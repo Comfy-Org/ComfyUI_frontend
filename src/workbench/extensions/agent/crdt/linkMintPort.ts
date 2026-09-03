@@ -9,7 +9,12 @@
  */
 import type { NodeId as WireNodeId } from '@comfyorg/comfy-multi-player'
 
-import type { GraphOperation } from './graphOperations'
+import { reportError } from '@/platform/telemetry/reportError'
+
+import type {
+  GraphMutationTarget,
+  TargetedGraphOperations
+} from './graphOperations'
 import { shouldMint } from './mintGate'
 import type { MintSession } from './mintSession'
 
@@ -36,11 +41,19 @@ export interface LinkTopologyView {
 interface LinkEventFeed {
   /** Fires after a successful `registerLink` or `replaceLink`. */
   onPlaced(
-    listener: (scope: LinkScopeView, topology: LinkTopologyView) => void
+    listener: (
+      target: GraphMutationTarget,
+      scope: LinkScopeView,
+      topology: LinkTopologyView
+    ) => void
   ): () => void
   /** Fires after `deleteLink` removes a registered topology. */
   onDeleted(
-    listener: (scope: LinkScopeView, topology: LinkTopologyView) => void
+    listener: (
+      target: GraphMutationTarget,
+      scope: LinkScopeView,
+      topology: LinkTopologyView
+    ) => void
   ): () => void
 }
 
@@ -53,7 +66,7 @@ export interface SeveranceLog {
    * Link ids severed for `nodeId` in the current capture window, each
    * consumed globally (a link touches two nodes; only one delete carries it).
    */
-  take(nodeId: string): WireNodeId[]
+  take(target: GraphMutationTarget, nodeId: string): WireNodeId[]
 }
 
 export interface LinkMintPortDeps {
@@ -64,7 +77,7 @@ export interface LinkMintPortDeps {
   /** A semantic doc is bound for the active workflow. */
   isDocBound(): boolean
   /** Receives minted semantic operations (the sender's inbox). */
-  enqueue(operations: GraphOperation[]): void
+  enqueue(batch: TargetedGraphOperations): boolean
 }
 
 export interface LinkMintPort {
@@ -74,12 +87,30 @@ export interface LinkMintPort {
 
 interface SeveranceEntry {
   linkId: WireNodeId
+  consumptionKey: string
+  target: GraphMutationTarget
+  scope: LinkScopeView
   /** The gate was open at severance: unconsumed means a real divergence. */
   mintable: boolean
 }
 
 function isRootScope(scope: LinkScopeView): boolean {
   return String(scope.owningGraphId) === String(scope.rootGraphId)
+}
+
+function matchesTarget(
+  target: GraphMutationTarget,
+  scope: LinkScopeView
+): boolean {
+  return target.rootGraphId === String(scope.rootGraphId)
+}
+
+function severanceKey(
+  workflowId: string,
+  rootGraphId: string,
+  nodeId: string
+): string {
+  return JSON.stringify([workflowId, rootGraphId, nodeId])
 }
 
 export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
@@ -95,32 +126,83 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
     })
   }
 
-  function surfaceUnrepresentable(what: string, id: string | number): void {
-    // A doc that no longer matches the local graph must be observable,
-    // never silent (the surfacing-honesty principle).
-    console.error(
-      `[agent-crdt] ${what} has no wire op; the bound doc diverges from the local graph`,
-      id
+  function surfaceUnrepresentable(
+    errorType:
+      | 'agent_crdt_link_mint_rejected_by_sender'
+      | 'agent_crdt_link_mint_subgraph_interior_connect'
+      | 'agent_crdt_link_mint_target_mismatch'
+      | 'agent_crdt_link_mint_unrepresentable_disconnect',
+    what: string,
+    target: GraphMutationTarget,
+    scope: LinkScopeView,
+    id: string | number
+  ): void {
+    reportError(
+      new Error(
+        `${what} has no wire op; the bound doc diverges from the local graph`
+      ),
+      {
+        errorType,
+        context: {
+          targetWorkflowId: target.workflowId,
+          targetRootGraphId: target.rootGraphId,
+          scopeRootGraphId: scope.rootGraphId,
+          owningGraphId: scope.owningGraphId,
+          linkId: String(id)
+        }
+      }
     )
   }
 
-  function onPlaced(scope: LinkScopeView, topology: LinkTopologyView): void {
+  function onPlaced(
+    target: GraphMutationTarget,
+    scope: LinkScopeView,
+    topology: LinkTopologyView
+  ): void {
     if (!gateOpen()) return
-    if (!isRootScope(scope)) {
-      surfaceUnrepresentable('subgraph-interior connect', topology.id)
+    if (!matchesTarget(target, scope)) {
+      surfaceUnrepresentable(
+        'agent_crdt_link_mint_target_mismatch',
+        'cross-document connect',
+        target,
+        scope,
+        topology.id
+      )
       return
     }
-    deps.enqueue([
-      {
-        op: 'connect',
-        link_id: topology.id,
-        from_node: topology.originNodeId,
-        from_slot: topology.originSlot,
-        to_node: topology.targetNodeId,
-        to_slot: topology.targetSlot,
-        link_type: String(topology.type)
-      }
-    ])
+    if (!isRootScope(scope)) {
+      surfaceUnrepresentable(
+        'agent_crdt_link_mint_subgraph_interior_connect',
+        'subgraph-interior connect',
+        target,
+        scope,
+        topology.id
+      )
+      return
+    }
+    const accepted = deps.enqueue({
+      target,
+      operations: [
+        {
+          op: 'connect',
+          link_id: topology.id,
+          from_node: topology.originNodeId,
+          from_slot: topology.originSlot,
+          to_node: topology.targetNodeId,
+          to_slot: topology.targetSlot,
+          link_type: String(topology.type)
+        }
+      ]
+    })
+    if (!accepted) {
+      surfaceUnrepresentable(
+        'agent_crdt_link_mint_rejected_by_sender',
+        'rejected connect',
+        target,
+        scope,
+        topology.id
+      )
+    }
   }
 
   function scheduleSweep(): void {
@@ -135,11 +217,17 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
         const surfaced = new Set<string>()
         for (const entries of severancesByNode.values()) {
           for (const entry of entries) {
-            const key = String(entry.linkId)
+            const key = entry.consumptionKey
             if (!entry.mintable || consumedLinkIds.has(key)) continue
             if (surfaced.has(key)) continue
             surfaced.add(key)
-            surfaceUnrepresentable('link disconnect', entry.linkId)
+            surfaceUnrepresentable(
+              'agent_crdt_link_mint_unrepresentable_disconnect',
+              'link disconnect',
+              entry.target,
+              entry.scope,
+              entry.linkId
+            )
           }
         }
         severancesByNode.clear()
@@ -148,20 +236,38 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
     })
   }
 
-  function capture(nodeId: string | number, entry: SeveranceEntry): void {
-    const key = String(nodeId)
+  function capture(key: string, entry: SeveranceEntry): void {
     const bucket = severancesByNode.get(key)
     if (bucket) bucket.push(entry)
     else severancesByNode.set(key, [entry])
   }
 
-  function onDeleted(scope: LinkScopeView, topology: LinkTopologyView): void {
+  function onDeleted(
+    target: GraphMutationTarget,
+    scope: LinkScopeView,
+    topology: LinkTopologyView
+  ): void {
+    // Key on the scope that owns the link, so a severance from another
+    // document is never consumed by this target's delete_node and survives
+    // to the sweep as a divergence.
+    const owningRoot = String(scope.rootGraphId)
     const entry: SeveranceEntry = {
       linkId: topology.id,
+      consumptionKey: severanceKey(
+        target.workflowId,
+        owningRoot,
+        String(topology.id)
+      ),
+      target: { ...target },
+      scope: { ...scope },
       mintable: gateOpen() && isRootScope(scope)
     }
-    capture(topology.originNodeId, entry)
-    capture(topology.targetNodeId, entry)
+    for (const nodeId of [topology.originNodeId, topology.targetNodeId]) {
+      capture(
+        severanceKey(target.workflowId, owningRoot, String(nodeId)),
+        entry
+      )
+    }
     scheduleSweep()
   }
 
@@ -170,10 +276,12 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
 
   return {
     severances: {
-      take(nodeId: string): WireNodeId[] {
+      take(target: GraphMutationTarget, nodeId: string): WireNodeId[] {
         const taken: WireNodeId[] = []
-        for (const entry of severancesByNode.get(nodeId) ?? []) {
-          const key = String(entry.linkId)
+        for (const entry of severancesByNode.get(
+          severanceKey(target.workflowId, target.rootGraphId, nodeId)
+        ) ?? []) {
+          const key = entry.consumptionKey
           if (consumedLinkIds.has(key)) continue
           consumedLinkIds.add(key)
           taken.push(entry.linkId)

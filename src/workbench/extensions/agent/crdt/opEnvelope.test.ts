@@ -1,5 +1,10 @@
-import { applyOps, mint, nodesMap } from '@comfyorg/comfy-multi-player'
-import type { Op } from '@comfyorg/comfy-multi-player'
+import {
+  applyOps,
+  mint,
+  nodesMap,
+  readGraph
+} from '@comfyorg/comfy-multi-player'
+import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { describe, expect, it } from 'vitest'
 
 import type { GraphOperation } from './graphOperations'
@@ -11,7 +16,7 @@ import {
   mintWireOps
 } from './opEnvelope'
 
-const MINT = { actor: 'human:test-user:tab-1', baseVersion: 7 }
+const MINT = { actor: 'human:test-user:tab-1', firstVersion: 7 }
 
 // The mint seam's vocabulary is the five implemented kinds only: the deferred
 // reset_doc stays outside GraphOperation (plan §2), pinned at compile time -
@@ -57,6 +62,7 @@ describe('mintWireOps', () => {
     const ops = mintWireOps([addNode(1), addNode(2), addNode(3)], MINT)
     const ids = new Set(ops.map((op) => op.op_id))
     expect(ids.size).toBe(3)
+    expect(ops.map((op) => op.stamp[0])).toEqual([7, 8, 9])
   })
 
   it('produces ops the real applier accepts and applies', () => {
@@ -94,6 +100,45 @@ describe('chunkWireOps', () => {
     expect(batches.map((b) => b.length)).toEqual([256, 256, 88])
     expect(batches.flat()).toEqual(ops)
     expect(WIRE_MAX_OPS_PER_BATCH).toBe(256)
+  })
+
+  it('converges to the later rapid widget write across chunk boundaries', () => {
+    const catalog: WidgetCatalog = {
+      types: { TestNode: { widget_order: ['seed'] } }
+    }
+    const doc = mint(
+      {
+        nodes: [
+          {
+            id: 1,
+            type: 'TestNode',
+            pos: [0, 0],
+            widgets_values: [0]
+          }
+        ],
+        links: []
+      },
+      catalog
+    )
+    const operations: GraphOperation[] = Array.from(
+      { length: WIRE_MAX_OPS_PER_BATCH + 1 },
+      (_, value) => ({
+        op: 'set_widget',
+        node_id: 1,
+        widget: 'seed',
+        value
+      })
+    )
+    const [earlier, later] = chunkWireOps(mintWireOps(operations, MINT))
+
+    applyOps(doc, later, catalog)
+    applyOps(doc, earlier, catalog)
+
+    const graph = readGraph(doc).nodes as Record<
+      string,
+      { widgets?: Record<string, unknown> }
+    >
+    expect(graph['1']?.widgets?.seed).toBe(WIRE_MAX_OPS_PER_BATCH)
   })
 
   it('isolates clear in a batch of exactly one', () => {

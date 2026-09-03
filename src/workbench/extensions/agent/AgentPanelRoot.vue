@@ -86,6 +86,7 @@ import type {
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
+import type { GraphMutationTarget } from './crdt/graphOperations'
 import {
   isCrdtDebugEnabled,
   resolveDebugPanelEnabled
@@ -130,7 +131,7 @@ const graphMutations = (workflowId: string) => {
   const existing = graphMutationsByWorkflow.get(workflowId)
   if (existing) return existing
   const mutations = createGraphMutations({
-    getScope() {
+    getScope: () => {
       const rootGraphId = boundTabFor(workflowId)?.activeState?.id
       return rootGraphId
         ? {
@@ -420,18 +421,34 @@ const {
   graphMutations,
   () => resolvedUserInfo.value?.id ?? null,
   isBoundWorkflowActive,
+  () => app.rootGraph?.state ?? null,
+  () => currentMintTarget()?.rootGraphId ?? null,
   // `app.isGraphReady` is a plain getter; reading `canvasStore.canvas` (set
   // right after `app.setup()`) makes the follower's graph watch fire once the
   // root graph exists.
   () => (canvasStore.canvas && app.isGraphReady ? app.rootGraph : null)
 )
+
+function currentMintTarget(): GraphMutationTarget | null {
+  const workflowId = boundWorkflowId.value
+  if (workflowId === null || !isBoundWorkflowActive.value) return null
+  const rootGraphId = boundTabFor(workflowId)?.activeState?.id
+  return rootGraphId === undefined ? null : { workflowId, rootGraphId }
+}
+
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,
-  isDocBound: () => isBoundWorkflowActive.value,
+  isDocBound: () => currentMintTarget() !== null,
+  target: currentMintTarget,
   enqueue: enqueueHumanOperations,
   layoutChanges: (listener) => layoutStore.onChange(listener),
   localActorPrefix: ACTOR_CONFIG.USER_PREFIX,
-  getGraph: () => (app.isGraphReady ? app.rootGraph : null)
+  getGraph: (target) => {
+    if (!app.isGraphReady) return null
+    const graph = app.rootGraph
+    const rootGraphId = String(graph.rootGraph?.id ?? graph.id)
+    return rootGraphId === target.rootGraphId ? graph : null
+  }
 })
 const isCrdtDevPanelEnabled = resolveDebugPanelEnabled(
   agentPanelStore.enabled,

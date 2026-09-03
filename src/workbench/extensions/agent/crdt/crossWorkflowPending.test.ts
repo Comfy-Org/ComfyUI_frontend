@@ -7,7 +7,11 @@ import type { Ref } from 'vue'
 import type { GraphMutations } from '@/core/graph/graphMutations'
 import { render } from '@testing-library/vue'
 
-import type { GraphOperation } from './graphOperations'
+import type {
+  GraphMutationTarget,
+  GraphOperation,
+  TargetedGraphOperations
+} from './graphOperations'
 
 const bridgeState = vi.hoisted(() => {
   const transport = { up: true }
@@ -133,20 +137,31 @@ function deleteNode(nodeId: string): GraphOperation {
   }
 }
 
+function target(workflowId: string): GraphMutationTarget {
+  return { workflowId, rootGraphId: `root-${workflowId}` }
+}
+
 function mountFollower(initial: string): {
   unmount: () => void
   workflowId: Ref<string | null>
-  enqueue: (operations: GraphOperation[]) => void
+  enqueue: (batch: TargetedGraphOperations) => boolean
   status: () => AgentCrdtStatus
 } {
   const workflowId = ref<string | null>(initial)
-  let enqueue!: (operations: GraphOperation[]) => void
+  let enqueue!: (batch: TargetedGraphOperations) => boolean
   let exposedStatus!: () => AgentCrdtStatus
   const host = defineComponent({
     setup() {
       const { enqueueHumanOperations, status } = useAgentCrdtFollower(
         workflowId,
-        graphMutations
+        graphMutations,
+        () => null,
+        ref(true),
+        () => null,
+        () =>
+          workflowId.value === null
+            ? null
+            : target(workflowId.value).rootGraphId
       )
       enqueue = enqueueHumanOperations
       exposedStatus = () => status.value as AgentCrdtStatus
@@ -183,6 +198,9 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     clientState.sent = []
     clientState.sendOps.mockClear()
     devLogState.recordDevEvent.mockClear()
+    // The producer clock persists per workflow in sessionStorage; clear it so
+    // reserved versions do not leak between tests.
+    sessionStorage.clear()
     vi.useFakeTimers()
   })
 
@@ -191,7 +209,7 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     bridgeState.transport.up = false
     clientState.transportUp = false
 
-    enqueue([deleteNode('a-queued')])
+    enqueue({ target: target('wf-a'), operations: [deleteNode('a-queued')] })
     expect(clientState.sent).toHaveLength(0)
     expect(clientState.attempts).toHaveLength(1)
     const operationId = clientState.attempts[0].ops[0].op_id
@@ -201,25 +219,30 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     clientState.transportUp = true
     vi.advanceTimersByTime(500)
 
-    // R-73 was filed against PR #16332's switch site. On main f954e479a,
-    // opSender keeps the workflow captured at enqueue time, so this half of
-    // the suspected A-to-B contamination is already a regression guard.
+    // The batch keeps workflow A's immutable address, but the active graph is
+    // already workflow B's root. The sender rejects rather than delivering an
+    // edit captured from a graph that is no longer current.
     expect(bridge().subscribe).toHaveBeenLastCalledWith('wf-b')
-    expect(clientState.sent).toHaveLength(1)
-    expect(clientState.sent[0]).toMatchObject({ workflowId: 'wf-a' })
-    expect(clientState.sent[0].ops[0]).toMatchObject({
-      op_id: operationId,
-      op: 'delete_node',
-      node_id: 'a-queued'
-    })
+    expect(clientState.sent).toHaveLength(0)
+    expect(devLogState.recordDevEvent).toHaveBeenCalledWith(
+      'human_ops_settled',
+      {
+        state: 'rejected',
+        target: target('wf-a'),
+        operations: [deleteNode('a-queued')],
+        reason: 'target_mismatch'
+      }
+    )
+    expect(operationId).toMatch(/^[0-9a-f]{32}$/)
   })
 
-  it('documents status contamination from a late workflow A result while workflow B is active', async () => {
+  it('settles only workflow A from a late workflow A result while workflow B is active', async () => {
     const { workflowId, enqueue, status } = mountFollower('wf-a')
 
     bridge().lastSequence = 41
-    enqueue([deleteNode('a-inflight')])
-    expect(clientState.sent[0].ops[0]).toMatchObject({ base_version: 41 })
+    enqueue({ target: target('wf-a'), operations: [deleteNode('a-inflight')] })
+    // The producer clock reserves strictly above the observed sequence.
+    expect(clientState.sent[0].ops[0]).toMatchObject({ base_version: 42 })
     const operationAId = clientState.sent[0].ops[0].op_id
     await switchWorkflow(workflowId, 'wf-b')
 
@@ -231,13 +254,16 @@ describe('R-73 cross-workflow pending operation characterization', () => {
       'human_ops_settled',
       {
         state: 'undeliverable',
+        target: target('wf-a'),
+        batchId: operationAId,
         ops: [expect.objectContaining({ op_id: operationAId })]
       }
     )
-    enqueue([deleteNode('b-pending')])
+    enqueue({ target: target('wf-b'), operations: [deleteNode('b-pending')] })
     expect(clientState.sent).toHaveLength(2)
     expect(clientState.sent[1]).toMatchObject({ workflowId: 'wf-b' })
-    expect(clientState.sent[1].ops[0]).toMatchObject({ base_version: 0 })
+    // Fresh producer clock for wf-b: nothing observed, so it reserves 1.
+    expect(clientState.sent[1].ops[0]).toMatchObject({ base_version: 1 })
     const operationBId = clientState.sent[1].ops[0].op_id
 
     dispatchOpsResult({
@@ -255,9 +281,9 @@ describe('R-73 cross-workflow pending operation characterization', () => {
       )
     ).toHaveLength(1)
 
-    // Documented defect expectation for R-73: result frames carry workflowId,
-    // but the composable updates workflow B's status from workflow A's frame.
-    // Flip this assertion when the result path gates status by workflowId.
+    // R-73: the sender settles by the result frame's workflowId, so the late
+    // wf-a result acknowledges only the wf-a batch. The composable status
+    // still records the frame type ungated; the sender is the gate.
     expect(status()).toMatchObject({
       workflowId: 'wf-b',
       lastFrameType: 'doc_ops_result'
@@ -271,14 +297,14 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     expect(operationBId).not.toBe(operationAId)
   })
 
-  it('documents an anonymous workflow A result settling workflow B in flight', async () => {
+  it('ignores an anonymous workflow A result while workflow B is in flight', async () => {
     const { workflowId, enqueue } = mountFollower('wf-a')
 
-    enqueue([deleteNode('a-inflight')])
+    enqueue({ target: target('wf-a'), operations: [deleteNode('a-inflight')] })
     const operationAId = clientState.sent[0].ops[0].op_id
     // The switch settles A undeliverable (settlement 0) and B goes out at once.
     await switchWorkflow(workflowId, 'wf-b')
-    enqueue([deleteNode('b-pending')])
+    enqueue({ target: target('wf-b'), operations: [deleteNode('b-pending')] })
     const operationBId = clientState.sent[1].ops[0].op_id
 
     // A's identified late result is ignored: its op_id is not in B's batch.
@@ -289,6 +315,9 @@ describe('R-73 cross-workflow pending operation characterization', () => {
       skipped: []
     })
 
+    // R-73 second half: a failure frame naming neither op_id nor workflow B
+    // must not acknowledge the wf-b batch. Before the per-workflow gate it
+    // settled whatever was in flight.
     dispatchOpsResult({
       workflowId: 'wf-a',
       ok: false,
@@ -299,11 +328,17 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     const settlements = devLogState.recordDevEvent.mock.calls.filter(
       ([event]) => event === 'human_ops_settled'
     )
-    expect(settlements).toHaveLength(2)
-    expect(settlements[1][1]).toMatchObject({
-      state: 'acknowledged',
-      ops: [expect.objectContaining({ op_id: operationBId })],
-      result: { ok: false, applied: [], skipped: [] }
+    // Settlement 0 is A going undeliverable at the switch; neither of A's
+    // late frames reaches B because the sender gates by workflowId + op_id.
+    expect(settlements).toHaveLength(1)
+    expect(settlements[0][1]).toMatchObject({
+      state: 'undeliverable',
+      target: target('wf-a'),
+      ops: [expect.objectContaining({ op_id: operationAId })]
     })
+    expect(clientState.sent[1]).toMatchObject({ workflowId: 'wf-b' })
+    expect(clientState.sent[1].ops[0]).toMatchObject({ op_id: operationBId })
+    // wf-b stays in flight until a wf-b result (or the result timeout) settles it.
+    expect(clientState.sent).toHaveLength(2)
   })
 })

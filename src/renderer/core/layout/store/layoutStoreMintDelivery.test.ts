@@ -16,12 +16,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { GraphScope } from '@/types/graphScopeId'
 import type { LinkTopology } from '@/types/linkTopology'
-import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
+import type {
+  GraphMutationTarget,
+  GraphOperation
+} from '@/workbench/extensions/agent/crdt/graphOperations'
 import type {
   MintPortWiring,
   MintableGraph
 } from '@/workbench/extensions/agent/crdt/mintPortWiring'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { useLinkStore } from '@/stores/linkStore'
@@ -30,6 +34,10 @@ import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import { createUuidv4 } from '@/utils/uuid'
 import { attachMintPortWiring } from '@/workbench/extensions/agent/crdt/mintPortWiring'
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: vi.fn()
+}))
 
 function createNodeOp(graphId: string, id: string) {
   return {
@@ -80,6 +88,7 @@ describe('mint ports against the real layout store delivery', () => {
   let minted: GraphOperation[]
   let wiring: MintPortWiring
   let graphId: string
+  let target: GraphMutationTarget
   let scope: GraphScope
   let graphNodes: Map<string, FakeGraphNode>
 
@@ -99,6 +108,7 @@ describe('mint ports against the real layout store delivery', () => {
     setActivePinia(createPinia())
     minted = []
     graphId = createUuidv4()
+    target = { workflowId: 'wf-a', rootGraphId: graphId }
     scope = {
       rootGraphId: toRootGraphId(graphId),
       owningGraphId: toOwningGraphId(graphId)
@@ -117,11 +127,17 @@ describe('mint ports against the real layout store delivery', () => {
     wiring = attachMintPortWiring({
       isEnabled: () => true,
       isDocBound: () => true,
-      enqueue: (operations) => minted.push(...operations),
+      target: () => target,
+      enqueue: (batch) => {
+        minted.push(...batch.operations)
+        return true
+      },
       layoutChanges: (listener) => layoutStore.onChange(listener),
       localActorPrefix: 'user-',
-      getGraph: () => graph
+      getGraph: (requested) =>
+        requested.rootGraphId === graphId ? graph : null
     })
+    vi.mocked(reportError).mockClear()
   })
 
   afterEach(() => {
@@ -159,9 +175,6 @@ describe('mint ports against the real layout store delivery', () => {
     const severed = linkTopology(41, '2')
     linkStore.registerLink(scope, severed)
     minted.length = 0
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
 
     // The real teardown order: litegraph severs the node's links
     // synchronously, then the layout deleteNode queues and delivers on the
@@ -180,8 +193,7 @@ describe('mint ports against the real layout store delivery', () => {
         removed_links: [toLinkId(41)]
       }
     ])
-    expect(consoleError).not.toHaveBeenCalled()
-    consoleError.mockRestore()
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('F2: the intentional-clear capture is consumed by the real clearGraph delivery', async () => {
@@ -233,14 +245,19 @@ describe('mint ports against the real layout store delivery', () => {
     const dangling = linkTopology(43, '9')
     linkStore.registerLink(scope, dangling)
     minted.length = 0
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
 
     linkStore.deleteLink(scope, dangling)
     await realDelivery()
 
-    expect(consoleError).toHaveBeenCalledOnce()
-    consoleError.mockRestore()
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_crdt_link_mint_unrepresentable_disconnect',
+      context: {
+        targetWorkflowId: target.workflowId,
+        targetRootGraphId: target.rootGraphId,
+        scopeRootGraphId: scope.rootGraphId,
+        owningGraphId: scope.owningGraphId,
+        linkId: '43'
+      }
+    })
   })
 })

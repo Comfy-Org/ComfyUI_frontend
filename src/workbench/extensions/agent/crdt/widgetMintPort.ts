@@ -4,7 +4,12 @@
  * writes mint the interior form (path = resolved node-id chain,
  * inner_widget = the name); an unresolvable owner surfaces, never drops.
  */
-import type { GraphOperation } from './graphOperations'
+import { reportError } from '@/platform/telemetry/reportError'
+
+import type {
+  GraphMutationTarget,
+  TargetedGraphOperations
+} from './graphOperations'
 import { shouldMint } from './mintGate'
 import type { MintSession } from './mintSession'
 
@@ -22,7 +27,9 @@ export interface WidgetSetView {
 
 interface WidgetEventFeed {
   /** Fires after a `setValue` that actually applied (the action returned true). */
-  onSet(listener: (set: WidgetSetView) => void): () => void
+  onSet(
+    listener: (target: GraphMutationTarget, set: WidgetSetView) => void
+  ): () => void
 }
 
 export interface WidgetMintPortDeps {
@@ -32,16 +39,17 @@ export interface WidgetMintPortDeps {
   isEnabled(): boolean
   /** A semantic doc is bound for the active workflow. */
   isDocBound(): boolean
-  /** The active root graph id, or null when no workflow is open. */
-  rootGraphId(): string | null
   /**
    * Subgraph-node id chain from the root to the definition owning
    * `owningGraphId`, or null when unreachable (wiring resolves it over the
    * live graph).
    */
-  resolveInteriorPath(owningGraphId: string): string[] | null
+  resolveInteriorPath(
+    target: GraphMutationTarget,
+    owningGraphId: string
+  ): string[] | null
   /** Receives minted semantic operations (the sender's inbox). */
-  enqueue(operations: GraphOperation[]): void
+  enqueue(batch: TargetedGraphOperations): boolean
 }
 
 export interface WidgetMintPort {
@@ -49,7 +57,31 @@ export interface WidgetMintPort {
 }
 
 export function attachWidgetMintPort(deps: WidgetMintPortDeps): WidgetMintPort {
-  function onSet(set: WidgetSetView): void {
+  function surfaceUnminted(
+    reason: 'owner_unresolvable' | 'rejected_by_sender',
+    target: GraphMutationTarget,
+    set: WidgetSetView
+  ): void {
+    const message =
+      reason === 'owner_unresolvable'
+        ? 'set_widget owner could not be resolved'
+        : 'set_widget mint rejected by the sender'
+    reportError(
+      new Error(`${message}; the bound doc diverges from the graph`),
+      {
+        errorType: `agent_crdt_widget_mint_${reason}`,
+        context: {
+          targetWorkflowId: target.workflowId,
+          targetRootGraphId: target.rootGraphId,
+          widgetGraphId: set.graphId,
+          widgetNodeId: String(set.nodeId),
+          widgetName: set.name
+        }
+      }
+    )
+  }
+
+  function onSet(target: GraphMutationTarget, set: WidgetSetView): void {
     const mintable = shouldMint({
       flagEnabled: deps.isEnabled(),
       docBound: deps.isDocBound(),
@@ -57,44 +89,45 @@ export function attachWidgetMintPort(deps: WidgetMintPortDeps): WidgetMintPort {
     })
     if (!mintable) return
 
-    const root = deps.rootGraphId()
-    if (root !== null && set.graphId === root) {
-      deps.enqueue([
+    if (set.graphId === target.rootGraphId) {
+      const accepted = deps.enqueue({
+        target,
+        operations: [
+          {
+            op: 'set_widget',
+            node_id: set.nodeId,
+            widget: set.name,
+            value: set.value,
+            old: set.old
+          }
+        ]
+      })
+      if (!accepted) surfaceUnminted('rejected_by_sender', target, set)
+      return
+    }
+
+    const subgraphNodePath = deps.resolveInteriorPath(target, set.graphId)
+    if (subgraphNodePath === null || subgraphNodePath.length === 0) {
+      surfaceUnminted('owner_unresolvable', target, set)
+      return
+    }
+
+    const [head, ...rest] = subgraphNodePath
+    const accepted = deps.enqueue({
+      target,
+      operations: [
         {
           op: 'set_widget',
           node_id: set.nodeId,
           widget: set.name,
           value: set.value,
-          old: set.old
+          old: set.old,
+          path: [head, ...rest, String(set.nodeId)],
+          inner_widget: set.name
         }
-      ])
-      return
-    }
-
-    const subgraphNodePath =
-      root === null ? null : deps.resolveInteriorPath(set.graphId)
-    if (subgraphNodePath === null || subgraphNodePath.length === 0) {
-      // The doc no longer matches the local graph; observable, never silent
-      // (the surfacing-honesty principle).
-      console.error(
-        '[agent-crdt] set_widget with an unresolvable owner not minted; the bound doc diverges from the local graph',
-        `${set.graphId}:${String(set.nodeId)}:${set.name}`
-      )
-      return
-    }
-
-    const [head, ...rest] = subgraphNodePath
-    deps.enqueue([
-      {
-        op: 'set_widget',
-        node_id: set.nodeId,
-        widget: set.name,
-        value: set.value,
-        old: set.old,
-        path: [head, ...rest, String(set.nodeId)],
-        inner_widget: set.name
-      }
-    ])
+      ]
+    })
+    if (!accepted) surfaceUnminted('rejected_by_sender', target, set)
   }
 
   const detach = deps.events.onSet(onSet)

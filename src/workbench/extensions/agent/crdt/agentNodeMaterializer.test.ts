@@ -682,10 +682,18 @@ describe('reconcileAgentAdapters', () => {
     beforeEach(() => {
       graph = new LGraph()
       minted = []
+      const target = {
+        workflowId: 'workflow-1',
+        rootGraphId: graph.rootGraph.id
+      }
       wiring = attachMintPortWiring({
         isEnabled: () => true,
         isDocBound: () => true,
-        enqueue: (operations) => minted.push(...operations),
+        target: () => target,
+        enqueue: (batch) => {
+          minted.push(...batch.operations)
+          return true
+        },
         layoutChanges: (listener) => layoutStore.onChange(listener),
         localActorPrefix: 'user-',
         getGraph: () => graph

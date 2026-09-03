@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { GraphOperation } from './graphOperations'
+import { reportError } from '@/platform/telemetry/reportError'
+
+import type { GraphMutationTarget, GraphOperation } from './graphOperations'
 import { attachLinkMintPort } from './linkMintPort'
 import type {
   LinkMintPort,
@@ -10,6 +12,10 @@ import type {
 import { createMintSession } from './mintSession'
 import type { MintSession } from './mintSession'
 
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: vi.fn()
+}))
+
 const ROOT_SCOPE: LinkScopeView = {
   rootGraphId: 'root-uuid',
   owningGraphId: 'root-uuid'
@@ -17,6 +23,10 @@ const ROOT_SCOPE: LinkScopeView = {
 const SUBGRAPH_SCOPE: LinkScopeView = {
   rootGraphId: 'root-uuid',
   owningGraphId: 'subgraph-uuid'
+}
+const TARGET: GraphMutationTarget = {
+  workflowId: 'wf-a',
+  rootGraphId: ROOT_SCOPE.rootGraphId
 }
 
 function topology(id: number): LinkTopologyView {
@@ -38,26 +48,44 @@ async function afterSweep(): Promise<void> {
 
 describe('attachLinkMintPort', () => {
   let minted: GraphOperation[]
+  let enqueueAccepts: boolean
   let port: LinkMintPort
   let enabled: boolean
   let bound: boolean
   let session: MintSession
   let placedListeners: Set<
-    (scope: LinkScopeView, topology: LinkTopologyView) => void
+    (
+      target: GraphMutationTarget,
+      scope: LinkScopeView,
+      topology: LinkTopologyView
+    ) => void
   >
   let deletedListeners: Set<
-    (scope: LinkScopeView, topology: LinkTopologyView) => void
+    (
+      target: GraphMutationTarget,
+      scope: LinkScopeView,
+      topology: LinkTopologyView
+    ) => void
   >
 
-  function place(scope: LinkScopeView, link: LinkTopologyView): void {
-    for (const listener of placedListeners) listener(scope, link)
+  function place(
+    scope: LinkScopeView,
+    link: LinkTopologyView,
+    target = TARGET
+  ): void {
+    for (const listener of placedListeners) listener(target, scope, link)
   }
 
-  function remove(scope: LinkScopeView, link: LinkTopologyView): void {
-    for (const listener of deletedListeners) listener(scope, link)
+  function remove(
+    scope: LinkScopeView,
+    link: LinkTopologyView,
+    target = TARGET
+  ): void {
+    for (const listener of deletedListeners) listener(target, scope, link)
   }
 
   beforeEach(() => {
+    enqueueAccepts = true
     minted = []
     enabled = true
     bound = true
@@ -78,7 +106,10 @@ describe('attachLinkMintPort', () => {
       session,
       isEnabled: () => enabled,
       isDocBound: () => bound,
-      enqueue: (operations) => minted.push(...operations)
+      enqueue: (batch) => {
+        minted.push(...batch.operations)
+        return enqueueAccepts
+      }
     })
   })
 
@@ -121,58 +152,86 @@ describe('attachLinkMintPort', () => {
   })
 
   it('surfaces a subgraph-interior placement observably instead of minting', () => {
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
     place(SUBGRAPH_SCOPE, topology(41))
 
     expect(minted).toEqual([])
-    expect(consoleError).toHaveBeenCalledOnce()
-    consoleError.mockRestore()
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_crdt_link_mint_subgraph_interior_connect',
+      context: {
+        targetWorkflowId: TARGET.workflowId,
+        targetRootGraphId: TARGET.rootGraphId,
+        scopeRootGraphId: SUBGRAPH_SCOPE.rootGraphId,
+        owningGraphId: SUBGRAPH_SCOPE.owningGraphId,
+        linkId: '41'
+      }
+    })
+  })
+
+  it('reports a sender rejection with target and link identity', () => {
+    enqueueAccepts = false
+
+    place(ROOT_SCOPE, topology(41))
+
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_crdt_link_mint_rejected_by_sender',
+      context: {
+        targetWorkflowId: TARGET.workflowId,
+        targetRootGraphId: TARGET.rootGraphId,
+        scopeRootGraphId: ROOT_SCOPE.rootGraphId,
+        owningGraphId: ROOT_SCOPE.owningGraphId,
+        linkId: '41'
+      }
+    })
   })
 
   it('captures a severed link under both endpoints, consumed exactly once', () => {
     remove(ROOT_SCOPE, topology(41))
 
-    expect(port.severances.take('2')).toEqual([41])
-    expect(port.severances.take('1')).toEqual([])
+    expect(port.severances.take(TARGET, '2')).toEqual([41])
+    expect(port.severances.take(TARGET, '1')).toEqual([])
+  })
+
+  it('isolates identical link and node ids by workflow/root target', () => {
+    const targetB = { workflowId: 'wf-b', rootGraphId: 'root-b' }
+    const scopeB = { rootGraphId: 'root-b', owningGraphId: 'root-b' }
+    remove(ROOT_SCOPE, topology(41))
+    remove(scopeB, topology(41), targetB)
+
+    expect(port.severances.take(TARGET, '2')).toEqual([41])
+    expect(port.severances.take(targetB, '2')).toEqual([41])
   })
 
   it('surfaces an unconsumed local disconnect as divergence after the sweep', async () => {
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
     remove(ROOT_SCOPE, topology(41))
     await afterSweep()
 
-    expect(consoleError).toHaveBeenCalledOnce()
-    expect(consoleError.mock.calls[0][1]).toBe(41)
-    consoleError.mockRestore()
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_crdt_link_mint_unrepresentable_disconnect',
+      context: {
+        targetWorkflowId: TARGET.workflowId,
+        targetRootGraphId: TARGET.rootGraphId,
+        scopeRootGraphId: ROOT_SCOPE.rootGraphId,
+        owningGraphId: ROOT_SCOPE.owningGraphId,
+        linkId: '41'
+      }
+    })
   })
 
   it('stays silent for a consumed severance (the delete carried it)', async () => {
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
     remove(ROOT_SCOPE, topology(41))
-    port.severances.take('1')
+    port.severances.take(TARGET, '1')
     await afterSweep()
 
-    expect(consoleError).not.toHaveBeenCalled()
-    consoleError.mockRestore()
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('stays silent for teardown severances', async () => {
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
     session.beginGraphTeardown()
     remove(ROOT_SCOPE, topology(41))
     session.endGraphTeardown()
     await afterSweep()
 
-    expect(consoleError).not.toHaveBeenCalled()
-    consoleError.mockRestore()
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('sweeps the capture window: a later take finds nothing', async () => {
@@ -181,8 +240,28 @@ describe('attachLinkMintPort', () => {
     session.endGraphTeardown()
     await afterSweep()
 
-    expect(port.severances.take('1')).toEqual([])
-    expect(port.severances.take('2')).toEqual([])
+    expect(port.severances.take(TARGET, '1')).toEqual([])
+    expect(port.severances.take(TARGET, '2')).toEqual([])
+  })
+
+  it('rejects a workflow target whose root does not own the link scope', () => {
+    const target = {
+      workflowId: 'wf-b',
+      rootGraphId: 'other-root'
+    }
+    place(ROOT_SCOPE, topology(41), target)
+
+    expect(minted).toEqual([])
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_crdt_link_mint_target_mismatch',
+      context: {
+        targetWorkflowId: target.workflowId,
+        targetRootGraphId: target.rootGraphId,
+        scopeRootGraphId: ROOT_SCOPE.rootGraphId,
+        owningGraphId: ROOT_SCOPE.owningGraphId,
+        linkId: '41'
+      }
+    })
   })
 
   it('stops minting after detach', () => {

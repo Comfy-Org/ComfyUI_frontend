@@ -1,12 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { GraphOperation } from './graphOperations'
+import { reportError } from '@/platform/telemetry/reportError'
+
+import type { GraphMutationTarget, GraphOperation } from './graphOperations'
 import { createMintSession } from './mintSession'
 import type { MintSession } from './mintSession'
 import { attachWidgetMintPort } from './widgetMintPort'
 import type { WidgetMintPort, WidgetSetView } from './widgetMintPort'
 
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: vi.fn()
+}))
+
 const ROOT = 'root-uuid'
+const TARGET: GraphMutationTarget = { workflowId: 'wf-a', rootGraphId: ROOT }
 
 function widgetSet(overrides: Partial<WidgetSetView> = {}): WidgetSetView {
   return {
@@ -21,23 +28,23 @@ function widgetSet(overrides: Partial<WidgetSetView> = {}): WidgetSetView {
 
 describe('attachWidgetMintPort', () => {
   let minted: GraphOperation[]
+  let enqueueAccepts: boolean
   let port: WidgetMintPort
   let enabled: boolean
   let bound: boolean
-  let root: string | null
   let interiorPaths: Map<string, string[]>
   let session: MintSession
-  let listeners: Set<(set: WidgetSetView) => void>
+  let listeners: Set<(target: GraphMutationTarget, set: WidgetSetView) => void>
 
-  function deliver(set: WidgetSetView): void {
-    for (const listener of listeners) listener(set)
+  function deliver(set: WidgetSetView, target = TARGET): void {
+    for (const listener of listeners) listener(target, set)
   }
 
   beforeEach(() => {
+    enqueueAccepts = true
     minted = []
     enabled = true
     bound = true
-    root = ROOT
     interiorPaths = new Map()
     session = createMintSession()
     listeners = new Set()
@@ -51,10 +58,12 @@ describe('attachWidgetMintPort', () => {
       session,
       isEnabled: () => enabled,
       isDocBound: () => bound,
-      rootGraphId: () => root,
-      resolveInteriorPath: (owningGraphId) =>
+      resolveInteriorPath: (_target, owningGraphId) =>
         interiorPaths.get(owningGraphId) ?? null,
-      enqueue: (operations) => minted.push(...operations)
+      enqueue: (batch) => {
+        minted.push(...batch.operations)
+        return enqueueAccepts
+      }
     })
   })
 
@@ -107,26 +116,53 @@ describe('attachWidgetMintPort', () => {
   })
 
   it('surfaces an unresolvable interior write observably instead of minting', () => {
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
     deliver(widgetSet({ graphId: 'subgraph-uuid' }))
 
     expect(minted).toEqual([])
-    expect(consoleError).toHaveBeenCalledOnce()
-    consoleError.mockRestore()
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_crdt_widget_mint_owner_unresolvable',
+      context: {
+        targetWorkflowId: TARGET.workflowId,
+        targetRootGraphId: TARGET.rootGraphId,
+        widgetGraphId: 'subgraph-uuid',
+        widgetNodeId: '7',
+        widgetName: 'seed'
+      }
+    })
   })
 
-  it('surfaces a write with no open root graph observably', () => {
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
-    root = null
-    deliver(widgetSet())
+  it('rejects a write whose event target does not own its root graph', () => {
+    const target = { workflowId: 'wf-b', rootGraphId: 'other-root' }
+    deliver(widgetSet(), target)
 
     expect(minted).toEqual([])
-    expect(consoleError).toHaveBeenCalledOnce()
-    consoleError.mockRestore()
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_crdt_widget_mint_owner_unresolvable',
+      context: {
+        targetWorkflowId: target.workflowId,
+        targetRootGraphId: target.rootGraphId,
+        widgetGraphId: ROOT,
+        widgetNodeId: '7',
+        widgetName: 'seed'
+      }
+    })
+  })
+
+  it('reports a sender rejection with target and widget identity', () => {
+    enqueueAccepts = false
+
+    deliver(widgetSet())
+
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_crdt_widget_mint_rejected_by_sender',
+      context: {
+        targetWorkflowId: TARGET.workflowId,
+        targetRootGraphId: TARGET.rootGraphId,
+        widgetGraphId: ROOT,
+        widgetNodeId: '7',
+        widgetName: 'seed'
+      }
+    })
   })
 
   it('stops minting after detach', () => {

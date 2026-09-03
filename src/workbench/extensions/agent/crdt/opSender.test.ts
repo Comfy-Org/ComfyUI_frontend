@@ -1,13 +1,17 @@
 import type { Op } from '@comfyorg/comfy-multi-player'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { GraphOperation } from './graphOperations'
+import type { GraphMutationTarget, GraphOperation } from './graphOperations'
 import { createOpSender } from './opSender'
 import type { BatchOutcome, OpsResultView } from './opSender'
 
 const WORKFLOW = 'wf-1'
 const TAB = 'tab-1'
 const ACTOR = 'human:test-user:tab-1'
+const TARGET: GraphMutationTarget = {
+  workflowId: WORKFLOW,
+  rootGraphId: 'root-1'
+}
 
 function addNode(id: number): GraphOperation {
   return {
@@ -25,15 +29,43 @@ describe('createOpSender', () => {
   let resultListener: ((result: OpsResultView) => void) | null
   let transportUp: boolean
   let boundWorkflow: string | null
+  let boundRootGraph: string | null
+  let producerVersion: number
+  let producerClockWritable: boolean
   let sender: ReturnType<typeof createOpSender>
+
+  function enqueue(...operations: GraphOperation[]): boolean {
+    return sender.enqueue({ target: TARGET, operations })
+  }
+
+  /** Enqueue for another bound workflow (the target check reads `boundWorkflow`). */
+  function enqueueFor(
+    workflowId: string,
+    ...operations: GraphOperation[]
+  ): boolean {
+    return sender.enqueue({
+      target: { workflowId, rootGraphId: `root-${workflowId}` },
+      operations
+    })
+  }
+
+  function deliverResult(
+    result: Omit<OpsResultView, 'workflowId'>,
+    workflowId = WORKFLOW
+  ): void {
+    resultListener?.({ workflowId, ...result })
+  }
 
   function ackInFlight(): void {
     const last = sent[sent.length - 1]
-    resultListener?.({
-      ok: true,
-      applied: last.ops.map((op) => op.op_id),
-      skipped: []
-    })
+    deliverResult(
+      {
+        ok: true,
+        applied: last.ops.map((op) => op.op_id),
+        skipped: []
+      },
+      last.workflowId
+    )
   }
 
   beforeEach(() => {
@@ -43,6 +75,9 @@ describe('createOpSender', () => {
     resultListener = null
     transportUp = true
     boundWorkflow = WORKFLOW
+    boundRootGraph = TARGET.rootGraphId
+    producerVersion = 0
+    producerClockWritable = true
     sender = createOpSender({
       sendOps: (workflowId, tab, ops) => {
         if (!transportUp) return false
@@ -56,9 +91,16 @@ describe('createOpSender', () => {
         }
       },
       workflowId: () => boundWorkflow,
+      rootGraphId: () => boundRootGraph,
       tab: TAB,
       actor: () => ACTOR,
-      baseVersion: () => 41,
+      observedVersion: () => 41,
+      reserveVersions: (_workflowId, observed, count) => {
+        if (!producerClockWritable) return null
+        const first = Math.max(producerVersion, observed) + 1
+        producerVersion = first + count - 1
+        return first
+      },
       onBatchSettled: (outcome) => settled.push(outcome)
     })
   })
@@ -68,23 +110,23 @@ describe('createOpSender', () => {
   })
 
   it('mints once and sends a doc_ops batch with the wire envelope', () => {
-    sender.enqueue([addNode(1), addNode(2)])
+    enqueue(addNode(1), addNode(2))
 
     expect(sent).toHaveLength(1)
     expect(sent[0].workflowId).toBe(WORKFLOW)
     expect(sent[0].tab).toBe(TAB)
     expect(sent[0].ops).toHaveLength(2)
-    for (const op of sent[0].ops) {
+    for (const [index, op] of sent[0].ops.entries()) {
       expect(op.op_id).toMatch(/^[0-9a-f]{32}$/)
       expect(op.actor).toBe(ACTOR)
-      expect(op.base_version).toBe(41)
-      expect(op.stamp).toEqual([41, ACTOR])
+      expect(op.base_version).toBe(42 + index)
+      expect(op.stamp).toEqual([42 + index, ACTOR])
     }
   })
 
   it('serializes batches: the next sends only after the result settles the first', () => {
-    sender.enqueue([addNode(1)])
-    sender.enqueue([addNode(2)])
+    enqueue(addNode(1))
+    enqueue(addNode(2))
     expect(sent).toHaveLength(1)
     expect(sender.pending()).toBe(2)
 
@@ -101,7 +143,7 @@ describe('createOpSender', () => {
 
   it('retries a down transport with the SAME minted ops and never re-mints', () => {
     transportUp = false
-    sender.enqueue([addNode(1)])
+    enqueue(addNode(1))
     expect(sent).toHaveLength(0)
 
     transportUp = true
@@ -120,9 +162,9 @@ describe('createOpSender', () => {
   })
 
   it('never re-addresses a queued batch: an unbound mint-time workflow settles it undeliverable at once', () => {
-    sender.enqueue([addNode(1)])
-    sender.enqueue([addNode(2)])
-    sender.enqueue([addNode(3)])
+    enqueue(addNode(1))
+    enqueue(addNode(2))
+    enqueue(addNode(3))
     boundWorkflow = 'wf-2'
 
     ackInFlight()
@@ -133,12 +175,36 @@ describe('createOpSender', () => {
       'undeliverable',
       'undeliverable'
     ])
-    expect(settled[1].ops[0].op_id).not.toBe(settled[2].ops[0].op_id)
+    expect(settled[1].state === 'undeliverable' && settled[1].target).toEqual(
+      TARGET
+    )
+    expect(
+      settled[1].state === 'undeliverable' && settled[1].ops[0].op_id
+    ).not.toBe(settled[2].state === 'undeliverable' && settled[2].ops[0].op_id)
+  })
+
+  it('rejects a queued batch before send after the active root changes', () => {
+    enqueue(addNode(1))
+    enqueue(addNode(2))
+    boundRootGraph = 'root-2'
+
+    ackInFlight()
+
+    expect(sent).toHaveLength(1)
+    expect(settled).toEqual([
+      expect.objectContaining({ state: 'acknowledged', target: TARGET }),
+      {
+        state: 'rejected',
+        target: TARGET,
+        operations: [addNode(2)],
+        reason: 'target_mismatch'
+      }
+    ])
   })
 
   it('a bound workflow restored before the next send still carries the queued batch', () => {
-    sender.enqueue([addNode(1)])
-    sender.enqueue([addNode(2)])
+    enqueue(addNode(1))
+    enqueue(addNode(2))
     boundWorkflow = null
     boundWorkflow = WORKFLOW
 
@@ -149,34 +215,61 @@ describe('createOpSender', () => {
   })
 
   it('settles an in-flight batch undeliverable at the silence resend once its workflow is unbound', () => {
-    sender.enqueue([addNode(1)])
+    enqueue(addNode(1))
     boundWorkflow = null
 
     vi.advanceTimersByTime(10_000)
 
     expect(sent).toHaveLength(1)
     expect(settled).toEqual([
-      { state: 'undeliverable', ops: expect.any(Array) }
+      expect.objectContaining({
+        state: 'undeliverable',
+        target: TARGET,
+        ops: expect.any(Array)
+      })
+    ])
+  })
+
+  it('rejects an in-flight batch before retry after the active root changes', () => {
+    transportUp = false
+    enqueue(addNode(1))
+    boundRootGraph = 'root-2'
+
+    vi.advanceTimersByTime(500)
+
+    expect(sent).toHaveLength(0)
+    expect(settled).toEqual([
+      {
+        state: 'rejected',
+        target: TARGET,
+        operations: [addNode(1)],
+        reason: 'target_mismatch'
+      }
     ])
   })
 
   it('abortIfUnbound settles an in-flight batch immediately, without waiting the 10s silence window', () => {
-    sender.enqueue([addNode(1)])
+    enqueue(addNode(1))
     boundWorkflow = null
 
     sender.abortIfUnbound()
 
     expect(settled).toEqual([
-      { state: 'undeliverable', ops: expect.any(Array) }
+      expect.objectContaining({
+        state: 'undeliverable',
+        target: TARGET,
+        ops: expect.any(Array)
+      })
     ])
     // No resend was burned reaching this outcome.
     expect(sent).toHaveLength(1)
   })
 
   it('abortIfUnbound frees the queue for the next bound batch immediately', () => {
-    sender.enqueue([addNode(1)])
+    enqueue(addNode(1))
     boundWorkflow = 'wf-2'
-    sender.enqueue([addNode(2)])
+    boundRootGraph = 'root-wf-2'
+    enqueueFor('wf-2', addNode(2))
     expect(sent).toHaveLength(1)
 
     sender.abortIfUnbound()
@@ -187,11 +280,12 @@ describe('createOpSender', () => {
   })
 
   it('abortIfUnbound cascades through every queued batch minted for the dead workflow, synchronously', () => {
-    sender.enqueue([addNode(1)])
-    sender.enqueue([addNode(2)])
-    sender.enqueue([addNode(3)])
+    enqueue(addNode(1))
+    enqueue(addNode(2))
+    enqueue(addNode(3))
     boundWorkflow = 'wf-2'
-    sender.enqueue([addNode(4)])
+    boundRootGraph = 'root-wf-2'
+    enqueueFor('wf-2', addNode(4))
     expect(sent).toHaveLength(1)
 
     sender.abortIfUnbound()
@@ -210,7 +304,7 @@ describe('createOpSender', () => {
 
   it('abortIfUnbound clears a pending send retry so no timer outlives the batch', () => {
     transportUp = false
-    sender.enqueue([addNode(1)])
+    enqueue(addNode(1))
     expect(vi.getTimerCount()).toBe(1)
     boundWorkflow = null
 
@@ -221,7 +315,7 @@ describe('createOpSender', () => {
   })
 
   it('abortIfUnbound is a no-op while the in-flight batch is still addressed to the bound workflow', () => {
-    sender.enqueue([addNode(1)])
+    enqueue(addNode(1))
 
     sender.abortIfUnbound()
 
@@ -235,9 +329,10 @@ describe('createOpSender', () => {
   })
 
   it('an unbound workflow at the resend frees the queue for the next bound batch without a retry burn', () => {
-    sender.enqueue([addNode(1)])
+    enqueue(addNode(1))
     boundWorkflow = 'wf-2'
-    sender.enqueue([addNode(2)])
+    boundRootGraph = 'root-wf-2'
+    enqueueFor('wf-2', addNode(2))
     expect(sent).toHaveLength(1)
 
     vi.advanceTimersByTime(10_000)
@@ -249,25 +344,69 @@ describe('createOpSender', () => {
 
   it('settles undeliverable after the transport retry budget', () => {
     transportUp = false
-    sender.enqueue([addNode(1)])
+    enqueue(addNode(1))
 
     vi.advanceTimersByTime(500 * 6)
 
     expect(settled).toEqual([
-      { state: 'undeliverable', ops: expect.any(Array) }
+      expect.objectContaining({
+        state: 'undeliverable',
+        target: TARGET,
+        ops: expect.any(Array)
+      })
     ])
   })
 
-  it('drops a batch as undeliverable when no doc is bound', () => {
+  it('rejects a target mismatch before reserving or minting', () => {
     boundWorkflow = null
-    sender.enqueue([addNode(1)])
+    const accepted = enqueue(addNode(1))
 
+    expect(accepted).toBe(false)
     expect(sent).toHaveLength(0)
-    expect(settled[0].state).toBe('undeliverable')
+    expect(settled).toEqual([
+      {
+        state: 'rejected',
+        target: TARGET,
+        operations: [addNode(1)],
+        reason: 'target_mismatch'
+      }
+    ])
+    expect(producerVersion).toBe(0)
+  })
+
+  it('rejects a same-workflow root mismatch before reserving or minting', () => {
+    boundRootGraph = 'root-2'
+
+    expect(enqueue(addNode(1))).toBe(false)
+    expect(sent).toEqual([])
+    expect(settled).toEqual([
+      {
+        state: 'rejected',
+        target: TARGET,
+        operations: [addNode(1)],
+        reason: 'target_mismatch'
+      }
+    ])
+    expect(producerVersion).toBe(0)
+  })
+
+  it('rejects an operation before minting when its clock cannot persist', () => {
+    producerClockWritable = false
+
+    expect(enqueue(addNode(1))).toBe(false)
+    expect(sent).toEqual([])
+    expect(settled).toEqual([
+      {
+        state: 'rejected',
+        target: TARGET,
+        operations: [addNode(1)],
+        reason: 'version_reservation_failed'
+      }
+    ])
   })
 
   it('resends the same ops exactly once after result silence, then reports unacknowledged', () => {
-    sender.enqueue([addNode(1)])
+    enqueue(addNode(1))
     expect(sent).toHaveLength(1)
 
     vi.advanceTimersByTime(10_000)
@@ -278,12 +417,16 @@ describe('createOpSender', () => {
 
     vi.advanceTimersByTime(10_000)
     expect(settled).toEqual([
-      { state: 'unacknowledged', ops: expect.any(Array) }
+      expect.objectContaining({
+        state: 'unacknowledged',
+        target: TARGET,
+        ops: expect.any(Array)
+      })
     ])
   })
 
   it('a late result after the resend still acknowledges the batch', () => {
-    sender.enqueue([addNode(1)])
+    enqueue(addNode(1))
     vi.advanceTimersByTime(10_000)
     expect(sent).toHaveLength(2)
 
@@ -294,7 +437,10 @@ describe('createOpSender', () => {
   })
 
   it('splits an oversized enqueue into serialized wire batches', () => {
-    sender.enqueue(Array.from({ length: 300 }, (_, index) => addNode(index)))
+    sender.enqueue({
+      target: TARGET,
+      operations: Array.from({ length: 300 }, (_, index) => addNode(index))
+    })
 
     expect(sent).toHaveLength(1)
     expect(sent[0].ops).toHaveLength(256)
@@ -305,25 +451,29 @@ describe('createOpSender', () => {
   })
 
   it('ignores a result for other ops while a batch is in flight', () => {
-    sender.enqueue([addNode(1)])
+    enqueue(addNode(1))
 
-    resultListener?.({ ok: true, applied: ['ffff'.repeat(8)], skipped: [] })
+    deliverResult({ ok: true, applied: ['ffff'.repeat(8)], skipped: [] })
 
     expect(settled).toHaveLength(0)
   })
 
   it('a late anonymous failure from an unacknowledged batch never settles the next batch', () => {
-    sender.enqueue([addNode(1)])
+    enqueue(addNode(1))
     vi.advanceTimersByTime(10_000)
     vi.advanceTimersByTime(10_000)
     expect(settled).toEqual([
-      { state: 'unacknowledged', ops: expect.any(Array) }
+      expect.objectContaining({
+        state: 'unacknowledged',
+        target: TARGET,
+        ops: expect.any(Array)
+      })
     ])
 
-    sender.enqueue([addNode(2)])
+    enqueue(addNode(2))
     expect(sent).toHaveLength(3)
 
-    resultListener?.({ ok: false, applied: [], skipped: [] })
+    deliverResult({ ok: false, applied: [], skipped: [] })
     expect(settled).toHaveLength(1)
 
     ackInFlight()
@@ -332,10 +482,10 @@ describe('createOpSender', () => {
   })
 
   it('an identified empty-list failure settles the batch it names via failure.op_id', () => {
-    sender.enqueue([addNode(1)])
+    enqueue(addNode(1))
     const opId = sent[0].ops[0].op_id
 
-    resultListener?.({
+    deliverResult({
       ok: false,
       applied: [],
       skipped: [],
@@ -343,13 +493,17 @@ describe('createOpSender', () => {
     })
 
     expect(settled).toHaveLength(1)
-    expect(settled[0].state).toBe('acknowledged')
+    const outcome = settled[0]
+    expect(outcome.state).toBe('acknowledged')
+    if (outcome.state !== 'acknowledged')
+      throw new Error('expected acknowledged outcome')
+    expect(outcome.batchId).toBe(opId)
   })
 
   it('an identified failure for other ops never settles the in-flight batch', () => {
-    sender.enqueue([addNode(1)])
+    enqueue(addNode(1))
 
-    resultListener?.({
+    deliverResult({
       ok: false,
       applied: [],
       skipped: [],
@@ -359,27 +513,64 @@ describe('createOpSender', () => {
     expect(settled).toHaveLength(0)
   })
 
-  it('idle late results drain the stale credits so a fresh batch can settle anonymously', () => {
-    sender.enqueue([addNode(1)])
-    vi.advanceTimersByTime(10_000)
-    vi.advanceTimersByTime(10_000)
+  it('ignores a foreign-workflow result that names this batch op', () => {
+    enqueue(addNode(1))
+    const opId = sent[0].ops[0].op_id
+
+    deliverResult({ ok: true, applied: [opId], skipped: [] }, 'wf-other')
+    expect(settled).toEqual([])
+
+    deliverResult({ ok: true, applied: [opId], skipped: [] })
+    expect(settled).toHaveLength(1)
+  })
+
+  it('settles each workflow batch only on its own identified result', () => {
+    enqueue(addNode(1))
+    const workflowAOpId = sent[0].ops[0].op_id
+    ackInFlight()
+
+    const targetB = { workflowId: 'wf-2', rootGraphId: 'root-2' }
+    boundWorkflow = targetB.workflowId
+    boundRootGraph = targetB.rootGraphId
+    sender.enqueue({ target: targetB, operations: [addNode(1)] })
+    const workflowBOpId = sent[1].ops[0].op_id
+
+    deliverResult(
+      { ok: true, applied: [workflowAOpId], skipped: [] },
+      TARGET.workflowId
+    )
+    deliverResult({ ok: false, applied: [], skipped: [] }, TARGET.workflowId)
+    deliverResult({ ok: false, applied: [], skipped: [] }, targetB.workflowId)
+
     expect(settled).toHaveLength(1)
 
-    resultListener?.({ ok: false, applied: [], skipped: [] })
-    resultListener?.({ ok: false, applied: [], skipped: [] })
-
-    sender.enqueue([addNode(2)])
-    resultListener?.({ ok: false, applied: [], skipped: [] })
-
+    deliverResult(
+      { ok: true, applied: [workflowBOpId], skipped: [] },
+      targetB.workflowId
+    )
     expect(settled).toHaveLength(2)
-    expect(settled[1].state).toBe('acknowledged')
+    expect(settled[1]).toMatchObject({
+      state: 'acknowledged',
+      target: targetB,
+      batchId: workflowBOpId
+    })
+  })
+
+  it('leaves a current anonymous result unacknowledged', () => {
+    enqueue(addNode(1))
+
+    deliverResult({ ok: false, applied: [], skipped: [] })
+    expect(settled).toEqual([])
+
+    vi.advanceTimersByTime(20_000)
+    expect(settled[0].state).toBe('unacknowledged')
   })
 
   it('stops sending after detach', () => {
-    sender.enqueue([addNode(1)])
+    enqueue(addNode(1))
     ackInFlight()
     sender.detach()
-    sender.enqueue([addNode(2)])
+    enqueue(addNode(2))
 
     expect(sent).toHaveLength(1)
   })

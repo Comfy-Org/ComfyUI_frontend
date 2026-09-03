@@ -6,6 +6,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createGraphMutations } from '@/core/graph/graphMutations'
 import type { NodeLifecycleEvent } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
+import {
+  MINT_ID_MIN,
+  mintNodeId,
+  setCoordinationFreeIds
+} from '@/lib/litegraph/src/idAllocation'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -1789,6 +1794,25 @@ describe('Shared LGraphState', () => {
 
     expect(rootGraph.state.lastNodeId).toBe(10)
     expect(rootGraph.state.lastLinkId).toBe(20)
+  })
+
+  it('carries coordination-free ID arming across clear()', () => {
+    const rootGraph = new LGraph()
+    setCoordinationFreeIds(rootGraph.state, true)
+
+    rootGraph.clear()
+
+    expect(Number(mintNodeId(rootGraph.state))).toBeGreaterThanOrEqual(
+      MINT_ID_MIN
+    )
+  })
+
+  it('does not arm a cleared graph that was not armed', () => {
+    const rootGraph = new LGraph()
+
+    rootGraph.clear()
+
+    expect(mintNodeId(rootGraph.state)).toBe(toNodeId(1))
   })
 })
 
