@@ -128,7 +128,7 @@ function onPointerDownOutside(event: Event) {
   if (!dismissable.value) event.preventDefault()
 }
 function closeDialog() {
-  visible.value = false
+  onOpenChange(false)
 }
 const canvasStore = useCanvasStore()
 

@@ -1,5 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, nextTick } from 'vue'
@@ -8,6 +9,7 @@ import { createI18n } from 'vue-i18n'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import type { Settings } from '@/schemas/apiSchema'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import type { FuseFilter, FuseFilterWithValue } from '@/utils/fuseUtil'
 
 import NodeSearchBoxPopover from './NodeSearchBoxPopover.vue'
@@ -55,15 +57,24 @@ describe('NodeSearchBoxPopover', () => {
       props: {
         filters: { type: Array, default: () => [] }
       },
-      emits: ['addFilter', 'addNode'],
+      emits: ['addFilter', 'removeFilter', 'addNode'],
       setup(props, { emit }) {
         emitAddFilter = (filter) => emit('addFilter', filter)
         emitAddNodeV1 = (nodeDef, dragEvent) =>
           emit('addNode', nodeDef, dragEvent)
         const filterCount = computed(() => props.filters.length)
-        return { filterCount }
+        return {
+          filterCount,
+          addTestFilter: () =>
+            emit('addFilter', createFilter('outputType', 'IMAGE')),
+          addTestNode: () => emit('addNode', { name: 'KSampler' })
+        }
       },
-      template: '<output aria-label="filter count">{{ filterCount }}</output>'
+      template: `
+        <output aria-label="filter count">{{ filterCount }}</output>
+        <button @click="addTestFilter">Add filter</button>
+        <button @click="addTestNode">Add node</button>
+      `
     })
 
     const NodeSearchContentStub = defineComponent({
@@ -87,7 +98,19 @@ describe('NodeSearchBoxPopover', () => {
           settingValues: settings,
           settingsById: coreSettingsById
         },
-        searchBox: { visible: false }
+        searchBox: { visible: false },
+        canvas: {
+          canvas: {
+            linkConnector: {
+              events: {
+                addEventListener: vi.fn(),
+                removeEventListener: vi.fn()
+              },
+              reset: vi.fn()
+            },
+            setDirty: vi.fn()
+          }
+        }
       }
     })
 
@@ -120,7 +143,8 @@ describe('NodeSearchBoxPopover', () => {
         if (!emitAddNodeV2)
           throw new Error('NodeSearchContent stub did not mount')
         return emitAddNodeV2
-      }
+      },
+      pinia
     }
   }
 
@@ -178,6 +202,30 @@ describe('NodeSearchBoxPopover', () => {
 
       expect(screen.getByLabelText('filter count')).toHaveTextContent('2')
     })
+  })
+
+  it('clears filters after a node closes the search programmatically', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      callback(0)
+      return 0
+    })
+    addNodeOnGraph.mockReturnValue({})
+    const { pinia } = renderComponent({
+      'Comfy.NodeSearchBoxImpl': 'v1 (legacy)'
+    })
+    const searchBoxStore = useSearchBoxStore(pinia)
+
+    searchBoxStore.visible = true
+    await user.click(screen.getByRole('button', { name: 'Add filter' }))
+    expect(screen.getByLabelText('filter count')).toHaveTextContent('1')
+
+    await user.click(screen.getByRole('button', { name: 'Add node' }))
+    expect(searchBoxStore.visible).toBe(false)
+    searchBoxStore.visible = true
+    await nextTick()
+
+    expect(screen.getByLabelText('filter count')).toHaveTextContent('0')
   })
 
   describe('addNode ghost flag (FollowCursor setting)', () => {
