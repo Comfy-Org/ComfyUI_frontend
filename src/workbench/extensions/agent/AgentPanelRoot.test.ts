@@ -1831,19 +1831,27 @@ describe('AgentPanelRoot lifecycle', () => {
     expect(activity.$state.creatingTab).toBe(false)
   })
 
-  it('gates the CRDT debug status strip behind the same DEV check as CrdtDevPanel (CRDT-RM-7)', () => {
+  it('hides the CRDT debug status strip and CrdtDevPanel outside DEV (CRDT-RM-7)', () => {
     // Regression guard: this strip previously rendered for every user
     // whenever `crdtStatus.enabled` was true (which is unconditional), so it
     // shipped as always-on production telemetry regardless of DEV/prod. It
     // must stay gated behind the same `isCrdtDevPanelEnabled`
-    // (import.meta.env.DEV) check as the CrdtDevPanel it sits above, so the
-    // two mount/unmount together rather than the strip alone surviving a
-    // build where the dev panel does not.
+    // (import.meta.env.DEV) check as the CrdtDevPanel it sits above. Vitest
+    // runs with DEV=true, so the production side of the gate has to be
+    // exercised by stubbing the env before mount.
+    vi.stubEnv('DEV', false)
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
-    const strip = screen.queryByTestId('agent-crdt-status')
-    const devPanel = screen.queryByTestId('crdt-dev-panel-chip')
-    expect(strip === null).toBe(devPanel === null)
+    expect(screen.queryByTestId('agent-crdt-status')).toBeNull()
+    expect(screen.queryByTestId('crdt-dev-panel')).toBeNull()
+  })
+
+  it('renders the CRDT debug status strip together with CrdtDevPanel in DEV', () => {
+    vi.stubEnv('DEV', true)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(screen.getByTestId('agent-crdt-status')).toBeInTheDocument()
+    expect(screen.getByTestId('crdt-dev-panel')).toBeInTheDocument()
   })
 })
 

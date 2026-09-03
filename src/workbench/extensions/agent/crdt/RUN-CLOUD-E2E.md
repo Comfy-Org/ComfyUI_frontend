@@ -29,7 +29,10 @@ agent panel, so the panel's product flag is the only gate.
 ## Verify
 
 - The status strip at the top of the agent panel (`data-testid="agent-crdt-status"`)
-  shows connected + the subscribed workflow id.
+  shows connected + the subscribed workflow id. The strip and the CrdtDevPanel below
+  it are DEV-only (`import.meta.env.DEV`), so they render under `pnpm dev` but not in
+  a production build such as a hosted preview; there, verify through the canvas
+  updates below and the `/ws` frames in the network tab instead.
 - Send a message in the agent chat; as the agent edits, `updatesApplied` increments and
   nodes move on the canvas.
 - Reload the tab mid-session: it resubscribes and reconverges from the seeded snapshot.
