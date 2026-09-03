@@ -92,7 +92,7 @@
         v-if="agentPanelStore.enabled"
         variant="link"
         size="sm"
-        :aria-pressed="agentPanelStore.isOpen"
+        :aria-pressed="agentPanelStore.isVisible"
         :class="
           cn(
             'no-drag shrink-0 border border-solid text-base-foreground',
@@ -173,6 +173,7 @@ const commandStore = useCommandStore()
 const agentPanelStore = useAgentPanelStore()
 const { withConsent } = useAgentConsent()
 const tabActivity = useWorkflowTabActivityStore()
+
 async function onAgentEntryClick(): Promise<void> {
   if (agentPanelStore.isVisible) {
     useTelemetry()?.trackAgentEntryButtonClicked({ resulting_state: 'closed' })
