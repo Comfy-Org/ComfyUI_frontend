@@ -5,6 +5,8 @@ import { api } from '@/scripts/api'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { createUuidv4 } from '@/utils/uuid'
 
+import type { MaterializableGraph } from './agentNodeMaterializer'
+import { reconcileAgentAdapters } from './agentNodeMaterializer'
 import { recordDevEvent } from './devPanelLog'
 import { wireLog } from './crdtLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
@@ -61,10 +63,6 @@ interface PersistedDocIdRecord {
 
 const DEFAULT_SCHEMA_ERROR_MESSAGE = 'Document schema version mismatch'
 
-// `AgentCrdtStatus.schemaError` is contractually `string | null`; the detail
-// arrives as an untyped CustomEvent payload (server frame or, in tests, a
-// hand-built object), so a non-string `message` must not reach the ref — it
-// would otherwise flow straight into a toast expecting a string.
 function readSchemaErrorMessage(detail: unknown): string {
   if (
     detail !== null &&
@@ -209,7 +207,13 @@ export function useAgentCrdtFollower(
   workflowId: Ref<string | null>,
   graphMutations: MutationsForTarget,
   userId: () => string | null = () => null,
-  isTargetActive: Ref<boolean> = ref(true)
+  isTargetActive: Ref<boolean> = ref(true),
+  /**
+   * Live graph that receives node adapters for store-only records. Reactive
+   * reads inside the getter are tracked, so a `null` → graph flip triggers a
+   * reconcile without waiting for the next remote frame.
+   */
+  getGraph: () => MaterializableGraph | null = () => null
 ) {
   const connected = ref(false)
   const updatesApplied = ref(0)
@@ -398,10 +402,6 @@ export function useAgentCrdtFollower(
       const stillUnreadable =
         bridge.lastSchemaError !== null || isPermanentlyMismatched()
       if (stillUnreadable) {
-        // The bridge's own gap detector and lineage handling resubscribe
-        // without consulting the gate, so an ok ack can still land here for
-        // the doc that already failed the read gate. Treat it like the
-        // refusal branch: no connected, no probe, no persisted binding.
         connected.value = false
         clearStaleProbe()
         return
@@ -454,6 +454,7 @@ export function useAgentCrdtFollower(
     outcomes.value = applied
       ? { ...outcomes.value, applied: outcomes.value.applied + 1 }
       : { ...outcomes.value, skipped: outcomes.value.skipped + 1 }
+    if (applied) reconcileLiveGraph(update.workflowId)
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
@@ -486,9 +487,6 @@ export function useAgentCrdtFollower(
             seq?: number
           })
         : undefined
-    // The bridge already replaced its doc for this lineage break, whether or
-    // not this target is active, so count it before the filter like the other
-    // bridge-decided outcomes (gap, dropped, errored).
     outcomes.value = { ...outcomes.value, reset: outcomes.value.reset + 1 }
     if (
       !isTargetActive.value ||
@@ -500,8 +498,14 @@ export function useAgentCrdtFollower(
       actor: detail?.actor ?? 'agent-reset',
       opId: `doc-reset:${detail?.seq ?? 'unknown'}`
     }
-    if (detail?.workflowId !== undefined)
+    if (detail?.workflowId !== undefined) {
       adapter.clearForReset(detail.workflowId, context)
+      // A lineage break empties the stores but leaves every live adapter
+      // standing, and those adapters are what a save serialises. Without a
+      // reconcile here the pre-reset nodes survive -- and can be written back
+      // -- until some later frame happens to arrive.
+      reconcileLiveGraph(detail.workflowId)
+    }
     connected.value = false
     updatesApplied.value = 0
     lastFrameType.value = event.type
@@ -527,20 +531,17 @@ export function useAgentCrdtFollower(
       workflowId === subscribedWorkflowId.value
     ) {
       updatesApplied.value = 0
-      // A lineage break mints a brand-new FollowerDoc (see
-      // LayoutFollowerBridge.dropDocForNewLineage), which is exactly the
-      // "unreadable FollowerDoc was replaced" condition that may lift a
-      // permanent schema-error gate for this workflow — the prior doc's
-      // failure says nothing about the fresh one.
-      if (workflowId === permanentSchemaMismatchWorkflowId) {
-        permanentSchemaMismatchWorkflowId = null
-        schemaError.value = null
-      }
+      permanentSchemaMismatchWorkflowId = null
+      schemaError.value = null
       adapter.clearForReset(workflowId, {
         source: 'agent-remote',
         actor: 'agent-lineage',
         opId: `follower-replaced:${workflowId}`
       })
+      // Same reasoning as `onDocReset`: the clear is store-only, so the stale
+      // live adapters have to be swept before the replacement doc's frames
+      // start landing.
+      reconcileLiveGraph(workflowId)
       adapter.bind(workflowId, bridge.follower)
     }
   }
@@ -558,10 +559,6 @@ export function useAgentCrdtFollower(
         : null
     const workflowId =
       typeof detail?.workflowId === 'string' ? detail.workflowId : null
-    // Same permanent-mismatch gate as the subscribe-refusal path: the doc this
-    // workflow just merged is unreadable, so a later status/reconnect must not
-    // resubscribe into the same failure until the workflow itself changes.
-    permanentSchemaMismatchWorkflowId = workflowId ?? subscribedWorkflowId.value
     schemaError.value = readSchemaErrorMessage(detail)
     if (workflowId !== null) adapter.discardPending(workflowId)
     outcomes.value = { ...outcomes.value, errored: outcomes.value.errored + 1 }
@@ -570,20 +567,10 @@ export function useAgentCrdtFollower(
       event instanceof CustomEvent ? (event.detail ?? null) : null
     )
   }
-  // True while the CURRENT workflow already failed a permanent schema check
-  // (subscribe refusal or KA-11 read gate). Guards every path that could
-  // otherwise re-drive a subscribe for that same doc: `reconcile()`/
-  // `resubscribe()` themselves have no notion of "permanent", so without this
-  // check a later `status` frame or a reconnect resends the exact request the
-  // server (or the local read gate) already refused.
   const isPermanentlyMismatched = (): boolean =>
     subscribedWorkflowId.value !== null &&
     subscribedWorkflowId.value === permanentSchemaMismatchWorkflowId
 
-  // s5-metrics-1: the bridge withholds a frame and forces a resubscribe when
-  // it detects a seq jump (FEB-2) — that frame never becomes a `doc_update`
-  // event, so `gap` can only be counted from the bridge's own `doc_gap`
-  // signal, not inferred inside `onUpdate`.
   const onGap: EventListener = (event) => {
     outcomes.value = { ...outcomes.value, gap: outcomes.value.gap + 1 }
     recordDevEvent(
@@ -591,9 +578,6 @@ export function useAgentCrdtFollower(
       event instanceof CustomEvent ? (event.detail ?? null) : null
     )
   }
-  // s5-metrics-1: a stale/duplicate frame is discarded inside the bridge
-  // before it becomes a `doc_update` event, so `dropped` is likewise counted
-  // from the bridge's own `doc_stale` signal.
   const onStale: EventListener = (event) => {
     outcomes.value = { ...outcomes.value, dropped: outcomes.value.dropped + 1 }
     recordDevEvent(
@@ -645,6 +629,30 @@ export function useAgentCrdtFollower(
   // (a REAL detach, e.g. new chat — drop the persisted id too).
   let initialBind = true
   let boundWorkflowId: string | null = null
+  // The op layer writes remote frames to the stores only; the live graph
+  // catches up here, after each applied frame and once a graph exists.
+  function reconcileLiveGraph(docId: string): void {
+    const graph = getGraph()
+    if (!graph) return
+    const nodeIds = reconcileAgentAdapters(graph)
+    if (nodeIds.length > 0) {
+      recordDevEvent('agent_node_adapters_materialized', {
+        workflowId: docId,
+        nodeIds
+      })
+    }
+  }
+  // Readiness only. The other ordering -- graph ready first, target activated
+  // second -- cannot be caught here: `getGraph` does not change when activity
+  // flips, and even if this watcher also took `isTargetActive` as a source it
+  // was created before the binding watcher below, so it would run first and
+  // still see `boundWorkflowId === null`. Activation is therefore reconciled at
+  // the bind site instead, once the binding actually exists.
+  watch(getGraph, (graph) => {
+    if (graph && boundWorkflowId !== null && isTargetActive.value) {
+      reconcileLiveGraph(boundWorkflowId)
+    }
+  })
   // Drive the bridge's intent, then give the sender the same eager signal the
   // refusal branch gets: `reconcile()` clears send reality synchronously when
   // the desired doc changes, and a batch minted for the old doc would
@@ -656,7 +664,11 @@ export function useAgentCrdtFollower(
   }
   watch(
     [workflowId, isTargetActive],
-    ([next, active]) => {
+    ([next, active], previous) => {
+      // Only the inactive->active edge, and never the `immediate` first run
+      // (`previous` is undefined there), so a plain mount or retarget keeps its
+      // existing "reconcile on frame or on graph readiness" behaviour.
+      const justActivated = active && previous?.[1] === false
       clearSubscribeRetry()
       clearStaleProbe()
       connected.value = false
@@ -690,6 +702,7 @@ export function useAgentCrdtFollower(
           }
           subscribedWorkflowId.value = persisted
           retarget(persisted)
+          if (justActivated) reconcileLiveGraph(persisted)
           return
         }
         clearPersistedDocId()
@@ -709,6 +722,7 @@ export function useAgentCrdtFollower(
       }
       subscribedWorkflowId.value = next
       retarget(next)
+      if (justActivated) reconcileLiveGraph(next)
     },
     { immediate: true }
   )

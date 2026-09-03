@@ -8,12 +8,16 @@
  */
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick, ref } from 'vue'
+import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import type { Ref } from 'vue'
 
 import { render } from '@testing-library/vue'
 
 import type { GraphMutations } from '@/core/graph/graphMutations'
+import type { NodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
+
+import type { MaterializableGraph } from './agentNodeMaterializer'
 
 const bridgeState = vi.hoisted(() => {
   class FakeBridge extends EventTarget {
@@ -48,6 +52,10 @@ const adapterState = vi.hoisted(() => ({
   clearForReset: vi.fn(),
   discardPending: vi.fn(),
   destroy: vi.fn()
+}))
+
+const materializerState = vi.hoisted(() => ({
+  reconcileAgentAdapters: vi.fn(() => [] as NodeId[])
 }))
 
 const apiState = vi.hoisted(() => {
@@ -95,6 +103,10 @@ vi.mock('./ecsFollowerAdapter', () => ({
   }
 }))
 
+vi.mock('./agentNodeMaterializer', () => ({
+  reconcileAgentAdapters: materializerState.reconcileAgentAdapters
+}))
+
 vi.mock('./devPanelLog', () => ({
   recordDevEvent: vi.fn()
 }))
@@ -138,7 +150,8 @@ function writeRawRecord(overrides: {
 
 function mountFollower(
   initial: string | null = null,
-  initiallyActive = true
+  initiallyActive = true,
+  getGraph: () => MaterializableGraph | null = () => null
 ): {
   unmount: () => void
   workflowId: Ref<string | null>
@@ -154,7 +167,8 @@ function mountFollower(
         workflowId,
         graphMutations,
         () => null,
-        isTargetActive
+        isTargetActive,
+        getGraph
       )
       exposedStatus = () => status.value as AgentCrdtStatus
       return () => null
@@ -179,6 +193,7 @@ describe('useAgentCrdtFollower', () => {
     setActivePinia(createPinia())
     sessionStorage.clear()
     bridgeState.current = null
+    materializerState.reconcileAgentAdapters.mockReset().mockReturnValue([])
   })
 
   it('subscribes immediately to a bound workflow and reports it in status', () => {
@@ -236,8 +251,6 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  // DrJKL discussion_r3911655585: a later status/reconnect must not re-enter
-  // the retry path for a permanent mismatch already reported for this doc.
   it('a permanent schema mismatch is not re-entered by a later status event', () => {
     const { unmount } = mountFollower('wf-1')
 
@@ -269,6 +282,23 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('resubscribes after reconnect when the local read gate rejected the document', () => {
+    const { unmount, status } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    dispatchFrame('schema_error', {
+      workflowId: 'wf-1',
+      message: 'meta.schema_version=3 is not schema v2'
+    })
+    bridge().lastSchemaError = new Error('still unreadable')
+
+    apiState.target.dispatchEvent(new Event('reconnected'))
+
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
+    expect(status().connected).toBe(false)
+    expect(status().schemaError).toBe('meta.schema_version=3 is not schema v2')
+    unmount()
+  })
+
   it('a permanent schema mismatch gate lifts once the workflow changes', async () => {
     const { unmount, workflowId } = mountFollower('wf-1')
 
@@ -283,14 +313,10 @@ describe('useAgentCrdtFollower', () => {
 
     expect(bridge().subscribe).toHaveBeenLastCalledWith('wf-2')
     apiState.target.dispatchEvent(new Event('status'))
-    // The gate applied to wf-1 only; wf-2 is free to reconcile normally.
     expect(bridge().reconcile).toHaveBeenCalled()
     unmount()
   })
 
-  // DrJKL discussion_r3911655577: a successful ack must not clear a read-time
-  // schema error the bridge itself still holds (KA-11), since the ack can
-  // land before — or for — a lineage whose merged doc remains unreadable.
   it('does not clear a read-time schema error on a bare subscription ack', () => {
     const { unmount, status } = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: true })
@@ -299,11 +325,9 @@ describe('useAgentCrdtFollower', () => {
       workflowId: 'wf-1',
       message: 'meta.schema_version=3 is not schema v2'
     })
+    bridge().lastSchemaError = new Error('still unreadable')
     expect(status().schemaError).toBe('meta.schema_version=3 is not schema v2')
 
-    // A later ack for the SAME still-unreadable lineage (no follower_replaced
-    // in between) must not clear it — only a workflow change or a confirmed
-    // doc replacement may.
     dispatchFrame('doc_subscribed', { ok: true })
 
     expect(status().schemaError).toBe('meta.schema_version=3 is not schema v2')
@@ -320,8 +344,6 @@ describe('useAgentCrdtFollower', () => {
     })
     expect(status().connected).toBe(false)
 
-    // The bridge's own gap detector resubscribes without consulting the
-    // composable's gate, so an ok ack can still land for the unreadable doc.
     bridge().lastSchemaError = new Error('still unreadable')
     dispatchFrame('doc_subscribed', { ok: true })
 
@@ -341,17 +363,12 @@ describe('useAgentCrdtFollower', () => {
     })
     expect(status().schemaError).not.toBeNull()
 
-    // The bridge minted a fresh FollowerDoc for the same workflow (a lineage
-    // break) — this is the "bridge confirms the unreadable FollowerDoc was
-    // replaced" recovery path, distinct from a bare re-ack of the old doc.
     dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
 
     expect(status().schemaError).toBeNull()
     unmount()
   })
 
-  // DrJKL discussion_r3911655596: a non-string `message` must not reach the
-  // strictly-typed `schemaError: string | null` contract.
   it('falls back to a default message when schema_error detail is malformed', () => {
     const { unmount, status } = mountFollower('wf-1')
 
@@ -777,6 +794,151 @@ describe('useAgentCrdtFollower', () => {
         reset: 0,
         dropped: 1
       })
+      unmount()
+    })
+  })
+
+  describe('live-graph reconcile', () => {
+    // The materializer is module-mocked, so the graph only needs to be a
+    // distinct reference the composable hands through.
+    const fakeGraph = {} as MaterializableGraph
+
+    it('reconciles the live graph after every applied frame', () => {
+      const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
+
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
+
+      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledTimes(1)
+      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
+        fakeGraph
+      )
+      unmount()
+    })
+
+    it('does not reconcile after a frame the adapter skipped', () => {
+      adapterState.applyFrame.mockReturnValueOnce(false)
+      const { unmount, status } = mountFollower('wf-1', true, () => fakeGraph)
+
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
+
+      expect(status().outcomes.skipped).toBe(1)
+      expect(materializerState.reconcileAgentAdapters).not.toHaveBeenCalled()
+      unmount()
+    })
+
+    it('skips the reconcile while no graph exists', () => {
+      // Default getGraph (no override) always returns null — mirrors the
+      // panel mounting before the root graph exists.
+      const { unmount } = mountFollower('wf-1')
+
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
+
+      expect(materializerState.reconcileAgentAdapters).not.toHaveBeenCalled()
+      unmount()
+    })
+
+    it('reconciles once the graph appears, without waiting for another frame', async () => {
+      const graph = shallowRef<MaterializableGraph | null>(null)
+      const { unmount } = mountFollower('wf-1', true, () => graph.value)
+
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
+      expect(materializerState.reconcileAgentAdapters).not.toHaveBeenCalled()
+
+      graph.value = fakeGraph
+      await nextTick()
+
+      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledTimes(1)
+      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
+        fakeGraph
+      )
+      unmount()
+    })
+
+    it('does not reconcile for a graph that appears while the target is inactive', async () => {
+      const graph = shallowRef<MaterializableGraph | null>(null)
+      const { unmount } = mountFollower('wf-1', false, () => graph.value)
+
+      graph.value = fakeGraph
+      await nextTick()
+
+      expect(materializerState.reconcileAgentAdapters).not.toHaveBeenCalled()
+      unmount()
+    })
+
+    it('reconciles when the target is activated after the graph became ready', async () => {
+      // The other readiness ordering: the graph arrives while inactive, so the
+      // `getGraph` watcher correctly skips it. Activation does not change the
+      // graph identity, so nothing re-triggers that watcher -- the reconcile
+      // has to happen where the active binding is established.
+      const graph = shallowRef<MaterializableGraph | null>(null)
+      const { unmount, isTargetActive } = mountFollower(
+        'wf-1',
+        false,
+        () => graph.value
+      )
+
+      graph.value = fakeGraph
+      await nextTick()
+      expect(materializerState.reconcileAgentAdapters).not.toHaveBeenCalled()
+
+      isTargetActive.value = true
+      await nextTick()
+
+      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
+        fakeGraph
+      )
+      unmount()
+    })
+
+    it('reconciles after a doc_reset clear, without waiting for another frame', () => {
+      // `clearForReset` empties the stores only. Every live adapter survives it
+      // and would be serialised back into a save until some later frame landed.
+      const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
+
+      dispatchFrame('doc_reset', {
+        workflowId: 'wf-1',
+        actor: 'agent:turn',
+        seq: 43
+      })
+
+      expect(adapterState.clearForReset).toHaveBeenCalled()
+      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
+        fakeGraph
+      )
+      unmount()
+    })
+
+    it('reconciles after a follower_replaced clear', () => {
+      const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
+
+      dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
+
+      expect(adapterState.clearForReset).toHaveBeenCalled()
+      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
+        fakeGraph
+      )
+      unmount()
+    })
+
+    it('records a dev event only when nodes were materialized', async () => {
+      const { recordDevEvent } = await import('./devPanelLog')
+      const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
+
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
+      materializerState.reconcileAgentAdapters.mockReturnValue([toNodeId(1)])
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 10 })
+
+      const materializedEvents = vi
+        .mocked(recordDevEvent)
+        .mock.calls.filter(
+          ([event]) => event === 'agent_node_adapters_materialized'
+        )
+      expect(materializedEvents).toEqual([
+        [
+          'agent_node_adapters_materialized',
+          { workflowId: 'wf-1', nodeIds: [toNodeId(1)] }
+        ]
+      ])
       unmount()
     })
   })
