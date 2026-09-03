@@ -63,4 +63,15 @@ describe('useAgentDockMount', () => {
     store.close('close_button')
     expect(docked.value).toBe(false)
   })
+
+  it('Gate 5: never docks or fetches the chunk while isOpen is stale but the flag is off', () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    const store = useAgentPanelStore()
+    store.isOpen = true
+
+    const { docked } = useAgentDockMount()
+
+    expect(docked.value).toBe(false)
+    expect(loadDockedAgentPanel).not.toHaveBeenCalled()
+  })
 })

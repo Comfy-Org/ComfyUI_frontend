@@ -208,3 +208,45 @@ The follower code on this branch splits into a durable core and a disposable spi
   the interim ADR-0009-lineage render path and are deleted when the
   apply-remote-update→store adapter lands. Coverage or review findings on these files
   route to the store-adapter work, not to polishing the spike.
+
+## Addendum (2026-09-03): flag-off invisibility criterion (Gate 5 narrowing)
+
+A cross-repo workspace scorecard (`reports/scorecards/flagoff-main-gate5.md`,
+`in-app-agent-program`) flagged five places where `main` imports or evaluates Agent state
+outside the `agent-in-app-experience` PostHog gate: `agentPanel.ts`'s
+`registerWorkflowTabActivityTracker` call in `setup()`, `WorkflowTabs.vue` /
+`WorkflowTab.vue` importing `useAgentPanelStore`/`useWorkflowTabActivityStore`, the global
+`agentTheme.css` import in `style.css`, `visibleCanvasViewport.ts` importing
+`useAgentPanelStore`, and the dock wiring in `GraphCanvas.vue` /
+`LiteGraphCanvasSplitterOverlay.vue`. Re-auditing each site against current `main` found
+every one of them **behaviorally inert when the flag is off**, not a live leak:
+
+- `visibleCanvasViewport` gates its own math on `panel.enabled && panel.isOpen`, so stale
+  `isOpen`/`width` state contributes 0 while `enabled` is false (covered by the new
+  "Gate 5: ignores stale isOpen/width state" test in `visibleCanvasViewport.test.ts`).
+- `useAgentDockMount` is the actual dead-code-elimination seam: on non-cloud builds it
+  returns a `null` component with no import; on cloud it defers the
+  `defineAsyncComponent` fetch until `enabled && isOpen`, so a flag-off session never
+  requests the `DockedAgentPanel` chunk (covered by the new "Gate 5: never docks or
+  fetches the chunk while isOpen is stale" test in `useAgentDockMount.test.ts`).
+- `WorkflowTabs.vue`'s entry button is `v-if="agentPanelStore.enabled"`, already asserted
+  by `WorkflowTabs.test.ts`'s "does not render the entry button while the feature flag is
+  off".
+- The tab-activity tracker registered in `agentPanel.ts`'s `setup()` is intentionally
+  ungated at the outer `effectScope` (asserted by `agentPanel.test.ts`'s "registers the
+  tab-activity tracker once at setup, not gated on the flag"), but its inner watchers
+  no-op and clear state the moment `enabled` is false — it never subscribes to workflow
+  data while disabled.
+
+So Gate 5's production-safety criterion is **"no Agent entry point, panel, dock, or
+canvas-affecting behavior is reachable while the flag is false,"** not "no Agent module is
+ever imported while the flag is false." Static reachability of a gated store/CSS import is
+accepted product debt under that reading — it is the module-resolution cost of a
+compile-time-shared, runtime-gated feature, not a behavioral leak. The one component-chunk
+cost that matters (`DockedAgentPanel` and its dependency tree) is the one already covered
+by `useAgentDockMount`'s literal `__DISTRIBUTION__` check. No further seam relocation is
+required to close Gate 5 under this scoping; a full static-import boundary (removing the
+global `agentTheme.css` import, lazy-loading the topbar entry button) remains available as
+a later hardening pass if a future incident shows the static cost actually matters (bundle
+size, CSS specificity collisions), but is not required for the production-safety
+invariant.
