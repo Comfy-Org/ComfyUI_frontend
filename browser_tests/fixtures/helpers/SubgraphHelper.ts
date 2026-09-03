@@ -3,7 +3,8 @@ import type { ConsoleMessage, Locator, Page } from '@playwright/test'
 
 import type {
   CanvasPointerEvent,
-  Subgraph
+  Subgraph,
+  SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -573,6 +574,22 @@ export class SubgraphHelper {
       const node = window.app!.graph.nodes.find((n) => String(n.id) === id)
       return (node?.widgets ?? []).map((w) => w.name)
     }, subgraphNodeId)
+  }
+
+  async getInnerControlWidgetLabels(): Promise<string[]> {
+    return this.page.evaluate(() => {
+      const graph = window.app!.canvas.graph!
+      const subgraphNode = graph.nodes.find((node) => node.isSubgraphNode()) as
+        | SubgraphNode
+        | undefined
+      if (!subgraphNode?.subgraph) return []
+      const innerNodes = Array.from(subgraphNode.subgraph.nodes.values())
+      return innerNodes.flatMap((node) =>
+        (node.widgets ?? [])
+          .filter((widget) => (widget.label ?? '').includes('control'))
+          .map((widget) => widget.label!)
+      )
+    })
   }
 
   async findSubgraphNodeId(): Promise<string> {
