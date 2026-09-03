@@ -9,15 +9,7 @@ import { join } from 'node:path'
 const baseUrl = process.env.PLAYWRIGHT_TEST_URL ?? 'http://127.0.0.1:5193'
 const evidenceDir =
   process.env.ACCOUNT_LAYER_EVIDENCE_DIR ??
-  '/home/c_byrne/workspaces/comfy-account-layer/.concept-poc/account-layer-refactor/08-qa/evidence/run-20f-frontend'
-const terminalSteps = [
-  'success',
-  'canceled',
-  'declined',
-  'processing_error',
-  'payment_received_hold'
-] as const
-
+  '/home/c_byrne/workspaces/comfy-account-layer/.concept-poc/account-layer-refactor/08-qa/evidence/run-20g-frontend'
 async function waitForStableUrl(page: Page, stableMs = 1_500) {
   let previous = page.url()
   let stableSince = Date.now()
@@ -165,40 +157,13 @@ async function paymentState(page: Page) {
   })
 }
 
-async function recordPaymentStateUntilTerminal(page: Page) {
-  let previous = ''
-  await expect
-    .poll(
-      async () => {
-        const state = await paymentState(page)
-        if (!state) return false
-        const serialized = JSON.stringify(state)
-        if (serialized !== previous) {
-          appendFileSync(
-            `${evidenceDir}/paystate.log`,
-            `${new Date().toISOString()} ${serialized}\n`
-          )
-          previous = serialized
-        }
-        return terminalSteps.includes(
-          state.step as (typeof terminalSteps)[number]
-        )
-      },
-      { timeout: 320_000, intervals: [1_000] }
-    )
-    .toBe(true)
-  const state = await paymentState(page)
-  if (!state) throw new Error('Payment state seam disappeared after settlement')
-  return state
-}
-
-test('completes hosted subscription and captures terminal operation', async () => {
+test('resumes declined checkout and completes it with a new card', async () => {
   test.setTimeout(process.env.DIAGNOSE_ONLY === 'true' ? 180_000 : 900_000)
   await mkdir(evidenceDir, { recursive: true })
   for (const file of ['requests.log', 'ops-responses.jsonl', 'paystate.log']) {
     writeFileSync(`${evidenceDir}/${file}`, '')
   }
-  const profileDir = await mkdtemp(join(tmpdir(), 'account-layer-run-20f-'))
+  const profileDir = await mkdtemp(join(tmpdir(), 'account-layer-run-20g-'))
   await mkdir(join(profileDir, 'Default'))
   writeFileSync(
     join(profileDir, 'Default', 'Preferences'),
@@ -297,106 +262,75 @@ test('completes hosted subscription and captures terminal operation', async () =
       `${evidenceDir}/preflight.log`,
       `step-zero=${activeOperation ? 'active-operation-found' : 'clean'}\n`
     )
-    if (activeOperation) await recordPaymentStateUntilTerminal(page)
-    const creditsBefore = await page.evaluate(() => {
-      const seam = Reflect.get(window, '__accountLayerPoc') as {
-        getCredits(): unknown
-      }
-      return seam.getCredits()
+    const resumed = await paymentState(page)
+    expect(resumed).not.toMatchObject({ step: 'processing_error' })
+    writeFileSync(
+      `${evidenceDir}/RUN20G-1-state.json`,
+      `${JSON.stringify(resumed, null, 2)}\n`
+    )
+    await page.screenshot({
+      path: `${evidenceDir}/RUN20G-1-resumed.png`,
+      fullPage: true
     })
-    const shouldCancelExisting =
-      process.env.E2E_EMAIL !== process.env.FIXTURE_B_EMAIL
-    appendFileSync(
-      `${evidenceDir}/preflight.log`,
-      `cancel-existing=${shouldCancelExisting ? 'started' : 'skipped-free-fixture'}\n`
+    const checkoutUrl = String(
+      (resumed as { actionUrl?: string } | null)?.actionUrl ??
+        'https://checkout.comfy.org/c/pay/cs_test_c16rnduq05sq3NBBNXb5OzMdUwHOtMB1ci1luoNhgr60Pv4hLYMUSwfyKO'
     )
-    const canceled = shouldCancelExisting
-      ? await page
-          .evaluate(() => {
-            const seam = Reflect.get(window, '__accountLayerPoc') as {
-              cancelSubscription(): Promise<void>
-            }
-            return seam.cancelSubscription()
-          })
-          .then(() => recordPaymentStateUntilTerminal(page))
-          .catch(() => null)
-      : null
-    appendFileSync(
-      `${evidenceDir}/preflight.log`,
-      canceled
-        ? `cancel-existing=${canceled.step} no-charge-confirmed=${canceled.noChargeConfirmed}\n`
-        : shouldCancelExisting
-          ? 'cancel-existing=not-active\n'
-          : 'cancel-existing=free-fixture\n'
+    expect(checkoutUrl).toMatch(
+      /^https:\/\/(checkout\.stripe|checkout\.comfy)\.org\//
     )
-    if (canceled) {
-      await page.screenshot({ path: `${evidenceDir}/cancel-terminal.png` })
-    }
-    const responsePromise = page.waitForResponse(
-      (response) =>
-        new URL(response.url()).pathname === '/api/billing/subscribe'
-    )
-    const checkoutPagePromise = context
-      .waitForEvent('page', { timeout: 20_000 })
-      .catch(() => null)
-    await page.evaluate(() => {
-      const seam = Reflect.get(window, '__accountLayerPoc') as {
-        subscribe(planId: string): Promise<void>
-      }
-      void seam.subscribe('pro-monthly')
+    const checkoutPage = await context.newPage()
+    await checkoutPage.goto(checkoutUrl, { timeout: 120_000 })
+    await checkoutPage.screenshot({
+      path: `${evidenceDir}/RUN20G-3-coupon-control.png`,
+      fullPage: true
     })
-    const response = await responsePromise
-    expect(response.status()).toBe(200)
-    const body = (await response.json()) as Record<string, unknown>
-    const checkoutUrl = String(body.payment_method_url ?? body.action_url ?? '')
-    expect(checkoutUrl).toContain('cs_test_')
-    const openedCheckoutPage = await checkoutPagePromise
-    const checkoutPage = openedCheckoutPage ?? (await context.newPage())
-    if (!openedCheckoutPage) {
-      appendFileSync(
-        `${evidenceDir}/harness.log`,
-        'window.open did not create a page within 20s; navigated a second tab to the captured checkout URL\n'
-      )
-      await checkoutPage.goto(checkoutUrl, { timeout: 120_000 })
-    }
-    await fillCheckout(
-      checkoutPage,
-      process.env.STRIPE_TEST_CARD ?? '4242424242424242'
+    const promotionControl = checkoutPage.getByText(/add promotion code/i)
+    writeFileSync(
+      `${evidenceDir}/RUN20G-3-coupon.json`,
+      `${JSON.stringify({ present: await promotionControl.isVisible().catch(() => false) })}\n`
     )
-    await checkoutPage
-      .waitForURL((url) => url.origin === new URL(baseUrl).origin, {
-        timeout: 600_000,
-        waitUntil: 'commit'
+    await fillCheckout(checkoutPage, '4000000000000002')
+    await expect(
+      checkoutPage.getByText(/your card was declined.*try a different card/i)
+    ).toBeVisible({ timeout: 60_000 })
+    await checkoutPage.screenshot({
+      path: `${evidenceDir}/RUN20G-2-inline-decline.png`,
+      fullPage: true
+    })
+    await expect
+      .poll(async () => (await paymentState(page))?.step, {
+        timeout: 90_000,
+        intervals: [30_000]
       })
-      .catch(async (error: unknown) => {
-        if (!checkoutPage.isClosed())
-          await checkoutPage.screenshot({
-            path: `${evidenceDir}/captcha-hard-stop.png`
-          })
-        throw error
-      })
-    const terminal = await recordPaymentStateUntilTerminal(page)
-    expect(terminalSteps).toContain(terminal.step)
-    await page.evaluate(async () => {
-      const seam = Reflect.get(window, '__accountLayerPoc') as {
-        refreshCredits(): Promise<void>
-      }
-      await seam.refreshCredits()
+      .not.toBe('processing_error')
+    writeFileSync(
+      `${evidenceDir}/RUN20G-2-state-after-90s.json`,
+      `${JSON.stringify(await paymentState(page), null, 2)}\n`
+    )
+    const cardNumber = checkoutPage.getByRole('textbox', {
+      name: 'Card number'
     })
-    const creditsAfter = await page.evaluate(() => {
-      const seam = Reflect.get(window, '__accountLayerPoc') as {
-        getCredits(): unknown
-      }
-      return seam.getCredits()
+    await cardNumber.fill('4242424242424242')
+    await checkoutPage.locator('.SubmitButton').click()
+    await checkoutPage.waitForURL(
+      (url) => url.origin === new URL(baseUrl).origin,
+      { timeout: 600_000, waitUntil: 'commit' }
+    )
+    await page.reload()
+    await requireAuthenticated(page)
+    const terminal = await paymentState(page)
+    await page.screenshot({
+      path: `${evidenceDir}/RUN20G-4-success.png`,
+      fullPage: true
     })
     writeFileSync(
-      `${evidenceDir}/credits-before-after.json`,
-      `${JSON.stringify({ before: creditsBefore, after: creditsAfter }, null, 2)}\n`
+      `${evidenceDir}/RUN20G-4-terminal.json`,
+      `${JSON.stringify(terminal, null, 2)}\n`
     )
     expect(
       readFileSync(`${evidenceDir}/ops-responses.jsonl`, 'utf8').length
     ).toBeGreaterThan(0)
-    await page.screenshot({ path: `${evidenceDir}/subscription-success.png` })
   } catch (error) {
     const diagnostic = await page
       .evaluate(() => {

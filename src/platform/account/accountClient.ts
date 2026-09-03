@@ -315,6 +315,16 @@ export function createFrontendAccountClients(
   const paymentClient = createBillingApiClient({
     async transport(request) {
       if (request.method === 'GET' && injectedOperationResponse) {
+        if (request.path === '/api/billing/status') {
+          return {
+            status: 200,
+            body: {
+              pending_billing_op_id: 'injected-operation',
+              pending_billing_op_type: 'subscription',
+              action_url: injectedOperationResponse.action_url
+            }
+          }
+        }
         return { status: 200, body: injectedOperationResponse }
       }
       const state = session.getState()

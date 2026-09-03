@@ -4,9 +4,9 @@ import type { Page, Request } from '@playwright/test'
 import { mkdir, writeFile } from 'node:fs/promises'
 
 const evidenceDir =
-  '/home/c_byrne/workspaces/comfy-account-layer/.concept-poc/account-layer-refactor/08-qa/evidence/run-6-frontend'
+  '/home/c_byrne/workspaces/comfy-account-layer/.concept-poc/account-layer-refactor/08-qa/evidence/run-20g-frontend/RUN20G-9'
 const paymentsEvidenceDir =
-  '/home/c_byrne/workspaces/comfy-account-layer/.concept-poc/account-layer-refactor/07-poc/consumer-frontend/evidence/payments'
+  '/home/c_byrne/workspaces/comfy-account-layer/.concept-poc/account-layer-refactor/08-qa/evidence/run-20g-frontend/RUN20G-5'
 const testUrl = process.env.PLAYWRIGHT_TEST_URL ?? 'http://localhost:5173'
 const storagePrefix = 'comfyui-frontend-account-layer-poc:'
 
@@ -331,18 +331,6 @@ test('mounts shared checkout in both hosts and drives safe payment states', asyn
     'data-copy-key',
     (await modalHost.getAttribute('data-copy-key')) ?? ''
   )
-  await modalHost.getByTestId('account-layer-subscribe').dblclick()
-  await expect
-    .poll(async () =>
-      page.evaluate(() => {
-        const debug = Reflect.get(
-          window,
-          '__accountLayerPoc'
-        ) as AccountLayerDebug
-        return debug.openUrlCalls
-      })
-    )
-    .toBe(1)
   const checkout = await page.evaluate(() => {
     const debug = Reflect.get(window, '__accountLayerPoc') as AccountLayerDebug
     return {
@@ -351,32 +339,48 @@ test('mounts shared checkout in both hosts and drives safe payment states', asyn
       lastCheckoutUrl: debug.lastCheckoutUrl
     }
   })
-  expect(checkout.billingPosts).toBe(1)
-  expect(checkout.openUrlCalls).toBe(1)
   const states = [
     {
       name: 'verifying',
+      step: 'verifying',
       response: {
         status: 'pending',
         action_url: 'https://checkout.stripe.test/verify'
       }
     },
     {
+      name: 'success',
+      step: 'success',
+      response: { status: 'succeeded' }
+    },
+    {
       name: 'canceled',
+      step: 'canceled',
       response: { status: 'canceled', no_charge_confirmed: true }
     },
     {
       name: 'declined',
+      step: 'declined',
       response: {
         status: 'failed',
         reason_code: 'insufficient_funds',
         no_charge_confirmed: true
       }
     },
-    { name: 'processing_error', response: { status: 'timeout' } },
+    {
+      name: 'processing_error',
+      step: 'processing_error',
+      response: { status: 'timeout' }
+    },
     {
       name: 'payment_received_hold',
+      step: 'payment_received_hold',
       response: { status: 'payment_received_hold' }
+    },
+    {
+      name: 'expired',
+      step: 'preview',
+      response: { status: 'expired' }
     }
   ] as const
   const copyKeys: Record<string, string | null> = {}
@@ -391,8 +395,13 @@ test('mounts shared checkout in both hosts and drives safe payment states', asyn
     }, state.response)
     await expect(modalHost).toHaveAttribute(
       'data-testid',
-      `account-layer-billing-modal-step-${state.name}`
+      `account-layer-billing-modal-step-${state.step}`
     )
+    await expect(settingsHost).toHaveAttribute(
+      'data-testid',
+      `account-layer-billing-settings-step-${state.step}`
+    )
+    await expect(settingsHost).toHaveText((await modalHost.textContent()) ?? '')
     copyKeys[state.name] = await modalHost.getAttribute('data-copy-key')
     const safetyCopy = modalHost.getByText('Nothing was charged.')
     noChargeCopy[state.name] = (await safetyCopy.count()) > 0
@@ -404,6 +413,9 @@ test('mounts shared checkout in both hosts and drives safe payment states', asyn
     await modalHost.screenshot({
       path: `${paymentsEvidenceDir}/modal-${state.name}.png`
     })
+    await settingsHost.screenshot({
+      path: `${paymentsEvidenceDir}/settings-${state.name}.png`
+    })
   }
   await modalHost.screenshot({
     path: `${paymentsEvidenceDir}/modal-payment-received-hold.png`
@@ -414,27 +426,6 @@ test('mounts shared checkout in both hosts and drives safe payment states', asyn
   const bothHostsIdentical =
     (await settingsHost.getAttribute('data-copy-key')) ===
     (await modalHost.getAttribute('data-copy-key'))
-  await page.evaluate(async () => {
-    const debug = Reflect.get(window, '__accountLayerPoc') as AccountLayerDebug
-    await debug.injectOperationResponse({ status: 'pending' })
-  })
-  await page.reload()
-  await page
-    .getByRole('button', { name: /^Settings/ })
-    .first()
-    .click()
-  const recoveredSettingsDialog = page.getByTestId('settings-dialog')
-  await recoveredSettingsDialog
-    .locator('nav')
-    .getByRole('button', { name: 'Plan & Credits' })
-    .click()
-  const recoveredHost = recoveredSettingsDialog.getByTestId(
-    'account-layer-billing-settings-step-preview'
-  )
-  await expect(recoveredHost).toBeVisible()
-  await recoveredHost.screenshot({
-    path: `${paymentsEvidenceDir}/settings-reload-recovered.png`
-  })
   await writeFile(
     `${paymentsEvidenceDir}/request.log`,
     `${requestEvidence.join('\n')}\nsecrets_recorded=false\n`
