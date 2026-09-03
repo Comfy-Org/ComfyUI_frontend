@@ -18,17 +18,10 @@ message ID and an export timestamp.
 cd ../cloud && cloud up
 ```
 
-```bash
-AGENT_MODEL=claude-opus-5 COMFY_BIN=~/.local/bin/comfy pnpm tsx scripts/dev-agent-integration.ts --record --engine temporal --catalog browser_tests/fixtures/data/agent/conversations/agent-rec-set-widget-existing.json
-```
-
-Paste the recorder command it prints (one `--prompt` per turn), then:
-
-```bash
-PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://localhost:5173 DISTRIBUTION=cloud pnpm exec playwright test agentConversation --project=cloud -g <case id>
-```
-
-The launcher lives in the integration environment PR; `ANTHROPIC_API_KEY` and ComfyUI on 8188 are assumed.
+Then record mode from `docs/testing/agent-integration-development.md` (Playbook,
+third command), paste the recorder command it prints with one `--prompt` per
+turn, and replay the new case with the command in `browser_tests/README.md`
+(Playbook) plus `-g <case id>`.
 
 ## Recording a conversation
 
