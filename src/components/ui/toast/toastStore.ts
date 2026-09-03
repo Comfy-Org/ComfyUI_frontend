@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
-import { markRaw, ref } from 'vue'
+import { markRaw, ref, watch } from 'vue'
 import type { Component } from 'vue'
+
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
 export type ToastId = number
 type ToastRole = 'alert' | 'status'
@@ -42,23 +44,37 @@ type Toast = StandardToast | CustomToast
 const PERSISTENT = Number.POSITIVE_INFINITY
 
 export const useToast = defineStore('toast', () => {
+  const agentNodeSelectionStore = useAgentNodeSelectionStore()
   const toasts = ref<Toast[]>([])
+  const queuedToasts = ref<Toast[]>([])
   let nextId = 1
+
+  function enqueue(toast: Toast) {
+    const target = agentNodeSelectionStore.isActive ? queuedToasts : toasts
+    target.value = [...target.value, toast]
+  }
+
+  watch(
+    () => agentNodeSelectionStore.isActive,
+    (active) => {
+      if (active || queuedToasts.value.length === 0) return
+      toasts.value = [...toasts.value, ...queuedToasts.value]
+      queuedToasts.value = []
+    },
+    { flush: 'sync' }
+  )
 
   function add(kind: ToastKind, title: string, options: ToastOptions = {}) {
     const id = nextId++
-    toasts.value = [
-      ...toasts.value,
-      {
-        id,
-        kind,
-        title,
-        description: options.description,
-        duration: options.duration ?? PERSISTENT,
-        closable: options.closable ?? true,
-        role: kind === 'error' || kind === 'warning' ? 'alert' : 'status'
-      }
-    ]
+    enqueue({
+      id,
+      kind,
+      title,
+      description: options.description,
+      duration: options.duration ?? PERSISTENT,
+      closable: options.closable ?? true,
+      role: kind === 'error' || kind === 'warning' ? 'alert' : 'status'
+    })
     return id
   }
 
@@ -88,27 +104,26 @@ export const useToast = defineStore('toast', () => {
     options: CustomToastOptions = {}
   ) {
     const id = nextId++
-    toasts.value = [
-      ...toasts.value,
-      {
-        id,
-        kind: 'custom',
-        component: markRaw(component),
-        props,
-        duration: options.duration ?? PERSISTENT,
-        closable: options.closable ?? true,
-        role: options.role ?? 'status'
-      }
-    ]
+    enqueue({
+      id,
+      kind: 'custom',
+      component: markRaw(component),
+      props,
+      duration: options.duration ?? PERSISTENT,
+      closable: options.closable ?? true,
+      role: options.role ?? 'status'
+    })
     return id
   }
 
   function dismiss(id: ToastId) {
     toasts.value = toasts.value.filter((toast) => toast.id !== id)
+    queuedToasts.value = queuedToasts.value.filter((toast) => toast.id !== id)
   }
 
   function dismissAll() {
     toasts.value = []
+    queuedToasts.value = []
   }
 
   return {
