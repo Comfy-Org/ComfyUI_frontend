@@ -225,6 +225,15 @@ describe('useAgentSession (v1 composition root)', () => {
     emit(done('msg-1'))
     expect(session.destructiveMutationsAllowed.value).toBe(false)
 
+    await session.sendMessage("Delete all nodes, but don't remove the links.")
+    expect(session.destructiveMutationsAllowed.value).toBe(true)
+
+    await session.sendMessage('Delete all nodes. Do not remove the links.')
+    expect(session.destructiveMutationsAllowed.value).toBe(true)
+
+    await session.sendMessage("Don't remove the links, but delete all nodes.")
+    expect(session.destructiveMutationsAllowed.value).toBe(true)
+
     await session.sendMessage('Do not delete any nodes; just explain them.')
     expect(session.destructiveMutationsAllowed.value).toBe(false)
 

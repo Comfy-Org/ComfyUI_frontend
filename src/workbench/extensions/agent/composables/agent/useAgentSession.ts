@@ -59,18 +59,21 @@ export interface AgentSessionDeps {
 const THREAD_STORAGE_KEY = 'Comfy.Agent.ThreadId'
 const PREPARE_TIMEOUT_MS = 3000
 const DESTRUCTIVE_COMMAND =
-  /\b(?:clear|delete|discard|erase|remove|replace)\b/iu
+  /\b(?:clear|delete|discard|erase|remove|replace)\b/giu
 const DESTRUCTIVE_TARGET =
   /\b(?:all|everything|graph|link|links|node|nodes|workflow|canvas|connection|connections)\b/iu
-const NEGATED_DESTRUCTIVE_COMMAND =
-  /\b(?:do not|don['’]t|never|without)\b[^.!?\n]{0,40}\b(?:clear|delete|discard|erase|remove|replace)\b/iu
+const NEGATED_COMMAND_PREFIX =
+  /\b(?:do not|don['’]t|never|without)(?:\s+\S+){0,3}\s*$/iu
 
 function hasExplicitDestructiveIntent(text: string): boolean {
-  return (
-    DESTRUCTIVE_COMMAND.test(text) &&
-    DESTRUCTIVE_TARGET.test(text) &&
-    !NEGATED_DESTRUCTIVE_COMMAND.test(text)
-  )
+  const hasUnnegatedCommand = Array.from(
+    text.matchAll(DESTRUCTIVE_COMMAND)
+  ).some((match) => {
+    const prefix = text.slice(Math.max(0, match.index - 40), match.index)
+    const clausePrefix = prefix.split(/[.!?;\n]|\bbut\b/iu).at(-1) ?? prefix
+    return !NEGATED_COMMAND_PREFIX.test(clausePrefix)
+  })
+  return hasUnnegatedCommand && DESTRUCTIVE_TARGET.test(text)
 }
 
 let sessionGeneration = 0
