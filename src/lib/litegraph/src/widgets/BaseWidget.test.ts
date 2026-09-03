@@ -7,10 +7,8 @@ import type {
   IBaseWidget,
   INumericWidget
 } from '@/lib/litegraph/src/types/widgets'
-import {
-  BaseWidget,
-  extensionValue
-} from '@/lib/litegraph/src/widgets/BaseWidget'
+import { extensionValue } from '@/lib/litegraph/src/utils/extensionValue'
+import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import type {
   DrawWidgetOptions,
   WidgetEventOptions
