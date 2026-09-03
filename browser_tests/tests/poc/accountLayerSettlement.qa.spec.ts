@@ -1,7 +1,7 @@
 // eslint-disable-next-line no-restricted-imports -- staging has no local ComfyUI settings backend
 import { chromium, expect, test } from '@playwright/test'
 import type { Frame, Page } from '@playwright/test'
-import { appendFileSync, readFileSync, writeFileSync } from 'node:fs'
+import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { mkdir, mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -33,6 +33,20 @@ async function signIn(page: Page) {
   const email = process.env.E2E_EMAIL
   const password = process.env.E2E_PASSWORD
   if (!email || !password) throw new Error('E2E credentials are unavailable')
+  await page.goto(baseUrl)
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => Boolean(Reflect.get(window, '__accountLayerPoc'))),
+      { timeout: 30_000 }
+    )
+    .toBe(true)
+  await page.evaluate(async () => {
+    const seam = Reflect.get(window, '__accountLayerPoc') as {
+      signOut(): Promise<void>
+    }
+    await seam.signOut()
+  })
   await page.goto(`${baseUrl}/cloud/login`)
   await page.getByRole('button', { name: /use email/i }).click()
   await page.getByLabel(/email/i).fill(email)
@@ -119,6 +133,15 @@ async function findChallengeFrame(page: Page): Promise<Frame> {
 
 async function fillCheckout(page: Page, card: string) {
   await page.waitForLoadState('domcontentloaded')
+  await page.evaluate(() => {
+    window.addEventListener('message', (event) => {
+      const value =
+        typeof event.data === 'string'
+          ? event.data.slice(0, 300)
+          : JSON.stringify(event.data).slice(0, 300)
+      console.log('PM', event.origin, value)
+    })
+  })
   await expect(page.getByText(/test mode|sandbox/i).first()).toBeVisible({
     timeout: 30_000
   })
@@ -338,20 +361,60 @@ test('resumes declined checkout and completes it with a new card', async () => {
     }),
     { flag: 'w' }
   )
-  const context = await chromium.launchPersistentContext(profileDir, {
-    executablePath: '/usr/bin/google-chrome',
-    headless: false,
-    args: [
-      '--disable-save-password-bubble',
-      '--disable-features=AutofillServerCommunication,PasswordManagerOnboarding'
-    ],
-    ignoreDefaultArgs: ['--enable-automation']
-  })
-  const page = context.pages()[0] ?? (await context.newPage())
+  const cleanChromium = process.env.CLEAN_CHROMIUM === 'true'
+  const browser = cleanChromium
+    ? await chromium.launch({ headless: false })
+    : undefined
+  const context = browser
+    ? await browser.newContext()
+    : await chromium.launchPersistentContext(profileDir, {
+        executablePath: '/usr/bin/google-chrome',
+        headless: false,
+        args: [
+          '--disable-save-password-bubble',
+          '--disable-features=AutofillServerCommunication,PasswordManagerOnboarding'
+        ],
+        ignoreDefaultArgs: ['--enable-automation']
+      })
+  const existingPages = context.pages()
+  const page = await context.newPage()
+  await Promise.all(existingPages.map((candidate) => candidate.close()))
   context.setDefaultTimeout(120_000)
   context.setDefaultNavigationTimeout(120_000)
-  const consoleMessages: string[] = []
-  page.on('console', (message) => consoleMessages.push(message.text()))
+  mkdirSync(`${evidenceDir}/3ds-responses`, { recursive: true })
+  let hostedResponseIndex = 0
+  function instrumentPage(candidate: Page) {
+    appendFileSync(
+      `${evidenceDir}/frames.log`,
+      `${new Date().toISOString()} page ${candidate.url()}\n`
+    )
+    candidate.on('console', (message) => {
+      appendFileSync(
+        `${evidenceDir}/console.log`,
+        `${new Date().toISOString()} console ${message.type()} ${message.text()}\n`
+      )
+    })
+    candidate.on('pageerror', (error) => {
+      appendFileSync(
+        `${evidenceDir}/console.log`,
+        `${new Date().toISOString()} pageerror ${error.message}\n`
+      )
+    })
+    candidate.on('framenavigated', (frame) => {
+      appendFileSync(
+        `${evidenceDir}/frames.log`,
+        `${new Date().toISOString()} navigated ${frame.url()}\n`
+      )
+    })
+    candidate.on('framedetached', (frame) => {
+      appendFileSync(
+        `${evidenceDir}/frames.log`,
+        `${new Date().toISOString()} detached ${frame.url()}\n`
+      )
+    })
+  }
+  instrumentPage(page)
+  context.on('page', instrumentPage)
   context.on('response', async (response) => {
     const url = new URL(response.url())
     const path = url.pathname.replace(/\/ops\/[^/]+$/, '/ops/[redacted]')
@@ -362,6 +425,38 @@ test('resumes declined checkout and completes it with a new card', async () => {
       `${evidenceDir}/requests.log`,
       `${response.request().method()} ${url.origin}${path}${url.search} ${response.status()}${body ? ` ${body}` : ''}\n`
     )
+    if (
+      url.hostname === 'testmode-acs.stripe.com' ||
+      (url.hostname === 'api.stripe.com' &&
+        (url.pathname.startsWith('/v1/3ds2') ||
+          url.pathname.includes('/payment_pages'))) ||
+      url.hostname === 'hooks.stripe.com'
+    ) {
+      const index = String(++hostedResponseIndex).padStart(2, '0')
+      const name = `${index}-${url.hostname}-${url.pathname.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '') || 'root'}.txt`
+      const responseBody = (await response.text().catch(() => '')).slice(
+        0,
+        20_000
+      )
+      const headers = response.headers()
+      writeFileSync(
+        `${evidenceDir}/3ds-responses/${name}`,
+        `${JSON.stringify(
+          {
+            captured_at: new Date().toISOString(),
+            method: response.request().method(),
+            url: response.url(),
+            status: response.status(),
+            headers: {
+              'content-type': headers['content-type'] ?? null,
+              location: headers.location ?? null
+            }
+          },
+          null,
+          2
+        )}\n\n${responseBody}\n`
+      )
+    }
     if (isBilling && url.pathname.endsWith('/status')) {
       writeFileSync(`${evidenceDir}/preflight-status.json`, `${body}\n`)
       appendFileSync(
@@ -423,6 +518,76 @@ test('resumes declined checkout and completes it with a new card', async () => {
       path: `${evidenceDir}/frontend-after-sign-in.png`,
       fullPage: true
     })
+    if (process.env.RUN20N_HOSTED === 'true') {
+      const startedAt = Date.now()
+      const pagesBeforeSubscribe = context.pages().length
+      await page.evaluate(async () => {
+        const seam = Reflect.get(window, '__accountLayerPoc') as {
+          subscribe(planId?: string): Promise<void>
+        }
+        await seam.subscribe('pro-monthly')
+      })
+      await expect
+        .poll(() => context.pages().length, { timeout: 30_000 })
+        .toBe(pagesBeforeSubscribe + 1)
+      const checkoutPage = context.pages().at(-1)!
+      const operationId = await page.evaluate(() => {
+        const seam = Reflect.get(window, '__accountLayerPoc') as {
+          getOperationStore(): { id?: string } | null
+        }
+        return seam.getOperationStore()?.id ?? null
+      })
+      expect(operationId).toBeTruthy()
+      writeFileSync(
+        `${evidenceDir}/operation.json`,
+        `${JSON.stringify({ started_at: new Date(startedAt).toISOString(), operation_id: operationId }, null, 2)}\n`
+      )
+      await fillCheckout(checkoutPage, '4000002760003184')
+      await findChallengeFrame(checkoutPage)
+      await completeChallenge(checkoutPage)
+      await waitForHostedReturn(checkoutPage)
+      const returnedAt = Date.now()
+      expect(checkoutPage.url()).toContain('/payment/success')
+      appendFileSync(
+        `${evidenceDir}/paystate.log`,
+        `${new Date().toISOString()} verifying ${operationId}\n`
+      )
+      await requireAuthenticated(checkoutPage)
+      await expect
+        .poll(async () => (await paymentState(checkoutPage))?.step, {
+          timeout: 180_000,
+          intervals: [1_000, 3_000, 8_000, 15_000]
+        })
+        .toBe('success')
+      const finishedAt = Date.now()
+      appendFileSync(
+        `${evidenceDir}/paystate.log`,
+        `${new Date().toISOString()} success ${operationId}\n`
+      )
+      writeFileSync(
+        `${evidenceDir}/settlement.json`,
+        `${JSON.stringify(
+          {
+            started_at: new Date(startedAt).toISOString(),
+            returned_at: new Date(returnedAt).toISOString(),
+            finished_at: new Date(finishedAt).toISOString(),
+            redirect_elapsed_ms: returnedAt - startedAt,
+            settlement_elapsed_ms: finishedAt - returnedAt,
+            total_elapsed_ms: finishedAt - startedAt,
+            operation_id: operationId,
+            payment: await paymentState(checkoutPage),
+            new_pages_on_return: context.pages().length - 1
+          },
+          null,
+          2
+        )}\n`
+      )
+      await checkoutPage.screenshot({
+        path: `${evidenceDir}/3ds-success.png`,
+        fullPage: true
+      })
+      return
+    }
     if (process.env.RUN20K_HOSTED === 'true') {
       const startedAt = Date.now()
       const pagesBeforeSubscribe = context.pages().length
@@ -802,7 +967,6 @@ test('resumes declined checkout and completes it with a new card', async () => {
         {
           error: String(error),
           diagnostic,
-          consoleMessages,
           lastRequests: readFileSync(`${evidenceDir}/requests.log`, 'utf8')
             .split('\n')
             .slice(-51)
@@ -816,11 +980,8 @@ test('resumes declined checkout and completes it with a new card', async () => {
       .catch(() => {})
     throw error
   } finally {
-    writeFileSync(
-      `${evidenceDir}/console.log`,
-      `${consoleMessages.join('\n')}\n`
-    )
     await context.close()
+    await browser?.close()
     if (!persistentProfileDir)
       await rm(profileDir, { recursive: true, force: true })
   }
