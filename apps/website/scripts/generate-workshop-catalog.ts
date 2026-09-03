@@ -1,119 +1,74 @@
-import { readFile, writeFile } from 'node:fs/promises'
-import { resolve } from 'node:path'
+import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
+import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-const OUTPUT = resolve(
+import { workshopModelSchema } from '../src/content/workshop-models.schema';
+import type { WorkshopModelEntry } from '../src/content/workshop-models.schema';
+
+/** One file per model, loaded as an Astro content collection. */
+const COLLECTION_DIR = resolve(
   import.meta.dirname,
-  '../src/config/workshop-catalog.generated.json'
+  '../src/content/workshop-models'
 )
 
-const MODALITIES = ['image', 'video', 'audio', 'music', '3d', 'svg'] as const
-
-type Modality = (typeof MODALITIES)[number]
-
-interface MediaRole {
-  readonly role: string
-  readonly required: boolean
-  readonly cardinality: 'single' | 'many'
-  readonly minItems: number
-  readonly maxItems?: number
-}
-
-export interface WorkshopCatalogModel {
-  readonly id: string
-  readonly slug: string
-  readonly displayName: string
-  readonly provider: string
-  readonly modality: Modality
-  readonly description: string
-  readonly tags: readonly string[]
-  readonly parameters: Readonly<Record<string, unknown>>
-  readonly roles: readonly MediaRole[]
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-function isStringArray(value: unknown): value is string[] {
-  return Array.isArray(value) && value.every((item) => typeof item === 'string')
-}
-
-function isModality(value: unknown): value is Modality {
-  return MODALITIES.some((modality) => modality === value)
-}
-
-function decodeRole(value: unknown): MediaRole | undefined {
-  if (
-    !isRecord(value) ||
-    typeof value.role !== 'string' ||
-    typeof value.required !== 'boolean' ||
-    (value.cardinality !== 'single' && value.cardinality !== 'many') ||
-    typeof value.minItems !== 'number' ||
-    (value.maxItems !== undefined && typeof value.maxItems !== 'number')
-  ) {
-    return undefined
-  }
-
-  return {
-    role: value.role,
-    required: value.required,
-    cardinality: value.cardinality,
-    minItems: value.minItems,
-    ...(value.maxItems === undefined ? {} : { maxItems: value.maxItems })
-  }
-}
+/** Everything about the snapshot that is not about one model. */
+const MANIFEST = resolve(
+  import.meta.dirname,
+  '../src/config/workshop-catalog.manifest.json'
+)
 
 function slugFor(id: string): string {
   return id.replaceAll('/', '--')
 }
 
-function decodeModel(value: unknown): WorkshopCatalogModel | undefined {
-  if (
-    !isRecord(value) ||
-    typeof value.id !== 'string' ||
-    typeof value.display_name !== 'string' ||
-    typeof value.provider !== 'string' ||
-    !isModality(value.type) ||
-    typeof value.description !== 'string' ||
-    !isStringArray(value.tags) ||
-    !isRecord(value.parameters) ||
-    !Array.isArray(value.roles)
-  ) {
-    return undefined
-  }
-
-  const roles = value.roles.map(decodeRole)
-  if (roles.some((role) => role === undefined)) return undefined
-
+/**
+ * The partner client speaks snake_case and calls modality `type`; the
+ * collection speaks camelCase. This is the only place the two meet.
+ */
+function project(value: unknown): unknown {
+  const source = value as Record<string, unknown>
   return {
-    id: value.id,
-    slug: slugFor(value.id),
-    displayName: value.display_name,
-    provider: value.provider,
-    modality: value.type,
-    description: value.description,
-    tags: value.tags,
-    parameters: value.parameters,
-    roles: roles.filter((role): role is MediaRole => role !== undefined)
+    id: source.id,
+    slug: typeof source.id === 'string' ? slugFor(source.id) : source.id,
+    displayName: source.display_name,
+    provider: source.provider,
+    modality: source.type,
+    description: source.description,
+    tags: source.tags,
+    parameters: source.parameters,
+    roles: Array.isArray(source.roles)
+      ? source.roles.map((role) => {
+          if (typeof role !== 'object' || role === null) return role
+          const { extras, ...rest } = role as Record<string, unknown>
+          // Keep `extras` only where the provider actually populated it, so
+          // 288 roles do not each carry an empty array.
+          return Array.isArray(extras) && extras.length > 0
+            ? { ...rest, extras }
+            : rest
+        })
+      : source.roles
   }
 }
 
-export function buildWorkshopCatalog(input: unknown): WorkshopCatalogModel[] {
+export function buildWorkshopCatalog(input: unknown): WorkshopModelEntry[] {
   if (!Array.isArray(input))
     throw new Error('Partner model export is not a list')
 
-  const decoded = input.map(decodeModel)
-  const invalid = decoded.flatMap((model, index) =>
-    model === undefined ? [index] : []
-  )
-  if (invalid.length > 0) {
-    throw new Error(`Invalid partner models at indexes: ${invalid.join(', ')}`)
-  }
+  // Zod is the boundary. A malformed model fails here, naming the model and
+  // the field, rather than being silently dropped or reaching the site.
+  const catalog = input.map((value, index) => {
+    const parsed = workshopModelSchema.safeParse(project(value))
+    if (!parsed.success) {
+      const id = (value as { id?: unknown })?.id
+      throw new Error(
+        `Invalid partner model at index ${index}${typeof id === 'string' ? ` (${id})` : ''}: ${parsed.error.issues
+          .map((issue) => `${issue.path.join('.')} ${issue.message}`)
+          .join('; ')}`
+      )
+    }
+    return parsed.data
+  })
 
-  const catalog = decoded.filter(
-    (model): model is WorkshopCatalogModel => model !== undefined
-  )
   const ids = new Set(catalog.map((model) => model.id))
   const slugs = new Set(catalog.map((model) => model.slug))
   if (ids.size !== catalog.length) throw new Error('Duplicate partner model id')
@@ -139,9 +94,41 @@ async function main(): Promise<void> {
   }
 
   const catalog = buildWorkshopCatalog(await loadModels(resolve(modulePath)))
-  const previous = await readFile(OUTPUT, 'utf8').catch(() => undefined)
-  const next = `${JSON.stringify({ sourceRef, models: catalog }, null, 2)}\n`
-  if (previous !== next) await writeFile(OUTPUT, next)
+  await writeCollection(catalog, sourceRef)
+}
+
+/**
+ * Writes one file per model and prunes any model the source no longer has,
+ * so a removed model leaves the collection instead of lingering as a page
+ * nothing links to. Files are only rewritten when their content changes,
+ * which keeps an unrelated regeneration out of the diff.
+ */
+async function writeCollection(
+  catalog: readonly WorkshopModelEntry[],
+  sourceRef: string
+): Promise<void> {
+  await mkdir(COLLECTION_DIR, { recursive: true })
+
+  const keep = new Set(catalog.map((model) => `${model.slug}.json`))
+  const existing = await readdir(COLLECTION_DIR).catch(() => [] as string[])
+  for (const file of existing) {
+    if (file.endsWith('.json') && !keep.has(file)) {
+      await rm(join(COLLECTION_DIR, file))
+    }
+  }
+
+  for (const model of catalog) {
+    const path = join(COLLECTION_DIR, `${model.slug}.json`)
+    const next = `${JSON.stringify(model, null, 2)}\n`
+    const previous = await readFile(path, 'utf8').catch(() => undefined)
+    if (previous !== next) await writeFile(path, next)
+  }
+
+  const manifest = `${JSON.stringify({ sourceRef, modelCount: catalog.length }, null, 2)}\n`
+  const previousManifest = await readFile(MANIFEST, 'utf8').catch(
+    () => undefined
+  )
+  if (previousManifest !== manifest) await writeFile(MANIFEST, manifest)
 }
 
 if (process.argv[1] === import.meta.filename) await main()

@@ -1,0 +1,111 @@
+{
+  "id": "byteplus/seedance-2-5-first-last-frame",
+  "slug": "byteplus--seedance-2-5-first-last-frame",
+  "displayName": "Seedance 2.5 First-Last Frame",
+  "provider": "byteplus",
+  "modality": "video",
+  "description": "Generates an adaptive-ratio Seedance 2.5 MP4 from first and optional last frames.",
+  "tags": ["byteplus", "seedance", "seedance-2.5", "first-last-frame"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["byteplus/seedance-2-5-first-last-frame"]
+      },
+      "prompt": {
+        "type": "string",
+        "minLength": 1
+      },
+      "duration": {
+        "type": "integer",
+        "minimum": 4,
+        "maximum": 30,
+        "default": 5
+      },
+      "seed": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 2147483647,
+        "default": 0
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["end_image"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["start_image"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "generate_audio": {
+        "type": "boolean",
+        "default": true
+      },
+      "output_format": {
+        "type": "string",
+        "enum": ["mp4"],
+        "default": "mp4"
+      },
+      "resolution": {
+        "type": "string",
+        "enum": ["480p", "720p", "1080p"],
+        "default": "720p"
+      },
+      "watermark": {
+        "type": "boolean",
+        "default": false
+      }
+    },
+    "required": ["model", "prompt"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "end_image",
+      "required": false,
+      "cardinality": "single",
+      "minItems": 0,
+      "maxItems": 1
+    },
+    {
+      "role": "start_image",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    }
+  ]
+}
