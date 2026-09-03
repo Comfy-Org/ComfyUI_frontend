@@ -6,6 +6,9 @@ import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { createUuidv4 } from '@/utils/uuid'
 
 import { recordDevEvent } from './devPanelLog'
+import { wireLog } from './crdtLog'
+import type { CrdtDebugSnapshot } from './crdtSnapshot'
+import { readCrdtSnapshot } from './crdtSnapshot'
 import type { DocFrameTransport, DocUpdate } from './docFrameClient'
 import { DocFrameClient } from './docFrameClient'
 import type { MutationsForTarget } from './ecsFollowerAdapter'
@@ -216,7 +219,7 @@ export function useAgentCrdtFollower(
       } catch {
         // Leave the raw string.
       }
-      recordDevEvent('ws_out', { delivered, frame: parsed })
+      wireLog.trace('ws_out', 'outbound frame', { delivered, frame: parsed })
       return delivered
     },
     addEventListener(type, listener) {
@@ -653,8 +656,17 @@ export function useAgentCrdtFollower(
     outcomes: outcomes.value
   }))
 
+  const debugSnapshot = (): CrdtDebugSnapshot =>
+    readCrdtSnapshot(bridge.follower.doc, {
+      status: status.value,
+      tabId,
+      lastSeq: bridge.lastSequence,
+      schemaError: bridge.lastSchemaError?.message ?? null
+    })
+
   return {
     status: readonly(status),
+    debugSnapshot,
     enqueueHumanOperations: (operations: GraphOperation[]) =>
       sender.enqueue(operations)
   }
