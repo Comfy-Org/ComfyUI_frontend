@@ -146,6 +146,7 @@ test.describe('Assets sidebar remote flag lifecycle', { tag: '@oss' }, () => {
     comfyPage,
     page
   }) => {
+    test.setTimeout(30_000)
     test.fail(
       true,
       'The Assets sidebar does not refresh history after a runtime flag change'
