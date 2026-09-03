@@ -134,6 +134,12 @@ vi.mock('@/scripts/api', () => ({
     removeEventListener: vi.fn((event: string) => {
       apiEventHandlers.delete(event)
     }),
+    dispatchCustomEvent: vi.fn((event: string, detail?: unknown) => {
+      const handler = apiEventHandlers.get(event)
+      if (!handler) return false
+      handler(new CustomEvent(event, { detail }))
+      return true
+    }),
     clientId: 'test-client',
     apiURL: vi.fn((path: string) => `/api${path}`)
   }
@@ -613,6 +619,7 @@ describe('useExecutionStore - workflowStatus', () => {
     workflow: Workflow,
     nodes: string[] = ['1']
   ) {
+    store.registerJobWorkflowIdMapping(jobId, workflow.path)
     store.storeJob({
       nodes,
       id: jobId,
@@ -1241,6 +1248,50 @@ describe('useExecutionStore - background workflow error routing', () => {
     expect(errorStore.lastExecutionError?.prompt_id).toBe('job-b')
   })
 
+  it('resets the active job and flushes its buffered failure after mapping', () => {
+    fireExecutionStart('job-b')
+    fireExecutionError('job-b')
+
+    expect(store.isIdle).toBe(true)
+
+    store.registerJobWorkflowIdMapping('job-b', graphBId)
+
+    expect(errorStore.lastExecutionError).toBeNull()
+
+    errorStore.setActiveGraph(graphBId, workflowB.path)
+    expect(errorStore.lastExecutionError?.prompt_id).toBe('job-b')
+  })
+
+  it('does not replay a buffered failure after execution succeeds', () => {
+    fireExecutionError('job-b')
+    api.dispatchCustomEvent('execution_success', {
+      prompt_id: 'job-b',
+      timestamp: 0
+    })
+
+    store.registerJobWorkflowIdMapping('job-b', graphBId)
+    errorStore.setActiveGraph(graphBId, workflowB.path)
+
+    expect(errorStore.lastExecutionError).toBeNull()
+  })
+
+  it('does not replay a buffered failure after execution is interrupted', () => {
+    fireExecutionError('job-b')
+    api.dispatchCustomEvent('execution_interrupted', {
+      prompt_id: 'job-b',
+      timestamp: 0,
+      node_id: '1',
+      node_type: 'TestNode',
+      executed: []
+    })
+
+    store.registerJobWorkflowIdMapping('job-b', graphBId)
+    errorStore.setActiveGraph(graphBId, workflowB.path)
+
+    expect(errorStore.lastExecutionError).toBeNull()
+    expect(errorStore.totalErrorCount).toBe(0)
+  })
+
   it('clears execution-start errors only for the producing workflow', () => {
     errorStore.recordPromptError({
       type: 'visible-error',
@@ -1263,7 +1314,7 @@ describe('useExecutionStore - background workflow error routing', () => {
     expect(errorStore.lastPromptError).toBeNull()
   })
 
-  it('does not route a known ambiguous job to the visible workflow', () => {
+  it('buffers a mapped job with an ambiguous path until storeJob', () => {
     const duplicateWorkflow = makeWorkflow('/workflows/c.json', graphBId)
     mockOpenWorkflows.value = [workflowA, workflowB, duplicateWorkflow]
     store.registerJobWorkflowIdMapping('job-ambiguous', graphBId)
@@ -1271,6 +1322,11 @@ describe('useExecutionStore - background workflow error routing', () => {
     fireExecutionError('job-ambiguous')
 
     expect(errorStore.lastExecutionError).toBeNull()
+
+    callStoreJob('job-ambiguous', workflowB)
+    errorStore.setActiveGraph(graphBId, workflowB.path)
+
+    expect(errorStore.lastExecutionError?.prompt_id).toBe('job-ambiguous')
   })
 
   it('does not route an unattributable failure to the visible workflow', () => {
