@@ -1,17 +1,9 @@
 import type { Locator, Page, WebSocketRoute } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import { applyOps, mint, readGraph } from '@comfyorg/comfy-multi-player'
-import type {
-  GraphSnapshot,
-  WidgetCatalog,
-  WorkflowJSON
-} from '@comfyorg/comfy-multi-player'
-import * as Y from 'yjs'
+import type { GraphSnapshot } from '@comfyorg/comfy-multi-player'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
-import { mintWireOps } from '@/workbench/extensions/agent/crdt/opEnvelope'
 import type {
   AgentCancelAccepted,
   AgentMessages,
@@ -20,6 +12,11 @@ import type {
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
+import type { DocFrame } from '@e2e/fixtures/agentConversationHostDoc'
+import {
+  DOC_PROTOCOL_VERSION,
+  HostDoc
+} from '@e2e/fixtures/agentConversationHostDoc'
 import type {
   AgentConversation,
   AgentConversationTurn,
@@ -38,114 +35,12 @@ const turnId = (turn: number): string =>
 // useAgentSession.ts keeps THREAD_STORAGE_KEY module-private.
 const THREAD_STORAGE_KEY = 'Comfy.Agent.ThreadId'
 const SOCKET_SID = '7d1f2e3a-4b5c-4d6e-8f90-1a2b3c4d5e6f'
-const HOST_ACTOR = 'agent:comfy'
-const DOC_PROTOCOL_VERSION = 1
 const PANEL_MOUNT_TIMEOUT = 30_000
 const SUBSCRIBE_TIMEOUT = 15_000
 
 const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
 const SEND_LABEL = enMessages.agent.send
 const STOP_LABEL = enMessages.agent.stop
-
-interface DocFrame {
-  type: 'doc_subscribed' | 'doc_update' | 'doc_ops_result'
-  data: Record<string, unknown>
-}
-
-function toBase64(bytes: Uint8Array): string {
-  return Buffer.from(bytes).toString('base64')
-}
-
-function fromBase64(value: string): Uint8Array {
-  return new Uint8Array(Buffer.from(value, 'base64'))
-}
-
-class HostDoc {
-  private readonly doc: Y.Doc
-  private seq = 1
-
-  constructor(
-    private readonly workflowId: string,
-    seed: WorkflowJSON,
-    private readonly catalog: WidgetCatalog
-  ) {
-    this.doc = mint(seed, catalog)
-  }
-
-  graph(): GraphSnapshot {
-    return readGraph(this.doc)
-  }
-
-  subscribed(): DocFrame {
-    return {
-      type: 'doc_subscribed',
-      data: {
-        v: DOC_PROTOCOL_VERSION,
-        workflow_id: this.workflowId,
-        ok: true,
-        seq: this.seq
-      }
-    }
-  }
-
-  catchUp(stateVectorB64: string): DocFrame {
-    const update = Y.encodeStateAsUpdate(this.doc, fromBase64(stateVectorB64))
-    return this.updateFrame(update, HOST_ACTOR, [])
-  }
-
-  // The real host folds client batches into the same doc, so the expected graph must see them.
-  applyClient(ops: unknown[]): string[] {
-    const result = applyOps(
-      this.doc,
-      ops as Parameters<typeof applyOps>[1],
-      this.catalog
-    )
-    this.seq += 1
-    return result.outcomes.flatMap((outcome, index) =>
-      outcome.outcome === 'applied'
-        ? [String((ops[index] as { op_id?: unknown }).op_id ?? index)]
-        : []
-    )
-  }
-
-  apply(operations: GraphOperation[]): DocFrame {
-    const before = Y.encodeStateVector(this.doc)
-    const ops = mintWireOps(operations, {
-      actor: HOST_ACTOR,
-      baseVersion: this.seq
-    })
-    const result = applyOps(this.doc, ops, this.catalog)
-    const rejected = result.outcomes.filter((o) => o.outcome !== 'applied')
-    if (rejected.length > 0)
-      throw new Error(
-        `conversation graph_ops did not apply: ${JSON.stringify(rejected)}`
-      )
-    this.seq += 1
-    return this.updateFrame(
-      Y.encodeStateAsUpdate(this.doc, before),
-      HOST_ACTOR,
-      ops.map((op) => op.op_id)
-    )
-  }
-
-  private updateFrame(
-    update: Uint8Array,
-    actor: string,
-    opIds: string[]
-  ): DocFrame {
-    return {
-      type: 'doc_update',
-      data: {
-        v: DOC_PROTOCOL_VERSION,
-        workflow_id: this.workflowId,
-        seq: this.seq,
-        update_b64: toBase64(update),
-        actor,
-        op_ids: opIds
-      }
-    }
-  }
-}
 
 type NodeBody = {
   id: number | string
