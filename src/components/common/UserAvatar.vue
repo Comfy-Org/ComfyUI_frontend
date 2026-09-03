@@ -1,27 +1,45 @@
 <template>
-  <Avatar
-    class="aspect-square bg-interface-panel-selected-surface"
-    :image="photoUrl ?? undefined"
-    :icon="hasAvatar ? undefined : 'icon-[lucide--user]'"
-    :pt="{
-      icon: {
-        class: { 'size-4': !hasAvatar },
-        'data-testid': 'avatar-icon'
-      }
-    }"
-    shape="circle"
-    :aria-label="ariaLabel ?? $t('auth.login.userAvatar')"
-    @error="handleImageError"
-  />
+  <span
+    :class="
+      cn(
+        'inline-flex aspect-square items-center justify-center overflow-hidden rounded-full bg-interface-panel-selected-surface',
+        size === 'small' ? 'size-6' : size === 'large' ? 'size-12' : 'size-8'
+      )
+    "
+  >
+    <img
+      v-if="hasAvatar"
+      :src="photoUrl ?? undefined"
+      :alt="ariaLabel ?? $t('auth.login.userAvatar')"
+      :aria-label="ariaLabel ?? $t('auth.login.userAvatar')"
+      class="size-full object-cover"
+      @error="handleImageError"
+    />
+    <span
+      v-else
+      :aria-label="ariaLabel ?? $t('auth.login.userAvatar')"
+      class="flex size-full items-center justify-center"
+    >
+      <span v-if="initials" class="font-medium uppercase">{{ initials }}</span>
+      <i v-else data-testid="avatar-icon" class="icon-[lucide--user] size-4" />
+    </span>
+  </span>
 </template>
 
 <script setup lang="ts">
-import Avatar from 'primevue/avatar'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref } from 'vue'
 
-const { photoUrl, ariaLabel } = defineProps<{
+const {
+  photoUrl,
+  ariaLabel,
+  initials,
+  size = 'normal'
+} = defineProps<{
   photoUrl?: string | null
   ariaLabel?: string
+  initials?: string
+  size?: 'small' | 'normal' | 'large'
 }>()
 
 const imageError = ref(false)

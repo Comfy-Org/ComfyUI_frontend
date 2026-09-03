@@ -99,7 +99,7 @@
       </Button>
     </div>
 
-    <Divider class="mx-0 my-2" />
+    <div class="mx-0 my-2 border-t border-interface-stroke" />
 
     <div
       v-if="canAccessSubscriptionFeatures"
@@ -136,7 +136,7 @@
       }}</span>
     </div>
 
-    <Divider class="mx-0 my-2" />
+    <div class="mx-0 my-2 border-t border-interface-stroke" />
 
     <div
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
@@ -154,7 +154,6 @@
 <script setup lang="ts">
 import { onClickOutside } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import Divider from 'primevue/divider'
 import Skeleton from 'primevue/skeleton'
 import { computed, onMounted, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'

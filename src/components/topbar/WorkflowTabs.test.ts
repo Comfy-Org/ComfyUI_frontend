@@ -17,8 +17,11 @@ const distribution = vi.hoisted(() => ({
 const tabBarLayout = vi.hoisted(() => ({ value: 'Default' }))
 const overflowObservers = vi.hoisted<
   Array<{
+    element: HTMLElement
     isOverflowing: { value: boolean }
+    disposed: { value: boolean }
     checkOverflow: ReturnType<typeof vi.fn>
+    dispose: ReturnType<typeof vi.fn>
   }>
 >(() => [])
 interface WorkflowFixture {
@@ -109,11 +112,17 @@ vi.mock('@/composables/useWorkflowStatusDismissal', () => ({
 vi.mock('@/composables/element/useOverflowObserver', async () => {
   const { ref } = await import('vue')
   return {
-    useOverflowObserver: () => {
+    useOverflowObserver: (element: HTMLElement) => {
       const isOverflowing = ref(false)
+      const disposed = ref(false)
       const observer = {
+        element,
         isOverflowing,
-        checkOverflow: vi.fn()
+        disposed,
+        checkOverflow: vi.fn(),
+        dispose: vi.fn(() => {
+          disposed.value = true
+        })
       }
       overflowObservers.push(observer)
       return observer
@@ -344,60 +353,27 @@ describe('WorkflowTabs scrolling', () => {
     overflowObservers.length = 0
   })
 
-  it('does not overwrite the ScrollPanel content ref', async () => {
+  it('observes the native scroll container', async () => {
     renderComponent()
 
     await waitFor(() => expect(overflowObservers).toHaveLength(1))
 
-    expect(screen.getByTestId('scroll-content')).toHaveAttribute(
-      'data-internal-ref-preserved',
-      'true'
-    )
+    expect(overflowObservers[0].element).toHaveClass('workflow-tabs-scroll')
   })
 
-  it('rebinds scroll listeners when scroll content is replaced', async () => {
-    const { user, unmount } = renderComponent()
+  it('disposes the overflow observer on unmount', async () => {
+    const { unmount } = renderComponent()
     await waitFor(() => expect(overflowObservers).toHaveLength(1))
-    const oldScrollContent = screen.getByTestId('scroll-content')
-    const removeOldListener = vi.spyOn(oldScrollContent, 'removeEventListener')
-
-    await user.click(
-      screen.getByRole('button', { name: 'Replace scroll content' })
-    )
-
-    await waitFor(() => {
-      expect(removeOldListener).toHaveBeenCalledWith(
-        'scroll',
-        expect.any(Function),
-        expect.any(Object)
-      )
-    })
-    expect(removeOldListener).toHaveBeenCalledWith(
-      'scrollend',
-      expect.any(Function),
-      expect.any(Object)
-    )
-
-    const newScrollContent = screen.getByTestId('scroll-content')
-    const removeNewListener = vi.spyOn(newScrollContent, 'removeEventListener')
     unmount()
 
-    expect(removeNewListener).toHaveBeenCalledWith(
-      'scroll',
-      expect.any(Function),
-      expect.any(Object)
-    )
-    expect(removeNewListener).toHaveBeenCalledWith(
-      'scrollend',
-      expect.any(Function),
-      expect.any(Object)
-    )
+    expect(overflowObservers[0].dispose).toHaveBeenCalledOnce()
+    expect(overflowObservers[0].disposed.value).toBe(true)
   })
 
-  it('reveals the active tab when overflowing scroll content is replaced', async () => {
+  it('reveals the active tab when the tab list overflows', async () => {
     const workflow = { path: 'active.json' }
     const scrollIntoView = vi.spyOn(HTMLElement.prototype, 'scrollIntoView')
-    const { user } = renderComponent()
+    renderComponent()
     await waitFor(() => expect(overflowObservers).toHaveLength(1))
     if (!workflowStoreHolder.store)
       throw new Error('Workflow store not mounted')
@@ -408,11 +384,6 @@ describe('WorkflowTabs scrolling', () => {
     overflowObservers[0].isOverflowing.value = true
     await nextTick()
     await nextTick()
-    scrollIntoView.mockClear()
-
-    await user.click(
-      screen.getByRole('button', { name: 'Replace scroll content' })
-    )
 
     await waitFor(() => {
       expect(scrollIntoView).toHaveBeenCalledWith({

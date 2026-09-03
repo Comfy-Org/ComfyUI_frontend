@@ -1,7 +1,6 @@
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { fireEvent, render, screen } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
 import { describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -26,7 +25,7 @@ describe('UserAvatar', () => {
   function renderComponent(props: ComponentProps<typeof UserAvatar> = {}) {
     return render(UserAvatar, {
       global: {
-        plugins: [PrimeVue, i18n]
+        plugins: [i18n]
       },
       props
     })
@@ -74,6 +73,13 @@ describe('UserAvatar', () => {
     await nextTick()
 
     expect(screen.getByTestId('avatar-icon')).toBeInTheDocument()
+  })
+
+  it('renders provided fallback initials', () => {
+    renderComponent({ initials: 'CU' })
+
+    expect(screen.getByText('CU')).toBeInTheDocument()
+    expect(screen.queryByTestId('avatar-icon')).not.toBeInTheDocument()
   })
 
   it('uses provided ariaLabel', () => {
