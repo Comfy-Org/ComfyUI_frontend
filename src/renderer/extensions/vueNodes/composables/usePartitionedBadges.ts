@@ -16,6 +16,8 @@ import type { SerializedNodeId } from '@/types/nodeId'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { widgetId } from '@/types/widgetId'
 
+const COMFY_CLOUD_PYTHON_MODULE = 'comfy_api_nodes.nodes_comfy_cloud'
+
 function splitAroundFirstSpace(text: string): [string, string | undefined] {
   const index = text.indexOf(' ')
   if (index === -1) return [text, undefined]
@@ -185,8 +187,11 @@ export function usePartitionedBadges(nodeData: VueNodeData) {
     const displaySource = settingStore.get(
       'Comfy.NodeBadge.NodeSourceBadgeMode'
     )
-    const isCoreNode =
+    const showComfyLogo =
       nodeDef?.isCoreNode && displaySource === NodeBadgeMode.ShowAll
+    const isComfyCloudNode =
+      nodeDef?.python_module === COMFY_CLOUD_PYTHON_MODULE
+
     const core: NodeBadgeProps[] = []
     const extension: NodeBadgeProps[] = []
     const pricing: { required: string; rest?: string }[] = []
@@ -222,7 +227,9 @@ export function usePartitionedBadges(nodeData: VueNodeData) {
     }
 
     return {
-      hasComfyBadge: isCoreNode && pricing.length === 0,
+      hasComfyBadge:
+        (showComfyLogo && pricing.length === 0) || isComfyCloudNode,
+      hasComfyCloudBadge: isComfyCloudNode,
       core,
       extension,
       pricing
