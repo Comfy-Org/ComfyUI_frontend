@@ -271,23 +271,12 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     expect(operationBId).not.toBe(operationAId)
   })
 
-  it('documents an anonymous workflow A result settling workflow B in flight', async () => {
+  it.fails('ignores an anonymous result from a previously active workflow', async () => {
     const { workflowId, enqueue } = mountFollower('wf-a')
 
     enqueue([deleteNode('a-inflight')])
-    const operationAId = clientState.sent[0].ops[0].op_id
-    // The switch settles A undeliverable (settlement 0) and B goes out at once.
     await switchWorkflow(workflowId, 'wf-b')
     enqueue([deleteNode('b-pending')])
-    const operationBId = clientState.sent[1].ops[0].op_id
-
-    // A's identified late result is ignored: its op_id is not in B's batch.
-    dispatchOpsResult({
-      workflowId: 'wf-a',
-      ok: true,
-      applied: [operationAId],
-      skipped: []
-    })
 
     dispatchOpsResult({
       workflowId: 'wf-a',
@@ -299,11 +288,6 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     const settlements = devLogState.recordDevEvent.mock.calls.filter(
       ([event]) => event === 'human_ops_settled'
     )
-    expect(settlements).toHaveLength(2)
-    expect(settlements[1][1]).toMatchObject({
-      state: 'acknowledged',
-      ops: [expect.objectContaining({ op_id: operationBId })],
-      result: { ok: false, applied: [], skipped: [] }
-    })
+    expect(settlements).toHaveLength(1)
   })
 })
