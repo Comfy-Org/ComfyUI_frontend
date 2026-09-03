@@ -23,22 +23,23 @@ const {
   dialogCloseMock,
   serviceSourceLoad3d,
   getLoad3dAsyncMock
-} = vi.hoisted(() => ({
-  viewerState: {
-    current: null as ReturnType<typeof buildViewerStub> | null
-  },
-  dragState: {
-    current: null as ReturnType<typeof buildDragStub> | null
-  },
-  capturedDragOptions: {
-    current: null as { onModelDrop?: (file: File) => Promise<void> } | null
-  },
-  dialogCloseMock: vi.fn(),
-  serviceSourceLoad3d: {
-    current: null as unknown
-  },
-  getLoad3dAsyncMock: vi.fn()
-}))
+} = vi.hoisted(() => {
+  const serviceSourceLoad3d: { current: unknown } = { current: null }
+  return {
+    viewerState: {
+      current: null as ReturnType<typeof buildViewerStub> | null
+    },
+    dragState: {
+      current: null as ReturnType<typeof buildDragStub> | null
+    },
+    capturedDragOptions: {
+      current: null as { onModelDrop?: (file: File) => Promise<void> } | null
+    },
+    dialogCloseMock: vi.fn(),
+    serviceSourceLoad3d,
+    getLoad3dAsyncMock: vi.fn()
+  }
+})
 
 function buildViewerStub() {
   return {

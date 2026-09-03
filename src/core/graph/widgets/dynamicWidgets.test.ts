@@ -198,7 +198,7 @@ describe('Dynamic Combos', () => {
     reloaded.widgets[0].value = '0'
     reloaded.widgets[0].value = '1'
 
-    expect(reloaded.widgets[1].value).not.toBe(0.8)
+    expect(reloaded.widgets[1].value).toBe(0.3)
   })
 })
 describe('Autogrow', () => {
@@ -409,7 +409,7 @@ describe('Autogrow', () => {
     const serialized = graph.serialize()
     graph.clear()
     graph.configure(serialized)
-    const newNode = graph.nodes[0]!
+    const newNode = graph.nodes[0]
 
     expect(newNode.inputs.map((i) => i.name)).toStrictEqual([
       '0.a0',

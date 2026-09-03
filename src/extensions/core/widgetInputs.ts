@@ -1,17 +1,18 @@
 import { intersection } from 'es-toolkit/compat'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import { createWidgetRestorationState } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   INodeInputSlot,
   INodeOutputSlot,
+  ISerialisedNode,
   ISlotType,
   LLink
 } from '@/lib/litegraph/src/litegraph'
 import type { IWidgetLocator } from '@/lib/litegraph/src/interfaces'
 import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
 import { outputHasLinks, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
-import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { assetService } from '@/platform/assets/services/assetService'
 import { createAssetWidget } from '@/platform/assets/utils/createAssetWidget'
@@ -21,6 +22,7 @@ import {
 } from '@/schemas/nodeDefSchema'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import {
   ComfyWidgets,
@@ -39,18 +41,6 @@ export class PrimitiveNode extends LGraphNode {
   controlValues?: WidgetValue[]
   lastType?: string
   static override category: string
-
-  /**
-   * `widgets_values` captured from `onConfigure`, read by `_createWidget` when
-   * it (re)builds the widget from `onAfterGraphConfigured`. The widget doesn't
-   * exist yet when `configure()` applies its own positional-restore loop, and
-   * `widgetValueStore`'s restoration record is already cleared by the time
-   * `onAfterGraphConfigured` runs, so this node keeps its own copy across that
-   * gap instead. Consumed (cleared) by the first non-recreating build so a
-   * later rebuild can't resurrect the workflow-file value.
-   */
-  private _configuredWidgetsValues?: readonly WidgetValue[]
-
   constructor(title: string) {
     super(title)
     this.addOutput('connect to widget input', '*')
@@ -60,10 +50,6 @@ export class PrimitiveNode extends LGraphNode {
     if (!this.properties || !(replacePropertyName in this.properties)) {
       this.addProperty(replacePropertyName, false, 'boolean')
     }
-  }
-
-  override onConfigure(info: ISerialisedNode) {
-    this._configuredWidgetsValues = info.widgets_values
   }
 
   override applyToGraph(extraLinks: LLink[] = []) {
@@ -139,6 +125,18 @@ export class PrimitiveNode extends LGraphNode {
     return values
   }
 
+  override configure(serialisedNode: ISerialisedNode) {
+    const type = serialisedNode.outputs?.[0]?.type
+    super.configure(serialisedNode)
+    if (!this.graph || this.widgets?.length || typeof type !== 'string') return
+
+    useWidgetValueStore().setNodeWidgetRestoration(
+      this.graph.rootGraph.id,
+      this.id,
+      createWidgetRestorationState(serialisedNode)
+    )
+  }
+
   override onAfterGraphConfigured() {
     if (
       this.graph &&
@@ -150,6 +148,14 @@ export class PrimitiveNode extends LGraphNode {
       // Merge values if required
       this._mergeWidgetConfig()
     }
+  }
+
+  private _clearWidgetRestoration() {
+    if (this.graph)
+      useWidgetValueStore().clearNodeWidgetRestoration(
+        this.graph.rootGraph.id,
+        this.id
+      )
   }
 
   override onConnectionsChange(
@@ -238,6 +244,8 @@ export class PrimitiveNode extends LGraphNode {
     if (!config) return
 
     const { type } = getWidgetType(config)
+    if (recreating || this.outputs[0].type !== type)
+      this._clearWidgetRestoration()
     // Update our output to restrict to the widget type
     this.outputs[0].type = type
     this.outputs[0].name = type
@@ -249,12 +257,6 @@ export class PrimitiveNode extends LGraphNode {
       widget.name,
       recreating
     )
-
-    // Consume-once: the serialized restore applies only to the first
-    // post-configure build. Later rebuilds (e.g. disconnect → reconnect
-    // after load) must reflect the live target widget, not resurrect the
-    // workflow-file value (the same snap-back class as #16006).
-    if (!recreating) this._configuredWidgetsValues = undefined
   }
 
   private _createWidget(
@@ -272,76 +274,68 @@ export class PrimitiveNode extends LGraphNode {
     // Store current size as addWidget resizes the node
     const [oldWidth, oldHeight] = this.size
     let widget: IBaseWidget
+    const restoredValue = this.graph
+      ? useWidgetValueStore().getRestoredWidgetValue(
+          this.graph.rootGraph.id,
+          this.id,
+          'value',
+          0
+        )
+      : undefined
 
-    if (
-      type === 'COMBO' &&
-      assetService.shouldUseAssetBrowser(node.comfyClass, widgetName)
-    ) {
-      widget = this._createAssetWidget(node, widgetName, inputData)
-      const theirWidget = node.widgets?.find((w) => w.name === widgetName)
-      if (theirWidget) widget.value = theirWidget.value
+    try {
+      if (
+        type === 'COMBO' &&
+        assetService.shouldUseAssetBrowser(node.comfyClass, widgetName)
+      ) {
+        widget = this._createAssetWidget(node, widgetName, inputData)
+        const theirWidget = node.widgets?.find((w) => w.name === widgetName)
+        if (theirWidget) widget.value = theirWidget.value
+        if (restoredValue) widget.value = restoredValue.value
+        this._finalizeWidget(widget, oldWidth, oldHeight, recreating)
+        return
+      }
+
+      if (isValidWidgetType(type)) {
+        widget = (ComfyWidgets[type](this, 'value', inputData, app) || {})
+          .widget
+      } else {
+        // @ts-expect-error InputSpec is not typed correctly
+        widget = this.addWidget(type, 'value', null, () => {}, {})
+      }
+
+      if (node?.widgets && widget) {
+        const theirWidget = node.widgets.find((w) => w.name === widgetName)
+        if (theirWidget) {
+          widget.value = theirWidget.value
+        }
+      }
+      if (restoredValue) widget.value = restoredValue.value
+
+      if (
+        !inputData?.[1]?.control_after_generate &&
+        (widget.type === 'number' || widget.type === 'combo')
+      ) {
+        addValueControlWidgets(this, widget, 'fixed', undefined, inputData)
+        if (this.widgets?.[1]) widget.linkedWidgets = [this.widgets[1]]
+      }
+
+      // Restore any saved control values
+      const controlValues = this.controlValues
+      if (
+        this.widgets &&
+        this.lastType === this.widgets[0]?.type &&
+        controlValues?.length === this.widgets.length - 1
+      ) {
+        for (let i = 0; i < controlValues.length; i++) {
+          this.widgets[i + 1].value = controlValues[i]
+        }
+      }
+
       this._finalizeWidget(widget, oldWidth, oldHeight, recreating)
-      return
+    } finally {
+      this._clearWidgetRestoration()
     }
-
-    if (isValidWidgetType(type)) {
-      widget = (ComfyWidgets[type](this, 'value', inputData, app) || {}).widget
-    } else {
-      // @ts-expect-error InputSpec is not typed correctly
-      widget = this.addWidget(type, 'value', null, () => {}, {})
-    }
-
-    if (node?.widgets && widget) {
-      const theirWidget = node.widgets.find((w) => w.name === widgetName)
-      if (theirWidget) {
-        widget.value = theirWidget.value
-      }
-    }
-
-    // The primitive's own serialized value takes precedence over the value
-    // just copied from the target widget above. `recreating` rebuilds the
-    // widget for a live reconfiguration (e.g. a new target type), where the
-    // caller (`recreateWidget`) restores the pre-rebuild value itself.
-    if (!recreating && this._configuredWidgetsValues?.[0] !== undefined) {
-      widget.value = this._configuredWidgetsValues[0]
-    }
-
-    if (
-      !inputData?.[1]?.control_after_generate &&
-      (widget.type === 'number' || widget.type === 'combo')
-    ) {
-      const control_value =
-        (!recreating && this._configuredWidgetsValues?.[1]) || 'fixed'
-      addValueControlWidgets(
-        this,
-        widget,
-        control_value as string,
-        undefined,
-        inputData
-      )
-      if (this.widgets?.[1]) widget.linkedWidgets = [this.widgets[1]]
-
-      const filter = !recreating
-        ? this._configuredWidgetsValues?.[2]
-        : undefined
-      if (filter != null && this.widgets && this.widgets.length === 3) {
-        this.widgets[2].value = filter
-      }
-    }
-
-    // Restore any saved control values
-    const controlValues = this.controlValues
-    if (
-      this.widgets &&
-      this.lastType === this.widgets[0]?.type &&
-      controlValues?.length === this.widgets.length - 1
-    ) {
-      for (let i = 0; i < controlValues.length; i++) {
-        this.widgets[i + 1].value = controlValues[i]
-      }
-    }
-
-    this._finalizeWidget(widget, oldWidth, oldHeight, recreating)
   }
 
   private _createAssetWidget(
@@ -387,7 +381,7 @@ export class PrimitiveNode extends LGraphNode {
   recreateWidget() {
     const values = this.widgets?.map((w) => w.value)
     this._removeWidgets()
-    this._onFirstConnection(true)
+    this._onFirstConnection(!!values?.length)
     if (values?.length && this.widgets) {
       for (let i = 0; i < this.widgets.length; i++)
         this.widgets[i].value = values[i]
@@ -467,6 +461,7 @@ export class PrimitiveNode extends LGraphNode {
   }
 
   onLastDisconnect() {
+    this._clearWidgetRestoration()
     // We can't remove + re-add the output here as if you drag a link over the same link
     // it removes, then re-adds, causing it to break
     this.outputs[0].type = '*'
