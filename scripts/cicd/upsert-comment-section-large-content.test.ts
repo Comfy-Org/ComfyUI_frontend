@@ -1,4 +1,4 @@
-import { spawnSync } from 'node:child_process'
+import { execFileSync, spawnSync } from 'node:child_process'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -7,7 +7,8 @@ import { afterAll, describe, expect, it } from 'vitest'
 
 const tempDirectory = mkdtempSync(join(tmpdir(), 'upsert-comment-section-'))
 const reportPath = join(tempDirectory, 'pr-report.md')
-const report = 'x'.repeat(256 * 1024)
+const argumentLimit = Number(execFileSync('getconf', ['ARG_MAX']).toString())
+const report = 'x'.repeat(argumentLimit + 1)
 
 writeFileSync(reportPath, report)
 
