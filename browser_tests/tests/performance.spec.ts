@@ -434,20 +434,50 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
         })
     })
 
-    test('minimum zoom rendering', async ({ comfyPage }) => {
-      await comfyPage.canvasOps.setScale(0.1)
-      await expect.poll(() => comfyPage.canvasOps.getScale()).toBe(0.1)
+    test('zoom out idle', async ({ comfyPage }) => {
+      // This test previously claimed to measure size-based culling
+      // (isNodeTooSmall / isNodeInViewport) and asserted scale < 0.02.
+      // No such culling exists in production source: GraphCanvas.vue mounts
+      // every Vue node from allNodes at any zoom, and the only
+      // isNodeTooSmall / isNodeInViewport matches in the repo are stale
+      // comments in this file. The helper sent wheel events over an overlay,
+      // leaving the workflow's 0.5 scale unchanged; the old <0.02 assertion
+      // was also below the real ds.min_scale clamp (0.1). This kept the perf
+      // job red and the baseline pipeline dead (issue #15545).
+      //
+      // Until renderer-owned LOD lands (PR #15031 replaces Vue widget DOM
+      // below the readable-font threshold, reachable at production zoom),
+      // this measures the honest current behavior: frame cost at maximum
+      // supported zoom-out with all Vue node DOM still mounted.
+      // Zoom out to the ds.min_scale clamp (0.1) before measuring so the
+      // metric captures only idle frames at minimum scale, not zoom
+      // input/render cost.
+      const box = await comfyPage.canvas.boundingBox()
+      if (!box) throw new Error('Canvas bounding box not available')
+      await comfyPage.page.mouse.move(
+        box.x + box.width / 2,
+        box.y + box.height / 2
+      )
+      for (let i = 0; i < 20; i++) {
+        await comfyPage.page.mouse.wheel(0, 100)
+        await comfyPage.nextFrame()
+      }
+      await expect
+        .poll(() => comfyPage.canvasOps.getScale())
+        .toBeCloseTo(0.1, 5)
 
       await comfyPage.perf.startMeasuring()
+
+      // Idle at maximum zoom-out with everything mounted.
       for (let i = 0; i < 60; i++) {
         await comfyPage.nextFrame()
       }
 
       const m = recordMeasurement(
-        await comfyPage.perf.stopMeasuring('vue-minimum-zoom')
+        await comfyPage.perf.stopMeasuring('vue-zoom-out-idle')
       )
       console.log(
-        `Vue minimum zoom: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.rafIntervalP95Ms.toFixed(1)}ms rAF p95`
+        `Vue zoom out idle: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.rafIntervalP95Ms.toFixed(1)}ms rAF p95`
       )
     })
   })

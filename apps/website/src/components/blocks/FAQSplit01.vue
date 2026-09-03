@@ -10,10 +10,11 @@ import AccordionTrigger from '../ui/accordion/AccordionTrigger.vue'
 
 type Faq = { id: string; question: string; answer: string }
 
-const { faqs } = defineProps<{
+const { faqs, compact = false } = defineProps<{
   id?: string
   heading: string
   faqs: readonly Faq[]
+  compact?: boolean
 }>()
 
 const parsedFaqs = computed(() =>
@@ -27,7 +28,14 @@ const parsedFaqs = computed(() =>
       <div
         class="sticky top-20 z-10 w-full shrink-0 self-start bg-primary-comfy-ink py-4 md:top-28 md:w-80 md:py-0"
       >
-        <h2 class="text-4xl font-light text-primary-comfy-canvas md:text-5xl">
+        <h2
+          :class="
+            cn(
+              'font-light text-primary-comfy-canvas',
+              compact ? 'text-2xl md:text-3xl' : 'text-4xl md:text-5xl'
+            )
+          "
+        >
           {{ heading }}
         </h2>
       </div>

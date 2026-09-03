@@ -65,9 +65,7 @@ export class PerformanceHelper {
 
   private async getSnapshot(): Promise<PerfSnapshot> {
     if (!this.cdp) throw new Error('PerformanceHelper not initialized')
-    const { metrics } = (await this.cdp.send('Performance.getMetrics')) as {
-      metrics: { name: string; value: number }[]
-    }
+    const { metrics } = await this.cdp.send('Performance.getMetrics')
     function get(name: string): number {
       return metrics.find((m) => m.name === name)?.value ?? 0
     }

@@ -22,7 +22,7 @@ describe('indexing policy', () => {
 
   it.for([
     '/privacy',
-    '/cloud/pricing',
+    '/pricing',
     '/p/supported-models/grok-imagine',
     '/demos/image-to-video'
   ])('keeps %s indexable', (pathname) => {
