@@ -322,7 +322,7 @@ const { fetchBalance, fetchStatus, manageSubscription, topup } =
 const { canTopUp } = useBillingCapabilities()
 
 const billingOperationStore = useBillingOperationStore()
-const isPolling = computed(() => billingOperationStore.isAddingCredits)
+const isAddingCredits = computed(() => billingOperationStore.isAddingCredits)
 const topupOperation = computed(
   () => billingOperationStore.topupActionOperation
 )
@@ -400,14 +400,14 @@ const paymentLocked = computed(
   () =>
     loading.value ||
     paymentSubmitted.value ||
-    isPolling.value ||
+    isAddingCredits.value ||
     !!topupOperation.value
 )
 
 watch(
-  [isPolling, topupOperation, canTopUp],
-  ([polling, operation, allowed]) => {
-    if (step.value === 'verifying' && !polling && !operation) {
+  [isAddingCredits, topupOperation, canTopUp],
+  ([addingCredits, operation, allowed]) => {
+    if (step.value === 'verifying' && !addingCredits && !operation) {
       step.value = 'amount'
       return
     }
