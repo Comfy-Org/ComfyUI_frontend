@@ -26,6 +26,13 @@ export interface DocSubscribed {
   message?: string
 }
 
+export interface DocError {
+  workflowId: string
+  code: 'fatal_doc'
+  message: string
+  requestType: string
+}
+
 interface DocOpsResult {
   workflowId: string
   ok: boolean
@@ -64,6 +71,7 @@ export type ServerDocFrame =
   | { type: 'doc_update'; data: DocUpdate }
   | { type: 'doc_subscribed'; data: DocSubscribed }
   | { type: 'doc_ops_result'; data: DocOpsResult }
+  | { type: 'doc_error'; data: DocError }
   | { type: 'doc_reset'; data: DocReset }
   | { type: 'awareness'; data: DocAwareness }
 
@@ -100,6 +108,7 @@ interface WireData {
   failed?: unknown
   state?: unknown
   expires_at?: unknown
+  request_type?: unknown
 }
 
 function decodeBase64(value: string): Uint8Array {
@@ -225,6 +234,23 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
     }
   }
 
+  if (
+    frame.type === 'doc_error' &&
+    data.code === 'fatal_doc' &&
+    typeof data.message === 'string' &&
+    typeof data.request_type === 'string'
+  ) {
+    return {
+      type: frame.type,
+      data: {
+        workflowId: data.workflow_id,
+        code: data.code,
+        message: data.message,
+        requestType: data.request_type
+      }
+    }
+  }
+
   if (frame.type === 'doc_reset' && typeof data.seq === 'number') {
     return {
       type: frame.type,
@@ -269,6 +295,7 @@ export class DocFrameClient extends EventTarget {
       'doc_update',
       'doc_subscribed',
       'doc_ops_result',
+      'doc_error',
       'doc_reset',
       'awareness'
     ]) {

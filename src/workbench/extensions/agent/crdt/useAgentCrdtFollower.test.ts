@@ -255,6 +255,23 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('stops retrying after a fatal doc error for the active workflow', () => {
+    vi.useFakeTimers()
+    const { unmount, status } = mountFollower('wf-1')
+
+    dispatchFrame('doc_subscribed', { ok: false, code: 'overloaded' })
+    dispatchFrame('doc_error', { workflowId: 'wf-1', code: 'fatal_doc' })
+    vi.runAllTimers()
+    apiState.target.dispatchEvent(new Event('status'))
+    apiState.target.dispatchEvent(new Event('reconnected'))
+
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+    expect(bridge().reconcile).not.toHaveBeenCalled()
+    expect(status().subscriptionStatus).toBe('fatal_doc')
+    expect(status().refusalCode).toBe('fatal_doc')
+    unmount()
+  })
+
   it.for(['unsupported', 'invalid_frame'])(
     'stops retrying permanent %s refusals',
     (code) => {
