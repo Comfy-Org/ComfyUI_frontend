@@ -139,22 +139,28 @@ describe('agentRunModeStore', () => {
   })
 
   it('keeps the latest save when an earlier PUT resolves last', async () => {
-    const resolvers: Array<(response: Response) => void> = []
-    fetchApi.mockImplementation(
-      () =>
-        new Promise<Response>((resolve) => {
-          resolvers.push(resolve)
-        })
-    )
+    let resolveFirst!: (response: Response) => void
+    let resolveSecond!: (response: Response) => void
+    fetchApi
+      .mockImplementationOnce(
+        () =>
+          new Promise<Response>((resolve) => {
+            resolveFirst = resolve
+          })
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise<Response>((resolve) => {
+            resolveSecond = resolve
+          })
+      )
     const store = useAgentRunModeStore()
 
     const first = store.save('auto_limited', 20)
     const second = store.save('auto', null)
-    expect(resolvers).toHaveLength(2)
-
-    resolvers[1]!(jsonResponse(200, { mode: 'auto', credit_limit: null }))
+    resolveSecond(jsonResponse(200, { mode: 'auto', credit_limit: null }))
     await second
-    resolvers[0]!(jsonResponse(200, { mode: 'auto_limited', credit_limit: 20 }))
+    resolveFirst(jsonResponse(200, { mode: 'auto_limited', credit_limit: 20 }))
     await first
 
     expect(store.mode).toBe('auto')
@@ -162,21 +168,29 @@ describe('agentRunModeStore', () => {
   })
 
   it('applies an earlier save when the latest one fails', async () => {
-    const resolvers: Array<(response: Response) => void> = []
-    fetchApi.mockImplementation(
-      () =>
-        new Promise<Response>((resolve) => {
-          resolvers.push(resolve)
-        })
-    )
+    let resolveFirst!: (response: Response) => void
+    let resolveSecond!: (response: Response) => void
+    fetchApi
+      .mockImplementationOnce(
+        () =>
+          new Promise<Response>((resolve) => {
+            resolveFirst = resolve
+          })
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise<Response>((resolve) => {
+            resolveSecond = resolve
+          })
+      )
     const store = useAgentRunModeStore()
 
     const first = store.save('auto_limited', 20)
     const second = store.save('auto', null)
 
-    resolvers[1]!(jsonResponse(500, { error: 'boom' }))
+    resolveSecond(jsonResponse(500, { error: 'boom' }))
     await expect(second).rejects.toThrow()
-    resolvers[0]!(jsonResponse(200, { mode: 'auto_limited', credit_limit: 20 }))
+    resolveFirst(jsonResponse(200, { mode: 'auto_limited', credit_limit: 20 }))
     await first
 
     expect(store.mode).toBe('auto_limited')
