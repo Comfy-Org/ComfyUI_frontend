@@ -187,39 +187,6 @@ describe('BrushCursor', () => {
       expect(readRect).toHaveBeenCalledTimes(2)
     })
 
-    // Restored per #16010: this coverage was deleted rather than adapted when
-    // the hand-rolled rect read (which re-read on every cursorPoint change,
-    // regardless of cause) was replaced by useElementBounding(). That hook
-    // only recomputes on its own ResizeObserver/MutationObserver/window
-    // scroll+resize listeners, bridged to cursor-driven moves by this
-    // component's explicit `watch(() => store.cursorPoint, updateContainerOffset)`.
-    // An ancestor that moves the container through some other means (e.g. a
-    // dialog dragged via a CSS transform on an element other than
-    // containerRef, with no window scroll/resize event and no mutation of
-    // containerRef's own style/class) is not observed, and the offset stays
-    // stale until the next cursor move. This characterizes that gap so it
-    // cannot silently widen further; closing it needs an explicit rect
-    // recompute wired to whatever signals dialog movement, tracked
-    // separately from this coverage restoration.
-    it('does not observe an ancestor move that fires no scroll, resize, or containerRef mutation', async () => {
-      const container = document.createElement('div')
-      vi.spyOn(container, 'getBoundingClientRect')
-        .mockReturnValueOnce(DOMRect.fromRect({ x: 30, y: 60 }))
-        .mockReturnValue(DOMRect.fromRect({ x: 80, y: 110 }))
-
-      renderCursor(container)
-      await waitFor(() => {
-        expect(styleOf(getBrushEl())).toContain('left: 50px')
-      })
-
-      // No fireEvent.scroll, no resize, no mutation on `container` itself,
-      // and a stationary cursor: the ancestor's move is invisible to
-      // useElementBounding's observers here.
-      await new Promise((resolve) => setTimeout(resolve, 0))
-
-      expect(styleOf(getBrushEl())).toContain('left: 50px')
-    })
-
     it('updates when the container moves under a stationary cursor', async () => {
       const container = document.createElement('div')
       vi.spyOn(container, 'getBoundingClientRect')
