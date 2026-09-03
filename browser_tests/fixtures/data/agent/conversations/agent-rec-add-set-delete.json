@@ -1,0 +1,485 @@
+{
+  "schema_version": "agent-conversation.v2",
+  "source": {
+    "repo": "Comfy-Org/ComfyUI_frontend",
+    "suite": "agent",
+    "case_id": "agent-rec-add-set-delete",
+    "response_side": "recorded",
+    "note": "RECORDED from Comfy-Org/cloud services/agent running NON-standalone local full stack (Postgres + doc host, M2M identity headers) at http://127.0.0.1:8086 (frames: redis SUBSCRIBE channel:ws:<workspace>:u:<user>); NOT a production capture. cloud commit 9dc1da7dae2a1d40a9ca1f2a1f91cd9fd9e10900; model claude-opus-5; thread 6b1502e7-a553-4d04-aa07-07786ab73223; messages 1a1dd9a7-3654-4869-beb4-7d9f1b3d8f67, 9be1516f-95b5-47b2-b939-46c60f141da7, 0b966fe0-ac97-4506-abbc-743051b5c526; workflow 79cf8c10-c40b-4f3a-8c88-c3961e3882fb (seeded by throwaway turn 2cc6c8bb-0057-4905-a4e7-acf0c50f440f; turn 1 opens on a fresh workflow and switches to it first because the replay subscribes only on an agent_active_tab frame); agent_tool_calls parent rows 573561a7-72dc-43de-a5a5-12be3d9fb403, 6d659f56-9cf1-49bb-91c8-72174fb8143a, c2370db1-c495-4c11-a4cd-4e0f80af092c, c295afbc-ff57-485c-b7ae-4ea4183b3fef, d61f5547-6761-4cb7-9f3c-f4ef8f47c3e1, ebb740d8-5eea-46c2-bc71-a4a1fb49d27f; rows agent-rec-add-set-delete.b1.rows.1.json, agent-rec-add-set-delete.b1.rows.2.json, agent-rec-add-set-delete.b1.rows.3.json; raw capture sha256 b9fad5c571ab000aa3fb30d17016756cab45774bc4ccf3231d5200d867d92aef",
+    "capture": {
+      "backend": "Comfy-Org/cloud",
+      "thread_id": "6b1502e7-a553-4d04-aa07-07786ab73223",
+      "exported_at": "2026-09-03T16:13:44.733Z"
+    }
+  },
+  "workflow": {
+    "id": "79cf8c10-c40b-4f3a-8c88-c3961e3882fb",
+    "name": "Text to image",
+    "catalog": {
+      "types": {
+        "CheckpointLoaderSimple": {
+          "widget_order": ["ckpt_name"]
+        },
+        "CLIPTextEncode": {
+          "widget_order": ["text"]
+        },
+        "KSampler": {
+          "widget_order": [
+            "seed",
+            "control_after_generate",
+            "steps",
+            "cfg",
+            "sampler_name",
+            "scheduler",
+            "denoise"
+          ]
+        },
+        "VAEDecode": {
+          "widget_order": []
+        },
+        "SaveImage": {
+          "widget_order": ["filename_prefix"]
+        },
+        "PrimitiveStringMultiline": {
+          "widget_order": ["value"]
+        },
+        "EmptyLatentImage": {
+          "widget_order": ["width", "height", "batch_size"]
+        }
+      }
+    },
+    "seed": {
+      "nodes": [
+        {
+          "id": 4,
+          "type": "CheckpointLoaderSimple",
+          "pos": [0, 0],
+          "size": [315, 98],
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "MODEL",
+              "type": "MODEL",
+              "links": [3]
+            },
+            {
+              "name": "CLIP",
+              "type": "CLIP",
+              "links": [1]
+            },
+            {
+              "name": "VAE",
+              "type": "VAE",
+              "links": [5]
+            }
+          ],
+          "widgets_values": ["sd_xl_base_1.0.safetensors"]
+        },
+        {
+          "id": 6,
+          "type": "CLIPTextEncode",
+          "title": "Positive prompt",
+          "pos": [400, 0],
+          "size": [400, 200],
+          "inputs": [
+            {
+              "name": "clip",
+              "type": "CLIP",
+              "link": 1
+            },
+            {
+              "name": "text",
+              "type": "STRING",
+              "widget": {
+                "name": "text"
+              },
+              "link": null
+            }
+          ],
+          "outputs": [
+            {
+              "name": "CONDITIONING",
+              "type": "CONDITIONING",
+              "links": [2]
+            }
+          ],
+          "widgets_values": ["a photo of a pier"]
+        },
+        {
+          "id": 3,
+          "type": "KSampler",
+          "pos": [850, 0],
+          "size": [315, 262],
+          "inputs": [
+            {
+              "name": "model",
+              "type": "MODEL",
+              "link": 3
+            },
+            {
+              "name": "positive",
+              "type": "CONDITIONING",
+              "link": 2
+            },
+            {
+              "name": "negative",
+              "type": "CONDITIONING",
+              "link": null
+            },
+            {
+              "name": "latent_image",
+              "type": "LATENT",
+              "link": null
+            }
+          ],
+          "outputs": [
+            {
+              "name": "LATENT",
+              "type": "LATENT",
+              "links": [4]
+            }
+          ],
+          "widgets_values": [0, "randomize", 20, 7, "euler", "normal", 1]
+        },
+        {
+          "id": 8,
+          "type": "VAEDecode",
+          "pos": [1200, 0],
+          "size": [210, 46],
+          "inputs": [
+            {
+              "name": "samples",
+              "type": "LATENT",
+              "link": 4
+            },
+            {
+              "name": "vae",
+              "type": "VAE",
+              "link": 5
+            }
+          ],
+          "outputs": [
+            {
+              "name": "IMAGE",
+              "type": "IMAGE",
+              "links": [6]
+            }
+          ],
+          "widgets_values": []
+        },
+        {
+          "id": 9,
+          "type": "SaveImage",
+          "pos": [1450, 0],
+          "size": [315, 270],
+          "inputs": [
+            {
+              "name": "images",
+              "type": "IMAGE",
+              "link": 6
+            }
+          ],
+          "outputs": [],
+          "widgets_values": ["ComfyUI"]
+        }
+      ],
+      "links": [
+        [1, 4, 1, 6, 0, "CLIP"],
+        [2, 6, 0, 3, 1, "CONDITIONING"],
+        [3, 4, 0, 3, 0, "MODEL"],
+        [4, 3, 0, 8, 0, "LATENT"],
+        [5, 4, 2, 8, 1, "VAE"],
+        [6, 8, 0, 9, 0, "IMAGE"]
+      ]
+    }
+  },
+  "turns": [
+    {
+      "message_id": "1a1dd9a7-3654-4869-beb4-7d9f1b3d8f67",
+      "request": {
+        "content": "Switch to the tab 'Text to image', then add a second CLIPTextEncode node fed from the checkpoint loader's CLIP output."
+      },
+      "response": [
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_thinking",
+            "data": {
+              "delta": "I'll switch to that tab and take a look at what's there."
+            }
+          },
+          "at_ms": 0
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_active_tab",
+            "data": {
+              "name": "Text to image",
+              "workflow_id": "79cf8c10-c40b-4f3a-8c88-c3961e3882fb"
+            }
+          },
+          "at_ms": 9
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 12,
+              "status": "success",
+              "tool_call_id": "toolu_0121DiG2dcAjwMFc9MmhTwmR",
+              "tool_name": "switch_tab"
+            }
+          },
+          "at_ms": 13
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 1087,
+              "status": "success",
+              "tool_call_id": "toolu_014y3jiwHxLmhhhnNtrx1FSz",
+              "tool_name": "print_workflow"
+            }
+          },
+          "at_ms": 3440
+        },
+        {
+          "kind": "graph_ops",
+          "ops": [
+            {
+              "op": "add_node",
+              "pos": [715, 280],
+              "node": {
+                "id": 2785690574723683,
+                "pos": [715, 280],
+                "mode": 0,
+                "size": [240, 86],
+                "type": "CLIPTextEncode",
+                "flags": {},
+                "order": 0,
+                "inputs": [
+                  {
+                    "link": null,
+                    "name": "clip",
+                    "type": "CLIP"
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "CONDITIONING",
+                    "type": "CONDITIONING",
+                    "links": []
+                  }
+                ],
+                "properties": {},
+                "widgets_values": [null]
+              },
+              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+              "op_id": "3e86cc1c94bb402ea9fbfc445f561025",
+              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+              "node_id": 2785690574723683,
+              "class_type": "CLIPTextEncode",
+              "base_version": 2
+            },
+            {
+              "op": "connect",
+              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+              "op_id": "6ceb8ce755854755b85f9b327d0e0963",
+              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+              "link_id": 3432143374160979,
+              "to_node": 2785690574723683,
+              "to_slot": 0,
+              "from_node": 4,
+              "from_slot": 1,
+              "link_type": "CLIP",
+              "base_version": 2
+            }
+          ],
+          "at_ms": 13977
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 567,
+              "status": "success",
+              "tool_call_id": "toolu_017yZpv6KmDDDbG6dxLL9YtE",
+              "tool_name": "apply_ops"
+            }
+          },
+          "at_ms": 13977
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 552,
+              "status": "success",
+              "tool_call_id": "toolu_01C6dAj6DS4pZZCs2hqkFzeg",
+              "tool_name": "print_workflow"
+            }
+          },
+          "at_ms": 17960
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_delta",
+            "data": {
+              "delta": "I'm on the \"Text to image\" tab now, and the second text encode node is in place, taking its text understanding from the same checkpoint loader as the first one.\n\nTwo things worth flagging, since I only did exactly what you asked:\n\n- Its text box is empty, and it isn't connected onward to anything yet — most likely you want it as the negative prompt into the sampler, whose negative input is currently empty.\n- That sampler is also missing its image-size input, so the workflow won't run as it stands regardless of this new node.\n\nSay the word and I'll wire the new node in as the negative prompt (with whatever text you want) and add the missing size input so it's ready to run."
+            }
+          },
+          "at_ms": 22703
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_done",
+            "data": {
+              "usage": {
+                "cache_creation_input_tokens": 1934,
+                "cache_read_input_tokens": 192393,
+                "input_tokens": 10,
+                "output_tokens": 1057,
+                "total_tokens": 1067
+              }
+            }
+          },
+          "at_ms": 22708
+        }
+      ]
+    },
+    {
+      "message_id": "9be1516f-95b5-47b2-b939-46c60f141da7",
+      "request": {
+        "content": "Set the text on that new node to 'blurry, low quality'."
+      },
+      "response": [
+        {
+          "kind": "graph_ops",
+          "ops": [
+            {
+              "op": "set_widget",
+              "old": null,
+              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+              "op_id": "48d9d0f3b762483c903b80d543ef971d",
+              "stamp": [3, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+              "value": "blurry, low quality",
+              "widget": "text",
+              "node_id": 2785690574723683,
+              "base_version": 3
+            }
+          ],
+          "at_ms": 0
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 687,
+              "status": "success",
+              "tool_call_id": "toolu_013VjTaSsWFeoXEkR6AUb9Gb",
+              "tool_name": "set_widget"
+            }
+          },
+          "at_ms": 0
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_delta",
+            "data": {
+              "delta": "Done — the new node now reads \"blurry, low quality\". It's still not wired into the sampler, so it won't affect a render until I connect it as the negative prompt. Want me to do that?"
+            }
+          },
+          "at_ms": 2300
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_done",
+            "data": {
+              "usage": {
+                "cache_creation_input_tokens": 993,
+                "cache_read_input_tokens": 76366,
+                "input_tokens": 4,
+                "output_tokens": 142,
+                "total_tokens": 146
+              }
+            }
+          },
+          "at_ms": 2304
+        }
+      ]
+    },
+    {
+      "message_id": "0b966fe0-ac97-4506-abbc-743051b5c526",
+      "request": {
+        "content": "Now delete that node again."
+      },
+      "response": [
+        {
+          "kind": "graph_ops",
+          "ops": [
+            {
+              "op": "delete_node",
+              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+              "op_id": "6c4742c08384414f975af16d5fbf5f91",
+              "stamp": [4, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+              "node_id": 2785690574723683,
+              "base_version": 4,
+              "removed_links": [3432143374160979]
+            }
+          ],
+          "at_ms": 0
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 561,
+              "status": "success",
+              "tool_call_id": "toolu_01VeBQyvK7MXKuSEjCGrmvK4",
+              "tool_name": "delete_node"
+            }
+          },
+          "at_ms": 0
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_delta",
+            "data": {
+              "delta": "Removed — the canvas is back to the five original nodes."
+            }
+          },
+          "at_ms": 2811
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_done",
+            "data": {
+              "usage": {
+                "cache_creation_input_tokens": 698,
+                "cache_read_input_tokens": 76763,
+                "input_tokens": 4,
+                "output_tokens": 96,
+                "total_tokens": 100
+              }
+            }
+          },
+          "at_ms": 2814
+        }
+      ]
+    }
+  ]
+}

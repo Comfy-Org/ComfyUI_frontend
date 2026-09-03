@@ -1,0 +1,346 @@
+{
+  "schema_version": "agent-conversation.v2",
+  "source": {
+    "repo": "Comfy-Org/ComfyUI_frontend",
+    "suite": "agent",
+    "case_id": "agent-rec-set-widget-existing",
+    "response_side": "recorded",
+    "note": "RECORDED from Comfy-Org/cloud services/agent running NON-standalone local full stack (Postgres + doc host, M2M identity headers) at http://127.0.0.1:8086 (frames: redis SUBSCRIBE channel:ws:<workspace>:u:<user>); NOT a production capture. cloud commit 9dc1da7dae2a1d40a9ca1f2a1f91cd9fd9e10900; model claude-opus-5; thread b5d11187-d40e-4be1-aeab-39869516773b; message 19230873-0f07-4f85-a0ae-e9f1d740cb3a; workflow 5733b17e-39f4-40f5-aa1c-468a4f355b55 (seeded by throwaway turn d00f4278-8e50-4671-a49b-8a237f1797b4; the recorded turn opens on a fresh workflow and switches to it first because the replay subscribes only on an agent_active_tab frame, see plan Q4); agent_tool_calls parent rows ['2383f8e0-be34-4bb1-88c5-bbe0fd34ee95', '2b9744df-c52a-4b45-b0e8-96b64642075d', 'c93c9e49-1d3d-4507-9c3d-481a0910d2c4', 'c2b5e940-a8f3-49eb-b043-e6f8360c686c', 'b538294c-6add-4ebe-b351-c09cce102a0f']; rows agent-rec-set-widget-existing.t3-a1.rows.json; raw capture sha256 6a5a92d256bb83cfd9fb95be1f182300da2361bb15a4325ce2365de6f79ad0a9",
+    "capture": {
+      "backend": "Comfy-Org/cloud",
+      "thread_id": "b5d11187-d40e-4be1-aeab-39869516773b",
+      "exported_at": "2026-09-03T12:38:52Z"
+    }
+  },
+  "workflow": {
+    "id": "5733b17e-39f4-40f5-aa1c-468a4f355b55",
+    "name": "Text to image",
+    "catalog": {
+      "types": {
+        "CheckpointLoaderSimple": {
+          "widget_order": ["ckpt_name"]
+        },
+        "CLIPTextEncode": {
+          "widget_order": ["text"]
+        },
+        "KSampler": {
+          "widget_order": [
+            "seed",
+            "control_after_generate",
+            "steps",
+            "cfg",
+            "sampler_name",
+            "scheduler",
+            "denoise"
+          ]
+        },
+        "VAEDecode": {
+          "widget_order": []
+        },
+        "SaveImage": {
+          "widget_order": ["filename_prefix"]
+        },
+        "PrimitiveStringMultiline": {
+          "widget_order": ["value"]
+        },
+        "EmptyLatentImage": {
+          "widget_order": ["width", "height", "batch_size"]
+        }
+      }
+    },
+    "seed": {
+      "nodes": [
+        {
+          "id": 4,
+          "type": "CheckpointLoaderSimple",
+          "pos": [0, 0],
+          "size": [315, 98],
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "MODEL",
+              "type": "MODEL",
+              "links": [3]
+            },
+            {
+              "name": "CLIP",
+              "type": "CLIP",
+              "links": [1]
+            },
+            {
+              "name": "VAE",
+              "type": "VAE",
+              "links": [5]
+            }
+          ],
+          "widgets_values": ["sd_xl_base_1.0.safetensors"]
+        },
+        {
+          "id": 6,
+          "type": "CLIPTextEncode",
+          "title": "Positive prompt",
+          "pos": [400, 0],
+          "size": [400, 200],
+          "inputs": [
+            {
+              "name": "clip",
+              "type": "CLIP",
+              "link": 1
+            },
+            {
+              "name": "text",
+              "type": "STRING",
+              "widget": {
+                "name": "text"
+              },
+              "link": null
+            }
+          ],
+          "outputs": [
+            {
+              "name": "CONDITIONING",
+              "type": "CONDITIONING",
+              "links": [2]
+            }
+          ],
+          "widgets_values": ["a photo of a pier"]
+        },
+        {
+          "id": 3,
+          "type": "KSampler",
+          "pos": [850, 0],
+          "size": [315, 262],
+          "inputs": [
+            {
+              "name": "model",
+              "type": "MODEL",
+              "link": 3
+            },
+            {
+              "name": "positive",
+              "type": "CONDITIONING",
+              "link": 2
+            },
+            {
+              "name": "negative",
+              "type": "CONDITIONING",
+              "link": null
+            },
+            {
+              "name": "latent_image",
+              "type": "LATENT",
+              "link": null
+            }
+          ],
+          "outputs": [
+            {
+              "name": "LATENT",
+              "type": "LATENT",
+              "links": [4]
+            }
+          ],
+          "widgets_values": [0, "randomize", 20, 7, "euler", "normal", 1]
+        },
+        {
+          "id": 8,
+          "type": "VAEDecode",
+          "pos": [1200, 0],
+          "size": [210, 46],
+          "inputs": [
+            {
+              "name": "samples",
+              "type": "LATENT",
+              "link": 4
+            },
+            {
+              "name": "vae",
+              "type": "VAE",
+              "link": 5
+            }
+          ],
+          "outputs": [
+            {
+              "name": "IMAGE",
+              "type": "IMAGE",
+              "links": [6]
+            }
+          ],
+          "widgets_values": []
+        },
+        {
+          "id": 9,
+          "type": "SaveImage",
+          "pos": [1450, 0],
+          "size": [315, 270],
+          "inputs": [
+            {
+              "name": "images",
+              "type": "IMAGE",
+              "link": 6
+            }
+          ],
+          "outputs": [],
+          "widgets_values": ["ComfyUI"]
+        }
+      ],
+      "links": [
+        [1, 4, 1, 6, 0, "CLIP"],
+        [2, 6, 0, 3, 1, "CONDITIONING"],
+        [3, 4, 0, 3, 0, "MODEL"],
+        [4, 3, 0, 8, 0, "LATENT"],
+        [5, 4, 2, 8, 1, "VAE"],
+        [6, 8, 0, 9, 0, "IMAGE"]
+      ]
+    }
+  },
+  "turns": [
+    {
+      "message_id": "19230873-0f07-4f85-a0ae-e9f1d740cb3a",
+      "request": {
+        "content": "Switch to the tab 'Text to image', then set the KSampler's steps to 30 and its cfg to 5. Change nothing else."
+      },
+      "response": [
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_thinking",
+            "data": {
+              "delta": "I'll switch to that tab first."
+            }
+          },
+          "at_ms": 0
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_active_tab",
+            "data": {
+              "name": "Text to image",
+              "workflow_id": "5733b17e-39f4-40f5-aa1c-468a4f355b55"
+            }
+          },
+          "at_ms": 6
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 12,
+              "status": "success",
+              "tool_call_id": "toolu_0127MABi8i6cpznwzfMSk2b6",
+              "tool_name": "switch_tab"
+            }
+          },
+          "at_ms": 12
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 498,
+              "status": "success",
+              "tool_call_id": "toolu_01DTMkDXHKWELHfKUTXUynfK",
+              "tool_name": "ls_nodes"
+            }
+          },
+          "at_ms": 3903
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 425,
+              "status": "success",
+              "tool_call_id": "toolu_018Ck46iqTkvLjT12cDdcyH6",
+              "tool_name": "list_slots"
+            }
+          },
+          "at_ms": 9834
+        },
+        {
+          "kind": "graph_ops",
+          "ops": [
+            {
+              "op": "set_widget",
+              "old": 20,
+              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+              "op_id": "5ee9143999c148439b6fc848bc8d309a",
+              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+              "value": 30,
+              "widget": "steps",
+              "node_id": 3,
+              "base_version": 2
+            },
+            {
+              "op": "set_widget",
+              "old": 7,
+              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+              "op_id": "7ad6e06be4f84086bec999cfc5177816",
+              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+              "value": 5,
+              "widget": "cfg",
+              "node_id": 3,
+              "base_version": 2
+            }
+          ],
+          "at_ms": 16908
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 253,
+              "status": "success",
+              "tool_call_id": "toolu_01BaTP7o2iAhJbBjQ9tChoEG",
+              "tool_name": "apply_ops"
+            }
+          },
+          "at_ms": 16908
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 199,
+              "status": "success",
+              "tool_call_id": "toolu_01MLp2wvSBojXfwPYKqT7dvB",
+              "tool_name": "list_slots"
+            }
+          },
+          "at_ms": 21478
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_delta",
+            "data": {
+              "delta": "You're now on the \"Text to image\" tab, with steps at 30 and cfg at 5. Nothing else was touched."
+            }
+          },
+          "at_ms": 23927
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_done",
+            "data": {
+              "usage": {
+                "cache_creation_input_tokens": 1549,
+                "cache_read_input_tokens": 230832,
+                "input_tokens": 12,
+                "output_tokens": 509,
+                "total_tokens": 521
+              }
+            }
+          },
+          "at_ms": 23931
+        }
+      ]
+    }
+  ]
+}
