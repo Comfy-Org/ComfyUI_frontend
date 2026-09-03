@@ -5,6 +5,7 @@ import { useClipboard } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
   computed,
+  defineAsyncComponent,
   nextTick,
   onBeforeUnmount,
   provide,
@@ -80,14 +81,24 @@ import type { WorkflowTurnContext } from './composables/agent/useAgentSession'
 import { useAgentSession } from './composables/agent/useAgentSession'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { createAgentRestClient } from './services/agent/agentRestClient'
-import type { OpenTabsSnapshot } from './services/agent/agentRestClient'
+import type {
+  DraftSnapshot,
+  OpenTabsSnapshot
+} from './services/agent/agentRestClient'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
-import CrdtDevPanel from './crdt/CrdtDevPanel.vue'
 import type { GraphMutationTarget } from './crdt/graphOperations'
+import {
+  isCrdtDebugEnabled,
+  resolveDebugPanelEnabled
+} from './crdt/crdtDebugGate'
 import { attachMintPortWiring } from './crdt/mintPortWiring'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
+
+const CrdtDevPanel = defineAsyncComponent(
+  () => import('./crdt/CrdtDevPanel.vue')
+)
 
 const { t } = useI18n()
 const toast = useToastStore()
@@ -107,7 +118,8 @@ const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const bindingStore = useAgentWorkflowTabBindingStore()
 const agentPanelStore = useAgentPanelStore()
-const { dismissedSelectionSignature } = storeToRefs(agentPanelStore)
+const { dismissedSelectionSignature, enabled: agentEnabled } =
+  storeToRefs(agentPanelStore)
 const agentNodeSelectionStore = useAgentNodeSelectionStore()
 const tabActivity = useWorkflowTabActivityStore()
 const CREATING_TAB_MIN_DURATION_MS = 500
@@ -192,6 +204,7 @@ const graphMutations = (workflowId: string) => {
         layoutStore.applyOperation({
           type: 'createNode',
           graphId: scope.rootGraphId,
+          ownerGraphId: scope.owningGraphId,
           nodeId,
           layout: {
             id: nodeId,
@@ -213,6 +226,7 @@ const graphMutations = (workflowId: string) => {
           nodeIds.map((nodeId) => ({
             type: 'deleteNode',
             graphId: scope.rootGraphId,
+            ownerGraphId: scope.owningGraphId,
             nodeId,
             source: LayoutSource.AgentRemote,
             actor: context.actor,
@@ -248,6 +262,7 @@ const {
   replace: replaceSelectionTags
 } = useCanvasSelection({
   selection: selectedNodes,
+  enabled: agentEnabled,
   isLive: () => agentPanelStore.isOpen,
   isTracking: () => agentNodeSelectionStore.isActive,
   isPaused: () => agentNodeSelectionStore.isLoadingWorkflow,
@@ -345,6 +360,16 @@ function activeWorkflowTurnContext(): WorkflowTurnContext | undefined {
   return bound === undefined ? undefined : { id: bound, tabPath: active.path }
 }
 
+function activeWorkflowDraft(): DraftSnapshot | undefined {
+  if (workflowDetached.value) return undefined
+  const active = workflowStore.activeWorkflow
+  if (!active) return undefined
+  active.changeTracker?.captureCanvasState()
+  const content = active.activeState
+  if (!content) return undefined
+  return { content }
+}
+
 const activeTab = computed<ActiveTab | null>(() => {
   const active = workflowStore.activeWorkflow
   return active
@@ -427,7 +452,8 @@ const {
     adopted: onWorkflowAdopted,
     prepare: refreshCloudWorkflowIds,
     tabs: openTabsSnapshot,
-    activeTab: enqueueActiveTab
+    activeTab: enqueueActiveTab,
+    draft: activeWorkflowDraft
   }
 })
 
@@ -445,12 +471,20 @@ const isBoundWorkflowActive = computed(() => {
 // session's bound workflow while its tab is active. Suspending the background
 // subscription makes reopening pull state-vector catch-up only after the
 // workflow's serialized activeState has hydrated the transient stores.
-const { status: crdtStatus, enqueueHumanOperations } = useAgentCrdtFollower(
+const {
+  status: crdtStatus,
+  debugSnapshot: crdtDebugSnapshot,
+  enqueueHumanOperations
+} = useAgentCrdtFollower(
   boundWorkflowId,
   graphMutations,
   () => resolvedUserInfo.value?.id ?? null,
   isBoundWorkflowActive,
-  () => app.rootGraph?.state ?? null
+  () => app.rootGraph?.state ?? null,
+  // `app.isGraphReady` is a plain getter; reading `canvasStore.canvas` (set
+  // right after `app.setup()`) makes the follower's graph watch fire once the
+  // root graph exists.
+  () => (canvasStore.canvas && app.isGraphReady ? app.rootGraph : null)
 )
 
 function currentMintTarget(): GraphMutationTarget | null {
@@ -466,7 +500,6 @@ const mintPortWiring = attachMintPortWiring({
   target: currentMintTarget,
   enqueue: enqueueHumanOperations,
   layoutChanges: (listener) => layoutStore.onChange(listener),
-  withLayoutActor: (actor, fn) => layoutStore.withActor(actor, fn),
   localActorPrefix: ACTOR_CONFIG.USER_PREFIX,
   getGraph: (target) => {
     if (!app.isGraphReady) return null
@@ -475,8 +508,10 @@ const mintPortWiring = attachMintPortWiring({
     return rootGraphId === target.rootGraphId ? graph : null
   }
 })
-// Dev instrument only (slice-02 classification): never ships to users.
-const isCrdtDevPanelEnabled = import.meta.env.DEV
+const isCrdtDevPanelEnabled = resolveDebugPanelEnabled(
+  agentPanelStore.enabled,
+  isCrdtDebugEnabled()
+)
 
 // The resumed turn's own workflow outlives a panel remount (the session
 // binds it at ack; only newChat/loadThread reset it), while the active tab
@@ -806,8 +841,10 @@ watch(
   }
 )
 
+watch(() => workflowStore.activeWorkflow, exitNodeSelectionMode)
+
 watch(
-  [() => workflowStore.activeWorkflow?.path, () => canvasStore.currentGraph],
+  () => canvasStore.currentGraph,
   () => {
     if (!agentNodeSelectionStore.isLoadingWorkflow) exitNodeSelectionMode()
   }
@@ -853,7 +890,7 @@ const attachment = useAttachment({
     const uploaded = await rest.uploadImage(file, file.name)
     // The library caches input assets; without this refresh a just-uploaded
     // file is neither listed in the Assets tab nor mentionable this session.
-    void assetsStore.updateInputs()
+    void assetsStore.inputAssets.loadNew()
     return { ref: uploaded.name }
   },
   maxBytes: (file) => {
@@ -1033,23 +1070,6 @@ function onPanelDrop(event: DragEvent): void {
       data-testid="agent-file-input"
       @change="onFilesPicked"
     />
-    <div
-      v-if="crdtStatus.enabled"
-      class="border-b border-border-default bg-base-background px-3 py-1 font-mono text-muted"
-      data-testid="agent-crdt-status"
-    >
-      {{
-        t('agent.crdtStatus', {
-          connection: crdtStatus.connected
-            ? t('agent.crdtConnected')
-            : t('agent.crdtDisconnected'),
-          workflowId: crdtStatus.workflowId ?? t('agent.crdtNoDocument'),
-          updates: crdtStatus.updatesApplied,
-          frame: crdtStatus.lastFrameType ?? '—'
-        })
-      }}
-    </div>
-    <CrdtDevPanel v-if="isCrdtDevPanelEnabled" :status="crdtStatus" />
     <AgentPanel
       ref="panelRef"
       :entries
@@ -1089,7 +1109,11 @@ function onPanelDrop(event: DragEvent): void {
       @rename-history="onRenameHistory"
       @rename-chat="onRenameChat"
       @copy-history="onCopyMarkdown"
-    />
+    >
+      <template v-if="isCrdtDevPanelEnabled" #instrument>
+        <CrdtDevPanel :status="crdtStatus" :snapshot="crdtDebugSnapshot" />
+      </template>
+    </AgentPanel>
     <OnboardingCoach
       :step="coachStep"
       storage-key="Comfy.AgentPanel.onboarded"

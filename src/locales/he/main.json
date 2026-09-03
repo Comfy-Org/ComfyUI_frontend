@@ -34,10 +34,6 @@
     "copy": "העתק",
     "copyMarkdown": "העתק כ-Markdown",
     "copyUnavailable": "בגרסה זו ניתן להעתיק רק את השיחה הנוכחית",
-    "crdtConnected": "מחובר",
-    "crdtDisconnected": "מנותק",
-    "crdtNoDocument": "אין מסמך",
-    "crdtStatus": "CRDT {connection} · {workflowId} · {updates} עדכונים · {frame}",
     "credits": "זיכויים",
     "delete": "מחק",
     "dismiss": "סגור",
@@ -125,11 +121,6 @@
     "toolSwitchedTabs": "הוחלפו לשוניות",
     "untitledChat": "ללא כותרת",
     "uploading": "מעלה"
-  },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "עלות להרצה",
-    "title": "צומת/צמתי API",
-    "totalCost": "עלות כוללת"
   },
   "apiNodesSignInDialog": {
     "message": "תהליך עבודה זה מכיל צמתי API, שדורשים שתהיה מחובר לחשבונך כדי להריץ אותם.",
@@ -3201,6 +3192,7 @@
     "scail": "scail",
     "schedulers": "schedulers",
     "scheduling": "scheduling",
+    "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "sigmas",
     "sound": "צליל",
@@ -5038,8 +5030,10 @@
       "failedCount": "לא ניתן היה לשלוח {count} הזמנה. נסה שוב. | לא ניתן היה לשלוח {count} הזמנות. נסה שוב.",
       "invalidEmailCount": "{count} כתובת דוא\"ל לא תקינה | {count} כתובות דוא\"ל לא תקינות",
       "invitedMessage": "הזמנה נשלחה אל {emails} | הזמנות נשלחו אל {emails}",
+      "pendingInviteCount": "ל־{count} מאנשים אלה כבר יש הזמנה ממתינה. הם ידולגו.",
+      "pendingInviteSingle": "לאדם זה כבר יש הזמנה ממתינה",
       "placeholder": "הזן את כתובת הדוא\"ל של האדם",
-      "seatLimitReached": "ניתן להזמין עד {count} חבר צוות. | ניתן להזמין עד {count} חברי צוות.",
+      "seatLimitExceeded": "סביבת עבודה זו מוגבלת ל־{max} חברים. הסר {overage} כדי להמשיך.",
       "title": "הזמנת אדם לסביבת עבודה זו"
     },
     "inviteUpsellDialog": {

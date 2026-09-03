@@ -2,6 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import BreadcrumbBar from '../../components/common/BreadcrumbBar.vue'
 import ModelLaunchAudioGallerySection from './ModelLaunchAudioGallerySection.vue'
+import ModelLaunchComparisonSection from './ModelLaunchComparisonSection.vue'
 import ModelLaunchCtaSection from './ModelLaunchCtaSection.vue'
 import ModelLaunchFaqSection from './ModelLaunchFaqSection.vue'
 import ModelLaunchGallerySection from './ModelLaunchGallerySection.vue'
@@ -96,6 +97,15 @@ const sectionOrder = page.sectionOrder ?? DEFAULT_SECTION_ORDER
           return (
             page.steps && (
               <ModelLaunchStepsSection steps={page.steps} locale={locale} />
+            )
+          )
+        case 'comparison':
+          return (
+            page.comparison && (
+              <ModelLaunchComparisonSection
+                comparison={page.comparison}
+                locale={locale}
+              />
             )
           )
         case 'pricing':

@@ -62,6 +62,11 @@ interface GraphMutationBatch {
   reconcileNode(payload: SemanticNodePayload): void
   setWidget(nodeId: NodeId, name: string, value: unknown): void
   connect(link: SemanticLinkPayload): void
+  /** Derived cleanup for an authoritative snapshot; not a wire op. */
+  removeMissing(
+    retainedNodeIds: readonly NodeId[],
+    retainedLinkIds: readonly number[]
+  ): void
   /** Derived removals emitted by connect/delete effects; not a wire op. */
   removeLinks(linkIds: readonly number[]): void
   deleteNode(nodeId: NodeId, removedLinkIds?: readonly number[]): void
@@ -104,6 +109,11 @@ type QueuedMutation =
   | { kind: 'reconcileNode'; payload: SemanticNodePayload }
   | { kind: 'setWidget'; nodeId: NodeId; name: string; value: unknown }
   | { kind: 'connect'; link: SemanticLinkPayload }
+  | {
+      kind: 'removeMissing'
+      retainedNodeIds: readonly NodeId[]
+      retainedLinkIds: readonly number[]
+    }
   | { kind: 'removeLinks'; linkIds: readonly number[] }
   | {
       kind: 'deleteNode'
@@ -127,6 +137,11 @@ type PreparedMutation =
       topology: LinkTopology
       originOutputs?: NodeState['outputs']
       targetInputs?: NodeState['inputs']
+    }
+  | {
+      kind: 'removeMissing'
+      nodeIds: readonly NodeId[]
+      linkIds: readonly LinkId[]
     }
   | { kind: 'removeLinks'; linkIds: readonly LinkId[] }
   | {
@@ -231,7 +246,7 @@ function prepareNode(
     flags: cloneRecord(payload.flags),
     inputs: prepareInputSlots(payload.inputs),
     outputs: prepareOutputSlots(payload.outputs),
-    mode: (Number.isInteger(mode) ? mode : 0) as NodeState['mode'],
+    mode: Number.isInteger(mode) ? mode : 0,
     properties: cloneRecord(payload.properties) as NodeState['properties'],
     lastSerialization: structuredClone(payload) as unknown as ISerialisedNode,
     ...(typeof payload.bgcolor === 'string' && { bgcolor: payload.bgcolor }),
@@ -241,7 +256,7 @@ function prepareNode(
       resizable: payload.resizable
     }),
     ...(typeof payload.shape === 'number' && {
-      shape: payload.shape as NodeState['shape']
+      shape: payload.shape
     }),
     ...(typeof payload.showAdvanced === 'boolean' && {
       showAdvanced: payload.showAdvanced
@@ -440,6 +455,31 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
               targetInputs
             })
           })
+          break
+        }
+        case 'removeMissing': {
+          const retainedNodeIds = new Set(mutation.retainedNodeIds.map(nodeKey))
+          const retainedLinkIds = new Set<LinkId>()
+          for (const value of mutation.retainedLinkIds) {
+            if (!Number.isInteger(value) || value < 0) {
+              return 'removeMissing requires non-negative integer link ids'
+            }
+            retainedLinkIds.add(toLinkId(value))
+          }
+
+          const nodeIds = [...nodes.values()]
+            .map(({ id }) => id)
+            .filter((id) => !retainedNodeIds.has(nodeKey(id)))
+          for (const id of nodeIds) {
+            nodes.delete(nodeKey(id))
+            widgets.delete(nodeKey(id))
+            removeIncidentLinks(links, id)
+          }
+          const linkIds = [...links.keys()].filter(
+            (id) => !retainedLinkIds.has(id)
+          )
+          for (const id of linkIds) links.delete(id)
+          prepared.push({ kind: mutation.kind, nodeIds, linkIds })
           break
         }
         case 'removeLinks': {
@@ -704,6 +744,13 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           }
           break
         }
+        case 'removeMissing':
+          for (const id of mutation.linkIds) {
+            const topology = linkStore.getTopology(scope.rootGraphId, id)
+            if (topology) removeLink(scope, topology, context)
+          }
+          for (const id of mutation.nodeIds) deleteNode(scope, id, [], context)
+          break
         case 'removeLinks':
           for (const id of mutation.linkIds) {
             const topology = linkStore.getTopology(scope.rootGraphId, id)
@@ -742,6 +789,13 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
         },
         connect(link) {
           queued.push({ kind: 'connect', link })
+        },
+        removeMissing(retainedNodeIds, retainedLinkIds) {
+          queued.push({
+            kind: 'removeMissing',
+            retainedNodeIds,
+            retainedLinkIds
+          })
         },
         removeLinks(linkIds) {
           queued.push({ kind: 'removeLinks', linkIds })

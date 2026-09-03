@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { GraphScope } from '@/types/graphScopeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import type { LinkTopology } from '@/types/linkTopology'
@@ -15,7 +15,10 @@ import { widgetId } from '@/types/widgetId'
 
 import type { GraphMutationTarget, GraphOperation } from './graphOperations'
 import type { LayoutChangeView } from './layoutMintPort'
-import { attachMintPortWiring } from './mintPortWiring'
+import {
+  attachMintPortWiring,
+  runMintPortsIntentionalClear
+} from './mintPortWiring'
 import type { MintPortWiring, MintableGraph } from './mintPortWiring'
 
 const ROOT_ID = 'root-uuid'
@@ -100,11 +103,31 @@ describe('attachMintPortWiring', () => {
         layoutListeners.add(listener)
         return () => layoutListeners.delete(listener)
       },
-      withLayoutActor: (_actor, fn) => fn(),
       localActorPrefix: 'user-',
       getGraph: (requested) =>
         requested.rootGraphId === ROOT_ID ? graph : null
     })
+  })
+
+  afterEach(() => wiring.detach())
+
+  it('mints a root clear through the production intentional-clear entry point', () => {
+    graphNodes.set('1', { id: toNodeId(1) })
+    graphNodes.set('2', { id: toNodeId(2) })
+
+    runMintPortsIntentionalClear(() => {
+      deliverLayoutChange({
+        operation: {
+          type: 'clearGraph',
+          graphId: ROOT_ID,
+          actor: 'user-abc'
+        }
+      })
+    })
+
+    expect(minted).toEqual([
+      { op: 'clear', removed_nodes: [toNodeId(1), toNodeId(2)] }
+    ])
   })
 
   it('mints a concrete connect when the real link store places a link', () => {
@@ -156,6 +179,7 @@ describe('attachMintPortWiring', () => {
       operation: {
         type: 'deleteNode',
         graphId: ROOT_ID,
+        ownerGraphId: ROOT_ID,
         actor: 'user-abc',
         nodeId: toNodeId(2)
       }
@@ -187,22 +211,54 @@ describe('attachMintPortWiring', () => {
     ])
   })
 
-  it('mints nothing for a setValue that did not apply', () => {
-    useWidgetValueStore().setValue(widgetId(ROOT_ID, toNodeId(9), 'missing'), 1)
+  it('mints a widget value written through a real widget', () => {
+    const liveGraph = new LGraph()
+    liveGraph.id = ROOT_ID
+    const node = new LGraphNode('Test')
+    node.id = toNodeId(7)
+    liveGraph.add(node)
+    const widget = node.addWidget('number', 'seed', 3, () => undefined)
+    graphNodes.set('7', node)
 
-    expect(minted).toEqual([])
+    widget.value = 42
+
+    expect(minted).toEqual([
+      {
+        op: 'set_widget',
+        node_id: toNodeId(7),
+        widget: 'seed',
+        value: 42,
+        old: 3
+      }
+    ])
   })
 
-  it('suppresses every port inside the remote scope', () => {
-    wiring.runRemoteScope(() => {
-      useLinkStore().registerLink(ROOT_SCOPE, topology(41))
-      const widgetStore = useWidgetValueStore()
-      const id = widgetId(ROOT_ID, toNodeId(7), 'seed')
-      widgetStore.registerWidget(id, { type: 'number', value: 3 } as Parameters<
-        typeof widgetStore.registerWidget
-      >[1])
-      widgetStore.setValue(id, 42)
-    })
+  it('mints once when a store write is mirrored through the widget shim', () => {
+    const liveGraph = new LGraph()
+    liveGraph.id = ROOT_ID
+    const node = new LGraphNode('Test')
+    node.id = toNodeId(7)
+    liveGraph.add(node)
+    const widget = node.addWidget('number', 'seed', 3, () => undefined)
+    graphNodes.set('7', node)
+    const id = widgetId(ROOT_ID, toNodeId(7), 'seed')
+
+    useWidgetValueStore().setValue(id, 42)
+    widget.value = 42
+
+    expect(minted).toEqual([
+      {
+        op: 'set_widget',
+        node_id: toNodeId(7),
+        widget: 'seed',
+        value: 42,
+        old: 3
+      }
+    ])
+  })
+
+  it('mints nothing for a setValue that did not apply', () => {
+    useWidgetValueStore().setValue(widgetId(ROOT_ID, toNodeId(9), 'missing'), 1)
 
     expect(minted).toEqual([])
   })
@@ -260,6 +316,7 @@ describe('attachMintPortWiring', () => {
       operation: {
         type: 'createNode',
         graphId: ROOT_ID,
+        ownerGraphId: ROOT_ID,
         actor: 'user-abc',
         nodeId: toNodeId(5),
         layout: { position: { x: 10, y: 20 } }
@@ -292,6 +349,7 @@ describe('attachMintPortWiring', () => {
       operation: {
         type: 'createNode',
         graphId: ROOT_ID,
+        ownerGraphId: ROOT_ID,
         actor: 'user-abc',
         nodeId: toNodeId(5),
         layout: { position: { x: 10, y: 20 } }

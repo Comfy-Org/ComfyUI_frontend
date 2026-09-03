@@ -37,6 +37,16 @@ describe('createOpSender', () => {
     return sender.enqueue({ target: TARGET, operations })
   }
 
+  function enqueueForBound(...operations: GraphOperation[]): boolean {
+    return sender.enqueue({
+      target: {
+        workflowId: boundWorkflow ?? WORKFLOW,
+        rootGraphId: TARGET.rootGraphId
+      },
+      operations
+    })
+  }
+
   function deliverResult(
     result: Omit<OpsResultView, 'workflowId'>,
     workflowId = WORKFLOW
@@ -132,7 +142,6 @@ describe('createOpSender', () => {
     enqueue(addNode(1))
     expect(sent).toHaveLength(0)
 
-    boundWorkflow = 'wf-2'
     transportUp = true
     vi.advanceTimersByTime(500)
 
@@ -148,14 +157,145 @@ describe('createOpSender', () => {
     ).toEqual(firstIds)
   })
 
-  it('keeps queued batches addressed to the workflow active when they were minted', () => {
+  it('never re-addresses a queued batch: an unbound mint-time workflow settles it undeliverable at once', () => {
     enqueue(addNode(1))
     enqueue(addNode(2))
+    enqueue(addNode(3))
     boundWorkflow = 'wf-2'
 
     ackInFlight()
 
+    expect(sent).toHaveLength(1)
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'acknowledged',
+      'undeliverable',
+      'undeliverable'
+    ])
+    expect(settled[1].state).toBe('undeliverable')
+    expect(settled[2].state).toBe('undeliverable')
+    if (
+      settled[1].state === 'undeliverable' &&
+      settled[2].state === 'undeliverable'
+    ) {
+      expect(settled[1].ops[0].op_id).not.toBe(settled[2].ops[0].op_id)
+    }
+  })
+
+  it('a bound workflow restored before the next send still carries the queued batch', () => {
+    enqueueForBound(addNode(1))
+    enqueueForBound(addNode(2))
+    boundWorkflow = null
+    boundWorkflow = WORKFLOW
+
+    ackInFlight()
+
+    expect(sent).toHaveLength(2)
     expect(sent[1].workflowId).toBe(WORKFLOW)
+  })
+
+  it('settles an in-flight batch undeliverable at the silence resend once its workflow is unbound', () => {
+    enqueueForBound(addNode(1))
+    boundWorkflow = null
+
+    vi.advanceTimersByTime(10_000)
+
+    expect(sent).toHaveLength(1)
+    expect(settled).toEqual([
+      expect.objectContaining({
+        state: 'undeliverable',
+        ops: expect.any(Array)
+      })
+    ])
+  })
+
+  it('abortIfUnbound settles an in-flight batch immediately, without waiting the 10s silence window', () => {
+    enqueueForBound(addNode(1))
+    boundWorkflow = null
+
+    sender.abortIfUnbound()
+
+    expect(settled).toEqual([
+      expect.objectContaining({
+        state: 'undeliverable',
+        ops: expect.any(Array)
+      })
+    ])
+    // No resend was burned reaching this outcome.
+    expect(sent).toHaveLength(1)
+  })
+
+  it('abortIfUnbound frees the queue for the next bound batch immediately', () => {
+    enqueueForBound(addNode(1))
+    boundWorkflow = 'wf-2'
+    enqueueForBound(addNode(2))
+    expect(sent).toHaveLength(1)
+
+    sender.abortIfUnbound()
+
+    expect(sent).toHaveLength(2)
+    expect(sent[1].workflowId).toBe('wf-2')
+    expect(settled[0].state).toBe('undeliverable')
+  })
+
+  it('abortIfUnbound cascades through every queued batch minted for the dead workflow, synchronously', () => {
+    enqueueForBound(addNode(1))
+    enqueueForBound(addNode(2))
+    enqueueForBound(addNode(3))
+    boundWorkflow = 'wf-2'
+    enqueueForBound(addNode(4))
+    expect(sent).toHaveLength(1)
+
+    sender.abortIfUnbound()
+
+    // No timer advance: settle -> pump -> transmit re-reads the binding and
+    // settles each wf-1 batch in turn until it reaches the wf-2 one.
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'undeliverable',
+      'undeliverable',
+      'undeliverable'
+    ])
+    expect(sent).toHaveLength(2)
+    expect(sent[1].workflowId).toBe('wf-2')
+    expect(sender.pending()).toBe(1)
+  })
+
+  it('abortIfUnbound clears a pending send retry so no timer outlives the batch', () => {
+    transportUp = false
+    enqueueForBound(addNode(1))
+    expect(vi.getTimerCount()).toBe(1)
+    boundWorkflow = null
+
+    sender.abortIfUnbound()
+
+    expect(settled.map((outcome) => outcome.state)).toEqual(['undeliverable'])
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('abortIfUnbound is a no-op while the in-flight batch is still addressed to the bound workflow', () => {
+    enqueueForBound(addNode(1))
+
+    sender.abortIfUnbound()
+
+    expect(settled).toHaveLength(0)
+    expect(sent).toHaveLength(1)
+  })
+
+  it('abortIfUnbound is a no-op with no batch in flight', () => {
+    expect(() => sender.abortIfUnbound()).not.toThrow()
+    expect(settled).toHaveLength(0)
+  })
+
+  it('an unbound workflow at the resend frees the queue for the next bound batch without a retry burn', () => {
+    enqueueForBound(addNode(1))
+    boundWorkflow = 'wf-2'
+    enqueueForBound(addNode(2))
+    expect(sent).toHaveLength(1)
+
+    vi.advanceTimersByTime(10_000)
+
+    expect(sent).toHaveLength(2)
+    expect(sent[1].workflowId).toBe('wf-2')
+    expect(settled[0].state).toBe('undeliverable')
   })
 
   it('settles undeliverable after the transport retry budget', () => {

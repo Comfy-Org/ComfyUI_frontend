@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
@@ -50,17 +50,10 @@ describe('CustomCombo copy/paste', () => {
       { name: 'CustomCombo' } as ComfyNodeDef,
       app
     )
-
-    if (LiteGraph.registered_node_types[TEST_CUSTOM_COMBO_TYPE]) {
-      LiteGraph.unregisterNodeType(TEST_CUSTOM_COMBO_TYPE)
-    }
-    LiteGraph.registerNodeType(TEST_CUSTOM_COMBO_TYPE, TestCustomComboNode)
   })
 
-  afterAll(() => {
-    if (LiteGraph.registered_node_types[TEST_CUSTOM_COMBO_TYPE]) {
-      LiteGraph.unregisterNodeType(TEST_CUSTOM_COMBO_TYPE)
-    }
+  beforeEach(() => {
+    LiteGraph.registerNodeType(TEST_CUSTOM_COMBO_TYPE, TestCustomComboNode)
   })
 
   it('preserves combo options and selected value through clone and paste', () => {
