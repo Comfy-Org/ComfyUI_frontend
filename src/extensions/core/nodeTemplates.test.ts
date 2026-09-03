@@ -67,8 +67,7 @@ it('reports invalid persisted node templates before falling back to empty', asyn
         failure_kind: 'caught_unexpected',
         feature_area: 'extensions',
         operation: 'load',
-        outcome: 'recovered',
-        assert_mode: 'soft'
+        outcome: 'recovered'
       },
       level: 'error'
     })

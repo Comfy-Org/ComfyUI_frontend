@@ -428,21 +428,20 @@ app.registerExtension({
                 useToastStore().addAlert(t('g.micPermissionDenied'))
 
                 if (mediaRecorder) {
+                  // getUserMedia already resolved, so this is not a permission failure.
+                  reportError(err, {
+                    errorType: 'extensions_audio_recorder_start_failed',
+                    tags: {
+                      failure_kind: 'caught_unexpected',
+                      feature_area: 'assets',
+                      operation: 'execute',
+                      outcome: 'recovered'
+                    },
+                    level: 'error'
+                  })
                   try {
                     mediaRecorder.stop()
-                  } catch (error) {
-                    reportError(error, {
-                      errorType: 'extensions_audio_recorder_stop_swallowed',
-                      tags: {
-                        failure_kind: 'caught_unexpected',
-                        feature_area: 'assets',
-                        operation: 'execute',
-                        outcome: 'recovered',
-                        assert_mode: 'soft'
-                      },
-                      level: 'error'
-                    })
-                  }
+                  } catch {}
                 }
                 useAudioService().stopAllTracks(currentStream)
                 currentStream = null

@@ -36,6 +36,7 @@ export type DevEventKind =
   | 'stale_probe'
   | 'doc_gap'
   | 'doc_stale'
+  | 'frame_send_failed'
 
 export interface DevEvent {
   seq: number

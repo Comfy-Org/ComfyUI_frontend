@@ -296,8 +296,7 @@ describe('FE-TEARDOWN-1 — teardown completes with a dead socket', () => {
         failure_kind: 'caught_unexpected',
         feature_area: 'agent',
         operation: 'sync',
-        outcome: 'recovered',
-        assert_mode: 'soft'
+        outcome: 'recovered'
       },
       level: 'error'
     })

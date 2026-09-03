@@ -7,6 +7,7 @@ import type {
   DocSubscribed,
   DocUpdate
 } from './docFrameClient'
+import { wireLog } from './crdtLog'
 import { FollowerDoc } from './followerDoc'
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 
@@ -27,11 +28,11 @@ function trySend(send: () => boolean): boolean {
         failure_kind: 'caught_unexpected',
         feature_area: 'agent',
         operation: 'sync',
-        outcome: 'recovered',
-        assert_mode: 'soft'
+        outcome: 'recovered'
       },
       level: 'error'
     })
+    wireLog.warn('frame_send_failed', 'outbound doc frame dropped', error)
     return false
   }
 }

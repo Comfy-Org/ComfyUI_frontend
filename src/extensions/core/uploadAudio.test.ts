@@ -338,14 +338,13 @@ async function loadAudioRecordWidget() {
 }
 
 describe('Comfy.RecordAudio AUDIO_RECORD widget', () => {
-  it('reports a recorder cleanup failure after microphone setup fails', async () => {
+  it('reports a recorder start failure after the microphone was granted', async () => {
     const accessError = new Error('recorder start failed')
-    const cleanupError = new Error('recorder stop failed')
     mockMediaRecorderStart.mockImplementationOnce(() => {
       throw accessError
     })
     mockMediaRecorderStop.mockImplementationOnce(() => {
-      throw cleanupError
+      throw new Error('recorder stop failed')
     })
     vi.stubGlobal('navigator', {
       mediaDevices: { getUserMedia: vi.fn().mockResolvedValue({}) }
@@ -370,16 +369,17 @@ describe('Comfy.RecordAudio AUDIO_RECORD widget', () => {
 
     await record!()
 
-    expect(mockReportError).toHaveBeenCalledWith(cleanupError, {
-      errorType: 'extensions_audio_recorder_stop_swallowed',
+    expect(mockReportError).toHaveBeenCalledTimes(1)
+    expect(mockReportError).toHaveBeenCalledWith(accessError, {
+      errorType: 'extensions_audio_recorder_start_failed',
       tags: {
         failure_kind: 'caught_unexpected',
         feature_area: 'assets',
         operation: 'execute',
-        outcome: 'recovered',
-        assert_mode: 'soft'
+        outcome: 'recovered'
       },
       level: 'error'
     })
+    expect(mockMediaRecorderStop).toHaveBeenCalledTimes(1)
   })
 })
