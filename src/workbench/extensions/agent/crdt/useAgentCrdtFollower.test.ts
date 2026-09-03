@@ -310,6 +310,28 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('a re-ack of a gated, still-unreadable doc neither reports connected nor re-arms the stale probe', () => {
+    vi.useFakeTimers()
+    const { unmount, status } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    dispatchFrame('schema_error', {
+      workflowId: 'wf-1',
+      message: 'meta.schema_version=3 is not schema v2'
+    })
+    expect(status().connected).toBe(false)
+
+    // The bridge's own gap detector resubscribes without consulting the
+    // composable's gate, so an ok ack can still land for the unreadable doc.
+    bridge().lastSchemaError = new Error('still unreadable')
+    dispatchFrame('doc_subscribed', { ok: true })
+
+    expect(status().connected).toBe(false)
+    expect(status().schemaError).toBe('meta.schema_version=3 is not schema v2')
+    vi.advanceTimersByTime(STALE_AFTER_MS * 2)
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+    unmount()
+  })
+
   it('clears a schema error once the bridge confirms the unreadable doc was replaced', () => {
     const { unmount, status } = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: true })

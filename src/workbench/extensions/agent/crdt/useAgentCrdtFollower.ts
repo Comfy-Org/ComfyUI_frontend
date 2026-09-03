@@ -328,7 +328,6 @@ export function useAgentCrdtFollower(
     if (!(event instanceof CustomEvent)) return
     if (!isTargetActive.value) return
     const ok = event.detail?.ok === true
-    connected.value = ok
     lastFrameType.value = event.type
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
@@ -340,18 +339,27 @@ export function useAgentCrdtFollower(
       // while projection stays blocked. Only clear once the bridge itself
       // holds no schema error (a fresh document passed the read-time guard)
       // and this same workflow was not permanently gated below.
-      if (
-        bridge.lastSchemaError === null &&
-        subscribedWorkflowId.value !== permanentSchemaMismatchWorkflowId
-      )
-        schemaError.value = null
       clearSubscribeRetry()
+      const stillUnreadable =
+        bridge.lastSchemaError !== null || isPermanentlyMismatched()
+      if (stillUnreadable) {
+        // The bridge's own gap detector and lineage handling resubscribe
+        // without consulting the gate, so an ok ack can still land here for
+        // the doc that already failed the read gate. Treat it like the
+        // refusal branch: no connected, no probe, no persisted binding.
+        connected.value = false
+        clearStaleProbe()
+        return
+      }
+      connected.value = true
+      schemaError.value = null
       armStaleProbe()
       // FE-1902 (poc-3): only a CONFIRMED binding is worth rebinding to after
       // a remount — persist on ok, not on intent.
       if (subscribedWorkflowId.value !== null)
         persistConfirmedDocId(subscribedWorkflowId.value)
     } else {
+      connected.value = false
       clearStaleProbe()
       if (event.detail?.code === 'schema_version_mismatch') {
         clearSubscribeRetry()
