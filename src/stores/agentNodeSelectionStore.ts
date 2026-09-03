@@ -12,15 +12,6 @@ const ACTION_BARS_TRANSITION_MS = 300
 const BANNER_TRANSITION_MS = 150
 const SIDEBAR_PANEL_TRANSITION_MS = 200
 
-/**
- * Hides the whole toast layer for the duration of the mode. PrimeVue teleports
- * every `<Toast>` container to `<body>`, and several components mount their own
- * groups, so the layer can only be reached from the root - see the `.p-toast`
- * rule in `src/assets/css/style.css`. The mode owns the class rather than any
- * one toast component, since no single component renders all of those groups.
- */
-const NODE_SELECTION_CLASS = 'node-selection-active'
-
 const MINIMAP_SETTING = 'Comfy.Minimap.Visible'
 
 /* Graph units around the framed nodes so none sit flush with the edge. */
@@ -81,11 +72,6 @@ export const useAgentNodeSelectionStore = defineStore(
     watch(isActive, (active) => {
       clearTimeout(transitionTimeoutId)
       clearTimeout(sidebarTimeoutId)
-
-      // This watcher is created with the store, so it runs before any watcher a
-      // component registers on `isActive`. That is what lets GlobalToast replay
-      // its deferred messages onto an already-visible layer.
-      document.body.classList.toggle(NODE_SELECTION_CLASS, active)
 
       if (active) {
         isActionBarsHidden.value = true
