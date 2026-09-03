@@ -270,6 +270,52 @@ describe('ReplyAssetGroup', () => {
     await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalledOnce())
   })
 
+  it('does not report a lookup failure for a strand abandoned by unmount', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    let rejectPreview!: (error: Error) => void
+    findServerPreviewUrl.mockReturnValueOnce(
+      new Promise((_, reject) => {
+        rejectPreview = reject
+      })
+    )
+    const { unmount } = renderGroup([model])
+
+    unmount()
+    rejectPreview(new Error('preview failed'))
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('cancels a pending retry when the viewer close finds a server preview', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    vi.useFakeTimers()
+    try {
+      renderGroup([model])
+      await vi.waitFor(() =>
+        expect(generateModelThumbnail).toHaveBeenCalledOnce()
+      )
+      expect(vi.getTimerCount()).toBe(1)
+
+      findServerPreviewUrl.mockResolvedValue('https://x/mesh_preview.png')
+      await userEvent.click(screen.getByRole('button', { name: 'mesh.glb' }))
+      const dialog = showDialog.mock.calls.at(-1)?.[0]
+      dialog.dialogComponentProps.onClose()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(vi.getTimerCount()).toBe(0)
+      await vi.advanceTimersByTimeAsync(10_000)
+      expect(generateModelThumbnail).toHaveBeenCalledOnce()
+      expect(screen.getByRole('img', { name: 'mesh.glb' })).toHaveAttribute(
+        'src',
+        'https://x/mesh_preview.png'
+      )
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('leaves a model that failed to render as a placeholder', async () => {
     isAssetPreviewSupported.mockReturnValue(true)
     renderGroup([model])

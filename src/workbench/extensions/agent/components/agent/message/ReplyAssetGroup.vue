@@ -87,6 +87,11 @@ const galleryIndex = ref(-1)
  */
 type ThumbnailState =
   | { phase: 'loading'; controller: AbortController }
+  | {
+      phase: 'retryPending'
+      timeout: ReturnType<typeof setTimeout>
+      attempts: number
+    }
   | { phase: 'ready'; src: string }
   | { phase: 'gaveUp'; attempts: number }
 
@@ -95,24 +100,23 @@ const THUMBNAIL_RETRY_DELAY_MS = 2000
 
 const thumbnailState = ref<Record<string, ThumbnailState>>({})
 const assetNames = ref<Record<string, string>>({})
+/** Dialog-close refresh timers; not tied to a url, so bulk-cleared on unmount. */
 const refreshTimeouts = new Set<ReturnType<typeof setTimeout>>()
-/**
- * Retry timers keyed by url, separate from `refreshTimeouts` (which exists
- * only to bulk-clear on unmount). `hideThumbnail` needs to cancel *this
- * url's* pending retry specifically -- otherwise a retry scheduled while a
- * tile was visible still fires after "Show less" hides it, resurrecting a
- * `loading` entry for an asset the watcher already dropped.
- */
-const retryTimeouts = new Map<string, ReturnType<typeof setTimeout>>()
 let mounted = true
+
+/** Stop whatever `state` has in flight: an abortable render or a pending retry. */
+function cancelThumbnailState(state: ThumbnailState | undefined): void {
+  if (state?.phase === 'loading') state.controller.abort()
+  else if (state?.phase === 'retryPending') clearTimeout(state.timeout)
+}
+
 onBeforeUnmount(() => {
   mounted = false
   for (const state of Object.values(thumbnailState.value)) {
-    if (state.phase === 'loading') state.controller.abort()
+    cancelThumbnailState(state)
   }
   for (const timeout of refreshTimeouts) clearTimeout(timeout)
   refreshTimeouts.clear()
-  retryTimeouts.clear()
 })
 
 /** Whether `url`'s current entry is still the `loading` strand owned by `controller`. */
@@ -154,9 +158,10 @@ function loadModelThumbnail(url: string, filename: string, attempts = 0): void {
       // synchronously when the abort was issued.
     })
     .catch((error) => {
-      if (mounted && owns(url, controller)) {
-        scheduleThumbnailRetry(url, filename, attempts)
-      }
+      // An aborted or unmounted strand affected no tile, so its lookup
+      // failure is not a user-visible one worth reporting.
+      if (!mounted || !owns(url, controller)) return
+      scheduleThumbnailRetry(url, filename, attempts)
       reportError(error, {
         errorType: 'agent_reply_asset_preview_failure'
       })
@@ -183,14 +188,14 @@ function scheduleThumbnailRetry(
     return
   }
   const timeout = setTimeout(() => {
-    refreshTimeouts.delete(timeout)
-    retryTimeouts.delete(url)
     if (!mounted) return
     loadModelThumbnail(url, filename, attempts + 1)
   }, THUMBNAIL_RETRY_DELAY_MS)
-  refreshTimeouts.add(timeout)
-  retryTimeouts.set(url, timeout)
-  thumbnailState.value[url] = { phase: 'gaveUp', attempts: attempts + 1 }
+  thumbnailState.value[url] = {
+    phase: 'retryPending',
+    timeout: markRaw(timeout),
+    attempts: attempts + 1
+  }
 }
 
 /**
@@ -200,14 +205,7 @@ function scheduleThumbnailRetry(
  * freeing the shared render queue instead of leaving it running hidden.
  */
 function hideThumbnail(url: string): void {
-  const state = thumbnailState.value[url]
-  if (state?.phase === 'loading') state.controller.abort()
-  const pendingRetry = retryTimeouts.get(url)
-  if (pendingRetry !== undefined) {
-    clearTimeout(pendingRetry)
-    refreshTimeouts.delete(pendingRetry)
-    retryTimeouts.delete(url)
-  }
+  cancelThumbnailState(thumbnailState.value[url])
   delete thumbnailState.value[url]
 }
 
@@ -264,11 +262,10 @@ function refreshModelThumbnail(asset: ReplyAsset, retry = true): void {
     .then((preview) => {
       if (!mounted) return
       if (preview) {
-        // Overwriting a `loading` entry here would drop its controller
-        // unreachable, so neither unmount nor the watcher could ever abort
-        // it. Abort first.
-        const current = thumbnailState.value[asset.url]
-        if (current?.phase === 'loading') current.controller.abort()
+        // Overwriting a `loading` or `retryPending` entry here would drop
+        // its controller/timer unreachable, so neither unmount nor the
+        // watcher could ever cancel it. Cancel first.
+        cancelThumbnailState(thumbnailState.value[asset.url])
         thumbnailState.value[asset.url] = { phase: 'ready', src: preview }
       } else if (retry) {
         const timeout = setTimeout(() => {
@@ -279,6 +276,7 @@ function refreshModelThumbnail(asset: ReplyAsset, retry = true): void {
       }
     })
     .catch((error) => {
+      if (!mounted) return
       reportError(error, { errorType: 'agent_reply_asset_preview_failure' })
     })
 }
