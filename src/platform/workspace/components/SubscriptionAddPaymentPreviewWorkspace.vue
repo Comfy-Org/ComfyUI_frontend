@@ -27,7 +27,6 @@
         :class="cn('mb-8 flex items-center gap-3', captureMode && 'xl:mb-10')"
       >
         <Button
-          v-if="usePaymentElement"
           size="icon"
           variant="muted-textonly"
           class="shrink-0 rounded-full"
@@ -101,6 +100,7 @@
 
       <!-- Total Due Section -->
       <div
+        v-if="totalDueToday"
         :class="
           cn(
             'flex flex-col gap-2 border-t border-border-subtle pt-8',

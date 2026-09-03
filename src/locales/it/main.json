@@ -34,10 +34,6 @@
     "copy": "Copia",
     "copyMarkdown": "Copia come markdown",
     "copyUnavailable": "In questa versione è possibile copiare solo la conversazione corrente",
-    "crdtConnected": "connesso",
-    "crdtDisconnected": "disconnesso",
-    "crdtNoDocument": "nessun documento",
-    "crdtStatus": "CRDT {connection} · {workflowId} · {updates} aggiornamenti · {frame}",
     "credits": "crediti",
     "delete": "Elimina",
     "dismiss": "Ignora",
@@ -125,11 +121,6 @@
     "toolSwitchedTabs": "Ha cambiato scheda",
     "untitledChat": "Senza titolo",
     "uploading": "Caricamento in corso"
-  },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "Costo per esecuzione",
-    "title": "Nodo/i API",
-    "totalCost": "Costo totale"
   },
   "apiNodesSignInDialog": {
     "message": "Questo workflow contiene nodi API, che richiedono l'accesso al tuo account per poter essere eseguiti.",
