@@ -48,6 +48,7 @@
     "build/**/*.ts",
     "eslint.config.ts",
     "global.d.ts",
+    "index.test.ts",
     "knip.config.ts",
     "lint-staged.config.ts",
     "src/**/*.vue",
