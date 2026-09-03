@@ -308,6 +308,10 @@ export const useAssetsStore = defineStore('assets', () => {
     },
     { immediate: true }
   )
+  api.addEventListener('assets.seed.enrich_complete', async ({ detail }) => {
+    if (detail.roots.includes('output')) await outputAssets.value.loadNew()
+    if (detail.roots.includes('input')) await inputAssets.value.loadNew()
+  })
 
   /**
    * Map of asset hash filename to asset item for O(1) lookup
