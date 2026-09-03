@@ -84,9 +84,7 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   private disabledEvents = new Set<TelemetryEventName>(DEFAULT_DISABLED_EVENTS)
 
   constructor() {
-    this.configureDisabledEvents(
-      (window.__CONFIG__ as Partial<RemoteConfig> | undefined) ?? null
-    )
+    this.configureDisabledEvents(window.__CONFIG__ ?? null)
     watch(
       remoteConfig,
       (config) => {

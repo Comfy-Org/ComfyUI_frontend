@@ -468,6 +468,10 @@ describe('useAgentSession (v1 composition root)', () => {
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
     session.start()
+    // Establish a live connection first: only a live->down transition is a
+    // real disconnect. An initial `false` snapshot (no prior `true`) must
+    // not abort turns; see test (g2).
+    status(true)
 
     await session.sendMessage('go')
     emit(delta('msg-1', 'partial'))
@@ -481,6 +485,24 @@ describe('useAgentSession (v1 composition root)', () => {
     // makes no REST calls on a live transition.
     status(true)
     expect(vi.mocked(rest.postMessage).mock.calls.length).toBe(requestsBefore)
+  })
+
+  it('(g2) an initial onStatus(false) snapshot does not abort a surviving turn', async () => {
+    // agentEventSource.onStatus reports the current socket state synchronously
+    // on subscribe, so the very first callback can be `false` before any real
+    // reconnect transition (e.g. the socket hasn't opened yet). That must not
+    // abort a turn that survived a remount.
+    const rest = fakeRest()
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+
+    await session.sendMessage('go')
+    emit(delta('msg-1', 'partial'))
+    expect(session.isStreaming.value).toBe(true)
+
+    status(false)
+    expect(session.isStreaming.value).toBe(true)
   })
 
   it('(h) attachments pass through to the postMessage wire body', async () => {
@@ -526,11 +548,11 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it('(h4) the turn post never carries a draft field (upload retired)', async () => {
-    const postMessage = vi.fn(async () => ({
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
       thread_id: 'th-1',
       message_id: 'msg-1',
       workflow_id: 'wf-1'
-    })) as unknown as AgentRestClient['postMessage']
+    }))
     const rest = fakeRest({ postMessage })
     const { source } = fakeEvents()
     const adopted = vi.fn()
@@ -549,6 +571,58 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(vi.mocked(postMessage).mock.calls[0][1]).not.toHaveProperty('draft')
     expect(adopted).toHaveBeenCalledWith('wf-1', undefined)
     expect(session.boundWorkflowId.value).toBe('wf-1')
+  })
+
+  it('(h5) a workflow.draft() snapshot is forwarded on the turn (PM-813/ecw-128)', async () => {
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
+      thread_id: 'th-1',
+      message_id: 'msg-1',
+      workflow_id: 'wf-1'
+    }))
+    const rest = fakeRest({ postMessage })
+    const { source } = fakeEvents()
+    const draftSnapshot = {
+      content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] }
+    }
+    const session = useAgentSession({
+      rest,
+      events: source,
+      workflow: {
+        current: () => undefined,
+        adopted: vi.fn(),
+        draft: () => draftSnapshot
+      }
+    })
+    session.start()
+
+    await session.sendMessage('what is on my canvas')
+
+    const body = postMessage.mock.calls[0][1]
+    expect(body.draft).toEqual(draftSnapshot)
+  })
+
+  it('(h6) no draft field is sent when workflow.draft() returns undefined (e.g. detached tab)', async () => {
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
+      thread_id: 'th-1',
+      message_id: 'msg-1',
+      workflow_id: 'wf-1'
+    }))
+    const rest = fakeRest({ postMessage })
+    const { source } = fakeEvents()
+    const session = useAgentSession({
+      rest,
+      events: source,
+      workflow: {
+        current: () => undefined,
+        adopted: vi.fn(),
+        draft: () => undefined
+      }
+    })
+    session.start()
+
+    await session.sendMessage('what is on my canvas')
+
+    expect(vi.mocked(postMessage).mock.calls[0][1]).not.toHaveProperty('draft')
   })
 
   it("(i2) loadThread drops the previous thread's workflow binding", async () => {
@@ -870,6 +944,9 @@ describe('useAgentSession (v1 composition root)', () => {
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
     session.start()
+    // Establish a live connection first; only a live->down transition (an
+    // actual socket death) should settle background turns.
+    status(true)
 
     await session.sendMessage('go')
     emit(delta('msg-1', 'partial'))
