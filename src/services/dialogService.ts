@@ -101,9 +101,9 @@ type ConfirmOptions = BaseConfirmOptions &
 export interface ExecutionErrorDialogInput {
   exception_type: string
   exception_message: string
-  node_id: string | number
-  node_type: string
-  traceback: string[]
+  node_id?: string | number | null
+  node_type?: string | null
+  traceback?: string[] | null
 }
 
 export const useDialogService = () => {
@@ -114,9 +114,9 @@ export const useDialogService = () => {
       error: {
         exceptionType: executionError.exception_type,
         exceptionMessage: executionError.exception_message,
-        nodeId: executionError.node_id.toString(),
-        nodeType: executionError.node_type,
-        traceback: executionError.traceback.join('\n'),
+        nodeId: executionError.node_id?.toString(),
+        nodeType: executionError.node_type ?? undefined,
+        traceback: executionError.traceback?.join('\n') ?? '',
         reportType: 'graphExecutionError'
       }
     }
