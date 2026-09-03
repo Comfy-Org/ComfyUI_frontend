@@ -5,6 +5,7 @@ import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import {
+  DowngradeNotAllowedError,
   ReactivationConfirmationRequiredError,
   useDowngradeToPersonal
 } from './useDowngradeToPersonal'
@@ -857,17 +858,31 @@ describe('useDowngradeToPersonal', () => {
       expect(result.requiresReactivationConfirmation).toBe(true)
     })
 
-    it('throws the BE reason without removing members when the transition is disallowed', async () => {
+    it('throws a typed refusal carrying the priced preview when the transition is disallowed', async () => {
       mockSubscription.value = { isCancelled: true }
       mockPreviewSubscribe.mockResolvedValue({
         allowed: false,
-        reason: 'Outstanding balance'
+        reason: 'Requested seats exceed maximum allowed for this plan',
+        transition_type: 'downgrade',
+        cost_today_cents: 1500
       })
       const { previewDowngrade } = useDowngradeToPersonal()
 
-      await expect(previewDowngrade('founder-monthly')).rejects.toThrow(
-        'Outstanding balance'
+      const error = await previewDowngrade('founder-monthly').then(
+        () => {
+          throw new Error('expected previewDowngrade to reject')
+        },
+        (thrown: unknown) => thrown
       )
+
+      expect(error).toBeInstanceOf(DowngradeNotAllowedError)
+      const refusal = error as DowngradeNotAllowedError
+      expect(refusal.message).toBe(
+        'Requested seats exceed maximum allowed for this plan'
+      )
+      expect(refusal.details.preview.cost_today_cents).toBe(1500)
+      expect(refusal.details.requiresReactivationConfirmation).toBe(true)
+      expect(mockRemoveMember).not.toHaveBeenCalled()
     })
 
     it('reports the cancellation discovered by refreshing status, not the stale cached read', async () => {

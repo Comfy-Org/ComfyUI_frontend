@@ -18,9 +18,20 @@ const hasOtherMembers = vi.hoisted(() => ({ value: false }))
 const openDialogKeys = ref<string[]>([])
 
 const {
+  DowngradeNotAllowedError,
   ReactivationConfirmationRequiredError,
   ReactivationAmountChangedError
 } = vi.hoisted(() => {
+  class DowngradeNotAllowedError extends Error {
+    constructor(
+      public details: {
+        preview: { cost_today_cents: number }
+        requiresReactivationConfirmation: boolean
+      }
+    ) {
+      super('downgrade not allowed')
+    }
+  }
   class ReactivationConfirmationRequiredError extends Error {
     constructor(public preview: { cost_today_cents: number }) {
       super('reactivation confirmation required')
@@ -32,6 +43,7 @@ const {
     }
   }
   return {
+    DowngradeNotAllowedError,
     ReactivationConfirmationRequiredError,
     ReactivationAmountChangedError
   }
@@ -77,6 +89,7 @@ vi.mock('@/platform/workspace/composables/useDowngradeToPersonal', () => ({
     previewDowngrade,
     downgradeToPersonal
   }),
+  DowngradeNotAllowedError,
   ReactivationConfirmationRequiredError,
   ReactivationAmountChangedError
 }))
@@ -404,10 +417,13 @@ describe('showDowngradeToPersonalDialog', () => {
     expect(downgradeToPersonal).not.toHaveBeenCalled()
   })
 
-  it('still offers member removal when the preview is rejected because members exist', async () => {
+  it('still offers member removal when the BE refuses the preview, using its priced numbers', async () => {
     hasOtherMembers.value = true
     previewDowngrade.mockRejectedValue(
-      new Error('Requested seats exceed maximum allowed for this plan')
+      new DowngradeNotAllowedError({
+        preview: { cost_today_cents: 1500 },
+        requiresReactivationConfirmation: true
+      })
     )
 
     const resultPromise =
@@ -417,8 +433,26 @@ describe('showDowngradeToPersonalDialog', () => {
     expect(toastAdd).not.toHaveBeenCalled()
     const [args] = showDialog.mock.calls[0]
     expect(args.props.requiresRemoval).toBe(true)
+    expect(args.props.requiresReactivation).toBe(true)
+    expect(args.props.chargeCents).toBe(1500)
 
     args.dialogComponentProps.onClose()
     await expect(resultPromise).resolves.toBeNull()
+  })
+
+  it('toasts instead of opening the dialog when the preview fails for any other reason, even with members', async () => {
+    hasOtherMembers.value = true
+    previewDowngrade.mockRejectedValue(new Error('Network request failed'))
+
+    await useDialogService().showDowngradeToPersonalDialog(options)
+
+    expect(toastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({
+        severity: 'error',
+        detail: 'Network request failed'
+      })
+    )
+    expect(showDialog).not.toHaveBeenCalled()
+    expect(downgradeToPersonal).not.toHaveBeenCalled()
   })
 })

@@ -31,6 +31,17 @@ export interface DowngradePreview {
   requiresReactivationConfirmation: boolean
 }
 
+/** Thrown by `previewDowngrade` when the billing authority answers the
+ *  preview with `allowed: false`. Carries the server's full priced preview
+ *  (the response includes it even when disallowed), so a caller resolving the
+ *  refusal — e.g. by removing members — can show the server's own numbers
+ *  instead of inventing any. */
+export class DowngradeNotAllowedError extends Error {
+  constructor(public readonly details: DowngradePreview) {
+    super(details.preview.reason || t('subscription.downgrade.notAllowed'))
+  }
+}
+
 /** Thrown by `downgradeToPersonal` when the billing authority requires
  *  reactivation consent, so the still-open confirmation can collect it and
  *  retry with `confirmReactivation: true`. */
@@ -121,19 +132,23 @@ export function useDowngradeToPersonal() {
   async function previewDowngrade(planSlug: string): Promise<DowngradePreview> {
     ensureCanDowngrade()
     const preview = await previewSubscribe(planSlug)
-    if (!preview?.allowed) {
-      throw new Error(preview?.reason || t('subscription.downgrade.notAllowed'))
+    if (!preview) {
+      throw new Error(t('subscription.downgrade.notAllowed'))
     }
     ensureCanDowngrade()
     // `subscription` is a cached snapshot from the last billing-context load,
     // which can predate a cancellation; refresh it before reading isCancelled
     // so this decision reflects the current server state, not a stale one.
     await fetchStatus()
-    return {
+    const details: DowngradePreview = {
       preview,
       requiresReactivationConfirmation:
         requiresReactivationConfirmation(preview)
     }
+    if (!preview.allowed) {
+      throw new DowngradeNotAllowedError(details)
+    }
+    return details
   }
 
   async function downgradeToPersonal(

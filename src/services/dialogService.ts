@@ -695,6 +695,7 @@ export const useDialogService = () => {
   }): Promise<DowngradeToPersonalResult | null> {
     const {
       useDowngradeToPersonal,
+      DowngradeNotAllowedError,
       ReactivationConfirmationRequiredError,
       ReactivationAmountChangedError
     } = await import('@/platform/workspace/composables/useDowngradeToPersonal')
@@ -726,10 +727,13 @@ export const useDialogService = () => {
         return await downgradeToPersonal(options.planSlug)
       }
     } catch (error) {
-      // The backend rejects a downgrade preview while the workspace still has
-      // other members — the very case this dialog exists to resolve — so fall
-      // through to it rather than surfacing the rejection as a dead end.
-      if (!hasOtherMembers.value) {
+      // A typed refusal on a still-populated workspace is the very case this
+      // dialog exists to resolve: fall through carrying the server's own
+      // priced preview. Anything else stays a dead end.
+      if (
+        !(error instanceof DowngradeNotAllowedError) ||
+        !hasOtherMembers.value
+      ) {
         useToastStore().add({
           severity: 'error',
           summary: t('subscription.downgrade.failed'),
@@ -737,6 +741,8 @@ export const useDialogService = () => {
         })
         return null
       }
+      requiresReactivation = error.details.requiresReactivationConfirmation
+      chargeCents = error.details.preview.cost_today_cents
     }
 
     const { default: component } =
