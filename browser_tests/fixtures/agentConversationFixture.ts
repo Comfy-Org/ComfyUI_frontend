@@ -343,6 +343,13 @@ class AgentConversationHarness {
       .filter((id) => !seedIds.has(id) && id in graph.nodes)
   }
 
+  removedNodeIds(): string[] {
+    const graph = this.host.graph()
+    return this.nodeBodies()
+      .map((body) => String(body.id))
+      .filter((id) => !(id in graph.nodes))
+  }
+
   hostGraph(): GraphSnapshot {
     return this.host.graph()
   }
