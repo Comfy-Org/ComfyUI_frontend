@@ -539,10 +539,7 @@ async function onAgentActiveTab(
       })
       return
     }
-    // A new agent workflow opens as an EMPTY tab: the host minted its doc
-    // server-side (seed-at-bind), and the follower fills the canvas through
-    // the ordinary subscribe catch-up - no snapshot fetch, no draft apply.
-    // The default template's node ids collide with agent docs, so the tab must start blank.
+    // The tab starts blank: the host seeds the doc at bind and the default template's node ids collide with agent docs.
     const creatingStartedAt = Date.now()
     tabActivity.setCreating(true)
     const remainingCreatingTime =
