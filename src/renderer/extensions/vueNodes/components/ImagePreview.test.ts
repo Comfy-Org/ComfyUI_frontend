@@ -167,7 +167,6 @@ describe('ImagePreview', () => {
     ).toBeInTheDocument()
 
     await fireEvent.error(screen.getByTestId('main-image'))
-    await nextTick()
 
     expect(
       screen.queryByRole('button', { name: 'Edit or mask image' })

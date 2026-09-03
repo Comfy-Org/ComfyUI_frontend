@@ -12,7 +12,7 @@
     <div v-else class="relative size-full">
       <!-- blur background -->
       <div
-        v-if="imgSrc"
+        v-if="imgSrc && !isImageError"
         class="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30"
         :style="{
           backgroundImage: `url(${imgSrc})`,
@@ -22,7 +22,7 @@
       <!-- image -->
       <img
         :src="isImageError ? DEFAULT_BANNER : imgSrc"
-        :alt="nodePack.name + ' banner'"
+        :alt="bannerAlt"
         :class="
           isImageError
             ? 'relative z-10 size-full object-cover'
@@ -48,5 +48,6 @@ const { nodePack } = defineProps<{
 const isImageError = ref(false)
 
 const showDefaultBanner = computed(() => !nodePack.banner_url && !nodePack.icon)
-const imgSrc = computed(() => nodePack.banner_url || nodePack.icon)
+const imgSrc = computed(() => nodePack.banner_url || nodePack.icon || '')
+const bannerAlt = computed(() => `${nodePack.name} banner`)
 </script>

@@ -1,10 +1,25 @@
 import type { ComponentProps } from 'vue-component-type-helpers'
 
-import { fireEvent, render, screen } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Ref } from 'vue'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+const useImageMock = vi.hoisted(() => ({
+  error: null as Ref<unknown> | null
+}))
+
+vi.mock('@vueuse/core', async () => {
+  const actual = await vi.importActual('@vueuse/core')
+  const { ref } = await import('vue')
+  useImageMock.error = ref<unknown>(null)
+  return {
+    ...(actual as Record<string, unknown>),
+    useImage: () => ({ error: useImageMock.error })
+  }
+})
 
 import UserAvatar from './UserAvatar.vue'
 
@@ -23,6 +38,10 @@ const i18n = createI18n({
 })
 
 describe('UserAvatar', () => {
+  beforeEach(() => {
+    if (useImageMock.error) useImageMock.error.value = null
+  })
+
   function renderComponent(props: ComponentProps<typeof UserAvatar> = {}) {
     return render(UserAvatar, {
       global: {
@@ -67,10 +86,10 @@ describe('UserAvatar', () => {
       photoUrl: 'https://example.com/broken-image.jpg'
     })
 
-    const img = screen.getByRole('img')
+    expect(screen.getByRole('img')).toBeInTheDocument()
     expect(screen.queryByTestId('avatar-icon')).not.toBeInTheDocument()
 
-    await fireEvent.error(img)
+    useImageMock.error!.value = new Event('error')
     await nextTick()
 
     expect(screen.getByTestId('avatar-icon')).toBeInTheDocument()
