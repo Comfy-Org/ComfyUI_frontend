@@ -6,19 +6,19 @@ import { nextTick } from 'vue'
 import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
 import WorkshopCatalog from './WorkshopCatalog.vue'
 
-const { entry } = usePrototypeTweaks()
+const { version } = usePrototypeTweaks()
 
 afterEach(() => {
-  entry.value = 'workshop'
+  version.value = 'v1'
 })
 
 describe('WorkshopCatalog', () => {
-  it('starts on the models catalog and swaps to the V2 Hub entry when the tweak asks', async () => {
+  it('starts on the models catalog and swaps to the V2 screen when the tweak asks', async () => {
     render(WorkshopCatalog, { props: { models: [] } })
     expect(screen.getByTestId('workshop-hero')).toBeTruthy()
     expect(screen.queryByTestId('workshop-hub')).toBeNull()
 
-    entry.value = 'hub'
+    version.value = 'v2'
     await nextTick()
     expect(screen.getByTestId('workshop-hub')).toBeTruthy()
     expect(screen.queryByTestId('workshop-hero')).toBeNull()

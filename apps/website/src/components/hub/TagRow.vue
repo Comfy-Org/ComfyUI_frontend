@@ -2,12 +2,20 @@
 import { useResizeObserver } from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import { hubTagUrl } from '../../lib/hub/routes'
 import { tagDisplayName } from '../../lib/hub/tag-aliases'
 
-const { tags, fallbackLabel = '' } = defineProps<{
+// Inside a card that is itself a link, the chips cannot be anchors.
+const {
+  tags,
+  fallbackLabel = '',
+  linkTags = true
+} = defineProps<{
   tags: readonly string[]
   fallbackLabel?: string
+  linkTags?: boolean
 }>()
 
 const allTags = computed(() =>
@@ -72,18 +80,19 @@ const pillClass =
       {{ fallbackLabel }}
     </span>
     <template v-else>
-      <a
+      <component
+        :is="linkTags ? 'a' : 'span'"
         v-for="tag in visibleTags"
         :key="tag.key"
-        :href="tag.href"
-        :class="[pillClass, 'hover:bg-hub-surface-hover']"
+        :href="linkTags ? tag.href : undefined"
+        :class="cn(pillClass, linkTags && 'hover:bg-hub-surface-hover')"
         @click.stop
       >
         {{ tag.label }}
-      </a>
+      </component>
       <span
         v-if="hiddenTags.length"
-        :class="[pillClass, 'tabular-nums']"
+        :class="cn(pillClass, 'tabular-nums')"
         :title="overflowText"
         data-testid="tag-overflow"
       >

@@ -42,6 +42,7 @@ export interface ToolbarLabels {
   readonly models: string
   readonly filter: string
   readonly clearAll: string
+  readonly applied: string
   readonly searchPlaceholder: string
   readonly noResults: string
   readonly sortPopular: string
@@ -270,11 +271,19 @@ const controlClass =
 
               <div
                 v-if="totalActiveFilters > 0"
-                class="border-t border-white/10 p-2"
+                class="flex items-center justify-between gap-3 border-t border-white/10 p-2"
               >
+                <span
+                  class="text-content-secondary px-1 text-xs"
+                  data-testid="hub-filter-applied"
+                >
+                  {{
+                    labels.applied.replace('{n}', String(totalActiveFilters))
+                  }}
+                </span>
                 <button
                   type="button"
-                  class="text-content-secondary hover:text-content w-full rounded-lg px-3 py-2 text-xs font-semibold transition-colors hover:bg-white/5"
+                  class="text-content-secondary hover:text-content shrink-0 rounded-lg px-3 py-2 text-xs font-semibold transition-colors hover:bg-white/5"
                   @click="store.clearBadges()"
                 >
                   {{ labels.clearAll }}

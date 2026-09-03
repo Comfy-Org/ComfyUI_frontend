@@ -2,7 +2,6 @@
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import PrototypeTweaks from '../../components/workshop/PrototypeTweaks.vue'
 import WorkshopCatalog from '../../components/workshop/WorkshopCatalog.vue'
-import WorkshopWorkflowsPreview from '../../components/workshop/WorkshopWorkflowsPreview.vue'
 import { workshopModels } from '../../config/workshop'
 import { t } from '../../i18n/translations'
 ---
@@ -14,7 +13,6 @@ import { t } from '../../i18n/translations'
 >
   <div class="mx-auto max-w-8xl px-6 py-16 lg:px-8 lg:py-24">
     <WorkshopCatalog models={workshopModels} client:load />
-    <WorkshopWorkflowsPreview client:load />
   </div>
   <PrototypeTweaks client:load />
 </BaseLayout>

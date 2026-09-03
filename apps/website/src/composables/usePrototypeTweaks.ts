@@ -20,66 +20,38 @@ export const MODEL_STATES = [
 ] as const
 export type ModelState = (typeof MODEL_STATES)[number]
 
-// V1 is the models playground (11 Sep); V2 adds workflows and Deploy (GA 30 Sep).
-export const SCOPES = ['v1', 'v2'] as const
-export type Scope = (typeof SCOPES)[number]
-
 export const OUTPUT_COUNTS = [1, 4, 9] as const
 type OutputCount = (typeof OUTPUT_COUNTS)[number]
 
-// Where /workshop starts: V1 is the models catalog; the first screen shaped
-// like comfy.org/workflows with workflows and apps is V2.
-export const ENTRIES = ['workshop', 'hub'] as const
-export type Entry = (typeof ENTRIES)[number]
+// One control for the whole prototype: V1 is the flat models catalog (11 Sep),
+// V1.1 opens that same catalog as browseable rows per use case, and V2 is the
+// screen where workflows, apps and models live together (GA 30 Sep).
+export const VERSIONS = ['v1', 'v1.1', 'v2'] as const
+export type Version = (typeof VERSIONS)[number]
 
-// How the models catalog opens: the flat grid, or the browseable rows per use
-// case that Willie proposed after the dev-platform playground.
-export const LISTINGS = ['flat', 'sections'] as const
-export type Listing = (typeof LISTINGS)[number]
-
-const SCOPE_KEY = 'comfy-workshop-scope'
-const ENTRY_KEY = 'comfy-workshop-entry'
-const LISTING_KEY = 'comfy-workshop-listing'
+const VERSION_KEY = 'comfy-workshop-version'
 
 const outcome = ref<RunOutcome>('success')
 const modelState = ref<ModelState>('none')
-const scope = ref<Scope>('v1')
-const entry = ref<Entry>('workshop')
-const listing = ref<Listing>('flat')
+const version = ref<Version>('v1')
 // Deprecated and degraded models are invented cases: hidden unless asked for.
 const showStatuses = ref(false)
 const outputCount = ref<OutputCount>(1)
 let hydrated = false
 
-function isScope(value: unknown): value is Scope {
+function isVersion(value: unknown): value is Version {
   return (
-    typeof value === 'string' && (SCOPES as readonly string[]).includes(value)
+    typeof value === 'string' && (VERSIONS as readonly string[]).includes(value)
   )
 }
 
-function isEntry(value: unknown): value is Entry {
-  return (
-    typeof value === 'string' && (ENTRIES as readonly string[]).includes(value)
-  )
-}
-
-function isListing(value: unknown): value is Listing {
-  return (
-    typeof value === 'string' && (LISTINGS as readonly string[]).includes(value)
-  )
-}
-
-function persist(key: string, value: string) {
+watch(version, (value) => {
   try {
-    localStorage.setItem(key, value)
+    localStorage.setItem(VERSION_KEY, value)
   } catch {
     /* storage unavailable */
   }
-}
-
-watch(scope, (value) => persist(SCOPE_KEY, value))
-watch(entry, (value) => persist(ENTRY_KEY, value))
-watch(listing, (value) => persist(LISTING_KEY, value))
+})
 
 // Shared across islands so the tweaks panel drives the whole prototype.
 export function usePrototypeTweaks() {
@@ -87,12 +59,8 @@ export function usePrototypeTweaks() {
     if (hydrated) return
     hydrated = true
     try {
-      const storedScope = localStorage.getItem(SCOPE_KEY)
-      if (isScope(storedScope)) scope.value = storedScope
-      const storedEntry = localStorage.getItem(ENTRY_KEY)
-      if (isEntry(storedEntry)) entry.value = storedEntry
-      const storedListing = localStorage.getItem(LISTING_KEY)
-      if (isListing(storedListing)) listing.value = storedListing
+      const stored = localStorage.getItem(VERSION_KEY)
+      if (isVersion(stored)) version.value = stored
     } catch {
       /* storage unavailable */
     }
@@ -100,9 +68,7 @@ export function usePrototypeTweaks() {
   return {
     outcome,
     modelState,
-    scope,
-    entry,
-    listing,
+    version,
     showStatuses,
     outputCount
   }

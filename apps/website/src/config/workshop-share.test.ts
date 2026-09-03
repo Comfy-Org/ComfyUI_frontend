@@ -13,7 +13,7 @@ describe('share links for the prototype controls', () => {
       encodeShareSearch(
         {
           ...SHARE_DEFAULTS,
-          entry: 'hub',
+          version: 'v2',
           session: 'existing',
           balance: 'low',
           member: true,
@@ -24,16 +24,16 @@ describe('share links for the prototype controls', () => {
         '?useCase=edit-images&outcome=stale'
       )
     ).toBe(
-      '?useCase=edit-images&entry=hub&session=existing&balance=low&member=1&outcome=timeout&state=degraded&outputs=4'
+      '?useCase=edit-images&version=v2&session=existing&balance=low&member=1&outcome=timeout&state=degraded&outputs=4'
     )
   })
 
-  it('carries the models listing so a link opens the browseable rows', () => {
-    expect(encodeShareSearch({ ...SHARE_DEFAULTS, listing: 'sections' })).toBe(
-      '?listing=sections'
+  it('carries the version so a link opens the browseable rows', () => {
+    expect(encodeShareSearch({ ...SHARE_DEFAULTS, version: 'v1.1' })).toBe(
+      '?version=v1.1'
     )
-    expect(decodeShareSearch('?listing=sections').listing).toBe('sections')
-    expect(decodeShareSearch('?listing=nope').listing).toBeUndefined()
+    expect(decodeShareSearch('?version=v1.1').version).toBe('v1.1')
+    expect(decodeShareSearch('?version=nope').version).toBeUndefined()
   })
 
   it('leaves the subscription out of a signed-out link', () => {
@@ -50,11 +50,10 @@ describe('share links for the prototype controls', () => {
   it('decodes a link and ignores values it does not know', () => {
     expect(
       decodeShareSearch(
-        '?scope=v2&entry=hub&statuses=1&session=existing&balance=zero&member=1&outputs=9&state=nope&outcome=42'
+        '?version=v2&statuses=1&session=existing&balance=zero&member=1&outputs=9&state=nope&outcome=42'
       )
     ).toEqual({
-      scope: 'v2',
-      entry: 'hub',
+      version: 'v2',
       showStatuses: true,
       session: 'existing',
       balance: 'zero',
@@ -63,7 +62,7 @@ describe('share links for the prototype controls', () => {
     })
     expect(decodeShareSearch('?useCase=text')).toEqual({})
     expect(
-      decodeShareSearch(encodeShareSearch(SHARE_DEFAULTS, '?entry=hub'))
+      decodeShareSearch(encodeShareSearch(SHARE_DEFAULTS, '?version=v2'))
     ).toEqual({})
   })
 })

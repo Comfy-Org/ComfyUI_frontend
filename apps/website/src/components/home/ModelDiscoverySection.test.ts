@@ -14,11 +14,11 @@ describe('ModelDiscoverySection', () => {
     }
   })
 
-  it('links every lineup model to its Workshop page once', () => {
+  it('sends every lineup model to the catalog filtered by its provider', () => {
     render(ModelDiscoverySection)
 
     const seedance = screen.getByRole('link', { name: /Seedance 2/ })
-    expect(seedance.getAttribute('href')).toBe('/workshop/models/seedance-2/')
+    expect(seedance.getAttribute('href')).toBe('/workshop?provider=ByteDance')
     expect(screen.getByRole('link', { name: /Kling O3/ })).toBeTruthy()
 
     const browse = screen.getByRole('link', { name: 'Browse all models' })

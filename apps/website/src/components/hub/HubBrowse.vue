@@ -48,6 +48,7 @@ const toolbarLabels: ToolbarLabels = {
   models: t('workshop.hub.kind.models', locale),
   filter: t('workshop.filter.label', locale),
   clearAll: t('workshop.hub.facets.clearAll', locale),
+  applied: t('workshop.filter.applied', locale),
   searchPlaceholder: t('workshop.hub.facets.search', locale),
   noResults: t('workshop.hub.facets.noResults', locale),
   sortPopular: t('workshop.hub.sort.popular', locale),

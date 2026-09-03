@@ -13,6 +13,7 @@ import { modalityOf, splitTask } from '../../config/workshop'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { getLogoPath } from '../../lib/hub/model-logos'
+import TagRow from '../hub/TagRow.vue'
 
 const {
   model,
@@ -73,8 +74,6 @@ const modalityTone: Record<Exclude<ModalityFilter, 'all'>, string> = {
 
 const pillClass =
   'inline-flex h-6 w-fit shrink-0 items-center justify-center rounded-full bg-hub-surface px-4 py-1 text-xs font-normal whitespace-nowrap text-content'
-const capabilityPillClass =
-  'inline-flex h-6 min-w-0 items-center rounded-full bg-hub-surface px-4 py-1 text-xs font-normal text-content'
 </script>
 
 <template>
@@ -105,7 +104,7 @@ const capabilityPillClass =
         "
       >
         <span
-          class="font-formula text-7xl font-bold text-primary-warm-white/20 select-none"
+          class="font-formula text-primary-warm-white/20 text-7xl font-bold select-none"
           aria-hidden="true"
         >
           {{ model.name[0] }}
@@ -127,7 +126,7 @@ const capabilityPillClass =
         role="img"
         :aria-label="providerName"
         :title="providerName"
-        class="absolute top-4 right-4 z-10 grid size-10 place-items-center rounded-2xl bg-transparency-white-t8 backdrop-blur-sm"
+        class="bg-transparency-white-t8 absolute top-4 right-4 z-10 grid size-10 place-items-center rounded-2xl backdrop-blur-sm"
         data-testid="model-card-logo"
       >
         <span
@@ -137,7 +136,7 @@ const capabilityPillClass =
       </span>
       <span
         v-if="showStatus && model.status"
-        class="bg-primary-comfy-yellow/80 absolute top-4 left-4 z-10 inline-flex h-8 items-center rounded-2xl px-3 text-[11px] font-bold tracking-wider text-primary-comfy-ink uppercase backdrop-blur-sm"
+        class="bg-primary-comfy-yellow/80 text-primary-comfy-ink absolute top-4 left-4 z-10 inline-flex h-8 items-center rounded-2xl px-3 text-[11px] font-bold tracking-wider uppercase backdrop-blur-sm"
       >
         {{
           model.status === 'deprecated'
@@ -151,7 +150,7 @@ const capabilityPillClass =
       <div class="flex items-center justify-between gap-2">
         <span class="text-content-secondary flex min-w-0 items-center gap-2">
           <span
-            class="bg-brand text-page grid size-5 shrink-0 place-items-center rounded-full text-2xs font-bold"
+            class="bg-brand text-page text-2xs grid size-5 shrink-0 place-items-center rounded-full font-bold"
             aria-hidden="true"
           >
             {{ providerName.charAt(0).toUpperCase() }}
@@ -164,11 +163,20 @@ const capabilityPillClass =
           </span>
         </span>
         <span
-          class="grid size-10 shrink-0 place-items-center rounded-2xl"
-          aria-hidden="true"
+          class="text-content group-hover:bg-primary-comfy-yellow group-hover:text-primary-comfy-ink relative isolate inline-flex h-10 w-fit shrink-0 items-center overflow-hidden rounded-2xl bg-transparent ps-9 pe-0 text-sm font-bold tracking-wider text-nowrap uppercase transition-all duration-500 group-hover:pe-5"
         >
           <span
-            class="text-content group-hover:bg-primary-comfy-yellow flex size-8 items-center justify-center rounded-xl bg-white/20 transition-colors group-hover:text-primary-comfy-ink"
+            class="grid grid-cols-[0fr] transition-[grid-template-columns] duration-500 group-hover:grid-cols-[1fr]"
+          >
+            <span class="overflow-hidden">
+              <span class="ppformula-text-center relative leading-none">
+                {{ t('workshop.hub.tryNow', locale) }}
+              </span>
+            </span>
+          </span>
+          <span
+            class="group-hover:bg-primary-comfy-yellow group-hover:text-primary-comfy-ink absolute top-1/2 left-1 z-10 flex size-8 -translate-y-1/2 items-center justify-center rounded-xl bg-white/20 text-white transition-all duration-500"
+            aria-hidden="true"
           >
             <ChevronRight class="size-4" :stroke-width="2" />
           </span>
@@ -178,14 +186,11 @@ const capabilityPillClass =
         <span :class="pillClass" data-testid="model-card-task">
           {{ taskLabel }}
         </span>
-        <span
-          v-for="capability in model.capabilities.slice(0, 1)"
-          :key="capability"
-          :class="capabilityPillClass"
-          :title="capability"
-        >
-          <span class="min-w-0 truncate">{{ capability }}</span>
-        </span>
+        <TagRow
+          :tags="model.capabilities"
+          :link-tags="false"
+          class="min-w-0 flex-1"
+        />
       </div>
     </div>
   </a>

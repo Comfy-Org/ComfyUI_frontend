@@ -119,7 +119,7 @@ describe('ModelDetail', () => {
     ).toBeNull()
   })
 
-  it('arrives with the first example loaded, editable and cleared in one click', async () => {
+  it('arrives with the first example loaded and editable', async () => {
     await signedInDetail()
     expect(
       (screen.getByTestId('field-prompt') as HTMLTextAreaElement).value
@@ -128,17 +128,6 @@ describe('ModelDetail', () => {
     expect(
       screen.getByTestId('playground-output').getAttribute('data-state')
     ).toBe('example')
-    expect(screen.getByTestId('active-example').textContent).toContain(
-      'Editable defaults'
-    )
-
-    await user().click(screen.getByTestId('active-example-clear'))
-    expect(
-      (screen.getByTestId('field-prompt') as HTMLTextAreaElement).value
-    ).toBe('')
-    expect(
-      screen.getByTestId('playground-output').getAttribute('data-state')
-    ).toBe('idle')
   })
 
   it('validates the form before charging anything', async () => {
@@ -232,21 +221,17 @@ describe('ModelDetail', () => {
     )
   })
 
-  it('swaps the form to the example template and back', async () => {
+  it('swaps the form to the example template', async () => {
     await signedInDetail()
     await user().click(screen.getByTestId('tab-examples'))
     await user().click(screen.getByTestId('example-open'))
 
-    expect(screen.getByTestId('active-example').textContent).toContain(
-      'Demo First-Last-Frame'
-    )
+    expect(
+      screen.getByTestId('playground-output').getAttribute('data-state')
+    ).toBe('example')
     expect(screen.getByText('flf-end_frame.webp')).toBeTruthy()
     expect(
       (screen.getByTestId('field-prompt') as HTMLTextAreaElement).value
     ).toBe('a capybara')
-
-    await user().click(screen.getByTestId('active-example-clear'))
-    expect(screen.queryByText('flf-end_frame.webp')).toBeNull()
-    expect(screen.queryByTestId('field-end_frame')).toBeNull()
   })
 })

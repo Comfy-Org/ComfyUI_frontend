@@ -204,8 +204,19 @@ function clearAll() {
 
         <div
           v-if="selectedCount"
-          class="flex items-center justify-end border-t border-white/10 p-2"
+          class="flex items-center justify-between gap-3 border-t border-white/10 p-2"
         >
+          <span
+            class="text-content-secondary px-1 text-xs"
+            data-testid="workshop-filter-applied"
+          >
+            {{
+              t('workshop.filter.applied', locale).replace(
+                '{n}',
+                String(selectedCount)
+              )
+            }}
+          </span>
           <button
             type="button"
             data-testid="workshop-filter-clear"

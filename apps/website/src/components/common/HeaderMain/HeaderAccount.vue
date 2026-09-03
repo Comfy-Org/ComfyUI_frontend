@@ -62,6 +62,7 @@ const itemClass =
     :href="signInHref"
     variant="outline"
     size="sm"
+    class="text-primary-warm-white hover:bg-primary-warm-white hover:text-primary-comfy-ink"
     data-testid="header-sign-in"
   >
     {{ t('nav.signIn', locale) }}

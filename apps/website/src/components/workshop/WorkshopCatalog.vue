@@ -11,11 +11,11 @@ const { models, locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
 
-const { entry } = usePrototypeTweaks()
+const { version } = usePrototypeTweaks()
 </script>
 
 <template>
-  <HubBrowse v-if="entry === 'hub'" :locale />
+  <HubBrowse v-if="version === 'v2'" :locale />
   <template v-else>
     <WorkshopHero :locale />
     <WorkshopModelsGrid :models :locale />

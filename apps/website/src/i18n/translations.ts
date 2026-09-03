@@ -8398,9 +8398,8 @@ Enterprise`
     'zh-CN': '运行顶尖模型'
   },
   'workshop.hero.subtitle': {
-    en: 'The best partner models, ready to run. No install, no setup: set your inputs, see the price, hit Run.',
-    'zh-CN':
-      '顶尖合作伙伴模型，即开即用。无需安装配置：设置输入、查看价格、点击运行。'
+    en: 'The best partner models, ready to run. No install, no setup: set your inputs, hit Run.',
+    'zh-CN': '顶尖合作伙伴模型，即开即用。无需安装配置：设置输入、点击运行。'
   },
   'workshop.task.label': {
     en: '{input} to {output}',
@@ -8411,14 +8410,18 @@ Enterprise`
   'workshop.task.video': { en: 'Video', 'zh-CN': '视频' },
   'workshop.task.audio': { en: 'Audio', 'zh-CN': '音频' },
   'workshop.models.heading': { en: 'Models', 'zh-CN': '模型' },
-  'workshop.proto.listing': { en: 'Models listing', 'zh-CN': '模型列表' },
-  'workshop.proto.listing.flat': {
-    en: 'V1 · Flat grid',
-    'zh-CN': 'V1 · 平铺网格'
+  'workshop.proto.version': { en: 'Version', 'zh-CN': '版本' },
+  'workshop.proto.version.v1': {
+    en: 'V1 · Flat grid of models',
+    'zh-CN': 'V1 · 模型平铺网格'
   },
-  'workshop.proto.listing.sections': {
-    en: 'V1.1 · Browse by category',
-    'zh-CN': 'V1.1 · 按类别浏览'
+  'workshop.proto.version.v1_1': {
+    en: 'V1.1 · Models by category',
+    'zh-CN': 'V1.1 · 按类别浏览模型'
+  },
+  'workshop.proto.version.v2': {
+    en: 'V2 · Workflows, apps and models',
+    'zh-CN': 'V2 · 工作流、应用与模型'
   },
   'workshop.sections.seeAll': { en: 'See all', 'zh-CN': '查看全部' },
   'workshop.sections.provider': { en: 'All providers', 'zh-CN': '所有提供方' },
@@ -8472,6 +8475,7 @@ Enterprise`
   'workshop.filter.back': { en: 'All filters', 'zh-CN': '全部筛选' },
   'workshop.filter.noMatches': { en: 'No matches', 'zh-CN': '没有匹配项' },
   'workshop.filter.clearAll': { en: 'Clear filters', 'zh-CN': '清除筛选' },
+  'workshop.filter.applied': { en: '{n} selected', 'zh-CN': '已选 {n} 项' },
   'workshop.filter.providerGroup': { en: 'Providers', 'zh-CN': '提供方' },
   'workshop.filter.capabilityGroup': {
     en: 'Capabilities',
@@ -8490,15 +8494,6 @@ Enterprise`
     'zh-CN': '价格：从高到低'
   },
   'workshop.form.advanced': { en: 'Advanced settings', 'zh-CN': '高级设置' },
-  'workshop.example.loaded': { en: 'Example loaded:', 'zh-CN': '已加载示例：' },
-  'workshop.example.editable': {
-    en: 'Editable defaults: change anything and run.',
-    'zh-CN': '可编辑的默认值：随意修改后运行。'
-  },
-  'workshop.example.clear': {
-    en: 'Back to the default inputs',
-    'zh-CN': '恢复默认输入'
-  },
   'workshop.signIn.meta.title': {
     en: 'Sign in · Comfy Workshop',
     'zh-CN': '登录 · Comfy 工作坊'
@@ -8591,16 +8586,6 @@ Enterprise`
     'zh-CN': '换个关键词或清除筛选条件。'
   },
   'workshop.empty.clear': { en: 'Clear filters', 'zh-CN': '清除筛选' },
-  'workshop.workflows.eyebrow': { en: 'Coming in V2', 'zh-CN': 'V2 即将推出' },
-  'workshop.workflows.heading': {
-    en: 'Curated workflows land here next',
-    'zh-CN': '精选工作流即将在此上线'
-  },
-  'workshop.workflows.body': {
-    en: 'Workflows will sit next to models in every use case, with presets, one-click Run, and Deploy to Developer Platform.',
-    'zh-CN':
-      '工作流将与模型一起出现在每个用途下，支持预设、一键运行以及部署到开发者平台。'
-  },
 
   // Workshop – model detail
   'workshop.model.meta.description': {
@@ -8870,22 +8855,12 @@ Enterprise`
     en: 'Prototype controls · mock data',
     'zh-CN': '原型控制 · 模拟数据'
   },
-  'workshop.proto.scope': { en: 'Scope', 'zh-CN': '范围' },
   'workshop.proto.share': { en: 'Share this setup', 'zh-CN': '分享此配置' },
   'workshop.proto.shareCopy': { en: 'Copy link', 'zh-CN': '复制链接' },
   'workshop.proto.shareCopied': { en: 'Copied', 'zh-CN': '已复制' },
   'workshop.proto.shareHint': {
     en: 'Opens this page with the controls above already applied.',
     'zh-CN': '打开此页面时会自动应用上面的控制项。'
-  },
-  'workshop.proto.entry': { en: 'Entry point', 'zh-CN': '入口' },
-  'workshop.proto.entry.workshop': {
-    en: 'V1 · Models catalog',
-    'zh-CN': 'V1 · 模型目录'
-  },
-  'workshop.proto.entry.hub': {
-    en: 'V2 · Comfy Workflows (comfy.org/workflows)',
-    'zh-CN': 'V2 · Comfy 工作流（comfy.org/workflows）'
   },
   'workshop.hub.title': { en: 'Browse Workflows', 'zh-CN': '浏览工作流' },
   'workshop.hub.subtitle': {
@@ -8997,14 +8972,6 @@ Enterprise`
   'workshop.hub.showing': {
     en: 'Showing {shown} of {total} templates',
     'zh-CN': '显示 {shown} / {total} 个模板'
-  },
-  'workshop.proto.scope.v1': {
-    en: 'V1 · Models playground (11 Sep)',
-    'zh-CN': 'V1 · 模型游乐场（9 月 11 日）'
-  },
-  'workshop.proto.scope.v2': {
-    en: 'V2 · Workflows + Deploy (GA 30 Sep)',
-    'zh-CN': 'V2 · 工作流 + 部署（9 月 30 日 GA）'
   },
   'workshop.proto.statuses': {
     en: 'Show deprecated and degraded models',

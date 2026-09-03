@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 
 import { getRoutes } from '../../config/routes'
+import type { WorkshopModel } from '../../config/workshop'
 import { discoveryModels } from '../../data/modelDiscovery'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -18,8 +19,16 @@ function reveal(slug: string) {
   revealed.value = new Set(revealed.value).add(slug)
 }
 
+// From the home a visitor is still discovering: land on the catalog filtered
+// to that provider, where every model and version of theirs is one row away,
+// rather than on a single model's page.
+const cardHref = ({ provider, href }: WorkshopModel) =>
+  provider
+    ? `${routes.workshop}?provider=${encodeURIComponent(provider)}`
+    : href
+
 const cardClass =
-  'group/card bg-transparency-white-t4 relative flex h-52 w-56 shrink-0 flex-col items-center justify-center gap-3 overflow-hidden rounded-3xl border border-transparency-white-t8 px-5 text-center text-primary-warm-white transition-colors hover:border-transparency-white-t20 focus-visible:border-primary-comfy-yellow focus-visible:outline-none'
+  'group/card bg-transparency-white-t4 relative flex h-44 w-48 shrink-0 flex-col items-center justify-center gap-3 overflow-hidden rounded-3xl border border-transparency-white-t8 px-5 text-center text-primary-warm-white transition-colors hover:border-transparency-white-t20 focus-visible:border-primary-comfy-yellow focus-visible:outline-none'
 </script>
 
 <template>
@@ -34,62 +43,68 @@ const cardClass =
         {{ t('modelDiscovery.label', locale) }}
       </p>
       <h2
-        class="text-3.5xl/tight mt-6 font-light whitespace-pre-line text-primary-comfy-canvas lg:text-5xl"
+        class="text-3.5xl/tight text-primary-comfy-canvas mt-6 font-light whitespace-pre-line lg:text-5xl"
       >
         {{ t('modelDiscovery.heading', locale) }}
       </h2>
       <p
-        class="mt-6 max-w-xl text-sm font-light text-primary-comfy-canvas/80 lg:text-base/snug"
+        class="text-primary-comfy-canvas/80 mt-6 max-w-xl text-sm font-light lg:text-base/snug"
       >
         {{ t('modelDiscovery.subtitle', locale) }}
       </p>
     </div>
 
     <div
-      class="group mt-12 flex w-max gap-3 lg:mt-16"
+      class="mt-12 px-6 lg:mt-16 lg:px-12"
       :aria-label="t('modelDiscovery.rowLabel', locale)"
       role="region"
     >
-      <div
-        v-for="copy in 2"
-        :key="copy"
-        class="animate-marquee flex shrink-0 gap-3 group-focus-within:[animation-play-state:paused] group-hover:[animation-play-state:paused]"
-        style="--marquee-gap: 0.75rem"
-        :aria-hidden="copy === 2 ? 'true' : undefined"
-      >
-        <a
-          v-for="{ model, logo } in discoveryModels"
-          :key="model.slug"
-          :href="model.href"
-          :class="cardClass"
-          :tabindex="copy === 2 ? -1 : undefined"
-          @pointerenter="reveal(model.slug)"
-          @focus="reveal(model.slug)"
-        >
-          <template v-if="revealed.has(model.slug) && model.thumbnailUrl">
-            <StaticFrame
-              :src="model.thumbnailUrl"
-              class="absolute inset-0 size-full object-cover opacity-0 transition-opacity duration-300 group-hover/card:opacity-50 group-focus-visible/card:opacity-50"
-            />
-            <span
-              class="absolute inset-0 bg-black/60 opacity-0 transition-opacity duration-300 group-hover/card:opacity-100 group-focus-visible/card:opacity-100"
-              aria-hidden="true"
-            />
-          </template>
-          <span
-            class="relative size-9 bg-current mask-contain mask-center mask-no-repeat"
-            :style="{ maskImage: `url(${logo})` }"
-            aria-hidden="true"
-          />
-          <span class="relative flex flex-col gap-0.5">
-            <span class="text-base/tight font-medium">{{ model.name }}</span>
-            <span
-              class="text-xs text-primary-warm-gray transition-colors group-hover/card:text-primary-warm-white group-focus-visible/card:text-primary-warm-white"
+      <div class="overflow-hidden">
+        <div class="group flex w-max gap-3">
+          <div
+            v-for="copy in 2"
+            :key="copy"
+            class="animate-marquee flex shrink-0 gap-3 group-focus-within:[animation-play-state:paused] group-hover:[animation-play-state:paused]"
+            style="--marquee-gap: 0.75rem"
+            :aria-hidden="copy === 2 ? 'true' : undefined"
+          >
+            <a
+              v-for="{ model, logo } in discoveryModels"
+              :key="model.slug"
+              :href="cardHref(model)"
+              :class="cardClass"
+              :tabindex="copy === 2 ? -1 : undefined"
+              @pointerenter="reveal(model.slug)"
+              @focus="reveal(model.slug)"
             >
-              {{ model.provider ?? t('workshop.card.partnerNode', locale) }}
-            </span>
-          </span>
-        </a>
+              <template v-if="revealed.has(model.slug) && model.thumbnailUrl">
+                <StaticFrame
+                  :src="model.thumbnailUrl"
+                  class="absolute inset-0 size-full object-cover opacity-0 transition-opacity duration-300 group-hover/card:opacity-50 group-focus-visible/card:opacity-50"
+                />
+                <span
+                  class="absolute inset-0 bg-black/60 opacity-0 transition-opacity duration-300 group-hover/card:opacity-100 group-focus-visible/card:opacity-100"
+                  aria-hidden="true"
+                />
+              </template>
+              <span
+                class="relative size-9 bg-current mask-contain mask-center mask-no-repeat"
+                :style="{ maskImage: `url(${logo})` }"
+                aria-hidden="true"
+              />
+              <span class="relative flex flex-col gap-0.5">
+                <span class="text-base/tight font-medium">{{
+                  model.name
+                }}</span>
+                <span
+                  class="text-primary-warm-gray group-hover/card:text-primary-warm-white group-focus-visible/card:text-primary-warm-white text-xs transition-colors"
+                >
+                  {{ model.provider ?? t('workshop.card.partnerNode', locale) }}
+                </span>
+              </span>
+            </a>
+          </div>
+        </div>
       </div>
     </div>
 

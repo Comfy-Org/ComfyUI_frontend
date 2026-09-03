@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Check, Link, Settings2 } from '@lucide/vue'
+import { Check, ChevronDown, Link, Settings2 } from '@lucide/vue'
 import {
   PopoverContent,
   PopoverPortal,
@@ -17,19 +17,15 @@ import {
   useMockSession
 } from '../../composables/useMockSession'
 import type {
-  Entry,
-  Listing,
   ModelState,
   RunOutcome,
-  Scope
+  Version
 } from '../../composables/usePrototypeTweaks'
 import {
-  ENTRIES,
-  LISTINGS,
   MODEL_STATES,
   OUTPUT_COUNTS,
   RUN_OUTCOMES,
-  SCOPES,
+  VERSIONS,
   usePrototypeTweaks
 } from '../../composables/usePrototypeTweaks'
 import type { SessionChoice, ShareState } from '../../config/workshop-share'
@@ -47,15 +43,8 @@ const { locale = 'en', showRunControls = false } = defineProps<{
 
 const { session, signIn, signOut, setCredits, setSubscribed, setRole } =
   useMockSession()
-const {
-  outcome,
-  modelState,
-  scope,
-  entry,
-  listing,
-  showStatuses,
-  outputCount
-} = usePrototypeTweaks()
+const { outcome, modelState, version, showStatuses, outputCount } =
+  usePrototypeTweaks()
 
 const SESSION_CHOICES: readonly SessionChoice[] = [
   'signedOut',
@@ -86,9 +75,7 @@ const isMember = computed(() => account.value?.role === 'member')
 // browser remembered.
 onMounted(() => {
   const shared = decodeShareSearch(location.search)
-  if (shared.scope) scope.value = shared.scope
-  if (shared.entry) entry.value = shared.entry
-  if (shared.listing) listing.value = shared.listing
+  if (shared.version) version.value = shared.version
   if (shared.showStatuses !== undefined)
     showStatuses.value = shared.showStatuses
   if (shared.outcome) outcome.value = shared.outcome
@@ -107,9 +94,7 @@ onMounted(() => {
 const pageUrl = ref('')
 const pageSearch = ref('')
 const shareState = computed<ShareState>(() => ({
-  scope: scope.value,
-  entry: entry.value,
-  listing: listing.value,
+  version: version.value,
   showStatuses: showStatuses.value,
   session: sessionChoice.value,
   subscribed: account.value?.subscribed ?? true,
@@ -124,6 +109,11 @@ const shareUrl = computed(
     `${pageUrl.value}${encodeShareSearch(shareState.value, pageSearch.value)}`
 )
 const copied = ref(false)
+const copyLabel = computed(() =>
+  copied.value
+    ? t('workshop.proto.shareCopied', locale)
+    : t('workshop.proto.shareCopy', locale)
+)
 
 async function copyShareUrl() {
   try {
@@ -143,17 +133,10 @@ function onSessionChange(event: Event) {
   else signIn(choice)
 }
 
-const scopeLabel: Record<Scope, TranslationKey> = {
-  v1: 'workshop.proto.scope.v1',
-  v2: 'workshop.proto.scope.v2'
-}
-const entryLabel: Record<Entry, TranslationKey> = {
-  workshop: 'workshop.proto.entry.workshop',
-  hub: 'workshop.proto.entry.hub'
-}
-const listingLabel: Record<Listing, TranslationKey> = {
-  flat: 'workshop.proto.listing.flat',
-  sections: 'workshop.proto.listing.sections'
+const versionLabel: Record<Version, TranslationKey> = {
+  v1: 'workshop.proto.version.v1',
+  'v1.1': 'workshop.proto.version.v1_1',
+  v2: 'workshop.proto.version.v2'
 }
 
 const outcomeLabel: Record<RunOutcome, TranslationKey> = {
@@ -180,11 +163,11 @@ const switchClass = (on: boolean) =>
   )
 const knobClass = (on: boolean) =>
   cn(
-    'absolute top-0.5 left-0.5 size-4 rounded-full bg-primary-comfy-ink transition-transform',
+    'bg-primary-comfy-ink absolute top-0.5 left-0.5 size-4 rounded-full transition-transform',
     on && 'translate-x-4'
   )
 const selectClass =
-  'h-8 w-full rounded-lg border border-transparency-white-t20 bg-transparency-white-t4 px-2 text-xs text-primary-warm-white outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50'
+  'focus-visible:ring-primary-comfy-yellow/50 h-8 w-full appearance-none rounded-lg border border-transparency-white-t20 bg-transparency-white-t4 ps-2 pe-7 text-xs text-primary-warm-white outline-none focus-visible:ring-3'
 </script>
 
 <template>
@@ -193,7 +176,7 @@ const selectClass =
       data-testid="prototype-tweaks"
       :aria-label="t('workshop.proto.title', locale)"
       :title="t('workshop.proto.title', locale)"
-      class="border-primary-comfy-ink-light bg-site-dropdown focus-visible:ring-primary-comfy-yellow/50 fixed right-4 bottom-4 z-40 grid size-9 cursor-pointer place-items-center rounded-full border text-primary-warm-gray shadow-lg transition-colors outline-none hover:text-primary-warm-white focus-visible:ring-3"
+      class="border-primary-comfy-ink-light bg-site-dropdown focus-visible:ring-primary-comfy-yellow/50 text-primary-warm-gray hover:text-primary-warm-white fixed right-4 bottom-4 z-40 grid size-9 cursor-pointer place-items-center rounded-full border shadow-lg transition-colors outline-none focus-visible:ring-3"
     >
       <Settings2 class="size-4" aria-hidden="true" />
     </PopoverTrigger>
@@ -202,7 +185,7 @@ const selectClass =
         align="end"
         side="top"
         :side-offset="8"
-        class="border-primary-comfy-ink-light bg-site-dropdown z-50 w-72 rounded-2xl border p-3 text-xs shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
+        class="border-primary-comfy-ink-light bg-site-dropdown data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0 z-50 w-80 rounded-2xl border p-3 text-xs shadow-lg"
       >
         <p
           class="text-primary-comfy-yellow mb-3 text-[10px] font-bold tracking-widest uppercase"
@@ -213,62 +196,28 @@ const selectClass =
         <div class="flex flex-col gap-3">
           <label class="flex flex-col gap-1">
             <span class="text-primary-warm-gray">
-              {{ t('workshop.proto.scope', locale) }}
+              {{ t('workshop.proto.version', locale) }}
             </span>
-            <select
-              v-model="scope"
-              data-testid="tweak-scope"
-              :class="selectClass"
-            >
-              <option
-                v-for="option in SCOPES"
-                :key="option"
-                :value="option"
-                class="bg-primary-comfy-ink"
+            <span class="relative flex items-center">
+              <select
+                v-model="version"
+                data-testid="tweak-version"
+                :class="selectClass"
               >
-                {{ t(scopeLabel[option], locale) }}
-              </option>
-            </select>
-          </label>
-
-          <label class="flex flex-col gap-1">
-            <span class="text-primary-warm-gray">
-              {{ t('workshop.proto.entry', locale) }}
+                <option
+                  v-for="option in VERSIONS"
+                  :key="option"
+                  :value="option"
+                  class="bg-primary-comfy-ink"
+                >
+                  {{ t(versionLabel[option], locale) }}
+                </option>
+              </select>
+              <ChevronDown
+                class="pointer-events-none absolute right-2 size-3.5 text-primary-warm-gray"
+                aria-hidden="true"
+              />
             </span>
-            <select
-              v-model="entry"
-              data-testid="tweak-entry"
-              :class="selectClass"
-            >
-              <option
-                v-for="option in ENTRIES"
-                :key="option"
-                :value="option"
-                class="bg-primary-comfy-ink"
-              >
-                {{ t(entryLabel[option], locale) }}
-              </option>
-            </select>
-          </label>
-
-          <label class="flex flex-col gap-1">
-            <span class="text-primary-warm-gray">
-              {{ t('workshop.proto.listing', locale) }}
-            </span>
-            <select
-              v-model="listing"
-              data-testid="tweak-listing"
-              :class="selectClass"
-            >
-              <option
-                v-for="option in LISTINGS"
-                :key="option"
-                :value="option"
-                class="bg-primary-comfy-ink"
-              >
-                {{ t(listingLabel[option], locale) }}
-              </option>
-            </select>
           </label>
 
           <label class="flex items-center justify-between gap-3">
@@ -291,21 +240,27 @@ const selectClass =
             <span class="text-primary-warm-gray">
               {{ t('workshop.proto.session', locale) }}
             </span>
-            <select
-              :value="sessionChoice"
-              data-testid="tweak-session"
-              :class="selectClass"
-              @change="onSessionChange"
-            >
-              <option
-                v-for="choice in SESSION_CHOICES"
-                :key="choice"
-                :value="choice"
-                class="bg-primary-comfy-ink"
+            <span class="relative flex items-center">
+              <select
+                :value="sessionChoice"
+                data-testid="tweak-session"
+                :class="selectClass"
+                @change="onSessionChange"
               >
-                {{ t(sessionLabel[choice], locale) }}
-              </option>
-            </select>
+                <option
+                  v-for="choice in SESSION_CHOICES"
+                  :key="choice"
+                  :value="choice"
+                  class="bg-primary-comfy-ink"
+                >
+                  {{ t(sessionLabel[choice], locale) }}
+                </option>
+              </select>
+              <ChevronDown
+                class="pointer-events-none absolute right-2 size-3.5 text-primary-warm-gray"
+                aria-hidden="true"
+              />
+            </span>
           </label>
 
           <label class="flex items-center justify-between gap-3">
@@ -409,66 +364,84 @@ const selectClass =
               <span class="text-primary-warm-gray">
                 {{ t('workshop.proto.outcome', locale) }}
               </span>
-              <select
-                v-model="outcome"
-                data-testid="tweak-outcome"
-                :class="selectClass"
-              >
-                <option
-                  v-for="option in RUN_OUTCOMES"
-                  :key="option"
-                  :value="option"
-                  class="bg-primary-comfy-ink"
+              <span class="relative flex items-center">
+                <select
+                  v-model="outcome"
+                  data-testid="tweak-outcome"
+                  :class="selectClass"
                 >
-                  {{ t(outcomeLabel[option], locale) }}
-                </option>
-              </select>
+                  <option
+                    v-for="option in RUN_OUTCOMES"
+                    :key="option"
+                    :value="option"
+                    class="bg-primary-comfy-ink"
+                  >
+                    {{ t(outcomeLabel[option], locale) }}
+                  </option>
+                </select>
+                <ChevronDown
+                  class="pointer-events-none absolute right-2 size-3.5 text-primary-warm-gray"
+                  aria-hidden="true"
+                />
+              </span>
             </label>
-            <p class="text-[10px] text-primary-warm-gray">
+            <p class="text-primary-warm-gray text-[10px]">
               {{ t('workshop.proto.outcomeHint', locale) }}
             </p>
             <label class="flex flex-col gap-1">
               <span class="text-primary-warm-gray">
                 {{ t('workshop.proto.gate', locale) }}
               </span>
-              <select
-                v-model="modelState"
-                data-testid="tweak-model-state"
-                :class="selectClass"
-              >
-                <option
-                  v-for="option in MODEL_STATES"
-                  :key="option"
-                  :value="option"
-                  class="bg-primary-comfy-ink"
+              <span class="relative flex items-center">
+                <select
+                  v-model="modelState"
+                  data-testid="tweak-model-state"
+                  :class="selectClass"
                 >
-                  {{ t(modelStateLabel[option], locale) }}
-                </option>
-              </select>
+                  <option
+                    v-for="option in MODEL_STATES"
+                    :key="option"
+                    :value="option"
+                    class="bg-primary-comfy-ink"
+                  >
+                    {{ t(modelStateLabel[option], locale) }}
+                  </option>
+                </select>
+                <ChevronDown
+                  class="pointer-events-none absolute right-2 size-3.5 text-primary-warm-gray"
+                  aria-hidden="true"
+                />
+              </span>
             </label>
             <label class="flex flex-col gap-1">
               <span class="text-primary-warm-gray">
                 {{ t('workshop.proto.outputs', locale) }}
               </span>
-              <select
-                v-model="outputCount"
-                data-testid="tweak-outputs"
-                :class="selectClass"
-              >
-                <option
-                  v-for="count in OUTPUT_COUNTS"
-                  :key="count"
-                  :value="count"
-                  class="bg-primary-comfy-ink"
+              <span class="relative flex items-center">
+                <select
+                  v-model="outputCount"
+                  data-testid="tweak-outputs"
+                  :class="selectClass"
                 >
-                  {{ count }}
-                </option>
-              </select>
+                  <option
+                    v-for="count in OUTPUT_COUNTS"
+                    :key="count"
+                    :value="count"
+                    class="bg-primary-comfy-ink"
+                  >
+                    {{ count }}
+                  </option>
+                </select>
+                <ChevronDown
+                  class="pointer-events-none absolute right-2 size-3.5 text-primary-warm-gray"
+                  aria-hidden="true"
+                />
+              </span>
             </label>
           </template>
 
           <div
-            class="flex flex-col gap-2 border-t border-transparency-white-t8 pt-3"
+            class="border-transparency-white-t8 flex flex-col gap-2 border-t pt-3"
           >
             <span class="text-primary-warm-gray">
               {{ t('workshop.proto.share', locale) }}
@@ -478,15 +451,17 @@ const selectClass =
                 :value="shareUrl"
                 readonly
                 data-testid="tweak-share-url"
-                :class="cn(selectClass, 'min-w-0 flex-1 truncate')"
+                :class="cn(selectClass, 'min-w-0 flex-1 truncate pe-2')"
                 @focus="($event.target as HTMLInputElement).select()"
               />
               <button
                 type="button"
                 data-testid="tweak-share-copy"
+                :aria-label="copyLabel"
+                :title="copyLabel"
                 :class="
                   cn(
-                    'inline-flex h-8 shrink-0 cursor-pointer items-center gap-1 rounded-lg px-3 text-[11px] font-bold tracking-wider uppercase transition-colors',
+                    'grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg transition-colors',
                     copied
                       ? 'bg-primary-comfy-yellow/20 text-primary-comfy-yellow'
                       : 'bg-primary-comfy-yellow text-primary-comfy-ink hover:opacity-90'
@@ -494,16 +469,11 @@ const selectClass =
                 "
                 @click="copyShareUrl"
               >
-                <Check v-if="copied" class="size-3.5" aria-hidden="true" />
-                <Link v-else class="size-3.5" aria-hidden="true" />
-                {{
-                  copied
-                    ? t('workshop.proto.shareCopied', locale)
-                    : t('workshop.proto.shareCopy', locale)
-                }}
+                <Check v-if="copied" class="size-4" aria-hidden="true" />
+                <Link v-else class="size-4" aria-hidden="true" />
               </button>
             </div>
-            <p class="text-[10px] text-primary-warm-gray">
+            <p class="text-primary-warm-gray text-[10px]">
               {{ t('workshop.proto.shareHint', locale) }}
             </p>
           </div>

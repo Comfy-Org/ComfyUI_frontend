@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Coins, Copy, Play, X } from '@lucide/vue'
+import { Coins, Copy, Play } from '@lucide/vue'
 import { useIntervalFn } from '@vueuse/core'
 import { computed, onBeforeUnmount, onMounted, ref, useSlots, watch } from 'vue'
 
@@ -67,7 +67,6 @@ const examples = examplesForModel(model)
 const firstExample = examples[0]
 // Every page arrives with its first example loaded: prompt, inputs and the
 // matching output, all editable.
-const loadedExample = ref<PlaygroundExample | undefined>(firstExample)
 const activeExample = ref<PlaygroundExample | undefined>(
   firstExample?.fields ? firstExample : undefined
 )
@@ -285,18 +284,10 @@ function reset() {
 
 function openExample(example: PlaygroundExample) {
   clearTimeout(timer)
-  loadedExample.value = example
   activeExample.value = example.fields ? example : undefined
   values.value = exampleValues(schema.value, example)
   runState.value = { status: 'example', output: exampleOutput(example) }
   activeSection.value = 'playground'
-}
-
-function clearExample() {
-  loadedExample.value = undefined
-  activeExample.value = undefined
-  values.value = defaultValues(schema.value, model.defaults)
-  reset()
 }
 
 function useInCode() {
@@ -309,7 +300,7 @@ function useInCode() {
     <div
       role="tablist"
       :aria-label="t('workshop.title', locale)"
-      class="flex gap-8 border-b border-transparency-white-t8"
+      class="border-transparency-white-t8 flex gap-8 border-b"
       data-testid="model-tabs"
     >
       <button
@@ -324,7 +315,7 @@ function useInCode() {
             'cursor-pointer border-b-2 pb-3 text-sm font-bold tracking-wider uppercase transition-colors',
             section === activeSection
               ? 'border-primary-comfy-yellow text-primary-warm-white'
-              : 'border-transparent text-primary-warm-gray hover:text-primary-warm-white'
+              : 'text-primary-warm-gray hover:text-primary-warm-white border-transparent'
           )
         "
         @click="activeSection = section"
@@ -339,45 +330,16 @@ function useInCode() {
       data-testid="playground-tab"
     >
       <div
-        class="bg-transparency-white-t4 flex flex-col overflow-hidden rounded-2xl border border-transparency-white-t8 lg:col-span-5"
+        class="bg-transparency-white-t4 border-transparency-white-t8 flex flex-col overflow-hidden rounded-2xl border lg:col-span-5"
         data-testid="playground-input"
       >
         <header
-          class="border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-warm-gray uppercase"
+          class="border-transparency-white-t8 text-primary-warm-gray border-b px-5 py-3 text-xs font-bold tracking-wider uppercase"
         >
           <span>{{ t('workshop.input.title', locale) }}</span>
         </header>
 
         <div class="flex flex-col gap-6 p-5">
-          <div
-            v-if="loadedExample"
-            class="bg-transparency-white-t4 flex items-center justify-between gap-3 rounded-2xl border border-transparency-white-t20 px-4 py-2 text-xs"
-            data-testid="active-example"
-          >
-            <span class="flex min-w-0 flex-col gap-0.5 text-primary-warm-gray">
-              <span class="truncate">
-                {{ t('workshop.example.loaded', locale) }}
-                <span class="text-primary-warm-white">
-                  {{ loadedExample.title }}
-                </span>
-                <template v-if="activeExample?.nodeDisplayName">
-                  · {{ activeExample.nodeDisplayName }}
-                </template>
-              </span>
-              <span>{{ t('workshop.example.editable', locale) }}</span>
-            </span>
-            <button
-              type="button"
-              :aria-label="t('workshop.example.clear', locale)"
-              :title="t('workshop.example.clear', locale)"
-              data-testid="active-example-clear"
-              class="shrink-0 cursor-pointer text-primary-warm-gray hover:text-primary-warm-white"
-              @click="clearExample"
-            >
-              <X class="size-4" aria-hidden="true" />
-            </button>
-          </div>
-
           <PlaygroundForm
             v-model="values"
             :schema
@@ -388,7 +350,7 @@ function useInCode() {
         </div>
 
         <div
-          class="mt-auto flex flex-col gap-2 border-t border-transparency-white-t8 p-3"
+          class="border-transparency-white-t8 mt-auto flex flex-col gap-2 border-t p-3"
         >
           <Button
             v-if="isRunning"
@@ -467,7 +429,7 @@ function useInCode() {
             {{ t('workshop.run.run', locale) }}
             <template v-if="creditsPerRun" #append>
               <span
-                class="ml-auto inline-flex h-8 items-center gap-1.5 rounded-full bg-primary-comfy-ink/10 px-3 text-xs font-bold tracking-normal normal-case tabular-nums"
+                class="bg-primary-comfy-ink/10 ml-auto inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-bold tracking-normal normal-case tabular-nums"
                 data-testid="run-cost"
               >
                 <Coins class="size-3.5" aria-hidden="true" />
@@ -491,7 +453,7 @@ function useInCode() {
           </Button>
           <p
             v-if="gate === 'noCredits'"
-            class="text-xs text-primary-warm-gray"
+            class="text-primary-warm-gray text-xs"
             data-testid="gate-note"
           >
             {{
@@ -504,7 +466,7 @@ function useInCode() {
           </p>
           <p
             v-else-if="gate === 'memberNoCredits'"
-            class="text-xs text-primary-warm-gray"
+            class="text-primary-warm-gray text-xs"
             data-testid="gate-note"
           >
             {{
@@ -541,7 +503,7 @@ function useInCode() {
                 )
               }}
             </Button>
-            <p class="text-xs text-primary-warm-gray" data-testid="clone-note">
+            <p class="text-primary-warm-gray text-xs" data-testid="clone-note">
               {{ cloneNote }}
             </p>
           </template>

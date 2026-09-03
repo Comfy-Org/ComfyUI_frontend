@@ -11,10 +11,10 @@ async function useAccount(page: Page, kind: 'new' | 'existing') {
   await page.keyboard.press('Escape')
 }
 
-test.describe('Workshop V2 entry', () => {
+test.describe('Workshop V2', () => {
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() =>
-      localStorage.setItem('comfy-workshop-entry', 'hub')
+      localStorage.setItem('comfy-workshop-version', 'v2')
     )
   })
 

@@ -1,18 +1,14 @@
 import type { AccountKind } from '../composables/useMockSession'
 import type {
-  Entry,
-  Listing,
   ModelState,
   RunOutcome,
-  Scope
+  Version
 } from '../composables/usePrototypeTweaks'
 import {
-  ENTRIES,
-  LISTINGS,
   MODEL_STATES,
   OUTPUT_COUNTS,
   RUN_OUTCOMES,
-  SCOPES
+  VERSIONS
 } from '../composables/usePrototypeTweaks'
 
 export type SessionChoice = 'signedOut' | AccountKind
@@ -21,9 +17,7 @@ type OutputCount = (typeof OUTPUT_COUNTS)[number]
 
 // Everything the prototype controls can set, so one link reproduces a setup.
 export interface ShareState {
-  readonly scope: Scope
-  readonly entry: Entry
-  readonly listing: Listing
+  readonly version: Version
   readonly showStatuses: boolean
   readonly session: SessionChoice
   readonly subscribed: boolean
@@ -35,9 +29,7 @@ export interface ShareState {
 }
 
 export const SHARE_DEFAULTS: ShareState = {
-  scope: 'v1',
-  entry: 'workshop',
-  listing: 'flat',
+  version: 'v1',
   showStatuses: false,
   session: 'signedOut',
   subscribed: true,
@@ -56,9 +48,7 @@ const SESSION_CHOICES: readonly SessionChoice[] = [
 const BALANCE_CHOICES: readonly BalanceChoice[] = ['normal', 'zero', 'low']
 
 const KEYS = {
-  scope: 'scope',
-  entry: 'entry',
-  listing: 'listing',
+  version: 'version',
   showStatuses: 'statuses',
   session: 'session',
   subscribed: 'subscribed',
@@ -105,9 +95,7 @@ function pickFlag(raw: string | null): boolean | undefined {
 export function decodeShareSearch(search: string): Partial<ShareState> {
   const params = new URLSearchParams(search)
   const decoded: Partial<ShareState> = {
-    scope: pick(SCOPES, params.get(KEYS.scope)),
-    entry: pick(ENTRIES, params.get(KEYS.entry)),
-    listing: pick(LISTINGS, params.get(KEYS.listing)),
+    version: pick(VERSIONS, params.get(KEYS.version)),
     showStatuses: pickFlag(params.get(KEYS.showStatuses)),
     session: pick(SESSION_CHOICES, params.get(KEYS.session)),
     subscribed: pickFlag(params.get(KEYS.subscribed)),
