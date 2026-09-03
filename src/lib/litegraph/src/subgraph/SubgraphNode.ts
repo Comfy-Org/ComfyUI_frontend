@@ -348,7 +348,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
         delete input.pos
         delete input.widget
-        delete input.widgetId
+        input.widgetId = undefined
         input._widget = undefined
         this.invalidatePromotedViews()
       },
@@ -656,7 +656,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       // that gets discarded), letting a later unrelated instance inherit
       // this value. onAdded() performs the deferred registration once a
       // real id is assigned.
-      delete input.widgetId
+      input.widgetId = undefined
       return
     }
 
@@ -677,7 +677,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     if (!registered) {
       delete input.pos
       delete input.widget
-      delete input.widgetId
+      input.widgetId = undefined
       input._widget = undefined
       return
     }
