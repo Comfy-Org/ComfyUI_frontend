@@ -178,4 +178,60 @@ describe('WorkshopField', () => {
     await user.selectOptions(select, '')
     expect(updated).toHaveBeenLastCalledWith({ quality: undefined })
   })
+
+  it('records an uploaded file as a single value or a list, per the field', async () => {
+    // The value stands in for an upload the run path resolves later; what
+    // matters here is that a single-file field never yields an array and a
+    // multiple one always does, because the request body shape depends on it.
+    const single = renderField({
+      kind: 'media',
+      name: 'media_image',
+      role: 'image',
+      label: 'Image',
+      required: false,
+      multiple: false,
+      accept: 'image'
+    })
+    const user = userEvent.setup()
+    await user.upload(
+      screen.getByLabelText(/Image/),
+      new File(['x'], 'cat.png', { type: 'image/png' })
+    )
+    expect(single).toHaveBeenLastCalledWith({ media_image: '<cat.png>' })
+  })
+
+  it('keeps every file when the field takes more than one', async () => {
+    const updated = renderField({
+      kind: 'media',
+      name: 'media_frames',
+      role: 'frames',
+      label: 'Frames',
+      required: false,
+      multiple: true,
+      accept: 'image'
+    })
+    await userEvent
+      .setup()
+      .upload(screen.getByLabelText(/Frames/), [
+        new File(['a'], 'a.png', { type: 'image/png' }),
+        new File(['b'], 'b.png', { type: 'image/png' })
+      ])
+    expect(updated).toHaveBeenLastCalledWith({
+      media_frames: ['<a.png>', '<b.png>']
+    })
+  })
+
+  it('toggles on and back off', async () => {
+    const updated = renderField({
+      kind: 'toggle',
+      name: 'enhance',
+      label: 'Enhance',
+      required: false,
+      defaultValue: false
+    })
+    const toggle = screen.getByRole('switch', { name: 'Enhance' })
+    const user = userEvent.setup()
+    await user.click(toggle)
+    expect(updated).toHaveBeenLastCalledWith({ enhance: true })
+  })
 })
