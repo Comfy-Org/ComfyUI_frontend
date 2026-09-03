@@ -179,7 +179,7 @@ export class LinkConnector {
           'before-move-input',
           renderLink
         )
-        if (mayContinue === false) return
+        if (!mayContinue) return
 
         renderLinks.push(renderLink)
       } catch (error) {
@@ -254,7 +254,7 @@ export class LinkConnector {
             'before-move-input',
             renderLink
           )
-          if (mayContinue === false) return
+          if (!mayContinue) return
 
           renderLinks.push(renderLink)
 
@@ -322,7 +322,7 @@ export class LinkConnector {
           'before-move-output',
           renderLink
         )
-        if (mayContinue === false) continue
+        if (!mayContinue) continue
 
         renderLinks.push(renderLink)
         this.floatingLinks.push(floatingLink)
@@ -392,7 +392,7 @@ export class LinkConnector {
             'before-move-output',
             renderLink
           )
-          if (mayContinue === false) continue
+          if (!mayContinue) continue
 
           renderLinks.push(renderLink)
         } catch (error) {
@@ -691,7 +691,7 @@ export class LinkConnector {
         renderLinks: this.renderLinks,
         event
       })
-      if (mayContinue === false) return
+      if (!mayContinue) return
     }
 
     try {
@@ -857,7 +857,7 @@ export class LinkConnector {
       reroute,
       event
     })
-    if (mayContinue === false) return
+    if (!mayContinue) return
 
     // Connecting to input
     if (this.state.connectingTo === 'input') {
@@ -950,7 +950,7 @@ export class LinkConnector {
     if (this.renderLinks.length === 0) return
     // For external event only.
     const mayContinue = this.events.dispatch('dropped-on-canvas', event)
-    if (mayContinue === false) return
+    if (!mayContinue) return
 
     this.disconnectLinks()
   }
@@ -982,7 +982,7 @@ export class LinkConnector {
     } = this
 
     const mayContinue = this.events.dispatch('dropped-on-node', { node, event })
-    if (mayContinue === false) return
+    if (!mayContinue) return
 
     // Assume all links are the same type, disallow loopback
     const firstLink = this.renderLinks[0]
@@ -1161,7 +1161,7 @@ export class LinkConnector {
    */
   reset(force = false): void {
     const mayContinue = this.events.dispatch('reset', force)
-    if (mayContinue === false) return
+    if (!mayContinue) return
 
     const {
       state,

@@ -871,8 +871,8 @@ export class LGraphNode
   getExtraMenuOptions?(
     this: LGraphNode,
     canvas: LGraphCanvas,
-    options: (IContextMenuValue<unknown> | null)[]
-  ): (IContextMenuValue<unknown> | null)[]
+    options: (IContextMenuValue | null)[]
+  ): (IContextMenuValue | null)[]
   getMenuOptions?(this: LGraphNode, canvas: LGraphCanvas): IContextMenuValue[]
   onAdded?(this: LGraphNode, graph: LGraph): void
   onDrawCollapsed?(
