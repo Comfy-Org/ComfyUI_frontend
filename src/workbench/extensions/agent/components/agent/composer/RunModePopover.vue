@@ -15,7 +15,10 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import type { AgentRunMode } from '../../../stores/agent/agentRunModeStore'
-import { useAgentRunModeStore } from '../../../stores/agent/agentRunModeStore'
+import {
+  DEFAULT_CREDIT_LIMIT,
+  useAgentRunModeStore
+} from '../../../stores/agent/agentRunModeStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
@@ -25,13 +28,13 @@ const toast = useToastStore()
 const open = ref(false)
 const saving = ref(false)
 const draftMode = ref<AgentRunMode>(store.mode)
-const draftLimit = ref(store.creditLimit)
+const draftLimit = ref(store.creditLimit ?? DEFAULT_CREDIT_LIMIT)
 
 function onOpenChange(next: boolean): void {
   open.value = next
   if (next) {
     draftMode.value = store.mode
-    draftLimit.value = store.creditLimit
+    draftLimit.value = store.creditLimit ?? DEFAULT_CREDIT_LIMIT
   }
 }
 
@@ -57,7 +60,10 @@ function onDraftMode(value: string | undefined): void {
 }
 
 const dirty = computed(
-  () => draftMode.value !== store.mode || draftLimit.value !== store.creditLimit
+  () =>
+    draftMode.value !== store.mode ||
+    (draftMode.value === 'auto_limited' &&
+      draftLimit.value !== store.creditLimit)
 )
 
 const limitValid = computed(() => {
