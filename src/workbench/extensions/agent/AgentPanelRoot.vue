@@ -79,7 +79,10 @@ import type { WorkflowTurnContext } from './composables/agent/useAgentSession'
 import { useAgentSession } from './composables/agent/useAgentSession'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { createAgentRestClient } from './services/agent/agentRestClient'
-import type { OpenTabsSnapshot } from './services/agent/agentRestClient'
+import type {
+  DraftSnapshot,
+  OpenTabsSnapshot
+} from './services/agent/agentRestClient'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
@@ -112,7 +115,8 @@ const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const bindingStore = useAgentWorkflowTabBindingStore()
 const agentPanelStore = useAgentPanelStore()
-const { dismissedSelectionSignature } = storeToRefs(agentPanelStore)
+const { dismissedSelectionSignature, enabled: agentEnabled } =
+  storeToRefs(agentPanelStore)
 const agentNodeSelectionStore = useAgentNodeSelectionStore()
 const tabActivity = useWorkflowTabActivityStore()
 const CREATING_TAB_MIN_DURATION_MS = 500
@@ -141,6 +145,7 @@ const graphMutations = (workflowId: string) => {
         layoutStore.applyOperation({
           type: 'createNode',
           graphId: scope.rootGraphId,
+          ownerGraphId: scope.owningGraphId,
           nodeId,
           layout: {
             id: nodeId,
@@ -162,6 +167,7 @@ const graphMutations = (workflowId: string) => {
           nodeIds.map((nodeId) => ({
             type: 'deleteNode',
             graphId: scope.rootGraphId,
+            ownerGraphId: scope.owningGraphId,
             nodeId,
             source: LayoutSource.AgentRemote,
             actor: context.actor,
@@ -196,6 +202,7 @@ const {
   replace: replaceSelectionTags
 } = useCanvasSelection({
   selection: selectedNodes,
+  enabled: agentEnabled,
   isLive: () => agentPanelStore.isOpen,
   isTracking: () => agentNodeSelectionStore.isActive,
   isPaused: () => agentNodeSelectionStore.isLoadingWorkflow,
@@ -293,6 +300,16 @@ function activeWorkflowTurnContext(): WorkflowTurnContext | undefined {
   return bound === undefined ? undefined : { id: bound, tabPath: active.path }
 }
 
+function activeWorkflowDraft(): DraftSnapshot | undefined {
+  if (workflowDetached.value) return undefined
+  const active = workflowStore.activeWorkflow
+  if (!active) return undefined
+  active.changeTracker?.captureCanvasState()
+  const content = active.activeState
+  if (!content) return undefined
+  return { content }
+}
+
 const activeTab = computed<ActiveTab | null>(() => {
   const active = workflowStore.activeWorkflow
   return active
@@ -375,7 +392,8 @@ const {
     adopted: onWorkflowAdopted,
     prepare: refreshCloudWorkflowIds,
     tabs: openTabsSnapshot,
-    activeTab: enqueueActiveTab
+    activeTab: enqueueActiveTab,
+    draft: activeWorkflowDraft
   }
 })
 
@@ -408,7 +426,6 @@ const mintPortWiring = attachMintPortWiring({
   isDocBound: () => isBoundWorkflowActive.value,
   enqueue: enqueueHumanOperations,
   layoutChanges: (listener) => layoutStore.onChange(listener),
-  withLayoutActor: (actor, fn) => layoutStore.withActor(actor, fn),
   localActorPrefix: ACTOR_CONFIG.USER_PREFIX,
   getGraph: () => (app.isGraphReady ? app.rootGraph : null)
 })
@@ -745,8 +762,10 @@ watch(
   }
 )
 
+watch(() => workflowStore.activeWorkflow, exitNodeSelectionMode)
+
 watch(
-  [() => workflowStore.activeWorkflow?.path, () => canvasStore.currentGraph],
+  () => canvasStore.currentGraph,
   () => {
     if (!agentNodeSelectionStore.isLoadingWorkflow) exitNodeSelectionMode()
   }

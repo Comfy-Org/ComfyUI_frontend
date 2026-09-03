@@ -7,7 +7,6 @@
 import { describe, expect, it } from 'vitest'
 import { reactive } from 'vue'
 
-import type { MergeScenario } from './mergeScenarios'
 import { getMergeScenarios, runScenario } from './mergeScenarios'
 
 function scenario(id: string) {
@@ -114,7 +113,7 @@ describe('merge scenarios', () => {
     // threw DataCloneError and took the whole merge lab down.
     const proxied = reactive({
       ...scenario('delete-then-write-then-add')
-    }) as MergeScenario
+    })
 
     expect(() => runScenario(proxied)).not.toThrow()
     expect(runScenario(proxied).entries).toHaveLength(3)

@@ -52,6 +52,14 @@
 }
 
 @font-face {
+  font-family: 'PP Formula';
+  src: url('/fonts/PPFormula-Bold.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
   font-family: 'PP Formula Narrow';
   src: url('/fonts/PPFormula-NarrowSemibold.woff2') format('woff2');
   font-weight: 600;
@@ -75,6 +83,8 @@
   --color-primary-warm-gray: #7e7c78;
   --color-secondary-mauve: #4d3762;
   --color-destructive: #f44336;
+  /* Legible on the dark ink surfaces; --color-destructive is too dark there. */
+  --color-destructive-light: #ffb4a8;
   --color-primary-comfy-plum: #49378b;
   --color-secondary-deep-plum: #2b2040;
   --color-secondary-cool-gray: #3c3c3c;
@@ -227,7 +237,9 @@
 }
 
 @utility animate-dash-flow {
-  animation: dash-flow 1.2s linear infinite;
+  @media (prefers-reduced-motion: no-preference) {
+    animation: dash-flow 1.2s linear infinite;
+  }
 }
 
 @keyframes platform-builder-float {
@@ -485,4 +497,42 @@ video::-webkit-media-controls-panel {
   --site-bg: var(--color-primary-comfy-ink);
   --site-bg-soft: var(--color-site-bg-soft);
   --site-border-subtle: rgb(255 255 255 / 0.1);
+}
+
+@keyframes backdrop-sway {
+  from {
+    transform: translate3d(-2%, -1%, 0) scale(1);
+  }
+
+  to {
+    transform: translate3d(3%, 2%, 0) scale(1.08);
+  }
+}
+
+@keyframes backdrop-drift {
+  0% {
+    mask-position:
+      8% 22%,
+      78% 70%,
+      45% 12%;
+  }
+
+  100% {
+    mask-position:
+      34% 58%,
+      52% 30%,
+      68% 74%;
+  }
+}
+
+@utility animate-backdrop-sway {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: backdrop-sway 40s ease-in-out infinite alternate;
+  }
+}
+
+@utility animate-backdrop-drift {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: backdrop-drift 48s ease-in-out infinite alternate;
+  }
 }

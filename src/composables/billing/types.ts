@@ -138,6 +138,4 @@ export interface BillingContext extends BillingState, BillingActions {
   getMaxSeats: (tierKey: TierKey) => number
   canRunWorkflows: ComputedRef<boolean>
   showsSubscribeToRunPrompt: ComputedRef<boolean>
-  /** @deprecated Use canAccessSubscriptionFeatures instead */
-  isActiveSubscription: ComputedRef<boolean>
 }

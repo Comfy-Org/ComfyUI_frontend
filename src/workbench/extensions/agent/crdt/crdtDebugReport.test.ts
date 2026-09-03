@@ -43,7 +43,16 @@ const SNAPSHOT: CrdtDebugSnapshot = {
     connected: true,
     workflowId: 'doc-1',
     updatesApplied: 3,
-    lastFrameType: 'doc_update'
+    lastFrameType: 'doc_update',
+    outcomes: {
+      received: 3,
+      applied: 3,
+      skipped: 0,
+      errored: 0,
+      gap: 0,
+      reset: 0,
+      dropped: 0
+    }
   },
   tabId: 'tab-1',
   lastSeq: 7,

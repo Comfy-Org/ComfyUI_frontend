@@ -34,7 +34,16 @@ const STATUS: AgentCrdtStatus = {
   connected: true,
   workflowId: 'doc-1',
   updatesApplied: 4,
-  lastFrameType: 'doc_update'
+  lastFrameType: 'doc_update',
+  outcomes: {
+    received: 5,
+    applied: 4,
+    skipped: 1,
+    errored: 0,
+    gap: 0,
+    reset: 0,
+    dropped: 0
+  }
 }
 
 function renderPanel() {

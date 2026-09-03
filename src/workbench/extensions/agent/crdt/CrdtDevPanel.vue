@@ -130,6 +130,21 @@ const STATUS_ROWS = [
   ['doc id', () => status.workflowId ?? S.none],
   ['connected', () => (status.connected ? S.yes : S.no)],
   ['updates applied', () => String(status.updatesApplied)],
+  [
+    'outcomes (recv/applied/skip/err/gap/reset/drop)',
+    () => {
+      const o = status.outcomes
+      return [
+        o.received,
+        o.applied,
+        o.skipped,
+        o.errored,
+        o.gap,
+        o.reset,
+        o.dropped
+      ].join('/')
+    }
+  ],
   ['last frame', () => status.lastFrameType ?? S.none]
 ] as const
 
@@ -147,7 +162,9 @@ const EVENT_KINDS: readonly DevEventKind[] = [
   'reconnected',
   'subscribe_retry',
   'stale_probe',
-  'rebind'
+  'rebind',
+  'doc_gap',
+  'doc_stale'
 ]
 
 const VERDICT_TONE: Record<string, string> = {
