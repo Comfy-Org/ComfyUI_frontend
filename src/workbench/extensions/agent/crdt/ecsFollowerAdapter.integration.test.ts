@@ -1125,7 +1125,7 @@ describe('EcsFollowerAdapter integration', () => {
         actor: 'agent:test',
         opIds: ['op-1']
       })
-    ).toBe(true)
+    ).toEqual({ status: 'projected', sequence: 1 })
 
     const [stored] = useNodeDataStore().getGraphNodesFor('root', 'root')
     expect(stored).toMatchObject({ id: toNodeId(1), type: 'Source' })

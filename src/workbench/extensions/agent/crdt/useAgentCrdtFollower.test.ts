@@ -691,7 +691,7 @@ describe('useAgentCrdtFollower', () => {
     })
 
     it('does not reconcile after a frame the adapter skipped', () => {
-      adapterState.applyFrame.mockReturnValueOnce(false)
+      adapterState.applyFrame.mockReturnValueOnce({ status: 'unbound' })
       const { unmount, status } = mountFollower('wf-1', true, () => fakeGraph)
 
       dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
