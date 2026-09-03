@@ -103,6 +103,30 @@ async function registerNoBindingCommand(comfyPage: ComfyPage) {
 
 test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
   test.describe('Row Expansion', () => {
+    test('Keyboard activates rows and opens the context menu', async ({
+      comfyPage
+    }) => {
+      const { page } = comfyPage
+
+      await searchKeybindings(page, MULTI_BINDING_COMMAND)
+      const row = getCommandRow(page, MULTI_BINDING_COMMAND)
+      await row.focus()
+      await row.press('Enter')
+      await expect(
+        getExpansionContent(page, MULTI_BINDING_COMMAND)
+      ).toBeVisible()
+
+      await row.press('Space')
+      await expect(
+        getExpansionContent(page, MULTI_BINDING_COMMAND)
+      ).toBeHidden()
+
+      await row.press('Shift+F10')
+      await expect(
+        page.getByRole('menuitem', { name: /Change keybinding/i })
+      ).toBeVisible()
+    })
+
     test('Click on row with 2+ keybindings toggles expansion', async ({
       comfyPage
     }) => {
