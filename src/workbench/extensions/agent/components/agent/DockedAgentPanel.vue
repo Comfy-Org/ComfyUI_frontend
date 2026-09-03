@@ -33,6 +33,7 @@ import { storeToRefs } from 'pinia'
 import { defineAsyncComponent, defineComponent, h, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useWorkspaceInsetRight } from '@/composables/useWorkspaceInset'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
@@ -67,6 +68,7 @@ const AgentPanelRoot = defineAsyncComponent({
 const agentPanelStore = useAgentPanelStore()
 const { isVisible: docked, width } = storeToRefs(agentPanelStore)
 const agentRunModeStore = useAgentRunModeStore()
+useWorkspaceInsetRight(() => (docked.value ? width.value : 0))
 
 void agentRunModeStore.load().catch((error: unknown) => {
   reportError(error, { errorType: 'agent_run_mode_load_failure' })
