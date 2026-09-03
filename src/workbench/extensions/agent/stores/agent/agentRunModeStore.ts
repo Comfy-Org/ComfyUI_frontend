@@ -115,17 +115,17 @@ export const useAgentRunModeStore = defineStore('agentRunMode', () => {
     nextMode: AgentRunMode,
     nextLimit: number | null
   ): Promise<void> {
-    const preference = zAgentRunMode.parse({
+    const next = zAgentRunMode.parse({
       mode: nextMode,
       credit_limit: nextLimit
     })
     saveRevision++
     try {
-      const savedPreference = await api.putRunMode(preference)
+      const savedPreference = await api.putRunMode(next)
       apply(savedPreference)
     } catch (error) {
       if (!(error instanceof AgentApiError && error.status === 404)) throw error
-      apply(preference)
+      apply(next)
     }
   }
 
