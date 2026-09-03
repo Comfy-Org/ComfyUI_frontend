@@ -81,6 +81,9 @@ function getFormAttrs(item: FormItem) {
         attrs['optionValue'] = 'value'
       }
       break
+    case 'password':
+      attrs['type'] = 'password'
+      break
   }
   return attrs
 }
@@ -117,13 +120,13 @@ function getFormComponent(item: FormItem): Component {
 </script>
 
 <style scoped>
-.form-input :deep(.input-slider) .p-inputnumber input,
-.form-input :deep(.input-slider) .slider-part {
+:deep(.input-slider .p-inputnumber input),
+:deep(.input-slider .slider-part) {
   width: 5rem;
 }
 
-.form-input :deep(.input-knob) .p-inputnumber input,
-.form-input :deep(.input-knob) .knob-part {
+:deep(.input-knob .p-inputnumber input),
+:deep(.input-knob .knob-part) {
   width: 8rem;
 }
 

@@ -1,3 +1,4 @@
+import { contributedButtons } from '@/platform/nodeApi/chromeContributions'
 import { defineStore } from 'pinia'
 import { computed } from 'vue'
 
@@ -8,9 +9,10 @@ import { useExtensionStore } from './extensionStore'
 export const useActionBarButtonStore = defineStore('actionBarButton', () => {
   const extensionStore = useExtensionStore()
 
-  const buttons = computed<ActionBarButton[]>(() =>
-    extensionStore.extensions.flatMap((e) => e.actionBarButtons ?? [])
-  )
+  const buttons = computed<ActionBarButton[]>(() => [
+    ...extensionStore.extensions.flatMap((e) => e.actionBarButtons ?? []),
+    ...contributedButtons.value
+  ])
 
   return {
     buttons

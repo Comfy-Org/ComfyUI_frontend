@@ -421,6 +421,7 @@ function processWidget(
     linkedUpstream,
     nodeLocatorId: widgetNodeLocatorId(ctx, bareWidgetId, sourceExecutionId),
     options: widgetOptions,
+    sourceWidget: live?.widget,
     spec: live
       ? ctx.nodeDefStore.getInputSpecForWidget(live.node, live.widget.name)
       : undefined
