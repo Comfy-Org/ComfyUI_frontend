@@ -44,6 +44,7 @@ import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
+import { reportError } from '@/platform/telemetry/reportError'
 import { installNodeAddedTelemetry } from '@/platform/telemetry/nodeAdded/installNodeAddedTelemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { normalizeExecutionTriggerSource } from '@comfyorg/telemetry/types'
@@ -137,6 +138,13 @@ import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplaceme
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import { markAppReady, notifyWorkflowLoaded } from '@/platform/nodeApi/appReady'
+import {
+  deliverPreview,
+  notifyDefsRefreshed
+} from '@/platform/nodeApi/defsRegistry'
+import { mayRun } from '@/platform/nodeApi/queueGuard'
+import { installUnplacedLinkBridge } from '@/renderer/core/canvas/unplacedLinkBridge'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -248,6 +256,39 @@ export function sanitizeNodeName(string: string) {
   return string.replace(/[&<>"'`=]/g, function fromEntityMap(s) {
     return entityMap[s as keyof typeof entityMap]
   })
+}
+
+function syncPromotedComboHostOptions(rootGraph: LGraph): void {
+  const widgetValueStore = useWidgetValueStore()
+  forEachNode(rootGraph, (node) => {
+    if (!node.isSubgraphNode()) return
+    for (const input of node.inputs) {
+      if (!input.widgetId) continue
+
+      const source = promotedInputSource(node, input)
+      if (!source) continue
+
+      const resolution = resolveConcretePromotedWidget(
+        node,
+        source.nodeId,
+        source.widgetName
+      )
+      if (resolution.status !== 'resolved') continue
+
+      const sourceWidget = resolution.resolved.widget
+      if (sourceWidget.type !== 'combo') continue
+
+      const state = widgetValueStore.getWidget(input.widgetId)
+      if (!state) continue
+
+      state.options = { ...sourceWidget.options }
+    }
+  })
+}
+
+async function finishWorkflowLoad(): Promise<void> {
+  await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+  notifyWorkflowLoaded()
 }
 
 function createNodeOutputsMutationView(
@@ -450,6 +491,7 @@ export class ComfyApp implements IComfyApp {
   }
 
   private configuringGraphLevel: number = 0
+  private disposeUnplacedLinkBridge?: () => void
   private graphLoadSequence = 0
   private graphLoadQueue: Promise<void> = Promise.resolve()
   private fileLoadDiscoveryQueue: Promise<void> = Promise.resolve()
@@ -828,6 +870,14 @@ export class ComfyApp implements IComfyApp {
       )) {
         setNodePreviewsByExecutionId(executionId, [blobUrl])
       }
+      const node = getNodeByExecutionId(this.rootGraph, displayNodeExecutionId)
+      if (node?.type) {
+        deliverPreview(
+          String(node.id),
+          node.type,
+          Object.freeze({ blob, url: blobUrl })
+        )
+      }
       releaseSharedObjectUrl(blobUrl)
     })
 
@@ -917,6 +967,8 @@ export class ComfyApp implements IComfyApp {
     const interactionMode = createCanvasInteractionMode()
     this.canvas = new LGraphCanvas(canvasEl, graph, { interactionMode })
     useCommandStore().setInteractionMode(interactionMode)
+    this.disposeUnplacedLinkBridge?.()
+    this.disposeUnplacedLinkBridge = installUnplacedLinkBridge(this.canvas)
     // Make canvas states reactive so we can observe changes on them.
     this.canvas.state = reactive(this.canvas.state)
 
@@ -992,6 +1044,7 @@ export class ComfyApp implements IComfyApp {
     await bootstrapTracer.settle('bootstrap/extensions-setup', () =>
       useExtensionService().invokeExtensionsAsync('setup')
     )
+    markAppReady()
 
     await defaultWorkflowReady
 
@@ -1601,6 +1654,7 @@ export class ComfyApp implements IComfyApp {
         await cancelReplacedLoad()
         return undefined
       }
+      notifyWorkflowLoaded()
       ChangeTracker.isLoadingGraph = false
       // Capture the workflow this load activated before the asset-scan awaits
       // below can hand control back and let the user switch to another one.
@@ -1731,10 +1785,6 @@ export class ComfyApp implements IComfyApp {
       requestId,
       workflowQueueIntent: intent
     })
-    api.dispatchCustomEvent('promptQueueing', {
-      requestId,
-      batchCount
-    })
 
     if (this.processingQueue) {
       return false
@@ -1746,6 +1796,7 @@ export class ComfyApp implements IComfyApp {
     const telemetry = useTelemetry()
     executionErrorStore.clearRunErrors()
     let queueResultOverride: boolean | null = null
+    let finishActiveAttempt: (() => void) | undefined
 
     const teamWorkspaceStore = useTeamWorkspaceStore()
     try {
@@ -1811,6 +1862,29 @@ export class ComfyApp implements IComfyApp {
           workflowQueueIntent
         } = this.queueItems.pop()!
         let queuedCount = 0
+        let rejectedCount = 0
+        const promptIds: string[] = []
+        const submissions: { promptId: string; nodeCount: number }[] = []
+        const finishAttempt = () => {
+          api.dispatchCustomEvent('promptQueueAttemptEnded', {
+            requestId,
+            queued: queuedCount,
+            rejected: rejectedCount
+          })
+          finishActiveAttempt = undefined
+        }
+        finishActiveAttempt = finishAttempt
+        api.dispatchCustomEvent('promptQueueing', {
+          requestId,
+          batchCount,
+          number
+        })
+
+        if (!(await mayRun())) {
+          queueResultOverride = false
+          finishAttempt()
+          continue
+        }
         const workflowExecutionIntent: WorkflowExecutionIntent = {
           trigger_source: normalizeExecutionTriggerSource(
             workflowQueueIntent?.trigger_source
@@ -1894,6 +1968,8 @@ export class ComfyApp implements IComfyApp {
             delete api.authToken
             delete api.apiKey
             if (!res.prompt_id) {
+              rejectedCount++
+              api.dispatchCustomEvent('promptRejected', { response: res })
               telemetry?.trackExecutionOutcome({
                 startTime,
                 endTime: responseReceivedAt,
@@ -1907,25 +1983,31 @@ export class ComfyApp implements IComfyApp {
               res.node_errors ?? null,
               queuedRunErrorKey
             )
+            if (!res.prompt_id) {
+              queueResultOverride = false
+              break
+            }
+            const promptId = res.prompt_id
             queueResultOverride = null
             try {
-              if (res.prompt_id) {
-                executionStore.storeJob({
-                  id: res.prompt_id,
-                  nodes: Object.keys(p.output),
-                  promptOutput: p.output,
-                  startTime,
-                  submissionAcceptedAt: responseReceivedAt,
-                  workflow: queuedWorkflow,
-                  mode: queuedMode,
-                  workflowContext,
-                  workflowExecutionIntent
-                })
-              }
+              executionStore.storeJob({
+                id: promptId,
+                nodes: Object.keys(p.output),
+                promptOutput: p.output,
+                startTime,
+                submissionAcceptedAt: responseReceivedAt,
+                workflow: queuedWorkflow,
+                mode: queuedMode,
+                workflowContext,
+                workflowExecutionIntent
+              })
             } catch (error) {
               console.warn('Failed to store queued job metadata', {
-                promptId: res.prompt_id,
+                promptId,
                 error
+              })
+              reportError(error, {
+                errorType: 'queue_job_metadata_store_failed'
               })
             }
             if (executionErrorStore.hasNodeError) {
@@ -1934,7 +2016,19 @@ export class ComfyApp implements IComfyApp {
               }
               this.canvas.draw(true, true)
             }
+            promptIds.push(promptId)
+            submissions.push({
+              promptId,
+              nodeCount: Object.keys(p.output).length
+            })
           } catch (error: unknown) {
+            if (error instanceof PromptExecutionError) {
+              rejectedCount++
+              api.dispatchCustomEvent('promptRejected', {
+                response: error.response,
+                status: error.status
+              })
+            }
             telemetry?.trackExecutionOutcome({
               startTime,
               endTime: performance.now(),
@@ -2067,11 +2161,16 @@ export class ComfyApp implements IComfyApp {
           api.dispatchCustomEvent('promptQueued', {
             number,
             batchCount: queuedCount,
-            requestId
+            requestId,
+            promptIds,
+            submissions,
+            rejectedCount
           })
         }
+        finishAttempt()
       }
     } finally {
+      finishActiveAttempt?.()
       this.processingQueue = false
     }
     return queueResultOverride ?? !executionErrorStore.lastNodeErrors
@@ -2301,7 +2400,7 @@ export class ComfyApp implements IComfyApp {
             fileName,
             this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
           )
-          await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+          await finishWorkflowLoad()
           return
         } catch (error) {
           if (!lifecycle.started) throw error
@@ -2661,7 +2760,7 @@ export class ComfyApp implements IComfyApp {
         fileName,
         this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
       )
-      await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+      await finishWorkflowLoad()
       lifecycleCompleted = true
       if (missingNodeTypes.length) {
         this.showMissingNodesError(missingNodeTypes, options)
@@ -2771,6 +2870,7 @@ export class ComfyApp implements IComfyApp {
     if (this.vueAppReady) {
       this.updateVueAppNodeDefs(defs)
     }
+    notifyDefsRefreshed()
     return true
   }
 

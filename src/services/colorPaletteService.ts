@@ -4,6 +4,7 @@ import { fromZodError } from 'zod-validation-error'
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { reapplyPackTypeColors } from '@/platform/nodeApi/defsRegistry'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import {
   comfyBaseSchema,
@@ -107,6 +108,7 @@ export const useColorPaletteService = () => {
       linkColorPalette
     )
     Object.assign(LGraphCanvas.link_type_colors, types, linkColorPalette)
+    reapplyPackTypeColors()
   }
 
   function loadLinkColorPaletteForVueNodes(

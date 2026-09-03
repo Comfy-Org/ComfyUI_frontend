@@ -987,6 +987,7 @@ export default defineConfig({
           ],
           exclude: ISOLATED_STORE_TESTS,
           include: [
+            'index.test.ts',
             'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
             'packages/api-client/src/**/*.test.ts',
             'packages/settings-core/src/**/*.test.ts',
