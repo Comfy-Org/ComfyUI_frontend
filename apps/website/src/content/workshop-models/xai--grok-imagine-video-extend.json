@@ -1,0 +1,64 @@
+{
+  "id": "xai/grok-imagine-video-extend",
+  "slug": "xai--grok-imagine-video-extend",
+  "displayName": "Grok Imagine Video Extend",
+  "provider": "xai",
+  "modality": "video",
+  "description": "Extends an existing video with a seamless continuation (Grok Imagine video-extend). Source must be MP4, 2-15s, ≤50MB.",
+  "tags": ["grok", "xai", "video", "video-extend", "extend"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["xai/grok-imagine-video-extend"]
+      },
+      "prompt": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Text description of what should happen next in the video."
+      },
+      "duration": {
+        "type": "integer",
+        "minimum": 2,
+        "maximum": 10,
+        "description": "Length of the extension in seconds.",
+        "default": 8
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": ["video"]
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": ["role", "value"],
+          "additionalProperties": false
+        }
+      }
+    },
+    "required": ["model", "prompt"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "video",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    }
+  ]
+}

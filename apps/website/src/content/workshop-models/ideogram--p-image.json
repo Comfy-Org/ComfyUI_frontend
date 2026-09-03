@@ -1,0 +1,74 @@
+{
+  "id": "ideogram/p-image",
+  "slug": "ideogram--p-image",
+  "displayName": "Ideogram & Pruna P-Image",
+  "provider": "ideogram",
+  "modality": "image",
+  "description": "Generates typographic or photorealistic images quickly with selectable quality and 1K or 2K output (Ideogram P-Image).",
+  "tags": [
+    "text-rendering",
+    "photorealistic",
+    "fast",
+    "structured-prompt",
+    "ideogram",
+    "image",
+    "text-to-image"
+  ],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["ideogram/p-image"]
+      },
+      "prompt": {
+        "type": "string"
+      },
+      "aspect_ratio": {
+        "type": "string",
+        "enum": [
+          "1:3",
+          "3:1",
+          "1:2",
+          "2:1",
+          "9:16",
+          "16:9",
+          "10:16",
+          "16:10",
+          "2:3",
+          "3:2",
+          "3:4",
+          "4:3",
+          "4:5",
+          "5:4",
+          "1:1"
+        ],
+        "default": "1:1"
+      },
+      "seed": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 2147483647,
+        "default": 42
+      },
+      "prompt_upsampling": {
+        "type": "string",
+        "enum": ["AUTO", "ON", "OFF"],
+        "default": "AUTO"
+      },
+      "quality": {
+        "type": "string",
+        "enum": ["VERY_LOW", "LOW", "MEDIUM", "HIGH"],
+        "default": "MEDIUM"
+      },
+      "resolution": {
+        "type": "string",
+        "enum": ["1K", "2K"],
+        "default": "1K"
+      }
+    },
+    "required": ["model", "prompt"],
+    "additionalProperties": true
+  },
+  "roles": []
+}

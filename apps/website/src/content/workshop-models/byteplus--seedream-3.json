@@ -1,0 +1,74 @@
+{
+  "id": "byteplus/seedream-3",
+  "slug": "byteplus--seedream-3",
+  "displayName": "Seedream 3.0",
+  "provider": "byteplus",
+  "modality": "image",
+  "description": "DEPRECATED — use byteplus/seedream-4 (or -4-5/-5-lite). Generates an image from text with selectable size presets (Seedream 3.0).",
+  "tags": ["byteplus", "seedream", "text-to-image", "fast", "deprecated"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["byteplus/seedream-3"]
+      },
+      "prompt": {
+        "type": "string",
+        "minLength": 1,
+        "description": "The text prompt used to generate the image"
+      },
+      "seed": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 2147483647,
+        "description": "Seed to use for generation",
+        "default": 0
+      },
+      "guidance_scale": {
+        "type": "number",
+        "minimum": 1,
+        "maximum": 10,
+        "description": "Higher value makes the image follow the prompt more closely",
+        "default": 2.5
+      },
+      "height": {
+        "type": "integer",
+        "minimum": 512,
+        "maximum": 2048,
+        "description": "Custom height for image. Value is working only if `size_preset` is set to `Custom`",
+        "default": 1024
+      },
+      "size_preset": {
+        "type": "string",
+        "enum": [
+          "1024x1024 (1:1)",
+          "864x1152 (3:4)",
+          "1152x864 (4:3)",
+          "1280x720 (16:9)",
+          "720x1280 (9:16)",
+          "832x1248 (2:3)",
+          "1248x832 (3:2)",
+          "1512x648 (21:9)",
+          "2048x2048 (1:1)",
+          "Custom"
+        ]
+      },
+      "watermark": {
+        "type": "boolean",
+        "description": "Whether to add an \"AI generated\" watermark to the image",
+        "default": false
+      },
+      "width": {
+        "type": "integer",
+        "minimum": 512,
+        "maximum": 2048,
+        "description": "Custom width for image. Value is working only if `size_preset` is set to `Custom`",
+        "default": 1024
+      }
+    },
+    "required": ["model", "prompt", "size_preset"],
+    "additionalProperties": true
+  },
+  "roles": []
+}

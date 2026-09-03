@@ -1,0 +1,170 @@
+{
+  "id": "tripo/multiview-to-model",
+  "slug": "tripo--multiview-to-model",
+  "displayName": "Tripo Multiview-to-3D",
+  "provider": "tripo",
+  "modality": "3d",
+  "description": "Generates a textured PBR 3D mesh from a front image plus left/back/right views (Tripo Multiview-to-3D).",
+  "tags": ["tripo", "3d", "image-to-3d", "multi-view", "glb"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["tripo/multiview-to-model"]
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["image"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["view_back"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["view_left"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["view_right"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "face_limit": {
+        "type": "integer",
+        "minimum": -1,
+        "maximum": 500000,
+        "description": "Face limit; -1 means 'no limit' (dropped on the wire).",
+        "default": -1
+      },
+      "geometry_quality": {
+        "type": "string",
+        "enum": ["standard", "detailed"],
+        "default": "standard"
+      },
+      "model_seed": {
+        "type": "integer",
+        "default": 42
+      },
+      "model_version": {
+        "type": "string",
+        "enum": ["v3.0-20250812", "v2.5-20250123", "v1.4-20240625"]
+      },
+      "orientation": {
+        "type": "string",
+        "enum": ["align_image", "default"],
+        "default": "default"
+      },
+      "pbr": {
+        "type": "boolean",
+        "default": true
+      },
+      "quad": {
+        "type": "boolean",
+        "default": false
+      },
+      "texture": {
+        "type": "boolean",
+        "default": true
+      },
+      "texture_alignment": {
+        "type": "string",
+        "enum": ["original_image", "geometry"],
+        "default": "original_image"
+      },
+      "texture_quality": {
+        "type": "string",
+        "enum": ["standard", "detailed"],
+        "default": "standard"
+      },
+      "texture_seed": {
+        "type": "integer",
+        "default": 42
+      }
+    },
+    "required": ["model"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "image",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    },
+    {
+      "role": "view_back",
+      "required": false,
+      "cardinality": "single",
+      "minItems": 0,
+      "maxItems": 1
+    },
+    {
+      "role": "view_left",
+      "required": false,
+      "cardinality": "single",
+      "minItems": 0,
+      "maxItems": 1
+    },
+    {
+      "role": "view_right",
+      "required": false,
+      "cardinality": "single",
+      "minItems": 0,
+      "maxItems": 1
+    }
+  ]
+}

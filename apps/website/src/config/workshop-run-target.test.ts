@@ -1,10 +1,29 @@
 import { describe, expect, it } from 'vitest'
 
-import { workshopDetailModels } from './workshop-detail'
+import type { WorkshopModelEntry } from '../content/workshop-models.schema'
+import type { WorkshopRunTargetId } from './workshop-detail'
+import { toDetailModel } from './workshop-detail'
 import { runTargetFor } from './workshop-run-target'
 import { buildRouterSnippet } from './workshop-snippets'
 
-const model = workshopDetailModels[0]
+const model = toDetailModel({
+  id: 'provider/model-v1',
+  slug: 'provider--model-v1',
+  displayName: 'Model V1',
+  provider: 'provider',
+  modality: 'image',
+  description: 'Generates an image.',
+  tags: ['text-to-image'],
+  parameters: {
+    type: 'object',
+    required: ['prompt'],
+    properties: {
+      prompt: { type: 'string' },
+      steps: { type: 'integer', minimum: 1, maximum: 50, default: 25 }
+    }
+  },
+  roles: []
+} satisfies WorkshopModelEntry)
 
 describe('workshop run targets', () => {
   it('treats a model with no explicit target as a Router model', () => {
@@ -31,13 +50,15 @@ describe('workshop run targets', () => {
     ])
   })
 
-  it('resolves every model in the catalog to a target', () => {
-    // A snapshot entry naming a target we have no implementation for would
-    // otherwise surface as an undefined dereference on that model's page.
-    const unresolved = workshopDetailModels.filter(
-      (entry) => runTargetFor(entry) === undefined
-    )
+  it('resolves every declared target id to an implementation', () => {
+    // Listed rather than inferred: adding a member to WorkshopRunTargetId
+    // without an implementation fails to compile here, and a member with a
+    // missing implementation fails the assertion. Either way it does not
+    // reach a page as an undefined dereference.
+    const declared: readonly WorkshopRunTargetId[] = ['router']
 
-    expect(unresolved).toEqual([])
+    for (const id of declared) {
+      expect(runTargetFor({ ...model, runTarget: id })).toBeDefined()
+    }
   })
 })

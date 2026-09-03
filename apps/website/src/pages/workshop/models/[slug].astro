@@ -1,27 +1,34 @@
 ---
 import type { GetStaticPaths } from 'astro'
+import { getCollection } from 'astro:content'
 
 import WorkshopPlayground from '../../../components/workshop/WorkshopPlayground.vue'
 import type { WorkshopDetailModel } from '../../../config/workshop-detail'
 import {
   relatedWorkshopModels,
-  workshopDetailModels
+  toDetailModel
 } from '../../../config/workshop-detail'
 import { t } from '../../../i18n/translations'
 import BaseLayout from '../../../layouts/BaseLayout.astro'
 
-export const getStaticPaths: GetStaticPaths = () =>
-  workshopDetailModels.map((model) => ({
+export const getStaticPaths: GetStaticPaths = async () => {
+  // One pass over the collection: every page needs the whole set anyway to
+  // pick its related models, and Astro calls this once per build.
+  const models = (await getCollection('workshopModels')).map((entry) =>
+    toDetailModel(entry.data)
+  )
+  return models.map((model) => ({
     params: { slug: model.slug },
-    props: { model }
+    props: { model, related: relatedWorkshopModels(model, models) }
   }))
+}
 
 interface Props {
   model: WorkshopDetailModel
+  related: readonly WorkshopDetailModel[]
 }
 
-const { model } = Astro.props
-const related = relatedWorkshopModels(model)
+const { model, related } = Astro.props
 ---
 
 <BaseLayout

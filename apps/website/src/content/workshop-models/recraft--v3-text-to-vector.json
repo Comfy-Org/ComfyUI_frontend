@@ -1,0 +1,146 @@
+{
+  "id": "recraft/v3-text-to-vector",
+  "slug": "recraft--v3-text-to-vector",
+  "displayName": "Recraft V3 Text-to-Vector",
+  "provider": "recraft",
+  "modality": "svg",
+  "description": "Generates an SVG illustration from a text prompt (Recraft V3).",
+  "tags": ["recraft", "svg", "vector", "illustration"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["recraft/v3-text-to-vector"]
+      },
+      "prompt": {
+        "type": "string",
+        "maxLength": 1000
+      },
+      "count": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 6,
+        "default": 1
+      },
+      "negative_prompt": {
+        "type": "string"
+      },
+      "recraft_controls": {
+        "type": "object",
+        "properties": {
+          "colors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "r": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255
+                },
+                "g": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255
+                },
+                "b": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255
+                }
+              },
+              "required": ["r", "g", "b"],
+              "additionalProperties": false
+            }
+          },
+          "background_color": {
+            "type": "object",
+            "properties": {
+              "r": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "g": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "b": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              }
+            },
+            "required": ["r", "g", "b"],
+            "additionalProperties": false
+          },
+          "artistic_level": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5
+          },
+          "no_text": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "size": {
+        "type": "string",
+        "enum": [
+          "1024x1024",
+          "1365x1024",
+          "1024x1365",
+          "1536x1024",
+          "1024x1536",
+          "1820x1024",
+          "1024x1820",
+          "1024x2048",
+          "2048x1024",
+          "1434x1024",
+          "1024x1434",
+          "1024x1280",
+          "1280x1024",
+          "1024x1707",
+          "1707x1024"
+        ],
+        "default": "1024x1024"
+      },
+      "substyle": {
+        "type": "string",
+        "enum": [
+          "None",
+          "bold_stroke",
+          "chemistry",
+          "colored_stencil",
+          "contour_pop_art",
+          "cosmics",
+          "cutout",
+          "depressive",
+          "editorial",
+          "emotional_flat",
+          "engraving",
+          "infographical",
+          "line_art",
+          "line_circuit",
+          "linocut",
+          "marker_outline",
+          "mosaic",
+          "naivector",
+          "roundish_flat",
+          "seamless",
+          "segmented_colors",
+          "sharp_contrast",
+          "thin",
+          "vector_photo",
+          "vivid_shapes"
+        ]
+      }
+    },
+    "required": ["model", "prompt"],
+    "additionalProperties": true
+  },
+  "roles": []
+}

@@ -1,0 +1,70 @@
+{
+  "id": "bfl/flux-kontext-pro",
+  "slug": "bfl--flux-kontext-pro",
+  "displayName": "FLUX.1 Kontext Pro",
+  "provider": "bfl",
+  "modality": "image",
+  "description": "Edits an image from a prompt with aspect ratios from 1:4 to 4:1 (Flux.1 Kontext Pro).",
+  "tags": ["bfl", "flux", "kontext", "edit", "image-edit"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["bfl/flux-kontext-pro"]
+      },
+      "prompt": {
+        "type": "string"
+      },
+      "aspect_ratio": {
+        "type": "string"
+      },
+      "seed": {
+        "type": "integer"
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": ["image"]
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": ["role", "value"],
+          "additionalProperties": false
+        }
+      },
+      "guidance": {
+        "type": "number"
+      },
+      "prompt_upsampling": {
+        "type": "boolean"
+      },
+      "steps": {
+        "type": "integer"
+      }
+    },
+    "required": ["model"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "image",
+      "required": false,
+      "cardinality": "single",
+      "minItems": 0,
+      "maxItems": 1
+    }
+  ]
+}
