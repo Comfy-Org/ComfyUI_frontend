@@ -1,5 +1,5 @@
 {
-  "schema_version": "agent-conversation.v1",
+  "schema_version": "agent-conversation.v2",
   "source": {
     "repo": "Comfy-Org/ComfyUI_frontend",
     "suite": "agent",
@@ -9,7 +9,6 @@
     "capture": {
       "backend": "Comfy-Org/cloud",
       "thread_id": "2ce25f4b-d581-4348-ab9c-3f4170222f6f",
-      "message_id": "37504547-e90d-4c14-91c7-b8f8fb65a0eb",
       "exported_at": "2026-09-03T12:40:55Z"
     }
   },
@@ -194,214 +193,219 @@
       ]
     }
   },
-  "request": {
-    "content": "Switch to the tab 'Text to image', then delete the positive prompt node (node 6) and add a fresh CLIPTextEncode wired the same way: CLIP from the checkpoint loader, conditioning into the KSampler's positive input."
-  },
-  "response": [
+  "turns": [
     {
-      "kind": "event",
-      "event": {
-        "type": "agent_thinking",
-        "data": {
-          "delta": "I'll switch to that tab first."
-        }
+      "message_id": "37504547-e90d-4c14-91c7-b8f8fb65a0eb",
+      "request": {
+        "content": "Switch to the tab 'Text to image', then delete the positive prompt node (node 6) and add a fresh CLIPTextEncode wired the same way: CLIP from the checkpoint loader, conditioning into the KSampler's positive input."
       },
-      "at_ms": 0
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_active_tab",
-        "data": {
-          "name": "Text to image",
-          "workflow_id": "5a6b35c4-8902-479d-87ab-8a9a07f08b90"
-        }
-      },
-      "at_ms": 7
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_tool_call",
-        "data": {
-          "duration_ms": 10,
-          "status": "success",
-          "tool_call_id": "toolu_01PbXSHPoAUnHhX2dqzJXiLB",
-          "tool_name": "switch_tab"
-        }
-      },
-      "at_ms": 11
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_tool_call",
-        "data": {
-          "duration_ms": 295,
-          "status": "success",
-          "tool_call_id": "toolu_01C2g2RACFUykeibS1je1Tbh",
-          "tool_name": "print_workflow"
-        }
-      },
-      "at_ms": 3673
-    },
-    {
-      "kind": "graph_ops",
-      "ops": [
+      "response": [
         {
-          "op": "add_node",
-          "pos": [715, 280],
-          "node": {
-            "id": 4181654812796082,
-            "pos": [715, 280],
-            "mode": 0,
-            "size": [240, 86],
-            "type": "CLIPTextEncode",
-            "flags": {},
-            "order": 0,
-            "inputs": [
-              {
-                "link": null,
-                "name": "clip",
-                "type": "CLIP"
-              }
-            ],
-            "outputs": [
-              {
-                "name": "CONDITIONING",
-                "type": "CONDITIONING",
-                "links": []
-              }
-            ],
-            "properties": {},
-            "widgets_values": [null]
+          "kind": "event",
+          "event": {
+            "type": "agent_thinking",
+            "data": {
+              "delta": "I'll switch to that tab first."
+            }
           },
-          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-          "op_id": "4c4d739392f14272939cf46a335652c8",
-          "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
-          "node_id": 4181654812796082,
-          "class_type": "CLIPTextEncode",
-          "base_version": 2
+          "at_ms": 0
         },
         {
-          "op": "connect",
-          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-          "op_id": "f1cd3aef4b984b04a9611a53f69763ba",
-          "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
-          "link_id": 3320191292493608,
-          "to_node": 4181654812796082,
-          "to_slot": 0,
-          "from_node": 4,
-          "from_slot": 1,
-          "link_type": "CLIP",
-          "base_version": 2
+          "kind": "event",
+          "event": {
+            "type": "agent_active_tab",
+            "data": {
+              "name": "Text to image",
+              "workflow_id": "5a6b35c4-8902-479d-87ab-8a9a07f08b90"
+            }
+          },
+          "at_ms": 7
         },
         {
-          "op": "connect",
-          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-          "op_id": "4f4de6968f124e23a3114f8c88a1a766",
-          "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
-          "link_id": 2686273519871711,
-          "to_node": 3,
-          "to_slot": 1,
-          "from_node": 4181654812796082,
-          "from_slot": 0,
-          "link_type": "CONDITIONING",
-          "base_version": 2
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 10,
+              "status": "success",
+              "tool_call_id": "toolu_01PbXSHPoAUnHhX2dqzJXiLB",
+              "tool_name": "switch_tab"
+            }
+          },
+          "at_ms": 11
         },
         {
-          "op": "set_widget",
-          "old": null,
-          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-          "op_id": "279c55a82f09416f9fa68e47ee11fafc",
-          "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
-          "value": "a photo of a pier",
-          "widget": "text",
-          "node_id": 4181654812796082,
-          "base_version": 2
-        }
-      ],
-      "at_ms": 10451
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_tool_call",
-        "data": {
-          "duration_ms": 223,
-          "status": "success",
-          "tool_call_id": "toolu_018Ao8cDcxmDBaz9qV7PWpGx",
-          "tool_name": "apply_ops"
-        }
-      },
-      "at_ms": 10451
-    },
-    {
-      "kind": "graph_ops",
-      "ops": [
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 295,
+              "status": "success",
+              "tool_call_id": "toolu_01C2g2RACFUykeibS1je1Tbh",
+              "tool_name": "print_workflow"
+            }
+          },
+          "at_ms": 3673
+        },
         {
-          "op": "delete_node",
-          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-          "op_id": "b141d8503ee54cde94d3a4e3f6b5204f",
-          "stamp": [3, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
-          "node_id": 6,
-          "base_version": 3,
-          "removed_links": [1]
+          "kind": "graph_ops",
+          "ops": [
+            {
+              "op": "add_node",
+              "pos": [715, 280],
+              "node": {
+                "id": 4181654812796082,
+                "pos": [715, 280],
+                "mode": 0,
+                "size": [240, 86],
+                "type": "CLIPTextEncode",
+                "flags": {},
+                "order": 0,
+                "inputs": [
+                  {
+                    "link": null,
+                    "name": "clip",
+                    "type": "CLIP"
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "CONDITIONING",
+                    "type": "CONDITIONING",
+                    "links": []
+                  }
+                ],
+                "properties": {},
+                "widgets_values": [null]
+              },
+              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+              "op_id": "4c4d739392f14272939cf46a335652c8",
+              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+              "node_id": 4181654812796082,
+              "class_type": "CLIPTextEncode",
+              "base_version": 2
+            },
+            {
+              "op": "connect",
+              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+              "op_id": "f1cd3aef4b984b04a9611a53f69763ba",
+              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+              "link_id": 3320191292493608,
+              "to_node": 4181654812796082,
+              "to_slot": 0,
+              "from_node": 4,
+              "from_slot": 1,
+              "link_type": "CLIP",
+              "base_version": 2
+            },
+            {
+              "op": "connect",
+              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+              "op_id": "4f4de6968f124e23a3114f8c88a1a766",
+              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+              "link_id": 2686273519871711,
+              "to_node": 3,
+              "to_slot": 1,
+              "from_node": 4181654812796082,
+              "from_slot": 0,
+              "link_type": "CONDITIONING",
+              "base_version": 2
+            },
+            {
+              "op": "set_widget",
+              "old": null,
+              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+              "op_id": "279c55a82f09416f9fa68e47ee11fafc",
+              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+              "value": "a photo of a pier",
+              "widget": "text",
+              "node_id": 4181654812796082,
+              "base_version": 2
+            }
+          ],
+          "at_ms": 10451
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 223,
+              "status": "success",
+              "tool_call_id": "toolu_018Ao8cDcxmDBaz9qV7PWpGx",
+              "tool_name": "apply_ops"
+            }
+          },
+          "at_ms": 10451
+        },
+        {
+          "kind": "graph_ops",
+          "ops": [
+            {
+              "op": "delete_node",
+              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+              "op_id": "b141d8503ee54cde94d3a4e3f6b5204f",
+              "stamp": [3, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+              "node_id": 6,
+              "base_version": 3,
+              "removed_links": [1]
+            }
+          ],
+          "at_ms": 15515
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 202,
+              "status": "success",
+              "tool_call_id": "toolu_01QkN5N4e8fkpBrT9aWbb4aK",
+              "tool_name": "delete_node"
+            }
+          },
+          "at_ms": 15515
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 199,
+              "status": "success",
+              "tool_call_id": "toolu_01QUTSXXBfU7oShpWRkxtLzD",
+              "tool_name": "print_workflow"
+            }
+          },
+          "at_ms": 18022
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_delta",
+            "data": {
+              "delta": "Done — I'm on the \"Text to image\" tab, the old positive prompt node is gone, and a fresh one is in its place, taking CLIP from the checkpoint loader and feeding the sampler's positive input. I carried over the same prompt text (\"a photo of a pier\").\n\nOne thing unrelated to this swap: the sampler's negative prompt and empty latent inputs were already unconnected before I started, so the graph won't run until those are filled in. Want me to add them?"
+            }
+          },
+          "at_ms": 22947
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_done",
+            "data": {
+              "usage": {
+                "cache_creation_input_tokens": 2216,
+                "cache_read_input_tokens": 232121,
+                "input_tokens": 12,
+                "output_tokens": 885,
+                "total_tokens": 897
+              }
+            }
+          },
+          "at_ms": 22951
         }
-      ],
-      "at_ms": 15515
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_tool_call",
-        "data": {
-          "duration_ms": 202,
-          "status": "success",
-          "tool_call_id": "toolu_01QkN5N4e8fkpBrT9aWbb4aK",
-          "tool_name": "delete_node"
-        }
-      },
-      "at_ms": 15515
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_tool_call",
-        "data": {
-          "duration_ms": 199,
-          "status": "success",
-          "tool_call_id": "toolu_01QUTSXXBfU7oShpWRkxtLzD",
-          "tool_name": "print_workflow"
-        }
-      },
-      "at_ms": 18022
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_message_delta",
-        "data": {
-          "delta": "Done — I'm on the \"Text to image\" tab, the old positive prompt node is gone, and a fresh one is in its place, taking CLIP from the checkpoint loader and feeding the sampler's positive input. I carried over the same prompt text (\"a photo of a pier\").\n\nOne thing unrelated to this swap: the sampler's negative prompt and empty latent inputs were already unconnected before I started, so the graph won't run until those are filled in. Want me to add them?"
-        }
-      },
-      "at_ms": 22947
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_message_done",
-        "data": {
-          "usage": {
-            "cache_creation_input_tokens": 2216,
-            "cache_read_input_tokens": 232121,
-            "input_tokens": 12,
-            "output_tokens": 885,
-            "total_tokens": 897
-          }
-        }
-      },
-      "at_ms": 22951
+      ]
     }
   ]
 }

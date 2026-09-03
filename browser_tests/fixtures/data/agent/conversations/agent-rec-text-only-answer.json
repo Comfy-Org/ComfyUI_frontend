@@ -1,5 +1,5 @@
 {
-  "schema_version": "agent-conversation.v1",
+  "schema_version": "agent-conversation.v2",
   "source": {
     "repo": "Comfy-Org/ComfyUI_frontend",
     "suite": "agent",
@@ -9,7 +9,6 @@
     "capture": {
       "backend": "Comfy-Org/cloud",
       "thread_id": "f36ef047-82b4-4f2b-b480-6df821df46da",
-      "message_id": "7de6039c-c1b4-437c-871c-2f1fc67e1750",
       "exported_at": "2026-09-03T12:40:56Z"
     }
   },
@@ -194,82 +193,87 @@
       ]
     }
   },
-  "request": {
-    "content": "Switch to the tab 'Text to image', then tell me what this workflow does."
-  },
-  "response": [
+  "turns": [
     {
-      "kind": "event",
-      "event": {
-        "type": "agent_thinking",
-        "data": {
-          "delta": "I'll switch over and take a look."
-        }
+      "message_id": "7de6039c-c1b4-437c-871c-2f1fc67e1750",
+      "request": {
+        "content": "Switch to the tab 'Text to image', then tell me what this workflow does."
       },
-      "at_ms": 0
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_active_tab",
-        "data": {
-          "name": "Text to image",
-          "workflow_id": "d762837d-c64d-4829-9aba-05e71b64adc3"
+      "response": [
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_thinking",
+            "data": {
+              "delta": "I'll switch over and take a look."
+            }
+          },
+          "at_ms": 0
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_active_tab",
+            "data": {
+              "name": "Text to image",
+              "workflow_id": "d762837d-c64d-4829-9aba-05e71b64adc3"
+            }
+          },
+          "at_ms": 6
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 8,
+              "status": "success",
+              "tool_call_id": "toolu_013WLWbbrNwTqV9UguY6rEu6",
+              "tool_name": "switch_tab"
+            }
+          },
+          "at_ms": 8
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 368,
+              "status": "success",
+              "tool_call_id": "toolu_01PjsdjzNXWZ8oDYHQAbjo5o",
+              "tool_name": "print_workflow"
+            }
+          },
+          "at_ms": 2364
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_delta",
+            "data": {
+              "delta": "I'm on the \"Text to image\" tab now.\n\nIt's a standard SDXL text-to-image setup: it loads the SDXL base model, turns the prompt — currently \"a photo of a pier\" — into guidance, generates an image over 20 steps, and saves the result.\n\nOne thing to flag: it isn't runnable as-is. Two inputs on the generation step are still empty — there's no negative prompt wired in, and no blank canvas/image-size node telling it what dimensions to make. Want me to add those so you can run it?"
+            }
+          },
+          "at_ms": 6244
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_done",
+            "data": {
+              "usage": {
+                "cache_creation_input_tokens": 960,
+                "cache_read_input_tokens": 114249,
+                "input_tokens": 6,
+                "output_tokens": 349,
+                "total_tokens": 355
+              }
+            }
+          },
+          "at_ms": 6246
         }
-      },
-      "at_ms": 6
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_tool_call",
-        "data": {
-          "duration_ms": 8,
-          "status": "success",
-          "tool_call_id": "toolu_013WLWbbrNwTqV9UguY6rEu6",
-          "tool_name": "switch_tab"
-        }
-      },
-      "at_ms": 8
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_tool_call",
-        "data": {
-          "duration_ms": 368,
-          "status": "success",
-          "tool_call_id": "toolu_01PjsdjzNXWZ8oDYHQAbjo5o",
-          "tool_name": "print_workflow"
-        }
-      },
-      "at_ms": 2364
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_message_delta",
-        "data": {
-          "delta": "I'm on the \"Text to image\" tab now.\n\nIt's a standard SDXL text-to-image setup: it loads the SDXL base model, turns the prompt — currently \"a photo of a pier\" — into guidance, generates an image over 20 steps, and saves the result.\n\nOne thing to flag: it isn't runnable as-is. Two inputs on the generation step are still empty — there's no negative prompt wired in, and no blank canvas/image-size node telling it what dimensions to make. Want me to add those so you can run it?"
-        }
-      },
-      "at_ms": 6244
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_message_done",
-        "data": {
-          "usage": {
-            "cache_creation_input_tokens": 960,
-            "cache_read_input_tokens": 114249,
-            "input_tokens": 6,
-            "output_tokens": 349,
-            "total_tokens": 355
-          }
-        }
-      },
-      "at_ms": 6246
+      ]
     }
   ]
 }

@@ -1,5 +1,5 @@
 {
-  "schema_version": "agent-conversation.v1",
+  "schema_version": "agent-conversation.v2",
   "source": {
     "repo": "Comfy-Org/ComfyUI_frontend",
     "suite": "agent",
@@ -9,7 +9,6 @@
     "capture": {
       "backend": "Comfy-Org/cloud",
       "thread_id": "934d7b9d-72d9-40ab-a3d9-3cdb6fa5a386",
-      "message_id": "a5ec5ead-1909-4322-9d62-edbb03a3ded9",
       "exported_at": "2026-09-03T12:40:56Z"
     }
   },
@@ -194,83 +193,88 @@
       ]
     }
   },
-  "request": {
-    "content": "Switch to the tab 'Text to image', then add a node of class DoesNotExist."
-  },
-  "response": [
+  "turns": [
     {
-      "kind": "event",
-      "event": {
-        "type": "agent_thinking",
-        "data": {
-          "delta": "I'll switch to that tab first."
-        }
+      "message_id": "a5ec5ead-1909-4322-9d62-edbb03a3ded9",
+      "request": {
+        "content": "Switch to the tab 'Text to image', then add a node of class DoesNotExist."
       },
-      "at_ms": 0
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_active_tab",
-        "data": {
-          "name": "Text to image",
-          "workflow_id": "5c1db1ce-4ca3-4db9-b559-4d3463d0c6e5"
+      "response": [
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_thinking",
+            "data": {
+              "delta": "I'll switch to that tab first."
+            }
+          },
+          "at_ms": 0
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_active_tab",
+            "data": {
+              "name": "Text to image",
+              "workflow_id": "5c1db1ce-4ca3-4db9-b559-4d3463d0c6e5"
+            }
+          },
+          "at_ms": 9
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 8,
+              "status": "success",
+              "tool_call_id": "toolu_01YWm16Ejys8FJBofYwL7k9E",
+              "tool_name": "switch_tab"
+            }
+          },
+          "at_ms": 12
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 346,
+              "error_code": "node_not_found",
+              "status": "error",
+              "tool_call_id": "toolu_01XqvtmCXKboog1UTZ3MGNJR",
+              "tool_name": "add_node"
+            }
+          },
+          "at_ms": 2654
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_delta",
+            "data": {
+              "delta": "I'm now on the \"Text to image\" tab, but there's no node called \"DoesNotExist\" — nothing was added, and the canvas is unchanged.\n\nIf you tell me what you actually want that node to do (e.g. upscale, add a LoRA, save output), I'll find the real one and wire it in."
+            }
+          },
+          "at_ms": 5701
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_done",
+            "data": {
+              "usage": {
+                "cache_creation_input_tokens": 752,
+                "cache_read_input_tokens": 114291,
+                "input_tokens": 6,
+                "output_tokens": 295,
+                "total_tokens": 301
+              }
+            }
+          },
+          "at_ms": 5703
         }
-      },
-      "at_ms": 9
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_tool_call",
-        "data": {
-          "duration_ms": 8,
-          "status": "success",
-          "tool_call_id": "toolu_01YWm16Ejys8FJBofYwL7k9E",
-          "tool_name": "switch_tab"
-        }
-      },
-      "at_ms": 12
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_tool_call",
-        "data": {
-          "duration_ms": 346,
-          "error_code": "node_not_found",
-          "status": "error",
-          "tool_call_id": "toolu_01XqvtmCXKboog1UTZ3MGNJR",
-          "tool_name": "add_node"
-        }
-      },
-      "at_ms": 2654
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_message_delta",
-        "data": {
-          "delta": "I'm now on the \"Text to image\" tab, but there's no node called \"DoesNotExist\" — nothing was added, and the canvas is unchanged.\n\nIf you tell me what you actually want that node to do (e.g. upscale, add a LoRA, save output), I'll find the real one and wire it in."
-        }
-      },
-      "at_ms": 5701
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_message_done",
-        "data": {
-          "usage": {
-            "cache_creation_input_tokens": 752,
-            "cache_read_input_tokens": 114291,
-            "input_tokens": 6,
-            "output_tokens": 295,
-            "total_tokens": 301
-          }
-        }
-      },
-      "at_ms": 5703
+      ]
     }
   ]
 }

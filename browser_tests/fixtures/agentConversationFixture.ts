@@ -15,7 +15,6 @@ import { mintWireOps } from '@/workbench/extensions/agent/crdt/opEnvelope'
 import type {
   AgentCancelAccepted,
   AgentMessages,
-  AgentTurnAccepted,
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -23,6 +22,7 @@ import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApi
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import type {
   AgentConversation,
+  AgentConversationTurn,
   RecordedWsEvent
 } from '@e2e/fixtures/data/agent/agentConversation'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
@@ -32,7 +32,9 @@ import { knownTool } from '@/workbench/extensions/agent/services/agent/agentTool
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const THREAD_ID = 'e9a2f3d1-7c44-4b2e-9a01-5f6d8c7b3a10'
-const TURN_ID = '0c5b1e77-2d4a-4f9e-8b63-1a2c3d4e5f60'
+// One synthetic message id per turn; the recorded ids never reach the page.
+const turnId = (turn: number): string =>
+  `0c5b1e77-2d4a-4f9e-8b63-1a2c3d4e5${turn.toString(16).padStart(3, '0')}`
 // useAgentSession.ts keeps THREAD_STORAGE_KEY module-private.
 const THREAD_STORAGE_KEY = 'Comfy.Agent.ThreadId'
 const SOCKET_SID = '7d1f2e3a-4b5c-4d6e-8f90-1a2b3c4d5e6f'
@@ -190,7 +192,6 @@ class AgentConversationHarness {
   // Human-op minting is observable only on the client side of the socket.
   readonly clientFrames: { type?: unknown; data?: unknown }[] = []
   readonly panel: Locator
-  readonly ack: AgentTurnAccepted
 
   private readonly host: HostDoc
   private socket: WebSocketRoute | null = null
@@ -206,11 +207,6 @@ class AgentConversationHarness {
   ) {
     const { workflow } = conversation
     this.host = new HostDoc(workflow.id, workflow.seed, workflow.catalog)
-    this.ack = {
-      thread_id: THREAD_ID,
-      message_id: TURN_ID,
-      workflow_id: workflow.id
-    }
     this.panel = page.locator('#agent-panel-root')
   }
 
@@ -239,15 +235,15 @@ class AgentConversationHarness {
     await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
   }
 
-  async sendPrompt(): Promise<void> {
-    const { content } = this.conversation.request
+  async sendPrompt(turn = 0): Promise<void> {
+    const { content } = this.conversation.turns[turn].request
     const composer = this.panel.getByRole('textbox', {
       name: /^Describe ideas/
     })
     await composer.fill(content)
     await this.panel.getByRole('button', { name: SEND_LABEL }).click()
-    await expect.poll(() => this.postedMessages.length).toBeGreaterThan(0)
-    expect(this.postedMessages[0]).toContain(content)
+    await expect.poll(() => this.postedMessages.length).toBeGreaterThan(turn)
+    expect(this.postedMessages[turn]).toContain(content)
     // Replay frames are dropped until the page has applied the ack's thread id.
     await expect
       .poll(() =>
@@ -260,16 +256,23 @@ class AgentConversationHarness {
   }
 
   async replayResponse(
+    turn = 0,
     afterEntry?: (index: number) => Promise<void>
   ): Promise<void> {
     const startedAt = Date.now()
-    for (const [index, entry] of this.conversation.response.entries()) {
-      if (this.replayTiming === 'recorded' && entry.at_ms !== undefined) {
-        const wait = entry.at_ms - (Date.now() - startedAt)
-        if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait))
-      }
+    const entries = this.conversation.turns[turn].response.entries()
+    for (const [index, entry] of entries) {
+      // A timer can fire a millisecond early, so wait until the offset has really passed.
+      while (
+        this.replayTiming === 'recorded' &&
+        entry.at_ms !== undefined &&
+        Date.now() - startedAt < entry.at_ms
+      )
+        await new Promise((resolve) =>
+          setTimeout(resolve, entry.at_ms! - (Date.now() - startedAt))
+        )
       if (entry.kind === 'event') {
-        this.send(this.stampTurn(entry.event))
+        this.send(this.stampTurn(entry.event, turn))
         continue
       }
       await this.waitForSubscribe()
@@ -280,6 +283,18 @@ class AgentConversationHarness {
   }
 
   replayElapsedMs = 0
+
+  async runTurns(): Promise<void> {
+    for (const turn of this.conversation.turns.keys()) {
+      await this.sendPrompt(turn)
+      await this.replayResponse(turn)
+      await this.waitForTurnComplete()
+    }
+  }
+
+  private entries(): AgentConversationTurn['response'] {
+    return this.conversation.turns.flatMap((turn) => turn.response)
+  }
 
   async waitForTurnComplete(): Promise<void> {
     await expect(
@@ -293,7 +308,7 @@ class AgentConversationHarness {
   // Doc-id filter: a stray template node must not pin the template here.
   private nodeBodies(): NodeBody[] {
     const seed = this.conversation.workflow.seed.nodes as NodeBody[]
-    const added = this.conversation.response.flatMap((entry) =>
+    const added = this.entries().flatMap((entry) =>
       entry.kind === 'graph_ops'
         ? entry.ops.flatMap((op) =>
             op.op === 'add_node' ? [op.node as NodeBody] : []
@@ -370,27 +385,29 @@ class AgentConversationHarness {
 
   toolCallGroups(): RecordedToolCall[][] {
     const groups: RecordedToolCall[][] = []
-    let current: RecordedToolCall[] = []
-    for (const entry of this.conversation.response) {
-      if (entry.kind !== 'event') continue
-      const { type, data } = entry.event
-      if (type === 'agent_tool_call') {
-        if (data.status !== 'running')
-          current.push({
-            name: String(data.tool_name),
-            ok: data.status === 'success'
-          })
-        continue
+    for (const turn of this.conversation.turns) {
+      let current: RecordedToolCall[] = []
+      for (const entry of turn.response) {
+        if (entry.kind !== 'event') continue
+        const { type, data } = entry.event
+        if (type === 'agent_tool_call') {
+          if (data.status !== 'running')
+            current.push({
+              name: String(data.tool_name),
+              ok: data.status === 'success'
+            })
+          continue
+        }
+        if (
+          (type === 'agent_thinking' || type === 'agent_message_delta') &&
+          current.length > 0
+        ) {
+          groups.push(current)
+          current = []
+        }
       }
-      if (
-        (type === 'agent_thinking' || type === 'agent_message_delta') &&
-        current.length > 0
-      ) {
-        groups.push(current)
-        current = []
-      }
+      if (current.length > 0) groups.push(current)
     }
-    if (current.length > 0) groups.push(current)
     return groups
   }
 
@@ -398,7 +415,7 @@ class AgentConversationHarness {
   recordedWidgetValues(): RecordedWidgetValue[] {
     const graph = this.host.graph()
     const latest = new Map<string, RecordedWidgetValue>()
-    for (const entry of this.conversation.response) {
+    for (const entry of this.entries()) {
       if (entry.kind !== 'graph_ops') continue
       for (const op of entry.ops) {
         if (op.op !== 'set_widget') continue
@@ -428,8 +445,7 @@ class AgentConversationHarness {
   // One update per ops entry plus the subscribe catch-up.
   expectedUpdateCount(): number {
     return (
-      this.conversation.response.filter((entry) => entry.kind === 'graph_ops')
-        .length + 1
+      this.entries().filter((entry) => entry.kind === 'graph_ops').length + 1
     )
   }
 
@@ -475,7 +491,11 @@ class AgentConversationHarness {
         return route.fulfill({
           status: 202,
           contentType: 'application/json',
-          body: JSON.stringify(this.ack)
+          body: JSON.stringify({
+            thread_id: THREAD_ID,
+            message_id: turnId(this.postedMessages.length - 1),
+            workflow_id: this.conversation.workflow.id
+          })
         })
       }
       const history: AgentMessages = []
@@ -495,10 +515,10 @@ class AgentConversationHarness {
     )
   }
 
-  private stampTurn(event: RecordedWsEvent): AgentWsEvent {
+  private stampTurn(event: RecordedWsEvent, turn: number): AgentWsEvent {
     const stamped = {
       type: event.type,
-      data: { ...event.data, message_id: TURN_ID, thread_id: THREAD_ID }
+      data: { ...event.data, message_id: turnId(turn), thread_id: THREAD_ID }
     }
     const parsed = parseAgentWsEvent(stamped)
     if (!parsed.success)

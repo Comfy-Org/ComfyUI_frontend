@@ -15,9 +15,7 @@ test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
         test.setTimeout(60_000)
         const { panel } = agentConversation
 
-        await agentConversation.sendPrompt()
-        await agentConversation.replayResponse()
-        await agentConversation.waitForTurnComplete()
+        await agentConversation.runTurns()
 
         const groups = agentConversation.toolCallGroups()
         const groupButtons = panel.getByRole('button', {

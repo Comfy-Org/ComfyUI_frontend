@@ -15,7 +15,7 @@ if (hasAgentConversation('agent-rec-set-widget-existing'))
       agentConversation
     }) => {
       test.setTimeout(120_000)
-      const offsets = agentConversation.conversation.response.flatMap(
+      const offsets = agentConversation.conversation.turns[0].response.flatMap(
         (entry) => (entry.at_ms === undefined ? [] : [entry.at_ms])
       )
       const span = offsets.length ? Math.max(...offsets) : undefined

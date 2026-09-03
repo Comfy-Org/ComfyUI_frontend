@@ -1,5 +1,5 @@
 {
-  "schema_version": "agent-conversation.v1",
+  "schema_version": "agent-conversation.v2",
   "source": {
     "repo": "Comfy-Org/ComfyUI_frontend",
     "suite": "agent",
@@ -9,7 +9,6 @@
     "capture": {
       "backend": "Comfy-Org/cloud",
       "thread_id": "b5d11187-d40e-4be1-aeab-39869516773b",
-      "message_id": "19230873-0f07-4f85-a0ae-e9f1d740cb3a",
       "exported_at": "2026-09-03T12:38:52Z"
     }
   },
@@ -194,149 +193,154 @@
       ]
     }
   },
-  "request": {
-    "content": "Switch to the tab 'Text to image', then set the KSampler's steps to 30 and its cfg to 5. Change nothing else."
-  },
-  "response": [
+  "turns": [
     {
-      "kind": "event",
-      "event": {
-        "type": "agent_thinking",
-        "data": {
-          "delta": "I'll switch to that tab first."
-        }
+      "message_id": "19230873-0f07-4f85-a0ae-e9f1d740cb3a",
+      "request": {
+        "content": "Switch to the tab 'Text to image', then set the KSampler's steps to 30 and its cfg to 5. Change nothing else."
       },
-      "at_ms": 0
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_active_tab",
-        "data": {
-          "name": "Text to image",
-          "workflow_id": "5733b17e-39f4-40f5-aa1c-468a4f355b55"
-        }
-      },
-      "at_ms": 6
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_tool_call",
-        "data": {
-          "duration_ms": 12,
-          "status": "success",
-          "tool_call_id": "toolu_0127MABi8i6cpznwzfMSk2b6",
-          "tool_name": "switch_tab"
-        }
-      },
-      "at_ms": 12
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_tool_call",
-        "data": {
-          "duration_ms": 498,
-          "status": "success",
-          "tool_call_id": "toolu_01DTMkDXHKWELHfKUTXUynfK",
-          "tool_name": "ls_nodes"
-        }
-      },
-      "at_ms": 3903
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_tool_call",
-        "data": {
-          "duration_ms": 425,
-          "status": "success",
-          "tool_call_id": "toolu_018Ck46iqTkvLjT12cDdcyH6",
-          "tool_name": "list_slots"
-        }
-      },
-      "at_ms": 9834
-    },
-    {
-      "kind": "graph_ops",
-      "ops": [
+      "response": [
         {
-          "op": "set_widget",
-          "old": 20,
-          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-          "op_id": "5ee9143999c148439b6fc848bc8d309a",
-          "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
-          "value": 30,
-          "widget": "steps",
-          "node_id": 3,
-          "base_version": 2
+          "kind": "event",
+          "event": {
+            "type": "agent_thinking",
+            "data": {
+              "delta": "I'll switch to that tab first."
+            }
+          },
+          "at_ms": 0
         },
         {
-          "op": "set_widget",
-          "old": 7,
-          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-          "op_id": "7ad6e06be4f84086bec999cfc5177816",
-          "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
-          "value": 5,
-          "widget": "cfg",
-          "node_id": 3,
-          "base_version": 2
+          "kind": "event",
+          "event": {
+            "type": "agent_active_tab",
+            "data": {
+              "name": "Text to image",
+              "workflow_id": "5733b17e-39f4-40f5-aa1c-468a4f355b55"
+            }
+          },
+          "at_ms": 6
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 12,
+              "status": "success",
+              "tool_call_id": "toolu_0127MABi8i6cpznwzfMSk2b6",
+              "tool_name": "switch_tab"
+            }
+          },
+          "at_ms": 12
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 498,
+              "status": "success",
+              "tool_call_id": "toolu_01DTMkDXHKWELHfKUTXUynfK",
+              "tool_name": "ls_nodes"
+            }
+          },
+          "at_ms": 3903
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 425,
+              "status": "success",
+              "tool_call_id": "toolu_018Ck46iqTkvLjT12cDdcyH6",
+              "tool_name": "list_slots"
+            }
+          },
+          "at_ms": 9834
+        },
+        {
+          "kind": "graph_ops",
+          "ops": [
+            {
+              "op": "set_widget",
+              "old": 20,
+              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+              "op_id": "5ee9143999c148439b6fc848bc8d309a",
+              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+              "value": 30,
+              "widget": "steps",
+              "node_id": 3,
+              "base_version": 2
+            },
+            {
+              "op": "set_widget",
+              "old": 7,
+              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+              "op_id": "7ad6e06be4f84086bec999cfc5177816",
+              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+              "value": 5,
+              "widget": "cfg",
+              "node_id": 3,
+              "base_version": 2
+            }
+          ],
+          "at_ms": 16908
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 253,
+              "status": "success",
+              "tool_call_id": "toolu_01BaTP7o2iAhJbBjQ9tChoEG",
+              "tool_name": "apply_ops"
+            }
+          },
+          "at_ms": 16908
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 199,
+              "status": "success",
+              "tool_call_id": "toolu_01MLp2wvSBojXfwPYKqT7dvB",
+              "tool_name": "list_slots"
+            }
+          },
+          "at_ms": 21478
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_delta",
+            "data": {
+              "delta": "You're now on the \"Text to image\" tab, with steps at 30 and cfg at 5. Nothing else was touched."
+            }
+          },
+          "at_ms": 23927
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_done",
+            "data": {
+              "usage": {
+                "cache_creation_input_tokens": 1549,
+                "cache_read_input_tokens": 230832,
+                "input_tokens": 12,
+                "output_tokens": 509,
+                "total_tokens": 521
+              }
+            }
+          },
+          "at_ms": 23931
         }
-      ],
-      "at_ms": 16908
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_tool_call",
-        "data": {
-          "duration_ms": 253,
-          "status": "success",
-          "tool_call_id": "toolu_01BaTP7o2iAhJbBjQ9tChoEG",
-          "tool_name": "apply_ops"
-        }
-      },
-      "at_ms": 16908
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_tool_call",
-        "data": {
-          "duration_ms": 199,
-          "status": "success",
-          "tool_call_id": "toolu_01MLp2wvSBojXfwPYKqT7dvB",
-          "tool_name": "list_slots"
-        }
-      },
-      "at_ms": 21478
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_message_delta",
-        "data": {
-          "delta": "You're now on the \"Text to image\" tab, with steps at 30 and cfg at 5. Nothing else was touched."
-        }
-      },
-      "at_ms": 23927
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_message_done",
-        "data": {
-          "usage": {
-            "cache_creation_input_tokens": 1549,
-            "cache_read_input_tokens": 230832,
-            "input_tokens": 12,
-            "output_tokens": 509,
-            "total_tokens": 521
-          }
-        }
-      },
-      "at_ms": 23931
+      ]
     }
   ]
 }

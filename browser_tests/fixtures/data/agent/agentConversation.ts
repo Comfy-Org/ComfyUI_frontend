@@ -58,9 +58,16 @@ const zResponseEntry = z.discriminatedUnion('kind', [
   })
 ])
 
+const zTurn = z.object({
+  message_id: z.string().min(1).optional(),
+  request: zAgentConversationRequest,
+  response: z.array(zResponseEntry).min(1)
+})
+export type AgentConversationTurn = z.infer<typeof zTurn>
+
 export const zAgentConversation = z
   .object({
-    schema_version: z.literal('agent-conversation.v1'),
+    schema_version: z.literal('agent-conversation.v2'),
     source: z.object({
       repo: z.string(),
       suite: z.string(),
@@ -71,26 +78,29 @@ export const zAgentConversation = z
         .object({
           backend: z.literal('Comfy-Org/cloud'),
           thread_id: z.string().min(1),
-          message_id: z.string().min(1),
           exported_at: z.string().datetime()
         })
         .optional()
     }),
     workflow: zAgentConversationWorkflow,
-    request: zAgentConversationRequest,
-    response: z.array(zResponseEntry).min(1)
+    // One thread; each turn lands on the graph the previous turn left.
+    turns: z.array(zTurn).min(1)
   })
   .superRefine((conversation, ctx) => {
-    if (
-      conversation.source.response_side === 'recorded' &&
-      conversation.source.capture === undefined
-    ) {
+    if (conversation.source.response_side !== 'recorded') return
+    if (conversation.source.capture === undefined)
       ctx.addIssue({
         code: 'custom',
         path: ['source', 'capture'],
         message: 'recorded responses require backend capture provenance'
       })
-    }
+    for (const [index, turn] of conversation.turns.entries())
+      if (turn.message_id === undefined)
+        ctx.addIssue({
+          code: 'custom',
+          path: ['turns', index, 'message_id'],
+          message: 'recorded turns carry the message id they were captured from'
+        })
   })
 export type AgentConversation = z.infer<typeof zAgentConversation>
 

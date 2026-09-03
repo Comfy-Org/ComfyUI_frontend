@@ -3,25 +3,8 @@ import { describe, expect, it } from 'vitest'
 import { zAgentConversation } from '../browser_tests/fixtures/data/agent/agentConversation'
 import { exportAgentConversation } from './agentConversationCapture'
 
-const capture = {
-  schema_version: 'agent-backend-capture.v1',
-  source: {
-    repo: 'Comfy-Org/evals',
-    suite: 'agent',
-    case_id: 'recorded-case'
-  },
-  capture: {
-    backend: 'Comfy-Org/cloud',
-    thread_id: 'thread-1',
-    message_id: 'message-1',
-    exported_at: '2026-09-02T16:00:00.000Z'
-  },
-  workflow: {
-    id: '6f1c2c1e-3b1c-4c88-9d9c-0d6e9b8e1a01',
-    name: 'Captured workflow',
-    catalog: { types: {} },
-    seed: { nodes: [], links: [] }
-  },
+const turn = {
+  message_id: 'message-1',
   request: { content: 'Add a node' },
   frames: [
     {
@@ -61,6 +44,32 @@ const capture = {
   ]
 } as const
 
+const capture = {
+  schema_version: 'agent-backend-capture.v2',
+  source: {
+    repo: 'Comfy-Org/evals',
+    suite: 'agent',
+    case_id: 'recorded-case'
+  },
+  capture: {
+    backend: 'Comfy-Org/cloud',
+    thread_id: 'thread-1',
+    exported_at: '2026-09-02T16:00:00.000Z'
+  },
+  workflow: {
+    id: '6f1c2c1e-3b1c-4c88-9d9c-0d6e9b8e1a01',
+    name: 'Captured workflow',
+    catalog: { types: {} },
+    seed: { nodes: [], links: [] }
+  },
+  turns: [turn]
+} as const
+
+const withTurn = (patch: Partial<typeof turn>) => ({
+  ...capture,
+  turns: [{ ...turn, ...patch }]
+})
+
 describe('exportAgentConversation', () => {
   it('interleaves only durably applied backend ops before the terminal frame', () => {
     const conversation = exportAgentConversation(capture)
@@ -69,7 +78,7 @@ describe('exportAgentConversation', () => {
       response_side: 'recorded',
       capture: capture.capture
     })
-    expect(conversation.response).toEqual([
+    expect(conversation.turns[0].response).toEqual([
       {
         kind: 'event',
         event: {
@@ -100,85 +109,113 @@ describe('exportAgentConversation', () => {
   })
 
   it('emits each entry at its offset from the first recorded frame', () => {
-    const [running, success] = capture.frames
-    const exported = exportAgentConversation({
-      ...capture,
-      frames: [
-        { ...running, at_ms: 1_700_000_001_000 },
-        { ...success, at_ms: 1_700_000_001_750 }
-      ]
-    })
-    expect(exported.response.map((entry) => entry.at_ms)).toEqual([0, 750, 750])
+    const [running, success] = turn.frames
+    const exported = exportAgentConversation(
+      withTurn({
+        frames: [
+          { ...running, at_ms: 1_700_000_001_000 },
+          { ...success, at_ms: 1_700_000_001_750 }
+        ]
+      })
+    )
+    const [{ response }] = exported.turns
+    expect(response.map((entry) => entry.at_ms)).toEqual([0, 750, 750])
     expect(
-      exported.response.every(
+      response.every(
         (entry) => entry.kind !== 'event' || !('at_ms' in entry.event)
       )
     ).toBe(true)
   })
 
   it('leaves the offset out when the frames carry no receipt time', () => {
-    const exported = exportAgentConversation(capture)
-    expect(exported.response.every((entry) => entry.at_ms === undefined)).toBe(
-      true
-    )
+    const [{ response }] = exportAgentConversation(capture).turns
+    expect(response.every((entry) => entry.at_ms === undefined)).toBe(true)
   })
 
   it('refuses a tool-call frame with a missing status', () => {
-    const [running, success] = capture.frames
+    const [running, success] = turn.frames
     const { status: _status, ...withoutStatus } = success.data
     expect(() =>
-      exportAgentConversation({
-        ...capture,
-        frames: [running, { ...success, data: withoutStatus }]
-      })
+      exportAgentConversation(
+        withTurn({ frames: [running, { ...success, data: withoutStatus }] })
+      )
     ).toThrow(/status undefined/)
   })
 
   it('refuses a tool-call frame with an unknown status', () => {
-    const [running, success] = capture.frames
+    const [running, success] = turn.frames
     expect(() =>
-      exportAgentConversation({
-        ...capture,
-        frames: [
-          running,
-          { ...success, data: { ...success.data, status: 'done' } }
-        ]
-      })
+      exportAgentConversation(
+        withTurn({
+          frames: [
+            running,
+            { ...success, data: { ...success.data, status: 'done' } }
+          ]
+        })
+      )
     ).toThrow(/status "done"/)
   })
 
   it('refuses an accepted op missing from the recorded result', () => {
     expect(() =>
-      exportAgentConversation({
-        ...capture,
-        tool_calls: [
-          {
-            ...capture.tool_calls[0],
-            applied_op_ids: ['op-not-in-result']
-          }
-        ]
-      })
+      exportAgentConversation(
+        withTurn({
+          tool_calls: [
+            { ...turn.tool_calls[0], applied_op_ids: ['op-not-in-result'] }
+          ]
+        })
+      )
     ).toThrow('accepted op op-not-in-result')
   })
 
   it('refuses to silently omit a mutating backend call', () => {
     expect(() =>
-      exportAgentConversation({ ...capture, frames: [capture.frames[0]] })
+      exportAgentConversation(withTurn({ frames: [turn.frames[0]] }))
     ).toThrow('no terminal websocket frame for tool call(s): tool-1')
   })
 
   it('refuses a websocket frame from another turn', () => {
     expect(() =>
-      exportAgentConversation({
-        ...capture,
-        frames: [
-          {
-            ...capture.frames[0],
-            data: { ...capture.frames[0].data, message_id: 'another-message' }
-          }
-        ]
-      })
-    ).toThrow('does not belong to capture thread-1/message-1')
+      exportAgentConversation(
+        withTurn({
+          frames: [
+            {
+              ...turn.frames[0],
+              data: { ...turn.frames[0].data, message_id: 'another-message' }
+            }
+          ]
+        })
+      )
+    ).toThrow('does not belong to turn thread-1/message-1')
+  })
+
+  it('exports every turn of the thread in order with its own frames', () => {
+    const second = {
+      ...turn,
+      message_id: 'message-2',
+      request: { content: 'Connect it' },
+      frames: turn.frames.map((frame) => ({
+        ...frame,
+        data: { ...frame.data, message_id: 'message-2' }
+      }))
+    }
+    const exported = exportAgentConversation({
+      ...capture,
+      turns: [turn, second]
+    })
+    expect(
+      exported.turns.map((exportedTurn) => exportedTurn.message_id)
+    ).toEqual(['message-1', 'message-2'])
+    expect(exported.turns[1].request).toEqual({ content: 'Connect it' })
+    expect(exported.turns[1].response).toHaveLength(3)
+  })
+
+  it('refuses a recorded turn without the message id it came from', () => {
+    const conversation = exportAgentConversation(capture)
+    const { message_id: _messageId, ...anonymous } = conversation.turns[0]
+    expect(() =>
+      zAgentConversation.parse({ ...conversation, turns: [anonymous] })
+    ).toThrow('recorded turns carry the message id')
   })
 
   it('refuses a recorded label without backend provenance', () => {

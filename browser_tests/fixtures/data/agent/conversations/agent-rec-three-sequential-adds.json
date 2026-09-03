@@ -1,5 +1,5 @@
 {
-  "schema_version": "agent-conversation.v1",
+  "schema_version": "agent-conversation.v2",
   "source": {
     "repo": "Comfy-Org/ComfyUI_frontend",
     "suite": "agent",
@@ -9,7 +9,6 @@
     "capture": {
       "backend": "Comfy-Org/cloud",
       "thread_id": "3710f44b-9941-4bc4-a806-5c15d00cd807",
-      "message_id": "d0d6b5dc-b189-491a-804e-f52fdb9495cb",
       "exported_at": "2026-09-03T14:05:21Z"
     }
   },
@@ -194,219 +193,224 @@
       ]
     }
   },
-  "request": {
-    "content": "Switch to the tab 'Text to image', then add three nodes one at a time, each with its own separate tool call and nothing else in that call: first a PrimitiveStringMultiline, then an EmptyLatentImage, then a CLIPTextEncode. Do not connect or configure them."
-  },
-  "response": [
+  "turns": [
     {
-      "kind": "event",
-      "event": {
-        "type": "agent_thinking",
-        "data": {
-          "delta": "I'll switch focus to that tab first."
-        }
+      "message_id": "d0d6b5dc-b189-491a-804e-f52fdb9495cb",
+      "request": {
+        "content": "Switch to the tab 'Text to image', then add three nodes one at a time, each with its own separate tool call and nothing else in that call: first a PrimitiveStringMultiline, then an EmptyLatentImage, then a CLIPTextEncode. Do not connect or configure them."
       },
-      "at_ms": 0
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_active_tab",
-        "data": {
-          "name": "Text to image",
-          "workflow_id": "7afd1f94-6cb5-4923-9388-18851b0fba5d"
-        }
-      },
-      "at_ms": 7
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_tool_call",
-        "data": {
-          "duration_ms": 8,
-          "status": "success",
-          "tool_call_id": "toolu_0199bXc7oQVbgJA4aY56VcfY",
-          "tool_name": "switch_tab"
-        }
-      },
-      "at_ms": 9
-    },
-    {
-      "kind": "graph_ops",
-      "ops": [
+      "response": [
         {
-          "op": "add_node",
-          "pos": [1845, 0],
-          "node": {
-            "id": 2478057798252548,
-            "pos": [1845, 0],
-            "mode": 0,
-            "size": [240, 86],
-            "type": "PrimitiveStringMultiline",
-            "flags": {},
-            "order": 0,
-            "inputs": [],
-            "outputs": [
-              {
-                "name": "STRING",
-                "type": "STRING",
-                "links": []
-              }
-            ],
-            "properties": {},
-            "widgets_values": [null]
+          "kind": "event",
+          "event": {
+            "type": "agent_thinking",
+            "data": {
+              "delta": "I'll switch focus to that tab first."
+            }
           },
-          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-          "op_id": "cf6a6fdb84ee4f7dbec557f999d2fa8f",
-          "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
-          "node_id": 2478057798252548,
-          "class_type": "PrimitiveStringMultiline",
-          "base_version": 2
-        }
-      ],
-      "at_ms": 2686
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_tool_call",
-        "data": {
-          "duration_ms": 964,
-          "status": "success",
-          "tool_call_id": "toolu_014VjtpNeXB9q2rBXxK9bkm9",
-          "tool_name": "add_node"
-        }
-      },
-      "at_ms": 2686
-    },
-    {
-      "kind": "graph_ops",
-      "ops": [
+          "at_ms": 0
+        },
         {
-          "op": "add_node",
-          "pos": [2165, 0],
-          "node": {
-            "id": 2772376668635982,
-            "pos": [2165, 0],
-            "mode": 0,
-            "size": [240, 134],
-            "type": "EmptyLatentImage",
-            "flags": {},
-            "order": 0,
-            "inputs": [],
-            "outputs": [
-              {
-                "name": "LATENT",
-                "type": "LATENT",
-                "links": []
-              }
-            ],
-            "properties": {},
-            "widgets_values": [512, 512, 1]
+          "kind": "event",
+          "event": {
+            "type": "agent_active_tab",
+            "data": {
+              "name": "Text to image",
+              "workflow_id": "7afd1f94-6cb5-4923-9388-18851b0fba5d"
+            }
           },
-          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-          "op_id": "48a4c2f2ea8647d1be5b0817985bda87",
-          "stamp": [3, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
-          "node_id": 2772376668635982,
-          "class_type": "EmptyLatentImage",
-          "base_version": 3
-        }
-      ],
-      "at_ms": 4441
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_tool_call",
-        "data": {
-          "duration_ms": 220,
-          "status": "success",
-          "tool_call_id": "toolu_01M6Jpuof94JLfgBij4etkaN",
-          "tool_name": "add_node"
-        }
-      },
-      "at_ms": 4441
-    },
-    {
-      "kind": "graph_ops",
-      "ops": [
+          "at_ms": 7
+        },
         {
-          "op": "add_node",
-          "pos": [2485, 0],
-          "node": {
-            "id": 2514973844700532,
-            "pos": [2485, 0],
-            "mode": 0,
-            "size": [240, 86],
-            "type": "CLIPTextEncode",
-            "flags": {},
-            "order": 0,
-            "inputs": [
-              {
-                "link": null,
-                "name": "clip",
-                "type": "CLIP"
-              }
-            ],
-            "outputs": [
-              {
-                "name": "CONDITIONING",
-                "type": "CONDITIONING",
-                "links": []
-              }
-            ],
-            "properties": {},
-            "widgets_values": [null]
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 8,
+              "status": "success",
+              "tool_call_id": "toolu_0199bXc7oQVbgJA4aY56VcfY",
+              "tool_name": "switch_tab"
+            }
           },
-          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-          "op_id": "da3e136d6b224cc8838a0d9aa569ede3",
-          "stamp": [4, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
-          "node_id": 2514973844700532,
-          "class_type": "CLIPTextEncode",
-          "base_version": 4
+          "at_ms": 9
+        },
+        {
+          "kind": "graph_ops",
+          "ops": [
+            {
+              "op": "add_node",
+              "pos": [1845, 0],
+              "node": {
+                "id": 2478057798252548,
+                "pos": [1845, 0],
+                "mode": 0,
+                "size": [240, 86],
+                "type": "PrimitiveStringMultiline",
+                "flags": {},
+                "order": 0,
+                "inputs": [],
+                "outputs": [
+                  {
+                    "name": "STRING",
+                    "type": "STRING",
+                    "links": []
+                  }
+                ],
+                "properties": {},
+                "widgets_values": [null]
+              },
+              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+              "op_id": "cf6a6fdb84ee4f7dbec557f999d2fa8f",
+              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+              "node_id": 2478057798252548,
+              "class_type": "PrimitiveStringMultiline",
+              "base_version": 2
+            }
+          ],
+          "at_ms": 2686
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 964,
+              "status": "success",
+              "tool_call_id": "toolu_014VjtpNeXB9q2rBXxK9bkm9",
+              "tool_name": "add_node"
+            }
+          },
+          "at_ms": 2686
+        },
+        {
+          "kind": "graph_ops",
+          "ops": [
+            {
+              "op": "add_node",
+              "pos": [2165, 0],
+              "node": {
+                "id": 2772376668635982,
+                "pos": [2165, 0],
+                "mode": 0,
+                "size": [240, 134],
+                "type": "EmptyLatentImage",
+                "flags": {},
+                "order": 0,
+                "inputs": [],
+                "outputs": [
+                  {
+                    "name": "LATENT",
+                    "type": "LATENT",
+                    "links": []
+                  }
+                ],
+                "properties": {},
+                "widgets_values": [512, 512, 1]
+              },
+              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+              "op_id": "48a4c2f2ea8647d1be5b0817985bda87",
+              "stamp": [3, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+              "node_id": 2772376668635982,
+              "class_type": "EmptyLatentImage",
+              "base_version": 3
+            }
+          ],
+          "at_ms": 4441
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 220,
+              "status": "success",
+              "tool_call_id": "toolu_01M6Jpuof94JLfgBij4etkaN",
+              "tool_name": "add_node"
+            }
+          },
+          "at_ms": 4441
+        },
+        {
+          "kind": "graph_ops",
+          "ops": [
+            {
+              "op": "add_node",
+              "pos": [2485, 0],
+              "node": {
+                "id": 2514973844700532,
+                "pos": [2485, 0],
+                "mode": 0,
+                "size": [240, 86],
+                "type": "CLIPTextEncode",
+                "flags": {},
+                "order": 0,
+                "inputs": [
+                  {
+                    "link": null,
+                    "name": "clip",
+                    "type": "CLIP"
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "CONDITIONING",
+                    "type": "CONDITIONING",
+                    "links": []
+                  }
+                ],
+                "properties": {},
+                "widgets_values": [null]
+              },
+              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+              "op_id": "da3e136d6b224cc8838a0d9aa569ede3",
+              "stamp": [4, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+              "node_id": 2514973844700532,
+              "class_type": "CLIPTextEncode",
+              "base_version": 4
+            }
+          ],
+          "at_ms": 7816
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 192,
+              "status": "success",
+              "tool_call_id": "toolu_01FzkN53SHp6ePAFbmX2H8oX",
+              "tool_name": "add_node"
+            }
+          },
+          "at_ms": 7816
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_delta",
+            "data": {
+              "delta": "All three nodes are on the \"Text to image\" tab now — a multiline text box, an empty latent, and a text encoder — left unconnected and unconfigured as you asked."
+            }
+          },
+          "at_ms": 9873
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_done",
+            "data": {
+              "usage": {
+                "cache_creation_input_tokens": 1944,
+                "cache_read_input_tokens": 192480,
+                "input_tokens": 10,
+                "output_tokens": 322,
+                "total_tokens": 332
+              }
+            }
+          },
+          "at_ms": 9875
         }
-      ],
-      "at_ms": 7816
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_tool_call",
-        "data": {
-          "duration_ms": 192,
-          "status": "success",
-          "tool_call_id": "toolu_01FzkN53SHp6ePAFbmX2H8oX",
-          "tool_name": "add_node"
-        }
-      },
-      "at_ms": 7816
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_message_delta",
-        "data": {
-          "delta": "All three nodes are on the \"Text to image\" tab now — a multiline text box, an empty latent, and a text encoder — left unconnected and unconfigured as you asked."
-        }
-      },
-      "at_ms": 9873
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_message_done",
-        "data": {
-          "usage": {
-            "cache_creation_input_tokens": 1944,
-            "cache_read_input_tokens": 192480,
-            "input_tokens": 10,
-            "output_tokens": 322,
-            "total_tokens": 332
-          }
-        }
-      },
-      "at_ms": 9875
+      ]
     }
   ]
 }

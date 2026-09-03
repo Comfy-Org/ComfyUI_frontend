@@ -1,5 +1,5 @@
 {
-  "schema_version": "agent-conversation.v1",
+  "schema_version": "agent-conversation.v2",
   "source": {
     "repo": "Comfy-Org/ComfyUI_frontend",
     "suite": "agent",
@@ -9,7 +9,6 @@
     "capture": {
       "backend": "Comfy-Org/cloud",
       "thread_id": "a6fd73be-e957-45b7-a5e0-5edd091670fb",
-      "message_id": "9f88da92-5074-4091-850b-7cbc65005cd1",
       "exported_at": "2026-09-03T12:40:55Z"
     }
   },
@@ -194,187 +193,192 @@
       ]
     }
   },
-  "request": {
-    "content": "Switch to the tab 'Text to image', then in ONE apply_ops call add two CLIPTextEncode nodes and wire both of their CLIP inputs from the checkpoint loader. Use a single batched tool call for all four operations."
-  },
-  "response": [
+  "turns": [
     {
-      "kind": "event",
-      "event": {
-        "type": "agent_active_tab",
-        "data": {
-          "name": "Text to image",
-          "workflow_id": "e539bb63-bc5d-4f97-b918-d85862c0f591"
-        }
+      "message_id": "9f88da92-5074-4091-850b-7cbc65005cd1",
+      "request": {
+        "content": "Switch to the tab 'Text to image', then in ONE apply_ops call add two CLIPTextEncode nodes and wire both of their CLIP inputs from the checkpoint loader. Use a single batched tool call for all four operations."
       },
-      "at_ms": 0
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_tool_call",
-        "data": {
-          "duration_ms": 7,
-          "status": "success",
-          "tool_call_id": "toolu_01UJ5hWx9Rxkvwon9F7nMGaK",
-          "tool_name": "switch_tab"
-        }
-      },
-      "at_ms": 2
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_tool_call",
-        "data": {
-          "duration_ms": 368,
-          "status": "success",
-          "tool_call_id": "toolu_011QfP8raZRXJbK5WZYpKTkv",
-          "tool_name": "print_workflow"
-        }
-      },
-      "at_ms": 2139
-    },
-    {
-      "kind": "graph_ops",
-      "ops": [
+      "response": [
         {
-          "op": "add_node",
-          "pos": [715, 280],
-          "node": {
-            "id": 2559261621971657,
-            "pos": [715, 280],
-            "mode": 0,
-            "size": [240, 86],
-            "type": "CLIPTextEncode",
-            "flags": {},
-            "order": 0,
-            "inputs": [
-              {
-                "link": null,
-                "name": "clip",
-                "type": "CLIP"
-              }
-            ],
-            "outputs": [
-              {
-                "name": "CONDITIONING",
-                "type": "CONDITIONING",
-                "links": []
-              }
-            ],
-            "properties": {},
-            "widgets_values": [null]
+          "kind": "event",
+          "event": {
+            "type": "agent_active_tab",
+            "data": {
+              "name": "Text to image",
+              "workflow_id": "e539bb63-bc5d-4f97-b918-d85862c0f591"
+            }
           },
-          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-          "op_id": "7a130c22fe934bc98e2ea2fed6bd10ad",
-          "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
-          "node_id": 2559261621971657,
-          "class_type": "CLIPTextEncode",
-          "base_version": 2
+          "at_ms": 0
         },
         {
-          "op": "add_node",
-          "pos": [715, 406],
-          "node": {
-            "id": 2214070360209981,
-            "pos": [715, 406],
-            "mode": 0,
-            "size": [240, 86],
-            "type": "CLIPTextEncode",
-            "flags": {},
-            "order": 0,
-            "inputs": [
-              {
-                "link": null,
-                "name": "clip",
-                "type": "CLIP"
-              }
-            ],
-            "outputs": [
-              {
-                "name": "CONDITIONING",
-                "type": "CONDITIONING",
-                "links": []
-              }
-            ],
-            "properties": {},
-            "widgets_values": [null]
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 7,
+              "status": "success",
+              "tool_call_id": "toolu_01UJ5hWx9Rxkvwon9F7nMGaK",
+              "tool_name": "switch_tab"
+            }
           },
-          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-          "op_id": "00b500c587744366b85d5c71ddbc9fdf",
-          "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
-          "node_id": 2214070360209981,
-          "class_type": "CLIPTextEncode",
-          "base_version": 2
+          "at_ms": 2
         },
         {
-          "op": "connect",
-          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-          "op_id": "e9e5c529eb574496a516dd6014ffd5e6",
-          "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
-          "link_id": 879068618000012,
-          "to_node": 2559261621971657,
-          "to_slot": 0,
-          "from_node": 4,
-          "from_slot": 1,
-          "link_type": "CLIP",
-          "base_version": 2
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 368,
+              "status": "success",
+              "tool_call_id": "toolu_011QfP8raZRXJbK5WZYpKTkv",
+              "tool_name": "print_workflow"
+            }
+          },
+          "at_ms": 2139
         },
         {
-          "op": "connect",
-          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-          "op_id": "c7f256bd0cd34e92830062aeea907b4c",
-          "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
-          "link_id": 3832075311322831,
-          "to_node": 2214070360209981,
-          "to_slot": 0,
-          "from_node": 4,
-          "from_slot": 1,
-          "link_type": "CLIP",
-          "base_version": 2
+          "kind": "graph_ops",
+          "ops": [
+            {
+              "op": "add_node",
+              "pos": [715, 280],
+              "node": {
+                "id": 2559261621971657,
+                "pos": [715, 280],
+                "mode": 0,
+                "size": [240, 86],
+                "type": "CLIPTextEncode",
+                "flags": {},
+                "order": 0,
+                "inputs": [
+                  {
+                    "link": null,
+                    "name": "clip",
+                    "type": "CLIP"
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "CONDITIONING",
+                    "type": "CONDITIONING",
+                    "links": []
+                  }
+                ],
+                "properties": {},
+                "widgets_values": [null]
+              },
+              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+              "op_id": "7a130c22fe934bc98e2ea2fed6bd10ad",
+              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+              "node_id": 2559261621971657,
+              "class_type": "CLIPTextEncode",
+              "base_version": 2
+            },
+            {
+              "op": "add_node",
+              "pos": [715, 406],
+              "node": {
+                "id": 2214070360209981,
+                "pos": [715, 406],
+                "mode": 0,
+                "size": [240, 86],
+                "type": "CLIPTextEncode",
+                "flags": {},
+                "order": 0,
+                "inputs": [
+                  {
+                    "link": null,
+                    "name": "clip",
+                    "type": "CLIP"
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "CONDITIONING",
+                    "type": "CONDITIONING",
+                    "links": []
+                  }
+                ],
+                "properties": {},
+                "widgets_values": [null]
+              },
+              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+              "op_id": "00b500c587744366b85d5c71ddbc9fdf",
+              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+              "node_id": 2214070360209981,
+              "class_type": "CLIPTextEncode",
+              "base_version": 2
+            },
+            {
+              "op": "connect",
+              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+              "op_id": "e9e5c529eb574496a516dd6014ffd5e6",
+              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+              "link_id": 879068618000012,
+              "to_node": 2559261621971657,
+              "to_slot": 0,
+              "from_node": 4,
+              "from_slot": 1,
+              "link_type": "CLIP",
+              "base_version": 2
+            },
+            {
+              "op": "connect",
+              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+              "op_id": "c7f256bd0cd34e92830062aeea907b4c",
+              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+              "link_id": 3832075311322831,
+              "to_node": 2214070360209981,
+              "to_slot": 0,
+              "from_node": 4,
+              "from_slot": 1,
+              "link_type": "CLIP",
+              "base_version": 2
+            }
+          ],
+          "at_ms": 5208
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 199,
+              "status": "success",
+              "tool_call_id": "toolu_01PhJ8AyewzRU6PHk7aFGfbC",
+              "tool_name": "apply_ops"
+            }
+          },
+          "at_ms": 5208
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_delta",
+            "data": {
+              "delta": "Done — I'm now on your \"Text to image\" tab, and both new text prompt nodes are on the canvas with their CLIP inputs wired from the checkpoint loader. They're not connected to anything downstream yet, so tell me if you'd like one hooked up as a negative prompt."
+            }
+          },
+          "at_ms": 7784
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_done",
+            "data": {
+              "usage": {
+                "cache_creation_input_tokens": 1437,
+                "cache_read_input_tokens": 153211,
+                "input_tokens": 8,
+                "output_tokens": 574,
+                "total_tokens": 582
+              }
+            }
+          },
+          "at_ms": 7786
         }
-      ],
-      "at_ms": 5208
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_tool_call",
-        "data": {
-          "duration_ms": 199,
-          "status": "success",
-          "tool_call_id": "toolu_01PhJ8AyewzRU6PHk7aFGfbC",
-          "tool_name": "apply_ops"
-        }
-      },
-      "at_ms": 5208
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_message_delta",
-        "data": {
-          "delta": "Done — I'm now on your \"Text to image\" tab, and both new text prompt nodes are on the canvas with their CLIP inputs wired from the checkpoint loader. They're not connected to anything downstream yet, so tell me if you'd like one hooked up as a negative prompt."
-        }
-      },
-      "at_ms": 7784
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_message_done",
-        "data": {
-          "usage": {
-            "cache_creation_input_tokens": 1437,
-            "cache_read_input_tokens": 153211,
-            "input_tokens": 8,
-            "output_tokens": 574,
-            "total_tokens": 582
-          }
-        }
-      },
-      "at_ms": 7786
+      ]
     }
   ]
 }

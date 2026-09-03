@@ -1,5 +1,5 @@
 {
-  "schema_version": "agent-conversation.v1",
+  "schema_version": "agent-conversation.v2",
   "source": {
     "repo": "Comfy-Org/ComfyUI_frontend",
     "suite": "agent",
@@ -9,7 +9,6 @@
     "capture": {
       "backend": "Comfy-Org/cloud",
       "thread_id": "5208dc27-0c2c-4ff3-ad1d-bf7e9ad79e9a",
-      "message_id": "b363781f-6c9a-4087-9190-d478781bbcd2",
       "exported_at": "2026-09-03T12:40:55Z"
     }
   },
@@ -194,251 +193,256 @@
       ]
     }
   },
-  "request": {
-    "content": "Switch to the tab 'Text to image', then add a second KSampler as a refiner: feed it the first sampler's LATENT output, and wire its own LATENT output into the VAE decoder's samples input."
-  },
-  "response": [
+  "turns": [
     {
-      "kind": "event",
-      "event": {
-        "type": "agent_thinking",
-        "data": {
-          "delta": "I'll switch to that tab and read what's there."
-        }
+      "message_id": "b363781f-6c9a-4087-9190-d478781bbcd2",
+      "request": {
+        "content": "Switch to the tab 'Text to image', then add a second KSampler as a refiner: feed it the first sampler's LATENT output, and wire its own LATENT output into the VAE decoder's samples input."
       },
-      "at_ms": 0
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_active_tab",
-        "data": {
-          "name": "Text to image",
-          "workflow_id": "b7d1e09f-682a-48f5-a388-d74a33ad5184"
-        }
-      },
-      "at_ms": 5
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_tool_call",
-        "data": {
-          "duration_ms": 5,
-          "status": "success",
-          "tool_call_id": "toolu_01Bq7cRyMamrEnmo4yHuMphE",
-          "tool_name": "switch_tab"
-        }
-      },
-      "at_ms": 6
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_tool_call",
-        "data": {
-          "duration_ms": 747,
-          "status": "success",
-          "tool_call_id": "toolu_01FEPdyTv3FtKtL8S6zTKj33",
-          "tool_name": "print_workflow"
-        }
-      },
-      "at_ms": 3053
-    },
-    {
-      "kind": "graph_ops",
-      "ops": [
+      "response": [
         {
-          "op": "add_node",
-          "pos": [1565, 280],
-          "node": {
-            "id": 2092962753103866,
-            "pos": [1565, 280],
-            "mode": 0,
-            "size": [240, 290],
-            "type": "KSampler",
-            "flags": {},
-            "order": 0,
-            "inputs": [
-              {
-                "link": null,
-                "name": "model",
-                "type": "MODEL"
-              },
-              {
-                "link": null,
-                "name": "positive",
-                "type": "CONDITIONING"
-              },
-              {
-                "link": null,
-                "name": "negative",
-                "type": "CONDITIONING"
-              },
-              {
-                "link": null,
-                "name": "latent_image",
-                "type": "LATENT"
-              }
-            ],
-            "outputs": [
-              {
-                "name": "LATENT",
-                "type": "LATENT",
-                "links": []
-              }
-            ],
-            "properties": {},
-            "widgets_values": [0, "fixed", 20, 8, "euler", "simple", 1]
+          "kind": "event",
+          "event": {
+            "type": "agent_thinking",
+            "data": {
+              "delta": "I'll switch to that tab and read what's there."
+            }
           },
-          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-          "op_id": "a3b5b79791364f75b1d89391a7a87564",
-          "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
-          "node_id": 2092962753103866,
-          "class_type": "KSampler",
-          "base_version": 2
+          "at_ms": 0
         },
         {
-          "op": "connect",
-          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-          "op_id": "a5d9733c860c40798848bf92d649988f",
-          "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
-          "link_id": 4414751122447181,
-          "to_node": 2092962753103866,
-          "to_slot": 3,
-          "from_node": 3,
-          "from_slot": 0,
-          "link_type": "LATENT",
-          "base_version": 2
+          "kind": "event",
+          "event": {
+            "type": "agent_active_tab",
+            "data": {
+              "name": "Text to image",
+              "workflow_id": "b7d1e09f-682a-48f5-a388-d74a33ad5184"
+            }
+          },
+          "at_ms": 5
         },
         {
-          "op": "connect",
-          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-          "op_id": "7ced254ebc4a417589c32b5a1797452d",
-          "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
-          "link_id": 863234800411381,
-          "to_node": 2092962753103866,
-          "to_slot": 0,
-          "from_node": 4,
-          "from_slot": 0,
-          "link_type": "MODEL",
-          "base_version": 2
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 5,
+              "status": "success",
+              "tool_call_id": "toolu_01Bq7cRyMamrEnmo4yHuMphE",
+              "tool_name": "switch_tab"
+            }
+          },
+          "at_ms": 6
         },
         {
-          "op": "connect",
-          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-          "op_id": "57585fd740934c15835cef60c216c84c",
-          "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
-          "link_id": 3220756471207314,
-          "to_node": 2092962753103866,
-          "to_slot": 1,
-          "from_node": 6,
-          "from_slot": 0,
-          "link_type": "CONDITIONING",
-          "base_version": 2
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 747,
+              "status": "success",
+              "tool_call_id": "toolu_01FEPdyTv3FtKtL8S6zTKj33",
+              "tool_name": "print_workflow"
+            }
+          },
+          "at_ms": 3053
         },
         {
-          "op": "connect",
-          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-          "op_id": "bb113cee68314103861361151c93ad36",
-          "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
-          "link_id": 619699595909791,
-          "to_node": 8,
-          "to_slot": 0,
-          "from_node": 2092962753103866,
-          "from_slot": 0,
-          "link_type": "LATENT",
-          "base_version": 2
+          "kind": "graph_ops",
+          "ops": [
+            {
+              "op": "add_node",
+              "pos": [1565, 280],
+              "node": {
+                "id": 2092962753103866,
+                "pos": [1565, 280],
+                "mode": 0,
+                "size": [240, 290],
+                "type": "KSampler",
+                "flags": {},
+                "order": 0,
+                "inputs": [
+                  {
+                    "link": null,
+                    "name": "model",
+                    "type": "MODEL"
+                  },
+                  {
+                    "link": null,
+                    "name": "positive",
+                    "type": "CONDITIONING"
+                  },
+                  {
+                    "link": null,
+                    "name": "negative",
+                    "type": "CONDITIONING"
+                  },
+                  {
+                    "link": null,
+                    "name": "latent_image",
+                    "type": "LATENT"
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "LATENT",
+                    "type": "LATENT",
+                    "links": []
+                  }
+                ],
+                "properties": {},
+                "widgets_values": [0, "fixed", 20, 8, "euler", "simple", 1]
+              },
+              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+              "op_id": "a3b5b79791364f75b1d89391a7a87564",
+              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+              "node_id": 2092962753103866,
+              "class_type": "KSampler",
+              "base_version": 2
+            },
+            {
+              "op": "connect",
+              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+              "op_id": "a5d9733c860c40798848bf92d649988f",
+              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+              "link_id": 4414751122447181,
+              "to_node": 2092962753103866,
+              "to_slot": 3,
+              "from_node": 3,
+              "from_slot": 0,
+              "link_type": "LATENT",
+              "base_version": 2
+            },
+            {
+              "op": "connect",
+              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+              "op_id": "7ced254ebc4a417589c32b5a1797452d",
+              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+              "link_id": 863234800411381,
+              "to_node": 2092962753103866,
+              "to_slot": 0,
+              "from_node": 4,
+              "from_slot": 0,
+              "link_type": "MODEL",
+              "base_version": 2
+            },
+            {
+              "op": "connect",
+              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+              "op_id": "57585fd740934c15835cef60c216c84c",
+              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+              "link_id": 3220756471207314,
+              "to_node": 2092962753103866,
+              "to_slot": 1,
+              "from_node": 6,
+              "from_slot": 0,
+              "link_type": "CONDITIONING",
+              "base_version": 2
+            },
+            {
+              "op": "connect",
+              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+              "op_id": "bb113cee68314103861361151c93ad36",
+              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+              "link_id": 619699595909791,
+              "to_node": 8,
+              "to_slot": 0,
+              "from_node": 2092962753103866,
+              "from_slot": 0,
+              "link_type": "LATENT",
+              "base_version": 2
+            },
+            {
+              "op": "set_widget",
+              "old": 1,
+              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+              "op_id": "8ba837eb610e4e0db4561b789bb44953",
+              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+              "value": 0.5,
+              "widget": "denoise",
+              "node_id": 2092962753103866,
+              "base_version": 2
+            },
+            {
+              "op": "set_widget",
+              "old": 20,
+              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+              "op_id": "e83bac70162244fa96c7d4633dd5fccc",
+              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+              "value": 20,
+              "widget": "steps",
+              "node_id": 2092962753103866,
+              "base_version": 2
+            }
+          ],
+          "at_ms": 11793
         },
         {
-          "op": "set_widget",
-          "old": 1,
-          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-          "op_id": "8ba837eb610e4e0db4561b789bb44953",
-          "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
-          "value": 0.5,
-          "widget": "denoise",
-          "node_id": 2092962753103866,
-          "base_version": 2
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 198,
+              "status": "success",
+              "tool_call_id": "toolu_01LqYJ1bi41MTaeDXdzC9A9j",
+              "tool_name": "apply_ops"
+            }
+          },
+          "at_ms": 11793
         },
         {
-          "op": "set_widget",
-          "old": 20,
-          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-          "op_id": "e83bac70162244fa96c7d4633dd5fccc",
-          "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
-          "value": 20,
-          "widget": "steps",
-          "node_id": 2092962753103866,
-          "base_version": 2
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 379,
+              "status": "success",
+              "tool_call_id": "toolu_01DAfeiUo97WETr7TRCrv4Cp",
+              "tool_name": "print_workflow"
+            }
+          },
+          "at_ms": 14468
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 199,
+              "status": "error",
+              "tool_call_id": "toolu_01G8xCCA9NuoEur1n8RySCWK",
+              "tool_name": "validate"
+            }
+          },
+          "at_ms": 19339
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_delta",
+            "data": {
+              "delta": "The refiner is in and wired: the first sampler's latent feeds it, and its own latent now drives the VAE decoder into your save node.\n\nTwo things were already unfinished in this graph before I touched it, and they'll block a run:\n\n- Neither sampler has a negative prompt connected, and there's no empty-latent node feeding the first sampler.\n- The checkpoint it points at isn't installed here, so no model file is actually available.\n\nI set the refiner to 20 steps at 0.5 denoise, which is a sensible second-pass default. Want me to add the missing negative prompt and latent-size nodes and pick an installed checkpoint so it can actually run?"
+            }
+          },
+          "at_ms": 29476
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_done",
+            "data": {
+              "usage": {
+                "cache_creation_input_tokens": 2906,
+                "cache_read_input_tokens": 232638,
+                "input_tokens": 12,
+                "output_tokens": 1422,
+                "total_tokens": 1434
+              }
+            }
+          },
+          "at_ms": 29482
         }
-      ],
-      "at_ms": 11793
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_tool_call",
-        "data": {
-          "duration_ms": 198,
-          "status": "success",
-          "tool_call_id": "toolu_01LqYJ1bi41MTaeDXdzC9A9j",
-          "tool_name": "apply_ops"
-        }
-      },
-      "at_ms": 11793
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_tool_call",
-        "data": {
-          "duration_ms": 379,
-          "status": "success",
-          "tool_call_id": "toolu_01DAfeiUo97WETr7TRCrv4Cp",
-          "tool_name": "print_workflow"
-        }
-      },
-      "at_ms": 14468
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_tool_call",
-        "data": {
-          "duration_ms": 199,
-          "status": "error",
-          "tool_call_id": "toolu_01G8xCCA9NuoEur1n8RySCWK",
-          "tool_name": "validate"
-        }
-      },
-      "at_ms": 19339
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_message_delta",
-        "data": {
-          "delta": "The refiner is in and wired: the first sampler's latent feeds it, and its own latent now drives the VAE decoder into your save node.\n\nTwo things were already unfinished in this graph before I touched it, and they'll block a run:\n\n- Neither sampler has a negative prompt connected, and there's no empty-latent node feeding the first sampler.\n- The checkpoint it points at isn't installed here, so no model file is actually available.\n\nI set the refiner to 20 steps at 0.5 denoise, which is a sensible second-pass default. Want me to add the missing negative prompt and latent-size nodes and pick an installed checkpoint so it can actually run?"
-        }
-      },
-      "at_ms": 29476
-    },
-    {
-      "kind": "event",
-      "event": {
-        "type": "agent_message_done",
-        "data": {
-          "usage": {
-            "cache_creation_input_tokens": 2906,
-            "cache_read_input_tokens": 232638,
-            "input_tokens": 12,
-            "output_tokens": 1422,
-            "total_tokens": 1434
-          }
-        }
-      },
-      "at_ms": 29482
+      ]
     }
   ]
 }

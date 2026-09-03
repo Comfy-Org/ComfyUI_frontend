@@ -19,7 +19,7 @@ if (hasAgentConversation('agent-rec-three-sequential-adds'))
       }) => {
         test.setTimeout(60_000)
         const { conversation } = agentConversation
-        const opsEntries = conversation.response
+        const opsEntries = conversation.turns[0].response
           .map((entry, index) => (entry.kind === 'graph_ops' ? index : -1))
           .filter((index) => index >= 0)
         expect(opsEntries.length).toBeGreaterThanOrEqual(3)
@@ -28,7 +28,7 @@ if (hasAgentConversation('agent-rec-three-sequential-adds'))
           .getByLabel('text', { exact: true })
 
         await agentConversation.sendPrompt()
-        await agentConversation.replayResponse(async (index) => {
+        await agentConversation.replayResponse(0, async (index) => {
           if (index !== opsEntries[0]) return
           await promptText.fill(HUMAN_TEXT)
           await expect
