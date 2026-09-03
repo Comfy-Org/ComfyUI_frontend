@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { render, screen } from '@testing-library/vue'
@@ -26,11 +26,22 @@ vi.mock(
   })
 )
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: vi.fn(() => ({
-    isFreeTier: { value: true }
-  }))
+const mockBilling = vi.hoisted(() => ({
+  isFreeTier: true,
+  showsSubscribeToRunPrompt: false
 }))
+
+vi.mock('@/composables/billing/useBillingContext', async () => {
+  const { computed } = await import('vue')
+  return {
+    useBillingContext: vi.fn(() => ({
+      isFreeTier: computed(() => mockBilling.isFreeTier),
+      showsSubscribeToRunPrompt: computed(
+        () => mockBilling.showsSubscribeToRunPrompt
+      )
+    }))
+  }
+})
 
 vi.mock('pinia')
 
@@ -62,10 +73,24 @@ function renderComponent() {
 }
 
 describe('TopbarSubscribeButton', () => {
+  beforeEach(() => {
+    mockBilling.isFreeTier = true
+    mockBilling.showsSubscribeToRunPrompt = false
+  })
+
   it('renders on cloud when isFreeTier is true', () => {
     mockIsCloud.value = true
     renderComponent()
     expect(screen.getByTestId('topbar-subscribe-button')).toBeInTheDocument()
+  })
+
+  it('yields when the Run slot is already prompting to subscribe', () => {
+    mockIsCloud.value = true
+    mockBilling.showsSubscribeToRunPrompt = true
+    renderComponent()
+    expect(
+      screen.queryByTestId('topbar-subscribe-button')
+    ).not.toBeInTheDocument()
   })
 
   it('hides on non-cloud distribution', () => {
