@@ -18,5 +18,10 @@ describe('ServerlessHero', () => {
       screen.getAllByRole('link', { name: t('platform.hero.getStarted', 'en') })
         .length
     ).toBeGreaterThan(0)
+    expect(screen.getByAltText('Comfy')).toBeTruthy()
+    expect(
+      screen.getByText(t('platform.products.serverless.badgeLabel', 'en'))
+    ).toBeTruthy()
+    expect(screen.getByText(t('nav.badgeBeta', 'en'))).toBeTruthy()
   })
 })
