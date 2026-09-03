@@ -276,7 +276,7 @@ async function mockAgentBoot(
   await page.route('**/api/workflows?limit=100', (r) =>
     r.fulfill(
       jsonRoute({
-        data: [{ id: WORKFLOW_ID, name: 'default.json' }],
+        data: [{ id: WORKFLOW_ID, name: 'default' }],
         pagination: {
           offset: 0,
           limit: 100,
