@@ -53,7 +53,7 @@ export function compareStampKeys(a: StampKey, b: StampKey): -1 | 0 | 1 {
  */
 export function stampKey(op: WireOp): StampKey {
   const stamp =
-    Array.isArray(op.stamp) && op.stamp.length >= 2
+    Array.isArray(op.stamp) && op.stamp.length === 2
       ? op.stamp
       : ([op.base_version ?? 0, op.actor ?? ""] as const);
   return [Number(stamp[0] ?? 0), String(stamp[1] ?? ""), op.op_id];

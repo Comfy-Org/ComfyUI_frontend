@@ -11,6 +11,7 @@ import {
   applyOps,
   mint,
   project,
+  stampKey,
   type Op,
   type SetWidgetOp,
   type WidgetCatalog,
@@ -82,12 +83,18 @@ describe("R-92 malformed stamp validation", () => {
     { name: "unsafe counter", stamp: [Number.MAX_SAFE_INTEGER + 1, "human:a"] },
     { name: "negative counter", stamp: [-1, "human:a"] },
     { name: "non-string actor", stamp: [5, 42] },
+    { name: "three-element derived key", stamp: [5, "human:a", id("f")] },
   ];
 
   it.each(malformed)("rejects $name without mutation", ({ stamp }) => {
     const doc = mint(workflow, catalog);
     expectMalformedWithoutMutation(doc, setSeed(id("c"), 99, stamp));
     expect(seedValue(doc)).toBe(0);
+  });
+
+  it("does not interpret a three-element derived key as a wire stamp", () => {
+    const op = setSeed(id("f"), 99, [5, "human:a", id("f")]);
+    expect(stampKey(op)).toEqual([1, "human:envelope", op.op_id]);
   });
 
   it("converges on the higher valid stamp in both arrival orders", () => {
