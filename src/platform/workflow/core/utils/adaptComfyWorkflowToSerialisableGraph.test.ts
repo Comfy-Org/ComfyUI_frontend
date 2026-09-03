@@ -5,6 +5,63 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 import { adaptComfyWorkflowToSerialisableGraph } from './adaptComfyWorkflowToSerialisableGraph'
 import { workflowToClipboardItems } from './workflowToClipboardItems'
 
+type WorkflowJSON1 = Extract<ComfyWorkflowJSON, { version: 1 }>
+type WorkflowSubgraph = NonNullable<
+  NonNullable<WorkflowJSON1['definitions']>['subgraphs']
+>[number] &
+  WorkflowJSON1
+
+function graphState() {
+  return {
+    lastGroupId: 0,
+    lastNodeId: 1,
+    lastLinkId: 0,
+    lastRerouteId: 0
+  }
+}
+
+function workflowSubgraph(
+  id: string,
+  name: string,
+  definitions?: WorkflowSubgraph['definitions']
+): WorkflowSubgraph {
+  return {
+    id,
+    revision: 1,
+    name,
+    version: 1,
+    state: graphState(),
+    inputNode: { id: -10, bounding: [0, 0, 20, 20] },
+    outputNode: { id: -20, bounding: [100, 0, 20, 20] },
+    nodes: [
+      {
+        id: 1,
+        type: 'TestNode',
+        pos: [0, 0],
+        size: [100, 100],
+        flags: {},
+        order: 0,
+        mode: 0,
+        properties: { nested: { values: [name] } },
+        widgets_values: [{ label: name }]
+      }
+    ],
+    groups: [
+      {
+        id: 1,
+        title: `${name} group`,
+        bounding: [0, 0, 100, 100],
+        metadata: { label: name }
+      }
+    ],
+    extra: {
+      metadata: { label: name },
+      reroutes: [{ id: 1, pos: [20, 30], linkIds: null }]
+    },
+    definitions
+  }
+}
+
 describe('adaptComfyWorkflowToSerialisableGraph', () => {
   it('adapts legacy tuple links and preserves legacy state', () => {
     const workflow: ComfyWorkflowJSON = {
@@ -19,6 +76,7 @@ describe('adaptComfyWorkflowToSerialisableGraph', () => {
         reroutes: [{ id: 7, pos: [40, 50], linkIds: null }]
       }
     }
+    const original = structuredClone(workflow)
 
     const graph = adaptComfyWorkflowToSerialisableGraph(workflow)
 
@@ -28,7 +86,7 @@ describe('adaptComfyWorkflowToSerialisableGraph', () => {
       last_link_id: 1,
       links: [[1, 1, 0, 2, 0, 'MODEL,LATENT']]
     })
-    expect(workflow.version).toBe(0.3)
+    expect(workflow).toEqual(original)
     expect(workflowToClipboardItems(graph)).toMatchObject({
       links: [{ id: 1, type: 'MODEL,LATENT', parentId: 7 }],
       reroutes: [{ id: 7, pos: [40, 50], linkIds: [] }]
@@ -81,5 +139,127 @@ describe('adaptComfyWorkflowToSerialisableGraph', () => {
       reroutes: [{ id: 5, pos: [60, 70], linkIds: [] }]
     })
     expect(workflow.nodes[0].inputs?.[0].type).toEqual(['MODEL', 'LATENT'])
+  })
+
+  it('recursively adapts nested workflow data without mutating the input', () => {
+    const childId = '22222222-2222-4222-8222-222222222222'
+    const parentId = '11111111-1111-4111-8111-111111111111'
+    const child = workflowSubgraph(childId, 'Child')
+    const parent = workflowSubgraph(parentId, 'Parent', {
+      subgraphs: [child]
+    })
+    const workflow: WorkflowJSON1 = {
+      version: 1,
+      state: graphState(),
+      nodes: [
+        {
+          id: 1,
+          type: parentId,
+          pos: [0, 0],
+          size: [100, 100],
+          flags: {},
+          order: 0,
+          mode: 0,
+          properties: { nested: { values: ['Root'] } },
+          widgets_values: [{ label: 'Root' }]
+        }
+      ],
+      groups: [
+        {
+          id: 1,
+          title: 'Root group',
+          bounding: [0, 0, 100, 100],
+          metadata: { label: 'Root' }
+        }
+      ],
+      subgraphs: [
+        {
+          id: 2,
+          type: parentId,
+          pos: [100, 100],
+          size: [100, 100],
+          flags: {},
+          order: 1,
+          mode: 0,
+          widgets_values: { 0: { label: 'Instance' }, length: 1 }
+        }
+      ],
+      extra: {
+        metadata: { label: 'Root' },
+        reroutes: [{ id: 1, pos: [10, 20], linkIds: null }]
+      },
+      definitions: { subgraphs: [parent] }
+    }
+    const original = structuredClone(workflow)
+
+    const graph = adaptComfyWorkflowToSerialisableGraph(workflow)
+
+    expect(graph).toMatchObject({
+      nodes: [
+        {
+          properties: { nested: { values: ['Root'] } },
+          widgets_values: [{ label: 'Root' }]
+        }
+      ],
+      groups: [{ metadata: { label: 'Root' } }],
+      subgraphs: [{ widgets_values: [{ label: 'Instance' }] }],
+      extra: {
+        metadata: { label: 'Root' },
+        reroutes: [{ linkIds: [] }]
+      },
+      definitions: {
+        subgraphs: [
+          {
+            nodes: [
+              {
+                properties: { nested: { values: ['Parent'] } },
+                widgets_values: [{ label: 'Parent' }]
+              }
+            ],
+            groups: [{ metadata: { label: 'Parent' } }],
+            extra: {
+              metadata: { label: 'Parent' },
+              reroutes: [{ linkIds: [] }]
+            },
+            definitions: {
+              subgraphs: [
+                {
+                  nodes: [
+                    {
+                      properties: { nested: { values: ['Child'] } },
+                      widgets_values: [{ label: 'Child' }]
+                    }
+                  ],
+                  groups: [{ metadata: { label: 'Child' } }],
+                  extra: {
+                    metadata: { label: 'Child' },
+                    reroutes: [{ linkIds: [] }]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    })
+    expect(workflow).toEqual(original)
+  })
+
+  it('rejects malformed version 1 subgraph definitions', () => {
+    const invalidSubgraph = workflowSubgraph(
+      '11111111-1111-4111-8111-111111111111',
+      'Invalid'
+    )
+    Reflect.deleteProperty(invalidSubgraph, 'inputNode')
+    const workflow: WorkflowJSON1 = {
+      version: 1,
+      state: graphState(),
+      nodes: [],
+      definitions: { subgraphs: [invalidSubgraph] }
+    }
+
+    expect(() => adaptComfyWorkflowToSerialisableGraph(workflow)).toThrow(
+      new TypeError('Invalid version 1 workflow subgraph')
+    )
   })
 })
