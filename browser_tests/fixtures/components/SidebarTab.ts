@@ -245,11 +245,17 @@ export class ModelLibrarySidebarTab extends SidebarTab {
   }
 
   getFolderByLabel(label: string) {
-    return this.modelTree.getByRole('treeitem', { name: label }).first()
+    return this.modelTree
+      .getByRole('treeitem', { name: label })
+      .and(this.modelTree.locator('[data-tree-node-type="folder"]'))
+      .first()
   }
 
   getLeafByLabel(label: string) {
-    return this.modelTree.getByRole('treeitem', { name: label }).first()
+    return this.modelTree
+      .getByRole('treeitem', { name: label })
+      .and(this.modelTree.locator('[data-tree-node-type="node"]'))
+      .first()
   }
 
   getFolderRowByLabel(label: string) {
