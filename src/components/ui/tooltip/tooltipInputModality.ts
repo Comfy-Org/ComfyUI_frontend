@@ -8,6 +8,28 @@ export const touchInteraction = ref(false)
 
 let pointerMovementSquared = 0
 let pointerInteractionTimer: ReturnType<typeof setTimeout> | undefined
+const tooltipDismissals = new Set<() => void>()
+
+function dismissTooltipsOnWheel() {
+  for (const dismiss of tooltipDismissals) dismiss()
+}
+
+export function registerTooltipWheelDismissal(dismiss: () => void) {
+  if (tooltipDismissals.size === 0) {
+    window.addEventListener('wheel', dismissTooltipsOnWheel, {
+      capture: true,
+      passive: true
+    })
+  }
+  tooltipDismissals.add(dismiss)
+
+  return () => {
+    tooltipDismissals.delete(dismiss)
+    if (tooltipDismissals.size === 0) {
+      window.removeEventListener('wheel', dismissTooltipsOnWheel, true)
+    }
+  }
+}
 
 function suppressAutomaticTooltips() {
   automaticTooltipSuppressed.value = true
