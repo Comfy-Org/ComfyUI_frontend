@@ -1032,6 +1032,9 @@ importers:
       happy-dom:
         specifier: 'catalog:'
         version: 20.9.0
+      openai:
+        specifier: 'catalog:'
+        version: 7.4.0(ws@8.21.1)(zod@3.25.76)
       tailwindcss:
         specifier: 'catalog:'
         version: 4.3.2

@@ -20,7 +20,9 @@
     "generate:models": "tsx ./scripts/generate-models.ts",
     "validate:jsonld": "tsx ./scripts/validate-jsonld.ts",
     "check:hreflang": "tsx ./scripts/check-hreflang.ts",
-    "validate:llms-txt-links": "tsx ./scripts/validate-llms-txt-links.ts"
+    "validate:llms-txt-links": "tsx ./scripts/validate-llms-txt-links.ts",
+    "i18n:check": "tsx ./scripts/i18n/update-translations.ts --check",
+    "i18n:translate": "tsx ./scripts/i18n/update-translations.ts"
   },
   "dependencies": {
     "@astrojs/sitemap": "catalog:",
@@ -57,6 +59,7 @@
     "@vitejs/plugin-vue": "catalog:",
     "astro": "catalog:",
     "happy-dom": "catalog:",
+    "openai": "catalog:",
     "tailwindcss": "catalog:",
     "tsx": "catalog:",
     "tw-animate-css": "catalog:",
