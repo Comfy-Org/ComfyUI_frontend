@@ -115,10 +115,15 @@ describe('CRDT follower invariants (property)', () => {
                 maxLength: entries.length * 2
               })
             )
-            .map(([order, duplicates]) => ({
-              entries,
-              delivery: [...order, ...duplicates]
-            }))
+            .chain(([order, duplicates]) => {
+              const deliveries = [...order, ...duplicates]
+              return fc
+                .shuffledSubarray(deliveries, {
+                  minLength: deliveries.length,
+                  maxLength: deliveries.length
+                })
+                .map((delivery) => ({ entries, delivery }))
+            })
         ),
         ({ entries, delivery }) => {
           const { source, updates } = incrementalUpdates(entries)
