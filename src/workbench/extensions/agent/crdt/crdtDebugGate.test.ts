@@ -35,6 +35,17 @@ describe('crdtDebugGate', () => {
     expect(gate.isCrdtDebugEnabled()).toBe(false)
   })
 
+  it('reads an absent saved choice only once', async () => {
+    vi.stubEnv('DEV', false)
+    const getItem = vi.spyOn(window.localStorage, 'getItem')
+    const gate = await loadGate('')
+
+    expect(gate.isCrdtDebugEnabled()).toBe(false)
+    expect(gate.isCrdtDebugEnabled()).toBe(false)
+    expect(gate.isCrdtDebugOptedOut()).toBe(false)
+    expect(getItem).toHaveBeenCalledTimes(1)
+  })
+
   it('lets a tester enable the instrument from a link, and remembers it', async () => {
     await loadGate('?crdtDebug=1')
     const afterReload = await loadGate('')
