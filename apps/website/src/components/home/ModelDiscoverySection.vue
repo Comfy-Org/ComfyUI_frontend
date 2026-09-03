@@ -43,12 +43,12 @@ const cardClass =
         {{ t('modelDiscovery.label', locale) }}
       </p>
       <h2
-        class="text-3.5xl/tight text-primary-comfy-canvas mt-6 font-light whitespace-pre-line lg:text-5xl"
+        class="text-3.5xl/tight mt-6 font-light whitespace-pre-line text-primary-comfy-canvas lg:text-5xl"
       >
         {{ t('modelDiscovery.heading', locale) }}
       </h2>
       <p
-        class="text-primary-comfy-canvas/80 mt-6 max-w-xl text-sm font-light lg:text-base/snug"
+        class="mt-6 max-w-xl text-sm font-light text-primary-comfy-canvas/80 lg:text-base/snug"
       >
         {{ t('modelDiscovery.subtitle', locale) }}
       </p>
@@ -97,7 +97,7 @@ const cardClass =
                   model.name
                 }}</span>
                 <span
-                  class="text-primary-warm-gray group-hover/card:text-primary-warm-white group-focus-visible/card:text-primary-warm-white text-xs transition-colors"
+                  class="text-xs text-primary-warm-gray transition-colors group-hover/card:text-primary-warm-white group-focus-visible/card:text-primary-warm-white"
                 >
                   {{ model.provider ?? t('workshop.card.partnerNode', locale) }}
                 </span>

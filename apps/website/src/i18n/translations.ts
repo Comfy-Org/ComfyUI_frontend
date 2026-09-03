@@ -8608,6 +8608,10 @@ Enterprise`
     en: 'Browse all models',
     'zh-CN': '浏览全部模型'
   },
+  'workshop.useCase.more': {
+    en: 'More categories',
+    'zh-CN': '更多分类'
+  },
   'workshop.model.versions': { en: '{n} versions', 'zh-CN': '{n} 个版本' },
   'workshop.model.versionsLabel': { en: 'Versions', 'zh-CN': '版本' },
   'workshop.model.latest': { en: 'Latest', 'zh-CN': '最新' },

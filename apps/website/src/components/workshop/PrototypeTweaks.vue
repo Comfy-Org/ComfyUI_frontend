@@ -163,7 +163,7 @@ const switchClass = (on: boolean) =>
   )
 const knobClass = (on: boolean) =>
   cn(
-    'bg-primary-comfy-ink absolute top-0.5 left-0.5 size-4 rounded-full transition-transform',
+    'absolute top-0.5 left-0.5 size-4 rounded-full bg-primary-comfy-ink transition-transform',
     on && 'translate-x-4'
   )
 const selectClass =
@@ -176,7 +176,7 @@ const selectClass =
       data-testid="prototype-tweaks"
       :aria-label="t('workshop.proto.title', locale)"
       :title="t('workshop.proto.title', locale)"
-      class="border-primary-comfy-ink-light bg-site-dropdown focus-visible:ring-primary-comfy-yellow/50 text-primary-warm-gray hover:text-primary-warm-white fixed right-4 bottom-4 z-40 grid size-9 cursor-pointer place-items-center rounded-full border shadow-lg transition-colors outline-none focus-visible:ring-3"
+      class="border-primary-comfy-ink-light bg-site-dropdown focus-visible:ring-primary-comfy-yellow/50 fixed right-4 bottom-4 z-40 grid size-9 cursor-pointer place-items-center rounded-full border text-primary-warm-gray shadow-lg transition-colors outline-none hover:text-primary-warm-white focus-visible:ring-3"
     >
       <Settings2 class="size-4" aria-hidden="true" />
     </PopoverTrigger>
@@ -185,7 +185,7 @@ const selectClass =
         align="end"
         side="top"
         :side-offset="8"
-        class="border-primary-comfy-ink-light bg-site-dropdown data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0 z-50 w-80 rounded-2xl border p-3 text-xs shadow-lg"
+        class="border-primary-comfy-ink-light bg-site-dropdown z-50 w-80 rounded-2xl border p-3 text-xs shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
       >
         <p
           class="text-primary-comfy-yellow mb-3 text-[10px] font-bold tracking-widest uppercase"
@@ -385,7 +385,7 @@ const selectClass =
                 />
               </span>
             </label>
-            <p class="text-primary-warm-gray text-[10px]">
+            <p class="text-[10px] text-primary-warm-gray">
               {{ t('workshop.proto.outcomeHint', locale) }}
             </p>
             <label class="flex flex-col gap-1">
@@ -441,7 +441,7 @@ const selectClass =
           </template>
 
           <div
-            class="border-transparency-white-t8 flex flex-col gap-2 border-t pt-3"
+            class="flex flex-col gap-2 border-t border-transparency-white-t8 pt-3"
           >
             <span class="text-primary-warm-gray">
               {{ t('workshop.proto.share', locale) }}
@@ -473,7 +473,7 @@ const selectClass =
                 <Link v-else class="size-4" aria-hidden="true" />
               </button>
             </div>
-            <p class="text-primary-warm-gray text-[10px]">
+            <p class="text-[10px] text-primary-warm-gray">
               {{ t('workshop.proto.shareHint', locale) }}
             </p>
           </div>

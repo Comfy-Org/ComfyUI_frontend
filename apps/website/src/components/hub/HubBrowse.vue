@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { Search } from '@lucide/vue'
+import { MoreHorizontal, Search } from '@lucide/vue'
+import {
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuPortal,
+  DropdownMenuRoot,
+  DropdownMenuTrigger
+} from 'reka-ui'
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -63,13 +70,31 @@ const inUseCase = (value: UseCase | 'all') => ({
   )
 })
 
-const useCases = computed(() =>
-  (['all', ...USE_CASES] as const)
-    .map((value) => {
-      const { models, templates: scoped } = inUseCase(value)
-      return { value, total: groupByFamily(models).length + scoped.length }
-    })
-    .filter((entry) => entry.total > 0)
+const entryFor = (value: UseCase | 'all') => {
+  const { models, templates: scoped } = inUseCase(value)
+  return {
+    value,
+    total: groupByFamily(models).length + scoped.length,
+    usage: scoped.reduce((sum, tmpl) => sum + tmpl.usage, 0)
+  }
+}
+
+// Four of the eight use cases carry 94% of all the runs behind the catalogue,
+// so those lead and the long tail sits behind the overflow menu.
+const FEATURED = 4
+
+const allEntry = entryFor('all')
+const ranked = USE_CASES.map(entryFor)
+  .filter((entry) => entry.total > 0)
+  .sort((a, b) => b.usage - a.usage)
+
+const featured = computed(() => {
+  const top = ranked.slice(0, FEATURED)
+  const current = ranked.find((entry) => entry.value === useCase.value)
+  return current && !top.includes(current) ? [...top, current] : top
+})
+const rest = computed(() =>
+  ranked.filter((entry) => !featured.value.includes(entry))
 )
 
 const scoped = computed(() => inUseCase(useCase.value))
@@ -177,10 +202,7 @@ const filteredTemplates = computed(() => {
 </script>
 
 <template>
-  <section
-    :class="cn(!embedded && 'mx-auto max-w-304 pb-32')"
-    data-testid="workshop-hub"
-  >
+  <section :class="cn(!embedded && 'pb-32')" data-testid="workshop-hub">
     <WorkshopHero
       v-if="!embedded"
       heading-key="workshop.hub.title"
@@ -188,12 +210,12 @@ const filteredTemplates = computed(() => {
       data-testid="hub-heading"
     >
       <nav
-        class="mt-10 flex scrollbar-thin gap-6 overflow-x-auto border-b border-white/10"
+        class="mt-8 flex scrollbar-thin gap-6 overflow-x-auto border-b border-white/10"
         :aria-label="t('workshop.useCase.label', locale)"
         data-testid="hub-use-cases"
       >
         <button
-          v-for="entry in useCases"
+          v-for="entry in [allEntry, ...featured]"
           :key="entry.value"
           type="button"
           :aria-pressed="useCase === entry.value"
@@ -213,6 +235,37 @@ const filteredTemplates = computed(() => {
             {{ entry.total }}
           </span>
         </button>
+
+        <DropdownMenuRoot v-if="rest.length">
+          <DropdownMenuTrigger
+            :aria-label="t('workshop.useCase.more', locale)"
+            :title="t('workshop.useCase.more', locale)"
+            class="text-content-secondary hover:text-content focus-visible:ring-brand mb-3 grid size-7 shrink-0 cursor-pointer place-items-center rounded-lg transition-colors outline-none hover:bg-white/8 focus-visible:ring-2"
+            data-testid="hub-use-case-more"
+          >
+            <MoreHorizontal class="size-4" aria-hidden="true" />
+          </DropdownMenuTrigger>
+          <DropdownMenuPortal>
+            <DropdownMenuContent
+              align="start"
+              :side-offset="4"
+              class="bg-site-dropdown z-50 min-w-48 rounded-2xl border border-white/10 p-2 shadow-2xl shadow-black/50"
+            >
+              <DropdownMenuItem
+                v-for="entry in rest"
+                :key="entry.value"
+                :data-testid="`hub-use-case-${entry.value}`"
+                class="text-content-secondary hover:text-content flex cursor-pointer items-baseline justify-between gap-4 rounded-lg px-3 py-2 text-sm outline-none select-none data-highlighted:bg-white/8"
+                @select="useCase = entry.value"
+              >
+                {{ t(useCaseLabelKey[entry.value], locale) }}
+                <span class="text-content-muted text-xs tabular-nums">
+                  {{ entry.total }}
+                </span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenuPortal>
+        </DropdownMenuRoot>
       </nav>
     </WorkshopHero>
 
@@ -236,7 +289,7 @@ const filteredTemplates = computed(() => {
         >
           <Search class="size-4" aria-hidden="true" />
         </button>
-        <label v-else class="relative block max-w-80">
+        <label v-else class="relative block w-96 max-w-full">
           <span class="sr-only">{{ t('workshop.hub.search', locale) }}</span>
           <Search
             class="text-content-muted pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2"
@@ -265,7 +318,9 @@ const filteredTemplates = computed(() => {
           >
             {{ t('workshop.hub.kind.models', locale) }}
           </h2>
-          <ul class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <ul
+            class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
+          >
             <li v-for="family in modelFamilies.slice(0, 6)" :key="family.key">
               <WorkshopModelCard
                 :model="family.latest"
@@ -284,7 +339,7 @@ const filteredTemplates = computed(() => {
 
       <template #models>
         <ul
-          class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
+          class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
           data-testid="hub-models"
         >
           <li v-for="family in modelFamilies" :key="family.key">

@@ -89,8 +89,7 @@ function clearAll() {
       data-testid="workshop-filter"
       :class="
         cn(
-          'hover:bg-transparency-white-t4 focus-visible:ring-primary-comfy-yellow/50 inline-flex h-11 cursor-pointer items-center gap-2 rounded-2xl border px-4 text-sm font-medium transition-colors outline-none focus-visible:ring-3',
-          'border-transparency-white-t20',
+          'bg-transparency-white-t4 focus-visible:ring-primary-comfy-yellow/50 inline-flex h-11 cursor-pointer items-center gap-2 rounded-2xl px-4 text-sm font-medium transition-colors outline-none hover:bg-transparency-white-t8 focus-visible:ring-3',
           selectedCount
             ? 'text-primary-warm-white'
             : 'text-primary-comfy-canvas'
@@ -101,13 +100,18 @@ function clearAll() {
       {{ t('workshop.filter.label', locale) }}
       <span
         v-if="selectedCount"
-        class="bg-primary-comfy-yellow rounded-full px-1.5 text-[10px] font-bold text-primary-comfy-ink"
+        class="bg-primary-comfy-yellow inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold text-primary-comfy-ink tabular-nums"
         data-testid="workshop-filter-count"
       >
         {{ selectedCount }}
       </span>
       <ChevronDown
-        :class="cn('size-4 transition-transform', open && 'rotate-180')"
+        :class="
+          cn(
+            'size-4 transition-transform duration-300 ease-out',
+            open && 'rotate-180'
+          )
+        "
         aria-hidden="true"
       />
     </PopoverTrigger>
@@ -116,7 +120,7 @@ function clearAll() {
         align="end"
         :side-offset="8"
         data-testid="workshop-filter-menu"
-        class="bg-site-dropdown z-50 w-80 max-w-[calc(100vw-2rem)] max-h-[var(--reka-popover-content-available-height)] overflow-y-auto rounded-2xl border border-white/10 shadow-2xl shadow-black/50 outline-none"
+        class="bg-site-dropdown z-50 max-h-(--reka-popover-content-available-height) w-80 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-2xl border border-white/10 shadow-2xl shadow-black/50 outline-none"
       >
         <TabsRoot v-model="activeFacet" class="flex flex-col">
           <TabsList

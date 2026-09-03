@@ -137,6 +137,15 @@ const pillClass =
         />
       </span>
       <span
+        v-if="versionCount > 1"
+        class="bg-page/70 text-content absolute top-4 left-4 z-10 inline-flex h-8 items-center rounded-2xl px-3 text-xs backdrop-blur-sm"
+        data-testid="model-card-versions"
+      >
+        {{
+          t('workshop.model.versions', locale).replace('{n}', `${versionCount}`)
+        }}
+      </span>
+      <span
         v-if="showStatus && model.status"
         class="bg-primary-comfy-yellow/80 absolute top-4 left-4 z-10 inline-flex h-8 items-center rounded-2xl px-3 text-[11px] font-bold tracking-wider text-primary-comfy-ink uppercase backdrop-blur-sm"
       >
@@ -187,18 +196,6 @@ const pillClass =
       <div class="flex h-6 min-w-0 items-center gap-1.5 overflow-hidden">
         <span :class="pillClass" data-testid="model-card-task">
           {{ taskLabel }}
-        </span>
-        <span
-          v-if="versionCount > 1"
-          :class="pillClass"
-          data-testid="model-card-versions"
-        >
-          {{
-            t('workshop.model.versions', locale).replace(
-              '{n}',
-              `${versionCount}`
-            )
-          }}
         </span>
         <TagRow
           :tags="model.capabilities"

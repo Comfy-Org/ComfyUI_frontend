@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, useSlots } from 'vue'
+
+import { cn } from '@comfyorg/tailwind-utils'
 
 import { workshopModels } from '../../config/workshop'
 import type { Locale, TranslationKey } from '../../i18n/translations'
@@ -16,6 +18,8 @@ const {
   locale?: Locale
 }>()
 
+const slots = useSlots()
+
 // The catalogue is the decoration: a few of its own outputs, blurred past
 // recognition, so the header carries the colour of what the page is for.
 const backdrop = computed(() =>
@@ -28,7 +32,12 @@ const backdrop = computed(() =>
 
 <template>
   <header
-    class="relative isolate -mx-6 -mt-16 mb-10 overflow-hidden px-6 pt-16 pb-8 lg:-mx-8 lg:-mt-24 lg:px-8 lg:pt-24"
+    :class="
+      cn(
+        'relative isolate -mx-6 -mt-16 overflow-hidden px-6 pt-16 lg:-mx-8 lg:-mt-24 lg:px-8 lg:pt-24',
+        slots.default ? 'mb-2' : 'mb-10 pb-8'
+      )
+    "
     data-testid="workshop-hero"
   >
     <div class="absolute inset-0 -z-10 flex" aria-hidden="true">
@@ -40,7 +49,7 @@ const backdrop = computed(() =>
       />
     </div>
     <div
-      class="from-page/95 via-page/75 to-page/95 absolute inset-0 -z-10 bg-gradient-to-b"
+      class="from-page/95 via-page/75 to-page/95 absolute inset-0 -z-10 bg-linear-to-b"
       aria-hidden="true"
     />
 

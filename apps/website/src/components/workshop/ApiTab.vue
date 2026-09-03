@@ -62,8 +62,8 @@ const languageLabel: Record<SnippetLanguage, string> = {
         >
           <button
             v-for="option in SNIPPET_LANGUAGES"
-            :key="option"
             :id="`snippet-tab-${option}`"
+            :key="option"
             type="button"
             role="tab"
             :aria-selected="language === option"

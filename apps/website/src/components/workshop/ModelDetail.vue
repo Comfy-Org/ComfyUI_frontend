@@ -310,8 +310,8 @@ function useInCode() {
     >
       <button
         v-for="section in sections"
-        :key="section"
         :id="`tab-${section}`"
+        :key="section"
         type="button"
         role="tab"
         :aria-selected="section === activeSection"
@@ -498,7 +498,7 @@ function useInCode() {
             v-if="clone"
             :href="clone.href"
             download
-            class="text-primary-warm-gray hover:text-primary-warm-white inline-flex items-center justify-center gap-2 self-center text-xs transition-colors"
+            class="inline-flex items-center justify-center gap-2 self-center text-xs text-primary-warm-gray transition-colors hover:text-primary-warm-white"
             data-testid="clone-button"
           >
             <Copy class="size-3.5" aria-hidden="true" />

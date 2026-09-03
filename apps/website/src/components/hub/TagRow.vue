@@ -105,6 +105,8 @@ const pillClass =
         </HoverCardTrigger>
         <HoverCardPortal>
           <HoverCardContent
+            side="top"
+            align="start"
             :side-offset="6"
             class="bg-site-dropdown z-50 flex max-w-64 flex-col gap-1.5 rounded-2xl border border-white/10 p-2 shadow-2xl shadow-black/50"
             data-testid="tag-overflow-list"

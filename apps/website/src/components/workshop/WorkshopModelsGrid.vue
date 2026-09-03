@@ -150,9 +150,10 @@ function clearFilters() {
 const tabClass = (current: boolean) =>
   cn(
     'focus-visible:ring-primary-comfy-yellow/50 inline-flex shrink-0 cursor-pointer items-center gap-2 border-b-2 pb-3 text-sm font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-3',
+    'lg:w-full lg:justify-between lg:rounded-xl lg:border-b-0 lg:px-3 lg:py-2.5',
     current
-      ? 'border-primary-comfy-yellow text-primary-warm-white'
-      : 'border-transparent text-primary-warm-gray hover:text-primary-warm-white'
+      ? 'border-primary-comfy-yellow text-primary-warm-white lg:bg-transparency-white-t8'
+      : 'lg:hover:bg-transparency-white-t4 border-transparent text-primary-warm-gray hover:text-primary-warm-white'
   )
 
 const chipClass = (active: boolean) =>
@@ -168,195 +169,225 @@ const menuItemClass =
 </script>
 
 <template>
-  <section>
-    <nav
+  <section
+    :class="
+      cn('gap-10', !browsing && 'lg:grid lg:grid-cols-[15rem_minmax(0,1fr)]')
+    "
+  >
+    <aside
       v-if="!browsing"
-      class="mb-8 flex gap-8 overflow-x-auto border-b border-transparency-white-t8"
-      :aria-label="t('workshop.useCase.label', locale)"
-      data-testid="workshop-use-cases"
+      class="lg:sticky lg:top-28 lg:max-h-[calc(100vh-9rem)] lg:scrollbar-thin lg:self-start lg:overflow-y-auto"
     >
-      <button
-        v-for="value in useCases"
-        :key="value"
-        type="button"
-        :aria-pressed="useCase === value"
-        :data-testid="`use-case-${value}`"
-        :class="tabClass(useCase === value)"
-        @click="useCase = value"
+      <h2
+        class="mb-3 hidden text-xs font-bold tracking-wider text-primary-warm-gray uppercase lg:block"
       >
-        {{ t(useCaseLabelKey[value], locale) }}
-        <span class="text-xs text-primary-warm-gray tabular-nums">
-          {{ counts[value] }}
-        </span>
-      </button>
-    </nav>
-
-    <div
-      class="mb-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
-    >
-      <div class="relative w-full lg:max-w-md">
-        <label for="workshop-search" class="sr-only">
-          {{ t('workshop.search.label', locale) }}
-        </label>
-        <Search
-          class="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-primary-warm-gray"
-          aria-hidden="true"
-        />
-        <input
-          id="workshop-search"
-          v-model="query"
-          type="search"
-          :placeholder="t('workshop.search.label', locale)"
-          data-testid="workshop-search"
-          class="bg-transparency-white-t4 focus-visible:border-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 h-11 w-full rounded-2xl border border-transparency-white-t20 pr-10 pl-11 text-sm text-primary-warm-white outline-none placeholder:text-primary-warm-gray focus-visible:ring-3 [&::-webkit-search-cancel-button]:hidden"
-        />
+        {{ t('workshop.useCase.label', locale) }}
+      </h2>
+      <nav
+        class="mb-8 flex gap-8 overflow-x-auto border-b border-transparency-white-t8 lg:mb-0 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:border-b-0"
+        :aria-label="t('workshop.useCase.label', locale)"
+        data-testid="workshop-use-cases"
+      >
         <button
-          v-if="query"
+          v-for="value in useCases"
+          :key="value"
           type="button"
-          :aria-label="t('workshop.search.clear', locale)"
-          data-testid="workshop-search-clear"
-          class="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-primary-warm-gray hover:text-primary-warm-white"
-          @click="query = ''"
+          :aria-pressed="useCase === value"
+          :data-testid="`use-case-${value}`"
+          :class="tabClass(useCase === value)"
+          @click="useCase = value"
         >
-          <X class="size-4" aria-hidden="true" />
+          {{ t(useCaseLabelKey[value], locale) }}
+          <span class="text-xs text-primary-warm-gray tabular-nums">
+            {{ counts[value] }}
+          </span>
         </button>
-      </div>
+      </nav>
+    </aside>
 
-      <div class="flex flex-wrap gap-2" data-testid="workshop-filters">
-        <WorkshopFilterMenu
-          v-model:capabilities="capabilities"
-          v-model:providers="providers"
-          :capability-options="capabilityOptions"
-          :provider-options="providerOptions"
-          :locale
-        />
-
-        <DropdownMenuRoot>
-          <DropdownMenuTrigger
-            data-testid="workshop-sort"
-            :aria-label="t('workshop.sort.label', locale)"
-            class="hover:bg-transparency-white-t4 focus-visible:ring-primary-comfy-yellow/50 inline-flex h-11 cursor-pointer items-center gap-2 rounded-2xl border border-transparency-white-t20 px-4 text-sm font-medium text-primary-comfy-canvas transition-colors outline-none focus-visible:ring-3"
+    <div class="min-w-0">
+      <div
+        class="mb-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
+      >
+        <div class="relative w-full lg:max-w-md">
+          <label for="workshop-search" class="sr-only">
+            {{ t('workshop.search.label', locale) }}
+          </label>
+          <Search
+            class="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-primary-warm-gray"
+            aria-hidden="true"
+          />
+          <input
+            id="workshop-search"
+            v-model="query"
+            type="search"
+            :placeholder="t('workshop.search.label', locale)"
+            data-testid="workshop-search"
+            class="bg-transparency-white-t4 focus-visible:ring-primary-comfy-yellow/50 h-11 w-full rounded-2xl pr-10 pl-11 text-sm text-primary-warm-white outline-none placeholder:text-primary-warm-gray focus-visible:ring-3 [&::-webkit-search-cancel-button]:hidden"
+          />
+          <button
+            v-if="query"
+            type="button"
+            :aria-label="t('workshop.search.clear', locale)"
+            data-testid="workshop-search-clear"
+            class="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-primary-warm-gray hover:text-primary-warm-white"
+            @click="query = ''"
           >
-            <ArrowUpDown class="size-4" aria-hidden="true" />
-            {{ t(sortLabelKey[sort], locale) }}
-            <ChevronDown class="size-4" aria-hidden="true" />
-          </DropdownMenuTrigger>
-          <DropdownMenuPortal>
-            <DropdownMenuContent
-              align="end"
-              :side-offset="8"
-              class="border-primary-comfy-ink-light bg-site-dropdown z-50 w-64 rounded-2xl border p-2 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
+            <X class="size-4" aria-hidden="true" />
+          </button>
+        </div>
+
+        <div class="flex flex-wrap gap-2" data-testid="workshop-filters">
+          <WorkshopFilterMenu
+            v-model:capabilities="capabilities"
+            v-model:providers="providers"
+            :capability-options="capabilityOptions"
+            :provider-options="providerOptions"
+            :locale
+          />
+
+          <DropdownMenuRoot>
+            <DropdownMenuTrigger
+              data-testid="workshop-sort"
+              :aria-label="t('workshop.sort.label', locale)"
+              class="bg-transparency-white-t4 focus-visible:ring-primary-comfy-yellow/50 group inline-flex h-11 cursor-pointer items-center gap-2 rounded-2xl px-4 text-sm font-medium text-primary-comfy-canvas transition-colors outline-none hover:bg-transparency-white-t8 focus-visible:ring-3"
             >
-              <DropdownMenuRadioGroup v-model="sort">
-                <DropdownMenuRadioItem
-                  v-for="order in SORT_ORDERS"
-                  :key="order"
-                  :value="order"
-                  :data-testid="`sort-${order}`"
-                  :class="menuItemClass"
-                >
-                  <span class="flex-1">{{
-                    t(sortLabelKey[order], locale)
-                  }}</span>
-                  <Check
-                    v-if="sort === order"
-                    class="text-primary-comfy-yellow size-4"
-                    aria-hidden="true"
-                  />
-                </DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenuPortal>
-        </DropdownMenuRoot>
+              <ArrowUpDown class="size-4" aria-hidden="true" />
+              {{ t(sortLabelKey[sort], locale) }}
+              <ChevronDown
+                class="size-4 transition-transform duration-300 ease-out group-data-[state=open]:rotate-180"
+                aria-hidden="true"
+              />
+            </DropdownMenuTrigger>
+            <DropdownMenuPortal>
+              <DropdownMenuContent
+                align="end"
+                :side-offset="8"
+                class="border-primary-comfy-ink-light bg-site-dropdown z-50 w-64 rounded-2xl border p-2 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
+              >
+                <DropdownMenuRadioGroup v-model="sort">
+                  <DropdownMenuRadioItem
+                    v-for="order in SORT_ORDERS"
+                    :key="order"
+                    :value="order"
+                    :data-testid="`sort-${order}`"
+                    :class="menuItemClass"
+                  >
+                    <span
+                      :class="
+                        cn(
+                          'flex size-4 shrink-0 items-center justify-center rounded-full border transition-colors',
+                          sort === order
+                            ? 'border-brand bg-brand text-page'
+                            : 'border-white/25'
+                        )
+                      "
+                      aria-hidden="true"
+                    >
+                      <Check
+                        v-if="sort === order"
+                        class="size-3"
+                        :stroke-width="3"
+                      />
+                    </span>
+                    <span class="flex-1">{{
+                      t(sortLabelKey[order], locale)
+                    }}</span>
+                  </DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenuPortal>
+          </DropdownMenuRoot>
+        </div>
       </div>
-    </div>
 
-    <WorkshopSections
-      v-if="browsing"
-      :models
-      :label-key="useCaseLabelKey"
-      :sort
-      :locale
-      :show-statuses="showStatuses"
-      @open="openSection"
-    />
+      <WorkshopSections
+        v-if="browsing"
+        :models
+        :label-key="useCaseLabelKey"
+        :sort
+        :locale
+        :show-statuses="showStatuses"
+        @open="openSection"
+      />
 
-    <template v-else>
-      <button
-        v-if="inSection"
-        type="button"
-        class="hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 mb-6 inline-flex cursor-pointer items-center gap-1 rounded-lg text-sm font-medium text-primary-warm-gray transition-colors outline-none focus-visible:ring-3"
-        data-testid="section-back"
-        @click="clearFilters"
-      >
-        <ChevronLeft class="size-4" aria-hidden="true" />
-        {{ t('workshop.sections.back', locale) }}
-      </button>
-
-      <div
-        v-if="inSection"
-        class="mb-6 flex flex-wrap items-center gap-2"
-        data-testid="section-providers"
-      >
+      <template v-else>
         <button
+          v-if="inSection"
           type="button"
-          :aria-pressed="providers.length === 0"
-          :class="chipClass(providers.length === 0)"
-          data-testid="section-provider-all"
-          @click="providers = []"
-        >
-          {{ t('workshop.sections.provider', locale) }}
-          <span class="tabular-nums opacity-60">{{ counts[useCase] }}</span>
-        </button>
-        <button
-          v-for="option in sectionProviders"
-          :key="option.value"
-          type="button"
-          :aria-pressed="providers.includes(option.value)"
-          :class="chipClass(providers.includes(option.value))"
-          :data-testid="`section-provider-${option.value}`"
-          @click="toggleProvider(option.value)"
-        >
-          {{ option.label }}
-          <span class="tabular-nums opacity-60">{{ option.count }}</span>
-        </button>
-      </div>
-
-      <div v-if="visible.length">
-        <h2 id="workshop-models-heading" class="sr-only">
-          {{ t('workshop.models.heading', locale) }}
-        </h2>
-        <ul
-          class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
-          aria-labelledby="workshop-models-heading"
-          data-testid="workshop-models-grid"
-        >
-          <li v-for="model in visible" :key="model.slug">
-            <WorkshopModelCard :model :locale :show-status="showStatuses" />
-          </li>
-        </ul>
-      </div>
-
-      <div
-        v-else
-        class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-transparency-white-t8 px-6 py-16 text-center"
-        data-testid="workshop-empty"
-      >
-        <p class="text-lg font-semibold text-primary-comfy-canvas">
-          {{ t('workshop.empty.heading', locale) }}
-        </p>
-        <p class="text-sm text-primary-warm-gray">
-          {{ t('workshop.empty.body', locale) }}
-        </p>
-        <Button
-          v-if="isFiltered"
-          variant="outline"
-          size="sm"
+          class="hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 mb-6 inline-flex cursor-pointer items-center gap-1 rounded-lg text-sm font-medium text-primary-warm-gray transition-colors outline-none focus-visible:ring-3"
+          data-testid="section-back"
           @click="clearFilters"
         >
-          {{ t('workshop.empty.clear', locale) }}
-        </Button>
-      </div>
-    </template>
+          <ChevronLeft class="size-4" aria-hidden="true" />
+          {{ t('workshop.sections.back', locale) }}
+        </button>
+
+        <div
+          v-if="inSection"
+          class="mb-6 flex flex-wrap items-center gap-2"
+          data-testid="section-providers"
+        >
+          <button
+            type="button"
+            :aria-pressed="providers.length === 0"
+            :class="chipClass(providers.length === 0)"
+            data-testid="section-provider-all"
+            @click="providers = []"
+          >
+            {{ t('workshop.sections.provider', locale) }}
+            <span class="tabular-nums opacity-60">{{ counts[useCase] }}</span>
+          </button>
+          <button
+            v-for="option in sectionProviders"
+            :key="option.value"
+            type="button"
+            :aria-pressed="providers.includes(option.value)"
+            :class="chipClass(providers.includes(option.value))"
+            :data-testid="`section-provider-${option.value}`"
+            @click="toggleProvider(option.value)"
+          >
+            {{ option.label }}
+            <span class="tabular-nums opacity-60">{{ option.count }}</span>
+          </button>
+        </div>
+
+        <div v-if="visible.length">
+          <h2 id="workshop-models-heading" class="sr-only">
+            {{ t('workshop.models.heading', locale) }}
+          </h2>
+          <ul
+            class="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
+            aria-labelledby="workshop-models-heading"
+            data-testid="workshop-models-grid"
+          >
+            <li v-for="model in visible" :key="model.slug">
+              <WorkshopModelCard :model :locale :show-status="showStatuses" />
+            </li>
+          </ul>
+        </div>
+
+        <div
+          v-else
+          class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-transparency-white-t8 px-6 py-16 text-center"
+          data-testid="workshop-empty"
+        >
+          <p class="text-lg font-semibold text-primary-comfy-canvas">
+            {{ t('workshop.empty.heading', locale) }}
+          </p>
+          <p class="text-sm text-primary-warm-gray">
+            {{ t('workshop.empty.body', locale) }}
+          </p>
+          <Button
+            v-if="isFiltered"
+            variant="outline"
+            size="sm"
+            @click="clearFilters"
+          >
+            {{ t('workshop.empty.clear', locale) }}
+          </Button>
+        </div>
+      </template>
+    </div>
   </section>
 </template>
