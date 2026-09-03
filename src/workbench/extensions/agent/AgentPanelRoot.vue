@@ -15,13 +15,13 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { fitGraphToView } from '@/composables/canvas/fitGraphToView'
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
+import { createGraphMutations } from '@/core/graph/graphMutations'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useAppMode } from '@/composables/useAppMode'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
@@ -33,10 +33,17 @@ import {
 } from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './utils/attachableFiles'
-import { appendWorkflowJsonExt } from '@/utils/formatUtil'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+// The composition root injects the renderer-owned layout port; follower core
+// stays independent of renderer and LiteGraph runtime values.
+// eslint-disable-next-line import-x/no-restricted-paths
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+// eslint-disable-next-line import-x/no-restricted-paths
+import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
+// eslint-disable-next-line import-x/no-restricted-paths
+import { LayoutSource } from '@/renderer/core/layout/types'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
@@ -45,6 +52,7 @@ import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 
 import AgentPanel from './components/agent/AgentPanel.vue'
 import {
@@ -60,27 +68,23 @@ import {
 import type { ComposerAttachment } from './composables/agent/useComposer'
 import type {
   AgentActiveTabData,
-  AgentDraftSnapshot,
   AgentThreadSummary
 } from './schemas/agentApiSchema'
 import type { ChatSession } from './stores/agent/agentChatHistoryStore'
 import type { ConversationEntry } from './stores/agent/agentConversationStore'
 import type { WorkflowTurnContext } from './composables/agent/useAgentSession'
 import { useAgentSession } from './composables/agent/useAgentSession'
-import { useAgentDraftStore } from './stores/agent/agentDraftStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
-import {
-  AgentApiError,
-  createAgentRestClient
-} from './services/agent/agentRestClient'
+import { createAgentRestClient } from './services/agent/agentRestClient'
 import type {
-  DraftUpload,
+  DraftSnapshot,
   OpenTabsSnapshot
 } from './services/agent/agentRestClient'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import CrdtDevPanel from './crdt/CrdtDevPanel.vue'
+import { attachMintPortWiring } from './crdt/mintPortWiring'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 
 const { t } = useI18n()
@@ -88,7 +92,7 @@ const toast = useToastStore()
 const sidebarTabStore = useSidebarTabStore()
 const { isBuilderMode } = useAppMode()
 
-const { userDisplayName } = useCurrentUser()
+const { resolvedUserInfo, userDisplayName } = useCurrentUser()
 const userName = computed(
   () => userDisplayName.value?.trim().split(/\s+/)[0] || undefined
 )
@@ -100,16 +104,73 @@ const events = createAgentEventSource(api)
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const bindingStore = useAgentWorkflowTabBindingStore()
-const draftStore = useAgentDraftStore()
-const crdtWorkflowId = computed(() => draftStore.workflowId)
-const { status: crdtStatus } = useAgentCrdtFollower(crdtWorkflowId)
 const agentPanelStore = useAgentPanelStore()
-const { dismissedSelectionSignature } = storeToRefs(agentPanelStore)
+const { dismissedSelectionSignature, enabled: agentEnabled } =
+  storeToRefs(agentPanelStore)
 const agentNodeSelectionStore = useAgentNodeSelectionStore()
 const tabActivity = useWorkflowTabActivityStore()
 const CREATING_TAB_MIN_DURATION_MS = 500
 
 const canvasStore = useCanvasStore()
+const graphMutationsByWorkflow = new Map<
+  string,
+  ReturnType<typeof createGraphMutations>
+>()
+const graphMutations = (workflowId: string) => {
+  const existing = graphMutationsByWorkflow.get(workflowId)
+  if (existing) return existing
+  const mutations = createGraphMutations({
+    getScope() {
+      const rootGraphId = boundTabFor(workflowId)?.activeState?.id
+      return rootGraphId
+        ? {
+            rootGraphId: toRootGraphId(rootGraphId),
+            owningGraphId: toOwningGraphId(rootGraphId)
+          }
+        : null
+    },
+    layout: {
+      createNode(scope, nodeId, layout, context) {
+        const { position, size } = layout
+        layoutStore.applyOperation({
+          type: 'createNode',
+          graphId: scope.rootGraphId,
+          ownerGraphId: scope.owningGraphId,
+          nodeId,
+          layout: {
+            id: nodeId,
+            position,
+            size,
+            bounds: { x: position.x, y: position.y, ...size },
+            zIndex: layoutStore.allocateZIndex(),
+            visible: true
+          },
+          source: LayoutSource.AgentRemote,
+          actor: context.actor,
+          opId: context.opId,
+          timestamp: Date.now()
+        })
+      },
+      deleteNodes(scope, nodeIds, context) {
+        const timestamp = Date.now()
+        layoutStore.applyOperations(
+          nodeIds.map((nodeId) => ({
+            type: 'deleteNode',
+            graphId: scope.rootGraphId,
+            ownerGraphId: scope.owningGraphId,
+            nodeId,
+            source: LayoutSource.AgentRemote,
+            actor: context.actor,
+            opId: context.opId,
+            timestamp
+          }))
+        )
+      }
+    }
+  })
+  graphMutationsByWorkflow.set(workflowId, mutations)
+  return mutations
+}
 const { focusNodeInstance } = useFocusNode()
 
 function toSelectedNode(node: LGraphNode): SelectedNode {
@@ -131,6 +192,7 @@ const {
   replace: replaceSelectionTags
 } = useCanvasSelection({
   selection: selectedNodes,
+  enabled: agentEnabled,
   isLive: () => agentPanelStore.isOpen,
   isTracking: () => agentNodeSelectionStore.isActive,
   isPaused: () => agentNodeSelectionStore.isLoadingWorkflow,
@@ -198,7 +260,9 @@ async function refreshCloudWorkflowIds(): Promise<void> {
       )
     )
   } catch (error) {
-    console.warn('[agent] could not refresh cloud workflow ids', error)
+    reportError(error, {
+      errorType: 'agent_cloud_workflow_ids_refresh_failed'
+    })
   }
 }
 
@@ -216,30 +280,24 @@ function cloudIdFor(tab: ComfyWorkflow): string | undefined {
   return saved ?? bindingStore.workflowIdFor(tab.path)
 }
 
-let lastKnownGraph: { serialized: string; workflowId: string } | null = null
-
-function reclaimMovedBinding(activePath: string): string | undefined {
-  if (lastKnownGraph === null) return undefined
-  const graph = app.graph?.serialize()
-  if (
-    !graph?.nodes?.length ||
-    JSON.stringify(graph) !== lastKnownGraph.serialized
-  )
-    return undefined
-  const { workflowId } = lastKnownGraph
-  bindingStore.bind(workflowId, activePath)
-  lastKnownGraph = null
-  return workflowId
-}
-
 const workflowDetached = ref(false)
 
 function activeWorkflowTurnContext(): WorkflowTurnContext | undefined {
   if (workflowDetached.value) return undefined
   const active = workflowStore.activeWorkflow
   if (!active) return undefined
-  const bound = cloudIdFor(active) ?? reclaimMovedBinding(active.path)
+  const bound = cloudIdFor(active)
   return bound === undefined ? undefined : { id: bound, tabPath: active.path }
+}
+
+function activeWorkflowDraft(): DraftSnapshot | undefined {
+  if (workflowDetached.value) return undefined
+  const active = workflowStore.activeWorkflow
+  if (!active) return undefined
+  active.changeTracker?.captureCanvasState()
+  const content = active.activeState
+  if (!content) return undefined
+  return { content }
 }
 
 const activeTab = computed<ActiveTab | null>(() => {
@@ -273,34 +331,6 @@ function onClearWorkflow(): void {
   workflowDetached.value = true
 }
 
-let lastSentGraph: string | null = null
-let snapshotTabPath: string | null = null
-
-function takeWorkflowSnapshot(): DraftUpload | undefined {
-  if (workflowDetached.value) return undefined
-  const graph = app.graph?.serialize()
-  if (!graph) return undefined
-  const serialized = JSON.stringify(graph)
-  const active = workflowStore.activeWorkflow
-  const activePath = active?.path ?? null
-  const hasBoundWorkflow = active != null && cloudIdFor(active) !== undefined
-  if (
-    !graph.nodes?.length &&
-    !hasBoundWorkflow &&
-    (lastSentGraph === null || activePath !== snapshotTabPath)
-  )
-    return undefined
-  lastSentGraph = serialized
-  snapshotTabPath = activePath
-  return { content: graph, version: draftStore.version }
-}
-
-function resetSnapshotGuard(): void {
-  lastSentGraph = null
-  snapshotTabPath = null
-  lastKnownGraph = null
-}
-
 function openTabsSnapshot(): OpenTabsSnapshot | undefined {
   const openTabs = workflowStore.openWorkflows.flatMap((tab) => {
     const workflowId = cloudIdFor(tab)
@@ -319,19 +349,11 @@ function openTabsSnapshot(): OpenTabsSnapshot | undefined {
 
 function onWorkflowAdopted(
   workflowId: string,
-  sent: WorkflowTurnContext | undefined,
-  uploaded: boolean
+  sent: WorkflowTurnContext | undefined
 ): void {
-  if (uploaded && lastSentGraph !== null)
-    lastKnownGraph = { serialized: lastSentGraph, workflowId }
   if (sent !== undefined && sent.id === workflowId) {
     bindingStore.bind(workflowId, sent.tabPath)
     tabActivity.setEditing(sent.tabPath)
-    return
-  }
-  if (uploaded && snapshotTabPath !== null) {
-    bindingStore.bind(workflowId, snapshotTabPath)
-    tabActivity.setEditing(snapshotTabPath)
   }
 }
 
@@ -349,7 +371,9 @@ const {
   notices,
   threadId,
   listThreads,
-  loadThread
+  loadThread,
+  boundWorkflowId,
+  bindWorkflow
 } = useAgentSession({
   rest,
   events,
@@ -357,40 +381,50 @@ const {
     current: activeWorkflowTurnContext,
     adopted: onWorkflowAdopted,
     prepare: refreshCloudWorkflowIds,
-    snapshot: takeWorkflowSnapshot,
-    uploadSkipped: resetSnapshotGuard,
     tabs: openTabsSnapshot,
-    activeTab: enqueueActiveTab
+    activeTab: enqueueActiveTab,
+    draft: activeWorkflowDraft
   }
 })
 
-let autoFitPending = false
-
-function fitDraftIntoView(): void {
-  const canvas = canvasStore.canvas
-  if (canvas) fitGraphToView(canvas)
-}
-
-// The agent's drafts often stack new nodes at one spot, so an added node
-// triggers the layered arrange; running it after loadGraphData keeps the
-// undo capture outside the loader's suppression window.
-function arrangeAgentNodes(): void {
-  app.graph?.arrange()
-  workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
-}
-
-watch(isStreaming, (streaming) => {
-  if (streaming || !autoFitPending) return
-  autoFitPending = false
-  fitDraftIntoView()
+const isBoundWorkflowActive = computed(() => {
+  const bound = boundWorkflowId.value
+  const active = workflowStore.activeWorkflow
+  return (
+    bound !== null &&
+    active !== null &&
+    boundTabFor(bound)?.path === active.path
+  )
 })
 
-// The resumed turn's own workflow outlives a panel remount (draftStore
+// The CRDT follower is the inbound content channel: subscribes to the
+// session's bound workflow while its tab is active. Suspending the background
+// subscription makes reopening pull state-vector catch-up only after the
+// workflow's serialized activeState has hydrated the transient stores.
+const { status: crdtStatus, enqueueHumanOperations } = useAgentCrdtFollower(
+  boundWorkflowId,
+  graphMutations,
+  () => resolvedUserInfo.value?.id ?? null,
+  isBoundWorkflowActive
+)
+const mintPortWiring = attachMintPortWiring({
+  isEnabled: () => agentPanelStore.enabled,
+  isDocBound: () => isBoundWorkflowActive.value,
+  enqueue: enqueueHumanOperations,
+  layoutChanges: (listener) => layoutStore.onChange(listener),
+  withLayoutActor: (actor, fn) => layoutStore.withActor(actor, fn),
+  localActorPrefix: ACTOR_CONFIG.USER_PREFIX,
+  getGraph: () => (app.isGraphReady ? app.rootGraph : null)
+})
+// Dev instrument only (slice-02 classification): never ships to users.
+const isCrdtDevPanelEnabled = import.meta.env.DEV
+
+// The resumed turn's own workflow outlives a panel remount (the session
 // binds it at ack; only newChat/loadThread reset it), while the active tab
 // may have changed since - prefer the bound tab over active-tab derivation.
 function resumedTurnTabPath(): string | null {
   if (workflowDetached.value) return null
-  const bound = draftStore.workflowId
+  const bound = boundWorkflowId.value
   if (bound === null) return activeWorkflowTurnContext()?.tabPath ?? null
   const boundPath = bindingStore.tabPathFor(bound)
   if (boundPath !== undefined) return boundPath
@@ -412,10 +446,7 @@ watch(status, (value) => {
 
 const executionErrorStore = useExecutionErrorStore()
 
-function surfaceAgentError(
-  type: 'agent_api_failed' | 'agent_draft_apply_failed',
-  details: string
-): void {
+function surfaceAgentError(type: 'agent_api_failed', details: string): void {
   executionErrorStore.recordPromptError({
     type,
     message: t(`errorCatalog.promptErrors.${type}.desc`),
@@ -434,19 +465,6 @@ watch(
   }
 )
 
-let draftRejectionNotified = false
-
-function surfaceDraftApplyFailure(details: string): void {
-  console.warn(details)
-  if (draftRejectionNotified) return
-  draftRejectionNotified = true
-  surfaceAgentError('agent_draft_apply_failed', details)
-}
-
-let lastApplied: { workflowId: string; version: number } | null = null
-let applying = false
-let reapplyQueued = false
-
 function boundTabFor(workflowId: string): ComfyWorkflow | null {
   const path = bindingStore.tabPathFor(workflowId)
   const bound =
@@ -460,50 +478,8 @@ function boundTabFor(workflowId: string): ComfyWorkflow | null {
   return null
 }
 
-function unusedFilenameFor(tab: ComfyWorkflow): string {
-  const takenByOther = (filename: string) => {
-    const path =
-      tab.directory +
-      '/' +
-      appendWorkflowJsonExt(filename, tab.initialMode === 'app')
-    return path !== tab.path && workflowStore.getWorkflowByPath(path) !== null
-  }
-  if (!takenByOther(tab.filename)) return tab.filename
-  let counter = 2
-  while (takenByOther(`${tab.filename} (${counter})`)) counter++
-  return `${tab.filename} (${counter})`
-}
-
-async function autosaveAppliedDraft(
-  workflowId: string,
-  tab: ComfyWorkflow
-): Promise<void> {
-  const preSavePath = tab.path
-  const wasEditing = tabActivity.editingTabPath === preSavePath
-  try {
-    const saved = tab.isTemporary
-      ? await workflowService.saveWorkflowAs(tab, {
-          filename: unusedFilenameFor(tab)
-        })
-      : await workflowService.saveWorkflow(tab)
-    if (!saved) console.error(`Agent draft autosave failed for ${tab.path}`)
-  } catch (error) {
-    console.error(`Agent draft autosave failed for ${tab.path}:`, error)
-  } finally {
-    bindingStore.bind(workflowId, tab.path)
-    const editing = tabActivity.editingTabPath
-    if (
-      wasEditing &&
-      (editing === preSavePath || editing === null) &&
-      status.value !== 'idle'
-    )
-      tabActivity.setEditing(tab.path)
-  }
-}
-
 let activeTabGeneration = 0
 let activeTabChain: Promise<void> = Promise.resolve()
-const lastRenderedVersions = new Map<string, number>()
 
 function enqueueActiveTab(data: AgentActiveTabData): void {
   const generation = ++activeTabGeneration
@@ -525,41 +501,6 @@ function agentTabFilename(name: string | undefined): string | undefined {
   return cleaned.length === 0 ? undefined : `${cleaned}.json`
 }
 
-async function fetchDraftSnapshot(
-  workflowId: string
-): Promise<AgentDraftSnapshot | null> {
-  try {
-    return await rest.getDraft(workflowId)
-  } catch (error) {
-    if (error instanceof AgentApiError && error.status === 404) return null
-    throw error
-  }
-}
-
-function recordRenderedVersion(nextWorkflowId: string): void {
-  const leaving = draftStore.workflowId
-  if (leaving === null || leaving === nextWorkflowId) return
-  if (lastApplied?.workflowId === leaving)
-    lastRenderedVersions.set(leaving, lastApplied.version)
-  else lastRenderedVersions.delete(leaving)
-}
-
-async function adoptDraftBase(
-  workflowId: string,
-  snapshot: AgentDraftSnapshot,
-  armVersion: number = snapshot.version
-): Promise<void> {
-  draftStore.bind(workflowId)
-  await nextTick()
-  if (
-    !(
-      lastApplied?.workflowId === workflowId && lastApplied.version > armVersion
-    )
-  )
-    lastApplied = { workflowId, version: armVersion }
-  draftStore.adoptSnapshot(snapshot)
-}
-
 async function onAgentActiveTab(
   data: AgentActiveTabData,
   generation: number
@@ -567,77 +508,50 @@ async function onAgentActiveTab(
   const stale = () => generation !== activeTabGeneration
   if (stale()) return
   try {
-    recordRenderedVersion(data.workflow_id)
     const bound = boundTabFor(data.workflow_id)
     if (bound) {
-      const alreadyCurrent =
-        draftStore.workflowId === data.workflow_id &&
-        draftStore.version !== null
       await workflowService.openWorkflow(bound)
       if (stale()) return
       // boundTabFor can resolve by cloud name, which leaves no binding behind
       // for everything downstream that only reads tabPathFor.
       bindingStore.bind(data.workflow_id, bound.path)
       if (status.value !== 'idle') tabActivity.setEditing(bound.path)
-      draftStore.bind(data.workflow_id)
-      const snapshot = await fetchDraftSnapshot(data.workflow_id)
-      if (stale()) return
-      if (
-        snapshot !== null &&
-        !(alreadyCurrent && (draftStore.version ?? -1) >= snapshot.version)
-      )
-        await adoptDraftBase(
-          data.workflow_id,
-          snapshot,
-          lastRenderedVersions.get(data.workflow_id) ?? -1
-        )
+      bindWorkflow(data.workflow_id)
       useTelemetry()?.trackAgentWorkflowApplied({
         workflow_id: data.workflow_id,
         target: 'active_tab_switch'
       })
       return
     }
+    // A new agent workflow opens as an EMPTY tab: the host minted its doc
+    // server-side (seed-at-bind), and the follower fills the canvas through
+    // the ordinary subscribe catch-up - no snapshot fetch, no draft apply.
     const creatingStartedAt = Date.now()
     tabActivity.setCreating(true)
-    const snapshot = await fetchDraftSnapshot(data.workflow_id)
-    if (stale()) return
-    let validationError = ''
-    const workflow =
-      snapshot === null
-        ? null
-        : await validateComfyWorkflow(snapshot.content, (error) => {
-            validationError = error
-          })
-    if (stale()) return
-    if (snapshot !== null && !workflow) {
-      surfaceDraftApplyFailure(validationError)
-      draftStore.bind(data.workflow_id)
-      return
-    }
     const remainingCreatingTime =
       CREATING_TAB_MIN_DURATION_MS - (Date.now() - creatingStartedAt)
     if (remainingCreatingTime > 0)
       await new Promise((resolve) => setTimeout(resolve, remainingCreatingTime))
     if (stale()) return
-    const tab = workflowStore.createTemporary(
-      agentTabFilename(data.name),
-      workflow ?? undefined
-    )
+    const tab = workflowStore.createTemporary(agentTabFilename(data.name))
     tabActivity.setCreating(false)
     await workflowService.openWorkflow(tab)
-    if (stale()) return
+    if (stale()) {
+      // A newer activation superseded this one mid-open: close the minted
+      // tab rather than stranding a ghost the user never asked for.
+      await workflowStore.closeWorkflow(tab)
+      return
+    }
     if (status.value !== 'idle') tabActivity.setEditing(tab.path)
-    await autosaveAppliedDraft(data.workflow_id, tab)
-    if (stale()) return
-    if (snapshot === null) draftStore.bind(data.workflow_id)
-    else await adoptDraftBase(data.workflow_id, snapshot)
+    bindingStore.bind(data.workflow_id, tab.path)
+    bindWorkflow(data.workflow_id)
     useTelemetry()?.trackAgentWorkflowApplied({
       workflow_id: data.workflow_id,
       target: 'active_tab_open'
     })
   } catch (error) {
     if (stale()) return
-    draftStore.bind(data.workflow_id)
+    bindWorkflow(data.workflow_id)
     surfaceAgentError(
       'agent_api_failed',
       error instanceof Error ? error.message : String(error)
@@ -647,120 +561,10 @@ async function onAgentActiveTab(
   }
 }
 
-async function loadDraft(
-  workflowId: string,
-  version: number,
-  content: Record<string, unknown>,
-  tab: ComfyWorkflow | null
-): Promise<void> {
-  const workflow = await validateComfyWorkflow(content, (error) => {
-    surfaceDraftApplyFailure(error)
-  })
-  if (!workflow) return
-  const openBefore = new Set(workflowStore.openWorkflows.map((w) => w.path))
-  const knownIds =
-    tab === null
-      ? new Set<string>()
-      : new Set((app.graph?.nodes ?? []).map((node) => String(node.id)))
-  try {
-    await app.loadGraphData(workflow, true, true, tab)
-    draftRejectionNotified = false
-    lastApplied = { workflowId, version }
-    if (workflow.nodes.some((node) => !knownIds.has(String(node.id))))
-      arrangeAgentNodes()
-    if (isStreaming.value) autoFitPending = true
-    else fitDraftIntoView()
-    const rendered = app.graph?.serialize()
-    if (rendered)
-      lastKnownGraph = { serialized: JSON.stringify(rendered), workflowId }
-    useTelemetry()?.trackAgentWorkflowApplied({
-      workflow_id: workflowId,
-      target: tab === null ? 'new_tab' : 'existing_tab'
-    })
-    if (tab === null) {
-      const opened = workflowStore.openWorkflows.find(
-        (w) => !openBefore.has(w.path)
-      )
-      if (opened) {
-        bindingStore.bind(workflowId, opened.path)
-        await autosaveAppliedDraft(workflowId, opened)
-      }
-      return
-    }
-    await autosaveAppliedDraft(workflowId, tab)
-  } catch (error) {
-    surfaceDraftApplyFailure(
-      error instanceof Error ? error.message : String(error)
-    )
-  }
-}
-
-async function applyDraft(): Promise<void> {
-  // PoC (FE-1903): when the CRDT follower owns the canvas, the legacy
-  // whole-draft apply must not also run — it re-loads the entire graph via
-  // app.loadGraphData, then arranges + auto-fits, which relayouts every node
-  // (including human-placed ones) each time the agent adds something. The
-  // follower projects semantic ops incrementally instead. The snapshot /
-  // tab-adoption flow (onWorkflowAdopted → adoptDraftBase) stays active.
-  if (crdtStatus.value.enabled) return
-  if (applying) {
-    reapplyQueued = true
-    return
-  }
-  applying = true
-  try {
-    const workflowId = draftStore.workflowId
-    const version = draftStore.version
-    const content = draftStore.content
-    if (workflowId === null || version === null || content === null) return
-    if (
-      lastApplied !== null &&
-      lastApplied.workflowId === workflowId &&
-      lastApplied.version >= version
-    )
-      return
-    const nodes = (content as { nodes?: unknown }).nodes
-    if (!Array.isArray(nodes) || nodes.length === 0) return
-    const boundTab = boundTabFor(workflowId)
-    if (boundTab) {
-      if (workflowStore.activeWorkflow?.path !== boundTab.path) {
-        tabActivity.markModified(boundTab.path)
-        return
-      }
-      await loadDraft(workflowId, version, content, boundTab)
-      return
-    }
-    await loadDraft(workflowId, version, content, null)
-  } finally {
-    applying = false
-    if (reapplyQueued) {
-      reapplyQueued = false
-      void applyDraft()
-    }
-  }
-}
-
-watch(
-  () => draftStore.version,
-  (version) => {
-    if (version === null || draftStore.content === null) return
-    void applyDraft()
-  }
-)
-watch(
-  () => workflowStore.activeWorkflow?.path,
-  () => void applyDraft()
-)
-watch(
-  () => draftStore.workflowId,
-  () => {
-    lastApplied = null
-  }
-)
-
 start()
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
+  mintPortWiring.detach()
   exitNodeSelectionMode()
   stop()
   tabActivity.setEditing(null)
@@ -775,7 +579,7 @@ function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
   useTelemetry()?.trackAgentMessageFeedback({
     message_id: turnId,
     vote,
-    workflow_id: draftStore.workflowId
+    workflow_id: boundWorkflowId.value
   })
 }
 
@@ -806,7 +610,6 @@ void refreshHistory()
 
 async function onSelectHistory(id: string): Promise<void> {
   exitNodeSelectionMode()
-  resetSnapshotGuard()
   workflowDetached.value = false
   await loadThread(id)
   void refreshHistory()
@@ -832,15 +635,12 @@ function onCopyMarkdown(id: string): void {
 
 function onSend(text: string, attachments: ComposerAttachment[]): void {
   exitNodeSelectionMode()
-  void applyDraft()
   const nodeTags = consumeSelection()
   useTelemetry()?.trackAgentMessageSent({
     attachment_count: attachments.length,
     node_tag_count: nodeTags.length
   })
-  void sendMessage(text, attachments, nodeTags).then((ok) => {
-    if (!ok) resetSnapshotGuard()
-  })
+  void sendMessage(text, attachments, nodeTags)
 }
 
 function onStop(): void {
@@ -863,7 +663,6 @@ function onDeleteHistory(id: string): void {
 
 function onNewChat(): void {
   exitNodeSelectionMode()
-  resetSnapshotGuard()
   workflowDetached.value = true
   newChat()
 }
@@ -942,8 +741,10 @@ watch(
   }
 )
 
+watch(() => workflowStore.activeWorkflow, exitNodeSelectionMode)
+
 watch(
-  [() => workflowStore.activeWorkflow?.path, () => canvasStore.currentGraph],
+  () => canvasStore.currentGraph,
   () => {
     if (!agentNodeSelectionStore.isLoadingWorkflow) exitNodeSelectionMode()
   }
@@ -989,7 +790,7 @@ const attachment = useAttachment({
     const uploaded = await rest.uploadImage(file, file.name)
     // The library caches input assets; without this refresh a just-uploaded
     // file is neither listed in the Assets tab nor mentionable this session.
-    void assetsStore.updateInputs()
+    void assetsStore.inputAssets.loadNew()
     return { ref: uploaded.name }
   },
   maxBytes: (file) => {
@@ -1185,7 +986,7 @@ function onPanelDrop(event: DragEvent): void {
         })
       }}
     </div>
-    <CrdtDevPanel v-if="crdtStatus.enabled" :status="crdtStatus" />
+    <CrdtDevPanel v-if="isCrdtDevPanelEnabled" :status="crdtStatus" />
     <AgentPanel
       ref="panelRef"
       :entries

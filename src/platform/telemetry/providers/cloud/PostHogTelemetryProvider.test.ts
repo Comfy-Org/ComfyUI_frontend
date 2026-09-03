@@ -404,6 +404,22 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it('captures link dedup drop events with metadata', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackLinkDedupDrop({
+        droppedLinkId: 7,
+        survivorLinkId: 3,
+        target: '12:0'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.LINK_DEDUP_DROP,
+        { droppedLinkId: 7, survivorLinkId: 3, target: '12:0' }
+      )
+    })
+
     it('captures auth failure events with metadata', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
@@ -419,6 +435,46 @@ describe('PostHogTelemetryProvider', () => {
           error_code: 'auth/user-not-found',
           auth_action: 'email_sign_in'
         }
+      )
+    })
+
+    it('captures unified auth retry and refresh outcomes', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackUnifiedAuthRetry({
+        transport: 'ws',
+        outcome: 'failed',
+        failure_reason: 'token_unavailable'
+      })
+      provider.trackUnifiedAuthRefresh({
+        outcome: 'retry_scheduled',
+        retry_count: 1
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.UNIFIED_AUTH_RETRY_FAILED,
+        {
+          transport: 'ws',
+          outcome: 'failed',
+          failure_reason: 'token_unavailable'
+        }
+      )
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.UNIFIED_AUTH_REFRESH_FAILED,
+        { outcome: 'retry_scheduled', retry_count: 1 }
+      )
+    })
+
+    it('captures image load failures', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackImageLoadFailed({ source: 'node_image_preview' })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.IMAGE_LOAD_FAILED,
+        { source: 'node_image_preview' }
       )
     })
 

@@ -13,14 +13,17 @@ import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionCont
 import type {
   AddCreditsClickMetadata,
   AgentEntryButtonClickedMetadata,
-  AgentMessageFeedbackMetadata,
   AgentMessageSentMetadata,
+  AgentMessageFeedbackMetadata,
   AgentNodeTaggedMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
   AgentWorkflowAppliedMetadata,
   AuthErrorMetadata,
   AuthMetadata,
+  ImageLoadFailureMetadata,
+  UnifiedAuthRefreshMetadata,
+  UnifiedAuthRetryMetadata,
   BeginCheckoutMetadata,
   BillingTelemetryEvent,
   DefaultViewSetMetadata,
@@ -33,6 +36,7 @@ import type {
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
+  LinkDedupDropMetadata,
   NamedValuesShadowDiffMismatchMetadata,
   NamedValuesShadowDiffSummaryMetadata,
   NodeAddedMetadata,
@@ -387,6 +391,28 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.USER_AUTH_FAILED, metadata)
   }
 
+  trackUnifiedAuthRetry(metadata: UnifiedAuthRetryMetadata): void {
+    this.trackEvent(
+      metadata.outcome === 'succeeded'
+        ? TelemetryEvents.UNIFIED_AUTH_RETRY_SUCCEEDED
+        : TelemetryEvents.UNIFIED_AUTH_RETRY_FAILED,
+      metadata
+    )
+  }
+
+  trackUnifiedAuthRefresh(metadata: UnifiedAuthRefreshMetadata): void {
+    this.trackEvent(
+      metadata.outcome === 'succeeded'
+        ? TelemetryEvents.UNIFIED_AUTH_REFRESH_SUCCEEDED
+        : TelemetryEvents.UNIFIED_AUTH_REFRESH_FAILED,
+      metadata
+    )
+  }
+
+  trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
+    this.trackEvent(TelemetryEvents.IMAGE_LOAD_FAILED, metadata)
+  }
+
   trackUserLoggedIn(): void {
     this.trackEvent(TelemetryEvents.USER_LOGGED_IN)
   }
@@ -659,7 +685,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   }
 
   trackAgentCloseButtonClicked(): void {
-    this.trackEvent(TelemetryEvents.AGENT_CLOSE_BUTTON_CLICKED)
+    this.trackEvent(TelemetryEvents.AGENT_CLOSE_BUTTON_CLICKED, {})
   }
 
   trackAgentMessageSent(metadata: AgentMessageSentMetadata): void {
@@ -671,7 +697,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   }
 
   trackAgentAttachButtonClicked(): void {
-    this.trackEvent(TelemetryEvents.AGENT_ATTACH_BUTTON_CLICKED)
+    this.trackEvent(TelemetryEvents.AGENT_ATTACH_BUTTON_CLICKED, {})
   }
 
   trackAgentWorkflowApplied(metadata: AgentWorkflowAppliedMetadata): void {
@@ -680,6 +706,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {
     this.trackEvent(TelemetryEvents.WIDGET_FAVORITE_TOGGLED, metadata)
+  }
+
+  trackLinkDedupDrop(metadata: LinkDedupDropMetadata): void {
+    this.trackEvent(TelemetryEvents.LINK_DEDUP_DROP, metadata)
   }
 
   trackNamedValuesShadowDiffMismatch(

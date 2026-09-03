@@ -9,6 +9,10 @@ import {
 } from '@/platform/settings/accountSettingsApi'
 import { useAuthStore } from '@/stores/authStore'
 
+class AgentConsentAuthenticationError extends Error {
+  override name = 'AgentConsentAuthenticationError'
+}
+
 export const useAgentConsentStore = defineStore('agentConsent', () => {
   const authStore = useAuthStore()
   const { resolvedUserInfo } = useCurrentUser()
@@ -35,7 +39,11 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
 
   function requireIdentity(): string {
     const identity = currentIdentity()
-    if (!identity) throw new Error('Comfy account authentication is required')
+    if (!identity) {
+      throw new AgentConsentAuthenticationError(
+        'Comfy account authentication is required'
+      )
+    }
     return identity
   }
 
@@ -50,7 +58,11 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
     const operationId = ++operation
     const authHeader = await authStore.getUserAuthHeader()
     if (!stillOwns(operationId, identity)) return false
-    if (!authHeader) throw new Error('Comfy account authentication is required')
+    if (!authHeader) {
+      throw new AgentConsentAuthenticationError(
+        'Comfy account authentication is required'
+      )
+    }
 
     const stored = await getAccountSetting(AGENT_CONSENT_SETTING_ID, authHeader)
     if (!stillOwns(operationId, identity)) return false
@@ -67,7 +79,11 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
     const operationId = ++operation
     const authHeader = await authStore.getUserAuthHeader()
     if (!stillOwns(operationId, identity)) return false
-    if (!authHeader) throw new Error('Comfy account authentication is required')
+    if (!authHeader) {
+      throw new AgentConsentAuthenticationError(
+        'Comfy account authentication is required'
+      )
+    }
 
     await setAccountSetting(AGENT_CONSENT_SETTING_ID, true, authHeader)
     if (!stillOwns(operationId, identity)) return false

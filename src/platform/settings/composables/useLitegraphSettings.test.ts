@@ -1,97 +1,80 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { effectScope, nextTick, ref } from 'vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { effectScope, nextTick } from 'vue'
+import type { EffectScope } from 'vue'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useLitegraphSettings } from '@/platform/settings/composables/useLitegraphSettings'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-// Mirrors the exemption in the composable under test.
-// eslint-disable-next-line import-x/no-restricted-paths
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
-// The composable drives many settings off one canvas; only `show_info` matters
-// here, the rest are present so the other effects don't throw.
-const canvas = {
-  show_info: false,
-  zoom_speed: 1,
-  auto_pan_speed: 1,
-  links_render_mode: 0,
-  min_font_size_for_lod: 0,
-  draw: vi.fn(),
-  setDirty: vi.fn()
+const testState = vi.hoisted(
+  (): { canvasStore: { canvas: LGraphCanvas | null } | null } => ({
+    canvasStore: null
+  })
+)
+
+vi.mock('@/renderer/core/canvas/canvasStore', async () => {
+  const { reactive } = await import('vue')
+  testState.canvasStore = reactive({ canvas: null })
+  return { useCanvasStore: () => testState.canvasStore }
+})
+
+import { useLitegraphSettings } from './useLitegraphSettings'
+
+function createCanvas(draw: () => void): LGraphCanvas {
+  return fromPartial<LGraphCanvas>({ draw, setDirty: vi.fn() })
 }
 
-const settings = ref<Record<string, unknown>>({})
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: vi.fn(() => ({
-    get: (key: string) => settings.value[key]
-  }))
-}))
-
-function run() {
-  const scope = effectScope()
-  scope.run(() => useLitegraphSettings())
-  return scope
+function getCanvasStore(): { canvas: LGraphCanvas | null } {
+  if (!testState.canvasStore)
+    throw new Error('Canvas store was not initialized')
+  return testState.canvasStore
 }
 
 describe('useLitegraphSettings', () => {
+  let scope: EffectScope
+
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    settings.value = {
-      'Comfy.Graph.CanvasInfo': true,
-      'Comfy.Graph.ZoomSpeed': 1,
-      'Comfy.Graph.AutoPanSpeed': 1
-    }
-    canvas.show_info = false
-    vi.mocked(useSettingStore).mockClear()
-    useCanvasStore().canvas = canvas as never
+    scope = effectScope()
+    useSettingStore().settingValues['Comfy.Graph.CanvasInfo'] = false
   })
 
-  it('applies the canvas info setting', () => {
-    run()
+  afterEach(() => scope.stop())
 
-    expect(canvas.show_info).toBe(true)
+  it('does not make slot reads during drawing reactive dependencies', async () => {
+    const node = new LGraphNode('test')
+    const slot = node.addInput('input', '*')
+    const draw = vi.fn(() => slot.pos)
+    getCanvasStore().canvas = createCanvas(draw)
+
+    scope.run(useLitegraphSettings)
+
+    expect(draw).toHaveBeenCalledOnce()
+
+    slot.pos = [10, 20]
+    await nextTick()
+
+    expect(draw).toHaveBeenCalledOnce()
   })
 
-  // The overlay is drawn onto the canvas rather than composed in the DOM, so it
-  // cannot be hidden with CSS alongside the rest of the chrome.
-  it('suppresses the canvas info overlay during node selection mode', async () => {
-    const nodeSelectionStore = useAgentNodeSelectionStore()
-    run()
-    expect(canvas.show_info).toBe(true)
+  it('redraws when CanvasInfo or the canvas changes', async () => {
+    const firstDraw = vi.fn()
+    const secondDraw = vi.fn()
+    const canvasStore = getCanvasStore()
+    const settingStore = useSettingStore()
+    canvasStore.canvas = createCanvas(firstDraw)
 
-    nodeSelectionStore.isActive = true
+    scope.run(useLitegraphSettings)
+    settingStore.settingValues['Comfy.Graph.CanvasInfo'] = true
     await nextTick()
 
-    expect(canvas.show_info).toBe(false)
-  })
+    expect(canvasStore.canvas?.show_info).toBe(true)
+    expect(firstDraw).toHaveBeenCalledTimes(2)
 
-  it('restores the overlay on exit without touching the user setting', async () => {
-    const nodeSelectionStore = useAgentNodeSelectionStore()
-    run()
-
-    nodeSelectionStore.isActive = true
-    await nextTick()
-    nodeSelectionStore.isActive = false
+    canvasStore.canvas = createCanvas(secondDraw)
     await nextTick()
 
-    expect(canvas.show_info).toBe(true)
-    expect(settings.value['Comfy.Graph.CanvasInfo']).toBe(true)
-  })
-
-  it('leaves the overlay off during the mode when the setting is disabled', async () => {
-    const nodeSelectionStore = useAgentNodeSelectionStore()
-    settings.value['Comfy.Graph.CanvasInfo'] = false
-    run()
-
-    nodeSelectionStore.isActive = true
-    await nextTick()
-    expect(canvas.show_info).toBe(false)
-
-    nodeSelectionStore.isActive = false
-    await nextTick()
-    expect(canvas.show_info).toBe(false)
+    expect(canvasStore.canvas.show_info).toBe(true)
+    expect(secondDraw).toHaveBeenCalledOnce()
   })
 })

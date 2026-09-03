@@ -1,26 +1,33 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-
-import { render, screen, within } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
-import PrimeVue from 'primevue/config'
-import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
+import type { DirectiveBinding } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
+import * as tooltipConfig from '@/composables/useTooltipConfig'
 import { i18n } from '@/i18n'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
 import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'
 import Composer from './Composer.vue'
+
+const tooltipBindings = new WeakMap<Element, unknown>()
+const tooltipDirectiveStub = {
+  mounted(element: Element, binding: DirectiveBinding<unknown>) {
+    tooltipBindings.set(element, binding.value)
+  },
+  updated(element: Element, binding: DirectiveBinding<unknown>) {
+    tooltipBindings.set(element, binding.value)
+  }
+}
 
 function mount(props: ComponentProps<typeof Composer> = {}) {
   return render(Composer, {
     props,
     global: {
-      plugins: [PrimeVue, i18n],
-      directives: { tooltip: Tooltip }
+      plugins: [i18n],
+      directives: { tooltip: tooltipDirectiveStub }
     }
   })
 }
@@ -30,7 +37,7 @@ describe('Composer', () => {
     setActivePinia(createPinia())
   })
 
-  it('shows the interactive empty-composer hint', () => {
+  it('T-21 / PM-678 / FE-1325 hints at ideas, canvas references, and dragged assets', () => {
     mount()
 
     expect(screen.getByText('Describe ideas, @ to reference,')).toBeVisible()
@@ -244,15 +251,15 @@ describe('Composer', () => {
       ['auto-limit', 'Auto (limited)', 'Ask when credit limit is reached']
     ] as const)(
       'shows the %s mode tooltip copy',
-      async ([mode, triggerName, tooltipCopy]) => {
+      ([mode, triggerName, tooltipCopy]) => {
         useAgentRunModeStore().save(mode, 450)
+
         mount()
 
-        await userEvent.hover(screen.getByRole('button', { name: triggerName }))
-
-        expect(
-          await screen.findByRole('tooltip', { hidden: true })
-        ).toHaveTextContent(tooltipCopy)
+        const trigger = screen.getByRole('button', { name: triggerName })
+        expect(tooltipBindings.get(trigger)).toEqual(
+          tooltipConfig.buildAgentTooltipConfig(tooltipCopy)
+        )
       }
     )
 
@@ -280,21 +287,25 @@ describe('Composer', () => {
       { id: '7', title: 'KSampler' },
       { id: '9', title: 'VAE Decode' }
     ]
-    const ASSETS: AssetItem[] = [
-      fromPartial({
+    const ASSETS = [
+      {
         id: 'asset-1',
         name: 'sunset-original.png',
         hash: 'sunset-hash.png',
         tags: ['input'],
         display_name: 'Sunset.png',
-        thumbnail_url: '/api/assets/asset-1/thumbnail'
-      }),
-      fromPartial({
+        thumbnail_url: '/api/assets/asset-1/thumbnail',
+        created_at: '2026-01-01T00:00:00.000Z',
+        updated_at: '2026-01-01T00:00:00.000Z'
+      },
+      {
         id: 'asset-2',
         name: 'forest.png',
         tags: ['input'],
-        user_metadata: { name: 'Forest reference' }
-      })
+        user_metadata: { name: 'Forest reference' },
+        created_at: '2026-01-01T00:00:00.000Z',
+        updated_at: '2026-01-01T00:00:00.000Z'
+      }
     ]
 
     it('lists matching nodes alphabetically', async () => {
@@ -380,17 +391,6 @@ describe('Composer', () => {
 
       expect(emitted().mentionPick[0]).toEqual([NODES[0]])
       expect(emitted().send).toBeUndefined()
-    })
-
-    it('excludes only the referenced id when node titles match', async () => {
-      mount({ selectionTags: [NODES[0]], getMentionNodes: () => NODES })
-
-      await userEvent.type(screen.getByRole('textbox'), '@')
-      const listbox = screen.getByRole('listbox')
-
-      expect(within(listbox).queryByText('#5')).not.toBeInTheDocument()
-      expect(within(listbox).getByText('#7')).toBeInTheDocument()
-      expect(within(listbox).getByText('VAE Decode')).toBeInTheDocument()
     })
 
     it('filters assets, stages a keyboard pick, removes its token, and sends its ref', async () => {
@@ -565,6 +565,17 @@ describe('Composer', () => {
     expect(screen.queryByText('#5')).not.toBeInTheDocument()
   })
 
+  it('passes the full tooltip config to selection chip directives', () => {
+    mount({ selectionTags: [{ id: '5', title: 'KSampler' }] })
+
+    const button = screen.getByRole('button', {
+      name: 'Show KSampler #5 on canvas'
+    })
+    expect(tooltipBindings.get(button)).toEqual(
+      tooltipConfig.buildAgentTooltipConfig('Show on canvas')
+    )
+  })
+
   it('emits removeTag when a selection chip is removed', async () => {
     const { emitted } = mount({
       selectionTags: [{ id: '5', title: 'KSampler' }]
@@ -577,16 +588,15 @@ describe('Composer', () => {
     expect(emitted().removeTag).toEqual([['5']])
   })
 
-  it('shows the remove tooltip for a selection chip', async () => {
+  it('builds the remove tooltip for a selection chip', () => {
     mount({ selectionTags: [{ id: '5', title: 'KSampler' }] })
 
-    await userEvent.hover(
-      screen.getByRole('button', { name: 'Remove KSampler #5 reference' })
+    const removeButton = screen.getByRole('button', {
+      name: 'Remove KSampler #5 reference'
+    })
+    expect(tooltipBindings.get(removeButton)).toEqual(
+      tooltipConfig.buildAgentTooltipConfig('Remove')
     )
-
-    expect(
-      await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent('Remove')
   })
 
   it('emits focusTag when a selection chip is activated', async () => {

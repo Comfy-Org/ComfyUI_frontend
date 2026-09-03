@@ -64,10 +64,9 @@ vi.mock('@/i18n', () => {
       'Prompt has no outputs',
     'errorCatalog.promptErrors.prompt_no_outputs.desc':
       'The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result.',
-    'errorCatalog.promptErrors.agent_draft_apply_failed.title':
-      "Couldn't apply agent changes",
-    'errorCatalog.promptErrors.agent_draft_apply_failed.desc':
-      "Couldn't apply the agent's draft to the canvas.",
+    'errorCatalog.promptErrors.apply_failed.title': 'Agent edit failed',
+    'errorCatalog.promptErrors.apply_failed.desc':
+      'An agent edit could not be applied to the workflow document.',
     'errorCatalog.runtimeErrors.execution_failed.title': 'Execution failed',
     'errorCatalog.runtimeErrors.execution_failed.message':
       'Node threw an error during execution.',
@@ -715,21 +714,21 @@ describe('useErrorGroups', () => {
     it('carries prompt error details onto the card item', async () => {
       const { store, groups } = createErrorGroups()
       store.recordPromptError({
-        type: 'agent_draft_apply_failed',
-        message: "Couldn't apply the agent's draft to the canvas",
-        details: 'Validation error: Required at "version"'
+        type: 'apply_failed',
+        message: 'An agent edit could not be applied to the workflow document.',
+        details: 'op_rejected: unknown_widget at seed'
       })
       await nextTick()
 
       const promptGroup = groups.allErrorGroups.value.find(
-        (g) => g.groupKey === 'execution:prompt:agent_draft_apply_failed'
+        (g) => g.groupKey === 'execution:prompt:apply_failed'
       )
       expect(promptGroup).toBeDefined()
       const details =
         promptGroup && 'cards' in promptGroup
           ? promptGroup.cards[0]?.errors[0]?.details
           : undefined
-      expect(details).toBe('Validation error: Required at "version"')
+      expect(details).toBe('op_rejected: unknown_widget at seed')
     })
 
     it('includes prompt error when a node is selected', async () => {

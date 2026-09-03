@@ -6298,6 +6298,42 @@
       }
     }
   },
+  "GeminiVideoOmniV2": {
+    "description": "צרו וידאו עם שמע מפרומפט טקסט באמצעות מודלי Gemini Omni Flash של Google. ניתן לספק תמונות ייחוס ו/או סרטונים כדי להנחות או לערוך את התוצאה. תארו את האורך הרצוי (3-10 שניות) ישירות בפרומפט.",
+    "display_name": "Google Gemini Omni (וידאו)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "מודל הווידאו Gemini המשמש ליצירת הווידאו."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_task_type": {
+        "name": "task_type"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "יצירת מסלולי וידאו",
     "inputs": {
@@ -6360,6 +6396,22 @@
       },
       "1": {
         "name": "track_length",
+        "tooltip": null
+      }
+    }
+  },
+  "Get3DComponents": {
+    "description": "פענחו קובץ מודל 3D ‏(GLB, GLTF, OBJ, STL) ל-MESH הניתן לעריכה עבור צמתי עיבוד רשת (decimate, remesh, פריסת UV, bake, ...). כל צמתי הסצנה/הפרימיטיבים ממוזגים לרשת אחת לאחר החלת ההתמרות שלהם; המרקמים ומקדמי החומר נלקחים מהחומר הראשון. המקביל של MeshToFile3D.",
+    "display_name": "קבלת רכיבי 3D",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "קובץ מודל 3D מ-Load 3D או מצומת 3D אחר. FBX/USDZ אינם נתמכים — יש להמיר תחילה ל-GLB."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
         "tooltip": null
       }
     }
@@ -7081,7 +7133,7 @@
       },
       "mode": {
         "name": "מצב",
-        "tooltip": "'speed' מהיר יותר; 'precision' מספק סנכרון שפתיים איכותי יותר במחיר כפול."
+        "tooltip": "‏'speed' מהיר יותר; 'precision' מפיק סנכרון שפתיים באיכות גבוהה יותר, במחיר גבוה יותר."
       },
       "output_language": {
         "name": "שפת יעד",
@@ -7149,12 +7201,12 @@
     }
   },
   "HiDreamO1ReferenceImages": {
-    "description": "צרף 1-10 תמונות ייחוס להתניה, אחת להנחיית עריכה או מספר תמונות להתאמה אישית מבוססת נושא.",
+    "description": "צרף תמונות ייחוס ממוינות להתניה חיובית ושלילית.",
     "display_name": "HiDream-O1 תמונות ייחוס",
     "inputs": {
       "images": {
         "name": "תמונות",
-        "tooltip": "תמונות ייחוס. תמונה אחת = עריכת הנחיה; 2-10 תמונות = ייחוס מרובה."
+        "tooltip": "תמונות הייחוס משמשות לפי הסדר המספרי של השקעים."
       },
       "negative": {
         "name": "שלילי"
@@ -12696,6 +12748,46 @@
       }
     }
   },
+  "MiniMaxH3FunControlNetApply": {
+    "description": "החל MiniMax H3 Fun ControlNet על מודל מטקסט לווידאו כתיקון מודל.",
+    "display_name": "החל MiniMax H3 Fun ControlNet",
+    "inputs": {
+      "control_video": {
+        "name": "control_video"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "הערך 1 מסמן את האזורים שיש ליצור מחדש."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "הווידאו שמאחורי המסכה; נקרא רק כאשר ניתנת מסכה."
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MiniMaxH3ImageToVideo": {
     "display_name": "MiniMax H3 Image to Video",
     "inputs": {
@@ -17772,7 +17864,7 @@
     }
   },
   "RecraftStyleV3LogoRaster": {
-    "description": "בחר סגנון realistic_image ותת-סגנון אופציונלי.",
+    "description": "בחר סגנון ותת-סגנון עבור logo_raster.",
     "display_name": "Recraft Style - רסטר לוגו",
     "inputs": {
       "substyle": {
@@ -17883,6 +17975,26 @@
       }
     }
   },
+  "RecraftV4CreateStyleNode": {
+    "description": "צור סגנון Recraft V4 לשימוש חוזר מתוך 1–10 תמונות ייחוס. ה-style_id המוחזר פועל עם כל מודל Recraft V4 ו-V4.1 מאותו סוג פלט. הגודל הכולל של כל התמונות מוגבל ל-10 MB.",
+    "display_name": "יצירת סגנון Recraft V4",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "תמונות ייחוס המגדירות את הסגנון. ייחוסים דומים מחדדים את ההתאמה, וייחוסים מגוונים מרחיבים אותה."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "סוג הפלט שעבורו נוצר הסגנון: recraftv4_styles לתמונות רסטר, recraftv4_styles_vector עבור SVG."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_id",
+        "tooltip": null
+      }
+    }
+  },
   "RecraftV4TextToImageNode": {
     "description": "יוצר תמונות באמצעות מודלים של Recraft V4 או V4 Pro.",
     "display_name": "Recraft V4 טקסט לתמונה",
@@ -17892,7 +18004,7 @@
       },
       "model": {
         "name": "מודל",
-        "tooltip": "המודל בו ייעשה שימוש ליצירה."
+        "tooltip": "המודל לשימוש ביצירה. המודלים recraftv4_styles מיועדים ליצירה עקבית מבחינת סגנון ותמיד דורשים style_id או style_references."
       },
       "model_size": {
         "name": "גודל"
@@ -17916,10 +18028,26 @@
       "seed": {
         "name": "seed",
         "tooltip": "seed לקביעת האם הצומת ירוץ מחדש; התוצאות בפועל אינן דטרמיניסטיות ללא קשר ל-seed."
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "UUID של סגנון Recraft V4 להחלה, למשל מצומת Recraft V4 Create Style או מפלט style_id של הרצה קודמת. לא ניתן לשלב עם style_references."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "מידת ההיצמדות לסגנון: precise משחזר אותו בפרטים, flexible תואם למראה הכללי. משמש רק כשמסופק סגנון."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "תמונות ייחוס ליצירת סגנון בזמן אמת, בחיוב נוסף על היצירה. הסגנון שנוצר מוחזר כ-style_id לשימוש חוזר. לא ניתן לשלב עם style_id."
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -17933,7 +18061,7 @@
       },
       "model": {
         "name": "מודל",
-        "tooltip": "המודל בו ייעשה שימוש ליצירה."
+        "tooltip": "המודל לשימוש ביצירה. המודלים recraftv4_styles מיועדים ליצירה עקבית מבחינת סגנון ותמיד דורשים style_id או style_references."
       },
       "model_size": {
         "name": "גודל"
@@ -17957,10 +18085,26 @@
       "seed": {
         "name": "seed",
         "tooltip": "seed לקביעת האם הצומת ירוץ מחדש; התוצאות בפועל אינן דטרמיניסטיות ללא קשר ל-seed."
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "UUID של סגנון וקטורי Recraft V4 להחלה, למשל מצומת Recraft V4 Create Style או מפלט style_id של הרצה קודמת. לא ניתן לשלב עם style_references."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "מידת ההיצמדות לסגנון: precise משחזר אותו בפרטים, flexible תואם למראה הכללי. משמש רק כשמסופק סגנון."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "תמונות ייחוס ליצירת סגנון וקטורי בזמן אמת, בחיוב נוסף על היצירה. הסגנון שנוצר מוחזר כ-style_id לשימוש חוזר. לא ניתן לשלב עם style_id."
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -21009,6 +21153,23 @@
       },
       "scale": {
         "name": "scale"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaSamplingOptions": {
+    "description": "הגדר את הסטת הזרימה של SenseNova.",
+    "display_name": "אפשרויות דגימה של SenseNova",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
       }
     },
     "outputs": {
@@ -24613,61 +24774,11 @@
       },
       "resolution": {
         "name": "resolution",
-        "tooltip": "רזולוציית הווידאו המופק. 4K לא זמין עבור veo-3.1-lite ו-veo-3.0."
+        "tooltip": "רזולוציית וידאו הפלט. 4K אינו זמין עבור המודל veo-3.1-lite."
       },
       "seed": {
         "name": "seed",
         "tooltip": "seed ליצירת הווידאו (0 לאקראי)"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "VeoVideoGenerationNode": {
-    "description": "יוצר סרטונים מהנחיות טקסט באמצעות Google Veo 2 API",
-    "display_name": "Google Veo 2 יצירת וידאו",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "יחס גובה-רוחב של הווידאו המופק"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration_seconds": {
-        "name": "duration_seconds",
-        "tooltip": "משך הווידאו המופק בשניות"
-      },
-      "enhance_prompt": {
-        "name": "enhance_prompt",
-        "tooltip": "האם לשפר את ההנחיה בעזרת בינה מלאכותית"
-      },
-      "image": {
-        "name": "image",
-        "tooltip": "תמונת ייחוס אופציונלית להכוונת יצירת הווידאו"
-      },
-      "model": {
-        "name": "model",
-        "tooltip": "מודל Veo 2 לשימוש ביצירת הווידאו"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "הנחיית טקסט שלילית שמנחה מה להימנע ממנו בווידאו"
-      },
-      "person_generation": {
-        "name": "person_generation",
-        "tooltip": "האם לאפשר יצירת דמויות אנושיות בווידאו"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "תיאור טקסטואלי של הווידאו"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "זרע ליצירת הווידאו (0 לאקראי)"
       }
     },
     "outputs": {
@@ -24690,6 +24801,23 @@
       "strict_duration": {
         "name": "strict_duration",
         "tooltip": "אם אמת, כאשר לא ניתן לעמוד במשך שצוין תתרחש שגיאה."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VideoCrop": {
+    "display_name": "חיתוך וידאו",
+    "inputs": {
+      "crop": {
+        "name": "crop",
+        "tooltip": "אזור חיתוך בפיקסלים. רוחב/גובה אפס שומרים על המסגרת המלאה."
       },
       "video": {
         "name": "video"
@@ -24802,6 +24930,27 @@
       },
       "model": {
         "name": "model"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "קיצוץ וידאו (מתקדם)",
+    "inputs": {
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "אם הערך הוא True, וכאשר משך הזמן שצוין אינו אפשרי, תועלה שגיאה."
+      },
+      "trim": {
+        "name": "trim",
+        "tooltip": "חלון קיצוץ באמצעות פריימי התחלה/סיום."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

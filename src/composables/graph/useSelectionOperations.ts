@@ -45,7 +45,6 @@ export function useSelectionOperations() {
 
   const pasteSelection = () => {
     const canvas = app.canvas
-    if (isSelectOnly(canvas)) return
     canvas.pasteFromClipboard({ connectInputs: false })
 
     // Trigger change tracking
@@ -54,7 +53,6 @@ export function useSelectionOperations() {
 
   const duplicateSelection = () => {
     const canvas = app.canvas
-    if (isSelectOnly(canvas)) return
     if (!canvas.selectedItems || canvas.selectedItems.size === 0) {
       toastStore.add({
         severity: 'warn',
@@ -102,7 +100,6 @@ export function useSelectionOperations() {
   }
 
   const renameSelection = async () => {
-    if (isSelectOnly(app.canvas)) return
     const selectedItems = Array.from(canvasStore.selectedItems)
 
     // Handle single node selection

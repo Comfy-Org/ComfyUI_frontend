@@ -9,7 +9,7 @@
     :can-select-inputs
     :node-id="nodeData?.id"
     :class="
-      shouldHandleNodePointerEvents && !agentNodeSelectionStore.isActive
+      shouldHandleNodePointerEvents
         ? 'pointer-events-auto'
         : 'pointer-events-none'
     "
@@ -31,8 +31,6 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import WidgetGrid from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
-import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
 interface NodeWidgetsProps {
   nodeData?: NodeState
@@ -44,7 +42,6 @@ const { nodeData, widgetIds } = defineProps<NodeWidgetsProps>()
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()
 const { bringNodeToFront } = useNodeZIndex()
-const agentNodeSelectionStore = useAgentNodeSelectionStore()
 
 function handleWidgetPointerEvent(event: PointerEvent) {
   if (shouldHandleNodePointerEvents.value) return
@@ -73,9 +70,4 @@ const { canSelectInputs, nodeType, processedWidgets } = useProcessedWidgets(
   () => nodeData,
   () => widgetIds
 )
-
-// Tracks widget-row growth that the node-level RO can't see
-if (nodeData?.id != null) {
-  useVueElementTracking(nodeData.id, 'widgets-grid')
-}
 </script>

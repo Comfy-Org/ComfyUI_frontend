@@ -11,9 +11,9 @@ import {
 import type { DragAndScaleState } from '@/lib/litegraph/src/DragAndScale'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { requestSlotLayoutSyncForAllNodes } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -149,12 +149,6 @@ export const useSubgraphNavigationStore = defineStore(
         if (getActiveGraphId() !== graphId) return
         if (!canvas.graph?.nodes?.length) return
         useLitegraphService().fitView()
-        // fitView changes scale/offset, so re-sync slot positions for
-        // collapsed nodes whose DOM-relative measurement is now stale.
-        requestAnimationFrame(() => {
-          if (getActiveGraphId() !== graphId) return
-          requestSlotLayoutSyncForAllNodes()
-        })
       })
     }
 
@@ -222,6 +216,8 @@ export const useSubgraphNavigationStore = defineStore(
       | { id: number; source: 'workflow' }
     const routeWriteStateKey = 'comfySubgraphNavigationWrite'
     const pendingRouteWrites = new Map<number, string>()
+    // D14: the reset-suppression flag dies with shared-graph loading at
+    // ECS per-document scoping; the intent ids guard the router and survive.
     let deferredNavigationIntent: GraphNavigationIntent | undefined
     let latestNavigationIntent: NavigationIntent | undefined
     let navigationIntentId = 0
@@ -229,10 +225,10 @@ export const useSubgraphNavigationStore = defineStore(
     let blockedRouteHash: string | undefined
     let pendingWorkflowResetGraph: typeof app.rootGraph | undefined
 
-    const createNavigationIntent = (
+    function createNavigationIntent(
       hash: string,
       source: GraphNavigationIntent['source']
-    ): GraphNavigationIntent => {
+    ): GraphNavigationIntent {
       const intent = { id: ++navigationIntentId, hash, source }
       latestNavigationIntent = intent
       return intent
@@ -244,12 +240,28 @@ export const useSubgraphNavigationStore = defineStore(
       return intent.id
     }
 
+    /**
+     * Releases a workflow-load intent whose load FAILED: while it stays the
+     * newest intent it suppresses the surviving graph's hash forever, so
+     * clear it and republish the live graph.
+     */
+    function endWorkflowNavigation(navigationId: number): void {
+      if (
+        latestNavigationIntent?.source !== 'workflow' ||
+        latestNavigationIntent.id !== navigationId
+      ) {
+        return
+      }
+      latestNavigationIntent = undefined
+      void updateHash('graph')
+    }
+
     async function withNavBlocked<T>(
       op: () => Promise<T>,
-      routeHash: string
+      blockedHash: string
     ): Promise<T> {
       const previousBlockedRouteHash = blockedRouteHash
-      blockedRouteHash = routeHash
+      blockedRouteHash = blockedHash
       blockNavDepth++
       try {
         return await op()
@@ -321,6 +333,7 @@ export const useSubgraphNavigationStore = defineStore(
               '[subgraphNavigation] openWorkflow rejected during recovery',
               err
             )
+            reportError(err, { errorType: 'workflow_navigation_failure' })
             return redirectToRoot('workflow load failed', navigationId)
           }
           if (navigationId !== navigationIntentId) return
@@ -408,7 +421,7 @@ export const useSubgraphNavigationStore = defineStore(
       }
     }
 
-    function updateHash(
+    async function updateHash(
       source: 'graph' | 'workflow-load' = 'graph',
       workflowNavigationId?: number,
       currentGraph?: LGraph | null
@@ -525,6 +538,7 @@ export const useSubgraphNavigationStore = defineStore(
       restoreViewport,
       saveCurrentViewport,
       beginWorkflowNavigation,
+      endWorkflowNavigation,
       updateHash,
       /** @internal Exposed for test assertions only. */
       viewportCache

@@ -30,9 +30,10 @@ import {
   SIDE_PANEL_SIZE
 } from '@/constants/splitterConstants'
 import { useAppModeStore } from '@/stores/appModeStore'
-import DockedAgentPanel from '@/workbench/extensions/agent/components/agent/DockedAgentPanel.vue'
+import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
 
 const settingStore = useSettingStore()
+const { docked: agentDocked, DockedAgentPanel } = useAgentDockMount()
 const workspaceStore = useWorkspaceStore()
 const { isBuilderMode, isArrangeMode } = useAppMode()
 const appModeStore = useAppModeStore()
@@ -103,7 +104,10 @@ function dragDrop(e: DragEvent) {
 <template>
   <MobileDisplay v-if="mobileDisplay" />
   <div v-else class="absolute flex size-full flex-row" @dragover.prevent>
-    <div class="flex min-w-0 flex-1 flex-col overflow-hidden">
+    <div
+      data-testid="linear-workspace-column"
+      class="flex min-w-0 flex-1 flex-col overflow-hidden"
+    >
       <div
         class="workflow-tabs-container pointer-events-auto h-(--workflow-tabs-height) w-full border-b border-interface-stroke shadow-interface"
       >
@@ -205,7 +209,7 @@ function dragDrop(e: DragEvent) {
         </Splitter>
       </div>
     </div>
-    <DockedAgentPanel />
+    <component :is="DockedAgentPanel" v-if="agentDocked" />
   </div>
 </template>
 

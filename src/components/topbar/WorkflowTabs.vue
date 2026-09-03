@@ -24,6 +24,7 @@
       pt:bar-x="h-1"
     >
       <SelectButton
+        :ref="setSelectButton"
         class="workflow-tabs bg-transparent"
         :class="props.class"
         :model-value="selectedWorkflow"
@@ -51,22 +52,6 @@
           />
         </template>
       </SelectButton>
-      <div
-        v-if="tabActivity.creatingTab"
-        data-testid="creating-tab-skeleton"
-        class="relative flex h-9 w-39 shrink-0 items-center justify-center gap-2 self-center bg-comfy-menu-bg px-4 py-2 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-border-default after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-border-default"
-      >
-        <Skeleton
-          aria-hidden="true"
-          data-testid="creating-tab-skeleton-shimmer"
-          class="h-4 w-25 animate-none bg-[linear-gradient(90deg,rgba(0,0,0,0.2)_0%,rgba(102,102,102,0.2)_50.481%,rgba(0,0,0,0.2)_100%),linear-gradient(90deg,#404040_0%,#404040_100%)]"
-        />
-        <i
-          role="img"
-          :aria-label="$t('g.agentWorking')"
-          class="icon-[lucide--loader-circle] size-4 text-smoke-800 motion-safe:animate-spin"
-        />
-      </div>
     </ScrollPanel>
     <Button
       v-if="showOverflowArrows"
@@ -100,16 +85,18 @@
     <div
       v-if="isIntegratedTabBar"
       data-testid="integrated-tab-bar-actions"
+      :data-agent-gate-settled="agentPanelStore.gateSettled || undefined"
       class="ml-auto flex shrink-0 items-center gap-2 px-2"
     >
       <Button
-        v-if="agentPanelEnabled"
+        v-if="agentPanelStore.enabled"
         variant="link"
         size="sm"
+        :aria-pressed="agentPanelStore.isVisible"
         :class="
           cn(
             'no-drag shrink-0 border border-solid text-base-foreground',
-            isAgentPanelVisible
+            agentPanelStore.isVisible
               ? 'border-plum-500 bg-plum-600/20'
               : 'border-plum-600 bg-ink-700 hover:border-plum-500'
           )
@@ -123,15 +110,12 @@
         v-if="isCloud || isNightly"
         v-tooltip="{ value: $t('actionbar.feedbackTooltip'), showDelay: 300 }"
         variant="muted-textonly"
-        size="unset"
-        class="size-[32px] shrink-0 rounded-[8px] p-[8px] text-base-foreground"
+        size="icon"
+        class="shrink-0 text-base-foreground"
         :aria-label="$t('actionbar.feedback')"
         @click="openFeedback"
       >
-        <i
-          data-testid="feedback-icon"
-          class="icon-[hugeicons--megaphone-03] size-[16px]"
-        />
+        <i class="icon-[lucide--megaphone]" />
       </Button>
       <CurrentUserButton v-if="showCurrentUser" compact class="shrink-0 p-1" />
       <LoginButton v-else class="p-1" />
@@ -141,26 +125,17 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
-import { useScroll } from '@vueuse/core'
-import { storeToRefs } from 'pinia'
+import { useScroll, whenever } from '@vueuse/core'
 import ScrollPanel from 'primevue/scrollpanel'
 import SelectButton from 'primevue/selectbutton'
-import {
-  computed,
-  nextTick,
-  onBeforeUnmount,
-  onMounted,
-  onUpdated,
-  ref,
-  watch
-} from 'vue'
-import type { WatchStopHandle } from 'vue'
+import { computed, nextTick, onUpdated, ref, watch } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
+import { cn } from '@comfyorg/tailwind-utils'
+
 import Button from '@/components/ui/button/Button.vue'
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useWorkflowStatusDismissal } from '@/composables/useWorkflowStatusDismissal'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
@@ -170,9 +145,9 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCommandStore } from '@/stores/commandStore'
-import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
@@ -197,11 +172,9 @@ const commandStore = useCommandStore()
 const agentPanelStore = useAgentPanelStore()
 const { withConsent } = useAgentConsent()
 const tabActivity = useWorkflowTabActivityStore()
-const { isVisible: isAgentPanelVisible, enabled: agentPanelEnabled } =
-  storeToRefs(agentPanelStore)
 
 async function onAgentEntryClick(): Promise<void> {
-  if (isAgentPanelVisible.value) {
+  if (agentPanelStore.isVisible) {
     useTelemetry()?.trackAgentEntryButtonClicked({ resulting_state: 'closed' })
     agentPanelStore.toggle()
     return
@@ -214,7 +187,6 @@ async function onAgentEntryClick(): Promise<void> {
   })
 }
 const { isLoggedIn } = useCurrentUser()
-
 // Dismiss a tab's terminal status badge once it has been viewed
 useWorkflowStatusDismissal()
 
@@ -228,9 +200,6 @@ function openFeedback() {
 }
 
 const containerRef = ref<HTMLElement | null>(null)
-const showOverflowArrows = ref(false)
-const leftArrowEnabled = ref(false)
-const rightArrowEnabled = ref(false)
 
 const workflowToOption = (workflow: ComfyWorkflow): WorkflowOption => ({
   value: workflow.path,
@@ -267,7 +236,7 @@ const closeWorkflows = async (options: WorkflowOption[]) => {
         warnIfUnsaved: !workspaceStore.shiftDown
       }))
     ) {
-      // User clicked cancel
+      // User cancelled, or the replacement load failed
       break
     }
   }
@@ -287,6 +256,11 @@ const handleWheel = (event: WheelEvent) => {
 }
 
 const scrollContent = ref<HTMLElement | null>(null)
+function setSelectButton(element: Element | ComponentPublicInstance | null) {
+  const selectButton = element instanceof Element ? element : element?.$el
+  scrollContent.value =
+    selectButton instanceof HTMLElement ? selectButton.parentElement : null
+}
 
 const scroll = (direction: number) => {
   const el = scrollContent.value
@@ -334,55 +308,25 @@ watch(
   }
 )
 
-let overflowObserver: ReturnType<typeof useOverflowObserver> | null = null
-let stopArrivedWatch: WatchStopHandle | null = null
-let stopOverflowWatch: WatchStopHandle | null = null
+const scrollState = useScroll(scrollContent)
+const leftArrowEnabled = computed(() => !scrollState.arrivedState.left)
+const rightArrowEnabled = computed(() => !scrollState.arrivedState.right)
+const {
+  isOverflowing: showOverflowArrows,
+  checkOverflow: checkScrollOverflow
+} = useOverflowObserver(scrollContent)
 
-onMounted(() => {
-  const el = containerRef.value?.querySelector<HTMLElement>(
-    '.p-scrollpanel-content'
-  )
-  if (!el) return
-  scrollContent.value = el
-
-  const scrollState = useScroll(el)
-
-  stopArrivedWatch = watch(
-    [() => scrollState.arrivedState.left, () => scrollState.arrivedState.right],
-    ([atLeft, atRight]) => {
-      leftArrowEnabled.value = !atLeft
-      rightArrowEnabled.value = !atRight
-    },
-    { immediate: true }
-  )
-
-  overflowObserver = useOverflowObserver(el)
-  stopOverflowWatch = watch(
-    overflowObserver.isOverflowing,
-    (isOverflow) => {
-      showOverflowArrows.value = isOverflow
-      if (!isOverflow) return
-      void nextTick(() => {
-        // Force a new check after arrows are updated
-        scrollState.measure()
-        void ensureActiveTabVisible({ waitForDom: false })
-      })
-    },
-    { immediate: true }
-  )
-})
-
-onBeforeUnmount(() => {
-  stopArrivedWatch?.()
-  stopOverflowWatch?.()
-  overflowObserver?.dispose()
-})
-
-onUpdated(() => {
-  if (!overflowObserver?.disposed.value) {
-    overflowObserver?.checkOverflow()
+whenever(
+  () => showOverflowArrows.value && scrollContent.value,
+  () => {
+    void nextTick(() => {
+      scrollState.measure()
+      void ensureActiveTabVisible({ waitForDom: false })
+    })
   }
-})
+)
+
+onUpdated(checkScrollOverflow)
 </script>
 
 <style scoped>
@@ -399,7 +343,7 @@ onUpdated(() => {
   border-radius: 0;
   background-color: transparent;
   padding: 0;
-  border-right-color: var(--border-default);
+  border-right-color: var(--border-color);
   min-width: 90px;
 }
 
@@ -427,7 +371,7 @@ onUpdated(() => {
 :deep(.p-togglebutton:first-child) {
   border-left-style: solid;
   border-left-width: 1px;
-  border-left-color: var(--border-default);
+  border-left-color: var(--border-color);
 }
 
 :deep(.p-togglebutton:not(:first-child)) {
@@ -437,8 +381,12 @@ onUpdated(() => {
 :deep(.p-togglebutton.p-togglebutton-checked) {
   height: 100%;
   border-bottom-style: solid;
-  border-bottom-width: 2px;
+  border-bottom-width: 1px;
   border-bottom-color: var(--p-button-text-primary-color);
+}
+
+:deep(.p-togglebutton:not(.p-togglebutton-checked)) {
+  opacity: 0.75;
 }
 
 :deep(.p-scrollpanel-content) {

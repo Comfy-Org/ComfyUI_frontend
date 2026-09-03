@@ -53,15 +53,18 @@ function stubCanvas(nodes: unknown[], selected: unknown[] = []) {
   const animateToBounds = vi.fn()
   const selectedItems = new Set(selected)
   const deselectAll = vi.fn(() => selectedItems.clear())
-  const surface = document.createElement('canvas')
-  surface.width = 1600
-  surface.height = 900
+  // A real element, not a `{ width, height }` literal: canvasStore attaches its
+  // litegraph event listeners to `canvas.canvas` on assignment, and a plain
+  // object rejects that registration on a post-flush tick nothing can await.
+  const element = document.createElement('canvas')
+  element.width = 1600
+  element.height = 900
   useCanvasStore().canvas = {
-    graph: { nodes, events: new EventTarget() },
+    graph: { nodes },
     selectedItems,
     deselectAll,
     animateToBounds,
-    canvas: surface
+    canvas: element
   } as never
   return { animateToBounds, deselectAll, selectedItems }
 }

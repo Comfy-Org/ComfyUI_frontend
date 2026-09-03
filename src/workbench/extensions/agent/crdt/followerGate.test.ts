@@ -4,13 +4,19 @@
  * enableable per session via `?agentCrdtFollower=1` / localStorage — and an
  * explicit URL param must win over everything, in both directions.
  */
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+import { reportError } from '@/platform/telemetry/reportError'
 
 import {
   FOLLOWER_QUERY_PARAM,
   FOLLOWER_STORAGE_KEY,
   resolveFollowerEnabled
 } from './followerGate'
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: vi.fn()
+}))
 
 class FakeStorage {
   private readonly map = new Map<string, string>()
@@ -137,6 +143,16 @@ describe('resolveFollowerEnabled', () => {
     expect(
       resolveFollowerEnabled({ buildFlag: 'true', search: '', storage })
     ).toBe(true)
+    expect(reportError).toHaveBeenCalledTimes(3)
+    expect(reportError).toHaveBeenNthCalledWith(1, expect.any(DOMException), {
+      errorType: 'agent_crdt_follower_storage_access_failed'
+    })
+    expect(reportError).toHaveBeenNthCalledWith(2, expect.any(DOMException), {
+      errorType: 'agent_crdt_follower_storage_access_failed'
+    })
+    expect(reportError).toHaveBeenNthCalledWith(3, expect.any(DOMException), {
+      errorType: 'agent_crdt_follower_storage_access_failed'
+    })
   })
 
   it('handles a null storage (fully unavailable) the same way', () => {

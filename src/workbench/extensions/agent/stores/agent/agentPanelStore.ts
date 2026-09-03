@@ -17,7 +17,11 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const consentStore = useAgentConsentStore()
   const { isLoggedIn } = useCurrentUser()
   const enabled = ref(false)
-  const isOpen = useLocalStorage(OPEN_STORAGE_KEY, false)
+  // writeDefaults false: no storage key planted for flag-off users.
+  const isOpen = useLocalStorage(OPEN_STORAGE_KEY, false, {
+    writeDefaults: false
+  })
+  const gateSettled = ref(false)
   const width = ref(PANEL_MIN_WIDTH)
   const dismissedSelectionSignature = ref<string | null>(null)
 
@@ -80,6 +84,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     enabled,
     isOpen,
     isVisible,
+    gateSettled,
     width,
     isMaximized,
     dismissedSelectionSignature,

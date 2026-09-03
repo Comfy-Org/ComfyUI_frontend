@@ -4,7 +4,6 @@ import { api } from '@/scripts/api'
 
 import {
   zAgentCancelAccepted,
-  zAgentDraftSnapshot,
   zAgentError,
   zAgentMessages,
   zAgentThreads,
@@ -14,7 +13,6 @@ import {
 } from '../../schemas/agentApiSchema'
 import type {
   AgentCancelAccepted,
-  AgentDraftSnapshot,
   AgentMessages,
   AgentThreadSummary,
   AgentTurnAccepted,
@@ -37,11 +35,6 @@ export class AgentApiError extends Error {
   }
 }
 
-export interface DraftUpload {
-  content: unknown
-  version: number | null
-}
-
 interface OpenTabEntry {
   workflow_id: string
   name: string
@@ -52,13 +45,19 @@ export interface OpenTabsSnapshot {
   current_tab?: string
 }
 
+/** An omitted `version` makes this content authoritative for the backend CAS. */
+export interface DraftSnapshot {
+  content: Record<string, unknown>
+  version?: number
+}
+
 export interface PostMessageInput {
   content: string
   workflowId?: string
   selection?: Record<string, unknown>
   attachments?: string[]
-  draft?: DraftUpload
   tabs?: OpenTabsSnapshot
+  draft?: DraftSnapshot
 }
 
 interface IngestErrorBody {
@@ -152,15 +151,20 @@ export function createAgentRestClient() {
   async function listCloudWorkflows(): Promise<CloudWorkflowEntry[]> {
     const entries: CloudWorkflowEntry[] = []
     let hasMore = false
+    let cursor: string | undefined
     for (let page = 0; page < CLOUD_WORKFLOW_MAX_PAGES; page++) {
+      const after = cursor ? `&after=${encodeURIComponent(cursor)}` : ''
       const result = await request(
-        `/workflows?limit=${CLOUD_WORKFLOW_PAGE_SIZE}&offset=${page * CLOUD_WORKFLOW_PAGE_SIZE}`,
+        `/workflows?limit=${CLOUD_WORKFLOW_PAGE_SIZE}${after}`,
         { method: 'GET' },
         zCloudWorkflowIndex
       )
       entries.push(...result.data)
       hasMore = result.pagination.has_more
       if (!hasMore) break
+      const nextCursor = result.pagination.next_cursor
+      if (!nextCursor || nextCursor === cursor) break
+      cursor = nextCursor
     }
     if (hasMore)
       console.warn(
@@ -177,15 +181,6 @@ export function createAgentRestClient() {
       `/agent/threads/${threadId}/messages/${messageId}/cancel`,
       jsonInit('POST', {}),
       zAgentCancelAccepted
-    )
-  }
-
-  async function getDraft(workflowId: string): Promise<AgentDraftSnapshot> {
-    const query = encodeURIComponent(workflowId)
-    return request(
-      `/agent/draft?workflow_id=${query}`,
-      { method: 'GET' },
-      zAgentDraftSnapshot
     )
   }
 
@@ -208,7 +203,6 @@ export function createAgentRestClient() {
     listThreads,
     listCloudWorkflows,
     cancelMessage,
-    getDraft,
     uploadImage
   }
 }

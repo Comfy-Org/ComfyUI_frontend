@@ -7,6 +7,18 @@ import type { NodeId } from '@/types/nodeId'
 export class BAD_DO_NOT_DO_THIS_LegacyApiHelper {
   constructor(private readonly page: Page) {}
 
+  addNodeWithMountedHiddenAriaDialog() {
+    return this.page.evaluate(() => {
+      const node = window.LiteGraph!.createNode(
+        'DevToolsNodeWithHiddenAriaDialog'
+      )
+      if (!node) {
+        throw new Error('DevToolsNodeWithHiddenAriaDialog is not registered')
+      }
+      window.app!.graph.add(node)
+    })
+  }
+
   disconnectInputByAssigningNull(nodeType: string, inputIndex: number) {
     return this.page.evaluate(
       ([nodeType, inputIndex]) => {

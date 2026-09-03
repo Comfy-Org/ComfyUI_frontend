@@ -34,6 +34,7 @@ const S = {
   no: 'no',
   none: '—',
   updates: 'updates applied',
+  outcomes: 'outcomes (recv/applied/skip/err/gap/reset/drop)',
   lastFrame: 'last frame',
   tabId: 'tab id',
   lastSeq: 'last seq',
@@ -72,7 +73,9 @@ const EVENT_KINDS: readonly DevEventKind[] = [
   'reconnected',
   'subscribe_retry',
   'doc_nodes_changed',
-  'rebind'
+  'rebind',
+  'doc_gap',
+  'doc_stale'
 ] as const
 
 // ── open/close state, persisted ───────────────────────────────────────────
@@ -240,6 +243,18 @@ function fmtTime(at: number): string {
               <tr>
                 <td class="pr-2 text-muted">{{ S.updates }}</td>
                 <td>{{ props.status.updatesApplied }}</td>
+              </tr>
+              <tr>
+                <td class="pr-2 text-muted">{{ S.outcomes }}</td>
+                <td>
+                  {{ props.status.outcomes.received }}/{{
+                    props.status.outcomes.applied
+                  }}/{{ props.status.outcomes.skipped }}/{{
+                    props.status.outcomes.errored
+                  }}/{{ props.status.outcomes.gap }}/{{
+                    props.status.outcomes.reset
+                  }}/{{ props.status.outcomes.dropped }}
+                </td>
               </tr>
               <tr>
                 <td class="pr-2 text-muted">{{ S.lastFrame }}</td>

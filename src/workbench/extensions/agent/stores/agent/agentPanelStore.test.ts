@@ -177,7 +177,7 @@ describe('agentPanelStore open-state persistence', () => {
     expect(localStorage.getItem(OPEN_STORAGE_KEY)).toBe('true')
   })
 
-  it('rehydrates isOpen from a pre-seeded stored value', () => {
+  it('T-15 / PM-648 / FE-1284 restores the open panel state after refresh', () => {
     localStorage.setItem(OPEN_STORAGE_KEY, 'true')
 
     const store = useAgentPanelStore()
@@ -185,7 +185,7 @@ describe('agentPanelStore open-state persistence', () => {
     expect(store.isOpen).toBe(true)
   })
 
-  it('persists the closed state when the panel is closed', async () => {
+  it('T-15 / PM-648 / FE-1284 preserves the closed panel state for refresh', async () => {
     localStorage.setItem(OPEN_STORAGE_KEY, 'true')
     const store = useAgentPanelStore()
 
@@ -205,6 +205,13 @@ describe('agentPanelStore open-state persistence', () => {
 
     expect(store.isOpen).toBe(true)
     expect(localStorage.getItem(OPEN_STORAGE_KEY)).toBe('true')
+  })
+
+  it('starts unsettled and does not plant a storage key for flag-off users', () => {
+    const store = useAgentPanelStore()
+
+    expect(store.gateSettled).toBe(false)
+    expect(localStorage.getItem(OPEN_STORAGE_KEY)).toBeNull()
   })
 
   it('clamps setWidth to the panel min and max bounds', () => {

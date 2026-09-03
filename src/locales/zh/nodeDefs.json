@@ -6298,6 +6298,42 @@
       }
     }
   },
+  "GeminiVideoOmniV2": {
+    "description": "使用 Google 的 Gemini Omni Flash 模型根据文本提示词生成带音频的视频。可选提供参考图像和/或视频，以引导或编辑结果。请直接在提示词中描述所需时长（3-10 秒）。",
+    "display_name": "Google Gemini Omni（视频）",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用于生成视频的 Gemini 视频模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_task_type": {
+        "name": "task_type"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "生成轨道",
     "inputs": {
@@ -6360,6 +6396,22 @@
       },
       "1": {
         "name": "轨迹长度",
+        "tooltip": null
+      }
+    }
+  },
+  "Get3DComponents": {
+    "description": "将 3D 模型文件（GLB、GLTF、OBJ、STL）解析为可编辑的 MESH，供网格处理节点使用（减面、重构网格、UV 展开、烘焙等）。所有场景节点/图元将合并为一个网格并应用其变换；纹理和材质系数取自第一个材质。与 MeshToFile3D 对应。",
+    "display_name": "获取 3D 组件",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "来自 Load 3D 或其他 3D 节点的 3D 模型文件。不支持 FBX/USDZ，请先转换为 GLB。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
         "tooltip": null
       }
     }
@@ -7081,7 +7133,7 @@
       },
       "mode": {
         "name": "模式",
-        "tooltip": "“speed”速度更快；“precision”可生成更高质量的唇形同步，但价格翻倍。"
+        "tooltip": "'speed' 速度更快；'precision' 可生成质量更高的口型同步效果，但价格更高。"
       },
       "output_language": {
         "name": "目标语言",
@@ -7149,12 +7201,12 @@
     }
   },
   "HiDreamO1ReferenceImages": {
-    "description": "为条件添加 1-10 张参考图像，一张用于编辑指令，多张用于主体个性化。",
+    "description": "将按顺序排列的参考图像连接到正向和负向条件输入。",
     "display_name": "HiDream-O1 参考图像",
     "inputs": {
       "images": {
         "name": "参考图像",
-        "tooltip": "参考图像。1 张 = 指令编辑；2-10 张 = 多参考。"
+        "tooltip": "参考图像按数字插槽顺序使用。"
       },
       "negative": {
         "name": "负向"
@@ -12696,6 +12748,46 @@
       }
     }
   },
+  "MiniMaxH3FunControlNetApply": {
+    "description": "将 MiniMax H3 Fun ControlNet 作为模型补丁应用于文生视频模型。",
+    "display_name": "应用 MiniMax H3 Fun ControlNet",
+    "inputs": {
+      "control_video": {
+        "name": "control_video"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "1 表示需要重新生成的区域。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "mask 后方的视频；仅在提供 mask 时读取。"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MiniMaxH3ImageToVideo": {
     "display_name": "MiniMax H3 图像转视频",
     "inputs": {
@@ -17772,7 +17864,7 @@
     }
   },
   "RecraftStyleV3LogoRaster": {
-    "description": "选择 realistic_image 风格和可选的子风格。",
+    "description": "选择 logo_raster 样式和子样式。",
     "display_name": "Recraft 风格 - 标志光栅图",
     "inputs": {
       "substyle": {
@@ -17883,6 +17975,26 @@
       }
     }
   },
+  "RecraftV4CreateStyleNode": {
+    "description": "从 1-10 张参考图像创建可复用的 Recraft V4 样式。返回的 style_id 适用于相同输出类型的所有 Recraft V4 和 V4.1 模型。所有图像的总大小限制为 10 MB。",
+    "display_name": "Recraft V4 创建样式",
+    "inputs": {
+      "images": {
+        "name": "图像",
+        "tooltip": "用于定义样式的参考图像。相似的参考图像可提高匹配精度，多样的参考图像可扩大样式范围。"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "创建样式所对应的输出类型：recraftv4_styles 用于栅格图像，recraftv4_styles_vector 用于 SVG。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_id",
+        "tooltip": null
+      }
+    }
+  },
   "RecraftV4TextToImageNode": {
     "description": "使用Recraft V4或V4 Pro模型生成图像。",
     "display_name": "Recraft V4 文本转图像",
@@ -17892,7 +18004,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "用于生成的模型。"
+        "tooltip": "用于生成的模型。recraftv4_styles 模型专为保持样式一致的生成而设计，且始终需要 style_id 或 style_references。"
       },
       "model_size": {
         "name": "size"
@@ -17916,10 +18028,26 @@
       "seed": {
         "name": "seed",
         "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，实际结果都是非确定性的。"
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "要应用的 Recraft V4 样式的 UUID，例如来自 Recraft V4 创建样式节点或先前运行的 style_id 输出。不能与 style_references 结合使用。"
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "与样式的贴合程度：precise 会细致复现样式，flexible 会匹配整体外观。仅在提供样式时使用。"
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "即时创建样式所用的参考图像，费用在生成费用之外另计。创建的样式将作为 style_id 返回以供复用。不能与 style_id 结合使用。"
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -17933,7 +18061,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "用于生成的模型。"
+        "tooltip": "用于生成的模型。recraftv4_styles 模型专为保持样式一致的生成而设计，且始终需要 style_id 或 style_references。"
       },
       "model_size": {
         "name": "size"
@@ -17957,10 +18085,26 @@
       "seed": {
         "name": "seed",
         "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，实际结果都是非确定性的。"
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "要应用的 Recraft V4 矢量样式的 UUID，例如来自 Recraft V4 创建样式节点或先前运行的 style_id 输出。不能与 style_references 结合使用。"
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "与样式的贴合程度：precise 会细致复现样式，flexible 会匹配整体外观。仅在提供样式时使用。"
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "即时创建矢量样式所用的参考图像，费用在生成费用之外另计。创建的样式将作为 style_id 返回以供复用。不能与 style_id 结合使用。"
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -21009,6 +21153,23 @@
       },
       "scale": {
         "name": "缩放"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaSamplingOptions": {
+    "description": "设置 SenseNova 流偏移。",
+    "display_name": "SenseNova 采样选项",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
       }
     },
     "outputs": {
@@ -24268,7 +24429,7 @@
     }
   },
   "VAEEncodeTiled": {
-    "display_name": "VAE编码分块）",
+    "display_name": "VAE编码（分块）",
     "inputs": {
       "overlap": {
         "name": "重叠"
@@ -24613,61 +24774,11 @@
       },
       "resolution": {
         "name": "分辨率",
-        "tooltip": "输出视频分辨率。veo-3.1-lite 和 veo-3.0 模型不支持 4K。"
+        "tooltip": "输出视频分辨率。veo-3.1-lite 模型不支持 4K。"
       },
       "seed": {
         "name": "随机种",
         "tooltip": "视频生成的种子值（0 表示随机）"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "VeoVideoGenerationNode": {
-    "description": "使用 Google 的 Veo API 根据文本提示生成视频",
-    "display_name": "Google Veo2 视频生成",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "宽高比",
-        "tooltip": "输出视频的宽高比"
-      },
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "duration_seconds": {
-        "name": "时长",
-        "tooltip": "输出视频的时长（秒）"
-      },
-      "enhance_prompt": {
-        "name": "优化提示词",
-        "tooltip": "是否使用 AI 辅助增强提示词"
-      },
-      "image": {
-        "name": "图像",
-        "tooltip": "可选的参考图像，用于引导视频生成"
-      },
-      "model": {
-        "name": "模型",
-        "tooltip": "用于视频生成的 Veo 2 模型"
-      },
-      "negative_prompt": {
-        "name": "负面提示词",
-        "tooltip": "用于指导视频中应避免内容的负面文本提示"
-      },
-      "person_generation": {
-        "name": "生成人类",
-        "tooltip": "是否允许在视频中生成人物"
-      },
-      "prompt": {
-        "name": "提示词",
-        "tooltip": "视频的文本描述"
-      },
-      "seed": {
-        "name": "随机种",
-        "tooltip": "视频生成的种子（0 表示随机）"
       }
     },
     "outputs": {
@@ -24693,6 +24804,23 @@
       },
       "video": {
         "name": "视频"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VideoCrop": {
+    "display_name": "裁剪视频",
+    "inputs": {
+      "crop": {
+        "name": "crop",
+        "tooltip": "以像素为单位的裁剪区域。宽度或高度为零时保留完整帧。"
+      },
+      "video": {
+        "name": "video"
       }
     },
     "outputs": {
@@ -24802,6 +24930,27 @@
       },
       "model": {
         "name": "模型"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "修剪视频（高级）",
+    "inputs": {
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "如果为 True，且无法满足指定时长，将引发错误。"
+      },
+      "trim": {
+        "name": "trim",
+        "tooltip": "使用起始/结束帧修剪窗口。"
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

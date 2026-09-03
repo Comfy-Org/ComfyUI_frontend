@@ -1,8 +1,11 @@
 import { zWorkflowListResponse } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
+import { isNodeLocatorId } from '@/types/nodeIdentification'
+
 const zTurnId = z.string().brand<'TurnId'>()
 export type TurnId = z.infer<typeof zTurnId>
+export const toTurnId = (value: string): TurnId => zTurnId.parse(value)
 
 export const zAgentTurnAccepted = z
   .object({
@@ -60,12 +63,6 @@ export const zAgentCancelAccepted = z.object({
 })
 export type AgentCancelAccepted = z.infer<typeof zAgentCancelAccepted>
 
-export const zAgentDraftSnapshot = z.object({
-  content: z.record(z.string(), z.unknown()),
-  version: z.number().int()
-})
-export type AgentDraftSnapshot = z.infer<typeof zAgentDraftSnapshot>
-
 export const zAgentError = z.object({
   error: z.string()
 })
@@ -87,26 +84,15 @@ const zAgentThinkingData = z
 
 const zAgentToolCallData = z
   .object({
+    tool_call_id: z.string(),
     tool_name: z.string(),
-    status: z.string(),
-    args: z.array(z.string()),
+    status: z.enum(['running', 'success', 'error']),
+    args: z.never().optional(),
     duration_ms: z.number().optional(),
     message_id: z.string(),
     thread_id: z.string()
   })
   .passthrough()
-
-const zDraftPatchData = z
-  .object({
-    base_version: z.number().int(),
-    version: z.number().int(),
-    content: z.record(z.string(), z.unknown()),
-    message_id: z.string().optional(),
-    thread_id: z.string().optional(),
-    workflow_id: z.string()
-  })
-  .passthrough()
-export type DraftPatchData = z.infer<typeof zDraftPatchData>
 
 const zAgentMessageDeltaData = z
   .object({
@@ -134,17 +120,14 @@ const zAgentMessageDoneData = z
   })
   .passthrough()
 
-const zDraftVersionData = z
-  .object({
-    version: z.number().int(),
-    workflow_id: z.string()
-  })
-  .passthrough()
-export type DraftVersionData = z.infer<typeof zDraftVersionData>
-
 const zAgentActiveTabData = z
   .object({
     workflow_id: z.string(),
+    node_locator_id: z
+      .string()
+      .max(256)
+      .refine((value): boolean => isNodeLocatorId(value))
+      .optional(),
     name: z.string().optional(),
     thread_id: z.string().optional(),
     message_id: z.string().optional()
@@ -162,11 +145,6 @@ const zAgentToolCallEvent = z.object({
   data: zAgentToolCallData
 })
 
-const zDraftPatchEvent = z.object({
-  type: z.literal('draft_patch'),
-  data: zDraftPatchData
-})
-
 const zAgentMessageDeltaEvent = z.object({
   type: z.literal('agent_message_delta'),
   data: zAgentMessageDeltaData
@@ -177,11 +155,6 @@ const zAgentMessageDoneEvent = z.object({
   data: zAgentMessageDoneData
 })
 
-const zDraftVersionEvent = z.object({
-  type: z.literal('draft_version'),
-  data: zDraftVersionData
-})
-
 const zAgentActiveTabEvent = z.object({
   type: z.literal('agent_active_tab'),
   data: zAgentActiveTabData
@@ -190,10 +163,8 @@ const zAgentActiveTabEvent = z.object({
 export const zAgentWsEvent = z.discriminatedUnion('type', [
   zAgentThinkingEvent,
   zAgentToolCallEvent,
-  zDraftPatchEvent,
   zAgentMessageDeltaEvent,
   zAgentMessageDoneEvent,
-  zDraftVersionEvent,
   zAgentActiveTabEvent
 ])
 export type AgentWsEvent = z.infer<typeof zAgentWsEvent>

@@ -7,7 +7,6 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import {
-  DRAFT_PATCH,
   INTERMEDIATE_MESSAGE_EVENT,
   MESSAGE_DELTA_EVENT,
   MESSAGE_DONE_EVENT,
@@ -103,13 +102,15 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         'The first graph edit is complete. I will check the remaining work.'
       )
     ).toBeVisible()
-    await expect(firstSummary).toHaveAttribute('aria-expanded', 'true')
-    await expect(panel.getByText('Set widget')).toBeVisible()
+    await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
+    await expect(panel.getByText('Set widget')).toBeHidden()
 
     pushEvent(ws, RESUMED_THINKING_EVENT)
     await expect(
       panel.getByText('Checking the remaining edits.', { exact: true })
     ).toBeVisible()
+    await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
+    await expect(panel.getByText('Set widget')).toBeHidden()
 
     pushEvent(ws, OPEN_TAB_TOOL_EVENT)
 
@@ -117,8 +118,8 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       name: 'Ran 1 tool call for 0.5 seconds'
     })
     await expect(secondSummary).toBeVisible()
-    await expect(firstSummary).toHaveAttribute('aria-expanded', 'true')
-    await expect(panel.getByText('Set widget')).toBeVisible()
+    await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
+    await expect(panel.getByText('Set widget')).toBeHidden()
     await expect(
       panel.getByText('Checking the remaining edits.', { exact: true })
     ).toHaveCount(0)
@@ -139,8 +140,8 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(secondSummary).toHaveCount(0)
 
     const toolRows = panel.getByRole('listitem')
-    await expect(toolRows).toHaveCount(3)
-    await expect(toolRows.filter({ hasText: 'Set widget' })).toBeVisible()
+    await expect(toolRows).toHaveCount(2)
+    await expect(toolRows.filter({ hasText: 'Set widget' })).toHaveCount(0)
     await expect(
       toolRows.filter({ hasText: 'Opened a new tab' }).getByText('0.5s')
     ).toBeVisible()
@@ -157,9 +158,9 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(
       panel.getByText('Checking the remaining edits.', { exact: true })
     ).toBeVisible()
-    await expect(finalSummary).toHaveAttribute('aria-expanded', 'true')
-    await expect(firstSummary).toHaveAttribute('aria-expanded', 'true')
-    await expect(panel.getByText('Opened a new tab')).toBeVisible()
+    await expect(finalSummary).toHaveAttribute('aria-expanded', 'false')
+    await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
+    await expect(panel.getByText('Opened a new tab')).toBeHidden()
 
     pushEvent(ws, MESSAGE_DONE_EVENT)
     await expect(panel.getByRole('button', { name: 'Send' })).toBeVisible()
@@ -221,7 +222,9 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     })
   })
 
-  test('keeps the Agent scrollbar track transparent', async ({ comfyPage }) => {
+  test('T-28 / PM-677 / FE-1320 keeps the Agent scrollbar track transparent', async ({
+    comfyPage
+  }) => {
     const page = comfyPage.page
     await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
 
@@ -284,6 +287,27 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       .toBeLessThanOrEqual(1)
   })
 
+  test('exits node selection when the active workflow changes', async ({
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+    await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+
+    const panel = page.locator('#agent-panel-root')
+    await panel
+      .getByRole('button', { name: enMessages.agent.addToPrompt })
+      .click()
+    await page
+      .getByRole('menuitem', { name: enMessages.agent.addNodesFromGraph })
+      .click()
+    const selectionBanner = page.getByTestId('node-selection-mode-banner')
+    await expect(selectionBanner).toBeVisible()
+
+    await comfyPage.menu.topbar.newWorkflowButton.click()
+
+    await expect(selectionBanner).toHaveCount(0)
+  })
+
   test('edits and resubmits the last prompt after stopping its turn', async ({
     comfyPage,
     postedMessages,
@@ -321,40 +345,5 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await panel.getByRole('button', { name: enMessages.agent.send }).click()
     await expect.poll(() => postedMessages.length).toBe(2)
     expect(postedMessages[1]).toContain(revisedPrompt)
-  })
-
-  test('applies a draft_patch graph to the canvas', async ({
-    comfyPage,
-    postedMessages,
-    getWebSocket
-  }) => {
-    test.setTimeout(30_000)
-
-    const page = comfyPage.page
-    const panel = page.locator('#agent-panel-root')
-
-    const openButton = page.getByRole('button', { name: OPEN_AGENT_LABEL })
-    await expect(openButton).toBeVisible()
-    await openButton.click()
-    await expect(panel).toBeVisible()
-
-    await panel
-      .getByRole('textbox', { name: /^Describe ideas/ })
-      .fill('Build it')
-    await panel.getByRole('button', { name: 'Send' }).click()
-    await expect.poll(() => postedMessages.length).toBeGreaterThanOrEqual(1)
-
-    const ws = await getWebSocket()
-    pushEvent(ws, { type: 'draft_patch', data: DRAFT_PATCH })
-
-    await expect
-      .poll(() => page.evaluate(() => window.app!.graph!.nodes.length))
-      .toBe(2)
-    const nodeTypes = await page.evaluate(() =>
-      window.app!.graph!.nodes.map((n) => n.type)
-    )
-    expect(nodeTypes).toEqual(
-      expect.arrayContaining(['CheckpointLoaderSimple', 'SaveImage'])
-    )
   })
 })

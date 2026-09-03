@@ -1,4 +1,4 @@
-import { watchEffect } from 'vue'
+import { watch, watchEffect } from 'vue'
 
 import {
   CanvasPointer,
@@ -8,7 +8,6 @@ import {
 import { useSettingStore } from '@/platform/settings/settingStore'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
 /**
  * Watch for changes in the setting store and update the LiteGraph settings accordingly.
@@ -16,21 +15,20 @@ import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 export const useLitegraphSettings = () => {
   const settingStore = useSettingStore()
   const canvasStore = useCanvasStore()
-  const agentNodeSelectionStore = useAgentNodeSelectionStore()
 
-  watchEffect(() => {
-    const canvasInfoEnabled = settingStore.get('Comfy.Graph.CanvasInfo')
-    // Node selection mode clears the canvas of everything but the graph and its
-    // own banner. This overlay is drawn onto the canvas rather than composed in
-    // the DOM, so it can't be hidden with CSS like the rest of the chrome. The
-    // user's setting is left untouched and takes effect again on exit.
-    const suppressedForNodeSelection = agentNodeSelectionStore.isActive
-    if (canvasStore.canvas) {
-      canvasStore.canvas.show_info =
-        canvasInfoEnabled && !suppressedForNodeSelection
-      canvasStore.canvas.draw(false, true)
-    }
-  })
+  watch(
+    [
+      () => settingStore.get('Comfy.Graph.CanvasInfo'),
+      () => canvasStore.canvas
+    ],
+    ([canvasInfoEnabled, canvas]) => {
+      if (canvas) {
+        canvas.show_info = canvasInfoEnabled
+        canvas.draw(false, true)
+      }
+    },
+    { immediate: true }
+  )
 
   watchEffect(() => {
     const zoomSpeed = settingStore.get('Comfy.Graph.ZoomSpeed')
@@ -70,32 +68,44 @@ export const useLitegraphSettings = () => {
     )
   })
 
-  watchEffect(() => {
-    const linkRenderMode = settingStore.get('Comfy.LinkRenderMode')
-    if (canvasStore.canvas) {
-      canvasStore.canvas.links_render_mode = linkRenderMode
-      canvasStore.canvas.setDirty(/* fg */ false, /* bg */ true)
-    }
-  })
+  watch(
+    [() => settingStore.get('Comfy.LinkRenderMode'), () => canvasStore.canvas],
+    ([linkRenderMode, canvas]) => {
+      if (canvas) {
+        canvas.links_render_mode = linkRenderMode
+        canvas.setDirty(false, true)
+      }
+    },
+    { immediate: true }
+  )
 
-  watchEffect(() => {
-    const minFontSizeForLOD = settingStore.get(
-      'LiteGraph.Canvas.MinFontSizeForLOD'
-    )
-    if (canvasStore.canvas) {
-      canvasStore.canvas.min_font_size_for_lod = minFontSizeForLOD
-      canvasStore.canvas.setDirty(/* fg */ true, /* bg */ true)
-    }
-  })
+  watch(
+    [
+      () => settingStore.get('LiteGraph.Canvas.MinFontSizeForLOD'),
+      () => canvasStore.canvas
+    ],
+    ([minFontSizeForLOD, canvas]) => {
+      if (canvas) {
+        canvas.min_font_size_for_lod = minFontSizeForLOD
+        canvas.setDirty(true, true)
+      }
+    },
+    { immediate: true }
+  )
 
-  watchEffect(() => {
-    const linkMarkerShape = settingStore.get('Comfy.Graph.LinkMarkers')
-    const { canvas } = canvasStore
-    if (canvas) {
-      canvas.linkMarkerShape = linkMarkerShape
-      canvas.setDirty(false, true)
-    }
-  })
+  watch(
+    [
+      () => settingStore.get('Comfy.Graph.LinkMarkers'),
+      () => canvasStore.canvas
+    ],
+    ([linkMarkerShape, canvas]) => {
+      if (canvas) {
+        canvas.linkMarkerShape = linkMarkerShape
+        canvas.setDirty(false, true)
+      }
+    },
+    { immediate: true }
+  )
 
   watchEffect(() => {
     const maximumFps = settingStore.get('LiteGraph.Canvas.MaximumFps')

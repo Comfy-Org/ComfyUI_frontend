@@ -12,12 +12,16 @@ export type DevEventKind =
   | 'doc_subscribed'
   | 'doc_update'
   | 'doc_ops_result'
+  | 'human_ops_settled'
   | 'doc_reset'
   | 'schema_error'
   | 'reconnected'
   | 'subscribe_retry'
   | 'doc_nodes_changed'
   | 'rebind'
+  | 'stale_probe'
+  | 'doc_gap'
+  | 'doc_stale'
 
 export interface DevEvent {
   seq: number
@@ -53,8 +57,15 @@ export function clearDevEvents(): void {
 export function stringifyDevEvents(events: readonly DevEvent[]): string {
   return JSON.stringify(
     events,
-    (_key, value) =>
-      value instanceof Uint8Array ? `Uint8Array(${value.length})` : value,
+    (_key, value) => {
+      if (ArrayBuffer.isView(value)) {
+        return `${value.constructor.name}(${value.byteLength})`
+      }
+      if (Object.prototype.toString.call(value) === '[object ArrayBuffer]') {
+        return `ArrayBuffer(${(value as ArrayBuffer).byteLength})`
+      }
+      return value
+    },
     2
   )
 }

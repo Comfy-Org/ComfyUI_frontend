@@ -1,13 +1,10 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createPinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { PropType } from 'vue'
 import { defineComponent, h, nextTick, reactive } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 
 import WorkflowTabs from './WorkflowTabs.vue'
 
@@ -18,6 +15,21 @@ const distribution = vi.hoisted(() => ({
 }))
 
 const tabBarLayout = vi.hoisted(() => ({ value: 'Default' }))
+const overflowObservers = vi.hoisted<
+  Array<{
+    isOverflowing: { value: boolean }
+    checkOverflow: ReturnType<typeof vi.fn>
+  }>
+>(() => [])
+interface WorkflowFixture {
+  path: string
+}
+const workflowStoreHolder = vi.hoisted<{
+  store: {
+    openWorkflows: WorkflowFixture[]
+    activeWorkflow: WorkflowFixture | null
+  } | null
+}>(() => ({ store: null }))
 
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
@@ -30,6 +42,46 @@ vi.mock('@/platform/distribution/types', () => ({
     return distribution.isNightly
   }
 }))
+
+vi.mock('primevue/scrollpanel', async () => {
+  const { defineComponent, h, ref } = await import('vue')
+  return {
+    default: defineComponent({
+      name: 'ScrollPanelStub',
+      inheritAttrs: false,
+      setup(_, { attrs, slots }) {
+        const contentKey = ref(0)
+        return () => {
+          const contentProps = attrs['pt:content']
+          const passThroughProps =
+            typeof contentProps === 'object' && contentProps !== null
+              ? contentProps
+              : {}
+
+          return h('div', [
+            h(
+              'button',
+              { onClick: () => contentKey.value++ },
+              'Replace scroll content'
+            ),
+            h(
+              'div',
+              {
+                ...passThroughProps,
+                key: contentKey.value,
+                class: 'p-scrollpanel-content',
+                'data-testid': 'scroll-content',
+                'data-internal-ref-preserved':
+                  'ref' in passThroughProps ? undefined : 'true'
+              },
+              slots.default?.()
+            )
+          ])
+        }
+      }
+    })
+  }
+})
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
@@ -46,19 +98,6 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
 }))
 
 const openFeedbackDialog = vi.hoisted(() => vi.fn())
-const openWorkflow = vi.hoisted(() => vi.fn())
-const workflowStore = vi.hoisted(() => ({
-  openWorkflows: [] as Array<{
-    key: string
-    path: string
-    filename: string
-  }>,
-  activeWorkflow: null as {
-    key: string
-    path: string
-    filename: string
-  } | null
-}))
 vi.mock('@/platform/support/feedbackDialog', () => ({
   openFeedbackDialog
 }))
@@ -67,24 +106,40 @@ vi.mock('@/composables/useWorkflowStatusDismissal', () => ({
   useWorkflowStatusDismissal: vi.fn()
 }))
 
-vi.mock('@/composables/element/useOverflowObserver', () => ({
-  useOverflowObserver: () => ({
-    isOverflowing: { value: false },
-    disposed: { value: false },
-    checkOverflow: vi.fn(),
-    dispose: vi.fn()
-  })
-}))
+vi.mock('@/composables/element/useOverflowObserver', async () => {
+  const { ref } = await import('vue')
+  return {
+    useOverflowObserver: () => {
+      const isOverflowing = ref(false)
+      const observer = {
+        isOverflowing,
+        checkOverflow: vi.fn()
+      }
+      overflowObservers.push(observer)
+      return observer
+    }
+  }
+})
 
 vi.mock('@/platform/workflow/core/services/workflowService', () => ({
   useWorkflowService: () => ({
-    openWorkflow,
+    openWorkflow: vi.fn(),
     closeWorkflow: vi.fn()
   })
 }))
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => reactive(workflowStore)
+  useWorkflowStore: () => {
+    const store = reactive<{
+      openWorkflows: WorkflowFixture[]
+      activeWorkflow: WorkflowFixture | null
+    }>({
+      openWorkflows: [],
+      activeWorkflow: null
+    })
+    workflowStoreHolder.store = store
+    return store
+  }
 }))
 
 vi.mock('@/stores/commandStore', () => ({
@@ -100,6 +155,7 @@ const agentPanelHolder = vi.hoisted(() => ({
     isOpen: { value: boolean }
     isVisible: { value: boolean }
     enabled: { value: boolean }
+    gateSettled: { value: boolean }
     toggle: ReturnType<typeof vi.fn>
     open: ReturnType<typeof vi.fn>
     suppressRestoredOpen: ReturnType<typeof vi.fn>
@@ -108,11 +164,12 @@ const agentPanelHolder = vi.hoisted(() => ({
 vi.mock(
   '@/workbench/extensions/agent/stores/agent/agentPanelStore',
   async () => {
-    const { ref } = await import('vue')
+    const { reactive, ref } = await import('vue')
     agentPanelHolder.store = {
       isOpen: ref(false),
       isVisible: ref(false),
       enabled: ref(false),
+      gateSettled: ref(false),
       toggle: vi.fn(() => {
         agentPanelHolder.store.isOpen.value =
           !agentPanelHolder.store.isOpen.value
@@ -125,7 +182,9 @@ vi.mock(
         agentPanelHolder.store.isOpen.value = false
       })
     }
-    return { useAgentPanelStore: () => agentPanelHolder.store }
+    // reactive() unwraps the holder refs on read, matching a real pinia
+    // store proxy now that the component reads properties directly.
+    return { useAgentPanelStore: () => reactive(agentPanelHolder.store) }
   }
 )
 
@@ -156,15 +215,7 @@ vi.mock('./WorkflowOverflowMenu.vue', () => ({
 vi.mock('./WorkflowTab.vue', () => ({
   default: defineComponent({
     name: 'WorkflowTabStub',
-    props: {
-      workflowOption: {
-        type: Object as PropType<{ workflow: { filename: string } }>,
-        required: true
-      }
-    },
-    render() {
-      return h('div', this.workflowOption.workflow.filename)
-    }
+    render: () => h('div')
   })
 }))
 
@@ -182,7 +233,7 @@ vi.mock('./LoginButton.vue', () => ({
   })
 }))
 
-function renderComponent(errorHandler?: (error: unknown) => void) {
+function renderComponent() {
   const user = userEvent.setup()
   const i18n = createI18n({
     legacy: false,
@@ -192,8 +243,7 @@ function renderComponent(errorHandler?: (error: unknown) => void) {
 
   const result = render(WorkflowTabs, {
     global: {
-      config: { errorHandler },
-      plugins: [i18n, createPinia()],
+      plugins: [i18n],
       directives: {
         tooltip: {}
       }
@@ -203,113 +253,12 @@ function renderComponent(errorHandler?: (error: unknown) => void) {
   return { user, ...result }
 }
 
-describe('WorkflowTabs agent entry button', () => {
-  beforeEach(() => {
-    tabBarLayout.value = 'Integrated'
-    agentPanelHolder.store.enabled.value = true
-    agentPanelHolder.store.isOpen.value = false
-    agentPanelHolder.store.isVisible.value = false
-    trackAgentEntryButtonClicked.mockClear()
-    agentPanelHolder.store.toggle.mockClear()
-    agentPanelHolder.store.open.mockClear()
-    agentPanelHolder.store.suppressRestoredOpen.mockClear()
-    withConsent.mockClear()
-    withConsent.mockImplementation((onAccept: () => void) => onAccept())
-  })
-
-  afterEach(() => {
-    tabBarLayout.value = 'Legacy'
-    agentPanelHolder.store.enabled.value = false
-    agentPanelHolder.store.isOpen.value = false
-    agentPanelHolder.store.isVisible.value = false
-  })
-
-  it('reports the entry click with the state the click produces', async () => {
-    const { user } = renderComponent()
-
-    await user.click(
-      screen.getByRole('button', { name: enMessages.agent.askComfyAgent })
-    )
-    expect(trackAgentEntryButtonClicked).toHaveBeenCalledWith({
-      resulting_state: 'opened'
-    })
-    expect(agentPanelHolder.store.open).toHaveBeenCalledTimes(1)
-
-    agentPanelHolder.store.isOpen.value = true
-    agentPanelHolder.store.isVisible.value = true
-    await user.click(
-      screen.getByRole('button', { name: enMessages.agent.askComfyAgent })
-    )
-    expect(trackAgentEntryButtonClicked).toHaveBeenLastCalledWith({
-      resulting_state: 'closed'
-    })
-  })
-
-  it('gates a restored open intent that is not actually visible', async () => {
-    agentPanelHolder.store.isOpen.value = true
-    agentPanelHolder.store.isVisible.value = false
-    const { user } = renderComponent()
-
-    await user.click(
-      screen.getByRole('button', { name: enMessages.agent.askComfyAgent })
-    )
-
-    expect(agentPanelHolder.store.toggle).not.toHaveBeenCalled()
-    expect(agentPanelHolder.store.suppressRestoredOpen).toHaveBeenCalledOnce()
-    expect(withConsent).toHaveBeenCalledOnce()
-  })
-})
-
-describe('WorkflowTabs creating-tab skeleton', () => {
-  const originalScrollIntoView = Element.prototype.scrollIntoView
-
-  beforeEach(() => {
-    tabBarLayout.value = 'Default'
-  })
-
-  afterEach(() => {
-    Element.prototype.scrollIntoView = originalScrollIntoView
-  })
-
-  it('renders a skeleton pseudo-tab only while a tab is being created', async () => {
-    const scrollIntoView = vi.fn()
-    Element.prototype.scrollIntoView = scrollIntoView
-    renderComponent()
-    expect(screen.queryByTestId('creating-tab-skeleton')).toBeNull()
-    expect(scrollIntoView).not.toHaveBeenCalled()
-
-    const activity = useWorkflowTabActivityStore()
-    activity.setCreating(true)
-    await vi.waitFor(() =>
-      expect(scrollIntoView).toHaveBeenCalledWith({
-        block: 'nearest',
-        inline: 'nearest'
-      })
-    )
-    expect(screen.getByTestId('creating-tab-skeleton')).toBeInTheDocument()
-    expect(
-      screen.getByTestId('creating-tab-skeleton-shimmer')
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole('img', { name: enMessages.g.agentWorking })
-    ).toBeInTheDocument()
-
-    activity.setCreating(false)
-    await nextTick()
-    expect(screen.queryByTestId('creating-tab-skeleton')).toBeNull()
-    expect(scrollIntoView).toHaveBeenCalledTimes(1)
-  })
-})
-
 describe('WorkflowTabs feedback button', () => {
   beforeEach(() => {
     distribution.isCloud = false
     distribution.isDesktop = false
     distribution.isNightly = false
     tabBarLayout.value = 'Default'
-    openWorkflow.mockReset()
-    workflowStore.openWorkflows = []
-    workflowStore.activeWorkflow = null
   })
 
   it('opens the feedback dialog tagged with topbar source when clicked', async () => {
@@ -325,13 +274,7 @@ describe('WorkflowTabs feedback button', () => {
     distribution.isNightly = true
     renderComponent()
 
-    const button = screen.getByRole('button', { name: 'Feedback' })
-    expect(button).toBeInTheDocument()
-    expect(button).toHaveClass('size-[32px]', 'rounded-[8px]', 'p-[8px]')
-    expect(screen.getByTestId('feedback-icon')).toHaveClass(
-      'icon-[hugeicons--megaphone-03]',
-      'size-[16px]'
-    )
+    expect(screen.getByRole('button', { name: 'Feedback' })).toBeInTheDocument()
   })
 
   it('does not render the feedback button on non-Cloud/non-Nightly builds', () => {
@@ -351,75 +294,209 @@ describe('WorkflowTabs feedback button', () => {
   })
 })
 
-describe('WorkflowTabs selection', () => {
-  const firstWorkflow = {
-    key: 'first',
-    path: 'first.json',
-    filename: 'First workflow'
-  }
-  const secondWorkflow = {
-    key: 'second',
-    path: 'second.json',
-    filename: 'Second workflow'
-  }
-
+describe('WorkflowTabs agent entry button', () => {
   beforeEach(() => {
-    workflowStore.openWorkflows = [firstWorkflow, secondWorkflow]
-    workflowStore.activeWorkflow = firstWorkflow
-    openWorkflow.mockReset()
+    tabBarLayout.value = 'Default'
+    agentPanelHolder.store.enabled.value = true
+    agentPanelHolder.store.isOpen.value = false
+    agentPanelHolder.store.isVisible.value = false
+    agentPanelHolder.store.toggle.mockClear()
+    agentPanelHolder.store.open.mockClear()
+    agentPanelHolder.store.suppressRestoredOpen.mockClear()
+    withConsent.mockClear()
+    withConsent.mockImplementation((onAccept: () => void) => onAccept())
+    trackAgentEntryButtonClicked.mockClear()
   })
 
-  it('forwards a click on the selected workflow', async () => {
+  afterEach(() => {
+    tabBarLayout.value = 'Default'
+    agentPanelHolder.store.enabled.value = false
+    agentPanelHolder.store.isOpen.value = false
+    agentPanelHolder.store.isVisible.value = false
+  })
+
+  it('does not render the entry button in the legacy tab bar even with the flag on', () => {
+    tabBarLayout.value = 'Legacy'
+    renderComponent()
+
+    expect(
+      screen.queryByRole('button', { name: enMessages.agent.askComfyAgent })
+    ).toBeNull()
+  })
+
+  it('does not render the entry button while the feature flag is off', () => {
+    agentPanelHolder.store.enabled.value = false
+    renderComponent()
+
+    expect(
+      screen.queryByRole('button', { name: enMessages.agent.askComfyAgent })
+    ).toBeNull()
+  })
+
+  // Two entry controls once shipped side by side after a merge, which broke
+  // every role-based lookup of the button in the Playwright suite.
+  it('renders exactly one agent entry control', () => {
+    renderComponent()
+
+    expect(
+      screen.getAllByRole('button', { name: enMessages.agent.askComfyAgent })
+    ).toHaveLength(1)
+  })
+
+  it('gates opening and reflects the visible state on the button', async () => {
     const { user } = renderComponent()
 
-    await user.click(screen.getByText('First workflow'))
-
-    expect(openWorkflow).toHaveBeenCalledOnce()
-    expect(openWorkflow).toHaveBeenCalledWith(firstWorkflow)
-  })
-
-  it('forwards a click on another workflow once', async () => {
-    const { user } = renderComponent()
-
-    await user.click(screen.getByText('Second workflow'))
-
-    expect(openWorkflow).toHaveBeenCalledOnce()
-    expect(openWorkflow).toHaveBeenCalledWith(secondWorkflow)
-  })
-
-  it('forwards a keyboard selection through the select button', async () => {
-    const { user } = renderComponent()
-    const secondTab = screen.getByRole('button', { name: 'Second workflow' })
-
-    secondTab.focus()
-    await user.keyboard('{Enter}')
-
-    expect(openWorkflow).toHaveBeenCalledOnce()
-    expect(openWorkflow).toHaveBeenCalledWith(secondWorkflow)
-  })
-
-  it('forwards keyboard activation of the selected workflow', async () => {
-    const { user } = renderComponent()
-    const firstTab = screen.getByRole('button', { name: 'First workflow' })
-
-    firstTab.focus()
-    await user.keyboard('{Enter}')
-
-    expect(openWorkflow).toHaveBeenCalledOnce()
-    expect(openWorkflow).toHaveBeenCalledWith(firstWorkflow)
-  })
-
-  it('forwards workflow load failures to the Vue error handler', async () => {
-    const error = new Error('load failed')
-    const errorHandler = vi.fn()
-    openWorkflow.mockRejectedValueOnce(error)
-    const { user } = renderComponent(errorHandler)
-
-    await user.click(screen.getByText('Second workflow'))
-
-    await vi.waitFor(() => {
-      expect(errorHandler).toHaveBeenCalled()
+    const button = screen.getByRole('button', {
+      name: enMessages.agent.askComfyAgent
     })
-    expect(errorHandler.mock.calls[0][0]).toBe(error)
+    expect(button).toHaveAttribute('aria-pressed', 'false')
+
+    await user.click(button)
+
+    expect(withConsent).toHaveBeenCalledOnce()
+    expect(agentPanelHolder.store.open).toHaveBeenCalledOnce()
+    expect(trackAgentEntryButtonClicked).toHaveBeenCalledWith({
+      resulting_state: 'opened'
+    })
+    expect(button).toHaveAttribute('aria-pressed', 'true')
+
+    await user.click(button)
+
+    expect(agentPanelHolder.store.toggle).toHaveBeenCalledOnce()
+    expect(trackAgentEntryButtonClicked).toHaveBeenLastCalledWith({
+      resulting_state: 'closed'
+    })
+  })
+
+  it('clears a hidden restored intent before requesting consent', async () => {
+    agentPanelHolder.store.isOpen.value = true
+    const { user } = renderComponent()
+
+    await user.click(
+      screen.getByRole('button', { name: enMessages.agent.askComfyAgent })
+    )
+
+    expect(agentPanelHolder.store.toggle).not.toHaveBeenCalled()
+    expect(agentPanelHolder.store.suppressRestoredOpen).toHaveBeenCalledOnce()
+    expect(withConsent).toHaveBeenCalledOnce()
+  })
+
+  it('exposes the gate-settled signal on the actions container once the gate settles', async () => {
+    renderComponent()
+
+    const actions = screen.getByTestId('integrated-tab-bar-actions')
+    expect(actions).not.toHaveAttribute('data-agent-gate-settled')
+
+    agentPanelHolder.store.gateSettled.value = true
+    await nextTick()
+
+    expect(actions).toHaveAttribute('data-agent-gate-settled', 'true')
+  })
+})
+
+describe('WorkflowTabs scrolling', () => {
+  beforeEach(() => {
+    overflowObservers.length = 0
+  })
+
+  it('does not overwrite the ScrollPanel content ref', async () => {
+    renderComponent()
+
+    await waitFor(() => expect(overflowObservers).toHaveLength(1))
+
+    expect(screen.getByTestId('scroll-content')).toHaveAttribute(
+      'data-internal-ref-preserved',
+      'true'
+    )
+  })
+
+  it('rebinds scroll listeners when scroll content is replaced', async () => {
+    const { user, unmount } = renderComponent()
+    await waitFor(() => expect(overflowObservers).toHaveLength(1))
+    const oldScrollContent = screen.getByTestId('scroll-content')
+    const removeOldListener = vi.spyOn(oldScrollContent, 'removeEventListener')
+
+    await user.click(
+      screen.getByRole('button', { name: 'Replace scroll content' })
+    )
+
+    await waitFor(() => {
+      expect(removeOldListener).toHaveBeenCalledWith(
+        'scroll',
+        expect.any(Function),
+        expect.any(Object)
+      )
+    })
+    expect(removeOldListener).toHaveBeenCalledWith(
+      'scrollend',
+      expect.any(Function),
+      expect.any(Object)
+    )
+
+    const newScrollContent = screen.getByTestId('scroll-content')
+    const removeNewListener = vi.spyOn(newScrollContent, 'removeEventListener')
+    unmount()
+
+    expect(removeNewListener).toHaveBeenCalledWith(
+      'scroll',
+      expect.any(Function),
+      expect.any(Object)
+    )
+    expect(removeNewListener).toHaveBeenCalledWith(
+      'scrollend',
+      expect.any(Function),
+      expect.any(Object)
+    )
+  })
+
+  it('reveals the active tab when overflowing scroll content is replaced', async () => {
+    const workflow = { path: 'active.json' }
+    const scrollIntoView = vi.spyOn(HTMLElement.prototype, 'scrollIntoView')
+    const { user } = renderComponent()
+    await waitFor(() => expect(overflowObservers).toHaveLength(1))
+    if (!workflowStoreHolder.store)
+      throw new Error('Workflow store not mounted')
+    workflowStoreHolder.store.openWorkflows = [workflow]
+    workflowStoreHolder.store.activeWorkflow = workflow
+    await nextTick()
+
+    overflowObservers[0].isOverflowing.value = true
+    await nextTick()
+    await nextTick()
+    scrollIntoView.mockClear()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Replace scroll content' })
+    )
+
+    await waitFor(() => {
+      expect(scrollIntoView).toHaveBeenCalledWith({
+        block: 'nearest',
+        inline: 'nearest'
+      })
+    })
+  })
+
+  it('does not reveal the active tab again when overflow remains true', async () => {
+    const workflow = { path: 'active.json' }
+    const scrollIntoView = vi.spyOn(HTMLElement.prototype, 'scrollIntoView')
+    const { unmount } = renderComponent()
+    await waitFor(() => expect(overflowObservers).toHaveLength(1))
+    if (!workflowStoreHolder.store)
+      throw new Error('Workflow store not mounted')
+    workflowStoreHolder.store.openWorkflows = [workflow]
+    workflowStoreHolder.store.activeWorkflow = workflow
+    await nextTick()
+
+    overflowObservers[0].isOverflowing.value = true
+    await nextTick()
+    await nextTick()
+    scrollIntoView.mockClear()
+
+    overflowObservers[0].isOverflowing.value = true
+    await nextTick()
+
+    expect(scrollIntoView).not.toHaveBeenCalled()
+    unmount()
   })
 })

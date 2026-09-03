@@ -242,7 +242,9 @@ const handleOpenUserSettings = () => {
 }
 
 const handleOpenPlanAndCreditsSettings = () => {
-  settingsDialog.show('credits')
+  // 'workspace' is the V1 Plan & Credits panel; the legacy 'credits' panel is
+  // hidden from the settings menu and only reachable by key.
+  settingsDialog.show('workspace')
   emit('close')
 }
 

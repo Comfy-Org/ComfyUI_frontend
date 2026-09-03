@@ -8,10 +8,121 @@
     "share": "Paylaş",
     "shareTooltip": "İş akışını paylaş"
   },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "Çalıştırma başına maliyet",
-    "title": "API Düğüm(ler)i",
-    "totalCost": "Toplam Maliyet"
+  "agent": {
+    "addFromAssets": "Varlıklar panelinden ekle",
+    "addNodesFromGraph": "Graftan düğüm ekle",
+    "addPromptToSend": "Göndermek için istem ekle",
+    "addToPrompt": "İsteme ekle",
+    "alpha": "ALFA",
+    "askComfyAgent": "Comfy Agent'e sor",
+    "assetNotAttachable": "Görüntüler, videolar, sesler, 3D modeller ve metin dosyaları eklenebilir",
+    "attach": "Dosya ekle",
+    "attachFiles": "Görüntü veya dosya ekle",
+    "attachmentTooLarge": "{name}, {limit} değerinden daha büyük",
+    "attachmentUploadFailed": "{name} yüklenemedi",
+    "backToPreviousChat": "Önceki sohbete dön",
+    "caption": "Yapay zekâ aracısı hata yapabilir",
+    "captionExpanded": "Yapay zekâ aracısı hata yapabilir. Yanıtınızı iki kez kontrol edin.",
+    "changeWorkflowForChat": "Bu sohbetin iş akışını değiştir",
+    "chatOptions": "Sohbet seçenekleri",
+    "chooseWorkflow": "Bir iş akışı seçin",
+    "chooseWorkflowForChat": "Bu sohbet için bir iş akışı seçin",
+    "close": "Kapat",
+    "copied": "Kopyalandı!",
+    "copy": "Kopyala",
+    "copyMarkdown": "Markdown olarak kopyala",
+    "copyUnavailable": "Bu sürümde yalnızca geçerli konuşma kopyalanabilir",
+    "crdtConnected": "bağlı",
+    "crdtDisconnected": "bağlantı kesildi",
+    "crdtNoDocument": "belge yok",
+    "crdtStatus": "CRDT {connection} · {workflowId} · {updates} güncelleme · {frame}",
+    "credits": "kredi",
+    "delete": "Sil",
+    "dismiss": "Kapat",
+    "dontWorkInWorkflow": "Bir iş akışında çalışma",
+    "downloadAssets": "Varlıkları indir",
+    "dragAndDropAssets": "Varlıkları buraya sürükleyip bırakın",
+    "focusNode": "Tuvalde göster",
+    "focusNodeLabel": "{node} öğesini tuvalde göster",
+    "friend": "orada",
+    "gotIt": "Anladım",
+    "greeting": "Merhaba {name},",
+    "greetingQuestion": "Ne oluşturmak istiyorsun?",
+    "helpful": "Yararlı",
+    "history": "Sohbet geçmişi",
+    "historyCurrent": "Geçerli",
+    "historyEarlier": "Daha önce",
+    "historyEmpty": "Henüz konuşma yok",
+    "historyToday": "Bugün",
+    "historyYesterday": "Dün",
+    "latest": "En son",
+    "loadFailed": "Aracı paneli yüklenemedi.",
+    "malformedEvent": "Aracı, bu panelin okuyamadığı bir olay gönderdi",
+    "maximize": "Paneli büyüt",
+    "mention": "Bir düğümden bahset",
+    "minimize": "Paneli küçült",
+    "modelAuto": "Otomatik",
+    "newChat": "Yeni sohbet",
+    "newChatTitle": "Adsız",
+    "noNodesToMention": "Bu iş akışında düğüm yok",
+    "nodeSelection": {
+      "bannerSubtitle": "Referans olarak eklemek için bir veya daha fazla düğüm seçin",
+      "bannerTitle": "Graftan düğüm ekle",
+      "exit": "Moddan çık",
+      "selectNode": "Düğüm seç"
+    },
+    "notHelpful": "Yararlı değil",
+    "openWorkflowTab": "{name} öğesini aç",
+    "placeholder": "Fikirleri açıklayın, referans vermek için {'@'} kullanın,\ngraftan düğüm ekleyin veya varlıkları sürükleyip bırakın",
+    "ranToolCalls": "{count} araç çağrısı çalıştırıldı | {count} araç çağrısı çalıştırıldı",
+    "ranToolCallsTimed": "{seconds} saniye boyunca {count} araç çağrısı çalıştırıldı | {seconds} saniye boyunca {count} araç çağrısı çalıştırıldı",
+    "remove": "Kaldır",
+    "removeNodeLabel": "{node} referansını kaldır",
+    "runModeAsk": "İş akışı çalışmadan önce sor",
+    "runModeAskDescription": "Comfy, her iş akışı çalıştırmasından önce onay isteyecek",
+    "runModeAuto": "Onay olmadan otomatik çalıştır",
+    "runModeAutoDescription": "Comfy, izin istemeden iş akışlarını çalıştıracak",
+    "runModeLimit": "Sınırlarla otomatik çalıştır",
+    "runModeLimitDescription": "Comfy, yalnızca iş akışı çalıştırması kredi sınırınızı aştığında onay isteyecek",
+    "runModeTriggerAsk": "Sor",
+    "runModeTriggerAskTooltip": "İzin iste",
+    "runModeTriggerAuto": "Otomatik",
+    "runModeTriggerAutoLimit": "Otomatik (sınırlı)",
+    "runModeTriggerAutoLimitTooltip": "Kredi limitine ulaşıldığında sor",
+    "runModeTriggerAutoTooltip": "İzin istemeden iş akışını çalıştır",
+    "runNotice": "Aracı grafiği değiştirebilir. İş akışını yürütmek için çalıştır'a tıklamanız gerekir.",
+    "runNoticeExpanded": "Aracı iş akışınızı değiştirebilir. Yürütmek için çalıştır'a tıklamanız gerekir.",
+    "runPermissions": "Çalıştırma izinleri",
+    "runPermissionsDescription": "Aracının ne zaman onayınıza ihtiyaç duyacağını seçin",
+    "saveChanges": "Değişiklikleri kaydet",
+    "searchWorkflows": "İş akışlarını ara",
+    "selectWorkflowToGenerate": "Oluşturma yapılacak iş akışını seçin",
+    "send": "Gönder",
+    "sendBusy": "Zaten bir mesaj gönderiliyor",
+    "sendFailed": "Mesaj gönderilemedi",
+    "showChatHistory": "Sohbet geçmişini göster",
+    "showLess": "Daha az göster",
+    "showMore": "Daha fazlasını göster",
+    "skip": "Atla",
+    "stop": "Durdur",
+    "suggestedPrompts": [
+      "Hokey maskeli sarı bir ördek oluştur",
+      "Kaydedilmiş iş akışlarımı listele",
+      "Cilt büyütme için en iyi iş akışını bul",
+      "Seçili düğümü açıkla",
+      "3 modelle görüntüden videoya iş akışı oluştur"
+    ],
+    "switchWorkflow": "İş akışını değiştir",
+    "thinking": "Düşünüyor...",
+    "thought": "Düşünce",
+    "thoughtTimed": "{seconds} saniye düşünüldü",
+    "title": "Comfy Agent",
+    "toolForgotPreference": "Bir tercih unutuldu",
+    "toolOpenedNewTab": "Yeni bir sekme açıldı",
+    "toolSavedPreference": "Bir tercih kaydedildi",
+    "toolSwitchedTabs": "Sekmeler değiştirildi",
+    "untitledChat": "Başlıksız",
+    "uploading": "Yükleniyor"
   },
   "apiNodesSignInDialog": {
     "message": "Bu iş akışı, çalıştırmak için hesabınıza giriş yapmanızı gerektiren API Düğümleri içerir.",
@@ -830,13 +941,16 @@
       "insufficientMessage": "Bu iş akışını çalıştırmak için yeterli krediniz yok.",
       "insufficientTitle": "Yetersiz Kredi",
       "insufficientWorkflowMessage": "Bu iş akışını çalıştırmak için yeterli krediniz yok.",
+      "manageBillingError": "Faturalandırma portalı açılamadı. Lütfen tekrar deneyin.",
       "maxAllowed": "En fazla {credits} kredi.",
       "maxAmount": "(Maks. 1.000 USD)",
       "maximumAmount": "En fazla ${amount}.",
       "minRequired": "En az {credits} kredi",
       "minimumPurchase": "En az ${amount} ({credits} kredi)",
       "needMore": "Daha fazlasına mı ihtiyacınız var?",
+      "noPaymentMethodError": "Bu çalışma alanı için kayıtlı bir ödeme yöntemi yok. Ayarlar → Plan ve Krediler → Faturalandırmayı yönet üzerinden bir tane ekleyin, ardından kredi yüklemeyi yeniden deneyin.",
       "payAmount": "{amount} öde",
+      "paymentDetailsRequiredNote": "Bu satın alma işlemini tamamlamak için bir ödeme yöntemi eklemeniz istenecek.",
       "purchaseError": "Satın Alma Başarısız",
       "purchaseErrorDetail": "Kredi satın alınamadı: {error}",
       "purchaseSuccess": "Krediler başarıyla eklendi!",
@@ -974,26 +1088,10 @@
     "UPSCALE_MODEL": "YÜKSELTME_MODELİ",
     "VAE": "VAE",
     "VIDEO": "VİDEO",
+    "VIDEO_EDIT": "VIDEO_EDIT",
     "VOXEL": "VOXEL",
     "WAN_CAMERA_EMBEDDING": "WAN_KAMERA_GÖMÜLMESİ",
     "WEBCAM": "WEBCAM"
-  },
-  "desktopDialogs": {
-    "invalidDialog": {
-      "buttons": {
-        "Close": "Kapat"
-      },
-      "message": "Geçersiz iletişim kutusu kimliği sağlandı.",
-      "title": "Geçersiz İletişim Kutusu"
-    },
-    "reinstallVenv": {
-      "buttons": {
-        "Learn More": "Daha Fazla Bilgi",
-        "Reinstall": "Yeniden Yükle"
-      },
-      "message": "Üzgünüz, yüklü bazı paketler uyumlu olmadığı için ComfyUI'yi başlatamıyoruz.\n\nComfyUI'yi geri yüklemek ve tekrar çalışır duruma getirmek için Yeniden Yükle'ye tıklayın.\n\nLütfen dikkat: özel düğümler eklediyseniz, bu işlemden sonra onları yeniden yüklemeniz gerekir.",
-      "title": "ComfyUI yeniden yüklensin mi (Temiz Başlangıç)?"
-    }
   },
   "desktopLogin": {
     "confirmMessage": "ComfyUI masaüstü uygulaması hesabınızla oturum açmayı bekliyor. Yalnızca ComfyUI masaüstü uygulamasından oturum açmayı yeni başlattıysanız devam edin.",
@@ -1087,6 +1185,18 @@
       }
     },
     "promptErrors": {
+      "agent_api_failed": {
+        "desc": "Comfy Agent bir sunucu hatasıyla karşılaştı.",
+        "title": "Comfy Agent hatası"
+      },
+      "apply_failed": {
+        "desc": "Bir aracı düzenlemesi iş akışı belgesine uygulanamadı.",
+        "title": "Aracı düzenlemesi başarısız oldu"
+      },
+      "guard_trip": {
+        "desc": "Gelen bir aracı güncellemesi, beklenen iş akışı belgesi yapısıyla eşleşmedi ve engellendi.",
+        "title": "Aracı güncellemesi engellendi"
+      },
       "missing_node_type": {
         "desc": "Bir düğüm türü eksik veya kullanılamıyor. Çalışma akışı bozulmuş olabilir veya özel bir düğüm gerektiriyor olabilir.",
         "title": "Eksik düğüm türü"
@@ -1094,6 +1204,14 @@
       "no_prompt": {
         "desc": "Sunucuya gönderilen çalışma akışı verisi boş. Bu beklenmeyen bir sistem hatası olabilir.",
         "title": "Çalışma akışı verisi boş"
+      },
+      "op_rejected": {
+        "desc": "İş akışı belgesi bir aracı düzenlemesini reddetti. Tuval ve paylaşılan belge, bir sonraki güncellemeye kadar kısa süreliğine farklı olabilir.",
+        "title": "Aracı düzenlemesi reddedildi"
+      },
+      "prefix_abort": {
+        "desc": "Bir grup aracı düzenlemesi yarıda durdu. Kalan düzenlemeler otomatik olarak yeniden denenecek.",
+        "title": "Aracı düzenlemeleri kısmen uygulandı"
       },
       "prompt_no_outputs": {
         "desc": "Çalışma akışında sonuç üretecek herhangi bir çıktı düğümü (örn. Görseli Kaydet, Görseli Önizle) bulunmuyor.",
@@ -1511,6 +1629,8 @@
     "addNewKeybinding": "Yeni kısayol tuşu ekle",
     "addNode": "Bir düğüm ekle...",
     "addNodeFilterCondition": "Düğüm filtresi koşulu ekle",
+    "agentModified": "Aracı bu iş akışını güncelledi",
+    "agentWorking": "Aracı bu iş akışı üzerinde çalışıyor",
     "all": "Tümü",
     "allKeybindingsReset": "Tüm kısayol tuşları varsayılana sıfırlandı",
     "amount": "Miktar",
@@ -1722,12 +1842,14 @@
     "micPermissionDenied": "Mikrofon izni reddedildi",
     "migrate": "Taşı",
     "missing": "Eksik",
+    "missingNodeTypesInGroup": "eksik: {types}",
     "modifyKeybinding": "Kısayol tuşunu değiştir",
     "more": "Daha Fazla",
     "moreOptions": "Daha Fazla Seçenek",
     "moreWorkflows": "Daha fazla iş akışı",
     "mostRelevant": "En alakalı",
     "multiSelectDropdown": "Çoklu seçim açılır menüsü",
+    "mute": "Sesi kapat",
     "nMoreKeybindings": "+ {count} tane daha",
     "nMoreKeybindingsCompact": "+ {count}",
     "name": "Ad",
@@ -1883,6 +2005,7 @@
     "triggerPhrase": "Tetikleyici ifade",
     "unknownError": "Bilinmeyen hata",
     "unknownFile": "Bilinmeyen dosya",
+    "unmute": "Sesi aç",
     "untitled": "Başlıksız",
     "update": "Güncelle",
     "updateAvailable": "Güncelleme Mevcut",
@@ -2422,8 +2545,8 @@
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "Sürüm {version} çekirdek düğümleri:",
-    "outdatedVersion": "Bu iş akışı ComfyUI'nin daha yeni bir sürümüyle oluşturulmuş ({version}). Bazı düğümler düzgün çalışmayabilir.",
-    "outdatedVersionGeneric": "Bu iş akışı ComfyUI'nin daha yeni bir sürümüyle oluşturulmuş. Bazı düğümler düzgün çalışmayabilir.",
+    "newerVersionRequired": "Bazı düğümler daha yeni bir ComfyUI sürümü gerektiriyor (geçerli: {version}). Tüm düğümleri kullanmak için lütfen güncelleyin.",
+    "newerVersionRequiredGeneric": "Bazı düğümler daha yeni bir ComfyUI sürümü gerektiriyor. Tüm düğümleri kullanmak için lütfen güncelleyin.",
     "unknownVersion": "bilinmeyen"
   },
   "logsTerminal": {
@@ -3071,6 +3194,7 @@
     "scail": "scail",
     "schedulers": "zamanlayıcılar",
     "scheduling": "zamanlama",
+    "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "sigmalar",
     "sound": "ses",
@@ -3237,12 +3361,12 @@
         "dismiss": "Şimdi değil",
         "explore": "Şablonları keşfet",
         "noTour": {
-          "body": "Şablonlara göz atın ve oluşturacak bir şey seçin.",
-          "title": "Daha yüzlercesi var"
+          "body": "Şablonlara göz atın ve oluşturmak için bir şey seçin.",
+          "title": "Bunun gibi yüzlercesi daha var"
         },
         "ran": {
-          "body": "İlkini oluşturdunuz. Başka neler yapabileceğinizi keşfedin.",
-          "title": "Bu yüzlercesinden biriydi"
+          "body": "Az önce ilkini oluşturdunuz. Başka neler oluşturabileceğinizi keşfedin.",
+          "title": "Bu, yüzlercesinden biriydi"
         }
       },
       "prompt": {
@@ -4380,6 +4504,8 @@
     "resubscribeFailed": "Abonelik yeniden etkinleştirilemedi",
     "resubscribeSuccess": "Abonelik başarıyla yeniden etkinleştirildi",
     "resubscribeTo": "{plan} planına yeniden abone ol",
+    "salesManagedRunBlockedDetail": "Bu çalışma alanının planı artık etkin değil. Erişimi geri yüklemek için Comfy hesap yöneticinizle iletişime geçin.",
+    "salesManagedRunBlockedTitle": "Plan etkin değil",
     "saveYearly": "%20 tasarruf",
     "saveYearlyUpTo": "%20'ye kadar tasarruf edin",
     "soloUseOnly": "Sadece bireysel kullanım",
@@ -4458,6 +4584,7 @@
     "title": "Abonelik",
     "titleUnsubscribed": "Comfy Cloud'a Abone Olun",
     "totalCredits": "Toplam kredi",
+    "unknownTierName": "Mevcut plan",
     "upgrade": "YÜKSELT",
     "upgradePlan": "Planı Yükselt",
     "upgradeTo": "{plan} planına yükselt",
@@ -4905,8 +5032,10 @@
       "failedCount": "{count} davet gönderilemedi. Tekrar deneyin. | {count} davet gönderilemedi. Tekrar deneyin.",
       "invalidEmailCount": "{count} geçersiz e-posta adresi | {count} geçersiz e-posta adresi",
       "invitedMessage": "{emails} adresine davet gönderildi | {emails} adreslerine davetler gönderildi",
+      "pendingInviteCount": "Bu kişilerden {count} tanesinin zaten bekleyen bir daveti var. Atlanacaklar.",
+      "pendingInviteSingle": "Bu kişinin zaten bekleyen bir daveti var",
       "placeholder": "Kişinin e-posta adresini girin",
-      "seatLimitReached": "En fazla {count} takım arkadaşı davet edebilirsiniz. | En fazla {count} takım arkadaşı davet edebilirsiniz.",
+      "seatLimitExceeded": "Bu çalışma alanı en fazla {max} üyeyle sınırlıdır. Devam etmek için {overage} üyeyi kaldırın.",
       "title": "Bu çalışma alanına birini davet et"
     },
     "inviteUpsellDialog": {

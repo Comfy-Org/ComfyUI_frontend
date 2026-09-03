@@ -21,11 +21,13 @@ export enum ServerFeatureFlag {
   MAX_UPLOAD_SIZE = 'max_upload_size',
   MANAGER_SUPPORTS_V4 = 'extension.manager.supports_v4',
   MODEL_UPLOAD_BUTTON_ENABLED = 'model_upload_button_enabled',
+  ASSET_DELETION_ENABLED = 'asset_deletion_enabled',
   ASSET_RENAME_ENABLED = 'asset_rename_enabled',
   PRIVATE_MODELS_ENABLED = 'private_models_enabled',
   ONBOARDING_SURVEY_ENABLED = 'onboarding_survey_enabled',
   LINEAR_TOGGLE_ENABLED = 'linear_toggle_enabled',
   PARTNER_NODE_GOVERNANCE_ENABLED = 'partner_node_governance_enabled',
+  PARTNER_RUN_GATE_ENABLED = 'partner_run_gate_enabled',
   USER_SECRETS_ENABLED = 'user_secrets_enabled',
   NODE_REPLACEMENTS = 'node_replacements',
   NODE_LIBRARY_ESSENTIALS_ENABLED = 'node_library_essentials_enabled',
@@ -87,7 +89,8 @@ function resolveAuthGatedFlag(
 
 function resolveFailClosedBooleanFlag(flagKey: string): boolean {
   try {
-    return api.getServerFeature<unknown>(flagKey, false) === true
+    const value: unknown = api.getServerFeature(flagKey, false)
+    return value === true
   } catch {
     return false
   }
@@ -111,6 +114,13 @@ export function useFeatureFlags() {
       return resolveFlag(
         ServerFeatureFlag.MODEL_UPLOAD_BUTTON_ENABLED,
         remoteConfig.value.model_upload_button_enabled,
+        false
+      )
+    },
+    get assetDeletionEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.ASSET_DELETION_ENABLED,
+        undefined,
         false
       )
     },
@@ -147,6 +157,13 @@ export function useFeatureFlags() {
         ServerFeatureFlag.PARTNER_NODE_GOVERNANCE_ENABLED,
         remoteConfig.value.partner_node_governance_enabled,
         false
+      )
+    },
+    get partnerRunGateEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.PARTNER_RUN_GATE_ENABLED,
+        remoteConfig.value.partner_run_gate_enabled,
+        true
       )
     },
     get userSecretsEnabled() {
@@ -268,6 +285,9 @@ export function useFeatureFlags() {
         remoteConfig.value.onboarding_tour_enabled,
         false
       )
+    },
+    get assetsEnabled() {
+      return isCloud || resolveFlag('assets', undefined, false)
     }
   })
 

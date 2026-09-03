@@ -117,7 +117,7 @@ reviews:
     - path: 'src/workbench/extensions/agent/**'
       instructions: |
         Treat `.agents/checks/follower-boundary.md` and
-        `docs/adr/0019-in-app-agent-crdt-follower-and-distribution.md` as
+        `docs/adr/0016-in-app-agent-crdt-follower-and-distribution.md` as
         required review context. Flag: the follower writing the shared doc,
         client-sent raw Yjs `update_b64`, layout/presence fields in the shared
         semantic doc, an optimistic overlay merged back as a Yjs update,

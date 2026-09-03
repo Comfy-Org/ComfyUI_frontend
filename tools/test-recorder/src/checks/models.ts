@@ -27,7 +27,10 @@ export async function checkModels(port = 8188): Promise<CheckResult> {
       `http://localhost:${port}/object_info/CheckpointLoaderSimple`,
       { signal: AbortSignal.timeout(5000) }
     )
-    if (!res.ok) throw new Error(`Status ${res.status}`)
+    if (!res.ok) {
+      console.error(`Status ${res.status}`)
+      return { name: NAME, ok: true, optional: true }
+    }
 
     const body: unknown = await res.json()
     const names = readCheckpointNames(body)

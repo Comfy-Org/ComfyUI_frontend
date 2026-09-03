@@ -1,3 +1,4 @@
+// oxlint-disable no-misused-spread -- spreading a widget is the compatibility contract under test
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it } from 'vitest'
 
@@ -33,7 +34,7 @@ function createTestWidget(
   )
 }
 
-class MutableTypeWidget extends BaseWidget<IBaseWidget<number, string>> {
+class MutableTypeWidget extends BaseWidget<IBaseWidget<number>> {
   drawWidget(
     _ctx: CanvasRenderingContext2D,
     _options: DrawWidgetOptions
@@ -66,6 +67,18 @@ describe('BaseWidget store integration', () => {
     node = new LGraphNode('TestNode')
     node.id = toNodeId(1)
     graph.add(node)
+  })
+
+  it('preserves name in keys, spread copies, and JSON', () => {
+    const widget = createTestWidget(node, { name: 'custom-name' })
+
+    const widgetKeys = Object.keys(widget)
+    expect(widgetKeys).toContain('_name')
+    expect(widgetKeys).not.toContain('name')
+    expect({ ...widget }).toMatchObject({ _name: 'custom-name' })
+    expect(JSON.parse(JSON.stringify(widget))).toMatchObject({
+      _name: 'custom-name'
+    })
   })
 
   describe('metadata properties before registration', () => {
@@ -116,8 +129,13 @@ describe('BaseWidget store integration', () => {
     })
 
     it('writes to store when registered', () => {
-      const widget = createTestWidget(node, { name: 'writeWidget' })
-      widget.setNodeId(toNodeId(1))
+      const widget = node.addWidget(
+        'number',
+        'writeWidget',
+        42,
+        () => undefined,
+        {}
+      )
 
       widget.label = 'Updated Label'
       widget.hidden = true
@@ -128,9 +146,13 @@ describe('BaseWidget store integration', () => {
         widgetId(graph.id, toNodeId(1), 'writeWidget')
       )
       expect(state?.label).toBe('Updated Label')
+      expect(state?.options.hidden).toBe(true)
       expect(state?.disabled).toBe(true)
 
-      expect(widget.hidden).toBe(true)
+      widget.hidden = false
+
+      expect(state?.options.hidden).toBe(false)
+      expect(widget.hidden).toBe(false)
       expect(widget.advanced).toBe(true)
     })
 
@@ -173,7 +195,7 @@ describe('BaseWidget store integration', () => {
       expect(state?.value).toBe(100)
       expect(state?.label).toBe('Auto Label')
       expect(state?.disabled).toBe(true)
-      expect(state?.options).toEqual({ min: 0, max: 100 })
+      expect(state?.options).toEqual({ min: 0, max: 100, hidden: true })
 
       expect(widget.hidden).toBe(true)
       expect(widget.advanced).toBe(true)
@@ -213,6 +235,26 @@ describe('BaseWidget store integration', () => {
         store.getWidget(widgetId(graph.id, toNodeId(1), 'typeChangedWidget'))
           ?.type
       ).toBe('number-custom')
+    })
+
+    it('registers replaced options after graph attachment', () => {
+      const detachedNode = new LGraphNode('DetachedNode')
+      const widget = detachedNode.addWidget(
+        'combo',
+        'resolution',
+        'initial',
+        null,
+        { values: ['initial'] }
+      )
+      widget.hidden = true
+      widget.options = { values: ['replacement'] }
+
+      graph.add(detachedNode)
+
+      expect(
+        store.getWidget(widgetId(graph.id, detachedNode.id, 'resolution'))
+          ?.options
+      ).toEqual({ values: ['replacement'], hidden: true })
     })
 
     it('registers duplicate widget names under distinct ids', () => {

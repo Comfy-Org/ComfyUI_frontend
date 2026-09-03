@@ -61,7 +61,6 @@ function createDataTransfer(files: File[] = []): DataTransfer {
 
 const mockCanvas = {
   current_node: null as LGraphNode | null,
-  selectOnly: false,
   graph: {
     add: vi.fn(),
     change: vi.fn()
@@ -112,8 +111,6 @@ vi.mock('@/utils/litegraphUtil', () => ({
   createNode: vi.fn(),
   isAudioNode: vi.fn(),
   isImageNode: vi.fn(),
-  isSelectOnly: (canvas: LGraphCanvas | undefined) =>
-    canvas?.selectOnly === true,
   isVideoNode: vi.fn()
 }))
 
@@ -395,7 +392,6 @@ describe('pasteVideoNodes', () => {
 describe('usePaste', () => {
   beforeEach(() => {
     mockCanvas.current_node = null
-    mockCanvas.selectOnly = false
     mockWorkspaceStore.shiftDown = false
     vi.mocked(mockCanvas.graph!.add).mockImplementation(
       (node: LGraphNode | LGraphGroup | null) => node as LGraphNode
@@ -524,22 +520,6 @@ describe('usePaste', () => {
     document.dispatchEvent(event)
 
     expect(createNode).not.toHaveBeenCalled()
-  })
-
-  it('should ignore graph paste while the canvas is picking-only', () => {
-    mockCanvas.selectOnly = true
-
-    usePaste()
-
-    const file = createImageFile()
-    const dataTransfer = createDataTransfer([file])
-    const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
-    document.dispatchEvent(event)
-
-    expect(createNode).not.toHaveBeenCalled()
-    expect(mockCanvas._deserializeItems).not.toHaveBeenCalled()
-    expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
-    expect(app.loadGraphData).not.toHaveBeenCalled()
   })
 
   it('should use existing image node when selected', () => {

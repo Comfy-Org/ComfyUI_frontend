@@ -18,7 +18,6 @@ import {
   mockWorkspaceTokenMint,
   workspace
 } from '@e2e/fixtures/utils/workspaceMocks'
-import { TestIds } from '@e2e/fixtures/selectors'
 
 /**
  * Billing facade consumers — FE-933 (B3) regression.
@@ -232,18 +231,10 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
     expect(billingRequests.legacyBalance).toBe(0)
   })
 
-  test('shows the complete free-tier quota and routes to pricing', async ({
+  test('subscribe-to-run routes an inactive FREE user to the pricing table', async ({
     page
   }) => {
     test.setTimeout(60_000)
-
-    const remoteConfig = {
-      subscription_required: true,
-      free_tier_job_allowance_enabled: true,
-      free_tier_balance: { allowance: 5, remaining: 3, used: 2 }
-    } satisfies RemoteConfig & {
-      free_tier_job_allowance_enabled: boolean
-    }
 
     // The facade routes a personal workspace through the workspace
     // `/api/billing/*` endpoints. With
@@ -261,30 +252,12 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
         renewal_date: '2099-02-20T10:00:00Z',
         has_funds: false
       },
-      remoteConfig,
+      {
+        subscription_required: true
+      },
       'stripe'
     )
     await bootApp(page)
-
-    const quota = page.getByTestId(TestIds.topbar.freeTierQuota)
-    const actionBars = page.getByTestId(TestIds.topbar.actionBars)
-    await expect(quota).toBeVisible()
-
-    await expect
-      .poll(async () => {
-        const [quotaBox, actionBarsBox] = await Promise.all([
-          quota.boundingBox(),
-          actionBars.boundingBox()
-        ])
-        if (!quotaBox || !actionBarsBox) return Number.POSITIVE_INFINITY
-
-        return (
-          quotaBox.y +
-          quotaBox.height -
-          (actionBarsBox.y + actionBarsBox.height)
-        )
-      })
-      .toBeLessThanOrEqual(0)
 
     await page.getByTestId('subscribe-to-run-button').click()
 

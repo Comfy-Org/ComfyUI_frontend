@@ -9,7 +9,6 @@ import {
   createNode,
   isAudioNode,
   isImageNode,
-  isSelectOnly,
   isVideoNode
 } from '@/utils/litegraphUtil'
 import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
@@ -193,10 +192,12 @@ export const usePaste = () => {
 
     const { canvas } = canvasStore
     if (!canvas) return
-    if (isSelectOnly(canvas)) return
 
     let data: DataTransfer | string | null = e.clipboardData
-    if (!data) throw new Error('No clipboard data on clipboard event')
+    if (!data) {
+      console.error('No clipboard data on clipboard event')
+      return
+    }
     data = cloneDataTransfer(data)
 
     const { items } = data

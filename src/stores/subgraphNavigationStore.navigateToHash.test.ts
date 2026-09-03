@@ -85,14 +85,15 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   })
 }))
 
+const reportErrorMock = vi.hoisted(() => vi.fn())
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: reportErrorMock
+}))
+
 vi.mock('@/services/litegraphService', () => ({
   useLitegraphService: () => ({ fitView: vi.fn() })
 }))
-
-vi.mock(
-  '@/renderer/extensions/vueNodes/composables/useSlotElementTracking',
-  () => ({ requestSlotLayoutSyncForAllNodes: vi.fn() })
-)
 
 const workflowServiceMocks = vi.hoisted(() => ({
   openWorkflow: vi.fn().mockResolvedValue(undefined)
@@ -347,6 +348,9 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
       expect(warnSpy).toHaveBeenCalledWith(
         expect.stringContaining('workflow load failed')
       )
+      expect(reportErrorMock).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'workflow_navigation_failure'
+      })
     })
     warnSpy.mockRestore()
   })
@@ -815,6 +819,121 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     })
     expect(routerMocks.replace).not.toHaveBeenCalled()
     expect(routeHashRef.value).toBe(`#${secondId}`)
+  })
+
+  it('does not let an older route that RESOLVES late redirect over a newer route', async () => {
+    const firstId = ids.deletedSubgraph
+    const secondId = ids.validSubgraph
+    const firstWorkflow = fromPartial<ComfyWorkflow>({
+      path: 'first-workflow.json',
+      activeState: { id: firstId, definitions: { subgraphs: [] } }
+    })
+    const secondWorkflow = fromPartial<ComfyWorkflow>({
+      path: 'second-workflow.json',
+      activeState: { id: secondId, definitions: { subgraphs: [] } }
+    })
+    let resolveFirstOpen: (() => void) | undefined
+
+    workflowStoreState.openWorkflows = [firstWorkflow, secondWorkflow]
+    workflowServiceMocks.openWorkflow.mockImplementation((workflow) => {
+      if (workflow === firstWorkflow) {
+        return new Promise<void>((resolve) => {
+          resolveFirstOpen = resolve
+        })
+      }
+      app.rootGraph.id = secondId
+      app.canvas.graph = app.rootGraph
+      currentGraphRef.value = app.rootGraph
+      return Promise.resolve()
+    })
+    useSubgraphNavigationStore()
+
+    routeHashRef.value = `#${firstId}`
+    await vi.waitFor(() =>
+      expect(workflowServiceMocks.openWorkflow).toHaveBeenCalledWith(
+        firstWorkflow,
+        { navigationIntentId: expect.any(Number) }
+      )
+    )
+    routeHashRef.value = `#${secondId}`
+    // The stale navigation completes SUCCESSFULLY (not rejected) while a
+    // newer route is pending; its locator is gone from the new root - the
+    // recovery redirect must not fire over the newer navigation.
+    resolveFirstOpen?.()
+
+    await vi.waitFor(() => {
+      expect(workflowServiceMocks.openWorkflow).toHaveBeenLastCalledWith(
+        secondWorkflow,
+        { navigationIntentId: expect.any(Number) }
+      )
+      expect(app.canvas.graph?.id).toBe(secondId)
+    })
+    expect(routerMocks.replace).not.toHaveBeenCalled()
+    expect(routeHashRef.value).toBe(`#${secondId}`)
+  })
+
+  it('a stale workflow-load id reapplies the latest graph intent', async () => {
+    const subgraph = makeSubgraph(ids.validSubgraph)
+    app.rootGraph.subgraphs.set(subgraph.id, subgraph)
+    const store = useSubgraphNavigationStore()
+    // Consume the initial-load swallow so the watcher publish is live.
+    await store.updateHash('graph', undefined, app.rootGraph as LGraph)
+
+    currentGraphRef.value = subgraph as LGraph
+    await vi.waitFor(() => {
+      expect(routerMocks.push).toHaveBeenCalledWith(
+        expect.objectContaining({ hash: `#${ids.validSubgraph}` })
+      )
+    })
+    vi.mocked(app.canvas.setGraph).mockClear()
+
+    // The mock canvas never left the root, so reapplying the live graph
+    // intent must drive setGraph at the stale publish.
+    await store.updateHash('workflow-load', -1)
+
+    expect(app.canvas.setGraph).toHaveBeenCalledWith(subgraph)
+  })
+
+  it('a workflow-load publish clears the pending reset suppression even for a stale id', async () => {
+    const subgraph = makeSubgraph(ids.validSubgraph)
+    app.rootGraph.subgraphs.set(subgraph.id, subgraph)
+    const store = useSubgraphNavigationStore()
+    // Consume the initial-load swallow so the later publish is live.
+    await store.updateHash('graph', undefined, app.rootGraph as LGraph)
+
+    // A workflow switch arms the suppression while the canvas sits inside a
+    // subgraph; the load then fails so ONLY the finally-publish (stale id by
+    // then) runs. Without the entry-point clear this strands the suppression
+    // and swallows the next root publish.
+    app.canvas.graph = subgraph as LGraph
+    store.saveCurrentViewport(true)
+    app.canvas.graph = app.rootGraph as LGraph
+    await store.updateHash('workflow-load', -1)
+
+    await store.updateHash('graph', undefined, app.rootGraph as LGraph)
+
+    await vi.waitFor(() => {
+      expect(routerMocks.replace).toHaveBeenCalledWith(
+        expect.objectContaining({ hash: `#${ids.root}` })
+      )
+    })
+  })
+
+  it('ignores endWorkflowNavigation for a superseded intent id', async () => {
+    app.rootGraph.id = ids.root
+    app.canvas.graph = app.rootGraph
+    currentGraphRef.value = app.rootGraph
+    routeHashRef.value = ''
+    const store = useSubgraphNavigationStore()
+
+    const olderId = store.beginWorkflowNavigation()
+    store.beginWorkflowNavigation()
+    store.endWorkflowNavigation(olderId)
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(routerMocks.replace).not.toHaveBeenCalled()
+    expect(routerMocks.push).not.toHaveBeenCalled()
   })
 
   it('routeHash watcher does not re-enter navigateToHash during recovery redirect', async () => {

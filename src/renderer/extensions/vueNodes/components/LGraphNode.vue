@@ -19,10 +19,7 @@
           ? 'h-(--node-height)'
           : 'min-h-(--node-height) min-w-(--min-node-width)',
         cursorClass,
-        isSelected &&
-          (agentNodeSelectionStore.isActive
-            ? 'outline-primary-background'
-            : 'outline-node-component-outline'),
+        isSelected && 'outline-node-component-outline',
         executing && 'outline-node-stroke-executing',
         shouldHandleNodePointerEvents &&
           !nodeData.flags?.ghost &&
@@ -65,9 +62,7 @@
           selectionShapeClass,
           hasAnyError ? '-inset-1.75' : '-inset-0.75',
           isSelected
-            ? agentNodeSelectionStore.isActive
-              ? 'border-primary-background'
-              : 'border-node-component-outline'
+            ? 'border-node-component-outline'
             : 'border-node-stroke-executing'
         )
       "
@@ -204,8 +199,7 @@
         !isCollapsed &&
         !isRerouteNode &&
         nodeData.resizable !== false &&
-        !isSelectMode &&
-        !agentNodeSelectionStore.isActive
+        !isSelectMode
       "
     >
       <div
@@ -296,7 +290,6 @@ import {
   shapeVariantClass
 } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import {
@@ -342,7 +335,6 @@ const isLightTheme = computed(
 const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeRightClick } =
   useNodeEventHandlers()
 const { bringNodeToFront } = useNodeZIndex()
-const agentNodeSelectionStore = useAgentNodeSelectionStore()
 
 const nodeId = computed(() => nodeData.id)
 
@@ -423,7 +415,7 @@ const badges = usePartitionedBadges(nodeData)
 
 async function nodeOnPointerdown(event: PointerEvent) {
   const node = resolveLGraphNode()
-  if (event.altKey && node && !agentNodeSelectionStore.isActive) {
+  if (event.altKey && node) {
     const result = LGraphCanvas.cloneNodes([node])
     if (result?.created?.length) {
       const [newNode] = result.created
@@ -446,8 +438,6 @@ const handleContextMenu = (event: MouseEvent) => {
 
   // First handle the standard right-click behavior (selection)
   handleNodeRightClick(event as PointerEvent, nodeData.id)
-
-  if (agentNodeSelectionStore.isActive) return
 
   // Show the node options menu at the cursor position
   showNodeOptions(event)
@@ -502,7 +492,6 @@ const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
 )
 
 const cursorClass = computed(() => {
-  if (agentNodeSelectionStore.isActive) return 'cursor-pointer'
   if (nodeData.flags?.pinned) return 'cursor-default'
   return layoutStore.isDraggingVueNodes.value
     ? 'cursor-grabbing'

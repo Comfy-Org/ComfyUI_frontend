@@ -8,10 +8,121 @@
     "share": "Compartir",
     "shareTooltip": "Compartir flujo de trabajo"
   },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "Costo por ejecución",
-    "title": "Nodo(s) de API",
-    "totalCost": "Costo total"
+  "agent": {
+    "addFromAssets": "Añadir desde el panel de recursos",
+    "addNodesFromGraph": "Añadir nodos desde el grafo",
+    "addPromptToSend": "Añadir un prompt para enviar",
+    "addToPrompt": "Añadir al prompt",
+    "alpha": "ALFA",
+    "askComfyAgent": "Preguntar a Comfy Agent",
+    "assetNotAttachable": "Se pueden adjuntar imágenes, vídeo, audio, modelos 3D y archivos de texto",
+    "attach": "Adjuntar un archivo",
+    "attachFiles": "Adjuntar imágenes o archivos",
+    "attachmentTooLarge": "{name} es más grande que {limit}",
+    "attachmentUploadFailed": "No se pudo cargar {name}",
+    "backToPreviousChat": "Volver al chat anterior",
+    "caption": "El agente de IA puede cometer errores",
+    "captionExpanded": "El agente de IA puede cometer errores. Verifica dos veces tu respuesta.",
+    "changeWorkflowForChat": "Cambiar el flujo de trabajo de este chat",
+    "chatOptions": "Opciones de chat",
+    "chooseWorkflow": "Elige un flujo de trabajo",
+    "chooseWorkflowForChat": "Elige un flujo de trabajo para este chat",
+    "close": "Cerrar",
+    "copied": "¡Copiado!",
+    "copy": "Copiar",
+    "copyMarkdown": "Copiar como markdown",
+    "copyUnavailable": "Solo se puede copiar la conversación actual en esta versión",
+    "crdtConnected": "conectado",
+    "crdtDisconnected": "desconectado",
+    "crdtNoDocument": "sin documento",
+    "crdtStatus": "CRDT {connection} · {workflowId} · {updates} actualizaciones · {frame}",
+    "credits": "créditos",
+    "delete": "Eliminar",
+    "dismiss": "Descartar",
+    "dontWorkInWorkflow": "No trabajar en un flujo de trabajo",
+    "downloadAssets": "Descargar recursos",
+    "dragAndDropAssets": "Arrastra y suelta recursos aquí",
+    "focusNode": "Mostrar en el lienzo",
+    "focusNodeLabel": "Mostrar {node} en el lienzo",
+    "friend": "amigo",
+    "gotIt": "Entendido",
+    "greeting": "Hola {name},",
+    "greetingQuestion": "¿Qué quieres crear?",
+    "helpful": "Útil",
+    "history": "Historial de chat",
+    "historyCurrent": "Actual",
+    "historyEarlier": "Anteriores",
+    "historyEmpty": "Aún no hay conversaciones",
+    "historyToday": "Hoy",
+    "historyYesterday": "Ayer",
+    "latest": "Más reciente",
+    "loadFailed": "No se pudo cargar el panel del agente.",
+    "malformedEvent": "El agente envió un evento que este panel no pudo leer",
+    "maximize": "Maximizar panel",
+    "mention": "Mencionar un nodo",
+    "minimize": "Minimizar panel",
+    "modelAuto": "Automático",
+    "newChat": "Nuevo chat",
+    "newChatTitle": "Sin título",
+    "noNodesToMention": "No hay nodos en este flujo de trabajo",
+    "nodeSelection": {
+      "bannerSubtitle": "Selecciona uno o varios nodos para añadirlos como referencia",
+      "bannerTitle": "Añadir nodos desde el grafo",
+      "exit": "Salir del modo",
+      "selectNode": "Seleccionar nodo"
+    },
+    "notHelpful": "No útil",
+    "openWorkflowTab": "Abrir {name}",
+    "placeholder": "Describe ideas, {'@'} para hacer referencia,\nañade nodos del grafo o arrastra recursos",
+    "ranToolCalls": "Se ejecutó {count} llamada a herramienta | Se ejecutaron {count} llamadas a herramienta",
+    "ranToolCallsTimed": "Se ejecutó {count} llamada a herramienta durante {seconds} segundos | Se ejecutaron {count} llamadas a herramienta durante {seconds} segundos",
+    "remove": "Eliminar",
+    "removeNodeLabel": "Eliminar la referencia a {node}",
+    "runModeAsk": "Preguntar antes de ejecutar un flujo de trabajo",
+    "runModeAskDescription": "Comfy pedirá aprobación antes de cada ejecución del flujo de trabajo",
+    "runModeAuto": "Ejecución automática sin aprobación",
+    "runModeAutoDescription": "Comfy ejecutará flujos de trabajo sin pedir permiso",
+    "runModeLimit": "Ejecución automática con límites",
+    "runModeLimitDescription": "Comfy solo pedirá confirmación cuando la ejecución de un flujo de trabajo supere tu límite de créditos",
+    "runModeTriggerAsk": "Preguntar",
+    "runModeTriggerAskTooltip": "Pedir permiso",
+    "runModeTriggerAuto": "Automático",
+    "runModeTriggerAutoLimit": "Automático (limitado)",
+    "runModeTriggerAutoLimitTooltip": "Preguntar cuando se alcance el límite de créditos",
+    "runModeTriggerAutoTooltip": "Ejecutar el flujo de trabajo sin permiso",
+    "runNotice": "El agente puede modificar el grafo. Deberás hacer clic en ejecutar para ejecutar el flujo de trabajo.",
+    "runNoticeExpanded": "El agente puede modificar tu flujo de trabajo. Deberás hacer clic en ejecutar para hacerlo.",
+    "runPermissions": "Permisos de ejecución",
+    "runPermissionsDescription": "Elige cuándo el agente necesita tu consentimiento",
+    "saveChanges": "Guardar cambios",
+    "searchWorkflows": "Buscar flujos de trabajo",
+    "selectWorkflowToGenerate": "Selecciona un flujo de trabajo en el que generar",
+    "send": "Enviar",
+    "sendBusy": "Ya se está enviando un mensaje",
+    "sendFailed": "No se pudo enviar el mensaje",
+    "showChatHistory": "Mostrar historial de chat",
+    "showLess": "Mostrar menos",
+    "showMore": "Mostrar más",
+    "skip": "Omitir",
+    "stop": "Detener",
+    "suggestedPrompts": [
+      "Genera un pato amarillo con una máscara de hockey",
+      "Enumera mis flujos de trabajo guardados",
+      "Encuentra el mejor flujo de trabajo para ampliar la piel",
+      "Explica el nodo seleccionado",
+      "Crea un flujo de trabajo de imagen a vídeo con 3 modelos"
+    ],
+    "switchWorkflow": "Cambiar de flujo de trabajo",
+    "thinking": "Pensando...",
+    "thought": "Razonamiento",
+    "thoughtTimed": "Razonó durante {seconds} segundos",
+    "title": "Comfy Agent",
+    "toolForgotPreference": "Olvidó una preferencia",
+    "toolOpenedNewTab": "Abrió una pestaña nueva",
+    "toolSavedPreference": "Guardó una preferencia",
+    "toolSwitchedTabs": "Cambió de pestaña",
+    "untitledChat": "Sin título",
+    "uploading": "Subiendo"
   },
   "apiNodesSignInDialog": {
     "message": "Este flujo de trabajo contiene nodos de API, que requieren que inicies sesión en tu cuenta para poder ejecutar.",
@@ -830,13 +941,16 @@
       "insufficientMessage": "No tienes suficientes créditos para ejecutar este flujo de trabajo.",
       "insufficientTitle": "Créditos insuficientes",
       "insufficientWorkflowMessage": "No tienes suficientes créditos para ejecutar este flujo de trabajo.",
+      "manageBillingError": "No se pudo abrir el portal de facturación. Vuelve a intentarlo.",
       "maxAllowed": "Máximo {credits} créditos.",
       "maxAmount": "(Máx. $1,000 USD)",
       "maximumAmount": "Máximo ${amount}.",
       "minRequired": "Mínimo {credits} créditos",
       "minimumPurchase": "Mínimo ${amount} ({credits} créditos)",
       "needMore": "¿Necesitas más?",
+      "noPaymentMethodError": "No hay ningún método de pago guardado para este espacio de trabajo. Añade uno en Configuración → Plan y créditos → Gestionar facturación y vuelve a intentar la recarga.",
       "payAmount": "Pagar {amount}",
+      "paymentDetailsRequiredNote": "Se te pedirá que añadas un método de pago para completar esta compra.",
       "purchaseError": "Compra fallida",
       "purchaseErrorDetail": "No se pudo comprar créditos: {error}",
       "purchaseSuccess": "¡Créditos añadidos correctamente!",
@@ -974,26 +1088,10 @@
     "UPSCALE_MODEL": "MODELO_DE_ESCALADO",
     "VAE": "VAE",
     "VIDEO": "VÍDEO",
+    "VIDEO_EDIT": "VIDEO_EDIT",
     "VOXEL": "VOXEL",
     "WAN_CAMERA_EMBEDDING": "INCORPORACIÓN_CÁMARA_WAN",
     "WEBCAM": "WEBCAM"
-  },
-  "desktopDialogs": {
-    "invalidDialog": {
-      "buttons": {
-        "Close": "Cerrar"
-      },
-      "message": "Se proporcionó un ID de diálogo no válido.",
-      "title": "Diálogo no válido"
-    },
-    "reinstallVenv": {
-      "buttons": {
-        "Learn More": "Más información",
-        "Reinstall": "Reinstalar"
-      },
-      "message": "Lo sentimos, no podemos iniciar ComfyUI porque algunos paquetes instalados no son compatibles.\n\nHaz clic en Reinstalar para restaurar ComfyUI y volver a ponerlo en funcionamiento.\n\nTen en cuenta que, si has añadido nodos personalizados, tendrás que reinstalarlos después de este proceso.",
-      "title": "¿Reinstalar ComfyUI (inicio desde cero)?"
-    }
   },
   "desktopLogin": {
     "confirmMessage": "La aplicación de escritorio de ComfyUI está esperando para iniciar sesión con tu cuenta. Continúa solo si acabas de iniciar sesión desde la aplicación de escritorio de ComfyUI.",
@@ -1087,6 +1185,18 @@
       }
     },
     "promptErrors": {
+      "agent_api_failed": {
+        "desc": "Comfy Agent encontró un error del servidor.",
+        "title": "Error de Comfy Agent"
+      },
+      "apply_failed": {
+        "desc": "No se pudo aplicar una edición del agente al documento del flujo de trabajo.",
+        "title": "Error en la edición del agente"
+      },
+      "guard_trip": {
+        "desc": "Una actualización entrante del agente no coincidía con la estructura esperada del documento del flujo de trabajo y se bloqueó.",
+        "title": "Actualización del agente bloqueada"
+      },
       "missing_node_type": {
         "desc": "Falta un tipo de nodo o no está disponible. El flujo de trabajo puede estar dañado o requerir un nodo personalizado.",
         "title": "Falta tipo de nodo"
@@ -1094,6 +1204,14 @@
       "no_prompt": {
         "desc": "Los datos del flujo de trabajo enviados al servidor están vacíos. Esto puede ser un error inesperado del sistema.",
         "title": "Los datos del flujo de trabajo están vacíos"
+      },
+      "op_rejected": {
+        "desc": "El documento del flujo de trabajo rechazó una edición del agente. El lienzo y el documento compartido pueden diferir brevemente hasta la próxima actualización.",
+        "title": "Edición del agente rechazada"
+      },
+      "prefix_abort": {
+        "desc": "Un lote de ediciones del agente se detuvo a mitad de camino. Las ediciones restantes se reintentarán automáticamente.",
+        "title": "Ediciones del agente aplicadas parcialmente"
       },
       "prompt_no_outputs": {
         "desc": "El flujo de trabajo no contiene ningún nodo de salida (por ejemplo, Guardar imagen, Vista previa de imagen) para producir un resultado.",
@@ -1511,6 +1629,8 @@
     "addNewKeybinding": "Agregar nueva combinación de teclas",
     "addNode": "Agregar un nodo...",
     "addNodeFilterCondition": "Agregar condición de filtro de nodo",
+    "agentModified": "El agente actualizó este flujo de trabajo",
+    "agentWorking": "El agente está trabajando en este flujo de trabajo",
     "all": "Todo",
     "allKeybindingsReset": "Todas las combinaciones de teclas se restablecieron a los valores predeterminados",
     "amount": "Cantidad",
@@ -1722,12 +1842,14 @@
     "micPermissionDenied": "Permiso de micrófono denegado",
     "migrate": "Migrar",
     "missing": "Faltante",
+    "missingNodeTypesInGroup": "faltan: {types}",
     "modifyKeybinding": "Modificar atajo de teclado",
     "more": "Más",
     "moreOptions": "Más Opciones",
     "moreWorkflows": "Más flujos de trabajo",
     "mostRelevant": "Más relevante",
     "multiSelectDropdown": "Menú desplegable de selección múltiple",
+    "mute": "Silenciar",
     "nMoreKeybindings": "+ {count} más",
     "nMoreKeybindingsCompact": "+ {count}",
     "name": "Nombre",
@@ -1883,6 +2005,7 @@
     "triggerPhrase": "Frase de activación",
     "unknownError": "Error desconocido",
     "unknownFile": "Archivo desconocido",
+    "unmute": "Activar sonido",
     "untitled": "Sin título",
     "update": "Actualizar",
     "updateAvailable": "Actualización Disponible",
@@ -2422,8 +2545,8 @@
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "Nodos principales de la versión {version}:",
-    "outdatedVersion": "Este flujo de trabajo fue creado con una versión más reciente de ComfyUI ({version}). Es posible que algunos nodos no funcionen correctamente.",
-    "outdatedVersionGeneric": "Este flujo de trabajo fue creado con una versión más reciente de ComfyUI. Es posible que algunos nodos no funcionen correctamente.",
+    "newerVersionRequired": "Algunos nodos requieren una versión más reciente de ComfyUI (actual: {version}). Actualiza para usar todos los nodos.",
+    "newerVersionRequiredGeneric": "Algunos nodos requieren una versión más reciente de ComfyUI. Actualiza para usar todos los nodos.",
     "unknownVersion": "desconocido"
   },
   "logsTerminal": {
@@ -3071,6 +3194,7 @@
     "scail": "scail",
     "schedulers": "programadores",
     "scheduling": "programación",
+    "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "sigmas",
     "sound": "sonido",
@@ -3238,11 +3362,11 @@
         "explore": "Explorar plantillas",
         "noTour": {
           "body": "Explora las plantillas y elige algo para crear.",
-          "title": "Hay cientos más como esa"
+          "title": "Hay cientos más de donde salió ese"
         },
         "ran": {
-          "body": "Acabas de crear la primera. Explora qué más puedes construir.",
-          "title": "Esa fue una de cientos"
+          "body": "Acabas de crear el primero. Explora qué más puedes crear.",
+          "title": "Ese fue uno de cientos"
         }
       },
       "prompt": {
@@ -4380,6 +4504,8 @@
     "resubscribeFailed": "No se pudo reactivar la suscripción",
     "resubscribeSuccess": "¡Suscripción reactivada correctamente!",
     "resubscribeTo": "Volver a suscribirse a {plan}",
+    "salesManagedRunBlockedDetail": "El plan de este espacio de trabajo ya no está activo. Ponte en contacto con tu gestor de cuenta de Comfy para restaurar el acceso.",
+    "salesManagedRunBlockedTitle": "Plan inactivo",
     "saveYearly": "Ahorra 20%",
     "saveYearlyUpTo": "Ahorra hasta un 20%",
     "soloUseOnly": "Solo para uso individual",
@@ -4458,6 +4584,7 @@
     "title": "Suscripción",
     "titleUnsubscribed": "Suscríbete a Comfy Cloud",
     "totalCredits": "Créditos totales",
+    "unknownTierName": "Plan actual",
     "upgrade": "MEJORAR",
     "upgradePlan": "Mejorar plan",
     "upgradeTo": "Mejorar a {plan}",
@@ -4905,8 +5032,10 @@
       "failedCount": "No se pudo enviar {count} invitación. Intenta de nuevo. | No se pudieron enviar {count} invitaciones. Intenta de nuevo.",
       "invalidEmailCount": "{count} dirección de correo electrónico no válida | {count} direcciones de correo electrónico no válidas",
       "invitedMessage": "Se envió una invitación a {emails} | Se enviaron invitaciones a {emails}",
+      "pendingInviteCount": "{count} de estas personas ya tienen una invitación pendiente. Se omitirán.",
+      "pendingInviteSingle": "Esta persona ya tiene una invitación pendiente",
       "placeholder": "Introduce el correo electrónico de la persona",
-      "seatLimitReached": "Puedes invitar hasta {count} compañero de equipo. | Puedes invitar hasta {count} compañeros de equipo.",
+      "seatLimitExceeded": "Este espacio de trabajo tiene un límite de {max} miembros. Elimina {overage} para continuar.",
       "title": "Invitar a una persona a este espacio de trabajo"
     },
     "inviteUpsellDialog": {

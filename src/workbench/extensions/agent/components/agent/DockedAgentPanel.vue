@@ -2,6 +2,8 @@
   <div
     v-if="docked"
     data-testid="docked-agent-panel"
+    role="complementary"
+    aria-labelledby="agent-panel-title"
     class="docked-agent-panel pointer-events-auto relative h-full shrink-0 overflow-hidden [anchor-name:--docked-agent-panel]"
     :style="{ width: `${width}px` }"
   >
@@ -25,28 +27,44 @@
   </div>
 </template>
 
-<script lang="ts">
-import { defineAsyncComponent } from 'vue'
-
-const AgentPanelRoot = defineAsyncComponent(
-  () => import('@/workbench/extensions/agent/AgentPanelRoot.vue')
-)
-</script>
-
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { ref } from 'vue'
+import { defineAsyncComponent, defineComponent, h, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-import { useWorkspaceInsetRight } from '@/composables/useWorkspaceInset'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+
+const AgentPanelLoadError = defineComponent({
+  name: 'AgentPanelLoadError',
+  setup() {
+    const { t } = useI18n()
+    return () =>
+      h('div', { class: 'size-full bg-base-background p-3' }, [
+        h(
+          'h2',
+          { id: 'agent-panel-title', class: 'sr-only' },
+          t('agent.title')
+        ),
+        h('p', { class: 'text-sm text-base-foreground' }, t('agent.loadFailed'))
+      ])
+  }
+})
+
+// Only a failed chunk load is a load failure; runtime errors inside the
+// resolved panel keep their normal propagation.
+const AgentPanelRoot = defineAsyncComponent({
+  loader: () => import('@/workbench/extensions/agent/AgentPanelRoot.vue'),
+  errorComponent: AgentPanelLoadError,
+  onError: (error, _retry, fail) => {
+    reportError(error, { errorType: 'agent_panel_load_failure' })
+    fail()
+  }
+})
 
 const agentPanelStore = useAgentPanelStore()
 const { isVisible: docked, width } = storeToRefs(agentPanelStore)
-
-// Body-mounted overlays center on the raw viewport; declaring the docked
-// width as --workspace-inset-right lets them center on the visible workspace.
-useWorkspaceInsetRight(() => (docked.value ? width.value : 0))
 
 const isResizing = ref(false)
 let resizeStartX = 0

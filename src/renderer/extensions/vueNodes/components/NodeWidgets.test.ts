@@ -7,7 +7,6 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { NodeState } from '@/types/nodeState'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
@@ -26,9 +25,9 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 
 const WidgetStub = {
   name: 'WidgetStub',
-  props: ['widget', 'nodeId', 'nodeType', 'modelValue'],
+  props: ['widget', 'nodeId', 'nodeType', 'modelValue', 'invalid'],
   template:
-    '<div class="widget-stub" :data-node-type="nodeType" :data-name="widget.name">{{ nodeType }}</div>'
+    '<div class="widget-stub" :data-node-type="nodeType" :data-name="widget.name" :aria-invalid="invalid || undefined">{{ nodeType }}</div>'
 }
 
 const AppInputStub = {
@@ -236,19 +235,6 @@ describe('NodeWidgets', () => {
     )
 
     expect(ids).toStrictEqual([seedAEntityId, seedBEntityId])
-  })
-
-  it('becomes non-interactive during agent node selection', () => {
-    const { container } = renderComponent({
-      nodeData: createMockNodeData('TestNode'),
-      setupStores: () => {
-        useAgentNodeSelectionStore().isActive = true
-      }
-    })
-
-    const widgetsRoot = container.querySelector('[data-testid="node-widgets"]')!
-    expect(widgetsRoot.classList).toContain('pointer-events-none')
-    expect(widgetsRoot.classList).not.toContain('pointer-events-auto')
   })
 
   it('marks widgets with host execution errors', () => {

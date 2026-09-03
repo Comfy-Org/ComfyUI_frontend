@@ -1,4 +1,7 @@
+import type { Op } from '@comfyorg/comfy-multi-player'
+
 const DOC_PROTOCOL_VERSION = 1
+const MAX_AWARENESS_STATE_BYTES = 8 * 1024
 
 export interface DocOp {
   op_id: string
@@ -11,6 +14,8 @@ export interface DocUpdate {
   seq: number
   update: Uint8Array
   actor?: string
+  /** Accepted semantic op identities folded into this effect frame (DQ-9). */
+  opIds?: string[]
 }
 
 export interface DocSubscribed {
@@ -72,7 +77,7 @@ export interface DocFrameTransport {
    * awaiting its auth token — not an exception. Throwing here aborted the
    * `watch(..., { immediate: true })` subscribe (leaving the follower
    * permanently inert) and aborted `onBeforeUnmount` before `client.destroy()`
-   * (leaking listeners and a live projector). Callers reconcile intent against
+   * (leaking listeners and a live adapter). Callers reconcile intent against
    * the returned boolean instead.
    */
   send(frame: string): boolean
@@ -86,6 +91,7 @@ interface WireData {
   seq?: unknown
   update_b64?: unknown
   actor?: unknown
+  op_ids?: unknown
   ok?: unknown
   code?: unknown
   message?: unknown
@@ -112,9 +118,41 @@ function parseWireData(value: unknown): WireData | null {
 }
 
 function parseRecord(value: unknown): Record<string, unknown> | null {
-  return typeof value === 'object' && value !== null
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
     ? Object.fromEntries(Object.entries(value))
     : null
+}
+
+/** Unix seconds on the wire: a non-negative integer inside the safe range. */
+function isNonNegativeInteger(value: unknown): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0
+}
+
+function parseAwarenessState(
+  value: unknown
+): Record<string, unknown> | undefined | null {
+  // The Go server's `State map[string]any` has `omitempty`, so it never
+  // emits `state: null` on the wire; nil/empty maps are omitted entirely,
+  // same as an absent field. Treat null the same as absent (no state) rather
+  // than rejecting the whole frame, so a value the server cannot actually
+  // send does not discard `actor`/`expires_at` too. A non-null, non-record
+  // shape (array, string, number) is still a malformed frame and rejected.
+  // discussion_r3911665011.
+  if (value === undefined || value === null) return undefined
+  const state = parseRecord(value)
+  if (state === null) return null
+
+  // Defence in depth behind the server's identical cap. The counts are not
+  // byte-identical: Go's json.Marshal HTML-escapes `<`, `>` and `&`, so the
+  // server always counts >= this and is the stricter of the two.
+  try {
+    return new TextEncoder().encode(JSON.stringify(state)).byteLength <=
+      MAX_AWARENESS_STATE_BYTES
+      ? state
+      : null
+  } catch {
+    return null
+  }
 }
 
 export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
@@ -139,7 +177,12 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
         workflowId: data.workflow_id,
         seq: data.seq,
         update: decodeBase64(data.update_b64),
-        ...(typeof data.actor === 'string' && { actor: data.actor })
+        ...(typeof data.actor === 'string' && { actor: data.actor }),
+        ...(Array.isArray(data.op_ids) && {
+          opIds: data.op_ids.filter(
+            (item): item is string => typeof item === 'string'
+          )
+        })
       }
     }
   }
@@ -194,14 +237,20 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
   }
 
   if (frame.type === 'awareness' && typeof data.actor === 'string') {
-    const state = parseRecord(data.state)
+    const state = parseAwarenessState(data.state)
+    if (
+      state === null ||
+      (data.expires_at !== undefined && !isNonNegativeInteger(data.expires_at))
+    )
+      return null
+
     return {
       type: frame.type,
       data: {
         workflowId: data.workflow_id,
         actor: data.actor,
-        ...(state !== null && { state }),
-        ...(typeof data.expires_at === 'number' && {
+        ...(state !== undefined && { state }),
+        ...(data.expires_at !== undefined && {
           expiresAt: data.expires_at
         })
       }
@@ -252,7 +301,7 @@ export class DocFrameClient extends EventTarget {
   }
 
   /** @returns whether the ops frame actually left the transport. */
-  sendOps(workflowId: string, tab: string, ops: DocOp[]): boolean {
+  sendOps(workflowId: string, tab: string, ops: DocOp[] | Op[]): boolean {
     return this.send('doc_ops', {
       v: DOC_PROTOCOL_VERSION,
       workflow_id: workflowId,
