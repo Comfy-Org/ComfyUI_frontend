@@ -47,6 +47,25 @@ vi.mock('@/platform/settings/settingStore', () => ({
   })
 }))
 
+function createPanelI18n() {
+  return createI18n({
+    legacy: false,
+    locale: 'en',
+    messages: { en: enMessages }
+  })
+}
+
+const panelStubs = {
+  Button: { template: '<button><slot /></button>' },
+  EditableText: true,
+  Tab: { template: '<button v-bind="$attrs"><slot /></button>' },
+  TabErrors: true,
+  TabInfo: true,
+  TabList: { template: '<div><slot /></div>' },
+  TabNormalInputs: true,
+  TabSettings: true
+}
+
 function renderPanel(
   activeTab: 'errors' | 'parameters' = 'errors',
   graphContext?: {
@@ -82,25 +101,10 @@ function renderPanel(
   )
   const openPanel = vi.spyOn(rightSidePanelStore, 'openPanel')
 
-  const i18n = createI18n({
-    legacy: false,
-    locale: 'en',
-    messages: { en: enMessages }
-  })
-
   const rendered = render(RightSidePanel, {
     global: {
-      plugins: [pinia, i18n],
-      stubs: {
-        Button: { template: '<button><slot /></button>' },
-        EditableText: true,
-        Tab: { template: '<button v-bind="$attrs"><slot /></button>' },
-        TabErrors: true,
-        TabInfo: true,
-        TabList: { template: '<div><slot /></div>' },
-        TabNormalInputs: true,
-        TabSettings: true
-      }
+      plugins: [pinia, createPanelI18n()],
+      stubs: panelStubs
     }
   })
 
@@ -207,6 +211,7 @@ describe('RightSidePanel global parameters tab', () => {
     pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
   ) {
     setActivePinia(pinia)
+    const onTabGlobalParametersSetup = vi.fn()
 
     const rootGraph = new LGraph()
     mockApp.rootGraph = rootGraph
@@ -223,37 +228,28 @@ describe('RightSidePanel global parameters tab', () => {
       ? ({ path: activeWorkflowPath } as LoadedComfyWorkflow)
       : null
 
-    const i18n = createI18n({
-      legacy: false,
-      locale: 'en',
-      messages: { en: enMessages }
-    })
-
-    return render(RightSidePanel, {
+    const rendered = render(RightSidePanel, {
       global: {
-        plugins: [pinia, i18n],
+        plugins: [pinia, createPanelI18n()],
         stubs: {
-          Button: { template: '<button><slot /></button>' },
-          EditableText: true,
-          Tab: { template: '<button v-bind="$attrs"><slot /></button>' },
-          TabErrors: true,
+          ...panelStubs,
           TabGlobalParameters: {
+            setup: onTabGlobalParametersSetup,
             template: '<div data-testid="tab-global-parameters" />'
-          },
-          TabInfo: true,
-          TabList: { template: '<div><slot /></div>' },
-          TabNormalInputs: true,
-          TabSettings: true
+          }
         }
       }
     })
+
+    return { ...rendered, onTabGlobalParametersSetup }
   }
 
   it('remounts TabGlobalParameters when the active workflow changes', async () => {
-    renderWithNoSelection('workflows/a.json')
+    const { onTabGlobalParametersSetup } =
+      renderWithNoSelection('workflows/a.json')
 
     const first = screen.getByTestId('tab-global-parameters')
-    expect(first).toBeInTheDocument()
+    expect(onTabGlobalParametersSetup).toHaveBeenCalledTimes(1)
 
     const workflowStore = useWorkflowStore()
     workflowStore.activeWorkflow = {
@@ -261,11 +257,7 @@ describe('RightSidePanel global parameters tab', () => {
     } as LoadedComfyWorkflow
     await nextTick()
 
-    // A genuine remount (not just a prop update) replaces the DOM node —
-    // the stub has no state, so this only proves identity changed via the
-    // `:key` binding, matching TabNodes/TabNormalInputs/subgraph views.
-    const second = screen.getByTestId('tab-global-parameters')
-    expect(second).toBeInTheDocument()
-    expect(second).not.toBe(first)
+    expect(onTabGlobalParametersSetup).toHaveBeenCalledTimes(2)
+    expect(screen.getByTestId('tab-global-parameters')).not.toBe(first)
   })
 })
