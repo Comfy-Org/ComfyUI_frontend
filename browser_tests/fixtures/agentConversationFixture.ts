@@ -525,9 +525,20 @@ interface ConversationFixtures {
   agentConversation: AgentConversationHarness
 }
 
+// Wide enough to keep the whole seed graph beside the docked panel; the video follows the viewport instead of Playwright's 800px cap.
+const VIEWPORT = { width: 2560, height: 1440 }
+
 export const agentConversationTest = agentTest.extend<ConversationFixtures>({
   conversationCase: ['', { option: true }],
   replayTiming: [defaultReplayTiming(), { option: true }],
+  viewport: VIEWPORT,
+  video: {
+    mode:
+      process.env.PLAYWRIGHT_LOCAL || process.env.RECORD_VIDEO === 'true'
+        ? 'on'
+        : 'off',
+    size: VIEWPORT
+  },
   agentConversation: async (
     { page, agentFlagEnabled, conversationCase, replayTiming },
     use
