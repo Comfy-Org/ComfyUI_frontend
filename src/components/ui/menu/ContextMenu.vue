@@ -48,6 +48,10 @@ function show(event: Event) {
     x: mouseEvent?.clientX ?? rect?.left ?? 0,
     y: mouseEvent?.clientY ?? rect?.top ?? 0
   }
+  if (!visible.value) {
+    setOpen(true)
+    return
+  }
   setOpen(false)
   const request = ++showRequest.value
   void nextTick(() => {
