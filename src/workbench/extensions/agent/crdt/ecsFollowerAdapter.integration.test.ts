@@ -141,6 +141,14 @@ describe('EcsFollowerAdapter integration', () => {
     expect(
       useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
     ).toMatchObject({ originNodeId: toNodeId(1), targetNodeId: toNodeId(2) })
+    expect(deleteLayouts).not.toHaveBeenCalled()
+    expect(createLayout).toHaveBeenCalledOnce()
+    expect(createLayout).toHaveBeenCalledWith(
+      scope,
+      toNodeId(2),
+      expect.any(Object),
+      expect.objectContaining({ opId: 'bootstrap' })
+    )
     expect(layouts.get(toNodeId(1))).toEqual({
       position: { x: 37, y: 41 },
       size: { width: 100, height: 80 }
@@ -954,6 +962,7 @@ describe('EcsFollowerAdapter integration', () => {
           events.push(`${workflowId}:end`)
           return true
         },
+        reconcileSnapshot: () => true,
         addNode: () => true,
         setWidget: () => true,
         connect: () => true,

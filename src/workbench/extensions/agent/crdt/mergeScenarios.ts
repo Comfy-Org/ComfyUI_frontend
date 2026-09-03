@@ -242,7 +242,7 @@ const SEED_WORKFLOW: WorkflowJSON = {
  * production sender would never produce.
  */
 function op(body: GraphOperation, actor: string, baseVersion: number): Op {
-  const [minted] = mintWireOps([body], { actor, baseVersion })
+  const [minted] = mintWireOps([body], { actor, firstVersion: baseVersion })
   return minted
 }
 

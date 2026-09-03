@@ -78,6 +78,11 @@ export interface GraphMutations {
     context: RemoteMutationContext,
     define: (batch: GraphMutationBatch) => void
   ): boolean
+  reconcileSnapshot(
+    nodes: readonly SemanticNodePayload[],
+    links: readonly SemanticLinkPayload[],
+    context: RemoteMutationContext
+  ): boolean
   addNode(payload: SemanticNodePayload, context: RemoteMutationContext): boolean
   setWidget(
     nodeId: NodeId,
@@ -806,6 +811,26 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       if (typeof prepared === 'string') return fail(prepared)
       commit(scope, prepared, context)
       return true
+    },
+    reconcileSnapshot(nodes, links, context) {
+      const scope = deps.getScope()
+      if (!scope) return false
+      const nodeIds = new Set(nodes.map(({ id }) => String(id)))
+      const linkIds = new Set(links.map(({ id }) => toLinkId(id)))
+      const removedLinks = [...linkStore.graphTopologies(scope)]
+        .filter(({ id }) => !linkIds.has(id))
+        .map(({ id }) => id)
+      const removedNodes = nodeStore
+        .getGraphNodesFor(scope.rootGraphId, scope.owningGraphId)
+        .filter(({ id }) => !nodeIds.has(String(id)))
+        .map(({ id }) => id)
+
+      return graphMutations.batch(context, (batch) => {
+        batch.removeLinks(removedLinks)
+        for (const id of removedNodes) batch.deleteNode(id)
+        for (const node of nodes) batch.reconcileNode(node)
+        for (const link of links) batch.connect(link)
+      })
     },
     addNode(payload, context) {
       return graphMutations.batch(context, (batch) => batch.addNode(payload))

@@ -1,7 +1,10 @@
 import { defineStore } from 'pinia'
 import { shallowReactive } from 'vue'
 
-import { createLGraphState } from '@/lib/litegraph/src/idAllocation'
+import {
+  cloneLGraphState,
+  createLGraphState
+} from '@/lib/litegraph/src/idAllocation'
 import type { LGraphState } from '@/lib/litegraph/src/idAllocation'
 import type { UUID } from '@/utils/uuid'
 
@@ -18,7 +21,7 @@ export const useEntityIdStore = defineStore('entityId', () => {
   }
 
   function set(rootGraphId: UUID, state: LGraphState): void {
-    states.set(rootGraphId, { ...state })
+    states.set(rootGraphId, cloneLGraphState(state))
   }
 
   function rekey(previousId: UUID, nextId: UUID): void {

@@ -4,8 +4,8 @@ import type { WorkflowNode } from '@comfyorg/comfy-multi-player'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
-import type { GraphOperation } from './graphOperations'
-import { attachLayoutMintPort } from './layoutMintPort'
+import type { GraphMutationTarget, GraphOperation } from './graphOperations'
+import { AGENT_REMOTE_ACTOR, attachLayoutMintPort } from './layoutMintPort'
 import type { LayoutChangeView, LayoutMintPort } from './layoutMintPort'
 import { createMintSession } from './mintSession'
 import type { MintSession } from './mintSession'
@@ -16,6 +16,8 @@ vi.mock('@/platform/telemetry/reportError', () => ({
 
 const LOCAL_PREFIX = 'user-'
 const LOCAL_ACTOR = 'user-abc123def'
+const ROOT = 'root-uuid'
+const TARGET: GraphMutationTarget = { workflowId: 'wf-a', rootGraphId: ROOT }
 
 function createNodeChange(
   id: string,
@@ -24,6 +26,8 @@ function createNodeChange(
   return {
     operation: {
       type: 'createNode',
+      graphId: ROOT,
+      ownerGraphId: ROOT,
       actor,
       nodeId: id,
       layout: { position: { x: 128, y: 96 } }
@@ -32,31 +36,43 @@ function createNodeChange(
 }
 
 function clearChange(actor: string = LOCAL_ACTOR): LayoutChangeView {
-  return { operation: { type: 'clearGraph', actor } }
+  return { operation: { type: 'clearGraph', graphId: ROOT, actor } }
 }
 
 function deleteChange(
   id: string,
   actor: string = LOCAL_ACTOR
 ): LayoutChangeView {
-  return { operation: { type: 'deleteNode', actor, nodeId: id } }
+  return {
+    operation: {
+      type: 'deleteNode',
+      graphId: ROOT,
+      ownerGraphId: ROOT,
+      actor,
+      nodeId: id
+    }
+  }
 }
 
 describe('attachLayoutMintPort', () => {
   let minted: GraphOperation[]
+  let enqueueAccepts: boolean
   let port: LayoutMintPort
   let enabled: boolean
   let bound: boolean
   let graphNodes: Map<string, WorkflowNode>
-  let listeners: Set<(change: LayoutChangeView) => void>
+  let listeners: Set<
+    (target: GraphMutationTarget, change: LayoutChangeView) => void
+  >
   let session: MintSession
   let severed: Map<string, (string | number)[]>
 
-  function deliver(change: LayoutChangeView): void {
-    for (const listener of listeners) listener(change)
+  function deliver(change: LayoutChangeView, target = TARGET): void {
+    for (const listener of listeners) listener(target, change)
   }
 
   beforeEach(() => {
+    enqueueAccepts = true
     minted = []
     enabled = true
     bound = true
@@ -74,15 +90,21 @@ describe('attachLayoutMintPort', () => {
         }
       },
       session,
-      severedLinks: { take: (nodeId) => severed.get(nodeId) ?? [] },
+      severedLinks: {
+        take: (_target, nodeId) => severed.get(nodeId) ?? []
+      },
       localActorPrefix: LOCAL_PREFIX,
       isEnabled: () => enabled,
       isDocBound: () => bound,
+      target: () => TARGET,
       source: {
-        serializeNode: (id) => graphNodes.get(id) ?? null,
+        serializeNode: (_target, id) => graphNodes.get(id) ?? null,
         nodeIds: () => [...graphNodes.keys()]
       },
-      enqueue: (operations) => minted.push(...operations)
+      enqueue: (batch) => {
+        minted.push(...batch.operations)
+        return enqueueAccepts
+      }
     })
   })
 
@@ -100,9 +122,25 @@ describe('attachLayoutMintPort', () => {
     ])
   })
 
+  it('surfaces a mint the sender rejected', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    enqueueAccepts = false
+
+    deliver(createNodeChange('1'))
+
+    expect(error).toHaveBeenCalledOnce()
+    error.mockRestore()
+  })
+
+  it('never mints an agent-remote echo (KA-6 sender half)', () => {
+    deliver(createNodeChange('1', AGENT_REMOTE_ACTOR))
+
+    expect(minted).toEqual([])
+  })
+
   it('surfaces interior create and delete without minting root operations', () => {
     const interior = {
-      graphId: 'root',
+      graphId: ROOT,
       ownerGraphId: 'subgraph'
     }
 
@@ -122,7 +160,7 @@ describe('attachLayoutMintPort', () => {
       {
         errorType: 'agent_crdt_unrepresentable_subgraph_node_create',
         context: {
-          graphId: 'root',
+          graphId: ROOT,
           ownerGraphId: 'subgraph',
           nodeId: '1'
         }
@@ -136,7 +174,7 @@ describe('attachLayoutMintPort', () => {
       {
         errorType: 'agent_crdt_unrepresentable_subgraph_node_delete',
         context: {
-          graphId: 'root',
+          graphId: ROOT,
           ownerGraphId: 'subgraph',
           nodeId: '1'
         }
@@ -149,7 +187,7 @@ describe('attachLayoutMintPort', () => {
       deliver({
         operation: {
           ...deleteChange(String(index)).operation,
-          graphId: 'root',
+          graphId: ROOT,
           ownerGraphId: 'subgraph-a'
         }
       })
@@ -159,7 +197,7 @@ describe('attachLayoutMintPort', () => {
     expect(reportError).toHaveBeenLastCalledWith(expect.any(Error), {
       errorType: 'agent_crdt_unrepresentable_subgraph_node_delete',
       context: {
-        graphId: 'root',
+        graphId: ROOT,
         ownerGraphId: 'subgraph-a',
         nodeId: '0'
       }
@@ -168,7 +206,7 @@ describe('attachLayoutMintPort', () => {
     deliver({
       operation: {
         ...deleteChange('30').operation,
-        graphId: 'root',
+        graphId: ROOT,
         ownerGraphId: 'subgraph-b'
       }
     })
@@ -178,7 +216,7 @@ describe('attachLayoutMintPort', () => {
     deliver({
       operation: {
         ...deleteChange('31').operation,
-        graphId: 'root',
+        graphId: ROOT,
         ownerGraphId: 'subgraph-a'
       }
     })
@@ -187,10 +225,18 @@ describe('attachLayoutMintPort', () => {
 
   it('fails closed on a graphId with no ownerGraphId instead of minting as root', () => {
     deliver({
-      operation: { ...createNodeChange('1').operation, graphId: 'root' }
+      operation: {
+        ...createNodeChange('1').operation,
+        graphId: ROOT,
+        ownerGraphId: undefined
+      }
     })
     deliver({
-      operation: { ...deleteChange('1').operation, graphId: 'root' }
+      operation: {
+        ...deleteChange('1').operation,
+        graphId: ROOT,
+        ownerGraphId: undefined
+      }
     })
 
     expect(minted).toEqual([])
@@ -201,7 +247,7 @@ describe('attachLayoutMintPort', () => {
       }),
       {
         errorType: 'agent_crdt_missing_owner_graph_id_create',
-        context: { graphId: 'root', nodeId: '1' }
+        context: { graphId: ROOT, nodeId: '1' }
       }
     )
     expect(reportError).toHaveBeenNthCalledWith(
@@ -211,7 +257,7 @@ describe('attachLayoutMintPort', () => {
       }),
       {
         errorType: 'agent_crdt_missing_owner_graph_id_delete',
-        context: { graphId: 'root', nodeId: '1' }
+        context: { graphId: ROOT, nodeId: '1' }
       }
     )
   })
@@ -220,8 +266,8 @@ describe('attachLayoutMintPort', () => {
     deliver({
       operation: {
         ...createNodeChange('1').operation,
-        graphId: 'root',
-        ownerGraphId: 'root'
+        graphId: ROOT,
+        ownerGraphId: ROOT
       }
     })
 
@@ -270,6 +316,32 @@ describe('attachLayoutMintPort', () => {
     deliver(createNodeChange('1'))
 
     expect(minted).toEqual([])
+  })
+
+  it('surfaces a delayed layout event after the active target changes', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    deliver(createNodeChange('1'), {
+      workflowId: 'wf-b',
+      rootGraphId: 'other-root'
+    })
+
+    expect(minted).toEqual([])
+    expect(error).toHaveBeenCalledOnce()
+    error.mockRestore()
+  })
+
+  it('does not surface a foreign-graph change that was never local anyway', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    deliver(createNodeChange('1', AGENT_REMOTE_ACTOR), {
+      workflowId: 'wf-b',
+      rootGraphId: 'other-root'
+    })
+
+    expect(minted).toEqual([])
+    expect(error).not.toHaveBeenCalled()
+    error.mockRestore()
   })
 
   it('never mints inside a graph-teardown bracket', () => {
@@ -364,6 +436,7 @@ describe('attachLayoutMintPort', () => {
     deliver({
       operation: {
         type,
+        graphId: ROOT,
         actor: LOCAL_ACTOR,
         nodeId: '1',
         layout: { position: { x: 1, y: 2 } }

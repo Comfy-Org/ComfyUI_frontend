@@ -7,7 +7,7 @@ import type { Ref } from 'vue'
 import type { GraphMutations } from '@/core/graph/graphMutations'
 import { render } from '@testing-library/vue'
 
-import type { GraphOperation } from './graphOperations'
+import type { GraphOperation, TargetedGraphOperations } from './graphOperations'
 
 const bridgeState = vi.hoisted(() => {
   const transport = { up: true }
@@ -140,7 +140,7 @@ function mountFollower(initial: string): {
   status: () => AgentCrdtStatus
 } {
   const workflowId = ref<string | null>(initial)
-  let enqueue!: (operations: GraphOperation[]) => void
+  let enqueueBatch!: (batch: TargetedGraphOperations) => boolean
   let exposedStatus!: () => AgentCrdtStatus
   const host = defineComponent({
     setup() {
@@ -148,13 +148,24 @@ function mountFollower(initial: string): {
         workflowId,
         graphMutations
       )
-      enqueue = enqueueHumanOperations
+      enqueueBatch = enqueueHumanOperations
       exposedStatus = () => status.value as AgentCrdtStatus
       return () => null
     }
   })
   const { unmount } = render(host)
   onTestFinished(unmount)
+  const enqueue = (operations: GraphOperation[]) => {
+    const currentWorkflowId = workflowId.value
+    if (!currentWorkflowId) return
+    enqueueBatch({
+      target: {
+        workflowId: currentWorkflowId,
+        rootGraphId: currentWorkflowId
+      },
+      operations
+    })
+  }
   return { unmount, workflowId, enqueue, status: exposedStatus }
 }
 
@@ -219,7 +230,7 @@ describe('R-73 cross-workflow pending operation characterization', () => {
 
     bridge().lastSequence = 41
     enqueue([deleteNode('a-inflight')])
-    expect(clientState.sent[0].ops[0]).toMatchObject({ base_version: 41 })
+    expect(clientState.sent[0].ops[0]).toMatchObject({ base_version: 42 })
     const operationAId = clientState.sent[0].ops[0].op_id
     await switchWorkflow(workflowId, 'wf-b')
 
@@ -229,15 +240,15 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     // 10 s result-silence window.
     expect(devLogState.recordDevEvent).toHaveBeenCalledWith(
       'human_ops_settled',
-      {
+      expect.objectContaining({
         state: 'undeliverable',
         ops: [expect.objectContaining({ op_id: operationAId })]
-      }
+      })
     )
     enqueue([deleteNode('b-pending')])
     expect(clientState.sent).toHaveLength(2)
     expect(clientState.sent[1]).toMatchObject({ workflowId: 'wf-b' })
-    expect(clientState.sent[1].ops[0]).toMatchObject({ base_version: 0 })
+    expect(clientState.sent[1].ops[0]).toMatchObject({ base_version: 1 })
     const operationBId = clientState.sent[1].ops[0].op_id
 
     dispatchOpsResult({
@@ -271,7 +282,7 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     expect(operationBId).not.toBe(operationAId)
   })
 
-  it('documents an anonymous workflow A result settling workflow B in flight', async () => {
+  it('ignores an anonymous workflow A result while workflow B is in flight', async () => {
     const { workflowId, enqueue } = mountFollower('wf-a')
 
     enqueue([deleteNode('a-inflight')])
@@ -299,11 +310,7 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     const settlements = devLogState.recordDevEvent.mock.calls.filter(
       ([event]) => event === 'human_ops_settled'
     )
-    expect(settlements).toHaveLength(2)
-    expect(settlements[1][1]).toMatchObject({
-      state: 'acknowledged',
-      ops: [expect.objectContaining({ op_id: operationBId })],
-      result: { ok: false, applied: [], skipped: [] }
-    })
+    expect(settlements).toHaveLength(1)
+    expect(operationBId).not.toBe(operationAId)
   })
 })

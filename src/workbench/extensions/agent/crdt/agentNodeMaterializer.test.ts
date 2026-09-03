@@ -685,7 +685,14 @@ describe('reconcileAgentAdapters', () => {
       wiring = attachMintPortWiring({
         isEnabled: () => true,
         isDocBound: () => true,
-        enqueue: (operations) => minted.push(...operations),
+        target: () => ({
+          workflowId: 'wf-test',
+          rootGraphId: String(graphScopeOf(graph).rootGraphId)
+        }),
+        enqueue: ({ operations }) => {
+          minted.push(...operations)
+          return true
+        },
         layoutChanges: (listener) => layoutStore.onChange(listener),
         localActorPrefix: 'user-',
         getGraph: () => graph

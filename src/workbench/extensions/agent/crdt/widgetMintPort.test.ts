@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { GraphOperation } from './graphOperations'
+import type { GraphMutationTarget, GraphOperation } from './graphOperations'
 import { createMintSession } from './mintSession'
 import type { MintSession } from './mintSession'
 import { attachWidgetMintPort } from './widgetMintPort'
 import type { WidgetMintPort, WidgetSetView } from './widgetMintPort'
 
 const ROOT = 'root-uuid'
+const TARGET: GraphMutationTarget = { workflowId: 'wf-a', rootGraphId: ROOT }
 
 function widgetSet(overrides: Partial<WidgetSetView> = {}): WidgetSetView {
   return {
@@ -21,23 +22,23 @@ function widgetSet(overrides: Partial<WidgetSetView> = {}): WidgetSetView {
 
 describe('attachWidgetMintPort', () => {
   let minted: GraphOperation[]
+  let enqueueAccepts: boolean
   let port: WidgetMintPort
   let enabled: boolean
   let bound: boolean
-  let root: string | null
   let interiorPaths: Map<string, string[]>
   let session: MintSession
-  let listeners: Set<(set: WidgetSetView) => void>
+  let listeners: Set<(target: GraphMutationTarget, set: WidgetSetView) => void>
 
-  function deliver(set: WidgetSetView): void {
-    for (const listener of listeners) listener(set)
+  function deliver(set: WidgetSetView, target = TARGET): void {
+    for (const listener of listeners) listener(target, set)
   }
 
   beforeEach(() => {
+    enqueueAccepts = true
     minted = []
     enabled = true
     bound = true
-    root = ROOT
     interiorPaths = new Map()
     session = createMintSession()
     listeners = new Set()
@@ -51,10 +52,14 @@ describe('attachWidgetMintPort', () => {
       session,
       isEnabled: () => enabled,
       isDocBound: () => bound,
-      rootGraphId: () => root,
-      resolveInteriorPath: (owningGraphId) =>
-        interiorPaths.get(owningGraphId) ?? null,
-      enqueue: (operations) => minted.push(...operations)
+      resolveInteriorPath: (target, owningGraphId) =>
+        target.rootGraphId === ROOT
+          ? (interiorPaths.get(owningGraphId) ?? null)
+          : null,
+      enqueue: (batch) => {
+        minted.push(...batch.operations)
+        return enqueueAccepts
+      }
     })
   })
 
@@ -117,12 +122,11 @@ describe('attachWidgetMintPort', () => {
     consoleError.mockRestore()
   })
 
-  it('surfaces a write with no open root graph observably', () => {
+  it('rejects a write whose event target does not own its root graph', () => {
     const consoleError = vi
       .spyOn(console, 'error')
       .mockImplementation(() => undefined)
-    root = null
-    deliver(widgetSet())
+    deliver(widgetSet(), { workflowId: 'wf-b', rootGraphId: 'other-root' })
 
     expect(minted).toEqual([])
     expect(consoleError).toHaveBeenCalledOnce()
