@@ -27,7 +27,7 @@
           maximumFractionDigits: precision
         }"
         :aria-label="widget.name"
-        class="w-16"
+        class="w-16 shrink-0"
       />
     </div>
   </WidgetLayoutField>
