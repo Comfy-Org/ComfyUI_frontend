@@ -74,16 +74,15 @@ async function run(options: Options): Promise<number> {
   const dataDir = await mkdtemp(resolve(tmpdir(), 'comfy-agent-integration-'))
   const token = randomBytes(32).toString('hex')
   const agentUrl = `http://127.0.0.1:${options.agentPort}`
-  const agent = spawnGroup(
-    options.airBin,
-    ['-c', '.air.toml'],
-    agentDir,
-    standaloneEnv(options, dataDir, token)
-  )
   const supervisor = supervise(dataDir)
-  supervisor.watch(agent)
-
   try {
+    const agent = spawnGroup(
+      options.airBin,
+      ['-c', '.air.toml'],
+      agentDir,
+      standaloneEnv(options, dataDir, token)
+    )
+    supervisor.watch(agent)
     const startupResult = await Promise.race([
       waitForHttp(
         agent,

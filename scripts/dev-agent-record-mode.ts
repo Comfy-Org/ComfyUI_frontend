@@ -229,13 +229,13 @@ export async function runRecord(options: Options): Promise<number> {
       ...process.env,
       DOC_HOST_PORT: String(options.docHostPort)
     })
+    supervisor.watch(docHost)
     const agent = spawnGroup(
       'bash',
       ['start.sh'],
       agentDir,
       recordEnv(options, catalogPath, secret)
     )
-    supervisor.watch(docHost)
     supervisor.watch(agent)
 
     const startupResult = await Promise.race([
