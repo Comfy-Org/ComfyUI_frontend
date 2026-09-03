@@ -133,7 +133,9 @@ onBeforeUnmount(() => {
         :side
         :side-offset
         :class="contentClass ?? normalizedConfig?.contentClass"
-        :aria-label="suppressDescription ? ' ' : undefined"
+        :aria-label="
+          suppressDescription || $attrs['aria-label'] === text ? ' ' : undefined
+        "
       >
         <slot name="content">{{ text }}</slot>
       </TooltipContent>
