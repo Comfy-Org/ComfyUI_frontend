@@ -36,7 +36,7 @@ export function useFocusNode() {
   async function focusNodeInstance(node: LGraphNode) {
     if (!canvasStore.canvas || !node.graph) return
 
-    await navigateToGraph(node.graph as LGraph)
+    await navigateToGraph(node.graph)
     const canvas = canvasStore.canvas
     if (!canvas || canvas.graph !== node.graph) return
 

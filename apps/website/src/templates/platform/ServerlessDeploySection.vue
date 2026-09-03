@@ -8,8 +8,10 @@ import CodeTabs from './CodeTabs.vue'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 // Command surface from comfy-cli's build + deploy stack (PRs #801-805):
-// `comfy build init --from-snapshot/--from-workflow`, `build push`, and
-// `deploy up`, which defaults to the current directory.
+// `comfy build init` (or `--from-workflow`, which resolves no ComfyUI version
+// and so needs `--comfy-version` before a release can be cut), `build push
+// --release`, whose `--target` decides whether `deploy up` finds a deployable
+// artifact, and `deploy up`. All three default to the current directory.
 function terminalSegments(transcript: string): CodeTab['segments'] {
   const lines = transcript.split('\n')
   return lines.flatMap((line, index) => [
@@ -21,9 +23,9 @@ function terminalSegments(transcript: string): CodeTab['segments'] {
 const deployTabs: Record<string, CodeTab> = {
   install: {
     name: t('platform.serverlessDeploy.tabInstall', locale),
-    segments: terminalSegments(`$ comfy build init --from-snapshot
-✔ Imported your install — custom nodes, models, pinned deps
-$ comfy build push
+    segments: terminalSegments(`$ comfy build init
+✔ Scanned this ComfyUI install — custom nodes, models, pinned deps
+$ comfy build push --release --target linux/nvidia
 ✔ Build released
 $ comfy deploy up
 ✔ Endpoint live → https://your-build.run.comfy.app`)
@@ -31,9 +33,9 @@ $ comfy deploy up
   workflow: {
     name: t('platform.serverlessDeploy.tabWorkflow', locale),
     segments:
-      terminalSegments(`$ comfy build init --from-workflow ./workflow.json
+      terminalSegments(`$ comfy build init --from-workflow ./workflow.json --comfy-version v0.34.2
 ✔ Custom nodes and models resolved from your workflow
-$ comfy build push
+$ comfy build push --release --target linux/nvidia
 ✔ Build released
 $ comfy deploy up
 ✔ Endpoint live → https://your-build.run.comfy.app`)
@@ -60,6 +62,7 @@ $ comfy deploy up
         :label="t('platform.serverlessDeploy.heading', locale)"
         content-class="bg-[#2a2230]"
         list-class="mx-auto sm:flex sm:w-fit"
+        trigger-class="px-2"
       />
     </div>
   </section>

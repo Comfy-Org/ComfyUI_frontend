@@ -1359,6 +1359,137 @@ describe('useNodeReplacement', () => {
       expect(useMissingNodesErrorStore().missingNodesError).toBeNull()
     })
 
+    it('keeps missing node state when only some nodes of a type are replaced', () => {
+      const firstPlaceholder = createPlaceholderNode(1, 'OldNode')
+      const secondPlaceholder = createPlaceholderNode(2, 'OldNode')
+      const graph = createMockGraph([firstPlaceholder, secondPlaceholder])
+      firstPlaceholder.graph = graph
+      secondPlaceholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+
+      vi.mocked(collectAllNodes).mockReturnValue([
+        firstPlaceholder,
+        secondPlaceholder
+      ])
+      const firstReplacement = createNewNode()
+      vi.mocked(LiteGraph.createNode)
+        .mockReturnValueOnce(firstReplacement)
+        .mockReturnValueOnce(createNewNode())
+      vi.mocked(canTransferReplacementOwnership)
+        .mockReturnValueOnce(true)
+        .mockReturnValueOnce(true)
+        .mockReturnValueOnce(false)
+
+      const oldNodeType = makeMissingNodeType('OldNode', {
+        new_node_id: 'NewNode',
+        old_node_id: 'OldNode',
+        old_widget_ids: null,
+        input_mapping: null,
+        output_mapping: null
+      })
+      seedMissingNodeTypes([oldNodeType])
+
+      useNodeReplacement().replaceGroup({
+        type: 'OldNode',
+        nodeTypes: [oldNodeType]
+      })
+
+      expect(graph._nodes).toStrictEqual([firstReplacement, secondPlaceholder])
+      expect(
+        getActiveWorkflowMock().pendingWarnings?.missingNodeTypes
+      ).toStrictEqual([oldNodeType])
+      expect(
+        useMissingNodesErrorStore().missingNodesError?.nodeTypes
+      ).toStrictEqual([oldNodeType])
+      expect(graph.updateExecutionOrder).toHaveBeenCalledOnce()
+      expect(graph.setDirtyCanvas).toHaveBeenCalledWith(true, true)
+    })
+
+    it('keeps missing node state when a failed node precedes a successful node', () => {
+      const firstPlaceholder = createPlaceholderNode(1, 'OldNode')
+      const secondPlaceholder = createPlaceholderNode(2, 'OldNode')
+      const graph = createMockGraph([firstPlaceholder, secondPlaceholder])
+      firstPlaceholder.graph = graph
+      secondPlaceholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+
+      vi.mocked(collectAllNodes).mockReturnValue([
+        firstPlaceholder,
+        secondPlaceholder
+      ])
+      const secondReplacement = createNewNode()
+      vi.mocked(LiteGraph.createNode)
+        .mockReturnValueOnce(createNewNode())
+        .mockReturnValueOnce(secondReplacement)
+      vi.mocked(canTransferReplacementOwnership)
+        .mockReturnValueOnce(false)
+        .mockReturnValueOnce(true)
+        .mockReturnValueOnce(true)
+
+      const oldNodeType = makeMissingNodeType('OldNode', {
+        new_node_id: 'NewNode',
+        old_node_id: 'OldNode',
+        old_widget_ids: null,
+        input_mapping: null,
+        output_mapping: null
+      })
+      seedMissingNodeTypes([oldNodeType])
+
+      useNodeReplacement().replaceGroup({
+        type: 'OldNode',
+        nodeTypes: [oldNodeType]
+      })
+
+      expect(graph._nodes).toStrictEqual([firstPlaceholder, secondReplacement])
+      expect(
+        getActiveWorkflowMock().pendingWarnings?.missingNodeTypes
+      ).toStrictEqual([oldNodeType])
+      expect(
+        useMissingNodesErrorStore().missingNodesError?.nodeTypes
+      ).toStrictEqual([oldNodeType])
+    })
+
+    it('keeps missing node state when a replacement node cannot be created', () => {
+      const firstPlaceholder = createPlaceholderNode(1, 'OldNode')
+      const secondPlaceholder = createPlaceholderNode(2, 'OldNode')
+      const graph = createMockGraph([firstPlaceholder, secondPlaceholder])
+      firstPlaceholder.graph = graph
+      secondPlaceholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+
+      vi.mocked(collectAllNodes).mockReturnValue([
+        firstPlaceholder,
+        secondPlaceholder
+      ])
+      const firstReplacement = createNewNode()
+      vi.mocked(LiteGraph.createNode)
+        .mockReturnValueOnce(firstReplacement)
+        .mockReturnValueOnce(null)
+      vi.mocked(canTransferReplacementOwnership).mockReturnValue(true)
+
+      const oldNodeType = makeMissingNodeType('OldNode', {
+        new_node_id: 'NewNode',
+        old_node_id: 'OldNode',
+        old_widget_ids: null,
+        input_mapping: null,
+        output_mapping: null
+      })
+      seedMissingNodeTypes([oldNodeType])
+
+      useNodeReplacement().replaceGroup({
+        type: 'OldNode',
+        nodeTypes: [oldNodeType]
+      })
+
+      expect(graph._nodes).toStrictEqual([firstReplacement, secondPlaceholder])
+      expect(
+        getActiveWorkflowMock().pendingWarnings?.missingNodeTypes
+      ).toStrictEqual([oldNodeType])
+      expect(
+        useMissingNodesErrorStore().missingNodesError?.nodeTypes
+      ).toStrictEqual([oldNodeType])
+    })
+
     it('keeps store-only missing types that never reached the cache', () => {
       const placeholder = createPlaceholderNode(1, 'OldNode')
       const graph = createMockGraph([placeholder])
