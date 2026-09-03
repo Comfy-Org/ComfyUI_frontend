@@ -25,9 +25,11 @@
               )
             "
           />
-          <Suspense @resolve="comfyRunButtonResolved">
-            <ComfyRunButton v-coachmark="FIRST_RUN_COACH_IDS.runButton" />
-          </Suspense>
+          <div v-coachmark="FIRST_RUN_COACH_IDS.runButton" class="inline-flex">
+            <Suspense @resolve="comfyRunButtonResolved">
+              <ComfyRunButton />
+            </Suspense>
+          </div>
           <Tooltip :config="cancelJobTooltipConfig" side="bottom">
             <Button
               variant="destructive"

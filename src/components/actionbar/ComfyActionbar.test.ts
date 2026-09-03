@@ -5,7 +5,13 @@ import { nextTick } from 'vue'
 
 import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
 import { i18n } from '@/i18n'
+import { coachmarkElements } from '@/platform/onboarding/coachmarkRegistry'
+import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import { useSettingStore } from '@/platform/settings/settingStore'
+
+vi.mock('@/components/actionbar/ComfyRunButton', () => ({
+  default: { template: '<button type="button">Run</button>' }
+}))
 
 const configureSettings = (
   pinia: ReturnType<typeof createTestingPinia>,
@@ -27,7 +33,7 @@ const renderActionbar = (showRunProgressBar: boolean) => {
   const pinia = createTestingPinia({ createSpy: vi.fn })
   configureSettings(pinia, showRunProgressBar)
 
-  render(ComfyActionbar, {
+  const rendered = render(ComfyActionbar, {
     container: document.body.appendChild(document.createElement('div')),
     props: {
       dockedProgressContainer,
@@ -45,24 +51,34 @@ const renderActionbar = (showRunProgressBar: boolean) => {
           template: '<div><slot /></div>'
         },
         StatusBadge: true,
-        ComfyRunButton: {
-          name: 'ComfyRunButton',
-          template: '<button type="button">Run</button>'
-        },
         QueueInlineProgress: true
       },
       directives: {
+        coachmark: vCoachmark,
         tooltip: () => {}
       }
     }
   })
 
-  return { dockedProgressContainer }
+  return { dockedProgressContainer, rendered }
 }
 
 describe('ComfyActionbar', () => {
   beforeEach(() => {
     i18n.global.locale.value = 'en'
+  })
+
+  it('registers the resolved run button as a coachmark target', async () => {
+    const { dockedProgressContainer, rendered } = renderActionbar(false)
+
+    try {
+      await rendered.findByText('Run')
+      await nextTick()
+
+      expect(coachmarkElements('first-run-run-button')).toHaveLength(1)
+    } finally {
+      dockedProgressContainer.remove()
+    }
   })
 
   it('teleports inline progress when run progress bar is enabled', async () => {
