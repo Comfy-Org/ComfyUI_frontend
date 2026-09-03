@@ -31,7 +31,7 @@ test.describe('Minimap change cadence performance', { tag: ['@perf'] }, () => {
               [nodeId]: {
                 value: update,
                 max: 20,
-                state: update % 2 === 0 ? 'running' : 'finished',
+                state: update % 2 === 0 ? 'finished' : 'running',
                 node_id: nodeId,
                 display_node_id: nodeId,
                 prompt_id: 'minimap-perf-job'
@@ -51,12 +51,12 @@ test.describe('Minimap change cadence performance', { tag: ['@perf'] }, () => {
     )
     recordMeasurement(measurement)
 
-    const finalProgress = await comfyPage.page.evaluate(async (nodeId) => {
-      const { useExecutionStore } =
-        await import('../../../src/stores/executionStore')
-      return useExecutionStore().nodeProgressStates[nodeId]
-    }, nodeId)
-    expect(finalProgress).toMatchObject({ value: 19, max: 20 })
+    const finalProgress = await comfyPage.page.evaluate(() => {
+      const node = window.app?.graph.nodes[0]
+      if (!node) throw new Error('Graph has no nodes')
+      return node.progress
+    })
+    expect(finalProgress).toBeCloseTo(19 / 20)
   })
 
   test('node geometry cadence', async ({ comfyPage }) => {
