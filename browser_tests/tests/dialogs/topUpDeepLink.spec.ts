@@ -144,7 +144,7 @@ test.describe('Top-up deep link', { tag: '@cloud' }, () => {
     await expect(page).not.toHaveURL(/[?&]topup=/)
   })
 
-  test('uses the top-up fallback when capabilities are unavailable', async ({
+  test('silently no-ops when capabilities are unavailable', async ({
     page
   }) => {
     test.slow()
@@ -155,7 +155,10 @@ test.describe('Top-up deep link', { tag: '@cloud' }, () => {
 
     await page.goto(`${APP_URL}/?topup=1`)
 
-    await expect(topUpDialog(page)).toBeVisible({ timeout: 45_000 })
+    await page.waitForURL((url) => !url.searchParams.has('topup'), {
+      timeout: 45_000
+    })
+    await expect(topUpDialog(page)).toBeHidden()
     await expect(page).not.toHaveURL(/[?&]topup=/)
   })
 })
