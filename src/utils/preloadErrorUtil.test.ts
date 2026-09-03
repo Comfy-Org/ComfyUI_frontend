@@ -207,7 +207,7 @@ describe('isExtensionOriginPreloadError', () => {
 
   it('does not throw when stack is a truthy non-string', () => {
     const error = makeError('Something failed')
-    ;(error as unknown as Record<string, unknown>).stack = 42
+    Object.defineProperty(error, 'stack', { value: 42, configurable: true })
     const info = parsePreloadError(error)
 
     expect(() => isExtensionOriginPreloadError(error, info)).not.toThrow()
