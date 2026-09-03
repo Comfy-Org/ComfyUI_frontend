@@ -25,13 +25,5 @@ export const AGENT_REKA_TOOLTIP_CONTENT_CLASS =
 
 export const buildAgentTooltipConfig = (value: string) => ({
   ...buildTooltipConfig(value),
-  showDelay: AGENT_TOOLTIP_SHOW_DELAY,
-  pt: {
-    text: {
-      class: AGENT_TOOLTIP_SURFACE_CLASS
-    },
-    arrow: {
-      class: 'hidden'
-    }
-  }
+  showDelay: AGENT_TOOLTIP_SHOW_DELAY
 })
