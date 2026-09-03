@@ -389,26 +389,31 @@ describe('reconcileAgentAdapters', () => {
       expect(graph.getNodeById(toNodeId(1))).toBe(live)
     })
 
-    it('replaces a node whose record was re-created under the same id', () => {
+    it('preserves a same-type node whose record was re-created', () => {
       const graph = new LGraph()
-      const scope = seedAgentAddedNode(graph, 1)
+      const scope = graphScopeOf(graph)
+      remoteMutations(scope).addNode(
+        { ...nodePayload(1, 'widget-node'), widgets_values: { value: 7 } },
+        REMOTE
+      )
       reconcileAgentAdapters(graph)
-      const stale = graph.getNodeById(toNodeId(1))
-      expect(stale).toBeDefined()
+      const incumbent = graph.getNodeById(toNodeId(1))!
+      expect(incumbent.widgets).toHaveLength(1)
 
       const mutations = remoteMutations(scope)
       mutations.deleteNode(toNodeId(1), [], REMOTE)
-      mutations.addNode(nodePayload(1), { ...REMOTE, opId: 'op-1-again' })
+      mutations.addNode(
+        { ...nodePayload(1, 'widget-node'), widgets_values: { value: 8 } },
+        { ...REMOTE, opId: 'op-1-again' }
+      )
 
       const materialized = reconcileAgentAdapters(graph)
 
       expect(materialized).toEqual([toNodeId(1)])
       expect(graph._nodes).toHaveLength(1)
-      const replacement = graph.getNodeById(toNodeId(1))
-      expect(replacement?.id).toBe(toNodeId(1))
-      expect(replacement).not.toBe(stale)
-      expect(graph._nodes).not.toContain(stale)
-      expect(stale?.graph).toBeNull()
+      expect(graph.getNodeById(toNodeId(1))).toBe(incumbent)
+      expect(incumbent.widgets).toHaveLength(1)
+      expect(incumbent.widgets?.[0].value).toBe(8)
       expect(graph.serialize().nodes).toHaveLength(1)
     })
 
@@ -451,7 +456,7 @@ describe('reconcileAgentAdapters', () => {
       expect(
         mutations.addNode(
           {
-            ...nodePayload(1, 'widget-node'),
+            ...nodePayload(1, 'dummy'),
             outputs: [{ name: 'value', type: '*', links: [9] }],
             widgets_values: { value: 7 }
           },
@@ -718,12 +723,22 @@ describe('reconcileAgentAdapters', () => {
     it('does not echo a remote re-create or delete back as local operations', async () => {
       const scope = graphScopeOf(graph)
       const mutations = remoteMutations(scope)
-      mutations.addNode(nodePayload(1), REMOTE)
+      mutations.addNode(
+        { ...nodePayload(1, 'widget-node'), widgets_values: { value: 7 } },
+        REMOTE
+      )
       reconcileAgentAdapters(graph)
+      const incumbent = graph.getNodeById(toNodeId(1))!
 
       mutations.deleteNode(toNodeId(1), [], REMOTE)
-      mutations.addNode(nodePayload(1), { ...REMOTE, opId: 'op-1-again' })
+      mutations.addNode(
+        { ...nodePayload(1, 'widget-node'), widgets_values: { value: 8 } },
+        { ...REMOTE, opId: 'op-1-again' }
+      )
       reconcileAgentAdapters(graph)
+      expect(graph.getNodeById(toNodeId(1))).toBe(incumbent)
+      expect(incumbent.widgets?.[0].value).toBe(8)
+
       mutations.deleteNode(toNodeId(1), [], REMOTE)
       reconcileAgentAdapters(graph)
       await settle()
