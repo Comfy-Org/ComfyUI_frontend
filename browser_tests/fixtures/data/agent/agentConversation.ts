@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import { FROZEN_OPS } from '@comfyorg/comfy-multi-player'
@@ -96,6 +96,7 @@ export type AgentConversation = z.infer<typeof zAgentConversation>
 
 export function listRecordedConversations(): string[] {
   const dir = fileURLToPath(new URL('./conversations/', import.meta.url))
+  if (!existsSync(dir)) return []
   return readdirSync(dir)
     .filter((file) => file.endsWith('.json'))
     .map((file) => file.slice(0, -'.json'.length))
