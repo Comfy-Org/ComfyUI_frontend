@@ -1,9 +1,6 @@
 import { expect } from '@playwright/test'
 
-import {
-  agentConversationTest as test,
-  toolRowLabel
-} from '@e2e/fixtures/agentConversationFixture'
+import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { listRecordedConversations } from '@e2e/fixtures/data/agent/agentConversation'
 
 test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
@@ -40,11 +37,9 @@ test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
             succeeded ? 'false' : 'true'
           )
           if (succeeded) await button.click()
-          for (const call of calls) {
-            await expect(
-              toolRows.filter({ hasText: toolRowLabel(call.name) }).first()
-            ).toBeVisible()
-          }
+        }
+        for (const [label, count] of agentConversation.toolRowLabels()) {
+          await expect(toolRows.filter({ hasText: label })).toHaveCount(count)
         }
 
         await expect(
