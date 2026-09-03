@@ -20,11 +20,12 @@ and deletes the temporary agent database.
 
 ## Start here
 
-Three jobs, three docs, in the order you will meet them:
-
-1. Replay the recorded agent conversations as tests. Needs only ComfyUI on 8188. `browser_tests/README.md`, "Playbook".
-2. Run the real agent locally: standalone for the dev loop and the smoke, record mode for the recording stack. Needs the cloud checkout. This doc.
-3. Record a new conversation through record mode. Needs `cloud up` in the cloud checkout. `browser_tests/fixtures/data/agent/README.md`, "Playbook".
+1. **Replay** the recordings as tests. Needs ComfyUI on 8188 only.
+   [browser_tests/README.md](../../browser_tests/README.md#playbook)
+2. **Run the agent locally**: dev loop, smoke, record mode. Needs `../cloud`.
+   This doc, below.
+3. **Record** a new conversation. Needs `cloud up` in `../cloud`.
+   [fixtures/data/agent/README.md](../../browser_tests/fixtures/data/agent/README.md#playbook)
 
 ## Playbook
 
