@@ -190,9 +190,9 @@ describe('chunkWireOps (property)', () => {
         const batches = chunkWireOps(ops)
 
         for (let i = 0; i < batches.length - 1; i++) {
-          const batch = batches[i]!
-          const next = batches[i + 1]!
-          const head = next[0]!
+          const batch = batches[i]
+          const next = batches[i + 1]
+          const head = next[0]
           // A clear on either side legitimately forces the boundary.
           if (
             batch.some((op) => !BATCHABLE_OPS.includes(op.op as never)) ||
@@ -239,7 +239,7 @@ describe('mintWireOps (property)', () => {
 
           expect(minted).toHaveLength(operations.length)
           for (const [index, op] of minted.entries()) {
-            const original = operations[index]!
+            const original = operations[index]
             expect(op.actor).toBe(actor)
             expect(op.base_version).toBe(baseVersion)
             expect(op.stamp).toEqual([baseVersion, actor])
@@ -310,14 +310,14 @@ describe('minted stamps (property) — order-independent LWW', () => {
               baseVersion: writer.baseVersion
             })
           )
-          const ops = concurrent.map((minted) => minted[0]!)
+          const ops = concurrent.map((minted) => minted[0])
           if (new Set(ops.map((op) => op.actor)).size > 1) contended++
 
           const reversed = [...ops].reverse()
           const shuffled = ops
             .map((op, index) => ({
               op,
-              key: permutationKeys[index % permutationKeys.length]!,
+              key: permutationKeys[index % permutationKeys.length],
               index
             }))
             .sort((a, b) => a.key - b.key || a.index - b.index)
@@ -331,7 +331,7 @@ describe('minted stamps (property) — order-independent LWW', () => {
           // not merely whatever both orders happened to agree on.
           const winner = [...ops].sort((a, b) =>
             compareStampKeys(stampKey(a), stampKey(b))
-          )[ops.length - 1]!
+          )[ops.length - 1]
           expect(forward).toEqual(
             (winner as Extract<Op, { op: 'set_widget' }>).value
           )
@@ -372,10 +372,10 @@ describe('minted stamps — DQ-11 actor-incarnation gap at this pin', () => {
 
     const [op] = mintWireOps([setWidget(1, 'v')], MINT)
 
-    expect(op!.stamp).toEqual([MINT.baseVersion, MINT.actor])
-    expect(op!.stamp).toHaveLength(2)
+    expect(op.stamp).toEqual([MINT.baseVersion, MINT.actor])
+    expect(op.stamp).toHaveLength(2)
     // No incarnation / life component exists to namespace the stamp with.
-    expect(Object.keys(op!)).not.toContain('incarnation')
+    expect(Object.keys(op)).not.toContain('incarnation')
   })
 
   it('documents that a stale life-1 write still defeats a live life-2 write', () => {

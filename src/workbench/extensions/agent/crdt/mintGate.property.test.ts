@@ -1,15 +1,11 @@
 /**
  * Exhaustive coverage of the mint gate.
  *
- * `mintGate.test.ts` walks the five one-conjunct-off cases. The gate has four
- * booleans, so those five leave 11 of the 16 states unvisited — and the states
- * that actually matter are the combinations: teardown coinciding with a bound
- * doc and local provenance is an ordinary tab switch, and that is precisely the
- * clear-storm the gate exists to stop. A regression that dropped the teardown
- * conjunct from the conjunction, or that ORed two of them, still passes every
- * example test.
+ * `mintGate.test.ts` walks the one-conjunct-off cases. Exhaustively covering
+ * all eight states also pins combinations such as teardown coinciding with a
+ * bound doc, the clear-storm case the gate exists to stop.
  *
- * The domain is 16 states, so this enumerates all of them rather than sampling.
+ * The domain is small, so this enumerates all of it rather than sampling.
  */
 import { describe, expect, it } from 'vitest'
 
@@ -20,24 +16,12 @@ const BOOLS = [false, true] as const
 
 const ALL_STATES: MintGateInput[] = BOOLS.flatMap((flagEnabled) =>
   BOOLS.flatMap((docBound) =>
-    BOOLS.flatMap((localProvenance) =>
-      BOOLS.map((teardown) => ({
-        flagEnabled,
-        docBound,
-        localProvenance,
-        teardown
-      }))
-    )
+    BOOLS.map((teardown) => ({ flagEnabled, docBound, teardown }))
   )
 )
 
-function key({
-  flagEnabled,
-  docBound,
-  localProvenance,
-  teardown
-}: MintGateInput): string {
-  return `flag=${flagEnabled} doc=${docBound} local=${localProvenance} teardown=${teardown}`
+function key({ flagEnabled, docBound, teardown }: MintGateInput): string {
+  return `flag=${flagEnabled} doc=${docBound} teardown=${teardown}`
 }
 
 describe('shouldMint — exhaustive over the whole input domain', () => {
@@ -45,13 +29,10 @@ describe('shouldMint — exhaustive over the whole input domain', () => {
     const expected: Record<string, boolean> = Object.fromEntries(
       ALL_STATES.map((s) => [key(s), false])
     )
-    // The single true state: flag enabled, doc bound, local provenance,
-    // and NOT teardown — an ordinary tab switch, not the clear-storm case.
     expected[
       key({
         flagEnabled: true,
         docBound: true,
-        localProvenance: true,
         teardown: false
       })
     ] = true
