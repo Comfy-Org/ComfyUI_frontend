@@ -448,9 +448,7 @@ const {
 // fallback is scoped to that one doc: the active tab's persisted tab binding
 // counts only when it names the doc the follower would restore, so a tab that
 // merely carries a stale binding, or a second bound tab, never reads as
-// active and never keeps the follower projecting into a background tab. A
-// full reload is out of scope by design: the follower refuses a record from
-// another page load (FEC-5).
+// active and never keeps the follower projecting into a background tab.
 function restorableWorkflowIdFor(tabPath: string): string | null {
   const persisted = bindingStore.workflowIdFor(tabPath)
   if (persisted === undefined) return null

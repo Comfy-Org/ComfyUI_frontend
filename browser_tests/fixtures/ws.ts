@@ -20,16 +20,24 @@ function createWebSocketRouteHandler(
 export const webSocketFixture = base.extend<{
   connectWebSocketToServer: boolean
   getWebSocket: () => Promise<WebSocketRoute>
+  webSocketMessages: string[]
 }>({
   connectWebSocketToServer: [true, { option: true }],
+  // oxlint-disable-next-line no-empty-pattern -- Playwright requires an object pattern.
+  webSocketMessages: async ({}, use) => {
+    await use([])
+  },
   getWebSocket: [
-    async ({ context, connectWebSocketToServer }, use) => {
+    async ({ context, connectWebSocketToServer, webSocketMessages }, use) => {
       let latest: WebSocketRoute | undefined
       let resolve: ((ws: WebSocketRoute) => void) | undefined
 
       await context.routeWebSocket(
         /\/ws/,
         createWebSocketRouteHandler(connectWebSocketToServer, (ws) => {
+          ws.onMessage((message) => {
+            if (typeof message === 'string') webSocketMessages.push(message)
+          })
           latest = ws
           resolve?.(ws)
         })
