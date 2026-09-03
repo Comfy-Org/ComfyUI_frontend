@@ -6,6 +6,10 @@ import type {
   BillingClient,
   Loadable
 } from '../core/index.js'
+export { CheckoutSteps } from './CheckoutSteps.js'
+export { createLocalStorageBillingOperationStore } from './localStorageBillingOperationStore.js'
+export { useBillingOperation, useCheckout, useTopUp } from './billing.js'
+export type { CheckoutStepsProps } from './billing.js'
 
 export const billingClientKey: InjectionKey<BillingClient> =
   Symbol('billingClient')

@@ -63,7 +63,7 @@ describe('packed package', () => {
       [
         '--input-type=module',
         '-e',
-        "await import('@comfyorg/account/core'); await import('@comfyorg/account/vue'); console.log('node-esm-ok')"
+        "const core=await import('@comfyorg/account/core'); const vue=await import('@comfyorg/account/vue'); if(!core.createBillingApiClient||!core.reduceBilling||!vue.CheckoutSteps) throw new Error('billing exports missing'); console.log('node-esm-ok')"
       ],
       consumerRoot
     )
@@ -71,7 +71,7 @@ describe('packed package', () => {
 
     writeFileSync(
       join(consumerRoot, 'consumer.ts'),
-      "import '@comfyorg/account/core'\nimport '@comfyorg/account/vue'\n"
+      "import { createBillingApiClient, reduceBilling } from '@comfyorg/account/core'\nimport { CheckoutSteps } from '@comfyorg/account/vue'\nvoid createBillingApiClient\nvoid reduceBilling\nvoid CheckoutSteps\n"
     )
     for (const [module, moduleResolution] of [
       ['NodeNext', 'NodeNext'],
