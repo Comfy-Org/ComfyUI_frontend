@@ -1,14 +1,8 @@
-import { Form } from '@primevue/forms'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
-
-import Button from '@/components/ui/button/Button.vue'
-import Input from '@/components/ui/input/Input.vue'
-import ProgressSpinner from '@/components/ui/spinner/Spinner.vue'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
@@ -77,8 +71,7 @@ describe('SignInForm', () => {
     const user = userEvent.setup()
     const result = render(SignInForm, {
       global: {
-        plugins: [PrimeVue, i18n],
-        components: { Form, Button, Input, ProgressSpinner }
+        plugins: [i18n]
       },
       props
     })
@@ -117,6 +110,20 @@ describe('SignInForm', () => {
   })
 
   describe('Form Submission', () => {
+    it('disables submit for invalid input and re-enables it after correction', async () => {
+      const { user } = renderComponent()
+      const submit = screen.getByRole('button', { name: loginButtonText })
+
+      expect(submit).toBeEnabled()
+
+      await user.type(getEmailInput(), 'invalid-email')
+      expect(submit).toBeDisabled()
+
+      await user.clear(getEmailInput())
+      await user.type(getEmailInput(), 'test@example.com')
+      expect(submit).toBeEnabled()
+    })
+
     it('emits submit event when form is submitted with valid data', async () => {
       const onSubmit = vi.fn()
       const { user } = renderComponent({ onSubmit })
@@ -140,6 +147,12 @@ describe('SignInForm', () => {
       await user.click(screen.getByRole('button', { name: loginButtonText }))
 
       expect(onSubmit).not.toHaveBeenCalled()
+      expect(
+        screen.getByText(enMessages.validation.invalidEmail)
+      ).toBeInTheDocument()
+      expect(getEmailInput()).toHaveAccessibleDescription(
+        enMessages.validation.invalidEmail
+      )
     })
   })
 
