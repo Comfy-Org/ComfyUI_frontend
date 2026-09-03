@@ -1,0 +1,1579 @@
+---
+import { cn } from '@comfyorg/tailwind-utils'
+import {
+  ArrowRight,
+  Coins as CreditsIcon,
+  Copy as CopyIcon,
+  Download as DownloadIcon,
+  KeyRound,
+  X as RemoveIcon
+} from '@lucide/vue'
+
+import FAQSplit01 from '../components/blocks/FAQSplit01.vue'
+import BrandButton from '../components/common/BrandButton.vue'
+import GlassCard from '../components/common/GlassCard.vue'
+import { buttonVariants } from '../components/ui/button'
+import Badge from '../components/ui/badge/Badge.vue'
+import { toggleVariants } from '../components/ui/toggle'
+import BaseLayout from '../layouts/BaseLayout.astro'
+import { highlightInline } from '../lib/highlight'
+
+const name = 'Image to 3D Model'
+const slugId = 'pixal3d-trellis2'
+const blurb =
+  'Turn a single image into a textured 3D model you can inspect, download, and continue refining on the graph.'
+const modality = '3d'
+const meta = { label: '3D' }
+const kind = 'open weights'
+const dayZero = false
+const runs = 'Image to textured mesh'
+const price = 'credit estimate before run'
+const promptExample =
+  'Upload one clear image with a single subject and a simple background.'
+const isImageTo3d = true
+const imageTo3dExamples = [
+  {
+    label: 'Viking axe',
+    name: 'viking_wolf_rune_axe.png',
+    imageUrl:
+      'https://raw.githubusercontent.com/Comfy-Org/workflow_templates/refs/heads/main/input/viking_wolf_rune_axe.png',
+    alt: 'Viking wolf rune axe example input',
+    modelUrl:
+      'https://media.comfy.org/website/pixal3d-trellis2/viking-wolf-rune-axe.glb'
+  },
+  {
+    label: 'Viking',
+    name: 'viking-fisher-input.png',
+    imageUrl:
+      'https://media.comfy.org/website/pixal3d-trellis2/viking-fisher-input.png',
+    alt: 'Viking holding a fish and an axe example input',
+    modelUrl:
+      'https://media.comfy.org/website/pixal3d-trellis2/viking-fisher-result.glb'
+  },
+  {
+    label: 'Dragon',
+    name: 'dragon-hatchling-input.png',
+    imageUrl:
+      'https://media.comfy.org/website/pixal3d-trellis2/dragon-hatchling-input.png',
+    alt: 'Crystal-backed dragon emerging from an egg example input',
+    modelUrl:
+      'https://media.comfy.org/website/pixal3d-trellis2/dragon-hatchling-result.glb'
+  }
+]
+const defaultImageTo3dExample = imageTo3dExamples[0]
+const imageTo3dModelUrl = defaultImageTo3dExample?.modelUrl ?? null
+const imageTo3dWorkflowUrl = 'https://cloud.comfy.org/?share=920c795f693a'
+const displayGallery = imageTo3dExamples.map(({ imageUrl }) => imageUrl)
+const img = displayGallery[0]
+const gallery = displayGallery
+const baseCredits = 6
+const kindLabel = 'Open weights'
+const sentence = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+const pill = 'inline-flex h-6 shrink-0 items-center rounded-full px-4 text-xs font-normal transition-colors'
+const pillMuted = 'bg-transparency-white-t4 text-primary-comfy-canvas'
+const pillActive = 'bg-transparency-white-t8 text-primary-comfy-canvas'
+const pillIdle = 'text-primary-warm-gray hover:bg-transparency-white-t4 hover:text-primary-comfy-canvas'
+const sectionTitle = 'text-xs font-bold uppercase tracking-widest text-primary-comfy-yellow'
+const panelTitle = 'text-xs font-bold uppercase tracking-widest text-primary-warm-white'
+const cardTitle = 'text-sm font-bold uppercase tracking-widest text-primary-comfy-yellow'
+const bodyCopy = 'text-sm font-light text-primary-warm-gray'
+const helperCopy = 'text-2xs font-light text-primary-warm-gray'
+const fieldLabel = 'block text-2xs font-bold uppercase tracking-widest text-primary-warm-gray'
+const textAction = 'text-2xs font-bold uppercase tracking-widest text-primary-warm-gray hover:text-primary-warm-white'
+const iconButton = 'group shrink-0 cursor-pointer rounded-lg border border-transparency-white-t20 bg-transparency-white-t4 p-1.5 text-primary-warm-gray transition-colors hover:bg-transparency-white-t8 hover:text-primary-warm-white'
+const tab = cn(
+  toggleVariants(),
+  'rounded-none px-4 first:rounded-l-xl last:rounded-r-xl'
+)
+const workflowsUrl = imageTo3dWorkflowUrl
+const hfUrl = null
+const docsUrl = null
+
+const altPromptsByModality: Record<string, string[]> = {
+  video: ['Night market in the rain, neon reflections, slow dolly through the crowd.', 'A glass of water on a train window sill, landscape rushing past outside.'],
+  i2v: ['Continue the motion from this frame — wind picks up, hair and fabric follow.', 'Subtle parallax push-in on this still, dust motes drifting in the light.'],
+  image: ['Editorial product shot on wet slate, single hard key light, deep shadow.', 'Isometric cutaway of a tiny workshop, warm tungsten palette.'],
+  edit: ['Same scene, golden hour — keep every reflection consistent.', 'Swap the background to a studio sweep, keep the subject untouched.'],
+  audio: ['A four-bar lo-fi loop that swings, vinyl crackle underneath.', 'Rising cinematic pulse that resolves on a held brass chord.'],
+  upscale: ['Recover the fine text on the label without inventing detail.', 'Sharpen the weave of the fabric, keep the grain of the film.'],
+  '3d': ['A watertight mesh of this object with clean PBR textures.', 'Turntable-ready asset, quads only, sensible UV seams.']
+}
+const galleryPrompts = [promptExample, ...(altPromptsByModality[modality] ?? [])]
+
+const familyVariants: Array<{
+  slug: string
+  displayName: string
+  directory: string
+  workflowCount: number
+}> = []
+const dirLabel: Record<string, string> = {}
+
+const costRows = isImageTo3d
+  ? [
+      { label: `${name} · textured GLB`, value: `${baseCredits} credits ≈ $${(baseCredits * 0.0084).toFixed(2)} · est.`, credits: true },
+      { label: `${name} · 4K textures`, value: `${baseCredits * 2} credits ≈ $${(baseCredits * 2 * 0.0084).toFixed(2)} · est.`, credits: true },
+      { label: 'Creator plan / month', value: `≈ ${Math.round(2400 / baseCredits) * 10} runs · est.`, credits: false }
+    ]
+  : [
+      { label: `${name} · 5s · 720p`, value: `${baseCredits} credits ≈ $${(baseCredits * 0.0084).toFixed(2)} · est.`, credits: true },
+      { label: `${name} · 5s · 1080p`, value: `${baseCredits * 2} credits ≈ $${(baseCredits * 2 * 0.0084).toFixed(2)} · est.`, credits: true },
+      { label: `${name} · 10s · 720p`, value: `${baseCredits * 2} credits ≈ $${(baseCredits * 2 * 0.0084).toFixed(2)} · est.`, credits: true },
+      { label: 'Creator plan / month', value: `≈ ${Math.round(2400 / baseCredits) * 10} runs · est.`, credits: false }
+    ]
+
+const canonicalURL = new URL('/pixal3d-trellis2/', Astro.site ?? 'https://comfy.org')
+const mdUrl = '/pixal3d-trellis2.md'
+
+// A model's example seed is derived from its slug: distinct per model, and
+// stable across builds so the page output stays reproducible.
+const seedFromSlug = (slug: string) => {
+  let hash = 2166136261
+  for (let i = 0; i < slug.length; i++) {
+    hash ^= slug.charCodeAt(i)
+    hash = Math.imul(hash, 16777619)
+  }
+  return (Math.abs(hash) % 900_000_000) + 100_000_000
+}
+const defaultSeed = seedFromSlug(slugId)
+const sdkExamples = [
+  {
+    id: 'python',
+    label: 'Python',
+    language: 'python',
+    code: `# pip install comfy-sdk
+import os
+from comfy_sdk import Comfy
+os.environ["COMFY_BASE_URL"] = "https://cloud.comfy.org"
+client = Comfy(api_key=os.environ["COMFY_API_KEY"])
+wf = client.workflows.from_file("workflow_api.json")
+
+# Upload an asset and set it as an input to the workflow
+asset = client.assets.from_file("viking_wolf_rune_axe.png")
+asset.commit()
+wf.set_input("122", "image", asset)
+
+# Submit the workflow and download the output
+job = client.run(wf)
+out = job.get_outputs("321")[0]
+out.to_file("viking_wolf_rune_axe_output.glb")`
+  },
+  {
+    id: 'javascript',
+    label: 'JavaScript',
+    language: 'javascript',
+    code: `// npm install @comfyorg/sdk  (Node 22+)
+import { Comfy } from "@comfyorg/sdk";
+
+process.env.COMFY_BASE_URL = "https://cloud.comfy.org";
+const client = new Comfy({ apiKey: process.env.COMFY_API_KEY });
+const wf = await client.workflows.fromFile("workflow_api.json");
+
+// Upload an asset and set it as an input to the workflow
+const asset = await client.assets.fromFile("viking_wolf_rune_axe.png");
+await asset.commit();
+wf.setInput("122", "image", asset);
+
+// Submit the workflow and download the output
+const job = await client.run(wf);
+const out = job.getOutputs("321")[0];
+await out.toFile("viking_wolf_rune_axe_output.glb");`
+  }
+] as const
+const highlightedSdkExamples = await Promise.all(
+  sdkExamples.map(async (example) => ({
+    ...example,
+    html: await highlightInline(example.code, example.language)
+  }))
+)
+const llmPrompt = encodeURIComponent(`Read ${canonicalURL.href}.md and help me run ${name} in ComfyUI. I want to understand the inputs and get my first output.`)
+const workflowCount = 0
+const softwareAppJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name,
+  applicationCategory: 'MultimediaApplication',
+  operatingSystem: 'Any',
+  url: canonicalURL.href,
+  author: { '@type': 'Organization', name: 'Comfy Org', url: 'https://comfy.org' }
+}
+const breadcrumbJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://comfy.org' },
+    { '@type': 'ListItem', position: 2, name, item: canonicalURL.href }
+  ]
+}
+// Same call and merge the events section makes, so the link reads identically.
+// cn resolves the variant's casing and type scale against the size defaults —
+// concatenating leaves both and the wrong one wins. The arrow carries no size
+// class on purpose: the variant sizes a bare svg to size-6.
+const runLink = cn(buttonVariants({ variant: 'link' }), 'normal-case')
+const faqs = isImageTo3d
+  ? [
+      {
+        id: 'what-is-trellis-2',
+        question: 'What is Trellis.2?',
+        answer:
+          "Trellis.2 is Microsoft's open-source image-to-3D model, released in December 2025. It is a 4-billion-parameter model built on a compact O-Voxel structured latent representation that generates geometry and PBR materials from a single image at effective resolutions up to 1536³. It now runs natively in ComfyUI core."
+      },
+      {
+        id: 'what-is-pixal3d',
+        question: 'What is Pixal3D?',
+        answer:
+          'Pixal3D is an image-to-3D model from Tsinghua University and Tencent ARC Lab. It uses pixel-aligned generation to keep the 3D output in direct correspondence with the input view, producing near-reconstruction-level fidelity. It is built on the Trellis.2 backbone and runs natively in ComfyUI alongside it.'
+      },
+      {
+        id: 'commercial-use',
+        question: 'Can I use Trellis.2 and Pixal3D output commercially?',
+        answer:
+          "Yes. Trellis.2's code and weights are MIT-licensed, and ComfyUI's native implementation replaces the non-commercial nvdiffrast and nvdiffrec dependencies from the original pipeline with a from-scratch PyTorch and SciPy reimplementation. There are no non-commercial dependencies in the ComfyUI pipeline, so generated assets can be used in commercial work."
+      },
+      {
+        id: 'pixal3d-vs-trellis-2',
+        question: 'How does Pixal3D compare to Trellis.2?',
+        answer:
+          'Pixal3D shares the Trellis.2 backbone, VAEs, and DINOv3 image conditioning, and adds pixel-aligned generation, explicit image back-projection into a 3D feature volume, and cascaded refinement of structure, shape, and texture. It generally produces better results than Trellis.2, with tighter fidelity to the input image. Both output the same PBR material set.'
+      },
+      {
+        id: 'cost',
+        question: 'How much does it cost to use Trellis.2 or Pixal3D in ComfyUI?',
+        answer:
+          'Nothing per asset. Both models are open weights and can run locally on consumer hardware as part of ComfyUI core, so there is no per-generation charge. They are also available on Comfy Cloud, where standard Comfy Cloud credit usage applies.'
+      },
+      {
+        id: 'pytorch-cuda-version',
+        question: 'Do I need a specific PyTorch or CUDA version?',
+        answer:
+          'No. The original Trellis.2 pipeline required PyTorch 2.6.0 with CUDA 12.4 and a stack of compiled extensions. The native ComfyUI implementation drops all of them. If your ComfyUI runs, these models run on your current PyTorch.'
+      },
+      {
+        id: 'inputs',
+        question: 'What inputs do Trellis.2 and Pixal3D take?',
+        answer:
+          'A single image. Both models generate geometry and materials from one input view. The workflows also include BiRefNet for background removal and MoGe for camera field-of-view estimation, both available on the Comfy-Org Hugging Face page.'
+      },
+      {
+        id: 'model-weights',
+        question: 'Which model weights do I need to download?',
+        answer:
+          'Comfy-Org/TRELLIS.2 and Comfy-Org/Pixal3D from Hugging Face, plus Comfy-Org/BiRefNet for background removal and Comfy-Org/MoGe for camera FOV estimation. The workflow note lists the target directory for each.'
+      },
+      {
+        id: 'texture-maps',
+        question: 'What texture maps does the ComfyUI pipeline generate?',
+        answer:
+          "Trellis.2's texturing model produces base color, roughness, and metallic maps. The ComfyUI implementation adds a UV unwrapping node and bakes two more maps from the high-poly mesh: a normal map and an ambient occlusion map, giving a complete PBR material set."
+      },
+      {
+        id: 'mesh-post-processing',
+        question: 'What mesh post-processing nodes are included?',
+        answer:
+          'Four new nodes ship with this release. Remesh Mesh fixes holes and mesh imperfections, Decimate Mesh reduces face and vertex count to a target budget, Smooth Mesh Normals smooths the mesh volume, and Render Mesh produces a quick image render. The Load 3D, Preview 3D, and Save 3D nodes were also rebuilt for these workflows.'
+      }
+    ]
+  : [
+      {
+        id: 'about',
+        question: `What is ${name}?`,
+        answer: `${name} is ${blurb} You can run it in the browser playground, on Comfy Cloud, or locally in ComfyUI with full control over every parameter.`
+      },
+      {
+        id: 'run-in-comfyui',
+        question: `How do I run ${name} in ComfyUI?`,
+        answer:
+          'Press Run in the playground above — the first five runs are free and no card is required. You can also open the full graph on Comfy Cloud or download the workflow to run locally.'
+      },
+      {
+        id: 'free-to-use',
+        question: `Is ${name} free to use?`,
+        answer:
+          kind === 'open weights'
+            ? `${name} is open weights: download it and run it locally in ComfyUI for free, forever. Comfy Cloud adds hosted GPUs with a free trial quota.`
+            : `${name} runs through Comfy partner nodes on Cloud credits. New accounts include free runs to try it, with no card required.`
+      },
+      ...(workflowCount > 0
+        ? [
+            {
+              id: 'workflow-count',
+              question: `How many ComfyUI workflows use ${name}?`,
+              answer: `There are ${workflowCount} workflow templates using ${name}, ready to load and customize.`
+            }
+          ]
+        : [])
+    ]
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map(({ question, answer }) => ({
+    '@type': 'Question',
+    name: question,
+    acceptedAnswer: { '@type': 'Answer', text: answer }
+  }))
+}
+---
+
+<BaseLayout
+  title="Pixal3D + TRELLIS.2 in ComfyUI"
+  description="Turn one image into a textured 3D model with Pixal3D and TRELLIS.2 in ComfyUI. Explore examples, download GLBs, and open the workflow."
+>
+  <Fragment slot="head">
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(softwareAppJsonLd)} />
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(breadcrumbJsonLd)} />
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(faqJsonLd)} />
+  </Fragment>
+  <!-- COMPACT HEADER -->
+  <section class="mx-auto max-w-9xl px-5 pt-8 sm:px-6 lg:px-20 lg:pt-12">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div class="flex min-w-0 flex-wrap items-center gap-3">
+        <h1 class="max-w-full truncate text-2xl font-semibold text-primary-warm-white sm:text-3xl">{name}</h1>
+        <Badge variant="accent">{meta.label}</Badge>
+      </div>
+      <div class="hidden gap-2 lg:flex">
+        {docsUrl && <BrandButton href={docsUrl} variant="outline" size="sm" class="text-2xs uppercase tracking-widest">Learn more</BrandButton>}
+        {!isImageTo3d && <BrandButton href={workflowsUrl} variant="solid" size="sm" class="text-2xs uppercase tracking-widest">Try workflows</BrandButton>}
+      </div>
+    </div>
+    <p class="mt-2 max-w-3xl text-sm text-primary-comfy-canvas lg:text-base">{blurb}</p>
+    <div class="mt-4 flex flex-wrap gap-1.5">
+      {dayZero && <span class:list={[pill, pillMuted]}>Day zero</span>}
+      <span class:list={[pill, pillMuted]}>{kindLabel}</span>
+      <span class:list={[pill, pillMuted]}>Commercial use</span>
+      <span class:list={[pill, pillMuted]}>{sentence(price)}</span>
+      <span class:list={[pill, pillMuted]}>{sentence(runs)}</span>
+    </div>
+  </section>
+
+  <!-- TABS + TRIO -->
+  <section class="mx-auto max-w-9xl px-5 pt-16 sm:px-6 lg:px-20">
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <nav class="ring-primary-warm-white/20 flex w-fit max-w-full items-center gap-0.5 overflow-x-auto rounded-2xl p-1.5 ring-2" role="tablist" aria-label="Model page sections">
+        <button type="button" role="tab" data-tab="playground" data-state="on" aria-controls="panel-playground" aria-selected="true" class={tab}><span class="ppformula-text-center">{isImageTo3d ? 'Examples' : 'Playground'}</span></button>
+        <button type="button" role="tab" data-tab="api" data-state="off" aria-controls="panel-api" aria-selected="false" class={tab}><span class="ppformula-text-center">API</span></button>
+        {!isImageTo3d && <button type="button" role="tab" data-tab="gallery" data-state="off" aria-controls="panel-gallery" aria-selected="false" class={tab}><span class="ppformula-text-center">Examples</span></button>}
+      </nav>
+      {!isImageTo3d && <div class="hidden gap-2 sm:flex">
+        <div class="relative" id="llms-wrap">
+          <div class="inline-flex items-stretch divide-x divide-transparency-white-t20 overflow-hidden rounded-lg border border-transparency-white-t20 bg-transparency-white-t4 text-xs font-normal text-primary-comfy-canvas">
+            <button id="llms-copy" class="cursor-pointer px-3 py-2.5 transition-colors hover:bg-transparency-white-t8"><span class="ppformula-text-center">Copy markdown<span id="llms-copied" class="hidden pl-2 text-primary-comfy-yellow">✓</span></span></button>
+            <button id="llms-btn" aria-haspopup="menu" aria-expanded="false" aria-label="More formats for LLMs" class="cursor-pointer px-2 transition-colors hover:bg-transparency-white-t8">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+          </div>
+          <div id="llms-menu" role="menu" class="absolute right-0 top-full z-40 mt-1.5 hidden w-60 overflow-hidden rounded-xl border border-transparency-white-t20 bg-site-dropdown py-1.5 shadow-2xl">
+            <a href={mdUrl} class="block px-4 py-2.5 text-xs text-primary-warm-white hover:bg-transparency-white-t4">View as Markdown</a>
+            <a href="/models-v2/llms.txt" class="block px-4 py-2.5 text-xs text-primary-warm-white hover:bg-transparency-white-t4">llms.txt — full catalog</a>
+            {hfUrl && (
+              <Fragment>
+                <div class="my-1.5 border-t border-transparency-white-t20"></div>
+                <a href={hfUrl} class="flex items-center justify-between gap-3 px-4 py-2.5 text-xs text-primary-warm-white hover:bg-transparency-white-t4">
+                  Download weights
+                  <DownloadIcon class="size-4 shrink-0" aria-hidden="true" />
+                </a>
+              </Fragment>
+            )}
+          </div>
+        </div>
+        <div class="relative" id="graph-wrap">
+          <div class="inline-flex items-stretch divide-x divide-transparency-white-t20 overflow-hidden rounded-lg border border-transparency-white-t20 bg-transparency-white-t4 text-xs font-normal text-primary-comfy-canvas">
+            <a href="https://cloud.comfy.org?utm_source=models_v2_preview" class="px-3 py-2.5 transition-colors hover:bg-transparency-white-t8"><span class="ppformula-text-center">Open the full graph</span></a>
+            <button id="graph-btn" aria-haspopup="menu" aria-expanded="false" aria-label="More ways to open this model" class="cursor-pointer px-2 transition-colors hover:bg-transparency-white-t8">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+          </div>
+          <div id="graph-menu" role="menu" class="absolute right-0 top-full z-40 mt-1.5 hidden w-60 overflow-hidden rounded-xl border border-transparency-white-t20 bg-site-dropdown py-1.5 shadow-2xl">
+            <a href={`https://chatgpt.com/?q=${llmPrompt}`} class="flex items-center justify-between gap-3 px-4 py-2.5 text-xs text-primary-warm-white hover:bg-transparency-white-t4">
+              Open in ChatGPT
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4 shrink-0"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg>
+            </a>
+            <a href={`https://claude.ai/new?q=${llmPrompt}`} class="flex items-center justify-between gap-3 px-4 py-2.5 text-xs text-primary-warm-white hover:bg-transparency-white-t4">
+              Open in Claude
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4 shrink-0"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg>
+            </a>
+          </div>
+        </div>
+      </div>}
+    </div>
+  </section>
+
+  <!-- PLAYGROUND -->
+  <section id="panel-playground" data-panel="playground" role="tabpanel" class="mx-auto max-w-9xl px-5 pt-6 sm:px-6 lg:px-20">
+    <div id="signed-in-strip" class="mb-4 hidden items-center justify-between gap-3 rounded-xl border border-primary-comfy-yellow/40 bg-primary-comfy-yellow/10 px-4 py-2.5 sm:flex-nowrap">
+      <p class="text-2xs font-bold uppercase tracking-widest text-primary-comfy-yellow">Signed in · inputs restored — no survey, no plan picker</p>
+      <p id="free-meter" class="shrink-0 text-2xs font-bold uppercase tracking-widest text-primary-comfy-yellow">Free runs: 5 left</p>
+    </div>
+
+    <GlassCard class="grid gap-2 lg:grid-cols-2">
+      <!-- INPUT CARD -->
+      <div class="rounded-4xl bg-primary-comfy-ink p-5 sm:p-6">
+        <div class="flex items-center justify-between">
+          <h2 class={cardTitle}>Input</h2>
+          {!isImageTo3d && <div id="iview-toggle" class="flex gap-1.5">
+            <button data-iview="app" class:list={[pill, pillActive]}>App</button>
+            <button data-iview="json" class:list={[pill, pillIdle]}>Code</button>
+          </div>}
+        </div>
+
+        <!-- APP VIEW — the workflow's exposed inputs, rendered as an app -->
+        <div id="panel-app">
+          {!isImageTo3d && (
+            <>
+              <label class:list={[fieldLabel, 'mt-5']}>Prompt *</label>
+              <textarea
+                id="pg-prompt"
+                rows="4"
+                class="mt-2 w-full resize-none rounded-xl border border-transparency-white-t20 bg-transparency-white-t4 p-4 text-sm font-light leading-relaxed text-primary-comfy-canvas focus:border-primary-comfy-yellow/60 focus:outline-none"
+              >{promptExample}</textarea>
+              <div class="mt-4 grid grid-cols-3 gap-2.5">
+                <div>
+                  <span class={fieldLabel}>Aspect</span>
+                  <div class="relative mt-1.5">
+                    <select id="sel-aspect" class="w-full appearance-none rounded-lg border border-transparency-white-t20 bg-transparency-white-t4 py-2.5 pl-3 pr-10 text-xs text-primary-comfy-canvas focus:border-primary-comfy-yellow/60 focus:outline-none">
+                      <option>16:9</option><option>9:16</option><option>1:1</option>
+                    </select>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-primary-comfy-canvas"><path d="m6 9 6 6 6-6"/></svg>
+                  </div>
+                </div>
+                <div>
+                  <span class={fieldLabel}>Duration</span>
+                  <div class="relative mt-1.5">
+                    <select id="sel-duration" class="w-full appearance-none rounded-lg border border-transparency-white-t20 bg-transparency-white-t4 py-2.5 pl-3 pr-10 text-xs text-primary-comfy-canvas focus:border-primary-comfy-yellow/60 focus:outline-none">
+                      <option data-mult="1">5 s</option><option data-mult="2">10 s</option>
+                    </select>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-primary-comfy-canvas"><path d="m6 9 6 6 6-6"/></svg>
+                  </div>
+                </div>
+                <div>
+                  <span class={fieldLabel}>Resolution</span>
+                  <div class="relative mt-1.5">
+                    <select id="sel-resolution" class="w-full appearance-none rounded-lg border border-transparency-white-t20 bg-transparency-white-t4 py-2.5 pl-3 pr-10 text-xs text-primary-comfy-canvas focus:border-primary-comfy-yellow/60 focus:outline-none">
+                      <option data-mult="1">720p</option><option data-mult="2">1080p</option>
+                    </select>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-primary-comfy-canvas"><path d="m6 9 6 6 6-6"/></svg>
+                  </div>
+                </div>
+              </div>
+              <label class:list={[fieldLabel, 'mt-4']} for="pg-seed">Seed</label>
+              <div class="mt-1.5 flex gap-2">
+                <input
+                  id="pg-seed"
+                  type="number"
+                  inputmode="numeric"
+                  min="0"
+                  step="1"
+                  value={defaultSeed}
+                  class="w-full rounded-lg border border-transparency-white-t20 bg-transparency-white-t4 px-3 py-2.5 text-xs text-primary-comfy-canvas focus:border-primary-comfy-yellow/60 focus:outline-none"
+                />
+                <button id="seed-shuffle" type="button" class="shrink-0 cursor-pointer rounded-lg border border-transparency-white-t20 bg-transparency-white-t4 px-3 py-2.5 text-xs font-normal text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t8"><span class="ppformula-text-center">Shuffle</span></button>
+              </div>
+              <p class:list={[helperCopy, 'mt-1.5']}>Change value for a different output.</p>
+            </>
+          )}
+          {!isImageTo3d && (
+            <>
+              <label class:list={[fieldLabel, 'mt-5']}>Reference image</label>
+              <input id="ref-file" type="file" accept="image/*" class="hidden" />
+              <div class="mt-2 flex flex-col items-start gap-3 sm:flex-row">
+                <div id="dropzone" role="button" tabindex="0" aria-controls="ref-file" class="flex min-h-40 w-full min-w-0 cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-transparency-white-t20 bg-transparency-white-t4 px-4 py-6 text-center transition-colors hover:border-primary-comfy-yellow/40 hover:bg-transparency-white-t8 focus:border-primary-comfy-yellow/60 focus:outline-none data-[dragging]:border-primary-comfy-yellow/40 data-[dragging]:bg-transparency-white-t8 sm:flex-1">
+                  <button id="add-image-btn" type="button" class="cursor-pointer rounded-lg border border-transparency-white-t20 bg-transparency-white-t4 px-3 py-2.5 text-xs font-normal text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t8"><span class="ppformula-text-center">Choose image</span></button>
+                  <span class="text-xs font-light text-primary-warm-gray">or drag and drop PNG, JPG, or WebP</span>
+                </div>
+
+                <div id="ref-attachment" class="relative hidden w-30 shrink-0 rounded-xl border border-transparency-white-t20 bg-transparency-white-t4 p-2">
+                  <div class="aspect-square w-full overflow-hidden rounded-lg bg-transparency-white-t8">
+                    <img
+                      id="ref-preview"
+                      alt=""
+                      class="aspect-square w-full object-cover"
+                      onerror="this.style.display='none'"
+                    />
+                  </div>
+                  <div class="px-0.5 pt-2">
+                    <p id="ref-name" class="truncate text-xs text-primary-comfy-canvas"></p>
+                    <p id="ref-meta" class="truncate text-2xs font-light text-primary-warm-gray"></p>
+                  </div>
+                  <button id="ref-remove" type="button" title="Remove" aria-label="Remove" class="absolute right-3 top-3 z-20 cursor-pointer rounded-lg border border-transparency-white-t20 bg-primary-comfy-ink/80 p-1.5 text-primary-comfy-canvas backdrop-blur transition-colors hover:bg-primary-comfy-ink hover:text-primary-warm-white">
+                    <RemoveIcon class="size-3.5 shrink-0" aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+          {isImageTo3d && (
+            <div class="mt-5">
+              <span class={fieldLabel}>Choose an example</span>
+              <div id="example-images" class="mt-2 grid grid-cols-3 gap-2">
+                {imageTo3dExamples.map((example, index) => (
+                  <button
+                    type="button"
+                    data-example-image
+                    data-example-name={example.name}
+                    data-example-url={example.imageUrl}
+                    data-example-alt={example.alt}
+                    data-example-model-url={example.modelUrl}
+                    data-selected={index === 0 ? '' : undefined}
+                    aria-label={`Use ${example.label} example`}
+                    aria-pressed={index === 0 ? 'true' : 'false'}
+                    class="group min-w-0 cursor-pointer rounded-xl border border-transparency-white-t20 bg-transparency-white-t4 p-1.5 text-left transition-colors hover:border-primary-comfy-yellow/40 hover:bg-transparency-white-t8 focus:border-primary-comfy-yellow/60 focus:outline-none data-[selected]:border-primary-comfy-yellow/60 data-[selected]:bg-transparency-white-t8"
+                  >
+                    <span class="block aspect-square overflow-hidden rounded-lg bg-transparency-white-t8">
+                      <img
+                        src={example.imageUrl}
+                        alt=""
+                        class="size-full object-cover transition-transform group-hover:scale-[1.02]"
+                        loading={index === 0 ? 'eager' : 'lazy'}
+                      />
+                    </span>
+                    <span class="block truncate px-1 pb-0.5 pt-2 text-2xs font-normal text-primary-comfy-canvas group-data-[selected]:text-primary-comfy-yellow">{example.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          <p id="image-error" class="mt-2 hidden text-xs text-primary-comfy-orange" role="alert">Add an image before running the workflow.</p>
+          <p id="run-error" class="mt-2 hidden text-xs text-primary-comfy-orange" role="alert"></p>
+        </div>
+
+        <!-- JSON VIEW -->
+        <div id="panel-json" class="hidden">
+          <div class="mt-4 overflow-hidden rounded-2xl border border-transparency-white-t20">
+            <div class="flex items-center justify-between border-b border-transparency-white-t20 px-4 py-2">
+              <div class="flex items-center gap-2 text-primary-warm-gray">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><path d="M14 2v6h6"/><path d="m10 13-2 2 2 2"/><path d="m14 17 2-2-2-2"/></svg>
+                <span class="font-mono text-2xs">json</span>
+              </div>
+              <button type="button" data-copy="input-json" title="Copy" aria-label="Copy" class={iconButton}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5 group-data-[copied]:hidden"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden size-3.5 group-data-[copied]:block"><path d="M20 6 9 17l-5-5"/></svg></button>
+            </div>
+            <pre id="input-json" class="max-h-96 scrollbar-code overflow-auto whitespace-pre-wrap break-words p-4 font-mono text-xs leading-relaxed text-primary-warm-gray"></pre>
+          </div>
+          <p class:list={[helperCopy, 'mt-2']}>Live from your inputs — the exact payload the API takes.</p>
+        </div>
+
+        <div class="mt-5 flex items-center justify-between gap-3 border-t border-white/10 pt-4">
+          {isImageTo3d
+            ? <div>
+                <p class="text-sm font-bold text-primary-comfy-canvas">Continue in Comfy Cloud</p>
+                <p class="mt-1 text-xs text-primary-comfy-canvas">Open the shared workflow to generate your own 3D model.</p>
+              </div>
+            : <span class="hidden items-center gap-1.5 text-2xs text-primary-warm-gray sm:flex">
+                <CreditsIcon class="size-3.5 shrink-0 text-primary-comfy-orange" aria-hidden="true" />
+                <span><span id="cost-line">{baseCredits} credits ≈ ${(baseCredits * 0.0084).toFixed(2)}</span> · est.</span>
+              </span>}
+          <div class="ml-auto flex items-center gap-3">
+            {!isImageTo3d && <BrandButton id="pg-reset" variant="outline" size="xs" class="uppercase tracking-widest">Reset</BrandButton>}
+            <BrandButton id="pg-run-desktop" variant="solid" size="xs" class="uppercase tracking-widest">{isImageTo3d ? 'TRY WORKFLOW' : 'Sign in to run — 5 free'}</BrandButton>
+          </div>
+        </div>
+      </div>
+
+      <!-- RESULT CARD -->
+      <div class="flex flex-col rounded-4xl bg-primary-comfy-ink p-5 sm:p-6">
+        <div class="flex items-center justify-between">
+          <h2 class={cardTitle}>Result</h2>
+          <div id="rview-toggle" class="flex gap-1.5">
+            <button data-rview="preview" class:list={[pill, pillActive]}>Preview</button>
+            <button data-rview="json" class:list={[pill, pillIdle]}>Code</button>
+          </div>
+        </div>
+        <div class="relative mt-5 aspect-video w-full overflow-hidden rounded-2xl">
+          {isImageTo3d
+            ? (
+                <div id="result-preview" class="relative h-full w-full bg-primary-comfy-ink-light">
+                  <canvas
+                    id="result-model-canvas"
+                    data-model-url={imageTo3dModelUrl}
+                    aria-label={`${name} interactive 3D result. Drag to orbit and scroll to zoom.`}
+                    class="h-full w-full cursor-grab touch-none active:cursor-grabbing"
+                  ></canvas>
+                  <p id="model-viewer-status" class="pointer-events-none absolute inset-0 flex items-center justify-center text-xs text-primary-warm-gray">Loading 3D preview…</p>
+                  <span class="pointer-events-none absolute bottom-3 left-3 rounded-full bg-primary-comfy-ink/80 px-3 py-1.5 text-2xs text-primary-comfy-canvas backdrop-blur">Drag to orbit · scroll to zoom</span>
+                </div>
+              )
+            : <img id="result-preview" src={img} alt={`${name} output`} class="h-full w-full object-cover transition-opacity duration-500" onerror="this.style.display='none'" />}
+          <div id="result-json-box" class="absolute inset-0 hidden overflow-hidden rounded-2xl border border-transparency-white-t20">
+            <div class="flex h-full flex-col">
+              <div class="flex items-center justify-between border-b border-transparency-white-t20 px-4 py-2">
+                <div class="flex items-center gap-2 text-primary-warm-gray">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><path d="M14 2v6h6"/><path d="m10 13-2 2 2 2"/><path d="m14 17 2-2-2-2"/></svg>
+                  <span class="font-mono text-2xs">json</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button type="button" data-copy="result-json" title="Copy" aria-label="Copy" class={iconButton}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5 group-data-[copied]:hidden"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden size-3.5 group-data-[copied]:block"><path d="M20 6 9 17l-5-5"/></svg></button>
+                  <button type="button" data-download="result-json" data-filename={`${slugId}-result.json`} title="Download JSON" aria-label="Download JSON" class={iconButton}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg></button>
+                </div>
+              </div>
+              <pre id="result-json" class="scrollbar-code min-h-0 flex-1 overflow-auto whitespace-pre-wrap break-words p-4 font-mono text-xs leading-relaxed text-primary-warm-gray"></pre>
+            </div>
+          </div>
+          <div id="running-overlay" class="absolute inset-0 hidden flex-col items-center justify-center gap-4 bg-primary-comfy-ink/95 px-8 text-center">
+            <p class={sectionTitle}>Restored your {isImageTo3d ? 'image' : 'prompt and settings'} ✓</p>
+            <p class="text-lg font-semibold text-primary-warm-white">Running the graph</p>
+            <div class="h-2 w-56 overflow-hidden rounded-full bg-transparency-white-t20 sm:w-72">
+              <div id="progress-fill" class="h-full w-0 rounded-full bg-primary-comfy-yellow transition-[width] duration-300 ease-out"></div>
+            </div>
+            <p class="font-mono text-2xs text-primary-warm-gray">ksampler · queue position 1</p>
+          </div>
+          <div id="upgrade-overlay" class="absolute inset-0 hidden flex-col justify-center gap-3 overflow-y-auto bg-primary-comfy-ink/[0.97] px-6 py-6 sm:px-10">
+            <p class={sectionTitle}>That was your fifth free run</p>
+            <p class="text-xl font-semibold text-primary-warm-white sm:text-2xl">Keep running it.</p>
+            <div class="divide-y divide-white/10 border-y border-white/10">
+              <div class="flex items-center justify-between gap-4 py-2.5">
+                <span class="text-xs font-bold uppercase tracking-widest text-primary-warm-white">Creator — $20/mo · est.</span>
+                <span class="text-2xs font-light text-primary-comfy-canvas">{isImageTo3d ? 'Textured GLB output included' : '≈ 220 runs of 720p · 1080p included'}</span>
+              </div>
+              <div class="flex items-center justify-between gap-4 py-2.5">
+                <span class="text-xs font-bold uppercase tracking-widest text-primary-warm-white">Pro — $60/mo · est.</span>
+                <span class="text-2xs font-light text-primary-comfy-canvas">≈ 800 runs · API keys · batch queues</span>
+              </div>
+            </div>
+            <p class="text-xs font-light leading-relaxed text-primary-warm-gray">Your graphs, seeds, history, and all five outputs stay yours — free, forever. Or run it locally: it’s open source.</p>
+            <div class="flex flex-wrap items-center gap-4">
+              <BrandButton variant="solid" size="xs" class="uppercase tracking-widest">Go Creator</BrandButton>
+              <span class="text-2xs font-bold uppercase tracking-widest text-primary-comfy-canvas">See all plans →</span>
+              <button id="demo-reset" class={textAction}>Replay demo</button>
+            </div>
+          </div>
+        </div>
+        <div id="result-meta" class="flex max-w-full flex-wrap items-center gap-2 pt-3">
+          {isImageTo3d
+            ? <><span class:list={[pill, pillMuted]}>Textured GLB</span><span id="result-output-name" class:list={[pill, pillMuted]}>Viking axe example output</span></>
+            : <><span id="result-seed" class:list={[pill, pillMuted]}>Seed {defaultSeed}</span><span class:list={[pill, pillMuted]}>4.2s render</span></>}
+        </div>
+        <div class="mt-auto flex justify-end pt-3">
+          <div id="result-download" class="shrink-0">
+            <BrandButton id={isImageTo3d ? 'result-model-download' : undefined} href={imageTo3dModelUrl ?? img} download={`${slugId}-result${isImageTo3d ? '.glb' : ''}`} variant="outline" size="xs" class="uppercase tracking-widest">Download{isImageTo3d ? ' GLB' : ''}</BrandButton>
+          </div>
+        </div>
+        <!-- VARIATIONS QUEUE -->
+        {!isImageTo3d && <div id="var-block" class="hidden border-t border-white/10 px-5 py-4">
+          <div class="flex items-center justify-between gap-3">
+            <p class={panelTitle}>The queue — pick the best, not the first</p>
+            <BrandButton id="queue-vars" variant="solid" size="xs" class="uppercase tracking-widest">Queue 4 variations — <span id="var-cost">24</span> cr</BrandButton>
+          </div>
+          <div id="var-strip" class="mt-3 hidden grid-cols-4 gap-2">
+            {[0, 1, 2, 3].map((i) => (
+              <div class="var-slot relative aspect-video overflow-hidden rounded-lg border border-white/10 bg-transparency-white-t4">
+                <div class="var-shimmer absolute inset-0 animate-pulse bg-white/[0.06]"></div>
+                <img data-var-img={gallery[i % gallery.length]} alt="" class="hidden h-full w-full object-cover" onerror="this.style.display='none'" />
+                <span class="absolute bottom-1 left-1.5 hidden rounded bg-black/60 px-1 py-0.5 font-mono text-[8px] text-primary-comfy-canvas">seed +{i + 1}</span>
+              </div>
+            ))}
+          </div>
+          <p id="var-note" class:list={[helperCopy, 'mt-2 hidden']}>Four seeds, one brief — charged on success only. This is the Queue mentality.</p>
+        </div>}
+      </div>
+    </GlassCard>
+
+    {!isImageTo3d && <div class="my-8 flex flex-col gap-4 rounded-3xl bg-primary-comfy-ink-light px-8 py-6 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p class="text-lg font-bold text-primary-comfy-canvas">Start free. Upgrade when you're ready.</p>
+        <p class="mt-1 text-sm text-primary-comfy-canvas">5 free runs on real GPUs — no credit card required.</p>
+      </div>
+      <BrandButton id="free-run-cta" variant="outline" size="xs" class="shrink-0 self-start uppercase tracking-widest sm:self-auto">Try free</BrandButton>
+    </div>}
+  </section>
+
+  <!-- EXAMPLES -->
+  {!isImageTo3d && <section id="panel-gallery" data-panel="gallery" role="tabpanel" hidden class="mx-auto max-w-9xl scroll-mt-24 px-5 py-12 sm:px-6 lg:px-20 lg:py-16">
+    <div class="mb-6">
+      <h2 class={sectionTitle}>Made with {name}</h2>
+      <p class:list={[bodyCopy, 'mt-2']}>{isImageTo3d ? 'Example image-to-3D outputs from Comfy workflow templates.' : 'Real outputs from the workflow templates — click one to load its prompt into the app.'}</p>
+    </div>
+    <ul class="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3">
+      {displayGallery.map((src, i) => (
+        <li class="group relative overflow-hidden rounded-xl border border-white/10 bg-secondary-mauve/30">
+          <img src={src} alt={`${name} example`} loading="lazy" class="aspect-video w-full object-cover transition duration-500 group-hover:scale-[1.03]" onerror="this.style.display='none'" />
+          {!isImageTo3d && (
+            <button
+              data-use-prompt={galleryPrompts[i % galleryPrompts.length]}
+              class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-primary-comfy-ink/95 to-transparent px-3 pb-2.5 pt-8 text-right text-2xs font-bold uppercase tracking-widest text-primary-comfy-yellow opacity-100 transition lg:opacity-0 lg:group-hover:opacity-100"
+            >
+              Use this prompt →
+            </button>
+          )}
+        </li>
+      ))}
+    </ul>
+  </section>}
+
+  <!-- API -->
+  <section id="panel-api" data-panel="api" role="tabpanel" hidden class="mx-auto max-w-9xl scroll-mt-24 px-5 py-12 sm:px-6 lg:px-20 lg:pb-24">
+    <h2 class={sectionTitle}>Run it your way</h2>
+    <p class:list={[bodyCopy, 'mt-2']}>Create a key, then make your first call with the SDK.</p>
+    <div id="sdk-examples" class="mt-5 overflow-hidden rounded-2xl border border-transparency-white-t20 bg-primary-comfy-ink">
+      <div class="flex items-center justify-between gap-3 border-b border-transparency-white-t20 p-2">
+        <div class="flex items-center gap-1" role="tablist" aria-label="SDK language">
+          {highlightedSdkExamples.map((example, index) => (
+            <button type="button" role="tab" data-sdk-tab={example.id} data-state={index === 0 ? 'on' : 'off'} aria-selected={index === 0 ? 'true' : 'false'} class:list={[pill, index === 0 ? pillActive : pillIdle]}>{example.label}</button>
+          ))}
+        </div>
+        <button id="sdk-copy" type="button" data-copy="sdk-python" class="group flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-xs text-primary-warm-gray transition-colors hover:bg-transparency-white-t4 hover:text-primary-warm-white">
+          <CopyIcon class="size-4 group-data-[copied]:hidden" aria-hidden="true" />
+          <span class="ppformula-text-center group-data-[copied]:hidden">Copy</span>
+          <span class="hidden ppformula-text-center text-primary-comfy-yellow group-data-[copied]:inline">Copied</span>
+        </button>
+      </div>
+      {highlightedSdkExamples.map((example, index) => (
+        <pre id={`sdk-${example.id}`} data-sdk-panel={example.id} class:list={['min-h-52 scrollbar-code overflow-auto whitespace-pre-wrap break-words p-5 font-mono text-xs leading-relaxed text-primary-warm-gray sm:p-6', index !== 0 && 'hidden']} set:html={example.html} />
+      ))}
+    </div>
+    <div class="mt-4 flex flex-wrap items-center gap-4">
+      <BrandButton href="https://platform.comfy.org/profile/api-keys" target="_blank" variant="solid" size="sm" class="gap-2 uppercase tracking-widest">
+        <span class="inline-flex items-center gap-2">
+          Create API key
+          <KeyRound class="size-4" aria-hidden="true" />
+        </span>
+      </BrandButton>
+      <a href="https://docs.comfy.org/api-reference/v2/overview" target="_blank" rel="noopener noreferrer" class="block py-1.5 text-sm transition-colors hover:text-primary-warm-white">
+        API reference
+        <img src="/icons/arrow-up-right.svg" alt="" class="inline-block size-3" aria-hidden="true" />
+      </a>
+    </div>
+  </section>
+
+  <!-- COST + FAMILY -->
+  {(!isImageTo3d || familyVariants.length > 0) && <section class="pb-12 lg:pb-16">
+    <div class="mx-auto max-w-9xl px-5 sm:px-6 lg:px-20">
+      <GlassCard>
+        <div class={cn('grid gap-2', !isImageTo3d && 'lg:grid-cols-2')}>
+          {!isImageTo3d && <div class="rounded-4xl bg-primary-comfy-ink p-6 sm:p-7">
+            <h2 class={cardTitle}>What it costs</h2>
+            <p class:list={[bodyCopy, 'mt-2']}>Credits before you commit. No surprises after the wall.</p>
+            <div class="mt-4 divide-y divide-white/10 border-t border-white/10">
+              {costRows.map((row) => (
+                <div class="flex items-center justify-between gap-4 py-3">
+                  <span class="text-sm text-primary-warm-white">{row.label}</span>
+                  <span class="flex items-center gap-1.5 text-right text-xs font-semibold text-primary-comfy-canvas">
+                    {row.credits && <CreditsIcon class="size-3.5 shrink-0 text-primary-comfy-orange" aria-hidden="true" />}
+                    {row.value}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>}
+          {familyVariants.length > 0 && (
+            <div class="rounded-4xl bg-primary-comfy-ink p-6 sm:p-7">
+              <h2 class={cardTitle}>Family files &amp; variants</h2>
+              <p class:list={[bodyCopy, 'mt-2']}>Related files from the registry — every one runnable on the graph.</p>
+              <div class="mt-4 divide-y divide-white/10 border-t border-white/10">
+                {familyVariants.map((v) => (
+                  <a href={`/models-v2/${v.slug}`} class="flex items-center justify-between gap-4 py-3 transition hover:bg-white/[0.03]">
+                    <div class="min-w-0">
+                      <p class="truncate text-sm font-semibold text-primary-warm-white">{v.displayName}</p>
+                      <p class="text-2xs font-light text-primary-warm-gray">{dirLabel[v.directory] ?? v.directory} · {v.workflowCount} workflows</p>
+                    </div>
+                    <span class={runLink}>Run <ArrowRight aria-hidden="true" /></span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </GlassCard>
+    </div>
+  </section>}
+
+  <FAQSplit01
+    id="model-faq"
+    heading="Frequently asked questions"
+    faqs={faqs}
+    client:visible
+  />
+
+  <!-- MOBILE STICKY RUN BAR -->
+  <div class="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-primary-comfy-ink/95 px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 backdrop-blur lg:hidden">
+    <BrandButton
+      id="pg-run-mobile"
+      data-base-credits={baseCredits}
+      data-slug={slugId}
+      data-workflow-kind={isImageTo3d ? 'image-to-3d' : 'standard'}
+      data-default-image-name={defaultImageTo3dExample?.name}
+      data-default-image-url={defaultImageTo3dExample?.imageUrl}
+      data-default-image-alt={defaultImageTo3dExample?.alt}
+      data-default-model-url={defaultImageTo3dExample?.modelUrl}
+      data-workflow-url={imageTo3dWorkflowUrl}
+      variant="solid"
+      size="xs"
+      class="w-full py-3.5 uppercase tracking-widest"
+    >{isImageTo3d ? 'TRY WORKFLOW' : 'Sign in to run — 5 free'}</BrandButton>
+    <p class:list={[helperCopy, 'mt-1.5 text-center']}>{isImageTo3d ? 'Open this workflow in Comfy Cloud' : 'Sign in at run · 5 free · no card'}</p>
+  </div>
+  <div class="h-24 lg:hidden"></div>
+
+  <!-- AUTH WALL MODAL -->
+  <div id="auth-modal" class="fixed inset-0 z-[60] hidden items-end justify-center bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-6">
+    <div class="w-full max-w-md rounded-t-3xl border border-transparency-white-t20 bg-site-dropdown p-6 shadow-2xl sm:rounded-3xl sm:p-8">
+      <span class:list={[pill, 'bg-primary-comfy-yellow/15 text-primary-comfy-yellow']}>This run: <span id="modal-credits">{baseCredits}</span> credits — free for you</span>
+      <h3 class="mt-4 text-2xl font-semibold text-primary-warm-white">5 free runs. No card.</h3>
+      <p class="mt-2 text-sm font-light leading-relaxed text-primary-comfy-canvas">Your {isImageTo3d ? 'image' : 'prompt and settings'} {isImageTo3d ? 'is' : 'are'} saved. The run starts the moment you’re in.</p>
+      <div class="mt-5 flex flex-col gap-2.5">
+        <BrandButton data-auth="google" variant="solid" size="xs" class="w-full">Continue with Google</BrandButton>
+        <BrandButton data-auth="github" variant="outline-light" size="sm" class="w-full">Continue with GitHub</BrandButton>
+        <div class="grid gap-2 sm:grid-cols-2">
+          <input id="auth-email" type="email" autocomplete="email" placeholder="Email" aria-label="Email" class="min-w-0 rounded-xl border border-transparency-white-t20 bg-transparency-white-t4 px-3 py-2.5 text-sm text-primary-warm-white" />
+          <input id="auth-password" type="password" autocomplete="current-password" placeholder="Password" aria-label="Password" class="min-w-0 rounded-xl border border-transparency-white-t20 bg-transparency-white-t4 px-3 py-2.5 text-sm text-primary-warm-white" />
+        </div>
+        <BrandButton data-auth="email" variant="outline-light" size="sm" class="w-full">Continue with email</BrandButton>
+      </div>
+      <p id="auth-error" class="mt-3 hidden text-sm text-danger"></p>
+      <p class:list={[helperCopy, 'mt-4 leading-relaxed']}>By continuing you agree to the Terms. Open source stays open — your graphs and outputs are yours.</p>
+      <button id="auth-close" class:list={[textAction, 'mt-3']}>Not now</button>
+    </div>
+  </div>
+
+  <script>
+    type Pixal3dImage = {
+      name: string
+      source: File | string
+    }
+
+    function initModelTabs() {
+      const tabs = Array.from(document.querySelectorAll<HTMLElement>('[data-tab]'))
+      const panels = Array.from(document.querySelectorAll<HTMLElement>('[data-panel]'))
+      if (!tabs.length || tabs[0].dataset.bound === '1') return
+      tabs.forEach((t) => (t.dataset.bound = '1'))
+
+      const names = tabs.map((t) => t.dataset.tab)
+      const show = (name: string | undefined) => {
+        const active = name && names.includes(name) ? name : 'playground'
+        tabs.forEach((t) => {
+          const selected = t.dataset.tab === active
+          t.setAttribute('aria-selected', String(selected))
+          t.dataset.state = selected ? 'on' : 'off'
+        })
+        panels.forEach((p) => (p.hidden = p.dataset.panel !== active))
+      }
+
+      tabs.forEach((t) =>
+        t.addEventListener('click', () => {
+          show(t.dataset.tab)
+          history.replaceState(null, '', t.dataset.tab === 'playground' ? location.pathname : `#${t.dataset.tab}`)
+        })
+      )
+
+      const toTop = () => window.scrollTo(0, 0)
+
+      const showFromHash = () => {
+        show(location.hash.slice(1))
+        if (!location.hash) return
+        toTop()
+        requestAnimationFrame(toTop)
+        window.addEventListener('load', toTop, { once: true })
+      }
+
+      showFromHash()
+      window.addEventListener('hashchange', showFromHash)
+    }
+
+    function initCodeCopy() {
+      const buttons = Array.from(document.querySelectorAll<HTMLElement>('[data-copy]'))
+      if (!buttons.length || buttons[0].dataset.bound === '1') return
+      buttons.forEach((b) => (b.dataset.bound = '1'))
+
+      buttons.forEach((b) =>
+        b.addEventListener('click', async () => {
+          const text = document.getElementById(b.dataset.copy!)?.textContent
+          if (!text) return
+          try {
+            await navigator.clipboard.writeText(text)
+            b.dataset.copied = ''
+            window.setTimeout(() => delete b.dataset.copied, 1200)
+          } catch { /* clipboard unavailable */ }
+        })
+      )
+
+      document.querySelectorAll<HTMLElement>('[data-download]').forEach((button) =>
+        button.addEventListener('click', () => {
+          const text = document.getElementById(button.dataset.download!)?.textContent
+          if (!text) return
+          const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }))
+          const link = document.createElement('a')
+          link.href = url
+          link.download = button.dataset.filename ?? 'result.json'
+          link.click()
+          URL.revokeObjectURL(url)
+        })
+      )
+    }
+
+    function initSdkTabs() {
+      const root = document.getElementById('sdk-examples')
+      if (!root || root.dataset.bound === '1') return
+      root.dataset.bound = '1'
+
+      const tabs = root.querySelectorAll<HTMLElement>('[data-sdk-tab]')
+      const panels = root.querySelectorAll<HTMLElement>('[data-sdk-panel]')
+      const copy = document.getElementById('sdk-copy')
+      for (const tab of tabs) {
+        tab.addEventListener('click', () => {
+          const selected = tab.dataset.sdkTab
+          if (!selected) return
+          for (const candidate of tabs) {
+            const active = candidate === tab
+            candidate.dataset.state = active ? 'on' : 'off'
+            candidate.setAttribute('aria-selected', String(active))
+            candidate.classList.toggle('bg-transparency-white-t8', active)
+            candidate.classList.toggle('text-primary-comfy-canvas', active)
+            candidate.classList.toggle('text-primary-warm-gray', !active)
+          }
+          for (const panel of panels) {
+            panel.classList.toggle('hidden', panel.dataset.sdkPanel !== selected)
+          }
+          if (copy) copy.dataset.copy = `sdk-${selected}`
+        })
+      }
+    }
+
+    async function initModelViewer() {
+      const canvas = document.getElementById(
+        'result-model-canvas'
+      ) as HTMLCanvasElement | null
+      if (!canvas || canvas.dataset.bound === '1') return
+      canvas.dataset.bound = '1'
+
+      const status = document.getElementById('model-viewer-status')
+      const modelUrl = canvas.dataset.modelUrl
+      if (!modelUrl) return
+
+      try {
+        const [THREE, { OrbitControls }, { GLTFLoader }] = await Promise.all([
+          import('three'),
+          import('three/examples/jsm/controls/OrbitControls.js'),
+          import('three/examples/jsm/loaders/GLTFLoader.js')
+        ])
+        if (!canvas.isConnected) return
+
+        const renderer = new THREE.WebGLRenderer({
+          alpha: true,
+          antialias: true,
+          canvas
+        })
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+        renderer.outputColorSpace = THREE.SRGBColorSpace
+        renderer.toneMapping = THREE.ACESFilmicToneMapping
+        renderer.toneMappingExposure = 1.35
+
+        const scene = new THREE.Scene()
+        const camera = new THREE.PerspectiveCamera(35, 1, 0.01, 1000)
+        const controls = new OrbitControls(camera, canvas)
+        controls.enableDamping = true
+        controls.autoRotate = true
+        controls.autoRotateSpeed = 1
+
+        scene.add(new THREE.HemisphereLight(0xffffff, 0x555555, 3.5))
+        const keyLight = new THREE.DirectionalLight(0xffffff, 4.5)
+        keyLight.position.set(4, 6, 5)
+        scene.add(keyLight)
+        const fillLight = new THREE.DirectionalLight(0xffffff, 2)
+        fillLight.position.set(-4, 2, -3)
+        scene.add(fillLight)
+
+        let model: import('three').Object3D | null = null
+        let loadVersion = 0
+
+        const disposeModel = () => {
+          if (!model) return
+          scene.remove(model)
+          model.traverse((object) => {
+            if (!(object instanceof THREE.Mesh)) return
+            object.geometry.dispose()
+            const materials = Array.isArray(object.material)
+              ? object.material
+              : [object.material]
+            materials.forEach((material) => material.dispose())
+          })
+          model = null
+        }
+
+        const loadModel = async (url: string) => {
+          const version = ++loadVersion
+          status?.classList.remove('hidden')
+          if (status) status.textContent = 'Loading 3D preview…'
+          const { scene: nextModel } = await new GLTFLoader().loadAsync(url)
+          if (version !== loadVersion || !canvas.isConnected) return
+
+          disposeModel()
+          model = nextModel
+          const bounds = new THREE.Box3().setFromObject(model)
+          const size = bounds.getSize(new THREE.Vector3())
+          const center = bounds.getCenter(new THREE.Vector3())
+          const diameter = Math.max(size.x, size.y, size.z)
+          model.position.sub(center)
+          scene.add(model)
+
+          camera.near = diameter / 100
+          camera.far = diameter * 100
+          camera.position.set(
+            diameter * 1.15,
+            diameter * 0.75,
+            diameter * 1.35
+          )
+          camera.updateProjectionMatrix()
+          controls.target.set(0, 0, 0)
+          controls.update()
+          status?.classList.add('hidden')
+        }
+
+        const onModelUrlChange = (event: Event) => {
+          const { url } = (event as CustomEvent<{ url: string }>).detail
+          void loadModel(url)
+        }
+        canvas.addEventListener('model-url-change', onModelUrlChange)
+        await loadModel(modelUrl)
+
+        const resize = () => {
+          const width = canvas.clientWidth
+          const height = canvas.clientHeight
+          if (!width || !height) return
+          renderer.setSize(width, height, false)
+          camera.aspect = width / height
+          camera.updateProjectionMatrix()
+        }
+        const resizeObserver = new ResizeObserver(resize)
+        resizeObserver.observe(canvas)
+        resize()
+
+        let frame = 0
+        const render = () => {
+          controls.update()
+          renderer.render(scene, camera)
+          frame = requestAnimationFrame(render)
+        }
+        render()
+
+        document.addEventListener(
+          'astro:before-swap',
+          () => {
+            cancelAnimationFrame(frame)
+            resizeObserver.disconnect()
+            controls.dispose()
+            canvas.removeEventListener('model-url-change', onModelUrlChange)
+            disposeModel()
+            renderer.dispose()
+          },
+          { once: true }
+        )
+      } catch {
+        if (status) status.textContent = '3D preview unavailable'
+      }
+    }
+
+    function initPlaygroundDemo() {
+      const runMobile = document.getElementById('pg-run-mobile')
+      if (!runMobile || runMobile.dataset.bound === '1') return
+      runMobile.dataset.bound = '1'
+
+      const $ = (id: string) => document.getElementById(id)
+
+      // Text lands first so the block is never blank; the tokenized markup
+      // replaces it once Shiki resolves. A newer paint wins on late arrivals.
+      const paintJson = (el: HTMLElement, code: string) => {
+        el.textContent = code
+        const stamp = String(Number(el.dataset.paint ?? '0') + 1)
+        el.dataset.paint = stamp
+        void import('../lib/highlight').then(({ highlightInline }) =>
+          highlightInline(code, 'json').then((html) => {
+            if (html && el.dataset.paint === stamp) el.innerHTML = html
+          })
+        )
+      }
+      const modal = $('auth-modal')!
+      const strip = $('signed-in-strip')!
+      const meter = $('free-meter')!
+      const overlay = $('running-overlay')!
+      const upgrade = $('upgrade-overlay')!
+      const fill = $('progress-fill')!
+      const resultPreview = $('result-preview')!
+      const resultSeed = $('result-seed')
+      const prompt = $('pg-prompt') as HTMLTextAreaElement | null
+      const selDur = $('sel-duration') as HTMLSelectElement | null
+      const selRes = $('sel-resolution') as HTMLSelectElement | null
+      const selAspect = $('sel-aspect') as HTMLSelectElement | null
+      const inputJson = $('input-json')!
+      const resultJson = $('result-json')!
+      const costLine = $('cost-line')
+      const modalCredits = $('modal-credits')!
+      const varBlock = $('var-block')
+      const varStrip = $('var-strip')
+      const varCost = $('var-cost')
+      const base = Number(runMobile.dataset.baseCredits ?? '6')
+      const slug = runMobile.dataset.slug ?? 'model'
+      const isImageTo3d = runMobile.dataset.workflowKind === 'image-to-3d'
+      const defaultImageName = runMobile.dataset.defaultImageName ?? null
+      const defaultImageUrl = runMobile.dataset.defaultImageUrl ?? null
+      const defaultImageAlt = runMobile.dataset.defaultImageAlt ?? ''
+      const defaultModelUrl = runMobile.dataset.defaultModelUrl ?? null
+      const workflowUrl = runMobile.dataset.workflowUrl ?? null
+      const runDesktop = $('pg-run-desktop')
+
+      // BrandButton wraps labels in a centering span — writing to the button
+      // itself would strip it.
+      const label = (el: HTMLElement) => el.querySelector('span') ?? el
+      const runMobileLabel = label(runMobile)
+      const runDesktopLabel = runDesktop ? label(runDesktop) : null
+
+      const seedInput = $('pg-seed') as HTMLInputElement | null
+      const defaultSeed = seedInput?.defaultValue ?? '0'
+      const seedNow = () => Number(seedInput?.value) || 0
+
+      let authed = false
+      let runsLeft = 5
+      let running = false
+      let refImage: Pixal3dImage | null =
+        defaultImageName && defaultImageUrl
+          ? { name: defaultImageName, source: defaultImageUrl }
+          : null
+      let lastRun: Record<string, unknown> | null = null
+
+      const mult = (sel: HTMLSelectElement | null) =>
+        Number(sel?.selectedOptions[0]?.dataset.mult ?? '1')
+      const creditsNow = () => base * mult(selDur) * mult(selRes)
+
+      const renderInputJson = () => {
+        const inputs = isImageTo3d
+          ? { image: refImage?.name ?? null, output_format: 'glb' }
+          : {
+              prompt: prompt?.value.trim() ?? '',
+              aspect_ratio: selAspect?.value ?? '16:9',
+              duration_s: mult(selDur) * 5,
+              resolution: selRes?.value ?? '720p',
+              seed: seedNow(),
+              ...(refImage ? { reference_image: refImage.name } : {})
+            }
+        const payload: Record<string, unknown> = {
+          workflow: slug,
+          inputs,
+          estimate: { credits: creditsNow(), charged_on: 'success only' }
+        }
+        paintJson(inputJson, JSON.stringify(payload, null, 2))
+      }
+
+      const renderResultJson = () => {
+        const receipt = lastRun ?? {
+          status: 'example',
+          note: 'This is a curated example. Run it to get your own receipt.',
+          model: slug,
+          ...(isImageTo3d
+            ? { output: { type: 'model/gltf-binary', format: 'glb' } }
+            : { seed: seedNow() })
+        }
+        paintJson(resultJson, JSON.stringify(receipt, null, 2))
+      }
+
+      const setRunLabels = () => {
+        const c = creditsNow()
+        if (costLine) {
+          costLine.textContent = `${c} credits ≈ $${(c * 0.0084).toFixed(2)}`
+        }
+        modalCredits.textContent = String(c)
+        if (varCost) varCost.textContent = String(c * 4)
+        const text = workflowUrl
+          ? 'TRY WORKFLOW'
+          : running
+            ? 'Running…'
+            : !authed
+              ? 'Sign in to run — 5 free'
+              : runsLeft > 0
+                ? `Run — ${runsLeft} free left`
+                : 'Go Creator — from $20/mo'
+        runMobileLabel.textContent = text
+        if (runDesktopLabel) runDesktopLabel.textContent = text
+      }
+
+      const setRunning = (value: boolean) => {
+        running = value
+        runMobile.toggleAttribute('disabled', value)
+        runDesktop?.toggleAttribute('disabled', value)
+        setRunLabels()
+      }
+
+      const renderAll = () => { renderInputJson(); renderResultJson(); setRunLabels() }
+
+      // input view toggle (APP | JSON)
+      const iPanels: Record<string, HTMLElement> = {
+        app: $('panel-app')!, json: $('panel-json')!
+      }
+      const inputViewToggle = $('iview-toggle')
+      inputViewToggle?.addEventListener('click', (e) => {
+        const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-iview]')
+        if (!btn) return
+        const view = btn.dataset.iview!
+        for (const [k, panel] of Object.entries(iPanels)) panel.classList.toggle('hidden', k !== view)
+        for (const b of inputViewToggle.querySelectorAll<HTMLElement>('[data-iview]')) {
+          const active = b === btn
+          b.classList.toggle('bg-transparency-white-t8', active)
+          b.classList.toggle('text-primary-comfy-canvas', active)
+          b.classList.toggle('text-primary-warm-gray', !active)
+          b.classList.toggle('hover:bg-transparency-white-t4', !active)
+          b.classList.toggle('hover:text-primary-comfy-canvas', !active)
+        }
+        renderAll()
+      })
+
+      // result view toggle (Preview | JSON)
+      $('rview-toggle')!.addEventListener('click', (e) => {
+        const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-rview]')
+        if (!btn) return
+        const json = btn.dataset.rview === 'json'
+        $('result-json-box')!.classList.toggle('hidden', !json)
+        resultPreview.classList.toggle('hidden', json)
+        $('result-meta')!.classList.toggle('hidden', json)
+        $('result-download')!.classList.toggle('hidden', json)
+        for (const b of $('rview-toggle')!.querySelectorAll<HTMLElement>('[data-rview]')) {
+          const active = b === btn
+          b.classList.toggle('bg-transparency-white-t8', active)
+          b.classList.toggle('text-primary-comfy-canvas', active)
+          b.classList.toggle('text-primary-warm-gray', !active)
+          b.classList.toggle('hover:bg-transparency-white-t4', !active)
+          b.classList.toggle('hover:text-primary-comfy-canvas', !active)
+        }
+        renderResultJson()
+      })
+
+      // live bindings
+      prompt?.addEventListener('input', renderAll)
+      seedInput?.addEventListener('input', renderAll)
+      for (const sel of [selAspect, selDur, selRes]) {
+        sel?.addEventListener('change', renderAll)
+      }
+
+      $('seed-shuffle')?.addEventListener('click', () => {
+        if (seedInput) {
+          seedInput.value = String(Math.floor(Math.random() * 1_000_000_000))
+        }
+        renderAll()
+      })
+
+      // reference image demo
+      const refFile = $('ref-file') as HTMLInputElement | null
+      const refPreview = $('ref-preview') as HTMLImageElement | null
+      const dropzone = $('dropzone')
+      const exampleButtons = [
+        ...document.querySelectorAll<HTMLElement>('[data-example-image]')
+      ]
+      let previewUrl: string | null = null
+
+      const fileSize = (bytes: number) =>
+        bytes >= 1024 * 1024
+          ? `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+          : `${Math.max(1, Math.round(bytes / 1024))} KB`
+
+      const fileKind = (file: File) =>
+        (file.type.split('/')[1] || file.name.split('.').pop() || 'image').toUpperCase()
+
+      const setExampleSelection = (name: string | null) => {
+        for (const button of exampleButtons) {
+          const selected = button.dataset.exampleName === name
+          if (selected) button.dataset.selected = ''
+          else delete button.dataset.selected
+          button.setAttribute('aria-pressed', String(selected))
+        }
+      }
+
+      const selectExample = (
+        name: string,
+        url: string,
+        alt: string,
+        modelUrl?: string | null
+      ) => {
+        if (previewUrl) URL.revokeObjectURL(previewUrl)
+        previewUrl = null
+        if (refFile) refFile.value = ''
+        refImage = { name, source: url }
+        if (refPreview) {
+          refPreview.style.display = ''
+          refPreview.src = url
+          refPreview.alt = alt
+        }
+        const refName = $('ref-name')
+        const refMeta = $('ref-meta')
+        if (refName) refName.textContent = name
+        if (refMeta) refMeta.textContent = 'PNG · Example input'
+        $('ref-attachment')?.classList.remove('hidden')
+        $('image-error')?.classList.add('hidden')
+        setExampleSelection(name)
+        if (modelUrl) {
+          $('result-model-canvas')?.dispatchEvent(
+            new CustomEvent('model-url-change', { detail: { url: modelUrl } })
+          )
+          const download = $('result-model-download') as HTMLAnchorElement | null
+          if (download) download.href = modelUrl
+          const outputName = $('result-output-name')
+          if (outputName) outputName.textContent = modelUrl.split('/').at(-1) ?? name
+        }
+        renderAll()
+      }
+
+      const clearImage = () => {
+        if (previewUrl) URL.revokeObjectURL(previewUrl)
+        previewUrl = null
+        refImage = null
+        if (refFile) refFile.value = ''
+        refPreview?.removeAttribute('src')
+        if (refPreview) refPreview.alt = ''
+        $('ref-attachment')?.classList.add('hidden')
+        setExampleSelection(null)
+        renderAll()
+      }
+
+      const resetImage = () => {
+        if (defaultImageName && defaultImageUrl) {
+          selectExample(
+            defaultImageName,
+            defaultImageUrl,
+            defaultImageAlt,
+            defaultModelUrl
+          )
+        } else {
+          if (previewUrl) URL.revokeObjectURL(previewUrl)
+          previewUrl = null
+          if (refFile) refFile.value = ''
+          refImage = null
+          refPreview?.removeAttribute('src')
+          if (refPreview) refPreview.alt = ''
+          $('ref-attachment')?.classList.add('hidden')
+          setExampleSelection(null)
+          renderAll()
+        }
+      }
+
+      const acceptImage = (file: File | undefined) => {
+        if (!file || !file.type.startsWith('image/') || !refPreview) return
+        if (previewUrl) URL.revokeObjectURL(previewUrl)
+        previewUrl = URL.createObjectURL(file)
+        refPreview.style.display = ''
+        refPreview.src = previewUrl
+        refPreview.alt = `Uploaded preview of ${file.name}`
+        const refName = $('ref-name')
+        const refMeta = $('ref-meta')
+        if (refName) refName.textContent = file.name
+        if (refMeta) refMeta.textContent = `${fileKind(file)} · ${fileSize(file.size)}`
+        refImage = { name: file.name, source: file }
+        $('ref-attachment')?.classList.remove('hidden')
+        $('image-error')?.classList.add('hidden')
+        setExampleSelection(null)
+        renderAll()
+      }
+
+      for (const button of exampleButtons) {
+        button.addEventListener('click', () => {
+          const exampleName = button.dataset.exampleName
+          const exampleUrl = button.dataset.exampleUrl
+          if (!exampleName || !exampleUrl) return
+          selectExample(
+            exampleName,
+            exampleUrl,
+            button.dataset.exampleAlt ?? '',
+            button.dataset.exampleModelUrl
+          )
+        })
+      }
+
+      $('add-image-btn')?.addEventListener('click', () => refFile?.click())
+      dropzone?.addEventListener('click', (event) => {
+        if (!(event.target as HTMLElement).closest('button')) refFile?.click()
+      })
+      dropzone?.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return
+        event.preventDefault()
+        refFile?.click()
+      })
+      refFile?.addEventListener('change', () => acceptImage(refFile.files?.[0]))
+      $('ref-remove')?.addEventListener('click', clearImage)
+      $('pg-reset')?.addEventListener('click', resetImage)
+
+      // The drop zone lights up while a file is over it, not on plain hover.
+      for (const type of ['dragenter', 'dragover']) {
+        dropzone?.addEventListener(type, (e) => {
+          e.preventDefault()
+          dropzone.dataset.dragging = ''
+        })
+      }
+      dropzone?.addEventListener('dragleave', (e) => {
+        if (!dropzone.contains(e.relatedTarget as Node)) delete dropzone.dataset.dragging
+      })
+      dropzone?.addEventListener('drop', (e) => {
+        e.preventDefault()
+        delete dropzone.dataset.dragging
+        acceptImage(e.dataTransfer?.files?.[0])
+      })
+
+      // split button menus
+      const splitMenus = [
+        { wrap: '#llms-wrap', trigger: 'llms-btn', menu: 'llms-menu' },
+        { wrap: '#graph-wrap', trigger: 'graph-btn', menu: 'graph-menu' }
+      ]
+      const setMenuOpen = (trigger: string, menu: string, open: boolean) => {
+        $(menu)?.classList.toggle('hidden', !open)
+        $(trigger)?.setAttribute('aria-expanded', String(open))
+      }
+      for (const { trigger, menu } of splitMenus) {
+        $(trigger)?.addEventListener('click', (e) => {
+          e.stopPropagation()
+          const open = $(menu)?.classList.contains('hidden') ?? false
+          for (const other of splitMenus) setMenuOpen(other.trigger, other.menu, false)
+          setMenuOpen(trigger, menu, open)
+        })
+      }
+      document.addEventListener('click', (e) => {
+        const target = e.target as HTMLElement
+        for (const { wrap, trigger, menu } of splitMenus) {
+          if (!target.closest(wrap)) setMenuOpen(trigger, menu, false)
+        }
+      })
+      $('llms-copy')?.addEventListener('click', async () => {
+        try {
+          const md = await (await fetch(window.location.pathname + '.md')).text()
+          await navigator.clipboard.writeText(md)
+          $('llms-copied')?.classList.remove('hidden')
+          window.setTimeout(() => $('llms-copied')?.classList.add('hidden'), 1200)
+        } catch { /* fetch or clipboard unavailable */ }
+      })
+
+      // gallery → prompt warm start
+      document.querySelectorAll<HTMLElement>('[data-use-prompt]').forEach((b) =>
+        b.addEventListener('click', () => {
+          if (!prompt) return
+          prompt.value = b.dataset.usePrompt ?? prompt.value
+          renderAll()
+          document.querySelector<HTMLElement>('[data-tab="playground"]')?.click()
+          document.getElementById('pg-prompt')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        })
+      )
+
+      let progressAnimation: Animation | null = null
+      function stopProgressAnimation() {
+        progressAnimation?.cancel()
+        progressAnimation = null
+        fill.style.transform = ''
+      }
+
+      const startRun = () => {
+        if (running) return
+        if (runsLeft <= 0) {
+          upgrade.classList.remove('hidden'); upgrade.classList.add('flex')
+          return
+        }
+        setRunning(true)
+        strip.classList.remove('hidden'); strip.classList.add('flex')
+        overlay.classList.remove('hidden'); overlay.classList.add('flex')
+        $('result-json-box')!.classList.add('hidden'); resultPreview.classList.remove('hidden')
+        $('result-meta')!.classList.remove('hidden')
+        $('result-download')!.classList.remove('hidden')
+        stopProgressAnimation()
+        fill.style.width = '0%'
+        $('run-error')?.classList.add('hidden')
+        requestAnimationFrame(() => requestAnimationFrame(() => (fill.style.width = '92%')))
+        window.setTimeout(() => {
+          overlay.classList.add('hidden'); overlay.classList.remove('flex')
+          resultPreview.style.opacity = '0.4'
+          window.setTimeout(() => (resultPreview.style.opacity = '1'), 350)
+          runsLeft -= 1
+          const runSeed = seedNow()
+          lastRun = {
+            job_id: 'j_' + runSeed.toString(16),
+            status: 'succeeded',
+            model: slug,
+            ...(isImageTo3d ? {} : { seed: runSeed }),
+            credits_charged: creditsNow(),
+            charged_on: 'success only',
+            duration_s: isImageTo3d ? 18.6 : 4.2,
+            nodes_executed: isImageTo3d ? 66 : 24,
+            output: isImageTo3d
+              ? { type: 'model/gltf-binary', format: 'glb', saved_to_history: true }
+              : { type: 'video/webp', watermark: false, saved_to_history: true }
+          }
+          if (resultSeed) resultSeed.textContent = `Seed ${runSeed}`
+          meter.textContent = runsLeft > 0 ? `Free runs: ${runsLeft} left` : 'Free runs used'
+          varBlock?.classList.remove('hidden')
+          renderAll()
+          setRunning(false)
+          if (runsLeft <= 0) {
+            window.setTimeout(() => { upgrade.classList.remove('hidden'); upgrade.classList.add('flex') }, 900)
+          }
+        }, 2400)
+      }
+
+      // variations queue demo — each variation is a run and spends the meter
+      $('queue-vars')?.addEventListener('click', () => {
+        if (!varStrip) return
+        if (runsLeft <= 0) {
+          upgrade.classList.remove('hidden'); upgrade.classList.add('flex')
+          return
+        }
+        varStrip.classList.remove('hidden'); varStrip.classList.add('grid')
+        $('var-note')?.classList.remove('hidden')
+        const slots = [...varStrip.querySelectorAll<HTMLElement>('.var-slot')]
+        slots.forEach((slot, i) => {
+          window.setTimeout(() => {
+            const im = slot.querySelector('img') as HTMLImageElement
+            im.src = im.dataset.varImg ?? ''
+            im.classList.remove('hidden')
+            slot.querySelector('.var-shimmer')?.classList.add('hidden')
+            slot.querySelector('span')?.classList.remove('hidden')
+            if (runsLeft > 0) runsLeft -= 1
+            meter.textContent = runsLeft > 0 ? `Free runs: ${runsLeft} left` : 'Free runs used'
+            setRunLabels()
+            if (runsLeft <= 0 && i === slots.length - 1) {
+              window.setTimeout(() => { upgrade.classList.remove('hidden'); upgrade.classList.add('flex') }, 900)
+            }
+          }, 700 + i * 650)
+        })
+      })
+
+      const onRun = () => {
+        if (workflowUrl) {
+          window.open(workflowUrl, '_blank', 'noopener,noreferrer')
+          return
+        }
+        if (isImageTo3d && !refImage) {
+          $('image-error')?.classList.remove('hidden')
+          dropzone?.focus()
+          return
+        }
+        if (!authed) { modal.classList.remove('hidden'); modal.classList.add('flex') }
+        else startRun()
+      }
+      runMobile.addEventListener('click', onRun)
+      runDesktop?.addEventListener('click', onRun)
+      $('free-run-cta')?.addEventListener('click', onRun)
+
+      modal.querySelectorAll('[data-auth]').forEach((button) =>
+        button.addEventListener('click', () => {
+          modal.classList.add('hidden'); modal.classList.remove('flex')
+          authed = true
+          setRunLabels()
+          startRun()
+        })
+      )
+      $('auth-close')!.addEventListener('click', () => {
+        modal.classList.add('hidden'); modal.classList.remove('flex')
+      })
+      $('demo-reset')!.addEventListener('click', () => {
+        runsLeft = 5; lastRun = null
+        resetImage()
+        if (seedInput) seedInput.value = defaultSeed
+        upgrade.classList.add('hidden'); upgrade.classList.remove('flex')
+        strip.classList.add('hidden'); strip.classList.remove('flex')
+        varBlock?.classList.add('hidden')
+        varStrip?.classList.add('hidden'); varStrip?.classList.remove('grid')
+        if (resultSeed) resultSeed.textContent = `Seed ${defaultSeed}`
+        meter.textContent = 'Free runs: 5 left'
+        renderAll()
+      })
+
+      renderAll()
+    }
+
+    const initAll = () => {
+      initModelTabs()
+      initSdkTabs()
+      initCodeCopy()
+      void initModelViewer()
+      initPlaygroundDemo()
+    }
+
+    initAll()
+    document.addEventListener('astro:page-load', initAll)
+  </script>
+</BaseLayout>

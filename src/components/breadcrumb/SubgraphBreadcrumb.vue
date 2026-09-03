@@ -54,7 +54,7 @@
 import Breadcrumb from 'primevue/breadcrumb'
 import Button from 'primevue/button'
 import type { MenuItem } from 'primevue/menuitem'
-import { computed, onUpdated, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, onUpdated, ref } from 'vue'
 
 import SubgraphBreadcrumbItem from '@/components/breadcrumb/SubgraphBreadcrumbItem.vue'
 import WorkflowActionsDropdown from '@/components/common/WorkflowActionsDropdown.vue'
@@ -135,20 +135,14 @@ const handleBackClick = () => {
   void useCommandStore().execute('Comfy.Graph.ExitSubgraph')
 }
 
-const breadcrumbElement = computed(() => {
-  if (!breadcrumbRef.value) return null
-
-  const el = (breadcrumbRef.value as unknown as { $el: HTMLElement }).$el
-  const list = el?.querySelector('.p-breadcrumb-list') as HTMLElement
-  return list
-})
-
 // Check for overflow on breadcrumb items and collapse/expand the breadcrumb to fit
 let overflowObserver: ReturnType<typeof useOverflowObserver> | undefined
-watch(breadcrumbElement, (el) => {
-  overflowObserver?.dispose()
-  overflowObserver = undefined
+onMounted(() => {
+  const breadcrumb = breadcrumbRef.value
+  if (!breadcrumb) return
 
+  const root = (breadcrumb as unknown as { $el: HTMLElement }).$el
+  const el = root.querySelector<HTMLElement>('.p-breadcrumb-list')
   if (!el) return
 
   overflowObserver = useOverflowObserver(el, {
@@ -192,6 +186,8 @@ watch(breadcrumbElement, (el) => {
     }
   })
 })
+
+onBeforeUnmount(() => overflowObserver?.dispose())
 
 // If e.g. the workflow name changes, we need to check the overflow again
 onUpdated(() => {

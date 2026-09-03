@@ -19,7 +19,8 @@ import {
   LiteGraph,
   RenderShape,
   SubgraphNode,
-  createBounds
+  createBounds,
+  outputAsSerialisable
 } from '@/lib/litegraph/src/litegraph'
 import type {
   CreateNodeOptions,
@@ -36,6 +37,7 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -56,7 +58,10 @@ import { $el } from '@/scripts/ui'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import {
+  getPreviewExposureHostLocator,
+  usePreviewExposureStore
+} from '@/stores/previewExposureStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
@@ -64,6 +69,7 @@ import { useWidgetStore } from '@/stores/widgetStore'
 import { parseNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { isBlueprintType } from '@/utils/blueprintUtils'
+import { markCoreMediaMenuCallback } from '@/utils/coreMediaMenuActionUtils'
 import type { WidgetId } from '@/types/widgetId'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
@@ -83,7 +89,7 @@ async function reencodeAsPngBlob(
   width: number,
   height: number
 ): Promise<Blob> {
-  const canvas = $el('canvas', { width, height }) as HTMLCanvasElement
+  const canvas = $el('canvas', { width, height })
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('Could not get canvas context')
 
@@ -191,7 +197,8 @@ export const useLitegraphService = () => {
   }
 
   function getPseudoWidgetPreviewTargets(node: SubgraphNode): LGraphNode[] {
-    const hostLocator = String(node.id)
+    const hostLocator = getPreviewExposureHostLocator(node)
+    if (!hostLocator) return []
     const promotions = usePreviewExposureStore().getExposuresAsPromotionShape(
       node.rootGraph.id,
       hostLocator
@@ -294,16 +301,25 @@ export const useLitegraphService = () => {
     const widgetConstructor = widgetStore.widgets.get(widgetInputSpec.type)
     if (!widgetConstructor || inputSpec.forceInput) return
 
-    const {
-      widget,
-      minWidth = 1,
-      minHeight = 1
-    } = widgetConstructor(
-      node,
-      inputName,
-      transformInputSpecV2ToV1(widgetInputSpec),
-      app
-    ) ?? {}
+    const widgetsBefore = new Set(node.widgets ?? [])
+    const result =
+      widgetConstructor(
+        node,
+        inputName,
+        transformInputSpecV2ToV1(widgetInputSpec),
+        app
+      ) ?? {}
+    const { minWidth = 1, minHeight = 1 } = result
+    const returnedWidget = result.widget
+    const widget =
+      returnedWidget &&
+      (node.widgets?.find(
+        (candidate) =>
+          candidate === returnedWidget ||
+          (!widgetsBefore.has(candidate) &&
+            candidate.name === returnedWidget.name)
+      ) ??
+        toConcreteWidget(returnedWidget, node))
 
     if (widget) {
       widget.label = resolveLabel(
@@ -468,8 +484,8 @@ export const useLitegraphService = () => {
 
         // Note: output name is not unique, so we cannot lookup output by name.
         // Use index instead.
-        data.outputs = zip(this.outputs, data.outputs).map(
-          ([output, outputData]) => {
+        data.outputs = zip(this.outputs, data.outputs ?? []).map(
+          ([output, outputData], index) => {
             // If there are extra outputs in the serialised node, use them directly.
             // There are currently custom nodes that dynamically add outputs via
             // js logic.
@@ -480,7 +496,7 @@ export const useLitegraphService = () => {
                   ...outputData,
                   ...pick(output, RESERVED_KEYS)
                 }
-              : output
+              : outputAsSerialisable(output, this, index)
           }
         )
 
@@ -571,8 +587,8 @@ export const useLitegraphService = () => {
 
         // Note: output name is not unique, so we cannot lookup output by name.
         // Use index instead.
-        data.outputs = zip(this.outputs, data.outputs).map(
-          ([output, outputData]) => {
+        data.outputs = zip(this.outputs, data.outputs ?? []).map(
+          ([output, outputData], index) => {
             // If there are extra outputs in the serialised node, use them directly.
             // There are currently custom nodes that dynamically add outputs via
             // js logic.
@@ -583,7 +599,7 @@ export const useLitegraphService = () => {
                   ...outputData,
                   ...pick(output, RESERVED_KEYS)
                 }
-              : output
+              : outputAsSerialisable(output, this, index)
           }
         )
 
@@ -637,7 +653,7 @@ export const useLitegraphService = () => {
       return [
         {
           content: 'Copy Image',
-          callback: async () => {
+          callback: markCoreMediaMenuCallback(async () => {
             const url = new URL(img.src)
             url.searchParams.delete('preview')
 
@@ -671,7 +687,7 @@ export const useLitegraphService = () => {
                 })
               )
             }
-          }
+          }, 'preview')
         }
       ]
     }
@@ -691,21 +707,21 @@ export const useLitegraphService = () => {
           options.unshift(
             {
               content: 'Open Image',
-              callback: () => {
+              callback: markCoreMediaMenuCallback(() => {
                 const url = new URL(img.src)
                 url.searchParams.delete('preview')
                 void openFileInNewTab(url.toString())
-              }
+              }, 'preview')
             },
             ...getCopyImageOption(img),
             {
               content: 'Save Image',
-              callback: () => {
+              callback: markCoreMediaMenuCallback(() => {
                 const url = new URL(img.src)
                 url.searchParams.delete('preview')
                 const filename = new URLSearchParams(url.search).get('filename')
                 downloadFile(url.toString(), filename ?? undefined)
-              }
+              }, 'preview')
             }
           )
         }
@@ -731,18 +747,18 @@ export const useLitegraphService = () => {
         if (ComfyApp.clipspace != null) {
           options.push({
             content: 'Paste (Clipspace)',
-            callback: () => {
+            callback: markCoreMediaMenuCallback(() => {
               ComfyApp.pasteFromClipspace(this)
-            }
+            }, 'input')
           })
         }
 
         if (isImageNode(this)) {
           options.push({
             content: 'Open in MaskEditor | Image Canvas',
-            callback: () => {
+            callback: markCoreMediaMenuCallback(() => {
               useMaskEditor().openMaskEditor(this)
-            }
+            }, 'preview')
           })
         }
       }
@@ -883,7 +899,7 @@ export const useLitegraphService = () => {
         handled = true
       }
 
-      if (handled === true) {
+      if (handled) {
         e.preventDefault()
         e.stopImmediatePropagation()
         return false

@@ -6,11 +6,13 @@ import type { Ref } from 'vue'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import { useMinimapGraph } from '@/renderer/extensions/minimap/composables/useMinimapGraph'
 import { api } from '@/scripts/api'
+import { toLinkId } from '@/types/linkId'
+import { toNodeId } from '@/types/nodeId'
 import {
   createMockLGraph,
   createMockLGraphNode,
@@ -44,6 +46,7 @@ describe('useMinimapGraph', () => {
   let onGraphChangedMock: () => void
 
   beforeEach(() => {
+    layoutStore.resetForTests()
     mockGraph = createMockLGraph({
       id: 'test-graph-123',
       _nodes: [
@@ -87,30 +90,20 @@ describe('useMinimapGraph', () => {
     )
   })
 
-  it('should wrap graph callbacks on setup', () => {
+  it('notifies on node add without displacing the graph callback', () => {
     const originalOnNodeAdded = vi.fn()
-    const originalOnNodeRemoved = vi.fn()
-    const originalOnConnectionChange = vi.fn()
-
     mockGraph.onNodeAdded = originalOnNodeAdded
-    mockGraph.onNodeRemoved = originalOnNodeRemoved
-    mockGraph.onConnectionChange = originalOnConnectionChange
 
     const graphRef = ref(mockGraph) as Ref<LGraph | null>
     const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
 
     graphManager.setupEventListeners()
 
-    // Should wrap the callbacks
-    expect(mockGraph.onNodeAdded).not.toBe(originalOnNodeAdded)
-    expect(mockGraph.onNodeRemoved).not.toBe(originalOnNodeRemoved)
-    expect(mockGraph.onConnectionChange).not.toBe(originalOnConnectionChange)
+    // The callback slot is left alone; the minimap subscribes to the event.
+    expect(mockGraph.onNodeAdded).toBe(originalOnNodeAdded)
 
-    // Test wrapped callbacks
-    const testNode = { id: '3' } as LGraphNode
-    mockGraph.onNodeAdded!(testNode)
+    mockGraph.events.dispatch('node:added', { node: { id: '3' } as LGraphNode })
 
-    expect(originalOnNodeAdded).toHaveBeenCalledWith(testNode)
     expect(onGraphChangedMock).toHaveBeenCalled()
   })
 
@@ -119,29 +112,15 @@ describe('useMinimapGraph', () => {
     const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
 
     graphManager.setupEventListeners()
-    const wrappedCallbacks = {
-      onNodeAdded: mockGraph.onNodeAdded,
-      onNodeRemoved: mockGraph.onNodeRemoved,
-      onConnectionChange: mockGraph.onConnectionChange
-    }
-
-    // Setup again - should not re-wrap
     graphManager.setupEventListeners()
 
-    expect(mockGraph.onNodeAdded).toBe(wrappedCallbacks.onNodeAdded)
-    expect(mockGraph.onNodeRemoved).toBe(wrappedCallbacks.onNodeRemoved)
-    expect(mockGraph.onConnectionChange).toBe(
-      wrappedCallbacks.onConnectionChange
-    )
+    mockGraph.events.dispatch('node:added', { node: { id: '3' } as LGraphNode })
+
+    expect(onGraphChangedMock).toHaveBeenCalledTimes(1)
   })
 
   it('should cleanup event listeners properly', () => {
-    const originalOnNodeAdded = vi.fn()
-    const originalOnNodeRemoved = vi.fn()
     const originalOnConnectionChange = vi.fn()
-
-    mockGraph.onNodeAdded = originalOnNodeAdded
-    mockGraph.onNodeRemoved = originalOnNodeRemoved
     mockGraph.onConnectionChange = originalOnConnectionChange
 
     const graphRef = ref(mockGraph) as Ref<LGraph | null>
@@ -150,10 +129,11 @@ describe('useMinimapGraph', () => {
     graphManager.setupEventListeners()
     graphManager.cleanupEventListeners()
 
-    // Should restore original callbacks
-    expect(mockGraph.onNodeAdded).toBe(originalOnNodeAdded)
-    expect(mockGraph.onNodeRemoved).toBe(originalOnNodeRemoved)
     expect(mockGraph.onConnectionChange).toBe(originalOnConnectionChange)
+
+    mockGraph.events.dispatch('node:added', { node: { id: '3' } as LGraphNode })
+
+    expect(onGraphChangedMock).not.toHaveBeenCalled()
   })
 
   it('should handle cleanup for never-setup graph', () => {
@@ -168,7 +148,7 @@ describe('useMinimapGraph', () => {
     const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
 
     graphManager.setupEventListeners()
-    const minimapWrapper = mockGraph.onNodeAdded
+    const minimapWrapper = mockGraph.onConnectionChange
 
     // Simulate another system adding its own wrapper on top
     const downstream = vi.fn()
@@ -176,34 +156,34 @@ describe('useMinimapGraph', () => {
       minimapWrapper?.call(this, node)
       downstream(node)
     })
-    mockGraph.onNodeAdded = layeredWrapper
+    mockGraph.onConnectionChange = layeredWrapper
 
     graphManager.cleanupEventListeners()
 
     // The newer wrapper must survive cleanup
-    expect(mockGraph.onNodeAdded).toBe(layeredWrapper)
+    expect(mockGraph.onConnectionChange).toBe(layeredWrapper)
   })
 
   it('a buried wrapper becomes inert after cleanup', () => {
-    const originalOnNodeAdded = vi.fn()
-    mockGraph.onNodeAdded = originalOnNodeAdded
+    const originalOnConnectionChange = vi.fn()
+    mockGraph.onConnectionChange = originalOnConnectionChange
 
     const graphRef = ref(mockGraph) as Ref<LGraph | null>
     const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
 
     graphManager.setupEventListeners()
-    const buriedWrapper = mockGraph.onNodeAdded
+    const buriedWrapper = mockGraph.onConnectionChange
 
     // Layer something on top so cleanup can't restore.
-    mockGraph.onNodeAdded = vi.fn()
+    mockGraph.onConnectionChange = vi.fn()
     graphManager.cleanupEventListeners()
     vi.mocked(onGraphChangedMock).mockClear()
 
     // Call the method directly and ensure it is a no-op
     const testNode = { id: '9' } as LGraphNode
-    buriedWrapper!(testNode)
+    buriedWrapper(testNode)
 
-    expect(originalOnNodeAdded).toHaveBeenCalledWith(testNode)
+    expect(originalOnConnectionChange).toHaveBeenCalledWith(testNode)
     expect(onGraphChangedMock).not.toHaveBeenCalled()
   })
 
@@ -273,6 +253,41 @@ describe('useMinimapGraph', () => {
     expect(graphManager.updateFlags.value.nodes).toBe(true)
   })
 
+  it('detects a rendered size change without a requested size change', () => {
+    const node = mockGraph._nodes[0]
+    let renderedSize = node.size
+    Object.defineProperty(node, 'renderingSize', {
+      get: () => renderedSize
+    })
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+
+    graphManager.checkForChanges()
+    expect(graphManager.checkForChanges()).toBe(false)
+
+    renderedSize = [240, 180]
+
+    expect(graphManager.checkForChanges()).toBe(true)
+    expect(graphManager.updateFlags.value.bounds).toBe(true)
+    expect(graphManager.updateFlags.value.nodes).toBe(true)
+  })
+
+  it('recomputes bounds after a reload that leaves node geometry identical', () => {
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+    graphManager.setupEventListeners()
+
+    graphManager.checkForChanges()
+    expect(graphManager.checkForChanges()).toBe(false)
+
+    // Reloading the same workflow leaves the node count and every geometry
+    // string unchanged, so only `configured` can say the bounds are stale.
+    mockGraph.events.dispatch('configured')
+
+    expect(graphManager.checkForChanges()).toBe(true)
+    expect(graphManager.updateFlags.value.bounds).toBe(true)
+  })
+
   it('should detect node count changes', () => {
     const graphRef = ref(mockGraph) as Ref<LGraph | null>
     const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
@@ -281,11 +296,9 @@ describe('useMinimapGraph', () => {
     graphManager.checkForChanges()
 
     // Add a node
-    mockGraph._nodes.push({
-      id: '3',
-      pos: [400, 300],
-      size: [100, 50]
-    } as Partial<LGraphNode> as LGraphNode)
+    mockGraph._nodes.push(
+      createMockLGraphNode({ id: '3', pos: [400, 300], size: [100, 50] })
+    )
 
     const hasChanges = graphManager.checkForChanges()
     expect(hasChanges).toBe(true)
@@ -369,9 +382,22 @@ describe('useMinimapGraph', () => {
   })
 
   it('detects a store-side geometry change with the litegraph nodes untouched', () => {
-    useLayoutMutations().createNode(toNodeId('1'), {
-      position: { x: 100, y: 100 },
-      size: { width: 150, height: 80 }
+    const nodeId = toNodeId('1')
+    const graphId = mockGraph.rootGraph.id
+    layoutStore.applyOperation({
+      type: 'createNode',
+      graphId,
+      nodeId,
+      layout: {
+        id: nodeId,
+        position: { x: 100, y: 100 },
+        size: { width: 150, height: 80 },
+        bounds: { x: 100, y: 100, width: 150, height: 80 },
+        zIndex: 0,
+        visible: true
+      },
+      timestamp: Date.now(),
+      source: LayoutSource.Vue
     })
 
     const graphRef = ref(mockGraph) as Ref<LGraph | null>
@@ -382,15 +408,31 @@ describe('useMinimapGraph', () => {
 
     // The renderer draws from layoutStore, so a move that reached the store but
     // whose write-back to the litegraph node has not landed must still count.
-    useLayoutMutations().moveNode(toNodeId('1'), { x: 500, y: 500 })
+    useLayoutMutations(LayoutSource.Vue).moveNode(graphId, nodeId, {
+      x: 500,
+      y: 500
+    })
 
     expect(graphManager.checkForChanges()).toBe(true)
   })
 
   it('ignores a z-index change, which the minimap never draws', () => {
-    useLayoutMutations().createNode(toNodeId('2'), {
-      position: { x: 300, y: 200 },
-      size: { width: 120, height: 60 }
+    const nodeId = toNodeId('2')
+    const graphId = mockGraph.rootGraph.id
+    layoutStore.applyOperation({
+      type: 'createNode',
+      graphId,
+      nodeId,
+      layout: {
+        id: nodeId,
+        position: { x: 300, y: 200 },
+        size: { width: 120, height: 60 },
+        bounds: { x: 300, y: 200, width: 120, height: 60 },
+        zIndex: 0,
+        visible: true
+      },
+      timestamp: Date.now(),
+      source: LayoutSource.Vue
     })
 
     const graphRef = ref(mockGraph) as Ref<LGraph | null>
@@ -401,7 +443,7 @@ describe('useMinimapGraph', () => {
 
     // Fires on every widget pointerdown; redrawing for it would rebuild the
     // whole layout map for a picture that cannot have changed.
-    useLayoutMutations().setNodeZIndex(toNodeId('2'), 42)
+    useLayoutMutations(LayoutSource.Vue).setNodeZIndex(graphId, nodeId, 42)
 
     expect(graphManager.checkForChanges()).toBe(false)
   })
@@ -520,19 +562,16 @@ describe('useMinimapGraph', () => {
     expect(graphManager.updateFlags.value.connections).toBe(true)
   })
 
-  it('should handle node removal in callbacks', () => {
-    const originalOnNodeRemoved = vi.fn()
-    mockGraph.onNodeRemoved = originalOnNodeRemoved
-
+  it('should handle node removal', () => {
     const graphRef = ref(mockGraph) as Ref<LGraph | null>
     const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
 
     graphManager.setupEventListeners()
 
-    const removedNode = { id: '2' } as LGraphNode
-    mockGraph.onNodeRemoved!(removedNode)
+    mockGraph.events.dispatch('node:removed', {
+      node: { id: '2' } as LGraphNode
+    })
 
-    expect(originalOnNodeRemoved).toHaveBeenCalledWith(removedNode)
     expect(onGraphChangedMock).toHaveBeenCalled()
   })
 
@@ -599,9 +638,9 @@ describe('useMinimapGraph', () => {
     graphManager.setupEventListeners()
 
     // Trigger multiple changes rapidly
-    mockGraph.onNodeAdded!({ id: '3' } as LGraphNode)
-    mockGraph.onNodeAdded!({ id: '4' } as LGraphNode)
-    mockGraph.onNodeAdded!({ id: '5' } as LGraphNode)
+    for (const id of ['3', '4', '5']) {
+      mockGraph.events.dispatch('node:added', { node: { id } as LGraphNode })
+    }
 
     // Should be throttled
     expect(throttledFn).toHaveBeenCalledTimes(3)

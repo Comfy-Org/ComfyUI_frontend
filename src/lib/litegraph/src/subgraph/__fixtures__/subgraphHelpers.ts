@@ -5,7 +5,7 @@
  * These functions provide consistent ways to create test subgraphs, nodes, and
  * verify their behavior.
  */
-import { expect, onTestFinished } from 'vitest'
+import { expect } from 'vitest'
 
 import type {
   ExportedSubgraph,
@@ -17,6 +17,7 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
+import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 import {
@@ -60,6 +61,42 @@ function nextFixtureUuid(): UUID {
 export function resetSubgraphFixtureState(): void {
   fixtureUuidSequence = 1
   cleanupComplexPromotionFixtureNodeType()
+}
+
+export function enableSubgraphNodeCreation(rootGraph: LGraph): () => void {
+  const registrations = new Map<string, typeof LGraphNode>()
+  const listener = (
+    e: CustomEvent<LGraphEventMap['subgraph-created']>
+  ): void => {
+    const { subgraph } = e.detail
+    class TestSubgraphNode extends SubgraphNode {
+      constructor() {
+        super(rootGraph, subgraph, {
+          id: -1,
+          type: subgraph.id,
+          pos: [0, 0],
+          size: [100, 100],
+          inputs: [],
+          outputs: [],
+          flags: {},
+          mode: 0,
+          order: 0
+        })
+      }
+    }
+    LiteGraph.registered_node_types[subgraph.id] = TestSubgraphNode
+    registrations.set(subgraph.id, TestSubgraphNode)
+  }
+  rootGraph.events.addEventListener('subgraph-created', listener)
+
+  return () => {
+    rootGraph.events.removeEventListener('subgraph-created', listener)
+    for (const [type, constructor] of registrations) {
+      if (LiteGraph.registered_node_types[type] === constructor) {
+        delete LiteGraph.registered_node_types[type]
+      }
+    }
+  }
 }
 
 export function createTestRootGraph(id: UUID = nextFixtureUuid()): LGraph {
@@ -284,12 +321,17 @@ export function createTestSubgraphNode(
     order: 0
   }
 
-  return new SubgraphNode(parentGraph, subgraph, instanceData)
+  const subgraphNode = new SubgraphNode(parentGraph, subgraph, instanceData)
+  // Reserve the id: the node is not add()ed here, so without this a later
+  // parentGraph.add() would mint a duplicate id.
+  const numericId = Number(subgraphNode.id)
+  if (Number.isInteger(numericId) && numericId > parentGraph.state.lastNodeId) {
+    parentGraph.state.lastNodeId = numericId
+  }
+  return subgraphNode
 }
 
 export function registerTestSubgraphNodeTypes(rootGraph: LGraph): void {
-  const registeredTypes: string[] = []
-
   rootGraph.events.addEventListener('subgraph-created', (event) => {
     const subgraph = event.detail.subgraph
     class TestSubgraphNode extends SubgraphNode {
@@ -308,11 +350,6 @@ export function registerTestSubgraphNodeTypes(rootGraph: LGraph): void {
       }
     }
     LiteGraph.registerNodeType(subgraph.id, TestSubgraphNode)
-    registeredTypes.push(subgraph.id)
-  })
-
-  onTestFinished(() => {
-    for (const type of registeredTypes) LiteGraph.unregisterNodeType(type)
   })
 }
 
@@ -368,13 +405,8 @@ export function setupComplexPromotionFixture(): {
     throw new Error('Expected fixture to contain subgraph instance node id 21')
 
   const graph = createTestRootGraph()
-  const subgraph = graph.createSubgraph(subgraphData as ExportedSubgraph)
-  subgraph.configure(subgraphData as ExportedSubgraph)
-  const hostNode = new SubgraphNode(
-    graph,
-    subgraph,
-    hostNodeData as ExportedSubgraphInstance
-  )
+  const subgraph = graph.createSubgraph(subgraphData)
+  const hostNode = new SubgraphNode(graph, subgraph, hostNodeData)
   graph.add(hostNode)
 
   return {

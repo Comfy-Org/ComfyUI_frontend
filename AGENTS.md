@@ -59,6 +59,32 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 - `pnpm preview`: Preview the production build locally
 - `pnpm test:unit`: Run Vitest unit tests
 - `pnpm test:browser:local`: Run Playwright E2E tests (`browser_tests/`)
+- `pnpm comfy-test record`: Interactive test recorder (guided setup for non-devs; **needs a real terminal** — exits immediately with guidance if stdin isn't a TTY)
+- `pnpm comfy-test plan --description "<what to test>" [--tags a,b] [--workflow w] [--name n] [--feature-flags name:value,...]`: **Agent entry point.** Non-interactive, no terminal, no backend/dev-server required — reads the filesystem and prints text only. Validates the tags/workflow and prints a `<test-suite>/<test-name>/<test-file>/<seed-file>/<tag>/<body>` block ready to hand to the `playwright-test-generator` agent below — this is how an agent (not a human) produces a test with `comfy-test`. Example:
+  ```
+  pnpm comfy-test plan --description "collapsing a KSampler node keeps its connections" --tags @canvas,@widget
+  ```
+- `pnpm comfy-test transform <file> [--name <n>] [--tags <a,b>] [--workflow <w>] [--output <f>] [--feature-flags <specs>]`: Transform raw Playwright codegen to conventions. Non-interactive.
+- `pnpm comfy-test pr <file> [description]`: Open a pull request for a generated test. Non-interactive.
+- `pnpm comfy-test check [--distribution cloud|cloud-staging|cloud-prod|local] [--backend <url>]`: Check environment prerequisites
+- `pnpm comfy-test list [--filter <keyword>]`: List available test workflows
+- `pnpm comfy-test tags`: List test tags with their meanings
+- `pnpm comfy-test add-workflow <file> [--name <n>]`: Add and validate a workflow asset from disk
+
+**Agent workflow, end to end:** `comfy-test plan` → hand its output to the `playwright-test-generator` agent (writes a convention-compliant spec directly, no `transform` needed) → `comfy-test pr <file>`.
+
+**A `[WARN] Unsupported engine` line on every `comfy-test` invocation is not a failure** — pnpm warns when the local Node version doesn't match `package.json`'s `engines` field, but the command still runs and exits 0 on success. Don't treat it as a tool failure requiring investigation.
+
+### Playwright Test Agents (`.claude/agents/`)
+
+| Agent                          | Responsibility                                                                                                                    |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| `playwright-test-planner.md`   | Explores the app, identifies testable scenarios, creates structured test plans                                                    |
+| `playwright-test-generator.md` | Generates Playwright test code from plans using ComfyUI fixtures and conventions — this is what `comfy-test plan`'s output is for |
+| `playwright-test-healer.md`    | Diagnoses and fixes failing tests; escalates regressions rather than auto-skipping                                                |
+
+Guardrails: agents must use `comfyPage` fixture (not bare `page`), never add `waitForTimeout()`, never weaken assertions, and reference `.claude/skills/codegen-transform/SKILL.md` for transform rules.
+
 - `pnpm lint` / `pnpm lint:fix`: Lint (ESLint)
 - `pnpm format` / `pnpm format:check`: oxfmt
 - `pnpm typecheck`: Vue TSC type checking
@@ -191,10 +217,12 @@ See `docs/guidance/design-standards.md` for Figma file keys, section node IDs, a
 
 All architectural decisions are documented in `docs/adr/`. Code changes must be consistent with accepted ADRs. Proposed ADRs indicate design direction and should be treated as guidance. See `.agents/checks/adr-compliance.md` for automated validation rules.
 
+When working from a TDD or design doc, record its tradeoffs, alternatives considered, and rejected options as a new ADR, keeping only the context a future maintainer cannot read off the code, and follow the ADR structure and update the index per `docs/adr/README.md`.
+
 ### Entity Architecture Constraints (ADR 0003 + ADR 0008)
 
 1. **Command pattern for all mutations**: Every entity state change must be a serializable, idempotent, deterministic command — replayable, undoable, and transmittable over CRDT. No imperative fire-and-forget mutation APIs. Systems produce command batches, not direct side effects.
-2. **Dedicated stores over instance state**: Entity data lives in dedicated Pinia stores keyed by string IDs — widget values in `widgetValueStore` keyed by `WidgetId` (`graphId:nodeId:name`, see `src/types/widgetId.ts`), plus `domWidgetStore`, `layoutStore`, `nodeOutputStore`, `subgraphNavigationStore`, and `previewExposureStore`. Prefer a focused store to a single unified registry. Do not add new instance properties/methods to entity classes for data that belongs in a store. Do not use OOP inheritance for entity modeling.
+2. **Dedicated stores over instance state**: Entity data lives in dedicated Pinia stores keyed by each concern's established ID type. Most entity IDs are branded numbers; node IDs may be numbers or strings, graph IDs are UUID strings, and scoped concerns may use composite string keys such as `WidgetId` (`graphId:nodeId:name`, see `src/types/widgetId.ts`). Prefer a focused store to a single unified registry. Do not add new instance properties/methods to entity classes for data that belongs in a store. Do not use OOP inheritance for entity modeling.
 3. **No god-object growth**: Do not add methods to `LGraphNode`, `LGraphCanvas`, `LGraph`, or `Subgraph`. Extract to systems, stores, or composables.
 4. **Plain data components**: ECS components are plain data objects — no methods, no back-references to parent entities. Behavior belongs in systems (pure functions).
 5. **Extension ecosystem impact**: Changes to entity callbacks (`onConnectionsChange`, `onRemoved`, `onAdded`, `onConnectInput/Output`, `onConfigure`, `onWidgetChanged`), `node.widgets` access, `node.serialize`, or `graph._version++` affect 40+ custom node repos and require migration guidance.
@@ -220,6 +248,9 @@ All architectural decisions are documented in `docs/adr/`. Code changes must be 
     5. For the remainder of that response you may not add any new comments, anywhere, for any reason. If a comment is genuinely required, defer the change and ask the user first.
   - There is no statute of limitations. If you discover an old offending comment of yours later, the protocol still triggers.
   - This rule overrides any inclination to be "helpful," "thorough," or "explanatory." Helpfulness here is restraint.
+- NEVER call `captureException` or `datadogRum.addError` directly
+  - Use `reportError()` from `@/platform/telemetry/reportError`; see `src/AGENTS.md`
+  - Each raw sink reaches one console, so the failure reads as zero in the other
 - NEVER use the `dark:` tailwind variant
   - Instead use a semantic value from the `style.css` theme
     - e.g. `bg-node-component-surface`

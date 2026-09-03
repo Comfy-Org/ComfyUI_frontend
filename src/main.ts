@@ -1,6 +1,10 @@
 import { definePreset } from '@primevue/themes'
 import Aura from '@primevue/themes/aura'
-import * as Sentry from '@sentry/vue'
+import {
+  browserApiErrorsIntegration,
+  captureMessage,
+  init as sentryInit
+} from '@sentry/vue'
 import { initializeApp } from 'firebase/app'
 import { createPinia } from 'pinia'
 import 'primeicons/primeicons.css'
@@ -19,11 +23,13 @@ import {
   configValueOrDefault,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
+import { reportAssertFailure } from '@/platform/telemetry/assertFailureReporter'
 import { syncHostUserIdWithFirebaseAuth } from '@/platform/telemetry/hostUserIdSync'
 import { flushErrorReports } from '@/platform/telemetry/reportError'
 import '@/lib/litegraph/public/css/litegraph.css'
 import router from '@/router'
 import { isDesktop, isNightly } from '@/platform/distribution/types'
+import { stripPaymentReturnParams } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 
@@ -35,6 +41,8 @@ import { i18n } from './i18n'
 const isCloud = __DISTRIBUTION__ === 'cloud'
 const hasHostTelemetryBridge = Boolean(window.__comfyDesktop2?.Telemetry)
 
+if (isCloud) stripPaymentReturnParams()
+
 // Load remote config before initializeApp() below, so getFirebaseConfig() resolves
 // against the server's runtime values instead of the build-time defaults.
 const { refreshRemoteConfig } =
@@ -44,6 +52,10 @@ await refreshRemoteConfig({ useAuth: false })
 if (isCloud) {
   const { initTelemetry } = await import('@/platform/telemetry/initTelemetry')
   await initTelemetry()
+  const { startFeatureFlagTelemetry } =
+    await import('@/composables/useFeatureFlags')
+  const stopFeatureFlagTelemetry = startFeatureFlagTelemetry()
+  import.meta.hot?.dispose(stopFeatureFlagTelemetry)
 }
 
 if (hasHostTelemetryBridge) {
@@ -74,7 +86,7 @@ const sentryDsn = isCloud
 // runs without the env var, however valid the runtime DSN turns out to be.
 const sentryEnabled = !import.meta.env.DEV && !!sentryDsn
 
-Sentry.init({
+sentryInit({
   app,
   dsn: sentryDsn,
   enabled: sentryEnabled,
@@ -90,7 +102,7 @@ Sentry.init({
           // Disable event target wrapping to reduce overhead on high-frequency
           // DOM events (pointermove, mousemove, wheel). Sentry still captures
           // errors via window.onerror and unhandledrejection.
-          Sentry.browserApiErrorsIntegration({ eventTarget: false })
+          browserApiErrorsIntegration({ eventTarget: false })
         ]
       }
     : {
@@ -105,18 +117,24 @@ flushErrorReports()
 // Assertion reporter receives pre-formatted messages (with "[Assertion failed]: " prefix).
 // Strings here are intentionally not i18n'd: they're developer/nightly diagnostics,
 // not user-facing in stable releases.
-setAssertReporter((message) => {
-  if (isDesktop) {
-    Sentry.captureMessage(message, { level: 'warning' })
-  }
-  if (isNightly) {
-    useToastStore(pinia).add({
-      severity: 'warn',
-      summary: 'Assertion failed',
-      detail: message
-    })
-  }
-})
+setAssertReporter(
+  (message) => {
+    if (isDesktop) {
+      captureMessage(message, { level: 'warning' })
+    }
+    if (isCloud) {
+      reportAssertFailure(message)
+    }
+    if (isNightly) {
+      useToastStore(pinia).add({
+        severity: 'warn',
+        summary: 'Assertion failed',
+        detail: message
+      })
+    }
+  },
+  { forwardsToRum: isCloud }
+)
 
 app.directive('tooltip', Tooltip)
 app

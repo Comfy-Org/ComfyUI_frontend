@@ -5,6 +5,7 @@ import { LGraph } from './LGraph'
 import { LGraphCanvas } from './LGraphCanvas'
 import { LGraphGroup } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
+import type { NodeProperty } from './LGraphNode'
 import { LLink } from './LLink'
 import { Reroute } from './Reroute'
 import { InputIndicators } from './canvas/InputIndicators'
@@ -29,6 +30,18 @@ import {
   TitleMode
 } from './types/globalEnums'
 import { createUuidv4 } from '@/utils/uuid'
+
+export interface SlotTypeDefaultNodeOpts {
+  node?: string
+  title?: string
+  properties?: Record<string, NodeProperty>
+  inputs?: [string, string][]
+  outputs?: [string, string][]
+  json?: Parameters<LGraphNode['configure']>[0]
+}
+
+type SlotTypeDefaultNode = string | SlotTypeDefaultNodeOpts
+type SlotTypeDefault = SlotTypeDefaultNode | SlotTypeDefaultNode[]
 
 /**
  * The Global Scope. It contains all the registered node classes.
@@ -232,12 +245,12 @@ export class LiteGraphGlobal {
    * specify for each IN slot type a(/many) default node(s), use single string, array, or object
    * (with node, title, parameters, ..) like for search
    */
-  slot_types_default_in: Record<string, string[]> = {}
+  slot_types_default_in: Record<string, SlotTypeDefault> = {}
   /**
    * specify for each OUT slot type a(/many) default node(s), use single string, array, or object
    * (with node, title, parameters, ..) like for search
    */
-  slot_types_default_out: Record<string, string[]> = {}
+  slot_types_default_out: Record<string, SlotTypeDefault> = {}
 
   /** [true!] very handy, ALT click to clone and drag the new node */
   alt_drag_do_clone_nodes = false
@@ -457,8 +470,8 @@ export class LiteGraphGlobal {
 
     delete this.registered_node_types[String(base_class.type)]
 
-    const name = base_class.constructor.name
-    if (name) delete this.Nodes[name]
+    const name = base_class.name
+    if (name && this.Nodes[name] === base_class) delete this.Nodes[name]
   }
 
   /**
@@ -544,18 +557,14 @@ export class LiteGraphGlobal {
 
     let node: LGraphNode
 
-    if (this.catch_exceptions) {
-      try {
-        node = new base_class(title)
-      } catch (error) {
-        console.error(error)
-        return null
-      }
-    } else {
+    try {
       node = new base_class(title)
+      node._state.type = type
+    } catch (error) {
+      if (!this.catch_exceptions) throw error
+      console.error(error)
+      return null
     }
-
-    node.type = type
 
     if (!node.title && title) node.title = title
     node.properties ||= {}

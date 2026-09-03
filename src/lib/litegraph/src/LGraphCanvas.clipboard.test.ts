@@ -2,10 +2,21 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
+import { enableSubgraphNodeCreation } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import {
   LGraph,
   LGraphCanvas,
@@ -22,9 +33,10 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import { useRerouteStore } from '@/stores/rerouteStore'
+import { graphScopeOf } from '@/types/graphScopeId'
+import { toRerouteId } from '@/types/rerouteId'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
-
-import { registerTestSubgraphNodeTypes } from './subgraph/__fixtures__/subgraphHelpers'
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({})
@@ -32,6 +44,8 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 vi.mock('@/services/litegraphService', () => ({
   useLitegraphService: () => ({ updatePreviews: () => ({}) })
 }))
+
+beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
 function createSerialisedNode(
   id: number,
@@ -187,10 +201,31 @@ describe('remapClipboardSubgraphNodeIds', () => {
   })
 })
 
+function createCanvas(graph: LGraph): LGraphCanvas {
+  const el = document.createElement('canvas')
+  el.width = 800
+  el.height = 600
+  el.getContext = vi.fn().mockReturnValue(createMockCanvasRenderingContext2D())
+  el.getBoundingClientRect = vi
+    .fn()
+    .mockReturnValue({ left: 0, top: 0, width: 800, height: 600 })
+  return new LGraphCanvas(el, graph, { skip_render: true })
+}
+
+function registerClipboardNodeType(type: string): void {
+  class ClipboardNode extends LGraphNode {
+    constructor() {
+      super('Clipboard Node')
+      this.addInput('input', '*')
+      this.addOutput('output', '*')
+    }
+  }
+  LiteGraph.registerNodeType(type, ClipboardNode)
+}
+
 describe('_deserializeItems paste-time migration & auto-expose', () => {
   let originalFlush: typeof LGraph.proxyWidgetMigrationFlush
   let originalAutoExpose: typeof LGraph.autoExposePreviewNodes
-  const registeredTypesToCleanup: string[] = []
 
   beforeEach(() => {
     originalFlush = LGraph.proxyWidgetMigrationFlush
@@ -200,36 +235,31 @@ describe('_deserializeItems paste-time migration & auto-expose', () => {
   afterEach(() => {
     LGraph.proxyWidgetMigrationFlush = originalFlush
     LGraph.autoExposePreviewNodes = originalAutoExpose
-    for (const type of registeredTypesToCleanup) {
-      LiteGraph.unregisterNodeType(type)
-    }
-    registeredTypesToCleanup.length = 0
   })
 
-  function createCanvas(graph: LGraph): LGraphCanvas {
-    const el = document.createElement('canvas')
-    el.width = 800
-    el.height = 600
-    el.getContext = vi
-      .fn()
-      .mockReturnValue(createMockCanvasRenderingContext2D())
-    el.getBoundingClientRect = vi
-      .fn()
-      .mockReturnValue({ left: 0, top: 0, width: 800, height: 600 })
-    return new LGraphCanvas(el, graph, { skip_render: true })
-  }
+  it('prunes pasted reroutes that no pasted link passes through', () => {
+    const nodeType = 'test/clipboard-reroute-prune'
+    registerClipboardNodeType(nodeType)
 
-  function registerClipboardNodeType(type: string): void {
-    class ClipboardNode extends LGraphNode {
-      constructor() {
-        super('Clipboard Node')
-        this.addInput('input', '*')
-        this.addOutput('output', '*')
-      }
-    }
-    LiteGraph.registerNodeType(type, ClipboardNode)
-    registeredTypesToCleanup.push(type)
-  }
+    const rootGraph = new LGraph()
+    const canvas = createCanvas(rootGraph)
+
+    const source = LiteGraph.createNode(nodeType)!
+    rootGraph.add(source)
+    const target = LiteGraph.createNode(nodeType)!
+    rootGraph.add(target)
+    const link = source.connect(0, target, 0)!
+    rootGraph.createReroute([50, 50], link)
+
+    const result = canvas._deserializeItems(
+      canvas._serializeItems([...rootGraph.reroutes.values()]),
+      { position: [300, 300] }
+    )
+
+    expect(result?.reroutes.size).toBe(0)
+    expect(result?.created).toHaveLength(0)
+    expect(rootGraph.reroutes.size).toBe(1)
+  })
 
   it('reconnects pasted inputs when clipboard node IDs differ from link endpoint types', () => {
     const nodeType = 'test/clipboard-node-id-normalization'
@@ -271,7 +301,7 @@ describe('_deserializeItems paste-time migration & auto-expose', () => {
       throw new Error('Expected pasted input link')
     }
 
-    const pastedInputLink = rootGraph._links.get(pastedInputLinkId)
+    const pastedInputLink = rootGraph.links.get(pastedInputLinkId)
     expect(pastedInputLink?.origin_id).toBe(source.id)
     expect(pastedInputLink?.target_id).toBe(pastedTarget.id)
   })
@@ -284,7 +314,7 @@ describe('_deserializeItems paste-time migration & auto-expose', () => {
       })
 
     const rootGraph = new LGraph()
-    registerTestSubgraphNodeTypes(rootGraph)
+    onTestFinished(enableSubgraphNodeCreation(rootGraph))
     const canvas = createCanvas(rootGraph)
 
     const subgraphId = createUuidv4()
@@ -360,7 +390,7 @@ describe('_deserializeItems paste-time migration & auto-expose', () => {
       autoExposeKnownPreviewNodes(hostNode)
 
     const rootGraph = new LGraph()
-    registerTestSubgraphNodeTypes(rootGraph)
+    onTestFinished(enableSubgraphNodeCreation(rootGraph))
     const canvas = createCanvas(rootGraph)
 
     const subgraphId = createUuidv4()
@@ -439,5 +469,123 @@ describe('_deserializeItems paste-time migration & auto-expose', () => {
         sourcePreviewName: '$$canvas-image-preview'
       })
     ])
+  })
+})
+
+describe('clipboard reroute id integrity', () => {
+  const carrierType = 'test/reroute-carrier'
+
+  function createRerouteSubgraph(subgraphId: string): ExportedSubgraph {
+    return {
+      id: subgraphId,
+      version: 1,
+      revision: 0,
+      state: {
+        lastNodeId: 11,
+        lastLinkId: 1,
+        lastGroupId: 0,
+        lastRerouteId: 2
+      },
+      config: {},
+      name: 'Reroute Subgraph',
+      inputNode: { id: SUBGRAPH_INPUT_ID, bounding: [0, 0, 10, 10] },
+      outputNode: { id: SUBGRAPH_OUTPUT_ID, bounding: [0, 0, 10, 10] },
+      inputs: [],
+      outputs: [],
+      widgets: [],
+      nodes: [
+        createSerialisedNode(10, carrierType),
+        createSerialisedNode(11, carrierType)
+      ],
+      links: [
+        {
+          id: 1,
+          type: '*',
+          origin_id: 10,
+          origin_slot: 0,
+          target_id: 11,
+          target_slot: 0,
+          parentId: 2
+        }
+      ],
+      reroutes: [
+        { id: 1, pos: [10, 10], linkIds: [1] },
+        { id: 2, parentId: 1, pos: [20, 20], linkIds: [1] }
+      ],
+      groups: []
+    }
+  }
+
+  function createLiveRerouteSubgraph(rootGraph: LGraph) {
+    const subgraphId = createUuidv4()
+    const exported = createRerouteSubgraph(subgraphId)
+    const subgraph = rootGraph.createSubgraph(exported)
+    const host = LiteGraph.createNode(subgraphId)
+    if (!host) throw new Error('Expected subgraph node type to be registered')
+    rootGraph.add(host)
+    return { subgraph, host }
+  }
+
+  it('copying a subgraph node leaves the live subgraph in control of its reroute registrations', () => {
+    registerClipboardNodeType(carrierType)
+    const rootGraph = new LGraph()
+    onTestFinished(enableSubgraphNodeCreation(rootGraph))
+    const canvas = createCanvas(rootGraph)
+    const { subgraph, host } = createLiveRerouteSubgraph(rootGraph)
+
+    canvas._serializeItems([host])
+
+    const store = useRerouteStore()
+    const terminal = subgraph.reroutes.get(toRerouteId(2))!
+    terminal.parentId = undefined
+    expect(
+      store.getReroute(graphScopeOf(subgraph), toRerouteId(2))?.parentId
+    ).toBeUndefined()
+
+    subgraph.removeReroute(toRerouteId(1))
+    expect(
+      store.getReroute(graphScopeOf(subgraph), toRerouteId(1))
+    ).toBeUndefined()
+  })
+
+  it('pasting a subgraph node remaps colliding reroute ids instead of hijacking live registrations', () => {
+    registerClipboardNodeType(carrierType)
+    const rootGraph = new LGraph()
+    onTestFinished(enableSubgraphNodeCreation(rootGraph))
+    const canvas = createCanvas(rootGraph)
+    const { subgraph: liveSubgraph } = createLiveRerouteSubgraph(rootGraph)
+
+    const clipboardSubgraphId = createUuidv4()
+    const parsed: ClipboardItems = {
+      nodes: [createSerialisedNode(99, clipboardSubgraphId)],
+      groups: [],
+      reroutes: [],
+      links: [],
+      subgraphs: [createRerouteSubgraph(clipboardSubgraphId)]
+    }
+
+    const result = canvas._deserializeItems(parsed, { position: [300, 300] })
+    const pasted = [...(result?.subgraphs.values() ?? [])][0]
+    expect(pasted).toBeDefined()
+
+    const liveIds = [...liveSubgraph.reroutes.keys()]
+    const pastedIds = [...pasted.reroutes.keys()]
+    expect(pastedIds).toHaveLength(2)
+    expect(new Set([...liveIds, ...pastedIds]).size).toBe(4)
+
+    const [pastedLink] = [...pasted.links.values()]
+    expect(pastedIds).toContain(pastedLink.parentId)
+
+    const store = useRerouteStore()
+    const terminal = liveSubgraph.reroutes.get(toRerouteId(2))!
+    terminal.parentId = undefined
+    expect(
+      store.getReroute(graphScopeOf(liveSubgraph), toRerouteId(2))?.parentId
+    ).toBeUndefined()
+
+    liveSubgraph.removeReroute(toRerouteId(1))
+    expect(
+      store.getReroute(graphScopeOf(liveSubgraph), toRerouteId(1))
+    ).toBeUndefined()
   })
 })

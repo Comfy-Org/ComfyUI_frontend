@@ -27,9 +27,15 @@ import type {
   TWidgetValue
 } from '@/lib/litegraph/src/types/widgets'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import { useLinkStore } from '@/stores/linkStore'
+import { graphScopeOf } from '@/types/graphScopeId'
+import {
+  getPreviewExposureHostLocator,
+  usePreviewExposureStore
+} from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
+import type { LinkTopology } from '@/types/linkTopology'
+import { toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 
 interface LegacyProxyEntrySource extends PromotedWidgetSource {
@@ -265,21 +271,28 @@ function pickHostValue(
   return { value: raw, isHole: false }
 }
 
+function primitiveOutputTopologies(primitiveNode: LGraphNode): LinkTopology[] {
+  if (!primitiveNode.graph) return []
+  return [
+    ...useLinkStore().getOutputSlotLinks(
+      graphScopeOf(primitiveNode.graph),
+      primitiveNode.id,
+      0
+    )
+  ]
+}
+
 function collectTargetsStrict(
   hostNode: SubgraphNode,
   primitiveNode: LGraphNode
 ): PrimitiveBypassTargetRef[] | undefined {
   const subgraph = hostNode.subgraph
-  const output = primitiveNode.outputs?.[0]
-  const linkIds = output?.links ?? []
   const targets: PrimitiveBypassTargetRef[] = []
-  for (const linkId of linkIds) {
-    const link = subgraph.links.get(linkId)
-    if (!link) return undefined
-    if (link.target_id === UNASSIGNED_NODE_ID) return undefined
+  for (const topology of primitiveOutputTopologies(primitiveNode)) {
+    if (!subgraph.links.get(topology.id)) return undefined
     targets.push({
-      targetNodeId: link.target_id,
-      targetSlot: link.target_slot
+      targetNodeId: topology.targetNodeId,
+      targetSlot: topology.targetSlot
     })
   }
   return targets
@@ -290,18 +303,12 @@ function collectTargetsSkippingDangling(
   primitiveNode: LGraphNode
 ): PrimitiveBypassTargetRef[] {
   const subgraph = hostNode.subgraph
-  const linkIds = primitiveNode.outputs?.[0]?.links ?? []
-  return linkIds.flatMap((linkId) => {
-    const link = subgraph.links.get(linkId)
-    return link && link.target_id !== UNASSIGNED_NODE_ID
-      ? [
-          {
-            targetNodeId: link.target_id,
-            targetSlot: link.target_slot
-          }
-        ]
-      : []
-  })
+  return primitiveOutputTopologies(primitiveNode)
+    .filter((topology) => subgraph.links.get(topology.id))
+    .map((topology) => ({
+      targetNodeId: topology.targetNodeId,
+      targetSlot: topology.targetSlot
+    }))
 }
 
 function cohortDuplicatesPrimitive(
@@ -619,17 +626,13 @@ function repairPrimitive(
   }
 
   const baseName = userRenamedTitle(primitiveNode) ?? validated.sourceWidgetName
-  const snapshot: SnapshotLink[] = (primitiveOutput.links ?? [])
-    .map((id) => subgraph.links.get(id))
-    .filter(
-      (l): l is NonNullable<typeof l> =>
-        l !== undefined && l.target_id !== UNASSIGNED_NODE_ID
-    )
-    .map((l) => ({
-      primitiveSlot: l.origin_slot,
-      targetNodeId: l.target_id,
-      targetSlot: l.target_slot
-    }))
+  const snapshot: SnapshotLink[] = primitiveOutputTopologies(primitiveNode).map(
+    (topology) => ({
+      primitiveSlot: topology.originSlot,
+      targetNodeId: topology.targetNodeId,
+      targetSlot: topology.targetSlot
+    })
+  )
 
   let newSubgraphInput: SubgraphInput | undefined
   try {
@@ -675,7 +678,7 @@ function repairPrimitive(
     } else {
       const primitiveValue = primitiveNode.widgets?.find(
         (w) => w.name === validated.sourceWidgetName
-      )?.value as TWidgetValue | undefined
+      )?.value
       if (primitiveValue !== undefined) {
         applyHostValueToInput(hostInput, {
           ...validated.uniqueEntries[0],
@@ -724,7 +727,8 @@ function migratePreview(
     }
   }
 
-  const hostNodeLocator = String(hostNode.id)
+  const hostNodeLocator = getPreviewExposureHostLocator(hostNode)
+  if (!hostNodeLocator) return { ok: false, reason: 'missingSourceNode' }
   const existing = store
     .getExposures(hostNode.rootGraph.id, hostNodeLocator)
     .find(

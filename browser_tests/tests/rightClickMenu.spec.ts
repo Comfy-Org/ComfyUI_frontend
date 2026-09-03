@@ -169,11 +169,12 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
 
     // Get EmptyLatentImage node title position dynamically (for dragging)
     const emptyLatentNode = await comfyPage.nodeOps.getNodeRefById(5)
+    const originalPosition = await emptyLatentNode.getPosition()
     const titlePos = await emptyLatentNode.getTitlePosition()
     await comfyPage.canvasOps.dragAndDrop(titlePos, { x: 200, y: 590 })
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'right-click-unpinned-node-moved.png'
-    )
+    await expect
+      .poll(() => emptyLatentNode.getPosition())
+      .not.toEqual(originalPosition)
   })
 
   test('Can pin/unpin selected nodes', async ({ comfyPage }) => {

@@ -1,0 +1,303 @@
+import { computed } from 'vue'
+import type { ComputedRef } from 'vue'
+
+import { useNodePricing } from '@/composables/node/useNodePricing'
+import { t } from '@/i18n'
+import type {
+  LGraph,
+  LGraphNode,
+  SubgraphNode
+} from '@/lib/litegraph/src/litegraph'
+import { registerBadgeRowsProvider } from '@/lib/litegraph/src/nodeBadgeDraw'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useLinkStore } from '@/stores/linkStore'
+import { graphScopeOf } from '@/types/graphScopeId'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { CORE_PART_ORDER } from '@/types/badgeData'
+import type { BadgeData, CoreBadgePart } from '@/types/badgeData'
+import type { NodeId } from '@/types/nodeId'
+import { NodeBadgeMode } from '@/types/nodeSource'
+import { widgetId } from '@/types/widgetId'
+import { adjustColor } from '@/utils/colorUtil'
+import { mapUniqueNodes } from '@/utils/graphTraversalUtil'
+import type { UUID } from '@/utils/uuid'
+
+/** The badge-relevant projection of a node's definition. */
+interface NodeDefBadgeSources {
+  isCoreNode: boolean
+  lifecycleText: string
+  sourceText: string
+}
+
+/** How a node participates in credits pricing, decided by the gatherer. */
+type PricingBadgeSources =
+  | { kind: 'none' }
+  | { kind: 'api-node'; label: string }
+  | { kind: 'subgraph'; apiNodeCount: number; singleLabel: string }
+
+/**
+ * The domain state a node's badges are computed from. Plain data so
+ * {@link computeBadges} stays pure — {@link nodeBadges}' computed
+ * gathers these from the live stores.
+ */
+export interface BadgeSources {
+  nodeId: NodeId
+  nodeDef: NodeDefBadgeSources | null
+  badgeModes: {
+    id: NodeBadgeMode
+    lifecycle: NodeBadgeMode
+    source: NodeBadgeMode
+  }
+  colors: { fgColor: string; bgColor: string; creditsBgColor: string }
+  pricing: PricingBadgeSources
+}
+
+function badgeTextVisible(
+  nodeDef: NodeDefBadgeSources | null,
+  badgeMode: NodeBadgeMode
+): boolean {
+  return !(
+    badgeMode === NodeBadgeMode.None ||
+    (nodeDef?.isCoreNode && badgeMode === NodeBadgeMode.HideBuiltIn)
+  )
+}
+
+/** Projects a node's core and credits badge rows from their sources. */
+export function computeBadges(sources: BadgeSources): BadgeData[] {
+  const { nodeId, nodeDef, badgeModes, colors, pricing } = sources
+  const corePartsByPart: Record<CoreBadgePart, [NodeBadgeMode, string]> = {
+    id: [badgeModes.id, `#${nodeId}`],
+    lifecycle: [badgeModes.lifecycle, nodeDef?.lifecycleText ?? ''],
+    source: [badgeModes.source, nodeDef?.sourceText ?? '']
+  }
+  const coreParts = CORE_PART_ORDER.map(
+    (part): [CoreBadgePart, NodeBadgeMode, string] => [
+      part,
+      ...corePartsByPart[part]
+    ]
+  )
+  const rows: BadgeData[] = coreParts
+    .filter(
+      ([, mode, text]) => badgeTextVisible(nodeDef, mode) && text.length > 0
+    )
+    .map(([part, , text]) => ({
+      kind: 'core',
+      part,
+      text,
+      fgColor: colors.fgColor,
+      bgColor: colors.bgColor
+    }))
+
+  const creditsText = computeCreditsText(pricing)
+  if (creditsText) {
+    rows.push({
+      kind: 'credits',
+      text: creditsText,
+      fgColor: colors.fgColor,
+      bgColor: colors.creditsBgColor
+    })
+  }
+  return rows
+}
+
+function computeCreditsText(pricing: PricingBadgeSources): string {
+  switch (pricing.kind) {
+    case 'none':
+      return ''
+    case 'api-node':
+      return pricing.label
+    case 'subgraph':
+      if (pricing.apiNodeCount > 1) {
+        return t('nodeBadge.partnerNodesCount', {
+          count: pricing.apiNodeCount
+        })
+      }
+      return pricing.apiNodeCount === 1 ? pricing.singleLabel : ''
+  }
+}
+
+const CREDITS_BASE_BG_COLOR = '#8D6932'
+
+/**
+ * Reads the pricing-relevant store state so the calling computed re-runs
+ * when a price revision, priced widget value, or priced input connection
+ * changes.
+ */
+function touchPricingSources(graphId: UUID, node: LGraphNode): void {
+  const pricing = useNodePricing()
+  const nodeId = node.id
+  void pricing.getNodeRevisionRef(nodeId).value
+
+  if (!node.type || !pricing.hasDynamicPricing(node.type)) return
+  const widgetStore = useWidgetValueStore()
+  for (const name of pricing.getRelevantWidgetNames(node.type)) {
+    void widgetStore.getWidget(widgetId(graphId, nodeId, name))?.value
+  }
+  const linkStore = useLinkStore()
+  const inputNames = pricing.getInputNames(node.type)
+  const groupPrefixes = pricing.getInputGroupPrefixes(node.type)
+  const graph = node.graph
+  const graphScope = graph ? graphScopeOf(graph) : undefined
+  node.inputs?.forEach((input, index) => {
+    const relevant =
+      (input.name && inputNames.includes(input.name)) ||
+      groupPrefixes.some((prefix) => input.name?.startsWith(prefix + '.'))
+    if (relevant && graphScope) {
+      void linkStore.isInputSlotConnected(graphScope, nodeId, index)
+    }
+  })
+}
+
+/** Promoted widget values on the wrapper override the inner node's own. */
+function collectPromotedOverrides(
+  wrapper: SubgraphNode,
+  innerNode: LGraphNode
+): ReadonlyMap<string, unknown> {
+  const overrides = new Map<string, unknown>()
+  for (const input of wrapper.inputs) {
+    if (!input.widgetId) continue
+    for (const linkId of input._subgraphSlot?.linkIds ?? []) {
+      const link = wrapper.subgraph.getLink(linkId)
+      if (link?.target_id !== innerNode.id) continue
+      const widgetName = innerNode.inputs[link.target_slot]?.widget?.name
+      if (!widgetName) continue
+      overrides.set(
+        widgetName,
+        useWidgetValueStore().getWidget(input.widgetId)?.value
+      )
+    }
+  }
+  return overrides
+}
+
+/**
+ * Aggregates the inner api nodes' credits for a wrapper, tracking their
+ * pricing revisions so inner price changes recompute the wrapper.
+ */
+function gatherSubgraphCredits(wrapper: SubgraphNode): PricingBadgeSources {
+  const pricing = useNodePricing()
+  const apiLeaves = mapUniqueNodes(wrapper.subgraph, (node) =>
+    !node.isSubgraphNode() && node.constructor?.nodeData?.api_node
+      ? node
+      : undefined
+  )
+  for (const leaf of apiLeaves) {
+    const graphId = leaf.graph?.rootGraph.id
+    if (graphId !== undefined) touchPricingSources(graphId, leaf)
+  }
+
+  if (apiLeaves.length !== 1) {
+    return { kind: 'subgraph', apiNodeCount: apiLeaves.length, singleLabel: '' }
+  }
+  const leaf = apiLeaves[0]
+  const singleLabel = pricing.getNodeDisplayPrice(
+    leaf,
+    collectPromotedOverrides(wrapper, leaf)
+  )
+  return { kind: 'subgraph', apiNodeCount: 1, singleLabel }
+}
+
+function gatherPricing(node: LGraphNode): PricingBadgeSources {
+  if (node.isSubgraphNode()) return gatherSubgraphCredits(node)
+  if (!node.constructor?.nodeData?.api_node) return { kind: 'none' }
+  const graphId = node.graph?.rootGraph.id
+  if (graphId !== undefined) touchPricingSources(graphId, node)
+  return { kind: 'api-node', label: useNodePricing().getNodeDisplayPrice(node) }
+}
+
+function gatherSources(node: LGraphNode): BadgeSources {
+  const settingStore = useSettingStore()
+  const palette = useColorPaletteStore().completedActivePalette
+  const def = useNodeDefStore().fromLGraphNode(node)
+  const showApiPricing = !!settingStore.get('Comfy.NodeBadge.ShowApiPricing')
+
+  return {
+    nodeId: node.id,
+    nodeDef: def
+      ? {
+          isCoreNode: def.isCoreNode,
+          lifecycleText: def.nodeLifeCycleBadgeText,
+          sourceText: def.nodeSource?.badgeText ?? ''
+        }
+      : null,
+    badgeModes: {
+      id: settingStore.get('Comfy.NodeBadge.NodeIdBadgeMode') as NodeBadgeMode,
+      lifecycle: settingStore.get(
+        'Comfy.NodeBadge.NodeLifeCycleBadgeMode'
+      ) as NodeBadgeMode,
+      source: settingStore.get(
+        'Comfy.NodeBadge.NodeSourceBadgeMode'
+      ) as NodeBadgeMode
+    },
+    colors: {
+      fgColor: palette.colors.litegraph_base.BADGE_FG_COLOR,
+      bgColor: palette.colors.litegraph_base.BADGE_BG_COLOR,
+      creditsBgColor: palette.light_theme
+        ? adjustColor(CREDITS_BASE_BG_COLOR, { lightness: 0.5 })
+        : CREDITS_BASE_BG_COLOR
+    },
+    pricing: showApiPricing ? gatherPricing(node) : { kind: 'none' }
+  }
+}
+
+const badgeComputeds = new WeakMap<LGraphNode, ComputedRef<BadgeData[]>>()
+
+/**
+ * A node's derived badge rows, memoized per node instance and recomputed
+ * when a source changes. Entries die with their nodes; there is no
+ * registration or teardown.
+ */
+export function nodeBadges(node: LGraphNode): readonly BadgeData[] {
+  let rows = badgeComputeds.get(node)
+  if (!rows) {
+    // Instantiate source stores outside the computed: a store's first
+    // instantiation mutates pinia.state and would invalidate it.
+    useSettingStore()
+    useNodeDefStore()
+    useColorPaletteStore()
+    useWidgetValueStore()
+    useLinkStore()
+    rows = computed(() => {
+      return computeBadges(gatherSources(node))
+    })
+    badgeComputeds.set(node, rows)
+  }
+  return rows.value
+}
+
+interface CreditsBadgeEntry {
+  nodeId: NodeId
+  price: string
+  title: string
+}
+
+const creditsComputeds = new WeakMap<LGraph, ComputedRef<CreditsBadgeEntry[]>>()
+
+/**
+ * The credits rows of every unique non-wrapper node under a root graph,
+ * memoized per graph instance like {@link nodeBadges}.
+ */
+export function graphCreditsBadges(
+  rootGraph: LGraph
+): readonly CreditsBadgeEntry[] {
+  let entries = creditsComputeds.get(rootGraph)
+  if (!entries) {
+    entries = computed(() =>
+      mapUniqueNodes(rootGraph, (node) => {
+        if (node.isSubgraphNode()) return
+        const priceRow = nodeBadges(node).find((row) => row.kind === 'credits')
+        if (!priceRow) return
+        return { nodeId: node.id, price: priceRow.text, title: node.title }
+      })
+    )
+    creditsComputeds.set(rootGraph, entries)
+  }
+  return entries.value
+}
+
+/** Installs {@link nodeBadges} as the legacy canvas's badge row source. */
+export function installNodeBadges(): () => void {
+  return registerBadgeRowsProvider(nodeBadges)
+}

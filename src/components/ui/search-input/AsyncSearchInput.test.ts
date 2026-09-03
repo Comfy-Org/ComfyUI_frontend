@@ -160,4 +160,27 @@ describe('AsyncSearchInput', () => {
       expect(cleanupB).not.toHaveBeenCalled()
     })
   })
+
+  describe('Autofocus', () => {
+    function renderWithAutofocus(autofocus: boolean) {
+      const Harness = defineComponent({
+        components: { AsyncSearchInput },
+        setup: () => ({ autofocus }),
+        template: `<AsyncSearchInput :autofocus="autofocus" />`
+      })
+      return render(Harness, { global: { plugins: [i18n] } })
+    }
+
+    it('focuses the input on mount when autofocus is set', async () => {
+      renderWithAutofocus(true)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(screen.getByRole('textbox')).toHaveFocus()
+    })
+
+    it('does not steal focus on mount without autofocus', async () => {
+      renderWithAutofocus(false)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(screen.getByRole('textbox')).not.toHaveFocus()
+    })
+  })
 })

@@ -287,7 +287,7 @@ describe('MissingPackGroupRow', () => {
     it('does not show Locate for nodeType without nodeId', () => {
       renderRow({
         group: makeGroup({
-          nodeTypes: [{ type: 'NoId', isReplaceable: false } as never]
+          nodeTypes: [{ type: 'NoId', isReplaceable: false }]
         })
       })
       expect(
@@ -303,7 +303,7 @@ describe('MissingPackGroupRow', () => {
         group: makeGroup({
           nodeTypes: [
             { type: 'WithId', nodeId: '100', isReplaceable: false },
-            { type: 'WithoutId', isReplaceable: false } as never
+            { type: 'WithoutId', isReplaceable: false }
           ]
         })
       })

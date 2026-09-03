@@ -33,20 +33,27 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
+import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import type { WidgetTypeMap } from '@/lib/litegraph/src/widgets/widgetMap'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema'
 import { parseProxyWidgetErrorQuarantine } from '@/core/schemas/proxyWidgetQuarantineSchema'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import {
+  getPreviewExposureHostLocator,
+  tryGetPreviewExposureHostLocator,
+  usePreviewExposureStore
+} from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
+import type { NodeState } from '@/types/nodeState'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
+import { createPromotedWidgetStoreProjection } from './promotedWidgetStoreProjection'
 import type { SubgraphInput } from './SubgraphInput'
 import { createBitmapCache } from './svgBitmapCache'
 
@@ -57,9 +64,22 @@ workflowSvg.src =
 const workflowBitmapCache = createBitmapCache(workflowSvg, 32)
 
 export class SubgraphNode extends LGraphNode implements BaseLGraph {
-  declare inputs: (INodeInputSlot & Partial<ISubgraphInput>)[]
+  override get inputs(): (INodeInputSlot & Partial<ISubgraphInput>)[] {
+    return super.inputs
+  }
 
-  override readonly type: SubgraphId
+  override set inputs(value: (INodeInputSlot & Partial<ISubgraphInput>)[]) {
+    super.inputs = value
+  }
+
+  override get type(): SubgraphId {
+    return super.type
+  }
+
+  override set type(value: string) {
+    super.type = value
+  }
+
   override readonly isVirtualNode = true as const
   override graph: GraphOrSubgraph | null
 
@@ -196,7 +216,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       (e) => {
         const { index, newName } = e.detail
         const input = this.inputs.at(index)
-        if (!input) throw new Error('Subgraph input not found')
+        if (!input) {
+          console.error('Subgraph input not found')
+          return
+        }
 
         input.label = newName
         // Do NOT change input.widget.name — it is the stable internal
@@ -222,7 +245,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       (e) => {
         const { index, newName } = e.detail
         const output = this.outputs.at(index)
-        if (!output) throw new Error('Subgraph output not found')
+        if (!output) {
+          console.error('Subgraph output not found')
+          return
+        }
 
         output.label = newName
         this.graph?.trigger('node:slot-label:changed', {
@@ -233,7 +259,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       { signal }
     )
 
-    this.type = subgraph.id
     this.configure(instanceData)
 
     this.addTitleButton({
@@ -264,52 +289,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const id = input.widgetId
     if (!id) return
 
-    const store = useWidgetValueStore()
-    const widget: IBaseWidget = {
-      get name() {
-        return store.getWidget(id)?.name ?? input.name
-      },
-      get label() {
-        return store.getWidget(id)?.label ?? input.label ?? input.name
-      },
-      set label(next) {
-        const state = store.getWidget(id)
-        if (state) state.label = next
-      },
-      get y() {
-        return store.getWidget(id)?.y ?? 0
-      },
-      set y(next) {
-        const state = store.getWidget(id)
-        if (state) state.y = next
-      },
-      get type() {
-        return store.getWidget(id)?.type ?? 'text'
-      },
-      get options() {
-        return store.getWidget(id)?.options ?? {}
-      },
-      get value() {
-        const value = store.getWidget(id)?.value
-        return isWidgetValue(value) ? value : undefined
-      },
-      set value(next) {
-        store.setValue(id, next)
-      },
-      // Canvas edits operate on a transient concrete widget (toConcreteWidget),
-      // so the value setter above is never invoked; BaseWidget.setValue writes
-      // its own local state and then calls this callback, which is the only
-      // bridge back to the store.
-      callback(next) {
-        store.setValue(id, next)
-      }
-    }
-    Object.defineProperty(widget, 'widgetId', {
-      value: id,
-      enumerable: false,
-      configurable: true
-    })
-    input._widget = widget
+    input._widget = createPromotedWidgetStoreProjection(input, id)
     return input._widget
   }
 
@@ -366,9 +346,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           })
         }
 
-        delete input.pos
-        delete input.widget
-        delete input.widgetId
+        input.pos = undefined
+        input.widget = undefined
+        input.widgetId = undefined
         input._widget = undefined
         this.invalidatePromotedViews()
       },
@@ -434,6 +414,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   override configure(info: ExportedSubgraphInstance): void {
     for (const input of this.inputs) {
+      this._clearPromotedWidget(input)
       if (
         input._listenerController &&
         typeof input._listenerController.abort === 'function'
@@ -495,9 +476,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     let valueIndex = 0
     for (const input of this.inputs) {
       if (!input.widgetId) continue
-      const value =
-        quarantineValuesByInputName.get(input.name) ??
-        widgetValues?.[valueIndex]
+      const value = quarantineValuesByInputName.has(input.name)
+        ? quarantineValuesByInputName.get(input.name)
+        : widgetValues?.[valueIndex]
       if (value !== undefined) {
         useWidgetValueStore().setValue(input.widgetId, value)
       }
@@ -512,9 +493,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       )
         .toReversed()
         .flatMap(({ originalEntry: [sourceNodeId, name], hostValue }) =>
-          sourceNodeId === '-1' &&
-          hostValue !== undefined &&
-          isWidgetValue(hostValue)
+          sourceNodeId === '-1' && hostValue !== undefined
             ? [[name, hostValue] as const]
             : []
         )
@@ -546,38 +525,53 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   private _hydratePreviewExposures() {
     const store = usePreviewExposureStore()
     const rootGraphId = this.rootGraph.id
-    const hostLocator = String(this.id)
     const rawProperty = this.properties.previewExposures
     const hasExplicitProperty = Array.isArray(rawProperty)
     const fromProperty = parsePreviewExposures(rawProperty)
-    if (fromProperty.length) {
-      store.setExposures(rootGraphId, hostLocator, fromProperty)
-      return
-    }
-    if (hasExplicitProperty) {
-      store.setExposures(rootGraphId, hostLocator, [])
+    if (fromProperty.length || hasExplicitProperty) {
+      const hostLocator = tryGetPreviewExposureHostLocator(this)
+      if (hostLocator)
+        store.setExposures(rootGraphId, hostLocator, fromProperty)
       return
     }
     const legacyKey = createNodeLocatorId(null, this.id)
     const legacy = store.getExposures(rootGraphId, legacyKey)
-    if (legacy.length) {
-      store.setExposures(rootGraphId, hostLocator, [...legacy])
-      return
+    if (!legacy.length) return
+    const hostLocator = getPreviewExposureHostLocator(this)
+    if (!hostLocator) return
+    store.setExposures(rootGraphId, hostLocator, [...legacy])
+    if (legacyKey !== hostLocator) {
+      store.setExposures(rootGraphId, legacyKey, [])
     }
-    store.setExposures(rootGraphId, hostLocator, [])
   }
 
   rebuildInputWidgetBindings(): void {
     this.invalidatePromotedViews()
 
+    const store = useWidgetValueStore()
+    const previousBindings = new Map(
+      this.inputs.flatMap((input) => {
+        if (!input.widgetId) return []
+        const state = store.getWidget(input.widgetId)
+        return state
+          ? [[input, { id: input.widgetId, value: state.value }]]
+          : []
+      })
+    )
+
     for (const input of this.inputs) {
-      delete input.widget
-      delete input.pos
-      delete input.widgetId
-      this._clearPromotedWidget(input)
       const subgraphInput = input._subgraphSlot
       if (!subgraphInput) continue
       this._resolveInputWidget(subgraphInput, input)
+      const previous = previousBindings.get(input)
+      if (previous && input.widgetId) {
+        store.setValue(input.widgetId, previous.value)
+      }
+    }
+
+    const activeIds = new Set(this.inputs.map((input) => input.widgetId))
+    for (const { id } of previousBindings.values()) {
+      if (!activeIds.has(id)) store.deleteWidget(id)
     }
 
     this.invalidatePromotedViews()
@@ -597,13 +591,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         continue
       }
 
-      const { inputNode } = link.resolve(this.subgraph)
+      const { inputNode, input: targetInput } = link.resolve(this.subgraph)
       if (!inputNode) {
         console.warn('Failed to resolve inputNode', link, this)
         continue
       }
 
-      const targetInput = inputNode.inputs.find((inp) => inp.link === linkId)
       if (!targetInput) {
         console.warn('Failed to find corresponding input', link, inputNode)
         continue
@@ -657,21 +650,39 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     input.widget.name = subgraphInput.name
     if (inputWidget) Object.setPrototypeOf(input.widget, inputWidget)
 
+    if (this.id === UNASSIGNED_NODE_ID) {
+      // Registering now would key the store under a construction-time id
+      // shared by every not-yet-added SubgraphNode (e.g. a clipboard clone
+      // that gets discarded), letting a later unrelated instance inherit
+      // this value. onAdded() performs the deferred registration once a
+      // real id is assigned.
+      input.widgetId = undefined
+      return
+    }
+
     const id = widgetId(this.rootGraph.id, this.id, subgraphInput.name)
+    const store = useWidgetValueStore()
+    const registered = store.registerWidget(
+      id,
+      {
+        type: interiorWidget.type,
+        value: interiorWidget.value,
+        options: cloneDeep(interiorWidget.options ?? {}),
+        label: input.label ?? subgraphInput.name,
+        serialize: interiorWidget.serialize,
+        disabled: interiorWidget.disabled
+      },
+      deriveWidgetRenderState(interiorWidget)
+    )
+    if (!registered) {
+      input.pos = undefined
+      input.widget = undefined
+      input.widgetId = undefined
+      input._widget = undefined
+      return
+    }
+
     input.widgetId = id
-    useWidgetValueStore().registerWidget(id, {
-      type: interiorWidget.type,
-      value: interiorWidget.value,
-      options: cloneDeep(interiorWidget.options ?? {}),
-      label: input.label ?? subgraphInput.name,
-      serialize: interiorWidget.serialize,
-      disabled: interiorWidget.disabled,
-      isDOMWidget:
-        'isDOMWidget' in interiorWidget &&
-        typeof interiorWidget.isDOMWidget === 'boolean'
-          ? interiorWidget.isDOMWidget
-          : undefined
-    })
     input._widget =
       this.createPromotedHostWidget(input, id, interiorWidget) ??
       this._projectPromotedWidget(input)
@@ -706,7 +717,38 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   override onAdded(_graph: LGraph): void {
-    this.invalidatePromotedViews()
+    const store = useWidgetValueStore()
+    for (const input of this.inputs) {
+      const previousId = input.widgetId
+      if (!previousId) {
+        // Registration deferred by _setWidget while this.id was still
+        // UNASSIGNED_NODE_ID (e.g. widget resolution during construction).
+        // Perform it now that a real id is assigned.
+        if (input._subgraphSlot)
+          this._resolveInputWidget(input._subgraphSlot, input)
+        continue
+      }
+      const nextId = widgetId(this.rootGraph.id, this.id, input.name)
+      if (nextId === previousId) continue
+
+      const state = store.getWidget(previousId)
+      if (!state) continue
+      const renderState = store.getWidgetRenderState(previousId)
+      const migrated = store.registerWidget(
+        nextId,
+        { ...state },
+        { ...renderState }
+      )
+      if (!migrated) continue
+      store.setValue(nextId, state.value)
+      store.deleteWidget(previousId)
+      input.widgetId = nextId
+      this._clearPromotedWidget(input)
+      if (input._subgraphSlot) {
+        this._resolveInputWidget(input._subgraphSlot, input)
+      }
+      input._widget ??= this._projectPromotedWidget(input)
+    }
   }
 
   /**
@@ -922,15 +964,18 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   override serialize(): ISerialisedNode {
-    const serialized = super.serialize()
+    return this.serializeFromStoreState(this._state)
+  }
+
+  override serializeFromStoreState(state: NodeState): ISerialisedNode {
+    const serialized = super.serializeFromStoreState(state)
     const serializedProperties = { ...(serialized.properties ?? {}) }
     const rootGraphId = this.rootGraph.id
-    const hostLocator = String(this.id)
+    const hostLocator = tryGetPreviewExposureHostLocator(this)
 
-    const previewExposures = usePreviewExposureStore().getExposures(
-      rootGraphId,
-      hostLocator
-    )
+    const previewExposures = hostLocator
+      ? usePreviewExposureStore().getExposures(rootGraphId, hostLocator)
+      : []
     serializedProperties.previewExposures = previewExposures.map((entry) => ({
       ...entry
     }))

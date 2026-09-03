@@ -609,7 +609,8 @@ describe('useExecutionStore - workflowStatus', () => {
       promptOutput: { '1': createPromptNode('Node', 'TestNode') },
       startTime: 42,
       submissionAcceptedAt: 62,
-      workflow
+      workflow,
+      mode: 'graph'
     })
   }
 
@@ -774,6 +775,7 @@ describe('useExecutionStore - workflowStatus', () => {
       promptOutput: { '1': createPromptNode('Node', 'TestNode') },
       startTime: 42,
       workflow: workflowA,
+      mode: 'graph',
       workflowContext,
       workflowExecutionIntent: {
         trigger_source: 'button'
@@ -987,6 +989,198 @@ describe('useExecutionStore - workflowStatus', () => {
   })
 })
 
+describe('useExecutionStore - background workflow error routing', () => {
+  const graphAId = '11111111-1111-4111-8111-111111111111'
+  const graphBId = '22222222-2222-4222-8222-222222222222'
+
+  let store: ReturnType<typeof useExecutionStore>
+  let errorStore: ReturnType<typeof useExecutionErrorStore>
+
+  type Workflow = Parameters<typeof store.storeJob>[0]['workflow']
+  const makeWorkflow = (path: string, graphId: string): Workflow =>
+    ({
+      path,
+      filename: path.split('/').pop(),
+      activeState: { id: graphId },
+      initialState: { id: graphId }
+    }) as Workflow
+
+  const workflowA = makeWorkflow('/workflows/a.json', graphAId)
+  const workflowB = makeWorkflow('/workflows/b.json', graphBId)
+
+  function callStoreJob(jobId: string, workflow: Workflow) {
+    store.storeJob({
+      nodes: ['1'],
+      id: jobId,
+      promptOutput: { '1': createPromptNode('Node', 'TestNode') },
+      startTime: 42,
+      submissionAcceptedAt: 62,
+      workflow,
+      mode: 'graph'
+    })
+  }
+
+  function fireExecutionError(
+    jobId: string,
+    detail: Record<string, unknown> = {}
+  ) {
+    const handler = apiEventHandlers.get('execution_error')
+    if (!handler) throw new Error('execution_error handler not bound')
+    handler(
+      new CustomEvent('execution_error', {
+        detail: {
+          prompt_id: jobId,
+          node_id: '1',
+          node_type: 'TestNode',
+          exception_message: 'boom',
+          exception_type: 'RuntimeError',
+          traceback: [],
+          ...detail
+        }
+      })
+    )
+  }
+
+  function fireExecutionStart(jobId: string) {
+    const handler = apiEventHandlers.get('execution_start')
+    if (!handler) throw new Error('execution_start handler not bound')
+    handler(
+      new CustomEvent('execution_start', { detail: { prompt_id: jobId } })
+    )
+  }
+
+  const cloudValidationMessage = JSON.stringify({
+    error: { type: 'prompt_outputs_failed_validation', message: 'invalid' },
+    node_errors: {
+      '1': {
+        errors: [
+          {
+            type: 'value_bigger_than_max',
+            message: 'Value 200 bigger than max of 100',
+            details: 'steps',
+            extra_info: { input_name: 'steps' }
+          }
+        ],
+        dependent_outputs: [],
+        class_type: 'KSampler'
+      }
+    }
+  })
+
+  beforeEach(() => {
+    apiEventHandlers.clear()
+    mockOpenWorkflows.value = [workflowA, workflowB]
+    store = useExecutionStore()
+    errorStore = useExecutionErrorStore()
+    store.bindExecutionEvents()
+    // Workflow A is the one on screen; workflow B runs in the background.
+    errorStore.setActiveGraph(graphAId, workflowA.path)
+  })
+
+  it('keeps a background run failure off the visible workflow', () => {
+    callStoreJob('job-b', workflowB)
+    fireExecutionError('job-b')
+
+    expect(errorStore.lastExecutionError).toBeNull()
+    expect(errorStore.totalErrorCount).toBe(0)
+  })
+
+  it('surfaces the background failure after switching to its workflow', () => {
+    callStoreJob('job-b', workflowB)
+    fireExecutionError('job-b')
+
+    errorStore.setActiveGraph(graphBId, workflowB.path)
+
+    expect(errorStore.lastExecutionError?.prompt_id).toBe('job-b')
+    expect(errorStore.totalErrorCount).toBe(1)
+  })
+
+  it('still records a failure produced by the visible workflow', () => {
+    callStoreJob('job-a', workflowA)
+    fireExecutionError('job-a')
+
+    expect(errorStore.lastExecutionError?.prompt_id).toBe('job-a')
+    expect(errorStore.totalErrorCount).toBe(1)
+  })
+
+  it('routes background validation node errors to their own workflow', () => {
+    callStoreJob('job-b', workflowB)
+    fireExecutionError('job-b', {
+      exception_message: cloudValidationMessage,
+      exception_type: 'ValidationError'
+    })
+
+    expect(errorStore.lastNodeErrors).toBeNull()
+
+    errorStore.setActiveGraph(graphBId, workflowB.path)
+    expect(Object.keys(errorStore.lastNodeErrors ?? {})).toEqual(['1'])
+  })
+
+  it('routes a background service-level error to its own workflow', () => {
+    callStoreJob('job-b', workflowB)
+    fireExecutionError('job-b', {
+      node_id: '',
+      exception_message: 'Job has stagnated',
+      exception_type: 'StagnationError'
+    })
+
+    expect(errorStore.lastPromptError).toBeNull()
+
+    errorStore.setActiveGraph(graphBId, workflowB.path)
+    expect(errorStore.lastPromptError?.message).toContain('Job has stagnated')
+  })
+
+  it('falls back to the queue-derived workflow id for jobs from a previous page load', () => {
+    // No storeJob: the job predates this session, so only the polled
+    // queue/history mapping identifies its workflow.
+    store.registerJobWorkflowIdMapping('job-b', graphBId)
+    fireExecutionError('job-b')
+
+    expect(errorStore.lastExecutionError).toBeNull()
+
+    errorStore.setActiveGraph(graphBId, workflowB.path)
+    expect(errorStore.lastExecutionError?.prompt_id).toBe('job-b')
+  })
+
+  it('clears execution-start errors only for the producing workflow', () => {
+    errorStore.recordPromptError({
+      type: 'visible-error',
+      message: 'visible workflow failed',
+      details: ''
+    })
+    callStoreJob('job-b', workflowB)
+    errorStore.setActiveGraph(graphBId, workflowB.path)
+    errorStore.recordPromptError({
+      type: 'background-error',
+      message: 'background workflow failed',
+      details: ''
+    })
+    errorStore.setActiveGraph(graphAId, workflowA.path)
+
+    fireExecutionStart('job-b')
+
+    expect(errorStore.lastPromptError?.type).toBe('visible-error')
+    errorStore.setActiveGraph(graphBId, workflowB.path)
+    expect(errorStore.lastPromptError).toBeNull()
+  })
+
+  it('does not route a known ambiguous job to the visible workflow', () => {
+    const duplicateWorkflow = makeWorkflow('/workflows/c.json', graphBId)
+    mockOpenWorkflows.value = [workflowA, workflowB, duplicateWorkflow]
+    store.registerJobWorkflowIdMapping('job-ambiguous', graphBId)
+
+    fireExecutionError('job-ambiguous')
+
+    expect(errorStore.lastExecutionError).toBeNull()
+  })
+
+  it('does not route an unattributable failure to the visible workflow', () => {
+    fireExecutionError('job-unknown')
+
+    expect(errorStore.lastExecutionError).toBeNull()
+  })
+})
+
 describe('useExecutionStore - clearActiveJobIfStale', () => {
   let store: ReturnType<typeof useExecutionStore>
 
@@ -1096,6 +1290,109 @@ describe('useExecutionStore - progress_text startup guard', () => {
 
     expect(mockExecutionIdToCurrentId).toHaveBeenCalledWith('1:2')
     expect(mockShowTextPreview).not.toHaveBeenCalled()
+  })
+})
+
+describe('rewriteSessionWorkflowPaths', () => {
+  let store: ReturnType<typeof useExecutionStore>
+
+  beforeEach(() => {
+    store = useExecutionStore()
+  })
+
+  it('rewrites all entries associated with the workflow instance', () => {
+    store.ensureSessionWorkflowPath(
+      'job-1',
+      'workflows/old.app.json',
+      'instance-A'
+    )
+    store.ensureSessionWorkflowPath(
+      'job-2',
+      'workflows/keep.app.json',
+      'instance-B'
+    )
+    store.ensureSessionWorkflowPath(
+      'job-3',
+      'workflows/old.app.json',
+      'instance-A'
+    )
+
+    store.rewriteSessionWorkflowPaths('instance-A', 'workflows/new.app.json')
+
+    expect(store.jobIdToSessionWorkflowPath.get('job-1')).toBe(
+      'workflows/new.app.json'
+    )
+    expect(store.jobIdToSessionWorkflowPath.get('job-2')).toBe(
+      'workflows/keep.app.json'
+    )
+    expect(store.jobIdToSessionWorkflowPath.get('job-3')).toBe(
+      'workflows/new.app.json'
+    )
+  })
+
+  it('only rewrites entries matching the workflow instance', () => {
+    store.ensureSessionWorkflowPath(
+      'job-1',
+      'workflows/old.app.json',
+      'instance-A'
+    )
+    store.ensureSessionWorkflowPath(
+      'job-2',
+      'workflows/old.app.json',
+      'instance-B'
+    )
+
+    store.rewriteSessionWorkflowPaths('instance-A', 'workflows/new.app.json')
+
+    expect(store.jobIdToSessionWorkflowPath.get('job-1')).toBe(
+      'workflows/new.app.json'
+    )
+    expect(store.jobIdToSessionWorkflowPath.get('job-2')).toBe(
+      'workflows/old.app.json'
+    )
+  })
+
+  it('does not rewrite entries from a different workflow sharing the same temp path', () => {
+    store.ensureSessionWorkflowPath(
+      'job-old',
+      'workflows/Unsaved Workflow.json',
+      'instance-OLD'
+    )
+    store.ensureSessionWorkflowPath(
+      'job-new',
+      'workflows/Unsaved Workflow.json',
+      'instance-NEW'
+    )
+
+    store.rewriteSessionWorkflowPaths(
+      'instance-NEW',
+      'workflows/saved.app.json'
+    )
+
+    expect(store.jobIdToSessionWorkflowPath.get('job-old')).toBe(
+      'workflows/Unsaved Workflow.json'
+    )
+    expect(store.jobIdToSessionWorkflowPath.get('job-new')).toBe(
+      'workflows/saved.app.json'
+    )
+  })
+
+  it('does not trigger reactivity when no entries match', () => {
+    store.ensureSessionWorkflowPath('job-1', 'workflows/keep.app.json')
+    const originalMap = store.jobIdToSessionWorkflowPath
+
+    store.rewriteSessionWorkflowPaths('instance-A', 'workflows/new.app.json')
+
+    expect(store.jobIdToSessionWorkflowPath).toBe(originalMap)
+  })
+
+  it('handles empty map', () => {
+    const originalMap = store.jobIdToSessionWorkflowPath
+
+    store.rewriteSessionWorkflowPaths('instance-A', 'workflows/new.app.json')
+
+    expect(store.jobIdToSessionWorkflowPath.size).toBe(0)
+    expect(store.jobIdToSessionWorkflowPath).toBe(originalMap)
   })
 })
 
@@ -1298,7 +1595,8 @@ describe('useExecutionStore - executingNode with subgraphs', () => {
       promptOutput: {
         '123': createPromptNode('Test Node', 'TestNode')
       },
-      workflow: createQueuedWorkflow()
+      workflow: createQueuedWorkflow(),
+      mode: 'graph'
     })
     store.activeJobId = 'test-prompt'
 
@@ -1326,7 +1624,8 @@ describe('useExecutionStore - executingNode with subgraphs', () => {
       promptOutput: {
         '456:789': createPromptNode('Nested Node', 'NestedNode')
       },
-      workflow: createQueuedWorkflow()
+      workflow: createQueuedWorkflow(),
+      mode: 'graph'
     })
     store.activeJobId = 'test-prompt'
 
@@ -1360,7 +1659,8 @@ describe('useExecutionStore - executingNode with subgraphs', () => {
       promptOutput: {
         '123': createPromptNode('Test Node', 'TestNode')
       },
-      workflow: createQueuedWorkflow()
+      workflow: createQueuedWorkflow(),
+      mode: 'graph'
     })
     store.activeJobId = 'test-prompt'
 
@@ -1780,19 +2080,25 @@ describe('useExecutionStore - RAF batching', () => {
     })
   })
 
-  describe('executing cancels both coalescers', () => {
-    it('discards pending progress_state RAF when a new node starts executing', () => {
+  describe('executing preserves node progress state', () => {
+    it('applies the initial running state when executing follows in the same frame', () => {
       expect.assertions(1)
+      const startHandler = getRegisteredHandler('execution_start')
       const progressStateHandler = getRegisteredHandler('progress_state')
       const executingHandler = getRegisteredHandler('executing')
 
+      startHandler(
+        new CustomEvent('execution_start', {
+          detail: { prompt_id: 'job-1', timestamp: 0 }
+        })
+      )
       progressStateHandler(
         new CustomEvent('progress_state', {
           detail: {
             prompt_id: 'job-1',
             nodes: {
               '1': {
-                value: 5,
+                value: 0,
                 max: 10,
                 state: 'running',
                 node_id: '1',
@@ -1804,7 +2110,38 @@ describe('useExecutionStore - RAF batching', () => {
         })
       )
 
-      executingHandler(new CustomEvent('executing', { detail: '2' }))
+      executingHandler(new CustomEvent('executing', { detail: '1' }))
+      vi.advanceTimersToNextFrame()
+
+      expect(store.nodeProgressStates['1']).toEqual(
+        expect.objectContaining({ state: 'running' })
+      )
+    })
+
+    it('discards a pending node progress state when execution stops', () => {
+      expect.assertions(1)
+      const progressStateHandler = getRegisteredHandler('progress_state')
+      const executingHandler = apiEventHandlers.get('executing')!
+
+      progressStateHandler(
+        new CustomEvent('progress_state', {
+          detail: {
+            prompt_id: 'job-1',
+            nodes: {
+              '1': {
+                value: 0,
+                max: 10,
+                state: 'running',
+                node_id: '1',
+                prompt_id: 'job-1',
+                display_node_id: '1'
+              }
+            }
+          }
+        })
+      )
+
+      executingHandler(new CustomEvent('executing', { detail: null }))
       vi.advanceTimersToNextFrame()
 
       expect(Object.keys(store.nodeProgressStates)).toHaveLength(0)
@@ -1861,6 +2198,23 @@ describe('useExecutionStore - WebSocket event handlers', () => {
     handler(new CustomEvent(event, { detail }))
   }
 
+  function storeVisibleJob(jobId: string) {
+    const workflow = createQueuedWorkflow()
+    mockActiveWorkflow.value = workflow
+    mockOpenWorkflows.value = [workflow]
+    useExecutionErrorStore().setActiveGraph(
+      workflow.activeState!.id!,
+      workflow.path
+    )
+    store.storeJob({
+      nodes: [],
+      id: jobId,
+      promptOutput: {},
+      workflow,
+      mode: 'graph'
+    })
+  }
+
   beforeEach(() => {
     apiEventHandlers.clear()
     store = useExecutionStore()
@@ -1880,6 +2234,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
 
     it('clears transient errors while preserving validation errors', () => {
       const errorStore = useExecutionErrorStore()
+      storeVisibleJob('job-1')
       const nodeErrors = {
         '1': {
           class_type: 'Test',
@@ -1921,10 +2276,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
     })
 
     it('clears initializing state for the starting job', () => {
-      store.initializingJobIds = new Set([
-        'job-1',
-        'job-2'
-      ]) as unknown as Set<string>
+      store.initializingJobIds = new Set(['job-1', 'job-2'])
       fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
 
       expect(store.initializingJobIds.has('job-1')).toBe(false)
@@ -2032,7 +2384,8 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         promptOutput: {
           a: createPromptNode('Node A', 'NodeA')
         },
-        workflow
+        workflow,
+        mode: 'graph'
       })
       fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
 
@@ -2058,7 +2411,8 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         promptOutput: {
           a: createPromptNode('Node A', 'NodeA')
         },
-        workflow
+        workflow,
+        mode: 'graph'
       })
 
       fire('execution_success', { prompt_id: 'job-1', timestamp: 0 })
@@ -2080,7 +2434,8 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         promptOutput: {
           a: createPromptNode('Node A', 'NodeA')
         },
-        workflow
+        workflow,
+        mode: 'graph'
       })
 
       mockAppModeState.mode.value = 'app'
@@ -2095,17 +2450,18 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       })
     })
 
-    it('attributes shared workflow run to the queued workflow, not the active one', () => {
+    it('attributes shared workflow run to the passed mode, not the workflow current mode', () => {
       const workflow = createQueuedWorkflow()
       workflow.shareId = 'share-1'
-      workflow.activeMode = 'app'
+      workflow.activeMode = 'graph'
       store.storeJob({
         nodes: ['a'],
         id: 'job-1',
         promptOutput: {
           a: createPromptNode('Node A', 'NodeA')
         },
-        workflow
+        workflow,
+        mode: 'app'
       })
 
       fire('execution_success', { prompt_id: 'job-1', timestamp: 0 })
@@ -2183,6 +2539,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
   describe('execution_error', () => {
     it('routes a service-level error (no node_id) to the prompt error store', () => {
       const errorStore = useExecutionErrorStore()
+      storeVisibleJob('job-1')
 
       fire('execution_error', {
         prompt_id: 'job-1',
@@ -2201,6 +2558,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
 
     it('routes a runtime error (with node_id) to lastExecutionError', () => {
       const errorStore = useExecutionErrorStore()
+      storeVisibleJob('job-1')
 
       fire('execution_error', {
         prompt_id: 'job-1',
@@ -2273,6 +2631,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
 
     it('still routes an ordinary node runtime error to the error panel', () => {
       const errorStore = useExecutionErrorStore()
+      storeVisibleJob('job-1')
 
       fire('execution_error', {
         prompt_id: 'job-1',
@@ -2363,7 +2722,8 @@ describe('useExecutionStore - storeJob and workflow path tracking', () => {
         a: createPromptNode('Node A', 'NodeA'),
         b: createPromptNode('Node B', 'NodeB')
       },
-      workflow
+      workflow,
+      mode: 'graph'
     })
 
     expect(store.queuedJobs['job-1']?.nodes).toEqual({ a: false, b: false })

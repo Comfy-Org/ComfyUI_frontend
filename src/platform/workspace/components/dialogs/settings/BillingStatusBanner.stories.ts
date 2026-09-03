@@ -4,6 +4,10 @@ import type { SubscriptionInfo } from '@/composables/billing/types'
 import { i18n } from '@/i18n'
 import type { BillingContextMockState } from '@/storybook/mocks/useBillingContext'
 import { setBillingContextMock } from '@/storybook/mocks/useBillingContext'
+import {
+  setCanSubscribeSelfServeMock,
+  setCanTopUpMock
+} from '@/storybook/mocks/useBillingCapabilities'
 import type { WorkspaceUIMockState } from '@/storybook/mocks/useWorkspaceUI'
 import { setWorkspaceUIMock } from '@/storybook/mocks/useWorkspaceUI'
 
@@ -57,13 +61,13 @@ const cancelled: SubscriptionInfo = {
 const owner: Partial<WorkspaceUIMockState> = {}
 const member: Partial<WorkspaceUIMockState> = {
   canManageSubscription: false,
-  canManageSubscriptionLifecycle: false,
-  canTopUp: false
+  canManageSubscriptionLifecycle: false
 }
 
 function story(
   billing: Partial<BillingContextMockState>,
-  workspace: Partial<WorkspaceUIMockState>
+  workspace: Partial<WorkspaceUIMockState>,
+  capabilities: { canTopUp?: boolean; canSubscribeSelfServe?: boolean } = {}
 ): Story {
   return {
     beforeEach() {
@@ -72,6 +76,8 @@ function story(
       i18n.global.locale.value = 'en'
       setBillingContextMock({ isTeamPlan: true, ...billing })
       setWorkspaceUIMock(workspace)
+      setCanTopUpMock(capabilities.canTopUp ?? true)
+      setCanSubscribeSelfServeMock(capabilities.canSubscribeSelfServe ?? false)
     }
   }
 }
@@ -84,7 +90,7 @@ function story(
 export const PausedOwner: Story = story(
   {
     subscription: funded,
-    isActiveSubscription: false,
+    canAccessSubscriptionFeatures: false,
     billingStatus: 'paused',
     subscriptionStatus: 'active'
   },
@@ -95,11 +101,12 @@ export const PausedOwner: Story = story(
 export const PausedMember: Story = story(
   {
     subscription: funded,
-    isActiveSubscription: false,
+    canAccessSubscriptionFeatures: false,
     billingStatus: 'paused',
     subscriptionStatus: 'active'
   },
-  member
+  member,
+  { canTopUp: false }
 )
 
 /**
@@ -109,7 +116,7 @@ export const PausedMember: Story = story(
 export const PaymentDeclined: Story = story(
   {
     subscription: funded,
-    isActiveSubscription: false,
+    canAccessSubscriptionFeatures: false,
     billingStatus: 'payment_failed',
     subscriptionStatus: 'active',
     renewalDate: RENEWAL_DATE
@@ -121,7 +128,7 @@ export const PaymentDeclined: Story = story(
 export const PaymentDeclinedNoDate: Story = story(
   {
     subscription: funded,
-    isActiveSubscription: false,
+    canAccessSubscriptionFeatures: false,
     billingStatus: 'payment_failed',
     subscriptionStatus: 'active'
   },
@@ -132,7 +139,7 @@ export const PaymentDeclinedNoDate: Story = story(
 export const OutOfCreditsOwner: Story = story(
   {
     subscription: exhausted,
-    isActiveSubscription: true,
+    canAccessSubscriptionFeatures: true,
     billingStatus: 'paid',
     subscriptionStatus: 'active',
     renewalDate: RENEWAL_DATE
@@ -144,19 +151,33 @@ export const OutOfCreditsOwner: Story = story(
 export const OutOfCreditsMember: Story = story(
   {
     subscription: exhausted,
-    isActiveSubscription: true,
+    canAccessSubscriptionFeatures: true,
     billingStatus: 'paid',
     subscriptionStatus: 'active',
     renewalDate: RENEWAL_DATE
   },
-  member
+  member,
+  { canTopUp: false }
+)
+
+/** No top-up entitlement but self-serve upgrade is open: upgrade copy, not contact-admin. */
+export const OutOfCreditsSelfServe: Story = story(
+  {
+    subscription: exhausted,
+    canAccessSubscriptionFeatures: true,
+    billingStatus: 'paid',
+    subscriptionStatus: 'active',
+    renewalDate: RENEWAL_DATE
+  },
+  owner,
+  { canTopUp: false, canSubscribeSelfServe: true }
 )
 
 /** Cancelled but still active until the period end. Informational. */
 export const EndingOwner: Story = story(
   {
     subscription: cancelled,
-    isActiveSubscription: true,
+    canAccessSubscriptionFeatures: true,
     billingStatus: 'paid',
     subscriptionStatus: 'canceled'
   },
@@ -166,7 +187,7 @@ export const EndingOwner: Story = story(
 export const EndingPromotedOwner: Story = story(
   {
     subscription: cancelled,
-    isActiveSubscription: true,
+    canAccessSubscriptionFeatures: true,
     billingStatus: 'paid',
     subscriptionStatus: 'canceled'
   },

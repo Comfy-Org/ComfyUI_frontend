@@ -14,6 +14,7 @@ import {
   EMPTY_BILLING_PLANS,
   LEGACY_PERSONAL_BILLING_STATUS
 } from '@e2e/fixtures/data/cloudWorkspace'
+import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import {
   UNSUBSCRIBED,
   ZERO_BALANCE
@@ -645,11 +646,7 @@ export const comfyPageFixture = base.extend<{
         ...(isVueNodes && { 'Comfy.VueNodes.Enabled': true }),
         ...initialSettings
       }
-      try {
-        await comfyPage.setupSettings(startupSettings)
-      } catch (e) {
-        console.error(e)
-      }
+      await comfyPage.setupSettings(startupSettings)
       if (testInfo.tags.includes('@cloud')) {
         const context = page.context()
         await context.route('**/api/auth/session', (route) =>
@@ -657,6 +654,9 @@ export const comfyPageFixture = base.extend<{
         )
         await context.route('**/api/billing/status', (route) =>
           route.fulfill({ json: LEGACY_PERSONAL_BILLING_STATUS })
+        )
+        await context.route('**/api/billing/capabilities', (route) =>
+          route.fulfill({ json: createBillingCapabilities('ws-personal') })
         )
         await context.route('**/api/billing/balance', (route) =>
           route.fulfill({ json: EMPTY_BILLING_BALANCE })
@@ -694,6 +694,12 @@ export const comfyPageFixture = base.extend<{
         await comfyExpect
           .poll(() => comfyPage.nodeOps.getGraphNodesCount())
           .toBe(0)
+      }
+
+      if (testInfo.tags.includes('@cloud')) {
+        await comfyPage.featureFlags.setServerFlagsPersistent({
+          asset_deletion_enabled: true
+        })
       }
 
       if (isVueNodes) {

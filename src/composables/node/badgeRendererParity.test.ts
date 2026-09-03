@@ -1,40 +1,25 @@
-import { render } from '@testing-library/vue'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, effectScope, h, ref } from 'vue'
+import { effectScope } from 'vue'
 
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
-import { useNodeBadge } from '@/composables/node/useNodeBadge'
+import { badgeDrawObjects } from '@/lib/litegraph/src/nodeBadgeDraw'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   LGraph,
   LGraphNode as LGraphNodeClass
 } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { usePartitionedBadges } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { nodeBadges } from '@/systems/badgeSystem'
+import type { NodeState } from '@/types/nodeState'
 import { NodeBadgeMode } from '@/types/nodeSource'
 
-interface CapturedExtension {
-  nodeCreated?: (node: LGraphNode) => void
-}
-
 const settings = vi.hoisted(() => ({ values: new Map<string, unknown>() }))
-const registered = vi.hoisted(() => ({
-  extension: undefined as CapturedExtension | undefined
-}))
-const canvasGraph = vi.hoisted(() => ({ graph: undefined as unknown }))
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({ get: (key: string) => settings.values.get(key) })
-}))
-vi.mock('@/stores/extensionStore', () => ({
-  useExtensionStore: () => ({
-    isExtensionInstalled: () => false,
-    registerExtension: (extension: CapturedExtension) => {
-      registered.extension = extension
-    }
-  })
 }))
 vi.mock('@/stores/workspace/colorPaletteStore', () => ({
   useColorPaletteStore: () => ({
@@ -44,32 +29,6 @@ vi.mock('@/stores/workspace/colorPaletteStore', () => ({
       }
     }
   })
-}))
-vi.mock('@/composables/node/useNodePricing', () => ({
-  useNodePricing: () => ({
-    pricingRevision: ref(0),
-    getNodePricingConfig: () => undefined,
-    getRelevantWidgetNames: () => [],
-    getNodeDisplayPrice: () => '',
-    triggerPriceRecalculation: () => {}
-  })
-}))
-vi.mock('@/composables/node/usePriceBadge', () => ({
-  usePriceBadge: () => ({
-    getCreditsBadge: () => ({ text: '' }),
-    isCreditsBadge: () => false,
-    updateSubgraphCredits: () => {}
-  })
-}))
-vi.mock('@/scripts/app', () => ({
-  app: {
-    canvas: {
-      setDirty: () => {},
-      get graph() {
-        return canvasGraph.graph
-      }
-    }
-  }
 }))
 
 const CORE_SOURCE_BADGE = '🦊'
@@ -97,38 +56,42 @@ function seedNodeDef(name: string, pythonModule: string) {
 }
 
 function legacyBadgeText(node: LGraphNode): string {
-  const thunk = node.badges[0]
-  if (typeof thunk !== 'function') throw new Error('no legacy badge installed')
-  return thunk().text.replaceAll('[', '').replaceAll(']', '')
+  const badge = badgeDrawObjects(node, nodeBadges(node))[0]
+  return badge?.text.replaceAll('[', '').replaceAll(']', '') ?? ''
+}
+
+function vueBadges(node: LGraphNode) {
+  if (!node.graph) throw new Error('node is not attached to a graph')
+  const nodeData: NodeState = {
+    flags: node.flags,
+    graphId: node.graph.id,
+    id: node.id,
+    inputs: node.inputs,
+    mode: node.mode,
+    outputs: node.outputs,
+    properties: node.properties,
+    title: node.title,
+    type: node.type
+  }
+  const scope = effectScope()
+  const partitioned = scope.run(() => usePartitionedBadges(nodeData).value)
+  scope.stop()
+  if (!partitioned) throw new Error('partitioned badges were not computed')
+  return partitioned
 }
 
 function vueBadgeText(node: LGraphNode): string {
-  const nodeData: VueNodeData = {
-    executing: false,
-    id: node.id,
-    mode: node.mode,
-    selected: false,
-    title: node.title,
-    type: node.type,
-    badges: node.badges
-  }
-  const scope = effectScope()
-  const facts = scope.run(() => {
-    const partitioned = usePartitionedBadges(nodeData).value
-    return [
-      ...partitioned.core.map((badge) => badge.text),
-      ...(partitioned.hasComfyBadge ? [CORE_SOURCE_BADGE] : [])
-    ]
-  })
-  scope.stop()
-  return (facts ?? []).join(' ')
+  const partitioned = vueBadges(node)
+  return [
+    ...partitioned.core.map((badge) => badge.text),
+    ...(partitioned.hasComfyBadge ? [CORE_SOURCE_BADGE] : [])
+  ].join(' ')
 }
 
 describe('badge renderer parity (I2)', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     settings.values = new Map<string, unknown>()
-    registered.extension = undefined
   })
 
   function setup(
@@ -138,20 +101,11 @@ describe('badge renderer parity (I2)', () => {
   ): LGraphNode {
     setModes(mode)
     seedNodeDef(type, pythonModule)
-    render(
-      defineComponent({
-        setup() {
-          useNodeBadge()
-          return () => h('div')
-        }
-      })
-    )
 
     const graph = new LGraph()
     const node = new LGraphNodeClass(type, type)
     graph.add(node)
-    canvasGraph.graph = graph
-    registered.extension?.nodeCreated?.(node)
+    useCanvasStore().currentGraph = graph
     return node
   }
 
@@ -166,7 +120,7 @@ describe('badge renderer parity (I2)', () => {
       expect(legacyBadgeText(node)).toBe('#1 BETA my_pack')
     })
 
-    it.fails('renders Vue badges in the same display order', () => {
+    it('renders Vue badges in the same display order', () => {
       const node = setup(
         NodeBadgeMode.ShowAll,
         'CustomNode',
@@ -188,7 +142,7 @@ describe('badge renderer parity (I2)', () => {
       expect(legacyBadgeText(node)).toBe('#1 BETA my_pack')
     })
 
-    it.fails('renders Vue badges in the same display order', () => {
+    it('renders Vue badges in the same display order', () => {
       const node = setup(
         NodeBadgeMode.HideBuiltIn,
         'CustomNode',
@@ -213,10 +167,23 @@ describe('badge renderer parity (I2)', () => {
       expect(legacyBadgeText(node)).toBe(`#1 BETA ${CORE_SOURCE_BADGE}`)
     })
 
-    it.fails('renders Vue badges in the same display order', () => {
+    it('renders Vue badges in the same display order', () => {
       const node = setup(NodeBadgeMode.ShowAll, 'CoreNode', 'nodes')
 
       expect(vueBadgeText(node)).toBe(`#1 BETA ${CORE_SOURCE_BADGE}`)
+    })
+  })
+
+  describe('Comfy Cloud mark', () => {
+    const CLOUD = 'comfy_api_nodes.nodes_comfy_cloud'
+    const OTHER_PARTNER = 'comfy_api_nodes.nodes_kling'
+
+    it('Vue marks Comfy Cloud and leaves the other partner node unmarked', () => {
+      const cloud = setup(NodeBadgeMode.ShowAll, 'CloudNode', CLOUD)
+      expect(vueBadges(cloud).hasComfyCloudBadge).toBe(true)
+
+      const partner = setup(NodeBadgeMode.ShowAll, 'KlingNode', OTHER_PARTNER)
+      expect(vueBadges(partner).hasComfyCloudBadge).toBe(false)
     })
   })
 
@@ -227,7 +194,7 @@ describe('badge renderer parity (I2)', () => {
       expect(legacyBadgeText(node)).toBe('')
     })
 
-    it.fails('hides built-in Vue badges', () => {
+    it('hides built-in Vue badges', () => {
       const node = setup(NodeBadgeMode.HideBuiltIn, 'CoreNode', 'nodes')
 
       expect(vueBadgeText(node)).toBe('')

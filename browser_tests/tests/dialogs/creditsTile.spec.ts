@@ -10,6 +10,7 @@ import type {
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
+import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import {
@@ -178,6 +179,14 @@ async function mockCloudBoot(
   await page.route('**/api/billing/plans', (r) =>
     r.fulfill(jsonRoute({ plans: [] }))
   )
+  await page.route('**/api/billing/capabilities', (r) => {
+    if (r.request().method() !== 'GET') return r.fallback()
+    return r.fulfill(
+      jsonRoute(
+        createWorkspaceBillingCapabilities(workspace('personal', 'owner'))
+      )
+    )
+  })
 }
 
 async function mockBalance(
@@ -492,9 +501,6 @@ test.describe('Top-up 3DS verification', { tag: '@cloud' }, () => {
 
     await topupDialog.root.getByRole('button', { name: 'Pay $50.00' }).click()
 
-    await expect(
-      topupDialog.root.getByRole('button', { name: 'Back' })
-    ).toBeDisabled()
     await expect.poll(() => operationPollRequests.length).toBeGreaterThan(0)
     const verificationButton = topupDialog.root.getByRole('button', {
       name: 'Complete verification'

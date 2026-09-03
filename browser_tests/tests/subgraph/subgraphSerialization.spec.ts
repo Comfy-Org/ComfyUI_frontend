@@ -55,9 +55,9 @@ async function getPrimitiveFanoutSnapshot(
       []
     )
     const primitiveOriginLinkCount = [
-      ...hostNode.subgraph._links.values()
+      ...hostNode.subgraph.links.values()
     ].filter((link) => link.origin_id === primitiveNode?.id).length
-    const serialized = window.app!.graph!.serialize()
+    const serialized = window.app!.graph.serialize()
     const serializedNode = serialized.nodes.find(
       (candidate) => String(candidate.id) === String(id)
     )
@@ -92,7 +92,7 @@ async function getSerializedSubgraphNodeProperties(
   hostNodeId: string
 ): Promise<Record<string, unknown>> {
   return comfyPage.page.evaluate((id) => {
-    const serialized = window.app!.graph!.serialize()
+    const serialized = window.app!.graph.serialize()
     const node = serialized.nodes.find(
       (candidate) => String(candidate.id) === String(id)
     )
@@ -111,7 +111,7 @@ async function expectPromotedWidgetsToResolveToInteriorNodes(
   const interiorNodeIds = widgets.map(([id]) => toNodeId(id))
   const results = await comfyPage.page.evaluate(
     ([hostId, ids]) => {
-      const graph = window.app!.graph!
+      const graph = window.app!.graph
       const hostNode = graph.getNodeById(hostId)
       if (!hostNode?.isSubgraphNode()) return ids.map(() => false)
 
@@ -677,7 +677,7 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
         }
 
         return labeledGraphs.flatMap(([label, g]) =>
-          [...g._links.values()].flatMap((link) =>
+          [...g.links.values()].flatMap((link) =>
             [
               checkEndpoint(label, 'origin_id', link.origin_id, g),
               checkEndpoint(label, 'target_id', link.target_id, g)

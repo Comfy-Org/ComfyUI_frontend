@@ -9,7 +9,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { getNodeInputOnPos } from '@/lib/litegraph/src/canvas/measureSlots'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { LayoutSource } from '@/renderer/core/layout/types'
+import { toGroupId } from '@/types/groupId'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
@@ -42,23 +42,13 @@ function buildGraph() {
   graph.add(producer)
   producer.updateArea()
 
-  const group = new LGraphGroup('Group', 1)
+  const group = new LGraphGroup('Group', toGroupId(1))
   group.pos = [GROUP_AT.x, GROUP_AT.y]
   group.size = [220, 220]
   graph.add(group)
   group.recomputeInsideNodes()
 
   return { graph, node, producer, group }
-}
-
-function seedLayoutStore(graph: LGraph) {
-  layoutStore.initializeFromLiteGraph(
-    graph.nodes.map((node) => ({
-      id: node.id,
-      pos: [node.pos[0], node.pos[1]] as [number, number],
-      size: [node.size[0], node.size[1]] as [number, number]
-    }))
-  )
 }
 
 function createCanvas(graph: LGraph): LGraphCanvas {
@@ -92,7 +82,9 @@ function dragGroup(canvas: LGraphCanvas, group: LGraphGroup) {
  * place.
  */
 function expectAuthoritiesAgree(graph: LGraph, node: LGraphNode) {
-  expect(layoutStore.getNodeLayoutRef(node.id).value?.bounds).toEqual({
+  expect(
+    layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.bounds
+  ).toEqual({
     x: node.pos[0],
     y: node.pos[1],
     width: node.size[0],
@@ -104,8 +96,7 @@ function expectAuthoritiesAgree(graph: LGraph, node: LGraphNode) {
 describe('hit targets across renderer modes and state reloads (I2)', () => {
   afterEach(() => {
     LiteGraph.vueNodesMode = false
-    layoutStore.initializeFromLiteGraph([])
-    layoutStore.setSource(LayoutSource.Canvas)
+    layoutStore.resetForTests()
   })
 
   it('drags member node and slot hit targets along with the group in the legacy renderer', () => {
@@ -129,7 +120,6 @@ describe('hit targets across renderer modes and state reloads (I2)', () => {
     LiteGraph.vueNodesMode = true
     const { graph, node, group } = buildGraph()
     const canvas = createCanvas(graph)
-    seedLayoutStore(graph)
     expect(group._children.has(node)).toBe(true)
 
     dragGroup(canvas, group)
@@ -146,7 +136,6 @@ describe('hit targets across renderer modes and state reloads (I2)', () => {
   it('restores node and reroute hit targets in both authorities after a state reload', () => {
     LiteGraph.vueNodesMode = true
     const { graph, node, producer } = buildGraph()
-    seedLayoutStore(graph)
     const link = producer.connect(0, node, 0)
     if (!link) throw new Error('expected a link')
     const reroute = graph.createReroute([REROUTE_AT.x, REROUTE_AT.y], link)

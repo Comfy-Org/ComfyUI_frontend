@@ -85,10 +85,8 @@ export function extractUniformSources(
     ? createPromotedHostWidgetIdLookup(subgraphNode)
     : undefined
 
-  for (const input of glslNode.inputs) {
-    if (input.link == null) continue
-
-    const link = subgraph.getLink(input.link)
+  for (const [index, input] of glslNode.inputs.entries()) {
+    const link = glslNode.getInputLink(index)
     if (!link || link.origin_id === SUBGRAPH_INPUT_ID) continue
 
     const sourceNode = subgraph.getNodeById(link.origin_id)
@@ -234,7 +232,7 @@ export function useGLSLUniforms(
             hostWidgetId ?? widgetId(gId, nId, widgetName)
           )
           const value = widget?.value ?? directValue()
-          return isCurveData(value) ? (value as CurveData) : null
+          return isCurveData(value) ? value : null
         })
         .filter((v): v is CurveData => v !== null)
     }
@@ -250,7 +248,7 @@ export function useGLSLUniforms(
 
       const widget = widgetValueStore.getWidget(widgetId(gId, nId, inputName))
       if (widget && isCurveData(widget.value)) {
-        values.push(widget.value as CurveData)
+        values.push(widget.value)
         continue
       }
 

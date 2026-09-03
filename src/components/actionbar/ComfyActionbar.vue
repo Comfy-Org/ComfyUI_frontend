@@ -76,6 +76,7 @@
         <ContextMenu ref="queueContextMenu" :model="queueContextMenuItems" />
       </div>
       <FreeTierQuota v-if="!isDocked" />
+      <PartnerNodesRunCaption v-if="!isDocked" />
     </Panel>
 
     <Teleport v-if="inlineProgressTarget" :to="inlineProgressTarget">
@@ -105,6 +106,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import PartnerNodesRunCaption from '@/components/actionbar/PartnerNodesRunCaption.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import QueueInlineProgress from '@/components/queue/QueueInlineProgress.vue'
 import Button from '@/components/ui/button/Button.vue'

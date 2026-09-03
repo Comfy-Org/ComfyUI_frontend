@@ -307,8 +307,7 @@ describe('Widget change error clearing via onWidgetChanged', () => {
 
   it('clears missing media when an upload emits onWidgetChanged', () => {
     const graph = new LGraph()
-    const node = new LGraphNode('LoadImage')
-    node.type = 'LoadImage'
+    const node = new LGraphNode('LoadImage', 'LoadImage')
     const widget = node.addWidget(
       'combo',
       'image',
@@ -392,16 +391,27 @@ describe('installErrorClearingHooks lifecycle', () => {
     expect(store.lastNodeErrors).toBeNull()
   })
 
-  it('restores original onNodeAdded when cleanup is called', () => {
+  it('stops hooking added nodes after cleanup, leaving onNodeAdded alone', () => {
     const graph = new LGraph()
     const originalHook = vi.fn()
     graph.onNodeAdded = originalHook
 
     const cleanup = installErrorClearingHooks(graph)
-    expect(graph.onNodeAdded).not.toBe(originalHook)
+    expect(graph.onNodeAdded).toBe(originalHook)
+
+    const hooked = new LGraphNode('hooked')
+    hooked.onConnectionsChange = vi.fn()
+    graph.add(hooked)
+    expect(graph.onNodeAdded).toBe(originalHook)
 
     cleanup()
-    expect(graph.onNodeAdded).toBe(originalHook)
+
+    const afterCleanup = new LGraphNode('after-cleanup')
+    const untouched = vi.fn()
+    afterCleanup.onConnectionsChange = untouched
+    graph.add(afterCleanup)
+
+    expect(afterCleanup.onConnectionsChange).toBe(untouched)
   })
 
   it('restores original node callbacks when a node is removed', () => {
@@ -421,8 +431,7 @@ describe('installErrorClearingHooks lifecycle', () => {
     expect(node.onConnectionsChange).not.toBe(originalOnConnectionsChange)
     expect(node.onWidgetChanged).not.toBe(originalOnWidgetChanged)
 
-    // Simulate node removal via the graph hook
-    graph.onNodeRemoved!(node)
+    graph.remove(node)
 
     // Original callbacks should be restored
     expect(node.onConnectionsChange).toBe(originalOnConnectionsChange)
@@ -448,8 +457,10 @@ describe('installErrorClearingHooks lifecycle', () => {
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
     installErrorClearingHooks(graph)
 
-    const node = new LGraphNode('CheckpointLoaderSimple')
-    node.type = 'CheckpointLoaderSimple'
+    const node = new LGraphNode(
+      'CheckpointLoaderSimple',
+      'CheckpointLoaderSimple'
+    )
     const widget = node.addWidget('combo', 'ckpt_name', '', () => undefined, {
       values: []
     })
@@ -485,8 +496,10 @@ describe('installErrorClearingHooks lifecycle', () => {
       .mockReturnValue([])
     installErrorClearingHooks(graph)
 
-    const node = new LGraphNode('CheckpointLoaderSimple')
-    node.type = 'CheckpointLoaderSimple'
+    const node = new LGraphNode(
+      'CheckpointLoaderSimple',
+      'CheckpointLoaderSimple'
+    )
     graph.add(node)
 
     await Promise.resolve()
@@ -512,8 +525,7 @@ describe('installErrorClearingHooks lifecycle', () => {
     const mediaScan = vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates')
     installErrorClearingHooks(graph)
 
-    const node = new LGraphNode('LoadVideo')
-    node.type = 'LoadVideo'
+    const node = new LGraphNode('LoadVideo', 'LoadVideo')
     node.addWidget('combo', 'file', 'uploading.mp4', () => undefined, {
       values: []
     })
@@ -952,6 +964,67 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
     ])
 
     graph.remove(node)
+
+    expect(modelStore.missingModelCandidates).toBeNull()
+  })
+
+  it('preserves same-id successor missing model errors', () => {
+    const graph = new LGraph()
+    const orphan = new LGraphNode('CheckpointLoaderSimple')
+    graph.add(orphan)
+    const successor = new LGraphNode('CheckpointLoaderSimple')
+    successor.id = orphan.id
+    graph._nodes.push(successor)
+    graph._nodes_by_id[orphan.id] = successor
+
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    installErrorClearingHooks(graph)
+
+    const modelStore = useMissingModelStore()
+    modelStore.setMissingModels([
+      fromAny<
+        Parameters<typeof modelStore.setMissingModels>[0][number],
+        unknown
+      >({
+        nodeId: String(successor.id),
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        isAssetSupported: false,
+        name: 'model.safetensors',
+        isMissing: true
+      })
+    ])
+
+    graph.remove(orphan, { preserveCanonicalState: true })
+
+    expect(graph.getNodeById(successor.id)).toBe(successor)
+    expect(modelStore.missingModelCandidates).toHaveLength(1)
+  })
+
+  it('removes missing model errors when the graph is cleared', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('CheckpointLoaderSimple')
+    graph.add(node)
+
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    installErrorClearingHooks(graph)
+
+    const modelStore = useMissingModelStore()
+    modelStore.setMissingModels([
+      fromAny<
+        Parameters<typeof modelStore.setMissingModels>[0][number],
+        unknown
+      >({
+        nodeId: String(node.id),
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        isAssetSupported: false,
+        name: 'model.safetensors',
+        isMissing: true
+      })
+    ])
+
+    graph.clear()
 
     expect(modelStore.missingModelCandidates).toBeNull()
   })
@@ -1480,8 +1553,7 @@ describe('scan skips interior of bypassed subgraph containers', () => {
 
   it('does not surface interior missing model when entering a bypassed subgraph', async () => {
     // Repro: root has a bypassed subgraph container, interior node is
-    // itself active. useGraphNodeManager replays `onNodeAdded` for each
-    // interior node on subgraph entry, which previously reached
+    // itself active. An interior add previously reached
     // scanSingleNodeErrors without an ancestor check and resurfaced the
     // error that the initial pipeline post-filter had correctly dropped.
     const subgraph = createTestSubgraph()
@@ -1510,9 +1582,8 @@ describe('scan skips interior of bypassed subgraph containers', () => {
 
     installErrorClearingHooks(subgraph)
 
-    // Simulate useGraphNodeManager replaying onNodeAdded for existing
-    // interior nodes after Vue node manager init on subgraph entry.
-    subgraph.onNodeAdded?.(interiorNode)
+    // An add inside the bypassed subgraph's interior.
+    subgraph.events.dispatch('node:added', { node: interiorNode })
     await new Promise((r) => setTimeout(r, 0))
 
     expect(useMissingModelStore().missingModelCandidates).toBeNull()
@@ -1547,7 +1618,7 @@ describe('scan skips interior of bypassed subgraph containers', () => {
 
     installErrorClearingHooks(rootGraph)
 
-    rootGraph.onNodeAdded?.(outerSubgraphNode)
+    rootGraph.events.dispatch('node:added', { node: outerSubgraphNode })
     await new Promise((r) => setTimeout(r, 0))
 
     expect(modelScanSpy).toHaveBeenCalledWith(
@@ -1619,9 +1690,8 @@ describe('scan skips interior of bypassed subgraph containers', () => {
       sourceGraphs: [innerSubgraph],
       sourceNodes: [leafNode]
     } = createPromotedMediaRuntime({ depth: 2 })
-    const unaffectedNode = new LGraphNode('LoadImage')
+    const unaffectedNode = new LGraphNode('LoadImage', 'LoadImage')
     unaffectedNode.id = toNodeId(80)
-    unaffectedNode.type = 'LoadImage'
     unaffectedNode.addWidget('combo', 'image', 'other.png', () => undefined, {
       values: []
     })

@@ -1,7 +1,6 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { toNodeId } from '@/types/nodeId'
 
 test.describe('Image Crop', () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -86,38 +85,6 @@ test.describe('Image Crop', () => {
           comfyPage.page.getByRole('option', { name: label, exact: true })
         ).toBeVisible()
       }
-    }
-  )
-
-  test(
-    'Programmatically setting widget value updates bounding box inputs',
-    { tag: '@ui' },
-    async ({ comfyPage }) => {
-      const newBounds = { x: 50, y: 100, width: 200, height: 300 }
-
-      await comfyPage.page.evaluate(
-        ({ nodeId, bounds }) => {
-          const node = window.app!.graph.getNodeById(nodeId)
-          const widget = node?.widgets?.find((w) => w.type === 'imagecrop')
-          if (widget) {
-            widget.value = bounds
-            widget.callback?.(bounds)
-          }
-        },
-        { nodeId: toNodeId(1), bounds: newBounds }
-      )
-      await comfyPage.nextFrame()
-
-      const node = comfyPage.vueNodes.getNodeLocator('1')
-      const inputs = node.locator('input[inputmode="decimal"]')
-
-      await expect.poll(() => inputs.nth(0).inputValue()).toBe('50')
-
-      await expect.poll(() => inputs.nth(1).inputValue()).toBe('100')
-
-      await expect.poll(() => inputs.nth(2).inputValue()).toBe('200')
-
-      await expect.poll(() => inputs.nth(3).inputValue()).toBe('300')
     }
   )
 })

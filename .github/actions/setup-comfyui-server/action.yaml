@@ -25,6 +25,7 @@ runs:
         repository: 'comfyanonymous/ComfyUI'
         ref: ${{ inputs.comfyui_ref }}
         path: 'ComfyUI'
+        persist-credentials: false
 
     - name: Install ComfyUI_devtools from frontend repo
       shell: bash

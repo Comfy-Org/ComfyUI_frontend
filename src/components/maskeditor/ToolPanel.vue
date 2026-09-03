@@ -14,10 +14,9 @@
         "
         @click="onToolSelect(tool)"
       >
-        <div
-          class="flex items-center justify-center"
-          v-html="iconsHtml[tool]"
-        ></div>
+        <div class="flex items-center justify-center">
+          <MaskEditorToolIcon :tool="tool" />
+        </div>
         <div class="maskEditor_toolPanelIndicator"></div>
       </div>
     </div>
@@ -43,8 +42,8 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import MaskEditorToolIcon from '@/components/maskeditor/MaskEditorToolIcon.vue'
 import type { useToolManager } from '@/composables/maskeditor/useToolManager'
-import { iconsHtml } from '@/extensions/core/maskeditor/constants'
 import type { Tools } from '@/extensions/core/maskeditor/types'
 import { allTools } from '@/extensions/core/maskeditor/types'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'

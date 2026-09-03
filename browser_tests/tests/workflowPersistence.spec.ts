@@ -252,10 +252,9 @@ test.describe('Workflow Persistence', () => {
     await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)
 
     await expect
-      .poll(async () => {
-        const nodes = await comfyPage.nodeOps.getNodes()
-        return nodes[0]?.type
-      })
+      .poll(() =>
+        comfyPage.page.evaluate(() => window.app!.graph.nodes[0]?.type)
+      )
       .toBe('KSampler')
   })
 
@@ -743,6 +742,7 @@ test.describe('Workflow Persistence', () => {
       )
     })
 
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup({ clearStorage: false })
     await comfyPage.nextFrame()
 

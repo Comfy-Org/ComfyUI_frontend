@@ -194,7 +194,10 @@ export const usePaste = () => {
     if (!canvas) return
 
     let data: DataTransfer | string | null = e.clipboardData
-    if (!data) throw new Error('No clipboard data on clipboard event')
+    if (!data) {
+      console.error('No clipboard data on clipboard event')
+      return
+    }
     data = cloneDataTransfer(data)
 
     const { items } = data
@@ -219,13 +222,13 @@ export const usePaste = () => {
     // Look for image paste data
     for (const item of items) {
       if (item.type.startsWith('image/')) {
-        await pasteImageNode(canvas as LGraphCanvas, items, imageNode)
+        await pasteImageNode(canvas, items, imageNode)
         return
       } else if (item.type.startsWith('video/')) {
-        await pasteVideoNode(canvas as LGraphCanvas, items, videoNode)
+        await pasteVideoNode(canvas, items, videoNode)
         return
       } else if (item.type.startsWith('audio/')) {
-        await pasteAudioNode(canvas as LGraphCanvas, items, audioNode)
+        await pasteAudioNode(canvas, items, audioNode)
         return
       }
     }

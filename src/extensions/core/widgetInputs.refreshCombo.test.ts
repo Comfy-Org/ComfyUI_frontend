@@ -1,17 +1,24 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LLink } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import { GET_CONFIG } from '@/services/litegraphService'
+import { useLinkStore } from '@/stores/linkStore'
+import { graphScopeOf } from '@/types/graphScopeId'
+import type { LinkId } from '@/types/linkId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import {
+  createMockLGraph,
   createMockLGraphNode,
   createMockLLink,
   createMockLinks
 } from '@/utils/__tests__/litegraphTestUtils'
+import { createUuidv4 } from '@/utils/uuid'
 
 vi.mock('@/scripts/app', () => ({
   app: {
@@ -28,8 +35,38 @@ const TARGET_INPUT_NAME = 'sampler_name'
 const ORIGINAL_OPTIONS = ['euler', 'euler_ancestral', 'heun']
 const FRESH_OPTIONS = ['euler', 'euler_ancestral', 'heun', 'lcm']
 
+function mockGetLink(links: LGraph['links']): LGraph['getLink'] {
+  function getLink(id: null | undefined): undefined
+  function getLink(id: LinkId | null | undefined): LLink | undefined
+  function getLink(id: LinkId | null | undefined): LLink | undefined {
+    return id == null ? undefined : links.get(id)
+  }
+  return getLink
+}
+
+function registerLink(graph: LGraph, node: PrimitiveNode, linkId: number) {
+  const link = graph.links.get(toLinkId(linkId))
+  if (!link) throw new Error(`Expected link ${linkId}`)
+
+  const scope = graphScopeOf(graph)
+  const registered = useLinkStore().registerLink(scope, {
+    id: link.id,
+    graphId: scope.owningGraphId,
+    originNodeId: node.id,
+    originSlot: 0,
+    targetNodeId: link.target_id,
+    targetSlot: link.target_slot,
+    type: link.type
+  })
+  if (!registered) throw new Error(`Failed to register link ${linkId}`)
+  if (!useLinkStore().isOutputSlotConnected(scope, node.id, 0)) {
+    throw new Error(`Failed to index link ${linkId}`)
+  }
+}
+
 function setupComboNode(inputWidgetName: string | null = TARGET_INPUT_NAME) {
   const node = new PrimitiveNode('Primitive')
+  node.id = toNodeId(1)
   const targetNode = createMockLGraphNode({
     id: toNodeId(7),
     type: TARGET_NODE_TYPE,
@@ -55,18 +92,22 @@ function setupComboNode(inputWidgetName: string | null = TARGET_INPUT_NAME) {
     callback: vi.fn()
   })
 
-  node.graph = fromPartial<LGraph>({
-    links: createMockLinks([link]),
+  const links = createMockLinks([link])
+  const graph = createMockLGraph({
+    id: createUuidv4(),
+    links,
+    getLink: mockGetLink(links),
     getNodeById: vi.fn(() => targetNode)
   })
-  node.outputs[0].links = [link.id]
+  node.graph = graph
+  registerLink(graph, node, 1)
   node.outputs[0].widget = {
     name: TARGET_INPUT_NAME,
     [GET_CONFIG]: () => [ORIGINAL_OPTIONS, {}]
   }
   node.widgets = [widget]
 
-  return { node, targetNode, widget }
+  return { graph, node, targetNode, widget }
 }
 
 function defsWithSpec(
@@ -81,6 +122,10 @@ function defsWithSpec(
 }
 
 describe('PrimitiveNode.refreshComboInNode', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
   it.each<[string, InputSpec]>([
     ['V1', [FRESH_OPTIONS, {}]],
     ['V2', ['COMBO', { options: FRESH_OPTIONS }]]
@@ -95,7 +140,7 @@ describe('PrimitiveNode.refreshComboInNode', () => {
   })
 
   it('uses only options shared by every connected input', () => {
-    const { node, targetNode, widget } = setupComboNode()
+    const { graph, node, targetNode, widget } = setupComboNode()
     const otherTarget = createMockLGraphNode({
       id: toNodeId(8),
       type: 'OtherSampler',
@@ -120,13 +165,12 @@ describe('PrimitiveNode.refreshComboInNode', () => {
         target_slot: 0
       })
     ]
-    node.graph = fromPartial<LGraph>({
-      links: createMockLinks(links),
-      getNodeById: vi.fn((id) =>
-        id === targetNode.id ? targetNode : otherTarget
-      )
-    })
-    node.outputs[0].links = links.map(({ id }) => id)
+    graph.links = createMockLinks(links)
+    graph.getLink = mockGetLink(graph.links)
+    graph.getNodeById = vi.fn((id) =>
+      id === targetNode.id ? targetNode : otherTarget
+    )
+    registerLink(graph, node, 2)
 
     node.refreshComboInNode({
       ...defsWithSpec([['euler', 'heun'], {}]),
