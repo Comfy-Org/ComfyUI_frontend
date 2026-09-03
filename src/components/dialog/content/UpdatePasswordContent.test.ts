@@ -54,6 +54,25 @@ describe('UpdatePasswordContent', () => {
     ).toHaveAccessibleDescription(enMessages.validation.password.match)
   })
 
+  it('clears a mismatch error when the password is corrected', async () => {
+    const { user } = renderContent()
+    const password = screen.getByLabelText(enMessages.auth.signup.passwordLabel)
+    const confirmPassword = screen.getByLabelText(
+      enMessages.auth.login.confirmPasswordLabel
+    )
+
+    await user.type(password, 'Password1!')
+    await user.type(confirmPassword, 'Different1!')
+    expect(confirmPassword).toHaveAccessibleDescription(
+      enMessages.validation.password.match
+    )
+
+    await user.clear(password)
+    await user.type(password, 'Different1!')
+
+    expect(confirmPassword).not.toHaveAccessibleDescription()
+  })
+
   it('updates a valid password and reports success', async () => {
     const { user, onSuccess } = renderContent()
 
