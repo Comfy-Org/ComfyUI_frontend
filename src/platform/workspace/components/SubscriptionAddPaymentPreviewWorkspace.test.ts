@@ -367,7 +367,11 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
         tierKey: 'creator',
         embeddedCheckoutEnabled: true,
         authenticationState: 'failed_retryable',
-        authenticationError: 'Challenge was closed'
+        authenticationError: 'Challenge was closed',
+        // A stale action_url from the abandoned challenge can still be present
+        // when the server reports failed_retryable; the button must stay
+        // hidden regardless.
+        actionUrl: 'https://verify.example/sensitive-token'
       },
       global: globalOptions
     })
