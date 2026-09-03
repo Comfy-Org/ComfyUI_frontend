@@ -31,7 +31,7 @@ const contractTest = test.extend<{ assetApiRequests: URL[] }>({
       const url = new URL(route.request().url())
       requests.push(url)
       const assets =
-        url.searchParams.get('include_tags') === 'input'
+        url.searchParams.get('tags_any') === 'input'
           ? [inputAsset]
           : [outputAsset]
       const response = {
@@ -50,11 +50,11 @@ const assertSharedQueryContract = (requests: URL[]) => {
     url.searchParams.get('tags_any')?.includes('output')
   )
   const inputRequest = requests.find(
-    (url) => url.searchParams.get('include_tags') === 'input'
+    (url) => url.searchParams.get('tags_any') === 'input'
   )
   expect(outputRequest?.searchParams.get('tags_any')).toBe('output,temp')
   expect(outputRequest?.searchParams.get('tags_none')).toBe('missing')
-  expect(inputRequest?.searchParams.get('include_tags')).toBe('input')
+  expect(inputRequest?.searchParams.get('tags_any')).toBe('input')
   expect(inputRequest?.searchParams.get('tags_none')).toBe('missing')
 }
 
