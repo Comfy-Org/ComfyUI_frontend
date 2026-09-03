@@ -179,7 +179,6 @@ export const useExecutionStore = defineStore('execution', () => {
     JobId,
     ReturnType<typeof setTimeout>
   >()
-  const terminalCachedJobIds = new Set<JobId>()
 
   function scheduleMissingTerminalEventReport(jobId: JobId) {
     if (missingTerminalEventTimers.has(jobId)) return
@@ -505,7 +504,6 @@ export const useExecutionStore = defineStore('execution', () => {
     jobIdToWorkflow.clear()
     for (const timer of missingTerminalEventTimers.values()) clearTimeout(timer)
     missingTerminalEventTimers.clear()
-    terminalCachedJobIds.clear()
 
     cancelPendingProgressUpdates()
   }
@@ -513,7 +511,6 @@ export const useExecutionStore = defineStore('execution', () => {
   function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
     executionIdToLocatorCache.clear()
     activeJobId.value = e.detail.prompt_id
-    terminalCachedJobIds.delete(activeJobId.value)
     queuedJobs.value[activeJobId.value] ??= { nodes: {} }
     clearInitializationByJobId(activeJobId.value)
 
@@ -543,9 +540,6 @@ export const useExecutionStore = defineStore('execution', () => {
     if (!activeJob.value) return
     for (const n of e.detail.nodes) {
       activeJob.value.nodes[n] = true
-    }
-    if (Object.values(activeJob.value.nodes).every(Boolean)) {
-      terminalCachedJobIds.add(e.detail.prompt_id)
     }
   }
 
@@ -607,10 +601,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
     // Update the executing nodes list
     if (e.detail == null) {
-      if (
-        activeJobId.value &&
-        !terminalCachedJobIds.delete(activeJobId.value)
-      ) {
+      if (activeJobId.value) {
         scheduleMissingTerminalEventReport(activeJobId.value)
       }
       activeJobId.value = null
@@ -945,7 +936,6 @@ export const useExecutionStore = defineStore('execution', () => {
     nodeProgressStates.value = {}
     const jobId = jobIdParam ?? activeJobId.value ?? null
     if (jobId) clearMissingTerminalEventReport(jobId)
-    if (jobId) terminalCachedJobIds.delete(jobId)
     const runErrorKey = jobId ? runErrorKeyForJob(jobId) : undefined
     if (jobId) {
       const map = { ...nodeProgressStatesByJob.value }

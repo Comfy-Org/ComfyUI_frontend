@@ -614,14 +614,10 @@ describe('useExecutionStore - workflowStatus', () => {
     )
   }
 
-  function callStoreJob(
-    jobId: string,
-    workflow: Workflow,
-    nodes: string[] = ['1']
-  ) {
+  function callStoreJob(jobId: string, workflow: Workflow) {
     store.registerJobWorkflowIdMapping(jobId, workflow.path)
     store.storeJob({
-      nodes,
+      nodes: ['1'],
       id: jobId,
       promptOutput: { '1': createPromptNode('Node', 'TestNode') },
       startTime: 42,
@@ -819,16 +815,12 @@ describe('useExecutionStore - workflowStatus', () => {
     }
   })
 
-  it('does not report a missing terminal event when every node is cached', () => {
+  it('does not schedule a report when the terminal event precedes executing', () => {
     vi.useFakeTimers()
     try {
       callStoreJob('job-1', workflowA)
       fireExecutionStart('job-1')
-      apiEventHandlers.get('execution_cached')!(
-        new CustomEvent('execution_cached', {
-          detail: { prompt_id: 'job-1', nodes: ['1'], timestamp: 0 }
-        })
-      )
+      fireExecutionSuccess('job-1')
       apiEventHandlers.get('executing')!(
         new CustomEvent('executing', { detail: null })
       )
@@ -841,10 +833,10 @@ describe('useExecutionStore - workflowStatus', () => {
     }
   })
 
-  it('still reports when only some nodes are cached', () => {
+  it('reports a missing terminal event when every node was cached', () => {
     vi.useFakeTimers()
     try {
-      callStoreJob('job-1', workflowA, ['1', '2'])
+      callStoreJob('job-1', workflowA)
       fireExecutionStart('job-1')
       apiEventHandlers.get('execution_cached')!(
         new CustomEvent('execution_cached', {
