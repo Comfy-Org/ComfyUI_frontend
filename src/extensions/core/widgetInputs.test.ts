@@ -3,7 +3,12 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphNode,
+  LiteGraph,
+  LLink
+} from '@/lib/litegraph/src/litegraph'
 import type {
   INodeInputSlot,
   INodeOutputSlot,
@@ -16,7 +21,7 @@ import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
+import { serializeNodeId, toNodeId } from '@/types/nodeId'
 
 /** `app.configuringGraph` is a getter on the real app, so route it via a ref. */
 const appState = vi.hoisted(() => ({ configuringGraph: false }))
@@ -54,6 +59,13 @@ const widgetInputsExtension = vi.mocked(app.registerExtension).mock
   .calls[0]?.[0]
 if (!widgetInputsExtension)
   throw new Error('Comfy.WidgetInputs was not registered on import')
+
+await import('./rerouteNode')
+const rerouteNodeExtension = vi
+  .mocked(app.registerExtension)
+  .mock.calls.find(([extension]) => extension.name === 'Comfy.RerouteNode')?.[0]
+if (!rerouteNodeExtension)
+  throw new Error('Comfy.RerouteNode was not registered on import')
 
 /**
  * Applies the extension's `beforeRegisterNodeDef` to a throwaway node class.
@@ -241,13 +253,20 @@ describe('PrimitiveNode', () => {
     })
   })
 
-  it('restores its serialized value after a reroute resolves its widget config', () => {
+  it('restores its serialized value through the reroute lifecycle', () => {
+    widgetInputsExtension.registerCustomNodes?.(app)
+    localStorage.setItem('Comfy.RerouteNode.DefaultVisibility', 'true')
+    rerouteNodeExtension.registerCustomNodes?.(app)
+    const frameCallbacks: FrameRequestCallback[] = []
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      frameCallbacks.push(callback)
+      return frameCallbacks.length
+    })
+
     const graph = new LGraph()
-    const reroute = new LGraphNode('Reroute')
+    const reroute = LiteGraph.createNode('Reroute')
+    if (!reroute) throw new Error('Reroute was not registered')
     graph.add(reroute)
-    reroute.addInput('', '*')
-    reroute.inputs[0].widget = { name: 'value' }
-    reroute.addOutput('', '*')
     const target = new LGraphNode('Target')
     graph.add(target)
     target.addInput('seed', 'INT')
@@ -256,21 +275,45 @@ describe('PrimitiveNode', () => {
       [GET_CONFIG]: () => ['INT', { control_after_generate: true }]
     }
     target.addWidget('number', 'seed', 111, () => {})
-    const primitive = new PrimitiveNode('Primitive')
+    const primitive = LiteGraph.createNode('PrimitiveNode')
+    if (!(primitive instanceof PrimitiveNode))
+      throw new Error('PrimitiveNode was not registered')
     graph.add(primitive)
     appState.configuringGraph = true
-    primitive.connect(0, reroute, 0)
-    reroute.connect(0, target, 0)
+    const primitiveLinkId = toLinkId(1)
+    graph._addLink(
+      new LLink(
+        primitiveLinkId,
+        'INT',
+        serializeNodeId(primitive.id),
+        0,
+        serializeNodeId(reroute.id),
+        0
+      )
+    )
+    graph._addLink(
+      new LLink(
+        toLinkId(2),
+        'INT',
+        serializeNodeId(reroute.id),
+        0,
+        serializeNodeId(target.id),
+        0
+      )
+    )
     primitive.configure(
-      fromPartial({ widgets_values: [222], outputs: [{ type: 'INT' }] })
+      fromPartial({
+        widgets_values: [222],
+        outputs: [{ type: 'INT', links: [primitiveLinkId] }]
+      })
     )
     appState.configuringGraph = false
 
-    primitive.onAfterGraphConfigured()
+    for (const node of graph.nodes) node.onAfterGraphConfigured?.()
     expect(primitive.widgets).toBeUndefined()
-    reroute.inputs[0].widget![GET_CONFIG] =
-      target.inputs[0].widget?.[GET_CONFIG]
-    primitive.recreateWidget()
+
+    expect(frameCallbacks).toHaveLength(1)
+    frameCallbacks.shift()!(0)
 
     expect(primitive.widgets?.[0].value).toBe(222)
   })
@@ -299,7 +342,7 @@ describe('PrimitiveNode', () => {
     expect(primitive.widgets?.[0].value).toBe(111)
   })
 
-  it('keeps an unconsumed serialized value until its widget is first built', () => {
+  it('drops an unconsumed serialized value after graph configuration', () => {
     const { primitive, target } = intFixture()
     primitive.configure(
       fromPartial({ widgets_values: [222], outputs: [{ type: 'INT' }] })
@@ -308,7 +351,7 @@ describe('PrimitiveNode', () => {
     primitive.onAfterGraphConfigured()
     primitive.connect(0, target, 0)
 
-    expect(primitive.widgets?.[0].value).toBe(222)
+    expect(primitive.widgets?.[0].value).toBe(111)
   })
 
   it('clears its serialized value when its output is disconnected', () => {
