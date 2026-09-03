@@ -6298,6 +6298,42 @@
       }
     }
   },
+  "GeminiVideoOmniV2": {
+    "description": "Создавайте видео со звуком по текстовому запросу с помощью моделей Gemini Omni Flash от Google. При необходимости добавьте эталонные изображения и/или видео, чтобы направить генерацию или отредактировать результат. Укажите желаемую длительность (3–10 с) непосредственно в запросе.",
+    "display_name": "Google Gemini Omni (Видео)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель Gemini для видео, используемая для генерации видео."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_task_type": {
+        "name": "task_type"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "GenerateTracks",
     "inputs": {
@@ -6360,6 +6396,22 @@
       },
       "1": {
         "name": "track_length",
+        "tooltip": null
+      }
+    }
+  },
+  "Get3DComponents": {
+    "description": "Преобразует файл 3D-модели (GLB, GLTF, OBJ, STL) в редактируемый MESH для узлов обработки сеток (упрощение, ремешинг, UV-развёртка, запекание, ...). Все узлы/примитивы сцены объединяются в одну сетку с применёнными преобразованиями; текстуры и параметры материала берутся из первого материала. Аналог MeshToFile3D.",
+    "display_name": "Получить 3D-компоненты",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Файл 3D-модели из Load 3D или другого 3D-узла. FBX/USDZ не поддерживаются — сначала преобразуйте в GLB."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
         "tooltip": null
       }
     }
@@ -7081,7 +7133,7 @@
       },
       "mode": {
         "name": "режим",
-        "tooltip": "'speed' — быстрее; 'precision' обеспечивает более качественную синхронизацию губ, но в два раза дороже."
+        "tooltip": "'speed' работает быстрее; 'precision' обеспечивает более качественную синхронизацию губ, но стоит дороже."
       },
       "output_language": {
         "name": "язык_перевода",
@@ -7149,12 +7201,12 @@
     }
   },
   "HiDreamO1ReferenceImages": {
-    "description": "Прикрепите 1-10 референсных изображений для кондиционирования: одно для редактирования по инструкции или несколько для персонализации по объекту.",
+    "description": "Подключите упорядоченные эталонные изображения к положительному и отрицательному кондиционированию.",
     "display_name": "Референсные изображения HiDream-O1",
     "inputs": {
       "images": {
         "name": "изображения",
-        "tooltip": "Референсные изображения. 1 изображение = редактирование по инструкции; 2-10 изображений = мульти-референс."
+        "tooltip": "Эталонные изображения используются в числовом порядке входов."
       },
       "negative": {
         "name": "отрицательный"
@@ -12696,6 +12748,46 @@
       }
     }
   },
+  "MiniMaxH3FunControlNetApply": {
+    "description": "Применяет MiniMax H3 Fun ControlNet к модели преобразования текста в видео в качестве патча модели.",
+    "display_name": "Применить MiniMax H3 Fun ControlNet",
+    "inputs": {
+      "control_video": {
+        "name": "control_video"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "1 отмечает области для регенерации."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "Видео под маской; считывается только при наличии маски."
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MiniMaxH3ImageToVideo": {
     "display_name": "MiniMax H3: изображение в видео",
     "inputs": {
@@ -16596,6 +16688,238 @@
       }
     }
   },
+  "PixverseV6ExtendVideoNode": {
+    "description": "Продолжает существующее видео с помощью PixVerse, при необходимости с нативным звуком. Исходное видео должно быть короче 40 секунд и не более 1920 px по любой стороне. Выходное видео сохраняет разрешение исходного, поэтому качество определяет, насколько хорошо отрисовывается продолжение, а не размер кадра.",
+    "display_name": "PixVerse V6: продление видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Настройки модели и генерации."
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Видео для продолжения."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FirstLastFrameNode": {
+    "description": "Создаёт видео с переходом от первого кадра к последнему с помощью PixVerse, при необходимости с нативным звуком. Выходное видео сохраняет соотношение сторон первого кадра.",
+    "display_name": "PixVerse V6: из первого и последнего кадра в видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Настройки модели и генерации."
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FusionVideoNode": {
+    "description": "Создаёт видео из референсных персонажей, фонов и видео с помощью PixVerse. Поместите референс в сцену, указав его в prompt, например: '{'@'}Subject1 проходит через {'@'}Background1'. При подключении референсного видео модель переключается в режим Omni, в котором длительность результата соответствует самому длинному референсному видео.",
+    "display_name": "PixVerse V6 Fusion (референсы в видео)",
+    "inputs": {
+      "backgrounds": {
+        "name": "backgrounds",
+        "tooltip": "Референсные изображения сцены, в которую будут помещены персонажи."
+      },
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Настройки модели и генерации."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration_seconds": {
+        "name": "длительность_в_секундах"
+      },
+      "model_generate_audio": {
+        "name": "генерировать_аудио"
+      },
+      "model_negative_prompt": {
+        "name": "негативный_запрос"
+      },
+      "model_prompt": {
+        "name": "запрос"
+      },
+      "model_quality": {
+        "name": "качество"
+      },
+      "model_seed": {
+        "name": "сид"
+      },
+      "model_style": {
+        "name": "стиль"
+      },
+      "subjects": {
+        "name": "subjects",
+        "tooltip": "Референсные изображения персонажей, которые будут размещены в сцене."
+      },
+      "videos": {
+        "name": "videos",
+        "tooltip": "Референсные видео, из которых можно взять персонажей, движение, кадрирование или стиль. Не более двух, общей длительностью не более 15 секунд."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6ImageToVideoNode": {
+    "description": "Анимирует изображение с помощью PixVerse, при необходимости добавляя нативное аудио. Выходное видео сохраняет соотношение сторон входного изображения.",
+    "display_name": "PixVerse V6: из изображения в видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "image": {
+        "name": "изображение"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Настройки модели и генерации."
+      },
+      "model_duration_seconds": {
+        "name": "длительность_в_секундах"
+      },
+      "model_generate_audio": {
+        "name": "генерировать_аудио"
+      },
+      "model_multi_clip": {
+        "name": "несколько_клипов"
+      },
+      "model_negative_prompt": {
+        "name": "негативный_запрос"
+      },
+      "model_prompt": {
+        "name": "запрос"
+      },
+      "model_quality": {
+        "name": "качество"
+      },
+      "model_seed": {
+        "name": "сид"
+      },
+      "model_style": {
+        "name": "стиль"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6TextToVideoNode": {
+    "description": "Генерирует видео из текстового запроса с помощью PixVerse, при необходимости добавляя нативное аудио.",
+    "display_name": "PixVerse V6: из текста в видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Настройки модели и генерации."
+      },
+      "model_aspect_ratio": {
+        "name": "соотношение_сторон"
+      },
+      "model_duration_seconds": {
+        "name": "длительность_в_секундах"
+      },
+      "model_generate_audio": {
+        "name": "генерировать_аудио"
+      },
+      "model_multi_clip": {
+        "name": "несколько_клипов"
+      },
+      "model_negative_prompt": {
+        "name": "негативный_запрос"
+      },
+      "model_prompt": {
+        "name": "запрос"
+      },
+      "model_quality": {
+        "name": "качество"
+      },
+      "model_seed": {
+        "name": "сид"
+      },
+      "model_style": {
+        "name": "стиль"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PolyexponentialScheduler": {
     "display_name": "Полиэкспоненциальный scheduler",
     "inputs": {
@@ -17540,7 +17864,7 @@
     }
   },
   "RecraftStyleV3LogoRaster": {
-    "description": "Выберите стиль realistic_image и дополнительный подстиль (опционально).",
+    "description": "Выберите стиль и подстиль logo_raster.",
     "display_name": "Recraft Style - Логотип Растр",
     "inputs": {
       "substyle": {
@@ -17651,6 +17975,26 @@
       }
     }
   },
+  "RecraftV4CreateStyleNode": {
+    "description": "Создайте многоразовый стиль Recraft V4 на основе 1–10 референсных изображений. Возвращаемый style_id работает с любой моделью Recraft V4 и V4.1 того же типа вывода. Общий размер всех изображений ограничен 10 МБ.",
+    "display_name": "Recraft V4: создание стиля",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Референсные изображения, определяющие стиль. Схожие референсы делают соответствие точнее, разнообразные — расширяют его."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Тип вывода, для которого создаётся стиль: recraftv4_styles для растровых изображений, recraftv4_styles_vector для SVG."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_id",
+        "tooltip": null
+      }
+    }
+  },
   "RecraftV4TextToImageNode": {
     "description": "Генерирует изображения с помощью моделей Recraft V4 или V4 Pro.",
     "display_name": "Recraft V4: текст в изображение",
@@ -17660,7 +18004,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Модель, используемая для генерации."
+        "tooltip": "Модель для генерации. Модели recraftv4_styles предназначены для генерации с сохранением стиля и всегда требуют style_id или style_references."
       },
       "model_size": {
         "name": "size"
@@ -17684,10 +18028,26 @@
       "seed": {
         "name": "seed",
         "tooltip": "Сид для определения необходимости повторного запуска узла; фактические результаты не детерминированы независимо от сида."
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "UUID применяемого стиля Recraft V4, например из узла Recraft V4 Create Style или вывода style_id предыдущего запуска. Нельзя использовать вместе со style_references."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "Степень следования стилю: precise воспроизводит его в деталях, flexible соответствует общему виду. Используется только при наличии стиля."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "Референсные изображения для создания стиля на лету, оплачиваются дополнительно к генерации. Созданный стиль возвращается как style_id для повторного использования. Нельзя использовать вместе со style_id."
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -17701,7 +18061,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Модель, используемая для генерации."
+        "tooltip": "Модель для генерации. Модели recraftv4_styles предназначены для генерации с сохранением стиля и всегда требуют style_id или style_references."
       },
       "model_size": {
         "name": "size"
@@ -17725,10 +18085,26 @@
       "seed": {
         "name": "seed",
         "tooltip": "Сид для определения необходимости повторного запуска узла; фактические результаты не детерминированы независимо от сида."
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "UUID применяемого векторного стиля Recraft V4, например из узла Recraft V4 Create Style или вывода style_id предыдущего запуска. Нельзя использовать вместе со style_references."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "Степень следования стилю: precise воспроизводит его в деталях, flexible соответствует общему виду. Используется только при наличии стиля."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "Референсные изображения для создания векторного стиля на лету, оплачиваются дополнительно к генерации. Созданный стиль возвращается как style_id для повторного использования. Нельзя использовать вместе со style_id."
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -20785,6 +21161,23 @@
       }
     }
   },
+  "SenseNovaSamplingOptions": {
+    "description": "Настройте смещение потока SenseNova.",
+    "display_name": "Параметры сэмплирования SenseNova",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SetClipHooks": {
     "display_name": "Установить хуки CLIP",
     "inputs": {
@@ -23452,30 +23845,6 @@
       }
     }
   },
-  "TripoRefineNode": {
-    "description": "Уточнение черновой модели, созданной только моделями Tripo v1.4.",
-    "display_name": "Tripo: Уточнение черновой модели",
-    "inputs": {
-      "model_task_id": {
-        "name": "идентификатор_задачи_модели",
-        "tooltip": "Должна быть модель Tripo v1.4"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "файл модели",
-        "tooltip": null
-      },
-      "1": {
-        "name": "task_id модели",
-        "tooltip": null
-      },
-      "2": {
-        "name": "GLB",
-        "tooltip": null
-      }
-    }
-  },
   "TripoRetargetNode": {
     "display_name": "Tripo: Перепривязка ригнутой модели",
     "inputs": {
@@ -24405,61 +24774,11 @@
       },
       "resolution": {
         "name": "разрешение",
-        "tooltip": "Разрешение выходного видео. 4K недоступно для моделей veo-3.1-lite и veo-3.0."
+        "tooltip": "Разрешение выходного видео. 4K недоступно для модели veo-3.1-lite."
       },
       "seed": {
         "name": "seed",
         "tooltip": "Сид для генерации видео (0 для случайного)"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "VeoVideoGenerationNode": {
-    "description": "Генерирует видео по текстовым подсказкам с помощью Google Veo API",
-    "display_name": "Google Veo2 Генерация видео",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "Соотношение сторон выходного видео"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration_seconds": {
-        "name": "duration_seconds",
-        "tooltip": "Длительность выходного видео в секундах"
-      },
-      "enhance_prompt": {
-        "name": "enhance_prompt",
-        "tooltip": "Улучшать ли подсказку с помощью ИИ"
-      },
-      "image": {
-        "name": "image",
-        "tooltip": "Необязательное референсное изображение для направления генерации видео"
-      },
-      "model": {
-        "name": "model",
-        "tooltip": "Модель Veo 2 для генерации видео"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Негативная текстовая подсказка для указания, чего избегать в видео"
-      },
-      "person_generation": {
-        "name": "person_generation",
-        "tooltip": "Разрешить ли генерацию людей в видео"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Текстовое описание видео"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Сид для генерации видео (0 — случайный)"
       }
     },
     "outputs": {
@@ -24485,6 +24804,23 @@
       },
       "video": {
         "name": "видео"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VideoCrop": {
+    "display_name": "Обрезка видео",
+    "inputs": {
+      "crop": {
+        "name": "crop",
+        "tooltip": "Область обрезки в пикселях. Нулевая ширина/высота сохраняет полный кадр."
+      },
+      "video": {
+        "name": "video"
       }
     },
     "outputs": {
@@ -24594,6 +24930,27 @@
       },
       "model": {
         "name": "модель"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "Обрезка видео (расширенная)",
+    "inputs": {
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "Если True и указанная длительность невозможна, будет вызвана ошибка."
+      },
+      "trim": {
+        "name": "trim",
+        "tooltip": "Окно обрезки с использованием начального/конечного кадров."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

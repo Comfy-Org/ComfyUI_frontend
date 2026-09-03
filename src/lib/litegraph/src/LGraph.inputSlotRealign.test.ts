@@ -2,6 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { registerNodeState } from '@/core/graph/nodeShell/nodeShellState'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
@@ -49,7 +50,14 @@ class SourceNode extends LGraphNode {
 
 const SUBGRAPH_ID = 'ab111111-1111-4111-8111-111111111111'
 
-function shiftedNodesAndLinks(sourceId: number, targetId: number) {
+function shiftedNodesAndLinks(
+  sourceId: number,
+  targetId: number,
+  linkIdOffset = 0
+) {
+  const [firstLinkId, secondLinkId, thirdLinkId] = [1, 2, 3].map(
+    (id) => id + linkIdOffset
+  )
   return {
     nodes: [
       {
@@ -61,7 +69,13 @@ function shiftedNodesAndLinks(sourceId: number, targetId: number) {
         order: 0,
         mode: 0,
         inputs: [],
-        outputs: [{ name: 'out', type: 'number', links: [1, 2, 3] }],
+        outputs: [
+          {
+            name: 'out',
+            type: 'number',
+            links: [firstLinkId, secondLinkId, thirdLinkId]
+          }
+        ],
         properties: {}
       },
       {
@@ -73,9 +87,9 @@ function shiftedNodesAndLinks(sourceId: number, targetId: number) {
         order: 1,
         mode: 0,
         inputs: [
-          { name: 'in_b', type: 'number', link: 1 },
-          { name: 'in_c', type: 'number', link: 2 },
-          { name: 'in_a', type: 'number', link: 3 }
+          { name: 'in_b', type: 'number', link: firstLinkId },
+          { name: 'in_c', type: 'number', link: secondLinkId },
+          { name: 'in_a', type: 'number', link: thirdLinkId }
         ],
         outputs: [],
         properties: {}
@@ -83,7 +97,7 @@ function shiftedNodesAndLinks(sourceId: number, targetId: number) {
     ],
     links: [
       {
-        id: 1,
+        id: firstLinkId,
         origin_id: sourceId,
         origin_slot: 0,
         target_id: targetId,
@@ -91,7 +105,7 @@ function shiftedNodesAndLinks(sourceId: number, targetId: number) {
         type: 'number'
       },
       {
-        id: 2,
+        id: secondLinkId,
         origin_id: sourceId,
         origin_slot: 0,
         target_id: targetId,
@@ -99,7 +113,7 @@ function shiftedNodesAndLinks(sourceId: number, targetId: number) {
         type: 'number'
       },
       {
-        id: 3,
+        id: thirdLinkId,
         origin_id: sourceId,
         origin_slot: 0,
         target_id: targetId,
@@ -325,8 +339,13 @@ describe('normalizeConfiguredTopology', () => {
     expect(normalized.links?.map((link) => link.id)).toEqual([2, 3])
     expect(normalized.nodes?.[1].inputs?.[0].link).toBe(2)
     expect(console.warn).toHaveBeenCalledWith(
-      'Dropping competing link to occupied input 2:0',
-      expect.objectContaining({ droppedLinkId: 2, survivorLinkId: 1 })
+      expect.any(String),
+      expect.objectContaining({
+        droppedLinkId: 1,
+        survivorLinkId: 2,
+        targetNodeId: toNodeId(2),
+        targetSlot: 0
+      })
     )
   })
 })
@@ -366,6 +385,47 @@ describe('LGraph.configure input slot realignment (#3348)', () => {
 
     expect(graph.links.has(toLinkId(4))).toBe(false)
     assertLinksRealigned(graph, toNodeId(2))
+  })
+
+  it('realigns links against a reminted node id', () => {
+    const payload = savedWorkflow()
+    const graph = new LGraph()
+    graph.id = payload.id
+    const incumbent = new ReorderTargetNode()
+    incumbent.id = toNodeId(2)
+    if (!registerNodeState(graph, incumbent)) {
+      throw new Error('failed to register incumbent target')
+    }
+    const contents = shiftedNodesAndLinks(10, 2, 10)
+    payload.state = {
+      lastNodeId: 10,
+      lastLinkId: 13,
+      lastGroupId: 0,
+      lastRerouteId: 0
+    }
+    payload.nodes = contents.nodes
+    payload.links = contents.links
+
+    graph.configure(payload, true)
+
+    const remintedTargetId = graph.links.get(toLinkId(11))?.target_id
+    if (remintedTargetId === undefined) throw new Error('link 11 not found')
+    expect(remintedTargetId).not.toBe(toNodeId(2))
+    expect(
+      [11, 12, 13].map(
+        (linkId) => graph.links.get(toLinkId(linkId))?.target_slot
+      )
+    ).toEqual([1, 2, 0])
+    expect(
+      [0, 1, 2].map(
+        (slot) =>
+          useLinkStore().getInputSlotLink(
+            graphScopeOf(graph),
+            remintedTargetId,
+            slot
+          )?.id
+      )
+    ).toEqual([toLinkId(13), toLinkId(11), toLinkId(12)])
   })
 
   it('maps a rejected subgraph input fanout branch to its exact survivor', () => {
@@ -606,7 +666,7 @@ describe('realignInputLinkSlots with a rejected batch (#15581)', () => {
       { name: 'q', type: 'number', link: free.id }
     ]
 
-    realignInputLinkSlots(graph, [nodeData])
+    realignInputLinkSlots(graph, [[target.id, nodeData]])
 
     expect({
       graphLinkIds: [...graph.links.keys()],
@@ -658,7 +718,7 @@ describe('realignInputLinkSlots', () => {
       { ...nodeData.inputs![1], link: link.id }
     ]
 
-    realignInputLinkSlots(graph, [nodeData])
+    realignInputLinkSlots(graph, [[target.id, nodeData]])
 
     const store = useLinkStore()
     expect(link.target_slot).toBe(1)
@@ -670,7 +730,7 @@ describe('realignInputLinkSlots', () => {
     )
   })
 
-  it('rejects all moves when one link cannot be realigned', () => {
+  it('realigns remaining links when one move is rejected', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     const graph = new LGraph()
     const source = new LGraphNode('Source')
@@ -693,13 +753,48 @@ describe('realignInputLinkSlots', () => {
       { ...nodeData.inputs![3], link: movable.id }
     ]
 
-    realignInputLinkSlots(graph, [nodeData])
+    realignInputLinkSlots(graph, [[target.id, nodeData]])
 
     expect(blocked.target_slot).toBe(0)
-    expect(movable.target_slot).toBe(2)
+    expect(movable.target_slot).toBe(3)
     expect(console.error).toHaveBeenCalledWith(
       'Failed to realign input link slots',
       expect.objectContaining({ code: 'occupied-target' })
     )
+  })
+
+  it('replays a successful retry after a rejected move', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const graph = new LGraph()
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'number')
+    const target = new LGraphNode('Target')
+    target.addInput('first', 'number')
+    target.addInput('occupied', 'number')
+    target.addInput('third', 'number')
+    target.addInput('destination', 'number')
+    graph.add(source)
+    graph.add(target)
+    const blocked = source.connect(0, target, 0)!
+    source.connect(0, target, 1)
+    const movable = source.connect(0, target, 2)!
+    const nodeData = target.serialize()
+    nodeData.inputs = [
+      { ...nodeData.inputs![0], name: 'occupied', link: blocked.id },
+      { ...nodeData.inputs![1], name: 'removed', link: null },
+      { ...nodeData.inputs![2], link: null },
+      { ...nodeData.inputs![3], link: movable.id }
+    ]
+    target.onConnectionsChange = (_type, slot, connected) => {
+      if (!connected || slot !== 3) return
+      const destination = target.inputs[3]
+      target.addInput('inserted', 'number')
+      target.inputs[3] = target.inputs[4]
+      target.inputs[4] = destination
+    }
+
+    realignInputLinkSlots(graph, [[target.id, nodeData]])
+
+    expect(movable.target_slot).toBe(4)
   })
 })

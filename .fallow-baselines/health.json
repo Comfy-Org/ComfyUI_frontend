@@ -5,55 +5,6 @@
         "count": 2
       }
     },
-    "apps/desktop-ui/.storybook/main.ts": {
-      "crap_moderate": {
-        "count": 2
-      }
-    },
-    "apps/desktop-ui/src/components/bottomPanel/tabs/terminal/BaseTerminal.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/desktop-ui/src/components/install/InstallLocationPicker.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/desktop-ui/src/components/maintenance/TaskListPanel.vue": {
-      "crap_moderate": {
-        "count": 3
-      }
-    },
-    "apps/desktop-ui/src/views/InstallView.stories.ts": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/desktop-ui/src/views/InstallView.vue": {
-      "crap_moderate": {
-        "count": 3
-      }
-    },
-    "apps/desktop-ui/src/views/MaintenanceView.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/desktop-ui/src/views/ServerStartView.vue": {
-      "crap_high": {
-        "count": 1
-      }
-    },
     "apps/website/scripts/generate-models.ts": {
       "complexity_critical": {
         "count": 4
@@ -3667,7 +3618,6 @@
     "src/renderer/extensions/vueNodes/utils/nodeDataUtils.ts:high impact",
     "src/composables/auth/useCurrentUser.ts:high impact",
     "src/extensions/core/widgetInputs.ts:high impact",
-    "apps/desktop-ui/src/utils/envUtil.ts:high impact",
     "src/extensions/core/groupNode.ts:complexity",
     "src/lib/litegraph/src/subgraph/ExecutableNodeDTO.ts:circular dependency",
     "src/workbench/extensions/manager/components/manager/button/PackInstallButton.vue:circular dependency",

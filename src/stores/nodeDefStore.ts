@@ -434,6 +434,9 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
     nodeDefsByName.value[nodeDef.name] = nodeDefImpl
   }
+  function removeNodeDef(nodeName: string) {
+    delete nodeDefsByName.value[nodeName]
+  }
   function fromLGraphNode(node: LGraphNode): ComfyNodeDefImpl | null {
     const nodeTypeName = node.constructor?.nodeData?.name ?? node.type
     if (!nodeTypeName) return null
@@ -549,6 +552,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
 
     updateNodeDefs,
     addNodeDef,
+    removeNodeDef,
     fromLGraphNode,
     getInputSpecForWidget,
     registerNodeDefFilter,

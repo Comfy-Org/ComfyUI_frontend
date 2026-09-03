@@ -6298,6 +6298,42 @@
       }
     }
   },
+  "GeminiVideoOmniV2": {
+    "description": "Google の Gemini Omni Flash モデルを使用して、テキストプロンプトから音声付き動画を生成します。必要に応じて、結果の誘導または編集用に参照画像や動画を指定できます。希望する長さ（3～10秒）はプロンプト内に直接記述してください。",
+    "display_name": "Google Gemini Omni（動画）",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "動画の生成に使用する Gemini 動画モデル。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_task_type": {
+        "name": "task_type"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "GenerateTracks",
     "inputs": {
@@ -6360,6 +6396,22 @@
       },
       "1": {
         "name": "トラック長",
+        "tooltip": null
+      }
+    }
+  },
+  "Get3DComponents": {
+    "description": "3Dモデルファイル（GLB、GLTF、OBJ、STL）を、メッシュ処理ノード（デシメーション、リメッシュ、UVアンラップ、ベイクなど）で編集可能な MESH に解析します。すべてのシーンノード／プリミティブは変換を適用した状態で1つのメッシュに統合され、テクスチャとマテリアル係数は最初のマテリアルから取得されます。MeshToFile3D の対になるノードです。",
+    "display_name": "3Dコンポーネントを取得",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Load 3D または別の3Dノードからの3Dモデルファイル。FBX/USDZ はサポートされていません。先に GLB へ変換してください。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
         "tooltip": null
       }
     }
@@ -7081,7 +7133,7 @@
       },
       "mode": {
         "name": "モード",
-        "tooltip": "「speed」は高速、「precision」は2倍の価格で高品質なリップシンクを生成します。"
+        "tooltip": "'speed' は高速です。'precision' はより高品質なリップシンクを実現しますが、料金が高くなります。"
       },
       "output_language": {
         "name": "出力言語",
@@ -7149,12 +7201,12 @@
     }
   },
   "HiDreamO1ReferenceImages": {
-    "description": "1～10枚の参照画像をコンディショニングに添付します。1枚は編集指示用、複数枚は被写体パーソナライズ用。",
+    "description": "正および負のコンディショニングに、順序付けされた参照画像を接続します。",
     "display_name": "HiDream-O1 参照画像",
     "inputs": {
       "images": {
         "name": "画像",
-        "tooltip": "参照画像。1枚＝編集指示、2～10枚＝マルチ参照。"
+        "tooltip": "参照画像は数値ソケット順に使用されます。"
       },
       "negative": {
         "name": "ネガティブ"
@@ -12696,6 +12748,46 @@
       }
     }
   },
+  "MiniMaxH3FunControlNetApply": {
+    "description": "MiniMax H3 Fun ControlNetをモデルパッチとしてテキストから動画へのモデルに適用します。",
+    "display_name": "MiniMax H3 Fun ControlNetを適用",
+    "inputs": {
+      "control_video": {
+        "name": "control_video"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "1は再生成する領域を示します。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "マスクの背後にある動画。マスクが指定されている場合にのみ読み取られます。"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MiniMaxH3ImageToVideo": {
     "display_name": "MiniMax H3 画像から動画へ",
     "inputs": {
@@ -16596,6 +16688,238 @@
       }
     }
   },
+  "PixverseV6ExtendVideoNode": {
+    "description": "PixVerseで既存の動画を延長します。必要に応じてネイティブ音声も使用できます。元動画は40秒未満かつ、いずれの辺も最大1920pxである必要があります。出力は元動画の解像度を維持するため、品質はフレームサイズではなく延長部分の描画品質を設定します。",
+    "display_name": "PixVerse V6 動画延長",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "モデルと生成設定。"
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "video": {
+        "name": "動画",
+        "tooltip": "延長する動画。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FirstLastFrameNode": {
+    "description": "PixVerseで最初のフレームから最後のフレームへ遷移する動画を生成します。必要に応じてネイティブ音声も使用できます。出力は最初のフレームのアスペクト比を維持します。",
+    "display_name": "PixVerse V6 最初・最後のフレームから動画",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "モデルと生成設定。"
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FusionVideoNode": {
+    "description": "PixVerseで参照用の被写体、背景、動画から動画を合成します。プロンプト内で名前を指定して参照をシーンに配置します。例: 「{'@'}Subject1 が {'@'}Background1 を歩く」。参照動画を接続するとモデルはOmniモードに切り替わり、出力の長さは最も長い参照動画に合わせられます。",
+    "display_name": "PixVerse V6 融合（参照から動画）",
+    "inputs": {
+      "backgrounds": {
+        "name": "背景",
+        "tooltip": "被写体を配置するシーンの参照画像。"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "モデルと生成設定。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_style": {
+        "name": "スタイル"
+      },
+      "subjects": {
+        "name": "被写体",
+        "tooltip": "シーンに配置する被写体の参照画像。"
+      },
+      "videos": {
+        "name": "動画",
+        "tooltip": "被写体、動き、フレーミング、スタイルを参照するための動画。最大2本、合計最大15秒。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6ImageToVideoNode": {
+    "description": "PixVerseで画像をアニメーション化します。必要に応じてネイティブ音声も追加できます。出力は入力画像のアスペクト比を維持します。",
+    "display_name": "PixVerse V6 画像から動画",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "モデルと生成の設定。"
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_multi_clip": {
+        "name": "multi_clip"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_style": {
+        "name": "スタイル"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6TextToVideoNode": {
+    "description": "PixVerseでテキストプロンプトから動画を生成します。必要に応じてネイティブ音声も追加できます。",
+    "display_name": "PixVerse V6 テキストから動画",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "モデルと生成の設定。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_multi_clip": {
+        "name": "multi_clip"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_style": {
+        "name": "スタイル"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PolyexponentialScheduler": {
     "display_name": "ポリ指数スケジューラー",
     "inputs": {
@@ -17540,7 +17864,7 @@
     }
   },
   "RecraftStyleV3LogoRaster": {
-    "description": "realistic_imageスタイルとオプションのサブスタイルを選択します。",
+    "description": "logo_raster スタイルとサブスタイルを選択します。",
     "display_name": "Recraft Style - ロゴラスタ",
     "inputs": {
       "substyle": {
@@ -17651,6 +17975,26 @@
       }
     }
   },
+  "RecraftV4CreateStyleNode": {
+    "description": "1～10枚の参照画像から再利用可能な Recraft V4 スタイルを作成します。返される style_id は、同じ出力タイプのすべての Recraft V4 および V4.1 モデルで使用できます。すべての画像の合計サイズは10 MBまでです。",
+    "display_name": "Recraft V4 Create Style",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "スタイルを定義する参照画像。類似した参照画像では一致度が高まり、多様な参照画像では適用範囲が広がります。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "スタイルを作成する出力タイプ: ラスター画像には recraftv4_styles、SVG には recraftv4_styles_vector。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_id",
+        "tooltip": null
+      }
+    }
+  },
   "RecraftV4TextToImageNode": {
     "description": "Recraft V4またはV4 Proモデルを使用して画像を生成します。",
     "display_name": "Recraft V4 テキストから画像生成",
@@ -17660,7 +18004,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "生成に使用するモデル。"
+        "tooltip": "生成に使用するモデル。recraftv4_styles モデルはスタイル一貫性のある生成向けに構築されており、常に style_id または style_references が必要です。"
       },
       "model_size": {
         "name": "サイズ"
@@ -17684,10 +18028,26 @@
       "seed": {
         "name": "seed",
         "tooltip": "ノードを再実行するかどうかを決定するシード値。実際の結果はシードに関係なく非決定的です。"
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "適用する Recraft V4 スタイルの UUID。例: Recraft V4 Create Style ノード、または前回の実行の style_id 出力から取得します。style_references とは併用できません。"
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "スタイルへの追従度: precise は細部まで再現し、flexible は全体的な見た目に合わせます。スタイルが指定されている場合にのみ使用されます。"
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "その場でスタイルを作成するための参照画像。生成料金に加えて課金されます。作成されたスタイルは再利用用の style_id として返されます。style_id とは併用できません。"
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -17701,7 +18061,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "生成に使用するモデル。"
+        "tooltip": "生成に使用するモデル。recraftv4_styles モデルはスタイル一貫性のある生成向けに構築されており、常に style_id または style_references が必要です。"
       },
       "model_size": {
         "name": "サイズ"
@@ -17725,10 +18085,26 @@
       "seed": {
         "name": "seed",
         "tooltip": "ノードを再実行するかどうかを決定するシード値。実際の結果はシードに関係なく非決定的です。"
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "適用する Recraft V4 ベクタースタイルの UUID。例: Recraft V4 Create Style ノード、または前回の実行の style_id 出力から取得します。style_references とは併用できません。"
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "スタイルへの追従度: precise は細部まで再現し、flexible は全体的な見た目に合わせます。スタイルが指定されている場合にのみ使用されます。"
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "その場でベクタースタイルを作成するための参照画像。生成料金に加えて課金されます。作成されたスタイルは再利用用の style_id として返されます。style_id とは併用できません。"
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -20785,6 +21161,23 @@
       }
     }
   },
+  "SenseNovaSamplingOptions": {
+    "description": "SenseNovaのフローシフトを設定します。",
+    "display_name": "SenseNova サンプリングオプション",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SetClipHooks": {
     "display_name": "CLIPフックを設定",
     "inputs": {
@@ -23452,30 +23845,6 @@
       }
     }
   },
-  "TripoRefineNode": {
-    "description": "v1.4 Tripoモデルでのみ作成されたドラフトモデルをリファインします。",
-    "display_name": "Tripo: ドラフトモデルのリファイン",
-    "inputs": {
-      "model_task_id": {
-        "name": "model_task_id",
-        "tooltip": "v1.4 Tripoモデルである必要があります"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "モデルファイル",
-        "tooltip": null
-      },
-      "1": {
-        "name": "モデルタスクID",
-        "tooltip": null
-      },
-      "2": {
-        "name": "GLB",
-        "tooltip": null
-      }
-    }
-  },
   "TripoRetargetNode": {
     "display_name": "Tripo: リグ付きモデルのリターゲット",
     "inputs": {
@@ -24405,61 +24774,11 @@
       },
       "resolution": {
         "name": "解像度",
-        "tooltip": "出力動画の解像度。4Kはveo-3.1-liteおよびveo-3.0モデルでは利用できません。"
+        "tooltip": "出力動画の解像度。veo-3.1-lite モデルでは 4K は利用できません。"
       },
       "seed": {
         "name": "シード",
         "tooltip": "ビデオ生成のシード値（0でランダム）"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "VeoVideoGenerationNode": {
-    "description": "Google の Veo API を使用してテキストプロンプトからビデオを生成します",
-    "display_name": "Google Veo2 ビデオ生成",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "出力ビデオのアスペクト比"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration_seconds": {
-        "name": "duration_seconds",
-        "tooltip": "出力ビデオの長さ（秒）"
-      },
-      "enhance_prompt": {
-        "name": "enhance_prompt",
-        "tooltip": "AIアシストでプロンプトを強化するかどうか"
-      },
-      "image": {
-        "name": "image",
-        "tooltip": "ビデオ生成の参考となる画像（オプション）"
-      },
-      "model": {
-        "name": "モデル",
-        "tooltip": "ビデオ生成に使用するVeo 2モデル"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "ビデオで避けたい内容を指定するネガティブプロンプト"
-      },
-      "person_generation": {
-        "name": "person_generation",
-        "tooltip": "ビデオ内で人物生成を許可するかどうか"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "ビデオのテキスト説明"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "ビデオ生成用のシード値（0でランダム）"
       }
     },
     "outputs": {
@@ -24485,6 +24804,23 @@
       },
       "video": {
         "name": "ビデオ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VideoCrop": {
+    "display_name": "動画をクロップ",
+    "inputs": {
+      "crop": {
+        "name": "crop",
+        "tooltip": "ピクセル単位のクロップ領域。幅または高さがゼロの場合はフルフレームを維持します。"
+      },
+      "video": {
+        "name": "video"
       }
     },
     "outputs": {
@@ -24594,6 +24930,27 @@
       },
       "model": {
         "name": "モデル"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "動画をトリミング（詳細）",
+    "inputs": {
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "True の場合、指定した長さを実現できないときにエラーが発生します。"
+      },
+      "trim": {
+        "name": "trim",
+        "tooltip": "開始/終了フレームを使用してトリミング範囲を指定します。"
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

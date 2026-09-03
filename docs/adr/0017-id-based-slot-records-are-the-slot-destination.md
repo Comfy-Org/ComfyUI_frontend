@@ -39,6 +39,12 @@ The current class-owned state is a temporary exception recorded in
 `docs/exceptions-log.md`. The exception closes when store records own slot state
 and the class-owned arrays and any descriptor or Proxy layer have been removed.
 
+PR #15779 adds a stable Proxy around `LGraphNode.inputs` as an interim
+compatibility view. It converts plain slots assigned through numeric writes
+into `NodeInputSlot` instances without becoming a new source of truth. Once
+ID-keyed records land, the view must project those records and the Proxy must be
+removed with the class-owned arrays after compatibility coverage is in place.
+
 We will introduce slot records when implementation work can replace the current
 representations. We will not add them only to make the code resemble an
 abstract ECS model.
@@ -83,3 +89,4 @@ behavior in ADR-0008 and test it in
 - `docs/exceptions-log.md`
 - PR #14246, ECS migration
 - PR #15544, descriptor and Proxy boundary proposal
+- PR #15779, interim input-slot compatibility Proxy

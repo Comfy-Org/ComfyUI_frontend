@@ -16,6 +16,8 @@ import { useLinkStore } from '@/stores/linkStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@/types/graphScopeId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
 
 function promotedInputNames(host: {
@@ -66,7 +68,8 @@ import {
   promoteWidget,
   pruneDisconnected,
   reorderSubgraphInputsByName,
-  reorderSubgraphInputsByWidgetOrder
+  reorderSubgraphInputsByWidgetOrder,
+  seedNestedPromotedInputState
 } from './promotionUtils'
 
 function widget(
@@ -1112,5 +1115,61 @@ describe('disambiguated nested promotion identity', () => {
     pruneDisconnected(outerHost)
 
     expect(outerHost.subgraph.inputs).toHaveLength(beforeCount)
+  })
+})
+
+describe('seedNestedPromotedInputState — unassigned host id (#16250 defect class)', () => {
+  it('does not register under the shared construction-time key when the host has no real id', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph, { id: -1 })
+
+    subgraph.addInput('text', 'STRING')
+    const hostInput = host.inputs.find(
+      (input) => input._subgraphSlot?.name === 'text'
+    )!
+    delete hostInput.widgetId
+
+    const sourceId = widgetId(host.rootGraph.id, toNodeId(999), 'origin')
+    useWidgetValueStore().registerWidget(sourceId, {
+      type: 'string',
+      value: 'source value',
+      options: {}
+    })
+
+    seedNestedPromotedInputState(host, 'text', { widgetId: sourceId })
+
+    const sharedKey = widgetId(host.rootGraph.id, UNASSIGNED_NODE_ID, 'text')
+    expect(useWidgetValueStore().getWidget(sharedKey)).toBeUndefined()
+    expect(hostInput.widgetId).toBeUndefined()
+  })
+})
+
+describe('seedNestedPromotedInputState — rejected registration (#16013, #16251)', () => {
+  it('does not leave a dangling widgetId or widget locator when registration is rejected', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+
+    // An empty subgraph input name — as produced by nextUniqueName when the
+    // promoted source widget has an empty name (e.g. a spacer/button
+    // widget) — derives an un-keyable WidgetId (`graphId:nodeId:`) below.
+    subgraph.addInput('', 'STRING')
+    const hostInput = host.inputs.find(
+      (input) => input._subgraphSlot?.name === ''
+    )!
+    expect(hostInput.widgetId).toBeUndefined()
+
+    const sourceId = widgetId(host.rootGraph.id, toNodeId(999), 'origin')
+    useWidgetValueStore().registerWidget(sourceId, {
+      type: 'string',
+      value: 'source value',
+      options: {}
+    })
+
+    seedNestedPromotedInputState(host, '', { widgetId: sourceId })
+
+    const rejectedId = widgetId(host.rootGraph.id, host.id, '')
+    expect(useWidgetValueStore().getWidget(rejectedId)).toBeUndefined()
+    expect(hostInput.widgetId).toBeUndefined()
+    expect(hostInput.widget).toBeUndefined()
   })
 })

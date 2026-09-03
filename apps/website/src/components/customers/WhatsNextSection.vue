@@ -30,7 +30,9 @@ const {
         <img
           :src="image"
           :alt="title"
-          class="w-full rounded-4xl object-cover"
+          loading="lazy"
+          decoding="async"
+          class="aspect-video w-full rounded-4xl object-cover"
         />
       </a>
 

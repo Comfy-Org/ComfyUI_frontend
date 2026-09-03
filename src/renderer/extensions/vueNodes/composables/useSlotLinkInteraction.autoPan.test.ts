@@ -66,6 +66,7 @@ vi.mock('@/scripts/app', () => ({
       ds: mockDs,
       graph: {
         rootGraph: { id: 'autopan-graph' },
+        nodes: [],
         getNodeById: (id: string) => ({
           id,
           inputs: [],
@@ -137,16 +138,18 @@ vi.mock('@/composables/element/useCanvasPositionConversion', () => ({
 
 vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
-    getSlotLayout: (_key: string) => ({
-      nodeId: 'node1',
-      index: 0,
-      type: 'output',
-      position: { x: 100, y: 200 }
-    }),
-    getAllSlotKeys: () => [],
     getRerouteLayout: () => null,
     queryRerouteAtPoint: () => null
   }
+}))
+
+vi.mock('@/renderer/core/canvas/litegraph/slotCalculations', () => ({
+  getGraphSlotLayout: () => ({
+    nodeId: 'node1',
+    index: 0,
+    type: 'output',
+    position: { x: 100, y: 200 }
+  })
 }))
 
 vi.mock('@/renderer/core/layout/slots/slotIdentifier', () => ({
