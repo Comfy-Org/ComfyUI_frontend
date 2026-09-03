@@ -17,17 +17,7 @@ import { runMintPortsSuppressed } from './mintPortWiring'
 
 export type MaterializableGraph = Pick<
   LGraph,
-  | 'id'
-  | 'rootGraph'
-  | '_nodes'
-  | '_nodes_by_id'
-  | 'add'
-  | 'remove'
-  | 'updateExecutionOrder'
-  | 'setDirtyCanvas'
-  | 'list_of_graphcanvas'
-  | 'onNodeRemoved'
-  | 'events'
+  'id' | 'rootGraph' | '_nodes' | '_nodes_by_id' | 'add' | 'remove'
 >
 
 /**
@@ -89,10 +79,8 @@ function reconcile(graph: MaterializableGraph): NodeId[] {
     (orphan) =>
       graph._nodes_by_id[orphan.id] !== orphan || !recordIds.has(orphan.id)
   )
-  for (const orphan of detached) detachOrphan(graph, orphan)
-  if (detached.length > 0) {
-    graph.updateExecutionOrder()
-    graph.setDirtyCanvas(true, true)
+  for (const orphan of detached) {
+    graph.remove(orphan, { preserveCanonicalState: true })
   }
   return materialized
 }
@@ -193,33 +181,6 @@ function materialize(
     })
   }
   return true
-}
-
-/**
- * Drop a node the stores no longer know about from the live graph without
- * going through `LGraph.remove()`: that path unregisters store state, releases
- * widget records and emits a layout delete, all of which now belong to the
- * record (and replacement node) that took over the id.
- */
-function detachOrphan(graph: MaterializableGraph, orphan: LGraphNode): void {
-  try {
-    orphan.onRemoved?.()
-  } catch (cause) {
-    console.error(cause)
-  }
-  const index = graph._nodes.indexOf(orphan)
-  if (index !== -1) graph._nodes.splice(index, 1)
-  if (graph._nodes_by_id[orphan.id] === orphan) {
-    delete graph._nodes_by_id[orphan.id]
-  }
-  for (const canvas of graph.list_of_graphcanvas ?? []) {
-    delete canvas.selected_nodes[orphan.id]
-    canvas.deselect(orphan)
-  }
-  orphan.graph = null
-  orphan._graphScope = undefined
-  graph.onNodeRemoved?.(orphan)
-  graph.events.dispatch('node:removed', { node: orphan })
 }
 
 /** Same placeholder `LGraph.configure()` builds for an unregistered type. */

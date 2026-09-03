@@ -11,7 +11,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { createGraphMutations } from '@/core/graph/graphMutations'
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphNode,
+  LiteGraph,
+  LLink
+} from '@/lib/litegraph/src/litegraph'
+import {
+  createTestSubgraphData,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { reportError } from '@/platform/telemetry/reportError'
 // Mirrors the production bridge in AgentPanelRoot.vue, which takes the same
 // exemption to drive the real layout store.
@@ -19,14 +28,16 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { useExecutionOrderStore } from '@/stores/executionOrderStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { GraphScope } from '@/types/graphScopeId'
 import { graphScopeOf } from '@/types/graphScopeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
 import { reconcileAgentAdapters } from './agentNodeMaterializer'
@@ -400,15 +411,100 @@ describe('reconcileAgentAdapters', () => {
       expect(stale?.graph).toBeNull()
       expect(graph.serialize().nodes).toHaveLength(1)
     })
+
+    it('runs stale-node lifecycle without clearing successor-owned state', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      const mutations = remoteMutations(scope)
+      mutations.batch(REMOTE, (batch) => {
+        batch.addNode({
+          ...nodePayload(1, 'widget-node'),
+          outputs: [{ name: 'value', type: '*', links: [] }],
+          widgets_values: { value: 7 }
+        })
+        batch.addNode({
+          ...nodePayload(2),
+          inputs: [{ name: 'value', type: '*', link: null }]
+        })
+        batch.connect({
+          id: 9,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 2,
+          targetSlot: 0,
+          type: '*'
+        })
+      })
+      reconcileAgentAdapters(graph)
+
+      const stale = graph.getNodeById(toNodeId(1))!
+      const lifecycle: string[] = []
+      graph.events.addEventListener('node:before-removed', (event) => {
+        if (event.detail.node === stale) lifecycle.push('before-removed')
+      })
+      stale.onRemoved = () => lifecycle.push('onRemoved')
+      const incumbent = useNodeDataStore().getNode(
+        scope.rootGraphId,
+        toNodeId(1)
+      )!
+      expect(useNodeDataStore().deleteNode(scope, incumbent, REMOTE)).toBe(true)
+      expect(
+        mutations.addNode(
+          {
+            ...nodePayload(1, 'widget-node'),
+            outputs: [{ name: 'value', type: '*', links: [9] }],
+            widgets_values: { value: 7 }
+          },
+          { ...REMOTE, opId: 'op-replace-1' }
+        )
+      ).toBe(true)
+
+      expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(1)])
+
+      const replacement = graph.getNodeById(toNodeId(1))!
+      expect(lifecycle).toEqual(['before-removed', 'onRemoved'])
+      expect(replacement).not.toBe(stale)
+      expect(graph._nodes).not.toContain(stale)
+      expect(graph.getLink(toLinkId(9))).toMatchObject({
+        origin_id: toNodeId(1),
+        target_id: toNodeId(2)
+      })
+      expect(
+        useWidgetValueStore().getWidget(
+          widgetId(scope.rootGraphId, toNodeId(1), 'value')
+        )?.value
+      ).toBe(7)
+      expect(
+        layoutStore.getNodeLayout(scope.rootGraphId, toNodeId(1))
+      ).toBeDefined()
+      expect(useExecutionOrderStore().get(scope, toNodeId(1))).toBeDefined()
+    })
   })
 
   describe('remote removal of a live node', () => {
-    it('detaches the node after a remote delete', () => {
+    it('runs full removal lifecycle after a remote delete', () => {
       const graph = new LGraph()
       const scope = seedAgentAddedNode(graph, 1)
       reconcileAgentAdapters(graph)
-      const removed = vi.fn()
-      graph.events.addEventListener('node:removed', removed)
+      const node = graph.getNodeById(toNodeId(1))!
+      const lifecycle: string[] = []
+      graph.events.addEventListener('node:before-removed', () => {
+        lifecycle.push('before-removed')
+      })
+      node.onRemoved = () => lifecycle.push('onRemoved')
+      graph.onNodeRemoved = () => lifecycle.push('onNodeRemoved')
+      graph.events.addEventListener('node:removed', () => {
+        lifecycle.push('node:removed')
+      })
+      usePreviewExposureStore().addExposure(
+        scope.rootGraphId,
+        String(node.id),
+        { sourceNodeId: node.id, sourcePreviewName: 'preview' }
+      )
+      useExecutionOrderStore().set(scope, node.id, 7)
+      graph.addFloatingLink(
+        new LLink(toLinkId(77), '*', node.id, 0, UNASSIGNED_NODE_ID, -1)
+      )
 
       remoteMutations(scope).deleteNode(toNodeId(1), [], REMOTE)
 
@@ -416,7 +512,20 @@ describe('reconcileAgentAdapters', () => {
       expect(graph._nodes).toHaveLength(0)
       expect(graph.getNodeById(toNodeId(1))).toBeFalsy()
       expect(graph.serialize().nodes).toHaveLength(0)
-      expect(removed).toHaveBeenCalledOnce()
+      expect(graph.floatingLinks.size).toBe(0)
+      expect(
+        usePreviewExposureStore().getExposures(
+          scope.rootGraphId,
+          String(node.id)
+        )
+      ).toEqual([])
+      expect(useExecutionOrderStore().get(scope, node.id)).toBeUndefined()
+      expect(lifecycle).toEqual([
+        'before-removed',
+        'onRemoved',
+        'onNodeRemoved',
+        'node:removed'
+      ])
     })
 
     it('detaches every node after a remote clear', () => {
@@ -444,6 +553,28 @@ describe('reconcileAgentAdapters', () => {
 
       expect(reconcileAgentAdapters(graph)).toEqual([])
       expect(graph._nodes.map((node) => node.id)).toEqual([toNodeId(2)])
+    })
+
+    it('releases an orphaned subgraph definition and its inner lifecycle', () => {
+      const graph = new LGraph()
+      const subgraph = graph.createSubgraph(createTestSubgraphData())
+      const inner = new LGraphNode('inner')
+      subgraph.add(inner)
+      const host = createTestSubgraphNode(subgraph, { id: 1 })
+      graph.add(host)
+      const beforeRemoved = vi.fn()
+      const onRemoved = vi.fn()
+      subgraph.events.addEventListener('node:before-removed', beforeRemoved)
+      inner.onRemoved = onRemoved
+      expect(graph.subgraphs.has(subgraph.id)).toBe(true)
+
+      remoteMutations(graphScopeOf(graph)).deleteNode(host.id, [], REMOTE)
+      reconcileAgentAdapters(graph)
+
+      expect(graph.subgraphs.has(subgraph.id)).toBe(false)
+      expect(beforeRemoved).toHaveBeenCalledOnce()
+      expect(onRemoved).toHaveBeenCalledOnce()
+      expect(inner._graphScope).toBeUndefined()
     })
   })
 
