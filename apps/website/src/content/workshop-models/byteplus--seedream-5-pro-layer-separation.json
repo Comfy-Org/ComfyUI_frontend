@@ -1,0 +1,71 @@
+{
+  "id": "byteplus/seedream-5-pro-layer-separation",
+  "slug": "byteplus--seedream-5-pro-layer-separation",
+  "displayName": "Seedream 5.0 Pro Layer Separation",
+  "provider": "byteplus",
+  "modality": "image",
+  "description": "Decomposes one image into a base plate and up to 16 ordered transparent layers with geometry metadata.",
+  "tags": ["byteplus", "seedream", "layer-separation", "image-edit"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["byteplus/seedream-5-pro-layer-separation"]
+      },
+      "prompt": {
+        "type": "string",
+        "description": "Optional layer-separation guidance.",
+        "default": ""
+      },
+      "seed": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 2147483647,
+        "default": 0
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": ["image"]
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": ["role", "value"],
+          "additionalProperties": false
+        }
+      },
+      "prompt_optimization": {
+        "type": "string",
+        "enum": ["standard", "fast"],
+        "default": "standard"
+      },
+      "size": {
+        "type": "string",
+        "enum": ["auto", "1K", "1.5K", "2K"],
+        "default": "auto"
+      },
+      "watermark": {
+        "type": "boolean",
+        "default": false
+      }
+    },
+    "required": ["model"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "image",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    }
+  ]
+}

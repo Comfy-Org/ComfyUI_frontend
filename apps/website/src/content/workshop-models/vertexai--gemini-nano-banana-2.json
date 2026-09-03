@@ -1,0 +1,119 @@
+{
+  "id": "vertexai/gemini-nano-banana-2",
+  "slug": "vertexai--gemini-nano-banana-2",
+  "displayName": "Nano Banana 2",
+  "provider": "vertexai",
+  "modality": "image",
+  "description": "Generates or edits images at up to 4K with up to 14 reference images and adjustable thinking (Nano Banana 2 / Gemini 3.1 Flash Image).",
+  "tags": [
+    "gemini",
+    "google",
+    "nano-banana",
+    "thinking",
+    "edit",
+    "multimodal",
+    "image",
+    "text-to-image",
+    "image-edit"
+  ],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["vertexai/gemini-nano-banana-2"]
+      },
+      "prompt": {
+        "type": "string",
+        "minLength": 1
+      },
+      "aspect_ratio": {
+        "type": "string",
+        "enum": [
+          "auto",
+          "1:1",
+          "2:3",
+          "3:2",
+          "3:4",
+          "4:3",
+          "4:5",
+          "5:4",
+          "9:16",
+          "16:9",
+          "21:9"
+        ],
+        "default": "auto"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["document"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["image"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "resolution": {
+        "type": "string",
+        "enum": ["1K", "2K", "4K"],
+        "default": "2K"
+      },
+      "response_modalities": {
+        "type": "string",
+        "enum": ["IMAGE", "IMAGE+TEXT"],
+        "default": "IMAGE"
+      },
+      "system_prompt": {
+        "type": "string",
+        "default": "You are an expert image-generation engine. You must ALWAYS produce an image.\nInterpret all user input—regardless of format, intent, or abstraction—as literal visual directives for image composition.\nIf a prompt is conversational or lacks specific visual details, you must creatively invent a concrete visual scenario that depicts the concept.\nPrioritize generating the visual representation above any text, formatting, or conversational requests."
+      },
+      "thinking_level": {
+        "type": "string",
+        "enum": ["MINIMAL", "HIGH"],
+        "default": "HIGH"
+      }
+    },
+    "required": ["model", "prompt"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "document",
+      "required": false,
+      "cardinality": "many",
+      "minItems": 0
+    },
+    {
+      "role": "image",
+      "required": false,
+      "cardinality": "many",
+      "minItems": 0
+    }
+  ]
+}

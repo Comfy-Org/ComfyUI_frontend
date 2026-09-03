@@ -1,0 +1,81 @@
+{
+  "id": "wan/happyhorse-image-to-video",
+  "slug": "wan--happyhorse-image-to-video",
+  "displayName": "HappyHorse Image-to-Video",
+  "provider": "wan",
+  "modality": "video",
+  "description": "Animates a still image into a video clip from a start frame (HappyHorse).",
+  "tags": ["wan", "happyhorse", "video", "image-to-video"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["wan/happyhorse-image-to-video"]
+      },
+      "prompt": {
+        "type": "string",
+        "description": "Prompt describing the elements and visual features.",
+        "default": ""
+      },
+      "duration": {
+        "type": "integer",
+        "minimum": 3,
+        "maximum": 15,
+        "description": "Video duration in seconds (integer 3-15).",
+        "default": 5
+      },
+      "seed": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 2147483647,
+        "description": "Seed.",
+        "default": 0
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": ["start_image"]
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": ["role", "value"],
+          "additionalProperties": false
+        }
+      },
+      "resolution": {
+        "type": "string",
+        "enum": ["720P", "1080P"],
+        "description": "Output video resolution tier (720P or 1080P)."
+      },
+      "watermark": {
+        "type": "boolean",
+        "description": "Watermark toggle.",
+        "default": false
+      }
+    },
+    "required": ["model", "resolution"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "start_image",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    }
+  ]
+}
