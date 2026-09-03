@@ -1,26 +1,16 @@
 <script setup lang="ts">
-import { MoreHorizontal, Search } from '@lucide/vue'
-import {
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuPortal,
-  DropdownMenuRoot,
-  DropdownMenuTrigger
-} from 'reka-ui'
+import { Search } from '@lucide/vue'
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { useHubStore } from '../../composables/useHubStore'
-import type { UseCase } from '../../config/workshop'
-import { USE_CASES, useCaseFor, workshopModels } from '../../config/workshop'
+import type { ModalityFilter } from '../../config/workshop'
+import { MODALITIES, modalityOf, workshopModels } from '../../config/workshop'
 import { groupByFamily } from '../../config/model-family'
 import hubTemplates from '../../data/hubTemplates.json'
 import { hubWorkflowPath } from '../../lib/hub/workflow-detail'
-import {
-  partnerModelFor,
-  useCaseForTemplate
-} from '../../lib/hub/template-use-case'
+import { partnerModelFor } from '../../lib/hub/template-use-case'
 import { tagDisplayName } from '../../lib/hub/tag-aliases'
 import type { HubTemplate } from '../../lib/hub/types'
 import type { Locale, TranslationKey } from '../../i18n/translations'
@@ -42,62 +32,40 @@ onUnmounted(() => store.reset())
 
 const TABS = ['all', 'nodeGraphs', 'comfyApps', 'models'] as const
 
-const useCase = ref<UseCase | 'all'>('all')
+// The hub browses by what a thing makes, the same axis as the models list.
+const medium = ref<ModalityFilter>('all')
 
-const useCaseLabelKey: Record<UseCase | 'all', TranslationKey> = {
+const mediumLabelKey: Record<ModalityFilter, TranslationKey> = {
   all: 'workshop.useCase.all',
-  'generate-images': 'workshop.useCase.generateImages',
-  'edit-images': 'workshop.useCase.editImages',
-  'generate-videos': 'workshop.useCase.generateVideos',
-  'animate-images': 'workshop.useCase.animateImages',
-  'edit-videos': 'workshop.useCase.editVideos',
-  '3d': 'workshop.useCase.3d',
-  audio: 'workshop.useCase.audio',
-  text: 'workshop.useCase.text'
+  image: 'workshop.filter.image',
+  video: 'workshop.filter.video',
+  audio: 'workshop.filter.audio',
+  '3d': 'workshop.filter.3d',
+  text: 'workshop.filter.text',
+  other: 'workshop.filter.other'
 }
 
-// One pass over the catalogue: every later count and filter reads this.
-const templateUseCase = new Map(
-  templates.map((tmpl) => [tmpl, useCaseForTemplate(tmpl, workshopModels)])
-)
-
-const inUseCase = (value: UseCase | 'all') => ({
+const inMedium = (value: ModalityFilter) => ({
   models: workshopModels.filter(
-    (model) => value === 'all' || useCaseFor(model) === value
+    (model) => value === 'all' || modalityOf(model) === value
   ),
   templates: templates.filter(
-    (tmpl) => value === 'all' || templateUseCase.get(tmpl) === value
+    (tmpl) => value === 'all' || tmpl.mediaType === value
   )
 })
 
-const entryFor = (value: UseCase | 'all') => {
-  const { models, templates: scoped } = inUseCase(value)
+const entryFor = (value: ModalityFilter) => {
+  const { models, templates: scoped } = inMedium(value)
   return {
     value,
-    total: groupByFamily(models).length + scoped.length,
-    usage: scoped.reduce((sum, tmpl) => sum + tmpl.usage, 0)
+    total: groupByFamily(models).length + scoped.length
   }
 }
 
-// Four of the eight use cases carry 94% of all the runs behind the catalogue,
-// so those lead and the long tail sits behind the overflow menu.
-const FEATURED = 4
-
 const allEntry = entryFor('all')
-const ranked = USE_CASES.map(entryFor)
-  .filter((entry) => entry.total > 0)
-  .sort((a, b) => b.usage - a.usage)
+const media = MODALITIES.map(entryFor).filter((entry) => entry.total > 0)
 
-const featured = computed(() => {
-  const top = ranked.slice(0, FEATURED)
-  const current = ranked.find((entry) => entry.value === useCase.value)
-  return current && !top.includes(current) ? [...top, current] : top
-})
-const rest = computed(() =>
-  ranked.filter((entry) => !featured.value.includes(entry))
-)
-
-const scoped = computed(() => inUseCase(useCase.value))
+const scoped = computed(() => inMedium(medium.value))
 
 // The row is for narrowing what the use case already picked, so search stays
 // out of the way until it is asked for.
@@ -116,8 +84,8 @@ onMounted(() => {
   const params = new URLSearchParams(location.search)
   const tab = TABS.find((value) => value === params.get('tab'))
   if (tab) store.setTab(tab)
-  const wanted = USE_CASES.find((value) => value === params.get('useCase'))
-  if (wanted) useCase.value = wanted
+  const wanted = MODALITIES.find((value) => value === params.get('medium'))
+  if (wanted) medium.value = wanted
   for (const type of ['tag', 'model'] as const) {
     const value = params.get(type)
     if (value) store.toggleBadge({ type, value })
@@ -213,62 +181,31 @@ const filteredTemplates = computed(() => {
       data-testid="hub-heading"
     >
       <nav
-        class="mt-8 flex scrollbar-thin gap-6 overflow-x-auto border-b border-white/10"
-        :aria-label="t('workshop.useCase.label', locale)"
+        class="mt-12 flex scrollbar-thin gap-6 overflow-x-auto border-b border-white/10"
+        :aria-label="t('workshop.media.label', locale)"
         data-testid="hub-use-cases"
       >
         <button
-          v-for="entry in [allEntry, ...featured]"
+          v-for="entry in [allEntry, ...media]"
           :key="entry.value"
           type="button"
-          :aria-pressed="useCase === entry.value"
+          :aria-pressed="medium === entry.value"
           :data-testid="`hub-use-case-${entry.value}`"
           :class="
             cn(
               'flex shrink-0 cursor-pointer items-baseline gap-1.5 border-b-2 pb-3 text-sm font-medium whitespace-nowrap transition-colors',
-              useCase === entry.value
+              medium === entry.value
                 ? 'border-primary-comfy-yellow text-primary-warm-white'
                 : 'text-content-secondary hover:text-content border-transparent'
             )
           "
-          @click="useCase = entry.value"
+          @click="medium = entry.value"
         >
-          {{ t(useCaseLabelKey[entry.value], locale) }}
+          {{ t(mediumLabelKey[entry.value], locale) }}
           <span class="text-content-muted text-xs tabular-nums">
             {{ entry.total }}
           </span>
         </button>
-
-        <DropdownMenuRoot v-if="rest.length">
-          <DropdownMenuTrigger
-            :aria-label="t('workshop.useCase.more', locale)"
-            :title="t('workshop.useCase.more', locale)"
-            class="text-content-secondary hover:text-content focus-visible:ring-brand mb-3 grid size-7 shrink-0 cursor-pointer place-items-center rounded-lg transition-colors outline-none hover:bg-white/8 focus-visible:ring-2"
-            data-testid="hub-use-case-more"
-          >
-            <MoreHorizontal class="size-4" aria-hidden="true" />
-          </DropdownMenuTrigger>
-          <DropdownMenuPortal>
-            <DropdownMenuContent
-              align="start"
-              :side-offset="4"
-              class="bg-site-dropdown z-50 min-w-48 rounded-2xl border border-white/10 p-2 shadow-2xl shadow-black/50"
-            >
-              <DropdownMenuItem
-                v-for="entry in rest"
-                :key="entry.value"
-                :data-testid="`hub-use-case-${entry.value}`"
-                class="text-content-secondary hover:text-content flex cursor-pointer items-baseline justify-between gap-4 rounded-lg px-3 py-2 text-sm outline-none select-none data-highlighted:bg-white/8"
-                @select="useCase = entry.value"
-              >
-                {{ t(useCaseLabelKey[entry.value], locale) }}
-                <span class="text-content-muted text-xs tabular-nums">
-                  {{ entry.total }}
-                </span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenuPortal>
-        </DropdownMenuRoot>
       </nav>
     </WorkshopHero>
 
@@ -286,13 +223,20 @@ const filteredTemplates = computed(() => {
           type="button"
           :aria-label="t('workshop.hub.search', locale)"
           :title="t('workshop.hub.search', locale)"
-          class="text-content-secondary hover:text-content focus-visible:ring-brand grid size-10 cursor-pointer place-items-center rounded-xl bg-white/8 transition-colors outline-none hover:bg-white/12 focus-visible:ring-2"
+          class="text-content-secondary hover:text-content focus-visible:ring-brand grid size-10 cursor-pointer place-items-center rounded-xl bg-white/8 transition-colors outline-none hover:bg-white/12 focus-visible:ring-2 xl:hidden"
           data-testid="hub-search-open"
           @click="openSearch"
         >
           <Search class="size-4" aria-hidden="true" />
         </button>
-        <label v-else class="relative block w-96 max-w-full">
+        <label
+          :class="
+            cn(
+              'relative block w-96 max-w-full',
+              !searching && 'hidden xl:block'
+            )
+          "
+        >
           <span class="sr-only">{{ t('workshop.hub.search', locale) }}</span>
           <Search
             class="text-content-muted pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2"
