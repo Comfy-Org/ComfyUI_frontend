@@ -12,32 +12,23 @@ Do not write `graph_ops` by hand or relabel a synthesized response. The fixture
 schema rejects `response_side: recorded` without a cloud thread ID, a per-turn
 message ID and an export timestamp.
 
-## Playbook: record a case
-
-Prerequisites: the cloud checkout beside this repo with its own local stack up
-(`cloud up` there: Postgres on 54331, Redis on 6379), a ComfyUI backend on
-8188, `ANTHROPIC_API_KEY`, `COMFY_BIN` pointing at a comfy-cli that works
-without a home directory, and the launcher from the integration environment
-PR checked out alongside this one.
-
-1. Bring the recording stack up (Temporal engine so a turn can be cancelled):
+## Playbook
 
 ```bash
-AGENT_MODEL=claude-opus-5 COMFY_BIN=~/.local/bin/comfy pnpm exec tsx scripts/dev-agent-integration.ts --record --engine temporal --catalog browser_tests/fixtures/data/agent/conversations/agent-rec-set-widget-existing.json --cloud-repo ../cloud --agent-port 8087 --doc-host-port 8096 --temporal-port 7234
+cd ../cloud && cloud up
 ```
-
-2. Paste the recorder command it prints, filling `AGENT_MODEL`, the case id,
-   the seed fixture and one `--prompt` per turn (`--cancel-turn` and
-   `--cancel-after-ms` for a cancelled turn).
-
-3. Replay the new case:
 
 ```bash
-PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://localhost:6310 DISTRIBUTION=cloud pnpm exec playwright test browser_tests/tests/agent/agentConversationReplay.spec.ts --project=cloud -g agent-rec-<slug>
+AGENT_MODEL=claude-opus-5 COMFY_BIN=~/.local/bin/comfy pnpm tsx scripts/dev-agent-integration.ts --record --engine temporal --catalog browser_tests/fixtures/data/agent/conversations/agent-rec-set-widget-existing.json
 ```
 
-Sidecars (raw frames, rows, capture, receipt) land in `conversations/recordings/`;
-commit only the fixture.
+Paste the recorder command it prints (one `--prompt` per turn), then:
+
+```bash
+PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://localhost:5173 DISTRIBUTION=cloud pnpm exec playwright test agentConversation --project=cloud -g <case id>
+```
+
+The launcher lives in the integration environment PR; `ANTHROPIC_API_KEY` and ComfyUI on 8188 are assumed.
 
 ## Recording a conversation
 
@@ -72,9 +63,7 @@ with the cloud repo's own local stack running (`cloud up` in the cloud
 checkout), run
 
 ```bash
-pnpm exec tsx scripts/dev-agent-integration.ts --record \
-  --catalog browser_tests/fixtures/data/agent/conversations/<any fixture>.json \
-  --cloud-repo ../cloud --agent-port 8087 --doc-host-port 8096
+pnpm exec tsx scripts/dev-agent-integration.ts --record --catalog browser_tests/fixtures/data/agent/conversations/<any fixture>.json
 ```
 
 It asserts Postgres on 54331 and Redis on 6379, starts the doc host the cloud
