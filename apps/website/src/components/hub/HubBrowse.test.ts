@@ -58,15 +58,19 @@ describe('HubBrowse', () => {
   it('browses by use case and keeps models and workflows under one count', async () => {
     const user = userEvent.setup()
     render(HubBrowse)
-    expect(screen.getByTestId('hub-use-case-all').textContent).toContain('658')
+    expect(screen.getByTestId('hub-use-case-all').textContent).toContain('646')
 
     await user.click(screen.getByTestId('hub-use-case-3d'))
     const lead = screen.getByTestId('hub-models-lead')
     expect(lead.textContent).toContain('Tripo')
     expect(screen.getByTestId('hub-showing').textContent).toContain('of 39')
 
+    // Meshy AI and Meshy 7 are one family, so they share a card.
     await user.click(screen.getByTestId('hub-tab-models'))
-    expect(screen.getAllByTestId('workshop-model-card')).toHaveLength(5)
+    expect(screen.getAllByTestId('workshop-model-card')).toHaveLength(4)
+    expect(screen.getByTestId('model-card-versions').textContent).toContain(
+      '2 versions'
+    )
   })
 
   it('counts the applied filters in the popover and clears them', async () => {

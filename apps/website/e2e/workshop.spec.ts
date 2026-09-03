@@ -26,7 +26,7 @@ test.describe('Workshop V2', () => {
     await expect(hub.getByTestId('hub-heading')).toContainText(
       'Browse the Workshop'
     )
-    await expect(hub.getByTestId('hub-use-case-all')).toContainText('658')
+    await expect(hub.getByTestId('hub-use-case-all')).toContainText('646')
     await expect(hub.getByTestId('hub-card').first()).toBeVisible()
     await hub.getByTestId('hub-tab-comfyApps').click()
     await expect(hub.getByTestId('hub-card').first()).toHaveAttribute(
@@ -120,6 +120,7 @@ test.describe('Workshop catalog', () => {
     await page.getByTestId('workshop-model-card').first().click()
     await expect(page).toHaveURL(/\/workshop\/models\/kling-ai\/?$/)
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Kling AI')
+    await expect(page.getByTestId('model-versions')).toContainText('Kling 2.6')
     await expect(
       page.getByTestId('related-models').getByTestId('workshop-model-card')
     ).toHaveCount(4)

@@ -94,6 +94,9 @@ const pillClass =
       </component>
       <HoverCardRoot v-if="hiddenTags.length" :open-delay="120">
         <HoverCardTrigger
+          as="button"
+          type="button"
+          :aria-label="hiddenTags.map((tag) => tag.label).join(', ')"
           :class="cn(pillClass, 'cursor-default tabular-nums')"
           data-testid="tag-overflow"
           @click.prevent.stop

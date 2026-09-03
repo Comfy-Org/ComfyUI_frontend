@@ -7,6 +7,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { useHubStore } from '../../composables/useHubStore'
 import type { UseCase } from '../../config/workshop'
 import { USE_CASES, useCaseFor, workshopModels } from '../../config/workshop'
+import { groupByFamily } from '../../config/model-family'
 import hubTemplates from '../../data/hubTemplates.json'
 import { hubWorkflowPath } from '../../lib/hub/workflow-detail'
 import {
@@ -66,7 +67,7 @@ const useCases = computed(() =>
   (['all', ...USE_CASES] as const)
     .map((value) => {
       const { models, templates: scoped } = inUseCase(value)
-      return { value, total: models.length + scoped.length }
+      return { value, total: groupByFamily(models).length + scoped.length }
     })
     .filter((entry) => entry.total > 0)
 )
@@ -150,6 +151,9 @@ const filteredModels = computed(() => {
     ? [...matches].sort((a, b) => b.runs - a.runs)
     : [...matches].sort((a, b) => a.name.localeCompare(b.name))
 })
+
+// One card per family: the newest release leads, the rest sit behind it.
+const modelFamilies = computed(() => groupByFamily(filteredModels.value))
 
 const filteredTemplates = computed(() => {
   const badges = store.filterBadges.value
@@ -252,7 +256,7 @@ const filteredTemplates = computed(() => {
 
       <template #lead>
         <section
-          v-if="store.activeTab.value === 'all' && filteredModels.length"
+          v-if="store.activeTab.value === 'all' && modelFamilies.length"
           class="mb-10"
           data-testid="hub-models-lead"
         >
@@ -262,8 +266,12 @@ const filteredTemplates = computed(() => {
             {{ t('workshop.hub.kind.models', locale) }}
           </h2>
           <ul class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            <li v-for="model in filteredModels.slice(0, 6)" :key="model.slug">
-              <WorkshopModelCard :model :locale />
+            <li v-for="family in modelFamilies.slice(0, 6)" :key="family.key">
+              <WorkshopModelCard
+                :model="family.latest"
+                :version-count="family.versions.length"
+                :locale
+              />
             </li>
           </ul>
           <h2
@@ -279,8 +287,12 @@ const filteredTemplates = computed(() => {
           class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
           data-testid="hub-models"
         >
-          <li v-for="model in filteredModels" :key="model.slug">
-            <WorkshopModelCard :model :locale />
+          <li v-for="family in modelFamilies" :key="family.key">
+            <WorkshopModelCard
+              :model="family.latest"
+              :version-count="family.versions.length"
+              :locale
+            />
           </li>
         </ul>
       </template>

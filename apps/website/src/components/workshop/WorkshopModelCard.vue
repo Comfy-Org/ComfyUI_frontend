@@ -18,11 +18,13 @@ import TagRow from '../hub/TagRow.vue'
 const {
   model,
   locale = 'en',
-  showStatus = false
+  showStatus = false,
+  versionCount = 1
 } = defineProps<{
   model: WorkshopModel
   locale?: Locale
   showStatus?: boolean
+  versionCount?: number
 }>()
 
 const modality = computed(() => modalityOf(model))
@@ -185,6 +187,18 @@ const pillClass =
       <div class="flex h-6 min-w-0 items-center gap-1.5 overflow-hidden">
         <span :class="pillClass" data-testid="model-card-task">
           {{ taskLabel }}
+        </span>
+        <span
+          v-if="versionCount > 1"
+          :class="pillClass"
+          data-testid="model-card-versions"
+        >
+          {{
+            t('workshop.model.versions', locale).replace(
+              '{n}',
+              `${versionCount}`
+            )
+          }}
         </span>
         <TagRow
           :tags="model.capabilities"
