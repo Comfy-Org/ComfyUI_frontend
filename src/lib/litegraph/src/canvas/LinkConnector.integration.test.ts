@@ -159,7 +159,7 @@ const test = baseTest.extend<TestContext>({
 
       for (const link of graph.links.values()) {
         expect(
-          graph.getNodeById(link!.origin_id)?.outputs[link!.origin_slot].links
+          graph.getNodeById(link.origin_id)?.outputs[link.origin_slot].links
         ).toContain(link.id)
         expect(
           linkStore.getInputSlotLink(graphId, link.target_id, link.target_slot)

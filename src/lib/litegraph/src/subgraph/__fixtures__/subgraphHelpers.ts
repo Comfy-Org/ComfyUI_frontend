@@ -5,7 +5,7 @@
  * These functions provide consistent ways to create test subgraphs, nodes, and
  * verify their behavior.
  */
-import { expect, onTestFinished } from 'vitest'
+import { expect } from 'vitest'
 
 import type {
   ExportedSubgraph,
@@ -332,8 +332,6 @@ export function createTestSubgraphNode(
 }
 
 export function registerTestSubgraphNodeTypes(rootGraph: LGraph): void {
-  const registeredTypes: string[] = []
-
   rootGraph.events.addEventListener('subgraph-created', (event) => {
     const subgraph = event.detail.subgraph
     class TestSubgraphNode extends SubgraphNode {
@@ -352,14 +350,6 @@ export function registerTestSubgraphNodeTypes(rootGraph: LGraph): void {
       }
     }
     LiteGraph.registerNodeType(subgraph.id, TestSubgraphNode)
-    registeredTypes.push(subgraph.id)
-  })
-
-  onTestFinished(() => {
-    for (const type of registeredTypes) {
-      if (!LiteGraph.registered_node_types[type]) continue
-      LiteGraph.unregisterNodeType(type)
-    }
   })
 }
 
@@ -415,12 +405,8 @@ export function setupComplexPromotionFixture(): {
     throw new Error('Expected fixture to contain subgraph instance node id 21')
 
   const graph = createTestRootGraph()
-  const subgraph = graph.createSubgraph(subgraphData as ExportedSubgraph)
-  const hostNode = new SubgraphNode(
-    graph,
-    subgraph,
-    hostNodeData as ExportedSubgraphInstance
-  )
+  const subgraph = graph.createSubgraph(subgraphData)
+  const hostNode = new SubgraphNode(graph, subgraph, hostNodeData)
   graph.add(hostNode)
 
   return {

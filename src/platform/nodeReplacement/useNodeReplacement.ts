@@ -244,8 +244,6 @@ function replaceWithMapping(
 ): boolean {
   const order = node.order
   newNode.id = node.id
-  newNode.pos = [...node.pos]
-  newNode.size = [...node.size]
   newNode.order = order
   newNode.mode = node.mode
   if (node.flags) newNode.flags = { ...node.flags }
@@ -425,8 +423,18 @@ export function useNodeReplacement() {
 
   function replaceNodesInPlace(selectedTypes: MissingNodeType[]): string[] {
     const replacedTypes: string[] = []
+    const failedTypes = new Set<string>()
     let replacementFailed = false
+    let anyNodeReplaced = false
     const graph = app.rootGraph
+    const recordReplacementFailure = (type: string) => {
+      replacementFailed = true
+      failedTypes.add(type)
+      const replacedTypeIndex = replacedTypes.indexOf(type)
+      if (replacedTypeIndex !== -1) {
+        replacedTypes.splice(replacedTypeIndex, 1)
+      }
+    }
 
     const changeTracker =
       useWorkflowStore().activeWorkflow?.changeTracker ?? null
@@ -463,13 +471,22 @@ export function useNodeReplacement() {
 
         const replacement = match.replacement
         const nodeGraph = node.graph
-        if (!nodeGraph) continue
+        if (!nodeGraph) {
+          recordReplacementFailure(match.type)
+          continue
+        }
 
         const idx = nodeGraph._nodes.indexOf(node)
-        if (idx === -1) continue
+        if (idx === -1) {
+          recordReplacementFailure(match.type)
+          continue
+        }
 
         const newNode = LiteGraph.createNode(replacement.new_node_id)
-        if (!newNode) continue
+        if (!newNode) {
+          recordReplacementFailure(match.type)
+          continue
+        }
 
         const hasMapping =
           replacement.input_mapping != null ||
@@ -492,19 +509,25 @@ export function useNodeReplacement() {
           idx
         )
         if (!replaced) {
-          replacementFailed = true
+          recordReplacementFailure(match.type)
           continue
         }
+        anyNodeReplaced = true
 
-        if (!replacedTypes.includes(match.type)) {
+        if (
+          !failedTypes.has(match.type) &&
+          !replacedTypes.includes(match.type)
+        ) {
           replacedTypes.push(match.type)
         }
       }
 
-      if (replacedTypes.length > 0) {
+      if (anyNodeReplaced) {
         graph.updateExecutionOrder()
         graph.setDirtyCanvas(true, true)
+      }
 
+      if (replacedTypes.length > 0) {
         toastStore.add({
           severity: 'success',
           summary: t('g.success'),
@@ -523,7 +546,7 @@ export function useNodeReplacement() {
       }
     } catch (error) {
       console.error('Failed to replace nodes:', error)
-      if (replacedTypes.length > 0) {
+      if (anyNodeReplaced) {
         graph.updateExecutionOrder()
         graph.setDirtyCanvas(true, true)
       }

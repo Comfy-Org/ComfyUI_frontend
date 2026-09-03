@@ -30,7 +30,7 @@ test.describe('Topbar menu commands', { tag: '@ui' }, () => {
     await test.step('Edit > Undo undoes the last action', async () => {
       await comfyPage.page.evaluate(() => {
         const node = window.LiteGraph!.createNode('Note')
-        window.app!.graph!.add(node)
+        window.app!.graph.add(node)
       })
       await comfyPage.nextFrame()
 

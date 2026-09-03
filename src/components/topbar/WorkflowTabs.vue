@@ -24,6 +24,7 @@
       pt:bar-x="h-1"
     >
       <SelectButton
+        :ref="setSelectButton"
         class="workflow-tabs bg-transparent"
         :class="props.class"
         :model-value="selectedWorkflow"
@@ -124,19 +125,11 @@
 </template>
 
 <script setup lang="ts">
-import { useScroll } from '@vueuse/core'
+import { useScroll, whenever } from '@vueuse/core'
 import ScrollPanel from 'primevue/scrollpanel'
 import SelectButton from 'primevue/selectbutton'
-import {
-  computed,
-  nextTick,
-  onBeforeUnmount,
-  onMounted,
-  onUpdated,
-  ref,
-  watch
-} from 'vue'
-import type { WatchStopHandle } from 'vue'
+import { computed, nextTick, onUpdated, ref, watch } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
@@ -164,6 +157,7 @@ import WorkflowOverflowMenu from './WorkflowOverflowMenu.vue'
 interface WorkflowOption {
   value: string
   workflow: ComfyWorkflow
+  revision: number
 }
 
 const props = defineProps<{
@@ -198,13 +192,15 @@ function openFeedback() {
 }
 
 const containerRef = ref<HTMLElement | null>(null)
-const showOverflowArrows = ref(false)
-const leftArrowEnabled = ref(false)
-const rightArrowEnabled = ref(false)
+const selectionRevision = ref(0)
 
-const workflowToOption = (workflow: ComfyWorkflow): WorkflowOption => ({
+const workflowToOption = (
+  workflow: ComfyWorkflow,
+  revision = 0
+): WorkflowOption => ({
   value: workflow.path,
-  workflow
+  workflow,
+  revision
 })
 
 const options = computed<WorkflowOption[]>(() =>
@@ -212,7 +208,10 @@ const options = computed<WorkflowOption[]>(() =>
 )
 const selectedWorkflow = computed<WorkflowOption | null>(() =>
   workflowStore.activeWorkflow
-    ? workflowToOption(workflowStore.activeWorkflow as ComfyWorkflow)
+    ? workflowToOption(
+        workflowStore.activeWorkflow as ComfyWorkflow,
+        selectionRevision.value
+      )
     : null
 )
 
@@ -227,7 +226,19 @@ const onWorkflowClick = async (event: MouseEvent) => {
       ?.querySelector<HTMLElement>('[data-workflow-path]')
   const path = workflowElement?.dataset.workflowPath
   const option = options.value.find(({ value }) => value === path)
-  if (option) await workflowService.openWorkflow(option.workflow)
+  if (!option) return
+
+  try {
+    const opened = await workflowService.openWorkflow(option.workflow)
+    if (opened === false) {
+      selectionRevision.value++
+      await nextTick()
+    }
+  } catch (error) {
+    selectionRevision.value++
+    await nextTick()
+    throw error
+  }
 }
 
 const closeWorkflows = async (options: WorkflowOption[]) => {
@@ -257,6 +268,11 @@ const handleWheel = (event: WheelEvent) => {
 }
 
 const scrollContent = ref<HTMLElement | null>(null)
+function setSelectButton(element: Element | ComponentPublicInstance | null) {
+  const selectButton = element instanceof Element ? element : element?.$el
+  scrollContent.value =
+    selectButton instanceof HTMLElement ? selectButton.parentElement : null
+}
 
 const scroll = (direction: number) => {
   const el = scrollContent.value
@@ -304,55 +320,25 @@ watch(
   }
 )
 
-let overflowObserver: ReturnType<typeof useOverflowObserver> | null = null
-let stopArrivedWatch: WatchStopHandle | null = null
-let stopOverflowWatch: WatchStopHandle | null = null
+const scrollState = useScroll(scrollContent)
+const leftArrowEnabled = computed(() => !scrollState.arrivedState.left)
+const rightArrowEnabled = computed(() => !scrollState.arrivedState.right)
+const {
+  isOverflowing: showOverflowArrows,
+  checkOverflow: checkScrollOverflow
+} = useOverflowObserver(scrollContent)
 
-onMounted(() => {
-  const el = containerRef.value?.querySelector<HTMLElement>(
-    '.p-scrollpanel-content'
-  )
-  if (!el) return
-  scrollContent.value = el
-
-  const scrollState = useScroll(el)
-
-  stopArrivedWatch = watch(
-    [() => scrollState.arrivedState.left, () => scrollState.arrivedState.right],
-    ([atLeft, atRight]) => {
-      leftArrowEnabled.value = !atLeft
-      rightArrowEnabled.value = !atRight
-    },
-    { immediate: true }
-  )
-
-  overflowObserver = useOverflowObserver(el)
-  stopOverflowWatch = watch(
-    overflowObserver.isOverflowing,
-    (isOverflow) => {
-      showOverflowArrows.value = isOverflow
-      if (!isOverflow) return
-      void nextTick(() => {
-        // Force a new check after arrows are updated
-        scrollState.measure()
-        void ensureActiveTabVisible({ waitForDom: false })
-      })
-    },
-    { immediate: true }
-  )
-})
-
-onBeforeUnmount(() => {
-  stopArrivedWatch?.()
-  stopOverflowWatch?.()
-  overflowObserver?.dispose()
-})
-
-onUpdated(() => {
-  if (!overflowObserver?.disposed.value) {
-    overflowObserver?.checkOverflow()
+whenever(
+  () => showOverflowArrows.value && scrollContent.value,
+  () => {
+    void nextTick(() => {
+      scrollState.measure()
+      void ensureActiveTabVisible({ waitForDom: false })
+    })
   }
-})
+)
+
+onUpdated(checkScrollOverflow)
 </script>
 
 <style scoped>
