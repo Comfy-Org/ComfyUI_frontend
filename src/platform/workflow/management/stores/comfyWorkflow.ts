@@ -13,6 +13,7 @@ import type { SerializedNodeId } from '@/types/nodeId'
 import type { DocumentId } from '@/types/documentId'
 import type { AppMode } from '@/utils/appMode'
 import type { WidgetId } from '@/types/widgetId'
+import { generateUUID } from '@/utils/formatUtil'
 
 export interface InputWidgetConfig {
   height?: number
@@ -37,6 +38,8 @@ export interface PendingWarnings {
 export class ComfyWorkflow extends UserFile {
   static readonly basePath: string = 'workflows/'
   readonly tintCanvasBg?: string
+  /** Unique, stable identity for this workflow instance in the current session. */
+  readonly instanceId = generateUUID()
 
   /**
    * The change tracker for the workflow. Non-reactive raw object.

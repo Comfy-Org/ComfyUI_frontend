@@ -302,7 +302,7 @@ export function useJobList() {
           task.executionTime !== undefined
             ? task.executionTime / 3_600_000
             : undefined
-      } as JobListItem
+      }
     })
   })
 

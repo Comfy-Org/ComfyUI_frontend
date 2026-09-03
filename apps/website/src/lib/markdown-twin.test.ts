@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 import { writeMarkdownTwins } from '../integrations/markdown-twins'
+import { writeSectionIndexes } from './section-index'
 import { htmlToTwin, renderTwin } from './markdown-twin'
 import { markdownTwinPath } from './markdown-twin-path'
 
@@ -169,16 +170,61 @@ describe('writeMarkdownTwins', () => {
     ])
 
     expect(report.written).toEqual(['/cli.md', '/index.md', '/404.md'])
-    expect(report.skipped).toEqual([
-      '/payment/success.md',
-      '/api.md',
-      '/missing.md'
-    ])
+    // A twin a page endpoint already wrote (api.md) is a real, current twin,
+    // not a gap — it belongs in `existing`, not lumped in with the pages
+    // that genuinely have no twin (noindex, or no built HTML).
+    expect(report.existing).toEqual(['/api.md'])
+    expect(report.skipped).toEqual(['/payment/success.md', '/missing.md'])
     expect(await readFile(join(root, 'cli.md'), 'utf8')).toContain(
       'canonical: https://comfy.org/cli/\nlang: en\nindex: https://comfy.org/llms.txt\n---\n\n# CLI\n'
     )
     expect(await readFile(join(root, 'api.md'), 'utf8')).toBe(
       '# hand-written\n'
     )
+  })
+
+  it('reports an existing twin even when the page has no built HTML at all', async () => {
+    // A page endpoint can ship a markdown twin with no .astro/HTML
+    // counterpart (e.g. a markdown-only resource). That twin is still real,
+    // current content, so it must be classified as `existing`, not lumped
+    // into `skipped` alongside pages that genuinely have neither an HTML
+    // page nor a twin.
+    const root = await mkdtemp(join(tmpdir(), 'twins-'))
+    await writeFile(join(root, 'reference.md'), '# hand-written, no HTML\n')
+
+    const report = await writeMarkdownTwins(root, ['reference/'])
+
+    expect(report.written).toEqual([])
+    expect(report.existing).toEqual(['/reference.md'])
+    expect(report.skipped).toEqual([])
+  })
+
+  it('feeds section indexes and llms-full.txt from written and existing twins alike', async () => {
+    // Regression test for a bug where astro:build:done only passed
+    // report.written downstream: a page endpoint's pre-existing twin
+    // (report.existing) silently never reached writeSectionIndexes or
+    // writeFullText, even though it is a real, current twin.
+    const root = await mkdtemp(join(tmpdir(), 'twins-'))
+    await mkdir(join(root, 'learning'), { recursive: true })
+    await writeFile(
+      join(root, 'learning', 'index.html'),
+      '<html lang="en"><head><title>Learning</title></head><body><main><h1>Learning</h1></main></body></html>'
+    )
+    await writeFile(
+      join(root, 'learning.md'),
+      '---\ntitle: "Learning"\ndescription: "Tutorials."\ncanonical: https://comfy.org/learning/\nlang: en\nindex: https://comfy.org/llms.txt\n---\n\n# Learning\n'
+    )
+
+    const report = await writeMarkdownTwins(root, ['learning/'])
+    expect(report.written).toEqual([])
+    expect(report.existing).toEqual(['/learning.md'])
+
+    const availableTwins = [...report.written, ...report.existing]
+    const indexes = await writeSectionIndexes(root, availableTwins, [
+      { prefix: '/learning', title: 'Learning', summary: 'Tutorials.' }
+    ])
+    expect(indexes).toEqual(['/learning/llms.txt'])
+    const index = await readFile(join(root, 'learning', 'llms.txt'), 'utf8')
+    expect(index).toContain('[Learning](https://comfy.org/learning.md)')
   })
 })
