@@ -37,6 +37,12 @@ This is the machine-addressable review log for the package. IDs are stable; do n
 
 The *rejection* half — "a rejected op leaves the doc untouched", stated in the `applyOps` module docstring in `src/applier.ts` and repeated as contract D4 — is swept table-driven in `test/ka4-rejection-byte-identity.test.ts`, one row per reachable rejection code across `add_node`, `set_widget`, `connect`, `connect`+grow, `delete_node`, `clear`, `reset_doc` and the envelope gate, asserting byte-identical `encodeStateAsUpdate` *and* that the `op_id` was not consumed. Completeness is enforced rather than asserted: one test compares the covered codes against `ALL_REJECTION_CODES`, and a second greps `src/applier.ts` for every `new OpRejectedError("…")` so a new code cannot be added without a row. **The four `connect` rejections this used to except are fixed (#34)** and are now ordinary rows in that sweep, asserting byte-identity and `op_id`-preservation like every other code; the block that deliberately asserted the bug is deleted and `KNOWN_KA4_VIOLATIONS` is kept empty so a regression has somewhere to be recorded.
 
+**Amendment A19 closes the seeded-link node-lifetime race:** A18 link rows
+retain the complete tuple as durable intent, explicit named removals use a
+separate terminal retirement row, and a higher-stamped re-add rematerializes
+eligible intent. `test/delete-node-lww-loser-removed-links.test.ts` forks both
+arrival orders from one linked snapshot and requires the same surviving link.
+
 ### KA-5 — IDs are collision-free without coordination
 **Rule:** Use 53-bit random mint; document high-water marks are advisory, never allocators; FE stable IDs must be non-colliding strings.  
 **Why:** Offline peers must create entities without a central allocator.  

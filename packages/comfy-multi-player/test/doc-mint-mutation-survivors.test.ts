@@ -471,7 +471,7 @@ describe("schema §1 doc layout: root-map names and the reserved opaque key are 
     const op = { op: "set_widget", ...env(), node_id: 1, widget: "text", value: "w" } as SetWidgetOp;
     expect(applyOps(doc, [op], catalog).outcomes.some((o) => o.outcome === "rejected")).toBe(false);
     expect(doc.getMap("__applied").has(op.op_id)).toBe(true);
-    expect(doc.getMap("__stamps").size).toBe(1);
+    expect(doc.getMap("__stamps").size).toBe(2);
   });
 
   it("the helpers address exactly those roots", () => {

@@ -73,6 +73,30 @@ function seededDoc(): Y.Doc {
   return doc;
 }
 
+function linkedDoc(): Y.Doc {
+  const doc = mint(workflow, catalog);
+  const connect: Op = {
+    op: "connect",
+    ...envelope("connect", "human:seed", 1),
+    link_id: 1,
+    from_node: 10,
+    from_slot: 0,
+    to_node: 20,
+    to_slot: 0,
+    link_type: "IMAGE",
+  };
+
+  expect(applyOps(doc, [connect], catalog).outcomes.map(({ outcome }) => outcome)).toEqual(["applied"]);
+  expect(project(doc, catalog).links).toHaveLength(1);
+  return doc;
+}
+
+function forkDoc(snapshot: Uint8Array): Y.Doc {
+  const doc = new Y.Doc();
+  Y.applyUpdate(doc, snapshot);
+  return doc;
+}
+
 function losingDelete(removedLinks: number[]): Op {
   return {
     op: "delete_node",
@@ -95,7 +119,12 @@ describe("delete_node LWW loser removed_links cleanup", () => {
 
     expect(result.outcomes[0]?.outcome).toBe("applied");
     expect(project(doc, catalog).nodes.some(({ id }) => id === 10)).toBe(true);
-    expect(stampsMap(doc).toJSON()).toEqual(stampBefore);
+    expect(stampsMap(doc).get(JSON.stringify(["node", "10"]))).toEqual(stampBefore[JSON.stringify(["node", "10"])]);
+    expect(stampsMap(doc).get(JSON.stringify(["link_retired", "1"]))).toEqual([
+      5,
+      "human:z",
+      losingDelete([1]).op_id,
+    ]);
     expect(project(doc, catalog).links).toEqual([]);
     expect(Y.encodeStateAsUpdate(doc)).not.toEqual(bytesBefore);
   });
@@ -121,7 +150,12 @@ describe("delete_node LWW loser removed_links cleanup", () => {
 
     expect(result.outcomes[0]).toEqual({ op_id: op.op_id, outcome: "lww-dropped" });
     expect(project(doc, catalog).nodes.some(({ id }) => id === 10)).toBe(true);
-    expect(stampsMap(doc).toJSON()).toEqual(stampBefore);
+    expect(stampsMap(doc).get(JSON.stringify(["node", "10"]))).toEqual(stampBefore[JSON.stringify(["node", "10"])]);
+    expect(stampsMap(doc).get(JSON.stringify(["link_retired", "999"]))).toEqual([
+      5,
+      "human:z",
+      op.op_id,
+    ]);
     expect(project(doc, catalog).links).toEqual([]);
     expect(appliedMap(doc).has(op.op_id)).toBe(true);
     const bytesAfter = Y.encodeStateAsUpdate(doc);
@@ -144,5 +178,54 @@ describe("delete_node LWW loser removed_links cleanup", () => {
       "no-op",
     ]);
     expect(Y.encodeStateAsUpdate(reverse)).toEqual(reverseBytes);
+  });
+
+  it("converges across arrival order when a higher-stamped add preserves durable link intent", () => {
+    const snapshot = Y.encodeStateAsUpdate(linkedDoc());
+    const op = losingDelete([999]);
+    const winner = winningPresence();
+    const forward = forkDoc(snapshot);
+    const reverse = forkDoc(snapshot);
+
+    expect(applyOps(forward, [winner, op], catalog).outcomes.map(({ outcome }) => outcome)).toEqual([
+      "applied",
+      "lww-dropped",
+    ]);
+    expect(applyOps(reverse, [op, winner], catalog).outcomes.map(({ outcome }) => outcome)).toEqual([
+      "applied",
+      "applied",
+    ]);
+
+    expect(project(reverse, catalog)).toEqual(project(forward, catalog));
+    expect(project(forward, catalog).links).toHaveLength(1);
+  });
+
+  it("keeps an explicitly retired link id terminal across a later identity winner", () => {
+    const snapshot = Y.encodeStateAsUpdate(seededDoc());
+    const forward = forkDoc(snapshot);
+    const reverse = forkDoc(snapshot);
+    const remove = losingDelete([1]);
+    const reconnect: Op = {
+      op: "connect",
+      ...envelope("reconnect", "human:zz", 10),
+      link_id: 1,
+      from_node: 10,
+      from_slot: 0,
+      to_node: 20,
+      to_slot: 0,
+      link_type: "IMAGE",
+    };
+
+    expect(applyOps(forward, [reconnect, remove], catalog).outcomes.map(({ outcome }) => outcome)).toEqual([
+      "applied",
+      "applied",
+    ]);
+    expect(applyOps(reverse, [remove, reconnect], catalog).outcomes.map(({ outcome }) => outcome)).toEqual([
+      "applied",
+      "no-op",
+    ]);
+
+    expect(project(reverse, catalog)).toEqual(project(forward, catalog));
+    expect(project(forward, catalog).links).toEqual([]);
   });
 });
