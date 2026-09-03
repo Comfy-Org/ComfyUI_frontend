@@ -10,6 +10,7 @@ import {
   normalizePath,
   parseLlmsTxtLinks
 } from '../lib/llms-txt'
+import { isNoindexPathname } from './indexing'
 import { getRoutes } from './routes'
 
 const websiteRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
@@ -40,6 +41,17 @@ const EXCLUDED_PAGES = new Set([
   '/demos', // index is a "Coming Soon" placeholder; the demo pages are listed
   '/platform/serverless-animation' // noindex temporary motion study, not a real page
 ])
+
+/**
+ * A page kept out of search indexes has no business in llms.txt either, so
+ * the noindex policy in ./indexing is the second source of exclusions.
+ * Deriving it rather than restating it means a launch that lifts noindex
+ * also starts requiring the page here, instead of leaving a second list to
+ * remember.
+ */
+function isExcludedPage(page: string): boolean {
+  return EXCLUDED_PAGES.has(page) || isNoindexPathname(page)
+}
 
 /**
  * Files the build emits outside src/pages: the sitemap integration writes
@@ -154,7 +166,7 @@ describe('llms.txt', () => {
   it('covers every static page in src/pages', () => {
     const linked = new Set(internalPaths)
     const missing = [...staticPages]
-      .filter((page) => !EXCLUDED_PAGES.has(page) && !linked.has(page))
+      .filter((page) => !isExcludedPage(page) && !linked.has(page))
       .sort()
     expect(missing).toEqual([])
   })
@@ -163,7 +175,7 @@ describe('llms.txt', () => {
     const linked = new Set(internalPaths)
     const missing = Object.values(getRoutes('en'))
       .map(normalizePath)
-      .filter((route) => !EXCLUDED_PAGES.has(route) && !linked.has(route))
+      .filter((route) => !isExcludedPage(route) && !linked.has(route))
     expect(missing).toEqual([])
   })
 
