@@ -1310,7 +1310,7 @@ describe('useMediaAssetActions', () => {
           props.onConfirm(true)
         }
       )
-      mockAppGraph.value = { _nodes: [] }
+      mockAppGraph.value = { _nodes: [], nodes: [] }
     })
 
     it('completes the lifecycle for one confirmed asset record', async () => {
