@@ -1,14 +1,30 @@
-import { execFileSync, spawnSync } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { afterAll, describe, expect, it } from 'vitest'
 
+function findOversizedReport() {
+  let report = 'x'.repeat(256 * 1024)
+
+  while (report.length <= 16 * 1024 * 1024) {
+    const result = spawnSync(process.execPath, ['-e', ''], {
+      env: { ...process.env, INPUT_SECTION_CONTENT: report }
+    })
+    if ((result.error)?.code === 'E2BIG') {
+      return report
+    }
+    if (result.error) throw result.error
+    report += report
+  }
+
+  throw new Error('Could not exceed the process environment limit')
+}
+
 const tempDirectory = mkdtempSync(join(tmpdir(), 'upsert-comment-section-'))
 const reportPath = join(tempDirectory, 'pr-report.md')
-const argumentLimit = Number(execFileSync('getconf', ['ARG_MAX']).toString())
-const report = 'x'.repeat(argumentLimit + 1)
+const report = findOversizedReport()
 
 writeFileSync(reportPath, report)
 
