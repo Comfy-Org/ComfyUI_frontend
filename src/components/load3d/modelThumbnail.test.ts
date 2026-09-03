@@ -151,11 +151,15 @@ describe('generateModelThumbnail', () => {
     })
 
     const [reported, options] = reportError.mock.calls[0]
-    const message = (reported as Error).message
+    const { message, stack } = reported as Error
     expect(message).not.toContain('sig=abc')
     expect(message).not.toContain('tok:sec')
-    expect(message).toContain('<redacted>')
-    expect(options).toMatchObject({ context: { assetName: 'a.glb' } })
+    expect(message).toContain('https://host/api/view')
+    expect(stack).not.toContain('sig=abc')
+    expect((reported as Error).cause).toBeUndefined()
+    expect(options).toEqual({
+      errorType: 'agent_model_thumbnail_generation_failure'
+    })
   })
 
   it('runs generations one at a time', async () => {
