@@ -115,6 +115,7 @@ test.describe('Workshop catalog', () => {
   test('model cards open the model detail page', async ({ page }) => {
     await page.goto('/workshop/')
     await page.getByTestId('workshop-search').fill('kling ai')
+    await page.getByRole('heading', { level: 1 }).click()
     await page.getByTestId('workshop-model-card').first().click()
     await expect(page).toHaveURL(/\/workshop\/models\/kling-ai\/?$/)
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Kling AI')
@@ -242,7 +243,7 @@ test.describe('Model playground', () => {
     await useAccount(page, 'new')
     await expect(
       page.getByTestId('desktop-nav-cta').getByTestId('header-credits')
-    ).toContainText('No credits')
+    ).toContainText('Upgrade')
     await expect(page.getByTestId('run-button')).toHaveAttribute(
       'data-gate',
       'noCredits'
@@ -251,10 +252,8 @@ test.describe('Model playground', () => {
       .getByTestId('desktop-nav-cta')
       .getByTestId('header-account')
       .click()
-    await expect(page.getByTestId('account-plan')).toHaveAttribute(
-      'href',
-      /platform\.comfy\.org/
-    )
+    await page.getByTestId('account-plan').click()
+    await expect(page.getByTestId('buy-credits-dialog')).toBeVisible()
   })
 
   test('an empty balance is sent to Comfy Platform and the form survives the trip', async ({
@@ -280,7 +279,7 @@ test.describe('Model playground', () => {
     await expect(run).toHaveAttribute('data-gate', 'ready')
     await expect(
       page.getByTestId('desktop-nav-cta').getByTestId('header-credits')
-    ).toHaveAttribute('href', /platform/)
+    ).toHaveText(/[0-9]/)
     await page.reload()
     await expect(page.getByTestId('field-prompt')).toHaveValue('keep me around')
   })
@@ -295,7 +294,7 @@ test.describe('Model playground', () => {
     await expect(page.getByTestId('snippet')).toContainText(
       'openai/openai-dall-e'
     )
-    await page.getByTestId('snippet-http').click()
+    await page.getByTestId('snippet-curl').click()
     await expect(page.getByTestId('snippet')).toContainText('POST https://')
   })
 

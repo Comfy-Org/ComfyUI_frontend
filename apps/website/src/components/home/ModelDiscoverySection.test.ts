@@ -3,23 +3,25 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import { discoveryModels } from '../../data/modelDiscovery'
+import { discoveryProviders } from '../../data/modelDiscovery'
 import ModelDiscoverySection from './ModelDiscoverySection.vue'
 
 describe('ModelDiscoverySection', () => {
-  it('only lines up models that have a preview to reveal', () => {
-    expect(discoveryModels.length).toBeGreaterThan(10)
-    for (const { model } of discoveryModels) {
-      expect(model.thumbnailUrl, model.slug).toBeTruthy()
+  it('only lines up providers that run models and have a preview', () => {
+    expect(discoveryProviders.length).toBeGreaterThan(10)
+    for (const provider of discoveryProviders) {
+      expect(provider.modelCount, provider.name).toBeGreaterThan(0)
+      expect(provider.thumbnailUrl, provider.name).toBeTruthy()
     }
   })
 
-  it('sends every lineup model to the catalog filtered by its provider', () => {
+  it('sends every provider to the catalog filtered by that provider', () => {
     render(ModelDiscoverySection)
 
-    const seedance = screen.getByRole('link', { name: /Seedance 2/ })
-    expect(seedance.getAttribute('href')).toBe('/workshop?provider=ByteDance')
-    expect(screen.getByRole('link', { name: /Kling O3/ })).toBeTruthy()
+    const bytedance = screen.getByRole('link', { name: /ByteDance/ })
+    expect(bytedance.getAttribute('href')).toBe('/workshop?provider=ByteDance')
+    expect(bytedance.textContent).toMatch(/\d+ models/)
+    expect(screen.getByRole('link', { name: /Black Forest Labs/ })).toBeTruthy()
 
     const browse = screen.getByRole('link', { name: 'Browse all models' })
     expect(browse.getAttribute('href')).toBe('/workshop')
@@ -28,9 +30,9 @@ describe('ModelDiscoverySection', () => {
   it('hides the looping copy of the row from assistive tech', () => {
     render(ModelDiscoverySection)
 
-    const visible = screen.getAllByRole('link', { name: /Seedance 2/ })
+    const visible = screen.getAllByRole('link', { name: /ByteDance/ })
     const all = screen.getAllByRole('link', {
-      name: /Seedance 2/,
+      name: /ByteDance/,
       hidden: true
     })
     expect(visible).toHaveLength(1)
@@ -39,12 +41,12 @@ describe('ModelDiscoverySection', () => {
     expect(all[1].getAttribute('tabindex')).toBe('-1')
   })
 
-  it('loads a model preview only once its card is hovered', async () => {
+  it('loads a provider preview only once its card is hovered', async () => {
     const user = userEvent.setup()
     render(ModelDiscoverySection)
 
     expect(screen.queryByTestId('static-frame')).toBeNull()
-    await user.hover(screen.getByRole('link', { name: /Seedance 2/ }))
+    await user.hover(screen.getByRole('link', { name: /ByteDance/ }))
     expect(screen.getAllByTestId('static-frame').length).toBeGreaterThan(0)
   })
 

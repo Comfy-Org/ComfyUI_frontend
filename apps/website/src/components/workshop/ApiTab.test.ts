@@ -28,9 +28,9 @@ describe('ApiTab', () => {
       buildSnippet('typescript', routerId, values)
     )
 
-    await user.click(screen.getByTestId('snippet-http'))
+    await user.click(screen.getByTestId('snippet-curl'))
     expect(screen.getByTestId('snippet').textContent).toBe(
-      buildSnippet('http', routerId, values)
+      buildSnippet('curl', routerId, values)
     )
   })
 })

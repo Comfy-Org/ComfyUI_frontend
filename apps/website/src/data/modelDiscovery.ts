@@ -1,35 +1,48 @@
-import type { WorkshopModel } from '../config/workshop'
-import { getWorkshopModel } from '../config/workshop'
+import { workshopModels } from '../config/workshop'
 
-export interface DiscoveryModel {
-  readonly model: WorkshopModel
+export interface DiscoveryProvider {
+  readonly name: string
   /** Masked onto the card, so every logo renders in the card's text colour. */
   readonly logo: string
+  readonly modelCount: number
+  readonly thumbnailUrl?: string
 }
 
-// The home page lineup, in display order.
-const LINEUP: readonly { slug: string; logo: string }[] = [
-  { slug: 'seedance-2', logo: 'bytedance' },
-  { slug: 'kling-o3', logo: 'kling' },
-  { slug: 'ideogram', logo: 'ideogram' },
-  { slug: 'nano-banana-2', logo: 'gemini' },
-  { slug: 'grok-imagine', logo: 'grok' },
-  { slug: 'flux-2-api', logo: 'bfl' },
-  { slug: 'wan2-7', logo: 'wan' },
-  { slug: 'minimax', logo: 'minimax' },
-  { slug: 'ltx-2', logo: 'ltxv' },
-  { slug: 'openai-dall-e', logo: 'openai' },
-  { slug: 'elevenlabs', logo: 'elevenlabs' },
-  { slug: 'runway', logo: 'runway' },
-  { slug: 'qwen-3', logo: 'qwen' },
-  { slug: 'luma-dream-machine', logo: 'luma' },
-  { slug: 'topaz-labs', logo: 'topaz' },
-  { slug: 'hunyuan-3d', logo: 'tencent' }
+// The home page lineup, in display order. A provider only appears once its
+// logo is drawn, so the row stays a wall of marks rather than of initials.
+const LINEUP: readonly { provider: string; logo: string }[] = [
+  { provider: 'ByteDance', logo: 'bytedance' },
+  { provider: 'Kling', logo: 'kling' },
+  { provider: 'Ideogram', logo: 'ideogram' },
+  { provider: 'Google', logo: 'gemini' },
+  { provider: 'xAI', logo: 'grok' },
+  { provider: 'Black Forest Labs', logo: 'bfl' },
+  { provider: 'Alibaba', logo: 'wan' },
+  { provider: 'MiniMax', logo: 'minimax' },
+  { provider: 'Lightricks', logo: 'ltxv' },
+  { provider: 'OpenAI', logo: 'openai' },
+  { provider: 'ElevenLabs', logo: 'elevenlabs' },
+  { provider: 'Runway', logo: 'runway' },
+  { provider: 'Luma', logo: 'luma' },
+  { provider: 'Topaz Labs', logo: 'topaz' },
+  { provider: 'Tencent', logo: 'tencent' }
 ]
 
-export const discoveryModels: readonly DiscoveryModel[] = LINEUP.flatMap(
-  ({ slug, logo }) => {
-    const model = getWorkshopModel(slug)
-    return model ? [{ model, logo: `/icons/ai-models/${logo}.svg` }] : []
+// A card stands for everything the provider runs, so it opens the catalogue
+// already narrowed to them rather than one model's page.
+export const discoveryProviders: readonly DiscoveryProvider[] = LINEUP.flatMap(
+  ({ provider, logo }) => {
+    const models = workshopModels.filter((model) => model.provider === provider)
+    const popular = [...models].sort((a, b) => b.runs - a.runs)[0]
+    return popular
+      ? [
+          {
+            name: provider,
+            logo: `/icons/ai-models/${logo}.svg`,
+            modelCount: models.length,
+            thumbnailUrl: popular.thumbnailUrl
+          }
+        ]
+      : []
   }
 )

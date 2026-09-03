@@ -18,7 +18,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -28,6 +28,7 @@ import { useSignInHref } from '../../../composables/useSignInHref'
 import { externalLinks } from '../../../config/routes'
 import type { Locale } from '../../../i18n/translations'
 import { t } from '../../../i18n/translations'
+import BuyCreditsDialog from '../../workshop/BuyCreditsDialog.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -50,6 +51,8 @@ const initials = computed(() =>
     .toUpperCase()
 )
 
+const buyingCredits = ref(false)
+
 const itemClass =
   'flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-primary-comfy-canvas outline-none hover:bg-transparency-white-t4 focus-visible:bg-transparency-white-t4'
 </script>
@@ -70,22 +73,23 @@ const itemClass =
     <div
       class="bg-transparency-white-t4 flex h-10 items-center gap-1.5 rounded-full border border-transparency-white-t20 p-1"
     >
-      <a
-        :href="externalLinks.platform"
+      <button
+        type="button"
         data-testid="header-credits"
         :title="t('nav.addCredits', locale)"
         :class="
           cn(
-            'flex h-8 items-center gap-1.5 rounded-full px-3 text-sm font-bold whitespace-nowrap tabular-nums transition-colors',
+            'flex h-8 cursor-pointer items-center gap-1.5 rounded-full px-3 text-sm font-bold whitespace-nowrap tabular-nums transition-colors',
             hasCredits
               ? 'bg-primary-comfy-yellow/10 text-primary-comfy-yellow hover:bg-primary-comfy-yellow/20'
-              : 'bg-primary-comfy-red/10 text-primary-comfy-red hover:bg-primary-comfy-red/20'
+              : 'bg-primary-comfy-yellow hover:bg-primary-comfy-yellow/90 text-primary-comfy-ink'
           )
         "
+        @click="buyingCredits = true"
       >
         <Coins class="size-4" aria-hidden="true" />
-        {{ hasCredits ? formattedCredits : t('nav.noCredits', locale) }}
-      </a>
+        {{ hasCredits ? formattedCredits : t('nav.upgrade', locale) }}
+      </button>
 
       <DropdownMenuTrigger
         data-testid="header-account"
@@ -182,22 +186,16 @@ const itemClass =
 
         <DropdownMenuSeparator class="my-1 h-px bg-transparency-white-t8" />
 
-        <DropdownMenuItem as-child>
-          <a
-            :href="externalLinks.platform"
-            target="_blank"
-            rel="noopener noreferrer"
-            :class="itemClass"
-            data-testid="account-plan"
-          >
-            <CreditCard
-              class="size-5 text-primary-warm-gray"
-              aria-hidden="true"
-            />
-            <span class="flex-1">{{
-              t('workshop.run.buyCredits', locale)
-            }}</span>
-          </a>
+        <DropdownMenuItem
+          :class="itemClass"
+          data-testid="account-plan"
+          @click="buyingCredits = true"
+        >
+          <CreditCard
+            class="size-5 text-primary-warm-gray"
+            aria-hidden="true"
+          />
+          <span class="flex-1">{{ t('workshop.run.buyCredits', locale) }}</span>
         </DropdownMenuItem>
         <DropdownMenuItem as-child>
           <a
@@ -244,4 +242,6 @@ const itemClass =
       </DropdownMenuContent>
     </DropdownMenuPortal>
   </DropdownMenuRoot>
+
+  <BuyCreditsDialog v-model:open="buyingCredits" :locale />
 </template>

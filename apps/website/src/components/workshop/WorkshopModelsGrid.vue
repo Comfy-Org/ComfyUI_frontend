@@ -44,6 +44,7 @@ import { t } from '../../i18n/translations'
 import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
+import WorkshopSearchPanel from './WorkshopSearchPanel.vue'
 import WorkshopSections from './WorkshopSections.vue'
 
 const { models, locale = 'en' } = defineProps<{
@@ -57,6 +58,24 @@ const modality = ref<ModalityFilter>('all')
 const capabilities = ref<string[]>([])
 const providers = ref<string[]>([])
 const sort = ref<SortOrder>('popular')
+const searchOpen = ref(false)
+
+// Focus moving to the clear button or into the panel itself is still inside
+// the search, so only a move out of the wrapper closes it.
+function closeSearchOnLeave(event: FocusEvent) {
+  const wrapper = event.currentTarget
+  const moved = event.relatedTarget
+  if (
+    wrapper instanceof HTMLElement &&
+    (!(moved instanceof Node) || !wrapper.contains(moved))
+  )
+    searchOpen.value = false
+}
+
+const toggled = (list: readonly string[], value: string) =>
+  list.includes(value)
+    ? list.filter((entry) => entry !== value)
+    : [...list, value]
 const { showStatuses, version, groupVersions } = usePrototypeTweaks()
 
 onMounted(() => {
@@ -291,7 +310,7 @@ const menuItemClass =
       <div
         class="mb-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
       >
-        <div class="relative w-full lg:max-w-md">
+        <div class="relative w-full lg:max-w-xl" @focusout="closeSearchOnLeave">
           <label for="workshop-search" class="sr-only">
             {{ t('workshop.search.label', locale) }}
           </label>
@@ -306,6 +325,11 @@ const menuItemClass =
             :placeholder="t('workshop.search.label', locale)"
             data-testid="workshop-search"
             class="bg-transparency-white-t4 focus-visible:ring-primary-comfy-yellow/50 h-11 w-full rounded-2xl pr-10 pl-11 text-sm text-primary-warm-white outline-none placeholder:text-primary-warm-gray focus-visible:ring-3 [&::-webkit-search-cancel-button]:hidden"
+            role="combobox"
+            aria-controls="workshop-search-panel"
+            :aria-expanded="searchOpen"
+            @focus="searchOpen = true"
+            @keydown.escape="searchOpen = false"
           />
           <button
             v-if="query"
@@ -317,6 +341,23 @@ const menuItemClass =
           >
             <X class="size-4" aria-hidden="true" />
           </button>
+
+          <WorkshopSearchPanel
+            v-if="searchOpen"
+            id="workshop-search-panel"
+            :models
+            :query
+            :providers
+            :capabilities
+            :locale
+            @pick="(model) => (query = model.name)"
+            @toggle-provider="
+              (value) => (providers = toggled(providers, value))
+            "
+            @toggle-capability="
+              (value) => (capabilities = toggled(capabilities, value))
+            "
+          />
         </div>
 
         <div class="flex flex-wrap gap-2" data-testid="workshop-filters">

@@ -25,17 +25,20 @@ const {
 
 const values = defineModel<FormValues>({ required: true })
 
-// Prompts and uploads (and anything the node lists before them, like a model
-// picker) stay on top; the remaining knobs pair up, toggles fold away.
+// Prompts and uploads stay on top; the remaining knobs pair up, toggles fold
+// away. The catalogue lists each release as its own model, so the node's own
+// model picker would be a second, contradictory way to choose one: it is not
+// drawn, though its value still travels with the request.
 const groups = computed(() => {
-  const lastPrimary = schema.reduce(
+  const shown = schema.filter((field) => field.name !== 'model')
+  const lastPrimary = shown.reduce(
     (last, field, index) =>
       field.kind === 'text' || field.kind === 'file' ? index : last,
     -1
   )
-  const rest = schema.slice(lastPrimary + 1)
+  const rest = shown.slice(lastPrimary + 1)
   return {
-    primary: schema.slice(0, lastPrimary + 1),
+    primary: shown.slice(0, lastPrimary + 1),
     settings: rest.filter((field) => field.kind !== 'toggle'),
     advanced: rest.filter((field) => field.kind === 'toggle')
   }

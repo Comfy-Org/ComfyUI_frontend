@@ -193,11 +193,19 @@ const translations = {
     'zh-CN': '最新模型，\n即刻运行'
   },
   'modelDiscovery.subtitle': {
-    en: 'Seedance, Kling, Veo, Flux, Nano Banana and more, from Comfy Router. Pick one, set your inputs, hit Run.',
+    en: 'Models from Google, ByteDance, Black Forest Labs, Kling and more, on Comfy Router. Pick one, set your inputs, hit Run.',
     'zh-CN':
-      'Seedance、Kling、Veo、Flux、Nano Banana 等模型，均由 Comfy Router 提供。选一个，设置输入，点击运行。'
+      '来自 Google、ByteDance、Black Forest Labs、Kling 等提供商的模型，均由 Comfy Router 提供。选一个，设置输入，点击运行。'
   },
-  'modelDiscovery.rowLabel': { en: 'Latest models', 'zh-CN': '最新模型' },
+  'modelDiscovery.rowLabel': { en: 'Model providers', 'zh-CN': '模型提供商' },
+  'modelDiscovery.modelCount.singular': {
+    en: '{n} model',
+    'zh-CN': '{n} 个模型'
+  },
+  'modelDiscovery.modelCount.plural': {
+    en: '{n} models',
+    'zh-CN': '{n} 个模型'
+  },
   'modelDiscovery.browse': { en: 'Browse all models', 'zh-CN': '浏览全部模型' },
 
   // Model release carousel (home page)
@@ -8460,10 +8468,12 @@ Enterprise`
   'workshop.useCase.audio': { en: 'Audio', 'zh-CN': '音频' },
   'workshop.useCase.text': { en: 'Text', 'zh-CN': '文本' },
   'workshop.search.label': {
-    en: 'Search models by name, provider or what they do',
-    'zh-CN': '按名称、提供商或用途搜索模型'
+    en: 'Search models, providers, categories...',
+    'zh-CN': '搜索模型、提供商、分类...'
   },
   'workshop.search.clear': { en: 'Clear search', 'zh-CN': '清除搜索' },
+  'workshop.search.popular': { en: 'Popular models', 'zh-CN': '热门模型' },
+  'workshop.search.providers': { en: 'Providers', 'zh-CN': '提供商' },
   'workshop.filter.image': { en: 'Image', 'zh-CN': '图像' },
   'workshop.filter.video': { en: 'Video', 'zh-CN': '视频' },
   'workshop.filter.audio': { en: 'Audio', 'zh-CN': '音频' },
@@ -8868,17 +8878,14 @@ Enterprise`
     'zh-CN': '从代码中调用该模型'
   },
   'workshop.api.body': {
-    en: 'The snippet mirrors the values in the Playground form.',
-    'zh-CN': '代码片段与 Playground 表单中的值保持一致。'
+    en: 'One POST to Comfy Router, with the values from the Playground form. Set COMFY_API_KEY and it runs as it stands.',
+    'zh-CN':
+      '向 Comfy Router 发送一次 POST 请求，使用 Playground 表单中的值。设置 COMFY_API_KEY 后即可直接运行。'
   },
   'workshop.api.copy': { en: 'Copy snippet', 'zh-CN': '复制代码' },
   'workshop.api.copied': { en: 'Copied', 'zh-CN': '已复制' },
   'workshop.api.getKey': { en: 'Get API key', 'zh-CN': '获取 API 密钥' },
   'workshop.api.docs': { en: 'Router docs', 'zh-CN': 'Router 文档' },
-  'workshop.api.illustrative': {
-    en: 'Illustrative shape. Final calls follow the Router SDK docs.',
-    'zh-CN': '仅为示意。最终调用以 Router SDK 文档为准。'
-  },
 
   // Workshop – examples
   'workshop.examples.heading': { en: 'Example outputs', 'zh-CN': '示例输出' },

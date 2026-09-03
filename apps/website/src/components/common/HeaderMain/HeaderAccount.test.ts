@@ -34,24 +34,20 @@ describe('HeaderAccount', () => {
     expect(screen.getByTestId('header-credits').textContent).toContain('5,840')
 
     await user.click(screen.getByTestId('header-account'))
-    expect(
-      (await screen.findByTestId('account-plan')).getAttribute('href')
-    ).toMatch(/platform/)
+    await user.click(await screen.findByTestId('account-plan'))
+    expect(await screen.findByTestId('buy-credits-dialog')).toBeTruthy()
   })
 
-  it('sends an empty account to buy credits, not to a plan', async () => {
+  it('offers an empty account the upgrade that opens the credits flow', async () => {
     const user = userEvent.setup()
     mountAccount('new')
     await nextTick()
 
-    expect(screen.getByTestId('header-credits').textContent).toContain(
-      'No credits'
-    )
+    const chip = screen.getByTestId('header-credits')
+    expect(chip.textContent).toContain('Upgrade')
 
-    await user.click(screen.getByTestId('header-account'))
-    expect(
-      (await screen.findByTestId('account-plan')).getAttribute('href')
-    ).toMatch(/platform/)
+    await user.click(chip)
+    expect(await screen.findByTestId('buy-credits-dialog')).toBeTruthy()
   })
 
   it('switches workspace from the submenu', async () => {

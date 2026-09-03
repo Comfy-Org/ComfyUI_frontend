@@ -33,7 +33,7 @@ const snippet = computed(() => buildSnippet(language.value, routerId, values))
 const languageLabel: Record<SnippetLanguage, string> = {
   python: 'Python',
   typescript: 'TypeScript',
-  http: 'HTTP'
+  curl: 'cURL'
 }
 </script>
 
@@ -98,10 +98,6 @@ const languageLabel: Record<SnippetLanguage, string> = {
         data-testid="snippet"
       ><code>{{ snippet }}</code></pre>
     </div>
-
-    <p class="text-xs text-primary-warm-gray">
-      {{ t('workshop.api.illustrative', locale) }}
-    </p>
 
     <div class="flex flex-wrap gap-3">
       <Button

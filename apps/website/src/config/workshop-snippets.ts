@@ -1,12 +1,14 @@
 import type { FormValues } from './workshop-playground'
 
-export type SnippetLanguage = 'python' | 'typescript' | 'http'
+export type SnippetLanguage = 'python' | 'typescript' | 'curl'
 
 export const SNIPPET_LANGUAGES: readonly SnippetLanguage[] = [
   'python',
   'typescript',
-  'http'
+  'curl'
 ]
+
+export const ROUTER_API = 'https://api.comfy.org'
 
 function serializableInput(
   values: FormValues
@@ -20,6 +22,19 @@ function serializableInput(
   )
 }
 
+// The router takes the release name in the body and the full id in the path,
+// so `openai/gpt-image` posts `"model": "gpt-image"`. A model whose schema
+// names its own release keeps that name.
+function requestBody(
+  routerId: string,
+  values: FormValues
+): Record<string, string | number | boolean> {
+  return {
+    model: routerId.split('/').at(-1) ?? routerId,
+    ...serializableInput(values)
+  }
+}
+
 function indent(json: string, spaces: number): string {
   const pad = ' '.repeat(spaces)
   return json
@@ -28,43 +43,67 @@ function indent(json: string, spaces: number): string {
     .join('\n')
 }
 
-// Illustrative shapes. The final calls come from the Router SDK docs once
-// the TDD settles which client the snippets teach.
+// One synchronous POST per run, the same call the Playground makes. The
+// idempotency key is what makes a retry safe: a dropped connection re-sends
+// the same key and collects the original result instead of paying twice.
 export function buildSnippet(
   language: SnippetLanguage,
   routerId: string,
   values: FormValues
 ): string {
-  const input = JSON.stringify(serializableInput(values), null, 2)
+  const body = requestBody(routerId, values)
+  const json = JSON.stringify(body, null, 2)
+  const endpoint = `${ROUTER_API}/v2/models/${routerId}`
   switch (language) {
     case 'python':
       return [
-        'from comfy_router import Router',
+        'import os',
+        'import uuid',
         '',
-        'router = Router(api_key="YOUR_API_KEY")',
-        `result = router.run(`,
-        `    "${routerId}",`,
-        `    input=${indent(input, 4)},`,
+        'import requests',
+        '',
+        `response = requests.post(`,
+        `    "${endpoint}",`,
+        '    headers={',
+        '        "Authorization": f"Bearer {os.environ[\'COMFY_API_KEY\']}",',
+        '        "Content-Type": "application/json",',
+        '        "Idempotency-Key": str(uuid.uuid4()),',
+        '    },',
+        `    json=${indent(json, 4)},`,
+        '    timeout=600,',
         ')',
-        'result.save("output")'
+        'response.raise_for_status()',
+        '',
+        'for output in response.json()["outputs"]:',
+        '    print(output["url"])'
       ].join('\n')
     case 'typescript':
       return [
-        "import { Router } from '@comfyorg/router'",
+        `const response = await fetch(`,
+        `  '${endpoint}',`,
+        '  {',
+        "    method: 'POST',",
+        '    headers: {',
+        '      Authorization: `Bearer ${process.env.COMFY_API_KEY}`,',
+        "      'Content-Type': 'application/json',",
+        "      'Idempotency-Key': crypto.randomUUID()",
+        '    },',
+        `    body: JSON.stringify(${indent(json, 4)})`,
+        '  }',
+        ')',
         '',
-        'const router = new Router({ apiKey: process.env.COMFY_API_KEY })',
-        `const result = await router.run('${routerId}', {`,
-        `  input: ${indent(input, 2)}`,
-        '})',
-        "await result.save('output')"
+        'if (!response.ok) throw new Error(await response.text())',
+        '',
+        'const { outputs } = await response.json()',
+        'for (const output of outputs) console.log(output.url)'
       ].join('\n')
-    case 'http':
+    case 'curl':
       return [
-        `POST https://api.comfy.org/v1/models/${routerId}/run`,
-        'Authorization: Bearer YOUR_API_KEY',
-        'Content-Type: application/json',
-        '',
-        JSON.stringify({ input: serializableInput(values) }, null, 2)
+        `curl -X POST ${endpoint} \\`,
+        '  -H "Authorization: Bearer $COMFY_API_KEY" \\',
+        '  -H "Content-Type: application/json" \\',
+        '  -H "Idempotency-Key: $(uuidgen)" \\',
+        `  -d '${json}'`
       ].join('\n')
   }
 }

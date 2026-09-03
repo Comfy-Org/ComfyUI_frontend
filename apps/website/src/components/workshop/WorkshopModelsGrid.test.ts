@@ -59,6 +59,39 @@ describe('WorkshopModelsGrid', () => {
     expect(cardNames()).toEqual([expect.stringContaining('Flux')])
   })
 
+  it('suggests popular models and narrows by a provider chip', async () => {
+    const user = userEvent.setup()
+    render(WorkshopModelsGrid, { props: { models } })
+    expect(screen.queryByTestId('workshop-search-panel')).toBeNull()
+
+    await user.click(screen.getByTestId('workshop-search'))
+    expect(
+      screen
+        .getAllByTestId('workshop-search-model')
+        .map((row) => row.textContent ?? '')
+    ).toHaveLength(3)
+
+    await user.click(
+      screen
+        .getAllByTestId('workshop-search-provider')
+        .filter((chip) => chip.textContent?.includes('Kling'))[0]
+    )
+    expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
+  })
+
+  it('fills the search from a suggested model', async () => {
+    const user = userEvent.setup()
+    render(WorkshopModelsGrid, { props: { models } })
+
+    await user.click(screen.getByTestId('workshop-search'))
+    await user.click(
+      screen
+        .getAllByTestId('workshop-search-model')
+        .filter((row) => row.textContent?.includes('Flux'))[0]
+    )
+    expect(cardNames()).toEqual([expect.stringContaining('Flux')])
+  })
+
   it('combines the medium rail with the capability menu', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })

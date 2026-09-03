@@ -2,8 +2,7 @@
 import { ref } from 'vue'
 
 import { getRoutes } from '../../config/routes'
-import type { WorkshopModel } from '../../config/workshop'
-import { discoveryModels } from '../../data/modelDiscovery'
+import { discoveryProviders } from '../../data/modelDiscovery'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import BrandButton from '../common/BrandButton.vue'
@@ -15,17 +14,20 @@ const routes = getRoutes(locale)
 // Thumbnails are fetched the first time a card is hovered or focused, so the
 // looping row does not pull every preview on page load.
 const revealed = ref<Set<string>>(new Set())
-function reveal(slug: string) {
-  revealed.value = new Set(revealed.value).add(slug)
+function reveal(name: string) {
+  revealed.value = new Set(revealed.value).add(name)
 }
 
-// From the home a visitor is still discovering: land on the catalog filtered
-// to that provider, where every model and version of theirs is one row away,
-// rather than on a single model's page.
-const cardHref = ({ provider, href }: WorkshopModel) =>
-  provider
-    ? `${routes.workshop}?provider=${encodeURIComponent(provider)}`
-    : href
+const cardHref = (name: string) =>
+  `${routes.workshop}?provider=${encodeURIComponent(name)}`
+
+const modelCount = (count: number) =>
+  t(
+    count === 1
+      ? 'modelDiscovery.modelCount.singular'
+      : 'modelDiscovery.modelCount.plural',
+    locale
+  ).replace('{n}', `${count}`)
 
 const cardClass =
   'group/card bg-transparency-white-t4 relative flex h-44 w-48 shrink-0 flex-col items-center justify-center gap-3 overflow-hidden rounded-3xl border border-transparency-white-t8 px-5 text-center text-primary-warm-white transition-colors hover:border-transparency-white-t20 focus-visible:border-primary-comfy-yellow focus-visible:outline-none'
@@ -69,17 +71,20 @@ const cardClass =
             :aria-hidden="copy === 2 ? 'true' : undefined"
           >
             <a
-              v-for="{ model, logo } in discoveryModels"
-              :key="model.slug"
-              :href="cardHref(model)"
+              v-for="provider in discoveryProviders"
+              :key="provider.name"
+              :href="cardHref(provider.name)"
               :class="cardClass"
               :tabindex="copy === 2 ? -1 : undefined"
-              @pointerenter="reveal(model.slug)"
-              @focus="reveal(model.slug)"
+              data-testid="discovery-provider"
+              @pointerenter="reveal(provider.name)"
+              @focus="reveal(provider.name)"
             >
-              <template v-if="revealed.has(model.slug) && model.thumbnailUrl">
+              <template
+                v-if="revealed.has(provider.name) && provider.thumbnailUrl"
+              >
                 <StaticFrame
-                  :src="model.thumbnailUrl"
+                  :src="provider.thumbnailUrl"
                   class="absolute inset-0 size-full object-cover opacity-0 transition-opacity duration-300 group-hover/card:opacity-50 group-focus-visible/card:opacity-50"
                 />
                 <span
@@ -89,17 +94,17 @@ const cardClass =
               </template>
               <span
                 class="relative size-9 bg-current mask-contain mask-center mask-no-repeat"
-                :style="{ maskImage: `url(${logo})` }"
+                :style="{ maskImage: `url(${provider.logo})` }"
                 aria-hidden="true"
               />
               <span class="relative flex flex-col gap-0.5">
-                <span class="text-base/tight font-medium">{{
-                  model.name
-                }}</span>
+                <span class="text-base/tight font-medium">
+                  {{ provider.name }}
+                </span>
                 <span
                   class="text-xs text-primary-warm-gray transition-colors group-hover/card:text-primary-warm-white group-focus-visible/card:text-primary-warm-white"
                 >
-                  {{ model.provider ?? t('workshop.card.partnerNode', locale) }}
+                  {{ modelCount(provider.modelCount) }}
                 </span>
               </span>
             </a>
