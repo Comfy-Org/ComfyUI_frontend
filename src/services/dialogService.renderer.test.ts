@@ -20,6 +20,7 @@ vi.mock('@/platform/telemetry', () => ({
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
+  DISTRIBUTION: 'desktop',
   isCloud: false
 }))
 
@@ -36,7 +37,8 @@ vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
   useBillingCapabilities: () => ({
     canTopUp: { value: true },
     canSubscribeSelfServe: { value: false },
-    isReady: { value: true }
+    isReady: { value: true },
+    snapshotAuthoritative: { value: false }
   })
 }))
 
