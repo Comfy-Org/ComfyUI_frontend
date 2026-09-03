@@ -14,6 +14,7 @@ const zRendererType = z.enum([
 // innerNode.id = `${this.node.id}:${i}`
 // Remove it after GroupNode is redesigned.
 export const zNodeId = z.union([z.number().int(), z.string()])
+export type NodeId = z.infer<typeof zNodeId>
 const zNodeInputName = z.string()
 
 /**
@@ -319,8 +320,7 @@ const zGraphDefinitions = z.object({
         SubgraphDefinitionBase<ComfyWorkflow1BaseOutput>,
         z.ZodTypeDef,
         SubgraphDefinitionBase<ComfyWorkflow1BaseInput>
-      >,
-      'many'
+      >
     > => z.array(zSubgraphDefinition)
   )
 })
@@ -439,10 +439,31 @@ interface SubgraphDefinitionBase<
   description?: string
   category?: string
   essentials_category?: string
+  /** Config for the subgraph (matches `zComfyWorkflow1`'s `config`, not present on the recursive base type). */
+  config?: T extends ComfyWorkflow1BaseInput
+    ? z.input<typeof zConfig> | null
+    : z.output<typeof zConfig> | null
   /** Custom metadata for the subgraph (description, searchAliases, etc.) */
   extra?: T extends ComfyWorkflow1BaseInput
     ? z.input<typeof zExtra> | null
     : z.output<typeof zExtra> | null
+  /** A subgraph is a recursive `ComfyWorkflow1` — it carries its own node/link/group/model graph data. */
+  nodes: T extends ComfyWorkflow1BaseInput
+    ? z.input<typeof zComfyNode>[]
+    : z.output<typeof zComfyNode>[]
+  links?: T extends ComfyWorkflow1BaseInput
+    ? z.input<typeof zComfyLinkObject>[]
+    : z.output<typeof zComfyLinkObject>[]
+  groups?: T extends ComfyWorkflow1BaseInput
+    ? z.input<typeof zGroup>[]
+    : z.output<typeof zGroup>[]
+  models?: T extends ComfyWorkflow1BaseInput
+    ? z.input<typeof zModelFile>[]
+    : z.output<typeof zModelFile>[]
+  version: 1
+  state: T extends ComfyWorkflow1BaseInput
+    ? z.input<typeof zGraphState>
+    : z.output<typeof zGraphState>
 
   inputNode: T extends ComfyWorkflow1BaseInput
     ? z.input<typeof zExportedSubgraphIONode>

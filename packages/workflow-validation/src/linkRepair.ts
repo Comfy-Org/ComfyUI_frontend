@@ -28,8 +28,7 @@ import type {
   SerialisedGraph,
   SerialisedLinkArray,
   SerialisedLinkObject,
-  SerialisedNode,
-  SerialisedNodeOutput
+  SerialisedNode
 } from './serialised'
 import { describeTopologyError, toLinkContext } from './linkTopology'
 import type { LinkContext, TopologyError } from './linkTopology'
@@ -137,12 +136,12 @@ export function repairLinks(
     op: 'ADD' | 'REMOVE'
   ) {
     patchedNodeSlots[node.id] = patchedNodeSlots[node.id] || {}
-    const patchedNode = patchedNodeSlots[node.id]!
+    const patchedNode = patchedNodeSlots[node.id]
     if (ioDir == IoDirection.INPUT) {
       patchedNode['inputs'] = patchedNode['inputs'] || {}
-      if (patchedNode['inputs']![slot] !== undefined) {
+      if (patchedNode['inputs'][slot] !== undefined) {
         logger.log(
-          ` > Already set ${node.id}.inputs[${slot}] to ${patchedNode['inputs']![slot]!} Skipping.`
+          ` > Already set ${node.id}.inputs[${slot}] to ${patchedNode['inputs'][slot]} Skipping.`
         )
         return false
       }
@@ -154,54 +153,54 @@ export function repairLinks(
         )
         return false
       }
-      patchedNode['inputs']![slot] = linkIdToSet
-      if (fix) {
-        inputSlot!.link = linkIdToSet
+      patchedNode['inputs'][slot] = linkIdToSet
+      if (fix && inputSlot) {
+        inputSlot.link = linkIdToSet
       }
     } else {
       patchedNode['outputs'] = patchedNode['outputs'] || {}
-      patchedNode['outputs']![slot] = patchedNode['outputs']![slot] || {
+      patchedNode['outputs'][slot] = patchedNode['outputs'][slot] || {
         links: [...(node.outputs?.[slot]?.links || [])],
         changes: {}
       }
-      if (patchedNode['outputs']![slot]!['changes']![linkId] !== undefined) {
+      if (patchedNode['outputs'][slot]['changes'][linkId] !== undefined) {
         logger.log(
           ` > Already set ${node.id}.outputs[${slot}] to ${
-            patchedNode['inputs']![slot]
+            patchedNode['inputs']?.[slot]
           }! Skipping.`
         )
         return false
       }
-      patchedNode['outputs']![slot]!['changes']![linkId] = op
+      patchedNode['outputs'][slot]['changes'][linkId] = op
       if (op === 'ADD') {
         const linkIdIndex =
-          patchedNode['outputs']![slot]!['links'].indexOf(linkId)
+          patchedNode['outputs'][slot]['links'].indexOf(linkId)
         if (linkIdIndex !== -1) {
           logger.log(
             ` > Hmmm.. asked to add ${linkId} but it is already in list...`
           )
           return false
         }
-        patchedNode['outputs']![slot]!['links'].push(linkId)
+        patchedNode['outputs'][slot]['links'].push(linkId)
         if (fix) {
           node.outputs = node.outputs || []
-          node.outputs[slot] =
-            node.outputs[slot] || ({} as SerialisedNodeOutput)
-          node.outputs[slot]!.links = node.outputs[slot]!.links || []
-          node.outputs[slot]!.links!.push(linkId)
+          node.outputs[slot] = node.outputs[slot] || {}
+          const outputSlot = node.outputs[slot]
+          outputSlot.links = outputSlot.links || []
+          outputSlot.links.push(linkId)
         }
       } else {
         const linkIdIndex =
-          patchedNode['outputs']![slot]!['links'].indexOf(linkId)
+          patchedNode['outputs'][slot]['links'].indexOf(linkId)
         if (linkIdIndex === -1) {
           logger.log(
             ` > Hmmm.. asked to remove ${linkId} but it doesn't exist...`
           )
           return false
         }
-        patchedNode['outputs']![slot]!['links'].splice(linkIdIndex, 1)
+        patchedNode['outputs'][slot]['links'].splice(linkIdIndex, 1)
         if (fix) {
-          node.outputs?.[slot]!.links!.splice(linkIdIndex, 1)
+          node.outputs?.[slot]?.links?.splice(linkIdIndex, 1)
         }
       }
     }
@@ -239,12 +238,12 @@ export function repairLinks(
     slot: number,
     linkId: number
   ) {
-    let has = false
+    let has: boolean
     if (ioDir === IoDirection.INPUT) {
       const nodeHasIt = node.inputs?.[slot]?.link === linkId
       if (patchedNodeSlots[node.id]?.['inputs']) {
         const patchedHasIt =
-          patchedNodeSlots[node.id]!['inputs']![slot] === linkId
+          patchedNodeSlots[node.id]['inputs']![slot] === linkId
         if (fix && nodeHasIt !== patchedHasIt) {
           throw new LinkRepairAbortedError({
             kind: 'target-link-mismatch',
@@ -260,7 +259,7 @@ export function repairLinks(
       const nodeHasIt = node.outputs?.[slot]?.links?.includes(linkId)
       if (patchedNodeSlots[node.id]?.['outputs']?.[slot]?.['changes'][linkId]) {
         const patchedHasIt =
-          patchedNodeSlots[node.id]!['outputs']![slot]?.links.includes(linkId)
+          patchedNodeSlots[node.id]['outputs']![slot]?.links.includes(linkId)
         if (fix && nodeHasIt !== patchedHasIt) {
           throw new LinkRepairAbortedError({
             kind: 'origin-link-not-listed',
@@ -280,12 +279,11 @@ export function repairLinks(
     ioDir: IoDirection,
     slot: number
   ) {
-    let hasAny = false
+    let hasAny: boolean
     if (ioDir === IoDirection.INPUT) {
       const nodeHasAny = node.inputs?.[slot]?.link != null
       if (patchedNodeSlots[node.id]?.['inputs']) {
-        const patchedHasAny =
-          patchedNodeSlots[node.id]!['inputs']![slot] != null
+        const patchedHasAny = patchedNodeSlots[node.id]['inputs']![slot] != null
         if (fix && nodeHasAny !== patchedHasAny) {
           throw new LinkRepairAbortedError({
             kind: 'target-slot-out-of-bounds',
@@ -301,7 +299,7 @@ export function repairLinks(
       const nodeHasAny = node.outputs?.[slot]?.links?.length
       if (patchedNodeSlots[node.id]?.['outputs']?.[slot]?.['changes']) {
         const patchedHasAny =
-          patchedNodeSlots[node.id]!['outputs']![slot]?.links.length
+          patchedNodeSlots[node.id]['outputs']![slot]?.links.length
         if (fix && nodeHasAny !== patchedHasAny) {
           throw new LinkRepairAbortedError({
             kind: 'origin-slot-out-of-bounds',
@@ -403,12 +401,12 @@ export function repairLinks(
           logger.log(
             ` > [PATCH] ${targetLog} is not defined, will set to ${ctx.linkId}.`
           )
-          let patched = patchTarget('ADD')
+          const patched = patchTarget('ADD')
           if (!patched) {
             logger.log(
               ` > [PATCH] Nvm, ${targetLog} already patched. Removing ${ctx.linkId} from ${originLog}.`
             )
-            patched = patchOrigin('REMOVE')
+            patchOrigin('REMOVE')
           }
         } else {
           logger.log(
@@ -457,13 +455,9 @@ export function repairLinks(
     for (let i = data.deletedLinks.length - 1; i >= 0; i--) {
       logger.log(`Deleting link #${data.deletedLinks[i]}.`)
       if (isLiveGraph(graph)) {
-        delete (graph.links as Record<number, unknown>)[data.deletedLinks[i]!]
+        delete (graph.links as Record<number, unknown>)[data.deletedLinks[i]]
       } else {
-        const idx = (
-          graph.links as Array<
-            SerialisedLinkArray | SerialisedLinkObject | null
-          >
-        ).findIndex(
+        const idx = graph.links.findIndex(
           (l) =>
             l &&
             ((l as SerialisedLinkArray)[0] === data.deletedLinks[i] ||
@@ -478,9 +472,9 @@ export function repairLinks(
       }
     }
     if (!isLiveGraph(graph)) {
-      graph.links = (
-        graph.links as Array<SerialisedLinkArray | SerialisedLinkObject | null>
-      ).filter((l): l is SerialisedLinkArray | SerialisedLinkObject => !!l)
+      graph.links = graph.links.filter(
+        (l): l is SerialisedLinkArray | SerialisedLinkObject => !!l
+      )
     }
   }
   if (!data.patchedNodes.length && !data.deletedLinks.length) {

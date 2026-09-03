@@ -2,6 +2,7 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "composite": true,
+    "noEmit": false,
     "outDir": "dist/.tsnode",
     "module": "ESNext",
     "moduleResolution": "bundler"
