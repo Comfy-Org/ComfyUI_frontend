@@ -283,12 +283,9 @@ test('completes hosted subscription and captures terminal operation', async () =
     const checkoutPagePromise = context.waitForEvent('page')
     await page.evaluate(() => {
       const seam = Reflect.get(window, '__accountLayerPoc') as {
-        recoverSubscription(planId: string, intent: string): Promise<void>
+        subscribe(planId: string): Promise<void>
       }
-      void seam.recoverSubscription(
-        'pro-monthly',
-        'comfyui-frontend-account-layer-poc:subscribe:pro-monthly'
-      )
+      void seam.subscribe('pro-monthly')
     })
     const response = await responsePromise
     expect(response.status()).toBe(200)
@@ -300,20 +297,19 @@ test('completes hosted subscription and captures terminal operation', async () =
     const captcha = checkoutPage
       .getByText(/hcaptcha|verify you are human/i)
       .first()
-    if (await captcha.isVisible().catch(() => false)) {
-      console.log(
-        'HUMAN: solve the captcha in the Chrome window on display :1 (waiting up to 600 s)'
-      )
-    }
+    console.log(
+      `HUMAN: complete any visible Stripe verification in Chrome on display :1; captcha visible=${await captcha.isVisible().catch(() => false)}; waiting up to 600 s for settlement`
+    )
     await checkoutPage
       .waitForURL((url) => url.origin === new URL(baseUrl).origin, {
         timeout: 600_000,
         waitUntil: 'commit'
       })
       .catch(async (error: unknown) => {
-        await checkoutPage.screenshot({
-          path: `${evidenceDir}/captcha-hard-stop.png`
-        })
+        if (!checkoutPage.isClosed())
+          await checkoutPage.screenshot({
+            path: `${evidenceDir}/captcha-hard-stop.png`
+          })
         throw error
       })
     const terminal = await recordPaymentStateUntilTerminal(page)
