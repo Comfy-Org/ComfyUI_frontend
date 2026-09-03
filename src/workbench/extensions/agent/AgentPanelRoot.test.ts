@@ -2875,6 +2875,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await sendFromComposer('second message')
 
     expect(bodies[1]).not.toHaveProperty('workflow_id')
+    expect(bodies[1]).not.toHaveProperty('draft')
     expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-42')).toBe(
       origin.path
     )
@@ -3136,6 +3137,18 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[0]).not.toHaveProperty('workflow_id')
     expect(bodies[0]).not.toHaveProperty('current_tab')
     expect(bodies[0]).not.toHaveProperty('draft')
+    await screen.findByRole('button', { name: 'Stop' })
+    expect(
+      useAgentWorkflowTabBindingStore().tabPathFor('wf-fresh')
+    ).toBeUndefined()
+    expect(
+      useAgentWorkflowTabBindingStore().workflowIdFor(replacement.path)
+    ).toBe('wf-replacement')
+    expect(
+      socketSend.mock.calls.some(([frame]) =>
+        String(frame).includes('doc_subscribe')
+      )
+    ).toBe(false)
   })
 
   it('sends only the remaining chip after one is dismissed', async () => {
