@@ -108,9 +108,9 @@ function frameContext(frame: TargetFrame): RemoteMutationContext {
 /**
  * Full-snapshot projection of a detached target session's staged document
  * into the ECS stores through the target's `GraphMutations` composite. One
- * atomic batch clears the scope and rebuilds it from the staged doc, so a
- * validation failure anywhere leaves the stores untouched and the frame
- * queued (the session's all-or-nothing commit contract).
+ * atomic reconciliation preserves retained layout entities while removing
+ * semantic entities absent from the snapshot. A validation failure anywhere
+ * leaves the stores untouched and the frame queued.
  */
 export function createTargetFrameApplyPort(
   mutations: GraphMutations
@@ -140,11 +140,7 @@ export function createTargetFrameApplyPort(
         links.push(link)
       }
 
-      return mutations.batch(frameContext(frame), (batch) => {
-        batch.clearSemanticGraph()
-        for (const node of nodes) batch.reconcileNode(node)
-        for (const link of links) batch.connect(link)
-      })
+      return mutations.reconcileSnapshot(nodes, links, frameContext(frame))
     }
   }
 }

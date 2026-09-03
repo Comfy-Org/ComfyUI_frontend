@@ -5,10 +5,11 @@ import type { TargetFrame } from '@/core/graph/document/detachedTargetSession'
 import type { GraphMutations } from '@/core/graph/graphMutations'
 import { createTargetFrameApplyPort } from '@/workbench/extensions/agent/crdt/targetFrameProjection'
 
-type RecordedCall =
-  | { kind: 'clearSemanticGraph' }
-  | { kind: 'reconcileNode'; id: unknown; type: unknown }
-  | { kind: 'connect'; id: unknown }
+type RecordedCall = {
+  kind: 'reconcileSnapshot'
+  nodeIds: unknown[]
+  linkIds: unknown[]
+}
 
 function recordingMutations(batchResult = true): {
   mutations: GraphMutations
@@ -21,21 +22,13 @@ function recordingMutations(batchResult = true): {
     throw new Error('projection must only use batch()')
   }
   const mutations: GraphMutations = {
-    batch(context, define) {
+    batch: fail,
+    reconcileSnapshot(nodes, links, context) {
       contexts.push(context)
-      define({
-        addNode: fail,
-        reconcileNode: (payload) =>
-          calls.push({
-            kind: 'reconcileNode',
-            id: payload.id,
-            type: payload.type
-          }),
-        setWidget: fail,
-        connect: (link) => calls.push({ kind: 'connect', id: link.id }),
-        removeLinks: fail,
-        deleteNode: fail,
-        clearSemanticGraph: () => calls.push({ kind: 'clearSemanticGraph' })
+      calls.push({
+        kind: 'reconcileSnapshot',
+        nodeIds: nodes.map(({ id }) => id),
+        linkIds: links.map(({ id }) => id)
       })
       return batchResult
     },
@@ -68,7 +61,7 @@ const frame: TargetFrame = {
 }
 
 describe('createTargetFrameApplyPort', () => {
-  it('projects the staged snapshot as one clear-then-rebuild batch', () => {
+  it('projects the staged document through snapshot reconciliation', () => {
     const doc = new Y.Doc()
     setNode(doc, '2', { type: 'Sink' })
     setNode(doc, '1', { type: 'Source' })
@@ -79,10 +72,7 @@ describe('createTargetFrameApplyPort', () => {
 
     expect(applied).toBe(true)
     expect(calls).toEqual([
-      { kind: 'clearSemanticGraph' },
-      { kind: 'reconcileNode', id: '1', type: 'Source' },
-      { kind: 'reconcileNode', id: '2', type: 'Sink' },
-      { kind: 'connect', id: 9 }
+      { kind: 'reconcileSnapshot', nodeIds: ['1', '2'], linkIds: [9] }
     ])
     expect(contexts).toEqual([
       {

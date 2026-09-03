@@ -550,6 +550,7 @@ describe('EcsFollowerAdapter integration', () => {
           events.push(`${workflowId}:end`)
           return true
         },
+        reconcileSnapshot: () => true,
         addNode: () => true,
         setWidget: () => true,
         connect: () => true,

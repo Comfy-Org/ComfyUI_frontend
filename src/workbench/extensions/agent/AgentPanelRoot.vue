@@ -143,6 +143,8 @@ const withMutationTracking = (
   }
   return {
     batch: (context, define) => tracked(() => inner.batch(context, define)),
+    reconcileSnapshot: (nodes, links, context) =>
+      tracked(() => inner.reconcileSnapshot(nodes, links, context)),
     addNode: (payload, context) =>
       tracked(() => inner.addNode(payload, context)),
     setWidget: (nodeId, name, value, context) =>

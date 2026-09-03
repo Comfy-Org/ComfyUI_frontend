@@ -224,7 +224,7 @@ describe('graphMutations', () => {
     error.mockRestore()
   })
 
-  it('reconciles a seeded node in place with authoritative widgets and layout', () => {
+  it('reconciles a seeded node while preserving its layout identity', () => {
     const graph = mutations()
     graph.addNode(node(1, { seed: 1, stale: 'old' }), context)
     const [existing] = useNodeDataStore().getGraphNodesFor('root', 'root')
@@ -250,16 +250,64 @@ describe('graphMutations', () => {
     expect(
       useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), 'stale'))
     ).toBeUndefined()
+    expect(deleteLayouts).not.toHaveBeenCalled()
+    expect(createLayout).not.toHaveBeenCalled()
+  })
+
+  it('reconciles a full snapshot without recreating retained layouts', () => {
+    const graph = mutations()
+    graph.batch(context, (batch) => {
+      batch.addNode(node(1))
+      batch.addNode(node(2))
+      batch.connect({
+        id: 9,
+        originNodeId: 1,
+        originSlot: 0,
+        targetNodeId: 2,
+        targetSlot: 0,
+        type: 'IMAGE'
+      })
+    })
+    createLayout.mockClear()
+    deleteLayouts.mockClear()
+
+    expect(
+      graph.reconcileSnapshot(
+        [{ ...node(1), title: 'Retained' }, node(3)],
+        [
+          {
+            id: 10,
+            originNodeId: 1,
+            originSlot: 0,
+            targetNodeId: 3,
+            targetSlot: 0,
+            type: 'IMAGE'
+          }
+        ],
+        { ...context, opId: 'snapshot' }
+      )
+    ).toBe(true)
+
+    expect(
+      useNodeDataStore()
+        .getGraphNodesFor('root', 'root')
+        .map(({ id }) => id)
+    ).toEqual([toNodeId(1), toNodeId(3)])
+    expect(
+      [...useLinkStore().graphTopologies(scope)].map(({ id }) => id)
+    ).toEqual([toLinkId(10)])
+    expect(deleteLayouts).toHaveBeenCalledOnce()
     expect(deleteLayouts).toHaveBeenCalledWith(
       scope,
-      [toNodeId(1)],
-      expect.objectContaining({ opId: 'bootstrap' })
+      [toNodeId(2)],
+      expect.objectContaining({ opId: 'snapshot' })
     )
+    expect(createLayout).toHaveBeenCalledOnce()
     expect(createLayout).toHaveBeenCalledWith(
       scope,
-      toNodeId(1),
+      toNodeId(3),
       expect.any(Object),
-      expect.objectContaining({ opId: 'bootstrap' })
+      expect.objectContaining({ opId: 'snapshot' })
     )
   })
 
