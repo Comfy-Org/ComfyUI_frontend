@@ -77,6 +77,12 @@ const config: KnipConfig = {
     'apps/website/src/types/rate-card/index.ts',
     'apps/website/src/types/rate-card/types.gen.ts',
     'apps/website/src/types/rate-card/zod.gen.ts',
+    // Pending integration in stacked PR
+    'src/components/sidebar/tabs/nodeLibrary/CustomNodesPanel.vue',
+    // Served to custom nodes at runtime as /comfy/api/v2.js. Nothing in
+    // the build imports it — that is the point: it is the entry point
+    // packs import from, so knip cannot see a consumer.
+    'public/comfy/api/v2.js',
     // Marketing media tooling — adopted by pages in a follow-up PR
     'apps/website/src/components/common/SiteVideo.vue',
     // Animated pill button — retained for reuse after the learning directory
