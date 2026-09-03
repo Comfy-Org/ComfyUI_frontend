@@ -7,7 +7,7 @@ interface WorkflowStep {
   name?: string
   if?: string
   uses?: string
-  with?: { name?: string }
+  with?: { name?: string; if_no_artifact_found?: string }
 }
 
 interface WorkflowJob {
@@ -42,7 +42,8 @@ describe('fork Storybook artifact contract', () => {
 
     expect(upload.uses).toMatch(/^actions\/upload-artifact@/)
     expect(upload.if).toBe('success()')
-    expect(download.uses).toMatch(/^actions\/download-artifact@/)
+    expect(download.uses).toMatch(/^dawidd6\/action-download-artifact@/)
     expect(download.with?.name).toBe(upload.with?.name)
+    expect(download.with?.if_no_artifact_found).toBe('warn')
   })
 })
