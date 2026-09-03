@@ -45,7 +45,7 @@ import {
 } from '@/utils/formatUtil'
 import type { AppMode } from '@/utils/appMode'
 import type { UUID } from '@/utils/uuid'
-import { ensureNonZeroUuid } from '@/utils/uuid'
+import { ensureNonZeroUuid, zeroUuid } from '@/utils/uuid'
 
 function linearModeToAppMode(linearMode: unknown): AppMode | null {
   if (typeof linearMode !== 'boolean') return null
@@ -57,15 +57,18 @@ function linearModeToAppMode(linearMode: unknown): AppMode | null {
  * carries the zero id. `loadApiJson` and `importA1111` populate the root graph
  * without `configure()`, so every such import would otherwise share the zero
  * id's bucket and lose it once a reload generated a real id. The id is written
- * back into `workflowData` so the state this load persists reloads under the
- * same key.
+ * back into `workflowData` only in that zero-id case, so a `configure()`-based
+ * load (where `rootGraph.id` already came from `workflowData.id`) can never
+ * have this rewrite the incoming workflow's identity to a stale graph's id.
  */
 function adoptRootGraphId(workflowData: ComfyWorkflowJSON): UUID | null {
   if (!app.isGraphReady) return null
 
   const rootGraph = app.rootGraph
-  workflowData.id = ensureNonZeroUuid(rootGraph)
-  return workflowData.id
+  if (rootGraph.id === zeroUuid) {
+    workflowData.id = ensureNonZeroUuid(rootGraph)
+  }
+  return rootGraph.id
 }
 
 // TRANSITIONAL (decision log D14): deletable when ECS scopes workflow
