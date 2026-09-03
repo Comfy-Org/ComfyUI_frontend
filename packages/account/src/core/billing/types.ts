@@ -115,7 +115,7 @@ export interface BillingTransport {
     request: TransportRequest<unknown>
   ): Promise<{ status: number; body: unknown }>
 }
-export interface BillingClient {
+export interface BillingApiClient {
   subscribe(
     input: SubscribeRequest,
     idempotencyKey: string,

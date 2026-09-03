@@ -1,6 +1,6 @@
 import { reduceBilling } from './reducer.js'
 import type {
-  BillingClient,
+  BillingApiClient,
   BillingClock,
   BillingOperationKind,
   BillingOperationStore,
@@ -15,7 +15,7 @@ export const billingPollTiming = {
   subscriptionTimeoutMs: 300_000
 } as const
 export function createBillingPoller(options: {
-  client: Pick<BillingClient, 'getOperation'>
+  client: Pick<BillingApiClient, 'getOperation'>
   clock: BillingClock
   store: BillingOperationStore
   onState(state: BillingState): void

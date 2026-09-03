@@ -1,7 +1,7 @@
 import { AccountError, MalformedResponseError } from '../index.js'
 import type { AccountAbortSignal, TransportRequest } from '../index.js'
 import type {
-  BillingClient,
+  BillingApiClient,
   BillingOperationResponse,
   BillingTransport,
   CancelRequest,
@@ -53,7 +53,7 @@ async function request<T>(
 
 export function createBillingApiClient(
   transport: BillingTransport
-): BillingClient {
+): BillingApiClient {
   return {
     subscribe: (
       input: SubscribeRequest,

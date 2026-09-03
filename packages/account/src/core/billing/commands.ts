@@ -2,7 +2,7 @@ import { createBillingPoller } from './poller.js'
 import { initialBillingState, reduceBilling } from './reducer.js'
 import { createSingleFlight } from './singleFlight.js'
 import type {
-  BillingClient,
+  BillingApiClient,
   BillingHostPorts,
   BillingOperationKind,
   BillingState,
@@ -29,7 +29,7 @@ export interface BillingCommands {
 }
 
 export function createBillingCommands(options: {
-  client: BillingClient
+  client: BillingApiClient
   ports: BillingHostPorts
 }): BillingCommands {
   let state = initialBillingState
