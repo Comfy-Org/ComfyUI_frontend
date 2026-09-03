@@ -11,7 +11,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-const zRecordedWsEvent = z.object({
+export const zRecordedWsEvent = z.object({
   type: z.string(),
   data: z.record(z.string(), z.unknown()),
   at_ms: z.number().int().nonnegative().optional()
@@ -35,14 +35,14 @@ const zWidgetCatalog = z.custom<WidgetCatalog>(
   (value) => isRecord(value) && isRecord(value.types)
 )
 
-const zAgentConversationWorkflow = z.object({
+export const zAgentConversationWorkflow = z.object({
   id: z.string().uuid(),
   name: z.string().min(1),
   catalog: zWidgetCatalog,
   seed: zWorkflowJson
 })
 
-const zAgentConversationRequest = z.object({
+export const zAgentConversationRequest = z.object({
   content: z.string().min(1)
 })
 
@@ -67,7 +67,7 @@ const zTurn = z.object({
 })
 export type AgentConversationTurn = z.infer<typeof zTurn>
 
-const zAgentConversation = z
+export const zAgentConversation = z
   .object({
     schema_version: z.literal('agent-conversation.v2'),
     source: z.object({
