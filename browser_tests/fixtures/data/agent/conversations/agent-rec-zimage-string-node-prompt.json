@@ -1,0 +1,526 @@
+{
+  "schema_version": "agent-conversation.v1",
+  "source": {
+    "repo": "Comfy-Org/ComfyUI_frontend",
+    "suite": "agent",
+    "case_id": "agent-rec-zimage-string-node-prompt",
+    "response_side": "recorded",
+    "note": "RECORDED from Comfy-Org/cloud services/agent running NON-standalone local full stack (Postgres + doc host, M2M identity headers) at http://127.0.0.1:8086 (frames: redis SUBSCRIBE channel:ws:<workspace>:u:<user>); NOT a production capture. cloud commit 9dc1da7dae2a1d40a9ca1f2a1f91cd9fd9e10900; model claude-opus-5; thread 98f33b92-6517-478e-a348-19db814e2685; message 5543eebd-40ed-408c-8574-f6a0e2d1e1c9; workflow 0150feeb-61a0-4dd2-b3c4-df8e743e31d4 (seeded by throwaway turn a9b183b7-9006-44ed-88ed-6c7f7cae1e7b; the recorded turn opens on a fresh workflow and switches to it first because the replay subscribes only on an agent_active_tab frame, see plan Q4); agent_tool_calls parent rows ['e74f78e1-874e-4673-aaf5-0ef9b45ece1e', 'a3fac78f-e0a5-43af-b43d-979f4a0c0772', '6e9347a0-2025-4d03-9b95-ce9e68cd8727', '3f61fdd8-3a0c-4f04-8697-23ac2c398b34', '0520e93c-8a51-4ce5-ab5a-c80eb49d8d0b', 'd82a0aad-c81c-4776-938a-e0bf02056ff8', 'cc97e012-c484-40f9-a864-a97c9ba2e4bb', 'bcadb3c6-f385-4a1f-ae9f-b99ff9b4e0bd', 'f93556bb-a8bb-4ba2-9f72-d32056a80587']; rows agent-rec-zimage-string-node-prompt.zi-a2.rows.json; raw capture sha256 844318cc2db8e402e576d48e64336a4733455f053bb6eceea41d3a01349465e9",
+    "capture": {
+      "backend": "Comfy-Org/cloud",
+      "thread_id": "98f33b92-6517-478e-a348-19db814e2685",
+      "message_id": "5543eebd-40ed-408c-8574-f6a0e2d1e1c9",
+      "exported_at": "2026-09-03T12:01:27Z"
+    }
+  },
+  "workflow": {
+    "id": "0150feeb-61a0-4dd2-b3c4-df8e743e31d4",
+    "name": "Text to image",
+    "catalog": {
+      "types": {
+        "CheckpointLoaderSimple": {
+          "widget_order": ["ckpt_name"]
+        },
+        "CLIPTextEncode": {
+          "widget_order": ["text"]
+        },
+        "KSampler": {
+          "widget_order": [
+            "seed",
+            "control_after_generate",
+            "steps",
+            "cfg",
+            "sampler_name",
+            "scheduler",
+            "denoise"
+          ]
+        },
+        "VAEDecode": {
+          "widget_order": []
+        },
+        "SaveImage": {
+          "widget_order": ["filename_prefix"]
+        },
+        "PrimitiveStringMultiline": {
+          "widget_order": ["value"]
+        },
+        "EmptyLatentImage": {
+          "widget_order": ["width", "height", "batch_size"]
+        }
+      }
+    },
+    "seed": {
+      "nodes": [
+        {
+          "id": 4,
+          "type": "CheckpointLoaderSimple",
+          "pos": [0, 0],
+          "size": [315, 98],
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "MODEL",
+              "type": "MODEL",
+              "links": [3]
+            },
+            {
+              "name": "CLIP",
+              "type": "CLIP",
+              "links": [1]
+            },
+            {
+              "name": "VAE",
+              "type": "VAE",
+              "links": [5]
+            }
+          ],
+          "widgets_values": ["sd_xl_base_1.0.safetensors"]
+        },
+        {
+          "id": 6,
+          "type": "CLIPTextEncode",
+          "title": "Positive prompt",
+          "pos": [400, 0],
+          "size": [400, 200],
+          "inputs": [
+            {
+              "name": "clip",
+              "type": "CLIP",
+              "link": 1
+            },
+            {
+              "name": "text",
+              "type": "STRING",
+              "widget": {
+                "name": "text"
+              },
+              "link": null
+            }
+          ],
+          "outputs": [
+            {
+              "name": "CONDITIONING",
+              "type": "CONDITIONING",
+              "links": [2]
+            }
+          ],
+          "widgets_values": ["a photo of a pier"]
+        },
+        {
+          "id": 3,
+          "type": "KSampler",
+          "pos": [850, 0],
+          "size": [315, 262],
+          "inputs": [
+            {
+              "name": "model",
+              "type": "MODEL",
+              "link": 3
+            },
+            {
+              "name": "positive",
+              "type": "CONDITIONING",
+              "link": 2
+            },
+            {
+              "name": "negative",
+              "type": "CONDITIONING",
+              "link": null
+            },
+            {
+              "name": "latent_image",
+              "type": "LATENT",
+              "link": null
+            }
+          ],
+          "outputs": [
+            {
+              "name": "LATENT",
+              "type": "LATENT",
+              "links": [4]
+            }
+          ],
+          "widgets_values": [0, "randomize", 20, 7, "euler", "normal", 1]
+        },
+        {
+          "id": 8,
+          "type": "VAEDecode",
+          "pos": [1200, 0],
+          "size": [210, 46],
+          "inputs": [
+            {
+              "name": "samples",
+              "type": "LATENT",
+              "link": 4
+            },
+            {
+              "name": "vae",
+              "type": "VAE",
+              "link": 5
+            }
+          ],
+          "outputs": [
+            {
+              "name": "IMAGE",
+              "type": "IMAGE",
+              "links": [6]
+            }
+          ],
+          "widgets_values": []
+        },
+        {
+          "id": 9,
+          "type": "SaveImage",
+          "pos": [1450, 0],
+          "size": [315, 270],
+          "inputs": [
+            {
+              "name": "images",
+              "type": "IMAGE",
+              "link": 6
+            }
+          ],
+          "outputs": [],
+          "widgets_values": ["ComfyUI"]
+        }
+      ],
+      "links": [
+        [1, 4, 1, 6, 0, "CLIP"],
+        [2, 6, 0, 3, 1, "CONDITIONING"],
+        [3, 4, 0, 3, 0, "MODEL"],
+        [4, 3, 0, 8, 0, "LATENT"],
+        [5, 4, 2, 8, 1, "VAE"],
+        [6, 8, 0, 9, 0, "IMAGE"]
+      ]
+    }
+  },
+  "request": {
+    "content": "Switch to the tab 'Text to image', then add a text node that feeds the prompt of this workflow, put 'a red bicycle on a pier at dusk' in it, and run."
+  },
+  "response": [
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_thinking",
+        "data": {
+          "delta": "I'll switch to that tab and take a look at what's there."
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_active_tab",
+        "data": {
+          "name": "Text to image",
+          "workflow_id": "0150feeb-61a0-4dd2-b3c4-df8e743e31d4"
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "duration_ms": 11,
+          "status": "success",
+          "tool_call_id": "toolu_01EjSa5ZT7qaRRqCEBFwUYLY",
+          "tool_name": "switch_tab"
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "duration_ms": 594,
+          "status": "success",
+          "tool_call_id": "toolu_011b7ZgsTFUVYggGLKAPwttu",
+          "tool_name": "print_workflow"
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "duration_ms": 185,
+          "status": "success",
+          "tool_call_id": "toolu_013REBJ3bgPMbgKaXSLAmkAG",
+          "tool_name": "find_nodes"
+        }
+      }
+    },
+    {
+      "kind": "graph_ops",
+      "ops": [
+        {
+          "op": "add_node",
+          "pos": [395, 280],
+          "node": {
+            "id": 2346297545678642,
+            "pos": [395, 280],
+            "mode": 0,
+            "size": [240, 86],
+            "type": "PrimitiveStringMultiline",
+            "flags": {},
+            "order": 0,
+            "inputs": [],
+            "outputs": [
+              {
+                "name": "STRING",
+                "type": "STRING",
+                "links": []
+              }
+            ],
+            "properties": {},
+            "widgets_values": [null]
+          },
+          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+          "op_id": "b2a640a31f1946119e4389cfbfa38610",
+          "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+          "node_id": 2346297545678642,
+          "class_type": "PrimitiveStringMultiline",
+          "base_version": 2
+        },
+        {
+          "op": "set_widget",
+          "old": null,
+          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+          "op_id": "731fc9d4faf84ae0840e0b3a45a03a48",
+          "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+          "value": "a red bicycle on a pier at dusk",
+          "widget": "value",
+          "node_id": 2346297545678642,
+          "base_version": 2
+        },
+        {
+          "op": "connect",
+          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+          "op_id": "9e0615aa944d426db3e5932b7ed2de8f",
+          "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+          "link_id": 1868944393408444,
+          "to_node": 6,
+          "to_slot": 1,
+          "from_node": 2346297545678642,
+          "from_slot": 0,
+          "link_type": "STRING",
+          "base_version": 2
+        },
+        {
+          "op": "add_node",
+          "pos": [715, 280],
+          "node": {
+            "id": 1068057559864246,
+            "pos": [715, 280],
+            "mode": 0,
+            "size": [240, 86],
+            "type": "CLIPTextEncode",
+            "flags": {},
+            "order": 0,
+            "inputs": [
+              {
+                "link": null,
+                "name": "clip",
+                "type": "CLIP"
+              }
+            ],
+            "outputs": [
+              {
+                "name": "CONDITIONING",
+                "type": "CONDITIONING",
+                "links": []
+              }
+            ],
+            "properties": {},
+            "widgets_values": [null]
+          },
+          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+          "op_id": "6521c0a17c584541bcd3539250cf877c",
+          "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+          "node_id": 1068057559864246,
+          "class_type": "CLIPTextEncode",
+          "base_version": 2
+        },
+        {
+          "op": "set_widget",
+          "old": null,
+          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+          "op_id": "68344eaa0b5c4590bfa572951a13458f",
+          "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+          "value": "",
+          "widget": "text",
+          "node_id": 1068057559864246,
+          "base_version": 2
+        },
+        {
+          "op": "connect",
+          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+          "op_id": "a5d0567473004a4e9cb96a8ef0c251e1",
+          "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+          "link_id": 769581307347504,
+          "to_node": 1068057559864246,
+          "to_slot": 0,
+          "from_node": 4,
+          "from_slot": 1,
+          "link_type": "CLIP",
+          "base_version": 2
+        },
+        {
+          "op": "connect",
+          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+          "op_id": "37b1548fe5d943b2b2738353d96892f1",
+          "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+          "link_id": 2229783680013788,
+          "to_node": 3,
+          "to_slot": 2,
+          "from_node": 1068057559864246,
+          "from_slot": 0,
+          "link_type": "CONDITIONING",
+          "base_version": 2
+        },
+        {
+          "op": "add_node",
+          "pos": [395, 406],
+          "node": {
+            "id": 4476795995918869,
+            "pos": [395, 406],
+            "mode": 0,
+            "size": [240, 134],
+            "type": "EmptyLatentImage",
+            "flags": {},
+            "order": 0,
+            "inputs": [],
+            "outputs": [
+              {
+                "name": "LATENT",
+                "type": "LATENT",
+                "links": []
+              }
+            ],
+            "properties": {},
+            "widgets_values": [512, 512, 1]
+          },
+          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+          "op_id": "833c3d83b4bb4c88a0e47d1448573f81",
+          "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+          "node_id": 4476795995918869,
+          "class_type": "EmptyLatentImage",
+          "base_version": 2
+        },
+        {
+          "op": "connect",
+          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+          "op_id": "23cb809c1f8c4cafb067880b01ee9a04",
+          "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+          "link_id": 1532394889807820,
+          "to_node": 3,
+          "to_slot": 3,
+          "from_node": 4476795995918869,
+          "from_slot": 0,
+          "link_type": "LATENT",
+          "base_version": 2
+        }
+      ]
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "duration_ms": 208,
+          "status": "success",
+          "tool_call_id": "toolu_01Bob4FLcTWSWKt9cetrSQcU",
+          "tool_name": "apply_ops"
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "duration_ms": 199,
+          "status": "error",
+          "tool_call_id": "toolu_014CR2Q7xLRCmDXEaydcbf4s",
+          "tool_name": "validate"
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "duration_ms": 184,
+          "status": "success",
+          "tool_call_id": "toolu_01LR9BRaBnxH5hdBvg91GQiE",
+          "tool_name": "show_node"
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "duration_ms": 236,
+          "error_code": "knowledge_unavailable",
+          "status": "error",
+          "tool_call_id": "toolu_01FgBW9iiC8boKQAu6mmYZFt",
+          "tool_name": "list_model_picks"
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "duration_ms": 667,
+          "status": "success",
+          "tool_call_id": "toolu_015pTnqS23ko4wetU427Ji3Z",
+          "tool_name": "list_generate_models"
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "duration_ms": 243,
+          "status": "success",
+          "tool_call_id": "toolu_01QwFYGv31NWSPfeZXcvd6Ge",
+          "tool_name": "print_workflow"
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_message_delta",
+        "data": {
+          "delta": "Done — the text node is on your canvas and wired into the prompt, with \"a red bicycle on a pier at dusk\" in it. I also filled in the two inputs the sampler was missing (an empty negative prompt and a 512×512 blank canvas) so the graph is complete.\n\nI couldn't run it, though: this workflow uses the SDXL base checkpoint, and this server currently has **no checkpoint files installed at all** — so the run would fail immediately. That's an environment issue, not a wiring one.\n\nTwo ways forward, your call:\n- Install/download a checkpoint on the server, and I'll run this graph exactly as it is.\n- Or I can build the same prompt on one of the hosted image models available here (Flux, Ideogram, Stability, Recraft, and others) in a **new tab**, leaving this workflow untouched — that one I can run right now."
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_message_done",
+        "data": {
+          "usage": {
+            "cache_creation_input_tokens": 4471,
+            "cache_read_input_tokens": 395107,
+            "input_tokens": 20,
+            "output_tokens": 3071,
+            "total_tokens": 3091
+          }
+        }
+      }
+    }
+  ]
+}

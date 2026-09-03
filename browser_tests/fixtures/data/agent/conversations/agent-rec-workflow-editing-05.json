@@ -1,0 +1,412 @@
+{
+  "schema_version": "agent-conversation.v1",
+  "source": {
+    "repo": "Comfy-Org/ComfyUI_frontend",
+    "suite": "agent",
+    "case_id": "agent-rec-workflow-editing-05",
+    "response_side": "recorded",
+    "note": "RECORDED from Comfy-Org/cloud services/agent running NON-standalone local full stack (Postgres + doc host, M2M identity headers) at http://127.0.0.1:8086 (frames: redis SUBSCRIBE channel:ws:<workspace>:u:<user>); NOT a production capture. cloud commit 9dc1da7dae2a1d40a9ca1f2a1f91cd9fd9e10900; model claude-opus-5; thread d22255f9-36b3-4ec4-a99e-1a14f92f9b87; message ed9a4ce1-9fcb-4393-8b8b-900f60103eba; workflow a1474551-fbbf-428b-9d89-a41ac0031d1e (seeded by throwaway turn 31737c38-71ba-4866-a9cf-947df44fb49c; the recorded turn opens on a fresh workflow and switches to it first because the replay subscribes only on an agent_active_tab frame, see plan Q4); agent_tool_calls parent rows ['fdfd9665-8318-403d-82a7-a6764d3be23b', '8ac84dde-0912-4fac-b4d2-24ff247442e6', '2e0155b2-2eed-4e72-8718-f56fe9561c1c', '8463f6d0-03dd-4b90-8ed0-8d33bd59723d', 'edfd4073-5440-4296-b075-c98ef506bcc6', '8c177691-44ea-4534-a1d8-378c58cfe4fe', '00922b53-e98d-4645-81db-1b3eee576273']; rows agent-rec-workflow-editing-05.e5-a1.rows.json; raw capture sha256 596f4c002229ad778ec76d5972d6a285255300e4b816a80b31bfaa1fc80fa215",
+    "capture": {
+      "backend": "Comfy-Org/cloud",
+      "thread_id": "d22255f9-36b3-4ec4-a99e-1a14f92f9b87",
+      "message_id": "ed9a4ce1-9fcb-4393-8b8b-900f60103eba",
+      "exported_at": "2026-09-03T11:59:52Z"
+    }
+  },
+  "workflow": {
+    "id": "a1474551-fbbf-428b-9d89-a41ac0031d1e",
+    "name": "Image edit",
+    "catalog": {
+      "types": {
+        "LoadImage": {
+          "widget_order": ["image", "upload"]
+        },
+        "VAEEncode": {
+          "widget_order": []
+        },
+        "KSampler": {
+          "widget_order": [
+            "seed",
+            "control_after_generate",
+            "steps",
+            "cfg",
+            "sampler_name",
+            "scheduler",
+            "denoise"
+          ]
+        },
+        "VAEDecode": {
+          "widget_order": []
+        },
+        "SaveImage": {
+          "widget_order": ["filename_prefix"]
+        },
+        "ImageStitch": {
+          "widget_order": [
+            "direction",
+            "match_image_size",
+            "spacing_width",
+            "spacing_color"
+          ]
+        },
+        "PreviewImage": {
+          "widget_order": []
+        }
+      }
+    },
+    "seed": {
+      "nodes": [
+        {
+          "id": 1,
+          "type": "LoadImage",
+          "pos": [0, 0],
+          "size": [315, 314],
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "IMAGE",
+              "type": "IMAGE",
+              "links": [1]
+            },
+            {
+              "name": "MASK",
+              "type": "MASK",
+              "links": []
+            }
+          ],
+          "widgets_values": ["example.png", "image"]
+        },
+        {
+          "id": 2,
+          "type": "VAEEncode",
+          "pos": [400, 0],
+          "size": [210, 46],
+          "inputs": [
+            {
+              "name": "pixels",
+              "type": "IMAGE",
+              "link": 1
+            },
+            {
+              "name": "vae",
+              "type": "VAE",
+              "link": null
+            }
+          ],
+          "outputs": [
+            {
+              "name": "LATENT",
+              "type": "LATENT",
+              "links": [2]
+            }
+          ],
+          "widgets_values": []
+        },
+        {
+          "id": 3,
+          "type": "KSampler",
+          "pos": [700, 0],
+          "size": [315, 262],
+          "inputs": [
+            {
+              "name": "model",
+              "type": "MODEL",
+              "link": null
+            },
+            {
+              "name": "positive",
+              "type": "CONDITIONING",
+              "link": null
+            },
+            {
+              "name": "negative",
+              "type": "CONDITIONING",
+              "link": null
+            },
+            {
+              "name": "latent_image",
+              "type": "LATENT",
+              "link": 2
+            }
+          ],
+          "outputs": [
+            {
+              "name": "LATENT",
+              "type": "LATENT",
+              "links": [3]
+            }
+          ],
+          "widgets_values": [0, "randomize", 20, 7, "euler", "normal", 0.6]
+        },
+        {
+          "id": 8,
+          "type": "VAEDecode",
+          "pos": [1100, 0],
+          "size": [210, 46],
+          "inputs": [
+            {
+              "name": "samples",
+              "type": "LATENT",
+              "link": 3
+            },
+            {
+              "name": "vae",
+              "type": "VAE",
+              "link": null
+            }
+          ],
+          "outputs": [
+            {
+              "name": "IMAGE",
+              "type": "IMAGE",
+              "links": [4]
+            }
+          ],
+          "widgets_values": []
+        },
+        {
+          "id": 9,
+          "type": "SaveImage",
+          "pos": [1400, 0],
+          "size": [315, 270],
+          "inputs": [
+            {
+              "name": "images",
+              "type": "IMAGE",
+              "link": 4
+            }
+          ],
+          "outputs": [],
+          "widgets_values": ["ComfyUI"]
+        }
+      ],
+      "links": [
+        [1, 1, 0, 2, 0, "IMAGE"],
+        [2, 2, 0, 3, 3, "LATENT"],
+        [3, 3, 0, 8, 0, "LATENT"],
+        [4, 8, 0, 9, 0, "IMAGE"]
+      ]
+    }
+  },
+  "request": {
+    "content": "Switch to the tab 'Image edit', then use a stitch images node to show the output next to the input"
+  },
+  "response": [
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_thinking",
+        "data": {
+          "delta": "I'll switch over and take a look at what's there."
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_active_tab",
+        "data": {
+          "name": "Image edit",
+          "workflow_id": "a1474551-fbbf-428b-9d89-a41ac0031d1e"
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "duration_ms": 6,
+          "status": "success",
+          "tool_call_id": "toolu_01D5FjSPRaApDH2iwX9YriXZ",
+          "tool_name": "switch_tab"
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "duration_ms": 494,
+          "status": "success",
+          "tool_call_id": "toolu_01MWii7Rz882gmf1pTE5pVTh",
+          "tool_name": "print_workflow"
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "duration_ms": 191,
+          "status": "success",
+          "tool_call_id": "toolu_01SuNZEL9D1wQAhhY5h85Emm",
+          "tool_name": "find_nodes"
+        }
+      }
+    },
+    {
+      "kind": "graph_ops",
+      "ops": [
+        {
+          "op": "add_node",
+          "pos": [1710, 280],
+          "node": {
+            "id": 1380502390045812,
+            "pos": [1710, 280],
+            "mode": 0,
+            "size": [240, 178],
+            "type": "ImageStitch",
+            "flags": {},
+            "order": 0,
+            "inputs": [
+              {
+                "link": null,
+                "name": "image1",
+                "type": "IMAGE"
+              },
+              {
+                "link": null,
+                "name": "image2",
+                "type": "IMAGE"
+              }
+            ],
+            "outputs": [
+              {
+                "name": "IMAGE",
+                "type": "IMAGE",
+                "links": []
+              }
+            ],
+            "properties": {},
+            "widgets_values": ["right", true, 0, "white"]
+          },
+          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+          "op_id": "1ae5761c56814cd59b90d5b34915d10d",
+          "stamp": [1, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+          "node_id": 1380502390045812,
+          "class_type": "ImageStitch",
+          "base_version": 1
+        },
+        {
+          "op": "connect",
+          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+          "op_id": "c1fbc369e27348d994ff6cdceaf0ccb3",
+          "stamp": [1, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+          "link_id": 4338446108286126,
+          "to_node": 1380502390045812,
+          "to_slot": 0,
+          "from_node": 1,
+          "from_slot": 0,
+          "link_type": "IMAGE",
+          "base_version": 1
+        },
+        {
+          "op": "connect",
+          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+          "op_id": "dff26a2ef5734d949b53391a7c61601b",
+          "stamp": [1, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+          "link_id": 2548323397064582,
+          "to_node": 1380502390045812,
+          "to_slot": 1,
+          "from_node": 8,
+          "from_slot": 0,
+          "link_type": "IMAGE",
+          "base_version": 1
+        }
+      ]
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "duration_ms": 209,
+          "status": "success",
+          "tool_call_id": "toolu_01HVWPwEhd4nMt5CJzpvF9kn",
+          "tool_name": "apply_ops"
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "duration_ms": 200,
+          "status": "success",
+          "tool_call_id": "toolu_01NDFSRkMRCkQ4KqhzHcH7EN",
+          "tool_name": "list_slots"
+        }
+      }
+    },
+    {
+      "kind": "graph_ops",
+      "ops": [
+        {
+          "op": "connect",
+          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+          "op_id": "2613854b97924cf394936f6425e1b0ff",
+          "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+          "link_id": 4049842834470829,
+          "to_node": 9,
+          "to_slot": 0,
+          "from_node": 1380502390045812,
+          "from_slot": 0,
+          "link_type": "IMAGE",
+          "base_version": 2
+        }
+      ]
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "duration_ms": 193,
+          "status": "success",
+          "tool_call_id": "toolu_01NEEaQs9cNn6qcJ1LgfZQCh",
+          "tool_name": "connect"
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "duration_ms": 197,
+          "status": "success",
+          "tool_call_id": "toolu_018ghX2WHT3XNERbndFewc2g",
+          "tool_name": "print_workflow"
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_message_delta",
+        "data": {
+          "delta": "Done — on the \"Image edit\" tab, the saved picture is now the original and the edited result side by side, original on the left, matched to the same height with no gap between them.\n\nOne thing to flag: this workflow was already incomplete before I touched it — it has no model or VAE loader and no prompt text, so the sampler, encoder and decoder have nothing feeding them. It won't run until those are added. Want me to fill that in?"
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_message_done",
+        "data": {
+          "usage": {
+            "cache_creation_input_tokens": 3222,
+            "cache_read_input_tokens": 312979,
+            "input_tokens": 16,
+            "output_tokens": 1175,
+            "total_tokens": 1191
+          }
+        }
+      }
+    }
+  ]
+}

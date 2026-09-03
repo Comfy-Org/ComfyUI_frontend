@@ -742,4 +742,176 @@ test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
         ])
     })
   })
+
+  // The two eval-suite cases, re-recorded on the local agent (the committed
+  // synthesized fixtures above stay as they are). The recorded prompt is the
+  // eval prompt behind the tab switch the replay binds on.
+  test.describe('recorded agent-rec-workflow-editing-05', () => {
+    test.use({ conversationCase: 'agent-rec-workflow-editing-05' })
+
+    test('stitches the recorded output beside the input and routes it to the save', async ({
+      agentConversation,
+      page
+    }) => {
+      test.setTimeout(45_000)
+      const { panel } = agentConversation
+
+      await agentConversation.sendPrompt()
+      await agentConversation.replayResponse()
+      await agentConversation.waitForTurnComplete()
+
+      const toolGroup = panel.getByRole('button', { name: /^Ran 7 tool calls/ })
+      await expect(toolGroup).toBeVisible()
+      await expect(toolGroup).toHaveAttribute('aria-expanded', 'false')
+      await toolGroup.click()
+      const toolRows = panel.getByRole('listitem')
+      await expect(toolRows).toHaveCount(7)
+      await expect(toolRows.filter({ hasText: 'Switched tabs' })).toBeVisible()
+      await expect(toolRows.filter({ hasText: 'Apply ops' })).toBeVisible()
+      await expect(toolRows.filter({ hasText: 'List slots' })).toBeVisible()
+
+      await expect(
+        panel.getByRole('button', { name: 'Open Image edit' })
+      ).toBeVisible()
+      await expect(panel.getByTestId('markdown-stream').first()).not.toBeEmpty()
+      await expect(panel.getByTestId('agent-crdt-status')).toContainText(
+        'connected'
+      )
+      // Two graph_ops entries (apply_ops, then the follow-up connect) plus the
+      // catch-up.
+      await expect(panel.getByTestId('agent-crdt-status')).toContainText(
+        '3 updates'
+      )
+      await expect(
+        page.locator('[data-node-id="1380502390045812"]')
+      ).toBeVisible()
+
+      // The stitch takes the source image and the decoded image; its output
+      // replaces the decoder's link into the save node (one link per input).
+      await expect
+        .poll(() => agentConversation.graphSnapshot())
+        .toEqual([
+          { id: '1', title: 'LoadImage', inputs: [], outputs: [true, false] },
+          {
+            id: '2',
+            title: 'VAEEncode',
+            inputs: [true, false],
+            outputs: [true]
+          },
+          {
+            id: '3',
+            title: 'KSampler',
+            inputs: [false, false, false, true],
+            outputs: [true]
+          },
+          {
+            id: '8',
+            title: 'VAEDecode',
+            inputs: [true, false],
+            outputs: [true]
+          },
+          { id: '9', title: 'SaveImage', inputs: [true], outputs: [] },
+          {
+            id: '1380502390045812',
+            title: 'ImageStitch',
+            inputs: [true, true],
+            outputs: [true]
+          }
+        ])
+    })
+  })
+
+  test.describe('recorded agent-rec-zimage-string-node-prompt', () => {
+    test.use({ conversationCase: 'agent-rec-zimage-string-node-prompt' })
+
+    test('adds the recorded text node and the inputs the sampler was missing', async ({
+      agentConversation,
+      page
+    }) => {
+      test.setTimeout(45_000)
+      const { panel } = agentConversation
+
+      await agentConversation.sendPrompt()
+      await agentConversation.replayResponse()
+      await agentConversation.waitForTurnComplete()
+
+      // The recording's `validate` and `list_model_picks` calls errored (no
+      // checkpoint on the recording host), so the group stays open at turn end.
+      const toolRows = panel.getByRole('listitem')
+      await expect(toolRows.filter({ hasText: 'Switched tabs' })).toBeVisible()
+      await expect(toolRows.filter({ hasText: 'Apply ops' })).toBeVisible()
+      await expect(toolRows.filter({ hasText: 'Validate' })).toBeVisible()
+      await expect(
+        panel.getByRole('button', { name: /^Ran 9 tool calls/ })
+      ).toHaveAttribute('aria-expanded', 'true')
+
+      await expect(
+        panel.getByRole('button', { name: 'Open Text to image' })
+      ).toBeVisible()
+      await expect(panel.getByTestId('markdown-stream').first()).not.toBeEmpty()
+      await expect(panel.getByTestId('agent-crdt-status')).toContainText(
+        'connected'
+      )
+      // One graph_ops entry (nine ops) plus the catch-up.
+      await expect(panel.getByTestId('agent-crdt-status')).toContainText(
+        '2 updates'
+      )
+      const stringNode = page.locator('[data-node-id="2346297545678642"]')
+      await expect(stringNode).toBeVisible()
+      await expect(stringNode.getByLabel('value', { exact: true })).toHaveValue(
+        'a red bicycle on a pier at dusk'
+      )
+
+      // Every sampler input is now fed: the recorded turn also added a
+      // negative encoder and an empty latent.
+      await expect
+        .poll(() => agentConversation.graphSnapshot())
+        .toEqual([
+          {
+            id: '3',
+            title: 'KSampler',
+            inputs: [true, true, true, true],
+            outputs: [true]
+          },
+          {
+            id: '4',
+            title: 'CheckpointLoaderSimple',
+            inputs: [],
+            outputs: [true, true, true]
+          },
+          {
+            id: '6',
+            title: 'Positive prompt',
+            inputs: [true],
+            outputs: [true]
+          },
+          {
+            id: '8',
+            title: 'VAEDecode',
+            inputs: [true, true],
+            outputs: [true]
+          },
+          { id: '9', title: 'SaveImage', inputs: [true], outputs: [] },
+          // Nodes render in ascending id order.
+          {
+            id: '1068057559864246',
+            title: 'CLIPTextEncode',
+            inputs: [true],
+            outputs: [true]
+          },
+          {
+            id: '2346297545678642',
+            title: 'PrimitiveStringMultiline',
+            inputs: [],
+            outputs: [true]
+          },
+          {
+            id: '4476795995918869',
+            title: 'EmptyLatentImage',
+            inputs: [],
+            outputs: [true]
+          }
+        ])
+    })
+  })
 })
