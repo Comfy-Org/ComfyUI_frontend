@@ -303,7 +303,12 @@ describe('ComfyHubPublishDialog', () => {
     expect(mockSubmitToComfyHub).toHaveBeenCalledOnce()
     expect(mockToastAdd.mock.calls.map(([method]) => method)).toContain('error')
     expect(mockToastAdd).not.toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'success' })
+      'success',
+      'comfyHubPublish.publishSuccessTitle',
+      {
+        description: 'comfyHubPublish.publishSuccessDescription',
+        duration: 5000
+      }
     )
     expect(onClose).not.toHaveBeenCalled()
   })
