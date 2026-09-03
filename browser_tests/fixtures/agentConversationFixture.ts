@@ -26,6 +26,8 @@ import type {
   RecordedWsEvent
 } from '@e2e/fixtures/data/agent/agentConversation'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
+
+import { knownTool } from '@/workbench/extensions/agent/services/agent/agentToolGlyph'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const THREAD_ID = 'e9a2f3d1-7c44-4b2e-9a01-5f6d8c7b3a10'
@@ -125,6 +127,44 @@ class HostDoc {
       }
     }
   }
+}
+
+interface NodeBody {
+  id: number | string
+  type: string
+  title?: string
+  inputs?: Array<{ name: string }>
+  outputs?: Array<{ name: string }>
+}
+
+interface RecordedToolCall {
+  name: string
+  ok: boolean
+}
+
+interface RecordedWidgetValue {
+  nodeId: string
+  widget: string
+  value: string | number
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+    ? (value as Record<string, unknown>)
+    : {}
+}
+
+// The panel's row label: the known-tool table, else the humanized tool name (ToolCallCard.vue).
+export function toolRowLabel(name: string): string {
+  const known = knownTool(name)?.labelKey
+  const label = known
+    ? enMessages.agent[
+        known.replace('agent.', '') as keyof typeof enMessages.agent
+      ]
+    : undefined
+  if (typeof label === 'string') return label
+  const spaced = name.replaceAll('_', ' ')
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1)
 }
 
 interface GraphNodeSnapshot {
@@ -238,6 +278,123 @@ class AgentConversationHarness {
   }
 
   // Doc-id filter: a stray template node must not pin the template here.
+  private nodeBodies(): NodeBody[] {
+    const seed = (
+      this.conversation.workflow.seed as unknown as { nodes: NodeBody[] }
+    ).nodes
+    const added = this.conversation.response.flatMap((entry) =>
+      entry.kind === 'graph_ops'
+        ? entry.ops.flatMap((op) =>
+            asRecord(op).op === 'add_node'
+              ? [asRecord(asRecord(op).node) as unknown as NodeBody]
+              : []
+          )
+        : []
+    )
+    return [...seed, ...added]
+  }
+
+  // The doc keeps no titles or slot names; those come from the node bodies the turn started from or added.
+  expectedGraph(): GraphNodeSnapshot[] {
+    const graph = this.host.graph()
+    const bodies = this.nodeBodies()
+    const byType = new Map(bodies.map((body) => [body.type, body]))
+    const byId = new Map(bodies.map((body) => [String(body.id), body]))
+    const catalog = this.conversation.workflow.catalog.types as Record<
+      string,
+      { widget_order: string[] }
+    >
+    const links = Object.values(graph.links) as Array<
+      [unknown, unknown, number, unknown, number, string]
+    >
+    return Object.entries(graph.nodes)
+      .map(([id, node]) => {
+        const type = String(node.type)
+        const body = byId.get(id) ?? byType.get(type)
+        const widgets = new Set(catalog[type]?.widget_order ?? [])
+        return {
+          id,
+          title: byId.get(id)?.title ?? type,
+          // Widget-backed inputs render as widgets, not slot rows.
+          inputs: (body?.inputs ?? [])
+            .map((slot, index) => ({ name: slot.name, index }))
+            .filter(({ name }) => !widgets.has(name))
+            .map(({ index }) =>
+              links.some((link) => String(link[3]) === id && link[4] === index)
+            ),
+          outputs: (body?.outputs ?? []).map((_, index) =>
+            links.some((link) => String(link[1]) === id && link[2] === index)
+          )
+        }
+      })
+      .sort((a, b) => Number(a.id) - Number(b.id))
+  }
+
+  // The panel starts a new tool group whenever thinking or text interrupts the calls.
+  toolCallGroups(): RecordedToolCall[][] {
+    const groups: RecordedToolCall[][] = []
+    let current: RecordedToolCall[] = []
+    for (const entry of this.conversation.response) {
+      if (entry.kind !== 'event') continue
+      const { type, data } = entry.event
+      if (type === 'agent_tool_call') {
+        if (data.status !== 'running')
+          current.push({
+            name: String(data.tool_name),
+            ok: data.status === 'success'
+          })
+        continue
+      }
+      if (
+        (type === 'agent_thinking' || type === 'agent_message_delta') &&
+        current.length > 0
+      ) {
+        groups.push(current)
+        current = []
+      }
+    }
+    if (current.length > 0) groups.push(current)
+    return groups
+  }
+
+  recordedWidgetValues(): RecordedWidgetValue[] {
+    const graph = this.host.graph()
+    return this.conversation.response.flatMap((entry) =>
+      entry.kind === 'graph_ops'
+        ? entry.ops.flatMap((rawOp) => {
+            const op = asRecord(rawOp)
+            const nodeId = String(op.node_id)
+            const widget = String(op.widget)
+            const value = asRecord(graph.nodes[nodeId]?.widgets)[widget]
+            return op.op === 'set_widget' &&
+              (typeof value === 'string' || typeof value === 'number')
+              ? [{ nodeId, widget, value }]
+              : []
+          })
+        : []
+    )
+  }
+
+  addedNodeIds(): string[] {
+    const graph = this.host.graph()
+    const seedIds = new Set(
+      (
+        this.conversation.workflow.seed as unknown as { nodes: NodeBody[] }
+      ).nodes.map((node) => String(node.id))
+    )
+    return this.nodeBodies()
+      .map((body) => String(body.id))
+      .filter((id) => !seedIds.has(id) && id in graph.nodes)
+  }
+
+  // One update per ops entry plus the subscribe catch-up.
+  expectedUpdateCount(): number {
+    return (
+      this.conversation.response.filter((entry) => entry.kind === 'graph_ops')
+        .length + 1
+    )
+  }
+
   hostGraph(): GraphSnapshot {
     return this.host.graph()
   }
