@@ -46,6 +46,7 @@ type CheckoutStep =
   | 'success'
   | 'declined'
   | 'processing_error'
+  | 'reconciliation'
 export type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 
 export type SubscriptionCheckoutSelection =
@@ -935,6 +936,13 @@ export function useSubscriptionCheckout(
     emit('close', true)
   }
 
+  // The payment landed but the subscription isn't confirmed active, so this
+  // close never claims `subscribed` — the caller must not treat the workspace
+  // as upgraded until reconciliation catches up.
+  function handleReconciliationClose() {
+    emit('close', false)
+  }
+
   // While a host that renders the outcome steps holds an operation, its
   // outcome renders there — the store's success/failure toasts stay quiet.
   // Closing the dialog releases the operation back to toast delivery. Hosts
@@ -1411,6 +1419,14 @@ export function useSubscriptionCheckout(
       checkoutStep.value = 'success'
     } else if (operation.status === 'failed' && rendersRecoverySteps) {
       showFailureOutcome(operation)
+    } else if (
+      operation.status === 'reconciliation_needed' &&
+      rendersRecoverySteps
+    ) {
+      // The charge landed but the workspace update didn't. Terminal for the
+      // dialog: nothing here can be retried or canceled, so the step is a
+      // receipt with the operation id and closing is the expected exit.
+      checkoutStep.value = 'reconciliation'
     }
   }
 
@@ -1495,6 +1511,10 @@ export function useSubscriptionCheckout(
       if (status === 'failed') {
         const operation = activeCheckoutOperation.value
         if (operation) showFailureOutcome(operation)
+        return
+      }
+      if (status === 'reconciliation_needed') {
+        checkoutStep.value = 'reconciliation'
         return
       }
       if (status === undefined) {
@@ -1731,6 +1751,7 @@ export function useSubscriptionCheckout(
     handleSubscribeTeamClick,
     handleBackToPricing,
     handleSuccessClose,
+    handleReconciliationClose,
     handleAddCreditCard: handleSubscription,
     handleConfirmTransition: handleSubscription,
     handleTeamSubscribe: handleTeamSubscription,
