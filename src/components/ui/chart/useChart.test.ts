@@ -1,6 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { Chart } from 'chart.js'
-import type { ChartDataset } from 'chart.js'
+import type { ChartDataset, ChartMeta, DatasetController } from 'chart.js'
 import { describe, expect, it } from 'vitest'
 
 import './useChart'
@@ -17,10 +17,8 @@ describe('useChart', () => {
         options: {}
       }),
       getDatasetMeta: () =>
-        fromPartial<ReturnType<Chart<'line'>['getDatasetMeta']>>({
-          controller: fromPartial<
-            ReturnType<Chart<'line'>['getDatasetMeta']>['controller']
-          >({})
+        fromPartial<ChartMeta<'line'>>({
+          controller: fromPartial<DatasetController<'line'>>({})
         })
     })
 
