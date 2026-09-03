@@ -1,0 +1,275 @@
+{
+  "schema_version": "agent-conversation.v1",
+  "source": {
+    "repo": "Comfy-Org/ComfyUI_frontend",
+    "suite": "agent",
+    "case_id": "agent-rec-text-only-answer",
+    "response_side": "recorded",
+    "note": "RECORDED from Comfy-Org/cloud services/agent running NON-standalone local full stack (Postgres + doc host, M2M identity headers) at http://127.0.0.1:8086 (frames: redis SUBSCRIBE channel:ws:<workspace>:u:<user>); NOT a production capture. cloud commit 9dc1da7dae2a1d40a9ca1f2a1f91cd9fd9e10900; model claude-opus-5; thread f36ef047-82b4-4f2b-b480-6df821df46da; message 7de6039c-c1b4-437c-871c-2f1fc67e1750; workflow d762837d-c64d-4829-9aba-05e71b64adc3 (seeded by throwaway turn c3727b7b-569e-4eda-983a-7ccfffbf4496; the recorded turn opens on a fresh workflow and switches to it first because the replay subscribes only on an agent_active_tab frame, see plan Q4); agent_tool_calls parent rows ['7622ee7b-b97a-4899-8931-99488b82bee5', '5547227c-9bef-4e95-9bd1-053fb658e7b4']; rows agent-rec-text-only-answer.t-a1.rows.json; raw capture sha256 24906bcf7826bc7860dd7b109ce8d243a1c6322f56a646ea53e5645cc795c387",
+    "capture": {
+      "backend": "Comfy-Org/cloud",
+      "thread_id": "f36ef047-82b4-4f2b-b480-6df821df46da",
+      "message_id": "7de6039c-c1b4-437c-871c-2f1fc67e1750",
+      "exported_at": "2026-09-03T12:40:56Z"
+    }
+  },
+  "workflow": {
+    "id": "d762837d-c64d-4829-9aba-05e71b64adc3",
+    "name": "Text to image",
+    "catalog": {
+      "types": {
+        "CheckpointLoaderSimple": {
+          "widget_order": ["ckpt_name"]
+        },
+        "CLIPTextEncode": {
+          "widget_order": ["text"]
+        },
+        "KSampler": {
+          "widget_order": [
+            "seed",
+            "control_after_generate",
+            "steps",
+            "cfg",
+            "sampler_name",
+            "scheduler",
+            "denoise"
+          ]
+        },
+        "VAEDecode": {
+          "widget_order": []
+        },
+        "SaveImage": {
+          "widget_order": ["filename_prefix"]
+        },
+        "PrimitiveStringMultiline": {
+          "widget_order": ["value"]
+        },
+        "EmptyLatentImage": {
+          "widget_order": ["width", "height", "batch_size"]
+        }
+      }
+    },
+    "seed": {
+      "nodes": [
+        {
+          "id": 4,
+          "type": "CheckpointLoaderSimple",
+          "pos": [0, 0],
+          "size": [315, 98],
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "MODEL",
+              "type": "MODEL",
+              "links": [3]
+            },
+            {
+              "name": "CLIP",
+              "type": "CLIP",
+              "links": [1]
+            },
+            {
+              "name": "VAE",
+              "type": "VAE",
+              "links": [5]
+            }
+          ],
+          "widgets_values": ["sd_xl_base_1.0.safetensors"]
+        },
+        {
+          "id": 6,
+          "type": "CLIPTextEncode",
+          "title": "Positive prompt",
+          "pos": [400, 0],
+          "size": [400, 200],
+          "inputs": [
+            {
+              "name": "clip",
+              "type": "CLIP",
+              "link": 1
+            },
+            {
+              "name": "text",
+              "type": "STRING",
+              "widget": {
+                "name": "text"
+              },
+              "link": null
+            }
+          ],
+          "outputs": [
+            {
+              "name": "CONDITIONING",
+              "type": "CONDITIONING",
+              "links": [2]
+            }
+          ],
+          "widgets_values": ["a photo of a pier"]
+        },
+        {
+          "id": 3,
+          "type": "KSampler",
+          "pos": [850, 0],
+          "size": [315, 262],
+          "inputs": [
+            {
+              "name": "model",
+              "type": "MODEL",
+              "link": 3
+            },
+            {
+              "name": "positive",
+              "type": "CONDITIONING",
+              "link": 2
+            },
+            {
+              "name": "negative",
+              "type": "CONDITIONING",
+              "link": null
+            },
+            {
+              "name": "latent_image",
+              "type": "LATENT",
+              "link": null
+            }
+          ],
+          "outputs": [
+            {
+              "name": "LATENT",
+              "type": "LATENT",
+              "links": [4]
+            }
+          ],
+          "widgets_values": [0, "randomize", 20, 7, "euler", "normal", 1]
+        },
+        {
+          "id": 8,
+          "type": "VAEDecode",
+          "pos": [1200, 0],
+          "size": [210, 46],
+          "inputs": [
+            {
+              "name": "samples",
+              "type": "LATENT",
+              "link": 4
+            },
+            {
+              "name": "vae",
+              "type": "VAE",
+              "link": 5
+            }
+          ],
+          "outputs": [
+            {
+              "name": "IMAGE",
+              "type": "IMAGE",
+              "links": [6]
+            }
+          ],
+          "widgets_values": []
+        },
+        {
+          "id": 9,
+          "type": "SaveImage",
+          "pos": [1450, 0],
+          "size": [315, 270],
+          "inputs": [
+            {
+              "name": "images",
+              "type": "IMAGE",
+              "link": 6
+            }
+          ],
+          "outputs": [],
+          "widgets_values": ["ComfyUI"]
+        }
+      ],
+      "links": [
+        [1, 4, 1, 6, 0, "CLIP"],
+        [2, 6, 0, 3, 1, "CONDITIONING"],
+        [3, 4, 0, 3, 0, "MODEL"],
+        [4, 3, 0, 8, 0, "LATENT"],
+        [5, 4, 2, 8, 1, "VAE"],
+        [6, 8, 0, 9, 0, "IMAGE"]
+      ]
+    }
+  },
+  "request": {
+    "content": "Switch to the tab 'Text to image', then tell me what this workflow does."
+  },
+  "response": [
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_thinking",
+        "data": {
+          "delta": "I'll switch over and take a look."
+        }
+      },
+      "at_ms": 0
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_active_tab",
+        "data": {
+          "name": "Text to image",
+          "workflow_id": "d762837d-c64d-4829-9aba-05e71b64adc3"
+        }
+      },
+      "at_ms": 6
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "duration_ms": 8,
+          "status": "success",
+          "tool_call_id": "toolu_013WLWbbrNwTqV9UguY6rEu6",
+          "tool_name": "switch_tab"
+        }
+      },
+      "at_ms": 8
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "duration_ms": 368,
+          "status": "success",
+          "tool_call_id": "toolu_01PjsdjzNXWZ8oDYHQAbjo5o",
+          "tool_name": "print_workflow"
+        }
+      },
+      "at_ms": 2364
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_message_delta",
+        "data": {
+          "delta": "I'm on the \"Text to image\" tab now.\n\nIt's a standard SDXL text-to-image setup: it loads the SDXL base model, turns the prompt — currently \"a photo of a pier\" — into guidance, generates an image over 20 steps, and saves the result.\n\nOne thing to flag: it isn't runnable as-is. Two inputs on the generation step are still empty — there's no negative prompt wired in, and no blank canvas/image-size node telling it what dimensions to make. Want me to add those so you can run it?"
+        }
+      },
+      "at_ms": 6244
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_message_done",
+        "data": {
+          "usage": {
+            "cache_creation_input_tokens": 960,
+            "cache_read_input_tokens": 114249,
+            "input_tokens": 6,
+            "output_tokens": 349,
+            "total_tokens": 355
+          }
+        }
+      },
+      "at_ms": 6246
+    }
+  ]
+}

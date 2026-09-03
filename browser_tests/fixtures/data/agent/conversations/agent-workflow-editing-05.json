@@ -1,0 +1,420 @@
+{
+  "schema_version": "agent-conversation.v1",
+  "source": {
+    "repo": "Comfy-Org/ComfyUI_frontend",
+    "suite": "agent",
+    "case_id": "agent-workflow-editing-05",
+    "response_side": "recorded",
+    "note": "RECORDED from Comfy-Org/cloud services/agent running NON-standalone local full stack (Postgres + doc host, M2M identity headers) at http://127.0.0.1:8086 (frames: redis SUBSCRIBE channel:ws:<workspace>:u:<user>); NOT a production capture. cloud commit 9dc1da7dae2a1d40a9ca1f2a1f91cd9fd9e10900; model claude-opus-5; thread 8f2ed7bf-7e42-49dc-a2af-0a15e4f55db3; message b199d9ab-1800-49b2-8a43-458cda7f104d; workflow f47e55ab-2cd5-414e-90d3-23a5fc7eee22 (seeded by throwaway turn 3d61dd80-dd03-4957-8506-734392c9583c; the recorded turn opens on a fresh workflow and switches to it first because the replay subscribes only on an agent_active_tab frame, see plan Q4); agent_tool_calls parent rows ['6206d0ef-f781-41db-81bd-4138950ccd2e', 'fb873a4b-59b4-4088-ae32-f43e0a7382c5', '473ea6be-f9c3-4a75-8776-0e7823cd5054', 'e6ec2a79-8f0b-408a-b01e-f9362ae8fde4', '47d7581e-2d55-49ea-ac3e-1d6520d80454', 'abd6c054-6b5b-49a2-8633-881078e9b07c', '3f83a246-0181-4d1a-b2b5-c1fcfac38fe0']; rows agent-workflow-editing-05.t-a1.rows.json; raw capture sha256 982353ccbf5d92ca70a7857eb7da662aa2d19b0fcebb27181a71c3a95b762658",
+    "capture": {
+      "backend": "Comfy-Org/cloud",
+      "thread_id": "8f2ed7bf-7e42-49dc-a2af-0a15e4f55db3",
+      "message_id": "b199d9ab-1800-49b2-8a43-458cda7f104d",
+      "exported_at": "2026-09-03T12:40:56Z"
+    }
+  },
+  "workflow": {
+    "id": "f47e55ab-2cd5-414e-90d3-23a5fc7eee22",
+    "name": "Image edit",
+    "catalog": {
+      "types": {
+        "LoadImage": {
+          "widget_order": ["image", "upload"]
+        },
+        "VAEEncode": {
+          "widget_order": []
+        },
+        "KSampler": {
+          "widget_order": [
+            "seed",
+            "control_after_generate",
+            "steps",
+            "cfg",
+            "sampler_name",
+            "scheduler",
+            "denoise"
+          ]
+        },
+        "VAEDecode": {
+          "widget_order": []
+        },
+        "SaveImage": {
+          "widget_order": ["filename_prefix"]
+        },
+        "ImageStitch": {
+          "widget_order": [
+            "direction",
+            "match_image_size",
+            "spacing_width",
+            "spacing_color"
+          ]
+        },
+        "PreviewImage": {
+          "widget_order": []
+        }
+      }
+    },
+    "seed": {
+      "nodes": [
+        {
+          "id": 1,
+          "type": "LoadImage",
+          "pos": [0, 0],
+          "size": [315, 314],
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "IMAGE",
+              "type": "IMAGE",
+              "links": [1]
+            },
+            {
+              "name": "MASK",
+              "type": "MASK",
+              "links": []
+            }
+          ],
+          "widgets_values": ["example.png", "image"]
+        },
+        {
+          "id": 2,
+          "type": "VAEEncode",
+          "pos": [400, 0],
+          "size": [210, 46],
+          "inputs": [
+            {
+              "name": "pixels",
+              "type": "IMAGE",
+              "link": 1
+            },
+            {
+              "name": "vae",
+              "type": "VAE",
+              "link": null
+            }
+          ],
+          "outputs": [
+            {
+              "name": "LATENT",
+              "type": "LATENT",
+              "links": [2]
+            }
+          ],
+          "widgets_values": []
+        },
+        {
+          "id": 3,
+          "type": "KSampler",
+          "pos": [700, 0],
+          "size": [315, 262],
+          "inputs": [
+            {
+              "name": "model",
+              "type": "MODEL",
+              "link": null
+            },
+            {
+              "name": "positive",
+              "type": "CONDITIONING",
+              "link": null
+            },
+            {
+              "name": "negative",
+              "type": "CONDITIONING",
+              "link": null
+            },
+            {
+              "name": "latent_image",
+              "type": "LATENT",
+              "link": 2
+            }
+          ],
+          "outputs": [
+            {
+              "name": "LATENT",
+              "type": "LATENT",
+              "links": [3]
+            }
+          ],
+          "widgets_values": [0, "randomize", 20, 7, "euler", "normal", 0.6]
+        },
+        {
+          "id": 8,
+          "type": "VAEDecode",
+          "pos": [1100, 0],
+          "size": [210, 46],
+          "inputs": [
+            {
+              "name": "samples",
+              "type": "LATENT",
+              "link": 3
+            },
+            {
+              "name": "vae",
+              "type": "VAE",
+              "link": null
+            }
+          ],
+          "outputs": [
+            {
+              "name": "IMAGE",
+              "type": "IMAGE",
+              "links": [4]
+            }
+          ],
+          "widgets_values": []
+        },
+        {
+          "id": 9,
+          "type": "SaveImage",
+          "pos": [1400, 0],
+          "size": [315, 270],
+          "inputs": [
+            {
+              "name": "images",
+              "type": "IMAGE",
+              "link": 4
+            }
+          ],
+          "outputs": [],
+          "widgets_values": ["ComfyUI"]
+        }
+      ],
+      "links": [
+        [1, 1, 0, 2, 0, "IMAGE"],
+        [2, 2, 0, 3, 3, "LATENT"],
+        [3, 3, 0, 8, 0, "LATENT"],
+        [4, 8, 0, 9, 0, "IMAGE"]
+      ]
+    }
+  },
+  "request": {
+    "content": "Switch to the tab 'Image edit', then use a stitch images node to show the output next to the input"
+  },
+  "response": [
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_thinking",
+        "data": {
+          "delta": "I'll switch to that tab and take a look at what's there."
+        }
+      },
+      "at_ms": 0
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_active_tab",
+        "data": {
+          "name": "Image edit",
+          "workflow_id": "f47e55ab-2cd5-414e-90d3-23a5fc7eee22"
+        }
+      },
+      "at_ms": 7
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "duration_ms": 9,
+          "status": "success",
+          "tool_call_id": "toolu_01RMDkomGUUpDL8wixWq9Fhe",
+          "tool_name": "switch_tab"
+        }
+      },
+      "at_ms": 14
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "duration_ms": 366,
+          "status": "success",
+          "tool_call_id": "toolu_01JECLyu71YJ1niLhepMB63u",
+          "tool_name": "print_workflow"
+        }
+      },
+      "at_ms": 2905
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "duration_ms": 194,
+          "status": "success",
+          "tool_call_id": "toolu_01Sttwp3yTjiF6LdrL5GdmVy",
+          "tool_name": "find_nodes"
+        }
+      },
+      "at_ms": 7034
+    },
+    {
+      "kind": "graph_ops",
+      "ops": [
+        {
+          "op": "add_node",
+          "pos": [1710, 280],
+          "node": {
+            "id": 1177948620476144,
+            "pos": [1710, 280],
+            "mode": 0,
+            "size": [240, 178],
+            "type": "ImageStitch",
+            "flags": {},
+            "order": 0,
+            "inputs": [
+              {
+                "link": null,
+                "name": "image1",
+                "type": "IMAGE"
+              },
+              {
+                "link": null,
+                "name": "image2",
+                "type": "IMAGE"
+              }
+            ],
+            "outputs": [
+              {
+                "name": "IMAGE",
+                "type": "IMAGE",
+                "links": []
+              }
+            ],
+            "properties": {},
+            "widgets_values": ["right", true, 0, "white"]
+          },
+          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+          "op_id": "8e44f8dcf31e46f6bf6d487c1bec2676",
+          "stamp": [1, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+          "node_id": 1177948620476144,
+          "class_type": "ImageStitch",
+          "base_version": 1
+        },
+        {
+          "op": "connect",
+          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+          "op_id": "792213bf2f824cfd8866f157117795a4",
+          "stamp": [1, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+          "link_id": 3298141227647238,
+          "to_node": 1177948620476144,
+          "to_slot": 0,
+          "from_node": 1,
+          "from_slot": 0,
+          "link_type": "IMAGE",
+          "base_version": 1
+        },
+        {
+          "op": "connect",
+          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+          "op_id": "7c91fdf62a4d437dac4ada8d3ae13661",
+          "stamp": [1, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+          "link_id": 2572689854678654,
+          "to_node": 1177948620476144,
+          "to_slot": 1,
+          "from_node": 8,
+          "from_slot": 0,
+          "link_type": "IMAGE",
+          "base_version": 1
+        },
+        {
+          "op": "connect",
+          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+          "op_id": "3eaf0c9e52cb4f0994962ff4b1e341ff",
+          "stamp": [1, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+          "link_id": 3588278739910384,
+          "to_node": 9,
+          "to_slot": 0,
+          "from_node": 1177948620476144,
+          "from_slot": 0,
+          "link_type": "IMAGE",
+          "base_version": 1
+        }
+      ],
+      "at_ms": 13620
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "duration_ms": 208,
+          "status": "success",
+          "tool_call_id": "toolu_01DNrpeJQDjW2v32xme5eyDq",
+          "tool_name": "apply_ops"
+        }
+      },
+      "at_ms": 13620
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "duration_ms": 210,
+          "status": "success",
+          "tool_call_id": "toolu_01VFMK15TdDdT4zFK3w8bRqE",
+          "tool_name": "list_slots"
+        }
+      },
+      "at_ms": 20740
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "duration_ms": 206,
+          "error_code": "conflict",
+          "status": "error",
+          "tool_call_id": "toolu_01GZUZLG9RtoeGym25Hy5p5P",
+          "tool_name": "set_widget"
+        }
+      },
+      "at_ms": 25170
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "duration_ms": 216,
+          "status": "error",
+          "tool_call_id": "toolu_01FCgU1tuBtusNgYiPMRaUQL",
+          "tool_name": "validate"
+        }
+      },
+      "at_ms": 29613
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_message_delta",
+        "data": {
+          "delta": "Done — the side-by-side comparison is on your canvas: the original image and the edited result now go into a stitch node (edited placed to the right of the original, sizes matched), and that combined image is what gets saved.\n\nTwo things worth knowing:\n\n- The gap/spacing setting on that node can't be changed from here, so the two images sit flush against each other. You can set a spacing value directly on the node if you want a divider.\n- The rest of this workflow was already incomplete before I touched it — the sampler has no model loaded and no prompt text, and the encode/decode steps have no VAE connected. It won't run until those are filled in. Want me to wire up a checkpoint and prompt boxes for you?"
+        }
+      },
+      "at_ms": 38675
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_message_done",
+        "data": {
+          "usage": {
+            "cache_creation_input_tokens": 3425,
+            "cache_read_input_tokens": 313028,
+            "input_tokens": 16,
+            "output_tokens": 1658,
+            "total_tokens": 1674
+          }
+        }
+      },
+      "at_ms": 38677
+    }
+  ]
+}

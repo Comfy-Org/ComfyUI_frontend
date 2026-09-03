@@ -1,0 +1,407 @@
+{
+  "schema_version": "agent-conversation.v1",
+  "source": {
+    "repo": "Comfy-Org/ComfyUI_frontend",
+    "suite": "agent",
+    "case_id": "agent-rec-replace-prompt-encoder",
+    "response_side": "recorded",
+    "note": "RECORDED from Comfy-Org/cloud services/agent running NON-standalone local full stack (Postgres + doc host, M2M identity headers) at http://127.0.0.1:8086 (frames: redis SUBSCRIBE channel:ws:<workspace>:u:<user>); NOT a production capture. cloud commit 9dc1da7dae2a1d40a9ca1f2a1f91cd9fd9e10900; model claude-opus-5; thread 2ce25f4b-d581-4348-ab9c-3f4170222f6f; message 37504547-e90d-4c14-91c7-b8f8fb65a0eb; workflow 5a6b35c4-8902-479d-87ab-8a9a07f08b90 (seeded by throwaway turn 3add9fbe-1dbb-4d5f-b255-d0fde410ed5e; the recorded turn opens on a fresh workflow and switches to it first because the replay subscribes only on an agent_active_tab frame, see plan Q4); agent_tool_calls parent rows ['d6e50c4a-5ef2-46bb-a48d-46473a36e13f', '6471d9bc-2e6f-41f1-b2c9-b417e7b9ecea', '3bda2337-3236-4585-9803-f8cbc1625d0a', '7cba8d9d-ebe4-481f-82e9-354377d2826e', '9d9678dd-2f0c-47eb-98da-0ec3720ff91d']; rows agent-rec-replace-prompt-encoder.t-a1.rows.json; raw capture sha256 eabe622a684331aa98da2a1a797cf0f761e3c866bcce8feaf2e1083a6fb7ff26",
+    "capture": {
+      "backend": "Comfy-Org/cloud",
+      "thread_id": "2ce25f4b-d581-4348-ab9c-3f4170222f6f",
+      "message_id": "37504547-e90d-4c14-91c7-b8f8fb65a0eb",
+      "exported_at": "2026-09-03T12:40:55Z"
+    }
+  },
+  "workflow": {
+    "id": "5a6b35c4-8902-479d-87ab-8a9a07f08b90",
+    "name": "Text to image",
+    "catalog": {
+      "types": {
+        "CheckpointLoaderSimple": {
+          "widget_order": ["ckpt_name"]
+        },
+        "CLIPTextEncode": {
+          "widget_order": ["text"]
+        },
+        "KSampler": {
+          "widget_order": [
+            "seed",
+            "control_after_generate",
+            "steps",
+            "cfg",
+            "sampler_name",
+            "scheduler",
+            "denoise"
+          ]
+        },
+        "VAEDecode": {
+          "widget_order": []
+        },
+        "SaveImage": {
+          "widget_order": ["filename_prefix"]
+        },
+        "PrimitiveStringMultiline": {
+          "widget_order": ["value"]
+        },
+        "EmptyLatentImage": {
+          "widget_order": ["width", "height", "batch_size"]
+        }
+      }
+    },
+    "seed": {
+      "nodes": [
+        {
+          "id": 4,
+          "type": "CheckpointLoaderSimple",
+          "pos": [0, 0],
+          "size": [315, 98],
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "MODEL",
+              "type": "MODEL",
+              "links": [3]
+            },
+            {
+              "name": "CLIP",
+              "type": "CLIP",
+              "links": [1]
+            },
+            {
+              "name": "VAE",
+              "type": "VAE",
+              "links": [5]
+            }
+          ],
+          "widgets_values": ["sd_xl_base_1.0.safetensors"]
+        },
+        {
+          "id": 6,
+          "type": "CLIPTextEncode",
+          "title": "Positive prompt",
+          "pos": [400, 0],
+          "size": [400, 200],
+          "inputs": [
+            {
+              "name": "clip",
+              "type": "CLIP",
+              "link": 1
+            },
+            {
+              "name": "text",
+              "type": "STRING",
+              "widget": {
+                "name": "text"
+              },
+              "link": null
+            }
+          ],
+          "outputs": [
+            {
+              "name": "CONDITIONING",
+              "type": "CONDITIONING",
+              "links": [2]
+            }
+          ],
+          "widgets_values": ["a photo of a pier"]
+        },
+        {
+          "id": 3,
+          "type": "KSampler",
+          "pos": [850, 0],
+          "size": [315, 262],
+          "inputs": [
+            {
+              "name": "model",
+              "type": "MODEL",
+              "link": 3
+            },
+            {
+              "name": "positive",
+              "type": "CONDITIONING",
+              "link": 2
+            },
+            {
+              "name": "negative",
+              "type": "CONDITIONING",
+              "link": null
+            },
+            {
+              "name": "latent_image",
+              "type": "LATENT",
+              "link": null
+            }
+          ],
+          "outputs": [
+            {
+              "name": "LATENT",
+              "type": "LATENT",
+              "links": [4]
+            }
+          ],
+          "widgets_values": [0, "randomize", 20, 7, "euler", "normal", 1]
+        },
+        {
+          "id": 8,
+          "type": "VAEDecode",
+          "pos": [1200, 0],
+          "size": [210, 46],
+          "inputs": [
+            {
+              "name": "samples",
+              "type": "LATENT",
+              "link": 4
+            },
+            {
+              "name": "vae",
+              "type": "VAE",
+              "link": 5
+            }
+          ],
+          "outputs": [
+            {
+              "name": "IMAGE",
+              "type": "IMAGE",
+              "links": [6]
+            }
+          ],
+          "widgets_values": []
+        },
+        {
+          "id": 9,
+          "type": "SaveImage",
+          "pos": [1450, 0],
+          "size": [315, 270],
+          "inputs": [
+            {
+              "name": "images",
+              "type": "IMAGE",
+              "link": 6
+            }
+          ],
+          "outputs": [],
+          "widgets_values": ["ComfyUI"]
+        }
+      ],
+      "links": [
+        [1, 4, 1, 6, 0, "CLIP"],
+        [2, 6, 0, 3, 1, "CONDITIONING"],
+        [3, 4, 0, 3, 0, "MODEL"],
+        [4, 3, 0, 8, 0, "LATENT"],
+        [5, 4, 2, 8, 1, "VAE"],
+        [6, 8, 0, 9, 0, "IMAGE"]
+      ]
+    }
+  },
+  "request": {
+    "content": "Switch to the tab 'Text to image', then delete the positive prompt node (node 6) and add a fresh CLIPTextEncode wired the same way: CLIP from the checkpoint loader, conditioning into the KSampler's positive input."
+  },
+  "response": [
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_thinking",
+        "data": {
+          "delta": "I'll switch to that tab first."
+        }
+      },
+      "at_ms": 0
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_active_tab",
+        "data": {
+          "name": "Text to image",
+          "workflow_id": "5a6b35c4-8902-479d-87ab-8a9a07f08b90"
+        }
+      },
+      "at_ms": 7
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "duration_ms": 10,
+          "status": "success",
+          "tool_call_id": "toolu_01PbXSHPoAUnHhX2dqzJXiLB",
+          "tool_name": "switch_tab"
+        }
+      },
+      "at_ms": 11
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "duration_ms": 295,
+          "status": "success",
+          "tool_call_id": "toolu_01C2g2RACFUykeibS1je1Tbh",
+          "tool_name": "print_workflow"
+        }
+      },
+      "at_ms": 3673
+    },
+    {
+      "kind": "graph_ops",
+      "ops": [
+        {
+          "op": "add_node",
+          "pos": [715, 280],
+          "node": {
+            "id": 4181654812796082,
+            "pos": [715, 280],
+            "mode": 0,
+            "size": [240, 86],
+            "type": "CLIPTextEncode",
+            "flags": {},
+            "order": 0,
+            "inputs": [
+              {
+                "link": null,
+                "name": "clip",
+                "type": "CLIP"
+              }
+            ],
+            "outputs": [
+              {
+                "name": "CONDITIONING",
+                "type": "CONDITIONING",
+                "links": []
+              }
+            ],
+            "properties": {},
+            "widgets_values": [null]
+          },
+          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+          "op_id": "4c4d739392f14272939cf46a335652c8",
+          "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+          "node_id": 4181654812796082,
+          "class_type": "CLIPTextEncode",
+          "base_version": 2
+        },
+        {
+          "op": "connect",
+          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+          "op_id": "f1cd3aef4b984b04a9611a53f69763ba",
+          "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+          "link_id": 3320191292493608,
+          "to_node": 4181654812796082,
+          "to_slot": 0,
+          "from_node": 4,
+          "from_slot": 1,
+          "link_type": "CLIP",
+          "base_version": 2
+        },
+        {
+          "op": "connect",
+          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+          "op_id": "4f4de6968f124e23a3114f8c88a1a766",
+          "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+          "link_id": 2686273519871711,
+          "to_node": 3,
+          "to_slot": 1,
+          "from_node": 4181654812796082,
+          "from_slot": 0,
+          "link_type": "CONDITIONING",
+          "base_version": 2
+        },
+        {
+          "op": "set_widget",
+          "old": null,
+          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+          "op_id": "279c55a82f09416f9fa68e47ee11fafc",
+          "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+          "value": "a photo of a pier",
+          "widget": "text",
+          "node_id": 4181654812796082,
+          "base_version": 2
+        }
+      ],
+      "at_ms": 10451
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "duration_ms": 223,
+          "status": "success",
+          "tool_call_id": "toolu_018Ao8cDcxmDBaz9qV7PWpGx",
+          "tool_name": "apply_ops"
+        }
+      },
+      "at_ms": 10451
+    },
+    {
+      "kind": "graph_ops",
+      "ops": [
+        {
+          "op": "delete_node",
+          "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
+          "op_id": "b141d8503ee54cde94d3a4e3f6b5204f",
+          "stamp": [3, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
+          "node_id": 6,
+          "base_version": 3,
+          "removed_links": [1]
+        }
+      ],
+      "at_ms": 15515
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "duration_ms": 202,
+          "status": "success",
+          "tool_call_id": "toolu_01QkN5N4e8fkpBrT9aWbb4aK",
+          "tool_name": "delete_node"
+        }
+      },
+      "at_ms": 15515
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "duration_ms": 199,
+          "status": "success",
+          "tool_call_id": "toolu_01QUTSXXBfU7oShpWRkxtLzD",
+          "tool_name": "print_workflow"
+        }
+      },
+      "at_ms": 18022
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_message_delta",
+        "data": {
+          "delta": "Done — I'm on the \"Text to image\" tab, the old positive prompt node is gone, and a fresh one is in its place, taking CLIP from the checkpoint loader and feeding the sampler's positive input. I carried over the same prompt text (\"a photo of a pier\").\n\nOne thing unrelated to this swap: the sampler's negative prompt and empty latent inputs were already unconnected before I started, so the graph won't run until those are filled in. Want me to add them?"
+        }
+      },
+      "at_ms": 22947
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_message_done",
+        "data": {
+          "usage": {
+            "cache_creation_input_tokens": 2216,
+            "cache_read_input_tokens": 232121,
+            "input_tokens": 12,
+            "output_tokens": 885,
+            "total_tokens": 897
+          }
+        }
+      },
+      "at_ms": 22951
+    }
+  ]
+}

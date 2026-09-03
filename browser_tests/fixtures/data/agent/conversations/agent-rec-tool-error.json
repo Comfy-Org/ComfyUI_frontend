@@ -1,0 +1,276 @@
+{
+  "schema_version": "agent-conversation.v1",
+  "source": {
+    "repo": "Comfy-Org/ComfyUI_frontend",
+    "suite": "agent",
+    "case_id": "agent-rec-tool-error",
+    "response_side": "recorded",
+    "note": "RECORDED from Comfy-Org/cloud services/agent running NON-standalone local full stack (Postgres + doc host, M2M identity headers) at http://127.0.0.1:8086 (frames: redis SUBSCRIBE channel:ws:<workspace>:u:<user>); NOT a production capture. cloud commit 9dc1da7dae2a1d40a9ca1f2a1f91cd9fd9e10900; model claude-opus-5; thread 934d7b9d-72d9-40ab-a3d9-3cdb6fa5a386; message a5ec5ead-1909-4322-9d62-edbb03a3ded9; workflow 5c1db1ce-4ca3-4db9-b559-4d3463d0c6e5 (seeded by throwaway turn 788de1fc-829b-4636-b715-2879479effbc; the recorded turn opens on a fresh workflow and switches to it first because the replay subscribes only on an agent_active_tab frame, see plan Q4); agent_tool_calls parent rows ['39a22dd2-4aaa-4d7d-9505-779ab6386ee8', 'aeb6b2f3-8d0c-4131-a913-144322ca42c8']; rows agent-rec-tool-error.t-a1.rows.json; raw capture sha256 83bd2c2c30c00883df39527e5f482deccc5e10c34a0d6554c34bbff8d725c0e6",
+    "capture": {
+      "backend": "Comfy-Org/cloud",
+      "thread_id": "934d7b9d-72d9-40ab-a3d9-3cdb6fa5a386",
+      "message_id": "a5ec5ead-1909-4322-9d62-edbb03a3ded9",
+      "exported_at": "2026-09-03T12:40:56Z"
+    }
+  },
+  "workflow": {
+    "id": "5c1db1ce-4ca3-4db9-b559-4d3463d0c6e5",
+    "name": "Text to image",
+    "catalog": {
+      "types": {
+        "CheckpointLoaderSimple": {
+          "widget_order": ["ckpt_name"]
+        },
+        "CLIPTextEncode": {
+          "widget_order": ["text"]
+        },
+        "KSampler": {
+          "widget_order": [
+            "seed",
+            "control_after_generate",
+            "steps",
+            "cfg",
+            "sampler_name",
+            "scheduler",
+            "denoise"
+          ]
+        },
+        "VAEDecode": {
+          "widget_order": []
+        },
+        "SaveImage": {
+          "widget_order": ["filename_prefix"]
+        },
+        "PrimitiveStringMultiline": {
+          "widget_order": ["value"]
+        },
+        "EmptyLatentImage": {
+          "widget_order": ["width", "height", "batch_size"]
+        }
+      }
+    },
+    "seed": {
+      "nodes": [
+        {
+          "id": 4,
+          "type": "CheckpointLoaderSimple",
+          "pos": [0, 0],
+          "size": [315, 98],
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "MODEL",
+              "type": "MODEL",
+              "links": [3]
+            },
+            {
+              "name": "CLIP",
+              "type": "CLIP",
+              "links": [1]
+            },
+            {
+              "name": "VAE",
+              "type": "VAE",
+              "links": [5]
+            }
+          ],
+          "widgets_values": ["sd_xl_base_1.0.safetensors"]
+        },
+        {
+          "id": 6,
+          "type": "CLIPTextEncode",
+          "title": "Positive prompt",
+          "pos": [400, 0],
+          "size": [400, 200],
+          "inputs": [
+            {
+              "name": "clip",
+              "type": "CLIP",
+              "link": 1
+            },
+            {
+              "name": "text",
+              "type": "STRING",
+              "widget": {
+                "name": "text"
+              },
+              "link": null
+            }
+          ],
+          "outputs": [
+            {
+              "name": "CONDITIONING",
+              "type": "CONDITIONING",
+              "links": [2]
+            }
+          ],
+          "widgets_values": ["a photo of a pier"]
+        },
+        {
+          "id": 3,
+          "type": "KSampler",
+          "pos": [850, 0],
+          "size": [315, 262],
+          "inputs": [
+            {
+              "name": "model",
+              "type": "MODEL",
+              "link": 3
+            },
+            {
+              "name": "positive",
+              "type": "CONDITIONING",
+              "link": 2
+            },
+            {
+              "name": "negative",
+              "type": "CONDITIONING",
+              "link": null
+            },
+            {
+              "name": "latent_image",
+              "type": "LATENT",
+              "link": null
+            }
+          ],
+          "outputs": [
+            {
+              "name": "LATENT",
+              "type": "LATENT",
+              "links": [4]
+            }
+          ],
+          "widgets_values": [0, "randomize", 20, 7, "euler", "normal", 1]
+        },
+        {
+          "id": 8,
+          "type": "VAEDecode",
+          "pos": [1200, 0],
+          "size": [210, 46],
+          "inputs": [
+            {
+              "name": "samples",
+              "type": "LATENT",
+              "link": 4
+            },
+            {
+              "name": "vae",
+              "type": "VAE",
+              "link": 5
+            }
+          ],
+          "outputs": [
+            {
+              "name": "IMAGE",
+              "type": "IMAGE",
+              "links": [6]
+            }
+          ],
+          "widgets_values": []
+        },
+        {
+          "id": 9,
+          "type": "SaveImage",
+          "pos": [1450, 0],
+          "size": [315, 270],
+          "inputs": [
+            {
+              "name": "images",
+              "type": "IMAGE",
+              "link": 6
+            }
+          ],
+          "outputs": [],
+          "widgets_values": ["ComfyUI"]
+        }
+      ],
+      "links": [
+        [1, 4, 1, 6, 0, "CLIP"],
+        [2, 6, 0, 3, 1, "CONDITIONING"],
+        [3, 4, 0, 3, 0, "MODEL"],
+        [4, 3, 0, 8, 0, "LATENT"],
+        [5, 4, 2, 8, 1, "VAE"],
+        [6, 8, 0, 9, 0, "IMAGE"]
+      ]
+    }
+  },
+  "request": {
+    "content": "Switch to the tab 'Text to image', then add a node of class DoesNotExist."
+  },
+  "response": [
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_thinking",
+        "data": {
+          "delta": "I'll switch to that tab first."
+        }
+      },
+      "at_ms": 0
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_active_tab",
+        "data": {
+          "name": "Text to image",
+          "workflow_id": "5c1db1ce-4ca3-4db9-b559-4d3463d0c6e5"
+        }
+      },
+      "at_ms": 9
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "duration_ms": 8,
+          "status": "success",
+          "tool_call_id": "toolu_01YWm16Ejys8FJBofYwL7k9E",
+          "tool_name": "switch_tab"
+        }
+      },
+      "at_ms": 12
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "duration_ms": 346,
+          "error_code": "node_not_found",
+          "status": "error",
+          "tool_call_id": "toolu_01XqvtmCXKboog1UTZ3MGNJR",
+          "tool_name": "add_node"
+        }
+      },
+      "at_ms": 2654
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_message_delta",
+        "data": {
+          "delta": "I'm now on the \"Text to image\" tab, but there's no node called \"DoesNotExist\" — nothing was added, and the canvas is unchanged.\n\nIf you tell me what you actually want that node to do (e.g. upscale, add a LoRA, save output), I'll find the real one and wire it in."
+        }
+      },
+      "at_ms": 5701
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_message_done",
+        "data": {
+          "usage": {
+            "cache_creation_input_tokens": 752,
+            "cache_read_input_tokens": 114291,
+            "input_tokens": 6,
+            "output_tokens": 295,
+            "total_tokens": 301
+          }
+        }
+      },
+      "at_ms": 5703
+    }
+  ]
+}
