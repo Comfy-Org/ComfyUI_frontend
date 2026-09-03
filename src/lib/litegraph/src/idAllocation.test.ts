@@ -155,6 +155,15 @@ describe('idAllocation', () => {
 })
 
 describe('coordination-free arming across a state swap', () => {
+  it('carries root graph arming across clear()', () => {
+    const graph = new LGraph()
+    setCoordinationFreeIds(graph.state, true)
+
+    graph.clear()
+
+    expect(Number(mintNodeId(graph.state))).toBeGreaterThanOrEqual(MINT_ID_MIN)
+  })
+
   it('carries arming to the state that replaces it', () => {
     const previous = createLGraphState()
     setCoordinationFreeIds(previous, true)

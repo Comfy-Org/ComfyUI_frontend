@@ -42,6 +42,12 @@ const MINT_ID_SPAN = MINT_ID_CEILING - MINT_ID_MIN
 
 const coordinationFreeStates = new WeakSet<LGraphState>()
 
+export function cloneLGraphState(source: LGraphState): LGraphState {
+  const state = { ...source }
+  if (coordinationFreeStates.has(source)) coordinationFreeStates.add(state)
+  return state
+}
+
 function defaultRandom(): number {
   const crypto = globalThis.crypto
   if (crypto?.getRandomValues) {

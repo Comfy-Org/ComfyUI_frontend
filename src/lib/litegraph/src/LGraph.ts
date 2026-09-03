@@ -730,6 +730,7 @@ export class LGraph
 
   private resetAfterClear(): void {
     const graphId = this.id
+    const previousState = this.isRootGraph ? this.state : undefined
     useGraphMetadataStore().clear(this.rootGraph?.id ?? graphId, graphId)
     if (this.isRootGraph) useEntityIdStore().clear(graphId)
     if (this.isRootGraph && graphId !== zeroUuid) {
@@ -755,7 +756,7 @@ export class LGraph
     this.id = this.isRootGraph ? createUuidv4() : zeroUuid
     this.revision = 0
 
-    this.state = createLGraphState(this.isRootGraph ? this.state : undefined)
+    this.state = createLGraphState(previousState)
 
     // used to detect changes
     this._version = -1
