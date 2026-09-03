@@ -1,6 +1,6 @@
 // eslint-disable-next-line no-restricted-imports -- staging has no local ComfyUI settings backend
 import { chromium, expect, test } from '@playwright/test'
-import type { Page } from '@playwright/test'
+import type { Frame, Page } from '@playwright/test'
 import { appendFileSync, readFileSync, writeFileSync } from 'node:fs'
 import { mkdir, mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -75,6 +75,30 @@ async function requireAuthenticated(page: Page) {
 
 async function pauseBetweenFields() {
   await new Promise((resolve) => setTimeout(resolve, 500))
+}
+
+async function findChallengeFrame(page: Page): Promise<Frame> {
+  const deadline = Date.now() + 60_000
+  while (Date.now() < deadline) {
+    for (const frame of page.frames()) {
+      if (/testmode-acs\.stripe\.com/.test(frame.url())) return frame
+    }
+    await new Promise((resolve) => setTimeout(resolve, 250))
+  }
+  const frames = await Promise.all(
+    page.frames().map(async (frame) => ({
+      url: frame.url(),
+      text: (
+        await frame
+          .locator('body')
+          .innerText()
+          .catch(() => '')
+      ).slice(0, 500)
+    }))
+  )
+  throw new Error(
+    `3DS challenge frame did not appear: ${JSON.stringify(frames)}`
+  )
 }
 
 async function fillCheckout(page: Page, card: string) {
@@ -200,9 +224,17 @@ test('resumes declined checkout and completes it with a new card', async () => {
     )
     if (isBilling && url.pathname.endsWith('/status')) {
       writeFileSync(`${evidenceDir}/preflight-status.json`, `${body}\n`)
+      appendFileSync(
+        `${evidenceDir}/status-responses.jsonl`,
+        `${JSON.stringify({ captured_at: new Date().toISOString(), body: JSON.parse(body) })}\n`
+      )
     }
     if (isBilling && url.pathname.endsWith('/balance')) {
       writeFileSync(`${evidenceDir}/preflight-balance.json`, `${body}\n`)
+      appendFileSync(
+        `${evidenceDir}/balance-responses.jsonl`,
+        `${JSON.stringify({ captured_at: new Date().toISOString(), body: JSON.parse(body) })}\n`
+      )
     }
     if (isBilling && !response.ok()) {
       writeFileSync(`${evidenceDir}/error-billing.json`, `${body}\n`)
@@ -251,6 +283,195 @@ test('resumes declined checkout and completes it with a new card', async () => {
       path: `${evidenceDir}/frontend-after-sign-in.png`,
       fullPage: true
     })
+    if (process.env.RUN20K_HOSTED === 'true') {
+      const startedAt = Date.now()
+      const pagesBeforeSubscribe = context.pages().length
+      await page.evaluate(async () => {
+        const seam = Reflect.get(window, '__accountLayerPoc') as {
+          subscribe(planId?: string): Promise<void>
+        }
+        await seam.subscribe('pro-monthly')
+      })
+      await expect
+        .poll(() => context.pages().length, { timeout: 30_000 })
+        .toBe(pagesBeforeSubscribe + 1)
+      const firstCheckout = context.pages().at(-1)!
+      const firstUrl = firstCheckout.url()
+      expect(firstUrl).toContain('cs_test_')
+      const abandoned = await page.evaluate(() => {
+        const seam = Reflect.get(window, '__accountLayerPoc') as {
+          getPaymentState(): unknown
+        }
+        const key = Object.keys(localStorage).find((candidate) =>
+          candidate.endsWith(':billing:active-operation')
+        )
+        return {
+          payment: seam.getPaymentState(),
+          storageKey: key ?? null,
+          operationId: key
+            ? ((
+                JSON.parse(localStorage.getItem(key) ?? 'null') as {
+                  id?: string
+                } | null
+              )?.id ?? null)
+            : null
+        }
+      })
+      expect(abandoned.operationId).toBeTruthy()
+      await firstCheckout.close()
+      const pagesBeforeReload = context.pages().length
+      await page.reload()
+      await requireAuthenticated(page)
+      const pagesAfterReload = context.pages().length
+      expect(pagesAfterReload).toBe(pagesBeforeReload)
+      await expect
+        .poll(
+          () =>
+            page.evaluate(() => {
+              const seam = Reflect.get(window, '__accountLayerPoc') as {
+                getPaymentState(): { operationId?: string }
+              }
+              return seam.getPaymentState().operationId
+            }),
+          { timeout: 30_000 }
+        )
+        .toBe(abandoned.operationId)
+      const resumed = await paymentState(page)
+      expect(resumed?.operationId).toBe(abandoned.operationId)
+      await page.evaluate(async () => {
+        const seam = Reflect.get(window, '__accountLayerPoc') as {
+          subscribe(planId?: string): Promise<void>
+        }
+        await seam.subscribe('pro-monthly')
+      })
+      await expect
+        .poll(() => context.pages().length, { timeout: 30_000 })
+        .toBe(pagesAfterReload + 1)
+      let checkoutPage = context.pages().at(-1)!
+      const secondUrl = checkoutPage.url()
+      expect(secondUrl).toContain('cs_test_')
+      expect(secondUrl).not.toBe(firstUrl)
+      const resumedOperation = await page.evaluate(() => {
+        const key = Object.keys(localStorage).find((candidate) =>
+          candidate.endsWith(':billing:active-operation')
+        )
+        return key
+          ? ((
+              JSON.parse(localStorage.getItem(key) ?? 'null') as {
+                id?: string
+              } | null
+            )?.id ?? null)
+          : null
+      })
+      expect(resumedOperation).toBe(abandoned.operationId)
+      writeFileSync(
+        `${evidenceDir}/abandon-resume.json`,
+        `${JSON.stringify(
+          {
+            started_at: new Date(startedAt).toISOString(),
+            captured_at: new Date().toISOString(),
+            elapsed_ms: Date.now() - startedAt,
+            operation_id: abandoned.operationId,
+            first_checkout_url_has_fragment: firstUrl.includes('#'),
+            second_checkout_url_has_fragment: secondUrl.includes('#'),
+            checkout_url_changed: secondUrl !== firstUrl,
+            pages_before_reload: pagesBeforeReload,
+            pages_after_reload: pagesAfterReload,
+            new_pages_on_reload: pagesAfterReload - pagesBeforeReload,
+            state_before_close: abandoned.payment,
+            state_after_reload: resumed
+          },
+          null,
+          2
+        )}\n`
+      )
+      await fillCheckout(checkoutPage, '4000002760003184')
+      const challenge = await findChallengeFrame(checkoutPage)
+      const fail = challenge.getByRole('button', {
+        name: /^(fail|fail authentication)$/i
+      })
+      await expect(fail).toBeVisible({ timeout: 60_000 })
+      await fail.click()
+      await checkoutPage.screenshot({
+        path: `${evidenceDir}/3ds-failed.png`,
+        fullPage: true
+      })
+      const failedAt = new Date().toISOString()
+      const failedState = await paymentState(page)
+      expect(failedState?.step).not.toBe('success')
+      writeFileSync(
+        `${evidenceDir}/3ds-failure.json`,
+        `${JSON.stringify({ captured_at: failedAt, operation_id: abandoned.operationId, app_state: failedState, hosted_text: await checkoutPage.locator('body').innerText() }, null, 2)}\n`
+      )
+      await checkoutPage.close()
+      const pagesBeforeRetry = context.pages().length
+      await page.evaluate(async () => {
+        const seam = Reflect.get(window, '__accountLayerPoc') as {
+          subscribe(planId?: string): Promise<void>
+        }
+        await seam.subscribe('pro-monthly')
+      })
+      await expect
+        .poll(() => context.pages().length, { timeout: 30_000 })
+        .toBe(pagesBeforeRetry + 1)
+      checkoutPage = context.pages().at(-1)!
+      await fillCheckout(checkoutPage, '4000002760003184')
+      const completeChallenge = await findChallengeFrame(checkoutPage)
+      const complete = completeChallenge.getByRole('button', {
+        name: /^(complete|complete authentication)$/i
+      })
+      await expect(complete).toBeVisible({ timeout: 60_000 })
+      await complete.click()
+      await checkoutPage.waitForURL(
+        (url) => url.origin === new URL(baseUrl).origin,
+        { timeout: 180_000, waitUntil: 'commit' }
+      )
+      const settlementStartedAt = Date.now()
+      appendFileSync(
+        `${evidenceDir}/paystate.log`,
+        `${new Date().toISOString()} verifying ${abandoned.operationId}\n`
+      )
+      await requireAuthenticated(checkoutPage)
+      await expect
+        .poll(async () => (await paymentState(checkoutPage))?.step, {
+          timeout: 180_000,
+          intervals: [1_000, 3_000, 8_000, 15_000]
+        })
+        .toBe('success')
+      const settlementElapsedMs = Date.now() - settlementStartedAt
+      expect(settlementElapsedMs).toBeLessThanOrEqual(180_000)
+      appendFileSync(
+        `${evidenceDir}/paystate.log`,
+        `${new Date().toISOString()} success ${abandoned.operationId}\n`
+      )
+      await checkoutPage.evaluate(async () => {
+        const seam = Reflect.get(window, '__accountLayerPoc') as {
+          refreshCredits(): Promise<void>
+        }
+        await seam.refreshCredits()
+      })
+      writeFileSync(
+        `${evidenceDir}/settlement.json`,
+        `${JSON.stringify(
+          {
+            started_at: new Date(settlementStartedAt).toISOString(),
+            finished_at: new Date().toISOString(),
+            elapsed_ms: settlementElapsedMs,
+            within_three_minutes: settlementElapsedMs <= 180_000,
+            operation_id: abandoned.operationId,
+            payment: await paymentState(checkoutPage),
+            pages: context.pages().length
+          },
+          null,
+          2
+        )}\n`
+      )
+      await checkoutPage.screenshot({
+        path: `${evidenceDir}/3ds-success.png`,
+        fullPage: true
+      })
+      return
+    }
     if (process.env.LIFECYCLE_ONLY === 'true') {
       const operationId = process.env.RECOVER_OPERATION_ID
       if (operationId) {
