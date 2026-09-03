@@ -265,6 +265,10 @@ async function recordTurns(
         await sleep(options.cancel.afterMs)
         turn.cancel_sent_at_ms = Date.now()
         turn.cancel_ack = await postCancel(thread, ack.data.message_id)
+        if (turn.cancel_ack.status !== 202)
+          refuse(
+            `${turnLabel(index)} cancel not accepted: ${JSON.stringify(turn.cancel_ack)}`
+          )
       }
       await waitDone(ack.data.message_id, turnLabel(index))
       turn.saw_done = true

@@ -575,6 +575,10 @@ function assembleTurn(
     sent === undefined
       ? []
       : frames.filter((frame) => (frame.at_ms ?? 0) <= sent)
+  if (sent !== undefined && turn.cancel_ack?.status !== 202)
+    refuse(
+      `${label} cancel was not accepted: ${JSON.stringify(turn.cancel_ack ?? null)}`
+    )
   if (sent !== undefined && before.length === 0)
     refuse(`${label} was cancelled before any frame arrived`)
   return {

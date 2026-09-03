@@ -155,6 +155,37 @@ const input = (
 }
 
 describe('assembleCapture', () => {
+  const cancelledTurn = (
+    cancel_ack: RawCapture['turns'][number]['cancel_ack']
+  ) =>
+    raw({
+      turns: [
+        {
+          ...raw().turns[0],
+          cancel_sent_at_ms: Number.MAX_SAFE_INTEGER,
+          cancel_ack
+        }
+      ]
+    })
+
+  it('refuses a cancelled turn whose cancel the backend rejected', () => {
+    expect(() =>
+      assembleCapture(
+        input({ raw: cancelledTurn({ status: 500, body: null }) })
+      )
+    ).toThrow('cancel was not accepted')
+    expect(() => assembleCapture(input({ raw: cancelledTurn(null) }))).toThrow(
+      'cancel was not accepted'
+    )
+  })
+
+  it('records the cancel marker only for an accepted cancel', () => {
+    const { capture } = assembleCapture(
+      input({ raw: cancelledTurn({ status: 202, body: {} }) })
+    )
+    expect(capture.turns[0].cancel_after_frame).toBe(frames().length - 1)
+  })
+
   it('keeps the turn frames with their receipt times and emits the applied ops', () => {
     const { capture, receipt } = assembleCapture(input())
 
