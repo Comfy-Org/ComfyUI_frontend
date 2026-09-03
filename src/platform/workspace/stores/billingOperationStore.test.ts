@@ -53,10 +53,10 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
   })
 }))
 
-const mockCaptureException = vi.hoisted(() => vi.fn())
+const mockReportError = vi.hoisted(() => vi.fn())
 
-vi.mock('@sentry/vue', () => ({
-  captureException: mockCaptureException
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
 }))
 
 vi.mock('@/platform/workspace/api/workspaceApi', () => ({
@@ -741,9 +741,9 @@ describe('billingOperationStore', () => {
       await vi.advanceTimersByTimeAsync(0)
 
       await expect(terminal).resolves.toMatchObject({ status: 'succeeded' })
-      expect(mockCaptureException).toHaveBeenCalledWith(error, {
-        tags: { error_type: 'billing_success_handling_failed' },
-        extra: { billing_op_id: 'op-1' }
+      expect(mockReportError).toHaveBeenCalledWith(error, {
+        errorType: 'billing_success_handling_failed',
+        context: { billing_op_id: 'op-1' }
       })
     })
 

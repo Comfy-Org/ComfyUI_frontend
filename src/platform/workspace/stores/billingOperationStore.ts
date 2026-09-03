@@ -1,4 +1,3 @@
-import { captureException } from '@sentry/vue'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { loadStripe } from '@stripe/stripe-js/pure'
 import { useEventListener } from '@vueuse/core'
@@ -13,6 +12,7 @@ import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscript
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import type {
   BillingFailure,
   PaymentIntentSource,
@@ -733,9 +733,9 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         life: 5000
       })
     } catch (error) {
-      captureException(error, {
-        tags: { error_type: 'billing_success_handling_failed' },
-        extra: { billing_op_id: opId }
+      reportError(error, {
+        errorType: 'billing_success_handling_failed',
+        context: { billing_op_id: opId }
       })
       throw error
     } finally {
