@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Search } from '@lucide/vue'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -20,6 +20,7 @@ import { t } from '../../i18n/translations'
 import type { FacetGroupConfig, ToolbarLabels } from './BrowseToolbar.vue'
 import type { GridLabels } from './WorkflowGrid.vue'
 import WorkflowGrid from './WorkflowGrid.vue'
+import WorkshopHero from '../workshop/WorkshopHero.vue'
 import WorkshopModelCard from '../workshop/WorkshopModelCard.vue'
 
 const { locale = 'en', embedded = false } = defineProps<{
@@ -36,7 +37,7 @@ const TABS = ['all', 'nodeGraphs', 'comfyApps', 'models'] as const
 const useCase = ref<UseCase | 'all'>('all')
 
 const useCaseLabelKey: Record<UseCase | 'all', TranslationKey> = {
-  all: 'workshop.hub.kind.all',
+  all: 'workshop.useCase.all',
   'generate-images': 'workshop.useCase.generateImages',
   'edit-images': 'workshop.useCase.editImages',
   'generate-videos': 'workshop.useCase.generateVideos',
@@ -72,6 +73,19 @@ const useCases = computed(() =>
 
 const scoped = computed(() => inUseCase(useCase.value))
 
+// The row is for narrowing what the use case already picked, so search stays
+// out of the way until it is asked for.
+const searchInput = ref<HTMLInputElement>()
+const searching = ref(false)
+async function openSearch() {
+  searching.value = true
+  await nextTick()
+  searchInput.value?.focus()
+}
+function closeSearchIfEmpty() {
+  if (store.searchQuery.value.trim() === '') searching.value = false
+}
+
 onMounted(() => {
   const params = new URLSearchParams(location.search)
   const tab = TABS.find((value) => value === params.get('tab'))
@@ -83,7 +97,10 @@ onMounted(() => {
     if (value) store.toggleBadge({ type, value })
   }
   const query = params.get('q')
-  if (query) store.searchQuery.value = query
+  if (query) {
+    store.searchQuery.value = query
+    searching.value = true
+  }
 })
 
 const toolbarLabels: ToolbarLabels = {
@@ -160,17 +177,12 @@ const filteredTemplates = computed(() => {
     :class="cn(!embedded && 'mx-auto max-w-304 pb-32')"
     data-testid="workshop-hub"
   >
-    <div
+    <WorkshopHero
       v-if="!embedded"
-      class="mb-6 flex flex-col gap-2 lg:mb-8"
+      heading-key="workshop.hub.title"
+      :locale
       data-testid="hub-heading"
-    >
-      <h1
-        class="text-content-bright text-3xl font-medium tracking-tight lg:text-5xl"
-      >
-        {{ t('workshop.hub.title', locale) }}
-      </h1>
-    </div>
+    />
 
     <nav
       v-if="!embedded"
@@ -209,18 +221,31 @@ const filteredTemplates = computed(() => {
       :href-for="hrefFor"
     >
       <template #search>
-        <label class="relative block">
+        <button
+          v-if="!searching"
+          type="button"
+          :aria-label="t('workshop.hub.search', locale)"
+          :title="t('workshop.hub.search', locale)"
+          class="text-content-secondary hover:text-content focus-visible:ring-brand grid size-10 cursor-pointer place-items-center rounded-xl border border-white/15 bg-white/8 transition-colors outline-none hover:bg-white/12 focus-visible:ring-2"
+          data-testid="hub-search-open"
+          @click="openSearch"
+        >
+          <Search class="size-4" aria-hidden="true" />
+        </button>
+        <label v-else class="relative block max-w-80">
           <span class="sr-only">{{ t('workshop.hub.search', locale) }}</span>
           <Search
-            class="text-content-muted pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2"
+            class="text-content-muted pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2"
             aria-hidden="true"
           />
           <input
+            ref="searchInput"
             v-model="store.searchQuery.value"
             type="search"
             data-testid="hub-search"
             :placeholder="t('workshop.hub.search', locale)"
-            class="text-content placeholder:text-content-muted focus-visible:ring-brand h-8 w-full rounded-lg border border-white/15 bg-white/8 pr-3 pl-9 text-xs outline-none focus-visible:ring-2"
+            class="text-content placeholder:text-content-muted focus-visible:ring-brand h-10 w-full rounded-xl border border-white/15 bg-white/8 pr-3 pl-10 text-xs outline-none focus-visible:ring-2"
+            @blur="closeSearchIfEmpty"
           />
         </label>
       </template>
@@ -235,7 +260,6 @@ const filteredTemplates = computed(() => {
             class="text-content-secondary mb-4 flex items-baseline gap-2 text-xs font-bold tracking-wider uppercase"
           >
             {{ t('workshop.hub.kind.models', locale) }}
-            <span class="tabular-nums">{{ filteredModels.length }}</span>
           </h2>
           <ul class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             <li v-for="model in filteredModels.slice(0, 6)" :key="model.slug">

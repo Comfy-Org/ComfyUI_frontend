@@ -10,6 +10,7 @@ import type { FormValues } from '../../config/workshop-playground'
 import type { SnippetLanguage } from '../../config/workshop-snippets'
 import { SNIPPET_LANGUAGES, buildSnippet } from '../../config/workshop-snippets'
 import type { Locale } from '../../i18n/translations'
+import { useTablist } from '../../composables/useTablist'
 import { t } from '../../i18n/translations'
 
 const {
@@ -23,6 +24,10 @@ const {
 }>()
 
 const language = ref<SnippetLanguage>('python')
+const { onKeydown: onLanguageKeydown } = useTablist(
+  () => SNIPPET_LANGUAGES,
+  language
+)
 const snippet = computed(() => buildSnippet(language.value, routerId, values))
 
 const languageLabel: Record<SnippetLanguage, string> = {
@@ -49,13 +54,21 @@ const languageLabel: Record<SnippetLanguage, string> = {
       <div
         class="flex items-center justify-between border-b border-transparency-white-t8 px-3 py-2"
       >
-        <div role="tablist" class="flex gap-1">
+        <div
+          role="tablist"
+          :aria-label="t('workshop.api.heading', locale)"
+          class="flex gap-1"
+          @keydown="onLanguageKeydown"
+        >
           <button
             v-for="option in SNIPPET_LANGUAGES"
             :key="option"
+            :id="`snippet-tab-${option}`"
             type="button"
             role="tab"
             :aria-selected="language === option"
+            aria-controls="snippet-panel"
+            :tabindex="language === option ? 0 : -1"
             :data-testid="`snippet-${option}`"
             :class="
               cn(
@@ -77,6 +90,10 @@ const languageLabel: Record<SnippetLanguage, string> = {
         />
       </div>
       <pre
+        id="snippet-panel"
+        role="tabpanel"
+        :aria-labelledby="`snippet-tab-${language}`"
+        tabindex="0"
         class="overflow-x-auto bg-primary-comfy-ink p-6 font-mono text-sm/relaxed text-primary-warm-white"
         data-testid="snippet"
       ><code>{{ snippet }}</code></pre>

@@ -1,5 +1,11 @@
 <script setup lang="ts">
 import { useResizeObserver } from '@vueuse/core'
+import {
+  HoverCardContent,
+  HoverCardPortal,
+  HoverCardRoot,
+  HoverCardTrigger
+} from 'reka-ui'
 import { computed, nextTick, ref, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -62,10 +68,6 @@ watch(allTags, () => nextTick(recompute), { immediate: true })
 
 const visibleTags = computed(() => allTags.value.slice(0, visibleCount.value))
 const hiddenTags = computed(() => allTags.value.slice(visibleCount.value))
-const overflowText = computed(() =>
-  hiddenTags.value.map((t) => t.label).join(', ')
-)
-
 const pillClass =
   'inline-flex h-6 w-fit shrink-0 items-center justify-center rounded-full bg-hub-surface px-4 py-1 text-xs font-normal whitespace-nowrap text-content transition-colors'
 </script>
@@ -90,14 +92,30 @@ const pillClass =
       >
         {{ tag.label }}
       </component>
-      <span
-        v-if="hiddenTags.length"
-        :class="cn(pillClass, 'tabular-nums')"
-        :title="overflowText"
-        data-testid="tag-overflow"
-      >
-        +{{ hiddenTags.length }}
-      </span>
+      <HoverCardRoot v-if="hiddenTags.length" :open-delay="120">
+        <HoverCardTrigger
+          :class="cn(pillClass, 'cursor-default tabular-nums')"
+          data-testid="tag-overflow"
+          @click.prevent.stop
+        >
+          +{{ hiddenTags.length }}
+        </HoverCardTrigger>
+        <HoverCardPortal>
+          <HoverCardContent
+            :side-offset="6"
+            class="bg-site-dropdown z-50 flex max-w-64 flex-col gap-1.5 rounded-2xl border border-white/10 p-2 shadow-2xl shadow-black/50"
+            data-testid="tag-overflow-list"
+          >
+            <span
+              v-for="tag in hiddenTags"
+              :key="`o:${tag.key}`"
+              :class="cn(pillClass, 'w-full justify-start')"
+            >
+              {{ tag.label }}
+            </span>
+          </HoverCardContent>
+        </HoverCardPortal>
+      </HoverCardRoot>
     </template>
     <div
       ref="measure"

@@ -24,6 +24,7 @@ describe('HubBrowse', () => {
     )
 
     await user.click(screen.getByTestId('hub-tab-all'))
+    await user.click(screen.getByTestId('hub-search-open'))
     await user.type(screen.getByTestId('hub-search'), 'minimax h3')
     expect(screen.getAllByTestId('hub-card-link')[0].textContent).toContain(
       'MiniMax H3'
@@ -38,6 +39,7 @@ describe('HubBrowse', () => {
     expect(screen.getAllByTestId('workshop-model-card').length).toBeGreaterThan(
       10
     )
+    await user.click(screen.getByTestId('hub-search-open'))
     await user.type(screen.getByTestId('hub-search'), 'kling')
     const cards = screen.getAllByTestId('workshop-model-card')
     expect(cards.length).toBeGreaterThan(0)

@@ -116,7 +116,7 @@ function clearAll() {
         align="end"
         :side-offset="8"
         data-testid="workshop-filter-menu"
-        class="bg-site-dropdown z-50 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-white/10 shadow-2xl shadow-black/50 outline-none"
+        class="bg-site-dropdown z-50 w-80 max-w-[calc(100vw-2rem)] max-h-[var(--reka-popover-content-available-height)] overflow-y-auto rounded-2xl border border-white/10 shadow-2xl shadow-black/50 outline-none"
       >
         <TabsRoot v-model="activeFacet" class="flex flex-col">
           <TabsList
@@ -161,7 +161,11 @@ function clearAll() {
               role="listbox"
               aria-multiselectable="true"
             >
-              <li v-for="option in visibleOptions(entry)" :key="option.value">
+              <li
+                v-for="option in visibleOptions(entry)"
+                :key="option.value"
+                role="none"
+              >
                 <button
                   type="button"
                   role="option"

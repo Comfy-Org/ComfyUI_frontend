@@ -8476,10 +8476,10 @@ Enterprise`
   'workshop.filter.noMatches': { en: 'No matches', 'zh-CN': '没有匹配项' },
   'workshop.filter.clearAll': { en: 'Clear filters', 'zh-CN': '清除筛选' },
   'workshop.filter.applied': { en: '{n} selected', 'zh-CN': '已选 {n} 项' },
-  'workshop.filter.providerGroup': { en: 'Providers', 'zh-CN': '提供方' },
+  'workshop.filter.providerGroup': { en: 'Models', 'zh-CN': '模型' },
   'workshop.filter.capabilityGroup': {
-    en: 'Capabilities',
-    'zh-CN': '能力'
+    en: 'Categories',
+    'zh-CN': '分类'
   },
   'workshop.filter.search': { en: 'Search…', 'zh-CN': '搜索…' },
   'workshop.sort.label': { en: 'Sort', 'zh-CN': '排序' },
@@ -8872,7 +8872,7 @@ Enterprise`
     en: 'Search workflows, models, creators...',
     'zh-CN': '搜索工作流、模型、创作者...'
   },
-  'workshop.hub.kind.all': { en: 'Everything', 'zh-CN': '全部' },
+  'workshop.hub.kind.all': { en: 'All', 'zh-CN': '全部' },
   'workshop.hub.kind.graph': { en: 'Node Graphs', 'zh-CN': '节点图' },
   'workshop.hub.kind.app': { en: 'Comfy Apps', 'zh-CN': 'Comfy 应用' },
   'workshop.hub.kind.models': { en: 'Models', 'zh-CN': '模型' },

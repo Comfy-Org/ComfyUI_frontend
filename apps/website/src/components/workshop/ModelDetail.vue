@@ -11,6 +11,7 @@ import {
   useMockSession
 } from '../../composables/useMockSession'
 import { useSignInHref } from '../../composables/useSignInHref'
+import { useTablist } from '../../composables/useTablist'
 import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
 import { externalLinks, getRoutes } from '../../config/routes'
 import type { WorkshopModelDetail } from '../../config/workshop'
@@ -62,6 +63,10 @@ const sectionLabel: Record<Section, TranslationKey> = {
 }
 
 const activeSection = ref<Section>('playground')
+const { onKeydown: onTabKeydown } = useTablist(
+  () => sections.value,
+  activeSection
+)
 
 const examples = examplesForModel(model)
 const firstExample = examples[0]
@@ -303,13 +308,17 @@ function useInCode() {
       :aria-label="t('workshop.title', locale)"
       class="flex gap-8 border-b border-transparency-white-t8"
       data-testid="model-tabs"
+      @keydown="onTabKeydown"
     >
       <button
         v-for="section in sections"
         :key="section"
+        :id="`tab-${section}`"
         type="button"
         role="tab"
         :aria-selected="section === activeSection"
+        :aria-controls="`panel-${section}`"
+        :tabindex="section === activeSection ? 0 : -1"
         :data-testid="`tab-${section}`"
         :class="
           cn(
@@ -327,6 +336,9 @@ function useInCode() {
 
     <section
       v-if="activeSection === 'playground'"
+      id="panel-playground"
+      role="tabpanel"
+      aria-labelledby="tab-playground"
       class="grid gap-8 lg:grid-cols-12"
       data-testid="playground-tab"
     >
@@ -526,15 +538,31 @@ function useInCode() {
       </div>
     </section>
 
-    <section v-if="activeSection === 'examples'">
+    <section
+      v-if="activeSection === 'examples'"
+      id="panel-examples"
+      role="tabpanel"
+      aria-labelledby="tab-examples"
+    >
       <ExamplesTab :examples :locale @open="openExample" />
     </section>
 
-    <section v-if="activeSection === 'details'" data-testid="details-tab">
+    <section
+      v-if="activeSection === 'details'"
+      id="panel-details"
+      role="tabpanel"
+      aria-labelledby="tab-details"
+      data-testid="details-tab"
+    >
       <slot name="details" />
     </section>
 
-    <section v-if="activeSection === 'api'">
+    <section
+      v-if="activeSection === 'api'"
+      id="panel-api"
+      role="tabpanel"
+      aria-labelledby="tab-api"
+    >
       <ApiTab :router-id="model.routerId" :values :locale />
     </section>
   </div>

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import {
   ArrowUpDown,
-  Boxes,
   Check,
   ChevronDown,
   LayoutGrid,
+  Sparkles,
   SlidersHorizontal
 } from '@lucide/vue'
 import {
@@ -67,7 +67,7 @@ const TABS: { key: HubTab; labelKey: keyof ToolbarLabels; icon: Component }[] =
     { key: 'all', labelKey: 'all', icon: LayoutGrid },
     { key: 'nodeGraphs', labelKey: 'nodeGraphs', icon: IconWorkflow },
     { key: 'comfyApps', labelKey: 'comfyApps', icon: IconApps },
-    { key: 'models', labelKey: 'models', icon: Boxes }
+    { key: 'models', labelKey: 'models', icon: Sparkles }
   ]
 
 const filterOpen = ref(false)
@@ -100,7 +100,7 @@ const sortLabel = computed(() =>
 )
 
 const controlClass =
-  'inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold whitespace-nowrap transition-colors outline-none focus-visible:ring-2 focus-visible:ring-brand sm:px-3.5'
+  'inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-xl px-3 text-xs font-semibold whitespace-nowrap transition-colors outline-none focus-visible:ring-2 focus-visible:ring-brand sm:px-4'
 </script>
 
 <template>
@@ -178,7 +178,7 @@ const controlClass =
             align="end"
             :side-offset="8"
             data-testid="hub-filter-menu"
-            class="bg-site-dropdown z-50 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-white/10 shadow-2xl shadow-black/50 outline-none"
+            class="bg-site-dropdown z-50 w-80 max-w-[calc(100vw-2rem)] max-h-[var(--reka-popover-content-available-height)] overflow-y-auto rounded-2xl border border-white/10 shadow-2xl shadow-black/50 outline-none"
           >
             <TabsRoot v-model="activeFacetTab" class="flex flex-col">
               <TabsList
@@ -224,7 +224,11 @@ const controlClass =
                   role="listbox"
                   aria-multiselectable="true"
                 >
-                  <li v-for="val in visibleValues(group)" :key="val.value">
+                  <li
+                    v-for="val in visibleValues(group)"
+                    :key="val.value"
+                    role="none"
+                  >
                     <button
                       type="button"
                       role="option"
