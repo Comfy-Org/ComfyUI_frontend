@@ -446,7 +446,7 @@ export const useWorkflowService = () => {
       // Cancel
       if (confirmed === null) return false
 
-      if (confirmed === true) {
+      if (confirmed) {
         const saved = await saveWorkflow(workflow)
         if (!saved) return false
       }
@@ -498,7 +498,7 @@ export const useWorkflowService = () => {
         // the close (a real configure failure resolves false - the dialog
         // path); a rejection still propagates as before.
         if (replacementWorkflow) {
-          if ((await openWorkflow(replacementWorkflow)) === false) return false
+          if (!(await openWorkflow(replacementWorkflow))) return false
         } else {
           if ((await loadDefaultWorkflow()) === false) return false
         }
@@ -655,11 +655,9 @@ export const useWorkflowService = () => {
     }
 
     if (value === null || typeof value === 'string') {
-      const path = value as string | null
-
       // Check if a persisted workflow with this path exists
-      if (path) {
-        const fullPath = ComfyWorkflow.basePath + appendJsonExt(path)
+      if (value) {
+        const fullPath = ComfyWorkflow.basePath + appendJsonExt(value)
         const existingWorkflow = workflowStore.getWorkflowByPath(fullPath)
 
         // Reuse an existing workflow when this is a restoration case
@@ -707,7 +705,7 @@ export const useWorkflowService = () => {
       }
 
       const tempWorkflow = workflowStore.createNewTemporary(
-        path ? appendJsonExt(path) : undefined,
+        value ? appendJsonExt(value) : undefined,
         workflowData
       )
       tempWorkflow.initialMode = freshLoadMode

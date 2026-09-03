@@ -1,6 +1,7 @@
 import { toString } from 'es-toolkit/compat'
 import { shallowRef, toRaw } from 'vue'
 
+import { assert } from '@/base/assert'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
@@ -1242,7 +1243,7 @@ export class LGraph
       if (typeof method === 'function') {
         const args =
           params == null ? [] : Array.isArray(params) ? params : [params]
-        ;(method as (...args: unknown[]) => unknown).apply(c, args)
+        Reflect.apply(method, c, args)
       }
     }
   }
@@ -1309,6 +1310,15 @@ export class LGraph
     }
 
     node.id = parseNodeId(node.id) ?? UNASSIGNED_NODE_ID
+
+    const nodeWithSameId = this._nodes_by_id[node.id]
+    if (nodeWithSameId === node) {
+      assert(
+        false,
+        'LGraph.add: re-adding the same node instance (id collision with itself)'
+      )
+      return nodeWithSameId
+    }
 
     if (this._nodes.length >= LiteGraph.MAX_NUMBER_OF_NODES) {
       throw 'LiteGraph: max number of nodes in a graph reached'
@@ -1397,6 +1407,11 @@ export class LGraph
     // cannot be removed
     if (node.ignore_remove) {
       console.warn('LiteGraph: node cannot be removed', node)
+      return
+    }
+
+    if (node.graph !== this) {
+      assert(false, 'LGraph.remove: node does not belong to this graph')
       return
     }
 

@@ -17,5 +17,7 @@ describe('ModelsApiHero', () => {
     expect(
       screen.getAllByText('comfy.models.run', { exact: false }).length
     ).toBeGreaterThan(0)
+    expect(screen.getByText(t('nav.badgeComingSoon', 'en'))).toBeTruthy()
+    expect(screen.queryByText(t('nav.badgeBeta', 'en'))).toBeNull()
   })
 })

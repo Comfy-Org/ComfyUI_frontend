@@ -52,6 +52,14 @@
 }
 
 @font-face {
+  font-family: 'PP Formula';
+  src: url('/fonts/PPFormula-Bold.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
   font-family: 'PP Formula Narrow';
   src: url('/fonts/PPFormula-NarrowSemibold.woff2') format('woff2');
   font-weight: 600;
@@ -229,7 +237,9 @@
 }
 
 @utility animate-dash-flow {
-  animation: dash-flow 1.2s linear infinite;
+  @media (prefers-reduced-motion: no-preference) {
+    animation: dash-flow 1.2s linear infinite;
+  }
 }
 
 @keyframes platform-builder-float {
