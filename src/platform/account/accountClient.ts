@@ -300,6 +300,7 @@ export function createFrontendAccountClients(
   })
   debug.injectOperationResponse = async (response) => {
     injectedOperationResponse = response
+    await operationStore.setActiveId('injected-operation')
     await billingCommands?.start()
   }
   debug.refreshCredits = () => billing.refreshCredits()

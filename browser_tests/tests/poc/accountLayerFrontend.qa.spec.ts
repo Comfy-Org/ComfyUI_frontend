@@ -234,6 +234,29 @@ test('sign-out during a boundary exchange cancels the timer and late write', asy
 test('mounts shared checkout in both hosts and drives safe payment states', async ({
   page
 }) => {
+  const requestEvidence: string[] = []
+  page.on('response', async (response) => {
+    const url = new URL(response.url())
+    if (url.pathname === '/api/workspaces') {
+      const body = (await response.json()) as { workspaces?: unknown[] }
+      requestEvidence.push(
+        `GET /api/workspaces status=${response.status()} workspace_count=${body.workspaces?.length ?? 0}`
+      )
+    }
+    if (url.pathname === '/api/billing/subscribe') {
+      const body = (await response.json()) as Record<string, unknown>
+      requestEvidence.push(
+        `POST /api/billing/subscribe status=${response.status()} body_keys=${Object.keys(body).sort().join(',')} checkout_url_test_mode=${typeof body.payment_method_url === 'string' && body.payment_method_url.includes('cs_test_')}`
+      )
+    }
+  })
+  await page.route('**/api/billing/ops/injected-operation', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ status: 'pending' })
+    })
+  )
   await page.addInitScript(() => {
     window.open = (url) => {
       Reflect.set(window, '__accountLayerOpenedUrl', String(url))
@@ -268,8 +291,16 @@ test('mounts shared checkout in both hosts and drives safe payment states', asyn
   )
   await modalHost.getByTestId('account-layer-subscribe').dblclick()
   await expect
-    .poll(async () => (await snapshot(page)).sessionExchanges)
-    .toBeGreaterThan(0)
+    .poll(async () =>
+      page.evaluate(() => {
+        const debug = Reflect.get(
+          window,
+          '__accountLayerPoc'
+        ) as AccountLayerDebug
+        return debug.openUrlCalls
+      })
+    )
+    .toBe(1)
   const checkout = await page.evaluate(() => {
     const debug = Reflect.get(window, '__accountLayerPoc') as AccountLayerDebug
     return {
@@ -294,7 +325,11 @@ test('mounts shared checkout in both hosts and drives safe payment states', asyn
     },
     {
       name: 'declined',
-      response: { status: 'failed', reason_code: 'insufficient_funds' }
+      response: {
+        status: 'failed',
+        reason_code: 'insufficient_funds',
+        no_charge_confirmed: true
+      }
     },
     { name: 'processing_error', response: { status: 'timeout' } },
     {
@@ -303,6 +338,7 @@ test('mounts shared checkout in both hosts and drives safe payment states', asyn
     }
   ] as const
   const copyKeys: Record<string, string | null> = {}
+  const noChargeCopy: Record<string, boolean> = {}
   for (const state of states) {
     await page.evaluate(async (response) => {
       const debug = Reflect.get(
@@ -316,6 +352,16 @@ test('mounts shared checkout in both hosts and drives safe payment states', asyn
       `account-layer-billing-modal-step-${state.name}`
     )
     copyKeys[state.name] = await modalHost.getAttribute('data-copy-key')
+    const safetyCopy = modalHost.getByText('Nothing was charged.')
+    noChargeCopy[state.name] = (await safetyCopy.count()) > 0
+    if (state.name === 'canceled') {
+      await expect(safetyCopy).toBeVisible()
+    } else {
+      await expect(safetyCopy).toHaveCount(0)
+    }
+    await modalHost.screenshot({
+      path: `${paymentsEvidenceDir}/modal-${state.name}.png`
+    })
   }
   await modalHost.screenshot({
     path: `${paymentsEvidenceDir}/modal-payment-received-hold.png`
@@ -323,18 +369,46 @@ test('mounts shared checkout in both hosts and drives safe payment states', asyn
   await settingsHost.screenshot({
     path: `${paymentsEvidenceDir}/settings-payment-received-hold.png`
   })
+  const bothHostsIdentical =
+    (await settingsHost.getAttribute('data-copy-key')) ===
+    (await modalHost.getAttribute('data-copy-key'))
+  await page.evaluate(async () => {
+    const debug = Reflect.get(window, '__accountLayerPoc') as AccountLayerDebug
+    await debug.injectOperationResponse({ status: 'pending' })
+  })
+  await page.reload()
+  await page
+    .getByRole('button', { name: /^Settings/ })
+    .first()
+    .click()
+  const recoveredSettingsDialog = page.getByTestId('settings-dialog')
+  await recoveredSettingsDialog
+    .locator('nav')
+    .getByRole('button', { name: 'Plan & Credits' })
+    .click()
+  const recoveredHost = recoveredSettingsDialog.getByTestId(
+    'account-layer-billing-settings-step-preview'
+  )
+  await expect(recoveredHost).toBeVisible()
+  await recoveredHost.screenshot({
+    path: `${paymentsEvidenceDir}/settings-reload-recovered.png`
+  })
+  await writeFile(
+    `${paymentsEvidenceDir}/request.log`,
+    `${requestEvidence.join('\n')}\nsecrets_recorded=false\n`
+  )
   await writeFile(
     `${paymentsEvidenceDir}/runtime-proof.json`,
     JSON.stringify(
       {
-        bothHostsIdentical:
-          (await settingsHost.getAttribute('data-copy-key')) ===
-          (await modalHost.getAttribute('data-copy-key')),
+        bothHostsIdentical,
         billingPosts: checkout.billingPosts,
         openUrlCalls: checkout.openUrlCalls,
         checkoutUrlTestMode:
           checkout.lastCheckoutUrl?.includes('cs_test_') ?? null,
-        copyKeys
+        copyKeys,
+        noChargeCopy,
+        reloadRecovery: 'preview'
       },
       null,
       2

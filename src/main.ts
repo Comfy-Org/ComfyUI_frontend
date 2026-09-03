@@ -15,6 +15,7 @@ import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
 import { createApp } from 'vue'
 import { VueFire, VueFireAuth } from 'vuefire'
+import { until } from '@vueuse/core'
 
 import { setAssertReporter } from '@/base/assert'
 import { getFirebaseConfig } from '@/config/firebase'
@@ -187,7 +188,13 @@ getAuth(firebaseApp).onAuthStateChanged(async (user) => {
   }
   clearAccountLayerPocExchangeError()
   try {
-    await useTeamWorkspaceStore(pinia).initialize()
+    const workspaceStore = useTeamWorkspaceStore(pinia)
+    await until(() => workspaceStore.initState).toMatch(
+      (state) => state === 'ready' || state === 'error'
+    )
+    if (workspaceStore.initState !== 'ready') {
+      throw workspaceStore.error ?? new Error('Workspace initialization failed')
+    }
     await accountClients.session.establishSession()
     await accountClients.billing.refreshCredits()
   } catch (error) {
