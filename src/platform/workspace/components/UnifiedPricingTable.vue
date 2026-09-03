@@ -3,7 +3,7 @@
     <!-- Plan-scope toggle (personal vs team PLAN on one workspace): sits directly
          on top of the content area — outside it, attached with no gap (DES QA). -->
     <div class="flex justify-center">
-      <ToggleGroup v-model="planMode" type="single">
+      <ToggleGroup v-model="planMode" type="single" required>
         <ToggleGroupItem
           v-for="option in planScopeOptions"
           :key="option.value"
@@ -64,6 +64,7 @@
         <ToggleGroup
           v-model="currentBillingCycle"
           type="single"
+          required
           class="rounded-lg bg-secondary-background p-1.5"
         >
           <ToggleGroupItem

@@ -31,6 +31,7 @@
           "
           :model-value="selectedWorkflow?.value"
           type="single"
+          required
           @update:model-value="onWorkflowChange"
         >
           <ToggleGroupItem
