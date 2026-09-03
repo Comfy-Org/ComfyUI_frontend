@@ -1,5 +1,5 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { afterAll, beforeAll, describe, expect, test } from 'vitest'
+import { beforeEach, describe, expect, test } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedGraph } from '@/lib/litegraph/src/litegraph'
@@ -56,15 +56,7 @@ const FIXTURE_NODE_TYPES = {
   }
 >
 
-const originalNodeTypes = Object.fromEntries(
-  Object.keys(FIXTURE_NODE_TYPES).map((type) => [
-    type,
-    LiteGraph.registered_node_types[type]
-  ])
-)
-const originalFixtureNode = LiteGraph.Nodes.FixtureNode
-
-beforeAll(() => {
+beforeEach(() => {
   for (const [type, shape] of Object.entries(FIXTURE_NODE_TYPES)) {
     class FixtureNode extends LGraphNode {
       constructor(title?: string) {
@@ -80,18 +72,6 @@ beforeAll(() => {
     }
     LiteGraph.registerNodeType(type, FixtureNode)
   }
-})
-
-afterAll(() => {
-  for (const type of Object.keys(FIXTURE_NODE_TYPES)) {
-    const originalNodeType = originalNodeTypes[type]
-    if (originalNodeType)
-      LiteGraph.registered_node_types[type] = originalNodeType
-    else delete LiteGraph.registered_node_types[type]
-  }
-
-  if (originalFixtureNode) LiteGraph.Nodes.FixtureNode = originalFixtureNode
-  else delete LiteGraph.Nodes.FixtureNode
 })
 
 interface RoundTripFixture {
@@ -117,7 +97,9 @@ const fixtures: RoundTripFixture[] = [
 function roundTrip(source: ISerialisedGraph) {
   const loaded = new LGraph(structuredClone(source))
   expect(loaded.nodes.filter((n) => n.has_errors)).toEqual([])
-  return loaded.serialize()
+  const serialized = loaded.serialize()
+  loaded.clear()
+  return serialized
 }
 
 /**

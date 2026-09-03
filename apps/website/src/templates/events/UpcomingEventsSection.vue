@@ -25,11 +25,13 @@ const events = computed(() =>
     ...event,
     calendarEvent: toCalendarEvent(event, locale),
     ctaText:
-      event.ctaLabel?.[locale] ?? t('events.upcoming.livestream', locale),
+      event.ctaLabel?.[locale] ||
+      event.ctaLabel?.en ||
+      t('events.upcoming.livestream', locale),
     learnMore: eventVideoId(event)
       ? { href: localizeHref(eventPath(event), locale) }
       : event.link && {
-          href: event.link.href[locale],
+          href: event.link.href[locale] || event.link.href.en,
           newTab: event.link.newTab
         }
   }))
@@ -60,23 +62,23 @@ const events = computed(() =>
               <h3
                 class="text-lg font-medium text-primary-warm-white md:text-xl"
               >
-                {{ event.title[locale] }}
+                {{ event.title[locale] || event.title.en }}
               </h3>
               <p
                 class="mt-2 text-sm font-light text-primary-comfy-canvas/60 md:text-base"
               >
-                {{ event.description[locale] }}
+                {{ event.description[locale] || event.description.en }}
               </p>
               <div
                 class="mt-2 flex flex-col gap-2 text-sm font-light text-primary-comfy-canvas/60"
               >
                 <span v-if="event.location" class="flex items-center gap-2">
                   <MapPin class="size-4 shrink-0" aria-hidden="true" />
-                  {{ event.location[locale] }}
+                  {{ event.location[locale] || event.location.en }}
                 </span>
                 <span v-if="event.dateLabel" class="flex items-center gap-2">
                   <Calendar class="size-4 shrink-0" aria-hidden="true" />
-                  {{ event.dateLabel[locale] }}
+                  {{ event.dateLabel[locale] || event.dateLabel.en }}
                 </span>
               </div>
               <div v-if="event.calendarEvent" class="mt-4">
@@ -100,7 +102,7 @@ const events = computed(() =>
                 })
               "
               :append-icon="ArrowRight"
-              :aria-label="`${event.title[locale]} — ${event.ctaText}`"
+              :aria-label="`${event.title[locale] || event.title.en} — ${event.ctaText}`"
               class="shrink-0 normal-case"
             >
               {{ event.ctaText }}

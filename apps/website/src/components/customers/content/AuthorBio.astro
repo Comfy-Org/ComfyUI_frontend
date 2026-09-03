@@ -31,6 +31,8 @@ const hasBioSlot = Astro.slots.has('default')
             <img
               src={person.photo}
               alt={person.name ?? ''}
+              loading="lazy"
+              decoding="async"
               class="size-20 shrink-0 rounded-full object-cover"
             />
           )}

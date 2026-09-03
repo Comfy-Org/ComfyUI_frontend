@@ -68,7 +68,7 @@ graph LR
 graphId:nodeId:name
 (branded string, src/types/widgetId.ts)"]
         NLID["nodeLocatorId
-subgraphId:nodeId"]
+subgraphUUID:nodeId"]
         NID["rootGraphId:localId
 (ScopedLayoutKey)"]
         LID["linkId (raw;
@@ -89,8 +89,10 @@ rootGraphId:rerouteId in layout"]
 ```
 
 `WidgetId = graphId:nodeId:name` is itself a branded string (see
-`src/types/widgetId.ts`). `nodeLocatorId = subgraphId:nodeId` addresses node
-outputs. `layoutStore` keys persistent node, group, and reroute geometry with
+`src/types/widgetId.ts`). `nodeLocatorId = subgraphDefinitionUUID:nodeId`
+addresses node outputs, where the first segment is the subgraph definition's
+UUID and the second is the node's sequential integer ID (not a UUID).
+`layoutStore` keys persistent node, group, and reroute geometry with
 `makeScopedLayoutKey(rootGraphId, localId)`. Link topology does not live in
 LayoutStore; transient segment geometry uses a separate cache key.
 `linkStore` keys `LinkTopology` identity by `linkId` inside

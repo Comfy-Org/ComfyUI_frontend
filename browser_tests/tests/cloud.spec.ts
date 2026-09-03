@@ -3,6 +3,7 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 const SHARE_AUTH_STORAGE_KEY = 'Comfy.PreservedQuery.share_auth'
+const SETTINGS_STORAGE_KEY = 'Comfy.PreservedQuery.settings'
 
 /**
  * Cloud distribution E2E tests.
@@ -38,6 +39,22 @@ test.describe('Cloud distribution UI', { tag: '@cloud' }, () => {
         )
       )
       .toBe(JSON.stringify({ share: 'abc' }))
+  })
+
+  test('preserves the settings deep link before redirecting logged-out users', async ({
+    page
+  }) => {
+    await page.goto(new URL('/?settings=plan-credits', APP_URL).toString())
+
+    await expect(page).toHaveURL(/\/cloud\/login/, { timeout: 10_000 })
+    await expect
+      .poll(() =>
+        page.evaluate(
+          (key) => sessionStorage.getItem(key),
+          SETTINGS_STORAGE_KEY
+        )
+      )
+      .toBe(JSON.stringify({ settings: 'plan-credits' }))
   })
 
   test('cloud login page renders sign-in options', async ({ page }) => {

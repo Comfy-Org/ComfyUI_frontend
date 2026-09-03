@@ -104,6 +104,30 @@ keep it in sync by hand — the sync is where the bugs live.
 - success changed → advance the workflow
 - an effect that writes state a second effect reads
 
+### Keep rendering out of implicit dependency collection
+
+Never call canvas `draw()` or `setDirty()` from `watchEffect`. Rendering reads
+large amounts of state; if any of it becomes reactive, Vue records those reads
+as dependencies and later rendering writes can create a redraw feedback loop.
+Use `watch` with an explicit source list when an effect must invalidate or draw
+the canvas:
+
+```ts
+watch(
+  [() => settings.linkMode, () => canvasStore.canvas],
+  ([linkMode, canvas]) => {
+    if (!canvas) return
+    canvas.links_render_mode = linkMode
+    canvas.setDirty(false, true)
+  },
+  { immediate: true }
+)
+```
+
+The same principle applies to whole-graph walks and DOM measurement: make their
+triggers explicit so incidental reads cannot silently widen when internals are
+made reactive.
+
 If two effects communicate through shared state, that is a transition wearing a
 disguise. Put it in the reducer.
 

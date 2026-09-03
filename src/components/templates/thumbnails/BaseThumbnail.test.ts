@@ -9,7 +9,7 @@ describe('BaseThumbnail', () => {
     props: Partial<ComponentProps<typeof BaseThumbnail>> = {}
   ) {
     return render(BaseThumbnail, {
-      props: props as ComponentProps<typeof BaseThumbnail>,
+      props: props,
       slots: {
         default: '<img src="/test.jpg" alt="test" />'
       }

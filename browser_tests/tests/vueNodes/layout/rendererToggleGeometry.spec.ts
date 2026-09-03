@@ -199,9 +199,9 @@ test.describe('Renderer toggle geometry', { tag: ['@vue-nodes'] }, () => {
         y: clickPosition[1]
       })
 
-      expect(await comfyPage.nodeOps.getSelectedNodeIds()).toEqual([
-        ksampler.id
-      ])
+      await expect
+        .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
+        .toEqual([ksampler.id])
     }
   )
 })

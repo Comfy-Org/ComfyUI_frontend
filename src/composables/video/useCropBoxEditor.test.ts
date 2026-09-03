@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, ref } from 'vue'
-import type { EffectScope, Ref } from 'vue'
+import type { EffectScope } from 'vue'
 
 import type { Bounds } from '@/renderer/core/layout/types'
 
@@ -39,7 +39,7 @@ describe('useCropBoxEditor', () => {
     scope = effectScope()
     const editor = scope.run(() =>
       useCropBoxEditor(bounds, {
-        rootEl: ref(rootEl) as Ref<HTMLElement | null>,
+        rootEl: ref(rootEl),
         sourceWidth: ref(1000),
         sourceHeight: ref(1000),
         isDisabled: () => disabled,
@@ -57,7 +57,7 @@ describe('useCropBoxEditor', () => {
     ) {
       target.addEventListener(
         'pointerdown',
-        (event) => editor.startDrag(mode, event as PointerEvent),
+        (event) => editor.startDrag(mode, event),
         { once: true }
       )
       target.dispatchEvent(
