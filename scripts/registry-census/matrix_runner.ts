@@ -77,10 +77,9 @@ interface OpRecord {
 const normalizeReloadGraph = (
   serialized: ISerialisedGraph,
   mangled: Set<string>
-): ISerialisedGraph => ({
-  ...serialized,
+) => ({
   nodes: serialized.nodes.map((node) => ({
-    ...node,
+    id: node.id,
     widgets_values_named: Object.fromEntries(
       Object.entries(node.widgets_values_named ?? {}).filter(
         ([name]) => !mangled.has(`${node.id}:${name}`)
@@ -92,11 +91,12 @@ const normalizeReloadGraph = (
 const reloadGraph = (
   serialized: ISerialisedGraph,
   mangled: Set<string>,
-  pinia: ReturnType<typeof createTestingPinia>
+  pinia: ReturnType<typeof createTestingPinia>,
+  LGraphClass: typeof LGraph
 ): string => {
   setActivePinia(createTestingPinia({ stubActions: false }))
   try {
-    const graph = new LGraph()
+    const graph = new LGraphClass()
     graph.configure(structuredClone(serialized))
     const reloadedSerialized = S(graph.serialize())
     if (
@@ -339,7 +339,7 @@ export async function runPack(
         output_is_list: [],
         output_node: name === 'SaveImage',
         ...(d as object)
-      } as Parameters<typeof svc.registerNodeDef>[1])
+      })
     } catch (e) {
       regErrs.push(`${name}:${errMsg(e)}`)
     }
@@ -575,9 +575,7 @@ export async function runPack(
     'wConvert',
     () => {
       const k = byType('KSampler')
-      const w = k?.widgets?.find((x) => x.name === 'steps') as
-        | ConvertibleWidget
-        | undefined
+      const w = k?.widgets?.find((x) => x.name === 'steps')
       if (k && w) {
         w.origType = w.type
         w.origComputeSize = w.computeSize
@@ -708,7 +706,7 @@ export async function runPack(
     const serialized = JSON.parse(
       String(row.serialized ?? '{}')
     ) as ISerialisedGraph
-    row.reloadedSerialized = reloadGraph(serialized, mangled, pinia)
+    row.reloadedSerialized = reloadGraph(serialized, mangled, pinia, LGraph)
   })
   await op('graphToPrompt', async () => {
     const p = await app.graphToPrompt(graph)
