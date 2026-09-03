@@ -171,7 +171,7 @@ function asRecord(value: unknown): Record<string, unknown> {
 }
 
 // The panel's row label: the known-tool table, else the humanized tool name (ToolCallCard.vue).
-export function toolRowLabel(name: string): string {
+function toolRowLabel(name: string): string {
   const known = knownTool(name)?.labelKey
   const label = known
     ? enMessages.agent[
