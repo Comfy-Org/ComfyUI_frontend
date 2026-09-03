@@ -251,6 +251,89 @@ test('resumes declined checkout and completes it with a new card', async () => {
       path: `${evidenceDir}/frontend-after-sign-in.png`,
       fullPage: true
     })
+    if (process.env.LIFECYCLE_ONLY === 'true') {
+      const operationId = process.env.RECOVER_OPERATION_ID
+      if (operationId) {
+        appendFileSync(
+          `${evidenceDir}/paystate.log`,
+          `${new Date().toISOString()} verifying ${operationId}\n`
+        )
+        await page.evaluate(async (id) => {
+          const seam = Reflect.get(window, '__accountLayerPoc') as {
+            recoverSubscription(planId: string, intent: string): Promise<void>
+            workspace: { activeWorkspaceId: string | null }
+          }
+          const authKey = Object.keys(localStorage).find((candidate) =>
+            candidate.startsWith('firebase:authUser:')
+          )
+          const authValue: unknown = JSON.parse(
+            localStorage.getItem(authKey ?? '') ?? 'null'
+          )
+          const uid =
+            authValue && typeof authValue === 'object' && 'uid' in authValue
+              ? Reflect.get(authValue, 'uid')
+              : null
+          if (typeof uid !== 'string' || !seam.workspace.activeWorkspaceId) {
+            throw new Error('Billing operation storage identity is unavailable')
+          }
+          const key = `comfyui-frontend-account-layer-poc:${uid}:${seam.workspace.activeWorkspaceId}:billing:active-operation`
+          localStorage.setItem(key, id)
+          await seam.recoverSubscription('pro-monthly', 'resume')
+        }, operationId)
+        await expect
+          .poll(async () => (await paymentState(page))?.step, {
+            timeout: 180_000,
+            intervals: [3_000, 10_000, 30_000]
+          })
+          .toBe('success')
+        appendFileSync(
+          `${evidenceDir}/paystate.log`,
+          `${new Date().toISOString()} success ${operationId}\n`
+        )
+      }
+      const action = process.env.LIFECYCLE_ACTION
+      const startedAt = Date.now()
+      await page.evaluate(async (requestedAction) => {
+        const seam = Reflect.get(window, '__accountLayerPoc') as {
+          cancelSubscription(): Promise<void>
+          resubscribe(): Promise<void>
+          topUp(amount: number): Promise<void>
+          openPaymentPortal(): Promise<void>
+          refreshCredits(): Promise<void>
+          signOut(): Promise<void>
+        }
+        if (requestedAction === 'cancel') await seam.cancelSubscription()
+        if (requestedAction === 'resubscribe') await seam.resubscribe()
+        if (requestedAction === 'topup') await seam.topUp(500)
+        if (requestedAction === 'portal') await seam.openPaymentPortal()
+        await seam.refreshCredits()
+        if (requestedAction === 'signout') await seam.signOut()
+      }, action)
+      if (['cancel', 'resubscribe', 'topup'].includes(action ?? '')) {
+        await expect
+          .poll(async () => (await paymentState(page))?.step, {
+            timeout: 180_000,
+            intervals: [3_000, 10_000, 30_000]
+          })
+          .toBe('success')
+      }
+      writeFileSync(
+        `${evidenceDir}/lifecycle-result.json`,
+        `${JSON.stringify(
+          {
+            action,
+            started_at: new Date(startedAt).toISOString(),
+            finished_at: new Date().toISOString(),
+            elapsed_ms: Date.now() - startedAt,
+            payment: await paymentState(page),
+            pages: context.pages().map((candidate) => candidate.url())
+          },
+          null,
+          2
+        )}\n`
+      )
+      return
+    }
     if (process.env.DIAGNOSE_ONLY === 'true') return
     const activeOperation = await page.evaluate(() => {
       const key = Object.keys(localStorage).find((candidate) =>
