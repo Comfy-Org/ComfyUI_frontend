@@ -1,4 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+const reportError = vi.hoisted(() => vi.fn())
+
+vi.mock('@/platform/telemetry/reportError', () => ({ reportError }))
 
 import type {
   ActivationOutcome,
@@ -316,5 +320,22 @@ describe('createActivationCoordinator', () => {
 
     expect(coordinator.deactivate(docB)).toBe(false)
     expect(coordinator.activeDocumentId()).toBe(docA)
+  })
+
+  it('reports a contained detach failure during deactivation', async () => {
+    const coordinator = createActivationCoordinator({ isLoaded: () => true })
+    const docA = toDocumentId('doc-a')
+    const detachFailure = new Error('detach boom')
+    await coordinator.activate(docA, {
+      attach: () => undefined,
+      detach: () => {
+        throw detachFailure
+      }
+    })
+
+    expect(coordinator.deactivate(docA)).toBe(true)
+    expect(reportError).toHaveBeenCalledWith(detachFailure, {
+      errorType: 'document_view_detach_failure'
+    })
   })
 })

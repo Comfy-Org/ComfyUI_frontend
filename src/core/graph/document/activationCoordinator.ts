@@ -1,4 +1,5 @@
 import type { DocumentId } from '@/types/documentId'
+import { reportError } from '@/platform/telemetry/reportError'
 
 /**
  * View concerns attached by activation and detached by deactivation: the
@@ -146,7 +147,8 @@ export function createActivationCoordinator(deps: ActivationCoordinatorDeps) {
     active = null
     try {
       previous.binding.detach(documentId)
-    } catch {
+    } catch (error) {
+      reportError(error, { errorType: 'document_view_detach_failure' })
       return true
     }
     return true
