@@ -191,7 +191,7 @@ describe('useAgentCrdtFollower', () => {
 
   it('FE-1901: retries a refused subscribe with bounded exponential backoff', () => {
     vi.useFakeTimers()
-    const { unmount } = mountFollower('wf-1')
+    const { unmount, status } = mountFollower('wf-1')
 
     dispatchFrame('doc_subscribed', { ok: false })
     expect(bridge().resubscribe).not.toHaveBeenCalled()
@@ -211,9 +211,31 @@ describe('useAgentCrdtFollower', () => {
       vi.advanceTimersByTime(500 * 2 ** attempt)
     }
     expect(bridge().resubscribe).toHaveBeenCalledTimes(6)
-    dispatchFrame('doc_subscribed', { ok: false })
+    expect(status().subscriptionStatus).toBe('retrying')
+    dispatchFrame('doc_subscribed', { ok: false, code: 'overloaded' })
     vi.advanceTimersByTime(60_000)
     expect(bridge().resubscribe).toHaveBeenCalledTimes(6)
+    expect(status().subscriptionStatus).toBe('retry_exhausted')
+    expect(status().refusalCode).toBe('overloaded')
+    unmount()
+  })
+
+  it('a reconnect gives an exhausted follower one more attempt', () => {
+    vi.useFakeTimers()
+    const { unmount, status } = mountFollower('wf-1')
+
+    for (let attempt = 0; attempt < 7; attempt++) {
+      dispatchFrame('doc_subscribed', { ok: false })
+      vi.runAllTimers()
+    }
+    expect(status().subscriptionStatus).toBe('retry_exhausted')
+
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(7)
+    expect(status().subscriptionStatus).toBe('retrying')
+
+    dispatchFrame('doc_subscribed', { ok: true })
+    expect(status().subscriptionStatus).toBe('connected')
     unmount()
   })
 
@@ -275,6 +297,66 @@ describe('useAgentCrdtFollower', () => {
     expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
     expect(status().subscriptionStatus).toBe('retrying')
     expect(status().refusalCode).toBe('not_found')
+    unmount()
+  })
+
+  it('keeps forbidden transient: the server maps it from the same not-found error', () => {
+    vi.useFakeTimers()
+    const { unmount, status } = mountFollower('wf-1')
+
+    dispatchFrame('doc_subscribed', { ok: false, code: 'forbidden' })
+    vi.advanceTimersByTime(500)
+
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
+    expect(status().subscriptionStatus).toBe('retrying')
+    expect(status().refusalCode).toBe('forbidden')
+    unmount()
+  })
+
+  it('records the reconnect a terminal follower ignores', async () => {
+    const { recordDevEvent } = await import('./devPanelLog')
+    const { unmount } = mountFollower('wf-1')
+
+    dispatchFrame('doc_subscribed', { ok: false, code: 'too_large' })
+    apiState.target.dispatchEvent(new Event('reconnected'))
+
+    expect(recordDevEvent).toHaveBeenCalledWith('reconnected', {
+      ignored: 'too_large',
+      refusalCode: 'too_large'
+    })
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  it('a reconnect without a subscribed workflow stays idle', () => {
+    const { unmount, status } = mountFollower(null)
+
+    apiState.target.dispatchEvent(new Event('reconnected'))
+
+    expect(status().subscriptionStatus).toBe('idle')
+    expect(status().refusalCode).toBeNull()
+    unmount()
+  })
+
+  it('a workflow change clears a terminal status and lets the follower recover', async () => {
+    vi.useFakeTimers()
+    const { unmount, workflowId, status } = mountFollower('wf-1')
+
+    dispatchFrame('doc_subscribed', { ok: false, code: 'too_large' })
+    expect(status().subscriptionStatus).toBe('too_large')
+
+    workflowId.value = 'wf-2'
+    await nextTick()
+    expect(status().subscriptionStatus).toBe('idle')
+    expect(status().refusalCode).toBeNull()
+    expect(bridge().subscribe).toHaveBeenLastCalledWith('wf-2')
+
+    apiState.target.dispatchEvent(new Event('status'))
+    expect(bridge().reconcile).toHaveBeenCalledTimes(1)
+
+    dispatchFrame('doc_subscribed', { ok: true })
+    expect(status().subscriptionStatus).toBe('connected')
+    expect(status().connected).toBe(true)
     unmount()
   })
 

@@ -159,6 +159,7 @@ type AgentCrdtSubscriptionStatus =
   | 'idle'
   | 'connected'
   | 'retrying'
+  | 'retry_exhausted'
   | 'too_large'
   | 'permanent_failure'
 
@@ -181,7 +182,7 @@ export interface AgentCrdtStatus {
 
 type AgentCrdtSubscriptionState =
   | { status: 'idle' | 'connected'; refusalCode: null }
-  | { status: 'retrying'; refusalCode: string | null }
+  | { status: 'retrying' | 'retry_exhausted'; refusalCode: string | null }
   | { status: 'too_large'; refusalCode: 'too_large' }
   | {
       status: 'permanent_failure'
@@ -193,6 +194,9 @@ function refusedSubscriptionState(code: unknown): AgentCrdtSubscriptionState {
   if (code === 'unsupported' || code === 'invalid_frame') {
     return { status: 'permanent_failure', refusalCode: code }
   }
+  // Everything else stays transient, including `forbidden`: the server maps
+  // it from the same doc-host error as "workflow not found or access denied",
+  // so it shares the FE-1901 creation race with `not_found`.
   return {
     status: 'retrying',
     refusalCode: typeof code === 'string' ? code : null
@@ -372,11 +376,12 @@ export function useAgentCrdtFollower(
     subscribeRetryAttempt = 0
   }
 
-  const scheduleSubscribeRetry = (): void => {
-    if (subscribeRetryTimer !== null) return
-    if (subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) return
+  /** Arms the next backoff step; false once the attempt budget is spent. */
+  const scheduleSubscribeRetry = (): boolean => {
+    if (subscribeRetryTimer !== null) return true
+    if (subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) return false
     const target = subscribedWorkflowId.value
-    if (target === null) return
+    if (target === null) return false
     const delay = SUBSCRIBE_RETRY_BASE_MS * 2 ** subscribeRetryAttempt
     subscribeRetryAttempt += 1
     subscribeRetryTimer = setTimeout(() => {
@@ -389,6 +394,7 @@ export function useAgentCrdtFollower(
       })
       bridge.resubscribe()
     }, delay)
+    return true
   }
 
   const onSubscribed: EventListener = (event) => {
@@ -415,7 +421,12 @@ export function useAgentCrdtFollower(
           clearSubscribeRetry()
           break
         case 'retrying':
-          scheduleSubscribeRetry()
+          if (!scheduleSubscribeRetry()) {
+            subscription.value = {
+              status: 'retry_exhausted',
+              refusalCode: subscription.value.refusalCode
+            }
+          }
           break
       }
       // FE #16637 residual: a refusal is the earliest signal the sender can
@@ -571,10 +582,18 @@ export function useAgentCrdtFollower(
     )
   }
   const onReconnected: EventListener = () => {
-    if (isTerminalSubscription(subscription.value)) return
+    if (isTerminalSubscription(subscription.value)) {
+      recordDevEvent('reconnected', {
+        ignored: subscription.value.status,
+        refusalCode: subscription.value.refusalCode
+      })
+      return
+    }
     connected.value = false
     clearStaleProbe()
-    subscription.value = { status: 'retrying', refusalCode: null }
+    if (subscribedWorkflowId.value !== null) {
+      subscription.value = { status: 'retrying', refusalCode: null }
+    }
     recordDevEvent('reconnected', null)
     bridge.resubscribe()
   }
