@@ -59,7 +59,7 @@ describe('createAgentEventSource', () => {
     expect(registered.size).toBe(0)
   })
 
-  it('maps reconnecting/reconnected to liveness', () => {
+  it('emits false only for reconnecting and true for reconnected', () => {
     const { host, emit } = fakeHost()
     const status = vi.fn()
 
@@ -73,7 +73,7 @@ describe('createAgentEventSource', () => {
     expect(status).toHaveBeenLastCalledWith(true)
   })
 
-  it('reports live once when the socket is already open at bind time', () => {
+  it('characterizes R-107: reports only true for an open socket', () => {
     const { host } = fakeHost(WebSocket.OPEN)
     const status = vi.fn()
 
@@ -81,17 +81,30 @@ describe('createAgentEventSource', () => {
 
     expect(status).toHaveBeenCalledTimes(1)
     expect(status).toHaveBeenCalledWith(true)
+    expect(status).not.toHaveBeenCalledWith(false)
   })
 
-  it('stays quiet for a connecting socket and after status unsubscribe', () => {
-    const { host, emit } = fakeHost(WebSocket.CONNECTING)
+  // R-107: subscription stays silent until socket liveness is positively known.
+  it.for([undefined, WebSocket.CONNECTING])(
+    'does not report an initial status for socket state %s',
+    (readyState) => {
+      const { host } = fakeHost(readyState)
+      const status = vi.fn()
+
+      createAgentEventSource(host).onStatus?.(status)
+
+      expect(status).not.toHaveBeenCalled()
+    }
+  )
+
+  it('stops reporting status after unsubscribe', () => {
+    const { host, emit } = fakeHost()
     const status = vi.fn()
 
     const unsubscribe = createAgentEventSource(host).onStatus?.(status)
-    expect(status).not.toHaveBeenCalled()
-
     unsubscribe?.()
     emit('reconnected')
+
     expect(status).not.toHaveBeenCalled()
   })
 })

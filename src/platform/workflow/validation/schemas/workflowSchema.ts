@@ -408,8 +408,7 @@ export const zComfyWorkflow1 = zBaseExportableGraph
               SubgraphDefinitionBase<ComfyWorkflow1BaseOutput>,
               z.ZodTypeDef,
               SubgraphDefinitionBase<ComfyWorkflow1BaseInput>
-            >,
-            'many'
+            >
           > => z.array(zSubgraphDefinition)
         )
       })
@@ -495,8 +494,7 @@ const zSubgraphDefinition = zComfyWorkflow1
               SubgraphDefinitionBase<ComfyWorkflow1BaseInput>,
               z.ZodTypeDef,
               SubgraphDefinitionBase<ComfyWorkflow1BaseInput>
-            >,
-            'many'
+            >
           > => zSubgraphDefinition.array()
         )
       })

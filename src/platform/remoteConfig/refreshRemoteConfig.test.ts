@@ -2,7 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 
-import { refreshRemoteConfig } from './refreshRemoteConfig'
+import {
+  invalidateRemoteConfig,
+  refreshRemoteConfig
+} from './refreshRemoteConfig'
 import {
   cachedLegacyBillingMigrationEnabled,
   remoteConfig,
@@ -45,6 +48,26 @@ describe('refreshRemoteConfig', () => {
     remoteConfigState.value = 'unloaded'
     cachedLegacyBillingMigrationEnabled.value = undefined
     window.__CONFIG__ = {}
+  })
+
+  it('retains base URLs while invalidating identity-specific config', () => {
+    remoteConfig.value = {
+      subscription_required: true,
+      comfy_api_base_url: 'https://api.example.com',
+      comfy_cloud_base_url: 'https://cloud.example.com',
+      comfy_platform_base_url: 'https://platform.example.com'
+    }
+    window.__CONFIG__ = remoteConfig.value
+
+    invalidateRemoteConfig()
+
+    expect(remoteConfig.value).toEqual({
+      comfy_api_base_url: 'https://api.example.com',
+      comfy_cloud_base_url: 'https://cloud.example.com',
+      comfy_platform_base_url: 'https://platform.example.com'
+    })
+    expect(window.__CONFIG__).toEqual(remoteConfig.value)
+    expect(remoteConfigState.value).toBe('unloaded')
   })
 
   describe('with auth (default)', () => {
@@ -214,14 +237,20 @@ describe('refreshRemoteConfig', () => {
       expect(window.__CONFIG__).toEqual({})
     })
 
-    it('clears config on fetch error', async () => {
+    it('preserves config on fetch error', async () => {
+      const existingConfig = {
+        subscription_required: true,
+        comfy_cloud_base_url: 'https://cloud.example.com'
+      }
       cachedLegacyBillingMigrationEnabled.value = true
+      remoteConfig.value = existingConfig
+      window.__CONFIG__ = existingConfig
       vi.mocked(api.fetchApi).mockRejectedValue(new Error('Network error'))
 
       await refreshRemoteConfig()
 
-      expect(remoteConfig.value).toEqual({})
-      expect(window.__CONFIG__).toEqual({})
+      expect(remoteConfig.value).toEqual(existingConfig)
+      expect(window.__CONFIG__).toEqual(existingConfig)
       expect(cachedLegacyBillingMigrationEnabled.value).toBeUndefined()
     })
 
