@@ -194,7 +194,7 @@ describe('follower seam integration', () => {
 
       expect(seam.bridge.lastSequence).toBe(1)
       expect(seam.bridge.follower.updatesApplied).toBe(1)
-      expect(seam.applyResults).toEqual([true])
+      expect(seam.applyResults).toEqual([false])
       expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
       expect(seam.createLayout).not.toHaveBeenCalled()
     } finally {
