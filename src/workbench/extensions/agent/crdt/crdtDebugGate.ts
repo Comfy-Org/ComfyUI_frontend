@@ -146,10 +146,12 @@ applyQueryOverride()
 /**
  * Whether the CRDT debug instrument (panel + console tracing) is available.
  *
- * An explicit opt-out wins over `DEV` so a developer chasing a rendering bug
- * can silence the instrument without editing code.
+ * Production is always disabled, including stale persisted choices from an
+ * older build. Elsewhere, an explicit opt-out wins over `DEV` so a developer
+ * chasing a rendering bug can silence the instrument without editing code.
  */
 export function isCrdtDebugEnabled(): boolean {
+  if (isProductionHostname()) return false
   if (cachedEnabled === null) {
     const stored = readStoredEnabled()
     cachedEnabled =
