@@ -1181,10 +1181,15 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       return 'unreachable'
     }
     // A 2xx says the cancel was accepted, not that nothing was captured — and
-    // the notice shown for 'canceled' promises money. One status read settles
-    // it: a charge that won the race stays on the polling path instead of
-    // being erased under a false receipt. A read that fails or comes back
-    // gone is the operation ending as requested.
+    // the notice shown for 'canceled' promises money. The claim is only made
+    // on proof: a status read that finds the operation gone. Every readable
+    // status refutes it — succeeded/reconciliation mean the charge won the
+    // race and stays on the polling path; pending/failed mean the cancel has
+    // not taken effect, so the affordance stays live (cancelling again is
+    // safe) and polling keeps custody of the outcome. A failed read proves
+    // nothing either way and must not be presented as a cancel. This second
+    // round trip dies when the cancel endpoint's own response carries the
+    // verdict.
     try {
       const settled = await workspaceApi.getBillingOpStatus(opId)
       if (
@@ -1193,11 +1198,15 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       ) {
         return 'unavailable'
       }
-    } catch {
-      // ignored: the canceled operation has nothing left to report
+      return 'unreachable'
+    } catch (error) {
+      if (error instanceof WorkspaceApiError && error.status === 404) {
+        clearOperation(opId)
+        return 'canceled'
+      }
+      reportError(error, { errorType: 'billing_op_cancel_verify_failure' })
+      return 'unreachable'
     }
-    clearOperation(opId)
-    return 'canceled'
   }
 
   return {
