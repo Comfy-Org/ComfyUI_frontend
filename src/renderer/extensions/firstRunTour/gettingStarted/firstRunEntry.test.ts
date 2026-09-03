@@ -1,11 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type * as VueUseCoreModule from '@vueuse/core'
-
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import type { SharedWorkflowUrlLoadStatus } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
-
-type VueUseCore = typeof VueUseCoreModule
 
 const mocks = vi.hoisted(() => ({
   isCloud: true,
@@ -25,8 +21,9 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
-vi.mock('@vueuse/core', async (importOriginal) => ({
-  ...(await importOriginal<VueUseCore>()),
+vi.mock('@vueuse/core', () => ({
+  breakpointsTailwind: {},
+  createSharedComposable: (composable: () => unknown) => composable,
   useBreakpoints: () => ({
     greaterOrEqual: () => ({
       get value() {
@@ -71,14 +68,9 @@ vi.mock('../tour/useFirstRunTourController', () => ({
   useFirstRunTourController: () => ({ beginTour: mocks.beginTour })
 }))
 
-// createSharedComposable caches across calls; each test needs its own instance.
-async function freshEntry() {
-  vi.resetModules()
-  const { useFirstRunEntry } = await import('./firstRunEntry')
-  return useFirstRunEntry()
-}
+import { useFirstRunEntry } from './firstRunEntry'
 
-type FirstRunEntry = Awaited<ReturnType<typeof freshEntry>>
+type FirstRunEntry = ReturnType<typeof useFirstRunEntry>
 
 describe('useFirstRunEntry', () => {
   beforeEach(() => {
@@ -110,7 +102,7 @@ describe('useFirstRunEntry', () => {
 
   describe('what a fresh user sees', () => {
     it('shows Getting Started to a candidate', async () => {
-      const entry = await freshEntry()
+      const entry = useFirstRunEntry()
 
       await entry.handleStartupOutcome('fresh')
 
@@ -122,7 +114,7 @@ describe('useFirstRunEntry', () => {
       'opens the template browser instead, with %s',
       async ([, disqualify]) => {
         disqualify()
-        const entry = await freshEntry()
+        const entry = useFirstRunEntry()
 
         await entry.handleStartupOutcome('fresh')
 
@@ -138,7 +130,7 @@ describe('useFirstRunEntry', () => {
       'marks the tutorial completed for %s, which no later boot can lift',
       async ([, disqualify]) => {
         disqualify()
-        const entry = await freshEntry()
+        const entry = useFirstRunEntry()
 
         await entry.handleStartupOutcome('fresh')
 
@@ -153,7 +145,7 @@ describe('useFirstRunEntry', () => {
       'leaves the tutorial unmarked for %s, so a later boot can still onboard',
       async ([, disqualify]) => {
         disqualify()
-        const entry = await freshEntry()
+        const entry = useFirstRunEntry()
 
         await entry.handleStartupOutcome('fresh')
 
@@ -166,11 +158,11 @@ describe('useFirstRunEntry', () => {
 
     it('onboards a user whose earlier boot was only transiently ineligible', async () => {
       mocks.isDesktopWidth = false
-      const phone = await freshEntry()
+      const phone = useFirstRunEntry()
       await phone.handleStartupOutcome('fresh')
 
       mocks.isDesktopWidth = true
-      const laptop = await freshEntry()
+      const laptop = useFirstRunEntry()
       await laptop.handleStartupOutcome('fresh')
 
       expect(
@@ -181,7 +173,7 @@ describe('useFirstRunEntry', () => {
   })
 
   it('marks a url-intent startup completed once its tour starts, without taking over the screen', async () => {
-    const entry = await freshEntry()
+    const entry = useFirstRunEntry()
 
     await entry.handleStartupOutcome('url-intent')
 
@@ -225,7 +217,7 @@ describe('useFirstRunEntry', () => {
     'runs a url-intent boot to the end for %s, offering no tour and keeping eligibility',
     async ([, disqualify, templateId, sharedStatus]) => {
       disqualify()
-      const entry = await freshEntry()
+      const entry = useFirstRunEntry()
 
       await entry.handleStartupOutcome('url-intent')
       await entry.handleUrlWorkflow('url-intent', templateId, sharedStatus)
@@ -247,7 +239,7 @@ describe('useFirstRunEntry', () => {
 
   it('tours a template link on the boot after one that only deferred', async () => {
     mocks.isDesktopWidth = false
-    const phone = await freshEntry()
+    const phone = useFirstRunEntry()
     await phone.handleStartupOutcome('url-intent')
     await phone.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
 
@@ -256,7 +248,7 @@ describe('useFirstRunEntry', () => {
     mocks.isDesktopWidth = true
     // What `checkIsNewUser()` reads on the next launch.
     mocks.isNewUser = !mocks.settings['Comfy.TutorialCompleted']
-    const laptop = await freshEntry()
+    const laptop = useFirstRunEntry()
     await laptop.handleStartupOutcome('url-intent')
     await laptop.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
 
@@ -271,7 +263,7 @@ describe('useFirstRunEntry', () => {
   })
 
   it('never onboards over restored work, even for an apparent new user', async () => {
-    const entry = await freshEntry()
+    const entry = useFirstRunEntry()
 
     await entry.handleStartupOutcome('restored')
 
@@ -302,7 +294,7 @@ describe('useFirstRunEntry', () => {
   it.for(startups)(
     'settles the first-run decision on a %s startup rather than leaving it pending',
     async ([outcome, finishBoot]) => {
-      const entry = await freshEntry()
+      const entry = useFirstRunEntry()
 
       await entry.handleStartupOutcome(outcome)
       await finishBoot(entry)
@@ -321,7 +313,7 @@ describe('useFirstRunEntry', () => {
     it.for(['loaded', 'loaded-without-assets'] as const)(
       'offers the tour over a shared workflow that %s, which has no template id',
       async (sharedStatus) => {
-        const entry = await freshEntry()
+        const entry = useFirstRunEntry()
 
         await entry.handleUrlWorkflow('url-intent', undefined, sharedStatus)
 
@@ -333,7 +325,7 @@ describe('useFirstRunEntry', () => {
     )
 
     it('passes a template id through so its pins beat the heuristic', async () => {
-      const entry = await freshEntry()
+      const entry = useFirstRunEntry()
 
       await entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
 
@@ -341,7 +333,7 @@ describe('useFirstRunEntry', () => {
     })
 
     it('drops the template pins when a share link replaced the graph', async () => {
-      const entry = await freshEntry()
+      const entry = useFirstRunEntry()
 
       await entry.handleUrlWorkflow(
         'url-intent',
@@ -356,7 +348,7 @@ describe('useFirstRunEntry', () => {
     })
 
     it('leaves the completion flag alone when the engine refused to start', async () => {
-      const entry = await freshEntry()
+      const entry = useFirstRunEntry()
       await entry.handleStartupOutcome('url-intent')
       mocks.setSetting.mockClear()
       mocks.beginTour.mockResolvedValue(false)
@@ -370,7 +362,7 @@ describe('useFirstRunEntry', () => {
     })
 
     it('keeps the account eligible when the link loaded nothing to tour', async () => {
-      const entry = await freshEntry()
+      const entry = useFirstRunEntry()
 
       await entry.handleStartupOutcome('url-intent')
       await entry.handleUrlWorkflow('url-intent', undefined, 'failed')
@@ -388,7 +380,7 @@ describe('useFirstRunEntry', () => {
     it.for(['failed', 'cancelled', 'not-present'] as const)(
       'offers no tour when nothing the user asked for arrived (%s)',
       async (sharedStatus) => {
-        const entry = await freshEntry()
+        const entry = useFirstRunEntry()
 
         await entry.handleUrlWorkflow('url-intent', undefined, sharedStatus)
 
@@ -401,7 +393,7 @@ describe('useFirstRunEntry', () => {
 
     it('leaves a non-candidate alone', async () => {
       mocks.isNewUser = false
-      const entry = await freshEntry()
+      const entry = useFirstRunEntry()
 
       await entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
 
@@ -414,7 +406,7 @@ describe('useFirstRunEntry', () => {
     it.for(['fresh', 'restored'] as const)(
       'does not fire on a %s startup',
       async (outcome: StartupOutcome) => {
-        const entry = await freshEntry()
+        const entry = useFirstRunEntry()
 
         await entry.handleUrlWorkflow(outcome, 'image_z_image_turbo')
 
@@ -428,7 +420,7 @@ describe('useFirstRunEntry', () => {
 
   it('leaves a completed user alone', async () => {
     mocks.settings['Comfy.TutorialCompleted'] = true
-    const entry = await freshEntry()
+    const entry = useFirstRunEntry()
 
     await entry.handleStartupOutcome('restored')
 
@@ -438,7 +430,7 @@ describe('useFirstRunEntry', () => {
   })
 
   it('keeps the screen up when eligibility changes underneath it', async () => {
-    const entry = await freshEntry()
+    const entry = useFirstRunEntry()
     await entry.handleStartupOutcome('fresh')
 
     mocks.isDesktopWidth = false
@@ -452,7 +444,7 @@ describe('useFirstRunEntry', () => {
   })
 
   it('marks the tutorial completed only once the user acts', async () => {
-    const entry = await freshEntry()
+    const entry = useFirstRunEntry()
     await entry.handleStartupOutcome('fresh')
 
     expect(
