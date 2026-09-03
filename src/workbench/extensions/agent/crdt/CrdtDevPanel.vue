@@ -167,7 +167,8 @@ const EVENT_KIND_FILTERS = {
   rebind: true,
   doc_gap: true,
   doc_stale: true,
-  scope_retry: true
+  scope_retry: true,
+  agent_node_adapters_materialized: true
 } satisfies Record<DevEventKind, true>
 
 function isDevEventKind(value: string): value is DevEventKind {
