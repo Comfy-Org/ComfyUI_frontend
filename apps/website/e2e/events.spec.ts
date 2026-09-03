@@ -3,11 +3,13 @@ import { expect } from '@playwright/test'
 
 import { localizeHref } from '../src/config/routes'
 import {
+  eventMediaThumbnail,
   eventPath,
   eventVideoId,
   featuredEvents,
   pastEvents,
-  upcomingEvents
+  upcomingEvents,
+  watchableEvents
 } from '../src/data/events'
 import type { Locale } from '../src/i18n/translations'
 import { t } from '../src/i18n/translations'
@@ -24,6 +26,13 @@ const LOCALES: ReadonlyArray<readonly [string, Locale]> = [
 const pastCardEvents = pastEvents.filter(
   (event) => event.media ?? event.featured?.media
 )
+
+// Only watchable events get an /events/[slug] page.
+const videoMediaEventPages = watchableEvents.filter(
+  (event) => event.media?.type === 'video'
+)
+
+const VIDEO_FILE = /\.(mp4|webm|mov)(\?|$)/i
 
 function heroSection(page: Page, locale: Locale) {
   return page.locator('section').filter({
@@ -381,5 +390,32 @@ test.describe('Events page — mobile @mobile', () => {
     const viewport = page.viewportSize()
     expect(viewport, 'viewport size').not.toBeNull()
     expect(box!.x + box!.width).toBeLessThanOrEqual(viewport!.width + 1)
+  })
+})
+
+test.describe('Event detail pages — desktop @smoke', () => {
+  test('video media resolves to its poster still for the social image', async ({
+    page
+  }) => {
+    test.skip(
+      videoMediaEventPages.length === 0,
+      'needs a watchable event with video media'
+    )
+
+    for (const event of videoMediaEventPages) {
+      await page.goto(eventPath(event))
+      const poster = eventMediaThumbnail(event.media)
+
+      for (const selector of [
+        'meta[property="og:image"]',
+        'meta[name="twitter:image"]'
+      ]) {
+        const content = await page.locator(selector).getAttribute('content')
+        // A video's own src is not an image, so the card must never point at
+        // the media file itself — with or without a poster configured.
+        expect(content, `${event.id} ${selector}`).not.toMatch(VIDEO_FILE)
+        if (poster) expect(content, `${event.id} ${selector}`).toBe(poster)
+      }
+    }
   })
 })
