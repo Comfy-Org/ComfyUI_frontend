@@ -60,7 +60,7 @@
       :class="
         cn(
           'flex min-h-0 w-full flex-1 flex-col gap-2 rounded-2xl border border-interface-stroke p-6',
-          !(hasMemberSeats && membersLoaded) && !showsUpsellBanner && 'mb-4'
+          !showsSeatFooter && !showsUpsellBanner && 'mb-4'
         )
       "
     >
@@ -189,14 +189,12 @@
     <!-- Upsell Banner -->
     <MemberUpsellBanner
       v-if="showsUpsellBanner"
+      :class="cn(!showsSeatFooter && 'mb-4')"
       :reactivate="hasLapsedTeamPlan"
       @show-plans="showTeamPlans()"
     />
     <!-- Need More Members Footer -->
-    <div
-      v-if="hasMemberSeats && membersLoaded"
-      class="flex shrink-0 items-center gap-1 pt-2"
-    >
+    <div v-if="showsSeatFooter" class="flex shrink-0 items-center gap-1 pt-2">
       <p class="text-sm text-muted-foreground">
         {{
           $t('workspacePanel.members.totalMembersCount', {
@@ -269,6 +267,10 @@ const {
 } = useMembersPanel()
 
 const { t } = useI18n()
+
+const showsSeatFooter = computed(
+  () => hasMemberSeats.value && membersLoaded.value
+)
 
 const showsUpsellBanner = computed(
   () =>
