@@ -253,9 +253,9 @@ export interface QueuePromptOptions {
 }
 
 function createNodeOutputsMutationView(
-  outputs: Record<string, NodeExecutionOutput>,
+  outputs: Partial<Record<string, NodeExecutionOutput>>,
   commit: (id: string, output: NodeExecutionOutput | undefined) => void
-): Record<string, NodeExecutionOutput> {
+): Partial<Record<string, NodeExecutionOutput>> {
   const views = new WeakMap<object, Map<string, object>>()
   const wrapNestedValue = (id: string, value: unknown): unknown => {
     if (value === null || typeof value !== 'object') return value
@@ -324,7 +324,9 @@ export class ComfyApp {
   api: ComfyApi
   ui: ComfyUI
   extensionManager!: ExtensionManager
-  private readonly nodeOutputsData: Record<string, NodeExecutionOutput> = {}
+  private readonly nodeOutputsData: Partial<
+    Record<string, NodeExecutionOutput>
+  > = {}
   private readonly _nodeOutputs = createNodeOutputsMutationView(
     this.nodeOutputsData,
     (id, output) => {

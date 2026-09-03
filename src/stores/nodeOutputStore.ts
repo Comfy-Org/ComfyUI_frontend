@@ -454,7 +454,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   }
 
   function replaceOutputsFromLegacy(
-    outputs: Record<string, ExecutedWsMessage['output']>
+    outputs: Partial<Record<string, ExecutedWsMessage['output']>>
   ) {
     const parsedOutputs = mapKeys(
       outputs,

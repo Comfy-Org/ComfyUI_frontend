@@ -56,8 +56,7 @@ function getNodeWrapper(comfyPage: ComfyPage, nodeTitle: string): Locator {
 }
 
 async function getNodeRef(comfyPage: ComfyPage, nodeTitle: string) {
-  const refs = await comfyPage.nodeOps.getNodeRefsByTitle(nodeTitle)
-  return refs[0]
+  return await comfyPage.nodeOps.getNodeRefByTitle(nodeTitle)
 }
 
 test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
@@ -242,8 +241,8 @@ test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
         .first()
         .waitFor({ state: 'visible' })
 
-      const [loadImageNode] =
-        await comfyPage.nodeOps.getNodeRefsByTitle('Load Image')
+      const loadImageNode =
+        await comfyPage.nodeOps.getNodeRefByTitle('Load Image')
 
       await expect
         .poll(() =>

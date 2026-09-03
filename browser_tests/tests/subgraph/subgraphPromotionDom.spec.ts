@@ -12,7 +12,7 @@ async function openSubgraphById(comfyPage: ComfyPage, nodeId: string) {
     const node = window.app!.rootGraph.nodes.find(
       (candidate) => String(candidate.id) === targetNodeId
     )
-    if (!node || !('subgraph' in node)) {
+    if (!node?.isSubgraphNode()) {
       throw new Error(`Subgraph node ${targetNodeId} not found`)
     }
 

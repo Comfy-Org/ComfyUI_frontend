@@ -176,8 +176,8 @@ for (const entry of manifestEntries) {
             servedExtensionPaths,
             entry.pack
           )
-          const exclusion = FRONTEND_ASSET_EXCLUSIONS[entry.pack]
           if (entry.pack in FRONTEND_ASSET_EXCLUSIONS) {
+            const exclusion = FRONTEND_ASSET_EXCLUSIONS[entry.pack]
             expect(packIdentity(entry)).toBe(exclusion.deployRef)
             expect(webDirectory).toBe(exclusion.webDirectory)
             expect(

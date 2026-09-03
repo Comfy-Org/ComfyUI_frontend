@@ -135,6 +135,15 @@ export class NodeOperationsHelper {
     )
   }
 
+  async getNodeRefByType(
+    type: string,
+    includeSubgraph: boolean = false
+  ): Promise<NodeReference> {
+    const node = (await this.getNodeRefsByType(type, includeSubgraph)).at(0)
+    if (!node) throw new Error(`Node of type "${type}" not found`)
+    return node
+  }
+
   async getNodeRefsByTitle(title: string): Promise<NodeReference[]> {
     return Promise.all(
       (
@@ -145,6 +154,12 @@ export class NodeOperationsHelper {
         }, title)
       ).map((id: SerializedNodeId) => this.getNodeRefById(id))
     )
+  }
+
+  async getNodeRefByTitle(title: string): Promise<NodeReference> {
+    const node = (await this.getNodeRefsByTitle(title)).at(0)
+    if (!node) throw new Error(`Node titled "${title}" not found`)
+    return node
   }
 
   async selectNodes(nodeTitles: string[]): Promise<void> {

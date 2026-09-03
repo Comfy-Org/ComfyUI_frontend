@@ -127,6 +127,7 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
       ])
 
       await comfyPage.page.reload()
+      // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
       await comfyPage.setup()
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
 

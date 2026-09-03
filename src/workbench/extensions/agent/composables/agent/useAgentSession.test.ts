@@ -7,6 +7,7 @@ import { toNodeId } from '@/types/nodeId'
 import type {
   AgentCancelAccepted,
   AgentMessages,
+  AgentRunModePreference,
   AgentThreadSummary,
   AgentTurnAccepted,
   TurnId,
@@ -35,6 +36,17 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
     ),
     getMessages: vi.fn(async (): Promise<AgentMessages> => []),
     listThreads: vi.fn(async (): Promise<AgentThreadSummary[]> => []),
+    getRunMode: vi.fn(
+      async (): Promise<AgentRunModePreference> => ({
+        mode: 'auto',
+        credit_limit: null
+      })
+    ),
+    putRunMode: vi.fn(
+      async (
+        preference: AgentRunModePreference
+      ): Promise<AgentRunModePreference> => preference
+    ),
     listCloudWorkflows: vi.fn(async () => []),
     cancelMessage: vi.fn(
       async (): Promise<AgentCancelAccepted> => ({ status: 'cancelling' })

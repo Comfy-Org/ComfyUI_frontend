@@ -1,5 +1,6 @@
 import { createRequire } from 'node:module'
 
+import type { noComfyPageSetupCall as NoComfyPageSetupCall } from './comfyPageSetup'
 import type { noDuplicateIngestType as NoDuplicateIngestType } from './comfyIngestTypes'
 import type {
   noModuleScopeVitestMocks as NoModuleScopeVitestMocks,
@@ -10,6 +11,9 @@ import type {
 import type { noRenderInWatchEffect as NoRenderInWatchEffect } from './watchEffectRendering'
 
 const requireFrom = createRequire(import.meta.url)
+const { noComfyPageSetupCall } = requireFrom('./comfyPageSetup.ts') as {
+  noComfyPageSetupCall: typeof NoComfyPageSetupCall
+}
 const { noDuplicateIngestType } = requireFrom('./comfyIngestTypes.ts') as {
   noDuplicateIngestType: typeof NoDuplicateIngestType
 }
@@ -31,6 +35,7 @@ const { noRenderInWatchEffect } = requireFrom('./watchEffectRendering.ts') as {
 export default {
   meta: { name: 'comfy' },
   rules: {
+    'no-comfy-page-setup-call': noComfyPageSetupCall,
     'no-duplicate-ingest-type': noDuplicateIngestType,
     'no-module-scope-vitest-mocks': noModuleScopeVitestMocks,
     'no-persistent-litegraph-registration': noPersistentLiteGraphRegistration,

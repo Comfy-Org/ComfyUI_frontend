@@ -540,7 +540,8 @@ export class SubgraphHelper {
         const graph = window.app!.canvas.graph
         if (!graph || !('inputNode' in graph)) return null
         const slot = graph[`${slotType}s`].at(idx)
-        return slot ? slot.label || slot.name : null
+        if (!slot) return null
+        return slot.label || slot.name
       },
       [type, index] as const
     )

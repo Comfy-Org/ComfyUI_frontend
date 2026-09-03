@@ -45,7 +45,7 @@ async function getPrimitiveFanoutSnapshot(
   const localHostNodeId = toNodeId(hostNodeId)
   return comfyPage.page.evaluate((id) => {
     const graph = window.app!.canvas.graph!
-    const hostNode = graph.nodes.find((node) => node.id === id)
+    const hostNode = graph.getNodeById(id)
     if (!hostNode?.isSubgraphNode()) {
       throw new Error(`Host node ${id} is not a SubgraphNode`)
     }

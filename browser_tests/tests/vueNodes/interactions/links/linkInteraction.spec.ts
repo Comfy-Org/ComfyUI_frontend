@@ -113,9 +113,7 @@ test.describe(
       comfyPage,
       comfyMouse
     }) => {
-      const samplerNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-      )[0]
+      const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
       expect(samplerNode).toBeTruthy()
 
       const slot = slotLocator(comfyPage.page, samplerNode.id, 0, false)
@@ -145,12 +143,8 @@ test.describe(
     test('should create a link when dropping on a compatible slot', async ({
       comfyPage
     }) => {
-      const samplerNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-      )[0]
-      const vaeNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('VAEDecode')
-      )[0]
+      const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
+      const vaeNode = await comfyPage.nodeOps.getNodeRefByType('VAEDecode')
       const samplerOutput = await samplerNode.getOutput(0)
       const vaeInput = await vaeNode.getInput(0)
 
@@ -177,12 +171,9 @@ test.describe(
     test('should not create a link when slot types are incompatible', async ({
       comfyPage
     }) => {
-      const samplerNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-      )[0]
-      const clipNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
-      )[0]
+      const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
+      const clipNode =
+        await comfyPage.nodeOps.getNodeRefByType('CLIPTextEncode')
       const samplerOutput = await samplerNode.getOutput(0)
       const clipInput = await clipNode.getInput(0)
 
@@ -205,9 +196,7 @@ test.describe(
     test('should not create a link when dropping onto a slot on the same node', async ({
       comfyPage
     }) => {
-      const samplerNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-      )[0]
+      const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
       expect(samplerNode).toBeTruthy()
 
       const samplerOutput = await samplerNode.getOutput(0)
@@ -229,12 +218,8 @@ test.describe(
       comfyPage,
       comfyMouse
     }) => {
-      const samplerNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-      )[0]
-      const vaeNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('VAEDecode')
-      )[0]
+      const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
+      const vaeNode = await comfyPage.nodeOps.getNodeRefByType('VAEDecode')
       const samplerOutputCenter = await getSlotCenter(
         comfyPage.page,
         samplerNode.id,
@@ -269,12 +254,8 @@ test.describe(
       comfyPage,
       comfyMouse
     }) => {
-      const samplerNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-      )[0]
-      const vaeNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('VAEDecode')
-      )[0]
+      const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
+      const vaeNode = await comfyPage.nodeOps.getNodeRefByType('VAEDecode')
       const samplerOutput = await samplerNode.getOutput(0)
       const vaeInput = await vaeNode.getInput(0)
 
@@ -328,12 +309,8 @@ test.describe(
       comfyPage,
       comfyMouse
     }) => {
-      const samplerNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-      )[0]
-      const vaeNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('VAEDecode')
-      )[0]
+      const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
+      const vaeNode = await comfyPage.nodeOps.getNodeRefByType('VAEDecode')
       const samplerOutput = await samplerNode.getOutput(0)
       const vaeInput = await vaeNode.getInput(0)
 
@@ -410,12 +387,8 @@ test.describe(
       comfyPage,
       comfyMouse
     }) => {
-      const samplerNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-      )[0]
-      const vaeNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('VAEDecode')
-      )[0]
+      const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
+      const vaeNode = await comfyPage.nodeOps.getNodeRefByType('VAEDecode')
 
       const samplerOutput = await samplerNode.getOutput(0)
       const vaeInput = await vaeNode.getInput(0)
@@ -500,12 +473,8 @@ test.describe(
       comfyPage,
       comfyMouse
     }) => {
-      const samplerNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-      )[0]
-      const vaeNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('VAEDecode')
-      )[0]
+      const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
+      const vaeNode = await comfyPage.nodeOps.getNodeRefByType('VAEDecode')
       const samplerOutput = await samplerNode.getOutput(0)
       const vaeInput = await vaeNode.getInput(0)
 
@@ -595,12 +564,9 @@ test.describe(
       comfyPage,
       comfyMouse
     }) => {
-      const clipNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
-      )[0]
-      const samplerNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-      )[0]
+      const clipNode =
+        await comfyPage.nodeOps.getNodeRefByType('CLIPTextEncode')
+      const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
       // Step 1: Connect CLIP's only output (index 0) to KSampler's second input (index 1)
       await connectSlots(
         comfyPage.page,
@@ -655,12 +621,9 @@ test.describe(
       comfyPage,
       comfyMouse
     }) => {
-      const clipNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
-      )[0]
-      const samplerNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-      )[0]
+      const clipNode =
+        await comfyPage.nodeOps.getNodeRefByType('CLIPTextEncode')
+      const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
       const clipOutput = await clipNode.getOutput(0)
 
       // Connect output[0] -> inputs[1] and [2]
@@ -712,12 +675,9 @@ test.describe(
       comfyPage,
       comfyMouse
     }) => {
-      const clipNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
-      )[0]
-      const samplerNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-      )[0]
+      const clipNode =
+        await comfyPage.nodeOps.getNodeRefByType('CLIPTextEncode')
+      const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
       // Start drag from CLIP output[0]
       const clipOutputCenter = await getSlotCenter(
         comfyPage.page,
@@ -769,12 +729,9 @@ test.describe(
       comfyPage,
       comfyMouse
     }) => {
-      const clipNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
-      )[0]
-      const samplerNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-      )[0]
+      const clipNode =
+        await comfyPage.nodeOps.getNodeRefByType('CLIPTextEncode')
+      const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
       // Drag from CLIP output[0] to KSampler input[2] (third slot) which is the
       // second compatible input for CLIP
       const clipOutputCenter = await getSlotCenter(
@@ -813,12 +770,9 @@ test.describe(
     test('should batch disconnect all links with ctrl+alt+click on slot', async ({
       comfyPage
     }) => {
-      const clipNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
-      )[0]
-      const samplerNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-      )[0]
+      const clipNode =
+        await comfyPage.nodeOps.getNodeRefByType('CLIPTextEncode')
+      const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
       await connectSlots(
         comfyPage.page,
         { nodeId: clipNode.id, index: 0 },
@@ -860,9 +814,7 @@ test.describe(
           'context menu'
         )
 
-        const samplerNode = (
-          await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-        )[0]
+        const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
         expect(samplerNode).toBeTruthy()
 
         const outputCenter = await getSlotCenter(
@@ -930,9 +882,7 @@ test.describe(
           'v1 (legacy)'
         )
 
-        const samplerNode = (
-          await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-        )[0]
+        const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
         expect(samplerNode).toBeTruthy()
 
         const outputCenter = await getSlotCenter(
@@ -1001,9 +951,7 @@ test.describe(
           'v1 (legacy)'
         )
 
-        const samplerNode = (
-          await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-        )[0]
+        const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
         expect(samplerNode).toBeTruthy()
 
         const outputCenter = await getSlotCenter(
@@ -1064,9 +1012,7 @@ test.describe(
       await comfyPage.nodeOps.waitForGraphNodes(1)
 
       // Convert the KSampler node to a subgraph
-      let ksamplerNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-      )[0]
+      let ksamplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
       await comfyPage.vueNodes.selectNode(String(ksamplerNode.id))
       await comfyPage.command.executeCommand('Comfy.Graph.ConvertToSubgraph')
 
@@ -1075,9 +1021,7 @@ test.describe(
       await fitToViewInstant(comfyPage)
 
       // Get the KSampler node inside the subgraph
-      ksamplerNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('KSampler', true)
-      )[0]
+      ksamplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler', true)
       const positiveInput = await ksamplerNode.getInput(1)
       const negativeInput = await ksamplerNode.getInput(2)
 
