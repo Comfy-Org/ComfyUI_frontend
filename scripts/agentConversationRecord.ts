@@ -16,7 +16,7 @@ import type { AgentBackendCapture } from './agentConversationCapture'
 import { exportAgentConversation } from './agentConversationCapture'
 
 const USAGE =
-  'usage: pnpm exec tsx scripts/agentConversationRecord.ts <caseId> <seedFixture.json> --prompt "<turn 1>" [--prompt "<turn 2>" ...] --out <fixture.json> [--work <dir>]'
+  'usage: pnpm exec tsx scripts/agentConversationRecord.ts <caseId> <seedFixture.json> --prompt "<turn 1>" [--prompt "<turn 2>" ...] --out <fixture.json> [--work <dir>] [--cancel-turn <k> --cancel-after-ms <n>]'
 
 const REPLAYED_FRAMES =
   'agent_thinking agent_tool_call agent_message_delta agent_message_done agent_active_tab'.split(
@@ -132,6 +132,8 @@ export interface RecordedTurn {
   prompt: string
   accepted: TurnAck | null
   saw_done: boolean
+  cancel_sent_at_ms?: number
+  cancel_ack?: TurnAck | null
 }
 
 export interface RawCapture {
@@ -542,6 +544,7 @@ function buildCapture(options: {
 interface TurnReceipt {
   message_id: string
   frames_kept: number
+  cancel_after_frame?: number
   parents: number
   mutating_parents: number
   child_statuses: Record<string, number>
@@ -600,16 +603,25 @@ function assembleTurn(
 } {
   const calls = rows.parents.map((row) => parentToolCall(row, workflowId))
   checkTurnAgreement(frames, rows.parents, label)
+  const sent = turn.cancel_sent_at_ms
+  const before =
+    sent === undefined
+      ? []
+      : frames.filter((frame) => (frame.at_ms ?? 0) <= sent)
+  if (sent !== undefined && before.length === 0)
+    refuse(`${label} was cancelled before any frame arrived`)
   return {
     capture: {
       message_id: ids.messageId,
       request: { content: turn.prompt },
       frames,
+      cancel_after_frame: sent === undefined ? undefined : before.length - 1,
       tool_calls: calls.map((call) => call.toolCall)
     },
     receipt: {
       message_id: ids.messageId,
       frames_kept: frames.length,
+      cancel_after_frame: sent === undefined ? undefined : before.length - 1,
       parents: rows.parents.length,
       mutating_parents: calls.filter((call) => call.appliedOps.length > 0)
         .length,
@@ -750,6 +762,7 @@ async function recordTurns(
     timeoutMs: number
     seed: WorkflowJSON
     prompts: string[]
+    cancel?: { turn: number; afterMs: number }
   }
 ): Promise<void> {
   const stop = openStream(raw, options.redisExec, (frame) =>
@@ -771,6 +784,27 @@ async function recordTurns(
     if (response.status === 202 && !body.success)
       refuse(`202 with a non-JSON body: ${payload.slice(0, 200)}`)
     return { status: response.status, body: body.data ?? null }
+  }
+
+  // The panel's own stop button posts this and expects a 202.
+  const postCancel = async (
+    thread: string,
+    messageId: string
+  ): Promise<TurnAck> => {
+    const response = await fetch(
+      `${raw.base}/agent/threads/${thread}/messages/${messageId}/cancel`,
+      {
+        method: 'POST',
+        headers: options.headers,
+        body: '{}',
+        signal: AbortSignal.timeout(30_000)
+      }
+    )
+    const payload = await response.text()
+    return {
+      status: response.status,
+      body: zJsonObject.safeParse(safeJson(payload)).data ?? null
+    }
   }
 
   const done = (messageId: string): boolean =>
@@ -844,6 +878,11 @@ async function recordTurns(
         refuse(`${turnLabel(index)} not accepted: ${JSON.stringify(posted)}`)
       thread = ack.data.thread_id
       opening ??= ack.data.message_id
+      if (options.cancel?.turn === index + 1) {
+        await sleep(options.cancel.afterMs)
+        turn.cancel_sent_at_ms = Date.now()
+        turn.cancel_ack = await postCancel(thread, ack.data.message_id)
+      }
       await waitDone(ack.data.message_id, turnLabel(index))
       turn.saw_done = true
     }
@@ -871,7 +910,12 @@ async function main(argv: string[]): Promise<void> {
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index]
     if (arg === '--prompt') prompts.push(argv[(index += 1)] ?? '')
-    else if (arg === '--out' || arg === '--work')
+    else if (
+      arg === '--out' ||
+      arg === '--work' ||
+      arg === '--cancel-turn' ||
+      arg === '--cancel-after-ms'
+    )
       flags[arg] = argv[(index += 1)] ?? ''
     else positional.push(arg)
   }
@@ -880,6 +924,22 @@ async function main(argv: string[]): Promise<void> {
   if (!caseId || !seedPath || !outPath || prompts.length === 0)
     throw new Error(USAGE)
   if (prompts.some((turn) => !turn.trim())) throw new Error(USAGE)
+  const cancel =
+    flags['--cancel-turn'] === undefined
+      ? undefined
+      : {
+          turn: Number(flags['--cancel-turn']),
+          afterMs: Number(flags['--cancel-after-ms'] ?? '5000')
+        }
+  if (
+    cancel &&
+    (!Number.isInteger(cancel.turn) ||
+      cancel.turn < 1 ||
+      cancel.turn > prompts.length ||
+      !Number.isFinite(cancel.afterMs) ||
+      cancel.afterMs < 0)
+  )
+    throw new Error(USAGE)
 
   const env = parseOrRefuse(
     zEnv,
@@ -943,7 +1003,8 @@ async function main(argv: string[]): Promise<void> {
       redisExec: env.AGENT_REDIS_EXEC.split(' '),
       timeoutMs: env.AGENT_TURN_TIMEOUT,
       seed: seed.workflow.seed,
-      prompts
+      prompts,
+      cancel
     })
 
     // One row set per turn; the last one also carries the final draft.

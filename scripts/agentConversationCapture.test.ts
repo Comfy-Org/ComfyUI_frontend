@@ -157,6 +157,25 @@ describe('exportAgentConversation', () => {
     ).toThrow(/status "done"/)
   })
 
+  it('maps the cancelled frame to the entry index the replay stops after', () => {
+    const conversation = exportAgentConversation(
+      withTurn({ cancel_after_frame: 1 })
+    )
+
+    expect(conversation.turns[0].response.map((entry) => entry.kind)).toEqual([
+      'event',
+      'graph_ops',
+      'event'
+    ])
+    expect(conversation.turns[0].cancel_after).toBe(2)
+  })
+
+  it('leaves cancel_after out of a turn that ran to completion', () => {
+    const conversation = exportAgentConversation(capture)
+
+    expect(conversation.turns[0].cancel_after).toBeUndefined()
+  })
+
   it('refuses an accepted op missing from the recorded result', () => {
     expect(() =>
       exportAgentConversation(

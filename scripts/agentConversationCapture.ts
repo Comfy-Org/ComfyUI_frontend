@@ -32,6 +32,8 @@ const zBackendTurn = z.object({
   message_id: z.string().min(1),
   request: zAgentConversationRequest,
   frames: z.array(zRecordedWsEvent).min(1),
+  // Index into frames of the last frame that arrived before the cancel.
+  cancel_after_frame: z.number().int().nonnegative().optional(),
   tool_calls: z.array(zToolCall)
 })
 
@@ -94,6 +96,7 @@ function exportTurn(turn: z.infer<typeof zBackendTurn>, threadId: string) {
     | { kind: 'event'; event: z.infer<typeof zRecordedWsEvent>; at_ms?: number }
     | { kind: 'graph_ops'; ops: Array<Record<string, unknown>>; at_ms?: number }
   > = []
+  let cancelAfter: number | undefined
   const firstAt = turn.frames[0].at_ms
   const relativeAt = (frame: { at_ms?: number }) =>
     firstAt === undefined || frame.at_ms === undefined
@@ -138,6 +141,8 @@ function exportTurn(turn: z.infer<typeof zBackendTurn>, threadId: string) {
       }
     }
     response.push({ kind: 'event', event, at_ms })
+    if (turn.cancel_after_frame === turn.frames.indexOf(frame))
+      cancelAfter = response.length - 1
   }
 
   const omitted = turn.tool_calls.filter(
@@ -150,7 +155,12 @@ function exportTurn(turn: z.infer<typeof zBackendTurn>, threadId: string) {
       `recorded response has no terminal websocket frame for tool call(s): ${omitted.map((call) => call.tool_call_id).join(', ')}`
     )
   }
-  return { message_id: turn.message_id, request: turn.request, response }
+  return {
+    message_id: turn.message_id,
+    request: turn.request,
+    cancel_after: cancelAfter,
+    response
+  }
 }
 
 export function exportAgentConversation(input: unknown) {
