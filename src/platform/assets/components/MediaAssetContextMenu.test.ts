@@ -1,12 +1,12 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { render } from '@testing-library/vue'
-import type { MenuItem } from 'primevue/menuitem'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { PropType } from 'vue'
 import { defineComponent, nextTick, onMounted, ref } from 'vue'
 
 import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
+import type { MenuItem } from '@/components/ui/menu/types'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type * as FormatUtil from '@/utils/formatUtil'
 

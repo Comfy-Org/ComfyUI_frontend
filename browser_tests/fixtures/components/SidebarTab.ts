@@ -189,7 +189,7 @@ export class WorkflowsSidebarTab extends SidebarTab {
   async renameWorkflow(locator: Locator, newName: string) {
     await locator.click({ button: 'right' })
     await this.page
-      .locator('.p-contextmenu-item-content', { hasText: 'Rename' })
+      .getByRole('menuitem', { name: 'Rename', exact: true })
       .click()
     await this.page.keyboard.type(newName)
     await this.page.keyboard.press('Enter')
@@ -207,7 +207,7 @@ export class WorkflowsSidebarTab extends SidebarTab {
   async insertWorkflow(locator: Locator) {
     await locator.click({ button: 'right' })
     await this.page
-      .locator('.p-contextmenu-item-content', { hasText: 'Insert' })
+      .getByRole('menuitem', { name: 'Insert', exact: true })
       .click()
   }
 }
@@ -436,7 +436,7 @@ export class AssetsSidebarTab extends SidebarTab {
   }
 
   contextMenuItem(label: string) {
-    return this.page.locator('.p-contextmenu').getByText(label)
+    return this.page.getByRole('menu').getByRole('menuitem', { name: label })
   }
 
   override async open({ waitForAssets = true } = {}) {
@@ -534,7 +534,7 @@ export class AssetsSidebarTab extends SidebarTab {
     const card = this.getAssetCardByName(name)
     await card.click({ button: 'right' })
     await this.page
-      .locator('.p-contextmenu')
+      .getByRole('menu')
       .waitFor({ state: 'visible', timeout: 3000 })
   }
 

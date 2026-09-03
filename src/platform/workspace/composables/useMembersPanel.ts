@@ -1,4 +1,4 @@
-import type { MenuItem } from 'primevue/menuitem'
+import type { MenuItem } from '@/components/ui/menu/types'
 import { storeToRefs } from 'pinia'
 import { useToast } from 'primevue/usetoast'
 import { computed, ref } from 'vue'

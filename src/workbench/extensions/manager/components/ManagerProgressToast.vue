@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { useScroll, whenever } from '@vueuse/core'
-import TabMenu from 'primevue/tabmenu'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import DotSpinner from '@/components/common/DotSpinner.vue'
 import HoneyToast from '@/components/honeyToast/HoneyToast.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Tabs from '@/components/ui/tabs/Tabs.vue'
+import TabsContent from '@/components/ui/tabs/TabsContent.vue'
+import TabsList from '@/components/ui/tabs/TabsList.vue'
+import TabsTrigger from '@/components/ui/tabs/TabsTrigger.vue'
 import { useApplyChanges } from '@/workbench/extensions/manager/composables/useApplyChanges'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
@@ -15,23 +18,26 @@ const comfyManagerStore = useComfyManagerStore()
 const { isRestarting, isRestartCompleted, applyChanges } = useApplyChanges()
 
 const isExpanded = ref(false)
-const activeTabIndex = ref(0)
+const activeTab = ref<'queue' | 'failed'>('queue')
 
 const tabs = computed(() => [
-  { label: t('manager.installationQueue') },
   {
+    value: 'queue' as const,
+    label: t('manager.installationQueue'),
+    logs: comfyManagerStore.succeededTasksLogs
+  },
+  {
+    value: 'failed' as const,
     label: t('manager.failed', {
       count: comfyManagerStore.failedTasksIds.length
-    })
+    }),
+    logs: comfyManagerStore.failedTasksLogs
   }
 ])
 
-const focusedLogs = computed(() => {
-  if (activeTabIndex.value === 0) {
-    return comfyManagerStore.succeededTasksLogs
-  }
-  return comfyManagerStore.failedTasksLogs
-})
+const focusedLogs = computed(
+  () => tabs.value.find((tab) => tab.value === activeTab.value)?.logs ?? []
+)
 
 const visible = computed(() => comfyManagerStore.taskLogs.length > 0)
 
@@ -158,84 +164,93 @@ onBeforeUnmount(() => {
 <template>
   <HoneyToast v-model:expanded="isExpanded" :visible>
     <template #default>
-      <div v-if="isExpanded" class="flex items-center px-4 py-2">
-        <TabMenu
-          v-model:active-index="activeTabIndex"
-          :model="tabs"
-          class="w-full border-none"
-          :pt="{
-            menu: { class: 'border-none' },
-            menuitem: { class: 'font-medium' },
-            action: { class: 'px-4 py-2' }
-          }"
-        />
-      </div>
-
-      <div
-        ref="sectionsContainerRef"
-        class="scroll-container max-h-[450px] overflow-y-auto px-6 py-4"
-        :style="{
-          scrollbarWidth: 'thin',
-          scrollbarColor: 'rgba(156, 163, 175, 0.5) transparent'
-        }"
-      >
-        <div v-for="(log, index) in focusedLogs" :key="index">
-          <div class="shadow-elevation-1 mt-2 rounded-lg">
-            <div class="flex w-full items-center justify-between px-4 py-2">
-              <div class="flex flex-col text-sm/normal font-medium">
-                <span>{{ log.taskName }}</span>
-                <span class="text-muted">
-                  {{
-                    isTaskInProgress(index)
-                      ? t('g.inProgress')
-                      : t('g.completedWithCheckmark')
-                  }}
-                </span>
-              </div>
-              <Button
-                variant="textonly"
-                class="text-neutral-300"
-                :aria-expanded="!collapsedPanels[index]"
-                @click="togglePanel(index)"
-              >
-                <i
-                  :class="
-                    collapsedPanels[index]
-                      ? 'pi pi-chevron-right'
-                      : 'pi pi-chevron-down'
-                  "
-                />
-              </Button>
-            </div>
-            <div
-              v-show="!collapsedPanels[index]"
-              :ref="
-                index === focusedLogs.length - 1
-                  ? (el) => (lastPanelRef = el as HTMLElement)
-                  : undefined
-              "
-              class="h-64 overflow-y-auto rounded-lg bg-black"
-              :class="{
-                'h-64': index !== focusedLogs.length - 1,
-                grow: index === focusedLogs.length - 1
-              }"
-              @scroll="handleScroll"
+      <Tabs v-if="isExpanded" v-model="activeTab">
+        <div class="flex items-center px-4 py-2">
+          <TabsList class="flex w-full">
+            <TabsTrigger
+              v-for="tab in tabs"
+              :key="tab.value"
+              :value="tab.value"
+              class="rounded-none px-4 py-2 font-medium"
             >
-              <div class="h-full">
+              {{ tab.label }}
+            </TabsTrigger>
+          </TabsList>
+        </div>
+
+        <TabsContent
+          v-for="tab in tabs"
+          :key="tab.value"
+          :value="tab.value"
+          class="contents"
+        >
+          <div
+            ref="sectionsContainerRef"
+            class="scroll-container max-h-[450px] overflow-y-auto px-6 py-4"
+            :style="{
+              scrollbarWidth: 'thin',
+              scrollbarColor: 'rgba(156, 163, 175, 0.5) transparent'
+            }"
+          >
+            <div v-for="(log, index) in tab.logs" :key="index">
+              <div class="shadow-elevation-1 mt-2 rounded-lg">
+                <div class="flex w-full items-center justify-between px-4 py-2">
+                  <div class="flex flex-col text-sm/normal font-medium">
+                    <span>{{ log.taskName }}</span>
+                    <span class="text-muted">
+                      {{
+                        isTaskInProgress(index)
+                          ? t('g.inProgress')
+                          : t('g.completedWithCheckmark')
+                      }}
+                    </span>
+                  </div>
+                  <Button
+                    variant="textonly"
+                    class="text-neutral-300"
+                    :aria-expanded="!collapsedPanels[index]"
+                    @click="togglePanel(index)"
+                  >
+                    <i
+                      :class="
+                        collapsedPanels[index]
+                          ? 'pi pi-chevron-right'
+                          : 'pi pi-chevron-down'
+                      "
+                    />
+                  </Button>
+                </div>
                 <div
-                  v-for="(logLine, logIndex) in log.logs"
-                  :key="logIndex"
-                  class="text-muted"
+                  v-show="!collapsedPanels[index]"
+                  :ref="
+                    index === focusedLogs.length - 1
+                      ? (el) => (lastPanelRef = el as HTMLElement)
+                      : undefined
+                  "
+                  class="h-64 overflow-y-auto rounded-lg bg-black"
+                  :class="{
+                    'h-64': index !== focusedLogs.length - 1,
+                    grow: index === focusedLogs.length - 1
+                  }"
+                  @scroll="handleScroll"
                 >
-                  <pre class="wrap-break-word whitespace-pre-wrap">{{
-                    logLine
-                  }}</pre>
+                  <div class="h-full">
+                    <div
+                      v-for="(logLine, logIndex) in log.logs"
+                      :key="logIndex"
+                      class="text-muted"
+                    >
+                      <pre class="wrap-break-word whitespace-pre-wrap">{{
+                        logLine
+                      }}</pre>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
+        </TabsContent>
+      </Tabs>
     </template>
 
     <template #footer="{ toggle }">

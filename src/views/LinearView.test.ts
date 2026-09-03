@@ -73,10 +73,6 @@ vi.mock(
   }
 )
 
-vi.mock('@/composables/useStablePrimeVueSplitterSizer', () => ({
-  useStablePrimeVueSplitterSizer: () => ({ onResizeEnd: vi.fn() })
-}))
-
 function setViewport(width: number) {
   const happyDOM = (window as unknown as { happyDOM?: DetachedWindowAPI })
     .happyDOM
@@ -96,9 +92,9 @@ function leafStub(testId: string) {
 }
 
 const baseStubs = {
-  Splitter: passthroughStub,
+  SplitterGroup: passthroughStub,
   SplitterPanel: passthroughStub,
-  DockedAgentPanel: leafStub('docked-agent-panel'),
+  SplitterResizeHandle: passthroughStub,
   MobileDisplay: leafStub('mobile-display'),
   AppBuilder: leafStub('app-builder'),
   AppModeToolbar: leafStub('app-mode-toolbar'),
@@ -107,6 +103,7 @@ const baseStubs = {
   TopbarBadges: leafStub('topbar-badges'),
   TopbarSubscribeButton: leafStub('topbar-subscribe-button'),
   WorkflowTabs: leafStub('workflow-tabs'),
+  DockedAgentPanel: leafStub('docked-agent-panel'),
   LinearControls: leafStub('linear-controls'),
   LinearPreview: leafStub('linear-preview'),
   LinearProgressBar: leafStub('linear-progress-bar')
@@ -197,6 +194,13 @@ describe('LinearView', () => {
       screen.getByTestId('linear-controls'),
       screen.getByTestId('extension-slot')
     )
+  })
+
+  it('keeps side panels at least 312px wide in a 1280px layout', () => {
+    renderView({ activeTab: sampleTab, hasOutputs: true })
+
+    expect(screen.getByTestId('linear-left-panel')).toHaveClass('min-w-78')
+    expect(screen.getByTestId('linear-right-panel')).toHaveClass('min-w-78')
   })
 
   it('omits both side panels when there is no active tab or output', () => {

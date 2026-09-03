@@ -1,0 +1,178 @@
+import { render, screen, waitFor } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it, vi } from 'vitest'
+import { defineComponent, ref } from 'vue'
+
+import Menu from './Menu.vue'
+import ContextMenu from './ContextMenu.vue'
+
+describe('Menu', () => {
+  it('opens, runs a command, and dismisses with Escape', async () => {
+    const command = vi.fn()
+    render(
+      defineComponent({
+        components: { Menu },
+        setup() {
+          const menu = ref<InstanceType<typeof Menu>>()
+          return { command, menu }
+        },
+        template:
+          '<button @click="menu?.show($event)">Open</button><Menu ref="menu" :model="[{ label: \'Run\', command }]" />'
+      })
+    )
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+    await user.click(screen.getByRole('button', { name: 'Open' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Run' }))
+    expect(command).toHaveBeenCalledOnce()
+
+    await user.click(screen.getByRole('button', { name: 'Open' }))
+    await screen.findByRole('menu')
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+  })
+
+  it('cancels an opening request when hidden in the same event', async () => {
+    render(
+      defineComponent({
+        components: { Menu },
+        setup() {
+          const menu = ref<InstanceType<typeof Menu>>()
+          return { menu }
+        },
+        template:
+          '<button @click="menu?.show($event); menu?.hide()">Open then hide</button><Menu ref="menu" :model="[{ label: \'Run\' }]" />'
+      })
+    )
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+    await user.click(screen.getByRole('button', { name: 'Open then hide' }))
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+  })
+
+  it('reopens when internal state outlives rendered content', async () => {
+    render(
+      defineComponent({
+        components: { Menu },
+        setup() {
+          const menu = ref<InstanceType<typeof Menu>>()
+          return { menu }
+        },
+        template:
+          '<button @click="menu?.show($event)">Open</button><Menu ref="menu" :model="[{ label: \'Run\' }]" />'
+      })
+    )
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    const trigger = screen.getByRole('button', { name: 'Open' })
+
+    await user.click(trigger)
+    await screen.findByRole('menu')
+    await user.click(trigger)
+    expect(await screen.findByRole('menuitem', { name: 'Run' })).toBeVisible()
+  })
+
+  it('opens a context menu at the pointer and dismisses outside', async () => {
+    render(
+      defineComponent({
+        components: { ContextMenu },
+        setup() {
+          const menu = ref<InstanceType<typeof ContextMenu>>()
+          return { menu }
+        },
+        template:
+          '<button @contextmenu.prevent="menu?.show($event)">Target</button><button>Outside</button><ContextMenu ref="menu" :model="[{ label: \'Inspect\' }]" />'
+      })
+    )
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+    await user.pointer({
+      keys: '[MouseRight]',
+      target: screen.getByRole('button', { name: 'Target' })
+    })
+    expect(
+      await screen.findByRole('menuitem', { name: 'Inspect' })
+    ).toBeVisible()
+
+    await user.pointer({
+      keys: '[MouseLeft>]',
+      target: screen.getByRole('button', { name: 'Outside', hidden: true })
+    })
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+  })
+
+  it('closes a context menu without dispatching Escape', async () => {
+    const onKeydown = vi.fn()
+    document.addEventListener('keydown', onKeydown)
+    const menu = ref<InstanceType<typeof ContextMenu>>()
+    render(
+      defineComponent({
+        components: { ContextMenu },
+        setup: () => ({ menu }),
+        template:
+          '<button @contextmenu.prevent="menu?.show($event)">Target</button><ContextMenu ref="menu" :model="[{ label: \'Inspect\' }]" />'
+      })
+    )
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+    await user.pointer({
+      keys: '[MouseRight]',
+      target: screen.getByRole('button', { name: 'Target' })
+    })
+    await screen.findByRole('menu')
+    menu.value?.hide()
+
+    await waitFor(() =>
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    )
+    expect(onKeydown).not.toHaveBeenCalled()
+    document.removeEventListener('keydown', onKeydown)
+  })
+
+  it('owns the positioned context menu element and one max-height', async () => {
+    const menu = ref<InstanceType<typeof ContextMenu>>()
+    render(
+      defineComponent({
+        components: { ContextMenu },
+        setup: () => ({ menu }),
+        template:
+          '<button @contextmenu.prevent="menu?.show($event)">Target</button><ContextMenu ref="menu" :model="[{ label: \'Inspect\' }]" />'
+      })
+    )
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+    await user.pointer({
+      keys: '[MouseRight]',
+      target: screen.getByRole('button', { name: 'Target' })
+    })
+    const content = await screen.findByRole('menu')
+
+    expect(menu.value?.container?.$el).toHaveAttribute(
+      'data-reka-popper-content-wrapper'
+    )
+    expect(
+      [...content.classList].filter((name) => name.startsWith('max-h-'))
+    ).toHaveLength(1)
+  })
+
+  it('stays closed when its open trigger is clicked', async () => {
+    const menu = ref<InstanceType<typeof ContextMenu>>()
+    render(
+      defineComponent({
+        components: { ContextMenu },
+        setup: () => ({ menu }),
+        template:
+          '<button @click="menu?.toggle($event)" @contextmenu.prevent="menu?.show($event)">Target</button><ContextMenu ref="menu" :model="[{ label: \'Inspect\' }]" />'
+      })
+    )
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    const trigger = screen.getByRole('button', { name: 'Target' })
+
+    await user.pointer({ keys: '[MouseRight]', target: trigger })
+    await screen.findByRole('menu')
+    await user.click(trigger)
+
+    await waitFor(() =>
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    )
+  })
+})

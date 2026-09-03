@@ -369,7 +369,7 @@ test.describe(
         await comfyPage.nextFrame()
 
         const promoteEntry = comfyPage.page
-          .locator('.p-contextmenu')
+          .getByRole('menu')
           .locator('text=Promote Widget')
 
         await expect(promoteEntry.first()).toBeVisible()

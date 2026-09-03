@@ -20,8 +20,9 @@ test.describe('Reroute Node', { tag: ['@screenshot', '@node'] }, () => {
     const workflowsTab = comfyPage.menu.workflowsTab
     await workflowsTab.open()
     await workflowsTab.getPersistedItem(workflowName).click({ button: 'right' })
-    const insertButton = comfyPage.page.locator('.p-contextmenu-item-link', {
-      hasText: 'Insert'
+    const insertButton = comfyPage.page.getByRole('menuitem', {
+      name: 'Insert',
+      exact: true
     })
     await insertButton.click()
 

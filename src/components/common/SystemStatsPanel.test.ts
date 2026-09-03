@@ -45,7 +45,12 @@ function renderPanel(stats: SystemStats) {
     props: { stats },
     global: {
       plugins: [i18n],
-      stubs: { Divider: true, TabView: true, TabPanel: true, DeviceInfo: true }
+      stubs: {
+        DeviceInfo: {
+          props: ['device'],
+          template: '<div>{{ device.name }}</div>'
+        }
+      }
     }
   })
 }
@@ -78,5 +83,38 @@ describe('SystemStatsPanel', () => {
     expect(copied).toContain('## System Info')
     expect(copied).toContain('PyTorch Version: 2.4.0')
     expect(copied).toContain('RAM Total: 1 KB')
+  })
+
+  it('switches between device tabs', async () => {
+    const stats = createStats()
+    stats.devices = [
+      {
+        name: 'GPU 0',
+        type: 'cuda',
+        index: 0,
+        vram_total: 100,
+        vram_free: 50,
+        torch_vram_total: 100,
+        torch_vram_free: 50
+      },
+      {
+        name: 'GPU 1',
+        type: 'cuda',
+        index: 1,
+        vram_total: 100,
+        vram_free: 50,
+        torch_vram_total: 100,
+        torch_vram_free: 50
+      }
+    ]
+    const user = userEvent.setup()
+    renderPanel(stats)
+
+    expect(screen.getByText('GPU 0', { selector: 'div' })).toBeVisible()
+    expect(screen.queryByText('GPU 1', { selector: 'div' })).toBeNull()
+
+    await user.click(screen.getByRole('tab', { name: 'GPU 1' }))
+    expect(screen.getByText('GPU 1', { selector: 'div' })).toBeVisible()
+    expect(screen.queryByText('GPU 0', { selector: 'div' })).toBeNull()
   })
 })

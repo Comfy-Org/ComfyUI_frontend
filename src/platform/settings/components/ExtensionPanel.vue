@@ -84,12 +84,12 @@
 <script setup lang="ts">
 import { FilterMatchMode } from '@primevue/core/api'
 import Column from 'primevue/column'
-import ContextMenu from 'primevue/contextmenu'
 import DataTable from 'primevue/datatable'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
 import Tag from '@/components/ui/badge/Badge.vue'
 import Message from '@/components/ui/message/Message.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
