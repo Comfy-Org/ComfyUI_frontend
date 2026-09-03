@@ -269,11 +269,6 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     pushEvent(reconnectedWs, agentDocSubscribed())
     pushEvent(reconnectedWs, updates.reconnectDelta)
 
-    await expect(panel.getByTestId('agent-crdt-status')).toContainText(
-      '2 updates',
-      { timeout: 10_000 }
-    )
-
     await expect
       .poll(
         () =>

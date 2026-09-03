@@ -1,22 +1,6 @@
 import { test as base } from '@playwright/test'
 import type { WebSocketRoute } from '@playwright/test'
 
-function createWebSocketRouteHandler(
-  connectWebSocketToServer: boolean,
-  onRouted: (ws: WebSocketRoute) => void
-) {
-  return (ws: WebSocketRoute) => {
-    if (connectWebSocketToServer) {
-      const server = ws.connectToServer()
-      server.onMessage((message) => {
-        ws.send(message)
-      })
-    }
-
-    onRouted(ws)
-  }
-}
-
 export const webSocketFixture = base.extend<{
   connectWebSocketToServer: boolean
   getWebSocket: () => Promise<WebSocketRoute>
