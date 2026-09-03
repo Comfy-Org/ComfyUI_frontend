@@ -34,7 +34,6 @@ test.describe('Workshop V2', () => {
       'true'
     )
     await hub.getByTestId('hub-tab-all').click()
-    await hub.getByTestId('hub-search-open').click()
     await hub.getByTestId('hub-search').fill('minimax h3')
     await expect(hub.getByTestId('hub-card-link').first()).toContainText(
       'MiniMax H3'
