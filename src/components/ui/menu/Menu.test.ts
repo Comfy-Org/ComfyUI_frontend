@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
@@ -98,5 +98,59 @@ describe('Menu', () => {
       target: screen.getByRole('button', { name: 'Outside', hidden: true })
     })
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+  })
+
+  it('closes a context menu without dispatching Escape', async () => {
+    const onKeydown = vi.fn()
+    document.addEventListener('keydown', onKeydown)
+    const menu = ref<InstanceType<typeof ContextMenu>>()
+    render(
+      defineComponent({
+        components: { ContextMenu },
+        setup: () => ({ menu }),
+        template:
+          '<button @contextmenu.prevent="menu?.show($event)">Target</button><ContextMenu ref="menu" :model="[{ label: \'Inspect\' }]" />'
+      })
+    )
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+    await user.pointer({
+      keys: '[MouseRight]',
+      target: screen.getByRole('button', { name: 'Target' })
+    })
+    await screen.findByRole('menu')
+    menu.value?.hide()
+
+    await waitFor(() =>
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    )
+    expect(onKeydown).not.toHaveBeenCalled()
+    document.removeEventListener('keydown', onKeydown)
+  })
+
+  it('owns the positioned context menu element and one max-height', async () => {
+    const menu = ref<InstanceType<typeof ContextMenu>>()
+    render(
+      defineComponent({
+        components: { ContextMenu },
+        setup: () => ({ menu }),
+        template:
+          '<button @contextmenu.prevent="menu?.show($event)">Target</button><ContextMenu ref="menu" :model="[{ label: \'Inspect\' }]" />'
+      })
+    )
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+    await user.pointer({
+      keys: '[MouseRight]',
+      target: screen.getByRole('button', { name: 'Target' })
+    })
+    const content = await screen.findByRole('menu')
+
+    expect(menu.value?.container?.$el).toHaveAttribute(
+      'data-reka-popper-content-wrapper'
+    )
+    expect(
+      [...content.classList].filter((name) => name.startsWith('max-h-'))
+    ).toHaveLength(1)
   })
 })
