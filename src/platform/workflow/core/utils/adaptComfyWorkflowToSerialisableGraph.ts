@@ -19,7 +19,6 @@ import type {
   WorkflowJSON04
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { toLinkId } from '@/types/linkId'
-import type { NodeProperty } from '@/types/nodeState'
 import { toRerouteId } from '@/types/rerouteId'
 import { zeroUuid } from '@/utils/uuid'
 
@@ -62,7 +61,7 @@ function adaptLegacyWorkflow(workflow: WorkflowJSON04): ISerialisedGraph {
     last_node_id: workflow.last_node_id,
     last_link_id: workflow.last_link_id,
     nodes: workflow.nodes.map(adaptNode),
-    links: workflow.links.map(adaptLegacyLink),
+    links: (workflow.links ?? []).map(adaptLegacyLink),
     floatingLinks: workflow.floatingLinks?.map(adaptLink),
     groups: (workflow.groups ?? []).map(adaptGroup),
     config: workflow.config ?? undefined,
@@ -180,46 +179,16 @@ function adaptNode(node: ComfyNode): ISerialisedNode {
       ...output,
       type: adaptSlotType(type)
     })),
-    properties: Object.fromEntries(
-      Object.entries(properties).map(([key, value]) => [
-        key,
-        adaptNodeProperty(value)
-      ])
-    ),
+    properties: (properties ?? {}) as ISerialisedNode['properties'],
     widgets_values: adaptWidgetValues(widgets_values)
   }
-}
-
-function adaptNodeProperty(value: unknown): NodeProperty | undefined {
-  if (
-    value === undefined ||
-    value === null ||
-    typeof value === 'string' ||
-    typeof value === 'number' ||
-    typeof value === 'boolean' ||
-    typeof value === 'object'
-  ) {
-    return value
-  }
-  throw new TypeError('Workflow node properties must be JSON values')
 }
 
 function adaptWidgetValues(
   values: ComfyNode['widgets_values']
 ): TWidgetValue[] | undefined {
   if (values === undefined || Array.isArray(values)) return values
-  if (typeof values.length !== 'number') return Object.values(values)
-  const length = values.length
-  const keys = Object.keys(values)
-  const hasIndexedEntry = keys.some((key) => {
-    const index = Number(key)
-    return String(index) === key && index >= 0 && index < length
-  })
-  if (!hasIndexedEntry && keys.some((key) => key !== 'length')) {
-    return Object.entries(values)
-      .filter(([key]) => key !== 'length')
-      .map(([, value]) => value)
-  }
+  const length = typeof values.length === 'number' ? values.length : 0
   return Array.from({ length }, (_, index) => values[index])
 }
 

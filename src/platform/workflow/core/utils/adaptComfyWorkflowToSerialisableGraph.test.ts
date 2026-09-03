@@ -114,8 +114,9 @@ describe('adaptComfyWorkflowToSerialisableGraph', () => {
           inputs: [{ name: 'input', type: ['MODEL', 'LATENT'] }],
           properties: {},
           widgets_values: {
-            ckpt_name: 'model.safetensors',
-            strength: 0.5
+            0: 'model.safetensors',
+            1: 0.5,
+            length: 2
           }
         }
       ],
@@ -148,16 +149,43 @@ describe('adaptComfyWorkflowToSerialisableGraph', () => {
       reroutes: [{ id: 5, pos: [60, 70], linkIds: [] }]
     })
 
-    const workflowWithNamedLength = structuredClone(workflow)
-    workflowWithNamedLength.nodes[0].widgets_values = {
-      length: 1,
+    const workflowWithKeyedValues = structuredClone(workflow)
+    workflowWithKeyedValues.nodes[0].widgets_values = {
       ckpt_name: 'model.safetensors'
     }
     expect(
-      adaptComfyWorkflowToSerialisableGraph(workflowWithNamedLength).nodes?.[0]
+      adaptComfyWorkflowToSerialisableGraph(workflowWithKeyedValues).nodes?.[0]
         ?.widgets_values
-    ).toEqual(['model.safetensors'])
+    ).toEqual([])
     expect(workflow.nodes[0].inputs?.[0].type).toEqual(['MODEL', 'LATENT'])
+  })
+
+  it('retains legacy tolerance for omitted links and node properties', () => {
+    const workflow: ComfyWorkflowJSON = {
+      version: 0.4,
+      last_node_id: 1,
+      last_link_id: 0,
+      nodes: [
+        {
+          id: 1,
+          type: 'TestNode',
+          pos: [0, 0],
+          size: [100, 100],
+          flags: {},
+          order: 0,
+          mode: 0,
+          properties: {}
+        }
+      ],
+      links: []
+    }
+    Reflect.deleteProperty(workflow, 'links')
+    Reflect.deleteProperty(workflow.nodes[0], 'properties')
+
+    expect(adaptComfyWorkflowToSerialisableGraph(workflow)).toMatchObject({
+      links: [],
+      nodes: [{ properties: {} }]
+    })
   })
 
   it('recursively adapts nested workflow data without mutating the input', () => {
