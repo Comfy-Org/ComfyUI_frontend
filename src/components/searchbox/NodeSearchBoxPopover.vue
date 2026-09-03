@@ -2,8 +2,9 @@
   <div>
     <Dialog :open="visible" @update:open="onOpenChange">
       <DialogPortal>
-        <DialogOverlay class="items-start" />
+        <DialogOverlay v-reka-z-index class="items-start" />
         <DialogContent
+          v-reka-z-index
           :class="
             cn(
               'top-1/4 translate-y-0 border-0 bg-transparent p-0 shadow-none duration-100',
@@ -52,6 +53,7 @@ import { storeToRefs } from 'pinia'
 import { computed, ref, toRaw, watch, watchEffect } from 'vue'
 
 import type { Point } from '@/lib/litegraph/src/interfaces'
+import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import Dialog from '@/components/ui/dialog/Dialog.vue'
 import DialogContent from '@/components/ui/dialog/DialogContent.vue'
 import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
