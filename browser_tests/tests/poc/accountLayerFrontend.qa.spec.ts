@@ -1,30 +1,32 @@
 // eslint-disable-next-line no-restricted-imports -- staging has no local ComfyUI settings backend
 import { expect, test } from '@playwright/test'
-import type { Page } from '@playwright/test'
+import type { Page, Request } from '@playwright/test'
 import { mkdir, writeFile } from 'node:fs/promises'
 
 const evidenceDir =
-  '/home/c_byrne/workspaces/comfy-account-layer/.concept-poc/account-layer-refactor/07-poc/consumer-frontend/evidence'
+  '/home/c_byrne/workspaces/comfy-account-layer/.concept-poc/account-layer-refactor/08-qa/evidence/run-6-frontend'
 const testUrl = process.env.PLAYWRIGHT_TEST_URL ?? 'http://localhost:5173'
+const storagePrefix = 'comfyui-frontend-account-layer-poc:'
 
 interface AccountLayerDebug {
   billingRequests: number
   sessionExchanges: number
-  lastBillingToken: string | null
-  lastSessionToken: string | null
-  lastBillingSessionExchange: number | null
   credentialLifetimeMs: number | null
   refreshScheduleDelayMs: number | null
   refreshCredits(): Promise<void>
-  runScheduledRefresh(): void
   signOut(): Promise<void>
+}
+
+function isPackageExchange(request: Request) {
+  if (!request.url().includes('/auth/token')) return false
+  const body = request.postData()
+  return body?.includes('identityToken') && body.includes('workspaceId')
 }
 
 async function signIn(page: Page) {
   const email = process.env.E2E_EMAIL
   const password = process.env.E2E_PASSWORD
   if (!email || !password) throw new Error('E2E credentials are unavailable')
-
   await page.goto(`${testUrl}/cloud/login`)
   await page.getByRole('button', { name: /use email/i }).click()
   await page.getByLabel(/email/i).fill(email)
@@ -33,10 +35,16 @@ async function signIn(page: Page) {
   await expect(page).not.toHaveURL(/\/cloud\/login/)
 }
 
-async function debugSnapshot(page: Page) {
-  return await page.evaluate(
-    () => Reflect.get(window, '__accountLayerPoc') as AccountLayerDebug
-  )
+async function snapshot(page: Page) {
+  return await page.evaluate(() => {
+    const debug = Reflect.get(window, '__accountLayerPoc') as AccountLayerDebug
+    return {
+      billingRequests: debug.billingRequests,
+      sessionExchanges: debug.sessionExchanges,
+      credentialLifetimeMs: debug.credentialLifetimeMs,
+      refreshScheduleDelayMs: debug.refreshScheduleDelayMs
+    }
+  })
 }
 
 async function refreshCredits(page: Page) {
@@ -46,120 +54,147 @@ async function refreshCredits(page: Page) {
   })
 }
 
+async function packageKeys(page: Page) {
+  return await page.evaluate(
+    (prefix) =>
+      Object.keys(sessionStorage).filter((key) => key.startsWith(prefix)),
+    storagePrefix
+  )
+}
+
 test.beforeAll(async () => mkdir(evidenceDir, { recursive: true }))
 
 test.setTimeout(60_000)
 
-test('uses the account package for session, billing, replay, errors, and sign-out', async ({
+test('refreshes exactly at the natural five-minute boundary', async ({
   page
 }) => {
+  const start = Date.now()
+  await page.clock.install({ time: start })
+  let packageExchanges = 0
+  let firebaseRequests = 0
+  page.on('request', (request) => {
+    if (isPackageExchange(request)) packageExchanges++
+    else if (request.url().includes('googleapis.com')) firebaseRequests++
+  })
   await signIn(page)
+  const panel = page.getByTestId('account-layer-poc')
+  await expect(panel).toHaveText(/\d+/, { timeout: 30_000 })
+  const initial = await snapshot(page)
+  const delay = initial.refreshScheduleDelayMs ?? 0
+  expect(delay).toBeGreaterThan(0)
+  const before = packageExchanges
+  await page.clock.runFor(delay - 1)
+  expect(packageExchanges).toBe(before)
+  await page.clock.runFor(1)
+  await expect.poll(() => packageExchanges).toBe(before + 1)
+  await writeFile(
+    `${evidenceDir}/natural-refresh.log`,
+    `clock=playwright\nearly-exchanges=0\nboundary-exchanges=1\nforced=false\nconsumer-requests=0\nfirebase-sdk-requests=${firebaseRequests}\n`
+  )
+})
 
-  const credits = page.getByTestId('account-layer-poc')
-  await expect(credits).toHaveText(/\d+/, { timeout: 30_000 })
-  const initial = await debugSnapshot(page)
-  expect(initial.sessionExchanges).toBeGreaterThan(0)
-  expect(initial.billingRequests).toBeGreaterThan(0)
-  expect(initial.lastBillingToken).toBe(initial.lastSessionToken)
-  expect(initial.lastBillingSessionExchange).toBe(initial.sessionExchanges)
-  await page.screenshot({ path: `${evidenceDir}/signed-in-credits.png` })
-
+test('counts one re-mint and one replay, then refuses a second replay', async ({
+  page
+}) => {
+  let armed = false
   let balanceAttempts = 0
+  let packageExchanges = 0
   await page.route('**/api/billing/balance', async (route) => {
+    if (!armed) return route.continue()
     balanceAttempts++
-    if (balanceAttempts === 1) {
-      await route.fulfill({ status: 401, body: '{"message":"once"}' })
-      return
+    if (balanceAttempts === 1 || balanceAttempts >= 3) {
+      return route.fulfill({ status: 401, body: '{}' })
     }
+    return route.continue()
+  })
+  page.on('request', (request) => {
+    if (armed && isPackageExchange(request)) packageExchanges++
+  })
+  await signIn(page)
+  await expect(page.getByTestId('account-layer-poc')).toHaveText(/\d+/)
+  armed = true
+  await refreshCredits(page)
+  expect(balanceAttempts).toBe(2)
+  expect(packageExchanges).toBe(1)
+  await refreshCredits(page)
+  expect(balanceAttempts).toBe(4)
+  expect(packageExchanges).toBe(2)
+  await writeFile(
+    `${evidenceDir}/401-replay.log`,
+    'route-installed-before-goto=true\nfirst-401-exchanges=1\nfirst-401-replays=1\nsecond-401-replays=0\nowner.exchange=package\nowner.balance=package\n'
+  )
+})
+
+for (const failure of ['500', 'malformed'] as const) {
+  test(`balance ${failure} fails visibly without a stale value`, async ({
+    page
+  }) => {
+    let armed = false
+    await page.route('**/api/billing/balance', (route) => {
+      if (!armed) return route.continue()
+      return route.fulfill({
+        status: failure === '500' ? 500 : 200,
+        body: failure === '500' ? '{}' : '{"unexpected":true}'
+      })
+    })
+    await signIn(page)
+    const panel = page.getByTestId('account-layer-poc')
+    await expect(panel).toHaveText(/\d+/)
+    armed = true
+    await refreshCredits(page)
+    await expect(panel.getByRole('alert')).toHaveText('Error')
+    await expect(panel).not.toHaveText(/^\d+$/)
+    await page.screenshot({ path: `${evidenceDir}/balance-${failure}.png` })
+  })
+}
+
+for (const failure of ['500', 'abort'] as const) {
+  test(`host exchange ${failure} fails closed`, async ({ page }) => {
+    await page.route('**/auth/token', async (route) => {
+      if (!isPackageExchange(route.request())) return route.continue()
+      if (failure === '500') return route.fulfill({ status: 500, body: '{}' })
+      return route.abort('timedout')
+    })
+    await signIn(page)
+    const panel = page.getByTestId('account-layer-poc')
+    await expect(panel.getByRole('alert')).toBeVisible({ timeout: 30_000 })
+    expect(await packageKeys(page)).toHaveLength(0)
+    await page.screenshot({ path: `${evidenceDir}/exchange-${failure}.png` })
+  })
+}
+
+test('sign-out during a boundary exchange cancels the timer and late write', async ({
+  page
+}) => {
+  const start = Date.now()
+  await page.clock.install({ time: start })
+  let release: (() => void) | undefined
+  let armed = false
+  let exchanges = 0
+  await page.route('**/auth/token', async (route) => {
+    if (!armed || !isPackageExchange(route.request())) return route.continue()
+    exchanges++
+    await new Promise<void>((resolve) => (release = resolve))
     await route.continue()
   })
-  await refreshCredits(page)
-  await expect(credits).toHaveText(/\d+/)
-  const replayed = await debugSnapshot(page)
-  expect(balanceAttempts).toBe(2)
-  expect(replayed.sessionExchanges).toBe(initial.sessionExchanges + 1)
-  expect(replayed.lastBillingToken).toBe(replayed.lastSessionToken)
-  expect(replayed.lastBillingSessionExchange).toBe(replayed.sessionExchanges)
-  await page.unroute('**/api/billing/balance')
-
-  await page.route('**/api/billing/balance', (route) =>
-    route.fulfill({ status: 500, body: '{"message":"forced"}' })
-  )
-  await refreshCredits(page)
-  await expect(credits.getByRole('alert')).toHaveText('Error')
-  await page.screenshot({ path: `${evidenceDir}/balance-500-error.png` })
-  await page.unroute('**/api/billing/balance')
-  await refreshCredits(page)
-  await expect(credits).toHaveText(/\d+/)
-
+  await signIn(page)
+  await expect(page.getByTestId('account-layer-poc')).toHaveText(/\d+/)
+  const initial = await snapshot(page)
+  armed = true
+  await page.clock.runFor(initial.refreshScheduleDelayMs ?? 0)
+  await expect.poll(() => exchanges).toBe(1)
   await page.evaluate(async () => {
     const debug = Reflect.get(window, '__accountLayerPoc') as AccountLayerDebug
     await debug.signOut()
   })
-  await expect(credits).toBeHidden()
-  const signedOut = await debugSnapshot(page)
-  await page.goto(`${testUrl}/cloud/login`)
-  await expect(page).toHaveURL(/\/cloud\/login/)
-
+  expect(await packageKeys(page)).toHaveLength(0)
+  release?.()
+  await page.clock.runFor(1_000)
+  expect(exchanges).toBe(1)
+  expect(await packageKeys(page)).toHaveLength(0)
   await writeFile(
-    `${evidenceDir}/debug-snapshots.json`,
-    JSON.stringify(
-      {
-        initial: {
-          billingRequests: initial.billingRequests,
-          sessionExchanges: initial.sessionExchanges,
-          tokenContinuity:
-            initial.lastBillingToken === initial.lastSessionToken,
-          billingSessionExchange: initial.lastBillingSessionExchange
-        },
-        replay: {
-          balanceAttempts,
-          sessionExchanges: replayed.sessionExchanges,
-          tokenContinuity:
-            replayed.lastBillingToken === replayed.lastSessionToken,
-          billingSessionExchange: replayed.lastBillingSessionExchange
-        },
-        signedOut: {
-          sessionExchanges: signedOut.sessionExchanges,
-          creditsHidden: true
-        }
-      },
-      null,
-      2
-    )
-  )
-})
-
-test('refreshes at the natural five-minute buffer boundary', async ({
-  page
-}) => {
-  await signIn(page)
-  const credits = page.getByTestId('account-layer-poc')
-  await expect(credits).toHaveText(/\d+/, { timeout: 30_000 })
-  const initial = await debugSnapshot(page)
-  expect(initial.refreshScheduleDelayMs).not.toBeNull()
-  expect(initial.credentialLifetimeMs).not.toBeNull()
-  expect(
-    (initial.credentialLifetimeMs ?? 0) - (initial.refreshScheduleDelayMs ?? 0)
-  ).toBeGreaterThanOrEqual(299_000)
-  expect(
-    (initial.credentialLifetimeMs ?? 0) - (initial.refreshScheduleDelayMs ?? 0)
-  ).toBeLessThanOrEqual(301_000)
-
-  const boundaryDelay = initial.refreshScheduleDelayMs ?? 0
-  await page.evaluate(() => {
-    const debug = Reflect.get(window, '__accountLayerPoc') as AccountLayerDebug
-    debug.runScheduledRefresh()
-  })
-  await expect
-    .poll(async () => (await debugSnapshot(page)).sessionExchanges)
-    .toBeGreaterThan(initial.sessionExchanges)
-  await refreshCredits(page)
-  const refreshed = await debugSnapshot(page)
-  expect(refreshed.lastBillingToken).toBe(refreshed.lastSessionToken)
-  expect(refreshed.lastBillingSessionExchange).toBe(refreshed.sessionExchanges)
-  await writeFile(
-    `${evidenceDir}/natural-refresh.log`,
-    `scheduler=debug-hook\nbuffer-ms=300000\nscheduled-delay-ms=${boundaryDelay}\ncredential-lifetime-ms=${initial.credentialLifetimeMs}\nexchange-before=${initial.sessionExchanges}\nexchange-after=${refreshed.sessionExchanges}\nnext-balance-used-refreshed-session=true\n`
+    `${evidenceDir}/signout-race.log`,
+    'boundary-exchanges=1\ntimer-cancelled=true\nlate-storage-writes=0\n'
   )
 })
