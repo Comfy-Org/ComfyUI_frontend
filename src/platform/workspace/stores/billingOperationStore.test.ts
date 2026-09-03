@@ -1455,6 +1455,7 @@ describe('billingOperationStore', () => {
           id: 'op-3ds',
           status: 'pending',
           authentication_state: 'failed_retryable',
+          payment_intent_client_secret: 'pi_secret_old',
           started_at: new Date().toISOString()
         })
         .mockResolvedValue({

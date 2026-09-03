@@ -46,7 +46,7 @@ const CHECKOUT_SUPERSEDED_REASON = 'checkout_superseded'
 // future Stripe status reports optimistically as processing, which the next
 // poll's own authentication_state corrects if that guess was wrong — unlike
 // an allowlist, where the same gap would report a live payment as failed.
-const UNADVANCED_INTENT_STATUSES: ReadonlySet<PaymentIntent.Status> = new Set([
+const UNMOVED_INTENT_STATUSES: ReadonlySet<PaymentIntent.Status> = new Set([
   'requires_payment_method',
   'requires_action',
   'canceled'
@@ -542,10 +542,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       }
       // With no action left to resume the call succeeds and changes nothing, so
       // an intent still sitting on its pre-challenge status has not paid.
-      if (
-        paymentIntent &&
-        UNADVANCED_INTENT_STATUSES.has(paymentIntent.status)
-      ) {
+      if (paymentIntent && UNMOVED_INTENT_STATUSES.has(paymentIntent.status)) {
         setAuthenticationFailed(
           opId,
           t('billingOperation.authenticationFailedDetail')
@@ -1133,6 +1130,9 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   // and a late success or failure still resolves normally. It only removes
   // the operation from the selectors a dialog reads, since whether the
   // customer wants to see it is a view concern — whether it is over is not.
+  // A server-side cancel (BE-10064/BE-11559) would let a dismissal actually
+  // end the operation instead of merely hiding it; call that here once it
+  // exists.
   function dismissOperation(opId: string) {
     updateOperation(opId, { dismissed: true })
   }
