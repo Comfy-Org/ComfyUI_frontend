@@ -127,12 +127,14 @@ describe('EcsFollowerAdapter integration', () => {
     expect(
       useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
     ).toMatchObject({ originNodeId: toNodeId(1), targetNodeId: toNodeId(2) })
-    expect(deleteLayouts).toHaveBeenCalledWith(
+    expect(deleteLayouts).not.toHaveBeenCalled()
+    expect(createLayout).toHaveBeenCalledOnce()
+    expect(createLayout).toHaveBeenCalledWith(
       scope,
-      [toNodeId(1)],
+      toNodeId(2),
+      expect.any(Object),
       expect.objectContaining({ opId: 'bootstrap' })
     )
-    expect(createLayout).toHaveBeenCalledTimes(2)
 
     adapter.destroy()
     follower.destroy()
