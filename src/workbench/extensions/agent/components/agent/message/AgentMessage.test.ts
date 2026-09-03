@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -310,11 +310,37 @@ describe('AgentMessage fallback content', () => {
       }
     })
 
-    expect(screen.getAllByTestId('tab-link')).toHaveLength(2)
-    expect(screen.getByText('workflow-1:First workflow')).toBeInTheDocument()
-    expect(screen.getByText('workflow-2:Second workflow')).toBeInTheDocument()
-    expect(screen.getByText('Saved locally')).toBeInTheDocument()
-    expect(screen.getByText('Could not publish')).toBeInTheDocument()
+    expect(
+      within(screen.getByRole('group')).getAllByTestId('tab-link')
+    ).toHaveLength(2)
+    expect(screen.getByRole('status')).toHaveTextContent('Saved locally')
+    expect(screen.getByRole('alert')).toHaveTextContent('Could not publish')
+  })
+
+  it('hides completed thinking when the response did not use tools', () => {
+    const message: AssistantMessage = {
+      ...thinkingMessage(),
+      streaming: false,
+      thinking: false,
+      parts: [
+        {
+          type: 'thinking',
+          text: 'Reasoning before the answer',
+          state: 'done'
+        },
+        { type: 'text', text: 'Finished without tools', state: 'done' }
+      ]
+    }
+
+    render(AgentMessage, {
+      props: { message },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.queryByText('Reasoning before the answer')
+    ).not.toBeInTheDocument()
+    expect(screen.getByText('Finished without tools')).toBeInTheDocument()
   })
 
   it('forwards feedback from a completed text response', async () => {

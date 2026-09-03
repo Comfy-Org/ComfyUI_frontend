@@ -26,7 +26,7 @@ const {
     routeHash: ref(''),
     routerPush: vi.fn(),
     routerReplace: vi.fn(),
-    routerHistory: { state: {} as Record<string, unknown> },
+    routerHistory: { state: {} },
     mockOpenWorkflow: vi.fn()
   }
 })

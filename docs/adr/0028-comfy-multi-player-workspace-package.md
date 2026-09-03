@@ -1,4 +1,4 @@
-# 27. Comfy Multi-Player Is a Frontend Workspace Package
+# 28. Comfy Multi-Player Is a Frontend Workspace Package
 
 Date: 2026-09-02
 

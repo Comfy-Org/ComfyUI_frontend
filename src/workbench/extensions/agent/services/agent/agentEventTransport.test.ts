@@ -16,7 +16,7 @@ import { createAssistantMessage } from './agentMessageParts'
 const fixtureText = import.meta.glob(
   '../../schemas/__fixtures__/agent/*.jsonl',
   { query: '?raw', import: 'default', eager: true }
-) as Record<string, string>
+)
 
 function fixtureFor(name: string): string {
   const path = Object.keys(fixtureText).find((p) => p.endsWith(`/${name}`))
@@ -94,10 +94,20 @@ function delta(text: string): AgentChatEvent {
   }
 }
 
-function activeTab(workflow_id: string, name?: string): AgentChatEvent {
+function activeTab(
+  workflow_id: string,
+  name?: string,
+  node_locator_id?: string
+): AgentChatEvent {
   return {
     type: 'agent_active_tab',
-    data: { workflow_id, name, message_id: 'm', thread_id: 't' }
+    data: {
+      workflow_id,
+      name,
+      node_locator_id,
+      message_id: 'm',
+      thread_id: 't'
+    }
   }
 }
 
@@ -383,10 +393,10 @@ describe('agentEventTransport settle lifecycle', () => {
     expect(toolParts(message)).toHaveLength(0)
   })
 
-  it('records an in-line tab link when the agent switches workflow tabs', () => {
+  it('records an explicitly targeted node link when the agent switches workflow tabs', () => {
     const message = drive([
       delta('opening it now'),
-      activeTab('wf-1', 'Portrait upscale'),
+      activeTab('wf-1', 'Portrait upscale', 'root-a:42'),
       delta('and here it is')
     ])
 
@@ -400,6 +410,7 @@ describe('agentEventTransport settle lifecycle', () => {
     expect(parts(message)[1]).toEqual({
       type: 'tabLink',
       workflowId: 'wf-1',
+      locatorId: 'root-a:42',
       name: 'Portrait upscale'
     })
   })
@@ -444,6 +455,20 @@ describe('agentEventTransport settle lifecycle', () => {
         part.type === 'tabLink' ? [part.workflowId] : []
       )
     ).toEqual(['wf-1'])
+  })
+
+  it('links distinct node targets within the same workflow', () => {
+    const message = drive([
+      activeTab('wf-1', 'First node', 'root-a:1'),
+      activeTab('wf-1', 'Second node', 'root-a:2'),
+      activeTab('wf-1', 'Second node', 'root-a:2')
+    ])
+
+    expect(
+      parts(message).flatMap((part) =>
+        part.type === 'tabLink' ? [part.locatorId] : []
+      )
+    ).toEqual(['root-a:1', 'root-a:2'])
   })
 
   it('links a tab again when the agent returns to it after switching away', () => {
