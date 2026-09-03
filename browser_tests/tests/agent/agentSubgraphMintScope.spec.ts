@@ -2,8 +2,7 @@ import { expect } from '@playwright/test'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 
-// Regression for #16611: a delete inside a subgraph must not mint a root-scope wire op.
-// Edits go through the layout store because UI-path deletes cannot see follower-only nodes yet (FE-1996).
+// Regression for #16611; edits drive the layout store because UI deletes cannot see follower-only nodes (FE-1996).
 
 interface LayoutStoreModule {
   layoutStore: {
