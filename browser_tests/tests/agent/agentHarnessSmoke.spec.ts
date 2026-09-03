@@ -40,23 +40,24 @@ test.describe('Agent harness smoke', { tag: '@agent-harness' }, () => {
     const panel = page.locator('#agent-panel-root')
     await expect(panel).toBeVisible()
 
-    await panel
-      .getByRole('textbox', { name: /^Describe ideas/ })
-      .fill(
-        `Reply with one short sentence acknowledging this session. Nonce: ${nonce}`
-      )
-    await panel.getByRole('button', { name: enMessages.agent.send }).click()
+    const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+    await composer.fill(
+      `Reply with one short sentence acknowledging this session. Nonce: ${nonce}`
+    )
+    // Enter submits the composer; the CRDT dev-panel chip overlaps the Send
+    // button under the harness and intercepts pointer clicks on it.
+    await composer.press('Enter')
 
-    // Streaming has finished when the Stop affordance is gone again; a real
-    // model turn can be slow, so the completion window is generous.
+    // The turn has started once assistant text renders (the Stop affordance
+    // is transient and a fast model turn can finish before it is observed);
+    // it has finished when Stop is gone again. A real model turn can be slow,
+    // so the completion window is generous.
+    const assistantText = panel.getByTestId('markdown-stream').last()
+    await expect(assistantText).toBeVisible({ timeout: 30_000 })
     const stopButton = panel.getByRole('button', {
       name: enMessages.agent.stop
     })
-    await expect(stopButton).toBeVisible({ timeout: 30_000 })
     await expect(stopButton).toBeHidden({ timeout: 150_000 })
-
-    const assistantText = panel.getByTestId('markdown-stream').last()
-    await expect(assistantText).toBeVisible({ timeout: 15_000 })
     await expect(assistantText).not.toHaveText('')
 
     await expect(panel.getByRole('alert')).toHaveCount(0)
