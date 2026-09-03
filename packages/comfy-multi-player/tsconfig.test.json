@@ -8,6 +8,6 @@
     "sourceMap": false,
     "types": ["node", "vitest/globals"]
   },
-  "include": ["src", "test/*.ts"],
+  "include": ["src", "test/**/*.ts"],
   "exclude": ["test/types"]
 }
