@@ -90,6 +90,14 @@ describe('widget value null contract', () => {
       expect(node.serialize().widgets_values).toEqual([null])
     })
 
+    it('mints null from a value JSON cannot represent as a number', () => {
+      // The scalar fast path skips the JSON round-trip, so the cases that
+      // depend on it — NaN and Infinity becoming null — have to stay on it.
+      const { node } = makeGraphWithWidget(Number.NaN)
+
+      expect(node.serialize().widgets_values).toEqual([null])
+    })
+
     it('still honours widget.serialize === false for a null value', () => {
       const { node } = makeGraphWithWidget(null)
       const dropped = node.addWidget('text', 'dropped', 'b', () => undefined)

@@ -81,6 +81,9 @@ function getFormAttrs(item: FormItem) {
         attrs['optionValue'] = 'value'
       }
       break
+    case 'password':
+      attrs['type'] = 'password'
+      break
   }
   return attrs
 }
