@@ -15,7 +15,7 @@ import type {
 
 export interface BillingCommands {
   start(): Promise<void>
-  subscribe(input: SubscribeRequest, intent?: string): Promise<void>
+  subscribe(input: SubscribeRequest): Promise<void>
   topUp(input: TopupRequest, intent?: string): Promise<void>
   resubscribe(input: ResubscribeRequest, intent?: string): Promise<void>
   cancelSubscription(input: CancelRequest, intent?: string): Promise<void>
@@ -67,15 +67,29 @@ export function createBillingCommands(options: {
   }
   return {
     async start() {
-      await poller.resume('subscribe')
+      const status = await options.client.getStatus()
+      if (!status.pending_billing_op_id) return
+      const kind =
+        status.pending_billing_op_type === 'topup' ? 'topup' : 'subscribe'
+      await follow(status.pending_billing_op_id, kind, status.action_url)
     },
-    async subscribe(input, intent = attemptIntent('subscribe')) {
+    async subscribe(input) {
       await singleFlight('subscribe', async () =>
-        options.client
-          .subscribe(input, intent)
-          .then((result) =>
-            follow(result.billing_op_id, 'subscribe', result.action_url)
+        options.client.subscribe(input).then(async (result) => {
+          if (result.status === 'subscribed') {
+            publish(
+              reduceBilling(state, { type: 'opStatus', status: 'succeeded' })
+            )
+            return
+          }
+          await follow(
+            result.billing_op_id,
+            'subscribe',
+            result.status === 'needs_payment_method'
+              ? result.payment_method_url
+              : undefined
           )
+        })
       )
     },
     async topUp(input, intent = input.idempotency_key) {

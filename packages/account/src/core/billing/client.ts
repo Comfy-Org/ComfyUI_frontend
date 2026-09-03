@@ -3,6 +3,7 @@ import type { AccountAbortSignal, TransportRequest } from '../index.js'
 import type {
   BillingApiClient,
   BillingOperationResponse,
+  BillingStatusResponse,
   BillingTransport,
   CancelRequest,
   CancelResponse,
@@ -22,6 +23,7 @@ export const billingPaths = {
   resubscribe: '/api/billing/subscription/resubscribe',
   cancel: '/api/billing/subscription/cancel',
   paymentPortal: '/api/billing/payment-portal',
+  status: '/api/billing/status',
   operation: (id: string) => `/api/billing/ops/${encodeURIComponent(id)}`
 } as const
 
@@ -34,14 +36,14 @@ async function request<T>(
   transport: BillingTransport,
   path: string,
   method: 'GET' | 'POST',
-  key: string,
+  key?: string,
   body?: unknown,
   signal: AccountAbortSignal = alive
 ) {
   const value: TransportRequest<unknown> = {
     method,
     path,
-    headers: { 'Idempotency-Key': key },
+    headers: key ? { 'Idempotency-Key': key } : {},
     ...(body === undefined ? {} : { body }),
     signal
   }
@@ -55,16 +57,12 @@ export function createBillingApiClient(
   transport: BillingTransport
 ): BillingApiClient {
   return {
-    subscribe: (
-      input: SubscribeRequest,
-      key: string,
-      signal?: AccountAbortSignal
-    ) =>
+    subscribe: (input: SubscribeRequest, signal?: AccountAbortSignal) =>
       request<SubscribeResponse>(
         transport,
         billingPaths.subscribe,
         'POST',
-        key,
+        undefined,
         input,
         signal
       ),
@@ -117,7 +115,16 @@ export function createBillingApiClient(
         transport,
         billingPaths.operation(id),
         'GET',
-        '',
+        undefined,
+        undefined,
+        signal
+      ),
+    getStatus: (signal?: AccountAbortSignal) =>
+      request<BillingStatusResponse>(
+        transport,
+        billingPaths.status,
+        'GET',
+        undefined,
         undefined,
         signal
       )

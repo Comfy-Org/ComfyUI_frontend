@@ -54,9 +54,11 @@ export interface BillingOperationRef {
   billing_op_id: string
   action_url?: string
 }
-export interface SubscribeResponse extends BillingOperationRef {
-  status?: string
-  session_id?: string
+export interface SubscribeResponse {
+  billing_op_id: string
+  status: 'subscribed' | 'needs_payment_method' | 'pending_payment'
+  payment_method_url?: string
+  effective_at?: string
 }
 export interface TopupResponse extends BillingOperationRef {
   status?: string
@@ -71,6 +73,11 @@ export interface CancelResponse {
 }
 export interface PaymentPortalResponse {
   url: string
+}
+export interface BillingStatusResponse {
+  pending_billing_op_id?: string
+  pending_billing_op_type?: 'subscription' | 'topup'
+  action_url?: string
 }
 export interface BillingOperationResponse {
   status: BillingOperationStatus
@@ -118,7 +125,6 @@ export interface BillingTransport {
 export interface BillingApiClient {
   subscribe(
     input: SubscribeRequest,
-    idempotencyKey: string,
     signal?: AccountAbortSignal
   ): Promise<SubscribeResponse>
   topup(
@@ -145,4 +151,5 @@ export interface BillingApiClient {
     id: string,
     signal?: AccountAbortSignal
   ): Promise<BillingOperationResponse>
+  getStatus(signal?: AccountAbortSignal): Promise<BillingStatusResponse>
 }

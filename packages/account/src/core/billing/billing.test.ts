@@ -18,24 +18,26 @@ import type {
 } from './types.js'
 
 describe('payments claims', () => {
-  it('TP-6 PM-8 PM-10 EC-P-1: routes subscribe through the transport with an idempotency header', async () => {
+  it('TP-6 PM-8 PM-10 EC-P-1: sends the production subscribe body without an idempotency header', async () => {
     const transport = vi.fn(async () => ({
       status: 200,
-      body: { billing_op_id: 'op' }
+      body: { billing_op_id: 'op', status: 'pending_payment' }
     }))
     const client = createBillingApiClient({ transport })
-    await client.subscribe(
-      {
-        plan_slug: 'pro',
-        return_url: 'https://host/ok',
-        cancel_url: 'https://host/no'
-      },
-      'intent-1'
-    )
+    await client.subscribe({
+      plan_slug: 'pro',
+      return_url: 'https://host/ok',
+      cancel_url: 'https://host/no'
+    })
     expect(transport).toHaveBeenCalledWith(
       expect.objectContaining({
         path: '/api/billing/subscribe',
-        headers: { 'Idempotency-Key': 'intent-1' }
+        headers: {},
+        body: {
+          plan_slug: 'pro',
+          return_url: 'https://host/ok',
+          cancel_url: 'https://host/no'
+        }
       })
     )
   })
@@ -142,13 +144,15 @@ describe('payments claims', () => {
       client: {
         subscribe: vi.fn(async () => ({
           billing_op_id: 'op',
-          action_url: 'https://checkout.example/test'
+          status: 'needs_payment_method' as const,
+          payment_method_url: 'https://checkout.example/test'
         })),
         topup: vi.fn(),
         resubscribe: vi.fn(),
         cancel: vi.fn(),
         paymentPortal: vi.fn(),
-        getOperation: vi.fn()
+        getOperation: vi.fn(),
+        getStatus: vi.fn()
       },
       ports: {
         openUrl,
@@ -172,7 +176,7 @@ describe('payments claims', () => {
     )
     expect(commands.getState().step).toBe('processing_error')
   })
-  it('uses a fresh intent for each billing attempt and preserves explicit resume intents', async () => {
+  it('uses fresh intents for mutation attempts while subscribe has no intent', async () => {
     const intents: string[] = []
     const recordIntent = (intent: string) => {
       intents.push(intent)
@@ -180,10 +184,10 @@ describe('payments claims', () => {
     }
     const commands = createBillingCommands({
       client: {
-        subscribe: vi.fn(async (_input, intent) => {
-          intents.push(intent)
-          return { billing_op_id: 'op' }
-        }),
+        subscribe: vi.fn(async () => ({
+          billing_op_id: 'op',
+          status: 'pending_payment' as const
+        })),
         topup: vi.fn(),
         resubscribe: vi.fn((_input, intent) => recordIntent(intent)),
         cancel: vi.fn((_input, intent) => recordIntent(intent)),
@@ -191,7 +195,8 @@ describe('payments claims', () => {
           intents.push(intent)
           return { url: 'https://billing.example/test' }
         }),
-        getOperation: vi.fn(async () => ({ status: 'succeeded' }))
+        getOperation: vi.fn(async () => ({ status: 'succeeded' })),
+        getStatus: vi.fn()
       },
       ports: {
         openUrl: vi.fn(async () => ({ opened: true })),
@@ -218,10 +223,45 @@ describe('payments claims', () => {
     await commands.cancelSubscription({})
     await commands.openPaymentPortal({ return_url: 'https://host/return' })
     await commands.openPaymentPortal({ return_url: 'https://host/return' })
-    await commands.subscribe(subscription, 'resume-intent')
+    expect(new Set(intents)).toHaveLength(6)
+  })
+  it('resumes the backend pending operation from billing status', async () => {
+    const openUrl = vi.fn(async () => ({ opened: true }))
+    const getOperation = vi.fn(async () => ({ status: 'succeeded' as const }))
+    const commands = createBillingCommands({
+      client: {
+        subscribe: vi.fn(),
+        topup: vi.fn(),
+        resubscribe: vi.fn(),
+        cancel: vi.fn(),
+        paymentPortal: vi.fn(),
+        getOperation,
+        getStatus: vi.fn(async () => ({
+          pending_billing_op_id: 'server-op',
+          pending_billing_op_type: 'subscription' as const,
+          action_url: 'https://checkout.example/resume'
+        }))
+      },
+      ports: {
+        openUrl,
+        clock: { now: () => 0, schedule: vi.fn(), cancel: vi.fn() },
+        operationStore: {
+          namespace: 'host',
+          getActiveId: async () => null,
+          setActiveId: async () => undefined,
+          clearActiveId: async () => undefined
+        }
+      }
+    })
 
-    expect(new Set(intents.slice(0, 8))).toHaveLength(8)
-    expect(intents.at(-1)).toBe('resume-intent')
+    await commands.start()
+
+    expect(openUrl).toHaveBeenCalledWith(
+      'https://checkout.example/resume',
+      'new_tab'
+    )
+    expect(getOperation).toHaveBeenCalledWith('server-op')
+    expect(commands.getState().step).toBe('success')
   })
   it('TP-7 TP-8 TP-9 TP-15 PM-9 EC-P-2 EC-P-3 EC-P-4: resumes durable polling and clears on success', async () => {
     const delays: number[] = []
