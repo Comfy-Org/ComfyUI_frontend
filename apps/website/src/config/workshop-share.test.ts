@@ -28,6 +28,14 @@ describe('share links for the prototype controls', () => {
     )
   })
 
+  it('carries the models listing so a link opens the browseable rows', () => {
+    expect(encodeShareSearch({ ...SHARE_DEFAULTS, listing: 'sections' })).toBe(
+      '?listing=sections'
+    )
+    expect(decodeShareSearch('?listing=sections').listing).toBe('sections')
+    expect(decodeShareSearch('?listing=nope').listing).toBeUndefined()
+  })
+
   it('leaves the subscription out of a signed-out link', () => {
     expect(encodeShareSearch({ ...SHARE_DEFAULTS, subscribed: false })).toBe('')
     expect(

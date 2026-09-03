@@ -18,12 +18,14 @@ import {
 } from '../../composables/useMockSession'
 import type {
   Entry,
+  Listing,
   ModelState,
   RunOutcome,
   Scope
 } from '../../composables/usePrototypeTweaks'
 import {
   ENTRIES,
+  LISTINGS,
   MODEL_STATES,
   OUTPUT_COUNTS,
   RUN_OUTCOMES,
@@ -45,8 +47,15 @@ const { locale = 'en', showRunControls = false } = defineProps<{
 
 const { session, signIn, signOut, setCredits, setSubscribed, setRole } =
   useMockSession()
-const { outcome, modelState, scope, entry, showStatuses, outputCount } =
-  usePrototypeTweaks()
+const {
+  outcome,
+  modelState,
+  scope,
+  entry,
+  listing,
+  showStatuses,
+  outputCount
+} = usePrototypeTweaks()
 
 const SESSION_CHOICES: readonly SessionChoice[] = [
   'signedOut',
@@ -79,6 +88,7 @@ onMounted(() => {
   const shared = decodeShareSearch(location.search)
   if (shared.scope) scope.value = shared.scope
   if (shared.entry) entry.value = shared.entry
+  if (shared.listing) listing.value = shared.listing
   if (shared.showStatuses !== undefined)
     showStatuses.value = shared.showStatuses
   if (shared.outcome) outcome.value = shared.outcome
@@ -99,6 +109,7 @@ const pageSearch = ref('')
 const shareState = computed<ShareState>(() => ({
   scope: scope.value,
   entry: entry.value,
+  listing: listing.value,
   showStatuses: showStatuses.value,
   session: sessionChoice.value,
   subscribed: account.value?.subscribed ?? true,
@@ -139,6 +150,10 @@ const scopeLabel: Record<Scope, TranslationKey> = {
 const entryLabel: Record<Entry, TranslationKey> = {
   workshop: 'workshop.proto.entry.workshop',
   hub: 'workshop.proto.entry.hub'
+}
+const listingLabel: Record<Listing, TranslationKey> = {
+  flat: 'workshop.proto.listing.flat',
+  sections: 'workshop.proto.listing.sections'
 }
 
 const outcomeLabel: Record<RunOutcome, TranslationKey> = {
@@ -232,6 +247,26 @@ const selectClass =
                 class="bg-primary-comfy-ink"
               >
                 {{ t(entryLabel[option], locale) }}
+              </option>
+            </select>
+          </label>
+
+          <label class="flex flex-col gap-1">
+            <span class="text-primary-warm-gray">
+              {{ t('workshop.proto.listing', locale) }}
+            </span>
+            <select
+              v-model="listing"
+              data-testid="tweak-listing"
+              :class="selectClass"
+            >
+              <option
+                v-for="option in LISTINGS"
+                :key="option"
+                :value="option"
+                class="bg-primary-comfy-ink"
+              >
+                {{ t(listingLabel[option], locale) }}
               </option>
             </select>
           </label>

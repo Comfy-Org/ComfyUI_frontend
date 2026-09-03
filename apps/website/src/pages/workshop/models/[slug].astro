@@ -138,17 +138,11 @@ const tags = [
         />
 
         <ul class="mt-2 flex flex-wrap items-center gap-2" data-testid="model-tags">
-          <li>
-            <span class={pillClass} data-testid="model-kind">{t('workshop.hub.tag.partnerNodes')}</span>
-          </li>
           {model.modality && (
             <li>
               <span class={pillClass}>{modalityLabel[model.modality]}</span>
             </li>
           )}
-          <li class="contents">
-            <ModelStatus status={model.status} variant="pill" client:load />
-          </li>
           {tags.map((tag) => (
             <li>
               <a

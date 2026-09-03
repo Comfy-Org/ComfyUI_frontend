@@ -429,7 +429,7 @@ export function modalityOf(
 }
 
 export interface WorkshopFilter {
-  readonly query: string
+  readonly query?: string
   readonly useCase?: UseCase | 'all'
   readonly providers?: readonly string[]
   readonly capabilities?: readonly string[]
@@ -471,7 +471,12 @@ export function parseCatalogSearch(search: string): WorkshopFilter {
 
 export function filterWorkshopModels(
   list: readonly WorkshopModel[],
-  { query, useCase = 'all', providers = [], capabilities = [] }: WorkshopFilter
+  {
+    query = '',
+    useCase = 'all',
+    providers = [],
+    capabilities = []
+  }: WorkshopFilter
 ): WorkshopModel[] {
   const needle = query.trim().toLowerCase()
   return list.filter(

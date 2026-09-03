@@ -29,6 +29,7 @@ import { t } from '../../i18n/translations'
 import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
+import WorkshopSections from './WorkshopSections.vue'
 
 const { models, locale = 'en' } = defineProps<{
   models: readonly WorkshopModel[]
@@ -40,11 +41,11 @@ const useCase = ref<UseCase | 'all'>('all')
 const capabilities = ref<string[]>([])
 const providers = ref<string[]>([])
 const sort = ref<SortOrder>('popular')
-const { showStatuses } = usePrototypeTweaks()
+const { showStatuses, listing } = usePrototypeTweaks()
 
 onMounted(() => {
   const initial = parseCatalogSearch(location.search)
-  query.value = initial.query
+  query.value = initial.query ?? ''
   useCase.value = initial.useCase ?? 'all'
   capabilities.value = [...(initial.capabilities ?? [])]
   providers.value = [...(initial.providers ?? [])]
@@ -103,6 +104,35 @@ const isFiltered = computed(
     capabilities.value.length + providers.value.length > 0
 )
 
+// Willie's browseable listing: rows per use case until the visitor narrows
+// down, then the flat grid takes over.
+const browsing = computed(
+  () =>
+    listing.value === 'sections' &&
+    query.value === '' &&
+    useCase.value === 'all' &&
+    capabilities.value.length + providers.value.length === 0
+)
+const inSection = computed(
+  () => listing.value === 'sections' && useCase.value !== 'all'
+)
+const sectionProviders = computed<FacetMenuOption[]>(() =>
+  countByFacet(
+    filterWorkshopModels(models, { useCase: useCase.value }),
+    'provider'
+  ).map((option) => ({ ...option, label: option.value }))
+)
+
+function openSection(value: UseCase) {
+  useCase.value = value
+}
+
+function toggleProvider(value: string) {
+  providers.value = providers.value.includes(value)
+    ? providers.value.filter((provider) => provider !== value)
+    : [value]
+}
+
 function clearFilters() {
   query.value = ''
   useCase.value = 'all'
@@ -116,6 +146,14 @@ const tabClass = (current: boolean) =>
     current
       ? 'border-primary-comfy-yellow text-primary-warm-white'
       : 'border-transparent text-primary-warm-gray hover:text-primary-warm-white'
+  )
+
+const chipClass = (active: boolean) =>
+  cn(
+    'focus-visible:ring-primary-comfy-yellow/50 inline-flex h-9 cursor-pointer items-center gap-2 rounded-2xl border px-4 text-sm transition-colors outline-none focus-visible:ring-3',
+    active
+      ? 'border-primary-comfy-yellow text-primary-warm-white'
+      : 'border-transparency-white-t20 text-primary-comfy-canvas hover:text-primary-warm-white'
   )
 
 const menuItemClass =
@@ -225,40 +263,80 @@ const menuItemClass =
       </div>
     </div>
 
-    <div v-if="visible.length">
-      <h2 id="workshop-models-heading" class="sr-only">
-        {{ t('workshop.models.heading', locale) }}
-      </h2>
-      <ul
-        class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
-        aria-labelledby="workshop-models-heading"
-        data-testid="workshop-models-grid"
-      >
-        <li v-for="model in visible" :key="model.slug">
-          <WorkshopModelCard :model :locale :show-status="showStatuses" />
-        </li>
-      </ul>
-    </div>
+    <WorkshopSections
+      v-if="browsing"
+      :models
+      :label-key="useCaseLabelKey"
+      :locale
+      :show-statuses="showStatuses"
+      @open="openSection"
+    />
 
-    <div
-      v-else
-      class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-transparency-white-t8 px-6 py-16 text-center"
-      data-testid="workshop-empty"
-    >
-      <p class="text-lg font-semibold text-primary-comfy-canvas">
-        {{ t('workshop.empty.heading', locale) }}
-      </p>
-      <p class="text-sm text-primary-warm-gray">
-        {{ t('workshop.empty.body', locale) }}
-      </p>
-      <Button
-        v-if="isFiltered"
-        variant="outline"
-        size="sm"
-        @click="clearFilters"
+    <template v-else>
+      <div
+        v-if="inSection"
+        class="mb-6 flex flex-wrap items-center gap-2"
+        data-testid="section-providers"
       >
-        {{ t('workshop.empty.clear', locale) }}
-      </Button>
-    </div>
+        <button
+          type="button"
+          :aria-pressed="providers.length === 0"
+          :class="chipClass(providers.length === 0)"
+          data-testid="section-provider-all"
+          @click="providers = []"
+        >
+          {{ t('workshop.sections.provider', locale) }}
+          <span class="tabular-nums opacity-60">{{ counts[useCase] }}</span>
+        </button>
+        <button
+          v-for="option in sectionProviders"
+          :key="option.value"
+          type="button"
+          :aria-pressed="providers.includes(option.value)"
+          :class="chipClass(providers.includes(option.value))"
+          :data-testid="`section-provider-${option.value}`"
+          @click="toggleProvider(option.value)"
+        >
+          {{ option.label }}
+          <span class="tabular-nums opacity-60">{{ option.count }}</span>
+        </button>
+      </div>
+
+      <div v-if="visible.length">
+        <h2 id="workshop-models-heading" class="sr-only">
+          {{ t('workshop.models.heading', locale) }}
+        </h2>
+        <ul
+          class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
+          aria-labelledby="workshop-models-heading"
+          data-testid="workshop-models-grid"
+        >
+          <li v-for="model in visible" :key="model.slug">
+            <WorkshopModelCard :model :locale :show-status="showStatuses" />
+          </li>
+        </ul>
+      </div>
+
+      <div
+        v-else
+        class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-transparency-white-t8 px-6 py-16 text-center"
+        data-testid="workshop-empty"
+      >
+        <p class="text-lg font-semibold text-primary-comfy-canvas">
+          {{ t('workshop.empty.heading', locale) }}
+        </p>
+        <p class="text-sm text-primary-warm-gray">
+          {{ t('workshop.empty.body', locale) }}
+        </p>
+        <Button
+          v-if="isFiltered"
+          variant="outline"
+          size="sm"
+          @click="clearFilters"
+        >
+          {{ t('workshop.empty.clear', locale) }}
+        </Button>
+      </div>
+    </template>
   </section>
 </template>

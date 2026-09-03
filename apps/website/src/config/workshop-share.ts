@@ -1,12 +1,14 @@
 import type { AccountKind } from '../composables/useMockSession'
 import type {
   Entry,
+  Listing,
   ModelState,
   RunOutcome,
   Scope
 } from '../composables/usePrototypeTweaks'
 import {
   ENTRIES,
+  LISTINGS,
   MODEL_STATES,
   OUTPUT_COUNTS,
   RUN_OUTCOMES,
@@ -21,6 +23,7 @@ type OutputCount = (typeof OUTPUT_COUNTS)[number]
 export interface ShareState {
   readonly scope: Scope
   readonly entry: Entry
+  readonly listing: Listing
   readonly showStatuses: boolean
   readonly session: SessionChoice
   readonly subscribed: boolean
@@ -34,6 +37,7 @@ export interface ShareState {
 export const SHARE_DEFAULTS: ShareState = {
   scope: 'v1',
   entry: 'workshop',
+  listing: 'flat',
   showStatuses: false,
   session: 'signedOut',
   subscribed: true,
@@ -54,6 +58,7 @@ const BALANCE_CHOICES: readonly BalanceChoice[] = ['normal', 'zero', 'low']
 const KEYS = {
   scope: 'scope',
   entry: 'entry',
+  listing: 'listing',
   showStatuses: 'statuses',
   session: 'session',
   subscribed: 'subscribed',
@@ -102,6 +107,7 @@ export function decodeShareSearch(search: string): Partial<ShareState> {
   const decoded: Partial<ShareState> = {
     scope: pick(SCOPES, params.get(KEYS.scope)),
     entry: pick(ENTRIES, params.get(KEYS.entry)),
+    listing: pick(LISTINGS, params.get(KEYS.listing)),
     showStatuses: pickFlag(params.get(KEYS.showStatuses)),
     session: pick(SESSION_CHOICES, params.get(KEYS.session)),
     subscribed: pickFlag(params.get(KEYS.subscribed)),

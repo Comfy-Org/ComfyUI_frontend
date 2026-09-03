@@ -32,13 +32,20 @@ type OutputCount = (typeof OUTPUT_COUNTS)[number]
 export const ENTRIES = ['workshop', 'hub'] as const
 export type Entry = (typeof ENTRIES)[number]
 
+// How the models catalog opens: the flat grid, or the browseable rows per use
+// case that Willie proposed after the dev-platform playground.
+export const LISTINGS = ['flat', 'sections'] as const
+export type Listing = (typeof LISTINGS)[number]
+
 const SCOPE_KEY = 'comfy-workshop-scope'
 const ENTRY_KEY = 'comfy-workshop-entry'
+const LISTING_KEY = 'comfy-workshop-listing'
 
 const outcome = ref<RunOutcome>('success')
 const modelState = ref<ModelState>('none')
 const scope = ref<Scope>('v1')
 const entry = ref<Entry>('workshop')
+const listing = ref<Listing>('flat')
 // Deprecated and degraded models are invented cases: hidden unless asked for.
 const showStatuses = ref(false)
 const outputCount = ref<OutputCount>(1)
@@ -56,6 +63,12 @@ function isEntry(value: unknown): value is Entry {
   )
 }
 
+function isListing(value: unknown): value is Listing {
+  return (
+    typeof value === 'string' && (LISTINGS as readonly string[]).includes(value)
+  )
+}
+
 function persist(key: string, value: string) {
   try {
     localStorage.setItem(key, value)
@@ -66,6 +79,7 @@ function persist(key: string, value: string) {
 
 watch(scope, (value) => persist(SCOPE_KEY, value))
 watch(entry, (value) => persist(ENTRY_KEY, value))
+watch(listing, (value) => persist(LISTING_KEY, value))
 
 // Shared across islands so the tweaks panel drives the whole prototype.
 export function usePrototypeTweaks() {
@@ -77,9 +91,19 @@ export function usePrototypeTweaks() {
       if (isScope(storedScope)) scope.value = storedScope
       const storedEntry = localStorage.getItem(ENTRY_KEY)
       if (isEntry(storedEntry)) entry.value = storedEntry
+      const storedListing = localStorage.getItem(LISTING_KEY)
+      if (isListing(storedListing)) listing.value = storedListing
     } catch {
       /* storage unavailable */
     }
   })
-  return { outcome, modelState, scope, entry, showStatuses, outputCount }
+  return {
+    outcome,
+    modelState,
+    scope,
+    entry,
+    listing,
+    showStatuses,
+    outputCount
+  }
 }

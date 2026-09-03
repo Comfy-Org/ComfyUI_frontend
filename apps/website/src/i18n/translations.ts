@@ -8411,6 +8411,25 @@ Enterprise`
   'workshop.task.video': { en: 'Video', 'zh-CN': '视频' },
   'workshop.task.audio': { en: 'Audio', 'zh-CN': '音频' },
   'workshop.models.heading': { en: 'Models', 'zh-CN': '模型' },
+  'workshop.proto.listing': { en: 'Models listing', 'zh-CN': '模型列表' },
+  'workshop.proto.listing.flat': {
+    en: 'V1 · Flat grid',
+    'zh-CN': 'V1 · 平铺网格'
+  },
+  'workshop.proto.listing.sections': {
+    en: 'V1.1 · Browse by category',
+    'zh-CN': 'V1.1 · 按类别浏览'
+  },
+  'workshop.sections.seeAll': { en: 'See all', 'zh-CN': '查看全部' },
+  'workshop.sections.provider': { en: 'All providers', 'zh-CN': '所有提供方' },
+  'workshop.sections.back': {
+    en: 'Back to all categories',
+    'zh-CN': '返回所有类别'
+  },
+  'workshop.sections.count': {
+    en: '{n} models',
+    'zh-CN': '{n} 个模型'
+  },
   'workshop.useCase.label': {
     en: 'Browse by use case',
     'zh-CN': '按用途浏览'

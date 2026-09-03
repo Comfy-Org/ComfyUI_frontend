@@ -32,7 +32,7 @@ const shown = computed(() =>
   <template v-if="shown">
     <span
       v-if="variant === 'pill'"
-      class="border-primary-comfy-orange/50 text-primary-comfy-orange rounded-2xl border px-3 py-1 text-[11px] font-bold tracking-wider uppercase"
+      class="border-primary-comfy-orange/50 text-primary-comfy-orange inline-flex h-6 items-center rounded-2xl border px-3 text-[11px] leading-none font-bold tracking-wider uppercase"
       data-testid="model-status"
     >
       {{
