@@ -41,7 +41,6 @@
  */
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -89,7 +88,7 @@ export function materializeMissingAdapters(
     if (!state) continue // store no longer has it (deleted later in the batch)
     if (state.graphId !== scope.owningGraphId) continue // lives in a different (sub)graph
 
-    const serialised = state.lastSerialization as ISerialisedNode | undefined
+    const serialised = state.lastSerialization
     if (!serialised) continue
 
     const node = LiteGraph.createNode(state.type, state.title)
