@@ -1776,6 +1776,78 @@ describe('AgentPanelRoot feedback capture', () => {
       [{ message_id: 'turn-9', vote: null, workflow_id: 'wf-rated' }]
     ])
   })
+
+  it('attributes the vote to the last tab the rated message linked', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    const store = useAgentConversationStore()
+    const turnId = 'turn-10' as TurnId
+    store.recordUser(turnId, 'make two cats')
+    store.startTurn(turnId)
+    for (const workflowId of ['wf-first', 'wf-last']) {
+      store.ingest(
+        zAgentWsEventForTest({
+          type: 'agent_active_tab',
+          data: {
+            workflow_id: workflowId,
+            message_id: 'turn-10',
+            thread_id: 'th'
+          }
+        })
+      )
+    }
+    store.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_delta',
+        data: { delta: 'Two cats', message_id: 'turn-10', thread_id: 'th' }
+      })
+    )
+    store.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_done',
+        data: { message_id: 'turn-10', thread_id: 'th', usage: null }
+      })
+    )
+    await nextTick()
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Helpful' })
+    )
+
+    expect(telemetry.trackAgentMessageFeedback.mock.calls).toEqual([
+      [{ message_id: 'turn-10', vote: 'up', workflow_id: 'wf-last' }]
+    ])
+  })
+
+  it('reports a null workflow when the rated message never linked a tab', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    const store = useAgentConversationStore()
+    const turnId = 'turn-11' as TurnId
+    store.recordUser(turnId, 'hello')
+    store.startTurn(turnId)
+    store.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_delta',
+        data: { delta: 'Hi there', message_id: 'turn-11', thread_id: 'th' }
+      })
+    )
+    store.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_done',
+        data: { message_id: 'turn-11', thread_id: 'th', usage: null }
+      })
+    )
+    await nextTick()
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Helpful' })
+    )
+
+    expect(telemetry.trackAgentMessageFeedback.mock.calls).toEqual([
+      [{ message_id: 'turn-11', vote: 'up', workflow_id: null }]
+    ])
+  })
 })
 
 describe('AgentPanelRoot lifecycle', () => {

@@ -560,7 +560,9 @@ const history = useAgentChatHistoryStore()
 const { copy } = useClipboard({ legacy: true })
 
 function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
-  const message = entries.value.find((entry) => entry.id === turnId)
+  const message = entries.value.find(
+    (entry) => entry.role === 'assistant' && entry.id === turnId
+  )
   const workflowId =
     message?.role === 'assistant'
       ? (message.parts
