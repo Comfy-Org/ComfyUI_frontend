@@ -36,8 +36,7 @@ export function usePackInstall(
     const isUnclaimedPack = installItem.publisher?.name === 'Unclaimed'
     const versionToInstall = isUnclaimedPack
       ? ('nightly' as ManagerComponents['schemas']['SelectedVersion'])
-      : (installItem.latest_version?.version ??
-        ('latest' as ManagerComponents['schemas']['SelectedVersion']))
+      : (installItem.latest_version?.version ?? 'latest')
 
     return {
       id: installItem.id,

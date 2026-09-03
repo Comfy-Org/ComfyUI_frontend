@@ -34,10 +34,6 @@
     "copy": "העתק",
     "copyMarkdown": "העתק כ-Markdown",
     "copyUnavailable": "בגרסה זו ניתן להעתיק רק את השיחה הנוכחית",
-    "crdtConnected": "מחובר",
-    "crdtDisconnected": "מנותק",
-    "crdtNoDocument": "אין מסמך",
-    "crdtStatus": "CRDT {connection} · {workflowId} · {updates} עדכונים · {frame}",
     "credits": "זיכויים",
     "delete": "מחק",
     "dismiss": "סגור",
@@ -125,11 +121,6 @@
     "toolSwitchedTabs": "הוחלפו לשוניות",
     "untitledChat": "ללא כותרת",
     "uploading": "מעלה"
-  },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "עלות להרצה",
-    "title": "צומת/צמתי API",
-    "totalCost": "עלות כוללת"
   },
   "apiNodesSignInDialog": {
     "message": "תהליך עבודה זה מכיל צמתי API, שדורשים שתהיה מחובר לחשבונך כדי להריץ אותם.",

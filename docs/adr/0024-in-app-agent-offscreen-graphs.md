@@ -17,14 +17,14 @@ targets or retain work for a target whose graph is not currently loaded.
 The missing abstraction is larger than an offscreen queue: a workflow graph needs to be
 a first-class domain document that exists independently of a tab and renderer. Activation
 then becomes an explicit binding between that document and the active canvas. This ADR is
-the self-contained frontend contract for target routing, document ownership, and lifecycle;
-its requirements do not depend on access to a separate program repository. Its
-target-routing and offscreen-queue rules align with the cross-repository contract recorded
-in the program repository's
-[ADR-015](https://github.com/christian-byrne/in-app-agent-program/blob/f3175059413d3ce4d22f53fc2b77107b475f9afb/decisions/ADR-015-target-graph-addressing-and-offscreen-queues.md).
-That ADR uses canonical wire `workflow_id` as the V1 agent frame target; this frontend ADR
-keeps a separately minted `document_id` for local document ownership and maps cloud-backed
-documents to their `workflow_id` explicitly.
+the self-contained frontend contract for target routing, document ownership, and lifecycle.
+Every remote mutation carries a canonical wire `workflow_id`; an unresolved target retains
+its target-scoped batch without falling back to the active graph, and queue drain preserves
+arrival order and the original operation stamps. Recovery is scoped to that same target.
+This reproduces the target-routing contract recorded in private program ADR-015 at commit
+`f3175059413d3ce4d22f53fc2b77107b475f9afb`. This frontend ADR keeps a separately minted
+`document_id` for local document ownership and maps cloud-backed documents to their
+`workflow_id` explicitly.
 
 The current `ChangeTracker` is important prior art. It stores serialized state during
 tab deactivation, allowing transient graph state to survive a tab switch, but its
@@ -376,7 +376,9 @@ document registry and target-aware tracker seam are the intended follow-up.
 - [Subgraph Boundaries and Widget Promotion](../architecture/subgraph-boundaries-and-promotion.md)
 - [PR #15721: graph-level atomicity audit](https://github.com/Comfy-Org/ComfyUI_frontend/pull/15721)
 - [PR #15421: canonical architecture knowledge and domain glossary](https://github.com/Comfy-Org/ComfyUI_frontend/pull/15421)
-- [Program ADR-015: target-graph addressing and offscreen queues](https://github.com/christian-byrne/in-app-agent-program/blob/main/decisions/ADR-015-target-graph-addressing-and-offscreen-queues.md)
+- Program ADR-015: target-graph addressing and offscreen queues (private provenance at
+  commit `f3175059413d3ce4d22f53fc2b77107b475f9afb`; applicable contract reproduced in
+  Context)
 
 ## Glossary
 

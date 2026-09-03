@@ -117,7 +117,7 @@ function makeScopedLayoutKey(
 function parseLayoutKey(key: string): { graphId: UUID; localId: string } {
   const separatorIndex = key.indexOf(':')
   return {
-    graphId: key.slice(0, separatorIndex) as UUID,
+    graphId: key.slice(0, separatorIndex),
     localId: key.slice(separatorIndex + 1)
   }
 }

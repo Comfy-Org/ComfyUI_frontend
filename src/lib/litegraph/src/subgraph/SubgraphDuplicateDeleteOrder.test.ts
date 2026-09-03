@@ -245,6 +245,33 @@ describe('duplicated subgraph deleted in both orders (I4)', () => {
     expect(promotedValueOf(second)).toBe(before)
   })
 
+  it('does not leak a discarded clipboard clone value into a later unrelated instance (#16250)', () => {
+    const rootGraph = createTestRootGraph()
+    registerTestSubgraphNodeTypes(rootGraph)
+    const definition = createSharedDefinition(rootGraph)
+
+    const original = instantiate(definition, rootGraph, 111)
+
+    // Simulate the clipboard's clone-and-discard: construct a clone (which
+    // runs constructor-time widget resolution while its id is still
+    // UNASSIGNED_NODE_ID), then drop it without ever calling graph.add().
+    const clone = original.clone()
+    expect(clone).not.toBeNull()
+
+    expect(
+      useWidgetValueStore().getWidget(
+        widgetId(rootGraph.id, UNASSIGNED_NODE_ID, PROMOTED_INPUT)
+      )
+    ).toBeUndefined()
+
+    // A later, unrelated instance with the same promoted input name/type
+    // must not inherit anything left behind by the discarded clone.
+    const unrelated = instantiate(definition, rootGraph, 555)
+
+    expect(promotedValueOf(unrelated)).toBe(555)
+    expect(promotedId(unrelated)).not.toBe(promotedId(original))
+  })
+
   it('keeps the shared definition only while a nested instance references it', () => {
     const { rootGraph, definition, instances } = buildScenario()
     const outer = rootGraph.createSubgraph(
