@@ -234,6 +234,13 @@ export class EcsFollowerAdapter {
     const links = [...session.links.keys()].flatMap((id) => {
       const link = readSemanticLink(session.follower.doc, id)
       return link &&
+        link.id >= 0 &&
+        link.originSlot >= 0 &&
+        link.originSlot < (link.originOutputs?.length ?? 0) &&
+        link.targetSlot >= 0 &&
+        link.targetSlot < (link.targetInputs?.length ?? 0) &&
+        !/^-\d+$/.test(String(link.originNodeId)) &&
+        !/^-\d+$/.test(String(link.targetNodeId)) &&
         nodeIds.has(String(link.originNodeId)) &&
         nodeIds.has(String(link.targetNodeId))
         ? [link]

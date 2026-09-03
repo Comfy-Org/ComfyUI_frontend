@@ -1,4 +1,9 @@
-import { applyOps, mint, nodesMap } from '@comfyorg/comfy-multi-player'
+import {
+  applyOps,
+  linksMap,
+  mint,
+  nodesMap
+} from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
@@ -611,21 +616,32 @@ describe('EcsFollowerAdapter integration', () => {
     host.destroy()
   })
 
-  it('projects baseline nodes while ignoring dangling links', () => {
+  it('projects baseline nodes and valid links while ignoring invalid links', () => {
     const host = mint(
       {
         nodes: [
           {
             id: 1,
             type: 'Source',
-            pos: [10, 20],
-            outputs: [{ name: 'out', type: 'IMAGE', links: [9] }]
+            outputs: [{ name: 'out', type: 'IMAGE', links: [9, 10] }]
+          },
+          {
+            id: 2,
+            type: 'Sink',
+            inputs: [{ name: 'in', type: 'IMAGE', link: 9 }],
+            outputs: []
           }
         ],
         links: [[9, 1, 0, 2, 0, 'IMAGE']]
       },
       catalog
     )
+    host.transact(() => {
+      const links = linksMap(host)
+      links.set('-1', [-1, 1, 0, 2, 0, 'IMAGE'])
+      links.set('10', [10, 1, 5, 2, 0, 'IMAGE'])
+      links.set('11', [11, -1, 0, 2, 0, 'IMAGE'])
+    })
     const follower = new FollowerDoc()
     follower.applyRemoteUpdate(Y.encodeStateAsUpdate(host))
     const adapter = new EcsFollowerAdapter(
@@ -646,8 +662,14 @@ describe('EcsFollowerAdapter integration', () => {
       useNodeDataStore()
         .getGraphNodesFor('root', 'root')
         .map(({ id }) => id)
-    ).toEqual([toNodeId(1)])
-    expect([...useLinkStore().graphTopologies(scope)]).toEqual([])
+    ).toEqual([toNodeId(1), toNodeId(2)])
+    expect([...useLinkStore().graphTopologies(scope)]).toEqual([
+      expect.objectContaining({
+        id: toLinkId(9),
+        originNodeId: toNodeId(1),
+        targetNodeId: toNodeId(2)
+      })
+    ])
 
     adapter.destroy()
     follower.destroy()
