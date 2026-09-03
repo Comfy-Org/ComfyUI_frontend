@@ -100,6 +100,32 @@ describe('Menu', () => {
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
   })
 
+  it('opens from a stopped pointer context-menu event', async () => {
+    const menu = ref<InstanceType<typeof ContextMenu>>()
+    const selected = ref(false)
+    render(
+      defineComponent({
+        components: { ContextMenu },
+        setup: () => ({ menu, selected }),
+        template:
+          '<button @contextmenu.prevent.stop="selected = true; menu?.show($event)">Widget</button><button v-if="selected">Selection tools</button><ContextMenu ref="menu" :model="[{ label: \'Inspect\' }]" />'
+      })
+    )
+    screen.getByRole('button', { name: 'Widget' }).dispatchEvent(
+      new PointerEvent('contextmenu', {
+        bubbles: true,
+        button: 2,
+        clientX: 100,
+        clientY: 120
+      })
+    )
+
+    expect(menu.value?.visible).toBe(true)
+    expect(
+      await screen.findByRole('menuitem', { name: 'Inspect' })
+    ).toBeVisible()
+  })
+
   it('closes a context menu without dispatching Escape', async () => {
     const onKeydown = vi.fn()
     document.addEventListener('keydown', onKeydown)
