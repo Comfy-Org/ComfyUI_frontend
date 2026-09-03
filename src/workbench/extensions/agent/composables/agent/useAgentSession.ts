@@ -38,6 +38,22 @@ export interface WorkflowTurnContext {
   tabPath: string
 }
 
+/**
+ * Which tab a turn belongs to, resolved once before prepare() and then handed
+ * to every post-await lookup. The three states are deliberately distinct:
+ *
+ * - omitted: resolve whatever tab is active right now. Only correct outside a
+ *   send, where there is nothing to pin to.
+ * - `null`: the send had no origin tab at all (panel detached, or no workflow
+ *   open when it started).
+ * - `{ tabPath }`: pin resolution to that tab.
+ *
+ * Collapsing `null` into the omitted case is what lets a detached send pick up
+ * whichever tab the user selects during prepare(), i.e. exactly the late
+ * binding this pin exists to remove.
+ */
+export type TurnOrigin = { tabPath: string } | null
+
 type PromptEditState =
   | { phase: 'idle' }
   | { phase: 'stopping'; turnId: TurnId }
@@ -47,16 +63,17 @@ export interface AgentSessionDeps {
   rest: AgentRestClient
   events: AgentEventSource
   workflow?: {
-    // originTabPath, when given, pins resolution to the tab that initiated
-    // the send instead of whatever tab is active when this is called - it
-    // is read after prepare() so cloud ids it resolves are fresh, but must
-    // still describe the pre-await originating tab, not a later switch.
-    current(originTabPath?: string): WorkflowTurnContext | undefined
+    // origin, when given, pins resolution to the tab that initiated the send
+    // instead of whatever tab is active when this is called - it is read
+    // after prepare() so cloud ids it resolves are fresh, but must still
+    // describe the pre-await originating tab, not a later switch. See
+    // TurnOrigin for why "no origin tab" is a value rather than an omission.
+    current(origin?: TurnOrigin): WorkflowTurnContext | undefined
     adopted(workflowId: string, sent: WorkflowTurnContext | undefined): void
     prepare?(): Promise<void>
-    tabs?(originTabPath?: string): OpenTabsSnapshot | undefined
+    tabs?(origin?: TurnOrigin): OpenTabsSnapshot | undefined
     activeTab?(data: AgentActiveTabData): void
-    draft?(originTabPath?: string): DraftSnapshot | undefined
+    draft?(origin?: TurnOrigin): DraftSnapshot | undefined
   }
 }
 
@@ -211,7 +228,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
     // pending must not reattribute this send to the newly active tab. The id
     // lookups themselves stay post-await (prepare() is what warms them), but
     // pinned to this originating path rather than whatever is active later.
-    const originTabPath = workflow?.current()?.tabPath
+    // A send that starts with no origin tab must stay that way: `null` is not
+    // "resolve the active tab", or re-attaching during prepare() reattributes
+    // the turn to the tab selected afterwards.
+    const originContext = workflow?.current()
+    const origin: TurnOrigin =
+      originContext === undefined ? null : { tabPath: originContext.tabPath }
     // The ack does not say whether the server minted a workflow or echoed
     // the thread's existing one; an unbound tab may only adopt an id the
     // session was not already bound to before this turn.
@@ -221,10 +243,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
         workflow.prepare().catch(() => undefined),
         new Promise<void>((resolve) => setTimeout(resolve, PREPARE_TIMEOUT_MS))
       ])
-    const wfContext = workflow?.current(originTabPath)
-    const tabs = workflow?.tabs?.(originTabPath)
+    const wfContext = workflow?.current(origin)
+    const tabs = workflow?.tabs?.(origin)
     async function postTurn(threadId: string) {
-      const draft = workflow?.draft?.(originTabPath)
+      const draft = workflow?.draft?.(origin)
       // An unsaved tab now yields a context carrying only its tabPath, so a
       // merely-defined wfContext no longer implies the tab has a workflow the
       // thread could own. An existing thread takes a draft only from a tab
