@@ -210,14 +210,51 @@ describe(useWorkflowShareService, () => {
       name: 'Published title',
       description: 'A cool workflow',
       tags: ['Art', 'Upscale'],
-      models: ['SDXL'],
-      customNodes: ['Impact Pack'],
+      models: ['sdxl'],
+      customNodes: ['impact-pack'],
       thumbnailType: 'imageComparison',
       sampleImageUrls: ['https://example.com/img1.png'],
       tutorialUrl: 'https://youtube.com/abc',
       metadata: { extra: 'value' }
     })
     expect(mockFetchApi).toHaveBeenNthCalledWith(2, '/hub/workflows/wf-prefill')
+  })
+
+  it('omits empty metadata from prefill', async () => {
+    mockFetchApi.mockImplementation(async (path: string) => {
+      if (path === '/userdata/wf-empty-meta/publish') {
+        return mockJsonResponse({
+          workflow_id: 'wf-empty-meta',
+          share_id: 'wf-empty-meta',
+          publish_time: '2026-02-23T00:00:00Z',
+          listed: true
+        })
+      }
+
+      if (path === '/hub/workflows/wf-empty-meta') {
+        const detail = {
+          share_id: 'wf-empty-meta',
+          workflow_id: 'wf-empty-meta',
+          name: 'Title only',
+          status: 'approved',
+          is_app: false,
+          metadata: {},
+          workflow_json: {},
+          assets: [],
+          profile: { username: 'builder' }
+        } satisfies HubWorkflowDetail
+
+        return mockJsonResponse(detail)
+      }
+
+      return mockJsonResponse({}, false, 404)
+    })
+
+    const service = useWorkflowShareService()
+    const status = await service.getPublishStatus('wf-empty-meta')
+
+    expect(status.prefill?.name).toBe('Title only')
+    expect(status.prefill?.metadata).toBeUndefined()
   })
 
   it('rejects hub workflow details that violate the generated contract', async () => {
