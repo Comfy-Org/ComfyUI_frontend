@@ -1,6 +1,24 @@
 import { test as base } from '@playwright/test'
 import type { WebSocketRoute } from '@playwright/test'
 
+import type { ClientDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
+
+type SubscriptionFrame = Extract<
+  ClientDocFrame,
+  { type: 'doc_subscribe' | 'doc_unsubscribe' }
+>
+
+export function countDocFrames(
+  messages: string[],
+  type: SubscriptionFrame['type'],
+  workflowId: string
+): number {
+  return messages.filter((message) => {
+    const frame = JSON.parse(message) as ClientDocFrame
+    return frame.type === type && frame.data.workflow_id === workflowId
+  }).length
+}
+
 function createWebSocketRouteHandler(
   connectWebSocketToServer: boolean,
   onRouted: (ws: WebSocketRoute, server: WebSocketRoute | null) => void

@@ -4,7 +4,7 @@ import { expect, mergeTests } from '@playwright/test'
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
-import { webSocketFixture } from '@e2e/fixtures/ws'
+import { countDocFrames, webSocketFixture } from '@e2e/fixtures/ws'
 import type { WorkspaceStore } from '@e2e/types/globals'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -16,20 +16,6 @@ const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
 
 function pushEvent(ws: WebSocketRoute, event: AgentWsEvent): void {
   ws.send(JSON.stringify(event))
-}
-
-function docFrameCount(
-  messages: string[],
-  type: 'doc_subscribe' | 'doc_unsubscribe',
-  workflowId: string
-): number {
-  return messages.filter((message) => {
-    const frame = JSON.parse(message) as {
-      type?: string
-      data?: { workflow_id?: string }
-    }
-    return frame.type === type && frame.data?.workflow_id === workflowId
-  }).length
 }
 
 async function activeWorkflowPath(page: Page) {
@@ -79,7 +65,9 @@ test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
     })
 
     await expect
-      .poll(() => docFrameCount(webSocketMessages, 'doc_subscribe', workflowId))
+      .poll(() =>
+        countDocFrames(webSocketMessages, 'doc_subscribe', workflowId)
+      )
       .toBe(1)
     ws.send(
       JSON.stringify({
@@ -117,7 +105,9 @@ test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
     await waitForCloudApp(page)
     await expect(page.locator('#agent-panel-root')).toBeVisible()
     await expect
-      .poll(() => docFrameCount(webSocketMessages, 'doc_subscribe', workflowId))
+      .poll(() =>
+        countDocFrames(webSocketMessages, 'doc_subscribe', workflowId)
+      )
       .toBe(2)
 
     const recordAfterReload = await page.evaluate(() =>
@@ -132,7 +122,7 @@ test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
     )
     await expect
       .poll(() =>
-        docFrameCount(webSocketMessages, 'doc_unsubscribe', workflowId)
+        countDocFrames(webSocketMessages, 'doc_unsubscribe', workflowId)
       )
       .toBe(1)
   })

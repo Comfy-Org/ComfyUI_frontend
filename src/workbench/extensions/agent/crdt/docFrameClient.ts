@@ -85,6 +85,29 @@ export type ServerDocFrame =
   | { type: 'doc_reset'; data: DocReset }
   | { type: 'awareness'; data: DocAwareness }
 
+export type ClientDocFrame =
+  | {
+      type: 'doc_subscribe'
+      data: {
+        v: typeof DOC_PROTOCOL_VERSION
+        workflow_id: string
+        state_vector_b64: string
+      }
+    }
+  | {
+      type: 'doc_unsubscribe'
+      data: { v: typeof DOC_PROTOCOL_VERSION; workflow_id: string }
+    }
+  | {
+      type: 'doc_ops'
+      data: {
+        v: typeof DOC_PROTOCOL_VERSION
+        workflow_id: string
+        tab: string
+        ops: DocOp[] | Op[]
+      }
+    }
+
 export interface DocFrameTransport {
   /**
    * Best-effort send. Returns `true` when the frame left the transport and
@@ -417,28 +440,34 @@ export class DocFrameClient extends EventTarget {
 
   /** @returns whether the subscribe frame actually left the transport. */
   subscribe(workflowId: string, stateVector: Uint8Array): boolean {
-    return this.send('doc_subscribe', {
-      v: DOC_PROTOCOL_VERSION,
-      workflow_id: workflowId,
-      state_vector_b64: encodeBase64(stateVector)
+    return this.send({
+      type: 'doc_subscribe',
+      data: {
+        v: DOC_PROTOCOL_VERSION,
+        workflow_id: workflowId,
+        state_vector_b64: encodeBase64(stateVector)
+      }
     })
   }
 
   /** @returns whether the unsubscribe frame actually left the transport. */
   unsubscribe(workflowId: string): boolean {
-    return this.send('doc_unsubscribe', {
-      v: DOC_PROTOCOL_VERSION,
-      workflow_id: workflowId
+    return this.send({
+      type: 'doc_unsubscribe',
+      data: { v: DOC_PROTOCOL_VERSION, workflow_id: workflowId }
     })
   }
 
   /** @returns whether the ops frame actually left the transport. */
   sendOps(workflowId: string, tab: string, ops: DocOp[] | Op[]): boolean {
-    return this.send('doc_ops', {
-      v: DOC_PROTOCOL_VERSION,
-      workflow_id: workflowId,
-      tab,
-      ops
+    return this.send({
+      type: 'doc_ops',
+      data: {
+        v: DOC_PROTOCOL_VERSION,
+        workflow_id: workflowId,
+        tab,
+        ops
+      }
     })
   }
 
@@ -448,7 +477,7 @@ export class DocFrameClient extends EventTarget {
     this.listeners.clear()
   }
 
-  private send(type: string, data: Record<string, unknown>): boolean {
-    return this.transport.send(JSON.stringify({ type, data }))
+  private send(frame: ClientDocFrame): boolean {
+    return this.transport.send(JSON.stringify(frame))
   }
 }
