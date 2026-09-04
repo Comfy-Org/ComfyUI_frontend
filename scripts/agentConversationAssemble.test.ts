@@ -576,7 +576,10 @@ describe('assembleConversation', () => {
       assembleConversation(
         input({
           raw: raw({
-            frames: [turnFrame('agent_ask', {}, 1_700_000_000_050), ...frames()]
+            frames: [
+              turnFrame('agent_not_a_frame', {}, 1_700_000_000_050),
+              ...frames()
+            ]
           })
         })
       )
