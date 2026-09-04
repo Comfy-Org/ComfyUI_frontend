@@ -68,12 +68,6 @@
               "
             >
               <ActionBarButtons />
-              <!-- Support for legacy topbar elements attached by custom scripts, hidden if no elements present -->
-              <div
-                ref="legacyCommandsContainerRef"
-                data-testid="legacy-topbar-container"
-                class="[&:not(:has(*>*:not(:empty)))]:hidden"
-              ></div>
 
               <ComfyActionbar
                 :docked-progress-container="actionbarCardRef"
@@ -164,9 +158,9 @@
 </template>
 
 <script setup lang="ts">
-import { useLocalStorage, useMutationObserver } from '@vueuse/core'
+import { useLocalStorage } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
@@ -188,7 +182,6 @@ import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import FreeTierQuota from '@/platform/cloud/subscription/components/FreeTierQuota.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
-import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useActionBarButtonStore } from '@/stores/actionBarButtonStore'
@@ -243,7 +236,6 @@ const isActionbarFloating = computed(
  */
 const hasDockedButtons = computed(() => {
   if (actionBarButtonStore.buttons.length > 0) return true
-  if (hasLegacyContent.value) return true
   if (!isIntegratedTabBar.value) return true
   if (isCloud && flags.workflowSharingEnabled) return true
   if (!isRightSidePanelOpen.value) return true
@@ -320,51 +312,6 @@ function openRightSidePanel() {
   })
   rightSidePanelStore.togglePanel()
 }
-
-// Maintain support for legacy topbar elements attached by custom scripts
-const legacyCommandsContainerRef = ref<HTMLElement>()
-const hasLegacyContent = ref(false)
-let legacyContentCheckRafId: number | null = null
-
-function checkLegacyContent() {
-  const el = legacyCommandsContainerRef.value
-  if (!el) {
-    hasLegacyContent.value = false
-    return
-  }
-  // Mirror the CSS: [&:not(:has(*>*:not(:empty)))]:hidden
-  hasLegacyContent.value =
-    el.querySelector(':scope > * > *:not(:empty)') !== null
-}
-
-function scheduleLegacyContentCheck() {
-  if (legacyContentCheckRafId !== null) return
-
-  legacyContentCheckRafId = requestAnimationFrame(() => {
-    legacyContentCheckRafId = null
-    checkLegacyContent()
-  })
-}
-
-useMutationObserver(legacyCommandsContainerRef, scheduleLegacyContentCheck, {
-  childList: true,
-  subtree: true
-})
-
-onMounted(() => {
-  if (legacyCommandsContainerRef.value) {
-    app.menu.element.style.width = 'fit-content'
-    legacyCommandsContainerRef.value.appendChild(app.menu.element)
-    checkLegacyContent()
-  }
-})
-
-onBeforeUnmount(() => {
-  if (legacyContentCheckRafId === null) return
-
-  cancelAnimationFrame(legacyContentCheckRafId)
-  legacyContentCheckRafId = null
-})
 
 const openCustomNodeManager = async () => {
   if (isCloud) {
