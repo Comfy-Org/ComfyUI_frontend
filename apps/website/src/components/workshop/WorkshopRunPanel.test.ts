@@ -24,6 +24,11 @@ vi.mock('../../scripts/posthog', async () => {
   return { useWorkshopAuthFlag: () => flag }
 })
 
+const refreshCredits = vi.hoisted(() => vi.fn(async () => {}))
+vi.mock('../../config/workshop-credits', () => ({
+  refreshWorkshopCredits: refreshCredits
+}))
+
 vi.mock('../../config/workshop-session-state', async () => {
   const { computed, ref } = await import('vue')
   const user = ref<{ uid: string } | null>(null)
@@ -141,6 +146,8 @@ describe('WorkshopRunPanel', () => {
     // The values in the form are what actually got sent.
     const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
     expect(init.body).toBe('{"prompt":"a cat"}')
+    // A finished run re-reads the balance so the chip reflects the spend.
+    expect(refreshCredits).toHaveBeenCalled()
   })
 
   it('explains a rejected key instead of showing the raw failure', async () => {

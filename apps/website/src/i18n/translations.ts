@@ -318,6 +318,26 @@ const translations = {
     en: 'Starting your session…',
     'zh-CN': '正在启动会话…'
   },
+  'auth.header.signIn': {
+    en: 'Sign in',
+    'zh-CN': '登录'
+  },
+  'auth.header.account': {
+    en: 'Account',
+    'zh-CN': '账户'
+  },
+  'auth.header.credits': {
+    en: 'credits',
+    'zh-CN': '积分'
+  },
+  'auth.header.sessionRetry': {
+    en: 'Session error — retry',
+    'zh-CN': '会话错误 — 重试'
+  },
+  'auth.header.balanceError': {
+    en: 'Balance unavailable right now.',
+    'zh-CN': '暂时无法获取余额。'
+  },
 
   // Tags (global, reusable across sections)
   'tags.partnerNodes': {

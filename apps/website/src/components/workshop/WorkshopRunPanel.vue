@@ -7,6 +7,7 @@ import type {
   WorkshopFormValues
 } from '../../config/workshop-detail'
 import { useWorkshopCredentials } from '../../config/workshop-credentials-state'
+import { refreshWorkshopCredits } from '../../config/workshop-credits'
 import { WORKSHOP_ROUTER_BASE_URL } from '../../config/workshop-env'
 import type {
   WorkshopRunErrorType,
@@ -171,6 +172,8 @@ async function run() {
     if (outcome.status === 'ok') {
       mediaUrls.value = extractMediaUrls(outcome.output)
     }
+    // A finished run changed the balance; the chip should say so.
+    void refreshWorkshopCredits()
   } finally {
     window.clearTimeout(timeout)
     if (ticker !== undefined) window.clearInterval(ticker)
