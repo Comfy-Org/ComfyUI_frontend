@@ -1,6 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 
@@ -25,6 +26,8 @@ import { useAgentConversationStore } from '../../stores/agent/agentConversationS
 import type { SelectedNode } from './useCanvasSelection'
 import type { AgentEventSource } from './useAgentSession'
 import { useAgentSession } from './useAgentSession'
+
+vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
 
 function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
   const base: AgentRestClient = {
@@ -169,6 +172,7 @@ describe('useAgentSession (v1 composition root)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
+    vi.mocked(reportError).mockClear()
   })
 
   it('(a) posts to new, adopts ids, records the user turn, and renders a settled reply', async () => {
@@ -450,6 +454,7 @@ describe('useAgentSession (v1 composition root)', () => {
 
     await session.answerAsk('turn-1:call-1', 'cancel')
 
+    expect(reportError).not.toHaveBeenCalled()
     expect(session.notices.value).toEqual([])
     expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
     expect(
@@ -474,6 +479,9 @@ describe('useAgentSession (v1 composition root)', () => {
 
     await session.answerAsk('turn-1:call-1', 'run')
 
+    expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+      errorType: 'agent_ask_answer_failed'
+    })
     expect(session.notices.value).toEqual([
       { level: 'error', text: 'backend blip' }
     ])
