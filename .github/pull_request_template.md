@@ -15,10 +15,10 @@
 ## Feature flag
 
 <!--
-For risk:high and risk:xhigh Cloud runtime changes, leave this blank when the
-flag is evident from the diff. The reviewing agent will ask for the key when it
-cannot identify exactly one flag. An exception needs the flag-exempt label
-applied by a comfy_frontend_devs reviewer.
+Required for risk:high and risk:xhigh Cloud runtime changes. The author must
+provide the exact rollout flag key; reviewing agents derive all other evidence.
+An exception needs the flag-exempt label applied by a comfy_frontend_devs
+reviewer.
 -->
 
 - **Flag**:

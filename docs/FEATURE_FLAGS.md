@@ -298,14 +298,13 @@ production cohort when the PR merges.
 control and does not satisfy this policy.
 
 The merge gate determines runtime scope from the changed files and the classes
-in `.github/risk.json`; the PR author's **Cloud runtime change** answer is
-reviewer context, not a bypass. Files classified only as `risk-map`,
-`codeowners`, `ci`, `deps`, `build-config`, `website`, `docs`, `i18n-copy`,
-`storybook`, or `tests` are outside this feature-flag gate.
+in `.github/risk.json`. Files classified only as `risk-map`, `codeowners`, `ci`,
+`deps`, `build-config`, `website`, `docs`, `i18n-copy`, `storybook`, or `tests`
+are outside this feature-flag gate.
 
-For an in-scope change, the PR template exposes only **Flag**. Leave it blank
-when the flag is evident from the diff. The reviewing agent infers it when
-possible and asks the author for the key when it cannot identify exactly one.
+For an in-scope change, the PR template requires only **Flag**. The author must
+provide the exact rollout key; reviewing agents derive all other evidence and
+must not infer or replace the flag.
 
 The reviewing agent derives the remaining evidence from the diff, repository,
 and configured source-of-truth tools such as the PostHog feature flag MCP:
