@@ -184,7 +184,7 @@ export async function runMissingModelPipeline({
     }
 
     if (!isCloud) {
-      if (!confirmedCandidates.length) {
+      if (!confirmedCandidates.length && !hasPendingVerification) {
         clearMissingModels(activeWf, silent)
         return { missingModels, confirmedCandidates }
       }
@@ -203,8 +203,8 @@ export async function runMissingModelPipeline({
         })
         .finally(() => {
           if (controller.signal.aborted) return
-          const confirmedAfterFolderPaths = enrichedCandidates.filter(
-            (c) => c.isMissing === true
+          const confirmedAfterFolderPaths = enrichedCandidates.filter((c) =>
+            isMissingCandidateActive(graph, c)
           )
           useExecutionErrorStore().surfaceMissingModels(
             confirmedAfterFolderPaths,

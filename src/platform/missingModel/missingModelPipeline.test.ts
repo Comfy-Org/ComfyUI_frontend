@@ -198,7 +198,11 @@ describe('missingModelPipeline', () => {
         )
       }
     )
-    mockHandles.isMissingCandidateActive.mockReturnValue(true)
+    mockHandles.isMissingCandidateActive.mockImplementation(
+      (graph: LGraph, candidate: MissingModelCandidate) =>
+        candidate.isMissing === true &&
+        mockHandles.isCandidateScopeActive(graph, candidate)
+    )
   })
 
   describe('refreshMissingModelPipeline', () => {
@@ -362,6 +366,67 @@ describe('missingModelPipeline', () => {
   })
 
   describe('runMissingModelPipeline', () => {
+    it('fetches folder paths for a remote-only pending candidate and surfaces it once verified', async () => {
+      const remoteCandidate = {
+        nodeType: 'RemoteFileNode',
+        widgetName: 'file_name',
+        name: 'selected.safetensors',
+        isMissing: undefined,
+        isAssetSupported: false,
+        pendingVerification: async () => true
+      } satisfies MissingModelCandidate
+      mockHandles.state.enrichedCandidates = [remoteCandidate]
+      mockHandles.verifyAssetSupportedCandidates.mockImplementation(
+        async (candidates) => {
+          for (const candidate of candidates) {
+            if (!candidate.pendingVerification) continue
+            candidate.isMissing = await candidate.pendingVerification()
+            delete candidate.pendingVerification
+          }
+        }
+      )
+      mockHandles.api.getFolderPaths.mockResolvedValue({
+        checkpoints: ['/models/checkpoints']
+      })
+
+      await runMissingModelPipeline({
+        graph: createGraph(),
+        graphData: createWorkflowGraphData(),
+        missingModelStore: mockHandles.missingModelStore
+      })
+      await vi.dynamicImportSettled()
+
+      expect(mockHandles.missingModelStore.setFolderPaths).toHaveBeenCalledWith(
+        { checkpoints: ['/models/checkpoints'] }
+      )
+      expect(
+        mockHandles.executionErrorStore.surfaceMissingModels
+      ).toHaveBeenLastCalledWith([remoteCandidate], { silent: false })
+    })
+
+    it('drops a candidate that became inactive while folder paths were loading', async () => {
+      const confirmedCandidate = {
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        name: 'missing.safetensors',
+        isMissing: true,
+        isAssetSupported: false
+      } satisfies MissingModelCandidate
+      mockHandles.state.enrichedCandidates = [confirmedCandidate]
+      mockHandles.isMissingCandidateActive.mockReturnValue(false)
+
+      await runMissingModelPipeline({
+        graph: createGraph(),
+        graphData: createWorkflowGraphData(),
+        missingModelStore: mockHandles.missingModelStore
+      })
+      await vi.dynamicImportSettled()
+
+      expect(
+        mockHandles.executionErrorStore.surfaceMissingModels
+      ).toHaveBeenLastCalledWith([], { silent: false })
+    })
+
     it('keeps a deferred remote combo that verifies missing before folder paths resolve', async () => {
       const staticCandidate = {
         nodeType: 'CheckpointLoaderSimple',
@@ -387,9 +452,6 @@ describe('missingModelPipeline', () => {
             delete candidate.pendingVerification
           }
         }
-      )
-      mockHandles.isMissingCandidateActive.mockImplementation(
-        (_graph, candidate) => candidate.isMissing === true
       )
       let resolveFolderPaths: (paths: Record<string, string[]>) => void = () =>
         undefined
