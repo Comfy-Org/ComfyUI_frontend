@@ -31,7 +31,7 @@ import {
 const WORKSHOP_APP_NAME = 'workshop'
 
 /** Ceiling on the provisioning POST; a hung request must not strand sign-in. */
-export const WORKSHOP_PROVISION_TIMEOUT_MS = 15_000
+const WORKSHOP_PROVISION_TIMEOUT_MS = 15_000
 
 function workshopAuth() {
   const existing = getApps().find((app) => app.name === WORKSHOP_APP_NAME)
