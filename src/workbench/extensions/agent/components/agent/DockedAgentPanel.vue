@@ -7,6 +7,9 @@
     class="docked-agent-panel pointer-events-auto relative h-full shrink-0 overflow-hidden [anchor-name:--docked-agent-panel]"
     :style="{ width: `${width}px` }"
   >
+    <h2 id="agent-panel-title" class="sr-only">
+      {{ t('agent.title') }}
+    </h2>
     <div
       data-testid="agent-panel-resize-handle"
       class="agent-resize-handle absolute top-0 left-0 z-10 h-full w-[5px] cursor-col-resize"
@@ -43,11 +46,6 @@ const AgentPanelLoadError = defineComponent({
     const { t } = useI18n()
     return () =>
       h('div', { class: 'size-full bg-base-background p-3' }, [
-        h(
-          'h2',
-          { id: 'agent-panel-title', class: 'sr-only' },
-          t('agent.title')
-        ),
         h('p', { class: 'text-sm text-base-foreground' }, t('agent.loadFailed'))
       ])
   }
@@ -66,6 +64,7 @@ const AgentPanelRoot = defineAsyncComponent({
 
 const agentPanelStore = useAgentPanelStore()
 const agentRunModeStore = useAgentRunModeStore()
+const { t } = useI18n()
 const { isOpen, enabled, width } = storeToRefs(agentPanelStore)
 const docked = computed(() => enabled.value && isOpen.value)
 

@@ -79,6 +79,9 @@ describe('DockedAgentPanel', () => {
     const container = screen.getByTestId('docked-agent-panel')
     expect(container.style.width).toBe(`${store.width}px`)
     expect(container).toHaveClass('docked-agent-panel')
+    const title = screen.getByRole('heading', { level: 2 })
+    expect(title).toHaveAttribute('id', 'agent-panel-title')
+    expect(container).toHaveAttribute('aria-labelledby', title.id)
     expect(
       await screen.findByTestId('agent-panel-root-stub', undefined, {
         timeout: 5000
