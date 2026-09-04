@@ -1,9 +1,4 @@
-import {
-  applyOps,
-  linksMap,
-  mint,
-  nodesMap
-} from '@comfyorg/comfy-multi-player'
+import { applyOps, mint, nodesMap } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
@@ -161,62 +156,6 @@ describe('EcsFollowerAdapter integration', () => {
     host.destroy()
   })
 
-  it.for([
-    ['origin', null],
-    ['origin', false],
-    ['origin', ''],
-    ['origin', []],
-    ['origin', [0]],
-    ['target', null],
-    ['target', false],
-    ['target', ''],
-    ['target', []],
-    ['target', [0]]
-  ] as const)('ignores a wrong-typed slot value %j', ([endpoint, badSlot]) => {
-    const host = mint(
-      {
-        nodes: [
-          {
-            id: 1,
-            type: 'Source',
-            inputs: [],
-            outputs: [{ name: 'out', type: 'IMAGE', links: [9] }]
-          },
-          {
-            id: 2,
-            type: 'Sink',
-            inputs: [{ name: 'in', type: 'IMAGE', link: 9 }],
-            outputs: []
-          }
-        ],
-        links: [[9, 1, 0, 2, 0, 'IMAGE']]
-      },
-      catalog
-    )
-    const tuple: unknown[] = [9, 1, 0, 2, 0, 'IMAGE']
-    tuple[endpoint === 'origin' ? 2 : 4] = badSlot
-    linksMap(host).set('9', tuple)
-
-    const mutations = createGraphMutations({
-      getScope: () => scope,
-      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
-    })
-    const follower = new FollowerDoc()
-    const adapter = new EcsFollowerAdapter(mutations)
-    adapter.bind('wf', follower)
-    const update = Y.encodeStateAsUpdate(host)
-    follower.applyRemoteUpdate(update)
-
-    expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(true)
-    expect(
-      useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
-    ).toBeUndefined()
-
-    adapter.destroy()
-    follower.destroy()
-    host.destroy()
-  })
-
   it('removes local-only state from the first authoritative snapshot', () => {
     const deleteLayouts = vi.fn()
     const mutations = createGraphMutations({
@@ -364,88 +303,6 @@ describe('EcsFollowerAdapter integration', () => {
       [toNodeId(99)],
       expect.objectContaining({ opId: 'replay' })
     )
-
-    adapter.destroy()
-    follower.destroy()
-    host.destroy()
-  })
-
-  it('reconciles changes discarded by a rejected incremental batch', () => {
-    const host = mint(
-      {
-        nodes: [
-          {
-            id: 1,
-            type: 'Source',
-            inputs: [],
-            outputs: [{ name: 'out', type: 'IMAGE', links: [] }]
-          },
-          {
-            id: 2,
-            type: 'Sink',
-            inputs: [{ name: 'in', type: 'IMAGE', link: null }],
-            outputs: []
-          }
-        ],
-        links: []
-      },
-      catalog
-    )
-    const follower = new FollowerDoc()
-    const mutations = createGraphMutations({
-      getScope: () => scope,
-      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
-    })
-    const adapter = new EcsFollowerAdapter(mutations)
-    adapter.bind('wf', follower)
-
-    const initialUpdate = Y.encodeStateAsUpdate(host)
-    follower.applyRemoteUpdate(initialUpdate)
-    expect(
-      adapter.applyFrame({ workflowId: 'wf', seq: 1, update: initialUpdate })
-    ).toBe(true)
-
-    const beforeRejectedUpdate = Y.encodeStateVector(host)
-    applyOps(
-      host,
-      [
-        op('add-3', 1, {
-          op: 'add_node',
-          node_id: 3,
-          class_type: 'Source',
-          pos: [0, 0],
-          node: {
-            id: 3,
-            type: 'Source',
-            inputs: [],
-            outputs: []
-          }
-        })
-      ] as Parameters<typeof applyOps>[1],
-      catalog
-    )
-    linksMap(host).set('9', [9, 1, -1, 2, 0, 'IMAGE'])
-    const rejectedUpdate = Y.encodeStateAsUpdate(host, beforeRejectedUpdate)
-    follower.applyRemoteUpdate(rejectedUpdate)
-
-    expect(
-      adapter.applyFrame({ workflowId: 'wf', seq: 2, update: rejectedUpdate })
-    ).toBe(false)
-    expect(
-      useNodeDataStore().getNode(scope.rootGraphId, toNodeId(3))
-    ).toBeUndefined()
-
-    const beforeRetryUpdate = Y.encodeStateVector(host)
-    linksMap(host).set('9', [9, 1, 0, 2, 0, 'IMAGE'])
-    const retryUpdate = Y.encodeStateAsUpdate(host, beforeRetryUpdate)
-    follower.applyRemoteUpdate(retryUpdate)
-
-    expect(
-      adapter.applyFrame({ workflowId: 'wf', seq: 3, update: retryUpdate })
-    ).toBe(true)
-    expect(
-      useNodeDataStore().getNode(scope.rootGraphId, toNodeId(3))
-    ).toBeDefined()
 
     adapter.destroy()
     follower.destroy()

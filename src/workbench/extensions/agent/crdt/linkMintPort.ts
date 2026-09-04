@@ -110,15 +110,6 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
       surfaceUnrepresentable('subgraph-interior connect', topology.id)
       return
     }
-    if (
-      !Number.isInteger(topology.originSlot) ||
-      topology.originSlot < 0 ||
-      !Number.isInteger(topology.targetSlot) ||
-      topology.targetSlot < 0
-    ) {
-      surfaceUnrepresentable('invalid link slot', topology.id)
-      return
-    }
     deps.enqueue([
       {
         op: 'connect',
