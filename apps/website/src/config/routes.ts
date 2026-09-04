@@ -41,7 +41,8 @@ const baseRoutes = {
   geminiOmni: '/gemini-omni',
   wanAnimate2: '/wan-animate-2',
   wan3: '/wan-3.0',
-  brand: '/brand'
+  brand: '/brand',
+  workshop: '/workshop'
 } as const
 
 type RouteKey = keyof typeof baseRoutes
@@ -69,6 +70,9 @@ type Routes = Readonly<Record<RouteKey, string>>
 // minimaxLicenseProfessionalRequest: embeds an English-only HubSpot intake
 // form, so no localized variant exists. See the comment header in
 // src/pages/minimax/license/professional-request.astro.
+//
+// workshop: the model workshop lives only at /workshop (src/pages/workshop/);
+// there is no /<locale>/workshop page, so a prefixed link 404s.
 const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'affiliates',
   'affiliateTerms',
@@ -77,7 +81,8 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'enterprise',
   'managedBuilds',
   'models',
-  'minimaxLicenseProfessionalRequest'
+  'minimaxLicenseProfessionalRequest',
+  'workshop'
 ])
 
 // pixal3d-trellis2: a bespoke English launch page with no Chinese version,
