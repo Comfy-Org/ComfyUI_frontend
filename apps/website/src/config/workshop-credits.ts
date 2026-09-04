@@ -11,6 +11,7 @@ import { computed, ref, watch } from 'vue'
 
 import { centsToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
 
+import { useWorkshopAuthFlag } from '../scripts/posthog'
 import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
 import { useWorkshopSession } from './workshop-session-state'
 
@@ -82,12 +83,13 @@ export async function refreshWorkshopCredits(
   fetchImpl: typeof fetch = globalThis.fetch
 ): Promise<void> {
   const { session, remint } = useWorkshopSession()
-  const token = session.value?.token
-  if (!token) {
+  const active = session.value
+  if (!active) {
     balance.value = { status: 'unknown' }
     return
   }
-  let result = await fetchBalance(token, fetchImpl)
+  const uid = active.uid
+  let result = await fetchBalance(active.token, fetchImpl)
   // One re-mint on a stale token, mirroring the run path's single retry.
   // Other failures are not the token's fault, so no mint is spent on them.
   if (result.status === 'error' && result.unauthorized) {
@@ -96,13 +98,12 @@ export async function refreshWorkshopCredits(
       result = await fetchBalance(reminted.session.token, fetchImpl)
     }
   }
-  // The session may have signed out while the fetch was in flight.
-  if (session.value !== undefined) balance.value = result
+  // Publish only if the same user is still signed in: a sign-out or a switch
+  // to a different workspace/user mid-fetch must not show the old balance.
+  if (session.value?.uid === uid) balance.value = result
 }
 
-function start(): void {
-  if (started || typeof window === 'undefined') return
-  started = true
+function begin(): void {
   const { session } = useWorkshopSession()
   watch(
     () => session.value?.token,
@@ -117,6 +118,23 @@ function start(): void {
   )
   window.addEventListener('focus', () => {
     if (session.value !== undefined) void refreshWorkshopCredits()
+  })
+}
+
+function start(): void {
+  if (started || typeof window === 'undefined') return
+  started = true
+  // No listeners until the flag is on, so a flag-off page installs nothing
+  // and stays byte-identical to the site before sign-in existed.
+  const enabled = useWorkshopAuthFlag()
+  if (enabled.value) {
+    begin()
+    return
+  }
+  const stop = watch(enabled, (on) => {
+    if (!on) return
+    stop()
+    begin()
   })
 }
 

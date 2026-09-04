@@ -177,21 +177,34 @@ async function mintWorkshopSession(
 
 let inFlight: Promise<WorkshopSessionResult> | undefined
 let inFlightUid: string | undefined
+let inFlightForced = false
 
+/**
+ * Later callers for the same uid reuse one in-flight mint. A `forced` mint
+ * reuses an in-flight mint only when that one is also forced, so a 401 retry
+ * never resolves to a non-forced mint still holding the stale token.
+ */
 function sharedMint(
   user: WorkshopSessionUser,
-  options: WorkshopSessionOptions
+  options: WorkshopSessionOptions,
+  forced: boolean
 ): Promise<WorkshopSessionResult> {
-  // Concurrent callers — a run click, a focus check — share one mint. A
-  // different user's request never reuses another user's in-flight mint.
-  if (!inFlight || inFlightUid !== user.uid) {
-    inFlightUid = user.uid
-    inFlight = mintWorkshopSession(user, options).finally(() => {
-      inFlight = undefined
-      inFlightUid = undefined
-    })
+  if (
+    inFlight !== undefined &&
+    inFlightUid === user.uid &&
+    (!forced || inFlightForced)
+  ) {
+    return inFlight
   }
-  return inFlight
+  inFlightUid = user.uid
+  inFlightForced = forced
+  const mint = mintWorkshopSession(user, options).finally(() => {
+    inFlight = undefined
+    inFlightUid = undefined
+    inFlightForced = false
+  })
+  inFlight = mint
+  return mint
 }
 
 /**
@@ -208,7 +221,7 @@ export function ensureFreshWorkshopSession(
   if (cached && isWorkshopSessionFresh(cached, now)) {
     return Promise.resolve({ status: 'ok', session: cached })
   }
-  return sharedMint(user, options)
+  return sharedMint(user, options, false)
 }
 
 /** A mint that ignores the cache — for the one 401-retry a run is allowed. */
@@ -217,5 +230,5 @@ export function remintWorkshopSession(
   options: WorkshopSessionOptions = {}
 ): Promise<WorkshopSessionResult> {
   clearWorkshopSession()
-  return sharedMint(user, options)
+  return sharedMint(user, options, true)
 }

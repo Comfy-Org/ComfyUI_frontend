@@ -176,6 +176,31 @@ describe('ensureFreshWorkshopSession', () => {
     expect(a).toEqual(b)
   })
 
+  it('never shares an in-flight mint across different users', async () => {
+    const other = { uid: 'user-2', getIdToken: async () => 'other-token' }
+    let releaseFirst!: (response: Response) => void
+    const fetchImpl = vi
+      .fn()
+      .mockImplementationOnce(
+        () => new Promise<Response>((resolve) => (releaseFirst = resolve))
+      )
+      .mockImplementationOnce(async () =>
+        jsonResponse(200, mintBody({ token: 'user-2-jwt' }))
+      )
+
+    const first = ensureFreshWorkshopSession(user, { fetchImpl })
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledOnce())
+    const second = ensureFreshWorkshopSession(other, { fetchImpl })
+    releaseFirst(jsonResponse(200, mintBody()))
+    const [, b] = await Promise.all([first, second])
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+    expect(
+      b.status === 'ok' && b.session.uid,
+      'a second user must get their own mint, never the first user’s token'
+    ).toBe('user-2')
+  })
+
   it('resolves an expired-cache read with the NEW token when the mint lands after the call', async () => {
     cachedSession({ expiresAt: Date.now() - 1000, token: 'expired-jwt' })
     let release!: (response: Response) => void
@@ -204,6 +229,30 @@ describe('remintWorkshopSession', () => {
 
     expect(fetchImpl).toHaveBeenCalledOnce()
     expect(result.status === 'ok' && result.session.token).toBe('workspace-jwt')
+  })
+
+  it('does not ride a non-forced mint already in flight for the same user', async () => {
+    let releaseFirst!: (response: Response) => void
+    const fetchImpl = vi
+      .fn()
+      .mockImplementationOnce(
+        () => new Promise<Response>((resolve) => (releaseFirst = resolve))
+      )
+      .mockImplementationOnce(async () =>
+        jsonResponse(200, mintBody({ token: 'forced-jwt' }))
+      )
+
+    const ensure = ensureFreshWorkshopSession(user, { fetchImpl })
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledOnce())
+    const forced = remintWorkshopSession(user, { fetchImpl })
+    releaseFirst(jsonResponse(200, mintBody({ token: 'stale-jwt' })))
+
+    const forcedResult = await forced
+    await ensure
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+    expect(forcedResult.status === 'ok' && forcedResult.session.token).toBe(
+      'forced-jwt'
+    )
   })
 })
 

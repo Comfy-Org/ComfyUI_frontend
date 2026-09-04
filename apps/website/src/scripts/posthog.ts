@@ -60,15 +60,14 @@ let initialized = false
 const WORKSHOP_AUTH_FLAG = 'workshop-auth'
 
 /**
- * False until something says otherwise, and false forever when nothing does
- * (PostHog blocked, or not initialized at all — it only runs in PROD builds),
- * so flag-off is byte-identical to the site before this flag existed. The
- * build-time override exists because dev and preview builds have no PostHog
- * to answer; without it no flag-gated surface would be exercisable anywhere.
+ * The build-time override forces the flag on for dev and preview builds, which
+ * have no PostHog to answer; without it no flag-gated surface is exercisable
+ * anywhere. It is sticky: an override-on build ignores PostHog turning the flag
+ * off. Otherwise the ref tracks PostHog's answer both ways, so disabling the
+ * flag remotely actually takes the surfaces down.
  */
-const workshopAuthEnabled = ref(
-  import.meta.env.PUBLIC_WORKSHOP_AUTH_FLAG === '1'
-)
+const OVERRIDDEN_ON = import.meta.env.PUBLIC_WORKSHOP_AUTH_FLAG === '1'
+const workshopAuthEnabled = ref(OVERRIDDEN_ON)
 
 export function useWorkshopAuthFlag(): Readonly<Ref<boolean>> {
   return readonly(workshopAuthEnabled)
@@ -88,9 +87,9 @@ export function initPostHog() {
     })
     initialized = true
     posthog.onFeatureFlags(() => {
-      if (posthog.isFeatureEnabled(WORKSHOP_AUTH_FLAG) === true) {
-        workshopAuthEnabled.value = true
-      }
+      if (OVERRIDDEN_ON) return
+      workshopAuthEnabled.value =
+        posthog.isFeatureEnabled(WORKSHOP_AUTH_FLAG) === true
     })
   } catch (error) {
     console.error('PostHog init failed', error)

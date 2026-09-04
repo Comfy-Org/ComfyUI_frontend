@@ -24,9 +24,16 @@ describe('safeReturnPath', () => {
     ['a relative path', 'workshop/models'],
     ['an empty string', ''],
     ['null', null],
-    ['undefined', undefined]
+    ['undefined', undefined],
+    ['a tab after the leading slash', '/\t/evil.com'],
+    ['a newline after the leading slash', '/\n/evil.com'],
+    ['a carriage return after the leading slash', '/\r/evil.com'],
+    ['a tab-hidden backslash', '/\t\\evil.com']
   ] as const)('falls back to the Workshop home for %s', ([, raw]) => {
-    expect(safeReturnPath(raw)).toBe('/workshop/')
+    expect(
+      safeReturnPath(raw),
+      'the browser strips C0 control chars before parsing, so /<TAB>//evil.com resolves cross-origin'
+    ).toBe('/workshop/')
   })
 })
 
@@ -54,6 +61,15 @@ const fields: readonly WorkshopField[] = [
     label: 'HD',
     required: false,
     defaultValue: false
+  },
+  {
+    kind: 'number',
+    name: 'steps',
+    label: 'Steps',
+    required: false,
+    integer: true,
+    step: 1,
+    defaultValue: 20
   }
 ]
 
@@ -62,11 +78,12 @@ describe('stashWorkshopForm / popWorkshopForm', () => {
     sessionStorage.clear()
   })
 
-  it('round-trips plain values and removes the stash after one pop', () => {
-    stashWorkshopForm('flux', fields, { prompt: 'a cat', hd: true })
+  it('round-trips string, number and boolean values and removes the stash after one pop', () => {
+    stashWorkshopForm('flux', fields, { prompt: 'a cat', steps: 30, hd: true })
 
     expect(popWorkshopForm('flux', fields)).toEqual({
       prompt: 'a cat',
+      steps: 30,
       hd: true
     })
     expect(

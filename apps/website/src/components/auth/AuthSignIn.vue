@@ -107,8 +107,17 @@ async function retryMint() {
   await runMint()
 }
 
+/**
+ * Sign-out only transitions on success: a failed sign-out leaves the user
+ * signed in, and the session listener drives the state when it clears.
+ */
 async function signOutHere() {
-  await signOut()
+  try {
+    await signOut()
+  } catch (error) {
+    console.error('Workshop sign-out failed', error)
+    return
+  }
   dispatch({ type: 'signedOut' })
 }
 
@@ -158,7 +167,7 @@ onBeforeUnmount(() => stopUserWatch?.())
       </p>
       <a
         href="/workshop/"
-        class="hover:bg-primary-comfy-yellow/90 mt-6 flex h-12 w-full items-center justify-center rounded-xl bg-primary-comfy-yellow font-semibold text-primary-comfy-ink transition-colors"
+        class="hover:bg-primary-comfy-yellow/90 bg-primary-comfy-yellow mt-6 flex h-12 w-full items-center justify-center rounded-xl font-semibold text-primary-comfy-ink transition-colors"
       >
         {{ t('auth.signIn.backToWorkshop', locale) }}
       </a>
