@@ -489,6 +489,11 @@ Enterprise`
     'zh-CN': '查看全部案例',
     ja: 'すべてのケーススタディを見る'
   },
+  'caseStudy.watchStory': {
+    en: 'WATCH STORY',
+    'zh-CN': '观看故事',
+    ja: 'ストーリーを見る'
+  },
 
   // BuildWhatSection
   'buildWhat.subtitle': {
@@ -5342,6 +5347,30 @@ Enterprise`
     en: 'From solo artists to global studios — teams building the future of visual media run on ComfyUI.',
     'zh-CN':
       '从独立艺术家到全球工作室——构建视觉媒体未来的团队都在使用 ComfyUI。'
+  },
+  'customers.group.watch': { en: 'WATCH', 'zh-CN': '观看' },
+  'customers.group.read': { en: 'READ', 'zh-CN': '阅读' },
+  'customers.video.watchStory': { en: 'WATCH STORY', 'zh-CN': '观看故事' },
+  'customers.watch.transcript': { en: 'Transcript', 'zh-CN': '文字记录' },
+  'customers.watch.moreStories': {
+    en: 'More customer stories',
+    'zh-CN': '更多客户故事'
+  },
+  'customers.watch.readWrittenStory': {
+    en: 'Read the written story',
+    'zh-CN': '阅读文字版故事'
+  },
+  'customers.watch.browseAll': {
+    en: 'BROWSE ALL CUSTOMER STORIES',
+    'zh-CN': '浏览全部客户故事'
+  },
+  'pricing.customerProof.heading': {
+    en: 'Built with ComfyUI',
+    'zh-CN': '使用 ComfyUI 构建'
+  },
+  'customers.article.watchVideo': {
+    en: 'WATCH THE VIDEO',
+    'zh-CN': '观看视频'
   },
   'customers.contact.label': { en: 'CONTACT', 'zh-CN': '联系' },
   'customers.contact.heading': {

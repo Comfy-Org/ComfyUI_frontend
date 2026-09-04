@@ -1,0 +1,8 @@
+---
+import CustomerVideoWatchTemplate from '../../../components/customers/CustomerVideoWatchTemplate.astro'
+import { getCustomerVideoStory } from '../../../data/customerVideos'
+
+const story = getCustomerVideoStory('silverside-ai')
+---
+
+<CustomerVideoWatchTemplate story={story} />

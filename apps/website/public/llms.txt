@@ -205,6 +205,8 @@ Languages: comfy.org is published in English and Simplified Chinese, with a Japa
 ## Customers and Case Studies
 
 - [Customer Stories](https://comfy.org/customers/): How studios, brands, artists, and universities use Comfy in production.
+- [Watch: Black Math](https://comfy.org/customers/videos/black-math/): How Black Math builds interactive design systems with ComfyUI.
+- [Watch: Silverside AI](https://comfy.org/customers/videos/silverside-ai/): How Silverside AI builds production workflows with ComfyUI.
 - [Series Entertainment](https://comfy.org/customers/series-entertainment/): How Series Entertainment rebuilt game and video production with ComfyUI.
 - [Moment Factory](https://comfy.org/customers/moment-factory/): How Moment Factory reimagined 3D projection mapping at architectural scale with ComfyUI.
 - [Ubisoft CHORD](https://comfy.org/customers/ubisoft-chord/): Ubisoft open-sources the CHORD model with ComfyUI for AAA PBR material generation.
