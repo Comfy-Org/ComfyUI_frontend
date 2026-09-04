@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { effectScope, nextTick } from 'vue'
 
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type {
@@ -12,7 +12,13 @@ import {
   remoteConfigState
 } from '@/platform/remoteConfig/remoteConfig'
 
-import { useBillingContext } from './useBillingContext'
+import { useBillingContext as useSharedBillingContext } from './useBillingContext'
+
+function useBillingContext() {
+  const scope = effectScope()
+  onTestFinished(() => scope.stop())
+  return scope.run(useSharedBillingContext)!
+}
 
 const DEFAULT_BILLING_STATUS: BillingStatusResponse = {
   is_active: true,
@@ -65,14 +71,6 @@ const {
       } as BillingStatusResponse
     },
     mockBillingStatus
-  }
-})
-
-vi.mock('@vueuse/core', async (importOriginal) => {
-  const original = await importOriginal()
-  return {
-    ...(original as Record<string, unknown>),
-    createSharedComposable: (fn: (...args: unknown[]) => unknown) => fn
   }
 })
 
