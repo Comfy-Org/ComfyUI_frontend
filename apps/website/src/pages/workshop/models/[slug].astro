@@ -51,17 +51,13 @@ const price =
     : undefined
 
 const pillClass =
-  'inline-flex h-6 items-center rounded-2xl bg-transparency-white-t8 px-3 text-[11px] leading-none font-bold tracking-wider text-primary-warm-white uppercase'
+  'inline-flex h-7 items-center rounded-full border border-transparency-white-t20 px-3 text-sm leading-none text-primary-comfy-canvas'
 
-const tags = [
-  ...(model.provider
-    ? [{ label: model.provider, search: catalogSearch({ providers: [model.provider] }) }]
-    : []),
-  ...model.capabilities.map((capability) => ({
-    label: capability,
-    search: catalogSearch({ capabilities: [capability] })
-  }))
-]
+// The provider already leads the hero, so the chip row is capabilities only.
+const tags = model.capabilities.map((capability) => ({
+  label: capability,
+  search: catalogSearch({ capabilities: [capability] })
+}))
 ---
 
 <BaseLayout
@@ -96,37 +92,45 @@ const tags = [
         model.thumbnailUrl && (
           <StaticFrame
             src={model.thumbnailUrl}
-            class="absolute inset-0 size-full object-cover opacity-40"
+            class="absolute inset-0 size-full object-cover"
             client:load
           />
         )
       }
       <div
-        class="absolute inset-0 bg-linear-to-r from-primary-comfy-ink via-primary-comfy-ink/75 to-primary-comfy-ink/10"
+        class="absolute inset-0 bg-linear-to-r from-primary-comfy-ink/95 to-primary-comfy-ink/50"
       />
 
       <div
         class="relative flex min-h-52 flex-col justify-center gap-6 p-8 lg:min-h-60 lg:p-10"
       >
         <div class="flex max-w-2xl flex-col gap-3">
-        <p
-          class="text-sm leading-none font-medium tracking-widest text-primary-comfy-yellow uppercase"
-        >
-          {model.provider ?? t('workshop.card.partnerNode')}
-        </p>
+        <div class="flex flex-wrap items-center gap-3">
+          <p
+            class="text-sm leading-none font-medium tracking-widest text-primary-comfy-yellow uppercase"
+          >
+            {model.provider ?? t('workshop.card.partnerNode')}
+          </p>
+          {model.modality && (
+            <span class={pillClass}>{modalityLabel[model.modality]}</span>
+          )}
+        </div>
 
         <h1 class="text-3xl font-bold text-primary-comfy-canvas lg:text-5xl">
           {model.name}
         </h1>
 
         <p
-          class="flex items-baseline gap-1.5 text-sm text-primary-comfy-canvas/70"
+          class="flex items-baseline gap-2 text-sm text-primary-comfy-canvas/60"
           data-testid="model-price"
         >
           {
             price ? (
               <>
-                <span class="text-lg font-bold text-primary-comfy-yellow">{price}</span>
+                <span class="text-xs font-medium tracking-widest uppercase">
+                  {t('workshop.model.priceFrom')}
+                </span>
+                <span class="text-lg font-bold text-primary-warm-white">{price}</span>
                 {t('workshop.model.perRun')}
               </>
             ) : (
@@ -143,16 +147,11 @@ const tags = [
         />
 
         <ul class="mt-2 flex flex-wrap items-center gap-2" data-testid="model-tags">
-          {model.modality && (
-            <li>
-              <span class={pillClass}>{modalityLabel[model.modality]}</span>
-            </li>
-          )}
           {tags.map((tag) => (
             <li>
               <a
                 href={`${routes.workshop}${tag.search}`}
-                class="inline-flex h-6 items-center rounded-2xl border border-transparency-white-t20 px-3 text-xs text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow"
+                class="inline-flex h-8 items-center rounded-full bg-transparency-white-t8 px-4 text-sm text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t20 hover:text-primary-comfy-yellow"
               >
                 {tag.label}
               </a>
