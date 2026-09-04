@@ -207,11 +207,29 @@ describe('splitBody + joinBody', () => {
       '<AuthorBio people={[{ name: "Jane", bio: `Jane is an artist.` }]} />\n'
     const segments = splitBody(body)
 
+    const translatable = segments.filter((s) => s.translatable)
+    expect(translatable).toHaveLength(1)
+    expect(translatable[0].text).toBe('Jane is an artist.')
+    expect(joinBody(segments)).toBe(body)
+  })
+
+  it('keeps prose translatable before and after a self-closing component with no bio: field', () => {
+    const body = 'Intro text.\n\n<Figure src="x.png" alt="a" />\n\nOutro text.'
+    const segments = splitBody(body)
+
     expect(segments).toContainEqual({
       translatable: true,
-      text: 'Jane is an artist.'
+      text: 'Intro text.\n\n'
     })
-    expect(segments.map((s) => s.text).join('')).toBe(body)
+    expect(segments).toContainEqual({
+      translatable: false,
+      text: '<Figure src="x.png" alt="a" />'
+    })
+    expect(segments).toContainEqual({
+      translatable: true,
+      text: '\n\nOutro text.'
+    })
+    expect(joinBody(segments)).toBe(body)
   })
 
   it('finds the true matching close of a component nested inside itself', () => {

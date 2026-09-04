@@ -75,6 +75,9 @@ function findTopLevelBlocks(body: string): { start: number; end: number }[] {
 // ..., bio: `text` }]} /> is self-closing, so it never yields a block.
 const bioFieldPattern = /\bbio:\s*`([^`]*)`/g
 
+// Only ever called on a self-closing tag's own text (its full `<Tag .../>`
+// span), never on surrounding prose: a tag with no bio: field is pure
+// markup, so "no match" correctly means "none of this is translatable."
 function splitBioFields(text: string): BodySegment[] {
   const segments: BodySegment[] = []
   let cursor = 0
@@ -99,6 +102,33 @@ function splitBioFields(text: string): BodySegment[] {
   return segments.length > 0 ? segments : [{ translatable: false, text }]
 }
 
+function splitProse(text: string): BodySegment[] {
+  return [{ translatable: text.trim().length > 0, text }]
+}
+
+// The text around (or entirely without) a top-level block: ordinary prose,
+// whitespace, and self-closing components. A self-closing tag's own span
+// goes through splitBioFields (markup, minus any translatable bio: field);
+// everything else is prose, translatable unless it's pure whitespace.
+function splitGap(text: string): BodySegment[] {
+  const segments: BodySegment[] = []
+  let cursor = 0
+  for (const match of text.matchAll(mdxTagPattern)) {
+    if (!match[3].trimEnd().endsWith('/')) continue
+    const index = match.index ?? 0
+    const tagEnd = index + match[0].length
+    if (index > cursor) {
+      segments.push(...splitProse(text.slice(cursor, index)))
+    }
+    segments.push(...splitBioFields(text.slice(index, tagEnd)))
+    cursor = tagEnd
+  }
+  if (cursor < text.length) {
+    segments.push(...splitProse(text.slice(cursor)))
+  }
+  return segments
+}
+
 // A customer story's body can run well past a single translation request's
 // character budget (longest today: ~15KB), but each <Section> or <AuthorBio>
 // within it is small (longest today: ~4.8KB). Splitting on that existing
@@ -108,22 +138,13 @@ function splitBioFields(text: string): BodySegment[] {
 // one segment.
 export function splitBody(body: string): BodySegment[] {
   const blocks = findTopLevelBlocks(body)
-  if (blocks.length === 0) {
-    // A body with no open/close block (e.g. one standalone self-closing
-    // <AuthorBio .../>) still needs its bio: fields extracted; plain prose
-    // with no tags at all has nothing for splitBioFields to find and should
-    // stay translatable in full rather than fall back to its "no match"
-    // default of non-translatable.
-    return [...body.matchAll(mdxTagPattern)].length > 0
-      ? splitBioFields(body)
-      : [{ translatable: true, text: body }]
-  }
+  if (blocks.length === 0) return splitGap(body)
 
   const segments: BodySegment[] = []
   let cursor = 0
   for (const block of blocks) {
     if (block.start > cursor) {
-      segments.push(...splitBioFields(body.slice(cursor, block.start)))
+      segments.push(...splitGap(body.slice(cursor, block.start)))
     }
     segments.push({
       translatable: true,
@@ -132,7 +153,7 @@ export function splitBody(body: string): BodySegment[] {
     cursor = block.end
   }
   if (cursor < body.length) {
-    segments.push(...splitBioFields(body.slice(cursor)))
+    segments.push(...splitGap(body.slice(cursor)))
   }
   return segments
 }
