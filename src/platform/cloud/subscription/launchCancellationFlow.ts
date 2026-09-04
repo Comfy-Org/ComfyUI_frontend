@@ -3,6 +3,7 @@ import { t } from '@/i18n'
 import { prepareChurnkey } from '@/platform/cloud/churnkey/churnkeyClient'
 import { getSubscriptionCancellationMetadata } from '@/platform/cloud/subscription/utils/subscriptionCancellationTelemetry'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { getErrorMessage } from '@/utils/errorUtil'
 
@@ -38,7 +39,18 @@ export async function launchCancellationFlow({
   }
 
   const session = await prepareChurnkey().catch((error) => {
-    console.warn('Failed to prepare Churnkey cancellation flow:', error)
+    reportError(error, {
+      errorType: 'cloud_cancellation_vendor_fallback',
+      tags: {
+        failure_kind: 'degraded',
+        feature_area: 'cloud',
+        operation: 'navigate',
+        outcome: 'recovered',
+        assert_mode: 'soft'
+      },
+      context: { workspace_still_current: isLaunchWorkspaceCurrent() },
+      level: 'warning'
+    })
     return null
   })
   if (!session) {
