@@ -1914,6 +1914,29 @@ describe('AgentPanelRoot greeting', () => {
   })
 })
 
+describe('AgentPanelRoot a11y id guard', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    ws.clear()
+  })
+
+  // R-193 residual: a duplicated #agent-panel-title (the FE #16912 regression
+  // class) reached main unnoticed because the fast suite never asserted the id
+  // count. Assert the document-level count, not a getBy* query, so a second
+  // copy of the id fails loudly here instead of only in the Playwright suite
+  // (agentPanelLifecycle.spec.ts, still test.fixme pending FE #16919).
+  it('renders exactly one #agent-panel-title on the success path', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(await screen.findByText(i18n.global.t('agent.title'))).toBeVisible()
+    // Document-level count is the point: the guard must see any duplicate id
+    // anywhere in the document, not just within the panel subtree.
+    /* eslint-disable testing-library/no-node-access */
+    expect(document.querySelectorAll('#agent-panel-title')).toHaveLength(1)
+    /* eslint-enable testing-library/no-node-access */
+  })
+})
+
 describe('AgentPanelRoot workflow binding', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
