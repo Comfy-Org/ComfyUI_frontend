@@ -123,12 +123,6 @@ describe('persistedDocId', () => {
     expect(reconcilePersistedDocId()).toBeNull()
   })
 
-  // FEC-5: sign-out and workspace switching both end in
-  // `window.location.reload()`, which preserves sessionStorage and reports
-  // navigation type `reload` - the one branch that adopts an inherited record.
-  // The binding therefore has to be dropped by the transition itself. These
-  // pin the key spelling duplicated in the workflow persistence layer, which
-  // cannot import this module without defeating the distribution seam.
   describe('identity transitions drop the binding', () => {
     it('workspace switching clears it', async () => {
       const { clearWorkflowRestoreState } =
