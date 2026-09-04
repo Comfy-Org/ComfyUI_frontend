@@ -11,7 +11,9 @@ const state = vi.hoisted(() => ({
   canTopUp: true,
   canSubscribeSelfServe: false,
   isReady: true,
-  initialize: vi.fn()
+  initialize: vi.fn(),
+  tier: null as string | null,
+  canManageSubscription: false
 }))
 
 vi.mock('@/stores/dialogStore', () => ({
@@ -35,7 +37,22 @@ vi.mock('@/platform/distribution/types', () => ({
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    type: { value: state.type }
+    type: { value: state.type },
+    subscription: {
+      get value() {
+        return state.tier === null ? null : { tier: state.tier }
+      }
+    }
+  })
+}))
+
+vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
+  useWorkspaceUI: () => ({
+    permissions: {
+      get value() {
+        return { canManageSubscription: state.canManageSubscription }
+      }
+    }
   })
 }))
 
@@ -74,6 +91,8 @@ vi.mock(
   })
 )
 
+import InsufficientCreditsMemberDialog from '@/platform/workspace/components/InsufficientCreditsMemberDialog.vue'
+import SalesManagedOwnerDialog from '@/platform/workspace/components/SalesManagedOwnerDialog.vue'
 import { useDialogService } from '@/services/dialogService'
 
 describe('showTopUpCreditsDialog', () => {
@@ -83,6 +102,8 @@ describe('showTopUpCreditsDialog', () => {
     state.canSubscribeSelfServe = false
     state.isReady = true
     state.initialize = vi.fn()
+    state.tier = null
+    state.canManageSubscription = false
     mockIsCloud.value = true
   })
 
@@ -115,6 +136,57 @@ describe('showTopUpCreditsDialog', () => {
     expect(closeDialog).toHaveBeenCalledWith({
       key: 'insufficient-credits-member'
     })
+  })
+
+  it('routes a sales-managed owner to the contact-sales notice, not the member copy', async () => {
+    state.canTopUp = false
+    state.canSubscribeSelfServe = false
+    state.tier = 'ENTERPRISE'
+    state.canManageSubscription = true
+
+    await useDialogService().showTopUpCreditsDialog({
+      isInsufficientCredits: true
+    })
+
+    const [args] = showDialog.mock.calls[0]
+    expect(args.key).toBe('insufficient-credits-member')
+    expect(args.component).toBe(SalesManagedOwnerDialog)
+    expect(args.props.outOfCredits).toBe(true)
+    expect(args.dialogComponentProps.headless).toBe(true)
+
+    args.props.onClose()
+    expect(closeDialog).toHaveBeenCalledWith({
+      key: 'insufficient-credits-member'
+    })
+  })
+
+  it('keeps the member copy for a member of a sales-managed workspace', async () => {
+    state.canTopUp = false
+    state.canSubscribeSelfServe = false
+    state.tier = 'ENTERPRISE'
+    state.canManageSubscription = false
+
+    await useDialogService().showTopUpCreditsDialog({
+      isInsufficientCredits: true
+    })
+
+    const [args] = showDialog.mock.calls[0]
+    expect(args.component).toBe(InsufficientCreditsMemberDialog)
+    expect(args.props).not.toHaveProperty('outOfCredits')
+  })
+
+  it('keeps the member copy for a self-serve workspace owner with top-up denied', async () => {
+    state.canTopUp = false
+    state.canSubscribeSelfServe = false
+    state.tier = 'TEAM'
+    state.canManageSubscription = true
+
+    await useDialogService().showTopUpCreditsDialog({
+      isInsufficientCredits: true
+    })
+
+    const [args] = showDialog.mock.calls[0]
+    expect(args.component).toBe(InsufficientCreditsMemberDialog)
   })
 
   it('uses the server capability on legacy billing', async () => {

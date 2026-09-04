@@ -11,6 +11,10 @@ import {
   savePendingSubscriptionCheckout
 } from '@/platform/workspace/utils/pendingSubscriptionCheckout'
 
+import PlanManagedMemberDialog from '@/platform/workspace/components/PlanManagedMemberDialog.vue'
+import SalesManagedOwnerDialog from '@/platform/workspace/components/SalesManagedOwnerDialog.vue'
+import SubscriptionInactiveMemberDialog from '@/platform/workspace/components/SubscriptionInactiveMemberDialog.vue'
+
 import { useSubscriptionDialog } from './useSubscriptionDialog'
 
 const mockCloseDialog = vi.fn()
@@ -42,8 +46,9 @@ const mockCurrentTeamCreditStop = vi.hoisted(() => ({
   value: null as TeamCreditStopSummary | null
 }))
 const mockSubscription = vi.hoisted(() => ({
-  value: null as Pick<SubscriptionInfo, 'duration'> | null
+  value: null as Partial<Pick<SubscriptionInfo, 'duration' | 'tier'>> | null
 }))
+const mockIsWorkspaceSubscribed = vi.hoisted(() => ({ value: false }))
 const mockSubscriptionStatus = vi.hoisted(() => ({
   value: null as BillingSubscriptionStatus | null
 }))
@@ -107,6 +112,9 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
     },
     get isInPersonalWorkspace() {
       return mockIsInPersonalWorkspace.value
+    },
+    get isWorkspaceSubscribed() {
+      return mockIsWorkspaceSubscribed.value
     }
   })
 }))
@@ -187,6 +195,7 @@ describe('useSubscriptionDialog', () => {
     mockCurrentTeamCreditStop.value = null
     mockSubscription.value = null
     mockSubscriptionStatus.value = null
+    mockIsWorkspaceSubscribed.value = false
     sessionStorage.clear()
   })
 
@@ -496,6 +505,72 @@ describe('useSubscriptionDialog', () => {
       expect(props).toHaveProperty('onClose')
       expect(props).not.toHaveProperty('reason')
       expect(props).not.toHaveProperty('initialPlanMode')
+    })
+
+    it('keeps the reactivation dialog for a member of an inactive workspace', async () => {
+      mockShouldUseWorkspaceBilling.value = true
+      mockCanManageSubscription.value = false
+      mockIsWorkspaceSubscribed.value = false
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable()
+
+      expect(mockShowLayoutDialog).toHaveBeenCalledTimes(1)
+      const loader = mockShowLayoutDialog.mock.calls[0][0].component
+      expect((await loader()).default).toBe(SubscriptionInactiveMemberDialog)
+    })
+
+    it('shows the managed-by-owner dialog to a member of an active workspace', async () => {
+      mockShouldUseWorkspaceBilling.value = true
+      mockCanManageSubscription.value = false
+      mockIsWorkspaceSubscribed.value = true
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable()
+
+      expect(mockShowLayoutDialog).toHaveBeenCalledTimes(1)
+      const loader = mockShowLayoutDialog.mock.calls[0][0].component
+      expect((await loader()).default).toBe(PlanManagedMemberDialog)
+      expect(mockTrackSubscription).not.toHaveBeenCalled()
+    })
+
+    it('redirects a sales-managed owner to the contact-sales dialog, never the table', async () => {
+      mockShouldUseWorkspaceBilling.value = true
+      mockCanManageSubscription.value = true
+      mockSubscription.value = { tier: 'ENTERPRISE' }
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable({ reason: 'deep_link' })
+
+      expect(mockShowLayoutDialog).toHaveBeenCalledTimes(1)
+      const loader = mockShowLayoutDialog.mock.calls[0][0].component
+      expect((await loader()).default).toBe(SalesManagedOwnerDialog)
+      expect(mockTrackSubscription).not.toHaveBeenCalled()
+    })
+
+    it('guards show() the same way for a sales-managed owner', async () => {
+      mockShouldUseWorkspaceBilling.value = true
+      mockSubscription.value = { tier: 'ENTERPRISE' }
+      const { show } = useSubscriptionDialog()
+
+      show()
+
+      expect(mockShowLayoutDialog).toHaveBeenCalledTimes(1)
+      const loader = mockShowLayoutDialog.mock.calls[0][0].component
+      expect((await loader()).default).toBe(SalesManagedOwnerDialog)
+    })
+
+    it('leaves the legacy billing rail unguarded by tier', () => {
+      mockShouldUseWorkspaceBilling.value = false
+      mockSubscription.value = { tier: 'ENTERPRISE' }
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable({ reason: 'deep_link' })
+
+      expect(mockTrackSubscription).toHaveBeenCalledWith(
+        'modal_opened',
+        expect.objectContaining({ reason: 'deep_link' })
+      )
     })
 
     it('does not track on non-cloud', () => {

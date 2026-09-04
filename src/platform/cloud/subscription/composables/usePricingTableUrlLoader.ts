@@ -95,16 +95,20 @@ export function getPricingCheckoutSelection(
  * selected personal tier or Team credit stop with a billing cycle to open its
  * confirmation.
  *
- * Gated to workspace owners (`canManageSubscription`); a member is a silent
- * no-op with the param stripped. Survives the login redirect via the
+ * Every audience denial routes to a visible destination (DES-974 item 6):
+ * members get the status-aware member dialog, sales-managed owners get the
+ * contact-sales dialog, and a denied or unreadable capability snapshot opens
+ * the table anyway — its footer notice explains the state. Only malformed
+ * param values stay silent. Survives the login redirect via the
  * preserved-query system, like the invite URL loader.
  */
 export function usePricingTableUrlLoader() {
   const route = useRoute()
   const router = useRouter()
   const subscriptionDialog = useSubscriptionDialog()
-  const { teamCreditStops, fetchPlans } = useBillingContext()
-  const { permissions, canOpenPricingSurface } = useWorkspaceUI()
+  const { teamCreditStops, fetchPlans, subscription, fetchStatus } =
+    useBillingContext()
+  const { permissions } = useWorkspaceUI()
   const { initialize: initializeCapabilities } = useBillingCapabilities()
 
   /** Reads `?pricing=`, strips it, and opens the table when the gate allows. */
@@ -140,12 +144,24 @@ export function usePricingTableUrlLoader() {
     // gets stripped above.
     if (typeof param !== 'string' || !param) return
 
-    if (!permissions.value.canManageSubscription) return
+    if (!permissions.value.canManageSubscription) {
+      subscriptionDialog.showMemberDialog()
+      return
+    }
 
-    // The loader can run before the capability snapshot resolves; a
-    // sales-managed workspace must not see the table through that gap.
+    // The loader can run before the capability snapshot or subscription tier
+    // resolves; a sales-managed owner must not see the table through that gap.
     await initializeCapabilities()
-    if (!canOpenPricingSurface.value) return
+    if (!subscription.value) {
+      try {
+        await fetchStatus()
+      } catch {
+        // Tier stays unknown; fall through and open the table.
+      }
+    }
+    if (subscriptionDialog.showSalesManagedDialog()) return
+    // A denied (settling) or unreadable capability snapshot still opens the
+    // table — its footer notice explains and offers the retry.
 
     const teamCheckoutRequest = getTeamCheckoutRequest(
       param,
@@ -161,7 +177,10 @@ export function usePricingTableUrlLoader() {
           error
         )
       }
-      if (!permissions.value.canManageSubscription) return
+      if (!permissions.value.canManageSubscription) {
+        subscriptionDialog.showMemberDialog()
+        return
+      }
       if (!teamCreditStops.value) {
         subscriptionDialog.showPricingTable({
           reason: 'deep_link',
@@ -199,7 +218,10 @@ export function usePricingTableUrlLoader() {
         : undefined
 
     if (!initialCheckout && !['1', 'team', 'personal'].includes(param)) return
-    if (!permissions.value.canManageSubscription) return
+    if (!permissions.value.canManageSubscription) {
+      subscriptionDialog.showMemberDialog()
+      return
+    }
 
     subscriptionDialog.showPricingTable({
       reason: 'deep_link',

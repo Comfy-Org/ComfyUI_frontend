@@ -1,4 +1,5 @@
 import { defineAsyncComponent } from 'vue'
+import type { Component } from 'vue'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -8,6 +9,7 @@ import {
   getStopDiscountedMonthlyUsd,
   mapApiTeamCreditStops
 } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
+import { isSalesManagedTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
@@ -73,18 +75,10 @@ export const useSubscriptionDialog = () => {
     })
   }
 
-  function showInactiveMemberDialog(): boolean {
-    if (!shouldUseWorkspaceBilling.value) return false
-
-    const { permissions } = useWorkspaceUI()
-    if (permissions.value.canManageSubscription) return false
-
+  function showMemberNoticeDialog(component: Component) {
     dialogService.showLayoutDialog({
       key: DIALOG_KEY,
-      component: defineAsyncComponent(
-        () =>
-          import('@/platform/workspace/components/SubscriptionInactiveMemberDialog.vue')
-      ),
+      component,
       props: { onClose: hide },
       dialogComponentProps: {
         renderer: 'reka',
@@ -92,12 +86,58 @@ export const useSubscriptionDialog = () => {
           'w-[min(360px,95vw)] max-w-[min(360px,95vw)] sm:max-w-[min(360px,95vw)] border-0 bg-transparent shadow-none'
       }
     })
+  }
+
+  /**
+   * Members never see the self-serve table. The copy is status-aware: an
+   * inactive workspace asks for a reactivation, an active one just says the
+   * owner manages the plan (no false "subscription is inactive" alarm).
+   */
+  function showMemberDialog(): boolean {
+    if (!shouldUseWorkspaceBilling.value) return false
+
+    const { permissions } = useWorkspaceUI()
+    if (permissions.value.canManageSubscription) return false
+
+    showMemberNoticeDialog(
+      workspaceStore.isWorkspaceSubscribed
+        ? defineAsyncComponent(
+            () =>
+              import('@/platform/workspace/components/PlanManagedMemberDialog.vue')
+          )
+        : defineAsyncComponent(
+            () =>
+              import('@/platform/workspace/components/SubscriptionInactiveMemberDialog.vue')
+          )
+    )
+    return true
+  }
+
+  /**
+   * A sales-managed (Enterprise or unrecognized-tier) owner never sees the
+   * self-serve table — its catalog prices don't apply to a negotiated
+   * contract. Redirects to the contact-sales dialog instead.
+   */
+  function showSalesManagedDialog(): boolean {
+    if (!shouldUseWorkspaceBilling.value) return false
+
+    // Resolved lazily to avoid the useBillingContext import cycle (see below).
+    const { subscription } = useBillingContext()
+    if (!isSalesManagedTier(subscription.value?.tier)) return false
+
+    showMemberNoticeDialog(
+      defineAsyncComponent(
+        () =>
+          import('@/platform/workspace/components/SalesManagedOwnerDialog.vue')
+      )
+    )
     return true
   }
 
   function showPricingTable(options?: SubscriptionDialogOptions) {
     if (!isCloud) return
-    if (showInactiveMemberDialog()) return
+    if (showMemberDialog()) return
+    if (showSalesManagedDialog()) return
 
     trackModalOpened(options?.reason)
 
@@ -205,8 +245,6 @@ export const useSubscriptionDialog = () => {
   }
 
   function show(options?: SubscriptionDialogOptions) {
-    if (isCloud && showInactiveMemberDialog()) return
-
     showPricingTable(options)
   }
 
@@ -338,6 +376,8 @@ export const useSubscriptionDialog = () => {
   return {
     show,
     showPricingTable,
+    showMemberDialog,
+    showSalesManagedDialog,
     hide,
     startTeamWorkspaceUpgradeFlow,
     resumePendingPricingFlow
