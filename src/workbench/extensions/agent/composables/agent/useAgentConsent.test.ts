@@ -5,28 +5,6 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 import { useAgentConsent } from './useAgentConsent'
 
-const settingState = vi.hoisted(() => ({
-  accepted: false,
-  error: undefined as unknown,
-  load: vi.fn<() => Promise<void>>(async () => {}),
-  set: vi.fn<(id: string, value: boolean) => Promise<void>>(
-    async (_id, value) => {
-      settingState.accepted = value
-    }
-  )
-}))
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({
-    get: () => settingState.accepted,
-    get error() {
-      return settingState.error
-    },
-    load: settingState.load,
-    set: settingState.set
-  })
-}))
-
 const authState = vi.hoisted(() => ({
   loggedIn: false,
   identity: 'account-a' as string | null
@@ -105,14 +83,6 @@ describe('useAgentConsent', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
-    settingState.accepted = false
-    settingState.error = undefined
-    settingState.load.mockReset()
-    settingState.load.mockResolvedValue()
-    settingState.set.mockReset()
-    settingState.set.mockImplementation(async (_id, value) => {
-      settingState.accepted = value
-    })
     authState.loggedIn = true
     authState.identity = 'account-a'
     accountAuthState.getUserAuthHeader.mockReset()
@@ -273,7 +243,6 @@ describe('useAgentConsent', () => {
     await request
 
     expect(showSignInDialog).toHaveBeenCalledOnce()
-    expect(settingState.set).not.toHaveBeenCalled()
     expect(fetchWithUnifiedRemint).toHaveBeenCalledOnce()
     expect(fetchWithUnifiedRemint).toHaveBeenCalledWith(
       'https://api.comfy.test/api/settings/Comfy.AgentPanel.ConsentAccepted',
@@ -294,7 +263,6 @@ describe('useAgentConsent', () => {
     ;(dialog.contentProps.onAccept as () => void)()
     await request
 
-    expect(settingState.set).not.toHaveBeenCalled()
     expect(fetchWithUnifiedRemint).not.toHaveBeenCalled()
     expect(onOpen).not.toHaveBeenCalled()
   })
@@ -320,7 +288,6 @@ describe('useAgentConsent', () => {
     ;(firstDialog.contentProps.onReject as () => void)()
     await Promise.resolve(firstRequest)
 
-    expect(settingState.set).not.toHaveBeenCalled()
     expect(useDialogStore().dialogStack).toHaveLength(0)
 
     const secondRequest = useAgentConsent().withConsent(vi.fn())
