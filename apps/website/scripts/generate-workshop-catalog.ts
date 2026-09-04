@@ -17,6 +17,15 @@ const MANIFEST = resolve(
   '../src/config/workshop-catalog.manifest.json'
 )
 
+/** Whether two JSON documents differ in content rather than in formatting. */
+function sameJson(a: string, b: string): boolean {
+  try {
+    return JSON.stringify(JSON.parse(a)) === JSON.stringify(JSON.parse(b))
+  } catch {
+    return false
+  }
+}
+
 function slugFor(id: string): string {
   return id.replaceAll('/', '--')
 }
@@ -26,6 +35,12 @@ function slugFor(id: string): string {
  * collection speaks camelCase. This is the only place the two meet.
  */
 function project(value: unknown): unknown {
+  // Leave a non-record alone so it reaches the schema and produces the
+  // contextual "invalid model at index N" error this function promises,
+  // rather than throwing a bare TypeError on property access.
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return value
+  }
   const source = value as Record<string, unknown>
   return {
     id: source.id,
@@ -74,7 +89,11 @@ export function buildWorkshopCatalog(input: unknown): WorkshopModelEntry[] {
   if (ids.size !== catalog.length) throw new Error('Duplicate partner model id')
   if (slugs.size !== catalog.length) throw new Error('Duplicate Workshop slug')
 
-  return catalog.sort((a, b) => a.id.localeCompare(b.id))
+  // Deliberately unsorted. Each model is its own file, so the only thing an
+  // order could affect is the sequence of independent writes. `localeCompare`
+  // was also host-dependent: `p/ä` and `p/z` swap between LANG=C and
+  // LANG=sv_SE.UTF-8, which would churn the committed output.
+  return catalog
 }
 
 async function loadModels(modulePath: string): Promise<unknown> {
@@ -121,7 +140,13 @@ async function writeCollection(
     const path = join(COLLECTION_DIR, `${model.slug}.json`)
     const next = `${JSON.stringify(model, null, 2)}\n`
     const previous = await readFile(path, 'utf8').catch(() => undefined)
-    if (previous !== next) await writeFile(path, next)
+    // Compare parsed content, not text. These files are formatted by the
+    // repo's formatter after they are written, so a byte comparison reports
+    // every model as changed on the next run and buries a real one-model
+    // diff in 268 files of reflowed arrays.
+    if (previous === undefined || !sameJson(previous, next)) {
+      await writeFile(path, next)
+    }
   }
 
   const manifest = `${JSON.stringify({ sourceRef, modelCount: catalog.length }, null, 2)}\n`
