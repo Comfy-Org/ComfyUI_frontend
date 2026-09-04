@@ -1,5 +1,6 @@
+import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
-import { createPinia, setActivePinia } from 'pinia'
+import { setActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -32,7 +33,7 @@ const i18n = createI18n({
 let pinia: Pinia
 
 beforeEach(() => {
-  pinia = createPinia()
+  pinia = createTestingPinia({ stubActions: false })
   setActivePinia(pinia)
   resolveNodeMock.mockReturnValue({
     id: NODE_ID,
@@ -160,6 +161,42 @@ describe('WidgetResolutionPreview', () => {
   it('renders the placeholder instead of guessing a missing multiple', () => {
     registerSibling('aspect_ratio', 'combo', '1:1 (Square)')
     registerSibling('megapixels', 'number', 1.0)
+    renderPreview()
+
+    expect(screen.queryByTestId('resolution-preview-value')).toBeNull()
+    expect(screen.getByText('—')).toBeTruthy()
+  })
+
+  it.for([
+    { desc: 'a malformed ratio label', ratio: 'Square', mp: 1.0, multiple: 8 },
+    {
+      desc: 'a zero-component ratio',
+      ratio: '0:1 (Degenerate)',
+      mp: 1.0,
+      multiple: 8
+    },
+    {
+      desc: 'non-positive megapixels',
+      ratio: '1:1 (Square)',
+      mp: 0,
+      multiple: 8
+    },
+    {
+      desc: 'a non-numeric megapixels value',
+      ratio: '1:1 (Square)',
+      mp: '1.0',
+      multiple: 8
+    },
+    {
+      desc: 'a non-positive multiple',
+      ratio: '1:1 (Square)',
+      mp: 1.0,
+      multiple: 0
+    }
+  ])('renders the placeholder for $desc', ({ ratio, mp, multiple }) => {
+    registerSibling('aspect_ratio', 'combo', ratio)
+    registerSibling('megapixels', 'number', mp)
+    registerSibling('multiple', 'number', multiple)
     renderPreview()
 
     expect(screen.queryByTestId('resolution-preview-value')).toBeNull()
