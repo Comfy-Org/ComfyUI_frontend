@@ -34,20 +34,12 @@ test.describe('Agent cancelled turn replay', { tag: '@cloud' }, () => {
     await expect
       .poll(() => agentConversation.renderedNodeIds())
       .toEqual(expect.arrayContaining(agentConversation.documentNodeIds()))
-    // Each connect the recording asked for must render as two connected slot
-    // rows, addressed by node id and slot index through the shared helpers.
-    for (const {
-      fromNode,
-      fromSlot,
-      toNode,
-      toSlot
-    } of agentConversation.recordedConnects()) {
+    // Each connect the recording asked for must leave its ORIGIN slot row
+    // connected. Only the origin: outputs always render, while a
+    // widget-backed input renders no slot dot to assert.
+    for (const { fromNode, fromSlot } of agentConversation.recordedConnects())
       await expect(
         agentConversation.vueNodes.getOutputSlotRow(fromNode, fromSlot)
       ).toHaveClass(/lg-slot--connected/)
-      await expect(
-        agentConversation.vueNodes.getInputSlotRow(toNode, toSlot)
-      ).toHaveClass(/lg-slot--connected/)
-    }
   })
 })
