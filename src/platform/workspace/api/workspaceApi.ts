@@ -112,9 +112,10 @@ export interface PreviewSubscribeOptions {
  * FE-only extension, so this shim is a stopgap and not the intersection
  * exemption in `docs/guidance/typescript.md`.
  *
- * Comfy-Org/cloud#7644 adds it to `services/ingest/openapi.yaml`. This PR stays
- * in draft until that merges and `@comfyorg/ingest-types` regenerates; drop
- * this type then and let the generated requests carry the field.
+ * Comfy-Org/cloud#7644 has merged and added it to `services/ingest/openapi.yaml`,
+ * but the automated `@comfyorg/ingest-types` regeneration PR has not landed
+ * (open, failing its own checks as of this writing). Drop this type once that
+ * regeneration merges and let the generated requests carry the field.
  */
 type WithCheckoutAttemptId<T> = T & { checkout_attempt_id?: string }
 

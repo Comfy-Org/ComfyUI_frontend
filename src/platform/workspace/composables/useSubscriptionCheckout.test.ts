@@ -1417,7 +1417,10 @@ describe('useSubscriptionCheckout', () => {
 
         expect(mockPreviewSubscribe).toHaveBeenCalledWith(
           'team_per_credit_monthly',
-          { teamCreditStopId: 'team_1400' }
+          {
+            teamCreditStopId: 'team_1400',
+            checkoutAttemptId: expect.any(String)
+          }
         )
         expect(checkout.previewData.value?.allowed).toBe(true)
         expect(checkout.checkoutStep.value).toBe('preview')
