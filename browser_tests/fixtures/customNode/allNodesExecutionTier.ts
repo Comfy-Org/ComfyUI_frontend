@@ -316,7 +316,7 @@ async function runBatch(
       const ids: string[] = []
       const allIds: string[] = []
       const nodeIdByKey: Record<string, string> = {}
-      const sinkIdByKey: Record<string, string> = {}
+      const sinkIdByKey: Partial<Record<string, string>> = {}
       for (const [index, spec] of nodes.entries()) {
         const node = window.LiteGraph!.createNode(spec.key, undefined, {
           pos: [0, index * spacingY]
@@ -326,7 +326,7 @@ async function runBatch(
         ids.push(String(node.id))
         allIds.push(String(node.id))
         nodeIdByKey[spec.key] = String(node.id)
-        for (const [name, value] of Object.entries(spec.widgetInputs ?? {})) {
+        for (const [name, value] of Object.entries(spec.widgetInputs)) {
           const widget = node.widgets?.find(
             (candidate) => candidate.name === name
           )
@@ -378,10 +378,9 @@ async function runBatch(
     expectedNodeIds: ids,
     graphNodeIds: allIds,
     proofOutputNodeByExpectedNode: Object.fromEntries(
-      Object.entries(sinkIdByKey).map(([key, sinkId]) => [
-        nodeIdByKey[key],
-        sinkId
-      ])
+      Object.entries(sinkIdByKey).flatMap(([key, sinkId]) =>
+        sinkId === undefined ? [] : [[nodeIdByKey[key], sinkId]]
+      )
     ),
     timeoutMs
   })

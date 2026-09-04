@@ -70,6 +70,21 @@ export function notifyMintPortsAfterGraphConfigure(): void {
   for (const wiring of activeWirings) wiring.onAfterGraphConfigure()
 }
 
+/**
+ * Run a graph mutation that replays already-committed remote state (so the
+ * live graph catches up with the stores) without any active mint port echoing
+ * it back into the doc as a local op.
+ */
+export function runMintPortsSuppressed<T>(fn: () => T): T {
+  const wirings = [...activeWirings]
+  for (const wiring of wirings) wiring.session.beginGraphTeardown()
+  try {
+    return fn()
+  } finally {
+    for (const wiring of wirings) wiring.session.endGraphTeardown()
+  }
+}
+
 /** Run a confirmed root-workflow clear through every active mint port. */
 export function runMintPortsIntentionalClear<T>(clear: () => T): T {
   const wirings = [...activeWirings]
@@ -174,7 +189,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     rootGraphId() {
       const graph = deps.getGraph()
       if (!graph) return null
-      return String(graph.rootGraph?.id ?? graph.id)
+      return graph.rootGraph?.id ?? graph.id
     },
     resolveInteriorPath(owningGraphId) {
       const graph = deps.getGraph()
@@ -214,7 +229,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
       const { graphId, nodeId, name: widgetName } = parseWidgetId(widgetId)
       for (const listener of setListeners) {
         listener({
-          graphId: String(graphId),
+          graphId,
           nodeId,
           name: widgetName,
           value,

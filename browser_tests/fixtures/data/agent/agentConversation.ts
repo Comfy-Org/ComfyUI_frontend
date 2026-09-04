@@ -15,15 +15,24 @@ export const mintedIds: { thread_id: true; message_id: true } = {
   message_id: true
 }
 // Every member gets the same transform, so the slot order only names them.
-const [thinking, toolCall, messageDelta, messageDone, activeTab] =
-  zAgentWsEvent.options
+const [
+  thinking,
+  toolCall,
+  messageDelta,
+  messageDone,
+  activeTab,
+  ask,
+  askResolved
+] = zAgentWsEvent.options
 
 export const zRecordedWsEvent = z.discriminatedUnion('type', [
   thinking.extend({ data: thinking.shape.data.omit(mintedIds) }),
   toolCall.extend({ data: toolCall.shape.data.omit(mintedIds) }),
   messageDelta.extend({ data: messageDelta.shape.data.omit(mintedIds) }),
   messageDone.extend({ data: messageDone.shape.data.omit(mintedIds) }),
-  activeTab.extend({ data: activeTab.shape.data.omit(mintedIds) })
+  activeTab.extend({ data: activeTab.shape.data.omit(mintedIds) }),
+  ask.extend({ data: ask.shape.data.omit(mintedIds) }),
+  askResolved.extend({ data: askResolved.shape.data.omit(mintedIds) })
 ])
 export type RecordedWsEvent = z.infer<typeof zRecordedWsEvent>
 

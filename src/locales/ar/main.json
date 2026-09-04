@@ -5,6 +5,10 @@
     "feedbackTooltip": "إرسال ملاحظات",
     "freeTierPartner": "العُقد الشريكة تتطلب خطة مدفوعة",
     "freeTierRuns": "{available} / {MAX_AVAILABLE} عمليات متبقية",
+    "partnerRunGate": {
+      "signInCaption": "تتطلب عُقد الشركاء حسابًا",
+      "signInToRun": "سجّل الدخول للتشغيل"
+    },
     "share": "مشاركة",
     "shareTooltip": "مشاركة سير العمل"
   },
@@ -82,6 +86,7 @@
     "runModeAutoDescription": "سيشغّل Comfy سير العمل دون طلب إذن",
     "runModeLimit": "تشغيل تلقائي مع حدود",
     "runModeLimitDescription": "لن يطلب Comfy التأكيد إلا عندما يتجاوز تشغيل سير العمل حد رصيدك",
+    "runModeSaveFailed": "تعذر حفظ أذونات التشغيل. يُرجى المحاولة مرة أخرى.",
     "runModeTriggerAsk": "اسأل",
     "runModeTriggerAskTooltip": "اطلب الإذن",
     "runModeTriggerAuto": "تلقائي",
@@ -111,6 +116,7 @@
       "أنشئ سير عمل لتحويل صورة إلى فيديو باستخدام 3 نماذج"
     ],
     "switchWorkflow": "تبديل سير العمل",
+    "targetNavigationUnavailable": "لم يعد هدف سير العمل هذا متاحًا.",
     "thinking": "جارٍ التفكير...",
     "thought": "فكرة",
     "thoughtTimed": "فكّر لمدة {seconds} ثوانٍ",
@@ -123,8 +129,12 @@
     "uploading": "جارٍ الرفع"
   },
   "apiNodesSignInDialog": {
-    "message": "يحتوي سير العمل هذا على عقد API، والتي تتطلب تسجيل دخولك إلى حسابك لتشغيلها.",
-    "title": "تسجيل الدخول مطلوب لاستخدام عقد API"
+    "message": "تعمل عُقد الشركاء على خدمات تابعة لجهات خارجية وتستخدم أرصدة من حسابك. يُرجى تسجيل الدخول لربط حسابك.",
+    "partnerNodesInWorkflow": "عُقد الشركاء في سير العمل هذا",
+    "signIn": "تسجيل الدخول",
+    "title": "سجّل الدخول لتشغيل عُقد الشركاء",
+    "tooltip": "تعمل عُقد الشركاء على خدمات تابعة لجهات خارجية. وهي تستخدم الأرصدة، الجزء الوحيد المدفوع في Comfy.",
+    "whatArePartnerNodes": "ما هي عُقد الشركاء؟"
   },
   "appBuilder": {
     "vueNodeSwitch": {
@@ -456,7 +466,6 @@
   },
   "billingOperation": {
     "authenticationFailedDetail": "تعذر إكمال التحقق من الدفع. يُرجى المحاولة مرة أخرى.",
-    "authenticationManagerRequired": "يتطلب التحقق من الدفع اهتمام مدير فواتير مساحة العمل.",
     "authenticationUnavailable": "مصادقة الدفع الآمن غير متاحة. يُرجى تحديث الصفحة والمحاولة مرة أخرى.",
     "cancelFailed": "فشل في إلغاء الاشتراك",
     "cancelTimeout": "انتهت مهلة إلغاء الاشتراك",
@@ -467,7 +476,6 @@
     "processingErrorDetail": "تعذرت معالجة دفعتك. حاول مرة أخرى أو استخدم طريقة دفع أخرى.",
     "reconciliationDetail": "تم استلام دفعتك، لكن تعذر علينا إكمال تحديث مساحة عملك. تواصل مع الدعم وأدرج معرّف العملية هذا:",
     "reconciliationTitle": "تم استلام الدفعة — التأكيد قيد الانتظار",
-    "retryVerification": "إعادة محاولة التحقق",
     "subscriptionActionRequired": "يرجى التحقق من الدفع لإكمال إعداد مساحة العمل الخاصة بك",
     "subscriptionFailed": "فشل تحديث الاشتراك",
     "subscriptionFailedDetail": "تعذر تحديث اشتراكك. يرجى المحاولة مرة أخرى.",
@@ -955,6 +963,7 @@
       "quickPurchase": "شراء سريع",
       "seeDetails": "عرض التفاصيل",
       "selectAmount": "اختر المبلغ",
+      "startOver": "البدء من جديد",
       "templateNote": "*تم الإنشاء باستخدام قالب Wan Fun Control",
       "topUp": "شحن الرصيد",
       "unknownError": "حدث خطأ غير معروف",
@@ -1068,6 +1077,7 @@
     "RECRAFT_COLOR": "لون Recraft",
     "RECRAFT_CONTROLS": "عناصر تحكم Recraft",
     "RECRAFT_V3_STYLE": "نمط Recraft V3",
+    "RESOLUTION_PREVIEW": "RESOLUTION_PREVIEW",
     "RETARGET_TASK_ID": "معرّف مهمة إعادة الاستهداف",
     "RIG_TASK_ID": "معرّف مهمة الهيكل",
     "RUNWAY_ALEPH2_KEYFRAME": "RUNWAY_ALEPH2_KEYFRAME",
@@ -2802,14 +2812,18 @@
       "seeMoreOutputs": "عرض المزيد من النتائج",
       "zoom": "تكبير"
     },
-    "assetDeletedSuccessfully": "تم حذف الأصل بنجاح",
-    "deleteAssetDescription": "سيتم إزالة هذا الأصل بشكل دائم.",
-    "deleteAssetTitle": "حذف هذا الأصل؟",
-    "deleteSelectedDescription": "سيتم إزالة {count} أصل(أصول) بشكل دائم.",
-    "deleteSelectedTitle": "حذف الأصول المحددة؟",
+    "assetDelete": {
+      "error": "تعذر حذف العناصر",
+      "success": "تم الحذف بنجاح",
+      "warn": "تعذر حذف بعض العناصر"
+    },
+    "assetsDeleted": "تم حذف {n} / {total} من الأصول",
+    "deleteHistoryOnly": "سيتأثر السجل فقط، وستبقى الملفات على القرص",
+    "deleteItems": "حذف هذه العناصر",
+    "deletePermanent": "ستُزال نهائيًا.",
     "deletingImportedFilesCloudOnly": "حذف الملفات المستوردة مدعوم فقط في النسخة السحابية",
+    "deletionUnsupported": "الأصول مفعّلة، لكن الخادم لا يدعم الحذف",
     "failedToCreateNode": "فشل في إنشاء العقدة",
-    "failedToDeleteAsset": "فشل في حذف الأصل",
     "failedToExportWorkflow": "فشل في تصدير سير العمل",
     "jobIdToast": {
       "copied": "تم النسخ",
@@ -2817,12 +2831,12 @@
       "jobIdCopied": "تم نسخ معرف المهمة إلى الحافظة",
       "jobIdCopyFailed": "فشل في نسخ معرف المهمة"
     },
+    "jobsDeleted": "تم حذف {n} / {total} من المهام",
     "noJobIdFound": "لم يتم العثور على معرف مهمة لهذا الأصل",
     "noWorkflowDataFound": "لا توجد بيانات سير عمل في هذا الأصل",
     "nodeAddedToWorkflow": "تمت إضافة عقدة {nodeType} إلى سير العمل",
     "nodeTypeNotFound": "نوع العقدة {nodeType} غير موجود",
     "selection": {
-      "assetsDeletedSuccessfully": "تم حذف {count} أصل(أصول) بنجاح",
       "deleteSelected": "حذف",
       "deleteSelectedAll": "حذف الكل",
       "deselectAll": "إلغاء تحديد الكل",
@@ -2833,7 +2847,6 @@
       "exportStarted": "يتم تجهيز تصدير ZIP لـ {count} ملف | يتم تجهيز تصدير ZIP لـ {count} ملفات",
       "exportWorkflowAll": "تصدير جميع سير العمل",
       "failedToAddNodes": "فشل في إضافة العقد إلى سير العمل",
-      "failedToDeleteAssets": "فشل في حذف الأصول المحددة",
       "insertAllAssetsAsNodes": "إدراج جميع الأصول كعقد",
       "multipleSelectedAssets": "تم تحديد عدة ملفات",
       "noWorkflowsFound": "لم يتم العثور على بيانات سير العمل في الأصول المحددة",
@@ -2841,7 +2854,6 @@
       "nodesAddedToWorkflow": "تمت إضافة {count} عقدة إلى سير العمل",
       "openWorkflowAll": "فتح جميع سير العمل",
       "partialAddNodesSuccess": "تمت إضافة {succeeded} بنجاح، وفشل {failed}",
-      "partialDeleteSuccess": "{succeeded} تم حذفها بنجاح، {failed} فشلت",
       "partialWorkflowsExported": "تم تصدير {succeeded} بنجاح، وفشل {failed}",
       "partialWorkflowsOpened": "تم فتح {succeeded} سير عمل، وفشل {failed}",
       "selectedCount": "الأصول المحددة: {count}",
@@ -3457,6 +3469,28 @@
     "addColor": "إضافة لون",
     "swatchTitle": "انقر للتعديل · اسحب لإعادة الترتيب · انقر بزر الفأرة الأيمن للإزالة"
   },
+  "partnerNodesEducation": {
+    "benefits": {
+      "free": "مجاني للتشغيل",
+      "noDownload": "لا يتطلب إعدادًا",
+      "noVram": "لا حاجة إلى VRAM، يبقى GPU لديك متاحًا",
+      "offline": "يعمل دون اتصال"
+    },
+    "included": "مضمّن",
+    "muteOpen": "كتم صوت clip ذي الأوزان المفتوحة",
+    "mutePartner": "كتم صوت clip لعقدة الشريك",
+    "notIncluded": "غير مضمّن",
+    "openHeader": "مفتوح",
+    "openTab": "العُقد المفتوحة",
+    "partnerHeader": "شريك",
+    "partnerTab": "عُقد الشركاء",
+    "pitch": "هل ترى الفرق؟ اسحب للمقارنة.",
+    "reassurance": "عُقد الشركاء متاحة عندما تريد المزيد. يبقى باقي Comfy مجانيًا.",
+    "sliderLabel": "قارن مخرجات الأوزان المفتوحة وعقدة الشريك",
+    "tooltip": "تشغّل عُقد الشركاء نماذج مغلقة المصدر مثل Kling أو Veo على عتاد المزوّد، عبر Comfy. وهي تستخدم الأرصدة؛ ويبقى باقي Comfy مجانيًا.",
+    "unmuteOpen": "إلغاء كتم صوت clip ذي الأوزان المفتوحة",
+    "unmutePartner": "إلغاء كتم صوت clip لعقدة الشريك"
+  },
   "progressToast": {
     "allDownloadsCompleted": "اكتملت جميع التنزيلات",
     "downloadingModel": "جاري تنزيل النموذج...",
@@ -3514,7 +3548,6 @@
       "copyErrorMessage": "نسخ رسالة الخطأ",
       "copyJobId": "نسخ معرف المهمة",
       "delete": "حذف",
-      "deleteAsset": "حذف الأصل",
       "download": "تنزيل",
       "exportWorkflow": "تصدير مسار العمل",
       "inspectAsset": "فحص الأصل",
@@ -4265,8 +4298,6 @@
     "canceledCard": {
       "description": "لن يتم خصم أي رسوم أخرى منك. ستبقى ميزاتك نشطة حتى {date}.",
       "descriptionWithoutDate": "لن يتم خصم أي رسوم أخرى. ستبقى ميزاتك نشطة حتى نهاية فترة الفوترة.",
-      "endedDescription": "لم يعد اشتراكك نشطًا.",
-      "endedTitle": "انتهى اشتراكك",
       "title": "تم إلغاء اشتراكك"
     },
     "changePlan": "تغيير الخطة",
@@ -4321,6 +4352,7 @@
     "gpuLabel": "RTX 6000 Pro (ذاكرة 96GB VRAM)",
     "haveQuestions": "هل لديك أسئلة أو ترغب في معرفة المزيد عن المؤسسات؟",
     "inactive": {
+      "badge": "غير نشط",
       "memberCta": "حسنًا، فهمت",
       "memberDescription": "اطلب من مالك مساحة العمل إعادة تفعيل الاشتراك لتشغيل سير العمل.",
       "memberRunTooltip": "تواصل مع مالك مساحة العمل لإعادة الاشتراك",
@@ -4332,7 +4364,6 @@
     "inactiveTeamTitle": "اشتراك الفريق غير نشط",
     "inviteUpTo": "ادعُ حتى",
     "invoiceHistory": "سجل الفواتير",
-    "learnMore": "معرفة المزيد",
     "manageBilling": "إدارة الفواتير",
     "managePlan": "إدارة الخطة",
     "manageSubscription": "إدارة الاشتراك",
@@ -4460,6 +4491,7 @@
       },
       "refillReplacesNote": "يستبدل إعادة التعبئة الشهرية. الرصيد الحالي يبقى محفوظاً.",
       "renewsAt": "يتجدد بسعر {amount} في {date}. يمكنك الإلغاء في أي وقت.",
+      "renewsAtAmount": "يتجدد بسعر {amount}. ألغِ في أي وقت.",
       "savedPaymentMethod": "طريقة الدفع",
       "showMoreFeatures": "عرض المزيد من الميزات",
       "starting": "يبدأ في {date}",
@@ -4599,7 +4631,6 @@
     "videoTemplateBasedCredits": "مقاطع الفيديو التي تم إنشاؤها باستخدام Wan 2.2 لتحويل الصورة إلى فيديو",
     "viewEnterprise": "عرض المؤسسات",
     "viewMoreDetails": "عرض المزيد من التفاصيل",
-    "viewMoreDetailsPlans": "عرض المزيد من التفاصيل حول الخطط والأسعار",
     "viewUsageHistory": "عرض سجل الاستخدام",
     "whatsIncluded": "ما يتضمنه:",
     "workspaceNotSubscribed": "هذه مساحة العمل ليست مشتركة",

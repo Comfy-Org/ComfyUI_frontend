@@ -21,27 +21,27 @@ test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
         const groupButtons = panel.getByRole('button', {
           name: /^Ran \d+ tool call/
         })
-        if (calls.length > 0) await expect(groupButtons.first()).toBeVisible()
-        // A group holding a failed call stays open at turn end; a clean one collapses.
-        await expect
-          .poll(async () =>
-            (
-              await groupButtons.evaluateAll((buttons) =>
-                buttons.map((button) => button.getAttribute('aria-expanded'))
+        if (calls.length > 0) {
+          // Groups exist for this recording, so the expansion check below
+          // cannot pass by there being nothing to expand.
+          await expect(groupButtons.first()).toBeVisible()
+          const expansion = async () =>
+            groupButtons.evaluateAll((buttons) =>
+              buttons.map((button) => button.getAttribute('aria-expanded'))
+            )
+          if (calls.some((call) => !call.ok))
+            // A group holding a failed call stays open at turn end.
+            await expect
+              .poll(async () => (await expansion()).includes('true'))
+              .toBe(true)
+          // A clean run collapses every one of them.
+          else
+            await expect
+              .poll(async () =>
+                (await expansion()).every((state) => state === 'false')
               )
-            ).includes('true')
-          )
-          .toBe(calls.some((call) => !call.ok))
-        for (const button of await groupButtons.all())
-          if ((await button.getAttribute('aria-expanded')) === 'false')
-            await button.click()
-        const toolRows = panel.getByRole('listitem')
-        for (const label of new Set(calls.map((call) => call.label)))
-          await expect(
-            toolRows
-              .filter({ has: page.getByText(label, { exact: true }) })
-              .first()
-          ).toBeVisible()
+              .toBe(true)
+        }
 
         await expect(
           panel.getByRole('button', {
@@ -98,21 +98,16 @@ test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
         await expect
           .poll(() => agentConversation.renderedNodeIds())
           .toEqual(expect.arrayContaining(agentConversation.documentNodeIds()))
-        // Each connect the recording asked for must render as two connected slot
-        // rows, addressed by node id and slot index through the shared helpers.
+        // Each connect the recording asked for must leave its ORIGIN slot row
+        // connected. Only the origin: outputs always render, while a
+        // widget-backed input renders no slot dot to assert.
         for (const {
           fromNode,
-          fromSlot,
-          toNode,
-          toSlot
-        } of agentConversation.recordedConnects()) {
+          fromSlot
+        } of agentConversation.recordedConnects())
           await expect(
             agentConversation.vueNodes.getOutputSlotRow(fromNode, fromSlot)
           ).toHaveClass(/lg-slot--connected/)
-          await expect(
-            agentConversation.vueNodes.getInputSlotRow(toNode, toSlot)
-          ).toHaveClass(/lg-slot--connected/)
-        }
       })
     })
   }

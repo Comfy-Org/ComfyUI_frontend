@@ -16,6 +16,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
+import { useDialogService } from '@/services/dialogService'
 import type {
   ExecutionErrorWsMessage,
   NodeError,
@@ -209,6 +210,19 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     updateRunErrors({ executionError: detail }, key)
   }
 
+  function showExecutionError(
+    detail: ExecutionErrorWsMessage,
+    key: string | null = activeRunErrorKey.value
+  ) {
+    if (key === null || key !== activeRunErrorKey.value) return
+
+    if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
+      showErrorOverlay()
+    } else {
+      useDialogService().showExecutionErrorDialog(detail)
+    }
+  }
+
   function recordPromptError(
     promptError: PromptError,
     key: string | null = activeRunErrorKey.value
@@ -253,8 +267,8 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     executionId: NodeExecutionId,
     slotName?: string
   ): Record<string, NodeError> | null {
+    if (!(executionId in nodeErrors)) return null
     const nodeError = nodeErrors[executionId]
-    if (!nodeError) return null
 
     const isSlotScoped = slotName !== undefined
     const relevantErrors = isSlotScoped
@@ -368,8 +382,8 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     value: number,
     callerOptions: { min?: number; max?: number }
   ): boolean {
+    if (!(target.executionId in nodeErrors)) return false
     const nodeError = nodeErrors[target.executionId]
-    if (!nodeError) return false
 
     const errors = errorsForSlot(nodeError.errors, target.slotName)
     const options = target.useRecordedBounds
@@ -559,7 +573,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     }
     if (lastExecutionError.value) {
       const nodeId = lastExecutionError.value.node_id
-      if (nodeId !== null && nodeId !== undefined) {
+      if (nodeId != null) {
         ids.push(String(nodeId))
       }
     }
@@ -627,7 +641,10 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
       for (const [executionId, nodeError] of Object.entries(
         surfacedNodeErrors.value
       )) {
-        const locatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
+        const locatorId = executionIdToNodeLocatorId(
+          app.rootGraphOrUndefined,
+          executionId
+        )
         if (locatorId) {
           map[locatorId] = nodeError
         }
@@ -705,6 +722,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
     // Overlay UI
     isErrorOverlayOpen,
+    showExecutionError,
     showErrorOverlay,
     dismissErrorOverlay,
 

@@ -3,18 +3,23 @@ import { fromPartial } from '@total-typescript/shoehorn'
 
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  createPinia,
+  disposePinia,
+  getActivePinia,
+  setActivePinia
+} from 'pinia'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 
 // jsdom does not implement ResizeObserver (happy-dom does); stub it before the
 // Vue node preview chain constructs its module-level observer at import time.
 vi.hoisted(() => {
-  globalThis.ResizeObserver ??= class {
+  globalThis.ResizeObserver = class {
     observe() {}
     unobserve() {}
     disconnect() {}
-  } as unknown as typeof ResizeObserver
+  }
 })
 
 import { i18n } from '@/i18n'
@@ -294,6 +299,7 @@ import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTab
 import AgentPanelRoot from './AgentPanelRoot.vue'
 
 beforeEach(() => {
+  vi.useRealTimers()
   Element.prototype.scrollIntoView = vi.fn()
   URL.createObjectURL = vi.fn(() => 'blob:mock-url')
   URL.revokeObjectURL = vi.fn()
@@ -314,6 +320,11 @@ beforeEach(() => {
   workflowService.saveWorkflowAs.mockClear()
   workflowService.openWorkflow.mockClear()
   focusNodeInstance.mockReset()
+})
+
+afterEach(() => {
+  const pinia = getActivePinia()
+  if (pinia) disposePinia(pinia)
 })
 
 const zAgentWsEventForTest = (raw: unknown): AgentChatEvent =>
@@ -2092,12 +2103,13 @@ describe('AgentPanelRoot workflow binding', () => {
       })
     )
 
+    vi.useFakeTimers({ shouldAdvanceTime: true })
     await renderAndSend('work here')
+    vi.useFakeTimers({ shouldAdvanceTime: false })
 
     const activity = useWorkflowTabActivityStore()
     expect(activity.creatingTab).toBe(false)
 
-    vi.useFakeTimers()
     ws.emit('agent_active_tab', {
       workflow_id: 'wf-new',
       name: 'Fresh',
@@ -2115,7 +2127,6 @@ describe('AgentPanelRoot workflow binding', () => {
     await vi.advanceTimersByTimeAsync(1)
     expect(activity.creatingTab).toBe(false)
     expect(hostStores.workflow.tabs.get('workflows/Fresh.json')).toBeDefined()
-    vi.useRealTimers()
   })
 
   it('lowers the creating flag when a newer focus event supersedes the fetch', async () => {
@@ -2630,7 +2641,7 @@ describe('AgentPanelRoot workflow binding', () => {
       'fetch',
       vi.fn(async (url: string, init?: RequestInit) => {
         if (url.includes('/messages') && init?.method === 'POST') {
-          bodies.push(JSON.parse(String(init?.body)))
+          bodies.push(JSON.parse(String(init.body)))
           return new Response(JSON.stringify(ack('wf-cloud-current', 'm-1')), {
             status: 202,
             headers: { 'Content-Type': 'application/json' }
@@ -2698,7 +2709,7 @@ describe('AgentPanelRoot workflow binding', () => {
       'fetch',
       vi.fn(async (url: string, init?: RequestInit) => {
         if (url.includes('/messages') && init?.method === 'POST') {
-          bodies.push(JSON.parse(String(init?.body)))
+          bodies.push(JSON.parse(String(init.body)))
           return new Response(JSON.stringify(ack('wf-42', 'm-1')), {
             status: 202,
             headers: { 'Content-Type': 'application/json' }

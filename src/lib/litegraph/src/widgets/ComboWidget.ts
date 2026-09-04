@@ -9,6 +9,7 @@ import type {
 import { warnDeprecated } from '@/lib/litegraph/src/utils/feedback'
 
 import { BaseSteppedWidget } from './BaseSteppedWidget'
+import { extensionValue } from './BaseWidget'
 import type { WidgetEventOptions } from './BaseWidget'
 
 /**
@@ -45,9 +46,11 @@ export class ComboWidget
       }
     }
 
-    const { values: rawValues } = this.options
+    const rawValues = extensionValue(this.options.values)
     if (rawValues) {
-      const values = typeof rawValues === 'function' ? rawValues() : rawValues
+      const values = extensionValue(
+        typeof rawValues === 'function' ? rawValues() : rawValues
+      )
 
       if (values && !Array.isArray(values)) {
         return values[this.value]
@@ -57,7 +60,7 @@ export class ComboWidget
   }
 
   private getValues(node: LGraphNode): Values {
-    const { values } = this.options
+    const values = extensionValue(this.options.values)
     if (values == null) {
       console.error('[ComboWidget]: values is required')
       return []
@@ -160,13 +163,11 @@ export class ComboWidget
       const getOptionLabel = this.options.getOptionLabel
       for (const value of values_list) {
         try {
-          const label = getOptionLabel
-            ? getOptionLabel(String(value))
-            : String(value)
+          const label = getOptionLabel(value)
           menu.addItem(label, value, menuOptions)
         } catch (err) {
           console.error('Failed to map value:', err)
-          menu.addItem(String(value), value, menuOptions)
+          menu.addItem(value, value, menuOptions)
         }
       }
       return

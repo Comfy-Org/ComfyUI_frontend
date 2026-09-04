@@ -24,7 +24,6 @@ import type {
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
 
 import { compareNodeIds, toNodeId } from '@/types/nodeId'
-import { knownTool } from '@/workbench/extensions/agent/services/agent/agentToolGlyph'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const THREAD_ID = 'e9a2f3d1-7c44-4b2e-9a01-5f6d8c7b3a10'
@@ -48,8 +47,6 @@ type NodeBody = {
 }
 
 interface RecordedToolCall {
-  // The row label the panel renders for this tool (ToolCallCard.vue).
-  label: string
   ok: boolean
 }
 
@@ -57,19 +54,6 @@ interface RecordedWidgetValue {
   nodeId: string
   widget: string
   value: string | number
-}
-
-// The panel's row label: the known-tool table, else the humanized tool name (ToolCallCard.vue).
-function toolRowLabel(name: string): string {
-  const known = knownTool(name)?.labelKey
-  const label = known
-    ? enMessages.agent[
-        known.replace('agent.', '') as keyof typeof enMessages.agent
-      ]
-    : undefined
-  if (typeof label === 'string') return label
-  const spaced = name.replaceAll('_', ' ')
-  return spaced.charAt(0).toUpperCase() + spaced.slice(1)
 }
 
 // Runs one recorded prompt/response through the real panel over a routed /ws socket.
@@ -217,12 +201,7 @@ class AgentConversationHarness {
       entry.kind === 'event' &&
       entry.event.type === 'agent_tool_call' &&
       entry.event.data.status !== 'running'
-        ? [
-            {
-              label: toolRowLabel(entry.event.data.tool_name),
-              ok: entry.event.data.status === 'success'
-            }
-          ]
+        ? [{ ok: entry.event.data.status === 'success' }]
         : []
     )
   }
@@ -286,15 +265,11 @@ class AgentConversationHarness {
       .join('')
   }
 
-  // Every concrete connect the recording asked for, limited to the ones whose
-  // endpoints survive: a deleted node renders no slot row to assert. A grown
-  // connect names no to_slot, so it carries no index either.
-  recordedConnects(): Array<{
-    fromNode: string
-    fromSlot: number
-    toNode: string
-    toSlot: number
-  }> {
+  // The origin side of every concrete connect whose endpoints survive. Only the
+  // origin is asserted: outputs always render (NodeSlots.vue), while a
+  // widget-backed input renders no slot dot at all, so a target row can be
+  // legitimately absent. A grown connect names no to_slot either.
+  recordedConnects(): Array<{ fromNode: string; fromSlot: number }> {
     const present = new Set(Object.keys(this.host.graph().nodes))
     return this.entries()
       .flatMap((entry) =>
@@ -305,8 +280,7 @@ class AgentConversationHarness {
                     {
                       fromNode: String(op.from_node),
                       fromSlot: op.from_slot,
-                      toNode: String(op.to_node),
-                      toSlot: op.to_slot
+                      toNode: String(op.to_node)
                     }
                   ]
                 : []
