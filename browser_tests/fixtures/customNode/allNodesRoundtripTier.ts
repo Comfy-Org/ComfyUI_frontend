@@ -764,7 +764,7 @@ export async function assertRoundtripTier({
                 })
                 for (const { target, widget } of mutations) {
                   if (!node.widgets?.includes(widget)) continue
-                  widget.value = target as typeof widget.value
+                  widget.value = target
                   widget.callback?.(widget.value)
                 }
               }

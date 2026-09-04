@@ -27,8 +27,6 @@ import type {
   GraphAddOptions,
   IContextMenuValue,
   INodeInputSlot,
-  INodeOutputSlot,
-  IWidget,
   Point,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
@@ -91,7 +89,7 @@ async function reencodeAsPngBlob(
   width: number,
   height: number
 ): Promise<Blob> {
-  const canvas = $el('canvas', { width, height }) as HTMLCanvasElement
+  const canvas = $el('canvas', { width, height })
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('Could not get canvas context')
 
@@ -494,15 +492,11 @@ export const useLitegraphService = () => {
             if (!output) return outputData as ISerialisableNodeOutput
 
             return outputData
-              ? ({
+              ? {
                   ...outputData,
                   ...pick(output, RESERVED_KEYS)
-                } as ISerialisableNodeOutput)
-              : outputAsSerialisable(
-                  output as INodeOutputSlot & { widget?: IWidget },
-                  this,
-                  index
-                )
+                }
+              : outputAsSerialisable(output, this, index)
           }
         )
 
@@ -601,15 +595,11 @@ export const useLitegraphService = () => {
             if (!output) return outputData as ISerialisableNodeOutput
 
             return outputData
-              ? ({
+              ? {
                   ...outputData,
                   ...pick(output, RESERVED_KEYS)
-                } as ISerialisableNodeOutput)
-              : outputAsSerialisable(
-                  output as INodeOutputSlot & { widget?: IWidget },
-                  this,
-                  index
-                )
+                }
+              : outputAsSerialisable(output, this, index)
           }
         )
 

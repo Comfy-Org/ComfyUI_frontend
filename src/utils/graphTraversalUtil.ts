@@ -473,10 +473,7 @@ export function getExecutionIdByNode(
     return createNodeExecutionId([node.id])
   }
 
-  const parentPath = findPartialExecutionPathToGraph(
-    node.graph as LGraph,
-    rootGraph
-  )
+  const parentPath = findPartialExecutionPathToGraph(node.graph, rootGraph)
   if (parentPath === undefined) return null
 
   return createExecutionIdFromPath(parentPath, node.id)
@@ -592,7 +589,7 @@ export function getExecutionIdForNodeInGraph(
   const localExecutionId = createNodeExecutionId([localNodeId])
   if (graph === rootGraph || graph.isRootGraph) return localExecutionId
 
-  const parentPath = findPartialExecutionPathToGraph(graph as LGraph, rootGraph)
+  const parentPath = findPartialExecutionPathToGraph(graph, rootGraph)
   if (parentPath === undefined) return localExecutionId
 
   return createExecutionIdFromPath(parentPath, localNodeId) ?? localExecutionId
@@ -783,11 +780,12 @@ export function traverseNodesDepthFirst<T = void>(
   nodes: LGraphNode[],
   options?: TraverseNodesOptions<T>
 ): void {
-  const {
-    visitor = () => undefined as T,
-    initialContext = undefined as T,
-    expandSubgraphs = true
-  } = options || {}
+  const visitor = options?.visitor ?? (() => undefined as T)
+  const initialContext =
+    options?.initialContext === undefined
+      ? (undefined as T)
+      : options.initialContext
+  const expandSubgraphs = options?.expandSubgraphs ?? true
   type StackItem = { node: LGraphNode; context: T }
   const stack: StackItem[] = []
 
@@ -865,7 +863,7 @@ export function collectFromNodes<T = LGraphNode, C = void>(
   const {
     collector = (node: LGraphNode) => node as T,
     contextBuilder = () => undefined as C,
-    initialContext = undefined as C,
+    initialContext = undefined,
     expandSubgraphs = true
   } = options || {}
   const results: T[] = []

@@ -26,7 +26,7 @@ const {
     routeHash: ref(''),
     routerPush: vi.fn(),
     routerReplace: vi.fn(),
-    routerHistory: { state: {} as Record<string, unknown> },
+    routerHistory: { state: {} },
     mockOpenWorkflow: vi.fn()
   }
 })
@@ -93,8 +93,9 @@ vi.mock('@/utils/graphTraversalUtil', () => ({
   findSubgraphPathById: vi.fn()
 }))
 vi.mock('@vueuse/router', () => ({ useRouteHash: () => routeHash }))
-vi.mock('vue-router', async (importOriginal) => ({
-  ...(await importOriginal<typeof VueRouter>()),
+vi.mock('vue-router', () => ({
+  NavigationFailureType: { cancelled: 8, duplicated: 16 },
+  isNavigationFailure: vi.fn(() => false),
   useRouter: () => ({
     push: routerPush,
     replace: routerReplace,

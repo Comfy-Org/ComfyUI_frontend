@@ -382,7 +382,7 @@ describe('Autogrow', () => {
     const serialized = graph.serialize()
     graph.clear()
     graph.configure(serialized)
-    const newNode = graph.nodes[0]!
+    const newNode = graph.nodes[0]
 
     expect(newNode.inputs.map((i) => i.name)).toStrictEqual([
       '0.a0',

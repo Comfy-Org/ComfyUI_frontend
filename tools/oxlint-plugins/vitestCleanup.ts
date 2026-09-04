@@ -328,7 +328,7 @@ function runsDirectlyInVitestCallback(
   const parent = ancestors[boundaryIndex - 1]
   return (
     isVitestCallbackCall(context, parent, callbackImports) &&
-    parent.arguments.includes(callback as Expression)
+    parent.arguments.includes(callback)
   )
 }
 

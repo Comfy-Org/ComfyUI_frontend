@@ -183,6 +183,30 @@ function serialiseWidgetValues(widgets: IBaseWidget[]) {
   return { widgets_values: positional, widgets_values_named: named }
 }
 
+export function createWidgetRestorationState(
+  info: Pick<ISerialisedNode, 'widgets_values' | 'widgets_values_named'>,
+  fallbackNames?: readonly string[]
+) {
+  const positional = Array.from(info.widgets_values ?? [])
+  const named =
+    info.widgets_values_named ??
+    (info.widgets_values && fallbackNames
+      ? Object.fromEntries(
+          positional.flatMap((value, index) =>
+            fallbackNames[index] ? [[fallbackNames[index], value]] : []
+          )
+        )
+      : undefined)
+
+  return {
+    positional,
+    named: named ? { ...named } : undefined,
+    restoreNamed: Boolean(
+      named && (LiteGraph.namedValuesRestore || fallbackNames)
+    )
+  }
+}
+
 interface ConnectByTypeOptions {
   /** @deprecated Events */
   createEventInCase?: boolean
@@ -1009,8 +1033,14 @@ export class LGraphNode
 
   constructor(title: string, type?: string) {
     initializeWidgetsView(this)
-    this._state = createNodeShellState(title, type, this.title_mode)
-    this._inputs = createInputSlotView(this, this._state.inputs)
+    this._state = createNodeShellState(
+      this,
+      createInputSlotView,
+      title,
+      type,
+      this.title_mode
+    )
+    this._inputs = this._state.inputs
     this._outputs = this._state.outputs
     for (const property of [
       'inputs',
@@ -1121,28 +1151,18 @@ export class LGraphNode
     // SubgraphNode callback.
     this._internalConfigureAfterSlots?.()
 
-    const positionalValues = Array.from(info.widgets_values ?? [])
-    const getNamedValues = () => {
-      if (info.widgets_values_named) return info.widgets_values_named
-
-      const map = this.constructor.nodeData?.fallbackWidgetsValuesNames
-      if (!info.widgets_values || !map) return
-
-      return Object.fromEntries(
-        positionalValues.flatMap((v, i) => (map[i] ? [[map[i], v]] : []))
-      )
-    }
-    const namedValues = getNamedValues()
-    const graphId = this.graph?.rootGraph.id ?? zeroUuid
-    const shouldRestoreNamed =
-      LiteGraph.namedValuesRestore ||
+    const restoration = createWidgetRestorationState(
+      info,
       this.constructor.nodeData?.fallbackWidgetsValuesNames
+    )
+    const namedValues = restoration.named
+    const graphId = this.graph?.rootGraph.id ?? zeroUuid
     try {
-      useWidgetValueStore().setNodeWidgetRestoration(graphId, this.id, {
-        positional: positionalValues,
-        named: namedValues ? { ...namedValues } : undefined,
-        restoreNamed: Boolean(namedValues && shouldRestoreNamed)
-      })
+      useWidgetValueStore().setNodeWidgetRestoration(
+        graphId,
+        this.id,
+        restoration
+      )
 
       if (this.widgets) {
         for (const w of this.widgets) {
@@ -3286,8 +3306,8 @@ export class LGraphNode
     if (!graph) throw new NullGraphError()
 
     // Assertion: It's either there or it isn't.
-    const inputIndex = this.inputs.indexOf(slot as INodeInputSlot)
-    const outputIndex = this.outputs.indexOf(slot as INodeOutputSlot)
+    const inputIndex = this.inputs.indexOf(slot)
+    const outputIndex = this.outputs.indexOf(slot)
     if (inputIndex === -1 && outputIndex === -1) {
       console.error('Invalid slot')
       return
