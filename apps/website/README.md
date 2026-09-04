@@ -196,7 +196,9 @@ test ! -d apps/website/dist/workshop && echo "no Workshop in this build"
 
 **To launch,** set `WORKSHOP_IN_BUILD=1` in the Vercel _production_ environment
 — and in the _preview_ environment at the same time, so the two go on matching.
-No code change, and reversible by removing it.
+No code change, and reversible by removing it. An unlabelled PR deliberately
+leaves the variable undefined rather than setting it empty, so that the Vercel
+preview value is what governs once it exists.
 
 The switch is `src/config/workshop-release.ts`; the removal is the
 `workshop-release-gate` Astro integration, which deletes the emitted directory
