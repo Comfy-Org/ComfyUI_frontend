@@ -329,6 +329,42 @@ describe('createOpSender', () => {
     expect(sender.pending()).toBe(1)
   })
 
+  it('late results addressed to the old workflow drain the stale credits', () => {
+    sender.enqueue([addNode(1)])
+    vi.advanceTimersByTime(10_000)
+    vi.advanceTimersByTime(10_000)
+    expect(settled.map((outcome) => outcome.state)).toEqual(['unacknowledged'])
+
+    boundWorkflow = 'wf-2'
+    sender.enqueue([addNode(2)])
+
+    resultListener?.({
+      workflowId: WORKFLOW,
+      ok: false,
+      applied: [],
+      skipped: []
+    })
+    resultListener?.({
+      workflowId: WORKFLOW,
+      ok: false,
+      applied: [],
+      skipped: []
+    })
+    expect(settled).toHaveLength(1)
+
+    resultListener?.({
+      workflowId: 'wf-2',
+      ok: false,
+      applied: [],
+      skipped: []
+    })
+
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'unacknowledged',
+      'acknowledged'
+    ])
+  })
+
   it('a late anonymous failure from an unacknowledged batch never settles the next batch', () => {
     sender.enqueue([addNode(1)])
     vi.advanceTimersByTime(10_000)

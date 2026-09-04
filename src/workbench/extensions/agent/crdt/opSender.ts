@@ -176,17 +176,17 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   }
 
   const unsubscribe = deps.onOpsResult((result) => {
-    if (!inFlight) {
-      // A late result with no batch waiting: drain a credit if one is
-      // outstanding so it cannot swallow a future batch's own result.
+    if (
+      !inFlight ||
+      (result.workflowId !== undefined &&
+        result.workflowId !== inFlight.workflowId)
+    ) {
+      // A late result with no batch waiting, or addressed to another workflow
+      // than the in-flight batch: drain a credit if one is outstanding so it
+      // cannot swallow a future batch's own result.
       if (staleAnonymousBudget > 0) staleAnonymousBudget--
       return
     }
-    if (
-      result.workflowId !== undefined &&
-      result.workflowId !== inFlight.workflowId
-    )
-      return
     const identified = [...result.applied, ...result.skipped]
     if (result.failure?.op_id) identified.push(result.failure.op_id)
     if (identified.length > 0) {
