@@ -46,7 +46,7 @@ useHeroAnimation({
     class="px-4 py-20 lg:flex lg:gap-16 lg:px-20 lg:py-24"
   >
     <!-- Left column: intro + image -->
-    <div class="lg:w-1/2">
+    <div class="min-w-0 lg:w-1/2">
       <div class="lg:max-w-xl">
         <SectionLabel ref="badgeRef">
           {{ t(tk('badge'), locale) }}
