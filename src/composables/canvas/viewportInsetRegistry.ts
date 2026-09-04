@@ -1,3 +1,5 @@
+import { reportError } from '@/platform/telemetry/reportError'
+
 export type ViewportInsetProvider = () => number
 
 type ViewportInsetRegistration = {
@@ -43,7 +45,7 @@ export function getViewportInset(): number {
     try {
       value = provider()
     } catch (error) {
-      console.error('[viewportInsetRegistry] Inset provider threw', error)
+      reportError(error, { errorType: 'viewport_inset_provider_failure' })
       continue
     }
     if (Number.isFinite(value)) inset += Math.max(value, 0)

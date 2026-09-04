@@ -5,6 +5,11 @@ import {
   registerViewportInset
 } from './viewportInsetRegistry'
 
+const mockReportError = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
+}))
+
 const disposers: Array<() => void> = []
 function trackedRegister(
   ...args: Parameters<typeof registerViewportInset>
@@ -80,10 +85,10 @@ describe('viewportInsetRegistry', () => {
     })
     trackedRegister('test-fine', () => 48)
 
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     expect(getViewportInset()).toBe(48)
-    expect(errorSpy).toHaveBeenCalledOnce()
-    errorSpy.mockRestore()
+    expect(mockReportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'viewport_inset_provider_failure'
+    })
   })
 
   it('treats a NaN or Infinity provider as contributing zero', () => {
