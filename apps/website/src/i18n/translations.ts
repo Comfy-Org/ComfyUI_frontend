@@ -49,6 +49,14 @@ const translations = {
     en: 'Your key is stored in this browser only and is sent straight to the Comfy API.',
     'zh-CN': '密钥仅保存在此浏览器中，并直接发送至 Comfy API。'
   },
+  'workshop.card.input': {
+    en: 'Input',
+    'zh-CN': '输入'
+  },
+  'workshop.card.output': {
+    en: 'Output',
+    'zh-CN': '输出'
+  },
   'workshop.auth.cta': {
     en: 'Sign up / Login to Render',
     'zh-CN': '注册 / 登录后生成'

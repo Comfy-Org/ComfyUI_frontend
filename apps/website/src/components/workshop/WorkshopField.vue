@@ -70,13 +70,16 @@ const acceptByType = {
 
 <template>
   <label class="flex flex-col gap-2">
-    <span class="text-sm font-medium text-primary-comfy-canvas">
+    <!-- Uppercase label with the description beneath, per the prototype. -->
+    <span
+      class="text-xs font-medium tracking-wider text-primary-comfy-canvas/80 uppercase"
+    >
       {{ field.label }}
       <span v-if="field.required" class="text-primary-comfy-yellow">*</span>
     </span>
     <span
       v-if="'hint' in field && field.hint"
-      class="text-xs text-primary-comfy-canvas/55"
+      class="-mt-1 text-xs text-primary-comfy-canvas/50"
     >
       {{ field.hint }}
     </span>

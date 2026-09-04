@@ -132,161 +132,187 @@ onBeforeUnmount(() => {
 
 <template>
   <!--
-    Two columns, controls left and result right, matching the platform
-    playground: the thing you are waiting for should not be below the fold
-    while you fill the form in. 2fr/3fr, so the result gets the larger half.
+    INPUT left / OUTPUT right at 5:7 on a twelve-column grid, matching the
+    Workshop prototype (PR #16556). The run control sits at the foot of the
+    input card, where the prototype puts it.
   -->
-  <div class="grid items-start gap-6 lg:grid-cols-5">
-    <div class="lg:col-span-2">
-      <slot name="form" />
-    </div>
+  <div class="grid items-start gap-6 lg:grid-cols-12">
+    <section
+      class="flex flex-col overflow-hidden rounded-2xl border border-primary-comfy-canvas/10 bg-primary-comfy-canvas/4 lg:col-span-5"
+    >
+      <header
+        class="border-b border-primary-comfy-canvas/10 px-5 py-3 text-xs tracking-wider text-primary-comfy-canvas/55 uppercase"
+      >
+        {{ t('workshop.card.input', locale) }}
+      </header>
+
+      <div class="flex flex-col gap-6 p-5">
+        <slot name="form" />
+
+        <button
+          v-if="!running"
+          type="button"
+          class="hover:bg-primary-comfy-yellow/90 group bg-primary-comfy-yellow flex h-13 w-full items-center justify-center gap-2.5 rounded-xl text-sm font-semibold tracking-wider text-primary-comfy-ink uppercase transition-colors"
+          @click="credentials === '' ? (signInOpen = true) : run()"
+        >
+          <Play
+            aria-hidden="true"
+            class="size-4 fill-current transition-transform group-hover:scale-110"
+          />
+          {{
+            credentials === ''
+              ? t('workshop.auth.cta', locale)
+              : t('workshop.run.button', locale)
+          }}
+        </button>
+        <button
+          v-else
+          type="button"
+          class="flex h-13 w-full items-center justify-center rounded-xl border border-primary-comfy-canvas/25 text-sm tracking-wider text-primary-comfy-canvas uppercase transition-colors hover:border-primary-comfy-canvas/40"
+          @click="cancel"
+        >
+          {{ t('workshop.run.cancel', locale) }}
+        </button>
+      </div>
+    </section>
 
     <section
-      class="rounded-2xl border border-primary-comfy-canvas/10 bg-primary-comfy-canvas/5 p-6 lg:col-span-3"
+      class="overflow-hidden rounded-2xl border border-primary-comfy-canvas/10 bg-primary-comfy-canvas/4 lg:col-span-7"
     >
-      <button
-        v-if="!running"
-        type="button"
-        class="hover:shadow-primary-comfy-yellow/25 group flex h-16 w-full items-center justify-center gap-3 rounded-2xl bg-primary-comfy-yellow text-lg font-semibold text-primary-comfy-ink transition-all hover:-translate-y-0.5 hover:shadow-lg"
-        @click="credentials === '' ? (signInOpen = true) : run()"
+      <header
+        class="flex items-center justify-between border-b border-primary-comfy-canvas/10 px-5 py-3"
       >
-        <Play
-          aria-hidden="true"
-          class="size-5 fill-current transition-transform group-hover:scale-110"
-        />
-        {{
-          credentials === ''
-            ? t('workshop.auth.cta', locale)
-            : t('workshop.run.button', locale)
-        }}
-      </button>
-      <button
-        v-else
-        type="button"
-        class="hover:border-primary-comfy-canvas/40 flex h-16 w-full items-center justify-center rounded-2xl border border-primary-comfy-canvas/25 text-lg text-primary-comfy-canvas transition-colors"
-        @click="cancel"
-      >
-        {{ t('workshop.run.cancel', locale) }}
-      </button>
-
-      <!--
-        No progress signal exists: the partner polls internally and reports
-        only a terminal state. So this sets an expectation and shows elapsed
-        time rather than animating a percentage we would be inventing.
-      -->
-      <div v-if="running" class="mt-6" aria-live="polite">
-        <div
-          class="workshop-shimmer relative flex aspect-video items-center justify-center overflow-hidden rounded-xl border border-primary-comfy-canvas/10"
+        <span
+          class="text-xs tracking-wider text-primary-comfy-canvas/55 uppercase"
         >
+          {{ t('workshop.card.output', locale) }}
+        </span>
+      </header>
+
+      <div class="p-5">
+        <!--
+          No progress signal exists: the partner polls internally and reports
+          only a terminal state. So this sets an expectation and shows elapsed
+          time rather than animating a percentage we would be inventing.
+        -->
+        <div v-if="running" aria-live="polite">
           <div
-            class="relative z-10 flex flex-col items-center gap-3 px-6 text-center"
+            class="workshop-shimmer relative flex aspect-video items-center justify-center overflow-hidden rounded-xl border border-primary-comfy-canvas/10"
           >
-            <span
-              class="border-primary-comfy-yellow/70 size-8 animate-spin rounded-full border-2 border-t-transparent motion-reduce:animate-none"
-            />
-            <p class="text-sm text-primary-comfy-canvas">
-              {{ t('workshop.run.running', locale) }}
-            </p>
-            <p class="text-xs text-primary-comfy-canvas/55">
-              {{ expectation }}
-            </p>
-            <p
-              class="font-mono text-xs tabular-nums text-primary-comfy-canvas/45"
+            <div
+              class="relative z-10 flex flex-col items-center gap-3 px-6 text-center"
             >
-              {{ elapsedLabel }}
-            </p>
+              <span
+                class="border-primary-comfy-yellow/70 size-8 animate-spin rounded-full border-2 border-t-transparent motion-reduce:animate-none"
+              />
+              <p class="text-sm text-primary-comfy-canvas">
+                {{ t('workshop.run.running', locale) }}
+              </p>
+              <p class="text-xs text-primary-comfy-canvas/55">
+                {{ expectation }}
+              </p>
+              <p
+                class="font-mono text-xs text-primary-comfy-canvas/45 tabular-nums"
+              >
+                {{ elapsedLabel }}
+              </p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div
-        v-else-if="result?.status === 'error'"
-        class="mt-6 rounded-xl border border-red-500/30 bg-red-500/5 p-5"
-        role="alert"
-      >
-        <p class="font-medium text-primary-comfy-canvas">
-          {{ headingFor(result.errorType) }}
-        </p>
-        <p
-          class="mt-2 text-sm whitespace-pre-line text-primary-comfy-canvas/70"
+        <div
+          v-else-if="result?.status === 'error'"
+          class="rounded-xl border border-red-500/30 bg-red-500/5 p-5"
+          role="alert"
         >
-          {{ result.detail }}
-        </p>
-        <p
-          v-if="result.requestId"
-          class="mt-3 font-mono text-xs text-primary-comfy-canvas/45"
-        >
-          {{ t('workshop.run.requestId', locale) }} {{ result.requestId }}
-        </p>
-      </div>
-
-      <div v-else-if="result?.status === 'ok'" class="mt-6">
-        <ul v-if="mediaUrls.length > 0" class="grid list-none gap-4 p-0">
-          <li
-            v-for="url in mediaUrls"
-            :key="url"
-            class="overflow-hidden rounded-xl border border-primary-comfy-canvas/10"
+          <p class="font-medium text-primary-comfy-canvas">
+            {{ headingFor(result.errorType) }}
+          </p>
+          <p
+            class="mt-2 text-sm whitespace-pre-line text-primary-comfy-canvas/70"
           >
-            <img
-              v-if="mediaKind === 'image'"
-              :src="url"
-              :alt="model.displayName"
-              class="w-full"
-            />
-            <video
-              v-else-if="mediaKind === 'video'"
-              :src="url"
-              controls
-              playsinline
-              class="w-full"
-            />
-            <audio
-              v-else-if="mediaKind === 'audio'"
-              :src="url"
-              controls
-              class="w-full p-4"
-            />
-            <a
-              v-else
-              :href="url"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="text-primary-comfy-yellow block p-6 text-sm break-all hover:underline"
-            >
-              {{ url }}
-            </a>
-          </li>
-        </ul>
+            {{ result.detail }}
+          </p>
+          <p
+            v-if="result.requestId"
+            class="mt-3 font-mono text-xs text-primary-comfy-canvas/45"
+          >
+            {{ t('workshop.run.requestId', locale) }} {{ result.requestId }}
+          </p>
+        </div>
 
-        <p v-else class="text-sm text-primary-comfy-canvas/65">
-          {{ t('workshop.run.noMedia', locale) }}
-        </p>
+        <div v-else-if="result?.status === 'ok'">
+          <ul v-if="mediaUrls.length > 0" class="grid list-none gap-4 p-0">
+            <li
+              v-for="url in mediaUrls"
+              :key="url"
+              class="overflow-hidden rounded-xl border border-primary-comfy-canvas/10"
+            >
+              <img
+                v-if="mediaKind === 'image'"
+                :src="url"
+                :alt="model.displayName"
+                class="w-full"
+              />
+              <video
+                v-else-if="mediaKind === 'video'"
+                :src="url"
+                controls
+                playsinline
+                class="w-full"
+              />
+              <audio
+                v-else-if="mediaKind === 'audio'"
+                :src="url"
+                controls
+                class="w-full p-4"
+              />
+              <a
+                v-else
+                :href="url"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-primary-comfy-yellow block p-6 text-sm break-all hover:underline"
+              >
+                {{ url }}
+              </a>
+            </li>
+          </ul>
+
+          <p v-else class="text-sm text-primary-comfy-canvas/65">
+            {{ t('workshop.run.noMedia', locale) }}
+          </p>
+
+          <!--
+            Always available, never only. The output shape belongs to the
+            partner, so whatever the list above found, the document itself is
+            the record of what actually came back.
+          -->
+          <details class="mt-4">
+            <summary
+              class="cursor-pointer text-sm text-primary-comfy-canvas/65 hover:text-primary-comfy-canvas"
+            >
+              {{ t('workshop.run.rawOutput', locale) }}
+            </summary>
+            <pre
+              class="mt-3 max-h-120 overflow-auto rounded-xl border border-primary-comfy-canvas/10 bg-black p-5 text-sm/relaxed text-primary-comfy-canvas"
+            ><code>{{ JSON.stringify(result.output, null, 2) }}</code></pre>
+          </details>
+        </div>
 
         <!--
-          Always available, never only. The output shape belongs to the
-          partner, so whatever the list above found, the document itself is
-          the record of what actually came back.
+          The prototype shows a real example here so you can see what a model
+          produces before running it. That needs per-model example media we do
+          not have yet, so this holds the space until the content pack lands.
         -->
-        <details class="mt-4">
-          <summary
-            class="cursor-pointer text-sm text-primary-comfy-canvas/65 hover:text-primary-comfy-canvas"
-          >
-            {{ t('workshop.run.rawOutput', locale) }}
-          </summary>
-          <pre
-            class="mt-3 max-h-120 overflow-auto rounded-xl border border-primary-comfy-canvas/10 bg-black p-5 text-sm/relaxed text-primary-comfy-canvas"
-          ><code>{{ JSON.stringify(result.output, null, 2) }}</code></pre>
-        </details>
-      </div>
-
-      <!-- Nothing has run yet: hold the space so the page does not jump. -->
-      <div
-        v-else
-        class="mt-6 flex aspect-video items-center justify-center rounded-xl border border-dashed border-primary-comfy-canvas/12"
-      >
-        <p class="px-6 text-center text-sm text-primary-comfy-canvas/45">
-          {{ t('workshop.run.idle', locale) }}
-        </p>
+        <div
+          v-else
+          class="flex aspect-video items-center justify-center rounded-xl border border-dashed border-primary-comfy-canvas/12"
+        >
+          <p class="px-6 text-center text-sm text-primary-comfy-canvas/45">
+            {{ t('workshop.run.idle', locale) }}
+          </p>
+        </div>
       </div>
     </section>
 

@@ -62,7 +62,7 @@ const languageLabels: Record<WorkshopSnippetLanguage, string> = {
         type="button"
         role="tab"
         :aria-selected="view === tab"
-        class="-mb-px border-b-2 px-4 py-3 text-sm transition-colors"
+        class="-mb-px border-b-2 px-4 py-3 text-sm font-medium tracking-wider uppercase transition-colors"
         :class="
           view === tab
             ? 'border-primary-comfy-yellow text-primary-comfy-canvas'
