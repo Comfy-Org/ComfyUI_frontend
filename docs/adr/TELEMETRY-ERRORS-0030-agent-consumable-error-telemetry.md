@@ -4,7 +4,15 @@ Date: 2026-09-03
 
 ## Status
 
-Accepted
+Proposed
+
+Two rules below are not expressible with the APIs as they stand: rule 5
+selects soft, hard, and sampled assertion modes, but `assert()` takes only a
+condition and a message; rule 4 configures a fingerprint at the emitter, but
+`ReportErrorOptions` has no fingerprint field and the only fingerprint seam
+today is the global `beforeSend` that rule 4 rules out. This stays Proposed
+until those two emitter APIs land, so it reads as direction rather than an
+immediately-binding gate.
 
 ## Context
 
