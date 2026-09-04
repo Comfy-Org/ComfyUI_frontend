@@ -18,7 +18,8 @@ const {
   mockGetBillingStatus,
   mockActiveWorkspaceId,
   mockSetWorkspaceBillingRail,
-  mockLocalStorage
+  mockLocalStorage,
+  mockReportTelemetryError
 } = vi.hoisted(() => ({
   mockIsLoggedIn: { value: false },
   mockIsCloud: { value: true },
@@ -26,6 +27,7 @@ const {
   mockGetBillingStatus: vi.fn(),
   mockActiveWorkspaceId: { value: 'workspace-123' },
   mockSetWorkspaceBillingRail: vi.fn(),
+  mockReportTelemetryError: vi.fn(),
   mockReportError: vi.fn(),
   mockAccessBillingPortal: vi.fn(),
   mockShowSubscriptionRequiredDialog: vi.fn(),
@@ -104,6 +106,10 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
 
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: vi.fn(() => mockTelemetry)
+}))
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportTelemetryError
 }))
 
 vi.mock('@/composables/auth/useAuthActions', () => ({
@@ -564,6 +570,85 @@ describe('useSubscription', () => {
   })
 
   describe('pending checkout recovery', () => {
+    it('reports once when pending checkout recovery exhausts its retry window', async () => {
+      vi.useFakeTimers()
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-timeout',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: false,
+        has_funds: false,
+        renewal_date: ''
+      })
+      mockIsLoggedIn.value = true
+
+      useSubscriptionWithScope()
+      await vi.advanceTimersByTimeAsync(43_000)
+      window.dispatchEvent(new Event('pageshow'))
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockReportTelemetryError).toHaveBeenCalledOnce()
+      expect(mockReportTelemetryError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'cloud_checkout_completion_missing',
+        tags: {
+          failure_kind: 'missing_event',
+          feature_area: 'cloud',
+          operation: 'sync',
+          outcome: 'timed_out',
+          assert_mode: 'soft'
+        },
+        context: {
+          recovery_attempt_count: 3,
+          has_pending_attempt: true,
+          is_logged_in: true
+        },
+        level: 'warning'
+      })
+    })
+
+    it('does not report a missing completion after recovery succeeds', async () => {
+      vi.useFakeTimers()
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-recovered',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+      mockGetBillingStatus
+        .mockResolvedValueOnce({
+          is_active: false,
+          has_funds: false,
+          renewal_date: ''
+        })
+        .mockResolvedValue({
+          is_active: true,
+          has_funds: true,
+          subscription_tier: 'STANDARD',
+          subscription_duration: 'MONTHLY',
+          renewal_date: '2025-11-16'
+        })
+      mockIsLoggedIn.value = true
+
+      useSubscriptionWithScope()
+      await vi.runAllTimersAsync()
+
+      expect(mockReportTelemetryError).not.toHaveBeenCalled()
+      expect(
+        localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
+      ).toBeNull()
+    })
+
     it('emits subscription_success when a pending new subscription becomes active', async () => {
       localStorage.setItem(
         PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
