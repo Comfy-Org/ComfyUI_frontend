@@ -230,14 +230,13 @@ export function applyAiVerdict(
     isFilled(parsed.flag)
       ? clean(parsed.flag)
       : null
-  const flag = result.flag ?? returnedFlag
   if (
     adapterOutcome !== 'success' ||
     !['pass', 'fail', 'inconclusive'].includes(String(verdict)) ||
     typeof reason !== 'string' ||
     !reason.trim() ||
-    (verdict !== 'inconclusive' && !flag) ||
-    Boolean(result.flag && returnedFlag && result.flag !== returnedFlag)
+    !result.flag ||
+    returnedFlag !== result.flag
   )
     return {
       verdict: 'inconclusive',
@@ -246,11 +245,8 @@ export function applyAiVerdict(
     }
 
   return {
+    ...result,
     verdict: verdict as PolicyResult['verdict'],
-    requiresAi: true,
-    flag: flag ?? undefined,
-    flagDiscovery:
-      result.flagDiscovery ?? (returnedFlag ? 'inferred' : undefined),
     reasons: [
       ...result.reasons,
       `AI review: ${reason.replace(/[\r\n]+/g, ' ').slice(0, 1000)}`
@@ -391,7 +387,6 @@ export function buildReviewContext(
         {
           flag: result.flag ?? null,
           flagOrigin: result.flagOrigin ?? null,
-          flagDiscovery: result.flagDiscovery ?? null,
           deterministicReasons: result.reasons
         },
         null,

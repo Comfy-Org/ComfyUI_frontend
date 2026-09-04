@@ -105,7 +105,8 @@ describe('applyAiVerdict', () => {
   const deterministic = {
     verdict: 'pass' as const,
     requiresAi: true,
-    reasons: ['Deterministic checks passed.']
+    reasons: ['Deterministic checks passed.'],
+    flag: 'safe_feature'
   }
 
   it('normalizes a provider pass', () => {
@@ -122,8 +123,7 @@ describe('applyAiVerdict', () => {
     ).toMatchObject({
       verdict: 'pass',
       requiresAi: true,
-      flag: 'safe_feature',
-      flagDiscovery: 'inferred'
+      flag: 'safe_feature'
     })
   })
 
@@ -153,9 +153,8 @@ describe('applyAiVerdict', () => {
   })
 
   it('rejects a provider that changes the resolved flag', () => {
-    const resolved = { ...deterministic, flag: 'safe_feature' }
     const result = applyAiVerdict(
-      resolved,
+      deterministic,
       JSON.stringify({
         verdict: 'pass',
         flag: 'other_feature',
