@@ -7,16 +7,12 @@ import type {
 } from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 
+import type { ServerDocWireFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
+import { DOC_PROTOCOL_VERSION } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
 import { mintWireOps } from '@/workbench/extensions/agent/crdt/opEnvelope'
 
 const HOST_ACTOR = 'agent:comfy'
-export const DOC_PROTOCOL_VERSION = 1
-
-export interface DocFrame {
-  type: 'doc_subscribed' | 'doc_update' | 'doc_ops_result'
-  data: Record<string, unknown>
-}
 
 function toBase64(bytes: Uint8Array): string {
   return Buffer.from(bytes).toString('base64')
@@ -43,7 +39,7 @@ export class HostDoc {
     return readGraph(this.doc)
   }
 
-  subscribed(): DocFrame {
+  subscribed(): ServerDocWireFrame {
     return {
       type: 'doc_subscribed',
       data: {
@@ -55,7 +51,7 @@ export class HostDoc {
     }
   }
 
-  catchUp(stateVectorB64: string): DocFrame {
+  catchUp(stateVectorB64: string): ServerDocWireFrame {
     const update = Y.encodeStateAsUpdate(this.doc, fromBase64(stateVectorB64))
     return this.updateFrame(update, HOST_ACTOR, [])
   }
@@ -72,7 +68,7 @@ export class HostDoc {
     return ops.map((op) => op.op_id)
   }
 
-  apply(operations: GraphOperation[]): DocFrame {
+  apply(operations: GraphOperation[]): ServerDocWireFrame {
     const before = Y.encodeStateVector(this.doc)
     const ops = mintWireOps(operations, {
       actor: HOST_ACTOR,
@@ -96,7 +92,7 @@ export class HostDoc {
     update: Uint8Array,
     actor: string,
     opIds: string[]
-  ): DocFrame {
+  ): ServerDocWireFrame {
     return {
       type: 'doc_update',
       data: {
