@@ -7,16 +7,16 @@ import { createI18n } from 'vue-i18n'
 
 import type { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
+import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 
 import AssetsSidebarTab from './AssetsSidebarTab.vue'
 
 const folderAsset = vi.hoisted(() => ({
   id: 'multi-output',
   name: 'multi-output.png',
+  created_at: '2026-01-01T00:00:00Z',
+  updated_at: '2026-01-01T00:00:00Z',
   tags: ['output'],
-  created_at: '2026-08-30T00:00:00.000Z',
-  updated_at: '2026-08-30T00:00:00.000Z',
   user_metadata: {
     jobId: 'multi-output-job',
     nodeId: '1',
@@ -33,10 +33,6 @@ const selectionMocks = vi.hoisted(() => ({
   reconcileSelection:
     vi.fn<ReturnType<typeof useAssetSelection>['reconcileSelection']>()
 }))
-
-const resolveOutputAssetItemsMock = vi.hoisted(() =>
-  vi.fn<typeof resolveOutputAssetItems>()
-)
 
 vi.mock('@/stores/assetsStore', async () => {
   const { ref } = await import('vue')
@@ -108,10 +104,7 @@ vi.mock('@/platform/assets/composables/useMediaAssetActions', () => ({
   })
 }))
 
-vi.mock('@/platform/assets/utils/outputAssetUtil', async (importOriginal) => ({
-  ...(await importOriginal()),
-  resolveOutputAssetItems: resolveOutputAssetItemsMock
-}))
+vi.mock('@/platform/assets/utils/outputAssetUtil')
 
 vi.mock('primevue/usetoast', () => ({
   useToast: () => ({ add: vi.fn() })
@@ -192,7 +185,7 @@ function renderTab() {
 describe('AssetsSidebarTab folder navigation', () => {
   beforeEach(() => {
     storeControls.setOutputItems([folderAsset])
-    resolveOutputAssetItemsMock.mockResolvedValue([folderAsset])
+    vi.mocked(resolveOutputAssetItems).mockResolvedValue([folderAsset])
   })
 
   it('places accessible folder actions beside the job ID', async () => {
@@ -245,7 +238,7 @@ describe('AssetsSidebarTab folder navigation', () => {
   // second resolved value so a refresh (triggered separately by each test)
   // has refreshed data available if the component ever fetches it.
   async function renderOpenFolder() {
-    resolveOutputAssetItemsMock
+    vi.mocked(resolveOutputAssetItems)
       .mockReset()
       .mockResolvedValueOnce([folderAsset, existingChild])
       .mockResolvedValueOnce([replacementPrimary, existingChild, addedChild])
