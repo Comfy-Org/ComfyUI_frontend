@@ -62,7 +62,7 @@ describe('registerAgentIdentityStateTracker', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     localStorage.clear()
     setUser(null)
-    global.URL.revokeObjectURL = vi.fn()
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
     stop = registerAgentIdentityStateTracker()
   })
 
