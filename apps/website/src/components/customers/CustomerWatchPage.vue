@@ -1,23 +1,20 @@
 <script setup lang="ts">
 import { getRoutes } from '../../config/routes'
 import type { CustomerVideoStory } from '../../data/customerVideos'
-import { customerVideoPath, formatDuration } from '../../data/customerVideos'
+import { formatDuration } from '../../data/customerVideos'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import type { WatchRelatedItem } from '../blocks/WatchRelatedCard.vue'
-import WatchPageLayout from '../blocks/WatchPageLayout.vue'
-import WatchRelatedStrip from '../blocks/WatchRelatedStrip.vue'
+import SectionLabel from '../common/SectionLabel.vue'
 import VideoPlayer from '../common/VideoPlayer.vue'
+import Button from '../ui/button/Button.vue'
 
 const {
   story,
-  otherStories,
   relatedStoryHref,
   transcript = [],
   locale = 'en'
 } = defineProps<{
   story: CustomerVideoStory
-  otherStories: readonly CustomerVideoStory[]
   /** Href of the reciprocal written story, when one exists for this video. */
   relatedStoryHref?: string
   transcript?: readonly string[]
@@ -25,86 +22,83 @@ const {
 }>()
 
 const routes = getRoutes(locale)
-
-const breadcrumbs = [
-  { label: t('breadcrumb.home', locale), href: '/' },
-  { label: t('nav.customerStories', locale), href: routes.customers },
-  { label: story.title }
-]
-
-const related: WatchRelatedItem[] = otherStories.map((item) => ({
-  id: item.slug,
-  label: item.company,
-  title: item.title,
-  href: customerVideoPath(item.slug),
-  poster: item.poster
-}))
-
 const duration = formatDuration(story.durationSeconds)
 </script>
 
 <template>
-  <WatchPageLayout
-    :breadcrumbs
-    :breadcrumbs-label="t('ui.breadcrumb', locale)"
-    :eyebrow="story.company"
-    :eyebrow-detail="story.category"
-    :title="story.title"
-    :description="story.description"
-  >
-    <VideoPlayer
-      :locale
-      :src="story.videoSrc"
-      :poster="story.poster"
-      :tracks="story.captions"
-      :aria-label="story.title"
-      class="w-full"
-    />
+  <!-- Hero: mirrors DetailHeroSection.vue (the written customer-story hero),
+       with the video standing in for the hero image. -->
+  <section class="pt-16 lg:px-20 lg:pt-40 lg:pb-8">
+    <div class="mx-auto flex max-w-4xl flex-col items-center text-center">
+      <SectionLabel>{{ story.category }}</SectionLabel>
 
-    <div v-if="transcript.length" class="mt-10 max-w-3xl">
-      <h2
-        class="text-sm font-extrabold tracking-wider text-primary-warm-white uppercase"
+      <h1
+        class="mt-4 text-3xl/tight font-light text-primary-comfy-canvas lg:text-5xl/tight"
       >
-        {{ t('customers.watch.transcript', locale) }}
-      </h2>
-      <div class="mt-4 flex flex-col gap-4">
+        {{ story.title }}
+      </h1>
+
+      <p
+        class="mt-6 max-w-xl text-sm/relaxed text-primary-warm-gray lg:text-base/relaxed"
+      >
+        {{ story.description }}
+      </p>
+    </div>
+
+    <div class="mt-12 overflow-hidden px-6 lg:mt-16 lg:px-20">
+      <VideoPlayer
+        :locale
+        :src="story.videoSrc"
+        :poster="story.poster"
+        :tracks="story.captions"
+        :aria-label="story.title"
+        class="w-full rounded-3xl"
+      />
+      <p
+        v-if="duration"
+        class="mt-3 text-center text-xs text-primary-comfy-canvas"
+      >
+        {{ duration }}
+      </p>
+    </div>
+  </section>
+
+  <!-- Body: mirrors CustomerArticle.astro's content column and typography
+       (Section.astro / Paragraph.astro), with the caption transcript
+       standing in for article body copy. -->
+  <section class="max-w-9xl mx-auto px-4 pt-8 pb-24 lg:px-20 lg:pt-24 lg:pb-40">
+    <div class="mx-auto max-w-3xl">
+      <div
+        v-if="transcript.length"
+        id="transcript"
+        class="mb-16 scroll-mt-24 lg:scroll-mt-36"
+      >
+        <h2 class="mb-6 text-2xl font-light text-primary-comfy-canvas">
+          {{ t('customers.watch.transcript', locale) }}
+        </h2>
         <p
           v-for="(paragraph, index) in transcript"
           :key="index"
-          class="text-base/relaxed font-light text-primary-warm-gray"
+          class="mt-4 text-sm/relaxed text-primary-comfy-canvas"
         >
           {{ paragraph }}
         </p>
       </div>
-    </div>
 
-    <template v-if="duration" #actions>
-      <span class="text-sm font-light text-primary-warm-gray">
-        {{ duration }}
-      </span>
-    </template>
-
-    <template #chapters>
-      <div class="flex flex-col gap-6">
-        <a
+      <div class="flex flex-col items-center gap-4">
+        <Button
           v-if="relatedStoryHref"
+          as="a"
           :href="relatedStoryHref"
-          class="text-primary-comfy-yellow text-sm font-semibold tracking-wide uppercase hover:underline"
+          variant="default"
+          size="lg"
         >
           {{ t('customers.watch.readWrittenStory', locale) }}
-        </a>
-        <WatchRelatedStrip
-          v-if="related.length"
-          :heading="t('customers.watch.moreStories', locale)"
-          :items="related"
-        />
-        <a
-          :href="routes.customers"
-          class="text-primary-comfy-yellow text-sm font-semibold tracking-wide uppercase hover:underline"
-        >
+        </Button>
+        <Button as="a" :href="routes.customers" variant="outline" size="lg">
           {{ t('customers.watch.browseAll', locale) }}
-        </a>
+        </Button>
       </div>
-    </template>
-  </WatchPageLayout>
+    </div>
+  </section>
 </template>

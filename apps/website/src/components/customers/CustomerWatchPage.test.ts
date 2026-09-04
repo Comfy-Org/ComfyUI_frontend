@@ -16,9 +16,9 @@ const stubs = {
 }
 
 describe('CustomerWatchPage', () => {
-  it('renders the breadcrumb, title, and description for the story', () => {
+  it('renders the title and description', () => {
     render(CustomerWatchPage, {
-      props: { story: blackMath, otherStories: [] },
+      props: { story: blackMath },
       global: { stubs }
     })
 
@@ -26,18 +26,11 @@ describe('CustomerWatchPage', () => {
       blackMath.title
     )
     expect(screen.getByText(blackMath.description)).toBeTruthy()
-    expect(screen.getByRole('link', { name: 'Home' })).toHaveProperty(
-      'href',
-      expect.stringContaining('/')
-    )
-    expect(
-      screen.getByRole('link', { name: 'Customer Stories' })
-    ).toHaveProperty('href', expect.stringContaining('/customers'))
   })
 
   it('passes the story media to the video player', () => {
     render(CustomerWatchPage, {
-      props: { story: blackMath, otherStories: [] },
+      props: { story: blackMath },
       global: { stubs }
     })
 
@@ -48,7 +41,7 @@ describe('CustomerWatchPage', () => {
 
   it('omits the transcript section when no transcript is passed', () => {
     render(CustomerWatchPage, {
-      props: { story: blackMath, otherStories: [] },
+      props: { story: blackMath },
       global: { stubs }
     })
 
@@ -59,7 +52,6 @@ describe('CustomerWatchPage', () => {
     render(CustomerWatchPage, {
       props: {
         story: blackMath,
-        otherStories: [],
         transcript: ['First paragraph.', 'Second paragraph.']
       },
       global: { stubs }
@@ -70,49 +62,33 @@ describe('CustomerWatchPage', () => {
     expect(screen.getByText('Second paragraph.')).toBeTruthy()
   })
 
-  it('omits the duration chip when the story has no verified duration', () => {
+  it('omits the duration caption when the story has no verified duration', () => {
     render(CustomerWatchPage, {
-      props: { story: blackMath, otherStories: [] },
+      props: { story: blackMath },
       global: { stubs }
     })
 
     expect(screen.queryByText(/^\d+:\d{2}$/)).toBeNull()
   })
 
-  it('shows the duration chip once the story has a verified duration', () => {
+  it('shows the duration caption once the story has a verified duration', () => {
     render(CustomerWatchPage, {
-      props: {
-        story: { ...blackMath, durationSeconds: 272 },
-        otherStories: []
-      },
+      props: { story: { ...blackMath, durationSeconds: 272 } },
       global: { stubs }
     })
 
     expect(screen.getByText('4:32')).toBeTruthy()
   })
 
-  it('links to other stories in the related strip, excluding itself', () => {
-    render(CustomerWatchPage, {
-      props: { story: blackMath, otherStories: [silverside] },
-      global: { stubs }
-    })
-
-    expect(screen.getByRole('link', { name: silverside.title })).toHaveProperty(
-      'href',
-      expect.stringContaining('/customers/videos/silverside-ai')
-    )
-  })
-
   it('shows the reciprocal written-story link only when one is given', () => {
     const { rerender } = render(CustomerWatchPage, {
-      props: { story: silverside, otherStories: [] },
+      props: { story: silverside },
       global: { stubs }
     })
     expect(screen.queryByText('Read the written story')).toBeNull()
 
     return rerender({
       story: silverside,
-      otherStories: [],
       relatedStoryHref: '/customers/svedka-silverside'
     }).then(() => {
       const link = screen.getByRole('link', {
@@ -127,7 +103,7 @@ describe('CustomerWatchPage', () => {
 
   it('always links back to the customer directory', () => {
     render(CustomerWatchPage, {
-      props: { story: blackMath, otherStories: [] },
+      props: { story: blackMath },
       global: { stubs }
     })
 

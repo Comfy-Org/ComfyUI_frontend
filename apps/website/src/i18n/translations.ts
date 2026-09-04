@@ -5352,10 +5352,6 @@ Enterprise`
   'customers.group.read': { en: 'READ', 'zh-CN': '阅读' },
   'customers.video.watchStory': { en: 'WATCH STORY', 'zh-CN': '观看故事' },
   'customers.watch.transcript': { en: 'Transcript', 'zh-CN': '文字记录' },
-  'customers.watch.moreStories': {
-    en: 'More customer stories',
-    'zh-CN': '更多客户故事'
-  },
   'customers.watch.readWrittenStory': {
     en: 'Read the written story',
     'zh-CN': '阅读文字版故事'

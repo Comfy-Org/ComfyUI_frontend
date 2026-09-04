@@ -110,13 +110,13 @@ test.describe('Customer watch pages @smoke', () => {
   }) => {
     await page.goto(customerVideoPath('black-math'))
     await expect(
-      page.locator(`a[href="${customerVideoPath('silverside-ai')}"]`)
+      page.locator(`a[href="${customerVideoPath('silverside-ai')}"]`).first()
     ).toBeVisible()
     expect(blackMath.relatedStorySlug).toBeUndefined()
 
     await page.goto(customerVideoPath('silverside-ai'))
     await expect(
-      page.locator(`a[href="${customerVideoPath('black-math')}"]`)
+      page.locator(`a[href="${customerVideoPath('black-math')}"]`).first()
     ).toBeVisible()
     expect(silverside.relatedStorySlug).toBe('svedka-silverside')
     await expect(
