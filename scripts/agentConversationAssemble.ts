@@ -45,6 +45,20 @@ export const zSeedFixture = z.object({
   workflow: zAgentConversationWorkflow
 })
 
+const zChildRow = z
+  .object({
+    op_id: z.string().nullable(),
+    status: z.string().nullable()
+  })
+  .superRefine((child, ctx) => {
+    if (child.status === 'ok' && !child.op_id?.trim())
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['op_id'],
+        message: 'must be non-empty when status is ok'
+      })
+  })
+
 const zParentRow = z.object({
   id: z.coerce.string(),
   tool_call_id: z.string().min(1),
@@ -52,12 +66,7 @@ const zParentRow = z.object({
   status: z.string().nullable(),
   workflow_id: z.string().nullable(),
   result: zJsonColumn.pipe(zJsonObject.nullable()),
-  children: z.array(
-    z.object({
-      op_id: z.string().nullable(),
-      status: z.string().nullable()
-    })
-  )
+  children: z.array(zChildRow)
 })
 
 export const zRowsDump = z.object({

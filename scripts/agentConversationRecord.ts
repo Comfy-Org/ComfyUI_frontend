@@ -71,16 +71,56 @@ const sha256OfFile = (path: string): string => sha256(readFileSync(path))
 const writeJson = (path: string, value: unknown): void =>
   writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`)
 
-function readRows(
+const errorText = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error)
+
+export function redactRecorderError(
+  error: unknown,
+  sensitiveValues: string[]
+): string {
+  return sensitiveValues
+    .filter(Boolean)
+    .sort((left, right) => right.length - left.length)
+    .reduce(
+      (message, sensitive) => message.replaceAll(sensitive, '[REDACTED]'),
+      errorText(error)
+    )
+}
+
+export function writeRefusalArtifacts(
+  raw: RawCapture,
+  rawPath: string,
+  refusalPath: string,
+  error: unknown,
+  sensitiveValues: string[]
+): string {
+  const message = redactRecorderError(error, sensitiveValues)
+  raw.error = message
+  writeJson(rawPath, raw)
+  writeFileSync(
+    refusalPath,
+    `${JSON.stringify({ at: new Date().toISOString(), attempt: raw.attempt, refused: message })}\n`,
+    { flag: 'a' }
+  )
+  return message
+}
+
+export function readRows(
   exec: string[],
   path: string,
   ids: TurnIds & { workflowId: string }
 ): NormalizedRows {
   const quote = (value: string): string => `'${value.replace(/'/g, "''")}'`
   const sql = `select json_build_object('source', 'postgres', 'parents', coalesce((select json_agg(row_to_json(r) order by r.started_at, r.id) from (select parent.id, parent.tool_call_id, parent.tool_name, parent.status, parent.result, parent.started_at, parent.workflow_id, coalesce(json_agg(json_build_object('op_id', child.op_id, 'status', child.status, 'op_index', child.op_index) order by child.op_index) filter (where child.id is not null), '[]'::json) as children from agent_tool_calls as parent left join agent_tool_calls as child on child.parent_call_id = parent.id where parent.thread_id = ${quote(ids.threadId)} and parent.message_id = ${quote(ids.messageId)} and parent.parent_call_id is null group by parent.id) r), '[]'::json), 'draft', (select content from workflow_drafts where workflow_id = ${quote(ids.workflowId)} limit 1))`
-  const dump: unknown = JSON.parse(
-    execFileSync(exec[0], [...exec.slice(1), sql], { encoding: 'utf8' }).trim()
-  )
+  let output: string
+  try {
+    output = execFileSync(exec[0], [...exec.slice(1), sql], {
+      encoding: 'utf8'
+    }).trim()
+  } catch {
+    refuse('Postgres command failed; subprocess details suppressed')
+  }
+  const dump: unknown = JSON.parse(output)
   writeJson(path, dump)
   const { parents, draft } = parseOrRefuse(zRowsDump, dump, 'rows dump')
   return {
@@ -92,7 +132,7 @@ function readRows(
   }
 }
 
-function openStream(
+export function openStream(
   raw: RawCapture,
   redisExec: string[],
   onFrame: (frame: RecordedFrame) => void
@@ -105,11 +145,12 @@ function openStream(
   const child = spawn(
     redisExec[0],
     [...redisExec.slice(1), 'SUBSCRIBE', raw.channel],
-    { stdio: ['ignore', 'pipe', 'inherit'] }
+    { stdio: ['ignore', 'pipe', 'pipe'] }
   )
   child.stdout.setEncoding('utf8')
-  child.on('error', (error) => {
-    raw.error ??= `frame source failed to start: ${error.message}`
+  child.stderr.resume()
+  child.on('error', () => {
+    raw.error ??= 'Redis command failed to start; subprocess details suppressed'
     raw.stream_closed = true
   })
   child.on('exit', () => (raw.stream_closed = true))
@@ -351,6 +392,9 @@ async function main(argv: string[]): Promise<void> {
   const sidecar = (suffix: string): string =>
     join(workDir, `${caseId}.${attempt}.${suffix}`)
   const rawPath = sidecar('raw.json')
+  const postgresExec = env.AGENT_PG_EXEC.split(' ')
+  const redisExec = env.AGENT_REDIS_EXEC.split(' ')
+  const m2mSecret = readFileSync(env.AGENT_M2M_SECRET_FILE, 'utf8').trim()
 
   const raw: RawCapture = {
     case_id: caseId,
@@ -376,14 +420,11 @@ async function main(argv: string[]): Promise<void> {
     await recordTurns(raw, {
       headers: {
         'content-type': 'application/json',
-        'X-Comfy-M2M-Secret': readFileSync(
-          env.AGENT_M2M_SECRET_FILE,
-          'utf8'
-        ).trim(),
+        'X-Comfy-M2M-Secret': m2mSecret,
         'X-Comfy-Workspace': env.AGENT_WORKSPACE_ID,
         'X-Comfy-User': env.AGENT_USER_ID
       },
-      redisExec: env.AGENT_REDIS_EXEC.split(' '),
+      redisExec,
       timeoutMs: env.AGENT_TURN_TIMEOUT,
       seed: seed.workflow.seed,
       prompts,
@@ -393,15 +434,11 @@ async function main(argv: string[]): Promise<void> {
     // One row set per turn; the last one also carries the final draft.
     const rows = raw.turns.map((turn, index) => {
       const ids = zAck.parse(turn.accepted?.body)
-      return readRows(
-        env.AGENT_PG_EXEC.split(' '),
-        sidecar(`rows.${index + 1}.json`),
-        {
-          threadId: ids.thread_id,
-          messageId: ids.message_id,
-          workflowId: String(raw.seed_workflow_id)
-        }
-      )
+      return readRows(postgresExec, sidecar(`rows.${index + 1}.json`), {
+        threadId: ids.thread_id,
+        messageId: ids.message_id,
+        workflowId: String(raw.seed_workflow_id)
+      })
     })
     writeJson(rawPath, raw)
 
@@ -429,14 +466,14 @@ async function main(argv: string[]): Promise<void> {
       `recorded ${outPath} sha256=${sha256OfFile(outPath)} attempt=${attempt} turns=${receipt.turns.length} ${perTurn} dropped=${JSON.stringify(receipt.frames_dropped)} workflow=${receipt.workflow_id}\nsidecars in ${workDir}\n`
     )
   } catch (error) {
-    raw.error = error instanceof Error ? error.message : String(error)
-    writeJson(rawPath, raw)
-    writeFileSync(
+    const message = writeRefusalArtifacts(
+      raw,
+      rawPath,
       join(workDir, `${caseId}.refused.jsonl`),
-      `${JSON.stringify({ at: new Date().toISOString(), attempt, refused: raw.error })}\n`,
-      { flag: 'a' }
+      error,
+      [m2mSecret]
     )
-    throw error
+    throw new RecordRefusal(message)
   }
 }
 
@@ -447,7 +484,7 @@ if (
   main(process.argv.slice(2)).catch((error: unknown) => {
     const refused = error instanceof RecordRefusal
     process.stderr.write(
-      `record: ${refused ? 'REFUSED' : 'FAILED'}: ${error instanceof Error ? error.message : String(error)}\n`
+      `record: ${refused ? 'REFUSED' : 'FAILED'}: ${errorText(error)}\n`
     )
     process.exitCode = 1
   })
