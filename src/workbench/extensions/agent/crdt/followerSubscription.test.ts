@@ -860,11 +860,16 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
 
-    const host = initDoc(new Y.Doc())
+    // Adapted from #16663 (which ran on the frozen base's package API):
+    // `initDoc`/`metaMap` are module-private in @comfyorg/comfy-multi-player
+    // 0.2.1, so the host doc is minted via the public surface and the meta map
+    // is reached through Yjs directly. Version literals are reader-relative:
+    // this build reads SCHEMA_VERSION, so "too new" is SCHEMA_VERSION + 1.
+    const host = mint({ nodes: [], links: [] }, { types: {} })
     const incompatibleNode = new Y.Map<unknown>()
-    incompatibleNode.set('type', 'SchemaV2Node')
+    incompatibleNode.set('type', 'SchemaV3Node')
     nodesMap(host).set('incompatible', incompatibleNode)
-    metaMap(host).set('schema_version', 2)
+    host.getMap('meta').set('schema_version', SCHEMA_VERSION + 1)
     const incompatibleUpdate = Y.encodeStateAsUpdate(host)
     const incompatibleState = Y.encodeStateVector(host)
     const follower = bridge.follower
@@ -874,13 +879,13 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
     const retainedError = bridge.lastSchemaError
     expect(retainedError).toBeInstanceOf(FollowerSchemaError)
     expect(nodesMap(follower.doc).get('incompatible')?.get('type')).toBe(
-      'SchemaV2Node'
+      'SchemaV3Node'
     )
     expect(projected).toHaveLength(0)
 
-    metaMap(host).set('schema_version', 1)
+    host.getMap('meta').set('schema_version', SCHEMA_VERSION)
     const compatibleNode = new Y.Map<unknown>()
-    compatibleNode.set('type', 'SchemaV1Node')
+    compatibleNode.set('type', 'SchemaV2Node')
     nodesMap(host).set('compatible', compatibleNode)
     const compatibleUpdate = Y.encodeStateAsUpdate(host, incompatibleState)
     transport.deliver(
@@ -890,15 +895,17 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
 
     expect(bridge.follower).toBe(follower)
     expect(nodesMap(follower.doc).get('incompatible')?.get('type')).toBe(
-      'SchemaV2Node'
+      'SchemaV3Node'
     )
     expect(nodesMap(follower.doc).get('compatible')?.get('type')).toBe(
-      'SchemaV1Node'
+      'SchemaV2Node'
     )
     expect(projected).toEqual([
       expect.objectContaining({ seq: 2, update: compatibleUpdate })
     ])
-    expect(schemaErrors).toEqual([{ workflowId: WORKFLOW_ID, found: 2 }])
+    expect(schemaErrors).toEqual([
+      { workflowId: WORKFLOW_ID, found: SCHEMA_VERSION + 1 }
+    ])
     expect(bridge.lastSchemaError).toBe(retainedError)
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
     error.mockRestore()
