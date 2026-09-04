@@ -27,8 +27,8 @@ function makeEvent(
 const paris = makeEvent({
   id: 'paris',
   category: 'hackathon',
-  program: 'partner',
-  title: { en: 'ComfyUI Buildathon', 'zh-CN': 'ComfyUI 共创马拉松' },
+  organizer: 'partner',
+  title: { en: 'ComfyUI Hack Night', 'zh-CN': 'ComfyUI 黑客之夜' },
   description: { en: 'Fifty builders, one night.', 'zh-CN': '五十位创作者。' },
   location: { en: 'Paris, France', 'zh-CN': '法国巴黎' }
 })
@@ -36,7 +36,7 @@ const paris = makeEvent({
 const sanFrancisco = makeEvent({
   id: 'sf',
   category: 'meetup',
-  program: 'official',
+  organizer: 'comfy',
   title: { en: 'Nodes & Noodles', 'zh-CN': '节点与面条' },
   description: { en: 'Monthly meetup.', 'zh-CN': '每月见面会。' },
   location: { en: 'San Francisco, USA', 'zh-CN': '美国旧金山' }
@@ -45,7 +45,7 @@ const sanFrancisco = makeEvent({
 const virtual = makeEvent({
   id: 'virtual',
   category: 'workshop',
-  program: 'student',
+  organizer: 'community',
   title: { en: 'Build Your First Custom Node', 'zh-CN': '构建你的第一个节点' },
   description: { en: 'From empty folder to node.', 'zh-CN': '从空文件夹开始。' }
 })
@@ -113,35 +113,35 @@ describe('filterDirectoryEvents', () => {
     ).toEqual(['virtual'])
   })
 
-  it('filters by program', () => {
+  it('filters by organizer', () => {
     expect(
       ids(
         filterDirectoryEvents(
           events,
-          { ...defaultDirectoryFilters(), program: 'official' },
+          { ...defaultDirectoryFilters(), organizer: 'comfy' },
           'en'
         )
       )
     ).toEqual(['sf'])
   })
 
-  it('drops events with no program when a program is selected', () => {
+  it('drops events with no organizer when an organizer is selected', () => {
     const unlabelled = makeEvent({ id: 'unlabelled' })
     expect(
       filterDirectoryEvents(
         [unlabelled],
-        { ...defaultDirectoryFilters(), program: 'student' },
+        { ...defaultDirectoryFilters(), organizer: 'community' },
         'en'
       )
     ).toEqual([])
   })
 
-  it('composes search, category, and program', () => {
+  it('composes search, category, and organizer', () => {
     expect(
       ids(
         filterDirectoryEvents(
           events,
-          { query: 'meetup', category: 'meetup', program: 'official' },
+          { query: 'meetup', category: 'meetup', organizer: 'comfy' },
           'en'
         )
       )
@@ -150,7 +150,7 @@ describe('filterDirectoryEvents', () => {
     expect(
       filterDirectoryEvents(
         events,
-        { query: 'meetup', category: 'hackathon', program: 'official' },
+        { query: 'meetup', category: 'hackathon', organizer: 'comfy' },
         'en'
       )
     ).toEqual([])
@@ -164,7 +164,7 @@ describe('filterDirectoryEvents', () => {
           {
             query: '',
             category: DIRECTORY_FILTER_ALL,
-            program: DIRECTORY_FILTER_ALL
+            organizer: DIRECTORY_FILTER_ALL
           },
           'en'
         )
@@ -216,7 +216,7 @@ describe('directoryRows', () => {
   it('offers the calendar menu on upcoming events and no watch link', () => {
     const [row] = directoryRows([paris], 'en', future)
     expect(row.calendar).toBeDefined()
-    expect(row.calendar?.title).toBe('ComfyUI Buildathon')
+    expect(row.calendar?.title).toBe('ComfyUI Hack Night')
     expect(row.watch).toBeUndefined()
   })
 
