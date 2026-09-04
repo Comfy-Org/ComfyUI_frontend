@@ -70,8 +70,7 @@ vi.mock('@/utils/colorUtil', () => ({
 vi.mock('@/utils/litegraphUtil', () => ({
   getItemsColorOption: vi.fn(() => null),
   isLGraphNode: vi.fn((item) => item?.type === 'LGraphNode'),
-  isLGraphGroup: vi.fn((item) => item?.type === 'LGraphGroup'),
-  isReroute: vi.fn(() => false)
+  isLGraphGroup: vi.fn((item) => item?.type === 'LGraphGroup')
 }))
 
 describe('ColorPickerButton', () => {

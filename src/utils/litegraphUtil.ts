@@ -7,7 +7,6 @@ import {
   LGraphGroup,
   LGraphNode,
   LiteGraph,
-  Reroute,
   isColorable
 } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -154,10 +153,6 @@ export const isLGraphNode = (item: unknown): item is LGraphNode => {
 
 export const isLGraphGroup = (item: unknown): item is LGraphGroup => {
   return item instanceof LGraphGroup
-}
-
-export const isReroute = (item: unknown): item is Reroute => {
-  return item instanceof Reroute
 }
 
 /**
