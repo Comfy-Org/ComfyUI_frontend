@@ -100,15 +100,26 @@ describe('SetupSection', () => {
     ).toBeTruthy()
   })
 
-  it('captures analytics once per tab change, deduping re-clicks', async () => {
+  it('captures connection tab analytics once per selection', async () => {
     renderSetup()
 
     await selectTab(/Local ComfyUI/)
     await selectTab(/Local ComfyUI/)
-    expect(connectionSpy).toHaveBeenCalledTimes(1)
-    expect(connectionSpy).toHaveBeenCalledWith('local')
+    await selectTab(/Comfy Cloud/)
+    await selectTab(/Comfy Cloud/)
+
+    expect(connectionSpy.mock.calls).toEqual([['local'], ['cloud']])
+  })
+
+  it('captures client tab analytics once per selection', async () => {
+    renderSetup()
 
     await selectTab('Cursor')
-    expect(clientSpy).toHaveBeenCalledWith('local-cursor')
+    await selectTab('Cursor')
+    await selectTab(/Local ComfyUI/)
+    await selectTab('Cursor')
+    await selectTab('Cursor')
+
+    expect(clientSpy.mock.calls).toEqual([['cursor'], ['local-cursor']])
   })
 })
