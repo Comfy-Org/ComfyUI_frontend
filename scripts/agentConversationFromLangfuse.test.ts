@@ -37,14 +37,27 @@ const span = (
 const turnRoot = (turnId: string, start: string, end: string): Observation =>
   span(
     `root-${turnId}`,
-    { 'comfy.thread_id': THREAD, 'comfy.turn_id': turnId },
+    {
+      'comfy.thread_id': THREAD,
+      'comfy.turn_id': turnId,
+      'gen_ai.operation.name': 'invoke_agent'
+    },
     {
       name: 'agent.turn',
       startTime: start,
       endTime: end,
       input: 'Add a sampler',
-      output: 'Added a KSampler.'
+      output: 'Added a KSampler.',
+      parentObservationId: `launch-${turnId}`
     }
+  )
+
+// The engine's launch span sits above the turn, carries the ids, and has no input or output.
+const launchSpan = (turnId: string, start: string): Observation =>
+  span(
+    `launch-${turnId}`,
+    { 'comfy.thread_id': THREAD, 'comfy.turn_id': turnId },
+    { name: 'agent.launch', startTime: start, endTime: null }
   )
 
 const roundSpan = (turnId: string): Observation =>
@@ -97,6 +110,7 @@ describe('captureFromObservations', () => {
   it('attaches tool spans to their turn through the parent chain', () => {
     const raw = captureFromObservations(
       [
+        launchSpan('message-1', '2026-09-04T09:59:59.000Z'),
         toolSpan(
           'message-1',
           'tool-1',
@@ -180,6 +194,17 @@ describe('captureFromObservations', () => {
     )
     expect(terminal?.data.status).toBe('error')
     expect(terminal?.data.message_id).toBe('message-2')
+  })
+
+  it('refuses a turn exported without its invoke_agent span', () => {
+    expect(() =>
+      captureFromObservations(
+        [launchSpan('message-1', '2026-09-04T09:59:59.000Z')],
+        options
+      )
+    ).toThrow(
+      'turn message-1 has no span marked gen_ai.operation.name invoke_agent'
+    )
   })
 
   it('refuses a tool span that reaches no turn of the thread', () => {

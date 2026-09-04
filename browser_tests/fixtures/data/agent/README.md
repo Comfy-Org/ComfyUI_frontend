@@ -122,8 +122,10 @@ trace. Credentials come from `~/.config/comfy-agent/langfuse.env`
 points elsewhere) and are never written to any artifact.
 
 What the importer reads, from the agent's own instrumentation (cloud
-`harness/telemetry/attrs.go`, `loop/host.go`): the turn span carries
-`comfy.thread_id` and `comfy.turn_id`; a tool span carries only
+`harness/telemetry/attrs.go`, `loop/host.go`): the turn span is the one marked
+`gen_ai.operation.name: invoke_agent` and carries `comfy.thread_id` and
+`comfy.turn_id` (the engine's launch span above it carries the ids but no
+input or output); a tool span carries only
 `gen_ai.tool.call.id`, `gen_ai.tool.name` and `comfy.tool.ok` and is attached
 to its turn by walking `parentObservationId` (tool, model round, turn); the
 turn's input and output exist only when the agent ran with content capture on

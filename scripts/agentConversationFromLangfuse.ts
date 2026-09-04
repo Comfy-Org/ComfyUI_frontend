@@ -145,19 +145,31 @@ function groupTurns(
   )
   const byTurn = new Map<string, TurnSpans>()
   const turnOf = new Map<string, TurnSpans>()
+  // The launch span carries the ids too but no input or output; the turn span is the
+  // one marked invoke_agent (harness/loop.go:175, loop/host.go:265 in the cloud repo).
+  const isTurnSpan = (observation: Observation): boolean =>
+    attributeOf(observation, 'gen_ai.operation.name') === 'invoke_agent'
   for (const observation of observations) {
     if (attributeOf(observation, 'comfy.thread_id') !== threadId) continue
     const turnId = attributeOf(observation, 'comfy.turn_id')
     if (turnId === undefined) continue
     const existing = byTurn.get(turnId)
-    const turn =
+    const replaces =
       existing === undefined ||
-      atMs(observation.startTime) < atMs(existing.root.startTime)
-        ? { root: observation, tools: existing?.tools ?? [] }
-        : existing
+      (isTurnSpan(observation) &&
+        (!isTurnSpan(existing.root) ||
+          atMs(observation.startTime) < atMs(existing.root.startTime)))
+    const turn = replaces
+      ? { root: observation, tools: existing?.tools ?? [] }
+      : existing
     byTurn.set(turnId, turn)
     turnOf.set(observation.id, turn)
   }
+  for (const [turnId, turn] of byTurn)
+    if (!isTurnSpan(turn.root))
+      refuse(
+        `turn ${turnId} has no span marked gen_ai.operation.name invoke_agent; only its launch or analytics spans were exported`
+      )
   for (const observation of observations) {
     if (attributeOf(observation, 'gen_ai.tool.call.id') === undefined) continue
     let cursor = observation.parentObservationId ?? null
