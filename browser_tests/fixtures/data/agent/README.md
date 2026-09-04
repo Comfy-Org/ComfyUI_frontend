@@ -109,43 +109,39 @@ PLAYWRIGHT_TEST_URL=http://localhost:5173 DISTRIBUTION=cloud \
 
 ## Import a Langfuse session
 
-A conversation that already ran on a hosted agent can be turned into the same
-fixture from its Langfuse trace instead of re-recording it:
+A conversation that already ran on a hosted agent becomes the same fixture
+from its Langfuse trace, without re-recording:
 
 ```bash
 AGENT_CLOUD_SHA=<cloud sha> pnpm exec tsx scripts/agentConversationFromLangfuse.ts <caseId> <seedFixture.json> --trace <traceId> --workflow <cloudWorkflowId> --out browser_tests/fixtures/data/agent/conversations/<caseId>.json
 ```
 
-`--session <sessionId>` takes every trace of a Langfuse session instead of one
-trace. Credentials come from `~/.config/comfy-agent/langfuse.env`
-(`LANGFUSE_HOST`, `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`; `--env-file`
-points elsewhere) and are never written to any artifact.
+`--session <sessionId>` takes every trace of a session. Credentials come from
+`~/.config/comfy-agent/langfuse.env` (`LANGFUSE_HOST`, `LANGFUSE_PUBLIC_KEY`,
+`LANGFUSE_SECRET_KEY`; `--env-file` points elsewhere) and never reach an
+artifact.
 
-What the importer reads, from the agent's own instrumentation (cloud
-`harness/telemetry/attrs.go`, `loop/host.go`): the turn span is the one marked
-`gen_ai.operation.name: invoke_agent` and carries `comfy.thread_id` and
-`comfy.turn_id` (the engine's launch span above it carries the ids but no
-input or output); a tool span carries only
-`gen_ai.tool.call.id`, `gen_ai.tool.name` and `comfy.tool.ok` and is attached
-to its turn by walking `parentObservationId` (tool, model round, turn); the
-turn's input and output exist only when the agent ran with content capture on
-(pass `--prompt` per turn when it did not). From those it rebuilds the tool-call
-and message frames, reads the turn's audit rows with the recorder's own query
-(`AGENT_PG_EXEC` must reach that environment's Postgres), and runs the same
-assembly gates as a recording. So the import works for a session whose audit
-database is still reachable, not for any Langfuse session.
+The importer reads what the agent's instrumentation emits (cloud
+`harness/telemetry/attrs.go`, `loop/host.go`): the turn span, marked
+`gen_ai.operation.name: invoke_agent`, carries `comfy.thread_id` and
+`comfy.turn_id` (the launch span above it carries the ids but no text); a tool
+span carries `gen_ai.tool.call.id`, `gen_ai.tool.name` and `comfy.tool.ok` and
+reaches its turn through `parentObservationId`; the turn's input and output
+exist only with content capture on (`--prompt` per turn otherwise). It rebuilds
+the tool-call and message frames, reads the audit rows with the recorder's own
+query (`AGENT_PG_EXEC` must reach that environment's Postgres), and runs the
+same assembly gates as a recording. So it imports a session whose audit
+database is still reachable, not any Langfuse session.
 
-UNVERIFIED until the first run against a real trace, and stated here so nobody
-reads them as fact: that `comfy.turn_id` is the message id the audit rows
-carry; that the span attributes arrive under `metadata.attributes` (a flattened
-`metadata` key is the coded fallback); that the observations page meta carries
+UNVERIFIED until the first real trace: that `comfy.turn_id` is the message id
+the audit rows carry; that attributes arrive under `metadata.attributes` (a
+flattened `metadata` key is the fallback); that the page meta carries
 `totalPages` (a short page ends the walk otherwise).
 
-An imported fixture keeps `response_side: recorded`: the replies and the
-accepted ops are the real agent's, only the socket framing was rebuilt, and the
-replay suite lists recorded fixtures only. The provenance note names the
-Langfuse origin, and thinking and active-tab frames are absent because the
-trace does not carry them.
+An import keeps `response_side: recorded`: the replies and accepted ops are the
+agent's, only the socket framing was rebuilt, and the replay suite lists
+recorded fixtures only. Thinking and active-tab frames are absent; the trace
+does not carry them.
 
 ## Capture
 

@@ -12,6 +12,7 @@ import {
   assembleConversation,
   parseOrRefuse,
   refuse,
+  zAck,
   zSeedFixture
 } from './agentConversationAssemble'
 import type {
@@ -43,7 +44,6 @@ const zEnv = z.object({
   AGENT_ATTEMPT: z.string().default('')
 })
 
-// The public observations endpoint returns these fields; anything else rides along untouched.
 export const zObservation = z
   .object({
     id: z.string(),
@@ -70,7 +70,7 @@ const zTracePage = z.object({
   meta: z.object({ totalPages: z.number().optional() }).passthrough().optional()
 })
 
-// Values are secrets: never logged, never echoed into any artifact.
+// The values are secrets: never logged, never written into an artifact.
 export function readEnvFile(path: string): LangfuseEnv {
   const pairs = readFileSync(path, 'utf8')
     .split('\n')
@@ -90,7 +90,7 @@ export function readEnvFile(path: string): LangfuseEnv {
   )
 }
 
-// OTel attributes land under metadata.attributes; a flattened metadata key is the documented alternative.
+// Langfuse keeps unmapped OTel attributes under metadata.attributes; flattened metadata is the fallback.
 export function attributeOf(
   observation: Observation,
   key: string
@@ -134,8 +134,7 @@ interface TurnSpans {
 
 const atMs = (iso: string): number => Date.parse(iso)
 
-// Only turn spans carry the thread and turn ids; a tool span reaches its turn through
-// parentObservationId (tool -> model round -> turn), since children inherit no attributes.
+// Children inherit no attributes, so a tool span finds its turn through parentObservationId.
 function groupTurns(
   observations: Observation[],
   threadId: string
@@ -145,8 +144,7 @@ function groupTurns(
   )
   const byTurn = new Map<string, TurnSpans>()
   const turnOf = new Map<string, TurnSpans>()
-  // The launch span carries the ids too but no input or output; the turn span is the
-  // one marked invoke_agent (harness/loop.go:175, loop/host.go:265 in the cloud repo).
+  // The launch span carries the ids but no text; invoke_agent marks the turn span (cloud loop/host.go:265).
   const isTurnSpan = (observation: Observation): boolean =>
     attributeOf(observation, 'gen_ai.operation.name') === 'invoke_agent'
   for (const observation of observations) {
@@ -190,8 +188,7 @@ function groupTurns(
   )
 }
 
-// Rebuilds the socket frames the replay needs from the spans of one turn: each tool
-// span becomes its running and terminal frames, the turn's own output becomes the text.
+// Each tool span becomes its running and terminal frames; the turn's output becomes the text.
 function turnFrames(
   turn: TurnSpans,
   threadId: string,
@@ -443,9 +440,7 @@ export async function main(argv: string[]): Promise<void> {
         sidecar(`rows.${index + 1}.json`),
         {
           threadId,
-          messageId: z
-            .object({ message_id: z.string() })
-            .parse(turn.accepted?.body).message_id,
+          messageId: zAck.parse(turn.accepted?.body).message_id,
           workflowId
         }
       )
