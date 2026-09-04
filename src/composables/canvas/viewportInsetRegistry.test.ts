@@ -52,10 +52,7 @@ describe('viewportInsetRegistry', () => {
 
   it('does not let an obsolete disposer remove a replacement provider', () => {
     const unregisterOld = trackedRegister('test-replacement', () => 100)
-    const unregisterCurrent = trackedRegister(
-      'test-replacement',
-      () => 240
-    )
+    const unregisterCurrent = trackedRegister('test-replacement', () => 240)
 
     unregisterOld()
     expect(getViewportInset()).toBe(240)
@@ -67,10 +64,7 @@ describe('viewportInsetRegistry', () => {
   it('does not let a stale disposer remove a same-function replacement', () => {
     const provider = () => 160
     const unregisterOld = trackedRegister('test-same-provider', provider)
-    const unregisterCurrent = trackedRegister(
-      'test-same-provider',
-      provider
-    )
+    const unregisterCurrent = trackedRegister('test-same-provider', provider)
 
     unregisterOld()
     expect(getViewportInset()).toBe(160)
