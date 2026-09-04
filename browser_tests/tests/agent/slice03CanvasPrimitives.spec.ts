@@ -3,8 +3,14 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 
-// These cases are intentionally staged behind fixme until the stacked canvas
-// slice lands on main: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16186
+// These cases cover canvas selection / navigation behaviour that exists on
+// main. They were originally gated behind slice PR 16186
+// (https://github.com/Comfy-Org/ComfyUI_frontend/pull/16186), which stayed an
+// open draft and is no longer the landing target for this surface, so the gate
+// could never fire. They run against main directly now; all helpers they use
+// (nodeOps.getSerializedGraph/getSelectedGraphNodesCount, NodeReference
+// centerOnNode/getPosition/click, canvasOps.getOffset/getNodeGeometry/
+// expectSlotsTrackedNode, fitToViewInstant) already exist on main.
 test.describe(
   'Agent canvas primitives from slice 03',
   { tag: '@agent' },
@@ -12,11 +18,6 @@ test.describe(
     test('select-only preserves the semantic workflow graph', async ({
       comfyPage
     }) => {
-      test.fixme(
-        true,
-        'Activates after slice PR 16186 merges: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16186'
-      )
-
       const node = await comfyPage.nodeOps.getFirstNodeRef()
       expect(node).not.toBeNull()
       if (!node) return
@@ -35,11 +36,6 @@ test.describe(
     test('focuses a known node without changing its graph data', async ({
       comfyPage
     }) => {
-      test.fixme(
-        true,
-        'Activates after slice PR 16186 merges: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16186'
-      )
-
       const node = await comfyPage.nodeOps.getFirstNodeRef()
       expect(node).not.toBeNull()
       if (!node) return
@@ -54,11 +50,6 @@ test.describe(
     test('fits the complete graph when a node is selected', async ({
       comfyPage
     }) => {
-      test.fixme(
-        true,
-        'Activates after slice PR 16186 merges: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16186'
-      )
-
       const node = await comfyPage.nodeOps.getFirstNodeRef()
       expect(node).not.toBeNull()
       if (!node) return
@@ -72,11 +63,6 @@ test.describe(
     test('moves one selected node and keeps its connection slots aligned', async ({
       comfyPage
     }) => {
-      test.fixme(
-        true,
-        'Activates after slice PR 16186 merges: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16186'
-      )
-
       const node = await comfyPage.nodeOps.getFirstNodeRef()
       expect(node).not.toBeNull()
       if (!node) return
