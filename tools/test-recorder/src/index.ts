@@ -174,6 +174,18 @@ try {
       }
       break
     }
+    case 'agent-replay': {
+      const { parseFlags } = await import('./cli/flags')
+      const { flags } = parseFlags(args.slice(1), ['case', 'url'])
+      const { runAgentReplay } = await import('./commands/agentReplay')
+      process.exitCode = runAgentReplay({
+        caseId: flags.case,
+        url: flags.url,
+        headed: flags.headed !== undefined,
+        video: flags.video !== undefined
+      })
+      break
+    }
     case 'list': {
       const { parseFlags } = await import('./cli/flags')
       const { flags } = parseFlags(args.slice(1), ['filter'])
@@ -214,6 +226,9 @@ Commands:
   pr          Open a pull request for a generated test
   check [--distribution cloud|cloud-staging|cloud-prod|local] [--backend <url>]
               Check environment prerequisites (defaults to cloud)
+  agent-replay [--case <id>] [--url <dev server>] [--headed] [--video]
+              Replay the recorded agent conversations as tests against a
+              running dev server (see .claude/skills/agent-integration-replay)
   list [--filter <keyword>]
               List available test workflows, optionally filtered by path
   tags        List test tags with their meanings
@@ -236,7 +251,7 @@ Transform flags:
   --feature-flags <specs>
               Seed comma-separated feature flags in the generated test
 
-'add-workflow', 'transform', 'pr', 'check', 'plan', 'list', and 'tags' work non-interactively.
+'add-workflow', 'transform', 'pr', 'check', 'plan', 'list', 'tags', and 'agent-replay' work non-interactively.
 `)
       break
     }
