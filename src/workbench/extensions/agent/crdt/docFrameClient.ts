@@ -288,6 +288,7 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
     frame.type === 'doc_update' &&
     isSequence(data.seq) &&
     isSequence(data.lineage_seq) &&
+    data.lineage_seq <= data.seq &&
     typeof data.update_b64 === 'string'
   ) {
     const update = decodeBase64(data.update_b64)
@@ -313,11 +314,13 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
   // migration default lineage 0 (`omitempty`), so absent means 0 here. A
   // present value must still be a well-formed lineage: unlike `seq`, lineage
   // is load-bearing on the ack, so a malformed one rejects the frame.
-  const ackLineageSeq = data.lineage_seq === undefined ? 0 : data.lineage_seq
+  const ackLineageSeq = isAbsent(data.lineage_seq) ? 0 : data.lineage_seq
   if (
     frame.type === 'doc_subscribed' &&
     typeof data.ok === 'boolean' &&
-    (!data.ok || isSequence(ackLineageSeq))
+    (!data.ok ||
+      (isSequence(ackLineageSeq) &&
+        (!isSequence(data.seq) || ackLineageSeq <= data.seq)))
   ) {
     const code = parseBoundedString(data.code, MAX_ERROR_CODE_LENGTH)
     const message = parseBoundedString(data.message, MAX_ERROR_MESSAGE_LENGTH)
@@ -327,7 +330,8 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
         workflowId: data.workflow_id,
         ok: data.ok,
         ...(isSequence(data.seq) && { seq: data.seq }),
-        ...(data.ok && { lineageSeq: ackLineageSeq as number }),
+        ...(data.ok &&
+          isSequence(ackLineageSeq) && { lineageSeq: ackLineageSeq }),
         ...(code !== undefined && { code }),
         ...(message !== undefined && { message })
       }

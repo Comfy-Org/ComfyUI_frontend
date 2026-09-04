@@ -246,7 +246,7 @@ export class LayoutFollowerBridge extends EventTarget {
       return
     }
     if (this.lineageSeq !== null && update.lineageSeq > this.lineageSeq) {
-      this.replaceLineage(update.workflowId, update.lineageSeq, update.seq)
+      this.replaceLineage(update.workflowId, update.lineageSeq)
       this.resubscribe()
       return
     }
@@ -326,7 +326,7 @@ export class LayoutFollowerBridge extends EventTarget {
       this.dispatchStale(reset.workflowId, reset.seq, reset.lineageSeq)
       return
     }
-    this.replaceLineage(reset.workflowId, reset.lineageSeq, reset.seq, reset)
+    this.replaceLineage(reset.workflowId, reset.lineageSeq, reset)
     this.resubscribe()
   }
 
@@ -343,8 +343,7 @@ export class LayoutFollowerBridge extends EventTarget {
   private replaceLineage(
     workflowId: string,
     lineageSeq: number,
-    seq: number,
-    reset: DocReset = { workflowId, lineageSeq, seq }
+    reset: DocReset = { workflowId, lineageSeq, seq: lineageSeq }
   ): void {
     this.dispatchEvent(new CustomEvent('doc_reset', { detail: reset }))
     this.dropDocForNewLineage()
@@ -399,6 +398,9 @@ export class LayoutFollowerBridge extends EventTarget {
           subscribed.seq ?? 0,
           lineageSeq
         )
+        // Keep the newer local lineage, but reopen intent/reality so the next
+        // transport status or reconnect retries instead of latching dead.
+        this.sentWorkflowId = null
         return
       }
       // No resubscribe here, unlike the newer-lineage `doc_update` path: the
@@ -406,11 +408,7 @@ export class LayoutFollowerBridge extends EventTarget {
       // state (cloud `docwire.Resync`), so the catch-up that follows this ack
       // is the whole new lineage.
       if (this.lineageSeq !== null && lineageSeq > this.lineageSeq) {
-        this.replaceLineage(
-          subscribed.workflowId,
-          lineageSeq,
-          subscribed.seq ?? lineageSeq
-        )
+        this.replaceLineage(subscribed.workflowId, lineageSeq)
       }
       this.lineageSeq = lineageSeq
       this.ackSeq = subscribed.seq ?? null

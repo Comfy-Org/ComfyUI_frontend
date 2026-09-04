@@ -356,6 +356,10 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
 
   it('treats a newer-lineage update as a missed reset and requests a cold sync', () => {
     const { transport, bridge, projected } = wire()
+    const resets: unknown[] = []
+    bridge.addEventListener('doc_reset', (event) => {
+      if (event instanceof CustomEvent) resets.push(event.detail)
+    })
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
     transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
@@ -369,6 +373,9 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
     expect(bridge.follower).not.toBe(oldDoc)
     expect(bridge.follower.updatesApplied).toBe(0)
     expect(projected).toHaveLength(1)
+    expect(resets).toEqual([
+      { workflowId: WORKFLOW_ID, seq: 43, lineageSeq: 43 }
+    ])
     const subscribes = transport.framesOfType('doc_subscribe') as {
       data: { known_lineage_seq: number; state_vector_b64: string }
     }[]
@@ -457,6 +464,10 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
 
   it('replaces before accepting a newer-lineage acknowledgement and its full catch-up', () => {
     const { transport, bridge } = wire()
+    const resets: unknown[] = []
+    bridge.addEventListener('doc_reset', (event) => {
+      if (event instanceof CustomEvent) resets.push(event.detail)
+    })
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
     transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
@@ -466,19 +477,45 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
       v: 1,
       workflow_id: WORKFLOW_ID,
       ok: true,
-      seq: 43,
+      seq: 50,
       lineage_seq: 43
     })
 
     expect(bridge.follower).not.toBe(oldDoc)
     expect(bridge.follower.updatesApplied).toBe(0)
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
+    expect(resets).toEqual([
+      { workflowId: WORKFLOW_ID, seq: 43, lineageSeq: 43 }
+    ])
 
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 50, 43)
+    )
+    expect(bridge.follower.updatesApplied).toBe(1)
+  })
+
+  it('retries after a stale acknowledgement instead of latching a dead subscription', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
     transport.deliver(
       'doc_update',
       docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 43, 43)
     )
-    expect(bridge.follower.updatesApplied).toBe(1)
+
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 42,
+      lineage_seq: 1
+    })
+
+    expect(bridge.subscribedWorkflowId).toBeNull()
+    expect(bridge.hasPendingSubscribe).toBe(true)
+    bridge.reconcile()
+    expect(transport.framesOfType('doc_subscribe')).toHaveLength(2)
   })
 
   it('replaces the follower doc and resubscribes with an empty state vector', () => {
