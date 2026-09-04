@@ -11,13 +11,9 @@ import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comf
 
 import PackEnableToggle from './PackEnableToggle.vue'
 
-vi.mock('es-toolkit/compat', async () => {
-  const actual = await vi.importActual('es-toolkit/compat')
-  return {
-    ...actual,
-    debounce: <T extends (...args: unknown[]) => unknown>(fn: T) => fn
-  }
-})
+vi.mock('es-toolkit/compat', () => ({
+  debounce: <T extends (...args: unknown[]) => unknown>(fn: T) => fn
+}))
 
 const {
   acknowledgmentState,
