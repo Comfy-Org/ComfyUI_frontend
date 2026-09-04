@@ -67,6 +67,12 @@ class WidgetNode extends LGraphNode {
   }
 }
 
+class ApiHydratedWidgetNode extends LGraphNode {
+  constructor() {
+    super('api-hydrated-widget-node')
+  }
+}
+
 /** Widget values observed by `onConfigure`, in configure order. */
 const configuredWidgetValues: unknown[] = []
 
@@ -115,6 +121,7 @@ const CATALOG: WidgetCatalog = {
   types: {
     dummy: { widget_order: [] },
     'widget-node': { widget_order: ['value'] },
+    'api-hydrated-widget-node': { widget_order: ['hydrated'] },
     'configure-capture': { widget_order: ['value'] },
     'throws-on-configure': { widget_order: [] }
   }
@@ -204,6 +211,7 @@ beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
   LiteGraph.registerNodeType('dummy', DummyNode)
   LiteGraph.registerNodeType('widget-node', WidgetNode)
+  LiteGraph.registerNodeType('api-hydrated-widget-node', ApiHydratedWidgetNode)
   LiteGraph.registerNodeType('configure-capture', ConfigureCapturingWidgetNode)
   LiteGraph.registerNodeType('throws-on-configure', ThrowsOnConfigureNode)
   LiteGraph.registerNodeType('throws-on-added', ThrowsOnAddedNode)
@@ -451,6 +459,39 @@ describe('reconcileAgentAdapters', () => {
       expect(incumbent.widgets).toHaveLength(1)
       expect(incumbent.widgets?.[0].value).toBe(8)
       expect(graph.serialize().nodes).toHaveLength(1)
+    })
+
+    it('preserves widgets added after construction when re-adding the same id', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      const mutations = remoteMutations(scope)
+      mutations.addNode(
+        {
+          ...nodePayload(1, 'api-hydrated-widget-node'),
+          widgets_values: { hydrated: 7 }
+        },
+        REMOTE
+      )
+      reconcileAgentAdapters(graph)
+      const incumbent = graph.getNodeById(toNodeId(1))!
+      incumbent.addWidget('number', 'hydrated', 7, () => {})
+
+      mutations.deleteNode(toNodeId(1), [], REMOTE)
+      mutations.addNode(
+        {
+          ...nodePayload(1, 'api-hydrated-widget-node'),
+          widgets_values: { hydrated: 8 }
+        },
+        { ...REMOTE, opId: 'op-1-again' }
+      )
+
+      expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(1)])
+      expect(graph.getNodeById(toNodeId(1))).toBe(incumbent)
+      expect(incumbent.widgets).toHaveLength(1)
+      expect(incumbent.widgets?.[0]).toMatchObject({
+        name: 'hydrated',
+        value: 8
+      })
     })
 
     it('runs stale-node lifecycle without clearing successor-owned state', () => {
