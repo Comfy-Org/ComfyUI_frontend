@@ -52,12 +52,14 @@ function readSemanticLink(doc: Y.Doc, id: string): SemanticLinkPayload | null {
   const tuple = raw instanceof Y.Array ? raw.toArray() : raw
   if (!Array.isArray(tuple) || tuple.length < 5) return null
   const linkId = Number(tuple[0] ?? id)
-  const originSlot = Number(tuple[2])
-  const targetSlot = Number(tuple[4])
+  const originSlot = tuple[2]
+  const targetSlot = tuple[4]
   if (
     !Number.isInteger(linkId) ||
     tuple[1] == null ||
     tuple[3] == null ||
+    typeof originSlot !== 'number' ||
+    typeof targetSlot !== 'number' ||
     !Number.isInteger(originSlot) ||
     !Number.isInteger(targetSlot)
   ) {
