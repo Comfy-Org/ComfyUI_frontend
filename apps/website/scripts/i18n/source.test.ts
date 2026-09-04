@@ -39,6 +39,21 @@ describe('parseTranslationsText', () => {
       ja: '詳しく見る'
     })
   })
+
+  it('throws when the source has no `const translations = {...}` declaration', () => {
+    expect(() =>
+      parseTranslationsText('export const other = {}', 'fixture.ts')
+    ).toThrow(/could not find/)
+  })
+
+  it('throws when a locale value is not a string literal', () => {
+    expect(() =>
+      parseTranslationsText(
+        `const translations = { 'ui.copy': { en: 1 } }`,
+        'fixture.ts'
+      )
+    ).toThrow('translations["ui.copy"].en is not a string')
+  })
 })
 
 describe('insertLocaleEdit', () => {

@@ -1,8 +1,14 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { OutputLocale } from './config'
 import { hashSource, loadManifest } from './manifest'
@@ -148,6 +154,35 @@ const translations = {
       ja: hashSource('Copy')
     })
     expect(readFileSync(sourcePath, 'utf8')).toBe(fixture)
+  })
+
+  it('--check reports a pending item without writing the source or a manifest', async () => {
+    const sourcePath = join(dir, 'translations.ts')
+    const manifestPath = join(dir, '.translations-manifest.json')
+    const fixture = `type Locale = 'en' | 'zh-CN' | 'ja'
+
+const translations = {
+  'ui.copy': {
+    en: 'Copy',
+    'zh-CN': '复制'
+  }
+} as const satisfies Record<
+  string,
+  { en: string; 'zh-CN': string } & Partial<Record<Locale, string>>
+>
+`
+    writeFileSync(sourcePath, fixture)
+    const writeSpy = vi
+      .spyOn(process.stdout, 'write')
+      .mockImplementation(() => true)
+
+    await runPipeline(['--check'], { sourcePath, manifestPath })
+
+    const output = writeSpy.mock.calls.map((call) => call[0]).join('')
+    writeSpy.mockRestore()
+    expect(output).toContain('ja/ui.copy: missing')
+    expect(readFileSync(sourcePath, 'utf8')).toBe(fixture)
+    expect(existsSync(manifestPath)).toBe(false)
   })
 })
 

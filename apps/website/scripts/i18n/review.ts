@@ -64,28 +64,34 @@ interface ReviewerOptions {
   onCompletion?: (completion: OpenAI.ChatCompletion) => void
 }
 
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function isVerdict(value: unknown): value is ReviewVerdict {
+  return (
+    isPlainRecord(value) &&
+    typeof value.pass === 'boolean' &&
+    (value.reason === undefined || typeof value.reason === 'string')
+  )
+}
+
 function parseVerdicts(
   content: string,
   requestedIds: ReadonlySet<string>
 ): Map<string, ReviewVerdict> {
   const parsed: unknown = JSON.parse(content)
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+  if (!isPlainRecord(parsed)) {
     throw new Error('review response is not a JSON object')
   }
   const verdicts = new Map<string, ReviewVerdict>()
   for (const [id, value] of Object.entries(parsed)) {
-    if (!requestedIds.has(id)) continue
-    if (
-      !value ||
-      typeof value !== 'object' ||
-      typeof (value as { pass?: unknown }).pass !== 'boolean'
-    ) {
-      continue
-    }
-    const { pass, reason } = value as { pass: boolean; reason?: unknown }
+    if (!requestedIds.has(id) || !isVerdict(value)) continue
     verdicts.set(id, {
-      pass,
-      ...(typeof reason === 'string' && reason.length > 0 ? { reason } : {})
+      pass: value.pass,
+      ...(value.reason && value.reason.length > 0
+        ? { reason: value.reason }
+        : {})
     })
   }
   return verdicts
