@@ -52,13 +52,12 @@ jobs:
           # Validate PR exists and is merged. The gh error is surfaced rather
           # than discarded: an auth failure and a genuinely missing PR are
           # indistinguishable once it is swallowed.
-          if ! PR_VIEW_ERR=$(gh pr view "${{ inputs.pr_number }}" --json merged 2>&1 >/dev/null); then
-            echo "::error::PR #${{ inputs.pr_number }} not found or inaccessible: ${PR_VIEW_ERR}"
+          if ! MERGED_AT=$(gh pr view "${{ inputs.pr_number }}" --json mergedAt --jq '.mergedAt' 2>&1); then
+            echo "::error::PR #${{ inputs.pr_number }} not found or inaccessible: ${MERGED_AT}"
             exit 1
           fi
 
-          MERGED=$(gh pr view "${{ inputs.pr_number }}" --json merged --jq '.merged')
-          if [ "$MERGED" != "true" ]; then
+          if [ -z "$MERGED_AT" ]; then
             echo "::error::PR #${{ inputs.pr_number }} is not merged. Only merged PRs can be backported."
             exit 1
           fi
