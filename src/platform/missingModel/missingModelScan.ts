@@ -118,9 +118,8 @@ export function isModelFileName(name: string): boolean {
  * Scan COMBO and asset widgets on configured graph nodes for model-like values.
  * Must be called after `graph.configure()` so widget name/value mappings are accurate.
  *
- * Static combos resolve `isMissing` immediately from widget options.
- * Asset-supported nodes and remote combos whose inventory is still loading
- * leave it `undefined` for async verification.
+ * `isMissing` resolves immediately from static combo options and stays
+ * `undefined` for asset-supported nodes and loading remote combos.
  */
 export function scanAllModelCandidates(
   rootGraph: LGraph,

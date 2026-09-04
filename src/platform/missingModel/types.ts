@@ -25,7 +25,7 @@ export interface MissingModelCandidate {
    * - `undefined` — pending async verification
    */
   isMissing: boolean | undefined
-  /** Runtime-only deferred combo inventory check; never persisted. */
+  /** Deferred inventory check for a loading remote combo; not persisted. */
   pendingVerification?: () => Promise<boolean | undefined>
 }
 
