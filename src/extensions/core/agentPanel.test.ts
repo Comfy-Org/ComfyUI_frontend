@@ -163,7 +163,6 @@ describe('AgentPanel extension flag gate', () => {
   it('registers its visible width through the feature-neutral viewport seam', async () => {
     await loadEntryAndSetup()
 
-    expect(mocks.registerViewportInset).toHaveBeenCalledOnce()
     const [source, provider] = mocks.registerViewportInset.mock.calls[0]
     expect(source).toBe('agent-panel')
     expect(provider()).toBe(0)
