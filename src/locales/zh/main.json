@@ -4298,8 +4298,6 @@
     "canceledCard": {
       "description": "您将不再被扣费。您的功能将在 {date} 前保持激活。",
       "descriptionWithoutDate": "您将不会再次被扣费。您的功能将在本计费周期结束前保持激活状态。",
-      "endedDescription": "您的订阅已不再激活。",
-      "endedTitle": "您的订阅已结束",
       "title": "您的订阅已被取消"
     },
     "changePlan": "更改套餐",
@@ -4354,6 +4352,7 @@
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "对企业级有疑问？",
     "inactive": {
+      "badge": "已失效",
       "memberCta": "好的，知道了",
       "memberDescription": "请联系您的工作区所有者，重新激活订阅以运行工作流。",
       "memberRunTooltip": "请联系您的工作区所有者重新订阅",

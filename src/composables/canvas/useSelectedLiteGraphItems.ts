@@ -91,7 +91,7 @@ export function useSelectedLiteGraphItems() {
     const nodeArray = getSelectedNodesShallow()
 
     const hasSubgraphs = nodeArray.some(
-      (node) => node.isSubgraphNode?.() && node.subgraph
+      (node) => node.isSubgraphNode() && node.subgraph
     )
     if (!hasSubgraphs) return nodeArray
 

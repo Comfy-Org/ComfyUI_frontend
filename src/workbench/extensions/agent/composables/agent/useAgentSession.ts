@@ -201,7 +201,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     promptEditState.value = { phase: 'idle' }
     sending.value = true
-    stopRequestedWhileSending = false
+    stopRequestedWhileSending.value = false
     if (workflow?.prepare)
       await Promise.race([
         workflow.prepare().catch(() => undefined),
@@ -248,8 +248,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         tags?.map((tag) => `${tag.title} #${tag.id}`)
       )
       conversationStore.startTurn(turnId)
-      if (stopRequestedWhileSending) {
-        stopRequestedWhileSending = false
+      if (wasStopRequestedWhileSending()) {
+        stopRequestedWhileSending.value = false
         void stopTurn()
       }
       return true
@@ -271,14 +271,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
-  let stopRequestedWhileSending = false
+  const stopRequestedWhileSending = ref(false)
+  const wasStopRequestedWhileSending = () => stopRequestedWhileSending.value
 
   async function stopTurn(): Promise<void> {
     const threadId = conversationStore.threadId
     const turnId = conversationStore.activeTurnId
     if (threadId === null || turnId === null) {
       // The POST has not acked yet; remember the intent and cancel on ack.
-      if (sending.value) stopRequestedWhileSending = true
+      if (sending.value) stopRequestedWhileSending.value = true
       return
     }
     promptEditState.value = { phase: 'stopping', turnId }
@@ -404,8 +405,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
           event.type === 'agent_message_done' &&
           promptEditState.value.phase === 'stopping' &&
           event.data.message_id === promptEditState.value.turnId &&
-          (event.data.thread_id === undefined ||
-            event.data.thread_id === conversationStore.threadId)
+          event.data.thread_id === conversationStore.threadId
         )
           promptEditState.value = {
             phase: 'ready',

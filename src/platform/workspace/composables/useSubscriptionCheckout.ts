@@ -361,23 +361,29 @@ export function useSubscriptionCheckout(
     preview: PreviewSubscribeResponse,
     ignoreTimeDerivedTodayValues = false
   ): string {
-    const planSnapshot = (
-      plan: PreviewSubscribeResponse['new_plan'] | undefined
-    ) =>
-      plan
-        ? [
-            plan.slug,
-            plan.tier,
-            plan.duration,
-            plan.price_cents,
-            plan.credits_cents,
-            plan.seat_summary?.seat_count,
-            plan.seat_summary?.total_cost_cents,
-            plan.seat_summary?.total_credits_cents,
-            plan.period_start,
-            plan.period_end
-          ]
-        : null
+    type RuntimePlan = Omit<
+      NonNullable<PreviewSubscribeResponse['new_plan']>,
+      'seat_summary'
+    > & {
+      seat_summary?: PreviewSubscribeResponse['new_plan']['seat_summary']
+    }
+
+    const planSnapshot = (plan: RuntimePlan | undefined) => {
+      if (!plan) return null
+      const { seat_summary: seatSummary } = plan
+      return [
+        plan.slug,
+        plan.tier,
+        plan.duration,
+        plan.price_cents,
+        plan.credits_cents,
+        seatSummary?.seat_count,
+        seatSummary?.total_cost_cents,
+        seatSummary?.total_credits_cents,
+        plan.period_start,
+        plan.period_end
+      ]
+    }
 
     return JSON.stringify([
       preview.allowed,
@@ -1351,7 +1357,7 @@ export function useSubscriptionCheckout(
     if (!beginCheckoutMutation()) return
 
     const teamCheckout = selectedTeamCheckout.value
-    if (!teamCheckout?.stop.id) {
+    if (!teamCheckout.stop.id) {
       toast.add({
         severity: 'error',
         summary: t('subscription.teamPlan.name'),

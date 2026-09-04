@@ -84,7 +84,7 @@ describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
     const result = ensureCorrectLayoutScale(undefined, graph)
 
     expect(result).toBe(true)
-    expect(graph.extra?.workflowRendererVersion).toBe('Vue-corrected')
+    expect(graph.extra.workflowRendererVersion).toBe('Vue-corrected')
 
     // Distance should shrink by 1/RENDER_SCALE_FACTOR
     const afterDistance = distanceBetweenNodes(nodes)
@@ -131,7 +131,7 @@ describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
     const result = ensureCorrectLayoutScale('Vue', graph)
 
     expect(result).toBe(true)
-    expect(graph.extra?.workflowRendererVersion).toBe('Vue-corrected')
+    expect(graph.extra.workflowRendererVersion).toBe('Vue-corrected')
     const afterDistance = distanceBetweenNodes(nodes)
     expect(afterDistance / beforeDistance).toBeCloseTo(
       1 / RENDER_SCALE_FACTOR,
@@ -189,7 +189,7 @@ describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
     graph.outputNode = null
 
     expect(() => ensureCorrectLayoutScale(undefined, graph)).not.toThrow()
-    expect(graph.extra?.workflowRendererVersion).toBe('Vue-corrected')
+    expect(graph.extra.workflowRendererVersion).toBe('Vue-corrected')
   })
 
   it('normalizes reroutes', () => {
@@ -203,7 +203,6 @@ describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
       pos: [200, 200] as Point,
       linkIds: new Set([1])
     })
-    if (!graph.reroutes) throw new Error('reroutes is undefined')
     graph.reroutes.set(toRerouteId(1), reroute)
 
     ensureCorrectLayoutScale(undefined, graph)

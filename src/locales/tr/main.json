@@ -4298,8 +4298,6 @@
     "canceledCard": {
       "description": "Tekrar ücretlendirilmeyeceksiniz. Özellikleriniz {date} tarihine kadar aktif kalacak.",
       "descriptionWithoutDate": "Tekrar ücretlendirilmeyeceksiniz. Özellikleriniz fatura dönemi sonuna kadar aktif kalacak.",
-      "endedDescription": "Aboneliğiniz artık aktif değil.",
-      "endedTitle": "Aboneliğiniz sona erdi",
       "title": "Aboneliğiniz iptal edildi"
     },
     "changePlan": "Planı değiştir",
@@ -4354,6 +4352,7 @@
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "Sorularınız mı var veya kurumsal çözüm mü arıyorsunuz?",
     "inactive": {
+      "badge": "Pasif",
       "memberCta": "Tamam, anladım",
       "memberDescription": "Çalışma alanı sahibinizden iş akışlarını çalıştırmak için aboneliği yeniden etkinleştirmesini isteyin.",
       "memberRunTooltip": "Yeniden abone olmak için çalışma alanı sahibinizle iletişime geçin",

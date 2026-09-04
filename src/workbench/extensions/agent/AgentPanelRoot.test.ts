@@ -15,11 +15,11 @@ import { defineComponent, h, nextTick } from 'vue'
 // jsdom does not implement ResizeObserver (happy-dom does); stub it before the
 // Vue node preview chain constructs its module-level observer at import time.
 vi.hoisted(() => {
-  globalThis.ResizeObserver ??= class {
+  globalThis.ResizeObserver = class {
     observe() {}
     unobserve() {}
     disconnect() {}
-  } as unknown as typeof ResizeObserver
+  }
 })
 
 import { i18n } from '@/i18n'
@@ -2639,7 +2639,7 @@ describe('AgentPanelRoot workflow binding', () => {
       'fetch',
       vi.fn(async (url: string, init?: RequestInit) => {
         if (url.includes('/messages') && init?.method === 'POST') {
-          bodies.push(JSON.parse(String(init?.body)))
+          bodies.push(JSON.parse(String(init.body)))
           return new Response(JSON.stringify(ack('wf-cloud-current', 'm-1')), {
             status: 202,
             headers: { 'Content-Type': 'application/json' }
@@ -2707,7 +2707,7 @@ describe('AgentPanelRoot workflow binding', () => {
       'fetch',
       vi.fn(async (url: string, init?: RequestInit) => {
         if (url.includes('/messages') && init?.method === 'POST') {
-          bodies.push(JSON.parse(String(init?.body)))
+          bodies.push(JSON.parse(String(init.body)))
           return new Response(JSON.stringify(ack('wf-42', 'm-1')), {
             status: 202,
             headers: { 'Content-Type': 'application/json' }

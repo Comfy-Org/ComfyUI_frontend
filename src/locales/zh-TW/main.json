@@ -4298,8 +4298,6 @@
     "canceledCard": {
       "description": "您將不會再次被收費。您的功能將持續至 {date}。",
       "descriptionWithoutDate": "您將不會再次被收費。您的功能會持續啟用至本期帳單結束。",
-      "endedDescription": "您的訂閱已不再有效。",
-      "endedTitle": "您的訂閱已結束",
       "title": "您的訂閱已取消"
     },
     "changePlan": "更改方案",
@@ -4354,6 +4352,7 @@
     "gpuLabel": "RTX 6000 Pro（96GB VRAM）",
     "haveQuestions": "有疑問或想了解企業方案？",
     "inactive": {
+      "badge": "已停用",
       "memberCta": "好的，知道了",
       "memberDescription": "請聯絡您的工作區擁有者以重新啟用訂閱，才能執行工作流程。",
       "memberRunTooltip": "請聯絡您的工作區擁有者重新訂閱",
