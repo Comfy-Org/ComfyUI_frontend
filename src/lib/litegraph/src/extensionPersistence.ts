@@ -209,12 +209,22 @@ export const runExtensionSerializeHook = <T extends object>(
   return canonical
 }
 
+/**
+ * Deep-copies a serialized object the way it would appear in workflow JSON.
+ *
+ * `node.serialize()` returns live slot instances that serialize through
+ * `toJSON()`, so `structuredClone` would throw (`DataCloneError`) on them and
+ * would not honour `toJSON()` even where it succeeds. A JSON round trip is the
+ * faithful "serialized view" clone.
+ */
+const cloneSerialised = <T>(value: T): T => JSON.parse(JSON.stringify(value))
+
 export const extensionConfigureView = <T extends object>(
   owner: object,
   canonical: T
 ): T =>
   Object.assign(
-    structuredClone(canonical),
+    cloneSerialised(canonical),
     structuredClone(payloads.get(owner)?.namespaced),
     structuredClone(payloads.get(owner)?.legacy)
   )

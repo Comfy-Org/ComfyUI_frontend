@@ -2,7 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, NodeInputSlot } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 
 /**
@@ -63,6 +63,32 @@ describe('LGraphNode.configure onConfigure hook isolation', () => {
     const serialized = node.serialize()
     expect(serialized).not.toHaveProperty('myExt')
     expect(serialized.extensions).toEqual({ myExt: { note: 'hello' } })
+  })
+
+  it('accepts a serialized object that still holds live slot instances', () => {
+    // `ComfyNode.configure` (litegraphService) fills `data.inputs` with the
+    // node's live `NodeInputSlot` instances before calling
+    // `LGraphNode.configure`. Those carry a node back-reference and only
+    // become plain data through `toJSON()`, so the view must not
+    // `structuredClone` them (DataCloneError) and must hand the hook the JSON
+    // shape.
+    const node = new LGraphNode('TestNode')
+    node.addInput('in', 'number')
+    const info: ISerialisedNode = {
+      ...nodeWithNamespacedExtension(),
+      inputs: [new NodeInputSlot({ name: 'in', type: 'number' }, node)]
+    }
+
+    let hookArg: ISerialisedNode | undefined
+    node.onConfigure = (data) => {
+      hookArg = data
+    }
+
+    expect(() => node.configure(info)).not.toThrow()
+    expect(hookArg?.inputs?.[0]).toEqual(
+      JSON.parse(JSON.stringify(info.inputs?.[0]))
+    )
+    expect(hookArg?.inputs?.[0]).not.toBe(info.inputs?.[0])
   })
 
   it('keeps a missing-node placeholder free of promoted keys after onConfigure mutates its view', () => {
