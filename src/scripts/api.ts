@@ -17,6 +17,7 @@ import type {
   ModelFolderInfo
 } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ShareableAssetsResponse } from '@/schemas/apiSchema'
 import {
@@ -352,6 +353,28 @@ export class PromptExecutionError extends Error {
   }
 }
 
+/**
+ * Reads the deploy-time WebSocket host override. Requires an own string
+ * property so a DOM-clobbering element (`id="__COMFY_API_WS_HOST__"`) or a
+ * prototype-pollution gadget cannot redirect the authenticated socket, and
+ * treats blank values as unset so the socket falls back to `api_host`.
+ */
+function getApiWebSocketHostOverride(): string {
+  if (!Object.hasOwn(window, '__COMFY_API_WS_HOST__')) {
+    return ''
+  }
+  const override = window.__COMFY_API_WS_HOST__
+  if (typeof override !== 'string') {
+    return ''
+  }
+  const trimmed = override.trim()
+  if (!trimmed) {
+    return ''
+  }
+  console.debug('[ComfyUI] WebSocket host override active:', trimmed)
+  return trimmed
+}
+
 export class ComfyApi extends EventTarget {
   private _registered = new Set()
   /**
@@ -388,6 +411,12 @@ export class ComfyApi extends EventTarget {
    * identity always wins and superseded attempts never open a leaked socket.
    */
   private socketGeneration = 0
+
+  /**
+   * Handle for the polling fallback, retained so repeated connection failures
+   * reuse one loop instead of stacking a permanent timer per attempt.
+   */
+  private pollQueueInterval: ReturnType<typeof setInterval> | null = null
 
   /**
    * Cache Firebase auth store composable function.
@@ -670,7 +699,8 @@ export class ComfyApi extends EventTarget {
    * Poll status  for colab and other things that don't support websockets.
    */
   private _pollQueue() {
-    setInterval(async () => {
+    if (this.pollQueueInterval !== null) return
+    this.pollQueueInterval = setInterval(async () => {
       try {
         const resp = await this.fetchApi('/prompt')
         const status = (await resp.json()) as StatusWsMessageStatus
@@ -679,6 +709,16 @@ export class ComfyApi extends EventTarget {
         this.dispatchCustomEvent('status', null)
       }
     }, 1000)
+  }
+
+  /**
+   * Stops the polling fallback, so a socket that recovers does not leave a
+   * second stream of `status` events running alongside it.
+   */
+  private _stopPollQueue() {
+    if (this.pollQueueInterval === null) return
+    clearInterval(this.pollQueueInterval)
+    this.pollQueueInterval = null
   }
 
   /**
@@ -721,7 +761,8 @@ export class ComfyApi extends EventTarget {
     }
 
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
-    const baseUrl = `${protocol}://${this.api_host}${this.api_base}/ws`
+    const wsHost = getApiWebSocketHostOverride() || this.api_host
+    const baseUrl = `${protocol}://${wsHost}${this.api_base}/ws`
     const query = params.toString()
     const wsUrl = query ? `${baseUrl}?${query}` : baseUrl
 
@@ -730,12 +771,23 @@ export class ComfyApi extends EventTarget {
     // generation owns this.socket and no superseded socket is opened.
     if (generation !== this.socketGeneration) return
 
-    const socket = new WebSocket(wsUrl)
+    let socket: WebSocket
+    try {
+      socket = new WebSocket(wsUrl)
+    } catch (error) {
+      reportError(error, { errorType: 'websocket_construction_failure' })
+      console.error('Failed to open WebSocket connection:', error)
+      if (!isReconnect) {
+        this._pollQueue()
+      }
+      return
+    }
     this.socket = socket
     socket.binaryType = 'arraybuffer'
 
     socket.addEventListener('open', () => {
       opened = true
+      this._stopPollQueue()
 
       // Send feature flags as the first message
       socket.send(
