@@ -131,19 +131,21 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
     name: string
     type: string
     options: DOMWidgetOptions<V>
+    value?: V
   }) {
-    const { node, name, type, options } = obj
-    super({ y: 0, name, type, options }, node)
+    const { node, name, type, options, value = '' as V } = obj
+    super({ y: 0, name, type, options, value }, node)
 
     this.id = generateUUID()
   }
 
   override get value(): V {
-    return this.options.getValue?.() ?? ('' as V)
+    return this.options.getValue?.() ?? super.value ?? ('' as V)
   }
 
   override set value(v: V) {
-    this.options.setValue?.(v)
+    if (this.options.setValue) this.options.setValue(v)
+    else super.value = v
     this.callback?.(this.value)
   }
 
@@ -304,6 +306,7 @@ export class ComponentWidgetImpl<
     props?: P
     options: DOMWidgetOptions<V>
     type?: string
+    value?: V
   }) {
     super({
       type: 'custom',
@@ -329,9 +332,9 @@ export class ComponentWidgetImpl<
   }
 }
 
-export const addWidget = <W extends BaseDOMWidget<object | string>>(
+export const addWidget = <V extends object | string>(
   node: LGraphNode,
-  widget: W
+  widget: BaseDOMWidget<V>
 ) => {
   node.addCustomWidget(widget)
 

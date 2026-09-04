@@ -9,6 +9,7 @@ import { createMockWidget } from './widgetTestUtils'
 
 const mockCopyToClipboard = vi.hoisted(() => vi.fn())
 const mockIsNodeOptionsOpen = vi.hoisted(() => vi.fn(() => false))
+const mockGetSpellcheck = vi.hoisted(() => vi.fn(() => false))
 
 vi.mock('@/composables/useCopyToClipboard', () => ({
   useCopyToClipboard: vi.fn(() => ({
@@ -18,6 +19,12 @@ vi.mock('@/composables/useCopyToClipboard', () => ({
 
 vi.mock('@/composables/graph/useMoreOptionsMenu', () => ({
   isNodeOptionsOpen: mockIsNodeOptionsOpen
+}))
+
+vi.mock('@/platform/settings/settingStore', () => ({
+  useSettingStore: () => ({
+    get: mockGetSpellcheck
+  })
 }))
 
 function createTextareaWidget(
@@ -72,6 +79,13 @@ async function setTextareaValueAndTrigger(
 }
 
 describe('WidgetTextarea Value Binding', () => {
+  it('applies the spellcheck setting', () => {
+    mockGetSpellcheck.mockReturnValue(true)
+    renderComponent(createTextareaWidget(), 'text')
+
+    expect(screen.getByRole('textbox')).toHaveAttribute('spellcheck', 'true')
+  })
+
   describe('Vue Event Emission', () => {
     it('emits Vue event when textarea value changes on blur', async () => {
       const widget = createTextareaWidget('hello')

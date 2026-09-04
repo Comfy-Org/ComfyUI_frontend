@@ -2,19 +2,6 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { DOMWidgetOptions } from '@/scripts/domWidget'
-
-interface FakeDOMWidget {
-  name: string
-  type: string
-  element: HTMLElement
-  options: Record<string, unknown>
-  value: string
-  callback?: (value: string) => void
-  onRemove?: () => void
-  serialize?: boolean
-  serializeValue?: () => unknown
-}
 
 interface FakeMediaWidget {
   name: string
@@ -26,33 +13,6 @@ interface FakeMediaWidget {
 }
 
 type NodeOverrides = Record<string, unknown> & { widgets?: never }
-
-export function createMockDOMWidgetNode(overrides: NodeOverrides = {}) {
-  const widgets: FakeDOMWidget[] = []
-  return fromAny<LGraphNode & { widgets: FakeDOMWidget[] }, unknown>({
-    id: 1,
-    widgets,
-    addDOMWidget: vi.fn(
-      (
-        name: string,
-        type: string,
-        element: HTMLElement,
-        _options?: DOMWidgetOptions<string>
-      ) => {
-        const widget: FakeDOMWidget = {
-          name,
-          type,
-          element,
-          options: {},
-          value: ''
-        }
-        widgets.push(widget)
-        return widget
-      }
-    ),
-    ...overrides
-  })
-}
 
 export function createMockMediaNode(overrides: NodeOverrides = {}) {
   const widgets: FakeMediaWidget[] = []

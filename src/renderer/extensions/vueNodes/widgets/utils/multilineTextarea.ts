@@ -13,7 +13,7 @@ import type { WidgetId } from '@/types/widgetId'
 const TRACKPAD_DETECTION_THRESHOLD = 50
 
 /** Creates the `<textarea>` element backing a `customtext` multiline widget. */
-export function createMultilineInputElement(
+function createMultilineInputElement(
   value: string,
   placeholder: string
 ): HTMLTextAreaElement {
@@ -30,7 +30,7 @@ export function createMultilineInputElement(
  * Wires textarea value propagation, trackpad gestures, and middle-button canvas
  * panning onto a `customtext` DOM widget, torn down via the widget's `onRemove`.
  */
-export function bindMultilineTextareaWidget(
+function bindMultilineTextareaWidget(
   widget: BaseDOMWidget<string>,
   element: HTMLTextAreaElement
 ): void {

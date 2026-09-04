@@ -2,13 +2,13 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive, shallowRef } from 'vue'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { createMockDOMWidgetNode } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useStringWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useStringWidget'
 import { DEBOUNCE_MS } from '@/renderer/glsl/glslPreviewUtils'
 import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { toNodeId } from '@/types/nodeId'
 
 /**
  * Guards the writer/reader store contract behind the GLSL live preview: the
@@ -17,7 +17,7 @@ import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
  * store-backed customtext write that #13851 fixed.
  */
 
-const GRAPH_ID = 'root'
+const GRAPH_ID = '00000000-0000-4000-8000-000000000001'
 const SHADER = 'void main() { gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0); }'
 
 const mockRenderer = vi.hoisted(() => {
@@ -62,29 +62,20 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   })
 }))
 
-vi.mock('@/scripts/app', () => ({
-  app: { rootGraph: { id: 'root' } }
-}))
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({ get: () => false })
-}))
-
 function seedShaderThroughWidget(nodeId: number, value: string): void {
-  const node = createMockDOMWidgetNode({
-    id: nodeId,
-    graph: { id: GRAPH_ID, rootGraph: { id: GRAPH_ID } }
-  })
+  const graph = new LGraph()
+  graph.id = GRAPH_ID
+  const node = new LGraphNode('GLSLShader')
+  node.id = toNodeId(nodeId)
+  graph.add(node)
   const inputSpec: InputSpec = {
     type: 'STRING',
     name: 'fragment_shader',
     default: '',
     multiline: true
   }
-  useStringWidget()(node, inputSpec)
-
-  const options = vi.mocked(node.addDOMWidget).mock.calls[0][3]
-  options?.setValue?.(value)
+  const widget = useStringWidget()(node, inputSpec)
+  widget.value = value
 }
 
 function createGLSLNode(nodeId: number): LGraphNode {
