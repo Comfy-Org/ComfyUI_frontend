@@ -92,10 +92,9 @@ describe('WorkshopModelsGrid', () => {
     expect(cardNames()).toEqual([expect.stringContaining('Flux')])
   })
 
-  it('narrows the grid to one use case and counts what sits behind each', async () => {
+  it('narrows the grid to one use case', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
-    expect(screen.getByTestId('use-case-all').textContent).toContain('3')
 
     await user.click(screen.getByTestId('use-case-edit-images'))
     expect(

@@ -106,26 +106,22 @@ const railBeside = computed(() => version.value === 'v1.2')
 const railLabel: TranslationKey = 'workshop.launch.label'
 
 // One flat list of use cases, ordered by how much of the catalogue sits behind
-// each. Every model belongs to exactly one, so the counts are honest totals.
-const useCaseCounts = computed(() => countByUseCase(models))
-
+// each. Every model belongs to exactly one, so the order is an honest ranking.
 const rail = computed(() => {
-  const counts = useCaseCounts.value
+  const counts = countByUseCase(models)
   return [
     {
       value: 'all' as const,
       label: t('workshop.launch.allUseCases', locale),
-      count: counts.all,
       current: useCase.value === 'all'
     },
     ...USE_CASES.filter((value) => counts[value] > 0)
+      .sort((a, b) => counts[b] - counts[a])
       .map((value) => ({
         value,
         label: t(useCaseLabelKey[value], locale),
-        count: counts[value],
         current: useCase.value === value
       }))
-      .sort((a, b) => b.count - a.count)
   ]
 })
 
@@ -296,12 +292,6 @@ const menuItemClass =
           @click="selectRail(entry.value)"
         >
           <span class="min-w-0 truncate">{{ entry.label }}</span>
-          <span
-            v-if="entry.count !== undefined"
-            class="shrink-0 text-xs text-primary-warm-gray tabular-nums"
-          >
-            {{ entry.count }}
-          </span>
         </button>
       </nav>
     </aside>
