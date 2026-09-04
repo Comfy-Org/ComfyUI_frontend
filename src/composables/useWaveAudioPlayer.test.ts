@@ -166,6 +166,34 @@ describe('useWaveAudioPlayer', () => {
     expect(bars.value[9].height).toBe(100)
   })
 
+  it('maps a quarter-amplitude bucket to a quarter-height bar', async () => {
+    const channel = new Float32Array(80)
+    channel.fill(0.25, 0, 8)
+    channel.fill(1, 72)
+    mockDecodedChannel(channel)
+
+    const src = ref('/audio.wav')
+    const { bars, loading } = useWaveAudioPlayer({ src, barCount: 10 })
+    await vi.waitFor(() => expect(loading.value).toBe(false))
+
+    expect(bars.value[0].height).toBe(25)
+    expect(bars.value[9].height).toBe(100)
+  })
+
+  it('falls back to placeholder bars when the decoded channel is empty', async () => {
+    mockDecodedChannel(new Float32Array(0))
+
+    const src = ref('/audio.wav')
+    const { bars, loading } = useWaveAudioPlayer({ src, barCount: 10 })
+    await vi.waitFor(() => expect(loading.value).toBe(false))
+
+    expect(bars.value).toHaveLength(10)
+    for (const bar of bars.value) {
+      expect(bar.height).toBeGreaterThanOrEqual(10)
+      expect(bar.height).toBeLessThanOrEqual(70)
+    }
+  })
+
   it('skips the waveform fetch entirely when waveform is disabled', () => {
     const src = ref('/audio.wav')
     const { loading } = useWaveAudioPlayer({ src, waveform: false })

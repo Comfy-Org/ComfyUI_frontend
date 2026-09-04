@@ -7,7 +7,8 @@ import { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
 import { isLoad3dResultViewerNode } from '@/extensions/core/load3d/nodeTypes'
 import {
   isAssetPreviewSupported,
-  persistThumbnail
+  persistThumbnailFromDataUrl,
+  THUMBNAIL_CAPTURE_SIZE
 } from '@/platform/assets/utils/assetPreviewUtil'
 import type {
   AnimationItem,
@@ -472,10 +473,11 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     modelUrl: string
   ) => {
     if (!containerRef) return
+    const generation = ++thumbnailGeneration
 
     try {
       if (load3d) {
-        await loadStandaloneModel(modelUrl)
+        await loadStandaloneModel(modelUrl, generation)
         return
       }
 
@@ -492,6 +494,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       }
 
       await load3d.loadModel(modelUrl)
+      if (generation !== thumbnailGeneration) return
       currentModelUrl = modelUrl
       restoreStandaloneConfig(modelUrl)
       captureAdapterFlags(load3d)
@@ -499,40 +502,67 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       isPreview.value = true
 
       setupAnimationEvents()
-      persistStandaloneThumbnail(modelUrl)
+      persistStandaloneThumbnail(modelUrl, generation)
     } catch (error) {
+      if (generation !== thumbnailGeneration) return
       console.error('Error initializing standalone 3D viewer:', error)
       useToastStore().addAlert(t('toastMessages.failedToLoadModel'))
     }
   }
 
-  const persistStandaloneThumbnail = (modelUrl: string) => {
+  // Invalidates in-flight captures when a newer model load starts, so a
+  // capture that completes after the switch cannot persist the new model's
+  // pixels under the previous model's name.
+  let thumbnailGeneration = 0
+  let standaloneThumbnailCapture: Promise<void> | undefined
+
+  const persistStandaloneThumbnail = (modelUrl: string, generation: number) => {
     if (!load3d || !isAssetPreviewSupported()) return
     const name = standaloneAssetName(modelUrl)
     if (!name) return
-    void load3d
-      .captureThumbnail(256, 256)
-      .then((dataUrl) => fetch(dataUrl))
-      .then((response) => response.blob())
-      .then((blob) => persistThumbnail(name, blob))
+    const capture = load3d.captureThumbnail(
+      THUMBNAIL_CAPTURE_SIZE,
+      THUMBNAIL_CAPTURE_SIZE
+    )
+    const captureComplete = capture.then(
+      () => undefined,
+      () => undefined
+    )
+    standaloneThumbnailCapture = captureComplete
+    void capture
+      .then((dataUrl) => {
+        if (generation !== thumbnailGeneration) return
+        return persistThumbnailFromDataUrl(name, dataUrl)
+      })
       .catch(() => {})
+    void captureComplete.finally(() => {
+      if (standaloneThumbnailCapture === captureComplete) {
+        standaloneThumbnailCapture = undefined
+      }
+    })
   }
 
   /**
    * Load a new model into an existing standalone viewer,
    * reusing the same WebGLRenderer.
    */
-  const loadStandaloneModel = async (modelUrl: string) => {
+  const loadStandaloneModel = async (modelUrl: string, generation: number) => {
     if (!load3d) return
 
     try {
+      if (standaloneThumbnailCapture) {
+        await standaloneThumbnailCapture
+        if (generation !== thumbnailGeneration) return
+      }
       saveStandaloneConfig()
       await load3d.loadModel(modelUrl)
+      if (generation !== thumbnailGeneration) return
       currentModelUrl = modelUrl
       restoreStandaloneConfig(modelUrl)
       captureAdapterFlags(load3d)
-      persistStandaloneThumbnail(modelUrl)
+      persistStandaloneThumbnail(modelUrl, generation)
     } catch (error) {
+      if (generation !== thumbnailGeneration) return
       console.error('Error loading model in standalone viewer:', error)
       useToastStore().addAlert('Failed to load 3D model')
     }

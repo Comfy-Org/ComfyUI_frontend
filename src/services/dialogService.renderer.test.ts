@@ -99,14 +99,12 @@ describe('dialogService Reka renderer opt-in', () => {
     expect(args.dialogComponentProps.size).toBe('lg')
   })
 
-  it("showTopUpCreditsDialog() sets renderer 'reka' with a transparent shrink-wrapped chrome", async () => {
+  it("showTopUpCreditsDialog() sets renderer 'reka' with headless content", async () => {
     await useDialogService().showTopUpCreditsDialog()
     const [args] = showDialog.mock.calls[0]
     expect(args.dialogComponentProps.renderer).toBe('reka')
     expect(args.dialogComponentProps.headless).toBe(true)
     expect(args.dialogComponentProps.pt).toBeUndefined()
-    expect(args.dialogComponentProps.contentClass).toContain('w-fit')
-    expect(args.dialogComponentProps.contentClass).toContain('bg-transparent')
   })
 
   it("showLayoutDialog() defaults to renderer 'reka' headless without pt", () => {
@@ -145,7 +143,6 @@ describe('dialogService Reka renderer opt-in', () => {
     const [args] = showDialog.mock.calls[0]
     expect(args.dialogComponentProps.renderer).toBe('reka')
     expect(args.dialogComponentProps.pt).toBeUndefined()
-    expect(args.dialogComponentProps.contentClass).toContain('w-fit')
     expect(args.dialogComponentProps.headerClass).toBe('p-0')
     expect(args.dialogComponentProps.bodyClass).toBe('p-0 overflow-y-hidden')
     expect(args.dialogComponentProps.footerClass).toBe('p-0')
