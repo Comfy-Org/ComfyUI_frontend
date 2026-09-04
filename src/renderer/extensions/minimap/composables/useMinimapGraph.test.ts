@@ -119,6 +119,9 @@ describe('useMinimapGraph', () => {
 
     expect(originalOnConnectionChange).toHaveBeenCalledWith(mockGraph._nodes[0])
     expect(onGraphChangedMock).toHaveBeenCalledTimes(1)
+    expect(originalOnConnectionChange.mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(onGraphChangedMock).mock.invocationCallOrder[0]
+    )
   })
 
   it('should prevent duplicate event listener setup', () => {
