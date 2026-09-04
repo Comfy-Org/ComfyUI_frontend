@@ -483,8 +483,7 @@ const lifecycleActionPermitted = computed(() => {
   return (
     capabilities.canSubscribeSelfServe.value ||
     capabilities.canChangeSeats.value ||
-    capabilities.canReactivate.value ||
-    capabilities.canDowngradeToPersonal.value
+    capabilities.canReactivate.value
   )
 })
 
