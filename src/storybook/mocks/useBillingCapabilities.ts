@@ -51,6 +51,7 @@ export function useBillingCapabilities() {
     ),
     isReady: computed(() => true),
     snapshotAuthoritative: computed(() => true),
+    snapshotResolved: computed(() => true),
     capabilityReadFailed: computed(() => false),
     initialize: () => undefined,
     refresh: () => undefined,
