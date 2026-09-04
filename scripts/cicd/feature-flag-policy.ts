@@ -222,11 +222,22 @@ export function applyAiVerdict(
     parsed && typeof parsed === 'object' && 'reason' in parsed
       ? parsed.reason
       : null
+  const returnedFlag =
+    parsed &&
+    typeof parsed === 'object' &&
+    'flag' in parsed &&
+    typeof parsed.flag === 'string' &&
+    isFilled(parsed.flag)
+      ? clean(parsed.flag)
+      : null
+  const flag = result.flag ?? returnedFlag
   if (
     adapterOutcome !== 'success' ||
     !['pass', 'fail', 'inconclusive'].includes(String(verdict)) ||
     typeof reason !== 'string' ||
-    !reason.trim()
+    !reason.trim() ||
+    (verdict !== 'inconclusive' && !flag) ||
+    Boolean(result.flag && returnedFlag && result.flag !== returnedFlag)
   )
     return {
       verdict: 'inconclusive',
@@ -237,6 +248,9 @@ export function applyAiVerdict(
   return {
     verdict: verdict as PolicyResult['verdict'],
     requiresAi: true,
+    flag: flag ?? undefined,
+    flagDiscovery:
+      result.flagDiscovery ?? (returnedFlag ? 'inferred' : undefined),
     reasons: [
       ...result.reasons,
       `AI review: ${reason.replace(/[\r\n]+/g, ' ').slice(0, 1000)}`
@@ -453,15 +467,6 @@ function prepare() {
     result.verdict = 'inconclusive'
     result.reasons = ['Multiple `risk-dispute:*` labels conflict.']
   }
-  writeFileSync(
-    statePath,
-    JSON.stringify({
-      repo,
-      sha: pull.head.sha,
-      risk,
-      result
-    } satisfies PolicyState)
-  )
   const context = buildReviewContext(
     pr,
     pull.head.sha,
@@ -476,11 +481,20 @@ function prepare() {
       'AI review context is incomplete; retry or use an approved exception.'
     )
   }
+  writeFileSync(
+    statePath,
+    JSON.stringify({
+      repo,
+      sha: pull.head.sha,
+      risk,
+      result
+    } satisfies PolicyState)
+  )
   writeFileSync(contextPath, context.content)
   if (process.env.GITHUB_OUTPUT)
     appendFileSync(
       process.env.GITHUB_OUTPUT,
-      `requires_ai=${result.verdict === 'pass' && result.requiresAi}\n`
+      `requires_ai=${result.requiresAi}\n`
     )
 }
 

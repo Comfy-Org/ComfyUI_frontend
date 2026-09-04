@@ -112,17 +112,30 @@ describe('applyAiVerdict', () => {
     expect(
       applyAiVerdict(
         deterministic,
-        JSON.stringify({ verdict: 'pass', reason: 'The OFF path is inert.' }),
+        JSON.stringify({
+          verdict: 'pass',
+          flag: 'safe_feature',
+          reason: 'The OFF path is inert.'
+        }),
         'success'
       )
-    ).toMatchObject({ verdict: 'pass', requiresAi: true })
+    ).toMatchObject({
+      verdict: 'pass',
+      requiresAi: true,
+      flag: 'safe_feature',
+      flagDiscovery: 'inferred'
+    })
   })
 
   it('preserves a provider failure as the aggregate verdict', () => {
     expect(
       applyAiVerdict(
         deterministic,
-        JSON.stringify({ verdict: 'fail', reason: 'An effect is not gated.' }),
+        JSON.stringify({
+          verdict: 'fail',
+          flag: 'safe_feature',
+          reason: 'An effect is not gated.'
+        }),
         'success'
       ).verdict
     ).toBe('fail')
@@ -138,6 +151,20 @@ describe('applyAiVerdict', () => {
     const exempt = { ...deterministic, requiresAi: false }
     expect(applyAiVerdict(exempt, '', 'skipped')).toBe(exempt)
   })
+
+  it('rejects a provider that changes the resolved flag', () => {
+    const resolved = { ...deterministic, flag: 'safe_feature' }
+    const result = applyAiVerdict(
+      resolved,
+      JSON.stringify({
+        verdict: 'pass',
+        flag: 'other_feature',
+        reason: 'The OFF path is inert.'
+      }),
+      'success'
+    )
+    expect(result.verdict).toBe('inconclusive')
+  })
 })
 
 describe('buildReviewContext', () => {
@@ -145,7 +172,7 @@ describe('buildReviewContext', () => {
     const context = buildReviewContext(
       12,
       'abc123',
-      null,
+      { verdict: 'inconclusive', requiresAi: true, reasons: [] },
       [{ filename: 'src/runtime.ts' }],
       ['src/runtime.ts']
     )
