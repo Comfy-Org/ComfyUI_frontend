@@ -1,6 +1,6 @@
 ---
 import BenefitsGrid01 from '../../components/blocks/BenefitsGrid01.vue'
-import BuildManifestSplit01 from '../../components/blocks/BuildManifestSplit01.vue'
+import BuildConfiguratorSplit01 from '../../components/blocks/BuildConfiguratorSplit01.vue'
 import CtaBands01 from '../../components/blocks/CtaBands01.vue'
 import CtaCenter01 from '../../components/blocks/CtaCenter01.vue'
 import FAQSplit01 from '../../components/blocks/FAQSplit01.vue'
@@ -225,45 +225,41 @@ const faqPage = buildFaqPageNode(url, faqs)
     offers={enterpriseOffers}
   />
 
-  <BuildManifestSplit01
-    eyebrow="COMFYUI MANAGED BUILDS"
-    heading={'One approved build\nacross the fleet.'}
-    body="Keep ComfyUI. Let Comfy manage the versioned distribution, governance, and release layer around it. Replace machine-by-machine setup with deliberate assignment, rollout, and updates."
+  <BuildConfiguratorSplit01
+    eyebrow="MANAGED BUILDS"
+    heading={'One approved ComfyUI environment,\neverywhere your team runs it.'}
+    body="Define the ComfyUI release, custom nodes, models, and dependencies your team is approved to run. Ship the same versioned build wherever the work happens."
     features={[
-      'Pin and approve the nodes each build needs across ComfyUI’s 5,000+ extensions and 60,000+ community nodes',
+      'Private custom nodes and models',
       'Use supported provider keys and existing contracts',
-      'Run on workstations, GPU servers, or customer infrastructure',
+      'Assign approved builds through company identity',
     ]}
-    primaryCta={{
-      label: 'VIEW MANAGED BUILDS',
-      href: '/enterprise/managed-builds/',
-    }}
-    secondaryCta={{
-      label: 'SEE THE DEVELOPER PLATFORM',
-      href: '/api/',
-    }}
-    manifestLabel="APPROVED BUILD"
-    manifestName="Production environment"
-    manifestVersion="CURRENT"
-    manifestItems={[
-      {
-        id: 'dependencies',
-        label: 'ComfyUI and dependencies',
-        value: 'Pinned',
-      },
-      { id: 'nodes', label: 'Custom nodes', value: 'Allowlisted' },
-      { id: 'models', label: 'Models', value: 'Approved and private' },
-      { id: 'providers', label: 'Provider access', value: 'BYOK' },
+    releasesLabel="COMFYUI RELEASE"
+    releases={['v0.3.41', 'v0.3.40', 'v0.3.38']}
+    environmentsLabel="PYTHON · PYTORCH · CUDA"
+    environments={[
+      { id: 'env-current', python: '3.12', torch: '2.6', cuda: '12.8' },
+      { id: 'env-previous', python: '3.12', torch: '2.5', cuda: '12.4' },
+      { id: 'env-legacy', python: '3.11', torch: '2.5', cuda: '12.4' },
     ]}
-    releaseLabels={[
-      { id: 'previous', label: 'Previous release' },
-      { id: 'current', label: 'Current release', current: true },
+    nodesLabel="CUSTOM NODES"
+    nodes={[
+      { id: 'manager', label: 'ComfyUI-Manager', selected: true },
+      { id: 'ipadapter', label: 'IPAdapter Plus', selected: true },
+      { id: 'controlnet', label: 'ControlNet Aux' },
+      { id: 'videohelper', label: 'VideoHelperSuite', selected: true },
+      { id: 'studio-nodes', label: 'studio-nodes (private)', selected: true },
     ]}
-    deploymentTargets={[
-      { id: 'workstations', label: 'Workstations' },
-      { id: 'servers', label: 'GPU servers' },
-      { id: 'infrastructure', label: 'Customer infrastructure' },
+    modelsLabel="MODELS"
+    models={[
+      { id: 'flux', label: 'FLUX 3', selected: true },
+      { id: 'wan', label: 'Wan 3.0' },
+      { id: 'sdxl', label: 'SDXL Base', selected: true },
+      { id: 'ltx', label: 'LTX-2.5' },
+      { id: 'brand-lora', label: 'brand-lora (private)', selected: true },
     ]}
+    cta={{ label: 'REQUEST DEMO', href: '/contact/' }}
+    client:visible
   />
 
   <BenefitsGrid01

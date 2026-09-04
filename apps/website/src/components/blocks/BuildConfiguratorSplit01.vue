@@ -54,7 +54,7 @@ const {
   body: string
   features?: readonly string[]
   eyebrow: string
-  panelTitle: string
+  panelTitle?: string
   releasesLabel: string
   releases: readonly string[]
   environmentsLabel: string
@@ -128,6 +128,11 @@ const chipClasses = (option: ChipOption, selected: boolean) =>
       class="bg-primary-comfy-ink-light flex flex-col gap-10 rounded-4xl p-6 md:p-10 lg:flex-row lg:gap-16 lg:p-14"
     >
       <div class="flex w-full flex-col justify-center lg:flex-1 lg:pl-6">
+        <p
+          class="text-primary-comfy-yellow mb-6 text-sm font-extrabold tracking-wider uppercase"
+        >
+          {{ eyebrow }}
+        </p>
         <component
           :is="headingTag"
           class="text-3xl leading-[125%] font-light tracking-tight whitespace-pre-line text-primary-comfy-canvas md:text-4xl"
@@ -157,17 +162,17 @@ const chipClasses = (option: ChipOption, selected: boolean) =>
 
       <div class="w-full lg:flex-1">
         <p
-          class="text-primary-comfy-yellow text-sm font-extrabold tracking-wider uppercase"
-        >
-          {{ eyebrow }}
-        </p>
-        <p
-          class="mt-3 text-2xl font-medium text-primary-warm-white md:text-3xl"
+          v-if="panelTitle"
+          class="text-2xl font-medium text-primary-warm-white md:text-3xl"
         >
           {{ panelTitle }}
         </p>
 
-        <div class="mt-7" role="group" :aria-label="releasesLabel">
+        <div
+          :class="panelTitle && 'mt-7'"
+          role="group"
+          :aria-label="releasesLabel"
+        >
           <p
             class="text-[0.65rem] tracking-[0.12em] text-primary-warm-white/55 uppercase"
           >
