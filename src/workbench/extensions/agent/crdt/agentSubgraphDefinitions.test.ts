@@ -149,4 +149,38 @@ describe('readSubgraphDefinitions', () => {
     expect(projected).toHaveLength(1)
     expect(projected[0]?.nodes?.map((node) => node.id)).toEqual([1])
   })
+
+  it('reads a node named twice in the order register once', () => {
+    // mintDefinition pushes one register entry per input node, so two interior
+    // nodes sharing an id leave a two-entry register over a one-key map.
+    const definition = createTestSubgraphData({
+      nodes: [interiorNode(1), interiorNode(1), interiorNode(2)] as never,
+      links: [interiorLink(5, 1, 2), interiorLink(5, 1, 2)] as never
+    })
+
+    const [projected] = readSubgraphDefinitions(seed(definition))
+
+    expect(projected.nodes?.map((node) => node.id)).toEqual([1, 2])
+    expect(projected.links?.map((link) => link.id)).toEqual([5])
+  })
+
+  it('skips a node whose widgets entry is not a map, as the package does', () => {
+    const definition = createTestSubgraphData({
+      nodes: [interiorNode(1), interiorNode(2)] as never
+    })
+    const doc = seed(definition)
+    doc.transact(() => {
+      const stored = doc
+        .getMap<unknown>('definitions')
+        .get(definition.id) as Y.Map<unknown>
+      const first = (stored.get('nodes') as Y.Map<unknown>).get(
+        '1'
+      ) as Y.Map<unknown>
+      first.set('widgets', 'nope')
+    })
+
+    const [projected] = readSubgraphDefinitions(doc)
+
+    expect(projected.nodes?.map((node) => node.id)).toEqual([2])
+  })
 })

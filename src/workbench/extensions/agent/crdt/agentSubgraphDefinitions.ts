@@ -26,20 +26,31 @@ function plain(value: unknown): unknown {
   return structuredClone(value)
 }
 
+/**
+ * Register entries that name a record, first occurrence only. LiteGraph keeps
+ * only the first entry per id when it normalizes a definition, and the
+ * positional widget restore in `agentNodeMaterializer` needs the list read
+ * here to have the same length as the list LiteGraph configures.
+ */
 function orderedKeys(register: unknown, map: Y.Map<unknown>): string[] {
   const order = Array.isArray(register)
     ? register.filter((key): key is string => typeof key === 'string')
     : [...map.keys()].sort()
-  return order.filter((key) => map.has(key))
+  return [...new Set(order)].filter((key) => map.has(key))
 }
 
 /**
  * Interior node record → serialised node. Named widget values go to
  * `widgets_values_named`, the only name-keyed slot `LGraphNode.configure()`
- * reads; the opaque positional form stays `widgets_values`.
+ * reads; the opaque positional form stays `widgets_values`. A record whose
+ * `widgets` is not a map cannot be read and is skipped, as the package's
+ * `tryProjectNode()` skips it.
  */
 function readInteriorNode(source: unknown): Record<string, unknown> | null {
   if (!(source instanceof Y.Map)) return null
+  if (source.has('widgets') && !(source.get('widgets') instanceof Y.Map)) {
+    return null
+  }
   const node: Record<string, unknown> = {}
   source.forEach((value, key) => {
     if (key === NODE_INCARNATION) return

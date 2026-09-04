@@ -972,6 +972,75 @@ describe('reconcileAgentAdapters', () => {
       expect(reportError).not.toHaveBeenCalled()
     })
 
+    it('keeps a registered definition when a later frame nests a copy of it', () => {
+      const inner = createTestSubgraphData({
+        nodes: [nodePayload(30, 'widget-node')] as never
+      })
+      const outer = createTestSubgraphData({
+        nodes: [nodePayload(21, inner.id)] as never,
+        definitions: { subgraphs: [inner] }
+      })
+      const first = seedDocument(graph, {
+        nodes: [nodePayload(1, inner.id)],
+        links: [],
+        definitions: { subgraphs: [inner] }
+      })
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(first.follower.doc))
+      const registered = graph.subgraphs.get(inner.id)
+      const instance = graph.getNodeById(toNodeId(1)) as SubgraphNode
+      expect(instance.subgraph).toBe(registered)
+
+      const second = seedDocument(graph, {
+        nodes: [nodePayload(1, inner.id), nodePayload(2, outer.id)],
+        links: [],
+        definitions: { subgraphs: [inner, outer] }
+      })
+      reconcileAgentAdapters(
+        graph,
+        readSubgraphDefinitions(second.follower.doc)
+      )
+
+      expect(graph.subgraphs.get(inner.id)).toBe(registered)
+      expect(graph.subgraphs.has(outer.id)).toBe(true)
+      expect(created).toHaveBeenCalledTimes(2)
+      expect(graph.getNodeById(toNodeId(2))).toBeInstanceOf(SubgraphNode)
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('registers the missing child of an already registered parent', () => {
+      const inner = createTestSubgraphData({
+        nodes: [nodePayload(30, 'widget-node')] as never
+      })
+      const outer = createTestSubgraphData({
+        nodes: [nodePayload(21, 'widget-node')] as never
+      })
+      const first = seedDocument(graph, {
+        nodes: [nodePayload(1, outer.id)],
+        links: [],
+        definitions: { subgraphs: [outer] }
+      })
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(first.follower.doc))
+      const registered = graph.subgraphs.get(outer.id)
+
+      const second = seedDocument(graph, {
+        nodes: [nodePayload(1, outer.id), nodePayload(2, inner.id)],
+        links: [],
+        definitions: {
+          subgraphs: [{ ...outer, definitions: { subgraphs: [inner] } }]
+        }
+      })
+      reconcileAgentAdapters(
+        graph,
+        readSubgraphDefinitions(second.follower.doc)
+      )
+
+      expect(graph.subgraphs.get(outer.id)).toBe(registered)
+      expect(graph.subgraphs.has(inner.id)).toBe(true)
+      expect(created).toHaveBeenCalledTimes(2)
+      expect(graph.getNodeById(toNodeId(2))).toBeInstanceOf(SubgraphNode)
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
     it('reports a definition that fails to register and still reconciles root nodes', () => {
       const definition = createTestSubgraphData({
         nodes: [nodePayload(7)] as never

@@ -72,9 +72,7 @@ function registerSubgraphDefinitions(
   definitions: ExportedSubgraph[]
 ): void {
   const rootGraph = graph.rootGraph
-  const missing = definitions.filter(
-    (definition) => !rootGraph.subgraphs.has(definition.id)
-  )
+  const missing = pruneRegistered(definitions, rootGraph)
   if (missing.length === 0) return
   try {
     // createSubgraphs hoists nested `definitions.subgraphs` into its return
@@ -99,6 +97,33 @@ function registerSubgraphDefinitions(
       }
     })
   }
+}
+
+/**
+ * Definitions the root graph does not have yet, at every nesting level.
+ *
+ * `LGraph.createSubgraphs()` hoists nested definitions and registers each one
+ * unconditionally, replacing a live definition of the same id and firing
+ * `subgraph-created` again for it. So a registered definition must be pruned
+ * wherever it appears, and the missing children of a registered parent are
+ * hoisted to the top level so they still register.
+ */
+function pruneRegistered(
+  definitions: ExportedSubgraph[],
+  rootGraph: MaterializableGraph['rootGraph']
+): ExportedSubgraph[] {
+  return definitions.flatMap((definition) => {
+    const nested = definition.definitions?.subgraphs ?? []
+    const missingNested = pruneRegistered(nested, rootGraph)
+    if (rootGraph.subgraphs.has(definition.id)) return missingNested
+    if (missingNested.length === nested.length) return [definition]
+    return [
+      {
+        ...definition,
+        definitions: { ...definition.definitions, subgraphs: missingNested }
+      }
+    ]
+  })
 }
 
 /** Each definition plus every definition nested under its `definitions`. */
