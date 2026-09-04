@@ -4,7 +4,7 @@ import { t } from '../../i18n/translations'
 import SectionLabel from '../common/SectionLabel.vue'
 import VideoStoryCard from './VideoStoryCard.vue'
 
-export interface WatchStoryCard {
+interface WatchStoryCard {
   slug: string
   company: string
   category: string
