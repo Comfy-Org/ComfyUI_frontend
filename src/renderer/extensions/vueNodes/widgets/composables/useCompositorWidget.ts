@@ -17,8 +17,7 @@ export const useCompositorWidget = (): ComfyWidgetConstructorV2 => {
       'compositor',
       inputSpec.name,
       defaultValue,
-      null,
-      { serialize: true, canvasOnly: false }
+      null
     )
 
     if (rawWidget.type !== 'compositor') {

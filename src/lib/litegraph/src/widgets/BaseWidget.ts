@@ -157,18 +157,15 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     this.syncVisibilityFromOptions()
   }
 
-  /**
-   * Re-applies visibility metadata carried on the raw options object after a
-   * wholesale `widget.options = {...}` replacement, matching the legacy read
-   * paths that consulted `options.hidden` / `options.hideInPanel` /
-   * `options.advanced` / `options.canvasOnly` live.
-   */
   private syncVisibilityFromOptions(): void {
-    const raw = this._rawOptions
-    this.applyLegacyVisibilityKey('hidden', raw.hidden)
-    this.applyLegacyVisibilityKey('hideInPanel', raw.hideInPanel)
-    this.applyLegacyVisibilityKey('advanced', raw.advanced)
-    this.applyLegacyVisibilityKey('canvasOnly', raw.canvasOnly)
+    const visibility = deriveWidgetVisibility({
+      type: this.type,
+      advanced: this._visibility.surfaces.canvas === 'advanced',
+      options: this._rawOptions
+    })
+    Object.assign(this._visibility.surfaces, visibility.surfaces)
+    this._visibility.suppression.byExtension =
+      visibility.suppression.byExtension
   }
 
   private applyLegacyVisibilityKey(

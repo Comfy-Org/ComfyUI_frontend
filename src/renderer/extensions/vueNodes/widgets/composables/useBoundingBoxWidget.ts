@@ -53,10 +53,6 @@ export const useBoundingBoxWidget = (): ComfyWidgetConstructorV2 => {
             subWidget.value = widget.value[field]
           }
         }
-      },
-      {
-        serialize: true,
-        canvasOnly: false
       }
     )
 
@@ -83,7 +79,7 @@ export const useBoundingBoxWidget = (): ComfyWidgetConstructorV2 => {
           step2: 1,
           precision: 0,
           serialize: false,
-          canvasOnly: true
+          surfaces: { vueNode: 'never', panel: 'never' }
         }
       )
 

@@ -142,7 +142,7 @@ export function addValueControlWidgets(
     {
       values: ['fixed', 'increment', 'decrement', 'randomize'],
       serialize: false, // Don't include this in prompt.
-      canvasOnly: true
+      surfaces: { vueNode: 'never', panel: 'never' }
     }
   ) as IComboWidget
 

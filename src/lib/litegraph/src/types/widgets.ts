@@ -5,7 +5,10 @@ import type { BoundingBox } from '@/types/boundingBoxes'
 import type { NodeId } from '@/types/nodeId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import type { WidgetId } from '@/types/widgetId'
-import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
+import type {
+  WidgetSurfaces,
+  WidgetVisibilityComponent
+} from '@/types/widgetVisibility'
 
 import type {
   CanvasColour,
@@ -44,7 +47,8 @@ export interface IWidgetOptions<TValues = unknown> {
   property?: string
   /** If `true`, an input socket will not be created for this widget. */
   socketless?: boolean
-  /** If `true`, the widget will not be rendered by the Vue renderer. */
+  surfaces?: Partial<WidgetSurfaces>
+  /** @deprecated Declare `surfaces: { vueNode: 'never', panel: 'never' }` instead. */
   canvasOnly?: boolean
   /**
    * If `true`, the widget still renders on the node but is omitted from the
