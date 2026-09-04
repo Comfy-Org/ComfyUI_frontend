@@ -8500,6 +8500,10 @@ Enterprise`
     en: 'Specialized outcomes',
     'zh-CN': '专项产出'
   },
+  'workshop.launch.allUseCases': {
+    en: 'All use cases',
+    'zh-CN': '全部用例'
+  },
   'workshop.launch.label': {
     en: 'What do you want to do',
     'zh-CN': '你想做什么'

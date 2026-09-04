@@ -15,18 +15,9 @@ import { computed, ref } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { CapabilityGroup } from '../../config/workshop'
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import { CAPABILITY_GROUP_LABELS } from '../../config/workshop'
+import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-
-const groupLabelKey: Record<CapabilityGroup, TranslationKey> = {
-  createImages: 'workshop.capGroup.createImages',
-  createVideos: 'workshop.capGroup.createVideos',
-  editImages: 'workshop.capGroup.editImages',
-  editVideos: 'workshop.capGroup.editVideos',
-  enhance: 'workshop.capGroup.enhance',
-  identity: 'workshop.capGroup.identity',
-  other: 'workshop.capGroup.other'
-}
 
 export interface FacetMenuOption {
   readonly value: string
@@ -216,7 +207,7 @@ function clearAll() {
                   class="text-content-muted px-3 pt-3 pb-1 text-2xs font-bold tracking-wider uppercase"
                   :data-testid="`filter-group-${option.group}`"
                 >
-                  {{ t(groupLabelKey[option.group], locale) }}
+                  {{ t(CAPABILITY_GROUP_LABELS[option.group], locale) }}
                 </li>
                 <li role="none">
                   <button

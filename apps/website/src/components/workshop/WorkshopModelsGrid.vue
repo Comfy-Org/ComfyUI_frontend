@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { ArrowUpDown, ChevronDown, ChevronLeft, Search, X } from '@lucide/vue'
+import {
+  ArrowUpDown,
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  Search,
+  X
+} from '@lucide/vue'
 import {
   DropdownMenuContent,
   DropdownMenuPortal,
@@ -27,6 +34,7 @@ import {
   SORT_ORDERS,
   parseCatalogSearch,
   CAPABILITY_GROUPS,
+  CAPABILITY_GROUP_LABELS,
   MODALITIES,
   LAUNCH_GROUPS,
   capabilityGroupOf,
@@ -162,6 +170,21 @@ watch(launch, () => {
   const offered = new Set(capabilityOptions.value.map((option) => option.value))
   capabilities.value = capabilities.value.filter((value) => offered.has(value))
 })
+// Beside the grid the categories are open rather than behind a button, so the
+// group each capability belongs to has to be drawn on the first of its run.
+const railCategories = computed(() =>
+  capabilityOptions.value.map((option, index) => ({
+    ...option,
+    startsGroup: option.group !== capabilityOptions.value[index - 1]?.group
+  }))
+)
+
+function toggleCapability(value: string) {
+  capabilities.value = capabilities.value.includes(value)
+    ? capabilities.value.filter((capability) => capability !== value)
+    : [...capabilities.value, value]
+}
+
 const providerOptions = computed<FacetMenuOption[]>(() =>
   countByFacet(models, 'provider').map((option) => ({
     ...option,
@@ -303,12 +326,6 @@ const menuItemClass =
         'lg:sticky lg:top-28 lg:max-h-[calc(100vh-9rem)] lg:scrollbar-thin lg:self-start lg:overflow-y-auto'
       "
     >
-      <h2
-        v-if="railBeside"
-        class="mb-3 hidden text-xs font-bold tracking-wider text-primary-warm-gray uppercase lg:block"
-      >
-        {{ t(railLabel, locale) }}
-      </h2>
       <nav
         :class="
           cn(
@@ -329,9 +346,61 @@ const menuItemClass =
           :class="tabClass(entry.current)"
           @click="selectRail(entry.value)"
         >
-          {{ t(entry.label, locale) }}
+          {{
+            t(
+              railBeside && entry.value === 'all'
+                ? 'workshop.launch.allUseCases'
+                : entry.label,
+              locale
+            )
+          }}
         </button>
       </nav>
+
+      <div
+        v-if="railBeside"
+        class="mt-8 hidden flex-col lg:flex"
+        data-testid="rail-categories"
+      >
+        <template v-for="option in railCategories" :key="option.value">
+          <p
+            v-if="option.startsGroup && option.group"
+            class="mt-5 px-2 pb-1 text-2xs font-bold tracking-wider text-primary-warm-gray uppercase first:mt-0"
+          >
+            {{ t(CAPABILITY_GROUP_LABELS[option.group], locale) }}
+          </p>
+          <button
+            type="button"
+            role="checkbox"
+            :aria-checked="capabilities.includes(option.value)"
+            :data-testid="`rail-capability-${option.value}`"
+            class="hover:bg-transparency-white-t4 focus-visible:bg-transparency-white-t4 flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-sm text-primary-comfy-canvas outline-none"
+            @click="toggleCapability(option.value)"
+          >
+            <span
+              :class="
+                cn(
+                  'flex size-4 shrink-0 items-center justify-center rounded-sm border transition-colors',
+                  capabilities.includes(option.value)
+                    ? 'border-brand bg-brand text-page'
+                    : 'border-white/25'
+                )
+              "
+              aria-hidden="true"
+            >
+              <Check
+                v-if="capabilities.includes(option.value)"
+                class="size-3"
+                :stroke-width="3"
+              />
+            </span>
+            <span class="min-w-0 flex-1 truncate">{{ option.label }}</span>
+            <span class="shrink-0 text-primary-warm-gray tabular-nums">
+              {{ option.count }}
+            </span>
+          </button>
+        </template>
+      </div>
     </aside>
 
     <div class="min-w-0">

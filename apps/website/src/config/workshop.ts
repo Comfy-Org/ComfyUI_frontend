@@ -4,6 +4,7 @@ import displayOverrides from './workshop-model-display.json'
 import generatedModels from './workshop-models.generated.json'
 import generatedVersions from './workshop-model-versions.generated.json'
 import { usdToCredits } from './credits'
+import type { TranslationKey } from '../i18n/translations'
 
 export const MODALITIES = ['image', 'video', 'audio', '3d', 'text'] as const
 export type Modality = (typeof MODALITIES)[number]
@@ -356,6 +357,17 @@ export const CAPABILITY_GROUPS = [
   capabilities: readonly string[]
 }[]
 export type CapabilityGroup = (typeof CAPABILITY_GROUPS)[number]['key']
+
+export const CAPABILITY_GROUP_LABELS: Record<CapabilityGroup, TranslationKey> =
+  {
+    createImages: 'workshop.capGroup.createImages',
+    createVideos: 'workshop.capGroup.createVideos',
+    editImages: 'workshop.capGroup.editImages',
+    editVideos: 'workshop.capGroup.editVideos',
+    enhance: 'workshop.capGroup.enhance',
+    identity: 'workshop.capGroup.identity',
+    other: 'workshop.capGroup.other'
+  }
 
 export function capabilityGroupOf(capability: string): CapabilityGroup {
   return (
