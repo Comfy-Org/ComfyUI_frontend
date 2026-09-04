@@ -5,7 +5,6 @@ import {
   isAgentEvent,
   parseAgentWsEvent,
   zAgentCancelAccepted,
-  zAgentDraftSnapshot,
   zAgentError,
   zAgentMessage,
   zAgentMessages,
@@ -108,16 +107,6 @@ describe('agentApiSchema contract subtleties', () => {
     ).toBe(true)
   })
 
-  it('parses a draft snapshot and rejects a non-integer version', () => {
-    expect(
-      zAgentDraftSnapshot.safeParse({ content: { nodes: {} }, version: 1 })
-        .success
-    ).toBe(true)
-    expect(
-      zAgentDraftSnapshot.safeParse({ content: {}, version: 1.5 }).success
-    ).toBe(false)
-  })
-
   it('accepts agent_message_done usage whether fully populated or partial', () => {
     const usages = [
       {
@@ -154,42 +143,9 @@ describe('agentApiSchema contract subtleties', () => {
     }
   })
 
-  it('admits draft frames into the union', () => {
-    expect(isAgentEvent('draft_patch')).toBe(true)
-    expect(isAgentEvent('draft_version')).toBe(true)
-  })
-
-  it('parses a draft_patch frame and rejects one missing workflow_id', () => {
-    const data = {
-      base_version: 1,
-      version: 2,
-      content: { nodes: {} },
-      workflow_id: 'w1'
-    }
-    expect(zAgentWsEvent.safeParse({ type: 'draft_patch', data }).success).toBe(
-      true
-    )
-    const { workflow_id: _workflow_id, ...withoutWorkflowId } = data
-    expect(
-      zAgentWsEvent.safeParse({
-        type: 'draft_patch',
-        data: withoutWorkflowId
-      }).success
-    ).toBe(false)
-  })
-
-  it('parses a draft_version frame and rejects one missing version', () => {
-    const data = { version: 3, workflow_id: 'w1' }
-    expect(
-      zAgentWsEvent.safeParse({ type: 'draft_version', data }).success
-    ).toBe(true)
-    const { version: _version, ...withoutVersion } = data
-    expect(
-      zAgentWsEvent.safeParse({
-        type: 'draft_version',
-        data: withoutVersion
-      }).success
-    ).toBe(false)
+  it('keeps draft frames foreign to this union', () => {
+    expect(isAgentEvent('draft_patch')).toBe(false)
+    expect(isAgentEvent('draft_version')).toBe(false)
   })
 
   it('rejects an unknown event type in the union while isAgentEvent stays false', () => {
@@ -237,16 +193,14 @@ describe('agentApiSchema contract subtleties', () => {
     ).toBe(false)
   })
 
-  it('exposes exactly the seven agent event types', () => {
+  it('exposes exactly the five agent event types', () => {
     expect([...AGENT_WS_EVENT_TYPES].sort()).toEqual(
       [
         'agent_active_tab',
         'agent_message_delta',
         'agent_message_done',
         'agent_thinking',
-        'agent_tool_call',
-        'draft_patch',
-        'draft_version'
+        'agent_tool_call'
       ].sort()
     )
   })

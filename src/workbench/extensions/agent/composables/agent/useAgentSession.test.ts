@@ -100,21 +100,6 @@ const doneIn = (threadId: string, id: string) =>
     type: 'agent_message_done',
     data: { message_id: id, thread_id: threadId, usage: null }
   })
-const draftPatch = (workflowId: string) =>
-  wire({
-    type: 'draft_patch',
-    data: {
-      base_version: 1,
-      version: 2,
-      content: {},
-      workflow_id: workflowId
-    }
-  })
-const draftVersion = (workflowId: string) =>
-  wire({
-    type: 'draft_version',
-    data: { version: 2, workflow_id: workflowId }
-  })
 const historyRow = (
   seq: number,
   role: 'user' | 'assistant',
@@ -163,26 +148,6 @@ describe('useAgentSession (v1 composition root)', () => {
       role: 'assistant',
       streaming: false
     })
-    expect(session.isStreaming.value).toBe(false)
-  })
-
-  it('(a2) draft_patch/draft_version frames are dropped from the chat transcript', async () => {
-    const rest = fakeRest()
-    const { source, emit } = fakeEvents()
-    const session = useAgentSession({ rest, events: source })
-    session.start()
-
-    await session.sendMessage('make me a cat')
-    emit(thinking('msg-1', 'planning'))
-    emit(draftPatch('wf-1'))
-    emit(draftVersion('wf-1'))
-    emit(delta('msg-1', 'A cat.'))
-    emit(done('msg-1'))
-
-    const roles = session.entries.value.map((e) => e.role)
-    expect(roles).toEqual(['user', 'assistant'])
-    const assistant = session.entries.value[1]
-    expect(assistant).toMatchObject({ role: 'assistant', streaming: false })
     expect(session.isStreaming.value).toBe(false)
   })
 

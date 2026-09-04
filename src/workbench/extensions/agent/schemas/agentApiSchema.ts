@@ -61,13 +61,6 @@ export const zAgentCancelAccepted = z.object({
 })
 export type AgentCancelAccepted = z.infer<typeof zAgentCancelAccepted>
 
-export const zAgentDraftSnapshot = z.object({
-  content: z.record(z.string(), z.unknown()),
-  version: z.number().int()
-})
-/** @knipIgnoreUsedByStackedPR consumed by the agent draft-store PR (cjx-8/cjx-11) */
-export type AgentDraftSnapshot = z.infer<typeof zAgentDraftSnapshot>
-
 export const zAgentError = z.object({
   error: z.string()
 })
@@ -99,19 +92,6 @@ const zAgentToolCallData = z
   })
   .passthrough()
 
-const zDraftPatchData = z
-  .object({
-    base_version: z.number().int(),
-    version: z.number().int(),
-    content: z.record(z.string(), z.unknown()),
-    message_id: z.string().optional(),
-    thread_id: z.string().optional(),
-    workflow_id: z.string()
-  })
-  .passthrough()
-/** @knipIgnoreUsedByStackedPR consumed by the agent draft-store PR (cjx-8/cjx-11) */
-export type DraftPatchData = z.infer<typeof zDraftPatchData>
-
 const zAgentMessageDeltaData = z
   .object({
     delta: z.string(),
@@ -138,15 +118,6 @@ const zAgentMessageDoneData = z
   })
   .passthrough()
 
-const zDraftVersionData = z
-  .object({
-    version: z.number().int(),
-    workflow_id: z.string()
-  })
-  .passthrough()
-/** @knipIgnoreUsedByStackedPR consumed by the agent draft-store PR (cjx-8/cjx-11) */
-export type DraftVersionData = z.infer<typeof zDraftVersionData>
-
 const zAgentActiveTabData = z
   .object({
     workflow_id: z.string(),
@@ -167,11 +138,6 @@ const zAgentToolCallEvent = z.object({
   data: zAgentToolCallData
 })
 
-const zDraftPatchEvent = z.object({
-  type: z.literal('draft_patch'),
-  data: zDraftPatchData
-})
-
 const zAgentMessageDeltaEvent = z.object({
   type: z.literal('agent_message_delta'),
   data: zAgentMessageDeltaData
@@ -182,11 +148,6 @@ const zAgentMessageDoneEvent = z.object({
   data: zAgentMessageDoneData
 })
 
-const zDraftVersionEvent = z.object({
-  type: z.literal('draft_version'),
-  data: zDraftVersionData
-})
-
 const zAgentActiveTabEvent = z.object({
   type: z.literal('agent_active_tab'),
   data: zAgentActiveTabData
@@ -195,10 +156,8 @@ const zAgentActiveTabEvent = z.object({
 export const zAgentWsEvent = z.discriminatedUnion('type', [
   zAgentThinkingEvent,
   zAgentToolCallEvent,
-  zDraftPatchEvent,
   zAgentMessageDeltaEvent,
   zAgentMessageDoneEvent,
-  zDraftVersionEvent,
   zAgentActiveTabEvent
 ])
 export type AgentWsEvent = z.infer<typeof zAgentWsEvent>

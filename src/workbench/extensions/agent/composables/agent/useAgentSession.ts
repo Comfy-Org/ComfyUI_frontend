@@ -338,12 +338,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
         )
           workflow?.activeTab?.(event.data)
         return
-      case 'draft_patch':
-      case 'draft_version':
-        // Draft sync frames are not chat-transcript events; this session
-        // ingests only the chat-facing event types (see AgentChatEvent).
-        // Draft handling lands with the draft-store consumer (cjx-8/cjx-11).
-        return
       default:
         conversationStore.ingest(event)
         if (
