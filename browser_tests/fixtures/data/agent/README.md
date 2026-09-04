@@ -2,7 +2,7 @@
 
 Conversation replays must use recorded cloud-agent responses. A fixture holds
 one thread, and each of its turns lands on the graph the previous turn left. The
-exporter combines two records per turn:
+recorder combines two records per turn:
 
 1. Websocket `agent_*` frames, in received order.
 2. The cloud backend's durable parent `agent_tool_calls.result` plus the
@@ -25,7 +25,7 @@ Replay the new case with job 1 there plus `-g <case id>`.
 ## Recording a conversation
 
 One command records a whole thread against a running agent, applies the gates
-below, and writes the fixture through the exporter. Repeat `--prompt` once per
+below, and writes the fixture. Repeat `--prompt` once per
 turn; they run in order on one thread:
 
 ```bash
@@ -89,9 +89,7 @@ Environment, all optional except the two provenance values:
 | `AGENT_TURN_TIMEOUT`                  | milliseconds to wait for the turn, default 180000                |
 
 Alongside the fixture the command writes a `recordings/` directory holding the
-raw frames, one retrieved row set per turn, the intermediate
-`agent-conversation.v2`
-document and a receipt (turn IDs, parent rows, applied ops, dropped-frame
+raw frames, one retrieved row set per turn, and a receipt (turn IDs, parent rows, applied ops, dropped-frame
 counts, artifact hashes). Those are provenance for the recording, not committed
 fixtures. Use `--work <dir>` to put them elsewhere.
 
@@ -109,31 +107,12 @@ PLAYWRIGHT_TEST_URL=http://localhost:5173 DISTRIBUTION=cloud \
 
 ## Capture
 
-Record the `/ws` frames for one eval turn and remove unrelated frame types. Keep
-the original `thread_id`, `message_id`, `tool_call_id`, and ordering. Export the
-matching backend rows with this query (bind `$1` to the thread ID and `$2` to
-the assistant message ID):
-
-```sql
-SELECT
-  parent.tool_call_id,
-  parent.result,
-  COALESCE(
-    json_agg(child.op_id ORDER BY child.op_index)
-      FILTER (WHERE child.status = 'ok' AND child.op_id IS NOT NULL),
-    '[]'::json
-  ) AS applied_op_ids
-FROM agent_tool_calls AS parent
-LEFT JOIN agent_tool_calls AS child ON child.parent_call_id = parent.id
-WHERE parent.thread_id = $1
-  AND parent.message_id = $2
-  AND parent.parent_call_id IS NULL
-GROUP BY parent.id
-ORDER BY parent.started_at, parent.id;
-```
-
-Run the query once per turn, binding `$2` to that turn's message ID. A frame
-belongs to the turn whose message ID it carries.
+The recorder keeps the `/ws` frames of the thread with their receipt times and,
+once a turn's `agent_message_done` arrives, reads that turn's audit rows itself:
+the parent tool-call rows with their child op ids and statuses, plus the current
+draft (`readRows` in `scripts/agentConversationRecord.ts` holds the query). Each
+turn's rows land in `recordings/` as `rows.<n>.json`; a frame belongs to the turn
+whose message ID it carries.
 
 ## Assembly
 
@@ -142,7 +121,8 @@ capture document and no separate export step.
 
 It emits one conversation turn per recorded turn. It strips turn
 identity from frames (the replay mints its own), inserts each durably accepted
-op before its terminal tool-call frame, and fails if any frame belongs to
-another turn, an accepted op is missing from the recorded parent result, or a
-mutating call has no terminal frame. Then run the conversation replay test for
+op before its terminal tool-call frame, counts a frame from another turn as
+dropped (the receipt's `frames_dropped`), and fails if an accepted op is
+missing from the recorded parent result or a mutating call has no terminal
+frame. Then run the conversation replay test for
 the case.

@@ -635,8 +635,8 @@ fix so the bug stays fixed:
    stack (Postgres + doc host), which is the only place the doc host
    writes the audit rows a replay asserts. That one command records the
    turn and writes the conversation JSON under
-   `browser_tests/fixtures/data/agent/conversations/` through the
-   exporter, marked `response_side: 'recorded'`; see
+   `browser_tests/fixtures/data/agent/conversations/`, marked
+   `response_side: 'recorded'`; see
    `fixtures/data/agent/README.md` for the stack recipe, the command and
    the capture format. Never write `graph_ops` by hand and never relabel
    a synthesized response as recorded.
@@ -649,7 +649,7 @@ fix so the bug stays fixed:
    run lines in the PR description. A replay case that never went red
    against the bug does not count as regression coverage.
 
-Name the case after the behavior it protects (`agent-<behavior-slug>.json`, with the fix PR cited in the spec header and the fixture's `source.note`). The exporter writes the provenance the replay keeps: `source.capture` (thread and message ids) and `source.note` (row ids and the raw capture hash), which is enough to re-export the recording.
+Name the case after the behavior it protects (`agent-<behavior-slug>.json`, with the fix PR cited in the spec header and the fixture's `source.note`). The recorder writes the provenance the replay keeps: `source.capture` (thread and message ids) and `source.note` (row ids and the raw capture hash). A bad fixture is re-recorded, never edited.
 
 ## Test Data & Typed API Mocks
 

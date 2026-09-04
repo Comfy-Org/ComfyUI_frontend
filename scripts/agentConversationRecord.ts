@@ -55,7 +55,6 @@ const zSocketFrame = z
   })
   .transform((frame) => ({ type: frame.type, data: frame.data ?? {} }))
 
-// The exporter's candidate set: data.ops when it is a list, else data.op.
 const safeJson = (text: string): unknown => {
   try {
     return JSON.parse(text)
