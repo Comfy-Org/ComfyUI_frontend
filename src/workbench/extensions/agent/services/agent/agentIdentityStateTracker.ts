@@ -19,7 +19,11 @@ export function registerAgentIdentityStateTracker(): () => void {
     watch(
       () => resolvedUserInfo.value?.id ?? null,
       (userId, previousUserId) => {
-        if (previousUserId === null && hasAgentSessionMemoryFor(userId)) {
+        if (previousUserId === undefined && userId === null) return
+        if (
+          (previousUserId === undefined || previousUserId === null) &&
+          hasAgentSessionMemoryFor(userId)
+        ) {
           return
         }
 
@@ -38,7 +42,8 @@ export function registerAgentIdentityStateTracker(): () => void {
 
         forgetAgentSessionMemory()
         useAgentWorkflowTabBindingStore().clear()
-      }
+      },
+      { immediate: true }
     )
   })
 

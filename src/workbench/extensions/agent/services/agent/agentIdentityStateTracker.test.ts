@@ -103,6 +103,18 @@ describe('registerAgentIdentityStateTracker', () => {
     expect(localStorage.getItem(AGENT_THREAD_STORAGE_KEY)).toBeNull()
   })
 
+  it('purges stale state when identity resolved before registration', () => {
+    stop()
+    seedUserState('user-a')
+    setUser('user-b')
+
+    stop = registerAgentIdentityStateTracker()
+
+    expect(useAgentConversationStore().threadId).toBeNull()
+    expect(useAgentConversationStore().messages).toEqual([])
+    expect(localStorage.getItem(AGENT_THREAD_STORAGE_KEY)).toBeNull()
+  })
+
   it('purges user-scoped state when the identity changes', async () => {
     setUser('user-a')
     await nextTick()
