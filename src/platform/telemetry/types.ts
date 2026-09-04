@@ -827,9 +827,64 @@ export interface BillingFailure {
   error_code?: BillingErrorCode
 }
 
+export type BillingFlagState =
+  | 'embedded_checkout_on'
+  | 'embedded_checkout_off'
+  /**
+   * The embedded-checkout flag arrives only on the WebSocket handshake and
+   * reads `false` until it lands, so an attempt that has not yet seen a flag
+   * map is genuinely unknown rather than off. Splitting a rollout dashboard on
+   * a defaulted `off` would bank gated traffic in the ungated bucket.
+   */
+  | 'embedded_checkout_unknown'
+
+/**
+ * Correlation and rollout dimensions shared by every billing event.
+ * `checkout_attempt_id` is minted client-side at attempt start because
+ * `started` precedes the billing op's existence; `billing_op_id` joins the same
+ * attempt to the backend from the first event that knows one.
+ */
+type BillingAttemptContext = {
+  checkout_attempt_id?: string
+  flag_state?: BillingFlagState
+  workspace_id?: string
+  quote_id?: string
+}
+
 type BillingStarted = {
   stage: 'started'
   outcome: 'pending'
+}
+
+type BillingQuoteMinted = {
+  stage: 'quote_minted'
+  outcome: 'pending'
+}
+
+type BillingChallengePresented = {
+  stage: 'challenge_presented'
+  outcome: 'pending'
+}
+
+type BillingChallengeReturned = {
+  stage: 'challenge_returned'
+  /**
+   * `abandoned` covers a challenge the customer never came back from. A closed
+   * tab is not observable in this client, so nothing here emits it — the value
+   * exists so the backend and the challenge-funnel panels share one vocabulary.
+   */
+  outcome: 'succeeded' | 'failed' | 'abandoned'
+  /**
+   * Why the challenge landed where it did. `intent_status_unavailable` is the
+   * honest case: the browser step resolved without an error and without
+   * reporting an intent, so the client cannot tell a completed challenge from
+   * one that changed nothing. Exclude it from a success numerator.
+   */
+  reason:
+    | 'intent_advanced'
+    | 'challenge_not_completed'
+    | 'stripe_error'
+    | 'intent_status_unavailable'
 }
 
 type BillingSucceeded = {
@@ -860,7 +915,14 @@ type SubscriptionCheckoutBillingEvent = {
    * `started` event through to this terminal event.
    */
   duration_ms?: number
-} & (BillingStarted | BillingSucceeded | BillingFailed)
+} & (
+  | BillingStarted
+  | BillingSucceeded
+  | BillingFailed
+  | BillingQuoteMinted
+  | BillingChallengePresented
+  | BillingChallengeReturned
+)
 
 type BillingOperationBillingEvent = {
   operation: 'operation'
@@ -909,12 +971,14 @@ type DowngradeToPersonalBillingEvent = {
   duration_ms?: number
 } & (BillingStarted | BillingSucceeded | BillingFailed)
 
-export type BillingTelemetryEvent =
+export type BillingTelemetryEvent = (
   | SubscriptionCheckoutBillingEvent
   | BillingOperationBillingEvent
   | ResubscribeBillingEvent
   | TopupBillingEvent
   | DowngradeToPersonalBillingEvent
+) &
+  BillingAttemptContext
 
 type BillingTelemetryEventNameFor<T extends BillingTelemetryEvent> =
   T extends BillingTelemetryEvent
@@ -939,6 +1003,14 @@ export function getBillingTelemetryEventPayload(event: BillingTelemetryEvent) {
       event.billing_op_id !== undefined && {
         billing_op_id: event.billing_op_id
       }),
+    ...(event.checkout_attempt_id !== undefined && {
+      checkout_attempt_id: event.checkout_attempt_id
+    }),
+    ...(event.flag_state !== undefined && { flag_state: event.flag_state }),
+    ...(event.workspace_id !== undefined && {
+      workspace_id: event.workspace_id
+    }),
+    ...(event.quote_id !== undefined && { quote_id: event.quote_id }),
     ...('operation_type' in event && {
       operation_type: event.operation_type
     }),
@@ -957,6 +1029,7 @@ export function getBillingTelemetryEventPayload(event: BillingTelemetryEvent) {
     ...('failure_category' in event && {
       failure_category: event.failure_category
     }),
+    ...('reason' in event && { reason: event.reason }),
     ...('error_code' in event &&
       event.error_code !== undefined && { error_code: event.error_code }),
     ...('member_removal_count' in event && {
@@ -1163,6 +1236,12 @@ export const TelemetryEvents = {
   BILLING_SUBSCRIPTION_CHECKOUT_SUCCEEDED:
     'billing.subscription_checkout.succeeded',
   BILLING_SUBSCRIPTION_CHECKOUT_FAILED: 'billing.subscription_checkout.failed',
+  BILLING_SUBSCRIPTION_CHECKOUT_QUOTE_MINTED:
+    'billing.subscription_checkout.quote_minted',
+  BILLING_SUBSCRIPTION_CHECKOUT_CHALLENGE_PRESENTED:
+    'billing.subscription_checkout.challenge_presented',
+  BILLING_SUBSCRIPTION_CHECKOUT_CHALLENGE_RETURNED:
+    'billing.subscription_checkout.challenge_returned',
   BILLING_OPERATION_STARTED: 'billing.operation.started',
   BILLING_OPERATION_SUCCEEDED: 'billing.operation.succeeded',
   BILLING_OPERATION_FAILED: 'billing.operation.failed',

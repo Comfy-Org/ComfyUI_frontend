@@ -420,6 +420,39 @@ describe('API Feature Flags', () => {
     expect(autoQueueGraphChanged).toHaveBeenCalledTimes(2)
   })
 
+  // A server is free to advertise no flags, so an empty map is a real answer.
+  // Callers that must not read a defaulted flag as a deliberate `off` — the
+  // billing rollout arms — need that apart from an unanswered handshake.
+  it('distinguishes an empty server flag map from an unanswered handshake', async () => {
+    const readyStatus = JSON.stringify({
+      type: 'status',
+      data: {
+        status: { exec_info: { queue_remaining: 0 } },
+        sid: 'test-sid'
+      }
+    })
+
+    const answeredApi = new ComfyApi()
+    const answeredInit = answeredApi.init()
+    wsEventHandlers['open'](new Event('open'))
+    wsEventHandlers['message']({ data: readyStatus })
+    wsEventHandlers['message']({
+      data: JSON.stringify({ type: 'feature_flags', data: {} })
+    })
+    await answeredInit
+
+    expect(answeredApi.getServerFeatures()).toEqual({})
+    expect(answeredApi.hasReceivedServerFeatureFlags()).toBe(true)
+
+    const unansweredApi = new ComfyApi()
+    const unansweredInit = unansweredApi.init()
+    wsEventHandlers['open'](new Event('open'))
+    wsEventHandlers['message']({ data: readyStatus })
+    await unansweredInit
+
+    expect(unansweredApi.hasReceivedServerFeatureFlags()).toBe(false)
+  })
+
   /**
    * Pins the resolution behaviour `getServerFeature` had before any override
    * layer was placed in front of it, so a future layer cannot quietly change

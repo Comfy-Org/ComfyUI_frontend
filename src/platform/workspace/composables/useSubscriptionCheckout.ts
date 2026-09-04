@@ -12,12 +12,15 @@ import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
+import { createAttemptId } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import { useTelemetry } from '@/platform/telemetry'
 import type {
+  BillingFlagState,
   PaymentIntentSource,
   SubscriptionCheckoutType
 } from '@/platform/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
+import { resolveBillingFlagState } from '@/platform/telemetry/utils/billingFlagState'
 import { useAuthStore } from '@/stores/authStore'
 import type {
   Plan,
@@ -161,6 +164,12 @@ export function useSubscriptionCheckout(
   let checkoutMutationLocked = false
   let refreshStatusOnFocus = false
   let activeCheckoutAttemptStartedAt: number | undefined
+  // Minted when the customer picks a plan, before the preview call, so every
+  // event of the attempt — including the quote mint and a `started` that
+  // precedes the billing op's existence — carries one joinable key.
+  let activeCheckoutAttemptId: string | undefined
+  let activeCheckoutFlagState: BillingFlagState | undefined
+  let activeCheckoutWorkspaceId: string | null = null
   useEventListener(window, 'focus', () => {
     if (!refreshStatusOnFocus) return
     refreshStatusOnFocus = false
@@ -215,6 +224,28 @@ export function useSubscriptionCheckout(
       operation.authenticationState !== 'requires_action'
     )
   })
+  function beginCheckoutAttempt(): void {
+    activeCheckoutAttemptId = createAttemptId()
+    activeCheckoutFlagState = resolveBillingFlagState(embeddedCheckoutEnabled)
+    activeCheckoutWorkspaceId = workspaceStore.activeWorkspaceId
+  }
+
+  // Snapshotted at attempt start, never read live: events fire after awaits,
+  // so a mid-attempt workspace switch would otherwise label this attempt's
+  // terminal event with the workspace the customer moved to (ADR 0014).
+  function attemptTelemetryContext() {
+    if (activeCheckoutAttemptId === undefined) beginCheckoutAttempt()
+    const quoteId = previewData.value?.quote_id
+    return {
+      checkout_attempt_id: activeCheckoutAttemptId,
+      flag_state: activeCheckoutFlagState,
+      ...(activeCheckoutWorkspaceId && {
+        workspace_id: activeCheckoutWorkspaceId
+      }),
+      ...(quoteId && { quote_id: quoteId })
+    }
+  }
+
   function beginCheckoutMutation(): boolean {
     if (checkoutMutationLocked) return false
     checkoutMutationLocked = true
@@ -249,7 +280,19 @@ export function useSubscriptionCheckout(
         preview.requires_reactivation_confirmation ?? true
     }
     quoteIsCurrent.value = true
+    trackQuoteMinted()
     return true
+  }
+
+  function trackQuoteMinted(): void {
+    if (!shouldUseWorkspaceBilling.value) return
+    telemetry?.trackBillingEvent({
+      operation: 'subscription_checkout',
+      stage: 'quote_minted',
+      outcome: 'pending',
+      payment_intent_source: paymentIntentSource,
+      ...attemptTelemetryContext()
+    })
   }
 
   function requiresReactivationConfirmation(): boolean {
@@ -305,6 +348,20 @@ export function useSubscriptionCheckout(
 
   function invalidateQuote(): void {
     quoteIsCurrent.value = false
+  }
+
+  // Every quote this attempt mints is reported to the backend under the same
+  // attempt key, so a preview that never becomes a subscribe is still joinable.
+  function previewSubscribeForAttempt(
+    planSlug: string,
+    options: PreviewSubscribeOptions = {}
+  ): Promise<PreviewSubscribeResponse | null> {
+    return previewSubscribe(planSlug, {
+      ...options,
+      ...(activeCheckoutAttemptId && {
+        checkoutAttemptId: activeCheckoutAttemptId
+      })
+    })
   }
 
   function withCurrentPromotion(
@@ -401,7 +458,7 @@ export function useSubscriptionCheckout(
     options?: PreviewSubscribeOptions
   ): Promise<void> {
     const confirmedPreview = previewData.value
-    const freshPreview = await previewSubscribe(
+    const freshPreview = await previewSubscribeForAttempt(
       planSlug,
       withCurrentPromotion(options)
     )
@@ -520,7 +577,7 @@ export function useSubscriptionCheckout(
 
     let freshPreview: PreviewSubscribeResponse | null
     try {
-      freshPreview = await previewSubscribe(
+      freshPreview = await previewSubscribeForAttempt(
         planSlug,
         withCurrentPromotion(options)
       )
@@ -561,7 +618,7 @@ export function useSubscriptionCheckout(
   ): Promise<void> {
     let freshPreview: PreviewSubscribeResponse | null = null
     try {
-      freshPreview = await previewSubscribe(
+      freshPreview = await previewSubscribeForAttempt(
         planSlug,
         withCurrentPromotion(options)
       )
@@ -681,6 +738,7 @@ export function useSubscriptionCheckout(
     const { tierKey, billingCycle } = payload
     promotionPreviewRequestId += 1
 
+    beginCheckoutAttempt()
     reactivationRequired.value = false
     isLoadingPreview.value = true
     loadingTier.value = tierKey
@@ -705,11 +763,11 @@ export function useSubscriptionCheckout(
       const response = embeddedCheckoutEnabled
         ? (
             await Promise.all([
-              previewSubscribe(planSlug),
+              previewSubscribeForAttempt(planSlug),
               loadSavedPaymentMethods()
             ])
           )[0]
-        : await previewSubscribe(planSlug)
+        : await previewSubscribeForAttempt(planSlug)
 
       if (!response || !response.allowed) {
         toast.add({
@@ -759,6 +817,7 @@ export function useSubscriptionCheckout(
 
     const previewRequestId = ++teamPreviewRequestId
     promotionPreviewRequestId += 1
+    beginCheckoutAttempt()
     reactivationRequired.value = false
     selectedTeamCheckout.value = {
       stop: payload.stop,
@@ -785,7 +844,7 @@ export function useSubscriptionCheckout(
       let response: PreviewSubscribeResponse | null = null
       let previewError: unknown
       try {
-        response = await previewSubscribe(
+        response = await previewSubscribeForAttempt(
           getTeamPlanSlug(payload.billingCycle),
           { teamCreditStopId }
         )
@@ -833,7 +892,7 @@ export function useSubscriptionCheckout(
     try {
       const planSlug = getTeamPlanSlug(payload.billingCycle)
       ;[response] = await Promise.all([
-        previewSubscribe(planSlug, {
+        previewSubscribeForAttempt(planSlug, {
           teamCreditStopId: payload.stop.id
         }),
         loadSavedPaymentMethods()
@@ -960,7 +1019,10 @@ export function useSubscriptionCheckout(
         confirmReactivation,
         prorationAt: previewData.value?.is_immediate
           ? previewData.value.proration_at
-          : undefined
+          : undefined,
+        ...(activeCheckoutAttemptId && {
+          checkoutAttemptId: activeCheckoutAttemptId
+        })
       })
 
       if (response) {
@@ -1076,7 +1138,7 @@ export function useSubscriptionCheckout(
     }
     quoteIsCurrent.value = false
     try {
-      const response = await previewSubscribe(planSlug, options)
+      const response = await previewSubscribeForAttempt(planSlug, options)
       if (!response?.allowed) {
         throw new Error(response?.reason || t('subscription.subscribeFailed'))
       }
@@ -1118,6 +1180,7 @@ export function useSubscriptionCheckout(
 
     activeCheckoutAttemptStartedAt = Date.now()
 
+    const attemptContext = attemptTelemetryContext()
     telemetry?.trackBillingEvent({
       operation: 'subscription_checkout',
       stage: 'started',
@@ -1125,7 +1188,8 @@ export function useSubscriptionCheckout(
       tier: context.tier,
       cycle: context.cycle,
       checkout_type: context.checkoutType,
-      payment_intent_source: paymentIntentSource
+      payment_intent_source: paymentIntentSource,
+      ...attemptContext
     })
     telemetry?.trackBillingEvent({
       operation: 'operation',
@@ -1135,7 +1199,8 @@ export function useSubscriptionCheckout(
       tier: context.tier,
       cycle: context.cycle,
       checkout_type: context.checkoutType,
-      payment_intent_source: paymentIntentSource
+      payment_intent_source: paymentIntentSource,
+      ...attemptContext
     })
     return activeCheckoutAttemptStartedAt
   }
@@ -1152,6 +1217,7 @@ export function useSubscriptionCheckout(
       ? 'unknown'
       : categorizeBillingApiError(error)
 
+    const attemptContext = attemptTelemetryContext()
     telemetry?.trackBillingEvent({
       operation: 'subscription_checkout',
       stage: 'failed',
@@ -1162,7 +1228,8 @@ export function useSubscriptionCheckout(
       payment_intent_source: paymentIntentSource,
       failure_category: failureCategory,
       ...(errorCode && { error_code: errorCode }),
-      duration_ms: Date.now() - context.attemptStartedAt
+      duration_ms: Date.now() - context.attemptStartedAt,
+      ...attemptContext
     })
     telemetry?.trackBillingEvent({
       operation: 'operation',
@@ -1175,7 +1242,8 @@ export function useSubscriptionCheckout(
       payment_intent_source: paymentIntentSource,
       failure_category: failureCategory,
       ...(errorCode && { error_code: errorCode }),
-      duration_ms: Date.now() - context.attemptStartedAt
+      duration_ms: Date.now() - context.attemptStartedAt,
+      ...attemptContext
     })
   }
 
@@ -1202,6 +1270,7 @@ export function useSubscriptionCheckout(
         // already restores trackMonthlySubscriptionSucceeded for the
         // providers that need it (Mixpanel, GTM); this call site doesn't need
         // a second one.
+        const attemptContext = attemptTelemetryContext()
         telemetry?.trackBillingEvent({
           operation: 'subscription_checkout',
           stage: 'succeeded',
@@ -1211,7 +1280,8 @@ export function useSubscriptionCheckout(
           checkout_type: context.checkoutType,
           payment_intent_source: paymentIntentSource,
           billing_op_id: response.billing_op_id,
-          duration_ms: durationMs
+          duration_ms: durationMs,
+          ...attemptContext
         })
         telemetry?.trackBillingEvent({
           operation: 'operation',
@@ -1223,7 +1293,8 @@ export function useSubscriptionCheckout(
           checkout_type: context.checkoutType,
           payment_intent_source: paymentIntentSource,
           billing_op_id: response.billing_op_id,
-          duration_ms: durationMs
+          duration_ms: durationMs,
+          ...attemptContext
         })
       }
       checkoutStep.value = 'success'
@@ -1310,6 +1381,10 @@ export function useSubscriptionCheckout(
       checkoutType: context.checkoutType,
       paymentIntentSource,
       attemptStartedAt: context.attemptStartedAt,
+      checkoutAttemptId: activeCheckoutAttemptId,
+      flagState: activeCheckoutFlagState,
+      attemptWorkspaceId: activeCheckoutWorkspaceId,
+      quoteId: previewData.value?.quote_id,
       ...(embeddedCheckoutEnabled && {
         suppressProcessingToast: true,
         autoHandleRequiresAction: true
@@ -1400,7 +1475,10 @@ export function useSubscriptionCheckout(
         confirmReactivation,
         prorationAt: previewData.value?.is_immediate
           ? previewData.value.proration_at
-          : undefined
+          : undefined,
+        ...(activeCheckoutAttemptId && {
+          checkoutAttemptId: activeCheckoutAttemptId
+        })
       })
 
       if (response) {
@@ -1456,6 +1534,11 @@ export function useSubscriptionCheckout(
 
     const source = 'pricing_dialog' as const
 
+    // A reactivation is its own attempt: without this it would inherit the id
+    // of whatever checkout ran earlier in the dialog, and a retry after a
+    // failed reactivation would emit a second started/terminal pair under it.
+    beginCheckoutAttempt()
+
     telemetry?.trackResubscribeClicked({
       source,
       payment_intent_source: paymentIntentSource
@@ -1468,7 +1551,8 @@ export function useSubscriptionCheckout(
       stage: 'started',
       outcome: 'pending',
       source,
-      payment_intent_source: paymentIntentSource
+      payment_intent_source: paymentIntentSource,
+      ...attemptTelemetryContext()
     })
     isResubscribing.value = true
     try {
@@ -1484,7 +1568,8 @@ export function useSubscriptionCheckout(
           stage: 'succeeded',
           outcome: 'success',
           source,
-          payment_intent_source: paymentIntentSource
+          payment_intent_source: paymentIntentSource,
+          ...attemptTelemetryContext()
         })
       }
       toast.add({
@@ -1502,7 +1587,8 @@ export function useSubscriptionCheckout(
         outcome: 'failure',
         source,
         payment_intent_source: paymentIntentSource,
-        failure_category: categorizeBillingApiError(error)
+        failure_category: categorizeBillingApiError(error),
+        ...attemptTelemetryContext()
       })
       toast.add({
         severity: 'error',

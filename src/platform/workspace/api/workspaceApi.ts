@@ -97,12 +97,27 @@ export interface SubscribeOptions {
   billingCycle?: SubscribeBillingCycle
   confirmReactivation?: boolean
   prorationAt?: string
+  checkoutAttemptId?: string
 }
 
 export interface PreviewSubscribeOptions {
   teamCreditStopId?: string
   promotionCode?: string
+  checkoutAttemptId?: string
 }
+
+/**
+ * `checkout_attempt_id` is the client-minted key that joins an abandoned
+ * attempt's frontend events to its billing op. It is a wire field, not an
+ * FE-only extension, so this shim is a stopgap and not the intersection
+ * exemption in `docs/guidance/typescript.md`.
+ *
+ * Comfy-Org/cloud#7644 has merged and added it to `services/ingest/openapi.yaml`,
+ * but the automated `@comfyorg/ingest-types` regeneration PR has not landed
+ * (open, failing its own checks as of this writing). Drop this type once that
+ * regeneration merges and let the generated requests carry the field.
+ */
+type WithCheckoutAttemptId<T> = T & { checkout_attempt_id?: string }
 
 export type { SubscribeResponse }
 
@@ -518,8 +533,9 @@ export const workspaceApi = {
         {
           plan_slug: planSlug,
           team_credit_stop_id: options.teamCreditStopId,
-          promotion_code: options.promotionCode
-        } satisfies PreviewSubscribeRequest,
+          promotion_code: options.promotionCode,
+          checkout_attempt_id: options.checkoutAttemptId
+        } satisfies WithCheckoutAttemptId<PreviewSubscribeRequest>,
         { headers }
       )
       return response.data
@@ -564,8 +580,9 @@ export const workspaceApi = {
           team_credit_stop_id: options.teamCreditStopId,
           billing_cycle: options.billingCycle,
           confirm_reactivation: options.confirmReactivation,
-          proration_at: options.prorationAt
-        } satisfies SubscribeRequest,
+          proration_at: options.prorationAt,
+          checkout_attempt_id: options.checkoutAttemptId
+        } satisfies WithCheckoutAttemptId<SubscribeRequest>,
         { headers }
       )
       return response.data

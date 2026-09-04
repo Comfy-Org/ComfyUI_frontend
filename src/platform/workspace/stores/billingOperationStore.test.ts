@@ -283,7 +283,10 @@ describe('billingOperationStore', () => {
             operation: 'operation',
             stage: 'started',
             outcome: 'pending',
-            operation_type: 'subscription'
+            operation_type: 'subscription',
+            billing_op_id: 'op-recovered',
+            flag_state: 'embedded_checkout_on',
+            workspace_id: 'workspace-1'
           }
         ],
         [
@@ -297,7 +300,9 @@ describe('billingOperationStore', () => {
             cycle: undefined,
             checkout_type: undefined,
             payment_intent_source: undefined,
-            duration_ms: 0
+            duration_ms: 0,
+            flag_state: 'embedded_checkout_on',
+            workspace_id: 'workspace-1'
           }
         ]
       ])
@@ -332,7 +337,9 @@ describe('billingOperationStore', () => {
             cycle: 'monthly',
             checkout_type: 'new',
             payment_intent_source: undefined,
-            duration_ms: 0
+            duration_ms: 0,
+            flag_state: 'embedded_checkout_on',
+            workspace_id: 'workspace-1'
           }
         ],
         [
@@ -345,7 +352,9 @@ describe('billingOperationStore', () => {
             checkout_type: 'new',
             payment_intent_source: undefined,
             billing_op_id: 'op-initiated',
-            duration_ms: 0
+            duration_ms: 0,
+            flag_state: 'embedded_checkout_on',
+            workspace_id: 'workspace-1'
           }
         ]
       ])
@@ -446,6 +455,8 @@ describe('billingOperationStore', () => {
       await vi.advanceTimersByTimeAsync(0)
 
       expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        flag_state: 'embedded_checkout_on',
+        workspace_id: 'workspace-1',
         operation: 'subscription_checkout',
         stage: 'succeeded',
         outcome: 'success',
@@ -556,6 +567,8 @@ describe('billingOperationStore', () => {
       await vi.advanceTimersByTimeAsync(0)
 
       expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        flag_state: 'embedded_checkout_on',
+        workspace_id: 'workspace-1',
         operation: 'downgrade_to_personal',
         stage: 'succeeded',
         outcome: 'success',
@@ -581,6 +594,8 @@ describe('billingOperationStore', () => {
       await vi.advanceTimersByTimeAsync(0)
 
       expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        flag_state: 'embedded_checkout_on',
+        workspace_id: 'workspace-1',
         operation: 'topup',
         stage: 'succeeded',
         outcome: 'success',
@@ -612,6 +627,8 @@ describe('billingOperationStore', () => {
         await vi.advanceTimersByTimeAsync(0)
 
         expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+          flag_state: 'embedded_checkout_on',
+          workspace_id: 'workspace-1',
           operation: 'operation',
           stage: 'succeeded',
           outcome: 'success',
@@ -747,6 +764,8 @@ describe('billingOperationStore', () => {
         life: 7000
       })
       expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        flag_state: 'embedded_checkout_on',
+        workspace_id: 'workspace-1',
         operation: 'operation',
         stage: 'failed',
         outcome: 'failure',
@@ -1559,6 +1578,298 @@ describe('billingOperationStore', () => {
       expect((await terminal).status).toBe('succeeded')
     })
 
+    describe('challenge telemetry', () => {
+      const startChallengedOperation = async (
+        opId = 'op-3ds',
+        secret = 'pi_secret_current'
+      ) => {
+        vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+          id: opId,
+          status: 'pending',
+          authentication_state: 'requires_action',
+          payment_intent_client_secret: secret,
+          started_at: new Date().toISOString()
+        })
+        const store = useBillingOperationStore()
+        void store.startOperation(opId, 'subscription', {
+          autoHandleRequiresAction: true,
+          suppressProcessingToast: true,
+          checkoutAttemptId: 'attempt-1',
+          flagState: 'embedded_checkout_on'
+        })
+        await vi.advanceTimersByTimeAsync(0)
+        return store
+      }
+
+      const challengeEvents = (stage: string) =>
+        mockTrackBillingEvent.mock.calls
+          .map(([event]) => event)
+          .filter((event) => event.stage === stage)
+
+      it('opens the challenge funnel when a challenge is first required', async () => {
+        await startChallengedOperation()
+
+        expect(challengeEvents('challenge_presented')).toEqual([
+          {
+            operation: 'subscription_checkout',
+            stage: 'challenge_presented',
+            outcome: 'pending',
+            billing_op_id: 'op-3ds',
+            tier: undefined,
+            cycle: undefined,
+            checkout_type: undefined,
+            payment_intent_source: undefined,
+            checkout_attempt_id: 'attempt-1',
+            flag_state: 'embedded_checkout_on',
+            workspace_id: 'workspace-1'
+          }
+        ])
+      })
+
+      // The presented event is the denominator for "attempts that hit a
+      // challenge", so a server that keeps reporting the same challenge must
+      // not inflate it.
+      it('counts one presentation however often the server repeats it', async () => {
+        const store = await startChallengedOperation()
+        await vi.advanceTimersByTimeAsync(31_000)
+        await vi.advanceTimersByTimeAsync(31_000)
+
+        expect(store.getOperation('op-3ds')?.authenticationRequiredSeen).toBe(
+          true
+        )
+        expect(challengeEvents('challenge_presented')).toHaveLength(1)
+      })
+
+      // The operation opens only once subscribe() has returned, so reading the
+      // workspace live here would label the attempt with wherever the customer
+      // navigated while it was in flight.
+      it('reports the workspace the attempt started in, not the live one', async () => {
+        vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+          id: 'op-ws',
+          status: 'pending',
+          started_at: new Date().toISOString()
+        })
+        const store = useBillingOperationStore()
+        mockActiveWorkspaceId.value = 'workspace-2'
+        void store.startOperation('op-ws', 'subscription', {
+          suppressProcessingToast: true,
+          checkoutAttemptId: 'attempt-1',
+          attemptWorkspaceId: 'workspace-1'
+        })
+        await vi.advanceTimersByTimeAsync(0)
+
+        expect(
+          mockTrackBillingEvent.mock.calls
+            .map(([event]) => event)
+            .filter((event) => event.stage === 'started')
+        ).toEqual([
+          expect.objectContaining({
+            billing_op_id: 'op-ws',
+            checkout_attempt_id: 'attempt-1',
+            workspace_id: 'workspace-1'
+          })
+        ])
+        expect(store.getOperation('op-ws')?.workspaceId).toBe('workspace-2')
+      })
+
+      // A `needs_payment_method` response hands its collection page to
+      // startOperation as the action url AND keeps echoing it on every poll for
+      // as long as the customer is on the Stripe page. Neither is a 3DS
+      // challenge, and counting either would also latch out the real
+      // presentation that follows.
+      it('does not open the funnel for a payment-method collection page', async () => {
+        vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+          id: 'op-pm',
+          status: 'pending',
+          action_url: 'https://billing.stripe.com/collect-payment-method',
+          started_at: new Date().toISOString()
+        })
+        const store = useBillingOperationStore()
+        void store.startOperation(
+          'op-pm',
+          'subscription',
+          { suppressProcessingToast: true, checkoutAttemptId: 'attempt-1' },
+          'https://billing.stripe.com/collect-payment-method'
+        )
+        await vi.advanceTimersByTimeAsync(0)
+        await vi.advanceTimersByTimeAsync(31_000)
+
+        expect(challengeEvents('challenge_presented')).toEqual([])
+
+        vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+          id: 'op-pm',
+          status: 'pending',
+          authentication_state: 'requires_action',
+          payment_intent_client_secret: 'pi_secret_pm',
+          started_at: new Date().toISOString()
+        })
+        await vi.advanceTimersByTimeAsync(31_000)
+
+        expect(challengeEvents('challenge_presented')).toEqual([
+          expect.objectContaining({
+            billing_op_id: 'op-pm',
+            checkout_attempt_id: 'attempt-1'
+          })
+        ])
+        expect(store.getOperation('op-pm')?.authenticationState).toBe(
+          'requires_action'
+        )
+      })
+
+      // `updateAuthenticationState` is skipped entirely in the ungated arm, so
+      // an `action_url` call site would give that arm a looser definition of
+      // `challenge_presented` than the gated one — in exactly the dimension the
+      // rollout dashboard splits on. Reporting nothing there is the intent.
+      it('emits no presentation in the ungated arm for a hosted action url', async () => {
+        mockFeatureFlags.embeddedCheckoutEnabled = false
+        vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+          id: 'op-ungated',
+          status: 'pending',
+          authentication_state: 'requires_action',
+          payment_intent_client_secret: 'pi_secret_ungated',
+          action_url: 'https://invoice.stripe.com/i/auth',
+          started_at: new Date().toISOString()
+        })
+
+        const store = useBillingOperationStore()
+        void store.startOperation('op-ungated', 'subscription', {
+          suppressProcessingToast: true,
+          checkoutAttemptId: 'attempt-1'
+        })
+        await vi.advanceTimersByTimeAsync(0)
+        await vi.advanceTimersByTimeAsync(31_000)
+
+        expect(store.getOperation('op-ungated')?.actionUrl).toBe(
+          'https://invoice.stripe.com/i/auth'
+        )
+        expect(challengeEvents('challenge_presented')).toEqual([])
+      })
+
+      it('reports a completed challenge as succeeded', async () => {
+        mockHandleNextAction.mockResolvedValue({
+          paymentIntent: { status: 'succeeded' }
+        })
+
+        await startChallengedOperation()
+
+        expect(challengeEvents('challenge_returned')).toEqual([
+          expect.objectContaining({
+            outcome: 'succeeded',
+            reason: 'intent_advanced',
+            billing_op_id: 'op-3ds',
+            checkout_attempt_id: 'attempt-1',
+            flag_state: 'embedded_checkout_on'
+          })
+        ])
+      })
+
+      // handleNextAction resolves with no error and an intent that never
+      // moved past its pre-challenge status. The store reports that as
+      // failed_retryable, not processing; this event is the telemetry side
+      // of the same distinction.
+      it('reports a challenge that resolved cleanly without advancing as failed', async () => {
+        mockHandleNextAction.mockResolvedValue({
+          paymentIntent: { status: 'requires_payment_method' }
+        })
+
+        const store = await startChallengedOperation()
+
+        expect(mockHandleNextAction).toHaveBeenCalledOnce()
+        expect(store.getOperation('op-3ds')?.authenticationState).toBe(
+          'failed_retryable'
+        )
+        expect(challengeEvents('challenge_returned')).toEqual([
+          expect.objectContaining({
+            outcome: 'failed',
+            reason: 'challenge_not_completed',
+            billing_op_id: 'op-3ds'
+          })
+        ])
+      })
+
+      it('reports a browser-reported challenge error as failed', async () => {
+        mockHandleNextAction.mockResolvedValue({
+          error: { message: 'authentication failed' }
+        })
+
+        await startChallengedOperation()
+
+        expect(challengeEvents('challenge_returned')).toEqual([
+          expect.objectContaining({
+            outcome: 'failed',
+            reason: 'stripe_error'
+          })
+        ])
+      })
+
+      // Stripe reported neither an error nor an intent, so the client cannot
+      // tell the two apart. The reason keeps that ambiguity out of a clean
+      // success rate instead of hiding it.
+      it('marks a challenge with no reported intent as unverifiable', async () => {
+        mockHandleNextAction.mockResolvedValue({})
+
+        await startChallengedOperation()
+
+        expect(challengeEvents('challenge_returned')).toEqual([
+          expect.objectContaining({
+            outcome: 'succeeded',
+            reason: 'intent_status_unavailable'
+          })
+        ])
+      })
+
+      // A decline's authenticationState is failed_retryable, never
+      // requires_action, so retryPaymentAuthentication's own gate stops it
+      // before Stripe is ever called. trackChallengeReturned's presented-latch
+      // check is a second guard against the same case if that gate is ever
+      // loosened.
+      it('reports no return for a decline retry that presented no challenge', async () => {
+        vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+          id: 'op-declined',
+          status: 'pending',
+          authentication_state: 'failed_retryable',
+          decline_reason: 'card_declined',
+          payment_intent_client_secret: 'pi_secret_declined',
+          started_at: new Date().toISOString()
+        })
+
+        const store = useBillingOperationStore()
+        void store.startOperation('op-declined', 'subscription', {
+          suppressProcessingToast: true,
+          checkoutAttemptId: 'attempt-1'
+        })
+        await vi.advanceTimersByTimeAsync(0)
+
+        expect(challengeEvents('challenge_presented')).toEqual([])
+        await expect(
+          store.retryPaymentAuthentication('op-declined')
+        ).resolves.toBe(false)
+
+        expect(mockHandleNextAction).not.toHaveBeenCalled()
+        expect(challengeEvents('challenge_returned')).toEqual([])
+      })
+
+      it('reports the ungated arm as unknown when no flag map has arrived', async () => {
+        mockFeatureFlags.embeddedCheckoutEnabled = false
+        vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+          id: 'op-flagless',
+          status: 'succeeded',
+          started_at: new Date().toISOString()
+        })
+
+        const store = useBillingOperationStore()
+        await store.startOperation('op-flagless', 'topup')
+
+        expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+          expect.objectContaining({
+            stage: 'started',
+            billing_op_id: 'op-flagless',
+            flag_state: 'embedded_checkout_unknown'
+          })
+        )
+      })
+    })
+
     it('keeps a completed challenge processing when the server echoes requires_action', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus)
         .mockResolvedValueOnce({
@@ -1721,6 +2032,8 @@ describe('billingOperationStore', () => {
       await vi.advanceTimersByTimeAsync(60_000)
       expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledOnce()
       expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        flag_state: 'embedded_checkout_on',
+        workspace_id: 'workspace-1',
         operation: 'operation',
         stage: 'failed',
         outcome: 'failure',
@@ -1743,7 +2056,9 @@ describe('billingOperationStore', () => {
         payment_intent_source: undefined,
         billing_op_id: 'op-reconcile',
         failure_category: 'reconciliation_needed',
-        duration_ms: 0
+        duration_ms: 0,
+        flag_state: 'embedded_checkout_on',
+        workspace_id: 'workspace-1'
       })
     })
 
@@ -2275,6 +2590,8 @@ describe('billingOperationStore', () => {
         isSubscribed: false
       })
       expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        flag_state: 'embedded_checkout_on',
+        workspace_id: 'workspace-1',
         operation: 'operation',
         stage: 'succeeded',
         outcome: 'success',

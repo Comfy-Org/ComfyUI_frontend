@@ -15,10 +15,12 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type {
   BillingFailure,
+  BillingFlagState,
   PaymentIntentSource,
   SubscriptionCheckoutTier,
   SubscriptionCheckoutType
 } from '@/platform/telemetry/types'
+import { resolveBillingFlagState } from '@/platform/telemetry/utils/billingFlagState'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type {
@@ -82,6 +84,20 @@ export interface StartOperationMetadata {
    * e.g. recovering a pending operation on page load.
    */
   attemptStartedAt?: number
+  /**
+   * The client-minted key for the checkout attempt that opened this operation,
+   * carried so the poller's terminal events join back to a `started` that could
+   * not yet know the billing op id.
+   */
+  checkoutAttemptId?: string
+  flagState?: BillingFlagState
+  quoteId?: string
+  /**
+   * The workspace the attempt started in, for telemetry only. `workspaceId`
+   * below is read live to gate UI against the workspace the customer is
+   * looking at now; this is the one they were subscribing for (ADR 0014).
+   */
+  attemptWorkspaceId?: string | null
 }
 
 interface BillingOperation {
@@ -109,6 +125,10 @@ interface BillingOperation {
   // over — only the server decides that — so it keeps polling and can still
   // resolve normally; this only hides it from the selectors a dialog reads.
   dismissed: boolean
+  checkoutAttemptId?: string
+  flagState: BillingFlagState
+  quoteId?: string
+  attemptWorkspaceId?: string | null
 }
 
 type TerminalResolver = (operation: BillingOperation) => void
@@ -123,6 +143,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   const terminalResolvers = new Map<string, TerminalResolver>()
   const terminalPromises = new Map<string, Promise<BillingOperation>>()
   const autoHandledPaymentActions = new Set<string>()
+  const challengePresentedOps = new Set<string>()
   const paymentIntentClientSecrets = new Map<string, string>()
   const inFlightPolls = new Map<string, Promise<void>>()
 
@@ -218,6 +239,52 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     toastStore.add(toastMessage)
   }
 
+  function operationTelemetryContext(operation: BillingOperation) {
+    const workspaceId = operation.attemptWorkspaceId ?? operation.workspaceId
+    return {
+      ...(operation.checkoutAttemptId && {
+        checkout_attempt_id: operation.checkoutAttemptId
+      }),
+      flag_state: operation.flagState,
+      ...(workspaceId && { workspace_id: workspaceId }),
+      ...(operation.quoteId && { quote_id: operation.quoteId })
+    }
+  }
+
+  /**
+   * The denominator for "attempts that hit a challenge" — latched to one per
+   * operation, however many times the customer retries. Pair it with
+   * `challenge_returned` per operation, not per event: a manual retry emits a
+   * second return against this one presentation.
+   *
+   * Driven by an `authentication_state` of `requires_action`, never by
+   * `actionUrl`: a `needs_payment_method` response puts a payment-method
+   * collection page in `actionUrl` too, and counting that as a challenge would
+   * both inflate this denominator and latch out the real 3DS presentation.
+   *
+   * `authentication_state` is only read under the embedded-checkout flag, so
+   * the ungated arm reports no presentation rather than a looser one. An empty
+   * challenge funnel there is intended; a differently-defined one is not.
+   */
+  function trackChallengePresented(opId: string) {
+    const operation = operations.value.get(opId)
+    if (!operation || operation.type !== 'subscription') return
+    if (challengePresentedOps.has(opId)) return
+    challengePresentedOps.add(opId)
+
+    useTelemetry()?.trackBillingEvent({
+      operation: 'subscription_checkout',
+      stage: 'challenge_presented',
+      outcome: 'pending',
+      billing_op_id: opId,
+      tier: operation.tier,
+      cycle: operation.cycle,
+      checkout_type: operation.checkoutType,
+      payment_intent_source: operation.paymentIntentSource,
+      ...operationTelemetryContext(operation)
+    })
+  }
+
   function startOperation(
     opId: string,
     type: OperationType,
@@ -252,7 +319,13 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       paymentIntentSource: metadata?.paymentIntentSource,
       autoHandleRequiresAction: metadata?.autoHandleRequiresAction ?? false,
       downgradeToPersonal: metadata?.downgradeToPersonal,
-      dismissed: false
+      dismissed: false,
+      checkoutAttemptId: metadata?.checkoutAttemptId,
+      flagState:
+        metadata?.flagState ??
+        resolveBillingFlagState(flags.embeddedCheckoutEnabled),
+      quoteId: metadata?.quoteId,
+      attemptWorkspaceId: metadata?.attemptWorkspaceId
     }
 
     operations.value = new Map(operations.value).set(opId, operation)
@@ -263,7 +336,9 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         operation: 'operation',
         stage: 'started',
         outcome: 'pending',
-        operation_type: type
+        operation_type: type,
+        billing_op_id: opId,
+        ...operationTelemetryContext(operation)
       })
     }
 
@@ -473,6 +548,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         operation.authenticationRequiredSeen || state === 'requires_action',
       ...(declineDetail && { errorMessage: declineDetail })
     })
+    if (state === 'requires_action') trackChallengePresented(opId)
 
     // Neither authentication state is terminal for a pending operation: the
     // customer may complete the challenge on a hosted page or another device,
@@ -524,6 +600,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
       const stripe = publishableKey ? await loadStripe(publishableKey) : null
       if (!stripe) {
+        trackChallengeReturned(opId, 'failed', 'stripe_error')
         setAuthenticationFailed(
           opId,
           t('billingOperation.authenticationUnavailable')
@@ -534,6 +611,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         clientSecret
       })
       if (error) {
+        trackChallengeReturned(opId, 'failed', 'stripe_error')
         setAuthenticationFailed(
           opId,
           error.message || t('billingOperation.authenticationFailedDetail')
@@ -543,12 +621,18 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       // With no action left to resume the call succeeds and changes nothing, so
       // an intent still sitting on its pre-challenge status has not paid.
       if (paymentIntent && UNMOVED_INTENT_STATUSES.has(paymentIntent.status)) {
+        trackChallengeReturned(opId, 'failed', 'challenge_not_completed')
         setAuthenticationFailed(
           opId,
           t('billingOperation.authenticationFailedDetail')
         )
         return false
       }
+      trackChallengeReturned(
+        opId,
+        'succeeded',
+        paymentIntent ? 'intent_advanced' : 'intent_status_unavailable'
+      )
       updateOperation(opId, {
         authenticationState: 'processing',
         isAuthenticating: false,
@@ -560,6 +644,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       intervals.set(opId, INITIAL_INTERVAL_MS)
       return true
     } catch (error) {
+      trackChallengeReturned(opId, 'failed', 'stripe_error')
       setAuthenticationFailed(
         opId,
         error instanceof Error
@@ -568,6 +653,40 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       )
       return false
     }
+  }
+
+  /**
+   * The numerator against `challenge_presented`. Gated on the same latch, so a
+   * return is only reported for a challenge this client actually presented:
+   * `retryPaymentAuthentication` also runs for a `failed_retryable` decline
+   * that was never `requires_action`, and counting that return would put an
+   * operation in the numerator that is absent from the denominator.
+   */
+  function trackChallengeReturned(
+    opId: string,
+    outcome: 'succeeded' | 'failed',
+    reason:
+      | 'intent_advanced'
+      | 'challenge_not_completed'
+      | 'stripe_error'
+      | 'intent_status_unavailable'
+  ) {
+    const operation = operations.value.get(opId)
+    if (!operation || operation.type !== 'subscription') return
+    if (!challengePresentedOps.has(opId)) return
+
+    useTelemetry()?.trackBillingEvent({
+      operation: 'subscription_checkout',
+      stage: 'challenge_returned',
+      outcome,
+      reason,
+      billing_op_id: opId,
+      tier: operation.tier,
+      cycle: operation.cycle,
+      checkout_type: operation.checkoutType,
+      payment_intent_source: operation.paymentIntentSource,
+      ...operationTelemetryContext(operation)
+    })
   }
 
   function setAuthenticationFailed(opId: string, errorMessage: string) {
@@ -658,7 +777,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       cycle: operation.cycle,
       checkout_type: operation.checkoutType,
       payment_intent_source: operation.paymentIntentSource,
-      duration_ms: operationDurationMs
+      duration_ms: operationDurationMs,
+      ...operationTelemetryContext(operation)
     })
 
     if (
@@ -675,7 +795,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         checkout_type: operation.checkoutType,
         payment_intent_source: operation.paymentIntentSource,
         billing_op_id: opId,
-        duration_ms: durationMs
+        duration_ms: durationMs,
+        ...operationTelemetryContext(operation)
       })
       // Also fires the legacy event for providers (Mixpanel, GTM) that don't
       // implement trackBillingEvent. Gated to actual new/upgraded
@@ -699,7 +820,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         stage: 'succeeded',
         outcome: 'success',
         billing_op_id: opId,
-        duration_ms: now - operation.businessAttemptStartedAt
+        duration_ms: now - operation.businessAttemptStartedAt,
+        ...operationTelemetryContext(operation)
       })
     }
     // Mirrors handleFailure's structure: not gated on businessAttemptStartedAt,
@@ -713,7 +835,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         member_removal_failures:
           operation.downgradeToPersonal.memberRemovalFailures,
         target_tier: operation.downgradeToPersonal.targetTier,
-        duration_ms: now - operation.downgradeToPersonal.startedAt
+        duration_ms: now - operation.downgradeToPersonal.startedAt,
+        ...operationTelemetryContext(operation)
       })
     }
 
@@ -791,7 +914,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       checkout_type: operation.checkoutType,
       payment_intent_source: operation.paymentIntentSource,
       failure_category: failureCategory,
-      duration_ms: now - operation.operationStartedAt
+      duration_ms: now - operation.operationStartedAt,
+      ...operationTelemetryContext(operation)
     })
     if (
       operation.type === 'subscription' &&
@@ -807,7 +931,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         payment_intent_source: operation.paymentIntentSource,
         billing_op_id: opId,
         failure_category: failureCategory,
-        duration_ms: now - operation.businessAttemptStartedAt
+        duration_ms: now - operation.businessAttemptStartedAt,
+        ...operationTelemetryContext(operation)
       })
     } else if (
       operation.type === 'topup' &&
@@ -819,7 +944,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         outcome: 'failure',
         billing_op_id: opId,
         failure_category: failureCategory,
-        duration_ms: now - operation.businessAttemptStartedAt
+        duration_ms: now - operation.businessAttemptStartedAt,
+        ...operationTelemetryContext(operation)
       })
     }
     if (operation.downgradeToPersonal) {
@@ -832,7 +958,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
           operation.downgradeToPersonal.memberRemovalFailures,
         target_tier: operation.downgradeToPersonal.targetTier,
         failure_category: failureCategory,
-        duration_ms: now - operation.downgradeToPersonal.startedAt
+        duration_ms: now - operation.downgradeToPersonal.startedAt,
+        ...operationTelemetryContext(operation)
       })
     }
 
@@ -874,7 +1001,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       checkout_type: operation.checkoutType,
       payment_intent_source: operation.paymentIntentSource,
       failure_category: 'reconciliation_needed',
-      duration_ms: now - operation.operationStartedAt
+      duration_ms: now - operation.operationStartedAt,
+      ...operationTelemetryContext(operation)
     })
     if (
       operation.type === 'subscription' &&
@@ -890,7 +1018,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         payment_intent_source: operation.paymentIntentSource,
         billing_op_id: opId,
         failure_category: 'reconciliation_needed',
-        duration_ms: now - operation.businessAttemptStartedAt
+        duration_ms: now - operation.businessAttemptStartedAt,
+        ...operationTelemetryContext(operation)
       })
     } else if (
       operation.type === 'topup' &&
@@ -902,7 +1031,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         outcome: 'failure',
         billing_op_id: opId,
         failure_category: 'reconciliation_needed',
-        duration_ms: now - operation.businessAttemptStartedAt
+        duration_ms: now - operation.businessAttemptStartedAt,
+        ...operationTelemetryContext(operation)
       })
     }
     resolveTerminal(opId)
@@ -930,7 +1060,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       checkout_type: operation.checkoutType,
       payment_intent_source: operation.paymentIntentSource,
       failure_category: 'poll_timeout',
-      duration_ms: now - operation.operationStartedAt
+      duration_ms: now - operation.operationStartedAt,
+      ...operationTelemetryContext(operation)
     })
     if (
       operation.type === 'subscription' &&
@@ -946,7 +1077,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         payment_intent_source: operation.paymentIntentSource,
         billing_op_id: opId,
         failure_category: 'poll_timeout',
-        duration_ms: now - operation.businessAttemptStartedAt
+        duration_ms: now - operation.businessAttemptStartedAt,
+        ...operationTelemetryContext(operation)
       })
     } else if (
       operation.type === 'topup' &&
@@ -958,7 +1090,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         outcome: 'failure',
         billing_op_id: opId,
         failure_category: 'poll_timeout',
-        duration_ms: now - operation.businessAttemptStartedAt
+        duration_ms: now - operation.businessAttemptStartedAt,
+        ...operationTelemetryContext(operation)
       })
     }
     if (operation.downgradeToPersonal) {
@@ -971,7 +1104,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
           operation.downgradeToPersonal.memberRemovalFailures,
         target_tier: operation.downgradeToPersonal.targetTier,
         failure_category: 'poll_timeout',
-        duration_ms: now - operation.downgradeToPersonal.startedAt
+        duration_ms: now - operation.downgradeToPersonal.startedAt,
+        ...operationTelemetryContext(operation)
       })
     }
 
@@ -1107,6 +1241,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
     intervals.delete(opId)
     autoHandledPaymentActions.delete(opId)
+    challengePresentedOps.delete(opId)
     paymentIntentClientSecrets.delete(opId)
 
     // Remove the "received" toast

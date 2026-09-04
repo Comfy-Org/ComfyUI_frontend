@@ -410,6 +410,14 @@ export class ComfyApi extends EventTarget {
   serverFeatureFlags = ref<Record<string, unknown>>({})
 
   /**
+   * Whether the server has answered the `feature_flags` handshake this session.
+   * Distinct from an empty {@link serverFeatureFlags}: a server is free to
+   * advertise no flags, and callers that must not read a defaulted flag as a
+   * deliberate `off` need to tell those two states apart.
+   */
+  #receivedServerFeatureFlags = false
+
+  /**
    * The auth token for the comfy org account if the user is logged in.
    * This is only used for {@link queuePrompt} now. It is not directly
    * passed as parameter to the function because some custom nodes are hijacking
@@ -916,6 +924,7 @@ export class ComfyApi extends EventTarget {
               break
             case 'feature_flags':
               this.serverFeatureFlags.value = msg.data
+              this.#receivedServerFeatureFlags = true
               this.dispatchCustomEvent('feature_flags', msg.data)
               break
             default:
@@ -1658,6 +1667,14 @@ export class ComfyApi extends EventTarget {
    */
   getServerFeatures(): Record<string, unknown> {
     return { ...this.serverFeatureFlags.value }
+  }
+
+  /**
+   * Whether the `feature_flags` handshake has been answered this session.
+   * @returns true once a server flag map has arrived, empty or not
+   */
+  hasReceivedServerFeatureFlags(): boolean {
+    return this.#receivedServerFeatureFlags
   }
 }
 
