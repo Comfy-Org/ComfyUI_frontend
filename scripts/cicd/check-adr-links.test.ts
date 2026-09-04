@@ -11,6 +11,8 @@ const GIT_ENV = {
   GIT_CONFIG_SYSTEM: '/dev/null'
 }
 
+const adrPath = (fileName: string): string => `docs/adr/${fileName}`
+
 // The script scans via `git grep`, so fixtures need a hermetic throwaway repo.
 function tempGitRepo(): { dir: string; git: (...args: string[]) => string } {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'adr-links-'))
@@ -40,8 +42,9 @@ function runScript(dir: string) {
 describe('check-adr-links', () => {
   it('passes when every referenced docs/adr path exists', () => {
     const { dir, git } = tempGitRepo()
-    write(dir, 'docs/adr/CRDT-TEST-0001-real.md', '# real\n')
-    write(dir, 'AGENTS.md', 'see [x](docs/adr/CRDT-TEST-0001-real.md)\n')
+    const realAdr = adrPath('CRDT-TEST-0001-real.md')
+    write(dir, realAdr, '# real\n')
+    write(dir, 'AGENTS.md', `see [x](${realAdr})\n`)
     git('add', '.')
     git('commit', '-m', 'fixture')
 
@@ -51,19 +54,17 @@ describe('check-adr-links', () => {
 
   it('fails and names the referencing file and the dangling path', () => {
     const { dir, git } = tempGitRepo()
-    write(dir, 'docs/adr/CRDT-TEST-0001-real.md', '# real\n')
-    write(
-      dir,
-      '.agents/checks/guard.md',
-      'required context: docs/adr/FOLLOWER-guessed-name.md\n'
-    )
+    const realAdr = adrPath('CRDT-TEST-0001-real.md')
+    const danglingAdr = adrPath('FOLLOWER-guessed-name.md')
+    write(dir, realAdr, '# real\n')
+    write(dir, '.agents/checks/guard.md', `required context: ${danglingAdr}\n`)
     git('add', '.')
     git('commit', '-m', 'fixture')
 
     const result = runScript(dir)
     expect(result.status).not.toBe(0)
     expect(result.stderr).toContain('.agents/checks/guard.md')
-    expect(result.stderr).toContain('docs/adr/FOLLOWER-guessed-name.md')
+    expect(result.stderr).toContain(danglingAdr)
   })
 
   it('ignores non-adr markdown references', () => {
