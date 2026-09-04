@@ -12832,7 +12832,8 @@
     "display_name": "MiniMax H3 Reference to Video",
     "inputs": {
       "audio_vae": {
-        "name": "audio_vae"
+        "name": "audio_vae",
+        "tooltip": "VAE לאודיו. בלעדיו, אודיו הייחוס משמש רק להתניית מקודד הטקסט."
       },
       "clip": {
         "name": "clip"
@@ -12864,7 +12865,8 @@
         "name": "ref_videos"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "VAE לווידאו. בלעדיו, תמונות/סרטוני הייחוס משמשים רק להתניית מקודד הטקסט."
       },
       "width": {
         "name": "width"
@@ -16972,7 +16974,7 @@
   },
   "Preview3D": {
     "description": "תצוגה מקדימה של קובץ מודל תלת-ממדי מבלי לשמור אותו בתיקיית הפלט של ComfyUI.",
-    "display_name": "תצוגה מקדימה בתלת-ממד ואנימציה",
+    "display_name": "תצוגה מקדימה של 3D ואנימציה (הוצא משימוש)",
     "inputs": {
       "bg_image": {
         "name": "bg_image"
@@ -17985,7 +17987,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "סוג הפלט שעבורו נוצר הסגנון: recraftv4_styles לתמונות רסטר, recraftv4_styles_vector עבור SVG."
+        "tooltip": "המודל שעבורו נוצר הסגנון. Standard ו-Pro חולקים מאגר סגנונות אחד: סגנונות רסטר פועלים עם כל מודל רסטר של Recraft V4 ו-V4.1, וסגנונות וקטוריים (*_vector) עם כל מודל וקטורי של V4 ו-V4.1."
       }
     },
     "outputs": {

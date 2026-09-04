@@ -12832,7 +12832,8 @@
     "display_name": "تبدیل مرجع به ویدیو MiniMax H3",
     "inputs": {
       "audio_vae": {
-        "name": "audio_vae"
+        "name": "audio_vae",
+        "tooltip": "VAE صوت. بدون آن، صوت مرجع فقط encoder متن را شرطی می‌کند."
       },
       "clip": {
         "name": "clip"
@@ -12864,7 +12865,8 @@
         "name": "ویدیوهای مرجع"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "VAE ویدئو. بدون آن، تصاویر/ویدئوهای مرجع فقط encoder متن را شرطی می‌کنند."
       },
       "width": {
         "name": "عرض"
@@ -16972,7 +16974,7 @@
   },
   "Preview3D": {
     "description": "پیش‌نمایش یک فایل مدل سه‌بعدی بدون ذخیره آن در پوشه خروجی ComfyUI.",
-    "display_name": "پیش‌نمایش سه‌بعدی و انیمیشن",
+    "display_name": "پیش‌نمایش ۳بعدی و انیمیشن (منسوخ)",
     "inputs": {
       "bg_image": {
         "name": "تصویر پس‌زمینه"
@@ -17985,7 +17987,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "نوع خروجی که سبک برای آن ایجاد می‌شود: recraftv4_styles برای تصاویر رستری و recraftv4_styles_vector برای SVG."
+        "tooltip": "مدلی که style برای آن ایجاد می‌شود. Standard و Pro از یک مجموعه style مشترک استفاده می‌کنند: styleهای raster با هر مدل raster از Recraft V4 و V4.1 کار می‌کنند و styleهای vector (*_vector) با هر مدل vector از V4 و V4.1."
       }
     },
     "outputs": {

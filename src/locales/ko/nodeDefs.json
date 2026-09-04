@@ -12832,7 +12832,8 @@
     "display_name": "MiniMax H3 참조 → 비디오",
     "inputs": {
       "audio_vae": {
-        "name": "audio_vae"
+        "name": "audio_vae",
+        "tooltip": "오디오 vae입니다. 없으면 참조 오디오는 텍스트 인코더만 조건화합니다."
       },
       "clip": {
         "name": "clip"
@@ -12864,7 +12865,8 @@
         "name": "ref_videos"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "비디오 vae입니다. 없으면 참조 이미지/비디오는 텍스트 인코더만 조건화합니다."
       },
       "width": {
         "name": "width"
@@ -16972,7 +16974,7 @@
   },
   "Preview3D": {
     "description": "3D 모델 파일을 ComfyUI 출력 디렉토리에 저장하지 않고 미리보기합니다.",
-    "display_name": "3D 미리보기",
+    "display_name": "3D 및 애니메이션 미리보기 (더 이상 사용되지 않음)",
     "inputs": {
       "bg_image": {
         "name": "bg_image"
@@ -17985,7 +17987,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "스타일이 생성될 출력 유형입니다: 래스터 이미지에는 recraftv4_styles, SVG에는 recraftv4_styles_vector."
+        "tooltip": "스타일이 생성될 모델입니다. Standard와 Pro는 하나의 스타일 풀을 공유합니다. 래스터 스타일은 모든 Recraft V4 및 V4.1 래스터 모델에서 작동하며, 벡터 스타일(*_vector)은 모든 V4 및 V4.1 벡터 모델에서 작동합니다."
       }
     },
     "outputs": {

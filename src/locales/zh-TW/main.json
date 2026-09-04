@@ -2486,11 +2486,13 @@
     "menuBar": {
       "bgColor": "背景顏色",
       "bgImage": "背景圖片",
+      "customUp": "自訂向上",
       "deleteRecording": "刪除錄影",
       "downloadRecording": "下載錄影",
       "fov": "視野(FOV)",
       "intensity": "強度",
       "material": "材質",
+      "naturalUp": "自然向上",
       "originalMaterialOnly": "僅原始材質",
       "panorama": "全景",
       "record": "錄製",

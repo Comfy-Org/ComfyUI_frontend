@@ -12834,12 +12834,6 @@
       "clip": {
         "name": "clip"
       },
-      "vae": {
-        "name": "vae"
-      },
-      "audio_vae": {
-        "name": "audio_vae"
-      },
       "prompt": {
         "name": "prompt"
       },
@@ -12856,6 +12850,14 @@
       "ref_image_size": {
         "name": "ref_image_size",
         "tooltip": "Reference image sizing. 'match' scales each ref (down only, keeping aspect) to the generation's pixel area; 'max' uses the reference pipeline's 2048px short edge for best identity fidelity. Reference tokens ride through every sampling step, so 'max' can be several times slower."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Video VAE. Without it reference images/videos only condition the text encoder."
+      },
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "Audio VAE. Without it reference audio only conditions the text encoder."
       },
       "ref_images": {
         "name": "ref_images"
@@ -16971,7 +16973,7 @@
     }
   },
   "Preview3D": {
-    "display_name": "Preview 3D & Animation",
+    "display_name": "Preview 3D & Animation (DEPRECATED)",
     "description": "Preview a 3D model file without saving it to the ComfyUI output directory.",
     "inputs": {
       "model_file": {
@@ -17953,7 +17955,7 @@
     "inputs": {
       "model": {
         "name": "model",
-        "tooltip": "Output type the style is created for: recraftv4_styles for raster images, recraftv4_styles_vector for SVG."
+        "tooltip": "Model the style is created for. Standard and Pro share one style pool: raster styles work with every Recraft V4 and V4.1 raster model, vector styles (*_vector) with every V4 and V4.1 vector model."
       },
       "images": {
         "name": "images",

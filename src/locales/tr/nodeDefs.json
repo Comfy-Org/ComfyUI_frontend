@@ -12832,7 +12832,8 @@
     "display_name": "MiniMax H3 Referanstan Videoya",
     "inputs": {
       "audio_vae": {
-        "name": "audio_vae"
+        "name": "audio_vae",
+        "tooltip": "Ses VAE. Bu olmadan referans ses yalnızca metin kodlayıcıyı koşullandırır."
       },
       "clip": {
         "name": "clip"
@@ -12864,7 +12865,8 @@
         "name": "ref_videolar"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "Video VAE. Bu olmadan referans görüntüler/videolar yalnızca metin kodlayıcıyı koşullandırır."
       },
       "width": {
         "name": "genişlik"
@@ -16972,7 +16974,7 @@
   },
   "Preview3D": {
     "description": "Bir 3D model dosyasını ComfyUI çıktı dizinine kaydetmeden önizleyin.",
-    "display_name": "3D Önizleme",
+    "display_name": "3D ve Animasyon Önizlemesi (KULLANIMDAN KALDIRILDI)",
     "inputs": {
       "bg_image": {
         "name": "bg_image"
@@ -17985,7 +17987,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Stilin oluşturulacağı çıktı türü: raster görüntüler için recraftv4_styles, SVG için recraftv4_styles_vector."
+        "tooltip": "Stilin oluşturulduğu model. Standard ve Pro tek bir stil havuzunu paylaşır: raster stiller her Recraft V4 ve V4.1 raster modelle, vektör stiller (*_vector) ise her V4 ve V4.1 vektör modelle çalışır."
       }
     },
     "outputs": {

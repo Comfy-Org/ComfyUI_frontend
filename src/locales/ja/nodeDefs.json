@@ -12832,7 +12832,8 @@
     "display_name": "MiniMax H3 リファレンスから動画へ",
     "inputs": {
       "audio_vae": {
-        "name": "audio_vae"
+        "name": "audio_vae",
+        "tooltip": "音声 VAE。これがない場合、参照音声はテキストエンコーダーへの条件付けにのみ使用されます。"
       },
       "clip": {
         "name": "clip"
@@ -12864,7 +12865,8 @@
         "name": "リファレンス動画"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "動画 VAE。これがない場合、参照画像/動画はテキストエンコーダーへの条件付けにのみ使用されます。"
       },
       "width": {
         "name": "幅"
@@ -16972,7 +16974,7 @@
   },
   "Preview3D": {
     "description": "3DモデルファイルをComfyUIの出力ディレクトリに保存せずにプレビューします。",
-    "display_name": "3Dプレビュー",
+    "display_name": "3D・アニメーションをプレビュー（非推奨）",
     "inputs": {
       "bg_image": {
         "name": "bg_image"
@@ -17985,7 +17987,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "スタイルを作成する出力タイプ: ラスター画像には recraftv4_styles、SVG には recraftv4_styles_vector。"
+        "tooltip": "スタイルの作成対象モデル。Standard と Pro は1つのスタイルプールを共有します。ラスター スタイルはすべての Recraft V4 および V4.1 ラスターモデルで、ベクター スタイル（*_vector）はすべての V4 および V4.1 ベクターモデルで使用できます。"
       }
     },
     "outputs": {

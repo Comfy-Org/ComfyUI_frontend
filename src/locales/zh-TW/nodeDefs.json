@@ -12832,7 +12832,8 @@
     "display_name": "MiniMax H3 參考轉影片",
     "inputs": {
       "audio_vae": {
-        "name": "audio_vae"
+        "name": "audio_vae",
+        "tooltip": "音訊 VAE。若無此項，參考音訊將僅用於條件化文字編碼器。"
       },
       "clip": {
         "name": "clip"
@@ -12864,7 +12865,8 @@
         "name": "參考影片"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "影片 VAE。若無此項，參考影像／影片將僅用於條件化文字編碼器。"
       },
       "width": {
         "name": "寬度"
@@ -16972,7 +16974,7 @@
   },
   "Preview3D": {
     "description": "預覽 3D 模型檔案，無需儲存至 ComfyUI 輸出目錄。",
-    "display_name": "3D 預覽",
+    "display_name": "預覽 3D 與動畫（已棄用）",
     "inputs": {
       "bg_image": {
         "name": "bg_image"
@@ -17985,7 +17987,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "建立風格所適用的輸出類型：recraftv4_styles 用於點陣圖片，recraftv4_styles_vector 用於 SVG。"
+        "tooltip": "要建立樣式所用的模型。Standard 與 Pro 共用同一個樣式集區：點陣樣式可用於所有 Recraft V4 和 V4.1 點陣模型；向量樣式（*_vector）可用於所有 V4 和 V4.1 向量模型。"
       }
     },
     "outputs": {
