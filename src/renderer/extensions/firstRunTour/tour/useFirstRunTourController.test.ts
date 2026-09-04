@@ -16,30 +16,35 @@ const INTRO_PREVIEW_MS = 500
 const OFFLINE_GRACE_MS = 20_000
 const ACCEPT_DEADLINE_MS = 15_000
 
-const mocks = vi.hoisted(() => ({
-  canRunWorkflows: { value: true },
-  showSubscriptionDialog: vi.fn(),
-  workflowStatus: { value: new Map<unknown, string>() },
-  executionErrors: { hasNodeError: false, hasPromptError: false },
-  activeWorkflow: { value: null as unknown },
-  queuedJobs: { value: {} as Record<string, { workflow?: unknown }> },
-  linearMode: { value: false },
-  vueNodesEnabled: true,
-  setSetting: vi.fn(),
-  steps: [] as CoachStep[],
-  runState: { value: 'idle' } as Ref<string>,
-  releaseFirstRunTargets: vi.fn(),
-  engine: {
-    activeTour: null as string | null,
-    lastEnding: null as TourEnding | null,
-    step: null as CoachStep | null,
-    isLast: false,
-    startTour: vi.fn(),
-    next: vi.fn(),
-    skip: vi.fn(),
-    postpone: vi.fn()
+const mocks = vi.hoisted(() => {
+  const queuedJobs: { value: Record<string, { workflow?: unknown }> } = {
+    value: {}
   }
-}))
+  return {
+    canRunWorkflows: { value: true },
+    showSubscriptionDialog: vi.fn(),
+    workflowStatus: { value: new Map<unknown, string>() },
+    executionErrors: { hasNodeError: false, hasPromptError: false },
+    activeWorkflow: { value: null as { path: string } | null },
+    queuedJobs,
+    linearMode: { value: false },
+    vueNodesEnabled: true,
+    setSetting: vi.fn(),
+    steps: [] as CoachStep[],
+    runState: { value: 'idle' } as Ref<string>,
+    releaseFirstRunTargets: vi.fn(),
+    engine: {
+      activeTour: null as string | null,
+      lastEnding: null as TourEnding | null,
+      step: null as CoachStep | null,
+      isLast: false,
+      startTour: vi.fn(),
+      next: vi.fn(),
+      skip: vi.fn(),
+      postpone: vi.fn()
+    }
+  }
+})
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({

@@ -12832,7 +12832,8 @@
     "display_name": "MiniMax H3 Riferimento a Video",
     "inputs": {
       "audio_vae": {
-        "name": "audio_vae"
+        "name": "audio_vae",
+        "tooltip": "VAE audio. Senza di esso, l'audio di riferimento condiziona solo il codificatore testuale."
       },
       "clip": {
         "name": "clip"
@@ -12864,7 +12865,8 @@
         "name": "video di riferimento"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "VAE video. Senza di esso, le immagini/video di riferimento condizionano solo il codificatore testuale."
       },
       "width": {
         "name": "larghezza"
@@ -12973,7 +12975,7 @@
     }
   },
   "MinimaxHailuo03FirstLastFrameNode": {
-    "description": "Genera un video da un'immagine del primo frame e, opzionalmente, da un'immagine dell'ultimo frame utilizzando il modello MiniMax H3. Il rapporto d'aspetto del video segue quello delle immagini fornite.",
+    "description": "Genera un video da un'immagine del primo fotogramma e, facoltativamente, da un'immagine dell'ultimo fotogramma usando i modelli MiniMax H3. Le proporzioni del video seguono le immagini fornite.",
     "display_name": "MiniMax H3 Da Primo-Ultimo Frame a Video",
     "inputs": {
       "control_after_generate": {
@@ -13016,7 +13018,7 @@
     }
   },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "Genera un video condizionato su immagini di riferimento, video e audio utilizzando il modello MiniMax H3. Fai riferimento agli elementi nel prompt secondo il loro ordine: 'Immagine 1', 'Immagine 2', 'Video 1', 'Audio 1', e così via.",
+    "description": "Genera un video condizionato da immagini, video e audio di riferimento usando i modelli MiniMax H3. Fai riferimento ai contenuti di riferimento nel prompt in base al loro ordine: 'Immagine 1', 'Immagine 2', 'Video 1', 'Audio 1' e così via.",
     "display_name": "MiniMax H3 Riferimento a Video",
     "inputs": {
       "control_after_generate": {
@@ -13091,7 +13093,7 @@
     }
   },
   "MinimaxHailuo03TextToVideoNode": {
-    "description": "Genera un video da un prompt testuale utilizzando il modello MiniMax H3.",
+    "description": "Genera un video da un prompt testuale usando i modelli MiniMax H3.",
     "display_name": "MiniMax H3 Testo a Video",
     "inputs": {
       "control_after_generate": {
@@ -16972,7 +16974,7 @@
   },
   "Preview3D": {
     "description": "Visualizza in anteprima un file modello 3D senza salvarlo nella directory di output di ComfyUI.",
-    "display_name": "Anteprima 3D & Animazione",
+    "display_name": "Anteprima 3D e animazione (DEPRECATO)",
     "inputs": {
       "bg_image": {
         "name": "immagine_sfondo"
@@ -17985,7 +17987,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Tipo di output per cui viene creato lo stile: recraftv4_styles per immagini raster, recraftv4_styles_vector per SVG."
+        "tooltip": "Modello per il quale viene creato lo stile. Standard e Pro condividono un unico pool di stili: gli stili raster funzionano con ogni modello raster Recraft V4 e V4.1, gli stili vettoriali (*_vector) con ogni modello vettoriale V4 e V4.1."
       }
     },
     "outputs": {
@@ -18681,6 +18683,10 @@
       "multiple": {
         "name": "multiplo",
         "tooltip": "Multiplo più vicino del risultato a cui impostare la risoluzione selezionata."
+      },
+      "preview": {
+        "name": "preview",
+        "tooltip": "Anteprima in tempo reale della risoluzione di output calcolata."
       }
     },
     "outputs": {
