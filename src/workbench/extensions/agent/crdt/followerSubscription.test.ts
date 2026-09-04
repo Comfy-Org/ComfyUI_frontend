@@ -1,5 +1,5 @@
 /**
- * Regression tests for the follower transport seam — the part of PR #15457 that
+ * Regression tests for the follower transport seam that
  * outlives the disposable projector/diff/mutator spike.
  *
  * Three defects are pinned here, all of them previously unreachable by the
