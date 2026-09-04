@@ -1,4 +1,5 @@
 import { partnerRunGateBlocksAutoQueue } from '@/composables/billing/usePartnerNodesRunGate'
+import { useConcurrentExecution } from '@/composables/useConcurrentExecution'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import {
@@ -10,6 +11,7 @@ import { useQueuePendingTaskCountStore } from '@/stores/queueStore'
 export function setupAutoQueueHandler() {
   const queueCountStore = useQueuePendingTaskCountStore()
   const queueSettingsStore = useQueueSettingsStore()
+  const { isConcurrentExecutionEnabled } = useConcurrentExecution()
 
   let graphHasChanged = false
   let internalCount = 0 // Use an internal counter here so it is instantly updated when re-queuing
@@ -17,7 +19,8 @@ export function setupAutoQueueHandler() {
     // Skip the whole submission while gated: never enqueue a prompt the gate
     // would drop, and never treat queuePrompt's false as gate rejection — it
     // also means the item was queued behind an active processor.
-    if (partnerRunGateBlocksAutoQueue()) return
+    if (isConcurrentExecutionEnabled.value || partnerRunGateBlocksAutoQueue())
+      return
     if (queueSettingsStore.mode === 'change') {
       if (internalCount) {
         graphHasChanged = true
@@ -38,6 +41,7 @@ export function setupAutoQueueHandler() {
       if (
         !internalCount &&
         !app.lastExecutionError &&
+        !isConcurrentExecutionEnabled.value &&
         !partnerRunGateBlocksAutoQueue()
       ) {
         if (

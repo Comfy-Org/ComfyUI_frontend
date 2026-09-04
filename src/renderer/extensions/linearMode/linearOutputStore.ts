@@ -256,21 +256,22 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
 
   // --- Event bindings (only active in app mode) ---
 
+  const displayedJobId = computed(
+    () => executionStore.focusedJobId ?? executionStore.activeJobId
+  )
+
   function handleExecuted({ detail }: CustomEvent<ExecutedWsMessage>) {
     const jobId = detail.prompt_id
-    if (jobId !== executionStore.activeJobId) return
+    if (jobId !== displayedJobId.value) return
     onNodeExecuted(jobId, detail)
   }
 
-  // Watch both activeJobId and the path mapping together. The path mapping
-  // may arrive after activeJobId due to a race between WebSocket
+  // Watch both the displayed job and the path mapping together. The path mapping
+  // may arrive after the job ID due to a race between WebSocket
   // (execution_start) and the HTTP response (queuePrompt > storeJob).
   // Watching both ensures onJobStart fires once the mapping is available.
   watch(
-    [
-      () => executionStore.activeJobId,
-      () => executionStore.jobIdToSessionWorkflowPath
-    ],
+    [displayedJobId, () => executionStore.jobIdToSessionWorkflowPath],
     ([jobId], [oldJobId]) => {
       if (!isAppMode.value) return
       if (oldJobId && oldJobId !== jobId) {
@@ -292,7 +293,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     () => jobPreviewStore.nodePreviewsByPromptId,
     (previews) => {
       if (!isAppMode.value) return
-      const jobId = executionStore.activeJobId
+      const jobId = displayedJobId.value
       if (!jobId) return
       const preview = previews[jobId]
       if (preview) onLatentPreview(jobId, preview.url, preview.nodeId)
@@ -304,20 +305,17 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     // Complete any tracked job that finished while we were away.
     // The activeJobId watcher couldn't fire onJobComplete because
     // isAppMode was false at the time.
-    if (
-      trackedJobId.value &&
-      trackedJobId.value !== executionStore.activeJobId
-    ) {
+    if (trackedJobId.value && trackedJobId.value !== displayedJobId.value) {
       onJobComplete(trackedJobId.value)
     }
     // Start tracking the current job only if it belongs to this
     // workflow — otherwise we'd adopt another tab's job.
     if (
-      executionStore.activeJobId &&
-      trackedJobId.value !== executionStore.activeJobId &&
-      isJobForActiveWorkflow(executionStore.activeJobId)
+      displayedJobId.value &&
+      trackedJobId.value !== displayedJobId.value &&
+      isJobForActiveWorkflow(displayedJobId.value)
     ) {
-      onJobStart(executionStore.activeJobId)
+      onJobStart(displayedJobId.value)
     }
 
     // Clear stale selection from another workflow's job.
@@ -343,10 +341,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     // If the tracked job already finished (no longer the active job),
     // complete it now to clean up skeletons/latents. If it's still
     // running, preserve all items for tab switching.
-    if (
-      trackedJobId.value &&
-      trackedJobId.value !== executionStore.activeJobId
-    ) {
+    if (trackedJobId.value && trackedJobId.value !== displayedJobId.value) {
       onJobComplete(trackedJobId.value)
     }
   }

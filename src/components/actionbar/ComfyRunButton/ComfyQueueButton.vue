@@ -62,6 +62,39 @@
               {{ item.label }}
             </Button>
           </DropdownMenuItem>
+          <DropdownMenuSeparator
+            v-if="isParallelToggleVisible"
+            class="m-1 h-px bg-border-subtle"
+          />
+          <DropdownMenuItem
+            v-if="isParallelToggleVisible"
+            :disabled="isParallelToggleDisabled"
+            class="flex items-center gap-3 rounded-sm px-2 py-1.5 outline-none data-disabled:pointer-events-none data-disabled:opacity-50 data-highlighted:bg-secondary-background-hover"
+            @select.prevent="toggleParallel"
+          >
+            <div class="flex flex-col select-none">
+              <div class="flex items-center gap-1.5">
+                <span class="text-sm text-text-primary">{{
+                  t('menu.parallelExecution')
+                }}</span>
+                <StatusBadge :label="t('g.new')" class="text-[10px]" />
+              </div>
+              <span class="text-text-muted text-xs">{{
+                t('menu.parallelUpTo', { count: maxConcurrentJobs })
+              }}</span>
+            </div>
+            <SwitchRoot
+              :checked="parallelToggleChecked"
+              :disabled="isParallelToggleDisabled"
+              class="relative ml-auto h-5 w-9 shrink-0 cursor-pointer rounded-full bg-secondary-background transition-colors data-disabled:cursor-not-allowed data-[state=checked]:bg-primary-background"
+              @click.stop
+              @update:checked="onParallelToggle"
+            >
+              <SwitchThumb
+                class="block size-4 translate-x-0.5 rounded-full bg-white shadow-sm transition-transform data-[state=checked]:translate-x-[18px]"
+              />
+            </SwitchRoot>
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenuPortal>
     </DropdownMenuRoot>
@@ -74,16 +107,21 @@ import {
   DropdownMenuItem,
   DropdownMenuPortal,
   DropdownMenuRoot,
-  DropdownMenuTrigger
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  SwitchRoot,
+  SwitchThumb
 } from 'reka-ui'
 import { storeToRefs } from 'pinia'
 import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import BatchCountEdit from '@/components/actionbar/BatchCountEdit.vue'
+import StatusBadge from '@/components/common/StatusBadge.vue'
 import TinyChevronIcon from '@/components/actionbar/TinyChevronIcon.vue'
 import Button from '@/components/ui/button/Button.vue'
 import ButtonGroup from '@/components/ui/button-group/ButtonGroup.vue'
+import { useConcurrentExecution } from '@/composables/useConcurrentExecution'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
@@ -256,6 +294,23 @@ const queueButtonTooltip = computed(() => {
   }
   return t('menu.runWorkflow')
 })
+
+const { isFeatureEnabled, isUserEnabled, maxConcurrentJobs, setUserEnabled } =
+  useConcurrentExecution()
+
+const isParallelToggleVisible = isFeatureEnabled
+const isParallelToggleDisabled = computed(
+  () => selectedQueueMode.value !== 'disabled'
+)
+const parallelToggleChecked = isUserEnabled
+
+function onParallelToggle(checked: boolean) {
+  void setUserEnabled(checked)
+}
+
+function toggleParallel() {
+  onParallelToggle(!parallelToggleChecked.value)
+}
 
 const commandStore = useCommandStore()
 const queuePrompt = async (e: Event) => {

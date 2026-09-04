@@ -10,7 +10,16 @@ const mocks = vi.hoisted(() => ({
     vi.fn<(event: string, listener: (event: Event) => void) => void>(),
   queuePrompt: vi.fn(() => Promise.resolve(true)),
   lastExecutionError: null as object | null,
-  gateBlocks: false
+  gateBlocks: false,
+  concurrentExecutionEnabled: false
+}))
+
+vi.mock('@/composables/useConcurrentExecution', () => ({
+  useConcurrentExecution: () => ({
+    isConcurrentExecutionEnabled: {
+      value: mocks.concurrentExecutionEnabled
+    }
+  })
 }))
 
 vi.mock('@/composables/billing/usePartnerNodesRunGate', () => ({
@@ -59,6 +68,7 @@ describe('setupAutoQueueHandler', () => {
     useQueuePendingTaskCountStore().count = 0
     mocks.lastExecutionError = null
     mocks.gateBlocks = false
+    mocks.concurrentExecutionEnabled = false
   })
 
   it('queues on autoQueueGraphChanged instead of graphChanged', () => {
@@ -129,6 +139,15 @@ describe('setupAutoQueueHandler', () => {
     mocks.gateBlocks = false
     listener(new Event('autoQueueGraphChanged'))
     expect(mocks.queuePrompt).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not auto-queue while concurrent execution is enabled', () => {
+    mocks.concurrentExecutionEnabled = true
+    const listener = setupAndGetAutoQueueGraphChangedListener()
+
+    listener(new Event('autoQueueGraphChanged'))
+
+    expect(mocks.queuePrompt).not.toHaveBeenCalled()
   })
 
   it('does not re-queue when a busy processor reports the item as not run yet', async () => {

@@ -2,7 +2,7 @@
 /* eslint-disable testing-library/prefer-user-event -- fireEvent needed: fake timers require fireEvent for mouseEnter/mouseLeave */
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 import type * as RekaUi from 'reka-ui'
 
@@ -13,6 +13,11 @@ import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
 import JobAssetsList from './JobAssetsList.vue'
 
 const hoisted = vi.hoisted(() => ({
+  concurrentExecutionEnabled: { value: false },
+  executionStore: {
+    focusedJobId: null as string | null,
+    setFocusedJob: vi.fn()
+  },
   jobDetailsPopoverStub: {
     name: 'JobDetailsPopover',
     props: {
@@ -22,6 +27,16 @@ const hoisted = vi.hoisted(() => ({
     template:
       '<div class="job-details-popover-stub" :data-job-id="jobId" :data-workflow-id="workflowId" />'
   }
+}))
+
+vi.mock('@/composables/useConcurrentExecution', () => ({
+  useConcurrentExecution: () => ({
+    isConcurrentExecutionEnabled: hoisted.concurrentExecutionEnabled
+  })
+}))
+
+vi.mock('@/stores/executionStore', () => ({
+  useExecutionStore: () => hoisted.executionStore
 }))
 
 vi.mock('@/components/queue/job/JobDetailsPopover.vue', () => ({
@@ -236,6 +251,12 @@ function renderJobAssetsList({
 }
 
 describe('JobAssetsList', () => {
+  beforeEach(() => {
+    hoisted.concurrentExecutionEnabled.value = false
+    hoisted.executionStore.focusedJobId = null
+    hoisted.executionStore.setFocusedJob.mockReset()
+  })
+
   it('renders grouped headers alongside job rows', () => {
     const displayedJobGroups: TestJobGroup[] = [
       {
@@ -361,6 +382,18 @@ describe('JobAssetsList', () => {
     await user.dblClick(stubRoot)
 
     expect(onViewItem).not.toHaveBeenCalled()
+  })
+
+  it('keeps a focus control visible for running concurrent jobs', async () => {
+    hoisted.concurrentExecutionEnabled.value = true
+    const job = buildJob({ state: 'running' })
+    const { user } = renderJobAssetsList({ jobs: [job] })
+
+    await user.click(
+      screen.getByRole('button', { name: 'queue.jobItem.focusTooltip' })
+    )
+
+    expect(hoisted.executionStore.setFocusedJob).toHaveBeenCalledWith(job.id)
   })
 
   it('emits viewItem from the View button for completed jobs without preview output', async () => {

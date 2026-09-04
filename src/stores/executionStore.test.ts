@@ -23,7 +23,8 @@ const {
   mockTrackExecutionError,
   mockTrackExecutionOutcome,
   mockTrackExecutionSuccess,
-  mockTrackSharedWorkflowRun
+  mockTrackSharedWorkflowRun,
+  mockConcurrentExecutionEnabled
 } = await vi.hoisted(async () => {
   const { shallowRef } = await import('vue')
   return {
@@ -36,7 +37,8 @@ const {
     mockTrackExecutionError: vi.fn(),
     mockTrackExecutionOutcome: vi.fn(),
     mockTrackExecutionSuccess: vi.fn(),
-    mockTrackSharedWorkflowRun: vi.fn()
+    mockTrackSharedWorkflowRun: vi.fn(),
+    mockConcurrentExecutionEnabled: shallowRef(false)
   }
 })
 
@@ -57,9 +59,16 @@ vi.mock('@/composables/useAppMode', async (importOriginal) => {
   }
 })
 
+vi.mock('@/composables/useConcurrentExecution', () => ({
+  useConcurrentExecution: () => ({
+    isConcurrentExecutionEnabled: mockConcurrentExecutionEnabled
+  })
+}))
+
 beforeEach(() => {
   mockAppModeState.mode.value = 'graph'
   mockAppModeState.isAppMode.value = false
+  mockConcurrentExecutionEnabled.value = false
 })
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { toNodeId } from '@/types/nodeId'
@@ -2726,6 +2735,84 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       fire('notification', { id: 'job-9', value: 'Hello' })
 
       expect(store.initializingJobIds.has('job-9')).toBe(false)
+    })
+  })
+
+  describe('concurrent execution', () => {
+    beforeEach(() => {
+      mockConcurrentExecutionEnabled.value = true
+    })
+
+    it('routes node completion events to the job named by prompt_id', () => {
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+      fire('execution_start', { prompt_id: 'job-2', timestamp: 0 })
+
+      fire('execution_cached', {
+        prompt_id: 'job-1',
+        nodes: ['cached-node'],
+        timestamp: 0
+      })
+      fire('executed', {
+        prompt_id: 'job-2',
+        node: 'executed-node',
+        display_node: 'executed-node',
+        output: {}
+      })
+
+      expect(store.queuedJobs['job-1']?.nodes['cached-node']).toBe(true)
+      expect(store.queuedJobs['job-2']?.nodes['executed-node']).toBe(true)
+    })
+
+    it('keeps other jobs running and advances focus when one completes', () => {
+      const runningNode = (promptId: string, nodeId: string) => ({
+        value: 1,
+        max: 10,
+        state: 'running' as const,
+        node_id: nodeId,
+        prompt_id: promptId,
+        display_node_id: nodeId
+      })
+
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+      fire('progress_state', {
+        prompt_id: 'job-1',
+        nodes: { n1: runningNode('job-1', 'n1') }
+      })
+      fire('execution_start', { prompt_id: 'job-2', timestamp: 0 })
+      fire('progress_state', {
+        prompt_id: 'job-2',
+        nodes: { n2: runningNode('job-2', 'n2') }
+      })
+
+      expect(store.focusedJobId).toBe('job-1')
+      expect(store.isConcurrentExecutionActive).toBe(true)
+
+      fire('execution_success', { prompt_id: 'job-1', timestamp: 0 })
+
+      expect(store.activeJobId).toBe('job-2')
+      expect(store.focusedJobId).toBe('job-2')
+      expect(store.queuedJobs['job-2']).toBeDefined()
+      expect(store.isIdle).toBe(false)
+    })
+
+    it('shows progress for the explicitly focused job', () => {
+      store.nodeProgressStatesByJob = {
+        'job-1': {
+          n1: {
+            value: 3,
+            max: 10,
+            state: 'running',
+            node_id: 'n1',
+            prompt_id: 'job-1',
+            display_node_id: 'n1'
+          }
+        }
+      }
+
+      store.setFocusedJob('job-1')
+
+      expect(store.focusedJobId).toBe('job-1')
+      expect(store.nodeProgressStates.n1?.value).toBe(3)
     })
   })
 
