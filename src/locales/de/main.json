@@ -5,6 +5,10 @@
     "feedbackTooltip": "Feedback",
     "freeTierPartner": "Partner-Nodes erfordern einen kostenpflichtigen Tarif",
     "freeTierRuns": "{available} / {MAX_AVAILABLE} Ausführungen übrig",
+    "partnerRunGate": {
+      "signInCaption": "Partner-Nodes erfordern ein Konto",
+      "signInToRun": "Zum Ausführen anmelden"
+    },
     "share": "Teilen",
     "shareTooltip": "Workflow teilen"
   },
@@ -82,6 +86,7 @@
     "runModeAutoDescription": "Comfy führt Workflows aus, ohne um Erlaubnis zu fragen",
     "runModeLimit": "Automatisch mit Limits ausführen",
     "runModeLimitDescription": "Comfy fragt nur nach Bestätigung, wenn eine Workflow-Ausführung Ihr Kreditlimit überschreitet",
+    "runModeSaveFailed": "Ausführungsberechtigungen konnten nicht gespeichert werden. Bitte versuchen Sie es erneut.",
     "runModeTriggerAsk": "Nachfragen",
     "runModeTriggerAskTooltip": "Um Erlaubnis fragen",
     "runModeTriggerAuto": "Automatisch",
@@ -111,6 +116,7 @@
       "Einen Workflow für Bild-zu-Video mit 3 Modellen erstellen"
     ],
     "switchWorkflow": "Workflow wechseln",
+    "targetNavigationUnavailable": "Dieses Workflow-Ziel ist nicht mehr verfügbar.",
     "thinking": "Denkt nach...",
     "thought": "Gedanke",
     "thoughtTimed": "Dachte {seconds} Sekunden lang",
@@ -123,8 +129,12 @@
     "uploading": "Wird hochgeladen"
   },
   "apiNodesSignInDialog": {
-    "message": "Dieser Workflow enthält API-Nodes, für deren Ausführung Sie bei Ihrem Konto angemeldet sein müssen.",
-    "title": "Anmeldung zur Nutzung von API-Nodes erforderlich"
+    "message": "Partner-Nodes werden auf Diensten von Drittanbietern ausgeführt und verwenden Credits aus Ihrem Konto. Melden Sie sich an, um Ihr Konto zu verbinden.",
+    "partnerNodesInWorkflow": "Partner-Nodes in diesem Workflow",
+    "signIn": "Anmelden",
+    "title": "Melden Sie sich an, um Partner-Nodes auszuführen",
+    "tooltip": "Partner-Nodes werden auf Diensten von Drittanbietern ausgeführt. Sie verwenden Credits, den einzigen kostenpflichtigen Teil von Comfy.",
+    "whatArePartnerNodes": "Was sind Partner-Nodes?"
   },
   "appBuilder": {
     "vueNodeSwitch": {
@@ -456,7 +466,6 @@
   },
   "billingOperation": {
     "authenticationFailedDetail": "Die Zahlungsbestätigung konnte nicht abgeschlossen werden. Bitte versuchen Sie es erneut.",
-    "authenticationManagerRequired": "Die Zahlungsbestätigung erfordert die Aufmerksamkeit eines Abrechnungsmanagers des Workspace.",
     "authenticationUnavailable": "Sichere Zahlungsbestätigung ist nicht verfügbar. Bitte aktualisieren Sie die Seite und versuchen Sie es erneut.",
     "cancelFailed": "Abonnement konnte nicht gekündigt werden",
     "cancelTimeout": "Zeitüberschreitung bei der Abonnementkündigung",
@@ -467,7 +476,6 @@
     "processingErrorDetail": "Ihre Zahlung konnte nicht verarbeitet werden. Versuchen Sie es erneut oder verwenden Sie eine andere Zahlungsmethode.",
     "reconciliationDetail": "Ihre Zahlung wurde erhalten, aber die Aktualisierung Ihres Workspace konnte nicht abgeschlossen werden. Wenden Sie sich an den Support und geben Sie diese Vorgangs-ID an:",
     "reconciliationTitle": "Zahlung erhalten — Bestätigung ausstehend",
-    "retryVerification": "Bestätigung erneut versuchen",
     "subscriptionActionRequired": "Bestätigen Sie Ihre Zahlung, um die Einrichtung Ihres Workspace abzuschließen",
     "subscriptionFailed": "Aktualisierung des Abonnements fehlgeschlagen",
     "subscriptionFailedDetail": "Ihr Abonnement konnte nicht aktualisiert werden. Bitte versuchen Sie es erneut.",
@@ -955,6 +963,7 @@
       "quickPurchase": "Schnellkauf",
       "seeDetails": "Details anzeigen",
       "selectAmount": "Betrag auswählen",
+      "startOver": "Neu starten",
       "templateNote": "*Generiert mit der Vorlage „Wan 2.2 Image-to-Video“",
       "topUp": "Aufladen",
       "unknownError": "Ein unbekannter Fehler ist aufgetreten",
@@ -1068,6 +1077,7 @@
     "RECRAFT_COLOR": "RECRAFT_COLOR",
     "RECRAFT_CONTROLS": "RECRAFT_CONTROLS",
     "RECRAFT_V3_STYLE": "RECRAFT_V3_STYLE",
+    "RESOLUTION_PREVIEW": "RESOLUTION_PREVIEW",
     "RETARGET_TASK_ID": "RETARGET_TASK_ID",
     "RIG_TASK_ID": "RIG_TASK_ID",
     "RUNWAY_ALEPH2_KEYFRAME": "RUNWAY_ALEPH2_KEYFRAME",
@@ -2802,14 +2812,18 @@
       "seeMoreOutputs": "Weitere Ausgaben anzeigen",
       "zoom": "Vergrößern"
     },
-    "assetDeletedSuccessfully": "Asset erfolgreich gelöscht",
-    "deleteAssetDescription": "Dieses Asset wird dauerhaft entfernt.",
-    "deleteAssetTitle": "Dieses Asset löschen?",
-    "deleteSelectedDescription": "{count} Asset(s) werden dauerhaft entfernt.",
-    "deleteSelectedTitle": "Ausgewählte Assets löschen?",
+    "assetDelete": {
+      "error": "Elemente konnten nicht gelöscht werden",
+      "success": "Löschen erfolgreich",
+      "warn": "Einige Elemente konnten nicht gelöscht werden"
+    },
+    "assetsDeleted": "{n} / {total} Assets wurden gelöscht",
+    "deleteHistoryOnly": "Nur der Verlauf wird gelöscht, die Dateien bleiben auf dem Datenträger",
+    "deleteItems": "Diese Elemente löschen",
+    "deletePermanent": "Sie werden dauerhaft entfernt.",
     "deletingImportedFilesCloudOnly": "Das Löschen importierter Dateien wird nur in der Cloud-Version unterstützt",
+    "deletionUnsupported": "Assets sind aktiviert, aber der Server unterstützt das Löschen nicht",
     "failedToCreateNode": "Node konnte nicht erstellt werden",
-    "failedToDeleteAsset": "Asset konnte nicht gelöscht werden",
     "failedToExportWorkflow": "Workflow konnte nicht exportiert werden",
     "jobIdToast": {
       "copied": "Kopiert",
@@ -2817,12 +2831,12 @@
       "jobIdCopied": "Job-ID in Zwischenablage kopiert",
       "jobIdCopyFailed": "Job-ID konnte nicht kopiert werden"
     },
+    "jobsDeleted": "{n} / {total} Jobs wurden gelöscht",
     "noJobIdFound": "Keine Job-ID für dieses Asset gefunden",
     "noWorkflowDataFound": "Keine Workflow-Daten in diesem Asset gefunden",
     "nodeAddedToWorkflow": "{nodeType}-Node zum Workflow hinzugefügt",
     "nodeTypeNotFound": "Node-Typ {nodeType} nicht gefunden",
     "selection": {
-      "assetsDeletedSuccessfully": "{count} Asset erfolgreich gelöscht | {count} Assets erfolgreich gelöscht",
       "deleteSelected": "Löschen",
       "deleteSelectedAll": "Alle löschen",
       "deselectAll": "Auswahl aufheben",
@@ -2833,7 +2847,6 @@
       "exportStarted": "ZIP-Export für {count} Datei wird vorbereitet | ZIP-Export für {count} Dateien wird vorbereitet",
       "exportWorkflowAll": "Alle Workflows exportieren",
       "failedToAddNodes": "Nodes konnten nicht zum Workflow hinzugefügt werden",
-      "failedToDeleteAssets": "Ausgewählte Assets konnten nicht gelöscht werden",
       "insertAllAssetsAsNodes": "Alle Assets als Nodes einfügen",
       "multipleSelectedAssets": "Mehrere Assets ausgewählt",
       "noWorkflowsFound": "Keine Workflow-Daten in den ausgewählten Assets gefunden",
@@ -2841,7 +2854,6 @@
       "nodesAddedToWorkflow": "{count} Node(s) zum Workflow hinzugefügt",
       "openWorkflowAll": "Alle Workflows öffnen",
       "partialAddNodesSuccess": "{succeeded} erfolgreich hinzugefügt, {failed} fehlgeschlagen",
-      "partialDeleteSuccess": "{succeeded} erfolgreich gelöscht, {failed} fehlgeschlagen",
       "partialWorkflowsExported": "{succeeded} erfolgreich exportiert, {failed} fehlgeschlagen",
       "partialWorkflowsOpened": "{succeeded} Workflow(s) geöffnet, {failed} fehlgeschlagen",
       "selectedCount": "{count} ausgewählt",
@@ -3457,6 +3469,28 @@
     "addColor": "Farbe hinzufügen",
     "swatchTitle": "Zum Bearbeiten klicken · zum Neuordnen ziehen · Rechtsklick zum Entfernen"
   },
+  "partnerNodesEducation": {
+    "benefits": {
+      "free": "Kostenlos ausführbar",
+      "noDownload": "Keine Einrichtung erforderlich",
+      "noVram": "Kein VRAM, Ihre GPU bleibt frei",
+      "offline": "Läuft offline"
+    },
+    "included": "Enthalten",
+    "muteOpen": "Open-Weights-Clip stummschalten",
+    "mutePartner": "Partner-Node-Clip stummschalten",
+    "notIncluded": "Nicht enthalten",
+    "openHeader": "OFFEN",
+    "openTab": "Offene Nodes",
+    "partnerHeader": "PARTNER",
+    "partnerTab": "Partner-Nodes",
+    "pitch": "Sehen Sie den Unterschied? Ziehen Sie zum Vergleichen.",
+    "reassurance": "Partner-Nodes sind da, wenn Sie mehr möchten. Der Rest von Comfy bleibt kostenlos.",
+    "sliderLabel": "Open-Weights- und Partner-Node-Ausgabe vergleichen",
+    "tooltip": "Partner-Nodes führen Closed-Source-Modelle wie Kling oder Veo auf der Hardware des Anbieters über Comfy aus. Sie verwenden Credits; der Rest von Comfy bleibt kostenlos.",
+    "unmuteOpen": "Stummschaltung des Open-Weights-Clips aufheben",
+    "unmutePartner": "Stummschaltung des Partner-Node-Clips aufheben"
+  },
   "progressToast": {
     "allDownloadsCompleted": "Alle Downloads abgeschlossen",
     "downloadingModel": "Modell wird heruntergeladen...",
@@ -3514,7 +3548,6 @@
       "copyErrorMessage": "Fehlermeldung kopieren",
       "copyJobId": "Auftrags-ID kopieren",
       "delete": "Löschen",
-      "deleteAsset": "Asset löschen",
       "download": "Herunterladen",
       "exportWorkflow": "Workflow exportieren",
       "inspectAsset": "Asset prüfen",
@@ -4332,7 +4365,6 @@
     "inactiveTeamTitle": "Inaktives Team-Abonnement",
     "inviteUpTo": "Einladen bis zu",
     "invoiceHistory": "Rechnungsverlauf",
-    "learnMore": "Mehr erfahren",
     "manageBilling": "Abrechnung verwalten",
     "managePlan": "Tarif verwalten",
     "manageSubscription": "Abonnement verwalten",
@@ -4460,6 +4492,7 @@
       },
       "refillReplacesNote": "Ersetzt Ihre monatliche Aufladung. Das vorhandene Guthaben bleibt erhalten.",
       "renewsAt": "Verlängert sich am {date} für {amount}. Jederzeit kündbar.",
+      "renewsAtAmount": "Verlängert sich für {amount}. Jederzeit kündbar.",
       "savedPaymentMethod": "Zahlungsmethode",
       "showMoreFeatures": "Weitere Funktionen anzeigen",
       "starting": "Beginnt am {date}",
@@ -4599,7 +4632,6 @@
     "videoTemplateBasedCredits": "Mit Wan 2.2 Image to Video generierte Videos",
     "viewEnterprise": "Enterprise ansehen",
     "viewMoreDetails": "Weitere Details anzeigen",
-    "viewMoreDetailsPlans": "Weitere Details zu Plänen & Preisen anzeigen",
     "viewUsageHistory": "Nutzungsverlauf anzeigen",
     "whatsIncluded": "Enthalten:",
     "workspaceNotSubscribed": "Dieser Workspace hat kein Abonnement",
