@@ -523,7 +523,7 @@ export async function collectCrdtDebugReport(
       : [
           `${SHARING_WARNING} Backend logs can echo prompts, file paths and tokens.`,
           logs.ok
-            ? fence('text', truncate(String(logs.value), MAX_LOG_CHARS))
+            ? fence('text', truncate(logs.value, MAX_LOG_CHARS))
             : `_${logs.label} unavailable: ${logs.error}_`
         ].join('\n\n')
   )

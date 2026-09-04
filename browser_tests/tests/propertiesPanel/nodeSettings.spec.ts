@@ -60,7 +60,7 @@ test.describe('Properties panel - Node settings', { tag: '@vue-nodes' }, () => {
           comfyPage.page.evaluate(() => {
             const selected = window.app!.canvas.selected_nodes
             const node = Object.values(selected)[0]
-            return node?.color != null
+            return node.color != null
           })
         )
         .toBe(true)
@@ -74,7 +74,7 @@ test.describe('Properties panel - Node settings', { tag: '@vue-nodes' }, () => {
           comfyPage.page.evaluate(() => {
             const selected = window.app!.canvas.selected_nodes
             const node = Object.values(selected)[0]
-            return node?.color != null
+            return node.color != null
           })
         )
         .toBe(true)
@@ -86,7 +86,7 @@ test.describe('Properties panel - Node settings', { tag: '@vue-nodes' }, () => {
           comfyPage.page.evaluate(() => {
             const selected = window.app!.canvas.selected_nodes
             const node = Object.values(selected)[0]
-            return node?.color
+            return node.color
           })
         )
         .toBeFalsy()
