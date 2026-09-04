@@ -209,6 +209,8 @@ const resetStores = () => {
 
   const executionStore = ensureExecutionStore()
   executionStore.activeJobId = null
+  executionStore.focusedJobId = null
+  executionStore.runningJobIds = []
   executionStore.executingNode = null
 
   const jobPreviewStore = ensureJobPreviewStore()
