@@ -76,6 +76,12 @@ function adoptRootGraphId(workflowData: ComfyWorkflowJSON): UUID | null {
 // loading per document; the contract tests transfer.
 let workflowLoadTail: Promise<unknown> = Promise.resolve()
 let pendingWorkflowLoads = 0
+// Guards the recovery load in `recoverFailedGraphLoad` against recursing
+// into itself when it, too, fails to activate.
+let recoveringFailedGraphLoad = false
+// The tabs that were already open when the in-flight activation began, so a
+// recovery only ever drops one that activation itself added.
+let tabsOpenBeforeActivation = new Set<string>()
 const pendingWorkflowLoadsByPath = new Map<string, Promise<unknown>>()
 // Object identity, not path: a mid-close rename would strand a path key.
 const closingWorkflowCounts = new Map<ComfyWorkflow, number>()
@@ -371,10 +377,18 @@ export const useWorkflowService = () => {
    * state so selection, canvas, and change tracking agree again. No
    * retry loop: a failure here leaves the first failure's dialog
    * standing.
+   *
+   * Loads directly rather than through `queueWorkflowLoad`: a caller may
+   * already be inside a queued load, and chaining onto the tail it is
+   * itself holding would deadlock.
+   *
+   * @param failedPath The path of the workflow whose load failed, when known.
+   * @returns true when the retained workflow was repainted.
    */
-  const restoreRetainedWorkflow = async (failed: ComfyWorkflow) => {
+  const repaintRetainedWorkflow = async (failedPath?: string) => {
     const retained = workflowStore.activeWorkflow
-    if (!retained || retained.path === failed.path || !retained.isLoaded) return
+    if (!retained || retained.path === failedPath || !retained.isLoaded)
+      return false
     await app.loadGraphData(
       toRaw(retained.activeState) as ComfyWorkflowJSON,
       /* clean=*/ true,
@@ -386,6 +400,62 @@ export const useWorkflowService = () => {
         skipAssetScans: true
       }
     )
+    return true
+  }
+
+  const openTabPaths = () =>
+    new Set(
+      workflowStore.openWorkflows
+        .map((open) => open?.path)
+        .filter((path): path is string => !!path)
+    )
+
+  /**
+   * `workflowStore.openWorkflow` appends the tab before awaiting the file
+   * fetch, so an activation that rejected mid-fetch leaves an unloaded tab
+   * behind for a workflow the editor never painted. Closing a persisted
+   * workflow only unloads it; the file itself is untouched.
+   *
+   * A tab that was already open before the failed activation is the user's,
+   * not the activation's: closing it would also discard its draft.
+   */
+  const dropPhantomWorkflowTab = async (failedPath?: string) => {
+    if (!failedPath || tabsOpenBeforeActivation.has(failedPath)) return
+    const phantom = workflowStore.openWorkflows.find(
+      (open) => open?.path === failedPath
+    )
+    if (!phantom || phantom.isLoaded || workflowStore.isActive(phantom)) return
+    await workflowStore.closeWorkflow(phantom)
+  }
+
+  /**
+   * Unwind a graph load whose activation rejected after the nodes were
+   * already built: `afterLoadNewGraph` throws when it opens a
+   * persisted-but-unloaded workflow of the same base name and that file
+   * fails to fetch, leaving the canvas showing a graph no workflow owns
+   * plus the phantom tab above.
+   *
+   * Drops that tab and repaints whatever the editor was showing before the
+   * failed load, falling back to a blank graph when nothing is retained.
+   * The recovery load never recurses into recovery, and its own failures
+   * are reported and swallowed so the original error is the one that
+   * surfaces.
+   *
+   * @param failedPath The path the failed load was activating, when known.
+   */
+  const recoverFailedGraphLoad = async (failedPath?: string) => {
+    if (recoveringFailedGraphLoad) return
+    recoveringFailedGraphLoad = true
+    try {
+      await dropPhantomWorkflowTab(failedPath)
+      if (!(await repaintRetainedWorkflow(failedPath)))
+        await app.loadGraphData(blankGraph)
+    } catch (error) {
+      console.error('[workflowService] graph load recovery failed', error)
+      reportError(error, { errorType: 'workflow_load_recovery_failure' })
+    } finally {
+      recoveringFailedGraphLoad = false
+    }
   }
 
   const openWorkflow = (
@@ -428,7 +498,7 @@ export const useWorkflowService = () => {
           // Same invariant as the catch: a failed load's intent must not
           // stay newest (guarded no-op when the publish already superseded).
           useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
-          await restoreRetainedWorkflow(workflow)
+          await repaintRetainedWorkflow(workflow.path)
           return false
         }
         showPendingWarnings(undefined, {
@@ -655,6 +725,7 @@ export const useWorkflowService = () => {
     workflowData: ComfyWorkflowJSON,
     shareId?: string
   ) => {
+    tabsOpenBeforeActivation = openTabPaths()
     await activateLoadedWorkflow(value, workflowData, shareId)
     useNodeOutputStore().restorePreviewsForWorkflow(
       useWorkspaceStore().workflow.activeWorkflow?.path
@@ -882,6 +953,7 @@ export const useWorkflowService = () => {
     duplicateWorkflow,
     showPendingWarnings,
     afterLoadNewGraph,
-    beforeLoadNewGraph
+    beforeLoadNewGraph,
+    recoverFailedGraphLoad
   }
 }

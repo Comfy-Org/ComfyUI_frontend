@@ -10,7 +10,7 @@ import { useCanvasPositionConversion } from '@/composables/element/useCanvasPosi
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { setBackendNodeText, st, t } from '@/i18n'
-import { normalizeI18nKey } from '@/utils/formatUtil'
+import { appendJsonExt, normalizeI18nKey } from '@/utils/formatUtil'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import { createMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
@@ -1246,6 +1246,32 @@ export class ComfyApp {
     }
   }
 
+  /**
+   * Hand a freshly built graph to the workflow service.
+   *
+   * Activation can reject after the nodes exist - opening a
+   * persisted-but-unloaded workflow of the same base name fetches its file,
+   * which can fail - leaving the canvas showing a graph no workflow owns and
+   * a phantom tab for the path that never loaded. Unwind that before
+   * rethrowing, so the original error is still what callers report.
+   */
+  private async activateLoadedGraph(
+    value: string | ComfyWorkflow | null,
+    workflowData: ComfyWorkflowJSON,
+    shareId?: string
+  ) {
+    try {
+      await useWorkflowService().afterLoadNewGraph(value, workflowData, shareId)
+    } catch (error) {
+      await useWorkflowService().recoverFailedGraphLoad(
+        typeof value === 'string'
+          ? ComfyWorkflow.basePath + appendJsonExt(value)
+          : undefined
+      )
+      throw error
+    }
+  }
+
   async loadGraphData(
     graphData?: ComfyWorkflowJSON,
     clean: boolean = true,
@@ -1556,11 +1582,22 @@ export class ComfyApp {
       }
       useTelemetry()?.trackWorkflowOpened(telemetryPayload)
       useTelemetry()?.trackWorkflowImported(telemetryPayload)
-      await useWorkflowService().afterLoadNewGraph(
-        workflow,
-        this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
-        effectiveShareId
-      )
+      try {
+        await this.activateLoadedGraph(
+          workflow,
+          this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
+          effectiveShareId
+        )
+      } catch (error) {
+        useDialogService().showErrorDialog(error, {
+          title: t('errorDialog.loadWorkflowTitle'),
+          reportType: 'loadWorkflowError'
+        })
+        console.error(error)
+        // Resolves rather than throws, as for a configure failure: the
+        // close/replacement guards read this outcome.
+        return false
+      }
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
       // Capture the workflow this load activated before the asset-scan awaits
       // below can hand control back and let the user switch to another one.
@@ -2171,7 +2208,7 @@ export class ComfyApp {
         'afterConfigureGraph',
         []
       )
-      await useWorkflowService().afterLoadNewGraph(
+      await this.activateLoadedGraph(
         fileName,
         this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
       )
@@ -2461,7 +2498,7 @@ export class ComfyApp {
       'afterConfigureGraph',
       missingNodeTypes
     )
-    await useWorkflowService().afterLoadNewGraph(
+    await this.activateLoadedGraph(
       fileName,
       this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
     )

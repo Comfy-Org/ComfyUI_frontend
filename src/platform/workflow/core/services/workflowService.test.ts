@@ -8,7 +8,7 @@ import type {
 } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { ComfyWorkflow as ComfyWorkflowClass } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { defaultGraph } from '@/scripts/defaultGraph'
+import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -2007,6 +2007,103 @@ describe('useWorkflowService', () => {
           rootGraphId,
           existingWorkflow.path
         )
+      })
+    })
+  })
+
+  describe('recoverFailedGraphLoad', () => {
+    const openPaths = (store: ReturnType<typeof useWorkflowStore>) =>
+      store.openWorkflows.map((open) => open?.path)
+
+    function createPhantomWorkflow(path: string) {
+      const phantom = new ComfyWorkflowClass({
+        path,
+        modified: Date.now(),
+        size: 100
+      })
+      vi.spyOn(phantom, 'load').mockRejectedValue(
+        new Error('Failed to load file')
+      )
+      return phantom
+    }
+
+    it('drops the tab a rejected activation opened and keeps the retained workflow', async () => {
+      const workflowStore = useWorkflowStore()
+      const retained = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/retained.json'
+      })
+      const phantom = createPhantomWorkflow('workflows/dup.json')
+      workflowStore.attachWorkflow(retained, 0)
+      workflowStore.attachWorkflow(phantom)
+      workflowStore.activeWorkflow = retained as LoadedComfyWorkflow
+      const service = useWorkflowService()
+
+      await expect(
+        service.afterLoadNewGraph('dup', makeWorkflowData())
+      ).rejects.toThrow('Failed to load file')
+      // The store appends the tab before awaiting the fetch that rejected.
+      expect(openPaths(workflowStore)).toContain('workflows/dup.json')
+
+      vi.mocked(app.loadGraphData).mockClear()
+      await service.recoverFailedGraphLoad('workflows/dup.json')
+
+      expect(openPaths(workflowStore)).not.toContain('workflows/dup.json')
+      expect(workflowStore.activeWorkflow?.path).toBe('workflows/retained.json')
+      const calls = vi.mocked(app.loadGraphData).mock.calls
+      expect(calls).toHaveLength(1)
+      expect(calls[0][3]).toMatchObject({ path: 'workflows/retained.json' })
+      expect(calls[0][0]).toEqual(retained.activeState)
+    })
+
+    it('keeps a tab that was already open before the failed activation', async () => {
+      const workflowStore = useWorkflowStore()
+      const retained = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/retained.json'
+      })
+      const alreadyOpen = createPhantomWorkflow('workflows/dup.json')
+      workflowStore.attachWorkflow(retained, 0)
+      // Already a tab - an unloaded session restore, with a draft of its own.
+      workflowStore.attachWorkflow(alreadyOpen, 1)
+      workflowStore.activeWorkflow = retained as LoadedComfyWorkflow
+      const service = useWorkflowService()
+
+      await expect(
+        service.afterLoadNewGraph('dup', makeWorkflowData())
+      ).rejects.toThrow('Failed to load file')
+      await service.recoverFailedGraphLoad('workflows/dup.json')
+
+      expect(openPaths(workflowStore)).toContain('workflows/dup.json')
+      expect(draftStoreMocks.removeDraft).not.toHaveBeenCalledWith(
+        'workflows/dup.json'
+      )
+    })
+
+    it('falls back to a blank graph when nothing is retained', async () => {
+      const workflowStore = useWorkflowStore()
+      workflowStore.activeWorkflow = null
+      vi.mocked(app.loadGraphData).mockClear()
+
+      await useWorkflowService().recoverFailedGraphLoad()
+
+      const calls = vi.mocked(app.loadGraphData).mock.calls
+      expect(calls).toHaveLength(1)
+      expect(calls[0][0]).toBe(blankGraph)
+    })
+
+    it('reports and swallows a failure of the recovery load itself', async () => {
+      const workflowStore = useWorkflowStore()
+      workflowStore.activeWorkflow = null
+      const recoveryError = new Error('recovery load failed')
+      vi.mocked(app.loadGraphData).mockRejectedValueOnce(recoveryError)
+
+      await expect(
+        useWorkflowService().recoverFailedGraphLoad()
+      ).resolves.toBeUndefined()
+
+      expect(reportErrorMock).toHaveBeenCalledWith(recoveryError, {
+        errorType: 'workflow_load_recovery_failure'
       })
     })
   })

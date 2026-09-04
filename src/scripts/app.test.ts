@@ -130,6 +130,7 @@ const {
   mockWorkflowService: {
     beforeLoadNewGraph: vi.fn<WorkflowService['beforeLoadNewGraph']>(),
     afterLoadNewGraph: vi.fn<WorkflowService['afterLoadNewGraph']>(),
+    recoverFailedGraphLoad: vi.fn<WorkflowService['recoverFailedGraphLoad']>(),
     showPendingWarnings: vi.fn<WorkflowService['showPendingWarnings']>()
   }
 }))
@@ -266,6 +267,9 @@ async function useRealWorkflowService(): Promise<WorkflowService> {
   mockWorkflowService.afterLoadNewGraph.mockImplementation(
     real.afterLoadNewGraph
   )
+  mockWorkflowService.recoverFailedGraphLoad.mockImplementation(
+    real.recoverFailedGraphLoad
+  )
   mockWorkflowService.showPendingWarnings.mockImplementation(
     real.showPendingWarnings
   )
@@ -323,6 +327,7 @@ describe('ComfyApp', () => {
     vi.mocked(extractFilesFromDragEvent).mockResolvedValue([])
     mockImportA1111.mockResolvedValue('imported')
     mockWorkflowService.afterLoadNewGraph.mockResolvedValue()
+    mockWorkflowService.recoverFailedGraphLoad.mockResolvedValue()
     mockSettingStore.get.mockImplementation((key: string) =>
       key === 'Comfy.RightSidePanel.ShowErrorsTab' ? true : undefined
     )
@@ -392,6 +397,36 @@ describe('ComfyApp', () => {
       )
     })
 
+    it('unwinds the load and resolves false when activation rejects', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      const activationError = new Error('Failed to load file')
+      mockWorkflowService.afterLoadNewGraph.mockRejectedValueOnce(
+        activationError
+      )
+      const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
+
+      await expect(
+        app.loadGraphData(createWorkflowGraphData(), true, true, 'dup', {
+          workflowNavigationId: 11
+        })
+      ).resolves.toBe(false)
+
+      expect(mockWorkflowService.recoverFailedGraphLoad).toHaveBeenCalledWith(
+        'workflows/dup.json'
+      )
+      expect(showDialog).toHaveBeenCalledOnce()
+      // Extensions only ever see a fully activated graph.
+      expect(
+        mockExtensionService.invokeExtensionsAsync
+      ).not.toHaveBeenCalledWith('afterLoadGraph')
+      // The finally still repairs the URL on the handled-failure path.
+      expect(mockSubgraphNavigationStore.updateHash).toHaveBeenCalledWith(
+        'workflow-load',
+        11
+      )
+    })
+
     it('notifies extensions once on each side of a graph load, in order', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
@@ -431,6 +466,25 @@ describe('ComfyApp', () => {
           ([hook]) => hook
         )
       ).toEqual(['beforeLoadGraph', 'afterConfigureGraph', 'afterLoadGraph'])
+    })
+
+    it('unwinds an API JSON import and rethrows when activation rejects', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const activationError = new Error('Failed to load file')
+      mockWorkflowService.afterLoadNewGraph.mockRejectedValueOnce(
+        activationError
+      )
+
+      await expect(app.loadApiJson({}, 'dup')).rejects.toBe(activationError)
+
+      expect(mockWorkflowService.recoverFailedGraphLoad).toHaveBeenCalledWith(
+        'workflows/dup.json'
+      )
+      // The callers report; no second toast is raised here.
+      expect(mockToastStore.addAlert).not.toHaveBeenCalled()
     })
   })
 
@@ -1826,6 +1880,29 @@ describe('ComfyApp', () => {
       await app.handleFile(createTestFile('a1111.png', 'image/png'))
 
       expect(missingNodesStore.missingNodesError).toBeNull()
+    })
+
+    it('unwinds the import and rethrows when activation rejects', async () => {
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+        parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+      })
+      mockImportA1111.mockResolvedValue('imported')
+      const activationError = new Error('Failed to load file')
+      mockWorkflowService.afterLoadNewGraph.mockRejectedValueOnce(
+        activationError
+      )
+
+      await expect(
+        app.handleFile(createTestFile('a1111.png', 'image/png'))
+      ).rejects.toBe(activationError)
+
+      expect(mockWorkflowService.recoverFailedGraphLoad).toHaveBeenCalledWith(
+        'workflows/a1111.json'
+      )
+      // ui.ts / the drop handler report; no second toast is raised here.
+      expect(mockToastStore.addAlert).not.toHaveBeenCalled()
     })
 
     it.for(['not-a1111', 'core-nodes-unavailable'] as const)(
