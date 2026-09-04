@@ -3,6 +3,7 @@ import type { z } from 'zod'
 import { api } from '@/scripts/api'
 
 import {
+  zAgentAnswerAccepted,
   zAgentCancelAccepted,
   zAgentError,
   zAgentMessages,
@@ -13,6 +14,7 @@ import {
   zUploadImageResult
 } from '../../schemas/agentApiSchema'
 import type {
+  AgentAnswerAccepted,
   AgentCancelAccepted,
   AgentMessages,
   AgentRunModePreference,
@@ -200,6 +202,18 @@ export function createAgentRestClient() {
     )
   }
 
+  async function answerAsk(
+    threadId: string,
+    askId: string,
+    selected: string[]
+  ): Promise<AgentAnswerAccepted> {
+    return request(
+      `/agent/threads/${threadId}/asks/${encodeURIComponent(askId)}/answer`,
+      jsonInit('POST', { selected }),
+      zAgentAnswerAccepted
+    )
+  }
+
   async function uploadImage(
     image: Blob,
     filename: string
@@ -221,11 +235,9 @@ export function createAgentRestClient() {
     putRunMode,
     listCloudWorkflows,
     cancelMessage,
+    answerAsk,
     uploadImage
   }
 }
 
-export type AgentRestClient = Omit<
-  ReturnType<typeof createAgentRestClient>,
-  'getRunMode' | 'putRunMode'
->
+export type AgentRestClient = ReturnType<typeof createAgentRestClient>
