@@ -152,8 +152,10 @@ describe('WorkshopRunPanel', () => {
     // The values in the form are what actually got sent.
     const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
     expect(init.body).toBe('{"prompt":"a cat"}')
-    // A finished run re-reads the balance so the chip reflects the spend.
-    expect(refreshCredits).toHaveBeenCalled()
+    expect(
+      refreshCredits,
+      'a finished run re-reads the balance so the chip reflects the spend'
+    ).toHaveBeenCalled()
   })
 
   it('explains a rejected key instead of showing the raw failure', async () => {
