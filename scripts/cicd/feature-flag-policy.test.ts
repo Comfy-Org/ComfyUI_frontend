@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  applyAiVerdict,
+  buildReviewContext,
   evaluatePolicy,
   hasFailClosedDefault,
   parseDeclaredFlag,
@@ -96,6 +98,85 @@ describe('riskFromLabels', () => {
     expect(riskFromLabels(['risk-dispute:medium', 'risk-dispute:high'])).toBe(
       'conflict'
     )
+  })
+})
+
+describe('applyAiVerdict', () => {
+  const deterministic = {
+    verdict: 'pass' as const,
+    requiresAi: true,
+    reasons: ['Deterministic checks passed.'],
+    flag: 'safe_feature'
+  }
+
+  it('normalizes a provider pass', () => {
+    expect(
+      applyAiVerdict(
+        deterministic,
+        JSON.stringify({
+          verdict: 'pass',
+          flag: 'safe_feature',
+          reason: 'The OFF path is inert.'
+        }),
+        'success'
+      )
+    ).toMatchObject({
+      verdict: 'pass',
+      requiresAi: true,
+      flag: 'safe_feature'
+    })
+  })
+
+  it('preserves a provider failure as the aggregate verdict', () => {
+    expect(
+      applyAiVerdict(
+        deterministic,
+        JSON.stringify({
+          verdict: 'fail',
+          flag: 'safe_feature',
+          reason: 'An effect is not gated.'
+        }),
+        'success'
+      ).verdict
+    ).toBe('fail')
+  })
+
+  it('fails closed when the provider does not return valid output', () => {
+    expect(applyAiVerdict(deterministic, '', 'failure').verdict).toBe(
+      'inconclusive'
+    )
+  })
+
+  it('does not require a provider verdict for an exempt change', () => {
+    const exempt = { ...deterministic, requiresAi: false }
+    expect(applyAiVerdict(exempt, '', 'skipped')).toBe(exempt)
+  })
+
+  it('rejects a provider that changes the resolved flag', () => {
+    const result = applyAiVerdict(
+      deterministic,
+      JSON.stringify({
+        verdict: 'pass',
+        flag: 'other_feature',
+        reason: 'The OFF path is inert.'
+      }),
+      'success'
+    )
+    expect(result.verdict).toBe('inconclusive')
+  })
+})
+
+describe('buildReviewContext', () => {
+  it('marks a missing runtime patch as incomplete', () => {
+    const context = buildReviewContext(
+      12,
+      'abc123',
+      { verdict: 'inconclusive', requiresAi: true, reasons: [] },
+      [{ filename: 'src/runtime.ts' }],
+      ['src/runtime.ts']
+    )
+    expect(context.complete).toBe(false)
+    expect(context.content).toContain('[patch unavailable]')
   })
 })
 
