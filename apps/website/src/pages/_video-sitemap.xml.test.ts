@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { customerVideoStories } from '../data/customerVideos'
-import { GET } from './video-sitemap.xml'
+import {
+  customerVideoStories,
+  getCustomerVideoStory
+} from '../data/customerVideos'
+import { GET, buildVideoSitemap } from './video-sitemap.xml'
 
 function render(site?: URL): Response {
   return GET({ site } as unknown as Parameters<typeof GET>[0]) as Response
@@ -33,5 +36,25 @@ describe('video-sitemap.xml', () => {
   it('escapes an apostrophe in the description', async () => {
     const xml = await render(new URL('https://comfy.org/')).text()
     expect(xml).not.toMatch(/<video:description>[^<]*'/)
+  })
+
+  it('includes video:duration and video:publication_date once a story has them', () => {
+    const story = {
+      ...getCustomerVideoStory('black-math'),
+      durationSeconds: 272.4,
+      uploadDate: '2026-08-01'
+    }
+
+    const xml = buildVideoSitemap([story], 'https://comfy.org')
+
+    expect(xml).toContain('<video:duration>272</video:duration>')
+    expect(xml).toContain(
+      '<video:publication_date>2026-08-01</video:publication_date>'
+    )
+  })
+
+  it('falls back to the default origin when the site is not configured', () => {
+    const xml = GET({ site: undefined } as unknown as Parameters<typeof GET>[0])
+    expect(xml).toBeInstanceOf(Response)
   })
 })
