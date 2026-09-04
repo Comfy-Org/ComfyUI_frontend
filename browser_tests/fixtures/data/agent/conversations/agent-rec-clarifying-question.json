@@ -326,13 +326,9 @@
             {
               "op": "set_widget",
               "old": 20,
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "4dd001682cf84979aad990491f1eee77",
-              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "value": 30,
               "widget": "steps",
-              "node_id": 3,
-              "base_version": 2
+              "node_id": 3
             }
           ],
           "at_ms": 2167

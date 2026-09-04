@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { zAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
+import { readFileSync, readdirSync } from 'node:fs'
+import { join } from 'node:path'
+
+import {
+  zAgentConversation,
+  zRecordedWsEvent
+} from '@e2e/fixtures/data/agent/agentConversation'
+import { zAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 const recorded = {
   schema_version: 'agent-conversation.v2',
@@ -25,7 +32,9 @@ const recorded = {
     {
       message_id: 'message-1',
       request: { content: 'Add a node' },
-      response: [{ kind: 'event', event: { type: 'agent_done', data: {} } }]
+      response: [
+        { kind: 'event', event: { type: 'agent_message_done', data: {} } }
+      ]
     }
   ]
 }
@@ -47,5 +56,61 @@ describe('zAgentConversation', () => {
     expect(() => zAgentConversation.parse({ ...recorded, source })).toThrow(
       'recorded responses require backend capture provenance'
     )
+  })
+})
+
+describe('zRecordedWsEvent', () => {
+  const discriminators = (
+    union: typeof zAgentWsEvent | typeof zRecordedWsEvent
+  ) => union.options.map((option) => option.shape.type.value)
+
+  it('mirrors every production event type', () => {
+    expect(discriminators(zRecordedWsEvent)).toEqual(
+      discriminators(zAgentWsEvent)
+    )
+  })
+
+  it('validates the production fields without the ids the replay mints', () => {
+    const frame = {
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'toolu_1',
+        tool_name: 'apply_ops',
+        status: 'success',
+        duration_ms: 12
+      }
+    }
+    expect(zRecordedWsEvent.parse(frame)).toEqual(frame)
+    expect(() =>
+      zRecordedWsEvent.parse({
+        ...frame,
+        data: { ...frame.data, status: 'done' }
+      })
+    ).toThrow()
+    expect(() =>
+      zRecordedWsEvent.parse({ type: 'agent_done', data: {} })
+    ).toThrow()
+  })
+})
+
+describe('committed recordings', () => {
+  // import.meta.url is not a file URL under vitest, so the loaders are bypassed.
+  const dir = join(
+    process.cwd(),
+    'browser_tests/fixtures/data/agent/conversations'
+  )
+
+  it('every recording parses against the production event union', () => {
+    const files = readdirSync(dir).filter((file) => file.endsWith('.json'))
+    expect(files.length).toBeGreaterThan(0)
+    for (const file of files) {
+      const raw = JSON.parse(readFileSync(join(dir, file), 'utf8'))
+      const conversation = zAgentConversation.parse(raw)
+      expect(conversation.workflow, file).toEqual(raw.workflow)
+      const frames = conversation.turns
+        .flatMap((turn) => turn.response)
+        .filter((entry) => entry.kind === 'event')
+      expect(frames.length, file).toBeGreaterThan(0)
+    }
   })
 })

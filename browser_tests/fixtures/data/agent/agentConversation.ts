@@ -1,39 +1,91 @@
-import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import { FROZEN_OPS } from '@comfyorg/comfy-multi-player'
-import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
+import type { OpBase } from '@comfyorg/comfy-multi-player'
 import { z } from 'zod'
 
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
+import { zAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
+// A recording keeps every production field except the two ids the replay
+// mints per run (agentConversationFixture stampTurn).
+export const mintedIds: { thread_id: true; message_id: true } = {
+  thread_id: true,
+  message_id: true
 }
+// Every member gets the same transform, so the slot order only names them.
+const [thinking, toolCall, messageDelta, messageDone, activeTab] =
+  zAgentWsEvent.options
 
-export const zRecordedWsEvent = z.object({
-  type: z.string(),
-  data: z.record(z.string(), z.unknown()),
-  at_ms: z.number().int().nonnegative().optional()
-})
+export const zRecordedWsEvent = z.discriminatedUnion('type', [
+  thinking.extend({ data: thinking.shape.data.omit(mintedIds) }),
+  toolCall.extend({ data: toolCall.shape.data.omit(mintedIds) }),
+  messageDelta.extend({ data: messageDelta.shape.data.omit(mintedIds) }),
+  messageDone.extend({ data: messageDone.shape.data.omit(mintedIds) }),
+  activeTab.extend({ data: activeTab.shape.data.omit(mintedIds) })
+])
 export type RecordedWsEvent = z.infer<typeof zRecordedWsEvent>
 
-// The applier validates op payloads at replay time; only the vocabulary is pinned here.
-const zGraphOperation = z.custom<GraphOperation>(
-  (value) =>
-    isRecord(value) &&
-    typeof value.op === 'string' &&
-    (FROZEN_OPS as readonly string[]).includes(value.op)
-)
+// GraphOperation is the wire op minus this envelope, which the replay remints
+// through mintWireOps. Exhaustive by construction: a new OpBase field fails to
+// typecheck here rather than slipping into a recording.
+const OP_ENVELOPE: Record<keyof OpBase, true> = {
+  op_id: true,
+  actor: true,
+  base_version: true,
+  stamp: true
+}
+export const OP_ENVELOPE_KEYS = Object.keys(OP_ENVELOPE)
 
-const zWorkflowJson = z.custom<WorkflowJSON>(
-  (value) =>
-    isRecord(value) && Array.isArray(value.nodes) && Array.isArray(value.links)
-)
+// The vocabulary and the absence of the envelope are checked here; the applier
+// validates each payload at replay time, which is the rest of GraphOperation.
+const zGraphOperation = z
+  .object({ op: z.enum(FROZEN_OPS) })
+  .passthrough()
+  .refine(
+    (op) => OP_ENVELOPE_KEYS.every((key) => !(key in op)),
+    'a recorded op carries the semantic operation only; the wire envelope is minted at replay'
+  )
+  .transform((op): GraphOperation => op as GraphOperation)
 
-const zWidgetCatalog = z.custom<WidgetCatalog>(
-  (value) => isRecord(value) && isRecord(value.types)
-)
+// WorkflowJSON and WorkflowNode declare an index signature, so the schema
+// validates the guaranteed fields and keeps the rest.
+const zWorkflowJson = z
+  .object({
+    nodes: z.array(
+      z
+        .object({ id: z.union([z.string(), z.number()]), type: z.string() })
+        .passthrough()
+    ),
+    links: z.array(z.unknown())
+  })
+  .passthrough()
+
+const zWidgetCatalogEntry = z
+  .object({
+    widget_order: z.array(z.string()),
+    autogrow_templates: z
+      .record(
+        z.string(),
+        z
+          .object({
+            prefix: z.string().optional(),
+            names: z.array(z.string()).optional()
+          })
+          .passthrough()
+      )
+      .optional()
+  })
+  .strict()
+
+// WidgetCatalog and WidgetCatalogEntry declare no index signature.
+const zWidgetCatalog = z
+  .object({
+    comment: z.string().optional(),
+    types: z.record(z.string(), zWidgetCatalogEntry)
+  })
+  .strict()
 
 export const zAgentConversationWorkflow = z.object({
   id: z.string().uuid(),
@@ -108,7 +160,6 @@ export type AgentConversation = z.infer<typeof zAgentConversation>
 
 export function listRecordedConversations(): string[] {
   const dir = fileURLToPath(new URL('./conversations/', import.meta.url))
-  if (!existsSync(dir)) return []
   return readdirSync(dir)
     .filter((file) => file.endsWith('.json'))
     .map((file) => file.slice(0, -'.json'.length))
@@ -117,13 +168,6 @@ export function listRecordedConversations(): string[] {
         loadAgentConversation(caseId).source.response_side === 'recorded'
     )
     .sort()
-}
-
-// Specs pinned to one recording skip on a branch that carries the code but not the data.
-export function hasAgentConversation(caseId: string): boolean {
-  return existsSync(
-    fileURLToPath(new URL(`./conversations/${caseId}.json`, import.meta.url))
-  )
 }
 
 export function loadAgentConversation(caseId: string): AgentConversation {

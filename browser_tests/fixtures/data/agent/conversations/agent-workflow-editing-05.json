@@ -290,51 +290,35 @@
                 "properties": {},
                 "widgets_values": ["right", true, 0, "white"]
               },
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "8e44f8dcf31e46f6bf6d487c1bec2676",
-              "stamp": [1, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "node_id": 1177948620476144,
-              "class_type": "ImageStitch",
-              "base_version": 1
+              "class_type": "ImageStitch"
             },
             {
               "op": "connect",
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "792213bf2f824cfd8866f157117795a4",
-              "stamp": [1, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "link_id": 3298141227647238,
               "to_node": 1177948620476144,
               "to_slot": 0,
               "from_node": 1,
               "from_slot": 0,
-              "link_type": "IMAGE",
-              "base_version": 1
+              "link_type": "IMAGE"
             },
             {
               "op": "connect",
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "7c91fdf62a4d437dac4ada8d3ae13661",
-              "stamp": [1, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "link_id": 2572689854678654,
               "to_node": 1177948620476144,
               "to_slot": 1,
               "from_node": 8,
               "from_slot": 0,
-              "link_type": "IMAGE",
-              "base_version": 1
+              "link_type": "IMAGE"
             },
             {
               "op": "connect",
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "3eaf0c9e52cb4f0994962ff4b1e341ff",
-              "stamp": [1, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "link_id": 3588278739910384,
               "to_node": 9,
               "to_slot": 0,
               "from_node": 1177948620476144,
               "from_slot": 0,
-              "link_type": "IMAGE",
-              "base_version": 1
+              "link_type": "IMAGE"
             }
           ],
           "at_ms": 13620

@@ -266,24 +266,16 @@
             {
               "op": "set_widget",
               "old": 20,
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "5ee9143999c148439b6fc848bc8d309a",
-              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "value": 30,
               "widget": "steps",
-              "node_id": 3,
-              "base_version": 2
+              "node_id": 3
             },
             {
               "op": "set_widget",
               "old": 7,
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "7ad6e06be4f84086bec999cfc5177816",
-              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "value": 5,
               "widget": "cfg",
-              "node_id": 3,
-              "base_version": 2
+              "node_id": 3
             }
           ],
           "at_ms": 16908

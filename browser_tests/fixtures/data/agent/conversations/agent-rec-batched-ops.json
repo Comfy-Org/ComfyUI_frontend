@@ -268,12 +268,8 @@
                 "properties": {},
                 "widgets_values": [null]
               },
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "7a130c22fe934bc98e2ea2fed6bd10ad",
-              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "node_id": 2559261621971657,
-              "class_type": "CLIPTextEncode",
-              "base_version": 2
+              "class_type": "CLIPTextEncode"
             },
             {
               "op": "add_node",
@@ -303,38 +299,26 @@
                 "properties": {},
                 "widgets_values": [null]
               },
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "00b500c587744366b85d5c71ddbc9fdf",
-              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "node_id": 2214070360209981,
-              "class_type": "CLIPTextEncode",
-              "base_version": 2
+              "class_type": "CLIPTextEncode"
             },
             {
               "op": "connect",
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "e9e5c529eb574496a516dd6014ffd5e6",
-              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "link_id": 879068618000012,
               "to_node": 2559261621971657,
               "to_slot": 0,
               "from_node": 4,
               "from_slot": 1,
-              "link_type": "CLIP",
-              "base_version": 2
+              "link_type": "CLIP"
             },
             {
               "op": "connect",
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "c7f256bd0cd34e92830062aeea907b4c",
-              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "link_id": 3832075311322831,
               "to_node": 2214070360209981,
               "to_slot": 0,
               "from_node": 4,
               "from_slot": 1,
-              "link_type": "CLIP",
-              "base_version": 2
+              "link_type": "CLIP"
             }
           ],
           "at_ms": 5208

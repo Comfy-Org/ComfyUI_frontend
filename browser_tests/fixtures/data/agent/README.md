@@ -10,7 +10,10 @@ recorder combines two records per turn:
 
 Do not write `graph_ops` by hand or relabel a synthesized response. The fixture
 schema rejects `response_side: recorded` without a cloud thread ID, a per-turn
-message ID and an export timestamp.
+message ID and an export timestamp. Recorded events are the production socket
+union (`zAgentWsEvent` in `agentApiSchema.ts`) minus the thread and message ids
+the replay mints, so when production changes shape the fix is a new recording
+or a production-side change, never a looser fixture schema.
 
 ## Playbook
 

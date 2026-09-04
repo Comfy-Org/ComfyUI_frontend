@@ -10,6 +10,7 @@ import type {
   SeedFixture
 } from './agentConversationAssemble'
 import { assembleConversation, zRowsDump } from './agentConversationAssemble'
+import { OP_ENVELOPE_KEYS } from '../browser_tests/fixtures/data/agent/agentConversation'
 
 const THREAD = 'thread-1'
 const MESSAGE = 'message-1'
@@ -74,6 +75,8 @@ const addNodeOp = {
   node_id: 10,
   class_type: 'KSampler'
 }
+// The same op as a recording carries it: the export drops the wire envelope.
+const { op_id: _addNodeOpId, ...addNodeOpSemantic } = addNodeOp
 
 const parent = (
   overrides: Partial<RowsInput['parents'][number]> = {}
@@ -219,7 +222,7 @@ describe('assembleConversation', () => {
     ])
     expect(
       conversation.turns[0].response.find((entry) => entry.kind === 'graph_ops')
-    ).toMatchObject({ ops: [addNodeOp] })
+    ).toMatchObject({ ops: [addNodeOpSemantic] })
     expect(receipt).toMatchObject({
       added_nodes: 1,
       deleted_nodes: 0,
@@ -246,6 +249,19 @@ describe('assembleConversation', () => {
     if (entry.kind !== 'event') return
     expect(entry.event.data).not.toHaveProperty('thread_id')
     expect(entry.event.data).not.toHaveProperty('message_id')
+  })
+
+  it('strips the wire envelope from the exported ops', () => {
+    const { conversation } = assembleConversation(input())
+    const entry = conversation.turns[0].response.find(
+      (item) => item.kind === 'graph_ops'
+    )
+
+    expect(entry?.kind).toBe('graph_ops')
+    if (entry?.kind !== 'graph_ops') return
+    expect(entry.ops).not.toHaveLength(0)
+    for (const op of entry.ops)
+      for (const key of OP_ENVELOPE_KEYS) expect(op).not.toHaveProperty(key)
   })
 
   it('refuses a tool-call frame carrying an unknown status', () => {
@@ -699,7 +715,7 @@ describe('assembleConversation', () => {
     )
     expect(
       conversation.turns[0].response.find((entry) => entry.kind === 'graph_ops')
-    ).toEqual({ kind: 'graph_ops', ops: [addNodeOp], at_ms: 200 })
+    ).toEqual({ kind: 'graph_ops', ops: [addNodeOpSemantic], at_ms: 200 })
     expect(receipt).toMatchObject({ added_nodes: 1, deleted_nodes: 0 })
   })
 

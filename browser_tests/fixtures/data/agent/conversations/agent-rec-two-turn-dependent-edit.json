@@ -278,36 +278,24 @@
                 "properties": {},
                 "widgets_values": [null]
               },
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "c00397c5ac4a411bafa8c29389fb1515",
-              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "node_id": 3337990138003756,
-              "class_type": "CLIPTextEncode",
-              "base_version": 2
+              "class_type": "CLIPTextEncode"
             },
             {
               "op": "connect",
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "720d36f953794c1a8d05c3558c8c7a0f",
-              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "link_id": 2557345504960691,
               "to_node": 3337990138003756,
               "to_slot": 0,
               "from_node": 4,
               "from_slot": 1,
-              "link_type": "CLIP",
-              "base_version": 2
+              "link_type": "CLIP"
             },
             {
               "op": "set_widget",
               "old": null,
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "959f6c6e6cbc4dd3a39f784437208f1c",
-              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "value": "blurry, low quality",
               "widget": "text",
-              "node_id": 3337990138003756,
-              "base_version": 2
+              "node_id": 3337990138003756
             }
           ],
           "at_ms": 7788
@@ -377,16 +365,12 @@
           "ops": [
             {
               "op": "connect",
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "0a73a31fd4c54bf8a2bf0746d41710cd",
-              "stamp": [3, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "link_id": 1795569972720099,
               "to_node": 3,
               "to_slot": 2,
               "from_node": 3337990138003756,
               "from_slot": 0,
-              "link_type": "CONDITIONING",
-              "base_version": 3
+              "link_type": "CONDITIONING"
             }
           ],
           "at_ms": 0
