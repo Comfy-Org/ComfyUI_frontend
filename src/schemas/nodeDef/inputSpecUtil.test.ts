@@ -69,11 +69,11 @@ describe('flattenInputSpecs', () => {
       'speaker_frame',
       'speaker_x'
     ])
-    expect(byName.speaker_frame?.advanced).toBe(true)
-    expect(byName.speaker_frame?.tooltip).toBe(
+    expect(byName.speaker_frame.advanced).toBe(true)
+    expect(byName.speaker_frame.tooltip).toBe(
       'Video frame used to locate the speaker.'
     )
-    expect(byName.speaker_x?.isOptional).toBe(true)
+    expect(byName.speaker_x.isOptional).toBe(true)
   })
 
   it('returns inputs unchanged when there is no dynamic combo', () => {

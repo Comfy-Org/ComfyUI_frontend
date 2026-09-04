@@ -108,7 +108,8 @@ vi.mock('@/utils/objectUrlUtil', () => ({
 }))
 
 function createMockNode(overrides: Record<string, unknown> = {}): LGraphNode {
-  const graph = { id: 'test-graph-id', rootGraph: { id: 'test-graph-id' } }
+  const rootGraph = { id: 'test-graph-id', _nodes: [] }
+  const graph = { id: 'test-graph-id', rootGraph }
   return fromAny<LGraphNode, unknown>({
     id: 1,
     type: 'GLSLShader',
@@ -126,13 +127,16 @@ function wrapNode(
   return ref(node) as MaybeRefOrGetter<LGraphNode | null>
 }
 
+function ensureImageBitmap(global: { ImageBitmap?: typeof ImageBitmap }): void {
+  global.ImageBitmap ??= class ImageBitmap {} as unknown as typeof ImageBitmap
+}
+
 describe('useGLSLPreview', () => {
   beforeEach(() => {
     mockRendererFactory.lastConfig.value = undefined
     globalThis.URL.createObjectURL = vi.fn(() => 'blob:test')
     globalThis.URL.revokeObjectURL = vi.fn()
-    globalThis.ImageBitmap ??=
-      class ImageBitmap {} as unknown as typeof globalThis.ImageBitmap
+    ensureImageBitmap(globalThis)
   })
 
   it('does not activate for non-GLSLShader nodes', () => {

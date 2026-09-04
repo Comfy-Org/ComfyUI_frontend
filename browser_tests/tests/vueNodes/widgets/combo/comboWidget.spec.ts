@@ -267,10 +267,7 @@ test.describe('Vue Combo Widget', { tag: ['@vue-nodes', '@widget'] }, () => {
     await comfyPage.workflow.loadGraphData(serialized)
     await comfyPage.vueNodes.waitForNodes()
 
-    const [ksamplerNode] = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-    if (!ksamplerNode) {
-      throw new Error('KSampler node not found after reload')
-    }
+    const ksamplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
 
     const schedulerWidget = await ksamplerNode.getWidgetByName('scheduler')
     await expect.poll(() => schedulerWidget.getValue()).toBe('karras')

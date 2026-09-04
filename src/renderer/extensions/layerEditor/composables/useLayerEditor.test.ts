@@ -25,7 +25,7 @@ vi.mock('@/i18n', () => ({
 
 describe('useLayerEditor', () => {
   it('does nothing without a node', () => {
-    useLayerEditor().openLayerEditor(null as unknown as LGraphNode)
+    useLayerEditor().openLayerEditor(null)
     expect(showDialog).not.toHaveBeenCalled()
   })
 
