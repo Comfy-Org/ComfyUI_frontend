@@ -164,6 +164,22 @@ describe('setupAutoQueueHandler', () => {
     expect(mocks.queuePrompt).toHaveBeenCalledTimes(1)
   })
 
+  it('suppresses a deferred queue when concurrent execution becomes enabled', async () => {
+    const listener = setupAndGetAutoQueueGraphChangedListener()
+    const queueCountStore = useQueuePendingTaskCountStore()
+    listener(new Event('autoQueueGraphChanged'))
+    listener(new Event('autoQueueGraphChanged'))
+    expect(mocks.queuePrompt).toHaveBeenCalledTimes(1)
+
+    mocks.concurrentExecutionEnabled = true
+    queueCountStore.count = 1
+    await nextTick()
+    queueCountStore.count = 0
+    await nextTick()
+
+    expect(mocks.queuePrompt).toHaveBeenCalledTimes(1)
+  })
+
   it('does not re-queue when a busy processor reports the item as not run yet', async () => {
     const listener = setupAndGetAutoQueueGraphChangedListener()
 
