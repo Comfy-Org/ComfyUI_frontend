@@ -17,6 +17,7 @@ import { clone } from '@/scripts/utils'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeId } from '@/types/nodeId'
+import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { parseFilePath } from '@/utils/formatUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import {
@@ -37,11 +38,17 @@ const createOutputs = (
   type: ResultItemType,
   isAnimated: boolean
 ): ExecutedWsMessage['output'] => {
+  const parsedFilenames = filenames.map((filename) =>
+    parseAnnotatedPath(filename, type)
+  )
   return {
-    images: filenames.map((image) => ({ type, ...parseFilePath(image) })),
-    animated: filenames.map(
-      (image) =>
-        isAnimated && (image.endsWith('.webp') || image.endsWith('.png'))
+    images: parsedFilenames.map(({ filepath, rootFolder }) => ({
+      type: rootFolder,
+      ...parseFilePath(filepath)
+    })),
+    animated: parsedFilenames.map(
+      ({ filepath }) =>
+        isAnimated && (filepath.endsWith('.webp') || filepath.endsWith('.png'))
     )
   }
 }
@@ -178,18 +185,15 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     const incomingImages = (outputs as ExecutedWsMessage['output']).images
     const hasIncomingImages =
       Array.isArray(incomingImages) && incomingImages.length > 0
-    if (
+    const existingOutput = nodeOutputs.value[nodeLocatorId]
+    const preservedImages =
       !hasIncomingImages &&
-      isInputPreviewOutput(nodeOutputs.value[nodeLocatorId])
-    ) {
-      outputs = {
-        ...outputs,
-        images: nodeOutputs.value[nodeLocatorId].images
-      }
-    }
+      existingOutput &&
+      isInputPreviewOutput(existingOutput)
+        ? existingOutput.images
+        : undefined
 
     if (options.merge) {
-      const existingOutput = nodeOutputs.value[nodeLocatorId]
       if (existingOutput && outputs) {
         const mergedOutput = { ...existingOutput }
         for (const k in outputs) {
@@ -202,9 +206,14 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
             mergedOutput[k] = newValue
           }
         }
-        nodeOutputs.value[nodeLocatorId] = mergedOutput
-        app.nodeOutputs[nodeLocatorId] = clone(mergedOutput)
-        return
+        outputs = mergedOutput
+      }
+    }
+
+    if (preservedImages) {
+      outputs = {
+        ...outputs,
+        images: preservedImages
       }
     }
 
@@ -220,10 +229,14 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       isAnimated = false
     }: { folder?: ResultItemType; isAnimated?: boolean } = {}
   ) {
-    if (!filenames || !node) return
+    if (!node) return
 
     const locatorId = nodeToNodeLocatorId(node)
     if (!locatorId) return
+    if (!filenames || (Array.isArray(filenames) && filenames.length === 0)) {
+      removeOutputsByLocatorId(locatorId)
+      return
+    }
     if (typeof filenames === 'string') {
       setOutputsByLocatorId(
         locatorId,
@@ -233,7 +246,6 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       setOutputsByLocatorId(locatorId, filenames)
     } else {
       const resultItems = createOutputs(filenames, folder, isAnimated)
-      if (!resultItems?.images?.length) return
       setOutputsByLocatorId(locatorId, resultItems)
     }
   }
@@ -468,13 +480,13 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     id: string,
     output: ExecutedWsMessage['output']
   ): void {
-    const locatorId = executionIdToNodeLocatorId(app.rootGraph, id) ?? id
-    nodeOutputs.value[locatorId] = { ...output }
+    const locatorId = executionIdToNodeLocatorId(app.rootGraph, id)
+    nodeOutputs.value[locatorId ?? id] = { ...output }
   }
 
   function removeOutputFromLegacy(id: string): void {
-    const locatorId = executionIdToNodeLocatorId(app.rootGraph, id) ?? id
-    delete nodeOutputs.value[locatorId]
+    const locatorId = executionIdToNodeLocatorId(app.rootGraph, id)
+    delete nodeOutputs.value[locatorId ?? id]
   }
 
   function restoreOutputs(
