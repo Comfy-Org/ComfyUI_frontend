@@ -42,11 +42,37 @@ export interface BodySegment {
   text: string
 }
 
-const blockPattern = /<([A-Za-z][A-Za-z0-9._-]*)\b[^<>]*>[\s\S]*?<\/\1>/g
+const mdxTagPattern =
+  /<(\/?)([a-zA-Z][a-zA-Z0-9._-]*)((?:"[^"]*"|'[^']*'|[^<>])*)>/g
+
+// A lazy `<Tag>...</Tag>` regex stops at the first same-name close it finds,
+// which is the wrong one once a component nests inside itself (e.g. a
+// <Section> containing another <Section>). Walking mdxTagPattern with a
+// stack finds each top-level block's true matching close regardless of
+// nesting, reusing the same quote-aware tag scan findMdxSyntaxErrors uses.
+function findTopLevelBlocks(body: string): { start: number; end: number }[] {
+  const blocks: { start: number; end: number }[] = []
+  const stack: { name: string; start: number }[] = []
+  for (const match of body.matchAll(mdxTagPattern)) {
+    const [full, closing, name, attrs] = match
+    if (attrs.trimEnd().endsWith('/')) continue
+    const index = match.index ?? 0
+    if (!closing) {
+      stack.push({ name, start: index })
+      continue
+    }
+    const open = stack.pop()
+    if (!open || open.name !== name) continue
+    if (stack.length === 0) {
+      blocks.push({ start: open.start, end: index + full.length })
+    }
+  }
+  return blocks
+}
 
 // bio fields are the one place prose lives inside a component's JSX
 // attribute expression rather than as tag children: <AuthorBio people={[{
-// ..., bio: `text` }]} /> is self-closing, so it never matches blockPattern.
+// ..., bio: `text` }]} /> is self-closing, so it never yields a block.
 const bioFieldPattern = /\bbio:\s*`([^`]*)`/g
 
 function splitBioFields(text: string): BodySegment[] {
@@ -81,18 +107,20 @@ function splitBioFields(text: string): BodySegment[] {
 // mid-sentence or mid-component. A body with no such tags (FAQ answers) is
 // one segment.
 export function splitBody(body: string): BodySegment[] {
-  const matches = [...body.matchAll(blockPattern)]
-  if (matches.length === 0) return [{ translatable: true, text: body }]
+  const blocks = findTopLevelBlocks(body)
+  if (blocks.length === 0) return [{ translatable: true, text: body }]
 
   const segments: BodySegment[] = []
   let cursor = 0
-  for (const match of matches) {
-    const index = match.index ?? 0
-    if (index > cursor) {
-      segments.push(...splitBioFields(body.slice(cursor, index)))
+  for (const block of blocks) {
+    if (block.start > cursor) {
+      segments.push(...splitBioFields(body.slice(cursor, block.start)))
     }
-    segments.push({ translatable: true, text: match[0] })
-    cursor = index + match[0].length
+    segments.push({
+      translatable: true,
+      text: body.slice(block.start, block.end)
+    })
+    cursor = block.end
   }
   if (cursor < body.length) {
     segments.push(...splitBioFields(body.slice(cursor)))
@@ -103,9 +131,6 @@ export function splitBody(body: string): BodySegment[] {
 export function joinBody(segments: readonly BodySegment[]): string {
   return segments.map((segment) => segment.text).join('')
 }
-
-const mdxTagPattern =
-  /<(\/?)([a-zA-Z][a-zA-Z0-9._-]*)((?:"[^"]*"|'[^']*'|[^<>])*)>/g
 
 // Astro compiles a generated .mdx file as JSX at build time, and nothing in
 // this pipeline otherwise runs that compiler before a translation is

@@ -201,6 +201,27 @@ describe('splitBody + joinBody', () => {
     })
     expect(joinBody(segments)).toBe(body)
   })
+
+  it('finds the true matching close of a component nested inside itself', () => {
+    const body = '<Section><Section>inner</Section> outer-after</Section>'
+    const segments = splitBody(body)
+
+    expect(segments).toEqual([{ translatable: true, text: body }])
+    expect(joinBody(segments)).toBe(body)
+  })
+
+  it('does not mistake a quoted > for a component boundary', () => {
+    const body =
+      '<Section title="A > B">first</Section>\n<Section>second</Section>'
+    const segments = splitBody(body)
+
+    expect(segments).toEqual([
+      { translatable: true, text: '<Section title="A > B">first</Section>' },
+      { translatable: false, text: '\n' },
+      { translatable: true, text: '<Section>second</Section>' }
+    ])
+    expect(joinBody(segments)).toBe(body)
+  })
 })
 
 describe('findMdxSyntaxErrors', () => {
