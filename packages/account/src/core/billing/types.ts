@@ -91,6 +91,8 @@ export interface BillingOperationResponse {
   status: BillingOperationStatus
   started_at?: string
   action_url?: string
+  authentication_state?: string
+  payment_intent_client_secret?: string
   reason_code?: string
   error_message?: string
   no_charge_confirmed?: boolean
@@ -107,6 +109,7 @@ export interface BillingState {
   step: BillingStep
   reasonKey?: ReasonKey
   actionUrl?: string
+  actionError?: string
   noChargeConfirmed: boolean
 }
 export interface BillingClock {
@@ -125,6 +128,10 @@ export interface BillingHostPorts {
   clock: BillingClock
   operationStore: BillingOperationStore
   openUrl(url: string, mode: OpenUrlMode): Promise<{ opened: boolean }>
+  handleNextAction?: (
+    clientSecret: string
+  ) => Promise<{ error?: { message: string; code?: string } }>
+  fallbackToHostedUrl?: boolean
 }
 export interface BillingTransport {
   transport(

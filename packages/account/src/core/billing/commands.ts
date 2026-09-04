@@ -49,7 +49,9 @@ export function createBillingCommands(options: {
     clock: options.ports.clock,
     store: options.ports.operationStore,
     onState: publish,
-    openUrl: options.ports.openUrl
+    openUrl: options.ports.openUrl,
+    handleNextAction: options.ports.handleNextAction,
+    fallbackToHostedUrl: options.ports.fallbackToHostedUrl
   })
   async function follow(
     id: string,

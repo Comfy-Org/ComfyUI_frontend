@@ -282,6 +282,157 @@ describe('payments claims', () => {
     expect(getOperation).toHaveBeenCalledWith('server-op')
     expect(commands.getState().step).toBe('success')
   })
+  it('handles each distinct invoice action once without opening its hosted URL', async () => {
+    const callbacks: Array<() => void> = []
+    const handleNextAction = vi.fn(async () => ({}))
+    const openUrl = vi.fn(async () => ({ opened: true }))
+    const getOperation = vi
+      .fn()
+      .mockResolvedValueOnce({
+        status: 'pending',
+        authentication_state: 'requires_action',
+        payment_intent_client_secret: 'secret-1',
+        action_url: 'https://invoice.example/one'
+      })
+      .mockResolvedValueOnce({
+        status: 'pending',
+        authentication_state: 'requires_action',
+        payment_intent_client_secret: 'secret-1',
+        action_url: 'https://invoice.example/one'
+      })
+      .mockResolvedValueOnce({
+        status: 'pending',
+        authentication_state: 'requires_action',
+        payment_intent_client_secret: 'secret-2',
+        action_url: 'https://invoice.example/two'
+      })
+    const poller = createBillingPoller({
+      client: { getOperation },
+      clock: {
+        now: () => 0,
+        schedule: (fn) => {
+          callbacks.push(fn)
+          return fn
+        },
+        cancel: vi.fn()
+      },
+      store: {
+        namespace: 'host',
+        getActiveId: async () => null,
+        setActiveId: async () => undefined,
+        clearActiveId: async () => undefined
+      },
+      onState: vi.fn(),
+      openUrl,
+      handleNextAction
+    })
+
+    await poller.resume('invoice-op', 'subscribe')
+    callbacks.shift()?.()
+    await vi.waitFor(() => expect(getOperation).toHaveBeenCalledTimes(2))
+    callbacks.shift()?.()
+    await vi.waitFor(() => expect(getOperation).toHaveBeenCalledTimes(3))
+
+    expect(handleNextAction).toHaveBeenNthCalledWith(1, 'secret-1')
+    expect(handleNextAction).toHaveBeenNthCalledWith(2, 'secret-2')
+    expect(openUrl).not.toHaveBeenCalled()
+  })
+  it('keeps hosted invoice behavior when the next-action port is absent', async () => {
+    const openUrl = vi.fn(async () => ({ opened: true }))
+    const poller = createBillingPoller({
+      client: {
+        getOperation: vi.fn(async () => ({
+          status: 'pending' as const,
+          authentication_state: 'requires_action',
+          payment_intent_client_secret: 'secret',
+          action_url: 'https://invoice.example/test'
+        }))
+      },
+      clock: { now: () => 0, schedule: vi.fn(), cancel: vi.fn() },
+      store: {
+        namespace: 'host',
+        getActiveId: async () => null,
+        setActiveId: async () => undefined,
+        clearActiveId: async () => undefined
+      },
+      onState: vi.fn(),
+      openUrl
+    })
+
+    await poller.resume('invoice-op', 'subscribe')
+
+    expect(openUrl).toHaveBeenCalledWith(
+      'https://invoice.example/test',
+      'new_tab'
+    )
+  })
+  it('records next-action errors without hosted fallback by default', async () => {
+    const states: BillingState[] = []
+    const openUrl = vi.fn(async () => ({ opened: true }))
+    const poller = createBillingPoller({
+      client: {
+        getOperation: vi.fn(async () => ({
+          status: 'pending' as const,
+          authentication_state: 'requires_action',
+          payment_intent_client_secret: 'secret',
+          action_url: 'https://invoice.example/test'
+        }))
+      },
+      clock: { now: () => 0, schedule: vi.fn(), cancel: vi.fn() },
+      store: {
+        namespace: 'host',
+        getActiveId: async () => null,
+        setActiveId: async () => undefined,
+        clearActiveId: async () => undefined
+      },
+      onState: (state) => states.push(state),
+      openUrl,
+      handleNextAction: vi.fn(async () => ({
+        error: { message: 'Authentication failed', code: 'payment_failed' }
+      }))
+    })
+
+    await poller.resume('invoice-op', 'subscribe')
+
+    expect(states.at(-1)).toMatchObject({
+      step: 'verifying',
+      actionError: 'Authentication failed'
+    })
+    expect(openUrl).not.toHaveBeenCalled()
+  })
+  it('opens the hosted invoice after a next-action error only when opted in', async () => {
+    const openUrl = vi.fn(async () => ({ opened: true }))
+    const poller = createBillingPoller({
+      client: {
+        getOperation: vi.fn(async () => ({
+          status: 'pending' as const,
+          authentication_state: 'requires_action',
+          payment_intent_client_secret: 'secret',
+          action_url: 'https://invoice.example/test'
+        }))
+      },
+      clock: { now: () => 0, schedule: vi.fn(), cancel: vi.fn() },
+      store: {
+        namespace: 'host',
+        getActiveId: async () => null,
+        setActiveId: async () => undefined,
+        clearActiveId: async () => undefined
+      },
+      onState: vi.fn(),
+      openUrl,
+      handleNextAction: vi.fn(async () => ({
+        error: { message: 'Authentication failed' }
+      })),
+      fallbackToHostedUrl: true
+    })
+
+    await poller.resume('invoice-op', 'subscribe')
+
+    expect(openUrl).toHaveBeenCalledWith(
+      'https://invoice.example/test',
+      'new_tab'
+    )
+  })
   it('resumes the stored operation when billing status omits it', async () => {
     let active: string | null = 'stored-op'
     const openUrl = vi.fn(async () => ({ opened: true }))

@@ -22,11 +22,16 @@ export function createBillingPoller(options: {
   store: BillingOperationStore
   onState(state: BillingState): void
   openUrl?(url: string, mode: OpenUrlMode): Promise<{ opened: boolean }>
+  handleNextAction?: (
+    clientSecret: string
+  ) => Promise<{ error?: { message: string; code?: string } }>
+  fallbackToHostedUrl?: boolean
 }) {
   let handle: unknown
   let stopped = false
   let openedActionUrl: string | undefined
   let actionRequired = false
+  const handledClientSecrets = new Set<string>()
   async function poll(
     id: string,
     startedAt: number,
@@ -48,7 +53,11 @@ export function createBillingPoller(options: {
       return
     }
     const response = await options.client.getOperation(id)
-    actionRequired ||= response.action_url !== undefined
+    const clientSecret = response.payment_intent_client_secret
+    const requiresNextAction =
+      response.authentication_state === 'requires_action' &&
+      clientSecret !== undefined
+    actionRequired ||= response.action_url !== undefined || requiresNextAction
     const parsedStartedAt = response.started_at
       ? Date.parse(response.started_at)
       : Number.NaN
@@ -86,7 +95,31 @@ export function createBillingPoller(options: {
         type: 'urlReceived',
         url: actionUrl
       })
-    if (response.action_url && response.action_url !== openedActionUrl) {
+    let nextActionFailed = false
+    if (
+      requiresNextAction &&
+      options.handleNextAction &&
+      !handledClientSecrets.has(clientSecret)
+    ) {
+      handledClientSecrets.add(clientSecret)
+      const result = await options.handleNextAction(clientSecret)
+      if (result.error) {
+        nextActionFailed = true
+        state = reduceBilling(state, {
+          type: 'actionFailed',
+          message: result.error.message
+        })
+      }
+    }
+    const shouldOpenHostedUrl =
+      !requiresNextAction ||
+      !options.handleNextAction ||
+      (nextActionFailed && options.fallbackToHostedUrl === true)
+    if (
+      shouldOpenHostedUrl &&
+      response.action_url &&
+      response.action_url !== openedActionUrl
+    ) {
       openedActionUrl = response.action_url
       await options.openUrl?.(response.action_url, 'new_tab')
     }
@@ -129,6 +162,7 @@ export function createBillingPoller(options: {
       stopped = false
       openedActionUrl = actionUrl
       actionRequired = actionUrl !== undefined
+      handledClientSecrets.clear()
       await options.store.setActiveId(id)
       await poll(id, options.clock.now())
     },
@@ -137,6 +171,7 @@ export function createBillingPoller(options: {
       stopped = false
       openedActionUrl = undefined
       actionRequired = true
+      handledClientSecrets.clear()
       await options.store.setActiveId(id)
       await poll(id, options.clock.now(), billingPollTiming.initialMs, 0)
     },
