@@ -953,6 +953,47 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(adopted).toHaveBeenCalledWith('wf-b', undefined)
   })
 
+  it('(h6) a bind landing in the prepare()/POST window makes an echoed id read as an echo', async () => {
+    // Regression for the r3929083595 race: priorWorkflowId was snapshotted
+    // before prepare(), so a bindWorkflow() landing in that window (a late
+    // agent_active_tab frame, loadThread, an overlapping send) left the guard
+    // comparing the echoed id against a stale pre-turn binding and
+    // re-binding the origin tab to a workflow the mid-turn event had already
+    // bound elsewhere.
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(
+      () =>
+        new Promise<AgentTurnAccepted>((resolve) =>
+          resolve({
+            thread_id: 'th-1',
+            message_id: 'msg-1',
+            workflow_id: 'wf-x'
+          })
+        )
+    )
+    const rest = fakeRest({ postMessage })
+    const { source } = fakeEvents()
+    const adopted = vi.fn()
+    const session = useAgentSession({
+      rest,
+      events: source,
+      workflow: {
+        current: () => undefined,
+        adopted
+      }
+    })
+    session.start()
+
+    const sendPromise = session.sendMessage('hello')
+    // The mid-turn bind establishes the thread's existing workflow while the
+    // POST is in flight; the ack then echoes exactly that id.
+    session.bindWorkflow('wf-x')
+    await sendPromise
+
+    // An echo of the current binding is not a mint: no re-adoption.
+    expect(adopted).not.toHaveBeenCalled()
+    expect(session.boundWorkflowId.value).toBe('wf-x')
+  })
+
   it("(i2) loadThread drops the previous thread's workflow binding", async () => {
     const rest = fakeRest()
     const { source } = fakeEvents()
