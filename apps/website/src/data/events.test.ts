@@ -287,6 +287,34 @@ describe('site event data', () => {
     expect(new Set(ids).size).toBe(ids.length)
   })
 
+  // The directory's organizer filter drops any event that carries no
+  // organizer, so an unlabelled event is unreachable from that select.
+  it('labels every event with an organizer', () => {
+    for (const event of directoryEvents) {
+      expect(event.organizer, event.id).toBeDefined()
+    }
+  })
+
+  // Marketing asked for no dashes anywhere in the events copy, in either
+  // locale. This guards the whole rendered surface rather than the strings
+  // that happened to have one when the request came in.
+  it('keeps em and en dashes out of every rendered string', () => {
+    const dash = /[\u2012-\u2015\u2212]/
+    for (const event of directoryEvents) {
+      for (const locale of ['en', 'zh-CN'] as const) {
+        const strings = [
+          event.title[locale],
+          event.description[locale],
+          event.location?.[locale],
+          event.dateLabel?.[locale]
+        ]
+        for (const value of strings) {
+          if (value) expect(value, `${event.id}.${locale}`).not.toMatch(dash)
+        }
+      }
+    }
+  })
+
   // The map view pins every event that has coords, so a virtual event with
   // coords would render a bogus pin.
   it('gives coords only to in-person events, within valid ranges', () => {
