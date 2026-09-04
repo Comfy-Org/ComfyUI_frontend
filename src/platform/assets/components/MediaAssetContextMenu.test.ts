@@ -8,7 +8,6 @@ import { defineComponent, nextTick, onMounted, ref } from 'vue'
 
 import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type * as FormatUtil from '@/utils/formatUtil'
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
@@ -24,8 +23,9 @@ vi.mock('@/platform/workflow/utils/workflowExtractionUtil', () => ({
   supportsWorkflowMetadata: () => true
 }))
 
-vi.mock('@/utils/formatUtil', async (importOriginal) => ({
-  ...(await importOriginal<typeof FormatUtil>()),
+vi.mock('@/utils/formatUtil', () => ({
+  getMediaTypeFromFilename: (filename: string) =>
+    filename.endsWith('.png') ? 'image' : 'text',
   isPreviewableMediaType: () => true
 }))
 

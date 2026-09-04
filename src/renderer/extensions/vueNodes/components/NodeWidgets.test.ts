@@ -38,13 +38,14 @@ const AppInputStub = {
 
 vi.mock(
   '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry',
-  async (importOriginal) => {
-    const original = await importOriginal()
-    return {
-      ...(original as Record<string, unknown>),
-      getComponent: () => WidgetStub
-    }
-  }
+  () => ({
+    getComponent: () => WidgetStub,
+    shouldExpand: () => false,
+    shouldRenderAsVue: (widget: {
+      options?: { canvasOnly?: boolean }
+      type?: string
+    }) => !widget.options?.canvasOnly && !!widget.type
+  })
 )
 
 function createMockNodeData(
