@@ -10,10 +10,13 @@ import type {
 } from '../../config/auth-sign-in-state'
 import { authSignInTransition } from '../../config/auth-sign-in-state'
 import {
+  signInWorkshopWithEmail,
   signInWorkshopWithGitHub,
   signInWorkshopWithGoogle,
+  signUpWorkshopWithEmail,
   warmWorkshopAuth
 } from '../../config/workshop-firebase'
+import AuthEmailForm from './AuthEmailForm.vue'
 import { safeReturnPath } from '../../config/workshop-return'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'
@@ -55,22 +58,48 @@ async function runMint() {
   }
 }
 
-async function signInWith(provider: AuthSignInProvider) {
+async function completeSignIn(
+  provider: AuthSignInProvider,
+  authenticate: () => Promise<{
+    user: { email: string | null; displayName: string | null }
+  }>
+) {
   if (state.value.step === 'pending' || state.value.step === 'minting') return
   dispatch({ type: 'signInStarted', provider })
   try {
-    const credential =
-      provider === 'google'
-        ? await signInWorkshopWithGoogle()
-        : await signInWorkshopWithGitHub()
+    const credential = await authenticate()
     dispatch({
-      type: 'popupSucceeded',
+      type: 'credentialSucceeded',
       email: credential.user.email ?? credential.user.displayName ?? ''
     })
     await runMint()
   } catch (error) {
     dispatch({ type: 'signInFailed', error })
   }
+}
+
+function signInWith(provider: 'google' | 'github') {
+  return completeSignIn(provider, () =>
+    provider === 'google'
+      ? signInWorkshopWithGoogle()
+      : signInWorkshopWithGitHub()
+  )
+}
+
+function submitEmail(credentials: {
+  email: string
+  password: string
+  turnstileToken?: string
+}) {
+  return completeSignIn('email', () =>
+    mode === 'signUp'
+      ? signUpWorkshopWithEmail(
+          credentials.email,
+          credentials.password,
+          credentials.turnstileToken
+        )
+      : signInWorkshopWithEmail(credentials.email, credentials.password)
+  )
 }
 
 async function retryMint() {
@@ -187,6 +216,22 @@ onBeforeUnmount(() => stopUserWatch?.())
           @github="signInWith('github')"
         />
       </div>
+
+      <div
+        class="my-6 flex items-center gap-3 text-xs text-primary-comfy-canvas/45 uppercase"
+        aria-hidden="true"
+      >
+        <span class="h-px flex-1 bg-primary-comfy-canvas/15"></span>
+        {{ t('auth.signIn.or', locale) }}
+        <span class="h-px flex-1 bg-primary-comfy-canvas/15"></span>
+      </div>
+
+      <AuthEmailForm
+        :mode="mode"
+        :locale="locale"
+        :disabled="state.step === 'pending' || state.step === 'minting'"
+        @submit="submitEmail"
+      />
 
       <p
         v-if="state.step === 'pending' || state.step === 'minting'"

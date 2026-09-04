@@ -36,7 +36,7 @@ describe('authSignInTransition', () => {
 
   it('moves through popup success into minting, then signedIn', () => {
     const afterPopup = authSignInTransition(pending, {
-      type: 'popupSucceeded',
+      type: 'credentialSucceeded',
       email: 'a@b.co'
     })
     expect(afterPopup).toEqual(minting)
@@ -92,6 +92,21 @@ describe('authSignInTransition', () => {
       'a non-Firebase failure',
       new Error('customers 500'),
       'auth.signIn.error.generic'
+    ],
+    [
+      'a wrong email/password pair',
+      { code: 'auth/invalid-credential', message: 'x' },
+      'auth.signIn.error.invalidCredentials'
+    ],
+    [
+      'an email already registered',
+      { code: 'auth/email-already-in-use', message: 'x' },
+      'auth.signIn.error.emailInUse'
+    ],
+    [
+      'a rate-limited account',
+      { code: 'auth/too-many-requests', message: 'x' },
+      'auth.signIn.error.tooManyRequests'
     ]
   ] as const)('maps %s to its message key', ([, error, messageKey]) => {
     expect(

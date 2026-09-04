@@ -49,3 +49,11 @@ const PROD_FIREBASE: FirebaseOptions = {
 export const WORKSHOP_FIREBASE_OPTIONS: FirebaseOptions = STAGING
   ? STAGING_FIREBASE
   : PROD_FIREBASE
+
+// Public per-environment Turnstile sitekeys, the same constants the platform
+// app bakes in. The widget resolving is still governed by Cloudflare's
+// hostname allowlist; where it cannot render, sign-up proceeds without a
+// token and the server's own policy decides.
+export const WORKSHOP_TURNSTILE_SITE_KEY = STAGING
+  ? '0x4AAAAAADnYY4_Q0qxHZ5a7'
+  : '0x4AAAAAADnYZPVOpFCL_zeo'

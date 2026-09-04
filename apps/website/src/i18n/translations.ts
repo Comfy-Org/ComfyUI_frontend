@@ -322,6 +322,136 @@ const translations = {
     en: 'Starting your session…',
     'zh-CN': '正在启动会话…'
   },
+  // Auth validation copy, matching the platform app's messages. The {length}
+  // and {prefix} tokens are interpolated by config/auth-schemas.ts.
+  'validation.invalidEmail': {
+    en: 'Invalid email address',
+    'zh-CN': '无效的电子邮件地址'
+  },
+  'validation.required': {
+    en: 'Required',
+    'zh-CN': '必填'
+  },
+  'validation.minLength': {
+    en: 'Must be at least {length} characters',
+    'zh-CN': '必须至少有{length}个字符'
+  },
+  'validation.maxLength': {
+    en: 'Must be no more than {length} characters',
+    'zh-CN': '不能超过{length}个字符'
+  },
+  'validation.length': {
+    en: 'Must be {length} characters',
+    'zh-CN': '必须为{length}个字符'
+  },
+  'validation.prefix': {
+    en: 'Must start with {prefix}',
+    'zh-CN': '必须以 {prefix} 开头'
+  },
+  'validation.password.uppercase': {
+    en: 'Must contain at least one uppercase letter',
+    'zh-CN': '必须包含至少一个大写字母'
+  },
+  'validation.password.lowercase': {
+    en: 'Must contain at least one lowercase letter',
+    'zh-CN': '必须包含至少一个小写字母'
+  },
+  'validation.password.number': {
+    en: 'Must contain at least one number',
+    'zh-CN': '必须包含至少一个数字'
+  },
+  'validation.password.special': {
+    en: 'Must contain at least one special character',
+    'zh-CN': '必须包含至少一个特殊字符'
+  },
+  'validation.password.match': {
+    en: 'Passwords must match',
+    'zh-CN': '密码必须匹配'
+  },
+  'auth.email.label': {
+    en: 'Email',
+    'zh-CN': '电子邮件'
+  },
+  'auth.password.label': {
+    en: 'Password',
+    'zh-CN': '密码'
+  },
+  'auth.confirmPassword.label': {
+    en: 'Confirm password',
+    'zh-CN': '确认密码'
+  },
+  'auth.signIn.submit': {
+    en: 'Sign in with email',
+    'zh-CN': '使用邮箱登录'
+  },
+  'auth.signUp.submit': {
+    en: 'Create account',
+    'zh-CN': '创建账户'
+  },
+  'auth.signIn.or': {
+    en: 'or',
+    'zh-CN': '或'
+  },
+  'auth.signIn.forgotPassword': {
+    en: 'Forgot password?',
+    'zh-CN': '忘记密码？'
+  },
+  'auth.signIn.error.invalidCredentials': {
+    en: 'That email and password did not match. Try again or reset your password.',
+    'zh-CN': '邮箱与密码不匹配。请重试或重置密码。'
+  },
+  'auth.signIn.error.emailInUse': {
+    en: 'An account with this email already exists. Sign in instead.',
+    'zh-CN': '该邮箱已注册，请直接登录。'
+  },
+  'auth.signIn.error.tooManyRequests': {
+    en: 'Too many attempts. Wait a moment and try again.',
+    'zh-CN': '尝试次数过多，请稍后再试。'
+  },
+  'auth.turnstile.expired': {
+    en: 'The verification expired. Please solve it again.',
+    'zh-CN': '验证已过期，请重新完成验证。'
+  },
+  'auth.turnstile.failed': {
+    en: 'Verification could not load. You can still continue.',
+    'zh-CN': '验证无法加载，你仍可以继续。'
+  },
+  'auth.turnstile.waiting': {
+    en: 'Waiting for the verification to finish…',
+    'zh-CN': '正在等待验证完成…'
+  },
+  'auth.forgot.meta.title': {
+    en: 'Reset password - Comfy',
+    'zh-CN': '重置密码 - Comfy'
+  },
+  'auth.forgot.meta.description': {
+    en: 'Reset your Comfy account password.',
+    'zh-CN': '重置你的 Comfy 账户密码。'
+  },
+  'auth.forgot.heading': {
+    en: 'Reset your password',
+    'zh-CN': '重置密码'
+  },
+  'auth.forgot.body': {
+    en: 'Enter your account email and we will send a reset link.',
+    'zh-CN': '输入你的账户邮箱，我们将发送重置链接。'
+  },
+  'auth.forgot.submit': {
+    en: 'Send reset link',
+    'zh-CN': '发送重置链接'
+  },
+  'auth.forgot.sent': {
+    en: 'If an account exists for that email, a reset link is on its way.',
+    'zh-CN': '如果该邮箱已注册，重置链接已发送。'
+  },
+  'auth.forgot.error': {
+    en: 'The reset link could not be sent. Try again.',
+    'zh-CN': '重置链接发送失败，请重试。'
+  },
+  'auth.forgot.backToSignIn': {
+    en: 'Back to sign in',
+    'zh-CN': '返回登录'
+  },
   'auth.header.signIn': {
     en: 'Sign in',
     'zh-CN': '登录'
