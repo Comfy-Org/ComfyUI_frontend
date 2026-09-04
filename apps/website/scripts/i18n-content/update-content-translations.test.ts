@@ -14,6 +14,8 @@ const locales: OutputLocale[] = [
   { code: 'ja', name: 'Japanese' }
 ]
 
+const faqBody = '\nPartner Nodes let you run proprietary models.\n'
+const faqFrontmatter = { question: 'What are Partner Nodes?', order: 14 }
 const faqFixture = `---
 question: "What are Partner Nodes?"
 order: 14
@@ -22,8 +24,11 @@ order: 14
 Partner Nodes let you run proprietary models.
 `
 
-function sourceHashOf(question: string, body: string): string {
-  return hashSource(`${question}\n${body}`)
+function sourceHashOf(
+  frontmatter: Record<string, unknown>,
+  body: string
+): string {
+  return hashSource(JSON.stringify({ frontmatter, body }))
 }
 
 describe('collectPending', () => {
@@ -55,22 +60,18 @@ describe('collectPending', () => {
       {
         ref: refs[0],
         locale: locales[0],
+        frontmatter: faqFrontmatter,
         fields: [{ path: 'question', value: 'What are Partner Nodes?' }],
-        body: '\nPartner Nodes let you run proprietary models.\n',
-        sourceHash: sourceHashOf(
-          'What are Partner Nodes?',
-          '\nPartner Nodes let you run proprietary models.\n'
-        )
+        body: faqBody,
+        sourceHash: sourceHashOf(faqFrontmatter, faqBody)
       },
       {
         ref: refs[0],
         locale: locales[1],
+        frontmatter: faqFrontmatter,
         fields: [{ path: 'question', value: 'What are Partner Nodes?' }],
-        body: '\nPartner Nodes let you run proprietary models.\n',
-        sourceHash: sourceHashOf(
-          'What are Partner Nodes?',
-          '\nPartner Nodes let you run proprietary models.\n'
-        )
+        body: faqBody,
+        sourceHash: sourceHashOf(faqFrontmatter, faqBody)
       }
     ])
   })
@@ -91,10 +92,7 @@ describe('collectPending', () => {
 
     expect(pending).toEqual([expect.objectContaining({ locale: locales[1] })])
     expect(manifestUpdates.get('faq/pricing/partner-nodes')?.get('zh-CN')).toBe(
-      sourceHashOf(
-        'What are Partner Nodes?',
-        '\nPartner Nodes let you run proprietary models.\n'
-      )
+      sourceHashOf(faqFrontmatter, faqBody)
     )
   })
 
@@ -109,10 +107,7 @@ describe('collectPending', () => {
       version: 1 as const,
       entries: {
         'faq/pricing/partner-nodes': {
-          ja: sourceHashOf(
-            'What are Partner Nodes?',
-            '\nPartner Nodes let you run proprietary models.\n'
-          )
+          ja: sourceHashOf(faqFrontmatter, faqBody)
         }
       }
     }
@@ -120,5 +115,28 @@ describe('collectPending', () => {
     const { pending } = collectPending(refs, manifest, [locales[1]])
 
     expect(pending).toEqual([])
+  })
+
+  it('re-queues a document whose English frontmatter changed even though no translatable field did', () => {
+    mkdirSync(join(dir, 'faq', 'pricing', 'ja'), { recursive: true })
+    writeFileSync(
+      join(dir, 'faq', 'pricing', 'ja', 'partner-nodes.mdx'),
+      faqFixture
+    )
+    const refs = discoverDocuments(dir)
+    const manifest = {
+      version: 1 as const,
+      entries: {
+        'faq/pricing/partner-nodes': {
+          // Recorded against order: 13 — the source now has order: 14, a
+          // non-translatable field, but it should still be enough to flag.
+          ja: sourceHashOf({ ...faqFrontmatter, order: 13 }, faqBody)
+        }
+      }
+    }
+
+    const { pending } = collectPending(refs, manifest, [locales[1]])
+
+    expect(pending).toEqual([expect.objectContaining({ locale: locales[1] })])
   })
 })

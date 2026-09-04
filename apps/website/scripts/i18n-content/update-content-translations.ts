@@ -4,39 +4,62 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import type { OutputLocale } from './config'
 import { translationPipelineConfig } from './config'
+import type {
+  BodySegment,
+  CustomersFrontmatter,
+  DocumentRef,
+  FaqFrontmatter,
+  TranslatableField
+} from './document'
+import {
+  applyFrontmatterTranslations,
+  discoverDocuments,
+  findMdxSyntaxErrors,
+  joinBody,
+  readDocument,
+  serializeDocument,
+  splitBody,
+  translatableFields
+} from './document'
 import { hashSource, loadManifest, saveManifest } from './manifest'
 import type { TranslationManifest } from './manifest'
-import { createOpenAiReviewer, reviewItems } from './review'
+import { protectedTokens } from './protected-tokens'
 import type { ReviewItem } from './review'
+import { createOpenAiReviewer, reviewItems } from './review'
+import type { TranslationItem } from './translate'
 import {
   createOpenAiTranslator,
   createRequestCounter,
   translateItems
 } from './translate'
-import type { TranslationItem } from './translate'
-import {
-  applyFrontmatterTranslations,
-  discoverDocuments,
-  readDocument,
-  serializeDocument,
-  translatableFields
-} from './document'
-import type { DocumentRef, TranslatableField } from './document'
-import { protectedTokens } from './protected-tokens'
 
 interface PendingDocument {
   ref: DocumentRef
   locale: OutputLocale
+  frontmatter: CustomersFrontmatter | FaqFrontmatter
   fields: TranslatableField[]
   body: string
   sourceHash: string
 }
 
-function documentSourceSignature(
-  fields: TranslatableField[],
+// Hashes the full document, including frontmatter fields the pipeline never
+// translates (cover, order, section ids): those still get copied through
+// into every generated locale file, so an English-only edit to one of them
+// must also mark the document pending, or the locale file's copy goes stale
+// forever. JSON.stringify (not a delimiter join) keeps the hash injective —
+// moving a newline across a field boundary changes the encoding.
+function fullDocumentSignature(
+  frontmatter: CustomersFrontmatter | FaqFrontmatter,
   body: string
 ): string {
-  return `${fields.map((field) => field.value).join('\n')}\n${body}`
+  return JSON.stringify({ frontmatter, body })
+}
+
+function translatableSignature(
+  fields: readonly TranslatableField[],
+  body: string
+): string {
+  return JSON.stringify({ fields, body })
 }
 
 function print(line: string): void {
@@ -57,13 +80,13 @@ export function collectPending(
   for (const ref of refs) {
     const { frontmatter, body } = readDocument(ref, ref.enPath)
     const fields = translatableFields(ref, frontmatter)
-    const sourceHash = hashSource(documentSourceSignature(fields, body))
+    const sourceHash = hashSource(fullDocumentSignature(frontmatter, body))
 
     for (const locale of outputLocales) {
       const recordedHash = manifest.entries[ref.id]?.[locale.code]
 
       if (!existsSync(ref.localePath(locale.code))) {
-        pending.push({ ref, locale, fields, body, sourceHash })
+        pending.push({ ref, locale, frontmatter, fields, body, sourceHash })
         continue
       }
       if (recordedHash === undefined) {
@@ -73,7 +96,7 @@ export function collectPending(
         continue
       }
       if (recordedHash !== sourceHash) {
-        pending.push({ ref, locale, fields, body, sourceHash })
+        pending.push({ ref, locale, frontmatter, fields, body, sourceHash })
       }
     }
   }
@@ -81,6 +104,59 @@ export function collectPending(
   return { pending, manifestUpdates }
 }
 
+function persistManifest(
+  manifestPath: string,
+  manifest: TranslationManifest,
+  manifestUpdates: ReadonlyMap<string, ReadonlyMap<string, string>>
+): void {
+  const nextEntries: TranslationManifest['entries'] = { ...manifest.entries }
+  for (const [id, locales] of manifestUpdates) {
+    nextEntries[id] = { ...nextEntries[id], ...Object.fromEntries(locales) }
+  }
+  saveManifest(manifestPath, { version: 1, entries: nextEntries })
+}
+
+function bodyTranslationItems(
+  contextId: string,
+  segments: readonly BodySegment[]
+): TranslationItem[] {
+  return segments.flatMap((segment, index) =>
+    segment.translatable
+      ? [
+          {
+            id: `body:${index}`,
+            context: `${contextId}: body section ${index}`,
+            source: segment.text,
+            preserve: protectedTokens(segment.text)
+          }
+        ]
+      : []
+  )
+}
+
+function assembleBody(
+  segments: readonly BodySegment[],
+  translations: ReadonlyMap<string, string>
+): string {
+  return joinBody(
+    segments.map((segment, index) =>
+      segment.translatable
+        ? {
+            ...segment,
+            text: translations.get(`body:${index}`) ?? segment.text
+          }
+        : segment
+    )
+  )
+}
+
+// A thrown error means translateItems could not produce a usable result
+// after every retry (bad API key, persistent malformed responses) — an
+// infrastructure failure, not a quality judgment, so it propagates instead
+// of being recorded as a rejection. reviewItems, by contrast, already
+// converts its own call failures into `pass: false` verdicts: a review
+// service being unreachable is a reason to hold a translation back, not to
+// abort the run.
 async function translateDocument(
   pending: PendingDocument,
   translateBatch: Parameters<typeof translateItems>[2],
@@ -90,6 +166,7 @@ async function translateDocument(
   | { outcome: 'written'; frontmatter: unknown; body: string }
   | { outcome: 'rejected'; reason: string }
 > {
+  const bodySegments = splitBody(pending.body)
   const items: TranslationItem[] = [
     ...pending.fields.map((field) => ({
       id: field.path,
@@ -97,28 +174,15 @@ async function translateDocument(
       source: field.value,
       preserve: protectedTokens(field.value)
     })),
-    {
-      id: 'body',
-      context: `${pending.ref.id}: body`,
-      source: pending.body,
-      preserve: protectedTokens(pending.body)
-    }
+    ...bodyTranslationItems(pending.ref.id, bodySegments)
   ]
 
-  let translations: Map<string, string>
-  try {
-    translations = await translateItems(
-      pending.locale,
-      items,
-      translateBatch,
-      config
-    )
-  } catch (error) {
-    return {
-      outcome: 'rejected',
-      reason: error instanceof Error ? error.message : String(error)
-    }
-  }
+  const translations = await translateItems(
+    pending.locale,
+    items,
+    translateBatch,
+    config
+  )
 
   const translatedFields = new Map(
     pending.fields.map((field) => [
@@ -126,13 +190,18 @@ async function translateDocument(
       translations.get(field.path) ?? field.value
     ])
   )
-  const translatedBody = translations.get('body') ?? pending.body
+  const translatedBody = assembleBody(bodySegments, translations)
+
+  const syntaxErrors = findMdxSyntaxErrors(translatedBody)
+  if (syntaxErrors.length > 0) {
+    return { outcome: 'rejected', reason: syntaxErrors.join('; ') }
+  }
 
   const reviewItem: ReviewItem = {
     id: pending.ref.id,
     context: pending.ref.id,
-    source: documentSourceSignature(pending.fields, pending.body),
-    translation: documentSourceSignature(
+    source: translatableSignature(pending.fields, pending.body),
+    translation: translatableSignature(
       pending.fields.map((field) => ({
         path: field.path,
         value: translatedFields.get(field.path) ?? field.value
@@ -151,12 +220,11 @@ async function translateDocument(
     return { outcome: 'rejected', reason: verdict?.reason ?? 'no verdict' }
   }
 
-  const { frontmatter } = readDocument(pending.ref, pending.ref.enPath)
   return {
     outcome: 'written',
     frontmatter: applyFrontmatterTranslations(
       pending.ref,
-      frontmatter,
+      pending.frontmatter,
       translatedFields
     ),
     body: translatedBody
@@ -187,10 +255,12 @@ async function run(argv: readonly string[]): Promise<void> {
         ? 'All website content translations are up to date.'
         : `Pending: ${pending.length} documents.`
     )
+    if (pending.length > 0) process.exitCode = 1
     return
   }
 
   if (pending.length === 0) {
+    persistManifest(manifestPath, manifest, manifestUpdates)
     print('All website content translations are up to date.')
     return
   }
@@ -221,32 +291,33 @@ async function run(argv: readonly string[]): Promise<void> {
   let written = 0
   let rejected = 0
 
-  for (const item of pending) {
-    const result = await translateDocument(
-      item,
-      translateBatch,
-      reviewBatch,
-      config
-    )
-    if (result.outcome === 'rejected') {
-      rejected++
-      print(`REJECTED ${item.locale.code}/${item.ref.id}: ${result.reason}`)
-      continue
+  try {
+    for (const item of pending) {
+      const result = await translateDocument(
+        item,
+        translateBatch,
+        reviewBatch,
+        config
+      )
+      if (result.outcome === 'rejected') {
+        rejected++
+        print(`REJECTED ${item.locale.code}/${item.ref.id}: ${result.reason}`)
+        continue
+      }
+      const outPath = item.ref.localePath(item.locale.code)
+      mkdirSync(dirname(outPath), { recursive: true })
+      writeFileSync(outPath, serializeDocument(result.frontmatter, result.body))
+      const localeHashes = manifestUpdates.get(item.ref.id) ?? new Map()
+      localeHashes.set(item.locale.code, item.sourceHash)
+      manifestUpdates.set(item.ref.id, localeHashes)
+      written++
     }
-    const outPath = item.ref.localePath(item.locale.code)
-    mkdirSync(dirname(outPath), { recursive: true })
-    writeFileSync(outPath, serializeDocument(result.frontmatter, result.body))
-    const localeHashes = manifestUpdates.get(item.ref.id) ?? new Map()
-    localeHashes.set(item.locale.code, item.sourceHash)
-    manifestUpdates.set(item.ref.id, localeHashes)
-    written++
+  } finally {
+    // Persist whatever completed even when a document further down the list
+    // throws, so a hard failure loses no more progress than it has to and
+    // the next run picks up exactly where this one stopped.
+    persistManifest(manifestPath, manifest, manifestUpdates)
   }
-
-  const nextEntries: TranslationManifest['entries'] = { ...manifest.entries }
-  for (const [id, locales] of manifestUpdates) {
-    nextEntries[id] = { ...nextEntries[id], ...Object.fromEntries(locales) }
-  }
-  saveManifest(manifestPath, { version: 1, entries: nextEntries })
 
   if (counter.requestCount() > 0) {
     print(`OpenAI usage: ${counter.requestCount()} HTTP requests.`)

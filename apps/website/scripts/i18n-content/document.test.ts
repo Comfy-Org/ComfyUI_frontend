@@ -10,9 +10,12 @@ import {
   customersTranslatableFields,
   discoverDocuments,
   faqTranslatableFields,
+  findMdxSyntaxErrors,
+  joinBody,
   parseDocument,
   readDocument,
-  serializeDocument
+  serializeDocument,
+  splitBody
 } from './document'
 import type { CustomersFrontmatter, FaqFrontmatter } from './document'
 
@@ -129,7 +132,87 @@ describe('serializeDocument', () => {
     const serialized = serializeDocument(frontmatter, body)
     const reparsed = parseDocument<FaqFrontmatter>(serialized)
     expect(reparsed.frontmatter).toEqual(frontmatter)
-    expect(reparsed.body.trim()).toBe(body.trim())
+    expect(reparsed.body).toBe(body)
+  })
+
+  it('preserves a body that opens with an indented code block', () => {
+    const fixture = `---
+question: "How do I run this?"
+order: 1
+---
+
+    def example():
+        return 1
+`
+    const { frontmatter, body } = parseDocument<FaqFrontmatter>(fixture)
+    const reparsed = parseDocument<FaqFrontmatter>(
+      serializeDocument(frontmatter, body)
+    )
+    expect(reparsed.body).toBe(body)
+    expect(reparsed.body).toContain('    def example():')
+  })
+})
+
+describe('splitBody + joinBody', () => {
+  it('splits multiple <Section> blocks out as separate translatable segments', () => {
+    const body =
+      '\n<Section id="a">one</Section>\n\n<Section id="b">two</Section>\n'
+    const segments = splitBody(body)
+
+    expect(segments).toEqual([
+      { translatable: false, text: '\n' },
+      { translatable: true, text: '<Section id="a">one</Section>' },
+      { translatable: false, text: '\n\n' },
+      { translatable: true, text: '<Section id="b">two</Section>' },
+      { translatable: false, text: '\n' }
+    ])
+    expect(joinBody(segments)).toBe(body)
+  })
+
+  it('treats a body with no <Section> tags as one translatable segment', () => {
+    const body = '\nPartner Nodes let you run proprietary models.\n'
+
+    const segments = splitBody(body)
+
+    expect(segments).toEqual([{ translatable: true, text: body }])
+    expect(joinBody(segments)).toBe(body)
+  })
+})
+
+describe('findMdxSyntaxErrors', () => {
+  it('is silent on well-formed nested components', () => {
+    expect(
+      findMdxSyntaxErrors(
+        '<Section id="a"><Quote>text</Quote><Figure src="x.png" /></Section>'
+      )
+    ).toEqual([])
+  })
+
+  it('flags a tag that is never closed', () => {
+    expect(findMdxSyntaxErrors('<Section id="a">text')).toEqual([
+      '<Section> is never closed'
+    ])
+  })
+
+  it('flags a mismatched closing tag', () => {
+    expect(findMdxSyntaxErrors('<Section id="a">text</Quote>')).toEqual([
+      '</Quote> does not match the open <Section>'
+    ])
+  })
+
+  it('flags an unbalanced opening brace', () => {
+    expect(findMdxSyntaxErrors('<Figure people={[{ name: "a" }]} />')).toEqual(
+      []
+    )
+    expect(findMdxSyntaxErrors('text with a stray {brace')).toEqual([
+      'unbalanced braces: 1 unclosed {'
+    ])
+  })
+
+  it('flags an unbalanced closing brace', () => {
+    expect(findMdxSyntaxErrors('text with a stray }brace')).toEqual([
+      'unbalanced braces: unexpected }'
+    ])
   })
 })
 
@@ -168,6 +251,19 @@ describe('discoverDocuments', () => {
     expect(refs[1].localePath('ja')).toBe(
       join(dir, 'faq', 'pricing', 'ja', 'partner-nodes.mdx')
     )
+  })
+
+  it('ignores a directory that happens to be named like an .mdx file', () => {
+    mkdirSync(join(dir, 'customers', 'en'), { recursive: true })
+    writeFileSync(
+      join(dir, 'customers', 'en', 'kathy-smith.mdx'),
+      customerFixture
+    )
+    mkdirSync(join(dir, 'customers', 'en', 'draft.mdx'), { recursive: true })
+
+    const refs = discoverDocuments(dir)
+
+    expect(refs.map((ref) => ref.id)).toEqual(['customers/kathy-smith'])
   })
 
   it('parses a discovered document according to its kind', () => {

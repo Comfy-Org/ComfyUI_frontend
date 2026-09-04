@@ -6,21 +6,19 @@ export interface TranslationManifest {
   entries: Record<string, Record<string, string>>
 }
 
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
 function isManifest(value: unknown): value is TranslationManifest {
-  return (
-    !!value &&
-    typeof value === 'object' &&
-    (value as { version?: unknown }).version === 1 &&
-    typeof (value as { entries?: unknown }).entries === 'object' &&
-    (value as { entries?: unknown }).entries !== null &&
-    Object.values((value as TranslationManifest).entries).every(
-      (locales) =>
-        typeof locales === 'object' &&
-        locales !== null &&
-        Object.values(locales).every(
-          (hash) => typeof hash === 'string' && /^[0-9a-f]{64}$/.test(hash)
-        )
-    )
+  if (!isPlainRecord(value) || value.version !== 1) return false
+  if (!isPlainRecord(value.entries)) return false
+  return Object.values(value.entries).every(
+    (locales) =>
+      isPlainRecord(locales) &&
+      Object.values(locales).every(
+        (hash) => typeof hash === 'string' && /^[0-9a-f]{64}$/.test(hash)
+      )
   )
 }
 
