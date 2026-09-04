@@ -103,6 +103,7 @@ export function getMainNavigation(locale: Locale): NavItem[] {
       ]
     },
     { label: t('nav.pricing', locale), href: routes.pricing },
+    { label: t('nav.workshop', locale), href: routes.workshop },
     {
       label: t('nav.community', locale),
       badge: 'new',
