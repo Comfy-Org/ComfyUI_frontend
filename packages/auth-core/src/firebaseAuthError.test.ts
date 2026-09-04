@@ -52,7 +52,12 @@ describe('classifyAuthError', () => {
     ['a non-auth code shape', { code: 'storage/unknown', message: 'x' }],
     ['null', null],
     ['undefined', undefined],
-    ['a string', 'auth/popup-blocked']
+    ['a string', 'auth/popup-blocked'],
+    ['an auth/ code with no message', { code: 'auth/internal-error' }],
+    [
+      'an auth/ code with a non-string message',
+      { code: 'auth/internal-error', message: 123 }
+    ]
   ] as const)('classifies %s as unknown', ([, value]) => {
     expect(classifyAuthError(value)).toEqual({ kind: 'unknown' })
   })

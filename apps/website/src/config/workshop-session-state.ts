@@ -35,7 +35,9 @@ async function refreshWith(
   // A user switch while the mint was in flight: the result belongs to the
   // previous user and must not be published.
   if (user.value?.uid !== currentUser.uid) return undefined
-  if (result.status === 'ok') session.value = result.session
+  // A failed mint must drop the stale session, or credentials.value keeps
+  // serving the old token and the run path fires with it (ADR 0011).
+  session.value = result.status === 'ok' ? result.session : undefined
   return result
 }
 

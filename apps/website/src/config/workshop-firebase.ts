@@ -45,10 +45,14 @@ export async function warmWorkshopAuth(): Promise<void> {
 }
 
 /**
- * Find-or-create the Comfy customer record for a signed-in user. A 409 means
- * the customer already exists, which is success for this call — social users
- * routinely sign in again.
+ * Whether a `POST /customers` response means the customer is provisioned. A
+ * 409 counts as success: the record already exists, which is the norm when a
+ * social user signs in again.
  */
+export function isCustomerProvisioned(status: number, ok: boolean): boolean {
+  return ok || status === 409
+}
+
 async function provisionCustomer(user: User): Promise<void> {
   const token = await user.getIdToken()
   const response = await fetch(`${WORKSHOP_ROUTER_BASE_URL}/customers`, {
@@ -59,7 +63,7 @@ async function provisionCustomer(user: User): Promise<void> {
     },
     body: JSON.stringify({ signup_source: 'comfy-workshop' })
   })
-  if (!response.ok && response.status !== 409) {
+  if (!isCustomerProvisioned(response.status, response.ok)) {
     throw new Error(`Customer provisioning failed: ${response.status}`)
   }
 }
@@ -104,12 +108,19 @@ export function onWorkshopUserChanged(
   let unsubscribe: (() => void) | undefined
   let cancelled = false
   void (async () => {
-    const [auth, { onAuthStateChanged }] = await Promise.all([
-      workshopAuth(),
-      import('firebase/auth')
-    ])
-    if (cancelled) return
-    unsubscribe = onAuthStateChanged(auth, callback)
+    try {
+      const [auth, { onAuthStateChanged }] = await Promise.all([
+        workshopAuth(),
+        import('firebase/auth')
+      ])
+      if (cancelled) return
+      unsubscribe = onAuthStateChanged(auth, callback)
+    } catch (error) {
+      // A Firebase chunk that fails to load leaves the visitor signed out
+      // rather than crashing an unhandled rejection.
+      console.error('Workshop auth listener failed to attach', error)
+      if (!cancelled) callback(null)
+    }
   })()
   return () => {
     cancelled = true
