@@ -1610,6 +1610,19 @@ describe('Subgraph Definition Garbage Collection', () => {
     expect(rootGraph.subgraphs.has(subgraphId)).toBe(false)
   })
 
+  it('releases the subgraph definition when an inner removal lifecycle throws', () => {
+    const rootGraph = new LGraph()
+    const { subgraph, innerNodes } = createSubgraphWithNodes(rootGraph, 1)
+    innerNodes[0].onRemoved = () => {
+      throw new Error('extension cleanup failed')
+    }
+
+    expect(() => rootGraph.releaseSubgraphs([subgraph])).toThrow(
+      'extension cleanup failed'
+    )
+    expect(rootGraph.subgraphs.has(subgraph.id)).toBe(false)
+  })
+
   function createNestedDefinitionFixture() {
     const rootGraph = new LGraph()
 

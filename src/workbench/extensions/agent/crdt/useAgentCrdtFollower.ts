@@ -7,6 +7,7 @@ import { createUuidv4 } from '@/utils/uuid'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
 import { reconcileAgentAdapters } from './agentNodeMaterializer'
+import { readSubgraphDefinitions } from './agentSubgraphDefinitions'
 import { recordDevEvent } from './devPanelLog'
 import { wireLog } from './crdtLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
@@ -579,7 +580,10 @@ export function useAgentCrdtFollower(
   function reconcileLiveGraph(docId: string): void {
     const graph = getGraph()
     if (!graph) return
-    const nodeIds = reconcileAgentAdapters(graph)
+    const nodeIds = reconcileAgentAdapters(
+      graph,
+      readSubgraphDefinitions(bridge.follower.doc)
+    )
     if (nodeIds.length > 0) {
       recordDevEvent('agent_node_adapters_materialized', {
         workflowId: docId,

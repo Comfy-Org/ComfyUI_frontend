@@ -1492,21 +1492,7 @@ export class LGraph
     }
 
     if (node.isSubgraphNode()) {
-      const releasedSubgraphs = findReleasableSubgraphs(this.rootGraph, node)
-      for (const subgraph of releasedSubgraphs) {
-        const nodes: LGraphNode[] = []
-        visitGraphNodes(subgraph, (node) => nodes.push(node))
-        fireNodeRemovalLifecycles(nodes)
-      }
-      for (const subgraph of releasedSubgraphs) {
-        unregisterAllLinkTopologies(subgraph)
-        unregisterAllRerouteChains(subgraph)
-        detachAllNodesFromStores(subgraph)
-        useExecutionOrderStore().clearGraph(graphScopeOf(subgraph))
-        useGraphMetadataStore().clear(this.rootGraph.id, subgraph.id)
-        this.rootGraph.subgraphs.delete(subgraph.id)
-      }
-      detachGraphLayouts(releasedSubgraphs)
+      this.releaseSubgraphs(findReleasableSubgraphs(this.rootGraph, node))
     }
 
     // callback
@@ -1559,6 +1545,35 @@ export class LGraph
     this.change()
 
     this.updateExecutionOrder()
+  }
+
+  /**
+   * Tears down subgraph definitions that no longer have (or never gained) a
+   * live instance: fires interior node removal lifecycles, unregisters their
+   * store state and metadata, and drops them from {@link subgraphs}.
+   *
+   * Used when the last {@link SubgraphNode} of a definition is removed, and
+   * to roll back a definition whose {@link createSubgraph} failed part-way so
+   * the same id can be registered again later.
+   */
+  releaseSubgraphs(subgraphs: readonly Subgraph[]): void {
+    try {
+      for (const subgraph of subgraphs) {
+        const nodes: LGraphNode[] = []
+        visitGraphNodes(subgraph, (node) => nodes.push(node))
+        fireNodeRemovalLifecycles(nodes)
+      }
+    } finally {
+      for (const subgraph of subgraphs) {
+        unregisterAllLinkTopologies(subgraph)
+        unregisterAllRerouteChains(subgraph)
+        detachAllNodesFromStores(subgraph)
+        useExecutionOrderStore().clearGraph(graphScopeOf(subgraph))
+        useGraphMetadataStore().clear(this.rootGraph.id, subgraph.id)
+        this.rootGraph.subgraphs.delete(subgraph.id)
+      }
+      detachGraphLayouts(subgraphs)
+    }
   }
 
   /**
