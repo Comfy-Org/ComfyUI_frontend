@@ -8,7 +8,7 @@ Proposed
 
 ## Context
 
-PrimitiveNode creates widgets dynamically on connection. When copied, the clone has no `this.widgets`, so `LGraphNode.serialize()` drops `widgets_values` from the clipboard data. This causes secondary widget values (e.g., `control_after_generate`) to be lost on paste. See [WIDGET_SERIALIZATION.md](../WIDGET_SERIALIZATION.md#primitiveno-and-copypaste) for the full mechanism.
+PrimitiveNode creates widgets dynamically on connection. When copied, the clone has no `this.widgets`, so `LGraphNode.serialize()` drops `widgets_values` from the clipboard data. This causes secondary widget values (e.g., `control_after_generate`) to be lost on paste. See [WIDGET_SERIALIZATION.md](../WIDGET_SERIALIZATION.md#primitivenode-and-copypaste) for the full mechanism.
 
 Related: [#1757](https://github.com/Comfy-Org/ComfyUI_frontend/issues/1757), [#8938](https://github.com/Comfy-Org/ComfyUI_frontend/pull/8938)
 

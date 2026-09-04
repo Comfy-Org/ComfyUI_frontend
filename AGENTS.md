@@ -70,6 +70,7 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 - `pnpm comfy-test list [--filter <keyword>]`: List available test workflows
 - `pnpm comfy-test tags`: List test tags with their meanings
 - `pnpm comfy-test add-workflow <file> [--name <n>]`: Add and validate a workflow asset from disk
+- `pnpm comfy-test guide`: Print instructions for an agent helping a **human** record a test. Run this first in that situation — it covers what to say and what never to say.
 
 **Agent workflow, end to end:** `comfy-test plan` → hand its output to the `playwright-test-generator` agent (writes a convention-compliant spec directly, no `transform` needed) → `comfy-test pr <file>`.
 

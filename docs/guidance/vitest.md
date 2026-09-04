@@ -45,11 +45,9 @@ file happened to be running, and fails the run with every test passing.
 
 If you hit the guard, mock the module that issues the request. Stubbing `fetch`
 also works and replaces the guard for that test, but do it in a `beforeEach` or
-inside the test body. A `vi.stubGlobal` at module scope does stay in place by
-default, but nothing owns restoring it: any `vi.unstubAllGlobals()` - a cleanup
-hook, another test tidying up after itself, or enabling the `unstubGlobals`
-config option - drops it and puts the real `fetch` back without failing
-anything.
+inside the test body. A `vi.stubGlobal` at module scope will not survive: this
+project sets `unstubGlobals: true`, so Vitest restores the real `fetch` before
+the first test runs and the stub silently does nothing.
 
 ## Component Testing
 
