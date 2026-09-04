@@ -90,7 +90,9 @@ const labelStepViolations = (run: string): string[] => {
   const read = code.search(/\w+=\$\(\s*gh api/)
   const check = code.search(/grep -qx ['"]needs-backport['"]/)
   const del = code.search(/gh api[^\n]*--method DELETE/)
-  const earlyExit = code.search(/^\s*exit 0\s*$/m)
+  const absentBranch = code.match(
+    /^\s*if\s+!\s+[^\n]*grep -qx ['"]needs-backport['"][^\n]*;\s*then\s*$([\s\S]*?)^\s*fi\s*$/m
+  )
 
   if (!/^\s*set -euo pipefail\s*$/m.test(code)) {
     violations.push('does not set -euo pipefail')
@@ -120,12 +122,16 @@ const labelStepViolations = (run: string): string[] => {
   if (check !== -1 && del !== -1 && check > del) {
     violations.push('deletes the label before checking for it')
   }
-  // An already-absent label is the desired end state, so the step short-circuits
-  // rather than letting the DELETE 404 fail the job under `set -e`.
-  if (earlyExit === -1) {
-    violations.push('does not exit 0 when the label is already absent')
-  } else if (del !== -1 && earlyExit > del) {
-    violations.push('exits early only after it has already deleted')
+  if (!absentBranch || !/^\s*exit 0\s*$/m.test(absentBranch[1])) {
+    violations.push('does not exit 0 inside the absent-label branch')
+  } else if (
+    del !== -1 &&
+    absentBranch.index !== undefined &&
+    del < absentBranch.index + absentBranch[0].length
+  ) {
+    violations.push(
+      'deletes the label before the absent-label branch completes'
+    )
   }
 
   return violations
@@ -192,6 +198,11 @@ describe('backport workflow token scopes', () => {
       'omits strict shell mode',
       `LABELS=$(gh api "$R/labels" --jq '.[].name')\nif ! printf '%s\\n' "$LABELS" | grep -qx 'needs-backport'; then\n  exit 0\nfi\ngh api --silent --method DELETE "$R/labels/needs-backport"`,
       'does not set -euo pipefail'
+    ],
+    [
+      'exits when the label is present',
+      `set -euo pipefail\nLABELS=$(gh api "$R/labels" --jq '.[].name')\nif printf '%s\\n' "$LABELS" | grep -qx 'needs-backport'; then\n  exit 0\nfi\ngh api --silent --method DELETE "$R/labels/needs-backport"`,
+      'does not exit 0 inside the absent-label branch'
     ]
   ])('rejects a cleanup step that %s', ([, script, expected]) => {
     expect(labelStepViolations(script)).toContain(expected)
