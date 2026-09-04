@@ -3,17 +3,19 @@ import type { WebSocketRoute } from '@playwright/test'
 
 function createWebSocketRouteHandler(
   connectWebSocketToServer: boolean,
-  onRouted: (ws: WebSocketRoute) => void
+  onRouted: (ws: WebSocketRoute, server: WebSocketRoute | null) => void
 ) {
   return (ws: WebSocketRoute) => {
-    if (connectWebSocketToServer) {
-      const server = ws.connectToServer()
-      server.onMessage((message) => {
-        ws.send(message)
-      })
+    if (!connectWebSocketToServer) {
+      onRouted(ws, null)
+      return
     }
 
-    onRouted(ws)
+    const server = ws.connectToServer()
+    server.onMessage((message) => {
+      ws.send(message)
+    })
+    onRouted(ws, server)
   }
 }
 
@@ -34,9 +36,14 @@ export const webSocketFixture = base.extend<{
 
       await context.routeWebSocket(
         /\/ws/,
-        createWebSocketRouteHandler(connectWebSocketToServer, (ws) => {
+        createWebSocketRouteHandler(connectWebSocketToServer, (ws, server) => {
+          // Registering a page-side handler switches off Playwright's automatic
+          // page-to-server forwarding, so recording has to re-send the frame
+          // itself. Without this every spec merging the fixture drops the
+          // `feature_flags` handshake and leaves `api.serverFeatureFlags` empty.
           ws.onMessage((message) => {
             if (typeof message === 'string') webSocketMessages.push(message)
+            server?.send(message)
           })
           latest = ws
           resolve?.(ws)
