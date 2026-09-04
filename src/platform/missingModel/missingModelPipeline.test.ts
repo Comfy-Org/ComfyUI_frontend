@@ -377,12 +377,8 @@ describe('missingModelPipeline', () => {
       } satisfies MissingModelCandidate
       mockHandles.state.enrichedCandidates = [remoteCandidate]
       mockHandles.verifyAssetSupportedCandidates.mockImplementation(
-        async (candidates) => {
-          for (const candidate of candidates) {
-            if (!candidate.pendingVerification) continue
-            candidate.isMissing = await candidate.pendingVerification()
-            delete candidate.pendingVerification
-          }
+        async () => {
+          remoteCandidate.isMissing = true
         }
       )
       mockHandles.api.getFolderPaths.mockResolvedValue({
@@ -401,7 +397,10 @@ describe('missingModelPipeline', () => {
       )
       expect(
         mockHandles.executionErrorStore.surfaceMissingModels
-      ).toHaveBeenLastCalledWith([remoteCandidate], { silent: false })
+      ).toHaveBeenCalledTimes(1)
+      expect(
+        mockHandles.executionErrorStore.surfaceMissingModels
+      ).toHaveBeenCalledWith([remoteCandidate], { silent: false })
     })
 
     it('drops a candidate that became inactive while folder paths were loading', async () => {
@@ -435,7 +434,36 @@ describe('missingModelPipeline', () => {
       ).toHaveBeenLastCalledWith([], { silent: false })
     })
 
-    it('keeps a deferred remote combo that verifies missing before folder paths resolve', async () => {
+    it('clears warnings without fetching folder paths when a deferred remote combo verifies present', async () => {
+      const remoteCandidate = {
+        nodeType: 'RemoteFileNode',
+        widgetName: 'file_name',
+        name: 'selected.safetensors',
+        isMissing: undefined,
+        isAssetSupported: false,
+        pendingVerification: async () => false
+      } satisfies MissingModelCandidate
+      mockHandles.state.enrichedCandidates = [remoteCandidate]
+      mockHandles.verifyAssetSupportedCandidates.mockImplementation(
+        async () => {
+          remoteCandidate.isMissing = false
+        }
+      )
+
+      await runMissingModelPipeline({
+        graph: createGraph(),
+        graphData: createWorkflowGraphData(),
+        missingModelStore: mockHandles.missingModelStore
+      })
+      await vi.dynamicImportSettled()
+
+      expect(mockHandles.api.getFolderPaths).not.toHaveBeenCalled()
+      expect(
+        mockHandles.executionErrorStore.surfaceMissingModels
+      ).toHaveBeenCalledWith([], { silent: false })
+    })
+
+    it('surfaces static and deferred remote candidates together after verification', async () => {
       const staticCandidate = {
         nodeType: 'CheckpointLoaderSimple',
         widgetName: 'ckpt_name',
@@ -453,20 +481,9 @@ describe('missingModelPipeline', () => {
       } satisfies MissingModelCandidate
       mockHandles.state.enrichedCandidates = [staticCandidate, remoteCandidate]
       mockHandles.verifyAssetSupportedCandidates.mockImplementation(
-        async (candidates) => {
-          for (const candidate of candidates) {
-            if (!candidate.pendingVerification) continue
-            candidate.isMissing = await candidate.pendingVerification()
-            delete candidate.pendingVerification
-          }
+        async () => {
+          remoteCandidate.isMissing = true
         }
-      )
-      let resolveFolderPaths: (paths: Record<string, string[]>) => void = () =>
-        undefined
-      mockHandles.api.getFolderPaths.mockReturnValueOnce(
-        new Promise((resolve) => {
-          resolveFolderPaths = resolve
-        })
       )
 
       const result = await runMissingModelPipeline({
@@ -474,20 +491,15 @@ describe('missingModelPipeline', () => {
         graphData: createWorkflowGraphData(),
         missingModelStore: mockHandles.missingModelStore
       })
-      await vi.waitFor(() =>
-        expect(
-          mockHandles.executionErrorStore.surfaceMissingModels
-        ).toHaveBeenCalledWith([staticCandidate, remoteCandidate], {
-          silent: false
-        })
-      )
-      resolveFolderPaths({})
       await vi.dynamicImportSettled()
 
       expect(result.confirmedCandidates).toEqual([staticCandidate])
       expect(
         mockHandles.executionErrorStore.surfaceMissingModels
-      ).toHaveBeenLastCalledWith([staticCandidate, remoteCandidate], {
+      ).toHaveBeenCalledTimes(1)
+      expect(
+        mockHandles.executionErrorStore.surfaceMissingModels
+      ).toHaveBeenCalledWith([staticCandidate, remoteCandidate], {
         silent: false
       })
     })

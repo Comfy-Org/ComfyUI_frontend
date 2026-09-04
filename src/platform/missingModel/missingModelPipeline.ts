@@ -150,46 +150,62 @@ export async function runMissingModelPipeline({
     missingModelCandidates: confirmedCandidates
   })
 
-  if (enrichedCandidates.length) {
-    if (isCloud || hasPendingVerification) {
-      void verifyAssetSupportedCandidates(enrichedCandidates, controller.signal)
-        .then(() => {
-          if (controller.signal.aborted) return
-          // Re-check ancestor: user may have bypassed a container
-          // while verification was in flight.
-          const confirmedAfterReverify = enrichedCandidates.filter((c) =>
-            isMissingCandidateActive(graph, c)
-          )
-          useExecutionErrorStore().surfaceMissingModels(
-            confirmedAfterReverify,
-            { silent }
-          )
-          cacheModelCandidates(activeWf, confirmedAfterReverify)
-        })
-        .catch((err) => {
-          if (controller.signal.aborted) return
-          console.warn(
-            '[Missing Model Pipeline] Asset verification failed:',
-            err
-          )
-          useToastStore().add({
-            severity: 'warn',
-            summary: st(
-              'toastMessages.missingModelVerificationFailed',
-              'Failed to verify missing models. Some models may not be shown in the Issues tab.'
-            ),
-            life: 5000
-          })
-        })
-    }
+  if (!enrichedCandidates.length) {
+    clearMissingModels(activeWf, silent)
+    return { missingModels, confirmedCandidates }
+  }
 
-    if (!isCloud) {
-      if (!confirmedCandidates.length && !hasPendingVerification) {
+  // Re-check ancestors at surface time: the user may have bypassed a
+  // container while verification or folder paths were in flight.
+  const surfaceActiveCandidates = () => {
+    const confirmed = enrichedCandidates.filter((c) =>
+      isMissingCandidateActive(graph, c)
+    )
+    useExecutionErrorStore().surfaceMissingModels(confirmed, { silent })
+    cacheModelCandidates(activeWf, confirmed)
+  }
+  const reportVerificationFailure = (err: unknown) => {
+    if (controller.signal.aborted) return
+    console.warn('[Missing Model Pipeline] Asset verification failed:', err)
+    useToastStore().add({
+      severity: 'warn',
+      summary: st(
+        'toastMessages.missingModelVerificationFailed',
+        'Failed to verify missing models. Some models may not be shown in the Issues tab.'
+      ),
+      life: 5000
+    })
+  }
+
+  if (isCloud) {
+    void verifyAssetSupportedCandidates(enrichedCandidates, controller.signal)
+      .then(() => {
+        if (controller.signal.aborted) return
+        surfaceActiveCandidates()
+      })
+      .catch(reportVerificationFailure)
+    return { missingModels, confirmedCandidates }
+  }
+
+  if (!confirmedCandidates.length && !hasPendingVerification) {
+    clearMissingModels(activeWf, silent)
+    return { missingModels, confirmedCandidates }
+  }
+
+  const verification = hasPendingVerification
+    ? verifyAssetSupportedCandidates(enrichedCandidates, controller.signal)
+    : Promise.resolve()
+  void verification
+    .then(async () => {
+      if (controller.signal.aborted) return
+      const hasActiveMissing = enrichedCandidates.some((c) =>
+        isMissingCandidateActive(graph, c)
+      )
+      if (!hasActiveMissing) {
         clearMissingModels(activeWf, silent)
-        return { missingModels, confirmedCandidates }
+        return
       }
-
-      void api
+      await api
         .getFolderPaths()
         .then((paths) => {
           if (controller.signal.aborted) return
@@ -201,34 +217,23 @@ export async function runMissingModelPipeline({
             err
           )
         })
-        .finally(() => {
-          if (controller.signal.aborted) return
-          const confirmedAfterFolderPaths = enrichedCandidates.filter((c) =>
-            isMissingCandidateActive(graph, c)
-          )
-          useExecutionErrorStore().surfaceMissingModels(
-            confirmedAfterFolderPaths,
-            { silent }
-          )
-          cacheModelCandidates(activeWf, confirmedAfterFolderPaths)
-        })
+      if (controller.signal.aborted) return
+      surfaceActiveCandidates()
+    })
+    .catch(reportVerificationFailure)
 
-      const missingModelMetadata =
-        import('@/platform/missingModel/missingModelMetadata')
-      void Promise.allSettled(
-        downloadableCandidates.map(async (c) => {
-          const { fetchAndStoreModelMetadata } = await missingModelMetadata
-          await fetchAndStoreModelMetadata(
-            c.url,
-            missingModelStore,
-            controller.signal
-          )
-        })
+  const missingModelMetadata =
+    import('@/platform/missingModel/missingModelMetadata')
+  void Promise.allSettled(
+    downloadableCandidates.map(async (c) => {
+      const { fetchAndStoreModelMetadata } = await missingModelMetadata
+      await fetchAndStoreModelMetadata(
+        c.url,
+        missingModelStore,
+        controller.signal
       )
-    }
-  } else {
-    clearMissingModels(activeWf, silent)
-  }
+    })
+  )
 
   return { missingModels, confirmedCandidates }
 }

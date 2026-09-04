@@ -301,6 +301,8 @@ function scanComboWidget(
   }
   if (nodeIsAssetSupported) return candidate
 
+  const isAbsentFromOptions = () =>
+    !resolveComboValues(target.definitionWidget).includes(value)
   const inventory = getComboWidgetInventory(target.definitionWidget)
   if (inventory && inventory.getStatus() !== 'ready') {
     candidate.pendingVerification = async (signal) => {
@@ -309,14 +311,12 @@ function scanComboWidget(
         return undefined
       }
       if (target.valueWidget.value !== value) return undefined
-      return !resolveComboValues(target.definitionWidget).includes(value)
+      return isAbsentFromOptions()
     }
     return candidate
   }
 
-  candidate.isMissing = !resolveComboValues(target.definitionWidget).includes(
-    value
-  )
+  candidate.isMissing = isAbsentFromOptions()
   return candidate
 }
 

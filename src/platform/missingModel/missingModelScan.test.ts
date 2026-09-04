@@ -1982,7 +1982,9 @@ describe('verifyAssetSupportedCandidates', () => {
 describe('remote combo inventory', () => {
   function makeRemoteCombo(value: string) {
     const widget = makeComboWidget('file_name', value, ['0', '1'])
-    const inventory = { status: 'loading' as ComboWidgetInventoryStatus }
+    const inventory: { status: ComboWidgetInventoryStatus } = {
+      status: 'loading'
+    }
     let release = () => {}
     const settled = new Promise<void>((resolve) => {
       release = resolve

@@ -2,11 +2,12 @@ import type { AxiosStatic } from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getComboWidgetInventory } from '@/core/graph/widgets/comboWidgetInventory'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type {
-  IBaseWidget,
-  IComboWidget
-} from '@/lib/litegraph/src/types/widgets'
+import {
+  LGraph,
+  LGraphNode,
+  isComboWidget
+} from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
@@ -217,9 +218,8 @@ describe('useComboWidget', () => {
       createMockInputSpec({ remote: { route: '/remote-files' } })
     )
 
-    expect(getComboWidgetInventory(widget as IComboWidget)?.getStatus()).toBe(
-      'loading'
-    )
+    if (!isComboWidget(widget)) throw new Error('expected a combo widget')
+    expect(getComboWidgetInventory(widget)?.getStatus()).toBe('loading')
   })
 
   it('should create normal combo widget when asset API is disabled', () => {
