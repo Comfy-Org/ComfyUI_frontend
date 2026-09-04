@@ -2,6 +2,7 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 
 import { i18n } from '@/i18n'
 
@@ -23,18 +24,14 @@ vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({
   findOutputAsset: async () => undefined
 }))
 
-vi.mock('@vueuse/core', async (importOriginal) => {
-  const { ref } = await import('vue')
-  return {
-    ...(await importOriginal<object>()),
-    useClipboard: () => ({
-      copy: clipboard.copy,
-      copied: ref(false),
-      isSupported: ref(true),
-      text: ref('')
-    })
-  }
-})
+vi.mock('@vueuse/core', () => ({
+  useClipboard: () => ({
+    copy: clipboard.copy,
+    copied: ref(false),
+    isSupported: ref(true),
+    text: ref('')
+  })
+}))
 
 const markdownSource = '# Title\n\n**bold** move'
 
