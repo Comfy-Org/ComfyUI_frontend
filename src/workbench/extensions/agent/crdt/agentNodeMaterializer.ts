@@ -1,7 +1,10 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { materializeLinkAdapter } from '@/lib/litegraph/src/LLink'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
+import type {
+  ExportedSubgraph,
+  ISerialisedNode
+} from '@/lib/litegraph/src/types/serialisation'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
@@ -36,9 +39,15 @@ export type MaterializableGraph = Pick<
  * which matches the op layer: remote operations are applied against the root
  * scope, so subgraph-owned nodes are neither adopted nor detached here.
  *
+ * @param subgraphDefinitions `definitions.subgraphs` the agent seeded into the
+ * document. Root nodes typed by a definition id can only materialize once the
+ * definition is registered on the root graph.
  * @returns ids that received a new live node.
  */
-export function reconcileAgentAdapters(graph: MaterializableGraph): NodeId[] {
+export function reconcileAgentAdapters(
+  graph: MaterializableGraph,
+  _subgraphDefinitions: ExportedSubgraph[] = []
+): NodeId[] {
   return runMintPortsSuppressed(() => reconcile(graph))
 }
 

@@ -15,11 +15,13 @@ import {
   LGraph,
   LGraphNode,
   LiteGraph,
-  LLink
+  LLink,
+  SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraphData,
-  createTestSubgraphNode
+  createTestSubgraphNode,
+  enableSubgraphNodeCreation
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { reportError } from '@/platform/telemetry/reportError'
 // Mirrors the production bridge in AgentPanelRoot.vue, which takes the same
@@ -41,6 +43,7 @@ import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
 import { reconcileAgentAdapters } from './agentNodeMaterializer'
+import { readSubgraphDefinitions } from './agentSubgraphDefinitions'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import { FollowerDoc } from './followerDoc'
 import type { GraphOperation } from './graphOperations'
@@ -807,6 +810,83 @@ describe('reconcileAgentAdapters', () => {
           old: 7
         })
       ])
+    })
+  })
+
+  describe('subgraph definitions', () => {
+    /**
+     * Deliver a full-document frame minted from `workflow` to a fresh follower
+     * bound to `graph`, the way the first frame of a session (or a reseed
+     * after `doc_reset`) arrives.
+     */
+    function seedDocument(graph: LGraph, workflow: Parameters<typeof mint>[0]) {
+      const host = mint(workflow, CATALOG)
+      const follower = new FollowerDoc()
+      const adapter = new EcsFollowerAdapter(
+        remoteMutations(graphScopeOf(graph))
+      )
+      adapter.bind('workflow', follower)
+      const update = Y.encodeStateAsUpdate(host)
+      follower.applyRemoteUpdate(update)
+      expect(
+        adapter.applyFrame({
+          workflowId: 'workflow',
+          seq: 1,
+          update,
+          actor: 'agent:test',
+          opIds: []
+        })
+      ).toBe(true)
+      return { host, follower, adapter }
+    }
+
+    let disableSubgraphNodeCreation: () => void
+    let graph: LGraph
+    let created: ReturnType<typeof vi.fn<(event: Event) => void>>
+
+    beforeEach(() => {
+      graph = new LGraph()
+      // Unit-test analog of the `subgraph-created` handler in `app.ts` that
+      // registers each new subgraph as a node type.
+      disableSubgraphNodeCreation = enableSubgraphNodeCreation(graph)
+      created = vi.fn<(event: Event) => void>()
+      graph.events.addEventListener('subgraph-created', created)
+    })
+
+    afterEach(() => {
+      disableSubgraphNodeCreation()
+    })
+
+    /**
+     * Regression: an agent-seeded workflow carrying `definitions.subgraphs`
+     * materialized its subgraph instance as a `has_errors` "missing node"
+     * placeholder because the follower only read the root `nodes`/`links`
+     * maps. The definition never reached `LGraph.createSubgraphs`, so
+     * `subgraph-created` never fired and no `SubgraphNode` type was registered.
+     */
+    it('regression: materializes an agent-added subgraph instance as a SubgraphNode via the subgraph-created lifecycle', () => {
+      const definition = createTestSubgraphData({
+        nodes: [nodePayload(7)] as never
+      })
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id)],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+
+      expect(
+        reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+      ).toEqual([toNodeId(1)])
+
+      expect(graph.subgraphs.has(definition.id)).toBe(true)
+      expect(created).toHaveBeenCalledOnce()
+      const instance = graph.getNodeById(toNodeId(1))
+      expect(instance).toBeInstanceOf(SubgraphNode)
+      expect(instance?.has_errors).toBeFalsy()
+      expect((instance as SubgraphNode).subgraph.nodes).toHaveLength(1)
+      // Interior nodes belong to the subgraph, never to the root scope.
+      expect(graph._nodes).toHaveLength(1)
+      expect(reportError).not.toHaveBeenCalled()
     })
   })
 })
