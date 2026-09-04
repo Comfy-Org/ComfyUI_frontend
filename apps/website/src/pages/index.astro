@@ -13,7 +13,7 @@ import FeaturedWorkflowsSection from "../components/home/FeaturedWorkflowsSectio
 import CaseStudySpotlightSection from "../components/home/CaseStudySpotlightSection.vue";
 import GetStartedSection from "../components/home/GetStartedSection.vue";
 import { getCollection } from "astro:content";
-import { isNoindexPathname } from "../config/indexing";
+import { isWorkshopInBuild } from "../config/workshop-release";
 import { toBrowseModel } from "../config/workshop";
 import { featuredWorkshopModels } from "../config/workshop-featured";
 import { t } from "../i18n/translations";
@@ -30,10 +30,10 @@ const { siteUrl } = pageContext(
   Astro.currentLocale,
 );
 
-// Workshop is still unlisted, and the homepage is the most linked page on the
-// site, so it does not link there until the section is indexable. Flipping the
-// entry in config/indexing.ts launches the sitemap, llms.txt and this at once.
-const workshopModels = isNoindexPathname("/workshop")
+// The same switch that decides whether Workshop is built at all. A release
+// build has no Workshop routes, so the homepage must not link to them; one
+// control rather than two that can drift apart.
+const workshopModels = !isWorkshopInBuild()
   ? []
   : featuredWorkshopModels(
       (await getCollection("workshopModels")).map((entry) =>
