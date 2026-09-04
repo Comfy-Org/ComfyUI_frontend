@@ -1288,7 +1288,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.RightSidePanel.ShowErrorsTab',
-    category: ['Comfy', 'Error System'],
+    category: ['Comfy', 'Error System', 'IssuesTab'],
     name: 'Show issues tab in side panel',
     tooltip:
       'When enabled, the Issues tab is displayed in the right side panel to show blocking errors and missing resources that need setup.',
@@ -1299,7 +1299,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.Workflow.ShowMissingNodesWarning',
-    category: ['Comfy', 'Error System'],
+    category: ['Comfy', 'Error System', 'MissingNodes'],
     name: 'Show missing nodes in the issues tab',
     tooltip:
       'Requires the issues tab. When disabled, missing node packs are not listed and their nodes are not highlighted, but the workflow still cannot run until they are installed.',
@@ -1309,7 +1309,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.Workflow.ShowMissingModelsWarning',
-    category: ['Comfy', 'Error System'],
+    category: ['Comfy', 'Error System', 'MissingModels'],
     name: 'Show missing models in the issues tab',
     tooltip:
       'Requires the issues tab. When disabled, model files that are not found are not listed and their nodes are not highlighted.',
@@ -1318,7 +1318,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.Workflow.ShowMissingMediaWarning',
-    category: ['Comfy', 'Error System'],
+    category: ['Comfy', 'Error System', 'MissingMedia'],
     name: 'Show missing media in the issues tab',
     tooltip:
       'Requires the issues tab. When disabled, input images, videos and audio that are not found are not listed and their nodes are not highlighted.',
