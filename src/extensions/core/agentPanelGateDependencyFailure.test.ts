@@ -34,7 +34,12 @@ vi.mock('@/workbench/extensions/agent/stores/agent/agentConsentStore', () => ({
 
 vi.mock('@/composables/auth/useCurrentUser', async () => {
   const { ref } = await import('vue')
-  return { useCurrentUser: () => ({ isLoggedIn: ref(true) }) }
+  return {
+    useCurrentUser: () => ({
+      isLoggedIn: ref(true),
+      resolvedUserInfo: ref({ id: 'account-a' })
+    })
+  }
 })
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
