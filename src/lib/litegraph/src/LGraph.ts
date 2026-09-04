@@ -2530,8 +2530,13 @@ export class LGraph
         if (newLink.tid === UNASSIGNED_NODE_ID) continue
         const tnode = this.getNodeById(newLink.tid)
         if (!tnode) continue
+        const targetSlot =
+          newLink.targetSlotName === undefined
+            ? newLink.tslot
+            : tnode.findInputSlot(newLink.targetSlotName)
+        if (targetSlot === -1) continue
         created = this.inputNode.slots[newLink.oslot].connect(
-          tnode.inputs[newLink.tslot],
+          tnode.inputs[targetSlot],
           tnode
         )
       } else if (newLink.tid == SUBGRAPH_OUTPUT_ID) {
