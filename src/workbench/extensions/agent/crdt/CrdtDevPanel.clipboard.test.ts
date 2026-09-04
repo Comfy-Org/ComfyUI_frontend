@@ -53,6 +53,10 @@ const status: AgentCrdtStatus = {
   }
 }
 
+async function flushPromises() {
+  await new Promise((resolve) => setTimeout(resolve, 0))
+}
+
 function renderPanel(overrides: Partial<AgentCrdtStatus> = {}) {
   localStorage.setItem('Comfy.Agent.CrdtDevPanel.open', 'true')
   return render(CrdtDevPanel, {
@@ -216,6 +220,19 @@ describe('CrdtDevPanel clipboard controls', () => {
     )
   })
 
+  it('falls back to String() when a detail refuses to serialize', async () => {
+    const user = userEvent.setup()
+    recordDevEvent('doc_update', {
+      toJSON() {
+        throw new Error('not serializable')
+      }
+    })
+    renderPanel()
+    await user.click(screen.getByTestId('crdt-dev-panel-tab-log'))
+
+    expect(screen.getByText('[object Object]')).toBeInTheDocument()
+  })
+
   it('bounds retained details and truncates excerpts on code-point boundaries', async () => {
     const user = userEvent.setup()
     recordDevEvent('doc_update', 'x'.repeat(20_100))
@@ -253,28 +270,38 @@ describe('CrdtDevPanel clipboard controls', () => {
 
     first.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     second.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(writeText).toHaveBeenCalledTimes(2)
     resolveSecond?.()
-    await vi.waitFor(() => expect(second).toHaveTextContent('Copied'))
+    await vi.waitFor(() => expect(second).toHaveTextContent(/^Copied$/))
     resolveFirst?.()
-    await vi.waitFor(() => expect(second).toHaveTextContent('Copied'))
-    expect(first).toHaveTextContent('node-a')
+    await flushPromises()
+
+    expect(second).toHaveTextContent(/^Copied$/)
+    expect(first).toHaveTextContent(/^node-a$/)
   })
 
   it('does not update feedback after unmount', async () => {
-    let resolveWrite: (() => void) | undefined
-    writeText.mockImplementationOnce(
-      () => new Promise<void>((resolve) => (resolveWrite = resolve))
-    )
-    const panel = renderPanel()
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      let resolveWrite: (() => void) | undefined
+      writeText.mockImplementationOnce(
+        () => new Promise<void>((resolve) => (resolveWrite = resolve))
+      )
+      const panel = renderPanel()
+      screen
+        .getByRole('button', { name: 'Copy document id' })
+        .dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      expect(writeText).toHaveBeenCalledOnce()
 
-    void userEvent.click(
-      screen.getByRole('button', { name: 'Copy document id' })
-    )
-    panel.unmount()
-    resolveWrite?.()
+      panel.unmount()
+      expect(vi.getTimerCount()).toBe(0)
+      resolveWrite?.()
+      await flushPromises()
 
-    await Promise.resolve()
-    expect(screen.queryByText('Copied')).not.toBeInTheDocument()
+      expect(vi.getTimerCount()).toBe(0)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('omits unavailable controls without writing', async () => {

@@ -579,14 +579,23 @@ const chipLabel = computed(
 )
 
 function stringifyDetail(detail: unknown): string {
-  return JSON.stringify(detail, devEventReplacer()) ?? ''
+  try {
+    return JSON.stringify(detail, devEventReplacer()) ?? ''
+  } catch {
+    return String(detail)
+  }
 }
 
 function truncateDetail(detail: string, limit = 200): string {
-  const codePoints = [...detail]
-  return codePoints.length > limit
-    ? `${codePoints.slice(0, limit).join('')}…`
-    : detail
+  if (detail.length <= limit) return detail
+  let end = 0
+  let count = 0
+  for (const codePoint of detail) {
+    if (count === limit) break
+    end += codePoint.length
+    count++
+  }
+  return end < detail.length ? `${detail.slice(0, end)}…` : detail
 }
 
 function eventNodeIds(event: DevEvent): string[] {
