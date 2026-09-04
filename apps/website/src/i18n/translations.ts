@@ -8490,23 +8490,13 @@ Enterprise`
   'workshop.filter.clearAll': { en: 'Clear filters', 'zh-CN': '清除筛选' },
   'workshop.filter.applied': { en: '{n} selected', 'zh-CN': '已选 {n} 项' },
   'workshop.filter.providerGroup': { en: 'Models', 'zh-CN': '模型' },
-  'workshop.launch.all': { en: 'All', 'zh-CN': '全部' },
-  'workshop.launch.create': { en: 'Create', 'zh-CN': '创建' },
-  'workshop.launch.edit': {
-    en: 'Edit and enhance',
-    'zh-CN': '编辑与增强'
-  },
-  'workshop.launch.specialized': {
-    en: 'Specialized outcomes',
-    'zh-CN': '专项产出'
-  },
   'workshop.launch.allUseCases': {
     en: 'All use cases',
     'zh-CN': '全部用例'
   },
   'workshop.launch.label': {
-    en: 'What do you want to do',
-    'zh-CN': '你想做什么'
+    en: 'Use cases',
+    'zh-CN': '用例'
   },
   'workshop.filter.outputGroup': { en: 'Output', 'zh-CN': '输出' },
   'workshop.capGroup.createImages': {

@@ -1,12 +1,5 @@
 <script setup lang="ts">
-import {
-  ArrowUpDown,
-  Check,
-  ChevronDown,
-  ChevronLeft,
-  Search,
-  X
-} from '@lucide/vue'
+import { ArrowUpDown, ChevronDown, ChevronLeft, Search, X } from '@lucide/vue'
 import {
   DropdownMenuContent,
   DropdownMenuPortal,
@@ -15,7 +8,7 @@ import {
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
@@ -23,8 +16,6 @@ import { groupModels } from '../../config/model-family'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type {
-  CapabilityGroup,
-  LaunchGroup,
   ModalityFilter,
   SortOrder,
   UseCase,
@@ -35,11 +26,11 @@ import {
   parseCatalogSearch,
   CAPABILITY_GROUPS,
   MODALITIES,
-  LAUNCH_GROUPS,
+  USE_CASES,
   capabilityGroupOf,
-  launchGroupsOf,
   countByFacet,
   countByModality,
+  countByUseCase,
   modalityOf,
   filterWorkshopModels,
   sortWorkshopModels
@@ -116,34 +107,32 @@ const railBeside = computed(() => version.value === 'v1.2')
 
 const railLabel: TranslationKey = 'workshop.launch.label'
 
-const launch = ref<LaunchGroup | 'all'>('all')
+// One flat list of use cases, ordered by how much of the catalogue sits behind
+// each. Every model belongs to exactly one, so the counts are honest totals.
+const useCaseCounts = computed(() => countByUseCase(models))
 
-const launchLabelKey: Record<LaunchGroup | 'all', TranslationKey> = {
-  all: 'workshop.launch.all',
-  create: 'workshop.launch.create',
-  edit: 'workshop.launch.edit',
-  specialized: 'workshop.launch.specialized'
-}
+const rail = computed(() => {
+  const counts = useCaseCounts.value
+  return [
+    {
+      value: 'all' as const,
+      label: t('workshop.launch.allUseCases', locale),
+      count: counts.all,
+      current: useCase.value === 'all'
+    },
+    ...USE_CASES.filter((value) => counts[value] > 0)
+      .map((value) => ({
+        value,
+        label: t(useCaseLabelKey[value], locale),
+        count: counts[value],
+        current: useCase.value === value
+      }))
+      .sort((a, b) => b.count - a.count)
+  ]
+})
 
-// No counts: a model that both creates and edits belongs to two of these, so
-// any total shown here would be larger than the catalogue.
-const rail = computed(() =>
-  (['all', ...LAUNCH_GROUPS] as const).map((value) => ({
-    value,
-    label: launchLabelKey[value],
-    current: launch.value === value
-  }))
-)
-
-function selectRail(value: LaunchGroup | 'all') {
-  launch.value = value
-}
-// The tabs carry the taxonomy's top layer and the filter its second, so the
-// filter only offers the groups that belong to the tab in front.
-const GROUPS_PER_TAB: Record<LaunchGroup, readonly CapabilityGroup[]> = {
-  create: ['createImages', 'createVideos'],
-  edit: ['editImages', 'editVideos', 'enhance'],
-  specialized: ['identity', 'other']
+function selectRail(value: UseCase | 'all') {
+  useCase.value = value
 }
 
 // Ordered by group so the filter can show where each block begins.
@@ -155,26 +144,8 @@ const capabilityOptions = computed<FacetMenuOption[]>(() => {
       label: option.value,
       group: capabilityGroupOf(option.value)
     }))
-    .filter(
-      (option) =>
-        launch.value === 'all' ||
-        GROUPS_PER_TAB[launch.value].includes(option.group)
-    )
     .sort((a, b) => order.indexOf(a.group) - order.indexOf(b.group))
 })
-
-// A selection the tab no longer offers would keep narrowing the grid from
-// somewhere the visitor cannot see.
-watch(launch, () => {
-  const offered = new Set(capabilityOptions.value.map((option) => option.value))
-  capabilities.value = capabilities.value.filter((value) => offered.has(value))
-})
-function toggleCapability(value: string) {
-  capabilities.value = capabilities.value.includes(value)
-    ? capabilities.value.filter((capability) => capability !== value)
-    : [...capabilities.value, value]
-}
-
 const providerOptions = computed<FacetMenuOption[]>(() =>
   countByFacet(models, 'provider').map((option) => ({
     ...option,
@@ -202,9 +173,6 @@ const modalityLabelKey: Record<
   other: 'workshop.filter.other'
 }
 
-const inLaunchGroup = (model: WorkshopModel) =>
-  launch.value === 'all' || launchGroupsOf(model).includes(launch.value)
-
 const inModality = (model: WorkshopModel) =>
   modalities.value.length === 0 || modalities.value.includes(modalityOf(model))
 
@@ -216,9 +184,7 @@ const visible = computed(() =>
         useCase: useCase.value,
         providers: providers.value,
         capabilities: capabilities.value
-      })
-        .filter(inLaunchGroup)
-        .filter(inModality),
+      }).filter(inModality),
       sort.value
     ),
     groupVersions.value
@@ -336,55 +302,15 @@ const menuItemClass =
           :class="tabClass(entry.current)"
           @click="selectRail(entry.value)"
         >
-          {{
-            t(
-              railBeside && entry.value === 'all'
-                ? 'workshop.launch.allUseCases'
-                : entry.label,
-              locale
-            )
-          }}
+          <span class="min-w-0 truncate">{{ entry.label }}</span>
+          <span
+            v-if="entry.count !== undefined"
+            class="shrink-0 text-xs text-primary-warm-gray tabular-nums"
+          >
+            {{ entry.count }}
+          </span>
         </button>
       </nav>
-
-      <div
-        v-if="railBeside"
-        class="mt-8 hidden flex-col lg:flex"
-        data-testid="rail-categories"
-      >
-        <template v-for="option in capabilityOptions" :key="option.value">
-          <button
-            type="button"
-            role="checkbox"
-            :aria-checked="capabilities.includes(option.value)"
-            :data-testid="`rail-capability-${option.value}`"
-            class="hover:bg-transparency-white-t4 focus-visible:bg-transparency-white-t4 flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-sm text-primary-comfy-canvas outline-none"
-            @click="toggleCapability(option.value)"
-          >
-            <span
-              :class="
-                cn(
-                  'flex size-4 shrink-0 items-center justify-center rounded-sm border transition-colors',
-                  capabilities.includes(option.value)
-                    ? 'border-brand bg-brand text-page'
-                    : 'border-white/25'
-                )
-              "
-              aria-hidden="true"
-            >
-              <Check
-                v-if="capabilities.includes(option.value)"
-                class="size-3"
-                :stroke-width="3"
-              />
-            </span>
-            <span class="min-w-0 flex-1 truncate">{{ option.label }}</span>
-            <span class="shrink-0 text-primary-warm-gray tabular-nums">
-              {{ option.count }}
-            </span>
-          </button>
-        </template>
-      </div>
     </aside>
 
     <div class="min-w-0">
