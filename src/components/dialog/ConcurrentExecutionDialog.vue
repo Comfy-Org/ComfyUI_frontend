@@ -35,6 +35,7 @@ import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
 import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import { useConcurrentExecution } from '@/composables/useConcurrentExecution'
+import { reportError } from '@/platform/telemetry/reportError'
 
 const { isConcurrentExecutionEnabled, hasSeenOnboarding, markOnboardingSeen } =
   useConcurrentExecution()
@@ -52,7 +53,13 @@ const visible = computed({
 })
 
 async function dismiss() {
-  await markOnboardingSeen()
-  dismissed.value = true
+  try {
+    await markOnboardingSeen()
+    dismissed.value = true
+  } catch (error) {
+    reportError(error, {
+      errorType: 'concurrent_execution_onboarding_dismiss_failed'
+    })
+  }
 }
 </script>
