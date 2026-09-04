@@ -254,6 +254,28 @@ describe('graphMutations', () => {
     expect(createLayout).not.toHaveBeenCalled()
   })
 
+  it('keeps the incumbent title when a reconcile payload carries none', () => {
+    const graph = mutations()
+    graph.addNode({ ...node(1), title: 'Load Checkpoint' }, context)
+    const [existing] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    expect(existing.title).toBe('Load Checkpoint')
+
+    expect(
+      graph.batch({ ...context, opId: 'bootstrap' }, (batch) => {
+        const { title: _title, ...untitled } = node(1, { seed: 7 })
+        batch.reconcileNode(untitled)
+      })
+    ).toBe(true)
+
+    const [reconciled] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    expect(reconciled).toBe(existing)
+    expect(reconciled.title).toBe('Load Checkpoint')
+    expect(
+      useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), 'seed'))
+        ?.value
+    ).toBe(7)
+  })
+
   it('updates endpoint slot records while retaining the supplied link id', () => {
     const graph = mutations()
     graph.batch(context, (batch) => {

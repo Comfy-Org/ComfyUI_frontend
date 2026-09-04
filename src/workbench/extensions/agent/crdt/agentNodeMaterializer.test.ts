@@ -19,6 +19,7 @@ import {
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import {
+  createTestSubgraph,
   createTestSubgraphData,
   createTestSubgraphNode,
   enableSubgraphNodeCreation
@@ -919,6 +920,90 @@ describe('reconcileAgentAdapters', () => {
       expect((instance as SubgraphNode).subgraph.nodes).toHaveLength(1)
       // Interior nodes belong to the subgraph, never to the root scope.
       expect(graph._nodes).toHaveLength(1)
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    /**
+     * Regression (Linear PM-827): an agent-built subgraph instance rendered
+     * correctly on load, then degraded to a widget-less node titled with its
+     * definition UUID the moment the agent wrote a promoted host widget. The
+     * op layer stores that write as the instance's positional
+     * `__widgets_opaque` array and retires the empty `widgets` map; the
+     * follower reconciles the node from a payload that has no `title` and
+     * positional `widgets_values`, which renamed the node to its `type` and
+     * wiped every store-backed promoted widget the SubgraphNode projects.
+     */
+    it('regression: keeps a subgraph instance title and promoted widgets across a promoted host set_widget', () => {
+      const source = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'number' }]
+      })
+      const interior = new WidgetNode()
+      interior.addInput('value', 'number').widget = { name: 'value' }
+      source.add(interior)
+      source.inputNode.slots[0].connect(interior.inputs[0], interior)
+      const definition = source.asSerialisable()
+      // `registerSubgraphNodeDef` gives the registered class a static title of
+      // the subgraph's display name; `LGraphNode.configure` falls back to it
+      // when the serialised node carries no `title`, which is why the
+      // instance reads correctly on first materialization.
+      graph.events.addEventListener('subgraph-created', (event) => {
+        const registered =
+          LiteGraph.registered_node_types[event.detail.subgraph.id]
+        if (registered) registered.title = event.detail.subgraph.name
+      })
+
+      const { host, follower, adapter } = seedDocument(graph, {
+        nodes: [{ ...nodePayload(1, definition.id), widgets_values: [] }],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+      const definitions = readSubgraphDefinitions(follower.doc)
+      reconcileAgentAdapters(graph, definitions)
+
+      const instance = graph.getNodeById(toNodeId(1)) as SubgraphNode
+      expect(instance).toBeInstanceOf(SubgraphNode)
+      expect(instance.title).toBe(source.name)
+      const promotedWidgetId = instance.inputs[0]?.widgetId
+      if (!promotedWidgetId) throw new Error('Missing promoted widgetId')
+      expect(useWidgetValueStore().getWidget(promotedWidgetId)?.value).toBe(0)
+
+      const stateVector = Y.encodeStateVector(host)
+      const result = applyOps(
+        host,
+        [
+          agentOperation('op-promoted', 2, {
+            op: 'set_widget',
+            node_id: 1,
+            widget: 'value',
+            value: 42,
+            promoted: { value_index: 0, host_widgets_values: [42] }
+          })
+        ] as Parameters<typeof applyOps>[1],
+        CATALOG
+      )
+      expect(result.outcomes).toEqual([
+        { op_id: 'op-promoted', outcome: 'applied' }
+      ])
+      const update = Y.encodeStateAsUpdate(host, stateVector)
+      follower.applyRemoteUpdate(update)
+      expect(
+        adapter.applyFrame({
+          workflowId: 'workflow',
+          seq: 2,
+          update,
+          actor: 'agent:test',
+          opIds: ['op-promoted']
+        })
+      ).toBe(true)
+      expect(reconcileAgentAdapters(graph, definitions)).toEqual([])
+
+      expect(graph.getNodeById(toNodeId(1))).toBe(instance)
+      expect(instance.title).toBe(source.name)
+      expect(instance.inputs).toHaveLength(1)
+      expect(instance.inputs[0]?.widgetId).toBe(promotedWidgetId)
+      expect(useWidgetValueStore().getWidget(promotedWidgetId)?.value).toBe(42)
+      expect(instance.widgets).toHaveLength(1)
+      expect(instance.widgets[0]?.value).toBe(42)
       expect(reportError).not.toHaveBeenCalled()
     })
 
