@@ -17987,7 +17987,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "スタイルを作成する出力タイプ: ラスター画像には recraftv4_styles、SVG には recraftv4_styles_vector。"
+        "tooltip": "スタイルの作成対象となるモデル。Standard と Pro は1つのスタイルプールを共有します。ラスタースタイルはすべての Recraft V4 および V4.1 ラスターモデルで使用でき、ベクタースタイル（*_vector）はすべての V4 および V4.1 ベクターモデルで使用できます。"
       }
     },
     "outputs": {

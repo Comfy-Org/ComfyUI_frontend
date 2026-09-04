@@ -17987,7 +17987,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "סוג הפלט שעבורו נוצר הסגנון: recraftv4_styles לתמונות רסטר, recraftv4_styles_vector עבור SVG."
+        "tooltip": "המודל שעבורו נוצר הסגנון. Standard ו-Pro חולקים מאגר סגנונות אחד: סגנונות רסטר פועלים עם כל מודל רסטר של Recraft V4 ו-V4.1, וסגנונות וקטוריים (*_vector) עם כל מודל וקטורי של V4 ו-V4.1."
       }
     },
     "outputs": {

@@ -17987,7 +17987,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "建立風格所適用的輸出類型：recraftv4_styles 用於點陣圖片，recraftv4_styles_vector 用於 SVG。"
+        "tooltip": "建立此風格所適用的模型。Standard 與 Pro 共用同一個風格池：點陣風格可搭配所有 Recraft V4 與 V4.1 點陣模型，向量風格（*_vector）可搭配所有 V4 與 V4.1 向量模型。"
       }
     },
     "outputs": {
