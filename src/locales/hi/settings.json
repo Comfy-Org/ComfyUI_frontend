@@ -231,65 +231,65 @@
     }
   },
   "Comfy_Node_AllowImageSizeDraw": {
-    "name": "छवि प्रीव्यू के नीचे चौड़ाई × ऊँचाई दिखाएँ"
+    "name": "Show width × height below image preview"
   },
   "Comfy_Node_AlwaysShowAdvancedWidgets": {
-    "name": "सभी नोड्स पर एडवांस्ड विजेट हमेशा दिखाएँ",
-    "tooltip": "सक्षम होने पर, उन्नत विजेट सभी नोड पर हमेशा दिखाई देते हैं; उन्हें अलग-अलग विस्तारित करने की ज़रूरत नहीं होती।"
+    "name": "Show advanced widgets on all nodes",
+    "tooltip": "When enabled, advanced widgets are always visible on all nodes without needing to expand them individually."
   },
   "Comfy_Node_AutoSnapLinkToSlot": {
-    "name": "लिंक को नोड सलोट पर ऑटो स्नैप करें",
-    "tooltip": "किसी नोड पर लिंक खींचते समय, लिंक अपने-आप नोड के उपयुक्त इनपुट स्लॉट पर स्नैप हो जाता है।"
+    "name": "Auto snap link to node slot",
+    "tooltip": "When dragging a link over a node, the link automatically snaps to a viable input slot on the node."
   },
   "Comfy_Node_BypassAllLinksOnDelete": {
-    "name": "नोड हटाएँ करते समय सभी लिंक बनाए रखें",
-    "tooltip": "किसी नोड को हटाते समय, उसके सभी इनपुट और आउटपुट लिंक को फिर से कनेक्ट करने की कोशिश करें (हटाए गए नोड को बायपास करते हुए)।"
+    "name": "Keep all links when deleting nodes",
+    "tooltip": "When deleting a node, attempt to reconnect all of its input and output links (bypassing the deleted node)."
   },
   "Comfy_Node_DoubleClickTitleToEdit": {
-    "name": "नोड शीर्षक संपादित करने के लिए डबल क्लिक करें"
+    "name": "Double click node title to edit"
   },
   "Comfy_Node_MiddleClickRerouteNode": {
-    "name": "मध्य-क्लिक से एक नया रीराउट नोड बनता है"
+    "name": "Middle-click creates a new Reroute node"
   },
   "Comfy_Node_Opacity": {
-    "name": "नोड अपारदर्शिता"
+    "name": "Node opacity"
   },
   "Comfy_Node_ShowDeprecated": {
-    "name": "खोजें में पुराना नोड्स दिखाएँ",
-    "tooltip": "पुराने नोड यूआई में डिफ़ॉल्ट रूप से छिपे होते हैं, लेकिन जो वर्कफ़्लो उनका उपयोग करते हैं उनमें वे काम करते रहते हैं।"
+    "name": "Show deprecated nodes in search",
+    "tooltip": "Deprecated nodes are hidden by default in the UI, but remain functional in existing workflows that use them."
   },
   "Comfy_Node_ShowExperimental": {
-    "name": "खोजें में प्रायोगिक नोड्स दिखाएँ",
-    "tooltip": "प्रायोगिक नोड यूआई में ऐसे चिह्नित होते हैं और भविष्य के संस्करण में बड़े बदलाव या हटाए जाने के अधीन हो सकते हैं। प्रोडक्शन वर्कफ़्लो में सावधानी से उपयोग करें।"
+    "name": "Show experimental nodes in search",
+    "tooltip": "Experimental nodes are marked as such in the UI and may be subject to significant changes or removal in future versions. Use with caution in production workflows."
   },
   "Comfy_Node_SnapHighlightsNode": {
-    "name": "स्नैप होने पर नोड हाइलाइट करें",
-    "tooltip": "उपयुक्त इनपुट स्लॉट वाले नोड पर लिंक खींचते समय नोड को हाइलाइट करें"
+    "name": "Snap highlights node",
+    "tooltip": "When dragging a link over a node with a viable input slot, highlight the node."
   },
   "Comfy_NodeBadge_NodeIdBadgeMode": {
-    "name": "नोड आईडी बैज मोड",
+    "name": "Node ID badge mode",
     "options": {
-      "None": "कोई नहीं",
-      "Show all": "सभी दिखाएँ"
+      "None": "None",
+      "Show all": "Show all"
     }
   },
   "Comfy_NodeBadge_NodeLifeCycleBadgeMode": {
-    "name": "नोड लिफे कयकले बैज मोड",
+    "name": "Node life cycle badge mode",
     "options": {
-      "None": "कोई नहीं",
-      "Show all": "सभी दिखाएँ"
+      "None": "None",
+      "Show all": "Show all"
     }
   },
   "Comfy_NodeBadge_NodeSourceBadgeMode": {
-    "name": "नोड स्रोत बैज मोड",
+    "name": "Node source badge mode",
     "options": {
-      "None": "कोई नहीं",
-      "Show all": "सभी दिखाएँ",
-      "Hide built-in": "बिल्ट-इन छिपाएँ"
+      "None": "None",
+      "Show all": "Show all",
+      "Hide built-in": "Hide built-in"
     }
   },
   "Comfy_NodeBadge_ShowApiPricing": {
-    "name": "एपीआई नोड परिकिंग बैज दिखाएँ"
+    "name": "Show API node pricing badge"
   },
   "Comfy_NodeLibrary_NewDesign": {
     "name": "नई नोड लाइब्रेरी डिज़ाइन",
