@@ -9,6 +9,7 @@
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { JobId } from '@/schemas/apiSchema'
+import { isPageUnloading } from '@/utils/pageTeardownUtil'
 
 import type {
   JobAssetsResult,
@@ -53,17 +54,22 @@ async function fetchJobsRaw(
 ): Promise<FetchJobsRawResult> {
   const statusParam = statuses.join(',')
   const url = `/jobs?status=${statusParam}&limit=${maxItems}&offset=${offset}`
+  const noJobs: FetchJobsRawResult = {
+    jobs: [],
+    total: 0,
+    offset,
+    limit: maxItems,
+    hasMore: false
+  }
   try {
     const res = await fetchApi(url)
     if (!res.ok) {
-      console.error(`[Jobs API] Failed to fetch jobs: ${res.status}`)
-      return {
-        jobs: [],
-        total: 0,
-        offset,
-        limit: maxItems,
-        hasMore: false
-      }
+      const message = `[Jobs API] Failed to fetch jobs: ${res.status}`
+      // A poll that outran the session is a lifecycle state, not a fault: the
+      // request seam already waits for auth to resolve and re-mints once on 401.
+      if (res.status === 401) console.warn(message)
+      else console.error(message)
+      return noJobs
     }
     const data = zJobsListResponse.parse(await res.json())
     return {
@@ -74,8 +80,11 @@ async function fetchJobsRaw(
       hasMore: data.pagination.has_more
     }
   } catch (error) {
+    // A request the browser cancels as the page is discarded surfaces as a
+    // bare `TypeError`, so the page lifecycle is what identifies it.
+    if (isPageUnloading()) return noJobs
     console.error('[Jobs API] Error fetching jobs:', error)
-    return { jobs: [], total: 0, offset, limit: maxItems, hasMore: false }
+    return noJobs
   }
 }
 
@@ -179,6 +188,7 @@ export async function fetchJobDetail(
 
     return zJobDetail.parse(await res.json())
   } catch (error) {
+    if (isPageUnloading()) return undefined
     console.error(`Failed to fetch job detail for job ${jobId}:`, error)
     return undefined
   }
@@ -233,6 +243,7 @@ export async function fetchJobAssets(
       offset += data.assets.length
     }
   } catch (error) {
+    if (isPageUnloading()) return { assets, complete: false }
     console.error(`Failed to fetch assets for job ${jobId}:`, error)
     return { assets, complete: false }
   }

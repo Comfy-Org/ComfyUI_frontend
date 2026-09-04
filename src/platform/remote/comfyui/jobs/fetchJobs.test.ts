@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   extractWorkflow,
@@ -15,6 +15,15 @@ import type {
 import type { z } from 'zod'
 
 type JobsListResponse = z.infer<typeof zJobsListResponse>
+
+function dispatchPageTransition(
+  type: 'pagehide' | 'pageshow',
+  { persisted }: { persisted: boolean }
+) {
+  const event = new Event(type)
+  Object.defineProperty(event, 'persisted', { value: persisted })
+  window.dispatchEvent(event)
+}
 
 function createMockJob(
   id: string,
@@ -46,6 +55,10 @@ function createMockResponse(
 }
 
 describe('fetchJobs', () => {
+  beforeEach(() => {
+    dispatchPageTransition('pageshow', { persisted: true })
+  })
+
   describe('fetchHistory', () => {
     it('fetches completed jobs', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
@@ -136,15 +149,21 @@ describe('fetchJobs', () => {
       expect(result[0].priority).toBe(999)
     })
 
-    it('returns empty array on error', async () => {
+    it('reports a network error and returns an empty array', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const mockFetch = vi.fn().mockRejectedValue(new Error('Network error'))
 
       const result = await fetchHistory(mockFetch)
 
       expect(result).toEqual([])
+      expect(errorSpy).toHaveBeenCalledWith(
+        '[Jobs API] Error fetching jobs:',
+        expect.any(Error)
+      )
     })
 
-    it('returns empty array on non-ok response', async () => {
+    it('reports a server error and returns an empty array', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const mockFetch = vi.fn().mockResolvedValue({
         ok: false,
         status: 500
@@ -153,6 +172,88 @@ describe('fetchJobs', () => {
       const result = await fetchHistory(mockFetch)
 
       expect(result).toEqual([])
+      expect(errorSpy).toHaveBeenCalledWith(
+        '[Jobs API] Failed to fetch jobs: 500'
+      )
+    })
+
+    it('reports a malformed response body as an error', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ jobs: 'not-an-array' })
+      })
+
+      const result = await fetchHistory(mockFetch)
+
+      expect(result).toEqual([])
+      expect(errorSpy).toHaveBeenCalledWith(
+        '[Jobs API] Error fetching jobs:',
+        expect.anything()
+      )
+    })
+
+    it('warns instead of erroring on an unauthenticated response', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401
+      })
+
+      const result = await fetchHistory(mockFetch)
+
+      expect(result).toEqual([])
+      expect(warnSpy).toHaveBeenCalledWith(
+        '[Jobs API] Failed to fetch jobs: 401'
+      )
+      expect(errorSpy).not.toHaveBeenCalled()
+    })
+
+    it('does not report a request cancelled by page teardown', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const mockFetch = vi.fn().mockImplementation(() => {
+        dispatchPageTransition('pagehide', { persisted: false })
+        return Promise.reject(new TypeError('Failed to fetch'))
+      })
+
+      const result = await fetchHistory(mockFetch)
+
+      expect(result).toEqual([])
+      expect(errorSpy).not.toHaveBeenCalled()
+    })
+
+    it('still reports a failure when the page is only frozen', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const mockFetch = vi.fn().mockImplementation(() => {
+        dispatchPageTransition('pagehide', { persisted: true })
+        return Promise.reject(new TypeError('Failed to fetch'))
+      })
+
+      const result = await fetchHistory(mockFetch)
+
+      expect(result).toEqual([])
+      expect(errorSpy).toHaveBeenCalledWith(
+        '[Jobs API] Error fetching jobs:',
+        expect.any(TypeError)
+      )
+    })
+
+    it('still reports network errors after the page is restored', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      dispatchPageTransition('pagehide', { persisted: false })
+      dispatchPageTransition('pageshow', { persisted: true })
+      const mockFetch = vi
+        .fn()
+        .mockRejectedValue(new TypeError('Failed to fetch'))
+
+      const result = await fetchHistory(mockFetch)
+
+      expect(result).toEqual([])
+      expect(errorSpy).toHaveBeenCalledWith(
+        '[Jobs API] Error fetching jobs:',
+        expect.any(TypeError)
+      )
     })
 
     it('parses batch containing text-only preview outputs', async () => {
@@ -312,12 +413,30 @@ describe('fetchJobs', () => {
       expect(result).toBeUndefined()
     })
 
-    it('returns undefined on error', async () => {
+    it('reports an error and returns undefined on a network fault', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const mockFetch = vi.fn().mockRejectedValue(new Error('Network error'))
 
       const result = await fetchJobDetail(mockFetch, 'job1')
 
       expect(result).toBeUndefined()
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Failed to fetch job detail for job job1:',
+        expect.any(Error)
+      )
+    })
+
+    it('does not report a request cancelled by page teardown', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const mockFetch = vi.fn().mockImplementation(() => {
+        dispatchPageTransition('pagehide', { persisted: false })
+        return Promise.reject(new TypeError('Failed to fetch'))
+      })
+
+      const result = await fetchJobDetail(mockFetch, 'job1')
+
+      expect(result).toBeUndefined()
+      expect(errorSpy).not.toHaveBeenCalled()
     })
   })
 
@@ -381,7 +500,6 @@ describe('fetchJobs', () => {
         '[extractWorkflow] Workflow validation failed:',
         expect.any(String)
       )
-      consoleSpy.mockRestore()
     })
   })
 
@@ -585,6 +703,20 @@ describe('fetchJobs', () => {
       expect(assets).toEqual([])
       expect(complete).toBe(false)
       consoleSpy.mockRestore()
+    })
+
+    it('does not report a request cancelled by page teardown', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const mockFetch = vi.fn().mockImplementation(() => {
+        dispatchPageTransition('pagehide', { persisted: false })
+        return Promise.reject(new TypeError('Failed to fetch'))
+      })
+
+      const { assets, complete } = await fetchJobAssets(mockFetch, 'job1')
+
+      expect(assets).toEqual([])
+      expect(complete).toBe(false)
+      expect(errorSpy).not.toHaveBeenCalled()
     })
 
     it('stops at the page cap when the server always reports has_more', async () => {
