@@ -11,6 +11,7 @@ import type {
   OpenTabsSnapshot
 } from '../../services/agent/agentRestClient'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
+import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 
 export interface AgentEventSource {
   subscribe(listener: (raw: unknown) => void): () => void
@@ -93,6 +94,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   const { rest, events, workflow } = deps
 
   const conversationStore = useAgentConversationStore()
+  const bindingStore = useAgentWorkflowTabBindingStore()
   /**
    * The workflow the session is bound to (set on turn ack or an active-tab
    * switch, cleared by newChat/loadThread) - the CRDT follower's subscribe
@@ -274,18 +276,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
       localStorage.setItem(THREAD_STORAGE_KEY, ack.thread_id)
       if (ack.workflow_id !== undefined) {
         // The ack does not say whether the server minted a workflow or echoed
-        // the thread's existing one; an unbound tab may only adopt an id the
-        // session is not already bound to. Compare against the binding as of
-        // the ack, not a pre-prepare() snapshot: a bindWorkflow() landing in
-        // the prepare()/POST window (a late agent_active_tab frame, an
-        // overlapping send, loadThread) must make an echoed id read as an
-        // echo, not as freshly minted. A minted id is never equal to the
-        // current binding, so genuine adoption still fires.
+        // the thread's existing one. The persisted binding store preserves
+        // ownership across reloads; the session binding covers a bind that
+        // lands while this request is in flight.
         const boundAtAck = boundWorkflowId.value
         bindWorkflow(ack.workflow_id)
-        const echoedToUnboundTab =
-          wfContext?.id === undefined && ack.workflow_id === boundAtAck
-        if (!echoedToUnboundTab) workflow?.adopted(ack.workflow_id, wfContext)
+        const shouldAdopt =
+          wfContext?.id !== undefined ||
+          (ack.workflow_id !== boundAtAck &&
+            bindingStore.tabPathFor(ack.workflow_id) === undefined)
+        if (shouldAdopt) workflow?.adopted(ack.workflow_id, wfContext)
       }
       const turnId = ack.message_id as TurnId
       conversationStore.recordUser(

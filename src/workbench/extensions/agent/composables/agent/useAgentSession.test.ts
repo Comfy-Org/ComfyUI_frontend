@@ -22,6 +22,7 @@ import type {
   PostMessageInput
 } from '../../services/agent/agentRestClient'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
+import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 
 import type { SelectedNode } from './useCanvasSelection'
 import type { AgentEventSource, TurnOrigin } from './useAgentSession'
@@ -992,6 +993,48 @@ describe('useAgentSession (v1 composition root)', () => {
     // An echo of the current binding is not a mint: no re-adoption.
     expect(adopted).not.toHaveBeenCalled()
     expect(session.boundWorkflowId.value).toBe('wf-x')
+  })
+
+  it('(h10) reload does not adopt a resumed thread workflow onto an unsaved tab', async () => {
+    useAgentWorkflowTabBindingStore().bind(
+      'wf-existing',
+      'workflows/existing.json'
+    )
+    setActivePinia(createPinia())
+    localStorage.setItem('Comfy.Agent.ThreadId', 'th-existing')
+
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
+      thread_id: 'th-existing',
+      message_id: 'msg-1',
+      workflow_id: 'wf-existing'
+    }))
+    const getMessages = vi.fn<AgentRestClient['getMessages']>(async () => [])
+    const adopted = vi.fn()
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage, getMessages }),
+      events: fakeEvents().source,
+      workflow: {
+        current: () => ({ tabPath: 'workflows/scratch.json' }),
+        adopted
+      }
+    })
+    session.start()
+    await vi.waitFor(() =>
+      expect(getMessages).toHaveBeenCalledWith('th-existing')
+    )
+    await session.loadThread('th-existing')
+
+    expect(session.boundWorkflowId.value).toBeNull()
+    await session.sendMessage('resume here')
+
+    expect(postMessage).toHaveBeenCalledWith(
+      'th-existing',
+      expect.not.objectContaining({ workflowId: expect.anything() })
+    )
+    expect(adopted).not.toHaveBeenCalled()
+    expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-existing')).toBe(
+      'workflows/existing.json'
+    )
   })
 
   it("(i2) loadThread drops the previous thread's workflow binding", async () => {
