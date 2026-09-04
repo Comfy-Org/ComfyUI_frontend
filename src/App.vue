@@ -2,11 +2,12 @@
   <router-view />
   <GlobalDialog />
   <BlockUI full-screen :blocked="isLoading" />
+  <component :is="AccountLayerPoc" v-if="AccountLayerPoc" />
 </template>
 
 <script setup lang="ts">
 import BlockUI from 'primevue/blockui'
-import { computed, onMounted, watch } from 'vue'
+import { computed, defineAsyncComponent, onMounted, watch } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
@@ -19,6 +20,12 @@ import { parsePreloadError } from '@/utils/preloadErrorUtil'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 
 const workspaceStore = useWorkspaceStore()
+const AccountLayerPoc =
+  import.meta.env.VITE_ACCOUNT_LAYER_POC === 'true'
+    ? defineAsyncComponent(
+        () => import('@/platform/account/AccountLayerPoc.vue')
+      )
+    : null
 app.extensionManager = useWorkspaceStore()
 
 const conflictDetection = useConflictDetection()

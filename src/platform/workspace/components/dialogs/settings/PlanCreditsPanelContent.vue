@@ -16,6 +16,11 @@
       </div>
     </div>
 
+    <AccountLayerBillingPoc
+      v-if="accountLayerPocEnabled && activeView === 'overview'"
+      host="settings"
+      class="mb-4"
+    />
     <template v-if="activeView === 'overview'">
       <SubscriptionPanelContentWorkspace v-if="isCloud" />
       <div v-else class="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto">
@@ -32,7 +37,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, useTemplateRef, watch } from 'vue'
+import { computed, defineAsyncComponent, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import CreditsPanel from '@/components/dialog/content/setting/CreditsPanel.vue'
@@ -45,6 +50,12 @@ import SubscriptionPanelContentWorkspace from '@/platform/workspace/components/S
 type View = 'overview' | 'activity'
 
 const { t } = useI18n()
+const accountLayerPocEnabled = import.meta.env.VITE_ACCOUNT_LAYER_POC === 'true'
+const AccountLayerBillingPoc = accountLayerPocEnabled
+  ? defineAsyncComponent(
+      () => import('@/platform/account/AccountLayerBillingPoc.vue')
+    )
+  : null
 
 const tabs = computed<{ key: View; label: string }[]>(() => [
   { key: 'overview', label: t('workspacePanel.planCredits.tabs.overview') },

@@ -163,6 +163,12 @@ app
     modules: [VueFireAuth()]
   })
 
+if (import.meta.env.VITE_ACCOUNT_LAYER_POC === 'true') {
+  const { installAccountLayerPoc } =
+    await import('@/platform/account/installAccountLayerPoc')
+  installAccountLayerPoc(app, pinia, firebaseApp)
+}
+
 if (isCloud && hasHostTelemetryBridge) {
   syncHostUserIdWithFirebaseAuth()
 }

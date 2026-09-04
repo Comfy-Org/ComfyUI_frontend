@@ -472,6 +472,9 @@ importers:
       '@atlaskit/pragmatic-drag-and-drop':
         specifier: ^1.3.1
         version: 1.8.1
+      '@comfyorg/account':
+        specifier: file:../../.concept-poc/account-layer-refactor/07-poc/comfyorg-account-0.0.0-poc.tgz
+        version: file:../../.concept-poc/account-layer-refactor/07-poc/comfyorg-account-0.0.0-poc.tgz(vue@3.5.41(typescript@6.0.3))
       '@comfyorg/comfy-multi-player':
         specifier: 0.2.1
         version: 0.2.1
@@ -1610,6 +1613,15 @@ packages:
   '@clack/prompts@1.7.0':
     resolution: {integrity: sha512-y7/yvZ2TPAnR9+jnc00klvNNLkJiXFFrQA/hlLCcxA9a2A4zQIOimyFQ9XfwYKiGD1fb5GY8vbKIIgO8d5Tb2A==}
     engines: {node: '>= 20.12.0'}
+
+  '@comfyorg/account@file:../../.concept-poc/account-layer-refactor/07-poc/comfyorg-account-0.0.0-poc.tgz':
+    resolution: {integrity: sha512-0iu3f+U+Gx60WLMvQYlO0FhP5+lMLpGnBNVJXVq3Abww9NakHJouhnUkdn11Yj9eN4nunbqm8UVFHBuQEMzunA==, tarball: file:../../.concept-poc/account-layer-refactor/07-poc/comfyorg-account-0.0.0-poc.tgz}
+    version: 0.0.0-poc
+    peerDependencies:
+      vue: '>=3.5 <4'
+    peerDependenciesMeta:
+      vue:
+        optional: true
 
   '@comfyorg/comfy-multi-player@0.2.1':
     resolution: {integrity: sha512-ReaO6GIKUv8ONwhFk/hjJPYiLU7aqbSgjtSaS754gUZqu8ouqLJiKIAJMqk76N92RnPeXALLjBH5bFugkaI3YQ==}
@@ -10051,6 +10063,10 @@ snapshots:
       fast-string-width: 3.0.2
       fast-wrap-ansi: 0.2.2
       sisteransi: 1.0.5
+
+  '@comfyorg/account@file:../../.concept-poc/account-layer-refactor/07-poc/comfyorg-account-0.0.0-poc.tgz(vue@3.5.41(typescript@6.0.3))':
+    optionalDependencies:
+      vue: 3.5.41(typescript@6.0.3)
 
   '@comfyorg/comfy-multi-player@0.2.1':
     dependencies:

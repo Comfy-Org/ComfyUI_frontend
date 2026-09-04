@@ -101,6 +101,22 @@ export const useSubscriptionDialog = () => {
 
     trackModalOpened(options?.reason)
 
+    if (import.meta.env.VITE_ACCOUNT_LAYER_POC === 'true') {
+      dialogService.showLayoutDialog({
+        key: DIALOG_KEY,
+        component: defineAsyncComponent(
+          () => import('@/platform/account/AccountLayerBillingPoc.vue')
+        ),
+        props: { host: 'modal' },
+        dialogComponentProps: {
+          renderer: 'reka',
+          size: 'md',
+          dismissableMask: false
+        }
+      })
+      return
+    }
+
     const legacyPricingDialogProps = {
       renderer: 'reka',
       size: 'full',
@@ -208,6 +224,13 @@ export const useSubscriptionDialog = () => {
     if (isCloud && showInactiveMemberDialog()) return
 
     showPricingTable(options)
+  }
+
+  if (import.meta.env.VITE_ACCOUNT_LAYER_POC === 'true') {
+    void import('@/platform/account/accountClient').then(
+      ({ setAccountLayerPocShowBillingModal }) =>
+        setAccountLayerPocShowBillingModal(() => showPricingTable())
+    )
   }
 
   /**
