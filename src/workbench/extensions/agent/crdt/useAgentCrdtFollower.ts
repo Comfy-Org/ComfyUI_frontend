@@ -449,7 +449,6 @@ export function useAgentCrdtFollower(
       detail?.workflowId !== subscribedWorkflowId.value
     )
       return
-    sender.resetLineage()
     const context: RemoteMutationContext = {
       source: 'agent-remote',
       actor: detail?.actor ?? 'agent-reset',
