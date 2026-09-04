@@ -13,11 +13,11 @@ import { useWidgetValueStore } from './widgetValueStore'
  * cleared: {@link detachNodeFromStores} in `nodeShellLifecycle.ts` drops them
  * unconditionally on the same detach.
  */
-export type ClearNodeOwnedStoreStateMode = 'keep-values' | 'discard-values'
+export type WidgetDetachMode = 'keep-values' | 'discard-values'
 
 export function clearNodeOwnedStoreState(
   node: LGraphNode,
-  mode: ClearNodeOwnedStoreStateMode = 'discard-values'
+  mode: WidgetDetachMode = 'discard-values'
 ): void {
   const graph = node.graph
   if (!graph) return

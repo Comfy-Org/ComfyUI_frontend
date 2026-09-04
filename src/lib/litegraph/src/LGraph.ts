@@ -1480,7 +1480,12 @@ export class LGraph
 
     // callback
     node.onRemoved?.()
-    if (!successor) clearNodeOwnedStoreState(node, 'keep-values')
+    if (!successor) {
+      clearNodeOwnedStoreState(
+        node,
+        options.preserveCanonicalState ? 'discard-values' : 'keep-values'
+      )
+    }
 
     const order = node.order
     if (!successor) {

@@ -139,8 +139,6 @@ describe('promoted widget survival across host replacement', () => {
       subgraph.rootGraph.remove(host)
       await flushDeferredCleanup()
 
-      // Ordinary removal is undo-friendly (`WidgetDetachMode: 'keep-values'`):
-      // the widget value is still in the store immediately after removal.
       expect(store.getWidget(valueId)?.value).toBe(null)
 
       const replacement = createTestSubgraphNode(subgraph, { id: HOST_ID })
@@ -188,11 +186,8 @@ describe('promoted widget survival across host replacement', () => {
       subgraph.rootGraph.remove(host)
       await flushDeferredCleanup()
 
-      // The host's own promoted-widget entry is undo-friendly
-      // (`WidgetDetachMode: 'keep-values'`) like any other removed node's
-      // widget state, but the last host's removal still releases the
-      // subgraph *definition* (the interior node the promotion resolves
-      // against), so a same-id replacement can't re-derive a promoted input.
+      // The value survives removal, but the last host's removal still releases
+      // the subgraph definition, so a same-id replacement has nothing to promote.
       expect(store.getWidget(valueId)?.value).toBe(null)
 
       const replacement = createTestSubgraphNode(subgraph, { id: HOST_ID })

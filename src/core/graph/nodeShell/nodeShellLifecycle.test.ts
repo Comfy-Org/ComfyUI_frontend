@@ -42,10 +42,6 @@ describe('node shell teardown', () => {
 
     subgraph.remove(node)
 
-    // Ordinary removal is undo-friendly (`WidgetDetachMode: 'keep-values'`):
-    // the node drops out of order tracking, but its widget value stays
-    // recoverable until something explicitly discards it (graph clear,
-    // subgraph teardown, node replacement).
     expect(widgetValueStore.getNodeWidgetIds(rootGraphId, node.id)).toEqual([])
     expect(widgetValueStore.getWidget(widgetId)?.value).toBe('a value')
   })

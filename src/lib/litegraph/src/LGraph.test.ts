@@ -1126,6 +1126,21 @@ describe('node:before-removed event', () => {
     expect(beforeRemoved.mock.calls[0][0].detail).toEqual({ node, successor })
   })
 
+  it('discards widget state when preserving canonical state with no successor', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addWidget('number', 'value', 7, () => {})
+    graph.add(node)
+    const store = useWidgetValueStore()
+    const [widgetId] = store.getNodeWidgetIds(graph.id, node.id)
+    expect(store.getWidget(widgetId)?.value).toBe(7)
+
+    graph.remove(node, { preserveCanonicalState: true })
+
+    expect(store.getNodeWidgetIds(graph.id, node.id)).toEqual([])
+    expect(store.getWidget(widgetId)).toBeUndefined()
+  })
+
   it('does not fire node:before-removed for a node not in the graph', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
@@ -1501,9 +1516,6 @@ describe('Subgraph Definition Garbage Collection', () => {
 
     rootGraph.remove(node)
 
-    // Ordinary removal is undo-friendly (`WidgetDetachMode: 'keep-values'`):
-    // the widget value survives so a re-add restores it. Preview exposures
-    // aren't mode-gated and always clear on detach.
     expect(useWidgetValueStore().getWidget(id)?.value).toBe(1)
     expect(
       usePreviewExposureStore().getExposures(rootGraph.id, String(node.id))

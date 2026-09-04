@@ -219,9 +219,6 @@ describe('duplicated subgraph deleted in both orders (I4)', () => {
 
     scenario.rootGraph.remove(removed)
 
-    // Ordinary removal is undo-friendly (`WidgetDetachMode: 'keep-values'`):
-    // the removed instance's own promoted-widget value survives, it's the
-    // widget order tracking that's released.
     expect(useWidgetValueStore().getWidget(removedWidgetId)?.value).toBe(111)
     expect(
       useWidgetValueStore().getNodeWidgetIds(scenario.rootGraph.id, removed.id)
