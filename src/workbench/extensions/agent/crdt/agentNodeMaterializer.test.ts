@@ -88,7 +88,10 @@ const REMOTE: RemoteMutationContext = {
   opId: 'op-test'
 }
 const CATALOG: WidgetCatalog = {
-  types: { dummy: { widget_order: [] } }
+  types: {
+    dummy: { widget_order: [] },
+    'widget-node': { widget_order: ['value'] }
+  }
 }
 
 function agentOperation(id: string, version: number, payload: object) {
@@ -887,6 +890,81 @@ describe('reconcileAgentAdapters', () => {
       // Interior nodes belong to the subgraph, never to the root scope.
       expect(graph._nodes).toHaveLength(1)
       expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('registers a definition once across repeated reconciles', () => {
+      const definition = createTestSubgraphData({
+        nodes: [nodePayload(7)] as never
+      })
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id)],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+      const definitions = readSubgraphDefinitions(follower.doc)
+
+      reconcileAgentAdapters(graph, definitions)
+      const subgraph = graph.subgraphs.get(definition.id)
+      const instance = graph.getNodeById(toNodeId(1))
+
+      // Every applied frame reconciles again with the same definitions.
+      expect(reconcileAgentAdapters(graph, definitions)).toEqual([])
+
+      expect(created).toHaveBeenCalledOnce()
+      expect(graph.subgraphs.get(definition.id)).toBe(subgraph)
+      expect(graph.getNodeById(toNodeId(1))).toBe(instance)
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('carries interior widget values into the instantiated subgraph', () => {
+      const definition = createTestSubgraphData({
+        nodes: [
+          { ...nodePayload(7, 'widget-node'), widgets_values: [42] }
+        ] as never
+      })
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id)],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+
+      const instance = graph.getNodeById(toNodeId(1)) as SubgraphNode
+      const interior = instance.subgraph.getNodeById(toNodeId(7))
+      expect(interior?.widgets?.[0]?.value).toBe(42)
+    })
+
+    it('reports a definition that fails to register and still reconciles root nodes', () => {
+      const definition = createTestSubgraphData({
+        nodes: [nodePayload(7)] as never
+      })
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id), nodePayload(2)],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+      vi.spyOn(graph, 'createSubgraphs').mockImplementation(() => {
+        throw new Error('definition rejected')
+      })
+
+      const materialized = reconcileAgentAdapters(
+        graph,
+        readSubgraphDefinitions(follower.doc)
+      )
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'definition rejected' }),
+        {
+          errorType: 'agent_subgraph_definitions_failed',
+          context: { graphId: graph.id, definitionIds: [definition.id] }
+        }
+      )
+      // The plain node still materializes; the instance degrades to the
+      // error placeholder instead of taking the whole reconcile down.
+      expect(materialized).toEqual([toNodeId(1), toNodeId(2)])
+      expect(graph.getNodeById(toNodeId(2))).toBeInstanceOf(DummyNode)
+      expect(graph.getNodeById(toNodeId(1))?.has_errors).toBe(true)
     })
   })
 })
