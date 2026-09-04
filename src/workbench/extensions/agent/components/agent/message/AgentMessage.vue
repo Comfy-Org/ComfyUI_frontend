@@ -5,6 +5,7 @@ import type {
   ActivityPart,
   AssistantMessage,
   NoticePart,
+  RunApprovalPart,
   TabLinkPart,
   TextPart
 } from '../../../services/agent/agentMessageParts'
@@ -14,17 +15,26 @@ import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
 import MarkdownStream from './MarkdownStream.vue'
 import MessageFeedback from './MessageFeedback.vue'
+import RunApprovalCard from './RunApprovalCard.vue'
 import TabLinkCard from './TabLinkCard.vue'
 import ToolCallGroup from './ToolCallGroup.vue'
 
-const { message } = defineProps<{ message: AssistantMessage }>()
-const emit = defineEmits<{ feedback: [vote: 'up' | 'down' | null] }>()
+const { message, answeringAskIds = new Set<string>() } = defineProps<{
+  message: AssistantMessage
+  answeringAskIds?: ReadonlySet<string>
+}>()
+const emit = defineEmits<{
+  feedback: [vote: 'up' | 'down' | null]
+  answerAsk: [askId: string, selection: 'run' | 'cancel']
+  openWorkflow: [workflowId: string, workflowName?: string]
+}>()
 
 type Group =
   | { kind: 'text'; part: TextPart }
   | { kind: 'notice'; part: NoticePart }
   | { kind: 'activity'; parts: ActivityPart[] }
   | { kind: 'tabLinks'; parts: TabLinkPart[] }
+  | { kind: 'runApproval'; part: RunApprovalPart }
 
 const groups = computed<Group[]>(() => {
   const out: Group[] = []
@@ -41,6 +51,8 @@ const groups = computed<Group[]>(() => {
     } else if (part.type === 'tabLink') {
       if (prev?.kind === 'tabLinks') prev.parts.push(part)
       else out.push({ kind: 'tabLinks', parts: [part] })
+    } else if (part.type === 'runApproval') {
+      out.push({ kind: 'runApproval', part })
     } else {
       out.push({ kind: 'notice', part })
     }
@@ -90,6 +102,16 @@ const hasTools = computed(() =>
           :name="link.name"
         />
       </div>
+      <RunApprovalCard
+        v-else-if="group.kind === 'runApproval'"
+        :part="group.part"
+        :answering="answeringAskIds.has(group.part.askId)"
+        @answer="(askId, selection) => emit('answerAsk', askId, selection)"
+        @open-workflow="
+          (workflowId, workflowName) =>
+            emit('openWorkflow', workflowId, workflowName)
+        "
+      />
       <div
         v-else
         :role="group.part.level === 'error' ? 'alert' : 'status'"
