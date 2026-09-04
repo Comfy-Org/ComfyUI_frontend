@@ -455,6 +455,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import CreditSlider from '@/components/ui/credit-slider/CreditSlider.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import {
   TIER_PRICING,
   hasActivePaidPlan,
@@ -516,6 +517,7 @@ const { t, n } = useI18n()
 const capabilities = useBillingCapabilities()
 const { permissions, canReactivatePlan: canReactivatePlanPolicy } =
   useWorkspaceUI()
+const { shouldUseWorkspaceBilling } = useBillingRouting()
 
 // A pending snapshot is no answer, not a denial (IR-128 / DES-974 7c). Until
 // the first capability read resolves, fails, or is denied, the plan CTAs fail
@@ -618,11 +620,17 @@ const footerNotice = computed<FooterNotice | null>(() => {
   }
   // Only a genuinely resolved `can_subscribe_self_serve: false` — a denied
   // (401/403) read is authoritative but carries no capability values, so it
-  // must not read as a change in progress. And only while every plan CTA the
-  // table shows is disabled: a pill saying subscribing is blocked next to an
-  // enabled Change/Resubscribe button would contradict itself.
+  // must not read as a change in progress. Never on the legacy billing rail:
+  // legacy_stripe workspaces have no capability projection row, so the server
+  // resolves their capabilities false permanently, and the change-in-progress
+  // copy would be a false promise (IR-128 / DES-974 7a) — they keep the
+  // pre-pill rendering until a dedicated legacy notice ships. And only while
+  // every plan CTA the table shows is disabled: a pill saying subscribing is
+  // blocked next to an enabled Change/Resubscribe button would contradict
+  // itself.
   if (
     isCloud &&
+    shouldUseWorkspaceBilling.value &&
     capabilities.snapshotResolved.value &&
     !capabilities.canSubscribeSelfServe.value &&
     shownPlanCtasDisabled.value

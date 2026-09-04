@@ -45,6 +45,7 @@ const mockPermissions = ref({
   canManageSubscriptionLifecycle: true,
   canDowngradeToPersonal: true
 })
+const mockShouldUseWorkspaceBilling = ref(true)
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
@@ -60,6 +61,14 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 }))
 
 vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
+
+vi.mock('@/composables/billing/useBillingRouting', () => ({
+  useBillingRouting: () => ({
+    shouldUseWorkspaceBilling: computed(
+      () => mockShouldUseWorkspaceBilling.value
+    )
+  })
+}))
 
 vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
   useBillingCapabilities: () => ({
@@ -589,6 +598,7 @@ describe('UnifiedPricingTable footer notice pill', () => {
     mockCanDowngradeToPersonal.value = true
     mockCapabilityReadFailed.value = false
     mockIsReady.value = true
+    mockShouldUseWorkspaceBilling.value = true
     mockSnapshotResolved.value = true
     mockCanChangeSeats.value = null
     mockRetryCapabilityRead.mockClear()
@@ -691,6 +701,23 @@ describe('UnifiedPricingTable footer notice pill', () => {
     mockCanManageSubscription.value = true
     await nextTick()
     expect(screen.getByRole('status').textContent).toContain(SETTLING_TEXT)
+  })
+
+  it('never shows the change-in-progress pill on the legacy billing rail', () => {
+    // legacy_stripe has no capability projection row: the server resolves
+    // these capabilities false permanently, so the change-in-progress copy
+    // would promise 20k paying customers a change that never completes. They
+    // keep the pre-pill rendering (disabled CTAs, fine-print blurb).
+    mockShouldUseWorkspaceBilling.value = false
+    mockCanManageSubscription.value = false
+
+    renderComponent()
+
+    expect(
+      screen.getByRole('button', { name: 'Subscribe to Standard Yearly' })
+    ).toBeDisabled()
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(screen.getByText(/Based on this template/)).toBeTruthy()
   })
 
   it('keeps the fine print when the read is denied outright (401/403)', () => {
