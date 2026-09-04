@@ -206,6 +206,27 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
     ).toBeNull()
   })
 
+  it('hides verification once a resumed challenge is processing', () => {
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: preview({}),
+        embeddedCheckoutEnabled: true,
+        authenticationState: 'processing',
+        // A stale action_url can still be present while the server catches up
+        // to a challenge this or another tab already resumed; the button must
+        // stay hidden so the customer never reopens a moving intent.
+        actionUrl: 'https://verify.example/sensitive-token'
+      },
+      global: globalOptions
+    })
+
+    expect(
+      screen.queryByRole('button', {
+        name: 'subscription.preview.completeVerification'
+      })
+    ).toBeNull()
+  })
+
   it('renders a scheduled downgrade with the after-that block and no charge', () => {
     render(SubscriptionTransitionPreviewWorkspace, {
       props: {

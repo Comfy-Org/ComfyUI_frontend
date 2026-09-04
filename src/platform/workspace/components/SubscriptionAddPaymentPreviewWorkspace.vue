@@ -250,7 +250,11 @@
       </div>
 
       <Button
-        v-if="actionUrl && authenticationState !== 'failed_retryable'"
+        v-if="
+          actionUrl &&
+          authenticationState !== 'failed_retryable' &&
+          authenticationState !== 'processing'
+        "
         variant="inverted"
         size="lg"
         class="w-full rounded-lg"
