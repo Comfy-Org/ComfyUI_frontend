@@ -37,20 +37,8 @@ export const cloudNodesPage: ModelLaunchPage = {
     },
     secondaryCta: {
       labelKey: 'cloudNodesLaunch.hero.secondaryCta',
-      href: externalLinks.cloud,
+      href: externalLinks.pricing,
       target: '_blank'
-    }
-  },
-  pricing: {
-    defaultBillingCycle: 'monthly',
-    banner: {
-      titleKey: 'cloudNodesLaunch.pricing.banner.title',
-      subtitleKey: 'cloudNodesLaunch.pricing.banner.subtitle',
-      cta: {
-        labelKey: 'cloudNodesLaunch.pricing.banner.cta',
-        href: GET_STARTED,
-        target: '_blank'
-      }
     }
   },
   steps: {
