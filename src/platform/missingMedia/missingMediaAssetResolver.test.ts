@@ -2,52 +2,24 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type * as AssetServiceModule from '@/platform/assets/services/assetService'
-import type * as FetchJobsModule from '@/platform/remote/comfyui/jobs/fetchJobs'
+import { assetService } from '@/platform/assets/services/assetService'
+import { fetchHistoryPage } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import {
   getAssetDetectionNames,
   resolveMissingMediaAssetSources
 } from './missingMediaAssetResolver'
 
-const { mockGetAllAssetsByTag, mockGetAssetsPageByTag } = vi.hoisted(() => ({
-  mockGetAllAssetsByTag: vi.fn(),
-  mockGetAssetsPageByTag: vi.fn()
-}))
-
-const { mockFetchHistoryPage } = vi.hoisted(() => ({
-  mockFetchHistoryPage: vi.fn()
-}))
-
 vi.mock('@/composables/useFeatureFlags', () => ({
   useFeatureFlags: () => ({ flags: { assetsEnabled: true } })
 }))
 
-vi.mock('@/platform/assets/services/assetService', async () => {
-  const actual = await vi.importActual<typeof AssetServiceModule>(
-    '@/platform/assets/services/assetService'
-  )
+vi.mock('@/platform/assets/services/assetService')
+vi.mock('@/platform/remote/comfyui/jobs/fetchJobs')
 
-  return {
-    ...actual,
-    assetService: {
-      ...actual.assetService,
-      getAllAssetsByTag: mockGetAllAssetsByTag,
-      getAssetsPageByTag: mockGetAssetsPageByTag
-    }
-  }
-})
-
-vi.mock('@/platform/remote/comfyui/jobs/fetchJobs', async () => {
-  const actual = await vi.importActual<typeof FetchJobsModule>(
-    '@/platform/remote/comfyui/jobs/fetchJobs'
-  )
-
-  return {
-    ...actual,
-    fetchHistoryPage: mockFetchHistoryPage
-  }
-})
+const mockGetAllAssetsByTag = vi.mocked(assetService.getAllAssetsByTag)
+const mockGetAssetsPageByTag = vi.mocked(assetService.getAssetsPageByTag)
+const mockFetchHistoryPage = vi.mocked(fetchHistoryPage)
 
 function makeAsset(name: string, assetHash?: string): AssetItem {
   return fromPartial({
@@ -253,7 +225,7 @@ describe('resolveMissingMediaAssetSources', () => {
 
     const outputSignal = mockGetAssetsPageByTag.mock.calls[0]?.[2]?.signal
     expect(outputSignal).toBeInstanceOf(AbortSignal)
-    expect(outputSignal.aborted).toBe(true)
+    expect(outputSignal?.aborted).toBe(true)
     expect(mockFetchHistoryPage).not.toHaveBeenCalled()
   })
 
