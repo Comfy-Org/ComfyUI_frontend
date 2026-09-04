@@ -6,7 +6,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import type { LGraphCanvas, Positionable } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { selectableKeyOf } from '@/lib/litegraph/src/utils/selectableItems'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 
 const { appModeState } = vi.hoisted(() => ({
   appModeState: {} as { isAppMode: Ref<boolean> }
@@ -105,18 +108,24 @@ describe('useCanvasStore', () => {
       const node = new LGraphNode('test')
       graph.add(node)
 
-      const selectedItems = new Set<Positionable>([node])
+      const scope = graphScopeOf(graph)
+      const selectionStore = useSelectionStore()
       const fakeCanvas = {
         canvas: document.createElement('canvas'),
         graph,
-        selectedItems,
         deselect: vi.fn((item: Positionable) => {
-          selectedItems.delete(item)
+          selectionStore.apply(scope, {
+            type: 'selection.remove',
+            keys: [selectableKeyOf(item)]
+          })
         })
       }
       store.canvas = fakeCanvas as unknown as LGraphCanvas
       await nextTick()
-      store.updateSelectedItems()
+      selectionStore.apply(scope, {
+        type: 'selection.add',
+        keys: [selectableKeyOf(node)]
+      })
       expect(store.selectedItems).toContain(node)
 
       let stillSelectedInOnRemoved: boolean | undefined
@@ -153,10 +162,25 @@ describe('useCanvasStore', () => {
     })
   })
 
-  it('Does not include groups in selected nodeIds', async () => {
-    store.selectedItems = [new LGraphGroup()]
+  it('resolves selected keys against the current graph and excludes groups from selectedNodeIds', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    const group = new LGraphGroup()
+    graph.add(node)
+    graph.add(group)
+    store.canvas = fromPartial<LGraphCanvas>({
+      canvas: document.createElement('canvas'),
+      graph
+    })
+    await nextTick()
 
-    expect(store.selectedNodeIds).toHaveLength(0)
+    useSelectionStore().apply(graphScopeOf(graph), {
+      type: 'selection.replace',
+      keys: [selectableKeyOf(group), selectableKeyOf(node)]
+    })
+
+    expect(store.selectedItems).toEqual([group, node])
+    expect([...store.selectedNodeIds]).toEqual([node.id])
   })
 
   describe('isReadOnly', () => {

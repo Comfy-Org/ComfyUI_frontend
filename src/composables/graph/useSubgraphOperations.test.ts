@@ -8,6 +8,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
+import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { useSubgraphOperations } from './useSubgraphOperations'
 
 const captureCanvasState = vi.fn()
@@ -32,7 +33,7 @@ function createRegularNode(): LGraphNode {
 
 describe('useSubgraphOperations', () => {
   beforeEach(() => {
-    useCanvasStore().selectedItems = []
+    setCanvasSelection([])
     useWorkflowStore().activeWorkflow = fromPartial<LoadedComfyWorkflow>({
       changeTracker: { captureCanvasState }
     })
@@ -87,7 +88,7 @@ describe('useSubgraphOperations', () => {
   })
 
   it('addSubgraphToLibrary calls publishSubgraph when single SubgraphNode selected', async () => {
-    useCanvasStore().selectedItems = [createSubgraphNode()]
+    setCanvasSelection([createSubgraphNode()])
     const { addSubgraphToLibrary } = useSubgraphOperations()
 
     await addSubgraphToLibrary()
@@ -96,7 +97,7 @@ describe('useSubgraphOperations', () => {
   })
 
   it('addSubgraphToLibrary does not call publishSubgraph when no items selected', async () => {
-    useCanvasStore().selectedItems = []
+    setCanvasSelection([])
     const { addSubgraphToLibrary } = useSubgraphOperations()
 
     await addSubgraphToLibrary()
@@ -105,10 +106,7 @@ describe('useSubgraphOperations', () => {
   })
 
   it('addSubgraphToLibrary does not call publishSubgraph when multiple items selected', async () => {
-    useCanvasStore().selectedItems = [
-      createSubgraphNode(),
-      createSubgraphNode()
-    ]
+    setCanvasSelection([createSubgraphNode(), createSubgraphNode()])
     const { addSubgraphToLibrary } = useSubgraphOperations()
 
     await addSubgraphToLibrary()
@@ -117,7 +115,7 @@ describe('useSubgraphOperations', () => {
   })
 
   it('addSubgraphToLibrary does not call publishSubgraph when selected item is not a SubgraphNode', async () => {
-    useCanvasStore().selectedItems = [createRegularNode()]
+    setCanvasSelection([createRegularNode()])
     const { addSubgraphToLibrary } = useSubgraphOperations()
 
     await addSubgraphToLibrary()
