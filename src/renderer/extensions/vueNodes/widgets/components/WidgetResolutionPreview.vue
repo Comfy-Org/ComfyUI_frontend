@@ -25,8 +25,9 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { getNodeWidgetValue } from '@/core/graph/widgets/nodeWidgetValues'
+import { nodeWidgetId } from '@/core/graph/widgets/nodeWidgetValues'
 import type { IWidgetResolutionPreviewOptions } from '@/lib/litegraph/src/types/widgets'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useWidgetHeight } from '@/types/widgetTypes'
@@ -41,10 +42,18 @@ const { widget, nodeId } = defineProps<{
 }>()
 
 const { t } = useI18n()
+const widgetValueStore = useWidgetValueStore()
 
 const hostNode = computed(() =>
   nodeId === undefined ? undefined : resolveNode(nodeId)
 )
+
+function siblingValue(name: string): unknown {
+  const node = hostNode.value
+  if (!node) return undefined
+  const id = nodeWidgetId(node, name)
+  return id ? widgetValueStore.getWidget(id)?.value : undefined
+}
 
 // Python round() ties to even; Math.round ties up.
 function roundHalfToEven(value: number): number {
@@ -56,30 +65,31 @@ function roundHalfToEven(value: number): number {
 // Mirrors ResolutionSelector.execute in comfy_extras/nodes_resolution.py —
 // keep the math in sync with the backend.
 const resolution = computed(() => {
-  const node = hostNode.value
-  if (!node) return null
-  const ratioRaw = getNodeWidgetValue(
-    node,
-    widget.options?.ratio_widget ?? 'aspect_ratio'
-  )
-  const mpRaw = getNodeWidgetValue(
-    node,
-    widget.options?.megapixels_widget ?? 'megapixels'
-  )
-  const multipleRaw = getNodeWidgetValue(
-    node,
+  const ratioRaw = siblingValue(widget.options?.ratio_widget ?? 'aspect_ratio')
+  const mpRaw = siblingValue(widget.options?.megapixels_widget ?? 'megapixels')
+  const multipleRaw = siblingValue(
     widget.options?.multiple_widget ?? 'multiple'
   )
 
   const match =
-    typeof ratioRaw === 'string' ? /^(\d+)\s*:\s*(\d+)/.exec(ratioRaw) : null
+    typeof ratioRaw === 'string'
+      ? /^(\d+(?:\.\d+)?)\s*:\s*(\d+(?:\.\d+)?)/.exec(ratioRaw)
+      : null
   const megapixels = typeof mpRaw === 'number' ? mpRaw : NaN
-  if (!match || !Number.isFinite(megapixels) || megapixels <= 0) return null
-
   const multiple =
-    typeof multipleRaw === 'number' && multipleRaw > 0 ? multipleRaw : 8
+    typeof multipleRaw === 'number' && multipleRaw > 0 ? multipleRaw : null
+  if (
+    !match ||
+    !Number.isFinite(megapixels) ||
+    megapixels <= 0 ||
+    multiple === null
+  ) {
+    return null
+  }
+
   const wRatio = Number(match[1])
   const hRatio = Number(match[2])
+  if (!(wRatio > 0) || !(hRatio > 0)) return null
   const scale = Math.sqrt((megapixels * 1024 * 1024) / (wRatio * hRatio))
   const width = roundHalfToEven((wRatio * scale) / multiple) * multiple
   const height = roundHalfToEven((hRatio * scale) / multiple) * multiple
