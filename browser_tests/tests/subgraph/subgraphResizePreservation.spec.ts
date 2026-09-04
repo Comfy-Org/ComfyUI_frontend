@@ -89,7 +89,7 @@ test.describe(
       const resizedBox = (await subgraphNode.boundingBox())!
 
       await comfyPage.vueNodes.enterSubgraph('2')
-      await comfyPage.subgraph.unpromoteWidget(ksampler, 'steps')
+      await comfyPage.subgraph.removeSlot('input', 'steps')
       await comfyPage.subgraph.exitViaBreadcrumb()
 
       const box = await subgraphNode.boundingBox()
@@ -141,11 +141,10 @@ test.describe(
         .toBeCloseTo(resizedBox.width, 0)
 
       await comfyPage.vueNodes.enterSubgraph('2')
-      await comfyPage.subgraph.unpromoteWidget(ksampler, 'steps')
+      await comfyPage.subgraph.removeSlot('input', 'steps')
       await comfyPage.subgraph.exitViaBreadcrumb()
-
       await comfyPage.vueNodes.enterSubgraph('2')
-      await comfyPage.subgraph.unpromoteWidget(ksampler, 'cfg')
+      await comfyPage.subgraph.removeSlot('input', 'cfg')
       await comfyPage.subgraph.exitViaBreadcrumb()
 
       const box = await subgraphNode.boundingBox()

@@ -8,14 +8,13 @@
       flex: gridTemplateRows.includes('auto') ? 1 : undefined
     }"
   >
-    <template v-for="widget in processedWidgets" :key="widget.renderKey">
+    <template v-for="row in renderedRows" :key="row.widget.renderKey">
       <div
-        v-if="shouldRenderRow(widget)"
-        :data-testid="isConvertedWidget(widget) ? undefined : 'node-widget'"
+        :data-testid="row.testId"
         :class="
           cn(
             'group col-span-full grid grid-cols-subgrid items-stretch',
-            !isConvertedWidget(widget) && 'lg-node-widget'
+            row.showsControl && 'lg-node-widget'
           )
         "
       >
@@ -23,48 +22,49 @@
           :class="
             cn(
               'z-10 flex w-3 items-stretch opacity-0 transition-opacity duration-150 group-hover:opacity-100',
-              widget.slotMetadata?.linked && 'opacity-100'
+              row.widget.slotMetadata?.linked && 'opacity-100'
             )
           "
         >
           <InputSlot
-            v-if="widget.slotMetadata"
-            :key="`widget-slot-${widget.simplified.name}-${widget.slotMetadata.index}`"
+            v-if="row.widget.slotMetadata"
+            :key="`widget-slot-${row.widget.simplified.name}-${row.widget.slotMetadata.index}`"
             :slot-data="{
-              name: widget.simplified.name,
-              type: widget.slotMetadata.type,
+              name: row.widget.simplified.name,
+              type: row.widget.slotMetadata.type,
               boundingRect: [0, 0, 0, 0]
             }"
             :node-id
-            :has-error="widget.hasError"
-            :index="widget.slotMetadata.index"
-            :socketless="widget.simplified.spec?.socketless"
+            :has-error="row.widget.hasError"
+            :index="row.widget.slotMetadata.index"
+            :socketless="row.widget.simplified.spec?.socketless"
+            :standalone="row.standalone"
             dot-only
           />
         </div>
         <AppInput
-          v-if="!isConvertedWidget(widget)"
-          :widget-id="widget.widgetId"
-          :name="widget.simplified.name"
-          :enable="canSelectInputs && !widget.simplified.options?.disabled"
+          v-if="row.showsControl"
+          :widget-id="row.widget.widgetId"
+          :name="row.widget.simplified.name"
+          :enable="canSelectInputs && !row.widget.simplified.options?.disabled"
         >
           <component
-            :is="widget.vueComponent"
-            v-tooltip.left="widget.tooltipConfig ?? EMPTY_TOOLTIP"
-            :model-value="widget.simplified.value"
-            :widget="widget.simplified"
+            :is="row.widget.vueComponent"
+            v-tooltip.left="row.widget.tooltipConfig ?? EMPTY_TOOLTIP"
+            :model-value="row.widget.simplified.value"
+            :widget="row.widget.simplified"
             :node-id
             :node-type
-            :invalid="widget.hasError"
-            :aria-invalid="widget.hasError || undefined"
+            :invalid="row.widget.hasError"
+            :aria-invalid="row.widget.hasError || undefined"
             :class="
               cn(
                 'col-span-2',
-                widget.hasError && 'font-bold text-node-stroke-error'
+                row.widget.hasError && 'font-bold text-node-stroke-error'
               )
             "
-            @update:model-value="widget.updateHandler"
-            @contextmenu="widget.handleContextMenu"
+            @update:model-value="row.widget.updateHandler"
+            @contextmenu="row.widget.handleContextMenu"
           />
         </AppInput>
       </div>
@@ -93,12 +93,6 @@ const grid = useTemplateRef<HTMLElement>('grid')
 const isConvertedWidgetType = (type: string) =>
   type === 'converted-widget' || type.startsWith('converted-widget:')
 
-const isConvertedWidget = (widget: WidgetGridItem) =>
-  isConvertedWidgetType(widget.simplified.type)
-
-const shouldRenderRow = (widget: WidgetGridItem) =>
-  isConvertedWidget(widget) ? !!widget.slotMetadata : widget.visible
-
 const {
   processedWidgets,
   nodeType,
@@ -115,23 +109,41 @@ const {
 
 useVueElementTracking(syncLayout ? String(nodeId ?? '') : '', 'widgets-grid')
 const canvasStore = useCanvasStore()
+const renderedRows = computed(() =>
+  processedWidgets.flatMap((widget) => {
+    const isConverted = isConvertedWidgetType(widget.simplified.type)
+    const showsControl = !isConverted && widget.visible
+    const shouldRender = isConverted
+      ? !!widget.slotMetadata
+      : widget.visible ||
+        (!!widget.suppressedByConnection && !!widget.slotMetadata)
+    if (!shouldRender) return []
+
+    return [
+      {
+        widget,
+        showsControl,
+        standalone: !showsControl && !!widget.suppressedByConnection,
+        testId: showsControl ? 'node-widget' : undefined,
+        rowSize:
+          showsControl &&
+          (shouldExpand(widget.simplified.type) || widget.hasLayoutSize)
+            ? 'auto'
+            : 'min-content'
+      }
+    ]
+  })
+)
 
 const gridTemplateRows = computed(() =>
-  processedWidgets
-    .filter(shouldRenderRow)
-    .map((widget) =>
-      !isConvertedWidget(widget) &&
-      (shouldExpand(widget.simplified.type) || widget.hasLayoutSize)
-        ? 'auto'
-        : 'min-content'
-    )
-    .join(' ')
+  renderedRows.value.map((row) => row.rowSize).join(' ')
 )
 
 const layoutKey = computed(() =>
-  processedWidgets
-    .filter((widget) => widget.visible)
-    .map((widget) => `${widget.renderKey}:${widget.slotMetadata?.index ?? ''}`)
+  renderedRows.value
+    .map(
+      ({ widget }) => `${widget.renderKey}:${widget.slotMetadata?.index ?? ''}`
+    )
     .join('|')
 )
 

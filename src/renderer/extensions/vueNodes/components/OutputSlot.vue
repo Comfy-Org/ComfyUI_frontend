@@ -58,7 +58,6 @@ const hasNoLabel = computed(
   () => !props.slotData.localized_name && props.slotData.name === ''
 )
 const dotOnly = computed(() => props.dotOnly || hasNoLabel.value)
-
 // Error boundary implementation
 const renderError = ref<string | null>(null)
 

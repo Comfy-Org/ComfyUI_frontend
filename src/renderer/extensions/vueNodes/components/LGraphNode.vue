@@ -664,9 +664,9 @@ const showAdvancedInputsButton = computed(() => {
   }
 
   const hasAdvancedWidgets = widgetIds.value.some((id) => {
-    const renderState = widgetValueStore.getWidgetRenderState(id)
-    const widgetState = widgetValueStore.getWidget(id)
-    return renderState?.advanced ?? widgetState?.options?.advanced
+    const visibility = widgetValueStore.getWidgetVisibility(id)
+    if (visibility) return visibility.surfaces.vueNode === 'advanced'
+    return widgetValueStore.getWidget(id)?.options?.advanced
   })
   const alwaysShowAdvanced = settingStore.get(
     'Comfy.Node.AlwaysShowAdvancedWidgets'

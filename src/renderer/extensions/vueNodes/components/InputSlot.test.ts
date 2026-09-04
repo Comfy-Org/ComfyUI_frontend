@@ -64,7 +64,12 @@ const nodeDef: ComfyNodeDef = {
   output_node: false
 }
 
-function renderInputSlot(slotData: INodeSlot, nodeType = nodeDef.name) {
+function renderInputSlot(
+  slotData: INodeSlot,
+  nodeType = nodeDef.name,
+  dotOnly = false,
+  standalone = dotOnly
+) {
   const pinia = createTestingPinia({ stubActions: false })
   const settingStore = useSettingStore(pinia)
   vi.spyOn(settingStore, 'get').mockImplementation(
@@ -80,7 +85,7 @@ function renderInputSlot(slotData: INodeSlot, nodeType = nodeDef.name) {
   }
 
   render(InputSlot, {
-    props: { slotData, index: 0, nodeType },
+    props: { slotData, index: 0, nodeType, dotOnly, standalone },
     global: {
       plugins: [i18n, pinia],
       directives: { tooltip: tooltipDirective },
@@ -92,6 +97,35 @@ function renderInputSlot(slotData: INodeSlot, nodeType = nodeDef.name) {
 }
 
 describe('InputSlot', () => {
+  it('exposes the slot name when rendering only the connection dot', () => {
+    renderInputSlot(
+      {
+        name: 'raw_seed',
+        localized_name: 'Localized Seed',
+        type: 'INT'
+      } as INodeSlot,
+      nodeDef.name,
+      true
+    )
+
+    expect(screen.getByLabelText('Localized Seed')).toBeInTheDocument()
+  })
+
+  it('leaves the dot unlabeled when a widget control renders alongside it', () => {
+    renderInputSlot(
+      {
+        name: 'raw_seed',
+        localized_name: 'Localized Seed',
+        type: 'INT'
+      } as INodeSlot,
+      nodeDef.name,
+      true,
+      false
+    )
+
+    expect(screen.queryByLabelText('Localized Seed')).not.toBeInTheDocument()
+  })
+
   it('resolves metadata tooltips by raw input name', () => {
     const tooltipDirective = renderInputSlot({
       name: 'raw_seed',

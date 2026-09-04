@@ -352,7 +352,7 @@ describe('graphMutations', () => {
       if (name === 'registerNode') nodeContexts.push(args[2])
     })
     useWidgetValueStore().$onAction(({ name, args }) => {
-      if (name === 'registerWidget') widgetContexts.push(args[3])
+      if (name === 'registerWidget') widgetContexts.push(args[4])
     })
 
     mutations().addNode(node(1, { seed: 1 }), context)

@@ -40,8 +40,7 @@ vi.mock(
   '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry',
   () => ({
     getComponent: () => WidgetStub,
-    shouldExpand: () => false,
-    shouldRenderAsVue: () => true
+    shouldExpand: () => false
   })
 )
 

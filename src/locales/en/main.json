@@ -3469,6 +3469,16 @@
     "Set Group Nodes to Always": "Set Group Nodes to Always"
   },
   "widgets": {
+    "vueOnly": {
+      "Chart": "Chart",
+      "Fileupload": "File upload",
+      "Galleria": "Gallery",
+      "Compositor": "Compositor",
+      "SelectButton": "Select button",
+      "ImageCompare": "Image compare",
+      "Markdown": "Markdown",
+      "MultiSelect": "Multi-select"
+    },
     "boolean": {
       "true": "true",
       "false": "false"

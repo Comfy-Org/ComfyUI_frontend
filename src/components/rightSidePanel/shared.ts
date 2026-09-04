@@ -8,6 +8,10 @@ import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { NodeId } from '@/types/nodeId'
+import {
+  deriveWidgetVisibility,
+  isWidgetVisibleOnSurface
+} from '@/types/widgetVisibility'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
@@ -256,14 +260,12 @@ export function computedSectionDataList(nodes: MaybeRefOrGetter<LGraphNode[]>) {
     return toValue(nodes).map((node) => {
       const { widgets = [] } = node
       const shownWidgets = widgets
-        .filter(
-          (w) =>
-            !(
-              w.options?.canvasOnly ||
-              w.options?.hidden ||
-              w.options?.hideInPanel ||
-              (w.options?.advanced && !includesAdvanced.value)
-            )
+        .filter((w) =>
+          isWidgetVisibleOnSurface(
+            w.visibility ?? deriveWidgetVisibility(w),
+            'panel',
+            { showAdvanced: includesAdvanced.value }
+          )
         )
         .map((widget) => ({ node, widget }))
       return { widgets: shownWidgets, node }

@@ -491,6 +491,33 @@ describe('LGraphNode', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('ignores widgets advanced only on another surface', () => {
+    mockData.mockLgraphNode = { isSubgraphNode: () => false }
+    const rootGraph: Record<string, unknown> = {
+      id: 'graph-test',
+      getNodeById: () => mockData.mockLgraphNode,
+      subgraphs: new Map()
+    }
+    rootGraph.rootGraph = rootGraph
+    useCanvasStore().currentGraph = fromAny(rootGraph)
+
+    const store = useWidgetValueStore()
+    const id = widgetId('graph-test', mockNodeData.id, 'canvasAdvanced')
+    store.registerWidget(id, { type: 'number', value: 0, options: {} })
+    const visibility = store.getWidgetVisibility(id)
+    expect(visibility).toBeDefined()
+    if (visibility) {
+      visibility.surfaces.canvas = 'advanced'
+      visibility.surfaces.vueNode = 'shown'
+    }
+
+    renderLGraphNode({ nodeData: mockNodeData })
+
+    expect(
+      screen.queryByRole('button', { name: /show advanced/i })
+    ).not.toBeInTheDocument()
+  })
+
   it('should show error-only footer for collapsed nodes with advanced widgets', () => {
     mockData.mockLgraphNode = {
       isSubgraphNode: () => false,

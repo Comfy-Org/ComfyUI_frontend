@@ -5,7 +5,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   getComponent,
   isEssential,
-  shouldRenderAsVue,
   FOR_TESTING
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 
@@ -114,32 +113,6 @@ describe('widgetRegistry', () => {
     })
   })
 
-  describe('shouldRenderAsVue', () => {
-    it('should return false for widgets marked as canvas-only', () => {
-      const widget = { type: 'text', options: { canvasOnly: true } }
-      expect(shouldRenderAsVue(widget)).toBe(false)
-    })
-
-    it('should return false for widgets without a type', () => {
-      const widget = {}
-      expect(shouldRenderAsVue(widget)).toBe(false)
-    })
-
-    it('should return true for widgets with mapped types', () => {
-      expect(shouldRenderAsVue({ type: 'text' })).toBe(true)
-      expect(shouldRenderAsVue({ type: 'int' })).toBe(true)
-      expect(shouldRenderAsVue({ type: 'combo' })).toBe(true)
-    })
-
-    it('should respect options while checking type', () => {
-      const widget: { type: string; options: { canvasOnly: boolean } } = {
-        type: 'text',
-        options: { canvasOnly: false }
-      }
-      expect(shouldRenderAsVue(widget)).toBe(true)
-    })
-  })
-
   describe('isEssential', () => {
     it('should identify essential widget types', () => {
       expect(isEssential('int')).toBe(true)
@@ -166,11 +139,6 @@ describe('widgetRegistry', () => {
   })
 
   describe('edge cases', () => {
-    it('should handle widgets with empty options', () => {
-      const widget = { type: 'text', options: {} }
-      expect(shouldRenderAsVue(widget)).toBe(true)
-    })
-
     it('should handle case sensitivity correctly through aliases', () => {
       // Test that both lowercase and uppercase work
       expect(getComponent('string')).toBe(WidgetInputText)

@@ -29,6 +29,11 @@ import { mintLinkId } from './idAllocation'
 import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeProperty, NodeState } from '@/types/nodeState'
+import {
+  deriveWidgetVisibility,
+  isWidgetVisibleOnSurface,
+  occupiesCanvasRow
+} from '@/types/widgetVisibility'
 import { adjustColor } from '@/utils/colorUtil'
 import type { ColorAdjustOptions } from '@/utils/colorUtil'
 import { zeroUuid } from '@/utils/uuid'
@@ -2047,7 +2052,7 @@ export class LGraphNode
         const text_width = compute_text_size(text, this.innerFontStyle)
         if (isWidgetInputSlot(input)) {
           const widget = this.getWidgetFromSlot(input)
-          if (widget && !this.isWidgetVisible(widget)) continue
+          if (widget && !this.isWidgetRowVisible(widget)) continue
 
           if (text_width > widgetWidth) widgetWidth = text_width
         } else {
@@ -2087,7 +2092,7 @@ export class LGraphNode
     let widgets_height = 0
     if (widgets?.length) {
       for (const widget of widgets) {
-        if (!this.isWidgetVisible(widget)) continue
+        if (!this.isWidgetRowVisible(widget)) continue
 
         let widget_height = 0
         if (widget.computeSize) {
@@ -3247,6 +3252,7 @@ export class LGraphNode
       if (replacingLink) graph.afterChange()
       return
     }
+    graph._addLink(link)
 
     if (replacingLink) {
       finalizeInputLinkRemoval(
@@ -4151,33 +4157,76 @@ export class LGraphNode
    * Returns `true` if the widget is visible, otherwise `false`.
    */
   isWidgetVisible(widget: IBaseWidget): boolean {
-    const isHidden =
-      this.collapsed || widget.hidden || (widget.advanced && !this.showAdvanced)
-    return !isHidden
+    return (
+      !this.collapsed &&
+      isWidgetVisibleOnSurface(
+        widget.visibility ?? deriveWidgetVisibility(widget),
+        'canvas',
+        { showAdvanced: this.showAdvanced ?? false }
+      )
+    )
+  }
+
+  /**
+   * Returns `true` when the widget's layout row renders on the legacy canvas.
+   * A connection-suppressed widget keeps its row — anchoring the connected
+   * slot dot and the widget name — even though its control is not rendered;
+   * see {@link isWidgetVisible}.
+   */
+  isWidgetRowVisible(widget: IBaseWidget): boolean {
+    return (
+      !this.collapsed &&
+      occupiesCanvasRow(widget.visibility ?? deriveWidgetVisibility(widget), {
+        showAdvanced: this.showAdvanced ?? false
+      })
+    )
   }
 
   /**
    * Returns all widgets that should participate in layout calculations.
-   * Filters out hidden widgets only (not collapsed/advanced).
+   * Filters out hidden widgets only (not collapsed/advanced). A
+   * connection-suppressed widget stays in layout so its row keeps anchoring
+   * the connected input slot.
    */
   getLayoutWidgets(): IBaseWidget[] {
-    return this.widgets?.filter((w) => !w.hidden) ?? []
+    return (
+      this.widgets?.filter((widget) => {
+        const { surfaces, suppression } =
+          widget.visibility ?? deriveWidgetVisibility(widget)
+        return !suppression.byExtension && surfaces.canvas !== 'never'
+      }) ?? []
+    )
   }
 
   /**
-   * Returns `true` if the node has any advanced widgets.
+   * Returns `true` if the node has any widgets gated behind the legacy
+   * canvas advanced toggle.
    */
   hasAdvancedWidgets(): boolean {
-    return this.widgets?.some((w) => w.advanced) ?? false
+    return (
+      this.widgets?.some(
+        (w) =>
+          (w.visibility ?? deriveWidgetVisibility(w)).surfaces.canvas ===
+          'advanced'
+      ) ?? false
+    )
   }
 
+  /**
+   * An upstream link satisfying a widget's input suppresses the widget's
+   * control on every rendering surface. A promoted host widget has its own
+   * visibility component, so suppressing an interior widget fed by the
+   * subgraph boundary leaves the host visible.
+   */
   updateComputedDisabled() {
-    if (!this.widgets) return
-    for (const widget of this.widgets) {
+    const { widgets } = this
+    if (!widgets) return
+    for (const widget of widgets) {
       const slot = this.getSlotFromWidget(widget)
-      widget.computedDisabled =
-        widget.disabled ||
-        (!!slot && this.isInputConnected(this.inputs.indexOf(slot)))
+      const connected =
+        !!slot && this.isInputConnected(this.inputs.indexOf(slot))
+      widget.computedDisabled = widget.disabled || connected
+      widget.connectionSuppressed = connected
     }
   }
 
@@ -4196,20 +4245,33 @@ export class LGraphNode
 
     this.updateComputedDisabled()
     for (const widget of widgets) {
-      if (!this.isWidgetVisible(widget)) continue
+      if (!this.isWidgetRowVisible(widget)) continue
 
       const { y } = widget
-      const outlineColour = widget.advanced
-        ? LiteGraph.WIDGET_ADVANCED_OUTLINE_COLOR
-        : LiteGraph.WIDGET_OUTLINE_COLOR
-
       widget.last_y = y
+      const width = widget.width || nodeWidth
+
+      if (widget.connectionSuppressed) {
+        if (showText) {
+          ctx.globalAlpha *= 0.5
+          toConcreteWidget(widget, this, false)?.drawSuppressedRowLabel(ctx, {
+            width
+          })
+          ctx.globalAlpha = editorAlpha
+        }
+        continue
+      }
+
+      const outlineColour =
+        (widget.visibility ?? deriveWidgetVisibility(widget)).surfaces
+          .canvas === 'advanced'
+          ? LiteGraph.WIDGET_ADVANCED_OUTLINE_COLOR
+          : LiteGraph.WIDGET_OUTLINE_COLOR
 
       ctx.strokeStyle = outlineColour
       ctx.fillStyle = '#222'
       ctx.textAlign = 'left'
       if (widget.computedDisabled) ctx.globalAlpha *= 0.5
-      const width = widget.width || nodeWidth
 
       if (typeof widget.draw === 'function') {
         widget.draw(ctx, this, width, y, H, lowQuality)

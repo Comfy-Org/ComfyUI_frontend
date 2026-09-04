@@ -94,6 +94,26 @@ test.describe(
       'Promoted Widget Visibility in Vue Mode',
       { tag: ['@vue-nodes'] },
       () => {
+        test('Promoted widget connected to the subgraph input is interactive on the host', async ({
+          comfyPage
+        }) => {
+          await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+
+          const subgraphNodeId = '2'
+          await comfyPage.vueNodes.enterSubgraph(subgraphNodeId)
+          await comfyPage.subgraph.promoteWidget(
+            comfyPage.vueNodes.getNodeByTitle('KSampler'),
+            'steps'
+          )
+          await comfyPage.subgraph.exitViaBreadcrumb()
+
+          const promotedWidget = comfyPage.vueNodes
+            .getNodeLocator(subgraphNodeId)
+            .getByLabel('steps', { exact: true })
+          await expect(promotedWidget).toBeVisible()
+          await expect(promotedWidget).toBeEnabled()
+        })
+
         test(
           'Promoted advanced widget remains visible when global advanced widgets are disabled',
           { tag: ['@node'] },
@@ -312,23 +332,9 @@ test.describe(
         await expectPromotedWidgetCountToBeGreaterThan(comfyPage, '2', 0)
         const initialWidgetCount = await getPromotedWidgetCount(comfyPage, '2')
 
-        const subgraphNode2 = await comfyPage.nodeOps.getNodeRefById('2')
-        await subgraphNode2.navigateIntoSubgraph()
-        const ksampler2 = await comfyPage.nodeOps.getNodeRefById('1')
-        await ksampler2.click('title')
-        const stepsWidget2 = await ksampler2.getWidget(2)
-        const widgetPos2 = await stepsWidget2.getPosition()
-
-        await comfyPage.canvasOps.mouseClickAt(widgetPos2, { button: 'right' })
-
-        const unpromoteEntry = comfyPage.page
-          .locator('.litemenu-entry')
-          .filter({ hasText: /Un-Promote Widget/ })
-
-        await expect(unpromoteEntry).toBeVisible()
-        await unpromoteEntry.click()
-        await expect(unpromoteEntry).toBeHidden()
-
+        const subgraphNodeRef = await comfyPage.nodeOps.getNodeRefById('2')
+        await subgraphNodeRef.navigateIntoSubgraph()
+        await comfyPage.subgraph.removeSlot('input', 'steps')
         await comfyPage.subgraph.exitViaBreadcrumb()
 
         await expect
@@ -672,7 +678,7 @@ test(
 
     await test.step('Un-promote widget', async () => {
       await comfyPage.vueNodes.enterSubgraph('2')
-      await comfyPage.subgraph.unpromoteWidget(ksampler, 'steps')
+      await comfyPage.subgraph.removeSlot('input', 'steps')
       await comfyPage.subgraph.exitViaBreadcrumb()
 
       await expect(subgraphNode).toBeVisible()
@@ -720,8 +726,7 @@ test(
     })
 
     await comfyPage.vueNodes.enterSubgraph('2')
-    const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
-    await comfyPage.subgraph.unpromoteWidget(ksampler.root, 'steps')
+    await comfyPage.subgraph.removeSlot('input', 'steps')
     await comfyPage.subgraph.exitViaBreadcrumb()
     await expect(steps, 'Un-promote widget').toBeHidden()
   }

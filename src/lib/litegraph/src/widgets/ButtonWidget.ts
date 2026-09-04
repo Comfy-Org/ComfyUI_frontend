@@ -4,15 +4,21 @@ import type { IButtonWidget } from '@/lib/litegraph/src/types/widgets'
 import { BaseWidget } from './BaseWidget'
 import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
 
+type ButtonWidgetSource = Omit<IButtonWidget, 'options'> & {
+  options?: IButtonWidget['options']
+}
+
 export class ButtonWidget
   extends BaseWidget<IButtonWidget>
   implements IButtonWidget
 {
-  override type = 'button' as const
   clicked: boolean
 
-  constructor(widget: IButtonWidget, node: LGraphNode) {
-    super(widget, node)
+  constructor(widget: ButtonWidgetSource, node: LGraphNode) {
+    const normalizedWidget = Object.assign(widget, {
+      options: widget.options ?? {}
+    })
+    super(normalizedWidget, node)
     this.clicked ??= false
   }
 

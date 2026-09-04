@@ -50,6 +50,7 @@ import { createNodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeState } from '@/types/nodeState'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
+import { deriveWidgetVisibility } from '@/types/widgetVisibility'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
@@ -226,10 +227,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         // identifier used by onGraphConfigured (widgetInputs.ts) to match
         // inputs to widgets. Changing it to the display label would cause
         // collisions when two promoted inputs share the same label.
-        if (input._widget) input._widget.label = newName
         if (input.widgetId) {
-          const state = useWidgetValueStore().getWidget(input.widgetId)
-          if (state) state.label = newName
+          useWidgetValueStore().setLabel(input.widgetId, newName)
         }
         this.invalidatePromotedViews()
         this.graph?.trigger('node:slot-label:changed', {
@@ -662,6 +661,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     const id = widgetId(this.rootGraph.id, this.id, subgraphInput.name)
     const store = useWidgetValueStore()
+    const visibility = cloneDeep(
+      interiorWidget.visibility ?? deriveWidgetVisibility(interiorWidget)
+    )
+    visibility.suppression.byConnection = false
     const registered = store.registerWidget(
       id,
       {
@@ -672,7 +675,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         serialize: interiorWidget.serialize,
         disabled: interiorWidget.disabled
       },
-      deriveWidgetRenderState(interiorWidget)
+      deriveWidgetRenderState(interiorWidget),
+      visibility
     )
     if (!registered) {
       input.pos = undefined
@@ -734,10 +738,15 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       const state = store.getWidget(previousId)
       if (!state) continue
       const renderState = store.getWidgetRenderState(previousId)
+      const visibility = store.getWidgetVisibility(previousId)
+      if (!visibility) continue
+      const migratedVisibility = cloneDeep(visibility)
+      migratedVisibility.suppression.byConnection = false
       const migrated = store.registerWidget(
         nextId,
         { ...state },
-        { ...renderState }
+        { ...renderState },
+        migratedVisibility
       )
       if (!migrated) continue
       store.setValue(nextId, state.value)

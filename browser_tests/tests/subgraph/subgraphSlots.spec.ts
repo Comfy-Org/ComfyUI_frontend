@@ -416,17 +416,42 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       )
       await comfyPage.vueNodes.waitForNodes()
 
+      const subgraphNodeId = toNodeId(19)
+      const disconnected = await comfyPage.page.evaluate((nodeId) => {
+        const node = window.app!.canvas.graph!.getNodeById(nodeId)
+        if (!node) return false
+
+        const seedInputIndex = node.inputs.findIndex(
+          (input) => input.name === 'seed'
+        )
+        return node.disconnectInput(seedInputIndex)
+      }, subgraphNodeId)
+      expect(disconnected, 'Expected the parent seed input to disconnect').toBe(
+        true
+      )
+      await comfyPage.nextFrame()
+
       const subgraphNode = comfyPage.vueNodes.getNodeLocator('19')
       await expect(subgraphNode).toBeVisible()
 
-      const seedWidget = subgraphNode.getByLabel('seed', { exact: true })
+      const seedWidget = subgraphNode
+        .getByTestId('widget-layout-field-label')
+        .filter({ hasText: /^renamed_seed$/ })
       await expect(seedWidget).toBeVisible()
       await SubgraphHelper.expectWidgetBelowHeader(subgraphNode, seedWidget)
 
+      // Switch to the legacy canvas first, then enter through setGraph:
+      // after the disconnect above, the legacy node body shows an
+      // interactive seed widget that swallows coordinate-based navigation
+      // clicks, and entering while Vue nodes are enabled leaves a stale
+      // active canvas that breaks the rename prompt.
       await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+      await comfyPage.subgraph.enterSubgraphWithFallback('19')
 
-      const subgraphNodeRef = await comfyPage.nodeOps.getNodeRefById('19')
-      await subgraphNodeRef.navigateIntoSubgraph()
+      // The rename prompt reads LGraphCanvas.active_canvas, which only real
+      // pointer events assign; setGraph-based entry never touches the
+      // canvas, so click empty space once before opening the slot menu.
+      await comfyPage.canvasOps.mouseClickAt({ x: 250, y: 250 })
 
       let seedSlotName: string | null = null
       await expect
@@ -461,7 +486,6 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       const subgraphNodeAfter = comfyPage.vueNodes.getNodeLocator('19')
       await expect(subgraphNodeAfter).toBeVisible()
 
-      const subgraphNodeId = toNodeId(19)
       await expect
         .poll(() =>
           comfyPage.page.evaluate((nodeId) => {
@@ -475,13 +499,10 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
         )
         .toBe(RENAMED_LABEL)
 
-      const seedWidgetAfter = subgraphNodeAfter.getByLabel('seed', {
-        exact: true
-      })
+      const seedWidgetAfter = subgraphNodeAfter
+        .getByTestId('widget-layout-field-label')
+        .filter({ hasText: new RegExp(`^${RENAMED_LABEL}$`) })
       await expect(seedWidgetAfter).toBeVisible()
-      await expect(
-        subgraphNodeAfter.getByText(RENAMED_LABEL, { exact: true })
-      ).toBeVisible()
       await SubgraphHelper.expectWidgetBelowHeader(
         subgraphNodeAfter,
         seedWidgetAfter

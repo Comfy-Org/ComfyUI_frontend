@@ -5,6 +5,7 @@ import type { BoundingBox } from '@/types/boundingBoxes'
 import type { NodeId } from '@/types/nodeId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import type { WidgetId } from '@/types/widgetId'
+import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
 
 import type {
   CanvasColour,
@@ -514,8 +515,24 @@ export interface IBaseWidget<
    */
   computedDisabled?: boolean
 
+  /**
+   * Whether the widget's input is satisfied by an upstream link, suppressing
+   * the widget on every rendering surface (the slot still renders).
+   * @readonly [Computed] This property is computed by the node on
+   * connection changes.
+   */
+  connectionSuppressed?: boolean
+
   hidden?: boolean
   advanced?: boolean
+
+  /**
+   * Canonical visibility component backing the `hidden` / `advanced` /
+   * `options.hideInPanel` facades. Present on concrete widgets; absent on
+   * legacy POJO widgets that have not been adopted yet.
+   */
+  readonly visibility?: WidgetVisibilityComponent
+
   tooltip?: string
 
   // TODO: Confirm this format
