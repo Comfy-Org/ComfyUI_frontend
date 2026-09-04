@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest'
 import {
   evaluatePolicy,
   hasFailClosedDefault,
-  inferFlags,
   parseDeclaredFlag,
   riskFromLabels,
   runtimePathsFor
@@ -26,11 +25,6 @@ const enabled = resolveFlag(
   false
 )
 `
-const safePatch = `
-@@ -1,0 +1,2 @@
-+const enabled = flags.get(ServerFeatureFlag.SAFE_FEATURE)
-`
-
 describe('parseDeclaredFlag', () => {
   it('accepts a declared or blank flag', () => {
     expect(parseDeclaredFlag(declaredBody)).toEqual({
@@ -75,20 +69,6 @@ describe('runtimePathsFor', () => {
     expect(
       runtimePathsFor([{ filename: 'src/components/NewUi.vue' }], riskMap)
     ).toEqual(['src/components/NewUi.vue'])
-  })
-})
-
-describe('inferFlags', () => {
-  it('infers a unique flag from added code', () => {
-    expect(inferFlags(registry, [safePatch])).toEqual(['safe_feature'])
-  })
-
-  it('returns every candidate when the diff is ambiguous', () => {
-    const patch = `${safePatch}+flags.get(ServerFeatureFlag.OTHER_FEATURE)\n`
-    expect(inferFlags(registry, [patch])).toEqual([
-      'safe_feature',
-      'other_feature'
-    ])
   })
 })
 
@@ -161,40 +141,29 @@ describe('evaluatePolicy', () => {
     ).toBe('pass')
   })
 
-  it('infers a registered default-off flag', () => {
-    expect(
-      evaluatePolicy({ ...runtimeInput, body: blankBody, patches: [safePatch] })
-    ).toMatchObject({
-      verdict: 'pass',
-      requiresAi: true,
-      flag: 'safe_feature',
-      flagOrigin: 'existing',
-      flagDiscovery: 'inferred'
-    })
-  })
-
   it('accepts an explicit registered default-off flag', () => {
     expect(
-      evaluatePolicy({ ...runtimeInput, body: declaredBody, patches: [] })
+      evaluatePolicy({ ...runtimeInput, body: declaredBody })
     ).toMatchObject({
       verdict: 'pass',
       requiresAi: true,
       flag: 'safe_feature',
-      flagDiscovery: 'declared'
+      flagOrigin: 'existing'
     })
   })
 
-  it('asks the author only when no single flag can be identified', () => {
-    expect(
-      evaluatePolicy({ ...runtimeInput, body: blankBody, patches: [] })
-    ).toMatchObject({ verdict: 'inconclusive', requiresAi: true })
+  it('requires the author to provide the flag', () => {
+    expect(evaluatePolicy({ ...runtimeInput, body: blankBody })).toMatchObject({
+      verdict: 'fail',
+      requiresAi: false,
+      reasons: ['The author must provide the `Flag` field.']
+    })
   })
 
   it('rejects an explicit flag without a fail-closed registration', () => {
     const result = evaluatePolicy({
       ...runtimeInput,
-      body: declaredBody.replace('safe_feature', 'invented_flag'),
-      patches: []
+      body: declaredBody.replace('safe_feature', 'invented_flag')
     })
     expect(result.verdict).toBe('fail')
     expect(result.reasons).toContain(

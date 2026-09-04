@@ -24,7 +24,6 @@ export interface PolicyInput {
   runtimePaths: string[]
   registrySource?: string
   baseRegistrySource?: string
-  patches?: string[]
 }
 
 export interface PolicyResult {
@@ -33,7 +32,6 @@ export interface PolicyResult {
   reasons: string[]
   flag?: string
   flagOrigin?: 'new' | 'existing'
-  flagDiscovery?: 'declared' | 'inferred'
 }
 
 const EXEMPT_CLASSES = new Set([
@@ -89,37 +87,6 @@ export function parseDeclaredFlag(body: string): {
 
   const value = values[0] ?? ''
   return { flag: isFilled(value) ? value : null, errors: [] }
-}
-
-export function inferFlags(
-  registrySource: string,
-  patches: string[]
-): string[] {
-  const registry = new Map(
-    [
-      ...registrySource.matchAll(/([A-Z][A-Z0-9_]*)\s*=\s*['"]([^'"]+)['"]/g)
-    ].map((match) => [match[1], match[2]] as const)
-  )
-  const added = patches
-    .flatMap((patch) => patch.split('\n'))
-    .filter((line) => line.startsWith('+') && !line.startsWith('+++'))
-    .join('\n')
-  const members = [
-    ...added.matchAll(/ServerFeatureFlag\.([A-Z][A-Z0-9_]*)/g)
-  ].map((match) => match[1])
-  const registered = [
-    ...added.matchAll(/([A-Z][A-Z0-9_]*)\s*=\s*['"]([^'"]+)['"]/g)
-  ]
-    .filter((match) => registry.get(match[1]) === match[2])
-    .map((match) => match[1])
-
-  return [
-    ...new Set(
-      [...members, ...registered]
-        .map((member) => registry.get(member))
-        .filter((flag): flag is string => Boolean(flag))
-    )
-  ]
 }
 
 export function runtimePathsFor(
@@ -197,19 +164,12 @@ export function evaluatePolicy(input: PolicyInput): PolicyResult {
   if (declared.errors.length)
     return { verdict: 'fail', requiresAi: false, reasons: declared.errors }
 
-  const inferred = input.registrySource
-    ? inferFlags(input.registrySource, input.patches ?? [])
-    : []
-  const flag = declared.flag ?? (inferred.length === 1 ? inferred[0] : null)
+  const flag = declared.flag
   if (!flag)
     return {
-      verdict: 'inconclusive',
-      requiresAi: true,
-      reasons: [
-        inferred.length > 1
-          ? 'Multiple flags were found; the author must set `Flag`.'
-          : 'No flag was found; the author must set `Flag` if review cannot infer it.'
-      ]
+      verdict: 'fail',
+      requiresAi: false,
+      reasons: ['The author must provide the `Flag` field.']
     }
 
   if (
@@ -232,17 +192,12 @@ export function evaluatePolicy(input: PolicyInput): PolicyResult {
     )
       ? 'existing'
       : 'new'
-  const flagDiscovery = declared.flag ? 'declared' : 'inferred'
-
   return {
     verdict: 'pass',
     requiresAi: true,
-    reasons: [
-      `Flag \`${flag}\` was ${flagDiscovery}, is ${flagOrigin}, and defaults OFF in code.`
-    ],
+    reasons: [`Flag \`${flag}\` is ${flagOrigin} and defaults OFF in code.`],
     flag,
-    flagOrigin,
-    flagDiscovery
+    flagOrigin
   }
 }
 
@@ -372,23 +327,13 @@ function main() {
   const baseRegistrySource = needsReview
     ? repoFile(repo, pull.base.sha, 'src/composables/useFeatureFlags.ts')
     : undefined
-  const runtimePathSet = new Set(runtimePaths)
-  const patches = files
-    .filter(
-      (file) =>
-        runtimePathSet.has(file.filename) ||
-        (file.previous_filename && runtimePathSet.has(file.previous_filename))
-    )
-    .map(({ patch }) => patch)
-    .filter((patch): patch is string => patch !== undefined)
   const result = evaluatePolicy({
     body: pull.body ?? '',
     labels,
     risk,
     runtimePaths,
     registrySource,
-    baseRegistrySource,
-    patches
+    baseRegistrySource
   })
   if (disputed === 'conflict') {
     result.verdict = 'inconclusive'
