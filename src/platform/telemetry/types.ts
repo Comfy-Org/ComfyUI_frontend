@@ -885,6 +885,7 @@ type ResubscribeBillingEvent = {
   operation: 'resubscribe'
   source: ResubscribeClickMetadata['source']
   payment_intent_source?: PaymentIntentSource
+  duration_ms?: number
 } & (BillingStarted | BillingSucceeded | BillingFailed)
 
 type TopupBillingEvent = {
