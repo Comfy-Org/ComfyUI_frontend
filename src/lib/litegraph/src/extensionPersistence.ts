@@ -214,7 +214,7 @@ export const extensionConfigureView = <T extends object>(
   canonical: T
 ): T =>
   Object.assign(
-    { ...canonical },
+    structuredClone(canonical),
     structuredClone(payloads.get(owner)?.namespaced),
     structuredClone(payloads.get(owner)?.legacy)
   )
