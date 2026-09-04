@@ -8,7 +8,16 @@
 set -euo pipefail
 
 # git grep exit code 1 means "no matches", which is success for this check.
-refs=$(git grep -nEo 'docs/adr/[A-Za-z0-9._/-]+\.md' -- . || true)
+if refs=$(git grep -nEo 'docs/adr/[A-Za-z0-9._/-]+\.md' -- .); then
+  :
+else
+  grep_status=$?
+  if [ "$grep_status" -eq 1 ]; then
+    refs=""
+  else
+    exit "$grep_status"
+  fi
+fi
 
 if [ -z "$refs" ]; then
   exit 0

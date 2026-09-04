@@ -82,6 +82,14 @@ describe('check-adr-links', () => {
     expect(result.status).toBe(0)
   })
 
+  it('propagates git grep errors', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'adr-links-not-git-'))
+    const result = runScript(dir)
+
+    expect(result.status).toBe(128)
+    expect(result.stderr).toContain('not a git repository')
+  })
+
   it('passes on the real repository (every tracked docs/adr reference resolves)', () => {
     const repoRoot = path.resolve(import.meta.dirname, '..', '..')
     const result = runScript(repoRoot)
