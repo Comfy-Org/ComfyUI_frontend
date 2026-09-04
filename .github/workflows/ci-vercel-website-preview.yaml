@@ -62,14 +62,23 @@ jobs:
           WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
           WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
           WEBSITE_CLOUD_API_KEY: ${{ secrets.WEBSITE_CLOUD_API_KEY }}
-          # A preview has to answer "what goes out if we release right now?",
-          # so by default it matches production and leaves the unreleased
-          # Workshop feature out. Label a PR `workshop` to build it in and get
-          # a review URL. Empty means "not specified" — the build then falls
-          # back to its environment default, which for a preview is out. See
-          # apps/website/src/config/workshop-release.ts.
-          WORKSHOP_IN_BUILD: ${{ contains(github.event.pull_request.labels.*.name, 'workshop') && '1' || '' }}
-        run: vercel build
+          WORKSHOP_LABELLED: ${{ contains(github.event.pull_request.labels.*.name, 'workshop') }}
+        # A preview has to answer "what goes out if we release right now?", so
+        # by default it matches production and leaves the unreleased Workshop
+        # feature out. Label a PR `workshop` to build it in and get a review URL.
+        #
+        # Set only when labelled, rather than always set with an empty value.
+        # An unlabelled PR must leave the variable undefined so that whatever
+        # `vercel pull` fetched for the preview environment still governs --
+        # otherwise, on the day Workshop launches, setting it in Vercel would
+        # take effect in production while every preview kept overriding it back
+        # off, and preview would stop matching production again.
+        # See apps/website/src/config/workshop-release.ts.
+        run: |
+          if [ "$WORKSHOP_LABELLED" = "true" ]; then
+            export WORKSHOP_IN_BUILD=1
+          fi
+          vercel build
 
       - name: Fetch head commit metadata
         id: head-commit
