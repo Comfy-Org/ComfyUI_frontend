@@ -124,6 +124,7 @@ import ButtonGroup from '@/components/ui/button-group/ButtonGroup.vue'
 import { useConcurrentExecution } from '@/composables/useConcurrentExecution'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import {
@@ -304,12 +305,18 @@ const isParallelToggleDisabled = computed(
 )
 const parallelToggleChecked = isUserEnabled
 
-function onParallelToggle(checked: boolean) {
-  void setUserEnabled(checked)
+async function onParallelToggle(checked: boolean) {
+  try {
+    await setUserEnabled(checked)
+  } catch (error) {
+    reportError(error, {
+      errorType: 'concurrent_execution_setting_update_failed'
+    })
+  }
 }
 
 function toggleParallel() {
-  onParallelToggle(!parallelToggleChecked.value)
+  void onParallelToggle(!parallelToggleChecked.value)
 }
 
 const commandStore = useCommandStore()
