@@ -54,7 +54,9 @@ test.describe('Enterprise pages @smoke', () => {
       /MANAGED BUILDS\s*BETA/
     )
     await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1)
-    await expect(page.getByText('BETA', { exact: true })).toBeVisible()
+    await expect(
+      page.getByRole('heading', { level: 1 }).getByText('BETA', { exact: true })
+    ).toBeVisible()
     await expect(
       page.getByText(
         /deploy the same build anywhere, local or serverless cloud/
@@ -76,7 +78,7 @@ test.describe('Enterprise pages @smoke', () => {
       page.getByRole('link', { name: 'REQUEST DEMO' }).first()
     ).toHaveAttribute('href', '/contact/')
     await expect(page.getByRole('link', { name: 'REQUEST DEMO' })).toHaveCount(
-      3
+      2
     )
     await expect(
       page.getByRole('heading', {
@@ -202,8 +204,23 @@ test.describe('Enterprise pages @smoke', () => {
       page.getByText(/For teams that need ComfyUI to move between people/)
     ).toHaveCount(0)
     await expect(
-      page.getByText(/dedicated GPU capacity, priority queueing/)
+      page.getByText(/Scale your custom nodes in your Comfy workflows/)
     ).toBeVisible()
+    await expect(page.getByRole('link', { name: 'GET STARTED' })).toBeVisible()
+    await expect(
+      page.getByRole('link', { name: 'READ THE DOCS' })
+    ).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: 'Forward Deployed Creatives' })
+    ).toBeVisible()
+    await expect(page.getByText(/Builders, not advisors\./)).toBeVisible()
+    await expect(
+      page.getByRole('link', { name: 'CONTACT US' })
+    ).toHaveAttribute('href', '/contact/')
+    await expect(page.getByText(/Your approved ComfyUI setup/)).toHaveCount(0)
+    await expect(
+      page.getByText(/dedicated GPU capacity, priority queueing/)
+    ).toHaveCount(0)
   })
 })
 

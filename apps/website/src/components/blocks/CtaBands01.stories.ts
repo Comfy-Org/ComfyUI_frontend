@@ -59,6 +59,20 @@ export const ExternalCta: Story = {
   }
 }
 
+export const Highlight: Story = {
+  args: {
+    variant: 'highlight',
+    bands: [
+      {
+        id: 'fdc',
+        label: 'Forward Deployed Creatives',
+        text: 'Builders, not advisors. Forward Deployed Creatives build production Comfy Workflows inside approved environments, alongside the teams that will own and extend them.',
+        cta: { label: 'CONTACT US', href: '#' }
+      }
+    ]
+  }
+}
+
 export const Mobile: Story = {
   globals: {
     viewport: { value: 'mobile1', isRotated: false }

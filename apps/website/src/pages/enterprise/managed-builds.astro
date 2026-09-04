@@ -3,7 +3,6 @@ import BenefitsGrid01 from '../../components/blocks/BenefitsGrid01.vue'
 import CardSplitContent02 from '../../components/blocks/CardSplitContent02.vue'
 import CompareTable01 from '../../components/blocks/CompareTable01.vue'
 import CtaBands01 from '../../components/blocks/CtaBands01.vue'
-import CtaCenter01 from '../../components/blocks/CtaCenter01.vue'
 import FAQSplit01 from '../../components/blocks/FAQSplit01.vue'
 import FeatureRows02 from '../../components/blocks/FeatureRows02.vue'
 import HeroProduct01 from '../../components/blocks/HeroProduct01.vue'
@@ -11,7 +10,9 @@ import StepsCards01 from '../../components/blocks/StepsCards01.vue'
 import IndustriesSection from '../../components/home/IndustriesSection.vue'
 import DistributionsScene from '../../components/product/enterprise/DistributionsScene.vue'
 import { externalLinks } from '../../config/routes'
+import { t } from '../../i18n/translations'
 import BaseLayout from '../../layouts/BaseLayout.astro'
+import ClosingCtaSection from '../../templates/platform/ClosingCtaSection.vue'
 import { absoluteUrl, pageContext } from '../../utils/jsonLd'
 import { buildFaqPageNode } from './_faqMetadata'
 
@@ -251,40 +252,33 @@ const faqPage = buildFaqPageNode(url, faqs)
     rows={compareRows}
   />
 
-  <IndustriesSection
-    heading="Built with studios in the room"
-    client:visible
-  />
-
-  <CtaBands01
-    bands={[
-      {
-        id: 'platform',
-        label: 'DEVELOPER PLATFORM',
-        text: 'Run approved Comfy Workflows as endpoints with dedicated GPU capacity, priority queueing, and enterprise SLA terms through the Developer Platform.',
-        cta: { label: 'SEE THE PLATFORM', href: '/api/' },
-      },
-      {
-        id: 'fdc',
-        label: 'FORWARD DEPLOYED CREATIVES',
-        text: 'Builders, not advisors. Forward Deployed Creatives build production Comfy Workflows inside approved environments, alongside the teams that will own and extend them.',
-        cta: {
-          label: 'VIEW THE OFFERING',
-          href: '/forward-deployed-creatives/',
-        },
-      },
-    ]}
-  />
-
   <FAQSplit01
     id="faq"
     heading="Managed Builds, answered."
     faqs={faqs}
     client:visible
   />
-  <CtaCenter01
-    heading={'Your approved ComfyUI setup,\nready for the whole team.'}
-    subtitle="Start with one known-good environment. Comfy engineers will map deployment targets, governance requirements, onboarding, and the path to your first approved build."
-    primaryCta={{ label: 'REQUEST DEMO', href: '/contact/' }}
+
+  <IndustriesSection
+    heading="Built with studios in the room"
+    client:visible
+  />
+
+  <ClosingCtaSection
+    locale="en"
+    heading-after-badge={t('platform.closing.headingAfterBadge', 'en')}
+    client:visible
+  />
+
+  <CtaBands01
+    variant="highlight"
+    bands={[
+      {
+        id: 'fdc',
+        label: 'Forward Deployed Creatives',
+        text: 'Builders, not advisors. Forward Deployed Creatives build production Comfy Workflows inside approved environments, alongside the teams that will own and extend them.',
+        cta: { label: 'CONTACT US', href: '/contact/' },
+      },
+    ]}
   />
 </BaseLayout>
