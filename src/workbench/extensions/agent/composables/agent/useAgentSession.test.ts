@@ -1033,7 +1033,12 @@ describe('useAgentSession (v1 composition root)', () => {
       >()
       .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
       .mockResolvedValueOnce({ thread_id: 'th-2', message_id: 'msg-2' })
-    const rest = fakeRest({ postMessage })
+    // Restored from the pre-rework (l2): switching threads must not cancel the
+    // backgrounded turn — only newChat and explicit Stop may.
+    const cancelMessage = vi.fn<
+      (threadId: string, messageId: string) => Promise<AgentCancelAccepted>
+    >(async () => ({ status: 'cancelling' }))
+    const rest = fakeRest({ postMessage, cancelMessage })
     const { source, emit } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
     session.start()
@@ -1042,6 +1047,7 @@ describe('useAgentSession (v1 composition root)', () => {
     emit(delta('msg-1', 'A'))
 
     await session.loadThread('th-2')
+    expect(cancelMessage).not.toHaveBeenCalled()
     await session.sendMessage('second')
     emit(deltaIn('th-2', 'msg-2', 'B'))
     emit(delta('msg-1', 'A2'))
