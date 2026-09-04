@@ -14,6 +14,34 @@ const translations = {
     en: 'Browse all models',
     'zh-CN': '浏览全部模型'
   },
+  'workshop.tab.playground': {
+    en: 'Playground',
+    'zh-CN': '试用'
+  },
+  'workshop.tab.api': {
+    en: 'API',
+    'zh-CN': 'API'
+  },
+  'workshop.run.hideKey': {
+    en: 'Hide the API key field',
+    'zh-CN': '隐藏 API 密钥输入框'
+  },
+  'workshop.run.needKey': {
+    en: 'Add your API key above',
+    'zh-CN': '请在上方填写 API 密钥'
+  },
+  'workshop.run.keySave': {
+    en: 'Use key',
+    'zh-CN': '使用密钥'
+  },
+  'workshop.run.keySaved': {
+    en: 'Saved',
+    'zh-CN': '已保存'
+  },
+  'workshop.run.keyTemporary': {
+    en: 'Temporary — replaced by sign-in.',
+    'zh-CN': '临时方案，登录功能上线后移除。'
+  },
   'workshop.run.heading': {
     en: 'Run it',
     'zh-CN': '运行'
@@ -30,6 +58,31 @@ const translations = {
     en: 'Your key is stored in this browser only and is sent straight to the Comfy API.',
     'zh-CN': '密钥仅保存在此浏览器中，并直接发送至 Comfy API。'
   },
+  'workshop.card.input': {
+    en: 'Input',
+    'zh-CN': '输入'
+  },
+  'workshop.card.output': {
+    en: 'Output',
+    'zh-CN': '输出'
+  },
+  'workshop.auth.cta': {
+    en: 'Sign up / Login to Render',
+    'zh-CN': '注册 / 登录后生成'
+  },
+  'workshop.auth.heading': {
+    en: 'Sign in to run this model',
+    'zh-CN': '登录后即可运行该模型'
+  },
+  'workshop.auth.body': {
+    en: 'Runs are billed to your Comfy account. Sign-in is coming to comfy.org; for now, paste an API key.',
+    'zh-CN':
+      '运行将从你的 Comfy 账户扣费。comfy.org 登录功能即将上线，目前请粘贴 API 密钥。'
+  },
+  'workshop.auth.continue': {
+    en: 'Continue',
+    'zh-CN': '继续'
+  },
   'workshop.run.button': {
     en: 'Run',
     'zh-CN': '运行'
@@ -39,8 +92,20 @@ const translations = {
     'zh-CN': '取消'
   },
   'workshop.run.running': {
-    en: 'Running. This can take a minute or two.',
-    'zh-CN': '运行中，可能需要一两分钟。'
+    en: 'Generating',
+    'zh-CN': '生成中'
+  },
+  'workshop.run.wait.video': {
+    en: 'Video models usually take one to three minutes.',
+    'zh-CN': '视频模型通常需要一到三分钟。'
+  },
+  'workshop.run.wait.slow': {
+    en: 'This can take a couple of minutes.',
+    'zh-CN': '这可能需要几分钟。'
+  },
+  'workshop.run.wait.default': {
+    en: 'Most images take under a minute.',
+    'zh-CN': '大多数图片生成不到一分钟。'
   },
   'workshop.run.noMedia': {
     en: 'The model returned no media. The full response is below.',
@@ -89,6 +154,14 @@ const translations = {
   'workshop.run.error.network': {
     en: 'The request could not be sent.',
     'zh-CN': '请求无法发送。'
+  },
+  'workshop.run.buyCredits': {
+    en: 'Buy credits on Comfy Platform',
+    'zh-CN': '在 Comfy Platform 购买积分'
+  },
+  'workshop.run.error.sessionRefresh': {
+    en: 'Your session could not be refreshed. Sign in again and retry.',
+    'zh-CN': '会话刷新失败，请重新登录后重试。'
   },
   'workshop.meta.title': {
     en: 'Comfy Workshop',
@@ -157,6 +230,260 @@ const translations = {
   'workshop.model.browseAll': {
     en: 'Browse all models',
     'zh-CN': '浏览所有模型'
+  },
+  'auth.signIn.meta.title': {
+    en: 'Sign in - Comfy',
+    'zh-CN': '登录 - Comfy'
+  },
+  'auth.signIn.meta.description': {
+    en: 'Sign in to your Comfy account.',
+    'zh-CN': '登录你的 Comfy 账户。'
+  },
+  'auth.signUp.meta.title': {
+    en: 'Sign up - Comfy',
+    'zh-CN': '注册 - Comfy'
+  },
+  'auth.signUp.meta.description': {
+    en: 'Create your Comfy account.',
+    'zh-CN': '创建你的 Comfy 账户。'
+  },
+  'auth.signIn.heading': {
+    en: 'Sign in to Comfy',
+    'zh-CN': '登录 Comfy'
+  },
+  'auth.signIn.body': {
+    en: 'Use your Comfy account across the Workshop, Cloud, and Platform.',
+    'zh-CN': '一个 Comfy 账户，通用于 Workshop、Cloud 和 Platform。'
+  },
+  'auth.signUp.heading': {
+    en: 'Create your Comfy account',
+    'zh-CN': '创建 Comfy 账户'
+  },
+  'auth.signUp.body': {
+    en: 'One account for the Workshop, Cloud, and Platform.',
+    'zh-CN': '一个账户，通用于 Workshop、Cloud 和 Platform。'
+  },
+  'auth.signIn.newHere': {
+    en: 'New to Comfy?',
+    'zh-CN': '第一次使用 Comfy？'
+  },
+  'auth.signIn.signUpLink': {
+    en: 'Create an account',
+    'zh-CN': '创建账户'
+  },
+  'auth.signUp.haveAccount': {
+    en: 'Already have an account?',
+    'zh-CN': '已经有账户？'
+  },
+  'auth.signUp.signInLink': {
+    en: 'Sign in',
+    'zh-CN': '登录'
+  },
+  'auth.signIn.google': {
+    en: 'Continue with Google',
+    'zh-CN': '使用 Google 继续'
+  },
+  'auth.signIn.github': {
+    en: 'Continue with GitHub',
+    'zh-CN': '使用 GitHub 继续'
+  },
+  'auth.signIn.pending': {
+    en: 'Finish signing in from the pop-up window.',
+    'zh-CN': '请在弹出窗口中完成登录。'
+  },
+  'auth.signIn.signedInHeading': {
+    en: 'You are signed in',
+    'zh-CN': '已登录'
+  },
+  'auth.signIn.signedInAs': {
+    en: 'Signed in as',
+    'zh-CN': '当前账户：'
+  },
+  'auth.signIn.signOut': {
+    en: 'Sign out',
+    'zh-CN': '退出登录'
+  },
+  'auth.signIn.backToWorkshop': {
+    en: 'Back to Workshop',
+    'zh-CN': '返回 Workshop'
+  },
+  'auth.signIn.error.popupDismissed': {
+    en: 'The sign-in window closed before finishing. Try again.',
+    'zh-CN': '登录窗口在完成前被关闭，请重试。'
+  },
+  'auth.signIn.error.domain': {
+    en: 'Sign-in is not available on this address yet.',
+    'zh-CN': '当前地址暂不支持登录。'
+  },
+  'auth.signIn.error.blocked': {
+    en: 'Sign-ups are temporarily unavailable. Please try again later.',
+    'zh-CN': '注册暂时不可用，请稍后再试。'
+  },
+  'auth.signIn.error.generic': {
+    en: 'Sign-in failed. Please try again.',
+    'zh-CN': '登录失败，请重试。'
+  },
+  'auth.signIn.error.session': {
+    en: 'You are signed in, but your session could not be started. Retry, or sign out and back in.',
+    'zh-CN': '已登录，但会话启动失败。请重试，或退出后重新登录。'
+  },
+  'auth.signIn.retry': {
+    en: 'Retry',
+    'zh-CN': '重试'
+  },
+  'auth.signIn.starting': {
+    en: 'Starting your session…',
+    'zh-CN': '正在启动会话…'
+  },
+  // Auth validation copy, matching the platform app's messages. The {length}
+  // and {prefix} tokens are interpolated by config/auth-schemas.ts.
+  'validation.invalidEmail': {
+    en: 'Invalid email address',
+    'zh-CN': '无效的电子邮件地址'
+  },
+  'validation.required': {
+    en: 'Required',
+    'zh-CN': '必填'
+  },
+  'validation.minLength': {
+    en: 'Must be at least {length} characters',
+    'zh-CN': '必须至少有{length}个字符'
+  },
+  'validation.maxLength': {
+    en: 'Must be no more than {length} characters',
+    'zh-CN': '不能超过{length}个字符'
+  },
+  'validation.length': {
+    en: 'Must be {length} characters',
+    'zh-CN': '必须为{length}个字符'
+  },
+  'validation.prefix': {
+    en: 'Must start with {prefix}',
+    'zh-CN': '必须以 {prefix} 开头'
+  },
+  'validation.password.uppercase': {
+    en: 'Must contain at least one uppercase letter',
+    'zh-CN': '必须包含至少一个大写字母'
+  },
+  'validation.password.lowercase': {
+    en: 'Must contain at least one lowercase letter',
+    'zh-CN': '必须包含至少一个小写字母'
+  },
+  'validation.password.number': {
+    en: 'Must contain at least one number',
+    'zh-CN': '必须包含至少一个数字'
+  },
+  'validation.password.special': {
+    en: 'Must contain at least one special character',
+    'zh-CN': '必须包含至少一个特殊字符'
+  },
+  'validation.password.match': {
+    en: 'Passwords must match',
+    'zh-CN': '密码必须匹配'
+  },
+  'auth.email.label': {
+    en: 'Email',
+    'zh-CN': '电子邮件'
+  },
+  'auth.password.label': {
+    en: 'Password',
+    'zh-CN': '密码'
+  },
+  'auth.confirmPassword.label': {
+    en: 'Confirm password',
+    'zh-CN': '确认密码'
+  },
+  'auth.signIn.submit': {
+    en: 'Sign in with email',
+    'zh-CN': '使用邮箱登录'
+  },
+  'auth.signUp.submit': {
+    en: 'Create account',
+    'zh-CN': '创建账户'
+  },
+  'auth.signIn.or': {
+    en: 'or',
+    'zh-CN': '或'
+  },
+  'auth.signIn.forgotPassword': {
+    en: 'Forgot password?',
+    'zh-CN': '忘记密码？'
+  },
+  'auth.signIn.error.invalidCredentials': {
+    en: 'That email and password did not match. Try again or reset your password.',
+    'zh-CN': '邮箱与密码不匹配。请重试或重置密码。'
+  },
+  'auth.signIn.error.emailInUse': {
+    en: 'An account with this email already exists. Sign in instead.',
+    'zh-CN': '该邮箱已注册，请直接登录。'
+  },
+  'auth.signIn.error.tooManyRequests': {
+    en: 'Too many attempts. Wait a moment and try again.',
+    'zh-CN': '尝试次数过多，请稍后再试。'
+  },
+  'auth.turnstile.expired': {
+    en: 'The verification expired. Please solve it again.',
+    'zh-CN': '验证已过期，请重新完成验证。'
+  },
+  'auth.turnstile.failed': {
+    en: 'Verification could not load. You can still continue.',
+    'zh-CN': '验证无法加载，你仍可以继续。'
+  },
+  'auth.turnstile.waiting': {
+    en: 'Waiting for the verification to finish…',
+    'zh-CN': '正在等待验证完成…'
+  },
+  'auth.forgot.meta.title': {
+    en: 'Reset password - Comfy',
+    'zh-CN': '重置密码 - Comfy'
+  },
+  'auth.forgot.meta.description': {
+    en: 'Reset your Comfy account password.',
+    'zh-CN': '重置你的 Comfy 账户密码。'
+  },
+  'auth.forgot.heading': {
+    en: 'Reset your password',
+    'zh-CN': '重置密码'
+  },
+  'auth.forgot.body': {
+    en: 'Enter your account email and we will send a reset link.',
+    'zh-CN': '输入你的账户邮箱，我们将发送重置链接。'
+  },
+  'auth.forgot.submit': {
+    en: 'Send reset link',
+    'zh-CN': '发送重置链接'
+  },
+  'auth.forgot.sent': {
+    en: 'If an account exists for that email, a reset link is on its way.',
+    'zh-CN': '如果该邮箱已注册，重置链接已发送。'
+  },
+  'auth.forgot.error': {
+    en: 'The reset link could not be sent. Try again.',
+    'zh-CN': '重置链接发送失败，请重试。'
+  },
+  'auth.forgot.backToSignIn': {
+    en: 'Back to sign in',
+    'zh-CN': '返回登录'
+  },
+  'auth.header.signIn': {
+    en: 'Sign in',
+    'zh-CN': '登录'
+  },
+  'auth.header.account': {
+    en: 'Account',
+    'zh-CN': '账户'
+  },
+  'auth.header.credits': {
+    en: 'credits',
+    'zh-CN': '积分'
+  },
+  'auth.header.sessionRetry': {
+    en: 'Session error — retry',
+    'zh-CN': '会话错误 — 重试'
+  },
+  'auth.header.balanceError': {
+    en: 'Balance unavailable right now.',
+    'zh-CN': '暂时无法获取余额。'
   },
 
   // Tags (global, reusable across sections)

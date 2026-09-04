@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import type { SafeParseReturnType } from 'zod'
 
-import {
-  signInSchema,
-  signUpSchema,
-  updatePasswordSchema
-} from '@/schemas/signInSchema'
+import { createAuthSchemas } from './signInSchemas'
+
+const { signInSchema, signUpSchema, updatePasswordSchema } = createAuthSchemas(
+  (key) => key
+)
 
 const VALID_PASSWORD = 'Password1!'
 
@@ -135,5 +135,32 @@ describe('updatePasswordSchema', () => {
 
     expect(result.success).toBe(false)
     expect(errorAt(result, 'confirmPassword')).toBeDefined()
+  })
+})
+
+describe('createAuthSchemas message wiring', () => {
+  it('resolves messages through the injected translator with its params', () => {
+    const seen: Array<[string, unknown]> = []
+    const { signUpSchema: schema } = createAuthSchemas((key, params) => {
+      seen.push([key, params])
+      return `msg:${key}`
+    })
+
+    const result = schema.safeParse(
+      signUpValues({ password: 'short', confirmPassword: 'short' })
+    )
+
+    expect(result.success).toBe(false)
+    expect(
+      seen.some(
+        ([key, params]) =>
+          key === 'validation.minLength' &&
+          (params as Record<string, unknown>).length === 8
+      ),
+      'the 8-char minimum must reach the translator as a param, not be baked into copy'
+    ).toBe(true)
+    expect(
+      result.success ? [] : result.error.issues.map((issue) => issue.message)
+    ).toContain('msg:validation.minLength')
   })
 })

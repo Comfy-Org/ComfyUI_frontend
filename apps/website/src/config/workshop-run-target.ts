@@ -44,13 +44,35 @@ export interface WorkshopRunTarget {
   ): Promise<WorkshopRunResult>
 }
 
+/**
+ * LOCAL ONLY. Off unless `PUBLIC_WORKSHOP_PARTNER_PROXY=1` is set, which only
+ * a gitignored .env does — so tests and any build exercise the committed
+ * Router path, and only the local dev server routes through the bundle.
+ */
+const USE_PARTNER_PROXY = import.meta.env.PUBLIC_WORKSHOP_PARTNER_PROXY === '1'
+
 const routerRunTarget: WorkshopRunTarget = {
   id: 'router',
   snippetLanguages: ROUTER_SNIPPET_LANGUAGES,
   buildSnippet: (language, model, values) =>
     buildRouterSnippet(language, model.id, model.fields, values),
-  run: (model, values, options) =>
-    runRouterModel(model.id, buildWorkshopInput(model.fields, values), options)
+  run: async (model, values, options) => {
+    // LOCAL ONLY. The catalog's parameters describe a normalized authoring
+    // shape that only the partner bundle can turn into a partner-native
+    // request, so posting our form values straight at Router runs the wrong
+    // body: measured, it drops reference images on the BFL models and
+    // silently ignores the prompt on ideogram/v4. Flip this off to get the
+    // committed Router behaviour back.
+    if (USE_PARTNER_PROXY) {
+      const { runViaPartnerProxy } = await import('./workshop-run-proxy')
+      return runViaPartnerProxy(model, values, options.credentials)
+    }
+    return runRouterModel(
+      model.id,
+      buildWorkshopInput(model.fields, values),
+      options
+    )
+  }
 }
 
 const RUN_TARGETS: Readonly<Record<WorkshopRunTargetId, WorkshopRunTarget>> = {

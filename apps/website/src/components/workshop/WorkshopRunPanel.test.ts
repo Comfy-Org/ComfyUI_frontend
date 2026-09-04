@@ -3,8 +3,64 @@ import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useWorkshopCredentials } from '../../config/workshop-credentials-state'
 import type { WorkshopDetailModel } from '../../config/workshop-detail'
 import WorkshopRunPanel from './WorkshopRunPanel.vue'
+
+interface SessionHandles {
+  setUser?: (user: { uid: string } | null) => void
+  setSessionToken?: (token: string | undefined) => void
+  ensureFresh?: ReturnType<typeof vi.fn>
+  remint?: ReturnType<typeof vi.fn>
+  flag?: { value: boolean }
+}
+
+const sessionHandles = vi.hoisted<SessionHandles>(() => ({}))
+
+vi.mock('../../scripts/posthog', async () => {
+  const { ref } = await import('vue')
+  const flag = ref(false)
+  sessionHandles.flag = flag
+  return { useWorkshopAuthFlag: () => flag }
+})
+
+const refreshCredits = vi.hoisted(() => vi.fn(async () => {}))
+vi.mock('../../config/workshop-credits', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  refreshWorkshopCredits: refreshCredits
+}))
+
+vi.mock('../../config/workshop-session-state', async () => {
+  const { computed, ref } = await import('vue')
+  const user = ref<{ uid: string } | null>(null)
+  const session = ref<{ token: string } | undefined>(undefined)
+  const ensureFresh = vi.fn(async () => {
+    session.value = { token: 'jwt' }
+    return { status: 'ok' as const }
+  })
+  const remint = vi.fn(async () => {
+    session.value = { token: 'jwt' }
+    return { status: 'ok' as const }
+  })
+  sessionHandles.setUser = (next) => {
+    user.value = next
+  }
+  sessionHandles.setSessionToken = (token) => {
+    session.value = token === undefined ? undefined : { token }
+  }
+  sessionHandles.ensureFresh = ensureFresh
+  sessionHandles.remint = remint
+  return {
+    useWorkshopSession: () => ({
+      user,
+      session,
+      signedIn: computed(() => session.value !== undefined),
+      ensureFresh,
+      remint,
+      signOut: vi.fn()
+    })
+  }
+})
 
 const model: WorkshopDetailModel = {
   id: 'bfl/flux-2-pro',
@@ -41,16 +97,40 @@ function jsonResponse(status: number, body: unknown, headers = {}) {
 
 beforeEach(() => {
   globalThis.localStorage.clear()
+  globalThis.sessionStorage.clear()
+  // The credential lives outside the panel now — it comes from the floating
+  // key widget, and in the shipped app it will come from a session.
+  useWorkshopCredentials().save('')
+  sessionHandles.flag!.value = false
+  sessionHandles.setUser!(null)
+  sessionHandles.setSessionToken!(undefined)
+  sessionHandles.ensureFresh!.mockClear()
+  sessionHandles.ensureFresh!.mockImplementation(async () => ({
+    status: 'ok'
+  }))
+  sessionHandles.remint!.mockClear()
+  sessionHandles.remint!.mockImplementation(async () => ({ status: 'ok' }))
 })
 
-describe('WorkshopRunPanel', () => {
-  it('cannot run until a key is entered', async () => {
-    renderPanel()
-    const button = screen.getByRole('button', { name: 'Run' })
-    expect((button as HTMLButtonElement).disabled).toBe(true)
+function enterKey(value = 'comfyui-abc') {
+  useWorkshopCredentials().save(value)
+}
 
-    await userEvent.setup().type(screen.getByLabelText('Comfy API key'), 'k')
-    expect((button as HTMLButtonElement).disabled).toBe(false)
+const runButton = () =>
+  screen.getByRole('button', { name: /^(Run|Sign up \/ Login to Render)$/ })
+
+describe('WorkshopRunPanel', () => {
+  it('asks you to sign in before it will run anything', async () => {
+    renderPanel()
+
+    // Not disabled — a dead button tells you nothing. It offers the way in.
+    expect(runButton().textContent).toContain('Sign up / Login to Render')
+    expect((runButton() as HTMLButtonElement).disabled).toBe(false)
+
+    enterKey()
+    await waitFor(() => {
+      expect(runButton().textContent).toContain('Run')
+    })
   })
 
   it('runs the model and shows the image it returned', async () => {
@@ -62,9 +142,8 @@ describe('WorkshopRunPanel', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     renderPanel()
-    const user = userEvent.setup()
-    await user.type(screen.getByLabelText('Comfy API key'), 'comfyui-abc')
-    await user.click(screen.getByRole('button', { name: 'Run' }))
+    enterKey()
+    await userEvent.setup().click(runButton())
 
     await waitFor(() =>
       expect(screen.getByAltText('FLUX 2 Pro').getAttribute('src')).toBe(
@@ -75,6 +154,10 @@ describe('WorkshopRunPanel', () => {
     // The values in the form are what actually got sent.
     const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
     expect(init.body).toBe('{"prompt":"a cat"}')
+    expect(
+      refreshCredits,
+      'a finished run re-reads the balance so the chip reflects the spend'
+    ).toHaveBeenCalled()
   })
 
   it('explains a rejected key instead of showing the raw failure', async () => {
@@ -92,9 +175,8 @@ describe('WorkshopRunPanel', () => {
     )
 
     renderPanel()
-    const user = userEvent.setup()
-    await user.type(screen.getByLabelText('Comfy API key'), 'wrong')
-    await user.click(screen.getByRole('button', { name: 'Run' }))
+    enterKey()
+    await userEvent.setup().click(runButton())
 
     const alert = await screen.findByRole('alert')
     expect(alert.textContent).toContain('That API key was not accepted.')
@@ -104,30 +186,175 @@ describe('WorkshopRunPanel', () => {
     expect(alert.textContent).toContain('r1')
   })
 
-  it('remembers the key across a reload but never puts it in the URL', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => Promise.resolve(jsonResponse(200, {})))
-    )
+  it('does not put a credential field in the product UI', () => {
+    // The key is scaffolding and lives in a floating widget outside the
+    // layout; in the shipped app it comes from a session. Persistence is
+    // covered in workshop-credentials.test.ts.
+    renderPanel()
 
-    const { unmount } = renderPanel()
-    const user = userEvent.setup()
-    await user.type(screen.getByLabelText('Comfy API key'), 'comfyui-remember')
-    await user.click(screen.getByRole('button', { name: 'Run' }))
-    await waitFor(() =>
-      expect(
-        screen.queryByText('Running. This can take a minute or two.')
-      ).toBeNull()
-    )
-    unmount()
+    // The key only exists inside the closed sign-in dialog, which stands in
+    // for a session until comfy.org can start one.
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(screen.queryAllByRole('textbox')).toEqual([])
+  })
+
+  it('sends a signed-out visitor to the sign-in page instead of the key dialog when auth is live', async () => {
+    sessionHandles.flag!.value = true
+    const assign = vi
+      .spyOn(window.location, 'assign')
+      .mockImplementation(() => {})
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
 
     renderPanel()
-    await waitFor(() =>
-      expect(
-        (screen.getByLabelText('Comfy API key') as HTMLInputElement).value
-      ).toBe('comfyui-remember')
+    await userEvent.setup().click(runButton())
+
+    expect(assign).toHaveBeenCalledOnce()
+    const target = assign.mock.calls[0]?.[0] as string
+    expect(target).toContain('/login/?returnTo=')
+    expect(
+      fetchMock,
+      'no run request may fire while signed out'
+    ).not.toHaveBeenCalled()
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(
+      globalThis.sessionStorage.getItem('comfy.workshop.form.bfl--flux-2-pro'),
+      'the form must be stashed before the page is left'
+    ).toContain('a cat')
+  })
+
+  it('offers the purchase path when a run fails on insufficient credits', async () => {
+    sessionHandles.setUser!({ uid: 'user-1' })
+    sessionHandles.setSessionToken!('jwt')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        jsonResponse(
+          402,
+          { error_type: 'insufficient_credits', detail: 'No credits left.' },
+          { 'X-Comfy-Error-Type': 'insufficient_credits' }
+        )
+      )
     )
-    expect(window.location.search).toBe('')
+
+    renderPanel()
+    const user = userEvent.setup()
+    await user.click(runButton())
+
+    const cta = await screen.findByRole('link', {
+      name: 'Buy credits on Comfy Platform'
+    })
+    const href = new URL(cta.getAttribute('href') ?? '')
+    expect(href.origin).toBe('https://platform.comfy.org')
+    expect(href.searchParams.get('returnTo')).toBeTruthy()
+
+    await user.click(cta)
+    expect(
+      globalThis.sessionStorage.getItem('comfy.workshop.form.bfl--flux-2-pro'),
+      'leaving to buy credits must not lose the form'
+    ).toContain('a cat')
+  })
+
+  it('runs with the token the awaited refresh produced, never the one from before the click', async () => {
+    sessionHandles.setUser!({ uid: 'user-1' })
+    sessionHandles.setSessionToken!('stale-jwt')
+    sessionHandles.ensureFresh!.mockImplementation(async () => {
+      sessionHandles.setSessionToken!('fresh-jwt')
+      return { status: 'ok' }
+    })
+    const fetchMock = vi.fn(async () => jsonResponse(200, {}))
+    vi.stubGlobal('fetch', fetchMock)
+
+    renderPanel()
+    await userEvent.setup().click(runButton())
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce())
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    expect(
+      (init.headers as Record<string, string>).Authorization,
+      'valid-on-read: the run must carry what ensureFresh resolved with'
+    ).toBe('Bearer fresh-jwt')
+  })
+
+  it('re-mints exactly once on an unauthorized run and replays the same idempotency key', async () => {
+    sessionHandles.setUser!({ uid: 'user-1' })
+    sessionHandles.setSessionToken!('revoked-jwt')
+    sessionHandles.remint!.mockImplementation(async () => {
+      sessionHandles.setSessionToken!('reminted-jwt')
+      return { status: 'ok' }
+    })
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        jsonResponse(
+          401,
+          { error_type: 'unauthorized' },
+          { 'X-Comfy-Error-Type': 'unauthorized' }
+        )
+      )
+      .mockResolvedValueOnce(
+        jsonResponse(200, { images: [{ url: 'https://storage/out.png' }] })
+      )
+    vi.stubGlobal('fetch', fetchMock)
+
+    renderPanel()
+    await userEvent.setup().click(runButton())
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+    expect(sessionHandles.remint).toHaveBeenCalledOnce()
+    const calls = fetchMock.mock.calls as unknown as [string, RequestInit][]
+    const headers = calls.map(
+      ([, init]) => init.headers as Record<string, string>
+    )
+    expect(headers[1]?.Authorization).toBe('Bearer reminted-jwt')
+    expect(
+      headers[1]?.['Idempotency-Key'],
+      'the retry replays the SAME logical run — a new key could bill twice'
+    ).toBe(headers[0]?.['Idempotency-Key'])
+    await waitFor(() =>
+      expect(screen.getByAltText('FLUX 2 Pro').getAttribute('src')).toBe(
+        'https://storage/out.png'
+      )
+    )
+  })
+
+  it('never retries an unauthorized run for a pasted key', async () => {
+    const fetchMock = vi.fn(async () =>
+      jsonResponse(
+        401,
+        { error_type: 'unauthorized' },
+        { 'X-Comfy-Error-Type': 'unauthorized' }
+      )
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    renderPanel()
+    enterKey()
+    await userEvent.setup().click(runButton())
+
+    await screen.findByRole('alert')
+    expect(fetchMock).toHaveBeenCalledOnce()
+    expect(sessionHandles.remint).not.toHaveBeenCalled()
+  })
+
+  it('surfaces a failed session refresh without firing the run', async () => {
+    sessionHandles.setUser!({ uid: 'user-1' })
+    sessionHandles.setSessionToken!('expiring-jwt')
+    sessionHandles.ensureFresh!.mockImplementation(async () => {
+      sessionHandles.setSessionToken!(undefined)
+      return { status: 'error', reason: 'http', httpStatus: 503 }
+    })
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    renderPanel()
+    await userEvent.setup().click(runButton())
+
+    const alert = await screen.findByRole('alert')
+    expect(alert.textContent).toContain(
+      'Your session could not be refreshed. Sign in again and retry.'
+    )
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it('shows the response when a model returns no media', async () => {
@@ -139,9 +366,8 @@ describe('WorkshopRunPanel', () => {
     )
 
     renderPanel()
-    const user = userEvent.setup()
-    await user.type(screen.getByLabelText('Comfy API key'), 'comfyui-abc')
-    await user.click(screen.getByRole('button', { name: 'Run' }))
+    enterKey()
+    await userEvent.setup().click(runButton())
 
     expect(
       await screen.findByText(
