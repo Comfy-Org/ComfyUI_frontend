@@ -7,6 +7,7 @@ import { useHeroAnimation } from '../../composables/useHeroAnimation'
 import { t } from '../../i18n/translations'
 import HubspotFormEmbed from '../common/HubspotFormEmbed.vue'
 import SectionLabel from '../common/SectionLabel.vue'
+import SocialProofBarSection from '../common/SocialProofBarSection.vue'
 
 const { locale = 'en' } = defineProps<{
   locale?: Locale
@@ -84,6 +85,8 @@ useHeroAnimation({
           class="w-full rounded-2xl object-cover"
         />
       </div>
+
+      <SocialProofBarSection class="lg:-ml-20" />
     </div>
 
     <!-- Right column: form -->
