@@ -466,7 +466,6 @@
   },
   "billingOperation": {
     "authenticationFailedDetail": "Ödeme doğrulamasını tamamlayamadık. Lütfen tekrar deneyin.",
-    "authenticationManagerRequired": "Ödeme doğrulaması, çalışma alanı faturalama yöneticisinin ilgisini gerektiriyor.",
     "authenticationUnavailable": "Güvenli ödeme doğrulaması kullanılamıyor. Lütfen yenileyip tekrar deneyin.",
     "cancelFailed": "Abonelik iptali başarısız oldu",
     "cancelTimeout": "Abonelik iptal süresi doldu",
@@ -477,7 +476,6 @@
     "processingErrorDetail": "Ödemeniz işlenemedi. Tekrar deneyin veya başka bir ödeme yöntemi kullanın.",
     "reconciliationDetail": "Ödemeniz alındı, ancak çalışma alanınızı güncellemeyi tamamlayamadık. Destek ekibiyle iletişime geçin ve şu işlem kimliğini ekleyin:",
     "reconciliationTitle": "Ödeme alındı — onay bekleniyor",
-    "retryVerification": "Doğrulamayı yeniden dene",
     "subscriptionActionRequired": "Çalışma alanınızı kurmayı tamamlamak için ödemenizi doğrulayın",
     "subscriptionFailed": "Abonelik güncellemesi başarısız oldu",
     "subscriptionFailedDetail": "Aboneliğinizi güncelleyemedik. Lütfen tekrar deneyin.",
@@ -965,6 +963,7 @@
       "quickPurchase": "Hızlı Satın Alma",
       "seeDetails": "Detayları gör",
       "selectAmount": "Tutar seç",
+      "startOver": "Yeniden başla",
       "templateNote": "*Wan Fun Control şablonu ile oluşturuldu",
       "topUp": "Yükleme Yap",
       "unknownError": "Bilinmeyen bir hata oluştu",
