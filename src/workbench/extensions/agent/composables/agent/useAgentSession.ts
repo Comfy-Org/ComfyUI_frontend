@@ -233,10 +233,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
             tabPath: originContext.tabPath,
             instanceId: originContext.instanceId
           }
-    // The ack does not say whether the server minted a workflow or echoed
-    // the thread's existing one; an unbound tab may only adopt an id the
-    // session was not already bound to before this turn.
-    const priorWorkflowId = boundWorkflowId.value
     if (workflow?.prepare)
       await Promise.race([
         workflow.prepare().catch(() => undefined),
@@ -276,9 +272,18 @@ export function useAgentSession(deps: AgentSessionDeps) {
       conversationStore.setThreadId(ack.thread_id)
       localStorage.setItem(THREAD_STORAGE_KEY, ack.thread_id)
       if (ack.workflow_id !== undefined) {
+        // The ack does not say whether the server minted a workflow or echoed
+        // the thread's existing one; an unbound tab may only adopt an id the
+        // session is not already bound to. Compare against the binding as of
+        // the ack, not a pre-prepare() snapshot: a bindWorkflow() landing in
+        // the prepare()/POST window (a late agent_active_tab frame, an
+        // overlapping send, loadThread) must make an echoed id read as an
+        // echo, not as freshly minted. A minted id is never equal to the
+        // current binding, so genuine adoption still fires.
+        const boundAtAck = boundWorkflowId.value
         bindWorkflow(ack.workflow_id)
         const echoedToUnboundTab =
-          wfContext?.id === undefined && ack.workflow_id === priorWorkflowId
+          wfContext?.id === undefined && ack.workflow_id === boundAtAck
         if (!echoedToUnboundTab) workflow?.adopted(ack.workflow_id, wfContext)
       }
       const turnId = ack.message_id as TurnId

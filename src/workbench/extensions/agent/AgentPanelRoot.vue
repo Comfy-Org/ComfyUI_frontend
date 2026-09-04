@@ -486,7 +486,14 @@ const isCrdtDevPanelEnabled = resolveDebugPanelEnabled(
 function resumedTurnTabPath(): string | null {
   if (workflowDetached.value) return null
   const bound = boundWorkflowId.value
-  if (bound === null) return activeWorkflowTurnContext()?.tabPath ?? null
+  if (bound === null) {
+    // An id-less context means the turn has no workflow at all: attributing
+    // it to whatever tab happens to be active lights the editing spinner on
+    // that tab and markModifieds it on completion. Only a context carrying a
+    // real workflow id may be attributed.
+    const context = activeWorkflowTurnContext()
+    return context?.id !== undefined ? context.tabPath : null
+  }
   const boundPath = bindingStore.tabPathFor(bound)
   if (boundPath !== undefined) return boundPath
   const context = activeWorkflowTurnContext()
