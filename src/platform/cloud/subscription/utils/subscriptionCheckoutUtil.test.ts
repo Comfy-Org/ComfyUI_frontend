@@ -10,7 +10,8 @@ const {
   mockUserId,
   mockIsCloud,
   mockGetCheckoutAttribution,
-  mockLocalStorage
+  mockLocalStorage,
+  mockReportError
 } = vi.hoisted(() => ({
   mockTelemetry: {
     trackBeginCheckout: vi.fn(),
@@ -33,6 +34,7 @@ const {
     gbraid: 'gbraid-456',
     wbraid: 'wbraid-789'
   })),
+  mockReportError: vi.fn(),
   mockLocalStorage: (() => {
     const store = new Map<string, string>()
 
@@ -66,6 +68,10 @@ Object.defineProperty(globalThis, 'localStorage', {
 
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: vi.fn(() => mockTelemetry)
+}))
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
 }))
 
 vi.mock('@/stores/authStore', () => ({
@@ -183,6 +189,7 @@ describe('performSubscriptionCheckout', () => {
       })
     )
     expect(openSpy).toHaveBeenCalledWith(checkoutUrl, '_blank')
+    expect(mockReportError).not.toHaveBeenCalled()
   })
 
   it('continues checkout when attribution collection fails', async () => {
@@ -303,6 +310,27 @@ describe('performSubscriptionCheckout', () => {
       expect.objectContaining({
         checkout_attempt_id: expect.any(String)
       })
+    )
+    expect(mockReportError).toHaveBeenCalledTimes(1)
+    expect(mockReportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'Subscription checkout popup was blocked'
+      }),
+      {
+        errorType: 'cloud_checkout_popup_blocked',
+        tags: {
+          failure_kind: 'bad_state',
+          feature_area: 'cloud',
+          operation: 'navigate',
+          outcome: 'aborted',
+          assert_mode: 'soft'
+        },
+        context: {
+          checkout_type: 'new',
+          open_in_new_tab: true
+        },
+        level: 'error'
+      }
     )
   })
 
