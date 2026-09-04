@@ -254,7 +254,9 @@ describe('JobAssetsList', () => {
   beforeEach(() => {
     hoisted.concurrentExecutionEnabled.value = false
     hoisted.executionStore.focusedJobId = null
-    hoisted.executionStore.setFocusedJob.mockReset()
+    hoisted.executionStore.setFocusedJob.mockImplementation((jobId) => {
+      hoisted.executionStore.focusedJobId = jobId
+    })
   })
 
   it('renders grouped headers alongside job rows', () => {
@@ -394,6 +396,7 @@ describe('JobAssetsList', () => {
     )
 
     expect(hoisted.executionStore.setFocusedJob).toHaveBeenCalledWith(job.id)
+    expect(hoisted.executionStore.focusedJobId).toBe(job.id)
   })
 
   it('emits viewItem from the View button for completed jobs without preview output', async () => {

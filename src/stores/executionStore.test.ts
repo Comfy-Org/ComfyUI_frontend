@@ -1711,6 +1711,62 @@ describe('useExecutionStore - executingNode with subgraphs', () => {
     })
   })
 
+  it('finds executing node info from the focused concurrent job', () => {
+    mockConcurrentExecutionEnabled.value = true
+    store.storeJob({
+      id: 'job-1',
+      nodes: ['1'],
+      promptOutput: {
+        '1': createPromptNode('First Node', 'FirstNode')
+      },
+      workflow: createQueuedWorkflow(),
+      mode: 'graph'
+    })
+    store.storeJob({
+      id: 'job-2',
+      nodes: ['2'],
+      promptOutput: {
+        '2': createPromptNode('Second Node', 'SecondNode')
+      },
+      workflow: createQueuedWorkflow(),
+      mode: 'graph'
+    })
+    store.nodeProgressStatesByJob = {
+      'job-1': {
+        '1': {
+          state: 'running',
+          value: 0,
+          max: 100,
+          display_node_id: '1',
+          prompt_id: 'job-1',
+          node_id: '1'
+        }
+      },
+      'job-2': {
+        '2': {
+          state: 'running',
+          value: 0,
+          max: 100,
+          display_node_id: '2',
+          prompt_id: 'job-2',
+          node_id: '2'
+        }
+      }
+    }
+
+    store.setFocusedJob('job-1')
+    expect(store.executingNode).toEqual({
+      title: 'First Node',
+      type: 'FirstNode'
+    })
+
+    store.setFocusedJob('job-2')
+    expect(store.executingNode).toEqual({
+      title: 'Second Node',
+      type: 'SecondNode'
+    })
+  })
+
   it('should return null when no node is executing', () => {
     store.nodeProgressStates = {}
 
