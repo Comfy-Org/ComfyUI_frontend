@@ -308,11 +308,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
       answeringAskIds.value.has(askId)
     )
       return
+    const generation = loadGeneration
+    const isCurrent = () =>
+      generation === loadGeneration && ownedGeneration === sessionGeneration
     setAskAnswering(askId, true)
     try {
       await rest.answerAsk(currentThreadId, askId, [selection])
       // Keep the actions disabled until the canonical resolution frame arrives.
     } catch (error) {
+      if (!isCurrent()) return
       setAskAnswering(askId, false)
       if (error instanceof AgentApiError && error.status === 409) {
         conversationStore.ingest({

@@ -464,6 +464,37 @@ describe('useAgentSession (v1 composition root)', () => {
     ).toBe(false)
   })
 
+  it('ignores a stale answer failure after switching threads', async () => {
+    let rejectAnswer: ((error: unknown) => void) | undefined
+    const answerAsk = vi.fn<AgentRestClient['answerAsk']>(
+      () =>
+        new Promise((_, reject) => {
+          rejectAnswer = reject
+        })
+    )
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ answerAsk }),
+      events: source
+    })
+    session.start()
+    await session.sendMessage('build it')
+    emit(runApproval('msg-1'))
+
+    const pendingAnswer = session.answerAsk('turn-1:call-1', 'cancel')
+    await vi.waitFor(() => expect(answerAsk).toHaveBeenCalledOnce())
+    const answeringState = session.answeringAskIds.value
+    const ingest = vi.spyOn(useAgentConversationStore(), 'ingest')
+
+    await session.loadThread('th-2')
+    ingest.mockClear()
+    rejectAnswer?.(new AgentApiError('already answered', 409, undefined))
+    await pendingAnswer
+
+    expect(session.answeringAskIds.value).toBe(answeringState)
+    expect(ingest).not.toHaveBeenCalled()
+  })
+
   it('retains and re-enables an approval after a non-409 answer failure', async () => {
     const answerAsk = vi
       .fn<AgentRestClient['answerAsk']>()
