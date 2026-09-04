@@ -549,12 +549,16 @@ export function topologicalSortSubgraphs(
   }
 
   for (const sg of subgraphs) {
+    // Count each dependency once: a parent that instantiates the same leaf
+    // several times still has a single edge from that leaf.
+    const dependencies = new Set<string>()
     for (const node of sg.nodes ?? []) {
-      if (subgraphIds.has(node.type)) {
-        // sg depends on node.type → edge from node.type to sg.id
-        dependents.get(node.type)!.add(sg.id)
-        inDegree.set(sg.id, (inDegree.get(sg.id) ?? 0) + 1)
-      }
+      if (subgraphIds.has(node.type)) dependencies.add(node.type)
+    }
+    for (const dependency of dependencies) {
+      // sg depends on dependency → edge from dependency to sg.id
+      dependents.get(dependency)!.add(sg.id)
+      inDegree.set(sg.id, (inDegree.get(sg.id) ?? 0) + 1)
     }
   }
 

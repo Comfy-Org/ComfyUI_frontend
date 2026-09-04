@@ -217,6 +217,13 @@ describe('topologicalSortSubgraphs', () => {
     expect(ids.indexOf('right')).toBeLessThan(ids.indexOf('top'))
   })
 
+  it('sorts a leaf before a parent that instantiates it more than once', () => {
+    const inner = makeSubgraph('inner', ['StringConcat'])
+    const outer = makeSubgraph('outer', ['inner', 'inner'])
+    const result = topologicalSortSubgraphs([outer, inner])
+    expect(result.map((s) => s.id)).toEqual(['inner', 'outer'])
+  })
+
   it('preserves original order for cyclic definitions', () => {
     const a = makeSubgraph('a', ['b'])
     const b = makeSubgraph('b', ['a'])

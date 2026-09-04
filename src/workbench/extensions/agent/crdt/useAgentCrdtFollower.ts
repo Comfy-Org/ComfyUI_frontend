@@ -273,8 +273,12 @@ export function useAgentCrdtFollower(
   // exactly which nodes each doc_update added/removed. Rebuilt from zero on
   // doc_reset (remint) because the lineage broke.
   let knownDocNodeIds: Set<string> = new Set()
-  const currentDocNodeIds = (): Set<string> =>
-    new Set(bridge.follower.doc.getMap('nodes').keys())
+  // `getMap` defines the root when it is absent; only read a root that exists.
+  const currentDocNodeIds = (): Set<string> => {
+    const doc = bridge.follower.doc
+    if (!doc.share.has('nodes')) return new Set()
+    return new Set(doc.getMap('nodes').keys())
+  }
 
   // FE-1901 (poc-2): a `doc_subscribed {ok:false}` is a SERVER refusal — e.g.
   // the subscribe raced the doc-host before the turn ack minted the doc. The
