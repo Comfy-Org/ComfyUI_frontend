@@ -197,7 +197,7 @@ describe('QA-12: FE op-ingestion boundary fuzz — malformed connect slot payloa
   describe('seam 2: applier rejects malformed connect ops gracefully (never a raw throw)', () => {
     it('applies the well-formed control on the same seed', () => {
       const doc = seedDoc()
-      const op = { ...envelope(), ...connectOp(0, 0) } as unknown as Op
+      const op = { ...envelope(), ...connectOp(0, 0) }
 
       const result = applyOps(doc, [op], CATALOG)
 
@@ -219,7 +219,7 @@ describe('QA-12: FE op-ingestion boundary fuzz — malformed connect slot payloa
                 endpoint === 'from' ? badSlot : 0,
                 endpoint === 'to' ? badSlot : 0
               )
-            } as unknown as Op
+            }
 
             let result: ApplyResult | undefined
             expect(() => {
@@ -260,7 +260,7 @@ describe('QA-12: FE op-ingestion boundary fuzz — malformed connect slot payloa
                 endpoint === 'from' ? badSlot : 0,
                 endpoint === 'to' ? badSlot : 0
               )
-            } as unknown as Op
+            }
             const good2: SetWidgetOp = {
               ...envelope('human:u1:tab', 1),
               op: 'set_widget',
