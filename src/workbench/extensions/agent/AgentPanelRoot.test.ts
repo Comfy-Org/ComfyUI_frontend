@@ -3,6 +3,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { createTestingPinia } from '@pinia/testing'
 import {
   createPinia,
   disposePinia,
@@ -439,7 +440,7 @@ function addTab(path: string, overrides: Partial<FakeTab> = {}): FakeTab {
 
 describe('AgentPanelRoot paywall actions', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     ws.clear()
     openAccountPrecondition.mockClear()
   })

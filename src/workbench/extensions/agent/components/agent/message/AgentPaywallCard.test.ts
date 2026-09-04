@@ -37,8 +37,8 @@ describe('AgentPaywallCard visual contract', () => {
     expect(addCredits).toHaveAccessibleName('Add credits')
     expect(addCredits).toHaveClass('bg-base-foreground', 'text-base-background')
 
-    await user.click(upgrade!)
-    await user.click(addCredits!)
+    await user.click(upgrade)
+    await user.click(addCredits)
     expect(onPaywallAction.mock.calls).toEqual([['upgrade'], ['addCredits']])
   })
 
@@ -61,6 +61,47 @@ describe('AgentPaywallCard visual contract', () => {
 
       expect(screen.getByText(body)).toBeInTheDocument()
       expect(screen.queryByRole('button')).not.toBeInTheDocument()
+    }
+  )
+
+  it.for([
+    {
+      presentation: { kind: 'subscriptionRequired' as const },
+      body: "You've run out of available credits.",
+      action: 'Subscribe',
+      emitted: 'subscribe'
+    },
+    {
+      presentation: { kind: 'local' as const },
+      body: "You've spent your credit balance. Add credits to keep the agent running.",
+      action: 'Add credits',
+      emitted: 'addCredits'
+    },
+    {
+      presentation: { kind: 'subscribed' as const, showUpgrade: false },
+      body: 'This workspace has spent its monthly credits and its top-up balance. Add credits to keep the agent running.',
+      action: 'Add credits',
+      emitted: 'addCredits'
+    }
+  ])(
+    'renders $presentation.kind with a single $action action',
+    async ({ presentation, body, action, emitted }) => {
+      const user = userEvent.setup()
+      const onPaywallAction = vi.fn()
+      render(AgentPaywallCard, {
+        props: { presentation },
+        attrs: { onPaywallAction },
+        global: { plugins: [i18n] }
+      })
+
+      expect(screen.getByText(body)).toBeInTheDocument()
+      const buttons = screen.getAllByRole('button')
+      expect(buttons).toHaveLength(1)
+      expect(buttons[0]).toHaveAccessibleName(action)
+      expect(screen.queryByRole('button', { name: 'Upgrade plan' })).toBeNull()
+
+      await user.click(buttons[0])
+      expect(onPaywallAction.mock.calls).toEqual([[emitted]])
     }
   )
 })

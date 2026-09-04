@@ -1,3 +1,4 @@
+import type { AgentAdmissionError } from '@comfyorg/ingest-types'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -15,7 +16,10 @@ import type {
   TurnId,
   UploadImageResult
 } from '../../schemas/agentApiSchema'
-import { zAgentWsEvent } from '../../schemas/agentApiSchema'
+import {
+  zAgentAdmissionError,
+  zAgentWsEvent
+} from '../../schemas/agentApiSchema'
 import { AgentApiError } from '../../services/agent/agentRestClient'
 import type {
   AgentRestClient,
@@ -178,18 +182,21 @@ const historyRow = (
   content: { text }
 })
 
+type AgentAdmissionReason = AgentAdmissionError['error']['reason']
+
 function admissionError(
-  reason: 'no_funds' | 'manual_block' | 'funds_unavailable',
+  reason: AgentAdmissionReason,
   message: string
 ): AgentApiError {
   const serviceUnavailable = reason === 'funds_unavailable'
-  return new AgentApiError(message, serviceUnavailable ? 503 : 402, {
+  const body = zAgentAdmissionError.parse({
     error: {
       message,
       type: serviceUnavailable ? 'SERVICE_UNAVAILABLE' : 'PAYMENT_REQUIRED',
       reason
     }
   })
+  return new AgentApiError(message, serviceUnavailable ? 503 : 402, body)
 }
 
 describe('useAgentSession (v1 composition root)', () => {

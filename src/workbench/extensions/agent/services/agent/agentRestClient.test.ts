@@ -300,6 +300,33 @@ describe('error mapping', () => {
     expect(Reflect.get(apiError, 'retryAfterSeconds')).toBe(5)
   })
 
+  it.for([
+    { label: 'absent', headers: undefined },
+    {
+      label: 'nonnumeric',
+      headers: { 'Retry-After': 'Wed, 21 Oct 2026 07:28:00 GMT' }
+    }
+  ])(
+    'leaves retryAfterSeconds undefined for an $label Retry-After header',
+    async ({ headers }) => {
+      const body = {
+        error: {
+          message: 'Billing status is temporarily unavailable; please retry.',
+          type: 'SERVICE_UNAVAILABLE',
+          reason: 'funds_unavailable'
+        }
+      }
+      respond(jsonResponse(503, body, headers))
+
+      const error = await makeClient()
+        .postMessage('t1', { content: 'try it' })
+        .catch((caught: unknown) => caught)
+
+      expect(error).toBeInstanceOf(AgentApiError)
+      expect((error as AgentApiError).retryAfterSeconds).toBeUndefined()
+    }
+  )
+
   it('falls back to statusText and undefined body for a non-JSON error response', async () => {
     respond(
       new Response('gateway boom', { status: 502, statusText: 'Bad Gateway' })
