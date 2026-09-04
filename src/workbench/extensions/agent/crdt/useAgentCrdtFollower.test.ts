@@ -555,6 +555,21 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
+    it('counts errored on an apply_error and does not touch applied/received', () => {
+      const { unmount, status } = mountFollower('wf-1')
+
+      dispatchFrame('apply_error', {
+        workflowId: 'wf-1',
+        seq: 7,
+        error: new Error('malformed update')
+      })
+
+      expect(status().outcomes.errored).toBe(1)
+      expect(status().outcomes.received).toBe(0)
+      expect(status().outcomes.applied).toBe(0)
+      unmount()
+    })
+
     it('counts gap on the bridge doc_gap signal, which never becomes a doc_update', () => {
       const { unmount, status } = mountFollower('wf-1')
 

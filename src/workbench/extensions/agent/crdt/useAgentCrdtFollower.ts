@@ -575,6 +575,7 @@ export function useAgentCrdtFollower(
             error?: unknown
           } | null)
         : null
+    outcomes.value = { ...outcomes.value, errored: outcomes.value.errored + 1 }
     reportError(detail?.error ?? new Error('agent CRDT apply_error'), {
       errorType: 'agent_crdt_apply_update_failure',
       context: { workflowId: detail?.workflowId, seq: detail?.seq }
