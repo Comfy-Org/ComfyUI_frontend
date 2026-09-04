@@ -16,10 +16,7 @@ import type {
 } from '@/renderer/extensions/vueNodes/types/widgetGrid'
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
-import {
-  getComponent,
-  shouldRenderAsVue
-} from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { app } from '@/scripts/app'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -382,8 +379,8 @@ function processWidget(
   const type = liveWidget?.type ?? widgetState.type
   const renderState = ctx.widgetValueStore.getWidgetRenderState(id)
   const visibility = ctx.widgetValueStore.getWidgetVisibility(id)
+  if (!type) return null
   const options: IWidgetOptions = { ...(widgetState.options ?? {}) }
-  if (!shouldRenderAsVue({ type, options })) return null
 
   const { live, errorTarget, controlWidget, sourceExecutionId } =
     resolveLiveWidgetContext(ctx.rootGraph, ctx.hostNode, liveWidget)

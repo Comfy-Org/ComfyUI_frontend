@@ -2,6 +2,7 @@ import type { TooltipOptions } from 'primevue'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
@@ -244,6 +245,24 @@ describe('widget visibility', () => {
 
   it('keeps hidden widgets hidden even when linked', () => {
     expect(visibilityOf({ hidden: true }, { linked: true })).toBe(false)
+  })
+
+  it('hides canvas-only widgets', () => {
+    expect(visibilityOf({ canvasOnly: true })).toBe(false)
+  })
+
+  it('re-shows a canvas-only widget once its vueNode tier is restored', () => {
+    const id = widgetId(GRAPH_ID, toNodeId(1), 'w')
+    registerWidgetState(id, { type: 'text', options: { canvasOnly: true } })
+    const visibility = useWidgetValueStore().getWidgetVisibility(id)
+    if (!visibility) throw new Error('Missing visibility component')
+    const visible = computed(
+      () => processWidgets({ widgetIds: [id] })[0]?.visible
+    )
+
+    expect(visible.value).toBe(false)
+    visibility.display.vueNode = 'shown'
+    expect(visible.value).toBe(true)
   })
 
   it('hides connection-suppressed widgets and flags them for socket-only rows', () => {
