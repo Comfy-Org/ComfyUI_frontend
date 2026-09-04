@@ -201,8 +201,6 @@ describe('attachLinkMintPort', () => {
   })
 
   it('cancels a same-task deletion of an unflushed placement without a phantom connect', async () => {
-    // Addresses review feedback:
-    // https://github.com/Comfy-Org/ComfyUI_frontend/pull/16337#discussion_r3893153026
     const consoleError = vi
       .spyOn(console, 'error')
       .mockImplementation(() => undefined)
@@ -221,8 +219,6 @@ describe('attachLinkMintPort', () => {
   })
 
   it('flushes and surfaces pending placements on detach instead of discarding them silently', () => {
-    // Addresses review feedback:
-    // https://github.com/Comfy-Org/ComfyUI_frontend/pull/16337#discussion_r3892825337
     const consoleError = vi
       .spyOn(console, 'error')
       .mockImplementation(() => undefined)

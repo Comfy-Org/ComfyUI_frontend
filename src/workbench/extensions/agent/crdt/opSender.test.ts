@@ -262,8 +262,6 @@ describe('createOpSender', () => {
   })
 
   it('preserves a canonical failure over a derived one, and collects every failed op_id', () => {
-    // Addresses review feedback:
-    // https://github.com/Comfy-Org/ComfyUI_frontend/pull/16337#discussion_r3893153055
     expect(
       toOpsResultView({
         ok: false,
@@ -280,8 +278,6 @@ describe('createOpSender', () => {
       failureOpIds: ['c'.repeat(32), 'd'.repeat(32)]
     })
 
-    // Addresses review feedback (match any failed op_id, not just the first):
-    // https://github.com/Comfy-Org/ComfyUI_frontend/pull/16337#discussion_r3892825409
     expect(
       toOpsResultView({
         ok: false,
@@ -299,8 +295,6 @@ describe('createOpSender', () => {
   })
 
   it('threads the host failure code, message and index through the view', () => {
-    // Addresses review feedback:
-    // https://github.com/Comfy-Org/ComfyUI_frontend/pull/16337#discussion_r3892825424
     expect(
       toOpsResultView({
         ok: false,
@@ -374,8 +368,6 @@ describe('createOpSender', () => {
   })
 
   it('a canonical empty-list rejection with no failed entries settles as anonymous', () => {
-    // Addresses review feedback:
-    // https://github.com/Comfy-Org/ComfyUI_frontend/pull/16337#discussion_r3893153036
     expect(
       toOpsResultView({ ok: false, applied: [], skipped: [], failed: [] })
     ).toEqual({
@@ -386,8 +378,6 @@ describe('createOpSender', () => {
   })
 
   it('returns a safe empty view for a null or undefined doc_ops_result detail', () => {
-    // Addresses review feedback:
-    // https://github.com/Comfy-Org/ComfyUI_frontend/pull/16337#discussion_r3892825397
     expect(toOpsResultView(null)).toEqual({
       ok: false,
       applied: [],
@@ -414,9 +404,6 @@ describe('createOpSender', () => {
   })
 
   it('a legacy failed id matching the in-flight batch settles it even under a foreign canonical op_id', () => {
-    // Addresses review feedback (match against every failure id, not the
-    // canonical pick alone):
-    // https://github.com/Comfy-Org/ComfyUI_frontend/pull/16337#discussion_r3915356523
     sender.enqueue([addNode(1)])
     const own = sent[0].ops[0].op_id
 
