@@ -329,6 +329,7 @@ describe('UnifiedPricingTable team plan CTA', () => {
     mockCanManageSubscription.value = false
     mockCanChangeSeats.value = false
     mockRawCanReactivate.value = false
+    mockCanDowngradeToPersonal.value = false
 
     renderComponent({ initialPlanMode: 'team' })
 
@@ -603,11 +604,61 @@ describe('UnifiedPricingTable capability gating', () => {
     mockCanManageSubscription.value = false
     mockCanChangeSeats.value = false
     mockRawCanReactivate.value = false
+    mockCanDowngradeToPersonal.value = false
 
     renderComponent()
 
     expect(
       screen.getByRole('button', { name: 'Subscribe to Standard Yearly' })
     ).toBeDisabled()
+  })
+})
+
+describe('UnifiedPricingTable plan-scope availability', () => {
+  beforeEach(() => {
+    mockCanChangeSeats.value = true
+    mockRawCanReactivate.value = true
+    mockSnapshotAuthoritative.value = true
+    mockSubscription.value = { tier: 'TEAM', duration: 'ANNUAL' }
+    mockSubscriptionStatus.value = null
+    mockCurrentPlanSlug.value = null
+    mockCurrentTeamCreditStop.value = {
+      id: 'team_700',
+      credits_monthly: 147_700,
+      stop_usd: 700
+    }
+    mockIsTeamPlan.value = true
+    mockCanManageSubscription.value = true
+    mockCanDowngradeToPersonal.value = true
+    mockPermissions.value = {
+      canManageSubscription: true,
+      canManageSubscriptionLifecycle: true,
+      canDowngradeToPersonal: true
+    }
+    mockDistributionTypes.isCloud = true
+  })
+
+  it('keeps personal plans reachable on a team plan while the snapshot is unresolved', () => {
+    mockSnapshotAuthoritative.value = false
+    mockCanDowngradeToPersonal.value = false
+    mockCanManageSubscription.value = false
+    mockCanChangeSeats.value = false
+    mockRawCanReactivate.value = false
+
+    renderComponent({ initialPlanMode: 'personal' })
+
+    expect(
+      screen.getByRole('button', { name: 'Change to Standard Yearly' })
+    ).toBeEnabled()
+  })
+
+  it('withholds personal plans when a resolved snapshot denies the downgrade', () => {
+    mockCanDowngradeToPersonal.value = false
+
+    renderComponent({ initialPlanMode: 'personal' })
+
+    expect(
+      screen.queryByRole('button', { name: 'Change to Standard Yearly' })
+    ).toBeNull()
   })
 })

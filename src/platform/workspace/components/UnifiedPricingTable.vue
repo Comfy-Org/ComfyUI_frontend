@@ -483,14 +483,18 @@ const lifecycleActionPermitted = computed(() => {
   return (
     capabilities.canSubscribeSelfServe.value ||
     capabilities.canChangeSeats.value ||
-    capabilities.canReactivate.value
+    capabilities.canReactivate.value ||
+    capabilities.canDowngradeToPersonal.value
   )
 })
-const canDowngradeToPersonal = computed(() =>
-  isCloud
-    ? capabilities.canDowngradeToPersonal.value
-    : permissions.value.canDowngradeToPersonal
-)
+
+// Read on its own by the plan-scope toggle, which offers or withholds the whole
+// personal catalog rather than one CTA, so it keeps its own capability.
+const canDowngradeToPersonal = computed(() => {
+  if (!isCloud) return permissions.value.canDowngradeToPersonal
+  if (!capabilities.snapshotAuthoritative.value) return true
+  return capabilities.canDowngradeToPersonal.value
+})
 
 const planMode = ref<'personal' | 'team'>(initialPlanMode)
 
@@ -866,13 +870,10 @@ const getButtonSeverity = (
   return 'secondary'
 }
 
-const canUsePersonalPlanAction = (tierKey: CheckoutTierKey): boolean => {
-  if (!canSelectPersonalPlan.value) return false
-  if (isTeamPlan.value) return canDowngradeToPersonal.value
-  return (
-    offersTransition(isCurrentPlan(tierKey)) && lifecycleActionPermitted.value
-  )
-}
+const canUsePersonalPlanAction = (tierKey: CheckoutTierKey): boolean =>
+  canSelectPersonalPlan.value &&
+  offersTransition(isCurrentPlan(tierKey)) &&
+  lifecycleActionPermitted.value
 
 const isButtonDisabled = (tier: PricingTierConfig): boolean =>
   isLoading || !canUsePersonalPlanAction(tier.key)
