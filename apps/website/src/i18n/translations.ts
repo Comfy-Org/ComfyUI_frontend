@@ -8377,7 +8377,6 @@ Enterprise`
     en: 'Workspace settings',
     'zh-CN': '工作区设置'
   },
-  'nav.accountSettings': { en: 'Account settings', 'zh-CN': '账户设置' },
   'nav.switchWorkspace': { en: 'Switch workspace', 'zh-CN': '切换工作区' },
   'nav.planFree': { en: 'Free', 'zh-CN': '免费' },
   'nav.roleOwner': { en: 'Owner', 'zh-CN': '所有者' },

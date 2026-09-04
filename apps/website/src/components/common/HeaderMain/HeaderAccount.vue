@@ -1,12 +1,5 @@
 <script setup lang="ts">
-import {
-  ArrowLeftRight,
-  Check,
-  Coins,
-  LogOut,
-  Settings,
-  User
-} from '@lucide/vue'
+import { ArrowLeftRight, Check, Coins, LogOut, Settings } from '@lucide/vue'
 import {
   DropdownMenuContent,
   DropdownMenuItem,
@@ -225,52 +218,29 @@ const avatarClass =
         </DropdownMenuItem>
 
         <DropdownMenuSeparator
-          class="-mx-2 my-2 h-px bg-transparency-white-t8"
+          class="-mx-2 mt-2 h-px bg-transparency-white-t8"
         />
 
-        <div class="flex items-center gap-3 p-2">
+        <div class="flex items-center gap-3 px-3 pt-3">
           <span
-            :class="cn(avatarClass, 'rounded-full bg-transparency-white-t8')"
-            aria-hidden="true"
+            class="min-w-0 flex-1 truncate text-sm text-primary-warm-gray"
+            data-testid="account-email"
           >
-            <User class="size-6 text-primary-warm-gray" />
+            {{ account.email }}
           </span>
-          <span class="min-w-0 flex-1">
-            <span
-              class="block truncate text-base font-bold text-primary-warm-white"
+          <DropdownMenuItem as-child>
+            <button
+              type="button"
+              :aria-label="t('nav.signOut', locale)"
+              :title="t('nav.signOut', locale)"
+              class="grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg text-primary-warm-gray outline-none hover:bg-transparency-white-t8 hover:text-primary-warm-white focus-visible:bg-transparency-white-t8"
+              data-testid="account-sign-out"
+              @click="signOut"
             >
-              {{ account.name }}
-            </span>
-            <span class="block truncate text-base text-primary-warm-gray">
-              {{ account.email }}
-            </span>
-          </span>
+              <LogOut class="size-5" aria-hidden="true" />
+            </button>
+          </DropdownMenuItem>
         </div>
-
-        <DropdownMenuItem as-child>
-          <a
-            :href="externalLinks.cloud"
-            target="_blank"
-            rel="noopener noreferrer"
-            :class="itemClass"
-            data-testid="account-settings"
-          >
-            <Settings
-              class="size-5 text-primary-warm-gray"
-              aria-hidden="true"
-            />
-            {{ t('nav.accountSettings', locale) }}
-          </a>
-        </DropdownMenuItem>
-
-        <DropdownMenuItem
-          :class="itemClass"
-          data-testid="account-sign-out"
-          @click="signOut"
-        >
-          <LogOut class="size-5 text-primary-warm-gray" aria-hidden="true" />
-          <span class="flex-1">{{ t('nav.signOut', locale) }}</span>
-        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenuPortal>
   </DropdownMenuRoot>
