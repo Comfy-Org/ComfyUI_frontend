@@ -5,7 +5,9 @@ import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick } from 'vue'
+import { defineComponent, h, markRaw, nextTick } from 'vue'
+
+import type * as FocusNodeModule from '@/composables/canvas/useFocusNode'
 
 // jsdom does not implement ResizeObserver (happy-dom does); stub it before the
 // Vue node preview chain constructs its module-level observer at import time.
@@ -32,10 +34,17 @@ const getServerFeature = vi.hoisted(() =>
   vi.fn((_name: string, defaultValue?: unknown) => defaultValue)
 )
 const focusNodeInstance = vi.hoisted(() => vi.fn())
+const focusNodeMode = vi.hoisted(() => ({ useRealImplementation: false }))
 
-vi.mock('@/composables/canvas/useFocusNode', () => ({
-  useFocusNode: () => ({ focusNodeInstance })
-}))
+vi.mock('@/composables/canvas/useFocusNode', async (importOriginal) => {
+  const actual = await importOriginal<typeof FocusNodeModule>()
+  return {
+    useFocusNode: () =>
+      focusNodeMode.useRealImplementation
+        ? actual.useFocusNode()
+        : { ...actual.useFocusNode(), focusNodeInstance }
+  }
+})
 
 const ws = vi.hoisted(() => {
   type Listener = (event: { detail?: unknown }) => void
@@ -306,6 +315,7 @@ beforeEach(() => {
   hostStores.workflow.activeWorkflow = null
   hostStores.canvas.selectedItems = []
   hostStores.canvas.currentGraph = null
+  hostStores.canvas.canvas = undefined
   appMock.graph.nodes = []
   appMock.graph.arrange.mockClear()
   Object.assign(appMock.rootGraph, { subgraphs: new Map() })
@@ -314,6 +324,7 @@ beforeEach(() => {
   workflowService.saveWorkflowAs.mockClear()
   workflowService.openWorkflow.mockClear()
   focusNodeInstance.mockReset()
+  focusNodeMode.useRealImplementation = false
 })
 
 const zAgentWsEventForTest = (raw: unknown): AgentChatEvent =>
@@ -435,7 +446,11 @@ type SelectionTestNode = {
   id: number | string
   title: string
   boundingRect: object
-  graph?: { id?: string }
+  graph?: {
+    id?: string
+    nodes?: SelectionTestNode[]
+    getNodeById?: (id: string | number) => SelectionTestNode | null
+  }
 }
 
 function setupNodeSelectionCanvas() {
@@ -459,6 +474,7 @@ function setupNodeSelectionCanvas() {
   appMock.graph.nodes = nodes
   const canvas = {
     graph,
+    subgraph: undefined as unknown,
     selectedItems,
     selectItems,
     deselect,
@@ -506,12 +522,14 @@ function showRootGraph(
   nodes: SelectionTestNode[] = []
 ) {
   const graph = {
+    isRootGraph: true,
     nodes,
     getNodeById: (id: string | number) =>
       nodes.find((node) => String(node.id) === String(id)) ?? null
   }
   state.canvas.graph = graph
   hostStores.canvas.currentGraph = graph
+  return graph
 }
 
 function renderCanvasNodeButtons(
@@ -3059,6 +3077,58 @@ describe('AgentPanelRoot workflow binding', () => {
 
     expect(focusNodeInstance).toHaveBeenCalledWith(state.nodes[1])
     expect(screen.getByText('KSampler')).toBeInTheDocument()
+  })
+
+  it('navigates and frames a retained subgraph node through the real focus composable', async () => {
+    vi.stubGlobal('devicePixelRatio', 1)
+    makeTab()
+    const state = setupNodeSelectionCanvas()
+    nestSelectionCanvasInSubgraph(state)
+    const subgraph = state.canvas.graph
+    const referencedNode = state.nodes[1]
+    referencedNode.graph = subgraph
+    referencedNode.boundingRect = [1, 2, 3, 4]
+
+    const setGraph = vi.fn((graph: typeof subgraph) => {
+      state.canvas.graph = graph
+    })
+    const animateToBounds = vi.fn()
+    Object.assign(state.canvas, {
+      setGraph,
+      animateToBounds,
+      canvas: { focus: state.focus, width: 1000, height: 600 }
+    })
+    hostStores.canvas.canvas = markRaw(state.canvas)
+    focusNodeMode.useRealImplementation = true
+    let rafHandle = 0
+    vi.stubGlobal(
+      'requestAnimationFrame',
+      (callback: FrameRequestCallback): number => {
+        rafHandle += 1
+        setTimeout(() => callback(0), 0)
+        return rafHandle
+      }
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentPanelStore().enabled = true
+    useAgentPanelStore().isOpen = true
+
+    await openMentionPicker()
+    await userEvent.click(await screen.findByText('KSampler'))
+    const rootGraph = showRootGraph(state)
+    await nextTick()
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Show KSampler #12 on canvas' })
+    )
+
+    expect(setGraph).toHaveBeenCalledWith(subgraph)
+    expect(state.canvas.graph).toBe(subgraph)
+    expect(state.canvas.subgraph).toBe(subgraph)
+    expect(animateToBounds).toHaveBeenCalledWith(referencedNode.boundingRect, {
+      viewport: [0, 0, 1000 - useAgentPanelStore().width, 600]
+    })
+    expect(rootGraph.isRootGraph).toBe(true)
   })
 
   it('uses graph-scoped identity for focus, removal, and picker exclusion', async () => {
