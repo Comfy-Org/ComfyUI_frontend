@@ -17987,7 +17987,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Stilin oluşturulacağı çıktı türü: raster görüntüler için recraftv4_styles, SVG için recraftv4_styles_vector."
+        "tooltip": "Stilin oluşturulduğu model. Standard ve Pro aynı stil havuzunu paylaşır: raster stiller tüm Recraft V4 ve V4.1 raster modelleriyle, vektör stilleri (*_vector) ise tüm V4 ve V4.1 vektör modelleriyle çalışır."
       }
     },
     "outputs": {

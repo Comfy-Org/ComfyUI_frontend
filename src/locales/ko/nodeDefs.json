@@ -17987,7 +17987,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "스타일이 생성될 출력 유형입니다: 래스터 이미지에는 recraftv4_styles, SVG에는 recraftv4_styles_vector."
+        "tooltip": "스타일을 생성할 모델입니다. Standard 및 Pro는 하나의 스타일 풀을 공유합니다. 래스터 스타일은 모든 Recraft V4 및 V4.1 래스터 모델에서, 벡터 스타일(*_vector)은 모든 V4 및 V4.1 벡터 모델에서 작동합니다."
       }
     },
     "outputs": {
