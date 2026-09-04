@@ -1,5 +1,7 @@
 import { shallowRef, triggerRef } from 'vue'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 import { isCrdtDebugEnabled } from './crdtDebugGate'
 import type { CrdtLogLevel } from './crdtDebugGate'
 
@@ -140,6 +142,9 @@ function sanitizeDetailSafely(detail: unknown): unknown {
   try {
     return sanitizeDetail(detail)
   } catch {
+    reportError(new Error('Failed to sanitize CRDT dev event detail'), {
+      errorType: 'crdt_dev_event_sanitization_failed'
+    })
     return REDACTED
   }
 }
