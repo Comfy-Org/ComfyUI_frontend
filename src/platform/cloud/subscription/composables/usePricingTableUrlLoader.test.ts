@@ -31,12 +31,16 @@ vi.mock('vue-router', () => ({
 }))
 
 const mockShowPricingTable = vi.hoisted(() => vi.fn())
+const mockShowMemberDialog = vi.hoisted(() => vi.fn(() => true))
+const mockShowSalesManagedDialog = vi.hoisted(() => vi.fn(() => false))
 
 vi.mock(
   '@/platform/cloud/subscription/composables/useSubscriptionDialog',
   () => ({
     useSubscriptionDialog: () => ({
-      showPricingTable: mockShowPricingTable
+      showPricingTable: mockShowPricingTable,
+      showMemberDialog: mockShowMemberDialog,
+      showSalesManagedDialog: mockShowSalesManagedDialog
     })
   })
 )
@@ -48,23 +52,27 @@ const mockTeamCreditStops = vi.hoisted(() => ({
   value: null as TeamCreditStops | null
 }))
 const mockFetchPlans = vi.hoisted(() => vi.fn())
+const mockSubscription = vi.hoisted(() => ({
+  value: null as { tier: string } | null
+}))
+const mockFetchStatus = vi.hoisted(() => vi.fn(async () => undefined))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     teamCreditStops: mockTeamCreditStops,
-    fetchPlans: mockFetchPlans
+    fetchPlans: mockFetchPlans,
+    subscription: mockSubscription,
+    fetchStatus: mockFetchStatus
   })
 }))
 
-const mockCanOpenPricingSurface = vi.hoisted(() => ({ value: true }))
 const mockInitializeCapabilities = vi.hoisted(() =>
   vi.fn(async () => undefined)
 )
 
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({
-    permissions: mockPermissions,
-    canOpenPricingSurface: mockCanOpenPricingSurface
+    permissions: mockPermissions
   })
 }))
 
@@ -94,12 +102,18 @@ describe('usePricingTableUrlLoader', () => {
   beforeEach(() => {
     mockRouteQuery.value = {}
     mockPermissions.value = { canManageSubscription: true }
-    mockCanOpenPricingSurface.value = true
     mockInitializeCapabilities.mockClear()
     mockInitializeCapabilities.mockResolvedValue(undefined)
     mockTeamCreditStops.value = TEAM_CREDIT_STOPS
     mockFetchPlans.mockResolvedValue(undefined)
+    mockSubscription.value = { tier: 'TEAM' }
+    mockFetchStatus.mockClear()
+    mockFetchStatus.mockResolvedValue(undefined)
     mockShowPricingTable.mockResolvedValue(undefined)
+    mockShowMemberDialog.mockClear()
+    mockShowMemberDialog.mockReturnValue(true)
+    mockShowSalesManagedDialog.mockClear()
+    mockShowSalesManagedDialog.mockReturnValue(false)
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
   })
 
@@ -125,29 +139,82 @@ describe('usePricingTableUrlLoader', () => {
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
   })
 
-  it('never opens for a sales-managed workspace, even from a deep link', async () => {
+  it('routes a sales-managed owner to the contact-sales dialog, never the table', async () => {
     mockRouteQuery.value = { pricing: '1' }
-    mockCanOpenPricingSurface.value = false
+    mockShowSalesManagedDialog.mockReturnValue(true)
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
+    expect(mockShowSalesManagedDialog).toHaveBeenCalledOnce()
     expect(mockShowPricingTable).not.toHaveBeenCalled()
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
   })
 
   it('resolves the capability snapshot before deciding', async () => {
     mockRouteQuery.value = { pricing: '1' }
-    mockCanOpenPricingSurface.value = true
-    mockInitializeCapabilities.mockImplementation(async () => {
-      mockCanOpenPricingSurface.value = false
-    })
+    mockShowSalesManagedDialog.mockReturnValue(true)
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
     expect(mockInitializeCapabilities).toHaveBeenCalledOnce()
+    expect(mockInitializeCapabilities.mock.invocationCallOrder[0]).toBeLessThan(
+      mockShowSalesManagedDialog.mock.invocationCallOrder[0]
+    )
+  })
+
+  it('fetches the subscription tier before the sales-managed decision when unknown', async () => {
+    mockRouteQuery.value = { pricing: '1' }
+    mockSubscription.value = null
+    mockFetchStatus.mockImplementation(async () => {
+      mockSubscription.value = { tier: 'ENTERPRISE' }
+    })
+    mockShowSalesManagedDialog.mockReturnValue(true)
+
+    const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
+    await loadPricingTableFromUrl()
+
+    expect(mockFetchStatus).toHaveBeenCalledOnce()
+    expect(mockFetchStatus.mock.invocationCallOrder[0]).toBeLessThan(
+      mockShowSalesManagedDialog.mock.invocationCallOrder[0]
+    )
     expect(mockShowPricingTable).not.toHaveBeenCalled()
+  })
+
+  it('skips the tier fetch when the subscription is already loaded', async () => {
+    mockRouteQuery.value = { pricing: '1' }
+
+    const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
+    await loadPricingTableFromUrl()
+
+    expect(mockFetchStatus).not.toHaveBeenCalled()
+    expect(mockShowPricingTable).toHaveBeenCalled()
+  })
+
+  it('still opens the table when the tier fetch fails (footer notice explains)', async () => {
+    mockRouteQuery.value = { pricing: '1' }
+    mockSubscription.value = null
+    mockFetchStatus.mockRejectedValue(new Error('status unavailable'))
+
+    const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
+    await loadPricingTableFromUrl()
+
+    expect(mockShowPricingTable).toHaveBeenCalledWith(
+      expect.objectContaining({ reason: 'deep_link' })
+    )
+  })
+
+  it('opens the table for a denied self-serve owner - the footer notice explains', async () => {
+    mockRouteQuery.value = { pricing: '1' }
+    mockShowSalesManagedDialog.mockReturnValue(false)
+
+    const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
+    await loadPricingTableFromUrl()
+
+    expect(mockShowPricingTable).toHaveBeenCalledWith(
+      expect.objectContaining({ reason: 'deep_link' })
+    )
   })
 
   it('opens on the team tab for ?pricing=team', async () => {
@@ -190,13 +257,14 @@ describe('usePricingTableUrlLoader', () => {
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
   })
 
-  it('is a silent no-op for a member', async () => {
+  it('routes a member to the member dialog instead of a silent no-op', async () => {
     mockRouteQuery.value = { pricing: '1' }
     mockPermissions.value = { canManageSubscription: false }
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
+    expect(mockShowMemberDialog).toHaveBeenCalledOnce()
     expect(mockShowPricingTable).not.toHaveBeenCalled()
   })
 
@@ -211,6 +279,7 @@ describe('usePricingTableUrlLoader', () => {
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
+    expect(mockShowMemberDialog).toHaveBeenCalledOnce()
     expect(mockShowPricingTable).not.toHaveBeenCalled()
     expect(mockRouterReplace).toHaveBeenCalledWith({
       query: { other: 'param' }
