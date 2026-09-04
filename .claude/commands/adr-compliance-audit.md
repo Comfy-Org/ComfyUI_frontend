@@ -12,14 +12,14 @@ Audit the current changes (or a specified PR) for compliance with Architecture D
 Read these documents for context:
 
 ```
-docs/adr/0003-crdt-based-layout-system.md
-docs/adr/0008-entity-component-system.md
+docs/adr/LAYOUT-crdt-layout-intent-and-local-measurement.md
+docs/adr/ECS-entity-component-system.md
 docs/architecture/ecs-target-architecture.md
 docs/architecture/ecs-migration-plan.md
 docs/architecture/appendix-critical-analysis.md
 ```
 
-### Check A: Command Pattern (ADR 0003)
+### Check A: Command Pattern (ADR-LAYOUT)
 
 Every entity state mutation must be a **serializable, idempotent, deterministic command** — replayable, undoable, transmittable over CRDT.
 
@@ -31,7 +31,7 @@ Flag:
 4. **Auto-increment IDs** — New entity creation via counters without addressing CRDT collision. Concurrent environments need globally unique identifiers.
 5. **Missing transaction semantics** — Multi-entity operations without atomic grouping (e.g., node removal = 10+ deletes with no rollback on failure)
 
-### Check B: ECS Architecture (ADR 0008)
+### Check B: ECS Architecture (ADR-ECS)
 
 Flag:
 
@@ -62,7 +62,7 @@ Reference: 40+ custom node repos depend on these (rgthree-comfy, ComfyUI-Impact-
 3. Check the diff for contradictions
 4. Only flag ACTUAL violations in changed code
 
-**Skip list**: ADR 0004 (Rejected — Fork PrimeVue)
+**Skip list**: ADR-PRIMEVUE (Rejected — Fork PrimeVue)
 
 ## Step 4: Generate Report
 
