@@ -185,7 +185,7 @@ onBeforeUnmount(() => stopUserWatch?.())
       </p>
       <button
         type="button"
-        class="hover:bg-primary-comfy-yellow/90 mt-4 flex h-12 w-full items-center justify-center rounded-xl bg-primary-comfy-yellow font-semibold text-primary-comfy-ink transition-colors"
+        class="hover:bg-primary-comfy-yellow/90 bg-primary-comfy-yellow mt-4 flex h-12 w-full items-center justify-center rounded-xl font-semibold text-primary-comfy-ink transition-colors"
         @click="retryMint"
       >
         {{ t('auth.signIn.retry', locale) }}
