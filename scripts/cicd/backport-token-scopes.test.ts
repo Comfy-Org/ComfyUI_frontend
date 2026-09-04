@@ -87,11 +87,14 @@ const labelStepViolations = (run: string): string[] => {
   const code = stripComments(run)
   const violations: string[] = []
 
-  const read = code.search(/\w+=\$\(\s*gh api/)
+  const labelRead = code.match(
+    /\b([A-Za-z_]\w*)=\$\(\s*gh api[^)]*["'][^"'\n]*\/labels["'][^)]*\)/
+  )
+  const read = labelRead?.index ?? -1
   const check = code.search(/grep -qx ['"]needs-backport['"]/)
   const del = code.search(/gh api[^\n]*--method DELETE/)
   const absentBranch = code.match(
-    /^\s*if\s+!\s+[^\n]*grep -qx ['"]needs-backport['"][^\n]*;\s*then\s*$([\s\S]*?)^\s*fi\s*$/m
+    /^\s*if\s+!\s+[^\n]*printf[^\n]*\$\{?([A-Za-z_]\w*)\}?[^\n]*\|\s*grep -qx ['"]needs-backport['"][^\n]*;\s*then\s*$([\s\S]*?)^\s*fi\s*$/m
   )
 
   if (!/^\s*set -euo pipefail\s*$/m.test(code)) {
@@ -102,6 +105,9 @@ const labelStepViolations = (run: string): string[] => {
   }
   if (check === -1) {
     violations.push('does not test for the needs-backport label')
+  }
+  if (labelRead && absentBranch && labelRead[1] !== absentBranch[1]) {
+    violations.push('does not check the fetched label list')
   }
   if (del === -1) {
     violations.push('does not delete the label over REST')
@@ -122,7 +128,7 @@ const labelStepViolations = (run: string): string[] => {
   if (check !== -1 && del !== -1 && check > del) {
     violations.push('deletes the label before checking for it')
   }
-  if (!absentBranch || !/^\s*exit 0\s*$/m.test(absentBranch[1])) {
+  if (!absentBranch || !/^\s*exit 0\s*$/m.test(absentBranch[2])) {
     violations.push('does not exit 0 inside the absent-label branch')
   } else if (
     del !== -1 &&
@@ -203,6 +209,11 @@ describe('backport workflow token scopes', () => {
       'exits when the label is present',
       `set -euo pipefail\nLABELS=$(gh api "$R/labels" --jq '.[].name')\nif printf '%s\\n' "$LABELS" | grep -qx 'needs-backport'; then\n  exit 0\nfi\ngh api --silent --method DELETE "$R/labels/needs-backport"`,
       'does not exit 0 inside the absent-label branch'
+    ],
+    [
+      'checks a variable other than the fetched label list',
+      `set -euo pipefail\nLABELS=$(gh api "$R/labels" --jq '.[].name')\nif ! printf '%s\\n' "$OTHER" | grep -qx 'needs-backport'; then\n  exit 0\nfi\ngh api --silent --method DELETE "$R/labels/needs-backport"`,
+      'does not check the fetched label list'
     ]
   ])('rejects a cleanup step that %s', ([, script, expected]) => {
     expect(labelStepViolations(script)).toContain(expected)
