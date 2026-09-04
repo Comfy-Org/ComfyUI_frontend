@@ -1,10 +1,11 @@
-import type { AxiosError, AxiosResponse } from 'axios'
+import type { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
 import axios from 'axios'
 import { v4 as uuidv4 } from 'uuid'
-import { ref } from 'vue'
 
+import type { ExecuteRequestOptions } from '@/composables/useApiRequest'
+import { useApiRequest } from '@/composables/useApiRequest'
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
-import { isAbortError } from '@/utils/typeGuardUtil'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import type { components } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 
@@ -51,92 +52,119 @@ const managerApiClient = axios.create({
  * Note: This service should only be used when Manager state is NEW_UI
  */
 export const useComfyManagerService = () => {
-  const isLoading = ref(false)
-  const error = ref<string | null>(null)
-
   // Check if manager service should be available
   const isManagerServiceAvailable = () => {
     const managerState = useManagerState()
     return managerState.isNewManagerUI.value
   }
 
-  const handleRequestError = (
+  const mapError = (
     err: unknown,
     context: string,
     routeSpecificErrors?: Record<number, string>
-  ) => {
-    // Don't treat cancellation as an error
-    if (isAbortError(err)) return
-
-    let message: string
+  ): string => {
     if (!axios.isAxiosError(err)) {
-      message = `${context} failed: ${err instanceof Error ? err.message : String(err)}`
-    } else {
-      const axiosError = err as AxiosError<{ message: string }>
-      const status = axiosError.response?.status
-      if (status && routeSpecificErrors?.[status]) {
-        message = routeSpecificErrors[status]
-      } else if (status === 404) {
-        message = 'Could not connect to ComfyUI-Manager'
-      } else {
-        message =
-          axiosError.response?.data?.message ??
-          `${context} failed with status ${status}`
-      }
+      return `${context} failed: ${err instanceof Error ? err.message : String(err)}`
     }
 
-    error.value = message
+    const axiosError = err as AxiosError<{ message: string }>
+    if (!axiosError.response) {
+      return `${context} failed: ${axiosError.message}`
+    }
+
+    const status = axiosError.response.status
+    if (routeSpecificErrors?.[status]) {
+      return routeSpecificErrors[status]
+    }
+    if (status === 404) {
+      return 'Could not connect to ComfyUI-Manager'
+    }
+
+    return (
+      axiosError.response.data?.message ??
+      `${context} failed with status ${status}`
+    )
   }
 
-  const executeRequest = async <T>(
-    requestCall: () => Promise<AxiosResponse<T>>,
-    options: {
-      errorContext: string
-      routeSpecificErrors?: Record<number, string>
+  const {
+    isLoading,
+    error,
+    executeRequest: sendRequest
+  } = useApiRequest({
+    client: managerApiClient,
+    mapError
+  })
+
+  const executeRequest = <T>(
+    apiCall: (client: AxiosInstance) => Promise<AxiosResponse<T>>,
+    options: Omit<ExecuteRequestOptions, 'onSuccess'> & {
       isQueueOperation?: boolean
     }
   ): Promise<T | null> => {
-    const { errorContext, routeSpecificErrors, isQueueOperation } = options
+    const { isQueueOperation, ...requestOptions } = options
 
     // Block service calls if not in NEW_UI state
     if (!isManagerServiceAvailable()) {
-      error.value = 'Manager service is not available in current mode'
-      return null
+      const message = 'Manager service is not available in current mode'
+      error.value = message
+      requestOptions.onError?.(message)
+      return Promise.resolve(null)
     }
 
-    isLoading.value = true
-    error.value = null
-
-    try {
-      const response = await requestCall()
-      if (isQueueOperation) await startQueue()
-      return response.data
-    } catch (err) {
-      handleRequestError(err, errorContext, routeSpecificErrors)
-      return null
-    } finally {
-      isLoading.value = false
-    }
+    return sendRequest(apiCall, {
+      ...requestOptions,
+      onSuccess: isQueueOperation
+        ? async () => {
+            const queueStartError = await requestQueueStart()
+            if (!queueStartError) return
+            error.value = queueStartError
+            reportError(new Error(queueStartError), {
+              errorType: 'manager_queue_start_failed'
+            })
+            return false
+          }
+        : undefined
+    })
   }
 
-  const startQueue = async (signal?: AbortSignal) => {
+  /**
+   * Resolves to *this* invocation's failure message, or `null` on success.
+   * The shared `error` ref cannot answer that: concurrent Manager requests
+   * reset it on start and overwrite it on failure.
+   */
+  const requestQueueStart = async (
+    signal?: AbortSignal
+  ): Promise<string | null> => {
     const errorContext = 'Starting ComfyUI-Manager job queue'
     const routeSpecificErrors = {
       201: 'Created: ComfyUI-Manager job queue is already running'
     }
 
-    return executeRequest<null>(
-      () => managerApiClient.post(ManagerRoute.START_QUEUE, null, { signal }),
-      { errorContext, routeSpecificErrors }
+    let failure: string | null = null
+    await executeRequest<null>(
+      (client) => client.post(ManagerRoute.START_QUEUE, null, { signal }),
+      {
+        errorContext,
+        routeSpecificErrors,
+        onError: (message) => {
+          failure = message
+        }
+      }
     )
+    return failure
+  }
+
+  const startQueue = async (signal?: AbortSignal): Promise<null> => {
+    await requestQueueStart(signal)
+    return null
   }
 
   const getQueueStatus = async (client_id?: string, signal?: AbortSignal) => {
     const errorContext = 'Getting ComfyUI-Manager queue status'
 
     return executeRequest<ManagerQueueStatus>(
-      () =>
-        managerApiClient.get(ManagerRoute.QUEUE_STATUS, {
+      (client) =>
+        client.get(ManagerRoute.QUEUE_STATUS, {
           params: client_id ? { client_id } : undefined,
           signal
         }),
@@ -148,7 +176,7 @@ export const useComfyManagerService = () => {
     const errorContext = 'Fetching installed packs'
 
     return executeRequest<InstalledPacksResponse>(
-      () => managerApiClient.get(ManagerRoute.LIST_INSTALLED, { signal }),
+      (client) => client.get(ManagerRoute.LIST_INSTALLED, { signal }),
       { errorContext }
     )
   }
@@ -157,7 +185,7 @@ export const useComfyManagerService = () => {
     const errorContext = 'Fetching import failure information'
 
     return executeRequest<Record<string, unknown>>(
-      () => managerApiClient.get(ManagerRoute.IMPORT_FAIL_INFO, { signal }),
+      (client) => client.get(ManagerRoute.IMPORT_FAIL_INFO, { signal }),
       { errorContext }
     )
   }
@@ -173,8 +201,8 @@ export const useComfyManagerService = () => {
     }
 
     return executeRequest<components['schemas']['ImportFailInfoBulkResponse']>(
-      () =>
-        managerApiClient.post(ManagerRoute.IMPORT_FAIL_INFO_BULK, params, {
+      (client) =>
+        client.post(ManagerRoute.IMPORT_FAIL_INFO_BULK, params, {
           signal
         }),
       { errorContext }
@@ -201,7 +229,7 @@ export const useComfyManagerService = () => {
     }
 
     return executeRequest<null>(
-      () => managerApiClient.post(ManagerRoute.QUEUE_TASK, task, { signal }),
+      (client) => client.post(ManagerRoute.QUEUE_TASK, task, { signal }),
       { errorContext, routeSpecificErrors, isQueueOperation: true }
     )
   }
@@ -264,8 +292,8 @@ export const useComfyManagerService = () => {
     }
 
     return executeRequest<null>(
-      () =>
-        managerApiClient.post(ManagerRoute.UPDATE_ALL, null, {
+      (client) =>
+        client.post(ManagerRoute.UPDATE_ALL, null, {
           params: queryParams,
           signal
         }),
@@ -291,8 +319,8 @@ export const useComfyManagerService = () => {
     }
 
     return executeRequest<null>(
-      () =>
-        managerApiClient.post(ManagerRoute.UPDATE_COMFYUI, null, {
+      (client) =>
+        client.post(ManagerRoute.UPDATE_COMFYUI, null, {
           params: queryParams,
           signal
         }),
@@ -307,7 +335,7 @@ export const useComfyManagerService = () => {
     }
 
     return executeRequest<null>(
-      () => managerApiClient.post(ManagerRoute.REBOOT, null, { signal }),
+      (client) => client.post(ManagerRoute.REBOOT, null, { signal }),
       { errorContext, routeSpecificErrors }
     )
   }
@@ -316,7 +344,7 @@ export const useComfyManagerService = () => {
     const errorContext = 'Checking if user set Manager to use the legacy UI'
 
     return executeRequest<{ is_legacy_manager_ui: boolean }>(
-      () => managerApiClient.get(ManagerRoute.IS_LEGACY_MANAGER_UI, { signal }),
+      (client) => client.get(ManagerRoute.IS_LEGACY_MANAGER_UI, { signal }),
       { errorContext }
     )
   }
@@ -333,8 +361,8 @@ export const useComfyManagerService = () => {
     const errorContext = 'Getting ComfyUI-Manager task history'
 
     return executeRequest<ManagerTaskHistory>(
-      () =>
-        managerApiClient.get(ManagerRoute.TASK_HISTORY, {
+      (client) =>
+        client.get(ManagerRoute.TASK_HISTORY, {
           params: options,
           signal
         }),

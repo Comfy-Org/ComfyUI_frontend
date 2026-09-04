@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 
 import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
@@ -73,7 +73,7 @@ describe('useComfyManagerStore', () => {
 
   beforeEach(() => {
     mockManagerService = {
-      isLoading: ref(false),
+      isLoading: computed(() => false),
       error: ref(null),
       startQueue: vi.fn().mockResolvedValue(null),
       getQueueStatus: vi.fn().mockResolvedValue(null),
