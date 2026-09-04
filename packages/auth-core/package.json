@@ -6,6 +6,7 @@
   "keywords": [],
   "type": "module",
   "exports": {
+    "./SocialAuthButtons.vue": "./src/SocialAuthButtons.vue",
     "./signInSchemas": "./src/signInSchemas.ts",
     "./turnstile": "./src/turnstile.ts",
     "./turnstileScript": "./src/turnstileScript.ts",

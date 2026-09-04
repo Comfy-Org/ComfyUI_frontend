@@ -1,4 +1,6 @@
 import posthog from 'posthog-js'
+import { readonly, ref } from 'vue'
+import type { Ref } from 'vue'
 
 import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
 
@@ -55,6 +57,23 @@ type AnalyticsEvent =
 
 let initialized = false
 
+const WORKSHOP_AUTH_FLAG = 'workshop-auth'
+
+/**
+ * False until something says otherwise, and false forever when nothing does
+ * (PostHog blocked, or not initialized at all — it only runs in PROD builds),
+ * so flag-off is byte-identical to the site before this flag existed. The
+ * build-time override exists because dev and preview builds have no PostHog
+ * to answer; without it no flag-gated surface would be exercisable anywhere.
+ */
+const workshopAuthEnabled = ref(
+  import.meta.env.PUBLIC_WORKSHOP_AUTH_FLAG === '1'
+)
+
+export function useWorkshopAuthFlag(): Readonly<Ref<boolean>> {
+  return readonly(workshopAuthEnabled)
+}
+
 export function initPostHog() {
   if (initialized || typeof window === 'undefined' || !POSTHOG_KEY) return
   try {
@@ -68,6 +87,11 @@ export function initPostHog() {
       before_send: createPostHogBeforeSend()
     })
     initialized = true
+    posthog.onFeatureFlags(() => {
+      if (posthog.isFeatureEnabled(WORKSHOP_AUTH_FLAG) === true) {
+        workshopAuthEnabled.value = true
+      }
+    })
   } catch (error) {
     console.error('PostHog init failed', error)
   }

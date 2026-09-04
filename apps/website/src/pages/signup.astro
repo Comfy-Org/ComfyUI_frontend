@@ -1,0 +1,15 @@
+---
+import AuthSignIn from '../components/auth/AuthSignIn.vue'
+import { t } from '../i18n/translations'
+import BaseLayout from '../layouts/BaseLayout.astro'
+---
+
+<BaseLayout
+  title={t('auth.signUp.meta.title')}
+  description={t('auth.signUp.meta.description')}
+  noindex
+>
+  <main class="mx-auto max-w-10xl px-6 py-16 lg:px-8 lg:py-24">
+    <AuthSignIn mode="signUp" client:load />
+  </main>
+</BaseLayout>
