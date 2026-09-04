@@ -3694,6 +3694,7 @@ Enterprise`
   // SiteNav
   'nav.products': { en: 'Products', 'zh-CN': '产品' },
   'nav.pricing': { en: 'Pricing', 'zh-CN': '价格' },
+  'nav.workshop': { en: 'Workshop', 'zh-CN': 'Workshop' },
   'nav.community': { en: 'Community', 'zh-CN': '社区' },
   'nav.resources': { en: 'Resources', 'zh-CN': '资源' },
   'nav.company': { en: 'Company', 'zh-CN': '公司' },
