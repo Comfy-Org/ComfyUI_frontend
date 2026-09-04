@@ -68,8 +68,7 @@ export const zRowsDump = z.object({
   )
 })
 
-// The socket carries frames without a data object; the replay union does not.
-// The exporter's candidate set: data.ops when it is a list, else data.op.
+// The candidate set: data.ops when it is a list, else data.op.
 const zOpsCarrier = z.object({
   data: z
     .object({ ops: z.array(z.unknown()).optional().catch(undefined) })
@@ -293,7 +292,7 @@ function activeWorkflowId(
   return workflowId.data
 }
 
-// Every op the exporter will read out of this result, shape-checked once.
+// Every op the assembler will read out of this result, shape-checked once.
 function echoedOps(row: ParentRow): Array<Record<string, unknown>> {
   const carrier = zOpsCarrier.safeParse(row.result ?? {})
   if (!carrier.success) return []
@@ -308,7 +307,7 @@ function echoedOps(row: ParentRow): Array<Record<string, unknown>> {
   )
   if (offFrozen.size > 0)
     refuse(
-      `parent row ${row.id} echoes op kinds ${list(offFrozen)} outside the exporter frozen set`
+      `parent row ${row.id} echoes op kinds ${list(offFrozen)} outside the frozen op set`
     )
   return ops.data
 }

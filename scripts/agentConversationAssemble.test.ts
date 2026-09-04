@@ -165,16 +165,11 @@ const input = (
 
 describe('assembleConversation', () => {
   const cancelledTurn = (
-    cancel_ack: RawCapture['turns'][number]['cancel_ack']
+    cancel_ack: RawCapture['turns'][number]['cancel_ack'],
+    cancel_sent_at_ms = Number.MAX_SAFE_INTEGER
   ) =>
     raw({
-      turns: [
-        {
-          ...raw().turns[0],
-          cancel_sent_at_ms: Number.MAX_SAFE_INTEGER,
-          cancel_ack
-        }
-      ]
+      turns: [{ ...raw().turns[0], cancel_sent_at_ms, cancel_ack }]
     })
 
   it('refuses a cancelled turn whose cancel the backend rejected', () => {
@@ -486,7 +481,7 @@ describe('assembleConversation', () => {
     ).toThrow('has applied ops but a NULL result')
   })
 
-  it('refuses an echoed op kind outside the exporter frozen set', () => {
+  it('refuses an echoed op kind outside the frozen op set', () => {
     expect(() =>
       assembleConversation(
         input({
@@ -504,7 +499,7 @@ describe('assembleConversation', () => {
           })
         })
       )
-    ).toThrow('outside the exporter frozen set')
+    ).toThrow('outside the frozen op set')
   })
 
   it('refuses a non-object echoed op entry', () => {
@@ -581,7 +576,10 @@ describe('assembleConversation', () => {
       assembleConversation(
         input({
           raw: raw({
-            frames: [turnFrame('agent_ask', {}, 1_700_000_000_050), ...frames()]
+            frames: [
+              turnFrame('agent_not_a_frame', {}, 1_700_000_000_050),
+              ...frames()
+            ]
           })
         })
       )
@@ -653,6 +651,85 @@ describe('assembleConversation', () => {
         })
       )
     ).toThrow('is not the seeded workflow')
+  })
+
+  it('leaves cancel_after out of a turn that ran to completion', () => {
+    const { conversation } = assembleConversation(input())
+    expect(conversation.turns[0].cancel_after).toBeUndefined()
+  })
+
+  it('maps a mid-stream cancel to the response entry after the inserted ops', () => {
+    const { conversation } = assembleConversation(
+      input({
+        raw: cancelledTurn({ status: 202, body: {} }, 1_700_000_000_200)
+      })
+    )
+    expect(
+      conversation.turns[0].response.map((entry) =>
+        entry.kind === 'event' ? entry.event.type : entry.kind
+      )
+    ).toEqual([
+      'agent_thinking',
+      'agent_active_tab',
+      'graph_ops',
+      'agent_tool_call',
+      'agent_message_done'
+    ])
+    expect(conversation.turns[0].cancel_after).toBe(3)
+  })
+
+  it('emits only the durably applied ops when the result echoes more', () => {
+    const rejected = {
+      op: 'add_node',
+      op_id: 'op-2',
+      node_id: 11,
+      class_type: 'KSampler'
+    }
+    const { conversation, receipt } = assembleConversation(
+      input({
+        rows: rows({
+          parents: [
+            parent({
+              result: { ok: true, data: { ops: [addNodeOp, rejected] } },
+              children: [{ op_id: 'op-1', status: 'ok' }]
+            })
+          ]
+        })
+      })
+    )
+    expect(
+      conversation.turns[0].response.find((entry) => entry.kind === 'graph_ops')
+    ).toEqual({ kind: 'graph_ops', ops: [addNodeOp], at_ms: 200 })
+    expect(receipt).toMatchObject({ added_nodes: 1, deleted_nodes: 0 })
+  })
+
+  it('counts a frame from another turn instead of keeping or refusing it', () => {
+    const foreign: RecordedFrame = {
+      type: 'agent_thinking',
+      data: { thread_id: 'other-thread', message_id: 'other-message' },
+      at_ms: 1_700_000_000_050
+    }
+    const { conversation, receipt } = assembleConversation(
+      input({ raw: raw({ frames: [...frames(), foreign] }) })
+    )
+    expect(turnEventTypes(conversation.turns[0])).toEqual([
+      'agent_thinking',
+      'agent_active_tab',
+      'agent_tool_call',
+      'agent_message_done'
+    ])
+    expect(receipt.frames_dropped).toEqual({ foreign: 1 })
+  })
+
+  it('refuses a mutating call whose only frame is still running', () => {
+    const running = frames().map((frame) =>
+      frame.type === 'agent_tool_call'
+        ? { ...frame, data: { ...frame.data, status: 'running' } }
+        : frame
+    )
+    expect(() =>
+      assembleConversation(input({ raw: raw({ frames: running }) }))
+    ).toThrow('disagree; the rows are not this turn')
   })
 })
 
