@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process'
 import { describe, expect, it } from 'vitest'
 
 import type { WorkshopField } from './workshop-detail'
@@ -30,6 +31,32 @@ const fields: WorkshopField[] = [
     accept: 'image'
   }
 ]
+
+const promptOnly = [
+  {
+    kind: 'text' as const,
+    name: 'prompt',
+    label: 'Prompt',
+    required: true,
+    multiline: true,
+    valueType: 'string' as const
+  }
+]
+
+/**
+ * Whether a shell would accept the command. `bash -n` parses without running,
+ * which is the only check that actually answers the question — counting
+ * quotes cannot, because the correct escape for an apostrophe (`'\''`)
+ * deliberately contains an odd number of them.
+ */
+function parsesAsShellCommand(command: string): boolean {
+  try {
+    execFileSync('bash', ['-n'], { input: command, stdio: 'pipe' })
+    return true
+  } catch {
+    return false
+  }
+}
 
 describe('Workshop snippets', () => {
   it('builds Router input and groups media roles', () => {
@@ -102,5 +129,19 @@ describe('Workshop snippets', () => {
     expect(buildWorkshopInput(complex, { inputs: '[{"text":"Hi"}]' })).toEqual({
       inputs: [{ text: 'Hi' }]
     })
+  })
+
+  it('stays a valid shell command when a prompt contains an apostrophe', () => {
+    // Apostrophes are ordinary in prompts. Interpolating raw JSON into a
+    // single-quoted argument ends the quote early and the command no longer
+    // parses, which `bash -n` rejects.
+    const snippet = buildRouterSnippet('http', 'bfl/flux-2-pro', promptOnly, {
+      prompt: "don't stop"
+    })
+
+    expect(parsesAsShellCommand(snippet)).toBe(true)
+    // And the apostrophe survives into the payload rather than being dropped.
+    expect(snippet).toContain('don')
+    expect(snippet).toContain('t stop')
   })
 })

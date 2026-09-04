@@ -62,6 +62,18 @@ function pythonLiteral(value: unknown, depth = 0): string {
 }
 
 /**
+ * Escapes a value for a POSIX single-quoted argument.
+ *
+ * A single quote cannot appear inside single quotes at all, so the string is
+ * closed, an escaped quote is emitted, and the string is reopened: `'\''`.
+ * Prompts contain apostrophes constantly, and without this the generated
+ * command ends its quote early and no longer parses.
+ */
+function shellSingleQuote(value: string): string {
+  return value.replaceAll("'", `'\\''`)
+}
+
+/**
  * Router's own snippets. Reached through `runTargetFor` rather than called
  * directly, so a page never has to know which backend it is describing.
  */
@@ -93,6 +105,6 @@ export function buildRouterSnippet(
     `curl --request POST 'https://api.comfy.org/v2/models/${modelId}' ${continuation}`,
     `  --header 'Authorization: Bearer YOUR_API_KEY' ${continuation}`,
     `  --header 'Content-Type: application/json' ${continuation}`,
-    `  --data '${JSON.stringify(input, null, 2)}'`
+    `  --data '${shellSingleQuote(JSON.stringify(input, null, 2))}'`
   ].join('\n')
 }

@@ -12,6 +12,10 @@ const { model, locale = 'en' } = defineProps<{
   model: WorkshopDetailModel
   locale?: Locale
 }>()
+// Defaulted, because the page renders this island with `model` alone —
+// Astro's Vue shim types a component from `defineProps`, so `modelValue`
+// cannot be passed from `.astro` at all. The form therefore seeds itself
+// from the schema and reports the result by emitting.
 const values = defineModel<WorkshopFormValues>({ default: () => ({}) })
 if (Object.keys(values.value).length === 0) {
   values.value = defaultWorkshopValues(model.fields)
