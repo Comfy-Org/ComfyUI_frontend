@@ -225,4 +225,30 @@ describe('readSubgraphDefinitions', () => {
     expect(projected.extra).toBe('markup')
     expect(projected).toHaveProperty('sub', {})
   })
+
+  it('drops a `__proto__` key instead of assigning through it', () => {
+    const definition = createTestSubgraphData({
+      nodes: [interiorNode(1)] as never
+    })
+    const doc = seed(definition)
+    doc.transact(() => {
+      const stored = doc
+        .getMap<unknown>('definitions')
+        .get(definition.id) as Y.Map<unknown>
+      stored.set('__proto__', { polluted: true })
+      const node = (stored.get('nodes') as Y.Map<unknown>).get(
+        '1'
+      ) as Y.Map<unknown>
+      node.set('__proto__', { polluted: true })
+    })
+
+    const [projected] = readSubgraphDefinitions(doc)
+
+    expect(Object.getPrototypeOf(projected)).toBe(Object.prototype)
+    expect(Object.getPrototypeOf(projected.nodes?.[0])).toBe(Object.prototype)
+    expect(projected).not.toHaveProperty('polluted')
+    expect(projected.nodes?.[0]).not.toHaveProperty('polluted')
+    expect(Object.keys(projected)).not.toContain('__proto__')
+    expect(Object.keys(projected.nodes?.[0] ?? {})).not.toContain('__proto__')
+  })
 })

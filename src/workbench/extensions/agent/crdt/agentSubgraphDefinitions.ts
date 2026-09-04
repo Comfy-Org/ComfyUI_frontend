@@ -22,6 +22,15 @@ const LINK_ORDER = 'link_order'
 const NODE_INCARNATION = '__incarnation'
 
 /**
+ * Own-key filter shared by both record readers. Assigning through
+ * `record['__proto__']` swaps the record's prototype, so a document carrying
+ * that key would hand LiteGraph an object whose inherited keys it never wrote.
+ */
+function isReadableKey(key: string): boolean {
+  return key !== '__proto__'
+}
+
+/**
  * A value slot's JSON view. Every shared type, and a subdocument, answers
  * `toJSON()`; `structuredClone` throws on all of them, and this reader runs
  * as a bare argument inside the follower's frame reconcile, where one throw
@@ -60,7 +69,7 @@ function readInteriorNode(source: unknown): Record<string, unknown> | null {
   }
   const node: Record<string, unknown> = {}
   source.forEach((value, key) => {
-    if (key === NODE_INCARNATION) return
+    if (key === NODE_INCARNATION || !isReadableKey(key)) return
     if (key === 'widgets' && value instanceof Y.Map) {
       node.widgets_values_named = value.toJSON()
     } else if (key === OPAQUE_WIDGETS_KEY) {
@@ -75,7 +84,7 @@ function readInteriorNode(source: unknown): Record<string, unknown> | null {
 function readDefinition(source: Y.Map<unknown>): ExportedSubgraph {
   const definition: Record<string, unknown> = {}
   source.forEach((value, key) => {
-    if (key === NODE_ORDER || key === LINK_ORDER) return
+    if (key === NODE_ORDER || key === LINK_ORDER || !isReadableKey(key)) return
     if (key === 'nodes' && value instanceof Y.Map) {
       definition.nodes = orderedKeys(source.get(NODE_ORDER), value).flatMap(
         (id) => {
