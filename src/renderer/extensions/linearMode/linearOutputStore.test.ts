@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 
 import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 
 const activeJobIdRef = ref<string | null>(null)
+const focusedJobIdRef = ref<string | null>(null)
 const previewsRef = ref<Record<string, { url: string; nodeId?: string }>>({})
 const isAppModeRef = ref(true)
 const activeWorkflowPathRef = ref<string>('workflows/test-workflow.json')
@@ -37,7 +38,7 @@ vi.mock('@/stores/executionStore', () => ({
       return activeJobIdRef.value
     },
     get focusedJobId() {
-      return activeJobIdRef.value
+      return focusedJobIdRef.value
     },
     get jobIdToSessionWorkflowPath() {
       return jobIdToWorkflowPathRef.value
@@ -91,6 +92,7 @@ function makeExecutedDetail(
 describe('linearOutputStore', () => {
   beforeEach(() => {
     activeJobIdRef.value = null
+    focusedJobIdRef.value = null
     previewsRef.value = {}
     isAppModeRef.value = true
     activeWorkflowPathRef.value = 'workflows/test-workflow.json'
@@ -147,6 +149,35 @@ describe('linearOutputStore', () => {
     const imageItems = store.inProgressItems.filter((i) => i.state === 'image')
     expect(imageItems).toHaveLength(1)
     expect(imageItems[0].output).toBeDefined()
+  })
+
+  it('routes executed events to the focused job', async () => {
+    const store = useLinearOutputStore()
+    setJobWorkflowPath('job-active', 'workflows/test-workflow.json')
+    setJobWorkflowPath('job-focused', 'workflows/test-workflow.json')
+    activeJobIdRef.value = 'job-active'
+    focusedJobIdRef.value = 'job-focused'
+    await nextTick()
+
+    apiTarget.dispatchEvent(
+      new CustomEvent('executed', {
+        detail: makeExecutedDetail('job-active')
+      })
+    )
+    expect(store.inProgressItems.every((item) => item.state === 'skeleton')).toBe(
+      true
+    )
+
+    apiTarget.dispatchEvent(
+      new CustomEvent('executed', {
+        detail: makeExecutedDetail('job-focused')
+      })
+    )
+    expect(
+      store.inProgressItems.some(
+        (item) => item.jobId === 'job-focused' && item.state === 'image'
+      )
+    ).toBe(true)
   })
 
   it('does not create trailing skeleton after executed output', () => {
