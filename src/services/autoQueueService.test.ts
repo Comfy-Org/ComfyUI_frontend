@@ -17,7 +17,9 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/composables/useConcurrentExecution', () => ({
   useConcurrentExecution: () => ({
     isConcurrentExecutionEnabled: {
-      value: mocks.concurrentExecutionEnabled
+      get value() {
+        return mocks.concurrentExecutionEnabled
+      }
     }
   })
 }))
@@ -148,6 +150,18 @@ describe('setupAutoQueueHandler', () => {
     listener(new Event('autoQueueGraphChanged'))
 
     expect(mocks.queuePrompt).not.toHaveBeenCalled()
+  })
+
+  it('responds to concurrent execution changes after setup', () => {
+    const listener = setupAndGetAutoQueueGraphChangedListener()
+
+    mocks.concurrentExecutionEnabled = true
+    listener(new Event('autoQueueGraphChanged'))
+    expect(mocks.queuePrompt).not.toHaveBeenCalled()
+
+    mocks.concurrentExecutionEnabled = false
+    listener(new Event('autoQueueGraphChanged'))
+    expect(mocks.queuePrompt).toHaveBeenCalledTimes(1)
   })
 
   it('does not re-queue when a busy processor reports the item as not run yet', async () => {
