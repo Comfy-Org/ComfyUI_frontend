@@ -1817,6 +1817,12 @@ describe('thread resume (B17)', () => {
         {
           id: 'th-9',
           title: 'build a duck',
+          preview: 'build a duck',
+          status: 'active',
+          workflow_id: '',
+          message_count: 1,
+          created_at: '2026-07-07T00:00:00Z',
+          last_message_at: '2026-07-07T00:00:00Z',
           updated_at: '2026-07-07T00:00:00Z'
         }
       ]

@@ -17,13 +17,15 @@ const emptyGroups: HistoryGroups = {
 const originalSession = {
   id: 'thread-1',
   title: 'Original title',
-  updatedAt: 1
+  updatedAt: 1,
+  status: 'active' as const
 }
 
 const secondSession = {
   id: 'thread-2',
   title: 'Second title',
-  updatedAt: 2
+  updatedAt: 2,
+  status: 'active' as const
 }
 
 const bucketLabels = /^(Current|Today|Yesterday|Earlier)$/
@@ -109,10 +111,18 @@ describe('ChatHistoryScreen', () => {
 
   it('orders populated bucket labels current, today, yesterday, earlier', () => {
     renderScreen({
-      current: [{ id: 'thread-c', title: 'Alpha', updatedAt: 4 }],
-      today: [{ id: 'thread-t', title: 'Bravo', updatedAt: 3 }],
-      yesterday: [{ id: 'thread-y', title: 'Charlie', updatedAt: 2 }],
-      earlier: [{ id: 'thread-e', title: 'Delta', updatedAt: 1 }]
+      current: [
+        { id: 'thread-c', title: 'Alpha', updatedAt: 4, status: 'active' }
+      ],
+      today: [
+        { id: 'thread-t', title: 'Bravo', updatedAt: 3, status: 'active' }
+      ],
+      yesterday: [
+        { id: 'thread-y', title: 'Charlie', updatedAt: 2, status: 'active' }
+      ],
+      earlier: [
+        { id: 'thread-e', title: 'Delta', updatedAt: 1, status: 'archived' }
+      ]
     })
 
     expect(renderedBucketLabels()).toEqual([

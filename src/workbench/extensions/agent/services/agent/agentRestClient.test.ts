@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { CloudWorkflowEntry } from '../../schemas/agentApiSchema'
+import type {
+  CloudWorkflowEntry,
+  AgentThreadSummary
+} from '../../schemas/agentApiSchema'
 
 const fetchApi = vi.hoisted(() =>
   vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
@@ -35,6 +38,37 @@ const turnAccepted = {
   thread_id: 't1',
   workflow_id: 'w1'
 }
+
+const thread = (
+  id: string,
+  status: 'active' | 'archived'
+): AgentThreadSummary => ({
+  id,
+  title: id,
+  preview: '',
+  status,
+  workflow_id: '',
+  message_count: 0,
+  created_at: '2026-09-04T00:00:00Z',
+  updated_at: '2026-09-04T00:00:00Z',
+  last_message_at: '2026-09-04T00:00:00Z'
+})
+
+const threadPage = (
+  threads: AgentThreadSummary[],
+  hasMore: boolean,
+  nextCursor?: string
+) =>
+  jsonResponse(200, {
+    threads,
+    pagination: {
+      offset: 0,
+      limit: 20,
+      total: threads.length,
+      has_more: hasMore,
+      next_cursor: nextCursor
+    }
+  })
 
 beforeEach(() => {
   fetchApi.mockReset()
@@ -118,6 +152,28 @@ describe('agentRestClient route + method', () => {
     expect(route).toBe('/agent/threads/t7/asks/turn-1%3Acall%2F1/answer')
     expect(init.method).toBe('POST')
     expect(JSON.parse(init.body as string)).toEqual({ selected: ['run'] })
+  })
+
+  it('accumulates every thread page and preserves archive status', async () => {
+    respond(threadPage([thread('active', 'active')], true, 'next page'))
+    respond(threadPage([thread('archived', 'archived')], false))
+
+    const threads = await createAgentRestClient().listThreads()
+
+    expect(fetchApi.mock.calls[0][0]).toBe('/agent/threads')
+    expect(fetchApi.mock.calls[1][0]).toBe('/agent/threads?after=next%20page')
+    expect(threads.map(({ id, status }) => ({ id, status }))).toEqual([
+      { id: 'active', status: 'active' },
+      { id: 'archived', status: 'archived' }
+    ])
+  })
+
+  it('rejects an incomplete thread page instead of returning partial history', async () => {
+    respond(threadPage([thread('only-page', 'active')], true))
+
+    await expect(createAgentRestClient().listThreads()).rejects.toThrow(
+      'Agent thread pagination did not advance'
+    )
   })
 
   it('listCloudWorkflows GETs the paginated workflows path until has_more is false', async () => {

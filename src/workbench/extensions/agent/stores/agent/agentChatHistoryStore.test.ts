@@ -7,9 +7,9 @@ const mocks = vi.hoisted(() => {
   const { ref } = require('vue')
   return {
     currentUser: {
-      resolvedUserInfo: ref({ id: 'user-1' } as { id: string } | null)
+      resolvedUserInfo: ref({ id: 'user-1' })
     },
-    workspace: { activeWorkspaceId: ref('workspace-1' as string | null) }
+    workspace: { activeWorkspaceId: ref('workspace-1') }
   }
 })
 
@@ -33,7 +33,8 @@ const DAY = 86_400_000
 const session = (id: string, updatedAt: number): ChatSession => ({
   id,
   title: id,
-  updatedAt
+  updatedAt,
+  status: 'active'
 })
 
 describe('groupSessionsByRecency', () => {
@@ -124,6 +125,13 @@ describe('useAgentChatHistoryStore', () => {
     store.replaceAll([session('a', 1), session('b', 2)])
 
     expect(store.sessions.map((s) => s.id)).toEqual(['b'])
+  })
+
+  it('preserves server archive status when replacing history', () => {
+    const store = useAgentChatHistoryStore()
+    store.replaceAll([{ ...session('a', 1), status: 'archived' }])
+
+    expect(store.sessions[0].status).toBe('archived')
   })
 
   it('clears the active id when the active session is removed', () => {

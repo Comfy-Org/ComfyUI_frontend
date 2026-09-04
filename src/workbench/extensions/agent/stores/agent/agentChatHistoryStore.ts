@@ -5,10 +5,13 @@ import { computed, ref, toValue, watch } from 'vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
+import type { AgentThreadSummary } from '../../schemas/agentApiSchema'
+
 export interface ChatSession {
   id: string
   title: string
   updatedAt: number
+  status: AgentThreadSummary['status']
 }
 
 export interface HistoryGroups {

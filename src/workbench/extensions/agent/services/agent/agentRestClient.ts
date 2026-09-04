@@ -148,12 +148,27 @@ export function createAgentRestClient() {
   }
 
   async function listThreads(): Promise<AgentThreadSummary[]> {
-    const page = await request(
-      '/agent/threads',
-      { method: 'GET' },
-      zAgentThreads
-    )
-    return page.threads
+    const threads: AgentThreadSummary[] = []
+    let cursor: string | undefined
+    do {
+      const after = cursor ? `?after=${encodeURIComponent(cursor)}` : ''
+      const page = await request(
+        `/agent/threads${after}`,
+        { method: 'GET' },
+        zAgentThreads
+      )
+      threads.push(...page.threads)
+      if (!page.pagination.has_more) break
+      const nextCursor = page.pagination.next_cursor
+      if (!nextCursor || nextCursor === cursor)
+        throw new AgentApiError(
+          'Agent thread pagination did not advance',
+          502,
+          page.pagination
+        )
+      cursor = nextCursor
+    } while (cursor)
+    return threads
   }
 
   async function getRunMode(): Promise<AgentRunModePreference> {

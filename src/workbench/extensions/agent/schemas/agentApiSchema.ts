@@ -1,5 +1,6 @@
 import {
   zAgentAnswerAccepted,
+  zAgentListThreadsResponse,
   zAgentRunMode as zGeneratedAgentRunMode,
   zWorkflowListResponse
 } from '@comfyorg/ingest-types/zod'
@@ -8,7 +9,10 @@ import { z } from 'zod'
 import { isNodeLocatorId } from '@/types/nodeIdentification'
 
 export { zAgentAnswerAccepted }
-export type { AgentRunMode as AgentRunModePreference } from '@comfyorg/ingest-types'
+export type {
+  AgentRunMode as AgentRunModePreference,
+  AgentThreadSummary
+} from '@comfyorg/ingest-types'
 
 const zTurnId = z.string().brand<'TurnId'>()
 export type TurnId = z.infer<typeof zTurnId>
@@ -93,21 +97,7 @@ export const zAgentMessage = z
 export const zAgentMessages = z.array(zAgentMessage)
 export type AgentMessages = z.infer<typeof zAgentMessages>
 
-const zAgentThreadSummary = z
-  .object({
-    id: z.string(),
-    title: z.string(),
-    preview: z.string().optional(),
-    last_message_at: z.string().optional(),
-    updated_at: z.string().optional(),
-    created_at: z.string().optional()
-  })
-  .passthrough()
-export type AgentThreadSummary = z.infer<typeof zAgentThreadSummary>
-
-export const zAgentThreads = z
-  .object({ threads: z.array(zAgentThreadSummary) })
-  .passthrough()
+export const zAgentThreads = zAgentListThreadsResponse
 
 export const zCloudWorkflowIndex = zWorkflowListResponse
   .pick({ pagination: true })
