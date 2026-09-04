@@ -34,7 +34,7 @@ import type {
 import type { SerializedNodeId } from '@/types/nodeId'
 import type {
   AssetDownloadWsMessage,
-  AssetEnrichCompleteWsMessage,
+  AssetSeedCompletedWsMessage,
   AssetExportWsMessage,
   CustomNodesI18n,
   EmbeddingsResponse,
@@ -201,7 +201,7 @@ interface BackendApiCalls {
   feature_flags: FeatureFlagsWsMessage
   asset_download: AssetDownloadWsMessage
   asset_export: AssetExportWsMessage
-  'assets.seed.enrich_complete': AssetEnrichCompleteWsMessage
+  'assets.seed.completed': AssetSeedCompletedWsMessage
 }
 
 /** Dictionary of all api calls */

@@ -167,9 +167,13 @@ const zAssetExportWsMessage = z.object({
   error: z.string().optional()
 })
 
-const zAssetEnrichCompleteWsMessage = z.object({
-  roots: z.array(z.string()),
-  enriched: z.number()
+const zAssetSeedCompletedWsMessage = z.object({
+  created: z.number(),
+  elapsed: z.number(),
+  enriched: z.number(),
+  phase: z.enum(['fast', 'enrich', 'full']),
+  skipped: z.number(),
+  total: z.number()
 })
 
 export type StatusWsMessageStatus = z.infer<typeof zStatusWsMessageStatus>
@@ -193,8 +197,8 @@ export type ProgressStateWsMessage = z.infer<typeof zProgressStateWsMessage>
 export type FeatureFlagsWsMessage = z.infer<typeof zFeatureFlagsWsMessage>
 export type AssetDownloadWsMessage = z.infer<typeof zAssetDownloadWsMessage>
 export type AssetExportWsMessage = z.infer<typeof zAssetExportWsMessage>
-export type AssetEnrichCompleteWsMessage = z.infer<
-  typeof zAssetEnrichCompleteWsMessage
+export type AssetSeedCompletedWsMessage = z.infer<
+  typeof zAssetSeedCompletedWsMessage
 >
 // End of ws messages
 

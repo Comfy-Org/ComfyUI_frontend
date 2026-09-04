@@ -308,9 +308,15 @@ export const useAssetsStore = defineStore('assets', () => {
     },
     { immediate: true }
   )
-  api.addEventListener('assets.seed.enrich_complete', async ({ detail }) => {
-    if (detail.roots.includes('output')) await outputAssets.value.loadNew()
-    if (detail.roots.includes('input')) await inputAssets.value.loadNew()
+
+  api.addEventListener('assets.seed.completed', async ({ detail }) => {
+    if (detail.enriched > detail.created || detail.phase === 'full') {
+      await outputAssets.value.invalidate()
+      await inputAssets.value.invalidate()
+    } else if (detail.created) {
+      await outputAssets.value.loadNew()
+      await inputAssets.value.loadNew()
+    }
   })
 
   /**
