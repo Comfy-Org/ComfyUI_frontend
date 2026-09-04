@@ -61,7 +61,9 @@ const materializerState = vi.hoisted(() => ({
 // The reader is module-mocked too: these tests only check that the composable
 // hands whatever it read from the bridge's doc through to the materializer.
 const definitionsState = vi.hoisted(() => ({
-  fakeDefinitions: [] as ExportedSubgraph[],
+  fakeDefinitions: [
+    { id: '11111111-1111-4111-8111-111111111111' } as ExportedSubgraph
+  ],
   readSubgraphDefinitions: vi.fn(() => definitionsState.fakeDefinitions)
 }))
 

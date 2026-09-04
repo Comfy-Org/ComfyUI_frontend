@@ -55,6 +55,16 @@ describe('readSubgraphDefinitions', () => {
     expect(readSubgraphDefinitions(seed())).toEqual([])
   })
 
+  it('does not create the definitions root on a document that lacks it', () => {
+    const doc = new Y.Doc()
+
+    readSubgraphDefinitions(doc)
+
+    // `Y.Doc.getMap` defines the shared type as a side effect; a reader must
+    // leave the document's shape alone.
+    expect(doc.share.has('definitions')).toBe(false)
+  })
+
   it('projects a definition back to the shape it was minted from', () => {
     const definition = createTestSubgraphData({
       nodes: [interiorNode(3), interiorNode(1)] as never,

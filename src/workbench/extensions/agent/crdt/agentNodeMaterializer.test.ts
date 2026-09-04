@@ -67,6 +67,28 @@ class WidgetNode extends LGraphNode {
   }
 }
 
+/** Widget values observed by `onConfigure`, in configure order. */
+const configuredWidgetValues: unknown[] = []
+
+class ConfigureCapturingWidgetNode extends WidgetNode {
+  override onConfigure(): void {
+    configuredWidgetValues.push(this.widgets?.[0]?.value)
+  }
+}
+
+/** Toggled per test; a definition holding this type fails to instantiate. */
+let configureShouldThrow = false
+
+class ThrowsOnConfigureNode extends LGraphNode {
+  constructor() {
+    super('throws-on-configure')
+  }
+
+  override onConfigure(): void {
+    if (configureShouldThrow) throw new Error('interior node rejected')
+  }
+}
+
 class ThrowsOnAddedNode extends LGraphNode {
   constructor() {
     super('throws-on-added')
@@ -90,7 +112,9 @@ const REMOTE: RemoteMutationContext = {
 const CATALOG: WidgetCatalog = {
   types: {
     dummy: { widget_order: [] },
-    'widget-node': { widget_order: ['value'] }
+    'widget-node': { widget_order: ['value'] },
+    'configure-capture': { widget_order: ['value'] },
+    'throws-on-configure': { widget_order: [] }
   }
 }
 
@@ -178,7 +202,11 @@ beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
   LiteGraph.registerNodeType('dummy', DummyNode)
   LiteGraph.registerNodeType('widget-node', WidgetNode)
+  LiteGraph.registerNodeType('configure-capture', ConfigureCapturingWidgetNode)
+  LiteGraph.registerNodeType('throws-on-configure', ThrowsOnConfigureNode)
   LiteGraph.registerNodeType('throws-on-added', ThrowsOnAddedNode)
+  configuredWidgetValues.length = 0
+  configureShouldThrow = false
 })
 
 describe('reconcileAgentAdapters', () => {
@@ -1041,17 +1069,54 @@ describe('reconcileAgentAdapters', () => {
       expect(reportError).not.toHaveBeenCalled()
     })
 
-    it('reports a definition that fails to register and still reconciles root nodes', () => {
+    it('restores interior widget values inside configure(), before onConfigure runs', () => {
       const definition = createTestSubgraphData({
-        nodes: [nodePayload(7)] as never
+        nodes: [
+          { ...nodePayload(7, 'configure-capture'), widgets_values: [42] }
+        ] as never
+      })
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id)],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+      expect(LiteGraph.namedValuesRestore).toBe(false)
+
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+
+      // A custom node's onConfigure must see the seeded value, the same as it
+      // does on the human load path, not the widget default.
+      expect(configuredWidgetValues).toEqual([42])
+      // The named-restore switch is scoped to registration, not left on.
+      expect(LiteGraph.namedValuesRestore).toBe(false)
+    })
+
+    it('leaves the named-restore switch as it found it when registration throws', () => {
+      configureShouldThrow = true
+      const definition = createTestSubgraphData({
+        nodes: [nodePayload(7, 'throws-on-configure')] as never
+      })
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id)],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+
+      expect(reportError).toHaveBeenCalledOnce()
+      expect(LiteGraph.namedValuesRestore).toBe(false)
+    })
+
+    it('reports a definition that fails to register and still reconciles the other root nodes', () => {
+      configureShouldThrow = true
+      const definition = createTestSubgraphData({
+        nodes: [nodePayload(7, 'throws-on-configure')] as never
       })
       const { follower } = seedDocument(graph, {
         nodes: [nodePayload(1, definition.id), nodePayload(2)],
         links: [],
         definitions: { subgraphs: [definition] }
-      })
-      vi.spyOn(graph, 'createSubgraphs').mockImplementation(() => {
-        throw new Error('definition rejected')
       })
 
       const materialized = reconcileAgentAdapters(
@@ -1059,18 +1124,138 @@ describe('reconcileAgentAdapters', () => {
         readSubgraphDefinitions(follower.doc)
       )
 
-      expect(reportError).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'definition rejected' }),
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ message: 'interior node rejected' }),
         {
           errorType: 'agent_subgraph_definitions_failed',
-          context: { graphId: graph.id, definitionIds: [definition.id] }
+          context: { graphId: graph.id, definitionId: definition.id }
         }
       )
-      // The plain node still materializes; the instance degrades to the
-      // error placeholder instead of taking the whole reconcile down.
-      expect(materialized).toEqual([toNodeId(1), toNodeId(2)])
+      // createSubgraphs registers a definition before configuring it. A
+      // failed one is rolled back so the map only holds definitions that
+      // finished the lifecycle.
+      expect(graph.subgraphs.has(definition.id)).toBe(false)
+      // The plain node still materializes. The instance waits for its
+      // definition instead of binding to the half-configured attempt.
+      expect(materialized).toEqual([toNodeId(2)])
       expect(graph.getNodeById(toNodeId(2))).toBeInstanceOf(DummyNode)
-      expect(graph.getNodeById(toNodeId(1))?.has_errors).toBe(true)
+      expect(graph.getNodeById(toNodeId(1))).toBeUndefined()
+    })
+
+    it('retries a failed definition on the next reconcile and reports it once', () => {
+      configureShouldThrow = true
+      const definition = createTestSubgraphData({
+        nodes: [nodePayload(7, 'throws-on-configure')] as never
+      })
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id)],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+      const definitions = readSubgraphDefinitions(follower.doc)
+
+      expect(reconcileAgentAdapters(graph, definitions)).toEqual([])
+      expect(reconcileAgentAdapters(graph, definitions)).toEqual([])
+      // Same definition, same failure: one report, not one per frame.
+      expect(reportError).toHaveBeenCalledOnce()
+
+      configureShouldThrow = false
+      expect(reconcileAgentAdapters(graph, definitions)).toEqual([toNodeId(1)])
+
+      expect(graph.subgraphs.has(definition.id)).toBe(true)
+      const instance = graph.getNodeById(toNodeId(1))
+      expect(instance).toBeInstanceOf(SubgraphNode)
+      expect(instance?.has_errors).toBeFalsy()
+      expect((instance as SubgraphNode).subgraph).toBe(
+        graph.subgraphs.get(definition.id)
+      )
+    })
+
+    it('registers a valid sibling when another definition in the same frame fails', () => {
+      configureShouldThrow = true
+      const bad = createTestSubgraphData({
+        nodes: [nodePayload(7, 'throws-on-configure')] as never
+      })
+      const good = createTestSubgraphData({
+        nodes: [nodePayload(8)] as never
+      })
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, bad.id), nodePayload(2, good.id)],
+        links: [],
+        definitions: { subgraphs: [bad, good] }
+      })
+
+      const materialized = reconcileAgentAdapters(
+        graph,
+        readSubgraphDefinitions(follower.doc)
+      )
+
+      expect(materialized).toEqual([toNodeId(2)])
+      expect(graph.subgraphs.has(bad.id)).toBe(false)
+      expect(graph.subgraphs.has(good.id)).toBe(true)
+      expect(graph.getNodeById(toNodeId(2))).toBeInstanceOf(SubgraphNode)
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
+        errorType: 'agent_subgraph_definitions_failed',
+        context: { graphId: graph.id, definitionId: bad.id }
+      })
+    })
+
+    it('keeps a live nested definition and registers a missing one under an existing outer', () => {
+      const inner = createTestSubgraphData({
+        nodes: [nodePayload(30)] as never
+      })
+      const outer = createTestSubgraphData({
+        nodes: [nodePayload(21, inner.id)] as never,
+        definitions: { subgraphs: [inner] }
+      })
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, outer.id)],
+        links: [],
+        definitions: { subgraphs: [outer] }
+      })
+      const definitions = readSubgraphDefinitions(follower.doc)
+
+      // The user (or an earlier frame) already has the inner definition live.
+      const liveInner = graph.createSubgraph(inner)
+      reconcileAgentAdapters(graph, definitions)
+      expect(graph.subgraphs.get(inner.id)).toBe(liveInner)
+      expect(graph.subgraphs.has(outer.id)).toBe(true)
+
+      // And the mirror: the outer is live but its nested definition is not.
+      const graph2 = new LGraph()
+      const disable2 = enableSubgraphNodeCreation(graph2)
+      try {
+        graph2.createSubgraph({ ...outer, definitions: undefined })
+        expect(graph2.subgraphs.has(inner.id)).toBe(false)
+        reconcileAgentAdapters(graph2, definitions)
+        expect(graph2.subgraphs.has(inner.id)).toBe(true)
+      } finally {
+        disable2()
+      }
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('reports and skips a definition whose id is not a UUID instead of remapping it', () => {
+      const definition = {
+        ...createTestSubgraphData({ nodes: [nodePayload(7)] as never }),
+        id: 'legacy-subgraph'
+      }
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id)],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+
+      // createSubgraphs would silently mint a UUID for it, leaving the root
+      // node's `type` pointing at an id the doc never registered.
+      expect(graph.subgraphs.size).toBe(0)
+      expect(created).not.toHaveBeenCalled()
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
+        errorType: 'agent_subgraph_definitions_failed',
+        context: { graphId: graph.id, definitionId: 'legacy-subgraph' }
+      })
     })
   })
 })
