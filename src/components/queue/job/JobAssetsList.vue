@@ -47,9 +47,33 @@
               @preview-click="emitViewItem(row.job)"
               @click.stop
             >
-              <template v-if="hoveredJobId === row.job.id" #actions>
+              <template
+                v-if="
+                  hoveredJobId === row.job.id || isFocusableRunningJob(row.job)
+                "
+                #actions
+              >
                 <Button
-                  v-if="isCancelable(row.job)"
+                  v-if="isFocusableRunningJob(row.job)"
+                  v-tooltip.top="focusTooltipConfig"
+                  variant="textonly"
+                  size="icon"
+                  :aria-label="t('queue.jobItem.focusTooltip')"
+                  @click.stop="executionStore.setFocusedJob(row.job.id)"
+                >
+                  <i
+                    :class="
+                      cn(
+                        'size-4',
+                        isFocusedJob(row.job)
+                          ? 'icon-[lucide--eye] text-text-primary'
+                          : 'icon-[lucide--eye-off] text-text-secondary'
+                      )
+                    "
+                  />
+                </Button>
+                <Button
+                  v-if="hoveredJobId === row.job.id && isCancelable(row.job)"
                   variant="destructive"
                   size="icon"
                   :aria-label="t('g.cancel')"
@@ -58,7 +82,9 @@
                   <i class="icon-[lucide--x] size-4" />
                 </Button>
                 <Button
-                  v-else-if="isFailedDeletable(row.job)"
+                  v-else-if="
+                    hoveredJobId === row.job.id && isFailedDeletable(row.job)
+                  "
                   variant="destructive"
                   size="icon"
                   :aria-label="t('g.delete')"
@@ -67,7 +93,9 @@
                   <i class="icon-[lucide--trash-2] size-4" />
                 </Button>
                 <Button
-                  v-else-if="row.job.state === 'completed'"
+                  v-else-if="
+                    hoveredJobId === row.job.id && row.job.state === 'completed'
+                  "
                   variant="textonly"
                   size="sm"
                   @click.stop="emitCompletedViewItem(row.job)"
@@ -75,6 +103,7 @@
                   {{ t('menuLabels.View') }}
                 </Button>
                 <Button
+                  v-if="hoveredJobId === row.job.id"
                   variant="secondary"
                   size="icon"
                   :aria-label="t('g.more')"
@@ -111,7 +140,10 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import JobDetailsHoverPopover from '@/components/queue/job/JobDetailsHoverPopover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
+import { useConcurrentExecution } from '@/composables/useConcurrentExecution'
+import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
+import { useExecutionStore } from '@/stores/executionStore'
 import { cn } from '@comfyorg/tailwind-utils'
 import { iconForJobState } from '@/utils/queueDisplay'
 import { isActiveJobState } from '@/utils/queueUtil'
@@ -139,6 +171,11 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const executionStore = useExecutionStore()
+const { isConcurrentExecutionEnabled } = useConcurrentExecution()
+const focusTooltipConfig = computed(() =>
+  buildTooltipConfig(t('queue.jobItem.focusTooltip'))
+)
 const scrollContainer = ref<HTMLElement | null>(null)
 const hoveredJobId = ref<string | null>(null)
 const activeRowElement = ref<HTMLElement | null>(null)
@@ -324,6 +361,14 @@ function onJobEnter(job: JobListItem, event: MouseEvent) {
 
 function isCancelable(job: JobListItem) {
   return job.showClear !== false && isActiveJobState(job.state)
+}
+
+function isFocusableRunningJob(job: JobListItem) {
+  return isConcurrentExecutionEnabled.value && job.state === 'running'
+}
+
+function isFocusedJob(job: JobListItem) {
+  return job.id === executionStore.focusedJobId
 }
 
 function isFailedDeletable(job: JobListItem) {

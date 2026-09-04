@@ -29,6 +29,7 @@
   <ManagerProgressToast />
   <DesktopCloudNotificationController />
   <UnloadWindowConfirmDialog v-if="!isDesktop" />
+  <ConcurrentExecutionDialog />
   <MenuHamburger />
   <TourOverlay v-if="graphReady" />
   <FirstRunTour />
@@ -50,6 +51,7 @@ import {
 
 import { runWhenGlobalIdle } from '@/base/common/async'
 import MenuHamburger from '@/components/MenuHamburger.vue'
+import ConcurrentExecutionDialog from '@/components/dialog/ConcurrentExecutionDialog.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import PartnerNodesEducationCard from '@/components/actionbar/PartnerNodesEducationCard.vue'

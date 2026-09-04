@@ -78,6 +78,7 @@ vi.mock('@/scripts/app', () => {
 vi.mock('@/scripts/api', () => ({
   api: {
     dispatchCustomEvent: vi.fn(),
+    interrupt: vi.fn(),
     apiURL: vi.fn(() => 'http://localhost:8188'),
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
@@ -159,8 +160,18 @@ vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
   }))
 }))
 
+const mockExecutionState = vi.hoisted(() => ({
+  activeJobId: 'active-job' as string | null,
+  focusedJobId: 'focused-job' as string | null,
+  concurrentEnabled: { value: false }
+}))
 vi.mock('@/stores/executionStore', () => ({
-  useExecutionStore: vi.fn(() => ({}))
+  useExecutionStore: vi.fn(() => mockExecutionState)
+}))
+vi.mock('@/composables/useConcurrentExecution', () => ({
+  useConcurrentExecution: () => ({
+    isConcurrentExecutionEnabled: mockExecutionState.concurrentEnabled
+  })
 }))
 
 const mockToastAdd = vi.hoisted(() => vi.fn())
@@ -353,6 +364,29 @@ describe('useCoreCommands', () => {
     // Mock global confirm
     global.confirm = vi.fn().mockReturnValue(true)
     mockRunMintPortsIntentionalClear.mockClear()
+    mockExecutionState.activeJobId = 'active-job'
+    mockExecutionState.focusedJobId = 'focused-job'
+    mockExecutionState.concurrentEnabled.value = false
+  })
+
+  describe('Interrupt command', () => {
+    function findInterruptCommand() {
+      return useCoreCommands().find((cmd) => cmd.id === 'Comfy.Interrupt')!
+    }
+
+    it('interrupts the active job in sequential mode', async () => {
+      await findInterruptCommand().function()
+
+      expect(api.interrupt).toHaveBeenCalledWith('active-job')
+    })
+
+    it('interrupts the focused job in concurrent mode', async () => {
+      mockExecutionState.concurrentEnabled.value = true
+
+      await findInterruptCommand().function()
+
+      expect(api.interrupt).toHaveBeenCalledWith('focused-job')
+    })
   })
 
   describe('ClearWorkflow command', () => {

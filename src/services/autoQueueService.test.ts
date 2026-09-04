@@ -10,7 +10,18 @@ const mocks = vi.hoisted(() => ({
     vi.fn<(event: string, listener: (event: Event) => void) => void>(),
   queuePrompt: vi.fn(() => Promise.resolve(true)),
   lastExecutionError: null as object | null,
-  gateBlocks: false
+  gateBlocks: false,
+  concurrentExecutionEnabled: false
+}))
+
+vi.mock('@/composables/useConcurrentExecution', () => ({
+  useConcurrentExecution: () => ({
+    isConcurrentExecutionEnabled: {
+      get value() {
+        return mocks.concurrentExecutionEnabled
+      }
+    }
+  })
 }))
 
 vi.mock('@/composables/billing/usePartnerNodesRunGate', () => ({
@@ -59,6 +70,7 @@ describe('setupAutoQueueHandler', () => {
     useQueuePendingTaskCountStore().count = 0
     mocks.lastExecutionError = null
     mocks.gateBlocks = false
+    mocks.concurrentExecutionEnabled = false
   })
 
   it('queues on autoQueueGraphChanged instead of graphChanged', () => {
@@ -128,6 +140,43 @@ describe('setupAutoQueueHandler', () => {
 
     mocks.gateBlocks = false
     listener(new Event('autoQueueGraphChanged'))
+    expect(mocks.queuePrompt).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not auto-queue while concurrent execution is enabled', () => {
+    mocks.concurrentExecutionEnabled = true
+    const listener = setupAndGetAutoQueueGraphChangedListener()
+
+    listener(new Event('autoQueueGraphChanged'))
+
+    expect(mocks.queuePrompt).not.toHaveBeenCalled()
+  })
+
+  it('responds to concurrent execution changes after setup', () => {
+    const listener = setupAndGetAutoQueueGraphChangedListener()
+
+    mocks.concurrentExecutionEnabled = true
+    listener(new Event('autoQueueGraphChanged'))
+    expect(mocks.queuePrompt).not.toHaveBeenCalled()
+
+    mocks.concurrentExecutionEnabled = false
+    listener(new Event('autoQueueGraphChanged'))
+    expect(mocks.queuePrompt).toHaveBeenCalledTimes(1)
+  })
+
+  it('suppresses a deferred queue when concurrent execution becomes enabled', async () => {
+    const listener = setupAndGetAutoQueueGraphChangedListener()
+    const queueCountStore = useQueuePendingTaskCountStore()
+    listener(new Event('autoQueueGraphChanged'))
+    listener(new Event('autoQueueGraphChanged'))
+    expect(mocks.queuePrompt).toHaveBeenCalledTimes(1)
+
+    mocks.concurrentExecutionEnabled = true
+    queueCountStore.count = 1
+    await nextTick()
+    queueCountStore.count = 0
+    await nextTick()
+
     expect(mocks.queuePrompt).toHaveBeenCalledTimes(1)
   })
 

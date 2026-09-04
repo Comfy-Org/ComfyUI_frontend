@@ -6,7 +6,13 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeOutput'
 import type { InProgressItem } from '@/renderer/extensions/linearMode/linearModeTypes'
 import type { ResultItemImpl } from '@/stores/queueStore'
-import type { ExecutedWsMessage, JobId } from '@/schemas/apiSchema'
+import type {
+  ExecutedWsMessage,
+  ExecutionErrorWsMessage,
+  ExecutionInterruptedWsMessage,
+  ExecutionSuccessWsMessage,
+  JobId
+} from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -256,24 +262,61 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
 
   // --- Event bindings (only active in app mode) ---
 
+  const displayedJobId = computed(
+    () => executionStore.focusedJobId ?? executionStore.activeJobId
+  )
+
   function handleExecuted({ detail }: CustomEvent<ExecutedWsMessage>) {
     const jobId = detail.prompt_id
-    if (jobId !== executionStore.activeJobId) return
+    if (jobId !== displayedJobId.value) return
     onNodeExecuted(jobId, detail)
   }
 
-  // Watch both activeJobId and the path mapping together. The path mapping
-  // may arrive after activeJobId due to a race between WebSocket
+  function completeJobFromTerminalEvent(jobId: JobId) {
+    if (inProgressItems.value.some((item) => item.jobId === jobId)) {
+      onJobComplete(jobId)
+    }
+  }
+
+  function handleExecutionSuccess({
+    detail
+  }: CustomEvent<ExecutionSuccessWsMessage>) {
+    completeJobFromTerminalEvent(detail.prompt_id)
+  }
+
+  function handleExecutionError({
+    detail
+  }: CustomEvent<ExecutionErrorWsMessage>) {
+    completeJobFromTerminalEvent(detail.prompt_id)
+  }
+
+  function handleExecutionInterrupted({
+    detail
+  }: CustomEvent<ExecutionInterruptedWsMessage>) {
+    completeJobFromTerminalEvent(detail.prompt_id)
+  }
+
+  api.addEventListener('execution_success', handleExecutionSuccess)
+  api.addEventListener('execution_error', handleExecutionError)
+  api.addEventListener('execution_interrupted', handleExecutionInterrupted)
+
+  // Watch both the displayed job and the path mapping together. The path mapping
+  // may arrive after the job ID due to a race between WebSocket
   // (execution_start) and the HTTP response (queuePrompt > storeJob).
   // Watching both ensures onJobStart fires once the mapping is available.
   watch(
-    [
-      () => executionStore.activeJobId,
-      () => executionStore.jobIdToSessionWorkflowPath
-    ],
+    [displayedJobId, () => executionStore.jobIdToSessionWorkflowPath],
     ([jobId], [oldJobId]) => {
       if (!isAppMode.value) return
-      if (oldJobId && oldJobId !== jobId) {
+      // Reconnect reconciliation removes stale jobs without a terminal event.
+      // Complete only jobs absent from execution state; changing focus between
+      // concurrently running jobs must preserve their in-progress output.
+      if (
+        oldJobId &&
+        oldJobId !== jobId &&
+        !executionStore.queuedJobs[oldJobId] &&
+        !pendingResolve.value.has(oldJobId)
+      ) {
         onJobComplete(oldJobId)
       }
       // Guard with trackedJobId to avoid double-starting when the
@@ -292,7 +335,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     () => jobPreviewStore.nodePreviewsByPromptId,
     (previews) => {
       if (!isAppMode.value) return
-      const jobId = executionStore.activeJobId
+      const jobId = displayedJobId.value
       if (!jobId) return
       const preview = previews[jobId]
       if (preview) onLatentPreview(jobId, preview.url, preview.nodeId)
@@ -301,23 +344,14 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
   )
 
   function reconcileOnEnter() {
-    // Complete any tracked job that finished while we were away.
-    // The activeJobId watcher couldn't fire onJobComplete because
-    // isAppMode was false at the time.
-    if (
-      trackedJobId.value &&
-      trackedJobId.value !== executionStore.activeJobId
-    ) {
-      onJobComplete(trackedJobId.value)
-    }
     // Start tracking the current job only if it belongs to this
     // workflow — otherwise we'd adopt another tab's job.
     if (
-      executionStore.activeJobId &&
-      trackedJobId.value !== executionStore.activeJobId &&
-      isJobForActiveWorkflow(executionStore.activeJobId)
+      displayedJobId.value &&
+      trackedJobId.value !== displayedJobId.value &&
+      isJobForActiveWorkflow(displayedJobId.value)
     ) {
-      onJobStart(executionStore.activeJobId)
+      onJobStart(displayedJobId.value)
     }
 
     // Clear stale selection from another workflow's job.
@@ -339,18 +373,6 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     }
   }
 
-  function cleanupOnLeave() {
-    // If the tracked job already finished (no longer the active job),
-    // complete it now to clean up skeletons/latents. If it's still
-    // running, preserve all items for tab switching.
-    if (
-      trackedJobId.value &&
-      trackedJobId.value !== executionStore.activeJobId
-    ) {
-      onJobComplete(trackedJobId.value)
-    }
-  }
-
   watch(
     isAppMode,
     (active, wasActive) => {
@@ -359,7 +381,6 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
         reconcileOnEnter()
       } else if (wasActive) {
         api.removeEventListener('executed', handleExecuted)
-        cleanupOnLeave()
       }
     },
     { immediate: true }

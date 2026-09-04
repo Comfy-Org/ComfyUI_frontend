@@ -9,7 +9,11 @@ import { useReconnectingNotification } from '@/composables/useReconnectingNotifi
 import type * as DistTypes from '@/platform/distribution/types'
 import type * as I18nModule from '@/i18n'
 
-const apiMock = vi.hoisted(() => new EventTarget())
+const apiMock = vi.hoisted(() =>
+  Object.assign(new EventTarget(), {
+    getServerFeature: vi.fn(() => undefined)
+  })
+)
 const distribution = vi.hoisted(() => ({ isCloud: false }))
 
 vi.mock('@/scripts/api', () => ({ api: apiMock }))

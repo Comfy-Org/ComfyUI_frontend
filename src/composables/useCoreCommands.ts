@@ -4,6 +4,7 @@ import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteG
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
 import { startModelNodeDragFromAsset } from '@/composables/node/startModelNodeDragFromAsset'
+import { useConcurrentExecution } from '@/composables/useConcurrentExecution'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useModelSelectorDialog } from '@/composables/useModelSelectorDialog'
 import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
@@ -106,6 +107,7 @@ export function useCoreCommands(): ComfyCommand[] {
   const toastStore = useToastStore()
   const canvasStore = useCanvasStore()
   const executionStore = useExecutionStore()
+  const { isConcurrentExecutionEnabled } = useConcurrentExecution()
   const modelStore = useModelStore()
   const missingModelStore = useMissingModelStore()
   const telemetry = useTelemetry()
@@ -347,7 +349,11 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Interrupt',
       category: 'essentials' as const,
       function: async () => {
-        await api.interrupt(executionStore.activeJobId)
+        await api.interrupt(
+          isConcurrentExecutionEnabled.value
+            ? executionStore.focusedJobId
+            : executionStore.activeJobId
+        )
         toastStore.add({
           severity: 'info',
           summary: t('g.interrupted'),

@@ -106,6 +106,8 @@ vi.mock('@/stores/queueStore', () => ({
 
 let executionStoreMock: {
   activeJobId: string | null
+  focusedJobId: string | null
+  runningJobIds: string[]
   executingNode: null | { title?: string; type?: string }
   isJobInitializing: (jobId?: string | number) => boolean
 }
@@ -117,6 +119,8 @@ const ensureExecutionStore = () => {
   if (!executionStoreMock) {
     executionStoreMock = reactive({
       activeJobId: null as string | null,
+      focusedJobId: null as string | null,
+      runningJobIds: [] as string[],
       executingNode: null as null | { title?: string; type?: string },
       isJobInitializing: (jobId?: string | number) =>
         isJobInitializingMock(jobId)
@@ -205,6 +209,8 @@ const resetStores = () => {
 
   const executionStore = ensureExecutionStore()
   executionStore.activeJobId = null
+  executionStore.focusedJobId = null
+  executionStore.runningJobIds = []
   executionStore.executingNode = null
 
   const jobPreviewStore = ensureJobPreviewStore()
@@ -477,6 +483,8 @@ describe('useJobList', () => {
     ]
 
     executionStoreMock.activeJobId = 'active'
+    executionStoreMock.focusedJobId = 'active'
+    executionStoreMock.runningJobIds = ['active', 'other']
     executionStoreMock.executingNode = { title: 'Render Node' }
     totalPercent.value = 80
     currentNodePercent.value = 40

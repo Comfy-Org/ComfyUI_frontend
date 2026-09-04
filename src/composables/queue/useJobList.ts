@@ -259,8 +259,12 @@ export function useJobList() {
 
   const jobItems = computed<JobListItem[]>(() => {
     return filteredTaskEntries.value.map(({ task, state }) => {
-      const isActive =
-        String(task.jobId ?? '') === String(executionStore.activeJobId ?? '')
+      const isRunning = executionStore.runningJobIds.includes(
+        String(task.jobId ?? '')
+      )
+      const isFocused =
+        String(task.jobId ?? '') === String(executionStore.focusedJobId ?? '')
+      const isActive = isRunning || isFocused
       const showAddedHint = shouldShowAddedHint(task, state)
       const promptKey = taskIdToKey(task.jobId)
       const promptPreviewUrl =
@@ -273,9 +277,9 @@ export function useJobList() {
         locale: locale.value,
         formatClockTimeFn: formatClockTime,
         isActive,
-        totalPercent: isActive ? totalPercent.value : undefined,
-        currentNodePercent: isActive ? currentNodePercent.value : undefined,
-        currentNodeName: isActive ? currentNodeName.value : undefined,
+        totalPercent: isFocused ? totalPercent.value : undefined,
+        currentNodePercent: isFocused ? currentNodePercent.value : undefined,
+        currentNodeName: isFocused ? currentNodeName.value : undefined,
         showAddedHint,
         isCloud
       })
@@ -290,13 +294,13 @@ export function useJobList() {
         showClear: display.showClear,
         taskRef: task,
         progressTotalPercent:
-          state === 'running' && isActive ? totalPercent.value : undefined,
+          state === 'running' && isFocused ? totalPercent.value : undefined,
         progressCurrentPercent:
-          state === 'running' && isActive
+          state === 'running' && isFocused
             ? currentNodePercent.value
             : undefined,
         runningNodeName:
-          state === 'running' && isActive ? currentNodeName.value : undefined,
+          state === 'running' && isFocused ? currentNodeName.value : undefined,
         executionTimeMs: task.executionTime,
         computeHours:
           task.executionTime !== undefined

@@ -1,14 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 
 import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 
 const activeJobIdRef = ref<string | null>(null)
+const focusedJobIdRef = ref<string | null>(null)
 const previewsRef = ref<Record<string, { url: string; nodeId?: string }>>({})
 const isAppModeRef = ref(true)
 const activeWorkflowPathRef = ref<string>('workflows/test-workflow.json')
 const jobIdToWorkflowPathRef = ref(new Map<string, string>())
+const queuedJobsRef = ref<Record<string, { nodes: Record<string, boolean> }>>(
+  {}
+)
 const selectedOutputsRef = ref<string[]>([])
 
 const { apiTarget } = vi.hoisted(() => ({
@@ -36,8 +40,14 @@ vi.mock('@/stores/executionStore', () => ({
     get activeJobId() {
       return activeJobIdRef.value
     },
+    get focusedJobId() {
+      return focusedJobIdRef.value
+    },
     get jobIdToSessionWorkflowPath() {
       return jobIdToWorkflowPathRef.value
+    },
+    get queuedJobs() {
+      return queuedJobsRef.value
     }
   })
 }))
@@ -85,13 +95,23 @@ function makeExecutedDetail(
   }
 }
 
+function completeJob(jobId: string) {
+  apiTarget.dispatchEvent(
+    new CustomEvent('execution_success', {
+      detail: { prompt_id: jobId, timestamp: 0 }
+    })
+  )
+}
+
 describe('linearOutputStore', () => {
   beforeEach(() => {
     activeJobIdRef.value = null
+    focusedJobIdRef.value = null
     previewsRef.value = {}
     isAppModeRef.value = true
     activeWorkflowPathRef.value = 'workflows/test-workflow.json'
     jobIdToWorkflowPathRef.value = new Map()
+    queuedJobsRef.value = {}
     selectedOutputsRef.value = []
   })
 
@@ -144,6 +164,35 @@ describe('linearOutputStore', () => {
     const imageItems = store.inProgressItems.filter((i) => i.state === 'image')
     expect(imageItems).toHaveLength(1)
     expect(imageItems[0].output).toBeDefined()
+  })
+
+  it('routes executed events to the focused job', async () => {
+    const store = useLinearOutputStore()
+    setJobWorkflowPath('job-active', 'workflows/test-workflow.json')
+    setJobWorkflowPath('job-focused', 'workflows/test-workflow.json')
+    activeJobIdRef.value = 'job-active'
+    focusedJobIdRef.value = 'job-focused'
+    await nextTick()
+
+    apiTarget.dispatchEvent(
+      new CustomEvent('executed', {
+        detail: makeExecutedDetail('job-active')
+      })
+    )
+    expect(
+      store.inProgressItems.every((item) => item.state === 'skeleton')
+    ).toBe(true)
+
+    apiTarget.dispatchEvent(
+      new CustomEvent('executed', {
+        detail: makeExecutedDetail('job-focused')
+      })
+    )
+    expect(
+      store.inProgressItems.some(
+        (item) => item.jobId === 'job-focused' && item.state === 'image'
+      )
+    ).toBe(true)
   })
 
   it('does not create trailing skeleton after executed output', () => {
@@ -360,11 +409,15 @@ describe('linearOutputStore', () => {
     expect(store.inProgressItems[0].latentPreviewUrl).toBe('blob:preview-1')
   })
 
-  it('completes previous job on direct job transition', async () => {
+  it('completes a job only after its terminal event', async () => {
     const { nextTick } = await import('vue')
     const store = useLinearOutputStore()
 
     setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
+    queuedJobsRef.value = {
+      'job-1': { nodes: {} },
+      'job-2': { nodes: {} }
+    }
     activeJobIdRef.value = 'job-1'
     await nextTick()
 
@@ -375,10 +428,30 @@ describe('linearOutputStore', () => {
     activeJobIdRef.value = 'job-2'
     await nextTick()
 
-    // job-1 should have been completed
+    expect(store.pendingResolve.has('job-1')).toBe(false)
+    expect(store.inProgressItems.some((i) => i.jobId === 'job-1')).toBe(true)
+
+    completeJob('job-1')
+
     expect(store.pendingResolve.has('job-1')).toBe(true)
-    // job-2 should have started
     expect(store.inProgressItems.some((i) => i.jobId === 'job-2')).toBe(true)
+  })
+
+  it('clears a tracked job removed during reconnect reconciliation', async () => {
+    const store = useLinearOutputStore()
+
+    setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
+    queuedJobsRef.value = { 'job-1': { nodes: {} } }
+    activeJobIdRef.value = 'job-1'
+    await nextTick()
+
+    expect(store.inProgressItems.some((i) => i.jobId === 'job-1')).toBe(true)
+
+    queuedJobsRef.value = {}
+    activeJobIdRef.value = null
+    await nextTick()
+
+    expect(store.inProgressItems.some((i) => i.jobId === 'job-1')).toBe(false)
   })
 
   it('two sequential runs: selection clears after each resolve', () => {
@@ -629,6 +702,7 @@ describe('linearOutputStore', () => {
     // Switch away — job finishes while we're gone
     isAppModeRef.value = false
     await nextTick()
+    completeJob('job-1')
     activeJobIdRef.value = null
     await nextTick()
 
@@ -949,6 +1023,7 @@ describe('linearOutputStore', () => {
       await nextTick()
 
       // While away: job A finishes, job B starts
+      completeJob('job-a')
       setJobWorkflowPath('job-b', 'workflows/app-a.json')
       activeJobIdRef.value = 'job-b'
       await nextTick()
@@ -980,6 +1055,7 @@ describe('linearOutputStore', () => {
       await nextTick()
 
       // Job finishes, no new job
+      completeJob('job-a')
       activeJobIdRef.value = null
       await nextTick()
 
@@ -1089,11 +1165,12 @@ describe('linearOutputStore', () => {
       store.onNodeExecuted('job-a', makeExecutedDetail('job-a', undefined, '1'))
 
       // Job ends, new job starts — all while in app mode
+      completeJob('job-a')
       setJobWorkflowPath('job-b', 'workflows/app-a.json')
       activeJobIdRef.value = 'job-b'
       await nextTick()
 
-      // job-a completed via activeJobId watcher, now pending resolve
+      // job-a completed from its terminal event, now pending resolve
       expect(store.pendingResolve.has('job-a')).toBe(true)
 
       // Switch away — tracked job is now job-b which is still active, so
@@ -1219,6 +1296,7 @@ describe('linearOutputStore', () => {
       await nextTick()
 
       // Dog finishes, cat starts (activeJobId transitions on dog tab)
+      completeJob('job-dog')
       activeJobIdRef.value = 'job-cat'
       await nextTick()
 

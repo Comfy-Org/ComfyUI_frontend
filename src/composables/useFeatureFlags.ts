@@ -45,7 +45,9 @@ export enum ServerFeatureFlag {
   CHURNKEY_APP_ID = 'churnkey_app_id',
   SIGNUP_TURNSTILE = 'signup_turnstile',
   SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags',
-  ONBOARDING_TOUR_ENABLED = 'onboarding_tour_enabled'
+  ONBOARDING_TOUR_ENABLED = 'onboarding_tour_enabled',
+  CONCURRENT_EXECUTION_ENABLED = 'concurrent_execution_enabled',
+  MAX_CONCURRENT_JOBS = 'max_concurrent_jobs'
 }
 
 function reportFeatureFlagEvaluation<T>(flagKey: string, value: T): T {
@@ -292,6 +294,23 @@ export function useFeatureFlags() {
         false
       )
     },
+    get concurrentExecutionEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.CONCURRENT_EXECUTION_ENABLED,
+        remoteConfig.value.concurrent_execution_enabled,
+        false
+      )
+    },
+    get maxConcurrentJobs() {
+      return Math.max(
+        1,
+        resolveFlag(
+          ServerFeatureFlag.MAX_CONCURRENT_JOBS,
+          remoteConfig.value.max_concurrent_jobs,
+          1
+        )
+      )
+    },
     get assetsEnabled() {
       return isCloud || resolveFlag('assets', undefined, false)
     }
@@ -348,6 +367,9 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.SIGNUP_TURNSTILE]: flags.signupTurnstileMode,
       [ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS]: flags.supportsModelTypeTags,
       [ServerFeatureFlag.ONBOARDING_TOUR_ENABLED]: flags.onboardingTourEnabled,
+      [ServerFeatureFlag.CONCURRENT_EXECUTION_ENABLED]:
+        flags.concurrentExecutionEnabled,
+      [ServerFeatureFlag.MAX_CONCURRENT_JOBS]: flags.maxConcurrentJobs,
       assets: flags.assetsEnabled
     }
 
