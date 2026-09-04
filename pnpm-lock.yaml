@@ -935,6 +935,9 @@ importers:
       '@astrojs/sitemap':
         specifier: 'catalog:'
         version: 3.7.3
+      '@comfyorg/account':
+        specifier: workspace:*
+        version: link:../../packages/account
       '@comfyorg/design-system':
         specifier: workspace:*
         version: link:../../packages/design-system
