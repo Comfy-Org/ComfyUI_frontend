@@ -113,7 +113,7 @@
     "name": "तेज़-ज़ूम शॉर्टकट सक्षम करें (कंट्रोल + शिफ्ट + ड्रैग)"
   },
   "Comfy_Graph_DeduplicateSubgraphNodeIds": {
-    "name": "subgraph node ID डीप्रतिलिपि करें",
+    "name": "दोहराई गई node ID हटाएँ",
     "tooltip": "workflow लोड करते समय subgraph में दोहराई गई node ID अपने-आप फिर से असाइन करें।"
   },
   "Comfy_Graph_LinkMarkers": {
@@ -185,7 +185,7 @@
   },
   "Comfy_Load3D_LightIntensity": {
     "name": "प्रारंभिक लाइट तीव्रता",
-    "tooltip": "त्रि-आयामी scene में lighting का डिफ़ॉल्ट brightness स्तर सेट करता है। यह मान तय करता है कि नया त्रि-आयामी widget बनने पर light object को कितनी तीव्रता से प्रकाशित करेंगी, लेकिन बाद में हर widget के लिए अलग से बदला जा सकता है।"
+    "tooltip": "त्रि-आयामी scene में lighting का डिफ़ॉल्ट brightness स्तर सेट करता है। यह मान तय करता है कि नया त्रि-आयामी widget बनने पर light object कितनी तीव्रता से प्रकाश देगा, लेकिन बाद में हर widget के लिए अलग से बदला जा सकता है।"
   },
   "Comfy_Load3D_LightIntensityMaximum": {
     "name": "लाइट तीव्रता अधिकतम",
@@ -359,7 +359,7 @@
     "tooltip": "queue history में दिखने वाले टास्क की अधिकतम संख्या।"
   },
   "Comfy_Queue_QPOV2": {
-    "name": "डोक किया गया job history/queue panel",
+    "name": "डॉक किया गया job history/queue panel",
     "tooltip": "फ्लोटिंग job queue panel को job history साइड panel में एम्बेडेड समकक्ष job queue से बदलता है। फ्लोटिंग panel लेआउट पर लौटने के लिए इसे अक्षम कर सकते हैं।"
   },
   "Comfy_QueueButton_BatchCountLimit": {
