@@ -709,7 +709,9 @@ function fmtTime(at: number): string {
                       type="button"
                       class="border-agent-border hover:bg-agent-surface-hover ml-1 cursor-pointer rounded-sm border px-1.5 py-0.5"
                       :aria-label="S.copyDocumentId"
-                      @click="copyItem(`doc:${status.workflowId}`, status.workflowId)"
+                      @click="
+                        copyItem(`doc:${status.workflowId}`, status.workflowId)
+                      "
                     >
                       {{ itemCopyLabel(`doc:${status.workflowId}`) }}
                     </button>
@@ -804,7 +806,9 @@ function fmtTime(at: number): string {
                 "
               >
                 <div class="flex items-baseline gap-1">
-                  <span class="text-agent-fg-muted">{{ fmtTime(row.event.at) }}</span>
+                  <span class="text-agent-fg-muted">{{
+                    fmtTime(row.event.at)
+                  }}</span>
                   <span
                     :class="
                       cn(
@@ -818,10 +822,17 @@ function fmtTime(at: number): string {
                   <span class="font-bold">{{ row.event.kind }}</span>
                 </div>
                 <div class="text-agent-fg-muted break-all">
-                  {{ expanded === row.event.seq ? row.detail : row.excerpt }}
+                  {{
+                    expanded === row.event.seq
+                      ? truncateDetail(row.detail, 20_000)
+                      : row.excerpt
+                  }}
                 </div>
               </button>
-              <div v-if="row.detail || row.nodeIds.length" class="mt-1 flex flex-wrap gap-1">
+              <div
+                v-if="row.detail || row.nodeIds.length"
+                class="mt-1 flex flex-wrap gap-1"
+              >
                 <button
                   v-if="row.detail"
                   type="button"
@@ -927,7 +938,9 @@ function fmtTime(at: number): string {
               </div>
               <div class="text-agent-fg-muted break-all">
                 {{ S.survivingWidgets }}:
-                {{ truncateDetail(stringifyDetail(simulation.survivingWidgets)) }}
+                {{
+                  truncateDetail(stringifyDetail(simulation.survivingWidgets))
+                }}
               </div>
             </section>
 

@@ -1,7 +1,15 @@
-// @vitest-environment jsdom
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const { writeText } = vi.hoisted(() => ({
+  writeText: vi.fn<(value: string) => Promise<void>>(() => Promise.resolve())
+}))
+
+vi.mock('@vueuse/core', async (importOriginal) => ({
+  ...(await importOriginal()),
+  useClipboard: () => ({ copy: writeText })
+}))
 
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 import CrdtDevPanel from './CrdtDevPanel.vue'
@@ -13,12 +21,19 @@ import {
 } from './devPanelLog'
 
 vi.mock('@/scripts/api', () => ({
-  api: { apiURL: (route: string) => `/api${route}` }
+  api: {
+    apiURL: (route: string) => `/api${route}`,
+    clientId: 'client-test-1',
+    api_host: 'localhost:8188',
+    api_base: ''
+  }
 }))
-
-const writeText = vi.fn<(value: string) => Promise<void>>(() =>
-  Promise.resolve()
-)
+vi.mock('@/scripts/app', () => ({
+  app: { rootGraph: { serialize: () => ({ nodes: [], links: [] }) } }
+}))
+vi.mock('@/stores/extensionStore', () => ({
+  useExtensionStore: () => ({ extensions: [] })
+}))
 
 const status: AgentCrdtStatus = {
   enabled: true,
@@ -98,9 +113,7 @@ describe('CrdtDevPanel clipboard controls', () => {
     })
     expect(screen.getByText(`${full.slice(0, 200)}…`)).toBeInTheDocument()
 
-    await user.click(
-      screen.getByRole('button', { name: 'Copy log detail' })
-    )
+    await user.click(screen.getByRole('button', { name: 'Copy log detail' }))
 
     expect(writeText).toHaveBeenCalledExactlyOnceWith(full)
   })
