@@ -22,7 +22,9 @@ function hasVisibleLegacyModal(): boolean {
 export function isModalOpen(managedDialogCount: number): boolean {
   return (
     managedDialogCount > 0 ||
-    document.querySelector('[role="dialog"][aria-modal="true"]') !== null ||
+    document.querySelector(
+      '[role="dialog"][aria-modal="true"]:not([hidden])'
+    ) !== null ||
     hasOpenRekaDialog() ||
     hasOpenNativeDialog() ||
     hasVisibleLegacyModal()
