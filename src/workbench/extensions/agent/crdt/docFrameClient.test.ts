@@ -229,7 +229,6 @@ describe('doc frame client', () => {
   })
 
   it('reports the first malformed inbound frame per type', () => {
-    vi.mocked(reportError).mockClear()
     const transport = new TestTransport()
     const client = new DocFrameClient(transport)
     const listener = vi.fn()
