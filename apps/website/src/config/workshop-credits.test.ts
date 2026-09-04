@@ -3,15 +3,26 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { centsToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
 
-import {
-  microsToCredits,
-  refreshWorkshopCredits,
-  useWorkshopCredits,
-  workshopPurchaseUrl
-} from './workshop-credits'
+import type * as CreditsModule from './workshop-credits'
+
+// The credits module carries a shared balance ref and an in-flight-refresh
+// guard, so each test loads a fresh copy to keep that state from leaking.
+let mod: typeof CreditsModule
+const microsToCredits = (micros: number) => mod.microsToCredits(micros)
+const refreshWorkshopCredits = (fetchImpl?: typeof fetch) =>
+  mod.refreshWorkshopCredits(fetchImpl)
+const useWorkshopCredits = () => mod.useWorkshopCredits()
+const workshopPurchaseUrl = (returnTo: string) =>
+  mod.workshopPurchaseUrl(returnTo)
+
+type WorkshopSession = {
+  token: string
+  uid: string
+  workspace?: { id: string }
+}
 
 interface SessionHandles {
-  setSession?: (session: { token: string; uid: string } | undefined) => void
+  setSession?: (session: WorkshopSession | undefined) => void
   remint?: ReturnType<typeof vi.fn>
   flag?: { value: boolean }
 }
@@ -27,7 +38,7 @@ vi.mock('../scripts/posthog', async () => {
 
 vi.mock('./workshop-session-state', async () => {
   const { computed, ref } = await import('vue')
-  const session = ref<{ token: string; uid: string } | undefined>(undefined)
+  const session = ref<WorkshopSession | undefined>(undefined)
   const remint = vi.fn(async () => ({
     status: 'ok',
     session: { token: 'jwt', uid: 'user-1' }
@@ -45,7 +56,16 @@ vi.mock('./workshop-session-state', async () => {
   }
 })
 
-const withToken = (token: string, uid = 'user-1') => ({ token, uid })
+const withToken = (token: string, uid = 'user-1'): WorkshopSession => ({
+  token,
+  uid
+})
+
+const withWorkspace = (
+  id: string,
+  token = 'jwt',
+  uid = 'user-1'
+): WorkshopSession => ({ token, uid, workspace: { id } })
 
 const jsonResponse = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), {
@@ -53,7 +73,9 @@ const jsonResponse = (status: number, body: unknown) =>
     headers: { 'Content-Type': 'application/json' }
   })
 
-beforeEach(() => {
+beforeEach(async () => {
+  vi.resetModules()
+  mod = await import('./workshop-credits')
   sessionHandles.setSession!(undefined)
   sessionHandles.remint!.mockClear()
   sessionHandles.flag!.value = true
@@ -190,6 +212,62 @@ describe('refreshWorkshopCredits', () => {
       useWorkshopCredits().balance.value,
       'a balance fetched for the previous user must not show under the new one'
     ).not.toEqual({ status: 'ok', credits: microsToCredits(9_000_000) })
+  })
+
+  it('does not publish a balance that belongs to a superseded workspace', async () => {
+    sessionHandles.setSession!(withWorkspace('ws-1'))
+    const fetchImpl = vi.fn(async () => {
+      sessionHandles.setSession!(withWorkspace('ws-2'))
+      return jsonResponse(200, { effective_balance_micros: 9_000_000 })
+    })
+
+    await refreshWorkshopCredits(fetchImpl)
+
+    expect(
+      useWorkshopCredits().balance.value,
+      'a balance for the previous workspace must not show after a switch'
+    ).not.toEqual({ status: 'ok', credits: microsToCredits(9_000_000) })
+  })
+
+  it('bounds the balance read with an abort signal', async () => {
+    sessionHandles.setSession!(withToken('jwt'))
+    const fetchImpl = vi.fn(async () =>
+      jsonResponse(200, { effective_balance_micros: 1_000_000 })
+    )
+
+    await refreshWorkshopCredits(fetchImpl)
+
+    const [, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit]
+    expect(
+      init.signal,
+      'a balance read without an abort signal can pin the chip stale'
+    ).toBeInstanceOf(AbortSignal)
+  })
+
+  it('shares one in-flight read across overlapping triggers', async () => {
+    sessionHandles.setSession!(withToken('jwt'))
+    let release!: () => void
+    const gate = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const fetchImpl = vi.fn(async () => {
+      await gate
+      return jsonResponse(200, { effective_balance_micros: 3_000_000 })
+    })
+
+    const first = refreshWorkshopCredits(fetchImpl)
+    const second = refreshWorkshopCredits(fetchImpl)
+    release()
+    await Promise.all([first, second])
+
+    expect(
+      fetchImpl,
+      'two overlapping triggers for one session must not fetch twice'
+    ).toHaveBeenCalledOnce()
+    expect(useWorkshopCredits().balance.value).toEqual({
+      status: 'ok',
+      credits: microsToCredits(3_000_000)
+    })
   })
 })
 
