@@ -169,6 +169,17 @@ describe('API Feature Flags', () => {
       expect(api.serverFeatureFlags.value).toEqual({})
       expect(api.serverFeatureFlagsReceived.value).toBe(true)
     })
+
+    it('settles feature flags when the socket closes before opening', () => {
+      vi.useFakeTimers()
+      api.init()
+
+      wsEventHandlers['error'](new Event('error'))
+      wsEventHandlers['close'](new Event('close'))
+
+      expect(mockWebSocket.close).toHaveBeenCalledOnce()
+      expect(api.serverFeatureFlagsReceived.value).toBe(true)
+    })
   })
 
   describe('Feature checking methods', () => {

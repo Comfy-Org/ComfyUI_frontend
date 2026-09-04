@@ -782,6 +782,9 @@ export class ComfyApi extends EventTarget {
       // A replaced socket (e.g. after resetSocket on an account switch) must
       // not reconnect; only the active socket owns the reconnect lifecycle.
       if (this.socket !== socket) return
+      if (!opened) {
+        this.serverFeatureFlagsReceived.value = true
+      }
       clearTimeout(settleTimer)
       setTimeout(async () => {
         if (this.socket !== socket) return
