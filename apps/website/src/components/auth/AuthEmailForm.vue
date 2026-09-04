@@ -43,7 +43,7 @@ const { token, unavailable, waiting } = useTurnstileGate(turnstileEnabled)
 const submitDisabled = computed(() => disabled || waiting.value)
 
 const FIELD_CLASS =
-  'focus:border-primary-comfy-yellow h-11 w-full rounded-xl border border-primary-comfy-canvas/15 bg-primary-comfy-canvas/5 px-4 text-sm text-primary-comfy-canvas outline-none'
+  'focus-visible:border-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 h-11 w-full rounded-xl border border-primary-comfy-canvas/15 bg-primary-comfy-canvas/5 px-4 text-sm text-primary-comfy-canvas outline-none focus-visible:ring-3'
 
 function submit() {
   const schemas = authSchemasFor(locale)
@@ -118,7 +118,7 @@ function submit() {
     <a
       v-if="mode === 'signIn'"
       href="/forgot-password/"
-      class="-mt-2 self-start text-xs text-primary-comfy-canvas/55 underline hover:text-primary-comfy-yellow"
+      class="hover:text-primary-comfy-yellow -mt-2 self-start text-xs text-primary-comfy-canvas/55 underline"
     >
       {{ t('auth.signIn.forgotPassword', locale) }}
     </a>
@@ -164,7 +164,7 @@ function submit() {
     <button
       type="submit"
       :disabled="submitDisabled"
-      class="hover:bg-primary-comfy-yellow/90 flex h-12 w-full items-center justify-center rounded-xl bg-primary-comfy-yellow font-semibold text-primary-comfy-ink transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+      class="hover:bg-primary-comfy-yellow/90 bg-primary-comfy-yellow flex h-12 w-full items-center justify-center rounded-xl font-semibold text-primary-comfy-ink transition-colors disabled:cursor-not-allowed disabled:opacity-40"
     >
       {{
         mode === 'signUp'

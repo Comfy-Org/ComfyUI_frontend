@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { classifyAuthError } from '@comfyorg/auth-core/firebaseAuthError'
 import { ref } from 'vue'
 
 import { authSchemasFor } from '../../config/auth-schemas'
@@ -32,11 +33,21 @@ async function submit() {
   try {
     await sendWorkshopPasswordReset(email.value)
     state.value = 'sent'
-  } catch {
-    // Firebase already answers generically for unknown emails; a thrown
-    // failure here is transport-level, so a retry is the honest offer.
-    state.value = 'error'
+  } catch (error) {
+    // An unregistered email must look identical to a registered one, or the
+    // sent/error split becomes an account-enumeration oracle. Only a real
+    // transport failure surfaces the error state.
+    state.value = isUnknownEmailError(error) ? 'sent' : 'error'
   }
+}
+
+function isUnknownEmailError(error: unknown): boolean {
+  const classified = classifyAuthError(error)
+  return (
+    classified.kind === 'auth' &&
+    (classified.code === 'auth/user-not-found' ||
+      classified.code === 'auth/invalid-email')
+  )
 }
 </script>
 
@@ -68,7 +79,7 @@ async function submit() {
           v-model="email"
           type="email"
           autocomplete="email"
-          class="focus:border-primary-comfy-yellow h-11 w-full rounded-xl border border-primary-comfy-canvas/15 bg-primary-comfy-canvas/5 px-4 text-sm text-primary-comfy-canvas outline-none"
+          class="focus-visible:border-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 h-11 w-full rounded-xl border border-primary-comfy-canvas/15 bg-primary-comfy-canvas/5 px-4 text-sm text-primary-comfy-canvas outline-none focus-visible:ring-3"
           :aria-invalid="Boolean(fieldError)"
         />
         <span v-if="fieldError" role="alert" class="text-xs text-red-400">
@@ -87,7 +98,7 @@ async function submit() {
       <button
         type="submit"
         :disabled="state === 'sending'"
-        class="hover:bg-primary-comfy-yellow/90 mt-5 flex h-12 w-full items-center justify-center rounded-xl bg-primary-comfy-yellow font-semibold text-primary-comfy-ink transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+        class="hover:bg-primary-comfy-yellow/90 bg-primary-comfy-yellow mt-5 flex h-12 w-full items-center justify-center rounded-xl font-semibold text-primary-comfy-ink transition-colors disabled:cursor-not-allowed disabled:opacity-40"
       >
         {{ t('auth.forgot.submit', locale) }}
       </button>
