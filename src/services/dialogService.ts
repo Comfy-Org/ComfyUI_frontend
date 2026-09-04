@@ -7,8 +7,11 @@ import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.v
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
 import TopUpCreditsDialogContentLegacy from '@/components/dialog/content/TopUpCreditsDialogContentLegacy.vue'
 import InsufficientCreditsMemberDialog from '@/platform/workspace/components/InsufficientCreditsMemberDialog.vue'
+import SalesManagedOwnerDialog from '@/platform/workspace/components/SalesManagedOwnerDialog.vue'
 import TopUpCreditsDialogContentWorkspace from '@/platform/workspace/components/TopUpCreditsDialogContentWorkspace.vue'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { isSalesManagedTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { isCloud } from '@/platform/distribution/types'
@@ -343,7 +346,7 @@ export const useDialogService = () => {
   async function showTopUpCreditsDialog(options?: {
     isInsufficientCredits?: boolean
   }) {
-    const { type } = useBillingContext()
+    const { type, subscription } = useBillingContext()
     const { canTopUp, canSubscribeSelfServe, isReady, initialize } =
       useBillingCapabilities()
     // A capability read still in flight has to be awaited here, or a top-up
@@ -360,10 +363,18 @@ export const useDialogService = () => {
     }
 
     if (!canTopUp.value && type.value === 'workspace') {
+      // A sales-managed owner IS the workspace admin — "ask your admins to add
+      // credits" is the wrong audience. Route them to sales instead.
+      const isSalesManagedOwner =
+        isSalesManagedTier(subscription.value?.tier) &&
+        useWorkspaceUI().permissions.value.canManageSubscription
       return dialogStore.showDialog({
         key: 'insufficient-credits-member',
-        component: InsufficientCreditsMemberDialog,
+        component: isSalesManagedOwner
+          ? SalesManagedOwnerDialog
+          : InsufficientCreditsMemberDialog,
         props: {
+          ...(isSalesManagedOwner ? { outOfCredits: true } : {}),
           onClose: () =>
             dialogStore.closeDialog({ key: 'insufficient-credits-member' })
         },
