@@ -1300,10 +1300,12 @@ export const CORE_SETTINGS: SettingParams[] = [
   {
     id: 'Comfy.Workflow.ShowMissingNodesWarning',
     category: ['Comfy', 'Error System', 'MissingNodes'],
+    disabled: () =>
+      !useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab'),
     sortOrder: -1,
     name: 'Show missing nodes in the issues tab',
     tooltip:
-      'Requires the issues tab. When disabled, missing node packs are not listed and their nodes are not highlighted, but the workflow still cannot run until they are installed.',
+      'Has no effect while the issues tab is switched off. When disabled, missing node packs are not listed and their nodes are not highlighted, but the workflow still cannot run until they are installed.',
     type: 'boolean',
     defaultValue: true,
     versionAdded: '1.55.0'
@@ -1311,20 +1313,24 @@ export const CORE_SETTINGS: SettingParams[] = [
   {
     id: 'Comfy.Workflow.ShowMissingModelsWarning',
     category: ['Comfy', 'Error System', 'MissingModels'],
+    disabled: () =>
+      !useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab'),
     sortOrder: -2,
     name: 'Show missing models in the issues tab',
     tooltip:
-      'Requires the issues tab. When disabled, model files that are not found are not listed and their nodes are not highlighted.',
+      'Has no effect while the issues tab is switched off. When disabled, model files that are not found are not listed and their nodes are not highlighted.',
     type: 'boolean',
     defaultValue: true
   },
   {
     id: 'Comfy.Workflow.ShowMissingMediaWarning',
     category: ['Comfy', 'Error System', 'MissingMedia'],
+    disabled: () =>
+      !useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab'),
     sortOrder: -3,
     name: 'Show missing media in the issues tab',
     tooltip:
-      'Requires the issues tab. When disabled, input images, videos and audio that are not found are not listed and their nodes are not highlighted.',
+      'Has no effect while the issues tab is switched off. When disabled, input images, videos and audio that are not found are not listed and their nodes are not highlighted.',
     type: 'boolean',
     defaultValue: true,
     versionAdded: '1.55.0'

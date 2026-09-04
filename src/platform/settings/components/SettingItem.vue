@@ -71,7 +71,10 @@ const formItem = computed(() => {
       : undefined,
     options: props.setting.options
       ? translateOptions(props.setting.options)
-      : undefined
+      : undefined,
+    attrs: props.setting.disabled
+      ? { ...props.setting.attrs, disabled: props.setting.disabled() }
+      : props.setting.attrs
   }
 })
 
