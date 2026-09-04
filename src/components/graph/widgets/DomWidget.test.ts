@@ -291,12 +291,13 @@ describe('native DOM widget interaction lifecycle', () => {
     const widgetState = createWidgetState(false)
     const input = document.createElement('input')
     Object.assign(widgetState.widget, { element: input })
-    const appendChild = vi
-      .spyOn(HTMLElement.prototype, 'appendChild')
-      .mockImplementation(function (this: HTMLElement, child: Node) {
-        if (child === input) throw new Error('mount failed')
-        return Node.prototype.appendChild.call(this, child)
-      })
+    vi.spyOn(HTMLElement.prototype, 'appendChild').mockImplementation(function (
+      this: HTMLElement,
+      child: Node
+    ) {
+      if (child === input) throw new Error('mount failed')
+      return Node.prototype.appendChild.call(this, child)
+    })
 
     const rendered = render(DomWidget, {
       props: { widgetState }
@@ -322,7 +323,6 @@ describe('native DOM widget interaction lifecycle', () => {
     })
     expect(rendered.container).not.toContainElement(input)
 
-    appendChild.mockRestore()
     rendered.unmount()
   })
 
