@@ -25,7 +25,7 @@ name: 'CI: Tests Custom Nodes'
 # An override run tests different code than the ref it is attributed to, so say
 # so in the Actions list as well as in the check-run names below. Without the
 # override this is the default run name.
-run-name: "CI: Tests Custom Nodes${{ inputs.branch && format(' [branch: {0}]', inputs.branch) || '' }}"
+run-name: "CI: Tests Custom Nodes${{ inputs.branch && format(' [branch: {0}]', inputs.branch) || '' }}${{ inputs.comfyui_ref && format(' [comfyui: {0}]', inputs.comfyui_ref) || '' }}${{ inputs.grep && format(' [grep: {0}]', inputs.grep) || '' }}"
 
 on:
   schedule:
@@ -95,13 +95,20 @@ jobs:
   custom_nodes_e2e:
     # GitHub attributes a job's check run to the ref the workflow was dispatched
     # from, not to whatever `branch` told the checkout to test, and a newer check
-    # run supersedes the ref's earlier one of the same name. So a dispatch aimed
+    # suite supersedes the ref's earlier one of the same name. So a dispatch aimed
     # at some other branch used to overwrite this ref's real grade: two overrides
     # aimed at a fix branch turned three genuine `main` nightly failures into
     # `success` for every rollup query. The suffix keeps an override's results
     # visible under their own names, where they cannot masquerade as the ref's.
-    # Without the override the name is byte-identical to the matrix default.
-    name: "custom_nodes_e2e (${{ matrix.shard }}, ${{ matrix.proof_row }})${{ inputs.branch && format(' [branch: {0}]', inputs.branch) || '' }}"
+    #
+    # Every input that changes WHAT is tested earns a suffix, not just `branch`:
+    # `comfyui_ref` swaps the core the suite runs against, and `grep` narrows the
+    # suite and (per its own description) skips the exact-count gate, so either
+    # one can publish a weaker or unrelated result under the full run's name.
+    # `detection_proof_row` is already in the matrix name and `record_interactions`
+    # already changes the shard list, so both are self-distinguishing. With no
+    # override the name is byte-identical to the matrix default.
+    name: "custom_nodes_e2e (${{ matrix.shard }}, ${{ matrix.proof_row }})${{ inputs.branch && format(' [branch: {0}]', inputs.branch) || '' }}${{ inputs.comfyui_ref && format(' [comfyui: {0}]', inputs.comfyui_ref) || '' }}${{ inputs.grep && format(' [grep: {0}]', inputs.grep) || '' }}"
     needs: changes
     if: needs.changes.outputs.should-run == 'true'
     strategy:
@@ -454,7 +461,7 @@ jobs:
     # Same masquerade guard as the matrix job above: this is the aggregate name
     # a reader treats as "the suite result for this commit", so a branch override
     # must not be able to publish under it.
-    name: "E2E Custom Nodes Test${{ inputs.branch && format(' [branch: {0}]', inputs.branch) || '' }}"
+    name: "E2E Custom Nodes Test${{ inputs.branch && format(' [branch: {0}]', inputs.branch) || '' }}${{ inputs.comfyui_ref && format(' [comfyui: {0}]', inputs.comfyui_ref) || '' }}${{ inputs.grep && format(' [grep: {0}]', inputs.grep) || '' }}"
     if: always()
     needs: [changes, custom_nodes_e2e]
     runs-on: ubuntu-latest
