@@ -12832,7 +12832,8 @@
     "display_name": "MiniMax H3 參考轉影片",
     "inputs": {
       "audio_vae": {
-        "name": "audio_vae"
+        "name": "audio_vae",
+        "tooltip": "音訊 VAE。若未提供，參考音訊將僅用於條件化文字編碼器。"
       },
       "clip": {
         "name": "clip"
@@ -12864,7 +12865,8 @@
         "name": "參考影片"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "影片 VAE。若未提供，參考圖片／影片將僅用於條件化文字編碼器。"
       },
       "width": {
         "name": "寬度"
@@ -12973,7 +12975,7 @@
     }
   },
   "MinimaxHailuo03FirstLastFrameNode": {
-    "description": "使用 MiniMax H3 模型，根據首幀圖像與（可選）末幀圖像生成影片。影片長寬比將依據所提供的圖像。",
+    "description": "使用 MiniMax H3 模型，根據首幀圖片及可選的末幀圖片生成影片。影片的長寬比會依照提供的圖片。",
     "display_name": "MiniMax H3 首末幀生成影片",
     "inputs": {
       "control_after_generate": {
@@ -13016,7 +13018,7 @@
     }
   },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "使用 MiniMax H3 模型，根據參考圖片、影片與音訊生成影片。在提示詞中依照順序引用參考資料：'Image 1'、'Image 2'、'Video 1'、'Audio 1'，依此類推。",
+    "description": "使用 MiniMax H3 模型，根據參考圖片、影片及音訊生成影片。在提示詞中請依序引用參考資料：「Image 1」、「Image 2」、「Video 1」、「Audio 1」等。",
     "display_name": "MiniMax H3 參考生成影片",
     "inputs": {
       "control_after_generate": {
@@ -16972,7 +16974,7 @@
   },
   "Preview3D": {
     "description": "預覽 3D 模型檔案，無需儲存至 ComfyUI 輸出目錄。",
-    "display_name": "3D 預覽",
+    "display_name": "預覽 3D 與動畫（已淘汰）",
     "inputs": {
       "bg_image": {
         "name": "bg_image"
@@ -18681,6 +18683,10 @@
       "multiple": {
         "name": "倍數",
         "tooltip": "將所選解析度設為結果的最接近倍數。"
+      },
+      "preview": {
+        "name": "預覽",
+        "tooltip": "即時計算出的輸出解析度預覽。"
       }
     },
     "outputs": {

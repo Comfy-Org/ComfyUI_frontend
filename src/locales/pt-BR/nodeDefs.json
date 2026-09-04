@@ -12832,7 +12832,8 @@
     "display_name": "MiniMax H3 Referência para Vídeo",
     "inputs": {
       "audio_vae": {
-        "name": "audio_vae"
+        "name": "audio_vae",
+        "tooltip": "VAE de áudio. Sem ele, o áudio de referência condiciona apenas o codificador de texto."
       },
       "clip": {
         "name": "clip"
@@ -12864,7 +12865,8 @@
         "name": "vídeos_ref"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "VAE de vídeo. Sem ele, imagens/vídeos de referência condicionam apenas o codificador de texto."
       },
       "width": {
         "name": "largura"
@@ -12973,7 +12975,7 @@
     }
   },
   "MinimaxHailuo03FirstLastFrameNode": {
-    "description": "Gere vídeo a partir de uma imagem de primeiro frame e, opcionalmente, uma imagem de último frame usando o modelo MiniMax H3. A proporção do vídeo segue as imagens fornecidas.",
+    "description": "Gera vídeo a partir de uma imagem do primeiro quadro e de uma imagem opcional do último quadro usando os modelos MiniMax H3. A proporção do vídeo segue as imagens fornecidas.",
     "display_name": "MiniMax H3 Primeiro-Último-Frame para Vídeo",
     "inputs": {
       "control_after_generate": {
@@ -13016,7 +13018,7 @@
     }
   },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "Gere vídeo condicionado a imagens de referência, vídeos e áudio usando o modelo MiniMax H3. Consulte as referências no prompt pela ordem: 'Imagem 1', 'Imagem 2', 'Vídeo 1', 'Áudio 1' e assim por diante.",
+    "description": "Gera vídeo condicionado por imagens, vídeos e áudio de referência usando os modelos MiniMax H3. Consulte as referências no prompt pela ordem: 'Imagem 1', 'Imagem 2', 'Vídeo 1', 'Áudio 1' e assim por diante.",
     "display_name": "MiniMax H3 Referência para Vídeo",
     "inputs": {
       "control_after_generate": {
@@ -13091,7 +13093,7 @@
     }
   },
   "MinimaxHailuo03TextToVideoNode": {
-    "description": "Gere vídeo a partir de um prompt de texto usando o modelo MiniMax H3.",
+    "description": "Gera vídeo a partir de um prompt de texto usando os modelos MiniMax H3.",
     "display_name": "MiniMax H3 Texto para Vídeo",
     "inputs": {
       "control_after_generate": {
@@ -16972,7 +16974,7 @@
   },
   "Preview3D": {
     "description": "Visualize um arquivo de modelo 3D sem salvá-lo no diretório de saída do ComfyUI.",
-    "display_name": "Pré-visualização 3D & Animação",
+    "display_name": "Pré-visualizar 3D e animação (OBSOLETO)",
     "inputs": {
       "bg_image": {
         "name": "bg_image"
@@ -18681,6 +18683,10 @@
       "multiple": {
         "name": "múltiplo",
         "tooltip": "Múltiplo mais próximo do resultado para definir a resolução selecionada."
+      },
+      "preview": {
+        "name": "pré-visualização",
+        "tooltip": "Pré-visualização ao vivo da resolução de saída calculada."
       }
     },
     "outputs": {

@@ -12832,7 +12832,8 @@
     "display_name": "MiniMax H3 参考转视频",
     "inputs": {
       "audio_vae": {
-        "name": "audio_vae"
+        "name": "audio_vae",
+        "tooltip": "音频 VAE。没有它，参考音频将只能对文本编码器进行条件控制。"
       },
       "clip": {
         "name": "clip"
@@ -12864,7 +12865,8 @@
         "name": "参考视频"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "视频 VAE。没有它，参考图像/视频将只能对文本编码器进行条件控制。"
       },
       "width": {
         "name": "宽度"
@@ -12973,7 +12975,7 @@
     }
   },
   "MinimaxHailuo03FirstLastFrameNode": {
-    "description": "使用 MiniMax H3 模型，根据首帧图像和可选的末帧图像生成视频。视频的宽高比与所提供的图像一致。",
+    "description": "使用 MiniMax H3 模型，根据首帧图像和可选的尾帧图像生成视频。视频的宽高比遵循所提供的图像。",
     "display_name": "MiniMax H3 首帧-末帧生成视频",
     "inputs": {
       "control_after_generate": {
@@ -13016,7 +13018,7 @@
     }
   },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "使用 MiniMax H3 模型，根据参考图像、视频和音频生成视频。在提示词中按顺序引用参考内容：'图像 1'、'图像 2'、'视频 1'、'音频 1'，依此类推。",
+    "description": "使用 MiniMax H3 模型，根据参考图像、视频和音频进行条件控制以生成视频。在提示词中按顺序引用参考内容：“图像 1”、“图像 2”、“视频 1”、“音频 1”，依此类推。",
     "display_name": "MiniMax H3 参考生成视频",
     "inputs": {
       "control_after_generate": {
@@ -16972,7 +16974,7 @@
   },
   "Preview3D": {
     "description": "预览 3D 模型文件，无需将其保存到 ComfyUI 输出目录。",
-    "display_name": "预览3D",
+    "display_name": "预览 3D 和动画（已弃用）",
     "inputs": {
       "bg_image": {
         "name": "背景图像"
@@ -18681,6 +18683,10 @@
       "multiple": {
         "name": "倍数",
         "tooltip": "将所选分辨率设置为结果的最近倍数。"
+      },
+      "preview": {
+        "name": "预览",
+        "tooltip": "计算出的输出分辨率实时预览。"
       }
     },
     "outputs": {

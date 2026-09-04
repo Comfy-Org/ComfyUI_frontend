@@ -12832,7 +12832,8 @@
     "display_name": "MiniMax H3 リファレンスから動画へ",
     "inputs": {
       "audio_vae": {
-        "name": "audio_vae"
+        "name": "audio_vae",
+        "tooltip": "オーディオVAE。これがない場合、参照オーディオはテキストエンコーダーのみを条件付けします。"
       },
       "clip": {
         "name": "clip"
@@ -12864,7 +12865,8 @@
         "name": "リファレンス動画"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "ビデオVAE。これがない場合、参照画像／動画はテキストエンコーダーのみを条件付けします。"
       },
       "width": {
         "name": "幅"
@@ -12973,7 +12975,7 @@
     }
   },
   "MinimaxHailuo03FirstLastFrameNode": {
-    "description": "MiniMax H3モデルを使用し、最初のフレーム画像と（オプションで）最後のフレーム画像から動画を生成します。動画のアスペクト比は入力画像に従います。",
+    "description": "MiniMax H3モデルを使用して、最初のフレーム画像と任意の最後のフレーム画像から動画を生成します。動画のアスペクト比は、指定された画像に従います。",
     "display_name": "MiniMax H3 最初・最後フレームから動画生成",
     "inputs": {
       "control_after_generate": {
@@ -13016,7 +13018,7 @@
     }
   },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "MiniMax H3 モデルを使用して、参照画像、ビデオ、音声に基づいてビデオを生成します。プロンプト内で参照を順番に指定してください：『Image 1』、『Image 2』、『Video 1』、『Audio 1』など。",
+    "description": "MiniMax H3モデルを使用して、参照画像、動画、オーディオを条件として動画を生成します。プロンプト内では、参照を順番に「Image 1」、「Image 2」、「Video 1」、「Audio 1」などとして指定してください。",
     "display_name": "MiniMax H3 参照からビデオ生成",
     "inputs": {
       "control_after_generate": {
@@ -13091,7 +13093,7 @@
     }
   },
   "MinimaxHailuo03TextToVideoNode": {
-    "description": "MiniMax H3 モデルを使用してテキストプロンプトからビデオを生成します。",
+    "description": "MiniMax H3モデルを使用して、テキストプロンプトから動画を生成します。",
     "display_name": "MiniMax H3 テキストからビデオ生成",
     "inputs": {
       "control_after_generate": {
@@ -16972,7 +16974,7 @@
   },
   "Preview3D": {
     "description": "3DモデルファイルをComfyUIの出力ディレクトリに保存せずにプレビューします。",
-    "display_name": "3Dプレビュー",
+    "display_name": "3Dとアニメーションをプレビュー（非推奨）",
     "inputs": {
       "bg_image": {
         "name": "bg_image"
@@ -18681,6 +18683,10 @@
       "multiple": {
         "name": "倍数",
         "tooltip": "選択した解像度を設定する際の最も近い倍数です。"
+      },
+      "preview": {
+        "name": "preview",
+        "tooltip": "計算された出力解像度のライブプレビュー。"
       }
     },
     "outputs": {

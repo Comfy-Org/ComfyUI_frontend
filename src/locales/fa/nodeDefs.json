@@ -12832,7 +12832,8 @@
     "display_name": "تبدیل مرجع به ویدیو MiniMax H3",
     "inputs": {
       "audio_vae": {
-        "name": "audio_vae"
+        "name": "audio_vae",
+        "tooltip": "VAE صوتی. بدون آن، صوت مرجع فقط انکودر متن را شرطی می‌کند."
       },
       "clip": {
         "name": "clip"
@@ -12864,7 +12865,8 @@
         "name": "ویدیوهای مرجع"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "VAE ویدئو. بدون آن، تصاویر/ویدئوهای مرجع فقط انکودر متن را شرطی می‌کنند."
       },
       "width": {
         "name": "عرض"
@@ -12973,7 +12975,7 @@
     }
   },
   "MinimaxHailuo03FirstLastFrameNode": {
-    "description": "تولید ویدیو از تصویر اولین فریم و در صورت نیاز تصویر آخرین فریم با استفاده از مدل MiniMax H3. نسبت تصویر ویدیو مطابق تصاویر ارائه‌شده خواهد بود.",
+    "description": "با استفاده از مدل‌های MiniMax H3، از تصویر فریم اول و تصویر اختیاری فریم آخر ویدئو تولید کنید. نسبت ابعاد ویدئو از تصاویر ارائه‌شده پیروی می‌کند.",
     "display_name": "تبدیل اولین و آخرین فریم MiniMax H3 به ویدیو",
     "inputs": {
       "control_after_generate": {
@@ -13016,7 +13018,7 @@
     }
   },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "تولید ویدیو بر اساس تصاویر مرجع، ویدیوها و صدا با استفاده از مدل MiniMax H3. به مراجع در پرامپت بر اساس ترتیب آن‌ها اشاره کنید: «تصویر ۱»، «تصویر ۲»، «ویدیو ۱»، «صدا ۱» و به همین ترتیب.",
+    "description": "با استفاده از مدل‌های MiniMax H3، ویدئویی شرطی‌شده بر تصاویر، ویدئوها و صوت مرجع تولید کنید. در prompt به‌ترتیب به مراجع اشاره کنید: 'Image 1'، 'Image 2'، 'Video 1'، 'Audio 1' و غیره.",
     "display_name": "تبدیل مرجع MiniMax H3 به ویدیو",
     "inputs": {
       "control_after_generate": {
@@ -13091,7 +13093,7 @@
     }
   },
   "MinimaxHailuo03TextToVideoNode": {
-    "description": "تولید ویدیو از طریق پرامپت متنی با استفاده از مدل MiniMax H3.",
+    "description": "با استفاده از مدل‌های MiniMax H3، از یک prompt متنی ویدئو تولید کنید.",
     "display_name": "تبدیل متن به ویدیو MiniMax H3",
     "inputs": {
       "control_after_generate": {
@@ -16972,7 +16974,7 @@
   },
   "Preview3D": {
     "description": "پیش‌نمایش یک فایل مدل سه‌بعدی بدون ذخیره آن در پوشه خروجی ComfyUI.",
-    "display_name": "پیش‌نمایش سه‌بعدی و انیمیشن",
+    "display_name": "پیش‌نمایش 3D و انیمیشن (منسوخ‌شده)",
     "inputs": {
       "bg_image": {
         "name": "تصویر پس‌زمینه"
@@ -18681,6 +18683,10 @@
       "multiple": {
         "name": "ضرب‌کننده",
         "tooltip": "نزدیک‌ترین مضرب نتیجه برای تنظیم وضوح انتخاب‌شده."
+      },
+      "preview": {
+        "name": "preview",
+        "tooltip": "پیش‌نمایش زندهٔ وضوح خروجی محاسبه‌شده."
       }
     },
     "outputs": {
