@@ -50,7 +50,7 @@ export const useMissingNodesErrorStore = defineStore(
       }
     }
 
-    /** Set missing node types. Returns true if the Errors tab is enabled and types were set. */
+    /** Set missing node types. Returns true if the Errors tab and the missing nodes warning are enabled and types were set. */
     function surfaceMissingNodes(types: MissingNodeType[]): boolean {
       setMissingNodeTypes(types)
       return (

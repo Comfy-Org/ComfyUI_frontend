@@ -1022,7 +1022,7 @@ describe('useWidgetSelectItems', () => {
   })
 
   describe('FE-230 missing-media filtering', () => {
-    it('keeps input items while the missing media warning is off', async () => {
+    it('still drops missing media when the missing media warning is off', async () => {
       const { useMissingMediaStore } =
         await import('@/platform/missingMedia/missingMediaStore')
       const { useSettingStore } =
@@ -1043,7 +1043,9 @@ describe('useWidgetSelectItems', () => {
 
       const { dropdownItems } = useWidgetSelectItems(createDefaultOptions())
 
-      expect(dropdownItems.value.map((i) => i.name)).toContain('photo_abc.jpg')
+      expect(dropdownItems.value.map((i) => i.name)).not.toContain(
+        'photo_abc.jpg'
+      )
     })
 
     it('drops input items whose name is in the missing-media store', async () => {

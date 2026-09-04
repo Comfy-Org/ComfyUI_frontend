@@ -78,8 +78,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
   const missingMediaValues = computed<ReadonlySet<string>>(
     () =>
       new Set(
-        missingMediaStore.visibleMissingMediaCandidates?.map((c) => c.name) ??
-          []
+        missingMediaStore.missingMediaCandidates?.map((c) => c.name) ?? []
       )
   )
 

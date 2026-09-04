@@ -1,12 +1,12 @@
 import { useSettingStore } from '@/platform/settings/settingStore'
 
-type MissingWarningKind = 'nodes' | 'models' | 'media'
-
 const MISSING_WARNING_SETTING_IDS = {
   nodes: 'Comfy.Workflow.ShowMissingNodesWarning',
   models: 'Comfy.Workflow.ShowMissingModelsWarning',
   media: 'Comfy.Workflow.ShowMissingMediaWarning'
 } as const
+
+type MissingWarningKind = keyof typeof MISSING_WARNING_SETTING_IDS
 
 /** A per-kind setting that is not registered yet reads as enabled. */
 export function isMissingWarningVisible(kind: MissingWarningKind): boolean {

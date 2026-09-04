@@ -693,7 +693,12 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     return errorAncestorExecutionIds.value.has(execId)
   }
 
-  useNodeErrorFlagSync(surfacedNodeErrors, missingModelStore, missingMediaStore)
+  useNodeErrorFlagSync(
+    surfacedNodeErrors,
+    missingModelStore,
+    missingMediaStore,
+    missingNodesStore
+  )
 
   return {
     // Read-only state

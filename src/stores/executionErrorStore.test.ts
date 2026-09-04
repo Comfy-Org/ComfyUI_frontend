@@ -704,26 +704,54 @@ describe('surfaceMissingModels — silent option', () => {
   })
 })
 
-describe('surfaceMissingModels — per-kind visibility', () => {
-  it('stores the models but keeps the overlay closed while the warning is off', () => {
-    mockSettings.values['Comfy.RightSidePanel.ShowErrorsTab'] = true
-    mockSettings.values['Comfy.Workflow.ShowMissingModelsWarning'] = false
-    const store = useExecutionErrorStore()
-    store.surfaceMissingModels([
-      fromAny({
-        name: 'model.safetensors',
-        nodeId: toNodeId('1'),
-        nodeType: 'Loader',
-        widgetName: 'ckpt',
-        isMissing: true,
-        isAssetSupported: false
-      })
-    ])
+describe('per-kind visibility', () => {
+  it.for([
+    {
+      kind: 'models',
+      settingId: 'Comfy.Workflow.ShowMissingModelsWarning',
+      surface: (store: ReturnType<typeof useExecutionErrorStore>) =>
+        store.surfaceMissingModels([
+          fromAny({
+            name: 'model.safetensors',
+            nodeId: toNodeId('1'),
+            nodeType: 'Loader',
+            widgetName: 'ckpt',
+            isMissing: true,
+            isAssetSupported: false
+          })
+        ]),
+      rawCount: () => useMissingModelStore().missingModelCandidates?.length
+    },
+    {
+      kind: 'media',
+      settingId: 'Comfy.Workflow.ShowMissingMediaWarning',
+      surface: (store: ReturnType<typeof useExecutionErrorStore>) =>
+        store.surfaceMissingMedia([
+          fromAny({
+            name: 'photo.png',
+            nodeId: toNodeId('1'),
+            nodeType: 'LoadImage',
+            widgetName: 'image',
+            mediaType: 'image',
+            isMissing: true
+          })
+        ]),
+      rawCount: () => useMissingMediaStore().missingMediaCandidates?.length
+    }
+  ])(
+    'stores missing $kind but keeps the overlay closed while its warning is off',
+    ({ settingId, surface, rawCount }) => {
+      mockSettings.values['Comfy.RightSidePanel.ShowErrorsTab'] = true
+      mockSettings.values[settingId] = false
+      const store = useExecutionErrorStore()
 
-    expect(useMissingModelStore().missingModelCandidates).toHaveLength(1)
-    expect(store.isErrorOverlayOpen).toBe(false)
-    expect(store.hasMissingError).toBe(false)
-  })
+      surface(store)
+
+      expect(rawCount()).toBe(1)
+      expect(store.isErrorOverlayOpen).toBe(false)
+      expect(store.hasMissingError).toBe(false)
+    }
+  )
 })
 
 describe('surfaceMissingMedia — silent option', () => {
