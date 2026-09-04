@@ -21,6 +21,7 @@ import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { MissingNodeType } from '@/types/comfy'
 import {
+  getNodeByExecutionId,
   isCandidateScopeActive,
   isMissingCandidateActive
 } from '@/utils/graphTraversalUtil'
@@ -155,18 +156,27 @@ export async function runMissingModelPipeline({
     return { missingModels, confirmedCandidates }
   }
 
-  // Re-check ancestors at surface time: the user may have bypassed a
-  // container while verification or folder paths were in flight.
+  // Re-check at surface time: the user may have bypassed a container or
+  // changed the selection while verification or folder paths were in flight.
+  const isStillSelected = (candidate: MissingModelCandidate) => {
+    if (candidate.nodeId == null) return true
+    const node = getNodeByExecutionId(graph, String(candidate.nodeId))
+    const widget = node?.widgets?.find((w) => w.name === candidate.widgetName)
+    return !widget || widget.value === candidate.name
+  }
   const surfaceActiveCandidates = () => {
-    const confirmed = enrichedCandidates.filter((c) =>
-      isMissingCandidateActive(graph, c)
+    const confirmed = enrichedCandidates.filter(
+      (c) => isMissingCandidateActive(graph, c) && isStillSelected(c)
     )
     useExecutionErrorStore().surfaceMissingModels(confirmed, { silent })
     cacheModelCandidates(activeWf, confirmed)
   }
   const reportVerificationFailure = (err: unknown) => {
     if (controller.signal.aborted) return
-    console.warn('[Missing Model Pipeline] Asset verification failed:', err)
+    console.warn(
+      '[Missing Model Pipeline] Missing model verification failed:',
+      err
+    )
     reportError(err, { errorType: 'missing_model_verification_failed' })
     useToastStore().add({
       severity: 'warn',

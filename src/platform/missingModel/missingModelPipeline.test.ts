@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type {
   ComfyWorkflowJSON,
@@ -84,6 +84,9 @@ const { mockHandles } = vi.hoisted(() => {
       isCandidateScopeActive,
       isMissingCandidateActive: vi.fn(
         (_graph: LGraph, _candidate: MissingModelCandidate) => true
+      ),
+      getNodeByExecutionId: vi.fn(
+        (_graph: LGraph, _executionId: string): LGraphNode | null => null
       )
     }
   }
@@ -153,7 +156,9 @@ vi.mock('@/utils/graphTraversalUtil', () => ({
   isCandidateScopeActive: (graph: LGraph, candidate: MissingModelCandidate) =>
     mockHandles.isCandidateScopeActive(graph, candidate),
   isMissingCandidateActive: (graph: LGraph, candidate: MissingModelCandidate) =>
-    mockHandles.isMissingCandidateActive(graph, candidate)
+    mockHandles.isMissingCandidateActive(graph, candidate),
+  getNodeByExecutionId: (graph: LGraph, executionId: string) =>
+    mockHandles.getNodeByExecutionId(graph, executionId)
 }))
 
 function createWorkflowGraphData(): ComfyWorkflowJSON {
@@ -189,6 +194,7 @@ describe('missingModelPipeline', () => {
     mockHandles.scanAllModelCandidates.mockReturnValue([])
     mockHandles.verifyAssetSupportedCandidates.mockResolvedValue(undefined)
     mockHandles.hasPendingVerification.mockReturnValue(false)
+    mockHandles.getNodeByExecutionId.mockReturnValue(null)
     mockHandles.api.getFolderPaths.mockResolvedValue({})
     mockHandles.fetchModelMetadata.mockResolvedValue({
       fileSize: null,
@@ -409,6 +415,42 @@ describe('missingModelPipeline', () => {
       expect(
         mockHandles.executionErrorStore.surfaceMissingModels
       ).toHaveBeenCalledWith([remoteCandidate], { silent: false })
+    })
+
+    it('drops a candidate whose selection changed while folder paths were loading', async () => {
+      const confirmedCandidate = {
+        nodeId: '7',
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        name: 'missing.safetensors',
+        isMissing: true,
+        isAssetSupported: false
+      } satisfies MissingModelCandidate
+      mockHandles.state.enrichedCandidates = [confirmedCandidate]
+      const widget = { name: 'ckpt_name', value: 'missing.safetensors' }
+      mockHandles.getNodeByExecutionId.mockReturnValue({
+        widgets: [widget]
+      } as unknown as LGraphNode)
+      let resolveFolderPaths: (paths: Record<string, string[]>) => void = () =>
+        undefined
+      mockHandles.api.getFolderPaths.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveFolderPaths = resolve
+        })
+      )
+
+      await runMissingModelPipeline({
+        graph: createGraph(),
+        graphData: createWorkflowGraphData(),
+        missingModelStore: mockHandles.missingModelStore
+      })
+      widget.value = 'installed.safetensors'
+      resolveFolderPaths({})
+      await vi.dynamicImportSettled()
+
+      expect(
+        mockHandles.executionErrorStore.surfaceMissingModels
+      ).toHaveBeenLastCalledWith([], { silent: false })
     })
 
     it('drops a candidate that became inactive while folder paths were loading', async () => {

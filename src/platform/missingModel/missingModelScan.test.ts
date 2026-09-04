@@ -2054,8 +2054,8 @@ describe('remote combo inventory', () => {
 
     expect(candidates[0].isMissing).toBeUndefined()
   })
-  it('keeps the deferred check on enriched copies', () => {
-    const { node, scan } = makeRemoteCombo('selected.safetensors')
+  it('keeps the deferred check on enriched copies', async () => {
+    const { node, settle, scan } = makeRemoteCombo('selected.safetensors')
     Object.assign(node, {
       properties: {
         models: [
@@ -2068,14 +2068,18 @@ describe('remote combo inventory', () => {
       }
     })
     const [fromNode] = scan()
-    const [fromWorkflow] = enrichWithEmbeddedMetadata([fromNode], {
-      nodes: [],
-      links: []
-    } as unknown as ComfyWorkflowJSON)
-
+    const [fromWorkflow] = enrichWithEmbeddedMetadata(
+      [fromNode],
+      fromPartial<ComfyWorkflowJSON>({ nodes: [], links: [] })
+    )
     expect(fromNode.url).toBe('https://example.com/selected.safetensors')
-    expect(hasPendingVerification(fromNode)).toBe(true)
     expect(hasPendingVerification(fromWorkflow)).toBe(true)
+
+    const verifying = verifyAssetSupportedCandidates([fromWorkflow])
+    settle('ready', ['selected.safetensors'])
+    await verifying
+
+    expect(fromWorkflow.isMissing).toBe(false)
   })
 
   it('releases the deferred check when the scan is aborted', async () => {

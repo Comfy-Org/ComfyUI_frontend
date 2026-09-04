@@ -783,6 +783,40 @@ describe('useRemoteWidget', () => {
       expect(hook.getInventoryStatus()).toBe('ready')
     })
 
+    it('follows a replacement request that interrupts its own request', async () => {
+      let resolveOriginal: (value: unknown) => void = () => undefined
+      vi.mocked(axios.get).mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveOriginal = resolve
+        })
+      )
+      const hook = useRemoteWidget(createMockOptions())
+      const waiting = hook.waitForInventory()
+
+      mockAxiosResponse(['replacement'])
+      hook.refreshValue?.()
+      resolveOriginal({ data: ['original'], status: 200 })
+      await waiting
+
+      expect(hook.getInventoryStatus()).toBe('ready')
+      expect(hook.getCachedValue()).toEqual(['replacement'])
+    })
+
+    it('stays loading for a new widget until its own first load settles on a warm cache', async () => {
+      const route = '/api/shared-inventory'
+      await setupHookWithResponse(['first', 'restored'], { route })
+      const options = createMockOptions({ route })
+      options.widget.value = 'restored'
+      const hook = useRemoteWidget(options)
+
+      expect(hook.getInventoryStatus()).toBe('loading')
+      await hook.waitForInventory()
+
+      expect(hook.getInventoryStatus()).toBe('ready')
+      expect(options.widget.value).toBe('first')
+      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
+    })
+
     it('follows a replacement request started by a refresh', async () => {
       let resolveOriginal: (value: unknown) => void = () => undefined
       vi.mocked(axios.get).mockReturnValueOnce(

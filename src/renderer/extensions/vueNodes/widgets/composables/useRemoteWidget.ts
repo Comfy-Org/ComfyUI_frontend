@@ -214,8 +214,8 @@ export function useRemoteWidget<
     const entry = dataCache.get(cacheKey)
     const isFresh =
       isInitialized(entry) && (isPermanent || !isStale(entry, refresh))
-    if (isFresh) return 'ready'
-    if (isFetching(entry)) return 'loading'
+    if (isFresh && isLoaded) return 'ready'
+    if (isFresh || isFetching(entry)) return 'loading'
     if (isFailed(entry) || entry?.error) return 'error'
     return 'loading'
   }
@@ -227,6 +227,7 @@ export function useRemoteWidget<
       inFlight = dataCache.get(cacheKey)?.fetchPromise
     }
     await new Promise<void>((resolve) => getValue(resolve))
+    if (dataCache.get(cacheKey)?.fetchPromise) await waitForInventory()
   }
 
   /**
