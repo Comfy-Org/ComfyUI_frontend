@@ -4,7 +4,6 @@ import { ref } from 'vue'
 
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import type { ListMembersParams } from '@/platform/workspace/api/workspaceApi'
-import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -35,7 +34,6 @@ const mockCanDowngradeToPersonal = vi.hoisted(() => ({ value: true }))
 let workspaceStore: ReturnType<typeof useTeamWorkspaceStore> & {
   activeWorkspaceId: string | null
 }
-let billingOperationStore: ReturnType<typeof useBillingOperationStore>
 
 const mockMembers = {
   get value() {
@@ -60,6 +58,10 @@ const mockMembers = {
     workspaceStore.activeWorkspaceId = 'workspace-one'
   }
 }
+
+vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
+  useBillingOperationStore: () => ({ startOperation: mockStartOperation })
+}))
 
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({ permissions: mockPermissions })
@@ -136,15 +138,8 @@ describe('useDowngradeToPersonal', () => {
   beforeEach(() => {
     const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
     workspaceStore = useTeamWorkspaceStore(pinia)
-    billingOperationStore = useBillingOperationStore(pinia)
     vi.mocked(workspaceStore.removeMember).mockImplementation(mockRemoveMember)
     vi.mocked(workspaceStore.fetchMembers).mockImplementation(mockFetchMembers)
-    vi.mocked(billingOperationStore.startOperation).mockImplementation(
-      (...args) => {
-        mockStartOperation(...args)
-        return new Promise(() => {})
-      }
-    )
     mockMembers.value = []
     mockRemoveMember.mockResolvedValue()
     mockFetchMembers.mockResolvedValue([])

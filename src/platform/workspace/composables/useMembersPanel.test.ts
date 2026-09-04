@@ -321,7 +321,6 @@ const {
 
 let workspaceStore: ReturnType<typeof useTeamWorkspaceStore> & {
   activeWorkspaceId: string | null
-  originalOwnerId: string | null
 }
 let workspaceType: 'personal' | 'team' = 'personal'
 let workspaceMembers: WorkspaceMember[] = []
@@ -372,10 +371,10 @@ const mockPendingInvites = {
   }
 }
 
-const mockOriginalOwnerId = {
-  set value(originalOwnerId: string | null) {
-    workspaceStore.originalOwnerId = originalOwnerId
-  }
+function setOriginalOwner(id = 'creator-1') {
+  mockMembers.value = [
+    createMember({ id, role: 'owner', isOriginalOwner: true })
+  ]
 }
 
 vi.mock('primevue/usetoast', () => ({
@@ -859,7 +858,7 @@ describe('useMembersPanel', () => {
     })
 
     it('returns no actions for the workspace creator', async () => {
-      mockOriginalOwnerId.value = 'creator-1'
+      setOriginalOwner()
       const panel = await setup()
       const items = panel.memberMenuItems(
         createMember({ id: 'creator-1', role: 'owner' })
@@ -882,7 +881,7 @@ describe('useMembersPanel', () => {
 
     it('keeps the creator menu hidden when the flag is disabled', async () => {
       mockBillingControlEnabled.value = false
-      mockOriginalOwnerId.value = 'creator-1'
+      setOriginalOwner()
       const panel = await setup()
 
       expect(
@@ -893,7 +892,7 @@ describe('useMembersPanel', () => {
 
   describe('isOriginalOwner', () => {
     it('protects the matching creator in a personal workspace', async () => {
-      mockOriginalOwnerId.value = 'creator-1'
+      setOriginalOwner()
       const panel = await setup()
       expect(panel.isOriginalOwner(createMember({ id: 'creator-1' }))).toBe(
         true
@@ -903,7 +902,7 @@ describe('useMembersPanel', () => {
 
     it('treats an additional workspace creator as an ordinary owner', async () => {
       mockActiveWorkspace.value = { type: 'team' }
-      mockOriginalOwnerId.value = 'creator-1'
+      setOriginalOwner()
       const panel = await setup()
 
       expect(panel.isOriginalOwner(createMember({ id: 'creator-1' }))).toBe(
