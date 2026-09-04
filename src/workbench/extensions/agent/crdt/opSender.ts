@@ -97,6 +97,8 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   const queue: Array<{ workflowId: string; ops: Op[] }> = []
   let inFlight: InFlight | null = null
   let detached = false
+  let lastMintedVersion = -1
+  let lastMintedWorkflowId: string | null = null
   // Late-result credits: a batch that settled 'unacknowledged' was
   // transmitted twice, so up to two of its results may still arrive - as
   // ANONYMOUS failures (empty id lists, no failure op_id) they are
@@ -200,16 +202,30 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   return {
     enqueue(operations) {
       if (detached || operations.length === 0) return
+      const workflowId = deps.workflowId()
+      if (workflowId !== lastMintedWorkflowId) {
+        lastMintedVersion = -1
+        lastMintedWorkflowId = workflowId
+      }
+      const baseVersion = Math.max(deps.baseVersion(), lastMintedVersion + 1)
       const minted = mintWireOps(operations, {
         actor: deps.actor(),
-        baseVersion: deps.baseVersion()
+        baseVersion
       })
-      const workflowId = deps.workflowId()
+      const batches = chunkWireOps(minted).map((ops, index) => {
+        const batchVersion = baseVersion + index
+        return ops.map<Op>((op) => ({
+          ...op,
+          base_version: batchVersion,
+          stamp: [batchVersion, op.actor]
+        }))
+      })
+      lastMintedVersion = baseVersion + batches.length - 1
       if (workflowId === null) {
         deps.onBatchSettled({ state: 'undeliverable', ops: minted })
         return
       }
-      queue.push(...chunkWireOps(minted).map((ops) => ({ workflowId, ops })))
+      queue.push(...batches.map((ops) => ({ workflowId, ops })))
       pump()
     },
     pending() {

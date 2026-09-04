@@ -298,10 +298,20 @@ describe('createOpSender', () => {
 
     expect(sent).toHaveLength(1)
     expect(sent[0].ops).toHaveLength(256)
+    expect(new Set(sent[0].ops.map((op) => op.base_version))).toEqual(
+      new Set([41])
+    )
     expect(sender.pending()).toBe(2)
 
     ackInFlight()
     expect(sent[1].ops).toHaveLength(44)
+    expect(new Set(sent[1].ops.map((op) => op.base_version))).toEqual(
+      new Set([42])
+    )
+
+    ackInFlight()
+    sender.enqueue([addNode(301)])
+    expect(sent[2].ops[0].base_version).toBe(43)
   })
 
   it('ignores a result for other ops while a batch is in flight', () => {
