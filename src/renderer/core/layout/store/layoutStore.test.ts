@@ -375,7 +375,7 @@ describe('layoutStore CRDT operations', () => {
         tags: {
           failure_kind: 'caught_unexpected',
           feature_area: 'canvas',
-          operation: 'render',
+          operation: 'sync',
           outcome: 'failed',
           listener_scope: scope
         },

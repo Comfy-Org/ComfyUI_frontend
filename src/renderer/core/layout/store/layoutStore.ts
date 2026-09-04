@@ -1269,7 +1269,7 @@ class LayoutStoreImpl {
               tags: {
                 failure_kind: 'caught_unexpected',
                 feature_area: 'canvas',
-                operation: 'render',
+                operation: 'sync',
                 outcome: 'failed',
                 listener_scope: 'geometry'
               },
@@ -1291,7 +1291,7 @@ class LayoutStoreImpl {
           tags: {
             failure_kind: 'caught_unexpected',
             feature_area: 'canvas',
-            operation: 'render',
+            operation: 'sync',
             outcome: 'failed',
             listener_scope: 'global'
           },
@@ -1318,7 +1318,7 @@ class LayoutStoreImpl {
             tags: {
               failure_kind: 'caught_unexpected',
               feature_area: 'canvas',
-              operation: 'render',
+              operation: 'sync',
               outcome: 'failed',
               listener_scope: 'node'
             },
