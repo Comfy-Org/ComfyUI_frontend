@@ -466,7 +466,6 @@
   },
   "billingOperation": {
     "authenticationFailedDetail": "Die Zahlungsbestätigung konnte nicht abgeschlossen werden. Bitte versuchen Sie es erneut.",
-    "authenticationManagerRequired": "Die Zahlungsbestätigung erfordert die Aufmerksamkeit eines Abrechnungsmanagers des Workspace.",
     "authenticationUnavailable": "Sichere Zahlungsbestätigung ist nicht verfügbar. Bitte aktualisieren Sie die Seite und versuchen Sie es erneut.",
     "cancelFailed": "Abonnement konnte nicht gekündigt werden",
     "cancelTimeout": "Zeitüberschreitung bei der Abonnementkündigung",
@@ -477,7 +476,6 @@
     "processingErrorDetail": "Ihre Zahlung konnte nicht verarbeitet werden. Versuchen Sie es erneut oder verwenden Sie eine andere Zahlungsmethode.",
     "reconciliationDetail": "Ihre Zahlung wurde erhalten, aber die Aktualisierung Ihres Workspace konnte nicht abgeschlossen werden. Wenden Sie sich an den Support und geben Sie diese Vorgangs-ID an:",
     "reconciliationTitle": "Zahlung erhalten — Bestätigung ausstehend",
-    "retryVerification": "Bestätigung erneut versuchen",
     "subscriptionActionRequired": "Bestätigen Sie Ihre Zahlung, um die Einrichtung Ihres Workspace abzuschließen",
     "subscriptionFailed": "Aktualisierung des Abonnements fehlgeschlagen",
     "subscriptionFailedDetail": "Ihr Abonnement konnte nicht aktualisiert werden. Bitte versuchen Sie es erneut.",
@@ -965,6 +963,7 @@
       "quickPurchase": "Schnellkauf",
       "seeDetails": "Details anzeigen",
       "selectAmount": "Betrag auswählen",
+      "startOver": "Neu starten",
       "templateNote": "*Generiert mit der Vorlage „Wan 2.2 Image-to-Video“",
       "topUp": "Aufladen",
       "unknownError": "Ein unbekannter Fehler ist aufgetreten",
