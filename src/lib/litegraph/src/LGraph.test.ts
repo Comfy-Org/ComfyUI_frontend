@@ -709,7 +709,7 @@ describe('Floating Links / Reroutes', () => {
   })
 })
 
-describe('Link serialization goldens (ADR-0008 topology-store migration)', () => {
+describe('Link serialization goldens (ADR-ECS-0008 topology-store migration)', () => {
   const LINK_KEYS = [
     'id',
     'origin_id',
@@ -1609,6 +1609,19 @@ describe('Subgraph Definition Garbage Collection', () => {
     rootGraph.remove(subgraphNode)
 
     expect(rootGraph.subgraphs.has(subgraphId)).toBe(false)
+  })
+
+  it('releases the subgraph definition when an inner removal lifecycle throws', () => {
+    const rootGraph = new LGraph()
+    const { subgraph, innerNodes } = createSubgraphWithNodes(rootGraph, 1)
+    innerNodes[0].onRemoved = () => {
+      throw new Error('extension cleanup failed')
+    }
+
+    expect(() => rootGraph.releaseSubgraphs([subgraph])).toThrow(
+      'extension cleanup failed'
+    )
+    expect(rootGraph.subgraphs.has(subgraph.id)).toBe(false)
   })
 
   function createNestedDefinitionFixture() {
