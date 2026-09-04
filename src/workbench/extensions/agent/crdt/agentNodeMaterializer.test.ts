@@ -935,6 +935,43 @@ describe('reconcileAgentAdapters', () => {
       expect(interior?.widgets?.[0]?.value).toBe(42)
     })
 
+    it('matches widget values to definitions by id when one definition nests another', () => {
+      // createSubgraphs hoists nested definitions into its return value, so
+      // the created subgraphs outnumber the definitions handed in.
+      const inner = createTestSubgraphData({
+        nodes: [
+          { ...nodePayload(30, 'widget-node'), widgets_values: [1] }
+        ] as never
+      })
+      const outer = createTestSubgraphData({
+        nodes: [
+          { ...nodePayload(20, 'widget-node'), widgets_values: [2] },
+          nodePayload(21, inner.id)
+        ] as never,
+        definitions: { subgraphs: [inner] }
+      })
+      const sibling = createTestSubgraphData({
+        nodes: [
+          { ...nodePayload(10, 'widget-node'), widgets_values: [3] }
+        ] as never
+      })
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, outer.id), nodePayload(2, sibling.id)],
+        links: [],
+        definitions: { subgraphs: [outer, sibling] }
+      })
+
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+
+      const widgetValue = (definitionId: string, nodeId: number) =>
+        graph.subgraphs.get(definitionId)?.getNodeById(toNodeId(nodeId))
+          ?.widgets?.[0]?.value
+      expect(widgetValue(inner.id, 30)).toBe(1)
+      expect(widgetValue(outer.id, 20)).toBe(2)
+      expect(widgetValue(sibling.id, 10)).toBe(3)
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
     it('reports a definition that fails to register and still reconciles root nodes', () => {
       const definition = createTestSubgraphData({
         nodes: [nodePayload(7)] as never
