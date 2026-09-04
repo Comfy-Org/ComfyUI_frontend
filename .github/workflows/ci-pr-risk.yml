@@ -64,5 +64,6 @@ jobs:
       # kill switch that needs no PR).
       enabled: true
       label_map: 'R0=risk:low,R1=risk:medium,R2=risk:high,R3=risk:xhigh,unknown=risk:unknown'
+      check_run: true
       pr_number: ${{ inputs.pr_number }}
       pr_numbers: ${{ inputs.pr_numbers }}

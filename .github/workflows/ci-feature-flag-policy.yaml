@@ -1,0 +1,53 @@
+name: 'CI: Feature Flag Policy'
+
+on:
+  pull_request_target:
+    types:
+      [
+        opened,
+        synchronize,
+        reopened,
+        ready_for_review,
+        edited,
+        labeled,
+        unlabeled
+      ]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: Pull request number to evaluate.
+        required: true
+        type: number
+
+permissions:
+  contents: read
+  pull-requests: read
+  checks: write
+
+concurrency:
+  group: feature-flag-policy-${{ github.event.pull_request.number || inputs.pr_number }}
+  cancel-in-progress: true
+
+jobs:
+  policy:
+    name: Publish feature-flag-policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # pull_request_target keeps this checkout on trusted base-branch code.
+      - name: Checkout policy
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.base.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Evaluate policy
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+        run: node --experimental-strip-types scripts/cicd/feature-flag-policy.ts
