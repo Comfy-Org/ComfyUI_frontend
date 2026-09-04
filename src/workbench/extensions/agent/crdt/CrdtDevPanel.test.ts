@@ -173,6 +173,27 @@ describe('CrdtDevPanel', () => {
     expect(log).not.toContain('ws_out')
   })
 
+  it('exposes dropped operation results in the event-kind filter', async () => {
+    const user = userEvent.setup()
+    recordDevEvent('doc_ops_result', { workflowId: 'wf-1' })
+    recordDevEvent('doc_ops_result_dropped', {
+      reason: 'workflow_mismatch',
+      frame: { workflowId: 'unknown', ok: false }
+    })
+    renderPanel()
+
+    await user.click(chip()!)
+    await user.click(screen.getByTestId('crdt-dev-panel-tab-log'))
+    await user.selectOptions(
+      screen.getByTestId('crdt-dev-panel-filter'),
+      'doc_ops_result_dropped'
+    )
+
+    const log = screen.getByTestId('crdt-dev-panel-log').textContent
+    expect(log).toContain('doc_ops_result_dropped')
+    expect(log).not.toContain('wf-1')
+  })
+
   it('shows the sensitive-source opt-ins as off, and lets them be turned on', async () => {
     const user = userEvent.setup()
     renderPanel()

@@ -427,11 +427,19 @@ export function useAgentCrdtFollower(
   const onOpsResult: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     const detail = event.detail as { workflowId?: unknown } | null
-    if (
-      !isTargetActive.value ||
-      detail?.workflowId !== subscribedWorkflowId.value
-    )
+    const dropReason = !isTargetActive.value
+      ? 'inactive_target'
+      : detail?.workflowId !== subscribedWorkflowId.value
+        ? 'workflow_mismatch'
+        : null
+    if (dropReason !== null) {
+      recordDevEvent('doc_ops_result_dropped', {
+        reason: dropReason,
+        subscribedWorkflowId: subscribedWorkflowId.value,
+        frame: event.detail ?? null
+      })
       return
+    }
     if (staleProbeTimer !== null) {
       armStaleProbe()
       refreshPersistedDocId()
