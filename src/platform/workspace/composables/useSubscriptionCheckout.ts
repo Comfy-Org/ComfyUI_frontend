@@ -27,7 +27,10 @@ import type {
   SubscribeOptions,
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import {
+  WorkspaceApiError,
+  workspaceApi
+} from '@/platform/workspace/api/workspaceApi'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
@@ -486,8 +489,29 @@ export function useSubscriptionCheckout(
     )
   }
 
+  /** The reservation-gate refusal the subscribe/plan-change/resubscribe
+   *  WRITES return while a previous change still holds the workspace's
+   *  billing-op gate: HTTP 409 SUBSCRIPTION_CHANGE_IN_PROGRESS (cloud
+   *  services/billing/server/billing_write.go, gateConflict). With fail-open
+   *  capability gating, a workspace with a stranded `scheduled` row reaches
+   *  this at click time, so it must land in the designed settling state, not
+   *  a generic error surface. Matched by status + code, with the sentinel
+   *  message as fallback for responses parsed without a code. */
+  function isChangeInProgressRefusal(error: unknown): boolean {
+    if (!(error instanceof WorkspaceApiError) || error.status !== 409) {
+      return false
+    }
+    return (
+      error.code === 'SUBSCRIPTION_CHANGE_IN_PROGRESS' ||
+      error.message.includes('subscription change is already in progress')
+    )
+  }
+
   function isSettlingRefusal(error: unknown): boolean {
-    return error instanceof Error && isSettlingRefusalMessage(error.message)
+    return (
+      isChangeInProgressRefusal(error) ||
+      (error instanceof Error && isSettlingRefusalMessage(error.message))
+    )
   }
 
   async function recoverOutstandingPayment(
@@ -1059,6 +1083,14 @@ export function useSubscriptionCheckout(
         error
       )
       activeCheckoutAttemptStartedAt = undefined
+      // The write hit the reservation gate: same designed response as the
+      // preview-path settling refusal - back to the pricing step with the
+      // inline notice, CTAs stay enabled, no generic error surface.
+      if (isSettlingRefusal(error)) {
+        isPaymentSettling.value = true
+        resetToPricing()
+        return
+      }
       if (await recoverOutstandingPayment(error)) return
       if (await refreshExpiredProrationQuote(error, planSlug)) return
       if (embeddedCheckoutEnabled && (await recoverStaleQuote(error))) return
@@ -1507,6 +1539,12 @@ export function useSubscriptionCheckout(
         error
       )
       activeCheckoutAttemptStartedAt = undefined
+      // Same reservation-gate interception as handleSubscription above.
+      if (isSettlingRefusal(error)) {
+        isPaymentSettling.value = true
+        resetToPricing()
+        return
+      }
       if (await recoverOutstandingPayment(error)) return
       if (
         await refreshExpiredProrationQuote(error, planSlug, {
@@ -1575,6 +1613,11 @@ export function useSubscriptionCheckout(
         payment_intent_source: paymentIntentSource,
         failure_category: categorizeBillingApiError(error)
       })
+      // Reservation-gate refusal: the designed settling notice, not a toast.
+      if (isSettlingRefusal(error)) {
+        isPaymentSettling.value = true
+        return
+      }
       toast.add({
         severity: 'error',
         summary: 'Error',
