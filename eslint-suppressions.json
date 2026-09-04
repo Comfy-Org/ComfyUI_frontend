@@ -269,11 +269,6 @@
       "count": 1
     }
   },
-  "src/renderer/core/layout/slots/slotIdentifier.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
   "src/renderer/extensions/layerEditor/composables/useLayerEditorExport.ts": {
     "comfy/no-new-error-throw": {
       "count": 1

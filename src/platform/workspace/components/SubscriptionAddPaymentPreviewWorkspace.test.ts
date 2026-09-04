@@ -361,25 +361,27 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     )
   })
 
-  it('renders an explicit retry action after failed verification', async () => {
-    const { emitted } = render(SubscriptionAddPaymentPreviewWorkspace, {
+  it('reports failed verification without offering to resume it', () => {
+    render(SubscriptionAddPaymentPreviewWorkspace, {
       props: {
         tierKey: 'creator',
         embeddedCheckoutEnabled: true,
         authenticationState: 'failed_retryable',
         authenticationError: 'Challenge was closed',
-        canRetryAuthentication: true
+        // A stale action_url from the abandoned challenge can still be present
+        // when the server reports failed_retryable; the button must stay
+        // hidden regardless.
+        actionUrl: 'https://verify.example/sensitive-token'
       },
       global: globalOptions
     })
 
     expect(screen.getByRole('alert')).toHaveTextContent('Challenge was closed')
-    await userEvent.click(
-      screen.getByRole('button', {
-        name: 'billingOperation.retryVerification'
+    expect(
+      screen.queryByRole('button', {
+        name: 'subscription.preview.completeVerification'
       })
-    )
-    expect(emitted().retryAuthentication).toBeTruthy()
+    ).toBeNull()
   })
 
   it('shows reconciliation support guidance with the operation id', () => {
