@@ -39,7 +39,7 @@ describe('FormSection', () => {
   // The contact pages no longer render this bar; dropping it strips both.
   it('renders the social proof bar', () => {
     const { unmount } = render(FormSection, { global: { stubs } })
-    expect(screen.getByTestId('social-proof')).not.toBeNull()
+    expect(screen.getAllByTestId('social-proof')).toHaveLength(1)
     unmount()
   })
 })
