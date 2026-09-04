@@ -25,9 +25,8 @@ export type AuthSchemaTranslate = (
 
 /**
  * Builds the auth validation schemas with the host's own translator, so the
- * rules live once while each host keeps its i18n system. Messages resolve at
- * build time — the same moment they resolved when these schemas were a plain
- * module — so behavior under locale switches is unchanged.
+ * rules live once while each host keeps its i18n system. Messages resolve
+ * eagerly at build time, so a locale switch requires rebuilding the schemas.
  */
 export function createAuthSchemas(t: AuthSchemaTranslate) {
   const apiKeySchema = z.object({
