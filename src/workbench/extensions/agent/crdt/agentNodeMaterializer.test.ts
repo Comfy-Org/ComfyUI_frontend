@@ -1168,7 +1168,7 @@ describe('reconcileAgentAdapters', () => {
       // definition instead of binding to the half-configured attempt.
       expect(materialized).toEqual([toNodeId(2)])
       expect(graph.getNodeById(toNodeId(2))).toBeInstanceOf(DummyNode)
-      expect(graph.getNodeById(toNodeId(1))).toBeUndefined()
+      expect(graph.getNodeById(toNodeId(1))).toBeNull()
     })
 
     it('still reconciles root nodes when definition rollback lifecycle cleanup throws', () => {

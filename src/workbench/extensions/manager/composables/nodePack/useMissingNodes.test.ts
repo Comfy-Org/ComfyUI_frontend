@@ -606,7 +606,10 @@ describe('useMissingNodes', () => {
         const allNodes: LGraphNode[] = []
 
         for (const node of graph.nodes) {
-          if (node.isSubgraphNode?.() && node.subgraph) {
+          if (
+            typeof node.isSubgraphNode === 'function' &&
+            node.isSubgraphNode()
+          ) {
             for (const subNode of node.subgraph.nodes) {
               if (!filter || filter(subNode)) {
                 allNodes.push(subNode)
