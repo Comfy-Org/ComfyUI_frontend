@@ -22,8 +22,11 @@ vi.mock('@/composables/useFeatureFlags', () => ({
   })
 }))
 
-vi.mock('@/scripts/app', () => ({ app: {} }))
-vi.mock('@/systems/badgeSystem', () => ({ graphCreditsBadges: () => [] }))
+const mockCreditBadges = vi.hoisted<{ value: object[] }>(() => ({ value: [] }))
+vi.mock('@/scripts/app', () => ({ app: { graph: { rootGraph: {} } } }))
+vi.mock('@/systems/badgeSystem', () => ({
+  graphCreditsBadges: () => mockCreditBadges.value
+}))
 
 const mockRemoteConfig = await vi.hoisted(async () => {
   const { ref } = await import('vue')
@@ -37,10 +40,7 @@ describe('useFreeTierQuota', () => {
   let scope: EffectScope
 
   function createQuota() {
-    let quota: ReturnType<typeof useFreeTierQuota> | undefined
-    scope.run(() => {
-      quota = useFreeTierQuota()
-    })
+    const quota = scope.run(() => useFreeTierQuota())
     if (!quota) throw new Error('Failed to create free tier quota')
     return quota
   }
@@ -48,6 +48,7 @@ describe('useFreeTierQuota', () => {
   beforeEach(() => {
     scope = effectScope()
     mockIsCloud.value = true
+    mockCreditBadges.value = []
     mockRemoteConfig.value = {
       free_tier_balance: { allowance: 5, remaining: 5 }
     }
@@ -70,6 +71,15 @@ describe('useFreeTierQuota', () => {
     const quota = createQuota()
 
     expect(quota.quotaEnabled.value).toBe(false)
+    expect(quota.freeTierExecutionPermitted.value).toBe(false)
+  })
+
+  it('blocks free-tier execution when the graph has credit badges', () => {
+    mockCreditBadges.value = [{}]
+
+    const quota = createQuota()
+
+    expect(quota.quotaEnabled.value).toBe(true)
     expect(quota.freeTierExecutionPermitted.value).toBe(false)
   })
 
