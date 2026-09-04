@@ -824,7 +824,8 @@ describe('useAgentCrdtFollower', () => {
       expect(adapterState.clearForReset).toHaveBeenCalled()
       expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
         fakeGraph,
-        fakeDefinitions
+        fakeDefinitions,
+        { replaceSubgraphDefinitions: true }
       )
       unmount()
     })
@@ -837,7 +838,8 @@ describe('useAgentCrdtFollower', () => {
       expect(adapterState.clearForReset).toHaveBeenCalled()
       expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
         fakeGraph,
-        fakeDefinitions
+        fakeDefinitions,
+        { replaceSubgraphDefinitions: true }
       )
       unmount()
     })
