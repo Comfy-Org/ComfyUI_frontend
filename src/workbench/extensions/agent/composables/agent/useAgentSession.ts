@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 
 import { i18n } from '@/i18n'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { AgentActiveTabData, TurnId } from '../../schemas/agentApiSchema'
 import { isAgentEvent, parseAgentWsEvent } from '../../schemas/agentApiSchema'
 import { AgentApiError } from '../../services/agent/agentRestClient'
@@ -81,6 +82,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
   const notices = ref<SessionNotice[]>([])
   const promptEditState = ref<PromptEditState>({ phase: 'idle' })
   const sending = ref(false)
+  const answeringAskIds = ref<ReadonlySet<string>>(new Set())
+
+  function setAskAnswering(askId: string, answering: boolean): void {
+    const next = new Set(answeringAskIds.value)
+    if (answering) next.add(askId)
+    else next.delete(askId)
+    answeringAskIds.value = next
+  }
 
   let localErrorCount = 0
   function nextLocalErrorId(): TurnId {
@@ -287,6 +296,42 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
+  async function answerAsk(
+    askId: string,
+    selection: 'run' | 'cancel'
+  ): Promise<void> {
+    const currentThreadId = conversationStore.threadId
+    const messageId = conversationStore.activeTurnId
+    if (
+      currentThreadId === null ||
+      messageId === null ||
+      answeringAskIds.value.has(askId)
+    )
+      return
+    setAskAnswering(askId, true)
+    try {
+      await rest.answerAsk(currentThreadId, askId, [selection])
+      // Keep the actions disabled until the canonical resolution frame arrives.
+    } catch (error) {
+      setAskAnswering(askId, false)
+      if (error instanceof AgentApiError && error.status === 409) {
+        conversationStore.ingest({
+          type: 'agent_ask_resolved',
+          data: {
+            thread_id: currentThreadId,
+            message_id: messageId,
+            ask_id: askId,
+            status: 'answered',
+            selected: null
+          }
+        })
+        return
+      }
+      reportError(error, { errorType: 'agent_ask_answer_failed' })
+      pushError(error instanceof Error ? error.message : String(error))
+    }
+  }
+
   let loadGeneration = 0
 
   function newChat(): void {
@@ -340,6 +385,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return
     }
     const event = parsed.data
+    if (event.type === 'agent_ask_resolved')
+      setAskAnswering(event.data.ask_id, false)
     switch (event.type) {
       case 'agent_active_tab':
         // Every thread records the link in its own transcript; only the thread
@@ -401,6 +448,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     stop,
     sendMessage,
     stopTurn,
+    answerAsk,
+    answeringAskIds: computed(() => answeringAskIds.value),
     newChat,
     listThreads,
     loadThread,
