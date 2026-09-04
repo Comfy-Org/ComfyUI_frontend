@@ -326,11 +326,19 @@ const crdtFollowerCalls = vi.hoisted(
     }[]
 )
 const persistedCrdtDocId = vi.hoisted(() => ({ value: null as string | null }))
+// The stub keeps the real module's contract between its two entry points: a
+// clear is what makes the next reconcile return null. Without that link a test
+// could assert the call happened while the record it names stayed restorable.
+const clearPersistedCrdtDocId = vi.hoisted(() => vi.fn())
 vi.mock('./crdt/persistedDocId', async (importOriginal) => {
   const actual = await importOriginal<typeof PersistedDocIdModule>()
   return {
     ...actual,
-    reconcilePersistedDocId: () => persistedCrdtDocId.value
+    reconcilePersistedDocId: () => persistedCrdtDocId.value,
+    clearPersistedDocId: () => {
+      clearPersistedCrdtDocId()
+      persistedCrdtDocId.value = null
+    }
   }
 })
 vi.mock('./crdt/useAgentCrdtFollower', async (importOriginal) => {
@@ -384,6 +392,7 @@ beforeEach(() => {
   URL.revokeObjectURL = vi.fn()
   localStorage.clear()
   persistedCrdtDocId.value = null
+  clearPersistedCrdtDocId.mockClear()
   mintPortWiringDeps.current = null
   getServerFeature.mockReset()
   getServerFeature.mockImplementation(
@@ -2172,6 +2181,10 @@ describe('AgentPanelRoot workflow binding', () => {
       throwaway.unmount()
       cleanup()
       crdtFollowerCalls.length = 0
+      // The throwaway's own "New chat" clears the persisted record, so the spy
+      // has to start from zero here or a test would credit the helper's call to
+      // the gesture it is actually exercising.
+      clearPersistedCrdtDocId.mockClear()
     }
 
     it('drives the follower active when the active tab is bound to the restorable doc', async () => {
@@ -2278,6 +2291,60 @@ describe('AgentPanelRoot workflow binding', () => {
       )
 
       expect(follower?.isTargetActive.value).toBe(false)
+    })
+
+    // `workflowDetached` is component state and cannot carry the detach on its
+    // own: `DockedAgentPanel.vue` mounts this panel under `v-if="docked"`, so
+    // closing and reopening the dock resets the flag to `false` while the
+    // localStorage tab binding and the persisted doc-id record both survive.
+    // Deactivating the follower is therefore not enough — the record the
+    // restore fallback reads has to go with it, or the detached doc rebinds
+    // and resumes projecting into the graph.
+    it('does not restore the detached doc after the panel remounts', async () => {
+      await resetSessionBinding()
+      makeTab('wf-42')
+      mockMessagesEndpoint('wf-42')
+      persistedCrdtDocId.value = 'wf-42'
+
+      const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      expect(crdtFollowerCalls.at(-1)?.isTargetActive.value).toBe(true)
+
+      await userEvent.click(
+        screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+      )
+      panel.unmount()
+      cleanup()
+      crdtFollowerCalls.length = 0
+
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+      expect(crdtFollowerCalls.at(-1)).toMatchObject({
+        workflowId: null,
+        active: false
+      })
+    })
+
+    // The composer's clear-workflow chip sets the same flag but is a
+    // context-scoping gesture, not a session boundary, so it deliberately keeps
+    // the record. Whether it should discard replica continuity too is the open
+    // question in blocked-on-christian #371; this pins today's behaviour so
+    // that ruling changes a test on purpose rather than silently.
+    it('keeps the restorable doc when the chip detaches the workflow', async () => {
+      await resetSessionBinding()
+      makeTab('wf-42')
+      mockMessagesEndpoint('wf-42')
+      persistedCrdtDocId.value = 'wf-42'
+
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.dontWorkInWorkflow')
+        })
+      )
+
+      expect(clearPersistedCrdtDocId).not.toHaveBeenCalled()
+      expect(persistedCrdtDocId.value).toBe('wf-42')
     })
   })
 

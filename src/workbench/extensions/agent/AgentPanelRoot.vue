@@ -94,7 +94,10 @@ import {
   resolveDebugPanelEnabled
 } from './crdt/crdtDebugGate'
 import { attachMintPortWiring } from './crdt/mintPortWiring'
-import { reconcilePersistedDocId } from './crdt/persistedDocId'
+import {
+  clearPersistedDocId,
+  reconcilePersistedDocId
+} from './crdt/persistedDocId'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 
 const CrdtDevPanel = defineAsyncComponent(
@@ -440,9 +443,12 @@ const {
 })
 
 // FE-1969: `boundWorkflowId` is the in-memory session binding and is reset
-// whenever the session restarts within the same page load ("New chat", or a
-// panel remount). The follower can still rebind to the doc it persisted for
-// this page load, but only if this computed drives it with `active=true`. The
+// whenever the session restarts within the same page load — a panel remount,
+// or a reload inside the record's TTL. The follower can still rebind to the doc
+// it persisted for this page load, but only if this computed drives it with
+// `active=true`. "New chat" is deliberately not one of those cases: it ends the
+// session, so `onNewChat` drops the record and there is nothing left to
+// restore. The
 // fallback is scoped to that one doc: the active tab's persisted tab binding
 // counts only when it names the doc the follower would restore, so a tab that
 // merely carries a stale binding, or a second bound tab, never reads as
@@ -779,6 +785,21 @@ function onDeleteHistory(id: string): void {
 
 function onNewChat(): void {
   exitNodeSelectionMode()
+  // FEC-5: ending the session must also end the document's claim on the graph,
+  // and `workflowDetached` cannot carry that on its own. The flag is component
+  // state, but `DockedAgentPanel.vue` mounts this panel under `v-if="docked"`,
+  // so closing the dock — or reloading inside the record's TTL — resets it to
+  // `false` while the localStorage tab binding and the persisted doc-id record
+  // both survive; the restore fallback then rebinds the very document the user
+  // left. The follower cannot drop the record itself: a detach and a
+  // backgrounded tab both reach it as `active=false`, and clearing on that edge
+  // would defeat the restore this panel exists to provide.
+  //
+  // Scoped to "New chat" deliberately. The clear-workflow chip is a
+  // context-scoping gesture, and whether it should also discard replica
+  // continuity is the open question in blocked-on-christian #371; all three
+  // alternatives there clear on "New chat", so only that half is settled.
+  clearPersistedDocId()
   workflowDetached.value = true
   newChat()
 }
