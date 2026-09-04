@@ -73,7 +73,7 @@ vi.mock('vue-i18n', () => ({
   createI18n: () => ({ global: { t: (key: string) => key } })
 }))
 
-vi.mock('firebase/auth', () => import('./firebaseAuthMock'))
+vi.mock('firebase/auth')
 
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({ trackAuth: vi.fn() })

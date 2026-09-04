@@ -20,7 +20,7 @@ vi.mock('vue-i18n', () => ({
   createI18n: () => ({ global: { t: (key: string) => key } })
 }))
 
-vi.mock('firebase/auth', () => import('./__tests__/firebaseAuthMock'))
+vi.mock('firebase/auth')
 
 vi.mock('@/platform/distribution/types', () => ({
   DISTRIBUTION: 'cloud',
