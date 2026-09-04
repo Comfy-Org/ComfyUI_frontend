@@ -320,7 +320,9 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
     typeof data.ok === 'boolean' &&
     (!data.ok ||
       (isSequence(ackLineageSeq) &&
-        (!isSequence(data.seq) || ackLineageSeq <= data.seq)))
+        (isSequence(data.seq)
+          ? ackLineageSeq <= data.seq
+          : ackLineageSeq === 0)))
   ) {
     const code = parseBoundedString(data.code, MAX_ERROR_CODE_LENGTH)
     const message = parseBoundedString(data.message, MAX_ERROR_MESSAGE_LENGTH)

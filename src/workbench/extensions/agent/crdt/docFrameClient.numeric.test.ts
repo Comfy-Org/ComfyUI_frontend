@@ -8,7 +8,7 @@ const updateFrame = (seq: unknown) => ({
     v: 1,
     workflow_id: 'wf-1',
     seq,
-    lineage_seq: 1,
+    lineage_seq: 0,
     update_b64: encodeBase64(new Uint8Array([1]))
   }
 })
@@ -91,6 +91,21 @@ describe('doc frame numeric domains', () => {
       })
     }
   )
+
+  it('rejects an unbounded lineage when doc_subscribed seq is malformed', () => {
+    expect(
+      parseServerDocFrame({
+        type: 'doc_subscribed',
+        data: {
+          v: 1,
+          workflow_id: 'wf-1',
+          ok: true,
+          seq: 'abc',
+          lineage_seq: 999
+        }
+      })
+    ).toBeNull()
+  })
 
   it.for([-1, 1.5, Number.POSITIVE_INFINITY, Number.NaN, '1'])(
     'omits an invalid doc_ops_result seq while preserving the result: %s',
