@@ -10,6 +10,9 @@ const previewsRef = ref<Record<string, { url: string; nodeId?: string }>>({})
 const isAppModeRef = ref(true)
 const activeWorkflowPathRef = ref<string>('workflows/test-workflow.json')
 const jobIdToWorkflowPathRef = ref(new Map<string, string>())
+const queuedJobsRef = ref<Record<string, { nodes: Record<string, boolean> }>>(
+  {}
+)
 const selectedOutputsRef = ref<string[]>([])
 
 const { apiTarget } = vi.hoisted(() => ({
@@ -42,6 +45,9 @@ vi.mock('@/stores/executionStore', () => ({
     },
     get jobIdToSessionWorkflowPath() {
       return jobIdToWorkflowPathRef.value
+    },
+    get queuedJobs() {
+      return queuedJobsRef.value
     }
   })
 }))
@@ -105,6 +111,7 @@ describe('linearOutputStore', () => {
     isAppModeRef.value = true
     activeWorkflowPathRef.value = 'workflows/test-workflow.json'
     jobIdToWorkflowPathRef.value = new Map()
+    queuedJobsRef.value = {}
     selectedOutputsRef.value = []
   })
 
@@ -407,6 +414,10 @@ describe('linearOutputStore', () => {
     const store = useLinearOutputStore()
 
     setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
+    queuedJobsRef.value = {
+      'job-1': { nodes: {} },
+      'job-2': { nodes: {} }
+    }
     activeJobIdRef.value = 'job-1'
     await nextTick()
 
@@ -424,6 +435,23 @@ describe('linearOutputStore', () => {
 
     expect(store.pendingResolve.has('job-1')).toBe(true)
     expect(store.inProgressItems.some((i) => i.jobId === 'job-2')).toBe(true)
+  })
+
+  it('clears a tracked job removed during reconnect reconciliation', async () => {
+    const store = useLinearOutputStore()
+
+    setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
+    queuedJobsRef.value = { 'job-1': { nodes: {} } }
+    activeJobIdRef.value = 'job-1'
+    await nextTick()
+
+    expect(store.inProgressItems.some((i) => i.jobId === 'job-1')).toBe(true)
+
+    queuedJobsRef.value = {}
+    activeJobIdRef.value = null
+    await nextTick()
+
+    expect(store.inProgressItems.some((i) => i.jobId === 'job-1')).toBe(false)
   })
 
   it('two sequential runs: selection clears after each resolve', () => {

@@ -306,8 +306,19 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
   // Watching both ensures onJobStart fires once the mapping is available.
   watch(
     [displayedJobId, () => executionStore.jobIdToSessionWorkflowPath],
-    ([jobId]) => {
+    ([jobId], [oldJobId]) => {
       if (!isAppMode.value) return
+      // Reconnect reconciliation removes stale jobs without a terminal event.
+      // Complete only jobs absent from execution state; changing focus between
+      // concurrently running jobs must preserve their in-progress output.
+      if (
+        oldJobId &&
+        oldJobId !== jobId &&
+        !executionStore.queuedJobs[oldJobId] &&
+        !pendingResolve.value.has(oldJobId)
+      ) {
+        onJobComplete(oldJobId)
+      }
       // Guard with trackedJobId to avoid double-starting when the
       // path mapping arrives after activeJobId was already set.
       if (
