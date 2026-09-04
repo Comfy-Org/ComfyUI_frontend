@@ -188,7 +188,7 @@ function acceptHint(accept: readonly string[]): string {
       :aria-invalid="invalid()"
       :aria-describedby="errorId()"
       :data-testid="`field-${field.name}`"
-      class="accent-primary-comfy-yellow h-2 w-full cursor-pointer disabled:opacity-50"
+      class="accent-primary-comfy-yellow [&::-moz-range-track]:bg-transparency-white-t4 [&::-webkit-slider-runnable-track]:bg-transparency-white-t4 h-2 w-full cursor-pointer disabled:opacity-50 [&::-moz-range-track]:h-2 [&::-moz-range-track]:rounded-full [&::-moz-range-track]:border [&::-moz-range-track]:border-transparency-white-t8 [&::-webkit-slider-runnable-track]:h-2 [&::-webkit-slider-runnable-track]:rounded-full [&::-webkit-slider-runnable-track]:border [&::-webkit-slider-runnable-track]:border-transparency-white-t8"
       @input="onNumber"
     />
 

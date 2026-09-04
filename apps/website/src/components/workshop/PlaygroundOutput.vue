@@ -376,7 +376,7 @@ const earlierClass = (active: boolean) =>
       </p>
       <div
         v-if="state.status === 'succeeded'"
-        class="flex flex-wrap items-center gap-2 border-t border-transparency-white-t8 p-4"
+        class="flex flex-wrap items-center justify-end gap-2 border-t border-transparency-white-t8 p-4"
       >
         <Button
           v-if="currentUrl"
