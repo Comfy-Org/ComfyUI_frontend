@@ -491,7 +491,7 @@ const {
   acknowledgedWorkflowId,
   enqueueHumanOperations
 } = useAgentCrdtFollower(
-  boundWorkflowId,
+  activeBoundWorkflowId,
   graphMutations,
   () => resolvedUserInfo.value?.id ?? null,
   isBoundWorkflowActive,

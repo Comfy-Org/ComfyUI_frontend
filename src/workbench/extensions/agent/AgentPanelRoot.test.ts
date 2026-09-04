@@ -320,6 +320,7 @@ const crdtFollowerCalls = vi.hoisted(
   () =>
     [] as {
       workflowId: string | null
+      workflowIdRef: Ref<string | null>
       active: boolean
       isTargetActive: Ref<boolean>
     }[]
@@ -342,6 +343,7 @@ vi.mock('./crdt/useAgentCrdtFollower', async (importOriginal) => {
       const [workflowId, , , isTargetActive = ref(true)] = args
       crdtFollowerCalls.push({
         workflowId: workflowId.value,
+        workflowIdRef: workflowId,
         active: isTargetActive.value,
         isTargetActive
       })
@@ -2181,9 +2183,29 @@ describe('AgentPanelRoot workflow binding', () => {
       render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
       expect(crdtFollowerCalls.at(-1)).toMatchObject({
-        workflowId: null,
+        workflowId: 'wf-42',
         active: true
       })
+    })
+
+    it('keeps the restored workflow as the follower target after switching away and back', async () => {
+      await resetSessionBinding()
+      const restored = makeTab('wf-42')
+      const other = addTab('workflows/other.json')
+      mockMessagesEndpoint('wf-42')
+      persistedCrdtDocId.value = 'wf-42'
+
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      const follower = crdtFollowerCalls.at(-1)
+      expect(follower?.workflowIdRef.value).toBe('wf-42')
+
+      hostStores.workflow.activeWorkflow = other
+      await nextTick()
+      expect(follower?.workflowIdRef.value).toBeNull()
+
+      hostStores.workflow.activeWorkflow = restored
+      await nextTick()
+      expect(follower?.workflowIdRef.value).toBe('wf-42')
     })
 
     it('keeps mint ports closed until the server acknowledges the active binding', async () => {
