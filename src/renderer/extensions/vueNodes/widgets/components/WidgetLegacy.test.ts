@@ -3,6 +3,7 @@ import { render } from '@testing-library/vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -145,13 +146,20 @@ describe('WidgetLegacy canvas width', () => {
 describe('WidgetLegacy widget width ownership', () => {
   const layoutWidth = 150
 
-  async function setupLegacyWidget() {
+  function createGraphWithLegacyWidget() {
     const graph = new LGraph()
     const node = new LGraphNode('Legacy')
     const widget = node.addWidget('number', 'frame_load_cap', 0, () => {})
     graph.add(node)
     widget.draw = () => {}
-    useCanvasStore().canvas = fromPartial({ graph })
+    return { graph, node, widget }
+  }
+
+  async function setupLegacyWidget(initialWidth?: number) {
+    const { graph, node, widget } = createGraphWithLegacyWidget()
+    widget.width = initialWidth
+    const canvas = fromPartial<LGraphCanvas>({ graph })
+    useCanvasStore().canvas = canvas
     await nextTick()
 
     vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(
@@ -165,7 +173,7 @@ describe('WidgetLegacy widget width ownership', () => {
         widget: { name: 'frame_load_cap', type: 'number', value: undefined }
       }
     })
-    return { widget, view }
+    return { canvas, node, widget, view }
   }
 
   it('leaves widget.width unset in LiteGraph mode so the canvas renderer sizes it from the node', async () => {
@@ -173,5 +181,36 @@ describe('WidgetLegacy widget width ownership', () => {
     const { widget } = await setupLegacyWidget()
 
     expect(widget.width).toBeUndefined()
+  })
+
+  it.for([
+    { mode: 'Vue nodes', vueNodesMode: true, initialWidth: undefined },
+    { mode: 'Vue nodes', vueNodesMode: true, initialWidth: 90 },
+    { mode: 'LiteGraph', vueNodesMode: false, initialWidth: 90 }
+  ])(
+    'restores widget.width $initialWidth on unmount in $mode mode',
+    async ({ vueNodesMode, initialWidth }) => {
+      LiteGraph.vueNodesMode = vueNodesMode
+      const { widget, view } = await setupLegacyWidget(initialWidth)
+
+      view.unmount()
+
+      expect(widget.width).toBe(initialWidth)
+    }
+  )
+
+  it('clears the previous widget.width when rebinding to a different widget', async () => {
+    LiteGraph.vueNodesMode = true
+    const { canvas, node, widget } = await setupLegacyWidget()
+    expect(widget.width).toBe(layoutWidth)
+
+    const next = createGraphWithLegacyWidget()
+    expect(next.node.id).toBe(node.id)
+    canvas.graph = next.graph
+    useCanvasStore().currentGraph = next.graph
+    await nextTick()
+
+    expect(widget.width).toBeUndefined()
+    expect(next.widget.width).toBe(layoutWidth)
   })
 })
