@@ -20,16 +20,11 @@ import {
 } from '@/workbench/extensions/manager/utils/systemCompatibility'
 import { checkVersionCompatibility } from '@/workbench/extensions/manager/utils/versionUtil'
 
-// Mock @vueuse/core until function
-vi.mock('@vueuse/core', async () => {
-  const actual = await vi.importActual('@vueuse/core')
-  return {
-    ...actual,
-    until: vi.fn(() => ({
-      toBe: vi.fn(() => Promise.resolve())
-    }))
-  }
-})
+vi.mock('@vueuse/core', () => ({
+  until: vi.fn(() => ({
+    toBe: vi.fn(() => Promise.resolve())
+  }))
+}))
 
 // Mock dependencies
 vi.mock('@/workbench/extensions/manager/services/comfyManagerService', () => ({

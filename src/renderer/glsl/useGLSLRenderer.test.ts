@@ -1,21 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { detectPassCount } from '@/renderer/glsl/glslUtils'
+import { useGLSLRenderer } from '@/renderer/glsl/useGLSLRenderer'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
-
-vi.mock('vue', async () => {
-  const actual = await vi.importActual('vue')
-  return {
-    ...actual,
-    onScopeDispose: vi.fn()
-  }
-})
 
 vi.mock('@/renderer/glsl/glslUtils', () => ({
   detectPassCount: vi.fn().mockReturnValue(1)
 }))
-
-const { detectPassCount } = await import('@/renderer/glsl/glslUtils')
-const { useGLSLRenderer } = await import('@/renderer/glsl/useGLSLRenderer')
 
 interface MockGL {
   // Constants referenced in test assertions

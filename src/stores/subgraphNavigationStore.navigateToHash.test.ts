@@ -31,16 +31,14 @@ const routerMocks = vi.hoisted(() => ({
 const routeHashRef = ref('')
 const currentGraphRef = shallowRef<LGraph | null>(null)
 
-vi.mock('vue-router', async (importOriginal) => {
-  const actual = await importOriginal<typeof VueRouter>()
-  return {
-    ...actual,
-    useRouter: () => ({
-      ...routerMocks,
-      options: { history: routerMocks.history }
-    })
-  }
-})
+vi.mock('vue-router', () => ({
+  NavigationFailureType: { cancelled: 8, duplicated: 16 },
+  isNavigationFailure: vi.fn(() => false),
+  useRouter: () => ({
+    ...routerMocks,
+    options: { history: routerMocks.history }
+  })
+}))
 
 vi.mock('@vueuse/router', () => ({
   useRouteHash: () => routeHashRef

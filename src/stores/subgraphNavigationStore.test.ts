@@ -93,8 +93,9 @@ vi.mock('@/utils/graphTraversalUtil', () => ({
   findSubgraphPathById: vi.fn()
 }))
 vi.mock('@vueuse/router', () => ({ useRouteHash: () => routeHash }))
-vi.mock('vue-router', async (importOriginal) => ({
-  ...(await importOriginal<typeof VueRouter>()),
+vi.mock('vue-router', () => ({
+  NavigationFailureType: { cancelled: 8, duplicated: 16 },
+  isNavigationFailure: vi.fn(() => false),
   useRouter: () => ({
     push: routerPush,
     replace: routerReplace,

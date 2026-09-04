@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { AgentWsEvent } from '../../schemas/agentApiSchema'
 import { toTurnId, zAgentWsEvent } from '../../schemas/agentApiSchema'
 
 import type { AgentChatEvent } from './agentEventTransport'
@@ -36,21 +35,10 @@ function chatEventsFor(fixture: string, messageId: string): AgentChatEvent[] {
     const parsed = zAgentWsEvent.safeParse(frame)
     if (!parsed.success) continue
     const event = parsed.data
-    if (!isChatEvent(event)) continue
     if (event.data.message_id !== messageId) continue
     events.push(event)
   }
   return events
-}
-
-function isChatEvent(event: AgentWsEvent): event is AgentChatEvent {
-  return (
-    event.type === 'agent_thinking' ||
-    event.type === 'agent_tool_call' ||
-    event.type === 'agent_message_delta' ||
-    event.type === 'agent_message_done' ||
-    true
-  )
 }
 
 const T = toTurnId('t1')
@@ -109,6 +97,43 @@ function activeTab(
       thread_id: 't'
     }
   }
+}
+
+function runApproval(askId = 'turn-1:call-1'): AgentChatEvent {
+  return zAgentWsEvent.parse({
+    type: 'agent_ask',
+    data: {
+      thread_id: 't',
+      message_id: 'm',
+      ask_id: askId,
+      kind: 'run_approval',
+      context: {
+        workflow_id: 'workflow-1',
+        workflow_name: 'Portrait workflow'
+      },
+      prompt: 'Run workflow “Portrait workflow”?',
+      options: [
+        { id: 'run', label: 'Run' },
+        { id: 'cancel', label: 'Cancel' }
+      ],
+      min_selections: 1,
+      max_selections: 1,
+      allow_other: false
+    }
+  })
+}
+
+function askResolved(askId = 'turn-1:call-1'): AgentChatEvent {
+  return zAgentWsEvent.parse({
+    type: 'agent_ask_resolved',
+    data: {
+      thread_id: 't',
+      message_id: 'm',
+      ask_id: askId,
+      status: 'answered',
+      selected: ['run']
+    }
+  })
 }
 
 const parts = (m: AssistantMessage) => m.parts
@@ -345,6 +370,44 @@ describe('agentEventTransport text and tool parts', () => {
         durationMs: undefined
       }
     ])
+  })
+})
+
+describe('agentEventTransport run approval', () => {
+  it('places the approval card at the decision point in transcript order', () => {
+    const message = drive([
+      delta('before'),
+      runApproval(),
+      delta('after the decision')
+    ])
+
+    expect(message.parts).toEqual([
+      { type: 'text', text: 'before', state: 'done' },
+      {
+        type: 'runApproval',
+        askId: 'turn-1:call-1',
+        workflowId: 'workflow-1',
+        workflowName: 'Portrait workflow'
+      },
+      { type: 'text', text: 'after the decision', state: 'streaming' }
+    ])
+  })
+
+  it('removes only the matching approval when the ask resolves', () => {
+    const message = drive([
+      runApproval('ask-1'),
+      runApproval('ask-2'),
+      askResolved('ask-1')
+    ])
+
+    expect(
+      message.parts.flatMap((part) =>
+        (part as { type: string }).type === 'runApproval'
+          ? [(part as { askId: string }).askId]
+          : []
+      )
+    ).toEqual(['ask-2'])
+    expect(message.streaming).toBe(true)
   })
 })
 
