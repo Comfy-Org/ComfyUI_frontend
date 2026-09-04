@@ -918,6 +918,16 @@ export const useLitegraphService = () => {
       const canvas = canvasStore.getCanvas()
       const bp = useSubgraphStore().getBlueprint(nodeDef.name)
       if (!bp) return null
+      const rootNode = bp.nodes.length === 1 ? bp.nodes[0] : undefined
+      const subgraph = rootNode
+        ? bp.definitions?.subgraphs?.find(
+            (definition) => definition.id === rootNode.type
+          )
+        : undefined
+      if (!rootNode || !subgraph) {
+        console.error(new Error('Cannot add invalid subgraph blueprint'))
+        return null
+      }
       const items: object = {
         nodes: bp.nodes,
         subgraphs: bp.definitions?.subgraphs
@@ -925,12 +935,19 @@ export const useLitegraphService = () => {
       const results = canvas._deserializeItems(items, {
         position: options.pos
       })
-      if (!results) throw new Error('Failed to add subgraph blueprint')
+      if (!results) {
+        console.error(new Error('Failed to add subgraph blueprint'))
+        return null
+      }
       const node = results.nodes.values().next().value
-      if (!node)
-        throw new Error(
-          'Subgraph blueprint was added, but failed to resolve a subgraph Node'
+      if (!node) {
+        console.error(
+          new Error(
+            'Subgraph blueprint was added, but failed to resolve a subgraph Node'
+          )
         )
+        return null
+      }
       if (addOptions?.ghost) {
         node.flags.ghost = true
         canvas.graph?.trigger('node:property:changed', {

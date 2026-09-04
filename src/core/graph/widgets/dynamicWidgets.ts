@@ -121,9 +121,23 @@ function dynamicComboWidget(
   function isInGroup(e: { name: string }): boolean {
     return e.name.startsWith(inputName + '.')
   }
+  let initializing = true
   const updateWidgets = (value?: string) => {
-    if (!node.widgets) throw new Error('Not Reachable')
+    if (!node.widgets) {
+      console.error(new Error('Dynamic widget node has no widgets'))
+      return
+    }
     const newSpec = value ? options[value] : undefined
+    const insertionPoint = node.widgets.findIndex((w) => w === widget) + 1
+    if (insertionPoint === 0) {
+      console.error(new Error("Dynamic widget doesn't exist on node"))
+      return
+    }
+    const hasInput = node.inputs.some((input) => input.name === widget.name)
+    if (newSpec && !hasInput && !initializing) {
+      console.error(new Error('Failed to find input socket for ' + widget.name))
+      return
+    }
 
     const previous = captureInputLayout(node)
     const inputLinks = new Map(previous.links)
@@ -140,12 +154,9 @@ function dynamicComboWidget(
       return
     }
 
-    const insertionPoint = node.widgets.findIndex((w) => w === widget) + 1
     const startingLength = node.widgets.length
     const startingInputLength = node.inputs.length
 
-    if (insertionPoint === 0)
-      throw new Error("Dynamic widget doesn't exist on node")
     const inputTypes: (Record<string, InputSpec> | undefined)[] = [
       newSpec.required,
       newSpec.optional
@@ -170,17 +181,11 @@ function dynamicComboWidget(
     })
 
     const inputInsertionPoint =
-      node.inputs.findIndex((i) => i.name === widget.name) + 1
+      node.inputs.findIndex((input) => input.name === widget.name) + 1
     const addedWidgets = node.widgets.splice(startingLength)
     node.widgets.splice(insertionPoint, 0, ...addedWidgets)
     syncNodeWidgetOrder(node)
     if (inputInsertionPoint === 0) {
-      if (
-        addedWidgets.length === 0 &&
-        node.inputs.length !== startingInputLength
-      )
-        //input is inputOnly, but lacks an insertion point
-        throw new Error('Failed to find input socket for ' + widget.name)
       const result = commitMutatedInputs(node, previous, inputLinks)
       if (!result.ok) return
       return
@@ -243,6 +248,7 @@ function dynamicComboWidget(
     }
   })
   widget.value = widgetValue
+  initializing = false
   return { widget, minWidth, minHeight }
 }
 

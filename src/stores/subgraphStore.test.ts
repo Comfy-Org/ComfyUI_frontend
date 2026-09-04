@@ -175,6 +175,19 @@ describe('useSubgraphStore', () => {
     } as ComfyNodeDefV1)
     expect(res).toBeTruthy()
   })
+  it('should reject blueprints with multiple root nodes before registration', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    await mockFetch({
+      'invalid.json': {
+        nodes: [{ type: '123' }, { type: '123' }],
+        definitions: { subgraphs: [{ id: '123' }] }
+      }
+    })
+
+    expect(store.subgraphBlueprints).toHaveLength(0)
+    expect(error).toHaveBeenCalledWith(expect.any(Error))
+  })
   it('should return a deep copy from getBlueprint so mutations do not corrupt the cache', async () => {
     await mockFetch({ 'test.json': mockGraph })
     const first = store.getBlueprint(BLUEPRINT_TYPE_PREFIX + 'test')

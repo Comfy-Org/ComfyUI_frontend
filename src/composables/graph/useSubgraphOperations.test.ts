@@ -4,7 +4,14 @@ import { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 
 const mocks = vi.hoisted(() => ({
   publishSubgraph: vi.fn(),
-  selectedItems: [] as unknown[]
+  selectedItems: [] as unknown[],
+  canvas: {
+    subgraph: null,
+    graph: null as { unpackSubgraph: ReturnType<typeof vi.fn> } | null,
+    selectedItems: new Set<unknown>()
+  },
+  captureCanvasState: vi.fn(),
+  revokeSubgraphPreviews: vi.fn()
 }))
 
 vi.mock('@/composables/canvas/useSelectedLiteGraphItems', () => ({
@@ -15,7 +22,7 @@ vi.mock('@/composables/canvas/useSelectedLiteGraphItems', () => ({
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
-    getCanvas: vi.fn(),
+    getCanvas: vi.fn(() => mocks.canvas),
     get selectedItems() {
       return mocks.selectedItems
     },
@@ -25,13 +32,15 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: () => ({
-    activeWorkflow: null
+    activeWorkflow: {
+      changeTracker: { captureCanvasState: mocks.captureCanvasState }
+    }
   })
 }))
 
 vi.mock('@/stores/nodeOutputStore', () => ({
   useNodeOutputStore: () => ({
-    revokeSubgraphPreviews: vi.fn()
+    revokeSubgraphPreviews: mocks.revokeSubgraphPreviews
   })
 }))
 
@@ -53,6 +62,25 @@ function createRegularNode(): LGraphNode {
 describe('useSubgraphOperations', () => {
   beforeEach(() => {
     mocks.selectedItems = []
+    mocks.canvas.graph = null
+    mocks.canvas.selectedItems.clear()
+  })
+
+  it('preserves previews and history when unpacking fails', async () => {
+    const subgraphNode = createSubgraphNode()
+    const unpackSubgraphNode = vi.fn(() => false)
+    mocks.canvas.graph = { unpackSubgraph: unpackSubgraphNode }
+    mocks.canvas.selectedItems.add(subgraphNode)
+
+    const { useSubgraphOperations } =
+      await import('@/composables/graph/useSubgraphOperations')
+    useSubgraphOperations().unpackSubgraph()
+
+    expect(unpackSubgraphNode).toHaveBeenCalledWith(subgraphNode, {
+      skipMissingNodes: true
+    })
+    expect(mocks.revokeSubgraphPreviews).not.toHaveBeenCalled()
+    expect(mocks.captureCanvasState).not.toHaveBeenCalled()
   })
 
   it('addSubgraphToLibrary calls publishSubgraph when single SubgraphNode selected', async () => {

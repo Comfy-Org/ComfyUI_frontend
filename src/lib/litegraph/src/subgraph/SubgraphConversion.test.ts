@@ -11,7 +11,11 @@ import {
 } from 'vitest'
 
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
-import { LGraphGroup } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphGroup,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
 import type { Positionable } from '@/lib/litegraph/src/litegraph'
 import {
   createTestNode,
@@ -181,6 +185,31 @@ describe('SubgraphConversion', () => {
   })
 
   describe('Subgraph Unpacking Functionality', () => {
+    it('does not mutate when an interior node type is unavailable', () => {
+      const nodeType = 'test/unavailable-during-unpack'
+      class UnavailableNode extends LGraphNode {}
+      LiteGraph.registerNodeType(nodeType, UnavailableNode)
+
+      const subgraph = createTestSubgraph()
+      const subgraphNode = createTestSubgraphNode(subgraph)
+      const graph = subgraphNode.graph!
+      graph.add(subgraphNode)
+      const interior = LiteGraph.createNode(nodeType)
+      expect(interior).toBeDefined()
+      if (!interior) return
+      subgraph.add(interior)
+      LiteGraph.unregisterNodeType(nodeType)
+      const before = graph.serialize()
+      const beforeChange = vi.spyOn(graph, 'beforeChange')
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      expect(graph.unpackSubgraph(subgraphNode)).toBe(false)
+
+      expect(beforeChange).not.toHaveBeenCalled()
+      expect(graph.serialize()).toEqual(before)
+      expect(error).toHaveBeenCalledWith(expect.any(Error))
+    })
+
     it('keeps a shared definition link registered while copying it to the parent', () => {
       const subgraph = createTestSubgraph()
       const subgraphNode = createTestSubgraphNode(subgraph)

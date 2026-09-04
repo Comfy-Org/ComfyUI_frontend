@@ -61,6 +61,41 @@ describe('Dynamic Combos', () => {
     expect(node.inputs.length).toBe(2)
     expect(node.inputs[1].type).toBe('IMAGE')
   })
+  test('Does not mutate when the dynamic widget is missing', () => {
+    const node = testNode()
+    addDynamicCombo(node, [['INT'], ['STRING']])
+    const selector = node.widgets[0]
+    node.widgets.splice(0, 1)
+    const inputsBefore = [...node.inputs]
+    const widgetsBefore = [...node.widgets]
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    selector.value = '1'
+
+    expect(node.inputs).toEqual(inputsBefore)
+    expect(node.widgets).toEqual(widgetsBefore)
+    expect(error).toHaveBeenCalledWith(expect.any(Error))
+  })
+  test('Does not mutate when the dynamic input socket is missing', () => {
+    const node = testNode()
+    addDynamicCombo(node, [['INT'], ['IMAGE']])
+    const selector = node.widgets[0]
+    const inputIndex = node.inputs.findIndex(
+      (input) => input.name === selector.name
+    )
+    expect(inputIndex).toBeGreaterThanOrEqual(0)
+    if (inputIndex < 0) return
+    node.inputs.splice(inputIndex, 1)
+    const inputsBefore = [...node.inputs]
+    const widgetsBefore = [...node.widgets]
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    selector.value = '1'
+
+    expect(node.inputs).toEqual(inputsBefore)
+    expect(node.widgets).toEqual(widgetsBefore)
+    expect(error).toHaveBeenCalledWith(expect.any(Error))
+  })
   test('Dynamically added inputs are well ordered', () => {
     const node = testNode()
     addDynamicCombo(node, [['INT'], ['IMAGE']])
