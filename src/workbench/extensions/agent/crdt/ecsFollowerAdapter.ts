@@ -303,12 +303,7 @@ export class EcsFollowerAdapter {
       }
     })
 
-    // Only clear the reconciliation flag once the batch actually commits.
-    // A rejected batch (no scope, or validation failure) must leave
-    // reconcileNextFrame set so the next frame retries authoritative
-    // cleanup instead of falling through to incremental handling with
-    // stale local-only graph state still present.
-    if (committed) session.reconcileNextFrame = false
+    session.reconcileNextFrame = !committed
     return committed
   }
 

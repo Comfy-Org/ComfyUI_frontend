@@ -370,6 +370,88 @@ describe('EcsFollowerAdapter integration', () => {
     host.destroy()
   })
 
+  it('reconciles changes discarded by a rejected incremental batch', () => {
+    const host = mint(
+      {
+        nodes: [
+          {
+            id: 1,
+            type: 'Source',
+            inputs: [],
+            outputs: [{ name: 'out', type: 'IMAGE', links: [] }]
+          },
+          {
+            id: 2,
+            type: 'Sink',
+            inputs: [{ name: 'in', type: 'IMAGE', link: null }],
+            outputs: []
+          }
+        ],
+        links: []
+      },
+      catalog
+    )
+    const follower = new FollowerDoc()
+    const mutations = createGraphMutations({
+      getScope: () => scope,
+      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+    })
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind('wf', follower)
+
+    const initialUpdate = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(initialUpdate)
+    expect(
+      adapter.applyFrame({ workflowId: 'wf', seq: 1, update: initialUpdate })
+    ).toBe(true)
+
+    const beforeRejectedUpdate = Y.encodeStateVector(host)
+    applyOps(
+      host,
+      [
+        op('add-3', 1, {
+          op: 'add_node',
+          node_id: 3,
+          class_type: 'Source',
+          pos: [0, 0],
+          node: {
+            id: 3,
+            type: 'Source',
+            inputs: [],
+            outputs: []
+          }
+        })
+      ] as Parameters<typeof applyOps>[1],
+      catalog
+    )
+    linksMap(host).set('9', [9, 1, -1, 2, 0, 'IMAGE'])
+    const rejectedUpdate = Y.encodeStateAsUpdate(host, beforeRejectedUpdate)
+    follower.applyRemoteUpdate(rejectedUpdate)
+
+    expect(
+      adapter.applyFrame({ workflowId: 'wf', seq: 2, update: rejectedUpdate })
+    ).toBe(false)
+    expect(
+      useNodeDataStore().getNode(scope.rootGraphId, toNodeId(3))
+    ).toBeUndefined()
+
+    const beforeRetryUpdate = Y.encodeStateVector(host)
+    linksMap(host).set('9', [9, 1, 0, 2, 0, 'IMAGE'])
+    const retryUpdate = Y.encodeStateAsUpdate(host, beforeRetryUpdate)
+    follower.applyRemoteUpdate(retryUpdate)
+
+    expect(
+      adapter.applyFrame({ workflowId: 'wf', seq: 3, update: retryUpdate })
+    ).toBe(true)
+    expect(
+      useNodeDataStore().getNode(scope.rootGraphId, toNodeId(3))
+    ).toBeDefined()
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
   it('clears only the target owner for an empty authoritative snapshot', () => {
     const targetScope = scope
     const siblingScope = {
