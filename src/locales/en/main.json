@@ -2977,6 +2977,18 @@
       "memberRunTooltip": "Contact your workspace owner to resubscribe",
       "runLabel": "Run"
     },
+    "managedByOwner": {
+      "memberTitle": "This workspace's plan is managed by its owner",
+      "memberDescription": "Ask your workspace owner to make changes to the workspace's plan.",
+      "memberCta": "Ok, got it"
+    },
+    "salesManaged": {
+      "planTitle": "Your plan is managed with our sales team",
+      "planDescription": "Subscriptions for this workspace are handled by our sales team. Reach out to make changes to your plan.",
+      "outOfCreditsTitle": "This workspace is out of credits",
+      "outOfCreditsDescription": "Credits for this workspace are managed with our sales team. Reach out to add more.",
+      "contactSales": "Contact sales"
+    },
     "paymentRecovery": {
       "title": "Subscription paused",
       "ownerDescription": "Update your payment method to restore the workspace's subscription and run workflows.",
