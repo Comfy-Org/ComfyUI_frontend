@@ -17,6 +17,84 @@ What is different, concretely:
   (vitest) and `test:e2e` (playwright, `apps/website/playwright.config.ts`).
   `browser_tests/` at the root belongs to the other app.
 
+## Developing from main
+
+Every PR targets `main`. Branches may be long-running — the largest comparable
+feature ran 100 commits before landing — but they land as **one PR to main**,
+not as a chain of PRs each reviewing the one below. The eight closest website
+features in the history are all `base=main`, between 509 and 7,046 lines,
+including a numbered series (`website/02-…`, `03-`, `06-`) whose slices each
+went to main independently.
+
+**What is on main is what is released.** A push to `main` runs
+`vercel build --prod` and deploys comfy.org. There is no staging environment
+holding different contents; a PR preview is the same build with
+`VERCEL_ENV=preview`. So there is no gap between merged and public:
+
+> Anything merged to main is live on comfy.org on the next deploy, unless
+> something in the build deliberately keeps it out.
+
+That is the whole reason unfinished work can be developed from main at all, and
+the discipline it demands:
+
+**Do**
+
+- Keep an unreleased feature's routes **out of the build**, so there is no URL
+  to find (see the Workshop gate below), or put its entry points behind a
+  switch that defaults off — `src/config/features.ts` is the small version of
+  this (`export const SHOW_FREE_TIER = false`).
+- Give the switch **one definition** that every entry point reads. A nav item
+  and a homepage section gated on different conditions will drift, and one of
+  them will ship early.
+- **Prove it**, by building the release shape and counting what is emitted.
+  `WORKSHOP_IN_BUILD=0 pnpm build` then check `dist/` — page count, and no
+  directory for the feature.
+- Assume a partially-built feature is **reachable by anyone who guesses the
+  URL**, and design for that.
+
+**Don't**
+
+- Rely on `noindex`. It asks a crawler to stay away. The page is still live and
+  shareable.
+- Rely on nothing linking to it. An unlinked page is a public page with a
+  quieter front door, and it will be found in a sitemap, an `llms.txt`, or an
+  OG-image request.
+- Rely on a runtime flag to keep pages off the server. This is a static build:
+  a PostHog flag can hide a link in the browser, but the HTML is already
+  deployed. Runtime flags gate _visibility_; only the build gates _existence_.
+- Merge a feature branch into another feature branch as a review strategy.
+
+## How the site is generated
+
+`astro build` emits static HTML into `dist/`. Files in `src/pages` are routes:
+`about.astro` is one page, `[slug].astro` is as many pages as its
+`getStaticPaths` returns. Integrations run in the order declared in
+`astro.config.ts` — `vue`, `mdx`, `sitemap`, `markdownTwins`,
+`workshopReleaseGate` — and the last of those runs at `astro:build:done`, after
+everything is on disk.
+
+CI then runs validators that read `dist/` and exit non-zero: `validate:jsonld`,
+`validate:llms-txt-links`, `check:hreflang`. They catch a cluster pointing at a
+page the build never produced, which is the usual symptom of a route quietly
+disappearing.
+
+For scale: `main` builds **738 pages**; with Workshop included it is 1,007.
+
+### What is generated today
+
+Committed to the repo, refreshed by a script, never fetched at build time:
+
+| Artifact                             | Script                         | Notes                                 |
+| ------------------------------------ | ------------------------------ | ------------------------------------- |
+| `src/data/ashby-roles.snapshot.json` | `ashby:refresh-snapshot`       | fallback for `/careers`               |
+| `src/data/cloud-nodes.snapshot.json` | `cloud-nodes:refresh-snapshot` | fallback for `/cloud/supported-nodes` |
+| `src/config/generated-models.json`   | `generate:models`              | model marketing pages                 |
+| `src/content/workshop-models.json`   | `generate:workshop-catalog`    | 268 Router models, packed             |
+
+Produced by the build and never committed: everything in `dist/`, the sitemap,
+and the markdown twins (`markdownTwins` writes ~309 `.md` twins, section
+indexes and `/llms-full.txt`).
+
 ## Running things here
 
 Use the package scripts. Two ways of reaching past them waste time:
