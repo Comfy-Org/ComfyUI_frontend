@@ -258,6 +258,20 @@ describe('deriveBillingBanner', () => {
       ).toBeNull()
     })
 
+    it('reverts cleanly when a webhook outage clears the end date', () => {
+      // cancel_at can disappear between polls; nothing latches, so the same
+      // inputs minus the cancellation must derive back to no banner.
+      expect(
+        derive(
+          { ...enterprise, isCancelled: true, endDate: daysFromNow(10) },
+          NOW
+        )
+      ).toBe('ending')
+      expect(
+        derive({ ...enterprise, isCancelled: false, endDate: null }, NOW)
+      ).toBeNull()
+    })
+
     it('never applies the window to a self-serve team cancellation', () => {
       expect(derive({ isCancelled: true, endDate: daysFromNow(60) }, NOW)).toBe(
         'ending'

@@ -2,7 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { BillingType, SubscriptionInfo } from '@/composables/billing/types'
@@ -602,6 +602,32 @@ describe('SubscriptionPanelContentWorkspace', () => {
         expect(
           screen.getByTestId('subscription-state-card')
         ).toBeInTheDocument()
+      })
+
+      it('restores the normal presentation when the end date clears between polls', async () => {
+        const iso = endInDays(10)
+        renderComponent()
+
+        expect(
+          screen.getByText(`Ends on ${formatPanelDate(iso)}`)
+        ).toBeInTheDocument()
+
+        // A webhook outage or reordering can clear cancel_at, flipping the
+        // workspace back to plainly active with a renewal date. Nothing is
+        // latched, so the presentation must follow the data.
+        mockSubscriptionStatus.value = 'active'
+        mockEndDate.value = null
+        mockRenewalDate.value = RENEWAL_DATE_ISO
+        await nextTick()
+
+        expect(
+          screen.getByText(`Renews on ${formatPanelDate(RENEWAL_DATE_ISO)}`)
+        ).toBeInTheDocument()
+        expect(screen.queryByText(/^Ends on/)).not.toBeInTheDocument()
+        expect(screen.queryByText('Canceled')).not.toBeInTheDocument()
+        expect(
+          screen.queryByTestId('subscription-state-card')
+        ).not.toBeInTheDocument()
       })
 
       it('leaves a cancelled unrecognized tier on the stock treatment too', () => {
