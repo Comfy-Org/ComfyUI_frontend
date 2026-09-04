@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 
 import { i18n } from '@/i18n'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { AgentActiveTabData, TurnId } from '../../schemas/agentApiSchema'
 import { isAgentEvent, parseAgentWsEvent } from '../../schemas/agentApiSchema'
 import { AgentApiError } from '../../services/agent/agentRestClient'
@@ -326,6 +327,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         })
         return
       }
+      reportError(error, { errorType: 'agent_ask_answer_failed' })
       pushError(error instanceof Error ? error.message : String(error))
     }
   }
