@@ -299,20 +299,6 @@ onBeforeUnmount(() => {
             ><code>{{ JSON.stringify(result.output, null, 2) }}</code></pre>
           </details>
         </div>
-
-        <!--
-          The prototype shows a real example here so you can see what a model
-          produces before running it. That needs per-model example media we do
-          not have yet, so this holds the space until the content pack lands.
-        -->
-        <div
-          v-else
-          class="flex aspect-video items-center justify-center rounded-xl border border-dashed border-primary-comfy-canvas/12"
-        >
-          <p class="px-6 text-center text-sm text-primary-comfy-canvas/45">
-            {{ t('workshop.run.idle', locale) }}
-          </p>
-        </div>
       </div>
     </section>
 

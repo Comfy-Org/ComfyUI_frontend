@@ -29,10 +29,6 @@ const translations = {
     en: 'Temporary — replaced by sign-in.',
     'zh-CN': '临时方案，登录功能上线后移除。'
   },
-  'workshop.run.idle': {
-    en: 'Your result will appear here.',
-    'zh-CN': '生成结果将显示在这里。'
-  },
   'workshop.run.heading': {
     en: 'Run it',
     'zh-CN': '运行'
