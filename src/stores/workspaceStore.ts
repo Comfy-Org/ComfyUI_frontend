@@ -17,6 +17,7 @@ import { useExecutionErrorStore } from './executionErrorStore'
 import { useAuthStore } from './authStore'
 import { useQueueSettingsStore } from './queueSettingsStore'
 import { useBottomPanelStore } from './workspace/bottomPanelStore'
+import { registerNodeTypeCullingOptOut } from '@/services/vueNodeCullingService'
 import { useSidebarTabStore } from './workspace/sidebarTabStore'
 
 function workspaceStoreSetup() {
@@ -48,6 +49,9 @@ function workspaceStoreSetup() {
   const colorPalette = useColorPaletteService()
   const dialog = useDialogService()
   const bottomPanel = useBottomPanelStore()
+  const vueNodes = {
+    registerCullingOptOut: registerNodeTypeCullingOptOut
+  }
 
   const authStore = useAuthStore()
   const apiKeyStore = useApiKeyAuthStore()
@@ -106,6 +110,7 @@ function workspaceStoreSetup() {
     colorPalette,
     dialog,
     bottomPanel,
+    vueNodes,
     user: partialUserStore,
 
     // Execution error state (read-only, exposed for custom extensions)
