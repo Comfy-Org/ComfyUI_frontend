@@ -197,7 +197,7 @@
     "eslint-plugin-vue": "catalog:",
     "fallow": "catalog:",
     "fast-check": "catalog:",
-    "fs-extra": "^11.2.0",
+    "fs-extra": "^11.4.0",
     "globals": "catalog:",
     "happy-dom": "catalog:",
     "husky": "catalog:",
