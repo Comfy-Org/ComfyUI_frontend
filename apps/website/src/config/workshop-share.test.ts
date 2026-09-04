@@ -63,4 +63,24 @@ describe('share links for the prototype controls', () => {
       decodeShareSearch(encodeShareSearch(SHARE_DEFAULTS, '?version=v2'))
     ).toEqual({})
   })
+
+  it('carries the return state and the step a review link opens on', () => {
+    const search = encodeShareSearch({
+      ...SHARE_DEFAULTS,
+      topUpOutcome: 'unresolved',
+      buyStep: 'landed'
+    })
+
+    expect(search).toContain('topup=unresolved')
+    expect(search).toContain('buy=landed')
+    expect(decodeShareSearch(search)).toMatchObject({
+      topUpOutcome: 'unresolved',
+      buyStep: 'landed'
+    })
+  })
+
+  it('leaves both out when they are at their defaults', () => {
+    expect(encodeShareSearch(SHARE_DEFAULTS)).not.toContain('topup=')
+    expect(encodeShareSearch(SHARE_DEFAULTS)).not.toContain('buy=')
+  })
 })

@@ -39,7 +39,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const open = defineModel<boolean>('open', { default: false })
 
 const { session, addCredits } = useMockSession()
-const { topUpOutcome } = usePrototypeTweaks()
+const { topUpOutcome, buyStep } = usePrototypeTweaks()
 
 const usd = ref<number>(25)
 const credits = computed(() => usdToCredits(usd.value))
@@ -72,12 +72,29 @@ function clearSettleTimer() {
 }
 onBeforeUnmount(clearSettleTimer)
 
+const RETURN_STEPS = ['waiting', 'landed', 'unresolved'] as const
+function isReturnStep(value: string): value is (typeof RETURN_STEPS)[number] {
+  return (RETURN_STEPS as readonly string[]).includes(value)
+}
+
 watch(open, (value) => {
   clearSettleTimer()
   if (!value) return
   returnPath.value = location.pathname + location.search
-  step.value = 'leaving'
-  canceled.value = false
+  // A review link can open any part of the flow. The states after the hand-off
+  // are three clicks deep otherwise, and they are the ones worth looking at.
+  const entry = buyStep.value
+  // Consumed once: after the link has opened its step, the dialog behaves
+  // normally, so closing and reopening does not jump back and grant again.
+  if (entry !== 'closed') buyStep.value = 'closed'
+  canceled.value = entry === 'canceled'
+  step.value = isReturnStep(entry) ? entry : 'leaving'
+  if (step.value === 'landed') {
+    previousCredits.value =
+      session.value.status === 'signedIn' ? session.value.account.credits : 0
+    // Land the grant too, so the ledger and the header agree.
+    addCredits(credits.value)
+  }
 })
 
 function setAmount(next: number) {

@@ -1,11 +1,13 @@
 import type { AccountKind } from '../composables/useMockSession'
 import type {
+  BuyStep,
   ModelState,
   RunOutcome,
   TopUpOutcome,
   Version
 } from '../composables/usePrototypeTweaks'
 import {
+  BUY_STEPS,
   MODEL_STATES,
   RUN_OUTCOMES,
   TOP_UP_OUTCOMES,
@@ -27,6 +29,7 @@ export interface ShareState {
   readonly outcome: RunOutcome
   readonly modelState: ModelState
   readonly topUpOutcome: TopUpOutcome
+  readonly buyStep: BuyStep
 }
 
 export const SHARE_DEFAULTS: ShareState = {
@@ -39,7 +42,8 @@ export const SHARE_DEFAULTS: ShareState = {
   member: false,
   outcome: 'success',
   modelState: 'none',
-  topUpOutcome: 'landed'
+  topUpOutcome: 'landed',
+  buyStep: 'closed'
 }
 
 const SESSION_CHOICES: readonly SessionChoice[] = [
@@ -59,7 +63,8 @@ const KEYS = {
   member: 'member',
   outcome: 'outcome',
   modelState: 'state',
-  topUpOutcome: 'topup'
+  topUpOutcome: 'topup',
+  buyStep: 'buy'
 } as const
 
 const flag = (value: boolean) => (value ? '1' : '0')
@@ -107,7 +112,8 @@ export function decodeShareSearch(search: string): Partial<ShareState> {
     member: pickFlag(params.get(KEYS.member)),
     outcome: pick(RUN_OUTCOMES, params.get(KEYS.outcome)),
     modelState: pick(MODEL_STATES, params.get(KEYS.modelState)),
-    topUpOutcome: pick(TOP_UP_OUTCOMES, params.get(KEYS.topUpOutcome))
+    topUpOutcome: pick(TOP_UP_OUTCOMES, params.get(KEYS.topUpOutcome)),
+    buyStep: pick(BUY_STEPS, params.get(KEYS.buyStep))
   }
   return Object.fromEntries(
     Object.entries(decoded).filter(([, value]) => value !== undefined)

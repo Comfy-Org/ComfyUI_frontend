@@ -50,7 +50,8 @@ const {
   version,
   showStatuses,
   groupVersions,
-  topUpOutcome
+  topUpOutcome,
+  buyStep
 } = usePrototypeTweaks()
 
 const SESSION_CHOICES: readonly SessionChoice[] = [
@@ -112,7 +113,8 @@ const shareState = computed<ShareState>(() => ({
   member: isMember.value,
   outcome: outcome.value,
   modelState: modelState.value,
-  topUpOutcome: topUpOutcome.value
+  topUpOutcome: topUpOutcome.value,
+  buyStep: buyStep.value
 }))
 const shareUrl = computed(
   () =>
