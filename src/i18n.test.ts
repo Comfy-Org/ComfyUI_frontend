@@ -534,7 +534,7 @@ describe('i18n', () => {
 
   describe('setActiveLocale', () => {
     it('clamps unsupported input to en', async () => {
-      expect(await setActiveLocale('de')).toBe('en')
+      expect(await setActiveLocale('nl')).toBe('en')
       expect(i18n.global.locale.value).toBe('en')
     })
 
@@ -547,7 +547,7 @@ describe('i18n', () => {
 
     it('honors prioritized navigator.languages', async () => {
       // First preference unsupported, second shipped — should land on French.
-      expect(await setActiveLocale(['de-DE', 'fr-CA', 'en'])).toBe('fr')
+      expect(await setActiveLocale(['nl-NL', 'fr-CA', 'en'])).toBe('fr')
     })
   })
 
@@ -564,6 +564,7 @@ describe('i18n', () => {
   describe('resolveSupportedLocale', () => {
     it('returns the canonical tag when the input is shipped', () => {
       expect(resolveSupportedLocale('en')).toBe('en')
+      expect(resolveSupportedLocale('de')).toBe('de')
       expect(resolveSupportedLocale('ja')).toBe('ja')
       expect(resolveSupportedLocale('zh-TW')).toBe('zh-TW')
       expect(resolveSupportedLocale('pt-BR')).toBe('pt-BR')
@@ -580,8 +581,8 @@ describe('i18n', () => {
     })
 
     it('falls back to the base tag when the full tag is unshipped', () => {
-      // de-DE → de (unshipped) → en
-      expect(resolveSupportedLocale('de-DE')).toBe('en')
+      // de-DE → de (shipped) → de
+      expect(resolveSupportedLocale('de-DE')).toBe('de')
       // fr-CA → fr (shipped) → fr
       expect(resolveSupportedLocale('fr-CA')).toBe('fr')
       // ko-KR → ko (shipped) → ko
@@ -591,7 +592,6 @@ describe('i18n', () => {
     })
 
     it('falls back to en for unsupported and missing inputs', () => {
-      expect(resolveSupportedLocale('de')).toBe('en')
       expect(resolveSupportedLocale('nl')).toBe('en')
       expect(resolveSupportedLocale('xx-YY')).toBe('en')
       expect(resolveSupportedLocale('')).toBe('en')
@@ -600,11 +600,11 @@ describe('i18n', () => {
     })
 
     it('walks a prioritized array per RFC 4647 lookup order', () => {
-      // First shipped match wins (de unshipped → fr shipped → fr).
-      expect(resolveSupportedLocale(['de-DE', 'fr-CA', 'en'])).toBe('fr')
+      // First shipped match wins (de-DE → de, shipped).
+      expect(resolveSupportedLocale(['de-DE', 'fr-CA', 'en'])).toBe('de')
       // Empty / all-unshipped arrays fall back to en.
       expect(resolveSupportedLocale([])).toBe('en')
-      expect(resolveSupportedLocale(['de', 'nl'])).toBe('en')
+      expect(resolveSupportedLocale(['nl', 'xx-YY'])).toBe('en')
     })
   })
 })
