@@ -1,4 +1,4 @@
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraph, Subgraph } from '@/lib/litegraph/src/LGraph'
 import { materializeLinkAdapter } from '@/lib/litegraph/src/LLink'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { topologicalSortSubgraphs } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
@@ -73,6 +73,12 @@ export function reconcileAgentAdapters(
  */
 const reportedDefinitionFailures = new WeakMap<LGraph, Set<string>>()
 
+/** Definitions created by the agent follower, distinguished from workflow-owned entries. */
+const materializedAgentDefinitions = new WeakMap<
+  LGraph,
+  Map<string, Subgraph>
+>()
+
 /**
  * Register explicitly created subgraph definitions the root graph does not
  * know yet.
@@ -118,6 +124,11 @@ function registerSubgraphDefinitions(
     if (failure === undefined) {
       pending.delete(definition.id)
       reported.delete(definition.id)
+      const subgraph = rootGraph.subgraphs.get(definition.id)!
+      const materialized =
+        materializedAgentDefinitions.get(rootGraph) ??
+        materializedAgentDefinitions.set(rootGraph, new Map()).get(rootGraph)!
+      materialized.set(definition.id, subgraph)
       continue
     }
     if (reported.has(definition.id)) continue
@@ -192,8 +203,14 @@ export function releaseAgentSubgraphDefinitions(
   graph: MaterializableGraph
 ): void {
   const rootGraph = graph.rootGraph
-  const definitions = [...rootGraph.subgraphs.values()]
+  const materialized = materializedAgentDefinitions.get(rootGraph)
+  materializedAgentDefinitions.delete(rootGraph)
   reportedDefinitionFailures.delete(rootGraph)
+  const definitions = materialized
+    ? [...materialized].flatMap(([id, subgraph]) =>
+        rootGraph.subgraphs.get(id) === subgraph ? [subgraph] : []
+      )
+    : []
   if (!definitions.length) return
   try {
     rootGraph.releaseSubgraphs(definitions)

@@ -998,6 +998,28 @@ describe('reconcileAgentAdapters', () => {
       ).toEqual([toNodeId(8)])
     })
 
+    it('preserves workflow-owned definitions when releasing an agent lineage', () => {
+      const workflowDefinition = createTestSubgraphData({
+        nodes: [nodePayload(17)] as never
+      })
+      const agentDefinition = createTestSubgraphData({
+        nodes: [nodePayload(27)] as never
+      })
+      const workflowSubgraph = graph.createSubgraph(workflowDefinition)
+      reconcileAgentAdapters(graph, [agentDefinition])
+
+      releaseAgentSubgraphDefinitions(graph)
+
+      expect(graph.subgraphs.get(workflowDefinition.id)).toBe(workflowSubgraph)
+      expect(
+        LiteGraph.registered_node_types[workflowDefinition.id]
+      ).toBeDefined()
+      expect(graph.subgraphs.has(agentDefinition.id)).toBe(false)
+      expect(
+        LiteGraph.registered_node_types[agentDefinition.id]
+      ).toBeUndefined()
+    })
+
     it('fails closed when an interior node id collides with a pending root node', () => {
       const definition = createTestSubgraphData({
         nodes: [nodePayload(7)] as never
