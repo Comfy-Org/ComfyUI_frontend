@@ -172,6 +172,40 @@ describe('useAgentConversationStore', () => {
     expect(partTexts(store)).toContain('background reply')
   })
 
+  it('repaints the displayed resumed turn on later stream events', async () => {
+    const store = useAgentConversationStore()
+    store.startBackgroundTurn('background', T1, 'background prompt')
+    store.setThreadId('background')
+    store.resumeBackgroundTurn()
+
+    // The transport mutates its message in place, so only the replaceActive
+    // emitter triggers array subscribers; track them to catch a silent repaint
+    // loss rather than reading the raw state.
+    const snapshots: string[][] = []
+    const stop = watch(
+      () => partTexts(store),
+      (texts) => snapshots.push(texts)
+    )
+    try {
+      store.ingest(
+        chat({
+          type: 'agent_message_delta',
+          data: { delta: 'resumed ', message_id: T1, thread_id: 'background' }
+        })
+      )
+      store.ingest(
+        chat({
+          type: 'agent_message_delta',
+          data: { delta: 'reply', message_id: T1, thread_id: 'background' }
+        })
+      )
+      await nextTick()
+    } finally {
+      stop()
+    }
+    expect(snapshots.at(-1)).toContain('resumed reply')
+  })
+
   it('(M2) isStreaming is false after abortActiveTurn() with no done', () => {
     const store = useAgentConversationStore()
     store.startTurn(T1)

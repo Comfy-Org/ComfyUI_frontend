@@ -1,14 +1,14 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type * as VueModule from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
-const identity = vi.hoisted(() => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { ref } = require('vue')
+const identity = await vi.hoisted(async () => {
+  const { ref } = await vi.importActual<typeof VueModule>('vue')
   return {
     currentUser: {
-      resolvedUserInfo: ref({ id: 'user-1' })
+      resolvedUserInfo: ref<{ id: string } | undefined>({ id: 'user-1' })
     },
     workspace: { activeWorkspaceId: ref('workspace-1') }
   }

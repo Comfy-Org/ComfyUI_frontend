@@ -227,7 +227,7 @@ export function createAgentRestClient() {
     selected: string[]
   ): Promise<AgentAnswerAccepted> {
     return request(
-      `/agent/threads/${threadId}/asks/${encodeURIComponent(askId)}/answer`,
+      `/agent/threads/${encodeURIComponent(threadId)}/asks/${encodeURIComponent(askId)}/answer`,
       jsonInit('POST', { selected }),
       zAgentAnswerAccepted
     )

@@ -1,13 +1,13 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+import type * as VueModule from 'vue'
 
-const mocks = vi.hoisted(() => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { ref } = require('vue')
+const mocks = await vi.hoisted(async () => {
+  const { ref } = await vi.importActual<typeof VueModule>('vue')
   return {
     currentUser: {
-      resolvedUserInfo: ref({ id: 'user-1' })
+      resolvedUserInfo: ref<{ id: string } | undefined>({ id: 'user-1' })
     },
     workspace: { activeWorkspaceId: ref('workspace-1') }
   }
@@ -227,5 +227,29 @@ describe('useAgentChatHistoryStore', () => {
     mocks.currentUser.resolvedUserInfo.value = { id: 'user-1' }
     await nextTick()
     expect(store.titleFor('a')).toBe('Account one')
+  })
+
+  it('[09-T3 regression] rotates persisted metadata and clears the in-memory list on workspace change', async () => {
+    const store = useAgentChatHistoryStore()
+    store.replaceAll([session('a', NOW - 1_000)])
+    store.rename('a', 'Workspace one')
+    await nextTick()
+
+    expect(
+      localStorage.getItem('Comfy.Agent.ChatTitles.user-1.workspace-1')
+    ).toContain('Workspace one')
+
+    mocks.workspace.activeWorkspaceId.value = 'workspace-2'
+    await nextTick()
+
+    expect(store.sessions).toHaveLength(0)
+    expect(store.titleFor('a')).toBeUndefined()
+    expect(
+      localStorage.getItem('Comfy.Agent.ChatTitles.user-1.workspace-2')
+    ).toBe('{}')
+
+    mocks.workspace.activeWorkspaceId.value = 'workspace-1'
+    await nextTick()
+    expect(store.titleFor('a')).toBe('Workspace one')
   })
 })

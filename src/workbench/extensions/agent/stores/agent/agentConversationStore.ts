@@ -207,7 +207,12 @@ export const useAgentConversationStore = defineStore(
       tags?: string[]
     ): void {
       const message = createAssistantMessage(turnId)
-      const backgroundTransport = createAgentEventTransport(message, () => {})
+      const backgroundTransport = createAgentEventTransport(message, (m) => {
+        // Repaint only once this transport is the adopted active transport;
+        // while the turn is stashed its snapshots must not touch the displayed
+        // message, whose turn id can collide with this one.
+        if (transport === backgroundTransport) replaceActive(m)
+      })
       backgroundTurns.set(thread, {
         messageId: turnId,
         message,

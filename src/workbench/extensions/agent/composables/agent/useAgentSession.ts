@@ -142,7 +142,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     try {
       localStorage.removeItem(storageKey())
     } catch (error) {
-      console.warn('[agent] failed to remove the thread id', error)
+      reportError(error, { errorType: 'agent_thread_id_clear_failed' })
     }
   }
 
