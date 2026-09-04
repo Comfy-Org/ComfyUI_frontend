@@ -3,10 +3,13 @@ import type {
   WorkshopFormValues,
   WorkshopRunTargetId
 } from './workshop-detail'
+import type { WorkshopRunOptions, WorkshopRunResult } from './workshop-run'
+import { runRouterModel } from './workshop-run'
 import type { WorkshopSnippetLanguage } from './workshop-snippets'
 import {
   ROUTER_SNIPPET_LANGUAGES,
-  buildRouterSnippet
+  buildRouterSnippet,
+  buildWorkshopInput
 } from './workshop-snippets'
 
 /**
@@ -28,13 +31,26 @@ export interface WorkshopRunTarget {
     model: WorkshopDetailModel,
     values: WorkshopFormValues
   ): string
+  /**
+   * Runs the model with the values currently in the form.
+   *
+   * Takes the same `values` the snippet does, so what the page runs and what
+   * it tells you to copy cannot drift apart — they are built from one input.
+   */
+  run(
+    model: WorkshopDetailModel,
+    values: WorkshopFormValues,
+    options: WorkshopRunOptions
+  ): Promise<WorkshopRunResult>
 }
 
 const routerRunTarget: WorkshopRunTarget = {
   id: 'router',
   snippetLanguages: ROUTER_SNIPPET_LANGUAGES,
   buildSnippet: (language, model, values) =>
-    buildRouterSnippet(language, model.id, model.fields, values)
+    buildRouterSnippet(language, model.id, model.fields, values),
+  run: (model, values, options) =>
+    runRouterModel(model.id, buildWorkshopInput(model.fields, values), options)
 }
 
 const RUN_TARGETS: Readonly<Record<WorkshopRunTargetId, WorkshopRunTarget>> = {

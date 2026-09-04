@@ -90,10 +90,12 @@ describe('WorkshopForm', () => {
     })
   })
 
-  it('shows the run control as not yet available', () => {
+  it('leaves running to the run panel rather than offering its own control', () => {
     renderForm()
 
-    const submit = screen.getByRole('button')
-    expect(submit.hasAttribute('disabled')).toBe(true)
+    // The form is inputs only. It used to carry a permanently disabled "Run
+    // model" button; now that running actually works, a second dead control
+    // beside the live one would be worse than no control at all.
+    expect(screen.queryAllByRole('button')).toEqual([])
   })
 })
