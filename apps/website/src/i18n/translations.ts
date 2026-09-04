@@ -8686,7 +8686,6 @@ Enterprise`
     'zh-CN': '建议改用 {successor}'
   },
   'workshop.model.degraded': { en: 'Degraded', 'zh-CN': '性能下降' },
-  'workshop.model.priceFrom': { en: 'From', 'zh-CN': '起' },
   'workshop.model.perRun': { en: 'per run', 'zh-CN': '每次运行' },
   'workshop.model.degradedBody': {
     en: 'The provider is reporting slow or failing runs right now.',

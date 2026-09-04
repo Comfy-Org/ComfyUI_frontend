@@ -59,10 +59,9 @@ describe('HubBrowse', () => {
     expect(screen.getByTestId('hub-showing').textContent).toContain('of 36')
   })
 
-  it('browses by output and keeps models and workflows under one count', async () => {
+  it('scopes both the models and the workflows to the chosen use case', async () => {
     const user = userEvent.setup()
     render(HubBrowse)
-    expect(screen.getByTestId('hub-use-case-all').textContent).toContain('700')
 
     await user.click(screen.getByTestId('hub-use-case-3d'))
     const lead = screen.getAllByTestId('hub-models-lead')

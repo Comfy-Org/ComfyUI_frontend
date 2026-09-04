@@ -63,19 +63,19 @@ const inUseCase = (value: UseCase | 'all') => ({
   )
 })
 
-const entryFor = (value: UseCase | 'all') => {
+const totalIn = (value: UseCase | 'all') => {
   const { models, templates: scoped } = inUseCase(value)
-  return {
-    value,
-    total: groupModels(models, groupVersions.value).length + scoped.length
-  }
+  return groupModels(models, groupVersions.value).length + scoped.length
 }
 
+// Ordered by how much of the catalogue sits behind each, without printing the
+// tally: the row names use cases, it is not a report.
 const useCaseTabs = computed(() => [
-  entryFor('all'),
-  ...USE_CASES.map(entryFor)
+  { value: 'all' as const },
+  ...USE_CASES.map((value) => ({ value, total: totalIn(value) }))
     .filter((entry) => entry.total > 0)
     .sort((a, b) => b.total - a.total)
+    .map(({ value }) => ({ value }))
 ])
 
 const scoped = computed(() => inUseCase(useCase.value))
@@ -216,9 +216,6 @@ const filteredTemplates = computed(() => {
           @click="useCase = entry.value"
         >
           {{ t(useCaseLabelKey[entry.value], locale) }}
-          <span class="text-content-muted text-xs tabular-nums">
-            {{ entry.total }}
-          </span>
         </button>
       </nav>
     </WorkshopHero>

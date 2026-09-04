@@ -60,6 +60,7 @@ const model: WorkshopModelDetail = {
 function mountDetail(options?: {
   clone?: { credits: number; href: string; author: string }
   details?: () => ReturnType<typeof h>
+  model?: WorkshopModelDetail
 }) {
   let api!: ReturnType<typeof useMockSession>
   render(
@@ -69,7 +70,7 @@ function mountDetail(options?: {
         return () =>
           h(
             ModelDetail,
-            { model, clone: options?.clone },
+            { model: options?.model ?? model, clone: options?.clone },
             options?.details ? { details: options.details } : undefined
           )
       }
@@ -237,6 +238,22 @@ describe('ModelDetail', () => {
     expect(screen.getByTestId('details-tab').textContent).toContain(
       'About this workflow'
     )
+  })
+
+  it('draws the model picker rather than nothing when it is the only field', async () => {
+    const picker = {
+      kind: 'select',
+      name: 'model',
+      label: 'Model',
+      options: ['Omni Flash 1.1', 'Omni Flash'],
+      default: 'Omni Flash 1.1'
+    } as const
+    mountDetail({
+      model: { ...model, fields: [picker], defaults: {}, examples: [] }
+    }).signIn('existing')
+    await nextTick()
+
+    expect(screen.getByTestId('field-model')).toBeTruthy()
   })
 
   it('swaps the form to the example template', async () => {

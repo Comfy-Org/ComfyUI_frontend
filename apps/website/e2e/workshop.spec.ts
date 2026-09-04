@@ -26,7 +26,7 @@ test.describe('Workshop V2', () => {
     await expect(hub.getByTestId('hub-heading')).toContainText(
       'Browse the Workshop'
     )
-    await expect(hub.getByTestId('hub-use-case-all')).toContainText('700')
+    await expect(hub.getByTestId('hub-use-case-generate-images')).toBeVisible()
     await expect(hub.getByTestId('hub-card').first()).toBeVisible()
     await hub.getByTestId('hub-tab-comfyApps').click()
     await expect(hub.getByTestId('hub-card').first()).toHaveAttribute(

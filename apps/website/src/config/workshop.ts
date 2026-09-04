@@ -325,13 +325,35 @@ const CAPABILITY_LABELS: Readonly<Record<string, string>> = {
   'Text to Music': 'Music'
 }
 
+// A family's simulated releases inherit the templates of the model they were
+// derived from, which lands video capabilities on an image model and the other
+// way round. What a model puts out is the one thing we know first-hand, so it
+// decides which of the inherited labels may stand.
+const CAPABILITY_MODALITY: Readonly<Record<string, 'image' | 'video'>> = {
+  'Image editing': 'image',
+  Inpainting: 'image',
+  Outpainting: 'image',
+  Relighting: 'image',
+  'Virtual try-on': 'image',
+  'Video editing': 'video',
+  'First and last frame': 'video',
+  'Reference video': 'video',
+  'Motion control': 'video',
+  'Lip sync': 'video'
+}
+
 export function capabilitiesFor(
-  examples: readonly GeneratedExample[]
+  examples: readonly GeneratedExample[],
+  modality?: string
 ): string[] {
   const labels = examples.flatMap((example) =>
     example.tags.flatMap((tag) => CAPABILITY_LABELS[tag] ?? [])
   )
-  return [...new Set(labels)].sort()
+  const fits = (label: string) => {
+    const wanted = CAPABILITY_MODALITY[label]
+    return wanted === undefined || modality === undefined || wanted === modality
+  }
+  return [...new Set(labels)].filter(fits).sort()
 }
 
 // The registry names some models "Model (Provider)" or "Model (API)"; the
@@ -380,7 +402,7 @@ function toWorkshopModel(model: Model): WorkshopModel {
     ...(provider ? { provider } : {}),
     ...(modality ? { modality } : {}),
     ...(data ? { task: taskFor(data.fields, modality) } : {}),
-    capabilities: capabilitiesFor(data?.examples ?? []),
+    capabilities: capabilitiesFor(data?.examples ?? [], modality),
     runs: mockRuns(model.slug, model.workflowCount),
     ...(creditsPerRun !== undefined ? { creditsPerRun } : {}),
     ...(data?.priceUsdFrom !== undefined
@@ -434,7 +456,7 @@ function toVersionModel(version: GeneratedVersion): WorkshopModel {
     ...(provider ? { provider } : {}),
     ...(version.modality ? { modality: version.modality } : {}),
     ...(data ? { task: taskFor(data.fields, version.modality) } : {}),
-    capabilities: capabilitiesFor(data?.examples ?? []),
+    capabilities: capabilitiesFor(data?.examples ?? [], version.modality),
     runs: mockRuns(version.slug, version.workflowCount),
     ...(base?.creditsPerRun !== undefined
       ? { creditsPerRun: base.creditsPerRun }

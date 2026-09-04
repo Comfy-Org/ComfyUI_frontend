@@ -27,10 +27,11 @@ const values = defineModel<FormValues>({ required: true })
 
 // Prompts and uploads stay on top; the remaining knobs pair up, toggles fold
 // away. The catalogue lists each release as its own model, so the node's own
-// model picker would be a second, contradictory way to choose one: it is not
-// drawn, though its value still travels with the request.
+// model picker would be a second, contradictory way to choose one: it is drawn
+// only where hiding it would leave the visitor an empty panel.
 const groups = computed(() => {
-  const shown = schema.filter((field) => field.name !== 'model')
+  const withoutPicker = schema.filter((field) => field.name !== 'model')
+  const shown = withoutPicker.length > 0 ? withoutPicker : schema
   const lastPrimary = shown.reduce(
     (last, field, index) =>
       field.kind === 'text' || field.kind === 'file' ? index : last,
