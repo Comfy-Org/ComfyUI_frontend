@@ -17987,7 +17987,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Tipo de salida para el que se crea el estilo: recraftv4_styles para imágenes ráster, recraftv4_styles_vector para SVG."
+        "tooltip": "Modelo para el que se crea el estilo. Standard y Pro comparten un mismo conjunto de estilos: los estilos ráster funcionan con todos los modelos ráster Recraft V4 y V4.1, y los estilos vectoriales (*_vector) con todos los modelos vectoriales V4 y V4.1."
       }
     },
     "outputs": {

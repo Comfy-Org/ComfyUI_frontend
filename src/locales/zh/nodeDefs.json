@@ -17987,7 +17987,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "创建样式所对应的输出类型：recraftv4_styles 用于栅格图像，recraftv4_styles_vector 用于 SVG。"
+        "tooltip": "要为其创建风格的模型。Standard 和 Pro 共用一个风格池：栅格风格适用于所有 Recraft V4 和 V4.1 栅格模型，矢量风格（*_vector）适用于所有 V4 和 V4.1 矢量模型。"
       }
     },
     "outputs": {

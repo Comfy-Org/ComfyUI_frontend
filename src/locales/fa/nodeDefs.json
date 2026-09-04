@@ -17987,7 +17987,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "نوع خروجی که سبک برای آن ایجاد می‌شود: recraftv4_styles برای تصاویر رستری و recraftv4_styles_vector برای SVG."
+        "tooltip": "مدلی که سبک برای آن ایجاد می‌شود. Standard و Pro یک مخزن سبک مشترک دارند: سبک‌های raster با همهٔ مدل‌های raster ‏Recraft V4 و V4.1 کار می‌کنند و سبک‌های vector (*_vector) با همهٔ مدل‌های vector ‏V4 و V4.1."
       }
     },
     "outputs": {
