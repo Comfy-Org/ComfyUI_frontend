@@ -15,7 +15,7 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const THREAD_ID = 'd4c016c4-3b8c-44cf-97de-1ae27e43e718'
 const TURN_ID = '3818ba00-d772-4a3f-98c1-9312725b577d'
-const WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
+export const WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
 
 const TURN_ACCEPTED: AgentTurnAccepted = {
   message_id: TURN_ID,
