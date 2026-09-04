@@ -32,8 +32,11 @@ export const getAdditionalUserInfo =
 export const onAuthStateChanged =
   vi.fn<typeof FirebaseAuth.onAuthStateChanged>()
 export const onIdTokenChanged = vi.fn<typeof FirebaseAuth.onIdTokenChanged>()
+export const sendPasswordResetEmail =
+  vi.fn<typeof FirebaseAuth.sendPasswordResetEmail>()
 export const setPersistence = vi.fn<typeof FirebaseAuth.setPersistence>()
 export const signInWithEmailAndPassword =
   vi.fn<typeof FirebaseAuth.signInWithEmailAndPassword>()
 export const signInWithPopup = vi.fn<typeof FirebaseAuth.signInWithPopup>()
 export const signOut = vi.fn<typeof FirebaseAuth.signOut>()
+export const updatePassword = vi.fn<typeof FirebaseAuth.updatePassword>()
