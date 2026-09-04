@@ -35,8 +35,6 @@ vi.mock('@/platform/workspace/composables/useSubscriptionCheckout', () => ({
     activeCheckoutActionUrl: ref(null),
     authenticationState: ref(null),
     authenticationError: ref(null),
-    canRetryAuthentication: ref(false),
-    isAuthenticating: ref(false),
     reconciliationOperationId: ref(null),
     isPolling: ref(false),
     isTeamCheckout: computed(() => false),
@@ -50,7 +48,6 @@ vi.mock('@/platform/workspace/composables/useSubscriptionCheckout', () => ({
     handleTeamSubscribe: vi.fn(),
     handleSubscriptionPayment: vi.fn(),
     handleTeamSubscriptionPayment: vi.fn(),
-    retryPaymentAuthentication: vi.fn(),
     applyPromotionCode: vi.fn(),
     invalidateQuote: mockInvalidateQuote,
     handleResubscribe: vi.fn()

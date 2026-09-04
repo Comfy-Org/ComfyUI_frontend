@@ -466,7 +466,6 @@
   },
   "billingOperation": {
     "authenticationFailedDetail": "לא הצלחנו להשלים את אימות התשלום. נא לנסות שוב.",
-    "authenticationManagerRequired": "אימות התשלום דורש טיפול של מנהל חיוב במרחב העבודה.",
     "authenticationUnavailable": "אימות תשלום מאובטח אינו זמין. נא לרענן ולנסות שוב.",
     "cancelFailed": "ביטול המנוי נכשל",
     "cancelTimeout": "פג זמן ההמתנה לביטול המנוי",
@@ -477,7 +476,6 @@
     "processingErrorDetail": "לא ניתן היה לעבד את התשלום שלך. נסה שוב או השתמש באמצעי תשלום אחר.",
     "reconciliationDetail": "התשלום שלך התקבל, אך לא הצלחנו לסיים את עדכון מרחב העבודה שלך. פנה לתמיכה וכלול את מזהה הפעולה הזה:",
     "reconciliationTitle": "התשלום התקבל — ממתין לאישור",
-    "retryVerification": "נסה שוב את האימות",
     "subscriptionActionRequired": "אמת את התשלום שלך כדי להשלים את הגדרת סביבת העבודה",
     "subscriptionFailed": "עדכון המנוי נכשל",
     "subscriptionFailedDetail": "לא הצלחנו לעדכן את המנוי שלכם. אנא נסו שוב.",
@@ -965,6 +963,7 @@
       "quickPurchase": "רכישה מהירה",
       "seeDetails": "ראה פרטים",
       "selectAmount": "בחר סכום",
+      "startOver": "התחל מחדש",
       "templateNote": "*נוצר באמצעות תבנית Wan 2.2 Image-to-Video",
       "topUp": "טעינה",
       "unknownError": "אירעה שגיאה לא ידועה",

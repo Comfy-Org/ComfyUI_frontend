@@ -2245,7 +2245,9 @@
       "deleteRecording": "Delete Recording",
       "videoRecordingTooltip": "Video recording of the scene [mp4]",
       "switchProjection": "Switch projection",
-      "originalMaterialOnly": "Original material only"
+      "originalMaterialOnly": "Original material only",
+      "customUp": "Custom up",
+      "naturalUp": "Natural up"
     },
     "materialModes": {
       "normal": "Normal",
@@ -2732,6 +2734,7 @@
       "unknownError": "An unknown error occurred",
       "verifyBody": "Your bank requires additional verification to complete this payment.",
       "verifyTitle": "Verify your payment",
+      "startOver": "Start over",
       "viewPricing": "View pricing details",
       "youPay": "Amount (USD)",
       "youGet": "Credits",
@@ -2789,8 +2792,6 @@
     "processingErrorDetail": "Your payment couldn't be processed. Try again or use another payment method.",
     "authenticationUnavailable": "Secure payment authentication is unavailable. Please refresh and try again.",
     "authenticationFailedDetail": "We couldn't complete payment verification. Please try again.",
-    "authenticationManagerRequired": "Payment verification needs attention from a workspace billing manager.",
-    "retryVerification": "Retry verification",
     "reconciliationTitle": "Payment received — confirmation pending",
     "reconciliationDetail": "Your payment was received, but we couldn't finish updating your workspace. Contact support and include this operation ID:",
     "cancelFailed": "Failed to cancel subscription",
