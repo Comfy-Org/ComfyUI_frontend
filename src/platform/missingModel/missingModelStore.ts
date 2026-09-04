@@ -9,9 +9,12 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { getAncestorExecutionIds } from '@/types/nodeIdentification'
-import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
-import { getActiveGraphNodeIds } from '@/utils/graphTraversalUtil'
+import {
+  computeActiveGraphIds,
+  computeAncestorExecutionIds,
+  createVerificationAbortController
+} from '@/platform/missing/missingCandidateHelpers'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
 
 /**
  * Missing model error state and interaction state.
@@ -55,32 +58,17 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     return keys
   })
 
-  /**
-   * Set of all execution ID prefixes derived from missing model node IDs,
-   * including the missing model nodes themselves.
-   *
-   * Example: missing model on node "65:70:63" → Set { "65", "65:70", "65:70:63" }
-   */
-  const missingModelAncestorExecutionIds = computed<Set<NodeExecutionId>>(
-    () => {
-      const ids = new Set<NodeExecutionId>()
-      for (const nodeId of missingModelNodeIds.value) {
-        for (const id of getAncestorExecutionIds(nodeId)) {
-          ids.add(id)
-        }
-      }
-      return ids
-    }
+  const missingModelAncestorExecutionIds = computed(() =>
+    computeAncestorExecutionIds(missingModelNodeIds.value)
   )
 
-  const activeMissingModelGraphIds = computed<Set<string>>(() => {
-    if (!app.rootGraph) return new Set()
-    return getActiveGraphNodeIds(
+  const activeMissingModelGraphIds = computed(() =>
+    computeActiveGraphIds(
       app.rootGraph,
-      canvasStore.currentGraph ?? app.rootGraph,
+      canvasStore.currentGraph,
       missingModelAncestorExecutionIds.value
     )
-  })
+  )
 
   // Persists across component re-mounts so that download progress
   // survives tab switches within the right-side panel.
@@ -91,13 +79,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
   const fileSizes = ref<Record<string, number>>({})
   const gatedRepoUrls = ref<Record<string, string>>({})
 
-  let _verificationAbortController: AbortController | null = null
-
-  function createVerificationAbortController(): AbortController {
-    _verificationAbortController?.abort()
-    _verificationAbortController = new AbortController()
-    return _verificationAbortController
-  }
+  const verificationAbortController = createVerificationAbortController()
 
   function setMissingModels(models: MissingModelCandidate[]) {
     missingModelCandidates.value = models.length ? models : null
@@ -255,8 +237,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
   }
 
   function clearMissingModels() {
-    _verificationAbortController?.abort()
-    _verificationAbortController = null
+    verificationAbortController.abort()
     missingModelCandidates.value = null
     modelExpandState.value = {}
     selectedLibraryModel.value = {}
@@ -311,7 +292,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     removeMissingModelsBySourceScope,
     clearMissingModels,
     refreshMissingModels,
-    createVerificationAbortController,
+    createVerificationAbortController: verificationAbortController.create,
 
     hasMissingModelOnNode,
     isWidgetMissingModel,
