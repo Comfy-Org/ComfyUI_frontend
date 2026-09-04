@@ -22,7 +22,7 @@ const workshopMediaRoleSchema = z.strictObject({
    * previous decoder dropped it by rebuilding the object, so it is carried
    * rather than silently lost a second time.
    */
-  extras: z.array(z.record(z.string(), z.unknown())).optional()
+  extras: z.array(z.record(z.string(), z.json())).optional()
 })
 
 /**
@@ -49,8 +49,16 @@ export const workshopModelSchema = z.strictObject({
   modality: z.enum(WORKSHOP_MODALITIES),
   description: z.string(),
   tags: z.array(z.string()),
-  /** The model's raw input schema, passed through and rendered as a form. */
-  parameters: z.record(z.string(), z.unknown()),
+  /**
+   * The model's raw input schema, passed through and rendered as a form.
+   *
+   * `z.json()` rather than `z.unknown()` so what validates is what gets
+   * committed. `unknown` accepts values `JSON.stringify` then silently
+   * changes — a nested `undefined` disappears, `NaN` and `Infinity` become
+   * `null` — which would let the generator write data its own validation
+   * never saw.
+   */
+  parameters: z.record(z.string(), z.json()),
   roles: z.array(workshopMediaRoleSchema)
 })
 

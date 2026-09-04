@@ -107,8 +107,12 @@ describe('deriveWorkshopFields', () => {
     for (const model of collection) {
       const fields = deriveWorkshopFields(model.parameters, model.roles)
       const fieldNames = new Set(fields.map((field) => field.name))
+      // JSON Schema says `required` is an array of strings, but the schema
+      // types it as arbitrary JSON, so narrow rather than assume.
       const required = Array.isArray(model.parameters.required)
-        ? model.parameters.required
+        ? model.parameters.required.filter(
+            (name): name is string => typeof name === 'string'
+          )
         : []
       for (const name of required) {
         if (['model', 'medias', 'dispatch_mode'].includes(name)) continue
