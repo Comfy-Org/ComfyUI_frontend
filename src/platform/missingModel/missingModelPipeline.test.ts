@@ -61,6 +61,9 @@ const { mockHandles } = vi.hoisted(() => {
           _graphData: ComfyWorkflowJSON
         ) => state.enrichedCandidates
       ),
+      hasPendingVerification: vi.fn(
+        (_candidate: MissingModelCandidate) => false
+      ),
       verifyAssetSupportedCandidates: vi.fn(
         async (
           _candidates: readonly MissingModelCandidate[],
@@ -112,6 +115,8 @@ vi.mock('@/stores/modelToNodeStore', () => ({
 }))
 
 vi.mock('@/platform/missingModel/missingModelScan', () => ({
+  hasPendingVerification: (candidate: MissingModelCandidate) =>
+    mockHandles.hasPendingVerification(candidate),
   scanAllModelCandidates: (
     graph: LGraph,
     isAssetSupported: (nodeType: string, widgetName: string) => boolean,
@@ -183,6 +188,7 @@ describe('missingModelPipeline', () => {
     )
     mockHandles.scanAllModelCandidates.mockReturnValue([])
     mockHandles.verifyAssetSupportedCandidates.mockResolvedValue(undefined)
+    mockHandles.hasPendingVerification.mockReturnValue(false)
     mockHandles.api.getFolderPaths.mockResolvedValue({})
     mockHandles.fetchModelMetadata.mockResolvedValue({
       fileSize: null,
@@ -367,15 +373,17 @@ describe('missingModelPipeline', () => {
 
   describe('runMissingModelPipeline', () => {
     it('fetches folder paths for a remote-only pending candidate and surfaces it once verified', async () => {
-      const remoteCandidate = {
+      const remoteCandidate: MissingModelCandidate = {
         nodeType: 'RemoteFileNode',
         widgetName: 'file_name',
         name: 'selected.safetensors',
         isMissing: undefined,
-        isAssetSupported: false,
-        pendingVerification: async () => true
-      } satisfies MissingModelCandidate
+        isAssetSupported: false
+      }
       mockHandles.state.enrichedCandidates = [remoteCandidate]
+      mockHandles.hasPendingVerification.mockImplementation(
+        (candidate) => candidate === remoteCandidate
+      )
       mockHandles.verifyAssetSupportedCandidates.mockImplementation(
         async () => {
           remoteCandidate.isMissing = true
@@ -435,15 +443,17 @@ describe('missingModelPipeline', () => {
     })
 
     it('clears warnings without fetching folder paths when a deferred remote combo verifies present', async () => {
-      const remoteCandidate = {
+      const remoteCandidate: MissingModelCandidate = {
         nodeType: 'RemoteFileNode',
         widgetName: 'file_name',
         name: 'selected.safetensors',
         isMissing: undefined,
-        isAssetSupported: false,
-        pendingVerification: async () => false
-      } satisfies MissingModelCandidate
+        isAssetSupported: false
+      }
       mockHandles.state.enrichedCandidates = [remoteCandidate]
+      mockHandles.hasPendingVerification.mockImplementation(
+        (candidate) => candidate === remoteCandidate
+      )
       mockHandles.verifyAssetSupportedCandidates.mockImplementation(
         async () => {
           remoteCandidate.isMissing = false
@@ -471,15 +481,17 @@ describe('missingModelPipeline', () => {
         isMissing: true,
         isAssetSupported: false
       } satisfies MissingModelCandidate
-      const remoteCandidate = {
+      const remoteCandidate: MissingModelCandidate = {
         nodeType: 'RemoteFileNode',
         widgetName: 'file_name',
         name: 'selected.safetensors',
         isMissing: undefined,
-        isAssetSupported: false,
-        pendingVerification: async () => true
-      } satisfies MissingModelCandidate
+        isAssetSupported: false
+      }
       mockHandles.state.enrichedCandidates = [staticCandidate, remoteCandidate]
+      mockHandles.hasPendingVerification.mockImplementation(
+        (candidate) => candidate === remoteCandidate
+      )
       mockHandles.verifyAssetSupportedCandidates.mockImplementation(
         async () => {
           remoteCandidate.isMissing = true

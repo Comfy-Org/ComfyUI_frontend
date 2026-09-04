@@ -215,6 +215,7 @@ export function useRemoteWidget<
     const isFresh =
       isInitialized(entry) && (isPermanent || !isStale(entry, refresh))
     if (isFresh) return 'ready'
+    if (isFetching(entry)) return 'loading'
     if (isFailed(entry) || entry?.error) return 'error'
     return 'loading'
   }
@@ -241,11 +242,11 @@ export function useRemoteWidget<
           onRefresh()
           refreshQueued = false
         }
-        onFulfilled?.()
       })
       .catch((err) => {
         console.error(err)
       })
+      .finally(() => onFulfilled?.())
     return getCachedValue() ?? defaultValue
   }
 

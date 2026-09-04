@@ -4,11 +4,13 @@ import { assetService } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
 import {
   enrichWithEmbeddedMetadata,
+  hasPendingVerification,
   scanAllModelCandidates,
   verifyAssetSupportedCandidates
 } from '@/platform/missingModel/missingModelScan'
 import type { MissingModelWorkflowData } from '@/platform/missingModel/missingModelScan'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -137,9 +139,7 @@ export async function runMissingModelPipeline({
   const confirmedCandidates = enrichedCandidates.filter(
     (c) => c.isMissing === true
   )
-  const hasPendingVerification = enrichedCandidates.some(
-    (c) => c.pendingVerification
-  )
+  const hasDeferredCandidates = enrichedCandidates.some(hasPendingVerification)
   const downloadableCandidates = confirmedCandidates.filter(hasDownloadMetadata)
 
   const missingModels: ModelFile[] = downloadableCandidates.map(toModelFile)
@@ -167,6 +167,7 @@ export async function runMissingModelPipeline({
   const reportVerificationFailure = (err: unknown) => {
     if (controller.signal.aborted) return
     console.warn('[Missing Model Pipeline] Asset verification failed:', err)
+    reportError(err, { errorType: 'missing_model_verification_failed' })
     useToastStore().add({
       severity: 'warn',
       summary: st(
@@ -187,12 +188,12 @@ export async function runMissingModelPipeline({
     return { missingModels, confirmedCandidates }
   }
 
-  if (!confirmedCandidates.length && !hasPendingVerification) {
+  if (!confirmedCandidates.length && !hasDeferredCandidates) {
     clearMissingModels(activeWf, silent)
     return { missingModels, confirmedCandidates }
   }
 
-  const verification = hasPendingVerification
+  const verification = hasDeferredCandidates
     ? verifyAssetSupportedCandidates(enrichedCandidates, controller.signal)
     : Promise.resolve()
   void verification

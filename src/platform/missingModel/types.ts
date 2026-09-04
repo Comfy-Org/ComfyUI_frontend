@@ -25,8 +25,6 @@ export interface MissingModelCandidate {
    * - `undefined` — pending async verification
    */
   isMissing: boolean | undefined
-  /** Deferred inventory check for a loading remote combo; not persisted. */
-  pendingVerification?: (signal?: AbortSignal) => Promise<boolean | undefined>
 }
 
 /** View model grouping multiple candidate references under a single model name. */

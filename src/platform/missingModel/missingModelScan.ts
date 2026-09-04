@@ -33,6 +33,31 @@ export type MissingModelWorkflowData = FlattenableWorkflowGraph & {
   models?: ModelFile[]
 }
 
+type DeferredVerification = (
+  signal?: AbortSignal
+) => Promise<boolean | undefined>
+
+const pendingVerifications = new WeakMap<
+  MissingModelCandidate,
+  DeferredVerification
+>()
+
+export function hasPendingVerification(
+  candidate: MissingModelCandidate
+): boolean {
+  return pendingVerifications.has(candidate)
+}
+
+function copyCandidate(
+  candidate: MissingModelCandidate,
+  overrides: Partial<MissingModelCandidate> = {}
+): MissingModelCandidate {
+  const copy = { ...candidate, ...overrides }
+  const verify = pendingVerifications.get(candidate)
+  if (verify) pendingVerifications.set(copy, verify)
+  return copy
+}
+
 function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
   return widget.type === 'combo'
 }
@@ -61,13 +86,12 @@ function enrichCandidateFromNodeProperties(
       (!candidate.directory || candidate.directory === m.directory)
   )
   if (!match) return candidate
-  return {
-    ...candidate,
+  return copyCandidate(candidate, {
     directory: candidate.directory ?? match.directory,
     url: candidate.url ?? match.url,
     hash: candidate.hash ?? match.hash,
     hashType: candidate.hashType ?? match.hash_type
-  }
+  })
 }
 
 function isAssetWidget(widget: IBaseWidget): widget is IAssetWidget {
@@ -305,14 +329,14 @@ function scanComboWidget(
     !resolveComboValues(target.definitionWidget).includes(value)
   const inventory = getComboWidgetInventory(target.definitionWidget)
   if (inventory && inventory.getStatus() !== 'ready') {
-    candidate.pendingVerification = async (signal) => {
+    pendingVerifications.set(candidate, async (signal) => {
       await untilSettledOrAborted(inventory.waitForSettled(), signal)
       if (signal?.aborted || inventory.getStatus() !== 'ready') {
         return undefined
       }
       if (target.valueWidget.value !== value) return undefined
       return isAbsentFromOptions()
-    }
+    })
     return candidate
   }
 
@@ -345,7 +369,7 @@ export function enrichWithEmbeddedMetadata(
   const allNodes = flattenWorkflowNodes(graphData)
   const embeddedModels = collectEmbeddedModels(allNodes, graphData)
 
-  const enriched = candidates.map((c) => ({ ...c }))
+  const enriched = candidates.map((c) => copyCandidate(c))
   const candidatesByKey = new Map<string, MissingModelCandidate[]>()
   for (const c of enriched) {
     const dirKey = `${c.name}::${c.directory ?? ''}`
@@ -438,10 +462,10 @@ export async function verifyAssetSupportedCandidates(
 
   await Promise.all(
     candidates.map(async (candidate) => {
-      const verify = candidate.pendingVerification
+      const verify = pendingVerifications.get(candidate)
       if (!verify) return
+      pendingVerifications.delete(candidate)
       const isMissing = await verify(signal)
-      delete candidate.pendingVerification
       if (!signal?.aborted) candidate.isMissing = isMissing
     })
   )
