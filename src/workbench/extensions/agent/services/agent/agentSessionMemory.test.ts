@@ -39,4 +39,24 @@ describe('agentSessionMemory', () => {
     expect(reportError).toHaveBeenCalledTimes(3)
     expect(localStorage.getItem(AGENT_THREAD_STORAGE_KEY)).toBeNull()
   })
+
+  it('restores the previous thread when the owner update fails', () => {
+    localStorage.setItem(AGENT_THREAD_STORAGE_KEY, 'thread-a')
+    localStorage.setItem('Comfy.Agent.ThreadOwnerId', 'user-a')
+    const setItem = Storage.prototype.setItem
+    let writes = 0
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (
+      key,
+      value
+    ) {
+      writes++
+      if (writes === 2) throw new Error('owner write failed')
+      setItem.call(this, key, value)
+    })
+
+    rememberAgentSessionMemory('thread-b', 'user-b')
+
+    expect(localStorage.getItem(AGENT_THREAD_STORAGE_KEY)).toBe('thread-a')
+    expect(localStorage.getItem('Comfy.Agent.ThreadOwnerId')).toBe('user-a')
+  })
 })
