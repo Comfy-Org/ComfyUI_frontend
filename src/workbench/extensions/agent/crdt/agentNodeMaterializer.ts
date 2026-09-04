@@ -41,7 +41,7 @@ export type MaterializableGraph = Pick<
  * which matches the op layer: remote operations are applied against the root
  * scope, so subgraph-owned nodes are neither adopted nor detached here.
  *
- * @param subgraphDefinitions `definitions.subgraphs` the agent seeded into the
+ * @param subgraphDefinitions explicitly created definitions present in the
  * document. Root nodes typed by a definition id can only materialize once the
  * definition is registered on the root graph.
  * @returns ids that received a new live node.
@@ -63,7 +63,8 @@ export function reconcileAgentAdapters(
 const reportedDefinitionFailures = new WeakMap<LGraph, Set<string>>()
 
 /**
- * Register agent-seeded subgraph definitions the root graph does not know yet.
+ * Register explicitly created subgraph definitions the root graph does not
+ * know yet.
  *
  * This is the same entry point the human load path uses
  * (`useSubgraphService().loadSubgraphs` → `rootGraph.createSubgraph(s)`), so
@@ -76,7 +77,8 @@ const reportedDefinitionFailures = new WeakMap<LGraph, Set<string>>()
  * that nest them, so a definition that throws while configuring is rolled off
  * the root graph (and retried on the next frame) without taking a healthy
  * sibling down with it. Definitions already present on the root graph are left
- * untouched: v1 treats agent-seeded definitions as static after creation.
+ * untouched: edits address interior nodes through normal node operations, not
+ * by replacing an existing definition.
  *
  * @returns ids of definitions from the document that are still not registered
  * on the root graph.

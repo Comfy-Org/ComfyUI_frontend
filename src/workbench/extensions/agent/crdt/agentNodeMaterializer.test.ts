@@ -946,6 +946,33 @@ describe('reconcileAgentAdapters', () => {
       expect(reportError).not.toHaveBeenCalled()
     })
 
+    it('does not treat a definition payload as an edit to an existing subgraph', () => {
+      const definition = createTestSubgraphData({
+        nodes: [nodePayload(7)] as never
+      })
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id)],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+      const registered = graph.subgraphs.get(definition.id)
+
+      reconcileAgentAdapters(graph, [
+        {
+          ...definition,
+          name: 'replacement must not apply',
+          nodes: [nodePayload(8)] as never
+        }
+      ])
+
+      expect(graph.subgraphs.get(definition.id)).toBe(registered)
+      expect(registered?.nodes.map((node) => node.id)).toEqual([toNodeId(7)])
+      expect(created).toHaveBeenCalledOnce()
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
     it('carries interior widget values into the instantiated subgraph', () => {
       const definition = createTestSubgraphData({
         nodes: [
