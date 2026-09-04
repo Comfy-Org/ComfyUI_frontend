@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
+import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { useSubgraphOperations } from './useSubgraphOperations'
 
 vi.mock<unknown>(
@@ -29,7 +29,7 @@ describe('useSubgraphOperations', () => {
   })
 
   it('addSubgraphToLibrary calls publishSubgraph when single SubgraphNode selected', async () => {
-    useCanvasStore().selectedItems = [createSubgraphNode()]
+    setCanvasSelection([createSubgraphNode()])
     const { addSubgraphToLibrary } = useSubgraphOperations()
 
     await addSubgraphToLibrary()
@@ -38,7 +38,7 @@ describe('useSubgraphOperations', () => {
   })
 
   it('addSubgraphToLibrary does not call publishSubgraph when no items selected', async () => {
-    useCanvasStore().selectedItems = []
+    setCanvasSelection([])
     const { addSubgraphToLibrary } = useSubgraphOperations()
 
     await addSubgraphToLibrary()
@@ -47,10 +47,7 @@ describe('useSubgraphOperations', () => {
   })
 
   it('addSubgraphToLibrary does not call publishSubgraph when multiple items selected', async () => {
-    useCanvasStore().selectedItems = [
-      createSubgraphNode(),
-      createSubgraphNode()
-    ]
+    setCanvasSelection([createSubgraphNode(), createSubgraphNode()])
     const { addSubgraphToLibrary } = useSubgraphOperations()
 
     await addSubgraphToLibrary()
@@ -59,7 +56,7 @@ describe('useSubgraphOperations', () => {
   })
 
   it('addSubgraphToLibrary does not call publishSubgraph when selected item is not a SubgraphNode', async () => {
-    useCanvasStore().selectedItems = [createRegularNode()]
+    setCanvasSelection([createRegularNode()])
     const { addSubgraphToLibrary } = useSubgraphOperations()
 
     await addSubgraphToLibrary()

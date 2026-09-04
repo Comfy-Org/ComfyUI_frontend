@@ -8,6 +8,7 @@ import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeLayout } from '@/renderer/core/layout/types'
 import { toNodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
+import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 
 // TODO: Simplify test setup — use real layoutStore + createTestingPinia instead
 // of manually mocking every dependency. See https://github.com/Comfy-Org/ComfyUI_frontend/issues/10765
@@ -115,7 +116,7 @@ function pointerEvent(clientX: number, clientY: number): PointerEvent {
 
 beforeEach(() => {
   Object.assign(useCanvasStore(), { selectedNodeIds: new Set() })
-  useCanvasStore().selectedItems = []
+  setCanvasSelection([])
   testState.nodeLayouts.clear()
   testState.nodeSnap.shouldSnap.mockReturnValue(false)
   testState.nodeSnap.applySnapToPosition.mockImplementation(
@@ -201,7 +202,7 @@ describe('useNodeDrag', () => {
     const selectedGroup = new LGraphGroup('selected')
     selectedGroup.pos = [500, 600]
     Object.assign(useCanvasStore(), { selectedNodeIds: new Set([node1]) })
-    useCanvasStore().selectedItems = [selectedNode, selectedGroup]
+    setCanvasSelection([selectedNode, selectedGroup])
     testState.nodeLayouts.set('1', {
       position: { x: 100, y: 100 },
       size: { width: 200, height: 120 }
@@ -259,7 +260,7 @@ describe('useNodeDrag', () => {
 describe('useNodeDrag auto-pan', () => {
   beforeEach(() => {
     Object.assign(useCanvasStore(), { selectedNodeIds: new Set([node1]) })
-    useCanvasStore().selectedItems = []
+    setCanvasSelection([])
     testState.nodeLayouts.clear()
     testState.nodeLayouts.set('1', {
       position: { x: 100, y: 200 },
@@ -407,7 +408,7 @@ describe('useNodeDrag non-node positionables', () => {
         pos[1] += deltaY
       }
     }
-    useCanvasStore().selectedItems = [fromPartial(group)]
+    setCanvasSelection([fromPartial(group)])
     return group
   }
 
