@@ -1,7 +1,5 @@
 import type { CSSProperties } from 'vue'
 
-import type { SubscriptionTier } from '@/platform/workspace/api/workspaceApi'
-
 const PLAN_COLORS = {
   FREE: { lightness: 0.45, chroma: 0.016, hue: 240, hueRange: 0 },
   CREATOR: { lightness: 0.53, chroma: 0.085, hue: 210, hueRange: 14 },
@@ -17,7 +15,7 @@ const NAME_VARIATIONS = [-1, -0.5, 0, 0.5, 1] as const
 /** Solid Polar plan color for a workspace avatar; neutral when the tier is unavailable. */
 export function workspaceAvatarStyle(
   workspaceName: string,
-  subscriptionTier: SubscriptionTier | null | undefined
+  subscriptionTier: string | null | undefined
 ): CSSProperties {
   if (subscriptionTier === undefined) return {}
 

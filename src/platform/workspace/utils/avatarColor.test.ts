@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest'
 
-import type { SubscriptionTier } from '@/platform/workspace/api/workspaceApi'
-
 import { workspaceAvatarStyle } from './avatarColor'
 
 describe('workspaceAvatarStyle', () => {
@@ -13,9 +11,7 @@ describe('workspaceAvatarStyle', () => {
     const freeStyle = workspaceAvatarStyle('Acme', null)
 
     expect(freeStyle).not.toEqual({})
-    expect(
-      workspaceAvatarStyle('Acme', 'FUTURE_TIER' as unknown as SubscriptionTier)
-    ).toEqual(freeStyle)
+    expect(workspaceAvatarStyle('Acme', 'FUTURE_TIER')).toEqual(freeStyle)
   })
 
   it('maps the legacy Creator tiers to the Creator plan', () => {
