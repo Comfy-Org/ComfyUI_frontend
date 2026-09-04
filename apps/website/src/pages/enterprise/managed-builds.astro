@@ -1,6 +1,7 @@
 ---
 import BenefitsGrid01 from '../../components/blocks/BenefitsGrid01.vue'
 import CardSplitContent02 from '../../components/blocks/CardSplitContent02.vue'
+import CompareTable01 from '../../components/blocks/CompareTable01.vue'
 import CtaBands01 from '../../components/blocks/CtaBands01.vue'
 import CtaCenter01 from '../../components/blocks/CtaCenter01.vue'
 import FAQSplit01 from '../../components/blocks/FAQSplit01.vue'
@@ -83,6 +84,29 @@ const governanceRows = [
     term: 'Usage visibility and audit requirements',
     description:
       'Track usage by model and partner on the Developer Platform. Scope authentication, build-assignment, release, retention, and export requirements during enterprise security review.',
+  },
+] as const
+
+const compareRows = [
+  {
+    id: 'packaging',
+    feature: 'Custom nodes packaging',
+    cells: ['Included', 'Included'],
+  },
+  {
+    id: 'sharing',
+    feature: 'Team sharing',
+    cells: ['Not included', 'Enterprise only'],
+  },
+  {
+    id: 'governance',
+    feature: 'Governance',
+    cells: ['Not included', 'Enterprise only'],
+  },
+  {
+    id: 'python',
+    feature: 'Python dependency auto-resolution',
+    cells: ['Included', 'Included'],
   },
 ] as const
 
@@ -239,6 +263,13 @@ const faqPage = buildFaqPageNode(url, faqs)
       target: '_blank',
     }}
     secondaryCta={{ label: 'REQUEST DEMO', href: '/contact/' }}
+  />
+
+  <CompareTable01
+    heading="Builder vs. Managed Builds"
+    subtitle="Builder is self-serve for packaging and testing your own environment. Managed Builds adds team sharing and enterprise governance."
+    columns={['BUILDER', 'MANAGED BUILDS']}
+    rows={compareRows}
   />
 
   <ReasonsSplit01

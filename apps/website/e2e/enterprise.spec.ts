@@ -156,7 +156,54 @@ test.describe('Enterprise pages @smoke', () => {
       securitySection.getByRole('link', { name: 'REQUEST DEMO' })
     ).toHaveAttribute('href', '/contact/')
     await expect(
+      page.getByRole('heading', {
+        level: 2,
+        name: 'Builder vs. Managed Builds'
+      })
+    ).toBeVisible()
+    await expect(
+      page.getByText(
+        /Builder is self-serve for packaging and testing your own environment\./
+      )
+    ).toBeVisible()
+    for (const feature of [
+      'Custom nodes packaging',
+      'Team sharing',
+      'Governance',
+      'Python dependency auto-resolution'
+    ]) {
+      await expect(
+        page.getByRole('rowheader', { name: feature, exact: true })
+      ).toBeVisible()
+    }
+    await expect(
+      page.getByRole('columnheader', { name: 'MANAGED BUILDS' })
+    ).toBeVisible()
+    await expect(
       page.getByText(/dedicated GPU capacity, priority queueing/)
     ).toBeVisible()
+  })
+})
+
+test.describe('Managed Builds — mobile @mobile', () => {
+  test('comparison table scrolls in its container without page overflow', async ({
+    page
+  }) => {
+    await page.goto('/enterprise/managed-builds')
+
+    const table = page.getByRole('table')
+    await table.scrollIntoViewIfNeeded()
+    await expect(table).toBeVisible()
+    await expect
+      .poll(
+        () =>
+          page.evaluate(
+            () =>
+              document.documentElement.scrollWidth >
+              document.documentElement.clientWidth
+          ),
+        { message: 'page has horizontal overflow', timeout: 5_000 }
+      )
+      .toBe(false)
   })
 })
