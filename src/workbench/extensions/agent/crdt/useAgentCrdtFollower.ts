@@ -97,9 +97,6 @@ export function useAgentCrdtFollower(
     dropped: 0
   })
 
-  // Dev-panel tap (poc-4): log every outbound frame with its delivery result.
-  // Wraps locally instead of modifying the exported apiTransport, whose
-  // never-throw contract is covered by tests.
   const client = new DocFrameClient(createLoggedTransport())
   const bridge = new LayoutFollowerBridge(client)
   const projection = new AgentCrdtProjection(
@@ -240,12 +237,10 @@ export function useAgentCrdtFollower(
       actor: detail?.actor ?? 'agent-reset',
       opId: `doc-reset:${detail?.seq ?? 'unknown'}`
     }
+    // Store clear and live-graph sweep travel together; see
+    // `AgentCrdtProjection.clearForReset` for why.
     if (detail?.workflowId !== undefined) {
       projection.clearForReset(detail.workflowId, context)
-      // A lineage break empties the stores but leaves every live adapter
-      // standing, and those adapters are what a save serialises. Without a
-      // reconcile here the pre-reset nodes survive -- and can be written back
-      // -- until some later frame happens to arrive.
     }
     connected.value = false
     updatesApplied.value = 0
@@ -277,9 +272,8 @@ export function useAgentCrdtFollower(
         actor: 'agent-lineage',
         opId: `follower-replaced:${workflowId}`
       })
-      // Same reasoning as `onDocReset`: the clear is store-only, so the stale
-      // live adapters have to be swept before the replacement doc's frames
-      // start landing.
+      // The sweep inside `clearForReset` must land before the replacement
+      // doc's frames start arriving through the rebound follower.
       projection.bind(workflowId, bridge.follower)
     }
   }
