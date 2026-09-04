@@ -3,6 +3,9 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { Locale } from '../../i18n/translations'
+import type * as McpClientConfig from '../../config/mcpClients'
+import type { McpConnections } from '../../config/mcpClients'
 import SetupSection from './SetupSection.vue'
 
 const { connectionSpy, clientSpy } = vi.hoisted(() => ({
@@ -14,6 +17,19 @@ vi.mock('../../scripts/posthog', () => ({
   captureMcpConnectionTabClick: connectionSpy,
   captureMcpClientTabClick: clientSpy
 }))
+
+vi.mock('../../config/mcpClients', async (importOriginal) => {
+  const actual = await importOriginal<typeof McpClientConfig>()
+
+  return {
+    ...actual,
+    createMcpConnections: (locale: Locale): McpConnections => {
+      const connections: McpConnections = actual.createMcpConnections(locale)
+      connections.cloud.clients.codex = undefined
+      return connections
+    }
+  }
+})
 
 const MCP_ENDPOINT = 'https://cloud.comfy.org/mcp'
 
@@ -97,6 +113,18 @@ describe('SetupSection', () => {
       screen.getByText(
         /docs\.comfy\.org\/agent-tools\/mcp\.md#local-comfy-mcp-connection/
       )
+    ).toBeTruthy()
+  })
+
+  it('omits unavailable clients from tabs and instructions', async () => {
+    renderSetup()
+
+    expect(screen.queryByRole('tab', { name: 'Codex' })).toBeNull()
+    expect(screen.queryByText(/codex mcp add comfy-cloud/)).toBeNull()
+
+    await selectTab('Claude Code Terminal')
+    expect(
+      screen.getByText(/claude mcp add --transport http comfy-cloud/)
     ).toBeTruthy()
   })
 
