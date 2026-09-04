@@ -126,7 +126,7 @@ function reloadHost(
 
 describe('promoted widget survival across host replacement', () => {
   describe('same-id host replacement', () => {
-    it('carries the promoted widget id and value through an ordinary same-id replacement', async () => {
+    it('recreates promoted widget state when the host is replaced', async () => {
       const { subgraph, host } = buildPromotedHost(true)
       const store = useWidgetValueStore()
       const valueId = promotedWidgetId(host, 'value')
@@ -139,25 +139,19 @@ describe('promoted widget survival across host replacement', () => {
       subgraph.rootGraph.remove(host)
       await flushDeferredCleanup()
 
-      // Ordinary removal is undo-friendly (`WidgetDetachMode: 'keep-values'`):
-      // the widget value is still in the store immediately after removal.
-      expect(store.getWidget(valueId)?.value).toBe(null)
+      expect(store.getWidget(valueId)).toBeUndefined()
 
       const replacement = createTestSubgraphNode(subgraph, { id: HOST_ID })
       subgraph.rootGraph.add(replacement)
 
-      // `registerWidget` keeps a same-typed re-registration's existing store
-      // value over the interior widget's live default (#13073, #13773), so
-      // the edited values from before removal carry over rather than
-      // resetting to the interior node's own current value.
       expect(promotedWidgetId(replacement, 'value')).toBe(valueId)
       expect(promotedWidgetId(replacement, 'count')).toBe(countId)
-      expect(promotedValue(replacement, 'value')).toBe(null)
-      expect(promotedValue(replacement, 'count')).toBe(42)
+      expect(promotedValue(replacement, 'value')).toBe('initial')
+      expect(promotedValue(replacement, 'count')).toBe(5)
 
       expect(upstream.connect(0, replacement, 0)).toBeTruthy()
       expect(replacement.inputs[0].link).not.toBeNull()
-      expect(promotedValue(replacement, 'value')).toBe(null)
+      expect(promotedValue(replacement, 'value')).toBe('initial')
     })
 
     it('discards the null host value when the interior widget type changes', async () => {
@@ -188,12 +182,7 @@ describe('promoted widget survival across host replacement', () => {
       subgraph.rootGraph.remove(host)
       await flushDeferredCleanup()
 
-      // The host's own promoted-widget entry is undo-friendly
-      // (`WidgetDetachMode: 'keep-values'`) like any other removed node's
-      // widget state, but the last host's removal still releases the
-      // subgraph *definition* (the interior node the promotion resolves
-      // against), so a same-id replacement can't re-derive a promoted input.
-      expect(store.getWidget(valueId)?.value).toBe(null)
+      expect(store.getWidget(valueId)).toBeUndefined()
 
       const replacement = createTestSubgraphNode(subgraph, { id: HOST_ID })
       subgraph.rootGraph.add(replacement)

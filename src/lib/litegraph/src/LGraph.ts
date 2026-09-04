@@ -1494,7 +1494,7 @@ export class LGraph
 
     // callback
     node.onRemoved?.()
-    if (!successor) clearNodeOwnedStoreState(node, 'keep-values')
+    if (!successor) clearNodeOwnedStoreState(node)
 
     const order = node.order
     if (!successor) {
