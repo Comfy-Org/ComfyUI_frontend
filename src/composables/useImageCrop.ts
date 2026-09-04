@@ -30,7 +30,6 @@ interface ResizeHandle {
 }
 
 const HANDLE_SIZE = 8
-// Pointer target for corner handles; the visible 9px dot is drawn by CORNER_DOT_CLASS.
 const CORNER_HIT_SIZE = 16
 const CORNER_DOT_CLASS =
   "after:pointer-events-none after:absolute after:left-1/2 after:top-1/2 after:size-[9px] after:-translate-x-1/2 after:-translate-y-1/2 after:rounded-full after:bg-white/80 after:content-['']"
@@ -286,8 +285,6 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     const y = imageOffsetY.value + cropY.value * scaleFactor.value
     const w = cropWidth.value * scaleFactor.value
     const h = cropHeight.value * scaleFactor.value
-    // The border is drawn outside the crop region (box-content), so its
-    // centerline sits half a border-width outside the region's edges.
     const borderMid = CROP_BOX_BORDER / 2
 
     return [
