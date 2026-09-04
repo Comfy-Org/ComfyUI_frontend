@@ -7,6 +7,7 @@ import { createI18n } from 'vue-i18n'
 import { useErrorOverlayState } from './useErrorOverlayState'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { NodeError } from '@/schemas/apiSchema'
 import type {
   MissingPackGroup,
@@ -476,6 +477,47 @@ describe('useErrorOverlayState', () => {
     expect(screen.getByTestId('message')).toHaveTextContent(
       'Resolve them before running the workflow.'
     )
+  })
+
+  it('hides an open overlay while the issues tab setting is off', async () => {
+    mockAllErrorGroups.value = [
+      {
+        type: 'execution',
+        severity: 'error',
+        groupKey: 'execution:KSampler',
+        displayTitle: 'Required input is missing',
+        count: 1,
+        priority: 0,
+        cards: [
+          {
+            id: '1',
+            title: 'KSampler',
+            errors: [
+              {
+                message: 'Required input is missing',
+                toastTitle: 'Required input missing',
+                toastMessage: 'KSampler is missing a required input: model'
+              }
+            ]
+          }
+        ]
+      }
+    ]
+    mountOverlayState()
+
+    const executionErrorStore = useExecutionErrorStore()
+    executionErrorStore.recordNodeErrors({
+      '1': makeNodeError(['Required input is missing'])
+    })
+    executionErrorStore.showErrorOverlay()
+    await nextTick()
+    expect(screen.getByTestId('visible')).toHaveTextContent('true')
+
+    useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] =
+      false
+    await nextTick()
+
+    expect(screen.getByTestId('visible')).toHaveTextContent('false')
   })
 
   it('does not show when a raw error has no resolved overlay message', async () => {

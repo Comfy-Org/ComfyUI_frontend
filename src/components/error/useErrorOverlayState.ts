@@ -2,6 +2,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 
+import { isIssuesTabEnabled } from '@/platform/settings/missingWarningVisibility'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useErrorGroups } from '@/components/rightSidePanel/errors/useErrorGroups'
 import type {
@@ -202,6 +203,7 @@ export function useErrorOverlayState() {
   const isVisible = computed(
     () =>
       isErrorOverlayOpen.value &&
+      isIssuesTabEnabled() &&
       totalErrorCount.value > 0 &&
       overlayMessage.value.trim().length > 0
   )
