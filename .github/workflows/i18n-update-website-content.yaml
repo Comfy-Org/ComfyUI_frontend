@@ -58,4 +58,4 @@ jobs:
           fi
           git -c user.name=github-actions -c user.email=github-actions@github.com \
             commit -m 'Update website content translations'
-          git push "https://x-access-token:${PR_GH_TOKEN}@github.com/${{ github.repository }}.git" "HEAD:refs/heads/${{ github.ref_name }}"
+          git push "https://x-access-token:${PR_GH_TOKEN}@github.com/${{ github.repository }}.git" "HEAD:refs/heads/$GITHUB_REF_NAME"

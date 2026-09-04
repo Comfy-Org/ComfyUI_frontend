@@ -177,6 +177,30 @@ describe('splitBody + joinBody', () => {
     expect(segments).toEqual([{ translatable: true, text: body }])
     expect(joinBody(segments)).toBe(body)
   })
+
+  it('translates an <AuthorBio> children block outside any <Section>', () => {
+    const body =
+      '<Section id="a">one</Section>\n\n<AuthorBio>Jane is an artist.</AuthorBio>\n'
+    const segments = splitBody(body)
+
+    expect(segments).toContainEqual({
+      translatable: true,
+      text: '<AuthorBio>Jane is an artist.</AuthorBio>'
+    })
+    expect(joinBody(segments)).toBe(body)
+  })
+
+  it('translates a bio: field inside a self-closing <AuthorBio /> without disturbing its structure', () => {
+    const body =
+      '<Section id="a">one</Section>\n\n<AuthorBio people={[{ name: "Jane", bio: `Jane is an artist.` }]} />\n'
+    const segments = splitBody(body)
+
+    expect(segments).toContainEqual({
+      translatable: true,
+      text: 'Jane is an artist.'
+    })
+    expect(joinBody(segments)).toBe(body)
+  })
 })
 
 describe('findMdxSyntaxErrors', () => {
@@ -213,6 +237,12 @@ describe('findMdxSyntaxErrors', () => {
     expect(findMdxSyntaxErrors('text with a stray }brace')).toEqual([
       'unbalanced braces: unexpected }'
     ])
+  })
+
+  it('does not mistake a > inside a quoted attribute for the tag close', () => {
+    expect(
+      findMdxSyntaxErrors('<Section title="A > B">text</Section>')
+    ).toEqual([])
   })
 })
 

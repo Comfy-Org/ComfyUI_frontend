@@ -47,6 +47,18 @@ describe('loadManifest', () => {
     )
     expect(() => loadManifest(path)).toThrow()
   })
+
+  it('rejects a locale hash that is not 64 lowercase hex characters', () => {
+    const path = join(dir, 'manifest.json')
+    writeFileSync(
+      path,
+      JSON.stringify({
+        version: 1,
+        entries: { 'ui.copy': { ja: 'not-a-hash' } }
+      })
+    )
+    expect(() => loadManifest(path)).toThrow()
+  })
 })
 
 describe('saveManifest + loadManifest', () => {

@@ -42,16 +42,46 @@ export interface BodySegment {
   text: string
 }
 
-const sectionPattern = /<Section\b[^<>]*>[\s\S]*?<\/Section>/g
+const blockPattern = /<([A-Za-z][A-Za-z0-9._-]*)\b[^<>]*>[\s\S]*?<\/\1>/g
+
+// bio fields are the one place prose lives inside a component's JSX
+// attribute expression rather than as tag children: <AuthorBio people={[{
+// ..., bio: `text` }]} /> is self-closing, so it never matches blockPattern.
+const bioFieldPattern = /\bbio:\s*`([^`]*)`/g
+
+function splitBioFields(text: string): BodySegment[] {
+  const segments: BodySegment[] = []
+  let cursor = 0
+  for (const match of text.matchAll(bioFieldPattern)) {
+    const index = match.index ?? 0
+    const innerStart = index + match[0].length - match[1].length - 1
+    const innerEnd = innerStart + match[1].length
+    if (innerStart > cursor) {
+      segments.push({
+        translatable: false,
+        text: text.slice(cursor, innerStart)
+      })
+    }
+    if (match[1].length > 0) {
+      segments.push({ translatable: true, text: match[1] })
+    }
+    cursor = innerEnd
+  }
+  if (cursor < text.length) {
+    segments.push({ translatable: false, text: text.slice(cursor) })
+  }
+  return segments.length > 0 ? segments : [{ translatable: false, text }]
+}
 
 // A customer story's body can run well past a single translation request's
-// character budget (longest today: ~15KB), but each <Section> within it is
-// small (longest today: ~4.8KB). Splitting on that existing structural
-// boundary keeps every translation request comfortably sized without
-// inventing an arbitrary character-based cut that could land mid-sentence or
-// mid-component. A body with no <Section> tags (FAQ answers) is one segment.
+// character budget (longest today: ~15KB), but each <Section> or <AuthorBio>
+// within it is small (longest today: ~4.8KB). Splitting on that existing
+// structural boundary keeps every translation request comfortably sized
+// without inventing an arbitrary character-based cut that could land
+// mid-sentence or mid-component. A body with no such tags (FAQ answers) is
+// one segment.
 export function splitBody(body: string): BodySegment[] {
-  const matches = [...body.matchAll(sectionPattern)]
+  const matches = [...body.matchAll(blockPattern)]
   if (matches.length === 0) return [{ translatable: true, text: body }]
 
   const segments: BodySegment[] = []
@@ -59,13 +89,13 @@ export function splitBody(body: string): BodySegment[] {
   for (const match of matches) {
     const index = match.index ?? 0
     if (index > cursor) {
-      segments.push({ translatable: false, text: body.slice(cursor, index) })
+      segments.push(...splitBioFields(body.slice(cursor, index)))
     }
     segments.push({ translatable: true, text: match[0] })
     cursor = index + match[0].length
   }
   if (cursor < body.length) {
-    segments.push({ translatable: false, text: body.slice(cursor) })
+    segments.push(...splitBioFields(body.slice(cursor)))
   }
   return segments
 }
@@ -74,14 +104,17 @@ export function joinBody(segments: readonly BodySegment[]): string {
   return segments.map((segment) => segment.text).join('')
 }
 
-const mdxTagPattern = /<(\/?)([a-zA-Z][a-zA-Z0-9._-]*)([^<>]*)>/g
+const mdxTagPattern =
+  /<(\/?)([a-zA-Z][a-zA-Z0-9._-]*)((?:"[^"]*"|'[^']*'|[^<>])*)>/g
 
 // Astro compiles a generated .mdx file as JSX at build time, and nothing in
 // this pipeline otherwise runs that compiler before a translation is
 // committed. This is a syntax heuristic, not a substitute for it: it catches
 // the two failure shapes an LLM actually produces (a dropped/mismatched
 // closing tag, an unbalanced `{`/`}` from stray JSX-looking text) without
-// taking on a full MDX/JSX parser as a dependency.
+// taking on a full MDX/JSX parser as a dependency. The attrs group treats
+// quoted strings as opaque so a `>` inside an attribute value (e.g.
+// title="A > B") isn't mistaken for the tag's own close.
 export function findMdxSyntaxErrors(body: string): string[] {
   const stack: string[] = []
   const errors: string[] = []

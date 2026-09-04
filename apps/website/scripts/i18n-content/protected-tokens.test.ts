@@ -84,6 +84,15 @@ describe('tokenErrors', () => {
     ).toEqual(['missing </Quote>×2, <Quote>×2'])
   })
 
+  it('flags a link repeated more times than the source', () => {
+    expect(
+      tokenErrors(
+        '[one](https://x.test/1)',
+        '[one](https://x.test/1) と [one](https://x.test/1)'
+      )
+    ).toEqual(['added https://x.test/1'])
+  })
+
   it('flags a dropped repeated markdown link', () => {
     expect(
       tokenErrors(

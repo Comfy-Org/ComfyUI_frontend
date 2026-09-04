@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, renameSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
@@ -306,7 +306,12 @@ async function run(argv: readonly string[]): Promise<void> {
       }
       const outPath = item.ref.localePath(item.locale.code)
       mkdirSync(dirname(outPath), { recursive: true })
-      writeFileSync(outPath, serializeDocument(result.frontmatter, result.body))
+      // Write beside the destination and rename into place, so a run that
+      // fails mid-write never leaves a partial file at outPath for the next
+      // run to bootstrap a baseline hash against.
+      const tmpPath = `${outPath}.tmp-${process.pid}`
+      writeFileSync(tmpPath, serializeDocument(result.frontmatter, result.body))
+      renameSync(tmpPath, outPath)
       const localeHashes = manifestUpdates.get(item.ref.id) ?? new Map()
       localeHashes.set(item.locale.code, item.sourceHash)
       manifestUpdates.set(item.ref.id, localeHashes)
