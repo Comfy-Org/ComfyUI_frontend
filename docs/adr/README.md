@@ -35,7 +35,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [SUBGRAPH-PROMOTION-0009](SUBGRAPH-PROMOTION-0009-represent-promoted-widgets-as-linked-inputs.md)                | Represent Promoted Widgets as Linked Inputs                     | Proposed | 2026-05-05 |
 | [SUBGRAPH-PROMOTION-0027](SUBGRAPH-PROMOTION-0027-defer-promoted-widget-registration-to-onadded.md)              | Defer Promoted-Widget Registration to `onAdded()`               | Accepted | 2026-09-01 |
 | [TELEMETRY-DIAGNOSTICS-0019](TELEMETRY-DIAGNOSTICS-0019-recoverable-event-diagnostics.md)                        | Recoverable Event Diagnostics                                   | Proposed | 2026-08-25 |
-| [TELEMETRY-ERRORS-0030](TELEMETRY-ERRORS-0030-agent-consumable-error-telemetry.md)                               | Agent-Consumable Error Telemetry                                | Accepted | 2026-09-03 |
+| [TELEMETRY-ERRORS-0030](TELEMETRY-ERRORS-0030-agent-consumable-error-telemetry.md)                               | Agent-Consumable Error Telemetry                                | Proposed | 2026-09-03 |
 | [TELEMETRY-ROUTING-0013](TELEMETRY-ROUTING-0013-telemetry-routing-across-consumers.md)                           | Telemetry Routing Across Consumers                              | Accepted | 2026-07-28 |
 | [WIDGET-SERIALIZATION-0006](WIDGET-SERIALIZATION-0006-preserve-primitive-widget-values-across-copy-and-paste.md) | Preserve Primitive Widget Values Across Copy and Paste          | Proposed | 2026-02-22 |
 

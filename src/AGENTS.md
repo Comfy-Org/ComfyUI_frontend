@@ -21,8 +21,11 @@
   Pick a slug that names the failure, not the symptom, and reuse the existing
   one if the failure already has a name.
 
-  Follow [ADR-TELEMETRY-ERRORS-0030](../docs/adr/TELEMETRY-ERRORS-0030-agent-consumable-error-telemetry.md) for
-  agent-consumable tags, assertion modes, catch classification, and PII rules.
+  [ADR-TELEMETRY-ERRORS-0030](../docs/adr/TELEMETRY-ERRORS-0030-agent-consumable-error-telemetry.md)
+  proposes agent-consumable tags, assertion modes, catch classification, and
+  PII rules. It is Proposed, not Accepted, until `assert()` takes an assertion
+  mode and `ReportErrorOptions` takes a fingerprint, so treat it as direction
+  rather than a gate.
 
 ## Security
 
