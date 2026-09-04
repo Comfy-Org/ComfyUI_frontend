@@ -16,7 +16,7 @@ import {
 } from '@/types/nodeIdentification'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 
-interface PromotedPreview {
+export interface PromotedPreview {
   sourceNodeId: NodeId
   sourceWidgetName: string
   type: 'image' | 'video' | 'audio'
@@ -28,7 +28,8 @@ const PREVIEW_TYPES_BY_MEDIA = {
   audio: 'audio'
 } as const satisfies Partial<Record<string, PromotedPreview['type']>>
 
-function getPreviewMediaType(node: LGraphNode): PromotedPreview['type'] {
+/** Shared with {@link useAmbientSubgraphPreviews} so both derive media type identically. */
+export function getPreviewMediaType(node: LGraphNode): PromotedPreview['type'] {
   const media = node.previewMediaType
   if (media && media in PREVIEW_TYPES_BY_MEDIA) {
     return PREVIEW_TYPES_BY_MEDIA[media as keyof typeof PREVIEW_TYPES_BY_MEDIA]

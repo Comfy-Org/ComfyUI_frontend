@@ -181,6 +181,51 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
       await expect(subgraphNode.imagePreview.locator('img')).toHaveCount(1)
     }
   )
+
+  wstest(
+    'Promotes a live sampler preview from inside a subgraph to the outer SubgraphNode',
+    async ({ comfyPage, getWebSocket }) => {
+      // Expected-fail until the `!lgraphNode?.isSubgraphNode()` guard in
+      // LGraphNode.vue is relaxed to allow rendering previews on subgraph
+      // nodes. Keep this test (don't delete) so it flips green automatically
+      // once that guard changes.
+      // incident-94: waiting on LGraphNode.vue:172's `!lgraphNode?.isSubgraphNode()` guard.
+      test.fail()
+
+      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+      const samplerNode = new VueNodeFixture(
+        comfyPage.vueNodes.getNodeByTitle('KSampler')
+      )
+      const subgraphNode = new VueNodeFixture(
+        comfyPage.vueNodes.getNodeByTitle('New Subgraph')
+      )
+
+      await test.step('Add node', async () => {
+        await comfyPage.menu.topbar.newWorkflowButton.click()
+        await comfyPage.nextFrame()
+
+        await comfyPage.searchBoxV2.addNode('KSampler')
+        await expect(samplerNode.root).toBeVisible()
+      })
+
+      await test.step('Create subgraph', async () => {
+        await samplerNode.title.click()
+        await comfyPage.page.keyboard.press('Control+Shift+e')
+        await expect(subgraphNode.root).toBeVisible()
+      })
+
+      await test.step('Fire live preview for the nested sampler', async () => {
+        const jobId = await execution.run()
+        execution.executionStart(jobId)
+        execution.executing(jobId, '2:1')
+        execution.latentPreview(jobId, '2:1')
+      })
+
+      await expect(
+        subgraphNode.root.getByAltText('Live sampling preview')
+      ).toBeVisible()
+    }
+  )
 })
 
 async function countColumns(locator: Locator) {

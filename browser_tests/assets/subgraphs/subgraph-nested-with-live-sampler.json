@@ -1,0 +1,184 @@
+{
+  "id": "11111111-1111-4111-8111-000000000001",
+  "revision": 0,
+  "last_node_id": 1,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "22222222-2222-4222-8222-000000000002",
+      "pos": [400, 200],
+      "size": [400, 200],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [{ "name": "output", "type": "LATENT", "links": null }],
+      "title": "Outer Subgraph",
+      "properties": { "previewExposures": [] },
+      "widgets_values": []
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "definitions": {
+    "subgraphs": [
+      {
+        "id": "22222222-2222-4222-8222-000000000002",
+        "version": 1,
+        "state": {
+          "lastGroupId": 0,
+          "lastNodeId": 2,
+          "lastLinkId": 1,
+          "lastRerouteId": 0
+        },
+        "revision": 0,
+        "config": {},
+        "name": "Outer Subgraph",
+        "inputNode": {
+          "id": -10,
+          "bounding": [50, 200, 120, 60]
+        },
+        "outputNode": {
+          "id": -20,
+          "bounding": [900, 200, 120, 60]
+        },
+        "inputs": [],
+        "outputs": [
+          {
+            "id": "44444444-4444-4444-8444-000000000004",
+            "name": "output",
+            "type": "LATENT",
+            "linkIds": [1],
+            "pos": { "0": 920, "1": 220 }
+          }
+        ],
+        "widgets": [],
+        "nodes": [
+          {
+            "id": 2,
+            "type": "33333333-3333-4333-8333-000000000003",
+            "pos": [400, 200],
+            "size": [400, 200],
+            "flags": {},
+            "order": 0,
+            "mode": 0,
+            "inputs": [],
+            "outputs": [{ "name": "output", "type": "LATENT", "links": [1] }],
+            "title": "Middle Subgraph",
+            "properties": { "previewExposures": [] },
+            "widgets_values": []
+          }
+        ],
+        "groups": [],
+        "links": [
+          {
+            "id": 1,
+            "origin_id": 2,
+            "origin_slot": 0,
+            "target_id": -20,
+            "target_slot": 0,
+            "type": "LATENT"
+          }
+        ],
+        "extra": {}
+      },
+      {
+        "id": "33333333-3333-4333-8333-000000000003",
+        "version": 1,
+        "state": {
+          "lastGroupId": 0,
+          "lastNodeId": 3,
+          "lastLinkId": 1,
+          "lastRerouteId": 0
+        },
+        "revision": 0,
+        "config": {},
+        "name": "Middle Subgraph",
+        "inputNode": {
+          "id": -10,
+          "bounding": [50, 200, 120, 60]
+        },
+        "outputNode": {
+          "id": -20,
+          "bounding": [900, 200, 120, 60]
+        },
+        "inputs": [],
+        "outputs": [
+          {
+            "id": "55555555-5555-4555-8555-000000000005",
+            "name": "output",
+            "type": "LATENT",
+            "linkIds": [1],
+            "pos": { "0": 920, "1": 220 }
+          }
+        ],
+        "widgets": [],
+        "nodes": [
+          {
+            "id": 3,
+            "type": "KSampler",
+            "pos": [250, 120],
+            "size": [280, 260],
+            "flags": {},
+            "order": 0,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "model",
+                "name": "model",
+                "type": "MODEL",
+                "link": null
+              },
+              {
+                "localized_name": "positive",
+                "name": "positive",
+                "type": "CONDITIONING",
+                "link": null
+              },
+              {
+                "localized_name": "negative",
+                "name": "negative",
+                "type": "CONDITIONING",
+                "link": null
+              },
+              {
+                "localized_name": "latent_image",
+                "name": "latent_image",
+                "type": "LATENT",
+                "link": null
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "LATENT",
+                "name": "LATENT",
+                "type": "LATENT",
+                "links": [1]
+              }
+            ],
+            "properties": { "Node name for S&R": "KSampler" },
+            "widgets_values": [1, "increment", 20, 8, "euler", "normal", 1]
+          }
+        ],
+        "groups": [],
+        "links": [
+          {
+            "id": 1,
+            "origin_id": 3,
+            "origin_slot": 0,
+            "target_id": -20,
+            "target_slot": 0,
+            "type": "LATENT"
+          }
+        ],
+        "extra": {}
+      }
+    ]
+  },
+  "config": {},
+  "extra": {
+    "ds": { "offset": [0, 0], "scale": 1 }
+  },
+  "version": 0.4
+}

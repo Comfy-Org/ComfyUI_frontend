@@ -273,6 +273,77 @@ describe('deduplicateSubgraphNodeIds', () => {
   })
 })
 
+describe('deduplicateSubgraphNodeIds - previewExposures', () => {
+  function makeSubgraphWithNodeId(
+    id: string,
+    nodeId: number
+  ): ExportedSubgraph {
+    const subgraph = makeSubgraph(id, ['KSampler'])
+    const node = subgraph.nodes?.[0]
+    if (node) node.id = nodeId
+    return subgraph
+  }
+
+  function makeHost(
+    id: number,
+    type: string,
+    previewExposures?: {
+      name: string
+      sourceNodeId: string
+      sourcePreviewName: string
+    }[]
+  ) {
+    return {
+      id,
+      type,
+      pos: [0, 0] as [number, number],
+      size: [100, 100] as [number, number],
+      flags: {},
+      order: id,
+      mode: 0,
+      inputs: [],
+      outputs: [],
+      properties: previewExposures ? { previewExposures } : {}
+    }
+  }
+
+  it('remaps a host previewExposures entry when its interior node id is reassigned', () => {
+    // Both definitions use interior node id 3, so whichever loads second gets
+    // its node 3 remapped to a fresh id.
+    const subgraphA = makeSubgraphWithNodeId('sg-a', 3)
+    const subgraphB = makeSubgraphWithNodeId('sg-b', 3)
+    const hostA = makeHost(1, 'sg-a', [
+      {
+        name: '$$canvas-image-preview',
+        sourceNodeId: '3',
+        sourcePreviewName: '$$canvas-image-preview'
+      }
+    ])
+    const hostB = makeHost(2, 'sg-b')
+    const state = freshState()
+
+    const result = deduplicateSubgraphNodeIds(
+      [subgraphB, subgraphA],
+      new Set([1, 2]),
+      state,
+      [hostB, hostA] as unknown as Parameters<
+        typeof deduplicateSubgraphNodeIds
+      >[3]
+    )
+
+    const remappedHostA = result.rootNodes?.find((node) => node.type === 'sg-a')
+    const defA = result.subgraphs.find((subgraph) => subgraph.id === 'sg-a')
+    const interiorId = String(defA?.nodes?.[0]?.id)
+
+    const exposures = remappedHostA?.properties?.previewExposures as
+      | { sourceNodeId: string }[]
+      | undefined
+
+    expect(interiorId).not.toBe('3')
+    expect(exposures?.[0]?.sourceNodeId).toBe(interiorId)
+  })
+})
+
 describe('deduplicateSubgraphLinkIds', () => {
   it('patches every reference to a remapped regular link', () => {
     const subgraph = makeSubgraph('sg', ['dummy'])

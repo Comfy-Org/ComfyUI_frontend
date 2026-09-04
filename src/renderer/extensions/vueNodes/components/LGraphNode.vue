@@ -162,7 +162,7 @@
           <div v-if="hasCustomContent" class="flex min-h-0 flex-1 flex-col">
             <NodeContent v-if="nodeMedia" :node-data :media="nodeMedia" />
             <NodeContent
-              v-for="preview in promotedPreviews"
+              v-for="preview in subgraphPreviews"
               :key="`${preview.sourceNodeId}-${preview.sourceWidgetName}`"
               :node-data
               :media="preview"
@@ -264,6 +264,11 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
+import { useAmbientSubgraphPreviews } from '@/composables/node/useAmbientSubgraphPreviews'
+import {
+  getHostExposedSourceNodeIds,
+  mergeSubgraphPreviews
+} from '@/composables/node/mergeSubgraphPreviews'
 import { usePromotedPreviews } from '@/composables/node/usePromotedPreviews'
 import NodeBadges from '@/renderer/extensions/vueNodes/components/NodeBadges.vue'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -477,7 +482,7 @@ const handleResizePointerDown = (
 
 // Check if node has custom content (like image/video outputs)
 const hasCustomContent = computed(() => {
-  if (promotedPreviews.value.length > 0) return true
+  if (subgraphPreviews.value.length > 0) return true
   return !!nodeMedia.value && nodeMedia.value.urls.length > 0
 })
 
@@ -630,6 +635,18 @@ const lgraphNode = computed(resolveLGraphNode)
 // TODO: Surface subgraph info more cleanly in NodeState instead of
 // reaching through lgraphNode for promoted preview resolution.
 const { promotedPreviews } = usePromotedPreviews(lgraphNode)
+const { ambientPreviews } = useAmbientSubgraphPreviews(lgraphNode)
+
+const subgraphPreviews = computed(() => {
+  const node = lgraphNode.value
+  const exposedSourceNodeIds =
+    node instanceof SubgraphNode ? getHostExposedSourceNodeIds(node) : []
+  return mergeSubgraphPreviews(
+    promotedPreviews.value,
+    ambientPreviews.value,
+    exposedSourceNodeIds
+  )
+})
 
 const { hideExecutedOutput } = useGLSLPreview(lgraphNode)
 
