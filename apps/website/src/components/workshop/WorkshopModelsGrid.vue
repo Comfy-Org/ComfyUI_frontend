@@ -34,7 +34,6 @@ import {
   SORT_ORDERS,
   parseCatalogSearch,
   CAPABILITY_GROUPS,
-  CAPABILITY_GROUP_LABELS,
   MODALITIES,
   LAUNCH_GROUPS,
   capabilityGroupOf,
@@ -170,15 +169,6 @@ watch(launch, () => {
   const offered = new Set(capabilityOptions.value.map((option) => option.value))
   capabilities.value = capabilities.value.filter((value) => offered.has(value))
 })
-// Beside the grid the categories are open rather than behind a button, so the
-// group each capability belongs to has to be drawn on the first of its run.
-const railCategories = computed(() =>
-  capabilityOptions.value.map((option, index) => ({
-    ...option,
-    startsGroup: option.group !== capabilityOptions.value[index - 1]?.group
-  }))
-)
-
 function toggleCapability(value: string) {
   capabilities.value = capabilities.value.includes(value)
     ? capabilities.value.filter((capability) => capability !== value)
@@ -362,13 +352,7 @@ const menuItemClass =
         class="mt-8 hidden flex-col lg:flex"
         data-testid="rail-categories"
       >
-        <template v-for="option in railCategories" :key="option.value">
-          <p
-            v-if="option.startsGroup && option.group"
-            class="mt-5 px-2 pb-1 text-2xs font-bold tracking-wider text-primary-warm-gray uppercase first:mt-0"
-          >
-            {{ t(CAPABILITY_GROUP_LABELS[option.group], locale) }}
-          </p>
+        <template v-for="option in capabilityOptions" :key="option.value">
           <button
             type="button"
             role="checkbox"
