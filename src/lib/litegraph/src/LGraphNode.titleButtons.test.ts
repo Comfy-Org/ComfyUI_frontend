@@ -78,7 +78,7 @@ describe('LGraphNode Title Buttons', () => {
 
       // Test the title button logic that's now in the canvas
       // This simulates what happens in LGraphCanvas.processMouseDown
-      if (node.title_buttons?.length && !node.flags.collapsed) {
+      if (node.title_buttons.length && !node.flags.collapsed) {
         const nodeRelativeX = clickPosRelativeToNode[0]
         const nodeRelativeY = clickPosRelativeToNode[1]
 
@@ -132,7 +132,7 @@ describe('LGraphNode Title Buttons', () => {
 
       // Test the title button logic that's now in the canvas
       let buttonClicked = false
-      if (node.title_buttons?.length && !node.flags.collapsed) {
+      if (node.title_buttons.length && !node.flags.collapsed) {
         const nodeRelativeX = clickPosRelativeToNode[0]
         const nodeRelativeY = clickPosRelativeToNode[1]
 
@@ -191,7 +191,7 @@ describe('LGraphNode Title Buttons', () => {
       ]
 
       // Test the title button logic that's now in the canvas
-      if (node.title_buttons?.length && !node.flags.collapsed) {
+      if (node.title_buttons.length && !node.flags.collapsed) {
         const nodeRelativeX = clickPosRelativeToNode[0]
         const nodeRelativeY = clickPosRelativeToNode[1]
 
@@ -256,7 +256,7 @@ describe('LGraphNode Title Buttons', () => {
       ]
 
       // Test the title button logic that's now in the canvas
-      if (node.title_buttons?.length && !node.flags.collapsed) {
+      if (node.title_buttons.length && !node.flags.collapsed) {
         const nodeRelativeX = clickPosRelativeToNode[0]
         const nodeRelativeY = clickPosRelativeToNode[1]
 

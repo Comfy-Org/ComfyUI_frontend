@@ -25,7 +25,7 @@ export function useNodeProgressText() {
   function showTextPreview(node: LGraphNode, text: string) {
     const widget = findTextPreviewWidget(node) ?? addTextPreviewWidget(node)
     widget.value = text
-    node.setDirtyCanvas?.(true)
+    node.setDirtyCanvas(true)
   }
 
   /**

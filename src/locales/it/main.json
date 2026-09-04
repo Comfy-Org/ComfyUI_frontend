@@ -4298,8 +4298,6 @@
     "canceledCard": {
       "description": "Non ti verrà più addebitato nulla. Le tue funzionalità rimarranno attive fino al {date}.",
       "descriptionWithoutDate": "Non ti verrà più addebitato nulla. Le tue funzionalità rimarranno attive fino alla fine del periodo di fatturazione.",
-      "endedDescription": "Il tuo abbonamento non è più attivo.",
-      "endedTitle": "Il tuo abbonamento è terminato",
       "title": "Il tuo abbonamento è stato annullato"
     },
     "changePlan": "Cambia piano",
@@ -4354,6 +4352,7 @@
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "Hai domande o sei interessato all'enterprise?",
     "inactive": {
+      "badge": "Inattivo",
       "memberCta": "Ok, capito",
       "memberDescription": "Chiedi al proprietario del workspace di riattivare l'abbonamento per eseguire workflow.",
       "memberRunTooltip": "Contatta il proprietario del workspace per riabbonarsi",

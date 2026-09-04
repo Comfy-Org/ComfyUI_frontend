@@ -72,7 +72,7 @@ test.describe('Load3D', () => {
         .poll(() =>
           comfyPage.page.evaluate((nodeId) => {
             const n = window.app!.graph.getNodeById(nodeId)
-            const config = n?.properties?.['Scene Config'] as
+            const config = n?.properties['Scene Config'] as
               | Record<string, string>
               | undefined
             return config?.backgroundColor

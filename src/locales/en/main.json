@@ -2836,9 +2836,7 @@
     "canceledCard": {
       "title": "Your subscription has been canceled",
       "description": "You won't be charged again. Your features remain active until {date}.",
-      "descriptionWithoutDate": "You won't be charged again. Your features remain active until the end of your billing period.",
-      "endedTitle": "Your subscription has ended",
-      "endedDescription": "Your subscription is no longer active."
+      "descriptionWithoutDate": "You won't be charged again. Your features remain active until the end of your billing period."
     },
     "cancelSuccess": "Subscription cancelled successfully",
     "cancelDialog": {
@@ -2977,7 +2975,8 @@
       "memberDescription": "Ask your workspace owner to reactivate the workspace's subscription to run workflows.",
       "memberCta": "Ok, got it",
       "memberRunTooltip": "Contact your workspace owner to resubscribe",
-      "runLabel": "Run"
+      "runLabel": "Run",
+      "badge": "Inactive"
     },
     "paymentRecovery": {
       "title": "Subscription paused",
