@@ -466,7 +466,6 @@
   },
   "billingOperation": {
     "authenticationFailedDetail": "Non è stato possibile completare la verifica del pagamento. Riprova.",
-    "authenticationManagerRequired": "La verifica del pagamento richiede l'intervento di un responsabile della fatturazione dello spazio di lavoro.",
     "authenticationUnavailable": "L'autenticazione sicura del pagamento non è disponibile. Aggiorna la pagina e riprova.",
     "cancelFailed": "Annullamento dell'abbonamento non riuscito",
     "cancelTimeout": "Timeout nell'annullamento dell'abbonamento",
@@ -477,7 +476,6 @@
     "processingErrorDetail": "Non è stato possibile elaborare il pagamento. Riprova o usa un altro metodo di pagamento.",
     "reconciliationDetail": "Il pagamento è stato ricevuto, ma non è stato possibile completare l'aggiornamento dello spazio di lavoro. Contatta l'assistenza e includi questo ID operazione:",
     "reconciliationTitle": "Pagamento ricevuto — conferma in attesa",
-    "retryVerification": "Riprova la verifica",
     "subscriptionActionRequired": "Verifica il pagamento per completare la configurazione dello spazio di lavoro",
     "subscriptionFailed": "Aggiornamento dell'abbonamento non riuscito",
     "subscriptionFailedDetail": "Non siamo riusciti ad aggiornare il tuo abbonamento. Riprova.",
@@ -965,6 +963,7 @@
       "quickPurchase": "Acquisto rapido",
       "seeDetails": "Vedi dettagli",
       "selectAmount": "Seleziona importo",
+      "startOver": "Ricomincia",
       "templateNote": "*Generato con il template Wan 2.2 Immagine-a-Video",
       "topUp": "Ricarica",
       "unknownError": "Si è verificato un errore sconosciuto",
