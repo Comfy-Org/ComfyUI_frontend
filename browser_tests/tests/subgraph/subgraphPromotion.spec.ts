@@ -179,6 +179,7 @@ test.describe(
     )
 
     test.describe('Promoted Widget Reactivity', { tag: ['@vue-nodes'] }, () => {
+      // Open bug #14495 — drop the `test.fail()` below when the fix lands.
       // https://github.com/Comfy-Org/ComfyUI_frontend/issues/14495
       test('Promoted STRING widget edit survives a rebind of the interior link', async ({
         comfyPage
@@ -609,6 +610,9 @@ test.describe(
         const subgraphNodeAfter =
           comfyPage.vueNodes.getNodeLocator(subgraphNodeId)
         await expect(subgraphNodeAfter).toBeVisible()
+        await expect
+          .poll(() => getPromotedWidgetNames(comfyPage, subgraphNodeId))
+          .not.toContain('text')
         await expect(
           subgraphNodeAfter.getByRole('textbox', { name: 'text' })
         ).toBeHidden()
