@@ -552,7 +552,6 @@ async function onAgentActiveTab(
       })
       return
     }
-    // The tab starts blank: the host seeds the doc at bind and the default template's node ids collide with agent docs.
     const creatingStartedAt = Date.now()
     tabActivity.setCreating(true)
     const remainingCreatingTime =
