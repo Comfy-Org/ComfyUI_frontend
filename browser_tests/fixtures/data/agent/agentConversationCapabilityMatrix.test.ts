@@ -3,10 +3,10 @@ import { readFileSync } from 'node:fs'
 
 import { describe, expect, it } from 'vitest'
 
+import { zSeedFixture } from '@e2e/../scripts/agentConversationAssemble'
 import {
   listRecordedConversations,
-  loadAgentConversation,
-  zAgentConversationWorkflow
+  loadAgentConversation
 } from '@e2e/fixtures/data/agent/agentConversation'
 import { agentConversationCapabilityMatrix } from '@e2e/fixtures/data/agent/agentConversationCapabilityMatrix'
 
@@ -109,19 +109,26 @@ describe('agentConversationCapabilityMatrix', () => {
       './agent-seed-empty-workflow.json',
       import.meta.url
     )
-    const seedWorkflow = zAgentConversationWorkflow.parse(
-      JSON.parse(readFileSync(seedFixtureUrl, 'utf-8'))
+    const seedFixture = zSeedFixture.parse(
+      JSON.parse(readFileSync(seedFixtureUrl, 'utf-8')) as unknown
     )
     const sourceWorkflow = loadAgentConversation(
       'agent-rec-clear-workflow'
     ).workflow
 
     expect(seedFixtureUrl.pathname).not.toContain('/conversations/')
-    expect(seedWorkflow).toEqual({
+    expect(seedFixture.workflow).toEqual({
       ...sourceWorkflow,
       name: 'Empty workflow'
     })
-    expect(seedWorkflow.catalog.types).toEqual(sourceWorkflow.catalog.types)
-    expect(seedWorkflow.seed).toEqual({ nodes: [], links: [] })
+    expect(seedFixture.workflow.catalog.types).toEqual(
+      sourceWorkflow.catalog.types
+    )
+    expect(seedFixture.workflow.seed).toEqual({ nodes: [], links: [] })
+
+    const unwrapped = zSeedFixture.safeParse(seedFixture.workflow)
+    expect(unwrapped.success).toBe(false)
+    if (!unwrapped.success)
+      expect(unwrapped.error.issues[0]?.path).toEqual(['workflow'])
   })
 })
