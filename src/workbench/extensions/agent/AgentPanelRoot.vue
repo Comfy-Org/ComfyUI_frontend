@@ -468,13 +468,18 @@ function restorableWorkflowIdFor(tabPath: string): string | null {
   if (persisted === undefined) return null
   return persisted === restorableDocId.value ? persisted : null
 }
-const isBoundWorkflowActive = computed(() => {
-  if (workflowDetached.value) return false
+const activeBoundWorkflowId = computed(() => {
+  if (workflowDetached.value) return null
   const active = workflowStore.activeWorkflow
-  if (active === null) return false
+  if (active === null) return null
   const bound = boundWorkflowId.value ?? restorableWorkflowIdFor(active.path)
   return bound !== null && boundTabFor(bound)?.path === active.path
+    ? bound
+    : null
 })
+const isBoundWorkflowActive = computed(
+  () => activeBoundWorkflowId.value !== null
+)
 
 // The CRDT follower is the inbound content channel: subscribes to the
 // session's bound workflow while its tab is active. Suspending the background
@@ -483,6 +488,7 @@ const isBoundWorkflowActive = computed(() => {
 const {
   status: crdtStatus,
   debugSnapshot: crdtDebugSnapshot,
+  acknowledgedWorkflowId,
   enqueueHumanOperations
 } = useAgentCrdtFollower(
   boundWorkflowId,
@@ -497,7 +503,8 @@ const {
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: () =>
-    isBoundWorkflowActive.value && crdtStatus.value.workflowId !== null,
+    acknowledgedWorkflowId.value !== null &&
+    acknowledgedWorkflowId.value === activeBoundWorkflowId.value,
   enqueue: enqueueHumanOperations,
   layoutChanges: (listener) => layoutStore.onChange(listener),
   localActorPrefix: ACTOR_CONFIG.USER_PREFIX,

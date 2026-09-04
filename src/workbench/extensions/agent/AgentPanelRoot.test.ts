@@ -15,6 +15,7 @@ import type { Ref } from 'vue'
 
 import type * as PersistedDocIdModule from './crdt/persistedDocId'
 import type * as AgentCrdtFollowerModule from './crdt/useAgentCrdtFollower'
+import type * as MintPortWiringModule from './crdt/mintPortWiring'
 
 // jsdom does not implement ResizeObserver (happy-dom does); stub it before the
 // Vue node preview chain constructs its module-level observer at import time.
@@ -62,8 +63,12 @@ const ws = vi.hoisted(() => {
   const emit = (type: string, data?: unknown): void => {
     for (const listener of listeners.get(type) ?? []) listener({ detail: data })
   }
+  const emitCustom = (type: string, data?: unknown): void => {
+    for (const listener of listeners.get(type) ?? [])
+      listener(new CustomEvent(type, { detail: data }))
+  }
   const clear = (): void => listeners.clear()
-  return { add, remove, emit, clear }
+  return { add, remove, emit, emitCustom, clear }
 })
 
 vi.mock('@/scripts/api', () => ({
@@ -345,6 +350,20 @@ vi.mock('./crdt/useAgentCrdtFollower', async (importOriginal) => {
   }
 })
 
+const mintPortWiringDeps = vi.hoisted(() => ({
+  current: null as MintPortWiringModule.MintPortWiringDeps | null
+}))
+vi.mock('./crdt/mintPortWiring', async (importOriginal) => {
+  const actual = await importOriginal<typeof MintPortWiringModule>()
+  return {
+    ...actual,
+    attachMintPortWiring: (deps: MintPortWiringModule.MintPortWiringDeps) => {
+      mintPortWiringDeps.current = deps
+      return actual.attachMintPortWiring(deps)
+    }
+  }
+})
+
 import type { TurnId } from './schemas/agentApiSchema'
 import { zAgentWsEvent } from './schemas/agentApiSchema'
 import { MAX_ATTACHMENT_BYTES } from './composables/agent/useAttachment'
@@ -363,6 +382,7 @@ beforeEach(() => {
   URL.revokeObjectURL = vi.fn()
   localStorage.clear()
   persistedCrdtDocId.value = null
+  mintPortWiringDeps.current = null
   getServerFeature.mockReset()
   getServerFeature.mockImplementation(
     (_name: string, defaultValue?: unknown) => defaultValue
@@ -2164,6 +2184,34 @@ describe('AgentPanelRoot workflow binding', () => {
         workflowId: null,
         active: true
       })
+    })
+
+    it('keeps mint ports closed until the server acknowledges the active binding', async () => {
+      await resetSessionBinding()
+      makeTab('wf-42')
+      mockMessagesEndpoint('wf-42')
+      persistedCrdtDocId.value = 'wf-42'
+
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      const isDocBound = mintPortWiringDeps.current?.isDocBound
+      expect(isDocBound).toBeTypeOf('function')
+      expect(isDocBound?.()).toBe(false)
+
+      ws.emitCustom('doc_subscribed', {
+        v: 1,
+        workflow_id: 'wf-42',
+        ok: true,
+        seq: 1
+      })
+      expect(isDocBound?.()).toBe(true)
+
+      ws.emitCustom('doc_subscribed', {
+        v: 1,
+        workflow_id: 'wf-42',
+        ok: false,
+        seq: 1
+      })
+      expect(isDocBound?.()).toBe(false)
     })
 
     it('keeps the follower inactive when the active tab is bound to a different doc', async () => {
