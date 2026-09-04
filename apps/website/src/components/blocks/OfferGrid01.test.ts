@@ -119,6 +119,68 @@ describe('OfferGrid01', () => {
     expect(screen.getAllByRole('article')).toHaveLength(2)
   })
 
+  it('renders only the offer cards when no featured offer is provided', () => {
+    render(OfferGrid01, {
+      props: {
+        heading: requiredProps.heading,
+        offers: [
+          requiredProps.offers[0],
+          {
+            id: 'licensing',
+            label: 'COMMERCIAL RIGHTS',
+            title: 'Model licensing',
+            description: 'Request commercial terms for supported models.',
+            cta: { label: 'VIEW LICENSING', href: '/minimax/license/' }
+          }
+        ]
+      }
+    })
+
+    expect(screen.getAllByRole('article')).toHaveLength(2)
+    expect(screen.queryByText('ComfyUI Managed Builds')).toBeNull()
+    expect(
+      screen.queryByRole('link', { name: 'VIEW MANAGED BUILDS' })
+    ).toBeNull()
+    expect(screen.getByText('Team plans')).toBeTruthy()
+    expect(screen.getByText('Model licensing')).toBeTruthy()
+    expect(
+      screen.getByRole('link', { name: 'VIEW LICENSING' }).getAttribute('href')
+    ).toBe('/minimax/license/')
+  })
+
+  it('drops the four-column layout and last-card spans without a featured offer', () => {
+    const withFeatured = renderOffers()
+    expect(withFeatured.html()).toContain('xl:grid-cols-4')
+    withFeatured.unmount()
+
+    const { html } = render(OfferGrid01, {
+      props: {
+        heading: requiredProps.heading,
+        offers: [
+          requiredProps.offers[0],
+          {
+            id: 'licensing',
+            title: 'Model licensing',
+            description: 'Request commercial terms for supported models.',
+            cta: { label: 'VIEW LICENSING', href: '/minimax/license/' }
+          }
+        ]
+      }
+    })
+
+    expect(html()).not.toContain('xl:grid-cols-4')
+    expect(html()).not.toContain('last:md:col-span-2')
+  })
+
+  it('renders no section header when no heading is provided', () => {
+    render(OfferGrid01, {
+      props: { offers: requiredProps.offers }
+    })
+
+    expect(screen.queryByRole('heading', { level: 2 })).toBeNull()
+    expect(screen.getByText('Team plans')).toBeTruthy()
+  })
+
   it('omits offer labels when they are not provided', () => {
     renderOffers({
       featuredOffer: { ...requiredProps.featuredOffer, label: undefined },

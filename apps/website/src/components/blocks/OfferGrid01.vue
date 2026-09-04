@@ -36,9 +36,9 @@ const {
   class: className
 } = defineProps<{
   eyebrow?: string
-  heading: string
+  heading?: string
   description?: string
-  featuredOffer: FeaturedOfferGridItem
+  featuredOffer?: FeaturedOfferGridItem
   offers: readonly OfferGridItem[]
   class?: HTMLAttributes['class']
 }>()
@@ -46,7 +46,7 @@ const {
 
 <template>
   <section :class="cn('max-w-9xl mx-auto px-6 py-16 lg:py-24', className)">
-    <SectionHeader :label="eyebrow" max-width="xl">
+    <SectionHeader v-if="heading" :label="eyebrow" max-width="xl">
       {{ heading }}
       <template v-if="description" #subtitle>
         <p
@@ -57,11 +57,13 @@ const {
       </template>
     </SectionHeader>
 
-    <GlassCard class="mx-auto mt-12 max-w-7xl lg:mt-16">
+    <GlassCard class="mx-auto max-w-7xl" :class="heading && 'mt-12 lg:mt-16'">
       <div
-        class="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4 xl:grid-rows-2"
+        class="grid grid-cols-1 gap-2 md:grid-cols-2"
+        :class="featuredOffer && 'xl:grid-cols-4 xl:grid-rows-2'"
       >
         <article
+          v-if="featuredOffer"
           class="bg-primary-comfy-plum flex min-h-96 flex-col rounded-4xl p-8 md:col-span-2 lg:p-10 xl:row-span-2"
         >
           <p
@@ -102,7 +104,8 @@ const {
         <article
           v-for="offer in offers"
           :key="offer.id"
-          class="flex min-h-64 flex-col rounded-4xl bg-primary-comfy-ink p-8 last:md:col-span-2 last:xl:col-span-2"
+          class="flex min-h-64 flex-col rounded-4xl bg-primary-comfy-ink p-8"
+          :class="featuredOffer && 'last:md:col-span-2 last:xl:col-span-2'"
         >
           <p
             v-if="offer.label"
