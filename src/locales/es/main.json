@@ -465,7 +465,6 @@
   },
   "billingOperation": {
     "authenticationFailedDetail": "No pudimos completar la verificación del pago. Inténtalo de nuevo.",
-    "authenticationManagerRequired": "La verificación del pago requiere la atención de un administrador de facturación del espacio de trabajo.",
     "authenticationUnavailable": "La autenticación de pago seguro no está disponible. Actualiza la página e inténtalo de nuevo.",
     "cancelFailed": "No se pudo cancelar la suscripción",
     "cancelTimeout": "La cancelación de la suscripción excedió el tiempo de espera",
@@ -476,7 +475,6 @@
     "processingErrorDetail": "No se pudo procesar tu pago. Inténtalo de nuevo o usa otro método de pago.",
     "reconciliationDetail": "Se recibió tu pago, pero no pudimos terminar de actualizar tu espacio de trabajo. Contacta con soporte e incluye este ID de operación:",
     "reconciliationTitle": "Pago recibido — confirmación pendiente",
-    "retryVerification": "Reintentar verificación",
     "subscriptionActionRequired": "Verifica tu pago para finalizar la configuración de tu espacio de trabajo",
     "subscriptionFailed": "Error al actualizar la suscripción",
     "subscriptionFailedDetail": "No pudimos actualizar tu suscripción. Por favor, inténtalo de nuevo.",
@@ -964,6 +962,7 @@
       "quickPurchase": "Compra rápida",
       "seeDetails": "Ver detalles",
       "selectAmount": "Seleccionar cantidad",
+      "startOver": "Empezar de nuevo",
       "templateNote": "*Generado con la plantilla Wan Fun Control",
       "topUp": "Recargar",
       "unknownError": "Ocurrió un error desconocido",

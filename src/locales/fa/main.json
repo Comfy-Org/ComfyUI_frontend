@@ -465,7 +465,6 @@
   },
   "billingOperation": {
     "authenticationFailedDetail": "نتوانستیم تأیید پرداخت را تکمیل کنیم. لطفاً دوباره تلاش کنید.",
-    "authenticationManagerRequired": "تأیید پرداخت به رسیدگی مدیر صورتحساب workspace نیاز دارد.",
     "authenticationUnavailable": "احراز هویت امن پرداخت در دسترس نیست. لطفاً صفحه را تازه‌سازی کرده و دوباره تلاش کنید.",
     "cancelFailed": "لغو اشتراک ناموفق بود",
     "cancelTimeout": "مهلت لغو اشتراک به پایان رسید",
@@ -476,7 +475,6 @@
     "processingErrorDetail": "پرداخت شما پردازش نشد. دوباره تلاش کنید یا از روش پرداخت دیگری استفاده کنید.",
     "reconciliationDetail": "پرداخت شما دریافت شد، اما نتوانستیم به‌روزرسانی workspace شما را کامل کنیم. با پشتیبانی تماس بگیرید و این شناسهٔ عملیات را ارائه کنید:",
     "reconciliationTitle": "پرداخت دریافت شد — در انتظار تأیید",
-    "retryVerification": "تلاش مجدد برای تأیید",
     "subscriptionActionRequired": "برای تکمیل راه‌اندازی فضای کاری، پرداخت خود را تأیید کنید",
     "subscriptionFailed": "به‌روزرسانی اشتراک ناموفق بود",
     "subscriptionFailedDetail": "امکان به‌روزرسانی اشتراک شما وجود ندارد. لطفاً دوباره تلاش کنید.",
@@ -964,6 +962,7 @@
       "quickPurchase": "خرید سریع",
       "seeDetails": "مشاهده جزئیات",
       "selectAmount": "انتخاب مبلغ",
+      "startOver": "شروع دوباره",
       "templateNote": "*تولید شده با قالب Wan Fun Control",
       "topUp": "افزایش اعتبار",
       "unknownError": "خطای ناشناخته رخ داد",
