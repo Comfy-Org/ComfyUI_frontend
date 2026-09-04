@@ -54,7 +54,7 @@ vi.mock('@/stores/authStore', () => ({
 }))
 
 vi.mock('@/config/comfyApi', () => ({
-  getComfyApiBaseUrl: () => 'https://api.comfy.test'
+  getComfyCloudBaseUrl: () => 'https://cloud.comfy.test'
 }))
 
 const fetchWithUnifiedRemint = vi.hoisted(() => vi.fn())
@@ -196,7 +196,7 @@ describe('useAgentConsent', () => {
 
     await vi.waitFor(() => {
       expect(fetchWithUnifiedRemint).toHaveBeenLastCalledWith(
-        'https://api.comfy.test/api/settings/Comfy.AgentPanel.ConsentAccepted',
+        'https://cloud.comfy.test/api/settings/Comfy.AgentPanel.ConsentAccepted',
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
@@ -270,7 +270,7 @@ describe('useAgentConsent', () => {
     expect(settingState.set).not.toHaveBeenCalled()
     expect(fetchWithUnifiedRemint).toHaveBeenCalledOnce()
     expect(fetchWithUnifiedRemint).toHaveBeenCalledWith(
-      'https://api.comfy.test/api/settings/Comfy.AgentPanel.ConsentAccepted',
+      'https://cloud.comfy.test/api/settings/Comfy.AgentPanel.ConsentAccepted',
       expect.objectContaining({ method: 'POST', body: 'true' }),
       false
     )
