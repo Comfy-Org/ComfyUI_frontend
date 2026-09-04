@@ -70,6 +70,157 @@ the discipline it demands:
   deployed. Runtime flags gate _visibility_; only the build gates _existence_.
 - Merge a feature branch into another feature branch as a review strategy.
 
+## Reviewing a change here
+
+Work top-down and stop at the first tier with a real finding. Every item says
+what to check, how, and what failure looks like. "How" is a command or a file;
+if you cannot run it, say so rather than guess. The probes are written to be
+followed literally and to come back clean on the current tree — where one
+names a known hit, that hit is documented beside it. A probe that returns
+something not explained here is a finding; a probe that returns exactly what
+is explained here is not.
+
+### P0 — would this break main's deployability, or leak something?
+
+A push to main deploys comfy.org. Anything here is a blocker.
+
+- **Unreleased feature reachable in a release build.** _How:_ from the repo
+  root, `WORKSHOP_IN_BUILD=0 pnpm --filter @comfyorg/website build; echo exit=$?`
+  then `test ! -d apps/website/dist/workshop` and
+  `grep -rl '/workshop' apps/website/dist --include='*.html' | wc -l` → 0.
+  _Failure:_ exit ≠ 0, the directory exists, or any page links to it. Check
+  the exit code first: a gate that removes its output and then throws is
+  correct by page count and still fails every deploy.
+- **Entry point on a different switch than the routes.** _How:_ grep the
+  literal path, not the word — `grep -rlE "['\"]/workshop" src` — and classify
+  every hit; do not count them. `*.test.ts` → ignore. `src/config/indexing.ts`
+  and `src/config/routes.ts` → metadata lists that name the path in order to
+  exclude or annotate it; ignore. A file under `src/pages/workshop/` or
+  `src/components/workshop/` → the feature itself; ignore. Anything else that
+  renders — an `.astro` page, a `.vue` island — must either read
+  `isWorkshopInBuild()` itself or be rendered only by a parent that does:
+  `grep -rl <ComponentName> src/pages` and check each parent. On the current
+  tree the only such hit is `src/components/home/WorkshopSection.vue`,
+  rendered solely by `src/pages/index.astro`, which gates it at the call site.
+  _Failure:_ a rendered surface reaches `/workshop` with no gate on that path
+  — including one gated on `noindex`, a runtime flag, or a second constant.
+  Do not grep for the word `workshop`: it appears in prompt copy on
+  `pixal3d-trellis2.astro` and will always false-positive.
+- **Secret in the client bundle.** Astro inlines every `PUBLIC_*` variable
+  into the browser bundle. _How:_
+  `grep -rhoE "PUBLIC_[A-Z0-9_]+" src astro.config.ts | sort -u` (do not glob
+  `.env*` — none exist locally and zsh aborts the command). Expected, and
+  legitimately public: `PUBLIC_CUSTOMERIO_WRITE_KEY`, `PUBLIC_POSTHOG_KEY`,
+  `PUBLIC_POSTHOG_API_HOST`, `PUBLIC_POSTHOG_UI_HOST` — analytics write keys
+  and hosts are meant for browsers. _Failure:_ any other `PUBLIC_` name, or one
+  of those four assigned something that is not a publishable key. Also grep
+  the change for `import.meta.env.` inside `.vue` files: a non-`PUBLIC_` name
+  there is not a leak (Astro leaves it undefined) but is a bug, since the
+  island runs in the browser.
+- **Existing pages changed by accident.** _How:_ build main at
+  `git merge-base origin/main HEAD` and this branch in release shape, then
+  `scripts/compare-build-to-main.sh <main-dist> <this-dist>`. _Failure:_
+  `existing changed > 0` or `removed > 0`. Expect CSS tokens added and a few
+  hundred gzipped bytes if Workshop components changed — see "What the gate
+  does not keep out"; that is not a page change.
+- **A redirect shadowing a new page.** _How:_ for each new file in
+  `src/pages`, `grep -nE '"source": "/<path>/?"' vercel.json` — sources match
+  exactly, so check both `/<path>` and `/<path>/`. _Failure:_ a match. The
+  page works under `astro dev`, which never reads `vercel.json`, and 307s
+  once deployed.
+
+### P1 — correctness and data integrity
+
+- **Remote data not validated.** _How:_ any new `fetch` in `src/utils` or
+  `scripts/` is followed by a Zod `parse`/`safeParse`, and a stale/failed
+  fetch falls back to the committed snapshot rather than throwing (except in
+  production, deliberately). _Failure:_ `JSON.parse` of a response used
+  directly; `as SomeType` on network data.
+- **Generated file without both markers.** _How:_ a new or moved generated
+  artifact appears in **both** `.gitattributes` (`linguist-generated=true`)
+  and `.oxfmtrc.json` `ignorePatterns`. _Failure:_ either missing — the second
+  one is silent until the next commit reformats the whole file.
+- **Generator not idempotent.** _How:_ if you can run it, run it twice;
+  `git status` is clean after the second run. `generate:workshop-catalog`
+  needs the private partner bundle, so for that one read the write path
+  instead: it must compare parsed content to what is on disk and skip the
+  write when equal (`writeCatalog` does). In all generators,
+  `grep -rn localeCompare scripts/` → nothing on a committed-output path.
+  _Failure:_ a diff on re-run, an unconditional write, or locale-dependent
+  order.
+- **JSON-LD emitted raw.** _How:_
+  `grep -rl 'application/ld+json' src --include='*.astro' --include='*.vue' | xargs grep -L escapeJsonLd`
+  → nothing. _Failure:_ a file listed. Today it lists
+  `src/pages/pixal3d-trellis2.astro`; its values are page constants, so no
+  live exposure, but it is the rule broken and the pattern to catch.
+- **User- or registry-controlled string rendered as HTML.** _How:_
+  `grep -rn 'set:html\|v-html' src` — every site's input must be a build-time
+  constant or pass through `escapeJsonLd` / the cloud-nodes sanitiser
+  (`safeExternalUrl` in `src/utils/cloudNodes.ts`). At the time of writing
+  there are five `set:html` and eleven `v-html` sites, all fed by build-time
+  constants; the review question is only whether a _new_ one takes untrusted
+  input. Do not report the existing ones.
+- **Tests exist on branches the change does not touch.** _How:_ if the change
+  alters something tests read (a data file, a directory, a schema), run
+  `pnpm test:unit` on every open branch that carries those tests, not only the
+  one that made the change. _Failure:_ green here, red above.
+
+### P2 — conventions the squash and the tooling depend on
+
+- **PR title** is `type(scope): lowercase imperative` — it becomes the commit
+  on main verbatim. Scopes in use: `website`, `workshop`, `auth`, `billing`,
+  `agent`, `deps`.
+- **PR body** follows `.github/pull_request_template.md` — Summary, Changes,
+  Review Focus — because `PR_BODY` becomes the commit body. An empty Review
+  Focus on a non-trivial change is a finding.
+- **No AI co-author trailers** on commits. Advisory check, but policy.
+- **`translations.ts` additions** are new keys only; a conflict there is
+  resolved by keeping both sides and checking for duplicate keys, never by
+  picking one.
+- **Islands do not take `v-model` from `.astro`** — `defineModel` is absent
+  from the generated props type. A new island that needs an initial value
+  seeds itself and emits.
+- **A page emitted only for `en`** is listed in `LOCALE_INVARIANT_EXTRA_PATHS`
+  in `src/config/routes.ts`, or `check:hreflang` will advertise a `zh-CN` twin
+  that 404s.
+
+### P3 — quality and coverage
+
+- **Unit tests** for new code under `src/config` and `scripts/`; that is where
+  the logic lives, and it is the only automated check for Workshop.
+- **e2e and visual run against the dev shape.** `ci-website-e2e.yaml` builds
+  with no `VERCEL_ENV`, so Workshop is _in_ — e2e never exercises what ships.
+  Visual snapshots (`e2e/visual-responsive.spec.ts-snapshots`, 26 Linux PNGs,
+  4 breakpoints) are **section-scoped**, so a new section does not fail them;
+  a change inside a snapshotted section fails `website-e2e`, which _is_
+  required, until regenerated via `pr-update-website-screenshots.yaml` (label,
+  slash command, or the checkbox in the E2E comment). Workshop has **zero**
+  e2e coverage.
+- **`target="_blank"` without `rel="noopener"`** — modern browsers imply it,
+  so this is hygiene, not a hole; ~36 exist.
+
+### Do not flag
+
+Things a reviewer will see and must not report as findings:
+
+- **`src/content/workshop-models.json` is huge and unreadable.** Generated,
+  packed one model per line by design, `linguist-generated`. Review the
+  generator, not the output.
+- **A `risk:*` label on the PR.** Applied by `ci-pr-risk.yml`, advisory,
+  grader-owned; nothing gates or merges on it. Not evidence of anything.
+- **`Check for AI agent co-author trailers` failing** on branch commits.
+  Advisory, and squash discards branch messages. Mention, do not block.
+- **`/workshop/` present on a preview.** If the PR carries the `workshop`
+  label, that is the requested build. If it does not, that _is_ a P0.
+- **CSS tokens added / a few hundred gzipped bytes** in the release build when
+  Workshop components changed. Known, measured, documented. Page changes are
+  the finding; asset deltas are not.
+- **`translations.ts` growing at the top** and merge conflicts there. Normal.
+- **The required `test` check passing.** It proves nothing about this package.
+  Read `website-unit`, `website-unit-gate` and `build` instead.
+- **No CODEOWNERS entry for `apps/website`.** There is none; the Assignee is
+  the reviewer, per `CONTRIBUTING.md`.
+
 ## How the site is generated
 
 `astro build` emits static HTML into `dist/`. Files in `src/pages` are routes:
@@ -212,10 +363,11 @@ cla-assistant · test · lint-and-format · e2e-status · website-e2e
 **None of the website's unit or build checks are in that list.**
 `ci-website-unit.yaml` reports as `website-unit` / `website-unit-gate` and
 `ci-website-build.yaml` as `build`; both run, both go red, neither blocks. The
-required `test` is the repository-root vitest job, and root vitest does not
-cover `apps/website` — so on a website-only PR it passes without running a
-single website test. Observed on #16871: `test` pass, `website-unit` fail,
-merge button available.
+required `test` is the repository-root vitest job, whose include is
+`src/**/*.{ts,vue}` (`vite.config.mts`) — `pnpm exec vitest list` at the root
+collects zero `apps/website` files — so on a website-only PR it passes
+without running a single website test. Observed on #16871: `test` pass,
+`website-unit` fail, merge button available.
 
 Until `website-unit-gate` and `build` are added to the required set (a repo
 setting, not a workflow change), a green merge button on a website PR proves
