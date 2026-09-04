@@ -113,7 +113,6 @@ vi.mock('vue-i18n', () => ({
 
 vi.mock('firebase/auth', () => import('./__tests__/firebaseAuthMock'))
 
-// Mock telemetry
 const mockTrackAuth = vi.fn()
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
