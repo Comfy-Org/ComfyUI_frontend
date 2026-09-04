@@ -514,21 +514,35 @@ const emit = defineEmits<{
 
 const { t, n } = useI18n()
 const capabilities = useBillingCapabilities()
-const { permissions, canReactivatePlan } = useWorkspaceUI()
+const { permissions, canReactivatePlan: canReactivatePlanPolicy } =
+  useWorkspaceUI()
 
+// A pending snapshot is no answer, not a denial (IR-128 / DES-974 7c). Until
+// the first capability read resolves, fails, or is denied, the plan CTAs fail
+// open instead of rendering a dead table with no message — every billing
+// write re-authorizes server-side, so an optimistic CTA is safe. Only a
+// failed read (unreadable pill) or an authoritative resolved-false (denied
+// pill) may disable them.
+const capabilityReadPending = computed(
+  () => isCloud && !capabilities.isReady.value
+)
+
+const canReactivatePlan = computed(
+  () => capabilityReadPending.value || canReactivatePlanPolicy.value
+)
 const canSubscribeSelfServe = computed(() =>
   isCloud
-    ? capabilities.canSubscribeSelfServe.value
+    ? capabilityReadPending.value || capabilities.canSubscribeSelfServe.value
     : permissions.value.canManageSubscription
 )
 const canChangeSeats = computed(() =>
   isCloud
-    ? capabilities.canChangeSeats.value
+    ? capabilityReadPending.value || capabilities.canChangeSeats.value
     : permissions.value.canManageSubscription
 )
 const canDowngradeToPersonal = computed(() =>
   isCloud
-    ? capabilities.canDowngradeToPersonal.value
+    ? capabilityReadPending.value || capabilities.canDowngradeToPersonal.value
     : permissions.value.canDowngradeToPersonal
 )
 
