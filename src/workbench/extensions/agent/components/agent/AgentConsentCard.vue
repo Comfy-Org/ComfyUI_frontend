@@ -30,6 +30,7 @@ const emit = defineEmits<{
 const WIDE_LAYOUT_MIN_WIDTH = 672
 const containerRef = ref<HTMLElement>()
 const isWide = ref(false)
+const videoFailed = ref(false)
 const actions = computed(() => {
   if (accepting) return ['accept'] as const
   return isWide.value
@@ -58,13 +59,15 @@ function openDocs(): void {
     >
       <div class="shrink-0 p-2">
         <video
-          v-if="videoSrc"
+          v-if="videoSrc && !videoFailed"
           :src="videoSrc"
+          data-testid="agent-consent-video"
           class="aspect-square w-full rounded-xl object-cover @2xl:aspect-auto @2xl:size-full"
           autoplay
           muted
           loop
           playsinline
+          @error="videoFailed = true"
         />
         <div
           v-else
