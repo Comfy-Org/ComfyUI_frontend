@@ -23,6 +23,7 @@ import type {
   PriceBadge,
   WidgetDependency
 } from '@/schemas/nodeDefSchema'
+import { zPriceBadge } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { NodeId } from '@/types/nodeId'
 import type { Expression } from 'jsonata'
@@ -408,13 +409,14 @@ const compiledRulesCache = new Map<string, CompiledJsonataPricingRule | null>()
  */
 const priceBadgeToRule = (priceBadge: PriceBadge): JsonataPricingRule => ({
   engine: priceBadge.engine,
-  depends_on: {
-    widgets: priceBadge.depends_on.widgets,
-    inputs: priceBadge.depends_on.inputs,
-    input_groups: priceBadge.depends_on.input_groups
-  },
+  depends_on: priceBadge.depends_on,
   expr: priceBadge.expr
 })
+
+const normalizePriceBadge = (value: unknown): PriceBadge | undefined => {
+  const result = zPriceBadge.safeParse(value)
+  return result.success ? result.data : undefined
+}
 
 /**
  * Get or compile a pricing rule for a node type.
@@ -423,7 +425,8 @@ const getCompiledRuleForNodeType = (
   nodeName: string,
   priceBadge: PriceBadge | undefined
 ): CompiledJsonataPricingRule | null => {
-  if (!priceBadge) return null
+  const normalizedPriceBadge = normalizePriceBadge(priceBadge)
+  if (!normalizedPriceBadge) return null
 
   // Check cache first
   if (compiledRulesCache.has(nodeName)) {
@@ -431,7 +434,7 @@ const getCompiledRuleForNodeType = (
   }
 
   // Compile and cache
-  const rule = priceBadgeToRule(priceBadge)
+  const rule = priceBadgeToRule(normalizedPriceBadge)
   const compiled = compileRule(rule)
   compiledRulesCache.set(nodeName, compiled)
   return compiled
@@ -544,7 +547,7 @@ const getRuleForNode = (
 // -----------------------------
 const getNodePriceBadge = (nodeType: string): PriceBadge | undefined => {
   const nodeDefStore = useNodeDefStore()
-  return nodeDefStore.nodeDefsByName[nodeType]?.price_badge
+  return normalizePriceBadge(nodeDefStore.nodeDefsByName[nodeType]?.price_badge)
 }
 
 // -----------------------------
@@ -700,7 +703,7 @@ function extractDefaultFromSpec(spec: unknown[]): unknown {
  */
 export const evaluateNodeDefPricing = memoize(
   async (nodeDef: ComfyNodeDef): Promise<string> => {
-    const priceBadge = nodeDef.price_badge
+    const priceBadge = normalizePriceBadge(nodeDef.price_badge)
     if (!priceBadge?.expr) return ''
 
     // Reuse compiled expression cache

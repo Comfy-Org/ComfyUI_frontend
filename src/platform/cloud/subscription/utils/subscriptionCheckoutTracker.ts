@@ -24,19 +24,22 @@ const VALID_TIER_KEYS: ReadonlySet<string> = new Set([
   'pro',
   'founder'
 ])
-const VALID_PAYMENT_INTENT_SOURCES: ReadonlySet<string> = new Set([
-  'subscription_required',
-  'out_of_credits',
-  'top_up_blocked',
-  'deep_link',
-  'subscribe_to_run',
-  'subscribe_now_button',
-  'upgrade_to_add_credits',
-  'settings_billing_panel',
-  'avatar_menu_plans',
-  'team_members_panel',
-  'invite_member_upsell'
-])
+const VALID_PAYMENT_INTENT_SOURCES = {
+  subscription_required: true,
+  out_of_credits: true,
+  top_up_blocked: true,
+  deep_link: true,
+  subscribe_to_run: true,
+  subscribe_now_button: true,
+  upgrade_to_add_credits: true,
+  settings_billing_panel: true,
+  avatar_menu_plans: true,
+  team_members_panel: true,
+  invite_member_upsell: true,
+  upload_model_upgrade: true,
+  team_upgrade_resume: true,
+  free_tier_quota: true
+} satisfies Record<PaymentIntentSource, true>
 
 export const PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY =
   'comfy.subscription.pending_checkout_attempt'
@@ -225,7 +228,8 @@ const isTierKey = (value: unknown): value is TierKey =>
   typeof value === 'string' && VALID_TIER_KEYS.has(value)
 
 const isPaymentIntentSource = (value: unknown): value is PaymentIntentSource =>
-  typeof value === 'string' && VALID_PAYMENT_INTENT_SOURCES.has(value)
+  typeof value === 'string' &&
+  Object.hasOwn(VALID_PAYMENT_INTENT_SOURCES, value)
 
 export const clearPendingSubscriptionCheckoutAttempt = (): void => {
   const storage = getStorage()

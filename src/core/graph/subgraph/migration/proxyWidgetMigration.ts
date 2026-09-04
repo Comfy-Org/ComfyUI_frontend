@@ -485,7 +485,8 @@ function repairCreateSubgraphInput(
     return { ok: false, reason: 'missingSubgraphInput' }
   }
 
-  const slotType = String(slot.type)
+  // oxlint-disable-next-line typescript/no-unnecessary-condition -- legacy workflow slots may omit type at runtime
+  const slotType = String(slot.type ?? '*')
   const newSubgraphInput = addUniqueSubgraphInput(
     subgraph,
     sourceWidgetName,
@@ -604,14 +605,16 @@ function repairPrimitive(
 
   const primitiveOutput = primitiveNode.outputs.at(0)
   if (!primitiveOutput) return failPrimitive('primitive has no output')
-  const primitiveOutputType = String(primitiveOutput.type)
+  // oxlint-disable-next-line typescript/no-unnecessary-condition -- legacy workflow slots may omit type at runtime
+  const primitiveOutputType = String(primitiveOutput.type ?? '*')
 
   for (const target of targets) {
     const targetNode = subgraph.getNodeById(target.targetNodeId)
     if (!targetNode) return failPrimitive('target node missing', target)
     const targetSlot = targetNode.inputs.at(target.targetSlot)
     if (!targetSlot) return failPrimitive('target slot missing', target)
-    const targetType = String(targetSlot.type)
+    // oxlint-disable-next-line typescript/no-unnecessary-condition -- legacy workflow slots may omit type at runtime
+    const targetType = String(targetSlot.type ?? '*')
     if (
       targetType !== primitiveOutputType &&
       targetType !== '*' &&

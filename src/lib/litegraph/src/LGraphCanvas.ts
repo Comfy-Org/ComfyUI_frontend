@@ -1469,13 +1469,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
   // TODO refactor :: this is used fot title but not for properties!
   static onShowPropertyEditor(
-    item: { property: keyof LGraphNode; type: string },
+    item: { property?: keyof LGraphNode; type: string },
     _options: IContextMenuOptions<string>,
     e: MouseEvent,
     _menu: ContextMenu<string>,
     node: LGraphNode
   ): void {
-    const property = item.property
+    const property = item.property ?? 'title'
     const value = node[property]
 
     const title = document.createElement('span')
@@ -6797,7 +6797,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
       const { name } = slotX
       iSlotConn = nodeX.slots.findIndex((s) => s.name === name)
-      slotX = nodeX.slots[iSlotConn]
+      const slot = nodeX.slots.at(iSlotConn)
+      if (!slot) {
+        console.warn('Cant get slot information', slotX)
+        return false
+      }
+      slotX = slot
     } else {
       switch (typeof slotX) {
         case 'string':
@@ -6869,7 +6874,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         nodeTypeStr = nodeNewType
       }
 
-      // that.graph.beforeChange();
       const xSizeFix = opts.posSizeFix[0] * LiteGraph.NODE_WIDTH
       const ySizeFix = opts.posSizeFix[1] * LiteGraph.NODE_SLOT_HEIGHT
       const nodeX = opts.position[0] + opts.posAdd[0] + xSizeFix
@@ -6879,7 +6883,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         pos
       })
       if (newNode) {
-        // if is object pass options
         if (nodeNewOpts) {
           if (nodeNewOpts.properties) {
             for (const i in nodeNewOpts.properties) {
@@ -6903,7 +6906,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           }
         }
 
-        // add the node
         if (!this.graph) throw new NullGraphError()
 
         this.graph.add(newNode)
@@ -6919,7 +6921,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         )
         if (!mayConnectLinks) return true
 
-        // connect the two!
         if (isFrom) {
           if (!opts.nodeFrom)
             throw new TypeError('createDefaultNodeForSlot - nodeFrom was null')
@@ -6932,11 +6933,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           opts.nodeTo.connectByTypeOutput(iSlotConn, newNode, fromSlotType, {
             afterRerouteId
           })
-        }
-
-        // if connecting in between
-        if (isFrom && isTo) {
-          // TODO
         }
 
         return true
@@ -7435,13 +7431,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     })
     input.addEventListener('keydown', function (e) {
       if (e.key == 'ArrowUp') {
-        // UP
         changeSelection(false)
       } else if (e.key == 'ArrowDown') {
-        // DOWN
         changeSelection(true)
       } else if (e.key == 'Escape') {
-        // ESC
         dialog.close()
       } else if (e.key == 'Enter') {
         if (selected instanceof HTMLElement) {

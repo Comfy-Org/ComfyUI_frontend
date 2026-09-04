@@ -349,8 +349,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     const key = getMostRecentKey(index)
     if (!key) return null
 
-    const entry = index.entries[key]
-    return entry.path
+    return getIndexEntry(index, key)?.path ?? null
   }
 
   /**

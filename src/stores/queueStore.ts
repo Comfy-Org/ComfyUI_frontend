@@ -656,8 +656,8 @@ export const useQueuePendingTaskCountStore = defineStore(
       count: 0
     }),
     actions: {
-      update(e: CustomEvent<StatusWsMessageStatus>) {
-        this.count = e.detail.exec_info.queue_remaining || 0
+      update(e: CustomEvent<StatusWsMessageStatus | null>) {
+        this.count = e.detail?.exec_info.queue_remaining || 0
       }
     }
   }

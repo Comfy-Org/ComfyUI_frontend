@@ -4,13 +4,20 @@ import { computed, ref } from 'vue'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { getInputSpecType } from '@/schemas/nodeDefSchema'
 import type { InputSpec as InputSpecV1 } from '@/schemas/nodeDefSchema'
-import type { ComfyWidgetConstructor } from '@/scripts/widgets'
+import type {
+  ComfyWidgetConstructor,
+  CustomComfyWidgetConstructor
+} from '@/scripts/widgets'
 import { ComfyWidgets } from '@/scripts/widgets'
+
+type WidgetConstructor = ComfyWidgetConstructor | CustomComfyWidgetConstructor
 
 export const useWidgetStore = defineStore('widget', () => {
   const coreWidgets = ComfyWidgets
-  const customWidgets = ref<Map<string, ComfyWidgetConstructor>>(new Map())
-  const widgets = computed<Map<string, ComfyWidgetConstructor>>(
+  const customWidgets = ref<Map<string, CustomComfyWidgetConstructor>>(
+    new Map()
+  )
+  const widgets = computed<Map<string, WidgetConstructor>>(
     () => new Map([...customWidgets.value, ...Object.entries(coreWidgets)])
   )
 
@@ -20,7 +27,7 @@ export const useWidgetStore = defineStore('widget', () => {
   }
 
   function registerCustomWidgets(
-    newWidgets: Record<string, ComfyWidgetConstructor> | null | undefined
+    newWidgets: Record<string, CustomComfyWidgetConstructor> | null | undefined
   ) {
     // Extensions are untrusted code: `getCustomWidgets` is typed to return
     // `Record<string, ...>`, but in practice an extension can resolve it to
@@ -33,6 +40,7 @@ export const useWidgetStore = defineStore('widget', () => {
   }
 
   return {
+    coreWidgets,
     widgets,
     inputIsWidget,
     registerCustomWidgets

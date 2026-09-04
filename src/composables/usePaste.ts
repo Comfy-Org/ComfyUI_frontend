@@ -1,7 +1,6 @@
 import { useEventListener } from '@vueuse/core'
 
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -55,6 +54,23 @@ function pasteClipboardItems(data: DataTransfer): boolean {
     console.error(err)
   }
   return false
+}
+
+function isWorkflow(
+  value: unknown
+): value is Parameters<typeof app.loadGraphData>[0] {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'version' in value &&
+    (typeof value.version === 'number' || typeof value.version === 'string') &&
+    'nodes' in value &&
+    Array.isArray(value.nodes) &&
+    'extra' in value &&
+    typeof value.extra === 'object' &&
+    value.extra !== null &&
+    !Array.isArray(value.extra)
+  )
 }
 
 function pasteItemsOnNode(
@@ -239,7 +255,7 @@ export const usePaste = () => {
 
     // No image found. Look for node data
     data = data.getData('text/plain')
-    let workflow: ComfyWorkflowJSON | null
+    let workflow: unknown
     try {
       data = data.slice(data.indexOf('{'))
       workflow = JSON.parse(data)
@@ -253,7 +269,7 @@ export const usePaste = () => {
       }
     }
 
-    if (workflow && workflow.version) {
+    if (isWorkflow(workflow)) {
       await app.loadGraphData(workflow)
     } else {
       if (

@@ -9,6 +9,46 @@ import type {
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 
+export function translateContextMenuItems(
+  values: readonly (IContextMenuValue | string | null)[] | undefined,
+  options: IContextMenuOptions
+) {
+  if (!values) return
+  const reInput = /Convert (.*) to input/
+  const reWidget = /Convert (.*) to widget/
+  const cvt = st('contextMenu.Convert ', 'Convert ')
+  const tinp = st('contextMenu. to input', ' to input')
+  const twgt = st('contextMenu. to widget', ' to widget')
+  for (const value of values) {
+    if (typeof value === 'string') continue
+
+    translateContextMenuItems(value?.submenu?.options, options)
+    if (!value?.content) continue
+    if (te(`contextMenu.${value.content}`)) {
+      value.content = st(`contextMenu.${value.content}`, value.content)
+    }
+
+    const extraInfo = (options.extra || options.parentMenu?.options.extra) as
+      | { inputs?: INodeInputSlot[]; widgets?: IWidget[] }
+      | undefined
+    const inputs = extraInfo?.inputs ?? []
+    const widgets = extraInfo?.widgets ?? []
+    const labelFor = (name: string) =>
+      inputs.find((input) => input.name === name)?.label ??
+      widgets.find((widget) => widget.name === name)?.label ??
+      name
+    const matchInput = value.content.match(reInput)
+    if (matchInput) {
+      value.content = cvt + labelFor(matchInput[1]) + tinp
+      continue
+    }
+    const matchWidget = value.content.match(reWidget)
+    if (matchWidget) {
+      value.content = cvt + labelFor(matchWidget[1]) + twgt
+    }
+  }
+}
+
 /**
  * Add translation for litegraph context menu.
  */
@@ -100,61 +140,6 @@ export const useContextMenuTranslation = () => {
     LGraphCanvas.prototype
   )
 
-  function translateMenus(
-    values: readonly (IContextMenuValue | string | null)[] | undefined,
-    options: IContextMenuOptions
-  ) {
-    if (!values) return
-    const reInput = /Convert (.*) to input/
-    const reWidget = /Convert (.*) to widget/
-    const cvt = st('contextMenu.Convert ', 'Convert ')
-    const tinp = st('contextMenu. to input', ' to input')
-    const twgt = st('contextMenu. to widget', ' to widget')
-    for (const value of values) {
-      if (typeof value === 'string') continue
-
-      translateMenus(value?.submenu?.options, options)
-      if (!value?.content) {
-        continue
-      }
-      if (te(`contextMenu.${value.content}`)) {
-        value.content = st(`contextMenu.${value.content}`, value.content)
-      }
-
-      // for capture translation text of input and widget
-      const extraInfo = (options.extra || options.parentMenu?.options.extra) as
-        | { inputs?: INodeInputSlot[]; widgets?: IWidget[] }
-        | undefined
-      const inputs = extraInfo?.inputs ?? []
-      const widgets = extraInfo?.widgets ?? []
-      // widgets and inputs
-      const matchInput = value.content.match(reInput)
-      if (matchInput) {
-        let match = matchInput[1]
-        inputs.forEach((i: INodeInputSlot) => {
-          if (i.name === match) match = i.name
-        })
-        widgets.forEach((i: IWidget) => {
-          if (i.name === match) match = i.name
-        })
-        value.content = cvt + match + tinp
-        continue
-      }
-      const matchWidget = value.content.match(reWidget)
-      if (matchWidget) {
-        let match = matchWidget[1]
-        inputs.forEach((i: INodeInputSlot) => {
-          if (i.name === match) match = i.name
-        })
-        widgets.forEach((i: IWidget) => {
-          if (i.name === match) match = i.name
-        })
-        value.content = cvt + match + twgt
-        continue
-      }
-    }
-  }
-
   const OriginalContextMenu = LiteGraph.ContextMenu
   function ContextMenu(
     values: (IContextMenuValue | string)[],
@@ -163,7 +148,7 @@ export const useContextMenuTranslation = () => {
     if (options.title) {
       options.title = resolveNodeDefText('display_name', options.title)
     }
-    translateMenus(values, options)
+    translateContextMenuItems(values, options)
     const ctx = new OriginalContextMenu(values, options)
     return ctx
   }

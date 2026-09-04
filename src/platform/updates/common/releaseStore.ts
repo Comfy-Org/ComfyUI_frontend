@@ -44,7 +44,7 @@ export const useReleaseStore = defineStore('release', () => {
 
   // Most recent release
   const recentRelease = computed(() => {
-    return releases.value[0] ?? null
+    return releases.value.at(0) ?? null
   })
 
   // 3 most recent releases
@@ -69,6 +69,7 @@ export const useReleaseStore = defineStore('release', () => {
   // New version available?
   const isNewVersionAvailable = computed(
     () =>
+      !!recentRelease.value &&
       compareVersions(
         recentRelease.value.version,
         currentVersion.value || '0.0.0'
@@ -77,6 +78,7 @@ export const useReleaseStore = defineStore('release', () => {
 
   const isLatestVersion = computed(
     () =>
+      !!recentRelease.value &&
       compareVersions(
         recentRelease.value.version,
         currentVersion.value || '0.0.0'
@@ -84,7 +86,7 @@ export const useReleaseStore = defineStore('release', () => {
   )
 
   const hasMediumOrHighAttention = computed(() => {
-    const attention = recentRelease.value.attention
+    const attention = recentRelease.value?.attention
     return attention === 'medium' || attention === 'high'
   })
 
@@ -111,7 +113,7 @@ export const useReleaseStore = defineStore('release', () => {
 
     // Skip if user already skipped or changelog seen
     if (
-      releaseVersion.value === recentRelease.value.version &&
+      releaseVersion.value === recentRelease.value?.version &&
       ['skipped', 'changelog seen'].includes(releaseStatus.value)
     ) {
       return false
@@ -137,7 +139,9 @@ export const useReleaseStore = defineStore('release', () => {
       return false
     }
 
-    const { version } = recentRelease.value
+    const release = recentRelease.value
+    if (!release) return false
+    const { version } = release
 
     // Changelog seen → clear dot
     if (
@@ -181,6 +185,10 @@ export const useReleaseStore = defineStore('release', () => {
       return false
     }
 
+    if (!recentRelease.value) {
+      return false
+    }
+
     // Skip version check if current version isn't semver (e.g. git hash)
     const skipVersionCheck = !valid(currentVersion.value)
     if (!skipVersionCheck && !isLatestVersion.value) {
@@ -200,7 +208,7 @@ export const useReleaseStore = defineStore('release', () => {
   // Action handlers for user interactions
   async function handleSkipRelease(version: string): Promise<void> {
     if (
-      version !== recentRelease.value.version ||
+      version !== recentRelease.value?.version ||
       releaseStatus.value === 'changelog seen'
     ) {
       return
@@ -214,7 +222,7 @@ export const useReleaseStore = defineStore('release', () => {
   }
 
   async function handleShowChangelog(version: string): Promise<void> {
-    if (version !== recentRelease.value.version) {
+    if (version !== recentRelease.value?.version) {
       return
     }
 
@@ -226,7 +234,7 @@ export const useReleaseStore = defineStore('release', () => {
   }
 
   async function handleWhatsNewSeen(version: string): Promise<void> {
-    if (version !== recentRelease.value.version) {
+    if (version !== recentRelease.value?.version) {
       return
     }
 

@@ -137,9 +137,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   private stopSubscriptionTierWatch: WatchStopHandle | null = null
 
   constructor() {
-    const windowConfig = Object.hasOwn(window, '__CONFIG__')
-      ? window.__CONFIG__
-      : undefined
+    const windowConfig = window.__CONFIG__
     watch(
       remoteConfig,
       (config) => {

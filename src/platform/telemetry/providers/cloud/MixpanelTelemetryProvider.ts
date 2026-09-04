@@ -82,9 +82,6 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   private disabledEvents = new Set<TelemetryEventName>(DEFAULT_DISABLED_EVENTS)
 
   constructor() {
-    const config = Object.hasOwn(window, '__CONFIG__')
-      ? window.__CONFIG__
-      : undefined
     watch(
       remoteConfig,
       (config) => {
@@ -92,7 +89,7 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
       },
       { immediate: true }
     )
-    const token = config?.mixpanel_token
+    const token = window.__CONFIG__?.mixpanel_token
 
     if (token) {
       try {

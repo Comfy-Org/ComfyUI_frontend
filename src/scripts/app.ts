@@ -161,7 +161,7 @@ import { applyPromotedWidgetControl } from './promotedWidgetControl'
 import { $el, ComfyUI } from './ui'
 import { ComfyAppMenu } from './ui/menu/index'
 import { clone } from './utils'
-import { type ComfyWidgetConstructor } from './widgets'
+import type { CustomComfyWidgetConstructor } from './widgets'
 import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale'
 import {
   extractFilesFromDragEvent,
@@ -318,7 +318,7 @@ export class ComfyApp {
   static clipspace_invalidate_handler: (() => void) | null = null
   static open_maskeditor: (() => void) | null = null
   static maskeditor_is_opended: (() => void) | null = null
-  static clipspace_return_node = null
+  static clipspace_return_node: LGraphNode | null = null
 
   vueAppReady: boolean
   api: ComfyApi
@@ -348,9 +348,13 @@ export class ComfyApp {
 
   get rootGraph(): LGraph {
     if (!this.rootGraphInternal) {
-      console.error('ComfyApp graph accessed before initialization')
+      throw new TypeError('ComfyApp graph accessed before initialization')
     }
-    return this.rootGraphInternal!
+    return this.rootGraphInternal
+  }
+
+  get rootGraphOrUndefined(): LGraph | undefined {
+    return this.rootGraphInternal
   }
 
   /** Whether the root graph has been initialized. Safe to check without triggering error logs. */
@@ -420,8 +424,13 @@ export class ComfyApp {
   /**
    * @deprecated Use useWidgetStore().widgets instead
    */
-  get widgets(): Record<string, ComfyWidgetConstructor> {
-    return Object.fromEntries(useWidgetStore().widgets.entries())
+  get widgets(): Record<string, CustomComfyWidgetConstructor> &
+    typeof import('./widgets').ComfyWidgets {
+    const widgetStore = useWidgetStore()
+    return Object.assign(
+      Object.fromEntries(widgetStore.widgets.entries()),
+      widgetStore.coreWidgets
+    )
   }
 
   /**

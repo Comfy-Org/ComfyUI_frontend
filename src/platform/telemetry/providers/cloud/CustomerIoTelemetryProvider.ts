@@ -53,14 +53,11 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
   private operationQueue: Promise<void> = Promise.resolve()
 
   constructor() {
-    const config = Object.hasOwn(window, '__CONFIG__')
-      ? window.__CONFIG__
-      : undefined
     const {
       write_key: writeKey,
       site_id: siteId,
       user_id: userIdOverride
-    } = config?.customer_io ?? {}
+    } = window.__CONFIG__?.customer_io ?? {}
     this.sessionIdentity = userIdOverride
       ? { userId: userIdOverride, locale: i18n.global.locale.value }
       : null

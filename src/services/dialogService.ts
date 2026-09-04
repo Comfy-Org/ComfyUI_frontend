@@ -483,7 +483,7 @@ export const useDialogService = () => {
   async function showSubscriptionRequiredDialog(
     options?: SubscriptionDialogOptions
   ) {
-    if (!isCloud || !window.__CONFIG__.subscription_required) {
+    if (!isCloud || !window.__CONFIG__?.subscription_required) {
       return
     }
 

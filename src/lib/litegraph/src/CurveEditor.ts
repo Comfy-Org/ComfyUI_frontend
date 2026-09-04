@@ -150,7 +150,6 @@ export class CurveEditor {
       this.selected = -1
       return
     }
-    // not edges
     if (!is_edge_point) point[0] = clamp(x, 0, 1)
     else point[0] = s == 0 ? 0 : 1
     point[1] = 1.0 - clamp(y, 0, 1)

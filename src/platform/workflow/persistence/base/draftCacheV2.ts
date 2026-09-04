@@ -182,10 +182,12 @@ export function removeOrphanedEntries(
 ): DraftIndexV2 {
   const entries: Record<string, DraftEntryMeta> = {}
   const order: string[] = []
+  const entriesByKey: Partial<Record<string, DraftEntryMeta>> = index.entries
 
   for (const key of index.order) {
-    if (existingPayloadKeys.has(key)) {
-      entries[key] = index.entries[key]
+    const entry = entriesByKey[key]
+    if (existingPayloadKeys.has(key) && entry) {
+      entries[key] = entry
       order.push(key)
     }
   }

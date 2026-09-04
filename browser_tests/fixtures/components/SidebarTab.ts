@@ -25,9 +25,6 @@ export class SidebarTab {
     await this.tabButton.click()
   }
   async close() {
-    if (!(await this.tabButton.isVisible())) {
-      return
-    }
     await this.tabButton.click()
   }
 }
@@ -54,10 +51,6 @@ export class NodeLibrarySidebarTab extends SidebarTab {
   }
 
   override async close() {
-    if (!(await this.tabButton.isVisible())) {
-      return
-    }
-
     await this.tabButton.click()
     await this.nodeLibraryTree.waitFor({ state: 'hidden' })
   }

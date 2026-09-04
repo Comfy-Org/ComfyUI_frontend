@@ -573,7 +573,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     }
     if (lastExecutionError.value) {
       const nodeId = lastExecutionError.value.node_id
-      if (String(nodeId) !== '') {
+      if (nodeId != null) {
         ids.push(String(nodeId))
       }
     }

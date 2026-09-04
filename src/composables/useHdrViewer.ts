@@ -364,8 +364,8 @@ export function useHdrViewer() {
     pointerNdc.x = ((event.clientX - rect.left) / rect.width) * 2 - 1
     pointerNdc.y = -(((event.clientY - rect.top) / rect.height) * 2 - 1)
     raycaster.setFromCamera(pointerNdc, camera)
-    const hit = raycaster.intersectObject(mesh)[0]
-    if (!hit.uv) {
+    const hit = raycaster.intersectObject(mesh).at(0)
+    if (!hit?.uv) {
       pixel.value = null
       return
     }

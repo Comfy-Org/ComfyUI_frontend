@@ -28,7 +28,8 @@ export function useEmptyWorkflowDialog() {
           closeDialog()
           templateSelectorDialog.show('appbuilder', {
             afterClose: () => {
-              if (app.rootGraph.nodes.length) options.onEnterBuilder()
+              if (app.rootGraphOrUndefined?.nodes.length)
+                options.onEnterBuilder()
             }
           })
         }

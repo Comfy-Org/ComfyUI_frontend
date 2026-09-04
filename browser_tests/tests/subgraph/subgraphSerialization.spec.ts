@@ -116,7 +116,7 @@ async function expectPromotedWidgetsToResolveToInteriorNodes(
 
       return ids.map((id) => {
         const interiorNode = hostNode.subgraph.getNodeById(id)
-        return interiorNode !== null
+        return interiorNode != null
       })
     },
     [hostNodeId, interiorNodeIds] as const

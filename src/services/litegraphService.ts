@@ -308,15 +308,20 @@ export const useLitegraphService = () => {
       transformInputSpecV2ToV1(widgetInputSpec),
       app
     )
-    const { minWidth = 1, minHeight = 1 } = result
-    const returnedWidget = result.widget
+    const { minWidth = 1, minHeight = 1 } = result ?? {}
+    const returnedWidget = result?.widget
+    if (returnedWidget) {
+      // oxlint-disable-next-line typescript/no-unnecessary-condition -- extension widgets may omit options at runtime
+      returnedWidget.options ??= {}
+    }
     const widget =
       (node.widgets ?? []).find(
         (candidate) =>
           candidate === returnedWidget ||
           (!widgetsBefore.has(candidate) &&
-            candidate.name === returnedWidget.name)
-      ) ?? toConcreteWidget(returnedWidget, node)
+            (!returnedWidget || candidate.name === returnedWidget.name))
+      ) ?? (returnedWidget ? toConcreteWidget(returnedWidget, node) : undefined)
+    if (!widget) return
 
     widget.label = resolveLabel(
       widget.label ?? widgetInputSpec.display_name ?? inputName

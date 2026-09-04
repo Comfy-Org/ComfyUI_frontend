@@ -64,8 +64,12 @@ type OriginalCallbacks = {
 const originalCallbacks = new WeakMap<LGraphNode, OriginalCallbacks>()
 
 function getRootGraph(): LGraph | null {
-  const rootGraph: unknown = Reflect.get(app, 'rootGraph')
-  return rootGraph instanceof LiteGraph.LGraph ? rootGraph : null
+  try {
+    const rootGraph: unknown = Reflect.get(app, 'rootGraph')
+    return rootGraph instanceof LiteGraph.LGraph ? rootGraph : null
+  } catch {
+    return null
+  }
 }
 
 function getRemovedNodeExecutionId(graph: LGraph, nodeId: NodeId): string {
@@ -88,11 +92,11 @@ function installNodeHooks(node: LGraphNode): void {
 
   node.onConnectionsChange = useChainCallback(
     node.onConnectionsChange,
-    function (type, slotIndex, isConnected) {
-      if (type !== NodeSlotType.INPUT) return
+    function (type, slotIndex: number | undefined, isConnected) {
+      if (type !== NodeSlotType.INPUT || slotIndex === undefined) return
       const rootGraph = getRootGraph()
       if (!rootGraph) return
-      const slotName = node.inputs[slotIndex].name
+      const slotName = node.inputs.at(slotIndex)?.name
       if (!slotName) return
       const execId = getExecutionIdByNode(rootGraph, node)
       if (!execId) return

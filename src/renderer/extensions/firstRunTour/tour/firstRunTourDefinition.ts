@@ -130,7 +130,8 @@ export async function firstRunTourSteps(
   runState: Readonly<Ref<RunState>>
 ): Promise<TourResolution> {
   releaseFirstRunTargets()
-  const graph = app.rootGraph
+  const graph = app.rootGraphOrUndefined
+  if (!graph) return { steps: [], reason: 'no_roles' }
   const roles = resolveTourRoles(graph, templateId)
   if (!roles) return { steps: [], reason: 'no_roles' }
 

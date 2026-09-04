@@ -34,10 +34,12 @@ export function planInteractionProbes(
     .filter((node) => node.pack === pack)
     .map((node) => {
       const plan: InteractionProbePlan = { type: node.type }
-      const firstInput = node.inputs[0]
-      const lastInput = node.inputs[node.inputs.length - 1]
-      plan.first = { inputName: firstInput.name }
-      if (lastInput !== firstInput) plan.last = { inputName: lastInput.name }
+      const firstInput = node.inputs.at(0)
+      const lastInput = node.inputs.at(-1)
+      if (firstInput) plan.first = { inputName: firstInput.name }
+      if (lastInput && lastInput !== firstInput) {
+        plan.last = { inputName: lastInput.name }
+      }
       return plan
     })
     .sort((a, b) => a.type.localeCompare(b.type))

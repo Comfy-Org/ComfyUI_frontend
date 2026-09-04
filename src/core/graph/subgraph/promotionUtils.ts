@@ -292,7 +292,8 @@ export function promoteValueWidgetViaSubgraphInput(
   const inputName = nextUniqueName(sourceWidgetName, existingNames)
   const subgraphInput = subgraphNode.subgraph.addInput(
     inputName,
-    String(sourceSlot.type)
+    // oxlint-disable-next-line typescript/no-unnecessary-condition -- legacy extension slots may omit type at runtime
+    String(sourceSlot.type ?? '*')
   )
   subgraphInput.label = sourceSlot.label
   const link = subgraphInput.connect(sourceSlot, sourceNode)

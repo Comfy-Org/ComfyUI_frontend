@@ -104,7 +104,8 @@ type CataloguedErrorItem = ErrorItem & ResolvedCatalogErrorMessage
 
 /** Resolve display info for a node by its execution ID. */
 function resolveNodeInfo(nodeId: NodeExecutionId) {
-  const graphNode = getNodeByExecutionId(app.rootGraph, nodeId)
+  const rootGraph = app.rootGraphOrUndefined
+  const graphNode = rootGraph ? getNodeByExecutionId(rootGraph, nodeId) : null
 
   return {
     title: resolveNodeDisplayName(graphNode, {
@@ -261,6 +262,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   const collapseState = reactive<Record<string, boolean>>({})
 
   const selectedNodeInfo = computed(() => {
+    const rootGraph = app.rootGraphOrUndefined
     const items = canvasStore.selectedItems
     const nodeIds = new Set<string>()
     const containerExecutionIds = new Set<NodeExecutionId>()
@@ -268,8 +270,8 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     for (const item of items) {
       if (!isLGraphNode(item)) continue
       nodeIds.add(String(item.id))
-      if (item instanceof SubgraphNode) {
-        const execId = getExecutionIdByNode(app.rootGraph, item)
+      if (rootGraph && item instanceof SubgraphNode) {
+        const execId = getExecutionIdByNode(rootGraph, item)
         if (execId) containerExecutionIds.add(execId)
       }
     }
@@ -300,8 +302,10 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
 
   const errorNodeCache = computed(() => {
     const map = new Map<string, LGraphNode>()
+    const rootGraph = app.rootGraphOrUndefined
+    if (!rootGraph) return map
     for (const execId of executionErrorStore.allErrorExecutionIds) {
-      const node = getNodeByExecutionId(app.rootGraph, execId)
+      const node = getNodeByExecutionId(rootGraph, execId)
       if (node) map.set(execId, node)
     }
     return map
@@ -309,12 +313,14 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
 
   const missingNodeCache = computed(() => {
     const map = new Map<string, LGraphNode>()
+    const rootGraph = app.rootGraphOrUndefined
+    if (!rootGraph) return map
     const nodeTypes = missingNodesStore.missingNodesError?.nodeTypes ?? []
     for (const nodeType of nodeTypes) {
       if (typeof nodeType === 'string') continue
       if (nodeType.nodeId == null) continue
       const nodeId = String(nodeType.nodeId)
-      const node = getNodeByExecutionId(app.rootGraph, nodeId)
+      const node = getNodeByExecutionId(rootGraph, nodeId)
       if (node) map.set(nodeId, node)
     }
     return map
@@ -441,6 +447,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     if (!executionErrorStore.lastExecutionError) return
 
     const e = executionErrorStore.lastExecutionError
+    if (e.node_id == null) return
     const nodeId = tryNormalizeNodeExecutionId(e.node_id)
     if (!nodeId) return
 
@@ -733,7 +740,10 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     if (cachedNode && nodeIds.has(String(cachedNode.id))) return true
 
     // Resolve from graph for model/media candidates
-    const graphNode = getNodeByExecutionId(app.rootGraph, executionNodeId)
+    const rootGraph = app.rootGraphOrUndefined
+    const graphNode = rootGraph
+      ? getNodeByExecutionId(rootGraph, executionNodeId)
+      : null
     if (graphNode && nodeIds.has(String(graphNode.id))) return true
 
     for (const containerExecId of selectedNodeInfo.value

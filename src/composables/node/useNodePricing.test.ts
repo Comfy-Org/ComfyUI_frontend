@@ -131,6 +131,18 @@ function createMockNode(
 
 describe('useNodePricing', () => {
   describe('static expressions', () => {
+    it('treats missing raw dependency arrays as empty', async () => {
+      const badge = priceBadge('{"type":"usd","usd":0.05}')
+      Object.defineProperty(badge, 'depends_on', { value: {} })
+      const node = createMockNodeWithPriceBadge('RawObjectInfoNode', badge)
+      const { getNodeDisplayPrice } = useNodePricing()
+
+      getNodeDisplayPrice(node)
+      await new Promise((resolve) => setTimeout(resolve, 50))
+
+      expect(getNodeDisplayPrice(node)).toBe(creditsLabel(0.05))
+    })
+
     it('should evaluate simple static USD price', async () => {
       const { getNodeDisplayPrice } = useNodePricing()
       const node = createMockNodeWithPriceBadge(

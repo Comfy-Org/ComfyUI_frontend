@@ -12,6 +12,9 @@ vi.mock('@/scripts/app', () => ({
     rootGraph: {
       serialize: vi.fn(() => ({})),
       getNodeById: vi.fn()
+    },
+    get rootGraphOrUndefined() {
+      return this.rootGraph
     }
   }
 }))

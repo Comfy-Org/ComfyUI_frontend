@@ -141,7 +141,8 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
    * Load favorited widgets from the current workflow's extra data.
    */
   function loadFromWorkflow() {
-    const graph = app.rootGraph
+    const graph = app.rootGraphOrUndefined
+    if (!graph) return
 
     try {
       const storedData = graph.extra.favoritedWidgets as
@@ -167,7 +168,8 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
    * Marks the workflow as modified.
    */
   function saveToWorkflow() {
-    const graph = app.rootGraph
+    const graph = app.rootGraphOrUndefined
+    if (!graph) return
 
     try {
       const favorites: FavoritedWidgetId[] = favoritedIds.value
@@ -190,7 +192,10 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
    * Returns null if the node or widget no longer exists.
    */
   function resolveWidget(id: FavoritedWidgetId): FavoritedWidget {
-    const graph = app.rootGraph
+    const graph = app.rootGraphOrUndefined
+    if (!graph) {
+      return { ...id, node: null, widget: null, label: id.widgetName }
+    }
 
     const node = getNodeByLocatorId(graph, id.nodeLocatorId)
     if (!node) {
