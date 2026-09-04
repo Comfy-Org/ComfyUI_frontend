@@ -41,17 +41,20 @@ function node(id: number, widgets_values: Record<string, unknown> = {}) {
 describe('graphMutations', () => {
   const createLayout = vi.fn()
   const deleteLayouts = vi.fn()
+  const setLiveWidgetValue = vi.fn()
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     createLayout.mockReset()
     deleteLayouts.mockReset()
+    setLiveWidgetValue.mockReset()
   })
 
   function mutations() {
     return createGraphMutations({
       getScope: () => scope,
-      layout: { createNode: createLayout, deleteNodes: deleteLayouts }
+      layout: { createNode: createLayout, deleteNodes: deleteLayouts },
+      liveWidgets: { setValue: setLiveWidgetValue }
     })
   }
 
@@ -78,6 +81,24 @@ describe('graphMutations', () => {
         size: { width: 200, height: 100 }
       },
       context
+    )
+  })
+
+  it('projects a remote widget value into the live widget adapter', () => {
+    const graph = mutations()
+    expect(graph.addNode(node(7, { image: 'before.png' }), context)).toBe(true)
+    setLiveWidgetValue.mockClear()
+
+    expect(graph.setWidget(toNodeId(7), 'image', 'after.png', context)).toBe(
+      true
+    )
+
+    expect(setLiveWidgetValue).toHaveBeenCalledOnce()
+    expect(setLiveWidgetValue).toHaveBeenCalledWith(
+      scope,
+      toNodeId(7),
+      'image',
+      'after.png'
     )
   })
 
