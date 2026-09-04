@@ -12,7 +12,12 @@ import { collectAllNodes } from '@/utils/graphTraversalUtil'
 import { useWorkflowPacks } from '@/workbench/extensions/manager/composables/nodePack/useWorkflowPacks'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
-function useMissingNodesInternal() {
+/**
+ * Composable to find missing NodePacks from workflow
+ * Automatically fetches workflow pack data when initialized
+ * This is a shared singleton composable - all components use the same instance
+ */
+export const useMissingNodes = createSharedComposable(() => {
   const nodeDefStore = useNodeDefStore()
   const comfyManagerStore = useComfyManagerStore()
   const workflowStore = useWorkflowStore()
@@ -89,8 +94,4 @@ function useMissingNodesInternal() {
     isLoading,
     error
   }
-}
-
-export const _for_testing = { useMissingNodesInternal }
-
-export const useMissingNodes = createSharedComposable(useMissingNodesInternal)
+})
