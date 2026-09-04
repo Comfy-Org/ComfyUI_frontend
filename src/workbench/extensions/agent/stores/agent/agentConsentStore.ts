@@ -18,7 +18,8 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
   const { resolvedUserInfo } = useCurrentUser()
   const loadedIdentity = ref<string | null>(null)
   const acceptedIdentity = ref<string | null>(null)
-  let operation = 0
+  let session = 0
+  let pendingLoad: { identity: string; result: Promise<boolean> } | null = null
 
   const currentIdentity = () => resolvedUserInfo.value?.id ?? null
   const identity = computed(currentIdentity)
@@ -30,7 +31,8 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
   watch(
     currentIdentity,
     () => {
-      operation += 1
+      session += 1
+      pendingLoad = null
       loadedIdentity.value = null
       acceptedIdentity.value = null
     },
@@ -47,46 +49,62 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
     return identity
   }
 
-  function stillOwns(operationId: number, identity: string): boolean {
-    return operation === operationId && currentIdentity() === identity
+  function stillOwns(sessionId: number, identity: string): boolean {
+    return session === sessionId && currentIdentity() === identity
   }
 
-  async function load(): Promise<boolean> {
-    const identity = requireIdentity()
-    if (loadedIdentity.value === identity) return accepted.value
-
-    const operationId = ++operation
+  async function requireAuthHeader(sessionId: number, identity: string) {
     const authHeader = await authStore.getUserAuthHeader()
-    if (!stillOwns(operationId, identity)) return false
+    if (!stillOwns(sessionId, identity)) return null
     if (!authHeader) {
       throw new AgentConsentAuthenticationError(
         'Comfy account authentication is required'
       )
     }
+    return authHeader
+  }
+
+  async function readAccountConsent(
+    sessionId: number,
+    identity: string
+  ): Promise<boolean> {
+    const authHeader = await requireAuthHeader(sessionId, identity)
+    if (!authHeader) return false
 
     const stored = await getAccountSetting(AGENT_CONSENT_SETTING_ID, authHeader)
-    if (!stillOwns(operationId, identity)) return false
+    if (!stillOwns(sessionId, identity)) return false
+    if (loadedIdentity.value === identity) return accepted.value
 
     loadedIdentity.value = identity
     acceptedIdentity.value = stored === true ? identity : null
     return accepted.value
   }
 
+  async function load(): Promise<boolean> {
+    const identity = requireIdentity()
+    if (loadedIdentity.value === identity) return accepted.value
+    if (pendingLoad?.identity === identity) return pendingLoad.result
+
+    const result = readAccountConsent(session, identity)
+    const request = { identity, result }
+    pendingLoad = request
+    try {
+      return await result
+    } finally {
+      if (pendingLoad === request) pendingLoad = null
+    }
+  }
+
   async function accept(expectedIdentity?: string): Promise<boolean> {
     const identity = requireIdentity()
     if (expectedIdentity && identity !== expectedIdentity) return false
 
-    const operationId = ++operation
-    const authHeader = await authStore.getUserAuthHeader()
-    if (!stillOwns(operationId, identity)) return false
-    if (!authHeader) {
-      throw new AgentConsentAuthenticationError(
-        'Comfy account authentication is required'
-      )
-    }
+    const sessionId = session
+    const authHeader = await requireAuthHeader(sessionId, identity)
+    if (!authHeader) return false
 
     await setAccountSetting(AGENT_CONSENT_SETTING_ID, true, authHeader)
-    if (!stillOwns(operationId, identity)) return false
+    if (!stillOwns(sessionId, identity)) return false
 
     loadedIdentity.value = identity
     acceptedIdentity.value = identity
