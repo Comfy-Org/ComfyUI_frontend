@@ -50,15 +50,21 @@ async function signInWith(provider: AuthSignInProvider) {
 }
 
 async function signOut() {
+  // A failed sign-out leaves the user signed in; the auth-state listener
+  // drives the transition when it actually clears. Routing it to a sign-in
+  // error would strand a signed-in user on an error screen.
   try {
     await signOutWorkshop()
   } catch (error) {
-    dispatch({ type: 'signInFailed', error })
+    console.error('Workshop sign-out failed', error)
   }
 }
 
 let stopUserListener: (() => void) | undefined
 onMounted(() => {
+  // The Firebase listener (and its chunk load) must not run on a flag-off
+  // page, where the whole surface is hidden.
+  if (!enabled.value) return
   stopUserListener = onWorkshopUserChanged((user) => {
     dispatch(
       user
@@ -88,7 +94,7 @@ onBeforeUnmount(() => stopUserListener?.())
       </p>
       <a
         href="/workshop/"
-        class="hover:bg-primary-comfy-yellow/90 mt-6 flex h-12 w-full items-center justify-center rounded-xl bg-primary-comfy-yellow font-semibold text-primary-comfy-ink transition-colors"
+        class="hover:bg-primary-comfy-yellow/90 bg-primary-comfy-yellow mt-6 flex h-12 w-full items-center justify-center rounded-xl font-semibold text-primary-comfy-ink transition-colors"
       >
         {{ t('auth.signIn.backToWorkshop', locale) }}
       </a>

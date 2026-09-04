@@ -38,10 +38,14 @@ function workshopAuth() {
 }
 
 /**
- * Find-or-create the Comfy customer record for a signed-in user. A 409 means
- * the customer already exists, which is success for this call — social users
- * routinely sign in again.
+ * Whether a `POST /customers` response means the customer is provisioned. A
+ * 409 counts as success: the record already exists, which is the norm when a
+ * social user signs in again.
  */
+export function isCustomerProvisioned(status: number, ok: boolean): boolean {
+  return ok || status === 409
+}
+
 async function provisionCustomer(user: User): Promise<void> {
   const token = await user.getIdToken()
   const response = await fetch(`${WORKSHOP_ROUTER_BASE_URL}/customers`, {
@@ -52,7 +56,7 @@ async function provisionCustomer(user: User): Promise<void> {
     },
     body: JSON.stringify({ signup_source: 'comfy-workshop' })
   })
-  if (!response.ok && response.status !== 409) {
+  if (!isCustomerProvisioned(response.status, response.ok)) {
     throw new Error(`Customer provisioning failed: ${response.status}`)
   }
 }

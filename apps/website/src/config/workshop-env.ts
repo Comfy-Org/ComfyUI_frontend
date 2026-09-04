@@ -1,13 +1,10 @@
 /**
- * Which backend family the Workshop talks to.
- *
- * One switch selects all three surfaces together — the cloud origin (token
- * mint, balance), the Router origin (runs, customer provisioning), and the
- * Firebase project — because a session minted against one family is only
- * valid inside it. `PUBLIC_WORKSHOP_CLOUD_ENV=staging` exists because prod
- * cannot serve comfy.org yet: the origin is missing from the ingest CORS
- * allowlist (FE-2009) and Firebase authorized domains (FE-2010), both owned
- * by the cloud team. Staging already allows the website's preview URLs.
+ * Which backend family the Workshop talks to. One switch selects the Router
+ * origin and the Firebase project together, because a token minted against
+ * one family is only valid inside it. `PUBLIC_WORKSHOP_CLOUD_ENV=staging`
+ * exists because prod cannot serve comfy.org yet: the origin is missing from
+ * the ingest CORS allowlist (FE-2009) and Firebase authorized domains
+ * (FE-2010). Staging already allows the website's preview URLs.
  */
 import type { FirebaseOptions } from 'firebase/app'
 
