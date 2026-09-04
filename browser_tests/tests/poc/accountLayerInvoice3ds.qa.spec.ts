@@ -366,21 +366,27 @@ test('completes invoice-stage 3DS in app and settles', async () => {
     await expect
       .poll(
         async () => {
-          ;[terminal, status, balance] = await page.evaluate(
-            async (id) =>
-              Promise.all([
-                fetch(`/api/billing/ops/${id}`).then((response) =>
-                  response.json()
-                ),
-                fetch('/api/billing/status').then((response) =>
-                  response.json()
-                ),
-                fetch('/api/billing/balance').then((response) =>
-                  response.json()
-                )
-              ]),
-            operationId
-          )
+          ;[terminal, status, balance] = await page.evaluate(async (id) => {
+            const seam = Reflect.get(window, '__accountLayerPoc') as {
+              lastBillingToken: string | null
+            }
+            if (!seam.lastBillingToken)
+              throw new Error('Billing bearer token is unavailable')
+            const init = {
+              headers: { Authorization: `Bearer ${seam.lastBillingToken}` }
+            }
+            return await Promise.all([
+              fetch(`/api/billing/ops/${id}`, init).then((response) =>
+                response.json()
+              ),
+              fetch('/api/billing/status', init).then((response) =>
+                response.json()
+              ),
+              fetch('/api/billing/balance', init).then((response) =>
+                response.json()
+              )
+            ])
+          }, operationId)
           return `${terminal?.status}:${status?.tier}:${Number(Reflect.get(balance ?? {}, 'balance_micros') ?? Reflect.get(balance ?? {}, 'credits') ?? 0) > 0}`
         },
         { timeout: 300_000, intervals: [1_000, 3_000, 8_000, 30_000] }
