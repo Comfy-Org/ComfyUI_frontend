@@ -4,35 +4,39 @@
 # only for now — auto-triggering on every PR is a follow-up once the team has
 # reviewed output quality, mirroring how i18n-update-core.yaml graduated from
 # manual runs to PR-triggered ones.
+#
+# Dispatch with `gh workflow run i18n-update-website.yaml --ref <branch>`: no
+# custom branch input. github.ref_name is the ref GitHub itself resolved the
+# dispatch against — unlike a free-text input, it can't be spoofed to a fork
+# PR merge ref or an arbitrary string, so it's safe to both check out and use
+# as the push target.
 name: 'i18n: Update Website Strings'
 
 on:
-  workflow_dispatch:
-    inputs:
-      branch:
-        description: 'Branch to translate and push results onto'
-        required: true
-        type: string
+  workflow_dispatch: {}
 
 concurrency:
-  group: i18n-update-website-strings-${{ github.event.inputs.branch }}
+  group: i18n-update-website-strings-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
   update-website-translations:
-    # Checkout uses the dispatcher-supplied branch as its ref, and the steps
-    # below run that ref's code with OPENAI_API_KEY — restrict it to this
-    # pipeline's own branch convention so dispatch can't be pointed at an
-    # arbitrary branch to exfiltrate the secret, mirroring the branch-prefix
-    # gate i18n-update-core.yaml uses for its own dispatched translation runs.
-    if: github.repository == 'Comfy-Org/ComfyUI_frontend' && startsWith(github.event.inputs.branch, 'i18n/')
+    # i18n/-prefixed is this pipeline's own branch convention: narrows which
+    # refs this job will ever check out or push to, on top of github.ref_name
+    # already being a real branch GitHub resolved the dispatch against.
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend' && startsWith(github.ref_name, 'i18n/')
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
-          token: ${{ secrets.PR_GH_TOKEN }}
-          ref: ${{ github.event.inputs.branch }}
+          # Untrusted code from this ref runs in the next two steps with
+          # OPENAI_API_KEY in its environment; a persisted PR_GH_TOKEN in
+          # .git/config would be readable by that same code. Push with an
+          # explicit credential in its own step instead.
+          persist-credentials: false
 
       - name: Setup ComfyUI Frontend
         uses: ./.github/actions/setup-frontend
@@ -48,7 +52,7 @@ jobs:
 
       - name: Commit and push generated translations
         env:
-          TARGET_BRANCH: ${{ github.event.inputs.branch }}
+          PR_GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
         run: |
           git add apps/website/src/i18n/
           if git diff --cached --quiet; then
@@ -57,4 +61,4 @@ jobs:
           fi
           git -c user.name=github-actions -c user.email=github-actions@github.com \
             commit -m 'Update website translations'
-          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
+          git push "https://x-access-token:${PR_GH_TOKEN}@github.com/${{ github.repository }}.git" "HEAD:refs/heads/${{ github.ref_name }}"

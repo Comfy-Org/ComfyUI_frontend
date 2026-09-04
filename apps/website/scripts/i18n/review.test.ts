@@ -137,4 +137,16 @@ describe('createOpenAiReviewer', () => {
 
     await expect(review(locale, [item])).rejects.toThrow(/no message content/)
   })
+
+  it('throws when the response content is not valid JSON', async () => {
+    const fetchFn: typeof fetch = async () => completion('not json')
+    const review = createOpenAiReviewer({
+      apiKey: 'test-key',
+      model: 'gpt-5.6-terra',
+      reasoningEffort: 'high',
+      fetchFn
+    })
+
+    await expect(review(locale, [item])).rejects.toThrow()
+  })
 })
