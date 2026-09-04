@@ -72,7 +72,7 @@ export class HostDoc {
       applied,
       update: this.updateFrame(
         Y.encodeStateAsUpdate(this.doc, before),
-        String(ops[0]?.actor ?? HOST_ACTOR),
+        ops[0]?.actor ?? HOST_ACTOR,
         applied
       )
     }
