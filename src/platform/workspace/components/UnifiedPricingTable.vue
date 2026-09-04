@@ -469,18 +469,23 @@ const emit = defineEmits<{
 
 const { t, n } = useI18n()
 const capabilities = useBillingCapabilities()
-const { permissions, canReactivatePlan } = useWorkspaceUI()
+const { permissions } = useWorkspaceUI()
 
-const canSubscribeSelfServe = computed(() =>
-  isCloud
-    ? capabilities.canSubscribeSelfServe.value
-    : permissions.value.canManageSubscription
-)
-const canChangeSeats = computed(() =>
-  isCloud
-    ? capabilities.canChangeSeats.value
-    : permissions.value.canManageSubscription
-)
+// Every lifecycle CTA here resolves to a billing write the server authorizes on
+// its own, so the table asks whether any such write is permitted instead of
+// mapping each card to one capability itself — that mapping is policy, and the
+// response carries no plan dimension to derive it from. An unresolved snapshot
+// is not a denial: the CTA stays live and the checkout endpoint answers, the
+// same trade canOpenPricingSurface and canTopUp already make.
+const lifecycleActionPermitted = computed(() => {
+  if (!isCloud) return permissions.value.canManageSubscription
+  if (!capabilities.snapshotAuthoritative.value) return true
+  return (
+    capabilities.canSubscribeSelfServe.value ||
+    capabilities.canChangeSeats.value ||
+    capabilities.canReactivate.value
+  )
+})
 const canDowngradeToPersonal = computed(() =>
   isCloud
     ? capabilities.canDowngradeToPersonal.value
@@ -658,6 +663,12 @@ const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
 // held must not read as current — it is buyable again.
 const isEnded = computed(() => subscriptionStatus.value === 'ended')
 
+// An active current plan has nothing to transition to, which describes the card
+// rather than the actor's permission — so it stays a client-side check while
+// permission comes from lifecycleActionPermitted.
+const offersTransition = (isCurrent: boolean): boolean =>
+  !isCurrent || isCancelled.value
+
 const currentBillingCycle = ref<BillingCycle>('yearly')
 
 // Team credit stops: backend-sourced when the API supplies them, otherwise the
@@ -761,14 +772,17 @@ const teamButtonLabel = computed(() => {
   return t('subscription.teamPlan.changePlan')
 })
 
-const isTeamButtonDisabled = computed(() => {
-  if (isLoading) return true
-  if (!isTeamSubscribed.value) return !canSubscribeSelfServe.value
-  if (isTeamCurrentPlanSelected.value) {
-    return !isCancelled.value || !canReactivatePlan.value
-  }
-  return !canChangeSeats.value
-})
+// `isTeamCurrentPlanSelected` compares the slider against a stop an ended
+// subscription still reports, so it only means "current plan" while the team
+// plan is live — the same exclusion `isCurrentPlan` makes via `isEnded`.
+const isTeamButtonDisabled = computed(
+  () =>
+    isLoading ||
+    !offersTransition(
+      isTeamSubscribed.value && isTeamCurrentPlanSelected.value
+    ) ||
+    !lifecycleActionPermitted.value
+)
 
 // A subscriber moving off their current plan is a prorated change rather than a
 // fresh subscribe; re-subscribe and the locked current plan exit before the
@@ -855,12 +869,9 @@ const getButtonSeverity = (
 const canUsePersonalPlanAction = (tierKey: CheckoutTierKey): boolean => {
   if (!canSelectPersonalPlan.value) return false
   if (isTeamPlan.value) return canDowngradeToPersonal.value
-  if (isCurrentPlan(tierKey)) {
-    return isCancelled.value && canReactivatePlan.value
-  }
-  return hasActivePaidPlan(currentAccountTier.value)
-    ? canChangeSeats.value
-    : canSubscribeSelfServe.value
+  return (
+    offersTransition(isCurrentPlan(tierKey)) && lifecycleActionPermitted.value
+  )
 }
 
 const isButtonDisabled = (tier: PricingTierConfig): boolean =>

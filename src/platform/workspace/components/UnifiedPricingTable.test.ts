@@ -29,10 +29,9 @@ const mockCurrentTeamCreditStop = ref<MockTeamStop | null>(null)
 const mockIsTeamPlan = ref(false)
 const mockCanManageSubscription = ref(true)
 const mockCanDowngradeToPersonal = ref(true)
-const mockCanReactivatePlan = ref(true)
-// the raw server capability, kept separate so a test can prove the component
-// follows the derived policy rather than this value
+const mockCanChangeSeats = ref(true)
 const mockRawCanReactivate = ref(true)
+const mockSnapshotAuthoritative = ref(true)
 const mockPermissions = ref({
   canManageSubscription: true,
   canManageSubscriptionLifecycle: true,
@@ -58,15 +57,15 @@ vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
   useBillingCapabilities: () => ({
     canSubscribeSelfServe: computed(() => mockCanManageSubscription.value),
     canReactivate: computed(() => mockRawCanReactivate.value),
-    canChangeSeats: computed(() => mockCanManageSubscription.value),
-    canDowngradeToPersonal: computed(() => mockCanDowngradeToPersonal.value)
+    canChangeSeats: computed(() => mockCanChangeSeats.value),
+    canDowngradeToPersonal: computed(() => mockCanDowngradeToPersonal.value),
+    snapshotAuthoritative: computed(() => mockSnapshotAuthoritative.value)
   })
 }))
 
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({
-    permissions: computed(() => mockPermissions.value),
-    canReactivatePlan: computed(() => mockCanReactivatePlan.value)
+    permissions: computed(() => mockPermissions.value)
   })
 }))
 
@@ -98,8 +97,9 @@ function renderComponent(props: Record<string, unknown> = {}) {
 
 describe('UnifiedPricingTable plan CTA labels', () => {
   beforeEach(() => {
-    mockCanReactivatePlan.value = true
+    mockCanChangeSeats.value = true
     mockRawCanReactivate.value = true
+    mockSnapshotAuthoritative.value = true
     mockSubscription.value = null
     mockSubscriptionStatus.value = null
     mockCurrentPlanSlug.value = null
@@ -229,8 +229,9 @@ describe('UnifiedPricingTable team plan CTA', () => {
   }
 
   beforeEach(() => {
-    mockCanReactivatePlan.value = true
+    mockCanChangeSeats.value = true
     mockRawCanReactivate.value = true
+    mockSnapshotAuthoritative.value = true
     mockSubscription.value = null
     mockSubscriptionStatus.value = null
     mockCurrentPlanSlug.value = null
@@ -318,14 +319,16 @@ describe('UnifiedPricingTable team plan CTA', () => {
     expect(emitted().resubscribe).toBeTruthy()
   })
 
-  it('disables Resubscribe when the workspace may not reactivate', () => {
+  it('disables Resubscribe when the server permits no lifecycle write', () => {
     mockSubscription.value = {
       tier: 'TEAM',
       duration: 'ANNUAL',
       isCancelled: true
     }
     mockCurrentTeamCreditStop.value = TEAM_STOP
-    mockCanReactivatePlan.value = false
+    mockCanManageSubscription.value = false
+    mockCanChangeSeats.value = false
+    mockRawCanReactivate.value = false
 
     renderComponent({ initialPlanMode: 'team' })
 
@@ -391,8 +394,9 @@ describe('UnifiedPricingTable outside Cloud', () => {
   }
 
   beforeEach(() => {
-    mockCanReactivatePlan.value = true
+    mockCanChangeSeats.value = true
     mockRawCanReactivate.value = true
+    mockSnapshotAuthoritative.value = true
     mockSubscription.value = null
     mockSubscriptionStatus.value = null
     mockCurrentPlanSlug.value = null
@@ -539,5 +543,71 @@ describe('UnifiedPricingTable outside Cloud', () => {
     expect(
       screen.queryByRole('button', { name: 'Change to Standard Yearly' })
     ).toBeNull()
+  })
+})
+
+// INC-128. The server answers per workspace, not per plan card, so the table
+// must not decide which capability governs a card: a legacy-rail customer holds
+// a paid tier with no local subscription row, which reads as "change" here while
+// the server is in fact permitting a subscribe.
+describe('UnifiedPricingTable capability gating', () => {
+  beforeEach(() => {
+    mockCanChangeSeats.value = true
+    mockRawCanReactivate.value = true
+    mockSnapshotAuthoritative.value = true
+    mockSubscription.value = null
+    mockSubscriptionStatus.value = null
+    mockCurrentPlanSlug.value = null
+    mockCurrentTeamCreditStop.value = null
+    mockIsTeamPlan.value = false
+    mockCanManageSubscription.value = true
+    mockCanDowngradeToPersonal.value = true
+    mockPermissions.value = {
+      canManageSubscription: true,
+      canManageSubscriptionLifecycle: true,
+      canDowngradeToPersonal: true
+    }
+    mockDistributionTypes.isCloud = true
+  })
+
+  it('keeps a paid plan actionable when only change-seats is withheld', async () => {
+    const user = userEvent.setup()
+    mockSubscription.value = { tier: 'PRO', duration: 'ANNUAL' }
+    mockCanChangeSeats.value = false
+    mockRawCanReactivate.value = false
+
+    const { emitted } = renderComponent()
+
+    const cta = screen.getByRole('button', { name: 'Change to Creator Yearly' })
+    expect(cta).toBeEnabled()
+    await user.click(cta)
+    expect(emitted().subscribe).toBeTruthy()
+  })
+
+  it('keeps the CTA live while the capability snapshot is unresolved', () => {
+    mockSubscription.value = { tier: 'FREE', duration: 'ANNUAL' }
+    mockSnapshotAuthoritative.value = false
+    mockCanManageSubscription.value = false
+    mockCanChangeSeats.value = false
+    mockRawCanReactivate.value = false
+
+    renderComponent()
+
+    expect(
+      screen.getByRole('button', { name: 'Subscribe to Standard Yearly' })
+    ).toBeEnabled()
+  })
+
+  it('blocks the CTA when a resolved snapshot permits no lifecycle write', () => {
+    mockSubscription.value = { tier: 'FREE', duration: 'ANNUAL' }
+    mockCanManageSubscription.value = false
+    mockCanChangeSeats.value = false
+    mockRawCanReactivate.value = false
+
+    renderComponent()
+
+    expect(
+      screen.getByRole('button', { name: 'Subscribe to Standard Yearly' })
+    ).toBeDisabled()
   })
 })
