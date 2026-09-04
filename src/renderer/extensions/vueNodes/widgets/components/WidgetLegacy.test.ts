@@ -1,34 +1,20 @@
 import { render } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
+import type { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { toNodeId } from '@/types/nodeId'
 
-const canvasMocks = vi.hoisted(() => ({
-  canvas: {
-    graph: {
-      getNodeById: vi.fn<() => unknown>(() => null)
-    }
-  },
-  linearMode: false
-}))
-
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => canvasMocks
-}))
-
 const resolveMock = vi.hoisted(() => vi.fn())
-vi.mock(
-  '@/renderer/extensions/vueNodes/widgets/utils/resolvePromotedWidget',
+vi.mock<unknown>(
+  import('@/renderer/extensions/vueNodes/widgets/utils/resolvePromotedWidget'),
   () => ({
     resolveWidgetFromHostNode: resolveMock
   })
 )
-
-vi.mock('@/stores/workspace/colorPaletteStore', () => ({
-  useColorPaletteStore: () => ({ activePaletteId: 'default' })
-}))
 
 import WidgetLegacy from './WidgetLegacy.vue'
 import { createMockWidget } from './widgetTestUtils'
@@ -56,22 +42,36 @@ function createMockWidgetInstance(): IBaseWidget {
   } as Partial<IBaseWidget> as IBaseWidget
 }
 
+function createFakeGraph(node: unknown): LGraph {
+  return { getNodeById: () => node } as Partial<LGraph> as LGraph
+}
+
+const MEASURED_WIDTH = 150
+
 describe('WidgetLegacy', () => {
   let mockNode: ReturnType<typeof createMockNode>
   let mockWidgetInstance: IBaseWidget
 
-  beforeEach(() => {
-    canvasMocks.canvas.graph.getNodeById.mockReset()
+  beforeEach(async () => {
     resolveMock.mockReset()
 
     mockNode = createMockNode()
     mockWidgetInstance = createMockWidgetInstance()
 
-    canvasMocks.canvas.graph.getNodeById.mockReturnValue(mockNode)
+    useCanvasStore().canvas = {
+      graph: createFakeGraph(mockNode)
+    } as Partial<LGraphCanvas> as LGraphCanvas
+    await nextTick()
+
     resolveMock.mockReturnValue({
       node: mockNode,
       widget: mockWidgetInstance
     })
+
+    vi.spyOn(
+      HTMLCanvasElement.prototype,
+      'getBoundingClientRect'
+    ).mockReturnValue(DOMRect.fromRect({ width: MEASURED_WIDTH }))
   })
 
   afterEach(() => {
@@ -98,10 +98,34 @@ describe('WidgetLegacy', () => {
     expect(mockWidgetInstance.width).toBeUndefined()
   })
 
-  it('sets widget.width when vueNodesMode is true', () => {
+  it('sets widget.width to the measured canvas width when vueNodesMode is true', () => {
     LiteGraph.vueNodesMode = true
     mountWidget()
 
-    expect(mockWidgetInstance.width).toBeDefined()
+    expect(mockWidgetInstance.width).toBe(MEASURED_WIDTH)
+  })
+
+  it('clears widget.width on unmount so LiteGraph mode derives width from node size', () => {
+    LiteGraph.vueNodesMode = true
+    const { unmount } = mountWidget()
+    expect(mockWidgetInstance.width).toBe(MEASURED_WIDTH)
+
+    unmount()
+
+    expect(mockWidgetInstance.width).toBeUndefined()
+  })
+
+  it('clears the previous widget.width when rebinding to a different widget', async () => {
+    LiteGraph.vueNodesMode = true
+    mountWidget()
+    expect(mockWidgetInstance.width).toBe(MEASURED_WIDTH)
+
+    const nextWidgetInstance = createMockWidgetInstance()
+    resolveMock.mockReturnValue({ node: mockNode, widget: nextWidgetInstance })
+    useCanvasStore().currentGraph = createFakeGraph(mockNode)
+    await nextTick()
+
+    expect(mockWidgetInstance.width).toBeUndefined()
+    expect(nextWidgetInstance.width).toBe(MEASURED_WIDTH)
   })
 })
