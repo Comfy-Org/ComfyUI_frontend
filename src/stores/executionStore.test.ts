@@ -8,9 +8,8 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
-import type * as DistributionTypes from '@/platform/distribution/types'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import type * as WorkflowStoreModule from '@/platform/workflow/management/stores/workflowStore'
+import type * as ComfyWorkflowModule from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { NodeProgressState } from '@/schemas/apiSchema'
 
 const {
@@ -49,13 +48,9 @@ const defaultWorkflowExecutionIntent = {
   trigger_source: 'unknown'
 } as const
 
-vi.mock('@/composables/useAppMode', async (importOriginal) => {
-  const actual = (await importOriginal()) as Record<string, unknown>
-  return {
-    ...actual,
-    useAppMode: () => mockAppModeState
-  }
-})
+vi.mock('@/composables/useAppMode', () => ({
+  useAppMode: () => mockAppModeState
+}))
 
 beforeEach(() => {
   mockAppModeState.mode.value = 'graph'
@@ -66,8 +61,8 @@ import { toNodeId } from '@/types/nodeId'
 
 // Mock the workflowStore
 vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
-  const { ComfyWorkflow } = await vi.importActual<typeof WorkflowStoreModule>(
-    '@/platform/workflow/management/stores/workflowStore'
+  const { ComfyWorkflow } = await vi.importActual<typeof ComfyWorkflowModule>(
+    '@/platform/workflow/management/stores/comfyWorkflow'
   )
   return {
     ComfyWorkflow,
@@ -87,10 +82,7 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
   }
 })
 
-vi.mock('@/platform/distribution/types', async () => ({
-  ...(await vi.importActual<typeof DistributionTypes>(
-    '@/platform/distribution/types'
-  )),
+vi.mock('@/platform/distribution/types', () => ({
   isCloud: true
 }))
 
