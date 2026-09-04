@@ -40,7 +40,8 @@ import {
 } from '@e2e/fixtures/customNode/outputHashes'
 import {
   collectConsoleErrors,
-  startupConsoleErrors
+  startupConsoleErrors,
+  startupConsoleWarnings
 } from '@e2e/fixtures/utils/consoleErrorCollector'
 import {
   errorSurfaces,
@@ -102,6 +103,11 @@ test('Pack startup/load: custom extensions import without unallowlisted errors @
   const startupErrors = customExtensionStartupErrors(
     startupConsoleErrors(comfyPage.page)
   )
+  // Extension-origin load failures log as warnings, so required observation
+  // reads both streams; the unallowlisted check stays on errors alone.
+  const startupWarnings = customExtensionStartupErrors(
+    startupConsoleWarnings(comfyPage.page)
+  )
   expect(
     unallowlistedGlobalExtensionErrorsForPacks(
       installedManifestPacks,
@@ -110,10 +116,10 @@ test('Pack startup/load: custom extensions import without unallowlisted errors @
     'custom extension failed while the application loaded it'
   ).toEqual([])
   expect(
-    staleRequiredStartupErrorRulesForPacks(
-      installedManifestPacks,
-      startupErrors
-    ),
+    staleRequiredStartupErrorRulesForPacks(installedManifestPacks, [
+      ...startupErrors,
+      ...startupWarnings
+    ]),
     'stale required startup extension errors'
   ).toEqual([])
 })

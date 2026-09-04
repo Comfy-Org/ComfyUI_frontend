@@ -164,13 +164,13 @@ const CONSOLE_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
     {
       id: 'duplicate-color-overlay',
       pattern:
-        /\[vite:preloadError\].*Extension named 'ColorOverlay' already registered\./,
+        /Extension named 'ColorOverlay' already registered\. Skipping duplicate registration\./,
       global: true,
       requiredStartupId: 'duplicate-color-overlay',
       reason:
         'this pack and comfyui_layerstyle both register the ColorOverlay extension in their pinned dz_node_palette.js',
       restore:
-        'give the extensions distinct names and remove this entry when both packs load without a duplicate-registration error'
+        'give the extensions distinct names and remove this entry when both packs load without a duplicate-registration warning'
     }
   ],
   'comfyui-sam3': [
@@ -297,6 +297,7 @@ export function customExtensionStartupErrors(
     (error) =>
       /\/extensions\/(?!core\/)/i.test(error) ||
       /(?:error (?:loading|calling)|failed to load) extension\b/i.test(error) ||
+      /extension named .* already registered/i.test(error) ||
       /\[vite:preloadError\]/.test(error)
   )
 }

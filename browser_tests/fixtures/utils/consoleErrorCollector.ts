@@ -1,6 +1,7 @@
 import type { ConsoleMessage, Page, TestInfo } from '@playwright/test'
 
 const startupErrors = new WeakMap<Page, readonly string[]>()
+const startupWarnings = new WeakMap<Page, readonly string[]>()
 
 export function recordStartupConsoleErrors(
   page: Page,
@@ -11,6 +12,17 @@ export function recordStartupConsoleErrors(
 
 export function startupConsoleErrors(page: Page): readonly string[] {
   return startupErrors.get(page) ?? []
+}
+
+export function recordStartupConsoleWarnings(
+  page: Page,
+  warnings: readonly string[]
+): void {
+  startupWarnings.set(page, [...warnings])
+}
+
+export function startupConsoleWarnings(page: Page): readonly string[] {
+  return startupWarnings.get(page) ?? []
 }
 
 export async function attachPageDiagnosticEvidence(
@@ -26,14 +38,21 @@ export async function attachPageDiagnosticEvidence(
 
 export function collectConsoleErrors(page: Page): {
   errors: string[]
+  warnings: string[]
   stop: () => void
   [Symbol.dispose]: () => void
 } {
   const errors: string[] = []
+  // Extension-origin load failures log as warnings; the ledger still requires
+  // observing them, so they are kept in a separate stream.
+  const warnings: string[] = []
   const listener = (message: ConsoleMessage) => {
-    if (message.type() !== 'error') return
+    const type = message.type()
+    if (type !== 'error' && type !== 'warning') return
     const url = message.location().url
-    errors.push(url ? `${message.text()} [${url}]` : message.text())
+    const text = url ? `${message.text()} [${url}]` : message.text()
+    if (type === 'error') errors.push(text)
+    else warnings.push(text)
   }
   // Uncaught page exceptions and unhandled promise rejections never reach
   // console.error; Chromium surfaces both through pageerror. Without this
@@ -50,6 +69,9 @@ export function collectConsoleErrors(page: Page): {
   return {
     get errors() {
       return errors
+    },
+    get warnings() {
+      return warnings
     },
     stop,
     [Symbol.dispose]: stop

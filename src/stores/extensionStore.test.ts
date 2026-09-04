@@ -6,7 +6,7 @@ describe('extensionStore', () => {
   describe('registerExtension', () => {
     it('registers an extension by name', () => {
       const store = useExtensionStore()
-      store.registerExtension({ name: 'test.ext' })
+      expect(store.registerExtension({ name: 'test.ext' })).toBe(true)
       expect(store.isExtensionInstalled('test.ext')).toBe(true)
     })
 
@@ -17,28 +17,45 @@ describe('extensionStore', () => {
       )
     })
 
-    it('throws for duplicate registration', () => {
+    it('warns and keeps the first registration on duplicate', () => {
       const store = useExtensionStore()
-      store.registerExtension({ name: 'dup' })
-      expect(() => store.registerExtension({ name: 'dup' })).toThrow(
-        "Extension named 'dup' already registered."
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const first = { name: 'dup', aboutPageBadges: [] }
+      expect(store.registerExtension(first)).toBe(true)
+
+      expect(store.registerExtension({ name: 'dup' })).toBe(false)
+      expect(warnSpy).toHaveBeenCalledWith(
+        "Extension named 'dup' already registered. Skipping duplicate registration."
       )
+      // The first registration wins.
+      expect(store.extensions.filter((ext) => ext.name === 'dup')).toEqual([
+        first
+      ])
     })
+
+    it.for(['toString', '__proto__', 'constructor'])(
+      'registers an extension named after the built-in property %s',
+      (name) => {
+        vi.spyOn(console, 'warn').mockImplementation(() => {})
+        const store = useExtensionStore()
+        expect(store.isExtensionInstalled(name)).toBe(false)
+        expect(store.registerExtension({ name })).toBe(true)
+        expect(store.isExtensionInstalled(name)).toBe(true)
+        expect(store.extensions.map((ext) => ext.name)).toContain(name)
+        expect(store.registerExtension({ name })).toBe(false)
+      }
+    )
 
     it('warns when registering a disabled extension but still installs it', () => {
       const store = useExtensionStore()
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      try {
-        store.loadDisabledExtensionNames(['disabled.ext'])
-        store.registerExtension({ name: 'disabled.ext' })
-        expect(warnSpy).toHaveBeenCalledWith(
-          'Extension disabled.ext is disabled.'
-        )
-        expect(store.isExtensionInstalled('disabled.ext')).toBe(true)
-        expect(store.isExtensionEnabled('disabled.ext')).toBe(false)
-      } finally {
-        warnSpy.mockRestore()
-      }
+      store.loadDisabledExtensionNames(['disabled.ext'])
+      store.registerExtension({ name: 'disabled.ext' })
+      expect(warnSpy).toHaveBeenCalledWith(
+        'Extension disabled.ext is disabled.'
+      )
+      expect(store.isExtensionInstalled('disabled.ext')).toBe(true)
+      expect(store.isExtensionEnabled('disabled.ext')).toBe(false)
     })
   })
 
