@@ -1,4 +1,4 @@
-import { render } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 
@@ -53,7 +53,7 @@ describe('TurnstileWidget', () => {
     expect(options().theme).toBe('light')
   })
 
-  it('publishes the token and clears unavailable when the challenge resolves', async () => {
+  it('publishes the token when the challenge resolves', async () => {
     const { api, options } = fakeTurnstile()
     window.turnstile = api
     const { emitted } = render(TurnstileWidget, {
@@ -66,10 +66,31 @@ describe('TurnstileWidget', () => {
     expect(emitted('update:token').at(-1)).toEqual(['token-abc'])
   })
 
+  it('recovers a timed-out widget: a late token clears the unavailable state', async () => {
+    const { api, options } = fakeTurnstile()
+    window.turnstile = api
+    const { emitted } = render(TurnstileWidget, {
+      props: { ...baseProps, loader: async () => api }
+    })
+    await flush()
+    // The load timeout fires first, marking the widget unavailable.
+    await vi.advanceTimersByTimeAsync(9_000)
+    expect(emitted('update:unavailable').at(-1)).toEqual([true])
+
+    // Then the challenge resolves late — the parent must be un-blocked.
+    options().callback?.('late-token')
+
+    expect(emitted('update:token').at(-1)).toEqual(['late-token'])
+    expect(
+      emitted('update:unavailable').at(-1),
+      'a slow-but-valid Turnstile must un-block signup, not leave it stuck'
+    ).toEqual([false])
+  })
+
   it('clears the token, shows the expired copy, and requests a fresh challenge on expiry', async () => {
     const { api, options } = fakeTurnstile()
     window.turnstile = api
-    const { emitted, getByRole } = render(TurnstileWidget, {
+    const { emitted } = render(TurnstileWidget, {
       props: { ...baseProps, loader: async () => api }
     })
     await flush()
@@ -79,14 +100,14 @@ describe('TurnstileWidget', () => {
     await flush()
 
     expect(emitted('update:token').at(-1)).toEqual([''])
-    expect(getByRole('alert').textContent).toContain('Challenge expired')
+    expect(screen.getByRole('alert').textContent).toContain('Challenge expired')
     expect(api.reset).toHaveBeenCalledWith('widget-id')
   })
 
   it('reports unavailable with the failed copy when the challenge errors', async () => {
     const { api, options } = fakeTurnstile()
     window.turnstile = api
-    const { emitted, getByRole } = render(TurnstileWidget, {
+    const { emitted } = render(TurnstileWidget, {
       props: { ...baseProps, loader: async () => api }
     })
     await flush()
@@ -95,7 +116,9 @@ describe('TurnstileWidget', () => {
     await flush()
 
     expect(emitted('update:unavailable').at(-1)).toEqual([true])
-    expect(getByRole('alert').textContent).toContain('Verification failed')
+    expect(screen.getByRole('alert').textContent).toContain(
+      'Verification failed'
+    )
   })
 
   it('reports unavailable when the script fails to load', async () => {

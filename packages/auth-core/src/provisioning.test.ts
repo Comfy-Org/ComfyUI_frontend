@@ -67,6 +67,29 @@ describe('signUpWithProvisioning', () => {
     expect(onRollbackFailure).toHaveBeenCalledWith(rollbackFailure)
   })
 
+  it('surfaces the provisioning error even when the rollback sink itself throws', async () => {
+    const credential = credentialWith(
+      vi.fn(async () => {
+        throw new Error('delete failed')
+      })
+    )
+    const failure = new Error('turnstile rejected')
+
+    await expect(
+      signUpWithProvisioning({
+        createUser: async () => credential,
+        provisionCustomer: async () => {
+          throw failure
+        },
+        // A telemetry sink can throw; it must never displace the original error.
+        onRollbackFailure: () => {
+          throw new Error('telemetry sink blew up')
+        }
+      }),
+      'the caller must learn why signup failed, not why logging it failed'
+    ).rejects.toBe(failure)
+  })
+
   it('does not provision when user creation itself fails', async () => {
     const failure = new Error('email already in use')
     const provisionCustomer = vi.fn(async () => {})
