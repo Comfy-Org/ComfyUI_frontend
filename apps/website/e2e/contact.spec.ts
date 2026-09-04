@@ -51,3 +51,36 @@ test.describe('Contact form embed @smoke', () => {
     })
   }
 })
+
+// The logo bar is rendered only by FormSection now; losing it there would
+// strip both locales of social proof while every page still renders.
+test.describe('Contact social proof @smoke', () => {
+  // The hero entrance tween translates the image, so geometry is only stable
+  // once useHeroAnimation opts out.
+  test.use({ contextOptions: { reducedMotion: 'reduce' } })
+
+  for (const { locale, path } of CONTACT_FORMS) {
+    test(`anchors the ${locale} logo bar beneath the hero image`, async ({
+      page
+    }) => {
+      await page.goto(path)
+
+      const formSection = page.locator('section', {
+        has: page.getByRole('heading', {
+          level: 1,
+          name: t('contact.form.heading', locale)
+        })
+      })
+
+      const bar = formSection.getByTestId('social-proof-desktop')
+      await expect(bar).toHaveCount(1)
+      await expect(page.getByTestId('social-proof-desktop')).toHaveCount(1)
+
+      const imageBox = await formSection.locator('img').first().boundingBox()
+      const barBox = await bar.boundingBox()
+      expect(barBox?.y).toBeGreaterThanOrEqual(
+        (imageBox?.y ?? 0) + (imageBox?.height ?? 0)
+      )
+    })
+  }
+})

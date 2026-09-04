@@ -8,9 +8,7 @@ import FormSection from './FormSection.vue'
 
 const stubs = {
   SectionLabel: true,
-  SocialProofBarSection: {
-    template: '<div data-testid="social-proof" />'
-  },
+  SocialProofBarSection: true,
   HubspotFormEmbed: {
     props: ['formId'],
     template: '<div data-testid="hubspot-form" :data-form-id="formId" />'
@@ -34,12 +32,5 @@ describe('FormSection', () => {
 
   it('falls back to the English form for locales without their own', () => {
     expect(formIdFor('ja')).toBe(formIdFor('en'))
-  })
-
-  // The contact pages no longer render this bar; dropping it strips both.
-  it('renders the social proof bar', () => {
-    const { unmount } = render(FormSection, { global: { stubs } })
-    expect(screen.getAllByTestId('social-proof')).toHaveLength(1)
-    unmount()
   })
 })
