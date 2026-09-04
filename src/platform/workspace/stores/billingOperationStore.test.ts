@@ -2569,6 +2569,40 @@ describe('billingOperationStore', () => {
 
       expect((await terminal).status).toBe('succeeded')
     })
+
+    it('does not close the dialog for a later attempt when a dismissed topup succeeds', async () => {
+      let opAResolved = false
+      vi.mocked(workspaceApi.getBillingOpStatus).mockImplementation(
+        async (opId: string) => ({
+          id: opId,
+          status:
+            opId === 'op-a' && opAResolved
+              ? ('succeeded' as const)
+              : ('pending' as const),
+          started_at: new Date().toISOString()
+        })
+      )
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-a', 'topup')
+      await vi.advanceTimersByTimeAsync(0)
+      store.dismissOperation('op-a')
+
+      mockCloseDialog.mockClear()
+      mockSettingsDialogShow.mockClear()
+
+      void store.startOperation('op-b', 'topup')
+      await vi.advanceTimersByTimeAsync(0)
+
+      // op-a's next poll now reports succeeded, after op-b has started; it
+      // must not reach for a dialog op-b now owns.
+      opAResolved = true
+      await vi.advanceTimersByTimeAsync(1500)
+
+      expect(store.getOperation('op-a')?.status).toBe('succeeded')
+      expect(mockCloseDialog).not.toHaveBeenCalled()
+      expect(mockSettingsDialogShow).not.toHaveBeenCalled()
+    })
   })
 
   describe('multiple operations', () => {
