@@ -34,7 +34,7 @@ PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://localhost:5173 DISTRIBUTION=cloud 
   name without `.json`).
 - Set `TEST_COMFYUI_DIR` to the ComfyUI install behind 8188 (or put it in
   `.env`) so the suite backs up and restores its user data.
-- Video: set `RECORD_VIDEO=1`; the suite records at 2560x1440 under
+- Video: set `RECORD_VIDEO=true`; Playwright writes the recording under
   `test-results/`.
 - A failing replay names the turn and the assertion that failed. Compare the
   recording's `response` entries for that turn with what the panel rendered
