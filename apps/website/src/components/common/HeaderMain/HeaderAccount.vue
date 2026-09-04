@@ -221,7 +221,7 @@ const avatarClass =
           class="-mx-2 mt-2 h-px bg-transparency-white-t8"
         />
 
-        <div class="flex items-center gap-3 px-3 pt-3">
+        <div class="group/footer flex items-center gap-3 px-3 pt-3">
           <span
             class="min-w-0 flex-1 truncate text-sm text-primary-warm-gray"
             data-testid="account-email"
@@ -232,11 +232,13 @@ const avatarClass =
             <button
               type="button"
               :aria-label="t('nav.signOut', locale)"
-              :title="t('nav.signOut', locale)"
-              class="grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg text-primary-warm-gray outline-none hover:bg-transparency-white-t8 hover:text-primary-warm-white focus-visible:bg-transparency-white-t8"
+              class="flex h-8 shrink-0 cursor-pointer items-center gap-2 rounded-lg px-2 text-sm text-primary-warm-gray transition-colors outline-none group-hover/footer:bg-transparency-white-t8 group-hover/footer:text-primary-warm-white focus-visible:bg-transparency-white-t8 focus-visible:text-primary-warm-white"
               data-testid="account-sign-out"
               @click="signOut"
             >
+              <span class="hidden group-hover/footer:inline">
+                {{ t('nav.signOut', locale) }}
+              </span>
               <LogOut class="size-5" aria-hidden="true" />
             </button>
           </DropdownMenuItem>

@@ -1,12 +1,5 @@
 <script setup lang="ts">
-import {
-  ArrowUpDown,
-  Check,
-  ChevronDown,
-  ChevronLeft,
-  Search,
-  X
-} from '@lucide/vue'
+import { ArrowUpDown, ChevronDown, ChevronLeft, Search, X } from '@lucide/vue'
 import {
   DropdownMenuContent,
   DropdownMenuPortal,
@@ -431,25 +424,14 @@ const menuItemClass =
                     :key="order"
                     :value="order"
                     :data-testid="`sort-${order}`"
-                    :class="menuItemClass"
+                    :class="
+                      cn(
+                        menuItemClass,
+                        sort === order &&
+                          'bg-transparency-white-t8 text-primary-warm-white'
+                      )
+                    "
                   >
-                    <span
-                      :class="
-                        cn(
-                          'flex size-4 shrink-0 items-center justify-center rounded-full border transition-colors',
-                          sort === order
-                            ? 'border-brand bg-brand text-page'
-                            : 'border-white/25'
-                        )
-                      "
-                      aria-hidden="true"
-                    >
-                      <Check
-                        v-if="sort === order"
-                        class="size-3"
-                        :stroke-width="3"
-                      />
-                    </span>
                     <span class="flex-1">{{
                       t(sortLabelKey[order], locale)
                     }}</span>

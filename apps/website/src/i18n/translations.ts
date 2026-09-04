@@ -8472,6 +8472,7 @@ Enterprise`
   },
   'workshop.search.clear': { en: 'Clear search', 'zh-CN': '清除搜索' },
   'workshop.search.popular': { en: 'Popular models', 'zh-CN': '热门模型' },
+  'workshop.search.more': { en: '+ {n} more', 'zh-CN': '+ {n} 个' },
   'workshop.search.providers': { en: 'Providers', 'zh-CN': '提供商' },
   'workshop.filter.image': { en: 'Image', 'zh-CN': '图像' },
   'workshop.filter.video': { en: 'Video', 'zh-CN': '视频' },

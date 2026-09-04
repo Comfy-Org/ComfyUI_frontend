@@ -57,14 +57,17 @@ const chipsFrom = (
   for (const model of matching.value)
     for (const value of values(model))
       counts.set(value, (counts.get(value) ?? 0) + 1)
-  return [...counts]
-    .sort(([a, left], [b, right]) => right - left || a.localeCompare(b))
-    .slice(0, CHIPS)
-    .map(([value, count]) => ({
+  const ranked = [...counts].sort(
+    ([a, left], [b, right]) => right - left || a.localeCompare(b)
+  )
+  return {
+    chips: ranked.slice(0, CHIPS).map(([value, count]) => ({
       value,
       count,
       selected: chosen.includes(value)
-    }))
+    })),
+    more: Math.max(ranked.length - CHIPS, 0)
+  }
 }
 
 const providerChips = computed(() =>
@@ -85,7 +88,7 @@ const chipClass = (selected: boolean) =>
 
 <template>
   <div
-    class="bg-site-dropdown absolute inset-x-0 top-full z-30 mt-2 flex flex-col gap-5 rounded-2xl border border-transparency-white-t20 p-4 shadow-lg"
+    class="bg-page absolute inset-x-0 top-full z-30 mt-2 flex flex-col gap-5 rounded-2xl border border-transparency-white-t20 p-4 shadow-lg"
     data-testid="workshop-search-panel"
   >
     <section v-if="popular.length" class="flex flex-col gap-2">
@@ -141,7 +144,7 @@ const chipClass = (selected: boolean) =>
     </p>
 
     <section
-      v-if="providerChips.length"
+      v-if="providerChips.chips.length"
       class="flex flex-wrap items-baseline gap-2"
     >
       <p
@@ -150,7 +153,7 @@ const chipClass = (selected: boolean) =>
         {{ t('workshop.search.providers', locale) }}
       </p>
       <button
-        v-for="chip in providerChips"
+        v-for="chip in providerChips.chips"
         :key="chip.value"
         type="button"
         :aria-pressed="chip.selected"
@@ -161,10 +164,22 @@ const chipClass = (selected: boolean) =>
         {{ chip.value }}
         <span class="tabular-nums opacity-60">{{ chip.count }}</span>
       </button>
+      <span
+        v-if="providerChips.more > 0"
+        class="text-xs text-primary-warm-gray"
+        data-testid="workshop-search-provider-more"
+      >
+        {{
+          t('workshop.search.more', locale).replace(
+            '{n}',
+            `${providerChips.more}`
+          )
+        }}
+      </span>
     </section>
 
     <section
-      v-if="capabilityChips.length"
+      v-if="capabilityChips.chips.length"
       class="flex flex-wrap items-baseline gap-2"
     >
       <p
@@ -173,7 +188,7 @@ const chipClass = (selected: boolean) =>
         {{ t('workshop.hub.categories', locale) }}
       </p>
       <button
-        v-for="chip in capabilityChips"
+        v-for="chip in capabilityChips.chips"
         :key="chip.value"
         type="button"
         :aria-pressed="chip.selected"
@@ -184,6 +199,18 @@ const chipClass = (selected: boolean) =>
         {{ chip.value }}
         <span class="tabular-nums opacity-60">{{ chip.count }}</span>
       </button>
+      <span
+        v-if="capabilityChips.more > 0"
+        class="text-xs text-primary-warm-gray"
+        data-testid="workshop-search-capability-more"
+      >
+        {{
+          t('workshop.search.more', locale).replace(
+            '{n}',
+            `${capabilityChips.more}`
+          )
+        }}
+      </span>
     </section>
   </div>
 </template>
