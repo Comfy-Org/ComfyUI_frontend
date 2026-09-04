@@ -10,6 +10,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { GraphScope } from '@/types/graphScopeId'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -44,13 +45,20 @@ export type MaterializableGraph = Pick<
  * @param subgraphDefinitions explicitly created definitions present in the
  * document. Root nodes typed by a definition id can only materialize once the
  * definition is registered on the root graph.
+ * @param options.replaceSubgraphDefinitions retires definitions registered by
+ * the previous agent document before registering this document's definitions.
+ * Use only at an explicit document-lineage break.
  * @returns ids that received a new live node.
  */
 export function reconcileAgentAdapters(
   graph: MaterializableGraph,
-  subgraphDefinitions: ExportedSubgraph[] = []
+  subgraphDefinitions: ExportedSubgraph[] = [],
+  options: { replaceSubgraphDefinitions?: boolean } = {}
 ): NodeId[] {
   return runMintPortsSuppressed(() => {
+    if (options.replaceSubgraphDefinitions) {
+      retireAgentSubgraphDefinitions(graph)
+    }
     const pending = registerSubgraphDefinitions(graph, subgraphDefinitions)
     return reconcile(graph, pending)
   })
@@ -61,6 +69,44 @@ export function reconcileAgentAdapters(
  * a definition that keeps failing across reconcile frames is reported once.
  */
 const reportedDefinitionFailures = new WeakMap<LGraph, Set<string>>()
+
+/** Definitions successfully registered by this materializer, per root graph. */
+const agentDefinitionIds = new WeakMap<LGraph, Set<string>>()
+
+/**
+ * Retire definitions owned by the previous agent document generation.
+ * Definitions that were already present when the agent first referenced them
+ * are not tracked and remain untouched.
+ */
+function retireAgentSubgraphDefinitions(graph: MaterializableGraph): void {
+  const rootGraph = graph.rootGraph
+  const ids = agentDefinitionIds.get(rootGraph)
+  reportedDefinitionFailures.delete(rootGraph)
+  if (!ids?.size) return
+
+  const subgraphs = [...ids].flatMap((id) => {
+    const subgraph = rootGraph.subgraphs.get(id)
+    return subgraph ? [subgraph] : []
+  })
+  try {
+    rootGraph.releaseSubgraphs(subgraphs)
+  } catch (cause) {
+    // Extension removal hooks are outside this lifecycle's control. The graph
+    // release finishes its own cleanup in `finally`; report the hook failure
+    // but keep the reset moving so old live adapters are swept as well.
+    reportError(cause, {
+      errorType: 'agent_subgraph_definitions_release_failed',
+      context: { graphId: graph.id, definitionIds: [...ids].join(',') }
+    })
+  } finally {
+    const nodeDefStore = useNodeDefStore()
+    for (const id of ids) {
+      if (LiteGraph.registered_node_types[id]) LiteGraph.unregisterNodeType(id)
+      nodeDefStore.removeNodeDef(id)
+    }
+    ids.clear()
+  }
+}
 
 /**
  * Register explicitly created subgraph definitions the root graph does not
@@ -104,6 +150,10 @@ function registerSubgraphDefinitions(
   for (const definition of topologicalSortSubgraphs(missing)) {
     const failure = tryCreateSubgraph(rootGraph, definition)
     if (failure === undefined) {
+      const registered =
+        agentDefinitionIds.get(rootGraph) ??
+        agentDefinitionIds.set(rootGraph, new Set()).get(rootGraph)!
+      registered.add(definition.id)
       pending.delete(definition.id)
       reported.delete(definition.id)
       continue
