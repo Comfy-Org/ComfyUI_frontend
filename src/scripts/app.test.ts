@@ -2040,7 +2040,9 @@ describe('ComfyApp', () => {
       mockWorkspaceWorkflow.openWorkflow.mockImplementation(
         async (workflow) => {
           const loadedWorkflow = await workflowStore.openWorkflow(workflow)
-          mockWorkspaceWorkflow.activeWorkflow = loadedWorkflow
+          if (loadedWorkflow) {
+            mockWorkspaceWorkflow.activeWorkflow = loadedWorkflow
+          }
           return loadedWorkflow
         }
       )

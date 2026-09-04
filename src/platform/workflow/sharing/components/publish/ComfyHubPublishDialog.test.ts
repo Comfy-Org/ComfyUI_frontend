@@ -105,7 +105,7 @@ vi.mock('@/platform/workflow/sharing/services/workflowShareService', () => ({
 
 vi.mock('@/platform/workflow/core/services/workflowService', () => ({
   useWorkflowService: () => ({
-    renameWorkflow: mockRenameWorkflow,
+    renameWorkflow: mockRenameWorkflow.mockResolvedValue(true),
     saveWorkflow: vi.fn()
   })
 }))

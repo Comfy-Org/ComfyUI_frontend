@@ -78,9 +78,11 @@ export async function persistThumbnail(
       user_metadata: { filename: previewFilename }
     })
 
-    await assetService.updateAsset(asset.id, {
+    const result = await assetService.updateAsset(asset.id, {
       preview_id: uploaded.id
     })
+    if (result.kind !== 'updated') return
+
     await useAssetsStore().outputAssets.invalidate()
   } catch {
     // Non-critical — client still shows the rendered thumbnail

@@ -824,14 +824,30 @@ describe(assetService.seedModelAssets, () => {
 })
 
 describe(assetService.updateAsset, () => {
-  it('throws when the response body fails schema validation', async () => {
+  it('returns unknown server state when the request reports failure', async () => {
     fetchApiMock.mockResolvedValueOnce(
-      buildResponse({ name: 'no-id-field.safetensors' })
+      buildResponse({}, { ok: false, status: 500 })
     )
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     await expect(
       assetService.updateAsset('asset-1', { name: 'renamed.safetensors' })
-    ).rejects.toThrow(/Invalid response/)
+    ).resolves.toEqual({ kind: 'failed', serverState: 'unknown' })
+    expect(consoleSpy).toHaveBeenCalledOnce()
+    consoleSpy.mockRestore()
+  })
+
+  it('returns unknown server state when the response body is invalid', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildResponse({ name: 'no-id-field.safetensors' })
+    )
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    await expect(
+      assetService.updateAsset('asset-1', { name: 'renamed.safetensors' })
+    ).resolves.toEqual({ kind: 'failed', serverState: 'unknown' })
+    expect(consoleSpy).toHaveBeenCalledOnce()
+    consoleSpy.mockRestore()
   })
 
   it('PUTs the JSON payload and returns the parsed asset', async () => {
@@ -843,9 +859,13 @@ describe(assetService.updateAsset, () => {
       name: 'renamed.safetensors'
     })
 
-    expect(result).toEqual(
-      expect.objectContaining({ id: 'asset-1', name: 'renamed.safetensors' })
-    )
+    expect(result).toEqual({
+      kind: 'updated',
+      asset: expect.objectContaining({
+        id: 'asset-1',
+        name: 'renamed.safetensors'
+      })
+    })
     expect(fetchApiMock).toHaveBeenCalledWith(
       '/assets/asset-1',
       expect.objectContaining({

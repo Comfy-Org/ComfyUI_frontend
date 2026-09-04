@@ -470,6 +470,23 @@ describe('useWorkflowService', () => {
   })
 
   describe('openWorkflow ordering', () => {
+    it('does not transform the graph when the workflow cannot be loaded', async () => {
+      const workflow = createModeTestWorkflow({
+        path: 'workflows/unavailable.json',
+        loaded: false
+      })
+      vi.spyOn(workflow, 'load').mockResolvedValue(undefined)
+
+      await expect(useWorkflowService().openWorkflow(workflow)).resolves.toBe(
+        false
+      )
+
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expect(
+        subgraphNavigationMocks.endWorkflowNavigation
+      ).toHaveBeenCalledWith(1)
+    })
+
     it('re-selecting the active workflow with no loads pending is a no-op', async () => {
       const workflowStore = useWorkflowStore()
       const active = createWorkflow(null, {
@@ -2260,6 +2277,7 @@ describe('useWorkflowService', () => {
       vi.spyOn(workflowStore, 'renameWorkflow').mockImplementation(
         async (renamedWorkflow, path) => {
           renamedWorkflow.updatePath(path)
+          return true
         }
       )
       executionErrorStore.setActiveGraph(graphId, oldPath)
@@ -2285,7 +2303,7 @@ describe('useWorkflowService', () => {
       workflowStore = useWorkflowStore()
       service = useWorkflowService()
       vi.spyOn(workflowStore, 'saveWorkflow').mockResolvedValue()
-      vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue()
+      vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue(true)
       app.rootGraph.extra = {}
     })
 
@@ -2318,6 +2336,17 @@ describe('useWorkflowService', () => {
         'workflows/my-workflow.json'
       )
       expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
+    })
+
+    it('does not save when renaming a temporary workflow fails', async () => {
+      const workflow = createTemporaryWorkflow()
+      vi.mocked(workflowStore.renameWorkflow).mockResolvedValueOnce(false)
+
+      await expect(
+        service.saveWorkflowAs(workflow, { filename: 'my-workflow' })
+      ).resolves.toBe(false)
+
+      expect(workflowStore.saveWorkflow).not.toHaveBeenCalled()
     })
 
     it('should return false when no filename is provided', async () => {
@@ -2624,7 +2653,7 @@ describe('useWorkflowService', () => {
       toastStore = useToastStore()
       service = useWorkflowService()
       vi.spyOn(workflowStore, 'saveWorkflow').mockResolvedValue()
-      vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue()
+      vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue(true)
     })
 
     function createSaveableWorkflow(path: string): LoadedComfyWorkflow {
@@ -2650,6 +2679,18 @@ describe('useWorkflowService', () => {
         'workflows/test.app.json'
       )
       expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
+    })
+
+    it('does not save or show success when an extension rename fails', async () => {
+      const workflow = createSaveableWorkflow('workflows/test.json')
+      workflow.initialMode = 'app'
+      vi.mocked(workflowStore.renameWorkflow).mockResolvedValueOnce(false)
+      const addSpy = vi.spyOn(toastStore, 'add')
+
+      await expect(service.saveWorkflow(workflow)).resolves.toBe(false)
+
+      expect(workflowStore.saveWorkflow).not.toHaveBeenCalled()
+      expect(addSpy).not.toHaveBeenCalled()
     })
 
     it('renames .app.json to .json when initialMode is graph', async () => {
@@ -2713,7 +2754,7 @@ describe('useWorkflowService', () => {
 
       const existing = createSaveableWorkflow('workflows/test.app.json')
       vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(existing)
-      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue()
+      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue(true)
       mockConfirm.mockResolvedValue(true)
 
       await service.saveWorkflow(workflow)
@@ -2739,6 +2780,22 @@ describe('useWorkflowService', () => {
       expect(mockConfirm).toHaveBeenCalled()
       expect(workflowStore.renameWorkflow).not.toHaveBeenCalled()
       expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
+    })
+  })
+
+  describe('deleteWorkflow', () => {
+    it('does not report success when persistence fails', async () => {
+      const workflowStore = useWorkflowStore()
+      const workflow = createModeTestWorkflow()
+      vi.spyOn(useSettingStore(), 'get').mockReturnValue(false)
+      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue(false)
+      const addSpy = vi.spyOn(useToastStore(), 'add')
+
+      await expect(useWorkflowService().deleteWorkflow(workflow)).resolves.toBe(
+        false
+      )
+
+      expect(addSpy).not.toHaveBeenCalled()
     })
   })
 })
