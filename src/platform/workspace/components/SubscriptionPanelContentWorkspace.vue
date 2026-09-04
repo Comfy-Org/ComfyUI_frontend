@@ -264,15 +264,11 @@
                     )
                   }}
                 </Button>
-                <!-- Never a self-serve resubscribe on an Enterprise contract,
-                     even where the legacy rail resolves canReactivatePlan
-                     true — same distrust as the banner action. -->
+                <!-- The server capability alone decides who may reactivate:
+                     hideLifecycleCapabilities closes this for sales-managed
+                     tiers (cloud common/billing/policy/capabilities.go). -->
                 <Button
-                  v-if="
-                    isSubscriptionCancelled &&
-                    canReactivatePlan &&
-                    !isEnterprisePlan
-                  "
+                  v-if="isSubscriptionCancelled && canReactivatePlan"
                   size="lg"
                   variant="primary"
                   class="rounded-lg px-4 text-sm font-normal"
