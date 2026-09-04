@@ -362,7 +362,8 @@
     <div class="mt-auto flex min-h-14 items-center justify-center pt-4">
       <!-- Inverted pill (token pairing from the Button `inverted` variant so
            it stays high-contrast in both themes). A status region: only its
-           underlined links are interactive. -->
+           bold links are interactive, matching the fine-print blurb's link
+           treatment. -->
       <p
         v-if="footerNotice"
         role="status"
@@ -377,12 +378,7 @@
           <span v-if="index > 0" aria-hidden="true">·</span>
           <button
             type="button"
-            :class="
-              cn(
-                'cursor-pointer border-none bg-transparent p-0 font-inter text-sm text-inherit underline hover:opacity-80',
-                link.emphasized && 'font-semibold'
-              )
-            "
+            class="cursor-pointer border-none bg-transparent p-0 font-inter text-sm font-semibold text-inherit hover:opacity-80"
             @click="link.onClick"
           >
             {{ link.label }}
@@ -531,8 +527,6 @@ const canDowngradeToPersonal = computed(() =>
 
 interface FooterNoticeLink {
   label: string
-  /** Semibold link — reserved for the one action that saves the user a wait. */
-  emphasized?: boolean
   onClick: () => void
 }
 
@@ -585,7 +579,6 @@ const footerNotice = computed<FooterNotice | null>(() => {
         {
           label: t('subscription.noticeTryAgain'),
           // Retrying immediately skips the read's 30-60s backoff wait.
-          emphasized: true,
           onClick: () => void capabilities.retryCapabilityRead()
         },
         contactSupportLink()
