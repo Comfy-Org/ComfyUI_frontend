@@ -89,6 +89,7 @@ Languages: comfy.org is published in English and Simplified Chinese, with a Japa
 - [MiniMax Commercial License](https://comfy.org/minimax/license/): Commercial-use licenses for running MiniMax H3 and MiniMax Audio & Music locally; Comfy is the only official reseller, with Professional and Enterprise tiers.
 - [Request a MiniMax Professional License](https://comfy.org/minimax/license/professional-request/): Intake form for the Professional tier — a fixed-price monthly license covering up to 10 users.
 - [Launches](https://comfy.org/launches/): Everything new in ComfyUI in one place: the latest launches across desktop, cloud, and the core engine.
+- [Comfy Cloud Nodes](https://comfy.org/cloud-nodes/): Run the newest open models on Comfy Cloud GPUs from inside a local ComfyUI graph, with no subscription and no downloads, billed per GPU-second in credits.
 
 ## Models
 
@@ -297,6 +298,7 @@ Languages: comfy.org is published in English and Simplified Chinese, with a Japa
 - [定价](https://comfy.org/zh-CN/pricing/): Comfy Cloud 各套餐与积分说明。
 - [开发者平台](https://comfy.org/zh-CN/platform/): 部署并扩展 ComfyUI 工作流。你的工作流。所有模型。一个 API。
 - [Comfy MCP](https://comfy.org/zh-CN/mcp/): 通过模型上下文协议，让 Claude Code、Claude Desktop 等 AI 智能体驱动完整的 ComfyUI 引擎。
+- [Comfy Cloud 节点](https://comfy.org/zh-CN/cloud-nodes/): 在你自己的 ComfyUI 工作流中，用 Comfy Cloud 的 GPU 运行最新的开源模型。无需订阅，无需下载，按 GPU 秒数以积分计费。
 - [Comfy CLI](https://comfy.org/zh-CN/cli/): 在终端和 Claude Code、Codex、Cursor 等编程智能体中驱动 ComfyUI 的命令行。
 - [前沿驻场创意人才](https://comfy.org/zh-CN/forward-deployed-creatives/): Comfy 专家驻场加入你的团队，构建并交付 ComfyUI 工作流。
 - [MiniMax 商业许可](https://comfy.org/zh-CN/minimax/license/): 通过 Comfy 获取 MiniMax H3 及音频与音乐模型的商业使用许可。

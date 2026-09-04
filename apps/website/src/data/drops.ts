@@ -54,6 +54,26 @@ function videoFor(
 
 export const drops: readonly Drop[] = [
   {
+    id: 'comfy-cloud-nodes',
+    badge: NEW_BADGE,
+    category: MODELS_AND_NODES,
+    // Placeholder art, same as the other drops until the asset lands.
+    media: imageFor('Drops_2x2card_CloudNodes.jpg', {
+      en: 'Comfy Cloud Nodes',
+      'zh-CN': 'Comfy Cloud 节点'
+    }),
+    title: { en: 'Comfy Cloud Nodes', 'zh-CN': 'Comfy Cloud 节点' },
+    description: {
+      en: 'Run the newest open models on our GPUs from inside your own ComfyUI. No subscription, no downloads.',
+      'zh-CN':
+        '在你自己的 ComfyUI 中，用我们的 GPU 运行最新的开源模型。无需订阅，无需下载。'
+    },
+    cta: {
+      label: EXPLORE,
+      href: { en: '/cloud-nodes', 'zh-CN': '/zh-CN/cloud-nodes' }
+    }
+  },
+  {
     id: 'desktop-client',
     badge: NEW_BADGE,
     category: PLATFORM,
