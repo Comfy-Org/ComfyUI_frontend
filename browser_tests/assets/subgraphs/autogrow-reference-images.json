@@ -2,7 +2,7 @@
   "id": "9f2daf30-9829-45d2-9614-393d2bc035da",
   "revision": 0,
   "last_node_id": 26,
-  "last_link_id": 52,
+  "last_link_id": 53,
   "nodes": [
     {
       "id": 18,
@@ -65,12 +65,42 @@
       }
     },
     {
-      "id": 26,
-      "type": "ByteDance2ReferenceNode",
-      "pos": [700, 120],
-      "size": [400, 463],
+      "id": 20,
+      "type": "LoadImage",
+      "pos": [680, 120],
+      "size": [282.796875, 346],
       "flags": {},
       "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [53]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": ["example.png", "image"],
+      "widgets_values_named": {
+        "image": "example.png",
+        "upload": "image"
+      }
+    },
+    {
+      "id": 26,
+      "type": "ByteDance2ReferenceNode",
+      "pos": [1000, 120],
+      "size": [400, 463],
+      "flags": {},
+      "order": 3,
       "mode": 0,
       "inputs": [
         {
@@ -86,6 +116,13 @@
           "shape": 7,
           "type": "IMAGE",
           "link": 52
+        },
+        {
+          "label": "image_3",
+          "name": "model.reference_images.image_3",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 53
         },
         {
           "label": "video_1",
@@ -149,7 +186,8 @@
   ],
   "links": [
     [51, 18, 0, 26, 0, "IMAGE"],
-    [52, 19, 0, 26, 1, "IMAGE"]
+    [52, 19, 0, 26, 1, "IMAGE"],
+    [53, 20, 0, 26, 2, "IMAGE"]
   ],
   "groups": [],
   "config": {},

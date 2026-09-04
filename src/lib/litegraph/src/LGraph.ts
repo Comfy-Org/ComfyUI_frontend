@@ -2547,7 +2547,8 @@ export class LGraph
       iparent?: RerouteId
       eparent?: RerouteId
       externalFirst: boolean
-    })[] = []
+      targetSlotName?: string
+    }[] = []
     for (const [, link] of subgraphNode.subgraph.links) {
       const presentation = presentationStore.getPresentation(
         subgraphScope,
@@ -2608,7 +2609,10 @@ export class LGraph
             iparent: link.parentId,
             eparent: sublink.parentId,
             externalFirst: true,
-            ...getAgreedLinkPresentation([presentation, outerPresentation])
+            ...getAgreedLinkPresentation([presentation, outerPresentation]),
+            targetSlotName: this.getNodeById(sublink.target_id)?.inputs[
+              sublink.target_slot
+            ]?.name
           })
           sublink.parentId = undefined
         }
@@ -2637,7 +2641,9 @@ export class LGraph
         iparent: link.parentId,
         eparent: externalParentId,
         externalFirst: false,
-        ...restoredPresentation
+        ...restoredPresentation,
+        targetSlotName: subgraphNode.subgraph.getNodeById(link.target_id)
+          ?.inputs[link.target_slot]?.name
       })
     }
     this.remove(subgraphNode)
@@ -2700,7 +2706,11 @@ export class LGraph
         const originNode = this.getNodeById(newLink.oid)
         const targetNode = this.getNodeById(newLink.tid)
         if (!originNode || !targetNode) continue
-        created = originNode.connect(newLink.oslot, targetNode, newLink.tslot)
+        created = originNode.connect(
+          newLink.oslot,
+          targetNode,
+          newLink.targetSlotName ?? newLink.tslot
+        )
       }
       if (!created) {
         console.error('Failed to create link')
