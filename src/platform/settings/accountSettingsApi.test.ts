@@ -7,7 +7,8 @@ import {
 } from './accountSettingsApi'
 
 vi.mock('@/config/comfyApi', () => ({
-  getComfyApiBaseUrl: () => 'https://api.comfy.test'
+  getComfyApiBaseUrl: () => 'https://api.comfy.test',
+  getComfyCloudBaseUrl: () => 'https://cloud.comfy.test'
 }))
 
 const fetchWithUnifiedRemint = vi.hoisted(() => vi.fn())
@@ -23,7 +24,7 @@ describe('accountSettingsApi', () => {
     fetchWithUnifiedRemint.mockReset()
   })
 
-  it('reads a setting from the configured Comfy account API', async () => {
+  it('reads a setting from the configured Comfy Cloud API', async () => {
     fetchWithUnifiedRemint.mockResolvedValueOnce(
       new Response(JSON.stringify({ value: true }), { status: 200 })
     )
@@ -32,7 +33,7 @@ describe('accountSettingsApi', () => {
       getAccountSetting('Comfy.Agent Consent', authHeader)
     ).resolves.toBe(true)
     expect(fetchWithUnifiedRemint).toHaveBeenCalledWith(
-      'https://api.comfy.test/api/settings/Comfy.Agent%20Consent',
+      'https://cloud.comfy.test/api/settings/Comfy.Agent%20Consent',
       { headers: authHeader },
       false
     )
@@ -68,7 +69,7 @@ describe('accountSettingsApi', () => {
     ).rejects.toBeInstanceOf(AccountSettingsApiError)
   })
 
-  it('writes a setting to the configured Comfy account API', async () => {
+  it('writes a setting to the configured Comfy Cloud API', async () => {
     fetchWithUnifiedRemint.mockResolvedValueOnce(
       new Response(JSON.stringify({ value: true }), { status: 200 })
     )
@@ -76,7 +77,7 @@ describe('accountSettingsApi', () => {
     await setAccountSetting('Comfy.Agent Consent', true, authHeader)
 
     expect(fetchWithUnifiedRemint).toHaveBeenCalledWith(
-      'https://api.comfy.test/api/settings/Comfy.Agent%20Consent',
+      'https://cloud.comfy.test/api/settings/Comfy.Agent%20Consent',
       {
         method: 'POST',
         headers: {

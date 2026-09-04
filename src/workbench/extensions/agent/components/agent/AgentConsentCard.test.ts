@@ -48,7 +48,7 @@ describe('AgentConsentCard', () => {
     expect(emitted().reject).toHaveLength(1)
   })
 
-  it('blocks both decisions while acceptance is being saved', () => {
+  it('shows only the busy Start action while acceptance is being saved', () => {
     renderCard({ accepting: true })
 
     expect(
@@ -57,7 +57,9 @@ describe('AgentConsentCard', () => {
     expect(
       screen.getByRole('button', { name: 'Start using Comfy Agent' })
     ).toHaveAttribute('aria-busy', 'true')
-    expect(screen.getByRole('button', { name: 'Skip for now' })).toBeDisabled()
+    expect(
+      screen.queryByRole('button', { name: 'Skip for now' })
+    ).not.toBeInTheDocument()
   })
 
   it('announces a persistence error and lets the user retry', () => {
@@ -69,6 +71,7 @@ describe('AgentConsentCard', () => {
     expect(
       screen.getByRole('button', { name: 'Start using Comfy Agent' })
     ).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Skip for now' })).toBeEnabled()
   })
 
   it('shows a placeholder when no video is supplied', () => {
