@@ -31,7 +31,7 @@ describe('test skip accountability checker', () => {
     assert.equal(result.status, 0, result.stderr)
   })
 
-  it('ignores skip-like text in comments and strings', () => {
+  it('ignores non-executable and unchanged skip calls', () => {
     const result = runChecker('unlinked-body.md', 'non-executable-skips.diff')
 
     assert.equal(result.status, 0, result.stderr)
