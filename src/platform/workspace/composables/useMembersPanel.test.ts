@@ -1,10 +1,13 @@
+import { createTestingPinia } from '@pinia/testing'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
+import type * as VueI18n from 'vue-i18n'
 
 import type {
   WorkspacePendingInvite,
   WorkspaceMember
 } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import {
   filterBySearch,
@@ -249,7 +252,8 @@ describe('sortPendingInvites', () => {
 })
 
 const mockToastAdd = vi.fn()
-const mockResendInvite = vi.fn()
+const mockResendInvite =
+  vi.fn<(inviteId: string) => Promise<WorkspacePendingInvite>>()
 const mockShowRemoveMemberDialog = vi.fn()
 const mockShowRevokeInviteDialog = vi.fn()
 const mockShowChangeMemberRoleDialog = vi.fn()
@@ -259,10 +263,6 @@ const mockShowInviteMemberDialog = vi.fn()
 const mockShowInviteMemberUpsellDialog = vi.fn()
 
 const {
-  mockActiveWorkspace,
-  mockMembers,
-  mockPendingInvites,
-  mockOriginalOwnerId,
   mockMaxSeats,
   mockOccupiedSeats,
   mockPermissions,
@@ -280,12 +280,6 @@ const {
   const { ref } = require('vue') as typeof import('vue')
 
   return {
-    mockActiveWorkspace: ref<{ type: 'personal' | 'team' } | null>({
-      type: 'personal'
-    }),
-    mockMembers: ref<WorkspaceMember[]>([]),
-    mockPendingInvites: ref<WorkspacePendingInvite[]>([]),
-    mockOriginalOwnerId: ref<string | null>(null),
     mockMaxSeats: ref<number | null>(73),
     mockOccupiedSeats: ref<number | null>(0),
     mockPermissions: ref({
@@ -325,30 +319,72 @@ const {
   }
 })
 
+let workspaceStore: ReturnType<typeof useTeamWorkspaceStore> & {
+  activeWorkspaceId: string | null
+  originalOwnerId: string | null
+}
+let workspaceType: 'personal' | 'team' = 'personal'
+let workspaceMembers: WorkspaceMember[] = []
+let workspacePendingInvites: WorkspacePendingInvite[] = []
+
+function updateWorkspaceStore() {
+  workspaceStore.workspaces = [
+    {
+      id: 'workspace-one',
+      name: 'Test workspace',
+      type: workspaceType,
+      role: 'owner',
+      created_at: '2025-01-01',
+      joined_at: '2025-01-01',
+      isSubscribed: true,
+      subscriptionPlan: null,
+      subscriptionTier: workspaceType === 'team' ? 'PRO' : 'FREE',
+      members: workspaceMembers,
+      pendingInvites: workspacePendingInvites
+    }
+  ]
+  workspaceStore.activeWorkspaceId = 'workspace-one'
+}
+
+const mockActiveWorkspace = {
+  set value(workspace: { type: 'personal' | 'team' } | null) {
+    if (!workspace) {
+      workspaceStore.workspaces = []
+      workspaceStore.activeWorkspaceId = null
+      return
+    }
+    workspaceType = workspace.type
+    updateWorkspaceStore()
+  }
+}
+
+const mockMembers = {
+  set value(members: WorkspaceMember[]) {
+    workspaceMembers = members
+    updateWorkspaceStore()
+  }
+}
+
+const mockPendingInvites = {
+  set value(pendingInvites: WorkspacePendingInvite[]) {
+    workspacePendingInvites = pendingInvites
+    updateWorkspaceStore()
+  }
+}
+
+const mockOriginalOwnerId = {
+  set value(originalOwnerId: string | null) {
+    workspaceStore.originalOwnerId = originalOwnerId
+  }
+}
+
 vi.mock('primevue/usetoast', () => ({
   useToast: () => ({ add: mockToastAdd })
 }))
 
-vi.mock('vue-i18n', () => ({
+vi.mock('vue-i18n', async (importOriginal) => ({
+  ...(await importOriginal<typeof VueI18n>()),
   useI18n: () => ({ t: (key: string) => key })
-}))
-
-vi.mock('pinia', async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...(actual as object),
-    storeToRefs: (store: Record<string, unknown>) => store
-  }
-})
-
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    activeWorkspace: mockActiveWorkspace,
-    members: mockMembers,
-    pendingInvites: mockPendingInvites,
-    originalOwnerId: mockOriginalOwnerId,
-    resendInvite: mockResendInvite
-  })
 }))
 
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
@@ -436,11 +472,14 @@ vi.mock('@/composables/useFeatureFlags', () => ({
 
 describe('useMembersPanel', () => {
   beforeEach(() => {
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
+    workspaceStore = useTeamWorkspaceStore(pinia)
+    vi.mocked(workspaceStore.resendInvite).mockImplementation(mockResendInvite)
+    workspaceType = 'personal'
+    workspaceMembers = []
+    workspacePendingInvites = []
+    updateWorkspaceStore()
     mockBillingControlEnabled.value = true
-    mockActiveWorkspace.value = { type: 'personal' }
-    mockMembers.value = []
-    mockPendingInvites.value = []
-    mockOriginalOwnerId.value = null
     mockMaxSeats.value = 73
     mockOccupiedSeats.value = 0
     mockCanAccessSubscriptionFeatures.value = true
@@ -636,7 +675,7 @@ describe('useMembersPanel', () => {
 
   describe('handleResendInvite', () => {
     it('resends the invite and shows a success toast', async () => {
-      mockResendInvite.mockResolvedValue(undefined)
+      mockResendInvite.mockResolvedValue(createInvite({ id: 'inv-1' }))
       const panel = await setup()
       await panel.handleResendInvite(createInvite({ id: 'inv-1' }))
       expect(mockResendInvite).toHaveBeenCalledWith('inv-1')

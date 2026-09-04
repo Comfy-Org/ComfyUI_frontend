@@ -1,35 +1,27 @@
+import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
-import type * as VueUse from '@vueuse/core'
-import type * as Pinia from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
-import type { Ref } from 'vue'
+import { markRaw } from 'vue'
 
-import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { Positionable } from '@/lib/litegraph/src/interfaces'
+import type { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeLayout } from '@/renderer/core/layout/types'
+import { toGroupId } from '@/types/groupId'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 
-// TODO: Simplify test setup — use real layoutStore + createTestingPinia instead
-// of manually mocking every dependency. See https://github.com/Comfy-Org/ComfyUI_frontend/issues/10765
 const ROOT_GRAPH_ID = vi.hoisted<UUID>(() => 'root-graph')
 
 const testState = vi.hoisted(() => {
-  // Imports are unavailable inside vi.hoisted() so shoehorn's fromAny cannot
-  // be used here. This local identity function serves the same purpose
-  // (runtime no-op cast) until the test is rewritten to use real stores.
-  const placeholder = <T>(v: unknown): T => v as T
   return {
-    selectedNodeIds: placeholder<Ref<Set<NodeId>>>(null),
-    selectedItems: placeholder<Ref<unknown[]>>(null),
-    nodeLayouts: new Map<string, Pick<NodeLayout, 'position' | 'size'>>(),
     mutationFns: {
       moveNode: vi.fn(),
       batchMoveNodes: vi.fn()
     },
-    batchUpdateNodeBounds: vi.fn(),
     nodeSnap: {
       shouldSnap: vi.fn(() => false),
       applySnapToPosition: vi.fn((pos: { x: number; y: number }) => pos)
@@ -46,14 +38,12 @@ const testState = vi.hoisted(() => {
         stop: ReturnType<typeof vi.fn>
       } | null
     },
+    selectedNodes: new WeakSet<object>(),
     mockDs: { offset: [0, 0] as [number, number], scale: 1 }
   }
 })
 
-vi.mock('pinia', async (importOriginal) => ({
-  ...(await importOriginal<typeof Pinia>()),
-  storeToRefs: <T>(store: T) => store
-}))
+let canvasStore: ReturnType<typeof useCanvasStore>
 
 vi.mock('@/renderer/core/canvas/useAutoPan', () => ({
   AutoPanController: class {
@@ -67,36 +57,28 @@ vi.mock('@/renderer/core/canvas/useAutoPan', () => ({
   }
 }))
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({
-    rootGraphId: ROOT_GRAPH_ID,
-    selectedNodeIds: testState.selectedNodeIds,
-    selectedItems: testState.selectedItems,
-    canvas: {
-      ds: testState.mockDs,
-      auto_pan_speed: 10,
-      canvas: {
-        getBoundingClientRect: () => ({
-          left: 0,
-          top: 0,
-          right: 800,
-          bottom: 600
-        })
-      }
-    }
+vi.mock('@/composables/useAppMode', () => ({
+  useAppMode: () => ({
+    isAppMode: { value: false },
+    setMode: vi.fn()
   })
+}))
+
+vi.mock('@/scripts/app', () => ({ app: {} }))
+
+vi.mock('@/core/graph/subgraph/promotionUtils', () => ({
+  promoteRecommendedWidgets: vi.fn()
+}))
+
+vi.mock('@/utils/litegraphUtil', () => ({
+  isLGraphNode: (item: unknown) =>
+    typeof item === 'object' &&
+    item !== null &&
+    testState.selectedNodes.has(item)
 }))
 
 vi.mock('@/renderer/core/layout/operations/layoutMutations', () => ({
   useLayoutMutations: () => testState.mutationFns
-}))
-
-vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
-  layoutStore: {
-    getNodeLayout: (_rootGraphId: string, nodeId: string) =>
-      testState.nodeLayouts.get(nodeId) ?? null,
-    batchUpdateNodeBounds: testState.batchUpdateNodeBounds
-  }
 }))
 
 vi.mock('@/renderer/extensions/vueNodes/composables/useNodeSnap', () => ({
@@ -118,8 +100,7 @@ vi.mock('@/renderer/core/layout/transform/useTransformState', () => ({
   })
 }))
 
-vi.mock('@vueuse/core', async (importOriginal) => ({
-  ...(await importOriginal<typeof VueUse>()),
+vi.mock('@vueuse/core', () => ({
   createSharedComposable: (fn: () => unknown) => fn,
   whenever: vi.fn()
 }))
@@ -135,10 +116,82 @@ function pointerEvent(clientX: number, clientY: number): PointerEvent {
   return fromPartial<PointerEvent>({ clientX, clientY, target, pointerId: 1 })
 }
 
+function selectedNode(id: NodeId, x = 0, y = 0) {
+  const pos: [number, number] = [x, y]
+  const node = {
+    id,
+    pos,
+    move(deltaX: number, deltaY: number) {
+      pos[0] += deltaX
+      pos[1] += deltaY
+    }
+  }
+  const positionable = markRaw(fromPartial<Positionable>(node))
+  testState.selectedNodes.add(positionable)
+  return positionable
+}
+
+function groupAt(x: number, y: number) {
+  const pos: [number, number] = [x, y]
+  return {
+    id: toGroupId(-1),
+    pos,
+    pinned: false,
+    move(deltaX: number, deltaY: number) {
+      if (this.pinned) return
+      pos[0] += deltaX
+      pos[1] += deltaY
+    }
+  }
+}
+
+function selectNodes(...nodeIds: NodeId[]) {
+  canvasStore.selectedItems = nodeIds.map((id) => selectedNode(id))
+}
+
+function setNodeLayout(
+  nodeId: NodeId,
+  { position, size }: Pick<NodeLayout, 'position' | 'size'>
+) {
+  layoutStore.applyOperation({
+    type: 'createNode',
+    graphId: ROOT_GRAPH_ID,
+    nodeId,
+    layout: {
+      id: nodeId,
+      position,
+      size,
+      zIndex: 0,
+      visible: true,
+      bounds: { ...position, width: size.width, height: size.height }
+    },
+    timestamp: 0,
+    source: LayoutSource.Vue,
+    actor: 'test'
+  })
+}
+
 beforeEach(() => {
-  testState.selectedNodeIds = ref(new Set<NodeId>())
-  testState.selectedItems = ref<unknown[]>([])
-  testState.nodeLayouts.clear()
+  const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
+  canvasStore = useCanvasStore(pinia)
+  canvasStore.currentGraph = fromPartial<LGraph>({
+    rootGraph: { id: ROOT_GRAPH_ID }
+  })
+  canvasStore.selectedItems = []
+  canvasStore.canvas = fromPartial<LGraphCanvas>({
+    ds: testState.mockDs,
+    auto_pan_speed: 10,
+    canvas: {
+      getBoundingClientRect: () => ({
+        left: 0,
+        top: 0,
+        right: 800,
+        bottom: 600
+      })
+    }
+  })
+  layoutStore.resetForTests()
+  vi.spyOn(layoutStore, 'batchUpdateNodeBounds')
   testState.nodeSnap.shouldSnap.mockReturnValue(false)
   testState.nodeSnap.applySnapToPosition.mockImplementation(
     (pos: { x: number; y: number }) => pos
@@ -158,12 +211,12 @@ beforeEach(() => {
 
 describe('useNodeDrag', () => {
   it('batches multi-node drag updates into one mutation call per frame', () => {
-    testState.selectedNodeIds.value = new Set([node1, toNodeId('2')])
-    testState.nodeLayouts.set('1', {
+    selectNodes(node1, toNodeId('2'))
+    setNodeLayout(node1, {
       position: { x: 100, y: 100 },
       size: { width: 200, height: 120 }
     })
-    testState.nodeLayouts.set('2', {
+    setNodeLayout(toNodeId('2'), {
       position: { x: 200, y: 180 },
       size: { width: 210, height: 130 }
     })
@@ -186,8 +239,8 @@ describe('useNodeDrag', () => {
   })
 
   it('uses the same batched mutation path for single-node drags', () => {
-    testState.selectedNodeIds.value = new Set([node1])
-    testState.nodeLayouts.set('1', {
+    selectNodes(node1)
+    setNodeLayout(node1, {
       position: { x: 50, y: 80 },
       size: { width: 180, height: 110 }
     })
@@ -207,13 +260,13 @@ describe('useNodeDrag', () => {
   })
 
   it('moves selected non-node items without moving selected LiteGraph nodes', () => {
-    const selectedNode = new LGraphNode('selected')
-    selectedNode.pos = [300, 400]
-    const selectedGroup = new LGraphGroup('selected')
-    selectedGroup.pos = [500, 600]
-    testState.selectedNodeIds.value = new Set([node1])
-    testState.selectedItems.value = [selectedNode, selectedGroup]
-    testState.nodeLayouts.set('1', {
+    const node = selectedNode(node1, 300, 400)
+    const selectedGroup = groupAt(500, 600)
+    canvasStore.selectedItems = [
+      node,
+      markRaw(fromPartial<Positionable>(selectedGroup))
+    ]
+    setNodeLayout(node1, {
       position: { x: 100, y: 100 },
       size: { width: 200, height: 120 }
     })
@@ -224,13 +277,13 @@ describe('useNodeDrag', () => {
     handleDrag(pointerEvent(30, 50), node1)
     testState.requestAnimationFrameCallback?.(0)
 
-    expect([...selectedNode.pos]).toEqual([300, 400])
+    expect([...node.pos]).toEqual([300, 400])
     expect([...selectedGroup.pos]).toEqual([520, 630])
   })
 
   it('cancels pending RAF and applies snap updates on endDrag', () => {
-    testState.selectedNodeIds.value = new Set([node1])
-    testState.nodeLayouts.set('1', {
+    selectNodes(node1)
+    setNodeLayout(node1, {
       position: { x: 50, y: 80 },
       size: { width: 180, height: 110 }
     })
@@ -248,8 +301,8 @@ describe('useNodeDrag', () => {
 
     expect(testState.cancelAnimationFrame).toHaveBeenCalledTimes(1)
     expect(testState.cancelAnimationFrame).toHaveBeenCalledWith(1)
-    expect(testState.batchUpdateNodeBounds).toHaveBeenCalledTimes(1)
-    expect(testState.batchUpdateNodeBounds).toHaveBeenCalledWith(
+    expect(layoutStore.batchUpdateNodeBounds).toHaveBeenCalledTimes(1)
+    expect(layoutStore.batchUpdateNodeBounds).toHaveBeenCalledWith(
       ROOT_GRAPH_ID,
       [
         {
@@ -269,14 +322,12 @@ describe('useNodeDrag', () => {
 
 describe('useNodeDrag auto-pan', () => {
   beforeEach(() => {
-    testState.selectedNodeIds = ref(new Set([node1]))
-    testState.selectedItems = ref<unknown[]>([])
-    testState.nodeLayouts.clear()
-    testState.nodeLayouts.set('1', {
+    selectNodes(node1)
+    setNodeLayout(node1, {
       position: { x: 100, y: 200 },
       size: { width: 200, height: 100 }
     })
-    testState.nodeLayouts.set('2', {
+    setNodeLayout(toNodeId('2'), {
       position: { x: 300, y: 400 },
       size: { width: 200, height: 100 }
     })
@@ -321,7 +372,7 @@ describe('useNodeDrag auto-pan', () => {
   })
 
   it('moves all selected nodes when auto-pan fires', () => {
-    testState.selectedNodeIds.value = new Set([node1, toNodeId('2')])
+    selectNodes(node1, toNodeId('2'))
     const drag = useNodeDrag()
 
     drag.startDrag(pointerEvent(750, 300), node1)
@@ -401,28 +452,18 @@ describe('useNodeDrag auto-pan', () => {
 })
 
 describe('useNodeDrag non-node positionables', () => {
-  /**
-   * Models just the Positionable contract the drag path uses. Real LGraphGroup
-   * would be preferable; see the harness TODO at the top of this file.
-   */
   function selectedGroupAt(x: number, y: number) {
-    const pos: [number, number] = [x, y]
-    const group = {
-      pos,
-      pinned: false,
-      move(deltaX: number, deltaY: number) {
-        if (group.pinned) return
-        pos[0] += deltaX
-        pos[1] += deltaY
-      }
-    }
-    testState.selectedItems.value = [group]
+    const group = groupAt(x, y)
+    selectNodes(node1)
+    canvasStore.selectedItems = [
+      ...canvasStore.selectedItems,
+      markRaw(fromPartial<Positionable>(group))
+    ]
     return group
   }
 
   function dragNodeBy(delta: number) {
-    testState.selectedNodeIds.value = new Set([node1])
-    testState.nodeLayouts.set('1', {
+    setNodeLayout(node1, {
       position: { x: 0, y: 0 },
       size: { width: 100, height: 50 }
     })
