@@ -1,11 +1,13 @@
-import type { LGraph, Subgraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { materializeLinkAdapter } from '@/lib/litegraph/src/LLink'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { topologicalSortSubgraphs } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
 import type {
   ExportedSubgraph,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
 import { reportError } from '@/platform/telemetry/reportError'
+import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -49,121 +51,150 @@ export function reconcileAgentAdapters(
   subgraphDefinitions: ExportedSubgraph[] = []
 ): NodeId[] {
   return runMintPortsSuppressed(() => {
-    registerSubgraphDefinitions(graph, subgraphDefinitions)
-    return reconcile(graph)
+    const pending = registerSubgraphDefinitions(graph, subgraphDefinitions)
+    return reconcile(graph, pending)
   })
 }
+
+/**
+ * Definition ids already reported as failing to register, per root graph, so
+ * a definition that keeps failing across reconcile frames is reported once.
+ */
+const reportedDefinitionFailures = new WeakMap<LGraph, Set<string>>()
 
 /**
  * Register agent-seeded subgraph definitions the root graph does not know yet.
  *
  * This is the same entry point the human load path uses
- * (`useSubgraphService().loadSubgraphs` → `rootGraph.createSubgraphs`), so each
- * definition dispatches `subgraph-created` and the app handler registers the
- * definition id as a `SubgraphNode` type before any root node of that type is
- * materialized. Without it `LiteGraph.createNode(definitionId)` returns null
- * and the instance degrades to an error placeholder.
+ * (`useSubgraphService().loadSubgraphs` → `rootGraph.createSubgraph(s)`), so
+ * each definition dispatches `subgraph-created` and the app handler registers
+ * the definition id as a `SubgraphNode` type before any root node of that type
+ * is materialized. Without it `LiteGraph.createNode(definitionId)` returns
+ * null and the instance degrades to an error placeholder.
  *
- * Definitions already present on the root graph are left untouched: v1 treats
- * agent-seeded definitions as static after creation.
+ * Definitions are registered one at a time, leaves before the definitions
+ * that nest them, so a definition that throws while configuring is rolled off
+ * the root graph (and retried on the next frame) without taking a healthy
+ * sibling down with it. Definitions already present on the root graph are left
+ * untouched: v1 treats agent-seeded definitions as static after creation.
+ *
+ * @returns ids of definitions from the document that are still not registered
+ * on the root graph.
  */
 function registerSubgraphDefinitions(
   graph: MaterializableGraph,
   definitions: ExportedSubgraph[]
-): void {
+): Set<string> {
   const rootGraph = graph.rootGraph
-  const missing = pruneRegistered(definitions, rootGraph)
-  if (missing.length === 0) return
-  try {
-    // createSubgraphs hoists nested `definitions.subgraphs` into its return
-    // value, so match created subgraphs back to definitions by id rather
-    // than by position.
-    const byId = new Map(
-      flattenDefinitions(missing).map((definition) => [
-        definition.id,
-        definition
-      ])
-    )
-    for (const subgraph of rootGraph.createSubgraphs(missing)) {
-      const definition = byId.get(subgraph.id)
-      if (definition) applyInteriorWidgetValues(subgraph, definition)
+  // Filter after flattening: a live nested definition must not be recreated
+  // just because its outer is missing, and a missing nested definition must
+  // still register when its outer is already live.
+  const missing = flattenDefinitions(definitions).filter(
+    (definition) => !rootGraph.subgraphs.has(definition.id)
+  )
+  const pending = new Set(missing.map((definition) => definition.id))
+  if (missing.length === 0) return pending
+
+  const reported =
+    reportedDefinitionFailures.get(rootGraph) ??
+    reportedDefinitionFailures.set(rootGraph, new Set()).get(rootGraph)!
+
+  for (const definition of topologicalSortSubgraphs(missing)) {
+    const failure = tryCreateSubgraph(rootGraph, definition)
+    if (failure === undefined) {
+      pending.delete(definition.id)
+      reported.delete(definition.id)
+      continue
     }
-  } catch (cause) {
-    reportError(cause, {
+    if (reported.has(definition.id)) continue
+    reported.add(definition.id)
+    reportError(failure, {
       errorType: 'agent_subgraph_definitions_failed',
-      context: {
-        graphId: graph.id,
-        definitionIds: missing.map((definition) => definition.id)
-      }
+      context: { graphId: graph.id, definitionId: definition.id }
     })
+  }
+  return pending
+}
+
+/**
+ * Register one definition on the root graph.
+ *
+ * @returns the failure when the definition could not be registered, after
+ * rolling any half-built entry back off the root graph so the next frame can
+ * retry it; `undefined` on success.
+ */
+function tryCreateSubgraph(
+  rootGraph: LGraph,
+  definition: ExportedSubgraph
+): unknown {
+  // createSubgraphs remints a non-UUID id, which would leave every node typed
+  // by the document's id pointing at a definition that never registers. The
+  // op layer only mints UUIDs; treat anything else as a broken document
+  // rather than silently diverging from it.
+  if (!isUuidShapedSubgraphId(definition.id)) {
+    return new Error(
+      `Agent subgraph definition id is not a UUID: ${definition.id}`
+    )
+  }
+  try {
+    withNamedValuesRestore(() => rootGraph.createSubgraph(definition))
+    return undefined
+  } catch (cause) {
+    // createSubgraph registers the definition before configuring it. Tear the
+    // half-built entry down through the same path node removal uses: a bare
+    // map delete would leave its graph metadata behind, and the Subgraph
+    // constructor remints the id on the next attempt when it finds that
+    // metadata, so the retry would never land under the document's id.
+    const halfBuilt = rootGraph.subgraphs.get(definition.id)
+    if (halfBuilt) rootGraph.releaseSubgraphs([halfBuilt])
+    return cause
   }
 }
 
 /**
- * Definitions the root graph does not have yet, at every nesting level.
- *
- * `LGraph.createSubgraphs()` hoists nested definitions and registers each one
- * unconditionally, replacing a live definition of the same id and firing
- * `subgraph-created` again for it. So a registered definition must be pruned
- * wherever it appears, and the missing children of a registered parent are
- * hoisted to the top level so they still register.
+ * Each definition plus every definition nested under its `definitions`, with
+ * the nesting stripped so each one registers on its own.
  */
-function pruneRegistered(
-  definitions: ExportedSubgraph[],
-  rootGraph: MaterializableGraph['rootGraph']
-): ExportedSubgraph[] {
-  return definitions.flatMap((definition) => {
-    const nested = definition.definitions?.subgraphs ?? []
-    const missingNested = pruneRegistered(nested, rootGraph)
-    if (rootGraph.subgraphs.has(definition.id)) return missingNested
-    if (missingNested.length === nested.length) return [definition]
-    return [
-      {
-        ...definition,
-        definitions: { ...definition.definitions, subgraphs: missingNested }
-      }
-    ]
-  })
-}
-
-/** Each definition plus every definition nested under its `definitions`. */
 function flattenDefinitions(
   definitions: ExportedSubgraph[]
 ): ExportedSubgraph[] {
   return definitions.flatMap((definition) => [
-    definition,
+    { ...definition, definitions: undefined },
     ...flattenDefinitions(definition.definitions?.subgraphs ?? [])
   ])
 }
 
 /**
- * Restore interior widget values the op layer stores by name.
+ * Run `fn` with `LGraphNode.configure()` honouring `widgets_values_named`.
  *
- * `LGraphNode.configure()` only honours `widgets_values_named` behind the
- * experimental `Comfy.Workflow.NamedValuesRestore` setting (or a class-level
- * fallback order), and the follower has no widget catalog to project the
- * names positionally the way the package's `project()` does. Assign them the
- * same way `configure()` would have, before any instance is materialized.
- *
- * Nodes are matched by position, not id: `LGraph.configure()` creates one
- * live node per serialised entry in order and may remint an id that collides
- * with a node the root graph already owns.
+ * The op layer stores interior widget values by name and the follower has no
+ * widget catalog to project them positionally the way the package's
+ * `project()` does. Named restore is otherwise gated behind the experimental
+ * `Comfy.Workflow.NamedValuesRestore` setting; enabling it only while the
+ * agent's definitions configure lets values land inside `configure()`, before
+ * `onConfigure`, exactly as they do for a human-loaded workflow.
  */
-function applyInteriorWidgetValues(
-  subgraph: Subgraph,
-  definition: ExportedSubgraph
-): void {
-  for (const [index, serialised] of (definition.nodes ?? []).entries()) {
-    const named = serialised.widgets_values_named
-    const widgets = subgraph.nodes[index]?.widgets
-    if (!named || !widgets) continue
-    for (const widget of widgets) {
-      if (Object.hasOwn(named, widget.name)) widget.value = named[widget.name]
-    }
+function withNamedValuesRestore<T>(fn: () => T): T {
+  const previous = LiteGraph.namedValuesRestore
+  LiteGraph.namedValuesRestore = true
+  try {
+    return fn()
+  } finally {
+    LiteGraph.namedValuesRestore = previous
   }
 }
 
-function reconcile(graph: MaterializableGraph): NodeId[] {
+/**
+ * @param pendingDefinitions definition ids the document seeds but the root
+ * graph could not register. Nodes typed by one stay unmaterialized rather
+ * than degrading to a placeholder: a `subgraph-created` handler may already
+ * have bound the type to the rolled-back `Subgraph`, and the record is picked
+ * up as soon as the definition registers.
+ */
+function reconcile(
+  graph: MaterializableGraph,
+  pendingDefinitions: Set<string>
+): NodeId[] {
   const scope = graphScopeOf(graph)
   // Remote connect registers canonical topology without importing LiteGraph.
   // Install its facade before node.configure() can query links; otherwise the
@@ -188,6 +219,7 @@ function reconcile(graph: MaterializableGraph): NodeId[] {
     if (live && nodeStore.ownsNode(scope, live._state)) continue
     const serialised = state.lastSerialization
     if (!serialised) continue
+    if (pendingDefinitions.has(state.type)) continue
     if (
       materialize(graph, scope, state, serialised, orphansById.get(state.id))
     ) {

@@ -27,10 +27,8 @@ function plain(value: unknown): unknown {
 }
 
 /**
- * Register entries that name a record, first occurrence only. LiteGraph keeps
- * only the first entry per id when it normalizes a definition, and the
- * positional widget restore in `agentNodeMaterializer` needs the list read
- * here to have the same length as the list LiteGraph configures.
+ * Register entries that name a record, first occurrence only, matching what
+ * LiteGraph keeps when it normalizes a definition.
  */
 function orderedKeys(register: unknown, map: Y.Map<unknown>): string[] {
   const order = Array.isArray(register)
@@ -97,6 +95,11 @@ function readDefinition(source: Y.Map<unknown>): ExportedSubgraph {
  */
 export function readSubgraphDefinitions(doc: Y.Doc): ExportedSubgraph[] {
   const definitions: ExportedSubgraph[] = []
+  // `doc.getMap` defines the root when it is absent. A document that never
+  // seeded definitions must keep its shape, so only read a root that exists.
+  // (For a root that arrived over the wire, `getMap` upgrades the untyped
+  // shared type in place; that is a read-side view, not new content.)
+  if (!doc.share.has(DEFINITIONS_ROOT)) return definitions
   doc.getMap<unknown>(DEFINITIONS_ROOT).forEach((value) => {
     if (value instanceof Y.Map) definitions.push(readDefinition(value))
   })
