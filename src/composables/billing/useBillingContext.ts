@@ -381,6 +381,8 @@ function useBillingContextInternal(): BillingContext {
   }
 }
 
+export const _for_testing = { useBillingContextInternal }
+
 export const useBillingContext = createSharedComposable(
   useBillingContextInternal
 )

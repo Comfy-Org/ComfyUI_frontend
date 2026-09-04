@@ -5,21 +5,13 @@ import type { LGraphNode, LGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
-import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
+import { _for_testing } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 import { useWorkflowPacks } from '@/workbench/extensions/manager/composables/nodePack/useWorkflowPacks'
 import type { WorkflowPack } from '@/workbench/extensions/manager/composables/nodePack/useWorkflowPacks'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock('@vueuse/core', async () => {
-  const actual = await vi.importActual('@vueuse/core')
-  return {
-    ...actual,
-    createSharedComposable: <Fn extends (...args: unknown[]) => unknown>(
-      fn: Fn
-    ) => fn
-  }
-})
+const { useMissingNodesInternal: useMissingNodes } = _for_testing
 
 // Mock the dependencies
 vi.mock(

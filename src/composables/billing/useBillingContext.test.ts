@@ -12,7 +12,9 @@ import {
   remoteConfigState
 } from '@/platform/remoteConfig/remoteConfig'
 
-import { useBillingContext } from './useBillingContext'
+import { _for_testing } from './useBillingContext'
+
+const { useBillingContextInternal: useBillingContext } = _for_testing
 
 const DEFAULT_BILLING_STATUS: BillingStatusResponse = {
   is_active: true,
@@ -65,14 +67,6 @@ const {
       } as BillingStatusResponse
     },
     mockBillingStatus
-  }
-})
-
-vi.mock('@vueuse/core', async (importOriginal) => {
-  const original = await importOriginal()
-  return {
-    ...(original as Record<string, unknown>),
-    createSharedComposable: (fn: (...args: unknown[]) => unknown) => fn
   }
 })
 
