@@ -160,6 +160,16 @@ test.describe('Workshop catalog', () => {
     ).toHaveCount(6)
   })
 
+  test('the hero medium deep-links into the catalog', async ({ page }) => {
+    await page.goto('/workshop/models/kling-ai/')
+    await page
+      .getByTestId('model-hero')
+      .getByRole('link', { name: 'Video' })
+      .click()
+    await expect(page).toHaveURL(/\/workshop\/?\?modality=video$/)
+    await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
+  })
+
   test('homepage model releases open their Workshop model', async ({
     page
   }) => {

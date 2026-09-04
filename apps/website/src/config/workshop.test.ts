@@ -347,13 +347,15 @@ describe('catalog deep links', () => {
     const search = catalogSearch({
       useCase: 'edit-images',
       capabilities: ['Upscale', 'Image editing'],
-      providers: ['Kling']
+      providers: ['Kling'],
+      modalities: ['video']
     })
     expect(parseCatalogSearch(search)).toEqual({
       query: '',
       useCase: 'edit-images',
       capabilities: ['Upscale', 'Image editing'],
-      providers: ['Kling']
+      providers: ['Kling'],
+      modalities: ['video']
     })
   })
 

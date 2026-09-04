@@ -51,7 +51,7 @@ const price =
     : undefined
 
 const pillClass =
-  'inline-flex h-7 items-center rounded-full border border-transparency-white-t20 px-3 text-sm leading-none text-primary-comfy-canvas'
+  'inline-flex h-7 items-center rounded-full border border-transparency-white-t20 px-3 text-sm leading-none text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow'
 
 // The provider already leads the hero, so the chip row is capabilities only.
 const tags = model.capabilities.map((capability) => ({
@@ -112,7 +112,12 @@ const tags = model.capabilities.map((capability) => ({
             {model.provider ?? t('workshop.card.partnerNode')}
           </p>
           {model.modality && (
-            <span class={pillClass}>{modalityLabel[model.modality]}</span>
+            <a
+              href={`${routes.workshop}${catalogSearch({ modalities: [model.modality] })}`}
+              class={pillClass}
+            >
+              {modalityLabel[model.modality]}
+            </a>
           )}
         </div>
 

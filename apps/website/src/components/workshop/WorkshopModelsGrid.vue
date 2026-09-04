@@ -89,6 +89,7 @@ onMounted(() => {
   useCase.value = initial.useCase ?? 'all'
   capabilities.value = [...(initial.capabilities ?? [])]
   providers.value = [...(initial.providers ?? [])]
+  modalities.value = [...(initial.modalities ?? [])]
 })
 
 const useCaseLabelKey: Record<UseCase | 'all', TranslationKey> = {

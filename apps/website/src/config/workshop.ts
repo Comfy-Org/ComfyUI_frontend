@@ -539,7 +539,7 @@ export function modalityOf(
 export interface WorkshopFilter {
   readonly query?: string
   readonly useCase?: UseCase | 'all'
-  readonly modality?: ModalityFilter
+  readonly modalities?: readonly string[]
   readonly providers?: readonly string[]
   readonly capabilities?: readonly string[]
 }
@@ -563,6 +563,8 @@ export function catalogSearch(filter: Partial<WorkshopFilter>): string {
     params.append('capability', capability)
   for (const provider of filter.providers ?? [])
     params.append('provider', provider)
+  for (const modality of filter.modalities ?? [])
+    params.append('modality', modality)
   const search = params.toString()
   return search ? `?${search}` : ''
 }
@@ -574,7 +576,8 @@ export function parseCatalogSearch(search: string): WorkshopFilter {
     query: params.get('q') ?? '',
     useCase: USE_CASES.find((value) => value === useCase) ?? 'all',
     capabilities: params.getAll('capability'),
-    providers: params.getAll('provider')
+    providers: params.getAll('provider'),
+    modalities: params.getAll('modality')
   }
 }
 
@@ -583,7 +586,7 @@ export function filterWorkshopModels(
   {
     query = '',
     useCase = 'all',
-    modality = 'all',
+    modalities = [],
     providers = [],
     capabilities = []
   }: WorkshopFilter
@@ -592,7 +595,7 @@ export function filterWorkshopModels(
   return list.filter(
     (model) =>
       (useCase === 'all' || useCaseFor(model) === useCase) &&
-      (modality === 'all' || modalityOf(model) === modality) &&
+      (modalities.length === 0 || modalities.includes(modalityOf(model))) &&
       matchesFacet(providers, model.provider) &&
       (capabilities.length === 0 ||
         capabilities.some((value) => model.capabilities.includes(value))) &&
