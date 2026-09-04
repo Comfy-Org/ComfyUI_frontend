@@ -179,7 +179,7 @@ describe('AssetsSidebarListView', () => {
     ['Enter', '{Enter}'],
     ['Space', '{ }']
   ] as const) {
-    it.fails(`selects a focused asset with ${label}`, async () => {
+    it(`does not select a focused asset with ${label} (#16308: missing keyboard handler)`, async () => {
       const user = userEvent.setup()
       const imageAsset = {
         ...buildAsset(`image-asset-${label}`, 'image.png'),
@@ -200,7 +200,7 @@ describe('AssetsSidebarListView', () => {
 
       await user.keyboard(keys)
 
-      expect(onSelectAsset).toHaveBeenCalledWith(imageAsset, [imageAsset])
+      expect(onSelectAsset).not.toHaveBeenCalled()
     })
   }
 })
