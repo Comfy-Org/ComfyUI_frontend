@@ -298,10 +298,16 @@ describe('useAgentCrdtFollower', () => {
     expect(reconcilePersistedDocId()).toBeNull()
     expect(persistedRecord()).toBeNull()
 
+    // The mismatch branch above consumed the record, so the reload branch needs
+    // its own; asserting against the emptied store would pass no matter what a
+    // reload does. A reload is the one navigation permitted to adopt the
+    // previous page load's record, and it takes ownership when it does.
+    writeRawRecord({ docId: 'wf-1', nonce: 'foreign-nonce' })
     vi.spyOn(performance, 'getEntriesByType').mockReturnValue([
       { type: 'reload' } as PerformanceNavigationTiming
     ])
-    expect(reconcilePersistedDocId()).toBeNull()
+    expect(reconcilePersistedDocId()).toBe('wf-1')
+    expect(persistedRecord()?.nonce).not.toBe('foreign-nonce')
     unmount()
   })
 
