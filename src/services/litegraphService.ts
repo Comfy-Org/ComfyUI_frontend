@@ -735,7 +735,7 @@ export const useLitegraphService = () => {
       })
 
       // prevent conflict of clipspace content
-      {
+      if (!ComfyApp.clipspace_return_node) {
         options.push({
           content: 'Copy (Clipspace)',
           callback: () => {
