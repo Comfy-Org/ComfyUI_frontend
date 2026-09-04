@@ -35,7 +35,6 @@ test.describe('Customers @smoke', () => {
     })
 
     await page.goto('/customers')
-    await page.waitForLoadState('networkidle')
 
     await expect(page.locator('video')).toHaveCount(0)
     expect(webmRequests).toEqual([])

@@ -12,8 +12,12 @@ const blackMath = getCustomerVideoStory('black-math')
 const silverside = getCustomerVideoStory('silverside-ai')
 
 test.describe('Customer watch pages @smoke', () => {
+  // One navigation per story covers title/meta/canonical/H1, the visible
+  // breadcrumb and its matching BreadcrumbList, the VideoObject JSON-LD, the
+  // player, and the browse-all link — separate tests would each pay for
+  // their own page load for no added confidence.
   for (const story of customerVideoStories) {
-    test(`${story.slug}: unique title, meta description, canonical, and H1`, async ({
+    test(`${story.slug}: metadata, breadcrumb, JSON-LD, and player`, async ({
       page
     }) => {
       await page.goto(customerVideoPath(story.slug))
@@ -30,12 +34,6 @@ test.describe('Customer watch pages @smoke', () => {
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(
         story.title
       )
-    })
-
-    test(`${story.slug}: visible breadcrumb agrees with BreadcrumbList JSON-LD`, async ({
-      page
-    }) => {
-      await page.goto(customerVideoPath(story.slug))
 
       const breadcrumb = page.getByRole('navigation', {
         name: t('ui.breadcrumb', 'en')
@@ -59,6 +57,11 @@ test.describe('Customer watch pages @smoke', () => {
         .locator('script[type="application/ld+json"]')
         .allTextContents()
       const graph = JSON.parse(blocks[0])['@graph'] as Record<string, unknown>[]
+      const types = graph.map((node) => node['@type'])
+      expect(types.filter((type) => type === 'Organization')).toHaveLength(1)
+      expect(types).toContain('WebPage')
+      expect(types).toContain('BreadcrumbList')
+
       const crumbList = graph.find((node) => node['@type'] === 'BreadcrumbList')
       const items = crumbList?.itemListElement as
         | { name: string; item?: string }[]
@@ -69,21 +72,6 @@ test.describe('Customer watch pages @smoke', () => {
         story.title
       ])
       expect(items?.at(-1)?.item).toBeUndefined()
-    })
-
-    test(`${story.slug}: emits VideoObject as the page's main entity`, async ({
-      page
-    }) => {
-      await page.goto(customerVideoPath(story.slug))
-
-      const blocks = await page
-        .locator('script[type="application/ld+json"]')
-        .allTextContents()
-      const graph = JSON.parse(blocks[0])['@graph'] as Record<string, unknown>[]
-      const types = graph.map((node) => node['@type'])
-      expect(types.filter((type) => type === 'Organization')).toHaveLength(1)
-      expect(types).toContain('WebPage')
-      expect(types).toContain('BreadcrumbList')
 
       const video = graph.find((node) => node['@type'] === 'VideoObject')
       expect(video?.name).toBe(story.title)
@@ -99,39 +87,25 @@ test.describe('Customer watch pages @smoke', () => {
       expect((webPage?.mainEntity as { '@id'?: string })?.['@id']).toBe(
         video?.['@id']
       )
-    })
 
-    test(`${story.slug}: one video, controls, captions, and no autoplay`, async ({
-      page
-    }) => {
-      await page.goto(customerVideoPath(story.slug))
+      const player = page.locator('video')
+      await expect(player).toHaveCount(1)
+      await expect(player).toHaveAttribute('src', story.videoSrc)
+      await expect(player).toHaveAttribute('poster', story.poster)
+      await expect(player).not.toHaveAttribute('autoplay', '')
+      await expect(player).not.toHaveAttribute('muted', '')
 
-      const video = page.locator('video')
-      await expect(video).toHaveCount(1)
-      await expect(video).toHaveAttribute('src', story.videoSrc)
-      await expect(video).toHaveAttribute('poster', story.poster)
-      await expect(video).not.toHaveAttribute('autoplay', '')
-      await expect(video).not.toHaveAttribute('muted', '')
-
-      const track = video.locator('track')
+      const track = player.locator('track')
       await expect(track).toHaveAttribute('src', story.captions[0].src)
       await expect(track).toHaveAttribute('kind', 'subtitles')
-    })
-
-    test(`${story.slug}: links to the directory and browse-all CTA`, async ({
-      page
-    }) => {
-      await page.goto(customerVideoPath(story.slug))
 
       await expect(
-        page.getByRole('link', {
-          name: t('customers.watch.browseAll', 'en')
-        })
+        page.getByRole('link', { name: t('customers.watch.browseAll', 'en') })
       ).toHaveAttribute('href', '/customers')
     })
   }
 
-  test('the Black Math page links to the Silverside AI watch page as a related story', async ({
+  test('the two watch pages reciprocally link to each other, and Silverside also links its written article', async ({
     page
   }) => {
     await page.goto(customerVideoPath('black-math'))
@@ -139,11 +113,7 @@ test.describe('Customer watch pages @smoke', () => {
       page.locator(`a[href="${customerVideoPath('silverside-ai')}"]`)
     ).toBeVisible()
     expect(blackMath.relatedStorySlug).toBeUndefined()
-  })
 
-  test('the Silverside AI page links back to Black Math and to its written article', async ({
-    page
-  }) => {
     await page.goto(customerVideoPath('silverside-ai'))
     await expect(
       page.locator(`a[href="${customerVideoPath('black-math')}"]`)
@@ -165,7 +135,7 @@ test.describe('Customer watch pages @smoke', () => {
 })
 
 test.describe('Silverside written story vs watch page @smoke', () => {
-  test('the article and the watch page carry distinct titles, descriptions, and canonicals', async ({
+  test('the article and the watch page carry distinct titles and canonicals, and the article links to the watch page', async ({
     page
   }) => {
     await page.goto('/customers/svedka-silverside')
@@ -173,6 +143,9 @@ test.describe('Silverside written story vs watch page @smoke', () => {
     const articleCanonical = await page
       .locator('link[rel="canonical"]')
       .getAttribute('href')
+    await expect(
+      page.locator(`a[href="${customerVideoPath('silverside-ai')}"]`)
+    ).toBeVisible()
 
     await page.goto(customerVideoPath('silverside-ai'))
     const watchTitle = await page.title()
@@ -182,14 +155,5 @@ test.describe('Silverside written story vs watch page @smoke', () => {
 
     expect(watchTitle).not.toBe(articleTitle)
     expect(watchCanonical).not.toBe(articleCanonical)
-  })
-
-  test('the written article links to the Silverside watch page', async ({
-    page
-  }) => {
-    await page.goto('/customers/svedka-silverside')
-    await expect(
-      page.locator(`a[href="${customerVideoPath('silverside-ai')}"]`)
-    ).toBeVisible()
   })
 })
