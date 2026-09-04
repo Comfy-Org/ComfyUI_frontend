@@ -14,13 +14,25 @@ import { computed, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale } from '../../i18n/translations'
+import type { CapabilityGroup } from '../../config/workshop'
+import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+
+const groupLabelKey: Record<CapabilityGroup, TranslationKey> = {
+  createImages: 'workshop.capGroup.createImages',
+  createVideos: 'workshop.capGroup.createVideos',
+  editImages: 'workshop.capGroup.editImages',
+  editVideos: 'workshop.capGroup.editVideos',
+  enhance: 'workshop.capGroup.enhance',
+  identity: 'workshop.capGroup.identity',
+  other: 'workshop.capGroup.other'
+}
 
 export interface FacetMenuOption {
   readonly value: string
   readonly label: string
   readonly count: number
+  readonly group?: CapabilityGroup
 }
 
 type Facet = 'provider' | 'capability'
@@ -61,13 +73,20 @@ const selectedCount = computed(
   () => capabilities.value.length + providers.value.length
 )
 
+// A group heading is drawn on the first option that carries it, so the list
+// stays one flat pass and the search keeps working across groups.
 function visibleOptions(entry: (typeof facets.value)[number]) {
   const needle = search.value[entry.facet].trim().toLowerCase()
-  return needle
+  const matching = needle
     ? entry.options.filter((option) =>
         option.label.toLowerCase().includes(needle)
       )
     : entry.options
+  return matching.map((option, index) => ({
+    ...option,
+    startsGroup:
+      option.group !== undefined && option.group !== matching[index - 1]?.group
+  }))
 }
 
 function toggle(facet: Facet, value: string) {
@@ -165,42 +184,51 @@ function clearAll() {
               role="listbox"
               aria-multiselectable="true"
             >
-              <li
+              <template
                 v-for="option in visibleOptions(entry)"
                 :key="option.value"
-                role="none"
               >
-                <button
-                  type="button"
-                  role="option"
-                  :aria-selected="entry.selected.value.includes(option.value)"
-                  :data-testid="`filter-${entry.facet}-${option.value}`"
-                  class="text-content-secondary hover:text-content flex w-full cursor-pointer items-center gap-2.5 px-3 py-2 text-left text-xs transition-colors outline-none hover:bg-white/5 focus-visible:bg-white/5"
-                  @click="toggle(entry.facet, option.value)"
+                <li
+                  v-if="option.startsGroup && option.group"
+                  role="presentation"
+                  class="text-content-muted px-3 pt-3 pb-1 text-2xs font-bold tracking-wider uppercase"
+                  :data-testid="`filter-group-${option.group}`"
                 >
-                  <span
-                    :class="
-                      cn(
-                        'flex size-4 shrink-0 items-center justify-center rounded-sm border transition-colors',
-                        entry.selected.value.includes(option.value)
-                          ? 'border-brand bg-brand text-page'
-                          : 'border-white/25'
-                      )
-                    "
-                    aria-hidden="true"
+                  {{ t(groupLabelKey[option.group], locale) }}
+                </li>
+                <li role="none">
+                  <button
+                    type="button"
+                    role="option"
+                    :aria-selected="entry.selected.value.includes(option.value)"
+                    :data-testid="`filter-${entry.facet}-${option.value}`"
+                    class="text-content-secondary hover:text-content flex w-full cursor-pointer items-center gap-2.5 px-3 py-2 text-left text-xs transition-colors outline-none hover:bg-white/5 focus-visible:bg-white/5"
+                    @click="toggle(entry.facet, option.value)"
                   >
-                    <Check
-                      v-if="entry.selected.value.includes(option.value)"
-                      class="size-3"
-                      :stroke-width="3"
-                    />
-                  </span>
-                  <span class="flex-1 truncate">{{ option.label }}</span>
-                  <span class="text-content/30 shrink-0 tabular-nums">
-                    {{ option.count }}
-                  </span>
-                </button>
-              </li>
+                    <span
+                      :class="
+                        cn(
+                          'flex size-4 shrink-0 items-center justify-center rounded-sm border transition-colors',
+                          entry.selected.value.includes(option.value)
+                            ? 'border-brand bg-brand text-page'
+                            : 'border-white/25'
+                        )
+                      "
+                      aria-hidden="true"
+                    >
+                      <Check
+                        v-if="entry.selected.value.includes(option.value)"
+                        class="size-3"
+                        :stroke-width="3"
+                      />
+                    </span>
+                    <span class="flex-1 truncate">{{ option.label }}</span>
+                    <span class="text-content/30 shrink-0 tabular-nums">
+                      {{ option.count }}
+                    </span>
+                  </button>
+                </li>
+              </template>
               <li
                 v-if="!visibleOptions(entry).length"
                 role="none"

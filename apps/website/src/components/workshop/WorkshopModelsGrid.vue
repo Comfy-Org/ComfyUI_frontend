@@ -34,6 +34,8 @@ import {
   USE_CASES,
   countByModality,
   parseCatalogSearch,
+  CAPABILITY_GROUPS,
+  capabilityGroupOf,
   countByFacet,
   countByUseCase,
   filterWorkshopModels,
@@ -154,12 +156,17 @@ function selectRail(value: (typeof rail.value)[number]['value']) {
   if (version.value === 'v1.1') useCase.value = value as UseCase | 'all'
   else modality.value = value as ModalityFilter
 }
-const capabilityOptions = computed<FacetMenuOption[]>(() =>
-  countByFacet(models, 'capabilities').map((option) => ({
-    ...option,
-    label: option.value
-  }))
-)
+// Ordered by group so the filter can show where each block begins.
+const capabilityOptions = computed<FacetMenuOption[]>(() => {
+  const order = CAPABILITY_GROUPS.map((group) => group.key)
+  return countByFacet(models, 'capabilities')
+    .map((option) => ({
+      ...option,
+      label: option.value,
+      group: capabilityGroupOf(option.value)
+    }))
+    .sort((a, b) => order.indexOf(a.group) - order.indexOf(b.group))
+})
 const providerOptions = computed<FacetMenuOption[]>(() =>
   countByFacet(models, 'provider').map((option) => ({
     ...option,
