@@ -300,7 +300,14 @@ export class PrimitiveNode extends LGraphNode {
         widget = (ComfyWidgets[type](this, 'value', inputData, app) || {})
           .widget
       } else {
-        widget = this.addWidget('custom', 'value', null, () => {}, {})
+        widget = this.addCustomWidget({
+          type: type.toLowerCase(),
+          name: 'value',
+          value: null,
+          callback: () => {},
+          options: {},
+          y: 0
+        })
       }
 
       if (node?.widgets && widget) {
