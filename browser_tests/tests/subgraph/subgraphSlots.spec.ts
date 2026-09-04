@@ -616,7 +616,7 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
 
       await comfyPage.page.evaluate(
         (wf) =>
-          window.app!.loadGraphData(wf as ComfyWorkflowJSON, true, true, null, {
+          window.app!.loadGraphData(wf, true, true, null, {
             openSource: 'template'
           }),
         workflow

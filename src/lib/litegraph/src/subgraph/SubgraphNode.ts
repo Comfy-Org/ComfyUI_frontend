@@ -74,7 +74,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   override get type(): SubgraphId {
-    return super.type as SubgraphId
+    return super.type
   }
 
   override set type(value: string) {
@@ -345,9 +345,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           })
         }
 
-        delete input.pos
-        delete input.widget
-        delete input.widgetId
+        input.pos = undefined
+        input.widget = undefined
+        input.widgetId = undefined
         input._widget = undefined
         this.invalidatePromotedViews()
       },
@@ -655,7 +655,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       // that gets discarded), letting a later unrelated instance inherit
       // this value. onAdded() performs the deferred registration once a
       // real id is assigned.
-      delete input.widgetId
+      input.widgetId = undefined
       return
     }
 
@@ -679,9 +679,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       visibility
     )
     if (!registered) {
-      delete input.pos
-      delete input.widget
-      delete input.widgetId
+      input.pos = undefined
+      input.widget = undefined
+      input.widgetId = undefined
       input._widget = undefined
       return
     }

@@ -161,7 +161,7 @@ describe('NodeBookmarkTreeExplorer', () => {
     await nextTick()
     const root = getRoot()
     expect(root).not.toBeNull()
-    return root!
+    return root
   }
 
   describe('handleDrop', () => {

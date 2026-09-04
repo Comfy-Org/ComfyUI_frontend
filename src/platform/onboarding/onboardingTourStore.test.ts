@@ -36,11 +36,10 @@ vi.mock('@/platform/telemetry', () => ({
 }))
 
 const appModeMock = vi.hoisted(
-  () =>
-    ({ mode: null, hasOutputs: null }) as {
-      mode: Ref<AppMode> | null
-      hasOutputs: Ref<boolean> | null
-    }
+  (): { mode: Ref<AppMode> | null; hasOutputs: Ref<boolean> | null } => ({
+    mode: null,
+    hasOutputs: null
+  })
 )
 vi.mock('@/composables/useAppMode', async () => {
   const { ref: r } = await import('vue')

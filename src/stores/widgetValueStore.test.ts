@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import type { UUID } from '@/utils/uuid'
+import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
@@ -350,6 +351,25 @@ describe('useWidgetValueStore', () => {
       expect(store.getWidgetVisibility(renamed)).toBe(component)
     })
 
+    it('reports subsequent changes with the new id', () => {
+      const store = useWidgetValueStore()
+      const renamed = widgetId(graphA, toNodeId('node-1'), 'renamed')
+      const onValueChange = vi.fn()
+      store.registerWidget(seedA, state('number', 1))
+      store.onValueChange(onValueChange)
+
+      const widget = store.renameWidget(seedA, renamed)!
+      widget.value = 2
+
+      expect(onValueChange).toHaveBeenCalledOnce()
+      expect(onValueChange).toHaveBeenCalledWith({
+        widgetId: renamed,
+        value: 2,
+        oldValue: 1,
+        context: undefined
+      })
+    })
+
     it('rejects an occupied destination without changing either widget', () => {
       const store = useWidgetValueStore()
       const nodeId = toNodeId('node-1')
@@ -408,6 +428,78 @@ describe('useWidgetValueStore', () => {
   })
 
   describe('value mutation', () => {
+    it('reports direct and contextual value changes exactly once', () => {
+      const store = useWidgetValueStore()
+      const widget = store.registerWidget(seedA, state('number', 100))!
+      const context: RemoteMutationContext = {
+        source: 'agent-remote',
+        actor: 'agent:test',
+        opId: 'op-1'
+      }
+      const onValueChange = vi.fn()
+      const unsubscribe = store.onValueChange(onValueChange)
+
+      widget.value = 200
+      store.setValue(seedA, 300, context)
+      store.setValue(seedA, 300)
+      unsubscribe()
+      widget.value = 400
+
+      expect(onValueChange).toHaveBeenCalledTimes(2)
+      expect(onValueChange).toHaveBeenNthCalledWith(1, {
+        widgetId: seedA,
+        value: 200,
+        oldValue: 100,
+        context: undefined
+      })
+      expect(onValueChange).toHaveBeenNthCalledWith(2, {
+        widgetId: seedA,
+        value: 300,
+        oldValue: 200,
+        context
+      })
+    })
+
+    it('does not leak mutation context into nested writes', () => {
+      const store = useWidgetValueStore()
+      const widget = store.registerWidget(seedA, state('number', 100))!
+      const context: RemoteMutationContext = {
+        source: 'agent-remote',
+        actor: 'agent:test',
+        opId: 'op-1'
+      }
+      const contexts: (RemoteMutationContext | undefined)[] = []
+      store.onValueChange((change) => {
+        contexts.push(change.context)
+        if (change.value === 200) widget.value = 201
+      })
+
+      store.setValue(seedA, 200, context)
+
+      expect(contexts).toEqual([context, undefined])
+    })
+
+    it('stops reporting replaced and deleted widget state', () => {
+      const store = useWidgetValueStore()
+      const replaced = store.registerWidget(seedA, state('number', 1))!
+      const current = store.registerWidget(seedA, state('string', 'two'))!
+      const onValueChange = vi.fn()
+      store.onValueChange(onValueChange)
+
+      replaced.value = 3
+      current.value = 'three'
+      store.deleteWidget(seedA)
+      current.value = 'four'
+
+      expect(onValueChange).toHaveBeenCalledOnce()
+      expect(onValueChange).toHaveBeenCalledWith({
+        widgetId: seedA,
+        value: 'three',
+        oldValue: 'two',
+        context: undefined
+      })
+    })
+
     it('setValue updates registered widgets and reports missing widgets', () => {
       const store = useWidgetValueStore()
       store.registerWidget(seedA, state('number', 100))
@@ -550,7 +642,7 @@ describe('useWidgetValueStore', () => {
     // header, preview, button). Such an id cannot be keyed; the store must
     // decline it rather than throw and blank every widget on the node.
     const malformedIds = [
-      widgetId(graphA, toNodeId('node-1'), '') as WidgetId, // empty name
+      widgetId(graphA, toNodeId('node-1'), ''), // empty name
       'no-colons' as WidgetId,
       `${graphA}:node-1` as WidgetId, // missing name segment
       `${graphA}:node-1:seed:extra` as WidgetId, // extra segment

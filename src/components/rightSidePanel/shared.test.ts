@@ -147,7 +147,7 @@ describe('computedSectionDataList', () => {
     name: string,
     options: IWidgetOptions = {}
   ): IBaseWidget {
-    return { name, type: 'number', options, y: 0 } as IBaseWidget
+    return { name, type: 'number', options, y: 0 }
   }
 
   it('omits hideInPanel widgets while keeping the rest on the node', () => {
