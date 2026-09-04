@@ -188,6 +188,15 @@ export class SubgraphInputNode
       subgraph.removeFloatingLink(floatingLink)
     }
 
+    if (input.widget) {
+      subgraph.trigger('node:slot-links:changed', {
+        nodeId: node.id,
+        slotType: NodeSlotType.INPUT,
+        slotIndex: inputIndex,
+        connected: false,
+        linkId: link?.id ?? null
+      })
+    }
     subgraph.setDirtyCanvas(false, true)
 
     if (!link) return
