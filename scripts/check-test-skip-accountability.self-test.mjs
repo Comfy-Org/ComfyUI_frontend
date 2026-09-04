@@ -5,10 +5,10 @@ import { fileURLToPath, URL } from 'node:url'
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
-const directory = fileURLToPath(new URL('.', import.meta.url))
-const script = `${directory}check-test-skip-accountability.mjs`
+const scriptDirectory = fileURLToPath(new URL('.', import.meta.url))
+const script = `${scriptDirectory}check-test-skip-accountability.mjs`
 const fixture = (name) =>
-  `${directory}fixtures/test-skip-accountability/${name}`
+  `${scriptDirectory}fixtures/test-skip-accountability/${name}`
 
 const runChecker = (body, diff = 'added-fixme.diff') =>
   spawnSync(
