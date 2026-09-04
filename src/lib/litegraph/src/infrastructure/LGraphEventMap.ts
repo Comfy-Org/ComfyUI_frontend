@@ -27,6 +27,11 @@ export interface LGraphEventMap {
     data: ExportedSubgraph
   }
 
+  'subgraph-released': {
+    /** The subgraph definition that was released. */
+    subgraph: Subgraph
+  }
+
   /** Dispatched when a group of items are converted to a subgraph. */
   'convert-to-subgraph': {
     /** The type of subgraph to create. */

@@ -1,6 +1,6 @@
 import { mint } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { createTestSubgraphData } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
@@ -63,6 +63,30 @@ describe('readSubgraphDefinitions', () => {
     // `Y.Doc.getMap` defines the shared type as a side effect; a reader must
     // leave the document's shape alone.
     expect(doc.share.has('definitions')).toBe(false)
+  })
+
+  it('does not project an already registered definition', () => {
+    const definition = createTestSubgraphData({
+      nodes: [interiorNode(1)] as never
+    })
+    const doc = seed(definition)
+    const clone = vi.spyOn(globalThis, 'structuredClone')
+
+    expect(readSubgraphDefinitions(doc, new Set([definition.id]))).toEqual([])
+
+    expect(clone).not.toHaveBeenCalled()
+  })
+
+  it('projects a registered parent when one of its nested definitions is missing', () => {
+    const inner = createTestSubgraphData({ nodes: [interiorNode(1)] as never })
+    const outer = createTestSubgraphData({
+      nodes: [interiorNode(2, inner.id)] as never,
+      definitions: { subgraphs: [inner] }
+    })
+
+    const projected = readSubgraphDefinitions(seed(outer), new Set([outer.id]))
+
+    expect(projected).toEqual([outer])
   })
 
   it('projects a definition back to the shape it was minted from', () => {

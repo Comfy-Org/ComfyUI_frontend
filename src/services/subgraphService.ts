@@ -1,3 +1,4 @@
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   ExportedSubgraph,
   ExportedSubgraphInstance,
@@ -100,8 +101,17 @@ export const useSubgraphService = () => {
     registerLitegraphNode(nodeDef, subgraph, exportedSubgraph)
   }
 
+  /** Removes the app-level registrations for a released subgraph definition. */
+  function unregisterSubgraph(subgraphId: string) {
+    if (LiteGraph.registered_node_types[subgraphId]) {
+      LiteGraph.unregisterNodeType(subgraphId)
+    }
+    nodeDefStore.removeNodeDef(subgraphId)
+  }
+
   return {
     loadSubgraphs,
-    registerNewSubgraph
+    registerNewSubgraph,
+    unregisterSubgraph
   }
 }

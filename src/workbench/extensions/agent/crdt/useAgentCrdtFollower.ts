@@ -6,7 +6,10 @@ import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { createUuidv4 } from '@/utils/uuid'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
-import { reconcileAgentAdapters } from './agentNodeMaterializer'
+import {
+  reconcileAgentAdapters,
+  releaseAgentSubgraphDefinitions
+} from './agentNodeMaterializer'
 import { readSubgraphDefinitions } from './agentSubgraphDefinitions'
 import { recordDevEvent } from './devPanelLog'
 import { wireLog } from './crdtLog'
@@ -502,6 +505,8 @@ export function useAgentCrdtFollower(
       // live adapters have to be swept before the replacement doc's frames
       // start landing.
       reconcileLiveGraph(workflowId)
+      const graph = getGraph()
+      if (graph) releaseAgentSubgraphDefinitions(graph)
       adapter.bind(workflowId, bridge.follower)
     }
   }
@@ -584,7 +589,10 @@ export function useAgentCrdtFollower(
     if (!graph) return
     const nodeIds = reconcileAgentAdapters(
       graph,
-      readSubgraphDefinitions(bridge.follower.doc)
+      readSubgraphDefinitions(
+        bridge.follower.doc,
+        new Set(graph.rootGraph.subgraphs.keys())
+      )
     )
     if (nodeIds.length > 0) {
       recordDevEvent('agent_node_adapters_materialized', {

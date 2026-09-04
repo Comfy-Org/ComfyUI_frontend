@@ -1554,6 +1554,7 @@ export class LGraph
         useExecutionOrderStore().clearGraph(graphScopeOf(subgraph))
         useGraphMetadataStore().clear(this.rootGraph.id, subgraph.id)
         this.rootGraph.subgraphs.delete(subgraph.id)
+        this.rootGraph.events.dispatch('subgraph-released', { subgraph })
       }
       detachGraphLayouts(subgraphs)
     }

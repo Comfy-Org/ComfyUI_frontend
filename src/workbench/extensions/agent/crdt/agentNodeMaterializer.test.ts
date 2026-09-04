@@ -42,7 +42,10 @@ import { toLinkId } from '@/types/linkId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
-import { reconcileAgentAdapters } from './agentNodeMaterializer'
+import {
+  reconcileAgentAdapters,
+  releaseAgentSubgraphDefinitions
+} from './agentNodeMaterializer'
 import { readSubgraphDefinitions } from './agentSubgraphDefinitions'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import { FollowerDoc } from './followerDoc'
@@ -971,6 +974,51 @@ describe('reconcileAgentAdapters', () => {
       expect(registered?.nodes.map((node) => node.id)).toEqual([toNodeId(7)])
       expect(created).toHaveBeenCalledOnce()
       expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('releases definitions before a replacement lineage reuses their ids', () => {
+      const definition = createTestSubgraphData({
+        nodes: [nodePayload(7)] as never
+      })
+      reconcileAgentAdapters(graph, [definition])
+
+      expect(graph.subgraphs.has(definition.id)).toBe(true)
+      expect(LiteGraph.registered_node_types[definition.id]).toBeDefined()
+
+      releaseAgentSubgraphDefinitions(graph)
+
+      expect(graph.subgraphs.has(definition.id)).toBe(false)
+      expect(LiteGraph.registered_node_types[definition.id]).toBeUndefined()
+
+      reconcileAgentAdapters(graph, [
+        { ...definition, nodes: [nodePayload(8)] as never }
+      ])
+      expect(
+        graph.subgraphs.get(definition.id)?.nodes.map(({ id }) => id)
+      ).toEqual([toNodeId(8)])
+    })
+
+    it('fails closed when an interior node id collides with a pending root node', () => {
+      const definition = createTestSubgraphData({
+        nodes: [nodePayload(7)] as never
+      })
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id), nodePayload(7)],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+
+      expect(
+        reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+      ).toEqual([toNodeId(7)])
+
+      expect(graph.subgraphs.has(definition.id)).toBe(false)
+      expect(graph.getNodeById(toNodeId(1))).toBeUndefined()
+      expect(graph.getNodeById(toNodeId(7))).toBeInstanceOf(DummyNode)
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
+        errorType: 'agent_subgraph_definitions_failed',
+        context: { graphId: graph.id, definitionId: definition.id }
+      })
     })
 
     it('carries interior widget values into the instantiated subgraph', () => {

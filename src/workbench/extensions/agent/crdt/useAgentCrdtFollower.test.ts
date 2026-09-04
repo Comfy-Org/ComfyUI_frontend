@@ -55,7 +55,8 @@ const adapterState = vi.hoisted(() => ({
 }))
 
 const materializerState = vi.hoisted(() => ({
-  reconcileAgentAdapters: vi.fn(() => [] as NodeId[])
+  reconcileAgentAdapters: vi.fn(() => [] as NodeId[]),
+  releaseAgentSubgraphDefinitions: vi.fn()
 }))
 
 // The reader is module-mocked too: these tests only check that the composable
@@ -113,7 +114,9 @@ vi.mock('./ecsFollowerAdapter', () => ({
 }))
 
 vi.mock('./agentNodeMaterializer', () => ({
-  reconcileAgentAdapters: materializerState.reconcileAgentAdapters
+  reconcileAgentAdapters: materializerState.reconcileAgentAdapters,
+  releaseAgentSubgraphDefinitions:
+    materializerState.releaseAgentSubgraphDefinitions
 }))
 
 vi.mock('./agentSubgraphDefinitions', () => ({
@@ -207,6 +210,7 @@ describe('useAgentCrdtFollower', () => {
     sessionStorage.clear()
     bridgeState.current = null
     materializerState.reconcileAgentAdapters.mockReset().mockReturnValue([])
+    materializerState.releaseAgentSubgraphDefinitions.mockReset()
     definitionsState.readSubgraphDefinitions.mockClear()
   })
 
@@ -669,8 +673,10 @@ describe('useAgentCrdtFollower', () => {
   describe('live-graph reconcile', () => {
     // The materializer is module-mocked, so the graph only needs to be a
     // distinct reference the composable hands through.
-    const fakeGraph = {} as MaterializableGraph
     const { fakeDefinitions } = definitionsState
+    const fakeGraph = {
+      rootGraph: { subgraphs: new Map([[fakeDefinitions[0].id, {}]]) }
+    } as unknown as MaterializableGraph
 
     it('reconciles the live graph after every applied frame', () => {
       const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
@@ -685,7 +691,8 @@ describe('useAgentCrdtFollower', () => {
       // Definitions come from the doc the bridge currently follows, so a
       // doc_reset remint (which swaps the FollowerDoc) is read fresh.
       expect(definitionsState.readSubgraphDefinitions).toHaveBeenCalledWith(
-        bridge().follower.doc
+        bridge().follower.doc,
+        new Set([fakeDefinitions[0].id])
       )
       unmount()
     })
@@ -796,6 +803,9 @@ describe('useAgentCrdtFollower', () => {
         fakeGraph,
         fakeDefinitions
       )
+      expect(
+        materializerState.releaseAgentSubgraphDefinitions
+      ).toHaveBeenCalledExactlyOnceWith(fakeGraph)
       unmount()
     })
 

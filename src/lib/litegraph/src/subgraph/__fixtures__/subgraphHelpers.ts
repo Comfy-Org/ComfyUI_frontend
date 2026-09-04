@@ -87,10 +87,21 @@ export function enableSubgraphNodeCreation(rootGraph: LGraph): () => void {
     LiteGraph.registered_node_types[subgraph.id] = TestSubgraphNode
     registrations.set(subgraph.id, TestSubgraphNode)
   }
+  const releaseListener = (
+    e: CustomEvent<LGraphEventMap['subgraph-released']>
+  ): void => {
+    const { id } = e.detail.subgraph
+    if (LiteGraph.registered_node_types[id] === registrations.get(id)) {
+      delete LiteGraph.registered_node_types[id]
+    }
+    registrations.delete(id)
+  }
   rootGraph.events.addEventListener('subgraph-created', listener)
+  rootGraph.events.addEventListener('subgraph-released', releaseListener)
 
   return () => {
     rootGraph.events.removeEventListener('subgraph-created', listener)
+    rootGraph.events.removeEventListener('subgraph-released', releaseListener)
     for (const [type, constructor] of registrations) {
       if (LiteGraph.registered_node_types[type] === constructor) {
         delete LiteGraph.registered_node_types[type]

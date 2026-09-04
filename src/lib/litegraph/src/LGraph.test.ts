@@ -1611,6 +1611,19 @@ describe('Subgraph Definition Garbage Collection', () => {
     expect(rootGraph.subgraphs.has(subgraphId)).toBe(false)
   })
 
+  it('announces a released subgraph definition for app registry cleanup', () => {
+    const rootGraph = new LGraph()
+    const { subgraph } = createSubgraphWithNodes(rootGraph, 1)
+    const released = vi.fn()
+    rootGraph.events.addEventListener('subgraph-released', released)
+
+    rootGraph.releaseSubgraphs([subgraph])
+
+    expect(released).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ detail: { subgraph } })
+    )
+  })
+
   it('releases the subgraph definition when an inner removal lifecycle throws', () => {
     const rootGraph = new LGraph()
     const { subgraph, innerNodes } = createSubgraphWithNodes(rootGraph, 1)

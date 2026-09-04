@@ -987,6 +987,9 @@ export class ComfyApp {
         })
       }
     })
+    graph.events.addEventListener('subgraph-released', (e) => {
+      useSubgraphService().unregisterSubgraph(e.detail.subgraph.id)
+    })
 
     this.addAfterConfigureHandler(graph)
 

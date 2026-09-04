@@ -14,6 +14,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { GraphScope } from '@/types/graphScopeId'
 import { graphScopeOf } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetStateInit } from '@/types/widgetState'
@@ -51,7 +52,17 @@ export function reconcileAgentAdapters(
   subgraphDefinitions: ExportedSubgraph[] = []
 ): NodeId[] {
   return runMintPortsSuppressed(() => {
-    const pending = registerSubgraphDefinitions(graph, subgraphDefinitions)
+    const scope = graphScopeOf(graph)
+    const pendingRootNodeIds = new Set(
+      useNodeDataStore()
+        .getGraphNodesFor(scope.rootGraphId, scope.owningGraphId)
+        .map(({ id }) => id)
+    )
+    const pending = registerSubgraphDefinitions(
+      graph,
+      subgraphDefinitions,
+      pendingRootNodeIds
+    )
     return reconcile(graph, pending)
   })
 }
@@ -85,7 +96,8 @@ const reportedDefinitionFailures = new WeakMap<LGraph, Set<string>>()
  */
 function registerSubgraphDefinitions(
   graph: MaterializableGraph,
-  definitions: ExportedSubgraph[]
+  definitions: ExportedSubgraph[],
+  pendingRootNodeIds: ReadonlySet<NodeId>
 ): Set<string> {
   const rootGraph = graph.rootGraph
   // Filter after flattening: a live nested definition must not be recreated
@@ -102,7 +114,7 @@ function registerSubgraphDefinitions(
     reportedDefinitionFailures.set(rootGraph, new Set()).get(rootGraph)!
 
   for (const definition of topologicalSortSubgraphs(missing)) {
-    const failure = tryCreateSubgraph(rootGraph, definition)
+    const failure = tryCreateSubgraph(rootGraph, definition, pendingRootNodeIds)
     if (failure === undefined) {
       pending.delete(definition.id)
       reported.delete(definition.id)
@@ -127,7 +139,8 @@ function registerSubgraphDefinitions(
  */
 function tryCreateSubgraph(
   rootGraph: LGraph,
-  definition: ExportedSubgraph
+  definition: ExportedSubgraph,
+  pendingRootNodeIds: ReadonlySet<NodeId>
 ): unknown {
   // createSubgraphs remints a non-UUID id, which would leave every node typed
   // by the document's id pointing at a definition that never registers. The
@@ -136,6 +149,14 @@ function tryCreateSubgraph(
   if (!isUuidShapedSubgraphId(definition.id)) {
     return new Error(
       `Agent subgraph definition id is not a UUID: ${definition.id}`
+    )
+  }
+  const collidingNode = definition.nodes?.find((node) =>
+    pendingRootNodeIds.has(toNodeId(node.id))
+  )
+  if (collidingNode) {
+    return new Error(
+      `Agent subgraph definition ${definition.id} has interior node id ${String(collidingNode.id)} reserved by a root node`
     )
   }
   try {
@@ -159,6 +180,30 @@ function tryCreateSubgraph(
       }
     }
     return cause
+  }
+}
+
+/**
+ * Drop every definition owned by the previous follower lineage. Root-node
+ * adapters are reconciled away first by the caller; this catches definitions
+ * that had no live instance and clears their failure-report dedupe state.
+ */
+export function releaseAgentSubgraphDefinitions(
+  graph: MaterializableGraph
+): void {
+  const rootGraph = graph.rootGraph
+  const definitions = [...rootGraph.subgraphs.values()]
+  reportedDefinitionFailures.delete(rootGraph)
+  if (!definitions.length) return
+  try {
+    rootGraph.releaseSubgraphs(definitions)
+  } catch (cause) {
+    // releaseSubgraphs is finally-backed, so the definitions are gone even
+    // when extension cleanup throws. Keep the replacement follower bind live.
+    reportError(cause, {
+      errorType: 'agent_subgraph_definitions_release_failed',
+      context: { graphId: graph.id }
+    })
   }
 }
 
