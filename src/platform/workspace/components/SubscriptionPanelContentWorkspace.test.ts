@@ -3,7 +3,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { getActivePinia } from 'pinia'
-import { computed, ref, toRef } from 'vue'
+import { computed, nextTick, ref, toRef } from 'vue'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { render, screen } from '@testing-library/vue'
@@ -218,6 +218,11 @@ const SubscriptionFooterLinksStub = {
     '<div data-testid="subscription-footer-links" :data-show-invoice-history="String(showInvoiceHistory)" />'
 }
 
+const StatusBadgeStub = {
+  props: ['label', 'severity'],
+  template: '<span :data-severity="severity">{{ label }}</span>'
+}
+
 const DropdownMenuStub = {
   props: ['entries'],
   template:
@@ -234,6 +239,7 @@ function renderComponent({ stubFooter = true } = {}) {
         ...(stubFooter
           ? { SubscriptionFooterLinks: SubscriptionFooterLinksStub }
           : {}),
+        StatusBadge: StatusBadgeStub,
         DropdownMenu: DropdownMenuStub
       }
     }
@@ -458,7 +464,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
       renderComponent()
 
       expect(
-        screen.queryByRole('button', { name: /reactivate/i })
+        screen.queryByRole('button', { name: /resume subscription/i })
       ).not.toBeInTheDocument()
     })
 
@@ -470,7 +476,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
       expect(screen.getByText('Enterprise')).toBeInTheDocument()
       expect(
-        screen.queryByRole('button', { name: /subscribe|reactivate/i })
+        screen.queryByRole('button', { name: /subscribe|resume subscription/i })
       ).not.toBeInTheDocument()
     })
 
@@ -482,6 +488,10 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
       expect(screen.getByTestId('plan-status-badge')).toHaveTextContent(
         'Inactive'
+      )
+      expect(screen.getByTestId('plan-status-badge')).toHaveAttribute(
+        'data-severity',
+        'secondary'
       )
       expect(
         screen.queryByTestId('subscription-state-card')
@@ -504,8 +514,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
       ).not.toBeInTheDocument()
     })
 
-    // FE-2035: an Enterprise end date is a contract fact set by sales, often
-    // months ahead. It must never borrow the self-serve cancelled treatment.
+    // FE-2035: an Enterprise end date is an agreed ending set through sales,
+    // often months ahead. It must never borrow the self-serve cancelled
+    // treatment.
     describe('end-dated Enterprise plan still running', () => {
       const NOW = new Date('2026-09-03T12:00:00Z')
       const DAY = 24 * 60 * 60 * 1000
@@ -535,6 +546,10 @@ describe('SubscriptionPanelContentWorkspace', () => {
           screen.queryByTestId('subscription-state-card')
         ).not.toBeInTheDocument()
         expect(screen.queryByText(/^Ends on/)).not.toBeInTheDocument()
+        // Deliberately no date row at all: Enterprise contracts are billed
+        // yearly upfront and an end-dated one will not renew, so "Renews on"
+        // would be a false claim (decided with Sonam).
+        expect(screen.queryByText(/^Renews on/)).not.toBeInTheDocument()
       })
 
       it('keeps the quiet treatment inside the window, with only the end date line', () => {
@@ -550,14 +565,27 @@ describe('SubscriptionPanelContentWorkspace', () => {
         ).toBeInTheDocument()
       })
 
-      it('never offers Reactivate, even when a legacy rail resolves it true', () => {
+      // The capability alone decides Reactivate — the server closes it for
+      // sales-managed tiers (hideLifecycleCapabilities), and the client adds
+      // no guard of its own on top (settled with the reviewer on #16934).
+      it('hides Reactivate while the capability resolves false', () => {
+        endInDays(10)
+        mockCanReactivatePlan.value = false
+        renderComponent()
+
+        expect(
+          screen.queryByRole('button', { name: /resume subscription/i })
+        ).not.toBeInTheDocument()
+      })
+
+      it('follows the capability if it ever resolves true', () => {
         endInDays(10)
         mockCanReactivatePlan.value = true
         renderComponent()
 
         expect(
-          screen.queryByRole('button', { name: /reactivate/i })
-        ).not.toBeInTheDocument()
+          screen.getByRole('button', { name: /resume subscription/i })
+        ).toBeInTheDocument()
       })
 
       it('falls back to the stock cancelled treatment without an end date', () => {
@@ -568,6 +596,42 @@ describe('SubscriptionPanelContentWorkspace', () => {
         expect(
           screen.getByTestId('subscription-state-card')
         ).toBeInTheDocument()
+      })
+
+      it('falls back to the stock cancelled treatment on an unreadable end date', () => {
+        mockEndDate.value = 'not-a-date'
+        renderComponent()
+
+        expect(screen.getByText('Canceled')).toBeInTheDocument()
+        expect(
+          screen.getByTestId('subscription-state-card')
+        ).toBeInTheDocument()
+      })
+
+      it('restores the normal presentation when the end date clears between polls', async () => {
+        const iso = endInDays(10)
+        renderComponent()
+
+        expect(
+          screen.getByText(`Ends on ${formatPanelDate(iso)}`)
+        ).toBeInTheDocument()
+
+        // A webhook outage or reordering can clear cancel_at, flipping the
+        // workspace back to plainly active with a renewal date. Nothing is
+        // latched, so the presentation must follow the data.
+        mockSubscriptionStatus.value = 'active'
+        mockEndDate.value = null
+        mockRenewalDate.value = RENEWAL_DATE_ISO
+        await nextTick()
+
+        expect(
+          screen.getByText(`Renews on ${formatPanelDate(RENEWAL_DATE_ISO)}`)
+        ).toBeInTheDocument()
+        expect(screen.queryByText(/^Ends on/)).not.toBeInTheDocument()
+        expect(screen.queryByText('Canceled')).not.toBeInTheDocument()
+        expect(
+          screen.queryByTestId('subscription-state-card')
+        ).not.toBeInTheDocument()
       })
 
       it('leaves a cancelled unrecognized tier on the stock treatment too', () => {
