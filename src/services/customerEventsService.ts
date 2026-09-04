@@ -1,7 +1,7 @@
-import type { AxiosError } from 'axios'
 import axios from 'axios'
 import { ref, watch } from 'vue'
 
+import { createDefaultErrorMapper } from '@/composables/apiErrorMapper'
 import { useApiRequest } from '@/composables/useApiRequest'
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
@@ -24,8 +24,6 @@ type CustomerEventsResponseQuery =
 
 export type AuditLog = components['schemas']['AuditLog']
 
-type ErrorResponse = components['schemas']['ErrorResponse']
-
 const customerApiClient = axios.create({
   baseURL: getComfyApiBaseUrl(),
   headers: {
@@ -46,30 +44,11 @@ export const useCustomerEventsService = () => {
     }
   )
 
-  const mapError = (
-    err: unknown,
-    context: string,
-    routeSpecificErrors?: Record<number, string>
-  ): string => {
-    if (!axios.isAxiosError(err)) {
-      return `${context} failed: ${err instanceof Error ? err.message : String(err)}`
-    }
-
-    const axiosError = err as AxiosError<ErrorResponse>
-    if (!axiosError.response) {
-      return `${context} failed: ${axiosError.message}`
-    }
-
-    const status = axiosError.response.status
-    if (routeSpecificErrors?.[status]) {
-      return routeSpecificErrors[status]
-    }
-
-    return (
-      axiosError.response.data?.message ??
-      `${context} failed with status ${status}`
-    )
-  }
+  const mapError = createDefaultErrorMapper({
+    formatFallback: (context, message) => `${context} failed: ${message}`,
+    responseFallback: ({ context, status, dataMessage }) =>
+      dataMessage ?? `${context} failed with status ${status}`
+  })
 
   const { error, executeRequest } = useApiRequest({
     client: customerApiClient,

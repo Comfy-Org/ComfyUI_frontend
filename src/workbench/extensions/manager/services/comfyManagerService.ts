@@ -1,7 +1,8 @@
-import type { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
+import type { AxiosInstance, AxiosResponse } from 'axios'
 import axios from 'axios'
 import { v4 as uuidv4 } from 'uuid'
 
+import { createDefaultErrorMapper } from '@/composables/apiErrorMapper'
 import type { ExecuteRequestOptions } from '@/composables/useApiRequest'
 import { useApiRequest } from '@/composables/useApiRequest'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -58,33 +59,12 @@ export const useComfyManagerService = () => {
     return managerState.isNewManagerUI.value
   }
 
-  const mapError = (
-    err: unknown,
-    context: string,
-    routeSpecificErrors?: Record<number, string>
-  ): string => {
-    if (!axios.isAxiosError(err)) {
-      return `${context} failed: ${err instanceof Error ? err.message : String(err)}`
-    }
-
-    const axiosError = err as AxiosError<{ message: string }>
-    if (!axiosError.response) {
-      return `${context} failed: ${axiosError.message}`
-    }
-
-    const status = axiosError.response.status
-    if (routeSpecificErrors?.[status]) {
-      return routeSpecificErrors[status]
-    }
-    if (status === 404) {
-      return 'Could not connect to ComfyUI-Manager'
-    }
-
-    return (
-      axiosError.response.data?.message ??
-      `${context} failed with status ${status}`
-    )
-  }
+  const mapError = createDefaultErrorMapper({
+    formatFallback: (context, message) => `${context} failed: ${message}`,
+    statusMessages: { 404: 'Could not connect to ComfyUI-Manager' },
+    responseFallback: ({ context, status, dataMessage }) =>
+      dataMessage ?? `${context} failed with status ${status}`
+  })
 
   const {
     isLoading,
