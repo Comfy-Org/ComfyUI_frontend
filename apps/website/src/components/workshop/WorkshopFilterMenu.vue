@@ -161,7 +161,7 @@ function clearAll() {
         align="end"
         :side-offset="8"
         data-testid="workshop-filter-menu"
-        class="bg-site-dropdown z-50 max-h-(--reka-popover-content-available-height) w-80 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-2xl border border-white/10 shadow-2xl shadow-black/50 outline-none"
+        class="bg-site-dropdown z-50 max-h-(--reka-popover-content-available-height) w-96 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-2xl border border-white/10 shadow-2xl shadow-black/50 outline-none"
       >
         <TabsRoot v-model="activeFacet" class="flex flex-col">
           <TabsList
@@ -172,12 +172,12 @@ function clearAll() {
               :key="entry.facet"
               :value="entry.facet"
               :data-testid="`workshop-facet-${entry.facet}`"
-              class="text-content-secondary hover:text-content focus-visible:ring-brand data-[state=active]:text-content inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold tracking-wider whitespace-nowrap uppercase transition-colors outline-none hover:bg-white/5 focus-visible:ring-2 data-[state=active]:bg-white/8"
+              class="text-content-secondary hover:text-content focus-visible:ring-brand data-[state=active]:text-content inline-flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold tracking-wider whitespace-nowrap uppercase transition-colors outline-none hover:bg-white/5 focus-visible:ring-2 data-[state=active]:bg-white/8"
             >
               {{ entry.label }}
               <span
                 v-if="entry.selected.value.length"
-                class="bg-brand text-page inline-flex min-w-4 items-center justify-center rounded-full px-1 text-2xs font-bold tabular-nums"
+                class="bg-brand text-page inline-flex size-4 items-center justify-center rounded-full text-2xs font-bold tabular-nums"
                 :data-testid="`workshop-facet-${entry.facet}-count`"
               >
                 {{ entry.selected.value.length }}
