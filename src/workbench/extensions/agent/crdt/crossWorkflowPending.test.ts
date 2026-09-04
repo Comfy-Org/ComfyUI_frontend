@@ -277,7 +277,7 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     expect(operationBId).not.toBe(operationAId)
   })
 
-  it('documents an anonymous workflow A result settling workflow B in flight', async () => {
+  it('does not settle workflow B from an anonymous workflow A result', async () => {
     const { workflowId, enqueue } = mountFollower('wf-a')
 
     enqueue([deleteNode('a-inflight')])
@@ -302,6 +302,19 @@ describe('R-73 cross-workflow pending operation characterization', () => {
       skipped: []
     })
 
+    expect(
+      devLogState.recordDevEvent.mock.calls.filter(
+        ([event]) => event === 'human_ops_settled'
+      )
+    ).toHaveLength(1)
+
+    dispatchOpsResult({
+      workflowId: 'wf-b',
+      ok: false,
+      applied: [],
+      skipped: []
+    })
+
     const settlements = devLogState.recordDevEvent.mock.calls.filter(
       ([event]) => event === 'human_ops_settled'
     )
@@ -309,7 +322,7 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     expect(settlements[1][1]).toMatchObject({
       state: 'acknowledged',
       ops: [expect.objectContaining({ op_id: operationBId })],
-      result: { ok: false, applied: [], skipped: [] }
+      result: { workflowId: 'wf-b', ok: false, applied: [], skipped: [] }
     })
   })
 })
