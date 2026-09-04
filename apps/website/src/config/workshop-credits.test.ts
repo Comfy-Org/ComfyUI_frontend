@@ -11,21 +11,29 @@ import {
 } from './workshop-credits'
 
 interface SessionHandles {
-  setSessionToken?: (token: string | undefined) => void
+  setSession?: (session: { token: string; uid: string } | undefined) => void
   remint?: ReturnType<typeof vi.fn>
+  flag?: { value: boolean }
 }
 
 const sessionHandles = vi.hoisted<SessionHandles>(() => ({}))
 
+vi.mock('../scripts/posthog', async () => {
+  const { ref } = await import('vue')
+  const flag = ref(true)
+  sessionHandles.flag = flag
+  return { useWorkshopAuthFlag: () => flag }
+})
+
 vi.mock('./workshop-session-state', async () => {
   const { computed, ref } = await import('vue')
-  const session = ref<{ token: string } | undefined>(undefined)
+  const session = ref<{ token: string; uid: string } | undefined>(undefined)
   const remint = vi.fn(async () => ({
     status: 'ok',
-    session: { token: 'jwt' }
+    session: { token: 'jwt', uid: 'user-1' }
   }))
-  sessionHandles.setSessionToken = (token) => {
-    session.value = token === undefined ? undefined : { token }
+  sessionHandles.setSession = (next) => {
+    session.value = next
   }
   sessionHandles.remint = remint
   return {
@@ -37,6 +45,8 @@ vi.mock('./workshop-session-state', async () => {
   }
 })
 
+const withToken = (token: string, uid = 'user-1') => ({ token, uid })
+
 const jsonResponse = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), {
     status,
@@ -44,17 +54,17 @@ const jsonResponse = (status: number, body: unknown) =>
   })
 
 beforeEach(() => {
-  sessionHandles.setSessionToken!(undefined)
+  sessionHandles.setSession!(undefined)
   sessionHandles.remint!.mockClear()
+  sessionHandles.flag!.value = true
   sessionHandles.remint!.mockImplementation(async () => ({
     status: 'ok',
-    session: { token: 'jwt' }
+    session: { token: 'jwt', uid: 'user-1' }
   }))
 })
 
 describe('microsToCredits', () => {
   it('agrees with the shared creditsUtil rounding', () => {
-    // $1 = 1,000,000 micros = 100 cents.
     expect(microsToCredits(1_000_000)).toBe(centsToCredits(100))
     expect(microsToCredits(4_750_000)).toBe(centsToCredits(475))
     expect(microsToCredits(0)).toBe(0)
@@ -72,7 +82,7 @@ describe('workshopPurchaseUrl', () => {
 
 describe('refreshWorkshopCredits', () => {
   it('publishes the converted balance for a live session', async () => {
-    sessionHandles.setSessionToken!('jwt')
+    sessionHandles.setSession!(withToken('jwt'))
     const fetchImpl = vi.fn(async () =>
       jsonResponse(200, { effective_balance_micros: 2_000_000 })
     )
@@ -94,7 +104,7 @@ describe('refreshWorkshopCredits', () => {
   })
 
   it('falls back to amount_micros when the effective field is absent', async () => {
-    sessionHandles.setSessionToken!('jwt')
+    sessionHandles.setSession!(withToken('jwt'))
     const fetchImpl = vi.fn(async () =>
       jsonResponse(200, { amount_micros: 1_000_000 })
     )
@@ -108,10 +118,10 @@ describe('refreshWorkshopCredits', () => {
   })
 
   it('re-mints once on a failed read and retries with the new token', async () => {
-    sessionHandles.setSessionToken!('stale-jwt')
+    sessionHandles.setSession!(withToken('stale-jwt'))
     sessionHandles.remint!.mockImplementation(async () => {
-      sessionHandles.setSessionToken!('fresh-jwt')
-      return { status: 'ok', session: { token: 'fresh-jwt' } }
+      sessionHandles.setSession!(withToken('fresh-jwt'))
+      return { status: 'ok', session: { token: 'fresh-jwt', uid: 'user-1' } }
     })
     const fetchImpl = vi
       .fn()
@@ -134,7 +144,7 @@ describe('refreshWorkshopCredits', () => {
   })
 
   it('settles on the error state when the retry also fails, never NaN', async () => {
-    sessionHandles.setSessionToken!('jwt')
+    sessionHandles.setSession!(withToken('jwt'))
     const fetchImpl = vi.fn(async () => jsonResponse(200, { unexpected: true }))
 
     await refreshWorkshopCredits(fetchImpl)
@@ -149,5 +159,67 @@ describe('refreshWorkshopCredits', () => {
 
     expect(fetchImpl).not.toHaveBeenCalled()
     expect(useWorkshopCredits().balance.value).toEqual({ status: 'unknown' })
+  })
+
+  it.for([
+    ['null', { effective_balance_micros: null }],
+    ['a string', { effective_balance_micros: '2000000' }],
+    ['neither field present', { some_other_field: 1 }]
+  ] as const)(
+    'errors rather than trusting a %s balance field',
+    async ([, body]) => {
+      sessionHandles.setSession!(withToken('jwt'))
+      const fetchImpl = vi.fn(async () => jsonResponse(200, body))
+
+      await refreshWorkshopCredits(fetchImpl)
+
+      expect(useWorkshopCredits().balance.value).toEqual({ status: 'error' })
+    }
+  )
+
+  it('does not publish a balance that belongs to a superseded user', async () => {
+    sessionHandles.setSession!(withToken('jwt', 'user-1'))
+    const fetchImpl = vi.fn(async () => {
+      sessionHandles.setSession!(withToken('other-jwt', 'user-2'))
+      return jsonResponse(200, { effective_balance_micros: 9_000_000 })
+    })
+
+    await refreshWorkshopCredits(fetchImpl)
+
+    expect(
+      useWorkshopCredits().balance.value,
+      'a balance fetched for the previous user must not show under the new one'
+    ).not.toEqual({ status: 'ok', credits: microsToCredits(9_000_000) })
+  })
+})
+
+describe('useWorkshopCredits start()', () => {
+  beforeEach(() => {
+    vi.resetModules()
+  })
+
+  it('installs no focus listener while the flag is off', async () => {
+    sessionHandles.flag!.value = false
+    const addSpy = vi.spyOn(window, 'addEventListener')
+    const mod = await import('./workshop-credits')
+
+    mod.useWorkshopCredits()
+
+    expect(
+      addSpy.mock.calls.some(([type]) => type === 'focus'),
+      'a flag-off page must install no credits listeners'
+    ).toBe(false)
+    addSpy.mockRestore()
+  })
+
+  it('installs the focus listener once the flag is on', async () => {
+    sessionHandles.flag!.value = true
+    const addSpy = vi.spyOn(window, 'addEventListener')
+    const mod = await import('./workshop-credits')
+
+    mod.useWorkshopCredits()
+
+    expect(addSpy.mock.calls.some(([type]) => type === 'focus')).toBe(true)
+    addSpy.mockRestore()
   })
 })

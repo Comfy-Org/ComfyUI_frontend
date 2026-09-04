@@ -84,7 +84,6 @@ const ctaButtons = [
       </Button>
     </div>
 
-    <!-- Renders nothing until the workshop-auth flag is on. -->
     <HeaderAccount :locale="locale" />
   </nav>
 </template>
