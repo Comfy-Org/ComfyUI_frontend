@@ -194,29 +194,40 @@ the provisional status applies to the governing decision record.
 
 The parser distinguishes sequence values by their effect on document correctness:
 
-- `doc_update.seq`, `doc_reset.seq`, and document-lineage identity are load-bearing.
-  Missing or malformed values reject the frame because accepting them could apply bytes
-  in the wrong order or onto the wrong document.
+- `doc_update.seq`, `doc_reset.seq`, and the document identity formed by wire fields
+  `workflow_id` plus `lineage_seq` (mapped to `workflowId` and `lineageSeq`) are
+  load-bearing. Missing or malformed values reject the frame because accepting them
+  could apply bytes in the wrong order or onto the wrong document incarnation.
 - `doc_subscribed.seq` and `doc_ops_result.seq` are optional delivery and recovery hints.
   A non-negative safe integer is retained; an absent, null, or malformed value is omitted
   while the rest of the valid acknowledgement or result is accepted.
+- Optional metadata may fail soft only when every load-bearing field remains independently
+  valid. On `doc_subscribed`, `lineage_seq` must not exceed `seq`. If `seq` is absent,
+  null, or malformed, only migration lineage `0` is provably bounded: that acknowledgement
+  remains valid with `seq` omitted, while a positive lineage is rejected. The
+  `doc_ops_result` frame has no load-bearing field that depends on its optional `seq`.
 
 Discarding a valid `doc_subscribed` frame leaves the client unconfirmed even though the
 server completed the subscription. Discarding a valid `doc_ops_result` frame throws away
-the operation outcome, causing a 10-second timeout, an idempotent resend, and potentially
-an unacknowledged settlement. Neither failure mode protects document state. Treating an
-invalid optional sequence as absent preserves the authoritative frame while disabling
-only sequence-assisted recovery.
+the operation outcome: `opSender.ts` waits 10 seconds, resends the same `op_id` values
+once, then settles unacknowledged after a second silent window. A refused subscription
+settles its bound batch as undeliverable immediately. Neither failure mode protects
+document state. Treating an invalid optional sequence as absent preserves the
+authoritative frame while disabling only sequence-assisted recovery, provided no
+load-bearing consistency check depends on that sequence.
 
 ```text
 incoming document frame
           │
           ├── load-bearing sequence or lineage invalid ──► reject frame
           │
-          └── optional ack/result sequence invalid ──────► omit sequence
-                                                            │
-                                                            ▼
-                                                     accept valid frame
+          └── optional ack/result sequence invalid
+                         │
+                         ├── dependent lineage still valid ─► omit sequence
+                         │                                     │
+                         │                                     ▼
+                         │                              accept valid frame
+                         └── lineage cannot be bounded ───────► reject frame
 ```
 
 This amendment selects the parser behavior merged in
