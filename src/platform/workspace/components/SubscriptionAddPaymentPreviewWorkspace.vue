@@ -288,9 +288,10 @@
               :disabled="interactionLocked"
               class="inline text-sm text-inherit underline underline-offset-2"
               @click="$emit('changePaymentMethod')"
+              >{{
+                $t('billingOperation.challengeFailedUseDifferentCard')
+              }}</Button
             >
-              {{ $t('billingOperation.challengeFailedUseDifferentCard') }}
-            </Button>
           </template>
         </i18n-t>
         <p v-else class="m-0">
