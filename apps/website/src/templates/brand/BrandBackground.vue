@@ -6,6 +6,8 @@ import {
 } from '@vueuse/core'
 import { onMounted, ref } from 'vue'
 
+import { readDesignTokenRgba } from '@comfyorg/shared-frontend-utils/designTokens'
+
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 
 interface Node {
@@ -28,6 +30,8 @@ const nodes: Node[] = Array.from({ length: 14 }, () => ({
 }))
 
 let ctx: CanvasRenderingContext2D | null = null
+let linkColor = ''
+let nodeColor = ''
 
 function draw() {
   const el = canvasEl.value
@@ -43,7 +47,7 @@ function draw() {
     if (n.y < 0 || n.y > 1) n.vy *= -1
   }
 
-  ctx.strokeStyle = 'rgba(242, 255, 89, 0.18)'
+  ctx.strokeStyle = linkColor
   ctx.lineWidth = dpr
   const max = Math.min(w, h) * 0.22
   for (let i = 0; i < nodes.length; i++) {
@@ -65,7 +69,7 @@ function draw() {
   }
 
   ctx.globalAlpha = 1
-  ctx.fillStyle = 'rgba(242, 255, 89, 0.9)'
+  ctx.fillStyle = nodeColor
   for (const n of nodes) {
     ctx.beginPath()
     ctx.arc(n.x * w, n.y * h, 2.5 * dpr, 0, Math.PI * 2)
@@ -99,6 +103,8 @@ useEventListener('resize', resize)
 
 onMounted(() => {
   ctx = canvasEl.value?.getContext('2d') ?? null
+  linkColor = readDesignTokenRgba('--color-primary-comfy-yellow', 0.18)
+  nodeColor = readDesignTokenRgba('--color-primary-comfy-yellow', 0.9)
   resize()
 })
 </script>

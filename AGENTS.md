@@ -254,6 +254,10 @@ When working from a TDD or design doc, record its tradeoffs, alternatives consid
 - NEVER use the `dark:` tailwind variant
   - Instead use a semantic value from the `style.css` theme
     - e.g. `bg-node-component-surface`
+- NEVER write out a design-system value — consume the token
+  - `packages/design-system` is the single source of truth for every token it ships: colors, fonts, icons, spacing, radii, shadows, text sizes
+  - Read the value from the package — a Tailwind class, `var(--token)`, or `readDesignToken()` where an API needs a concrete string. A literal that merely equals the token today still drifts the day the token changes, and it is invisible when it does
+  - See [Consuming tokens](packages/design-system/README.md#consuming-tokens) for the per-context table, the SVG `fill` caveat, and the two cases where a literal is unavoidable
 - NEVER use `:class="[]"` to merge class names
   - Always use `import { cn } from '@comfyorg/tailwind-utils'`
     - e.g. `<div :class="cn('text-node-component-header-icon', hasError && 'text-danger')" />`

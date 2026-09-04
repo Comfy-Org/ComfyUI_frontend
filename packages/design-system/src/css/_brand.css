@@ -1,0 +1,44 @@
+/*
+ * Brand — the Comfy company brand system.
+ *
+ * Every brand colour and typeface is declared here, once, for every surface
+ * that carries the brand: comfy.org, platform.comfy.org, the app and the
+ * desktop shell. Nothing here is app-specific; nothing app-specific belongs
+ * here. Product tokens (node editor, PrimeVue, semantic roles) live in
+ * style.css, and the shared neutral ramps live in _palette.css.
+ *
+ * Source of truth: Brand Guidelines 2026.
+ */
+
+@theme {
+  /* Core brand colours */
+  --color-electric-400: #f2ff59;
+  --color-sapphire-700: #172dd7;
+
+  /* Primary */
+  --color-primary-comfy-ink: #211927;
+  --color-primary-comfy-ink-light: #2a2330;
+  --color-primary-comfy-canvas: #c2bfb9;
+  --color-primary-comfy-orange: #fabc25;
+  --color-primary-warm-white: #f0efed;
+  --color-primary-warm-gray: #7e7c78;
+
+  /* Secondary */
+  --color-secondary-mauve: #4d3762;
+  --color-secondary-deep-plum: #2b2040;
+  --color-secondary-cool-gray: #3c3c3c;
+
+  /* Illustration */
+  --color-illustration-forest: #20464c;
+
+  /* Named aliases */
+  --color-brand-yellow: var(--color-electric-400);
+  --color-brand-blue: var(--color-sapphire-700);
+  --color-primary-comfy-yellow: var(--color-brand-yellow);
+  --color-primary-comfy-plum: var(--color-plum-600);
+
+  /* Brand typefaces. The app bundles only three PP Formula weights
+     (src/platform/cloud/onboarding/assets), so Inter backs the rest. */
+  --font-formula: 'PP Formula', 'Inter', sans-serif;
+  --font-formula-narrow: 'PP Formula Narrow', sans-serif;
+}

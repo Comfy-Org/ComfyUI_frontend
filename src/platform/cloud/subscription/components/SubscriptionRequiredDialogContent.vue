@@ -135,7 +135,7 @@
           class="rounded-lg px-4 py-2"
           :pt="{
             root: {
-              style: 'background: var(--color-accent-blue, #0B8CE9);'
+              style: 'background: var(--color-azure-600);'
             },
             label: {
               class: 'font-inter font-[700] text-sm'

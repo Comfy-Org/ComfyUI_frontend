@@ -38,6 +38,9 @@ jobs:
       - name: Typecheck website
         run: pnpm --filter @comfyorg/website typecheck
 
+      - name: Run website unit tests
+        run: pnpm --filter @comfyorg/website test:unit
+
       - name: Build website
         env:
           WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
