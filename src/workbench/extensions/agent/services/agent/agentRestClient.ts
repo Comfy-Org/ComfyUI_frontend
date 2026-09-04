@@ -1,5 +1,6 @@
 import type { z } from 'zod'
 
+import { errorResponseFromBody } from '@/platform/remote/comfyui/errors'
 import { api } from '@/scripts/api'
 
 import {
@@ -92,7 +93,10 @@ export function createAgentRestClient() {
       ? plain.data.error
       : isIngestErrorBody(body)
         ? body.error.message
-        : response.statusText
+        : errorResponseFromBody(
+            body === undefined ? text : body,
+            response.statusText || `HTTP ${response.status}`
+          ).message
     return new AgentApiError(message, response.status, body)
   }
 
@@ -129,7 +133,7 @@ export function createAgentRestClient() {
     if (req.attachments !== undefined) body.attachments = req.attachments
     if (req.draft !== undefined) body.draft = req.draft
     return request(
-      `/agent/threads/${threadId}/messages`,
+      `/agent/threads/${encodeURIComponent(threadId)}/messages`,
       jsonInit('POST', body),
       zAgentTurnAccepted
     )
@@ -137,19 +141,34 @@ export function createAgentRestClient() {
 
   async function getMessages(threadId: string): Promise<AgentMessages> {
     return request(
-      `/agent/threads/${threadId}/messages`,
+      `/agent/threads/${encodeURIComponent(threadId)}/messages`,
       { method: 'GET' },
       zAgentMessages
     )
   }
 
   async function listThreads(): Promise<AgentThreadSummary[]> {
-    const page = await request(
-      '/agent/threads',
-      { method: 'GET' },
-      zAgentThreads
-    )
-    return page.threads
+    const threads: AgentThreadSummary[] = []
+    let cursor: string | undefined
+    do {
+      const after = cursor ? `?after=${encodeURIComponent(cursor)}` : ''
+      const page = await request(
+        `/agent/threads${after}`,
+        { method: 'GET' },
+        zAgentThreads
+      )
+      threads.push(...page.threads)
+      if (!page.pagination.has_more) break
+      const nextCursor = page.pagination.next_cursor
+      if (!nextCursor || nextCursor === cursor)
+        throw new AgentApiError(
+          'Agent thread pagination did not advance',
+          502,
+          page.pagination
+        )
+      cursor = nextCursor
+    } while (cursor)
+    return threads
   }
 
   async function getRunMode(): Promise<AgentRunModePreference> {
@@ -196,7 +215,7 @@ export function createAgentRestClient() {
     messageId: string
   ): Promise<AgentCancelAccepted> {
     return request(
-      `/agent/threads/${threadId}/messages/${messageId}/cancel`,
+      `/agent/threads/${encodeURIComponent(threadId)}/messages/${encodeURIComponent(messageId)}/cancel`,
       jsonInit('POST', {}),
       zAgentCancelAccepted
     )
@@ -208,7 +227,7 @@ export function createAgentRestClient() {
     selected: string[]
   ): Promise<AgentAnswerAccepted> {
     return request(
-      `/agent/threads/${threadId}/asks/${encodeURIComponent(askId)}/answer`,
+      `/agent/threads/${encodeURIComponent(threadId)}/asks/${encodeURIComponent(askId)}/answer`,
       jsonInit('POST', { selected }),
       zAgentAnswerAccepted
     )

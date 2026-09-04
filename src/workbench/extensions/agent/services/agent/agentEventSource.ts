@@ -1,5 +1,9 @@
-import type { AgentEventSource } from '../../composables/agent/useAgentSession'
 import { AGENT_WS_EVENT_TYPES } from '../../schemas/agentApiSchema'
+
+export interface AgentEventSource {
+  subscribe(listener: (raw: unknown) => void): () => void
+  onStatus?(listener: (live: boolean) => void): () => void
+}
 
 export interface AgentEventHost {
   socket: { readyState: number } | null

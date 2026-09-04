@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { CloudWorkflowEntry } from '../../schemas/agentApiSchema'
+import type {
+  CloudWorkflowEntry,
+  AgentThreadSummary
+} from '../../schemas/agentApiSchema'
 
 const fetchApi = vi.hoisted(() =>
   vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
@@ -30,13 +33,42 @@ function contentType(init: RequestInit): string | undefined {
   return (init.headers as Record<string, string> | undefined)?.['Content-Type']
 }
 
-const makeClient = createAgentRestClient
-
 const turnAccepted = {
   message_id: 'm1',
   thread_id: 't1',
   workflow_id: 'w1'
 }
+
+const thread = (
+  id: string,
+  status: 'active' | 'archived'
+): AgentThreadSummary => ({
+  id,
+  title: id,
+  preview: '',
+  status,
+  workflow_id: '',
+  message_count: 0,
+  created_at: '2026-09-04T00:00:00Z',
+  updated_at: '2026-09-04T00:00:00Z',
+  last_message_at: '2026-09-04T00:00:00Z'
+})
+
+const threadPage = (
+  threads: AgentThreadSummary[],
+  hasMore: boolean,
+  nextCursor?: string
+) =>
+  jsonResponse(200, {
+    threads,
+    pagination: {
+      offset: 0,
+      limit: 20,
+      total: threads.length,
+      has_more: hasMore,
+      next_cursor: nextCursor
+    }
+  })
 
 beforeEach(() => {
   fetchApi.mockReset()
@@ -45,16 +77,23 @@ beforeEach(() => {
 describe('agentRestClient route + method', () => {
   it('postMessage targets the literal "new" thread path to open a thread', async () => {
     respond(jsonResponse(202, turnAccepted))
-    await makeClient().postMessage('new', { content: 'hi' })
+    await createAgentRestClient().postMessage('new', { content: 'hi' })
 
     const { route, init } = lastCall()
     expect(route).toBe('/agent/threads/new/messages')
     expect(init.method).toBe('POST')
   })
 
+  it('percent-encodes a hostile thread id instead of retargeting the path', async () => {
+    respond(jsonResponse(202, turnAccepted))
+    await createAgentRestClient().postMessage('t1/x', { content: 'hi' })
+
+    expect(lastCall().route).toBe('/agent/threads/t1%2Fx/messages')
+  })
+
   it('getMessages GETs the thread messages path', async () => {
     respond(jsonResponse(200, []))
-    await makeClient().getMessages('t7')
+    await createAgentRestClient().getMessages('t7')
 
     const { route, init } = lastCall()
     expect(route).toBe('/agent/threads/t7/messages')
@@ -97,7 +136,7 @@ describe('agentRestClient route + method', () => {
 
   it('cancelMessage POSTs the cancel path with an empty JSON body', async () => {
     respond(jsonResponse(202, { status: 'cancelling' }))
-    await makeClient().cancelMessage('t7', 'm3')
+    await createAgentRestClient().cancelMessage('t7', 'm3')
 
     const { route, init } = lastCall()
     expect(route).toBe('/agent/threads/t7/messages/m3/cancel')
@@ -107,12 +146,34 @@ describe('agentRestClient route + method', () => {
 
   it('answerAsk POSTs the selected option to the encoded ask path', async () => {
     respond(jsonResponse(202, { status: 'answered' }))
-    await makeClient().answerAsk('t7', 'turn-1:call/1', ['run'])
+    await createAgentRestClient().answerAsk('t1/x', 'turn-1:call/1', ['run'])
 
     const { route, init } = lastCall()
-    expect(route).toBe('/agent/threads/t7/asks/turn-1%3Acall%2F1/answer')
+    expect(route).toBe('/agent/threads/t1%2Fx/asks/turn-1%3Acall%2F1/answer')
     expect(init.method).toBe('POST')
     expect(JSON.parse(init.body as string)).toEqual({ selected: ['run'] })
+  })
+
+  it('accumulates every thread page and preserves archive status', async () => {
+    respond(threadPage([thread('active', 'active')], true, 'next page'))
+    respond(threadPage([thread('archived', 'archived')], false))
+
+    const threads = await createAgentRestClient().listThreads()
+
+    expect(fetchApi.mock.calls[0][0]).toBe('/agent/threads')
+    expect(fetchApi.mock.calls[1][0]).toBe('/agent/threads?after=next%20page')
+    expect(threads.map(({ id, status }) => ({ id, status }))).toEqual([
+      { id: 'active', status: 'active' },
+      { id: 'archived', status: 'archived' }
+    ])
+  })
+
+  it('rejects an incomplete thread page instead of returning partial history', async () => {
+    respond(threadPage([thread('only-page', 'active')], true))
+
+    await expect(createAgentRestClient().listThreads()).rejects.toThrow(
+      'Agent thread pagination did not advance'
+    )
   })
 
   it('listCloudWorkflows GETs the paginated workflows path until has_more is false', async () => {
@@ -135,7 +196,7 @@ describe('agentRestClient route + method', () => {
     respond(page(0, [{ id: 'wf-1', name: 'one' }], true, 'next page'))
     respond(page(1, [{ id: 'wf-2', name: 'two' }], false))
 
-    const workflows = await makeClient().listCloudWorkflows()
+    const workflows = await createAgentRestClient().listCloudWorkflows()
 
     expect(fetchApi.mock.calls[0][0]).toBe('/workflows?limit=100')
     expect(fetchApi.mock.calls[1][0]).toBe(
@@ -152,7 +213,7 @@ describe('agentRestClient route + method', () => {
       })
     )
 
-    await makeClient().listCloudWorkflows()
+    await createAgentRestClient().listCloudWorkflows()
 
     expect(fetchApi).toHaveBeenCalledTimes(1)
   })
@@ -161,7 +222,7 @@ describe('agentRestClient route + method', () => {
 describe('postMessage wire body', () => {
   it('uses snake_case workflow_id and includes only the keys provided', async () => {
     respond(jsonResponse(202, turnAccepted))
-    await makeClient().postMessage('t1', {
+    await createAgentRestClient().postMessage('t1', {
       content: 'build it',
       workflowId: 'wf-9',
       selection: { nodeId: 3 },
@@ -179,9 +240,36 @@ describe('postMessage wire body', () => {
     expect(contentType(init)).toBe('application/json')
   })
 
+  it('flattens tabs to top-level snake_case keys, omitting an absent current_tab', async () => {
+    respond(jsonResponse(202, turnAccepted))
+    await createAgentRestClient().postMessage('t1', {
+      content: 'hi',
+      tabs: { open_tabs: [{ workflow_id: 'w1', name: 'One' }] }
+    })
+
+    const parsed = JSON.parse(lastCall().init.body as string) as Record<
+      string,
+      unknown
+    >
+    expect(parsed.open_tabs).toEqual([{ workflow_id: 'w1', name: 'One' }])
+    expect('tabs' in parsed).toBe(false)
+    expect('current_tab' in parsed).toBe(false)
+
+    respond(jsonResponse(202, turnAccepted))
+    await createAgentRestClient().postMessage('t1', {
+      content: 'hi',
+      tabs: { open_tabs: [], current_tab: 'w2' }
+    })
+    const withCurrent = JSON.parse(lastCall().init.body as string) as Record<
+      string,
+      unknown
+    >
+    expect(withCurrent.current_tab).toBe('w2')
+  })
+
   it('omits absent optionals rather than sending them as undefined keys', async () => {
     respond(jsonResponse(202, turnAccepted))
-    await makeClient().postMessage('t1', { content: 'just text' })
+    await createAgentRestClient().postMessage('t1', { content: 'just text' })
 
     const parsed = JSON.parse(lastCall().init.body as string) as Record<
       string,
@@ -192,7 +280,7 @@ describe('postMessage wire body', () => {
 
   it('includes draft.content (and omits version when absent) when a draft is provided', async () => {
     respond(jsonResponse(202, turnAccepted))
-    await makeClient().postMessage('t1', {
+    await createAgentRestClient().postMessage('t1', {
       content: "what's on my canvas",
       draft: { content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] } }
     })
@@ -205,7 +293,7 @@ describe('postMessage wire body', () => {
 
   it('forwards draft.version when the client has previously seen one', async () => {
     respond(jsonResponse(202, turnAccepted))
-    await makeClient().postMessage('t1', {
+    await createAgentRestClient().postMessage('t1', {
       content: 'edit it',
       draft: { content: { nodes: [], links: [] }, version: 4 }
     })
@@ -221,7 +309,7 @@ describe('uploadImage multipart', () => {
     respond(jsonResponse(200, { name: 'x.png', subfolder: '', type: 'input' }))
     const appendSpy = vi.spyOn(FormData.prototype, 'append')
     const blob = new Blob(['bytes'], { type: 'image/png' })
-    await makeClient().uploadImage(blob, 'x.png')
+    await createAgentRestClient().uploadImage(blob, 'x.png')
 
     const { route, init } = lastCall()
     expect(route).toBe('/upload/image')
@@ -237,7 +325,9 @@ describe('success response parsing', () => {
   it('parses the postMessage 202 through zAgentTurnAccepted, keeping extra workflow_id', async () => {
     respond(jsonResponse(202, turnAccepted))
 
-    const result = await makeClient().postMessage('t1', { content: 'hi' })
+    const result = await createAgentRestClient().postMessage('t1', {
+      content: 'hi'
+    })
 
     expect(result.message_id).toBe('m1')
     expect(result.thread_id).toBe('t1')
@@ -249,7 +339,7 @@ describe('error mapping', () => {
   it('maps a plain-string error body to its message with the status and parsed body', async () => {
     respond(jsonResponse(409, { error: 'turn is not running' }))
 
-    const error = await makeClient()
+    const error = await createAgentRestClient()
       .cancelMessage('t1', 'm1')
       .catch((e: unknown) => e)
 
@@ -267,7 +357,7 @@ describe('error mapping', () => {
       })
     )
 
-    const error = await makeClient()
+    const error = await createAgentRestClient()
       .getMessages('t-x')
       .catch((e: unknown) => e)
 
@@ -275,25 +365,48 @@ describe('error mapping', () => {
     expect((error as AgentApiError).status).toBe(403)
   })
 
-  it('falls back to statusText and undefined body for a non-JSON error response', async () => {
-    respond(
-      new Response('gateway boom', { status: 502, statusText: 'Bad Gateway' })
-    )
+  it('surfaces a short text/plain error body when the reason phrase is absent', async () => {
+    respond(new Response('gateway boom', { status: 502 }))
 
-    const error = await makeClient()
+    const error = await createAgentRestClient()
       .getMessages('t1')
       .catch((e: unknown) => e)
 
     const apiError = error as AgentApiError
-    expect(apiError.message).toBe('Bad Gateway')
+    expect(apiError.message).toBe('gateway boom')
     expect(apiError.status).toBe(502)
     expect(apiError.body).toBeUndefined()
+  })
+
+  it.for(['42', 'null', 'true', '"   "'])(
+    'degrades a JSON-primitive error body %s to the fallback like the canonical parser',
+    async (raw) => {
+      // The canonical parser pins these four in errors.test.ts; the agent
+      // path must degrade them identically, never surface them as messages.
+      respond(new Response(raw, { status: 502 }))
+
+      const error = await createAgentRestClient()
+        .getMessages('t1')
+        .catch((e: unknown) => e)
+
+      expect((error as AgentApiError).message).toBe('HTTP 502')
+    }
+  )
+
+  it('falls back to HTTP <status> when the body is empty and no reason phrase exists', async () => {
+    respond(new Response(null, { status: 502 }))
+
+    const error = await createAgentRestClient()
+      .getMessages('t1')
+      .catch((e: unknown) => e)
+
+    expect((error as AgentApiError).message).toBe('HTTP 502')
   })
 
   it('throws zod when a success body violates the response schema (anti-drift)', async () => {
     respond(jsonResponse(200, { wrong: 'shape' }))
 
-    const error = await makeClient()
+    const error = await createAgentRestClient()
       .getMessages('t-1')
       .catch((e: unknown) => e)
 

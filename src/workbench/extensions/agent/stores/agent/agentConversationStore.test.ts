@@ -148,6 +148,64 @@ describe('useAgentConversationStore', () => {
     expect(tabLinkIds(store)).toEqual(['wf-9'])
   })
 
+  it('routes colliding turn ids by thread before the displayed transport', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('visible')
+    store.startTurn(T1)
+    store.startBackgroundTurn('background', T1, 'background prompt')
+
+    store.ingest(
+      chat({
+        type: 'agent_message_delta',
+        data: {
+          delta: 'background reply',
+          message_id: T1,
+          thread_id: 'background'
+        }
+      })
+    )
+
+    expect(partTexts(store)).not.toContain('background reply')
+    store.stashActiveTurn()
+    store.setThreadId('background')
+    store.resumeBackgroundTurn()
+    expect(partTexts(store)).toContain('background reply')
+  })
+
+  it('repaints the displayed resumed turn on later stream events', async () => {
+    const store = useAgentConversationStore()
+    store.startBackgroundTurn('background', T1, 'background prompt')
+    store.setThreadId('background')
+    store.resumeBackgroundTurn()
+
+    // The transport mutates its message in place, so only the replaceActive
+    // emitter triggers array subscribers; track them to catch a silent repaint
+    // loss rather than reading the raw state.
+    const snapshots: string[][] = []
+    const stop = watch(
+      () => partTexts(store),
+      (texts) => snapshots.push(texts)
+    )
+    try {
+      store.ingest(
+        chat({
+          type: 'agent_message_delta',
+          data: { delta: 'resumed ', message_id: T1, thread_id: 'background' }
+        })
+      )
+      store.ingest(
+        chat({
+          type: 'agent_message_delta',
+          data: { delta: 'reply', message_id: T1, thread_id: 'background' }
+        })
+      )
+      await nextTick()
+    } finally {
+      stop()
+    }
+    expect(snapshots.at(-1)).toContain('resumed reply')
+  })
+
   it('(M2) isStreaming is false after abortActiveTurn() with no done', () => {
     const store = useAgentConversationStore()
     store.startTurn(T1)
@@ -351,6 +409,24 @@ describe('useAgentConversationStore', () => {
         (entry) => entry.role !== 'user' || entry.attachments === undefined
       )
     ).toBe(true)
+    revoke.mockRestore()
+  })
+
+  it('revokes only unreferenced blob previews when dropping background turns', () => {
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const store = useAgentConversationStore()
+    store.recordUser(T1, 'displayed', [
+      { name: 'shared.png', previewUrl: 'blob:shared' }
+    ])
+    store.startBackgroundTurn('background', T2, 'background', [
+      { name: 'discarded.png', previewUrl: 'blob:discarded' },
+      { name: 'shared.png', previewUrl: 'blob:shared' }
+    ])
+
+    store.dropBackgroundTurns()
+
+    expect(revoke).toHaveBeenCalledTimes(1)
+    expect(revoke).toHaveBeenCalledWith('blob:discarded')
     revoke.mockRestore()
   })
 
