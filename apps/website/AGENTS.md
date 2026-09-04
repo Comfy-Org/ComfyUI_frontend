@@ -46,9 +46,9 @@ the discipline it demands:
 - Give the switch **one definition** that every entry point reads. A nav item
   and a homepage section gated on different conditions will drift, and one of
   them will ship early.
-- **Prove it**, by building the release shape and counting what is emitted.
-  `WORKSHOP_IN_BUILD=0 pnpm build` then check `dist/` — page count, and no
-  directory for the feature.
+- **Prove it**, by building the release shape and counting what is emitted —
+  page count, exit code, and no directory for the feature. The exact probe
+  is the first item under _Reviewing a change here_ → P0.
 - Assume a partially-built feature is **reachable by anyone who guesses the
   URL**, and design for that.
 - When a change low in a stack alters something tests read, **run the suite on
@@ -80,22 +80,27 @@ names a known hit, that hit is documented beside it. A probe that returns
 something not explained here is a finding; a probe that returns exactly what
 is explained here is not.
 
+Every command below runs from `apps/website`. From anywhere else, prefix
+`pnpm` commands with `--filter @comfyorg/website` and paths with
+`apps/website/` — a `grep … src` run from the repository root searches the
+ComfyUI app instead and reports nothing useful.
+
 ### P0 — would this break main's deployability, or leak something?
 
 A push to main deploys comfy.org. Anything here is a blocker.
 
-- **Unreleased feature reachable in a release build.** _How:_ from the repo
-  root, `WORKSHOP_IN_BUILD=0 pnpm --filter @comfyorg/website build; echo exit=$?`
-  then `test ! -d apps/website/dist/workshop` and
-  `grep -rl '/workshop' apps/website/dist --include='*.html' | wc -l` → 0.
+- **Unreleased feature reachable in a release build.** _How:_
+  `WORKSHOP_IN_BUILD=0 pnpm build; echo exit=$?` then `test ! -d dist/workshop`
+  and `grep -rl '/workshop' dist --include='*.html' | wc -l` → 0.
   _Failure:_ exit ≠ 0, the directory exists, or any page links to it. Check
   the exit code first: a gate that removes its output and then throws is
   correct by page count and still fails every deploy.
 - **Entry point on a different switch than the routes.** _How:_ grep the
   literal path, not the word — `grep -rlE "['\"]/workshop" src` — and classify
-  every hit; do not count them. `*.test.ts` → ignore. `src/config/indexing.ts`
-  and `src/config/routes.ts` → metadata lists that name the path in order to
-  exclude or annotate it; ignore. A file under `src/pages/workshop/` or
+  every hit; do not count them. `*.test.ts` → ignore.
+  `src/config/workshop-release.ts` → the switch itself; ignore.
+  `src/config/indexing.ts` and `src/config/routes.ts` → metadata lists that
+  name the path in order to exclude or annotate it; ignore. A file under `src/pages/workshop/` or
   `src/components/workshop/` → the feature itself; ignore. Anything else that
   renders — an `.astro` page, a `.vue` island — must either read
   `isWorkshopInBuild()` itself or be rendered only by a parent that does:
