@@ -80,6 +80,17 @@ describe('HeaderAccount', () => {
     expect(screen.getByText(/1,234/)).toBeTruthy()
   })
 
+  it('speaks the balance in the account button name, not just on screen', () => {
+    h.user!.value = { email: 'a@b.co', displayName: 'Ada' }
+    h.session!.value = { token: 'jwt', uid: 'user-1', workspace, role: 'owner' }
+    h.balance!.value = { status: 'ok', credits: 1234 }
+    render(HeaderAccount)
+
+    // A bare aria-label="Account" would win over the child text and leave the
+    // balance unspoken; the accessible name must carry it.
+    expect(screen.getByRole('button', { name: /1,234 credits/i })).toBeTruthy()
+  })
+
   it('omits the credits number when the balance is in error', () => {
     h.user!.value = { email: 'a@b.co', displayName: 'Ada' }
     h.session!.value = { token: 'jwt', uid: 'user-1', workspace, role: 'owner' }
