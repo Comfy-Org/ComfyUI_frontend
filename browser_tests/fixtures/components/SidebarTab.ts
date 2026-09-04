@@ -25,7 +25,7 @@ export class SidebarTab {
     await this.tabButton.click()
   }
   async close() {
-    if (!this.tabButton.isVisible()) {
+    if (!(await this.selectedTabButton.isVisible())) {
       return
     }
     await this.tabButton.click()
@@ -54,7 +54,7 @@ export class NodeLibrarySidebarTab extends SidebarTab {
   }
 
   override async close() {
-    if (!this.tabButton.isVisible()) {
+    if (!(await this.selectedTabButton.isVisible())) {
       return
     }
 
@@ -99,8 +99,8 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
 
   constructor(public override readonly page: Page) {
     super(page, 'node-library')
-    this.searchInput = page.getByPlaceholder('Search...')
     this.sidebarContent = page.locator('.sidebar-content-container')
+    this.searchInput = this.sidebarContent.getByPlaceholder('Search...')
     this.allTab = this.getTab('All nodes')
     this.essentialsTab = this.getTab('Essentials')
     this.sortButton = this.sidebarContent.getByRole('button', { name: 'Sort' })
