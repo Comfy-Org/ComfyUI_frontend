@@ -23,6 +23,7 @@ import type {
   PriceBadge,
   WidgetDependency
 } from '@/schemas/nodeDefSchema'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { NodeId } from '@/types/nodeId'
 import type { Expression } from 'jsonata'
@@ -395,9 +396,18 @@ export const formatPricingResult = (
 const compileRule = (rule: JsonataPricingRule): CompiledJsonataPricingRule => {
   try {
     return { ...rule, _compiled: jsonata(rule.expr) }
-  } catch (e) {
-    // Do not crash app on bad expressions; just disable rule.
-    console.error('[pricing/jsonata] failed to compile expr:', rule.expr, e)
+  } catch {
+    reportError(new Error('Failed to compile node pricing rule'), {
+      errorType: 'nodes_pricing_rule_compile_failed',
+      tags: {
+        failure_kind: 'degraded',
+        feature_area: 'nodes',
+        operation: 'render',
+        outcome: 'recovered',
+        assert_mode: 'soft'
+      },
+      level: 'warning'
+    })
     return { ...rule, _compiled: null }
   }
 }
@@ -509,6 +519,18 @@ const scheduleEvaluation = (
       cacheLabel(node, sig, formatPricingResult(res))
     })
     .catch(() => {
+      reportError(new Error('Failed to evaluate node pricing rule'), {
+        errorType: 'nodes_pricing_rule_evaluate_failed',
+        tags: {
+          failure_kind: 'degraded',
+          feature_area: 'nodes',
+          operation: 'render',
+          outcome: 'recovered',
+          assert_mode: 'soft'
+        },
+        context: { evaluation_source: 'live_node' },
+        level: 'warning'
+      })
       // Cache empty to avoid retry-spam for same signature
       cacheLabel(node, sig, '')
     })
@@ -750,8 +772,19 @@ export const evaluateNodeDefPricing = memoize(
       const context: JsonataEvalContext = { widgets, inputs, inputGroups }
       const result = await rule._compiled.evaluate(context)
       return formatPricingResult(result, { valueOnly: true })
-    } catch (e) {
-      console.error('[evaluateNodeDefPricing] error:', e)
+    } catch {
+      reportError(new Error('Failed to evaluate node pricing rule'), {
+        errorType: 'nodes_pricing_rule_evaluate_failed',
+        tags: {
+          failure_kind: 'degraded',
+          feature_area: 'nodes',
+          operation: 'render',
+          outcome: 'recovered',
+          assert_mode: 'soft'
+        },
+        context: { evaluation_source: 'node_definition' },
+        level: 'warning'
+      })
       return ''
     }
   },
