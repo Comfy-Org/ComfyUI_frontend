@@ -90,7 +90,7 @@ Environment, all optional except the two provenance values:
 
 Alongside the fixture the command writes a `recordings/` directory holding the
 raw frames, one retrieved row set per turn, the intermediate
-`agent-backend-capture.v2`
+`agent-conversation.v2`
 document and a receipt (turn IDs, parent rows, applied ops, dropped-frame
 counts, artifact hashes). Those are provenance for the recording, not committed
 fixtures. Use `--work <dir>` to put them elsewhere.
@@ -132,25 +132,15 @@ GROUP BY parent.id
 ORDER BY parent.started_at, parent.id;
 ```
 
-Put those values in an `agent-backend-capture.v2` JSON document: the eval
-source, the seed workflow and widget catalog, a `capture` block naming the
-backend, the thread ID and the export timestamp, and a `turns` array carrying,
-per turn, its `message_id`, its `request`, its captured `frames` and its
-`tool_calls`. Run the query once per turn, binding `$2` to that turn's message
-ID. A frame belongs to the turn whose message ID it carries.
+Run the query once per turn, binding `$2` to that turn's message ID. A frame
+belongs to the turn whose message ID it carries.
 
-## Export
+## Assembly
 
-```bash
-pnpm exec tsx scripts/agentConversationCapture.ts \
-  /path/to/backend-capture.json \
-  browser_tests/fixtures/data/agent/conversations/<case-id>.json
-```
+The recorder assembles the conversation itself: there is no intermediate
+capture document and no separate export step.
 
-The recorder above calls this exporter for you; run it directly when you
-already have a capture document.
-
-The exporter emits one conversation turn per captured turn. It strips turn
+It emits one conversation turn per recorded turn. It strips turn
 identity from frames (the replay mints its own), inserts each durably accepted
 op before its terminal tool-call frame, and fails if any frame belongs to
 another turn, an accepted op is missing from the recorded parent result, or a

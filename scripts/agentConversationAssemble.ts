@@ -5,10 +5,15 @@ import { basename } from 'node:path'
 import { FROZEN_OPS } from '@comfyorg/comfy-multi-player'
 import { z } from 'zod'
 
-import type { zRecordedWsEvent } from '../browser_tests/fixtures/data/agent/agentConversation'
-import { zAgentConversationWorkflow } from '../browser_tests/fixtures/data/agent/agentConversation'
+import type {
+  zAgentConversationRequest,
+  zRecordedWsEvent
+} from '../browser_tests/fixtures/data/agent/agentConversation'
+import {
+  zAgentConversation,
+  zAgentConversationWorkflow
+} from '../browser_tests/fixtures/data/agent/agentConversation'
 import { AGENT_WS_EVENT_TYPES } from '../src/workbench/extensions/agent/schemas/agentApiSchema'
-import type { AgentBackendCapture } from './agentConversationCapture'
 
 // The replay accepts exactly the agent events the panel itself parses.
 const REPLAYED_FRAMES: readonly string[] = [...AGENT_WS_EVENT_TYPES]
@@ -75,6 +80,19 @@ const zOpsCarrier = z.object({
 })
 
 export type RecordedFrame = z.infer<typeof zRecordedWsEvent>
+type GraphOps = Array<Record<string, unknown>>
+
+// What the assembler hands to zAgentConversation, which narrows the op payloads.
+type DraftEntry =
+  | { kind: 'event'; event: RecordedFrame; at_ms?: number }
+  | { kind: 'graph_ops'; ops: GraphOps; at_ms?: number }
+
+interface DraftTurn {
+  message_id: string
+  request: z.input<typeof zAgentConversationRequest>
+  cancel_after: number | undefined
+  response: DraftEntry[]
+}
 export type SeedFixture = z.infer<typeof zSeedFixture>
 export type ParentRow = z.infer<typeof zParentRow>
 
@@ -321,10 +339,7 @@ function appliedOps(
 function parentToolCall(
   row: ParentRow,
   workflowId: string
-): {
-  toolCall: AgentBackendCapture['turns'][number]['tool_calls'][number]
-  appliedOps: Array<Record<string, unknown>>
-} {
+): { toolCallId: string; appliedOps: GraphOps } {
   const applied = row.children.flatMap((child) =>
     child.status === 'ok' && child.op_id ? [child.op_id] : []
   )
@@ -336,14 +351,49 @@ function parentToolCall(
       `parent row ${row.id} applied ops on ${row.workflow_id}, not the seeded workflow ${workflowId}`
     )
 
-  return {
-    appliedOps: appliedOps(row, applied),
-    toolCall: {
-      tool_call_id: row.tool_call_id,
-      result: row.result ?? {},
-      applied_op_ids: applied
+  return { toolCallId: row.tool_call_id, appliedOps: appliedOps(row, applied) }
+}
+
+// The replay's view of one turn: its frames, and the ops it applied, in order.
+// Frames belong to the turn (keepTurnFrames) and every row tool call has a
+// terminal frame here (checkTurnAgreement), so neither is re-checked.
+function buildResponse(
+  frames: RecordedFrame[],
+  opsByToolCall: Map<string, GraphOps>,
+  cancelAfterFrame: number | undefined,
+  label: string
+): { response: DraftEntry[]; cancelAfter: number | undefined } {
+  const response: DraftEntry[] = []
+  let cancelAfter: number | undefined
+  const firstAt = frames[0].at_ms
+
+  for (const [index, frame] of frames.entries()) {
+    const at_ms =
+      firstAt === undefined || frame.at_ms === undefined
+        ? undefined
+        : frame.at_ms - firstAt
+    const data = { ...frame.data }
+    delete data.thread_id
+    delete data.message_id
+
+    if (frame.type === 'agent_tool_call') {
+      const { status, tool_call_id: toolCallId } = frame.data
+      if (status !== 'running' && status !== 'success' && status !== 'error')
+        refuse(
+          `${label}: agent_tool_call frame carries status ${JSON.stringify(status)}; only running, success or error are known`
+        )
+      const ops =
+        typeof toolCallId === 'string' && status !== 'running'
+          ? opsByToolCall.get(toolCallId)
+          : undefined
+      if (ops !== undefined && ops.length > 0)
+        response.push({ kind: 'graph_ops', ops, at_ms })
     }
+    response.push({ kind: 'event', event: { type: frame.type, data }, at_ms })
+    if (cancelAfterFrame === index) cancelAfter = response.length - 1
   }
+
+  return { response, cancelAfter }
 }
 
 // The frames and the audit rows must describe the same turn's tool calls.
@@ -429,30 +479,31 @@ function checkAddedClasses(
     )
 }
 
-function buildCapture(options: {
+function buildConversation(options: {
   input: AssembleInput
   threadId: string
   workflowId: string
   seedMessageId: string | null
-  turns: AgentBackendCapture['turns']
-}): AgentBackendCapture {
+  turns: DraftTurn[]
+}) {
   const { input, threadId, workflowId, turns } = options
   const { raw, rows, provenance } = input
   const { workflow } = input.seed.json
   const note = `RECORDED from Comfy-Org/cloud services/agent running ${STACK} at ${raw.base} (frames: ${raw.frame_source}); NOT a production capture. cloud commit ${provenance.cloudSha}; model ${provenance.model}; thread ${threadId}; messages ${turns.map((turn) => turn.message_id).join(', ')}; workflow ${workflowId} (seeded by throwaway turn ${options.seedMessageId}; turn 1 opens on a fresh workflow and switches to it first because the replay subscribes only on an agent_active_tab frame); agent_tool_calls parent rows ${list(rows.flatMap((set) => set.parents.map((row) => row.id)))}; rows ${rows.map((set) => basename(set.path)).join(', ')}; raw capture sha256 ${input.rawSha256}`
 
-  return {
-    schema_version: 'agent-backend-capture.v2',
+  return zAgentConversation.parse({
+    schema_version: 'agent-conversation.v2',
     source: {
       repo: 'Comfy-Org/ComfyUI_frontend',
       suite: 'agent',
       case_id: raw.case_id,
-      note
-    },
-    capture: {
-      backend: 'Comfy-Org/cloud',
-      thread_id: threadId,
-      exported_at: provenance.exportedAt
+      response_side: 'recorded',
+      note,
+      capture: {
+        backend: 'Comfy-Org/cloud',
+        thread_id: threadId,
+        exported_at: provenance.exportedAt
+      }
     },
     workflow: {
       id: workflowId,
@@ -461,7 +512,7 @@ function buildCapture(options: {
       seed: workflow.seed
     },
     turns
-  }
+  })
 }
 
 interface TurnReceipt {
@@ -519,11 +570,7 @@ function assembleTurn(
   rows: NormalizedRows,
   workflowId: string,
   label: string
-): {
-  capture: AgentBackendCapture['turns'][number]
-  receipt: TurnReceipt
-  appliedOps: Array<Record<string, unknown>>
-} {
+): { turn: DraftTurn; receipt: TurnReceipt; appliedOps: GraphOps } {
   const calls = rows.parents.map((row) => parentToolCall(row, workflowId))
   checkTurnAgreement(frames, rows.parents, label)
   const sent = turn.cancel_sent_at_ms
@@ -537,18 +584,24 @@ function assembleTurn(
     )
   if (sent !== undefined && before.length === 0)
     refuse(`${label} was cancelled before any frame arrived`)
+  const cancelAfterFrame = sent === undefined ? undefined : before.length - 1
+  const { response, cancelAfter } = buildResponse(
+    frames,
+    new Map(calls.map((call) => [call.toolCallId, call.appliedOps])),
+    cancelAfterFrame,
+    label
+  )
   return {
-    capture: {
+    turn: {
       message_id: ids.messageId,
       request: { content: turn.prompt },
-      frames,
-      cancel_after_frame: sent === undefined ? undefined : before.length - 1,
-      tool_calls: calls.map((call) => call.toolCall)
+      cancel_after: cancelAfter,
+      response
     },
     receipt: {
       message_id: ids.messageId,
       frames_kept: frames.length,
-      cancel_after_frame: sent === undefined ? undefined : before.length - 1,
+      cancel_after_frame: cancelAfterFrame,
       parents: rows.parents.length,
       mutating_parents: calls.filter((call) => call.appliedOps.length > 0)
         .length,
@@ -560,7 +613,7 @@ function assembleTurn(
   }
 }
 
-export function assembleCapture(input: AssembleInput) {
+export function assembleConversation(input: AssembleInput) {
   const { raw, rows } = input
   const { workflow } = input.seed.json
   const seedIds = new Set(workflow.seed.nodes.map((node) => String(node.id)))
@@ -599,12 +652,12 @@ export function assembleCapture(input: AssembleInput) {
   checkAddedClasses(appliedOps, workflow.catalog)
 
   return {
-    capture: buildCapture({
+    conversation: buildConversation({
       input,
       threadId,
       workflowId,
       seedMessageId: seedTurn?.messageId ?? null,
-      turns: turns.map((turn) => turn.capture)
+      turns: turns.map((turn) => turn.turn)
     }),
     receipt: buildReceipt({
       input,

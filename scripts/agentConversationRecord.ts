@@ -11,7 +11,7 @@ import { z } from 'zod'
 
 import {
   RecordRefusal,
-  assembleCapture,
+  assembleConversation,
   parseOrRefuse,
   refuse,
   turnLabel,
@@ -28,7 +28,6 @@ import type {
   TurnAck,
   TurnIds
 } from './agentConversationAssemble'
-import { exportAgentConversation } from './agentConversationCapture'
 
 const USAGE =
   'usage: pnpm exec tsx scripts/agentConversationRecord.ts <caseId> <seedFixture.json> --prompt "<turn 1>" [--prompt "<turn 2>" ...] --out <fixture.json> [--work <dir>] [--cancel-turn <k> --cancel-after-ms <n>]'
@@ -407,7 +406,7 @@ async function main(argv: string[]): Promise<void> {
     })
     writeJson(rawPath, raw)
 
-    const { capture, receipt } = assembleCapture({
+    const { conversation, receipt } = assembleConversation({
       raw,
       rows,
       seed: { json: seed, path: seedPath, sha256: raw.seed_sha256 },
@@ -419,8 +418,7 @@ async function main(argv: string[]): Promise<void> {
       rawSha256: sha256OfFile(rawPath),
       rawPath
     })
-    writeJson(sidecar('capture.json'), capture)
-    writeJson(outPath, exportAgentConversation(capture))
+    writeJson(outPath, conversation)
     writeJson(sidecar('receipt.json'), receipt)
     const perTurn = receipt.turns
       .map(

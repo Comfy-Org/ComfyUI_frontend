@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { z } from 'zod'
 
-import { exportAgentConversation } from './agentConversationCapture'
 import type {
   AssembleInput,
   NormalizedRows,
@@ -10,7 +9,7 @@ import type {
   RecordedTurn,
   SeedFixture
 } from './agentConversationAssemble'
-import { assembleCapture, zRowsDump } from './agentConversationAssemble'
+import { assembleConversation, zRowsDump } from './agentConversationAssemble'
 
 const THREAD = 'thread-1'
 const MESSAGE = 'message-1'
@@ -41,6 +40,18 @@ const frames = (): RecordedFrame[] => [
   ),
   turnFrame('agent_message_done', {}, 1_700_000_000_300)
 ]
+
+type ConversationTurn = ReturnType<
+  typeof assembleConversation
+>['conversation']['turns'][number]
+
+const turnEvents = (turn: ConversationTurn): RecordedFrame[] =>
+  turn.response.flatMap((entry) =>
+    entry.kind === 'event' ? [entry.event] : []
+  )
+
+const turnEventTypes = (turn: ConversationTurn): string[] =>
+  turnEvents(turn).map((event) => event.type)
 
 const seed = (): SeedFixture => ({
   workflow: {
@@ -152,7 +163,7 @@ const input = (
   }
 }
 
-describe('assembleCapture', () => {
+describe('assembleConversation', () => {
   const cancelledTurn = (
     cancel_ack: RawCapture['turns'][number]['cancel_ack']
   ) =>
@@ -168,49 +179,52 @@ describe('assembleCapture', () => {
 
   it('refuses a cancelled turn whose cancel the backend rejected', () => {
     expect(() =>
-      assembleCapture(
+      assembleConversation(
         input({ raw: cancelledTurn({ status: 500, body: null }) })
       )
     ).toThrow('cancel was not accepted')
-    expect(() => assembleCapture(input({ raw: cancelledTurn(null) }))).toThrow(
-      'cancel was not accepted'
-    )
+    expect(() =>
+      assembleConversation(input({ raw: cancelledTurn(null) }))
+    ).toThrow('cancel was not accepted')
   })
 
   it('records the cancel marker only for an accepted cancel', () => {
-    const { capture } = assembleCapture(
+    const { conversation } = assembleConversation(
       input({ raw: cancelledTurn({ status: 202, body: {} }) })
     )
-    expect(capture.turns[0].cancel_after_frame).toBe(frames().length - 1)
+    expect(conversation.turns[0].cancel_after).toBe(
+      conversation.turns[0].response.length - 1
+    )
   })
 
-  it('keeps the turn frames with their receipt times and emits the applied ops', () => {
-    const { capture, receipt } = assembleCapture(input())
+  it('emits the turn response at its offsets with the applied ops inline', () => {
+    const { conversation, receipt } = assembleConversation(input())
 
-    expect(capture.workflow.id).toBe(WORKFLOW)
-    expect(capture.schema_version).toBe('agent-backend-capture.v2')
-    expect(capture.capture).toMatchObject({
-      backend: 'Comfy-Org/cloud',
-      thread_id: THREAD
+    expect(conversation.workflow.id).toBe(WORKFLOW)
+    expect(conversation.schema_version).toBe('agent-conversation.v2')
+    expect(conversation.source).toMatchObject({
+      response_side: 'recorded',
+      capture: { backend: 'Comfy-Org/cloud', thread_id: THREAD }
     })
-    expect(capture.turns).toHaveLength(1)
-    expect(capture.turns[0].message_id).toBe(MESSAGE)
-    expect(capture.turns[0].frames.map((frame) => frame.type)).toEqual([
+    expect(conversation.turns).toHaveLength(1)
+    expect(conversation.turns[0].message_id).toBe(MESSAGE)
+    expect(
+      conversation.turns[0].response.map((entry) =>
+        entry.kind === 'event' ? entry.event.type : entry.kind
+      )
+    ).toEqual([
       'agent_thinking',
       'agent_active_tab',
+      'graph_ops',
       'agent_tool_call',
       'agent_message_done'
     ])
-    expect(capture.turns[0].frames.map((frame) => frame.at_ms)).toEqual([
-      1_700_000_000_000, 1_700_000_000_100, 1_700_000_000_200, 1_700_000_000_300
+    expect(conversation.turns[0].response.map((entry) => entry.at_ms)).toEqual([
+      0, 100, 200, 200, 300
     ])
-    expect(capture.turns[0].tool_calls).toEqual([
-      {
-        tool_call_id: 'tool-1',
-        result: { ok: true, data: { ops: [addNodeOp] } },
-        applied_op_ids: ['op-1']
-      }
-    ])
+    expect(
+      conversation.turns[0].response.find((entry) => entry.kind === 'graph_ops')
+    ).toMatchObject({ ops: [addNodeOp] })
     expect(receipt).toMatchObject({
       added_nodes: 1,
       deleted_nodes: 0,
@@ -229,30 +243,59 @@ describe('assembleCapture', () => {
     ])
   })
 
-  it('produces a capture the exporter turns into a recorded conversation', () => {
-    const { capture } = assembleCapture(input())
-    const conversation = exportAgentConversation(capture)
+  it('strips the routing ids the replay does not carry', () => {
+    const { conversation } = assembleConversation(input())
+    const [entry] = conversation.turns[0].response
 
-    expect(conversation.source.response_side).toBe('recorded')
-    expect(conversation.turns).toHaveLength(1)
-    expect(conversation.turns[0].message_id).toBe(MESSAGE)
-    expect(
-      conversation.turns[0].response.filter(
-        (entry) => entry.kind === 'graph_ops'
+    expect(entry.kind).toBe('event')
+    if (entry.kind !== 'event') return
+    expect(entry.event.data).not.toHaveProperty('thread_id')
+    expect(entry.event.data).not.toHaveProperty('message_id')
+  })
+
+  it('refuses a tool-call frame carrying an unknown status', () => {
+    expect(() =>
+      assembleConversation(
+        input({
+          raw: raw({
+            frames: [
+              ...frames().slice(0, 2),
+              turnFrame(
+                'agent_tool_call',
+                { tool_call_id: 'tool-1', status: 'queued' },
+                1_700_000_000_200
+              ),
+              frames()[3]
+            ]
+          })
+        })
       )
-    ).toHaveLength(1)
+    ).toThrow(/only running, success or error are known/)
+  })
+
+  it('leaves the offset out when the frames carry no receipt time', () => {
+    const { conversation } = assembleConversation(
+      input({
+        raw: raw({ frames: frames().map(({ type, data }) => ({ type, data })) })
+      })
+    )
+
+    for (const entry of conversation.turns[0].response)
+      expect(entry.at_ms).toBeUndefined()
   })
 
   it('records the note without the concrete redis channel', () => {
-    const { capture, receipt } = assembleCapture(input())
+    const { conversation, receipt } = assembleConversation(input())
 
-    expect(capture.source.note).toContain('channel:ws:<workspace>:u:<user>')
-    expect(capture.source.note).not.toContain('w-secret')
+    expect(conversation.source.note).toContain(
+      'channel:ws:<workspace>:u:<user>'
+    )
+    expect(conversation.source.note).not.toContain('w-secret')
     expect(receipt.channel).toContain('w-secret')
   })
 
   it('accepts a delete_node whose node id is zero', () => {
-    const { receipt } = assembleCapture(
+    const { receipt } = assembleConversation(
       input({
         seed: {
           json: {
@@ -285,7 +328,7 @@ describe('assembleCapture', () => {
   })
 
   it('accepts a batch the document rejected as zero applied ops', () => {
-    const { receipt } = assembleCapture(
+    const { receipt } = assembleConversation(
       input({
         rows: rows({
           parents: [
@@ -304,7 +347,7 @@ describe('assembleCapture', () => {
   })
 
   it('accepts a read tool that echoes ops without writing child rows', () => {
-    const { capture, receipt } = assembleCapture(
+    const { conversation, receipt } = assembleConversation(
       input({
         rows: rows({
           parents: [
@@ -319,12 +362,14 @@ describe('assembleCapture', () => {
       })
     )
 
-    expect(capture.turns[0].tool_calls[0].applied_op_ids).toEqual([])
+    expect(
+      conversation.turns[0].response.some((entry) => entry.kind === 'graph_ops')
+    ).toBe(false)
     expect(receipt.turns[0].mutating_parents).toBe(0)
   })
 
   it('drops the ambient heartbeat and a non-replay turn frame into buckets', () => {
-    const { receipt } = assembleCapture(
+    const { receipt } = assembleConversation(
       input({
         raw: raw({
           frames: [
@@ -357,7 +402,7 @@ describe('assembleCapture', () => {
 
   it('refuses an applied add_node whose class is outside the seed catalog', () => {
     expect(() =>
-      assembleCapture(
+      assembleConversation(
         input({
           rows: rows({
             parents: [
@@ -378,7 +423,7 @@ describe('assembleCapture', () => {
 
   it('refuses an applied parent row that names another workflow', () => {
     expect(() =>
-      assembleCapture(
+      assembleConversation(
         input({ rows: rows({ parents: [parent({ workflow_id: null })] }) })
       )
     ).toThrow('not the seeded workflow')
@@ -386,7 +431,7 @@ describe('assembleCapture', () => {
 
   it('refuses an unparseable socket payload', () => {
     expect(() =>
-      assembleCapture(
+      assembleConversation(
         input({
           raw: raw({
             frames: [
@@ -401,7 +446,7 @@ describe('assembleCapture', () => {
 
   it('refuses rows whose tool calls disagree with the recorded frames', () => {
     expect(() =>
-      assembleCapture(
+      assembleConversation(
         input({
           rows: rows({
             parents: [
@@ -421,7 +466,7 @@ describe('assembleCapture', () => {
 
   it('refuses an applied op that its parent result never echoed', () => {
     expect(() =>
-      assembleCapture(
+      assembleConversation(
         input({
           rows: rows({
             parents: [
@@ -435,7 +480,7 @@ describe('assembleCapture', () => {
 
   it('refuses applied ops whose parent recorded no result at all', () => {
     expect(() =>
-      assembleCapture(
+      assembleConversation(
         input({ rows: rows({ parents: [parent({ result: null })] }) })
       )
     ).toThrow('has applied ops but a NULL result')
@@ -443,7 +488,7 @@ describe('assembleCapture', () => {
 
   it('refuses an echoed op kind outside the exporter frozen set', () => {
     expect(() =>
-      assembleCapture(
+      assembleConversation(
         input({
           rows: rows({
             parents: [
@@ -464,7 +509,7 @@ describe('assembleCapture', () => {
 
   it('refuses a non-object echoed op entry', () => {
     expect(() =>
-      assembleCapture(
+      assembleConversation(
         input({
           rows: rows({
             parents: [
@@ -480,7 +525,7 @@ describe('assembleCapture', () => {
 
   it('refuses an applied delete_node without a node id', () => {
     expect(() =>
-      assembleCapture(
+      assembleConversation(
         input({
           rows: rows({
             parents: [
@@ -498,20 +543,20 @@ describe('assembleCapture', () => {
   })
 
   it('refuses an attempt label that would collide across attempts', () => {
-    expect(() => assembleCapture(input({ raw: raw({ attempt: '' }) }))).toThrow(
-      'is not [A-Za-z0-9_-]+'
-    )
+    expect(() =>
+      assembleConversation(input({ raw: raw({ attempt: '' }) }))
+    ).toThrow('is not [A-Za-z0-9_-]+')
   })
 
   it('refuses a seed the driver did not use', () => {
     expect(() =>
-      assembleCapture(input({ raw: raw({ seed_node_ids: [3, 4, 99] }) }))
+      assembleConversation(input({ raw: raw({ seed_node_ids: [3, 4, 99] }) }))
     ).toThrow('but the seed fixture given here has')
   })
 
   it('refuses a turn with no active tab frame', () => {
     expect(() =>
-      assembleCapture(
+      assembleConversation(
         input({
           raw: raw({
             frames: frames().filter(
@@ -525,13 +570,15 @@ describe('assembleCapture', () => {
 
   it('refuses a turn whose last frame is not the done frame', () => {
     expect(() =>
-      assembleCapture(input({ raw: raw({ frames: frames().slice(0, -1) }) }))
+      assembleConversation(
+        input({ raw: raw({ frames: frames().slice(0, -1) }) })
+      )
     ).toThrow('not agent_message_done')
   })
 
   it('refuses an agent frame type the replay cannot validate', () => {
     expect(() =>
-      assembleCapture(
+      assembleConversation(
         input({
           raw: raw({
             frames: [turnFrame('agent_ask', {}, 1_700_000_000_050), ...frames()]
@@ -543,7 +590,7 @@ describe('assembleCapture', () => {
 
   it('refuses a draft that lost a seed node nothing deleted', () => {
     expect(() =>
-      assembleCapture(
+      assembleConversation(
         input({ rows: rows({ draft: { nodes: [{ id: 3 }], links: [] } }) })
       )
     ).toThrow('lacks seed node ids')
@@ -551,7 +598,7 @@ describe('assembleCapture', () => {
 
   it('refuses a draft that still holds a deleted node', () => {
     expect(() =>
-      assembleCapture(
+      assembleConversation(
         input({
           rows: rows({
             parents: [
@@ -572,7 +619,7 @@ describe('assembleCapture', () => {
 
   it('refuses a turn the backend never accepted', () => {
     expect(() =>
-      assembleCapture(
+      assembleConversation(
         input({
           raw: raw({
             turns: [
@@ -586,13 +633,13 @@ describe('assembleCapture', () => {
 
   it('refuses a recording whose frame stream never opened', () => {
     expect(() =>
-      assembleCapture(input({ raw: raw({ saw_stream: false }) }))
+      assembleConversation(input({ raw: raw({ saw_stream: false }) }))
     ).toThrow('frame stream never opened')
   })
 
   it('refuses a recording with no terminal done frame observed', () => {
     expect(() =>
-      assembleCapture(
+      assembleConversation(
         input({ raw: raw({ turns: [{ ...raw().turns[0], saw_done: false }] }) })
       )
     ).toThrow('never arrived')
@@ -600,7 +647,7 @@ describe('assembleCapture', () => {
 
   it('refuses a seeded workflow the active tab never named', () => {
     expect(() =>
-      assembleCapture(
+      assembleConversation(
         input({
           raw: raw({ seed_workflow_id: '11111111-2222-4333-8444-555555555555' })
         })
@@ -670,25 +717,26 @@ const twoTurns = (overrides: Partial<AssembleInput> = {}): AssembleInput =>
     ...overrides
   })
 
-describe('assembleCapture across turns', () => {
+describe('assembleConversation across turns', () => {
   it('buckets frames by the message id of the turn that owns them', () => {
-    const { capture, receipt } = assembleCapture(twoTurns())
+    const { conversation, receipt } = assembleConversation(twoTurns())
 
-    expect(capture.turns.map((turn) => turn.message_id)).toEqual([
+    expect(conversation.turns.map((turn) => turn.message_id)).toEqual([
       MESSAGE,
       MESSAGE_2
     ])
-    expect(
-      capture.turns[0].frames.every(
-        (frame) => frame.data.message_id === MESSAGE
-      )
-    ).toBe(true)
-    expect(capture.turns[1].frames.map((frame) => frame.type)).toEqual([
+    expect(turnEventTypes(conversation.turns[0])).toEqual([
+      'agent_thinking',
+      'agent_active_tab',
+      'agent_tool_call',
+      'agent_message_done'
+    ])
+    expect(turnEventTypes(conversation.turns[1])).toEqual([
       'agent_thinking',
       'agent_tool_call',
       'agent_message_done'
     ])
-    expect(capture.turns[1].request.content).toBe(
+    expect(conversation.turns[1].request.content).toBe(
       'Now connect it to the sampler.'
     )
     expect(receipt.turns.map((turn) => turn.message_id)).toEqual([
@@ -699,9 +747,7 @@ describe('assembleCapture across turns', () => {
   })
 
   it('exports one recorded conversation turn per recorded turn', () => {
-    const conversation = exportAgentConversation(
-      assembleCapture(twoTurns()).capture
-    )
+    const { conversation } = assembleConversation(twoTurns())
 
     expect(conversation.turns.map((turn) => turn.message_id)).toEqual([
       MESSAGE,
@@ -716,9 +762,9 @@ describe('assembleCapture across turns', () => {
   })
 
   it('requires the active tab frame only on the opening turn', () => {
-    const { capture } = assembleCapture(twoTurns())
+    const { conversation } = assembleConversation(twoTurns())
     const tabFrames = (index: number) =>
-      capture.turns[index].frames.filter(
+      turnEvents(conversation.turns[index]).filter(
         (frame) => frame.type === 'agent_active_tab'
       )
 
@@ -728,7 +774,7 @@ describe('assembleCapture across turns', () => {
 
   it('checks the draft once, against every applied op of the thread', () => {
     expect(() =>
-      assembleCapture(
+      assembleConversation(
         twoTurns({
           rows: [
             rows(),
@@ -757,7 +803,7 @@ describe('assembleCapture across turns', () => {
 
   it('refuses a turn that landed on another thread', () => {
     expect(() =>
-      assembleCapture(
+      assembleConversation(
         twoTurns({
           raw: raw({
             turns: [
@@ -777,14 +823,14 @@ describe('assembleCapture across turns', () => {
   })
 
   it('refuses a turn whose audit rows were never read', () => {
-    expect(() => assembleCapture(twoTurns({ rows: [rows()] }))).toThrow(
+    expect(() => assembleConversation(twoTurns({ rows: [rows()] }))).toThrow(
       'recorded 2 turn(s) but read 1 audit row set(s)'
     )
   })
 
   it('names the turn whose last kept frame is not the done frame', () => {
     expect(() =>
-      assembleCapture(
+      assembleConversation(
         twoTurns({
           raw: raw({
             turns: [raw().turns[0], secondTurn()],
