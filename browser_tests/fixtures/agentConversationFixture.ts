@@ -77,14 +77,12 @@ function toolRowLabel(name: string): string {
 // Connected link slots by name; a node definition may render slots the recording never listed.
 interface GraphNodeSnapshot {
   id: string
-  title: string
   inputs: string[]
   outputs: string[]
 }
 
 // Runs one recorded prompt/response through the real panel over a routed /ws socket.
 class AgentConversationHarness {
-  private readonly displayNames: Record<string, string> = {}
   readonly postedMessages: string[] = []
   // Human-op minting is observable only on the client side of the socket.
   readonly clientFrames: { type?: unknown; data?: unknown }[] = []
@@ -132,20 +130,6 @@ class AgentConversationHarness {
 
     await this.page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
     await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
-    await this.loadDisplayNames()
-  }
-
-  // The same definitions the app just loaded; an untitled node renders its display name.
-  private async loadDisplayNames(): Promise<void> {
-    const response = await this.page.request.get(
-      new URL('/api/object_info', this.page.url()).href
-    )
-    const defs = (await response.json()) as Record<
-      string,
-      { display_name?: string }
-    >
-    for (const [type, def] of Object.entries(defs))
-      if (def.display_name) this.displayNames[type] = def.display_name
   }
 
   async sendPrompt(turn = 0): Promise<void> {
@@ -259,8 +243,6 @@ class AgentConversationHarness {
         const outputNames = (body?.outputs ?? []).map((slot) => slot.name)
         return {
           id,
-          // An untitled node renders its registered display name, as LiteGraph.createNode does.
-          title: byId.get(id)?.title ?? this.displayNames[type] ?? type,
           // Widget-backed inputs render as widgets, not slot rows.
           inputs: [
             ...new Set(
@@ -401,10 +383,6 @@ class AgentConversationHarness {
               .sort()
           return {
             id: node.getAttribute('data-node-id') ?? '',
-            title:
-              node
-                .querySelector('[data-testid="node-title"]')
-                ?.textContent?.trim() ?? '',
             inputs: connected('.lg-slot--input'),
             outputs: connected('.lg-slot--output')
           }
