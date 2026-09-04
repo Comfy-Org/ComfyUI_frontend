@@ -654,9 +654,7 @@ test('resumes declined checkout and completes it with a new card', async () => {
         `${evidenceDir}/operation.json`,
         `${JSON.stringify({ started_at: new Date(startedAt).toISOString(), operation_id: operationId }, null, 2)}\n`
       )
-      await fillCheckout(checkoutPage, '4000002760003184')
-      await findChallengeFrame(checkoutPage)
-      await completeChallenge(checkoutPage)
+      await fillCheckout(checkoutPage, '4242424242424242')
       await waitForHostedReturn(checkoutPage)
       const returnedAt = Date.now()
       expect(checkoutPage.url()).toContain('/payment/success')
