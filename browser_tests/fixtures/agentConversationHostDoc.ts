@@ -56,8 +56,10 @@ export class HostDoc {
     return this.updateFrame(update, HOST_ACTOR, [])
   }
 
-  // Client batches arrive already minted; the real host folds them into the same doc.
-  applyClient(ops: Op[]): string[] {
+  // Client batches arrive already minted; the real host folds them into the same
+  // doc and broadcasts the result, so every subscriber converges on them.
+  applyClient(ops: Op[]): { applied: string[]; update: ServerDocWireFrame } {
+    const before = Y.encodeStateVector(this.doc)
     const result = applyOps(this.doc, ops, this.catalog)
     const rejected = result.outcomes.filter((o) => o.outcome !== 'applied')
     if (rejected.length > 0)
@@ -65,7 +67,15 @@ export class HostDoc {
         `client doc_ops did not apply: ${JSON.stringify(rejected)}`
       )
     this.seq += 1
-    return ops.map((op) => op.op_id)
+    const applied = ops.map((op) => op.op_id)
+    return {
+      applied,
+      update: this.updateFrame(
+        Y.encodeStateAsUpdate(this.doc, before),
+        String(ops[0]?.actor ?? HOST_ACTOR),
+        applied
+      )
+    }
   }
 
   apply(operations: GraphOperation[]): ServerDocWireFrame {
