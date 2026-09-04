@@ -41,6 +41,34 @@ const definedEntriesOf = (
     Object.entries(tags ?? {}).filter(([, value]) => value !== undefined)
   ) as Record<string, string | number | boolean>
 
+interface DesktopExceptionTelemetry {
+  captureException?: (
+    error: { message: string; stack?: string },
+    properties: Record<string, string | number | boolean>
+  ) => void
+}
+
+function dispatchToDesktop(
+  error: Error,
+  errorType: string,
+  tags: Record<string, string | number | boolean>,
+  level?: ReportErrorOptions['level']
+): boolean {
+  // Keep this structural compatibility shim until the optional method ships
+  // in @comfyorg/comfyui-desktop-bridge-types. Older Desktop builds simply
+  // omit it, while current builds scrub the error and add release context.
+  const telemetry = window.__comfyDesktop2?.Telemetry as
+    | DesktopExceptionTelemetry
+    | undefined
+  if (!telemetry?.captureException) return false
+
+  telemetry.captureException(
+    { message: error.message, ...(error.stack ? { stack: error.stack } : {}) },
+    { ...tags, error_type: errorType, ...(level ? { level } : {}) }
+  )
+  return true
+}
+
 function dispatch(error: Error, options: ReportErrorOptions): boolean {
   const { errorType, context, level } = options
   const tags = definedEntriesOf(options.tags)
@@ -62,8 +90,9 @@ function dispatch(error: Error, options: ReportErrorOptions): boolean {
       ...(level ? { level } : {})
     })
   }
+  const desktopLive = dispatchToDesktop(error, errorType, tags, level)
 
-  return sentryLive || datadogLive
+  return sentryLive || datadogLive || desktopLive
 }
 
 /**
@@ -76,7 +105,15 @@ function dispatch(error: Error, options: ReportErrorOptions): boolean {
  */
 export function flushErrorReports(): void {
   if (!pendingReports.length) return
-  if (!isSentryEnabled() && !isDatadogRumLive()) return
+  const desktopTelemetry = window.__comfyDesktop2?.Telemetry as
+    | DesktopExceptionTelemetry
+    | undefined
+  if (
+    !isSentryEnabled() &&
+    !isDatadogRumLive() &&
+    !desktopTelemetry?.captureException
+  )
+    return
 
   const drained = pendingReports.splice(0, pendingReports.length)
   for (const { error, options } of drained) {

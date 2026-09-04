@@ -4,6 +4,7 @@ const captureException = vi.fn()
 const isEnabled = vi.fn()
 const addError = vi.fn()
 const getInitConfiguration = vi.fn()
+const captureDesktopException = vi.fn()
 
 vi.mock('@sentry/vue', () => ({
   captureException: (...args: unknown[]) => captureException(...args),
@@ -28,6 +29,7 @@ const datadogLive = (live: boolean) =>
 
 describe('reportError', () => {
   beforeEach(() => {
+    delete window.__comfyDesktop2
     sentryLive(true)
     datadogLive(true)
   })
@@ -64,6 +66,56 @@ describe('reportError', () => {
 
     expect(captureException).not.toHaveBeenCalled()
     expect(addError).toHaveBeenCalledOnce()
+  })
+
+  it('sends only sanctioned fields through the Desktop error bridge', async () => {
+    sentryLive(false)
+    datadogLive(false)
+    window.__comfyDesktop2 = {
+      Telemetry: {
+        capture: vi.fn(),
+        captureException: captureDesktopException
+      }
+    } as typeof window.__comfyDesktop2
+    const { reportError } = await loadReportError()
+    const error = new Error('failed for /Users/private/workflow.json')
+
+    reportError(error, {
+      errorType: 'workspace_auth_gate_initialization_failure',
+      tags: { feature_area: 'workspace_auth', http_status: undefined },
+      context: { workflow: '/Users/private/workflow.json' },
+      level: 'error'
+    })
+
+    expect(captureDesktopException).toHaveBeenCalledWith(
+      { message: error.message, stack: error.stack },
+      {
+        error_type: 'workspace_auth_gate_initialization_failure',
+        feature_area: 'workspace_auth',
+        level: 'error'
+      }
+    )
+  })
+
+  it('flushes an early report when the Desktop bridge becomes available', async () => {
+    sentryLive(false)
+    datadogLive(false)
+    const { reportError, flushErrorReports } = await loadReportError()
+
+    reportError(new Error('early'), { errorType: 'resource_load_error' })
+
+    window.__comfyDesktop2 = {
+      Telemetry: {
+        capture: vi.fn(),
+        captureException: captureDesktopException
+      }
+    } as typeof window.__comfyDesktop2
+    flushErrorReports()
+
+    expect(captureDesktopException).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'early' }),
+      { error_type: 'resource_load_error' }
+    )
   })
 
   it('buffers reports raised before any sink is live, then flushes them', async () => {
