@@ -3,28 +3,22 @@ import { describe, expect, it } from 'vitest'
 import {
   evaluatePolicy,
   hasFailClosedDefault,
-  parsePolicyFields,
+  inferFlags,
+  parseDeclaredFlag,
   riskFromLabels,
   runtimePathsFor
 } from './feature-flag-policy'
 
-const validBody = `
+const blankBody = `
 ## Feature flag
 
-- **Cloud runtime change**: yes
-- **Flag**: safe_feature
-- **Flag source**: new
-- **Default-OFF code evidence**: src/composables/useFeatureFlags.ts:100
-- **Production-OFF evidence**: https://flags.example/safe_feature
-- **Flag-OFF behavior**: Existing behavior remains unchanged.
-- **Flag-OFF test**: src/safeFeature.test.ts:test off path
-- **Exception**: none
-- **Exception evidence**: N/A
+- **Flag**:
 `
-
+const declaredBody = blankBody.replace('**Flag**:', '**Flag**: safe_feature')
 const registry = `
 export enum ServerFeatureFlag {
-  SAFE_FEATURE = 'safe_feature'
+  SAFE_FEATURE = 'safe_feature',
+  OTHER_FEATURE = 'other_feature'
 }
 const enabled = resolveFlag(
   ServerFeatureFlag.SAFE_FEATURE,
@@ -32,29 +26,25 @@ const enabled = resolveFlag(
   false
 )
 `
+const safePatch = `
+@@ -1,0 +1,2 @@
++const enabled = flags.get(ServerFeatureFlag.SAFE_FEATURE)
+`
 
-describe('parsePolicyFields', () => {
-  it('reads the fixed template fields', () => {
-    expect(parsePolicyFields(validBody).fields).toMatchObject({
-      cloudRuntimeChange: 'yes',
+describe('parseDeclaredFlag', () => {
+  it('accepts a declared or blank flag', () => {
+    expect(parseDeclaredFlag(declaredBody)).toEqual({
       flag: 'safe_feature',
-      exception: 'none'
+      errors: []
     })
+    expect(parseDeclaredFlag(blankBody)).toEqual({ flag: null, errors: [] })
+    expect(parseDeclaredFlag('## Summary')).toEqual({ flag: null, errors: [] })
   })
 
-  it('rejects a missing section', () => {
-    expect(parsePolicyFields('## Summary\nNo policy').errors).toContain(
-      'Missing `## Feature flag` section.'
-    )
-  })
-
-  it('rejects duplicate fields', () => {
-    const duplicate = validBody.replace(
-      '- **Flag**: safe_feature',
-      '- **Flag**: unsafe_feature\n- **Flag**: safe_feature'
-    )
-    expect(parsePolicyFields(duplicate).errors).toContain(
-      'Policy fields must be unique.'
+  it('rejects duplicate flag fields', () => {
+    const duplicate = `${declaredBody}- **Flag**: other_feature\n`
+    expect(parseDeclaredFlag(duplicate).errors).toContain(
+      'The `Flag` field must be unique.'
     )
   })
 })
@@ -88,14 +78,32 @@ describe('runtimePathsFor', () => {
   })
 })
 
-describe('hasFailClosedDefault', () => {
-  it('accepts a registered flag with a false fallback', () => {
-    expect(hasFailClosedDefault('safe_feature', registry, registry)).toBe(true)
+describe('inferFlags', () => {
+  it('infers a unique flag from added code', () => {
+    expect(inferFlags(registry, [safePatch])).toEqual(['safe_feature'])
   })
 
-  it('rejects a nightly-on fallback', () => {
-    const unsafe = registry.replace('false', 'isNightly')
-    expect(hasFailClosedDefault('safe_feature', unsafe, unsafe)).toBe(false)
+  it('returns every candidate when the diff is ambiguous', () => {
+    const patch = `${safePatch}+flags.get(ServerFeatureFlag.OTHER_FEATURE)\n`
+    expect(inferFlags(registry, [patch])).toEqual([
+      'safe_feature',
+      'other_feature'
+    ])
+  })
+})
+
+describe('hasFailClosedDefault', () => {
+  it('accepts a registered flag with a false fallback', () => {
+    expect(hasFailClosedDefault('safe_feature', registry)).toBe(true)
+  })
+
+  it('rejects a non-fail-closed fallback', () => {
+    expect(
+      hasFailClosedDefault(
+        'safe_feature',
+        registry.replace('false', 'isNightly')
+      )
+    ).toBe(false)
   })
 })
 
@@ -112,6 +120,14 @@ describe('riskFromLabels', () => {
 })
 
 describe('evaluatePolicy', () => {
+  const runtimeInput = {
+    labels: [],
+    risk: 'high' as const,
+    runtimePaths: ['src/runtime.ts'],
+    registrySource: registry,
+    baseRegistrySource: registry
+  }
+
   it('passes low-risk changes without parsing the template', () => {
     expect(
       evaluatePolicy({
@@ -134,86 +150,55 @@ describe('evaluatePolicy', () => {
     ).toBe('pass')
   })
 
-  it('requires complete default-off containment for runtime changes', () => {
+  it('accepts a labeled exception without template evidence', () => {
     expect(
       evaluatePolicy({
-        body: validBody,
-        labels: [],
-        risk: 'high',
-        runtimePaths: ['src/runtime.ts'],
-        registrySource: registry,
-        evidenceSource: registry,
-        testPathExists: true
-      })
-    ).toMatchObject({ verdict: 'pass', requiresAi: true })
-  })
-
-  it('rejects prose that names no registered flag', () => {
-    expect(
-      evaluatePolicy({
-        body: validBody.replaceAll('safe_feature', 'invented_flag'),
-        labels: [],
-        risk: 'high',
-        runtimePaths: ['src/runtime.ts'],
-        registrySource: registry,
-        evidenceSource: registry,
-        testPathExists: true
-      }).reasons
-    ).toContain('The named flag is not registered with a fail-closed default.')
-  })
-
-  it('requires the test evidence to name a test file', () => {
-    const body = validBody.replace(
-      'src/safeFeature.test.ts:test off path',
-      'src/safeFeature.ts:test off path'
-    )
-    expect(
-      evaluatePolicy({
-        body,
-        labels: [],
-        risk: 'high',
-        runtimePaths: ['src/runtime.ts'],
-        registrySource: registry,
-        evidenceSource: registry,
-        testPathExists: true
-      }).reasons
-    ).toContain('`Flag-OFF test` must reference a test file.')
-  })
-
-  it('requires the explicit label for a human exception', () => {
-    const exceptionBody = validBody
-      .replace('- **Exception**: none', '- **Exception**: contract')
-      .replace(
-        '- **Exception evidence**: N/A',
-        '- **Exception evidence**: Validation link and rollback steps.'
-      )
-    expect(
-      evaluatePolicy({
-        body: exceptionBody,
-        labels: [],
-        risk: 'xhigh',
-        runtimePaths: ['src/runtime.ts']
-      }).reasons
-    ).toContain('An exception requires the `flag-exempt` label.')
-    expect(
-      evaluatePolicy({
-        body: exceptionBody,
+        body: '',
         labels: ['flag-exempt'],
         risk: 'xhigh',
         runtimePaths: ['src/runtime.ts']
       }).verdict
     ).toBe('pass')
+  })
 
+  it('infers a registered default-off flag', () => {
     expect(
-      evaluatePolicy({
-        body: exceptionBody.replace(
-          'Validation link and rollback steps.',
-          'n/a'
-        ),
-        labels: ['flag-exempt'],
-        risk: 'xhigh',
-        runtimePaths: ['src/runtime.ts']
-      }).reasons
-    ).toContain('`Exception evidence` must include validation and rollback.')
+      evaluatePolicy({ ...runtimeInput, body: blankBody, patches: [safePatch] })
+    ).toMatchObject({
+      verdict: 'pass',
+      requiresAi: true,
+      flag: 'safe_feature',
+      flagOrigin: 'existing',
+      flagDiscovery: 'inferred'
+    })
+  })
+
+  it('accepts an explicit registered default-off flag', () => {
+    expect(
+      evaluatePolicy({ ...runtimeInput, body: declaredBody, patches: [] })
+    ).toMatchObject({
+      verdict: 'pass',
+      requiresAi: true,
+      flag: 'safe_feature',
+      flagDiscovery: 'declared'
+    })
+  })
+
+  it('asks the author only when no single flag can be identified', () => {
+    expect(
+      evaluatePolicy({ ...runtimeInput, body: blankBody, patches: [] })
+    ).toMatchObject({ verdict: 'inconclusive', requiresAi: true })
+  })
+
+  it('rejects an explicit flag without a fail-closed registration', () => {
+    const result = evaluatePolicy({
+      ...runtimeInput,
+      body: declaredBody.replace('safe_feature', 'invented_flag'),
+      patches: []
+    })
+    expect(result.verdict).toBe('fail')
+    expect(result.reasons).toContain(
+      'Flag `invented_flag` is not registered with a fail-closed default.'
+    )
   })
 })

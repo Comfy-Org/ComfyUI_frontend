@@ -17,45 +17,25 @@ interface PullFile {
   patch?: string
 }
 
-interface PolicyFields {
-  cloudRuntimeChange: string
-  flag: string
-  flagSource: string
-  defaultOffEvidence: string
-  productionOffEvidence: string
-  offBehavior: string
-  offTest: string
-  exception: string
-  exceptionEvidence: string
-}
-
 export interface PolicyInput {
   body: string
   labels: string[]
   risk: RiskTier | null
   runtimePaths: string[]
   registrySource?: string
-  evidenceSource?: string
-  testPathExists?: boolean
+  baseRegistrySource?: string
+  patches?: string[]
 }
 
 export interface PolicyResult {
   verdict: 'pass' | 'fail' | 'inconclusive'
   requiresAi: boolean
   reasons: string[]
+  flag?: string
+  flagOrigin?: 'new' | 'existing'
+  flagDiscovery?: 'declared' | 'inferred'
 }
 
-const FIELD_NAMES = [
-  'Cloud runtime change',
-  'Flag',
-  'Flag source',
-  'Default-OFF code evidence',
-  'Production-OFF evidence',
-  'Flag-OFF behavior',
-  'Flag-OFF test',
-  'Exception',
-  'Exception evidence'
-] as const
 const EXEMPT_CLASSES = new Set([
   'risk-map',
   'codeowners',
@@ -68,32 +48,15 @@ const EXEMPT_CLASSES = new Set([
   'storybook',
   'tests'
 ])
-const EXCEPTION_REASONS = new Set([
-  'ci',
-  'codeowners',
-  'dependency',
-  'release',
-  'backport',
-  'revert',
-  'risk-map',
-  'flag-rollout',
-  'test-only',
-  'non-cloud',
-  'contract'
-])
 const PLACEHOLDERS = new Set([
   'key',
+  'auto',
   'n/a',
   'na',
   'none',
   'not applicable',
   'tbd',
-  'todo',
-  'url',
-  'path:line',
-  'path:test',
-  'description',
-  'validation and rollback plan'
+  'todo'
 ])
 
 function clean(value: string): string {
@@ -109,43 +72,54 @@ function isFilled(value: string): boolean {
   )
 }
 
-export function parsePolicyFields(body: string): {
-  fields: PolicyFields | null
+export function parseDeclaredFlag(body: string): {
+  flag: string | null
   errors: string[]
 } {
   const heading = /^## Feature flag\s*$/im.exec(body)
-  if (!heading)
-    return { fields: null, errors: ['Missing `## Feature flag` section.'] }
+  if (!heading) return { flag: null, errors: [] }
 
   const rest = body.slice(heading.index + heading[0].length)
   const section = rest.slice(0, /^## /m.exec(rest)?.index)
-  const entries = [...section.matchAll(/^- \*\*([^*]+)\*\*:\s*(.+?)\s*$/gm)]
-    .filter((match) =>
-      FIELD_NAMES.includes(match[1] as (typeof FIELD_NAMES)[number])
-    )
-    .map((match) => [match[1], clean(match[2])])
-  const values = new Map(entries)
-  const errors = FIELD_NAMES.filter((name) => !values.has(name)).map(
-    (name) => `Missing field: ${name}.`
-  )
-  if (values.size !== entries.length)
-    errors.push('Policy fields must be unique.')
-  if (errors.length > 0) return { fields: null, errors }
+  const values = [
+    ...section.matchAll(/^- \*\*Flag\*\*:[ \t]*(.*?)[ \t]*$/gm)
+  ].map((match) => clean(match[1]))
+  if (values.length > 1)
+    return { flag: null, errors: ['The `Flag` field must be unique.'] }
 
-  return {
-    fields: {
-      cloudRuntimeChange: values.get('Cloud runtime change')!,
-      flag: values.get('Flag')!,
-      flagSource: values.get('Flag source')!,
-      defaultOffEvidence: values.get('Default-OFF code evidence')!,
-      productionOffEvidence: values.get('Production-OFF evidence')!,
-      offBehavior: values.get('Flag-OFF behavior')!,
-      offTest: values.get('Flag-OFF test')!,
-      exception: values.get('Exception')!,
-      exceptionEvidence: values.get('Exception evidence')!
-    },
-    errors: []
-  }
+  const value = values[0] ?? ''
+  return { flag: isFilled(value) ? value : null, errors: [] }
+}
+
+export function inferFlags(
+  registrySource: string,
+  patches: string[]
+): string[] {
+  const registry = new Map(
+    [
+      ...registrySource.matchAll(/([A-Z][A-Z0-9_]*)\s*=\s*['"]([^'"]+)['"]/g)
+    ].map((match) => [match[1], match[2]] as const)
+  )
+  const added = patches
+    .flatMap((patch) => patch.split('\n'))
+    .filter((line) => line.startsWith('+') && !line.startsWith('+++'))
+    .join('\n')
+  const members = [
+    ...added.matchAll(/ServerFeatureFlag\.([A-Z][A-Z0-9_]*)/g)
+  ].map((match) => match[1])
+  const registered = [
+    ...added.matchAll(/([A-Z][A-Z0-9_]*)\s*=\s*['"]([^'"]+)['"]/g)
+  ]
+    .filter((match) => registry.get(match[1]) === match[2])
+    .map((match) => match[1])
+
+  return [
+    ...new Set(
+      [...members, ...registered]
+        .map((member) => registry.get(member))
+        .filter((flag): flag is string => Boolean(flag))
+    )
+  ]
 }
 
 export function runtimePathsFor(
@@ -172,15 +146,14 @@ function escapeRegExp(value: string): string {
 
 export function hasFailClosedDefault(
   flag: string,
-  registrySource: string,
-  evidenceSource: string
+  registrySource: string
 ): boolean {
   const member = new RegExp(
     `([A-Z][A-Z0-9_]*)\\s*=\\s*['"]${escapeRegExp(flag)}['"]`
   ).exec(registrySource)?.[1]
   if (!member) return false
 
-  const source = `${registrySource}\n${evidenceSource}`.replace(/\s+/g, ' ')
+  const source = registrySource.replace(/\s+/g, ' ')
   const key = `ServerFeatureFlag\\.${member}`
   const off = `(?:false|'off'|"off"|''|"")`
   return [
@@ -211,81 +184,66 @@ export function evaluatePolicy(input: PolicyInput): PolicyResult {
       reasons: ['All changed paths are mechanically outside runtime scope.']
     }
 
-  const parsed = parsePolicyFields(input.body)
-  if (!parsed.fields)
-    return { verdict: 'fail', requiresAi: false, reasons: parsed.errors }
-  const fields = parsed.fields
-
-  if (input.labels.includes('flag-exempt')) {
-    const errors: string[] = []
-    if (!EXCEPTION_REASONS.has(fields.exception))
-      errors.push('`Exception` must name an allowed reason.')
-    if (!isFilled(fields.exceptionEvidence))
-      errors.push('`Exception evidence` must include validation and rollback.')
+  if (input.labels.includes('flag-exempt'))
     return {
-      verdict: errors.length ? 'fail' : 'pass',
+      verdict: 'pass',
       requiresAi: false,
-      reasons: errors.length
-        ? errors
-        : [`Approved flag exception: ${fields.exception}.`]
+      reasons: [
+        '`flag-exempt` is present; validation and rollback remain reviewer-owned.'
+      ]
     }
-  }
 
-  const errors: string[] = []
-  if (fields.exception !== 'none')
-    errors.push('An exception requires the `flag-exempt` label.')
-  if (fields.cloudRuntimeChange !== 'yes')
-    errors.push('In-scope paths require `Cloud runtime change: yes`.')
-  if (!isFilled(fields.flag)) errors.push('`Flag` must name the rollout key.')
-  if (!['new', 'existing'].includes(fields.flagSource))
-    errors.push('`Flag source` must be `new` or `existing`.')
-  if (!isFilled(fields.defaultOffEvidence))
-    errors.push('`Default-OFF code evidence` is required.')
-  if (!fields.productionOffEvidence.startsWith('https://'))
-    errors.push('`Production-OFF evidence` must be an HTTPS URL.')
-  if (!isFilled(fields.offBehavior))
-    errors.push('`Flag-OFF behavior` must describe the unchanged path.')
-  if (!isFilled(fields.offTest))
-    errors.push('`Flag-OFF test` must identify an automated test.')
-  else if (!isTestPath(fields.offTest))
-    errors.push('`Flag-OFF test` must reference a test file.')
+  const declared = parseDeclaredFlag(input.body)
+  if (declared.errors.length)
+    return { verdict: 'fail', requiresAi: false, reasons: declared.errors }
+
+  const inferred = input.registrySource
+    ? inferFlags(input.registrySource, input.patches ?? [])
+    : []
+  const flag = declared.flag ?? (inferred.length === 1 ? inferred[0] : null)
+  if (!flag)
+    return {
+      verdict: 'inconclusive',
+      requiresAi: true,
+      reasons: [
+        inferred.length > 1
+          ? 'Multiple flags were found; the author must set `Flag`.'
+          : 'No flag was found; the author must set `Flag` if review cannot infer it.'
+      ]
+    }
+
   if (
-    isFilled(fields.flag) &&
-    (!input.registrySource ||
-      !input.evidenceSource ||
-      !hasFailClosedDefault(
-        fields.flag,
-        input.registrySource,
-        input.evidenceSource
-      ))
+    !input.registrySource ||
+    !hasFailClosedDefault(flag, input.registrySource)
   )
-    errors.push('The named flag is not registered with a fail-closed default.')
-  if (input.testPathExists === false)
-    errors.push('The referenced OFF-path test does not exist.')
+    return {
+      verdict: 'fail',
+      requiresAi: false,
+      reasons: [
+        `Flag \`${flag}\` is not registered with a fail-closed default.`
+      ],
+      flag
+    }
+
+  const flagOrigin =
+    input.baseRegistrySource &&
+    new RegExp(`=\\s*['"]${escapeRegExp(flag)}['"]`).test(
+      input.baseRegistrySource
+    )
+      ? 'existing'
+      : 'new'
+  const flagDiscovery = declared.flag ? 'declared' : 'inferred'
 
   return {
-    verdict: errors.length ? 'fail' : 'pass',
-    requiresAi: errors.length === 0,
-    reasons: errors.length
-      ? errors
-      : ['Deterministic flag and evidence checks passed.']
+    verdict: 'pass',
+    requiresAi: true,
+    reasons: [
+      `Flag \`${flag}\` was ${flagDiscovery}, is ${flagOrigin}, and defaults OFF in code.`
+    ],
+    flag,
+    flagOrigin,
+    flagDiscovery
   }
-}
-
-function evidencePath(value: string): string | null {
-  const filePath = /^([^#]+?\.(?:ts|tsx|vue))(?::|#|$)/.exec(value)?.[1]
-  return filePath && !filePath.startsWith('/') && !filePath.includes('..')
-    ? filePath
-    : null
-}
-
-function isTestPath(value: string): boolean {
-  const filePath = evidencePath(value)
-  return Boolean(
-    filePath &&
-    (/\.(?:test|spec)\.tsx?$/.test(filePath) ||
-      filePath.startsWith('browser_tests/'))
-  )
 }
 
 function gh(args: string[], input?: string): string {
@@ -304,16 +262,6 @@ function repoFile(repo: string, ref: string, filePath: string): string {
     'Accept: application/vnd.github.raw+json',
     `repos/${repo}/contents/${encoded}?ref=${encodeURIComponent(ref)}`
   ])
-}
-
-function maybeRepoFile(repo: string, ref: string, value: string) {
-  const filePath = evidencePath(value)
-  if (!filePath) return undefined
-  try {
-    return repoFile(repo, ref, filePath)
-  } catch {
-    return undefined
-  }
 }
 
 export function riskFromLabels(labels: string[]): RiskTier | null | 'conflict' {
@@ -414,30 +362,33 @@ function main() {
     repoFile(repo, pull.base.sha, '.github/risk.json')
   ) as RiskMap
   const runtimePaths = runtimePathsFor(files, riskMap)
-  const fields = parsePolicyFields(pull.body ?? '').fields
-  const needsEvidence =
+  const needsReview =
     (risk === 'high' || risk === 'xhigh') &&
     runtimePaths.length > 0 &&
     !labels.includes('flag-exempt')
-  const registrySource = needsEvidence
+  const registrySource = needsReview
     ? repoFile(repo, pull.head.sha, 'src/composables/useFeatureFlags.ts')
     : undefined
-  const evidenceSource =
-    needsEvidence && fields
-      ? maybeRepoFile(repo, pull.head.sha, fields.defaultOffEvidence)
-      : undefined
-  const testSource =
-    needsEvidence && fields
-      ? maybeRepoFile(repo, pull.head.sha, fields.offTest)
-      : undefined
+  const baseRegistrySource = needsReview
+    ? repoFile(repo, pull.base.sha, 'src/composables/useFeatureFlags.ts')
+    : undefined
+  const runtimePathSet = new Set(runtimePaths)
+  const patches = files
+    .filter(
+      (file) =>
+        runtimePathSet.has(file.filename) ||
+        (file.previous_filename && runtimePathSet.has(file.previous_filename))
+    )
+    .map(({ patch }) => patch)
+    .filter((patch): patch is string => patch !== undefined)
   const result = evaluatePolicy({
     body: pull.body ?? '',
     labels,
     risk,
     runtimePaths,
     registrySource,
-    evidenceSource,
-    testPathExists: fields ? testSource !== undefined : false
+    baseRegistrySource,
+    patches
   })
   if (disputed === 'conflict') {
     result.verdict = 'inconclusive'
