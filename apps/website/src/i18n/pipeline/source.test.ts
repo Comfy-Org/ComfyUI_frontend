@@ -126,6 +126,36 @@ describe('translatableEntries', () => {
       'privacyBanner.accept'
     ])
   })
+
+  /**
+   * Pages that are structured but deliberately not sent to the model: a one-off
+   * launch page, and a page whose own description calls it temporary. Extracting
+   * their copy makes them locale-generic like every other page; translating them
+   * would spend money and reviewer time on copy nobody asked to see in another
+   * language.
+   */
+  it.for([
+    'pixal3dTrellis2.meta.title',
+    'platform.serverlessAnimation.meta.description'
+  ])('excludes a page opted out of translation: %s', (key) => {
+    const kept = translatableEntries([{ key, english: 'x', approved: {} }])
+    expect(kept).toEqual([])
+  })
+
+  it('opts out only the named page, not the section around it', () => {
+    // `platform` carries the marketing section's keys and must survive; only
+    // `platform.serverlessAnimation` opted out. Matching on a raw prefix rather
+    // than on segment boundaries would also swallow a sibling whose name merely
+    // starts the same way.
+    const kept = translatableEntries([
+      { key: 'platform.hero.title', english: 'x', approved: {} },
+      { key: 'platform.serverlessAnimationStudy.x', english: 'x', approved: {} }
+    ])
+    expect(kept.map((entry) => entry.key)).toEqual([
+      'platform.hero.title',
+      'platform.serverlessAnimationStudy.x'
+    ])
+  })
 })
 
 describe('pendingSource', () => {

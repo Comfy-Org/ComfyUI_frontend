@@ -4,6 +4,7 @@ import {
   DEFAULT_LOCALE,
   LOCALE_CODES,
   LOCALES,
+  isPageIndexable,
   localeHasRoute,
   localePrefix
 } from './locales'
@@ -38,6 +39,32 @@ describe('LOCALES', () => {
       // Open Graph wants language_TERRITORY, not the BCP 47 tag.
       expect(locale.ogLocale, code).toMatch(/^[a-z]{2}_[A-Z]{2}$/)
     }
+  })
+})
+
+describe('isPageIndexable', () => {
+  /**
+   * The single predicate every surface reads: the page's hreflang tags, the
+   * sitemap, the canonical and the build assert. They cannot disagree because
+   * there is only one answer, and it is knowable before a page renders.
+   */
+  it('always allows English, which is the source', () => {
+    expect(isPageIndexable('en', '/')).toBe(true)
+    expect(isPageIndexable('en', '/anything')).toBe(true)
+  })
+
+  it('allows a localized page the locale actually serves', () => {
+    expect(isPageIndexable('zh-CN', '/cli')).toBe(true)
+    expect(isPageIndexable('ja', '/')).toBe(true)
+  })
+
+  /**
+   * Indexability can never exceed existence. Advertising a page that was never
+   * built is the 404-in-a-cluster defect Phase 0 fixed.
+   */
+  it('never allows a page the locale does not serve', () => {
+    expect(isPageIndexable('ja', '/cli')).toBe(false)
+    expect(isPageIndexable('ja', '/pricing')).toBe(false)
   })
 })
 

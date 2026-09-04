@@ -19,6 +19,12 @@
     "cloud-nodes:refresh-snapshot": "tsx ./scripts/refresh-cloud-nodes-snapshot.ts",
     "generate:models": "tsx ./scripts/generate-models.ts",
     "i18n:build-source": "tsx ./scripts/i18n/build-content-source.ts",
+    "i18n:build-resolved": "tsx ./scripts/i18n/build-resolved.ts",
+    "i18n:validate": "tsx ./scripts/i18n/validate-translations.ts",
+    "i18n:translate": "tsx ./scripts/i18n/translate-pending.ts",
+    "i18n:enforce": "tsx ./scripts/i18n/enforce-translations.ts",
+    "i18n:report": "tsx ./scripts/i18n/report-coverage.ts",
+    "i18n:check-config": "tsx ./scripts/i18n/check-config.ts",
     "validate:jsonld": "tsx ./scripts/validate-jsonld.ts",
     "check:hreflang": "tsx ./scripts/check-hreflang.ts",
     "validate:llms-txt-links": "tsx ./scripts/validate-llms-txt-links.ts"

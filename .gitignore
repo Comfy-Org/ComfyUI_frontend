@@ -119,3 +119,7 @@ matrix-proof/
 # the approved and machine layers on every run, so committing it would churn a
 # 2,000-key file for no information. Regenerate with `pnpm i18n:build-source`.
 apps/website/src/i18n/pending/
+
+# Staged raw model output, before review and enforcement. Only what passes
+# both reaches src/i18n/content, so this is a scratch area, not a source.
+apps/website/src/i18n/incoming/

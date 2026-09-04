@@ -124,3 +124,38 @@ export function localeHasRoute(locale: Locale, route: string): boolean {
   const served = PARTIAL_LOCALE_ROUTES[locale]
   return served === undefined || served.has(route)
 }
+
+/**
+ * Which localized pages may be indexed.
+ *
+ * Deliberately an explicit list rather than something computed from how much of
+ * a page is translated. Completeness is only known after a page renders, but its
+ * hreflang tags are written before that, so a computed gate would let the tags
+ * and the sitemap disagree, which is the defect Phase 0 fixed. An allowlist is
+ * known up front, so every surface reads the same answer.
+ *
+ * It also matches how the hub works: a locale goes live in its own small,
+ * reviewed change rather than by a heuristic deciding on someone's behalf.
+ *
+ * `pnpm i18n:report` says which namespaces are complete enough to add here.
+ */
+const INDEXABLE_PAGES: Record<
+  Exclude<Locale, typeof DEFAULT_LOCALE>,
+  'all' | ReadonlySet<string>
+> = {
+  // Complete and human-approved, so every page it serves is fair game.
+  'zh-CN': 'all',
+  // Japanese has one page today and it is already indexed; whether a
+  // 94%-English page should stay that way was deferred to P4, so this holds the
+  // current behaviour rather than silently changing it. When P3 generates the
+  // shells this narrows to the tier-1 pages the plan wants launched first.
+  ja: 'all'
+}
+
+/** Whether `route` may be indexed in `locale`. English is always indexable. */
+export function isPageIndexable(locale: Locale, route: string): boolean {
+  if (locale === DEFAULT_LOCALE) return true
+  if (!localeHasRoute(locale, route)) return false
+  const allowed = INDEXABLE_PAGES[locale]
+  return allowed === 'all' || allowed.has(route)
+}

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { resolveTranslation, t } from './translations'
+import { resolveTranslation } from './source'
+import { t } from './translations'
 
 describe('t() fallback semantics', () => {
   it('returns Japanese copy when it exists', () => {

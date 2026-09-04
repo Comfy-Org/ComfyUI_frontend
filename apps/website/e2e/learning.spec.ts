@@ -381,8 +381,11 @@ test.describe('Learning tutorial page @smoke', () => {
     const zhPath = `/zh-CN${tutorialPath(firstTutorial)}`
     await page.goto(zhPath)
     await expect(page).toHaveTitle(tutorialMetaTitle(firstTutorial, 'zh-CN'))
+    // Resolved the way the page resolves it. Chinese is optional on the type
+    // now, so completeness is the coverage report's job, not this test's; this
+    // asserts the heading matches whatever the resolver produced.
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      firstTutorial.title['zh-CN']
+      firstTutorial.title['zh-CN'] ?? firstTutorial.title.en
     )
   })
 })
@@ -445,7 +448,10 @@ test.describe('Learning page (zh-CN) @smoke', () => {
     const [firstTutorial] = learningTutorials
     await expect(
       page.getByRole('link', {
-        name: thumbnailLinkName(firstTutorial.title['zh-CN'], 'zh-CN')
+        name: thumbnailLinkName(
+          firstTutorial.title['zh-CN'] ?? firstTutorial.title.en,
+          'zh-CN'
+        )
       })
     ).toBeVisible()
   })

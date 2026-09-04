@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { localizedEntry } from '../../source'
 import { translationKeys } from '../../translations'
 import { approvedLayer } from '../source'
 import { translationsAdapter } from './translations'
@@ -35,13 +36,23 @@ describe('translationsAdapter', () => {
   })
 
   /**
-   * Chinese is complete today, and that is the fact the whole zero-diff promise
-   * rests on: if the adapter reported any of these as missing, the model would
-   * translate over approved work.
+   * The zero-diff promise: if the adapter reported an existing Chinese string as
+   * missing, the model would translate over approved work.
+   *
+   * Checked against `source.ts` directly rather than against a key total. This
+   * used to assert Chinese covered every key, which held only while Chinese was
+   * at 100%; P3-3 added English-only pages (the 404 and the Enterprise pages),
+   * so a count assertion now fails for a reason that is not a defect. What must
+   * never happen is a Chinese string existing in the source and not reaching the
+   * approved layer, and that is what this asserts.
    */
-  it('treats the existing Chinese as approved, for every key', () => {
+  it('reports every Chinese string the source holds, and no other key', () => {
     const approved = approvedLayer(entries, 'zh-CN')
-    expect(Object.keys(approved)).toHaveLength(translationKeys.length)
+    const inSource = translationKeys.filter(
+      (key) => localizedEntry(key)['zh-CN'] !== undefined
+    )
+
+    expect(Object.keys(approved).sort()).toEqual([...inSource].sort())
   })
 
   it('reports Japanese only where a person actually wrote it', () => {

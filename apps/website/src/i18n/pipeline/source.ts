@@ -47,10 +47,36 @@ const NEVER_TRANSLATED_NAMESPACES: ReadonlySet<string> = new Set([
   'minimaxLicense'
 ])
 
+/**
+ * Individual pages opted out of machine translation.
+ *
+ * Separate from the list above because the reason is different, and the two
+ * should be reviewable apart: these are not contracts, just pages nobody asked
+ * to read in another language — a one-off launch page, and a page whose own
+ * description calls itself temporary. Their copy is still extracted, so they
+ * stay locale-generic like every other page; they are simply never sent to the
+ * model.
+ *
+ * Matched on whole segments, so `platform.serverlessAnimation` opts out one page
+ * without touching the `platform` section around it.
+ */
+const PAGES_OPTED_OUT: readonly string[] = [
+  'pixal3dTrellis2',
+  'platform.serverlessAnimation'
+]
+
+function isOptedOut(key: string): boolean {
+  return PAGES_OPTED_OUT.some(
+    (page) => key === page || key.startsWith(`${page}.`)
+  )
+}
+
 /** The entries the pipeline is allowed to translate. */
 export function translatableEntries(entries: SourceEntry[]): SourceEntry[] {
   return entries.filter(
-    (entry) => !NEVER_TRANSLATED_NAMESPACES.has(entry.key.split('.')[0])
+    (entry) =>
+      !NEVER_TRANSLATED_NAMESPACES.has(entry.key.split('.')[0]) &&
+      !isOptedOut(entry.key)
   )
 }
 

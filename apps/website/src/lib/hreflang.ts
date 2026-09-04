@@ -3,7 +3,7 @@ import {
   LOCALE_CODES,
   LOCALE_PREFIXES,
   LOCALES,
-  localeHasRoute,
+  isPageIndexable,
   localePrefix,
   isLocale,
   type Locale
@@ -55,11 +55,12 @@ export function hreflangAlternates(
   const twin = (locale: Locale) =>
     new URL(withSlash(`${localePrefix(locale)}${en === '/' ? '' : en}`), origin)
       .href
-  // One entry per locale that actually serves this route. `localeHasRoute` is
-  // the same predicate `localizeHref` uses, so a cluster and a nav link can no
-  // longer disagree about whether a localized page exists.
+  // `isPageIndexable` is the single predicate: it already asks whether the
+  // locale serves this route, and additionally whether that page is allowed to
+  // be indexed. Both the page tags and the sitemap read it, so they cannot
+  // disagree about a cluster.
   const alternates: Alternate[] = LOCALE_CODES.filter((locale) =>
-    localeHasRoute(locale, en)
+    isPageIndexable(locale, en)
   ).map((locale) => ({
     hreflang: LOCALES[locale].hreflang as Locale,
     href: locale === DEFAULT_LOCALE ? enHref : twin(locale)

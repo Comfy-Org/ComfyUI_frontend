@@ -7,7 +7,7 @@
  */
 import { DEFAULT_LOCALE, LOCALE_CODES } from '../../../config/locales'
 import type { Locale } from '../../../config/locales'
-import { localizedEntry, translationKeys } from '../../translations'
+import { localizedEntry, translationKeys } from '../../source'
 import type { SourceAdapter, SourceEntry } from '../types'
 
 export const translationsAdapter: SourceAdapter = {
