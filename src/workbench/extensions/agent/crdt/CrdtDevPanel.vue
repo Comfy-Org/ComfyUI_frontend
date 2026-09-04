@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useClipboard } from '@vueuse/core'
+import { useClipboard, useEventListener } from '@vueuse/core'
 import {
   computed,
   nextTick,
@@ -218,8 +218,16 @@ function setOpen(value: boolean) {
   } catch {
     // Storage unavailable — the panel still toggles in-memory.
   }
-  void nextTick(() => (value ? closeButton.value : chipButton.value)?.focus())
 }
+
+function onDocumentKeydown(event: KeyboardEvent): void {
+  if (!open.value || event.key !== 'Escape') return
+  event.stopPropagation()
+  if (event.target instanceof HTMLSelectElement) return
+  setOpen(false)
+}
+
+useEventListener(document, 'keydown', onDocumentKeydown)
 
 // ── live document facts ───────────────────────────────────────────────────
 const docState = shallowRef<CrdtDebugSnapshot | null>(null)
@@ -243,6 +251,21 @@ onBeforeUnmount(() => {
   clearTimeout(reportCopyReset)
 })
 
+watch(
+  open,
+  (value) => {
+    const control = value ? closeButton.value : chipButton.value
+    control?.focus()
+  },
+  { flush: 'post' }
+)
+watch(
+  closeButton,
+  (button) => {
+    if (open.value) button?.focus()
+  },
+  { flush: 'post' }
+)
 watch(tab, poll)
 
 const docRows = computed<readonly (readonly [string, string])[]>(() => {
@@ -587,7 +610,6 @@ function fmtTime(at: number): string {
       v-else
       class="bg-agent-surface border-agent-border text-agent-fg flex min-h-0 grow flex-col overflow-hidden border-y"
       data-testid="crdt-dev-panel"
-      @keydown.esc="setOpen(false)"
     >
       <header
         class="border-agent-border flex h-8 shrink-0 items-center gap-2 border-b px-2"
