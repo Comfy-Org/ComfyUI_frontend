@@ -39,7 +39,7 @@ Preferred glossary: node = צומת (plural צמתים), workflow = תהליך �
 Keep widely-recognized technical terms in English (Latin script): API, GPU, CUDA, VAE, CLIP, LoRA, ControlNet, Civitai, Hugging Face, Nodes 2.0, etc.`
 
 const hindiGuidance = `Use formal Hindi written in Devanagari script throughout the UI.
-Keep widely-recognized technical terms in English when they are standard in software UX (for example: node, workflow, prompt, queue, canvas, widget, subgraph, API, GPU, VAE, CLIP, LoRA, ControlNet).
+Keep widely-recognized technical terms in English when they are standard in software UX, including plural or inflected forms (for example: node, workflow, prompt, queue, canvas, widget, subgraph, API, GPU, VAE, CLIP, LoRA, ControlNet).
 Prefer concise, natural UI phrasing and avoid mixing Devanagari with Latin script unless the English term is standard terminology.`
 
 const germanGuidance = `Use formal German (Sie-Form) consistently for a professional tone throughout the UI. Never mix Sie and du.
