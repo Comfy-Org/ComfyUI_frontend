@@ -37,6 +37,12 @@ export class AgentCrdtProjection {
     return applied
   }
 
+  /**
+   * Empties the stores for a lineage break and sweeps the live graph in the
+   * same step. The adapter's clear is store-only, but the live adapters are
+   * what a save serialises: without the sweep the pre-reset nodes survive,
+   * and can be written back, until some later frame happens to arrive.
+   */
   clearForReset(workflowId: string, context: RemoteMutationContext): boolean {
     const cleared = this.adapter.clearForReset(workflowId, context)
     this.reconcileLiveGraph(workflowId)
