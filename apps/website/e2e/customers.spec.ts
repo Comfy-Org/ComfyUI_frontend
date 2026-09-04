@@ -43,7 +43,9 @@ test.describe('Customers @smoke', () => {
   test('the WATCH group links each video story to its dedicated watch page', async ({
     page
   }) => {
-    const watchHeading = page.getByText(t('customers.group.watch', 'en'))
+    const watchHeading = page.getByText(t('customers.group.watch', 'en'), {
+      exact: true
+    })
     await expect(watchHeading).toBeVisible()
 
     for (const story of customerVideoStories) {
@@ -57,7 +59,9 @@ test.describe('Customers @smoke', () => {
   test('shows a READ group heading above the written stories', async ({
     page
   }) => {
-    await expect(page.getByText(t('customers.group.read', 'en'))).toBeVisible()
+    await expect(
+      page.getByText(t('customers.group.read', 'en'), { exact: true })
+    ).toBeVisible()
   })
 
   test('hero image declares intrinsic dimensions so layout reserves space before load', async ({
