@@ -147,7 +147,8 @@ export function useAgentCrdtFollower(
   workflowId: Ref<string | null>,
   graphMutations: MutationsForTarget,
   userId: () => string | null = () => null,
-  isTargetActive: Ref<boolean> = ref(true)
+  isTargetActive: Ref<boolean> = ref(true),
+  frameTransport: DocFrameTransport = apiTransport
 ) {
   const connected = ref(false)
   const updatesApplied = ref(0)
@@ -159,7 +160,7 @@ export function useAgentCrdtFollower(
   // never-throw contract is covered by tests.
   const transport: DocFrameTransport = {
     send(frame) {
-      const delivered = apiTransport.send(frame)
+      const delivered = frameTransport.send(frame)
       let parsed: unknown = frame
       try {
         parsed = JSON.parse(frame)
@@ -170,10 +171,10 @@ export function useAgentCrdtFollower(
       return delivered
     },
     addEventListener(type, listener) {
-      apiTransport.addEventListener(type, listener)
+      frameTransport.addEventListener(type, listener)
     },
     removeEventListener(type, listener) {
-      apiTransport.removeEventListener(type, listener)
+      frameTransport.removeEventListener(type, listener)
     }
   }
   const client = new DocFrameClient(transport)

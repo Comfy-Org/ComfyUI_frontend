@@ -81,6 +81,7 @@ import { createAgentRestClient } from './services/agent/agentRestClient'
 import type { OpenTabsSnapshot } from './services/agent/agentRestClient'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { createStandaloneAgentEventSource } from './services/agent/standaloneAgentEventSource'
+import { createStandaloneAgentDocTransport } from './crdt/standaloneAgentDocTransport'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import CrdtDevPanel from './crdt/CrdtDevPanel.vue'
@@ -103,6 +104,10 @@ const events =
   import.meta.env.VITE_AGENT_STANDALONE === 'true'
     ? createStandaloneAgentEventSource()
     : createAgentEventSource(api)
+const standaloneDocTransport =
+  import.meta.env.VITE_AGENT_STANDALONE === 'true'
+    ? createStandaloneAgentDocTransport()
+    : undefined
 
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
@@ -396,8 +401,12 @@ const isBoundWorkflowActive = computed(() => {
 const { status: crdtStatus, enqueueHumanOperations } = useAgentCrdtFollower(
   boundWorkflowId,
   graphMutations,
-  () => resolvedUserInfo.value?.id ?? null,
-  isBoundWorkflowActive
+  () =>
+    import.meta.env.VITE_AGENT_STANDALONE === 'true'
+      ? 'local-user'
+      : (resolvedUserInfo.value?.id ?? null),
+  isBoundWorkflowActive,
+  standaloneDocTransport
 )
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,
