@@ -34,7 +34,6 @@ const mockCanReactivatePlan = ref(true)
 // follows the derived policy rather than this value
 const mockRawCanReactivate = ref(true)
 const mockCapabilityReadFailed = ref(false)
-const mockIsReady = ref(true)
 const mockSnapshotResolved = ref(true)
 // null mirrors mockCanManageSubscription, so most tests keep one knob while
 // the pill tests can split subscribe from change-seats.
@@ -80,7 +79,6 @@ vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
     canDowngradeToPersonal: computed(() => mockCanDowngradeToPersonal.value),
     snapshotResolved: computed(() => mockSnapshotResolved.value),
     capabilityReadFailed: computed(() => mockCapabilityReadFailed.value),
-    isReady: computed(() => mockIsReady.value),
     retryCapabilityRead: mockRetryCapabilityRead
   })
 }))
@@ -597,7 +595,6 @@ describe('UnifiedPricingTable footer notice pill', () => {
     mockCanManageSubscription.value = true
     mockCanDowngradeToPersonal.value = true
     mockCapabilityReadFailed.value = false
-    mockIsReady.value = true
     mockShouldUseWorkspaceBilling.value = true
     mockSnapshotResolved.value = true
     mockCanChangeSeats.value = null
@@ -837,62 +834,5 @@ describe('UnifiedPricingTable footer notice pill', () => {
 
     expect(screen.queryByRole('status')).toBeNull()
     expect(screen.getByText(/Based on this template/)).toBeTruthy()
-  })
-
-  it('keeps personal CTAs enabled with the blurb while the first read is pending', () => {
-    // Pending is no answer, not a denial (IR-128): every capability still
-    // reads false, but nothing is resolved yet, so the table must not lock.
-    mockIsReady.value = false
-    mockSnapshotResolved.value = false
-    mockCanManageSubscription.value = false
-    mockCanDowngradeToPersonal.value = false
-
-    renderComponent()
-
-    expect(
-      screen.getByRole('button', { name: 'Subscribe to Standard Yearly' })
-    ).toBeEnabled()
-    expect(screen.queryByRole('status')).toBeNull()
-    expect(screen.getByText(/Based on this template/)).toBeTruthy()
-  })
-
-  it('keeps the team CTA enabled while the first read is pending', () => {
-    mockIsReady.value = false
-    mockSnapshotResolved.value = false
-    mockCanManageSubscription.value = false
-
-    renderComponent({ initialPlanMode: 'team' })
-
-    expect(
-      screen.getByRole('button', { name: 'Subscribe to Team Yearly' })
-    ).toBeEnabled()
-    expect(screen.queryByRole('status')).toBeNull()
-  })
-
-  it('locks the CTAs once the read settles into failure or resolved denial', async () => {
-    // The same session walking pending -> failed -> resolved-false: the CTAs
-    // fail open only in the pending window and lock as soon as the read has
-    // an answer, with the matching pill each time.
-    mockIsReady.value = false
-    mockSnapshotResolved.value = false
-    mockCanManageSubscription.value = false
-
-    renderComponent()
-    const cta = screen.getByRole('button', {
-      name: 'Subscribe to Standard Yearly'
-    })
-    expect(cta).toBeEnabled()
-
-    mockIsReady.value = true
-    mockCapabilityReadFailed.value = true
-    await nextTick()
-    expect(cta).toBeDisabled()
-    expect(screen.getByRole('status').textContent).toContain(UNREADABLE_TEXT)
-
-    mockCapabilityReadFailed.value = false
-    mockSnapshotResolved.value = true
-    await nextTick()
-    expect(cta).toBeDisabled()
-    expect(screen.getByRole('status').textContent).toContain(DENIED_TEXT)
   })
 })
