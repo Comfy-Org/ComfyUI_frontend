@@ -62,7 +62,20 @@ const materializerState = vi.hoisted(() => ({
 // hands whatever it read from the bridge's doc through to the materializer.
 const definitionsState = vi.hoisted(() => ({
   fakeDefinitions: [
-    { id: '11111111-1111-4111-8111-111111111111' } as ExportedSubgraph
+    {
+      id: '11111111-1111-4111-8111-111111111111',
+      name: 'Forwarding fixture',
+      version: 1,
+      revision: 0,
+      state: {
+        lastNodeId: 0,
+        lastLinkId: 0,
+        lastGroupId: 0,
+        lastRerouteId: 0
+      },
+      inputNode: { id: -10, bounding: [0, 0, 75, 100] },
+      outputNode: { id: -20, bounding: [0, 0, 75, 100] }
+    } satisfies ExportedSubgraph
   ],
   readSubgraphDefinitions: vi.fn(() => definitionsState.fakeDefinitions)
 }))

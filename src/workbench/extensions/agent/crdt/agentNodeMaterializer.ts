@@ -91,7 +91,7 @@ function registerSubgraphDefinitions(
   // Filter after flattening: a live nested definition must not be recreated
   // just because its outer is missing, and a missing nested definition must
   // still register when its outer is already live.
-  const missing = flattenDefinitions(definitions).filter(
+  const missing = uniqueDefinitions(flattenDefinitions(definitions)).filter(
     (definition) => !rootGraph.subgraphs.has(definition.id)
   )
   const pending = new Set(missing.map((definition) => definition.id))
@@ -142,11 +142,10 @@ function tryCreateSubgraph(
     withNamedValuesRestore(() => rootGraph.createSubgraph(definition))
     return undefined
   } catch (cause) {
-    // createSubgraph registers the definition before configuring it. Tear the
-    // half-built entry down through the same path node removal uses: a bare
-    // map delete would leave its graph metadata behind, and the Subgraph
-    // constructor remints the id on the next attempt when it finds that
-    // metadata, so the retry would never land under the document's id.
+    // Configuration failed before `subgraph-created` was dispatched, so no
+    // app-owned node type exists. Tear the half-built graph down through the
+    // same path node removal uses: a bare map delete would leave its graph
+    // metadata behind, and the next attempt would remint its id.
     const halfBuilt = rootGraph.subgraphs.get(definition.id)
     if (halfBuilt) {
       try {
@@ -173,6 +172,18 @@ function flattenDefinitions(
     { ...definition, definitions: undefined },
     ...flattenDefinitions(definition.definitions?.subgraphs ?? [])
   ])
+}
+
+/** Keep the first occurrence, matching LiteGraph's definition normalization. */
+function uniqueDefinitions(
+  definitions: ExportedSubgraph[]
+): ExportedSubgraph[] {
+  const seen = new Set<string>()
+  return definitions.filter((definition) => {
+    if (seen.has(definition.id)) return false
+    seen.add(definition.id)
+    return true
+  })
 }
 
 /**
