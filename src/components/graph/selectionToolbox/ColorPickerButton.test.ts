@@ -1,4 +1,4 @@
-import type { Mock } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
@@ -6,67 +6,44 @@ import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-// Import after mocks
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
-import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
-import {
-  ComfyWorkflow,
-  useWorkflowStore
-} from '@/platform/workflow/management/stores/workflowStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { ChangeTracker } from '@/scripts/changeTracker'
-import { defaultGraph } from '@/scripts/defaultGraph'
-import { createMockPositionable } from '@/utils/__tests__/litegraphTestUtils'
+import type { Positionable } from '@/lib/litegraph/src/litegraph'
+import { toGroupId } from '@/types/groupId'
 
-function createMockWorkflow(
-  overrides: Partial<LoadedComfyWorkflow> = {}
-): LoadedComfyWorkflow {
-  const workflow = new ComfyWorkflow({
-    path: 'workflows/color-picker-test.json',
-    modified: 0,
-    size: 0
-  })
-
-  const changeTracker = Object.assign(
-    new ChangeTracker(workflow, structuredClone(defaultGraph)),
-    {
-      captureCanvasState: vi.fn() as Mock
-    }
-  )
-
-  const workflowOverrides = {
-    changeTracker,
-    ...overrides
-  } satisfies Partial<LoadedComfyWorkflow>
-
-  return Object.assign(workflow, workflowOverrides)
+function createMockPositionable(): Positionable {
+  return fromPartial<Positionable>({ id: toGroupId(1), pos: [0, 0] })
 }
 
-// Mock the litegraph module
-vi.mock('@/lib/litegraph/src/litegraph', async () => {
-  const actual = await vi.importActual('@/lib/litegraph/src/litegraph')
-  return {
-    ...actual,
-    LGraphCanvas: {
-      node_colors: {
-        red: { bgcolor: '#ff0000' },
-        green: { bgcolor: '#00ff00' },
-        blue: { bgcolor: '#0000ff' }
-      }
-    },
-    LiteGraph: {
-      NODE_DEFAULT_BGCOLOR: '#353535'
-    },
-    isColorable: vi.fn(() => true)
-  }
-})
+const mockCanvasStore = vi.hoisted<{ selectedItems: Positionable[] }>(() => ({
+  selectedItems: []
+}))
 
-// Mock the colorUtil module
+vi.mock('@/lib/litegraph/src/litegraph', () => ({
+  LGraphCanvas: {
+    node_colors: {
+      red: { bgcolor: '#ff0000' },
+      green: { bgcolor: '#00ff00' },
+      blue: { bgcolor: '#0000ff' }
+    }
+  },
+  LiteGraph: {
+    NODE_DEFAULT_BGCOLOR: '#353535'
+  },
+  isColorable: vi.fn(() => true)
+}))
+
+vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
+  useWorkflowStore: () => ({ activeWorkflow: null })
+}))
+
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+  useCanvasStore: () => mockCanvasStore
+}))
+
 vi.mock('@/utils/colorUtil', () => ({
   adjustColor: vi.fn((color: string) => color + '_light')
 }))
 
-// Mock the litegraphUtil module
 vi.mock('@/utils/litegraphUtil', () => ({
   getItemsColorOption: vi.fn(() => null),
   isLGraphNode: vi.fn((item) => item?.type === 'LGraphNode'),
@@ -75,9 +52,6 @@ vi.mock('@/utils/litegraphUtil', () => ({
 }))
 
 describe('ColorPickerButton', () => {
-  let canvasStore: ReturnType<typeof useCanvasStore>
-  let workflowStore: ReturnType<typeof useWorkflowStore>
-
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
@@ -94,14 +68,7 @@ describe('ColorPickerButton', () => {
   })
 
   beforeEach(() => {
-    canvasStore = useCanvasStore()
-    workflowStore = useWorkflowStore()
-
-    // Set up default store state
-    canvasStore.selectedItems = []
-
-    // Mock workflow store
-    workflowStore.activeWorkflow = createMockWorkflow()
+    mockCanvasStore.selectedItems = []
   })
 
   function renderComponent() {
@@ -120,13 +87,13 @@ describe('ColorPickerButton', () => {
   }
 
   it('should render when nodes are selected', () => {
-    canvasStore.selectedItems = [createMockPositionable()]
+    mockCanvasStore.selectedItems = [createMockPositionable()]
     renderComponent()
     expect(screen.getByTestId('color-picker-button')).toBeInTheDocument()
   })
 
   it('should toggle color picker visibility on button click', async () => {
-    canvasStore.selectedItems = [createMockPositionable()]
+    mockCanvasStore.selectedItems = [createMockPositionable()]
     const { user } = renderComponent()
     const button = screen.getByTestId('color-picker-button')
 

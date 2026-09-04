@@ -4,16 +4,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 
-vi.mock('@/lib/litegraph/src/litegraph', async (importOriginal) => {
-  const actual = await importOriginal<Record<string, unknown>>()
-  return {
-    ...actual,
-    LiteGraph: {
-      ...(actual.LiteGraph as Record<string, unknown>),
-      registered_node_types: {} as Record<string, unknown>
-    }
+vi.mock('@/lib/litegraph/src/litegraph', () => ({
+  LiteGraph: {
+    registered_node_types: {}
   }
-})
+}))
 
 vi.mock('@/utils/graphTraversalUtil', () => ({
   collectAllNodes: vi.fn(),
@@ -36,6 +31,12 @@ vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
     get: vi.fn(() => true)
   })
+}))
+
+vi.mock('@/scripts/app', () => ({ app: {} }))
+
+vi.mock('@/stores/executionErrorStore', () => ({
+  useExecutionErrorStore: () => ({ showErrorOverlay: vi.fn() })
 }))
 
 import {
@@ -76,7 +77,6 @@ function getMissingNodesError(
 
 describe('scanMissingNodes (via rescanAndSurfaceMissingNodes)', () => {
   beforeEach(() => {
-    // Reset registered_node_types
     const reg = LiteGraph.registered_node_types as Record<string, unknown>
     for (const key of Object.keys(reg)) {
       delete reg[key]
