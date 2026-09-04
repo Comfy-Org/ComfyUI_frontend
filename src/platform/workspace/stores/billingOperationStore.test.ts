@@ -1076,7 +1076,7 @@ describe('billingOperationStore', () => {
         authenticationState: 'failed_retryable',
         canRetryAuthentication: true,
         isAuthenticating: false,
-        errorMessage: 'Stripe.js blocked'
+        errorMessage: 'billingOperation.authenticationFailedDetail'
       })
     })
 
@@ -1108,7 +1108,7 @@ describe('billingOperationStore', () => {
         authenticationState: 'failed_retryable',
         canRetryAuthentication: true,
         isAuthenticating: false,
-        errorMessage: 'Challenge was closed'
+        errorMessage: 'billingOperation.authenticationFailedDetail'
       })
       expect(JSON.stringify([...store.operations.values()])).not.toContain(
         'pi_secret_current'
@@ -1121,7 +1121,7 @@ describe('billingOperationStore', () => {
       ).toBeGreaterThan(1)
       expect(store.getOperation('op-3ds')).toMatchObject({
         authenticationState: 'failed_retryable',
-        errorMessage: 'Challenge was closed'
+        errorMessage: 'billingOperation.authenticationFailedDetail'
       })
     })
 
@@ -1289,14 +1289,14 @@ describe('billingOperationStore', () => {
       expect(store.getOperation('op-3ds')).toMatchObject({
         authenticationState: 'failed_retryable',
         canRetryAuthentication: true,
-        errorMessage: 'Verification failed again'
+        errorMessage: 'billingOperation.authenticationFailedDetail'
       })
       await vi.advanceTimersByTimeAsync(60_000)
       expect(mockHandleNextAction).toHaveBeenCalledOnce()
       expect(store.getOperation('op-3ds')).toMatchObject({
         authenticationState: 'failed_retryable',
         canRetryAuthentication: true,
-        errorMessage: 'Verification failed again'
+        errorMessage: 'billingOperation.authenticationFailedDetail'
       })
     })
 

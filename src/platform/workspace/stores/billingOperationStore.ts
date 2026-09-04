@@ -510,9 +510,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       }
       const result = await stripe.handleNextAction({ clientSecret })
       if (result.error) {
+        const code = result.error.decline_code ?? result.error.code ?? null
         setAuthenticationRetry(
           opId,
-          result.error.message ||
+          (code && billingFailureDetail(operation.type, code)) ||
             t('billingOperation.authenticationFailedDetail')
         )
         return false
@@ -530,9 +531,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     } catch (error) {
       setAuthenticationRetry(
         opId,
-        error instanceof Error
-          ? error.message
-          : t('billingOperation.authenticationFailedDetail')
+        t('billingOperation.authenticationFailedDetail')
       )
       return false
     }

@@ -236,26 +236,10 @@
         </p>
       </div>
 
-      <div
-        v-if="
-          embeddedCheckoutEnabled && authenticationState === 'failed_retryable'
-        "
-        role="alert"
-        class="rounded-lg border border-interface-stroke bg-secondary-background p-4 text-sm text-base-foreground"
-      >
-        {{
-          authenticationError ||
-          (canRetryAuthentication
-            ? $t('billingOperation.authenticationFailedDetail')
-            : $t('billingOperation.authenticationManagerRequired'))
-        }}
-      </div>
-
       <Button
         v-if="
           embeddedCheckoutEnabled &&
-          (authenticationState === 'failed_retryable' ||
-            authenticationState === 'requires_action') &&
+          authenticationState === 'requires_action' &&
           canRetryAuthentication
         "
         variant="inverted"
@@ -264,23 +248,14 @@
         :loading="isAuthenticating"
         @click="$emit('retryAuthentication')"
       >
-        {{
-          $t(
-            authenticationState === 'failed_retryable'
-              ? 'billingOperation.retryVerification'
-              : 'subscription.preview.completeVerification'
-          )
-        }}
+        {{ $t('subscription.preview.completeVerification') }}
       </Button>
 
       <Button
         v-if="
           actionUrl &&
-          !(
-            (authenticationState === 'failed_retryable' ||
-              authenticationState === 'requires_action') &&
-            canRetryAuthentication
-          )
+          authenticationState !== 'failed_retryable' &&
+          !(authenticationState === 'requires_action' && canRetryAuthentication)
         "
         variant="inverted"
         size="lg"
@@ -289,6 +264,46 @@
       >
         {{ $t('subscription.preview.completeVerification') }}
       </Button>
+
+      <div
+        v-if="
+          embeddedCheckoutEnabled && authenticationState === 'failed_retryable'
+        "
+        role="alert"
+        class="rounded-lg border border-interface-stroke bg-secondary-background p-4 text-sm text-base-foreground"
+      >
+        <p v-if="!canRetryAuthentication" class="m-0">
+          {{ $t('billingOperation.authenticationManagerRequired') }}
+        </p>
+        <i18n-t
+          v-else-if="savedMethods?.length"
+          keypath="billingOperation.challengeFailedNotice"
+          tag="p"
+          class="m-0"
+        >
+          <template #useDifferentCard>
+            <Button
+              variant="textonly"
+              size="unset"
+              :disabled="interactionLocked"
+              class="inline p-0 text-sm text-inherit underline underline-offset-2"
+              @click="$emit('changePaymentMethod')"
+              >{{
+                $t('billingOperation.challengeFailedUseDifferentCard')
+              }}</Button
+            >
+          </template>
+        </i18n-t>
+        <p v-else class="m-0">
+          {{ $t('billingOperation.challengeFailedRetry') }}
+        </p>
+        <p
+          v-if="canRetryAuthentication && failureDetail"
+          class="m-0 mt-1 text-muted-foreground"
+        >
+          {{ failureDetail }}
+        </p>
+      </div>
 
       <UnifiedStripePaymentSelector
         v-if="captureMode && quoteReady"
@@ -389,7 +404,8 @@ interface Props {
   teamPlan?: TeamPlanSelection | null
   actionUrl?: string | null
   authenticationState?: BillingAuthenticationState | null
-  authenticationError?: string | null
+  /** The store's mapped rendering of the bank's verdict, when it gave one. */
+  failureDetail?: string | null
   canRetryAuthentication?: boolean
   isAuthenticating?: boolean
   reconciliationOperationId?: string | null
@@ -413,7 +429,7 @@ const {
   teamPlan = null,
   actionUrl = null,
   authenticationState = null,
-  authenticationError = null,
+  failureDetail = null,
   canRetryAuthentication = false,
   isAuthenticating = false,
   reconciliationOperationId = null,

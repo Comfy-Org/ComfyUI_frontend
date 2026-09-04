@@ -190,7 +190,7 @@ export function useSubscriptionCheckout(
   const authenticationState = computed(
     () => activeCheckoutOperation.value?.authenticationState ?? null
   )
-  const authenticationError = computed(
+  const authenticationFailureDetail = computed(
     () => activeCheckoutOperation.value?.errorMessage ?? null
   )
   const canRetryAuthentication = computed(
@@ -1545,7 +1545,7 @@ export function useSubscriptionCheckout(
     selectedBillingCycle,
     activeCheckoutActionUrl,
     authenticationState,
-    authenticationError,
+    authenticationFailureDetail,
     canRetryAuthentication,
     isAuthenticating,
     reconciliationOperationId,

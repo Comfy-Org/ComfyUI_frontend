@@ -236,26 +236,10 @@
         </p>
       </div>
 
-      <div
-        v-if="
-          embeddedCheckoutEnabled && authenticationState === 'failed_retryable'
-        "
-        role="alert"
-        class="rounded-lg border border-interface-stroke bg-secondary-background p-4 text-sm text-base-foreground"
-      >
-        {{
-          authenticationError ||
-          (canRetryAuthentication
-            ? $t('billingOperation.authenticationFailedDetail')
-            : $t('billingOperation.authenticationManagerRequired'))
-        }}
-      </div>
-
       <Button
         v-if="
           embeddedCheckoutEnabled &&
-          (authenticationState === 'failed_retryable' ||
-            authenticationState === 'requires_action') &&
+          authenticationState === 'requires_action' &&
           canRetryAuthentication
         "
         variant="inverted"
@@ -264,23 +248,14 @@
         :loading="isAuthenticating"
         @click="$emit('retryAuthentication')"
       >
-        {{
-          $t(
-            authenticationState === 'failed_retryable'
-              ? 'billingOperation.retryVerification'
-              : 'subscription.preview.completeVerification'
-          )
-        }}
+        {{ $t('subscription.preview.completeVerification') }}
       </Button>
 
       <Button
         v-if="
           actionUrl &&
-          !(
-            (authenticationState === 'failed_retryable' ||
-              authenticationState === 'requires_action') &&
-            canRetryAuthentication
-          )
+          authenticationState !== 'failed_retryable' &&
+          !(authenticationState === 'requires_action' && canRetryAuthentication)
         "
         variant="inverted"
         size="lg"
@@ -289,6 +264,30 @@
       >
         {{ $t('subscription.preview.completeVerification') }}
       </Button>
+
+      <div
+        v-if="
+          embeddedCheckoutEnabled && authenticationState === 'failed_retryable'
+        "
+        role="alert"
+        class="rounded-lg border border-interface-stroke bg-secondary-background p-4 text-sm text-base-foreground"
+      >
+        <p class="m-0">
+          {{
+            $t(
+              canRetryAuthentication
+                ? 'billingOperation.challengeFailedRetry'
+                : 'billingOperation.authenticationManagerRequired'
+            )
+          }}
+        </p>
+        <p
+          v-if="canRetryAuthentication && failureDetail"
+          class="m-0 mt-1 text-muted-foreground"
+        >
+          {{ failureDetail }}
+        </p>
+      </div>
 
       <Button
         :variant="actionUrl ? 'tertiary' : 'inverted'"
@@ -339,7 +338,7 @@ const {
   actionUrl = null,
   forceReactivation = false,
   authenticationState = null,
-  authenticationError = null,
+  failureDetail = null,
   canRetryAuthentication = false,
   isAuthenticating = false,
   reconciliationOperationId = null,
@@ -357,7 +356,8 @@ const {
    * scheduled cancellation until subscribe enforces the consent gate. */
   forceReactivation?: boolean
   authenticationState?: BillingAuthenticationState | null
-  authenticationError?: string | null
+  /** The store's mapped rendering of the bank's verdict, when it gave one. */
+  failureDetail?: string | null
   canRetryAuthentication?: boolean
   isAuthenticating?: boolean
   reconciliationOperationId?: string | null

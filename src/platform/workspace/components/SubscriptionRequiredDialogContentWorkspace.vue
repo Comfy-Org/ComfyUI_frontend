@@ -88,7 +88,7 @@
       :is-loading="isSubscribing || isPolling"
       :action-url="activeCheckoutActionUrl"
       :authentication-state
-      :authentication-error
+      :failure-detail="authenticationFailureDetail"
       :can-retry-authentication
       :is-authenticating
       :reconciliation-operation-id
@@ -113,7 +113,7 @@
       :action-url="activeCheckoutActionUrl"
       :force-reactivation="reactivationRequired"
       :authentication-state
-      :authentication-error
+      :failure-detail="authenticationFailureDetail"
       :can-retry-authentication
       :is-authenticating
       :reconciliation-operation-id
@@ -180,7 +180,7 @@ const {
   selectedBillingCycle,
   activeCheckoutActionUrl,
   authenticationState,
-  authenticationError,
+  authenticationFailureDetail,
   canRetryAuthentication,
   isAuthenticating,
   reconciliationOperationId,

@@ -1,3 +1,4 @@
+import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -53,7 +54,11 @@ const previewData: PreviewSubscribeResponse = {
 
 function renderPreview(
   recovery:
-    | { authenticationState: 'failed_retryable' | 'requires_action' }
+    | {
+        authenticationState: 'failed_retryable' | 'requires_action'
+        canRetryAuthentication?: boolean
+        failureDetail?: string
+      }
     | { reconciliationOperationId: string }
 ) {
   return render(SubscriptionAddPaymentPreviewWorkspace, {
@@ -98,6 +103,33 @@ describe('SubscriptionAddPaymentPreviewWorkspace — confirm lock', () => {
     expect(
       screen.getByRole('button', { name: 'Pay and subscribe' })
     ).toBeDisabled()
+  })
+
+  it('names the bank verdict under the failure notice when there is one', () => {
+    renderPreview({
+      authenticationState: 'failed_retryable',
+      canRetryAuthentication: true,
+      failureDetail: 'Your card has insufficient funds.'
+    })
+
+    expect(
+      screen.getByText('Your card has insufficient funds.')
+    ).toBeInTheDocument()
+  })
+
+  it('offers a different card from the failure notice', async () => {
+    const { emitted } = renderPreview({
+      authenticationState: 'failed_retryable',
+      canRetryAuthentication: true
+    })
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      "Verification didn't finish."
+    )
+    await userEvent.click(
+      screen.getByRole('button', { name: 'use a different card' })
+    )
+    expect(emitted().changePaymentMethod).toBeTruthy()
   })
 
   it('locks the pay action while a challenge is still open', () => {

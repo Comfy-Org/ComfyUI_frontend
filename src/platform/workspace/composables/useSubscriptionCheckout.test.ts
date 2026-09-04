@@ -2625,7 +2625,9 @@ describe('useSubscriptionCheckout', () => {
       const checkout = await setup()
 
       expect(checkout.authenticationState.value).toBe('failed_retryable')
-      expect(checkout.authenticationError.value).toBe('Challenge was closed')
+      expect(checkout.authenticationFailureDetail.value).toBe(
+        'Challenge was closed'
+      )
       expect(checkout.canRetryAuthentication.value).toBe(true)
       expect(checkout.isPolling.value).toBe(false)
 

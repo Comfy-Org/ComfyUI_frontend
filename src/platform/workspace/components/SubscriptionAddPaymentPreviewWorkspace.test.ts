@@ -354,22 +354,42 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     )
   })
 
-  it('renders an explicit retry action after failed verification', async () => {
-    const { emitted } = render(SubscriptionAddPaymentPreviewWorkspace, {
+  it('shows the mapped failure notice without a retry action after a failed challenge', () => {
+    render(SubscriptionAddPaymentPreviewWorkspace, {
       props: {
         tierKey: 'creator',
         embeddedCheckoutEnabled: true,
+        actionUrl: 'https://verify.example/expired-challenge',
         authenticationState: 'failed_retryable',
-        authenticationError: 'Challenge was closed',
         canRetryAuthentication: true
       },
       global: globalOptions
     })
 
-    expect(screen.getByRole('alert')).toHaveTextContent('Challenge was closed')
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'billingOperation.challengeFailedRetry'
+    )
+    expect(
+      screen.queryByRole('button', {
+        name: 'subscription.preview.completeVerification'
+      })
+    ).toBeNull()
+  })
+
+  it('keeps the in-flight verification action for an open challenge', async () => {
+    const { emitted } = render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: {
+        tierKey: 'creator',
+        embeddedCheckoutEnabled: true,
+        authenticationState: 'requires_action',
+        canRetryAuthentication: true
+      },
+      global: globalOptions
+    })
+
     await userEvent.click(
       screen.getByRole('button', {
-        name: 'billingOperation.retryVerification'
+        name: 'subscription.preview.completeVerification'
       })
     )
     expect(emitted().retryAuthentication).toBeTruthy()
