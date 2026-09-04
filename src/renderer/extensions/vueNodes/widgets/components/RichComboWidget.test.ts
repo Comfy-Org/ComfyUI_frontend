@@ -67,7 +67,7 @@ function makeWidget(
     type: 'combo',
     value,
     spec
-  }) as SimplifiedWidget<string | undefined>
+  })
 }
 
 const itemSchema: RemoteItemSchema = {
@@ -127,7 +127,7 @@ describe('RichComboWidget', () => {
     vi.mocked(axios.get).mockImplementationOnce(
       () =>
         new Promise((resolve) => {
-          resolveResp = (data) => resolve({ data, status: 200 } as never)
+          resolveResp = (data) => resolve({ data, status: 200 })
         })
     )
     const widget = makeWidget(makeRemoteCombo())

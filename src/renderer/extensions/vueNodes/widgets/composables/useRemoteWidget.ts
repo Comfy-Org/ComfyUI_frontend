@@ -91,7 +91,7 @@ export function useRemoteWidget<
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error'
       console.warn('Remote widget fetch failed:', message)
-      cachedValue = (cachedValue ?? defaultValue) as T
+      cachedValue = cachedValue ?? defaultValue
       return cachedValue
     }
   }

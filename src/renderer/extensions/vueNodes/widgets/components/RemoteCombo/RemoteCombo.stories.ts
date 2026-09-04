@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref, computed } from 'vue'
-import type { Ref } from 'vue'
 
 import type { DropdownItemShape } from '@/base/remote/itemSchema'
 
@@ -35,7 +34,7 @@ interface StoryArgs {
 function makeContext(args: StoryArgs): RemoteComboContext {
   const isOpen = ref(false)
   const searchQuery = ref('')
-  const selectedValue = ref(args.selected) as Ref<string | undefined>
+  const selectedValue = ref(args.selected)
   const items = computed(() => args.items)
   const filteredItems = computed(() =>
     searchQuery.value

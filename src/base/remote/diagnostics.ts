@@ -21,7 +21,7 @@ export function summarizePayload(data: unknown): Record<string, unknown> {
   if (data === undefined) return { type: 'undefined' }
   if (Array.isArray(data)) return { type: 'array', length: data.length }
   if (typeof data === 'object') {
-    const keys = Object.keys(data as Record<string, unknown>)
+    const keys = Object.keys(data)
     return {
       type: 'object',
       keys: keys.slice(0, PAYLOAD_KEY_SAMPLE),
