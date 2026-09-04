@@ -15,7 +15,7 @@ const {
   footnote,
   class: className
 } = defineProps<{
-  heading: string
+  heading?: string
   rows: readonly DefinitionRow[]
   footnote?: string
   class?: HTMLAttributes['class']
@@ -25,6 +25,7 @@ const {
 <template>
   <section :class="cn('max-w-9xl mx-auto px-6 py-16 lg:py-24', className)">
     <h2
+      v-if="heading"
       class="mb-12 text-center text-4xl font-light tracking-tight text-primary-comfy-canvas lg:mb-16 lg:text-5xl"
     >
       {{ heading }}

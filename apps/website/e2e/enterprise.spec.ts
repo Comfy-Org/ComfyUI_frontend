@@ -113,6 +113,26 @@ test.describe('Enterprise pages @smoke', () => {
       'Roll out to the fleet'
     ])
     await expect(
+      page.getByRole('heading', {
+        level: 2,
+        name: 'Govern the build, models, people, and usage.'
+      })
+    ).toBeVisible()
+    const governRows = page.locator('section').filter({
+      has: page.getByText('Build policy', { exact: true })
+    })
+    for (const term of [
+      'Build policy',
+      'Model policy and BYOK',
+      'People and access',
+      'Usage visibility and audit requirements'
+    ]) {
+      await expect(
+        governRows.locator('dl').getByText(term, { exact: true })
+      ).toBeVisible()
+    }
+    await expect(page.getByText(/The graph stays flexible\./)).toBeVisible()
+    await expect(
       page.getByText(/dedicated GPU capacity, priority queueing/)
     ).toBeVisible()
   })

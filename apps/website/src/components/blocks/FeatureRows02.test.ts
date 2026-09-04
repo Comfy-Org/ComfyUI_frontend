@@ -60,4 +60,11 @@ describe('FeatureRows02', () => {
 
     expect(screen.getByText('The graph stays flexible.')).toBeTruthy()
   })
+
+  it('omits the heading element when no heading is provided', () => {
+    renderFeatureRows({ heading: undefined })
+
+    expect(screen.queryByRole('heading', { level: 2 })).toBeNull()
+    expect(screen.getByText('Environment packaging')).toBeTruthy()
+  })
 })

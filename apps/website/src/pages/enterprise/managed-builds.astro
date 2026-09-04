@@ -1,5 +1,6 @@
 ---
 import BenefitsGrid01 from '../../components/blocks/BenefitsGrid01.vue'
+import CardSplitContent02 from '../../components/blocks/CardSplitContent02.vue'
 import CtaBands01 from '../../components/blocks/CtaBands01.vue'
 import CtaCenter01 from '../../components/blocks/CtaCenter01.vue'
 import FAQSplit01 from '../../components/blocks/FAQSplit01.vue'
@@ -58,28 +59,28 @@ const faqs = [
   },
 ] as const
 
-const governanceBenefits = [
+const governanceRows = [
   {
     id: 'build-policy',
-    title: 'Build policy',
+    term: 'Build policy',
     description:
       'Pin the ComfyUI release, custom nodes, models, and dependencies that belong in an approved build.',
   },
   {
     id: 'model-policy',
-    title: 'Model policy and BYOK',
+    term: 'Model policy and BYOK',
     description:
       'Choose the partner, open, and private models teams can use. Bring supported provider keys and existing contracts.',
   },
   {
     id: 'people-access',
-    title: 'People and access',
+    term: 'People and access',
     description:
       'Use company identity and SSO to assign approved environments to the teams that need them.',
   },
   {
     id: 'usage-records',
-    title: 'Usage visibility and audit requirements',
+    term: 'Usage visibility and audit requirements',
     description:
       'Track usage by model and partner on the Developer Platform. Scope authentication, build-assignment, release, retention, and export requirements during enterprise security review.',
   },
@@ -191,9 +192,13 @@ const faqPage = buildFaqPageNode(url, faqs)
     />
   </div>
 
-  <BenefitsGrid01
-    heading="Govern the build, models, people, and usage."
-    benefits={governanceBenefits}
+  <CardSplitContent02
+    title="Govern the build, models, people, and usage."
+    imageSrc="/assets/enterprise/govern-matrix-city.webp"
+  />
+  <FeatureRows02
+    class="pt-0 lg:pt-0"
+    rows={governanceRows}
     footnote="The graph stays flexible. The environment around it becomes an approved, reviewable operating model for the organization."
   />
 
