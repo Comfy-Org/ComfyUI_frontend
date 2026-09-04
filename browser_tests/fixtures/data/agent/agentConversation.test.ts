@@ -106,11 +106,14 @@ describe('committed recordings', () => {
     for (const file of files) {
       const raw = JSON.parse(readFileSync(join(dir, file), 'utf8'))
       const conversation = zAgentConversation.parse(raw)
-      expect(conversation.workflow, file).toEqual(raw.workflow)
+      expect({ file, workflow: conversation.workflow }).toEqual({
+        file,
+        workflow: raw.workflow
+      })
       const frames = conversation.turns
         .flatMap((turn) => turn.response)
         .filter((entry) => entry.kind === 'event')
-      expect(frames.length, file).toBeGreaterThan(0)
+      expect({ file, frames: frames.length }).not.toEqual({ file, frames: 0 })
     }
   })
 })
