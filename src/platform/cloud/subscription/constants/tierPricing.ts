@@ -120,10 +120,10 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000
 // Wall-clock comparison; callers feed `now` from a coarse reactive clock so a
 // long-lived session still crosses into the window without a data refresh.
 // The window is deliberately unbounded below — a passed end date counts as
-// "within" — because the ended state gates upstream of every caller: the
-// backend folds an ended subscription into canAccessSubscriptionFeatures
-// false, which deriveBillingBanner requires before any window check, and the
-// panel's ended presentation short-circuits first.
+// "within" — because the backend reconciles on read: cloud's
+// common/repository/billing/subscription.go:55 transitions a canceled row
+// whose cancel_at has passed into ended on first load and returns no active
+// subscription, so canAccessSubscriptionFeatures gates every caller first.
 export function isWithinEnterpriseEndingNotice(
   endDate: string | null | undefined,
   now: number = Date.now()
