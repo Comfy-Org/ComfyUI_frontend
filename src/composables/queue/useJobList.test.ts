@@ -484,7 +484,7 @@ describe('useJobList', () => {
 
     executionStoreMock.activeJobId = 'active'
     executionStoreMock.focusedJobId = 'active'
-    executionStoreMock.runningJobIds = ['active']
+    executionStoreMock.runningJobIds = ['active', 'other']
     executionStoreMock.executingNode = { title: 'Render Node' }
     totalPercent.value = 80
     currentNodePercent.value = 40
