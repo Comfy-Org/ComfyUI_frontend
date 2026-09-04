@@ -115,7 +115,7 @@ describe('useMinimapGraph', () => {
     const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
 
     graphManager.setupEventListeners()
-    mockGraph.onConnectionChange?.(mockGraph._nodes[0])
+    mockGraph.onConnectionChange(mockGraph._nodes[0])
 
     expect(originalOnConnectionChange).toHaveBeenCalledWith(mockGraph._nodes[0])
     expect(onGraphChangedMock).toHaveBeenCalledTimes(1)
