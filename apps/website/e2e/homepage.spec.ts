@@ -56,7 +56,6 @@ test.describe('Homepage @smoke', () => {
       'href',
       '/workshop?provider=ByteDance'
     )
-    await expect(bytedance).toContainText(/\d+ models/)
     await expect(
       section.getByRole('link', { name: 'Browse all models' })
     ).toHaveAttribute('href', '/workshop')

@@ -195,7 +195,7 @@ const itemClass =
             class="size-5 text-primary-warm-gray"
             aria-hidden="true"
           />
-          <span class="flex-1">{{ t('workshop.run.buyCredits', locale) }}</span>
+          <span class="flex-1">{{ t('nav.addCredits', locale) }}</span>
         </DropdownMenuItem>
         <DropdownMenuItem as-child>
           <a

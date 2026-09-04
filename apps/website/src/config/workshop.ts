@@ -491,6 +491,26 @@ export const workshopModels: readonly WorkshopModel[] = [
   ...versions.map(toVersionModel)
 ]
 
+// The launch taxonomy's top layer. A model belongs to every group it can serve
+// rather than to one: where the media input is optional the model both creates
+// and edits, which is why the row of tabs carries no counts.
+export const LAUNCH_GROUPS = ['create', 'edit', 'specialized'] as const
+export type LaunchGroup = (typeof LAUNCH_GROUPS)[number]
+
+export function launchGroupsOf(model: WorkshopModel): LaunchGroup[] {
+  if (model.modality !== 'image' && model.modality !== 'video')
+    return ['specialized']
+  const media = (
+    generated[baseSlugFor.get(model.slug) ?? model.slug]?.fields ?? []
+  ).filter((field) => field.kind === 'file')
+  return [
+    ...(media.length === 0 || media.some((field) => !field.required)
+      ? (['create'] as const)
+      : []),
+    ...(media.length > 0 ? (['edit'] as const) : [])
+  ]
+}
+
 export function getWorkshopModel(slug: string): WorkshopModel | undefined {
   return workshopModels.find((model) => model.slug === slug)
 }

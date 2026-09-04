@@ -187,7 +187,7 @@ const translations = {
     en: 'Next featured workflow',
     'zh-CN': '下一个精选工作流'
   },
-  'modelDiscovery.label': { en: 'MODELS', 'zh-CN': '模型' },
+  'modelDiscovery.label': { en: 'WORKSHOP', 'zh-CN': '工作坊' },
   'modelDiscovery.heading': {
     en: 'All the latest models,\nready to run',
     'zh-CN': '最新模型，\n即刻运行'
@@ -198,14 +198,6 @@ const translations = {
       '来自 Google、ByteDance、Black Forest Labs、Kling 等提供商的模型，均由 Comfy Router 提供。选一个，设置输入，点击运行。'
   },
   'modelDiscovery.rowLabel': { en: 'Model providers', 'zh-CN': '模型提供商' },
-  'modelDiscovery.modelCount.singular': {
-    en: '{n} model',
-    'zh-CN': '{n} 个模型'
-  },
-  'modelDiscovery.modelCount.plural': {
-    en: '{n} models',
-    'zh-CN': '{n} 个模型'
-  },
   'modelDiscovery.browse': { en: 'Browse all models', 'zh-CN': '浏览全部模型' },
 
   // Model release carousel (home page)
@@ -8491,6 +8483,21 @@ Enterprise`
   'workshop.filter.clearAll': { en: 'Clear filters', 'zh-CN': '清除筛选' },
   'workshop.filter.applied': { en: '{n} selected', 'zh-CN': '已选 {n} 项' },
   'workshop.filter.providerGroup': { en: 'Models', 'zh-CN': '模型' },
+  'workshop.launch.all': { en: 'All', 'zh-CN': '全部' },
+  'workshop.launch.create': { en: 'Create', 'zh-CN': '创建' },
+  'workshop.launch.edit': {
+    en: 'Edit and enhance',
+    'zh-CN': '编辑与增强'
+  },
+  'workshop.launch.specialized': {
+    en: 'Specialized outcomes',
+    'zh-CN': '专项产出'
+  },
+  'workshop.launch.label': {
+    en: 'What do you want to do',
+    'zh-CN': '你想做什么'
+  },
+  'workshop.filter.outputGroup': { en: 'Output', 'zh-CN': '输出' },
   'workshop.capGroup.createImages': {
     en: 'Create images',
     'zh-CN': '创建图像'

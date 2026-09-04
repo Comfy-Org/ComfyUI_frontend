@@ -92,15 +92,14 @@ describe('WorkshopModelsGrid', () => {
     expect(cardNames()).toEqual([expect.stringContaining('Flux')])
   })
 
-  it('combines the medium rail with the capability menu', async () => {
+  it('combines the launch tabs with the capability menu', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
-    expect(screen.queryByTestId('use-case-audio')).toBeNull()
 
-    await user.click(screen.getByTestId('use-case-video'))
+    await user.click(screen.getByTestId('use-case-create'))
     expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
     expect(
-      screen.getByTestId('use-case-video').getAttribute('aria-pressed')
+      screen.getByTestId('use-case-create').getAttribute('aria-pressed')
     ).toBe('true')
 
     await user.click(screen.getByTestId('workshop-filter'))
@@ -110,6 +109,20 @@ describe('WorkshopModelsGrid', () => {
     expect(screen.getByTestId('workshop-empty')).toBeTruthy()
 
     await user.click(screen.getByTestId('workshop-filter-clear'))
+    expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
+  })
+
+  it('lists a model whose media input is optional under create and edit', async () => {
+    const user = userEvent.setup()
+    render(WorkshopModelsGrid, { props: { models } })
+
+    await user.click(screen.getByTestId('use-case-edit'))
+    expect(cardNames()).toEqual([
+      expect.stringContaining('Kling AI'),
+      expect.stringContaining('Flux')
+    ])
+
+    await user.click(screen.getByTestId('use-case-create'))
     expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
   })
 

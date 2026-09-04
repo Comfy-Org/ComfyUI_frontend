@@ -35,24 +35,31 @@ export interface FacetMenuOption {
   readonly group?: CapabilityGroup
 }
 
-type Facet = 'provider' | 'capability'
+type Facet = 'provider' | 'capability' | 'modality'
 
 const {
   capabilityOptions,
   providerOptions,
+  modalityOptions,
   locale = 'en'
 } = defineProps<{
   capabilityOptions: readonly FacetMenuOption[]
   providerOptions: readonly FacetMenuOption[]
+  modalityOptions: readonly FacetMenuOption[]
   locale?: Locale
 }>()
 
 const capabilities = defineModel<string[]>('capabilities', { required: true })
 const providers = defineModel<string[]>('providers', { required: true })
+const modalities = defineModel<string[]>('modalities', { required: true })
 
 const open = ref(false)
 const activeFacet = ref<Facet>('provider')
-const search = ref<Record<Facet, string>>({ provider: '', capability: '' })
+const search = ref<Record<Facet, string>>({
+  provider: '',
+  capability: '',
+  modality: ''
+})
 
 const facets = computed(() => [
   {
@@ -66,11 +73,18 @@ const facets = computed(() => [
     label: t('workshop.filter.capabilityGroup', locale),
     options: capabilityOptions,
     selected: capabilities
+  },
+  {
+    facet: 'modality' as const,
+    label: t('workshop.filter.outputGroup', locale),
+    options: modalityOptions,
+    selected: modalities
   }
 ])
 
 const selectedCount = computed(
-  () => capabilities.value.length + providers.value.length
+  () =>
+    capabilities.value.length + providers.value.length + modalities.value.length
 )
 
 // A group heading is drawn on the first option that carries it, so the list
@@ -89,8 +103,15 @@ function visibleOptions(entry: (typeof facets.value)[number]) {
   }))
 }
 
+const modelFor = (facet: Facet) =>
+  facet === 'capability'
+    ? capabilities
+    : facet === 'modality'
+      ? modalities
+      : providers
+
 function toggle(facet: Facet, value: string) {
-  const selected = facet === 'capability' ? capabilities : providers
+  const selected = modelFor(facet)
   selected.value = selected.value.includes(value)
     ? selected.value.filter((item) => item !== value)
     : [...selected.value, value]
@@ -99,6 +120,7 @@ function toggle(facet: Facet, value: string) {
 function clearAll() {
   capabilities.value = []
   providers.value = []
+  modalities.value = []
 }
 </script>
 

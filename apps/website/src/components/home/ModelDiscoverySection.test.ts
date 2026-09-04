@@ -20,7 +20,6 @@ describe('ModelDiscoverySection', () => {
 
     const bytedance = screen.getByRole('link', { name: /ByteDance/ })
     expect(bytedance.getAttribute('href')).toBe('/workshop?provider=ByteDance')
-    expect(bytedance.textContent).toMatch(/\d+ models/)
     expect(screen.getByRole('link', { name: /Black Forest Labs/ })).toBeTruthy()
 
     const browse = screen.getByRole('link', { name: 'Browse all models' })

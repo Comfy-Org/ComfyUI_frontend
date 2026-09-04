@@ -67,7 +67,7 @@ test.describe('Workshop V2', () => {
 })
 
 test.describe('Workshop catalog', () => {
-  test('lists partner models by what they make and filters by search', async ({
+  test('lists partner models by what they do and filters by search', async ({
     page
   }) => {
     await page.goto('/workshop/')
@@ -76,11 +76,12 @@ test.describe('Workshop catalog', () => {
     await expect(cards.first()).toBeVisible()
     await expect(page.getByTestId('workshop-tabs')).toHaveCount(0)
 
-    await page.getByTestId('use-case-video').click()
-    await expect(cards).toHaveCount(39)
-    const tasks = await grid.getByTestId('model-card-task').allTextContents()
-    expect(tasks.every((task) => task.includes('Video'))).toBe(true)
+    const all = await cards.count()
+    await page.getByTestId('use-case-edit').click()
+    await expect(cards.first()).toBeVisible()
+    expect(await cards.count()).toBeLessThan(all)
     await page.getByTestId('use-case-all').click()
+    await expect(cards).toHaveCount(all)
 
     await page.getByTestId('workshop-search').fill('kling')
     await expect(cards.first()).toContainText('Kling')

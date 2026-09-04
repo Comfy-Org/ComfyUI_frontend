@@ -21,14 +21,6 @@ function reveal(name: string) {
 const cardHref = (name: string) =>
   `${routes.workshop}?provider=${encodeURIComponent(name)}`
 
-const modelCount = (count: number) =>
-  t(
-    count === 1
-      ? 'modelDiscovery.modelCount.singular'
-      : 'modelDiscovery.modelCount.plural',
-    locale
-  ).replace('{n}', `${count}`)
-
 const cardClass =
   'group/card bg-transparency-white-t4 relative flex h-44 w-48 shrink-0 flex-col items-center justify-center gap-3 overflow-hidden rounded-3xl border border-transparency-white-t8 px-5 text-center text-primary-warm-white transition-colors hover:border-transparency-white-t20 focus-visible:border-primary-comfy-yellow focus-visible:outline-none'
 </script>
@@ -100,11 +92,6 @@ const cardClass =
               <span class="relative flex flex-col gap-0.5">
                 <span class="text-base/tight font-medium">
                   {{ provider.name }}
-                </span>
-                <span
-                  class="text-xs text-primary-warm-gray transition-colors group-hover/card:text-primary-warm-white group-focus-visible/card:text-primary-warm-white"
-                >
-                  {{ modelCount(provider.modelCount) }}
                 </span>
               </span>
             </a>

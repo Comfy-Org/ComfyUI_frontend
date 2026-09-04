@@ -14,28 +14,38 @@ const providerOptions = [
   { value: 'Kling', label: 'Kling', count: 3 },
   { value: 'Black Forest Labs', label: 'Black Forest Labs', count: 2 }
 ]
+const modalityOptions = [
+  { value: 'video', label: 'Video', count: 3 },
+  { value: 'image', label: 'Image', count: 2 }
+]
 
 function mountMenu() {
   const capabilities = ref<string[]>([])
   const providers = ref<string[]>([])
+  const modalities = ref<string[]>([])
   render(
     defineComponent({
       setup: () => () =>
         h(WorkshopFilterMenu, {
           capabilityOptions,
           providerOptions,
+          modalityOptions,
           capabilities: capabilities.value,
           providers: providers.value,
+          modalities: modalities.value,
           'onUpdate:capabilities': (value: string[]) => {
             capabilities.value = value
           },
           'onUpdate:providers': (value: string[]) => {
             providers.value = value
+          },
+          'onUpdate:modalities': (value: string[]) => {
+            modalities.value = value
           }
         })
     })
   )
-  return { capabilities, providers }
+  return { capabilities, providers, modalities }
 }
 
 describe('WorkshopFilterMenu', () => {

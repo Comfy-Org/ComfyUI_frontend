@@ -23,21 +23,23 @@ import { groupModels } from '../../config/model-family'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type {
+  LaunchGroup,
   ModalityFilter,
   SortOrder,
   UseCase,
   WorkshopModel
 } from '../../config/workshop'
 import {
-  MODALITIES,
   SORT_ORDERS,
-  USE_CASES,
-  countByModality,
   parseCatalogSearch,
   CAPABILITY_GROUPS,
+  MODALITIES,
+  LAUNCH_GROUPS,
   capabilityGroupOf,
+  launchGroupsOf,
   countByFacet,
-  countByUseCase,
+  countByModality,
+  modalityOf,
   filterWorkshopModels,
   sortWorkshopModels
 } from '../../config/workshop'
@@ -56,7 +58,7 @@ const { models, locale = 'en' } = defineProps<{
 
 const query = ref('')
 const useCase = ref<UseCase | 'all'>('all')
-const modality = ref<ModalityFilter>('all')
+const modalities = ref<string[]>([])
 const capabilities = ref<string[]>([])
 const providers = ref<string[]>([])
 const sort = ref<SortOrder>('popular')
@@ -99,15 +101,6 @@ const useCaseLabelKey: Record<UseCase | 'all', TranslationKey> = {
   audio: 'workshop.useCase.audio',
   text: 'workshop.useCase.text'
 }
-const mediaLabelKey: Record<ModalityFilter, TranslationKey> = {
-  all: 'workshop.useCase.all',
-  image: 'workshop.filter.image',
-  video: 'workshop.filter.video',
-  audio: 'workshop.filter.audio',
-  '3d': 'workshop.filter.3d',
-  text: 'workshop.filter.text',
-  other: 'workshop.filter.other'
-}
 const sortLabelKey: Record<SortOrder, TranslationKey> = {
   popular: 'workshop.sort.popular',
   name: 'workshop.sort.name',
@@ -115,46 +108,33 @@ const sortLabelKey: Record<SortOrder, TranslationKey> = {
   priceDesc: 'workshop.sort.priceDesc'
 }
 
-const counts = computed(() => countByUseCase(models))
-const useCases = computed(() =>
-  (['all', ...USE_CASES] as const).filter((value) => counts.value[value] > 0)
-)
-const mediaCounts = computed(() => countByModality(models))
-const media = computed(() =>
-  (['all', ...MODALITIES] as const).filter(
-    (value) => mediaCounts.value[value] > 0
-  )
-)
-
-// The listing browses by what a model makes; V1.1's rows stay on the use cases
-// they were built around.
 // V1 keeps the row of tabs it shipped with; V1.2 is the same listing with the
 // categories moved into a rail beside the grid.
 const railBeside = computed(() => version.value === 'v1.2')
 
-const railLabel = computed<TranslationKey>(() =>
-  version.value === 'v1.1' ? 'workshop.useCase.label' : 'workshop.media.label'
-)
+const railLabel: TranslationKey = 'workshop.launch.label'
 
+const launch = ref<LaunchGroup | 'all'>('all')
+
+const launchLabelKey: Record<LaunchGroup | 'all', TranslationKey> = {
+  all: 'workshop.launch.all',
+  create: 'workshop.launch.create',
+  edit: 'workshop.launch.edit',
+  specialized: 'workshop.launch.specialized'
+}
+
+// No counts: a model that both creates and edits belongs to two of these, so
+// any total shown here would be larger than the catalogue.
 const rail = computed(() =>
-  version.value === 'v1.1'
-    ? useCases.value.map((value) => ({
-        value,
-        label: useCaseLabelKey[value],
-        count: counts.value[value],
-        current: useCase.value === value
-      }))
-    : media.value.map((value) => ({
-        value,
-        label: mediaLabelKey[value],
-        count: mediaCounts.value[value],
-        current: modality.value === value
-      }))
+  (['all', ...LAUNCH_GROUPS] as const).map((value) => ({
+    value,
+    label: launchLabelKey[value],
+    current: launch.value === value
+  }))
 )
 
-function selectRail(value: (typeof rail.value)[number]['value']) {
-  if (version.value === 'v1.1') useCase.value = value as UseCase | 'all'
-  else modality.value = value as ModalityFilter
+function selectRail(value: LaunchGroup | 'all') {
+  launch.value = value
 }
 // Ordered by group so the filter can show where each block begins.
 const capabilityOptions = computed<FacetMenuOption[]>(() => {
@@ -173,6 +153,32 @@ const providerOptions = computed<FacetMenuOption[]>(() =>
     label: option.value
   }))
 )
+// What a model puts out stays reachable, one level below the tabs.
+const modalityOptions = computed<FacetMenuOption[]>(() => {
+  const counts = countByModality(models)
+  return MODALITIES.filter((value) => counts[value] > 0).map((value) => ({
+    value,
+    label: t(modalityLabelKey[value], locale),
+    count: counts[value]
+  }))
+})
+const modalityLabelKey: Record<
+  Exclude<ModalityFilter, 'all'>,
+  TranslationKey
+> = {
+  image: 'workshop.filter.image',
+  video: 'workshop.filter.video',
+  audio: 'workshop.filter.audio',
+  '3d': 'workshop.filter.3d',
+  text: 'workshop.filter.text',
+  other: 'workshop.filter.other'
+}
+
+const inLaunchGroup = (model: WorkshopModel) =>
+  launch.value === 'all' || launchGroupsOf(model).includes(launch.value)
+
+const inModality = (model: WorkshopModel) =>
+  modalities.value.length === 0 || modalities.value.includes(modalityOf(model))
 
 const visible = computed(() =>
   groupModels(
@@ -180,10 +186,11 @@ const visible = computed(() =>
       filterWorkshopModels(models, {
         query: query.value,
         useCase: useCase.value,
-        modality: modality.value,
         providers: providers.value,
         capabilities: capabilities.value
-      }),
+      })
+        .filter(inLaunchGroup)
+        .filter(inModality),
       sort.value
     ),
     groupVersions.value
@@ -193,8 +200,10 @@ const isFiltered = computed(
   () =>
     query.value !== '' ||
     useCase.value !== 'all' ||
-    modality.value !== 'all' ||
-    capabilities.value.length + providers.value.length > 0
+    capabilities.value.length +
+      providers.value.length +
+      modalities.value.length >
+      0
 )
 
 // Willie's browseable listing: rows per use case until the visitor narrows
@@ -229,7 +238,7 @@ function toggleProvider(value: string) {
 function clearFilters() {
   query.value = ''
   useCase.value = 'all'
-  modality.value = 'all'
+  modalities.value = []
   capabilities.value = []
   providers.value = []
 }
@@ -306,9 +315,6 @@ const menuItemClass =
           @click="selectRail(entry.value)"
         >
           {{ t(entry.label, locale) }}
-          <span class="text-xs text-primary-warm-gray tabular-nums">
-            {{ entry.count }}
-          </span>
         </button>
       </nav>
     </aside>
@@ -371,8 +377,10 @@ const menuItemClass =
           <WorkshopFilterMenu
             v-model:capabilities="capabilities"
             v-model:providers="providers"
+            v-model:modalities="modalities"
             :capability-options="capabilityOptions"
             :provider-options="providerOptions"
+            :modality-options="modalityOptions"
             :locale
           />
 
@@ -466,7 +474,6 @@ const menuItemClass =
             @click="providers = []"
           >
             {{ t('workshop.sections.provider', locale) }}
-            <span class="tabular-nums opacity-60">{{ counts[useCase] }}</span>
           </button>
           <button
             v-for="option in sectionProviders"
