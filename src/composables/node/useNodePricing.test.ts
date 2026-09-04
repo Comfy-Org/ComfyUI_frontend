@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { CREDITS_PER_USD, formatCredits } from '@/base/credits/comfyCredits'
 import {
@@ -14,6 +14,12 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef, PriceBadge } from '@/schemas/nodeDefSchema'
 import { toNodeId } from '@/types/nodeId'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+
+const reportErrorMock = vi.hoisted(() => vi.fn())
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: reportErrorMock
+}))
 
 // -----------------------------------------------------------------------------
 // Test Types
@@ -134,6 +140,10 @@ function drainMicrotasks(): Promise<void> {
 // -----------------------------------------------------------------------------
 
 describe('useNodePricing', () => {
+  beforeEach(() => {
+    reportErrorMock.mockClear()
+  })
+
   describe('static expressions', () => {
     it('should evaluate simple static USD price', async () => {
       const { getNodeDisplayPrice } = useNodePricing()
@@ -778,14 +788,27 @@ describe('useNodePricing', () => {
 
       // Should not crash, just return empty
       expect(getNodeDisplayPrice(node)).toBe('')
+      expect(reportErrorMock).toHaveBeenCalledWith(
+        new Error('Failed to compile node pricing rule'),
+        {
+          errorType: 'nodes_pricing_rule_compile_failed',
+          tags: {
+            failure_kind: 'degraded',
+            feature_area: 'nodes',
+            operation: 'render',
+            outcome: 'recovered',
+            assert_mode: 'soft'
+          },
+          level: 'warning'
+        }
+      )
     })
 
     it('should return empty string for expression that throws at runtime', async () => {
       const { getNodeDisplayPrice, pricingRevision } = useNodePricing()
       const node = createMockNodeWithPriceBadge(
         'TestRuntimeErrorNode',
-        // Expression that will fail at runtime (calling function on undefined)
-        priceBadge('$lookup(undefined, "key")')
+        priceBadge('$error("pricing failure")')
       )
 
       const revisionBeforeEvaluation = pricingRevision.value
@@ -798,6 +821,21 @@ describe('useNodePricing', () => {
         { interval: 1 }
       )
       expect(getNodeDisplayPrice(node)).toBe('')
+      expect(reportErrorMock).toHaveBeenCalledWith(
+        new Error('Failed to evaluate node pricing rule'),
+        {
+          errorType: 'nodes_pricing_rule_evaluate_failed',
+          tags: {
+            failure_kind: 'degraded',
+            feature_area: 'nodes',
+            operation: 'render',
+            outcome: 'recovered',
+            assert_mode: 'soft'
+          },
+          context: { evaluation_source: 'live_node' },
+          level: 'warning'
+        }
+      )
     })
 
     it('should return empty string for invalid PricingResult type', async () => {
@@ -1208,6 +1246,10 @@ describe('formatCreditsListValue', () => {
 // -----------------------------------------------------------------------------
 
 describe('evaluateNodeDefPricing', () => {
+  beforeEach(() => {
+    reportErrorMock.mockClear()
+  })
+
   const createMockNodeDef = (
     overrides: Partial<ComfyNodeDef> = {}
   ): ComfyNodeDef =>
@@ -1380,12 +1422,27 @@ describe('evaluateNodeDefPricing', () => {
       name: 'ErrorNode',
       price_badge: {
         engine: 'jsonata',
-        expr: '$lookup(undefined, "key")',
+        expr: '$error("pricing failure")',
         depends_on: { widgets: [], inputs: [], input_groups: [] }
       }
     })
     const result = await evaluateNodeDefPricing(nodeDef)
     expect(result).toBe('')
+    expect(reportErrorMock).toHaveBeenCalledWith(
+      new Error('Failed to evaluate node pricing rule'),
+      {
+        errorType: 'nodes_pricing_rule_evaluate_failed',
+        tags: {
+          failure_kind: 'degraded',
+          feature_area: 'nodes',
+          operation: 'render',
+          outcome: 'recovered',
+          assert_mode: 'soft'
+        },
+        context: { evaluation_source: 'node_definition' },
+        level: 'warning'
+      }
+    )
   })
 
   it('should handle range_usd result', async () => {
