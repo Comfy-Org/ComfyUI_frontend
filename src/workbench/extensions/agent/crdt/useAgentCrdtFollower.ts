@@ -589,10 +589,7 @@ export function useAgentCrdtFollower(
     if (!graph) return
     const nodeIds = reconcileAgentAdapters(
       graph,
-      readSubgraphDefinitions(
-        bridge.follower.doc,
-        new Set(graph.rootGraph.subgraphs.keys())
-      )
+      readSubgraphDefinitions(bridge.follower.doc)
     )
     if (nodeIds.length > 0) {
       recordDevEvent('agent_node_adapters_materialized', {

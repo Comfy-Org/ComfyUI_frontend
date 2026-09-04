@@ -104,43 +104,6 @@ function readDefinition(source: Y.Map<unknown>): ExportedSubgraph {
 }
 
 /**
- * Whether a definition or one of its nested definitions is not registered.
- * Nested definitions are opaque JSON in the v1 document, so walk only their
- * ids and child-definition containers instead of cloning their graph data.
- */
-function hasMissingDefinition(
-  definition: unknown,
-  registeredIds: ReadonlySet<string>
-): boolean {
-  if (typeof definition !== 'object' || definition === null) return true
-  const record = definition as Record<string, unknown>
-  if (typeof record.id !== 'string' || !registeredIds.has(record.id))
-    return true
-
-  const nested = record.definitions
-  if (typeof nested !== 'object' || nested === null) return false
-  const subgraphs = (nested as Record<string, unknown>).subgraphs
-  return (
-    Array.isArray(subgraphs) &&
-    subgraphs.some((subgraph) => hasMissingDefinition(subgraph, registeredIds))
-  )
-}
-
-function needsProjection(
-  source: Y.Map<unknown>,
-  registeredIds: ReadonlySet<string>
-): boolean {
-  if (!registeredIds.size) return true
-  return hasMissingDefinition(
-    {
-      id: source.get('id'),
-      definitions: source.get('definitions')
-    },
-    registeredIds
-  )
-}
-
-/**
  * Project the subgraph definitions the op layer minted into the follower doc
  * back to the `ExportedSubgraph` shape `LGraph.createSubgraphs()` consumes,
  * interior nodes and links in mint order.
@@ -148,10 +111,7 @@ function needsProjection(
  * Mirrors the package's own `projectDefinition()` so that what the agent
  * seeded and what the canvas instantiates agree byte-for-byte on structure.
  */
-export function readSubgraphDefinitions(
-  doc: Y.Doc,
-  registeredIds: ReadonlySet<string> = new Set()
-): ExportedSubgraph[] {
+export function readSubgraphDefinitions(doc: Y.Doc): ExportedSubgraph[] {
   const definitions: ExportedSubgraph[] = []
   // `doc.getMap` defines the root when it is absent. A document that never
   // seeded definitions must keep its shape, so only read a root that exists.
@@ -159,9 +119,7 @@ export function readSubgraphDefinitions(
   // shared type in place; that is a read-side view, not new content.)
   if (!doc.share.has(DEFINITIONS_ROOT)) return definitions
   doc.getMap<unknown>(DEFINITIONS_ROOT).forEach((value) => {
-    if (value instanceof Y.Map && needsProjection(value, registeredIds)) {
-      definitions.push(readDefinition(value))
-    }
+    if (value instanceof Y.Map) definitions.push(readDefinition(value))
   })
   return definitions
 }

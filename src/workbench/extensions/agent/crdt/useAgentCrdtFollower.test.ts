@@ -691,8 +691,7 @@ describe('useAgentCrdtFollower', () => {
       // Definitions come from the doc the bridge currently follows, so a
       // doc_reset remint (which swaps the FollowerDoc) is read fresh.
       expect(definitionsState.readSubgraphDefinitions).toHaveBeenCalledWith(
-        bridge().follower.doc,
-        new Set([fakeDefinitions[0].id])
+        bridge().follower.doc
       )
       unmount()
     })
