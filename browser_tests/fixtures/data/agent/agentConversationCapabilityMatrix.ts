@@ -166,7 +166,17 @@ export const agentConversationCapabilityMatrix: readonly AgentConversationCapabi
     {
       capability: 'agent_ask',
       status: 'blocked',
-      reason: 'panel-does-not-render-event'
+      reason: 'stack-not-rebased-onto-main'
+    },
+    {
+      capability: 'agent_ask_resolved',
+      status: 'blocked',
+      reason: 'stack-not-rebased-onto-main'
+    },
+    {
+      capability: 'reset_doc',
+      status: 'blocked',
+      reason: 'deferred-by-op-vocabulary'
     },
     {
       capability: 'subgraph_operations',

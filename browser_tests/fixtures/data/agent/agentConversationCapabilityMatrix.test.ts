@@ -1,9 +1,12 @@
 // @vitest-environment node
+import { readFileSync } from 'node:fs'
+
 import { describe, expect, it } from 'vitest'
 
 import {
   listRecordedConversations,
-  loadAgentConversation
+  loadAgentConversation,
+  zAgentConversationWorkflow
 } from '@e2e/fixtures/data/agent/agentConversation'
 import { agentConversationCapabilityMatrix } from '@e2e/fixtures/data/agent/agentConversationCapabilityMatrix'
 
@@ -38,6 +41,7 @@ describe('agentConversationCapabilityMatrix', () => {
     const capabilities = agentConversationCapabilityMatrix.map(
       (row) => row.capability
     )
+    expect(new Set(capabilities).size).toBe(capabilities.length)
     expect(capabilities).toEqual([
       'add_node',
       'connect',
@@ -56,6 +60,8 @@ describe('agentConversationCapabilityMatrix', () => {
       'asset_url_in_reply_text',
       'agent_asset',
       'agent_ask',
+      'agent_ask_resolved',
+      'reset_doc',
       'subgraph_operations'
     ])
     expect(
@@ -71,7 +77,17 @@ describe('agentConversationCapabilityMatrix', () => {
       {
         capability: 'agent_ask',
         status: 'blocked',
-        reason: 'panel-does-not-render-event'
+        reason: 'stack-not-rebased-onto-main'
+      },
+      {
+        capability: 'agent_ask_resolved',
+        status: 'blocked',
+        reason: 'stack-not-rebased-onto-main'
+      },
+      {
+        capability: 'reset_doc',
+        status: 'blocked',
+        reason: 'deferred-by-op-vocabulary'
       },
       {
         capability: 'subgraph_operations',
@@ -80,5 +96,26 @@ describe('agentConversationCapabilityMatrix', () => {
         reason: 'no-wire-operation-exists'
       }
     ])
+  })
+
+  it('derives the empty workflow seed from the recorded clear workflow', () => {
+    const seedFixtureUrl = new URL(
+      './agent-seed-empty-workflow.json',
+      import.meta.url
+    )
+    const seedWorkflow = zAgentConversationWorkflow.parse(
+      JSON.parse(readFileSync(seedFixtureUrl, 'utf-8'))
+    )
+    const sourceWorkflow = loadAgentConversation(
+      'agent-rec-clear-workflow'
+    ).workflow
+
+    expect(seedFixtureUrl.pathname).not.toContain('/conversations/')
+    expect(seedWorkflow).toEqual({
+      ...sourceWorkflow,
+      name: 'Empty workflow'
+    })
+    expect(seedWorkflow.catalog.types).toEqual(sourceWorkflow.catalog.types)
+    expect(seedWorkflow.seed).toEqual({ nodes: [], links: [] })
   })
 })

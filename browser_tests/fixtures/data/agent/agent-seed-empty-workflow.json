@@ -1,0 +1,15 @@
+{
+  "id": "b1979b02-7501-4b17-bb01-0f3adc08cf06",
+  "name": "Empty workflow",
+  "catalog": {
+    "types": {
+      "CLIPTextEncode": {
+        "widget_order": ["text"]
+      }
+    }
+  },
+  "seed": {
+    "nodes": [],
+    "links": []
+  }
+}
