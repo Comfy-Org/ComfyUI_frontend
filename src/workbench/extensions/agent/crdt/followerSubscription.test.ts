@@ -854,7 +854,7 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
     error.mockRestore()
   })
 
-  it('retains a schema error after a compatible continuation resumes dispatch', () => {
+  it('keeps the read gate closed until an explicit reset replaces the doc', () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { transport, bridge, projected, schemaErrors } = wire()
     transport.open = true
@@ -897,17 +897,42 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
     expect(nodesMap(follower.doc).get('incompatible')?.get('type')).toBe(
       'SchemaV3Node'
     )
-    expect(nodesMap(follower.doc).get('compatible')?.get('type')).toBe(
-      'SchemaV2Node'
-    )
-    expect(projected).toEqual([
-      expect.objectContaining({ seq: 2, update: compatibleUpdate })
-    ])
+    expect(nodesMap(follower.doc).has('compatible')).toBe(false)
+    expect(follower.updatesApplied).toBe(1)
+    expect(bridge.lastSequence).toBe(1)
+    expect(projected).toHaveLength(0)
     expect(schemaErrors).toEqual([
       { workflowId: WORKFLOW_ID, found: SCHEMA_VERSION + 1 }
     ])
     expect(bridge.lastSchemaError).toBe(retainedError)
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
+
+    transport.deliver('doc_reset', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      seq: 2
+    })
+
+    expect(bridge.follower).not.toBe(follower)
+    expect(bridge.follower.updatesApplied).toBe(0)
+    expect(bridge.follower.doc.getMap('nodes').size).toBe(0)
+    expect(bridge.lastSchemaError).toBeNull()
+    const subscribes = transport.framesOfType('doc_subscribe') as {
+      data: { state_vector_b64: string }
+    }[]
+    expect(subscribes).toHaveLength(2)
+    expect(subscribes[1].data.state_vector_b64).toBe(
+      encodeBase64(Y.encodeStateVector(new Y.Doc()))
+    )
+
+    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
+
+    expect(bridge.follower.updatesApplied).toBe(1)
+    expect(projected).toEqual([expect.objectContaining({ seq: 1 })])
+    expect(schemaErrors).toEqual([
+      { workflowId: WORKFLOW_ID, found: SCHEMA_VERSION + 1 }
+    ])
+    expect(bridge.lastSchemaError).toBeNull()
     error.mockRestore()
   })
 
