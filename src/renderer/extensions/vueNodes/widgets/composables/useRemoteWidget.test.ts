@@ -740,15 +740,37 @@ describe('useRemoteWidget', () => {
       expect(hook.getInventoryStatus()).toBe('error')
     })
 
-    it('stays ready when a stale refresh fails', async () => {
+    it('treats expired data as loading until the refresh settles', async () => {
       const refresh = 4096
       const { hook } = await setupHookWithResponse(['option1'], { refresh })
 
-      mockAxiosError('Network error')
       vi.advanceTimersByTime(refresh)
-      await getResolvedValue(hook)
+      expect(hook.getInventoryStatus()).toBe('loading')
+
+      mockAxiosError('Network error')
+      await hook.waitForInventory()
+
+      expect(hook.getInventoryStatus()).toBe('error')
+    })
+
+    it('follows a replacement request started by a refresh', async () => {
+      let resolveOriginal: (value: unknown) => void = () => undefined
+      vi.mocked(axios.get).mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveOriginal = resolve
+        })
+      )
+      const hook = useRemoteWidget(createMockOptions())
+      hook.getValue()
+      const waiting = hook.waitForInventory()
+
+      mockAxiosResponse(['replacement'])
+      hook.refreshValue?.()
+      resolveOriginal({ data: ['original'], status: 200 })
+      await waiting
 
       expect(hook.getInventoryStatus()).toBe('ready')
+      expect(hook.getCachedValue()).toEqual(['replacement'])
     })
   })
 })

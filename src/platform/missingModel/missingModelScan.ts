@@ -303,9 +303,11 @@ function scanComboWidget(
 
   const inventory = getComboWidgetInventory(target.definitionWidget)
   if (inventory && inventory.getStatus() !== 'ready') {
-    candidate.pendingVerification = async () => {
-      await inventory.waitForSettled()
-      if (inventory.getStatus() !== 'ready') return undefined
+    candidate.pendingVerification = async (signal) => {
+      await untilSettledOrAborted(inventory.waitForSettled(), signal)
+      if (signal?.aborted || inventory.getStatus() !== 'ready') {
+        return undefined
+      }
       if (target.valueWidget.value !== value) return undefined
       return !resolveComboValues(target.definitionWidget).includes(value)
     }
@@ -316,6 +318,24 @@ function scanComboWidget(
     value
   )
   return candidate
+}
+
+async function untilSettledOrAborted(
+  settled: Promise<void>,
+  signal?: AbortSignal
+): Promise<void> {
+  if (!signal) return settled
+  if (signal.aborted) return
+  let onAbort = () => {}
+  const aborted = new Promise<void>((resolve) => {
+    onAbort = resolve
+    signal.addEventListener('abort', onAbort, { once: true })
+  })
+  try {
+    await Promise.race([settled, aborted])
+  } finally {
+    signal.removeEventListener('abort', onAbort)
+  }
 }
 
 export function enrichWithEmbeddedMetadata(
@@ -420,7 +440,7 @@ export async function verifyAssetSupportedCandidates(
     candidates.map(async (candidate) => {
       const verify = candidate.pendingVerification
       if (!verify) return
-      const isMissing = await verify()
+      const isMissing = await verify(signal)
       delete candidate.pendingVerification
       if (!signal?.aborted) candidate.isMissing = isMissing
     })

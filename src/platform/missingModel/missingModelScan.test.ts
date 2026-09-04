@@ -2050,4 +2050,19 @@ describe('remote combo inventory', () => {
 
     expect(candidates[0].isMissing).toBeUndefined()
   })
+  it('releases the deferred check when the scan is aborted', async () => {
+    const { scan } = makeRemoteCombo('selected.safetensors')
+    const candidates = scan()
+    const controller = new AbortController()
+
+    const verifying = verifyAssetSupportedCandidates(
+      candidates,
+      controller.signal
+    )
+    controller.abort()
+    await verifying
+
+    expect(candidates[0].isMissing).toBeUndefined()
+    expect(candidates[0].pendingVerification).toBeUndefined()
+  })
 })

@@ -413,13 +413,21 @@ describe('missingModelPipeline', () => {
         isAssetSupported: false
       } satisfies MissingModelCandidate
       mockHandles.state.enrichedCandidates = [confirmedCandidate]
-      mockHandles.isMissingCandidateActive.mockReturnValue(false)
+      let resolveFolderPaths: (paths: Record<string, string[]>) => void = () =>
+        undefined
+      mockHandles.api.getFolderPaths.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveFolderPaths = resolve
+        })
+      )
 
       await runMissingModelPipeline({
         graph: createGraph(),
         graphData: createWorkflowGraphData(),
         missingModelStore: mockHandles.missingModelStore
       })
+      mockHandles.isMissingCandidateActive.mockReturnValue(false)
+      resolveFolderPaths({})
       await vi.dynamicImportSettled()
 
       expect(

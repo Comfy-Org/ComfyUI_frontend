@@ -212,18 +212,20 @@ export function useRemoteWidget<
 
   function getInventoryStatus(): ComboWidgetInventoryStatus {
     const entry = dataCache.get(cacheKey)
-    if (isInitialized(entry)) return 'ready'
+    const isFresh =
+      isInitialized(entry) && (isPermanent || !isStale(entry, refresh))
+    if (isFresh) return 'ready'
     if (isFailed(entry) || entry?.error) return 'error'
     return 'loading'
   }
 
   async function waitForInventory(): Promise<void> {
-    const inFlight = dataCache.get(cacheKey)?.fetchPromise
-    if (inFlight) {
+    let inFlight = dataCache.get(cacheKey)?.fetchPromise
+    while (inFlight) {
       await inFlight.catch(() => undefined)
-      return
+      inFlight = dataCache.get(cacheKey)?.fetchPromise
     }
-    await fetchValue()
+    await new Promise<void>((resolve) => getValue(resolve))
   }
 
   /**
