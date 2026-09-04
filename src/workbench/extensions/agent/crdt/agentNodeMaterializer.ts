@@ -77,9 +77,18 @@ function registerSubgraphDefinitions(
   )
   if (missing.length === 0) return
   try {
-    const created = rootGraph.createSubgraphs(missing)
-    for (const [index, subgraph] of created.entries()) {
-      applyInteriorWidgetValues(subgraph, missing[index])
+    // createSubgraphs hoists nested `definitions.subgraphs` into its return
+    // value, so match created subgraphs back to definitions by id rather
+    // than by position.
+    const byId = new Map(
+      flattenDefinitions(missing).map((definition) => [
+        definition.id,
+        definition
+      ])
+    )
+    for (const subgraph of rootGraph.createSubgraphs(missing)) {
+      const definition = byId.get(subgraph.id)
+      if (definition) applyInteriorWidgetValues(subgraph, definition)
     }
   } catch (cause) {
     reportError(cause, {
@@ -90,6 +99,16 @@ function registerSubgraphDefinitions(
       }
     })
   }
+}
+
+/** Each definition plus every definition nested under its `definitions`. */
+function flattenDefinitions(
+  definitions: ExportedSubgraph[]
+): ExportedSubgraph[] {
+  return definitions.flatMap((definition) => [
+    definition,
+    ...flattenDefinitions(definition.definitions?.subgraphs ?? [])
+  ])
 }
 
 /**
