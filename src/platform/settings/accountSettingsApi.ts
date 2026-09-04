@@ -2,7 +2,7 @@ import { zGetSettingByIdResponse } from '@comfyorg/ingest-types/zod'
 
 import type { AuthHeader } from '@/types/authTypes'
 
-import { getComfyApiBaseUrl } from '@/config/comfyApi'
+import { getComfyCloudBaseUrl } from '@/config/comfyApi'
 import {
   fetchWithUnifiedRemint,
   shouldRemintCloudRequest
@@ -19,7 +19,7 @@ export class AccountSettingsApiError extends Error {
 }
 
 function accountSettingUrl(id: string): string {
-  return `${getComfyApiBaseUrl()}/api/settings/${encodeURIComponent(id)}`
+  return `${getComfyCloudBaseUrl()}/api/settings/${encodeURIComponent(id)}`
 }
 
 export async function getAccountSetting(

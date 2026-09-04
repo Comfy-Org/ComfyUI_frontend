@@ -30,11 +30,12 @@ const emit = defineEmits<{
 const WIDE_LAYOUT_MIN_WIDTH = 672
 const containerRef = ref<HTMLElement>()
 const isWide = ref(false)
-const actions = computed(() =>
-  isWide.value
+const actions = computed(() => {
+  if (accepting) return ['accept'] as const
+  return isWide.value
     ? (['reject', 'accept'] as const)
     : (['accept', 'reject'] as const)
-)
+})
 
 useResizeObserver(containerRef, ([entry]) => {
   isWide.value = entry.contentRect.width >= WIDE_LAYOUT_MIN_WIDTH
