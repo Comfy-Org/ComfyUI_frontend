@@ -9,14 +9,12 @@ import type {
   AgentMessages,
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { ServerDocWireFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
+import { DOC_PROTOCOL_VERSION } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
-import type { DocFrame } from '@e2e/fixtures/agentConversationHostDoc'
-import {
-  DOC_PROTOCOL_VERSION,
-  HostDoc
-} from '@e2e/fixtures/agentConversationHostDoc'
+import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type {
   AgentConversation,
   AgentConversationTurn,
@@ -227,10 +225,7 @@ class AgentConversationHarness {
     const bodies = this.nodeBodies()
     const byType = new Map(bodies.map((body) => [body.type, body]))
     const byId = new Map(bodies.map((body) => [String(body.id), body]))
-    const catalog = this.conversation.workflow.catalog.types as Record<
-      string,
-      { widget_order: string[] }
-    >
+    const catalog = this.conversation.workflow.catalog.types
     const links = Object.values(graph.links) as Array<
       [unknown, unknown, number, unknown, number, string]
     >
@@ -442,7 +437,7 @@ class AgentConversationHarness {
     return parsed.data
   }
 
-  private send(frame: AgentWsEvent | DocFrame): void {
+  private send(frame: AgentWsEvent | ServerDocWireFrame): void {
     if (!this.socket) throw new Error('the app has not opened /ws yet')
     this.socket.send(JSON.stringify(frame))
   }

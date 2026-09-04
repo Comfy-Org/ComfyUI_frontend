@@ -2,7 +2,6 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import { FROZEN_OPS } from '@comfyorg/comfy-multi-player'
-import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import { z } from 'zod'
 
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
@@ -26,14 +25,42 @@ const zGraphOperation = z.custom<GraphOperation>(
     (FROZEN_OPS as readonly string[]).includes(value.op)
 )
 
-const zWorkflowJson = z.custom<WorkflowJSON>(
-  (value) =>
-    isRecord(value) && Array.isArray(value.nodes) && Array.isArray(value.links)
-)
+// The package types these loosely and passes unknown keys through, so the
+// schema validates the guaranteed fields and keeps the rest.
+const zWorkflowJson = z
+  .object({
+    nodes: z.array(
+      z
+        .object({ id: z.union([z.string(), z.number()]), type: z.string() })
+        .passthrough()
+    ),
+    links: z.array(z.unknown())
+  })
+  .passthrough()
 
-const zWidgetCatalog = z.custom<WidgetCatalog>(
-  (value) => isRecord(value) && isRecord(value.types)
-)
+const zWidgetCatalogEntry = z
+  .object({
+    widget_order: z.array(z.string()),
+    autogrow_templates: z
+      .record(
+        z.string(),
+        z
+          .object({
+            prefix: z.string().optional(),
+            names: z.array(z.string()).optional()
+          })
+          .passthrough()
+      )
+      .optional()
+  })
+  .passthrough()
+
+const zWidgetCatalog = z
+  .object({
+    comment: z.string().optional(),
+    types: z.record(z.string(), zWidgetCatalogEntry)
+  })
+  .passthrough()
 
 export const zAgentConversationWorkflow = z.object({
   id: z.string().uuid(),

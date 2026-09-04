@@ -1,6 +1,6 @@
 import type { Op } from '@comfyorg/comfy-multi-player'
 
-const DOC_PROTOCOL_VERSION = 1
+export const DOC_PROTOCOL_VERSION = 1
 const MAX_AWARENESS_STATE_BYTES = 8 * 1024
 
 export interface DocOp {
@@ -66,6 +66,12 @@ export type ServerDocFrame =
   | { type: 'doc_ops_result'; data: DocOpsResult }
   | { type: 'doc_reset'; data: DocReset }
   | { type: 'awareness'; data: DocAwareness }
+
+/** A frame as it travels the wire, before {@link parseServerDocFrame} reads it. */
+export interface ServerDocWireFrame {
+  type: ServerDocFrame['type']
+  data: WireData
+}
 
 export interface DocFrameTransport {
   /**
