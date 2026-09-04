@@ -1,8 +1,16 @@
 import { describe, expect, it } from 'vitest'
 
-import { mutateExecutionSource, proofIdentity } from './custom-node-proof'
+import {
+  assertNoCommittedSourceTierSwitch,
+  mutateExecutionSource,
+  proofIdentity
+} from './custom-node-proof'
 
 describe('custom-node detection proof', () => {
+  it('keeps the detection proof switch out of committed source', () => {
+    expect(() => assertNoCommittedSourceTierSwitch()).not.toThrow()
+  })
+
   it('mutates only the calibrated S9 witness method', () => {
     const source = `class LoadAudioUpload:
     def load_audio(self, start_time=0, duration=0, **kwargs):
