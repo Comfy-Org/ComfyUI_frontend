@@ -13,6 +13,10 @@ import type { FirebaseOptions } from 'firebase/app'
 
 const STAGING = import.meta.env.PUBLIC_WORKSHOP_CLOUD_ENV === 'staging'
 
+export const WORKSHOP_CLOUD_BASE_URL = STAGING
+  ? 'https://stagingcloud.comfy.org'
+  : 'https://cloud.comfy.org'
+
 export const WORKSHOP_ROUTER_BASE_URL = STAGING
   ? 'https://stagingapi.comfy.org'
   : 'https://api.comfy.org'

@@ -1,8 +1,12 @@
 /**
  * The sign-in page's state, as one union and a pure transition so the
  * orderings that matter — a popup resolving while Firebase's restore
- * listener also fires, a provisioning failure after the popup succeeded —
+ * listener also fires, a session mint failing after the popup succeeded —
  * are decided in one tested place instead of by handler timing.
+ *
+ * `minting` is its own step because the popup succeeding is not the end:
+ * the visitor is signed in only once the workspace session exists, and a
+ * mint failure needs a retry surface that must never re-prompt the popup.
  */
 import { classifyAuthError } from '@comfyorg/auth-core/firebaseAuthError'
 
@@ -13,14 +17,19 @@ export type AuthSignInProvider = 'google' | 'github'
 export type AuthSignInState =
   | { readonly step: 'idle' }
   | { readonly step: 'pending'; readonly provider: AuthSignInProvider }
+  | { readonly step: 'minting'; readonly email: string }
   | { readonly step: 'error'; readonly messageKey: TranslationKey }
+  | { readonly step: 'sessionError'; readonly email: string }
   | { readonly step: 'signedIn'; readonly email: string }
 
 export type AuthSignInEvent =
   | { readonly type: 'signInStarted'; readonly provider: AuthSignInProvider }
-  | { readonly type: 'signInSucceeded'; readonly email: string }
+  | { readonly type: 'popupSucceeded'; readonly email: string }
   | { readonly type: 'signInFailed'; readonly error: unknown }
   | { readonly type: 'userRestored'; readonly email: string }
+  | { readonly type: 'mintSucceeded' }
+  | { readonly type: 'mintFailed' }
+  | { readonly type: 'mintRetried' }
   | { readonly type: 'signedOut' }
 
 const ERROR_KEYS: Record<
@@ -40,24 +49,39 @@ export function authSignInTransition(
 ): AuthSignInState {
   switch (event.type) {
     case 'signInStarted':
-      // One popup at a time: a second click while pending changes nothing.
-      return state.step === 'pending'
+      // One attempt at a time: a click during pending/minting changes nothing.
+      return state.step === 'pending' || state.step === 'minting'
         ? state
         : { step: 'pending', provider: event.provider }
-    case 'signInSucceeded':
-      return { step: 'signedIn', email: event.email }
+    case 'popupSucceeded':
+      return { step: 'minting', email: event.email }
     case 'signInFailed':
       return {
         step: 'error',
         messageKey: ERROR_KEYS[classifyAuthError(event.error).kind]
       }
     case 'userRestored':
-      // Firebase's restore listener also fires mid-popup; the in-flight
-      // attempt owns the outcome then (provisioning may still fail).
-      return state.step === 'pending'
-        ? state
-        : { step: 'signedIn', email: event.email }
+      // A returning Firebase user still needs the mint. While an attempt is
+      // in flight (the popup fires this listener too), the attempt owns the
+      // outcome.
+      return state.step === 'idle' || state.step === 'error'
+        ? { step: 'minting', email: event.email }
+        : state
+    case 'mintSucceeded':
+      return state.step === 'minting'
+        ? { step: 'signedIn', email: state.email }
+        : state
+    case 'mintFailed':
+      return state.step === 'minting'
+        ? { step: 'sessionError', email: state.email }
+        : state
+    case 'mintRetried':
+      return state.step === 'sessionError'
+        ? { step: 'minting', email: state.email }
+        : state
     case 'signedOut':
-      return state.step === 'pending' ? state : { step: 'idle' }
+      return state.step === 'pending' || state.step === 'minting'
+        ? state
+        : { step: 'idle' }
   }
 }

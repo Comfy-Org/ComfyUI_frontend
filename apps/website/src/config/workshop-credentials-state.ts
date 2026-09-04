@@ -1,30 +1,34 @@
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import {
   readStoredCredentials,
   writeStoredCredentials
 } from './workshop-credentials'
+import { useWorkshopSession } from './workshop-session-state'
 
 /**
- * The credential shared between the temporary key bar and the run panel.
+ * The credential shared between the key dialog, the run panel, and the
+ * session. A live workspace session wins; the pasted key remains as the
+ * developer fallback, untouched in localStorage, and is what a signed-out
+ * visitor keeps using. Module-scoped rather than passed as props so islands
+ * share one instance (see workshop-session-state).
  *
- * Module-scoped rather than passed as props because it is scaffolding: in the
- * real product the credential comes from a signed-in session and neither
- * component takes it as input at all. Keeping it out of the component
- * interfaces means deleting the bar is the whole removal.
+ * This ref is a DISPLAY of the credential, not its freshness guarantee: the
+ * run path awaits the session's ensureFresh() before reading it (ADR 0011).
  */
-const credentials = ref('')
+const pastedKey = ref('')
 let loaded = false
 
 export function useWorkshopCredentials() {
   if (!loaded) {
     loaded = true
-    credentials.value = readStoredCredentials()
+    pastedKey.value = readStoredCredentials()
   }
+  const { session } = useWorkshopSession()
   return {
-    credentials,
+    credentials: computed(() => session.value?.token ?? pastedKey.value),
     save: (value: string) => {
-      credentials.value = value
+      pastedKey.value = value
       writeStoredCredentials(value)
     }
   }

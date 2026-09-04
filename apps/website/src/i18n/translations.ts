@@ -142,6 +142,10 @@ const translations = {
     en: 'The request could not be sent.',
     'zh-CN': '请求无法发送。'
   },
+  'workshop.run.error.sessionRefresh': {
+    en: 'Your session could not be refreshed. Sign in again and retry.',
+    'zh-CN': '会话刷新失败，请重新登录后重试。'
+  },
   'workshop.meta.title': {
     en: 'Comfy Workshop',
     'zh-CN': 'Comfy Workshop'
@@ -301,6 +305,18 @@ const translations = {
   'auth.signIn.error.generic': {
     en: 'Sign-in failed. Please try again.',
     'zh-CN': '登录失败，请重试。'
+  },
+  'auth.signIn.error.session': {
+    en: 'You are signed in, but your session could not be started. Retry, or sign out and back in.',
+    'zh-CN': '已登录，但会话启动失败。请重试，或退出后重新登录。'
+  },
+  'auth.signIn.retry': {
+    en: 'Retry',
+    'zh-CN': '重试'
+  },
+  'auth.signIn.starting': {
+    en: 'Starting your session…',
+    'zh-CN': '正在启动会话…'
   },
 
   // Tags (global, reusable across sections)

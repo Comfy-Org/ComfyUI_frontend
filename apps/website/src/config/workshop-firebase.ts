@@ -5,20 +5,15 @@
  * rolls the user back) live tested in @comfyorg/auth-core — this module only
  * supplies the Firebase and network effects.
  *
+ * Firebase is imported dynamically so pages that merely COULD sign in (every
+ * model page reads the credential seam) ship none of it until the auth flag
+ * is on and something here actually runs.
+ *
  * Popup, never `signInWithRedirect`: the redirect flow is broken under
  * Safari's ITP for cross-origin helper domains, which is why the platform
  * app is popup-only too.
  */
-import { getApps, initializeApp } from 'firebase/app'
-import type { User, UserCredential } from 'firebase/auth'
-import {
-  GithubAuthProvider,
-  GoogleAuthProvider,
-  getAuth,
-  onAuthStateChanged,
-  signInWithPopup,
-  signOut
-} from 'firebase/auth'
+import type { Auth, User, UserCredential } from 'firebase/auth'
 
 import { socialSignInWithProvisioning } from '@comfyorg/auth-core/provisioning'
 
@@ -30,11 +25,23 @@ import {
 // Named app: never contend with a default app another script might create.
 const WORKSHOP_APP_NAME = 'workshop'
 
-function workshopAuth() {
+async function workshopAuth(): Promise<Auth> {
+  const [{ getApps, initializeApp }, { getAuth }] = await Promise.all([
+    import('firebase/app'),
+    import('firebase/auth')
+  ])
   const existing = getApps().find((app) => app.name === WORKSHOP_APP_NAME)
   return getAuth(
     existing ?? initializeApp(WORKSHOP_FIREBASE_OPTIONS, WORKSHOP_APP_NAME)
   )
+}
+
+/**
+ * Pre-resolves the Firebase chunks so the popup call inside a click handler
+ * doesn't spend its user-gesture budget on module loading.
+ */
+export async function warmWorkshopAuth(): Promise<void> {
+  await workshopAuth()
 }
 
 /**
@@ -57,27 +64,55 @@ async function provisionCustomer(user: User): Promise<void> {
   }
 }
 
-export function signInWorkshopWithGoogle(): Promise<UserCredential> {
+async function signInWithProvider(
+  provider: 'google' | 'github'
+): Promise<UserCredential> {
+  const [auth, { GithubAuthProvider, GoogleAuthProvider, signInWithPopup }] =
+    await Promise.all([workshopAuth(), import('firebase/auth')])
   return socialSignInWithProvisioning({
-    signIn: () => signInWithPopup(workshopAuth(), new GoogleAuthProvider()),
+    signIn: () =>
+      signInWithPopup(
+        auth,
+        provider === 'google'
+          ? new GoogleAuthProvider()
+          : new GithubAuthProvider()
+      ),
     provisionCustomer: (credential) => provisionCustomer(credential.user)
   })
+}
+
+export function signInWorkshopWithGoogle(): Promise<UserCredential> {
+  return signInWithProvider('google')
 }
 
 export function signInWorkshopWithGitHub(): Promise<UserCredential> {
-  return socialSignInWithProvisioning({
-    signIn: () => signInWithPopup(workshopAuth(), new GithubAuthProvider()),
-    provisionCustomer: (credential) => provisionCustomer(credential.user)
-  })
+  return signInWithProvider('github')
 }
 
-export function signOutWorkshop(): Promise<void> {
-  return signOut(workshopAuth())
+export async function signOutWorkshop(): Promise<void> {
+  const [auth, { signOut }] = await Promise.all([
+    workshopAuth(),
+    import('firebase/auth')
+  ])
+  return signOut(auth)
 }
 
 /** Fires with the restored user (or null) once Firebase settles, then on every change. */
 export function onWorkshopUserChanged(
   callback: (user: User | null) => void
 ): () => void {
-  return onAuthStateChanged(workshopAuth(), callback)
+  let unsubscribe: (() => void) | undefined
+  let cancelled = false
+  void (async () => {
+    const [auth, { onAuthStateChanged }] = await Promise.all([
+      workshopAuth(),
+      import('firebase/auth')
+    ])
+    if (cancelled) return
+    unsubscribe = onAuthStateChanged(auth, callback)
+  })()
+  return () => {
+    cancelled = true
+    unsubscribe?.()
+  }
 }

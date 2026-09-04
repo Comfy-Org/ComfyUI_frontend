@@ -7,11 +7,13 @@ import type {
   WorkshopFormValues
 } from '../../config/workshop-detail'
 import { useWorkshopCredentials } from '../../config/workshop-credentials-state'
+import { WORKSHOP_ROUTER_BASE_URL } from '../../config/workshop-env'
 import type {
   WorkshopRunErrorType,
   WorkshopRunResult
 } from '../../config/workshop-run'
 import { WORKSHOP_RUN_TIMEOUT_MS } from '../../config/workshop-run'
+import { useWorkshopSession } from '../../config/workshop-session-state'
 import {
   extractMediaUrls,
   mediaKindForModality
@@ -20,6 +22,7 @@ import { runTargetFor } from '../../config/workshop-run-target'
 import WorkshopSignInDialog from './WorkshopSignInDialog.vue'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { useWorkshopAuthFlag } from '../../scripts/posthog'
 
 const {
   model,
@@ -32,6 +35,8 @@ const {
 }>()
 
 const { credentials } = useWorkshopCredentials()
+const authFlagEnabled = useWorkshopAuthFlag()
+const { user, ensureFresh, remint } = useWorkshopSession()
 const running = ref(false)
 const signInOpen = ref(false)
 const elapsedMs = ref(0)
@@ -86,8 +91,29 @@ function headingFor(errorType: WorkshopRunErrorType): string {
   return t(errorHeadings[errorType] ?? 'workshop.run.error.generic', locale)
 }
 
+/**
+ * What pressing the primary button means right now: run when a credential is
+ * available (a live session or the pasted key), otherwise offer the way in —
+ * the sign-in page when auth is live, the pasted-key dialog as the fallback.
+ */
+function onPrimaryClick() {
+  if (credentials.value !== '') {
+    void run()
+    return
+  }
+  if (authFlagEnabled.value) {
+    window.location.assign(
+      `/login/?returnTo=${encodeURIComponent(
+        window.location.pathname + window.location.search
+      )}`
+    )
+    return
+  }
+  signInOpen.value = true
+}
+
 async function run() {
-  if (credentials.value === '' || running.value) return
+  if (running.value) return
   running.value = true
   result.value = undefined
   mediaUrls.value = []
@@ -102,11 +128,45 @@ async function run() {
     () => controller?.abort(),
     WORKSHOP_RUN_TIMEOUT_MS
   )
-  try {
-    const outcome = await runTargetFor(model).run(model, values, {
+  // One key for every attempt of this logical run, so the 401 retry below
+  // replays the original dispatch instead of billing a second one.
+  const idempotencyKey = crypto.randomUUID()
+  const attempt = () =>
+    runTargetFor(model).run(model, values, {
       credentials: credentials.value,
-      signal: controller.signal
+      signal: controller?.signal,
+      baseUrl: WORKSHOP_ROUTER_BASE_URL,
+      idempotencyKey
     })
+  try {
+    // Valid-on-read (ADR 0011): the token is guaranteed at the moment of the
+    // run, never by a background timer a throttled tab may not have fired.
+    if (user.value) {
+      const fresh = await ensureFresh()
+      if (fresh && fresh.status !== 'ok' && credentials.value === '') {
+        result.value = {
+          status: 'error',
+          errorType:
+            fresh.reason === 'network' ? 'network_error' : 'unauthorized',
+          detail: t('workshop.run.error.sessionRefresh', locale),
+          requestId: undefined
+        }
+        return
+      }
+    }
+    if (credentials.value === '') return
+
+    let outcome = await attempt()
+    // A live session that still 401s gets exactly one forced re-mint and one
+    // retry; a pasted key gets none — it cannot become valid by retrying.
+    if (
+      outcome.status === 'error' &&
+      outcome.errorType === 'unauthorized' &&
+      user.value
+    ) {
+      const reminted = await remint()
+      if (reminted?.status === 'ok') outcome = await attempt()
+    }
     result.value = outcome
     if (outcome.status === 'ok') {
       mediaUrls.value = extractMediaUrls(outcome.output)
@@ -153,7 +213,7 @@ onBeforeUnmount(() => {
           v-if="!running"
           type="button"
           class="hover:bg-primary-comfy-yellow/90 group bg-primary-comfy-yellow flex h-13 w-full items-center justify-center gap-2.5 rounded-xl text-sm font-semibold tracking-wider text-primary-comfy-ink uppercase transition-colors"
-          @click="credentials === '' ? (signInOpen = true) : run()"
+          @click="onPrimaryClick"
         >
           <Play
             aria-hidden="true"

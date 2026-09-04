@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import SocialAuthButtons from '@comfyorg/auth-core/SocialAuthButtons.vue'
 
@@ -10,11 +10,12 @@ import type {
 } from '../../config/auth-sign-in-state'
 import { authSignInTransition } from '../../config/auth-sign-in-state'
 import {
-  onWorkshopUserChanged,
   signInWorkshopWithGitHub,
   signInWorkshopWithGoogle,
-  signOutWorkshop
+  warmWorkshopAuth
 } from '../../config/workshop-firebase'
+import { safeReturnPath } from '../../config/workshop-return'
+import { useWorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { useWorkshopAuthFlag } from '../../scripts/posthog'
@@ -26,14 +27,36 @@ const { mode = 'signIn', locale = 'en' } = defineProps<{
 }>()
 
 const enabled = useWorkshopAuthFlag()
+const { user, ensureFresh, signOut } = useWorkshopSession()
 const state = ref<AuthSignInState>({ step: 'idle' })
 
 function dispatch(event: AuthSignInEvent) {
   state.value = authSignInTransition(state.value, event)
 }
 
+/**
+ * The whole page exists to send the visitor back where they came from; a
+ * missing or unsafe returnTo lands on the Workshop home.
+ */
+function navigateBack() {
+  window.location.assign(
+    safeReturnPath(new URLSearchParams(window.location.search).get('returnTo'))
+  )
+}
+
+async function runMint() {
+  const result = await ensureFresh()
+  if (state.value.step !== 'minting') return
+  if (result?.status === 'ok') {
+    dispatch({ type: 'mintSucceeded' })
+    navigateBack()
+  } else {
+    dispatch({ type: 'mintFailed' })
+  }
+}
+
 async function signInWith(provider: AuthSignInProvider) {
-  if (state.value.step === 'pending') return
+  if (state.value.step === 'pending' || state.value.step === 'minting') return
   dispatch({ type: 'signInStarted', provider })
   try {
     const credential =
@@ -41,43 +64,61 @@ async function signInWith(provider: AuthSignInProvider) {
         ? await signInWorkshopWithGoogle()
         : await signInWorkshopWithGitHub()
     dispatch({
-      type: 'signInSucceeded',
+      type: 'popupSucceeded',
       email: credential.user.email ?? credential.user.displayName ?? ''
     })
+    await runMint()
   } catch (error) {
     dispatch({ type: 'signInFailed', error })
   }
 }
 
-async function signOut() {
-  try {
-    await signOutWorkshop()
-  } catch (error) {
-    dispatch({ type: 'signInFailed', error })
-  }
+async function retryMint() {
+  dispatch({ type: 'mintRetried' })
+  await runMint()
 }
 
-let stopUserListener: (() => void) | undefined
+async function signOutHere() {
+  await signOut()
+  dispatch({ type: 'signedOut' })
+}
+
+// The session state module owns the Firebase listener; this watch turns a
+// restored user into this page's minting step.
+function watchUser() {
+  return watch(
+    user,
+    (restored) => {
+      if (!restored) {
+        dispatch({ type: 'signedOut' })
+        return
+      }
+      const before = state.value.step
+      dispatch({
+        type: 'userRestored',
+        email: restored.email ?? restored.displayName ?? ''
+      })
+      if (before !== state.value.step && state.value.step === 'minting') {
+        void runMint()
+      }
+    },
+    { immediate: true }
+  )
+}
+
+let stopUserWatch: (() => void) | undefined
 onMounted(() => {
-  stopUserListener = onWorkshopUserChanged((user) => {
-    dispatch(
-      user
-        ? {
-            type: 'userRestored',
-            email: user.email ?? user.displayName ?? ''
-          }
-        : { type: 'signedOut' }
-    )
-  })
+  void warmWorkshopAuth()
+  stopUserWatch = watchUser()
 })
-onBeforeUnmount(() => stopUserListener?.())
+onBeforeUnmount(() => stopUserWatch?.())
 </script>
 
 <template>
   <section
     v-if="enabled"
     class="mx-auto w-full max-w-md rounded-2xl border border-primary-comfy-canvas/15 bg-primary-comfy-canvas/4 p-8"
-    :aria-busy="state.step === 'pending'"
+    :aria-busy="state.step === 'pending' || state.step === 'minting'"
   >
     <template v-if="state.step === 'signedIn'">
       <h1 class="text-2xl font-semibold text-primary-comfy-canvas">
@@ -92,10 +133,29 @@ onBeforeUnmount(() => stopUserListener?.())
       >
         {{ t('auth.signIn.backToWorkshop', locale) }}
       </a>
+    </template>
+
+    <template v-else-if="state.step === 'sessionError'">
+      <h1 class="text-2xl font-semibold text-primary-comfy-canvas">
+        {{ t('auth.signIn.heading', locale) }}
+      </h1>
+      <p
+        role="alert"
+        class="mt-4 rounded-xl border border-red-500/30 bg-red-500/5 p-4 text-sm text-primary-comfy-canvas"
+      >
+        {{ t('auth.signIn.error.session', locale) }}
+      </p>
+      <button
+        type="button"
+        class="hover:bg-primary-comfy-yellow/90 mt-4 flex h-12 w-full items-center justify-center rounded-xl bg-primary-comfy-yellow font-semibold text-primary-comfy-ink transition-colors"
+        @click="retryMint"
+      >
+        {{ t('auth.signIn.retry', locale) }}
+      </button>
       <button
         type="button"
         class="mt-3 flex h-12 w-full items-center justify-center rounded-xl border border-primary-comfy-canvas/25 text-sm text-primary-comfy-canvas transition-colors hover:border-primary-comfy-canvas/40"
-        @click="signOut"
+        @click="signOutHere"
       >
         {{ t('auth.signIn.signOut', locale) }}
       </button>
@@ -121,7 +181,7 @@ onBeforeUnmount(() => stopUserListener?.())
         <SocialAuthButtons
           :google-label="t('auth.signIn.google', locale)"
           :github-label="t('auth.signIn.github', locale)"
-          :disabled="state.step === 'pending'"
+          :disabled="state.step === 'pending' || state.step === 'minting'"
           button-class="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-primary-comfy-canvas/15 bg-primary-comfy-canvas/5 text-sm font-semibold text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow/60 disabled:cursor-not-allowed disabled:opacity-40"
           @google="signInWith('google')"
           @github="signInWith('github')"
@@ -129,11 +189,15 @@ onBeforeUnmount(() => stopUserListener?.())
       </div>
 
       <p
-        v-if="state.step === 'pending'"
+        v-if="state.step === 'pending' || state.step === 'minting'"
         aria-live="polite"
         class="mt-4 text-sm text-primary-comfy-canvas/55"
       >
-        {{ t('auth.signIn.pending', locale) }}
+        {{
+          state.step === 'pending'
+            ? t('auth.signIn.pending', locale)
+            : t('auth.signIn.starting', locale)
+        }}
       </p>
 
       <p
