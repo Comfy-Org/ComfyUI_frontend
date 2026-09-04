@@ -108,7 +108,16 @@ function splitBioFields(text: string): BodySegment[] {
 // one segment.
 export function splitBody(body: string): BodySegment[] {
   const blocks = findTopLevelBlocks(body)
-  if (blocks.length === 0) return [{ translatable: true, text: body }]
+  if (blocks.length === 0) {
+    // A body with no open/close block (e.g. one standalone self-closing
+    // <AuthorBio .../>) still needs its bio: fields extracted; plain prose
+    // with no tags at all has nothing for splitBioFields to find and should
+    // stay translatable in full rather than fall back to its "no match"
+    // default of non-translatable.
+    return [...body.matchAll(mdxTagPattern)].length > 0
+      ? splitBioFields(body)
+      : [{ translatable: true, text: body }]
+  }
 
   const segments: BodySegment[] = []
   let cursor = 0

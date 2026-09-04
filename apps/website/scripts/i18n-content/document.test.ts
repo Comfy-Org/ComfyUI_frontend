@@ -202,6 +202,18 @@ describe('splitBody + joinBody', () => {
     expect(joinBody(segments)).toBe(body)
   })
 
+  it('extracts a bio: field from a body that is only a standalone self-closing <AuthorBio />', () => {
+    const body =
+      '<AuthorBio people={[{ name: "Jane", bio: `Jane is an artist.` }]} />\n'
+    const segments = splitBody(body)
+
+    expect(segments).toContainEqual({
+      translatable: true,
+      text: 'Jane is an artist.'
+    })
+    expect(segments.map((s) => s.text).join('')).toBe(body)
+  })
+
   it('finds the true matching close of a component nested inside itself', () => {
     const body = '<Section><Section>inner</Section> outer-after</Section>'
     const segments = splitBody(body)
