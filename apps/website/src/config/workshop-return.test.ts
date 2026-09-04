@@ -61,6 +61,15 @@ const fields: readonly WorkshopField[] = [
     label: 'HD',
     required: false,
     defaultValue: false
+  },
+  {
+    kind: 'number',
+    name: 'steps',
+    label: 'Steps',
+    required: false,
+    integer: true,
+    step: 1,
+    defaultValue: 20
   }
 ]
 
@@ -69,11 +78,12 @@ describe('stashWorkshopForm / popWorkshopForm', () => {
     sessionStorage.clear()
   })
 
-  it('round-trips plain values and removes the stash after one pop', () => {
-    stashWorkshopForm('flux', fields, { prompt: 'a cat', hd: true })
+  it('round-trips string, number and boolean values and removes the stash after one pop', () => {
+    stashWorkshopForm('flux', fields, { prompt: 'a cat', steps: 30, hd: true })
 
     expect(popWorkshopForm('flux', fields)).toEqual({
       prompt: 'a cat',
+      steps: 30,
       hd: true
     })
     expect(
