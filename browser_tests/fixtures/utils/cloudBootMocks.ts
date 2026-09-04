@@ -17,11 +17,11 @@ interface CloudBootOptions {
 }
 
 /**
- * Stub the core endpoints the cloud app hits on boot so a raw `page` reaches the
- * working app without falling through to the OSS devtools backend. Specs layer
- * their own feature- or flow-specific routes on top.
+ * Stub the endpoints every cloud boot path mocks the same way. Callers layer
+ * their own workspace, billing or flow routes on top; Playwright matches the
+ * most recently registered handler first, so those overrides still win.
  */
-export async function mockCloudBoot(
+export async function mockCloudBootRoutes(
   page: Page,
   { features, settings = {}, objectInfo }: CloudBootOptions
 ) {
@@ -38,9 +38,6 @@ export async function mockCloudBoot(
       })
     )
   )
-  await page.route('**/api/user', (r) =>
-    r.fulfill(jsonRoute({ status: 'active' }))
-  )
   await page.route('**/api/settings', (r) => r.fulfill(jsonRoute(settings)))
   await page.route('**/api/userdata**', (r) => r.fulfill(jsonRoute([])))
   await page.route('**/api/extensions', (r) => r.fulfill(jsonRoute([])))
@@ -51,8 +48,20 @@ export async function mockCloudBoot(
   await page.route('**/api/auth/session', (r) =>
     r.fulfill(jsonRoute({ token: 'mock-workspace-token' }))
   )
-  await mockWorkspace(page, workspace('personal', 'owner'), [])
   await page.route('**/releases**', (r) => r.fulfill(jsonRoute([])))
+}
+
+/**
+ * Stub the core endpoints the cloud app hits on boot so a raw `page` reaches the
+ * working app without falling through to the OSS devtools backend. Specs layer
+ * their own feature- or flow-specific routes on top.
+ */
+export async function mockCloudBoot(page: Page, options: CloudBootOptions) {
+  await mockCloudBootRoutes(page, options)
+  await page.route('**/api/user', (r) =>
+    r.fulfill(jsonRoute({ status: 'active' }))
+  )
+  await mockWorkspace(page, workspace('personal', 'owner'), [])
 }
 
 /**
