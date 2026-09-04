@@ -5,6 +5,10 @@
     "feedbackTooltip": "フィードバック",
     "freeTierPartner": "パートナーノードは有料プランが必要です",
     "freeTierRuns": "残り {available} / {MAX_AVAILABLE} 回",
+    "partnerRunGate": {
+      "signInCaption": "パートナーノードにはアカウントが必要です",
+      "signInToRun": "実行するにはサインイン"
+    },
     "share": "共有",
     "shareTooltip": "ワークフローを共有"
   },
@@ -82,6 +86,7 @@
     "runModeAutoDescription": "Comfy は許可を求めずにワークフローを実行します",
     "runModeLimit": "制限付き自動実行",
     "runModeLimitDescription": "Comfy はワークフローの実行がクレジット上限を超える場合にのみ確認します",
+    "runModeSaveFailed": "実行権限を保存できませんでした。もう一度お試しください。",
     "runModeTriggerAsk": "確認",
     "runModeTriggerAskTooltip": "許可を求める",
     "runModeTriggerAuto": "自動",
@@ -111,6 +116,7 @@
       "3つのモデルを使用した画像から動画へのワークフローを作成"
     ],
     "switchWorkflow": "ワークフローを切り替え",
+    "targetNavigationUnavailable": "このワークフローのターゲットは利用できなくなりました。",
     "thinking": "考え中...",
     "thought": "思考",
     "thoughtTimed": "{seconds} 秒間思考",
@@ -123,8 +129,12 @@
     "uploading": "アップロード中"
   },
   "apiNodesSignInDialog": {
-    "message": "このワークフローにはAPIノードが含まれており、実行するためにはアカウントにサインインする必要があります。",
-    "title": "APIノードを使用するためにはサインインが必要です"
+    "message": "パートナーノードはサードパーティーのサービス上で実行され、アカウントのクレジットを使用します。アカウントを接続するにはサインインしてください。",
+    "partnerNodesInWorkflow": "このワークフロー内のパートナーノード",
+    "signIn": "サインイン",
+    "title": "パートナーノードを実行するにはサインイン",
+    "tooltip": "パートナーノードはサードパーティーのサービス上で実行されます。Comfyで唯一の有料要素であるクレジットを使用します。",
+    "whatArePartnerNodes": "パートナーノードとは？"
   },
   "appBuilder": {
     "vueNodeSwitch": {
@@ -1068,6 +1078,7 @@
     "RECRAFT_COLOR": "Recraftカラー",
     "RECRAFT_CONTROLS": "Recraftコントロール",
     "RECRAFT_V3_STYLE": "Recraft V3スタイル",
+    "RESOLUTION_PREVIEW": "RESOLUTION_PREVIEW",
     "RETARGET_TASK_ID": "リターゲットタスクID",
     "RIG_TASK_ID": "リグタスクID",
     "RUNWAY_ALEPH2_KEYFRAME": "RUNWAY_ALEPH2_KEYFRAME",
@@ -2802,14 +2813,18 @@
       "seeMoreOutputs": "さらに出力を表示",
       "zoom": "拡大"
     },
-    "assetDeletedSuccessfully": "アセットが正常に削除されました",
-    "deleteAssetDescription": "このアセットは完全に削除されます。",
-    "deleteAssetTitle": "このアセットを削除しますか？",
-    "deleteSelectedDescription": "{count} 個のアセットが完全に削除されます。",
-    "deleteSelectedTitle": "選択したアセットを削除しますか？",
+    "assetDelete": {
+      "error": "削除に失敗した項目があります",
+      "success": "削除に成功しました",
+      "warn": "一部の項目を削除できませんでした"
+    },
+    "assetsDeleted": "{n} / {total} 個のアセットを削除しました",
+    "deleteHistoryOnly": "履歴のみが影響を受け、ファイルはディスクに残ります",
+    "deleteItems": "これらの項目を削除",
+    "deletePermanent": "完全に削除されます。",
     "deletingImportedFilesCloudOnly": "インポートしたファイルの削除はクラウド版でのみサポートされています",
+    "deletionUnsupported": "アセットは有効ですが、サーバーは削除をサポートしていません",
     "failedToCreateNode": "ノードの作成に失敗しました",
-    "failedToDeleteAsset": "アセットの削除に失敗しました",
     "failedToExportWorkflow": "ワークフローのエクスポートに失敗しました",
     "jobIdToast": {
       "copied": "コピーしました",
@@ -2817,12 +2832,12 @@
       "jobIdCopied": "ジョブIDをクリップボードにコピーしました",
       "jobIdCopyFailed": "ジョブIDのコピーに失敗しました"
     },
+    "jobsDeleted": "{n} / {total} 件のジョブを削除しました",
     "noJobIdFound": "このアセットにジョブIDが見つかりません",
     "noWorkflowDataFound": "このアセットにワークフローデータが見つかりません",
     "nodeAddedToWorkflow": "{nodeType}ノードがワークフローに追加されました",
     "nodeTypeNotFound": "ノードタイプ {nodeType} が見つかりません",
     "selection": {
-      "assetsDeletedSuccessfully": "{count} 個のアセットが正常に削除されました",
       "deleteSelected": "削除",
       "deleteSelectedAll": "すべて削除",
       "deselectAll": "すべて選択解除",
@@ -2833,7 +2848,6 @@
       "exportStarted": "{count} 件のファイルのZIPエクスポートを準備中",
       "exportWorkflowAll": "すべてのワークフローをエクスポート",
       "failedToAddNodes": "ノードのワークフローへの追加に失敗しました",
-      "failedToDeleteAssets": "選択したアセットの削除に失敗しました",
       "insertAllAssetsAsNodes": "すべてのアセットをノードとして挿入",
       "multipleSelectedAssets": "複数のアセットが選択されています",
       "noWorkflowsFound": "選択したアセットにワークフローデータが見つかりません",
@@ -2841,7 +2855,6 @@
       "nodesAddedToWorkflow": "{count} 個のノードがワークフローに追加されました",
       "openWorkflowAll": "すべてのワークフローを開く",
       "partialAddNodesSuccess": "{succeeded} 件が正常に追加され、{failed} 件が失敗しました",
-      "partialDeleteSuccess": "{succeeded}件の削除に成功、{failed}件の削除に失敗しました",
       "partialWorkflowsExported": "{succeeded} 件が正常にエクスポートされ、{failed} 件が失敗しました",
       "partialWorkflowsOpened": "{succeeded} 件のワークフローが開かれ、{failed} 件が失敗しました",
       "selectedCount": "選択されたアセット: {count}",
@@ -3457,6 +3470,28 @@
     "addColor": "色を追加",
     "swatchTitle": "クリックで編集 · ドラッグで並べ替え · 右クリックで削除"
   },
+  "partnerNodesEducation": {
+    "benefits": {
+      "free": "無料で実行",
+      "noDownload": "セットアップ不要",
+      "noVram": "VRAM不要、GPUは空いたまま",
+      "offline": "オフラインで実行"
+    },
+    "included": "含まれる",
+    "muteOpen": "オープンウェイトclipをミュート",
+    "mutePartner": "パートナーノードclipをミュート",
+    "notIncluded": "含まれない",
+    "openHeader": "オープン",
+    "openTab": "オープンノード",
+    "partnerHeader": "パートナー",
+    "partnerTab": "パートナーノード",
+    "pitch": "違いがわかりますか？ドラッグして比較してください。",
+    "reassurance": "さらに多くを求めるときは、パートナーノードをご利用ください。Comfyのその他の機能は無料のままです。",
+    "sliderLabel": "オープンウェイトとパートナーノードの出力を比較",
+    "tooltip": "パートナーノードは、Comfyを通じて、プロバイダーのハードウェア上でKlingやVeoなどのクローズドソースモデルを実行します。クレジットを使用しますが、Comfyのその他の機能は無料のままです。",
+    "unmuteOpen": "オープンウェイトclipのミュートを解除",
+    "unmutePartner": "パートナーノードclipのミュートを解除"
+  },
   "progressToast": {
     "allDownloadsCompleted": "すべてのダウンロードが完了しました",
     "downloadingModel": "モデルをダウンロード中...",
@@ -3514,7 +3549,6 @@
       "copyErrorMessage": "エラーメッセージをコピー",
       "copyJobId": "ジョブIDをコピー",
       "delete": "削除",
-      "deleteAsset": "アセットを削除",
       "download": "ダウンロード",
       "exportWorkflow": "ワークフローをエクスポート",
       "inspectAsset": "アセットを確認",
@@ -4332,7 +4366,6 @@
     "inactiveTeamTitle": "チームサブスクリプションが無効です",
     "inviteUpTo": "最大招待数",
     "invoiceHistory": "請求履歴",
-    "learnMore": "詳細を見る",
     "manageBilling": "請求管理",
     "managePlan": "プランを管理",
     "manageSubscription": "サブスクリプションを管理",
@@ -4460,6 +4493,7 @@
       },
       "refillReplacesNote": "月間補充を置き換えます。既存の残高は保持されます。",
       "renewsAt": "{date}に{amount}で更新されます。いつでもキャンセルできます。",
+      "renewsAtAmount": "{amount}で更新。いつでもキャンセルできます。",
       "savedPaymentMethod": "お支払い方法",
       "showMoreFeatures": "さらに機能を表示",
       "starting": "{date}から開始",
@@ -4599,7 +4633,6 @@
     "videoTemplateBasedCredits": "Wan 2.2 画像から動画で生成された動画",
     "viewEnterprise": "エンタープライズを見る",
     "viewMoreDetails": "詳細を表示",
-    "viewMoreDetailsPlans": "プランと価格の詳細を見る",
     "viewUsageHistory": "利用履歴を表示",
     "whatsIncluded": "含まれる内容：",
     "workspaceNotSubscribed": "このワークスペースはサブスクリプションに加入していません",
