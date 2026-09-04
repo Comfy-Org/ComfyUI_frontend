@@ -57,6 +57,10 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
     settingStore.settingValues['Comfy.Workflow.ShowMissingNodesWarning'] = true
     await nextTick()
     expect(nodeA.has_errors).toBe(true)
+
+    settingStore.settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = false
+    await nextTick()
+    expect(nodeA.has_errors).toBe(true)
   })
 
   it('sets has_errors on nodes referenced in lastNodeErrors', async () => {

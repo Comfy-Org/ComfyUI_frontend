@@ -123,9 +123,10 @@ export function useNodeErrorFlagSync(
         showErrorsTab.value
           ? missingMediaStore.missingMediaAncestorExecutionIds
           : new Set(),
-        showErrorsTab.value
-          ? missingNodesStore.missingAncestorExecutionIds
-          : new Set()
+        // Placeholders for missing nodes are flagged at creation regardless
+        // of the Errors tab, so keep that and let only the nodes warning
+        // setting clear them.
+        missingNodesStore.missingAncestorExecutionIds
       )
     },
     { flush: 'post' }
