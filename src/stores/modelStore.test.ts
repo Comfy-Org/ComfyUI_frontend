@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { assetService } from '@/platform/assets/services/assetService'
+import type * as DistributionTypes from '@/platform/distribution/types'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
@@ -13,16 +14,12 @@ import {
   useModelStore
 } from '@/stores/modelStore'
 
-const { isCloudRef } = vi.hoisted(() => ({ isCloudRef: { value: false } }))
+const mockDistribution = vi.hoisted(
+  (): { isCloud: typeof DistributionTypes.isCloud } => ({ isCloud: false })
+)
 
-vi.mock('@/platform/distribution/types', async (importOriginal) => ({
-  ...(await importOriginal<Record<string, unknown>>()),
-  get isCloud() {
-    return isCloudRef.value
-  }
-}))
+vi.mock('@/platform/distribution/types', () => mockDistribution)
 
-// Mock the api
 vi.mock('@/scripts/api', () => ({
   api: {
     getModels: vi.fn(),
@@ -110,7 +107,7 @@ describe('useModelStore', () => {
   let store: ReturnType<typeof useModelStore>
 
   beforeEach(async () => {
-    isCloudRef.value = false
+    mockDistribution.isCloud = false
     remoteConfig.value = {}
   })
 
@@ -677,7 +674,7 @@ describe('useModelStore', () => {
 
   describe('cloud gating', () => {
     beforeEach(() => {
-      isCloudRef.value = true
+      mockDistribution.isCloud = true
     })
 
     it('does not read safetensors metadata from disk on cloud', async () => {
