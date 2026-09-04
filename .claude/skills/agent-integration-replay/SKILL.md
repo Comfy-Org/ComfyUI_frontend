@@ -5,9 +5,7 @@ description: 'Run the agent integration suite: replay recorded agent conversatio
 
 # Agent integration replay
 
-Three jobs, each one command pair. The playbook with the setup and the
-glossary is `docs/testing/agent-integration-development.md`; this skill is the
-short form for an agent that already has a checkout.
+Four jobs. Setup and glossary: `docs/testing/agent-integration-development.md`.
 
 Replay needs only a ComfyUI backend on port 8188. Running the agent and
 recording need the cloud repo checked out beside this one as `../cloud`, `air`
@@ -45,16 +43,14 @@ PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://localhost:5173 DISTRIBUTION=cloud 
 
 Add `--headed -g <case id>` to watch one and `RECORD_VIDEO=true` for video.
 
-- A failing replay names the turn and the assertion that failed. Compare the
-  recording's `response` entries for that turn with what the panel rendered
-  before touching the fixture; the fixture is data, never edit it by hand to
-  make a test pass.
+- A failing replay names the turn and the assertion. Compare that turn's
+  `response` entries with what the panel rendered; never edit a fixture to make
+  a test pass.
 
 ## 2. Run the real agent locally
 
-Not needed for replay. Use it to drive the real model with hot reload while
-changing agent or panel code, to run the unmocked smoke, or as the first step
-of recording.
+For driving the real model with hot reload, the unmocked smoke, or as the
+first step of recording.
 
 ```bash
 pnpm tsx scripts/dev-agent-integration.ts
@@ -70,9 +66,9 @@ PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://127.0.0.1:6207 pnpm exec playwrigh
 
 ## 3. Record a new conversation
 
-Recording drives the real local agent on the cloud repo's full stack (the doc
-host and the Postgres audit rows are what make the recording trustworthy, so
-standalone mode cannot record).
+Recording needs the cloud repo's full stack: the doc host and the Postgres
+audit rows are what make a recording trustworthy, so standalone mode cannot
+record.
 
 ```bash
 cd ../cloud && cloud up
@@ -83,25 +79,33 @@ AGENT_MODEL=claude-opus-5 COMFY_BIN=~/.local/bin/comfy pnpm tsx scripts/dev-agen
 ```
 
 The launcher prints the recorder command with the environment filled in.
-Paste it, adding one `--prompt "<text>"` per turn and `--out <fixture path>`;
-for a cancelled turn add `--cancel-turn <k> --cancel-after-ms <n>`; `--work <dir>`
-moves the provenance sidecars out of `recordings/`. The
-recorder refuses the recording, with the reason, when the socket stream never
-opened, a turn was not accepted, an applied operation is missing from the tool
-result, or a cancel was not acknowledged; fix the cause and re-run rather than
-editing the output.
+Paste it with one `--prompt "<text>"` per turn and `--out <fixture path>`;
+`--cancel-turn <k> --cancel-after-ms <n>` cancels a turn mid-stream;
+`--work <dir>` moves the provenance sidecars out of `recordings/`. A refused
+recording names its gate; fix the cause and re-run, never edit the output.
 
 Then replay the new case alone (`pnpm comfy-test agent-replay --case <case id>`)
 before committing
 it. Name the case after the behavior it pins, `agent-rec-<behavior>`.
 
+## 4. Import a Langfuse session
+
+A conversation that already ran on a hosted agent becomes a fixture from its
+trace (arrives with #17018):
+
+```bash
+AGENT_CLOUD_SHA=<cloud sha> pnpm exec tsx scripts/agentConversationFromLangfuse.ts <caseId> <seedFixture.json> --trace <traceId> --workflow <cloudWorkflowId> --out <fixture path>
+```
+
+`--session <sessionId>` takes a whole session. Credentials come from
+`~/.config/comfy-agent/langfuse.env`; the audit rows still come from that
+environment's Postgres (`AGENT_PG_EXEC`), so the database must be reachable.
+Then replay the case (job 1) to see the session in the UI, with `--video` for
+a recording. Details: `browser_tests/fixtures/data/agent/README.md`.
+
 ## Conventions
 
-- One recording per agent bug fix: a fix that changes what the agent's ops do
-  to the graph or the panel ships with a recording that failed before the fix.
-  See `browser_tests/fixtures/data/agent/README.md`.
-- Fixtures validate against `zAgentConversation` in
-  `browser_tests/fixtures/data/agent/agentConversation.ts`; a schema change is
-  a versioned change, never a silent one.
-- Never run the record-mode stack while another recording session has it up;
-  check ports 8086, 5173 and 6207 first.
+- One recording per agent bug fix, made before the fix so it went red.
+- Fixtures validate against `zAgentConversation`; a schema change is versioned,
+  never silent.
+- Check ports 8086, 5173 and 6207 before bringing the record-mode stack up.
