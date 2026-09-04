@@ -457,7 +457,17 @@ const sessionRestorePrefixes = [
 const sessionRestoreKeys = [
   'Comfy.PreviousWorkflow',
   'Comfy.OpenWorkflowsPaths',
-  'Comfy.ActiveWorkflowIndex'
+  'Comfy.ActiveWorkflowIndex',
+  // FEC-5: the agent's persisted CRDT doc id. Owned by
+  // `workbench/extensions/agent/crdt/persistedDocId.ts` and duplicated here as a
+  // literal on purpose - importing the agent module would pull it into every
+  // build and defeat the distribution seam's dead-code elimination. Sign-out and
+  // workspace switching both end in `window.location.reload()`, which preserves
+  // sessionStorage and reports navigation type `reload`, so without this the
+  // reconciler's reload-adoption branch would rebind the previous account's or
+  // workspace's document. `persistedDocId.test.ts` pins the two spellings
+  // together.
+  'Comfy.Agent.CrdtDocId'
 ]
 
 function removeStorageKeys(
