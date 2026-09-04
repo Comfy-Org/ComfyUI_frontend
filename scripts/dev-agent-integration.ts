@@ -7,12 +7,7 @@ import { resolve } from 'node:path'
 import type { Options } from './dev-agent-options'
 import { PROJECT_ROOT, USAGE, parseOptions } from './dev-agent-options'
 import { runRecord } from './dev-agent-record-mode'
-import {
-  assertReachable,
-  spawnGroup,
-  supervise,
-  waitForHttp
-} from './dev-agent-supervisor'
+import { assertReachable, supervise, waitForHttp } from './dev-agent-supervisor'
 
 async function assertWorkspacePackage(): Promise<void> {
   const manifest = JSON.parse(
@@ -76,13 +71,12 @@ async function run(options: Options): Promise<number> {
   const agentUrl = `http://127.0.0.1:${options.agentPort}`
   const supervisor = supervise(dataDir)
   try {
-    const agent = spawnGroup(
+    const agent = supervisor.spawn(
       options.airBin,
       ['-c', '.air.toml'],
       agentDir,
       standaloneEnv(options, dataDir, token)
     )
-    supervisor.watch(agent)
     const startupResult = await Promise.race([
       waitForHttp(
         agent,
@@ -94,7 +88,7 @@ async function run(options: Options): Promise<number> {
     ])
     if (startupResult !== null) return await supervisor.stop(startupResult)
     const frontendUrl = `http://127.0.0.1:${options.frontendPort}`
-    const frontend = spawnGroup(
+    const frontend = supervisor.spawn(
       'pnpm',
       [
         'exec',
@@ -116,7 +110,6 @@ async function run(options: Options): Promise<number> {
         VITE_AGENT_STANDALONE: 'true'
       }
     )
-    supervisor.watch(frontend)
     await waitForHttp(frontend, frontendUrl, supervisor.requested, 'Vite')
     process.stdout.write(
       `\nAgent integration environment ready: ${frontendUrl}\n` +

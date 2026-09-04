@@ -9,7 +9,6 @@ import { promisify } from 'node:util'
 import type { Options } from './dev-agent-options'
 import {
   assertReachable,
-  spawnGroup,
   supervise,
   wait,
   waitForHttp
@@ -200,22 +199,20 @@ export async function runRecord(options: Options): Promise<number> {
   const supervisor = supervise(dataDir)
   try {
     if (options.engine === 'temporal') {
-      supervisor.watch(
-        spawnGroup(
-          'temporal',
-          [
-            'server',
-            'start-dev',
-            '--ip',
-            '127.0.0.1',
-            '--port',
-            String(options.temporalPort),
-            '--ui-port',
-            String(options.temporalUiPort)
-          ],
-          agentDir,
-          process.env
-        )
+      supervisor.spawn(
+        'temporal',
+        [
+          'server',
+          'start-dev',
+          '--ip',
+          '127.0.0.1',
+          '--port',
+          String(options.temporalPort),
+          '--ui-port',
+          String(options.temporalUiPort)
+        ],
+        agentDir,
+        process.env
       )
       const listening = await Promise.race([
         waitForPort(options.temporalPort, 'Temporal', 60_000).then(() => true),
@@ -225,18 +222,16 @@ export async function runRecord(options: Options): Promise<number> {
         throw new Error('Temporal exited before it started listening')
       }
     }
-    const docHost = spawnGroup('bash', ['dochost/start.sh'], agentDir, {
+    supervisor.spawn('bash', ['dochost/start.sh'], agentDir, {
       ...process.env,
       DOC_HOST_PORT: String(options.docHostPort)
     })
-    supervisor.watch(docHost)
-    const agent = spawnGroup(
+    const agent = supervisor.spawn(
       'bash',
       ['start.sh'],
       agentDir,
       recordEnv(options, catalogPath, secret)
     )
-    supervisor.watch(agent)
 
     const startupResult = await Promise.race([
       waitForHttp(

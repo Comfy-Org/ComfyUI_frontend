@@ -7,7 +7,7 @@ export async function assertReachable(url: string): Promise<void> {
   if (!response.ok) throw new Error(`${url} returned HTTP ${response.status}`)
 }
 
-export function spawnGroup(
+function spawnGroup(
   command: string,
   args: string[],
   cwd: string,
@@ -90,9 +90,24 @@ export function supervise(dataDir: string) {
   const onSigterm = () => requestExit(143)
   process.once('SIGINT', onSigint)
   process.once('SIGTERM', onSigterm)
+  function watch(child: ChildProcess): void {
+    children.push(child)
+    child.once('exit', (code) => requestExit(code ?? 1))
+    child.once('error', () => requestExit(1))
+  }
   return {
     exitRequested,
     requested: () => requestedExitCode !== null,
+    spawn(
+      command: string,
+      args: string[],
+      cwd: string,
+      env: NodeJS.ProcessEnv
+    ): ChildProcess {
+      const child = spawnGroup(command, args, cwd, env)
+      watch(child)
+      return child
+    },
     // Signalled newest first, so a dependent stops before what it was talking to.
     stop: async (exitCode: number): Promise<number> => {
       if (stopping) return exitCode
@@ -108,11 +123,6 @@ export function supervise(dataDir: string) {
       process.removeListener('SIGINT', onSigint)
       process.removeListener('SIGTERM', onSigterm)
       return exitCode
-    },
-    watch: (child: ChildProcess) => {
-      children.push(child)
-      child.once('exit', (code) => requestExit(code ?? 1))
-      child.once('error', () => requestExit(1))
     }
   }
 }
