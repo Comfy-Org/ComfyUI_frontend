@@ -229,9 +229,11 @@ components:
           type: string
         op_ids:
           type: array
+          maxItems: 256
           items:
             type: string
             minLength: 1
+            maxLength: 128
           description:
             Creator-minted operation ids whose effects are included in
             this update.
