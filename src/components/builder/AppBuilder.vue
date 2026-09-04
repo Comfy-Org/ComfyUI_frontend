@@ -140,7 +140,7 @@ function handleClick(e: MouseEvent) {
     return
   }
   const visibility = widget.visibility ?? deriveWidgetVisibility(widget)
-  if (!isSelectInputsMode.value || visibility.display.panel === 'never') return
+  if (!isSelectInputsMode.value || visibility.surfaces.panel === 'never') return
 
   const widgetId = widget.widgetId
   if (!widgetId) return

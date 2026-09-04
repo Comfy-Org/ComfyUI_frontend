@@ -231,8 +231,8 @@ describe('SubgraphEditor', () => {
     if (!hiddenWidget.visibility || !pseudoWidget.visibility) {
       throw new Error('Missing concrete widget visibility')
     }
-    hiddenWidget.visibility.display.vueNode = 'never'
-    pseudoWidget.visibility.display.vueNode = 'never'
+    hiddenWidget.visibility.surfaces.vueNode = 'never'
+    pseudoWidget.visibility.surfaces.vueNode = 'never'
     useSettingStore().settingValues['Comfy.VueNodes.Enabled'] = true
     useCanvasStore().selectedItems = [host]
 

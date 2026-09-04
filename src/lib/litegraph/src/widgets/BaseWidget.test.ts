@@ -123,7 +123,7 @@ describe('BaseWidget store integration', () => {
       widget.options.advanced = true
 
       expect(widget.hidden).toBe(true)
-      expect(widget.visibility.display.panel).toBe('never')
+      expect(widget.visibility.surfaces.panel).toBe('never')
       expect(widget.advanced).toBe(true)
 
       widget.setNodeId(toNodeId(1))
@@ -133,7 +133,7 @@ describe('BaseWidget store integration', () => {
       widget.options.advanced = false
 
       expect(widget.hidden).toBe(false)
-      expect(widget.visibility.display.panel).toBe('shown')
+      expect(widget.visibility.surfaces.panel).toBe('shown')
       expect(widget.advanced).toBe(false)
     })
 
@@ -153,7 +153,7 @@ describe('BaseWidget store integration', () => {
       expect(isWidgetHidden(widget.visibility)).toBe(false)
     })
 
-    it('resets omitted display tiers when options are replaced', () => {
+    it('resets omitted surface tiers when options are replaced', () => {
       const widget = createTestWidget(node)
       widget.options.hidden = true
       widget.options.hideInPanel = true
@@ -162,7 +162,7 @@ describe('BaseWidget store integration', () => {
       widget.options = {}
 
       expect(widget.hidden).toBe(true)
-      expect(widget.visibility.display).toEqual({
+      expect(widget.visibility.surfaces).toEqual({
         canvas: 'shown',
         vueNode: 'shown',
         panel: 'shown'
@@ -175,28 +175,28 @@ describe('BaseWidget store integration', () => {
       })
       widget.setNodeId(toNodeId(1))
 
-      expect(widget.visibility.display).toEqual({
+      expect(widget.visibility.surfaces).toEqual({
         canvas: 'shown',
         vueNode: 'never',
         panel: 'never'
       })
 
       widget.options.canvasOnly = false
-      expect(widget.visibility.display).toEqual({
+      expect(widget.visibility.surfaces).toEqual({
         canvas: 'shown',
         vueNode: 'shown',
         panel: 'shown'
       })
 
       widget.options.canvasOnly = true
-      expect(widget.visibility.display).toEqual({
+      expect(widget.visibility.surfaces).toEqual({
         canvas: 'shown',
         vueNode: 'never',
         panel: 'never'
       })
 
       delete widget.options.canvasOnly
-      expect(widget.visibility.display).toEqual({
+      expect(widget.visibility.surfaces).toEqual({
         canvas: 'shown',
         vueNode: 'shown',
         panel: 'shown'
@@ -204,7 +204,7 @@ describe('BaseWidget store integration', () => {
 
       widget.options.hideInPanel = true
       widget.options.canvasOnly = false
-      expect(widget.visibility.display).toEqual({
+      expect(widget.visibility.surfaces).toEqual({
         canvas: 'shown',
         vueNode: 'shown',
         panel: 'never'
@@ -215,14 +215,14 @@ describe('BaseWidget store integration', () => {
       const widget = createTestWidget(node)
 
       widget.options = { canvasOnly: true }
-      expect(widget.visibility.display).toEqual({
+      expect(widget.visibility.surfaces).toEqual({
         canvas: 'shown',
         vueNode: 'never',
         panel: 'never'
       })
 
       widget.options = {}
-      expect(widget.visibility.display).toEqual({
+      expect(widget.visibility.surfaces).toEqual({
         canvas: 'shown',
         vueNode: 'shown',
         panel: 'shown'
@@ -287,10 +287,10 @@ describe('BaseWidget store integration', () => {
       })
 
       widget.advanced = true
-      expect(widget.visibility.display.canvas).toBe('advanced')
+      expect(widget.visibility.surfaces.canvas).toBe('advanced')
 
       widget.advanced = undefined
-      expect(widget.visibility.display).toEqual({
+      expect(widget.visibility.surfaces).toEqual({
         canvas: 'shown',
         vueNode: 'advanced',
         panel: 'advanced'
@@ -367,9 +367,9 @@ describe('BaseWidget store integration', () => {
       expect(visibility()).toBe(false)
 
       widget.options.hideInPanel = true
-      expect(store.getWidgetVisibility(id)?.display.panel).toBe('never')
+      expect(store.getWidgetVisibility(id)?.surfaces.panel).toBe('never')
       delete widget.options.hideInPanel
-      expect(store.getWidgetVisibility(id)?.display.panel).toBe('shown')
+      expect(store.getWidgetVisibility(id)?.surfaces.panel).toBe('shown')
     })
 
     it('clears stale hidden state when a converted widget is restored', () => {

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   applyLegacyAdvancedWrite,
   applyLegacyHiddenWrite,
-  deriveWidgetDisplay,
+  deriveWidgetSurfaces,
   deriveWidgetVisibility,
   isLegacyHiddenWidgetType,
   isLegacyWidgetHidingType,
@@ -17,7 +17,7 @@ import {
   WIDGET_SURFACES
 } from '@/types/widgetVisibility'
 
-describe('deriveWidgetDisplay', () => {
+describe('deriveWidgetSurfaces', () => {
   it.for([
     [{ type: 'number' }, ['shown', 'shown', 'shown']],
     [
@@ -33,9 +33,11 @@ describe('deriveWidgetDisplay', () => {
       { type: 'text', options: { hideInPanel: true } },
       ['shown', 'shown', 'never']
     ]
-  ] as const)('applies display policy for %o', ([widget, expected]) => {
-    const display = deriveWidgetDisplay(widget)
-    expect(WIDGET_SURFACES.map((surface) => display[surface])).toEqual(expected)
+  ] as const)('applies surface policy for %o', ([widget, expected]) => {
+    const surfaces = deriveWidgetSurfaces(widget)
+    expect(WIDGET_SURFACES.map((surface) => surfaces[surface])).toEqual(
+      expected
+    )
   })
 })
 
@@ -52,7 +54,7 @@ describe('isWidgetVisibleOnSurface', () => {
     ([tier, showAdvanced, expected]) => {
       const visibility = deriveWidgetVisibility({ type: 'number' })
       for (const surface of WIDGET_SURFACES) {
-        visibility.display[surface] = tier
+        visibility.surfaces[surface] = tier
         expect(
           isWidgetVisibleOnSurface(visibility, surface, { showAdvanced })
         ).toBe(expected)
@@ -62,7 +64,7 @@ describe('isWidgetVisibleOnSurface', () => {
 
   it('suppression hides on every surface regardless of tier', () => {
     const suppressed = {
-      display: { ...shown.display },
+      surfaces: { ...shown.surfaces },
       suppression: { byExtension: false, byConnection: true }
     }
     expect(
@@ -152,7 +154,7 @@ describe('legacy facades', () => {
     expect(isWidgetHidden(canvasOnly)).toBe(false)
   })
 
-  it('hidden writes round-trip without losing static display tiers', () => {
+  it('hidden writes round-trip without losing static surface tiers', () => {
     const visibility = deriveWidgetVisibility({
       type: 'number',
       advanced: true
@@ -161,7 +163,7 @@ describe('legacy facades', () => {
     expect(isWidgetHidden(visibility)).toBe(true)
     applyLegacyHiddenWrite(visibility, false)
     expect(isWidgetHidden(visibility)).toBe(false)
-    expect(visibility.display.canvas).toBe('advanced')
+    expect(visibility.surfaces.canvas).toBe('advanced')
   })
 
   it('hideInPanel writes toggle the panel tier around its vueNode baseline', () => {
@@ -172,14 +174,14 @@ describe('legacy facades', () => {
     setWidgetHiddenInPanel(advanced, true)
     expect(isWidgetHiddenInPanel(advanced)).toBe(true)
     setWidgetHiddenInPanel(advanced, false)
-    expect(advanced.display.panel).toBe('advanced')
+    expect(advanced.surfaces.panel).toBe('advanced')
 
     const canvasOnly = deriveWidgetVisibility({
       type: 'combo',
       options: { canvasOnly: true }
     })
     setWidgetHiddenInPanel(canvasOnly, false)
-    expect(canvasOnly.display.panel).toBe('never')
+    expect(canvasOnly.surfaces.panel).toBe('never')
   })
 
   it('advanced writes toggle shown tiers only', () => {
@@ -189,26 +191,26 @@ describe('legacy facades', () => {
     })
     setWidgetAdvanced(visibility, true)
     expect(isWidgetAdvanced(visibility)).toBe(true)
-    expect(visibility.display).toEqual({
+    expect(visibility.surfaces).toEqual({
       canvas: 'advanced',
       vueNode: 'advanced',
       panel: 'never'
     })
     setWidgetAdvanced(visibility, false)
     expect(isWidgetAdvanced(visibility)).toBe(false)
-    expect(visibility.display.panel).toBe('never')
+    expect(visibility.surfaces.panel).toBe('never')
   })
 
   it('runtime advanced writes gate all surfaces without registration advanced', () => {
     const visibility = deriveWidgetVisibility({ type: 'number' })
     applyLegacyAdvancedWrite(visibility, true, false)
-    expect(visibility.display).toEqual({
+    expect(visibility.surfaces).toEqual({
       canvas: 'advanced',
       vueNode: 'advanced',
       panel: 'advanced'
     })
     applyLegacyAdvancedWrite(visibility, undefined, false)
-    expect(visibility.display).toEqual({
+    expect(visibility.surfaces).toEqual({
       canvas: 'shown',
       vueNode: 'shown',
       panel: 'shown'
@@ -221,9 +223,9 @@ describe('legacy facades', () => {
       options: { advanced: true }
     })
     applyLegacyAdvancedWrite(visibility, true, true)
-    expect(visibility.display.canvas).toBe('advanced')
+    expect(visibility.surfaces.canvas).toBe('advanced')
     applyLegacyAdvancedWrite(visibility, undefined, true)
-    expect(visibility.display).toEqual({
+    expect(visibility.surfaces).toEqual({
       canvas: 'shown',
       vueNode: 'advanced',
       panel: 'advanced'

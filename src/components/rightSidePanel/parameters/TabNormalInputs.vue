@@ -37,7 +37,7 @@ const advancedWidgetsSectionDataList = computed((): NodeWidgetsListList => {
           return (
             !visibility.suppression.byExtension &&
             !visibility.suppression.byConnection &&
-            visibility.display.panel === 'advanced'
+            visibility.surfaces.panel === 'advanced'
           )
         })
         .map((widget) => ({ node, widget }))

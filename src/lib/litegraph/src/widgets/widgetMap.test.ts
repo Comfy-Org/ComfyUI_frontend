@@ -217,7 +217,7 @@ describe('toConcreteWidget', () => {
     result.options.advanced = true
 
     expect(result.hidden).toBe(true)
-    expect(result.visibility.display.panel).toBe('never')
+    expect(result.visibility.surfaces.panel).toBe('never')
     expect(result.advanced).toBe(true)
   })
 

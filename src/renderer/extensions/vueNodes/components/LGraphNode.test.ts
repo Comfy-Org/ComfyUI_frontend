@@ -507,8 +507,8 @@ describe('LGraphNode', () => {
     const visibility = store.getWidgetVisibility(id)
     expect(visibility).toBeDefined()
     if (visibility) {
-      visibility.display.canvas = 'advanced'
-      visibility.display.vueNode = 'shown'
+      visibility.surfaces.canvas = 'advanced'
+      visibility.surfaces.vueNode = 'shown'
     }
 
     renderLGraphNode({ nodeData: mockNodeData })

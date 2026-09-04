@@ -187,7 +187,7 @@ const candidateWidgets = computed<WidgetItem[]>(() => {
       const visibility = widget.visibility ?? deriveWidgetVisibility(widget)
       return (
         widget.name.startsWith('$$') ||
-        !(shouldRenderVueNodes.value && visibility.display.vueNode === 'never')
+        !(shouldRenderVueNodes.value && visibility.surfaces.vueNode === 'never')
       )
     })
 })

@@ -287,7 +287,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   }
 
   private _visibility: WidgetVisibilityComponent = {
-    display: { canvas: 'shown', vueNode: 'shown', panel: 'shown' },
+    surfaces: { canvas: 'shown', vueNode: 'shown', panel: 'shown' },
     suppression: { byExtension: false, byConnection: false }
   }
 
@@ -467,7 +467,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   }
 
   getOutlineColor() {
-    return this._visibility.display.canvas === 'advanced'
+    return this._visibility.surfaces.canvas === 'advanced'
       ? litegraph().WIDGET_ADVANCED_OUTLINE_COLOR
       : litegraph().WIDGET_OUTLINE_COLOR
   }

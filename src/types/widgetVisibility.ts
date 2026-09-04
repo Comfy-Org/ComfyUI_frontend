@@ -1,7 +1,7 @@
 /**
  * Widget visibility as a data-oriented component (ADR 0003/0008).
  *
- * Static, registration-time policy lives in {@link WidgetDisplay}: one tier
+ * Static, registration-time policy lives in {@link WidgetSurfaces}: one tier
  * per rendering surface. Dynamic, runtime state lives in
  * {@link WidgetSuppression}: orthogonal boolean reasons a widget is currently
  * not rendered anywhere. Surfaces resolve visibility with
@@ -13,9 +13,9 @@ export const WIDGET_SURFACES = ['canvas', 'vueNode', 'panel'] as const
 
 export type WidgetSurface = (typeof WIDGET_SURFACES)[number]
 
-type WidgetDisplayTier = 'shown' | 'advanced' | 'never'
+type WidgetSurfaceTier = 'shown' | 'advanced' | 'never'
 
-export type WidgetDisplay = Record<WidgetSurface, WidgetDisplayTier>
+export type WidgetSurfaces = Record<WidgetSurface, WidgetSurfaceTier>
 
 interface WidgetSuppression {
   byExtension: boolean
@@ -23,11 +23,11 @@ interface WidgetSuppression {
 }
 
 export interface WidgetVisibilityComponent {
-  display: WidgetDisplay
+  surfaces: WidgetSurfaces
   suppression: WidgetSuppression
 }
 
-export interface WidgetDisplaySource {
+export interface WidgetVisibilitySource {
   type: string
   hidden?: boolean
   advanced?: boolean
@@ -64,13 +64,13 @@ export function isLegacyWidgetHidingType(
  * renders spec-advanced widgets as plain rows. Only the runtime
  * `widget.advanced` property (an extension write) gates the canvas surface.
  */
-export function deriveWidgetDisplay(
-  source: WidgetDisplaySource
-): WidgetDisplay {
-  const canvas: WidgetDisplayTier = source.advanced ? 'advanced' : 'shown'
-  const specTier: WidgetDisplayTier =
+export function deriveWidgetSurfaces(
+  source: WidgetVisibilitySource
+): WidgetSurfaces {
+  const canvas: WidgetSurfaceTier = source.advanced ? 'advanced' : 'shown'
+  const specTier: WidgetSurfaceTier =
     (source.options?.advanced ?? source.advanced) ? 'advanced' : 'shown'
-  const vueNode: WidgetDisplayTier = source.options?.canvasOnly
+  const vueNode: WidgetSurfaceTier = source.options?.canvasOnly
     ? 'never'
     : specTier
   return {
@@ -81,20 +81,20 @@ export function deriveWidgetDisplay(
 }
 
 export function deriveWidgetVisibility(
-  source: WidgetDisplaySource
+  source: WidgetVisibilitySource
 ): WidgetVisibilityComponent {
   const hidden =
     source.hidden ??
     source.options?.hidden ??
     isLegacyHiddenWidgetType(source.type)
   return {
-    display: deriveWidgetDisplay(source),
+    surfaces: deriveWidgetSurfaces(source),
     suppression: { byExtension: hidden, byConnection: false }
   }
 }
 
 function isTierVisible(
-  tier: WidgetDisplayTier,
+  tier: WidgetSurfaceTier,
   view: { showAdvanced: boolean }
 ): boolean {
   switch (tier) {
@@ -116,9 +116,9 @@ export function isWidgetVisibleOnSurface(
   surface: WidgetSurface,
   view: { showAdvanced: boolean }
 ): boolean {
-  const { display, suppression } = visibility
+  const { surfaces, suppression } = visibility
   if (suppression.byExtension || suppression.byConnection) return false
-  return isTierVisible(display[surface], view)
+  return isTierVisible(surfaces[surface], view)
 }
 
 /**
@@ -133,15 +133,15 @@ export function occupiesCanvasRow(
   if (visibility.suppression.byExtension) return false
   return (
     visibility.suppression.byConnection ||
-    isTierVisible(visibility.display.canvas, view)
+    isTierVisible(visibility.surfaces.canvas, view)
   )
 }
 
-function isNeverShown(display: WidgetDisplay): boolean {
+function isNeverShown(surfaces: WidgetSurfaces): boolean {
   return (
-    display.canvas === 'never' &&
-    display.vueNode === 'never' &&
-    display.panel === 'never'
+    surfaces.canvas === 'never' &&
+    surfaces.vueNode === 'never' &&
+    surfaces.panel === 'never'
   )
 }
 
@@ -150,7 +150,7 @@ export function isWidgetHidden(visibility: WidgetVisibilityComponent): boolean {
   return (
     visibility.suppression.byExtension ||
     visibility.suppression.byConnection ||
-    isNeverShown(visibility.display)
+    isNeverShown(visibility.surfaces)
   )
 }
 
@@ -158,7 +158,7 @@ export function isWidgetHidden(visibility: WidgetVisibilityComponent): boolean {
 export function isWidgetHiddenInPanel(
   visibility: WidgetVisibilityComponent
 ): boolean {
-  return visibility.display.panel === 'never'
+  return visibility.surfaces.panel === 'never'
 }
 
 /**
@@ -169,14 +169,14 @@ export function setWidgetHiddenInPanel(
   visibility: WidgetVisibilityComponent,
   hidden: boolean
 ): void {
-  visibility.display.panel = hidden ? 'never' : visibility.display.vueNode
+  visibility.surfaces.panel = hidden ? 'never' : visibility.surfaces.vueNode
 }
 
 /** Legacy `widget.advanced` read: any surface gated behind the advanced toggle. */
 export function isWidgetAdvanced(
   visibility: WidgetVisibilityComponent
 ): boolean {
-  const { canvas, vueNode, panel } = visibility.display
+  const { canvas, vueNode, panel } = visibility.surfaces
   return canvas === 'advanced' || vueNode === 'advanced' || panel === 'advanced'
 }
 
@@ -189,18 +189,18 @@ export function setWidgetAdvanced(
   advanced: boolean,
   surfaces: readonly WidgetSurface[] = WIDGET_SURFACES
 ): void {
-  const from: WidgetDisplayTier = advanced ? 'shown' : 'advanced'
-  const to: WidgetDisplayTier = advanced ? 'advanced' : 'shown'
-  const { display } = visibility
+  const from: WidgetSurfaceTier = advanced ? 'shown' : 'advanced'
+  const to: WidgetSurfaceTier = advanced ? 'advanced' : 'shown'
+  const { surfaces: widgetSurfaces } = visibility
   for (const surface of surfaces) {
-    if (display[surface] === from) display[surface] = to
+    if (widgetSurfaces[surface] === from) widgetSurfaces[surface] = to
   }
 }
 
 /**
  * Legacy `widget.hidden` write. All legacy hiding — registration metadata,
  * legacy hidden type markers, and runtime extension writes — is extension
- * suppression, so un-hiding restores the widget's static display tiers.
+ * suppression, so un-hiding restores the widget's static surface tiers.
  */
 export function applyLegacyHiddenWrite(
   visibility: WidgetVisibilityComponent,
@@ -211,14 +211,14 @@ export function applyLegacyHiddenWrite(
 
 export function applyLegacyCanvasOnlyWrite(
   visibility: WidgetVisibilityComponent,
-  source: WidgetDisplaySource
+  source: WidgetVisibilitySource
 ): void {
-  const { vueNode, panel } = deriveWidgetDisplay({
+  const { vueNode, panel } = deriveWidgetSurfaces({
     ...source,
-    advanced: visibility.display.canvas === 'advanced'
+    advanced: visibility.surfaces.canvas === 'advanced'
   })
-  visibility.display.vueNode = vueNode
-  visibility.display.panel = panel
+  visibility.surfaces.vueNode = vueNode
+  visibility.surfaces.panel = panel
 }
 
 /**

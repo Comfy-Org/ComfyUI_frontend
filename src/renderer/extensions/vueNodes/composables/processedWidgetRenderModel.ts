@@ -392,7 +392,7 @@ function processWidget(
     slotInfo?.linked || slotInfo?.promoted
   )
   const advanced = visibility
-    ? visibility.display.vueNode === 'advanced'
+    ? visibility.surfaces.vueNode === 'advanced'
     : (options.advanced ?? false)
   const isDisabled = slotInfo?.linked || widgetState.disabled
   const widgetOptions = isDisabled ? { ...options, disabled: true } : options

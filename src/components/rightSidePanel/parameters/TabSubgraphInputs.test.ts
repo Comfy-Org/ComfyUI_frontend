@@ -124,7 +124,7 @@ describe('TabSubgraphInputs', () => {
     )
     const visibility = useWidgetValueStore().getWidgetVisibility(id)
     if (!visibility) throw new Error('Missing promoted widget visibility')
-    visibility.display.panel = 'never'
+    visibility.surfaces.panel = 'never'
 
     renderPanel(panelHiddenHost)
     const panelHiddenRow = captured.rows.find(

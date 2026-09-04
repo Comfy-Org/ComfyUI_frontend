@@ -163,7 +163,7 @@ describe('SubgraphWidgetPromotion', () => {
       expect(widget.visibility.suppression.byConnection).toBe(true)
       expect(useWidgetValueStore().getWidgetVisibility(input.widgetId)).toEqual(
         {
-          display: { canvas: 'shown', vueNode: 'shown', panel: 'shown' },
+          surfaces: { canvas: 'shown', vueNode: 'shown', panel: 'shown' },
           suppression: { byExtension: false, byConnection: false }
         }
       )
@@ -184,7 +184,7 @@ describe('SubgraphWidgetPromotion', () => {
       expect(widget.visibility.suppression.byConnection).toBe(true)
       expect(useWidgetValueStore().getWidgetVisibility(input.widgetId)).toEqual(
         {
-          display: { canvas: 'shown', vueNode: 'shown', panel: 'shown' },
+          surfaces: { canvas: 'shown', vueNode: 'shown', panel: 'shown' },
           suppression: { byExtension: false, byConnection: false }
         }
       )

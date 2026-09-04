@@ -19,13 +19,13 @@ function state<T>(
 }
 
 function visibility(
-  display: WidgetVisibilityComponent['display'],
+  surfaces: WidgetVisibilityComponent['surfaces'],
   suppression: WidgetVisibilityComponent['suppression'] = {
     byExtension: false,
     byConnection: false
   }
 ): WidgetVisibilityComponent {
-  return { display, suppression }
+  return { surfaces, suppression }
 }
 
 describe('useWidgetValueStore', () => {
@@ -199,7 +199,7 @@ describe('useWidgetValueStore', () => {
       )
 
       expect(store.getWidgetVisibility(seedA)).toEqual({
-        display: { canvas: 'never', vueNode: 'never', panel: 'never' },
+        surfaces: { canvas: 'never', vueNode: 'never', panel: 'never' },
         suppression: { byExtension: false, byConnection: true }
       })
     })
@@ -224,7 +224,7 @@ describe('useWidgetValueStore', () => {
       )
 
       expect(store.getWidgetVisibility(seedA)).toEqual({
-        display: { canvas: 'never', vueNode: 'never', panel: 'never' },
+        surfaces: { canvas: 'never', vueNode: 'never', panel: 'never' },
         suppression: { byExtension: false, byConnection: false }
       })
     })
@@ -541,7 +541,7 @@ describe('useWidgetValueStore', () => {
         })
       ).toBe(true)
       expect(store.getWidgetVisibility(seedA)).toEqual({
-        display: { canvas: 'shown', vueNode: 'advanced', panel: 'never' },
+        surfaces: { canvas: 'shown', vueNode: 'advanced', panel: 'never' },
         suppression: { byExtension: true, byConnection: false }
       })
     })

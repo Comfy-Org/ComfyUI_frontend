@@ -4191,9 +4191,9 @@ export class LGraphNode
   getLayoutWidgets(): IBaseWidget[] {
     return (
       this.widgets?.filter((widget) => {
-        const { display, suppression } =
+        const { surfaces, suppression } =
           widget.visibility ?? deriveWidgetVisibility(widget)
-        return !suppression.byExtension && display.canvas !== 'never'
+        return !suppression.byExtension && surfaces.canvas !== 'never'
       }) ?? []
     )
   }
@@ -4206,7 +4206,7 @@ export class LGraphNode
     return (
       this.widgets?.some(
         (w) =>
-          (w.visibility ?? deriveWidgetVisibility(w)).display.canvas ===
+          (w.visibility ?? deriveWidgetVisibility(w)).surfaces.canvas ===
           'advanced'
       ) ?? false
     )
@@ -4263,8 +4263,8 @@ export class LGraphNode
       }
 
       const outlineColour =
-        (widget.visibility ?? deriveWidgetVisibility(widget)).display.canvas ===
-        'advanced'
+        (widget.visibility ?? deriveWidgetVisibility(widget)).surfaces
+          .canvas === 'advanced'
           ? LiteGraph.WIDGET_ADVANCED_OUTLINE_COLOR
           : LiteGraph.WIDGET_OUTLINE_COLOR
 

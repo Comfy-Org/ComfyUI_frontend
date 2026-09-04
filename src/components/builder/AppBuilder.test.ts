@@ -52,7 +52,7 @@ describe('AppBuilder', () => {
     graph.add(node)
     if (!widget.visibility)
       throw new Error('Missing concrete widget visibility')
-    widget.visibility.display.panel = 'never'
+    widget.visibility.surfaces.panel = 'never'
     vi.spyOn(graph, 'getNodeOnPos').mockReturnValue(node)
     vi.spyOn(node, 'getWidgetOnPos').mockReturnValue(widget)
     vi.spyOn(canvas, 'adjustMouseEvent').mockImplementation(() => {})

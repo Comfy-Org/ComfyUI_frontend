@@ -68,11 +68,11 @@ Map<UUID, Map<WidgetId, WidgetEntity>>
 
 Each `WidgetEntity` groups three plain-data components:
 
-| Component    | Type                        | Purpose                                       |
-| ------------ | --------------------------- | --------------------------------------------- |
-| `state`      | `WidgetState`               | Identity, value, and configuration            |
-| `render`     | `WidgetRenderState`         | Canvas layout state                           |
-| `visibility` | `WidgetVisibilityComponent` | Per-surface display tiers + suppression flags |
+| Component    | Type                        | Purpose                                          |
+| ------------ | --------------------------- | ------------------------------------------------ |
+| `state`      | `WidgetState`               | Identity, value, and configuration               |
+| `render`     | `WidgetRenderState`         | Canvas layout state                              |
+| `visibility` | `WidgetVisibilityComponent` | Per-surface visibility tiers + suppression flags |
 
 `WidgetState` (the `state` component) is a plain data object with no methods:
 

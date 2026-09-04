@@ -261,7 +261,7 @@ describe('widget visibility', () => {
     )
 
     expect(visible.value).toBe(false)
-    visibility.display.vueNode = 'shown'
+    visibility.surfaces.vueNode = 'shown'
     expect(visible.value).toBe(true)
   })
 
