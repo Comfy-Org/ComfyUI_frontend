@@ -20,6 +20,11 @@ import type {
   NodeLayout
 } from '@/renderer/core/layout/types'
 
+const mockReportError = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
+}))
+
 const GRAPH = createUuidv4()
 
 beforeEach(() => {
@@ -299,6 +304,91 @@ describe('layoutStore CRDT operations', () => {
 
     unsubscribeNode()
     unsubscribeGlobal()
+  })
+
+  it('reports listener failures by scope and continues fan-out', async () => {
+    const nodeId = toNodeId('failing-listener-node')
+    const layout = createTestNode(nodeId)
+
+    layoutStore.applyOperation({
+      type: 'createNode',
+      graphId: GRAPH,
+      nodeId,
+      layout,
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas,
+      actor: 'test'
+    })
+
+    const errors = {
+      geometry: new Error('geometry listener failed'),
+      global: new Error('global listener failed'),
+      node: new Error('node listener failed')
+    }
+    const successfulListeners = {
+      geometry: vi.fn(),
+      global: vi.fn(),
+      node: vi.fn()
+    }
+
+    const stopFailingGeometry = layoutStore.onGeometryChange(() => {
+      throw errors.geometry
+    })
+    const stopSuccessfulGeometry = layoutStore.onGeometryChange(
+      successfulListeners.geometry
+    )
+    const stopFailingGlobal = layoutStore.onChange(() => {
+      throw errors.global
+    })
+    const stopSuccessfulGlobal = layoutStore.onChange(
+      successfulListeners.global
+    )
+    const stopFailingNode = layoutStore.onNodeChange(GRAPH, nodeId, () => {
+      throw errors.node
+    })
+    const stopSuccessfulNode = layoutStore.onNodeChange(
+      GRAPH,
+      nodeId,
+      successfulListeners.node
+    )
+
+    layoutStore.applyOperation({
+      type: 'moveNode',
+      graphId: GRAPH,
+      nodeId,
+      position: { x: 300, y: 200 },
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas,
+      actor: 'test'
+    })
+
+    await vi.waitFor(() => {
+      expect(mockReportError).toHaveBeenCalledTimes(3)
+    })
+
+    for (const listener of Object.values(successfulListeners)) {
+      expect(listener).toHaveBeenCalledOnce()
+    }
+    for (const scope of ['geometry', 'global', 'node'] as const) {
+      expect(mockReportError).toHaveBeenCalledWith(errors[scope], {
+        errorType: 'canvas_layout_listener_failed',
+        tags: {
+          failure_kind: 'caught_unexpected',
+          feature_area: 'canvas',
+          operation: 'render',
+          outcome: 'failed',
+          listener_scope: scope
+        },
+        level: 'error'
+      })
+    }
+
+    stopFailingGeometry()
+    stopSuccessfulGeometry()
+    stopFailingGlobal()
+    stopSuccessfulGlobal()
+    stopFailingNode()
+    stopSuccessfulNode()
   })
 
   it('clears node-scoped listeners when the viewed graph changes', () => {
