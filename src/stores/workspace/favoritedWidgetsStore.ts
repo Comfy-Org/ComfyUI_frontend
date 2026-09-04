@@ -73,7 +73,7 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
   /** In-memory array of favorited widget IDs, ordered for display */
   const favoritedIds = ref<string[]>([])
 
-  // TODO(ADR0009): key favorites by the host-scoped WidgetId instead of
+  // TODO(ADR-SUBGRAPH-PROMOTION-0009): key favorites by the host-scoped WidgetId instead of
   // (nodeLocatorId, widgetName). That drops the isShownOnParents/favoriteNode
   // indirection for promoted widgets. Deferred: needs a one-time migration of
   // the persisted workflow.extra.favoritedWidgets format.
