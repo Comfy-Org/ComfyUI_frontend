@@ -18,8 +18,15 @@ describe('safeReturnPath', () => {
     ['a relative path', 'workshop/models'],
     ['an empty string', ''],
     ['null', null],
-    ['undefined', undefined]
+    ['undefined', undefined],
+    ['a tab after the leading slash', '/\t/evil.com'],
+    ['a newline after the leading slash', '/\n/evil.com'],
+    ['a carriage return after the leading slash', '/\r/evil.com'],
+    ['a tab-hidden backslash', '/\t\\evil.com']
   ] as const)('falls back to the Workshop home for %s', ([, raw]) => {
-    expect(safeReturnPath(raw)).toBe('/workshop/')
+    expect(
+      safeReturnPath(raw),
+      'the browser strips C0 control chars before parsing, so /<TAB>//evil.com resolves cross-origin'
+    ).toBe('/workshop/')
   })
 })
