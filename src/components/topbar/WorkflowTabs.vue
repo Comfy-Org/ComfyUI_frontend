@@ -173,19 +173,31 @@ const commandStore = useCommandStore()
 const agentPanelStore = useAgentPanelStore()
 const { withConsent } = useAgentConsent()
 const tabActivity = useWorkflowTabActivityStore()
+const isOpeningAgent = ref(false)
 
 async function onAgentEntryClick(): Promise<void> {
-  if (agentPanelStore.isVisible) {
-    useTelemetry()?.trackAgentEntryButtonClicked({ resulting_state: 'closed' })
-    agentPanelStore.toggle()
-    return
-  }
+  if (isOpeningAgent.value) return
+  isOpeningAgent.value = true
 
-  agentPanelStore.suppressRestoredOpen()
-  await withConsent(() => {
-    useTelemetry()?.trackAgentEntryButtonClicked({ resulting_state: 'opened' })
-    agentPanelStore.open()
-  })
+  try {
+    if (agentPanelStore.isVisible) {
+      useTelemetry()?.trackAgentEntryButtonClicked({
+        resulting_state: 'closed'
+      })
+      agentPanelStore.toggle()
+      return
+    }
+
+    agentPanelStore.suppressRestoredOpen()
+    await withConsent(() => {
+      useTelemetry()?.trackAgentEntryButtonClicked({
+        resulting_state: 'opened'
+      })
+      agentPanelStore.open()
+    })
+  } finally {
+    isOpeningAgent.value = false
+  }
 }
 const { isLoggedIn } = useCurrentUser()
 // Dismiss a tab's terminal status badge once it has been viewed

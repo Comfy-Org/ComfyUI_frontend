@@ -39,7 +39,16 @@ export async function getAccountSetting(
     )
   }
 
-  const payload = zGetSettingByIdResponse.safeParse(await response.json())
+  let responseBody: unknown
+  try {
+    responseBody = await response.json()
+  } catch {
+    throw new AccountSettingsApiError(
+      `Account setting ${id} returned an invalid response`
+    )
+  }
+
+  const payload = zGetSettingByIdResponse.safeParse(responseBody)
   if (!payload.success) {
     throw new AccountSettingsApiError(
       `Account setting ${id} returned an invalid response`

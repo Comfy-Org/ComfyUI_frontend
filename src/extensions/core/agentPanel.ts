@@ -73,7 +73,7 @@ export function registerAgentPanelExtension(): void {
       const agentPanelStore = useAgentPanelStore()
       const consentStore = useAgentConsentStore()
       const { enabled } = storeToRefs(agentPanelStore)
-      const { isLoggedIn } = useCurrentUser()
+      const { resolvedUserInfo } = useCurrentUser()
       registerWorkflowTabActivityTracker(enabled)
 
       watch(
@@ -85,14 +85,16 @@ export function registerAgentPanelExtension(): void {
       )
 
       const loadConsentIfEligible = (): void => {
-        if (!agentPanelStore.enabled || !isLoggedIn.value) return
+        if (!agentPanelStore.enabled || !resolvedUserInfo.value) return
         void consentStore.load().catch((error: unknown) => {
           reportError(error, {
             errorType: 'agent_consent_setting_load_failure'
           })
         })
       }
-      watch(isLoggedIn, loadConsentIfEligible, { immediate: true })
+      watch(() => resolvedUserInfo.value?.id, loadConsentIfEligible, {
+        immediate: true
+      })
       return setupFlagGate(loadConsentIfEligible)
     }
   })

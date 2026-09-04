@@ -20,7 +20,9 @@ const mocks = vi.hoisted(() => ({
     load: vi.fn(() => Promise.resolve(false))
   },
   currentUser: {
-    switchTo: vi.fn<(id: string | null) => void>()
+    resolvedUserInfo: null as {
+      value: { id: string } | null
+    } | null
   },
   canvasStore: { updateSelectedItems: vi.fn() },
   getNodeByLocatorId: vi.fn(),
@@ -66,15 +68,15 @@ vi.mock('@/workbench/extensions/agent/stores/agent/agentConsentStore', () => ({
 
 vi.mock('@/composables/auth/useCurrentUser', async () => {
   const { computed, ref } = await import('vue')
-  const resolvedUserInfo = ref<{ id: string } | null>({ id: 'account-a' })
-  mocks.currentUser.switchTo.mockImplementation((id) => {
-    resolvedUserInfo.value = id ? { id } : null
-  })
   return {
-    useCurrentUser: () => ({
-      isLoggedIn: computed(() => resolvedUserInfo.value !== null),
-      resolvedUserInfo
-    })
+    useCurrentUser: () => {
+      const resolvedUserInfo = ref<{ id: string } | null>({ id: 'account-a' })
+      mocks.currentUser.resolvedUserInfo = resolvedUserInfo
+      return {
+        isLoggedIn: computed(() => resolvedUserInfo.value !== null),
+        resolvedUserInfo
+      }
+    }
   }
 })
 
@@ -121,6 +123,14 @@ vi.mock('posthog-js', () => ({
 const flush = (): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, 0))
 
+function getResolvedUserInfoRef(): {
+  value: { id: string } | null
+} {
+  const resolvedUserInfo = mocks.currentUser.resolvedUserInfo
+  if (!resolvedUserInfo) throw new Error('Current-user mock is not initialized')
+  return resolvedUserInfo
+}
+
 async function loadEntryAndSetup(): Promise<void> {
   const { registerAgentPanelExtension } = await import('./agentPanel')
   registerAgentPanelExtension()
@@ -141,7 +151,6 @@ describe('AgentPanel extension flag gate', () => {
     mocks.agentStore.close.mockClear()
     mocks.consentStore.load.mockClear()
     mocks.consentStore.accepted = true
-    mocks.currentUser.switchTo('account-a')
     mocks.agentStore.enabled = false
     mocks.agentStore.consentAccepted = false
     mocks.agentStore.isOpen = true
@@ -206,7 +215,7 @@ describe('AgentPanel extension flag gate', () => {
     await loadEntryAndSetup()
     expect(mocks.consentStore.load).toHaveBeenCalledOnce()
 
-    mocks.currentUser.switchTo('account-b')
+    getResolvedUserInfoRef().value = { id: 'account-b' }
     await flush()
 
     expect(mocks.consentStore.load).toHaveBeenCalledTimes(2)
