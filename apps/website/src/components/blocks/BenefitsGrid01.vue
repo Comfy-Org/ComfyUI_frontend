@@ -10,13 +10,18 @@ type Cta = {
   target?: '_blank' | '_self' | '_parent' | '_top'
 }
 
-defineProps<{
-  heading: string
-  benefits: readonly Benefit[]
-  footnote?: string
-  primaryCta?: Cta
-  secondaryCta?: Cta
-}>()
+withDefaults(
+  defineProps<{
+    heading: string
+    benefits: readonly Benefit[]
+    columns?: 2 | 4
+    numbered?: boolean
+    footnote?: string
+    primaryCta?: Cta
+    secondaryCta?: Cta
+  }>(),
+  { columns: 4, numbered: true }
+)
 </script>
 
 <template>
@@ -28,13 +33,17 @@ defineProps<{
     </h2>
 
     <GlassCard class="mx-auto max-w-7xl">
-      <div class="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-4">
+      <div
+        class="grid grid-cols-1 gap-2 md:grid-cols-2"
+        :class="columns === 2 ? 'lg:grid-cols-2' : 'lg:grid-cols-4'"
+      >
         <article
           v-for="(benefit, index) in benefits"
           :key="benefit.id"
           class="flex flex-col gap-6 rounded-4xl bg-primary-comfy-ink p-6 lg:p-8"
         >
           <span
+            v-if="numbered"
             class="text-primary-comfy-yellow font-mono text-sm font-bold tracking-wide"
           >
             {{ String(index + 1).padStart(2, '0') }}

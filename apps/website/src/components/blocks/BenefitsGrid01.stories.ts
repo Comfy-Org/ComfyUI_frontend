@@ -94,6 +94,44 @@ export const WithTitlesFootnoteAndTwoActions: Story = {
   }
 }
 
+export const TwoColumnsUnnumbered: Story = {
+  args: {
+    heading: 'Ready for your security review',
+    columns: 2,
+    numbered: false,
+    benefits: [
+      {
+        id: 'local',
+        title: 'Workflows stay local',
+        description:
+          'For local deployments, your Comfy Workflows and outputs stay where they run. Comfy does not train on customer data.'
+      },
+      {
+        id: 'private-assets',
+        title: 'Private models and nodes',
+        description:
+          'Include internal node packs and fine-tuned models inside a team-controlled build.'
+      },
+      {
+        id: 'access',
+        title: 'Identity and BYOK',
+        description:
+          'Gate build assignment through company identity and use supported provider keys with existing contracts.'
+      },
+      {
+        id: 'usage',
+        title: 'Audit requirements',
+        description:
+          'Define the model, partner, authentication, release, retention, and export events your organization needs.'
+      }
+    ],
+    footnote:
+      'DPA and enterprise agreement available. US processing on Google Cloud. 99.5% workflow-execution uptime SLA. SOC 2 Type II audit in progress.',
+    primaryCta: { label: 'VIEW TRUST CENTER', href: '#' },
+    secondaryCta: { label: 'REQUEST DEMO', href: '#' }
+  }
+}
+
 export const Mobile: Story = {
   globals: {
     viewport: { value: 'mobile1', isRotated: false }

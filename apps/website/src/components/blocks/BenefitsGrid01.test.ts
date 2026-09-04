@@ -34,6 +34,33 @@ describe('BenefitsGrid01', () => {
     ).toBeTruthy()
   })
 
+  it('renders numbered index labels by default', () => {
+    renderBenefitsGrid()
+
+    expect(screen.getByText('01')).toBeTruthy()
+    expect(screen.getByText('02')).toBeTruthy()
+  })
+
+  it('renders no index labels when numbered is false', () => {
+    renderBenefitsGrid({ numbered: false })
+
+    expect(screen.queryByText('01')).toBeNull()
+    expect(screen.queryByText('02')).toBeNull()
+  })
+
+  it('lays the cards out four across on large screens by default', () => {
+    const { html } = renderBenefitsGrid()
+
+    expect(html()).toContain('lg:grid-cols-4')
+  })
+
+  it('lays the cards out two across on large screens when columns is 2', () => {
+    const { html } = renderBenefitsGrid({ columns: 2 })
+
+    expect(html()).toContain('lg:grid-cols-2')
+    expect(html()).not.toContain('lg:grid-cols-4')
+  })
+
   it('omits the footnote and CTAs by default', () => {
     renderBenefitsGrid()
 

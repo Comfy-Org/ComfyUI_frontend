@@ -132,6 +132,29 @@ test.describe('Enterprise pages @smoke', () => {
       ).toBeVisible()
     }
     await expect(page.getByText(/The graph stays flexible\./)).toBeVisible()
+    const securityHeading = page.getByRole('heading', {
+      level: 2,
+      name: 'Ready for your security review',
+      exact: true
+    })
+    await expect(securityHeading).toBeVisible()
+    const securitySection = page
+      .locator('section')
+      .filter({ has: securityHeading })
+    await expect(securitySection.getByRole('heading', { level: 3 })).toHaveText(
+      [
+        'Workflows stay local',
+        'Private models and nodes',
+        'Identity and BYOK',
+        'Audit requirements'
+      ]
+    )
+    await expect(
+      securitySection.getByRole('link', { name: 'VIEW TRUST CENTER' })
+    ).toHaveAttribute('href', /app\.vanta\.com\/comfy\.org\/trust/)
+    await expect(
+      securitySection.getByRole('link', { name: 'REQUEST DEMO' })
+    ).toHaveAttribute('href', '/contact/')
     await expect(
       page.getByText(/dedicated GPU capacity, priority queueing/)
     ).toBeVisible()
