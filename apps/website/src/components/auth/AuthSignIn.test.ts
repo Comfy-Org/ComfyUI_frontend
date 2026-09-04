@@ -9,6 +9,8 @@ const handles = vi.hoisted(() => ({
   flag: undefined as { value: boolean } | undefined,
   onUserChanged: vi.fn(),
   signOut: vi.fn(),
+  google: vi.fn(),
+  github: vi.fn(),
   emitUser: undefined as ((user: unknown) => void) | undefined
 }))
 
@@ -20,8 +22,8 @@ vi.mock('../../scripts/posthog', async () => {
 })
 
 vi.mock('../../config/workshop-firebase', () => ({
-  signInWorkshopWithGoogle: vi.fn(),
-  signInWorkshopWithGitHub: vi.fn(),
+  signInWorkshopWithGoogle: handles.google,
+  signInWorkshopWithGitHub: handles.github,
   signOutWorkshop: handles.signOut,
   onWorkshopUserChanged: (cb: (user: unknown) => void) => {
     handles.emitUser = cb
@@ -34,6 +36,8 @@ beforeEach(() => {
   handles.flag!.value = true
   handles.onUserChanged.mockClear()
   handles.signOut.mockReset().mockResolvedValue(undefined)
+  handles.google.mockReset()
+  handles.github.mockReset()
   handles.emitUser = undefined
 })
 
@@ -63,9 +67,39 @@ describe('AuthSignIn', () => {
       .setup()
       .click(screen.getByRole('button', { name: 'Sign out' }))
 
-    // Still signed in, not stranded on a sign-in error.
     await waitFor(() => expect(handles.signOut).toHaveBeenCalled())
-    expect(screen.getByText(/a@b\.co/)).toBeTruthy()
+    expect(
+      screen.getByText(/a@b\.co/),
+      'a failed sign-out keeps the user on the signed-in screen'
+    ).toBeTruthy()
     expect(screen.queryByRole('alert')).toBeNull()
+  })
+
+  it('signs in through the Google button and shows the signed-in identity', async () => {
+    handles.google.mockResolvedValue({
+      user: { email: 'user@example.com', displayName: null }
+    })
+    render(AuthSignIn)
+
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: /continue with google/i }))
+
+    await waitFor(() => expect(handles.google).toHaveBeenCalledOnce())
+    expect(await screen.findByText(/user@example\.com/)).toBeTruthy()
+  })
+
+  it('surfaces an error when the GitHub sign-in fails', async () => {
+    handles.github.mockRejectedValue({
+      code: 'auth/popup-closed-by-user',
+      message: 'x'
+    })
+    render(AuthSignIn)
+
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: /continue with github/i }))
+
+    expect(await screen.findByRole('alert')).toBeTruthy()
   })
 })
