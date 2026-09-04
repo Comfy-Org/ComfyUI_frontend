@@ -3739,6 +3739,63 @@ describe('ComfyApp', () => {
 
     it.for([
       {
+        source: 'workflow',
+        metadata: { workflow: createWorkflowGraphData() },
+        loader: 'loadGraphData',
+        errorType: 'workflow_load_failure'
+      },
+      {
+        source: 'api prompt',
+        metadata: { prompt: { '1': { class_type: 'KSampler', inputs: {} } } },
+        loader: 'loadApiJson',
+        errorType: 'api_prompt_load_failure'
+      }
+    ] as const)(
+      'reports a $source load failure instead of importing A1111 parameters',
+      async ({ metadata, loader, errorType }) => {
+        vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+          ...metadata,
+          parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+        })
+        const loadFailure = new Error('load failed')
+        vi.spyOn(app, loader).mockRejectedValue(loadFailure)
+
+        await app.handleFile(createTestFile('both.png', 'image/png'))
+
+        expect(mockImportA1111).not.toHaveBeenCalled()
+        expect(reportError).toHaveBeenCalledWith(loadFailure, {
+          surface: 'graph',
+          errorType
+        })
+        expect(useToast().toasts).toEqual([
+          expect.objectContaining({
+            kind: 'warning',
+            title: t('toastMessages.fileLoadError', { fileName: 'both.png' })
+          })
+        ])
+      }
+    )
+
+    it('still falls back to A1111 parameters when the workflow fails to parse', async () => {
+      const graph = new LGraph()
+      const parameters = 'positive\nNegative prompt: negative\nSteps: 20'
+      Reflect.set(app, 'rootGraphInternal', graph)
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+        workflow: 'not json',
+        parameters
+      })
+
+      await app.handleFile(createTestFile('both.png', 'image/png'))
+
+      expect(mockImportA1111).toHaveBeenCalledWith(
+        graph,
+        parameters,
+        expect.any(Function)
+      )
+    })
+
+    it.for([
+      {
         description: undefined,
         fileName: 'a1111.png',
         loadsGraph: false,
