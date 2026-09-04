@@ -1,4 +1,4 @@
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraph, Subgraph } from '@/lib/litegraph/src/LGraph'
 import { materializeLinkAdapter } from '@/lib/litegraph/src/LLink'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -77,7 +77,10 @@ function registerSubgraphDefinitions(
   )
   if (missing.length === 0) return
   try {
-    rootGraph.createSubgraphs(missing)
+    const created = rootGraph.createSubgraphs(missing)
+    for (const [index, subgraph] of created.entries()) {
+      applyInteriorWidgetValues(subgraph, missing[index])
+    }
   } catch (cause) {
     reportError(cause, {
       errorType: 'agent_subgraph_definitions_failed',
@@ -86,6 +89,33 @@ function registerSubgraphDefinitions(
         definitionIds: missing.map((definition) => definition.id)
       }
     })
+  }
+}
+
+/**
+ * Restore interior widget values the op layer stores by name.
+ *
+ * `LGraphNode.configure()` only honours `widgets_values_named` behind the
+ * experimental `Comfy.Workflow.NamedValuesRestore` setting (or a class-level
+ * fallback order), and the follower has no widget catalog to project the
+ * names positionally the way the package's `project()` does. Assign them the
+ * same way `configure()` would have, before any instance is materialized.
+ *
+ * Nodes are matched by position, not id: `LGraph.configure()` creates one
+ * live node per serialised entry in order and may remint an id that collides
+ * with a node the root graph already owns.
+ */
+function applyInteriorWidgetValues(
+  subgraph: Subgraph,
+  definition: ExportedSubgraph
+): void {
+  for (const [index, serialised] of (definition.nodes ?? []).entries()) {
+    const named = serialised.widgets_values_named
+    const widgets = subgraph.nodes[index]?.widgets
+    if (!named || !widgets) continue
+    for (const widget of widgets) {
+      if (Object.hasOwn(named, widget.name)) widget.value = named[widget.name]
+    }
   }
 }
 

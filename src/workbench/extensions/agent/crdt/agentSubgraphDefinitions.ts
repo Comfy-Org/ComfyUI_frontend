@@ -14,6 +14,13 @@ const DEFINITIONS_ROOT = 'definitions'
 const NODE_ORDER = 'node_order'
 const LINK_ORDER = 'link_order'
 
+/**
+ * Per-node bookkeeping the op layer's applier stamps on every node record
+ * (`NODE_INCARNATION_KEY`, not exported by the package). Its own `project()`
+ * drops it; so does this reader.
+ */
+const NODE_INCARNATION = '__incarnation'
+
 function plain(value: unknown): unknown {
   if (value instanceof Y.Map || value instanceof Y.Array) return value.toJSON()
   return structuredClone(value)
@@ -35,6 +42,7 @@ function readInteriorNode(source: unknown): Record<string, unknown> | null {
   if (!(source instanceof Y.Map)) return null
   const node: Record<string, unknown> = {}
   source.forEach((value, key) => {
+    if (key === NODE_INCARNATION) return
     if (key === 'widgets' && value instanceof Y.Map) {
       node.widgets_values_named = value.toJSON()
     } else if (key === OPAQUE_WIDGETS_KEY) {
