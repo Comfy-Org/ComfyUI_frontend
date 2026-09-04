@@ -7,8 +7,8 @@ import CtaCenter01 from '../../components/blocks/CtaCenter01.vue'
 import FAQSplit01 from '../../components/blocks/FAQSplit01.vue'
 import FeatureRows02 from '../../components/blocks/FeatureRows02.vue'
 import HeroProduct01 from '../../components/blocks/HeroProduct01.vue'
-import ReasonsSplit01 from '../../components/blocks/ReasonsSplit01.vue'
 import StepsCards01 from '../../components/blocks/StepsCards01.vue'
+import IndustriesSection from '../../components/home/IndustriesSection.vue'
 import DistributionsScene from '../../components/product/enterprise/DistributionsScene.vue'
 import { externalLinks } from '../../config/routes'
 import BaseLayout from '../../layouts/BaseLayout.astro'
@@ -107,27 +107,6 @@ const compareRows = [
     id: 'python',
     feature: 'Python dependency auto-resolution',
     cells: ['Included', 'Included'],
-  },
-] as const
-
-const industries = [
-  {
-    id: 'games',
-    title: 'Game studios',
-    description:
-      'Keep art, UA, and marketing teams on one pinned toolchain while each group works in the Comfy Workflows built for its job.',
-  },
-  {
-    id: 'vfx',
-    title: 'VFX and animation',
-    description:
-      'Lock the environment per show, keep private nodes and models inside the build, and run IP-sensitive work on infrastructure you control.',
-  },
-  {
-    id: 'onboarding',
-    title: 'Studios you onboard',
-    description:
-      'Give a new studio or client an approved build aligned to its stack, then release updates deliberately instead of repeating setup by hand.',
   },
 ] as const
 
@@ -272,12 +251,9 @@ const faqPage = buildFaqPageNode(url, faqs)
     rows={compareRows}
   />
 
-  <ReasonsSplit01
-    heading={'Built with studios\n'}
-    headingHighlight="in the room."
-    highlightClass="text-primary-comfy-yellow"
-    subtitle="For teams that need ComfyUI to move between people, productions, and partners without changing underneath them."
-    reasons={industries}
+  <IndustriesSection
+    heading="Built with studios in the room"
+    client:visible
   />
 
   <CtaBands01

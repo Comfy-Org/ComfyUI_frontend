@@ -180,6 +180,28 @@ test.describe('Enterprise pages @smoke', () => {
       page.getByRole('columnheader', { name: 'MANAGED BUILDS' })
     ).toBeVisible()
     await expect(
+      page.getByRole('heading', {
+        level: 2,
+        name: 'Built with studios in the room'
+      })
+    ).toBeVisible()
+    for (const industry of [
+      'VFX & Animation',
+      'Advertising & Creative Studios',
+      'Gaming',
+      'eCommerce & Fashion'
+    ]) {
+      await expect(
+        page.getByRole('button', { name: industry, exact: true })
+      ).toBeVisible()
+    }
+    await expect(
+      page.getByRole('link', { name: 'EXPLORE WORKFLOWS' })
+    ).toHaveAttribute('href', 'https://comfy.org/workflows/')
+    await expect(
+      page.getByText(/For teams that need ComfyUI to move between people/)
+    ).toHaveCount(0)
+    await expect(
       page.getByText(/dedicated GPU capacity, priority queueing/)
     ).toBeVisible()
   })
