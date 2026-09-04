@@ -5,6 +5,10 @@
     "feedbackTooltip": "משוב",
     "freeTierPartner": "צמתים של שותפים דורשים תוכנית בתשלום",
     "freeTierRuns": "{available} / {MAX_AVAILABLE} הרצות נותרו",
+    "partnerRunGate": {
+      "signInCaption": "צומתי שותפים מחייבים חשבון",
+      "signInToRun": "התחברות להפעלה"
+    },
     "share": "שיתוף",
     "shareTooltip": "שיתוף תהליך העבודה"
   },
@@ -82,6 +86,7 @@
     "runModeAutoDescription": "Comfy יפעיל תהליכי עבודה ללא בקשת הרשאה",
     "runModeLimit": "הפעלה אוטומטית עם מגבלות",
     "runModeLimitDescription": "Comfy יבקש אישור רק כאשר הפעלת תהליך עבודה חורגת ממגבלת הזיכויים שלך",
+    "runModeSaveFailed": "לא ניתן לשמור את הרשאות ההרצה. נסו שוב.",
     "runModeTriggerAsk": "שאל",
     "runModeTriggerAskTooltip": "בקש הרשאה",
     "runModeTriggerAuto": "אוטומטי",
@@ -111,6 +116,7 @@
       "בנה תהליך עבודה להמרת תמונה לווידאו עם 3 מודלים"
     ],
     "switchWorkflow": "החלף תהליך עבודה",
+    "targetNavigationUnavailable": "יעד זה של תהליך העבודה אינו זמין עוד.",
     "thinking": "חושב...",
     "thought": "מחשבה",
     "thoughtTimed": "חשב במשך {seconds} שניות",
@@ -123,8 +129,12 @@
     "uploading": "מעלה"
   },
   "apiNodesSignInDialog": {
-    "message": "תהליך עבודה זה מכיל צמתי API, שדורשים שתהיה מחובר לחשבונך כדי להריץ אותם.",
-    "title": "נדרשת התחברות לשימוש בצמתי API"
+    "message": "צומתי שותפים פועלים בשירותי צד שלישי ומשתמשים בקרדיטים מחשבונך. יש להתחבר כדי לקשר את חשבונך.",
+    "partnerNodesInWorkflow": "צומתי שותפים בתהליך עבודה זה",
+    "signIn": "התחברות",
+    "title": "התחברות להפעלת צומתי שותפים",
+    "tooltip": "צומתי שותפים פועלים בשירותי צד שלישי. הם משתמשים בקרדיטים, החלק היחיד בתשלום ב-Comfy.",
+    "whatArePartnerNodes": "מהם צומתי שותפים?"
   },
   "appBuilder": {
     "vueNodeSwitch": {
@@ -456,7 +466,6 @@
   },
   "billingOperation": {
     "authenticationFailedDetail": "לא הצלחנו להשלים את אימות התשלום. נא לנסות שוב.",
-    "authenticationManagerRequired": "אימות התשלום דורש טיפול של מנהל חיוב במרחב העבודה.",
     "authenticationUnavailable": "אימות תשלום מאובטח אינו זמין. נא לרענן ולנסות שוב.",
     "cancelFailed": "ביטול המנוי נכשל",
     "cancelTimeout": "פג זמן ההמתנה לביטול המנוי",
@@ -467,7 +476,6 @@
     "processingErrorDetail": "לא ניתן היה לעבד את התשלום שלך. נסה שוב או השתמש באמצעי תשלום אחר.",
     "reconciliationDetail": "התשלום שלך התקבל, אך לא הצלחנו לסיים את עדכון מרחב העבודה שלך. פנה לתמיכה וכלול את מזהה הפעולה הזה:",
     "reconciliationTitle": "התשלום התקבל — ממתין לאישור",
-    "retryVerification": "נסה שוב את האימות",
     "subscriptionActionRequired": "אמת את התשלום שלך כדי להשלים את הגדרת סביבת העבודה",
     "subscriptionFailed": "עדכון המנוי נכשל",
     "subscriptionFailedDetail": "לא הצלחנו לעדכן את המנוי שלכם. אנא נסו שוב.",
@@ -955,6 +963,7 @@
       "quickPurchase": "רכישה מהירה",
       "seeDetails": "ראה פרטים",
       "selectAmount": "בחר סכום",
+      "startOver": "התחל מחדש",
       "templateNote": "*נוצר באמצעות תבנית Wan 2.2 Image-to-Video",
       "topUp": "טעינה",
       "unknownError": "אירעה שגיאה לא ידועה",
@@ -1068,6 +1077,7 @@
     "RECRAFT_COLOR": "RECRAFT_COLOR",
     "RECRAFT_CONTROLS": "RECRAFT_CONTROLS",
     "RECRAFT_V3_STYLE": "RECRAFT_V3_STYLE",
+    "RESOLUTION_PREVIEW": "RESOLUTION_PREVIEW",
     "RETARGET_TASK_ID": "RETARGET_TASK_ID",
     "RIG_TASK_ID": "RIG_TASK_ID",
     "RUNWAY_ALEPH2_KEYFRAME": "RUNWAY_ALEPH2_KEYFRAME",
@@ -2802,14 +2812,18 @@
       "seeMoreOutputs": "ראה פלטים נוספים",
       "zoom": "התקרבות"
     },
-    "assetDeletedSuccessfully": "הנכס נמחק בהצלחה",
-    "deleteAssetDescription": "נכס זה יוסר לצמיתות.",
-    "deleteAssetTitle": "למחוק נכס זה?",
-    "deleteSelectedDescription": "{count} נכסים יוסרו לצמיתות.",
-    "deleteSelectedTitle": "למחוק את הנכסים הנבחרים?",
+    "assetDelete": {
+      "error": "מחיקת פריטים נכשלה",
+      "success": "המחיקה בוצעה בהצלחה",
+      "warn": "מחיקת חלק מהפריטים נכשלה"
+    },
+    "assetsDeleted": "{n} / {total} נכסים נמחקו",
+    "deleteHistoryOnly": "רק ההיסטוריה תושפע, הקבצים יישארו בדיסק",
+    "deleteItems": "מחיקת פריטים אלה",
+    "deletePermanent": "הם יוסרו לצמיתות.",
     "deletingImportedFilesCloudOnly": "מחיקת קבצים מיובאים נתמכת רק בגרסת הענן",
+    "deletionUnsupported": "הנכסים מופעלים, אך השרת אינו תומך במחיקה",
     "failedToCreateNode": "יצירת הצומת נכשלה",
-    "failedToDeleteAsset": "מחיקת הנכס נכשלה",
     "failedToExportWorkflow": "ייצוא תהליך העבודה נכשל",
     "jobIdToast": {
       "copied": "הועתק",
@@ -2817,12 +2831,12 @@
       "jobIdCopied": "מזהה המשימה הועתק ללוח",
       "jobIdCopyFailed": "העתקת מזהה המשימה נכשלה"
     },
+    "jobsDeleted": "{n} / {total} משימות נמחקו",
     "noJobIdFound": "לא נמצא מזהה משימה עבור נכס זה",
     "noWorkflowDataFound": "לא נמצאו נתוני תהליך עבודה בנכס זה",
     "nodeAddedToWorkflow": "צומת {nodeType} נוסף לתהליך העבודה",
     "nodeTypeNotFound": "סוג הצומת {nodeType} לא נמצא",
     "selection": {
-      "assetsDeletedSuccessfully": "{count} נכס נמחק בהצלחה | {count} נכסים נמחקו בהצלחה",
       "deleteSelected": "מחיקה",
       "deleteSelectedAll": "מחיקת הכול",
       "deselectAll": "ביטול בחירת הכול",
@@ -2833,7 +2847,6 @@
       "exportStarted": "מכין ייצוא ZIP עבור {count} קובץ | מכין ייצוא ZIP עבור {count} קבצים",
       "exportWorkflowAll": "ייצוא כל תהליכי העבודה",
       "failedToAddNodes": "הוספת הצמתים לתהליך העבודה נכשלה",
-      "failedToDeleteAssets": "מחיקת הנכסים הנבחרים נכשלה",
       "insertAllAssetsAsNodes": "הוספת כל הנכסים כצמתים",
       "multipleSelectedAssets": "נבחרו מספר נכסים",
       "noWorkflowsFound": "לא נמצאו נתוני תהליך עבודה בנכסים הנבחרים",
@@ -2841,7 +2854,6 @@
       "nodesAddedToWorkflow": "{count} צמתים נוספו לתהליך העבודה",
       "openWorkflowAll": "פתיחת כל תהליכי העבודה",
       "partialAddNodesSuccess": "{succeeded} נוספו בהצלחה, {failed} נכשלו",
-      "partialDeleteSuccess": "{succeeded} נמחקו בהצלחה, {failed} נכשלו",
       "partialWorkflowsExported": "{succeeded} יוצאו בהצלחה, {failed} נכשלו",
       "partialWorkflowsOpened": "{succeeded} תהליכי עבודה נפתחו, {failed} נכשלו",
       "selectedCount": "נכסים נבחרים: {count}",
@@ -3457,6 +3469,28 @@
     "addColor": "הוסף צבע",
     "swatchTitle": "לחץ לעריכה · גרור לשינוי סדר · קליק ימני להסרה"
   },
+  "partnerNodesEducation": {
+    "benefits": {
+      "free": "חינמי להפעלה",
+      "noDownload": "אין צורך בהגדרה",
+      "noVram": "ללא VRAM, ה-GPU שלך נשאר פנוי",
+      "offline": "פועל במצב לא מקוון"
+    },
+    "included": "כלול",
+    "muteOpen": "השתקת clip בעל משקלים פתוחים",
+    "mutePartner": "השתקת clip של צומת שותף",
+    "notIncluded": "לא כלול",
+    "openHeader": "פתוח",
+    "openTab": "צמתים פתוחים",
+    "partnerHeader": "שותף",
+    "partnerTab": "צומתי שותפים",
+    "pitch": "רואים את ההבדל? גררו להשוואה.",
+    "reassurance": "צומתי שותפים זמינים כשרוצים יותר. שאר Comfy נשאר חינמי.",
+    "sliderLabel": "השוואת פלט של משקלים פתוחים וצומת שותף",
+    "tooltip": "צומתי שותפים מפעילים דרך Comfy מודלים בקוד סגור, כגון Kling או Veo, על חומרת הספק. הם משתמשים בקרדיטים; שאר Comfy נשאר חינמי.",
+    "unmuteOpen": "ביטול השתקת clip בעל משקלים פתוחים",
+    "unmutePartner": "ביטול השתקת clip של צומת שותף"
+  },
   "progressToast": {
     "allDownloadsCompleted": "כל ההורדות הושלמו",
     "downloadingModel": "מוריד מודל...",
@@ -3514,7 +3548,6 @@
       "copyErrorMessage": "העתקת הודעת השגיאה",
       "copyJobId": "העתקת מזהה המשימה",
       "delete": "מחיקה",
-      "deleteAsset": "מחיקת הנכס",
       "download": "הורדה",
       "exportWorkflow": "ייצוא תהליך העבודה",
       "inspectAsset": "בדיקת הנכס",
@@ -4332,7 +4365,6 @@
     "inactiveTeamTitle": "מנוי צוות לא פעיל",
     "inviteUpTo": "הזמן עד",
     "invoiceHistory": "היסטוריית חשבוניות",
-    "learnMore": "מידע נוסף",
     "manageBilling": "ניהול חיוב",
     "managePlan": "ניהול המסלול",
     "manageSubscription": "ניהול המנוי",
@@ -4460,6 +4492,7 @@
       },
       "refillReplacesNote": "מחליף את המילוי החודשי שלך. היתרה הקיימת נשמרת.",
       "renewsAt": "מתחדש בסך {amount} בתאריך {date}. ניתן לבטל בכל עת.",
+      "renewsAtAmount": "מתחדש במחיר {amount}. ניתן לבטל בכל עת.",
       "savedPaymentMethod": "אמצעי תשלום",
       "showMoreFeatures": "הצגת תכונות נוספות",
       "starting": "החל מ-{date}",
@@ -4599,7 +4632,6 @@
     "videoTemplateBasedCredits": "סרטונים שנוצרו באמצעות Wan 2.2 Image to Video",
     "viewEnterprise": "הצגת מסלול ארגוני",
     "viewMoreDetails": "הצגת פרטים נוספים",
-    "viewMoreDetailsPlans": "הצגת פרטים נוספים על המסלולים והתמחור",
     "viewUsageHistory": "הצגת היסטוריית השימוש",
     "whatsIncluded": "מה כלול:",
     "workspaceNotSubscribed": "סביבת עבודה זו אינה במנוי",

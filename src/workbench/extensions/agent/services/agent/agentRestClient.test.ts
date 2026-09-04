@@ -105,6 +105,16 @@ describe('agentRestClient route + method', () => {
     expect(init.body).toBe('{}')
   })
 
+  it('answerAsk POSTs the selected option to the encoded ask path', async () => {
+    respond(jsonResponse(202, { status: 'answered' }))
+    await makeClient().answerAsk('t7', 'turn-1:call/1', ['run'])
+
+    const { route, init } = lastCall()
+    expect(route).toBe('/agent/threads/t7/asks/turn-1%3Acall%2F1/answer')
+    expect(init.method).toBe('POST')
+    expect(JSON.parse(init.body as string)).toEqual({ selected: ['run'] })
+  })
+
   it('listCloudWorkflows GETs the paginated workflows path until has_more is false', async () => {
     const page = (
       offset: number,
