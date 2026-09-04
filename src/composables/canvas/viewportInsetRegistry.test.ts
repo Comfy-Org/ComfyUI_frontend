@@ -24,8 +24,8 @@ describe('viewportInsetRegistry', () => {
   })
 
   it('sums registered providers and removes them independently', () => {
-    const unregisterPanel = registerViewportInset('test-panel', () => 320)
-    const unregisterToolbar = registerViewportInset('test-toolbar', () => 48)
+    const unregisterPanel = trackedRegister('test-panel', () => 320)
+    const unregisterToolbar = trackedRegister('test-toolbar', () => 48)
 
     expect(getViewportInset()).toBe(368)
 
@@ -46,8 +46,8 @@ describe('viewportInsetRegistry', () => {
   })
 
   it('does not let an obsolete disposer remove a replacement provider', () => {
-    const unregisterOld = registerViewportInset('test-replacement', () => 100)
-    const unregisterCurrent = registerViewportInset(
+    const unregisterOld = trackedRegister('test-replacement', () => 100)
+    const unregisterCurrent = trackedRegister(
       'test-replacement',
       () => 240
     )
@@ -61,8 +61,8 @@ describe('viewportInsetRegistry', () => {
 
   it('does not let a stale disposer remove a same-function replacement', () => {
     const provider = () => 160
-    const unregisterOld = registerViewportInset('test-same-provider', provider)
-    const unregisterCurrent = registerViewportInset(
+    const unregisterOld = trackedRegister('test-same-provider', provider)
+    const unregisterCurrent = trackedRegister(
       'test-same-provider',
       provider
     )
