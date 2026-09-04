@@ -160,19 +160,6 @@ const CONSOLE_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
         'make the audio loader tolerate an unavailable configured value and remove this entry'
     }
   ],
-  ComfyUI_LayerStyle_Advance: [
-    {
-      id: 'duplicate-color-overlay',
-      pattern:
-        /\[vite:preloadError\].*Extension named 'ColorOverlay' already registered\./,
-      global: true,
-      requiredStartupId: 'duplicate-color-overlay',
-      reason:
-        'this pack and comfyui_layerstyle both register the ColorOverlay extension in their pinned dz_node_palette.js',
-      restore:
-        'give the extensions distinct names and remove this entry when both packs load without a duplicate-registration error'
-    }
-  ],
   'comfyui-sam3': [
     {
       id: 'sam3-editor-legacy-clipspace-import',

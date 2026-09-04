@@ -17,12 +17,42 @@ describe('extensionStore', () => {
       )
     })
 
-    it('throws for duplicate registration', () => {
+    it('warns and keeps the first registration for a duplicate name', () => {
       const store = useExtensionStore()
-      store.registerExtension({ name: 'dup' })
-      expect(() => store.registerExtension({ name: 'dup' })).toThrow(
-        "Extension named 'dup' already registered."
-      )
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      try {
+        const first = { name: 'dup' }
+        expect(store.registerExtension(first)).toBe(true)
+        expect(store.registerExtension({ name: 'dup' })).toBe(false)
+        expect(warnSpy).toHaveBeenCalledWith(
+          "Extension named 'dup' already registered - skipping"
+        )
+        expect(store.extensions).toHaveLength(1)
+        expect(store.extensions[0]).toBe(first)
+      } finally {
+        warnSpy.mockRestore()
+      }
+    })
+
+    it('registers names that collide with Object.prototype keys', () => {
+      const store = useExtensionStore()
+      store.registerExtension({ name: 'constructor' })
+      store.registerExtension({ name: '__proto__' })
+      expect(store.isExtensionInstalled('constructor')).toBe(true)
+      expect(store.isExtensionInstalled('__proto__')).toBe(true)
+      expect(store.extensions).toHaveLength(2)
+    })
+
+    it('lists extensions in registration order', () => {
+      const store = useExtensionStore()
+      store.registerExtension({ name: 'z.ext' })
+      store.registerExtension({ name: '2' })
+      store.registerExtension({ name: 'a.ext' })
+      expect(store.extensions.map((ext) => ext.name)).toEqual([
+        'z.ext',
+        '2',
+        'a.ext'
+      ])
     })
 
     it('warns when registering a disabled extension but still installs it', () => {
@@ -46,6 +76,7 @@ describe('extensionStore', () => {
     it('returns false for uninstalled extension', () => {
       const store = useExtensionStore()
       expect(store.isExtensionInstalled('missing')).toBe(false)
+      expect(store.isExtensionInstalled('toString')).toBe(false)
     })
   })
 

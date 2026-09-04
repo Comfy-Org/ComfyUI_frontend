@@ -24,23 +24,22 @@ const ALWAYS_DISABLED_EXTENSIONS: readonly string[] = [
 ]
 
 export const useExtensionStore = defineStore('extension', () => {
-  // For legacy reasons, the name uniquely identifies an extension
-  const extensionByName = ref<Record<string, ComfyExtension>>({})
-  const extensions = computed(() => Object.values(extensionByName.value))
+  const extensionByName = ref<Map<string, ComfyExtension>>(new Map())
+  const extensions = computed(() => [...extensionByName.value.values()])
   // Not using computed because disable extension requires reloading of the page.
   // Dynamically update this list won't affect extensions that are already loaded.
   const disabledExtensionNames = ref<Set<string>>(new Set())
+
+  const isExtensionInstalled = (name: string) => extensionByName.value.has(name)
 
   // Disabled extension names that are currently not in the extension list.
   // If a node pack is disabled in the backend, we shouldn't remove the configuration
   // of the frontend extension disable list, in case the node pack is re-enabled.
   const inactiveDisabledExtensionNames = computed(() => {
     return Array.from(disabledExtensionNames.value).filter(
-      (name) => !(name in extensionByName.value)
+      (name) => !isExtensionInstalled(name)
     )
   })
-
-  const isExtensionInstalled = (name: string) => name in extensionByName.value
 
   const isExtensionEnabled = (name: string) =>
     !disabledExtensionNames.value.has(name)
@@ -55,20 +54,29 @@ export const useExtensionStore = defineStore('extension', () => {
     )
   }
 
-  function registerExtension(extension: ComfyExtension) {
+  /**
+   * Registers an extension by name. A name that is already registered keeps its
+   * first registration.
+   * @returns whether the extension was registered
+   */
+  function registerExtension(extension: ComfyExtension): boolean {
     if (!extension.name) {
       throw new Error("Extensions must have a 'name' property.")
     }
 
-    if (extensionByName.value[extension.name]) {
-      throw new Error(`Extension named '${extension.name}' already registered.`)
+    if (isExtensionInstalled(extension.name)) {
+      console.warn(
+        `Extension named '${extension.name}' already registered - skipping`
+      )
+      return false
     }
 
     if (disabledExtensionNames.value.has(extension.name)) {
       console.warn(`Extension ${extension.name} is disabled.`)
     }
 
-    extensionByName.value[extension.name] = markRaw(extension)
+    extensionByName.value.set(extension.name, markRaw(extension))
+    return true
   }
 
   function loadDisabledExtensionNames(names: string[]) {
