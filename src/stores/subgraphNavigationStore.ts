@@ -449,9 +449,10 @@ export const useSubgraphNavigationStore = defineStore(
         (targetGraph.rootGraph === app.rootGraph &&
           app.rootGraph.subgraphs.get(targetId) === targetGraph)
 
-      if (!canvas || !targetId || !belongsToCurrentWorkflow) return false
+      if (!canvas?.graph || !targetId || !belongsToCurrentWorkflow) return false
       if (canvas.graph === targetGraph) return true
 
+      const previousGraph = canvas.graph
       const intent = createNavigationIntent('#' + targetId, 'graph')
       await withNavBlocked(
         async () => canvas.setGraph(targetGraph),
@@ -460,6 +461,16 @@ export const useSubgraphNavigationStore = defineStore(
       if (intent.id !== navigationIntentId) return false
 
       const hashWritten = await queueGraphHash(intent)
+      if (
+        !hashWritten &&
+        intent.id === navigationIntentId &&
+        canvasStore.canvas?.graph === targetGraph
+      ) {
+        await withNavBlocked(
+          async () => canvas.setGraph(previousGraph),
+          '#' + previousGraph.id
+        )
+      }
       return (
         hashWritten &&
         intent.id === navigationIntentId &&

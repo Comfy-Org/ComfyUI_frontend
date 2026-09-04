@@ -560,6 +560,7 @@ describe('useSubgraphNavigationStore', () => {
 
   it('returns false when writing the graph hash fails', async () => {
     const navigationStore = useSubgraphNavigationStore()
+    const originalGraph = app.canvas.graph
     const targetId = '11111111-1111-4111-8111-111111111111'
     const targetGraph = createMockSubgraph(targetId)
     app.rootGraph.subgraphs.set(targetId, targetGraph)
@@ -573,7 +574,7 @@ describe('useSubgraphNavigationStore', () => {
       false
     )
 
-    expect(app.canvas.graph).toBe(targetGraph)
+    expect(app.canvas.graph).toBe(originalGraph)
     expect(routeHash.value).toBe('#' + app.rootGraph.id)
   })
 
