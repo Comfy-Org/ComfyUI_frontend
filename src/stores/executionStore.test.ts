@@ -9,7 +9,6 @@ import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNod
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import type * as ComfyWorkflowModule from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { NodeProgressState } from '@/schemas/apiSchema'
 
 const {
@@ -59,28 +58,21 @@ beforeEach(() => {
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { toNodeId } from '@/types/nodeId'
 
-// Mock the workflowStore
-vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
-  const { ComfyWorkflow } = await vi.importActual<typeof ComfyWorkflowModule>(
-    '@/platform/workflow/management/stores/comfyWorkflow'
-  )
-  return {
-    ComfyWorkflow,
-    useWorkflowStore: vi.fn(() => ({
-      nodeIdToNodeLocatorId: mockNodeIdToNodeLocatorId,
-      nodeLocatorIdToNodeExecutionId: mockNodeLocatorIdToNodeExecutionId,
-      executionIdToCurrentId: mockExecutionIdToCurrentId,
-      get activeWorkflow() {
-        return mockActiveWorkflow.value
-      },
-      get openWorkflows() {
-        return mockOpenWorkflows.value
-      },
-      isOpen: (workflow: { path?: string }) =>
-        mockOpenWorkflows.value.some((w) => w.path === workflow.path)
-    }))
-  }
-})
+vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
+  useWorkflowStore: vi.fn(() => ({
+    nodeIdToNodeLocatorId: mockNodeIdToNodeLocatorId,
+    nodeLocatorIdToNodeExecutionId: mockNodeLocatorIdToNodeExecutionId,
+    executionIdToCurrentId: mockExecutionIdToCurrentId,
+    get activeWorkflow() {
+      return mockActiveWorkflow.value
+    },
+    get openWorkflows() {
+      return mockOpenWorkflows.value
+    },
+    isOpen: (workflow: { path?: string }) =>
+      mockOpenWorkflows.value.some((w) => w.path === workflow.path)
+  }))
+}))
 
 vi.mock('@/platform/distribution/types', () => ({
   isCloud: true

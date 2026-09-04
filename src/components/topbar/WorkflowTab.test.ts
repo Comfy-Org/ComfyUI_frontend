@@ -8,6 +8,7 @@ import { createI18n } from 'vue-i18n'
 
 import type { ComponentProps } from 'vue-component-type-helpers'
 
+import type * as ExecutionStoreModule from '@/stores/executionStore'
 import type { WorkflowExecutionStatus } from '@/stores/executionStore'
 
 const { mockWorkflowStatus, mockCloseWorkflow } = await vi.hoisted(async () => {
@@ -28,19 +29,18 @@ vi.mock('@/stores/authStore', () => ({
   })
 }))
 
-vi.mock('@/stores/executionStore', () => ({
-  WORKFLOW_STATUS_I18N_KEYS: {
-    running: 'g.running',
-    completed: 'g.completed',
-    failed: 'g.failed'
-  } satisfies Record<WorkflowExecutionStatus, string>,
-  useExecutionStore: () => ({
-    getWorkflowStatus(workflow: object | undefined | null) {
-      if (!workflow) return undefined
-      return mockWorkflowStatus.value.get(workflow)
-    }
-  })
-}))
+vi.mock('@/stores/executionStore', async (importOriginal) => {
+  const actual = await importOriginal<typeof ExecutionStoreModule>()
+  return {
+    WORKFLOW_STATUS_I18N_KEYS: actual.WORKFLOW_STATUS_I18N_KEYS,
+    useExecutionStore: () => ({
+      getWorkflowStatus(workflow: object | undefined | null) {
+        if (!workflow) return undefined
+        return mockWorkflowStatus.value.get(workflow)
+      }
+    })
+  }
+})
 
 vi.mock('@/composables/usePragmaticDragAndDrop', () => ({
   usePragmaticDraggable: vi.fn(),
