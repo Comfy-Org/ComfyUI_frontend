@@ -108,11 +108,12 @@ PLAYWRIGHT_TEST_URL=http://localhost:5173 DISTRIBUTION=cloud \
 ## Capture
 
 The recorder keeps the `/ws` frames of the thread with their receipt times and,
-once a turn's `agent_message_done` arrives, reads that turn's audit rows itself:
-the parent tool-call rows with their child op ids and statuses, plus the current
-draft (`readRows` in `scripts/agentConversationRecord.ts` holds the query). Each
-turn's rows land in `recordings/` as `rows.<n>.json`; a frame belongs to the turn
-whose message ID it carries.
+after the last turn completes, reads each turn's audit rows itself: the parent
+tool-call rows with their child op ids and statuses, plus the draft as it stands
+at the end of the thread (`readRows` in `scripts/agentConversationRecord.ts`
+holds the query). Each turn's rows land in `recordings/` as
+`<case-id>.<attempt>.rows.<n>.json`; a frame belongs to the turn whose message ID
+it carries.
 
 ## Assembly
 

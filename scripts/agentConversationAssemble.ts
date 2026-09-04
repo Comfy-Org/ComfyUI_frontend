@@ -71,7 +71,6 @@ export const zRowsDump = z.object({
   )
 })
 
-// The socket carries frames without a data object; the replay union does not.
 // The candidate set: data.ops when it is a list, else data.op.
 const zOpsCarrier = z.object({
   data: z

@@ -649,7 +649,7 @@ fix so the bug stays fixed:
    run lines in the PR description. A replay case that never went red
    against the bug does not count as regression coverage.
 
-Name the case after the behavior it protects (`agent-<behavior-slug>.json`, with the fix PR cited in the spec header and the fixture's `source.note`). The recorder writes the provenance the replay keeps: `source.capture` (thread and message ids) and `source.note` (row ids and the raw capture hash). A bad fixture is re-recorded, never edited.
+Name the case after the behavior it protects (`agent-<behavior-slug>.json`, with the fix PR cited in the spec header and the fixture's `source.note`). The recorder writes the provenance the replay keeps: `source.capture` (backend, thread id, export time), `turns[].message_id`, and `source.note` (row ids and the raw capture hash). A bad fixture is re-recorded, never edited.
 
 ## Test Data & Typed API Mocks
 

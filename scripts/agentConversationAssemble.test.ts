@@ -840,65 +840,6 @@ describe('assembleConversation across turns', () => {
       )
     ).toThrow('last kept frame of turn 2 is agent_tool_call')
   })
-})
-
-describe('zRowsDump', () => {
-  const dump = (result: unknown, overrides: Record<string, unknown> = {}) => ({
-    source: 'postgres',
-    parents: [
-      {
-        id: 'parent-1',
-        tool_call_id: 'tool-1',
-        tool_name: 'apply_ops',
-        status: 'ok',
-        workflow_id: WORKFLOW,
-        result,
-        children: [],
-        ...overrides
-      }
-    ],
-    draft: null
-  })
-
-  it('decodes a result psql handed back as a JSON string', () => {
-    const parsed = zRowsDump.parse(
-      dump(JSON.stringify({ ok: true, data: { ops: [addNodeOp] } }))
-    )
-
-    expect(parsed.parents[0].result).toEqual({
-      ok: true,
-      data: { ops: [addNodeOp] }
-    })
-  })
-
-  it('decodes the draft column and normalises its node ids to strings', () => {
-    const parsed = zRowsDump.parse({
-      ...dump(null),
-      draft: JSON.stringify({ nodes: [{ id: 3 }, { id: '4' }], links: [] })
-    })
-
-    expect(parsed.draft?.nodes.map((node) => node.id)).toEqual(['3', '4'])
-  })
-
-  it('refuses a result that is not a JSON object', () => {
-    expect(() => zRowsDump.parse(dump([1, 2]))).toThrow()
-  })
-
-  it('refuses a result string that is not JSON', () => {
-    expect(() => zRowsDump.parse(dump('{'))).toThrow('is not JSON')
-  })
-
-  it('refuses a parent row without a tool call id', () => {
-    expect(() =>
-      zRowsDump.parse(dump({ ok: true }, { tool_call_id: null }))
-    ).toThrow()
-  })
-
-  it('refuses a dump that did not come from postgres', () => {
-    expect(() =>
-      zRowsDump.parse({ ...dump({ ok: true }), source: 'sqlite' })
-    ).toThrow()
-  })
 
   it('leaves cancel_after out of a turn that ran to completion', () => {
     const { conversation } = assembleConversation(input())
@@ -984,6 +925,65 @@ describe('zRowsDump', () => {
     )
     expect(() =>
       assembleConversation(input({ raw: raw({ frames: running }) }))
-    ).toThrow('disagree')
+    ).toThrow('disagree; the rows are not this turn')
+  })
+})
+
+describe('zRowsDump', () => {
+  const dump = (result: unknown, overrides: Record<string, unknown> = {}) => ({
+    source: 'postgres',
+    parents: [
+      {
+        id: 'parent-1',
+        tool_call_id: 'tool-1',
+        tool_name: 'apply_ops',
+        status: 'ok',
+        workflow_id: WORKFLOW,
+        result,
+        children: [],
+        ...overrides
+      }
+    ],
+    draft: null
+  })
+
+  it('decodes a result psql handed back as a JSON string', () => {
+    const parsed = zRowsDump.parse(
+      dump(JSON.stringify({ ok: true, data: { ops: [addNodeOp] } }))
+    )
+
+    expect(parsed.parents[0].result).toEqual({
+      ok: true,
+      data: { ops: [addNodeOp] }
+    })
+  })
+
+  it('decodes the draft column and normalises its node ids to strings', () => {
+    const parsed = zRowsDump.parse({
+      ...dump(null),
+      draft: JSON.stringify({ nodes: [{ id: 3 }, { id: '4' }], links: [] })
+    })
+
+    expect(parsed.draft?.nodes.map((node) => node.id)).toEqual(['3', '4'])
+  })
+
+  it('refuses a result that is not a JSON object', () => {
+    expect(() => zRowsDump.parse(dump([1, 2]))).toThrow()
+  })
+
+  it('refuses a result string that is not JSON', () => {
+    expect(() => zRowsDump.parse(dump('{'))).toThrow('is not JSON')
+  })
+
+  it('refuses a parent row without a tool call id', () => {
+    expect(() =>
+      zRowsDump.parse(dump({ ok: true }, { tool_call_id: null }))
+    ).toThrow()
+  })
+
+  it('refuses a dump that did not come from postgres', () => {
+    expect(() =>
+      zRowsDump.parse({ ...dump({ ok: true }), source: 'sqlite' })
+    ).toThrow()
   })
 })
