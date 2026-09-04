@@ -2,7 +2,10 @@ diff --git a/src/renderer/extensions/vueNodes/composables/processedWidgetRenderM
 index c09570c137..06c840aa80 100644
 --- a/src/renderer/extensions/vueNodes/composables/processedWidgetRenderModel.ts
 +++ b/src/renderer/extensions/vueNodes/composables/processedWidgetRenderModel.ts
-@@ -361,3 +361,16 @@ function processWidget(
+@@ -358,6 +358,19 @@ function processWidget(
+   const widgetState = ctx.widgetValueStore.getWidget(id)
+   if (!widgetState) return null
+-
 +  // DETECTION PROOF (row 2, mount v2): hide ImpactInt's value widget only
 +  // in Vue Nodes. Expected: S2 red and every other tier remains green.
 +  const detectionProofTier = (
@@ -16,6 +19,7 @@ index c09570c137..06c840aa80 100644
 +    widgetState.name === 'value'
 +  )
 +    return null
++
    const liveWidget = ctx.liveWidgets.get(id)
    const type = liveWidget?.type ?? widgetState.type
    const renderState = ctx.widgetValueStore.getWidgetRenderState(id)
