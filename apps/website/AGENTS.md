@@ -51,6 +51,12 @@ the discipline it demands:
   directory for the feature.
 - Assume a partially-built feature is **reachable by anyone who guesses the
   URL**, and design for that.
+- When a change low in a stack alters something tests read, **run the suite on
+  the branches that carry those tests**, not on the branch that made the
+  change. Packing the catalog deleted a directory three test files scanned;
+  the suite passed on the branch that did it — which carries none of them —
+  and was red on seven branches above for hours. Builds were verified at
+  every hop; tests at none.
 
 **Don't**
 
@@ -79,6 +85,26 @@ page the build never produced, which is the usual symptom of a route quietly
 disappearing.
 
 For scale: `main` builds **738 pages**; with Workshop included it is 1,007.
+
+### Comparing a build to main
+
+The proof that a change does not touch existing pages is a page-by-page diff
+of two builds — main at the commit your branch contains
+(`git merge-base origin/main HEAD`), and yours. A raw diff reports every page
+changed; three things differ on every build and mean nothing:
+
+- hashed asset filenames — under **`/_website/`**, not `/_astro/`
+- `<astro-island uid="…">`
+- `server-render-time="…"` on every island
+
+Normalise those and the honest number appears. Compare the shared CSS at
+token level (split on `{};`) and by gzipped size; splitting on `}` alone
+reports a minified Tailwind file as one giant rule. On macOS, `stat -f '%z'`
+is not byte size — use `wc -c`.
+
+`scripts/compare-build-to-main.sh <baseline-dist> <candidate-dist> [label]`
+does all of this. It is not yet wired into CI; that would need a cached build
+of main to compare against, which is a cost decision, not a code one.
 
 ### What is generated today
 
@@ -162,10 +188,43 @@ Everything runs from `.github/workflows/ci-vercel-website-preview.yaml`:
 Project: `vercel.com/comfyui/website-frontend`. `website-frontend-comfyui.vercel.app`
 serves it directly; comfy.org is the same deployment behind Cloudflare.
 
+**Redirects in `vercel.json` win over pages.** Vercel evaluates them before
+static files, so a page whose path matches a redirect `source` is never
+served — and `astro dev` / `astro preview` do not read `vercel.json`, so it
+works locally and only fails deployed. Live instance: `vercel.json` sends
+`/login` to `cloud.comfy.org/cloud/login` (307), while `src/pages/login.astro`
+exists on the sign-in branch; `/login` bounces, `/login/` serves the page.
+Grep `vercel.json` for the path before adding a page.
+
 **The repo is squash-merge only**, with the commit message built from
 `PR_TITLE` + `PR_BODY`. So a PR title _is_ the commit message on main — use
 conventional commits (`feat(scope): lowercase imperative`), and note that
 branch commit messages never reach main's history.
+
+## What CI enforces, and what it only reports
+
+Main's required checks are exactly:
+
+```
+cla-assistant · test · lint-and-format · e2e-status · website-e2e
+```
+
+**None of the website's unit or build checks are in that list.**
+`ci-website-unit.yaml` reports as `website-unit` / `website-unit-gate` and
+`ci-website-build.yaml` as `build`; both run, both go red, neither blocks. The
+required `test` is the repository-root vitest job, and root vitest does not
+cover `apps/website` — so on a website-only PR it passes without running a
+single website test. Observed on #16871: `test` pass, `website-unit` fail,
+merge button available.
+
+Until `website-unit-gate` and `build` are added to the required set (a repo
+setting, not a workflow change), a green merge button on a website PR proves
+nothing about its tests. Read the checks list, not the button.
+
+`Check for AI agent co-author trailers` is also advisory. It fails on any
+commit carrying `Co-Authored-By: <AI agent>`; the repo rejects those as policy
+(`.agents/skills/disabling-ai-attribution`). Squash-merge discards branch
+commit messages, so the trailers never reach main — but do not add them.
 
 ## Vue islands
 
@@ -232,6 +291,36 @@ Either alone will lie to you.
 The 268 model pages come from `getStaticPaths`, so they can be skipped at the
 source; only `/workshop/index.astro` is a static route that has to be removed
 after the fact.
+
+### What the gate does not keep out
+
+The gate removes **routes**. Three things leak past it into a release build,
+all measured against main at the same commit our branch contains:
+
+| Leak                                                  | Where               | Size           | Reachable?                               |
+| ----------------------------------------------------- | ------------------- | -------------- | ---------------------------------------- |
+| 56 Tailwind utilities, 0 removed                      | `BaseLayout.*.css`  | +336 B gzipped | no — no page on main carries the classes |
+| `WorkshopCatalog.*.js`, `WorkshopPlayground.*.js`     | `_website/`         | 16.7 KB        | no — imported by nothing                 |
+| 27 `workshop.*` strings ("Comfy Workshop", hero copy) | `translations.*.js` | +821 B gzipped | **yes** — every page's islands import it |
+
+Why each happens:
+
+- **Tailwind v4 scans source, not built routes.** `src/styles/global.css` is
+  `@import 'tailwindcss'` with no `@source`, so a gated component still
+  contributes its classes. ON and OFF builds produce byte-identical CSS.
+- **Islands are compiled for pages that are then deleted.** The gate runs at
+  `astro:build:done`; by then the model pages' islands are already chunks.
+  Returning `[]` from `getStaticPaths` when the gate is off would stop both the
+  268 renders and their chunks at the source.
+- **`translations.ts` is one map, bundled whole into every island.** Any key
+  added for an unreleased feature ships in production JS immediately. This is
+  the only one of the three a user actually receives, and it is also why the
+  chunk is 474 KB / 125 KB gzipped for every visitor regardless of feature.
+
+None of these changes what an existing page renders — nothing on main
+references the added classes, chunks or keys. They are byte changes to shared
+assets, and a small text leak of the feature's existence. Know they exist
+before claiming "release shape == main".
 
 ### The catalog
 
