@@ -30,6 +30,9 @@ import {
 // Named app: never contend with a default app another script might create.
 const WORKSHOP_APP_NAME = 'workshop'
 
+/** Ceiling on the provisioning POST; a hung request must not strand sign-in. */
+export const WORKSHOP_PROVISION_TIMEOUT_MS = 15_000
+
 function workshopAuth() {
   const existing = getApps().find((app) => app.name === WORKSHOP_APP_NAME)
   return getAuth(
@@ -46,15 +49,24 @@ export function isCustomerProvisioned(status: number, ok: boolean): boolean {
   return ok || status === 409
 }
 
-async function provisionCustomer(user: User): Promise<void> {
+/** The slice of a Firebase user this call needs; injectable in tests. */
+interface ProvisionableUser {
+  getIdToken: () => Promise<string>
+}
+
+export async function provisionCustomer(
+  user: ProvisionableUser,
+  fetchImpl: typeof fetch = globalThis.fetch
+): Promise<void> {
   const token = await user.getIdToken()
-  const response = await fetch(`${WORKSHOP_ROUTER_BASE_URL}/customers`, {
+  const response = await fetchImpl(`${WORKSHOP_ROUTER_BASE_URL}/customers`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ signup_source: 'comfy-workshop' })
+    body: JSON.stringify({ signup_source: 'comfy-workshop' }),
+    signal: AbortSignal.timeout(WORKSHOP_PROVISION_TIMEOUT_MS)
   })
   if (!isCustomerProvisioned(response.status, response.ok)) {
     throw new Error(`Customer provisioning failed: ${response.status}`)
