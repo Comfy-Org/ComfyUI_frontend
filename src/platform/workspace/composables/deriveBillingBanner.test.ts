@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import type { BillingBannerInputs } from './useBillingBanner'
 import { deriveBillingBanner } from './useBillingBanner'
@@ -7,7 +7,7 @@ const funded: BillingBannerInputs = {
   billingControlEnabled: true,
   v1PaymentRecovery: true,
   isTeamPlan: true,
-  isSalesManaged: false,
+  isEnterprise: false,
   isLoaded: true,
   canAccessSubscriptionFeatures: true,
   billingStatus: 'paid',
@@ -32,8 +32,8 @@ const paymentFailed: Partial<BillingBannerInputs> = {
   canAccessSubscriptionFeatures: false
 }
 
-function derive(overrides: Partial<BillingBannerInputs>) {
-  return deriveBillingBanner({ ...funded, ...overrides })
+function derive(overrides: Partial<BillingBannerInputs>, now?: number) {
+  return deriveBillingBanner({ ...funded, ...overrides }, now)
 }
 
 describe('deriveBillingBanner', () => {
@@ -140,69 +140,126 @@ describe('deriveBillingBanner', () => {
     ).toBeNull()
   })
 
-  describe('sales-managed ending notice window', () => {
-    const NOW = new Date('2026-09-03T12:00:00Z')
-
-    beforeEach(() => {
-      vi.useFakeTimers({ toFake: ['Date'] })
-      vi.setSystemTime(NOW)
-    })
+  describe('enterprise ending notice window', () => {
+    const NOW = new Date('2026-09-03T12:00:00Z').getTime()
 
     function daysFromNow(days: number): string {
-      return new Date(NOW.getTime() + days * 24 * 60 * 60 * 1000).toISOString()
+      return new Date(NOW + days * 24 * 60 * 60 * 1000).toISOString()
     }
 
     const enterprise: Partial<BillingBannerInputs> = {
       isTeamPlan: false,
-      isSalesManaged: true
+      isEnterprise: true
     }
 
     it('stays quiet while the end date is beyond the notice window', () => {
       expect(
-        derive({ ...enterprise, isCancelled: true, endDate: daysFromNow(30) })
+        derive(
+          { ...enterprise, isCancelled: true, endDate: daysFromNow(30) },
+          NOW
+        )
       ).toBeNull()
     })
 
     it('surfaces the ending notice once the end date is near', () => {
       expect(
-        derive({ ...enterprise, isCancelled: true, endDate: daysFromNow(10) })
+        derive(
+          { ...enterprise, isCancelled: true, endDate: daysFromNow(10) },
+          NOW
+        )
       ).toBe('ending')
     })
 
     it('includes the window boundary itself', () => {
       expect(
-        derive({ ...enterprise, isCancelled: true, endDate: daysFromNow(14) })
+        derive(
+          { ...enterprise, isCancelled: true, endDate: daysFromNow(14) },
+          NOW
+        )
       ).toBe('ending')
     })
 
     it('hides the notice from members even inside the window', () => {
       expect(
-        derive({
-          ...enterprise,
-          isCancelled: true,
-          endDate: daysFromNow(10),
-          canManage: false
-        })
+        derive(
+          {
+            ...enterprise,
+            isCancelled: true,
+            endDate: daysFromNow(10),
+            canManage: false
+          },
+          NOW
+        )
       ).toBeNull()
     })
 
     it('needs a populated end date, like the self-serve notice', () => {
-      expect(derive({ ...enterprise, isCancelled: true })).toBeNull()
+      expect(derive({ ...enterprise, isCancelled: true }, NOW)).toBeNull()
     })
 
-    it('does not leak team-only banners into sales-managed workspaces', () => {
-      expect(derive({ ...enterprise, hasFunds: false })).toBeNull()
+    it('shows nothing for a passed end date once access is gone', () => {
+      // The window is unbounded below by design; this is the upstream gate
+      // that keeps a stale payload from pinning a perpetual past-date banner.
       expect(
-        derive({
-          ...enterprise,
-          billingStatus: 'paused',
-          canAccessSubscriptionFeatures: false
-        })
+        derive(
+          {
+            ...enterprise,
+            isCancelled: true,
+            endDate: daysFromNow(-5),
+            canAccessSubscriptionFeatures: false
+          },
+          NOW
+        )
+      ).toBeNull()
+    })
+
+    it('does not leak team-only banners into enterprise workspaces', () => {
+      expect(derive({ ...enterprise, hasFunds: false }, NOW)).toBeNull()
+      expect(
+        derive(
+          {
+            ...enterprise,
+            billingStatus: 'paused',
+            canAccessSubscriptionFeatures: false
+          },
+          NOW
+        )
+      ).toBeNull()
+    })
+
+    it('lets enterprise take precedence if a subscription reads as both', () => {
+      expect(
+        derive(
+          {
+            ...enterprise,
+            isTeamPlan: true,
+            isCancelled: true,
+            endDate: daysFromNow(60)
+          },
+          NOW
+        )
+      ).toBeNull()
+      expect(
+        derive({ ...enterprise, isTeamPlan: true, hasFunds: false }, NOW)
+      ).toBeNull()
+    })
+
+    it('gives an unrecognized tier no banner at all, as before this window', () => {
+      expect(
+        derive(
+          {
+            isTeamPlan: false,
+            isEnterprise: false,
+            isCancelled: true,
+            endDate: daysFromNow(10)
+          },
+          NOW
+        )
       ).toBeNull()
     })
 
     it('never applies the window to a self-serve team cancellation', () => {
-      expect(derive({ isCancelled: true, endDate: daysFromNow(60) })).toBe(
+      expect(derive({ isCancelled: true, endDate: daysFromNow(60) }, NOW)).toBe(
         'ending'
       )
     })

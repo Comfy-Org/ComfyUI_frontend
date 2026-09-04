@@ -544,8 +544,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
       const NOW = new Date('2026-09-03T12:00:00Z')
       const DAY = 24 * 60 * 60 * 1000
 
+      // The project vitest setup fakes timers for every test, so pinning the
+      // clock is just a setSystemTime away.
       beforeEach(() => {
-        vi.useFakeTimers({ toFake: ['Date'] })
         vi.setSystemTime(NOW)
         useEnterprisePlan()
         mockSubscriptionStatus.value = 'canceled'
@@ -580,6 +581,41 @@ describe('SubscriptionPanelContentWorkspace', () => {
         ).not.toBeInTheDocument()
         expect(
           screen.getByText(`Ends on ${formatPanelDate(iso)}`)
+        ).toBeInTheDocument()
+      })
+
+      it('never offers Reactivate, even when a legacy rail resolves it true', () => {
+        endInDays(10)
+        mockCanReactivatePlan.value = true
+        renderComponent()
+
+        expect(
+          screen.queryByRole('button', { name: /reactivate/i })
+        ).not.toBeInTheDocument()
+      })
+
+      it('falls back to the stock cancelled treatment without an end date', () => {
+        mockEndDate.value = null
+        renderComponent()
+
+        expect(screen.getByText('Canceled')).toBeInTheDocument()
+        expect(
+          screen.getByTestId('subscription-state-card')
+        ).toBeInTheDocument()
+      })
+
+      it('leaves a cancelled unrecognized tier on the stock treatment too', () => {
+        mockSubscriptionTier.value = runtimeTier('GALACTIC')
+        mockPlanSlug.value = 'galactic_monthly'
+        endInDays(30)
+        renderComponent()
+
+        expect(screen.getByText('Canceled')).toBeInTheDocument()
+        expect(
+          screen.getByTestId('subscription-state-card')
+        ).toBeInTheDocument()
+        expect(
+          screen.getByText(`Ends on ${formatPanelDate(mockEndDate.value!)}`)
         ).toBeInTheDocument()
       })
     })

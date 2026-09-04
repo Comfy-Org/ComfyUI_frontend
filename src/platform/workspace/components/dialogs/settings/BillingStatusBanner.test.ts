@@ -424,12 +424,13 @@ describe('BillingStatusBanner', () => {
     ).not.toBeInTheDocument()
   })
 
-  describe('sales-managed ending notice', () => {
+  describe('enterprise ending notice', () => {
     const NOW = new Date('2026-09-03T12:00:00Z')
     const DAY = 24 * 60 * 60 * 1000
 
+    // The project vitest setup fakes timers for every test, so pinning the
+    // clock is just a setSystemTime away.
     beforeEach(() => {
-      vi.useFakeTimers({ toFake: ['Date'] })
       vi.setSystemTime(NOW)
     })
 
@@ -452,8 +453,8 @@ describe('BillingStatusBanner', () => {
 
     it('shows enterprise copy without a Reactivate action inside the window', () => {
       enterpriseEndingIn(10)
-      // Pin the gate itself: even a rail that resolves reactivation true for a
-      // sales-managed plan must not surface the action.
+      // Pin the gate itself: even a rail that resolves reactivation true for
+      // an Enterprise plan must not surface the action.
       state.canReactivatePlan = true
       renderBanner()
 

@@ -106,26 +106,32 @@ export function isSalesManagedTier(
   return tier === 'ENTERPRISE' || isUnknownTier(tier)
 }
 
-// Sales schedules an end date on a sales-managed contract, often months before
+// Sales schedules an end date on an Enterprise contract, often months before
 // it lapses. That is a contract fact, not a self-serve cancellation, so the
 // workspace keeps its plainly-active presentation until the end date is this
-// close; only then does the muted ending notice appear. Self-serve plans never
-// consult this window.
-export const SALES_MANAGED_ENDING_NOTICE_DAYS = 14
+// close; only then does the muted ending notice appear. Strictly ENTERPRISE:
+// self-serve plans never consult this window, and neither do unrecognized
+// tiers — sales-managed contracts are Enterprise-only today, and per
+// isUnknownTier's contract an unidentifiable plan must not borrow claims.
+export const ENTERPRISE_ENDING_NOTICE_DAYS = 14
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000
 
-// Wall-clock comparison, evaluated on render/data refresh rather than a live
-// timer. An already-passed end date counts as "within" — the ended state has
-// its own handling upstream of every caller.
-export function isWithinSalesManagedEndingNotice(
+// Wall-clock comparison; callers feed `now` from a coarse reactive clock so a
+// long-lived session still crosses into the window without a data refresh.
+// The window is deliberately unbounded below — a passed end date counts as
+// "within" — because the ended state gates upstream of every caller: the
+// backend folds an ended subscription into canAccessSubscriptionFeatures
+// false, which deriveBillingBanner requires before any window check, and the
+// panel's ended presentation short-circuits first.
+export function isWithinEnterpriseEndingNotice(
   endDate: string | null | undefined,
   now: number = Date.now()
 ): boolean {
   if (!endDate) return false
   const end = new Date(endDate).getTime()
   if (Number.isNaN(end)) return false
-  return end - now <= SALES_MANAGED_ENDING_NOTICE_DAYS * MS_PER_DAY
+  return end - now <= ENTERPRISE_ENDING_NOTICE_DAYS * MS_PER_DAY
 }
 
 // Includes the workspace-level TEAM, which toTierKey maps to null: a catalog

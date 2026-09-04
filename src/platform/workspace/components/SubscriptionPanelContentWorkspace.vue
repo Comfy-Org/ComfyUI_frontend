@@ -264,8 +264,15 @@
                     )
                   }}
                 </Button>
+                <!-- Never a self-serve resubscribe on an Enterprise contract,
+                     even where the legacy rail resolves canReactivatePlan
+                     true — same distrust as the banner action. -->
                 <Button
-                  v-if="isSubscriptionCancelled && canReactivatePlan"
+                  v-if="
+                    isSubscriptionCancelled &&
+                    canReactivatePlan &&
+                    !isEnterprisePlan
+                  "
                   size="lg"
                   variant="primary"
                   class="rounded-lg px-4 text-sm font-normal"
@@ -397,6 +404,7 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { useTimestamp } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -413,7 +421,7 @@ import {
   isEnterprisePlanSlug,
   isSalesManagedTier,
   isUnknownTier,
-  isWithinSalesManagedEndingNotice
+  isWithinEnterpriseEndingNotice
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
@@ -611,22 +619,36 @@ const isNonCatalogPlan = computed(() =>
   isSalesManagedTier(subscription.value?.tier)
 )
 
-// A sales-managed end date sits quiet until the notice window: no amber card
-// or Canceled badge at any point, and no "Ends on" line until the date is
-// near. Wall-clock check, re-evaluated on data refresh rather than a timer.
-const isQuietSalesManagedEnding = computed(
-  () =>
-    isNonCatalogPlan.value &&
-    !isWithinSalesManagedEndingNotice(subscription.value?.endDate)
+// Strictly ENTERPRISE, not isSalesManagedTier: an unrecognized tier keeps the
+// stock cancelled treatment (isUnknownTier's contract — no borrowed claims).
+const isEnterprisePlan = computed(
+  () => subscription.value?.tier === 'ENTERPRISE'
 )
 
-// Sales-managed plans never show the amber card; inside the notice window the
-// muted ending banner carries the message instead.
+// An Enterprise end date is a contract fact set by sales, often months ahead.
+// Only its presence moves the plan onto the quiet path: no amber card or
+// Canceled badge at any point, and no "Ends on" line until the notice window.
+// Cancelled with no end date falls back to the stock treatment.
+const hasScheduledEnterpriseEnd = computed(
+  () => isEnterprisePlan.value && Boolean(subscription.value?.endDate)
+)
+
+// Coarse shared clock so the notice window opens mid-session too.
+const now = useTimestamp({ interval: 60_000 })
+
+const isQuietEnterpriseEnding = computed(
+  () =>
+    hasScheduledEnterpriseEnd.value &&
+    !isWithinEnterpriseEndingNotice(subscription.value?.endDate, now.value)
+)
+
+// An end-dated Enterprise plan never shows the amber card; inside the notice
+// window the muted ending banner carries the message instead.
 const showSubscriptionStateCard = computed(
   () =>
     isSubscriptionCancelled.value &&
     !isSubscriptionEnded.value &&
-    !isNonCatalogPlan.value
+    !hasScheduledEnterpriseEnd.value
 )
 
 const subscriptionStateCardTitle = computed(() =>
@@ -647,7 +669,7 @@ const planStatusBadge = computed(() => {
       label: t('subscription.inactive.badge'),
       severity: 'secondary' as const
     }
-  if (isSubscriptionCancelled.value && !isNonCatalogPlan.value)
+  if (isSubscriptionCancelled.value && !hasScheduledEnterpriseEnd.value)
     return { label: t('subscription.canceled'), severity: 'warn' as const }
   return null
 })
@@ -656,7 +678,7 @@ const planDateDisplay = computed(() => {
   if (!canAccessSubscriptionFeatures.value || isSubscriptionEnded.value)
     return ''
   if (isSubscriptionCancelled.value) {
-    if (isQuietSalesManagedEnding.value) return ''
+    if (isQuietEnterpriseEnding.value) return ''
     return formattedEndDate.value
       ? t('subscription.endsOnDate', { date: formattedEndDate.value })
       : ''
@@ -683,10 +705,6 @@ const subscriptionTierName = computed(() => {
     ? t('subscription.tierNameYearly', { name: baseName })
     : baseName
 })
-
-const isEnterprisePlan = computed(
-  () => subscription.value?.tier === 'ENTERPRISE'
-)
 
 const planDisplayName = computed(() => {
   if (isEnterprisePlan.value) return t('subscription.tiers.enterprise.name')
