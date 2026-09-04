@@ -26,7 +26,7 @@ import {
 const WORKSHOP_APP_NAME = 'workshop'
 
 /** Ceiling on the provisioning POST; a hung request must not strand sign-in. */
-export const WORKSHOP_PROVISION_TIMEOUT_MS = 15_000
+const WORKSHOP_PROVISION_TIMEOUT_MS = 15_000
 
 async function workshopAuth(): Promise<Auth> {
   const [{ getApps, initializeApp }, { getAuth }] = await Promise.all([
