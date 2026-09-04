@@ -105,7 +105,10 @@ a recording. Details: `browser_tests/fixtures/data/agent/README.md`.
 
 ## Conventions
 
-- One recording per agent bug fix, made before the fix so it went red.
-- Fixtures validate against `zAgentConversation`; a schema change is versioned,
-  never silent.
-- Check ports 8086, 5173 and 6207 before bringing the record-mode stack up.
+- A fix that changes what the agent's ops do to the graph or the panel ships
+  with a recording made before the fix, so it went red.
+- Fixtures validate against `zAgentConversation` in
+  `browser_tests/fixtures/data/agent/agentConversation.ts`; a schema change is
+  versioned, never silent.
+- Never bring the record-mode stack up while another session has it up; check
+  ports 8086, 5173 and 6207 first.
