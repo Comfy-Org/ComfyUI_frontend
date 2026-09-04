@@ -11,6 +11,7 @@ import { MediaAssetKey } from '@/platform/assets/schemas/mediaAssetSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
 import { api } from '@/scripts/api'
+import type * as loaderNodeUtilModule from '@/utils/loaderNodeUtil'
 import type * as outputAssetUtilModule from '../utils/outputAssetUtil'
 import { useMediaAssetActions } from './useMediaAssetActions'
 
@@ -118,11 +119,14 @@ vi.mock('@/stores/nodeDefStore', () => ({
   })
 }))
 
-vi.mock('@/utils/loaderNodeUtil', () => ({
-  detectNodeTypeFromFilename: vi.fn(() => ({
+const mockDetectNodeTypeFromFilename = vi.hoisted(() =>
+  vi.fn<typeof loaderNodeUtilModule.detectNodeTypeFromFilename>(() => ({
     nodeType: 'LoadImage',
     widgetName: 'image'
   }))
+)
+vi.mock('@/utils/loaderNodeUtil', () => ({
+  detectNodeTypeFromFilename: mockDetectNodeTypeFromFilename
 }))
 
 vi.mock('@/utils/typeGuardUtil', () => ({
@@ -314,6 +318,10 @@ describe('useMediaAssetActions', () => {
     )
     litegraphServiceMock.addNodeOnGraph.mockImplementation(createLoadImageNode)
     litegraphServiceMock.getCanvasCenter.mockReturnValue([100, 100])
+    mockDetectNodeTypeFromFilename.mockReturnValue({
+      nodeType: 'LoadImage',
+      widgetName: 'image'
+    })
     mockGetOutputAssetMetadata.mockReturnValue(null)
     mockGetAssetType.mockReturnValue('input')
     mockResolveOutputAssetItems.mockResolvedValue([])
@@ -436,6 +444,41 @@ describe('useMediaAssetActions', () => {
           'hash3.jpeg [output]'
         ])
       })
+    })
+
+    it('adds supported assets and reports an exact partial result', async () => {
+      mockDetectNodeTypeFromFilename.mockImplementation((filename: string) =>
+        filename.endsWith('.txt')
+          ? { nodeType: null, widgetName: null }
+          : { nodeType: 'LoadImage', widgetName: 'image' }
+      )
+      const { actions, unmount } = mountMediaActions()
+      const assets = [
+        createMockAsset({ id: '1', name: 'first.png' }),
+        createMockAsset({ id: '2', name: 'unsupported.txt' }),
+        createMockAsset({ id: '3', name: 'third.png' })
+      ]
+
+      await actions.addMultipleToWorkflow(assets)
+
+      expect(litegraphServiceMock.addNodeOnGraph).toHaveBeenCalledTimes(2)
+      expect(getAddedImageWidgetValues()).toEqual(['first.png', 'third.png'])
+      expect(
+        litegraphServiceMock.addNodeOnGraph.mock.calls.map(
+          ([, options]) => options
+        )
+      ).toEqual([{ pos: [100, 100] }, { pos: [150, 150] }])
+      expect(useToast().add).toHaveBeenCalledWith({
+        severity: 'warn',
+        summary: 'g.warning',
+        detail: 'mediaAsset.selection.partialAddNodesSuccess',
+        life: 3000
+      })
+      expect(vi.mocked(useI18n().t)).toHaveBeenCalledWith(
+        'mediaAsset.selection.partialAddNodesSuccess',
+        { succeeded: 2, failed: 1 }
+      )
+      unmount()
     })
   })
 
