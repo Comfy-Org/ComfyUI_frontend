@@ -141,18 +141,8 @@ function registerSubgraphDefinitions(
   ])
   const normalized =
     missing.length > 0
-      ? deduplicateSubgraphNodeIds(
-          missing,
-          reservedNodeIds,
-          rootGraph.state,
-          serialisedRootNodes
-        )
+      ? deduplicateSubgraphNodeIds(missing, reservedNodeIds, rootGraph.state)
       : undefined
-  const rootNodes =
-    normalized?.rootNodes ??
-    serialisedRootNodes.map((node) =>
-      registeredRemaps.has(node.type) ? structuredClone(node) : node
-    )
 
   const reported =
     reportedDefinitionFailures.get(rootGraph) ??
@@ -177,6 +167,12 @@ function registerSubgraphDefinitions(
       context: { graphId: graph.id, definitionId: definition.id }
     })
   }
+  // Patch root proxyWidgets once, from the remaps that actually registered.
+  // Letting deduplicateSubgraphNodeIds patch them too would re-apply a chained
+  // remint (7->8, 8->9) and point the proxy at the wrong interior node.
+  const rootNodes = serialisedRootNodes.map((node) =>
+    registeredRemaps.has(node.type) ? structuredClone(node) : node
+  )
   patchSubgraphProxyWidgetIds(rootNodes, registeredRemaps)
   return {
     pending,

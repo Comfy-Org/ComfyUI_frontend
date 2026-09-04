@@ -965,6 +965,39 @@ describe('reconcileAgentAdapters', () => {
       expect(reportError).not.toHaveBeenCalled()
     })
 
+    it('patches root proxyWidgets once when a remint chains into a later interior id', () => {
+      const definition = createTestSubgraphData({
+        nodes: [nodePayload(7, 'widget-node'), nodePayload(8)] as never,
+        widgets: [{ id: 7, name: 'value' }]
+      })
+      const rootNode = {
+        ...nodePayload(7, definition.id),
+        properties: { proxyWidgets: [['7', 'value']] }
+      }
+      const { follower } = seedDocument(graph, {
+        nodes: [rootNode],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+      // Mint from the colliding id so 7 -> 8 collides with interior 8 -> 9.
+      graph.state.lastNodeId = 7
+
+      expect(
+        reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+      ).toEqual([toNodeId(7)])
+
+      const instance = graph.getNodeById(toNodeId(7)) as SubgraphNode
+      const subgraph = instance.subgraph
+      const interiorIds = subgraph.nodes.map(({ id }) => id)
+      expect(new Set(interiorIds).size).toBe(2)
+      expect(interiorIds).not.toContain(toNodeId(7))
+      expect(toNodeId(subgraph.widgets[0].id)).toBe(interiorIds[0])
+      expect(instance.properties.proxyWidgets).toEqual([
+        [String(interiorIds[0]), 'value']
+      ])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
     it('registers a definition once across repeated reconciles', () => {
       const definition = createTestSubgraphData({
         nodes: [nodePayload(7)] as never
