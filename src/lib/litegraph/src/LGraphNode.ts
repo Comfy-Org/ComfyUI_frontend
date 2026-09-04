@@ -2379,7 +2379,10 @@ export class LGraphNode
 
     out[0] = this.pos[0]
     out[1] = this.pos[1] + -titleHeight
-    if (!this.flags?.collapsed || LiteGraph.vueNodesMode) {
+    if (
+      !this.flags?.collapsed ||
+      (LiteGraph.vueNodesMode && !LiteGraph.vueNodesSuspended)
+    ) {
       const size = this.renderingSize
       out[2] = size[0]
       out[3] = size[1] + titleHeight

@@ -8,7 +8,7 @@ import { boundsIntersect } from '@/renderer/core/layout/utils/layoutMath'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import {
   getCullingOptOutVersion,
-  isNodeTypeExcludedFromCulling
+  isNodeExcludedFromCulling
 } from '@/services/vueNodeCullingService'
 
 const MIN_NODES_FOR_KEEP_ALIVE = 150
@@ -113,13 +113,13 @@ export function useViewportKeepAlive({
     const viewportBounds = getKeepAliveBounds(camera, viewport)
     const next = new Set<NodeId>()
     for (const nodeId of ids) {
-      // Admission for registered types: an extension has said detaching this
+      // Admission for registered nodes and types: a caller has said detaching
       // node from the document destroys state its component cannot keep - a
       // canvas context, an uncontrolled editor. Always attached, wherever it
       // is. Bounded by the registrant, not the graph, so unlike the pins below
       // it is safe to admit.
       const nodeType = getNodeType(nodeId)
-      if (nodeType && isNodeTypeExcludedFromCulling(nodeType)) {
+      if (isNodeExcludedFromCulling(nodeId, nodeType)) {
         next.add(nodeId)
         continue
       }

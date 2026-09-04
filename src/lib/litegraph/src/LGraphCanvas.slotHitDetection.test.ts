@@ -93,6 +93,7 @@ describe('LGraphCanvas slot hit detection', () => {
 
   afterEach(() => {
     LiteGraph.vueNodesMode = false
+    LiteGraph.vueNodesSuspended = false
   })
 
   it('highlights the free fallback when hovering an incompatible input', () => {
@@ -235,6 +236,81 @@ describe('LGraphCanvas slot hit detection', () => {
         x: clickX,
         y: clickY
       })
+    })
+
+    it('does not start invisible slot interactions while Vue nodes are suspended', () => {
+      LiteGraph.vueNodesSuspended = true
+      node.updateArea()
+      canvas.visible_nodes = [node]
+      const [clickX, clickY] = node.getOutputPos(0)
+      const dragNewFromOutput = vi.spyOn(
+        canvas.linkConnector,
+        'dragNewFromOutput'
+      )
+
+      canvas.processMouseDown(
+        new MouseEvent('pointerdown', {
+          button: 0,
+          clientX: clickX,
+          clientY: clickY
+        })
+      )
+
+      expect(dragNewFromOutput).not.toHaveBeenCalled()
+    })
+
+    it('does not activate invisible widgets while Vue nodes are suspended', () => {
+      LiteGraph.vueNodesSuspended = true
+      node.updateArea()
+      canvas.visible_nodes = [node]
+      const widget = node.addWidget('toggle', 'enabled', false, null)
+      vi.spyOn(node, 'getWidgetOnPos').mockReturnValue(widget)
+      const processWidgetClick = vi.spyOn(canvas, 'processWidgetClick')
+
+      canvas.processMouseDown(
+        new MouseEvent('pointerdown', {
+          button: 0,
+          clientX: node.pos[0] + 50,
+          clientY: node.pos[1] + 50
+        })
+      )
+
+      expect(processWidgetClick).not.toHaveBeenCalled()
+    })
+
+    it('measures cold collapsed nodes at their collapsed size while suspended', () => {
+      LiteGraph.vueNodesSuspended = true
+      node.flags.collapsed = true
+
+      node.updateArea()
+
+      expect(node.boundingRect[2]).toBe(LiteGraph.NODE_COLLAPSED_WIDTH)
+      expect(node.boundingRect[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT)
+    })
+
+    it('updates the LOD threshold after the display DPR changes', () => {
+      const originalDpr = window.devicePixelRatio
+      try {
+        Object.defineProperty(window, 'devicePixelRatio', {
+          value: 1,
+          configurable: true
+        })
+        canvas.ds.scale = 0.5
+        canvas.min_font_size_for_lod = 7
+        canvas.min_font_size_for_lod = 8
+        expect(canvas.low_quality).toBe(true)
+
+        Object.defineProperty(window, 'devicePixelRatio', {
+          value: 4,
+          configurable: true
+        })
+        expect(canvas.low_quality).toBe(false)
+      } finally {
+        Object.defineProperty(window, 'devicePixelRatio', {
+          value: originalDpr,
+          configurable: true
+        })
+      }
     })
   })
 })

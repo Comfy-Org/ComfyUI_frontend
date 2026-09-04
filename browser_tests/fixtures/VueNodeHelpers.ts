@@ -218,13 +218,41 @@ export class VueNodeHelpers {
    * Wait for Vue nodes to be rendered
    */
   async waitForNodes(expectedCount?: number): Promise<void> {
-    if (expectedCount !== undefined) {
-      await this.page.waitForFunction(
-        (count) => document.querySelectorAll('[data-node-id]').length >= count,
-        expectedCount
-      )
-    } else {
-      await this.page.locator('[data-node-id]').first().waitFor()
+    try {
+      if (expectedCount !== undefined) {
+        await this.page.waitForFunction(
+          (count) =>
+            document.querySelectorAll('[data-node-id]').length >= count,
+          expectedCount
+        )
+      } else {
+        await this.page.locator('[data-node-id]').first().waitFor()
+      }
+    } catch (error) {
+      // Below the level-of-detail threshold no `[data-node-id]` is ever
+      // created, so this waits out its full timeout and reports only that a
+      // locator was not found - which points at the node rather than the zoom,
+      // and costs the timeout on every test in the file. Say so instead.
+      const belowLod = await this.page.evaluate(() => {
+        const canvas = window.app?.canvas
+        const minFontSize = canvas?.min_font_size_for_lod ?? 0
+        if (!canvas || minFontSize <= 0) return null
+
+        const textSize = window.LiteGraph?.NODE_TEXT_SIZE ?? 14
+        const threshold =
+          minFontSize / (textSize * Math.sqrt(window.devicePixelRatio || 1))
+        return canvas.ds.scale < threshold
+          ? { scale: canvas.ds.scale, threshold }
+          : null
+      })
+
+      if (belowLod) {
+        throw new Error(
+          `No Vue nodes are addressable: canvas zoom ${belowLod.scale.toFixed(3)} is below the level-of-detail threshold ${belowLod.threshold.toFixed(3)}, so nodes render as canvas boxes with no [data-node-id] element. Call ensureNodesAddressable(comfyPage) after loading, or set a zoom above the threshold.`,
+          { cause: error }
+        )
+      }
+      throw error
     }
   }
 
