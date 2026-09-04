@@ -5,16 +5,29 @@ import { FROZEN_OPS } from '@comfyorg/comfy-multi-player'
 import { z } from 'zod'
 
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
+import { zAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-const zRecordedWsEvent = z.object({
-  type: z.string(),
-  data: z.record(z.string(), z.unknown()),
-  at_ms: z.number().int().nonnegative().optional()
-})
+// A recording keeps every production field except the two ids the replay
+// mints per run (agentConversationFixture stampTurn).
+export const mintedIds: { thread_id: true; message_id: true } = {
+  thread_id: true,
+  message_id: true
+}
+// Every member gets the same transform, so the slot order only names them.
+const [thinking, toolCall, messageDelta, messageDone, activeTab] =
+  zAgentWsEvent.options
+
+export const zRecordedWsEvent = z.discriminatedUnion('type', [
+  thinking.extend({ data: thinking.shape.data.omit(mintedIds) }),
+  toolCall.extend({ data: toolCall.shape.data.omit(mintedIds) }),
+  messageDelta.extend({ data: messageDelta.shape.data.omit(mintedIds) }),
+  messageDone.extend({ data: messageDone.shape.data.omit(mintedIds) }),
+  activeTab.extend({ data: activeTab.shape.data.omit(mintedIds) })
+])
 export type RecordedWsEvent = z.infer<typeof zRecordedWsEvent>
 
 // The applier validates op payloads at replay time; only the vocabulary is pinned here.
@@ -25,8 +38,8 @@ const zGraphOperation = z.custom<GraphOperation>(
     (FROZEN_OPS as readonly string[]).includes(value.op)
 )
 
-// The package types these loosely and passes unknown keys through, so the
-// schema validates the guaranteed fields and keeps the rest.
+// WorkflowJSON and WorkflowNode declare an index signature, so the schema
+// validates the guaranteed fields and keeps the rest.
 const zWorkflowJson = z
   .object({
     nodes: z.array(
@@ -53,23 +66,24 @@ const zWidgetCatalogEntry = z
       )
       .optional()
   })
-  .passthrough()
+  .strict()
 
+// WidgetCatalog and WidgetCatalogEntry declare no index signature.
 const zWidgetCatalog = z
   .object({
     comment: z.string().optional(),
     types: z.record(z.string(), zWidgetCatalogEntry)
   })
-  .passthrough()
+  .strict()
 
-const zAgentConversationWorkflow = z.object({
+export const zAgentConversationWorkflow = z.object({
   id: z.string().uuid(),
   name: z.string().min(1),
   catalog: zWidgetCatalog,
   seed: zWorkflowJson
 })
 
-const zAgentConversationRequest = z.object({
+export const zAgentConversationRequest = z.object({
   content: z.string().min(1)
 })
 
@@ -94,7 +108,7 @@ const zTurn = z.object({
 })
 export type AgentConversationTurn = z.infer<typeof zTurn>
 
-const zAgentConversation = z
+export const zAgentConversation = z
   .object({
     schema_version: z.literal('agent-conversation.v2'),
     source: z.object({
