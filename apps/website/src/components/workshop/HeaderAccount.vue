@@ -34,6 +34,17 @@ const initial = computed(() => {
   return name.slice(0, 1).toUpperCase()
 })
 
+// The button carries the avatar and, when known, the balance; an aria-label
+// would replace all of that with one word, so it names the account AND folds
+// the balance in when there is one, matching what the chip shows.
+const accountLabel = computed(() => {
+  const account = t('auth.header.account', locale)
+  const current = balance.value
+  return current.status === 'ok'
+    ? `${account}, ${current.credits.toLocaleString()} ${t('auth.header.credits', locale)}`
+    : account
+})
+
 async function signOutFromMenu() {
   menuOpen.value = false
   await signOut()
@@ -63,7 +74,7 @@ async function signOutFromMenu() {
       <button
         type="button"
         class="hover:border-primary-comfy-yellow/60 flex h-10 items-center gap-2.5 rounded-2xl border border-primary-comfy-canvas/25 pr-3 pl-1.5 transition-colors"
-        :aria-label="t('auth.header.account', locale)"
+        :aria-label="accountLabel"
         :aria-expanded="menuOpen"
         aria-haspopup="menu"
         @click="menuOpen = !menuOpen"

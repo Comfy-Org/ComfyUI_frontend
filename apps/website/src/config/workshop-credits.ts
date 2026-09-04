@@ -32,6 +32,9 @@ type BalanceState =
   | { readonly status: 'ok'; readonly credits: number }
   | { readonly status: 'error'; readonly unauthorized?: boolean }
 
+/** Ceiling on a balance read; a hung fetch must not pin the chip stale. */
+const BALANCE_TIMEOUT_MS = 15_000
+
 const balance = ref<BalanceState>({ status: 'unknown' })
 let started = false
 
@@ -44,7 +47,8 @@ async function fetchBalance(
     response = await fetchImpl(
       `${WORKSHOP_CLOUD_BASE_URL}/api/billing/balance`,
       {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(BALANCE_TIMEOUT_MS)
       }
     )
   } catch {
@@ -79,9 +83,47 @@ function readMicros(body: unknown): number | undefined {
   return undefined
 }
 
-export async function refreshWorkshopCredits(
+let inFlight: Promise<void> | undefined
+let inFlightIdentity: string | undefined
+
+const identityKey = (uid: string, workspaceId: string | undefined) =>
+  `${uid}|${workspaceId ?? ''}`
+
+/**
+ * Refresh the chip balance for the live session.
+ *
+ * Session-change, refocus and run-completion can all fire together; without
+ * dedupe they race and the last fetch to resolve wins, so a slow earlier read
+ * can overwrite a fresh later one. Concurrent callers for the same identity
+ * therefore share one in-flight refresh; a caller for a different identity
+ * (a user or workspace switch) starts its own rather than reusing a read
+ * that is fetching for whoever came before.
+ */
+export function refreshWorkshopCredits(
   fetchImpl: typeof fetch = globalThis.fetch
 ): Promise<void> {
+  const { session } = useWorkshopSession()
+  const active = session.value
+  const identity = active
+    ? identityKey(active.uid, active.workspace?.id)
+    : undefined
+
+  if (inFlight !== undefined && inFlightIdentity === identity) {
+    return inFlight
+  }
+
+  inFlightIdentity = identity
+  const refresh = runRefresh(fetchImpl).finally(() => {
+    if (inFlight === refresh) {
+      inFlight = undefined
+      inFlightIdentity = undefined
+    }
+  })
+  inFlight = refresh
+  return refresh
+}
+
+async function runRefresh(fetchImpl: typeof fetch): Promise<void> {
   const { session, remint } = useWorkshopSession()
   const active = session.value
   if (!active) {
@@ -89,6 +131,7 @@ export async function refreshWorkshopCredits(
     return
   }
   const uid = active.uid
+  const workspaceId = active.workspace?.id
   let result = await fetchBalance(active.token, fetchImpl)
   // One re-mint on a stale token, mirroring the run path's single retry.
   // Other failures are not the token's fault, so no mint is spent on them.
@@ -98,9 +141,13 @@ export async function refreshWorkshopCredits(
       result = await fetchBalance(reminted.session.token, fetchImpl)
     }
   }
-  // Publish only if the same user is still signed in: a sign-out or a switch
-  // to a different workspace/user mid-fetch must not show the old balance.
-  if (session.value?.uid === uid) balance.value = result
+  // Publish only if the same user AND workspace is still signed in: a
+  // sign-out, a user switch, or a workspace switch mid-fetch must not show a
+  // balance that belongs to the identity we started with.
+  const live = session.value
+  if (live?.uid === uid && live?.workspace?.id === workspaceId) {
+    balance.value = result
+  }
 }
 
 function begin(): void {
