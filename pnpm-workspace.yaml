@@ -39,10 +39,10 @@ catalog:
   '@sentry/vite-plugin': ^4.6.0
   '@sentry/vue': ^10.32.1
   '@sparkjsdev/spark': ^2.1.0
-  '@storybook/addon-docs': ^10.5.6
+  '@storybook/addon-docs': ^10.5.10
   '@storybook/addon-mcp': 0.7.0
-  '@storybook/vue3': ^10.5.6
-  '@storybook/vue3-vite': ^10.5.6
+  '@storybook/vue3': ^10.5.10
+  '@storybook/vue3-vite': ^10.5.10
   '@stripe/stripe-js': ^9.12.0
   '@tailwindcss/vite': ^4.3.2
   '@tanstack/vue-virtual': ^3.13.12
@@ -127,7 +127,7 @@ catalog:
   shaders: ^3.1.463
   shiki: ^4.3.0
   start-server-and-test: ^3.0.11
-  storybook: ^10.5.6
+  storybook: ^10.5.10
   stylelint: ^17.14.0
   tailwindcss: ^4.3.2
   tailwindcss-primeui: ^0.6.1
