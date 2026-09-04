@@ -1,0 +1,73 @@
+{
+  "id": "wan/image-to-image",
+  "slug": "wan--image-to-image",
+  "displayName": "Wan 2.5 Image-to-Image",
+  "provider": "wan",
+  "modality": "image",
+  "description": "Edits an image from 1–2 source images with optional prompt (Wan 2.5 Image-to-Image).",
+  "tags": ["wan", "wan2.5", "image", "image-to-image"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["wan/image-to-image"]
+      },
+      "prompt": {
+        "type": "string",
+        "description": "Prompt describing the elements and visual features. Supports English and Chinese. Empty prompts are accepted.",
+        "default": ""
+      },
+      "seed": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 2147483647,
+        "description": "Seed to use for generation.",
+        "default": 0
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": ["image"]
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": ["role", "value"],
+          "additionalProperties": false
+        }
+      },
+      "negative_prompt": {
+        "type": "string",
+        "description": "Negative prompt describing what to avoid.",
+        "default": ""
+      },
+      "watermark": {
+        "type": "boolean",
+        "description": "Whether to add an AI-generated watermark to the result.",
+        "default": false
+      }
+    },
+    "required": ["model"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "image",
+      "required": true,
+      "cardinality": "many",
+      "minItems": 1
+    }
+  ]
+}

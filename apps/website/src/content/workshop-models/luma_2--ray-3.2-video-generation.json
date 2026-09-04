@@ -1,0 +1,136 @@
+{
+  "id": "luma_2/ray-3.2-video-generation",
+  "slug": "luma_2--ray-3.2-video-generation",
+  "displayName": "Luma Ray 3.2",
+  "provider": "luma_2",
+  "modality": "video",
+  "description": "Generates a Ray 3.2 video from text and optional guide frames.",
+  "tags": ["luma", "ray-3.2", "video", "text-to-video"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["luma_2/ray-3.2-video-generation"]
+      },
+      "prompt": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 6000
+      },
+      "aspect_ratio": {
+        "type": "string",
+        "enum": ["9:16", "3:4", "1:1", "4:3", "16:9", "21:9"],
+        "default": "16:9"
+      },
+      "duration": {
+        "type": "string",
+        "enum": ["5s", "10s"],
+        "default": "5s"
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["image"]
+                },
+                "value": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "string",
+                  "description": "Base64-encoded image data. Required with `media_type`; mutually exclusive with `url`."
+                },
+                "generation_id": {
+                  "type": "string"
+                },
+                "media_type": {
+                  "type": "string",
+                  "description": "MIME type (e.g. `image/jpeg`). Required when `data` is set; mutually exclusive with `url`."
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["start_image"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "exr_export": {
+        "type": "boolean"
+      },
+      "hdr": {
+        "type": "boolean"
+      },
+      "loop": {
+        "type": "boolean"
+      },
+      "resolution": {
+        "type": "string",
+        "enum": ["360p", "540p", "720p", "1080p"],
+        "default": "720p"
+      }
+    },
+    "required": ["model", "prompt"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "image",
+      "required": false,
+      "cardinality": "many",
+      "minItems": 0,
+      "maxItems": 2,
+      "extras": [
+        {
+          "name": "data",
+          "type": "string",
+          "required": false,
+          "description": "Base64-encoded image data. Required with `media_type`; mutually exclusive with `url`."
+        },
+        {
+          "name": "generation_id",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "media_type",
+          "type": "string",
+          "required": false,
+          "description": "MIME type (e.g. `image/jpeg`). Required when `data` is set; mutually exclusive with `url`."
+        }
+      ]
+    },
+    {
+      "role": "start_image",
+      "required": false,
+      "cardinality": "single",
+      "minItems": 0,
+      "maxItems": 1
+    }
+  ]
+}

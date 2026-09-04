@@ -1,0 +1,62 @@
+{
+  "id": "vidu/text-to-video-q1",
+  "slug": "vidu--text-to-video-q1",
+  "displayName": "Vidu Q1 Text-to-Video",
+  "provider": "vidu",
+  "modality": "video",
+  "description": "Generates a five-second 1080p video clip from text (Vidu Q1).",
+  "tags": ["vidu", "viduq1", "video", "text-to-video"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["vidu/text-to-video-q1"]
+      },
+      "prompt": {
+        "type": "string",
+        "minLength": 1,
+        "description": "A textual description for video generation."
+      },
+      "aspect_ratio": {
+        "type": "string",
+        "enum": ["16:9", "9:16", "1:1"],
+        "description": "The aspect ratio of the output video.",
+        "default": "16:9"
+      },
+      "duration": {
+        "type": "integer",
+        "minimum": 5,
+        "maximum": 5,
+        "description": "Duration of the output video in seconds.",
+        "default": 5
+      },
+      "seed": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 2147483647,
+        "description": "Seed for video generation (0 for random).",
+        "default": 0
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "movement_amplitude": {
+        "type": "string",
+        "enum": ["auto", "small", "medium", "large"],
+        "description": "The movement amplitude of objects in the frame."
+      },
+      "resolution": {
+        "type": "string",
+        "enum": ["1080p"],
+        "description": "Supported values may vary by model & duration."
+      }
+    },
+    "required": ["model", "prompt"],
+    "additionalProperties": true
+  },
+  "roles": []
+}

@@ -1,0 +1,117 @@
+{
+  "id": "pixverse/transition-video",
+  "slug": "pixverse--transition-video",
+  "displayName": "PixVerse 3.5 Transition",
+  "provider": "pixverse",
+  "modality": "video",
+  "description": "Generates a transition video from start + end frames (PixVerse 3.5).",
+  "tags": ["pixverse", "video", "transition", "first-last-frame"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["pixverse/transition-video"]
+      },
+      "prompt": {
+        "type": "string",
+        "description": "Prompt for the video generation. Empty allowed.",
+        "default": ""
+      },
+      "duration": {
+        "type": "number",
+        "description": "Duration of the output video in seconds. Allowed values: 5 or 8."
+      },
+      "seed": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 2147483647,
+        "description": "Seed for video generation.",
+        "default": 0
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["end_image"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["start_image"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "first_frame_img_id": {
+        "type": "string",
+        "description": "Pre-existing PixVerse handle for the first frame (asset_id from `createPartnerAsset({ model: 'pixverse/image-handle' })`). Mutually exclusive with `first_frame`."
+      },
+      "last_frame_img_id": {
+        "type": "string",
+        "description": "Pre-existing PixVerse handle for the last frame (asset_id from `createPartnerAsset({ model: 'pixverse/image-handle' })`). Mutually exclusive with `last_frame`."
+      },
+      "motion_mode": {
+        "type": "string",
+        "enum": ["normal", "fast"],
+        "description": "Motion mode (subject to silent override at L2)."
+      },
+      "negative_prompt": {
+        "type": "string",
+        "description": "Optional text description of undesired elements. Empty string is dropped from the wire body at L2.",
+        "default": ""
+      },
+      "quality": {
+        "type": "string",
+        "enum": ["360p", "540p", "720p", "1080p"],
+        "description": "Output video resolution / quality. Setting to '1080p' silently forces motion_mode='normal' and duration_seconds=5 at L2.",
+        "default": "540p"
+      }
+    },
+    "required": ["model", "duration", "motion_mode"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "end_image",
+      "required": false,
+      "cardinality": "single",
+      "minItems": 0,
+      "maxItems": 1
+    },
+    {
+      "role": "start_image",
+      "required": false,
+      "cardinality": "single",
+      "minItems": 0,
+      "maxItems": 1
+    }
+  ]
+}

@@ -1,0 +1,99 @@
+{
+  "id": "kling/omni-pro-edit-video",
+  "slug": "kling--omni-pro-edit-video",
+  "displayName": "Kling OmniPro Video Edit",
+  "provider": "kling",
+  "modality": "video",
+  "description": "Edits an existing video while preserving its length and aspect (Kling OmniPro).",
+  "tags": ["kling", "video", "omni-pro", "video-edit"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["kling/omni-pro-edit-video"]
+      },
+      "prompt": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 2500,
+        "description": "Text prompt (required, 1..2500 chars)."
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["reference_image"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["video"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "keep_original_sound": {
+        "type": "boolean",
+        "description": "Whether to keep the source video's original sound.",
+        "default": true
+      },
+      "model_name": {
+        "type": "string",
+        "enum": ["kling-v3-omni", "kling-video-o1"],
+        "description": "OmniPro video model name."
+      },
+      "resolution": {
+        "type": "string",
+        "enum": ["1080p", "720p"],
+        "description": "Output resolution (no 4k for edit video).",
+        "default": "1080p"
+      }
+    },
+    "required": ["model", "prompt", "model_name"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "reference_image",
+      "required": false,
+      "cardinality": "many",
+      "minItems": 0,
+      "maxItems": 4
+    },
+    {
+      "role": "video",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    }
+  ]
+}

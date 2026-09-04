@@ -1,0 +1,25 @@
+---
+import { getCollection } from 'astro:content'
+
+import WorkshopCatalog from '../../components/workshop/WorkshopCatalog.vue'
+import { toBrowseModel } from '../../config/workshop'
+import { t } from '../../i18n/translations'
+import BaseLayout from '../../layouts/BaseLayout.astro'
+
+// Projected at build time so the island receives card-sized records. The
+// models' input schemas are the bulk of each entry and the browse page has
+// no use for them, so they never reach the browser.
+const models = (await getCollection('workshopModels'))
+  .map((entry) => toBrowseModel(entry.data))
+  .sort((a, b) => a.id.localeCompare(b.id))
+---
+
+<BaseLayout
+  title={t('workshop.meta.title')}
+  description={t('workshop.meta.description')}
+  noindex
+>
+  <main class="mx-auto max-w-10xl px-6 py-16 lg:px-8 lg:py-24">
+    <WorkshopCatalog models={models} client:load />
+  </main>
+</BaseLayout>

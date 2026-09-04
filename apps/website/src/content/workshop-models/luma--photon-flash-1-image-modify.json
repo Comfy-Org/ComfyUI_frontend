@@ -1,0 +1,71 @@
+{
+  "id": "luma/photon-flash-1-image-modify",
+  "slug": "luma--photon-flash-1-image-modify",
+  "displayName": "Luma Photon Flash-1 Modify",
+  "provider": "luma",
+  "modality": "image",
+  "description": "Modifies an image from a prompt, faster and cheaper than Photon-1 (Photon-Flash-1 Modify).",
+  "tags": ["luma", "photon", "flash", "image", "image-to-image", "modify"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["luma/photon-flash-1-image-modify"]
+      },
+      "prompt": {
+        "type": "string",
+        "description": "Prompt for the image modification. node.py widget default is the empty string; node.py does not call `validate_string` here.",
+        "default": ""
+      },
+      "seed": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 18446744073709552000,
+        "description": "Seed for the image modification.",
+        "default": 0
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": ["image"]
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": ["role", "value"],
+          "additionalProperties": false
+        }
+      },
+      "image_weight": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 0.98,
+        "description": "Weight of the image (0.0-0.98, default 0.1). The closer to 1.0, the less the image will be modified. Body assembly translates to `1.0 - image_weight` clamped+rounded per node.py:354.",
+        "default": 0.1
+      }
+    },
+    "required": ["model"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "image",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    }
+  ]
+}
