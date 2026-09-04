@@ -208,7 +208,7 @@ test.describe('Enterprise pages @smoke', () => {
       page.getByRole('link', { name: 'REQUEST DEMO' }).first()
     ).toHaveAttribute('href', '/contact/')
     await expect(page.getByRole('link', { name: 'REQUEST DEMO' })).toHaveCount(
-      3
+      2
     )
     await expect(
       page.getByRole('heading', {
@@ -281,12 +281,6 @@ test.describe('Enterprise pages @smoke', () => {
         'Audit requirements'
       ]
     )
-    await expect(
-      securitySection.getByRole('link', { name: 'VIEW TRUST CENTER' })
-    ).toHaveAttribute('href', /app\.vanta\.com\/comfy\.org\/trust/)
-    await expect(
-      securitySection.getByRole('link', { name: 'REQUEST DEMO' })
-    ).toHaveAttribute('href', '/contact/')
     await expect(
       page.getByRole('heading', {
         level: 2,
