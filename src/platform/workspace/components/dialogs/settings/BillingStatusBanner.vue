@@ -73,6 +73,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { isSalesManagedTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useBillingBanner } from '@/platform/workspace/composables/useBillingBanner'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
@@ -90,6 +91,9 @@ const { isResubscribing, handleResubscribe } = useResubscribe()
 const dialogService = useDialogService()
 
 const canManage = computed(() => permissions.value.canManageSubscription)
+const isSalesManagedPlan = computed(() =>
+  isSalesManagedTier(subscription.value?.tier)
+)
 const cycleResetDate = computed(() => {
   const raw = renewalDate.value
   return raw ? d(new Date(raw), { month: 'short', day: 'numeric' }) : ''
@@ -146,6 +150,18 @@ const banner = computed<BannerView | null>(() => {
         dismissible: true
       }
     case 'ending':
+      // A sales-managed contract renews through sales, not self-serve
+      // reactivation, so it gets its own copy and never a Reactivate action —
+      // even where the legacy rail would resolve canReactivatePlan true.
+      if (isSalesManagedPlan.value) {
+        return {
+          muted: true,
+          title: t(`${bs}.ending.enterpriseTitle`, { date: planEndDate.value }),
+          body: t(`${bs}.ending.enterpriseBody`),
+          action: null,
+          dismissible: false
+        }
+      }
       return {
         muted: true,
         title: t(`${bs}.ending.title`, { date: planEndDate.value }),

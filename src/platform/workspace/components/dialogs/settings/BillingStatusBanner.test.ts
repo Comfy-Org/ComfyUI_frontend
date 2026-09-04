@@ -14,6 +14,7 @@ interface Subscription {
   hasFunds: boolean
   isCancelled: boolean
   endDate: string | null
+  tier?: 'ENTERPRISE'
 }
 
 const state = vi.hoisted(() => ({
@@ -142,6 +143,9 @@ const i18n = createI18n({
           ending: {
             title: 'Your team plan ends on {date}',
             body: 'Members keep full access until then. Reactivate to keep your shared credits and seats.',
+            enterpriseTitle: 'Your Enterprise plan ends on {date}',
+            enterpriseBody:
+              'Members keep full access until then. Reach out to our sales team to extend.',
             reactivate: 'Reactivate plan'
           },
           updatePayment: 'Update payment'
@@ -418,5 +422,50 @@ describe('BillingStatusBanner', () => {
     expect(
       screen.queryByRole('button', { name: 'Reactivate plan' })
     ).not.toBeInTheDocument()
+  })
+
+  describe('sales-managed ending notice', () => {
+    const NOW = new Date('2026-09-03T12:00:00Z')
+    const DAY = 24 * 60 * 60 * 1000
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(NOW)
+    })
+
+    function enterpriseEndingIn(days: number) {
+      state.isTeamPlan = false
+      state.subscription = {
+        hasFunds: true,
+        isCancelled: true,
+        endDate: new Date(NOW.getTime() + days * DAY).toISOString(),
+        tier: 'ENTERPRISE'
+      }
+    }
+
+    it('shows no banner while the end date is beyond the notice window', () => {
+      enterpriseEndingIn(30)
+      renderBanner()
+
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    })
+
+    it('shows enterprise copy without a Reactivate action inside the window', () => {
+      enterpriseEndingIn(10)
+      // Pin the gate itself: even a rail that resolves reactivation true for a
+      // sales-managed plan must not surface the action.
+      state.canReactivatePlan = true
+      renderBanner()
+
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Your Enterprise plan ends on'
+      )
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Reach out to our sales team to extend'
+      )
+      expect(
+        screen.queryByRole('button', { name: 'Reactivate plan' })
+      ).not.toBeInTheDocument()
+    })
   })
 })

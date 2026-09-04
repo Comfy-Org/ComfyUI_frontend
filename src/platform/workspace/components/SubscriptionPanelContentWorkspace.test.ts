@@ -538,14 +538,50 @@ describe('SubscriptionPanelContentWorkspace', () => {
       ).not.toBeInTheDocument()
     })
 
-    it('keeps the cancelled badge while an Enterprise plan still runs', () => {
-      useEnterprisePlan()
-      mockSubscriptionStatus.value = 'canceled'
-      renderComponent()
+    // FE-2035: an Enterprise end date is a contract fact set by sales, often
+    // months ahead. It must never borrow the self-serve cancelled treatment.
+    describe('end-dated Enterprise plan still running', () => {
+      const NOW = new Date('2026-09-03T12:00:00Z')
+      const DAY = 24 * 60 * 60 * 1000
 
-      expect(screen.getByText('Canceled')).toBeInTheDocument()
-      expect(screen.queryByText('Inactive')).not.toBeInTheDocument()
-      expect(screen.getByTestId('subscription-state-card')).toBeInTheDocument()
+      beforeEach(() => {
+        vi.useFakeTimers({ toFake: ['Date'] })
+        vi.setSystemTime(NOW)
+        useEnterprisePlan()
+        mockSubscriptionStatus.value = 'canceled'
+      })
+
+      function endInDays(days: number): string {
+        const iso = new Date(NOW.getTime() + days * DAY).toISOString()
+        mockEndDate.value = iso
+        return iso
+      }
+
+      it('renders as a plainly active plan outside the ending notice window', () => {
+        endInDays(30)
+        renderComponent()
+
+        expect(screen.getByText('Enterprise')).toBeInTheDocument()
+        expect(screen.queryByText('Canceled')).not.toBeInTheDocument()
+        expect(screen.queryByText('Inactive')).not.toBeInTheDocument()
+        expect(
+          screen.queryByTestId('subscription-state-card')
+        ).not.toBeInTheDocument()
+        expect(screen.queryByText(/^Ends on/)).not.toBeInTheDocument()
+      })
+
+      it('keeps the quiet treatment inside the window, with only the end date line', () => {
+        const iso = endInDays(10)
+        renderComponent()
+
+        expect(screen.queryByText('Canceled')).not.toBeInTheDocument()
+        expect(
+          screen.queryByTestId('subscription-state-card')
+        ).not.toBeInTheDocument()
+        expect(
+          screen.getByText(`Ends on ${formatPanelDate(iso)}`)
+        ).toBeInTheDocument()
+      })
     })
 
     it('renders an unrecognized tier as Current plan without catalog content', () => {
