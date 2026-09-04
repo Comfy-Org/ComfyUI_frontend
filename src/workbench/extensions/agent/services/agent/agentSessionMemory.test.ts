@@ -16,7 +16,7 @@ describe('agentSessionMemory', () => {
 
   it('treats unavailable storage as empty and reports the failure', () => {
     const error = new Error('storage disabled')
-    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+    vi.spyOn(localStorage, 'getItem').mockImplementation(() => {
       throw error
     })
 
@@ -27,10 +27,10 @@ describe('agentSessionMemory', () => {
   })
 
   it('does not throw when storage writes and removals fail', () => {
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+    vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
       throw new Error('write disabled')
     })
-    vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {
+    vi.spyOn(localStorage, 'removeItem').mockImplementation(() => {
       throw new Error('remove disabled')
     })
 
@@ -43,15 +43,12 @@ describe('agentSessionMemory', () => {
   it('restores the previous thread when the owner update fails', () => {
     localStorage.setItem(AGENT_THREAD_STORAGE_KEY, 'thread-a')
     localStorage.setItem('Comfy.Agent.ThreadOwnerId', 'user-a')
-    const setItem = Storage.prototype.setItem
+    const setItem = localStorage.setItem.bind(localStorage)
     let writes = 0
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (
-      key,
-      value
-    ) {
+    vi.spyOn(localStorage, 'setItem').mockImplementation((key, value) => {
       writes++
       if (writes === 2) throw new Error('owner write failed')
-      setItem.call(this, key, value)
+      setItem(key, value)
     })
 
     rememberAgentSessionMemory('thread-b', 'user-b')
