@@ -121,14 +121,14 @@ describe('deriveBillingBanner', () => {
     ).toBeNull()
   })
 
-  it('hides the ending banner from members', () => {
+  it('shows the ending banner to members too', () => {
     expect(
       derive({
         isCancelled: true,
         endDate: '2026-08-01T00:00:00Z',
         canManage: false
       })
-    ).toBeNull()
+    ).toBe('ending')
   })
 
   it('shows no banner for an inactive subscription (that is a run-lock modal)', () => {
@@ -179,13 +179,24 @@ describe('deriveBillingBanner', () => {
       ).toBe('ending')
     })
 
-    it('hides the notice from members even inside the window', () => {
+    it('shows the notice to members on the owner schedule', () => {
       expect(
         derive(
           {
             ...enterprise,
             isCancelled: true,
             endDate: daysFromNow(10),
+            canManage: false
+          },
+          NOW
+        )
+      ).toBe('ending')
+      expect(
+        derive(
+          {
+            ...enterprise,
+            isCancelled: true,
+            endDate: daysFromNow(30),
             canManage: false
           },
           NOW
