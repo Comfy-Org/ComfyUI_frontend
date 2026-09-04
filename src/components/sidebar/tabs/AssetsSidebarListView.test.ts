@@ -175,11 +175,14 @@ describe('AssetsSidebarListView', () => {
     expect(onPreviewAsset).toHaveBeenCalledWith(imageAsset)
   })
 
-  for (const key of ['{Enter}', '{Space}']) {
-    it.fails(`selects a focused asset with ${key}`, async () => {
+  for (const [label, keys] of [
+    ['Enter', '{Enter}'],
+    ['Space', '{ }']
+  ] as const) {
+    it.fails(`selects a focused asset with ${label}`, async () => {
       const user = userEvent.setup()
       const imageAsset = {
-        ...buildAsset(`image-asset-${key}`, 'image.png'),
+        ...buildAsset(`image-asset-${label}`, 'image.png'),
         user_metadata: {}
       } satisfies AssetItem
       const onSelectAsset = vi.fn()
@@ -195,7 +198,7 @@ describe('AssetsSidebarListView', () => {
       item.focus()
       expect(item).toHaveFocus()
 
-      await user.keyboard(key)
+      await user.keyboard(keys)
 
       expect(onSelectAsset).toHaveBeenCalledWith(imageAsset, [imageAsset])
     })
