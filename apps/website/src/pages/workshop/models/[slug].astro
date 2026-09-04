@@ -10,6 +10,12 @@ import {
 } from '../../../config/workshop-detail'
 import { t } from '../../../i18n/translations'
 import BaseLayout from '../../../layouts/BaseLayout.astro'
+import {
+  absoluteUrl,
+  jsonLdId,
+  pageContext,
+  softwareApplicationNode
+} from '../../../utils/jsonLd'
 
 export const getStaticPaths: GetStaticPaths = async () => {
   // One pass over the collection: every page needs the whole set anyway to
@@ -29,11 +35,38 @@ interface Props {
 }
 
 const { model, related } = Astro.props
+
+const { siteUrl, locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale
+)
+
+const softwareId = jsonLdId(url, 'software')
+const software = softwareApplicationNode({
+  siteUrl,
+  id: softwareId,
+  name: model.displayName,
+  url,
+  applicationCategory: 'MultimediaApplication',
+  authorName: model.provider,
+  description: model.description
+})
 ---
 
 <BaseLayout
   title={`${model.displayName} · Workshop - Comfy`}
   description={model.description}
+  mainEntityId={softwareId}
+  breadcrumbs={[
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    {
+      name: t('workshop.model.breadcrumb', locale),
+      url: absoluteUrl(Astro.site, '/workshop')
+    },
+    { name: model.displayName }
+  ]}
+  extraJsonLd={[software]}
   noindex
 >
   <main class="mx-auto max-w-10xl px-6 py-12 lg:px-8 lg:py-16">
