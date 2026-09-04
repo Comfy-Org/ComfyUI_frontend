@@ -122,8 +122,8 @@ describe('Comfy.GroupOptions canvas menu', () => {
       ['Set Group Nodes to Always', 'Set Group Nodes to Never']
     ],
     [
-      'on trigger',
-      LGraphEventMode.ON_TRIGGER,
+      'on event',
+      LGraphEventMode.ON_EVENT,
       [
         'Set Group Nodes to Always',
         'Set Group Nodes to Never',
@@ -160,8 +160,8 @@ describe('Comfy.GroupOptions canvas menu', () => {
     ['Bypass Group Nodes', LGraphEventMode.BYPASS]
   ])('applies %s to every node in the group', ([label, expected]) => {
     const nodes = [
-      makeNode(LGraphEventMode.ON_TRIGGER),
-      makeNode(LGraphEventMode.ON_TRIGGER)
+      makeNode(LGraphEventMode.ON_EVENT),
+      makeNode(LGraphEventMode.ON_EVENT)
     ]
     const items = menuFor(makeCanvas(makeGroup(nodes)))
     const item = items.find((entry) => entry?.content === label)
