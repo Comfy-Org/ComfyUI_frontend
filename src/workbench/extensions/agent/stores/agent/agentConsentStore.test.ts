@@ -110,6 +110,56 @@ describe('agentConsentStore', () => {
     expect(store.accepted).toBe(false)
   })
 
+  it('does not let a background load cancel an in-flight acceptance', async () => {
+    let finishSave = (): void => {}
+    accountApi.set.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          finishSave = resolve
+        })
+    )
+    const store = useAgentConsentStore()
+
+    const acceptance = store.accept()
+    await vi.waitFor(() => expect(accountApi.set).toHaveBeenCalledOnce())
+    const load = store.load()
+    finishSave()
+
+    await expect(acceptance).resolves.toBe(true)
+    await expect(load).resolves.toBe(true)
+    expect(store.accepted).toBe(true)
+  })
+
+  it('keeps a confirmed acceptance when an older load resolves afterwards', async () => {
+    let finishLoad = (_value: boolean): void => {}
+    accountApi.get.mockImplementationOnce(
+      () =>
+        new Promise<boolean>((resolve) => {
+          finishLoad = resolve
+        })
+    )
+    const store = useAgentConsentStore()
+
+    const load = store.load()
+    await vi.waitFor(() => expect(accountApi.get).toHaveBeenCalledOnce())
+    await expect(store.accept()).resolves.toBe(true)
+    finishLoad(false)
+
+    await expect(load).resolves.toBe(true)
+    expect(store.accepted).toBe(true)
+  })
+
+  it('shares one request between concurrent loads for the same account', async () => {
+    accountApi.get.mockResolvedValueOnce(true)
+    const store = useAgentConsentStore()
+
+    const results = await Promise.all([store.load(), store.load()])
+
+    expect(results).toEqual([true, true])
+    expect(accountApi.get).toHaveBeenCalledOnce()
+    expect(store.accepted).toBe(true)
+  })
+
   it('fails closed without an authenticated account', async () => {
     authState.identity = null
     const store = useAgentConsentStore()
