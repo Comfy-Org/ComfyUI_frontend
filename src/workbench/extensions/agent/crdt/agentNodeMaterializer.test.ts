@@ -23,6 +23,7 @@ import {
   createTestSubgraphNode,
   enableSubgraphNodeCreation
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import { reportError } from '@/platform/telemetry/reportError'
 // Mirrors the production bridge in AgentPanelRoot.vue, which takes the same
 // exemption to drive the real layout store.
@@ -185,9 +186,12 @@ function nodePayload(id: number, type = 'dummy') {
     type,
     pos: [0, 0],
     size: [100, 80],
+    flags: {},
+    order: 0,
+    mode: 0,
     inputs: [],
     outputs: []
-  }
+  } satisfies ISerialisedNode
 }
 
 /** Commit a remote add to the stores only, the way a follower frame does. */
@@ -924,7 +928,7 @@ describe('reconcileAgentAdapters', () => {
 
     it('reserves same-frame root ids before remapping colliding subgraph interiors', () => {
       const definition = createTestSubgraphData({
-        nodes: [nodePayload(7, 'widget-node')] as never,
+        nodes: [nodePayload(7, 'widget-node')],
         widgets: [{ id: 7, name: 'value' }]
       })
       const rootNode = {
@@ -967,7 +971,7 @@ describe('reconcileAgentAdapters', () => {
 
     it('patches root proxyWidgets once when a remint chains into a later interior id', () => {
       const definition = createTestSubgraphData({
-        nodes: [nodePayload(7, 'widget-node'), nodePayload(8)] as never,
+        nodes: [nodePayload(7, 'widget-node'), nodePayload(8)],
         widgets: [{ id: 7, name: 'value' }]
       })
       const rootNode = {
