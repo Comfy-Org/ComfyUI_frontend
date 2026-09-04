@@ -9,7 +9,7 @@ export const noNewErrorThrow: Rule.RuleModule = {
     schema: [],
     messages: {
       forbidden:
-        'Do not add `throw new Error(...)` in production code. Use the recoverable diagnostics contract from ADR 0019.'
+        'Do not add `throw new Error(...)` in production code. Use the recoverable diagnostics contract from ADR RED.'
     }
   },
   create(context) {
