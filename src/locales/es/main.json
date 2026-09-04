@@ -4298,8 +4298,6 @@
     "canceledCard": {
       "description": "No se te cobrará de nuevo. Tus funciones seguirán activas hasta {date}.",
       "descriptionWithoutDate": "No se te volverá a cobrar. Tus funciones seguirán activas hasta el final de tu periodo de facturación.",
-      "endedDescription": "Tu suscripción ya no está activa.",
-      "endedTitle": "Tu suscripción ha finalizado",
       "title": "Tu suscripción ha sido cancelada"
     },
     "changePlan": "Cambiar plan",
@@ -4354,6 +4352,7 @@
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "¿Tienes preguntas o buscas soluciones empresariales?",
     "inactive": {
+      "badge": "Inactiva",
       "memberCta": "Ok, entendido",
       "memberDescription": "Pide al propietario del espacio de trabajo que reactive la suscripción para ejecutar flujos de trabajo.",
       "memberRunTooltip": "Contacta al propietario del espacio de trabajo para volver a suscribirte",

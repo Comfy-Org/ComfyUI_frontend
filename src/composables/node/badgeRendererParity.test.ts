@@ -56,7 +56,7 @@ function seedNodeDef(name: string, pythonModule: string) {
 }
 
 function legacyBadgeText(node: LGraphNode): string {
-  const badge = badgeDrawObjects(node, nodeBadges(node))[0]
+  const badge = badgeDrawObjects(node, nodeBadges(node)).at(0)
   return badge?.text.replaceAll('[', '').replaceAll(']', '') ?? ''
 }
 

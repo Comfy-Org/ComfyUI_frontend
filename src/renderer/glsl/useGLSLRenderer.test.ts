@@ -179,7 +179,7 @@ describe('useGLSLRenderer', () => {
   })
 
   afterEach(() => {
-    renderer?.dispose()
+    renderer.dispose()
   })
 
   describe('init', () => {

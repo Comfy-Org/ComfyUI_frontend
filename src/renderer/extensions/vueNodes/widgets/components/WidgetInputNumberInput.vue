@@ -86,14 +86,14 @@ const precision = computed(() => {
 const stepValue = computed(() => {
   // Use step2 (correct input spec value) if available
   if (props.widget.options?.step2 !== undefined) {
-    return Number(props.widget.options.step2)
+    return props.widget.options.step2
   }
   // Use step / 10 for custom large step values (> 10) to match litegraph behavior
   // This is important for extensions like Impact Pack that use custom step values (e.g., 640)
   // We skip default step values (1, 10) to avoid affecting normal widgets
   const step = props.widget.options?.step as number | undefined
   if (step !== undefined && step > 10) {
-    return Number(step) / 10
+    return step / 10
   }
   // Otherwise, derive from precision
   if (precision.value !== undefined) {
