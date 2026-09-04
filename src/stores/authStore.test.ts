@@ -229,35 +229,35 @@ describe('useAuthStore', () => {
 
   describe('token refresh events', () => {
     it("should not increment tokenRefreshTrigger on the user's first ID token event", () => {
-      idTokenCallback?.(mockUser)
+      idTokenCallback(mockUser)
       expect(store.tokenRefreshTrigger).toBe(0)
     })
 
     it('should increment tokenRefreshTrigger on subsequent ID token events for the same user', () => {
-      idTokenCallback?.(mockUser)
-      idTokenCallback?.(mockUser)
+      idTokenCallback(mockUser)
+      idTokenCallback(mockUser)
       expect(store.tokenRefreshTrigger).toBe(1)
     })
 
     it('should not increment when ID token event is for a different user UID', () => {
       const otherUser = { uid: 'other-user-id' } as Partial<User> as User
-      idTokenCallback?.(mockUser)
-      idTokenCallback?.(otherUser)
+      idTokenCallback(mockUser)
+      idTokenCallback(otherUser)
       expect(store.tokenRefreshTrigger).toBe(0)
     })
 
     it('should increment after switching to a new UID and receiving a second event for that UID', () => {
       const otherUser = { uid: 'other-user-id' } as Partial<User> as User
-      idTokenCallback?.(mockUser)
-      idTokenCallback?.(otherUser)
-      idTokenCallback?.(otherUser)
+      idTokenCallback(mockUser)
+      idTokenCallback(otherUser)
+      idTokenCallback(otherUser)
       expect(store.tokenRefreshTrigger).toBe(1)
     })
 
     it('does not increment on a Firebase token refresh when unified_cloud_auth is ON', () => {
       mockFeatureFlags.unifiedCloudAuthEnabled = true
-      idTokenCallback?.(mockUser) // initial event (always skipped)
-      idTokenCallback?.(mockUser) // refresh — gated off; the unified lifecycle drives rotation
+      idTokenCallback(mockUser) // initial event (always skipped)
+      idTokenCallback(mockUser) // refresh — gated off; the unified lifecycle drives rotation
       expect(store.tokenRefreshTrigger).toBe(0)
     })
 

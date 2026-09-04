@@ -534,14 +534,14 @@ test.describe(
             return await comfyPage.page.evaluate(() => {
               const graph = window.app!.canvas.graph
               if (!graph || !('inputNode' in graph)) return null
-              return graph.inputs?.[0]?.name ?? null
+              return graph.inputs.at(0)?.name ?? null
             })
           })
           .not.toBeNull()
         const removedSlotName = await comfyPage.page.evaluate(() => {
           const graph = window.app!.canvas.graph
           if (!graph || !('inputNode' in graph)) return null
-          return graph.inputs?.[0]?.name ?? null
+          return graph.inputs.at(0)?.name ?? null
         })
 
         await comfyPage.subgraph.removeSlot('input')

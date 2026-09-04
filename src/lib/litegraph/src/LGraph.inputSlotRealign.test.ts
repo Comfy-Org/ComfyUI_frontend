@@ -371,9 +371,7 @@ describe('LGraph.configure input slot realignment (#3348)', () => {
       const graph = new LGraph()
       graph.configure(savedWorkflow(options))
       const configuredGraph =
-        'insideSubgraph' in options && options.insideSubgraph
-          ? graph.subgraphs.get(SUBGRAPH_ID)!
-          : graph
+        'insideSubgraph' in options ? graph.subgraphs.get(SUBGRAPH_ID)! : graph
 
       assertLinksRealigned(configuredGraph, targetNodeId)
     }
@@ -580,7 +578,7 @@ function unmatchedInputLinkState(graph: LGraph) {
   return {
     graphLinkIds: [...graph.links.keys()],
     inputLinkIds: target.inputs.map((_, slot) => target.getInputLink(slot)?.id),
-    serializedLinkIds: (serialized.links ?? []).map(([id]) => toLinkId(id)),
+    serializedLinkIds: serialized.links.map(([id]) => toLinkId(id)),
     reloadedGraphLinkIds: [...reloaded.links.keys()],
     reloadedInputLinkIds: reloadedTarget.inputs.map(
       (_, slot) => reloadedTarget.getInputLink(slot)?.id

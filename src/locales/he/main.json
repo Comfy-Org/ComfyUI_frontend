@@ -4298,8 +4298,6 @@
     "canceledCard": {
       "description": "לא תחויב שוב. התכונות שלך יישארו פעילות עד {date}.",
       "descriptionWithoutDate": "לא תחויבו שוב. הפיצ'רים שלכם יישארו פעילים עד לסיום תקופת החיוב.",
-      "endedDescription": "המנוי שלכם אינו פעיל יותר.",
-      "endedTitle": "המנוי שלכם הסתיים",
       "title": "המנוי שלך בוטל"
     },
     "changePlan": "שנה תוכנית",
@@ -4354,6 +4352,7 @@
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "יש לך שאלות או מתעניין במסלול ארגוני (enterprise)?",
     "inactive": {
+      "badge": "לא פעיל",
       "memberCta": "הבנתי",
       "memberDescription": "פנה לבעלים של מרחב העבודה כדי להפעיל מחדש את המנוי ולהריץ תהליכי עבודה.",
       "memberRunTooltip": "פנה לבעלים של מרחב העבודה כדי לחדש מנוי",

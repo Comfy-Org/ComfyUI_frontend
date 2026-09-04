@@ -38,7 +38,7 @@ const isFileProtocol = window.location.protocol === 'file:'
  */
 function getBasePath(): string {
   if (isDesktop) return '/'
-  if (isCloud) return import.meta.env?.BASE_URL || '/'
+  if (isCloud) return import.meta.env.BASE_URL || '/'
   return window.location.pathname
 }
 
@@ -241,7 +241,7 @@ if (isCloud) {
 
     // User is logged in - check if they need onboarding (when enabled)
     // For root path, check actual user status to handle waitlisted users
-    if (!isDesktop && isLoggedIn && to.path === '/') {
+    if (!isDesktop && to.path === '/') {
       if (!flags.onboardingSurveyEnabled) {
         return next()
       }
