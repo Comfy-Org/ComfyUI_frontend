@@ -39,6 +39,9 @@ const invalidWorkflowIds: [string, string][] = [
 ]
 
 const invalidActors: [string, string][] = [
+  ['an empty actor', ''],
+  ['an actor with an extra segment', 'human:user:tab:extra'],
+  ['an actor with a missing segment', 'human:user'],
   ['an actor exceeding 256 encoded bytes', `human:${'u'.repeat(250)}:tab`],
   ['an actor outside the closed actor grammar', 'operator:user:tab']
 ]
@@ -56,6 +59,17 @@ describe('document frame identifier grammar', () => {
 
   it.for(validFrames)('accepts valid identifiers in $type', (frame) => {
     expect(parseServerDocFrame(frame)).not.toBeNull()
+  })
+
+  it('accepts identifiers at their inclusive encoded-byte limits', () => {
+    expect(
+      parseServerDocFrame(
+        awarenessFrame({
+          workflow_id: 'w'.repeat(128),
+          actor: `human:${'u'.repeat(248)}:t`
+        })
+      )
+    ).not.toBeNull()
   })
 
   it.for(['workflow/path', 'workflow\\path', 'workflow..id', '工作流-1'])(
