@@ -12,15 +12,18 @@ import {
   getInputNames
 } from '@e2e/fixtures/utils/nodeInputLinks'
 import { routeObjectInfoFromSetupApi } from '@e2e/fixtures/utils/objectInfo'
+import { toNodeId } from '@/types/nodeId'
 
 const REFERENCE_NODE_ID = '26'
 const IMAGE_1 = `${REFERENCE_IMAGES_PREFIX}image_1`
 const IMAGE_2 = `${REFERENCE_IMAGES_PREFIX}image_2`
+const IMAGE_3 = `${REFERENCE_IMAGES_PREFIX}image_3`
 // Autogrow keeps one empty slot past the last connected one.
 const REFERENCE_IMAGE_SLOTS = [
   IMAGE_1,
   IMAGE_2,
-  `${REFERENCE_IMAGES_PREFIX}image_3`
+  IMAGE_3,
+  `${REFERENCE_IMAGES_PREFIX}image_4`
 ]
 
 const BLEND_NODE_ID = '3'
@@ -95,7 +98,8 @@ test.describe(
           )
           .toEqual([
             { name: IMAGE_1, originNodeId: '18' },
-            { name: IMAGE_2, originNodeId: '19' }
+            { name: IMAGE_2, originNodeId: '19' },
+            { name: IMAGE_3, originNodeId: '20' }
           ])
 
         await expect
@@ -116,7 +120,8 @@ test.describe(
         await comfyPage.nodeOps.selectNodes(['Load Image'])
         expect(await comfyPage.nodeOps.getSelectedNodeIds()).toEqual([
           '18',
-          '19'
+          '19',
+          '20'
         ])
         const subgraphNodeId =
           await comfyPage.subgraph.convertSelectionToSubgraph()
@@ -132,7 +137,8 @@ test.describe(
           )
           .toEqual([
             { name: IMAGE_1, originNodeId: subgraphNodeId },
-            { name: IMAGE_2, originNodeId: subgraphNodeId }
+            { name: IMAGE_2, originNodeId: subgraphNodeId },
+            { name: IMAGE_3, originNodeId: subgraphNodeId }
           ])
 
         await expect
@@ -141,6 +147,46 @@ test.describe(
           )
           .toEqual(REFERENCE_IMAGE_SLOTS)
       })
+
+      test(
+        'keeps every autogrow link when the subgraph is unpacked',
+        { tag: ['@custom-nodes'] },
+        async ({ comfyPage }) => {
+          await comfyPage.keyboard.selectAll()
+          const subgraphNodeId =
+            await comfyPage.subgraph.convertSelectionToSubgraph()
+
+          const unpackedReferenceNodeId = await comfyPage.page.evaluate(
+            (nodeId) => {
+              const graph = window.app!.graph
+              const subgraphNode = graph.getNodeById(nodeId)
+              if (!subgraphNode?.isSubgraphNode()) {
+                throw new Error(`Expected subgraph node ${nodeId}`)
+              }
+              graph.unpackSubgraph(subgraphNode)
+              const referenceNode = graph.nodes.find(
+                (node) => node.type === 'ByteDance2ReferenceNode'
+              )
+              if (!referenceNode)
+                throw new Error('Reference node was not unpacked')
+              return String(referenceNode.id)
+            },
+            toNodeId(subgraphNodeId)
+          )
+
+          await expect
+            .poll(async () =>
+              (
+                await getConnectedInputs(
+                  comfyPage,
+                  unpackedReferenceNodeId,
+                  REFERENCE_IMAGES_PREFIX
+                )
+              ).map(({ name }) => name)
+            )
+            .toEqual([IMAGE_1, IMAGE_2, IMAGE_3])
+        }
+      )
     })
   }
 )
