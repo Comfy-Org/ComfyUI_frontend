@@ -121,7 +121,9 @@ const CATALOG: WidgetCatalog = {
   types: {
     dummy: { widget_order: [] },
     'widget-node': { widget_order: ['value'] },
-    'api-hydrated-widget-node': { widget_order: ['hydrated'] },
+    'api-hydrated-widget-node': {
+      widget_order: ['hydrated', 'secondary']
+    },
     'configure-capture': { widget_order: ['value'] },
     'throws-on-configure': { widget_order: [] }
   }
@@ -468,30 +470,32 @@ describe('reconcileAgentAdapters', () => {
       mutations.addNode(
         {
           ...nodePayload(1, 'api-hydrated-widget-node'),
-          widgets_values: { hydrated: 7 }
+          widgets_values: { hydrated: 7, secondary: 70 }
         },
         REMOTE
       )
       reconcileAgentAdapters(graph)
       const incumbent = graph.getNodeById(toNodeId(1))!
       incumbent.addWidget('number', 'hydrated', 7, () => {})
+      incumbent.addWidget('number', 'secondary', 70, () => {})
 
       mutations.deleteNode(toNodeId(1), [], REMOTE)
       mutations.addNode(
         {
           ...nodePayload(1, 'api-hydrated-widget-node'),
-          widgets_values: { hydrated: 8 }
+          widgets_values: { hydrated: 8, secondary: 80 }
         },
         { ...REMOTE, opId: 'op-1-again' }
       )
 
       expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(1)])
       expect(graph.getNodeById(toNodeId(1))).toBe(incumbent)
-      expect(incumbent.widgets).toHaveLength(1)
-      expect(incumbent.widgets?.[0]).toMatchObject({
-        name: 'hydrated',
-        value: 8
-      })
+      expect(
+        incumbent.widgets?.map(({ name, value }) => ({ name, value }))
+      ).toEqual([
+        { name: 'hydrated', value: 8 },
+        { name: 'secondary', value: 80 }
+      ])
     })
 
     it('runs stale-node lifecycle without clearing successor-owned state', () => {
