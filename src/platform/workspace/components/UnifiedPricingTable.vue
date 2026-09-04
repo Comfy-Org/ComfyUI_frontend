@@ -23,21 +23,9 @@
     <div
       class="flex min-h-0 flex-col gap-6 rounded-2xl bg-base-background p-8 xl:flex-1"
     >
-      <!-- Plan-scope description, above the billing toggle (DES-197). While a
-           previous payment attempt settles server-side (FE-1990 variant B) the
-           same slot carries the settling notice instead — same row, same type
-           size, so nothing shifts. CTAs stay enabled: a preview is a free
-           quote request, and the first click after the server settles simply
-           succeeds. -->
-      <p
-        v-if="isPaymentSettling"
-        class="m-0 flex items-center justify-center gap-1.5 text-center text-sm text-muted-foreground"
-      >
-        <i class="icon-[lucide--info] size-4 shrink-0" />
-        {{ t('subscription.settlingNotice') }}
-      </p>
+      <!-- Plan-scope description, above the billing toggle (DES-197). -->
       <I18nT
-        v-else-if="planMode === 'personal'"
+        v-if="planMode === 'personal'"
         keypath="subscription.personalHeader"
         tag="p"
         class="m-0 text-center text-sm text-muted-foreground"
@@ -367,53 +355,92 @@
       </div>
     </div>
 
-    <!-- Footnote: template caveat + contact / pricing links -->
-    <I18nT
-      keypath="subscription.pricingBlurb"
-      tag="p"
-      class="m-0 mt-auto pt-4 text-center text-sm text-text-secondary"
+    <!-- Footer slot (DES-974 capability states): the fine-print blurb
+         normally; while subscribing is blocked the same row carries a notice
+         pill saying why. min-h reserves the blurb's two-line wrap height so
+         the swap never shifts the table above it. -->
+    <div
+      ref="footerRegionEl"
+      tabindex="-1"
+      data-testid="pricing-table-footer"
+      class="mt-auto flex min-h-14 items-center justify-center pt-4 outline-none"
     >
-      <template #seeDetails>
-        <a
-          :href="VIDEO_TEMPLATE_URL"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
-        >
-          {{ t('subscription.pricingBlurbSeeDetails') }}
-        </a>
-      </template>
-      <template #questions>
-        <a
-          :href="QUESTIONS_URL"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
-        >
-          {{ t('subscription.pricingBlurbQuestions') }}
-        </a>
-      </template>
-      <template #enterpriseDiscussions>
-        <a
-          :href="ENTERPRISE_URL"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
-        >
-          {{ t('subscription.pricingBlurbEnterprise') }}
-        </a>
-      </template>
-      <template #clickHere>
-        <a
-          :href="PRICING_URL"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
-        >
-          {{ t('subscription.pricingBlurbClickHere') }}
-        </a>
-      </template>
-    </I18nT>
+      <!-- Inverted pill (token pairing from the Button `inverted` variant so
+           it stays high-contrast in both themes). A status region: only its
+           bold links are interactive, matching the fine-print blurb's link
+           treatment. -->
+      <p
+        v-if="footerNotice"
+        ref="footerNoticeEl"
+        role="status"
+        class="m-0 flex flex-wrap items-center justify-center gap-x-1.5 rounded-full bg-base-foreground px-4 py-1.5 text-center text-sm text-base-background"
+      >
+        <i
+          class="icon-[lucide--info] size-4 shrink-0 text-inherit"
+          aria-hidden="true"
+        />
+        <span>{{ footerNotice.message }}</span>
+        <template v-for="(link, index) in footerNotice.links" :key="link.label">
+          <span v-if="index > 0" aria-hidden="true">·</span>
+          <button
+            type="button"
+            class="cursor-pointer border-none bg-transparent p-0 font-inter text-sm font-semibold text-inherit hover:opacity-80"
+            @click="link.onClick"
+          >
+            {{ link.label }}
+          </button>
+        </template>
+      </p>
+
+      <!-- Footnote: template caveat + contact / pricing links -->
+      <I18nT
+        v-else
+        keypath="subscription.pricingBlurb"
+        tag="p"
+        class="m-0 text-center text-sm text-text-secondary"
+      >
+        <template #seeDetails>
+          <a
+            :href="VIDEO_TEMPLATE_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
+          >
+            {{ t('subscription.pricingBlurbSeeDetails') }}
+          </a>
+        </template>
+        <template #questions>
+          <a
+            :href="QUESTIONS_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
+          >
+            {{ t('subscription.pricingBlurbQuestions') }}
+          </a>
+        </template>
+        <template #enterpriseDiscussions>
+          <a
+            :href="ENTERPRISE_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
+          >
+            {{ t('subscription.pricingBlurbEnterprise') }}
+          </a>
+        </template>
+        <template #clickHere>
+          <a
+            :href="PRICING_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
+          >
+            {{ t('subscription.pricingBlurbClickHere') }}
+          </a>
+        </template>
+      </I18nT>
+    </div>
   </div>
 </template>
 
@@ -421,12 +448,14 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import SelectButton from 'primevue/selectbutton'
 import type { ToggleButtonPassThroughMethodOptions } from 'primevue/togglebutton'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { I18nT, useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import CreditSlider from '@/components/ui/credit-slider/CreditSlider.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import {
   TIER_PRICING,
   hasActivePaidPlan,
@@ -447,6 +476,7 @@ import {
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
+import { buildSupportUrl } from '@/platform/support/config'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -486,6 +516,7 @@ const emit = defineEmits<{
 const { t, n } = useI18n()
 const capabilities = useBillingCapabilities()
 const { permissions, canReactivatePlan } = useWorkspaceUI()
+const { shouldUseWorkspaceBilling } = useBillingRouting()
 
 const canSubscribeSelfServe = computed(() =>
   isCloud
@@ -503,7 +534,108 @@ const canDowngradeToPersonal = computed(() =>
     : permissions.value.canDowngradeToPersonal
 )
 
+interface FooterNoticeLink {
+  label: string
+  onClick: () => void
+}
+
+interface FooterNotice {
+  message: string
+  links: FooterNoticeLink[]
+}
+
+const { userEmail, resolvedUserInfo } = useCurrentUser()
+
+/** Same destination and user context as the `Comfy.ContactSupport` command,
+ *  so billing tickets arrive identified. */
+function openContactSupport() {
+  window.open(
+    buildSupportUrl({
+      userEmail: userEmail.value,
+      userId: resolvedUserInfo.value?.id
+    }),
+    '_blank',
+    'noopener,noreferrer'
+  )
+}
+
+function contactSupportLink(): FooterNoticeLink {
+  return {
+    label: t('subscription.noticeContactSupport'),
+    onClick: openContactSupport
+  }
+}
+
+/**
+ * The notice for a snapshot that resolved `can_subscribe_self_serve: false`.
+ * The server does not yet say WHY it denied; when the `denied_reason` enum
+ * ships, its cases slot in here. Until then every resolved false takes the
+ * default — the change-in-progress copy, the dominant cause for self-serve
+ * owners; other deny reasons get opener-guard dialogs separately (DES-974).
+ */
+function capabilityDeniedNotice(deniedReason?: string): FooterNotice {
+  switch (deniedReason) {
+    default:
+      return {
+        message: t('subscription.capabilityDeniedNotice'),
+        links: [contactSupportLink()]
+      }
+  }
+}
+
+/**
+ * Which blocked-state notice occupies the footer slot (DES-974), in priority
+ * order: an unreadable snapshot beats a denied capability beats the
+ * click-time settling refusal. Null renders the normal fine-print blurb.
+ * Button disabling is handled by the existing capability gating — the pill
+ * only says why.
+ */
+const footerNotice = computed<FooterNotice | null>(() => {
+  if (isCloud && capabilities.capabilityReadFailed.value) {
+    return {
+      message: t('subscription.capabilityUnreadableNotice'),
+      links: [
+        {
+          label: t('subscription.noticeTryAgain'),
+          // Retrying immediately skips the read's 30-60s backoff wait.
+          onClick: () => void capabilities.retryCapabilityRead()
+        },
+        contactSupportLink()
+      ]
+    }
+  }
+  // Only a genuinely resolved `can_subscribe_self_serve: false` — a denied
+  // (401/403) read is authoritative but carries no capability values, so it
+  // must not read as a change in progress. Never on the legacy billing rail:
+  // legacy_stripe workspaces have no capability projection row, so the server
+  // resolves their capabilities false permanently, and the change-in-progress
+  // copy would be a false promise (IR-128 / DES-974 7a) — they keep the
+  // pre-pill rendering until a dedicated legacy notice ships. And only while
+  // every plan CTA the table shows is disabled: a pill saying subscribing is
+  // blocked next to an enabled Change/Resubscribe button would contradict
+  // itself.
+  if (
+    isCloud &&
+    shouldUseWorkspaceBilling.value &&
+    capabilities.snapshotResolved.value &&
+    !capabilities.canSubscribeSelfServe.value &&
+    shownPlanCtasDisabled.value
+  ) {
+    return capabilityDeniedNotice()
+  }
+  if (isPaymentSettling) {
+    return {
+      message: t('subscription.settlingNotice'),
+      links: [contactSupportLink()]
+    }
+  }
+  return null
+})
+
 const planMode = ref<'personal' | 'team'>(initialPlanMode)
+
+const footerRegionEl = ref<HTMLElement | null>(null)
+const footerNoticeEl = ref<HTMLElement | null>(null)
 
 /** The Wan 2.2 i2v template the video estimates are based on. */
 const VIDEO_TEMPLATE_URL =
@@ -882,6 +1014,16 @@ const canUsePersonalPlanAction = (tierKey: CheckoutTierKey): boolean => {
 const isButtonDisabled = (tier: PricingTierConfig): boolean =>
   isLoading || !canUsePersonalPlanAction(tier.key)
 
+// Derived from the exact disable computation the visible plan buttons use, so
+// the denied pill can never sit beside an enabled plan CTA (e.g. a snapshot
+// with can_subscribe_self_serve false but can_change_seats true). The
+// Enterprise contact button is navigation, not a plan CTA.
+const shownPlanCtasDisabled = computed(() =>
+  planMode.value === 'team'
+    ? isTeamButtonDisabled.value
+    : tiers.every((tier) => isButtonDisabled(tier))
+)
+
 const getButtonTextClass = (tier: PricingTierConfig): string =>
   tier.key === 'creator'
     ? 'font-inter text-sm font-bold leading-normal text-base-background'
@@ -943,4 +1085,18 @@ function handleSubscribeTeam() {
 function handleViewEnterprise() {
   window.open(ENTERPRISE_URL, '_blank')
 }
+
+// The pill is removed by v-if the moment its blocked state clears; if keyboard
+// focus is inside it (on Try again), it would drop to <body>. This pre-flush
+// watch still sees the pill in the DOM, so it can tell whether it held focus
+// and hand focus to the footer region once the swap has rendered.
+// (Registered last: watching `footerNotice` evaluates it eagerly, and its
+// getter reads bindings declared through the end of this script.)
+watch(footerNotice, async (notice) => {
+  if (notice) return
+  const pill = footerNoticeEl.value
+  if (!pill || !pill.contains(document.activeElement)) return
+  await nextTick()
+  footerRegionEl.value?.focus()
+})
 </script>

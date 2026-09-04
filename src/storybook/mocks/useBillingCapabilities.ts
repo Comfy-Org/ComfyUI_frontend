@@ -50,7 +50,11 @@ export function useBillingCapabilities() {
       () => capabilityState.canDowngradeToPersonal
     ),
     isReady: computed(() => true),
+    snapshotAuthoritative: computed(() => true),
+    snapshotResolved: computed(() => true),
+    capabilityReadFailed: computed(() => false),
     initialize: () => undefined,
-    refresh: () => undefined
+    refresh: () => undefined,
+    retryCapabilityRead: () => undefined
   }
 }

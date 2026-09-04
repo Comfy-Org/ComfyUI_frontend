@@ -1417,6 +1417,81 @@ describe('useSubscriptionCheckout', () => {
     })
   })
 
+  describe('reservation-gate refusal on the write path (409 SUBSCRIPTION_CHANGE_IN_PROGRESS)', () => {
+    // The exact refusal the BE writes for a held billing-op gate: HTTP 409
+    // with { error: { code: 'SUBSCRIPTION_CHANGE_IN_PROGRESS', message:
+    // 'a subscription change is already in progress' } } (cloud
+    // services/billing/server/billing_write.go, gateConflict), parsed by
+    // errorResponseFromBody into this WorkspaceApiError.
+    const GATE_MESSAGE = 'a subscription change is already in progress'
+    const gateError = () =>
+      new WorkspaceApiError(
+        GATE_MESSAGE,
+        409,
+        'SUBSCRIPTION_CHANGE_IN_PROGRESS'
+      )
+
+    it('routes the subscribe-create 409 into the settling notice, not a toast', async () => {
+      const checkout = await setup()
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+      mockSubscribe.mockRejectedValueOnce(gateError())
+
+      await checkout.handleConfirmTransition()
+
+      expect(checkout.isPaymentSettling.value).toBe(true)
+      expect(checkout.checkoutStep.value).toBe('pricing')
+      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(mockGetPaymentPortalUrl).not.toHaveBeenCalled()
+    })
+
+    it('recognizes the refusal by status and sentinel message when the code is lost', async () => {
+      const checkout = await setup()
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+      mockSubscribe.mockRejectedValueOnce(
+        new WorkspaceApiError(GATE_MESSAGE, 409)
+      )
+
+      await checkout.handleConfirmTransition()
+
+      expect(checkout.isPaymentSettling.value).toBe(true)
+      expect(mockToastAdd).not.toHaveBeenCalled()
+    })
+
+    it('routes the resubscribe 409 into the settling notice, not a toast', async () => {
+      const checkout = await setup()
+      mockResubscribe.mockRejectedValueOnce(gateError())
+
+      await checkout.handleResubscribe()
+
+      expect(checkout.isPaymentSettling.value).toBe(true)
+      expect(mockToastAdd).not.toHaveBeenCalled()
+    })
+
+    it('keeps the generic surface for a 409 that is not the gate refusal', async () => {
+      const checkout = await setup()
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+      mockSubscribe.mockRejectedValueOnce(
+        new WorkspaceApiError('duplicate idempotency key', 409)
+      )
+
+      await checkout.handleConfirmTransition()
+
+      expect(checkout.isPaymentSettling.value).toBe(false)
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+    })
+  })
+
   describe('handleSubscribeTeamClick', () => {
     const teamStop = {
       id: 'team_1400',
