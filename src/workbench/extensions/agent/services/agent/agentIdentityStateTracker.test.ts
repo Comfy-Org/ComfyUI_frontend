@@ -91,6 +91,18 @@ describe('registerAgentIdentityStateTracker', () => {
     expect(localStorage.getItem(AGENT_THREAD_STORAGE_KEY)).toBeNull()
   })
 
+  it('purges ownerless legacy state when the initial identity resolves', async () => {
+    seedUserState()
+    localStorage.removeItem('Comfy.Agent.ThreadOwnerId')
+
+    setUser('user-a')
+    await nextTick()
+
+    expect(useAgentConversationStore().threadId).toBeNull()
+    expect(useAgentConversationStore().messages).toEqual([])
+    expect(localStorage.getItem(AGENT_THREAD_STORAGE_KEY)).toBeNull()
+  })
+
   it('purges user-scoped state when the identity changes', async () => {
     setUser('user-a')
     await nextTick()
