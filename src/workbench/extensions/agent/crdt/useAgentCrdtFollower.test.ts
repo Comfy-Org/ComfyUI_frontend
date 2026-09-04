@@ -64,6 +64,9 @@ const definitionsState = vi.hoisted(() => ({
   fakeDefinitions: [
     { id: '11111111-1111-4111-8111-111111111111' } as ExportedSubgraph
   ],
+  readSubgraphDefinitionIds: vi.fn(() => [
+    '11111111-1111-4111-8111-111111111111'
+  ]),
   readSubgraphDefinitions: vi.fn(() => definitionsState.fakeDefinitions)
 }))
 
@@ -117,6 +120,7 @@ vi.mock('./agentNodeMaterializer', () => ({
 }))
 
 vi.mock('./agentSubgraphDefinitions', () => ({
+  readSubgraphDefinitionIds: definitionsState.readSubgraphDefinitionIds,
   readSubgraphDefinitions: definitionsState.readSubgraphDefinitions
 }))
 
@@ -207,6 +211,7 @@ describe('useAgentCrdtFollower', () => {
     sessionStorage.clear()
     bridgeState.current = null
     materializerState.reconcileAgentAdapters.mockReset().mockReturnValue([])
+    definitionsState.readSubgraphDefinitionIds.mockClear()
     definitionsState.readSubgraphDefinitions.mockClear()
   })
 
@@ -669,8 +674,10 @@ describe('useAgentCrdtFollower', () => {
   describe('live-graph reconcile', () => {
     // The materializer is module-mocked, so the graph only needs to be a
     // distinct reference the composable hands through.
-    const fakeGraph = {} as MaterializableGraph
     const { fakeDefinitions } = definitionsState
+    const fakeGraph = {
+      rootGraph: { subgraphs: new Map() }
+    } as unknown as MaterializableGraph
 
     it('reconciles the live graph after every applied frame', () => {
       const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
@@ -686,6 +693,27 @@ describe('useAgentCrdtFollower', () => {
       // doc_reset remint (which swaps the FollowerDoc) is read fresh.
       expect(definitionsState.readSubgraphDefinitions).toHaveBeenCalledWith(
         bridge().follower.doc
+      )
+      unmount()
+    })
+
+    it('does not deep-copy definitions for a frame when all are registered', () => {
+      const registeredGraph = {
+        rootGraph: {
+          subgraphs: new Map([[fakeDefinitions[0].id, {}]])
+        }
+      } as unknown as MaterializableGraph
+      const { unmount } = mountFollower('wf-1', true, () => registeredGraph)
+
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
+
+      expect(definitionsState.readSubgraphDefinitionIds).toHaveBeenCalledWith(
+        bridge().follower.doc
+      )
+      expect(definitionsState.readSubgraphDefinitions).not.toHaveBeenCalled()
+      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
+        registeredGraph,
+        []
       )
       unmount()
     })

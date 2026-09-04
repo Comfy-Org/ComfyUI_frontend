@@ -103,6 +103,37 @@ function readDefinition(source: Y.Map<unknown>): ExportedSubgraph {
   return definition as unknown as ExportedSubgraph
 }
 
+function readField(source: unknown, key: string): unknown {
+  if (source instanceof Y.Map) return source.get(key)
+  if (typeof source !== 'object' || source === null || !(key in source)) {
+    return undefined
+  }
+  return Reflect.get(source, key)
+}
+
+function readList(source: unknown): unknown[] {
+  if (source instanceof Y.Array) return source.toArray()
+  return Array.isArray(source) ? source : []
+}
+
+function collectDefinitionIds(source: unknown, ids: string[]): void {
+  const id = readField(source, 'id')
+  if (typeof id === 'string') ids.push(id)
+  const nested = readField(readField(source, 'definitions'), 'subgraphs')
+  for (const definition of readList(nested)) {
+    collectDefinitionIds(definition, ids)
+  }
+}
+
+export function readSubgraphDefinitionIds(doc: Y.Doc): string[] {
+  const ids: string[] = []
+  if (!doc.share.has(DEFINITIONS_ROOT)) return ids
+  doc.getMap<unknown>(DEFINITIONS_ROOT).forEach((value) => {
+    if (value instanceof Y.Map) collectDefinitionIds(value, ids)
+  })
+  return ids
+}
+
 /**
  * Project the subgraph definitions the op layer minted into the follower doc
  * back to the `ExportedSubgraph` shape `LGraph.createSubgraphs()` consumes,
