@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
@@ -78,5 +78,15 @@ describe('AgentConsentCard', () => {
     renderCard()
 
     expect(screen.getByText('Video unavailable')).toBeInTheDocument()
+  })
+
+  it('falls back to the placeholder when the video fails to load', async () => {
+    renderCard({ videoSrc: 'https://example.test/a.mp4' })
+    expect(screen.queryByText('Video unavailable')).not.toBeInTheDocument()
+
+    await fireEvent.error(screen.getByTestId('agent-consent-video'))
+
+    expect(screen.getByText('Video unavailable')).toBeInTheDocument()
+    expect(screen.queryByTestId('agent-consent-video')).not.toBeInTheDocument()
   })
 })
