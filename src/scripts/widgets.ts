@@ -60,6 +60,7 @@ export type CustomComfyWidgetConstructor = (
       minWidth?: number
       minHeight?: number
     }
+  | IBaseWidget
   | undefined
 
 /**

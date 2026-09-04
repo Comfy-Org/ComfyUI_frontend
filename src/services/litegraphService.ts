@@ -308,8 +308,9 @@ export const useLitegraphService = () => {
       transformInputSpecV2ToV1(widgetInputSpec),
       app
     )
-    const { minWidth = 1, minHeight = 1 } = result ?? {}
-    const returnedWidget = result?.widget
+    const wrappedResult = result && !('type' in result) ? result : undefined
+    const { minWidth = 1, minHeight = 1 } = wrappedResult ?? {}
+    const returnedWidget = result && 'type' in result ? result : result?.widget
     if (returnedWidget) {
       // oxlint-disable-next-line typescript/no-unnecessary-condition -- extension widgets may omit options at runtime
       returnedWidget.options ??= {}

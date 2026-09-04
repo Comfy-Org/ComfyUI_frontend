@@ -185,7 +185,7 @@ describe('useLitegraphService().registerNodeDef custom widget metadata', () => {
         })
         node.widgets ??= []
         node.widgets.push(retainedWidget)
-        return { widget: retainedWidget }
+        return retainedWidget
       }
     })
     await useLitegraphService().registerNodeDef(nodeName, {
