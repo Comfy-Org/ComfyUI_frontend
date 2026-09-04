@@ -205,6 +205,7 @@ export function createDetachedTargetSession(
    * frames from the old lineage are meaningless and dropped.
    */
   function resetLineage(atSeq: number): void {
+    if (destroyed) return
     committedDoc.destroy()
     committedDoc = new Y.Doc()
     lineage = createUuidv4()

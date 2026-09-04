@@ -377,6 +377,16 @@ describe('createDetachedTargetSession', () => {
     expect(session.snapshot().needsResync).toBe(true)
   })
 
+  it('does not recreate lineage state after destruction', () => {
+    const session = createDetachedTargetSession(WORKFLOW_ID)
+    const beforeDestroy = session.snapshot()
+
+    session.destroy()
+    session.resetLineage(10)
+
+    expect(session.snapshot()).toEqual(beforeDestroy)
+  })
+
   it('rejects frames addressed to another target loudly', () => {
     vi.stubEnv('DEV', false)
     const session = createDetachedTargetSession(WORKFLOW_ID)

@@ -139,6 +139,9 @@ describe('useGraphDocumentStore', () => {
     store.markMutated(documentId)
     const presentedRevision =
       store.getDocument(documentId)?.state.revision ?? -1
+    const dispose = vi.fn()
+    const lease = { graph: {}, dispose }
+    store.completeGraphHydration(store.beginGraphHydration(documentId)!, lease)
     store.markMutated(documentId)
     expect(
       store.closeDocument(documentId, {
@@ -147,12 +150,15 @@ describe('useGraphDocumentStore', () => {
       })
     ).toBe(false)
     expect(store.getDocument(documentId)?.state.phase).toBe('loaded')
+    expect(store.graphLeaseOf(documentId)).toBe(lease)
+    expect(dispose).not.toHaveBeenCalled()
     expect(
       store.closeDocument(documentId, {
         atRevision: presentedRevision + 1,
         discardChanges: true
       })
     ).toBe(true)
+    expect(dispose).toHaveBeenCalledOnce()
   })
 
   it('refuses to close a dirty document without an explicit discard', () => {

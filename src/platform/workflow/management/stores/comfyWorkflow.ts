@@ -166,11 +166,21 @@ export class ComfyWorkflow extends UserFile {
     // `workflow_id` (that mapping is layered on separately, e.g. by the
     // agent panel). Minted once per load; reused across re-entrant loads of
     // an already-loaded instance.
-    this.documentId ??= useGraphDocumentStore().createDocument()
+    const graphDocumentStore = useGraphDocumentStore()
+    if (this.documentId === null) {
+      this.documentId = graphDocumentStore.createDocument()
+      if (this.documentId !== null) {
+        const persistedBaseline = graphDocumentStore.beginSave(this.documentId)
+        if (persistedBaseline)
+          graphDocumentStore.completeSave(persistedBaseline)
+      }
+    }
     if (draftState && draftContent) {
       this.changeTracker.activeState = draftState
       this.content = draftContent
       this._isModified = true
+      if (this.documentId !== null)
+        graphDocumentStore.markMutated(this.documentId)
       // Saved-workflow draft overlay path; direct persisted-draft restores
       // are touched in workflowDraftStoreV2.loadDraft().
       draftStore.markDraftUsed(this.path)
@@ -192,8 +202,10 @@ export class ComfyWorkflow extends UserFile {
     // invoked — never to whatever revision happens to be current once
     // control returns to us after yielding.
     const documentId = this.documentId
-    const graphDocumentStore = documentId ? useGraphDocumentStore() : null
-    const saveTicket = graphDocumentStore?.beginSave(documentId!) ?? null
+    const graphDocumentStore = useGraphDocumentStore()
+    const saveTicket = documentId
+      ? graphDocumentStore.beginSave(documentId)
+      : null
     const content = JSON.stringify(this.activeState)
 
     const { useWorkflowDraftStoreV2 } =
@@ -203,10 +215,10 @@ export class ComfyWorkflow extends UserFile {
     // Force save to ensure the content is updated in remote storage incase
     // the isModified state is screwed by changeTracker.
     const ret = await super.save({ force: true })
-    if (saveTicket) graphDocumentStore!.completeSave(saveTicket)
+    if (saveTicket) graphDocumentStore.completeSave(saveTicket)
     const savedCurrentRevision =
       saveTicket === null ||
-      graphDocumentStore?.persistenceStateOf(saveTicket.documentId) === 'clean'
+      graphDocumentStore.persistenceStateOf(saveTicket.documentId) === 'clean'
     if (savedCurrentRevision) {
       this.changeTracker?.reset()
       this.isModified = false

@@ -1,4 +1,5 @@
 import type { DocumentId } from '@/types/documentId'
+import { reportError } from '@/platform/telemetry/reportError'
 
 /**
  * View concerns attached by activation and detached by deactivation: the
@@ -66,7 +67,10 @@ export function createActivationCoordinator(deps: ActivationCoordinatorDeps) {
     }
     try {
       await deps.hydrate?.(documentId)
-    } catch {
+    } catch (error) {
+      reportError(error, {
+        errorType: 'document_activation_hydration_failure'
+      })
       return finish(
         stale()
           ? { status: 'superseded', documentId }
@@ -81,7 +85,10 @@ export function createActivationCoordinator(deps: ActivationCoordinatorDeps) {
     active = null
     try {
       if (previous) previous.binding.detach(previous.documentId)
-    } catch {
+    } catch (error) {
+      reportError(error, {
+        errorType: 'document_view_binding_previous_detach_failure'
+      })
       // A throwing detach must not leave a stale published binding: a later
       // activate/deactivate would detach the old document twice.
       return finish({
@@ -96,7 +103,10 @@ export function createActivationCoordinator(deps: ActivationCoordinatorDeps) {
     if (stale()) return finish({ status: 'superseded', documentId })
     try {
       binding.attach(documentId)
-    } catch {
+    } catch (error) {
+      reportError(error, {
+        errorType: 'document_view_binding_attach_failure'
+      })
       // Best-effort cleanup of hooks a partially-run attach installed; the
       // binding stays unpublished either way.
       try {
@@ -146,8 +156,10 @@ export function createActivationCoordinator(deps: ActivationCoordinatorDeps) {
     active = null
     try {
       previous.binding.detach(documentId)
-    } catch {
-      /* treated as detached (DocumentViewBinding contract) */
+    } catch (error) {
+      reportError(error, {
+        errorType: 'document_view_binding_detach_failure'
+      })
     }
     return true
   }
