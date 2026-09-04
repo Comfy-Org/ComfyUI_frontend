@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
@@ -11,20 +11,19 @@ import {
   toBrowseModel
 } from './workshop'
 
-const COLLECTION = join(
+// The committed catalog: one packed array, a model per line. Read it the way
+// the content loader does rather than scanning a directory that no longer
+// exists, and validate every entry so the test fails on a bad catalog.
+const CATALOG = join(
   dirname(fileURLToPath(import.meta.url)),
   '..',
   'content',
-  'workshop-models'
+  'workshop-models.json'
 )
 
-const collection = readdirSync(COLLECTION)
-  .filter((file) => file.endsWith('.json'))
-  .map((file) =>
-    workshopModelSchema.parse(
-      JSON.parse(readFileSync(join(COLLECTION, file), 'utf8'))
-    )
-  )
+const collection = (JSON.parse(readFileSync(CATALOG, 'utf8')) as unknown[]).map(
+  (entry) => workshopModelSchema.parse(entry)
+)
 
 const models: WorkshopBrowseModel[] = [
   {
