@@ -2799,6 +2799,18 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       mockConcurrentExecutionEnabled.value = true
     })
 
+    it('is active from execution start until the terminal event', () => {
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+
+      expect(store.runningJobIds).toEqual(['job-1'])
+      expect(store.isIdle).toBe(false)
+
+      fire('execution_success', { prompt_id: 'job-1', timestamp: 0 })
+
+      expect(store.runningJobIds).toEqual([])
+      expect(store.isIdle).toBe(true)
+    })
+
     it('routes node completion events to the job named by prompt_id', () => {
       fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
       fire('execution_start', { prompt_id: 'job-2', timestamp: 0 })

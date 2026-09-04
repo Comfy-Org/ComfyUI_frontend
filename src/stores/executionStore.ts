@@ -1140,13 +1140,9 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   const runningJobIds = computed<JobId[]>(() => {
-    const result: JobId[] = []
-    for (const [pid, nodes] of Object.entries(nodeProgressStatesByJob.value)) {
-      if (Object.values(nodes).some((n) => n.state === 'running')) {
-        result.push(pid)
-      }
-    }
-    return result
+    return Object.entries(queuedJobs.value)
+      .filter(([, job]) => job.executionStartedAt !== undefined)
+      .map(([jobId]) => jobId)
   })
 
   const runningWorkflowCount = computed<number>(
