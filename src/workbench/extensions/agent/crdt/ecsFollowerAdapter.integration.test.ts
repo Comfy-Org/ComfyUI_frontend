@@ -1338,7 +1338,7 @@ describe('EcsFollowerAdapter integration', () => {
             actor: 'agent:test',
             opIds: ops.map(({ op_id }) => op_id)
           })
-        ).toBe(true)
+        ).toEqual({ status: 'projected', sequence: 1 })
       } else {
         let before = Y.encodeStateVector(host)
         let first = true
@@ -1360,7 +1360,7 @@ describe('EcsFollowerAdapter integration', () => {
               actor: 'agent:test',
               opIds: [singleOp.op_id]
             })
-          ).toBe(true)
+          ).toEqual({ status: 'projected', sequence: seq })
         }
       }
 
