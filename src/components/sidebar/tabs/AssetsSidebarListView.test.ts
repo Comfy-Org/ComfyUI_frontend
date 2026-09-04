@@ -57,7 +57,7 @@ const AssetsListItemStub = defineComponent({
     :data-preview-url="previewUrl"
     :data-is-video-preview="isVideoPreview"
     data-testid="assets-list-item"
-  ><button data-testid="preview-click-trigger" @click="$emit('preview-click')" /><slot /></div>`
+  ><button data-testid="preview-click-trigger" @click="$emit('preview-click')" /><slot /><slot name="actions" /></div>`
 })
 
 const buildAsset = (id: string, name: string): AssetItem =>
@@ -203,4 +203,31 @@ describe('AssetsSidebarListView', () => {
       expect(onSelectAsset).not.toHaveBeenCalled()
     })
   }
+
+  it('does not select an asset when Enter activates its actions button', async () => {
+    const user = userEvent.setup()
+    const imageAsset = {
+      ...buildAsset('image-asset-actions', 'image.png'),
+      user_metadata: {}
+    } satisfies AssetItem
+    const onSelectAsset = vi.fn()
+
+    renderListView([buildOutputItem(imageAsset)], {
+      selectableAssets: [imageAsset],
+      'onSelect-asset': onSelectAsset
+    })
+
+    const item = screen.getByRole('button', {
+      name: 'assetBrowser.ariaLabel.assetCard'
+    })
+    await user.hover(item)
+
+    const actionsButton = await screen.findByRole('button', {
+      name: 'mediaAsset.actions.moreOptions'
+    })
+    actionsButton.focus()
+    await user.keyboard('{Enter}')
+
+    expect(onSelectAsset).not.toHaveBeenCalled()
+  })
 })
