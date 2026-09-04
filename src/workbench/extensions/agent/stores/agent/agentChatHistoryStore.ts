@@ -2,10 +2,13 @@ import { useLocalStorage, useTimestamp } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import type { AgentThreadSummary } from '../../schemas/agentApiSchema'
+
 export interface ChatSession {
   id: string
   title: string
   updatedAt: number
+  status: AgentThreadSummary['status']
 }
 
 export interface HistoryGroups {
