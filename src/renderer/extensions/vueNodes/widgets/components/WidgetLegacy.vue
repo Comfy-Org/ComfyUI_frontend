@@ -40,8 +40,14 @@ function findLegacyWidget():
   return resolveWidgetFromHostNode(hostNode, props.widget.name)
 }
 
+function releaseWidget() {
+  if (!widgetInstance) return
+  widgetInstance.triggerDraw = () => {}
+  widgetInstance.width = undefined
+}
+
 function bindWidget() {
-  if (widgetInstance) widgetInstance.triggerDraw = () => {}
+  releaseWidget()
 
   const resolved = findLegacyWidget()
   if (!resolved) {
@@ -70,9 +76,7 @@ onMounted(() => {
   watch(() => useColorPaletteStore().activePaletteId, draw)
   pointer = new CanvasPointer(canvasEl.value)
 })
-onBeforeUnmount(() => {
-  if (widgetInstance) widgetInstance.triggerDraw = () => {}
-})
+onBeforeUnmount(releaseWidget)
 
 whenever(() => !canvasStore.linearMode, bindWidget)
 watch(() => canvasStore.currentGraph, bindWidget)
