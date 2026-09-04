@@ -8,7 +8,9 @@
 set -euo pipefail
 
 # git grep exit code 1 means "no matches", which is success for this check.
-refs=$(git grep -nEo 'docs/adr/[A-Za-z0-9._/-]+\.md' -- . || true)
+# The checker's own test file is excluded: its fixtures reference deliberately
+# dangling docs/adr paths to prove the failure mode.
+refs=$(git grep -nEo 'docs/adr/[A-Za-z0-9._/-]+\.md' -- . ':(exclude)scripts/cicd/check-adr-links.test.ts' || true)
 
 if [ -z "$refs" ]; then
   exit 0
