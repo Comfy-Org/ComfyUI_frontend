@@ -21,16 +21,12 @@ import { imageCropLoadingAfterUrlChange, useImageCrop } from './useImageCrop'
 
 const resizeObserverCallbacks: Array<() => void> = []
 
-vi.mock('@vueuse/core', async () => {
-  const actual = await vi.importActual('@vueuse/core')
-  return {
-    ...(actual as Record<string, unknown>),
-    useResizeObserver: (_target: unknown, cb: () => void) => {
-      resizeObserverCallbacks.push(cb)
-      return { stop: vi.fn() }
-    }
+vi.mock('@vueuse/core', () => ({
+  useResizeObserver: (_target: unknown, cb: () => void) => {
+    resizeObserverCallbacks.push(cb)
+    return { stop: vi.fn() }
   }
-})
+}))
 
 const mockResolveNode = vi.hoisted(() =>
   vi.fn<(id: NodeId) => LGraphNode | null>()
