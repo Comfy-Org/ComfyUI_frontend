@@ -282,14 +282,15 @@
           class="m-0"
         >
           <template #useDifferentCard>
-            <button
-              type="button"
+            <Button
+              variant="textonly"
+              size="unset"
               :disabled="interactionLocked"
-              class="cursor-pointer underline underline-offset-2 disabled:cursor-default disabled:opacity-50"
+              class="inline text-sm text-inherit underline underline-offset-2"
               @click="$emit('changePaymentMethod')"
             >
               {{ $t('billingOperation.challengeFailedUseDifferentCard') }}
-            </button>
+            </Button>
           </template>
         </i18n-t>
         <p v-else class="m-0">
