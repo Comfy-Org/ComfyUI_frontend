@@ -34,14 +34,11 @@ test.describe('Enterprise pages @smoke', () => {
 
     await expect(page.locator('main :is(h1, h2)')).toHaveText([
       /Govern ComfyUI across\s+every team and runtime\./,
-      'The open standard for visual AI, ready for your organization.',
+      /The open standard for visual AI, ready for your organization\./,
       /One approved ComfyUI environment,\s+everywhere your team runs it\./,
       'Govern the build, models, people, and usage.',
-      'TEAM PLANS',
-      'COMMERCIAL RIGHTS',
-      'FORWARD DEPLOYED CREATIVES',
       'Capacity and support for production.',
-      /Built with studios\s+in the room\./,
+      'Built with studios in the room',
       'A clearer path through security review.',
       'Enterprise, answered.',
       /Bring the open standard for visual AI\s+to your organization\./,
@@ -91,6 +88,9 @@ test.describe('Enterprise pages @smoke', () => {
       offerRow.getByRole('link', { name: 'VIEW THE OFFERING' })
     ).toHaveAttribute('href', '/forward-deployed-creatives/')
 
+    const governRows = page.locator('section').filter({
+      has: page.getByText('Build policy', { exact: true })
+    })
     for (const governance of [
       'Build policy',
       'Model policy and BYOK',
@@ -98,28 +98,39 @@ test.describe('Enterprise pages @smoke', () => {
       'Usage visibility and audit requirements'
     ]) {
       await expect(
-        page.getByRole('heading', { level: 3, name: governance })
+        governRows.locator('dl').getByText(governance, { exact: true })
       ).toBeVisible()
     }
-    await expect(page.getByText(/Builders, not advisors\./)).toBeVisible()
-    await expect(
-      page.getByText(/Give the team a shared credit pool/)
-    ).toBeVisible()
+    await expect(page.getByText(/The graph stays flexible\./)).toBeVisible()
+    const capacityRows = page.locator('section').filter({
+      has: page.getByText('Dedicated GPU capacity', { exact: true })
+    })
     for (const capacity of [
       'Dedicated GPU capacity',
+      'Priority queueing',
+      'Flexible deployment',
       'Custom SLAs and support'
     ]) {
       await expect(
-        page.getByRole('heading', { level: 3, name: capacity })
+        capacityRows.locator('dl').getByText(capacity, { exact: true })
       ).toBeVisible()
     }
+    await expect(
+      page.getByText(/99\.5% workflow-execution uptime SLA/).first()
+    ).toBeVisible()
     for (const industry of [
-      'Game studios',
-      'VFX and animation',
-      'Studios you onboard'
+      'VFX & Animation',
+      'Advertising & Creative Studios',
+      'Gaming',
+      'eCommerce & Fashion'
     ]) {
-      await expect(page.getByText(industry, { exact: true })).toBeVisible()
+      await expect(
+        page.getByRole('button', { name: industry, exact: true })
+      ).toBeVisible()
     }
+    await expect(
+      page.getByRole('link', { name: 'EXPLORE WORKFLOWS' })
+    ).toHaveAttribute('href', 'https://comfy.org/workflows/')
     for (const security of [
       'SOC 2',
       'Identity',
@@ -164,6 +175,7 @@ test.describe('Enterprise pages @smoke', () => {
 
     await expect(page.locator('main :is(h1, h2)')).toHaveText([
       /MANAGED BUILDS\s*BETA/,
+      /One approved ComfyUI environment,\s+everywhere your team runs it\./,
       'One ComfyUI build for the whole team',
       'From one working setup to an approved fleet',
       'Govern the build, models, people, and usage.',
@@ -190,19 +202,13 @@ test.describe('Enterprise pages @smoke', () => {
       0
     )
     await expect(
-      page.getByRole('heading', {
-        level: 2,
-        name: /One approved ComfyUI environment, everywhere your team runs it\./
-      })
-    ).toHaveCount(0)
-    await expect(
       page.getByRole('link', { name: 'BUILD', exact: true })
     ).toHaveCount(0)
     await expect(
       page.getByRole('link', { name: 'REQUEST DEMO' }).first()
     ).toHaveAttribute('href', '/contact/')
     await expect(page.getByRole('link', { name: 'REQUEST DEMO' })).toHaveCount(
-      2
+      3
     )
     await expect(
       page.getByRole('heading', {

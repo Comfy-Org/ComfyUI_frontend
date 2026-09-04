@@ -39,6 +39,15 @@ describe('CardSplitContent02', () => {
     expect(screen.getByRole('img').getAttribute('alt')).toBe('')
   })
 
+  it('places the image first when reverse is set', () => {
+    const byDefault = renderCardSplitContent()
+    expect(byDefault.html()).not.toContain('lg:flex-row-reverse')
+    byDefault.unmount()
+
+    const { html } = renderCardSplitContent({ reverse: true })
+    expect(html()).toContain('lg:flex-row-reverse')
+  })
+
   it('applies the provided image alt text', () => {
     renderCardSplitContent({ imageAlt: 'A city of circuit towers' })
 

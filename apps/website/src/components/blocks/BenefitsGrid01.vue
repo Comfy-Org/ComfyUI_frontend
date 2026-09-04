@@ -16,11 +16,12 @@ withDefaults(
     benefits: readonly Benefit[]
     columns?: 2 | 4
     numbered?: boolean
+    contained?: boolean
     footnote?: string
     primaryCta?: Cta
     secondaryCta?: Cta
   }>(),
-  { columns: 4, numbered: true }
+  { columns: 4, numbered: true, contained: true }
 )
 </script>
 
@@ -32,15 +33,24 @@ withDefaults(
       {{ heading }}
     </h2>
 
-    <GlassCard class="mx-auto max-w-7xl">
+    <component :is="contained ? GlassCard : 'div'" class="mx-auto max-w-7xl">
       <div
-        class="grid grid-cols-1 gap-2 md:grid-cols-2"
-        :class="columns === 2 ? 'lg:grid-cols-2' : 'lg:grid-cols-4'"
+        :class="[
+          'grid grid-cols-1',
+          contained ? 'gap-2' : 'gap-4 lg:gap-6',
+          'md:grid-cols-2',
+          columns === 2 ? 'lg:grid-cols-2' : 'lg:grid-cols-4'
+        ]"
       >
         <article
           v-for="(benefit, index) in benefits"
           :key="benefit.id"
-          class="flex flex-col gap-6 rounded-4xl bg-primary-comfy-ink p-6 lg:p-8"
+          :class="[
+            'flex flex-col gap-6 rounded-4xl',
+            contained
+              ? 'bg-primary-comfy-ink p-6 lg:p-8'
+              : 'bg-primary-comfy-ink-light p-8 lg:p-12'
+          ]"
         >
           <span
             v-if="numbered"
@@ -65,7 +75,7 @@ withDefaults(
           </p>
         </article>
       </div>
-    </GlassCard>
+    </component>
 
     <p
       v-if="footnote"

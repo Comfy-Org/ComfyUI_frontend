@@ -4,7 +4,6 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { AnchorHTMLAttributes, HTMLAttributes } from 'vue'
 
 import { resolveRel } from '../../utils/cta'
-import GlassCard from '../common/GlassCard.vue'
 import SectionHeader from '../common/SectionHeader.vue'
 import Button from '../ui/button/Button.vue'
 
@@ -57,14 +56,14 @@ const {
       </template>
     </SectionHeader>
 
-    <GlassCard class="mx-auto max-w-7xl" :class="heading && 'mt-12 lg:mt-16'">
+    <div class="mx-auto max-w-7xl" :class="heading && 'mt-12 lg:mt-16'">
       <div
         class="grid grid-cols-1 gap-2 md:grid-cols-2"
         :class="featuredOffer && 'xl:grid-cols-4 xl:grid-rows-2'"
       >
         <article
           v-if="featuredOffer"
-          class="bg-primary-comfy-plum flex min-h-96 flex-col rounded-4xl p-8 md:col-span-2 lg:p-10 xl:row-span-2"
+          class="bg-transparency-white-t4 flex min-h-96 flex-col rounded-4xl p-8 md:col-span-2 lg:p-10 xl:row-span-2"
         >
           <p
             v-if="featuredOffer.label"
@@ -104,7 +103,7 @@ const {
         <article
           v-for="offer in offers"
           :key="offer.id"
-          class="flex min-h-64 flex-col rounded-4xl bg-primary-comfy-ink p-8"
+          class="bg-transparency-white-t4 flex min-h-64 flex-col rounded-4xl p-8"
           :class="featuredOffer && 'last:md:col-span-2 last:xl:col-span-2'"
         >
           <p
@@ -142,6 +141,6 @@ const {
           </div>
         </article>
       </div>
-    </GlassCard>
+    </div>
   </section>
 </template>

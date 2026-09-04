@@ -1,12 +1,14 @@
 ---
+import IndustriesSection from '@/components/home/IndustriesSection.vue'
 import BenefitsGrid01 from '../../components/blocks/BenefitsGrid01.vue'
 import BuildConfiguratorSplit01 from '../../components/blocks/BuildConfiguratorSplit01.vue'
+import CardSplitContent02 from '../../components/blocks/CardSplitContent02.vue'
 import CtaBands01 from '../../components/blocks/CtaBands01.vue'
 import CtaCenter01 from '../../components/blocks/CtaCenter01.vue'
 import FAQSplit01 from '../../components/blocks/FAQSplit01.vue'
+import FeatureRows02 from '../../components/blocks/FeatureRows02.vue'
 import HeroSplit01 from '../../components/blocks/HeroSplit01.vue'
 import OfferGrid01 from '../../components/blocks/OfferGrid01.vue'
-import ReasonsSplit01 from '../../components/blocks/ReasonsSplit01.vue'
 import SectionIntro01 from '../../components/blocks/SectionIntro01.vue'
 import EnterpriseHeroScene from '../../components/product/enterprise/EnterpriseHeroScene.vue'
 import { externalLinks } from '../../config/routes'
@@ -89,78 +91,57 @@ const enterpriseOffers = [
   },
 ] as const
 
-const governanceBenefits = [
+const governanceRows = [
   {
     id: 'build-policy',
-    title: 'Build policy',
+    term: 'Build policy',
     description:
       'Pin the ComfyUI release, custom nodes, models, and dependencies that belong in an approved build.',
   },
   {
     id: 'model-policy',
-    title: 'Model policy and BYOK',
+    term: 'Model policy and BYOK',
     description:
       'Choose the partner, open, and private models teams can use. Bring supported provider keys and existing contracts.',
   },
   {
     id: 'people-access',
-    title: 'People and access',
+    term: 'People and access',
     description:
-      'Use company identity and SSO to assign approved environments, with App Mode for simplified, approved experiences.',
+      'Use company identity and SSO to assign approved environments to the teams that need them.',
   },
   {
     id: 'usage-records',
-    title: 'Usage visibility and audit requirements',
+    term: 'Usage visibility and audit requirements',
     description:
       'Track usage by model and partner on the Developer Platform. Scope authentication, build-assignment, release, retention, and export requirements during enterprise security review.',
   },
 ] as const
 
-const productionBenefits = [
+const productionRows = [
   {
     id: 'dedicated-capacity',
-    title: 'Dedicated GPU capacity',
+    term: 'Dedicated GPU capacity',
     description:
       'Reserve GPU capacity for production workloads through the Developer Platform, sized around your deployment plan.',
   },
   {
     id: 'priority-queueing',
-    title: 'Priority queueing',
+    term: 'Priority queueing',
     description:
       'Production jobs run ahead of standard shared-capacity traffic when demand spikes.',
   },
   {
     id: 'deployment',
-    title: 'Flexible deployment',
+    term: 'Flexible deployment',
     description:
       'Run Comfy Workflows on Comfy Cloud, through the Developer Platform, or on infrastructure you control.',
   },
   {
     id: 'support',
-    title: 'Custom SLAs and support',
+    term: 'Custom SLAs and support',
     description:
       'Get guided onboarding, priority support, direct access to Comfy engineering, and response commitments defined in your agreement.',
-  },
-] as const
-
-const industries = [
-  {
-    id: 'games',
-    title: 'Game studios',
-    description:
-      'Keep art, UA, and marketing teams on one pinned toolchain while each group works in the Comfy Workflows built for its job.',
-  },
-  {
-    id: 'vfx',
-    title: 'VFX and animation',
-    description:
-      'Lock the environment per show, keep private nodes and models inside the build, and run IP-sensitive work on infrastructure you control.',
-  },
-  {
-    id: 'onboarding',
-    title: 'Studios you onboard',
-    description:
-      'Give a new studio or client an approved build aligned to its stack, then release updates deliberately instead of repeating setup by hand.',
   },
 ] as const
 
@@ -197,6 +178,7 @@ const faqPage = buildFaqPageNode(url, faqs)
       href: externalLinks.trustCenter,
       target: '_blank',
     }}
+    mediaWrapperClass="hidden lg:block"
   >
     <EnterpriseHeroScene slot="media" client:load />
   </HeroSplit01>
@@ -204,7 +186,7 @@ const faqPage = buildFaqPageNode(url, faqs)
   <SectionIntro01
     eyebrow="WAYS TO SCALE WITH COMFY"
     heading="The open standard for visual AI, ready for your organization."
-    subtitle="Keep your team focused on the Comfy Workflows that differentiate your business. Comfy provides the governed environments, production runtimes, commercial terms, and hands-on builders you would otherwise assemble yourself."
+    subtitle="Your team builds the workflows. Comfy runs them, governs them, and licenses them for commercial use."
     maxWidth="xl"
   />
 
@@ -247,58 +229,35 @@ const faqPage = buildFaqPageNode(url, faqs)
 
   <OfferGrid01 offers={enterpriseOffers} />
 
-  <BenefitsGrid01
-    heading="Govern the build, models, people, and usage."
-    benefits={governanceBenefits}
+  <CardSplitContent02
+    title="Govern the build, models, people, and usage."
+    imageSrc="https://media.comfy.org/website/enterprise/enterprise-featured.png"
+  />
+  <FeatureRows02
+    class="pt-0 lg:pt-0"
+    rows={governanceRows}
     footnote="The graph stays flexible. The environment around it becomes an approved, reviewable operating model for the organization."
   />
 
-  <CtaBands01
-    bands={[
-      {
-        id: 'team-plans',
-        label: 'TEAM PLANS',
-        text: 'Give the team a shared credit pool for Cloud GPU time and partner-model usage, plus centralized billing, Single Sign-On, and App Mode.',
-        cta: { label: 'REQUEST DEMO', href: '/contact/' },
-      },
-      {
-        id: 'commercial-rights',
-        label: 'COMMERCIAL RIGHTS',
-        text: 'Every model on Cloud is licensed for commercial use. Local terms vary by provider, and Comfy is an official reseller for MiniMax commercial-use licenses.',
-        cta: {
-          label: 'VIEW MINIMAX LICENSING',
-          href: '/minimax/license/',
-        },
-      },
-      {
-        id: 'fdc',
-        label: 'FORWARD DEPLOYED CREATIVES',
-        text: 'Builders, not advisors. Work directly with Comfy specialists to design, validate, and operationalize production Comfy Workflows your team owns and extends.',
-        cta: {
-          label: 'VIEW THE OFFERING',
-          href: '/forward-deployed-creatives/',
-        },
-      },
-    ]}
+  <CardSplitContent02
+    title="Capacity and support for production."
+    imageSrc="/assets/enterprise/capacity-checker-falls.webp"
+    reverse
   />
-
-  <BenefitsGrid01
-    heading="Capacity and support for production."
-    benefits={productionBenefits}
+  <FeatureRows02
+    class="pt-0 lg:pt-0"
+    rows={productionRows}
     footnote="Enterprise includes a 99.5% workflow-execution uptime SLA. Dedicated capacity, response commitments, and custom SLA terms are defined in your agreement."
-    primaryCta={{ label: 'REQUEST DEMO', href: '/contact/' }}
   />
 
-  <ReasonsSplit01
-    heading={'Built with studios\n'}
-    headingHighlight="in the room."
-    highlightClass="text-primary-comfy-yellow"
-    subtitle="For teams that need ComfyUI to move between people, productions, and partners without changing underneath them."
-    reasons={industries}
+  <IndustriesSection
+    heading="Built with studios in the room"
+    client:visible
   />
 
   <BenefitsGrid01
     heading="A clearer path through security review."
+    numbered={false}
     benefits={[
       {
         id: 'soc2',

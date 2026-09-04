@@ -7,11 +7,13 @@ const {
   title,
   imageSrc,
   imageAlt = '',
+  reverse = false,
   class: className
 } = defineProps<{
   title: string
   imageSrc: string
   imageAlt?: string
+  reverse?: boolean
   class?: HTMLAttributes['class']
 }>()
 </script>
@@ -19,7 +21,8 @@ const {
 <template>
   <section :class="cn('max-w-9xl mx-auto px-6 py-16 lg:py-24', className)">
     <div
-      class="bg-transparency-white-t4 rounded-5xl flex flex-col gap-2 p-2 lg:flex-row lg:items-stretch"
+      class="flex flex-col gap-2 p-2 lg:items-stretch"
+      :class="reverse ? 'lg:flex-row-reverse' : 'lg:flex-row'"
     >
       <div class="flex flex-col justify-start p-6 lg:flex-1 lg:p-10">
         <h2

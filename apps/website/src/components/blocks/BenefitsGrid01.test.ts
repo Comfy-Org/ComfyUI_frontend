@@ -34,6 +34,16 @@ describe('BenefitsGrid01', () => {
     ).toBeTruthy()
   })
 
+  it('drops the glass container and lightens the cards when contained is false', () => {
+    const byDefault = renderBenefitsGrid()
+    expect(byDefault.html()).toContain('bg-transparency-white-t4')
+    byDefault.unmount()
+
+    const { html } = renderBenefitsGrid({ contained: false })
+    expect(html()).not.toContain('bg-transparency-white-t4')
+    expect(html()).toContain('bg-primary-comfy-ink-light')
+  })
+
   it('renders numbered index labels by default', () => {
     renderBenefitsGrid()
 

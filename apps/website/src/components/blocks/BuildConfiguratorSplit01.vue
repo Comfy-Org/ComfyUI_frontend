@@ -47,6 +47,7 @@ const {
   nodesUnit = 'nodes',
   modelsUnit = 'models',
   pinnedLabel = 'pinned',
+  moreOptionsLabel = 'more options',
   class: className
 } = defineProps<{
   heading: string
@@ -67,6 +68,7 @@ const {
   nodesUnit?: string
   modelsUnit?: string
   pinnedLabel?: string
+  moreOptionsLabel?: string
   class?: HTMLAttributes['class']
 }>()
 
@@ -189,6 +191,11 @@ const chipClasses = (option: ChipOption, selected: boolean) =>
             >
               {{ release }}
             </button>
+            <span
+              class="self-center text-[13px] text-primary-warm-white/55 underline underline-offset-4"
+            >
+              {{ moreOptionsLabel }}
+            </span>
           </div>
         </div>
 
@@ -209,6 +216,11 @@ const chipClasses = (option: ChipOption, selected: boolean) =>
             >
               {{ environmentLabel(environment) }}
             </button>
+            <span
+              class="self-center text-[13px] text-primary-warm-white/55 underline underline-offset-4"
+            >
+              {{ moreOptionsLabel }}
+            </span>
           </div>
         </div>
 
@@ -237,6 +249,11 @@ const chipClasses = (option: ChipOption, selected: boolean) =>
               />
               {{ node.label }}
             </button>
+            <span
+              class="self-center text-[13px] text-primary-warm-white/55 underline underline-offset-4"
+            >
+              {{ moreOptionsLabel }}
+            </span>
           </div>
         </div>
 
@@ -265,6 +282,11 @@ const chipClasses = (option: ChipOption, selected: boolean) =>
               />
               {{ model.label }}
             </button>
+            <span
+              class="self-center text-[13px] text-primary-warm-white/55 underline underline-offset-4"
+            >
+              {{ moreOptionsLabel }}
+            </span>
           </div>
         </div>
 

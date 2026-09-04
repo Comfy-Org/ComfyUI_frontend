@@ -1,5 +1,6 @@
 ---
 import BenefitsGrid01 from '../../components/blocks/BenefitsGrid01.vue'
+import BuildConfiguratorSplit01 from '../../components/blocks/BuildConfiguratorSplit01.vue'
 import CardSplitContent02 from '../../components/blocks/CardSplitContent02.vue'
 import CompareTable01 from '../../components/blocks/CompareTable01.vue'
 import CtaBands01 from '../../components/blocks/CtaBands01.vue'
@@ -9,7 +10,6 @@ import HeroProduct01 from '../../components/blocks/HeroProduct01.vue'
 import StepsCards01 from '../../components/blocks/StepsCards01.vue'
 import IndustriesSection from '../../components/home/IndustriesSection.vue'
 import DistributionsScene from '../../components/product/enterprise/DistributionsScene.vue'
-import { externalLinks } from '../../config/routes'
 import { t } from '../../i18n/translations'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import ClosingCtaSection from '../../templates/platform/ClosingCtaSection.vue'
@@ -140,6 +140,43 @@ const faqPage = buildFaqPageNode(url, faqs)
     <DistributionsScene slot="media" client:load />
   </HeroProduct01>
 
+  <BuildConfiguratorSplit01
+    eyebrow="MANAGED BUILDS"
+    heading={'One approved ComfyUI environment,\neverywhere your team runs it.'}
+    body="Define the ComfyUI release, custom nodes, models, and dependencies your team is approved to run. Ship the same versioned build wherever the work happens."
+    features={[
+      'Private custom nodes and models',
+      'Use supported provider keys and existing contracts',
+      'Assign approved builds through company identity',
+    ]}
+    releasesLabel="COMFYUI RELEASE"
+    releases={['v0.3.41', 'v0.3.40', 'v0.3.38']}
+    environmentsLabel="PYTHON · PYTORCH · CUDA"
+    environments={[
+      { id: 'env-current', python: '3.12', torch: '2.6', cuda: '12.8' },
+      { id: 'env-previous', python: '3.12', torch: '2.5', cuda: '12.4' },
+      { id: 'env-legacy', python: '3.11', torch: '2.5', cuda: '12.4' },
+    ]}
+    nodesLabel="CUSTOM NODES"
+    nodes={[
+      { id: 'manager', label: 'ComfyUI-Manager', selected: true },
+      { id: 'ipadapter', label: 'IPAdapter Plus', selected: true },
+      { id: 'controlnet', label: 'ControlNet Aux' },
+      { id: 'videohelper', label: 'VideoHelperSuite', selected: true },
+      { id: 'studio-nodes', label: 'studio-nodes (private)', selected: true },
+    ]}
+    modelsLabel="MODELS"
+    models={[
+      { id: 'flux', label: 'FLUX 3', selected: true },
+      { id: 'wan', label: 'Wan 3.0' },
+      { id: 'sdxl', label: 'SDXL Base', selected: true },
+      { id: 'ltx', label: 'LTX-2.5' },
+      { id: 'brand-lora', label: 'brand-lora (private)', selected: true },
+    ]}
+    cta={{ label: 'REQUEST DEMO', href: '/contact/' }}
+    client:visible
+  />
+
   <FeatureRows02
     heading="One ComfyUI build for the whole team"
     rows={[
@@ -210,6 +247,7 @@ const faqPage = buildFaqPageNode(url, faqs)
     heading="Ready for your security review"
     columns={2}
     numbered={false}
+    contained={false}
     benefits={[
       {
         id: 'local',
@@ -237,12 +275,6 @@ const faqPage = buildFaqPageNode(url, faqs)
       },
     ]}
     footnote="DPA and enterprise agreement available. US processing on Google Cloud. 99.5% workflow-execution uptime SLA. SOC 2 Type II audit in progress."
-    primaryCta={{
-      label: 'VIEW TRUST CENTER',
-      href: externalLinks.trustCenter,
-      target: '_blank',
-    }}
-    secondaryCta={{ label: 'REQUEST DEMO', href: '/contact/' }}
   />
 
   <CompareTable01

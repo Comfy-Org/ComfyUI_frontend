@@ -87,6 +87,12 @@ describe('BuildConfiguratorSplit01', () => {
     ).toBeTruthy()
   })
 
+  it('shows a more-options hint after each chip group', () => {
+    render(BuildConfiguratorSplit01, { props: baseProps })
+
+    expect(screen.getAllByText('more options')).toHaveLength(4)
+  })
+
   it('renders the panel without a title when panelTitle is omitted', () => {
     const { panelTitle: _panelTitle, ...withoutPanelTitle } = baseProps
     render(BuildConfiguratorSplit01, { props: withoutPanelTitle })

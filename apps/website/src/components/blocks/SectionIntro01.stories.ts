@@ -34,7 +34,7 @@ const meta: Meta<typeof SectionIntro01> = {
     eyebrow: 'WAYS TO SCALE WITH COMFY',
     heading: 'The open standard for visual AI, ready for your organization.',
     subtitle:
-      'Keep your team focused on the Comfy Workflows that differentiate your business. Comfy provides the governed environments, production runtimes, commercial terms, and hands-on builders you would otherwise assemble yourself.',
+      'Your team builds the workflows. Comfy runs them, governs them, and licenses them for commercial use.',
     maxWidth: 'xl'
   }
 }
