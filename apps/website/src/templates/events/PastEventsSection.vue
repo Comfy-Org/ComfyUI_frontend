@@ -55,11 +55,13 @@ const items = computed<CardArticleGalleryItem[]>(() =>
   })
 )
 
-// Only categories with at least one past event get a tab; an empty filter
-// would render a blank gallery.
+// Only categories that actually have a card get a tab; an empty filter would
+// render a blank gallery. Derived from `items` rather than `pastEvents`,
+// because a past event without card art is dropped above and so cannot fill a
+// tab of its own.
 const tabs = computed(() =>
   CATEGORY_ORDER.filter((category) =>
-    pastEvents.some((event) => event.category === category)
+    items.value.some((item) => item.filterKey === category)
   ).map((category) => ({
     key: category,
     label: t(`events.category.${category}`, locale).toLocaleUpperCase(locale)
