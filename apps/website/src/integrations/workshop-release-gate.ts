@@ -1,4 +1,8 @@
 import type { AstroIntegration } from 'astro'
+// Both imported statically. A dynamic `import()` inside the hook throws
+// "Vite module runner has been closed" — by `astro:build:done` the runner that
+// resolves module specifiers is gone, so anything not already loaded fails.
+import { existsSync } from 'node:fs'
 import { rm } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
@@ -10,7 +14,7 @@ import { isWorkshopInBuild } from '../config/workshop-release'
  *
  * Workshop is unfinished, and `noindex` does not stop a page being deployed —
  * it only asks a crawler to stay away, while the page stays live at a URL
- * anyone can share. A release build must not contain those routes at all.
+ * anyone can share. A deployed build must not contain those routes at all.
  *
  * This runs at `astro:build:done` and removes the emitted directory. The
  * earlier attempt filtered the route list at `astro:routes:resolved`, which
@@ -18,8 +22,10 @@ import { isWorkshopInBuild } from '../config/workshop-release'
  * array does not stop them being generated. Deleting the output is
  * unambiguous, and the assertion below makes a silent failure impossible.
  *
- * Preview and local builds keep Workshop, because that is where it is
- * reviewed. See `config/workshop-release.ts` for the switch.
+ * Preview builds are release builds too — a preview answers "what goes out if
+ * we release right now?", so it excludes Workshop for the same reason. Local
+ * development keeps it, and so does any build asked for it explicitly. See
+ * `config/workshop-release.ts` for the switch.
  */
 export function workshopReleaseGate(): AstroIntegration {
   return {
@@ -40,7 +46,6 @@ export function workshopReleaseGate(): AstroIntegration {
         // The whole point of this integration is that nothing ships. If the
         // directory is somehow still there, fail the build rather than let a
         // release go out with it.
-        const { existsSync } = await import('node:fs')
         if (existsSync(join(root, 'workshop'))) {
           throw new Error(
             'workshop-release-gate could not remove the Workshop output; refusing to ship it.'
