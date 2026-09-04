@@ -50,6 +50,18 @@ test.describe('Enterprise pages @smoke', () => {
 
     await page.goto('/enterprise/managed-builds')
 
+    await expect(page.locator('main :is(h1, h2)')).toHaveText([
+      /MANAGED BUILDS\s*BETA/,
+      'One ComfyUI build for the whole team',
+      'From one working setup to an approved fleet',
+      'Govern the build, models, people, and usage.',
+      'Ready for your security review',
+      'Builder vs. Managed Builds',
+      'Managed Builds, answered.',
+      'Built with studios in the room',
+      /Scale your custom nodes in your Comfy workflows/,
+      'Forward Deployed Creatives'
+    ])
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       /MANAGED BUILDS\s*BETA/
     )
@@ -105,7 +117,7 @@ test.describe('Enterprise pages @smoke', () => {
     const stepsSection = page.locator('section').filter({
       has: page.getByRole('heading', {
         level: 2,
-        name: 'From one working setup to an approved fleet.'
+        name: 'From one working setup to an approved fleet'
       })
     })
     await expect(stepsSection.getByRole('heading', { level: 3 })).toHaveText([
@@ -221,6 +233,58 @@ test.describe('Enterprise pages @smoke', () => {
     await expect(
       page.getByText(/dedicated GPU capacity, priority queueing/)
     ).toHaveCount(0)
+    await expect(
+      page.getByRole('link', { name: 'SEE THE PLATFORM' })
+    ).toHaveCount(0)
+    await expect(
+      page.getByRole('link', { name: 'VIEW THE OFFERING' })
+    ).toHaveCount(0)
+  })
+
+  test('emits Managed Builds metadata, breadcrumbs, and FAQ structured data', async ({
+    page
+  }) => {
+    await page.goto('/enterprise/managed-builds')
+
+    await expect(page).toHaveTitle(
+      'ComfyUI Managed Builds | Govern ComfyUI across your fleet'
+    )
+    await expect(page.locator('meta[name="description"]')).toHaveAttribute(
+      'content',
+      'Create approved, reproducible ComfyUI environments and deploy them across workstations, studios, and customer infrastructure.'
+    )
+
+    const blocks = await page
+      .locator('script[type="application/ld+json"]')
+      .allTextContents()
+    expect(blocks).toHaveLength(1)
+
+    const graph = JSON.parse(blocks[0])['@graph'] as Record<string, unknown>[]
+    expect(graph.map((node) => node['@type'])).toContain('WebPage')
+
+    const breadcrumbs = graph.find(
+      (node) => node['@type'] === 'BreadcrumbList'
+    ) as { itemListElement: { name: string }[] } | undefined
+    expect(breadcrumbs, 'BreadcrumbList node in @graph').toBeDefined()
+    expect(breadcrumbs!.itemListElement.map((item) => item.name)).toEqual([
+      'Home',
+      'Enterprise',
+      'ComfyUI Managed Builds'
+    ])
+
+    const faqPage = graph.find((node) => node['@type'] === 'FAQPage') as
+      | { mainEntity: { name: string }[] }
+      | undefined
+    expect(faqPage, 'FAQPage node in @graph').toBeDefined()
+    expect(faqPage!.mainEntity.map((question) => question.name)).toEqual([
+      'What is a ComfyUI Managed Build?',
+      'Where do Managed Builds run?',
+      'Can we use private models and our own provider keys?',
+      'How are custom nodes governed?',
+      'How are users and teams assigned?',
+      'What usage and audit information is available?',
+      'How do we get started?'
+    ])
   })
 })
 

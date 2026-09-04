@@ -15,7 +15,7 @@ const meta: Meta<typeof StepsCards01> = {
     layout: 'fullscreen'
   },
   args: {
-    heading: 'From one working setup to an approved fleet.',
+    heading: 'From one working setup to an approved fleet',
     steps: [
       {
         id: 'define',

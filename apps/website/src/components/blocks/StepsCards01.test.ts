@@ -8,7 +8,7 @@ import StepsCards01 from './StepsCards01.vue'
 type StepsCardsProps = ComponentProps<typeof StepsCards01>
 
 const requiredProps = {
-  heading: 'From one working setup to an approved fleet.',
+  heading: 'From one working setup to an approved fleet',
   steps: [
     {
       id: 'define',
@@ -36,7 +36,7 @@ describe('StepsCards01', () => {
     renderStepsCards()
 
     expect(
-      screen.getByText('From one working setup to an approved fleet.')
+      screen.getByText('From one working setup to an approved fleet')
     ).toBeTruthy()
     expect(
       screen.getByRole('heading', { level: 3, name: 'Define the build' })
