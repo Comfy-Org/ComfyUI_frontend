@@ -1,19 +1,21 @@
 import { describe, expect, it } from 'vitest'
 
-import { platformCreditsHref } from './buy-credits'
+import { stripeCheckoutHref } from './buy-credits'
 
-describe('platformCreditsHref', () => {
+describe('stripeCheckoutHref', () => {
   it('sends the page as the return address', () => {
-    const url = new URL(platformCreditsHref('/workshop/models/vidu-q2/'))
+    const url = new URL(stripeCheckoutHref('/workshop/models/vidu-q2/', 25))
 
-    expect(url.origin).toBe('https://platform.comfy.org')
-    expect(url.searchParams.get('returnTo')).toBe('/workshop/models/vidu-q2/')
-    expect(url.searchParams.get('utm_source')).toBe('workshop')
+    expect(url.origin).toBe('https://checkout.stripe.com')
+    expect(url.searchParams.get('success_url')).toBe(
+      '/workshop/models/vidu-q2/'
+    )
+    expect(url.searchParams.get('amount')).toBe('25')
   })
 
   it('refuses a return address that leaves the site', () => {
-    const url = new URL(platformCreditsHref('//evil.example/steal'))
+    const url = new URL(stripeCheckoutHref('//evil.example/steal', 10))
 
-    expect(url.searchParams.get('returnTo')).toBeNull()
+    expect(url.searchParams.get('success_url')).toBeNull()
   })
 })

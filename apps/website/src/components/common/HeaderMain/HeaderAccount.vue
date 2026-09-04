@@ -52,7 +52,6 @@ function initialsOf(name: string): string {
     .toUpperCase()
 }
 
-const initials = computed(() => initialsOf(account.value?.name ?? ''))
 const workspaceInitials = computed(() =>
   initialsOf(account.value?.workspace ?? '')
 )
@@ -69,7 +68,7 @@ const roleLabel = computed(() =>
 const buyingCredits = ref(false)
 
 const itemClass =
-  'flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-base text-primary-comfy-canvas outline-none hover:bg-transparency-white-t4 focus-visible:bg-transparency-white-t4'
+  'flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-sm text-primary-comfy-canvas outline-none hover:bg-transparency-white-t4 focus-visible:bg-transparency-white-t4'
 const avatarClass =
   'grid size-12 shrink-0 place-items-center text-base font-bold text-primary-warm-white'
 </script>
@@ -108,10 +107,10 @@ const avatarClass =
       </span>
 
       <span
-        class="bg-primary-comfy-plum grid size-8 shrink-0 place-items-center rounded-full text-xs font-bold text-primary-warm-white"
+        class="grid size-8 shrink-0 place-items-center rounded-full bg-transparency-white-t8 text-xs font-bold text-primary-warm-white"
         aria-hidden="true"
       >
-        {{ initials }}
+        {{ workspaceInitials }}
       </span>
     </DropdownMenuTrigger>
 
@@ -119,7 +118,7 @@ const avatarClass =
       <DropdownMenuContent
         align="end"
         :side-offset="10"
-        class="border-primary-comfy-ink-light bg-site-dropdown z-50 w-80 rounded-2xl border p-2 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
+        class="border-primary-comfy-ink-light bg-site-dropdown z-50 w-96 rounded-2xl border p-2 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
       >
         <DropdownMenuSub>
           <DropdownMenuSubTrigger

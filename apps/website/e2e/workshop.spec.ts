@@ -280,7 +280,7 @@ test.describe('Model playground', () => {
     await expect(run).toHaveAttribute('data-gate', 'noCredits')
     await run.click()
     await expect(page.getByTestId('buy-credits-url')).toContainText(
-      'returnTo=%2Fworkshop%2Fmodels%2Fopenai-dall-e%2F'
+      'success_url=%2Fworkshop%2Fmodels%2Fopenai-dall-e%2F'
     )
     await page.getByTestId('buy-credits-continue').click()
     await page.getByTestId('buy-credits-pay').click()

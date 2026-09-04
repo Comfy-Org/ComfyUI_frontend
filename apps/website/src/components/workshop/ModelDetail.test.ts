@@ -162,7 +162,7 @@ describe('ModelDetail', () => {
     expect(credits(api)).toBe(EXISTING_CREDITS)
   })
 
-  it('sends a short balance to Comfy Platform with the form saved for the return', async () => {
+  it('sends a short balance to Stripe with the form saved for the return', async () => {
     const api = await signedInDetail()
     api.setCredits(3)
     await nextTick()
@@ -176,7 +176,7 @@ describe('ModelDetail', () => {
     await user().click(run)
     expect(
       (await screen.findByTestId('buy-credits-url')).textContent
-    ).toContain('returnTo=')
+    ).toContain('success_url=')
     await user().click(screen.getByTestId('buy-credits-continue'))
     await user().click(await screen.findByTestId('buy-credits-pay'))
     expect((await screen.findByTestId('buy-credits-done')).textContent).toMatch(

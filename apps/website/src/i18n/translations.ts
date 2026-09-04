@@ -8657,17 +8657,17 @@ Enterprise`
     'zh-CN': '浏览全部模型'
   },
   'workshop.credits.title': {
-    en: 'Credits are bought on Comfy Platform',
-    'zh-CN': '积分在 Comfy Platform 购买'
+    en: 'Payment happens on Stripe',
+    'zh-CN': '支付在 Stripe 完成'
   },
   'workshop.credits.body': {
-    en: 'Payment runs on platform.comfy.org. We send the page you are on as the return address, so you land back here with your inputs as you left them. Pick a top-up:',
+    en: 'Pick a top-up here and finish the purchase on Stripe Checkout. We send the page you are on as the return address, so you land back here with your inputs as you left them:',
     'zh-CN':
-      '支付在 platform.comfy.org 完成。我们会带上当前页面作为返回地址，付款后你会回到这里，输入内容保持原样。请选择充值额度：'
+      '在此选择充值额度，然后在 Stripe Checkout 完成支付。我们会带上当前页面作为返回地址，付款后你会回到这里，输入内容保持原样：'
   },
   'workshop.credits.continue': {
-    en: 'Continue to Platform',
-    'zh-CN': '前往 Platform'
+    en: 'Continue to Stripe',
+    'zh-CN': '前往 Stripe'
   },
   'workshop.credits.cancel': { en: 'Stay here', 'zh-CN': '留在此页' },
   'workshop.credits.checkout': {
@@ -8675,9 +8675,8 @@ Enterprise`
     'zh-CN': '结账'
   },
   'workshop.credits.checkoutNote': {
-    en: 'Payment is hosted by Stripe on the platform site. This step is simulated here so the round trip can be reviewed end to end.',
-    'zh-CN':
-      '支付由 Stripe 在平台站点托管。此步骤在此处为模拟，以便完整体验整个流程。'
+    en: 'Stripe hosts this page. It stands in here so the round trip can be reviewed end to end.',
+    'zh-CN': '此页面由 Stripe 托管。这里以模拟代替，以便完整体验整个流程。'
   },
   'workshop.credits.pay': { en: 'Pay {usd}', 'zh-CN': '支付 {usd}' },
   'workshop.credits.back': { en: 'Back', 'zh-CN': '返回' },

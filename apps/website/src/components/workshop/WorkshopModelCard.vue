@@ -124,19 +124,6 @@ const pillClass =
       </h3>
 
       <span
-        v-if="logo"
-        role="img"
-        :aria-label="providerName"
-        :title="providerName"
-        class="absolute top-4 right-4 z-10 grid size-10 place-items-center rounded-2xl bg-transparency-white-t8 backdrop-blur-sm"
-        data-testid="model-card-logo"
-      >
-        <span
-          class="size-5 bg-white mask-contain mask-center mask-no-repeat"
-          :style="{ maskImage: `url(${logo})` }"
-        />
-      </span>
-      <span
         v-if="versionCount > 1"
         class="bg-page/70 text-content absolute top-4 left-4 z-10 inline-flex h-8 items-center rounded-2xl px-3 text-xs backdrop-blur-sm"
         data-testid="model-card-versions"
@@ -161,6 +148,19 @@ const pillClass =
       <div class="flex items-center justify-between gap-2">
         <span class="text-content-secondary flex min-w-0 items-center gap-2">
           <span
+            v-if="logo"
+            role="img"
+            :aria-label="providerName"
+            class="grid size-5 shrink-0 place-items-center"
+            data-testid="model-card-logo"
+          >
+            <span
+              class="bg-content-secondary size-5 mask-contain mask-center mask-no-repeat"
+              :style="{ maskImage: `url(${logo})` }"
+            />
+          </span>
+          <span
+            v-else
             class="bg-brand text-page grid size-5 shrink-0 place-items-center rounded-full text-2xs font-bold"
             aria-hidden="true"
           >

@@ -9,7 +9,7 @@ import { useMockSession } from '../../composables/useMockSession'
 import { usdToCredits } from '../../config/credits'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import { platformCreditsHref } from '../../lib/workshop/buy-credits'
+import { stripeCheckoutHref } from '../../lib/workshop/buy-credits'
 import Dialog from '../ui/dialog/Dialog.vue'
 import DialogContent from '../ui/dialog/DialogContent.vue'
 import DialogDescription from '../ui/dialog/DialogDescription.vue'
@@ -24,14 +24,14 @@ const PACKS = [10, 25, 50] as const
 const usd = ref<number>(25)
 const credits = computed(() => usdToCredits(usd.value))
 
-// The real flow leaves for platform.comfy.org and comes back. The prototype
-// plays that round trip out in place, so the whole journey can be reviewed
-// without a payment account.
+// The real flow leaves for Stripe Checkout and comes back. The prototype plays
+// that round trip out in place, so the whole journey can be reviewed without a
+// payment account.
 type Step = 'leaving' | 'checkout' | 'back'
 const step = ref<Step>('leaving')
 
 const returnPath = ref('/workshop/')
-const href = computed(() => platformCreditsHref(returnPath.value))
+const href = computed(() => stripeCheckoutHref(returnPath.value, usd.value))
 
 watch(open, (value) => {
   if (!value) return
