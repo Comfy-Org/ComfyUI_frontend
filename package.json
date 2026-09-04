@@ -83,7 +83,7 @@
   "dependencies": {
     "@alloc/quick-lru": "catalog:",
     "@atlaskit/pragmatic-drag-and-drop": "^1.3.1",
-    "@comfyorg/comfy-multi-player": "catalog:",
+    "@comfyorg/comfy-multi-player": "0.2.1",
     "@comfyorg/comfyui-desktop-bridge-types": "catalog:",
     "@comfyorg/comfyui-electron-types": "catalog:",
     "@comfyorg/design-system": "workspace:*",

@@ -21,9 +21,6 @@ catalogs:
     '@astrojs/vue':
       specifier: ^7.0.2
       version: 7.0.2
-    '@comfyorg/comfy-multi-player':
-      specifier: https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/620a8f039040ddb70be037fec1c0c17827f7f08a
-      version: 0.2.1
     '@comfyorg/comfyui-desktop-bridge-types':
       specifier: 0.2.0
       version: 0.2.0
@@ -479,8 +476,8 @@ importers:
         specifier: ^1.3.1
         version: 1.8.1
       '@comfyorg/comfy-multi-player':
-        specifier: 'catalog:'
-        version: https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/620a8f039040ddb70be037fec1c0c17827f7f08a
+        specifier: 0.2.1
+        version: 0.2.1
       '@comfyorg/comfyui-desktop-bridge-types':
         specifier: 'catalog:'
         version: 0.2.0
@@ -1608,9 +1605,8 @@ packages:
     resolution: {integrity: sha512-y7/yvZ2TPAnR9+jnc00klvNNLkJiXFFrQA/hlLCcxA9a2A4zQIOimyFQ9XfwYKiGD1fb5GY8vbKIIgO8d5Tb2A==}
     engines: {node: '>= 20.12.0'}
 
-  '@comfyorg/comfy-multi-player@https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/620a8f039040ddb70be037fec1c0c17827f7f08a':
-    resolution: {gitHosted: true, integrity: sha512-1iWwqVqku1AOxt70a1aFa/oMFrcn9eintFhUKVJAf4uH57heLo0dEoUyg3n1N4ADY5b0CjNlPxF++Fj7wmX46w==, tarball: https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/620a8f039040ddb70be037fec1c0c17827f7f08a}
-    version: 0.2.1
+  '@comfyorg/comfy-multi-player@0.2.1':
+    resolution: {integrity: sha512-ReaO6GIKUv8ONwhFk/hjJPYiLU7aqbSgjtSaS754gUZqu8ouqLJiKIAJMqk76N92RnPeXALLjBH5bFugkaI3YQ==}
 
   '@comfyorg/comfyui-desktop-bridge-types@0.2.0':
     resolution: {integrity: sha512-V5Wj5KXDzTDm5GJAa0xBISjmndNIY5P79pRHQbLkkqJxgp/GPb/QGvcI+xG4ogol0ODJ4j/UBnUmkzpSafw8Aw==}
@@ -10083,7 +10079,7 @@ snapshots:
       fast-wrap-ansi: 0.2.2
       sisteransi: 1.0.5
 
-  '@comfyorg/comfy-multi-player@https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/620a8f039040ddb70be037fec1c0c17827f7f08a':
+  '@comfyorg/comfy-multi-player@0.2.1':
     dependencies:
       yjs: 13.6.31
 

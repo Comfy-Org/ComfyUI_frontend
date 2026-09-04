@@ -16,7 +16,6 @@ catalog:
   '@astrojs/mdx': ^7.0.5
   '@astrojs/sitemap': ^3.7.3
   '@astrojs/vue': ^7.0.2
-  '@comfyorg/comfy-multi-player': https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/620a8f039040ddb70be037fec1c0c17827f7f08a
   '@comfyorg/comfyui-desktop-bridge-types': 0.2.0
   '@comfyorg/comfyui-electron-types': 0.6.2
   '@customerio/cdp-analytics-browser': ^0.5.3
@@ -164,7 +163,6 @@ catalog:
 cleanupUnusedCatalogs: true
 
 allowBuilds:
-  '@comfyorg/comfy-multi-player@https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/620a8f039040ddb70be037fec1c0c17827f7f08a': true
   '@comfyorg/comfy-multi-player@https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/58e2333ce3bb6375fd2efbc1e9d7df17327f37e0': true
   '@firebase/util': false
   '@sentry/cli': true
