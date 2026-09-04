@@ -20,7 +20,6 @@ const mockDistribution = vi.hoisted(
 
 vi.mock('@/platform/distribution/types', () => mockDistribution)
 
-// Mock the api
 vi.mock('@/scripts/api', () => ({
   api: {
     getModels: vi.fn(),

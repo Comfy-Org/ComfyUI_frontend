@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type * as DistributionTypes from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 
 let currentToken: string | undefined = 'token-a'
@@ -15,11 +14,7 @@ const releaseNextToken = async () => {
   await new Promise((resolve) => setTimeout(resolve, 0))
 }
 
-const mockDistribution = vi.hoisted(
-  (): { isCloud: typeof DistributionTypes.isCloud } => ({ isCloud: true })
-)
-
-vi.mock('@/platform/distribution/types', () => mockDistribution)
+vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
 
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({
