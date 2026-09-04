@@ -1,12 +1,15 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 
 import type {
+  AgentAnswerAccepted,
   AgentCancelAccepted,
   AgentMessages,
+  AgentRunModePreference,
   AgentThreadSummary,
   AgentTurnAccepted,
   TurnId,
@@ -24,6 +27,8 @@ import type { SelectedNode } from './useCanvasSelection'
 import type { AgentEventSource } from './useAgentSession'
 import { useAgentSession } from './useAgentSession'
 
+vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
+
 function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
   const base: AgentRestClient = {
     postMessage: vi.fn(
@@ -35,9 +40,23 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
     ),
     getMessages: vi.fn(async (): Promise<AgentMessages> => []),
     listThreads: vi.fn(async (): Promise<AgentThreadSummary[]> => []),
+    getRunMode: vi.fn(
+      async (): Promise<AgentRunModePreference> => ({
+        mode: 'auto',
+        credit_limit: null
+      })
+    ),
+    putRunMode: vi.fn(
+      async (
+        preference: AgentRunModePreference
+      ): Promise<AgentRunModePreference> => preference
+    ),
     listCloudWorkflows: vi.fn(async () => []),
     cancelMessage: vi.fn(
       async (): Promise<AgentCancelAccepted> => ({ status: 'cancelling' })
+    ),
+    answerAsk: vi.fn(
+      async (): Promise<AgentAnswerAccepted> => ({ status: 'answered' })
     ),
     uploadImage: vi.fn(
       async (): Promise<UploadImageResult> => ({
@@ -90,6 +109,39 @@ const done = (id: string) =>
     type: 'agent_message_done',
     data: { message_id: id, thread_id: 'th-1', usage: null }
   })
+const runApproval = (id: string, askId = 'turn-1:call-1') =>
+  wire({
+    type: 'agent_ask',
+    data: {
+      thread_id: 'th-1',
+      message_id: id,
+      ask_id: askId,
+      kind: 'run_approval',
+      context: {
+        workflow_id: 'workflow-1',
+        workflow_name: 'Portrait workflow'
+      },
+      prompt: 'Run it?',
+      options: [
+        { id: 'run', label: 'Run' },
+        { id: 'cancel', label: 'Cancel' }
+      ],
+      min_selections: 1,
+      max_selections: 1,
+      allow_other: false
+    }
+  })
+const askResolved = (id: string, askId = 'turn-1:call-1') =>
+  wire({
+    type: 'agent_ask_resolved',
+    data: {
+      thread_id: 'th-1',
+      message_id: id,
+      ask_id: askId,
+      status: 'answered',
+      selected: ['run']
+    }
+  })
 const deltaIn = (threadId: string, id: string, text: string) =>
   wire({
     type: 'agent_message_delta',
@@ -120,6 +172,7 @@ describe('useAgentSession (v1 composition root)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
+    vi.mocked(reportError).mockClear()
   })
 
   it('(a) posts to new, adopts ids, records the user turn, and renders a settled reply', async () => {
@@ -355,6 +408,89 @@ describe('useAgentSession (v1 composition root)', () => {
       'assistant'
     ])
     expect(session.isStreaming.value).toBe(false)
+  })
+
+  it('answers a run approval once and stays busy until its resolution event', async () => {
+    const answerAsk = vi.fn(
+      async (): Promise<AgentAnswerAccepted> => ({ status: 'answered' })
+    )
+    const rest = fakeRest({ answerAsk })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    await session.sendMessage('build it')
+    emit(runApproval('msg-1'))
+
+    const first = session.answerAsk('turn-1:call-1', 'run')
+    const duplicate = session.answerAsk('turn-1:call-1', 'run')
+
+    expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(true)
+    await Promise.all([first, duplicate])
+    expect(answerAsk).toHaveBeenCalledTimes(1)
+    expect(answerAsk).toHaveBeenCalledWith('th-1', 'turn-1:call-1', ['run'])
+    expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(true)
+
+    emit(askResolved('msg-1'))
+    expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
+    expect(
+      useAgentConversationStore().messages[0].parts.some(
+        (part) => part.type === 'runApproval'
+      )
+    ).toBe(false)
+  })
+
+  it('collapses a stale approval on 409 without surfacing an error', async () => {
+    const answerAsk = vi
+      .fn<AgentRestClient['answerAsk']>()
+      .mockRejectedValue(new AgentApiError('already answered', 409, undefined))
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ answerAsk }),
+      events: source
+    })
+    session.start()
+    await session.sendMessage('build it')
+    emit(runApproval('msg-1'))
+
+    await session.answerAsk('turn-1:call-1', 'cancel')
+
+    expect(reportError).not.toHaveBeenCalled()
+    expect(session.notices.value).toEqual([])
+    expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
+    expect(
+      useAgentConversationStore().messages[0].parts.some(
+        (part) => part.type === 'runApproval'
+      )
+    ).toBe(false)
+  })
+
+  it('retains and re-enables an approval after a non-409 answer failure', async () => {
+    const answerAsk = vi
+      .fn<AgentRestClient['answerAsk']>()
+      .mockRejectedValue(new AgentApiError('backend blip', 500, undefined))
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ answerAsk }),
+      events: source
+    })
+    session.start()
+    await session.sendMessage('build it')
+    emit(runApproval('msg-1'))
+
+    await session.answerAsk('turn-1:call-1', 'run')
+
+    expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+      errorType: 'agent_ask_answer_failed'
+    })
+    expect(session.notices.value).toEqual([
+      { level: 'error', text: 'backend blip' }
+    ])
+    expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
+    expect(
+      useAgentConversationStore().messages[0].parts.some(
+        (part) => part.type === 'runApproval'
+      )
+    ).toBe(true)
   })
 
   it('(d) stopTurn cancels the active turn; a 409 is swallowed and the socket settles it', async () => {
