@@ -1,0 +1,52 @@
+# Description: Generates missing/stale customer-story and FAQ translations
+# under apps/website/src/content/, using OpenAI, gated by the pipeline's own
+# AI review pass (see apps/website/scripts/i18n-content/review.ts). Manual
+# dispatch only for now — same rationale as i18n-update-website.yaml.
+name: 'i18n: Update Website Content'
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to translate and push results onto'
+        required: true
+        type: string
+
+concurrency:
+  group: i18n-update-website-content-${{ github.event.inputs.branch }}
+  cancel-in-progress: false
+
+jobs:
+  update-website-content-translations:
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          token: ${{ secrets.PR_GH_TOKEN }}
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: Setup ComfyUI Frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Update website content translations
+        run: pnpm --filter website i18n-content:translate
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+      - name: Format
+        run: pnpm format
+
+      - name: Commit and push generated translations
+        env:
+          TARGET_BRANCH: ${{ github.event.inputs.branch }}
+        run: |
+          git add apps/website/src/content/
+          if git diff --cached --quiet; then
+            echo "No new translations generated."
+            exit 0
+          fi
+          git -c user.name=github-actions -c user.email=github-actions@github.com \
+            commit -m 'Update website content translations'
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH"

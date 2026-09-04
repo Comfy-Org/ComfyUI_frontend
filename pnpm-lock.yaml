@@ -1032,6 +1032,9 @@ importers:
       happy-dom:
         specifier: 'catalog:'
         version: 20.9.0
+      openai:
+        specifier: 'catalog:'
+        version: 7.4.0(ws@8.21.1)(zod@3.25.76)
       tailwindcss:
         specifier: 'catalog:'
         version: 4.3.2
@@ -1053,6 +1056,9 @@ importers:
       vue-tsc:
         specifier: 'catalog:'
         version: 3.3.9(typescript@6.0.3)
+      yaml:
+        specifier: ^2.8.3
+        version: 2.9.0
 
   packages/design-system:
     dependencies:
