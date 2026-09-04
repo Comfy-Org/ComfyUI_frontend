@@ -21,8 +21,17 @@ const LINK_ORDER = 'link_order'
  */
 const NODE_INCARNATION = '__incarnation'
 
+/**
+ * A value slot's JSON view. Every shared type, and a subdocument, answers
+ * `toJSON()`; `structuredClone` throws on all of them, and this reader runs
+ * as a bare argument inside the follower's frame reconcile, where one throw
+ * would stall every node on the canvas. The package only mints maps and
+ * arrays; the rest arrive through a doc host folding in a raw update.
+ */
 function plain(value: unknown): unknown {
-  if (value instanceof Y.Map || value instanceof Y.Array) return value.toJSON()
+  if (value instanceof Y.AbstractType || value instanceof Y.Doc) {
+    return value.toJSON()
+  }
   return structuredClone(value)
 }
 

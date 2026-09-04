@@ -193,4 +193,36 @@ describe('readSubgraphDefinitions', () => {
 
     expect(projected.nodes?.map((node) => node.id)).toEqual([2])
   })
+
+  it('reads shared types the package never mints instead of throwing', () => {
+    // Nothing in this reader may throw: it runs as a bare argument inside the
+    // follower's frame reconcile, so one unreadable value would stall every
+    // node on the canvas. `structuredClone` throws on any Y type; a doc host
+    // folding in a raw update can put any of them into a value slot.
+    const definition = createTestSubgraphData({
+      nodes: [interiorNode(1)] as never
+    })
+    const doc = seed(definition)
+    doc.transact(() => {
+      const stored = doc
+        .getMap<unknown>('definitions')
+        .get(definition.id) as Y.Map<unknown>
+      const node = (stored.get('nodes') as Y.Map<unknown>).get(
+        '1'
+      ) as Y.Map<unknown>
+      const text = new Y.Text()
+      node.set('title', text)
+      text.insert(0, 'from text')
+      const fragment = new Y.XmlFragment()
+      stored.set('extra', fragment)
+      fragment.insert(0, [new Y.XmlText('markup')])
+      stored.set('sub', new Y.Doc())
+    })
+
+    const [projected] = readSubgraphDefinitions(doc)
+
+    expect(projected.nodes?.[0]?.title).toBe('from text')
+    expect(projected.extra).toBe('markup')
+    expect(projected).toHaveProperty('sub', {})
+  })
 })
