@@ -1061,6 +1061,7 @@ describe('EcsFollowerAdapter integration', () => {
           adapter.applyFrame({
             workflowId: 'wf',
             seq: 1,
+            lineageSeq: 1,
             update,
             actor: 'agent:test',
             opIds: ops.map(({ op_id }) => op_id)
@@ -1083,6 +1084,7 @@ describe('EcsFollowerAdapter integration', () => {
             adapter.applyFrame({
               workflowId: 'wf',
               seq: ++seq,
+              lineageSeq: 1,
               update,
               actor: 'agent:test',
               opIds: [singleOp.op_id]
