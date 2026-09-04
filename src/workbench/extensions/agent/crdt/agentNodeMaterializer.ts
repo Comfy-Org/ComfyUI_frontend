@@ -46,9 +46,47 @@ export type MaterializableGraph = Pick<
  */
 export function reconcileAgentAdapters(
   graph: MaterializableGraph,
-  _subgraphDefinitions: ExportedSubgraph[] = []
+  subgraphDefinitions: ExportedSubgraph[] = []
 ): NodeId[] {
-  return runMintPortsSuppressed(() => reconcile(graph))
+  return runMintPortsSuppressed(() => {
+    registerSubgraphDefinitions(graph, subgraphDefinitions)
+    return reconcile(graph)
+  })
+}
+
+/**
+ * Register agent-seeded subgraph definitions the root graph does not know yet.
+ *
+ * This is the same entry point the human load path uses
+ * (`useSubgraphService().loadSubgraphs` → `rootGraph.createSubgraphs`), so each
+ * definition dispatches `subgraph-created` and the app handler registers the
+ * definition id as a `SubgraphNode` type before any root node of that type is
+ * materialized. Without it `LiteGraph.createNode(definitionId)` returns null
+ * and the instance degrades to an error placeholder.
+ *
+ * Definitions already present on the root graph are left untouched: v1 treats
+ * agent-seeded definitions as static after creation.
+ */
+function registerSubgraphDefinitions(
+  graph: MaterializableGraph,
+  definitions: ExportedSubgraph[]
+): void {
+  const rootGraph = graph.rootGraph
+  const missing = definitions.filter(
+    (definition) => !rootGraph.subgraphs.has(definition.id)
+  )
+  if (missing.length === 0) return
+  try {
+    rootGraph.createSubgraphs(missing)
+  } catch (cause) {
+    reportError(cause, {
+      errorType: 'agent_subgraph_definitions_failed',
+      context: {
+        graphId: graph.id,
+        definitionIds: missing.map((definition) => definition.id)
+      }
+    })
+  }
 }
 
 function reconcile(graph: MaterializableGraph): NodeId[] {

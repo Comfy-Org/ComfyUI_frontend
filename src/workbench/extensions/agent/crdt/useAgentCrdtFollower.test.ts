@@ -14,6 +14,7 @@ import type { Ref } from 'vue'
 import { render } from '@testing-library/vue'
 
 import type { GraphMutations } from '@/core/graph/graphMutations'
+import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 
@@ -55,6 +56,13 @@ const adapterState = vi.hoisted(() => ({
 
 const materializerState = vi.hoisted(() => ({
   reconcileAgentAdapters: vi.fn(() => [] as NodeId[])
+}))
+
+// The reader is module-mocked too: these tests only check that the composable
+// hands whatever it read from the bridge's doc through to the materializer.
+const definitionsState = vi.hoisted(() => ({
+  fakeDefinitions: [] as ExportedSubgraph[],
+  readSubgraphDefinitions: vi.fn(() => definitionsState.fakeDefinitions)
 }))
 
 const apiState = vi.hoisted(() => {
@@ -104,6 +112,10 @@ vi.mock('./ecsFollowerAdapter', () => ({
 
 vi.mock('./agentNodeMaterializer', () => ({
   reconcileAgentAdapters: materializerState.reconcileAgentAdapters
+}))
+
+vi.mock('./agentSubgraphDefinitions', () => ({
+  readSubgraphDefinitions: definitionsState.readSubgraphDefinitions
 }))
 
 vi.mock('./devPanelLog', () => ({
@@ -193,6 +205,7 @@ describe('useAgentCrdtFollower', () => {
     sessionStorage.clear()
     bridgeState.current = null
     materializerState.reconcileAgentAdapters.mockReset().mockReturnValue([])
+    definitionsState.readSubgraphDefinitions.mockClear()
   })
 
   it('subscribes immediately to a bound workflow and reports it in status', () => {
@@ -655,6 +668,7 @@ describe('useAgentCrdtFollower', () => {
     // The materializer is module-mocked, so the graph only needs to be a
     // distinct reference the composable hands through.
     const fakeGraph = {} as MaterializableGraph
+    const { fakeDefinitions } = definitionsState
 
     it('reconciles the live graph after every applied frame', () => {
       const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
@@ -663,7 +677,13 @@ describe('useAgentCrdtFollower', () => {
 
       expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledTimes(1)
       expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
-        fakeGraph
+        fakeGraph,
+        fakeDefinitions
+      )
+      // Definitions come from the doc the bridge currently follows, so a
+      // doc_reset remint (which swaps the FollowerDoc) is read fresh.
+      expect(definitionsState.readSubgraphDefinitions).toHaveBeenCalledWith(
+        bridge().follower.doc
       )
       unmount()
     })
@@ -702,7 +722,8 @@ describe('useAgentCrdtFollower', () => {
 
       expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledTimes(1)
       expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
-        fakeGraph
+        fakeGraph,
+        fakeDefinitions
       )
       unmount()
     })
@@ -738,7 +759,8 @@ describe('useAgentCrdtFollower', () => {
       await nextTick()
 
       expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
-        fakeGraph
+        fakeGraph,
+        fakeDefinitions
       )
       unmount()
     })
@@ -756,7 +778,8 @@ describe('useAgentCrdtFollower', () => {
 
       expect(adapterState.clearForReset).toHaveBeenCalled()
       expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
-        fakeGraph
+        fakeGraph,
+        fakeDefinitions
       )
       unmount()
     })
@@ -768,7 +791,8 @@ describe('useAgentCrdtFollower', () => {
 
       expect(adapterState.clearForReset).toHaveBeenCalled()
       expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
-        fakeGraph
+        fakeGraph,
+        fakeDefinitions
       )
       unmount()
     })
