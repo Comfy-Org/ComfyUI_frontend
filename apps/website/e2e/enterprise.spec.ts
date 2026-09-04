@@ -16,17 +16,17 @@ test.describe('Enterprise pages @smoke', () => {
       page.getByRole('link', { name: 'REQUEST DEMO' }).first()
     ).toHaveAttribute('href', '/contact/')
     await expect(
-      page.getByRole('link', { name: 'VIEW MANAGED BUILDS' }).first()
-    ).toHaveAttribute('href', '/enterprise/managed-builds/')
+      page.getByRole('heading', {
+        level: 2,
+        name: 'One approved ComfyUI environment, everywhere your team runs it.'
+      })
+    ).toBeVisible()
     await expect(page.getByText('LEAD OFFER')).toHaveCount(0)
     await expect(page.getByRole('link', { name: 'SUBSCRIBE NOW' })).toHaveCount(
-      2
+      1
     )
     await expect(
-      page.getByRole('link', { name: 'SUBSCRIBE NOW' }).first()
-    ).toHaveAttribute('href', '/pricing')
-    await expect(
-      page.getByRole('link', { name: 'SUBSCRIBE NOW' }).last()
+      page.getByRole('link', { name: 'SUBSCRIBE NOW' })
     ).toHaveAttribute('href', '/pricing')
     await expect(
       page.getByRole('heading', {

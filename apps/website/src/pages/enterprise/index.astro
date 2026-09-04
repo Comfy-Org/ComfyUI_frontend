@@ -7,6 +7,7 @@ import FAQSplit01 from '../../components/blocks/FAQSplit01.vue'
 import HeroSplit01 from '../../components/blocks/HeroSplit01.vue'
 import OfferGrid01 from '../../components/blocks/OfferGrid01.vue'
 import ReasonsSplit01 from '../../components/blocks/ReasonsSplit01.vue'
+import SectionIntro01 from '../../components/blocks/SectionIntro01.vue'
 import EnterpriseHeroScene from '../../components/product/enterprise/EnterpriseHeroScene.vue'
 import { externalLinks } from '../../config/routes'
 import BaseLayout from '../../layouts/BaseLayout.astro'
@@ -64,14 +65,6 @@ const faqs = [
 ] as const
 
 const enterpriseOffers = [
-  {
-    id: 'team-plans',
-    label: 'SELF-SERVE FOR TEAMS',
-    title: 'Team plans',
-    description:
-      'Invite members, run workflows concurrently, share one credit pool with centralized billing, and manage role-based permissions in a self-serve Comfy Cloud plan.',
-    cta: { label: 'SUBSCRIBE NOW', href: '/pricing' },
-  },
   {
     id: 'commercial-licensing',
     label: 'COMMERCIAL RIGHTS',
@@ -208,21 +201,11 @@ const faqPage = buildFaqPageNode(url, faqs)
     <EnterpriseHeroScene slot="media" client:load />
   </HeroSplit01>
 
-  <OfferGrid01
+  <SectionIntro01
     eyebrow="WAYS TO SCALE WITH COMFY"
     heading="The open standard for visual AI, ready for your organization."
-    description="Keep your team focused on the Comfy Workflows that differentiate your business. Comfy provides the governed environments, production runtimes, commercial terms, and hands-on builders you would otherwise assemble yourself."
-    featuredOffer={{
-      id: 'managed-builds',
-      title: 'ComfyUI Managed Builds',
-      description:
-        'Self-serve Builds package a reproducible environment. ComfyUI Managed Builds add team distribution, model and custom-node governance, controlled rollout, enterprise terms, and support across the fleet.',
-      cta: {
-        label: 'VIEW MANAGED BUILDS',
-        href: '/enterprise/managed-builds/',
-      },
-    }}
-    offers={enterpriseOffers}
+    subtitle="Keep your team focused on the Comfy Workflows that differentiate your business. Comfy provides the governed environments, production runtimes, commercial terms, and hands-on builders you would otherwise assemble yourself."
+    maxWidth="xl"
   />
 
   <BuildConfiguratorSplit01
@@ -261,6 +244,8 @@ const faqPage = buildFaqPageNode(url, faqs)
     cta={{ label: 'REQUEST DEMO', href: '/contact/' }}
     client:visible
   />
+
+  <OfferGrid01 offers={enterpriseOffers} />
 
   <BenefitsGrid01
     heading="Govern the build, models, people, and usage."
