@@ -4,7 +4,7 @@ import { computed, ref } from 'vue'
 import { st } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isCloud } from '@/platform/distribution/types'
-import { useSettingStore } from '@/platform/settings/settingStore'
+import { isMissingWarningVisible } from '@/platform/settings/missingWarningVisibility'
 import {
   dedupeMissingNodeTypes,
   removePendingMissingNodeTypesByExecutionIdPrefix,
@@ -27,6 +27,11 @@ export const useMissingNodesErrorStore = defineStore(
   () => {
     const missingNodesError = ref<MissingNodesError | null>(null)
 
+    /** Error to display; empty while the missing nodes warning is off. */
+    const visibleMissingNodesError = computed(() =>
+      isMissingWarningVisible('nodes') ? missingNodesError.value : null
+    )
+
     function setMissingNodeTypes(types: MissingNodeType[]) {
       if (!types.length) {
         missingNodesError.value = null
@@ -44,13 +49,10 @@ export const useMissingNodesErrorStore = defineStore(
       }
     }
 
-    /** Set missing node types. Returns true if the Errors tab is enabled and types were set. */
+    /** Set missing node types. Returns true if the warning is visible and types were set. */
     function surfaceMissingNodes(types: MissingNodeType[]): boolean {
       setMissingNodeTypes(types)
-      return (
-        types.length > 0 &&
-        useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')
-      )
+      return types.length > 0 && isMissingWarningVisible('nodes')
     }
 
     function removeMissingNodesByNodeId(nodeId: string) {
@@ -89,10 +91,10 @@ export const useMissingNodesErrorStore = defineStore(
       setMissingNodeTypes(remaining)
     }
 
-    const hasMissingNodes = computed(() => !!missingNodesError.value)
+    const hasMissingNodes = computed(() => !!visibleMissingNodesError.value)
 
     const missingNodeCount = computed(
-      () => missingNodesError.value?.nodeTypes.length ?? 0
+      () => visibleMissingNodesError.value?.nodeTypes.length ?? 0
     )
 
     /**
@@ -103,7 +105,7 @@ export const useMissingNodesErrorStore = defineStore(
      */
     const missingAncestorExecutionIds = computed<Set<NodeExecutionId>>(() => {
       const ids = new Set<NodeExecutionId>()
-      const error = missingNodesError.value
+      const error = visibleMissingNodesError.value
       if (!error) return ids
 
       for (const nodeType of error.nodeTypes) {
@@ -127,6 +129,7 @@ export const useMissingNodesErrorStore = defineStore(
 
     return {
       missingNodesError,
+      visibleMissingNodesError,
       setMissingNodeTypes,
       surfaceMissingNodes,
       removeMissingNodesByNodeId,

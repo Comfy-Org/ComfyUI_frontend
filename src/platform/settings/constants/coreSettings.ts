@@ -292,13 +292,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     }
   },
   {
-    id: 'Comfy.Workflow.ShowMissingModelsWarning',
-    name: 'Show missing models warning',
-    type: isCloud ? 'hidden' : 'boolean',
-    defaultValue: isCloud ? false : true,
-    experimental: true
-  },
-  {
     id: 'Comfy.Workflow.WarnBlueprintOverwrite',
     name: 'Require confirmation to overwrite an existing subgraph blueprint',
     type: 'boolean',
@@ -1303,6 +1296,35 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: true,
     experimental: true,
     versionAdded: '1.40.0'
+  },
+  {
+    id: 'Comfy.Workflow.ShowMissingNodesWarning',
+    category: ['Comfy', 'Error System'],
+    name: 'Show missing nodes in the issues tab',
+    tooltip:
+      'Requires the issues tab. When disabled, missing node packs are not listed and their nodes are not highlighted, but the workflow still cannot run until they are installed.',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.55.0'
+  },
+  {
+    id: 'Comfy.Workflow.ShowMissingModelsWarning',
+    category: ['Comfy', 'Error System'],
+    name: 'Show missing models in the issues tab',
+    tooltip:
+      'Requires the issues tab. When disabled, model files that are not found are not listed and their nodes are not highlighted.',
+    type: 'boolean',
+    defaultValue: true
+  },
+  {
+    id: 'Comfy.Workflow.ShowMissingMediaWarning',
+    category: ['Comfy', 'Error System'],
+    name: 'Show missing media in the issues tab',
+    tooltip:
+      'Requires the issues tab. When disabled, input images, videos and audio that are not found are not listed and their nodes are not highlighted.',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.55.0'
   },
   {
     id: 'LiteGraph.Group.SelectChildrenOnClick',

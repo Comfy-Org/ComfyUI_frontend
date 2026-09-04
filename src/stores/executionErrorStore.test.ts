@@ -26,11 +26,18 @@ vi.mock('@/platform/distribution/types', () => ({
   isCloud: false
 }))
 
-const mockShowErrorsTab = vi.hoisted(() => ({ value: false }))
+const mockSettings = vi.hoisted(() => ({
+  values: {
+    'Comfy.RightSidePanel.ShowErrorsTab': false,
+    'Comfy.Workflow.ShowMissingNodesWarning': true,
+    'Comfy.Workflow.ShowMissingModelsWarning': true,
+    'Comfy.Workflow.ShowMissingMediaWarning': true
+  } as Record<string, boolean>
+}))
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn(() => ({
-    get: vi.fn(() => mockShowErrorsTab.value)
+    get: vi.fn((key: string) => mockSettings.values[key])
   }))
 }))
 
@@ -624,7 +631,7 @@ describe('executionErrorStore — node error operations', () => {
 
 describe('surfaceMissingModels — silent option', () => {
   beforeEach(() => {
-    mockShowErrorsTab.value = true
+    mockSettings.values['Comfy.RightSidePanel.ShowErrorsTab'] = true
   })
 
   it('opens error overlay when silent is not specified and setting is enabled', () => {
@@ -689,9 +696,32 @@ describe('surfaceMissingModels — silent option', () => {
   })
 })
 
+describe('surfaceMissingModels — per-kind visibility', () => {
+  it('stores the models but keeps the overlay closed while the warning is off', () => {
+    mockSettings.values['Comfy.RightSidePanel.ShowErrorsTab'] = true
+    mockSettings.values['Comfy.Workflow.ShowMissingModelsWarning'] = false
+    const store = useExecutionErrorStore()
+    store.surfaceMissingModels([
+      fromAny({
+        name: 'model.safetensors',
+        nodeId: toNodeId('1'),
+        nodeType: 'Loader',
+        widgetName: 'ckpt',
+        isMissing: true,
+        isAssetSupported: false
+      })
+    ])
+
+    expect(useMissingModelStore().missingModelCandidates).toHaveLength(1)
+    expect(store.isErrorOverlayOpen).toBe(false)
+    expect(store.hasMissingError).toBe(false)
+    mockSettings.values['Comfy.Workflow.ShowMissingModelsWarning'] = true
+  })
+})
+
 describe('surfaceMissingMedia — silent option', () => {
   beforeEach(() => {
-    mockShowErrorsTab.value = true
+    mockSettings.values['Comfy.RightSidePanel.ShowErrorsTab'] = true
   })
 
   it('opens error overlay when silent is not specified and setting is enabled', () => {

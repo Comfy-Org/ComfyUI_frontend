@@ -5,6 +5,7 @@ import { t } from '@/i18n'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
+import { isMissingWarningVisible } from '@/platform/settings/missingWarningVisibility'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
@@ -25,18 +26,23 @@ export const useMissingModelStore = defineStore('missingModel', () => {
   const missingModelCandidates = ref<MissingModelCandidate[] | null>(null)
   const isRefreshingMissingModels = ref(false)
 
+  /** Candidates to display; empty while the missing models warning is off. */
+  const visibleMissingModelCandidates = computed(() =>
+    isMissingWarningVisible('models') ? missingModelCandidates.value : null
+  )
+
   const hasMissingModels = computed(
-    () => !!missingModelCandidates.value?.length
+    () => !!visibleMissingModelCandidates.value?.length
   )
 
   const missingModelCount = computed(
-    () => missingModelCandidates.value?.length ?? 0
+    () => visibleMissingModelCandidates.value?.length ?? 0
   )
 
   const missingModelNodeIds = computed<Set<string>>(() => {
     const ids = new Set<string>()
-    if (!missingModelCandidates.value) return ids
-    for (const m of missingModelCandidates.value) {
+    if (!visibleMissingModelCandidates.value) return ids
+    for (const m of visibleMissingModelCandidates.value) {
       // Promoted-widget candidates are scoped to the subgraph host node
       // (`nodeId`) but originate at an interior node (`sourceExecutionId`);
       // both execution ids carry the missing model.
@@ -48,8 +54,8 @@ export const useMissingModelStore = defineStore('missingModel', () => {
 
   const missingModelWidgetKeys = computed<Set<string>>(() => {
     const keys = new Set<string>()
-    if (!missingModelCandidates.value) return keys
-    for (const m of missingModelCandidates.value) {
+    if (!visibleMissingModelCandidates.value) return keys
+    for (const m of visibleMissingModelCandidates.value) {
       keys.add(`${String(m.nodeId)}::${m.widgetName}`)
     }
     return keys
@@ -295,6 +301,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
 
   return {
     missingModelCandidates,
+    visibleMissingModelCandidates,
     isRefreshingMissingModels,
     hasMissingModels,
     missingModelCount,

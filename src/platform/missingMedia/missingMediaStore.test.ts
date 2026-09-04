@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 
+const mockMissingWarningVisible = vi.hoisted(() => ({ value: true }))
+
+vi.mock('@/platform/settings/missingWarningVisibility', () => ({
+  isMissingWarningVisible: () => mockMissingWarningVisible.value
+}))
+
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 
 import { useMissingMediaStore } from './missingMediaStore'
@@ -43,6 +49,18 @@ describe('useMissingMediaStore', () => {
     expect(store.missingMediaCandidates).toBeNull()
     expect(store.hasMissingMedia).toBe(false)
     expect(store.missingMediaCount).toBe(0)
+  })
+
+  it('hides derived state while the missing media warning is off', () => {
+    mockMissingWarningVisible.value = false
+    const store = useMissingMediaStore()
+    store.setMissingMedia([makeCandidate('1', 'photo.png')])
+
+    expect(store.missingMediaCandidates).toHaveLength(1)
+    expect(store.visibleMissingMediaCandidates).toBeNull()
+    expect(store.hasMissingMedia).toBe(false)
+    expect(store.missingMediaNodeIds.size).toBe(0)
+    mockMissingWarningVisible.value = true
   })
 
   it('setMissingMedia populates candidates', () => {

@@ -2,6 +2,12 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+const mockMissingWarningVisible = vi.hoisted(() => ({ value: true }))
+
+vi.mock('@/platform/settings/missingWarningVisibility', () => ({
+  isMissingWarningVisible: () => mockMissingWarningVisible.value
+}))
+
 import type { MissingNodeType } from '@/types/comfy'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import type * as GraphTraversalUtil from '@/utils/graphTraversalUtil'

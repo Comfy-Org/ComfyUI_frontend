@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+const mockMissingWarningVisible = vi.hoisted(() => ({ value: true }))
+
+vi.mock('@/platform/settings/missingWarningVisibility', () => ({
+  isMissingWarningVisible: () => mockMissingWarningVisible.value
+}))
+
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import {
   createNodeExecutionId,
@@ -70,6 +76,19 @@ describe('missingModelStore', () => {
       expect(store.missingModelCandidates).not.toBeNull()
       expect(store.missingModelCandidates).toHaveLength(1)
       expect(store.hasMissingModels).toBe(true)
+    })
+
+    it('hides derived state while the missing models warning is off', () => {
+      mockMissingWarningVisible.value = false
+      const store = useMissingModelStore()
+      store.setMissingModels([makeModelCandidate('model_a.safetensors')])
+
+      expect(store.missingModelCandidates).toHaveLength(1)
+      expect(store.visibleMissingModelCandidates).toBeNull()
+      expect(store.hasMissingModels).toBe(false)
+      expect(store.missingModelCount).toBe(0)
+      expect(store.missingModelNodeIds.size).toBe(0)
+      mockMissingWarningVisible.value = true
     })
 
     it('clears missingModelCandidates when given empty array', () => {

@@ -461,8 +461,17 @@
   "Comfy_Workflow_Persist": {
     "name": "Persist workflow state and restore on page (re)load"
   },
+  "Comfy_Workflow_ShowMissingMediaWarning": {
+    "name": "Show missing media in the issues tab",
+    "tooltip": "Requires the issues tab. When disabled, input images, videos and audio that are not found are not listed and their nodes are not highlighted."
+  },
   "Comfy_Workflow_ShowMissingModelsWarning": {
-    "name": "Show missing models warning"
+    "name": "Show missing models in the issues tab",
+    "tooltip": "Requires the issues tab. When disabled, model files that are not found are not listed and their nodes are not highlighted."
+  },
+  "Comfy_Workflow_ShowMissingNodesWarning": {
+    "name": "Show missing nodes in the issues tab",
+    "tooltip": "Requires the issues tab. When disabled, missing node packs are not listed and their nodes are not highlighted, but the workflow still cannot run until they are installed."
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "Sort node IDs when saving workflow"

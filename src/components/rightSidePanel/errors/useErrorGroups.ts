@@ -308,7 +308,8 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
 
   const missingNodeCache = computed(() => {
     const map = new Map<string, LGraphNode>()
-    const nodeTypes = missingNodesStore.missingNodesError?.nodeTypes ?? []
+    const nodeTypes =
+      missingNodesStore.visibleMissingNodesError?.nodeTypes ?? []
     for (const nodeType of nodeTypes) {
       if (typeof nodeType === 'string') continue
       if (nodeType.nodeId == null) continue
@@ -467,7 +468,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   const asyncResolvedIds = ref<Map<string, string | null>>(new Map())
 
   const pendingTypes = computed(() =>
-    (missingNodesStore.missingNodesError?.nodeTypes ?? []).filter(
+    (missingNodesStore.visibleMissingNodesError?.nodeTypes ?? []).filter(
       (n): n is Exclude<MissingNodeType, string> =>
         typeof n !== 'string' && !n.cnrId
     )
@@ -523,7 +524,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
 
   // Evict stale entries when missing nodes are cleared
   watch(
-    () => missingNodesStore.missingNodesError,
+    () => missingNodesStore.visibleMissingNodesError,
     (error) => {
       if (!error && asyncResolvedIds.value.size > 0) {
         asyncResolvedIds.value = new Map()
@@ -532,7 +533,8 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   )
 
   const missingPackGroups = computed<MissingPackGroup[]>(() => {
-    const nodeTypes = missingNodesStore.missingNodesError?.nodeTypes ?? []
+    const nodeTypes =
+      missingNodesStore.visibleMissingNodesError?.nodeTypes ?? []
     const map = new Map<
       string | null,
       { nodeTypes: MissingNodeType[]; isResolving: boolean }
@@ -594,7 +596,8 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   })
 
   const swapNodeGroups = computed<SwapNodeGroup[]>(() => {
-    const nodeTypes = missingNodesStore.missingNodesError?.nodeTypes ?? []
+    const nodeTypes =
+      missingNodesStore.visibleMissingNodesError?.nodeTypes ?? []
     const map = new Map<string, SwapNodeGroup>()
 
     for (const nodeType of nodeTypes) {
@@ -624,7 +627,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   function buildMissingNodeGroups(
     includeGroup: (nodeTypes: MissingNodeType[]) => boolean = () => true
   ): ErrorGroup[] {
-    const error = missingNodesStore.missingNodesError
+    const error = missingNodesStore.visibleMissingNodesError
     if (!error) return []
 
     const groups: ErrorGroup[] = []
@@ -672,7 +675,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
 
   const missingModelGroups = computed<MissingModelGroup[]>(() => {
     return groupMissingModelCandidates(
-      missingModelStore.missingModelCandidates,
+      missingModelStore.visibleMissingModelCandidates,
       isCloud
     )
   })
@@ -698,7 +701,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   }
 
   const missingMediaGroups = computed<MissingMediaGroup[]>(() => {
-    const candidates = missingMediaStore.missingMediaCandidates
+    const candidates = missingMediaStore.visibleMissingMediaCandidates
     if (!candidates?.length) return []
     return groupCandidatesByMediaType(candidates)
   })
@@ -753,7 +756,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   /** Model groups narrowed to the selection, for emphasis derivation only. */
   const missingModelGroupsForSelection = computed(() => {
     if (!hasSelection.value) return []
-    const candidates = missingModelStore.missingModelCandidates
+    const candidates = missingModelStore.visibleMissingModelCandidates
     if (!candidates?.length) return []
     const matched = candidates.filter(
       (c) =>
@@ -768,7 +771,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   /** Media groups narrowed to the selection, for emphasis derivation only. */
   const missingMediaGroupsForSelection = computed(() => {
     if (!hasSelection.value) return []
-    const candidates = missingMediaStore.missingMediaCandidates
+    const candidates = missingMediaStore.visibleMissingMediaCandidates
     if (!candidates?.length) return []
     const matched = candidates.filter(
       (c) => c.nodeId != null && isAssetCandidateInSelection(c.nodeId)
@@ -864,11 +867,11 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
    */
   const assetNodeIdsWithError = computed<string[]>(() => {
     const candidateIds = [
-      ...(missingModelStore.missingModelCandidates ?? []),
-      ...(missingMediaStore.missingMediaCandidates ?? [])
+      ...(missingModelStore.visibleMissingModelCandidates ?? []),
+      ...(missingMediaStore.visibleMissingMediaCandidates ?? [])
     ].map((candidate) => candidate.nodeId)
     const missingNodeTypeIds = (
-      missingNodesStore.missingNodesError?.nodeTypes ?? []
+      missingNodesStore.visibleMissingNodesError?.nodeTypes ?? []
     ).map((nodeType) =>
       typeof nodeType === 'string' ? undefined : nodeType.nodeId
     )

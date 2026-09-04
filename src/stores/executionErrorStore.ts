@@ -12,6 +12,7 @@ import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import { isMissingWarningVisible } from '@/platform/settings/missingWarningVisibility'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -504,7 +505,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     if (
       !options?.silent &&
       models.length &&
-      useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')
+      isMissingWarningVisible('models')
     ) {
       showErrorOverlay()
     }
@@ -516,11 +517,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     options?: { silent?: boolean }
   ) {
     missingMediaStore.setMissingMedia(media)
-    if (
-      !options?.silent &&
-      media.length &&
-      useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')
-    ) {
+    if (!options?.silent && media.length && isMissingWarningVisible('media')) {
       showErrorOverlay()
     }
   }

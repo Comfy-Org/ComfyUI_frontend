@@ -34,6 +34,8 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
 
     const settingStore = useSettingStore()
     settingStore.settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
+    settingStore.settingValues['Comfy.Workflow.ShowMissingModelsWarning'] = true
+    settingStore.settingValues['Comfy.Workflow.ShowMissingMediaWarning'] = true
 
     const store = useExecutionErrorStore()
     return { graph, nodeA, nodeB, store }
@@ -206,6 +208,8 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
 
     const settingStore = useSettingStore()
     settingStore.settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
+    settingStore.settingValues['Comfy.Workflow.ShowMissingModelsWarning'] = true
+    settingStore.settingValues['Comfy.Workflow.ShowMissingMediaWarning'] = true
 
     useExecutionErrorStore()
     const missingModelStore = useMissingModelStore()
