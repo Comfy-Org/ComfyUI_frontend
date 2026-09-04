@@ -5,6 +5,7 @@ import {
   captureMessage,
   init as sentryInit
 } from '@sentry/vue'
+import { VueQueryPlugin } from '@tanstack/vue-query'
 import { initializeApp } from 'firebase/app'
 import { createPinia } from 'pinia'
 import 'primeicons/primeicons.css'
@@ -15,6 +16,8 @@ import { createApp } from 'vue'
 import { VueFire, VueFireAuth } from 'vuefire'
 
 import { setAssertReporter } from '@/base/assert'
+import { createAppQueryClient } from '@/platform/remote/queryClient'
+
 import { getFirebaseConfig } from '@/config/firebase'
 import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
@@ -137,7 +140,9 @@ setAssertReporter(
 )
 
 app.directive('tooltip', Tooltip)
+const queryClient = createAppQueryClient()
 app
+  .use(VueQueryPlugin, { queryClient })
   .use(router)
   .use(PrimeVue, {
     zIndex: {

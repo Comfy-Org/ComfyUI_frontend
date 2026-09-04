@@ -1,0 +1,128 @@
+import { createTestingPinia } from '@pinia/testing'
+import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
+import type * as AxiosModule from 'axios'
+import { describe, expect, it, vi } from 'vitest'
+import { createApp, effectScope, h } from 'vue'
+
+import { useRemoteOptions } from '@/platform/remote/composables/useRemoteOptions'
+import { remoteOptionKeys } from '@/platform/remote/queryKeys'
+import type { RemoteRequestDescriptor } from '@/platform/remote/schema/remoteRequestSchema'
+
+vi.mock('axios', async (importOriginal) => {
+  const actual = await importOriginal<typeof AxiosModule>()
+  return {
+    ...actual,
+    default: { ...actual.default, get: vi.fn() }
+  }
+})
+
+vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
+  useWorkspaceAuthStore: () => ({ currentWorkspace: null })
+}))
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: () => ({
+    userId: 'u1',
+    getAuthHeader: vi.fn(() => Promise.resolve(null))
+  })
+}))
+
+function createTestQueryClient() {
+  return new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 } }
+  })
+}
+
+function withSetup<T>(setup: () => T): { result: T; cleanup: () => void } {
+  let result!: T
+  const queryClient = createTestQueryClient()
+  const app = createApp({
+    setup() {
+      result = setup()
+      return () => h('div')
+    }
+  })
+  app.use(createTestingPinia({ createSpy: vi.fn }))
+  app.use(VueQueryPlugin, { queryClient })
+  const container = document.createElement('div')
+  app.mount(container)
+  return {
+    result,
+    cleanup: () => {
+      app.unmount()
+    }
+  }
+}
+
+const desc: RemoteRequestDescriptor = {
+  client: 'comfyApi',
+  route: '/test'
+}
+
+describe('useRemoteOptions', () => {
+  it('builds a stable, scope-aware query key', () => {
+    const key = remoteOptionKeys.byRoute(desc, {
+      userId: 'u1',
+      workspaceId: 'w1'
+    })
+    expect(key).toContain('comfyApi')
+    expect(key).toContain('/test')
+    expect(key).toContain('u1')
+    expect(key).toContain('w1')
+  })
+
+  it('partitions by route', () => {
+    const a = remoteOptionKeys.byRoute(
+      { client: 'comfyApi', route: '/a' },
+      { userId: 'u1', workspaceId: null }
+    )
+    const b = remoteOptionKeys.byRoute(
+      { client: 'comfyApi', route: '/b' },
+      { userId: 'u1', workspaceId: null }
+    )
+    expect(JSON.stringify(a)).not.toBe(JSON.stringify(b))
+  })
+
+  it('partitions by workspaceId', () => {
+    const a = remoteOptionKeys.byRoute(desc, {
+      userId: 'u1',
+      workspaceId: 'w1'
+    })
+    const b = remoteOptionKeys.byRoute(desc, {
+      userId: 'u1',
+      workspaceId: 'w2'
+    })
+    expect(JSON.stringify(a)).not.toBe(JSON.stringify(b))
+  })
+
+  it('partitions anonymous from api-key sessions even when userId/workspaceId match', () => {
+    const anon = remoteOptionKeys.byRoute(desc, {
+      userId: null,
+      workspaceId: null,
+      apiKeyBucket: 'anon'
+    })
+    const apikey = remoteOptionKeys.byRoute(desc, {
+      userId: null,
+      workspaceId: null,
+      apiKeyBucket: 'apikey'
+    })
+    expect(JSON.stringify(anon)).not.toBe(JSON.stringify(apikey))
+  })
+
+  it('returns disabled state when descriptor is null', async () => {
+    const scope = effectScope()
+    let result!: ReturnType<typeof useRemoteOptions>
+    let cleanup = () => {}
+    scope.run(() => {
+      const mounted = withSetup(() =>
+        useRemoteOptions({
+          descriptor: null
+        })
+      )
+      result = mounted.result
+      cleanup = mounted.cleanup
+    })
+    expect(result.isLoading.value).toBe(false)
+    cleanup()
+    scope.stop()
+  })
+})

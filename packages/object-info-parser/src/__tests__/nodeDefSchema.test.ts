@@ -64,4 +64,35 @@ describe('validateNodeDef', () => {
       ).toBeNull()
     })
   })
+
+  describe('remote_combo route validation', () => {
+    const buildNodeDef = (route: string): unknown => ({
+      ...EXAMPLE_NODE_DEF,
+      input: {
+        required: {
+          voice: [
+            'COMBO',
+            {
+              remote_combo: {
+                route,
+                item_schema: { value_field: 'id', label_field: 'name' }
+              }
+            }
+          ]
+        }
+      }
+    })
+
+    it('accepts a relative route', () => {
+      expect(validateComfyNodeDef(buildNodeDef('/voices'))).not.toBeNull()
+    })
+
+    it.each([
+      'http://api.example.com/voices',
+      'https://api.example.com/voices',
+      'voices'
+    ])('rejects a non-relative route: %s', (route) => {
+      expect(validateComfyNodeDef(buildNodeDef(route), () => {})).toBeNull()
+    })
+  })
 })

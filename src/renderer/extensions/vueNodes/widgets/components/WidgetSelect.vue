@@ -1,6 +1,7 @@
 <template>
+  <RichComboWidget v-if="hasRemoteCombo" v-model="richComboValue" :widget />
   <WidgetSelectDropdown
-    v-if="isDropdownUIWidget"
+    v-else-if="isDropdownUIWidget"
     v-model="modelValue"
     :widget
     :node-type="widget.nodeType ?? nodeType"
@@ -24,6 +25,7 @@
 import { computed } from 'vue'
 
 import { assetService } from '@/platform/assets/services/assetService'
+import RichComboWidget from '@/renderer/extensions/vueNodes/widgets/components/RichComboWidget.vue'
 import WidgetSelectDefault from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDefault.vue'
 import WidgetSelectDropdown from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue'
 import WidgetWithControl from '@/renderer/extensions/vueNodes/widgets/components/WidgetWithControl.vue'
@@ -47,12 +49,24 @@ const props = defineProps<{
 
 const modelValue = defineModel<WidgetValue>()
 
+// RichComboWidget only deals in string values; narrow the shared WidgetValue
+// model (which also admits null/number/boolean/object) for that branch.
+const richComboValue = computed<string | undefined>({
+  get: () =>
+    typeof modelValue.value === 'string' ? modelValue.value : undefined,
+  set: (value) => {
+    modelValue.value = value
+  }
+})
+
 const comboSpec = computed<ComboInputSpec | undefined>(() => {
   if (props.widget.spec && isComboInputSpec(props.widget.spec)) {
     return props.widget.spec
   }
   return undefined
 })
+
+const hasRemoteCombo = computed(() => !!comboSpec.value?.remote_combo)
 
 const specDescriptor = computed<{
   kind: AssetKind

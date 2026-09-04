@@ -20,6 +20,24 @@ const zRemoteWidgetConfig = z.object({
   timeout: z.number().gte(0).optional(),
   max_retries: z.number().gte(0).optional()
 })
+const zRemoteItemSchema = z.object({
+  value_field: z.string(),
+  label_field: z.string(),
+  preview_url_field: z.string().optional(),
+  preview_type: z.enum(['image', 'video', 'audio']).default('image'),
+  description_field: z.string().optional(),
+  search_fields: z.array(z.string()).optional()
+})
+const zRemoteComboConfig = z.object({
+  route: z.string().startsWith('/'),
+  item_schema: zRemoteItemSchema,
+  refresh_button: z.boolean().optional(),
+  auto_select: z.enum(['first', 'last']).optional(),
+  refresh: z.number().gte(128).safe().or(z.number().lte(0).safe()).optional(),
+  response_key: z.string().optional(),
+  timeout: z.number().gte(0).optional(),
+  max_retries: z.number().gte(0).optional()
+})
 const zMultiSelectOption = z.object({
   placeholder: z.string().optional(),
   chip: z.boolean().optional()
@@ -101,9 +119,19 @@ export const zComboInputOptions = zBaseInputOptions.extend({
   animated_image_upload: z.boolean().optional(),
   options: z.array(zComboOption).optional(),
   remote: zRemoteWidgetConfig.optional(),
+  remote_combo: zRemoteComboConfig.optional(),
   /** Whether the widget is a multi-select widget. */
   multi_select: zMultiSelectOption.optional()
 })
+
+export const zComboInputOptionsValidated = zComboInputOptions.refine(
+  (opts) => !(opts.remote && opts.remote_combo),
+  {
+    message:
+      'Combo input cannot specify both `remote` and `remote_combo`; pick one.',
+    path: ['remote_combo']
+  }
+)
 
 const zIntInputSpec = z.tuple([z.literal('INT'), zIntInputOptions.optional()])
 const zFloatInputSpec = z.tuple([
@@ -124,11 +152,11 @@ const zStringInputSpec = z.tuple([
  */
 const zComboInputSpec = z.tuple([
   z.array(zComboOption),
-  zComboInputOptions.optional()
+  zComboInputOptionsValidated.optional()
 ])
 const zComboInputSpecV2 = z.tuple([
   z.literal('COMBO'),
-  zComboInputOptions.optional()
+  zComboInputOptionsValidated.optional()
 ])
 
 export function isComboInputSpecV1(
@@ -367,6 +395,8 @@ export type ComfyNodeDef = z.infer<typeof zComfyNodeDef>
 /** Full `/object_info` response: node definitions keyed by node type. */
 export type ObjectInfoResponse = Record<string, ComfyNodeDef>
 export type RemoteWidgetConfig = z.infer<typeof zRemoteWidgetConfig>
+export type RemoteComboConfig = z.infer<typeof zRemoteComboConfig>
+export type RemoteItemSchema = z.infer<typeof zRemoteItemSchema>
 
 export type ComboInputOptions = z.infer<typeof zComboInputOptions>
 export type NumericInputOptions = z.infer<typeof zNumericInputOptions>

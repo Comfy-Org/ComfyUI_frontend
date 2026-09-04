@@ -21,6 +21,8 @@ interface Props {
   uploadable: boolean
   filterOptions: FilterOption[]
   sortOptions: SortOption[]
+  showSort?: boolean
+  showLayoutSwitcher?: boolean
   showOwnershipFilter?: boolean
   ownershipOptions?: OwnershipFilterOption[]
   showBaseModelFilter?: boolean
@@ -36,6 +38,8 @@ const {
   uploadable,
   filterOptions,
   sortOptions,
+  showSort = true,
+  showLayoutSwitcher = true,
   showOwnershipFilter,
   ownershipOptions,
   showBaseModelFilter,
@@ -143,6 +147,8 @@ const onWheel = (event: WheelEvent) => {
       v-model:ownership-selected="ownershipSelected"
       v-model:base-model-selected="baseModelSelected"
       :sort-options
+      :show-sort
+      :show-layout-switcher
       :show-ownership-filter
       :ownership-options
       :show-base-model-filter
@@ -180,6 +186,7 @@ const onWheel = (event: WheelEvent) => {
           :preview-url="item.preview_url ?? ''"
           :name="item.name"
           :label="item.label"
+          :description="item.description"
           :layout="layoutMode"
           @click="emit('item-click', item, index)"
         />
