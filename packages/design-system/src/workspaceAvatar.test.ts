@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { workspaceAvatarStyle } from './avatarColor'
+import { workspaceAvatarStyle } from './workspaceAvatar'
 
 describe('workspaceAvatarStyle', () => {
   it('is neutral when the tier is unavailable', () => {

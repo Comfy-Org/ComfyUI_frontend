@@ -8,10 +8,10 @@
 </template>
 
 <script setup lang="ts">
+import { workspaceAvatarStyle } from '@comfyorg/design-system/workspaceAvatar'
 import { computed } from 'vue'
 
 import type { SubscriptionTier } from '@/platform/workspace/api/workspaceApi'
-import { workspaceAvatarStyle } from '@/platform/workspace/utils/avatarColor'
 
 const { workspaceName, subscriptionTier } = defineProps<{
   workspaceName: string

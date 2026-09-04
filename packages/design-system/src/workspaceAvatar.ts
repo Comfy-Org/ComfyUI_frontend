@@ -1,5 +1,3 @@
-import type { CSSProperties } from 'vue'
-
 const PLAN_COLORS = {
   FREE: { lightness: 0.45, chroma: 0.016, hue: 240, hueRange: 0 },
   CREATOR: { lightness: 0.53, chroma: 0.085, hue: 210, hueRange: 14 },
@@ -16,7 +14,7 @@ const NAME_VARIATIONS = [-1, -0.5, 0, 0.5, 1] as const
 export function workspaceAvatarStyle(
   workspaceName: string,
   subscriptionTier: string | null | undefined
-): CSSProperties {
+): { backgroundColor?: string; color?: string } {
   if (subscriptionTier === undefined) return {}
 
   const plan = resolveAvatarPlan(subscriptionTier)
