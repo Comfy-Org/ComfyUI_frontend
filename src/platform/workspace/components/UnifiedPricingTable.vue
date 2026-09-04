@@ -359,13 +359,19 @@
          normally; while subscribing is blocked the same row carries a notice
          pill saying why. min-h reserves the blurb's two-line wrap height so
          the swap never shifts the table above it. -->
-    <div class="mt-auto flex min-h-14 items-center justify-center pt-4">
+    <div
+      ref="footerRegionEl"
+      tabindex="-1"
+      data-testid="pricing-table-footer"
+      class="mt-auto flex min-h-14 items-center justify-center pt-4 outline-none"
+    >
       <!-- Inverted pill (token pairing from the Button `inverted` variant so
            it stays high-contrast in both themes). A status region: only its
            bold links are interactive, matching the fine-print blurb's link
            treatment. -->
       <p
         v-if="footerNotice"
+        ref="footerNoticeEl"
         role="status"
         class="m-0 flex flex-wrap items-center justify-center gap-x-1.5 rounded-full bg-base-foreground px-4 py-1.5 text-center text-sm text-base-background"
       >
@@ -442,10 +448,11 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import SelectButton from 'primevue/selectbutton'
 import type { ToggleButtonPassThroughMethodOptions } from 'primevue/togglebutton'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { I18nT, useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import CreditSlider from '@/components/ui/credit-slider/CreditSlider.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import {
@@ -535,9 +542,19 @@ interface FooterNotice {
   links: FooterNoticeLink[]
 }
 
-/** Same destination as the `Comfy.ContactSupport` command. */
+const { userEmail, resolvedUserInfo } = useCurrentUser()
+
+/** Same destination and user context as the `Comfy.ContactSupport` command,
+ *  so billing tickets arrive identified. */
 function openContactSupport() {
-  window.open(buildSupportUrl(), '_blank', 'noopener,noreferrer')
+  window.open(
+    buildSupportUrl({
+      userEmail: userEmail.value,
+      userId: resolvedUserInfo.value?.id
+    }),
+    '_blank',
+    'noopener,noreferrer'
+  )
 }
 
 function contactSupportLink(): FooterNoticeLink {
@@ -585,10 +602,16 @@ const footerNotice = computed<FooterNotice | null>(() => {
       ]
     }
   }
+  // Only a genuinely resolved `can_subscribe_self_serve: false` — a denied
+  // (401/403) read is authoritative but carries no capability values, so it
+  // must not read as a change in progress. And only while every plan CTA the
+  // table shows is disabled: a pill saying subscribing is blocked next to an
+  // enabled Change/Resubscribe button would contradict itself.
   if (
     isCloud &&
-    capabilities.snapshotAuthoritative.value &&
-    !capabilities.canSubscribeSelfServe.value
+    capabilities.snapshotResolved.value &&
+    !capabilities.canSubscribeSelfServe.value &&
+    shownPlanCtasDisabled.value
   ) {
     return capabilityDeniedNotice()
   }
@@ -602,6 +625,9 @@ const footerNotice = computed<FooterNotice | null>(() => {
 })
 
 const planMode = ref<'personal' | 'team'>(initialPlanMode)
+
+const footerRegionEl = ref<HTMLElement | null>(null)
+const footerNoticeEl = ref<HTMLElement | null>(null)
 
 /** The Wan 2.2 i2v template the video estimates are based on. */
 const VIDEO_TEMPLATE_URL =
@@ -980,6 +1006,16 @@ const canUsePersonalPlanAction = (tierKey: CheckoutTierKey): boolean => {
 const isButtonDisabled = (tier: PricingTierConfig): boolean =>
   isLoading || !canUsePersonalPlanAction(tier.key)
 
+// Derived from the exact disable computation the visible plan buttons use, so
+// the denied pill can never sit beside an enabled plan CTA (e.g. a snapshot
+// with can_subscribe_self_serve false but can_change_seats true). The
+// Enterprise contact button is navigation, not a plan CTA.
+const shownPlanCtasDisabled = computed(() =>
+  planMode.value === 'team'
+    ? isTeamButtonDisabled.value
+    : tiers.every((tier) => isButtonDisabled(tier))
+)
+
 const getButtonTextClass = (tier: PricingTierConfig): string =>
   tier.key === 'creator'
     ? 'font-inter text-sm font-bold leading-normal text-base-background'
@@ -1041,4 +1077,18 @@ function handleSubscribeTeam() {
 function handleViewEnterprise() {
   window.open(ENTERPRISE_URL, '_blank')
 }
+
+// The pill is removed by v-if the moment its blocked state clears; if keyboard
+// focus is inside it (on Try again), it would drop to <body>. This pre-flush
+// watch still sees the pill in the DOM, so it can tell whether it held focus
+// and hand focus to the footer region once the swap has rendered.
+// (Registered last: watching `footerNotice` evaluates it eagerly, and its
+// getter reads bindings declared through the end of this script.)
+watch(footerNotice, async (notice) => {
+  if (notice) return
+  const pill = footerNoticeEl.value
+  if (!pill || !pill.contains(document.activeElement)) return
+  await nextTick()
+  footerRegionEl.value?.focus()
+})
 </script>
