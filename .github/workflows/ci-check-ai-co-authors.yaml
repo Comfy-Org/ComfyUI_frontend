@@ -23,4 +23,4 @@ jobs:
         run: node --test scripts/check-test-skip-accountability.test.mjs
 
       - name: Check browser test skips have restoration tracking
-        run: node scripts/check-test-skip-accountability.mjs
+        run: node scripts/check-test-skip-accountability.mjs --base-sha "${{ github.event.pull_request.base.sha }}"

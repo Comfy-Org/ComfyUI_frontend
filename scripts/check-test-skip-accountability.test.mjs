@@ -10,16 +10,10 @@ const script = `${directory}check-test-skip-accountability.mjs`
 const fixture = (name) =>
   `${directory}fixtures/test-skip-accountability/${name}`
 
-const runChecker = (body) =>
+const runChecker = (body, diff = 'added-fixme.diff') =>
   spawnSync(
     process.execPath,
-    [
-      script,
-      '--diff-file',
-      fixture('added-fixme.diff'),
-      '--body-file',
-      fixture(body)
-    ],
+    [script, '--diff-file', fixture(diff), '--body-file', fixture(body)],
     { encoding: 'utf8' }
   )
 
@@ -33,6 +27,12 @@ describe('test skip accountability checker', () => {
 
   it('accepts an added fixme with a linked tracking issue', () => {
     const result = runChecker('linked-body.md')
+
+    assert.equal(result.status, 0, result.stderr)
+  })
+
+  it('ignores skip-like text in comments and strings', () => {
+    const result = runChecker('unlinked-body.md', 'non-executable-skips.diff')
 
     assert.equal(result.status, 0, result.stderr)
   })

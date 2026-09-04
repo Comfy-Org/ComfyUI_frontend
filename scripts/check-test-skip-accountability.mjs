@@ -15,7 +15,13 @@ const readDiff = () => {
 
   return execFileSync(
     'git',
-    ['diff', '--unified=0', 'origin/main...HEAD', '--', 'browser_tests'],
+    [
+      'diff',
+      '--unified=0',
+      `${readArgument('--base-sha') ?? 'origin/main'}...HEAD`,
+      '--',
+      'browser_tests'
+    ],
     { encoding: 'utf8' }
   )
 }
@@ -36,7 +42,7 @@ const readPullRequestBody = () => {
   })
 }
 
-const addedSkipPattern = /^\+(?!\+\+\+).*\btest\.(?:fixme|skip)\s*\(/m
+const addedSkipPattern = /^\+\s*test\.(?:fixme|skip)\s*\(/m
 const trackingLinkPattern =
   /(?:https?:\/\/github\.com\/[\w.-]+\/[\w.-]+\/(?:issues|pull)\/\d+|(?:^|[\s([])#\d+)/m
 
