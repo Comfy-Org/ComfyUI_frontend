@@ -32,7 +32,12 @@ export async function signUpWithProvisioning<
     try {
       await credential.user.delete()
     } catch (rollbackError) {
-      deps.onRollbackFailure?.(rollbackError)
+      // A reporting sink can throw; never let it displace the original error.
+      try {
+        deps.onRollbackFailure?.(rollbackError)
+      } catch {
+        void 0
+      }
     }
     throw error
   }
