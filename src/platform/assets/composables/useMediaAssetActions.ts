@@ -28,10 +28,8 @@ import { getAssetUrl } from '../utils/assetUrlUtil'
 import { clearDeletedAssetWidgetValues } from '../utils/clearDeletedAssetWidgetValues'
 import { clearNodePreviewCacheForValues } from '../utils/clearNodePreviewCacheForValues'
 import { markDeletedAssetsAsMissingMedia } from '../utils/markDeletedAssetsAsMissingMedia'
-import {
-  getTotalAssetOutputCount,
-  resolveOutputAssetItems
-} from '../utils/outputAssetUtil'
+import { getTotalAssetOutputCount } from '../utils/outputAssetCountUtil'
+import { resolveOutputAssetItems } from '../utils/outputAssetUtil'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
