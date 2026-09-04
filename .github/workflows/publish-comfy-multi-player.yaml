@@ -51,7 +51,8 @@ jobs:
           pnpm --filter @comfyorg/comfy-multi-player run check:coderabbit
           pnpm --filter @comfyorg/comfy-multi-player run check:imports
           pnpm --filter @comfyorg/comfy-multi-player run check:pins
-          pnpm --filter @comfyorg/comfy-multi-player test
+          # already covered as an explicit probe by check:stateless above
+          pnpm --filter @comfyorg/comfy-multi-player test --exclude test/stateless.test.ts
           pnpm --filter @comfyorg/comfy-multi-player run test:clock-matrix
 
       - name: Verify package contents
