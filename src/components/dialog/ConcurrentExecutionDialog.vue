@@ -46,8 +46,8 @@ const visible = computed({
     isConcurrentExecutionEnabled.value &&
     !hasSeenOnboarding.value &&
     !dismissed.value,
-  set: () => {
-    dismissed.value = true
+  set: (open) => {
+    if (!open) void dismiss()
   }
 })
 
