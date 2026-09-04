@@ -168,7 +168,8 @@ function mountFollower(
         graphMutations,
         () => null,
         isTargetActive,
-        getGraph
+        getGraph,
+        'Document schema version mismatch'
       )
       exposedStatus = () => status.value as AgentCrdtStatus
       return () => null

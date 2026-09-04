@@ -61,9 +61,7 @@ interface PersistedDocIdRecord {
   expiresAt: number
 }
 
-const DEFAULT_SCHEMA_ERROR_MESSAGE = 'Document schema version mismatch'
-
-function readSchemaErrorMessage(detail: unknown): string {
+function readSchemaErrorMessage(detail: unknown, fallback: string): string {
   if (
     detail !== null &&
     typeof detail === 'object' &&
@@ -71,7 +69,7 @@ function readSchemaErrorMessage(detail: unknown): string {
     typeof (detail as { message?: unknown }).message === 'string'
   )
     return (detail as { message: string }).message
-  return DEFAULT_SCHEMA_ERROR_MESSAGE
+  return fallback
 }
 
 function safeSessionStorage(): Storage | null {
@@ -213,7 +211,8 @@ export function useAgentCrdtFollower(
    * reads inside the getter are tracked, so a `null` → graph flip triggers a
    * reconcile without waiting for the next remote frame.
    */
-  getGraph: () => MaterializableGraph | null = () => null
+  getGraph: () => MaterializableGraph | null = () => null,
+  schemaErrorFallback = ''
 ) {
   const connected = ref(false)
   const updatesApplied = ref(0)
@@ -419,7 +418,10 @@ export function useAgentCrdtFollower(
       if (event.detail?.code === 'schema_version_mismatch') {
         clearSubscribeRetry()
         permanentSchemaMismatchWorkflowId = subscribedWorkflowId.value
-        schemaError.value = readSchemaErrorMessage(event.detail)
+        schemaError.value = readSchemaErrorMessage(
+          event.detail,
+          schemaErrorFallback
+        )
       } else {
         scheduleSubscribeRetry()
       }
@@ -559,7 +561,7 @@ export function useAgentCrdtFollower(
         : null
     const workflowId =
       typeof detail?.workflowId === 'string' ? detail.workflowId : null
-    schemaError.value = readSchemaErrorMessage(detail)
+    schemaError.value = readSchemaErrorMessage(detail, schemaErrorFallback)
     if (workflowId !== null) adapter.discardPending(workflowId)
     outcomes.value = { ...outcomes.value, errored: outcomes.value.errored + 1 }
     recordDevEvent(
