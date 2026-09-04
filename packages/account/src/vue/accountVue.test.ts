@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/vue'
-import { defineComponent, h, provide } from 'vue'
+import { defineComponent, h, nextTick, provide } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 import type {
   BillingClient,
@@ -13,15 +13,22 @@ import {
   useCredits
 } from './index'
 
-function billing(
-  state: Loadable<BillingBalanceResponse>
-): BillingClient & { unsubscribe: ReturnType<typeof vi.fn> } {
+function billing(state: Loadable<BillingBalanceResponse>): BillingClient & {
+  publish(state: Loadable<BillingBalanceResponse>): void
+  unsubscribe: ReturnType<typeof vi.fn>
+} {
   const unsubscribe = vi.fn()
+  let listener: ((state: Loadable<BillingBalanceResponse>) => void) | undefined
   return {
     unsubscribe,
+    dispose: vi.fn(),
     getCreditsState: () => state,
-    subscribeCredits: () => unsubscribe,
-    refreshCredits: async () => undefined
+    subscribeCredits: (next) => {
+      listener = next
+      return unsubscribe
+    },
+    refreshCredits: async () => undefined,
+    publish: (next) => listener?.(next)
   }
 }
 
@@ -55,13 +62,13 @@ describe('TP-4 Vue contract', () => {
     expect(screen.getByRole('alert').textContent).toBe('Error')
   })
 
-  it('TP-4: useCredits returns readonly ref and disposes subscription', () => {
+  it('TP-4: useCredits reflects updates and disposes subscription', async () => {
     const client = billing({ phase: 'value', value: { balance: 7 } })
     const Child = defineComponent({
       setup() {
         const credits = useCredits()
         expect(credits.value.phase).toBe('value')
-        return () => h('span')
+        return () => h('span', renderCredits(credits.value))
       }
     })
     const Host = defineComponent({
@@ -71,7 +78,18 @@ describe('TP-4 Vue contract', () => {
       }
     })
     const result = render(Host)
+    client.publish({ phase: 'value', value: { balance: 0 } })
+    await nextTick()
+    expect(screen.getByText('0')).toBeTruthy()
+    client.publish({ phase: 'error', error: new Error('offline') })
+    await nextTick()
+    expect(screen.getByText('error')).toBeTruthy()
     result.unmount()
     expect(client.unsubscribe).toHaveBeenCalledOnce()
   })
 })
+
+function renderCredits(state: Loadable<BillingBalanceResponse>) {
+  if (state.phase === 'value') return String(state.value.balance)
+  return state.phase
+}

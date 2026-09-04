@@ -21,6 +21,7 @@ export type BillingOperationKind =
   | 'cancel'
 export type ReasonKey =
   | 'generic'
+  | 'checkout_expired'
   | 'declined_generic'
   | 'declined_insufficient_funds'
   | 'declined_authentication_required'
@@ -29,6 +30,7 @@ export type BillingOperationStatus =
   | 'succeeded'
   | 'failed'
   | 'timeout'
+  | 'expired'
   | 'canceled'
   | 'payment_received_hold'
 
@@ -42,7 +44,7 @@ export interface TopupRequest {
   idempotency_key: string
 }
 export interface ResubscribeRequest {
-  plan_slug?: string
+  idempotency_key?: string
 }
 export interface CancelRequest {
   idempotency_key?: string
@@ -54,27 +56,43 @@ export interface BillingOperationRef {
   billing_op_id: string
   action_url?: string
 }
-export interface SubscribeResponse extends BillingOperationRef {
-  status?: string
-  session_id?: string
+export interface SubscribeResponse {
+  billing_op_id: string
+  status: 'subscribed' | 'needs_payment_method' | 'pending_payment'
+  payment_method_url?: string
+  effective_at?: string
 }
 export interface TopupResponse extends BillingOperationRef {
-  status?: string
+  topup_id?: string
+  amount_cents: number
+  status: 'pending' | 'completed' | 'failed'
 }
 export interface ResubscribeResponse {
-  status: 'resubscribed' | 'pending'
+  status: 'active' | 'pending'
   billing_op_id?: string
+  message?: string
 }
 export interface CancelResponse {
-  status: 'canceled' | 'pending'
-  billing_op_id?: string
+  billing_op_id: string
+  cancel_at: string
 }
 export interface PaymentPortalResponse {
   url: string
 }
+export interface BillingStatusResponse {
+  pending_billing_op_id?: string
+  pending_billing_op_type?: 'subscription' | 'topup'
+  action_url?: string
+  subscription_tier?: string
+  subscription_status?: string
+  is_active?: boolean
+}
 export interface BillingOperationResponse {
   status: BillingOperationStatus
+  started_at?: string
   action_url?: string
+  authentication_state?: string
+  payment_intent_client_secret?: string
   reason_code?: string
   error_message?: string
   no_charge_confirmed?: boolean
@@ -91,6 +109,7 @@ export interface BillingState {
   step: BillingStep
   reasonKey?: ReasonKey
   actionUrl?: string
+  actionError?: string
   noChargeConfirmed: boolean
 }
 export interface BillingClock {
@@ -109,16 +128,19 @@ export interface BillingHostPorts {
   clock: BillingClock
   operationStore: BillingOperationStore
   openUrl(url: string, mode: OpenUrlMode): Promise<{ opened: boolean }>
+  handleNextAction?: (
+    clientSecret: string
+  ) => Promise<{ error?: { message: string; code?: string } }>
+  fallbackToHostedUrl?: boolean
 }
 export interface BillingTransport {
   transport(
     request: TransportRequest<unknown>
   ): Promise<{ status: number; body: unknown }>
 }
-export interface BillingClient {
+export interface BillingApiClient {
   subscribe(
     input: SubscribeRequest,
-    idempotencyKey: string,
     signal?: AccountAbortSignal
   ): Promise<SubscribeResponse>
   topup(
@@ -145,4 +167,5 @@ export interface BillingClient {
     id: string,
     signal?: AccountAbortSignal
   ): Promise<BillingOperationResponse>
+  getStatus(signal?: AccountAbortSignal): Promise<BillingStatusResponse>
 }

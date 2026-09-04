@@ -27,6 +27,8 @@ export const defaultBillingCopy: Readonly<Record<BillingCopyKey, string>> = {
   'billing.step.success.header': 'Payment complete',
   'billing.step.success.body': 'Your account is updated.',
   'billing.reason.generic': 'Something went wrong.',
+  'billing.reason.checkout_expired':
+    'This checkout expired. Start again when you are ready.',
   'billing.reason.declined_generic': 'Your bank declined the payment.',
   'billing.reason.declined_insufficient_funds':
     'Your bank reported insufficient funds.',

@@ -1,9 +1,10 @@
 import { reduceBilling } from './reducer.js'
 import type {
-  BillingClient,
+  BillingApiClient,
   BillingClock,
   BillingOperationKind,
   BillingOperationStore,
+  OpenUrlMode,
   BillingState
 } from './types.js'
 
@@ -12,28 +13,36 @@ export const billingPollTiming = {
   multiplier: 1.5,
   capMs: 8_000,
   mutationTimeoutMs: 120_000,
-  subscriptionTimeoutMs: 300_000
+  checkoutExpiryMs: 6 * 60 * 60 * 1_000
 } as const
+const resumeDelaysMs = [3_000, 10_000, 30_000] as const
 export function createBillingPoller(options: {
-  client: Pick<BillingClient, 'getOperation'>
+  client: Pick<BillingApiClient, 'getOperation'>
   clock: BillingClock
   store: BillingOperationStore
   onState(state: BillingState): void
+  openUrl?(url: string, mode: OpenUrlMode): Promise<{ opened: boolean }>
+  handleNextAction?: (
+    clientSecret: string
+  ) => Promise<{ error?: { message: string; code?: string } }>
+  fallbackToHostedUrl?: boolean
 }) {
   let handle: unknown
   let stopped = false
+  let openedActionUrl: string | undefined
+  let actionRequired = false
+  const handledClientSecrets = new Set<string>()
   async function poll(
     id: string,
-    kind: BillingOperationKind,
     startedAt: number,
-    delay: number = billingPollTiming.initialMs
+    delay: number = billingPollTiming.initialMs,
+    resumeAttempt?: number
   ): Promise<void> {
     if (stopped) return
-    const timeout =
-      kind === 'subscribe' || kind === 'resubscribe'
-        ? billingPollTiming.subscriptionTimeoutMs
-        : billingPollTiming.mutationTimeoutMs
-    if (options.clock.now() - startedAt >= timeout) {
+    if (
+      !actionRequired &&
+      options.clock.now() - startedAt >= billingPollTiming.mutationTimeoutMs
+    ) {
       options.onState(
         reduceBilling(
           { operationId: id, step: 'verifying', noChargeConfirmed: false },
@@ -44,16 +53,76 @@ export function createBillingPoller(options: {
       return
     }
     const response = await options.client.getOperation(id)
+    const clientSecret = response.payment_intent_client_secret
+    const requiresNextAction =
+      response.authentication_state === 'requires_action' &&
+      clientSecret !== undefined
+    actionRequired ||= response.action_url !== undefined || requiresNextAction
+    const parsedStartedAt = response.started_at
+      ? Date.parse(response.started_at)
+      : Number.NaN
+    const backendStartedAt = Number.isNaN(parsedStartedAt)
+      ? startedAt
+      : parsedStartedAt
+    if (
+      response.status === 'pending' &&
+      actionRequired &&
+      options.clock.now() - backendStartedAt >=
+        billingPollTiming.checkoutExpiryMs
+    ) {
+      options.onState(
+        reduceBilling(
+          {
+            operationId: id,
+            step: 'verifying',
+            actionUrl: response.action_url ?? openedActionUrl,
+            noChargeConfirmed: false
+          },
+          { type: 'opStatus', status: 'expired' }
+        )
+      )
+      await options.store.clearActiveId()
+      return
+    }
     let state: BillingState = {
       operationId: id,
-      step: 'preview',
+      step: resumeAttempt === undefined ? 'preview' : 'verifying',
       noChargeConfirmed: false
     }
-    if (response.action_url)
+    const actionUrl = response.action_url ?? openedActionUrl
+    if (actionRequired && actionUrl)
       state = reduceBilling(state, {
         type: 'urlReceived',
-        url: response.action_url
+        url: actionUrl
       })
+    let nextActionFailed = false
+    if (
+      requiresNextAction &&
+      options.handleNextAction &&
+      !handledClientSecrets.has(clientSecret)
+    ) {
+      handledClientSecrets.add(clientSecret)
+      const result = await options.handleNextAction(clientSecret)
+      if (result.error) {
+        nextActionFailed = true
+        state = reduceBilling(state, {
+          type: 'actionFailed',
+          message: result.error.message
+        })
+      }
+    }
+    const shouldOpenHostedUrl =
+      !requiresNextAction ||
+      !options.handleNextAction ||
+      (nextActionFailed && options.fallbackToHostedUrl === true)
+    if (
+      shouldOpenHostedUrl &&
+      response.action_url &&
+      response.action_url !== openedActionUrl
+    ) {
+      openedActionUrl = response.action_url
+      await options.openUrl?.(response.action_url, 'new_tab')
+    }
     state = reduceBilling(state, {
       type: 'opStatus',
       status: response.status,
@@ -66,25 +135,45 @@ export function createBillingPoller(options: {
       await options.store.clearActiveId()
       return
     }
+    const scheduledDelay =
+      resumeAttempt === undefined
+        ? response.action_url
+          ? 30_000
+          : delay
+        : (resumeDelaysMs[resumeAttempt] ?? 30_000)
     const next = Math.min(
-      delay * billingPollTiming.multiplier,
+      scheduledDelay * billingPollTiming.multiplier,
       billingPollTiming.capMs
     )
     handle = options.clock.schedule(
-      () => void poll(id, kind, startedAt, next),
-      delay
+      () =>
+        void poll(
+          id,
+          startedAt,
+          next,
+          resumeAttempt === undefined ? undefined : resumeAttempt + 1
+        ),
+      scheduledDelay
     )
   }
   return {
-    async start(id: string, kind: BillingOperationKind) {
+    async start(id: string, kind: BillingOperationKind, actionUrl?: string) {
+      void kind
       stopped = false
+      openedActionUrl = actionUrl
+      actionRequired = actionUrl !== undefined
+      handledClientSecrets.clear()
       await options.store.setActiveId(id)
-      await poll(id, kind, options.clock.now())
+      await poll(id, options.clock.now())
     },
-    async resume(kind: BillingOperationKind) {
-      const id = await options.store.getActiveId()
-      if (id) await poll(id, kind, options.clock.now())
-      return id
+    async resume(id: string, kind: BillingOperationKind) {
+      void kind
+      stopped = false
+      openedActionUrl = undefined
+      actionRequired = true
+      handledClientSecrets.clear()
+      await options.store.setActiveId(id)
+      await poll(id, options.clock.now(), billingPollTiming.initialMs, 0)
     },
     stop() {
       stopped = true

@@ -4,6 +4,7 @@ import type { BillingOperationStatus, BillingState } from './types.js'
 export type BillingEvent =
   | { type: 'started'; operationId: string }
   | { type: 'urlReceived'; url: string }
+  | { type: 'actionFailed'; message: string }
   | {
       type: 'opStatus'
       status: BillingOperationStatus
@@ -36,6 +37,8 @@ export function reduceBilling(
     }
   if (event.type === 'urlReceived')
     return { ...state, step: 'verifying', actionUrl: event.url }
+  if (event.type === 'actionFailed')
+    return { ...state, step: 'verifying', actionError: event.message }
   if (event.type === 'hostReturned') {
     if (event.result === 'success') return { ...state, step: 'verifying' }
     return {
@@ -57,6 +60,13 @@ export function reduceBilling(
     }
   if (event.status === 'payment_received_hold')
     return { ...state, step: 'payment_received_hold', actionUrl: undefined }
+  if (event.status === 'expired')
+    return {
+      ...state,
+      step: 'preview',
+      reasonKey: 'checkout_expired',
+      actionUrl: undefined
+    }
   if (event.status === 'timeout')
     return {
       ...state,

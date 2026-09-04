@@ -22,7 +22,7 @@
     "build": "tsc -p tsconfig.build.json",
     "guard": "bash scripts/verify-import-guard.sh",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --root ../.. packages/account/src"
+    "test": "vitest run"
   },
   "devDependencies": {
     "typescript": "catalog:",

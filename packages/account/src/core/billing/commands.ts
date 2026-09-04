@@ -2,9 +2,10 @@ import { createBillingPoller } from './poller.js'
 import { initialBillingState, reduceBilling } from './reducer.js'
 import { createSingleFlight } from './singleFlight.js'
 import type {
-  BillingClient,
+  BillingApiClient,
   BillingHostPorts,
   BillingOperationKind,
+  BillingStatusResponse,
   BillingState,
   CancelRequest,
   PaymentPortalRequest,
@@ -15,7 +16,7 @@ import type {
 
 export interface BillingCommands {
   start(): Promise<void>
-  subscribe(input: SubscribeRequest, intent?: string): Promise<void>
+  subscribe(input: SubscribeRequest): Promise<void>
   topUp(input: TopupRequest, intent?: string): Promise<void>
   resubscribe(input: ResubscribeRequest, intent?: string): Promise<void>
   cancelSubscription(input: CancelRequest, intent?: string): Promise<void>
@@ -26,15 +27,19 @@ export interface BillingCommands {
   getState(): BillingState
   subscribeState(listener: (state: BillingState) => void): () => void
   reset(): void
+  getBillingStatus(): BillingStatusResponse | undefined
 }
 
 export function createBillingCommands(options: {
-  client: BillingClient
+  client: BillingApiClient
   ports: BillingHostPorts
 }): BillingCommands {
+  const attemptIntent = (kind: string) =>
+    `${options.ports.operationStore.namespace}:${kind}:${crypto.randomUUID()}`
   let state = initialBillingState
   const listeners = new Set<(state: BillingState) => void>()
   const singleFlight = createSingleFlight()
+  let billingStatus: BillingStatusResponse | undefined
   function publish(next: BillingState) {
     state = next
     listeners.forEach((listener) => listener(state))
@@ -43,7 +48,10 @@ export function createBillingCommands(options: {
     client: options.client,
     clock: options.ports.clock,
     store: options.ports.operationStore,
-    onState: publish
+    onState: publish,
+    openUrl: options.ports.openUrl,
+    handleNextAction: options.ports.handleNextAction,
+    fallbackToHostedUrl: options.ports.fallbackToHostedUrl
   })
   async function follow(
     id: string,
@@ -61,22 +69,53 @@ export function createBillingCommands(options: {
         return
       }
     }
-    await poller.start(id, kind)
+    await poller.start(id, kind, actionUrl)
   }
   return {
     async start() {
-      await poller.resume('subscribe')
+      const status = await options.client.getStatus()
+      billingStatus = status
+      const operationId =
+        status.pending_billing_op_id ??
+        (await options.ports.operationStore.getActiveId())
+      if (!operationId) return
+      const kind =
+        status.pending_billing_op_type === 'topup' ? 'topup' : 'subscribe'
+      publish(
+        reduceBilling(state, { type: 'started', operationId: operationId })
+      )
+      await poller.resume(operationId, kind)
     },
-    async subscribe(
-      input,
-      intent = `${options.ports.operationStore.namespace}:subscribe:${input.plan_slug}`
-    ) {
-      await singleFlight('subscribe', async () =>
-        options.client
-          .subscribe(input, intent)
-          .then((result) =>
-            follow(result.billing_op_id, 'subscribe', result.action_url)
+    async subscribe(input) {
+      if (
+        billingStatus?.is_active &&
+        billingStatus.subscription_tier !== 'FREE'
+      ) {
+        if (billingStatus.subscription_status === 'canceled') {
+          await this.resubscribe({})
+        } else {
+          publish(
+            reduceBilling(state, { type: 'opStatus', status: 'succeeded' })
           )
+        }
+        return
+      }
+      await singleFlight('subscribe', async () =>
+        options.client.subscribe(input).then(async (result) => {
+          if (result.status === 'subscribed') {
+            publish(
+              reduceBilling(state, { type: 'opStatus', status: 'succeeded' })
+            )
+            return
+          }
+          await follow(
+            result.billing_op_id,
+            'subscribe',
+            result.status === 'needs_payment_method'
+              ? result.payment_method_url
+              : undefined
+          )
+        })
       )
     },
     async topUp(input, intent = input.idempotency_key) {
@@ -88,10 +127,7 @@ export function createBillingCommands(options: {
           )
       )
     },
-    async resubscribe(
-      input,
-      intent = `${options.ports.operationStore.namespace}:resubscribe:${input.plan_slug ?? 'current'}`
-    ) {
+    async resubscribe(input, intent = attemptIntent('resubscribe')) {
       const result = await options.client.resubscribe(input, intent)
       if (result.status === 'pending' && result.billing_op_id)
         await follow(result.billing_op_id, 'resubscribe')
@@ -100,19 +136,12 @@ export function createBillingCommands(options: {
     },
     async cancelSubscription(
       input,
-      intent = input.idempotency_key ??
-        `${options.ports.operationStore.namespace}:cancel`
+      intent = input.idempotency_key ?? attemptIntent('cancel')
     ) {
       const result = await options.client.cancel(input, intent)
-      if (result.status === 'pending' && result.billing_op_id)
-        await follow(result.billing_op_id, 'cancel')
-      else
-        publish(reduceBilling(state, { type: 'opStatus', status: 'succeeded' }))
+      await follow(result.billing_op_id, 'cancel')
     },
-    async openPaymentPortal(
-      input,
-      intent = `${options.ports.operationStore.namespace}:portal`
-    ) {
+    async openPaymentPortal(input, intent = attemptIntent('portal')) {
       const result = await options.client.paymentPortal(input, intent)
       return options.ports.openUrl(result.url, 'new_tab')
     },
@@ -123,6 +152,7 @@ export function createBillingCommands(options: {
     },
     reset() {
       publish(initialBillingState)
-    }
+    },
+    getBillingStatus: () => billingStatus
   }
 }
