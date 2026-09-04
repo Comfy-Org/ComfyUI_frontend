@@ -1,12 +1,5 @@
 <script setup lang="ts">
-import {
-  Check,
-  ChevronRight,
-  Coins,
-  CreditCard,
-  LogOut,
-  SlidersHorizontal
-} from '@lucide/vue'
+import { ArrowLeftRight, Check, Coins, LogOut, Settings } from '@lucide/vue'
 import {
   DropdownMenuContent,
   DropdownMenuItem,
@@ -42,19 +35,36 @@ const hasCredits = computed(() => (account.value?.credits ?? 0) > 0)
 const formattedCredits = computed(() =>
   new Intl.NumberFormat(locale).format(account.value?.credits ?? 0)
 )
-const initials = computed(() =>
-  (account.value?.name ?? '')
+
+function initialsOf(name: string): string {
+  return name
     .split(' ')
     .map((part) => part[0])
     .slice(0, 2)
     .join('')
     .toUpperCase()
+}
+
+const initials = computed(() => initialsOf(account.value?.name ?? ''))
+const workspaceInitials = computed(() =>
+  initialsOf(account.value?.workspace ?? '')
+)
+const planLabel = computed(() =>
+  t(account.value?.subscribed ? 'nav.planPro' : 'nav.planFree', locale)
+)
+const roleLabel = computed(() =>
+  t(
+    account.value?.role === 'member' ? 'nav.roleMember' : 'nav.roleOwner',
+    locale
+  )
 )
 
 const buyingCredits = ref(false)
 
 const itemClass =
   'flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-primary-comfy-canvas outline-none hover:bg-transparency-white-t4 focus-visible:bg-transparency-white-t4'
+const avatarClass =
+  'grid size-10 shrink-0 place-items-center text-sm font-bold text-primary-warm-white'
 </script>
 
 <template>
@@ -106,70 +116,77 @@ const itemClass =
         :side-offset="10"
         class="border-primary-comfy-ink-light bg-site-dropdown z-50 w-80 rounded-2xl border p-2 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
       >
-        <DropdownMenuSub>
-          <DropdownMenuSubTrigger
-            class="hover:bg-transparency-white-t4 data-[state=open]:bg-transparency-white-t4 focus-visible:bg-transparency-white-t4 flex w-full cursor-pointer items-center gap-3 rounded-xl p-2 text-left outline-none"
-            data-testid="account-workspace"
+        <div class="flex items-center gap-3 p-2">
+          <span
+            :class="cn(avatarClass, 'rounded-xl bg-transparency-white-t8')"
+            aria-hidden="true"
           >
+            {{ workspaceInitials }}
+          </span>
+          <span class="min-w-0 flex-1">
             <span
-              class="grid size-11 shrink-0 place-items-center rounded-xl bg-transparency-white-t8 text-lg font-bold text-primary-warm-white"
-              aria-hidden="true"
-            >
-              {{ account.workspace[0] }}
-            </span>
-            <span
-              class="flex-1 truncate text-base font-bold text-primary-warm-white"
+              class="block truncate text-base font-bold text-primary-warm-white"
             >
               {{ account.workspace }}
             </span>
-            <ChevronRight
-              class="size-5 text-primary-warm-gray"
-              aria-hidden="true"
-            />
-          </DropdownMenuSubTrigger>
-          <DropdownMenuPortal>
-            <DropdownMenuSubContent
-              :side-offset="12"
-              class="border-primary-comfy-ink-light bg-site-dropdown z-50 w-72 rounded-2xl border p-2 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
-              data-testid="account-workspaces"
+            <span
+              class="block truncate text-[11px] font-bold tracking-wider text-primary-warm-gray uppercase"
             >
-              <p
-                class="px-3 pt-1 pb-2 text-[11px] font-bold tracking-wider text-primary-warm-gray uppercase"
-              >
-                {{ t('nav.workspaces', locale) }}
-              </p>
-              <DropdownMenuItem
-                v-for="workspace in WORKSPACES"
-                :key="workspace"
-                :class="itemClass"
-                :data-testid="`account-workspace-${workspace}`"
-                @click="switchWorkspace(workspace)"
-              >
-                <span
-                  class="grid size-9 shrink-0 place-items-center rounded-lg bg-transparency-white-t8 text-sm font-bold text-primary-warm-white"
-                  aria-hidden="true"
-                >
-                  {{ workspace[0] }}
-                </span>
-                <span class="flex-1 truncate">{{ workspace }}</span>
-                <Check
-                  v-if="workspace === account.workspace"
-                  class="text-primary-comfy-yellow size-4"
-                  aria-hidden="true"
-                />
-              </DropdownMenuItem>
-            </DropdownMenuSubContent>
-          </DropdownMenuPortal>
-        </DropdownMenuSub>
-
-        <div
-          class="flex items-center gap-3 p-3 text-sm"
-          data-testid="account-credits"
-        >
-          <Coins class="text-primary-comfy-yellow size-5" aria-hidden="true" />
-          <span class="flex-1 text-primary-warm-gray">
-            {{ t('nav.creditsLabel', locale) }}
+              {{ planLabel }} · {{ roleLabel }}
+            </span>
           </span>
+
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger
+              :aria-label="t('nav.switchWorkspace', locale)"
+              data-testid="account-workspace"
+              class="grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg text-primary-warm-gray outline-none hover:bg-transparency-white-t8 focus-visible:bg-transparency-white-t8 data-[state=open]:bg-transparency-white-t8"
+            >
+              <ArrowLeftRight class="size-4" aria-hidden="true" />
+            </DropdownMenuSubTrigger>
+            <DropdownMenuPortal>
+              <DropdownMenuSubContent
+                :side-offset="12"
+                class="border-primary-comfy-ink-light bg-site-dropdown z-50 w-72 rounded-2xl border p-2 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
+                data-testid="account-workspaces"
+              >
+                <p
+                  class="px-3 pt-1 pb-2 text-[11px] font-bold tracking-wider text-primary-warm-gray uppercase"
+                >
+                  {{ t('nav.workspaces', locale) }}
+                </p>
+                <DropdownMenuItem
+                  v-for="workspace in WORKSPACES"
+                  :key="workspace"
+                  :class="itemClass"
+                  :data-testid="`account-workspace-${workspace}`"
+                  @click="switchWorkspace(workspace)"
+                >
+                  <span
+                    class="grid size-9 shrink-0 place-items-center rounded-lg bg-transparency-white-t8 text-sm font-bold text-primary-warm-white"
+                    aria-hidden="true"
+                  >
+                    {{ initialsOf(workspace) }}
+                  </span>
+                  <span class="flex-1 truncate">{{ workspace }}</span>
+                  <Check
+                    v-if="workspace === account.workspace"
+                    class="text-primary-comfy-yellow size-4"
+                    aria-hidden="true"
+                  />
+                </DropdownMenuItem>
+              </DropdownMenuSubContent>
+            </DropdownMenuPortal>
+          </DropdownMenuSub>
+        </div>
+
+        <DropdownMenuItem
+          :class="itemClass"
+          data-testid="account-plan"
+          @click="buyingCredits = true"
+        >
+          <Coins class="size-5 text-primary-warm-gray" aria-hidden="true" />
+          <span class="flex-1">{{ t('nav.creditsLabel', locale) }}</span>
           <span
             :class="
               cn(
@@ -182,63 +199,76 @@ const itemClass =
           >
             {{ formattedCredits }}
           </span>
-        </div>
-
-        <DropdownMenuSeparator class="my-1 h-px bg-transparency-white-t8" />
-
-        <DropdownMenuItem
-          :class="itemClass"
-          data-testid="account-plan"
-          @click="buyingCredits = true"
-        >
-          <CreditCard
-            class="size-5 text-primary-warm-gray"
-            aria-hidden="true"
-          />
-          <span class="flex-1">{{ t('nav.addCredits', locale) }}</span>
         </DropdownMenuItem>
+
         <DropdownMenuItem as-child>
           <a
             :href="externalLinks.cloud"
             target="_blank"
             rel="noopener noreferrer"
             :class="itemClass"
+            data-testid="account-workspace-settings"
           >
-            <SlidersHorizontal
+            <Settings
               class="size-5 text-primary-warm-gray"
               aria-hidden="true"
             />
-            {{ t('nav.settings', locale) }}
+            {{ t('nav.workspaceSettings', locale) }}
           </a>
         </DropdownMenuItem>
 
-        <DropdownMenuSeparator class="my-1 h-px bg-transparency-white-t8" />
+        <DropdownMenuSeparator
+          class="-mx-2 my-2 h-px bg-transparency-white-t8"
+        />
 
-        <div class="group/footer flex items-center gap-3 px-3 py-2">
+        <div class="flex items-center gap-3 p-2">
           <span
-            class="bg-primary-comfy-yellow/80 grid size-8 shrink-0 place-items-center rounded-full text-xs font-bold text-primary-comfy-ink"
+            :class="
+              cn(
+                avatarClass,
+                'bg-primary-comfy-yellow/80 rounded-full text-primary-comfy-ink'
+              )
+            "
             aria-hidden="true"
           >
             {{ initials }}
           </span>
-          <span class="flex-1 truncate text-sm text-primary-warm-gray">
-            {{ account.email }}
-          </span>
-          <DropdownMenuItem as-child>
-            <button
-              type="button"
-              :aria-label="t('nav.signOut', locale)"
-              class="flex h-9 shrink-0 cursor-pointer items-center gap-2 rounded-xl px-2 text-sm font-medium text-primary-warm-gray transition-colors outline-none group-hover/footer:bg-transparency-white-t8 group-hover/footer:px-3 group-hover/footer:text-primary-warm-white focus-visible:bg-transparency-white-t8 focus-visible:text-primary-warm-white"
-              data-testid="account-sign-out"
-              @click="signOut"
+          <span class="min-w-0 flex-1">
+            <span
+              class="block truncate text-sm font-bold text-primary-warm-white"
             >
-              <span class="hidden group-hover/footer:inline">
-                {{ t('nav.signOut', locale) }}
-              </span>
-              <LogOut class="size-5" aria-hidden="true" />
-            </button>
-          </DropdownMenuItem>
+              {{ account.name }}
+            </span>
+            <span class="block truncate text-sm text-primary-warm-gray">
+              {{ account.email }}
+            </span>
+          </span>
         </div>
+
+        <DropdownMenuItem as-child>
+          <a
+            :href="externalLinks.cloud"
+            target="_blank"
+            rel="noopener noreferrer"
+            :class="itemClass"
+            data-testid="account-settings"
+          >
+            <Settings
+              class="size-5 text-primary-warm-gray"
+              aria-hidden="true"
+            />
+            {{ t('nav.accountSettings', locale) }}
+          </a>
+        </DropdownMenuItem>
+
+        <DropdownMenuItem
+          :class="itemClass"
+          data-testid="account-sign-out"
+          @click="signOut"
+        >
+          <LogOut class="size-5 text-primary-warm-gray" aria-hidden="true" />
+          <span class="flex-1">{{ t('nav.signOut', locale) }}</span>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenuPortal>
   </DropdownMenuRoot>

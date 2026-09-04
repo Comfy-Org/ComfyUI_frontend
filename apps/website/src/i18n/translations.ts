@@ -8373,7 +8373,15 @@ Enterprise`
   'nav.creditsLabel': { en: 'Credits', 'zh-CN': '积分' },
   'nav.workspaces': { en: 'Workspaces', 'zh-CN': '工作区' },
   'nav.planAndCredits': { en: 'Plan & credits', 'zh-CN': '套餐与积分' },
-  'nav.settings': { en: 'Settings', 'zh-CN': '设置' },
+  'nav.workspaceSettings': {
+    en: 'Workspace settings',
+    'zh-CN': '工作区设置'
+  },
+  'nav.accountSettings': { en: 'Account settings', 'zh-CN': '账户设置' },
+  'nav.switchWorkspace': { en: 'Switch workspace', 'zh-CN': '切换工作区' },
+  'nav.planFree': { en: 'Free', 'zh-CN': '免费' },
+  'nav.roleOwner': { en: 'Owner', 'zh-CN': '所有者' },
+  'nav.roleMember': { en: 'Member', 'zh-CN': '成员' },
   'nav.planPro': { en: 'Pro', 'zh-CN': 'Pro' },
   'nav.upgrade': { en: 'Upgrade', 'zh-CN': '升级' },
   'nav.addCredits': { en: 'Add credits', 'zh-CN': '添加积分' },
