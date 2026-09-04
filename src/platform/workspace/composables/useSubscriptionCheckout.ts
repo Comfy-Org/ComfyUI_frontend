@@ -193,12 +193,6 @@ export function useSubscriptionCheckout(
   const authenticationError = computed(
     () => activeCheckoutOperation.value?.errorMessage ?? null
   )
-  const canRetryAuthentication = computed(
-    () => activeCheckoutOperation.value?.canRetryAuthentication ?? false
-  )
-  const isAuthenticating = computed(
-    () => activeCheckoutOperation.value?.isAuthenticating ?? false
-  )
   const reconciliationOperationId = computed(() =>
     activeCheckoutOperation.value?.status === 'reconciliation_needed'
       ? activeCheckoutOperation.value.opId
@@ -1341,12 +1335,6 @@ export function useSubscriptionCheckout(
     }
   }
 
-  async function retryPaymentAuthentication() {
-    const opId = activeCheckoutOperation.value?.opId
-    if (!opId) return
-    await billingOperationStore.retryPaymentAuthentication(opId)
-  }
-
   async function handleTeamSubscription(
     confirmReactivation = false,
     confirmationToken?: string,
@@ -1558,8 +1546,6 @@ export function useSubscriptionCheckout(
     activeCheckoutActionUrl,
     authenticationState,
     authenticationError,
-    canRetryAuthentication,
-    isAuthenticating,
     reconciliationOperationId,
     isPolling,
     isTeamCheckout,
@@ -1573,7 +1559,6 @@ export function useSubscriptionCheckout(
     handleTeamSubscribe: handleTeamSubscription,
     handleSubscriptionPayment,
     handleTeamSubscriptionPayment,
-    retryPaymentAuthentication,
     applyPromotionCode,
     invalidateQuote,
     handleResubscribe
