@@ -143,6 +143,30 @@ describe('createOpSender', () => {
     expect(sent[1].ops[0].stamp).toEqual([0, ACTOR])
   })
 
+  it('discards in-flight and queued batches when the document lineage resets', () => {
+    sender.enqueue(Array.from({ length: 300 }, (_, index) => addNode(index)))
+    expect(sender.pending()).toBe(2)
+
+    sender.resetLineage()
+
+    expect(sender.pending()).toBe(0)
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'undeliverable',
+      'undeliverable'
+    ])
+    expect(vi.getTimerCount()).toBe(0)
+
+    baseVersion = 0
+    sender.enqueue([addNode(301)])
+    vi.advanceTimersByTime(20_000)
+
+    expect(sent).toHaveLength(3)
+    expect(sent[1].ops[0]).toMatchObject({
+      op: 'add_node',
+      node_id: 301
+    })
+  })
+
   it('retries a down transport with the SAME minted ops and never re-mints', () => {
     transportUp = false
     sender.enqueue([addNode(1)])

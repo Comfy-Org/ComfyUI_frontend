@@ -91,6 +91,7 @@ interface InFlight {
   workflowId: string
   ops: Op[]
   opIds: Set<string>
+  transmissions: number
   resent: boolean
   timer: ReturnType<typeof setTimeout> | null
 }
@@ -139,6 +140,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       }
       return
     }
+    batch.transmissions++
     armResultTimeout(batch)
   }
 
@@ -153,7 +155,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     batch.timer = setTimeout(() => {
       if (inFlight !== batch) return
       if (batch.resent) {
-        staleAnonymousBudget += 2
+        staleAnonymousBudget += batch.transmissions
         settle({ state: 'unacknowledged', ops: batch.ops })
         return
       }
@@ -172,6 +174,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       workflowId: queued.workflowId,
       ops: queued.ops,
       opIds: new Set(queued.ops.map((op) => op.op_id)),
+      transmissions: 0,
       resent: false,
       timer: null
     }
@@ -231,8 +234,19 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       pump()
     },
     resetLineage() {
+      const discardedOps = [
+        ...(inFlight ? [inFlight.ops] : []),
+        ...queue.map(({ ops }) => ops)
+      ]
+      if (inFlight?.timer) clearTimeout(inFlight.timer)
+      if (inFlight) staleAnonymousBudget += inFlight.transmissions
+      inFlight = null
+      queue.length = 0
       lastMintedVersion = -1
       lastMintedWorkflowId = null
+      for (const ops of discardedOps) {
+        deps.onBatchSettled({ state: 'undeliverable', ops })
+      }
     },
     pending() {
       return queue.length + (inFlight ? 1 : 0)
