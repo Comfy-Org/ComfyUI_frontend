@@ -302,11 +302,19 @@ const crdtFollowerCalls = vi.hoisted(
     }[]
 )
 const persistedCrdtDocId = vi.hoisted(() => ({ value: null as string | null }))
+const persistedCrdtDocIdExpiresAt = vi.hoisted(() => ({ value: 0 }))
 vi.mock('./crdt/persistedDocId', async (importOriginal) => {
   const actual = await importOriginal<typeof PersistedDocIdModule>()
   return {
     ...actual,
-    reconcilePersistedDocId: () => persistedCrdtDocId.value
+    reconcilePersistedDocId: () => persistedCrdtDocId.value,
+    reconcilePersistedDocIdRecord: () =>
+      persistedCrdtDocId.value === null
+        ? null
+        : {
+            docId: persistedCrdtDocId.value,
+            expiresAt: persistedCrdtDocIdExpiresAt.value
+          }
   }
 })
 vi.mock('./crdt/useAgentCrdtFollower', async (importOriginal) => {
@@ -358,6 +366,7 @@ beforeEach(() => {
   URL.revokeObjectURL = vi.fn()
   localStorage.clear()
   persistedCrdtDocId.value = null
+  persistedCrdtDocIdExpiresAt.value = Date.now() + 5 * 60 * 1000
   mintPortWiringDeps.current = null
   getServerFeature.mockReset()
   getServerFeature.mockImplementation(
@@ -2074,6 +2083,25 @@ describe('AgentPanelRoot workflow binding', () => {
         workflowId: null,
         active: true
       })
+    })
+
+    it('deactivates the follower when the restorable doc expires', async () => {
+      vi.useFakeTimers()
+      await resetSessionBinding()
+      makeTab('wf-42')
+      mockMessagesEndpoint('wf-42')
+      persistedCrdtDocId.value = 'wf-42'
+      persistedCrdtDocIdExpiresAt.value = Date.now() + 1_000
+
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      const follower = crdtFollowerCalls.at(-1)
+      expect(follower?.isTargetActive.value).toBe(true)
+
+      persistedCrdtDocId.value = null
+      await vi.advanceTimersByTimeAsync(1_000)
+
+      expect(follower?.isTargetActive.value).toBe(false)
+      vi.useRealTimers()
     })
 
     it('keeps mint ports closed until the server acknowledges the active binding', async () => {

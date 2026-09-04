@@ -84,7 +84,7 @@ import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import CrdtDevPanel from './crdt/CrdtDevPanel.vue'
 import { attachMintPortWiring } from './crdt/mintPortWiring'
-import { reconcilePersistedDocId } from './crdt/persistedDocId'
+import { reconcilePersistedDocIdRecord } from './crdt/persistedDocId'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 
 const { t } = useI18n()
@@ -384,19 +384,23 @@ const {
 // counts only when it names the doc the follower would restore, so a tab that
 // merely carries a stale binding, or a second bound tab, never reads as
 // active and never keeps the follower projecting into a background tab.
-// `reconcilePersistedDocId()` is not a pure read: it adopts and re-stamps the
-// record on a reload, drops it on a nonce mismatch, and consults untracked
-// `sessionStorage` and `Date.now()`. Calling it from inside the computed getter
-// therefore let an unrelated re-render consume or rewrite the record the
-// follower was about to read, and the cached value never invalidated when the
-// record lapsed. Resolve it at the explicit lifecycle points that used to drive
-// re-evaluation and let the getter read only reactive state.
+// Reconciliation adopts and re-stamps the record on a reload, drops it on a
+// nonce mismatch, and consults untracked `sessionStorage` and `Date.now()`.
 const restorableDocId = ref<string | null>(null)
+let restorableDocIdExpiryTimer: ReturnType<typeof setTimeout> | undefined
+function refreshRestorableDocId(): void {
+  clearTimeout(restorableDocIdExpiryTimer)
+  const record = reconcilePersistedDocIdRecord()
+  restorableDocId.value = record?.docId ?? null
+  if (record === null) return
+  restorableDocIdExpiryTimer = setTimeout(
+    refreshRestorableDocId,
+    Math.max(0, record.expiresAt - Date.now())
+  )
+}
 watch(
   [workflowDetached, () => workflowStore.activeWorkflow, boundWorkflowId],
-  () => {
-    restorableDocId.value = reconcilePersistedDocId()
-  },
+  refreshRestorableDocId,
   { immediate: true }
 )
 
@@ -591,6 +595,7 @@ async function onAgentActiveTab(
 start()
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
+  clearTimeout(restorableDocIdExpiryTimer)
   mintPortWiring.detach()
   exitNodeSelectionMode()
   stop()

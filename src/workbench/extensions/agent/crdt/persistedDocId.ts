@@ -24,6 +24,11 @@ interface PersistedDocIdRecord {
   expiresAt: number
 }
 
+export type ReconciledPersistedDocId = Pick<
+  PersistedDocIdRecord,
+  'docId' | 'expiresAt'
+>
+
 function currentPageSessionNonce(): string {
   pageSessionNonce ??= createUuidv4()
   return pageSessionNonce
@@ -59,7 +64,7 @@ function isReloadNavigation(): boolean {
     .some((entry) => (entry as PerformanceNavigationTiming).type === 'reload')
 }
 
-export function reconcilePersistedDocId(): string | null {
+export function reconcilePersistedDocIdRecord(): ReconciledPersistedDocId | null {
   try {
     const raw = safeSessionStorage()?.getItem(DOC_ID_SESSION_KEY)
     if (!raw) return null
@@ -96,13 +101,17 @@ export function reconcilePersistedDocId(): string | null {
         expiresAt: record.expiresAt
       })
     }
-    return record.docId
+    return { docId: record.docId, expiresAt: record.expiresAt }
   } catch {
     // A pre-FEC-5 bare doc id is not valid JSON, so it lands here rather than
     // in the shape check above; drop it so it is consumed exactly once.
     clearPersistedDocId()
     return null
   }
+}
+
+export function reconcilePersistedDocId(): string | null {
+  return reconcilePersistedDocIdRecord()?.docId ?? null
 }
 
 export function clearPersistedDocId(): void {

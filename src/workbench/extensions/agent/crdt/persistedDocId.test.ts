@@ -5,7 +5,8 @@ import {
   DOC_ID_TTL_MS,
   clearPersistedDocId,
   persistDocId,
-  reconcilePersistedDocId
+  reconcilePersistedDocId,
+  reconcilePersistedDocIdRecord
 } from './persistedDocId'
 
 function rawRecord(): {
@@ -40,6 +41,17 @@ describe('persistedDocId', () => {
     persistDocId('wf-1')
 
     expect(reconcilePersistedDocId()).toBe('wf-1')
+  })
+
+  it('exposes the expiry used to schedule reactive invalidation', () => {
+    const now = Date.now()
+    vi.spyOn(Date, 'now').mockReturnValue(now)
+    persistDocId('wf-1')
+
+    expect(reconcilePersistedDocIdRecord()).toEqual({
+      docId: 'wf-1',
+      expiresAt: now + DOC_ID_TTL_MS
+    })
   })
 
   describe('rejection consumes the record', () => {
