@@ -88,6 +88,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   const promptEditState = ref<PromptEditState>({ phase: 'idle' })
   const sending = ref(false)
   let loadGeneration = 0
+  let identityGeneration = 0
 
   if (deps.identity) {
     watch(deps.identity, (identity, previousIdentity) => {
@@ -100,8 +101,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // Clear session-local state too so an open panel cannot keep following
       // the previous account's workflow or complete one of its pending loads.
       loadGeneration++
+      identityGeneration++
       notices.value = []
       promptEditState.value = { phase: 'idle' }
+      sending.value = false
+      stopRequestedWhileSending = false
       boundWorkflowId.value = null
       rememberedWorkflowId = null
       forgetAgentSessionMemory()
@@ -223,11 +227,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
     promptEditState.value = { phase: 'idle' }
     sending.value = true
     stopRequestedWhileSending = false
+    const operationGeneration = identityGeneration
+    const isCurrentIdentity = () => operationGeneration === identityGeneration
     if (workflow?.prepare)
       await Promise.race([
         workflow.prepare().catch(() => undefined),
         new Promise<void>((resolve) => setTimeout(resolve, PREPARE_TIMEOUT_MS))
       ])
+    if (!isCurrentIdentity()) return false
     const wfContext = workflow?.current()
     const tabs = workflow?.tabs?.()
     async function postTurn(threadId: string) {
@@ -251,6 +258,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     try {
       const ack = await postTurn(conversationStore.threadId ?? 'new')
+      if (!isCurrentIdentity()) return false
       conversationStore.setThreadId(ack.thread_id)
       rememberAgentSessionMemory(ack.thread_id, deps.identity?.())
       if (ack.workflow_id !== undefined) {
@@ -275,6 +283,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       }
       return true
     } catch (error) {
+      if (!isCurrentIdentity()) return false
       const message =
         error instanceof AgentApiError
           ? error.message
@@ -288,7 +297,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       )
       return false
     } finally {
-      sending.value = false
+      if (isCurrentIdentity()) sending.value = false
     }
   }
 

@@ -624,6 +624,39 @@ describe('useAgentSession (v1 composition root)', () => {
     session.newChat()
   })
 
+  it('ignores a send completion from the previous identity', async () => {
+    let resolvePost: ((ack: AgentTurnAccepted) => void) | undefined
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(
+      () =>
+        new Promise((resolve) => {
+          resolvePost = resolve
+        })
+    )
+    const identity = ref<string | null>('user-a')
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source,
+      identity: () => identity.value
+    })
+    session.start()
+
+    const send = session.sendMessage('private prompt')
+    await vi.waitFor(() => expect(postMessage).toHaveBeenCalledOnce())
+    identity.value = 'user-b'
+    await nextTick()
+    resolvePost?.({
+      thread_id: 'thread-a',
+      message_id: 'message-a',
+      workflow_id: 'workflow-a'
+    })
+
+    await expect(send).resolves.toBe(false)
+    expect(session.threadId.value).toBeNull()
+    expect(session.entries.value).toEqual([])
+    expect(session.isSending.value).toBe(false)
+    expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBeNull()
+  })
+
   it('(h5) a workflow.draft() snapshot is forwarded on the turn (PM-813/ecw-128)', async () => {
     const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
       thread_id: 'th-1',
