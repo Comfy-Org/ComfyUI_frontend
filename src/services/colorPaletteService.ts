@@ -4,6 +4,7 @@ import { fromZodError } from 'zod-validation-error'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { t } from '@/i18n'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { paletteSchema, comfyBaseSchema } from '@/schemas/colorPaletteSchema'
@@ -27,8 +28,11 @@ export const useColorPaletteService = () => {
   const colorPaletteStore = useColorPaletteStore()
   const settingStore = useSettingStore()
   const nodeDefStore = useNodeDefStore()
-  const { wrapWithErrorHandling, wrapWithErrorHandlingAsync } =
-    useErrorHandling()
+  const {
+    wrapWithErrorHandling,
+    wrapWithErrorHandlingAsync,
+    toastErrorHandler
+  } = useErrorHandling()
 
   /**
    * Validates the palette against the zod schema.
@@ -246,10 +250,11 @@ export const useColorPaletteService = () => {
    *
    * @param colorPaletteId - The ID of the color palette to load.
    */
-  const loadColorPalette = async (colorPaletteId: string) => {
+  const loadColorPalette = async (colorPaletteId: string): Promise<boolean> => {
     const colorPalette = colorPaletteStore.palettesLookup[colorPaletteId]
     if (!colorPalette) {
-      throw new Error(`Color palette ${colorPaletteId} not found`)
+      toastErrorHandler(new Error(t('palette.notFound', { colorPaletteId })))
+      return false
     }
 
     const completedPalette = colorPaletteStore.completePalette(colorPalette)
@@ -267,6 +272,7 @@ export const useColorPaletteService = () => {
     app.canvas.setDirty(true, true)
 
     colorPaletteStore.activePaletteId = colorPaletteId
+    return true
   }
 
   /**
@@ -274,10 +280,11 @@ export const useColorPaletteService = () => {
    *
    * @param colorPaletteId - The ID of the color palette to export.
    */
-  const exportColorPalette = (colorPaletteId: string) => {
+  const exportColorPalette = (colorPaletteId: string): boolean => {
     const colorPalette = colorPaletteStore.palettesLookup[colorPaletteId]
     if (!colorPalette) {
-      throw new Error(`Color palette ${colorPaletteId} not found`)
+      toastErrorHandler(new Error(t('palette.notFound', { colorPaletteId })))
+      return false
     }
     downloadBlob(
       colorPalette.id + '.json',
@@ -285,6 +292,7 @@ export const useColorPaletteService = () => {
         type: 'application/json'
       })
     )
+    return true
   }
 
   /**

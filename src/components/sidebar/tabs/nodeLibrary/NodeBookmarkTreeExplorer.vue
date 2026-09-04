@@ -199,15 +199,16 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
           : {
               async handleRename(newName: string) {
                 if (this.data && this.data.isDummyFolder) {
-                  await nodeBookmarkStore.renameBookmarkFolder(
+                  return await nodeBookmarkStore.renameBookmarkFolder(
                     this.data,
                     newName
                   )
                 }
+                return false
               },
               async handleDelete() {
-                if (!this.data) return
-                await nodeBookmarkStore.deleteBookmarkFolder(this.data)
+                if (!this.data) return false
+                return await nodeBookmarkStore.deleteBookmarkFolder(this.data)
               }
             })
       }

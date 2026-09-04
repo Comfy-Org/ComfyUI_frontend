@@ -157,19 +157,16 @@ const handleNodeLabelEdit = async (
   newName: string
 ) => {
   const node = n as RenderedTreeExplorerNode<T>
-  await errorHandling.wrapWithErrorHandlingAsync(
-    async () => {
-      if (node.key === newFolderNode.value?.key) {
-        await handleFolderCreation(newName)
-      } else {
-        await node.handleRename?.(newName)
-      }
-    },
-    node.handleError,
-    () => {
-      renameEditingNode.value = null
+  const renamed = await errorHandling.wrapWithErrorHandlingAsync(async () => {
+    if (node.key === newFolderNode.value?.key) {
+      await handleFolderCreation(newName)
+    } else {
+      const result = await node.handleRename?.(newName)
+      if (result === false) return false
     }
-  )()
+    return true
+  }, node.handleError)()
+  if (renamed) renameEditingNode.value = null
 }
 provide(InjectKeyHandleEditLabelFunction, handleNodeLabelEdit)
 
@@ -178,8 +175,8 @@ const renameCommand = (node: RenderedTreeExplorerNode<T>) => {
   renameEditingNode.value = node
 }
 const deleteCommand = async (node: RenderedTreeExplorerNode<T>) => {
-  await node.handleDelete?.()
-  emit('nodeDelete', node)
+  const result = await node.handleDelete?.()
+  if (result !== false) emit('nodeDelete', node)
 }
 const menuItems = computed<MenuItem[]>(() => {
   const node = menuTargetNode.value

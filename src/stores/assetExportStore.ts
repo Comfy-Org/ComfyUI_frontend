@@ -99,8 +99,8 @@ export const useAssetExportStore = defineStore('assetExport', () => {
     const existing = exports.value.get(data.task_id)
 
     if (
-      (existing?.status === 'completed' || existing?.status === 'failed') &&
-      existing?.downloadTriggered
+      existing?.status === 'failed' ||
+      (existing?.status === 'completed' && existing.downloadTriggered)
     ) {
       return
     }
@@ -139,6 +139,21 @@ export const useAssetExportStore = defineStore('assetExport', () => {
       try {
         const task = await taskService.getTask(exp.taskId)
 
+        if (!task) {
+          handleAssetExport({
+            task_id: exp.taskId,
+            export_name: exp.exportName,
+            assets_total: exp.assetsTotal,
+            assets_attempted: exp.assetsAttempted,
+            assets_failed: exp.assetsFailed,
+            bytes_total: exp.bytesTotal,
+            bytes_processed: exp.bytesProcessed,
+            progress: exp.progress,
+            status: 'failed'
+          })
+          return
+        }
+
         if (task.status === 'completed' || task.status === 'failed') {
           const result = task.result as Record<string, unknown> | undefined
           handleAssetExport({
@@ -157,7 +172,7 @@ export const useAssetExportStore = defineStore('assetExport', () => {
           })
         }
       } catch {
-        // Task not ready or not found
+        return
       }
     }
 
