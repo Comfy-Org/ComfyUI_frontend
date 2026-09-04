@@ -24,26 +24,44 @@ describe('isWorkshopInBuild', () => {
     expect(isWorkshopInBuild()).toBe(false)
   })
 
-  it('keeps Workshop in preview and local builds, where it is reviewed', () => {
+  it('keeps Workshop out of a preview, so preview matches production', () => {
+    // A preview exists to answer "what goes out if we release right now?".
+    // If it carries an unreleased feature it cannot answer that.
+    process.env.VERCEL_ENV = 'preview'
     delete process.env.WORKSHOP_IN_BUILD
 
-    process.env.VERCEL_ENV = 'preview'
-    expect(isWorkshopInBuild()).toBe(true)
+    expect(isWorkshopInBuild()).toBe(false)
+  })
 
+  it('keeps Workshop in local development, where it is being built', () => {
+    delete process.env.WORKSHOP_IN_BUILD
     delete process.env.VERCEL_ENV
-    expect(isWorkshopInBuild()).toBe(true)
-  })
-
-  it('launches on an explicit override, with no code change', () => {
-    process.env.VERCEL_ENV = 'production'
-    process.env.WORKSHOP_IN_BUILD = '1'
 
     expect(isWorkshopInBuild()).toBe(true)
   })
 
-  it('can be forced off in a preview too', () => {
-    // So the exact release output can be reviewed before it is released.
+  it('gives an unrecognised VERCEL_ENV the local answer', () => {
+    // `vercel dev` sets VERCEL_ENV=development. That is a developer's machine,
+    // not a deployment, so it behaves like local rather than like a release.
+    delete process.env.WORKSHOP_IN_BUILD
+    process.env.VERCEL_ENV = 'development'
+
+    expect(isWorkshopInBuild()).toBe(true)
+  })
+
+  it('puts Workshop in a deployed build on an explicit override', () => {
+    // Two users: CI on a PR labelled `workshop`, to get a review URL...
     process.env.VERCEL_ENV = 'preview'
+    process.env.WORKSHOP_IN_BUILD = '1'
+    expect(isWorkshopInBuild()).toBe(true)
+
+    // ...and production on the day Workshop launches. No code change either.
+    process.env.VERCEL_ENV = 'production'
+    expect(isWorkshopInBuild()).toBe(true)
+  })
+
+  it('can be forced off locally, to reproduce a release build', () => {
+    delete process.env.VERCEL_ENV
     process.env.WORKSHOP_IN_BUILD = '0'
 
     expect(isWorkshopInBuild()).toBe(false)
