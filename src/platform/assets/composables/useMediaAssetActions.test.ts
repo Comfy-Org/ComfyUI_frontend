@@ -11,7 +11,7 @@ import { MediaAssetKey } from '@/platform/assets/schemas/mediaAssetSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
 import { api } from '@/scripts/api'
-import type * as outputAssetUtilModule from '../utils/outputAssetUtil'
+import { resolveOutputAssetItems } from '../utils/outputAssetUtil'
 import { useMediaAssetActions } from './useMediaAssetActions'
 
 // Use vi.hoisted to create a mutable reference for isCloud
@@ -145,16 +145,8 @@ vi.mock('../schemas/assetMetadataSchema', () => ({
   getOutputAssetMetadata: mockGetOutputAssetMetadata
 }))
 
-const mockResolveOutputAssetItems = vi.hoisted(() =>
-  vi.fn<typeof outputAssetUtilModule.resolveOutputAssetItems>(async () => [])
-)
-vi.mock('../utils/outputAssetUtil', async (importOriginal) => {
-  const actual = await importOriginal<typeof outputAssetUtilModule>()
-  return {
-    ...actual,
-    resolveOutputAssetItems: mockResolveOutputAssetItems
-  }
-})
+vi.mock('../utils/outputAssetUtil')
+const mockResolveOutputAssetItems = vi.mocked(resolveOutputAssetItems)
 
 const mockDeleteAsset = vi.hoisted(() => vi.fn())
 const mockCreateAssetExport = vi.hoisted(() =>

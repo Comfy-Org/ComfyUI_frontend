@@ -7,6 +7,7 @@ import { createUuidv4 } from '@/utils/uuid'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
 import { reconcileAgentAdapters } from './agentNodeMaterializer'
+import { readSubgraphDefinitions } from './agentSubgraphDefinitions'
 import { recordDevEvent } from './devPanelLog'
 import { wireLog } from './crdtLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
@@ -425,14 +426,19 @@ export function useAgentCrdtFollower(
     knownDocNodeIds = ids
   }
   const onOpsResult: EventListener = (event) => {
+    if (!(event instanceof CustomEvent)) return
+    const detail = event.detail as { workflowId?: unknown } | null
+    if (
+      !isTargetActive.value ||
+      detail?.workflowId !== subscribedWorkflowId.value
+    )
+      return
     if (staleProbeTimer !== null) {
       armStaleProbe()
       refreshPersistedDocId()
     }
     lastFrameType.value = event.type
-    if (event instanceof CustomEvent) {
-      recordDevEvent('doc_ops_result', event.detail ?? null)
-    }
+    recordDevEvent('doc_ops_result', event.detail ?? null)
   }
   const onDocReset: EventListener = (event) => {
     const detail =
@@ -576,7 +582,10 @@ export function useAgentCrdtFollower(
   function reconcileLiveGraph(docId: string): void {
     const graph = getGraph()
     if (!graph) return
-    const nodeIds = reconcileAgentAdapters(graph)
+    const nodeIds = reconcileAgentAdapters(
+      graph,
+      readSubgraphDefinitions(bridge.follower.doc)
+    )
     if (nodeIds.length > 0) {
       recordDevEvent('agent_node_adapters_materialized', {
         workflowId: docId,

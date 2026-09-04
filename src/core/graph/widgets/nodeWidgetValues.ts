@@ -4,7 +4,7 @@ import type { WidgetValue } from '@/types/simplifiedWidget'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
 
-export function nodeWidgetId(node: LGraphNode, name: string): WidgetId | null {
+function nodeWidgetId(node: LGraphNode, name: string): WidgetId | null {
   const graphId = node.graph?.rootGraph?.id
   return graphId ? widgetId(graphId, node.id, name) : null
 }
@@ -22,9 +22,18 @@ export function setNodeWidgetValue(
   value: WidgetValue
 ): boolean {
   const id = nodeWidgetId(node, name)
-  if (id && useWidgetValueStore().setValue(id, value)) return true
   const widget = node.widgets?.find((w) => w.name === name)
+  const previousValue = getNodeWidgetValue(node, name)
+  if (id && useWidgetValueStore().setValue(id, value)) {
+    if (widget) {
+      widget.callback?.(value)
+      node.onWidgetChanged?.(name, value, previousValue, widget)
+    }
+    return true
+  }
   if (!widget) return false
   widget.value = value
+  widget.callback?.(value)
+  node.onWidgetChanged?.(name, value, previousValue, widget)
   return true
 }
