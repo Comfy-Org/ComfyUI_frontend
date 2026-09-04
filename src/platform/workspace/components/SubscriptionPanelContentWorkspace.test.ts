@@ -569,6 +569,10 @@ describe('SubscriptionPanelContentWorkspace', () => {
           screen.queryByTestId('subscription-state-card')
         ).not.toBeInTheDocument()
         expect(screen.queryByText(/^Ends on/)).not.toBeInTheDocument()
+        // Deliberately no date row at all: Enterprise contracts are billed
+        // yearly upfront and an end-dated one will not renew, so "Renews on"
+        // would be a false claim (decided with Sonam).
+        expect(screen.queryByText(/^Renews on/)).not.toBeInTheDocument()
       })
 
       it('keeps the quiet treatment inside the window, with only the end date line', () => {

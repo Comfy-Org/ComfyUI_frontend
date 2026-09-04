@@ -8,6 +8,7 @@ import type {
 import { cloudAppFixture as test } from '@e2e/fixtures/cloudAppFixture'
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import {
+  CLOUD_REMOTE_CONFIG,
   DEFAULT_TEAM_MEMBERS,
   INACTIVE_TEAM_BILLING_STATUS,
   TEAM_BILLING_STATUS,
@@ -84,13 +85,17 @@ async function setupSalesManagedWorkspace(
 
 // The ending banner sits behind the billing_control_enabled remote-config
 // rollout; the workspace helper's default /api/features payload leaves it off.
-// Registered after setup, so this route takes precedence.
+// Registered after setup, so this route takes precedence. Spreads the helper's
+// default payload so only this one flag diverges from the stock fixture.
 async function enableBillingControl(page: Page) {
   await page.route('**/api/features', (r) =>
     r.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ billing_control_enabled: true })
+      body: JSON.stringify({
+        ...CLOUD_REMOTE_CONFIG,
+        billing_control_enabled: true
+      })
     })
   )
 }
@@ -189,10 +194,13 @@ test.describe('Enterprise workspace billing', { tag: '@cloud' }, () => {
       content.getByRole('heading', { name: 'Enterprise' })
     ).toBeVisible()
     // A sales-set end date months out is a contract fact, not a cancellation:
-    // no badge, no amber card, no ending banner, no early "Ends on" line.
+    // no badge, no amber card, no ending banner, no early "Ends on" line —
+    // and no "Renews on" line either: the date row is deliberately blank,
+    // since an end-dated contract will not renew.
     await expect(content.getByTestId('plan-status-badge')).toHaveCount(0)
     await expect(content.getByTestId('subscription-state-card')).toHaveCount(0)
     await expect(content.getByText(/^Ends on /)).toHaveCount(0)
+    await expect(content.getByText(/^Renews on /)).toHaveCount(0)
     await expect(
       page.getByText('Your Enterprise plan ends on', { exact: false })
     ).toHaveCount(0)
