@@ -106,8 +106,9 @@ export function isSalesManagedTier(
   return tier === 'ENTERPRISE' || isUnknownTier(tier)
 }
 
-// Sales schedules an end date on an Enterprise contract, often months before
-// it lapses. That is a contract fact, not a self-serve cancellation, so the
+// An Enterprise end date is an agreed ending — an operator pilot term or a
+// sales-mediated cancellation, deliberately not distinguished (FE-2035) —
+// often set months before the plan lapses. It is not self-serve news, so the
 // workspace keeps its plainly-active presentation until the end date is this
 // close; only then does the muted ending notice appear. Strictly ENTERPRISE:
 // self-serve plans never consult this window, and neither do unrecognized

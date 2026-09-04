@@ -625,9 +625,11 @@ const isEnterprisePlan = computed(
   () => subscription.value?.tier === 'ENTERPRISE'
 )
 
-// An Enterprise end date is a contract fact set by sales, often months ahead.
-// Only its presence moves the plan onto the quiet path: no amber card or
-// Canceled badge at any point, and no "Ends on" line until the notice window.
+// An Enterprise end date is an agreed ending — operator pilot term or
+// sales-mediated cancellation, deliberately not distinguished (see
+// deriveBillingBanner; decision on FE-2035) — often set months ahead. Only
+// its presence moves the plan onto the quiet path: no amber card or Canceled
+// badge at any point, and no "Ends on" line until the notice window.
 // Cancelled with no end date falls back to the stock treatment.
 const hasScheduledEnterpriseEnd = computed(
   () => isEnterprisePlan.value && Boolean(subscription.value?.endDate)

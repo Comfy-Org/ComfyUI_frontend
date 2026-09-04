@@ -193,7 +193,7 @@ test.describe('Enterprise workspace billing', { tag: '@cloud' }, () => {
     await expect(
       content.getByRole('heading', { name: 'Enterprise' })
     ).toBeVisible()
-    // A sales-set end date months out is a contract fact, not a cancellation:
+    // An agreed end date months out is not self-serve news:
     // no badge, no amber card, no ending banner, no early "Ends on" line —
     // and no "Renews on" line either: the date row is deliberately blank,
     // since an end-dated contract will not renew.

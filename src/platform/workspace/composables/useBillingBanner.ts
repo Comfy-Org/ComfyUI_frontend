@@ -42,11 +42,15 @@ export function deriveBillingBanner(
 ): BillingBannerKind | null {
   if (!inputs.isLoaded) return null
 
-  // An Enterprise workspace surfaces exactly one banner: the ending notice,
-  // and only once the sales-set end date is near. Its payment and credit
-  // lifecycles are handled by sales, so paused/paymentFailed/outOfCredits
-  // never apply — this branch takes precedence over any team-plan reading of
-  // the same subscription.
+  // An Enterprise cancel_at is an agreed end date — an operator pilot term or
+  // a sales-mediated cancellation. The two are deliberately not distinguished:
+  // cancel_at alone cannot tell them apart (cloud's
+  // common/repository/billing/repository.go), and the rendering is truthful
+  // for both — quiet until the 14-day window, then this ending notice.
+  // Decision recorded on FE-2035. Enterprise payment and credit lifecycles
+  // are handled by sales, so paused/paymentFailed/outOfCredits never apply —
+  // this branch takes precedence over any team-plan reading of the same
+  // subscription.
   if (inputs.isEnterprise) {
     if (!inputs.canAccessSubscriptionFeatures) return null
     if (!inputs.billingControlEnabled) return null

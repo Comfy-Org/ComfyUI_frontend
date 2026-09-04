@@ -538,8 +538,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
       ).not.toBeInTheDocument()
     })
 
-    // FE-2035: an Enterprise end date is a contract fact set by sales, often
-    // months ahead. It must never borrow the self-serve cancelled treatment.
+    // FE-2035: an Enterprise end date is an agreed ending set through sales,
+    // often months ahead. It must never borrow the self-serve cancelled
+    // treatment.
     describe('end-dated Enterprise plan still running', () => {
       const NOW = new Date('2026-09-03T12:00:00Z')
       const DAY = 24 * 60 * 60 * 1000
