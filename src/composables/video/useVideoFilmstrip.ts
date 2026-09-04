@@ -267,10 +267,8 @@ export function useVideoFilmstrip(
       width.value = metadata?.width ?? video.videoWidth
       height.value = metadata?.height ?? video.videoHeight
       fps.value = metadata?.fps ?? options.fps ?? DEFAULT_VIDEO_FPS
-      fileSize.value = metadata?.size
-      totalFrames.value =
-        metadata?.frame_count ??
-        Math.max(Math.round(effectiveDuration * fps.value), 1)
+      fileSize.value = metadata?.size ?? undefined
+      totalFrames.value = Math.max(Math.round(effectiveDuration * fps.value), 1)
 
       const capturedThumbnail = await captureRepresentativeFrame(
         video,

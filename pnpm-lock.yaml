@@ -279,6 +279,9 @@ catalogs:
     markdown-table:
       specifier: ^3.0.4
       version: 3.0.4
+    mediabunny:
+      specifier: ^1.53.1
+      version: 1.53.1
     minisearch:
       specifier: ^7.2.0
       version: 7.2.0
@@ -593,6 +596,9 @@ importers:
       marked:
         specifier: ^15.0.11
         version: 15.0.12
+      mediabunny:
+        specifier: 'catalog:'
+        version: 1.53.1
       minisearch:
         specifier: 'catalog:'
         version: 7.2.0
@@ -4137,6 +4143,12 @@ packages:
   '@types/deep-eql@4.0.2':
     resolution: {integrity: sha512-c9h9dVVMigMPc4bwTvC5dxqtqJZwQPePsWjPlpSOnojbor6pGqdk541lfA7AqFQr5pB1BRdq0juY9db81BwyFw==}
 
+  '@types/dom-mediacapture-transform@0.1.12':
+    resolution: {integrity: sha512-d7/QsLRwF864A5mgIM/YrfiglHoYn7zgCcAoJgW404r+2DwnNr7EBbLnCWpmOMgH8y0te73L1AV6H1bmauaWFw==}
+
+  '@types/dom-webcodecs@0.1.13':
+    resolution: {integrity: sha512-O5hkiFIcjjszPIYyUSyvScyvrBoV3NOEEZx/pMlsu44TKzWNkLVBBxnxJz42in5n3QIolYOcBYFCPZZ0h8SkwQ==}
+
   '@types/esrecurse@4.3.1':
     resolution: {integrity: sha512-xJBAbDifo5hpffDBuHl0Y8ywswbiAp/Wi7Y/GtAgSlZyIABppyurxVueOPE8LUQOxdlgi6Zqce7uoEpqNTeiUw==}
 
@@ -7008,6 +7020,9 @@ packages:
 
   media-encoder-host@9.0.30:
     resolution: {integrity: sha512-LOmX7zW5SjvpeFA6lPPsp8wg+f0G39lqcf40kZkFTkSI4n/Rh2CJsPS/IhxRngMAcEDepiIvoXLrqetsOq4eSw==}
+
+  mediabunny@1.53.1:
+    resolution: {integrity: sha512-w25gA6mQuHSLzdpWswqwndbKtHFcJ0IRowJaIHgY7rlJaVTHhomfx5mLq4IHqonrsGCGDE/LIrtXz8mxiDzavA==}
 
   meow@14.1.0:
     resolution: {integrity: sha512-EDYo6VlmtnumlcBCbh1gLJ//9jvM/ndXHfVXIFrZVr6fGcwTUyCTFNTLCKuY3ffbK8L/+3Mzqnd58RojiZqHVw==}
@@ -12245,6 +12260,12 @@ snapshots:
 
   '@types/deep-eql@4.0.2': {}
 
+  '@types/dom-mediacapture-transform@0.1.12':
+    dependencies:
+      '@types/dom-webcodecs': 0.1.13
+
+  '@types/dom-webcodecs@0.1.13': {}
+
   '@types/esrecurse@4.3.1': {}
 
   '@types/estree-jsx@1.0.5':
@@ -15578,6 +15599,11 @@ snapshots:
       media-encoder-host-broker: 8.0.29
       media-encoder-host-worker: 10.0.29
       tslib: 2.8.1
+
+  mediabunny@1.53.1:
+    dependencies:
+      '@types/dom-mediacapture-transform': 0.1.12
+      '@types/dom-webcodecs': 0.1.13
 
   meow@14.1.0: {}
 
