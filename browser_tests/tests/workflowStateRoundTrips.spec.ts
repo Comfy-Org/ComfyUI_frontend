@@ -19,7 +19,6 @@ test.describe(
 
           const [samplerRef] =
             await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
-          if (!samplerRef) throw new Error('KSampler was not found')
           const sampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
           const cfgWidget = await samplerRef.getWidgetByName('cfg')
           const originalBounds = await sampler.boundingBox()
@@ -86,7 +85,6 @@ test.describe(
 
           const [originalRef] =
             await comfyPage.nodeOps.getNodeRefsByTitle('New Subgraph')
-          if (!originalRef) throw new Error('Subgraph was not found')
           const original =
             await comfyPage.vueNodes.getFixtureByTitle('New Subgraph')
           await original.select()

@@ -118,7 +118,7 @@ function makeScopedLayoutKey(
 function parseLayoutKey(key: string): { graphId: UUID; localId: string } {
   const separatorIndex = key.indexOf(':')
   return {
-    graphId: key.slice(0, separatorIndex) as UUID,
+    graphId: key.slice(0, separatorIndex),
     localId: key.slice(separatorIndex + 1)
   }
 }
@@ -425,9 +425,7 @@ class LayoutStoreImpl {
       isBoundsEqual(existing.bounds, layout.bounds) &&
       isPointEqual(existing.centerPos, layout.centerPos)
     ) {
-      if (layout.path) {
-        existing.path = layout.path
-      }
+      existing.path = layout.path
       return
     }
 
@@ -545,9 +543,7 @@ class LayoutStoreImpl {
       isBoundsEqual(existing.bounds, layout.bounds) &&
       isPointEqual(existing.centerPos, layout.centerPos)
     ) {
-      if (layout.path) {
-        existing.path = layout.path
-      }
+      existing.path = layout.path
       return
     }
 
@@ -620,10 +616,10 @@ class LayoutStoreImpl {
       const segmentLayout = this.linkSegmentLayouts.get(key)
       if (!segmentLayout) continue
 
-      if (ctx && segmentLayout.path) {
+      if (ctx) {
         // Match LiteGraph behavior: hit test uses device pixel ratio for coordinates
         const dpi =
-          (typeof window !== 'undefined' && window?.devicePixelRatio) || 1
+          (typeof window !== 'undefined' && window.devicePixelRatio) || 1
         const hit = ctx.isPointInStroke(
           segmentLayout.path,
           point.x * dpi,
@@ -715,11 +711,11 @@ class LayoutStoreImpl {
   applyOperation(operation: LayoutOperation): void {
     const stamped = this.stampActor(operation)
     const change = createLayoutChange(stamped)
-    let applied = false
+    const result: { applied?: boolean } = {}
     this.ydoc.transact(() => {
-      applied = this.applyOperationInTransaction(stamped, change)
+      result.applied = this.applyOperationInTransaction(stamped, change)
     }, this.currentActor)
-    if (!applied) return
+    if (!result.applied) return
 
     this.finalizeOperation(change)
   }
@@ -1098,7 +1094,7 @@ class LayoutStoreImpl {
       const ynode = this.ynodes.get(
         makeScopedLayoutKey(operation.graphId, nodeId)
       )
-      if (!ynode || !bounds) continue
+      if (!ynode) continue
 
       const rect = ynode.get('rect')
       if (

@@ -10,11 +10,29 @@ export interface PagedList<T> {
   loadNew: () => Promise<void>
 }
 
-export function wrapPagedList<T>(
-  list: PagedList<T>,
-  transform: (items: readonly T[]) => T[]
-): PagedList<T> {
-  return { ...list, items: computed(() => transform(toValue(list.items))) }
+export class WrappedList<T> implements PagedList<T> {
+  readonly items: MaybeRef<T[]>
+  constructor(
+    private readonly childList: PagedList<T>,
+    private readonly transform: (items: readonly T[]) => T[]
+  ) {
+    this.items = computed(() => this.transform(toValue(this.childList.items)))
+  }
+  get hasMore() {
+    return this.childList.hasMore
+  }
+  async invalidate(stale?: string[]) {
+    await this.childList.invalidate(stale)
+  }
+  get isLoading() {
+    return this.childList.isLoading
+  }
+  async loadMore() {
+    await this.childList.loadMore()
+  }
+  async loadNew() {
+    await this.childList.loadNew()
+  }
 }
 
 interface CacheEntry<T> {
@@ -81,8 +99,8 @@ class SharedPagedList<T> implements PagedList<T> {
   get items() {
     return this.childList.items
   }
-  get loadMore() {
-    return this.childList.loadMore
+  async loadMore() {
+    await this.childList.loadMore()
   }
   async loadNew() {
     await Promise.all(this.overlapping().map((l) => l.loadNew()))
@@ -133,7 +151,7 @@ export function usePreemptableQueue() {
     const task = makeTask(PREEMPT_KIND, runner)
     controller.abort()
     controller = new AbortController()
-    const active = queue[0]
+    const active = queue.at(0)
     const existing = queue.splice(0, queue.length, task)
     if (active) {
       await active.promise

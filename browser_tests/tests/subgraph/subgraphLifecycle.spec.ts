@@ -59,7 +59,7 @@ test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
         .toBeGreaterThan(0)
 
       await comfyPage.page.evaluate((nodeId) => {
-        const graph = window.app!.graph!
+        const graph = window.app!.graph
         const subgraphNode = graph.getNodeById(nodeId)
         if (!subgraphNode || !subgraphNode.isSubgraphNode()) return
         graph.unpackSubgraph(subgraphNode)
@@ -107,8 +107,8 @@ test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
     // widening the race window so a guard regression deterministically surfaces.
     async function deferLegacyHandlers(comfyPage: ComfyPage) {
       return await comfyPage.page.evaluateHandle(() => {
-        const graph = window.app!.graph!
-        const canvas = window.app!.canvas!
+        const graph = window.app!.graph
+        const canvas = window.app!.canvas
         const queue: Array<() => void> = []
         const originalNodeRemoved = graph.onNodeRemoved
         const originalSelectionChange = canvas.onSelectionChange
@@ -140,7 +140,7 @@ test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
       comfyPage: ComfyPage
     ): Promise<DeferredHandlers> {
       return await comfyPage.page.evaluateHandle(() => {
-        const canvas = window.app!.canvas!
+        const canvas = window.app!.canvas
         const queue: Array<() => void> = []
         const original = canvas.onSelectionChange
         canvas.onSelectionChange = function (selected) {
@@ -168,7 +168,7 @@ test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
       const onPageError = (err: Error) => {
         if (
           err.name === 'NullGraphError' ||
-          isNullGraphErrorText(err.message ?? '')
+          isNullGraphErrorText(err.message)
         ) {
           captured.push(`pageerror ${err.name}: ${err.message}`)
         }

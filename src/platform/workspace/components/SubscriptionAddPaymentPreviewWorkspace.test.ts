@@ -296,7 +296,7 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     await userEvent.click(
       screen.getByText('subscription.preview.applyPromoCode')
     )
-    expect(emitted().applyPromotionCode?.at(-1)).toEqual(['SAVE20'])
+    expect(emitted().applyPromotionCode.at(-1)).toEqual(['SAVE20'])
   })
 
   it('offers Add new payment method from the saved-method picker', async () => {
@@ -361,25 +361,27 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     )
   })
 
-  it('renders an explicit retry action after failed verification', async () => {
-    const { emitted } = render(SubscriptionAddPaymentPreviewWorkspace, {
+  it('reports failed verification without offering to resume it', () => {
+    render(SubscriptionAddPaymentPreviewWorkspace, {
       props: {
         tierKey: 'creator',
         embeddedCheckoutEnabled: true,
         authenticationState: 'failed_retryable',
         authenticationError: 'Challenge was closed',
-        canRetryAuthentication: true
+        // A stale action_url from the abandoned challenge can still be present
+        // when the server reports failed_retryable; the button must stay
+        // hidden regardless.
+        actionUrl: 'https://verify.example/sensitive-token'
       },
       global: globalOptions
     })
 
     expect(screen.getByRole('alert')).toHaveTextContent('Challenge was closed')
-    await userEvent.click(
-      screen.getByRole('button', {
-        name: 'billingOperation.retryVerification'
+    expect(
+      screen.queryByRole('button', {
+        name: 'subscription.preview.completeVerification'
       })
-    )
-    expect(emitted().retryAuthentication).toBeTruthy()
+    ).toBeNull()
   })
 
   it('shows reconciliation support guidance with the operation id', () => {
@@ -417,6 +419,18 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     await userEvent.click(screen.getByRole('button', { name: 'g.back' }))
 
     expect(emitted().back).toBeTruthy()
+  })
+
+  it('omits the total row entirely when no quote is available to price it', () => {
+    render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: {
+        teamPlan: { usd: 700, credits: 147_700, discountedUsd: 665 },
+        previewData: null
+      },
+      global: globalOptions
+    })
+
+    expect(screen.queryByText('subscription.preview.totalDueToday')).toBeNull()
   })
 
   it('prices a legacy preview from the server costs instead of rendering a blank total', () => {

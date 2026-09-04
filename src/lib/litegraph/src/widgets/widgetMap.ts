@@ -123,7 +123,7 @@ function adoptConcreteWidget<C extends object>(widget: object, concrete: C): C {
     )
       continue
 
-    if (concreteDescriptor?.get && concreteDescriptor.set) {
+    if (concreteDescriptor.get && concreteDescriptor.set) {
       descriptors.set(key, {
         configurable: foreignDescriptor.configurable,
         enumerable: foreignDescriptor.enumerable,

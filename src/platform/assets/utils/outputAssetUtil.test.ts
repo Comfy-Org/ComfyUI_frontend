@@ -8,10 +8,8 @@ import { getOutputKey } from '@/platform/assets/utils/outputKeyUtil'
 import type { ResultItemImpl } from '@/stores/queueStore'
 import type { SerializedNodeId } from '@/types/nodeId'
 
-import {
-  getTotalAssetOutputCount,
-  resolveOutputAssetItems
-} from './outputAssetUtil'
+import { getTotalAssetOutputCount } from './outputAssetCountUtil'
+import { resolveOutputAssetItems } from './outputAssetUtil'
 
 const mocks = vi.hoisted(() => ({
   getJobDetail: vi.fn(),
@@ -433,9 +431,7 @@ describe('resolveOutputAssetItems', () => {
     expect(mocks.getJobDetail).not.toHaveBeenCalled()
     expect(results).toHaveLength(1)
     const [asset] = results
-    if (!asset) {
-      throw new Error('Expected a root output asset')
-    }
+
     expect(asset.id).toBe(`job-root-${getOutputKey(output)}`)
     if (!asset.user_metadata) {
       throw new Error('Expected output metadata')

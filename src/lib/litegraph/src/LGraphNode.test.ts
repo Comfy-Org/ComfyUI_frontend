@@ -122,12 +122,12 @@ describe('LGraphNode', () => {
       flags: {},
       order: node.order,
       mode: node.mode,
-      inputs: node.inputs?.map((i) => ({
+      inputs: node.inputs.map((i) => ({
         name: i.name,
         type: i.type,
         link: i.link
       })),
-      outputs: node.outputs?.map((o) => ({
+      outputs: node.outputs.map((o) => ({
         name: o.name,
         type: o.type,
         links: o.links ? [...o.links] : o.links,
