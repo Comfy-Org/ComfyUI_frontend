@@ -54,12 +54,37 @@ const definedEntriesOf = (
     Object.entries(tags ?? {}).filter(([, value]) => value !== undefined)
   ) as Record<string, string | number | boolean>
 
+interface DesktopExceptionTelemetry {
+  captureException?: (
+    error: { message: string; stack?: string },
+    properties: Record<string, string | number | boolean>
+  ) => void
+}
+
+function dispatchToDesktop(
+  error: Error,
+  errorType: string,
+  tags: Record<string, string | number | boolean>,
+  level?: ReportErrorOptions['level']
+): boolean {
+  const telemetry = window.__comfyDesktop2?.Telemetry as
+    | DesktopExceptionTelemetry
+    | undefined
+  if (!telemetry?.captureException) return false
+
+  telemetry.captureException(
+    { message: error.message, ...(error.stack ? { stack: error.stack } : {}) },
+    { ...tags, error_type: errorType, ...(level ? { level } : {}) }
+  )
+  return true
+}
+
 function dispatch(
   error: Error,
   options: ReportErrorOptions,
   sentryAlreadyDelivered = false,
   datadogAlreadyDelivered = false
-): { sentry: boolean; datadog: boolean } {
+): { sentry: boolean; datadog: boolean; desktop: boolean } {
   const { errorType, context, level } = options
   const tags = definedEntriesOf(options.tags)
   const sentryLive = !sentryAlreadyDelivered && isSentryEnabled()
@@ -105,8 +130,13 @@ function dispatch(
       )
     }
   }
+  const desktopDelivered = dispatchToDesktop(error, errorType, tags, level)
 
-  return { sentry: sentryDelivered, datadog: datadogDelivered }
+  return {
+    sentry: sentryDelivered,
+    datadog: datadogDelivered,
+    desktop: desktopDelivered
+  }
 }
 
 function enqueuePendingReport(report: PendingReport): void {
@@ -125,7 +155,15 @@ function enqueuePendingReport(report: PendingReport): void {
  */
 export function flushErrorReports(): void {
   if (!pendingReports.length) return
-  if (!isSentryEnabled() && !isDatadogRumLive()) return
+  const desktopTelemetry = window.__comfyDesktop2?.Telemetry as
+    | DesktopExceptionTelemetry
+    | undefined
+  if (
+    !isSentryEnabled() &&
+    !isDatadogRumLive() &&
+    !desktopTelemetry?.captureException
+  )
+    return
 
   const drained = pendingReports.splice(0, pendingReports.length)
   for (const report of drained) {
@@ -188,7 +226,7 @@ export function reportError(cause: unknown, options: ReportErrorOptions): void {
       })
       return
     }
-    if (delivered.sentry || delivered.datadog) return
+    if (delivered.sentry || delivered.datadog || delivered.desktop) return
 
     enqueuePendingReport({
       error,
