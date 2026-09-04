@@ -172,7 +172,6 @@ describe('devPanelLog', () => {
     recordDevEvent('doc_subscribed', {
       accessToken: 'secret-camel',
       'x-api-key': 'secret-header',
-      message: 'secret-message',
       token_count: 3,
       context: 'kept-context',
       prompt_id: 'kept-prompt-id',
@@ -182,12 +181,37 @@ describe('devPanelLog', () => {
     expect(devEvents.value[0]?.detail).toEqual({
       accessToken: '[REDACTED]',
       'x-api-key': '[REDACTED]',
-      message: '[REDACTED]',
       token_count: 3,
       context: 'kept-context',
       prompt_id: 'kept-prompt-id',
       class_type: 'kept-class'
     })
+  })
+
+  it('keeps server error messages on failed frames', () => {
+    const detail = {
+      workflowId: 'wf-1',
+      ok: false,
+      applied: [],
+      skipped: ['op-1'],
+      code: 'op_failed',
+      message: 'unknown node 7',
+      failed: { op_id: 'op-1', code: 'unknown_node', message: 'unknown node 7' }
+    }
+    recordDevEvent('doc_ops_result', detail)
+
+    expect(devEvents.value[0]?.detail).toEqual(detail)
+  })
+
+  it('collapses values nested beyond the depth cap', () => {
+    let detail: Record<string, unknown> = { leaf: 'kept-leaf' }
+    for (let i = 0; i < 14; i++) detail = { child: detail }
+    recordDevEvent('doc_update', detail)
+
+    const serialized = stringifyDevEvents(devEvents.value)
+    expect(serialized).toContain('[REDACTED]')
+    expect(serialized).not.toContain('kept-leaf')
+    expect(serialized.match(/"child":/g)).toHaveLength(13)
   })
 
   it('keeps a value referenced twice from sibling positions', () => {
