@@ -52,6 +52,12 @@ jobs:
           GH_REPO: ${{ github.repository }}
           DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
           DATADOG_APP_KEY: ${{ secrets.DATADOG_APP_KEY }}
+          # Datadog user -> GitHub login, as JSON. Must stay a secret and never
+          # become an Actions variable: Actions prints a step's env block before
+          # running it and this repo's run logs are public, so a variable would
+          # publish the whole map. Secret values are masked. Source of truth is
+          # rosters/release-sheriff-directory.json in Comfy-Org/github-workflows-ops.
+          RELEASE_SHERIFF_DIRECTORY: ${{ secrets.RELEASE_SHERIFF_DIRECTORY }}
         run: pnpm exec tsx scripts/release-sheriff/release-sheriff.ts
 
       # A failed scheduled run only notifies whoever last pushed to main, which

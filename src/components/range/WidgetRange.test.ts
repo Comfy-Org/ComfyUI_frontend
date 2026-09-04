@@ -67,9 +67,9 @@ function makeWidget(
     name: 'range_w',
     type: 'range',
     value: { min: 0, max: 1 },
-    options: options as IWidgetRangeOptions,
+    options,
     ...widgetOverrides
-  } as SimplifiedWidget<RangeValue, IWidgetRangeOptions>
+  }
 }
 
 function setUpstream(value: RangeValue | undefined) {
@@ -135,9 +135,12 @@ describe('WidgetRange', () => {
     it('shows upstream value when disabled with a valid upstream', () => {
       setUpstream({ min: 0.3, max: 0.7 })
       renderWidget(
-        makeWidget({ disabled: true } as IWidgetRangeOptions, {
-          linkedUpstream: { nodeId: toNodeId('n1') }
-        }),
+        makeWidget(
+          { disabled: true },
+          {
+            linkedUpstream: { nodeId: toNodeId('n1') }
+          }
+        ),
         { min: 0, max: 1 }
       )
       const el = screen.getByTestId('range-editor')

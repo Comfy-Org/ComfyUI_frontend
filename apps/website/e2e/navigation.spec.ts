@@ -85,7 +85,7 @@ test.describe('Desktop dropdown @interaction', () => {
     for (const item of [
       'Comfy Desktop',
       'Comfy Cloud',
-      'Comfy API',
+      'Developer Platform',
       'Comfy Enterprise'
     ]) {
       await expect(dropdown.getByText(item)).toBeVisible()

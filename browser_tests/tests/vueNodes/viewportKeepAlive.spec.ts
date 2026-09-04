@@ -46,7 +46,7 @@ test.describe(
         throw new Error('Expected an active Vue node with an id')
       }
       const initialSize = await comfyPage.page.evaluate((id) => {
-        const node = window.app!.graph!.nodes.find(
+        const node = window.app!.graph.nodes.find(
           (candidate) => String(candidate.id) === id
         )
         if (!node) throw new Error(`Node ${id} is missing`)
@@ -77,7 +77,7 @@ test.describe(
       ).toBe(true)
       expect(
         await comfyPage.page.evaluate((id) => {
-          const node = window.app!.graph!.nodes.find(
+          const node = window.app!.graph.nodes.find(
             (candidate) => String(candidate.id) === id
           )
           if (!node) throw new Error(`Node ${id} is missing`)

@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, toValue } from 'vue'
 
 import MultiSelectWidget from '@/components/graph/widgets/MultiSelectWidget.vue'
 import { t } from '@/i18n'
@@ -86,7 +86,7 @@ const addMultiSelectWidget = (
       }
     }
   })
-  addWidget(node, widget as BaseDOMWidget<object | string>)
+  addWidget(node, widget as BaseDOMWidget)
   // TODO: Add remote support to multi-select widget
   // https://github.com/Comfy-Org/ComfyUI_frontend/issues/3003
   if (inputSpec.control_after_generate) {
@@ -129,7 +129,7 @@ function getCloudInputAssets(nodeType: string | undefined): AssetItem[] {
   const mediaType = NODE_MEDIA_TYPE_MAP[nodeType ?? '']
   if (!mediaType) return []
 
-  return useAssetsStore().inputAssets.filter(
+  return toValue(useAssetsStore().inputAssets.items).filter(
     (asset) =>
       getCloudInputAssetValue(asset) &&
       getMediaTypeFromFilename(asset.name) === mediaType
@@ -201,14 +201,13 @@ const createInputMappingWidget = (
     }
   )
 
-  if (assetsStore.inputAssets.length === 0 && !assetsStore.inputLoading) {
-    void assetsStore.updateInputs().then(() => {
-      // edge for users using nodes with 0 prior inputs
-      // force canvas refresh the first time they add an asset
-      // so they see filenames instead of hashes.
+  async function loadAll() {
+    while (toValue(assetsStore.inputAssets.hasMore)) {
+      await assetsStore.inputAssets.loadMore()
       node.setDirtyCanvas(true, false)
-    })
+    }
   }
+  void loadAll()
 
   bindDynamicValuesOption(widget, () =>
     getCloudInputAssetValues(node.comfyClass)

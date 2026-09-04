@@ -212,9 +212,7 @@ describe('useVersionCompatibilityStore', () => {
 
     it('should not show warning when disabled via setting', async () => {
       // Enable the disable setting
-      ;(
-        mockSettingStore as { get: ReturnType<typeof vi.fn> }
-      ).get.mockReturnValue(true)
+      mockSettingStore.get.mockReturnValue(true)
 
       // Set up version mismatch that would normally show warning
       mockSystemStatsStore.systemStats = {
@@ -228,9 +226,9 @@ describe('useVersionCompatibilityStore', () => {
       await store.checkVersionCompatibility()
 
       expect(store.shouldShowWarning).toBe(false)
-      expect(
-        (mockSettingStore as { get: ReturnType<typeof vi.fn> }).get
-      ).toHaveBeenCalledWith('Comfy.VersionCompatibility.DisableWarnings')
+      expect(mockSettingStore.get).toHaveBeenCalledWith(
+        'Comfy.VersionCompatibility.DisableWarnings'
+      )
     })
   })
 

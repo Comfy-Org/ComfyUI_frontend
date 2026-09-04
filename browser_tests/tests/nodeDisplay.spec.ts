@@ -54,7 +54,7 @@ test.describe('Optional input', { tag: ['@screenshot', '@node'] }, () => {
     await comfyPage.workflow.loadWorkflow('inputs/old_workflow_converted_input')
 
     const linkState = await comfyPage.page.evaluate((nodeId) => {
-      const node = window.app!.graph!.getNodeById(nodeId)
+      const node = window.app!.graph.getNodeById(nodeId)
       if (!node) return null
       const linkIdOf = (name: string) => {
         const slot = node.inputs.findIndex((input) => input.name === name)
@@ -72,7 +72,7 @@ test.describe('Optional input', { tag: ['@screenshot', '@node'] }, () => {
     await comfyPage.workflow.loadWorkflow('inputs/renamed_converted_widget')
     const inputNames = await comfyPage.page.evaluate(
       (nodeId) =>
-        window.app!.graph!.getNodeById(nodeId)!.inputs.map(({ name }) => name),
+        window.app!.graph.getNodeById(nodeId)!.inputs.map(({ name }) => name),
       toNodeId(3)
     )
 

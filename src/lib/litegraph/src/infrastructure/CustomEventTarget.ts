@@ -110,7 +110,7 @@ export class CustomEventTarget<
     options?: boolean | AddEventListenerOptions
   ): void {
     // Assertion: Contravariance on CustomEvent => Event
-    super.addEventListener(type as string, listener as EventListener, options)
+    super.addEventListener(type, listener as EventListener, options)
   }
 
   override removeEventListener<K extends Keys>(
@@ -119,11 +119,7 @@ export class CustomEventTarget<
     options?: boolean | EventListenerOptions
   ): void {
     // Assertion: Contravariance on CustomEvent => Event
-    super.removeEventListener(
-      type as string,
-      listener as EventListener,
-      options
-    )
+    super.removeEventListener(type, listener as EventListener, options)
   }
 
   /** @deprecated Use {@link dispatch}. */

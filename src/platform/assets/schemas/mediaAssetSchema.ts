@@ -54,10 +54,18 @@ export const MediaAssetKey: InjectionKey<MediaAssetProviderValue> =
 
 export const MIME_ASSET_INFO = 'application/x-comfy-asset-info'
 
+const zDraggedAssetInfo = zResultItem.and(
+  z.object({
+    attachment_ref: z.string().min(1).optional(),
+    media_kind: zMediaKindSchema.optional(),
+    preview_url: z.string().url().optional()
+  })
+)
+
 export function parseAssetInfo(dataTransfer: DataTransfer) {
   const assetString = dataTransfer?.getData(MIME_ASSET_INFO)
   try {
-    return zResultItem.safeParse(JSON.parse(assetString ?? '')).data
+    return zDraggedAssetInfo.safeParse(JSON.parse(assetString ?? '')).data
   } catch {
     // output was not parsable, allow fallthrough and return undefined
   }

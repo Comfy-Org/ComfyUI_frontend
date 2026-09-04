@@ -10,7 +10,7 @@ import {
 
 describe('getWidgetStep', () => {
   test('should return step2 when available', () => {
-    const options: IWidgetOptions<unknown> = {
+    const options: IWidgetOptions = {
       step2: 0.5,
       step: 20
     }
@@ -19,7 +19,7 @@ describe('getWidgetStep', () => {
   })
 
   test('should calculate from step when step2 is not available', () => {
-    const options: IWidgetOptions<unknown> = {
+    const options: IWidgetOptions = {
       step: 20
     }
 
@@ -27,20 +27,20 @@ describe('getWidgetStep', () => {
   })
 
   test('should use default step value of 10 when neither step2 nor step is provided', () => {
-    const options: IWidgetOptions<unknown> = {}
+    const options: IWidgetOptions = {}
 
     expect(getWidgetStep(options)).toBe(1) // 10 * 0.1 = 1
   })
   // Zero value is not allowed for step, fallback to 1.
   test('should handle zero values correctly', () => {
-    const optionsWithZeroStep2: IWidgetOptions<unknown> = {
+    const optionsWithZeroStep2: IWidgetOptions = {
       step2: 0,
       step: 20
     }
 
     expect(getWidgetStep(optionsWithZeroStep2)).toBe(2)
 
-    const optionsWithZeroStep: IWidgetOptions<unknown> = {
+    const optionsWithZeroStep: IWidgetOptions = {
       step: 0
     }
 

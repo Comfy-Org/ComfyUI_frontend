@@ -61,9 +61,7 @@ function getPromotedInputValue(
 ): TWidgetValue | undefined {
   const input = host.inputs.find((input) => input.name === name)
   if (!input?.widgetId) return undefined
-  return useWidgetValueStore().getWidget(input.widgetId)?.value as
-    | TWidgetValue
-    | undefined
+  return useWidgetValueStore().getWidget(input.widgetId)?.value
 }
 
 function addPrimitiveWithTargets(
@@ -758,11 +756,7 @@ describe('flushProxyWidgetMigration', () => {
           }
         }
       )
-      try {
-        reloadedGraph.configure(serialized)
-      } finally {
-        LiteGraph.unregisterNodeType(subgraph.id)
-      }
+      reloadedGraph.configure(serialized)
 
       const reloadedHost = reloadedGraph.getNodeById(host.id)
       expect(reloadedHost?.properties.proxyWidgets).toBeUndefined()

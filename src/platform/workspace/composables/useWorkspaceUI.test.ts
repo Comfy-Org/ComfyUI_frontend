@@ -64,7 +64,7 @@ vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    isActiveSubscription: ref(mockIsActiveSubscription.value),
+    canAccessSubscriptionFeatures: ref(mockIsActiveSubscription.value),
     isTeamPlan: ref(mockIsTeamPlan.value),
     subscription: ref({ isCancelled: mockIsCancelled.value })
   })

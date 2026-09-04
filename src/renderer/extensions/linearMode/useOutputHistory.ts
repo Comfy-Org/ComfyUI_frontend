@@ -1,16 +1,17 @@
 import { useAsyncState } from '@vueuse/core'
 import type { ComputedRef } from 'vue'
-import { computed, ref, watchEffect } from 'vue'
+import { computed, toValue, watchEffect } from 'vue'
 
-import type { IAssetsProvider } from '@/platform/assets/composables/media/IAssetsProvider'
-import { useAssetsApi } from '@/platform/assets/composables/media/useAssetsApi'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeOutput'
 import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
-import { getJobDetail } from '@/services/jobOutputCache'
 import { api } from '@/scripts/api'
+import { getJobDetail } from '@/services/jobOutputCache'
+import { WrappedList } from '@/utils/pagedList'
+import type { PagedList } from '@/utils/pagedList'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -18,15 +19,15 @@ import { useQueueStore } from '@/stores/queueStore'
 import type { ResultItemImpl } from '@/stores/queueStore'
 
 export function useOutputHistory(): {
-  outputs: IAssetsProvider
+  outputs: PagedList<AssetItem>
   allOutputs: (item?: AssetItem) => ResultItemImpl[]
   selectFirstHistory: () => void
   mayBeActiveWorkflowPending: ComputedRef<boolean>
   isWorkflowActive: ComputedRef<boolean>
   cancelActiveWorkflowJobs: () => Promise<void>
 } {
-  const backingOutputs = useAssetsApi('output')
-  void backingOutputs.fetchMediaList()
+  const assetsStore = useAssetsStore()
+  void assetsStore.outputAssets.loadMore()
   const linearStore = useLinearOutputStore()
   const workflowStore = useWorkflowStore()
   const executionStore = useExecutionStore()
@@ -68,25 +69,17 @@ export function useOutputHistory(): {
     )
   }
 
-  const sessionMedia = computed(() => {
+  const outputs = new WrappedList(assetsStore.outputAssets, (items) => {
     const path = workflowStore.activeWorkflow?.path
     if (!path) return []
 
     const pathMap = executionStore.jobIdToSessionWorkflowPath
 
-    return backingOutputs.media.value.filter((asset) => {
+    return items.filter((asset) => {
       const m = getOutputAssetMetadata(asset?.user_metadata)
       return m ? pathMap.get(m.jobId) === path : false
     })
   })
-
-  const outputs: IAssetsProvider = {
-    ...backingOutputs,
-    media: sessionMedia,
-    hasMore: ref(false),
-    isLoadingMore: ref(false),
-    loadMore: async () => {}
-  }
 
   const resolvedCache = linearStore.resolvedOutputsCache
   const asyncRefs = new Map<
@@ -151,7 +144,7 @@ export function useOutputHistory(): {
   }
 
   function selectFirstHistory() {
-    const first = outputs.media.value[0]
+    const first = toValue(outputs.items)[0]
     if (first) {
       linearStore.selectAsLatest(`history:${first.id}:0`)
     } else {
@@ -163,7 +156,7 @@ export function useOutputHistory(): {
   watchEffect(() => {
     if (linearStore.pendingResolve.size === 0) return
     for (const jobId of linearStore.pendingResolve) {
-      const asset = outputs.media.value.find((a) => {
+      const asset = toValue(outputs.items).find((a) => {
         const m = getOutputAssetMetadata(a?.user_metadata)
         return m?.jobId === jobId
       })

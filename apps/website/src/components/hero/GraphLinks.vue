@@ -172,7 +172,7 @@ const sweeps = computed(() =>
          scale uniformly and `vector-effect` is unnecessary here — it is also
          underspecified in combination with dashing. -->
     <g class="wire-sweep">
-      <template v-for="(d, i) in links" :key="`sweep-${i}`">
+      <template v-for="(_, i) in links" :key="`sweep-${i}`">
         <use
           v-for="band in bands"
           :key="`sweep-${i}-${band}`"

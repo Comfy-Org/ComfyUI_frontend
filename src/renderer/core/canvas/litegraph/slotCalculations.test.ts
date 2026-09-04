@@ -159,13 +159,13 @@ describe('calculateInputSlotPosFromSlot', () => {
       expect(y).toBeCloseTo(200 - 0.3 * SLOT_HEIGHT)
     })
 
-    it('uses the legacy fallback position for a detached input', () => {
+    it('uses the node origin for a detached input', () => {
       const detached = makeInput()
       const ctx = makeContext({ inputs: [makeInput(), makeInput()] })
 
-      const [, y] = calculateInputSlotPosFromSlot(ctx, detached)
+      const position = calculateInputSlotPosFromSlot(ctx, detached)
 
-      expect(y).toBeCloseTo(200 - 0.3 * SLOT_HEIGHT)
+      expect(position).toEqual([100, 200])
     })
 
     it('excludes slots with hard-coded positions from vertical ordering', () => {

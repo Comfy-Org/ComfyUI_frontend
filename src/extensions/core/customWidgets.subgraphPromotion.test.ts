@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -92,31 +92,14 @@ describe('CustomCombo index widget after subgraph promotion', () => {
       { name: 'CustomCombo' } as ComfyNodeDef,
       app
     )
+  })
 
-    if (LiteGraph.registered_node_types[TEST_CUSTOM_COMBO_TYPE]) {
-      LiteGraph.unregisterNodeType(TEST_CUSTOM_COMBO_TYPE)
-    }
+  beforeEach(() => {
     LiteGraph.registerNodeType(TEST_CUSTOM_COMBO_TYPE, TestCustomComboNode)
-
-    if (LiteGraph.registered_node_types[TEST_CUSTOM_COMBO_UNCONVERTED_TYPE]) {
-      LiteGraph.unregisterNodeType(TEST_CUSTOM_COMBO_UNCONVERTED_TYPE)
-    }
     LiteGraph.registerNodeType(
       TEST_CUSTOM_COMBO_UNCONVERTED_TYPE,
       TestCustomComboNodeWithoutInput
     )
-  })
-
-  afterAll(() => {
-    if (LiteGraph.registered_node_types[TEST_CUSTOM_COMBO_TYPE]) {
-      LiteGraph.unregisterNodeType(TEST_CUSTOM_COMBO_TYPE)
-    }
-    if (LiteGraph.registered_node_types[TEST_CUSTOM_COMBO_UNCONVERTED_TYPE]) {
-      LiteGraph.unregisterNodeType(TEST_CUSTOM_COMBO_UNCONVERTED_TYPE)
-    }
-  })
-
-  beforeEach(() => {
     resetSubgraphFixtureState()
   })
 

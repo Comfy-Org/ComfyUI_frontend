@@ -20,12 +20,18 @@ const locatorNode = { id: 'inner' }
 const mocks = vi.hoisted(() => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { ref: createRef } = require('vue')
-  return {
+  const mocks: {
+    getNodeByLocatorId: ReturnType<typeof vi.fn>
+    resolvedSource: unknown
+    filmstripError: { value: string | null }
+    filmstripRetry: ReturnType<typeof vi.fn>
+  } = {
     getNodeByLocatorId: vi.fn(),
-    resolvedSource: undefined as unknown,
+    resolvedSource: undefined,
     filmstripError: createRef(null) as { value: string | null },
     filmstripRetry: vi.fn()
   }
+  return mocks
 })
 
 vi.mock('@/scripts/app', () => ({
@@ -115,7 +121,7 @@ function createWidget(
     value: {},
     options,
     ...extra
-  } as SimplifiedWidget<VideoEditValue>
+  }
 }
 
 function renderWidget(widget = createWidget()) {

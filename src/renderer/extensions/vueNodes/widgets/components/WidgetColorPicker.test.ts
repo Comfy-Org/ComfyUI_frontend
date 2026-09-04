@@ -35,7 +35,7 @@ describe('WidgetColorPicker Value Binding', () => {
     options: Record<string, unknown> = {},
     callback?: (value: string) => void
   ) =>
-    createMockWidget<string>({
+    createMockWidget({
       value,
       name: 'test_color_picker',
       type: 'color',

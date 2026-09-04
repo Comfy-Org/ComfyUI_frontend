@@ -466,6 +466,23 @@ describe('computeProcessedWidgets', () => {
     expect(result).toEqual([])
   })
 
+  it('uses the legacy renderer for a customized draw method', () => {
+    const id = widgetId(GRAPH_ID, toNodeId(1), 'stack_data')
+    registerWidgetState(id, { type: 'text' })
+    const widget = createMockWidget({
+      widgetId: id,
+      name: 'stack_data',
+      type: 'text',
+      computeSize: () => [0, -4],
+      draw: () => undefined
+    })
+    const { graph } = createGraphWithNode([widget])
+
+    const [result] = processWidgets({ widgetIds: [id], rootGraph: graph })
+
+    expect(result.vueComponent).toBe(WidgetLegacy)
+  })
+
   it('uses widget state nodeId for simplified widget locator', () => {
     const subgraphId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
     const id = widgetId(GRAPH_ID, toNodeId('inner-node'), 'text')

@@ -218,9 +218,7 @@ export function useConflictDetection() {
             supported_comfyui_version: versionData.supported_comfyui_version,
             supported_comfyui_frontend_version:
               versionData.supported_comfyui_frontend_version,
-            supported_os: normalizeOSList(
-              versionData.supported_os
-            ) as Node['supported_os'],
+            supported_os: normalizeOSList(versionData.supported_os),
             supported_accelerators: versionData.supported_accelerators,
 
             // Status information

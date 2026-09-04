@@ -181,7 +181,7 @@ describe('useMinimapGraph', () => {
 
     // Call the method directly and ensure it is a no-op
     const testNode = { id: '9' } as LGraphNode
-    buriedWrapper!(testNode)
+    buriedWrapper(testNode)
 
     expect(originalOnConnectionChange).toHaveBeenCalledWith(testNode)
     expect(onGraphChangedMock).not.toHaveBeenCalled()

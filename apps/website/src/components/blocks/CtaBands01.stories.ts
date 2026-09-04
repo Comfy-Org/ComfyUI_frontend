@@ -10,15 +10,15 @@ const meta: Meta<typeof CtaBands01> = {
     bands: [
       {
         id: 'enterprise',
-        label: 'For Enterprise',
-        text: "Tell us what you're trying to make. An FDCT validates it after the first call and builds from there.",
-        cta: { label: 'Contact us', href: '/contact' }
+        label: 'ENTERPRISE',
+        text: 'Bring a production problem. Forward Deployed Creatives validate the path and build alongside your team.',
+        cta: { label: 'REQUEST DEMO', href: '/contact/' }
       },
       {
         id: 'creators',
-        label: 'For Creators',
+        label: 'CREATORS',
         text: "Building production-grade content with Comfy? We're hiring from the community.",
-        cta: { label: 'Apply now', href: '/careers' }
+        cta: { label: 'VIEW OPEN ROLES', href: '/careers/' }
       }
     ]
   }
@@ -34,9 +34,9 @@ export const SingleBand: Story = {
     bands: [
       {
         id: 'enterprise',
-        label: 'For Enterprise',
-        text: "Tell us what you're trying to make. An FDCT validates it after the first call and builds from there.",
-        cta: { label: 'Contact us', href: '/contact' }
+        label: 'ENTERPRISE',
+        text: 'Bring a production problem. Forward Deployed Creatives validate the path and build alongside your team.',
+        cta: { label: 'REQUEST DEMO', href: '/contact/' }
       }
     ]
   }
@@ -56,5 +56,11 @@ export const ExternalCta: Story = {
         }
       }
     ]
+  }
+}
+
+export const Mobile: Story = {
+  globals: {
+    viewport: { value: 'mobile1', isRotated: false }
   }
 }

@@ -96,6 +96,7 @@ describe('usePartitionedBadges', () => {
 
     expect(partitioned.value).toEqual({
       hasComfyBadge: false,
+      hasComfyCloudBadge: false,
       core: [{ text: '#5' }, { text: 'BETA' }, { text: 'testpack' }],
       extension: [],
       pricing: [{ required: '$0.05', rest: 'x 3 Runs' }]
@@ -122,6 +123,29 @@ describe('usePartitionedBadges', () => {
     expect(partitioned.value.pricing).toEqual([
       { required: '$0.05', rest: 'x 3 Runs' }
     ])
+  })
+
+  it('shows the logo for a Comfy Cloud node despite its pricing', () => {
+    makeNode('ComfyCloudNode', { apiNode: true })
+    addNodeDef('ComfyCloudNode', 'comfy_api_nodes.nodes_comfy_cloud')
+
+    const partitioned = usePartitionedBadges(nodeData('ComfyCloudNode'))
+
+    expect(partitioned.value.hasComfyBadge).toBe(true)
+    expect(partitioned.value.hasComfyCloudBadge).toBe(true)
+    expect(partitioned.value.pricing).toEqual([
+      { required: '$0.05', rest: 'x 3 Runs' }
+    ])
+  })
+
+  it('shows no logo for a partner node from another api module', () => {
+    makeNode('KlingNode', { apiNode: true })
+    addNodeDef('KlingNode', 'comfy_api_nodes.nodes_kling')
+
+    const partitioned = usePartitionedBadges(nodeData('KlingNode'))
+
+    expect(partitioned.value.hasComfyBadge).toBe(false)
+    expect(partitioned.value.hasComfyCloudBadge).toBe(false)
   })
 
   it('appends non-empty node.badges extension badges after derived rows', () => {

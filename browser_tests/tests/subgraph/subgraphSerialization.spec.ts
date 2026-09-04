@@ -57,7 +57,7 @@ async function getPrimitiveFanoutSnapshot(
     const primitiveOriginLinkCount = [
       ...hostNode.subgraph.links.values()
     ].filter((link) => link.origin_id === primitiveNode?.id).length
-    const serialized = window.app!.graph!.serialize()
+    const serialized = window.app!.graph.serialize()
     const serializedNode = serialized.nodes.find(
       (candidate) => String(candidate.id) === String(id)
     )
@@ -92,7 +92,7 @@ async function getSerializedSubgraphNodeProperties(
   hostNodeId: string
 ): Promise<Record<string, unknown>> {
   return comfyPage.page.evaluate((id) => {
-    const serialized = window.app!.graph!.serialize()
+    const serialized = window.app!.graph.serialize()
     const node = serialized.nodes.find(
       (candidate) => String(candidate.id) === String(id)
     )
@@ -111,7 +111,7 @@ async function expectPromotedWidgetsToResolveToInteriorNodes(
   const interiorNodeIds = widgets.map(([id]) => toNodeId(id))
   const results = await comfyPage.page.evaluate(
     ([hostId, ids]) => {
-      const graph = window.app!.graph!
+      const graph = window.app!.graph
       const hostNode = graph.getNodeById(hostId)
       if (!hostNode?.isSubgraphNode()) return ids.map(() => false)
 

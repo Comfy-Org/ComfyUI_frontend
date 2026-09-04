@@ -7,9 +7,6 @@ import type { components as ManagerComponents } from '@/workbench/extensions/man
 
 type InstalledPacksResponse =
   ManagerComponents['schemas']['InstalledPacksResponse']
-type ManagerChannel = ManagerComponents['schemas']['ManagerChannel']
-type ManagerDatabaseSource =
-  ManagerComponents['schemas']['ManagerDatabaseSource']
 type ManagerPackInstalled = ManagerComponents['schemas']['ManagerPackInstalled']
 
 vi.mock('@/workbench/extensions/manager/services/comfyManagerService', () => ({
@@ -365,8 +362,8 @@ describe('useComfyManagerStore', () => {
       await store.installPack.call({
         id: 'test-pack',
         repository: 'https://github.com/test/test-pack',
-        channel: 'dev' as ManagerChannel,
-        mode: 'cache' as ManagerDatabaseSource,
+        channel: 'dev',
+        mode: 'cache',
         selected_version: 'latest',
         version: 'latest'
       })
@@ -382,8 +379,8 @@ describe('useComfyManagerStore', () => {
       await store.installPack.call({
         id: 'pack-1',
         repository: 'https://github.com/test/pack-1',
-        channel: 'dev' as ManagerChannel,
-        mode: 'cache' as ManagerDatabaseSource,
+        channel: 'dev',
+        mode: 'cache',
         selected_version: 'latest',
         version: 'latest'
       })
@@ -392,8 +389,8 @@ describe('useComfyManagerStore', () => {
       await store.installPack.call({
         id: 'pack-2',
         repository: 'https://github.com/test/pack-2',
-        channel: 'dev' as ManagerChannel,
-        mode: 'cache' as ManagerDatabaseSource,
+        channel: 'dev',
+        mode: 'cache',
         selected_version: 'latest',
         version: 'latest'
       })

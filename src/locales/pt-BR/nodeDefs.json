@@ -7133,7 +7133,7 @@
       },
       "mode": {
         "name": "modo",
-        "tooltip": "'speed' é mais rápido; 'precision' produz sincronização labial de maior qualidade pelo dobro do preço."
+        "tooltip": "'speed' é mais rápido; 'precision' produz sincronização labial de maior qualidade a um preço mais alto."
       },
       "output_language": {
         "name": "idioma de saída",
@@ -7201,12 +7201,12 @@
     }
   },
   "HiDreamO1ReferenceImages": {
-    "description": "Anexe de 1 a 10 imagens de referência ao condicionamento, uma para instrução de edição ou múltiplas para personalização orientada por sujeito.",
+    "description": "Anexe imagens de referência ordenadas ao condicionamento positivo e negativo.",
     "display_name": "Imagens de Referência HiDream-O1",
     "inputs": {
       "images": {
         "name": "imagens",
-        "tooltip": "Imagens de referência. 1 imagem = edição por instrução; 2-10 imagens = múltiplas referências."
+        "tooltip": "As imagens de referência são usadas na ordem numérica dos soquetes."
       },
       "negative": {
         "name": "negativo"
@@ -12744,6 +12744,46 @@
     "outputs": {
       "0": {
         "name": "positive",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3FunControlNetApply": {
+    "description": "Aplique um MiniMax H3 Fun ControlNet a um modelo de texto para vídeo como um patch de modelo.",
+    "display_name": "Aplicar MiniMax H3 Fun ControlNet",
+    "inputs": {
+      "control_video": {
+        "name": "control_video"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "1 marca as regiões a serem regeneradas."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "Vídeo por trás da mask; lido apenas quando uma mask é fornecida."
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -21121,6 +21161,23 @@
       }
     }
   },
+  "SenseNovaSamplingOptions": {
+    "description": "Defina o deslocamento de fluxo do SenseNova.",
+    "display_name": "Opções de amostragem do SenseNova",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SetClipHooks": {
     "display_name": "Definir Hooks do CLIP",
     "inputs": {
@@ -24755,6 +24812,23 @@
       }
     }
   },
+  "VideoCrop": {
+    "display_name": "Recortar Vídeo",
+    "inputs": {
+      "crop": {
+        "name": "crop",
+        "tooltip": "Região de recorte em pixels. Largura/altura zero mantém o quadro completo."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VideoFrameSample": {
     "description": "Amostre um número fixo de quadros de um vídeo usando várias estratégias.",
     "display_name": "Amostrar Quadro de Vídeo",
@@ -24856,6 +24930,27 @@
       },
       "model": {
         "name": "model"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "Aparar Vídeo (Avançado)",
+    "inputs": {
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "Se for True, quando a duração especificada não for possível, será gerado um erro."
+      },
+      "trim": {
+        "name": "trim",
+        "tooltip": "Janela de recorte usando os quadros inicial/final."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

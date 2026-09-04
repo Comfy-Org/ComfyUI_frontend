@@ -65,6 +65,7 @@ describe.for(pages)('$name launch page config', ({ page }) => {
       page.pricing?.banner?.subtitleKey,
       page.pricing?.banner?.cta.labelKey,
       page.faq?.headingKey,
+      page.comparison?.headingKey,
       page.steps?.headingKey,
       page.steps?.stepLabelKey,
       page.steps?.primaryCta?.labelKey,
@@ -90,21 +91,63 @@ describe.for(pages)('$name launch page config', ({ page }) => {
   it('localizes every gallery card and FAQ entry in both locales', () => {
     for (const card of page.gallery?.cards ?? []) {
       for (const locale of ['en', 'zh-CN'] as const) {
-        expect(card.name[locale], `${card.id} name`).not.toBe('')
-        expect(card.note[locale], `${card.id} note`).not.toBe('')
-        expect(card.description[locale], `${card.id} description`).not.toBe('')
+        expect(card.name[locale] || card.name.en, `${card.id} name`).not.toBe(
+          ''
+        )
+        expect(card.note[locale] || card.note.en, `${card.id} note`).not.toBe(
+          ''
+        )
+        expect(
+          card.description[locale] || card.description.en,
+          `${card.id} description`
+        ).not.toBe('')
       }
     }
     for (const card of page.audioGallery?.cards ?? []) {
       for (const locale of ['en', 'zh-CN'] as const) {
-        expect(card.description[locale], `${card.id} description`).not.toBe('')
-        expect(card.prompt[locale], `${card.id} prompt`).not.toBe('')
+        expect(
+          card.description[locale] || card.description.en,
+          `${card.id} description`
+        ).not.toBe('')
+        expect(
+          card.prompt[locale] || card.prompt.en,
+          `${card.id} prompt`
+        ).not.toBe('')
+      }
+    }
+    if (page.comparison) {
+      // Empty columns/rows would render an empty table while every loop below
+      // runs zero times and passes.
+      expect(page.comparison.columns, 'comparison columns').not.toHaveLength(0)
+      expect(page.comparison.rows, 'comparison rows').not.toHaveLength(0)
+    }
+    for (const column of page.comparison?.columns ?? []) {
+      for (const locale of ['en', 'zh-CN'] as const) {
+        expect(column.label[locale], `${column.id} column label`).not.toBe('')
+      }
+    }
+    for (const row of page.comparison?.rows ?? []) {
+      // A short row would silently render an empty cell under the last column.
+      expect(row.cells.length, `${row.id} cell count`).toBe(
+        page.comparison?.columns.length
+      )
+      for (const locale of ['en', 'zh-CN'] as const) {
+        expect(row.label[locale], `${row.id} label`).not.toBe('')
+        for (const [index, cell] of row.cells.entries()) {
+          expect(cell[locale], `${row.id} cell ${index}`).not.toBe('')
+        }
       }
     }
     for (const faq of page.faq?.items ?? []) {
       for (const locale of ['en', 'zh-CN'] as const) {
-        expect(faq.question[locale], `${faq.id} question`).not.toBe('')
-        expect(faq.answer[locale], `${faq.id} answer`).not.toBe('')
+        expect(
+          faq.question[locale] || faq.question.en,
+          `${faq.id} question`
+        ).not.toBe('')
+        expect(
+          faq.answer[locale] || faq.answer.en,
+          `${faq.id} answer`
+        ).not.toBe('')
       }
     }
   })

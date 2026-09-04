@@ -13,6 +13,8 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
@@ -44,6 +46,25 @@ vi.mock('@/platform/settings/settingStore', () => ({
     set: vi.fn()
   })
 }))
+
+function createPanelI18n() {
+  return createI18n({
+    legacy: false,
+    locale: 'en',
+    messages: { en: enMessages }
+  })
+}
+
+const panelStubs = {
+  Button: { template: '<button><slot /></button>' },
+  EditableText: true,
+  Tab: { template: '<button v-bind="$attrs"><slot /></button>' },
+  TabErrors: true,
+  TabInfo: true,
+  TabList: { template: '<div><slot /></div>' },
+  TabNormalInputs: true,
+  TabSettings: true
+}
 
 function renderPanel(
   activeTab: 'errors' | 'parameters' = 'errors',
@@ -80,25 +101,10 @@ function renderPanel(
   )
   const openPanel = vi.spyOn(rightSidePanelStore, 'openPanel')
 
-  const i18n = createI18n({
-    legacy: false,
-    locale: 'en',
-    messages: { en: enMessages }
-  })
-
   const rendered = render(RightSidePanel, {
     global: {
-      plugins: [pinia, i18n],
-      stubs: {
-        Button: { template: '<button><slot /></button>' },
-        EditableText: true,
-        Tab: { template: '<button v-bind="$attrs"><slot /></button>' },
-        TabErrors: true,
-        TabInfo: true,
-        TabList: { template: '<div><slot /></div>' },
-        TabNormalInputs: true,
-        TabSettings: true
-      }
+      plugins: [pinia, createPanelI18n()],
+      stubs: panelStubs
     }
   })
 
@@ -192,5 +198,66 @@ describe('RightSidePanel active tab fallback', () => {
     expect(screen.getByTestId('panel-tab-errors')).toBeInTheDocument()
     expect(rightSidePanelStore.activeTab).toBe('errors')
     expect(openPanel).not.toHaveBeenCalled()
+  })
+})
+
+describe('RightSidePanel global parameters tab', () => {
+  beforeEach(() => {
+    mockApp.rootGraph = null
+  })
+
+  function renderWithNoSelection(
+    activeWorkflowPath: string | null,
+    pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
+  ) {
+    setActivePinia(pinia)
+    const onTabGlobalParametersSetup = vi.fn()
+
+    const rootGraph = new LGraph()
+    mockApp.rootGraph = rootGraph
+
+    const canvasStore = useCanvasStore()
+    canvasStore.currentGraph = rootGraph
+    canvasStore.selectedItems = []
+
+    const rightSidePanelStore = useRightSidePanelStore()
+    rightSidePanelStore.activeTab = 'parameters'
+
+    const workflowStore = useWorkflowStore()
+    workflowStore.activeWorkflow = activeWorkflowPath
+      ? ({ path: activeWorkflowPath } as LoadedComfyWorkflow)
+      : null
+
+    const rendered = render(RightSidePanel, {
+      global: {
+        plugins: [pinia, createPanelI18n()],
+        stubs: {
+          ...panelStubs,
+          TabGlobalParameters: {
+            setup: onTabGlobalParametersSetup,
+            template: '<div data-testid="tab-global-parameters" />'
+          }
+        }
+      }
+    })
+
+    return { ...rendered, onTabGlobalParametersSetup }
+  }
+
+  it('remounts TabGlobalParameters when the active workflow changes', async () => {
+    const { onTabGlobalParametersSetup } =
+      renderWithNoSelection('workflows/a.json')
+
+    const first = screen.getByTestId('tab-global-parameters')
+    expect(onTabGlobalParametersSetup).toHaveBeenCalledTimes(1)
+
+    const workflowStore = useWorkflowStore()
+    workflowStore.activeWorkflow = {
+      path: 'workflows/b.json'
+    } as LoadedComfyWorkflow
+    await nextTick()
+
+    expect(onTabGlobalParametersSetup).toHaveBeenCalledTimes(2)
+    expect(screen.getByTestId('tab-global-parameters')).not.toBe(first)
   })
 })

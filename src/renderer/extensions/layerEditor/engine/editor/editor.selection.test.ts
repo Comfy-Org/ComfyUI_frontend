@@ -25,10 +25,10 @@ class FakeCompositor implements Compositor {
   }
   freeTarget() {}
   targetTexture(): WebGLTexture {
-    return {} as WebGLTexture
+    return {}
   }
   upload(): WebGLTexture {
-    return {} as WebGLTexture
+    return {}
   }
   readback(): ImageData {
     return {

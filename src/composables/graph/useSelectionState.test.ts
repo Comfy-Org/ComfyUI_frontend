@@ -178,7 +178,7 @@ describe('useSelectionState', () => {
       canvasStore.$state.selectedItems = [pinnedNode, collapsedNode]
 
       const { selectedNodes } = useSelectionState()
-      const isPinned = selectedNodes.value.some((n) => n.pinned === true)
+      const isPinned = selectedNodes.value.some((n) => n.pinned)
       const isCollapsed = selectedNodes.value.some(
         (n) => n.flags?.collapsed === true
       )
@@ -196,7 +196,7 @@ describe('useSelectionState', () => {
       canvasStore.$state.selectedItems = [node]
 
       const { selectedNodes } = useSelectionState()
-      const isPinned = selectedNodes.value.some((n) => n.pinned === true)
+      const isPinned = selectedNodes.value.some((n) => n.pinned)
       const isCollapsed = selectedNodes.value.some(
         (n) => n.flags?.collapsed === true
       )
@@ -211,7 +211,7 @@ describe('useSelectionState', () => {
       // Test with empty selection using new composable instance
       canvasStore.$state.selectedItems = []
       const { selectedNodes: newSelectedNodes } = useSelectionState()
-      const newIsPinned = newSelectedNodes.value.some((n) => n.pinned === true)
+      const newIsPinned = newSelectedNodes.value.some((n) => n.pinned)
       expect(newIsPinned).toBe(false)
     })
   })

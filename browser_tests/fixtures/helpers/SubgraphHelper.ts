@@ -46,7 +46,7 @@ export class SubgraphHelper {
       async (params) => {
         const { slotType, action, targetSlotName } = params
         const app = window.app!
-        const currentGraph = app.canvas!.graph!
+        const currentGraph = app.canvas.graph!
 
         // Check if we're in a subgraph
         if (!('inputNode' in currentGraph)) {
@@ -55,7 +55,7 @@ export class SubgraphHelper {
           )
         }
 
-        const subgraph = currentGraph as Subgraph
+        const subgraph = currentGraph
 
         // Get the appropriate node and slots
         const node =
@@ -502,7 +502,7 @@ export class SubgraphHelper {
 
   async countGraphPseudoPreviewEntries(): Promise<number> {
     return this.page.evaluate(() => {
-      const graph = window.app!.graph!
+      const graph = window.app!.graph
       return graph.nodes.reduce((count, node) => {
         const proxyWidgets = node.properties?.proxyWidgets
         if (!Array.isArray(proxyWidgets)) return count
@@ -589,7 +589,7 @@ export class SubgraphHelper {
 
   async getBoundaryLinkSnapshot() {
     return this.page.evaluate(() => {
-      const graph = window.app!.graph!
+      const graph = window.app!.graph
       const host = graph.nodes.find((node) => node.isSubgraphNode())
       if (!host) {
         return {
@@ -632,7 +632,7 @@ export class SubgraphHelper {
 
   async serializeAndReload(): Promise<void> {
     const serialized = await this.page.evaluate(() =>
-      window.app!.graph!.serialize()
+      window.app!.graph.serialize()
     )
     await this.comfyPage.workflow.loadGraphData(serialized as ComfyWorkflowJSON)
   }

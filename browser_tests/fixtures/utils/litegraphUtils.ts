@@ -219,7 +219,7 @@ class NodeWidgetReference {
   async getSocketPosition(): Promise<Position> {
     const pos: [number, number] = await this.node.comfyPage.page.evaluate(
       ([id, index]) => {
-        const node = window.app!.graph!.getNodeById(id)
+        const node = window.app!.graph.getNodeById(id)
         if (!node) throw new Error(`Node ${id} not found.`)
         const widget = node.widgets![index]
         if (!widget) throw new Error(`Widget ${index} not found.`)
@@ -260,7 +260,7 @@ class NodeWidgetReference {
   async getValue() {
     return await this.node.comfyPage.page.evaluate(
       ([id, index]) => {
-        const node = window.app!.graph!.getNodeById(id)
+        const node = window.app!.graph.getNodeById(id)
         if (!node) throw new Error(`Node ${id} not found.`)
         const widget = node.widgets![index]
         if (!widget) throw new Error(`Widget ${index} not found.`)

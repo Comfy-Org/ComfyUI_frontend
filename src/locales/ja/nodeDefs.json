@@ -7133,7 +7133,7 @@
       },
       "mode": {
         "name": "モード",
-        "tooltip": "「speed」は高速、「precision」は2倍の価格で高品質なリップシンクを生成します。"
+        "tooltip": "'speed' は高速です。'precision' はより高品質なリップシンクを実現しますが、料金が高くなります。"
       },
       "output_language": {
         "name": "出力言語",
@@ -7201,12 +7201,12 @@
     }
   },
   "HiDreamO1ReferenceImages": {
-    "description": "1～10枚の参照画像をコンディショニングに添付します。1枚は編集指示用、複数枚は被写体パーソナライズ用。",
+    "description": "正および負のコンディショニングに、順序付けされた参照画像を接続します。",
     "display_name": "HiDream-O1 参照画像",
     "inputs": {
       "images": {
         "name": "画像",
-        "tooltip": "参照画像。1枚＝編集指示、2～10枚＝マルチ参照。"
+        "tooltip": "参照画像は数値ソケット順に使用されます。"
       },
       "negative": {
         "name": "ネガティブ"
@@ -12744,6 +12744,46 @@
     "outputs": {
       "0": {
         "name": "positive",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3FunControlNetApply": {
+    "description": "MiniMax H3 Fun ControlNetをモデルパッチとしてテキストから動画へのモデルに適用します。",
+    "display_name": "MiniMax H3 Fun ControlNetを適用",
+    "inputs": {
+      "control_video": {
+        "name": "control_video"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "1は再生成する領域を示します。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "マスクの背後にある動画。マスクが指定されている場合にのみ読み取られます。"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -21121,6 +21161,23 @@
       }
     }
   },
+  "SenseNovaSamplingOptions": {
+    "description": "SenseNovaのフローシフトを設定します。",
+    "display_name": "SenseNova サンプリングオプション",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SetClipHooks": {
     "display_name": "CLIPフックを設定",
     "inputs": {
@@ -24755,6 +24812,23 @@
       }
     }
   },
+  "VideoCrop": {
+    "display_name": "動画をクロップ",
+    "inputs": {
+      "crop": {
+        "name": "crop",
+        "tooltip": "ピクセル単位のクロップ領域。幅または高さがゼロの場合はフルフレームを維持します。"
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VideoFrameSample": {
     "description": "さまざまな戦略を使って、ビデオから固定数のフレームをサンプリングします。",
     "display_name": "ビデオフレームのサンプリング",
@@ -24856,6 +24930,27 @@
       },
       "model": {
         "name": "モデル"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "動画をトリミング（詳細）",
+    "inputs": {
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "True の場合、指定した長さを実現できないときにエラーが発生します。"
+      },
+      "trim": {
+        "name": "trim",
+        "tooltip": "開始/終了フレームを使用してトリミング範囲を指定します。"
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

@@ -7133,7 +7133,7 @@
       },
       "mode": {
         "name": "모드",
-        "tooltip": "'speed'는 더 빠르며, 'precision'은 두 배의 비용으로 더 높은 품질의 입 모양 동기화를 제공합니다."
+        "tooltip": "'speed'는 더 빠르며, 'precision'은 더 높은 비용으로 더 높은 품질의 립싱크를 생성합니다."
       },
       "output_language": {
         "name": "출력 언어",
@@ -7201,12 +7201,12 @@
     }
   },
   "HiDreamO1ReferenceImages": {
-    "description": "컨디셔닝에 1~10개의 참조 이미지를 첨부합니다. 1개는 편집 지시, 여러 개는 주제 기반 개인화에 사용됩니다.",
+    "description": "양성 및 음성 conditioning에 순서가 지정된 참조 이미지를 연결합니다.",
     "display_name": "HiDream-O1 Reference Images",
     "inputs": {
       "images": {
         "name": "images",
-        "tooltip": "참조 이미지. 1개 = 편집 지시; 2~10개 = 다중 참조."
+        "tooltip": "참조 이미지는 숫자 소켓 순서대로 사용됩니다."
       },
       "negative": {
         "name": "negative"
@@ -12744,6 +12744,46 @@
     "outputs": {
       "0": {
         "name": "positive",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3FunControlNetApply": {
+    "description": "MiniMax H3 Fun ControlNet을 모델 패치로 텍스트-투-비디오 모델에 적용합니다.",
+    "display_name": "MiniMax H3 Fun ControlNet 적용",
+    "inputs": {
+      "control_video": {
+        "name": "control_video"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "1은 다시 생성할 영역을 표시합니다."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "mask 뒤의 비디오이며, mask가 제공된 경우에만 읽습니다."
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -21121,6 +21161,23 @@
       }
     }
   },
+  "SenseNovaSamplingOptions": {
+    "description": "SenseNova 플로우 시프트를 설정합니다.",
+    "display_name": "SenseNova 샘플링 옵션",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SetClipHooks": {
     "display_name": "CLIP 후크 설정",
     "inputs": {
@@ -24755,6 +24812,23 @@
       }
     }
   },
+  "VideoCrop": {
+    "display_name": "비디오 자르기",
+    "inputs": {
+      "crop": {
+        "name": "crop",
+        "tooltip": "픽셀 단위로 영역을 자릅니다. 너비/높이가 0이면 전체 프레임을 유지합니다."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VideoFrameSample": {
     "description": "다양한 전략을 사용하여 비디오에서 고정된 개수의 프레임을 샘플링합니다.",
     "display_name": "비디오 프레임 샘플링",
@@ -24856,6 +24930,27 @@
       },
       "model": {
         "name": "모델"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "비디오 트리밍 (고급)",
+    "inputs": {
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "True인 경우, 지정한 길이가 불가능하면 오류가 발생합니다."
+      },
+      "trim": {
+        "name": "trim",
+        "tooltip": "시작/종료 프레임을 사용하여 구간을 트리밍합니다."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

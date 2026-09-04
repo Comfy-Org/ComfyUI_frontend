@@ -86,11 +86,13 @@ export function useLayoutMutations(source: LayoutSource) {
     const zIndex =
       order === 'front'
         ? layoutStore.allocateZIndex()
-        : Math.min(
-            ...graph._nodes.map(
-              (node) =>
+        : graph._nodes.reduce(
+            (lowest, node) =>
+              Math.min(
+                lowest,
                 layoutStore.getNodeLayout(rootGraphId, node.id)?.zIndex ?? 0
-            )
+              ),
+            0
           ) - 1
     setNodeZIndex(rootGraphId, nodeId, zIndex)
   }

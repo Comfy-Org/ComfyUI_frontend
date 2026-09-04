@@ -116,10 +116,10 @@ describe('AssetFilterBar', () => {
       ) as HTMLSelectElement
       const fileFormatOptions = fileFormatEl.querySelectorAll('option')
       const ckptOption = Array.from(fileFormatOptions).find(
-        (o) => (o as HTMLOptionElement).value === 'ckpt'
+        (o) => o.value === 'ckpt'
       ) as HTMLOptionElement
       const safetensorsOption = Array.from(fileFormatOptions).find(
-        (o) => (o as HTMLOptionElement).value === 'safetensors'
+        (o) => o.value === 'safetensors'
       ) as HTMLOptionElement
       ckptOption.selected = true
       safetensorsOption.selected = true
@@ -134,7 +134,7 @@ describe('AssetFilterBar', () => {
       ) as HTMLSelectElement
       const baseModelOptions = baseModelEl.querySelectorAll('option')
       const sdxlOption = Array.from(baseModelOptions).find(
-        (o) => (o as HTMLOptionElement).value === 'sdxl'
+        (o) => o.value === 'sdxl'
       ) as HTMLOptionElement
       sdxlOption.selected = true
       await fireEvent.change(baseModelSelectEl)
@@ -215,7 +215,7 @@ describe('AssetFilterBar', () => {
       expect(
         Array.from(options).map((o) => ({
           name: o.textContent?.trim(),
-          value: (o as HTMLOptionElement).value
+          value: o.value
         }))
       ).toEqual([
         { name: '.ckpt', value: 'ckpt' },
@@ -238,7 +238,7 @@ describe('AssetFilterBar', () => {
       expect(
         Array.from(options).map((o) => ({
           name: o.textContent?.trim(),
-          value: (o as HTMLOptionElement).value
+          value: o.value
         }))
       ).toEqual([
         { name: 'sd15', value: 'sd15' },

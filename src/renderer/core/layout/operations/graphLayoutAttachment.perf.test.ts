@@ -1,5 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
+import { effect, stop } from 'vue'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import {
@@ -9,6 +10,7 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import { createMockCanvas2DContext } from '@/utils/__tests__/litegraphTestUtils'
 
 type GeometryCounts = {
@@ -22,8 +24,6 @@ type RenderCounts = {
   visibleNodes: number
 }
 
-const MAX_LINEAR_GROWTH = 2.05
-
 describe('renderer geometry boundary complexity', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
@@ -32,7 +32,7 @@ describe('renderer geometry boundary complexity', () => {
   })
 
   test(
-    'keeps stable foreground and background boundary calls linear',
+    'avoids stable foreground and background geometry lookups',
     { timeout: 20_000 },
     () => {
       const smaller = measureRenderCounts(250)
@@ -40,20 +40,139 @@ describe('renderer geometry boundary complexity', () => {
 
       expect(smaller.visibleNodes).toBe(125)
       expect(larger.visibleNodes).toBe(250)
-      expect(smaller.foreground.contentLookups).toBeGreaterThan(0)
-      expect(smaller.background.contentLookups).toBeGreaterThan(0)
-      expect(larger.foreground.contentLookups).toBeLessThanOrEqual(
-        smaller.foreground.contentLookups * MAX_LINEAR_GROWTH
-      )
-      expect(larger.background.contentLookups).toBeLessThanOrEqual(
-        smaller.background.contentLookups * MAX_LINEAR_GROWTH
-      )
-      expect(smaller.foreground.rectReads).toBe(0)
-      expect(smaller.background.rectReads).toBe(0)
-      expect(larger.foreground.rectReads).toBe(0)
-      expect(larger.background.rectReads).toBe(0)
+      expect(smaller.foreground).toEqual({ contentLookups: 0, rectReads: 0 })
+      expect(smaller.background).toEqual({ contentLookups: 0, rectReads: 0 })
+      expect(larger.foreground).toEqual({ contentLookups: 0, rectReads: 0 })
+      expect(larger.background).toEqual({ contentLookups: 0, rectReads: 0 })
     }
   )
+
+  test('refreshes exactly once after a real geometry revision', () => {
+    const { nodes } = createRenderer(245)
+    const target = nodes[0]
+
+    layoutStore.batchUpdateNodeBounds(
+      target.graph!.rootGraph.id,
+      [
+        {
+          nodeId: target.id,
+          bounds: { x: 75, y: 80, width: 240, height: 100 }
+        }
+      ],
+      { source: LayoutSource.Canvas }
+    )
+
+    const counts = countGeometryCalls(() => {
+      expect([...target.pos]).toEqual([75, 80])
+      expect([...target.size]).toEqual([240, 100])
+      expect([...target.renderingSize]).toEqual([240, 100])
+    })
+
+    expect(counts).toEqual({ contentLookups: 1, rectReads: 1 })
+  })
+
+  test('invalidates measured content only when dimensions change', () => {
+    const { nodes } = createRenderer(1)
+    const node = nodes[0]
+    const graphId = node.graph!.rootGraph.id
+
+    layoutStore.reportContentSize(graphId, node.id, {
+      width: 260,
+      height: 120
+    })
+    expect(countGeometryCalls(() => void node.renderingSize[0])).toEqual({
+      contentLookups: 1,
+      rectReads: 0
+    })
+    expect([...node.renderingSize]).toEqual([260, 120])
+
+    layoutStore.reportContentSize(graphId, node.id, {
+      width: 260,
+      height: 120
+    })
+    expect(countGeometryCalls(() => void node.renderingSize[0])).toEqual({
+      contentLookups: 0,
+      rectReads: 0
+    })
+  })
+
+  test('subscribes implicit effects only to the observed node layout', () => {
+    const { nodes } = createRenderer(2)
+    const [node, other] = nodes
+    let runs = 0
+    let observed = [0, 0, 0, 0]
+    const runner = effect(() => {
+      runs++
+      observed = [node.pos[0], node.pos[1], node.size[0], node.size[1]]
+    })
+
+    other.pos = [500, 600]
+    expect(runs).toBe(1)
+
+    node.pos = [150, 160]
+    expect(runs).toBe(2)
+    expect(observed).toEqual([150, 160, 200, 100])
+
+    node.size = [240, 120]
+    expect(runs).toBe(3)
+    expect(observed).toEqual([150, 160, 240, 120])
+    stop(runner)
+  })
+
+  test('keeps detached rendering size fresh', () => {
+    const node = new LGraphNode('detached')
+    node.size = [100, 50]
+    expect([...node.renderingSize]).toEqual([100, 50])
+    node.size[0] = 180
+    node.size[1] = 90
+    expect([...node.renderingSize]).toEqual([180, 90])
+  })
+
+  test('keeps stable mutation views fresh and extension-compatible', () => {
+    const { nodes } = createRenderer(1)
+    const node = nodes[0]
+    const pos = node.pos
+    const size = node.size
+
+    node.pos = [30, 40]
+    node.size = [220, 90]
+    expect(node.pos).toBe(pos)
+    expect(node.size).toBe(size)
+    expect([...pos]).toEqual([30, 40])
+    expect([...size]).toEqual([220, 90])
+
+    pos[0] = 55
+    size[1] = 105
+    expect([...node.pos]).toEqual([55, 40])
+    expect([...node.size]).toEqual([220, 105])
+  })
+
+  test('preserves widget-backed slot identity and reactive trigger behavior', () => {
+    const { nodes } = createRenderer(1)
+    const node = nodes[0]
+    const widget = node.addWidget('text', 'value', '', null)
+    const input = node.addInput('value', 'STRING')
+    input.widget = { name: 'value' }
+    node._setConcreteSlots()
+
+    let runs = 0
+    const runner = effect(() => {
+      runs++
+      void input.pos
+    })
+
+    node.arrange()
+    const firstPos = input.pos
+    expect(firstPos).toBeDefined()
+    expect(firstPos![1]).toBe(widget.y + 10)
+    expect(runs).toBe(2)
+
+    firstPos![0] = 33
+    expect(input.pos).toBe(firstPos)
+    expect(input.pos![0]).toBe(33)
+    expect(runs).toBe(2)
+    stop(runner)
+  })
 })
 
 function measureRenderCounts(nodeCount: number): RenderCounts {

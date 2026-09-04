@@ -237,7 +237,7 @@ function buildInputs(
       if (!node.visible || node.opacity <= 0) continue
 
       if (node.kind === 'group') {
-        const g = node as GroupData
+        const g = node
         const sub = buildInputs(g, doc, deps, used)
         if (g.passThrough) {
           inputs.push(...sub.inputs)

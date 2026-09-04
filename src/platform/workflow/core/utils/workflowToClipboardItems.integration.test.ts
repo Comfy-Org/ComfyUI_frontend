@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ISlotType } from '@/lib/litegraph/src/interfaces'
 import {
@@ -44,7 +44,6 @@ describe('workflow clipboard insertion', () => {
     }
 
     LiteGraph.registerNodeType(nodeType, WorkflowClipboardNode)
-    onTestFinished(() => LiteGraph.unregisterNodeType(nodeType))
 
     const graph = new LGraph()
     const canvas = createCanvas(graph)
@@ -78,7 +77,6 @@ describe('workflow clipboard insertion', () => {
     }
 
     LiteGraph.registerNodeType(nodeType, WorkflowClipboardNode)
-    onTestFinished(() => LiteGraph.unregisterNodeType(nodeType))
 
     const graph = new LGraph()
     const origin = LiteGraph.createNode(nodeType)!
@@ -116,7 +114,6 @@ describe('workflow clipboard insertion', () => {
     }
 
     LiteGraph.registerNodeType(nodeType, ReorderingNode)
-    onTestFinished(() => LiteGraph.unregisterNodeType(nodeType))
 
     const graph = new LGraph()
     createCanvas(graph)._deserializeItems(reorderedInputsWorkflow(nodeType), {

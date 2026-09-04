@@ -28,8 +28,9 @@ vi.mock('./gpu/GPUBrushRenderer', () => ({
   )
 }))
 
+const tgpuRoot: unknown = null
 const mockStore = reactive({
-  tgpuRoot: null as unknown,
+  tgpuRoot,
   maskCanvas: null as HTMLCanvasElement | null,
   rgbCanvas: null as HTMLCanvasElement | null,
   maskCtx: null as CanvasRenderingContext2D | null,
@@ -39,8 +40,8 @@ const mockStore = reactive({
   gpuTexturesNeedRecreation: false,
   gpuTextureWidth: 0,
   gpuTextureHeight: 0,
-  pendingGPUMaskData: null as null,
-  pendingGPURgbData: null as null,
+  pendingGPUMaskData: null,
+  pendingGPURgbData: null,
   brushSettings: {
     size: 20,
     hardness: 0.9,
@@ -185,7 +186,7 @@ describe('watchers', () => {
 describe('initGPUResources with pre-existing tgpuRoot', () => {
   it('returns early with a warning when canvas contexts are not ready', async () => {
     const { initGPUResources, hasRenderer } = setup()
-    mockStore.tgpuRoot = { device: {} } as unknown
+    mockStore.tgpuRoot = { device: {} }
     await initGPUResources()
     expect(hasRenderer.value).toBe(false)
   })

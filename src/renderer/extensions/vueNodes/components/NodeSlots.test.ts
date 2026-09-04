@@ -125,7 +125,7 @@ function createTrackingStub(
     name: componentName,
     props: STUB_SLOT_PROPS,
     setup(props) {
-      const key = `${props.slotData?.name ?? ''}`
+      const key = props.slotData?.name ?? ''
       mountCounts.set(key, (mountCounts.get(key) ?? 0) + 1)
     },
     template: `

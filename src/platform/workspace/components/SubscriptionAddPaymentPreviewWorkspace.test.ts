@@ -44,9 +44,16 @@ function previewFixture(
   }
 }
 
+// Interpolation values are appended so assertions can verify what a message
+// was given, not just which message was chosen.
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
-    t: (key: string) => key,
+    t: (key: string, named?: Record<string, unknown>) =>
+      named
+        ? `${key}|${Object.entries(named)
+            .map(([name, value]) => `${name}=${String(value)}`)
+            .join(',')}`
+        : key,
     n: (value: number) => value.toLocaleString('en-US'),
     locale: { value: 'en' }
   })
@@ -391,16 +398,60 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     expect(screen.getByText('op-reconcile-123')).toBeTruthy()
   })
 
-  it('does not render a back action on the payment confirmation', () => {
+  it('owns a back action whether or not the payment element is embedded', async () => {
+    const { emitted } = render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: { tierKey: 'creator' },
+      global: {
+        ...globalOptions,
+        stubs: {
+          ...globalOptions.stubs,
+          Button: {
+            props: ['ariaLabel'],
+            template:
+              '<button :aria-label="ariaLabel" @click="$emit(\'click\')"><slot /></button>'
+          }
+        }
+      }
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: 'g.back' }))
+
+    expect(emitted().back).toBeTruthy()
+  })
+
+  it('omits the total row entirely when no quote is available to price it', () => {
     render(SubscriptionAddPaymentPreviewWorkspace, {
-      props: { tierKey: 'creator', isLoading: true },
+      props: {
+        teamPlan: { usd: 700, credits: 147_700, discountedUsd: 665 },
+        previewData: null
+      },
       global: globalOptions
     })
 
+    expect(screen.queryByText('subscription.preview.totalDueToday')).toBeNull()
+  })
+
+  it('prices a legacy preview from the server costs instead of rendering a blank total', () => {
+    const {
+      amount_due_cents,
+      currency,
+      renewal_amount_cents,
+      renewal_at,
+      quote_id,
+      quote_version,
+      ...legacy
+    } = previewFixture('MONTHLY', 2000)
+
+    render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: { tierKey: 'creator', previewData: legacy },
+      global: globalOptions
+    })
+
+    expect(screen.getByText('$20.00')).toBeTruthy()
     expect(
-      screen.queryByRole('button', {
-        name: 'subscription.preview.backToAllPlans'
-      })
-    ).toBeNull()
+      screen.getByText(
+        'subscription.preview.renewsAt|amount=$20.00,date=Jun 19, 2027'
+      )
+    ).toBeTruthy()
   })
 })

@@ -19,7 +19,7 @@ interface Subscription {
 const state = vi.hoisted(() => ({
   billingControlEnabled: true,
   v1PaymentRecovery: true,
-  isActiveSubscription: true,
+  canAccessSubscriptionFeatures: true,
   isTeamPlan: true,
   billingStatus: 'paid' as string | null,
   subscription: {
@@ -64,7 +64,9 @@ vi.mock('@/composables/useFeatureFlags', () => ({
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    isActiveSubscription: computed(() => state.isActiveSubscription),
+    canAccessSubscriptionFeatures: computed(
+      () => state.canAccessSubscriptionFeatures
+    ),
     isTeamPlan: computed(() => state.isTeamPlan),
     billingStatus: computed(() => state.billingStatus as BillingStatus | null),
     subscription: computed(() => state.subscription),
@@ -176,19 +178,19 @@ function exhausted() {
 // paused alongside an active subscription.
 function pausedState() {
   state.billingStatus = 'paused'
-  state.isActiveSubscription = false
+  state.canAccessSubscriptionFeatures = false
 }
 
 function paymentFailedState() {
   state.billingStatus = 'payment_failed'
-  state.isActiveSubscription = false
+  state.canAccessSubscriptionFeatures = false
 }
 
 describe('BillingStatusBanner', () => {
   beforeEach(() => {
     state.billingControlEnabled = true
     state.v1PaymentRecovery = true
-    state.isActiveSubscription = true
+    state.canAccessSubscriptionFeatures = true
     state.isTeamPlan = true
     state.billingStatus = 'paid'
     state.subscription = { hasFunds: true, isCancelled: false, endDate: null }
@@ -339,7 +341,7 @@ describe('BillingStatusBanner', () => {
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
     unmount()
 
-    state.isActiveSubscription = true
+    state.canAccessSubscriptionFeatures = true
     state.billingStatus = 'paid'
     exhausted()
     renderBanner()

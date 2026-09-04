@@ -24,7 +24,7 @@ function mkRaster(
     contentId,
     naturalWidth: w,
     naturalHeight: h
-  } as RasterData
+  }
 }
 
 function mkText(

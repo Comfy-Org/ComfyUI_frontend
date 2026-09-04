@@ -89,11 +89,8 @@ export function calculateInputSlotPosFromSlot(
   const nodeOffsetY = context.slotStartY || 0
   let slotIndex = -1
   const inputIndex = context.inputs.indexOf(input)
-  if (
-    inputIndex !== -1 &&
-    !input.pos &&
-    !(context.widgets?.length && isWidgetInputSlot(input))
-  ) {
+  if (inputIndex === -1) return [nodeX, nodeY]
+  if (!input.pos && !(context.widgets?.length && isWidgetInputSlot(input))) {
     slotIndex = 0
     for (const [index, slot] of context.inputs.entries()) {
       if (index >= inputIndex) break

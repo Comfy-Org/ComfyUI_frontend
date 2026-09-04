@@ -1,5 +1,5 @@
 import type { ContentStore } from '../content'
-import type { GroupData, RasterData, SceneNode, Vec2 } from '../node'
+import type { RasterData, SceneNode, Vec2 } from '../node'
 import { toLocalFrame } from '../tools/transformMath'
 
 export const PICK_OPACITY_THRESHOLD = 0.25
@@ -66,14 +66,14 @@ export function layerOpacityAt(
   switch (node.kind) {
     case 'group': {
       let best = 0
-      for (const child of (node as GroupData).children) {
+      for (const child of node.children) {
         best = Math.max(best, layerOpacityAt(child, pt, content, sample))
         if (best >= 1) break
       }
       return best * node.opacity
     }
     case 'raster':
-      return rasterAlphaAt(node as RasterData, pt, content, sample)
+      return rasterAlphaAt(node, pt, content, sample)
     default:
       return boxAlphaAt(node, pt)
   }

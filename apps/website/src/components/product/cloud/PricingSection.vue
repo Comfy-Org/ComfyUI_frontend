@@ -34,7 +34,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         </div>
 
         <a
-          :href="getRoutes(locale).cloudPricing"
+          :href="getRoutes(locale).pricing"
           class="text-primary-comfy-yellow shrink-0 rounded-2xl bg-primary-comfy-ink px-6 py-3 text-center text-sm font-semibold transition-opacity hover:opacity-90"
         >
           {{ t('cloud.pricing.cta', locale) }}

@@ -38,6 +38,13 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
     datadogRum.addAction(TelemetryEvents.IMAGE_LOAD_FAILED, metadata)
   }
 
+  trackFeatureFlagEvaluation(key: string, value: unknown): void {
+    datadogRum.addFeatureFlagEvaluation(
+      key.replace(/[.:+\-=&|><!(){}[\]^"“”~*?\\\s]/g, '_'),
+      value
+    )
+  }
+
   trackBillingEvent(event: BillingTelemetryEvent): void {
     datadogRum.addAction(
       getBillingTelemetryEventName(event),

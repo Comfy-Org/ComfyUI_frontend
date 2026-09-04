@@ -60,9 +60,7 @@ describe('DropdownControl', () => {
 
   it('should reflect modelValue as the selected option', () => {
     renderComponent({ options: ['One', 'Two'], modelValue: 'Two' })
-    expect((screen.getByRole('combobox') as HTMLSelectElement).value).toBe(
-      'Two'
-    )
+    expect(screen.getByRole<HTMLSelectElement>('combobox').value).toBe('Two')
   })
 
   it('should emit update:modelValue with the chosen string value', async () => {

@@ -7,7 +7,7 @@ const mockSubscribeDirect = vi.fn()
 
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: () => ({
-    isActiveSubscription: { value: false },
+    canAccessSubscriptionFeatures: { value: false },
     subscriptionTier: { value: null },
     subscriptionDuration: { value: null },
     subscriptionStatus: { value: null },

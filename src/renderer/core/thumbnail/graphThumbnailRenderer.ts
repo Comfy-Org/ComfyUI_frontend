@@ -1,4 +1,3 @@
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
@@ -38,7 +37,7 @@ export function createGraphThumbnail(): string | null {
   canvas.height = height
 
   // Render the minimap
-  renderMinimapToCanvas(canvas, graph as LGraph, {
+  renderMinimapToCanvas(canvas, graph, {
     bounds,
     scale,
     settings: {

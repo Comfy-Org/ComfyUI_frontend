@@ -1,5 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+vi.mock('@/platform/assets/composables/media/assetMappers')
 
 import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeOutput'
 import type { NodeExecutionOutput } from '@/schemas/apiSchema'

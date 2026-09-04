@@ -66,9 +66,7 @@ function createCanvas(graph: LGraph): LGraphCanvas {
     textBaseline: 'alphabetic' as CanvasTextBaseline
   } satisfies Partial<CanvasRenderingContext2D>
 
-  el.getContext = vi
-    .fn()
-    .mockReturnValue(ctx as unknown as CanvasRenderingContext2D)
+  el.getContext = vi.fn().mockReturnValue(ctx)
   el.getBoundingClientRect = vi.fn().mockReturnValue({
     left: 0,
     top: 0,

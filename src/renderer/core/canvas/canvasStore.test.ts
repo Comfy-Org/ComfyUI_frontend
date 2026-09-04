@@ -93,7 +93,7 @@ describe('useCanvasStore', () => {
       store.initScaleSync()
 
       app.canvas.ds.scale = 2.0
-      app.canvas.ds.onChanged!(app.canvas.ds.scale, app.canvas.ds.offset)
+      app.canvas.ds.onChanged(app.canvas.ds.scale, app.canvas.ds.offset)
 
       expect(originalHandler).toHaveBeenCalledWith(2.0, app.canvas.ds.offset)
     })

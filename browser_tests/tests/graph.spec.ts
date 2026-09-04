@@ -17,7 +17,7 @@ test.describe('Graph', { tag: ['@smoke', '@canvas'] }, () => {
     await expect
       .poll(() =>
         comfyPage.page.evaluate(
-          (linkId) => window.app!.graph!.links.get(linkId)?.target_slot,
+          (linkId) => window.app!.graph.links.get(linkId)?.target_slot,
           toLinkId(1)
         )
       )
@@ -77,7 +77,7 @@ test.describe('Graph', { tag: ['@smoke', '@canvas'] }, () => {
           ).length
         }
 
-        const graph = window.app!.graph!
+        const graph = window.app!.graph
         const subgraph = graph.subgraphs.values().next().value
         if (!subgraph) return { error: 'No subgraph found' }
 

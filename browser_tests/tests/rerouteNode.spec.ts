@@ -13,6 +13,7 @@ test.describe('Reroute Node', { tag: ['@screenshot', '@node'] }, () => {
     await comfyPage.workflow.setupWorkflowsDirectory({
       [`${workflowName}.json`]: `links/${workflowName}.json`
     })
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
     await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
 

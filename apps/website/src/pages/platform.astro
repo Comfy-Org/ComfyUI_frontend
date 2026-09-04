@@ -1,0 +1,33 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro'
+import BrandBackground from '../templates/brand/BrandBackground.vue'
+import ProductCardsSection from '../components/common/ProductCardsSection.vue'
+import SocialProofBarSection from '../components/common/SocialProofBarSection.vue'
+import ClosingCtaSection from '../templates/platform/ClosingCtaSection.vue'
+import HeroSection from '../templates/platform/HeroSection.vue'
+import PricingSection from '../templates/platform/PricingSection.vue'
+import ProductsSection from '../templates/platform/ProductsSection.vue'
+import { t } from '../i18n/translations'
+---
+
+<BaseLayout
+  title={t('platform.meta.title', 'en')}
+  description={t('platform.meta.description', 'en')}
+>
+  <div class="relative isolate">
+    <BrandBackground client:idle />
+    <HeroSection locale="en" client:load />
+    <ProductsSection locale="en" client:visible />
+  </div>
+  <SocialProofBarSection />
+  <PricingSection locale="en" />
+  <ClosingCtaSection
+    locale="en"
+    heading-after-badge={t('platform.closing.headingAfterBadge', 'en')}
+    client:visible
+  />
+  <ProductCardsSection
+    locale="en"
+    label-key="products.labelProducts"
+  />
+</BaseLayout>

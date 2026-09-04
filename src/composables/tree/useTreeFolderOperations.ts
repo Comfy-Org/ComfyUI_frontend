@@ -51,7 +51,7 @@ export function useTreeFolderOperations<T>(
       totalLeaves: 0,
       badgeText: '',
       isEditingLabel: true
-    } as RenderedTreeExplorerNode<T>
+    }
     addFolderTargetNode.value = targetNode
   }
 

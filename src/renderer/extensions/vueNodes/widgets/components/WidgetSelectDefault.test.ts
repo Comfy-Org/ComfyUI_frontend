@@ -37,7 +37,7 @@ describe('WidgetSelectDefault', () => {
     name: 'test_combo',
     type: 'combo',
     value: undefined,
-    options: { values, ...options } as SimplifiedWidget['options']
+    options: { values, ...options }
   })
 
   function renderComponent(

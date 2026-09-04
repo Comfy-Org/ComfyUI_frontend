@@ -26,7 +26,7 @@ function createInput(link: number | null): SerialisedInput {
     name: 'input',
     type: '*',
     link
-  } satisfies Partial<SerialisedInput> as SerialisedInput
+  } satisfies Partial<SerialisedInput>
 }
 
 function createOutput(links: number[]): SerialisedOutput {
@@ -34,7 +34,7 @@ function createOutput(links: number[]): SerialisedOutput {
     name: 'output',
     type: '*',
     links
-  } satisfies Partial<SerialisedOutput> as SerialisedOutput
+  } satisfies Partial<SerialisedOutput>
 }
 
 function createNode({

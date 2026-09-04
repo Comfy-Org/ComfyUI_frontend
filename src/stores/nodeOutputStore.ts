@@ -252,6 +252,26 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     node.images = images
   }
 
+  /**
+   * Replaces a node's output with exactly these images, dropping any media
+   * metadata the previous output carried. `animated`, `video` and friends are
+   * parallel to the images they were produced with, so an editor that rewrites
+   * the image list wholesale must not inherit them.
+   */
+  function replaceNodeOutputImages(
+    node: LGraphNode,
+    images: NonNullable<ExecutedWsMessage['output']['images']>
+  ) {
+    if (!images.length) return
+
+    const locatorId = nodeToNodeLocatorId(node)
+    if (!locatorId) return
+
+    revokePreviewsByLocatorId(locatorId)
+    setOutputsByLocatorId(locatorId, { images })
+    node.images = images
+  }
+
   function setNodeOutputsByExecutionId(
     executionId: NodeExecutionId,
     outputs: ExecutedWsMessage['output'] | ResultItem,
@@ -444,6 +464,19 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     nodeOutputs.value = { ...parsedOutputs }
   }
 
+  function setOutputFromLegacy(
+    id: string,
+    output: ExecutedWsMessage['output']
+  ): void {
+    const locatorId = executionIdToNodeLocatorId(app.rootGraph, id) ?? id
+    nodeOutputs.value[locatorId] = { ...output }
+  }
+
+  function removeOutputFromLegacy(id: string): void {
+    const locatorId = executionIdToNodeLocatorId(app.rootGraph, id) ?? id
+    delete nodeOutputs.value[locatorId]
+  }
+
   function restoreOutputs(
     outputs: Record<string, ExecutedWsMessage['output']>
   ) {
@@ -495,6 +528,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
     setNodeOutputs,
     setNodeOutputImages,
+    replaceNodeOutputImages,
     setNodeOutputsByExecutionId,
     setNodePreviewsByExecutionId,
     setNodePreviewsByLocatorId,
@@ -513,6 +547,8 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     removeNodeOutputsForNode,
     snapshotOutputs,
     replaceOutputsFromLegacy,
+    setOutputFromLegacy,
+    removeOutputFromLegacy,
     restoreOutputs,
     resetAllOutputsAndPreviews,
 

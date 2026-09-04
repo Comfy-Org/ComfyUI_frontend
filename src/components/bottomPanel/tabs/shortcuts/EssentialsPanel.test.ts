@@ -39,7 +39,7 @@ const mockCommands: ComfyCommandImpl[] = [
     tooltip: 'Test tooltip',
     menubarLabel: 'Other Command',
     keybinding: null
-  } as ComfyCommandImpl
+  }
 ]
 
 vi.mock('@/stores/commandStore', () => ({

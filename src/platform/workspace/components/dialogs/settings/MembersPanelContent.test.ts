@@ -82,7 +82,7 @@ const {
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
       headerGridCols: 'grid-cols-[50%_40%_10%]',
       showEditWorkspaceMenuItem: true,
-      workspaceMenuAction: 'delete' as 'delete' | null,
+      workspaceMenuAction: 'delete',
       workspaceMenuDisabledTooltip: null as string | null
     })
   }
@@ -590,7 +590,7 @@ describe('MembersPanelContent', () => {
         screen.getByText('workspacePanel.members.contactUs')
       )
       expect(openSpy).toHaveBeenCalledWith(
-        'https://comfy-org.portal.usepylon.com/forms/team-plan-requests',
+        'https://comfysupport.portal.usepylon.com/forms/team-plan-requests',
         '_blank',
         'noopener,noreferrer'
       )

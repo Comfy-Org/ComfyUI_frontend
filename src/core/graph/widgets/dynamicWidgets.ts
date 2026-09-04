@@ -209,12 +209,18 @@ function dynamicComboWidget(
       node.onConnectionsChange?.(LiteGraph.INPUT, slot, true, link, input)
     }
 
-    node.size = [node.size[0], node.computeSize([...node.size])[1]]
     if (!node.graph) return
     node._setConcreteSlots()
     node.arrange()
     app.canvas?.setDirty(true, true)
   }
+  //Refit height on the callback channel: interaction fires it after the value
+  //setter, while configure (load, clone, paste) only fires the setter and must
+  //keep the serialised height.
+  widget.callback = useChainCallback(widget.callback, () => {
+    node.size = [node.size[0], node.computeSize([...node.size])[1]]
+    app.canvas?.setDirty(true, true)
+  })
   //A little hacky, but onConfigure won't work.
   //It fires too late and is overly disruptive
   let widgetValue = widget.value

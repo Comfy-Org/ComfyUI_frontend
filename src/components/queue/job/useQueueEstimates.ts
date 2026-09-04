@@ -33,7 +33,7 @@ const pickRecentDurations = (queueStore: QueueStore) =>
     .filter(
       (value: number | undefined) =>
         typeof value === 'number' && !Number.isNaN(value)
-    ) as number[]
+    )
 
 export const useQueueEstimates = ({
   queueStore,
@@ -66,7 +66,7 @@ export const useQueueEstimates = ({
     const avg = sorted.reduce((sum, value) => sum + value, 0) / sorted.length
     const p75 =
       sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.75))]
-    const running = queueStore.runningTasks as TaskItemImpl[]
+    const running = queueStore.runningTasks
     const now = nowTs.value
     const remaining = running
       .map((task) => task.executionStartTimestamp)

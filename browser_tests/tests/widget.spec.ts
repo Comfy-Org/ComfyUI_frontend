@@ -63,7 +63,7 @@ test.describe('Combo text widget', { tag: ['@screenshot', '@widget'] }, () => {
     const getComboValues = async () =>
       comfyPage.page.evaluate(() => {
         return window
-          .app!.graph!.nodes.find(
+          .app!.graph.nodes.find(
             (node) => node.title === 'Node With Optional Combo Input'
           )!
           .widgets!.find((widget) => widget.name === 'optional_combo_input')!
@@ -89,7 +89,7 @@ test.describe('Combo text widget', { tag: ['@screenshot', '@widget'] }, () => {
     const getComboValues = async () =>
       comfyPage.page.evaluate(() => {
         return window
-          .app!.graph!.nodes.find(
+          .app!.graph.nodes.find(
             (node) => node.title === 'Node With V2 Combo Input'
           )!
           .widgets!.find((widget) => widget.name === 'combo_input')!.options
@@ -127,7 +127,7 @@ test.describe('Slider widget', { tag: ['@screenshot', '@widget'] }, () => {
 
     await comfyPage.page.evaluate(() => {
       window.widgetValue = undefined
-      const widget = window.app!.graph!.nodes[0].widgets![0]
+      const widget = window.app!.graph.nodes[0].widgets![0]
       widget.callback = (value: number) => {
         window.widgetValue = value
       }
@@ -149,7 +149,7 @@ test.describe('Number widget', { tag: ['@screenshot', '@widget'] }, () => {
     const widget = await node.getWidget(0)
     await comfyPage.page.evaluate(() => {
       window.widgetValue = undefined
-      const widget = window.app!.graph!.nodes[0].widgets![0]
+      const widget = window.app!.graph.nodes[0].widgets![0]
       widget.callback = (value: number) => {
         window.widgetValue = value
       }
@@ -175,8 +175,8 @@ test.describe(
       const initialSize = await node.getSize()
 
       await comfyPage.page.evaluate(() => {
-        window.app!.graph!.nodes[0].addWidget('number', 'new_widget', 10, null)
-        window.app!.graph!.setDirtyCanvas(true, true)
+        window.app!.graph.nodes[0].addWidget('number', 'new_widget', 10, null)
+        window.app!.graph.setDirtyCanvas(true, true)
       })
 
       await expect
@@ -259,7 +259,7 @@ test.describe('Image widget', { tag: ['@screenshot', '@widget'] }, () => {
       .poll(
         () =>
           comfyPage.page.evaluate((nodeId) => {
-            const node = window.app!.graph!.getNodeById(nodeId)
+            const node = window.app!.graph.getNodeById(nodeId)
             const img = node?.imgs?.[0]
             return (
               !!img &&
@@ -315,7 +315,10 @@ test.describe(
   'Animated image widget',
   { tag: ['@screenshot', '@widget'] },
   () => {
-    test('Can drag-and-drop animated webp image', async ({ comfyPage }) => {
+    test('Can drag-and-drop animated webp image', async ({
+      comfyPage,
+      comfyFiles
+    }) => {
       await comfyPage.workflow.loadWorkflow('widgets/load_animated_webp')
 
       // Get position of the load animated webp node
@@ -324,6 +327,10 @@ test.describe(
       )
       const loadAnimatedWebpNode = nodes[0]
       const { x, y } = await loadAnimatedWebpNode.getPosition()
+      comfyFiles.deleteAfterTest({
+        filename: 'animated_webp.webp',
+        type: 'input'
+      })
 
       // Drag and drop image file onto the load animated webp node
       await comfyPage.dragDrop.dragAndDropFile('animated_webp.webp', {
@@ -338,7 +345,10 @@ test.describe(
         .toContain('animated_webp.webp')
     })
 
-    test('Can preview saved animated webp image', async ({ comfyPage }) => {
+    test('Can preview saved animated webp image', async ({
+      comfyPage,
+      comfyFiles
+    }) => {
       await comfyPage.workflow.loadWorkflow('widgets/save_animated_webp')
 
       // Get position of the load animated webp node
@@ -347,6 +357,10 @@ test.describe(
       )
       const loadAnimatedWebpNode = loadNodes[0]
       const { x, y } = await loadAnimatedWebpNode.getPosition()
+      comfyFiles.deleteAfterTest({
+        filename: 'animated_webp.webp',
+        type: 'input'
+      })
 
       // Drag and drop image file onto the load animated webp node
       await comfyPage.dragDrop.dragAndDropFile('animated_webp.webp', {

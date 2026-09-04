@@ -58,8 +58,6 @@ const config: KnipConfig = {
     // Auto generated API types
     'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
     'packages/ingest-types/src/zod.gen.ts',
-    // Workflow files contain license names that knip misinterprets as binaries
-    '.github/workflows/ci-oss-assets-validation.yaml',
     // Pending integration in stacked PR
     'src/components/sidebar/tabs/nodeLibrary/CustomNodesPanel.vue',
     // Marketing media tooling — adopted by pages in a follow-up PR

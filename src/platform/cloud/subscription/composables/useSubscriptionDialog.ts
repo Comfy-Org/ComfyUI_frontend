@@ -18,6 +18,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { useAuthStore } from '@/stores/authStore'
 import {
   clearPendingSubscriptionCheckout,
+  clearPendingSubscriptionCheckoutIfTerminal,
   getPendingSubscriptionCheckout
 } from '@/platform/workspace/utils/pendingSubscriptionCheckout'
 import type { PendingSubscriptionCheckout } from '@/platform/workspace/utils/pendingSubscriptionCheckout'
@@ -289,29 +290,29 @@ export const useSubscriptionDialog = () => {
     }
 
     const billingOperationStore = useBillingOperationStore()
-    try {
-      const operation = await billingOperationStore.startOperation(
-        pending.operationId,
-        'subscription',
-        {
-          tier:
-            pending.selection.planMode === 'personal'
-              ? pending.selection.tierKey
-              : 'team',
-          cycle: pending.selection.billingCycle,
-          attemptStartedAt: pending.attemptedAt
-        }
-      )
-      if (operation.status !== 'failed') return
+    const operation = await billingOperationStore.startOperation(
+      pending.operationId,
+      'subscription',
+      {
+        tier:
+          pending.selection.planMode === 'personal'
+            ? pending.selection.tierKey
+            : 'team',
+        cycle: pending.selection.billingCycle,
+        attemptStartedAt: pending.attemptedAt
+      }
+    )
+    clearPendingSubscriptionCheckoutIfTerminal(
+      pending.operationId,
+      operation.status
+    )
+    if (operation.status !== 'failed') return
 
-      const initialCheckout = await restoreCheckoutSelection(pending)
-      showPricingTable({
-        planMode: pending.selection.planMode,
-        ...(initialCheckout && { initialCheckout })
-      })
-    } finally {
-      clearPendingSubscriptionCheckout(pending.operationId)
-    }
+    const initialCheckout = await restoreCheckoutSelection(pending)
+    showPricingTable({
+      planMode: pending.selection.planMode,
+      ...(initialCheckout && { initialCheckout })
+    })
   }
 
   function resumePendingPricingFlow(): Promise<void> | void {

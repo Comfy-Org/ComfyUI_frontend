@@ -99,6 +99,13 @@ declare global {
     /** For use in tests to track app initialization state */
     __appReadiness?: AppReadiness
 
+    /**
+     * Set to `true` by Desktop builds predating the bridge's `isRemote()`;
+     * local installs of those builds leave it unset.
+     * @deprecated Superseded by `ComfyDesktop2Bridge.isRemote()`.
+     */
+    __comfyDesktop2Remote?: boolean
+
     __comfyDesktop2?: ComfyDesktop2Bridge
   }
 }

@@ -179,7 +179,7 @@ export class LinkConnector {
           'before-move-input',
           renderLink
         )
-        if (mayContinue === false) return
+        if (!mayContinue) return
 
         renderLinks.push(renderLink)
       } catch (error) {
@@ -254,7 +254,7 @@ export class LinkConnector {
             'before-move-input',
             renderLink
           )
-          if (mayContinue === false) return
+          if (!mayContinue) return
 
           renderLinks.push(renderLink)
 
@@ -322,7 +322,7 @@ export class LinkConnector {
           'before-move-output',
           renderLink
         )
-        if (mayContinue === false) continue
+        if (!mayContinue) continue
 
         renderLinks.push(renderLink)
         this.floatingLinks.push(floatingLink)
@@ -392,7 +392,7 @@ export class LinkConnector {
             'before-move-output',
             renderLink
           )
-          if (mayContinue === false) continue
+          if (!mayContinue) continue
 
           renderLinks.push(renderLink)
         } catch (error) {
@@ -691,7 +691,7 @@ export class LinkConnector {
         renderLinks: this.renderLinks,
         event
       })
-      if (mayContinue === false) return
+      if (!mayContinue) return
     }
 
     try {
@@ -838,10 +838,14 @@ export class LinkConnector {
       const input = node.getInputOnPos([canvasX, canvasY])
       const inputOrSocket = input ?? node.getSlotFromWidget(this.overWidget)
 
-      // Input slot
-      if (inputOrSocket) {
-        this._dropOnInput(node, inputOrSocket)
-      } else {
+      // Input slot; fall back to a free compatible input if the slot rejects it
+      const droppedOnSlot =
+        inputOrSocket != null && this._dropOnInput(node, inputOrSocket)
+      const hasFreeCompatibleInput = node.inputs.some(
+        (candidate) =>
+          candidate.link == null && this.isInputValidDrop(node, candidate)
+      )
+      if (!droppedOnSlot && (inputOrSocket == null || hasFreeCompatibleInput)) {
         // Node background / title
         this.connectToNode(node, event)
       }
@@ -853,7 +857,7 @@ export class LinkConnector {
       reroute,
       event
     })
-    if (mayContinue === false) return
+    if (!mayContinue) return
 
     // Connecting to input
     if (this.state.connectingTo === 'input') {
@@ -946,7 +950,7 @@ export class LinkConnector {
     if (this.renderLinks.length === 0) return
     // For external event only.
     const mayContinue = this.events.dispatch('dropped-on-canvas', event)
-    if (mayContinue === false) return
+    if (!mayContinue) return
 
     this.disconnectLinks()
   }
@@ -978,7 +982,7 @@ export class LinkConnector {
     } = this
 
     const mayContinue = this.events.dispatch('dropped-on-node', { node, event })
-    if (mayContinue === false) return
+    if (!mayContinue) return
 
     // Assume all links are the same type, disallow loopback
     const firstLink = this.renderLinks[0]
@@ -1010,12 +1014,16 @@ export class LinkConnector {
     }
   }
 
-  private _dropOnInput(node: LGraphNode, input: INodeInputSlot): void {
+  /** @returns `true` if at least one link accepted {@link input}. */
+  private _dropOnInput(node: LGraphNode, input: INodeInputSlot): boolean {
+    let connected = false
     for (const link of this.renderLinks) {
       if (!link.canConnectToInput(node, input)) continue
 
       link.connectToInput(node, input, this.events)
+      connected = true
     }
+    return connected
   }
 
   private _dropOnOutput(node: LGraphNode, output: INodeOutputSlot): void {
@@ -1030,7 +1038,7 @@ export class LinkConnector {
             link.outputSlot,
             link.inputNode,
             link.inputSlot,
-            undefined!
+            undefined
           )
         }
         continue
@@ -1154,7 +1162,7 @@ export class LinkConnector {
    */
   reset(force = false): void {
     const mayContinue = this.events.dispatch('reset', force)
-    if (mayContinue === false) return
+    if (!mayContinue) return
 
     const {
       state,

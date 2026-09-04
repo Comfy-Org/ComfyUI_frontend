@@ -434,8 +434,7 @@ export class Reroute
     }
 
     for (const link of floatingOutLinks) {
-      link.origin_id = node.id
-      link.origin_slot = index
+      link.updateEndpoints({ originNodeId: node.id, originSlot: index })
     }
   }
 

@@ -3,14 +3,7 @@ import type { Layer, LayerMaskData, LinkedFile, Psd } from 'ag-psd'
 import type { Compositor } from './engine/compositor'
 import type { ContentEntry, ContentStore } from './engine/content'
 import type { Document } from './engine/document'
-import type {
-  FillData,
-  GroupData,
-  RasterData,
-  Rect,
-  SceneNode,
-  Transform
-} from './engine/node'
+import type { RasterData, Rect, SceneNode, Transform } from './engine/node'
 import { getNodeKind } from './engine/nodeKind'
 import type { RenderNodeCtx } from './engine/nodeKind'
 import { placeBitmap } from './engine/render/place'
@@ -128,7 +121,7 @@ async function buildLayer(
     mask: maskData(node, deps)
   }
   if (node.kind === 'group') {
-    const g = node as GroupData
+    const g = node
     if (g.passThrough) layer.blendMode = 'pass through'
     layer.opened = true
     layer.children = []
@@ -145,10 +138,9 @@ async function buildLayer(
     layer.right = placed.left + placed.canvas.width
     layer.bottom = placed.top + placed.canvas.height
   }
-  if (node.kind === 'fill')
-    layer.vectorFill = fillToVectorContent((node as FillData).fill)
+  if (node.kind === 'fill') layer.vectorFill = fillToVectorContent(node.fill)
   else if (node.kind === 'raster')
-    await applyPlacedLayer(layer, node as RasterData, deps, linkedFiles)
+    await applyPlacedLayer(layer, node, deps, linkedFiles)
   return layer
 }
 

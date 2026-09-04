@@ -55,7 +55,7 @@ describe('slot identity', () => {
 
     node.inputs = [input]
 
-    expect(node._state.inputs).not.toBe(node.inputs)
+    expect(node._state.inputs).toBe(node.inputs)
     expect(node.inputs[0]).toBeInstanceOf(NodeInputSlot)
     expect(node._state.inputs[0]).toBe(node.inputs[0])
   })

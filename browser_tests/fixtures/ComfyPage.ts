@@ -696,6 +696,12 @@ export const comfyPageFixture = base.extend<{
           .toBe(0)
       }
 
+      if (testInfo.tags.includes('@cloud')) {
+        await comfyPage.featureFlags.setServerFlagsPersistent({
+          asset_deletion_enabled: true
+        })
+      }
+
       if (isVueNodes) {
         await comfyPage.vueNodes.waitForNodes()
       }
