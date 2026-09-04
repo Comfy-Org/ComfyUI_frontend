@@ -922,6 +922,49 @@ describe('reconcileAgentAdapters', () => {
       expect(reportError).not.toHaveBeenCalled()
     })
 
+    it('reserves same-frame root ids before remapping colliding subgraph interiors', () => {
+      const definition = createTestSubgraphData({
+        nodes: [nodePayload(7, 'widget-node')] as never,
+        widgets: [{ id: 7, name: 'value' }]
+      })
+      const rootNode = {
+        ...nodePayload(7, definition.id),
+        properties: { proxyWidgets: [['7', 'value']] }
+      }
+      const { follower } = seedDocument(graph, {
+        nodes: [rootNode],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+      const definitions = readSubgraphDefinitions(follower.doc)
+
+      expect(reconcileAgentAdapters(graph, definitions)).toEqual([toNodeId(7)])
+
+      const instance = graph.getNodeById(toNodeId(7))
+      expect(instance).toBeInstanceOf(SubgraphNode)
+      const subgraph = (instance as SubgraphNode).subgraph
+      const interior = subgraph.nodes[0]
+      expect(interior.id).not.toBe(toNodeId(7))
+      expect(definitions[0].nodes?.[0].id).toBe(7)
+      expect(toNodeId(subgraph.widgets[0].id)).toBe(interior.id)
+      expect(instance?.properties.proxyWidgets).toEqual([
+        [String(interior.id), 'value']
+      ])
+
+      expect(reconcileAgentAdapters(graph, definitions)).toEqual([])
+      expect(graph.getNodeById(toNodeId(7))).toBe(instance)
+      expect(subgraph.nodes[0]).toBe(interior)
+
+      const mutations = remoteMutations(graphScopeOf(graph))
+      mutations.deleteNode(toNodeId(7), [], REMOTE)
+      mutations.addNode(rootNode, { ...REMOTE, opId: 'op-recreate-7' })
+      expect(reconcileAgentAdapters(graph, definitions)).toEqual([toNodeId(7)])
+      expect(graph.getNodeById(toNodeId(7))?.properties.proxyWidgets).toEqual([
+        [String(interior.id), 'value']
+      ])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
     it('registers a definition once across repeated reconciles', () => {
       const definition = createTestSubgraphData({
         nodes: [nodePayload(7)] as never
