@@ -383,7 +383,9 @@ const {
   listThreads,
   loadThread,
   boundWorkflowId,
-  bindWorkflow
+  bindWorkflow,
+  answerAsk,
+  answeringAskIds
 } = useAgentSession({
   rest,
   events,
@@ -507,6 +509,13 @@ let activeTabChain: Promise<void> = Promise.resolve()
 function enqueueActiveTab(data: AgentActiveTabData): void {
   const generation = ++activeTabGeneration
   activeTabChain = activeTabChain.then(() => onAgentActiveTab(data, generation))
+}
+
+function onOpenApprovalWorkflow(
+  workflowId: string,
+  workflowName?: string
+): void {
+  enqueueActiveTab({ workflow_id: workflowId, name: workflowName })
 }
 
 function agentTabFilename(name: string | undefined): string | undefined {
@@ -1003,6 +1012,7 @@ function onPanelDrop(event: DragEvent): void {
       ref="panelRef"
       :entries
       :editable-turn-id="editableTurnId"
+      :answering-ask-ids="answeringAskIds"
       :user-name="userName"
       :streaming="isStreaming"
       :submitting="isSending || status === 'thinking'"
@@ -1029,6 +1039,8 @@ function onPanelDrop(event: DragEvent): void {
       @focus-tag="onFocusSelectionTag"
       @mention-pick="onMentionPick"
       @feedback="onFeedback"
+      @answer-ask="answerAsk"
+      @open-workflow="onOpenApprovalWorkflow"
       @new-chat="onNewChat"
       @toggle-size="agentPanelStore.toggleMaximize()"
       @close="onClosePanel"
