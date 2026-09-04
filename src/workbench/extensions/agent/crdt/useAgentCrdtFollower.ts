@@ -61,7 +61,7 @@ export function useAgentCrdtFollower(
   userId: () => string | null = () => null,
   isTargetActive: Ref<boolean> = ref(true)
 ) {
-  const connected = ref(false)
+  const acknowledgedWorkflowId = ref<string | null>(null)
   const updatesApplied = ref(0)
   const lastFrameType = ref<string | null>(null)
   const subscribedWorkflowId = ref<string | null>(null)
@@ -161,7 +161,7 @@ export function useAgentCrdtFollower(
     lastPersistedAt = Date.now()
   }
   const refreshPersistedDocId = (): void => {
-    const docId = subscribedWorkflowId.value
+    const docId = acknowledgedWorkflowId.value
     if (docId === null) return
     if (Date.now() - lastPersistedAt < DOC_ID_REFRESH_INTERVAL_MS) return
     persistConfirmedDocId(docId)
@@ -217,7 +217,7 @@ export function useAgentCrdtFollower(
     if (!(event instanceof CustomEvent)) return
     if (!isTargetActive.value) return
     const ok = event.detail?.ok === true
-    connected.value = ok
+    acknowledgedWorkflowId.value = ok ? bridge.subscribedWorkflowId : null
     lastFrameType.value = event.type
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
@@ -225,8 +225,8 @@ export function useAgentCrdtFollower(
       armStaleProbe()
       // FE-1902 (poc-3): only a CONFIRMED binding is worth rebinding to after
       // a remount — persist on ok, not on intent.
-      if (subscribedWorkflowId.value !== null)
-        persistConfirmedDocId(subscribedWorkflowId.value)
+      if (acknowledgedWorkflowId.value !== null)
+        persistConfirmedDocId(acknowledgedWorkflowId.value)
     } else {
       clearStaleProbe()
       scheduleSubscribeRetry()
@@ -293,7 +293,7 @@ export function useAgentCrdtFollower(
     }
     if (detail?.workflowId !== undefined)
       adapter.clearForReset(detail.workflowId, context)
-    connected.value = false
+    acknowledgedWorkflowId.value = null
     updatesApplied.value = 0
     lastFrameType.value = event.type
     clearStaleProbe()
@@ -330,7 +330,7 @@ export function useAgentCrdtFollower(
     // KA-11 fail-closed: the bridge refused to propagate an unreadable doc, so
     // nothing was projected. Surface it as its own status rather than as a
     // generic "disconnected", which is indistinguishable from "never connected".
-    connected.value = false
+    acknowledgedWorkflowId.value = null
     lastFrameType.value = event.type
     clearStaleProbe()
     const detail =
@@ -345,7 +345,7 @@ export function useAgentCrdtFollower(
     )
   }
   const onReconnected: EventListener = () => {
-    connected.value = false
+    acknowledgedWorkflowId.value = null
     clearStaleProbe()
     recordDevEvent('reconnected', null)
     bridge.resubscribe()
@@ -395,7 +395,7 @@ export function useAgentCrdtFollower(
     ([next, active]) => {
       clearSubscribeRetry()
       clearStaleProbe()
-      connected.value = false
+      acknowledgedWorkflowId.value = null
       knownDocNodeIds = new Set()
       if (!active) {
         if (next !== null) initialBind = false
@@ -466,7 +466,7 @@ export function useAgentCrdtFollower(
 
   const status = computed<AgentCrdtStatus>(() => ({
     enabled: true,
-    connected: connected.value,
+    connected: acknowledgedWorkflowId.value !== null,
     workflowId: subscribedWorkflowId.value,
     updatesApplied: updatesApplied.value,
     lastFrameType: lastFrameType.value
@@ -474,6 +474,7 @@ export function useAgentCrdtFollower(
 
   return {
     status: readonly(status),
+    acknowledgedWorkflowId: readonly(acknowledgedWorkflowId),
     enqueueHumanOperations: (operations: GraphOperation[]) =>
       sender.enqueue(operations)
   }

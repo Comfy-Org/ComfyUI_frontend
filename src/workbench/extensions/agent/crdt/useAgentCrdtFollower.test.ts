@@ -17,13 +17,17 @@ import type { GraphMutations } from '@/core/graph/graphMutations'
 
 const bridgeState = vi.hoisted(() => {
   class FakeBridge extends EventTarget {
-    subscribe = vi.fn()
-    unsubscribe = vi.fn()
+    subscribe = vi.fn((workflowId: string) => {
+      this.subscribedWorkflowId = workflowId
+    })
+    unsubscribe = vi.fn(() => {
+      this.subscribedWorkflowId = null
+    })
     resubscribe = vi.fn()
     reconcile = vi.fn()
     destroy = vi.fn()
     sendHumanOps = vi.fn()
-    subscribedWorkflowId: string | null = 'wf-1'
+    subscribedWorkflowId: string | null = null
     lastSequence = 41
     follower = {
       updatesApplied: 0,
@@ -144,24 +148,33 @@ function mountFollower(
   workflowId: Ref<string | null>
   isTargetActive: Ref<boolean>
   status: () => AgentCrdtStatus
+  acknowledgedWorkflowId: () => string | null
 } {
   const workflowId = ref<string | null>(initial)
   const isTargetActive = ref(initiallyActive)
   let exposedStatus!: () => AgentCrdtStatus
+  let exposedAcknowledgedWorkflowId!: () => string | null
   const host = defineComponent({
     setup() {
-      const { status } = useAgentCrdtFollower(
+      const { status, acknowledgedWorkflowId } = useAgentCrdtFollower(
         workflowId,
         graphMutations,
         () => null,
         isTargetActive
       )
       exposedStatus = () => status.value as AgentCrdtStatus
+      exposedAcknowledgedWorkflowId = () => acknowledgedWorkflowId.value
       return () => null
     }
   })
   const { unmount } = render(host)
-  return { unmount, workflowId, isTargetActive, status: exposedStatus }
+  return {
+    unmount,
+    workflowId,
+    isTargetActive,
+    status: exposedStatus,
+    acknowledgedWorkflowId: exposedAcknowledgedWorkflowId
+  }
 }
 
 function bridge(): InstanceType<(typeof bridgeState)['FakeBridge']> {
@@ -187,6 +200,28 @@ describe('useAgentCrdtFollower', () => {
     expect(bridge().subscribe).toHaveBeenCalledWith('wf-1')
     expect(status().workflowId).toBe('wf-1')
     expect(status().enabled).toBe(true)
+    unmount()
+  })
+
+  it('surfaces a binding only after the server acknowledges it', async () => {
+    const { unmount, workflowId, acknowledgedWorkflowId } =
+      mountFollower('wf-1')
+
+    expect(acknowledgedWorkflowId()).toBeNull()
+
+    dispatchFrame('doc_subscribed', { ok: true, workflowId: 'wf-1' })
+    expect(acknowledgedWorkflowId()).toBe('wf-1')
+
+    workflowId.value = 'wf-2'
+    await nextTick()
+    expect(acknowledgedWorkflowId()).toBeNull()
+
+    dispatchFrame('doc_subscribed', { ok: true, workflowId: 'wf-2' })
+    expect(acknowledgedWorkflowId()).toBe('wf-2')
+
+    bridge().subscribedWorkflowId = null
+    dispatchFrame('doc_subscribed', { ok: false, workflowId: 'wf-2' })
+    expect(acknowledgedWorkflowId()).toBeNull()
     unmount()
   })
 
