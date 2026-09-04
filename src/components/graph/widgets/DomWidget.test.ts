@@ -284,7 +284,6 @@ describe('DomWidget position update matrix', () => {
 describe('native DOM widget interaction lifecycle', () => {
   afterEach(() => {
     useDomWidgetStore().clear()
-    vi.mocked(reportError).mockClear()
   })
 
   it('reports and contains DOM widget mount failures', async () => {
@@ -311,8 +310,7 @@ describe('native DOM widget interaction lifecycle', () => {
         failure_kind: 'caught_unexpected',
         feature_area: 'canvas',
         operation: 'render',
-        outcome: 'failed',
-        assert_mode: 'soft'
+        outcome: 'failed'
       },
       context: {
         nodeId: 1,

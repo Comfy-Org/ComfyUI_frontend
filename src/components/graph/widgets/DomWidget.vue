@@ -193,8 +193,7 @@ onMounted(() => {
         failure_kind: 'caught_unexpected',
         feature_area: 'canvas',
         operation: 'render',
-        outcome: 'failed',
-        assert_mode: 'soft'
+        outcome: 'failed'
       },
       context: {
         nodeId: widget.node.id,
