@@ -28,11 +28,11 @@ export async function fitToViewInstant(
 
       const canvas = app.canvas
       const items = (() => {
-        if (selectionOnly && canvas.selectedItems?.size) {
+        if (selectionOnly && canvas.selectedItems.size) {
           return Array.from(canvas.selectedItems)
         }
         try {
-          return Array.from(canvas.positionableItems ?? [])
+          return Array.from(canvas.positionableItems)
         } catch {
           return []
         }
@@ -43,13 +43,12 @@ export async function fitToViewInstant(
       const rects: ReadOnlyRect[] = []
 
       for (const item of items) {
-        const rect = item?.boundingRect
-        if (!rect) continue
+        const rect = item.boundingRect
 
-        const x = Number(rect[0])
-        const y = Number(rect[1])
-        const width = Number(rect[2])
-        const height = Number(rect[3])
+        const x = rect[0]
+        const y = rect[1]
+        const width = rect[2]
+        const height = rect[3]
 
         rects.push([x, y, width, height] as const)
       }
@@ -67,10 +66,10 @@ export async function fitToViewInstant(
   let maxY = -Infinity
 
   for (const [x, y, width, height] of rectangles) {
-    minX = Math.min(minX, Number(x))
-    minY = Math.min(minY, Number(y))
-    maxX = Math.max(maxX, Number(x) + Number(width))
-    maxY = Math.max(maxY, Number(y) + Number(height))
+    minX = Math.min(minX, x)
+    minY = Math.min(minY, y)
+    maxX = Math.max(maxX, x + width)
+    maxY = Math.max(maxY, y + height)
   }
 
   const hasFiniteBounds =

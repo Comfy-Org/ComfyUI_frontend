@@ -4298,8 +4298,6 @@
     "canceledCard": {
       "description": "今後請求されることはありません。{date}まで機能は有効です。",
       "descriptionWithoutDate": "今後請求は発生しません。機能は請求期間の終了まで有効です。",
-      "endedDescription": "サブスクリプションは無効になりました。",
-      "endedTitle": "サブスクリプションが終了しました",
       "title": "サブスクリプションはキャンセルされました"
     },
     "changePlan": "プランを変更",
@@ -4354,6 +4352,7 @@
     "gpuLabel": "RTX 6000 Pro（96GB VRAM）",
     "haveQuestions": "ご質問やエンタープライズについてのお問い合わせはこちら",
     "inactive": {
+      "badge": "無効",
       "memberCta": "了解しました",
       "memberDescription": "ワークスペースのオーナーに連絡して、サブスクリプションを再有効化してワークフローを実行してください。",
       "memberRunTooltip": "ワークスペースのオーナーに再購読を依頼してください",

@@ -263,7 +263,7 @@ const zPriceBadgeDepends = z.object({
  * Used to calculate and display pricing information for API nodes.
  * The `expr` field contains a JSONata expression that returns a PricingResult.
  */
-const zPriceBadge = z.object({
+export const zPriceBadge = z.object({
   engine: z.literal('jsonata').optional().default('jsonata'),
   depends_on: zPriceBadgeDepends
     .optional()
