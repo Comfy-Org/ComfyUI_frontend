@@ -49,12 +49,18 @@ describe('LGraphNode.configure onConfigure hook isolation', () => {
     expect(canonical).toEqual(canonicalSnapshot)
   })
 
-  it('does not promote namespaced extension keys to top-level fields on serialize', () => {
+  it('does not promote namespaced extension keys onto the caller serialized object', () => {
     const node = new LGraphNode('TestNode')
-    node.configure(nodeWithNamespacedExtension())
+    // The configure view is only built when a hook is installed.
+    node.onConfigure = () => {}
+    const info = nodeWithNamespacedExtension()
+
+    node.configure(info)
+
+    expect(info).not.toHaveProperty('myExt')
+    expect(info.extensions).toEqual({ myExt: { note: 'hello' } })
 
     const serialized = node.serialize()
-
     expect(serialized).not.toHaveProperty('myExt')
     expect(serialized.extensions).toEqual({ myExt: { note: 'hello' } })
   })
