@@ -1,5 +1,8 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { watch } from 'vue'
+
+const { reportError } = vi.hoisted(() => ({ reportError: vi.fn() }))
+vi.mock('@/platform/telemetry/reportError', () => ({ reportError }))
 
 import {
   clearDevEvents,
@@ -13,6 +16,7 @@ describe('devPanelLog', () => {
   beforeEach(() => {
     setCrdtDebugEnabled(true)
     clearDevEvents()
+    reportError.mockClear()
   })
 
   it('records events with monotonically increasing sequence numbers', () => {
@@ -212,6 +216,26 @@ describe('devPanelLog', () => {
     expect(serialized).toContain('[REDACTED]')
     expect(serialized).not.toContain('kept-leaf')
     expect(serialized.match(/"child":/g)).toHaveLength(13)
+  })
+
+  it('redacts and reports details that cannot be inspected safely', () => {
+    const detail = new Proxy(
+      {},
+      {
+        ownKeys() {
+          throw new Error('secret payload')
+        }
+      }
+    )
+
+    expect(() => recordDevEvent('doc_update', detail)).not.toThrow()
+    expect(devEvents.value[0]?.detail).toBe('[REDACTED]')
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'Failed to sanitize CRDT dev event detail'
+      }),
+      { errorType: 'crdt_dev_event_sanitization_failed' }
+    )
   })
 
   it('keeps a value referenced twice from sibling positions', () => {
