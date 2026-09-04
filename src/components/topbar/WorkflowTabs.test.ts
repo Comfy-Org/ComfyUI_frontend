@@ -175,6 +175,8 @@ vi.mock(
       toggle: vi.fn(() => {
         agentPanelHolder.store.isOpen.value =
           !agentPanelHolder.store.isOpen.value
+        agentPanelHolder.store.isVisible.value =
+          agentPanelHolder.store.isOpen.value
       }),
       open: vi.fn(() => {
         agentPanelHolder.store.isOpen.value = true
@@ -191,7 +193,7 @@ vi.mock(
 )
 
 const withConsent = vi.hoisted(() =>
-  vi.fn((onAccept: () => void) => onAccept())
+  vi.fn(async (onAccept: () => void) => onAccept())
 )
 vi.mock(
   '@/workbench/extensions/agent/composables/agent/useAgentConsent',
@@ -318,7 +320,7 @@ describe('WorkflowTabs agent entry button', () => {
     agentPanelHolder.store.open.mockClear()
     agentPanelHolder.store.suppressRestoredOpen.mockClear()
     withConsent.mockClear()
-    withConsent.mockImplementation((onAccept: () => void) => onAccept())
+    withConsent.mockImplementation(async (onAccept: () => void) => onAccept())
     trackAgentEntryButtonClicked.mockClear()
   })
 
@@ -380,10 +382,43 @@ describe('WorkflowTabs agent entry button', () => {
     expect(trackAgentEntryButtonClicked).toHaveBeenLastCalledWith({
       resulting_state: 'closed'
     })
+    expect(button).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('ignores repeated opens while consent is pending and retries after it settles', async () => {
+    let resolveConsent!: () => void
+    withConsent.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveConsent = resolve
+        })
+    )
+    const { user } = renderComponent()
+    const button = screen.getByRole('button', {
+      name: enMessages.agent.askComfyAgent
+    })
+
+    await user.click(button)
+    await user.click(button)
+
+    expect(withConsent).toHaveBeenCalledOnce()
+    expect(agentPanelHolder.store.open).not.toHaveBeenCalled()
+
+    resolveConsent()
+    await waitFor(() => expect(withConsent).toHaveBeenCalledOnce())
+    await user.click(button)
+
+    expect(withConsent).toHaveBeenCalledTimes(2)
+    expect(agentPanelHolder.store.open).toHaveBeenCalledOnce()
   })
 
   it('clears a hidden restored intent before requesting consent', async () => {
     agentPanelHolder.store.isOpen.value = true
+    withConsent.mockImplementationOnce(async (onAccept: () => void) => {
+      expect(agentPanelHolder.store.isOpen.value).toBe(false)
+      expect(agentPanelHolder.store.suppressRestoredOpen).toHaveBeenCalledOnce()
+      onAccept()
+    })
     const { user } = renderComponent()
 
     await user.click(

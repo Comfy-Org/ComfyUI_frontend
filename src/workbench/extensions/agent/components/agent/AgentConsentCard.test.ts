@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
+import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
 
@@ -12,7 +13,9 @@ const props = {
   paragraphs: ['First paragraph.', 'Second paragraph.']
 }
 
-function renderCard(overrides: Record<string, unknown> = {}) {
+function renderCard(
+  overrides: Partial<ComponentProps<typeof AgentConsentCard>> = {}
+) {
   return render(AgentConsentCard, {
     props: { ...props, ...overrides },
     global: { plugins: [i18n] }

@@ -81,14 +81,10 @@ describe('agentPanelStore engagement telemetry', () => {
     store.enabled = true
     await nextTick()
 
-    const gatedStore = store as typeof store & {
-      isVisible: boolean
-      suppressRestoredOpen: () => void
-    }
-    expect(gatedStore.isVisible).toBe(false)
+    expect(store.isVisible).toBe(false)
     expect(telemetry.trackAgentPanelOpened).not.toHaveBeenCalled()
 
-    gatedStore.suppressRestoredOpen()
+    store.suppressRestoredOpen()
     expect(store.isOpen).toBe(false)
   })
 

@@ -58,6 +58,16 @@ describe('accountSettingsApi', () => {
     ).rejects.toBeInstanceOf(AccountSettingsApiError)
   })
 
+  it('wraps invalid JSON responses as account settings errors', async () => {
+    fetchWithUnifiedRemint.mockResolvedValueOnce(
+      new Response('{not-json', { status: 200 })
+    )
+
+    await expect(
+      getAccountSetting('invalid-json', authHeader)
+    ).rejects.toBeInstanceOf(AccountSettingsApiError)
+  })
+
   it('writes a setting to the configured Comfy account API', async () => {
     fetchWithUnifiedRemint.mockResolvedValueOnce(
       new Response(JSON.stringify({ value: true }), { status: 200 })
