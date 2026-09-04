@@ -2061,6 +2061,7 @@
     "RECRAFT_COLOR": "RECRAFT_COLOR",
     "RECRAFT_CONTROLS": "RECRAFT_CONTROLS",
     "RECRAFT_V3_STYLE": "RECRAFT_V3_STYLE",
+    "RESOLUTION_PREVIEW": "RESOLUTION_PREVIEW",
     "RETARGET_TASK_ID": "RETARGET_TASK_ID",
     "RIG_TASK_ID": "RIG_TASK_ID",
     "RUNWAY_ALEPH2_KEYFRAME": "RUNWAY_ALEPH2_KEYFRAME",
@@ -2153,7 +2154,7 @@
   },
   "apiNodesSignInDialog": {
     "title": "Sign in to run partner nodes",
-    "message": "Partner nodes run on third-party services and use credits from your account. That's why signing in is needed.",
+    "message": "Partner nodes run on third-party services and use credits from your account. Please sign in to connect your account.",
     "partnerNodesInWorkflow": "Partner nodes in this workflow",
     "whatArePartnerNodes": "What are partner nodes?",
     "tooltip": "Partner nodes run on third-party services. They use credits, the only paid part of Comfy.",
@@ -3898,13 +3899,12 @@
   },
   "mediaAsset": {
     "assetDelete": {
-        "error": "Items failed to delete",
-        "success": "Deletion successful",
-        "warn": "Some items failed to delete"
+      "error": "Items failed to delete",
+      "success": "Deletion successful",
+      "warn": "Some items failed to delete"
     },
     "assetsDeleted": "{n} / {total} assets were deleted",
     "jobsDeleted": "{n} / {total} jobs were deleted",
-
     "deleteItems": "Delete these items",
     "deletePermanent": "They will be permanently removed.",
     "deleteHistoryOnly": "Only history will be affected, files will remain on disk",

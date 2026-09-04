@@ -235,7 +235,11 @@ export function useAgentCrdtFollower(
    * reads inside the getter are tracked, so a `null` → graph flip triggers a
    * reconcile without waiting for the next remote frame.
    */
-  getGraph: () => MaterializableGraph | null = () => null
+  getGraph: () => MaterializableGraph | null = () => null,
+  onFailure: (
+    type: 'op_rejected' | 'apply_failed',
+    details: string
+  ) => void = () => {}
 ) {
   const connected = ref(false)
   const updatesReceived = ref(0)
@@ -462,6 +466,7 @@ export function useAgentCrdtFollower(
       message: error instanceof Error ? error.message : String(error)
     }
     recordDevEvent('projection_error', failure)
+    onFailure('apply_failed', failure.message)
     // Count and report only. A state-vector resubscribe cannot redeliver this
     // frame: the bridge merged its Yjs bytes before dispatching, so the host's
     // catch-up delta is empty, and the adapter dropped its pending diff before
@@ -552,19 +557,23 @@ export function useAgentCrdtFollower(
     const detail = event.detail as Partial<DocOpsResult> | null
     if (detail === null) return
     const resultWorkflowId = detail?.workflowId
-    const failed = failureView(detail.failed)
-    // Dev log sees every result frame (it carries its own workflowId);
-    // status and nack diagnostics are gated to the subscribed workflow so a
-    // late result for the previous workflow cannot contaminate them.
-    recordDevEvent('doc_ops_result', {
-      ...detail,
-      failed: failed ?? null
-    })
     if (
+      !isTargetActive.value ||
       typeof resultWorkflowId !== 'string' ||
       resultWorkflowId !== subscribedWorkflowId.value
     )
       return
+    const failed = failureView(detail.failed)
+    recordDevEvent('doc_ops_result', {
+      workflowId: resultWorkflowId,
+      ok: detail.ok,
+      seq: detail.seq,
+      applied: detail.applied ?? [],
+      skipped: detail.skipped ?? [],
+      code: detail.code,
+      message: detail.message,
+      failed: failed ?? null
+    })
     if (staleProbeTimer !== null) {
       armStaleProbe()
       refreshPersistedDocId()
@@ -583,6 +592,14 @@ export function useAgentCrdtFollower(
     opNacks.value += 1
     lastOpNack.value = nack
     recordDevEvent('op_nack', nack)
+    onFailure(
+      'op_rejected',
+      nack.message ??
+        nack.failed?.message ??
+        nack.code ??
+        nack.failed?.code ??
+        'The host rejected the workflow edit.'
+    )
     if (!opNackReported) {
       opNackReported = true
       reportError(new Error('Host rejected CRDT operations'), {

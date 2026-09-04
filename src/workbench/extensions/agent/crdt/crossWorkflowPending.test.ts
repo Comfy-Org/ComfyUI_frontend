@@ -255,20 +255,25 @@ describe('R-73 cross-workflow pending operation characterization', () => {
       )
     ).toHaveLength(1)
 
-    // R-73: result frames carry workflowId; the composable gates status by
-    // it, so workflow A's late frame leaves workflow B's status untouched.
-    // The dev log still records the frame under its own workflowId.
+    // R-73 regression guard: result frames carry workflowId, and the guard
+    // added alongside this test (onOpsResult in useAgentCrdtFollower.ts)
+    // drops a result whose workflowId no longer matches the subscribed
+    // workflow, so workflow B's status is never updated from workflow A's
+    // late frame, and the composable never re-emits that frame as a
+    // 'doc_ops_result' dev event.
     expect(status()).toMatchObject({
       workflowId: 'wf-b',
       lastFrameType: null
     })
-    expect(devLogState.recordDevEvent).toHaveBeenCalledWith('doc_ops_result', {
-      workflowId: 'wf-a',
-      ok: true,
-      applied: [operationAId],
-      skipped: [],
-      failed: null
-    })
+    expect(devLogState.recordDevEvent).not.toHaveBeenCalledWith(
+      'doc_ops_result',
+      {
+        workflowId: 'wf-a',
+        ok: true,
+        applied: [operationAId],
+        skipped: []
+      }
+    )
     expect(operationBId).not.toBe(operationAId)
   })
 

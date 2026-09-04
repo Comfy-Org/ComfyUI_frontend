@@ -155,7 +155,11 @@ function writeRawRecord(overrides: {
 function mountFollower(
   initial: string | null = null,
   initiallyActive = true,
-  getGraph: () => MaterializableGraph | null = () => null
+  getGraph: () => MaterializableGraph | null = () => null,
+  onFailure: (
+    type: 'op_rejected' | 'apply_failed',
+    details: string
+  ) => void = () => {}
 ): {
   unmount: () => void
   workflowId: Ref<string | null>
@@ -172,7 +176,8 @@ function mountFollower(
         graphMutations,
         () => null,
         isTargetActive,
-        getGraph
+        getGraph,
+        onFailure
       )
       exposedStatus = () => status.value as AgentCrdtStatus
       return () => null
@@ -386,6 +391,27 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('FEC-5: only active-workflow op results slide the persisted expiry', () => {
+    vi.useFakeTimers()
+    const { isTargetActive, unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    const stampedAt = persistedRecord()?.expiresAt
+    expect(stampedAt).toBeTypeOf('number')
+
+    vi.advanceTimersByTime(3 * 60 * 1000)
+    dispatchFrame('doc_ops_result', { workflowId: 'wf-2', ok: true })
+    expect(persistedRecord()?.expiresAt).toBe(stampedAt)
+
+    isTargetActive.value = false
+    dispatchFrame('doc_ops_result', { workflowId: 'wf-1', ok: true })
+    expect(persistedRecord()?.expiresAt).toBe(stampedAt)
+
+    isTargetActive.value = true
+    dispatchFrame('doc_ops_result', { workflowId: 'wf-1', ok: true })
+    expect(persistedRecord()?.expiresAt).toBeGreaterThan(stampedAt ?? 0)
+    unmount()
+  })
+
   it('FEC-5: an idle doc still expires', () => {
     vi.useFakeTimers()
     const setup = mountFollower('wf-1')
@@ -506,7 +532,13 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it('surfaces a rejected human operation batch without rolling it back', () => {
-    const { unmount, status } = mountFollower('wf-1')
+    const onFailure = vi.fn()
+    const { unmount, status } = mountFollower(
+      'wf-1',
+      true,
+      () => null,
+      onFailure
+    )
 
     dispatchFrame('doc_ops_result', {
       workflowId: 'wf-1',
@@ -534,6 +566,10 @@ describe('useAgentCrdtFollower', () => {
         errorType: 'agent_crdt_host_operation_rejected'
       })
     )
+    expect(onFailure).toHaveBeenCalledWith(
+      'op_rejected',
+      'node payload failed schema check'
+    )
     unmount()
   })
 
@@ -549,7 +585,13 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it('reports an ECS projection failure and keeps listening for updates', () => {
-    const { unmount, status } = mountFollower('wf-1')
+    const onFailure = vi.fn()
+    const { unmount, status } = mountFollower(
+      'wf-1',
+      true,
+      () => null,
+      onFailure
+    )
     adapterState.applyFrame.mockImplementationOnce(() => {
       throw new Error('mutation batch failed')
     })
@@ -562,6 +604,10 @@ describe('useAgentCrdtFollower', () => {
     expect(reportErrorMock).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({ errorType: 'agent_crdt_projection_failure' })
+    )
+    expect(onFailure).toHaveBeenCalledWith(
+      'apply_failed',
+      'mutation batch failed'
     )
     unmount()
   })

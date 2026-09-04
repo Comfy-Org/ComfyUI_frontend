@@ -51,8 +51,12 @@ const ws = vi.hoisted(() => {
   const emit = (type: string, data?: unknown): void => {
     for (const listener of listeners.get(type) ?? []) listener({ detail: data })
   }
+  const emitCustom = (type: string, data?: unknown): void => {
+    for (const listener of listeners.get(type) ?? [])
+      listener(new CustomEvent(type, { detail: data }))
+  }
   const clear = (): void => listeners.clear()
-  return { add, remove, emit, clear }
+  return { add, remove, emit, emitCustom, clear }
 })
 
 vi.mock('@/scripts/api', () => ({
@@ -1974,6 +1978,33 @@ describe('AgentPanelRoot workflow binding', () => {
     )
     return bodies
   }
+
+  it('surfaces a host operation rejection in the user-facing error overlay', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    await renderAndSend('edit this workflow')
+    executionErrors.lastPromptError = null
+    executionErrors.showErrorOverlay.mockClear()
+
+    ws.emitCustom('doc_ops_result', {
+      v: 1,
+      workflow_id: 'wf-42',
+      ok: false,
+      applied: [],
+      skipped: [],
+      code: 'invalid_node_payload',
+      message: 'The node payload was invalid.'
+    })
+    await nextTick()
+
+    expect(executionErrors.showErrorOverlay).toHaveBeenCalledOnce()
+    expect(executionErrors.lastPromptError).toEqual({
+      type: 'op_rejected',
+      message: i18n.global.t('errorCatalog.promptErrors.op_rejected.desc'),
+      details: 'The node payload was invalid.'
+    })
+  })
 
   it('names the active workflow in the selector', async () => {
     makeTab('wf-42')
