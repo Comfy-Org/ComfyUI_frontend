@@ -8,6 +8,7 @@ import type { RawCapture } from './agentConversationAssemble'
 import {
   openStream,
   readRows,
+  redactRecorderError,
   writeRefusalArtifacts
 } from './agentConversationRecord'
 
@@ -35,7 +36,15 @@ const rawCapture = (): RawCapture => ({
 })
 
 describe('recorder subprocess boundaries', () => {
-  it('suppresses Postgres arguments before refusal artifacts or stderr', () => {
+  it('redacts a recorder secret while preserving surrounding error text', () => {
+    expect(
+      redactRecorderError(new Error(`request with ${SECRET} was rejected`), [
+        SECRET
+      ])
+    ).toBe('request with [REDACTED] was rejected')
+  })
+
+  it('suppresses Postgres subprocess details in refusal artifacts and stderr', () => {
     const workDir = mkdtempSync(join(tmpdir(), 'agent-recorder-'))
     const raw = rawCapture()
     const paths = {

@@ -397,13 +397,6 @@ async function main(argv: string[]): Promise<void> {
   const postgresExec = env.AGENT_PG_EXEC.split(' ')
   const redisExec = env.AGENT_REDIS_EXEC.split(' ')
   const m2mSecret = readFileSync(env.AGENT_M2M_SECRET_FILE, 'utf8').trim()
-  const sensitiveValues = [
-    m2mSecret,
-    env.AGENT_PG_EXEC,
-    ...postgresExec.slice(1),
-    env.AGENT_REDIS_EXEC,
-    ...redisExec.slice(1)
-  ]
 
   const raw: RawCapture = {
     case_id: caseId,
@@ -485,7 +478,7 @@ async function main(argv: string[]): Promise<void> {
       rawPath,
       join(workDir, `${caseId}.refused.jsonl`),
       error,
-      sensitiveValues
+      [m2mSecret]
     )
     throw new RecordRefusal(message)
   }
