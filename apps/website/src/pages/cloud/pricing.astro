@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
+import AccountIsland from '../../components/account/AccountIsland.vue'
 import CloudPricingSection from '../../components/pricing/CloudPricingSection.vue'
 import WhatsIncludedSection from '../../components/pricing/WhatsIncludedSection.vue'
 import PricingFaq from '../../components/pricing/PricingFaq.astro'
@@ -40,6 +41,11 @@ const productId = jsonLdId(url, 'product')
     }),
   ]}
 >
+  {
+    import.meta.env.PUBLIC_ACCOUNT_LAYER_POC === '1' && (
+      <AccountIsland client:load />
+    )
+  }
   <MinimaxLicenseHeroSection client:visible />
   <CloudPricingSection client:load />
   <WhatsIncludedSection />
