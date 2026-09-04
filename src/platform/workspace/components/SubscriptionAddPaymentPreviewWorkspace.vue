@@ -286,7 +286,7 @@
               variant="textonly"
               size="unset"
               :disabled="interactionLocked"
-              class="inline text-sm text-inherit underline underline-offset-2"
+              class="inline p-0 text-sm text-inherit underline underline-offset-2"
               @click="$emit('changePaymentMethod')"
               >{{
                 $t('billingOperation.challengeFailedUseDifferentCard')
