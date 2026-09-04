@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { MissingNodeType } from '@/types/comfy'
 
@@ -17,15 +17,24 @@ const mockSettings = vi.hoisted(() => ({
   } as Record<string, boolean>
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: vi.fn(() => ({
-    get: vi.fn((key: string) => mockSettings.values[key])
-  }))
-}))
+vi.mock('@/platform/settings/settingStore', async () => {
+  const { reactive } = await import('vue')
+  mockSettings.values = reactive(mockSettings.values)
+  return {
+    useSettingStore: vi.fn(() => ({
+      get: vi.fn((key: string) => mockSettings.values[key])
+    }))
+  }
+})
 
 import { useMissingNodesErrorStore } from './missingNodesErrorStore'
 
 describe('missingNodesErrorStore', () => {
+  beforeEach(() => {
+    mockSettings.values['Comfy.RightSidePanel.ShowErrorsTab'] = true
+    mockSettings.values['Comfy.Workflow.ShowMissingNodesWarning'] = true
+  })
+
   describe('setMissingNodeTypes', () => {
     it('sets missingNodesError with provided types', () => {
       const store = useMissingNodesErrorStore()
@@ -40,18 +49,23 @@ describe('missingNodesErrorStore', () => {
     })
 
     it('keeps the error but hides it while the missing nodes warning is off', () => {
-      mockSettings.values['Comfy.Workflow.ShowMissingNodesWarning'] = false
       const store = useMissingNodesErrorStore()
-      const surfaced = store.surfaceMissingNodes([
+      const types: MissingNodeType[] = [
         { type: 'NodeA', nodeId: '1', isReplaceable: false }
-      ])
+      ]
+      expect(store.surfaceMissingNodes(types)).toBe(true)
 
-      expect(surfaced).toBe(false)
+      mockSettings.values['Comfy.Workflow.ShowMissingNodesWarning'] = false
+
+      expect(store.surfaceMissingNodes(types)).toBe(false)
       expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
       expect(store.visibleMissingNodesError).toBeNull()
       expect(store.hasMissingNodes).toBe(false)
       expect(store.missingNodeCount).toBe(0)
+
       mockSettings.values['Comfy.Workflow.ShowMissingNodesWarning'] = true
+
+      expect(store.hasMissingNodes).toBe(true)
     })
 
     it('clears missingNodesError when given empty array', () => {
@@ -124,7 +138,7 @@ describe('missingNodesErrorStore', () => {
 
       expect(store.missingNodesError).not.toBeNull()
       expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
-      expect(store.hasMissingNodes).toBe(false)
+      expect(store.hasMissingNodes).toBe(true)
       expect(shouldShowOverlay).toBe(false)
     })
 

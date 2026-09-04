@@ -58,8 +58,6 @@ export interface SettingParams<TValue = unknown> extends FormItem {
   // Default is 0 if not specified.
   sortOrder?: number
   hideInVueNodes?: boolean
-  /** Evaluated on render; true renders the control disabled. */
-  disabled?: () => boolean
 }
 
 /**

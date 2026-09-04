@@ -1022,6 +1022,30 @@ describe('useWidgetSelectItems', () => {
   })
 
   describe('FE-230 missing-media filtering', () => {
+    it('keeps input items while the missing media warning is off', async () => {
+      const { useMissingMediaStore } =
+        await import('@/platform/missingMedia/missingMediaStore')
+      const { useSettingStore } =
+        await import('@/platform/settings/settingStore')
+      useMissingMediaStore().setMissingMedia([
+        {
+          nodeId: '1',
+          nodeType: 'LoadImage',
+          widgetName: 'image',
+          mediaType: 'image',
+          name: 'photo_abc.jpg',
+          isMissing: true
+        }
+      ])
+      useSettingStore().settingValues[
+        'Comfy.Workflow.ShowMissingMediaWarning'
+      ] = false
+
+      const { dropdownItems } = useWidgetSelectItems(createDefaultOptions())
+
+      expect(dropdownItems.value.map((i) => i.name)).toContain('photo_abc.jpg')
+    })
+
     it('drops input items whose name is in the missing-media store', async () => {
       const { useMissingMediaStore } =
         await import('@/platform/missingMedia/missingMediaStore')

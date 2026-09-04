@@ -5,6 +5,7 @@ import { st } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isCloud } from '@/platform/distribution/types'
 import { isMissingWarningVisible } from '@/platform/settings/missingWarningVisibility'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import {
   dedupeMissingNodeTypes,
   removePendingMissingNodeTypesByExecutionIdPrefix,
@@ -27,7 +28,7 @@ export const useMissingNodesErrorStore = defineStore(
   () => {
     const missingNodesError = ref<MissingNodesError | null>(null)
 
-    /** Error to display; empty while the missing nodes warning is off. */
+    /** Error to display; `null` while the missing nodes warning is off. */
     const visibleMissingNodesError = computed(() =>
       isMissingWarningVisible('nodes') ? missingNodesError.value : null
     )
@@ -49,10 +50,13 @@ export const useMissingNodesErrorStore = defineStore(
       }
     }
 
-    /** Set missing node types. Returns true if the warning is visible and types were set. */
+    /** Set missing node types. Returns true if the Errors tab is enabled and types were set. */
     function surfaceMissingNodes(types: MissingNodeType[]): boolean {
       setMissingNodeTypes(types)
-      return types.length > 0 && isMissingWarningVisible('nodes')
+      return (
+        hasMissingNodes.value &&
+        useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')
+      )
     }
 
     function removeMissingNodesByNodeId(nodeId: string) {

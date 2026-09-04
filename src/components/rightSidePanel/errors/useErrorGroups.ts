@@ -468,7 +468,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   const asyncResolvedIds = ref<Map<string, string | null>>(new Map())
 
   const pendingTypes = computed(() =>
-    (missingNodesStore.visibleMissingNodesError?.nodeTypes ?? []).filter(
+    (missingNodesStore.missingNodesError?.nodeTypes ?? []).filter(
       (n): n is Exclude<MissingNodeType, string> =>
         typeof n !== 'string' && !n.cnrId
     )
@@ -524,7 +524,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
 
   // Evict stale entries when missing nodes are cleared
   watch(
-    () => missingNodesStore.visibleMissingNodesError,
+    () => missingNodesStore.missingNodesError,
     (error) => {
       if (!error && asyncResolvedIds.value.size > 0) {
         asyncResolvedIds.value = new Map()

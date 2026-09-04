@@ -1,11 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const mockMissingWarningVisible = vi.hoisted(() => ({ value: true }))
-
-vi.mock('@/platform/settings/missingWarningVisibility', () => ({
-  isMissingWarningVisible: () => mockMissingWarningVisible.value
-}))
-
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import {
   createNodeExecutionId,
@@ -13,6 +7,7 @@ import {
 } from '@/types/nodeIdentification'
 
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 const mockNodeLocatorIdToNodeExecutionId = vi.hoisted(() =>
   vi.fn((nodeLocatorId: string) => nodeLocatorId)
@@ -79,16 +74,24 @@ describe('missingModelStore', () => {
     })
 
     it('hides derived state while the missing models warning is off', () => {
-      mockMissingWarningVisible.value = false
+      const settingStore = useSettingStore()
       const store = useMissingModelStore()
       store.setMissingModels([makeModelCandidate('model_a.safetensors')])
+      expect(store.hasMissingModels).toBe(true)
+
+      settingStore.settingValues['Comfy.Workflow.ShowMissingModelsWarning'] =
+        false
 
       expect(store.missingModelCandidates).toHaveLength(1)
       expect(store.visibleMissingModelCandidates).toBeNull()
       expect(store.hasMissingModels).toBe(false)
       expect(store.missingModelCount).toBe(0)
       expect(store.missingModelNodeIds.size).toBe(0)
-      mockMissingWarningVisible.value = true
+
+      settingStore.settingValues['Comfy.Workflow.ShowMissingModelsWarning'] =
+        true
+
+      expect(store.hasMissingModels).toBe(true)
     })
 
     it('clears missingModelCandidates when given empty array', () => {

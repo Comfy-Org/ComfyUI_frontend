@@ -27,13 +27,21 @@ vi.mock('@/platform/distribution/types', () => ({
 }))
 
 const mockSettings = vi.hoisted(() => ({
-  values: {
-    'Comfy.RightSidePanel.ShowErrorsTab': false,
-    'Comfy.Workflow.ShowMissingNodesWarning': true,
-    'Comfy.Workflow.ShowMissingModelsWarning': true,
-    'Comfy.Workflow.ShowMissingMediaWarning': true
-  } as Record<string, boolean>
+  values: {} as Record<string, boolean>,
+  reset() {
+    this.values = {
+      'Comfy.RightSidePanel.ShowErrorsTab': false,
+      'Comfy.Workflow.ShowMissingNodesWarning': true,
+      'Comfy.Workflow.ShowMissingModelsWarning': true,
+      'Comfy.Workflow.ShowMissingMediaWarning': true
+    }
+  }
 }))
+mockSettings.reset()
+
+beforeEach(() => {
+  mockSettings.reset()
+})
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn(() => ({
@@ -715,7 +723,6 @@ describe('surfaceMissingModels — per-kind visibility', () => {
     expect(useMissingModelStore().missingModelCandidates).toHaveLength(1)
     expect(store.isErrorOverlayOpen).toBe(false)
     expect(store.hasMissingError).toBe(false)
-    mockSettings.values['Comfy.Workflow.ShowMissingModelsWarning'] = true
   })
 })
 

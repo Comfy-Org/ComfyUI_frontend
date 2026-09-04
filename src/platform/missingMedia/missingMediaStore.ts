@@ -22,7 +22,7 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
 
   const missingMediaCandidates = ref<MissingMediaCandidate[] | null>(null)
 
-  /** Candidates to display; empty while the missing media warning is off. */
+  /** Candidates to display; `null` while the missing media warning is off. */
   const visibleMissingMediaCandidates = computed(() =>
     isMissingWarningVisible('media') ? missingMediaCandidates.value : null
   )

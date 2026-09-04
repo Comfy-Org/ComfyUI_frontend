@@ -19,7 +19,6 @@ vi.mock('@/platform/settings/settingStore', () => ({
 }))
 
 let emitFormValue: ((value: unknown) => void) | null = null
-let lastFormItem: Record<string, unknown> | undefined
 
 const FormItemUpdateStub = defineComponent({
   props: {
@@ -27,9 +26,8 @@ const FormItemUpdateStub = defineComponent({
     item: { type: Object, default: undefined },
     formValue: { type: [String, Number, Boolean, Object], default: undefined }
   },
-  setup(props, { emit }) {
+  setup(_, { emit }) {
     emitFormValue = (value: unknown) => emit('update:form-value', value)
-    lastFormItem = props.item
     return {}
   },
   template: '<div data-testid="form-item-stub" />'
@@ -38,7 +36,6 @@ const FormItemUpdateStub = defineComponent({
 describe('SettingItem', () => {
   beforeEach(() => {
     emitFormValue = null
-    lastFormItem = undefined
   })
 
   function renderComponent(setting: SettingParams) {
@@ -74,20 +71,5 @@ describe('SettingItem', () => {
     await flushPromises()
 
     expect(mockSet).toHaveBeenCalledWith('main.sub.setting.name', 'newvalue')
-  })
-
-  it('passes the evaluated disabled state to the form control', () => {
-    mockGet.mockReturnValue(true)
-
-    renderComponent({
-      id: 'main.sub.setting.name',
-      name: 'Dependent Setting',
-      type: 'boolean',
-      defaultValue: true,
-      attrs: { title: 'kept' },
-      disabled: () => true
-    })
-
-    expect(lastFormItem?.attrs).toEqual({ title: 'kept', disabled: true })
   })
 })

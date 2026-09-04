@@ -26,7 +26,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
   const missingModelCandidates = ref<MissingModelCandidate[] | null>(null)
   const isRefreshingMissingModels = ref(false)
 
-  /** Candidates to display; empty while the missing models warning is off. */
+  /** Candidates to display; `null` while the missing models warning is off. */
   const visibleMissingModelCandidates = computed(() =>
     isMissingWarningVisible('models') ? missingModelCandidates.value : null
   )

@@ -1,13 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 
-const mockMissingWarningVisible = vi.hoisted(() => ({ value: true }))
-
-vi.mock('@/platform/settings/missingWarningVisibility', () => ({
-  isMissingWarningVisible: () => mockMissingWarningVisible.value
-}))
-
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useMissingMediaStore } from './missingMediaStore'
 import type { MissingMediaCandidate } from './types'
 
@@ -52,15 +47,21 @@ describe('useMissingMediaStore', () => {
   })
 
   it('hides derived state while the missing media warning is off', () => {
-    mockMissingWarningVisible.value = false
+    const settingStore = useSettingStore()
     const store = useMissingMediaStore()
     store.setMissingMedia([makeCandidate('1', 'photo.png')])
+    expect(store.hasMissingMedia).toBe(true)
+
+    settingStore.settingValues['Comfy.Workflow.ShowMissingMediaWarning'] = false
 
     expect(store.missingMediaCandidates).toHaveLength(1)
     expect(store.visibleMissingMediaCandidates).toBeNull()
     expect(store.hasMissingMedia).toBe(false)
     expect(store.missingMediaNodeIds.size).toBe(0)
-    mockMissingWarningVisible.value = true
+
+    settingStore.settingValues['Comfy.Workflow.ShowMissingMediaWarning'] = true
+
+    expect(store.hasMissingMedia).toBe(true)
   })
 
   it('setMissingMedia populates candidates', () => {
