@@ -1,51 +1,165 @@
 import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
 
+async function readStructuredData(page: Page) {
+  const blocks = await page
+    .locator('script[type="application/ld+json"]')
+    .allTextContents()
+  expect(blocks).toHaveLength(1)
+
+  const graph = JSON.parse(blocks[0])['@graph'] as Record<string, unknown>[]
+
+  const breadcrumbs = graph.find(
+    (node) => node['@type'] === 'BreadcrumbList'
+  ) as { itemListElement: { name: string }[] } | undefined
+  expect(breadcrumbs, 'BreadcrumbList node in @graph').toBeDefined()
+
+  const faqPage = graph.find((node) => node['@type'] === 'FAQPage') as
+    | { mainEntity: { name: string }[] }
+    | undefined
+  expect(faqPage, 'FAQPage node in @graph').toBeDefined()
+
+  return {
+    types: graph.map((node) => node['@type']),
+    breadcrumbNames: breadcrumbs!.itemListElement.map((item) => item.name),
+    faqQuestionNames: faqPage!.mainEntity.map((question) => question.name)
+  }
+}
+
 test.describe('Enterprise pages @smoke', () => {
-  test('renders the canonical Enterprise offer and Managed Builds path', async ({
-    page
-  }) => {
+  test('renders the revised Enterprise page', async ({ page }) => {
     await page.goto('/enterprise')
 
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      /Govern ComfyUI across\s+every team and runtime\./
-    )
+    await expect(page.locator('main :is(h1, h2)')).toHaveText([
+      /Govern ComfyUI across\s+every team and runtime\./,
+      'The open standard for visual AI, ready for your organization.',
+      /One approved ComfyUI environment,\s+everywhere your team runs it\./,
+      'Govern the build, models, people, and usage.',
+      'TEAM PLANS',
+      'COMMERCIAL RIGHTS',
+      'FORWARD DEPLOYED CREATIVES',
+      'Capacity and support for production.',
+      /Built with studios\s+in the room\./,
+      'A clearer path through security review.',
+      'Enterprise, answered.',
+      /Bring the open standard for visual AI\s+to your organization\./,
+      'Team plans'
+    ])
     await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1)
     await expect(
       page.getByRole('link', { name: 'REQUEST DEMO' }).first()
     ).toHaveAttribute('href', '/contact/')
     await expect(
-      page.getByRole('heading', {
+      page.getByRole('link', { name: 'VIEW TRUST CENTER' }).first()
+    ).toHaveAttribute('href', /app\.vanta\.com\/comfy\.org\/trust/)
+
+    const configuratorSection = page.locator('section').filter({
+      has: page.getByRole('heading', {
         level: 2,
         name: 'One approved ComfyUI environment, everywhere your team runs it.'
       })
+    })
+    await configuratorSection.scrollIntoViewIfNeeded()
+    await expect(
+      configuratorSection.getByRole('link', { name: 'REQUEST DEMO' })
+    ).toHaveAttribute('href', '/contact/')
+    await expect(
+      configuratorSection.getByRole('button', { name: 'v0.3.41' })
+    ).toHaveAttribute('aria-pressed', 'true')
+    await expect(
+      configuratorSection.getByRole('button', { name: 'ControlNet Aux' })
+    ).toHaveAttribute('aria-pressed', 'false')
+
+    const offerRow = page.locator('section').filter({
+      has: page.getByRole('heading', { level: 3, name: 'Model licensing' })
+    })
+    await expect(
+      offerRow.getByRole('heading', { level: 3, name: 'Model licensing' })
     ).toBeVisible()
-    await expect(page.getByText('LEAD OFFER')).toHaveCount(0)
+    await expect(
+      offerRow.getByRole('link', { name: 'VIEW MINIMAX LICENSING' })
+    ).toHaveAttribute('href', '/minimax/license/')
+    await expect(
+      offerRow.getByRole('heading', {
+        level: 3,
+        name: 'Forward deployed creatives'
+      })
+    ).toBeVisible()
+    await expect(
+      offerRow.getByRole('link', { name: 'VIEW THE OFFERING' })
+    ).toHaveAttribute('href', '/forward-deployed-creatives/')
+
+    for (const governance of [
+      'Build policy',
+      'Model policy and BYOK',
+      'People and access',
+      'Usage visibility and audit requirements'
+    ]) {
+      await expect(
+        page.getByRole('heading', { level: 3, name: governance })
+      ).toBeVisible()
+    }
+    await expect(page.getByText(/Builders, not advisors\./)).toBeVisible()
+    await expect(
+      page.getByText(/Give the team a shared credit pool/)
+    ).toBeVisible()
+    for (const capacity of [
+      'Dedicated GPU capacity',
+      'Custom SLAs and support'
+    ]) {
+      await expect(
+        page.getByRole('heading', { level: 3, name: capacity })
+      ).toBeVisible()
+    }
+    for (const industry of [
+      'Game studios',
+      'VFX and animation',
+      'Studios you onboard'
+    ]) {
+      await expect(page.getByText(industry, { exact: true })).toBeVisible()
+    }
+    for (const security of [
+      'SOC 2',
+      'Identity',
+      'Data control',
+      'Procurement'
+    ]) {
+      await expect(
+        page.getByRole('heading', { level: 3, name: security })
+      ).toBeVisible()
+    }
     await expect(page.getByRole('link', { name: 'SEE PRICING' })).toHaveCount(1)
     await expect(
       page.getByRole('link', { name: 'SEE PRICING' })
     ).toHaveAttribute('href', '/pricing')
     await expect(
-      page.getByRole('heading', {
-        level: 2,
-        name: 'Capacity and support for production.'
-      })
+      page.getByText(/Give teams a shared credit pool/)
     ).toBeVisible()
-    await expect(
-      page.getByRole('heading', {
-        level: 3,
-        name: 'Dedicated GPU capacity'
-      })
-    ).toBeVisible()
-    await expect(
-      page.getByRole('heading', {
-        level: 3,
-        name: 'Custom SLAs and support'
-      })
-    ).toBeVisible()
-    await expect(page.getByText(/Builders, not advisors\./)).toBeVisible()
 
+    await expect(
+      page.getByRole('heading', {
+        name: 'One approved build across the fleet.'
+      })
+    ).toHaveCount(0)
+    await expect(page.getByText('LEAD OFFER')).toHaveCount(0)
+    await expect(page.getByText('SELF-SERVE FOR TEAMS')).toHaveCount(0)
+    await expect(page.getByRole('link', { name: 'SUBSCRIBE NOW' })).toHaveCount(
+      0
+    )
+    await expect(
+      page.getByRole('link', { name: 'VIEW MANAGED BUILDS' })
+    ).toHaveCount(0)
+    await expect(
+      page.getByRole('link', { name: 'SEE THE DEVELOPER PLATFORM' })
+    ).toHaveCount(0)
+    await expect(
+      page.getByText(/Self-serve Builds package a reproducible environment/)
+    ).toHaveCount(0)
+  })
+
+  test('renders the Managed Builds page', async ({ page }) => {
     await page.goto('/enterprise/managed-builds')
 
     await expect(page.locator('main :is(h1, h2)')).toHaveText([
@@ -236,6 +350,34 @@ test.describe('Enterprise pages @smoke', () => {
     ).toHaveCount(0)
   })
 
+  test('emits Enterprise metadata, breadcrumbs, and FAQ structured data', async ({
+    page
+  }) => {
+    await page.goto('/enterprise')
+
+    await expect(page).toHaveTitle(
+      'Comfy Enterprise | Govern visual AI across every team'
+    )
+    await expect(page.locator('meta[name="description"]')).toHaveAttribute(
+      'content',
+      'Standardize ComfyUI across teams and runtimes with Managed Builds, self-serve Team plans, commercial model licensing, enterprise security, and hands-on delivery.'
+    )
+
+    const structuredData = await readStructuredData(page)
+    expect(structuredData.types).toContain('WebPage')
+    expect(structuredData.breadcrumbNames).toEqual(['Home', 'Enterprise'])
+    expect(structuredData.faqQuestionNames).toEqual([
+      'What is included in Comfy Enterprise?',
+      'Where can our Comfy Workflows run?',
+      'How are Builds different from ComfyUI Managed Builds?',
+      'Can we use models commercially?',
+      'How does Comfy support security review?',
+      'What usage and audit information is available?',
+      'Is there a self-serve Team plan?',
+      'What production capacity and support are available?'
+    ])
+  })
+
   test('emits Managed Builds metadata, breadcrumbs, and FAQ structured data', async ({
     page
   }) => {
@@ -249,29 +391,14 @@ test.describe('Enterprise pages @smoke', () => {
       'Create approved, reproducible ComfyUI environments and deploy them across workstations, studios, and customer infrastructure.'
     )
 
-    const blocks = await page
-      .locator('script[type="application/ld+json"]')
-      .allTextContents()
-    expect(blocks).toHaveLength(1)
-
-    const graph = JSON.parse(blocks[0])['@graph'] as Record<string, unknown>[]
-    expect(graph.map((node) => node['@type'])).toContain('WebPage')
-
-    const breadcrumbs = graph.find(
-      (node) => node['@type'] === 'BreadcrumbList'
-    ) as { itemListElement: { name: string }[] } | undefined
-    expect(breadcrumbs, 'BreadcrumbList node in @graph').toBeDefined()
-    expect(breadcrumbs!.itemListElement.map((item) => item.name)).toEqual([
+    const structuredData = await readStructuredData(page)
+    expect(structuredData.types).toContain('WebPage')
+    expect(structuredData.breadcrumbNames).toEqual([
       'Home',
       'Enterprise',
       'ComfyUI Managed Builds'
     ])
-
-    const faqPage = graph.find((node) => node['@type'] === 'FAQPage') as
-      | { mainEntity: { name: string }[] }
-      | undefined
-    expect(faqPage, 'FAQPage node in @graph').toBeDefined()
-    expect(faqPage!.mainEntity.map((question) => question.name)).toEqual([
+    expect(structuredData.faqQuestionNames).toEqual([
       'What is a ComfyUI Managed Build?',
       'Where do Managed Builds run?',
       'Can we use private models and our own provider keys?',
