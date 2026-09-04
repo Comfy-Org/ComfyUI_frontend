@@ -31,6 +31,7 @@ interface SentAttachment {
 interface SentTag {
   id: string
   title: string
+  workflowId?: string
 }
 
 export interface WorkflowTurnContext {
@@ -218,7 +219,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
         tabs,
         selection:
           tags !== undefined && tags.length > 0
-            ? { node_ids: tags.map((tag) => tag.id) }
+            ? {
+                node_ids: tags.map((tag) => tag.id),
+                ...(tags[0].workflowId !== undefined
+                  ? { workflow_id: tags[0].workflowId }
+                  : {})
+              }
             : undefined,
         attachments: attachments?.map((attachment) => attachment.ref),
         ...(shouldSendDraft ? { draft } : {})

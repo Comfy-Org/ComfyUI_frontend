@@ -683,6 +683,23 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(body.selection).toEqual({ node_ids: ['5', '6'] })
   })
 
+  it('(h3) identifies the workflow that owns the selected nodes', async () => {
+    const rest = fakeRest()
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    const tags: SelectedNode[] = [
+      { id: '5', title: 'KSampler', workflowId: 'wf-selected' }
+    ]
+    session.start()
+
+    await session.sendMessage('explain', undefined, tags)
+
+    const body = vi.mocked(rest.postMessage).mock.calls[0][1]
+    expect(body.selection).toEqual({
+      node_ids: ['5'],
+      workflow_id: 'wf-selected'
+    })
+  })
+
   it('(h4) the turn post never carries a draft field (upload retired)', async () => {
     const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
       thread_id: 'th-1',
