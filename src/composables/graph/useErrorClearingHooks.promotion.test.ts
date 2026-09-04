@@ -22,6 +22,11 @@ import { app } from '@/scripts/app'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 
+function stubRootGraph(graph: LGraph) {
+  vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+  vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
+}
+
 describe('link ownership error surface', () => {
   beforeEach(() => {
     seedMediaNodeDefs()
@@ -45,7 +50,7 @@ describe('link ownership error surface', () => {
     )
     input.widget = { name: widget.name }
     graph.add(node)
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    stubRootGraph(graph)
 
     installErrorClearingHooks(graph)
 
@@ -93,7 +98,7 @@ describe('link ownership while a workflow loads', () => {
     )
     input.widget = { name: widget.name }
     graph.add(node)
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    stubRootGraph(graph)
 
     installErrorClearingHooks(graph)
 
@@ -125,7 +130,7 @@ describe('link ownership while a workflow loads', () => {
     )
     input.widget = { name: widget.name }
     graph.add(node)
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    stubRootGraph(graph)
 
     installErrorClearingHooks(graph)
 
@@ -170,7 +175,7 @@ describe('promotion listener lifecycle', () => {
       rootGraph.add(host)
       return host
     })
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    stubRootGraph(rootGraph)
     return { subgraph, rootGraph, hosts }
   }
 
@@ -265,7 +270,7 @@ describe('promoted widget promotion error surface moves with ownership', () => {
     leafInput.widget = { name: leafWidget.name }
     subgraph.add(leafNode)
 
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    stubRootGraph(rootGraph)
     return { subgraph, rootGraph, host, leafNode, leafWidget }
   }
 
@@ -350,7 +355,7 @@ describe('promoted widget demotion error clearing', () => {
       promoteValueWidgetViaSubgraphInput(host, leafNode, leafWidget).ok
     ).toBe(true)
     expect(host.widgets).toHaveLength(1)
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    stubRootGraph(rootGraph)
     installErrorClearingHooks(subgraph)
 
     const mediaStore = useMissingMediaStore()

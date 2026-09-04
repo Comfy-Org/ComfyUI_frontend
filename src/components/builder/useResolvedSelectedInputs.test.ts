@@ -13,6 +13,7 @@ import { useResolvedSelectedInputs } from './useResolvedSelectedInputs'
 
 vi.mock('@/scripts/app', () => ({
   app: {
+    isGraphReady: true,
     rootGraph: {
       id: '11111111-1111-4111-8111-111111111111',
       nodes: [] as LGraphNode[],

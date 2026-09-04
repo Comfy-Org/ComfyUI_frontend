@@ -2618,7 +2618,7 @@ export class ComfyApp {
 
     // Subgraph does not properly implement `clear` and the parent class's
     // (`LGraph`) `clear` breaks the subgraph structure.
-    if (this.rootGraph && !this.canvas.subgraph) {
+    if (this.isGraphReady && !this.canvas.subgraph) {
       this.rootGraph.clear()
       ensureNonZeroUuid(this.rootGraph)
     }
