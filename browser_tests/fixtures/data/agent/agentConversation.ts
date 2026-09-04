@@ -11,33 +11,22 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-// Offset from the turn's first frame, so replays can reproduce real gaps.
-const zAtMs = z.number().int().nonnegative().optional()
-
 // A recording keeps every production field except the two ids the replay
 // mints per run (agentConversationFixture stampTurn).
-const mintedIds: { thread_id: true; message_id: true } = {
+export const mintedIds: { thread_id: true; message_id: true } = {
   thread_id: true,
   message_id: true
 }
+// Every member gets the same transform, so the slot order only names them.
 const [thinking, toolCall, messageDelta, messageDone, activeTab] =
   zAgentWsEvent.options
 
 export const zRecordedWsEvent = z.discriminatedUnion('type', [
-  thinking.extend({ data: thinking.shape.data.omit(mintedIds), at_ms: zAtMs }),
-  toolCall.extend({ data: toolCall.shape.data.omit(mintedIds), at_ms: zAtMs }),
-  messageDelta.extend({
-    data: messageDelta.shape.data.omit(mintedIds),
-    at_ms: zAtMs
-  }),
-  messageDone.extend({
-    data: messageDone.shape.data.omit(mintedIds),
-    at_ms: zAtMs
-  }),
-  activeTab.extend({
-    data: activeTab.shape.data.omit(mintedIds),
-    at_ms: zAtMs
-  })
+  thinking.extend({ data: thinking.shape.data.omit(mintedIds) }),
+  toolCall.extend({ data: toolCall.shape.data.omit(mintedIds) }),
+  messageDelta.extend({ data: messageDelta.shape.data.omit(mintedIds) }),
+  messageDone.extend({ data: messageDone.shape.data.omit(mintedIds) }),
+  activeTab.extend({ data: activeTab.shape.data.omit(mintedIds) })
 ])
 export type RecordedWsEvent = z.infer<typeof zRecordedWsEvent>
 
@@ -49,8 +38,8 @@ const zGraphOperation = z.custom<GraphOperation>(
     (FROZEN_OPS as readonly string[]).includes(value.op)
 )
 
-// The package types these loosely and passes unknown keys through, so the
-// schema validates the guaranteed fields and keeps the rest.
+// WorkflowJSON and WorkflowNode declare an index signature, so the schema
+// validates the guaranteed fields and keeps the rest.
 const zWorkflowJson = z
   .object({
     nodes: z.array(
@@ -77,14 +66,15 @@ const zWidgetCatalogEntry = z
       )
       .optional()
   })
-  .passthrough()
+  .strict()
 
+// WidgetCatalog and WidgetCatalogEntry declare no index signature.
 const zWidgetCatalog = z
   .object({
     comment: z.string().optional(),
     types: z.record(z.string(), zWidgetCatalogEntry)
   })
-  .passthrough()
+  .strict()
 
 export const zAgentConversationWorkflow = z.object({
   id: z.string().uuid(),
@@ -96,6 +86,9 @@ export const zAgentConversationWorkflow = z.object({
 export const zAgentConversationRequest = z.object({
   content: z.string().min(1)
 })
+
+// Offset from the turn's first frame, so replays can reproduce real gaps.
+const zAtMs = z.number().int().nonnegative().optional()
 
 const zResponseEntry = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('event'), event: zRecordedWsEvent, at_ms: zAtMs }),

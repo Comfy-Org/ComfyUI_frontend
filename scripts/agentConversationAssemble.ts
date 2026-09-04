@@ -7,6 +7,7 @@ import { z } from 'zod'
 
 import type { zAgentConversationRequest } from '../browser_tests/fixtures/data/agent/agentConversation'
 import {
+  mintedIds,
   zAgentConversation,
   zAgentConversationWorkflow
 } from '../browser_tests/fixtures/data/agent/agentConversation'
@@ -375,8 +376,7 @@ function buildResponse(
         ? undefined
         : frame.at_ms - firstAt
     const data = { ...frame.data }
-    delete data.thread_id
-    delete data.message_id
+    for (const key of Object.keys(mintedIds)) delete data[key]
 
     if (frame.type === 'agent_tool_call') {
       const { status, tool_call_id: toolCallId } = frame.data
@@ -493,28 +493,32 @@ function buildConversation(options: {
   const { workflow } = input.seed.json
   const note = `RECORDED from Comfy-Org/cloud services/agent running ${STACK} at ${raw.base} (frames: ${raw.frame_source}); NOT a production capture. cloud commit ${provenance.cloudSha}; model ${provenance.model}; thread ${threadId}; messages ${turns.map((turn) => turn.message_id).join(', ')}; workflow ${workflowId} (seeded by throwaway turn ${options.seedMessageId}; turn 1 opens on a fresh workflow and switches to it first because the replay subscribes only on an agent_active_tab frame); agent_tool_calls parent rows ${list(rows.flatMap((set) => set.parents.map((row) => row.id)))}; rows ${rows.map((set) => basename(set.path)).join(', ')}; raw capture sha256 ${input.rawSha256}`
 
-  return zAgentConversation.parse({
-    schema_version: 'agent-conversation.v2',
-    source: {
-      repo: 'Comfy-Org/ComfyUI_frontend',
-      suite: 'agent',
-      case_id: raw.case_id,
-      response_side: 'recorded',
-      note,
-      capture: {
-        backend: 'Comfy-Org/cloud',
-        thread_id: threadId,
-        exported_at: provenance.exportedAt
-      }
+  return parseOrRefuse(
+    zAgentConversation,
+    {
+      schema_version: 'agent-conversation.v2',
+      source: {
+        repo: 'Comfy-Org/ComfyUI_frontend',
+        suite: 'agent',
+        case_id: raw.case_id,
+        response_side: 'recorded',
+        note,
+        capture: {
+          backend: 'Comfy-Org/cloud',
+          thread_id: threadId,
+          exported_at: provenance.exportedAt
+        }
+      },
+      workflow: {
+        id: workflowId,
+        name: workflow.name,
+        catalog: workflow.catalog,
+        seed: workflow.seed
+      },
+      turns
     },
-    workflow: {
-      id: workflowId,
-      name: workflow.name,
-      catalog: workflow.catalog,
-      seed: workflow.seed
-    },
-    turns
-  })
+    'assembled conversation'
+  )
 }
 
 interface TurnReceipt {
