@@ -5,21 +5,13 @@ import { createI18n } from 'vue-i18n'
 
 import OAuthConsentView from '@/platform/cloud/oauth/OAuthConsentView.vue'
 import { OAuthApiError } from '@/platform/cloud/oauth/oauthApi'
+import type * as oauthApi from '@/platform/cloud/oauth/oauthApi'
 import type { OAuthConsentChallenge } from '@/platform/cloud/oauth/oauthApi'
 
 const submitOAuthConsentDecision = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/cloud/oauth/oauthApi', () => ({
-  OAuthApiError: class OAuthApiError extends Error {
-    constructor(
-      message: string,
-      readonly status: number
-    ) {
-      super(message)
-      this.name = 'OAuthApiError'
-    }
-  },
-  fetchOAuthConsentChallenge: vi.fn(),
+vi.mock('@/platform/cloud/oauth/oauthApi', async (importOriginal) => ({
+  ...(await importOriginal<typeof oauthApi>()),
   submitOAuthConsentDecision
 }))
 

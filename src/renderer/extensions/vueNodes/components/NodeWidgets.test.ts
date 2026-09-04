@@ -41,10 +41,7 @@ vi.mock(
   () => ({
     getComponent: () => WidgetStub,
     shouldExpand: () => false,
-    shouldRenderAsVue: (widget: {
-      options?: { canvasOnly?: boolean }
-      type?: string
-    }) => !widget.options?.canvasOnly && !!widget.type
+    shouldRenderAsVue: () => true
   })
 )
 
