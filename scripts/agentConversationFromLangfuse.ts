@@ -134,24 +134,44 @@ interface TurnSpans {
 
 const atMs = (iso: string): number => Date.parse(iso)
 
+// Only turn spans carry the thread and turn ids; a tool span reaches its turn through
+// parentObservationId (tool -> model round -> turn), since children inherit no attributes.
 function groupTurns(
   observations: Observation[],
   threadId: string
 ): TurnSpans[] {
+  const byId = new Map(
+    observations.map((observation) => [observation.id, observation])
+  )
   const byTurn = new Map<string, TurnSpans>()
+  const turnOf = new Map<string, TurnSpans>()
   for (const observation of observations) {
     if (attributeOf(observation, 'comfy.thread_id') !== threadId) continue
     const turnId = attributeOf(observation, 'comfy.turn_id')
     if (turnId === undefined) continue
-    const turn = byTurn.get(turnId) ?? { root: observation, tools: [] }
-    if (attributeOf(observation, 'gen_ai.tool.call.id') !== undefined)
-      turn.tools.push(observation)
-    else if (
-      atMs(observation.startTime) <= atMs(turn.root.startTime) ||
-      turn.root === observation
-    )
-      turn.root = observation
+    const existing = byTurn.get(turnId)
+    const turn =
+      existing === undefined ||
+      atMs(observation.startTime) < atMs(existing.root.startTime)
+        ? { root: observation, tools: existing?.tools ?? [] }
+        : existing
     byTurn.set(turnId, turn)
+    turnOf.set(observation.id, turn)
+  }
+  for (const observation of observations) {
+    if (attributeOf(observation, 'gen_ai.tool.call.id') === undefined) continue
+    let cursor = observation.parentObservationId ?? null
+    let turn: TurnSpans | undefined
+    for (let hops = 0; cursor !== null && hops < 32; hops += 1) {
+      turn = turnOf.get(cursor)
+      if (turn !== undefined) break
+      cursor = byId.get(cursor)?.parentObservationId ?? null
+    }
+    if (turn === undefined)
+      refuse(
+        `tool span ${observation.id} (${attributeOf(observation, 'gen_ai.tool.name') ?? observation.name}) is not under any turn of thread ${threadId}`
+      )
+    turn.tools.push(observation)
   }
   return [...byTurn.values()].sort(
     (a, b) => atMs(a.root.startTime) - atMs(b.root.startTime)

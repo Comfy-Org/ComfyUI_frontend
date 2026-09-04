@@ -33,6 +33,7 @@ const span = (
   ...extra
 })
 
+// Only the turn span carries the thread and turn ids; children do not inherit them.
 const turnRoot = (turnId: string, start: string, end: string): Observation =>
   span(
     `root-${turnId}`,
@@ -46,6 +47,13 @@ const turnRoot = (turnId: string, start: string, end: string): Observation =>
     }
   )
 
+const roundSpan = (turnId: string): Observation =>
+  span(
+    `round-${turnId}`,
+    { 'gen_ai.operation.name': 'chat' },
+    { name: 'agent.model_round', parentObservationId: `root-${turnId}` }
+  )
+
 const toolSpan = (
   turnId: string,
   callId: string,
@@ -56,8 +64,6 @@ const toolSpan = (
   span(
     `tool-${callId}`,
     {
-      'comfy.thread_id': THREAD,
-      'comfy.turn_id': turnId,
       'gen_ai.tool.call.id': callId,
       'gen_ai.tool.name': 'apply_ops',
       'comfy.tool.ok': ok
@@ -66,7 +72,7 @@ const toolSpan = (
       name: 'agent.tool apply_ops',
       startTime: start,
       endTime: end,
-      parentObservationId: `root-${turnId}`
+      parentObservationId: `round-${turnId}`
     }
   )
 
@@ -88,7 +94,7 @@ const options = {
 }
 
 describe('captureFromObservations', () => {
-  it('rebuilds the frames of a turn from its tool spans and output', () => {
+  it('attaches tool spans to their turn through the parent chain', () => {
     const raw = captureFromObservations(
       [
         toolSpan(
@@ -98,6 +104,7 @@ describe('captureFromObservations', () => {
           '2026-09-04T10:00:00.200Z',
           '2026-09-04T10:00:00.700Z'
         ),
+        roundSpan('message-1'),
         turnRoot(
           'message-1',
           '2026-09-04T10:00:00.000Z',
@@ -147,6 +154,7 @@ describe('captureFromObservations', () => {
           '2026-09-04T10:01:00.000Z',
           '2026-09-04T10:01:02.000Z'
         ),
+        roundSpan('message-2'),
         toolSpan(
           'message-2',
           'tool-2',
@@ -171,6 +179,30 @@ describe('captureFromObservations', () => {
         frame.data.tool_call_id === 'tool-2' && frame.data.status !== 'running'
     )
     expect(terminal?.data.status).toBe('error')
+    expect(terminal?.data.message_id).toBe('message-2')
+  })
+
+  it('refuses a tool span that reaches no turn of the thread', () => {
+    const orphan = toolSpan(
+      'message-9',
+      'tool-9',
+      true,
+      '2026-09-04T10:00:00.200Z',
+      '2026-09-04T10:00:00.700Z'
+    )
+    expect(() =>
+      captureFromObservations(
+        [
+          orphan,
+          turnRoot(
+            'message-1',
+            '2026-09-04T10:00:00.000Z',
+            '2026-09-04T10:00:01.000Z'
+          )
+        ],
+        options
+      )
+    ).toThrow('tool span tool-tool-9 (apply_ops) is not under any turn')
   })
 
   it('takes the prompts from the command line when content capture was off', () => {
@@ -192,7 +224,7 @@ describe('captureFromObservations', () => {
     ).toThrow('no recorded output')
   })
 
-  it('ignores spans of other threads and refuses when none match', () => {
+  it('ignores turns of other threads and refuses when none match', () => {
     const foreign = span('x', {
       'comfy.thread_id': 'thread-2',
       'comfy.turn_id': 'message-9'

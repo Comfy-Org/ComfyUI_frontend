@@ -119,16 +119,31 @@ AGENT_CLOUD_SHA=<cloud sha> pnpm exec tsx scripts/agentConversationFromLangfuse.
 `--session <sessionId>` takes every trace of a Langfuse session instead of one
 trace. Credentials come from `~/.config/comfy-agent/langfuse.env`
 (`LANGFUSE_HOST`, `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`; `--env-file`
-points elsewhere) and are never written to any artifact. The importer rebuilds
-the turn's socket frames from the spans the agent exports (`comfy.thread_id`
-and `comfy.turn_id` on every span, `gen_ai.tool.call.id`, `gen_ai.tool.name`
-and `comfy.tool.ok` on tool spans, the turn's input and output when the agent
-ran with content capture on; pass `--prompt` per turn when it did not), then
-reads the turn's audit rows with the recorder's own query (`AGENT_PG_EXEC` must
-reach that environment's Postgres) and runs the same assembly gates as a
-recording. What the trace cannot carry, the fixture will not contain: thinking
-and active-tab frames are absent, and the accepted ops still come only from the
-audit rows.
+points elsewhere) and are never written to any artifact.
+
+What the importer reads, from the agent's own instrumentation (cloud
+`harness/telemetry/attrs.go`, `loop/host.go`): the turn span carries
+`comfy.thread_id` and `comfy.turn_id`; a tool span carries only
+`gen_ai.tool.call.id`, `gen_ai.tool.name` and `comfy.tool.ok` and is attached
+to its turn by walking `parentObservationId` (tool, model round, turn); the
+turn's input and output exist only when the agent ran with content capture on
+(pass `--prompt` per turn when it did not). From those it rebuilds the tool-call
+and message frames, reads the turn's audit rows with the recorder's own query
+(`AGENT_PG_EXEC` must reach that environment's Postgres), and runs the same
+assembly gates as a recording. So the import works for a session whose audit
+database is still reachable, not for any Langfuse session.
+
+UNVERIFIED until the first run against a real trace, and stated here so nobody
+reads them as fact: that `comfy.turn_id` is the message id the audit rows
+carry; that the span attributes arrive under `metadata.attributes` (a flattened
+`metadata` key is the coded fallback); that the observations page meta carries
+`totalPages` (a short page ends the walk otherwise).
+
+An imported fixture keeps `response_side: recorded`: the replies and the
+accepted ops are the real agent's, only the socket framing was rebuilt, and the
+replay suite lists recorded fixtures only. The provenance note names the
+Langfuse origin, and thinking and active-tab frames are absent because the
+trace does not carry them.
 
 ## Capture
 
