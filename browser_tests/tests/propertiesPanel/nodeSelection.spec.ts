@@ -94,6 +94,52 @@ test.describe('Properties panel - Node selection', () => {
     )
 
     test(
+      'live canvasOnly writes update node and Parameters visibility',
+      { tag: '@vue-nodes' },
+      async ({ comfyPage }) => {
+        const nodeWidget = comfyPage.vueNodes
+          .getNodeByTitle('KSampler')
+          .getByLabel('steps', { exact: true })
+        const panelWidget = panel.contentArea.getByText('steps', {
+          exact: true
+        })
+
+        await expect(nodeWidget).toBeVisible()
+        await expect(panelWidget).toBeVisible()
+
+        await comfyPage.page.evaluate(() => {
+          const node = window.app!.graph.nodes.find(
+            (candidate) => candidate.type === 'KSampler'
+          )
+          const widget = node?.widgets?.find(
+            (candidate) => candidate.name === 'steps'
+          )
+          if (!widget) throw new Error('KSampler steps widget not found')
+          widget.options.canvasOnly = true
+        })
+        await comfyPage.nextFrame()
+
+        await expect(nodeWidget).toBeHidden()
+        await expect(panelWidget).toBeHidden()
+
+        await comfyPage.page.evaluate(() => {
+          const node = window.app!.graph.nodes.find(
+            (candidate) => candidate.type === 'KSampler'
+          )
+          const widget = node?.widgets?.find(
+            (candidate) => candidate.name === 'steps'
+          )
+          if (!widget) throw new Error('KSampler steps widget not found')
+          widget.options.canvasOnly = false
+        })
+        await comfyPage.nextFrame()
+
+        await expect(nodeWidget).toBeVisible()
+        await expect(panelWidget).toBeVisible()
+      }
+    )
+
+    test(
       'a linked widget is suppressed while its slot remains connected',
       { tag: '@vue-nodes' },
       async ({ comfyPage }) => {

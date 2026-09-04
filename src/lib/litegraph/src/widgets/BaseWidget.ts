@@ -23,13 +23,14 @@ import { ensureUniqueWidgetNames, widgetId } from '@/types/widgetId'
 import type { WidgetState } from '@/types/widgetState'
 import {
   applyLegacyAdvancedWrite,
+  applyLegacyCanvasOnlyWrite,
   applyLegacyHiddenWrite,
+  deriveWidgetVisibility,
   isLegacyHiddenWidgetType,
   isLegacyWidgetHidingType,
   isWidgetAdvanced,
   isWidgetHidden,
   isWidgetHiddenInPanel,
-  deriveWidgetVisibility,
   setWidgetAdvanced,
   setWidgetHiddenInPanel
 } from '@/types/widgetVisibility'
@@ -68,7 +69,7 @@ function unwrapOptionsShim<TOptions extends object>(
   return (rawOptionsByShim.get(options) ?? options) as TOptions
 }
 
-type LegacyVisibilityKey = 'hidden' | 'hideInPanel' | 'advanced'
+type LegacyVisibilityKey = 'hidden' | 'hideInPanel' | 'advanced' | 'canvasOnly'
 
 type BaseWidgetState<TWidget extends IBaseWidget> = WidgetState<
   TWidget['value'],
@@ -160,13 +161,14 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
    * Re-applies visibility metadata carried on the raw options object after a
    * wholesale `widget.options = {...}` replacement, matching the legacy read
    * paths that consulted `options.hidden` / `options.hideInPanel` /
-   * `options.advanced` live.
+   * `options.advanced` / `options.canvasOnly` live.
    */
   private syncVisibilityFromOptions(): void {
     const raw = this._rawOptions
     this.applyLegacyVisibilityKey('hidden', raw.hidden)
     this.applyLegacyVisibilityKey('hideInPanel', raw.hideInPanel)
     this.applyLegacyVisibilityKey('advanced', raw.advanced)
+    this.applyLegacyVisibilityKey('canvasOnly', raw.canvasOnly)
   }
 
   private applyLegacyVisibilityKey(
@@ -179,16 +181,21 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       else this.hidden = enabled
     } else if (key === 'hideInPanel') {
       setWidgetHiddenInPanel(this._visibility, enabled)
+    } else if (key === 'canvasOnly') {
+      applyLegacyCanvasOnlyWrite(this._visibility, {
+        type: this.type,
+        options: { ...this._rawOptions, canvasOnly: enabled }
+      })
     } else {
       setWidgetAdvanced(this._visibility, enabled, ['vueNode', 'panel'])
     }
   }
 
   /**
-   * Binds the `options.hidden` / `options.hideInPanel` compatibility shim to
-   * this object. Widget adoption copies property descriptors onto the original
-   * widget object, so the adopting object must rebind the shim to itself;
-   * otherwise visibility writes land on the discarded donor instance.
+   * Binds the legacy visibility options compatibility shim to this object.
+   * Widget adoption copies property descriptors onto the original widget
+   * object, so the adopting object must rebind the shim to itself; otherwise
+   * visibility writes land on the discarded donor instance.
    */
   installOptionsShim(rawOptions: TWidget['options'] = this._rawOptions): void {
     this._rawOptions = unwrapOptionsShim(rawOptions) ?? {}
@@ -225,7 +232,8 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     return (
       property === 'hidden' ||
       property === 'hideInPanel' ||
-      property === 'advanced'
+      property === 'advanced' ||
+      property === 'canvasOnly'
     )
   }
 

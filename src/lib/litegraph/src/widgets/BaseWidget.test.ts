@@ -169,6 +169,66 @@ describe('BaseWidget store integration', () => {
       })
     })
 
+    it('mirrors live canvasOnly writes without overriding hideInPanel', () => {
+      const widget = createTestWidget(node, {
+        options: { min: 0, max: 100, canvasOnly: true }
+      })
+      widget.setNodeId(toNodeId(1))
+
+      expect(widget.visibility.display).toEqual({
+        canvas: 'shown',
+        vueNode: 'never',
+        panel: 'never'
+      })
+
+      widget.options.canvasOnly = false
+      expect(widget.visibility.display).toEqual({
+        canvas: 'shown',
+        vueNode: 'shown',
+        panel: 'shown'
+      })
+
+      widget.options.canvasOnly = true
+      expect(widget.visibility.display).toEqual({
+        canvas: 'shown',
+        vueNode: 'never',
+        panel: 'never'
+      })
+
+      delete widget.options.canvasOnly
+      expect(widget.visibility.display).toEqual({
+        canvas: 'shown',
+        vueNode: 'shown',
+        panel: 'shown'
+      })
+
+      widget.options.hideInPanel = true
+      widget.options.canvasOnly = false
+      expect(widget.visibility.display).toEqual({
+        canvas: 'shown',
+        vueNode: 'shown',
+        panel: 'never'
+      })
+    })
+
+    it('mirrors canvasOnly when options are replaced', () => {
+      const widget = createTestWidget(node)
+
+      widget.options = { canvasOnly: true }
+      expect(widget.visibility.display).toEqual({
+        canvas: 'shown',
+        vueNode: 'never',
+        panel: 'never'
+      })
+
+      widget.options = {}
+      expect(widget.visibility.display).toEqual({
+        canvas: 'shown',
+        vueNode: 'shown',
+        panel: 'shown'
+      })
+    })
+
     it('supplies shimmed options when constructed without them', () => {
       const widget = new MutableTypeWidget(
         fromPartial({

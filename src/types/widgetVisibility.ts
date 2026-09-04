@@ -6,7 +6,7 @@
  * {@link WidgetSuppression}: orthogonal boolean reasons a widget is currently
  * not rendered anywhere. Surfaces resolve visibility with
  * {@link isWidgetVisibleOnSurface}; legacy `hidden` / `hideInPanel` /
- * `advanced` fields are facades over this component.
+ * `advanced` / `canvasOnly` fields are facades over this component.
  */
 
 export const WIDGET_SURFACES = ['canvas', 'vueNode', 'panel'] as const
@@ -207,6 +207,18 @@ export function applyLegacyHiddenWrite(
   hidden: boolean
 ): void {
   visibility.suppression.byExtension = hidden
+}
+
+export function applyLegacyCanvasOnlyWrite(
+  visibility: WidgetVisibilityComponent,
+  source: WidgetDisplaySource
+): void {
+  const { vueNode, panel } = deriveWidgetDisplay({
+    ...source,
+    advanced: visibility.display.canvas === 'advanced'
+  })
+  visibility.display.vueNode = vueNode
+  visibility.display.panel = panel
 }
 
 /**
