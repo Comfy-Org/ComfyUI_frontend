@@ -5,16 +5,40 @@ import { FROZEN_OPS } from '@comfyorg/comfy-multi-player'
 import { z } from 'zod'
 
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
+import { zAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-export const zRecordedWsEvent = z.object({
-  type: z.string(),
-  data: z.record(z.string(), z.unknown()),
-  at_ms: z.number().int().nonnegative().optional()
-})
+// Offset from the turn's first frame, so replays can reproduce real gaps.
+const zAtMs = z.number().int().nonnegative().optional()
+
+// A recording keeps every production field except the two ids the replay
+// mints per run (agentConversationFixture stampTurn).
+const mintedIds: { thread_id: true; message_id: true } = {
+  thread_id: true,
+  message_id: true
+}
+const [thinking, toolCall, messageDelta, messageDone, activeTab] =
+  zAgentWsEvent.options
+
+export const zRecordedWsEvent = z.discriminatedUnion('type', [
+  thinking.extend({ data: thinking.shape.data.omit(mintedIds), at_ms: zAtMs }),
+  toolCall.extend({ data: toolCall.shape.data.omit(mintedIds), at_ms: zAtMs }),
+  messageDelta.extend({
+    data: messageDelta.shape.data.omit(mintedIds),
+    at_ms: zAtMs
+  }),
+  messageDone.extend({
+    data: messageDone.shape.data.omit(mintedIds),
+    at_ms: zAtMs
+  }),
+  activeTab.extend({
+    data: activeTab.shape.data.omit(mintedIds),
+    at_ms: zAtMs
+  })
+])
 export type RecordedWsEvent = z.infer<typeof zRecordedWsEvent>
 
 // The applier validates op payloads at replay time; only the vocabulary is pinned here.
@@ -72,9 +96,6 @@ export const zAgentConversationWorkflow = z.object({
 export const zAgentConversationRequest = z.object({
   content: z.string().min(1)
 })
-
-// Offset from the turn's first frame, so replays can reproduce real gaps.
-const zAtMs = z.number().int().nonnegative().optional()
 
 const zResponseEntry = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('event'), event: zRecordedWsEvent, at_ms: zAtMs }),

@@ -5,10 +5,7 @@ import { basename } from 'node:path'
 import { FROZEN_OPS } from '@comfyorg/comfy-multi-player'
 import { z } from 'zod'
 
-import type {
-  zAgentConversationRequest,
-  zRecordedWsEvent
-} from '../browser_tests/fixtures/data/agent/agentConversation'
+import type { zAgentConversationRequest } from '../browser_tests/fixtures/data/agent/agentConversation'
 import {
   zAgentConversation,
   zAgentConversationWorkflow
@@ -79,7 +76,13 @@ const zOpsCarrier = z.object({
     .passthrough()
 })
 
-export type RecordedFrame = z.infer<typeof zRecordedWsEvent>
+// Every socket frame the recorder saw, agent event or not; zAgentConversation
+// narrows the kept ones to the production event union.
+export interface RecordedFrame {
+  type: string
+  data: Record<string, unknown>
+  at_ms?: number
+}
 type GraphOps = Array<Record<string, unknown>>
 
 // What the assembler hands to zAgentConversation, which narrows the op payloads.
