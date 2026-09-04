@@ -81,6 +81,7 @@ describe('agentPanelStore engagement telemetry', () => {
     store.enabled = true
     await nextTick()
 
+    expect(store.isOpen).toBe(true)
     expect(store.isVisible).toBe(false)
     expect(telemetry.trackAgentPanelOpened).not.toHaveBeenCalled()
 
