@@ -5,17 +5,136 @@
     "feedbackTooltip": "Retour",
     "freeTierPartner": "Les nodes partenaires nécessitent un forfait payant",
     "freeTierRuns": "{available} / {MAX_AVAILABLE} exécutions restantes",
+    "partnerRunGate": {
+      "signInCaption": "Les nœuds partenaires nécessitent un compte",
+      "signInToRun": "Connectez-vous pour exécuter"
+    },
     "share": "Partager",
     "shareTooltip": "Partager le workflow"
   },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "Coût par exécution",
-    "title": "Nœud(s) API",
-    "totalCost": "Coût total"
+  "agent": {
+    "addFromAssets": "Ajouter depuis le panneau des ressources",
+    "addNodesFromGraph": "Ajouter des nœuds depuis le graphe",
+    "addPromptToSend": "Ajouter un prompt à envoyer",
+    "addToPrompt": "Ajouter au prompt",
+    "alpha": "ALPHA",
+    "askComfyAgent": "Demander à Comfy Agent",
+    "assetNotAttachable": "Il est possible de joindre des images, vidéos, fichiers audio, modèles 3D et fichiers texte",
+    "attach": "Joindre un fichier",
+    "attachFiles": "Joindre des images ou des fichiers",
+    "attachmentTooLarge": "{name} dépasse {limit}",
+    "attachmentUploadFailed": "Impossible d’importer {name}",
+    "backToPreviousChat": "Retour à la discussion précédente",
+    "caption": "L’agent IA peut faire des erreurs",
+    "captionExpanded": "L’agent IA peut faire des erreurs. Vérifiez votre réponse.",
+    "changeWorkflowForChat": "Modifier le workflow de cette discussion",
+    "chatOptions": "Options de discussion",
+    "chooseWorkflow": "Choisir un workflow",
+    "chooseWorkflowForChat": "Choisir un workflow pour cette conversation",
+    "close": "Fermer",
+    "coachBody": "Demandez-lui de créer ou modifier des graphes.",
+    "coachTitle": "Découvrez l’agent",
+    "copied": "Copié !",
+    "copy": "Copier",
+    "copyMarkdown": "Copier au format markdown",
+    "copyUnavailable": "Seule la conversation actuelle peut être copiée dans cette version",
+    "credits": "crédits",
+    "delete": "Supprimer",
+    "dismiss": "Fermer",
+    "dontWorkInWorkflow": "Ne pas travailler dans un workflow",
+    "downloadAssets": "Télécharger les ressources",
+    "dragAndDropAssets": "Glissez-déposez des ressources ici",
+    "focusNode": "Afficher sur le canevas",
+    "focusNodeLabel": "Afficher {node} sur le canevas",
+    "friend": "là",
+    "gotIt": "Compris",
+    "greeting": "Bonjour {name},",
+    "greetingQuestion": "Que voulez-vous créer ?",
+    "helpful": "Utile",
+    "history": "Historique des discussions",
+    "historyCurrent": "En cours",
+    "historyEarlier": "Antérieures",
+    "historyEmpty": "Aucune conversation pour le moment",
+    "historyToday": "Aujourd’hui",
+    "historyYesterday": "Hier",
+    "latest": "Dernier",
+    "loadFailed": "Échec du chargement du panneau de l’agent.",
+    "malformedEvent": "L’agent a envoyé un événement que ce panneau ne peut pas lire",
+    "maximize": "Agrandir le panneau",
+    "mention": "Mentionner un nœud",
+    "minimize": "Réduire le panneau",
+    "modelAuto": "Auto",
+    "newChat": "Nouvelle discussion",
+    "newChatTitle": "Sans titre",
+    "noNodesToMention": "Aucun nœud dans ce workflow",
+    "nodeSelection": {
+      "bannerSubtitle": "Sélectionnez un ou plusieurs nœuds à ajouter comme référence",
+      "bannerTitle": "Ajouter des nœuds depuis le graphe",
+      "exit": "Quitter le mode",
+      "selectNode": "Sélectionner un nœud"
+    },
+    "notHelpful": "Pas utile",
+    "openWorkflowTab": "Ouvrir {name}",
+    "placeholder": "Décrivez vos idées, {'@'} pour référencer,\najoutez des nœuds depuis le graphe ou faites glisser des ressources",
+    "ranToolCalls": "A exécuté {count} appel d’outil | A exécuté {count} appels d’outil",
+    "ranToolCallsTimed": "A exécuté {count} appel d’outil pendant {seconds} secondes | A exécuté {count} appels d’outil pendant {seconds} secondes",
+    "remove": "Supprimer",
+    "removeNodeLabel": "Supprimer la référence à {node}",
+    "runModeAsk": "Demander avant l’exécution d’un workflow",
+    "runModeAskDescription": "Comfy demandera votre approbation avant chaque exécution de workflow",
+    "runModeAuto": "Exécution automatique sans approbation",
+    "runModeAutoDescription": "Comfy exécutera les workflows sans demander d’autorisation",
+    "runModeLimit": "Exécution automatique avec limites",
+    "runModeLimitDescription": "Comfy demandera confirmation uniquement lorsqu’une exécution de workflow dépasse votre limite de crédits",
+    "runModeSaveFailed": "Impossible d'enregistrer les autorisations d'exécution. Veuillez réessayer.",
+    "runModeTriggerAsk": "Demander",
+    "runModeTriggerAskTooltip": "Demander l’autorisation",
+    "runModeTriggerAuto": "Auto",
+    "runModeTriggerAutoLimit": "Auto (limité)",
+    "runModeTriggerAutoLimitTooltip": "Demander lorsque la limite de crédits est atteinte",
+    "runModeTriggerAutoTooltip": "Exécuter le workflow sans autorisation",
+    "runNotice": "L’agent peut modifier le graphe. Vous devrez cliquer sur Exécuter pour lancer le workflow.",
+    "runNoticeExpanded": "L’agent peut modifier votre workflow. Vous devrez cliquer sur Exécuter pour le lancer.",
+    "runPermissions": "Autorisations d’exécution",
+    "runPermissionsDescription": "Choisissez quand l’agent doit obtenir votre consentement",
+    "saveChanges": "Enregistrer les modifications",
+    "searchWorkflows": "Rechercher des workflows",
+    "selectWorkflowToGenerate": "Sélectionner un workflow dans lequel générer",
+    "send": "Envoyer",
+    "sendBusy": "Un message est déjà en cours d’envoi",
+    "sendFailed": "Échec de l’envoi du message",
+    "showChatHistory": "Afficher l’historique des discussions",
+    "showLess": "Afficher moins",
+    "showMore": "Afficher plus",
+    "skip": "Passer",
+    "stop": "Arrêter",
+    "suggestedPrompts": [
+      "Générez un canard jaune avec un masque de hockey",
+      "Listez mes workflows enregistrés",
+      "Trouvez le meilleur workflow pour l’agrandissement de la peau",
+      "Expliquez le nœud sélectionné",
+      "Créez un workflow d’image à vidéo avec 3 modèles"
+    ],
+    "switchWorkflow": "Changer de workflow",
+    "targetNavigationUnavailable": "Cette cible de workflow n'est plus disponible.",
+    "thinking": "Réflexion...",
+    "thought": "Réflexion",
+    "thoughtTimed": "Réflexion pendant {seconds} secondes",
+    "title": "Comfy Agent",
+    "toolForgotPreference": "A oublié une préférence",
+    "toolOpenedNewTab": "A ouvert un nouvel onglet",
+    "toolSavedPreference": "A enregistré une préférence",
+    "toolSwitchedTabs": "A changé d’onglet",
+    "untitledChat": "Sans titre",
+    "uploading": "Envoi en cours"
   },
   "apiNodesSignInDialog": {
-    "message": "Ce flux de travail contient des nœuds API, qui nécessitent que vous soyez connecté à votre compte pour pouvoir fonctionner.",
-    "title": "Connexion requise pour utiliser les nœuds API"
+    "message": "Les nœuds partenaires s'exécutent sur des services tiers et utilisent les crédits de votre compte. Connectez-vous pour associer votre compte.",
+    "partnerNodesInWorkflow": "Nœuds partenaires dans ce workflow",
+    "signIn": "Se connecter",
+    "title": "Connectez-vous pour exécuter les nœuds partenaires",
+    "tooltip": "Les nœuds partenaires s'exécutent sur des services tiers. Ils utilisent des crédits, la seule partie payante de Comfy.",
+    "whatArePartnerNodes": "Que sont les nœuds partenaires ?"
   },
   "appBuilder": {
     "vueNodeSwitch": {
@@ -347,7 +466,6 @@
   },
   "billingOperation": {
     "authenticationFailedDetail": "Nous n’avons pas pu terminer la vérification du paiement. Veuillez réessayer.",
-    "authenticationManagerRequired": "La vérification du paiement nécessite l’intervention d’un responsable de la facturation de l’espace de travail.",
     "authenticationUnavailable": "L’authentification sécurisée du paiement est indisponible. Actualisez la page et réessayez.",
     "cancelFailed": "Échec de l'annulation de l'abonnement",
     "cancelTimeout": "Délai d'annulation de l'abonnement dépassé",
@@ -358,7 +476,6 @@
     "processingErrorDetail": "Votre paiement n’a pas pu être traité. Réessayez ou utilisez un autre mode de paiement.",
     "reconciliationDetail": "Votre paiement a été reçu, mais nous n’avons pas pu terminer la mise à jour de votre espace de travail. Contactez l’assistance et indiquez cet ID d’opération :",
     "reconciliationTitle": "Paiement reçu — confirmation en attente",
-    "retryVerification": "Réessayer la vérification",
     "subscriptionActionRequired": "Vérifiez votre paiement pour finaliser la configuration de votre espace de travail",
     "subscriptionFailed": "Échec de la mise à jour de l'abonnement",
     "subscriptionFailedDetail": "Nous n’avons pas pu mettre à jour votre abonnement. Veuillez réessayer.",
@@ -846,6 +963,7 @@
       "quickPurchase": "Achat rapide",
       "seeDetails": "Voir les détails",
       "selectAmount": "Sélectionner le montant",
+      "startOver": "Recommencer",
       "templateNote": "*Généré avec le modèle Wan Fun Control",
       "topUp": "Recharger",
       "unknownError": "Une erreur inconnue est survenue",
@@ -959,6 +1077,7 @@
     "RECRAFT_COLOR": "Couleur Recraft",
     "RECRAFT_CONTROLS": "Contrôles Recraft",
     "RECRAFT_V3_STYLE": "Style Recraft V3",
+    "RESOLUTION_PREVIEW": "RESOLUTION_PREVIEW",
     "RETARGET_TASK_ID": "ID_TÂCHE_RETARGET",
     "RIG_TASK_ID": "ID_TÂCHE_RIG",
     "RUNWAY_ALEPH2_KEYFRAME": "RUNWAY_ALEPH2_KEYFRAME",
@@ -977,6 +1096,7 @@
     "UPSCALE_MODEL": "MODÈLE_DE_MISE_À_L'ÉCHELLE",
     "VAE": "VAE",
     "VIDEO": "Vidéo",
+    "VIDEO_EDIT": "VIDEO_EDIT",
     "VOXEL": "VOXEL",
     "WAN_CAMERA_EMBEDDING": "INTÉGRATION_CAMÉRA_WAN",
     "WEBCAM": "WEBCAM"
@@ -1073,6 +1193,18 @@
       }
     },
     "promptErrors": {
+      "agent_api_failed": {
+        "desc": "Comfy Agent a rencontré une erreur de serveur.",
+        "title": "Erreur de Comfy Agent"
+      },
+      "apply_failed": {
+        "desc": "Une modification de l’agent n’a pas pu être appliquée au document du workflow.",
+        "title": "Échec de la modification de l’agent"
+      },
+      "guard_trip": {
+        "desc": "Une mise à jour entrante de l’agent ne correspondait pas à la structure attendue du document de workflow et a été bloquée.",
+        "title": "Mise à jour de l’agent bloquée"
+      },
       "missing_node_type": {
         "desc": "Un type de nœud est manquant ou indisponible. Le workflow peut être corrompu ou nécessiter un nœud personnalisé.",
         "title": "Type de nœud manquant"
@@ -1080,6 +1212,14 @@
       "no_prompt": {
         "desc": "Les données du workflow envoyées au serveur sont vides. Il peut s’agir d’une erreur système inattendue.",
         "title": "Les données du workflow sont vides"
+      },
+      "op_rejected": {
+        "desc": "Le document du workflow a refusé une modification de l’agent. Le canevas et le document partagé peuvent brièvement différer jusqu’à la prochaine mise à jour.",
+        "title": "Modification de l’agent refusée"
+      },
+      "prefix_abort": {
+        "desc": "Un lot de modifications de l’agent s’est arrêté en cours de route. Les modifications restantes sont réessayées automatiquement.",
+        "title": "Modifications de l’agent partiellement appliquées"
       },
       "prompt_no_outputs": {
         "desc": "Le workflow ne contient aucun nœud de sortie (par exemple, Enregistrer l’image, Prévisualiser l’image) pour produire un résultat.",
@@ -1497,6 +1637,8 @@
     "addNewKeybinding": "Ajouter un nouveau raccourci clavier",
     "addNode": "Ajouter un nœud...",
     "addNodeFilterCondition": "Ajouter une condition de filtre de nœud",
+    "agentModified": "L’agent a mis à jour ce workflow",
+    "agentWorking": "L’agent travaille sur ce workflow",
     "all": "Tout",
     "allKeybindingsReset": "Tous les raccourcis clavier ont été réinitialisés par défaut",
     "amount": "Quantité",
@@ -1715,6 +1857,7 @@
     "moreWorkflows": "Plus de workflows",
     "mostRelevant": "Les plus pertinents",
     "multiSelectDropdown": "Menu déroulant à sélection multiple",
+    "mute": "Couper le son",
     "nMoreKeybindings": "+ {count} de plus",
     "nMoreKeybindingsCompact": "+ {count}",
     "name": "Nom",
@@ -1870,6 +2013,7 @@
     "triggerPhrase": "Phrase déclencheuse",
     "unknownError": "Erreur inconnue",
     "unknownFile": "Fichier inconnu",
+    "unmute": "Rétablir le son",
     "untitled": "Sans titre",
     "update": "Mettre à jour",
     "updateAvailable": "Mise à jour disponible",
@@ -2409,8 +2553,8 @@
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "Nœuds principaux de la version {version} :",
-    "outdatedVersion": "Ce workflow a été créé avec une version plus récente de ComfyUI ({version}). Certains nœuds peuvent ne pas fonctionner correctement.",
-    "outdatedVersionGeneric": "Ce workflow a été créé avec une version plus récente de ComfyUI. Certains nœuds peuvent ne pas fonctionner correctement.",
+    "newerVersionRequired": "Certains nœuds nécessitent une version plus récente de ComfyUI (actuelle : {version}). Veuillez effectuer la mise à jour pour utiliser tous les nœuds.",
+    "newerVersionRequiredGeneric": "Certains nœuds nécessitent une version plus récente de ComfyUI. Veuillez effectuer la mise à jour pour utiliser tous les nœuds.",
     "unknownVersion": "inconnue"
   },
   "logsTerminal": {
@@ -2668,14 +2812,18 @@
       "seeMoreOutputs": "Voir plus de sorties",
       "zoom": "Zoomer"
     },
-    "assetDeletedSuccessfully": "Élément supprimé avec succès",
-    "deleteAssetDescription": "Cet élément sera définitivement supprimé.",
-    "deleteAssetTitle": "Supprimer cet élément ?",
-    "deleteSelectedDescription": "{count} élément(s) sera(ont) définitivement supprimé(s).",
-    "deleteSelectedTitle": "Supprimer les éléments sélectionnés ?",
+    "assetDelete": {
+      "error": "Échec de la suppression d'éléments",
+      "success": "Suppression réussie",
+      "warn": "Échec de la suppression de certains éléments"
+    },
+    "assetsDeleted": "{n} / {total} ressources ont été supprimées",
+    "deleteHistoryOnly": "Seul l'historique sera affecté, les fichiers resteront sur le disque",
+    "deleteItems": "Supprimer ces éléments",
+    "deletePermanent": "Ils seront supprimés définitivement.",
     "deletingImportedFilesCloudOnly": "La suppression des fichiers importés n'est prise en charge que dans la version cloud",
+    "deletionUnsupported": "Les ressources sont activées, mais le serveur ne prend pas en charge la suppression",
     "failedToCreateNode": "Échec de la création du nœud",
-    "failedToDeleteAsset": "Échec de la suppression de l'élément",
     "failedToExportWorkflow": "Échec de l’exportation du flux de travail",
     "jobIdToast": {
       "copied": "Copié",
@@ -2683,12 +2831,12 @@
       "jobIdCopied": "ID de tâche copié dans le presse-papiers",
       "jobIdCopyFailed": "Échec de la copie de l'ID de tâche"
     },
+    "jobsDeleted": "{n} / {total} tâches ont été supprimées",
     "noJobIdFound": "Aucun ID de tâche trouvé pour cet actif",
     "noWorkflowDataFound": "Aucune donnée de flux de travail trouvée dans cet actif",
     "nodeAddedToWorkflow": "Nœud {nodeType} ajouté au flux de travail",
     "nodeTypeNotFound": "Type de nœud {nodeType} introuvable",
     "selection": {
-      "assetsDeletedSuccessfully": "{count} élément(s) supprimé(s) avec succès",
       "deleteSelected": "Supprimer",
       "deleteSelectedAll": "Tout supprimer",
       "deselectAll": "Tout désélectionner",
@@ -2699,7 +2847,6 @@
       "exportStarted": "Préparation de l’export ZIP pour {count} fichier | Préparation de l’export ZIP pour {count} fichiers",
       "exportWorkflowAll": "Exporter tous les workflows",
       "failedToAddNodes": "Échec de l’ajout des nœuds au workflow",
-      "failedToDeleteAssets": "Échec de la suppression des éléments sélectionnés",
       "insertAllAssetsAsNodes": "Insérer toutes les ressources comme nœuds",
       "multipleSelectedAssets": "Plusieurs ressources sélectionnées",
       "noWorkflowsFound": "Aucune donnée de workflow trouvée dans les ressources sélectionnées",
@@ -2707,7 +2854,6 @@
       "nodesAddedToWorkflow": "{count} nœud(s) ajouté(s) au workflow",
       "openWorkflowAll": "Ouvrir tous les workflows",
       "partialAddNodesSuccess": "{succeeded} ajouté(s) avec succès, {failed} échec(s)",
-      "partialDeleteSuccess": "{succeeded} supprimé(s) avec succès, {failed} échec(s)",
       "partialWorkflowsExported": "{succeeded} exporté(s) avec succès, {failed} échec(s)",
       "partialWorkflowsOpened": "{succeeded} workflow(s) ouvert(s), {failed} échec(s)",
       "selectedCount": "Éléments sélectionnés : {count}",
@@ -3058,6 +3204,7 @@
     "scail": "scail",
     "schedulers": "planificateurs",
     "scheduling": "planification",
+    "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "sigmas",
     "sound": "son",
@@ -3221,26 +3368,15 @@
     "done": "Terminé",
     "firstRun": {
       "nudge": {
-        "animate": {
-          "detail": "Image en vidéo · 5 s",
-          "title": "L’animer"
-        },
-        "body": "Chaque création commence avec l’image que vous venez de générer.",
-        "explore": "Parcourir tous les modèles",
-        "fallback": {
+        "dismiss": "Pas maintenant",
+        "explore": "Explorer les modèles",
+        "noTour": {
           "body": "Parcourez les modèles et choisissez quelque chose à créer.",
           "title": "Des centaines d’autres vous attendent"
         },
-        "loadFailed": "Impossible de charger ce modèle. Veuillez réessayer.",
-        "restyle": {
-          "detail": "Modèle partenaire · Tout forfait payant",
-          "title": "Restyliser avec Nano Banana"
-        },
-        "title": "Votre premier résultat. Voici la suite.",
-        "upscale": {
-          "badge": "4x",
-          "detail": "Même image, plus de détails",
-          "title": "L’agrandir"
+        "ran": {
+          "body": "Vous venez de créer le premier. Découvrez ce que vous pouvez encore créer.",
+          "title": "Ce n’est qu’un parmi des centaines"
         }
       },
       "prompt": {
@@ -3333,6 +3469,28 @@
     "addColor": "Ajouter une couleur",
     "swatchTitle": "Cliquez pour éditer · glissez pour réordonner · clic droit pour supprimer"
   },
+  "partnerNodesEducation": {
+    "benefits": {
+      "free": "Utilisation gratuite",
+      "noDownload": "Aucune configuration requise",
+      "noVram": "Pas de VRAM, votre GPU reste disponible",
+      "offline": "Fonctionne hors ligne"
+    },
+    "included": "Inclus",
+    "muteOpen": "Couper le son du clip à poids ouverts",
+    "mutePartner": "Couper le son du clip de nœud partenaire",
+    "notIncluded": "Non inclus",
+    "openHeader": "OUVERT",
+    "openTab": "Nœuds ouverts",
+    "partnerHeader": "PARTENAIRE",
+    "partnerTab": "Nœuds partenaires",
+    "pitch": "Voyez la différence ? Faites glisser pour comparer.",
+    "reassurance": "Les nœuds partenaires sont là lorsque vous en voulez plus. Le reste de Comfy reste gratuit.",
+    "sliderLabel": "Comparer la sortie des poids ouverts et des nœuds partenaires",
+    "tooltip": "Les nœuds partenaires exécutent des modèles propriétaires tels que Kling ou Veo sur le matériel du fournisseur, via Comfy. Ils utilisent des crédits ; le reste de Comfy reste gratuit.",
+    "unmuteOpen": "Activer le son du clip à poids ouverts",
+    "unmutePartner": "Activer le son du clip de nœud partenaire"
+  },
   "progressToast": {
     "allDownloadsCompleted": "Tous les téléchargements sont terminés",
     "downloadingModel": "Téléchargement du modèle...",
@@ -3390,7 +3548,6 @@
       "copyErrorMessage": "Copier le message d'erreur",
       "copyJobId": "Copier l'ID de la tâche",
       "delete": "Supprimer",
-      "deleteAsset": "Supprimer l'élément",
       "download": "Télécharger",
       "exportWorkflow": "Exporter le workflow",
       "inspectAsset": "Inspecter l'élément",
@@ -4208,7 +4365,6 @@
     "inactiveTeamTitle": "Abonnement d'équipe inactif",
     "inviteUpTo": "Invitez jusqu’à",
     "invoiceHistory": "Historique des factures",
-    "learnMore": "En savoir plus",
     "manageBilling": "Gérer la facturation",
     "managePlan": "Gérer le forfait",
     "manageSubscription": "Gérer l'abonnement",
@@ -4336,6 +4492,7 @@
       },
       "refillReplacesNote": "Remplace votre recharge mensuelle. Le solde existant est conservé.",
       "renewsAt": "Renouvellement à {amount} le {date}. Résiliable à tout moment.",
+      "renewsAtAmount": "Renouvellement à {amount}. Annulez à tout moment.",
       "savedPaymentMethod": "Mode de paiement",
       "showMoreFeatures": "Afficher plus de fonctionnalités",
       "starting": "À partir du {date}",
@@ -4475,7 +4632,6 @@
     "videoTemplateBasedCredits": "Vidéos générées avec Wan 2.2 Image to Video",
     "viewEnterprise": "Voir l'offre entreprise",
     "viewMoreDetails": "Voir plus de détails",
-    "viewMoreDetailsPlans": "Voir plus de détails sur les forfaits et tarifs",
     "viewUsageHistory": "Voir l'historique d'utilisation",
     "whatsIncluded": "Inclus :",
     "workspaceNotSubscribed": "Cet espace de travail n’a pas d’abonnement",
@@ -4906,8 +5062,10 @@
       "failedCount": "Impossible d'envoyer {count} invitation. Réessayez. | Impossible d'envoyer {count} invitations. Réessayez.",
       "invalidEmailCount": "{count} adresse e-mail invalide | {count} adresses e-mail invalides",
       "invitedMessage": "Une invitation a été envoyée à {emails} | Des invitations ont été envoyées à {emails}",
+      "pendingInviteCount": "{count} de ces personnes ont déjà une invitation en attente. Elles seront ignorées.",
+      "pendingInviteSingle": "Cette personne a déjà une invitation en attente",
       "placeholder": "Entrez l'email de la personne",
-      "seatLimitReached": "Vous pouvez inviter jusqu'à {count} coéquipier. | Vous pouvez inviter jusqu'à {count} coéquipiers.",
+      "seatLimitExceeded": "Cet espace de travail est limité à {max} membres. Supprimez-en {overage} pour continuer.",
       "title": "Inviter une personne dans cet espace de travail"
     },
     "inviteUpsellDialog": {

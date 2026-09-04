@@ -7133,7 +7133,7 @@
       },
       "mode": {
         "name": "الوضع",
-        "tooltip": "'السرعة' أسرع؛ 'الدقة' تنتج مزامنة شفاه بجودة أعلى ولكن بتكلفة مضاعفة."
+        "tooltip": "‏'speed' أسرع؛ بينما يُنتج 'precision' مزامنة شفاه أعلى جودة بتكلفة أعلى."
       },
       "output_language": {
         "name": "اللغة المستهدفة",
@@ -7201,12 +7201,12 @@
     }
   },
   "HiDreamO1ReferenceImages": {
-    "description": "إرفاق ١-١٠ صور مرجعية للتهيئة، صورة واحدة لتعليمات التحرير أو عدة صور لتخصيص قائم على الموضوع.",
+    "description": "أرفق صورًا مرجعية مرتبة بالتكييف الإيجابي والسلبي.",
     "display_name": "صور مرجعية HiDream-O1",
     "inputs": {
       "images": {
         "name": "الصور",
-        "tooltip": "صور مرجعية. صورة واحدة = تحرير بالتعليمات؛ ٢-١٠ صور = مرجع متعدد."
+        "tooltip": "تُستخدم الصور المرجعية وفق الترتيب الرقمي للمقابس."
       },
       "negative": {
         "name": "سلبي"
@@ -12748,6 +12748,46 @@
       }
     }
   },
+  "MiniMaxH3FunControlNetApply": {
+    "description": "تطبيق MiniMax H3 Fun ControlNet على نموذج تحويل النص إلى فيديو كرقعة للنموذج.",
+    "display_name": "تطبيق MiniMax H3 Fun ControlNet",
+    "inputs": {
+      "control_video": {
+        "name": "control_video"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "يشير 1 إلى المناطق المطلوب إعادة توليدها."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "الفيديو خلف القناع؛ لا يُقرأ إلا عند توفير قناع."
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MiniMaxH3ImageToVideo": {
     "display_name": "تحويل صورة MiniMax H3 إلى فيديو",
     "inputs": {
@@ -12792,7 +12832,8 @@
     "display_name": "تحويل مرجع MiniMax H3 إلى فيديو",
     "inputs": {
       "audio_vae": {
-        "name": "audio_vae"
+        "name": "audio_vae",
+        "tooltip": "VAE للصوت. بدونه، لا يؤثر الصوت المرجعي إلا على مرمّز النص."
       },
       "clip": {
         "name": "clip"
@@ -12824,7 +12865,8 @@
         "name": "الفيديوهات المرجعية"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "VAE للفيديو. بدونه، لا تؤثر الصور/الفيديوهات المرجعية إلا على مرمّز النص."
       },
       "width": {
         "name": "العرض"
@@ -12933,7 +12975,7 @@
     }
   },
   "MinimaxHailuo03FirstLastFrameNode": {
-    "description": "توليد فيديو من صورة الإطار الأول وصورة إطار أخير اختيارية باستخدام نموذج MiniMax H3. نسبة العرض إلى الارتفاع للفيديو تتبع الصور المقدمة.",
+    "description": "أنشئ فيديو من صورة الإطار الأول وصورة اختيارية للإطار الأخير باستخدام نماذج MiniMax H3. تتبع نسبة أبعاد الفيديو الصور المُقدَّمة.",
     "display_name": "MiniMax H3 من إطار أول/أخير إلى فيديو",
     "inputs": {
       "control_after_generate": {
@@ -12976,7 +13018,7 @@
     }
   },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "إنشاء فيديو بناءً على صور مرجعية، فيديوهات، وصوت باستخدام نموذج MiniMax H3. ارجع إلى المراجع في النص حسب ترتيبها: 'صورة 1'، 'صورة 2'، 'فيديو 1'، 'صوت 1'، وهكذا.",
+    "description": "أنشئ فيديو مشروطًا بالصور والفيديوهات والصوت المرجعية باستخدام نماذج MiniMax H3. أشِر إلى المراجع في الموجّه وفق ترتيبها: «الصورة 1»، «الصورة 2»، «الفيديو 1»، «الصوت 1»، وهكذا.",
     "display_name": "MiniMax H3 مرجع إلى فيديو",
     "inputs": {
       "control_after_generate": {
@@ -13051,7 +13093,7 @@
     }
   },
   "MinimaxHailuo03TextToVideoNode": {
-    "description": "إنشاء فيديو من نص باستخدام نموذج MiniMax H3.",
+    "description": "أنشئ فيديو من موجّه نصي باستخدام نماذج MiniMax H3.",
     "display_name": "MiniMax H3 تحويل نص إلى فيديو",
     "inputs": {
       "control_after_generate": {
@@ -16932,7 +16974,7 @@
   },
   "Preview3D": {
     "description": "معاينة ملف نموذج ثلاثي الأبعاد دون حفظه في دليل مخرجات ComfyUI.",
-    "display_name": "معاينة ثلاثية الأبعاد",
+    "display_name": "معاينة ثلاثية الأبعاد والرسوم المتحركة (مهمل)",
     "inputs": {
       "bg_image": {
         "name": "bg_image"
@@ -17945,7 +17987,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "نوع الإخراج الذي يُنشأ النمط له: recraftv4_styles للصور النقطية، وrecraftv4_styles_vector لـ SVG."
+        "tooltip": "النموذج الذي يُنشأ النمط له. يشترك Standard وPro في مجموعة أنماط واحدة: تعمل الأنماط النقطية مع كل نموذج نقطي من Recraft V4 وV4.1، وتعمل الأنماط المتجهية (*_vector) مع كل نموذج متجهي من V4 وV4.1."
       }
     },
     "outputs": {
@@ -18641,6 +18683,10 @@
       "multiple": {
         "name": "مضاعف",
         "tooltip": "أقرب مضاعف للنتيجة لتعيين الدقة المختارة عليه."
+      },
+      "preview": {
+        "name": "معاينة",
+        "tooltip": "معاينة مباشرة لدقة الإخراج المحسوبة."
       }
     },
     "outputs": {
@@ -21113,6 +21159,23 @@
       },
       "scale": {
         "name": "المقياس"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaSamplingOptions": {
+    "description": "تعيين إزاحة تدفق SenseNova.",
+    "display_name": "خيارات أخذ العينات لـ SenseNova",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
       }
     },
     "outputs": {
@@ -24755,6 +24818,23 @@
       }
     }
   },
+  "VideoCrop": {
+    "display_name": "اقتصاص الفيديو",
+    "inputs": {
+      "crop": {
+        "name": "crop",
+        "tooltip": "منطقة الاقتصاص بالبكسل. يَحفظ العرض/الارتفاع الصفري الإطار كاملاً."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VideoFrameSample": {
     "description": "استخلاص عدد ثابت من الإطارات من فيديو باستخدام استراتيجيات متنوعة.",
     "display_name": "استخلاص إطار من الفيديو",
@@ -24856,6 +24936,27 @@
       },
       "model": {
         "name": "النموذج"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "اقتطاع الفيديو (متقدم)",
+    "inputs": {
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "إذا كانت القيمة True، فسيُثار خطأ عند تعذّر تحقيق المدة المحددة."
+      },
+      "trim": {
+        "name": "trim",
+        "tooltip": "نافذة الاقتطاع باستخدام إطارات البداية/النهاية."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

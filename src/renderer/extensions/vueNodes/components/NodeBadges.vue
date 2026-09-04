@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+
 import NodeBadge from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
 import type { NodeBadgeProps } from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
 
 defineProps<{
   hasComfyBadge: boolean
+  hasComfyCloudBadge?: boolean
   core: NodeBadgeProps[]
   extension: NodeBadgeProps[]
 }>()
@@ -34,7 +37,14 @@ defineProps<{
       data-testid="comfy-badge"
       class="flex size-6 items-center justify-center rounded-full bg-component-node-widget-background"
     >
-      <i class="icon-[comfy--comfy-c] size-3" />
+      <i
+        :class="
+          cn(
+            'icon-[comfy--comfy-c] size-3',
+            hasComfyCloudBadge && 'text-brand-yellow'
+          )
+        "
+      />
     </div>
     <div
       v-if="extension.length"

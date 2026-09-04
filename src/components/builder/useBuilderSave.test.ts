@@ -157,10 +157,12 @@ describe('useBuilderSave', () => {
       saveAs()
 
       expect(mockShowLayoutDialog).toHaveBeenCalledOnce()
-      const { key, props } = mockShowLayoutDialog.mock.calls[0][0]
+      const { key, props, dialogComponentProps } =
+        mockShowLayoutDialog.mock.calls[0][0]
       expect(key).toBe(SAVE_DIALOG_KEY)
       expect(props.defaultFilename).toBe('my-workflow')
       expect(props.defaultOpenAsApp).toBe(true)
+      expect(dialogComponentProps.useAutomaticLabeling).toBe(true)
     })
 
     it('passes defaultOpenAsApp: false when initialMode is graph', () => {

@@ -21,7 +21,7 @@ function getLoad3dImageInput(body: unknown, nodeId: string): Load3dImageInput {
   const prompt = (body as PromptBody).prompt ?? {}
   const node = prompt[nodeId]
   expect(node?.class_type, `node ${nodeId} should be Load3D`).toBe('Load3D')
-  const input = node!.inputs!.image as Load3dImageInput
+  const input = node.inputs!.image as Load3dImageInput
   expect(typeof input.image).toBe('string')
   expect(typeof input.recording).toBe('string')
   return input

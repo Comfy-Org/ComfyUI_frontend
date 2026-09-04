@@ -7133,7 +7133,7 @@
       },
       "mode": {
         "name": "モード",
-        "tooltip": "「speed」は高速、「precision」は2倍の価格で高品質なリップシンクを生成します。"
+        "tooltip": "'speed' は高速です。'precision' はより高品質なリップシンクを実現しますが、料金が高くなります。"
       },
       "output_language": {
         "name": "出力言語",
@@ -7201,12 +7201,12 @@
     }
   },
   "HiDreamO1ReferenceImages": {
-    "description": "1～10枚の参照画像をコンディショニングに添付します。1枚は編集指示用、複数枚は被写体パーソナライズ用。",
+    "description": "正および負のコンディショニングに、順序付けされた参照画像を接続します。",
     "display_name": "HiDream-O1 参照画像",
     "inputs": {
       "images": {
         "name": "画像",
-        "tooltip": "参照画像。1枚＝編集指示、2～10枚＝マルチ参照。"
+        "tooltip": "参照画像は数値ソケット順に使用されます。"
       },
       "negative": {
         "name": "ネガティブ"
@@ -12748,6 +12748,46 @@
       }
     }
   },
+  "MiniMaxH3FunControlNetApply": {
+    "description": "MiniMax H3 Fun ControlNetをモデルパッチとしてテキストから動画へのモデルに適用します。",
+    "display_name": "MiniMax H3 Fun ControlNetを適用",
+    "inputs": {
+      "control_video": {
+        "name": "control_video"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "1は再生成する領域を示します。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "マスクの背後にある動画。マスクが指定されている場合にのみ読み取られます。"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MiniMaxH3ImageToVideo": {
     "display_name": "MiniMax H3 画像から動画へ",
     "inputs": {
@@ -12792,7 +12832,8 @@
     "display_name": "MiniMax H3 リファレンスから動画へ",
     "inputs": {
       "audio_vae": {
-        "name": "audio_vae"
+        "name": "audio_vae",
+        "tooltip": "オーディオVAE。これがない場合、参照オーディオはテキストエンコーダーのみを条件付けします。"
       },
       "clip": {
         "name": "clip"
@@ -12824,7 +12865,8 @@
         "name": "リファレンス動画"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "ビデオVAE。これがない場合、参照画像／動画はテキストエンコーダーのみを条件付けします。"
       },
       "width": {
         "name": "幅"
@@ -12933,7 +12975,7 @@
     }
   },
   "MinimaxHailuo03FirstLastFrameNode": {
-    "description": "MiniMax H3モデルを使用し、最初のフレーム画像と（オプションで）最後のフレーム画像から動画を生成します。動画のアスペクト比は入力画像に従います。",
+    "description": "MiniMax H3モデルを使用して、最初のフレーム画像と任意の最後のフレーム画像から動画を生成します。動画のアスペクト比は、指定された画像に従います。",
     "display_name": "MiniMax H3 最初・最後フレームから動画生成",
     "inputs": {
       "control_after_generate": {
@@ -12976,7 +13018,7 @@
     }
   },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "MiniMax H3 モデルを使用して、参照画像、ビデオ、音声に基づいてビデオを生成します。プロンプト内で参照を順番に指定してください：『Image 1』、『Image 2』、『Video 1』、『Audio 1』など。",
+    "description": "MiniMax H3モデルを使用して、参照画像、動画、オーディオを条件として動画を生成します。プロンプト内では、参照を順番に「Image 1」、「Image 2」、「Video 1」、「Audio 1」などとして指定してください。",
     "display_name": "MiniMax H3 参照からビデオ生成",
     "inputs": {
       "control_after_generate": {
@@ -13051,7 +13093,7 @@
     }
   },
   "MinimaxHailuo03TextToVideoNode": {
-    "description": "MiniMax H3 モデルを使用してテキストプロンプトからビデオを生成します。",
+    "description": "MiniMax H3モデルを使用して、テキストプロンプトから動画を生成します。",
     "display_name": "MiniMax H3 テキストからビデオ生成",
     "inputs": {
       "control_after_generate": {
@@ -16932,7 +16974,7 @@
   },
   "Preview3D": {
     "description": "3DモデルファイルをComfyUIの出力ディレクトリに保存せずにプレビューします。",
-    "display_name": "3Dプレビュー",
+    "display_name": "3Dとアニメーションをプレビュー（非推奨）",
     "inputs": {
       "bg_image": {
         "name": "bg_image"
@@ -17945,7 +17987,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "スタイルを作成する出力タイプ: ラスター画像には recraftv4_styles、SVG には recraftv4_styles_vector。"
+        "tooltip": "スタイルの作成対象となるモデル。Standard と Pro は1つのスタイルプールを共有します。ラスタースタイルはすべての Recraft V4 および V4.1 ラスターモデルで使用でき、ベクタースタイル（*_vector）はすべての V4 および V4.1 ベクターモデルで使用できます。"
       }
     },
     "outputs": {
@@ -18641,6 +18683,10 @@
       "multiple": {
         "name": "倍数",
         "tooltip": "選択した解像度を設定する際の最も近い倍数です。"
+      },
+      "preview": {
+        "name": "preview",
+        "tooltip": "計算された出力解像度のライブプレビュー。"
       }
     },
     "outputs": {
@@ -21113,6 +21159,23 @@
       },
       "scale": {
         "name": "スケール"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaSamplingOptions": {
+    "description": "SenseNovaのフローシフトを設定します。",
+    "display_name": "SenseNova サンプリングオプション",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
       }
     },
     "outputs": {
@@ -24755,6 +24818,23 @@
       }
     }
   },
+  "VideoCrop": {
+    "display_name": "動画をクロップ",
+    "inputs": {
+      "crop": {
+        "name": "crop",
+        "tooltip": "ピクセル単位のクロップ領域。幅または高さがゼロの場合はフルフレームを維持します。"
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VideoFrameSample": {
     "description": "さまざまな戦略を使って、ビデオから固定数のフレームをサンプリングします。",
     "display_name": "ビデオフレームのサンプリング",
@@ -24856,6 +24936,27 @@
       },
       "model": {
         "name": "モデル"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "動画をトリミング（詳細）",
+    "inputs": {
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "True の場合、指定した長さを実現できないときにエラーが発生します。"
+      },
+      "trim": {
+        "name": "trim",
+        "tooltip": "開始/終了フレームを使用してトリミング範囲を指定します。"
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

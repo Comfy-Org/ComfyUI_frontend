@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
 import type { LearningTutorial } from '../../data/learningTutorials'
+import type { Locale } from '../../i18n/translations'
 
 import { filterByCategory } from '../../data/learningTutorials'
 import LearningWatchPage from './LearningWatchPage.vue'
@@ -19,13 +20,16 @@ const hostedTutorial = filterByCategory('vfx').find(
 if (!hostedTutorial) throw new Error('Expected a VFX tutorial with videoSrc')
 
 const stubs = {
-  LearningVideoEmbed: { template: '<div data-testid="youtube-embed" />' },
+  LearningVideoEmbed: {
+    props: ['title'],
+    template: '<div data-testid="youtube-embed">{{ title }}</div>'
+  },
   VideoPlayer: { template: '<div data-testid="hosted-video" />' }
 }
 
-function renderWatchPage(tutorial: LearningTutorial) {
+function renderWatchPage(tutorial: LearningTutorial, locale: Locale = 'en') {
   render(LearningWatchPage, {
-    props: { tutorial, locale: 'en' },
+    props: { tutorial, locale },
     global: { stubs }
   })
 }
@@ -43,5 +47,13 @@ describe('LearningWatchPage', () => {
 
     expect(screen.getByTestId('hosted-video')).toBeTruthy()
     expect(screen.queryByTestId('youtube-embed')).toBeNull()
+  })
+
+  it('titles the embed in English when the locale has no translation', () => {
+    renderWatchPage(youtubeTutorial, 'ja')
+
+    expect(screen.getByTestId('youtube-embed').textContent).toBe(
+      youtubeTutorial.title.en
+    )
   })
 })

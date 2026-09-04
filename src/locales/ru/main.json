@@ -5,17 +5,136 @@
     "feedbackTooltip": "Обратная связь",
     "freeTierPartner": "Партнёрские узлы требуют платного плана",
     "freeTierRuns": "{available} / {MAX_AVAILABLE} запусков осталось",
+    "partnerRunGate": {
+      "signInCaption": "Для партнёрских нод требуется аккаунт",
+      "signInToRun": "Войти для запуска"
+    },
     "share": "Поделиться",
     "shareTooltip": "Поделиться рабочим процессом"
   },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "Стоимость за запуск",
-    "title": "API Node(s)",
-    "totalCost": "Общая стоимость"
+  "agent": {
+    "addFromAssets": "Добавить из панели ресурсов",
+    "addNodesFromGraph": "Добавить узлы из графа",
+    "addPromptToSend": "Добавить prompt для отправки",
+    "addToPrompt": "Добавить в prompt",
+    "alpha": "АЛЬФА",
+    "askComfyAgent": "Задать вопрос Comfy Agent",
+    "assetNotAttachable": "Можно прикреплять изображения, видео, аудио, 3D-модели и текстовые файлы",
+    "attach": "Прикрепить файл",
+    "attachFiles": "Прикрепить изображения или файлы",
+    "attachmentTooLarge": "{name} больше {limit}",
+    "attachmentUploadFailed": "Не удалось загрузить {name}",
+    "backToPreviousChat": "Вернуться к предыдущему чату",
+    "caption": "ИИ-агент может ошибаться",
+    "captionExpanded": "ИИ-агент может ошибаться. Перепроверьте ответ.",
+    "changeWorkflowForChat": "Изменить workflow для этого чата",
+    "chatOptions": "Параметры чата",
+    "chooseWorkflow": "Выберите рабочий процесс",
+    "chooseWorkflowForChat": "Выберите рабочий процесс для этого чата",
+    "close": "Закрыть",
+    "coachBody": "Попросите его создать или изменить графы.",
+    "coachTitle": "Познакомьтесь с агентом",
+    "copied": "Скопировано!",
+    "copy": "Копировать",
+    "copyMarkdown": "Копировать как markdown",
+    "copyUnavailable": "В этой версии можно скопировать только текущий разговор",
+    "credits": "кредиты",
+    "delete": "Удалить",
+    "dismiss": "Закрыть",
+    "dontWorkInWorkflow": "Не работать в рабочем процессе",
+    "downloadAssets": "Скачать ресурсы",
+    "dragAndDropAssets": "Перетащите ресурсы сюда",
+    "focusNode": "Показать на холсте",
+    "focusNodeLabel": "Показать {node} на холсте",
+    "friend": "друг",
+    "gotIt": "Понятно",
+    "greeting": "Здравствуйте, {name},",
+    "greetingQuestion": "Что вы хотите создать?",
+    "helpful": "Полезно",
+    "history": "История чатов",
+    "historyCurrent": "Текущий",
+    "historyEarlier": "Ранее",
+    "historyEmpty": "Разговоров пока нет",
+    "historyToday": "Сегодня",
+    "historyYesterday": "Вчера",
+    "latest": "Последние",
+    "loadFailed": "Не удалось загрузить панель агента.",
+    "malformedEvent": "Агент отправил событие, которое эта панель не смогла прочитать",
+    "maximize": "Развернуть панель",
+    "mention": "Упомянуть узел",
+    "minimize": "Свернуть панель",
+    "modelAuto": "Авто",
+    "newChat": "Новый чат",
+    "newChatTitle": "Без названия",
+    "noNodesToMention": "В этом рабочем процессе нет узлов",
+    "nodeSelection": {
+      "bannerSubtitle": "Выберите один или несколько узлов для добавления в качестве ссылки",
+      "bannerTitle": "Добавить узлы из графа",
+      "exit": "Выйти из режима",
+      "selectNode": "Выбрать узел"
+    },
+    "notHelpful": "Не полезно",
+    "openWorkflowTab": "Открыть {name}",
+    "placeholder": "Опишите идеи, {'@'} для ссылки,\nдобавьте узлы из графа или перетащите ресурсы",
+    "ranToolCalls": "Выполнен {count} вызов инструмента | Выполнено {count} вызовов инструмента",
+    "ranToolCallsTimed": "Выполнен {count} вызов инструмента за {seconds} секунд | Выполнено {count} вызовов инструмента за {seconds} секунд",
+    "remove": "Удалить",
+    "removeNodeLabel": "Удалить ссылку на {node}",
+    "runModeAsk": "Спрашивать перед запуском рабочего процесса",
+    "runModeAskDescription": "Comfy будет запрашивать подтверждение перед каждым запуском рабочего процесса",
+    "runModeAuto": "Автозапуск без подтверждения",
+    "runModeAutoDescription": "Comfy будет запускать рабочие процессы без запроса разрешения",
+    "runModeLimit": "Автозапуск с ограничениями",
+    "runModeLimitDescription": "Comfy будет запрашивать подтверждение, только если запуск рабочего процесса превышает ваш лимит кредитов",
+    "runModeSaveFailed": "Не удалось сохранить разрешения на запуск. Повторите попытку.",
+    "runModeTriggerAsk": "Спрашивать",
+    "runModeTriggerAskTooltip": "Запрашивать разрешение",
+    "runModeTriggerAuto": "Авто",
+    "runModeTriggerAutoLimit": "Авто (ограничено)",
+    "runModeTriggerAutoLimitTooltip": "Спрашивать при достижении лимита кредитов",
+    "runModeTriggerAutoTooltip": "Запускать рабочий процесс без разрешения",
+    "runNotice": "Агент может изменять граф. Чтобы выполнить рабочий процесс, нажмите «Запустить».",
+    "runNoticeExpanded": "Агент может изменять ваш рабочий процесс. Чтобы выполнить его, нажмите «Запустить».",
+    "runPermissions": "Разрешения на запуск",
+    "runPermissionsDescription": "Выберите, когда агенту требуется ваше согласие",
+    "saveChanges": "Сохранить изменения",
+    "searchWorkflows": "Поиск рабочих процессов",
+    "selectWorkflowToGenerate": "Выберите рабочий процесс для генерации",
+    "send": "Отправить",
+    "sendBusy": "Сообщение уже отправляется",
+    "sendFailed": "Не удалось отправить сообщение",
+    "showChatHistory": "Показать историю чатов",
+    "showLess": "Показать меньше",
+    "showMore": "Показать больше",
+    "skip": "Пропустить",
+    "stop": "Остановить",
+    "suggestedPrompts": [
+      "Создай жёлтую утку в хоккейной маске",
+      "Покажи мои сохранённые workflows",
+      "Найди лучший workflow для увеличения детализации кожи",
+      "Объясни выбранный узел",
+      "Создай workflow для преобразования изображения в видео с 3 моделями"
+    ],
+    "switchWorkflow": "Переключить рабочий процесс",
+    "targetNavigationUnavailable": "Эта цель рабочего процесса больше недоступна.",
+    "thinking": "Думаю...",
+    "thought": "Размышление",
+    "thoughtTimed": "Размышлял {seconds} секунд",
+    "title": "Comfy Agent",
+    "toolForgotPreference": "Настройка забыта",
+    "toolOpenedNewTab": "Открыта новая вкладка",
+    "toolSavedPreference": "Сохранена настройка",
+    "toolSwitchedTabs": "Переключены вкладки",
+    "untitledChat": "Без названия",
+    "uploading": "Загрузка"
   },
   "apiNodesSignInDialog": {
-    "message": "Этот рабочий процесс содержит API Nodes, которые требуют входа в вашу учетную запись для выполнения.",
-    "title": "Требуется вход для использования API Nodes"
+    "message": "Партнёрские ноды запускаются в сторонних сервисах и используют средства с вашего аккаунта. Войдите, чтобы подключить аккаунт.",
+    "partnerNodesInWorkflow": "Партнёрские ноды в этом рабочем процессе",
+    "signIn": "Войти",
+    "title": "Войдите, чтобы запускать партнёрские ноды",
+    "tooltip": "Партнёрские ноды запускаются в сторонних сервисах. Они используют средства — единственную платную часть Comfy.",
+    "whatArePartnerNodes": "Что такое партнёрские ноды?"
   },
   "appBuilder": {
     "vueNodeSwitch": {
@@ -347,7 +466,6 @@
   },
   "billingOperation": {
     "authenticationFailedDetail": "Не удалось завершить проверку платежа. Повторите попытку.",
-    "authenticationManagerRequired": "Проверка платежа требует внимания менеджера по оплате рабочего пространства.",
     "authenticationUnavailable": "Безопасная аутентификация платежа недоступна. Обновите страницу и повторите попытку.",
     "cancelFailed": "Не удалось отменить подписку",
     "cancelTimeout": "Время ожидания отмены подписки истекло",
@@ -358,7 +476,6 @@
     "processingErrorDetail": "Не удалось обработать ваш платёж. Повторите попытку или используйте другой способ оплаты.",
     "reconciliationDetail": "Ваш платёж получен, но не удалось завершить обновление рабочего пространства. Обратитесь в поддержку и укажите этот идентификатор операции:",
     "reconciliationTitle": "Платёж получен — ожидается подтверждение",
-    "retryVerification": "Повторить проверку",
     "subscriptionActionRequired": "Подтвердите платёж для завершения настройки рабочего пространства",
     "subscriptionFailed": "Не удалось обновить подписку",
     "subscriptionFailedDetail": "Не удалось обновить вашу подписку. Пожалуйста, попробуйте еще раз.",
@@ -846,6 +963,7 @@
       "quickPurchase": "Быстрая покупка",
       "seeDetails": "Смотреть детали",
       "selectAmount": "Выберите сумму",
+      "startOver": "Начать сначала",
       "templateNote": "*Сгенерировано с помощью шаблона Wan Fun Control",
       "topUp": "Пополнить",
       "unknownError": "Произошла неизвестная ошибка",
@@ -959,6 +1077,7 @@
     "RECRAFT_COLOR": "RECRAFT_ЦВЕТ",
     "RECRAFT_CONTROLS": "RECRAFT_УПРАВЛЕНИЯ",
     "RECRAFT_V3_STYLE": "RECRAFT_V3_СТИЛЬ",
+    "RESOLUTION_PREVIEW": "RESOLUTION_PREVIEW",
     "RETARGET_TASK_ID": "ID_ЗАДАЧИ_РЕТАРГЕТИНГА",
     "RIG_TASK_ID": "RIG_TASK_ID",
     "RUNWAY_ALEPH2_KEYFRAME": "RUNWAY_ALEPH2_KEYFRAME",
@@ -977,6 +1096,7 @@
     "UPSCALE_MODEL": "МОДЕЛЬ_АПСКЕЙЛА",
     "VAE": "VAE",
     "VIDEO": "ВИДЕО",
+    "VIDEO_EDIT": "VIDEO_EDIT",
     "VOXEL": "ВОКСЕЛ",
     "WAN_CAMERA_EMBEDDING": "WAN_CAMERA_EMBEDDING",
     "WEBCAM": "ВЕБ-КАМЕРА"
@@ -1073,6 +1193,18 @@
       }
     },
     "promptErrors": {
+      "agent_api_failed": {
+        "desc": "Comfy Agent столкнулся с ошибкой сервера.",
+        "title": "Ошибка Comfy Agent"
+      },
+      "apply_failed": {
+        "desc": "Не удалось применить правку агента к документу рабочего процесса.",
+        "title": "Не удалось применить правку агента"
+      },
+      "guard_trip": {
+        "desc": "Входящее обновление от агента не соответствовало ожидаемой структуре документа рабочего процесса и было заблокировано.",
+        "title": "Обновление от агента заблокировано"
+      },
       "missing_node_type": {
         "desc": "Тип узла отсутствует или недоступен. Рабочий процесс может быть повреждён или требует пользовательский узел.",
         "title": "Отсутствует тип узла"
@@ -1080,6 +1212,14 @@
       "no_prompt": {
         "desc": "Данные рабочего процесса, отправленные на сервер, пусты. Это может быть неожиданной системной ошибкой.",
         "title": "Данные рабочего процесса отсутствуют"
+      },
+      "op_rejected": {
+        "desc": "Документ рабочего процесса отклонил правку агента. Холст и общий документ могут кратковременно различаться до следующего обновления.",
+        "title": "Правка агента отклонена"
+      },
+      "prefix_abort": {
+        "desc": "Пакет правок агента был остановлен на середине. Остальные правки будут повторены автоматически.",
+        "title": "Правки агента применены частично"
       },
       "prompt_no_outputs": {
         "desc": "В рабочем процессе отсутствуют выходные узлы (например, Сохранить изображение, Просмотр изображения) для получения результата.",
@@ -1497,6 +1637,8 @@
     "addNewKeybinding": "Добавить новое сочетание клавиш",
     "addNode": "Добавить узел...",
     "addNodeFilterCondition": "Добавить условие фильтрации узла",
+    "agentModified": "Агент обновил этот рабочий процесс",
+    "agentWorking": "Агент работает над этим рабочим процессом",
     "all": "Все",
     "allKeybindingsReset": "Все сочетания клавиш сброшены по умолчанию",
     "amount": "Количество",
@@ -1715,6 +1857,7 @@
     "moreWorkflows": "Больше рабочих процессов",
     "mostRelevant": "Наиболее релевантные",
     "multiSelectDropdown": "Выпадающий список множественного выбора",
+    "mute": "Выключить звук",
     "nMoreKeybindings": "+ ещё {count}",
     "nMoreKeybindingsCompact": "+ {count}",
     "name": "Имя",
@@ -1870,6 +2013,7 @@
     "triggerPhrase": "Триггерная фраза",
     "unknownError": "Неизвестная ошибка",
     "unknownFile": "Неизвестный файл",
+    "unmute": "Включить звук",
     "untitled": "Без названия",
     "update": "Обновить",
     "updateAvailable": "Доступно обновление",
@@ -2409,8 +2553,8 @@
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "Базовые узлы из версии {version}:",
-    "outdatedVersion": "Этот рабочий процесс был создан в более новой версии ComfyUI ({version}). Некоторые узлы могут работать некорректно.",
-    "outdatedVersionGeneric": "Этот рабочий процесс был создан в более новой версии ComfyUI. Некоторые узлы могут работать некорректно.",
+    "newerVersionRequired": "Для некоторых узлов требуется более новая версия ComfyUI (текущая: {version}). Обновитесь, чтобы использовать все узлы.",
+    "newerVersionRequiredGeneric": "Для некоторых узлов требуется более новая версия ComfyUI. Обновитесь, чтобы использовать все узлы.",
     "unknownVersion": "неизвестно"
   },
   "logsTerminal": {
@@ -2668,14 +2812,18 @@
       "seeMoreOutputs": "Показать больше результатов",
       "zoom": "Увеличить"
     },
-    "assetDeletedSuccessfully": "Ресурс успешно удален",
-    "deleteAssetDescription": "Этот ресурс будет удален безвозвратно.",
-    "deleteAssetTitle": "Удалить этот ресурс?",
-    "deleteSelectedDescription": "{count} ресурс(ов) будет удален безвозвратно.",
-    "deleteSelectedTitle": "Удалить выбранные ресурсы?",
+    "assetDelete": {
+      "error": "Не удалось удалить элементы",
+      "success": "Удаление выполнено успешно",
+      "warn": "Не удалось удалить некоторые элементы"
+    },
+    "assetsDeleted": "Удалено ресурсов: {n} / {total}",
+    "deleteHistoryOnly": "Будет затронута только история, файлы останутся на диске",
+    "deleteItems": "Удалить эти элементы",
+    "deletePermanent": "Они будут удалены без возможности восстановления.",
     "deletingImportedFilesCloudOnly": "Удаление импортированных файлов поддерживается только в облачной версии",
+    "deletionUnsupported": "Ресурсы включены, но сервер не поддерживает удаление",
     "failedToCreateNode": "Не удалось создать узел",
-    "failedToDeleteAsset": "Не удалось удалить ресурс",
     "failedToExportWorkflow": "Не удалось экспортировать рабочий процесс",
     "jobIdToast": {
       "copied": "Скопировано",
@@ -2683,12 +2831,12 @@
       "jobIdCopied": "ID задания скопирован в буфер обмена",
       "jobIdCopyFailed": "Не удалось скопировать ID задания"
     },
+    "jobsDeleted": "Удалено заданий: {n} / {total}",
     "noJobIdFound": "ID задания для этого ресурса не найден",
     "noWorkflowDataFound": "В этом ресурсе не найдено данных рабочего процесса",
     "nodeAddedToWorkflow": "Узел {nodeType} добавлен в рабочий процесс",
     "nodeTypeNotFound": "Тип узла {nodeType} не найден",
     "selection": {
-      "assetsDeletedSuccessfully": "{count} ресурс(ов) успешно удалено",
       "deleteSelected": "Удалить",
       "deleteSelectedAll": "Удалить все",
       "deselectAll": "Снять выделение со всех",
@@ -2699,7 +2847,6 @@
       "exportStarted": "Подготовка ZIP-экспорта для {count} файла | Подготовка ZIP-экспорта для {count} файлов",
       "exportWorkflowAll": "Экспортировать все рабочие процессы",
       "failedToAddNodes": "Не удалось добавить узлы в рабочий процесс",
-      "failedToDeleteAssets": "Не удалось удалить выбранные ресурсы",
       "insertAllAssetsAsNodes": "Вставить все ресурсы как узлы",
       "multipleSelectedAssets": "Выбрано несколько ресурсов",
       "noWorkflowsFound": "В выбранных ресурсах не найдено данных рабочих процессов",
@@ -2707,7 +2854,6 @@
       "nodesAddedToWorkflow": "{count} узел(ов) добавлено в рабочий процесс",
       "openWorkflowAll": "Открыть все рабочие процессы",
       "partialAddNodesSuccess": "{succeeded} успешно добавлено, {failed} не удалось",
-      "partialDeleteSuccess": "{succeeded} успешно удалено, {failed} не удалось удалить",
       "partialWorkflowsExported": "{succeeded} успешно экспортировано, {failed} не удалось",
       "partialWorkflowsOpened": "{succeeded} рабочий(их) процесс(ов) открыт(ы), {failed} не удалось",
       "selectedCount": "Выбрано ресурсов: {count}",
@@ -3058,6 +3204,7 @@
     "scail": "scail",
     "schedulers": "schedulers",
     "scheduling": "scheduling",
+    "sensenova": "sensenova",
     "shader": "шейдер",
     "sigmas": "сигмы",
     "sound": "звук",
@@ -3221,26 +3368,15 @@
     "done": "Готово",
     "firstRun": {
       "nudge": {
-        "animate": {
-          "detail": "Изображение в видео · 5 с",
-          "title": "Анимируйте"
-        },
-        "body": "Каждый из них начинается с только что созданного изображения.",
-        "explore": "Просмотреть все шаблоны",
-        "fallback": {
+        "dismiss": "Не сейчас",
+        "explore": "Посмотреть шаблоны",
+        "noTour": {
           "body": "Просмотрите шаблоны и выберите, что создать.",
-          "title": "И это лишь малая часть"
+          "title": "Впереди ещё сотни"
         },
-        "loadFailed": "Не удалось загрузить этот шаблон. Повторите попытку.",
-        "restyle": {
-          "detail": "Партнёрская модель · Любой платный тариф",
-          "title": "Измените стиль с Nano Banana"
-        },
-        "title": "Ваш первый результат. Что дальше.",
-        "upscale": {
-          "badge": "4x",
-          "detail": "То же изображение, больше деталей",
-          "title": "Увеличьте разрешение"
+        "ran": {
+          "body": "Вы только что создали свой первый проект. Узнайте, что ещё можно создать.",
+          "title": "Это лишь одна из сотен"
         }
       },
       "prompt": {
@@ -3333,6 +3469,28 @@
     "addColor": "Добавить цвет",
     "swatchTitle": "Клик — редактировать · перетащить — изменить порядок · ПКМ — удалить"
   },
+  "partnerNodesEducation": {
+    "benefits": {
+      "free": "Бесплатный запуск",
+      "noDownload": "Настройка не требуется",
+      "noVram": "Без VRAM, ваш GPU остаётся свободным",
+      "offline": "Работает офлайн"
+    },
+    "included": "Включено",
+    "muteOpen": "Отключить звук clip с открытыми весами",
+    "mutePartner": "Отключить звук clip партнёрской ноды",
+    "notIncluded": "Не включено",
+    "openHeader": "ОТКРЫТЫЕ",
+    "openTab": "Открытые ноды",
+    "partnerHeader": "ПАРТНЁРСКИЕ",
+    "partnerTab": "Партнёрские ноды",
+    "pitch": "Видите разницу? Перетащите, чтобы сравнить.",
+    "reassurance": "Партнёрские ноды доступны, когда вам нужно больше. Остальная часть Comfy остаётся бесплатной.",
+    "sliderLabel": "Сравнить результаты моделей с открытыми весами и партнёрской ноды",
+    "tooltip": "Партнёрские ноды запускают модели с закрытым исходным кодом, такие как Kling или Veo, на оборудовании провайдера через Comfy. Они используют средства; остальная часть Comfy остаётся бесплатной.",
+    "unmuteOpen": "Включить звук clip с открытыми весами",
+    "unmutePartner": "Включить звук clip партнёрской ноды"
+  },
   "progressToast": {
     "allDownloadsCompleted": "Все загрузки завершены",
     "downloadingModel": "Загрузка модели...",
@@ -3390,7 +3548,6 @@
       "copyErrorMessage": "Скопировать сообщение об ошибке",
       "copyJobId": "Скопировать ID задачи",
       "delete": "Удалить",
-      "deleteAsset": "Удалить ресурс",
       "download": "Скачать",
       "exportWorkflow": "Экспортировать рабочий процесс",
       "inspectAsset": "Просмотреть ресурс",
@@ -4208,7 +4365,6 @@
     "inactiveTeamTitle": "Неактивная командная подписка",
     "inviteUpTo": "Пригласить до",
     "invoiceHistory": "История счетов",
-    "learnMore": "Узнать больше",
     "manageBilling": "Управление оплатой",
     "managePlan": "Управление планом",
     "manageSubscription": "Управление подпиской",
@@ -4336,6 +4492,7 @@
       },
       "refillReplacesNote": "Заменяет ваше ежемесячное пополнение. Текущий баланс сохраняется.",
       "renewsAt": "Продление на сумму {amount} {date}. Отменить можно в любое время.",
+      "renewsAtAmount": "Продление за {amount}. Отменить можно в любое время.",
       "savedPaymentMethod": "Способ оплаты",
       "showMoreFeatures": "Показать больше функций",
       "starting": "Начинается {date}",
@@ -4475,7 +4632,6 @@
     "videoTemplateBasedCredits": "Видео, созданные с помощью Wan 2.2 Image to Video",
     "viewEnterprise": "Посмотреть корпоративные решения",
     "viewMoreDetails": "Подробнее",
-    "viewMoreDetailsPlans": "Подробнее о планах и ценах",
     "viewUsageHistory": "История использования",
     "whatsIncluded": "Что входит:",
     "workspaceNotSubscribed": "Это рабочее пространство не имеет подписки",
@@ -4906,8 +5062,10 @@
       "failedCount": "Не удалось отправить {count} приглашение. Попробуйте еще раз. | Не удалось отправить {count} приглашения. Попробуйте еще раз. | Не удалось отправить {count} приглашений. Попробуйте еще раз.",
       "invalidEmailCount": "{count} некорректный адрес электронной почты | {count} некорректных адреса электронной почты | {count} некорректных адресов электронной почты",
       "invitedMessage": "Приглашение отправлено на {emails} | Приглашения отправлены на {emails}",
+      "pendingInviteCount": "У {count} из этих людей уже есть ожидающее приглашение. Они будут пропущены.",
+      "pendingInviteSingle": "У этого человека уже есть ожидающее приглашение",
       "placeholder": "Введите email человека",
-      "seatLimitReached": "Вы можете пригласить до {count} участника. | Вы можете пригласить до {count} участников.",
+      "seatLimitExceeded": "Это рабочее пространство ограничено {max} участниками. Удалите {overage}, чтобы продолжить.",
       "title": "Пригласить человека в это рабочее пространство"
     },
     "inviteUpsellDialog": {

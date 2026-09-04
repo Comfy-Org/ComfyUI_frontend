@@ -7133,7 +7133,7 @@
       },
       "mode": {
         "name": "mode",
-        "tooltip": "'speed' est plus rapide ; 'precision' produit une synchronisation labiale de meilleure qualité à un coût doublé."
+        "tooltip": "« speed » est plus rapide ; « precision » produit une synchronisation labiale de meilleure qualité, mais à un coût plus élevé."
       },
       "output_language": {
         "name": "langue de sortie",
@@ -7201,12 +7201,12 @@
     }
   },
   "HiDreamO1ReferenceImages": {
-    "description": "Ajoutez 1 à 10 images de référence au conditionnement, une pour une instruction d’édition ou plusieurs pour une personnalisation orientée sujet.",
+    "description": "Joignez des images de référence ordonnées au conditionnement positif et négatif.",
     "display_name": "Images de référence HiDream-O1",
     "inputs": {
       "images": {
         "name": "images",
-        "tooltip": "Images de référence. 1 image = édition par instruction ; 2-10 images = multi-référence."
+        "tooltip": "Les images de référence sont utilisées dans l'ordre numérique des sockets."
       },
       "negative": {
         "name": "négatif"
@@ -12748,6 +12748,46 @@
       }
     }
   },
+  "MiniMaxH3FunControlNetApply": {
+    "description": "Applique un MiniMax H3 Fun ControlNet à un modèle texte-vers-vidéo sous forme de patch de modèle.",
+    "display_name": "Appliquer MiniMax H3 Fun ControlNet",
+    "inputs": {
+      "control_video": {
+        "name": "control_video"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "1 indique les régions à régénérer."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "Vidéo derrière le masque ; lue uniquement lorsqu'un masque est fourni."
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MiniMaxH3ImageToVideo": {
     "display_name": "MiniMax H3 Image vers Vidéo",
     "inputs": {
@@ -12792,7 +12832,8 @@
     "display_name": "MiniMax H3 Référence vers Vidéo",
     "inputs": {
       "audio_vae": {
-        "name": "audio_vae"
+        "name": "audio_vae",
+        "tooltip": "VAE audio. Sans lui, l’audio de référence ne conditionne que l’encodeur de texte."
       },
       "clip": {
         "name": "clip"
@@ -12824,7 +12865,8 @@
         "name": "vidéos_de_référence"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "VAE vidéo. Sans lui, les images/vidéos de référence ne conditionnent que l’encodeur de texte."
       },
       "width": {
         "name": "largeur"
@@ -12933,7 +12975,7 @@
     }
   },
   "MinimaxHailuo03FirstLastFrameNode": {
-    "description": "Générez une vidéo à partir d'une image de première image et, éventuellement, d'une image de dernière image à l'aide du modèle MiniMax H3. Le ratio d'aspect de la vidéo suit celui des images fournies.",
+    "description": "Génère une vidéo à partir d’une image de première image et d’une image de dernière image facultative à l’aide des modèles MiniMax H3. Le rapport d’aspect de la vidéo suit celui des images fournies.",
     "display_name": "MiniMax H3 Première-Dernière-Image vers Vidéo",
     "inputs": {
       "control_after_generate": {
@@ -12976,7 +13018,7 @@
     }
   },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "Générez une vidéo à partir d’images, de vidéos et d’audio de référence en utilisant le modèle MiniMax H3. Référez-vous aux références dans le prompt selon leur ordre : « Image 1 », « Image 2 », « Vidéo 1 », « Audio 1 », etc.",
+    "description": "Génère une vidéo conditionnée par des images, vidéos et fichiers audio de référence à l’aide des modèles MiniMax H3. Faites référence aux éléments dans le prompt selon leur ordre : « Image 1 », « Image 2 », « Vidéo 1 », « Audio 1 », etc.",
     "display_name": "MiniMax H3 Référence vers Vidéo",
     "inputs": {
       "control_after_generate": {
@@ -13051,7 +13093,7 @@
     }
   },
   "MinimaxHailuo03TextToVideoNode": {
-    "description": "Générez une vidéo à partir d’un prompt texte en utilisant le modèle MiniMax H3.",
+    "description": "Génère une vidéo à partir d’un prompt textuel à l’aide des modèles MiniMax H3.",
     "display_name": "MiniMax H3 Texte vers Vidéo",
     "inputs": {
       "control_after_generate": {
@@ -16932,7 +16974,7 @@
   },
   "Preview3D": {
     "description": "Prévisualisez un fichier de modèle 3D sans l'enregistrer dans le répertoire de sortie ComfyUI.",
-    "display_name": "Aperçu 3D",
+    "display_name": "Aperçu 3D et animation (OBSOLÈTE)",
     "inputs": {
       "bg_image": {
         "name": "bg_image"
@@ -17945,7 +17987,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Type de sortie pour lequel le style est créé : recraftv4_styles pour les images matricielles, recraftv4_styles_vector pour les SVG."
+        "tooltip": "Modèle pour lequel le style est créé. Standard et Pro partagent un même pool de styles : les styles raster fonctionnent avec tous les modèles raster Recraft V4 et V4.1, les styles vectoriels (*_vector) avec tous les modèles vectoriels V4 et V4.1."
       }
     },
     "outputs": {
@@ -18641,6 +18683,10 @@
       "multiple": {
         "name": "multiple",
         "tooltip": "Multiplicateur le plus proche du résultat pour définir la résolution sélectionnée."
+      },
+      "preview": {
+        "name": "aperçu",
+        "tooltip": "Aperçu en direct de la résolution de sortie calculée."
       }
     },
     "outputs": {
@@ -21113,6 +21159,23 @@
       },
       "scale": {
         "name": "échelle"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaSamplingOptions": {
+    "description": "Définir le décalage de flux SenseNova.",
+    "display_name": "Options d’échantillonnage SenseNova",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
       }
     },
     "outputs": {
@@ -24755,6 +24818,23 @@
       }
     }
   },
+  "VideoCrop": {
+    "display_name": "Recadrer la vidéo",
+    "inputs": {
+      "crop": {
+        "name": "crop",
+        "tooltip": "Zone de recadrage en pixels. Une largeur/hauteur nulle conserve l’image entière."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VideoFrameSample": {
     "description": "Échantillonnez un nombre fixe d’images d’une vidéo en utilisant différentes stratégies.",
     "display_name": "Échantillonner une image vidéo",
@@ -24856,6 +24936,27 @@
       },
       "model": {
         "name": "modèle"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "Découper la vidéo (avancé)",
+    "inputs": {
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "Si True, lorsqu’il n’est pas possible d’obtenir la durée spécifiée, une erreur est générée."
+      },
+      "trim": {
+        "name": "trim",
+        "tooltip": "Fenêtre de découpage utilisant les images de début et de fin."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

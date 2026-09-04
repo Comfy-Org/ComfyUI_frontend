@@ -6,6 +6,7 @@
   "keywords": [],
   "type": "module",
   "exports": {
+    "./creditsUtil": "./src/creditsUtil.ts",
     "./formatUtil": "./src/formatUtil.ts",
     "./networkUtil": "./src/networkUtil.ts",
     "./piiUtil": "./src/piiUtil.ts"

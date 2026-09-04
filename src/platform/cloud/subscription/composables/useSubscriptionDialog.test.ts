@@ -6,7 +6,10 @@ import type {
   TeamCreditStops,
   TeamCreditStopSummary
 } from '@/platform/workspace/api/workspaceApi'
-import { savePendingSubscriptionCheckout } from '@/platform/workspace/utils/pendingSubscriptionCheckout'
+import {
+  getPendingSubscriptionCheckout,
+  savePendingSubscriptionCheckout
+} from '@/platform/workspace/utils/pendingSubscriptionCheckout'
 
 import { useSubscriptionDialog } from './useSubscriptionDialog'
 
@@ -44,14 +47,6 @@ const mockSubscription = vi.hoisted(() => ({
 const mockSubscriptionStatus = vi.hoisted(() => ({
   value: null as BillingSubscriptionStatus | null
 }))
-
-vi.mock('vue', async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...(actual as object),
-    defineAsyncComponent: vi.fn((loader) => loader)
-  }
-})
 
 vi.mock('@/stores/dialogStore', () => ({
   useDialogStore: () => ({
@@ -757,9 +752,34 @@ describe('useSubscriptionDialog', () => {
       await resumePendingPricingFlow()
 
       expect(mockShowLayoutDialog).not.toHaveBeenCalled()
-      expect(
-        sessionStorage.getItem('comfy:pending-subscription-checkout')
-      ).toBeNull()
+      // A poll giving up says nothing about the server-side operation, which
+      // can stay pending for hours awaiting bank authentication.
+      expect(getPendingSubscriptionCheckout()?.operationId).toBe('op-timeout')
+    })
+
+    it('keeps the pointer for an unfinished operation across repeated resumes', async () => {
+      mockShouldUseWorkspaceBilling.value = true
+      mockStartOperation.mockResolvedValue({ status: 'timeout' })
+      savePendingSubscriptionCheckout({
+        operationId: 'op-parked',
+        workspaceId: 'workspace-1',
+        ownerUid: 'user-1',
+        selection: {
+          planMode: 'personal',
+          tierKey: 'creator',
+          billingCycle: 'monthly'
+        },
+        attemptedAt: Date.now()
+      })
+
+      await useSubscriptionDialog().resumePendingPricingFlow()
+      expect(getPendingSubscriptionCheckout()?.operationId).toBe('op-parked')
+
+      await useSubscriptionDialog().resumePendingPricingFlow()
+      expect(getPendingSubscriptionCheckout()?.operationId).toBe('op-parked')
+
+      expect(mockStartOperation).toHaveBeenCalledTimes(2)
+      expect(mockShowLayoutDialog).not.toHaveBeenCalled()
     })
 
     it('clears a checkout owned by another user without reconciling it', async () => {
