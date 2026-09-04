@@ -8436,6 +8436,14 @@ Enterprise`
   },
   'workshop.sections.seeAll': { en: 'See all', 'zh-CN': '查看全部' },
   'workshop.sections.provider': { en: 'All providers', 'zh-CN': '所有提供方' },
+  'workshop.sections.scrollBack': {
+    en: 'Scroll back',
+    'zh-CN': '向前滚动'
+  },
+  'workshop.sections.scrollForward': {
+    en: 'Scroll forward',
+    'zh-CN': '向后滚动'
+  },
   'workshop.sections.back': {
     en: 'Back to all categories',
     'zh-CN': '返回所有类别'
@@ -8804,8 +8812,8 @@ Enterprise`
     'zh-CN': '你的工作区策略禁止了该提供方。'
   },
   'workshop.error.noCredits': {
-    en: 'Not enough credits for this run. Payment happens on Stripe; your inputs stay here while you buy.',
-    'zh-CN': '积分不足，无法运行。支付在 Stripe 完成，期间您的输入会保留在此。'
+    en: 'Not enough credits. Payment happens on Stripe.',
+    'zh-CN': '积分不足。支付在 Stripe 完成。'
   },
   'workshop.error.unavailable': {
     en: 'This model is temporarily unavailable.',

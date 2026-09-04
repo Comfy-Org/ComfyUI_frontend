@@ -12,6 +12,7 @@ import {
   filterWorkshopModels,
   formatRuns,
   getWorkshopModel,
+  getWorkshopModelDetail,
   mockRuns,
   parseCatalogSearch,
   isRouterModel,
@@ -261,7 +262,7 @@ describe('workshopModels', () => {
   it('drops provider and API suffixes the registry put in the name', () => {
     const seedance = workshopModels.find((m) => m.provider === 'ByteDance')
     expect(seedance?.name).toBe('Seedance')
-    expect(getWorkshopModel('flux-2-api')?.name).toBe('Flux 2')
+    expect(getWorkshopModel('flux-api')?.name).toBe('Flux')
     for (const model of workshopModels) {
       expect(model.name).not.toMatch(/\((API|Provider)\)$/)
       if (model.provider)
@@ -269,12 +270,18 @@ describe('workshopModels', () => {
     }
   })
 
-  it('holds every partner node plus the releases the templates name', () => {
+  it('holds the runnable partner nodes plus the releases the templates name', () => {
     const routerSlugs = models.filter(isRouterModel).map((m) => m.slug)
     const slugs = workshopModels.map((m) => m.slug)
-    expect(slugs).toEqual(expect.arrayContaining(routerSlugs))
     expect(slugs.length).toBeGreaterThan(routerSlugs.length)
     expect(new Set(slugs).size).toBe(slugs.length)
+    // A model the generator could not resolve has nothing to run or show, so
+    // it is left out rather than listed as an empty page.
+    for (const slug of slugs) {
+      const detail = getWorkshopModelDetail(slug)
+      expect(detail?.fields.length).toBeGreaterThan(0)
+      expect(detail?.examples.length).toBeGreaterThan(0)
+    }
     expect(workshopModels.filter((m) => m.thumbnailUrl).length).toBeGreaterThan(
       40
     )

@@ -12,6 +12,7 @@ import {
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { groupByFamily } from '../../config/model-family'
+import CardRow from './CardRow.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 
 const ROW_LIMIT = 8
@@ -86,9 +87,7 @@ const unplaced = computed(() =>
         </button>
       </div>
 
-      <ul
-        class="-mx-1 flex snap-x scrollbar-thin gap-5 overflow-x-auto px-1 pb-2"
-      >
+      <CardRow :locale>
         <li
           v-for="family in section.shown"
           :key="family.key"
@@ -101,7 +100,7 @@ const unplaced = computed(() =>
             :show-status="showStatuses"
           />
         </li>
-      </ul>
+      </CardRow>
     </section>
 
     <section

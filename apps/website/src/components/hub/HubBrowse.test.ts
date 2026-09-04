@@ -69,7 +69,7 @@ describe('HubBrowse', () => {
     expect(screen.getByTestId('hub-showing').textContent).toContain('of 39')
 
     await user.click(screen.getByTestId('hub-tab-models'))
-    expect(screen.getAllByTestId('workshop-model-card')).toHaveLength(6)
+    expect(screen.getAllByTestId('workshop-model-card')).toHaveLength(5)
     expect(screen.queryByTestId('model-card-versions')).toBeNull()
   })
 
@@ -80,7 +80,7 @@ describe('HubBrowse', () => {
 
     await user.click(screen.getByTestId('hub-use-case-3d'))
     await user.click(screen.getByTestId('hub-tab-models'))
-    expect(screen.getAllByTestId('workshop-model-card')).toHaveLength(4)
+    expect(screen.getAllByTestId('workshop-model-card')).toHaveLength(3)
     expect(
       screen.getAllByTestId('model-card-versions')[0].textContent
     ).toContain('2 versions')

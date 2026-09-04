@@ -8,7 +8,9 @@ import {
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
+
+import { useResizeObserver } from '@vueuse/core'
 
 import Button from '@/components/ui/button/Button.vue'
 import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
@@ -201,6 +203,9 @@ const browsing = computed(
 const inSection = computed(
   () => version.value === 'v1.1' && useCase.value !== 'all'
 )
+// V1.1 navigates through its section rows and the way back out of one, so the
+// row of use cases would be a second, competing way to move around.
+const showRail = computed(() => version.value !== 'v1.1')
 const sectionProviders = computed<FacetMenuOption[]>(() =>
   countByFacet(
     filterWorkshopModels(models, { useCase: useCase.value }),
@@ -228,19 +233,37 @@ function clearFilters() {
 
 const tabClass = (current: boolean) =>
   cn(
-    'focus-visible:ring-primary-comfy-yellow/50 inline-flex shrink-0 cursor-pointer items-center gap-2 border-b-2 pb-3 text-sm font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-3',
+    'focus-visible:ring-primary-comfy-yellow/50 inline-flex shrink-0 cursor-pointer items-center gap-2 pb-3 text-sm font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-3',
     railBeside.value &&
-      'lg:w-full lg:justify-between lg:rounded-xl lg:border-b-0 lg:px-3 lg:py-2.5',
+      'lg:w-full lg:justify-between lg:rounded-xl lg:px-3 lg:py-2.5',
     current
       ? cn(
-          'border-primary-comfy-yellow text-primary-warm-white',
+          'text-primary-warm-white',
           railBeside.value && 'lg:bg-transparency-white-t8'
         )
       : cn(
-          'border-transparent text-primary-warm-gray hover:text-primary-warm-white',
+          'text-primary-warm-gray hover:text-primary-warm-white',
           railBeside.value && 'lg:hover:bg-transparency-white-t4'
         )
   )
+
+// One underline that travels to the tab you picked, rather than a border that
+// blinks out under one heading and in under the next.
+const navRef = useTemplateRef<HTMLElement>('nav')
+const underline = ref({ left: 0, width: 0 })
+
+function measureUnderline() {
+  const current = navRef.value?.querySelector<HTMLElement>(
+    '[aria-pressed="true"]'
+  )
+  underline.value = current
+    ? { left: current.offsetLeft, width: current.offsetWidth }
+    : { left: 0, width: 0 }
+}
+
+onMounted(measureUnderline)
+useResizeObserver(navRef, measureUnderline)
+watch([useCase, rail], () => void nextTick(measureUnderline))
 
 const chipClass = (active: boolean) =>
   cn(
@@ -265,16 +288,17 @@ const menuItemClass =
     "
   >
     <aside
-      v-if="!browsing"
+      v-if="showRail"
       :class="
         railBeside &&
         'lg:sticky lg:top-28 lg:max-h-[calc(100vh-9rem)] lg:scrollbar-thin lg:self-start lg:overflow-y-auto'
       "
     >
       <nav
+        ref="nav"
         :class="
           cn(
-            'mb-8 flex gap-8 overflow-x-auto border-b border-transparency-white-t8',
+            'relative mb-8 flex gap-8 overflow-x-auto border-b border-transparency-white-t8',
             railBeside &&
               'lg:mb-0 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:border-b-0'
           )
@@ -282,6 +306,19 @@ const menuItemClass =
         :aria-label="t(railLabel, locale)"
         data-testid="workshop-use-cases"
       >
+        <span
+          aria-hidden="true"
+          :class="
+            cn(
+              'bg-primary-comfy-yellow pointer-events-none absolute bottom-0 h-0.5 rounded-full transition-[translate,width] duration-300 ease-out',
+              railBeside && 'lg:hidden'
+            )
+          "
+          :style="{
+            translate: `${underline.left}px 0`,
+            width: `${underline.width}px`
+          }"
+        />
         <button
           v-for="entry in rail"
           :key="entry.value"
@@ -416,16 +453,20 @@ const menuItemClass =
       />
 
       <template v-else>
-        <button
-          v-if="inSection"
-          type="button"
-          class="hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 mb-6 inline-flex cursor-pointer items-center gap-1 rounded-lg text-sm font-medium text-primary-warm-gray transition-colors outline-none focus-visible:ring-3"
-          data-testid="section-back"
-          @click="clearFilters"
-        >
-          <ChevronLeft class="size-4" aria-hidden="true" />
-          {{ t('workshop.sections.back', locale) }}
-        </button>
+        <div v-if="inSection" class="mb-8 flex flex-col gap-2">
+          <button
+            type="button"
+            class="hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 -ml-1 inline-flex w-fit cursor-pointer items-center gap-1 rounded-lg text-sm font-medium text-primary-warm-gray transition-colors outline-none focus-visible:ring-3"
+            data-testid="section-back"
+            @click="clearFilters"
+          >
+            <ChevronLeft class="size-4" aria-hidden="true" />
+            {{ t('workshop.sections.back', locale) }}
+          </button>
+          <h2 class="text-2xl font-bold text-primary-warm-white">
+            {{ t(useCaseLabelKey[useCase], locale) }}
+          </h2>
+        </div>
 
         <div
           v-if="inSection"

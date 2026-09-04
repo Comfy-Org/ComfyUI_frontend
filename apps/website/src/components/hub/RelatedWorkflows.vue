@@ -5,6 +5,7 @@ import { hubWorkflowPath } from '../../lib/hub/workflow-detail'
 import type { HubTemplate } from '../../lib/hub/types'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import CardRow from '../workshop/CardRow.vue'
 import HubWorkflowCard from './HubWorkflowCard.vue'
 
 // An island cannot take a function as a prop: Astro serialises them as JSON,
@@ -36,9 +37,7 @@ const {
       </a>
     </div>
 
-    <ul
-      class="-mx-1 flex snap-x scrollbar-thin gap-5 overflow-x-auto px-1 pb-2"
-    >
+    <CardRow :locale>
       <li
         v-for="template in templates"
         :key="template.name"
@@ -50,6 +49,6 @@ const {
           :try-now-label="t('workshop.hub.tryNow', locale)"
         />
       </li>
-    </ul>
+    </CardRow>
   </section>
 </template>

@@ -468,13 +468,33 @@ function toVersionModel(version: GeneratedVersion): WorkshopModel {
   }
 }
 
+// A model the generator could not resolve has no schema to run and no template
+// to show, so its page is an empty shell. Until the data is there it stays out
+// of the catalogue rather than being listed as something a visitor can try.
+function isRunnable(model: WorkshopModel): boolean {
+  const data = generated[baseSlugFor.get(model.slug) ?? model.slug]
+  return (data?.fields ?? []).length > 0 && (data?.examples ?? []).length > 0
+}
+
 export const workshopModels: readonly WorkshopModel[] = [
   ...routerModels,
   ...versions.map(toVersionModel)
-]
+].filter(isRunnable)
 
 export function getWorkshopModel(slug: string): WorkshopModel | undefined {
   return workshopModels.find((model) => model.slug === slug)
+}
+
+// A family's releases run the same templates, and those titles lead with the
+// one release they were written for ("Kling 3.0: Motion Control"). On a sibling
+// page that names a model the reader is not looking at, so the prefix goes.
+const modelNames = new Set(workshopModels.map((model) => model.name))
+
+function withoutModelPrefix(title: string): string {
+  const prefix = /^(.+?):\s+/.exec(title)
+  return prefix && modelNames.has(prefix[1])
+    ? title.slice(prefix[0].length)
+    : title
 }
 
 export function getWorkshopModelDetail(
@@ -488,7 +508,10 @@ export function getWorkshopModelDetail(
     ...(data?.node ? { nodeDisplayName: data.node.displayName } : {}),
     fields: data?.fields ?? [],
     defaults: data?.defaults ?? {},
-    examples: data?.examples ?? []
+    examples: (data?.examples ?? []).map((example) => ({
+      ...example,
+      title: withoutModelPrefix(example.title)
+    }))
   }
 }
 

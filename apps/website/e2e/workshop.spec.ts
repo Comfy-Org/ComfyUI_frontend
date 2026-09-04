@@ -99,15 +99,16 @@ test.describe('Workshop catalog', () => {
     await expect(page.getByTestId('workshop-use-cases')).toHaveCount(0)
 
     const videos = page.getByTestId('section-generate-videos')
-    await expect(videos).toContainText('11')
+    await expect(videos).toContainText('10')
     await videos.getByTestId('section-generate-videos-see-all').click()
 
     await expect(sections).toHaveCount(0)
+    await expect(page.getByTestId('workshop-use-cases')).toHaveCount(0)
     await expect(
       page
         .getByTestId('workshop-models-grid')
         .getByTestId('workshop-model-card')
-    ).toHaveCount(20)
+    ).toHaveCount(18)
 
     await page.getByTestId('section-back').click()
     await expect(page.getByTestId('workshop-sections')).toBeVisible()
@@ -141,7 +142,7 @@ test.describe('Workshop catalog', () => {
     ).toHaveText('1')
     await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
     await page.getByTestId('workshop-filter-clear').click()
-    await expect(cards).toHaveCount(90)
+    await expect(cards).toHaveCount(84)
   })
 
   test('model tags deep-link into a filtered catalog', async ({ page }) => {
