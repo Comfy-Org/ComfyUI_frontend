@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest'
 
-import { parseServerDocFrame } from './docFrameClient'
+import type { DocFrameTransport } from './docFrameClient'
+import { DocFrameClient, parseServerDocFrame } from './docFrameClient'
+
+class TestTransport extends EventTarget implements DocFrameTransport {
+  readonly sent: string[] = []
+
+  send(frame: string): boolean {
+    this.sent.push(frame)
+    return true
+  }
+}
 
 function awarenessFrame(state: unknown, expiresAt: unknown = 123) {
   return {
@@ -94,5 +104,18 @@ describe('awareness frame validation', () => {
         expiresAt: 456
       }
     })
+  })
+
+  it('refuses to send awareness with an invalid actor or oversized state', () => {
+    const transport = new TestTransport()
+    const client = new DocFrameClient(transport)
+
+    expect(client.sendAwareness('wf-1', 'not-an-actor', {})).toBe(false)
+    expect(
+      client.sendAwareness('wf-1', 'human:user:tab-a', {
+        value: 'x'.repeat(8 * 1024)
+      })
+    ).toBe(false)
+    expect(transport.sent).toEqual([])
   })
 })
