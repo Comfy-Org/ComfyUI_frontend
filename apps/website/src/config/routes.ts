@@ -93,8 +93,13 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
 // /platform/ each have a zh-CN twin and it does not, so without this the
 // emitter advertises a Chinese page that 404s.
 const LOCALE_INVARIANT_EXTRA_PATHS = [
+  // Auth surfaces render one page for every locale (copy localizes in the
+  // island); a /zh-CN twin does not exist and must not be advertised.
+  '/forgot-password',
+  '/login',
   '/pixal3d-trellis2',
-  '/platform/serverless-animation'
+  '/platform/serverless-animation',
+  '/signup'
 ]
 
 const LOCALE_INVARIANT_PATHS = new Set<string>([

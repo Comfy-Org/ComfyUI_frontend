@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
 import type { WorkshopDetailModel } from '../../config/workshop-detail'
@@ -22,16 +22,70 @@ const model: WorkshopDetailModel = {
       required: true,
       multiline: true,
       valueType: 'string'
+    },
+    {
+      kind: 'number',
+      name: 'steps',
+      label: 'Steps',
+      required: false,
+      integer: true,
+      step: 1,
+      defaultValue: 20
     }
   ]
 }
 
 describe('WorkshopPlayground', () => {
+  it('restores a stashed form on mount, exactly once', async () => {
+    sessionStorage.setItem(
+      `comfy.workshop.form.${model.slug}`,
+      JSON.stringify({ prompt: 'Stashed red fox' })
+    )
+
+    render(WorkshopPlayground, { props: { model } })
+
+    const prompt = screen.getByRole('textbox', {
+      name: /Prompt/
+    }) as HTMLTextAreaElement
+    await waitFor(() => expect(prompt.value).toBe('Stashed red fox'))
+    expect(
+      sessionStorage.getItem(`comfy.workshop.form.${model.slug}`),
+      'the stash is consumed by the restore'
+    ).toBeNull()
+  })
+
+  it('merges the stash over the seeded defaults, keeping keys the stash omits', async () => {
+    sessionStorage.setItem(
+      `comfy.workshop.form.${model.slug}`,
+      JSON.stringify({ prompt: 'Stashed red fox' })
+    )
+
+    render(WorkshopPlayground, { props: { model } })
+    const prompt = screen.getByRole('textbox', {
+      name: /Prompt/
+    }) as HTMLTextAreaElement
+    await waitFor(() => expect(prompt.value).toBe('Stashed red fox'))
+
+    await userEvent.setup().click(screen.getByRole('tab', { name: 'API' }))
+    expect(
+      screen.getByText(/"steps": 20/),
+      'a default not present in the stash must survive the restore merge'
+    ).toBeTruthy()
+  })
+
   it('updates every snippet from the current form values', async () => {
     const user = userEvent.setup()
     render(WorkshopPlayground, { props: { model } })
 
-    await user.type(screen.getByRole('textbox', { name: /Prompt/ }), 'Red fox')
+    // The prompt arrives pre-filled with a sample, so replace it rather than
+    // typing on the end of it.
+    const prompt = screen.getByRole('textbox', { name: /Prompt/ })
+    await user.clear(prompt)
+    await user.type(prompt, 'Red fox')
+
+    // The snippet lives behind the API tab now: the result gets the column
+    // beside the form, matching the platform playground.
+    await user.click(screen.getByRole('tab', { name: 'API' }))
     expect(screen.getByText(/"prompt": "Red fox"/)).toBeTruthy()
 
     await user.click(screen.getByRole('tab', { name: 'Python' }))
