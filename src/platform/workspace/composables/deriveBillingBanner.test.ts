@@ -131,6 +131,24 @@ describe('deriveBillingBanner', () => {
     ).toBe('ending')
   })
 
+  it('gives the single slot to out of credits ahead of the ending notice for members', () => {
+    const memberOfCancelledTeamOutOfCredits: Partial<BillingBannerInputs> = {
+      isCancelled: true,
+      endDate: '2026-08-01T00:00:00Z',
+      hasFunds: false,
+      canManage: false
+    }
+    expect(derive(memberOfCancelledTeamOutOfCredits)).toBe('outOfCredits')
+    // Only once the credits notice is dismissed does the ending heads-up
+    // take the slot.
+    expect(
+      derive({
+        ...memberOfCancelledTeamOutOfCredits,
+        outOfCreditsDismissed: true
+      })
+    ).toBe('ending')
+  })
+
   it('shows no banner for an inactive subscription (that is a run-lock modal)', () => {
     expect(
       derive({
