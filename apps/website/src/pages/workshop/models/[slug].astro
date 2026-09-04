@@ -9,7 +9,6 @@ import WorkshopModelCard from '../../../components/workshop/WorkshopModelCard.vu
 import { getRoutes } from '../../../config/routes'
 import {
   catalogSearch,
-  formatRuns,
   getWorkshopModel,
   getWorkshopModelDetail,
   workshopModels
@@ -23,10 +22,16 @@ export const getStaticPaths: GetStaticPaths = () =>
 const { slug } = Astro.params
 const model = getWorkshopModelDetail(slug as string)!
 const related = relatedModels(model, workshopModels)
-const relatedHeading =
-  model.provider && related.some((other) => other.provider === model.provider)
-    ? t('workshop.model.relatedProvider').replace('{provider}', model.provider)
-    : t('workshop.model.related')
+// The provider heading only holds while every card under it is that provider's;
+// once the row is topped up from the rest of the catalogue it would be a lie.
+const relatedProvider =
+  related.length > 0 &&
+  related.every((other) => other.provider === model.provider)
+    ? model.provider
+    : undefined
+const relatedHeading = relatedProvider
+  ? t('workshop.model.relatedProvider').replace('{provider}', relatedProvider)
+  : t('workshop.model.related')
 const successor = model.successorSlug
   ? getWorkshopModel(model.successorSlug)
   : undefined
@@ -123,10 +128,6 @@ const tags = [
               <>
                 <span class="text-lg font-bold text-primary-comfy-yellow">{price}</span>
                 {t('workshop.model.perRun')}
-                <span class="text-primary-comfy-canvas/40">·</span>
-                <span data-testid="model-runs">
-                  {t('workshop.card.runs').replace('{n}', formatRuns(model.runs, 'en'))}
-                </span>
               </>
             ) : (
               t('workshop.card.priceOnPage')
@@ -177,14 +178,14 @@ const tags = [
           href={routes.workshop}
           class="text-sm font-bold tracking-wider text-primary-comfy-yellow uppercase hover:underline"
         >
-          {t('workshop.model.browseAll')}
+          {t('workshop.model.browseAll')} →
         </a>
       </div>
       <ul class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {
           related.map((other) => (
             <li>
-              <WorkshopModelCard model={other} />
+              <WorkshopModelCard model={other} client:visible />
             </li>
           ))
         }

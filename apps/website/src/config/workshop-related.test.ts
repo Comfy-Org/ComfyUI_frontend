@@ -7,7 +7,8 @@ function model(
   slug: string,
   modality: WorkshopModel['modality'],
   workflowCount: number,
-  provider?: string
+  provider?: string,
+  capabilities: readonly string[] = []
 ): WorkshopModel {
   return {
     slug,
@@ -15,7 +16,7 @@ function model(
     workflowCount,
     href: `/${slug}`,
     routerId: `x/${slug}`,
-    capabilities: [],
+    capabilities,
     runs: 12_000,
     modality,
     ...(provider ? { provider } : {})
@@ -52,6 +53,19 @@ describe('relatedModels', () => {
     expect(
       relatedModels(withProviders[0], withProviders).map((m) => m.slug)
     ).toEqual(['hailuo-02', 'hailuo-i2v', 'busy-video'])
+  })
+
+  it('tops the row up with the nearest capability when the provider runs out', () => {
+    const models = [
+      model('current', 'video', 9, 'MiniMax', ['Lip sync']),
+      model('popular-stranger', 'video', 8),
+      model('lip-sync-stranger', 'video', 2, undefined, ['Lip sync'])
+    ]
+
+    expect(relatedModels(models[0], models).map((m) => m.slug)).toEqual([
+      'lip-sync-stranger',
+      'popular-stranger'
+    ])
   })
 
   it('honours the limit', () => {
