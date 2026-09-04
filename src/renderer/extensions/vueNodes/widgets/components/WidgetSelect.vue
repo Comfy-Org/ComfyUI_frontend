@@ -1,5 +1,5 @@
 <template>
-  <RichComboWidget v-if="hasRemoteCombo" v-model="modelValue" :widget />
+  <RichComboWidget v-if="hasRemoteCombo" v-model="richComboValue" :widget />
   <WidgetSelectDropdown
     v-else-if="isDropdownUIWidget"
     v-model="modelValue"
@@ -48,6 +48,16 @@ const props = defineProps<{
 }>()
 
 const modelValue = defineModel<WidgetValue>()
+
+// RichComboWidget only deals in string values; narrow the shared WidgetValue
+// model (which also admits null/number/boolean/object) for that branch.
+const richComboValue = computed<string | undefined>({
+  get: () =>
+    typeof modelValue.value === 'string' ? modelValue.value : undefined,
+  set: (value) => {
+    modelValue.value = value
+  }
+})
 
 const comboSpec = computed<ComboInputSpec | undefined>(() => {
   if (props.widget.spec && isComboInputSpec(props.widget.spec)) {

@@ -100,7 +100,9 @@ export function useRemoteOptions<T = unknown>(
     queryFn: async ({ signal }) => {
       const descriptor = toValue(args.descriptor)
       if (!descriptor) {
-        throw new Error('useRemoteOptions: descriptor is required')
+        // Guards against a race between `enabled` (derived from `hasDescriptor`)
+        // and TanStack Query invoking a stale queryFn.
+        throw new TypeError('useRemoteOptions: descriptor is required')
       }
       return executeRemoteRequest(descriptor, signal)
     },

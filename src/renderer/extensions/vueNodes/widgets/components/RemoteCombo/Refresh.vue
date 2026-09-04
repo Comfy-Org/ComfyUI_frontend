@@ -6,7 +6,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 
-import { RemoteComboKey } from './state'
+import { RemoteComboContextError, RemoteComboKey } from './state'
 import type { RemoteComboContext } from './state'
 
 const props = defineProps<{
@@ -18,8 +18,9 @@ const props = defineProps<{
 const injected = inject(RemoteComboKey, null)
 const resolved = props.context ?? injected
 if (!resolved) {
-  throw new Error(
-    'RemoteCombo.Refresh requires a RemoteComboContext (provide via Root or pass as prop)'
+  throw new RemoteComboContextError(
+    'RemoteCombo.Refresh',
+    'requires a RemoteComboContext (provide via Root or pass as prop)'
   )
 }
 const ctx = resolved

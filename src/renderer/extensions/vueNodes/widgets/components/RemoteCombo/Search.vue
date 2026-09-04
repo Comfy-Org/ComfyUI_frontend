@@ -6,7 +6,7 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { searchVariants } from './remoteCombo.variants'
-import { RemoteComboKey } from './state'
+import { RemoteComboContextError, RemoteComboKey } from './state'
 
 defineProps<{
   placeholder?: string
@@ -14,7 +14,7 @@ defineProps<{
 
 const ctx = inject(RemoteComboKey)
 if (!ctx) {
-  throw new Error('RemoteCombo.Search must be used inside RemoteCombo.Root')
+  throw new RemoteComboContextError('RemoteCombo.Search')
 }
 
 const { t } = useI18n()

@@ -1,6 +1,6 @@
 import type { Component } from 'vue'
 
-import type { ResultItemType } from '@/schemas/apiSchema'
+import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { AssetKind } from '@/types/widgetTypes'
 

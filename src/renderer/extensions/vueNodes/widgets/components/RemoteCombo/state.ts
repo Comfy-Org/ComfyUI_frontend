@@ -21,3 +21,14 @@ export interface RemoteComboContext {
 
 export const RemoteComboKey: InjectionKey<RemoteComboContext> =
   Symbol('RemoteComboContext')
+
+/** Thrown when a RemoteCombo.* subcomponent is rendered outside RemoteCombo.Root. */
+export class RemoteComboContextError extends Error {
+  constructor(
+    componentName: string,
+    reason = 'must be used inside RemoteCombo.Root'
+  ) {
+    super(`${componentName} ${reason}`)
+    this.name = 'RemoteComboContextError'
+  }
+}

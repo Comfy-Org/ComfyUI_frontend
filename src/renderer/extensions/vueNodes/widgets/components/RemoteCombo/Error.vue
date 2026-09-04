@@ -5,11 +5,11 @@ defineProps<{
   message?: string
 }>()
 
-import { RemoteComboKey } from './state'
+import { RemoteComboContextError, RemoteComboKey } from './state'
 
 const ctx = inject(RemoteComboKey)
 if (!ctx) {
-  throw new Error('RemoteCombo.Error must be used inside RemoteCombo.Root')
+  throw new RemoteComboContextError('RemoteCombo.Error')
 }
 </script>
 

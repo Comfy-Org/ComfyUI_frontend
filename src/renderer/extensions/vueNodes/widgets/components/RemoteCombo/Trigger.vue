@@ -9,7 +9,7 @@ import { displayName } from '@/base/remote/itemSchema'
 
 import { triggerVariants } from './remoteCombo.variants'
 import type { TriggerVariants } from './remoteCombo.variants'
-import { RemoteComboKey } from './state'
+import { RemoteComboContextError, RemoteComboKey } from './state'
 
 const props = defineProps<{
   size?: TriggerVariants['size']
@@ -22,7 +22,7 @@ const props = defineProps<{
 
 const ctx = inject(RemoteComboKey)
 if (!ctx) {
-  throw new Error('RemoteCombo.Trigger must be used inside RemoteCombo.Root')
+  throw new RemoteComboContextError('RemoteCombo.Trigger')
 }
 
 const { t } = useI18n()

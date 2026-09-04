@@ -10,7 +10,7 @@ import type { DropdownItemShape } from '@/base/remote/itemSchema'
 
 import { itemVariants } from './remoteCombo.variants'
 import type { ItemVariants } from './remoteCombo.variants'
-import { RemoteComboKey } from './state'
+import { RemoteComboContextError, RemoteComboKey } from './state'
 
 const props = defineProps<{
   item: DropdownItemShape
@@ -21,7 +21,7 @@ const props = defineProps<{
 
 const ctx = inject(RemoteComboKey)
 if (!ctx) {
-  throw new Error('RemoteCombo.Item must be used inside RemoteCombo.Root')
+  throw new RemoteComboContextError('RemoteCombo.Item')
 }
 
 const { t } = useI18n()
