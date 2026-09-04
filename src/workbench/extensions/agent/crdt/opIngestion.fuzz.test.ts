@@ -193,7 +193,16 @@ describe('QA-12: FE op-ingestion boundary fuzz — malformed connect slot payloa
             expect(readGraph(doc)).toEqual(before)
           }
         ),
-        { seed: FUZZ_SEED, numRuns: 200 }
+        {
+          seed: FUZZ_SEED,
+          numRuns: 200,
+          examples: [
+            ['from', '0'],
+            ['from', [0]],
+            ['to', '0'],
+            ['to', [0]]
+          ]
+        }
       )
     })
 
