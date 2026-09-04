@@ -1,8 +1,13 @@
-import { createSharedComposable, useEventListener } from '@vueuse/core'
+import {
+  createSharedComposable,
+  useEventListener,
+  useTimestamp
+} from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { isWithinEnterpriseEndingNotice } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isCloud } from '@/platform/distribution/types'
 import type { BillingStatus } from '@/platform/workspace/api/workspaceApi'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -17,6 +22,7 @@ export interface BillingBannerInputs {
   billingControlEnabled: boolean
   v1PaymentRecovery: boolean
   isTeamPlan: boolean
+  isEnterprise: boolean
   isLoaded: boolean
   canAccessSubscriptionFeatures: boolean
   billingStatus: BillingStatus | null
@@ -31,11 +37,38 @@ export interface BillingBannerInputs {
 // outOfCredits > ending. Payment recovery and the existing billing-control
 // notices have independent rollout gates.
 export function deriveBillingBanner(
-  inputs: BillingBannerInputs
+  inputs: BillingBannerInputs,
+  now: number = Date.now()
 ): BillingBannerKind | null {
-  if (!inputs.isTeamPlan || !inputs.isLoaded) {
+  if (!inputs.isLoaded) return null
+
+  // An Enterprise cancel_at is an agreed end date — an operator pilot term or
+  // a sales-mediated cancellation. The two are deliberately not distinguished:
+  // cancel_at alone cannot tell them apart (cloud's
+  // common/repository/billing/repository.go), and the rendering is truthful
+  // for both — quiet until the 14-day window, then this ending notice.
+  // Decision recorded on FE-2035. Enterprise payment and credit lifecycles
+  // are handled by sales, so paused/paymentFailed/outOfCredits never apply —
+  // this branch takes precedence over any team-plan reading of the same
+  // subscription.
+  if (inputs.isEnterprise) {
+    if (!inputs.canAccessSubscriptionFeatures) return null
+    if (!inputs.billingControlEnabled) return null
+    if (
+      inputs.isCancelled &&
+      inputs.endDate &&
+      inputs.canManage &&
+      isWithinEnterpriseEndingNotice(inputs.endDate, now)
+    ) {
+      return 'ending'
+    }
     return null
   }
+
+  // Everything below is the self-serve team path, unchanged: a cancellation
+  // there is user-initiated news, so the ending notice shows at once. Any
+  // other tier (including unrecognized ones) gets no banner at all.
+  if (!inputs.isTeamPlan) return null
 
   if (inputs.v1PaymentRecovery) {
     if (inputs.billingStatus === 'paused') return 'paused'
@@ -71,21 +104,29 @@ function useBillingBannerInternal() {
 
   const dismissed = ref(false)
 
+  // Coarse shared clock so the enterprise notice window opens mid-session
+  // instead of waiting for an unrelated billing ref to change.
+  const now = useTimestamp({ interval: 60_000 })
+
   const kind = computed<BillingBannerKind | null>(() => {
     if (!isCloud) return null
-    return deriveBillingBanner({
-      billingControlEnabled: flags.billingControlEnabled,
-      v1PaymentRecovery: flags.v1PaymentRecovery,
-      isTeamPlan: isTeamPlan.value,
-      isLoaded: subscription.value !== null,
-      canAccessSubscriptionFeatures: canAccessSubscriptionFeatures.value,
-      billingStatus: billingStatus.value,
-      hasFunds: subscription.value?.hasFunds ?? null,
-      isCancelled: subscription.value?.isCancelled ?? false,
-      endDate: subscription.value?.endDate ?? null,
-      canManage: permissions.value.canManageSubscription,
-      outOfCreditsDismissed: dismissed.value
-    })
+    return deriveBillingBanner(
+      {
+        billingControlEnabled: flags.billingControlEnabled,
+        v1PaymentRecovery: flags.v1PaymentRecovery,
+        isTeamPlan: isTeamPlan.value,
+        isEnterprise: subscription.value?.tier === 'ENTERPRISE',
+        isLoaded: subscription.value !== null,
+        canAccessSubscriptionFeatures: canAccessSubscriptionFeatures.value,
+        billingStatus: billingStatus.value,
+        hasFunds: subscription.value?.hasFunds ?? null,
+        isCancelled: subscription.value?.isCancelled ?? false,
+        endDate: subscription.value?.endDate ?? null,
+        canManage: permissions.value.canManageSubscription,
+        outOfCreditsDismissed: dismissed.value
+      },
+      now.value
+    )
   })
 
   // Dismiss silences only the out-of-credits banner, and only for the current

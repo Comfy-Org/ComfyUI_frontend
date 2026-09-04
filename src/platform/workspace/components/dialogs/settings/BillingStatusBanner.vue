@@ -90,6 +90,11 @@ const { isResubscribing, handleResubscribe } = useResubscribe()
 const dialogService = useDialogService()
 
 const canManage = computed(() => permissions.value.canManageSubscription)
+// Strictly ENTERPRISE: an unrecognized tier must not borrow Enterprise copy
+// (isUnknownTier's contract) nor lose its Reactivate path.
+const isEnterprisePlan = computed(
+  () => subscription.value?.tier === 'ENTERPRISE'
+)
 const cycleResetDate = computed(() => {
   const raw = renewalDate.value
   return raw ? d(new Date(raw), { month: 'short', day: 'numeric' }) : ''
@@ -146,6 +151,18 @@ const banner = computed<BannerView | null>(() => {
         dismissible: true
       }
     case 'ending':
+      // An Enterprise contract renews through sales, not self-serve
+      // reactivation, so it gets its own copy and never a Reactivate action —
+      // even where the legacy rail would resolve canReactivatePlan true.
+      if (isEnterprisePlan.value) {
+        return {
+          muted: true,
+          title: t(`${bs}.ending.enterpriseTitle`, { date: planEndDate.value }),
+          body: t(`${bs}.ending.enterpriseBody`),
+          action: null,
+          dismissible: false
+        }
+      }
       return {
         muted: true,
         title: t(`${bs}.ending.title`, { date: planEndDate.value }),

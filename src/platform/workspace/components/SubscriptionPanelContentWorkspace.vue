@@ -264,6 +264,9 @@
                     )
                   }}
                 </Button>
+                <!-- The server capability alone decides who may reactivate:
+                     hideLifecycleCapabilities closes this for sales-managed
+                     tiers (cloud common/billing/policy/capabilities.go). -->
                 <Button
                   v-if="isSubscriptionCancelled && canReactivatePlan"
                   size="lg"
@@ -397,6 +400,7 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { useTimestamp } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -412,7 +416,8 @@ import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useF
 import {
   isEnterprisePlanSlug,
   isSalesManagedTier,
-  isUnknownTier
+  isUnknownTier,
+  isWithinEnterpriseEndingNotice
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
@@ -606,8 +611,42 @@ const scheduledPlanName = computed(() => {
   )
 })
 
+const isNonCatalogPlan = computed(() =>
+  isSalesManagedTier(subscription.value?.tier)
+)
+
+// Strictly ENTERPRISE, not isSalesManagedTier: an unrecognized tier keeps the
+// stock cancelled treatment (isUnknownTier's contract — no borrowed claims).
+const isEnterprisePlan = computed(
+  () => subscription.value?.tier === 'ENTERPRISE'
+)
+
+// An Enterprise end date is an agreed ending — operator pilot term or
+// sales-mediated cancellation, deliberately not distinguished (see
+// deriveBillingBanner; decision on FE-2035) — often set months ahead. Only
+// its presence moves the plan onto the quiet path: no amber card or Canceled
+// badge at any point, and no "Ends on" line until the notice window.
+// Cancelled with no end date falls back to the stock treatment.
+const hasScheduledEnterpriseEnd = computed(
+  () => isEnterprisePlan.value && Boolean(subscription.value?.endDate)
+)
+
+// Coarse shared clock so the notice window opens mid-session too.
+const now = useTimestamp({ interval: 60_000 })
+
+const isQuietEnterpriseEnding = computed(
+  () =>
+    hasScheduledEnterpriseEnd.value &&
+    !isWithinEnterpriseEndingNotice(subscription.value?.endDate, now.value)
+)
+
+// An end-dated Enterprise plan never shows the amber card; inside the notice
+// window the muted ending banner carries the message instead.
 const showSubscriptionStateCard = computed(
-  () => isSubscriptionCancelled.value && !isSubscriptionEnded.value
+  () =>
+    isSubscriptionCancelled.value &&
+    !isSubscriptionEnded.value &&
+    !hasScheduledEnterpriseEnd.value
 )
 
 const subscriptionStateCardTitle = computed(() =>
@@ -628,7 +667,7 @@ const planStatusBadge = computed(() => {
       label: t('subscription.inactive.badge'),
       severity: 'secondary' as const
     }
-  if (isSubscriptionCancelled.value)
+  if (isSubscriptionCancelled.value && !hasScheduledEnterpriseEnd.value)
     return { label: t('subscription.canceled'), severity: 'warn' as const }
   return null
 })
@@ -637,6 +676,7 @@ const planDateDisplay = computed(() => {
   if (!canAccessSubscriptionFeatures.value || isSubscriptionEnded.value)
     return ''
   if (isSubscriptionCancelled.value) {
+    if (isQuietEnterpriseEnding.value) return ''
     return formattedEndDate.value
       ? t('subscription.endsOnDate', { date: formattedEndDate.value })
       : ''
@@ -663,14 +703,6 @@ const subscriptionTierName = computed(() => {
     ? t('subscription.tierNameYearly', { name: baseName })
     : baseName
 })
-
-const isEnterprisePlan = computed(
-  () => subscription.value?.tier === 'ENTERPRISE'
-)
-
-const isNonCatalogPlan = computed(() =>
-  isSalesManagedTier(subscription.value?.tier)
-)
 
 const planDisplayName = computed(() => {
   if (isEnterprisePlan.value) return t('subscription.tiers.enterprise.name')

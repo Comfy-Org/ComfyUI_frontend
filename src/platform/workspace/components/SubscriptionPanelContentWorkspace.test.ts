@@ -2,7 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { BillingType, SubscriptionInfo } from '@/composables/billing/types'
@@ -538,14 +538,130 @@ describe('SubscriptionPanelContentWorkspace', () => {
       ).not.toBeInTheDocument()
     })
 
-    it('keeps the cancelled badge while an Enterprise plan still runs', () => {
-      useEnterprisePlan()
-      mockSubscriptionStatus.value = 'canceled'
-      renderComponent()
+    // FE-2035: an Enterprise end date is an agreed ending set through sales,
+    // often months ahead. It must never borrow the self-serve cancelled
+    // treatment.
+    describe('end-dated Enterprise plan still running', () => {
+      const NOW = new Date('2026-09-03T12:00:00Z')
+      const DAY = 24 * 60 * 60 * 1000
 
-      expect(screen.getByText('Canceled')).toBeInTheDocument()
-      expect(screen.queryByText('Inactive')).not.toBeInTheDocument()
-      expect(screen.getByTestId('subscription-state-card')).toBeInTheDocument()
+      // The project vitest setup fakes timers for every test, so pinning the
+      // clock is just a setSystemTime away.
+      beforeEach(() => {
+        vi.setSystemTime(NOW)
+        useEnterprisePlan()
+        mockSubscriptionStatus.value = 'canceled'
+      })
+
+      function endInDays(days: number): string {
+        const iso = new Date(NOW.getTime() + days * DAY).toISOString()
+        mockEndDate.value = iso
+        return iso
+      }
+
+      it('renders as a plainly active plan outside the ending notice window', () => {
+        endInDays(30)
+        renderComponent()
+
+        expect(screen.getByText('Enterprise')).toBeInTheDocument()
+        expect(screen.queryByText('Canceled')).not.toBeInTheDocument()
+        expect(screen.queryByText('Inactive')).not.toBeInTheDocument()
+        expect(
+          screen.queryByTestId('subscription-state-card')
+        ).not.toBeInTheDocument()
+        expect(screen.queryByText(/^Ends on/)).not.toBeInTheDocument()
+        // Deliberately no date row at all: Enterprise contracts are billed
+        // yearly upfront and an end-dated one will not renew, so "Renews on"
+        // would be a false claim (decided with Sonam).
+        expect(screen.queryByText(/^Renews on/)).not.toBeInTheDocument()
+      })
+
+      it('keeps the quiet treatment inside the window, with only the end date line', () => {
+        const iso = endInDays(10)
+        renderComponent()
+
+        expect(screen.queryByText('Canceled')).not.toBeInTheDocument()
+        expect(
+          screen.queryByTestId('subscription-state-card')
+        ).not.toBeInTheDocument()
+        expect(
+          screen.getByText(`Ends on ${formatPanelDate(iso)}`)
+        ).toBeInTheDocument()
+      })
+
+      // The capability alone decides Reactivate — the server closes it for
+      // sales-managed tiers (hideLifecycleCapabilities), and the client adds
+      // no guard of its own on top (settled with the reviewer on #16934).
+      it('hides Reactivate while the capability resolves false', () => {
+        endInDays(10)
+        mockCanReactivatePlan.value = false
+        renderComponent()
+
+        expect(
+          screen.queryByRole('button', { name: /reactivate/i })
+        ).not.toBeInTheDocument()
+      })
+
+      it('follows the capability if it ever resolves true', () => {
+        endInDays(10)
+        mockCanReactivatePlan.value = true
+        renderComponent()
+
+        expect(
+          screen.getByRole('button', { name: /reactivate/i })
+        ).toBeInTheDocument()
+      })
+
+      it('falls back to the stock cancelled treatment without an end date', () => {
+        mockEndDate.value = null
+        renderComponent()
+
+        expect(screen.getByText('Canceled')).toBeInTheDocument()
+        expect(
+          screen.getByTestId('subscription-state-card')
+        ).toBeInTheDocument()
+      })
+
+      it('restores the normal presentation when the end date clears between polls', async () => {
+        const iso = endInDays(10)
+        renderComponent()
+
+        expect(
+          screen.getByText(`Ends on ${formatPanelDate(iso)}`)
+        ).toBeInTheDocument()
+
+        // A webhook outage or reordering can clear cancel_at, flipping the
+        // workspace back to plainly active with a renewal date. Nothing is
+        // latched, so the presentation must follow the data.
+        mockSubscriptionStatus.value = 'active'
+        mockEndDate.value = null
+        mockRenewalDate.value = RENEWAL_DATE_ISO
+        await nextTick()
+
+        expect(
+          screen.getByText(`Renews on ${formatPanelDate(RENEWAL_DATE_ISO)}`)
+        ).toBeInTheDocument()
+        expect(screen.queryByText(/^Ends on/)).not.toBeInTheDocument()
+        expect(screen.queryByText('Canceled')).not.toBeInTheDocument()
+        expect(
+          screen.queryByTestId('subscription-state-card')
+        ).not.toBeInTheDocument()
+      })
+
+      it('leaves a cancelled unrecognized tier on the stock treatment too', () => {
+        mockSubscriptionTier.value = runtimeTier('GALACTIC')
+        mockPlanSlug.value = 'galactic_monthly'
+        endInDays(30)
+        renderComponent()
+
+        expect(screen.getByText('Canceled')).toBeInTheDocument()
+        expect(
+          screen.getByTestId('subscription-state-card')
+        ).toBeInTheDocument()
+        expect(
+          screen.getByText(`Ends on ${formatPanelDate(mockEndDate.value!)}`)
+        ).toBeInTheDocument()
+      })
     })
 
     it('renders an unrecognized tier as Current plan without catalog content', () => {

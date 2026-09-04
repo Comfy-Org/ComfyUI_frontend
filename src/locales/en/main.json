@@ -3222,6 +3222,8 @@
       "ending": {
         "title": "Your team plan ends on {date}",
         "body": "Members keep full access until then. Reactivate to keep your shared credits and seats.",
+        "enterpriseTitle": "Your Enterprise plan ends on {date}",
+        "enterpriseBody": "Members keep full access until then. Reach out to our sales team to extend.",
         "reactivate": "Reactivate plan"
       },
       "updatePayment": "Update payment"

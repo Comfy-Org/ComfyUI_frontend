@@ -106,6 +106,35 @@ export function isSalesManagedTier(
   return tier === 'ENTERPRISE' || isUnknownTier(tier)
 }
 
+// An Enterprise end date is an agreed ending — an operator pilot term or a
+// sales-mediated cancellation, deliberately not distinguished (FE-2035) —
+// often set months before the plan lapses. It is not self-serve news, so the
+// workspace keeps its plainly-active presentation until the end date is this
+// close; only then does the muted ending notice appear. Strictly ENTERPRISE:
+// self-serve plans never consult this window, and neither do unrecognized
+// tiers — sales-managed contracts are Enterprise-only today, and per
+// isUnknownTier's contract an unidentifiable plan must not borrow claims.
+export const ENTERPRISE_ENDING_NOTICE_DAYS = 14
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000
+
+// Wall-clock comparison; callers feed `now` from a coarse reactive clock so a
+// long-lived session still crosses into the window without a data refresh.
+// The window is deliberately unbounded below — a passed end date counts as
+// "within" — because the backend reconciles on read: cloud's
+// common/repository/billing/subscription.go:55 transitions a canceled row
+// whose cancel_at has passed into ended on first load and returns no active
+// subscription, so canAccessSubscriptionFeatures gates every caller first.
+export function isWithinEnterpriseEndingNotice(
+  endDate: string | null | undefined,
+  now: number = Date.now()
+): boolean {
+  if (!endDate) return false
+  const end = new Date(endDate).getTime()
+  if (Number.isNaN(end)) return false
+  return end - now <= ENTERPRISE_ENDING_NOTICE_DAYS * MS_PER_DAY
+}
+
 // Includes the workspace-level TEAM, which toTierKey maps to null: a catalog
 // key is not a usable test for "is on a paid plan".
 export function hasActivePaidPlan(
