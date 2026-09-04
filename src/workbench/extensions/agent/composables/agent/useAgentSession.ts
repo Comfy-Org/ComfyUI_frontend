@@ -34,9 +34,28 @@ interface SentTag {
 }
 
 export interface WorkflowTurnContext {
-  id: string
+  id?: string
   tabPath: string
+  instanceId?: string
+  isTemporary?: boolean
 }
+
+/**
+ * Which tab a turn belongs to, resolved once before prepare() and then handed
+ * to every post-await lookup. The three states are deliberately distinct:
+ *
+ * - omitted: resolve whatever tab is active right now. Only correct outside a
+ *   send, where there is nothing to pin to.
+ * - `null`: the send had no origin tab at all (panel detached, or no workflow
+ *   open when it started).
+ * - `{ tabPath, instanceId? }`: pin resolution to that tab, using its stable
+ *   instance identity when the workflow host provides one.
+ *
+ * Collapsing `null` into the omitted case is what lets a detached send pick up
+ * whichever tab the user selects during prepare(), i.e. exactly the late
+ * binding this pin exists to remove.
+ */
+export type TurnOrigin = { tabPath: string; instanceId?: string } | null
 
 type PromptEditState =
   | { phase: 'idle' }
@@ -47,12 +66,17 @@ export interface AgentSessionDeps {
   rest: AgentRestClient
   events: AgentEventSource
   workflow?: {
-    current(): WorkflowTurnContext | undefined
+    // origin, when given, pins resolution to the tab that initiated the send
+    // instead of whatever tab is active when this is called - it is read
+    // after prepare() so cloud ids it resolves are fresh, but must still
+    // describe the pre-await originating tab, not a later switch. See
+    // TurnOrigin for why "no origin tab" is a value rather than an omission.
+    current(origin?: TurnOrigin): WorkflowTurnContext | undefined
     adopted(workflowId: string, sent: WorkflowTurnContext | undefined): void
     prepare?(): Promise<void>
-    tabs?(): OpenTabsSnapshot | undefined
+    tabs?(origin?: TurnOrigin): OpenTabsSnapshot | undefined
     activeTab?(data: AgentActiveTabData): void
-    draft?(): DraftSnapshot | undefined
+    draft?(origin?: TurnOrigin): DraftSnapshot | undefined
   }
 }
 
@@ -202,17 +226,39 @@ export function useAgentSession(deps: AgentSessionDeps) {
     promptEditState.value = { phase: 'idle' }
     sending.value = true
     stopRequestedWhileSending = false
+    // Capture the originating tab identity before the first await: prepare()
+    // can take up to PREPARE_TIMEOUT_MS, and a tab switch while it is
+    // pending must not reattribute this send to the newly active tab. The id
+    // lookups themselves stay post-await (prepare() is what warms them), but
+    // pinned to this originating path rather than whatever is active later.
+    // A send that starts with no origin tab must stay that way: `null` is not
+    // "resolve the active tab", or re-attaching during prepare() reattributes
+    // the turn to the tab selected afterwards.
+    const originContext = workflow?.current()
+    const origin: TurnOrigin =
+      originContext === undefined
+        ? null
+        : {
+            tabPath: originContext.tabPath,
+            instanceId: originContext.instanceId
+          }
     if (workflow?.prepare)
       await Promise.race([
         workflow.prepare().catch(() => undefined),
         new Promise<void>((resolve) => setTimeout(resolve, PREPARE_TIMEOUT_MS))
       ])
-    const wfContext = workflow?.current()
-    const tabs = workflow?.tabs?.()
+    const wfContext = workflow?.current(origin)
+    const tabs = workflow?.tabs?.(origin)
     async function postTurn(threadId: string) {
-      const draft = workflow?.draft?.()
+      const draft = workflow?.draft?.(origin)
+      // An unsaved tab now yields a context carrying only its tabPath, so a
+      // merely-defined wfContext no longer implies the tab has a workflow the
+      // thread could own. An existing thread takes a draft only from a tab
+      // with a real workflow id; otherwise an unbound scratch tab would leak
+      // its canvas into someone else's thread.
       const shouldSendDraft =
-        draft !== undefined && (threadId === 'new' || wfContext !== undefined)
+        draft !== undefined &&
+        (threadId === 'new' || wfContext?.id !== undefined)
       const input = {
         content: text,
         tabs,
@@ -225,7 +271,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
       }
       return rest.postMessage(
         threadId,
-        wfContext ? { ...input, workflowId: wfContext.id } : input
+        wfContext?.id !== undefined
+          ? { ...input, workflowId: wfContext.id }
+          : input
       )
     }
     try {
@@ -233,8 +281,19 @@ export function useAgentSession(deps: AgentSessionDeps) {
       conversationStore.setThreadId(ack.thread_id)
       localStorage.setItem(THREAD_STORAGE_KEY, ack.thread_id)
       if (ack.workflow_id !== undefined) {
+        // The ack does not say whether the server minted a workflow or echoed
+        // the thread's existing one; an unbound tab may only adopt an id the
+        // session is not already bound to. Compare against the binding as of
+        // the ack, not a pre-prepare() snapshot: a bindWorkflow() landing in
+        // the prepare()/POST window (a late agent_active_tab frame, an
+        // overlapping send, loadThread) must make an echoed id read as an
+        // echo, not as freshly minted. A minted id is never equal to the
+        // current binding, so genuine adoption still fires.
+        const boundAtAck = boundWorkflowId.value
         bindWorkflow(ack.workflow_id)
-        workflow?.adopted(ack.workflow_id, wfContext)
+        const echoedToUnboundTab =
+          wfContext?.id === undefined && ack.workflow_id === boundAtAck
+        if (!echoedToUnboundTab) workflow?.adopted(ack.workflow_id, wfContext)
       }
       const turnId = ack.message_id as TurnId
       conversationStore.recordUser(
