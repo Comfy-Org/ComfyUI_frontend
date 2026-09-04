@@ -285,6 +285,53 @@ max_size = feature_flags.get_connection_feature(
 
 ## Adding New Feature Flags
 
+### High-risk Cloud PRs
+
+A `risk:high` or `risk:xhigh` PR that changes Cloud runtime behavior must be
+operationally inert while its rollout flag is OFF. The flag may be new or
+pre-existing, but it must fail closed in code and be OFF for every Cloud
+production cohort when the PR merges.
+
+`clientFeatureFlags.json` advertises client capabilities. It is not a rollout
+control and does not satisfy this policy.
+
+The merge gate determines runtime scope from the changed files and the classes
+in `.github/risk.json`; the PR author's **Cloud runtime change** answer is
+reviewer context, not a bypass. Files classified only as `risk-map`,
+`codeowners`, `ci`, `deps`, `build-config`, `website`, `docs`, `i18n-copy`,
+`storybook`, or `tests` are outside this feature-flag gate.
+
+For an in-scope change, complete the PR template with:
+
+1. The flag key and whether it is new or existing.
+2. Code showing that the flag exists and defaults to OFF.
+3. Source-of-truth evidence that every Cloud production cohort is OFF.
+4. A description of what still runs while the flag is OFF.
+5. An automated test covering the OFF path.
+
+If a flag cannot isolate the change safely, select a fixed exception reason,
+provide validation and rollback evidence, and ask any `comfy_frontend_devs`
+reviewer to apply the `flag-exempt` label. Urgency alone is not an exception.
+
+With the flag OFF, merging the PR must not change observable Cloud behavior or
+cause new side effects.
+
+### Example
+
+```markdown
+## Feature flag
+
+- **Cloud runtime change**: yes
+- **Flag**: unified_cloud_auth
+- **Flag source**: existing
+- **Default-OFF code evidence**: src/composables/useFeatureFlags.ts:221
+- **Production-OFF evidence**: https://example.internal/flags/unified_cloud_auth
+- **Flag-OFF behavior**: Existing authentication flow remains unchanged.
+- **Flag-OFF test**: src/composables/useFeatureFlags.test.ts:715
+- **Exception**: none
+- **Exception evidence**: N/A
+```
+
 ### Backend
 
 1. **For server capabilities**, add to `SERVER_FEATURE_FLAGS` in `comfy_api/feature_flags.py`:
