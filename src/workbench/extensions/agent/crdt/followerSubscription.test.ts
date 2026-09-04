@@ -338,6 +338,8 @@ describe('s2-2 — cold subscribe and warm reconnect remain distinct', () => {
     }[]
     expect(subscribes).toHaveLength(1)
     const requestedVector = decodeBase64(subscribes[0].data.state_vector_b64)
+    expect(requestedVector).not.toBeNull()
+    if (requestedVector === null) return
     expect(requestedVector).toEqual(Y.encodeStateVector(new Y.Doc()))
 
     const fullState = Y.encodeStateAsUpdate(host, requestedVector)
@@ -383,6 +385,8 @@ describe('s2-2 — cold subscribe and warm reconnect remain distinct', () => {
     }[]
     expect(subscribes).toHaveLength(2)
     const resumeVector = decodeBase64(subscribes[1].data.state_vector_b64)
+    expect(resumeVector).not.toBeNull()
+    if (resumeVector === null) return
     expect(resumeVector).toEqual(retained.stateVector())
 
     // Wire order: the host acks the resubscribe, then sends the catch-up.
