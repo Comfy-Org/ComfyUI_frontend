@@ -56,7 +56,7 @@ const CAPACITY = 500
 const REDACTED = '[REDACTED]'
 const MAX_SANITIZE_DEPTH = 12
 const SENSITIVE_KEY =
-  /(^|_)(token|accesstoken|secret|password|passwd|credential|api_key|apikey|authorization|auth|bearer|session|cookie|signature|jwt|prompt|text|message)$/
+  /(^|_)(token|accesstoken|secret|password|passwd|credential|api_key|apikey|authorization|auth|bearer|session|cookie|signature|jwt|prompt|text)$/
 const CONTENT_KEYS = new Set([
   'value',
   'old',
