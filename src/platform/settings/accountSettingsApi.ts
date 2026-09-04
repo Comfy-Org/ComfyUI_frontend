@@ -2,11 +2,13 @@ import { zGetSettingByIdResponse } from '@comfyorg/ingest-types/zod'
 
 import type { AuthHeader } from '@/types/authTypes'
 
-import { getComfyCloudBaseUrl } from '@/config/comfyApi'
+import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import {
   fetchWithUnifiedRemint,
   shouldRemintCloudRequest
 } from '@/platform/auth/unified/remintRetry'
+import { isCloud } from '@/platform/distribution/types'
+import { api } from '@/scripts/api'
 
 export class AccountSettingsApiError extends Error {
   constructor(
@@ -18,19 +20,25 @@ export class AccountSettingsApiError extends Error {
   }
 }
 
+function accountSettingPath(id: string): string {
+  return `/settings/${encodeURIComponent(id)}`
+}
+
 function accountSettingUrl(id: string): string {
-  return `${getComfyCloudBaseUrl()}/api/settings/${encodeURIComponent(id)}`
+  return `${getComfyApiBaseUrl()}/api${accountSettingPath(id)}`
 }
 
 export async function getAccountSetting(
   id: string,
   authHeader: AuthHeader
 ): Promise<unknown> {
-  const response = await fetchWithUnifiedRemint(
-    accountSettingUrl(id),
-    { headers: authHeader },
-    await shouldRemintCloudRequest()
-  )
+  const response = isCloud
+    ? await api.fetchApi(accountSettingPath(id))
+    : await fetchWithUnifiedRemint(
+        accountSettingUrl(id),
+        { headers: authHeader },
+        await shouldRemintCloudRequest()
+      )
   if (response.status === 404) return undefined
   if (!response.ok) {
     throw new AccountSettingsApiError(
@@ -62,18 +70,23 @@ export async function setAccountSetting(
   value: unknown,
   authHeader: AuthHeader
 ): Promise<void> {
-  const response = await fetchWithUnifiedRemint(
-    accountSettingUrl(id),
-    {
-      method: 'POST',
-      headers: {
-        ...authHeader,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(value)
-    },
-    await shouldRemintCloudRequest()
-  )
+  const response = isCloud
+    ? await api.fetchApi(accountSettingPath(id), {
+        method: 'POST',
+        body: JSON.stringify(value)
+      })
+    : await fetchWithUnifiedRemint(
+        accountSettingUrl(id),
+        {
+          method: 'POST',
+          headers: {
+            ...authHeader,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(value)
+        },
+        await shouldRemintCloudRequest()
+      )
   if (!response.ok) {
     throw new AccountSettingsApiError(
       `Failed to save account setting ${id}: ${response.status}`,
