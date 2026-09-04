@@ -203,5 +203,17 @@ describe('evaluatePolicy', () => {
         runtimePaths: ['src/runtime.ts']
       }).verdict
     ).toBe('pass')
+
+    expect(
+      evaluatePolicy({
+        body: exceptionBody.replace(
+          'Validation link and rollback steps.',
+          'n/a'
+        ),
+        labels: ['flag-exempt'],
+        risk: 'xhigh',
+        runtimePaths: ['src/runtime.ts']
+      }).reasons
+    ).toContain('`Exception evidence` must include validation and rollback.')
   })
 })

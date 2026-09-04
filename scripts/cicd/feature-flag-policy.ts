@@ -83,8 +83,13 @@ const EXCEPTION_REASONS = new Set([
 ])
 const PLACEHOLDERS = new Set([
   'key',
-  'N/A',
-  'URL',
+  'n/a',
+  'na',
+  'none',
+  'not applicable',
+  'tbd',
+  'todo',
+  'url',
   'path:line',
   'path:test',
   'description',
@@ -96,7 +101,12 @@ function clean(value: string): string {
 }
 
 function isFilled(value: string): boolean {
-  return value.length > 0 && !value.includes(' | ') && !PLACEHOLDERS.has(value)
+  const normalized = value.trim().toLowerCase()
+  return (
+    normalized.length > 0 &&
+    !normalized.includes(' | ') &&
+    !PLACEHOLDERS.has(normalized)
+  )
 }
 
 export function parsePolicyFields(body: string): {
