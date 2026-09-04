@@ -186,7 +186,11 @@ write path and the follower invariant coexist by design. Whole-graph replace as 
 mutation primitive (client re-sends the full graph, server diffs and re-mints ops)
 remains rejected: it clobbers concurrent agent edits mid-turn and kills op-log replay.
 
-## Accepted amendment (2026-09-04) — optional sequence metadata fails soft
+## Provisional amendment (2026-09-04) — optional sequence metadata fails soft
+
+This amendment becomes accepted after 2026-09-06T12:30Z if Christian raises no objection during
+the program's 48-hour ratification window. The parser behavior is already implemented on `main`;
+the provisional status applies to the governing decision record.
 
 The parser distinguishes sequence values by their effect on document correctness:
 
@@ -215,7 +219,7 @@ incoming document frame
                                                      accept valid frame
 ```
 
-This amendment accepts the parser behavior merged in
+This amendment selects the parser behavior merged in
 [#16668](https://github.com/Comfy-Org/ComfyUI_frontend/pull/16668) and supersedes the
 earlier request to reject an invalid-present `doc_ops_result.seq` in
 [#16487](https://github.com/Comfy-Org/ComfyUI_frontend/pull/16487#discussion_r3917181360).
