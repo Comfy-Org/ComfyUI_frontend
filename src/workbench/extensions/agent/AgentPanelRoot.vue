@@ -384,10 +384,26 @@ const {
 // counts only when it names the doc the follower would restore, so a tab that
 // merely carries a stale binding, or a second bound tab, never reads as
 // active and never keeps the follower projecting into a background tab.
+// `reconcilePersistedDocId()` is not a pure read: it adopts and re-stamps the
+// record on a reload, drops it on a nonce mismatch, and consults untracked
+// `sessionStorage` and `Date.now()`. Calling it from inside the computed getter
+// therefore let an unrelated re-render consume or rewrite the record the
+// follower was about to read, and the cached value never invalidated when the
+// record lapsed. Resolve it at the explicit lifecycle points that used to drive
+// re-evaluation and let the getter read only reactive state.
+const restorableDocId = ref<string | null>(null)
+watch(
+  [workflowDetached, () => workflowStore.activeWorkflow, boundWorkflowId],
+  () => {
+    restorableDocId.value = reconcilePersistedDocId()
+  },
+  { immediate: true }
+)
+
 function restorableWorkflowIdFor(tabPath: string): string | null {
   const persisted = bindingStore.workflowIdFor(tabPath)
   if (persisted === undefined) return null
-  return persisted === reconcilePersistedDocId() ? persisted : null
+  return persisted === restorableDocId.value ? persisted : null
 }
 const isBoundWorkflowActive = computed(() => {
   if (workflowDetached.value) return false
