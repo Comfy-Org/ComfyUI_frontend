@@ -1,14 +1,13 @@
+import { randomUUID } from 'crypto'
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
 
-import type { PerfMeasurement } from '@e2e/fixtures/helpers/PerformanceHelper'
-
-interface PerfReport {
-  timestamp: string
-  gitSha: string
-  branch: string
-  measurements: PerfMeasurement[]
-}
+import type {
+  PerfMeasurement,
+  PerfMeasurementResult,
+  PerfReportV3
+} from '@e2e/fixtures/utils/perfReportSchema'
+import { perfMeasurementResultSchema } from '@e2e/fixtures/utils/perfReportSchema'
 
 const TEMP_DIR = join('test-results', 'perf-temp')
 
@@ -19,7 +18,8 @@ const FIELD_FORMATTERS: Record<string, (m: PerfMeasurement) => string> = {
   layouts: (m) => `${m.layouts} layouts`,
   taskDurationMs: (m) => `${m.taskDurationMs.toFixed(1)}ms task`,
   layoutDurationMs: (m) => `${m.layoutDurationMs.toFixed(1)}ms layout`,
-  frameDurationMs: (m) => `${m.frameDurationMs.toFixed(1)}ms/frame`,
+  rafIntervalP95Ms: (m) => `${m.rafIntervalP95Ms.toFixed(1)}ms rAF p95`,
+  rafIntervalMaxMs: (m) => `${m.rafIntervalMaxMs.toFixed(1)}ms rAF max`,
   totalBlockingTimeMs: (m) => `TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`,
   durationMs: (m) => `${m.durationMs.toFixed(0)}ms total`,
   heapDeltaBytes: (m) => `heap Δ${(m.heapDeltaBytes / 1024).toFixed(0)}KB`,
@@ -45,11 +45,13 @@ export function logMeasurement(
   console.log(`${label}: ${parts.join(', ')}`)
 }
 
-export function recordMeasurement(m: PerfMeasurement) {
+export function recordMeasurement(
+  result: PerfMeasurementResult
+): PerfMeasurement {
   mkdirSync(TEMP_DIR, { recursive: true })
-  const filename = `${m.name}-${Date.now()}.json`
-  const { allFrameDurationsMs: _, ...serializable } = m
-  writeFileSync(join(TEMP_DIR, filename), JSON.stringify(serializable))
+  const filename = `${result.measurement.name}-${Date.now()}-${randomUUID()}.json`
+  writeFileSync(join(TEMP_DIR, filename), JSON.stringify(result))
+  return result.measurement
 }
 
 export function writePerfReport(
@@ -72,11 +74,24 @@ export function writePerfReport(
   }
   if (tempFiles.length === 0) return
 
-  const measurements: PerfMeasurement[] = tempFiles.map((f) =>
-    JSON.parse(readFileSync(join(TEMP_DIR, f), 'utf-8'))
-  )
+  const measurements = tempFiles.flatMap((file) => {
+    try {
+      const value: unknown = JSON.parse(
+        readFileSync(join(TEMP_DIR, file), 'utf-8')
+      )
+      return [perfMeasurementResultSchema.parse(value)]
+    } catch {
+      return []
+    }
+  })
+  if (measurements.length === 0) {
+    throw new Error(
+      `All ${tempFiles.length} recorded performance measurements were invalid`
+    )
+  }
 
-  const report: PerfReport = {
+  const report: PerfReportV3 = {
+    schemaVersion: 3,
     timestamp: new Date().toISOString(),
     gitSha,
     branch,

@@ -38,6 +38,13 @@ import App from './App.vue'
 import './assets/css/style.css'
 import { i18n } from './i18n'
 
+window.__COMFYUI_FRONTEND_VERSION__ = __COMFYUI_FRONTEND_VERSION__
+window.__COMFYUI_FRONTEND_COMMIT__ = __COMFYUI_FRONTEND_COMMIT__
+window.__COMFYUI_BUILD_MODE__ = import.meta.env.MODE as
+  | 'development'
+  | 'production'
+  | 'test'
+
 const isCloud = __DISTRIBUTION__ === 'cloud'
 const hasHostTelemetryBridge = Boolean(window.__comfyDesktop2?.Telemetry)
 

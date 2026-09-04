@@ -1,6 +1,14 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 
+import { filterComparableWorkloads } from '../browser_tests/fixtures/helpers/perfWorkloadIdentity'
+import type {
+  PerfMeasurement,
+  PerfReport,
+  PerfReportV3
+} from '../browser_tests/fixtures/utils/perfReportSchema'
+import { perfReportSchema } from '../browser_tests/fixtures/utils/perfReportSchema'
 import type { MetricStats } from './perf-stats'
 import {
   classifyChange,
@@ -13,36 +21,10 @@ import {
   zScore
 } from './perf-stats'
 
-interface PerfMeasurement {
-  name: string
-  durationMs: number
-  styleRecalcs: number
-  styleRecalcDurationMs: number
-  layouts: number
-  layoutDurationMs: number
-  taskDurationMs: number
-  heapDeltaBytes: number
-  heapUsedBytes: number
-  domNodes: number
-  jsHeapTotalBytes: number
-  scriptDurationMs: number
-  eventListeners: number
-  totalBlockingTimeMs: number
-  frameDurationMs: number
-  p95FrameDurationMs: number
-  allFrameDurationsMs?: number[]
-}
-
-interface PerfReport {
-  timestamp: string
-  gitSha: string
-  branch: string
-  measurements: PerfMeasurement[]
-}
-
 const CURRENT_PATH = 'test-results/perf-metrics.json'
 const BASELINE_PATH = 'temp/perf-baseline/perf-metrics.json'
 const HISTORY_DIR = 'temp/perf-history'
+const COMMENT_DATA_LIMIT = 48_000
 
 type MetricKey =
   | 'styleRecalcs'
@@ -50,12 +32,25 @@ type MetricKey =
   | 'layouts'
   | 'layoutDurationMs'
   | 'taskDurationMs'
+  | 'taskOtherDurationMs'
+  | 'v8CompileDurationMs'
+  | 'devToolsCommandDurationMs'
+  | 'threadTimeMs'
+  | 'processTimeMs'
+  | 'accountedTaskDurationMs'
+  | 'taskAccountingResidualMs'
   | 'domNodes'
   | 'scriptDurationMs'
   | 'eventListeners'
   | 'totalBlockingTimeMs'
-  | 'frameDurationMs'
-  | 'p95FrameDurationMs'
+  | 'rafIntervalP50Ms'
+  | 'rafIntervalP95Ms'
+  | 'rafIntervalP99Ms'
+  | 'rafIntervalMaxMs'
+  | 'rafIntervalsOver8_33Ms'
+  | 'rafIntervalsOver16_67Ms'
+  | 'rafIntervalsOver33_3Ms'
+  | 'rafIntervalsOver50Ms'
   | 'heapUsedBytes'
 
 interface MetricDef {
@@ -67,8 +62,26 @@ interface MetricDef {
 }
 
 const REPORTED_METRICS: MetricDef[] = [
-  { key: 'frameDurationMs', label: 'avg frame time', unit: 'ms' },
-  { key: 'p95FrameDurationMs', label: 'p95 frame time', unit: 'ms' },
+  { key: 'rafIntervalP50Ms', label: 'rAF interval p50', unit: 'ms' },
+  { key: 'rafIntervalP95Ms', label: 'rAF interval p95', unit: 'ms' },
+  { key: 'rafIntervalP99Ms', label: 'rAF interval p99', unit: 'ms' },
+  { key: 'rafIntervalMaxMs', label: 'rAF interval max', unit: 'ms' },
+  {
+    key: 'rafIntervalsOver8_33Ms',
+    label: 'rAF intervals >8.33ms',
+    unit: ''
+  },
+  {
+    key: 'rafIntervalsOver16_67Ms',
+    label: 'rAF intervals >16.67ms',
+    unit: ''
+  },
+  {
+    key: 'rafIntervalsOver33_3Ms',
+    label: 'rAF intervals >33.3ms',
+    unit: ''
+  },
+  { key: 'rafIntervalsOver50Ms', label: 'rAF intervals >50ms', unit: '' },
   { key: 'layoutDurationMs', label: 'layout duration', unit: 'ms' },
   {
     key: 'styleRecalcDurationMs',
@@ -83,15 +96,31 @@ const REPORTED_METRICS: MetricDef[] = [
     minAbsDelta: 5
   },
   { key: 'taskDurationMs', label: 'task duration', unit: 'ms' },
+  { key: 'taskOtherDurationMs', label: 'task other duration', unit: 'ms' },
+  { key: 'v8CompileDurationMs', label: 'V8 compile duration', unit: 'ms' },
+  {
+    key: 'devToolsCommandDurationMs',
+    label: 'DevTools command duration',
+    unit: 'ms'
+  },
+  { key: 'threadTimeMs', label: 'thread time', unit: 'ms' },
+  { key: 'processTimeMs', label: 'process time', unit: 'ms' },
+  {
+    key: 'accountedTaskDurationMs',
+    label: 'accounted task duration',
+    unit: 'ms'
+  },
+  {
+    key: 'taskAccountingResidualMs',
+    label: 'task accounting residual',
+    unit: 'ms'
+  },
   { key: 'scriptDurationMs', label: 'script duration', unit: 'ms' },
   { key: 'totalBlockingTimeMs', label: 'TBT', unit: 'ms' },
   { key: 'heapUsedBytes', label: 'heap used', unit: 'bytes' },
   { key: 'domNodes', label: 'DOM nodes', unit: '', minAbsDelta: 5 },
   { key: 'eventListeners', label: 'event listeners', unit: '', minAbsDelta: 5 }
 ]
-
-/** Target: P5 FPS ≥ 52 */
-const TARGET_P5_FPS = 52
 
 function groupByName(
   measurements: PerfMeasurement[]
@@ -105,6 +134,34 @@ function groupByName(
   return map
 }
 
+function acceptedMeasurements(report: PerfReportV3): PerfMeasurement[] {
+  return report.measurements.flatMap((result) =>
+    result.kind === 'accepted' ? [result.measurement] : []
+  )
+}
+
+function groupComparableCurrentMeasurements(report: PerfReportV3): {
+  groups: Map<string, PerfMeasurement[]>
+  mixedIdentityNames: string[]
+} {
+  const groups = groupByName(acceptedMeasurements(report))
+  const mixedIdentityNames: string[] = []
+  for (const [name, samples] of groups) {
+    if (
+      filterComparableWorkloads(samples[0], samples).length !== samples.length
+    ) {
+      groups.delete(name)
+      mixedIdentityNames.push(name)
+    }
+  }
+  return { groups, mixedIdentityNames }
+}
+
+function readPerfReport(path: string): PerfReport {
+  const value: unknown = JSON.parse(readFileSync(path, 'utf-8'))
+  return perfReportSchema.parse(value)
+}
+
 function loadHistoricalReports(): PerfReport[] {
   if (!existsSync(HISTORY_DIR)) return []
   const reports: PerfReport[] = []
@@ -115,7 +172,7 @@ function loadHistoricalReports(): PerfReport[] {
       : join(entryPath, 'perf-metrics.json')
     if (!existsSync(filePath)) continue
     try {
-      reports.push(JSON.parse(readFileSync(filePath, 'utf-8')) as PerfReport)
+      reports.push(readPerfReport(filePath))
     } catch {
       console.warn(`Skipping malformed perf history: ${filePath}`)
     }
@@ -124,14 +181,18 @@ function loadHistoricalReports(): PerfReport[] {
 }
 
 function getHistoricalStats(
-  reports: PerfReport[],
+  reports: PerfReportV3[],
   testName: string,
-  metric: MetricKey
+  metric: MetricKey,
+  reference: PerfMeasurement
 ): MetricStats {
   const values: number[] = []
   for (const r of reports) {
-    const group = groupByName(r.measurements)
-    const samples = group.get(testName)
+    const group = groupByName(acceptedMeasurements(r))
+    const samples = filterComparableWorkloads(
+      reference,
+      group.get(testName) ?? []
+    )
     if (samples) {
       const mean = meanMetric(samples, metric)
       if (mean !== null) values.push(mean)
@@ -141,21 +202,24 @@ function getHistoricalStats(
 }
 
 function getHistoricalTimeSeries(
-  reports: PerfReport[],
+  reports: PerfReportV3[],
   testName: string,
-  metric: MetricKey
+  metric: MetricKey,
+  reference: PerfMeasurement
 ): number[] {
   const sorted = [...reports].sort(
     (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
   )
   const values: number[] = []
   for (const r of sorted) {
-    const group = groupByName(r.measurements)
-    const samples = group.get(testName)
+    const group = groupByName(acceptedMeasurements(r))
+    const samples = filterComparableWorkloads(
+      reference,
+      group.get(testName) ?? []
+    )
     if (samples) {
-      values.push(
-        samples.reduce((sum, s) => sum + s[metric], 0) / samples.length
-      )
+      const mean = meanMetric(samples, metric)
+      if (mean !== null) values.push(mean)
     }
   }
   return values
@@ -182,7 +246,7 @@ function getMetricValue(
   key: MetricKey
 ): number | null {
   const value = sample[key]
-  return Number.isFinite(value) ? value : null
+  return typeof value === 'number' && Number.isFinite(value) ? value : null
 }
 
 function meanMetric(samples: PerfMeasurement[], key: MetricKey): number | null {
@@ -214,10 +278,6 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-function frameTimeToFps(ms: number): number {
-  return ms > 0 ? 1000 / ms : 0
-}
-
 function renderHeadlineSummary(
   prGroups: Map<string, PerfMeasurement[]>
 ): string[] {
@@ -225,26 +285,22 @@ function renderHeadlineSummary(
   const summaries: string[] = []
 
   for (const [testName, prSamples] of prGroups) {
-    const avgFrame = medianMetric(prSamples, 'frameDurationMs')
-    const p95Frame = medianMetric(prSamples, 'p95FrameDurationMs')
+    const p95Interval = medianMetric(prSamples, 'rafIntervalP95Ms')
+    const maxInterval = medianMetric(prSamples, 'rafIntervalMaxMs')
+    const over16 = medianMetric(prSamples, 'rafIntervalsOver16_67Ms')
     const tbt = medianMetric(prSamples, 'totalBlockingTimeMs')
     const heap = medianMetric(prSamples, 'heapUsedBytes')
 
-    const avgFps = avgFrame !== null ? frameTimeToFps(avgFrame) : null
-    const p5Fps = p95Frame !== null ? frameTimeToFps(p95Frame) : null
-
     const parts: string[] = [`**${testName}**:`]
-    if (avgFps !== null) parts.push(`${avgFps.toFixed(1)} avg FPS`)
-    if (p5Fps !== null) {
-      const pass = p5Fps >= TARGET_P5_FPS
-      parts.push(
-        `${p5Fps.toFixed(1)} P5 FPS ${pass ? '✅' : '❌'} (target: ≥${TARGET_P5_FPS})`
-      )
-    }
+    if (p95Interval !== null) parts.push(`${p95Interval.toFixed(1)}ms rAF p95`)
+    if (maxInterval !== null) parts.push(`${maxInterval.toFixed(1)}ms rAF max`)
+    if (over16 !== null) parts.push(`${over16.toFixed(0)} intervals >16.67ms`)
     if (tbt !== null) parts.push(`${tbt.toFixed(0)}ms TBT`)
     if (heap !== null) parts.push(`${formatBytes(heap)} heap`)
 
-    if (parts.length > 1) summaries.push(parts.join(' · '))
+    if (parts.length > 1) {
+      summaries.push(`${parts[0]} ${parts.slice(1).join(' · ')}`)
+    }
   }
 
   if (summaries.length > 0) {
@@ -256,11 +312,11 @@ function renderHeadlineSummary(
 
 function renderFullReport(
   prGroups: Map<string, PerfMeasurement[]>,
-  baseline: PerfReport,
-  historical: PerfReport[]
+  baseline: PerfReportV3,
+  historical: PerfReportV3[]
 ): string[] {
   const lines: string[] = []
-  const baselineGroups = groupByName(baseline.measurements)
+  const baselineGroups = groupByName(acceptedMeasurements(baseline))
   const tableHeader = [
     '| Metric | Baseline | PR (median) | Δ | Sig |',
     '|--------|----------|----------|---|-----|'
@@ -270,13 +326,17 @@ function renderFullReport(
   const allRows: string[] = []
 
   for (const [testName, prSamples] of prGroups) {
-    const baseSamples = baselineGroups.get(testName)
+    const reference = prSamples[0]
+    const baseSamples = filterComparableWorkloads(
+      reference,
+      baselineGroups.get(testName) ?? []
+    )
 
     for (const { key, label, unit, minAbsDelta } of REPORTED_METRICS) {
       // Use median for PR values — robust to outlier runs in CI
       const prVal = medianMetric(prSamples, key)
       if (prVal === null) continue
-      const histStats = getHistoricalStats(historical, testName, key)
+      const histStats = getHistoricalStats(historical, testName, key, reference)
       const cv = computeCV(histStats)
 
       if (!baseSamples?.length) {
@@ -343,9 +403,10 @@ function renderFullReport(
     '| Metric | μ | σ | CV |',
     '|--------|---|---|-----|'
   )
-  for (const [testName] of prGroups) {
+  for (const [testName, prSamples] of prGroups) {
+    const reference = prSamples[0]
     for (const { key, label, unit } of REPORTED_METRICS) {
-      const stats = getHistoricalStats(historical, testName, key)
+      const stats = getHistoricalStats(historical, testName, key, reference)
       if (stats.n < 2) continue
       const cv = computeCV(stats)
       lines.push(
@@ -356,9 +417,15 @@ function renderFullReport(
   lines.push('', '</details>')
 
   const trendRows: string[] = []
-  for (const [testName] of prGroups) {
+  for (const [testName, prSamples] of prGroups) {
+    const reference = prSamples[0]
     for (const { key, label, unit } of REPORTED_METRICS) {
-      const series = getHistoricalTimeSeries(historical, testName, key)
+      const series = getHistoricalTimeSeries(
+        historical,
+        testName,
+        key,
+        reference
+      )
       if (series.length < 3) continue
       const dir = trendDirection(series)
       const arrow = trendArrow(dir)
@@ -388,11 +455,11 @@ function renderFullReport(
 
 function renderColdStartReport(
   prGroups: Map<string, PerfMeasurement[]>,
-  baseline: PerfReport,
+  baseline: PerfReportV3,
   historicalCount: number
 ): string[] {
   const lines: string[] = []
-  const baselineGroups = groupByName(baseline.measurements)
+  const baselineGroups = groupByName(acceptedMeasurements(baseline))
   lines.push(
     `> ℹ️ Collecting baseline variance data (${historicalCount}/15 runs). Significance will appear after 2 main branch runs.`,
     '',
@@ -403,7 +470,10 @@ function renderColdStartReport(
   )
 
   for (const [testName, prSamples] of prGroups) {
-    const baseSamples = baselineGroups.get(testName)
+    const baseSamples = filterComparableWorkloads(
+      prSamples[0],
+      baselineGroups.get(testName) ?? []
+    )
 
     for (const { key, label, unit } of REPORTED_METRICS) {
       const prVal = medianMetric(prSamples, key)
@@ -462,6 +532,138 @@ function renderNoBaselineReport(
   return lines
 }
 
+function renderRejectedMeasurements(report: PerfReportV3): string[] {
+  const rejected = report.measurements.filter(
+    (result) => result.kind === 'rejected'
+  )
+  if (rejected.length === 0) return []
+
+  return [
+    `> ⚠️ ${rejected.length} measurement${rejected.length === 1 ? '' : 's'} rejected and excluded from all statistics.`,
+    '',
+    '<details><summary>Rejected measurements</summary>',
+    '',
+    '| Test | Reason |',
+    '|------|--------|',
+    ...rejected.map(
+      (result) => `| ${result.measurement.name} | ${result.reason} |`
+    ),
+    '',
+    '</details>',
+    ''
+  ]
+}
+
+function serializeCommentData(current: PerfReportV3): string {
+  const commentData = {
+    ...current,
+    measurements: current.measurements.map((result) => {
+      const { rafIntervalsMs: _, ...measurement } = result.measurement
+      return { ...result, measurement }
+    })
+  }
+  const serializedCommentData = JSON.stringify(commentData, null, 2)
+  if (serializedCommentData.length <= COMMENT_DATA_LIMIT) {
+    return serializedCommentData
+  }
+
+  const measurementIdentities = current.measurements.map((result) => ({
+    name: result.measurement.name,
+    rejectedRunReason: result.kind === 'rejected' ? result.reason : null,
+    workloadIdentity: result.measurement.workloadIdentity
+  }))
+  const fallbackData = {
+    schemaVersion: current.schemaVersion,
+    timestamp: current.timestamp,
+    gitSha: current.gitSha,
+    branch: current.branch,
+    summaryTruncated: true,
+    fullArtifact: CURRENT_PATH,
+    measurementCount: current.measurements.length
+  }
+  const serializeFallback = (identityCount: number) =>
+    JSON.stringify(
+      {
+        ...fallbackData,
+        measurementIdentities: measurementIdentities.slice(0, identityCount)
+      },
+      null,
+      2
+    )
+
+  let lowerBound = 0
+  let upperBound = measurementIdentities.length
+  while (lowerBound < upperBound) {
+    const candidate = Math.ceil((lowerBound + upperBound) / 2)
+    if (serializeFallback(candidate).length <= COMMENT_DATA_LIMIT) {
+      lowerBound = candidate
+    } else {
+      upperBound = candidate - 1
+    }
+  }
+  return serializeFallback(lowerBound)
+}
+
+export function renderPerfReport(
+  current: PerfReportV3,
+  baseline: PerfReport | null,
+  historical: PerfReport[]
+): string {
+  const compatibleHistory = historical.filter(
+    (report): report is PerfReportV3 => report.schemaVersion === 3
+  )
+  const { groups: prGroups, mixedIdentityNames } =
+    groupComparableCurrentMeasurements(current)
+
+  const lines: string[] = ['## ⚡ Performance Report\n']
+  lines.push(...renderRejectedMeasurements(current))
+  lines.push(
+    ...mixedIdentityNames.flatMap((name) => [
+      `> ⚠️ ${name} rejected because its current samples have mixed workload identities.`,
+      ''
+    ])
+  )
+  lines.push(...renderHeadlineSummary(prGroups))
+
+  const compatibleBaseline =
+    baseline?.schemaVersion === current.schemaVersion ? baseline : null
+
+  if (prGroups.size === 0) {
+    lines.push(
+      '> ⚠️ No accepted measurements were available. No regression verdict was calculated.',
+      ''
+    )
+  } else if (baseline && !compatibleBaseline) {
+    lines.push(
+      `> ℹ️ Baseline schema v${baseline.schemaVersion ?? 1} is not comparable with current schema v${current.schemaVersion}. Starting a new measurement epoch.`,
+      ''
+    )
+    lines.push(...renderNoBaselineReport(prGroups))
+  } else if (compatibleBaseline && compatibleHistory.length >= 2) {
+    lines.push(
+      ...renderFullReport(prGroups, compatibleBaseline, compatibleHistory)
+    )
+  } else if (compatibleBaseline) {
+    lines.push(
+      ...renderColdStartReport(
+        prGroups,
+        compatibleBaseline,
+        compatibleHistory.length
+      )
+    )
+  } else {
+    lines.push(...renderNoBaselineReport(prGroups))
+  }
+
+  lines.push('\n<details><summary>Summary data</summary>\n')
+  lines.push('```json')
+  lines.push(serializeCommentData(current))
+  lines.push('```')
+  lines.push('\n</details>')
+
+  return lines.join('\n') + '\n'
+}
+
 function main() {
   if (!existsSync(CURRENT_PATH)) {
     process.stdout.write(
@@ -470,40 +672,22 @@ function main() {
     process.exit(0)
   }
 
-  const current: PerfReport = JSON.parse(readFileSync(CURRENT_PATH, 'utf-8'))
+  const current = readPerfReport(CURRENT_PATH)
+  if (current.schemaVersion !== 3) {
+    throw new Error('Current performance report must use schema v3')
+  }
 
   const baseline: PerfReport | null = existsSync(BASELINE_PATH)
-    ? JSON.parse(readFileSync(BASELINE_PATH, 'utf-8'))
+    ? readPerfReport(BASELINE_PATH)
     : null
 
   const historical = loadHistoricalReports()
-  const prGroups = groupByName(current.measurements)
-
-  const lines: string[] = []
-  lines.push('## ⚡ Performance Report\n')
-  lines.push(...renderHeadlineSummary(prGroups))
-
-  if (baseline && historical.length >= 2) {
-    lines.push(...renderFullReport(prGroups, baseline, historical))
-  } else if (baseline) {
-    lines.push(...renderColdStartReport(prGroups, baseline, historical.length))
-  } else {
-    lines.push(...renderNoBaselineReport(prGroups))
-  }
-
-  const rawData = {
-    ...current,
-    measurements: current.measurements.map(
-      ({ allFrameDurationsMs: _, ...rest }) => rest
-    )
-  }
-  lines.push('\n<details><summary>Raw data</summary>\n')
-  lines.push('```json')
-  lines.push(JSON.stringify(rawData, null, 2))
-  lines.push('```')
-  lines.push('\n</details>')
-
-  process.stdout.write(lines.join('\n') + '\n')
+  process.stdout.write(renderPerfReport(current, baseline, historical))
 }
 
-main()
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
+  main()
+}

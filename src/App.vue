@@ -9,7 +9,6 @@ import BlockUI from 'primevue/blockui'
 import { computed, onMounted, watch } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
-import config from '@/config'
 import { isDesktop } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { app } from '@/scripts/app'
@@ -57,8 +56,6 @@ function handleResourceError(url: string, tagName: string) {
 }
 
 onMounted(() => {
-  window['__COMFYUI_FRONTEND_VERSION__'] = config.app_version
-
   if (isDesktop) {
     document.addEventListener('contextmenu', showContextMenu)
   }
