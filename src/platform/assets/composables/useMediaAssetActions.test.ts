@@ -1,6 +1,7 @@
 import type { CreateAssetExportData } from '@comfyorg/ingest-types'
+import { createTestingPinia } from '@pinia/testing'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { createPinia, setActivePinia } from 'pinia'
+import { setActivePinia } from 'pinia'
 import { useToast } from 'primevue/usetoast'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, defineComponent, h, provide, ref } from 'vue'
@@ -1276,7 +1277,7 @@ describe('useMediaAssetActions', () => {
     })
 
     it('refetches only affected loaded model caches after deletion', async () => {
-      setActivePinia(createPinia())
+      setActivePinia(createTestingPinia({ stubActions: false }))
       const { useAssetsStore } = await vi.importActual<
         typeof assetsStoreModule
       >('@/stores/assetsStore')
