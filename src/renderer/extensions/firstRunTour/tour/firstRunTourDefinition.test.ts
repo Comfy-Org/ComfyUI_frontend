@@ -67,6 +67,9 @@ vi.mock('@/scripts/app', () => ({
     get rootGraph() {
       return appState.graph
     },
+    get rootGraphOrUndefined() {
+      return appState.graph
+    },
     get canvas() {
       return appState.graph
         ? {

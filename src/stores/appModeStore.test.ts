@@ -45,7 +45,10 @@ const mockEmptyWorkflowDialog = vi.hoisted(() => {
 
 vi.mock('@/scripts/app', () => ({
   app: {
-    rootGraph: { extra: {}, nodes: [{ id: 1 }], events: new EventTarget() }
+    rootGraph: { extra: {}, nodes: [{ id: 1 }], events: new EventTarget() },
+    get isGraphReady() {
+      return Boolean(this.rootGraph)
+    }
   }
 }))
 
@@ -1081,7 +1084,7 @@ describe('appModeStore', () => {
         rootGraph.getNodeById(id)
       )
 
-      expect(rootGraph.getNodeById(interior.id)).toBeUndefined()
+      expect(rootGraph.getNodeById(interior.id)).toBeNull()
 
       const result = store.pruneLinearData({
         inputs: [[interior.id, sourceWidgetName, { height: 120 }]],

@@ -47,6 +47,7 @@ export function useLogsTerminal(
     const controller = new AbortController()
     resyncController = controller
     const { signal } = controller
+    const isAborted = () => signal.aborted
 
     try {
       const logs = await api.getRawLogs()
@@ -57,7 +58,7 @@ export function useLogsTerminal(
       // Backend lost the per-client log subscription across the restart;
       // re-subscribe so new runtime logs stream over the fresh WebSocket.
       await api.subscribeLogs(true)
-      if (signal.aborted) return
+      if (isAborted()) return
       errorMessage.value = ''
       loading.value = false
     } catch (err) {
@@ -83,6 +84,7 @@ export function useLogsTerminal(
     const controller = new AbortController()
     mountController = controller
     const { signal } = controller
+    const isAborted = () => signal.aborted
 
     try {
       const logs = await api.getRawLogs()
@@ -98,16 +100,16 @@ export function useLogsTerminal(
 
     const { clientId } = storeToRefs(useExecutionStore())
     if (!clientId.value) await until(clientId).not.toBeNull()
-    if (signal.aborted) return
+    if (isAborted()) return
 
     try {
       await api.subscribeLogs(true)
     } catch (err) {
-      if (signal.aborted) return
+      if (isAborted()) return
       console.error('Error subscribing to logs', err)
     }
 
-    if (!signal.aborted) loading.value = false
+    if (!isAborted()) loading.value = false
   })
 
   onScopeDispose(() => {
