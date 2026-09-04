@@ -1,8 +1,12 @@
 // @vitest-environment happy-dom
-import { render, screen } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
+import { describe, expect, it } from 'vitest'
 
-import type { WorkshopDetailModel } from '../../config/workshop-detail'
+import type {
+  WorkshopDetailModel,
+  WorkshopFormValues
+} from '../../config/workshop-detail'
 import WorkshopForm from './WorkshopForm.vue'
 
 const model = {
@@ -31,45 +35,63 @@ const model = {
       defaultValue: '1:1'
     }
   ]
-} as unknown as WorkshopDetailModel
+} satisfies WorkshopDetailModel
 
-function renderForm(modelValue: Record<string, unknown>) {
-  const updated = vi.fn()
-  render(WorkshopForm, {
-    props: { model, modelValue, 'onUpdate:modelValue': updated } as never
-  })
-  return updated
+/**
+ * Asserting on what the component emits, rather than on an injected update
+ * handler, is what a caller actually observes — and it keeps the fixture and
+ * the props in their real types with no casts.
+ */
+function renderForm() {
+  return render(WorkshopForm, { props: { model } })
+}
+
+function lastEmittedValues(
+  utils: ReturnType<typeof renderForm>
+): WorkshopFormValues | undefined {
+  const emitted = utils.emitted('update:modelValue') as
+    | [WorkshopFormValues][]
+    | undefined
+  return emitted?.at(-1)?.[0]
+}
+
+function utilsSelectValue(): string {
+  return (screen.getByLabelText(/aspect ratio/i) as HTMLSelectElement).value
 }
 
 describe('WorkshopForm', () => {
   it('renders one control per field in the model', () => {
-    renderForm({})
+    renderForm()
 
     expect(screen.getByLabelText(/prompt/i)).toBeTruthy()
     expect(screen.getByLabelText(/aspect ratio/i)).toBeTruthy()
   })
 
-  it('seeds the schema defaults when it is handed an empty value bag', () => {
-    // A page renders the form before the visitor has touched anything, so an
-    // empty bag has to become the model's defaults rather than stay empty and
-    // send a request with no aspect ratio.
-    const updated = renderForm({})
+  it('seeds the schema defaults and reports them', async () => {
+    // The page renders this before the visitor has touched anything, so the
+    // form has to become the model's defaults rather than stay empty and send
+    // a request with no aspect ratio.
+    const utils = renderForm()
 
-    expect(updated).toHaveBeenCalledWith(
-      expect.objectContaining({ aspect_ratio: '1:1' })
+    await waitFor(() =>
+      expect(lastEmittedValues(utils)).toMatchObject({ aspect_ratio: '1:1' })
     )
+    expect(utilsSelectValue()).toBe('1:1')
   })
 
-  it('leaves values alone when it is handed some already', () => {
-    // The same form is re-rendered after an edit; re-seeding here would throw
-    // away what the visitor typed.
-    const updated = renderForm({ prompt: 'a cat', aspect_ratio: '16:9' })
+  it('keeps an edit instead of re-seeding over it', async () => {
+    const utils = renderForm()
+    await userEvent.setup().type(screen.getByLabelText(/prompt/i), 'a cat')
 
-    expect(updated).not.toHaveBeenCalled()
+    // The seed must not come back and overwrite what was typed.
+    expect(lastEmittedValues(utils)).toMatchObject({
+      prompt: 'a cat',
+      aspect_ratio: '1:1'
+    })
   })
 
   it('shows the run control as not yet available', () => {
-    renderForm({})
+    renderForm()
 
     const submit = screen.getByRole('button')
     expect(submit.hasAttribute('disabled')).toBe(true)
