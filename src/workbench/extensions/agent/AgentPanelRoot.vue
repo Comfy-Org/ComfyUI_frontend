@@ -990,6 +990,14 @@ function onPanelDrop(event: DragEvent): void {
     @dragover="onPanelDragOver"
     @drop="onPanelDrop"
   >
+    <!--
+      `DockedAgentPanel` labels its `role="complementary"` landmark with an
+      unconditional `aria-labelledby="agent-panel-title"`, but only its
+      `AgentPanelLoadError` fallback renders that id. On the success path the
+      reference dangled, so the landmark had no accessible name. Carry the same
+      `agent.title` string here so the name resolves whichever branch renders.
+    -->
+    <h2 id="agent-panel-title" class="sr-only">{{ t('agent.title') }}</h2>
     <input
       ref="fileInput"
       type="file"
