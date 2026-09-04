@@ -277,6 +277,8 @@ function materialize(
   if (orphan?.type === state.type) {
     nodeStore.deleteNode(scope, state)
     const registered = nodeStore.registerNode(scope, orphan._state)
+    // ADR 0016: same-state re-registration is idempotent; rejection here is
+    // lifecycle corruption rather than a recoverable input collision.
     assert(registered, 'Failed to rebind incumbent node state')
     orphan._state = registered
     orphan._graphScope = scope
