@@ -6,7 +6,11 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
 import type { NodeId } from '@/types/nodeId'
 
-import { computedSectionDataList, searchWidgetsAndNodes } from '../shared'
+import {
+  computedSectionDataList,
+  isPanelHiddenWidget,
+  searchWidgetsAndNodes
+} from '../shared'
 import type { NodeWidgetsListList } from '../shared'
 import PanelSearchHeader from './PanelSearchHeader.vue'
 import SectionWidgets from './SectionWidgets.vue'
@@ -31,14 +35,7 @@ const advancedWidgetsSectionDataList = computed((): NodeWidgetsListList => {
     .map((node) => {
       const { widgets = [] } = node
       const advancedWidgets = widgets
-        .filter(
-          (w) =>
-            !(
-              w.options?.canvasOnly ||
-              w.options?.hidden ||
-              w.options?.hideInPanel
-            ) && w.options?.advanced
-        )
+        .filter((w) => !isPanelHiddenWidget(w) && w.options?.advanced)
         .map((widget) => ({ node, widget }))
       return { widgets: advancedWidgets, node }
     })

@@ -13,7 +13,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
-import { searchWidgets } from '../shared'
+import { isPanelHiddenWidget, searchWidgets } from '../shared'
 import type { NodeWidgetsList } from '../shared'
 import PanelSearchHeader from './PanelSearchHeader.vue'
 import SectionWidgets from './SectionWidgets.vue'
@@ -66,7 +66,9 @@ watch(
 )
 
 const widgetsList = computed((): NodeWidgetsList => {
-  return promotedInputWidgets(node).map((widget) => ({ node, widget }))
+  return promotedInputWidgets(node)
+    .filter((widget) => !isPanelHiddenWidget(widget))
+    .map((widget) => ({ node, widget }))
 })
 
 const advancedInputsWidgets = computed((): NodeWidgetsList => {
@@ -75,7 +77,7 @@ const advancedInputsWidgets = computed((): NodeWidgetsList => {
   const allInteriorWidgets = interiorNodes.flatMap((interiorNode) => {
     const { widgets = [] } = interiorNode
     return widgets
-      .filter((w) => !w.computedDisabled && !w.options.canvasOnly)
+      .filter((w) => !w.computedDisabled && !isPanelHiddenWidget(w))
       .map((widget) => ({ node: interiorNode, widget }))
   })
 
