@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
   notifyAfterGraphConfigure: vi.fn(),
   notifyBeforeGraphLoad: vi.fn(),
   agentStore: { enabled: false, isOpen: true, close: vi.fn() },
-  canvasStore: { updateSelectedItems: vi.fn() },
+  canvasStore: {},
   getNodeByLocatorId: vi.fn(),
   flagEnabled: undefined as boolean | undefined,
   flagListener: null as (() => void) | null,
@@ -109,7 +109,6 @@ describe('AgentPanel extension flag gate', () => {
     mocks.flagEnabled = undefined
     mocks.flagListener = null
     mocks.registerTracker.mockClear()
-    mocks.canvasStore.updateSelectedItems.mockClear()
     mocks.getNodeByLocatorId.mockReset()
     mocks.nodeSelectionStore.beginWorkflowLoad.mockClear()
     mocks.nodeSelectionStore.finishWorkflowLoad.mockClear()
@@ -209,7 +208,6 @@ describe('AgentPanel extension flag gate', () => {
     expect(mocks.getNodeByLocatorId).toHaveBeenCalledWith(rootGraph, '12')
     expect(selectItems).toHaveBeenCalledWith([secondNode])
     expect(mocks.nodeSelectionStore.restoreNodeIds).toHaveBeenCalledWith(['12'])
-    expect(mocks.canvasStore.updateSelectedItems).toHaveBeenCalledOnce()
     expect(mocks.nodeSelectionStore.finishWorkflowLoad).not.toHaveBeenCalled()
   })
 
@@ -277,7 +275,6 @@ describe('AgentPanel extension flag gate', () => {
 
     expect(mocks.nodeSelectionStore.finishWorkflowLoad).toHaveBeenCalledOnce()
     expect(mocks.getNodeByLocatorId).not.toHaveBeenCalled()
-    expect(mocks.canvasStore.updateSelectedItems).not.toHaveBeenCalled()
   })
 
   it('finishes restoration when graph configuration fails', async () => {

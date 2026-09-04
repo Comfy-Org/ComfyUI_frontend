@@ -57,9 +57,6 @@ function useNodeEventHandlersIndividual() {
     if (!node.flags?.pinned) {
       bringNodeToFront(nodeId)
     }
-
-    // Update canvas selection tracking
-    canvasStore.updateSelectedItems()
   }
 
   /**
@@ -136,7 +133,6 @@ function useNodeEventHandlersIndividual() {
     if (!multiSelect) {
       canvasStore.canvas.deselectAll()
       canvasStore.canvas.select(node)
-      canvasStore.updateSelectedItems()
       // Bring node to front when selected (unless pinned)
       if (!node.flags?.pinned) {
         bringNodeToFront(nodeId)
@@ -153,8 +149,6 @@ function useNodeEventHandlersIndividual() {
         bringNodeToFront(nodeId)
       }
     }
-
-    canvasStore.updateSelectedItems()
   }
 
   return {

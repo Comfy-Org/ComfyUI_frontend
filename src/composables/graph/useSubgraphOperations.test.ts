@@ -18,8 +18,7 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
     getCanvas: vi.fn(),
     get selectedItems() {
       return mocks.selectedItems
-    },
-    updateSelectedItems: vi.fn()
+    }
   })
 }))
 

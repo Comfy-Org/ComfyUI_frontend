@@ -58,8 +58,7 @@ vi.mock('@/stores/workspace/rightSidePanelStore', () => ({
 const mockCanvasStore = vi.hoisted(() => ({
   linearMode: false,
   canvas: null,
-  currentGraph: null,
-  updateSelectedItems: vi.fn()
+  currentGraph: null
 }))
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => mockCanvasStore

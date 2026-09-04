@@ -33,7 +33,7 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
 }))
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({ updateSelectedItems: vi.fn() })
+  useCanvasStore: () => ({})
 }))
 
 vi.mock('@/stores/agentNodeSelectionStore', () => ({
