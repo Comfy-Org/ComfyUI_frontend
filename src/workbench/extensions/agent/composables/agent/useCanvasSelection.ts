@@ -7,6 +7,7 @@ export interface SelectedNode {
   id: string
   locatorId?: NodeLocatorId
   title: string
+  workflowId?: string
 }
 
 export function selectedNodeKey(node: SelectedNode): string {
