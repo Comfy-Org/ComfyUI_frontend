@@ -14,7 +14,6 @@ import {
   getWorkshopModelDetail,
   workshopModels
 } from '../../../config/workshop'
-import { familyOf } from '../../../config/model-family'
 import { relatedModels } from '../../../config/workshop-related'
 import { t } from '../../../i18n/translations'
 
@@ -23,15 +22,7 @@ export const getStaticPaths: GetStaticPaths = () =>
 
 const { slug } = Astro.params
 const model = getWorkshopModelDetail(slug as string)!
-const family = familyOf(workshopModels, model.slug)
-const versions = family && family.versions.length > 1 ? family.versions : []
-// The releases of this model are on the switcher, so they stay out of "more".
-const related = relatedModels(
-  model,
-  workshopModels.filter(
-    (other) => !versions.some((version) => version.slug === other.slug)
-  )
-)
+const related = relatedModels(model, workshopModels)
 const relatedHeading =
   model.provider && related.some((other) => other.provider === model.provider)
     ? t('workshop.model.relatedProvider').replace('{provider}', model.provider)
@@ -122,35 +113,6 @@ const tags = [
         <h1 class="text-3xl font-bold text-primary-comfy-canvas lg:text-5xl">
           {model.name}
         </h1>
-
-        {
-          versions.length > 0 && (
-            <nav
-              class="flex flex-wrap items-center gap-2"
-              aria-label={t('workshop.model.versionsLabel')}
-              data-testid="model-versions"
-            >
-              {versions.map((version) => (
-                <a
-                  href={version.href}
-                  aria-current={version.name === model.name ? 'page' : undefined}
-                  class={`inline-flex h-8 items-center gap-2 rounded-2xl border px-3 text-xs transition-colors ${
-                    version.name === model.name
-                      ? 'border-primary-comfy-yellow text-primary-comfy-yellow'
-                      : 'border-transparency-white-t20 text-primary-comfy-canvas hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow'
-                  }`}
-                >
-                  {version.name}
-                  {version.slug === family?.latest.slug && (
-                    <span class="text-[10px] font-bold tracking-wider text-primary-warm-gray uppercase">
-                      {t('workshop.model.latest')}
-                    </span>
-                  )}
-                </a>
-              ))}
-            </nav>
-          )
-        }
 
         <p
           class="flex items-baseline gap-1.5 text-sm text-primary-comfy-canvas/70"

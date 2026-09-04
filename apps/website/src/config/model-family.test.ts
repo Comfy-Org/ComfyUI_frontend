@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { familyOf, groupByFamily } from './model-family'
+import { groupByFamily } from './model-family'
 import type { WorkshopModel } from './workshop'
 
 function model(
@@ -90,17 +90,5 @@ describe('groupByFamily', () => {
     ])
 
     expect(families.map((family) => family.name)).toEqual(['Veo', 'Wan'])
-  })
-})
-
-describe('familyOf', () => {
-  it('finds the family of a release the switcher no longer lists', () => {
-    const models = [
-      model('Flux', 'flux', { workflowCount: 9 }),
-      model('Flux', 'flux-api', { workflowCount: 2 })
-    ]
-
-    expect(familyOf(models, 'flux-api')?.latest.slug).toBe('flux')
-    expect(familyOf(models, 'nope')).toBeUndefined()
   })
 })

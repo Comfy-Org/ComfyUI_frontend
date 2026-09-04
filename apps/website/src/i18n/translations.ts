@@ -8695,8 +8695,6 @@ Enterprise`
     'zh-CN': '更多分类'
   },
   'workshop.model.versions': { en: '{n} versions', 'zh-CN': '{n} 个版本' },
-  'workshop.model.versionsLabel': { en: 'Versions', 'zh-CN': '版本' },
-  'workshop.model.latest': { en: 'Latest', 'zh-CN': '最新' },
   'workshop.model.deprecated': { en: 'Deprecated', 'zh-CN': '已弃用' },
   'workshop.model.deprecatedBody': {
     en: 'This model is being retired.',

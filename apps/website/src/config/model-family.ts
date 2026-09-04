@@ -107,13 +107,3 @@ export function groupModels(
         versions: [model]
       }))
 }
-
-export function familyOf(
-  models: readonly WorkshopModel[],
-  slug: string
-): ModelFamily | undefined {
-  const model = models.find((candidate) => candidate.slug === slug)
-  if (!model) return undefined
-  const key = familyKeyOf(model)
-  return groupByFamily(models).find((family) => family.key === key)
-}

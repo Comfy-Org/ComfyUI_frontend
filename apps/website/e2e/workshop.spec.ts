@@ -120,7 +120,6 @@ test.describe('Workshop catalog', () => {
     await page.getByTestId('workshop-model-card').first().click()
     await expect(page).toHaveURL(/\/workshop\/models\/kling-ai\/?$/)
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Kling AI')
-    await expect(page.getByTestId('model-versions')).toContainText('Kling 2.6')
     await expect(
       page.getByTestId('related-models').getByTestId('workshop-model-card')
     ).toHaveCount(4)
