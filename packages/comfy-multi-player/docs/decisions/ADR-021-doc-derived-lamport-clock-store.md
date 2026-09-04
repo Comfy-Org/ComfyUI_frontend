@@ -68,7 +68,8 @@ no caller-independent merge or durable state (KA-13).
 - **DQ-11:** the decision to namespace node-scoped stamps by incarnation.
 - **Vector clock:** a test reference mapping each actor to its observed counter, able to distinguish
   ordered pairs from true concurrency.
-- **KA-13:** the package statelessness invariant guarded by `check:stateless`.
+- **KA-13:** the package statelessness invariant guarded by `check:stateless`, registered in
+  [`docs/INVARIANTS.md`](../INVARIANTS.md).
 
 ## Amendment: CLK-1 transaction serialization and commit
 
