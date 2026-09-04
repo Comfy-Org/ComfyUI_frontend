@@ -205,8 +205,7 @@ export function useJobMenu(
   }
 
   const removeFailedJob = async (task?: TaskItemImpl | null) => {
-    const target =
-      task ?? (currentMenuItem()?.taskRef as TaskItemImpl | undefined)
+    const target = task ?? currentMenuItem()?.taskRef
     if (!target) return
     await queueStore.delete(target)
   }

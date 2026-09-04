@@ -34,7 +34,7 @@ function createTestWidget(
   )
 }
 
-class MutableTypeWidget extends BaseWidget<IBaseWidget<number, string>> {
+class MutableTypeWidget extends BaseWidget<IBaseWidget<number>> {
   drawWidget(
     _ctx: CanvasRenderingContext2D,
     _options: DrawWidgetOptions

@@ -405,12 +405,8 @@ export function setupComplexPromotionFixture(): {
     throw new Error('Expected fixture to contain subgraph instance node id 21')
 
   const graph = createTestRootGraph()
-  const subgraph = graph.createSubgraph(subgraphData as ExportedSubgraph)
-  const hostNode = new SubgraphNode(
-    graph,
-    subgraph,
-    hostNodeData as ExportedSubgraphInstance
-  )
+  const subgraph = graph.createSubgraph(subgraphData)
+  const hostNode = new SubgraphNode(graph, subgraph, hostNodeData)
   graph.add(hostNode)
 
   return {

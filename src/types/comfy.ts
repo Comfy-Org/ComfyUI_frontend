@@ -231,6 +231,13 @@ export interface ComfyExtension {
   afterLoadGraph?(app: ComfyApp): Promise<void> | void
 
   /**
+   * Allows the extension to clean up state when graph configuration fails.
+   * @param error The graph configuration error
+   * @param app The app instance
+   */
+  onGraphLoadError?(error: unknown, app: ComfyApp): Promise<void> | void
+
+  /**
    * Allows the extension to modify the graph data before it is configured.
    * @param graphData The graph data
    * @param missingNodeTypes The missing node types

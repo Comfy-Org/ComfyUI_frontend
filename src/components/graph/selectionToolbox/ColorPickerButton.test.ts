@@ -39,7 +39,7 @@ function createMockWorkflow(
     ...overrides
   } satisfies Partial<LoadedComfyWorkflow>
 
-  return Object.assign(workflow, workflowOverrides) as LoadedComfyWorkflow
+  return Object.assign(workflow, workflowOverrides)
 }
 
 // Mock the litegraph module

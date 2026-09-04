@@ -1,3 +1,5 @@
+import { storeToRefs } from 'pinia'
+
 import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { registerViewportInset } from '@/composables/canvas/viewportInsetRegistry'
@@ -24,7 +26,7 @@ export function registerAgentPanelExtension(): void {
     beforeLoadGraph() {
       notifyMintPortsBeforeGraphLoad()
       const agentPanelStore = useAgentPanelStore()
-      if (!agentPanelStore.isOpen) return
+      if (!agentPanelStore.enabled || !agentPanelStore.isOpen) return
 
       const nodeSelectionStore = useAgentNodeSelectionStore()
       nodeSelectionStore.beginWorkflowLoad()
@@ -33,30 +35,42 @@ export function registerAgentPanelExtension(): void {
       const agentPanelStore = useAgentPanelStore()
       const nodeSelectionStore = useAgentNodeSelectionStore()
       if (!nodeSelectionStore.isLoadingWorkflow) return
-      if (!agentPanelStore.isOpen) {
+      if (!agentPanelStore.enabled || !agentPanelStore.isOpen) {
         nodeSelectionStore.finishWorkflowLoad()
         return
       }
 
-      const canvas = app.canvas
-      const workflowStore = useWorkflowStore()
-      const workflowPath = workflowStore.activeWorkflow?.path
-      const nodes = nodeSelectionStore
-        .nodeIds(workflowPath)
-        .map((locatorId) => getNodeByLocatorId(app.rootGraph, locatorId))
-        .filter(isLGraphNode)
-      nodeSelectionStore.restoreNodeIds(
-        nodes.map((node) => workflowStore.nodeToNodeLocatorId(node))
-      )
-      canvas?.selectItems(nodes)
-      useCanvasStore().updateSelectedItems()
+      try {
+        const canvas = app.canvas
+        const workflowStore = useWorkflowStore()
+        const workflowPath = workflowStore.activeWorkflow?.path
+        const nodes = nodeSelectionStore
+          .nodeIds(workflowPath)
+          .map((locatorId) => getNodeByLocatorId(app.rootGraph, locatorId))
+          .filter(isLGraphNode)
+        nodeSelectionStore.restoreNodeIds(
+          nodes.map((node) => workflowStore.nodeToNodeLocatorId(node))
+        )
+        canvas?.selectItems(nodes)
+        useCanvasStore().updateSelectedItems()
+      } catch (error) {
+        nodeSelectionStore.finishWorkflowLoad()
+        throw error
+      }
+    },
+    onGraphLoadError() {
+      const nodeSelectionStore = useAgentNodeSelectionStore()
+      if (nodeSelectionStore.isLoadingWorkflow) {
+        nodeSelectionStore.finishWorkflowLoad()
+      }
     },
     afterConfigureGraph() {
       notifyMintPortsAfterGraphConfigure()
     },
     setup() {
-      registerWorkflowTabActivityTracker()
       const agentPanelStore = useAgentPanelStore()
+      const { enabled } = storeToRefs(agentPanelStore)
+      registerWorkflowTabActivityTracker(enabled)
       registerViewportInset('agent-panel', () =>
         agentPanelStore.docked ? agentPanelStore.width : 0
       )
@@ -82,6 +96,11 @@ async function setupFlagGate(): Promise<void> {
     const sync = (): void => {
       const forceInDev = import.meta.env.MODE === 'development'
       agentPanelStore.enabled = forceInDev || source.isEnabled()
+      if (!agentPanelStore.enabled) {
+        const nodeSelectionStore = useAgentNodeSelectionStore()
+        if (nodeSelectionStore.isLoadingWorkflow)
+          nodeSelectionStore.finishWorkflowLoad()
+      }
     }
     source.onChange?.(() => {
       sync()
