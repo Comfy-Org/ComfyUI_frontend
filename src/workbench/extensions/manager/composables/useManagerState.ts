@@ -57,8 +57,7 @@ export function useManagerState() {
 
       // Get current values
       const clientSupportsV4 =
-        api.getClientFeatureFlags().supports_manager_v4_ui ?? false
-
+        api.getClientFeatureFlags().supports_manager_v4_ui === true
       const serverSupportsV4 = api.getServerFeature(
         'extension.manager.supports_v4'
       )
@@ -70,7 +69,7 @@ export function useManagerState() {
       // Check command line args first (highest priority)
       // --enable-manager flag enables the manager (opposite of old --disable-manager)
       const hasEnableManager =
-        systemStats.value?.system?.argv?.includes('--enable-manager')
+        systemStats.value?.system.argv.includes('--enable-manager')
 
       // If --enable-manager is NOT present, manager is disabled
       if (!hasEnableManager) {
@@ -78,7 +77,7 @@ export function useManagerState() {
       }
 
       if (
-        systemStats.value?.system?.argv?.includes('--enable-manager-legacy-ui')
+        systemStats.value?.system.argv.includes('--enable-manager-legacy-ui')
       ) {
         return ManagerUIState.LEGACY_UI
       }
@@ -101,7 +100,6 @@ export function useManagerState() {
         return ManagerUIState.NEW_UI
       }
 
-      // Server supports v4 but client doesn't = LEGACY_UI
       if (serverSupportsV4 === true && !clientSupportsV4) {
         return ManagerUIState.LEGACY_UI
       }

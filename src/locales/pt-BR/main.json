@@ -4298,8 +4298,6 @@
     "canceledCard": {
       "description": "Você não será mais cobrado. Seus recursos permanecem ativos até {date}.",
       "descriptionWithoutDate": "Você não será cobrado novamente. Seus recursos permanecem ativos até o final do seu período de cobrança.",
-      "endedDescription": "Sua assinatura não está mais ativa.",
-      "endedTitle": "Sua assinatura foi encerrada",
       "title": "Sua assinatura foi cancelada"
     },
     "changePlan": "Alterar plano",
@@ -4354,6 +4352,7 @@
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "Tem dúvidas ou interesse em soluções empresariais?",
     "inactive": {
+      "badge": "Inativo",
       "memberCta": "Ok, entendi",
       "memberDescription": "Peça ao proprietário do workspace para reativar a assinatura e executar fluxos de trabalho.",
       "memberRunTooltip": "Entre em contato com o proprietário do workspace para reativar a assinatura",

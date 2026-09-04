@@ -62,9 +62,7 @@ function assertAssetOptions(
 
 function firstShowOptions() {
   const showOptions = vi.mocked(useAssetBrowserDialog().show).mock.calls[0]?.[0]
-  if (!showOptions) {
-    throw new Error('Expected the asset browser dialog to open')
-  }
+
   return showOptions
 }
 

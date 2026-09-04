@@ -59,7 +59,7 @@ function renderedWidgets(
     }
   })
   const nodeData: { widgets?: ProbedWidget[] } = JSON.parse(
-    screen.getByTestId('node-data').textContent ?? ''
+    screen.getByTestId('node-data').textContent
   )
   return nodeData.widgets ?? []
 }

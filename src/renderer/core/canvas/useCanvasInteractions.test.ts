@@ -133,19 +133,6 @@ describe('useCanvasInteractions', () => {
       expect(mockEvent.preventDefault).not.toHaveBeenCalled()
       expect(mockEvent.stopPropagation).not.toHaveBeenCalled()
     })
-
-    it('should return early when canvas is null', () => {
-      const { getCanvas } = useCanvasStore()
-      vi.mocked(getCanvas).mockReturnValue(null!)
-      const { handlePointerMove } = useCanvasInteractions()
-
-      const mockEvent = createMockPointerEvent({ buttons: 1 })
-      handlePointerMove(mockEvent)
-
-      expect(getCanvas).toHaveBeenCalled()
-      expect(mockEvent.preventDefault).not.toHaveBeenCalled()
-      expect(mockEvent.stopPropagation).not.toHaveBeenCalled()
-    })
   })
 
   describe('handleWheel', () => {

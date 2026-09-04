@@ -31,7 +31,7 @@ const runningTasksRef = ref<Array<{ jobId: string }>>([])
 const pendingTasksRef = ref<Array<{ jobId: string }>>([])
 
 const selectFirstHistoryFn = vi.fn(() => {
-  const first = mediaRef.value[0]
+  const first = mediaRef.value.at(0)
   selectedIdRef.value = first ? `history:${first.id}:0` : null
 })
 const mayBeActiveWorkflowPendingRef = ref(false)

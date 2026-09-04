@@ -4298,8 +4298,6 @@
     "canceledCard": {
       "description": "Ihnen werden keine weiteren Kosten berechnet. Ihre Funktionen bleiben bis {date} aktiv.",
       "descriptionWithoutDate": "Ihnen werden keine weiteren Kosten berechnet. Ihre Funktionen bleiben bis zum Ende Ihres Abrechnungszeitraums aktiv.",
-      "endedDescription": "Ihr Abonnement ist nicht mehr aktiv.",
-      "endedTitle": "Ihr Abonnement ist beendet",
       "title": "Ihr Abonnement wurde gekündigt"
     },
     "changePlan": "Plan ändern",
@@ -4354,6 +4352,7 @@
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "Haben Sie Fragen oder interessieren Sie sich für Enterprise?",
     "inactive": {
+      "badge": "Inaktiv",
       "memberCta": "OK, verstanden",
       "memberDescription": "Bitten Sie den Workspace-Inhaber, das Abonnement des Workspace zu reaktivieren, um Workflows auszuführen.",
       "memberRunTooltip": "Wenden Sie sich an den Workspace-Inhaber, um das Abonnement erneut abzuschließen",
