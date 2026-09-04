@@ -50,12 +50,16 @@ export function rememberAgentSessionMemory(
 ): void {
   if (userId === null) return
 
+  const previousThreadId = readStorage(AGENT_THREAD_STORAGE_KEY)
   if (!writeStorage(AGENT_THREAD_STORAGE_KEY, threadId)) return
-  if (userId === undefined) {
-    removeStorage(AGENT_THREAD_OWNER_STORAGE_KEY)
-  } else {
-    writeStorage(AGENT_THREAD_OWNER_STORAGE_KEY, userId)
-  }
+  const ownerUpdated =
+    userId === undefined
+      ? removeStorage(AGENT_THREAD_OWNER_STORAGE_KEY)
+      : writeStorage(AGENT_THREAD_OWNER_STORAGE_KEY, userId)
+  if (ownerUpdated) return
+
+  if (previousThreadId === null) removeStorage(AGENT_THREAD_STORAGE_KEY)
+  else writeStorage(AGENT_THREAD_STORAGE_KEY, previousThreadId)
 }
 
 export function hasAgentSessionMemoryFor(userId: string | null): boolean {
