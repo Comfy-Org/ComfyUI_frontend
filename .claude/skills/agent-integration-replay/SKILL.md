@@ -27,15 +27,24 @@ DISTRIBUTION=cloud DEV_SERVER_COMFYUI_URL=http://127.0.0.1:8188 pnpm dev
 ```
 
 ```bash
+pnpm comfy-test agent-replay
+```
+
+- One case: `pnpm comfy-test agent-replay --case <case id> --headed` (the
+  case id is the JSON file name without `.json`); `--video` records it under
+  `test-results/`; `--url <origin>` points at a dev server other than
+  `http://localhost:5173`.
+- Set `TEST_COMFYUI_DIR` to the ComfyUI install behind 8188 (or put it in
+  `.env`) so the suite backs up and restores its user data.
+- The command is a thin front for the raw invocation, which still works when
+  the CLI is not available:
+
+```bash
 PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://localhost:5173 DISTRIBUTION=cloud pnpm exec playwright test agentConversation --project=cloud
 ```
 
-- Watch one case: add `--headed -g <case id>` (the case id is the JSON file
-  name without `.json`).
-- Set `TEST_COMFYUI_DIR` to the ComfyUI install behind 8188 (or put it in
-  `.env`) so the suite backs up and restores its user data.
-- Video: set `RECORD_VIDEO=true`; Playwright writes the recording under
-  `test-results/`.
+Add `--headed -g <case id>` to watch one and `RECORD_VIDEO=true` for video.
+
 - A failing replay names the turn and the assertion that failed. Compare the
   recording's `response` entries for that turn with what the panel rendered
   before touching the fixture; the fixture is data, never edit it by hand to
@@ -75,13 +84,15 @@ AGENT_MODEL=claude-opus-5 COMFY_BIN=~/.local/bin/comfy pnpm tsx scripts/dev-agen
 
 The launcher prints the recorder command with the environment filled in.
 Paste it, adding one `--prompt "<text>"` per turn and `--out <fixture path>`;
-for a cancelled turn add `--cancel-turn <k> --cancel-after-ms <n>`. The
+for a cancelled turn add `--cancel-turn <k> --cancel-after-ms <n>`; `--work <dir>`
+moves the provenance sidecars out of `recordings/`. The
 recorder refuses the recording, with the reason, when the socket stream never
 opened, a turn was not accepted, an applied operation is missing from the tool
 result, or a cancel was not acknowledged; fix the cause and re-run rather than
 editing the output.
 
-Then replay the new case alone (job 1 with `-g <case id>`) before committing
+Then replay the new case alone (`pnpm comfy-test agent-replay --case <case id>`)
+before committing
 it. Name the case after the behavior it pins, `agent-rec-<behavior>`.
 
 ## Conventions
