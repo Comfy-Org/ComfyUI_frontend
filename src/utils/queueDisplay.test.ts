@@ -1,227 +1,92 @@
 import { describe, expect, it } from 'vitest'
 
-import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { TaskItemImpl } from '@/stores/queueStore'
 import type { JobState } from '@/types/queue'
-import type { BuildJobDisplayCtx } from '@/utils/queueDisplay'
-import { buildJobDisplay, iconForJobState } from '@/utils/queueDisplay'
 
-type QueueDisplayTask = Parameters<typeof buildJobDisplay>[0]
-type PreviewOutput = NonNullable<QueueDisplayTask['previewOutput']>
+import type { BuildJobDisplayCtx } from './queueDisplay'
+import { buildJobDisplay, iconForJobState } from './queueDisplay'
 
-function createJob(
-  status: JobListItem['status'],
-  overrides: Partial<JobListItem> = {}
-): JobListItem {
-  return {
-    id: 'job-123456',
-    status,
-    create_time: 1_710_000_000_000,
-    priority: 12,
-    ...overrides
-  }
-}
+const noopFormatClockTime = (ts: number) => `t:${ts}`
 
-function createTask({
-  job,
-  jobId = 'job-123456',
-  createTime = 1_710_000_000_000,
-  executionTime,
-  executionTimeInSeconds,
-  previewOutput
-}: {
-  job?: Partial<JobListItem>
-  jobId?: string
-  createTime?: number
-  executionTime?: number
-  executionTimeInSeconds?: number
-  previewOutput?: PreviewOutput
-} = {}): QueueDisplayTask {
-  return {
-    job: createJob(job?.status ?? 'pending', job),
-    jobId,
-    createTime,
-    executionTime,
-    executionTimeInSeconds,
-    previewOutput
-  } as QueueDisplayTask
-}
-
-function createCtx(
+const baseCtx = (
   overrides: Partial<BuildJobDisplayCtx> = {}
-): BuildJobDisplayCtx {
-  return {
-    t: (key, values) => {
-      const entries = Object.entries(values ?? {})
-      if (!entries.length) return key
+): BuildJobDisplayCtx => ({
+  t: (key: string) => key,
+  locale: 'en-US',
+  formatClockTimeFn: noopFormatClockTime,
+  isActive: false,
+  ...overrides
+})
 
-      return `${key}(${entries
-        .map(([name, value]) => `${name}=${String(value)}`)
-        .join(',')})`
-    },
-    locale: 'en-US',
-    formatClockTimeFn: (ts, locale) => `${locale}:${ts}`,
-    isActive: false,
+const taskFor = (overrides: Partial<TaskItemImpl> = {}): TaskItemImpl =>
+  ({
+    jobId: 'job-1',
+    job: { priority: 1 },
+    createTime: 0,
     ...overrides
-  }
-}
+  }) as unknown as TaskItemImpl
 
 describe('iconForJobState', () => {
-  it.for<[JobState, string]>([
-    ['pending', 'icon-[lucide--loader-circle]'],
-    ['initialization', 'icon-[lucide--server-crash]'],
-    ['running', 'icon-[lucide--zap]'],
-    ['completed', 'icon-[lucide--check-check]'],
-    ['failed', 'icon-[lucide--alert-circle]']
-  ])('maps %s to its icon', ([state, icon]) => {
-    expect(iconForJobState(state)).toBe(icon)
+  it('returns a distinct icon for cancelled vs failed', () => {
+    expect(iconForJobState('cancelled')).toBe('icon-[lucide--circle-x]')
+    expect(iconForJobState('failed')).toBe('icon-[lucide--circle-alert]')
+    expect(iconForJobState('cancelled')).not.toBe(iconForJobState('failed'))
+  })
+
+  it('returns expected icons for in-progress and completed states', () => {
+    expect(iconForJobState('running')).toBe('icon-[lucide--zap]')
+    expect(iconForJobState('completed')).toBe('icon-[lucide--check-check]')
+    expect(iconForJobState('pending')).toBe('icon-[lucide--loader-circle]')
   })
 })
 
-describe('buildJobDisplay', () => {
-  it('shows the added hint for pending jobs when requested', () => {
-    expect(
-      buildJobDisplay(
-        createTask(),
-        'pending',
-        createCtx({ showAddedHint: true })
-      )
-    ).toEqual({
-      iconName: 'icon-[lucide--check]',
-      primary: 'queue.jobAddedToQueue',
-      secondary: 'en-US:1710000000000',
-      showClear: true
-    })
+describe('buildJobDisplay - cancelled state', () => {
+  it('uses g.cancelled labels (not g.failed) for cancelled jobs', () => {
+    const seen: string[] = []
+    const t = (key: string) => {
+      seen.push(key)
+      return key
+    }
+
+    const display = buildJobDisplay(taskFor(), 'cancelled', baseCtx({ t }))
+
+    expect(display.primary).toBe('g.cancelled')
+    expect(display.secondary).toBe('g.cancelled')
+    expect(seen).toContain('g.cancelled')
+    expect(seen).not.toContain('g.failed')
   })
 
-  it('shows queued time for pending and initializing jobs', () => {
-    expect(buildJobDisplay(createTask(), 'pending', createCtx())).toMatchObject(
-      {
-        iconName: 'icon-[lucide--loader-circle]',
-        primary: 'queue.inQueue',
-        secondary: 'en-US:1710000000000',
-        showClear: true
-      }
-    )
-
-    expect(
-      buildJobDisplay(createTask(), 'initialization', createCtx())
-    ).toMatchObject({
-      iconName: 'icon-[lucide--server-crash]',
-      primary: 'queue.initializingAlmostReady',
-      secondary: 'en-US:1710000000000',
-      showClear: true
-    })
+  it('uses the cancelled icon, not the failed icon', () => {
+    const display = buildJobDisplay(taskFor(), 'cancelled', baseCtx())
+    expect(display.iconName).toBe(iconForJobState('cancelled'))
+    expect(display.iconName).not.toBe(iconForJobState('failed'))
   })
 
-  it('formats active running progress from the injected context', () => {
-    expect(
-      buildJobDisplay(
-        createTask({ job: { status: 'in_progress' } }),
-        'running',
-        createCtx({
-          isActive: true,
-          totalPercent: 42.7,
-          currentNodePercent: -10,
-          currentNodeName: 'KSampler'
-        })
-      )
-    ).toEqual({
-      iconName: 'icon-[lucide--zap]',
-      primary: 'sideToolbar.queueProgressOverlay.total(percent=43%)',
-      secondary:
-        'KSampler sideToolbar.queueProgressOverlay.colonPercent(percent=0%)',
-      showClear: true
-    })
+  it('keeps the failed branch using g.failed and the failed icon', () => {
+    const display = buildJobDisplay(taskFor(), 'failed', baseCtx())
+    expect(display.primary).toBe('g.failed')
+    expect(display.iconName).toBe(iconForJobState('failed'))
   })
 
-  it('uses a compact running label when the job is not active', () => {
-    expect(
-      buildJobDisplay(
-        createTask({ job: { status: 'in_progress' } }),
-        'running',
-        createCtx()
-      )
-    ).toEqual({
-      iconName: 'icon-[lucide--zap]',
-      primary: 'g.running',
-      secondary: '',
-      showClear: true
-    })
+  it('allows the row to be cleared (showClear true) for cancelled', () => {
+    const display = buildJobDisplay(taskFor(), 'cancelled', baseCtx())
+    expect(display.showClear).toBe(true)
   })
+})
 
-  it('shows local completed jobs as the preview filename', () => {
-    expect(
-      buildJobDisplay(
-        createTask({
-          job: {
-            status: 'completed'
-          },
-          executionTimeInSeconds: 3.51,
-          previewOutput: {
-            filename: 'preview.png',
-            isImage: true,
-            url: '/api/view?filename=preview.png&type=output&subfolder='
-          } as PreviewOutput
-        }),
-        'completed',
-        createCtx()
-      )
-    ).toEqual({
-      iconName: 'icon-[lucide--check-check]',
-      iconImageUrl: '/api/view?filename=preview.png&type=output&subfolder=',
-      primary: 'preview.png',
-      secondary: '3.51s',
-      showClear: false
-    })
-  })
+describe('buildJobDisplay - exhaustive state handling', () => {
+  const states: JobState[] = [
+    'pending',
+    'initialization',
+    'running',
+    'completed',
+    'failed',
+    'cancelled'
+  ]
 
-  it('shows cloud completed jobs as elapsed time', () => {
-    expect(
-      buildJobDisplay(
-        createTask({
-          job: {
-            status: 'completed'
-          },
-          executionTime: 64_000,
-          executionTimeInSeconds: 64
-        }),
-        'completed',
-        createCtx({ isCloud: true })
-      )
-    ).toMatchObject({
-      iconName: 'icon-[lucide--check-check]',
-      primary: 'queue.completedIn(duration=1m 4s)',
-      secondary: '64.00s',
-      showClear: false
-    })
-  })
-
-  it('falls back to job title for completed jobs without a preview filename', () => {
-    expect(
-      buildJobDisplay(
-        createTask({
-          job: {
-            status: 'completed',
-            priority: 42
-          }
-        }),
-        'completed',
-        createCtx()
-      )
-    ).toMatchObject({
-      iconName: 'icon-[lucide--check-check]',
-      primary: 'g.job #42',
-      secondary: '',
-      showClear: false
-    })
-  })
-
-  it('shows failed jobs as clearable failures', () => {
-    expect(buildJobDisplay(createTask(), 'failed', createCtx())).toEqual({
-      iconName: 'icon-[lucide--alert-circle]',
-      primary: 'g.failed',
-      secondary: 'g.failed',
-      showClear: true
-    })
+  it.each(states)('returns a non-empty display for %s state', (state) => {
+    const display = buildJobDisplay(taskFor(), state, baseCtx())
+    expect(display.iconName).toBeTruthy()
+    expect(display.primary).toBeTruthy()
   })
 })

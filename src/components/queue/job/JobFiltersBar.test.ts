@@ -66,6 +66,7 @@ describe('JobFiltersBar', () => {
         selectedWorkflowFilter: 'all',
         selectedSortMode: 'mostRecent',
         hasFailedJobs: false,
+        hasCancelledJobs: false,
         onShowAssets: showAssetsSpy
       },
       global: {
@@ -86,6 +87,7 @@ describe('JobFiltersBar', () => {
         selectedWorkflowFilter: 'all',
         selectedSortMode: 'mostRecent',
         hasFailedJobs: false,
+        hasCancelledJobs: false,
         hideShowAssetsAction: true
       },
       global: {

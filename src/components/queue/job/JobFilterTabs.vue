@@ -22,9 +22,10 @@ import Button from '@/components/ui/button/Button.vue'
 import { jobTabs } from '@/composables/queue/useJobList'
 import type { JobTab } from '@/composables/queue/useJobList'
 
-const { selectedJobTab, hasFailedJobs } = defineProps<{
+const { selectedJobTab, hasFailedJobs, hasCancelledJobs } = defineProps<{
   selectedJobTab: JobTab
   hasFailedJobs: boolean
+  hasCancelledJobs: boolean
 }>()
 
 defineEmits<{
@@ -34,12 +35,17 @@ defineEmits<{
 const { t } = useI18n()
 
 const visibleJobTabs = computed(() =>
-  hasFailedJobs ? jobTabs : jobTabs.filter((tab) => tab !== 'Failed')
+  jobTabs.filter((tab) => {
+    if (tab === 'Failed') return hasFailedJobs
+    if (tab === 'Cancelled') return hasCancelledJobs
+    return true
+  })
 )
 
 const tabLabel = (tab: JobTab) => {
   if (tab === 'All') return t('g.all')
   if (tab === 'Completed') return t('g.completed')
+  if (tab === 'Cancelled') return t('g.cancelled')
   return t('g.failed')
 }
 </script>

@@ -7,3 +7,4 @@ export type JobState =
   | 'running'
   | 'completed'
   | 'failed'
+  | 'cancelled'

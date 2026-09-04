@@ -31,8 +31,9 @@ export const jobStateFromTask = (
     case 'Completed':
       return 'completed'
     case 'Failed':
-    case 'Cancelled':
       return 'failed'
+    case 'Cancelled':
+      return 'cancelled'
   }
   return 'failed'
 }

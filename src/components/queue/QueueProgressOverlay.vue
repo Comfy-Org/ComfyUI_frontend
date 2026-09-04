@@ -21,6 +21,7 @@
         :queued-count="queuedCount"
         :displayed-job-groups="displayedJobGroups"
         :has-failed-jobs="hasFailedJobs"
+        :has-cancelled-jobs="hasCancelledJobs"
         @show-assets="toggleAssetsSidebar"
         @clear-history="onClearHistoryFromMenu"
         @clear-queued="cancelQueuedWorkflows"
@@ -180,6 +181,7 @@ const {
   selectedWorkflowFilter,
   selectedSortMode,
   hasFailedJobs,
+  hasCancelledJobs,
   filteredTasks,
   groupedJobItems,
   currentNodeName
