@@ -211,16 +211,21 @@ describe('duplicated subgraph deleted in both orders (I4)', () => {
     expectSurvivorUndamaged(buildScenario(), 1)
   })
 
-  it('releases promoted widget state when an instance is removed', () => {
+  it('keeps promoted widget state recoverable when an instance is removed (undo-friendly)', () => {
     const scenario = buildScenario()
     const removed = scenario.instances[0]
     const removedWidgetId = promotedId(removed)
+    if (!removedWidgetId) throw new Error('expected a promoted widget id')
 
     scenario.rootGraph.remove(removed)
 
+    // Ordinary removal is undo-friendly (`WidgetDetachMode: 'keep-values'`):
+    // the removed instance's own promoted-widget value survives, it's the
+    // widget order tracking that's released.
+    expect(useWidgetValueStore().getWidget(removedWidgetId)?.value).toBe(111)
     expect(
-      removedWidgetId && useWidgetValueStore().getWidget(removedWidgetId)
-    ).toBeUndefined()
+      useWidgetValueStore().getNodeWidgetIds(scenario.rootGraph.id, removed.id)
+    ).toEqual([])
   })
 
   it('gives converted subgraphs independent promoted widgets (#15565)', () => {

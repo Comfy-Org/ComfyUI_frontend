@@ -1484,7 +1484,7 @@ describe('Subgraph Definition Garbage Collection', () => {
     expect(removedNodeIds.size).toBe(2)
   })
 
-  it('removing a node clears its widget and preview exposure records', () => {
+  it('removing a node clears its preview exposure records but keeps its widget value for undo', () => {
     const rootGraph = new LGraph()
     const node = new LGraphNode('owned state')
     rootGraph.add(node)
@@ -1501,7 +1501,10 @@ describe('Subgraph Definition Garbage Collection', () => {
 
     rootGraph.remove(node)
 
-    expect(useWidgetValueStore().getWidget(id)).toBeUndefined()
+    // Ordinary removal is undo-friendly (`WidgetDetachMode: 'keep-values'`):
+    // the widget value survives so a re-add restores it. Preview exposures
+    // aren't mode-gated and always clear on detach.
+    expect(useWidgetValueStore().getWidget(id)?.value).toBe(1)
     expect(
       usePreviewExposureStore().getExposures(rootGraph.id, String(node.id))
     ).toEqual([])
