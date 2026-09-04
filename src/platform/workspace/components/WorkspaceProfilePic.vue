@@ -1,10 +1,7 @@
 <template>
   <div
-    class="flex aspect-square size-8 items-center justify-center rounded-md text-base font-semibold text-white"
-    :style="{
-      background: gradient,
-      textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)'
-    }"
+    class="flex aspect-square size-8 items-center justify-center rounded-md bg-secondary-background text-base font-semibold text-base-foreground"
+    :style="avatarStyle"
   >
     {{ letter }}
   </div>
@@ -13,31 +10,63 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-const { workspaceName } = defineProps<{
+import type { SubscriptionTier } from '@/platform/workspace/api/workspaceApi'
+
+const PLAN_COLORS = {
+  FREE: { lightness: 0.45, chroma: 0.016, hue: 240, hueRange: 0 },
+  CREATOR: { lightness: 0.53, chroma: 0.085, hue: 210, hueRange: 14 },
+  PRO: { lightness: 0.52, chroma: 0.14, hue: 295, hueRange: 14 },
+  TEAM: { lightness: 0.52, chroma: 0.1, hue: 155, hueRange: 14 },
+  ENTERPRISE: { lightness: 0.66, chroma: 0.16, hue: 345, hueRange: 12 }
+} as const
+
+type AvatarPlan = keyof typeof PLAN_COLORS
+
+const NAME_VARIATIONS = [-1, -0.5, 0, 0.5, 1] as const
+
+const { workspaceName, subscriptionTier } = defineProps<{
   workspaceName: string
+  subscriptionTier?: SubscriptionTier | null
 }>()
 
-const letter = computed(() => workspaceName?.charAt(0)?.toUpperCase() ?? '?')
+const letter = computed(() => [...workspaceName][0]?.toUpperCase() ?? '?')
 
-const gradient = computed(() => {
-  const seed = letter.value.charCodeAt(0)
+const avatarStyle = computed(() => {
+  if (subscriptionTier === undefined) return {}
 
-  function mulberry32(a: number) {
-    return function () {
-      let t = (a += 0x6d2b79f5)
-      t = Math.imul(t ^ (t >>> 15), t | 1)
-      t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
-      return ((t ^ (t >>> 14)) >>> 0) / 4294967296
-    }
+  const plan = resolveAvatarPlan(subscriptionTier)
+  const base = PLAN_COLORS[plan]
+  const variation =
+    NAME_VARIATIONS[nameHash(workspaceName) % NAME_VARIATIONS.length] ?? 0
+  const lightnessStep = base.hueRange ? 0.025 : 0.055
+  const lightness = (base.lightness + variation * lightnessStep).toFixed(3)
+  const chroma = (base.chroma + variation * 0.006).toFixed(3)
+  const hue = Math.round(base.hue + variation * base.hueRange)
+
+  return {
+    backgroundColor: `oklch(${lightness} ${chroma} ${hue})`,
+    color:
+      plan === 'ENTERPRISE' ? 'var(--color-charcoal-800)' : 'var(--color-white)'
   }
-
-  const rand = mulberry32(seed)
-
-  const hue1 = Math.floor(rand() * 360)
-  const hue2 = (hue1 + 40 + Math.floor(rand() * 80)) % 360
-  const sat = 65 + Math.floor(rand() * 20)
-  const light = 55 + Math.floor(rand() * 15)
-
-  return `linear-gradient(135deg, hsl(${hue1}, ${sat}%, ${light}%), hsl(${hue2}, ${sat}%, ${light}%))`
 })
+
+function resolveAvatarPlan(tier: string | null): AvatarPlan {
+  if (tier === 'STANDARD' || tier === 'FOUNDERS_EDITION') return 'CREATOR'
+  return tier && isAvatarPlan(tier) ? tier : 'FREE'
+}
+
+function isAvatarPlan(tier: string): tier is AvatarPlan {
+  return Object.hasOwn(PLAN_COLORS, tier)
+}
+
+function nameHash(name: string): number {
+  const characters = [...name.normalize('NFKC').trim().toLowerCase()]
+  return (
+    characters.reduce(
+      (hash, character) =>
+        Math.imul(hash ^ (character.codePointAt(0) ?? 0), 16777619),
+      2166136261
+    ) >>> 0
+  )
+}
 </script>

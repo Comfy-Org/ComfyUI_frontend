@@ -99,7 +99,10 @@ function renderComponent(
         i18n
       ],
       stubs: {
-        WorkspaceProfilePic: true
+        WorkspaceProfilePic: {
+          props: ['subscriptionTier'],
+          template: '<div data-testid="avatar">{{ subscriptionTier }}</div>'
+        }
       }
     }
   })
@@ -175,6 +178,23 @@ describe('WorkspaceSwitcherPopover', () => {
       expect(screen.queryByText('Personal')).not.toBeInTheDocument()
     }
   )
+
+  it('forwards the workspace subscription tier to the avatar', () => {
+    renderComponent({
+      activeWorkspaceId: 'ws-team',
+      workspaces: [
+        createWorkspaceState({
+          id: 'ws-team',
+          name: 'Team Comfy',
+          type: 'team',
+          role: 'owner',
+          subscriptionTier: 'ENTERPRISE'
+        })
+      ]
+    })
+
+    expect(screen.getByTestId('avatar')).toHaveTextContent('ENTERPRISE')
+  })
 
   it('exposes the full team workspace name as a tooltip on the row', () => {
     renderComponent()
