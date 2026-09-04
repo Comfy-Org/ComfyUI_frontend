@@ -173,7 +173,7 @@ function dispatchOpsResult(detail: unknown): void {
   bridge().dispatchEvent(new CustomEvent('doc_ops_result', { detail }))
 }
 
-describe('R-73 cross-workflow pending operation characterization', () => {
+describe('R-73 cross-workflow pending operations', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     bridgeState.current = null
