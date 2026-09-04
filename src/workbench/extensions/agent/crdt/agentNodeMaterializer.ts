@@ -228,7 +228,7 @@ function reconcile(
   for (const state of records) {
     const live = graph._nodes_by_id[state.id]
     if (live && nodeStore.ownsNode(scope, live._state)) {
-      reconfigureSubgraphInstance(live, state.lastSerialization)
+      reconfigureSubgraphInstance(graph, live, state.lastSerialization)
       continue
     }
     const serialised = state.lastSerialization
@@ -267,6 +267,7 @@ function reconcile(
  * alone.
  */
 function reconfigureSubgraphInstance(
+  graph: MaterializableGraph,
   live: LGraphNode,
   serialised: ISerialisedNode | undefined
 ): void {
@@ -276,7 +277,17 @@ function reconfigureSubgraphInstance(
     live.inputs.length === declared.length &&
     live.inputs.every((input) => input._subgraphSlot !== undefined)
   if (intact) return
-  live.configure(withNamedWidgetValues(serialised))
+  // `configure()` falls back to the class static title when the payload has
+  // none; the reconcile already kept the incumbent title, so carry it through.
+  const info = withNamedWidgetValues(serialised)
+  try {
+    live.configure(serialised.title ? info : { ...info, title: live.title })
+  } catch (cause) {
+    reportError(cause, {
+      errorType: 'agent_node_reconfigure_failed',
+      context: { graphId: graph.id, nodeId: String(live.id) }
+    })
+  }
 }
 
 function materialize(
