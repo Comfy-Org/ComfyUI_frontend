@@ -447,7 +447,7 @@ const i18n = createI18n({
 })
 
 describe('useSubscriptionCheckout', () => {
-  let emit: ReturnType<typeof vi.fn>
+  const emit = vi.fn<Parameters<typeof useSubscriptionCheckout>[0]>()
 
   function setup(
     paymentIntentSource?: PaymentIntentSource,
@@ -458,14 +458,10 @@ describe('useSubscriptionCheckout', () => {
     render(
       {
         setup() {
-          checkout = useSubscriptionCheckout(
-            emit as never,
-            paymentIntentSource,
-            {
-              tierPlanType,
-              embeddedCheckoutEnabled
-            }
-          )
+          checkout = useSubscriptionCheckout(emit, paymentIntentSource, {
+            tierPlanType,
+            embeddedCheckoutEnabled
+          })
           return () => null
         }
       },
@@ -551,7 +547,6 @@ describe('useSubscriptionCheckout', () => {
     mockCanReactivatePlan.value = true
     mockSubscription.value = null
     sessionStorage.clear()
-    emit = vi.fn()
   })
 
   describe('handleSubscribeClick', () => {
