@@ -7,7 +7,9 @@ import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useNodeHelpContent as useNodeHelpContentComposable } from '@/composables/useNodeHelpContent'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { getNodeSource } from '@/types/nodeSource'
 
 const i18n = createI18n({
   legacy: false,
@@ -51,6 +53,10 @@ function createMockNode(
     experimental: false,
     output_node: false,
     api_node: false,
+    nodeSource: getNodeSource(
+      overrides.python_module,
+      overrides.essentials_category
+    ),
     ...overrides
   } as ComfyNodeDefImpl
 }
@@ -65,9 +71,13 @@ vi.mock('@/types/nodeSource', () => ({
   NodeSourceType: {
     Blueprint: 'blueprint',
     Core: 'core',
-    CustomNodes: 'custom_nodes'
+    CustomNodes: 'custom_nodes',
+    Essentials: 'essentials'
   },
-  getNodeSource: vi.fn((pythonModule) => {
+  getNodeSource: vi.fn((pythonModule, essentialsCategory) => {
+    if (essentialsCategory) {
+      return { type: 'essentials' }
+    }
     if (pythonModule?.startsWith('blueprint')) {
       return { type: 'blueprint' }
     }
@@ -76,6 +86,10 @@ vi.mock('@/types/nodeSource', () => ({
     }
     return { type: 'core' }
   })
+}))
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: vi.fn()
 }))
 
 describe('useNodeHelpContent', () => {
@@ -168,6 +182,24 @@ describe('useNodeHelpContent', () => {
     expect(renderedHelpHtml.value).toContain(mockCustomNode.description)
   })
 
+  it('should use core help for Essentials nodes', async () => {
+    const node = createMockNode({
+      name: 'EssentialsNode',
+      essentials_category: 'image',
+      python_module: 'custom_nodes.test_module'
+    })
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      text: async () => '# Essentials help'
+    })
+
+    const { renderedHelpHtml } = useNodeHelpContent(ref(node))
+    await flushPromises()
+
+    expect(mockFetch).toHaveBeenCalledWith('/docs/EssentialsNode/en.md')
+    expect(renderedHelpHtml.value).toContain('Essentials help')
+  })
+
   it('should show the unavailable state for a blueprint without a description', async () => {
     const nodeRef = ref(
       createMockNode({ description: '', python_module: 'blueprint' })
@@ -218,7 +250,6 @@ describe('useNodeHelpContent', () => {
   })
 
   it('should log and recover from infrastructure failures', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const nodeRef = ref(mockCoreNode)
     mockFetch.mockResolvedValueOnce({
       ok: false,
@@ -229,8 +260,11 @@ describe('useNodeHelpContent', () => {
     const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
     await flushPromises()
 
-    expect(warn).toHaveBeenCalledWith(
-      'nodeHelpService: failed to fetch markdown (500 Internal Server Error) at /docs/TestNode/en.md'
+    expect(reportError).toHaveBeenCalledWith(
+      new Error(
+        'Failed to fetch node help (500 Internal Server Error) at /docs/TestNode/en.md'
+      ),
+      { errorType: 'node_help_fetch_failure' }
     )
     expect(error.value).toBe('Help not found')
     expect(renderedHelpHtml.value).toContain(mockCoreNode.description)

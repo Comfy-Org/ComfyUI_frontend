@@ -1,6 +1,7 @@
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { NodeSourceType, getNodeSource } from '@/types/nodeSource'
+import { NodeSourceType } from '@/types/nodeSource'
 import { extractCustomNodeName } from '@/workbench/utils/nodeHelpUtil'
 
 class NodeHelpService {
@@ -8,7 +9,7 @@ class NodeHelpService {
     node: ComfyNodeDefImpl,
     locale: string
   ): Promise<string | undefined> {
-    const nodeSource = getNodeSource(node.python_module)
+    const nodeSource = node.nodeSource
 
     if (nodeSource.type === NodeSourceType.Blueprint) {
       return node.description || undefined
@@ -69,8 +70,11 @@ class NodeHelpService {
       return undefined
     }
     if (!res.ok) {
-      console.warn(
-        `nodeHelpService: failed to fetch markdown (${res.status} ${res.statusText}) at ${path}`
+      reportError(
+        new Error(
+          `Failed to fetch node help (${res.status} ${res.statusText}) at ${path}`
+        ),
+        { errorType: 'node_help_fetch_failure' }
       )
       return undefined
     }

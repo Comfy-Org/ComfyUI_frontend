@@ -224,7 +224,14 @@ describe('useAssetDownloadStore', () => {
       await vi.advanceTimersByTimeAsync(45_000)
 
       expect(store.activeDownloads).toHaveLength(0)
-      expect(store.finishedDownloads[0].status).toBe('failed')
+      expect(store.finishedDownloads[0]).toMatchObject({
+        assetId: 'asset-456',
+        assetName: 'model.safetensors',
+        bytesTotal: 1000,
+        bytesDownloaded: 500,
+        progress: 50,
+        status: 'failed'
+      })
       expect(taskService.getTask).toHaveBeenCalledTimes(1)
     })
   })
