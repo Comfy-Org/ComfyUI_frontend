@@ -36,11 +36,10 @@ vi.mock('@/platform/telemetry', () => ({
 }))
 
 const appModeMock = vi.hoisted(
-  () =>
-    ({ mode: null, hasOutputs: null }) as {
-      mode: Ref<AppMode> | null
-      hasOutputs: Ref<boolean> | null
-    }
+  (): { mode: Ref<AppMode> | null; hasOutputs: Ref<boolean> | null } => ({
+    mode: null,
+    hasOutputs: null
+  })
 )
 vi.mock('@/composables/useAppMode', async () => {
   const { ref: r } = await import('vue')
@@ -875,8 +874,6 @@ describe('onboardingTourStore', () => {
       store.next()
       await nextTick()
       const superseded = attempts[0]
-      if (!superseded) throw new Error('no attempt to supersede')
-
       superseded.fail(new Error('the superseded attempt blew up'))
       await nextTick()
       await nextTick()

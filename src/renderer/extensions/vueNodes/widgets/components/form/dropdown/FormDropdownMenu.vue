@@ -102,7 +102,7 @@ type VirtualDropdownItem = FormDropdownItem & { key: string }
 const virtualItems = computed<VirtualDropdownItem[]>(() =>
   items.map((item) => ({
     ...item,
-    key: String(item.id)
+    key: item.id
   }))
 )
 

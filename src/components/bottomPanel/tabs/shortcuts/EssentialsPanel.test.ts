@@ -39,7 +39,7 @@ const mockCommands: ComfyCommandImpl[] = [
     tooltip: 'Test tooltip',
     menubarLabel: 'Other Command',
     keybinding: null
-  } as ComfyCommandImpl
+  }
 ]
 
 vi.mock('@/stores/commandStore', () => ({
@@ -63,7 +63,7 @@ describe('EssentialsPanel', () => {
     render(EssentialsPanel)
 
     const el = screen.getByTestId('shortcuts-list')
-    const subcategories = JSON.parse(el.textContent ?? '{}')
+    const subcategories = JSON.parse(el.textContent)
 
     expect(subcategories).toHaveProperty('workflow')
     expect(subcategories).toHaveProperty('node')

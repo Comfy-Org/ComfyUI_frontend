@@ -65,11 +65,11 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
   }) => {
     async function getPrimitiveComboState() {
       return comfyPage.page.evaluate(() => {
-        const primitive = window.app!.graph!.nodes.find(
+        const primitive = window.app!.graph.nodes.find(
           (node) => node.type === 'PrimitiveNode'
         )
         const widget = primitive?.widgets?.[0]
-        const values = widget?.options?.values
+        const values = widget?.options.values
         return {
           isArray: Array.isArray(values),
           length: Array.isArray(values) ? values.length : 0,
@@ -98,10 +98,10 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
     // confirms refreshComboInNodes() re-resolves it without losing state.
     async function staleifyPrimitiveOutputWidget() {
       return comfyPage.page.evaluate(() => {
-        const primitive = window.app!.graph!.nodes.find(
+        const primitive = window.app!.graph.nodes.find(
           (node) => node.type === 'PrimitiveNode'
         )
-        const output = primitive?.outputs?.[0]
+        const output = primitive?.outputs[0]
         if (!output?.widget) throw new Error('Expected primitive output widget')
 
         output.widget = { name: output.widget.name }

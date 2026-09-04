@@ -105,7 +105,7 @@ export const useRegistrySearchGateway = (): NodePackSearchProvider => {
   const getActiveProvider = (): NodePackSearchProvider => {
     // First, try to use the current active provider if it's healthy
     const currentProvider = providers[activeProviderIndex]
-    if (currentProvider && isCircuitClosed(currentProvider)) {
+    if (isCircuitClosed(currentProvider)) {
       return currentProvider.provider
     }
 

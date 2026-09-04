@@ -269,35 +269,35 @@ describe('useAuthStore', () => {
     })
 
     it("should not increment tokenRefreshTrigger on the user's first ID token event", () => {
-      idTokenCallback?.(mockUser)
+      idTokenCallback(mockUser)
       expect(store.tokenRefreshTrigger).toBe(0)
     })
 
     it('should increment tokenRefreshTrigger on subsequent ID token events for the same user', () => {
-      idTokenCallback?.(mockUser)
-      idTokenCallback?.(mockUser)
+      idTokenCallback(mockUser)
+      idTokenCallback(mockUser)
       expect(store.tokenRefreshTrigger).toBe(1)
     })
 
     it('should not increment when ID token event is for a different user UID', () => {
       const otherUser = { uid: 'other-user-id' } as Partial<User> as User
-      idTokenCallback?.(mockUser)
-      idTokenCallback?.(otherUser)
+      idTokenCallback(mockUser)
+      idTokenCallback(otherUser)
       expect(store.tokenRefreshTrigger).toBe(0)
     })
 
     it('should increment after switching to a new UID and receiving a second event for that UID', () => {
       const otherUser = { uid: 'other-user-id' } as Partial<User> as User
-      idTokenCallback?.(mockUser)
-      idTokenCallback?.(otherUser)
-      idTokenCallback?.(otherUser)
+      idTokenCallback(mockUser)
+      idTokenCallback(otherUser)
+      idTokenCallback(otherUser)
       expect(store.tokenRefreshTrigger).toBe(1)
     })
 
     it('does not increment on a Firebase token refresh when unified_cloud_auth is ON', () => {
       mockFeatureFlags.unifiedCloudAuthEnabled = true
-      idTokenCallback?.(mockUser) // initial event (always skipped)
-      idTokenCallback?.(mockUser) // refresh — gated off; the unified lifecycle drives rotation
+      idTokenCallback(mockUser) // initial event (always skipped)
+      idTokenCallback(mockUser) // refresh — gated off; the unified lifecycle drives rotation
       expect(store.tokenRefreshTrigger).toBe(0)
     })
 
@@ -366,7 +366,7 @@ describe('useAuthStore', () => {
       await balanceRequested
 
       // Firebase transitions directly to account B before the response lands.
-      authStateCallback({ ...mockUser, uid: 'account-b' } as User)
+      authStateCallback({ ...mockUser, uid: 'account-b' })
       resolveBalanceJson({ balance: 4242 })
 
       expect(await pending).toBeNull()
@@ -420,7 +420,7 @@ describe('useAuthStore', () => {
     })
 
     it('fetchBalance prefers the Firebase token over the API key when signed in', async () => {
-      authStateCallback(mockUser as User)
+      authStateCallback(mockUser)
 
       await store.fetchBalance()
 
@@ -2120,7 +2120,7 @@ describe('useAuthStore', () => {
       authStateCallback(mockUser)
 
       // Stale POST resolves successfully after session reset
-      resolveCreate!({
+      resolveCreate({
         ok: true,
         statusText: 'OK',
         json: () => Promise.resolve({ id: 'stale-id' })
@@ -2141,7 +2141,7 @@ describe('useAuthStore', () => {
       ...mockUser,
       uid: 'account-b-id',
       email: 'b@example.com'
-    } as MockUser
+    }
 
     it('does not reset the socket on the initial sign-in', () => {
       // The store is created in beforeEach, which drives the initial

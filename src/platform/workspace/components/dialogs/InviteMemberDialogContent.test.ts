@@ -17,17 +17,20 @@ const {
   mockFetchStatus,
   mockMaxSeats,
   mockOccupiedSeats
-} = vi.hoisted(() => ({
-  mockCreateInvite: vi.fn(),
-  mockFetchPendingInvites: vi.fn(),
-  mockCloseDialog: vi.fn(),
-  mockToastAdd: vi.fn(),
-  mockTrackInviteSent: vi.fn(),
-  mockTrackInviteFailed: vi.fn(),
-  mockFetchStatus: vi.fn(),
-  mockMaxSeats: { value: 73 as number | null },
-  mockOccupiedSeats: { value: 0 as number | null }
-}))
+} = vi.hoisted(() => {
+  const nullableNumber = (value: number | null) => ({ value })
+  return {
+    mockCreateInvite: vi.fn(),
+    mockFetchPendingInvites: vi.fn(),
+    mockCloseDialog: vi.fn(),
+    mockToastAdd: vi.fn(),
+    mockTrackInviteSent: vi.fn(),
+    mockTrackInviteFailed: vi.fn(),
+    mockFetchStatus: vi.fn(),
+    mockMaxSeats: nullableNumber(73),
+    mockOccupiedSeats: nullableNumber(0)
+  }
+})
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
@@ -218,7 +221,7 @@ describe('InviteMemberDialogContent', () => {
 
     const closeButton = screen
       .getAllByRole('button', { name: 'g.close' })
-      .find((button) => button.textContent?.includes('g.close'))
+      .find((button) => button.textContent.includes('g.close'))
     await user.click(closeButton!)
 
     expect(mockCloseDialog).toHaveBeenCalledWith({ key: 'invite-member' })

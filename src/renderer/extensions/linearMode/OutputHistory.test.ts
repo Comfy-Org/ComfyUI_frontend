@@ -31,7 +31,7 @@ const runningTasksRef = ref<Array<{ jobId: string }>>([])
 const pendingTasksRef = ref<Array<{ jobId: string }>>([])
 
 const selectFirstHistoryFn = vi.fn(() => {
-  const first = mediaRef.value[0]
+  const first = mediaRef.value.at(0)
   selectedIdRef.value = first ? `history:${first.id}:0` : null
 })
 const mayBeActiveWorkflowPendingRef = ref(false)
@@ -178,7 +178,7 @@ function lastEmission(result: RenderResult): OutputSelection {
     | Array<[OutputSelection]>
     | undefined
   expect(emitted).toBeDefined()
-  return emitted![emitted!.length - 1][0] as OutputSelection
+  return emitted![emitted!.length - 1][0]
 }
 
 function historySelectableItems(): HTMLElement[] {

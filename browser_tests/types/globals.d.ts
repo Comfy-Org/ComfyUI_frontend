@@ -11,7 +11,7 @@ import type { useWorkspaceStore } from '@/stores/workspaceStore'
  * Provides typed access to graph internals without requiring `any`.
  */
 export interface TestGraphAccess {
-  _nodes_by_id: Record<string, LGraphNode>
+  _nodes_by_id: Partial<Record<string, LGraphNode>>
 }
 
 interface AppReadiness {
