@@ -13,6 +13,7 @@ import { getComfyApiBaseUrl, getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError as reportTelemetryError } from '@/platform/telemetry/reportError'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type {
   CheckoutAttributionMetadata,
@@ -133,6 +134,7 @@ function useSubscriptionInternal() {
   let pendingCheckoutRecoveryTimeout: number | null = null
   let pendingCheckoutRecoveryAttempt = 0
   let isRecoveringPendingCheckout = false
+  let hasReportedPendingCheckoutRecoveryExhaustion = false
 
   const stopPendingCheckoutRecovery = () => {
     if (pendingCheckoutRecoveryTimeout !== null && defaultWindow) {
@@ -141,6 +143,7 @@ function useSubscriptionInternal() {
 
     pendingCheckoutRecoveryTimeout = null
     pendingCheckoutRecoveryAttempt = 0
+    hasReportedPendingCheckoutRecoveryExhaustion = false
   }
 
   const schedulePendingCheckoutRecovery = () => {
@@ -158,6 +161,28 @@ function useSubscriptionInternal() {
     )
 
     if (nextDelay === undefined) {
+      if (!hasReportedPendingCheckoutRecoveryExhaustion) {
+        reportTelemetryError(
+          new Error('Pending subscription checkout recovery timed out'),
+          {
+            errorType: 'cloud_checkout_completion_missing',
+            tags: {
+              failure_kind: 'missing_event',
+              feature_area: 'cloud',
+              operation: 'sync',
+              outcome: 'timed_out',
+              assert_mode: 'soft'
+            },
+            context: {
+              recovery_attempt_count: pendingCheckoutRecoveryAttempt,
+              has_pending_attempt: hasPendingSubscriptionCheckoutAttempt(),
+              is_logged_in: isLoggedIn.value
+            },
+            level: 'warning'
+          }
+        )
+        hasReportedPendingCheckoutRecoveryExhaustion = true
+      }
       return
     }
 
