@@ -55,6 +55,7 @@ import { isLGraphNode } from '@/utils/litegraphUtil'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
+import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -109,6 +110,7 @@ const CrdtDevPanel = defineAsyncComponent(
 const { t } = useI18n()
 const toast = useToastStore()
 const { open: openAccountPrecondition } = useAccountPreconditionDialog()
+const { showPricingTable } = useSubscriptionDialog()
 const { workspaceRole } = useWorkspaceUI()
 const {
   canTopUp,
@@ -142,7 +144,12 @@ const rest = createAgentRestClient()
 const events = createAgentEventSource(api)
 
 function onPaywallAction(action: AgentPaywallAction): void {
-  openAccountPrecondition(action === 'addCredits' ? 'credits' : 'subscription')
+  if (action === 'upgrade') {
+    showPricingTable({ reason: 'upgrade_to_add_credits' })
+    return
+  }
+  // 'subscribe' also goes through credits so the out_of_credits reason is kept.
+  openAccountPrecondition('credits')
 }
 
 const workflowStore = useWorkflowStore()

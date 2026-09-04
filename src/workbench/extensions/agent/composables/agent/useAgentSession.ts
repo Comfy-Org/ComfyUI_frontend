@@ -97,7 +97,23 @@ let rememberedWorkflowId: string | null = null
 function parseAdmissionError(error: unknown) {
   if (!(error instanceof AgentApiError)) return undefined
   const parsed = zAgentAdmissionError.safeParse(error.body)
-  return parsed.success ? parsed.data.error : undefined
+  if (!parsed.success) return undefined
+  return { ...parsed.data.error, retryAfterSeconds: error.retryAfterSeconds }
+}
+
+function admissionNoticeText(admission: {
+  message: string
+  reason: string
+  retryAfterSeconds?: number
+}): string {
+  if (
+    admission.reason !== 'funds_unavailable' ||
+    admission.retryAfterSeconds === undefined
+  ) {
+    return admission.message
+  }
+  const count = Math.max(1, Math.ceil(admission.retryAfterSeconds))
+  return `${admission.message} ${i18n.global.t('agent.retryAfter', { count }, count)}`
 }
 
 export function useAgentSession(deps: AgentSessionDeps) {
@@ -324,7 +340,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         conversationStore.recordFailedSend(
           nextLocalErrorId(),
           text,
-          admission.message
+          admissionNoticeText(admission)
         )
         return false
       }

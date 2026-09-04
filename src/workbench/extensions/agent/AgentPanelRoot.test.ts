@@ -316,6 +316,13 @@ vi.mock(
     useAccountPreconditionDialog: () => ({ open: openAccountPrecondition })
   })
 )
+const showPricingTable = vi.hoisted(() => vi.fn())
+vi.mock(
+  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
+  () => ({
+    useSubscriptionDialog: () => ({ showPricingTable })
+  })
+)
 
 const paywallWorkspace = vi.hoisted(() => ({
   role: 'owner' as 'owner' | 'member'
@@ -442,9 +449,10 @@ describe('AgentPanelRoot paywall actions', () => {
     setActivePinia(createPinia())
     ws.clear()
     openAccountPrecondition.mockClear()
+    showPricingTable.mockClear()
   })
 
-  it('routes the subscribed owner actions through account preconditions', async () => {
+  it('routes the subscribed owner actions to upgrade and credits flows', async () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentConversationStore().messages.push({
       id: 'msg-paywall' as TurnId,
@@ -457,12 +465,32 @@ describe('AgentPanelRoot paywall actions', () => {
     await userEvent.click(
       await screen.findByRole('button', { name: 'Upgrade plan' })
     )
-    await userEvent.click(screen.getByRole('button', { name: 'Add credits' }))
+    expect(showPricingTable).toHaveBeenCalledExactlyOnceWith({
+      reason: 'upgrade_to_add_credits'
+    })
+    expect(openAccountPrecondition).not.toHaveBeenCalled()
 
-    expect(openAccountPrecondition.mock.calls).toEqual([
-      ['subscription'],
-      ['credits']
-    ])
+    await userEvent.click(screen.getByRole('button', { name: 'Add credits' }))
+    expect(openAccountPrecondition).toHaveBeenCalledExactlyOnceWith('credits')
+  })
+
+  it('routes Subscribe through the credits precondition so the out-of-credits reason is kept', async () => {
+    paywallCapabilities.canTopUp = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().messages.push({
+      id: 'msg-paywall' as TurnId,
+      role: 'assistant',
+      parts: [{ type: 'paywall' }],
+      streaming: false,
+      thinking: false
+    })
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Subscribe' })
+    )
+
+    expect(openAccountPrecondition).toHaveBeenCalledExactlyOnceWith('credits')
+    expect(showPricingTable).not.toHaveBeenCalled()
   })
 
   it('hides purchase actions from a Team member without billing permissions', async () => {

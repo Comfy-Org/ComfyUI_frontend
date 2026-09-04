@@ -180,16 +180,22 @@ const historyRow = (
 
 function admissionError(
   reason: 'no_funds' | 'manual_block' | 'funds_unavailable',
-  message: string
+  message: string,
+  retryAfterSeconds?: number
 ): AgentApiError {
   const serviceUnavailable = reason === 'funds_unavailable'
-  return new AgentApiError(message, serviceUnavailable ? 503 : 402, {
-    error: {
-      message,
-      type: serviceUnavailable ? 'SERVICE_UNAVAILABLE' : 'PAYMENT_REQUIRED',
-      reason
-    }
-  })
+  return new AgentApiError(
+    message,
+    serviceUnavailable ? 503 : 402,
+    {
+      error: {
+        message,
+        type: serviceUnavailable ? 'SERVICE_UNAVAILABLE' : 'PAYMENT_REQUIRED',
+        reason
+      }
+    },
+    retryAfterSeconds
+  )
 }
 
 describe('useAgentSession (v1 composition root)', () => {
@@ -592,6 +598,32 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.entries.value.at(-1)).toMatchObject({
       role: 'assistant',
       parts: [{ type: 'notice', level: 'error', text: message }]
+    })
+  })
+
+  it('appends the Retry-After hint to a funds_unavailable notice', async () => {
+    const message = 'Billing status is temporarily unavailable; please retry.'
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockRejectedValue(admissionError('funds_unavailable', message, 30))
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    expect(await session.sendMessage('make a cat')).toBe(false)
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [
+        {
+          type: 'notice',
+          level: 'error',
+          text: `${message} Try again in 30 seconds.`
+        }
+      ]
     })
   })
 
