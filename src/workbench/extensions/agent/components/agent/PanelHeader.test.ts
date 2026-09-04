@@ -28,11 +28,11 @@ function mount(isMaximized = false) {
 }
 
 describe('PanelHeader', () => {
-  it('exposes the heading id used to label the docked panel', () => {
+  it('exposes the heading id the dock landmark labels', () => {
     mount()
 
     expect(
-      screen.getByRole('heading', { name: i18n.global.t('agent.title') })
+      screen.getByRole('heading', { name: 'Comfy Agent' })
     ).toHaveAttribute('id', 'agent-panel-title')
   })
 
