@@ -5,6 +5,10 @@
     "feedbackTooltip": "بازخورد",
     "freeTierPartner": "نودهای Partner نیاز به پلن پولی دارند",
     "freeTierRuns": "{available} / {MAX_AVAILABLE} اجرا باقی مانده",
+    "partnerRunGate": {
+      "signInCaption": "گره‌های شریک به حساب کاربری نیاز دارند",
+      "signInToRun": "برای اجرا وارد شوید"
+    },
     "share": "اشتراک‌گذاری",
     "shareTooltip": "اشتراک‌گذاری گردش‌کار"
   },
@@ -82,6 +86,7 @@
     "runModeAutoDescription": "Comfy workflowها را بدون درخواست اجازه اجرا می‌کند",
     "runModeLimit": "اجرای خودکار با محدودیت",
     "runModeLimitDescription": "Comfy فقط زمانی تأیید می‌گیرد که اجرای workflow از سقف اعتبار شما فراتر رود",
+    "runModeSaveFailed": "ذخیره مجوزهای اجرا ممکن نشد. لطفاً دوباره تلاش کنید.",
     "runModeTriggerAsk": "پرسیدن",
     "runModeTriggerAskTooltip": "درخواست اجازه",
     "runModeTriggerAuto": "خودکار",
@@ -111,6 +116,7 @@
       "یک workflow برای تبدیل تصویر به ویدیو با ۳ مدل بساز"
     ],
     "switchWorkflow": "تغییر workflow",
+    "targetNavigationUnavailable": "این مقصد workflow دیگر در دسترس نیست.",
     "thinking": "در حال فکر کردن...",
     "thought": "تفکر",
     "thoughtTimed": "تفکر به‌مدت {seconds} ثانیه",
@@ -123,8 +129,12 @@
     "uploading": "در حال بارگذاری"
   },
   "apiNodesSignInDialog": {
-    "message": "این workflow شامل API Node است که برای اجرا نیاز به ورود به حساب کاربری دارد.",
-    "title": "ورود برای استفاده از API Nodeها لازم است"
+    "message": "گره‌های شریک روی سرویس‌های شخص ثالث اجرا می‌شوند و از اعتبارهای حساب شما استفاده می‌کنند. لطفاً برای اتصال حساب خود وارد شوید.",
+    "partnerNodesInWorkflow": "گره‌های شریک در این workflow",
+    "signIn": "ورود",
+    "title": "برای اجرای گره‌های شریک وارد شوید",
+    "tooltip": "گره‌های شریک روی سرویس‌های شخص ثالث اجرا می‌شوند. آن‌ها از اعتبار استفاده می‌کنند که تنها بخش پولی Comfy است.",
+    "whatArePartnerNodes": "گره‌های شریک چه هستند؟"
   },
   "appBuilder": {
     "vueNodeSwitch": {
@@ -456,7 +466,6 @@
   },
   "billingOperation": {
     "authenticationFailedDetail": "نتوانستیم تأیید پرداخت را تکمیل کنیم. لطفاً دوباره تلاش کنید.",
-    "authenticationManagerRequired": "تأیید پرداخت به رسیدگی مدیر صورتحساب workspace نیاز دارد.",
     "authenticationUnavailable": "احراز هویت امن پرداخت در دسترس نیست. لطفاً صفحه را تازه‌سازی کرده و دوباره تلاش کنید.",
     "cancelFailed": "لغو اشتراک ناموفق بود",
     "cancelTimeout": "مهلت لغو اشتراک به پایان رسید",
@@ -467,7 +476,6 @@
     "processingErrorDetail": "پرداخت شما پردازش نشد. دوباره تلاش کنید یا از روش پرداخت دیگری استفاده کنید.",
     "reconciliationDetail": "پرداخت شما دریافت شد، اما نتوانستیم به‌روزرسانی workspace شما را کامل کنیم. با پشتیبانی تماس بگیرید و این شناسهٔ عملیات را ارائه کنید:",
     "reconciliationTitle": "پرداخت دریافت شد — در انتظار تأیید",
-    "retryVerification": "تلاش مجدد برای تأیید",
     "subscriptionActionRequired": "برای تکمیل راه‌اندازی فضای کاری، پرداخت خود را تأیید کنید",
     "subscriptionFailed": "به‌روزرسانی اشتراک ناموفق بود",
     "subscriptionFailedDetail": "امکان به‌روزرسانی اشتراک شما وجود ندارد. لطفاً دوباره تلاش کنید.",
@@ -955,6 +963,7 @@
       "quickPurchase": "خرید سریع",
       "seeDetails": "مشاهده جزئیات",
       "selectAmount": "انتخاب مبلغ",
+      "startOver": "شروع دوباره",
       "templateNote": "*تولید شده با قالب Wan Fun Control",
       "topUp": "افزایش اعتبار",
       "unknownError": "خطای ناشناخته رخ داد",
@@ -1068,6 +1077,7 @@
     "RECRAFT_COLOR": "رنگ Recraft",
     "RECRAFT_CONTROLS": "کنترل‌های Recraft",
     "RECRAFT_V3_STYLE": "سبک Recraft V3",
+    "RESOLUTION_PREVIEW": "RESOLUTION_PREVIEW",
     "RETARGET_TASK_ID": "شناسه وظیفه Retarget",
     "RIG_TASK_ID": "شناسه وظیفه Rig",
     "RUNWAY_ALEPH2_KEYFRAME": "RUNWAY_ALEPH2_KEYFRAME",
@@ -2802,14 +2812,18 @@
       "seeMoreOutputs": "مشاهده خروجی‌های بیشتر",
       "zoom": "بزرگ‌نمایی"
     },
-    "assetDeletedSuccessfully": "دارایی با موفقیت حذف شد",
-    "deleteAssetDescription": "این دارایی به طور دائمی حذف خواهد شد.",
-    "deleteAssetTitle": "حذف این دارایی؟",
-    "deleteSelectedDescription": "{count} دارایی به طور دائمی حذف خواهد شد.",
-    "deleteSelectedTitle": "حذف دارایی‌های انتخاب‌شده؟",
+    "assetDelete": {
+      "error": "حذف برخی موارد ناموفق بود",
+      "success": "حذف با موفقیت انجام شد",
+      "warn": "حذف برخی موارد ناموفق بود"
+    },
+    "assetsDeleted": "{n} / {total} دارایی حذف شد",
+    "deleteHistoryOnly": "فقط تاریخچه تحت تأثیر قرار می‌گیرد؛ فایل‌ها روی دیسک باقی می‌مانند",
+    "deleteItems": "حذف این موارد",
+    "deletePermanent": "این موارد به‌طور دائمی حذف خواهند شد.",
     "deletingImportedFilesCloudOnly": "حذف فایل‌های واردشده فقط در نسخه ابری پشتیبانی می‌شود",
+    "deletionUnsupported": "دارایی‌ها فعال‌اند، اما سرور از حذف پشتیبانی نمی‌کند",
     "failedToCreateNode": "ایجاد node ناموفق بود",
-    "failedToDeleteAsset": "حذف دارایی ناموفق بود",
     "failedToExportWorkflow": "خروجی گرفتن از workflow ناموفق بود",
     "jobIdToast": {
       "copied": "کپی شد",
@@ -2817,12 +2831,12 @@
       "jobIdCopied": "شناسه job با موفقیت کپی شد",
       "jobIdCopyFailed": "کپی شناسه job ناموفق بود"
     },
+    "jobsDeleted": "{n} / {total} وظیفه حذف شد",
     "noJobIdFound": "شناسه job برای این دارایی یافت نشد",
     "noWorkflowDataFound": "داده‌ای از workflow در این دارایی یافت نشد",
     "nodeAddedToWorkflow": "node از نوع {nodeType} به workflow افزوده شد",
     "nodeTypeNotFound": "نوع node {nodeType} یافت نشد",
     "selection": {
-      "assetsDeletedSuccessfully": "{count} دارایی با موفقیت حذف شد",
       "deleteSelected": "حذف",
       "deleteSelectedAll": "حذف همه",
       "deselectAll": "لغو انتخاب همه",
@@ -2833,7 +2847,6 @@
       "exportStarted": "در حال آماده‌سازی خروجی ZIP برای {count} فایل",
       "exportWorkflowAll": "خروجی گرفتن از همه workflowها",
       "failedToAddNodes": "افزودن nodeها به workflow ناموفق بود",
-      "failedToDeleteAssets": "حذف دارایی‌های انتخاب‌شده ناموفق بود",
       "insertAllAssetsAsNodes": "افزودن همه دارایی‌ها به عنوان node",
       "multipleSelectedAssets": "چندین دارایی انتخاب شده‌اند",
       "noWorkflowsFound": "هیچ داده‌ای از workflow در دارایی‌های انتخاب‌شده یافت نشد",
@@ -2841,7 +2854,6 @@
       "nodesAddedToWorkflow": "{count} node به workflow افزوده شد",
       "openWorkflowAll": "باز کردن همه workflowها",
       "partialAddNodesSuccess": "{succeeded} با موفقیت افزوده شد، {failed} ناموفق",
-      "partialDeleteSuccess": "{succeeded} با موفقیت حذف شد، {failed} ناموفق بود",
       "partialWorkflowsExported": "{succeeded} با موفقیت خروجی گرفته شد، {failed} ناموفق",
       "partialWorkflowsOpened": "{succeeded} workflow باز شد، {failed} ناموفق",
       "selectedCount": "دارایی‌های انتخاب‌شده: {count}",
@@ -3457,6 +3469,28 @@
     "addColor": "افزودن رنگ",
     "swatchTitle": "برای ویرایش کلیک کنید · برای جابجایی بکشید · برای حذف راست‌کلیک کنید"
   },
+  "partnerNodesEducation": {
+    "benefits": {
+      "free": "اجرای رایگان",
+      "noDownload": "نیازی به راه‌اندازی نیست",
+      "noVram": "بدون VRAM، GPU شما آزاد می‌ماند",
+      "offline": "به‌صورت آفلاین اجرا می‌شود"
+    },
+    "included": "شامل می‌شود",
+    "muteOpen": "بی‌صدا کردن clip وزن‌باز",
+    "mutePartner": "بی‌صدا کردن clip گره شریک",
+    "notIncluded": "شامل نمی‌شود",
+    "openHeader": "باز",
+    "openTab": "گره‌های باز",
+    "partnerHeader": "شریک",
+    "partnerTab": "گره‌های شریک",
+    "pitch": "تفاوت را می‌بینید؟ برای مقایسه بکشید.",
+    "reassurance": "هر زمان که بیشتر بخواهید، گره‌های شریک در دسترس‌اند. سایر بخش‌های Comfy رایگان می‌مانند.",
+    "sliderLabel": "مقایسه خروجی وزن‌باز و گره شریک",
+    "tooltip": "گره‌های شریک مدل‌های متن‌بسته‌ای مانند Kling یا Veo را از طریق Comfy و روی سخت‌افزار ارائه‌دهنده اجرا می‌کنند. آن‌ها از اعتبار استفاده می‌کنند؛ سایر بخش‌های Comfy رایگان می‌مانند.",
+    "unmuteOpen": "باصدا کردن clip وزن‌باز",
+    "unmutePartner": "باصدا کردن clip گره شریک"
+  },
   "progressToast": {
     "allDownloadsCompleted": "همه دانلودها تکمیل شدند",
     "downloadingModel": "در حال دانلود مدل...",
@@ -3514,7 +3548,6 @@
       "copyErrorMessage": "کپی پیام خطا",
       "copyJobId": "کپی شناسه کار",
       "delete": "حذف",
-      "deleteAsset": "حذف دارایی",
       "download": "دانلود",
       "exportWorkflow": "خروجی گرفتن از workflow",
       "inspectAsset": "بررسی دارایی",
@@ -4265,8 +4298,6 @@
     "canceledCard": {
       "description": "دیگر هزینه‌ای از شما دریافت نمی‌شود. امکانات شما تا تاریخ {date} فعال خواهد بود.",
       "descriptionWithoutDate": "دیگر هزینه‌ای از شما دریافت نمی‌شود. امکانات شما تا پایان دوره صورتحساب فعال خواهد بود.",
-      "endedDescription": "اشتراک شما دیگر فعال نیست.",
-      "endedTitle": "اشتراک شما به پایان رسیده است",
       "title": "اشتراک شما لغو شده است"
     },
     "changePlan": "تغییر پلن",
@@ -4321,6 +4352,7 @@
     "gpuLabel": "RTX 6000 Pro (۹۶ گیگابایت VRAM)",
     "haveQuestions": "سوالی دارید یا به دنبال راهکار سازمانی هستید؟",
     "inactive": {
+      "badge": "غیرفعال",
       "memberCta": "باشه، متوجه شدم",
       "memberDescription": "از مالک فضای کاری خود بخواهید تا اشتراک را برای اجرای workflowها فعال کند.",
       "memberRunTooltip": "برای تمدید اشتراک با مالک فضای کاری تماس بگیرید",
@@ -4332,7 +4364,6 @@
     "inactiveTeamTitle": "اشتراک تیمی غیرفعال",
     "inviteUpTo": "دعوت تا سقف",
     "invoiceHistory": "تاریخچه فاکتورها",
-    "learnMore": "اطلاعات بیشتر",
     "manageBilling": "مدیریت صورتحساب",
     "managePlan": "مدیریت طرح",
     "manageSubscription": "مدیریت اشتراک",
@@ -4460,6 +4491,7 @@
       },
       "refillReplacesNote": "جایگزین شارژ ماهانه شما می‌شود. موجودی فعلی حفظ می‌شود.",
       "renewsAt": "در {date} با مبلغ {amount} تمدید می‌شود. هر زمان می‌توانید لغو کنید.",
+      "renewsAtAmount": "با مبلغ {amount} تمدید می‌شود. هر زمان خواستید لغو کنید.",
       "savedPaymentMethod": "روش پرداخت",
       "showMoreFeatures": "نمایش امکانات بیشتر",
       "starting": "شروع از {date}",
@@ -4599,7 +4631,6 @@
     "videoTemplateBasedCredits": "ویدیوهای تولید شده با Wan 2.2 Image to Video",
     "viewEnterprise": "مشاهده راهکار سازمانی",
     "viewMoreDetails": "مشاهده جزئیات بیشتر",
-    "viewMoreDetailsPlans": "مشاهده جزئیات بیشتر درباره طرح‌ها و قیمت‌ها",
     "viewUsageHistory": "مشاهده تاریخچه استفاده",
     "whatsIncluded": "شامل موارد زیر:",
     "workspaceNotSubscribed": "این محیط کاری اشتراک فعال ندارد",

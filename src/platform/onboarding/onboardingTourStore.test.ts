@@ -874,8 +874,6 @@ describe('onboardingTourStore', () => {
       store.next()
       await nextTick()
       const superseded = attempts[0]
-      if (!superseded) throw new Error('no attempt to supersede')
-
       superseded.fail(new Error('the superseded attempt blew up'))
       await nextTick()
       await nextTick()

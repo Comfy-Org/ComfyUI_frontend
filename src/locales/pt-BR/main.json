@@ -5,6 +5,10 @@
     "feedbackTooltip": "Feedback",
     "freeTierPartner": "Nodes parceiros precisam de um plano pago",
     "freeTierRuns": "{available} / {MAX_AVAILABLE} execuções restantes",
+    "partnerRunGate": {
+      "signInCaption": "Nós parceiros exigem uma conta",
+      "signInToRun": "Entre para executar"
+    },
     "share": "Compartilhar",
     "shareTooltip": "Compartilhar fluxo de trabalho"
   },
@@ -82,6 +86,7 @@
     "runModeAutoDescription": "O Comfy executará fluxos de trabalho sem pedir permissão",
     "runModeLimit": "Execução automática com limites",
     "runModeLimitDescription": "O Comfy só pedirá confirmação quando uma execução de fluxo de trabalho exceder seu limite de créditos",
+    "runModeSaveFailed": "Não foi possível salvar as permissões de execução. Tente novamente.",
     "runModeTriggerAsk": "Perguntar",
     "runModeTriggerAskTooltip": "Pedir permissão",
     "runModeTriggerAuto": "Automático",
@@ -111,6 +116,7 @@
       "Crie um fluxo de trabalho de imagem para vídeo com 3 modelos"
     ],
     "switchWorkflow": "Alternar fluxo de trabalho",
+    "targetNavigationUnavailable": "Este destino do fluxo de trabalho não está mais disponível.",
     "thinking": "Pensando...",
     "thought": "Pensamento",
     "thoughtTimed": "Pensou por {seconds} segundos",
@@ -123,8 +129,12 @@
     "uploading": "Enviando"
   },
   "apiNodesSignInDialog": {
-    "message": "Este fluxo de trabalho contém nós de API, que exigem que você esteja conectado à sua conta para executar.",
-    "title": "Login necessário para usar nós de API"
+    "message": "Os nós parceiros são executados em serviços de terceiros e usam créditos da sua conta. Entre para conectar sua conta.",
+    "partnerNodesInWorkflow": "Nós parceiros neste fluxo de trabalho",
+    "signIn": "Entrar",
+    "title": "Entre para executar nós parceiros",
+    "tooltip": "Os nós parceiros são executados em serviços de terceiros. Eles usam créditos, a única parte paga do Comfy.",
+    "whatArePartnerNodes": "O que são nós parceiros?"
   },
   "appBuilder": {
     "vueNodeSwitch": {
@@ -456,7 +466,6 @@
   },
   "billingOperation": {
     "authenticationFailedDetail": "Não foi possível concluir a verificação do pagamento. Tente novamente.",
-    "authenticationManagerRequired": "A verificação do pagamento precisa da atenção de um gerente de faturamento do espaço de trabalho.",
     "authenticationUnavailable": "A autenticação de pagamento seguro não está disponível. Atualize a página e tente novamente.",
     "cancelFailed": "Falha ao cancelar a assinatura",
     "cancelTimeout": "Tempo esgotado ao cancelar a assinatura",
@@ -467,7 +476,6 @@
     "processingErrorDetail": "Não foi possível processar seu pagamento. Tente novamente ou use outro método de pagamento.",
     "reconciliationDetail": "Seu pagamento foi recebido, mas não foi possível concluir a atualização do seu espaço de trabalho. Entre em contato com o suporte e inclua este ID da operação:",
     "reconciliationTitle": "Pagamento recebido — confirmação pendente",
-    "retryVerification": "Tentar verificar novamente",
     "subscriptionActionRequired": "Verifique seu pagamento para finalizar a configuração do seu workspace",
     "subscriptionFailed": "Falha ao atualizar a assinatura",
     "subscriptionFailedDetail": "Não foi possível atualizar sua assinatura. Por favor, tente novamente.",
@@ -955,6 +963,7 @@
       "quickPurchase": "Compra rápida",
       "seeDetails": "Ver detalhes",
       "selectAmount": "Selecione o valor",
+      "startOver": "Começar de novo",
       "templateNote": "*Gerado com o template Wan Fun Control",
       "topUp": "Adicionar créditos",
       "unknownError": "Ocorreu um erro desconhecido",
@@ -1068,6 +1077,7 @@
     "RECRAFT_COLOR": "COR RECRAFT",
     "RECRAFT_CONTROLS": "CONTROLES RECRAFT",
     "RECRAFT_V3_STYLE": "ESTILO RECRAFT V3",
+    "RESOLUTION_PREVIEW": "RESOLUTION_PREVIEW",
     "RETARGET_TASK_ID": "ID DA TAREFA DE REDIRECIONAMENTO",
     "RIG_TASK_ID": "ID DA TAREFA DE RIG",
     "RUNWAY_ALEPH2_KEYFRAME": "RUNWAY_ALEPH2_KEYFRAME",
@@ -2802,14 +2812,18 @@
       "seeMoreOutputs": "Ver mais resultados",
       "zoom": "Ampliar"
     },
-    "assetDeletedSuccessfully": "Recurso excluído com sucesso",
-    "deleteAssetDescription": "Este recurso será removido permanentemente.",
-    "deleteAssetTitle": "Excluir este recurso?",
-    "deleteSelectedDescription": "{count} recurso(s) será(ão) removido(s) permanentemente.",
-    "deleteSelectedTitle": "Excluir recursos selecionados?",
+    "assetDelete": {
+      "error": "Falha ao excluir itens",
+      "success": "Exclusão concluída",
+      "warn": "Não foi possível excluir alguns itens"
+    },
+    "assetsDeleted": "{n} / {total} ativos foram excluídos",
+    "deleteHistoryOnly": "Apenas o histórico será afetado; os arquivos permanecerão no disco",
+    "deleteItems": "Excluir estes itens",
+    "deletePermanent": "Eles serão removidos permanentemente.",
     "deletingImportedFilesCloudOnly": "A exclusão de arquivos importados é suportada apenas na versão em nuvem",
+    "deletionUnsupported": "Os ativos estão ativados, mas o servidor não oferece suporte à exclusão",
     "failedToCreateNode": "Falha ao criar nó",
-    "failedToDeleteAsset": "Falha ao excluir o recurso",
     "failedToExportWorkflow": "Falha ao exportar fluxo de trabalho",
     "jobIdToast": {
       "copied": "Copiado",
@@ -2817,12 +2831,12 @@
       "jobIdCopied": "ID do trabalho copiado para a área de transferência",
       "jobIdCopyFailed": "Falha ao copiar o ID do trabalho"
     },
+    "jobsDeleted": "{n} / {total} tarefas foram excluídas",
     "noJobIdFound": "Nenhum ID de trabalho encontrado para este recurso",
     "noWorkflowDataFound": "Nenhum dado de fluxo de trabalho encontrado neste recurso",
     "nodeAddedToWorkflow": "Nó {nodeType} adicionado ao fluxo de trabalho",
     "nodeTypeNotFound": "Tipo de nó {nodeType} não encontrado",
     "selection": {
-      "assetsDeletedSuccessfully": "{count} recurso(s) excluído(s) com sucesso",
       "deleteSelected": "Excluir",
       "deleteSelectedAll": "Excluir todos",
       "deselectAll": "Desmarcar todos",
@@ -2833,7 +2847,6 @@
       "exportStarted": "Preparando exportação ZIP para {count} arquivo | Preparando exportação ZIP para {count} arquivos",
       "exportWorkflowAll": "Exportar todos os fluxos de trabalho",
       "failedToAddNodes": "Falha ao adicionar nós ao fluxo de trabalho",
-      "failedToDeleteAssets": "Falha ao excluir os recursos selecionados",
       "insertAllAssetsAsNodes": "Inserir todos os ativos como nós",
       "multipleSelectedAssets": "Vários ativos selecionados",
       "noWorkflowsFound": "Nenhum dado de fluxo de trabalho encontrado nos ativos selecionados",
@@ -2841,7 +2854,6 @@
       "nodesAddedToWorkflow": "{count} nó(s) adicionado(s) ao fluxo de trabalho",
       "openWorkflowAll": "Abrir todos os fluxos de trabalho",
       "partialAddNodesSuccess": "{succeeded} adicionado(s) com sucesso, {failed} falharam",
-      "partialDeleteSuccess": "{succeeded} excluído(s) com sucesso, {failed} falha(s)",
       "partialWorkflowsExported": "{succeeded} exportado(s) com sucesso, {failed} falharam",
       "partialWorkflowsOpened": "{succeeded} fluxo(s) de trabalho aberto(s), {failed} falharam",
       "selectedCount": "Recursos selecionados: {count}",
@@ -3457,6 +3469,28 @@
     "addColor": "Adicionar cor",
     "swatchTitle": "Clique para editar · arraste para reordenar · clique direito para remover"
   },
+  "partnerNodesEducation": {
+    "benefits": {
+      "free": "Grátis para executar",
+      "noDownload": "Não requer configuração",
+      "noVram": "Sem VRAM, sua GPU fica livre",
+      "offline": "Funciona off-line"
+    },
+    "included": "Incluído",
+    "muteOpen": "Silenciar clipe de pesos abertos",
+    "mutePartner": "Silenciar clipe de nó parceiro",
+    "notIncluded": "Não incluído",
+    "openHeader": "ABERTO",
+    "openTab": "Nós abertos",
+    "partnerHeader": "PARCEIRO",
+    "partnerTab": "Nós parceiros",
+    "pitch": "Vê a diferença? Arraste para comparar.",
+    "reassurance": "Os nós parceiros estão disponíveis quando você quiser mais. O restante do Comfy continua grátis.",
+    "sliderLabel": "Comparar saídas de pesos abertos e de nó parceiro",
+    "tooltip": "Os nós parceiros executam modelos de código fechado, como Kling ou Veo, no hardware do provedor, pelo Comfy. Eles usam créditos; o restante do Comfy continua grátis.",
+    "unmuteOpen": "Ativar som do clipe de pesos abertos",
+    "unmutePartner": "Ativar som do clipe de nó parceiro"
+  },
   "progressToast": {
     "allDownloadsCompleted": "Todos os downloads concluídos",
     "downloadingModel": "Baixando modelo...",
@@ -3514,7 +3548,6 @@
       "copyErrorMessage": "Copiar mensagem de erro",
       "copyJobId": "Copiar ID da tarefa",
       "delete": "Excluir",
-      "deleteAsset": "Excluir ativo",
       "download": "Baixar",
       "exportWorkflow": "Exportar fluxo de trabalho",
       "inspectAsset": "Inspecionar ativo",
@@ -4265,8 +4298,6 @@
     "canceledCard": {
       "description": "Você não será mais cobrado. Seus recursos permanecem ativos até {date}.",
       "descriptionWithoutDate": "Você não será cobrado novamente. Seus recursos permanecem ativos até o final do seu período de cobrança.",
-      "endedDescription": "Sua assinatura não está mais ativa.",
-      "endedTitle": "Sua assinatura foi encerrada",
       "title": "Sua assinatura foi cancelada"
     },
     "changePlan": "Alterar plano",
@@ -4321,6 +4352,7 @@
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "Tem dúvidas ou interesse em soluções empresariais?",
     "inactive": {
+      "badge": "Inativo",
       "memberCta": "Ok, entendi",
       "memberDescription": "Peça ao proprietário do workspace para reativar a assinatura e executar fluxos de trabalho.",
       "memberRunTooltip": "Entre em contato com o proprietário do workspace para reativar a assinatura",
@@ -4332,7 +4364,6 @@
     "inactiveTeamTitle": "Assinatura de equipe inativa",
     "inviteUpTo": "Convide até",
     "invoiceHistory": "Histórico de faturas",
-    "learnMore": "Saiba mais",
     "manageBilling": "Gerenciar cobrança",
     "managePlan": "Gerenciar plano",
     "manageSubscription": "Gerenciar assinatura",
@@ -4460,6 +4491,7 @@
       },
       "refillReplacesNote": "Substitui sua recarga mensal. O saldo existente é mantido.",
       "renewsAt": "Renova por {amount} em {date}. Cancele a qualquer momento.",
+      "renewsAtAmount": "Renova por {amount}. Cancele quando quiser.",
       "savedPaymentMethod": "Método de pagamento",
       "showMoreFeatures": "Mostrar mais recursos",
       "starting": "Começando em {date}",
@@ -4599,7 +4631,6 @@
     "videoTemplateBasedCredits": "Vídeos gerados com Wan 2.2 Image to Video",
     "viewEnterprise": "Ver soluções empresariais",
     "viewMoreDetails": "Ver mais detalhes",
-    "viewMoreDetailsPlans": "Veja mais detalhes sobre planos e preços",
     "viewUsageHistory": "Ver histórico de uso",
     "whatsIncluded": "O que está incluído:",
     "workspaceNotSubscribed": "Este espaço de trabalho não possui uma assinatura",
