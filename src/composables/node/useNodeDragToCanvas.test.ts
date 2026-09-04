@@ -324,13 +324,9 @@ describe('useNodeDragToCanvas', () => {
             failure_kind: 'bad_state',
             feature_area: 'nodes',
             operation: 'render',
-            outcome: 'failed',
-            assert_mode: 'soft'
+            outcome: 'failed'
           },
-          context: {
-            drag_mode: 'click',
-            has_widget_values: true
-          },
+          context: { drag_mode: 'click' },
           level: 'error'
         }
       )
@@ -373,8 +369,7 @@ describe('useNodeDragToCanvas', () => {
             failure_kind: 'bad_state',
             feature_area: 'nodes',
             operation: 'render',
-            outcome: 'failed',
-            assert_mode: 'soft'
+            outcome: 'failed'
           },
           context: {
             drag_mode: 'click',
