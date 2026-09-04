@@ -45,6 +45,7 @@ export enum ServerFeatureFlag {
   CHURNKEY_APP_ID = 'churnkey_app_id',
   SIGNUP_TURNSTILE = 'signup_turnstile',
   SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags',
+  FEATURE_FLAG_POLICY_FIXTURE = 'feature_flag_policy_fixture',
   ONBOARDING_TOUR_ENABLED = 'onboarding_tour_enabled'
 }
 
@@ -282,6 +283,13 @@ export function useFeatureFlags() {
       return resolveFlag(
         ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS,
         remoteConfig.value.supports_model_type_tags,
+        false
+      )
+    },
+    get featureFlagPolicyFixtureEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.FEATURE_FLAG_POLICY_FIXTURE,
+        undefined,
         false
       )
     },
