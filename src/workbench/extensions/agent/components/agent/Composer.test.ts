@@ -1122,6 +1122,9 @@ describe('Composer', () => {
     const { emitted } = mount({ canOpenAssets: true })
 
     await openAddMenu()
+    expect(
+      screen.getAllByRole('menuitem').map((item) => item.textContent.trim())
+    ).toEqual(['Drag in asset from asset panel', 'Nodes', 'Workflows'])
     await userEvent.click(
       await screen.findByRole('menuitem', {
         name: 'Drag in asset from asset panel'
