@@ -193,10 +193,10 @@ export interface AgentCrdtStatus {
   workflowId: string | null
   updatesReceived: number
   /**
-   * Mirror of `bridge.follower.updatesApplied` (Yjs merges, reset to 0 on
-   * `doc_reset` / `follower_replaced`). Not interchangeable with
-   * `outcomes.applied`, which is monotonic and counts only frames that passed
-   * this composable's filter. Kept for AgentPanelRoot.vue and CrdtDevPanel.vue.
+   * Successful adapter commits for the current follower lineage. Reset to 0
+   * on `doc_reset` / `follower_replaced`; unlike `outcomes.applied`, it does
+   * not remain monotonic across those resets. Kept for AgentPanelRoot.vue and
+   * CrdtDevPanel.vue.
    */
   updatesApplied: number
   updatesSkipped: number
