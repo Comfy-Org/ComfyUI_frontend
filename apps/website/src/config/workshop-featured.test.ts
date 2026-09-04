@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
@@ -8,16 +8,15 @@ import {
   featuredWorkshopModels
 } from './workshop-featured'
 
-const CONTENT_DIR = join(import.meta.dirname, '../content/workshop-models')
+// The committed catalog is one packed array, a model per line; read it rather
+// than scanning a directory that no longer exists.
+const CATALOG = join(import.meta.dirname, '../content/workshop-models.json')
 
 function catalogIds(): Set<string> {
   return new Set(
-    readdirSync(CONTENT_DIR)
-      .filter((file) => file.endsWith('.json'))
-      .map(
-        (file) =>
-          JSON.parse(readFileSync(join(CONTENT_DIR, file), 'utf8')).id as string
-      )
+    (JSON.parse(readFileSync(CATALOG, 'utf8')) as { id: string }[]).map(
+      (entry) => entry.id
+    )
   )
 }
 
