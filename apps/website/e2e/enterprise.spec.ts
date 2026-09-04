@@ -227,17 +227,14 @@ test.describe('Enterprise pages @smoke', () => {
     ).toBeVisible()
     await expect(page.getByText(/Builders, not advisors\./)).toBeVisible()
     await expect(
-      page.getByRole('link', { name: 'CONTACT US' })
-    ).toHaveAttribute('href', '/contact/')
+      page.getByRole('link', { name: 'VIEW THE OFFERING' })
+    ).toHaveAttribute('href', '/forward-deployed-creatives/')
     await expect(page.getByText(/Your approved ComfyUI setup/)).toHaveCount(0)
     await expect(
       page.getByText(/dedicated GPU capacity, priority queueing/)
     ).toHaveCount(0)
     await expect(
       page.getByRole('link', { name: 'SEE THE PLATFORM' })
-    ).toHaveCount(0)
-    await expect(
-      page.getByRole('link', { name: 'VIEW THE OFFERING' })
     ).toHaveCount(0)
   })
 
