@@ -155,15 +155,16 @@ describe('useImagePreviewWidget', () => {
       expect(widget.type).toBe('custom')
     })
 
-    it('widget options include serialize false and canvasOnly', () => {
+    it('keeps the preview on the canvas', () => {
       const constructor = useImagePreviewWidget()
       const node = createMockNode()
       constructor(node, defaultInputSpec)
 
       const widget = getWidget(node)
-      expect(widget.options).toMatchObject({
-        serialize: false,
-        canvasOnly: true
+      expect(widget.visibility.surfaces).toEqual({
+        canvas: 'shown',
+        vueNode: 'never',
+        panel: 'never'
       })
     })
   })

@@ -9,6 +9,8 @@
  * `advanced` / `canvasOnly` fields are facades over this component.
  */
 
+import { isPlainObject } from 'es-toolkit'
+
 export const WIDGET_SURFACES = ['canvas', 'vueNode', 'panel'] as const
 
 export type WidgetSurface = (typeof WIDGET_SURFACES)[number]
@@ -34,6 +36,7 @@ export interface WidgetVisibilitySource {
   options?: {
     hidden?: boolean
     advanced?: boolean
+    surfaces?: Partial<WidgetSurfaces>
     canvasOnly?: boolean
     hideInPanel?: boolean
   }
@@ -76,7 +79,8 @@ export function deriveWidgetSurfaces(
   return {
     canvas,
     vueNode,
-    panel: source.options?.hideInPanel ? 'never' : vueNode
+    panel: source.options?.hideInPanel ? 'never' : vueNode,
+    ...(isPlainObject(source.options?.surfaces) ? source.options.surfaces : {})
   }
 }
 

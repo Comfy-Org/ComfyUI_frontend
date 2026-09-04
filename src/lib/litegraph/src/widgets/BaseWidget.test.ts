@@ -229,6 +229,18 @@ describe('BaseWidget store integration', () => {
       })
     })
 
+    it('applies explicit surfaces when options are replaced', () => {
+      const widget = createTestWidget(node)
+
+      widget.options = { surfaces: { panel: 'never' } }
+
+      expect(widget.visibility.surfaces).toEqual({
+        canvas: 'shown',
+        vueNode: 'shown',
+        panel: 'never'
+      })
+    })
+
     it('supplies shimmed options when constructed without them', () => {
       const widget = new MutableTypeWidget(
         fromPartial({

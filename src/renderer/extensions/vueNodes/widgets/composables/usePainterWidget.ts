@@ -9,8 +9,7 @@ export const usePainterWidget = (): ComfyWidgetConstructorV2 => {
       'painter',
       inputSpec.name,
       (inputSpec.default as string) ?? '',
-      null,
-      { serialize: true, canvasOnly: false }
+      null
     )
   }
 }
