@@ -296,7 +296,7 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
         seq: data.seq,
         update,
         ...(actor !== undefined && { actor }),
-        ...(Array.isArray(data.op_ids) && {
+        ...(isStringArray(data.op_ids) && {
           opIds: data.op_ids
         })
       }
