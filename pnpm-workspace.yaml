@@ -73,6 +73,7 @@ catalog:
   '@webgpu/types': ^0.1.66
   ag-psd: ^31.0.2
   algoliasearch: ^5.21.0
+  ajv: ^8.18.0
   astro: ^7.2.1
   axios: ^1.15.2
   class-variance-authority: ^0.7.1
@@ -112,6 +113,7 @@ catalog:
   mixpanel-browser: ^2.71.0
   monocart-coverage-reports: ^2.12.9
   openai: ^7.4.0
+  openapi-typescript: ^7.13.0
   oxfmt: ^0.59.0
   oxlint: ^1.77.0
   oxlint-tsgolint: ^7.0.2001

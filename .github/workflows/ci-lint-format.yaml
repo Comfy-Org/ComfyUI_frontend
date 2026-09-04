@@ -34,6 +34,9 @@ jobs:
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
 
+      - name: Verify generated DocFrame types
+        run: scripts/check-docframe-typegen.sh
+
       - name: Run ESLint with auto-fix
         run: pnpm lint:fix
 

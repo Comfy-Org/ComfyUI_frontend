@@ -1,0 +1,669 @@
+openapi: 3.1.0
+info:
+  title: ComfyUI Doc-frame WebSocket Protocol
+  version: 0.1.0
+  description:
+    'Code-derived contract for the eight document-frame messages carried
+    by the existing ComfyUI JSON WebSocket. This specification describes wire shapes,
+    not client delivery guarantees. Provenance: reports/protocol/docframe-wire-inventory.md.'
+servers:
+  - url: '{scheme}://{host}'
+    description: Deployment-specific ComfyUI WebSocket origin.
+    variables:
+      scheme:
+        default: wss
+        enum:
+          - ws
+          - wss
+      host:
+        default: agent.comfy.org
+paths: {}
+x-websocket:
+  path: /ws
+  subprotocol: json
+  description:
+    Existing authenticated ComfyUI WebSocket shared with other protocol
+    families. This contract covers doc frames only. Client-originated server-only
+    doc-frame discriminators are ignored by the current cloud ingress implementation.
+  clientToServer:
+    $ref: '#/components/schemas/DocFrameClientToServer'
+  serverToClient:
+    $ref: '#/components/schemas/DocFrameServerToClient'
+components:
+  schemas:
+    DocFrame:
+      description:
+        'Any doc-frame envelope. Provenance: inventory "Message inventory"
+        and "OpenAPI handoff notes" §1.'
+      oneOf:
+        - $ref: '#/components/schemas/DocSubscribeFrame'
+        - $ref: '#/components/schemas/DocSubscribedFrame'
+        - $ref: '#/components/schemas/DocUnsubscribeFrame'
+        - $ref: '#/components/schemas/DocUpdateFrame'
+        - $ref: '#/components/schemas/DocOpsFrame'
+        - $ref: '#/components/schemas/DocOpsResultFrame'
+        - $ref: '#/components/schemas/DocResetFrame'
+        - $ref: '#/components/schemas/AwarenessFrame'
+      discriminator:
+        propertyName: type
+        mapping:
+          doc_subscribe: '#/components/schemas/DocSubscribeFrame'
+          doc_subscribed: '#/components/schemas/DocSubscribedFrame'
+          doc_unsubscribe: '#/components/schemas/DocUnsubscribeFrame'
+          doc_update: '#/components/schemas/DocUpdateFrame'
+          doc_ops: '#/components/schemas/DocOpsFrame'
+          doc_ops_result: '#/components/schemas/DocOpsResultFrame'
+          doc_reset: '#/components/schemas/DocResetFrame'
+          awareness: '#/components/schemas/AwarenessFrame'
+    DocFrameClientToServer:
+      description: Client-originated doc frames accepted by cloud ingress.
+      oneOf:
+        - $ref: '#/components/schemas/DocSubscribeFrame'
+        - $ref: '#/components/schemas/DocUnsubscribeFrame'
+        - $ref: '#/components/schemas/DocOpsFrame'
+        - $ref: '#/components/schemas/AwarenessFrame'
+      discriminator:
+        propertyName: type
+        mapping:
+          doc_subscribe: '#/components/schemas/DocSubscribeFrame'
+          doc_unsubscribe: '#/components/schemas/DocUnsubscribeFrame'
+          doc_ops: '#/components/schemas/DocOpsFrame'
+          awareness: '#/components/schemas/AwarenessFrame'
+    DocFrameServerToClient:
+      description: Server-originated doc frames parsed by the browser follower.
+      oneOf:
+        - $ref: '#/components/schemas/DocSubscribedFrame'
+        - $ref: '#/components/schemas/DocUpdateFrame'
+        - $ref: '#/components/schemas/DocOpsResultFrame'
+        - $ref: '#/components/schemas/DocResetFrame'
+        - $ref: '#/components/schemas/AwarenessFrame'
+      discriminator:
+        propertyName: type
+        mapping:
+          doc_subscribed: '#/components/schemas/DocSubscribedFrame'
+          doc_update: '#/components/schemas/DocUpdateFrame'
+          doc_ops_result: '#/components/schemas/DocOpsResultFrame'
+          doc_reset: '#/components/schemas/DocResetFrame'
+          awareness: '#/components/schemas/AwarenessFrame'
+    ProtocolVersion:
+      type: integer
+      const: 1
+      description: Exactly 1 on the current /ws protocol.
+    WorkflowId:
+      type: string
+      minLength: 1
+      maxLength: 128
+      description:
+        'Workflow identifier. The implementation additionally rejects control
+        and channel-special characters. Provenance: inventory "Validation and size
+        limits".'
+    Sequence:
+      type: integer
+      minimum: 0
+      description: Authoritative document sequence number.
+    Base64Payload:
+      type: string
+      contentEncoding: base64
+      maxLength: 8388608
+      description: Standard-base64 data, capped at 8 MiB encoded.
+    DocSubscribeFrame:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+        - data
+      properties:
+        type:
+          type: string
+          const: doc_subscribe
+        data:
+          $ref: '#/components/schemas/DocSubscribeData'
+    DocSubscribeData:
+      type: object
+      additionalProperties: false
+      required:
+        - v
+        - workflow_id
+      properties:
+        v:
+          $ref: '#/components/schemas/ProtocolVersion'
+        workflow_id:
+          $ref: '#/components/schemas/WorkflowId'
+        state_vector_b64:
+          allOf:
+            - $ref: '#/components/schemas/Base64Payload'
+          description:
+            'Optional Yjs state vector. Empty or absent requests full catch-up;
+            the current FE always emits this field. Provenance: inventory "Message
+            inventory" row doc_subscribe.'
+    DocSubscribedFrame:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+        - data
+      properties:
+        type:
+          type: string
+          const: doc_subscribed
+        data:
+          $ref: '#/components/schemas/DocSubscribedData'
+    DocSubscribedData:
+      type: object
+      additionalProperties: false
+      required:
+        - v
+        - workflow_id
+        - ok
+      properties:
+        v:
+          $ref: '#/components/schemas/ProtocolVersion'
+        workflow_id:
+          $ref: '#/components/schemas/WorkflowId'
+        ok:
+          type: boolean
+        seq:
+          $ref: '#/components/schemas/Sequence'
+        code:
+          type: string
+        message:
+          type: string
+      description: Provenance inventory "Message inventory" row doc_subscribed.
+    DocUnsubscribeFrame:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+        - data
+      properties:
+        type:
+          type: string
+          const: doc_unsubscribe
+        data:
+          $ref: '#/components/schemas/DocUnsubscribeData'
+    DocUnsubscribeData:
+      type: object
+      additionalProperties: false
+      required:
+        - v
+        - workflow_id
+      properties:
+        v:
+          $ref: '#/components/schemas/ProtocolVersion'
+        workflow_id:
+          $ref: '#/components/schemas/WorkflowId'
+      description: Provenance inventory "Message inventory" row doc_unsubscribe.
+    DocUpdateFrame:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+        - data
+      properties:
+        type:
+          type: string
+          const: doc_update
+        data:
+          $ref: '#/components/schemas/DocUpdateData'
+    DocUpdateData:
+      type: object
+      additionalProperties: false
+      required:
+        - v
+        - workflow_id
+        - seq
+        - update_b64
+      properties:
+        v:
+          $ref: '#/components/schemas/ProtocolVersion'
+        workflow_id:
+          $ref: '#/components/schemas/WorkflowId'
+        seq:
+          $ref: '#/components/schemas/Sequence'
+        update_b64:
+          allOf:
+            - $ref: '#/components/schemas/Base64Payload'
+          minLength: 1
+          description: Non-empty Yjs binary update encoded as standard base64.
+        actor:
+          type: string
+        op_ids:
+          type: array
+          maxItems: 256
+          items:
+            type: string
+            minLength: 1
+            maxLength: 128
+          description:
+            Creator-minted operation ids whose effects are included in
+            this update.
+      description: Provenance inventory "Message inventory" row doc_update.
+    DocOpsFrame:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+        - data
+      properties:
+        type:
+          type: string
+          const: doc_ops
+        data:
+          $ref: '#/components/schemas/DocOpsData'
+    DocOpsData:
+      type: object
+      additionalProperties: false
+      required:
+        - v
+        - workflow_id
+        - tab
+        - ops
+      properties:
+        v:
+          $ref: '#/components/schemas/ProtocolVersion'
+        workflow_id:
+          $ref: '#/components/schemas/WorkflowId'
+        tab:
+          type: string
+          minLength: 1
+          maxLength: 256
+          description: Tab identity; whitespace, colon, and controls are rejected.
+        ops:
+          type: array
+          minItems: 1
+          maxItems: 256
+          items:
+            $ref: '#/components/schemas/DocOp'
+          description:
+            Semantic operations, with a 4 MiB aggregate encoded-size cap.
+            The WS relay validates the common envelope but treats operation interiors
+            as opaque; the five variants are the executable 02b producer vocabulary.
+      description: Provenance inventory "Nested doc_ops.ops[*] inventory".
+    DocOpsResultFrame:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+        - data
+      properties:
+        type:
+          type: string
+          const: doc_ops_result
+        data:
+          $ref: '#/components/schemas/DocOpsResultData'
+    DocOpsResultData:
+      type: object
+      additionalProperties: false
+      required:
+        - v
+        - workflow_id
+        - ok
+      properties:
+        v:
+          $ref: '#/components/schemas/ProtocolVersion'
+        workflow_id:
+          $ref: '#/components/schemas/WorkflowId'
+        ok:
+          type: boolean
+        seq:
+          $ref: '#/components/schemas/Sequence'
+        applied:
+          type: array
+          items:
+            type: string
+        skipped:
+          type: array
+          items:
+            type: string
+        failed:
+          $ref: '#/components/schemas/DocOpFailure'
+        code:
+          type: string
+        message:
+          type: string
+      description:
+        'Optional arrays follow Go omitempty behavior; the FE normalizes
+        absent arrays to empty arrays. Only the canonical cloud failure shape is modeled.
+        Provenance: inventory "Message inventory" row doc_ops_result.'
+    DocOpFailure:
+      type: object
+      additionalProperties: false
+      required:
+        - index
+        - code
+        - message
+      properties:
+        index:
+          type: integer
+          minimum: 0
+        op_id:
+          type: string
+          maxLength: 128
+        code:
+          type: string
+        message:
+          type: string
+    DocResetFrame:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+        - data
+      properties:
+        type:
+          type: string
+          const: doc_reset
+        data:
+          $ref: '#/components/schemas/DocResetData'
+    DocResetData:
+      type: object
+      additionalProperties: false
+      required:
+        - v
+        - workflow_id
+        - seq
+      properties:
+        v:
+          $ref: '#/components/schemas/ProtocolVersion'
+        workflow_id:
+          $ref: '#/components/schemas/WorkflowId'
+        seq:
+          $ref: '#/components/schemas/Sequence'
+        actor:
+          type: string
+      description:
+        'Explicit lineage break; carries no update or snapshot. Provenance:
+        inventory "Message inventory" row doc_reset.'
+    AwarenessFrame:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+        - data
+      properties:
+        type:
+          type: string
+          const: awareness
+        data:
+          $ref: '#/components/schemas/AwarenessData'
+    AwarenessData:
+      type: object
+      additionalProperties: false
+      required:
+        - v
+        - workflow_id
+        - actor
+      properties:
+        v:
+          $ref: '#/components/schemas/ProtocolVersion'
+        workflow_id:
+          $ref: '#/components/schemas/WorkflowId'
+        actor:
+          type: string
+          maxLength: 256
+        state:
+          type: object
+          description: Ephemeral presence state, capped at 8 KiB encoded JSON.
+        expires_at:
+          type: integer
+          minimum: 0
+          description: Unix seconds; server overwrites/stamps expiry before fanout.
+      description:
+        'Bidirectional protocol capability; neither inspected FE revision
+        emits it. Provenance: inventory "Message inventory" row awareness.'
+    DocOp:
+      description:
+        Five operation payloads emitted by the inspected 02b executable
+        lineage. Current checked-in PoC producers mint only add_node and delete_node.
+      oneOf:
+        - $ref: '#/components/schemas/AddNodeOp'
+        - $ref: '#/components/schemas/DeleteNodeOp'
+        - $ref: '#/components/schemas/ClearOp'
+        - $ref: '#/components/schemas/ConnectOp'
+        - $ref: '#/components/schemas/SetWidgetOp'
+      discriminator:
+        propertyName: op
+        mapping:
+          add_node: '#/components/schemas/AddNodeOp'
+          delete_node: '#/components/schemas/DeleteNodeOp'
+          clear: '#/components/schemas/ClearOp'
+          connect: '#/components/schemas/ConnectOp'
+          set_widget: '#/components/schemas/SetWidgetOp'
+    DocOpCommon:
+      type: object
+      required:
+        - op
+        - op_id
+        - actor
+        - base_version
+        - stamp
+      properties:
+        op:
+          type: string
+        op_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: Unique within a batch; minted once before dispatch.
+        actor:
+          type: string
+          minLength: 1
+          maxLength: 256
+          pattern: ^(agent:[^:]+:[^:]+|human:[^:]+:[^:]+|system:mint)$
+        base_version:
+          type: integer
+        stamp:
+          type: array
+          prefixItems:
+            - type: integer
+            - type: string
+              minLength: 1
+          minItems: 2
+          maxItems: 2
+          description: Ordering stamp [base_version, actor].
+      description: Provenance inventory "Common emitted envelope".
+    NodeId:
+      description:
+        NodeId is imported from the shared package in 02b; observed link
+        seams explicitly accept string or number, so the wire contract preserves both.
+      oneOf:
+        - type: string
+        - type: number
+    AddNodeOp:
+      allOf:
+        - $ref: '#/components/schemas/DocOpCommon'
+        - type: object
+          additionalProperties: false
+          required:
+            - op
+            - node_id
+            - class_type
+            - pos
+            - node
+          properties:
+            op:
+              type: string
+              const: add_node
+            op_id:
+              type: string
+              minLength: 1
+              maxLength: 128
+            actor:
+              type: string
+              minLength: 1
+              maxLength: 256
+            base_version:
+              type: integer
+            stamp:
+              type: array
+              prefixItems:
+                - type: integer
+                - type: string
+                  minLength: 1
+              minItems: 2
+              maxItems: 2
+            node_id:
+              $ref: '#/components/schemas/NodeId'
+            class_type:
+              type: string
+            pos:
+              type: array
+              prefixItems:
+                - type: number
+                - type: number
+              minItems: 2
+              maxItems: 2
+            node:
+              type: object
+              additionalProperties: true
+    DeleteNodeOp:
+      allOf:
+        - $ref: '#/components/schemas/DocOpCommon'
+        - type: object
+          additionalProperties: false
+          required:
+            - op
+            - node_id
+            - removed_links
+          properties:
+            op:
+              type: string
+              const: delete_node
+            op_id:
+              type: string
+              minLength: 1
+              maxLength: 128
+            actor:
+              type: string
+              minLength: 1
+              maxLength: 256
+            base_version:
+              type: integer
+            stamp:
+              type: array
+              minItems: 2
+              maxItems: 2
+            node_id:
+              $ref: '#/components/schemas/NodeId'
+            removed_links:
+              type: array
+              items:
+                $ref: '#/components/schemas/NodeId'
+    ClearOp:
+      allOf:
+        - $ref: '#/components/schemas/DocOpCommon'
+        - type: object
+          additionalProperties: false
+          required:
+            - op
+            - removed_nodes
+          properties:
+            op:
+              type: string
+              const: clear
+            op_id:
+              type: string
+              minLength: 1
+              maxLength: 128
+            actor:
+              type: string
+              minLength: 1
+              maxLength: 256
+            base_version:
+              type: integer
+            stamp:
+              type: array
+              minItems: 2
+              maxItems: 2
+            removed_nodes:
+              type: array
+              items:
+                $ref: '#/components/schemas/NodeId'
+    ConnectOp:
+      allOf:
+        - $ref: '#/components/schemas/DocOpCommon'
+        - type: object
+          additionalProperties: false
+          required:
+            - op
+            - link_id
+            - from_node
+            - from_slot
+            - to_node
+            - to_slot
+            - link_type
+          properties:
+            op:
+              type: string
+              const: connect
+            op_id:
+              type: string
+              minLength: 1
+              maxLength: 128
+            actor:
+              type: string
+              minLength: 1
+              maxLength: 256
+            base_version:
+              type: integer
+            stamp:
+              type: array
+              minItems: 2
+              maxItems: 2
+            link_id:
+              $ref: '#/components/schemas/NodeId'
+            from_node:
+              $ref: '#/components/schemas/NodeId'
+            from_slot:
+              type: integer
+            to_node:
+              $ref: '#/components/schemas/NodeId'
+            to_slot:
+              type: integer
+            link_type:
+              type: string
+    SetWidgetOp:
+      allOf:
+        - $ref: '#/components/schemas/DocOpCommon'
+        - type: object
+          additionalProperties: false
+          required:
+            - op
+            - node_id
+            - widget
+            - value
+            - old
+          properties:
+            op:
+              type: string
+              const: set_widget
+            op_id:
+              type: string
+              minLength: 1
+              maxLength: 128
+            actor:
+              type: string
+              minLength: 1
+              maxLength: 256
+            base_version:
+              type: integer
+            stamp:
+              type: array
+              minItems: 2
+              maxItems: 2
+            node_id:
+              $ref: '#/components/schemas/NodeId'
+            widget:
+              type: string
+            value: {}
+            old: {}
+            path:
+              type: array
+              items:
+                type: string
+            inner_widget:
+              type: string
+      description:
+        Root form omits path and inner_widget; interior form includes both.
+        value and old accept any JSON value. Provenance inventory "Additional operation
+        payloads emitted on 02b".
