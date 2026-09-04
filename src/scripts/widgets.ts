@@ -52,6 +52,17 @@ export type ComfyWidgetConstructor = (
   widgetName?: string
 ) => { widget: IBaseWidget; minWidth?: number; minHeight?: number }
 
+export type CustomComfyWidgetConstructor = (
+  ...args: Parameters<ComfyWidgetConstructor>
+) =>
+  | {
+      widget?: IBaseWidget
+      minWidth?: number
+      minHeight?: number
+    }
+  | IBaseWidget
+  | undefined
+
 /**
  * Transforms a V2 widget constructor to a V1 widget constructor.
  * @param widgetConstructorV2 The V2 widget constructor to transform.

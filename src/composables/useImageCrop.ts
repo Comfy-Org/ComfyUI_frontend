@@ -582,9 +582,7 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
   }
 
   const initialize = () => {
-    if (nodeId != null) {
-      node.value = resolveNode(nodeId) ?? null
-    }
+    node.value = resolveNode(nodeId) ?? null
 
     updateImageUrl()
   }

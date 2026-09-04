@@ -75,7 +75,7 @@ describe('WorkflowSelectorChip', () => {
     await user.click(trigger())
 
     const items = await screen.findAllByRole('menuitemradio')
-    expect(items.map((item) => item.textContent?.trim())).toEqual([
+    expect(items.map((item) => item.textContent.trim())).toEqual([
       'portrait',
       'upscale'
     ])
@@ -213,7 +213,7 @@ describe('WorkflowSelectorChip', () => {
     await user.type(search, 'ups')
 
     const items = screen.getAllByRole('menuitemradio')
-    expect(items.map((item) => item.textContent?.trim())).toEqual(['upscale'])
+    expect(items.map((item) => item.textContent.trim())).toEqual(['upscale'])
   })
 
   it('closes the dropdown on Escape from the focused search input', async () => {

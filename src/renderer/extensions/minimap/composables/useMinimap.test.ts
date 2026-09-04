@@ -81,7 +81,7 @@ const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0))
 
 const triggerRAF = async () => {
   // Trigger all RAF callbacks
-  Object.values(rafCallbacks).forEach((cb) => cb?.())
+  Object.values(rafCallbacks).forEach((cb) => cb())
   await flushPromises()
 }
 
@@ -107,9 +107,10 @@ vi.mock('@vueuse/core', () => {
       const resumeFn = vi.fn(() => {
         mockResume()
         // Execute the RAF callback immediately when resumed
-        if (rafCallbacks[id]) {
-          rafCallbacks[id]()
-        }
+        const callback = Object.hasOwn(rafCallbacks, id)
+          ? rafCallbacks[id]
+          : undefined
+        callback?.()
       })
 
       return {

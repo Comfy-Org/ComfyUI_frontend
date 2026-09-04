@@ -221,7 +221,7 @@ describe('InviteMemberDialogContent', () => {
 
     const closeButton = screen
       .getAllByRole('button', { name: 'g.close' })
-      .find((button) => button.textContent?.includes('g.close'))
+      .find((button) => button.textContent.includes('g.close'))
     await user.click(closeButton!)
 
     expect(mockCloseDialog).toHaveBeenCalledWith({ key: 'invite-member' })
