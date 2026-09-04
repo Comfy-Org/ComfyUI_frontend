@@ -132,6 +132,25 @@ For cloud extensions, modify `.env`:
 DEV_SERVER_COMFYUI_URL=https://stagingcloud.comfy.org/
 ```
 
+## Migrating From LiteGraph Executor APIs
+
+The deprecated `LGraph.runStep()` and `LGraph.sendEventToAllNodes()` APIs have
+been removed. ComfyUI executes workflows on the backend, so extensions should
+replace `runStep()` according to the intended outcome:
+
+- To execute the workflow, call `app.queuePrompt()`.
+- To redraw the canvas after a frontend-only change, call
+  `app.graph.setDirtyCanvas(true, true)`.
+
+Do not replace `runStep()` with `LGraphNode.doExecute()`. That method belongs to
+LiteGraph's removed browser-side execution loop and does not queue backend
+execution.
+
+There is no global replacement for `sendEventToAllNodes()`. Extensions that
+coordinate their own nodes should use an extension-owned event target or store
+and subscribe only the nodes that handle that event, rather than broadcasting a
+dynamically named method call to every node in the graph.
+
 ## Key Points
 
 - Python nodes work normally in dev mode
