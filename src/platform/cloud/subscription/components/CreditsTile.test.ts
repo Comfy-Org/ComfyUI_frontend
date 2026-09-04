@@ -41,6 +41,7 @@ const state = vi.hoisted(() => ({
     async (): Promise<CustomerEventsResult> => ({ events: [] })
   ),
   customerEventsError: null as string | null,
+  billingError: null as string | null,
   toastErrorHandler: vi.fn()
 }))
 
@@ -63,6 +64,7 @@ vi.mock('@/composables/useErrorHandling', () => ({
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     balance: computed(() => state.balance),
+    error: computed(() => state.billingError),
     subscription: computed(() => state.subscription),
     canAccessSubscriptionFeatures: computed(
       () => state.canAccessSubscriptionFeatures
@@ -142,7 +144,8 @@ const i18n = createI18n({
         additionalCredits: 'Additional credits',
         additionalCreditsInUse: 'In use',
         usedAfterMonthly: 'Used after monthly runs out',
-        reactivateToUseCredits: 'Reactivate your plan to use these credits',
+        reactivateToUseCredits: 'Spendable once the plan is active again.',
+        planCreditsEnded: 'Plan credits ended with your subscription.',
         monthlyCreditsUsedUpTitle:
           'Monthly credits are used up. Refills {date}',
         monthlyCreditsUsedUpTitleNoDate: 'Monthly credits are used up',
@@ -215,6 +218,7 @@ describe('CreditsTile', () => {
     state.canSubscribeSelfServe = false
     state.type = 'workspace'
     state.customerEventsError = null
+    state.billingError = null
     state.telemetryUnavailable = false
     mockIsCloud.value = true
   })
@@ -398,25 +402,89 @@ describe('CreditsTile', () => {
     expect(screen.queryByText('Add credits')).toBeNull()
   })
 
-  it('shows disabled credit details for an inactive plan even while top-up reads open', () => {
+  it('keeps the retained balance visible on an inactive plan', () => {
     activeProSubscription()
-    // canTopUp fails open for owners on an unreadable snapshot, so a lapsed
-    // self-serve plan must keep this state on tier alone.
+    // canTopUp fails open for owners on an unreadable snapshot, so the tile
+    // must not offer top-up on the strength of that alone.
     state.canTopUp = true
     const { container } = renderTile({ inactivePlan: true })
 
-    expect(container.textContent).toContain('0remaining')
+    expect(container.textContent).toContain('633remaining')
     expect(container.textContent).toContain('Additional credits')
+    expect(container.textContent).toContain('633')
     expect(container.textContent).toContain(
-      'Reactivate your plan to use these credits'
+      'Spendable once the plan is active again.'
     )
+    expect(container.textContent).not.toContain('left of')
     expect(screen.queryByText('Add credits')).toBeNull()
   })
 
-  it('keeps Add credits and the real balance on an inactive sales-managed plan', () => {
+  it('states that plan credits ended when an inactive plan retained nothing', () => {
     activeProSubscription()
-    // A sales-managed plan has no self-serve reactivation to sell, so the
-    // reactivate-to-use-credits treatment must not apply.
+    state.balance = {
+      amountMicros: 0,
+      cloudCreditBalanceMicros: 0,
+      prepaidBalanceMicros: 0
+    }
+    const { container } = renderTile({ inactivePlan: true })
+
+    expect(container.textContent).toContain(
+      'Plan credits ended with your subscription.'
+    )
+    expect(container.textContent).not.toContain(
+      'Spendable once the plan is active again.'
+    )
+  })
+
+  it('settles a missing-customer lookup at zero rather than a skeleton', () => {
+    activeProSubscription()
+    state.balance = null
+    state.billingError = null
+    renderTile()
+
+    expect(screen.queryAllByRole('status')).toHaveLength(0)
+    expect(screen.getAllByText('0').length).toBeGreaterThan(0)
+  })
+
+  it('keeps the placeholders up when the balance lookup failed', () => {
+    activeProSubscription()
+    state.balance = null
+    state.billingError = 'Failed to fetch balance'
+    renderTile()
+
+    expect(screen.getAllByRole('status')).not.toHaveLength(0)
+    expect(screen.queryByText('0')).not.toBeInTheDocument()
+  })
+
+  it('withholds the credit note on an inactive plan until the balance is read', () => {
+    activeProSubscription()
+    state.balance = null
+    state.billingError = 'Failed to fetch balance'
+    const { container } = renderTile({ inactivePlan: true })
+
+    expect(container.textContent).not.toContain(
+      'Plan credits ended with your subscription.'
+    )
+    expect(container.textContent).not.toContain(
+      'Spendable once the plan is active again.'
+    )
+    expect(screen.queryByText('0')).not.toBeInTheDocument()
+    expect(screen.getAllByRole('status')).not.toHaveLength(0)
+  })
+
+  it('withholds the breakdown figures on an active plan until the balance is read', () => {
+    activeProSubscription()
+    state.balance = null
+    state.billingError = 'Failed to fetch balance'
+    const { container } = renderTile()
+
+    expect(container.textContent).not.toContain('left of')
+    expect(screen.queryByText('0')).not.toBeInTheDocument()
+    expect(screen.getAllByRole('status')).not.toHaveLength(0)
+  })
+
+  it('gives an inactive sales-managed plan the same retained-credit treatment', () => {
+    activeProSubscription()
     state.canTopUp = true
     state.tier = 'ENTERPRISE'
     state.subscription = {
@@ -426,10 +494,25 @@ describe('CreditsTile', () => {
     }
     const { container } = renderTile({ inactivePlan: true })
 
-    expect(container.textContent).not.toContain(
-      'Reactivate your plan to use these credits'
+    expect(container.textContent).toContain('633')
+    expect(container.textContent).toContain(
+      'Spendable once the plan is active again.'
     )
     expect(screen.getByText('Add credits')).toBeInTheDocument()
+  })
+
+  it('drops top-up on an inactive sales-managed plan once the server clears it', () => {
+    activeProSubscription()
+    state.canTopUp = false
+    state.tier = 'ENTERPRISE'
+    state.subscription = {
+      tier: 'ENTERPRISE',
+      duration: 'MONTHLY',
+      renewalDate: '2026-02-20T12:00:00Z'
+    }
+    renderTile({ inactivePlan: true })
+
+    expect(screen.queryByText('Add credits')).toBeNull()
   })
 
   it('does not borrow a catalog monthly pool for an Enterprise plan', () => {

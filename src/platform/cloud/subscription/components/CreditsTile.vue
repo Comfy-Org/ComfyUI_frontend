@@ -22,16 +22,9 @@
       <div class="text-sm text-muted">
         {{ $t('subscription.totalCredits') }}
       </div>
-      <Skeleton v-if="isLoadingBalance" width="8rem" height="2rem" />
+      <Skeleton v-if="!totalIsKnown" width="8rem" height="2rem" />
       <div v-else class="flex items-baseline gap-2">
-        <i
-          :class="
-            cn(
-              'icon-[lucide--coins] size-4 self-center',
-              !inactivePlan && 'text-credit'
-            )
-          "
-        />
+        <i class="icon-[lucide--coins] size-4 self-center text-credit" />
         <span class="text-2xl leading-none font-bold">{{ displayTotal }}</span>
         <span class="text-sm text-muted @max-[300px]:hidden">{{
           $t('subscription.remaining')
@@ -80,7 +73,7 @@
         </div>
         <div class="flex items-center justify-between gap-2 text-sm">
           <Skeleton
-            v-if="isLoadingBalance"
+            v-if="!balanceIsKnown"
             class="@max-[300px]:hidden"
             width="5rem"
             height="1rem"
@@ -88,7 +81,7 @@
           <span v-else class="text-muted @max-[300px]:hidden">
             {{ $t('subscription.creditsUsed', { used: usedDisplay }) }}
           </span>
-          <Skeleton v-if="isLoadingBalance" width="9rem" height="1rem" />
+          <Skeleton v-if="!balanceIsKnown" width="9rem" height="1rem" />
           <span
             v-else
             class="flex items-center gap-1 font-bold text-text-primary"
@@ -141,7 +134,7 @@
               {{ $t('subscription.additionalCreditsInUse') }}
             </span>
           </span>
-          <Skeleton v-if="isLoadingBalance" width="3rem" height="1rem" />
+          <Skeleton v-if="!balanceIsKnown" width="3rem" height="1rem" />
           <span
             v-else
             class="flex items-center gap-1 font-bold text-text-primary"
@@ -175,13 +168,20 @@
               <i class="icon-[lucide--info] size-4" />
             </Button>
           </span>
-          <span class="flex items-center gap-1 font-bold">
-            <i class="icon-[lucide--coins] size-4" />
+          <Skeleton v-if="!balanceIsKnown" width="3rem" height="1rem" />
+          <span v-else class="flex items-center gap-1 font-bold">
+            <i class="icon-[lucide--coins] size-4 text-credit" />
             {{ displayPrepaid }}
           </span>
         </div>
-        <span class="text-sm">
-          {{ $t('subscription.reactivateToUseCredits') }}
+        <span v-if="balanceIsKnown" class="text-sm">
+          {{
+            $t(
+              prepaidCreditsValue > 0
+                ? 'subscription.reactivateToUseCredits'
+                : 'subscription.planCreditsEnded'
+            )
+          }}
         </span>
       </div>
     </template>
@@ -253,6 +253,7 @@ const { locale, t } = useI18n()
 const {
   subscription,
   balance,
+  error: billingError,
   canAccessSubscriptionFeatures,
   currentTeamCreditStop,
   fetchBalance,
@@ -291,14 +292,18 @@ const creditPoolTotalCredits = computed<number | null>(() => {
     : monthlyCredits
 })
 
-// The reactivate-to-use-credits treatment sells a self-serve reactivation, so
-// it applies only where one exists. Tier decides that, as it does for the
-// credit pool above: can_top_up is a rollout-defaulted capability that also
-// fails open for owners on an unreadable snapshot, which would drop a lapsed
-// self-serve team out of this state during a capabilities outage.
-const showsInactivePlanState = computed(
-  () => inactivePlan === true && !isSalesManagedTier(subscription.value?.tier)
+const showsInactivePlanState = computed(() => inactivePlan === true)
+
+// A missing customer answers the lookup rather than failing it: the legacy
+// endpoint returns null on 404, and that is a real zero. Only a fetch still in
+// flight or one that errored leaves the balance genuinely unknown.
+const balanceIsKnown = computed(
+  () =>
+    !isLoadingBalance.value &&
+    (balance.value != null || billingError.value == null)
 )
+
+const totalIsKnown = computed(() => zeroState || balanceIsKnown.value)
 
 const usage = computed(() =>
   computeMonthlyUsage(
@@ -352,15 +357,16 @@ const creditPoolTotalCompact = computed(() => {
   return total === null ? '—' : compactNumber.value.format(total)
 })
 
-const displayTotal = computed(() =>
-  zeroState || showsInactivePlanState.value
-    ? formatCreditCount(0)
+const displayTotal = computed(() => {
+  if (zeroState) return formatCreditCount(0)
+  // The monthly allowance ends with the plan, so the aggregate would count a
+  // pool the tile no longer shows. Only the prepaid balance survives.
+  return showsInactivePlanState.value
+    ? prepaidCredits.value
     : totalCredits.value
-)
+})
 const displayPrepaid = computed(() =>
-  zeroState || showsInactivePlanState.value
-    ? formatCreditCount(0)
-    : prepaidCredits.value
+  zeroState ? formatCreditCount(0) : prepaidCredits.value
 )
 const usedBarWidth = computed(
   () => `${(usage.value.usedFraction * 100).toFixed(2)}%`
@@ -387,11 +393,21 @@ const showBar = computed(
     creditPoolTotalCredits.value !== null &&
     creditPoolTotalCredits.value > 0
 )
+// A lapsed self-serve plan routes recovery through Reactivate plan, so the tile
+// withdraws its own button. Sales-managed tiers have no self-serve reactivation,
+// and whether a terminal contract may still top up is the server's call through
+// can_top_up (BE-10999) rather than a presentation state's.
+const withholdsActionButton = computed(
+  () =>
+    showsInactivePlanState.value &&
+    !isSalesManagedTier(subscription.value?.tier)
+)
+
 const showActionButton = computed(
   () =>
     (canTopUp.value || canSubscribeSelfServe.value) &&
     !zeroState &&
-    !showsInactivePlanState.value
+    !withholdsActionButton.value
 )
 
 const isMonthlyDepleted = computed(

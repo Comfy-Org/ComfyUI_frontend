@@ -4362,7 +4362,6 @@
     },
     "inactiveTeamDescription": "チームプランを再有効化して、メンバーを追加したりワークフローを実行したりできます",
     "inactiveTeamPlanIncludes": "有効なプランには{plan}のすべてに加えて、以下が含まれます：",
-    "inactiveTeamTitle": "チームサブスクリプションが無効です",
     "inviteUpTo": "最大招待数",
     "invoiceHistory": "請求履歴",
     "manageBilling": "請求管理",

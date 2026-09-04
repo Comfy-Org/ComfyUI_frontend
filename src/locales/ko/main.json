@@ -4362,7 +4362,6 @@
     },
     "inactiveTeamDescription": "팀 플랜을 다시 활성화하여 더 많은 멤버를 추가하고 워크플로우를 실행하세요",
     "inactiveTeamPlanIncludes": "활성 플랜에는 {plan}의 모든 기능과 다음이 포함됩니다:",
-    "inactiveTeamTitle": "비활성화된 팀 구독",
     "inviteUpTo": "최대 초대",
     "invoiceHistory": "청구서 기록",
     "manageBilling": "결제 관리",
