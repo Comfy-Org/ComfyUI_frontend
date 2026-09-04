@@ -2,6 +2,8 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@/platform/telemetry'
+import { setTemplateBaseline } from '@/platform/telemetry/utils/templateBaselineStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import type {
   TemplateGroup,
@@ -158,6 +160,10 @@ export function useTemplateWorkflows() {
       } else {
         educationStore.dismissCard()
       }
+
+      const loadedBaseline =
+        useWorkflowStore().activeWorkflow?.changeTracker?.activeState ?? json
+      setTemplateBaseline(id, loadedBaseline)
 
       return true
     } catch (error) {
