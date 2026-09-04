@@ -471,12 +471,15 @@ const { t, n } = useI18n()
 const capabilities = useBillingCapabilities()
 const { permissions } = useWorkspaceUI()
 
-// Every lifecycle CTA here resolves to a billing write the server authorizes on
-// its own, so the table asks whether any such write is permitted instead of
+// Every CTA here resolves to a billing write the server authorizes on its own,
+// so each catalog asks whether any write that reaches it is permitted instead of
 // mapping each card to one capability itself — that mapping is policy, and the
 // response carries no plan dimension to derive it from. An unresolved snapshot
 // is not a denial: the CTA stays live and the checkout endpoint answers, the
 // same trade canOpenPricingSurface and canTopUp already make.
+//
+// The team catalog is not reachable by downgrading to personal, so its gate
+// stops at the three writes that do reach it.
 const lifecycleActionPermitted = computed(() => {
   if (!isCloud) return permissions.value.canManageSubscription
   if (!capabilities.snapshotAuthoritative.value) return true
@@ -494,6 +497,12 @@ const canDowngradeToPersonal = computed(() => {
   if (!capabilities.snapshotAuthoritative.value) return true
   return capabilities.canDowngradeToPersonal.value
 })
+
+// A personal card is reachable by one further write the team catalog has no
+// counterpart for: leaving a team plan.
+const personalPlanActionPermitted = computed(
+  () => lifecycleActionPermitted.value || canDowngradeToPersonal.value
+)
 
 const planMode = ref<'personal' | 'team'>(initialPlanMode)
 
@@ -872,7 +881,7 @@ const getButtonSeverity = (
 const canUsePersonalPlanAction = (tierKey: CheckoutTierKey): boolean =>
   canSelectPersonalPlan.value &&
   offersTransition(isCurrentPlan(tierKey)) &&
-  lifecycleActionPermitted.value
+  personalPlanActionPermitted.value
 
 const isButtonDisabled = (tier: PricingTierConfig): boolean =>
   isLoading || !canUsePersonalPlanAction(tier.key)

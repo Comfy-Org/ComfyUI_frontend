@@ -667,6 +667,18 @@ describe('UnifiedPricingTable plan-scope availability', () => {
     ).toBeEnabled()
   })
 
+  it('keeps personal cards actionable when only the downgrade is permitted', () => {
+    mockCanManageSubscription.value = false
+    mockCanChangeSeats.value = false
+    mockRawCanReactivate.value = false
+
+    renderComponent({ initialPlanMode: 'personal' })
+
+    expect(
+      screen.getByRole('button', { name: 'Change to Standard Yearly' })
+    ).toBeEnabled()
+  })
+
   it('withholds personal plans when a resolved snapshot denies the downgrade', () => {
     mockCanDowngradeToPersonal.value = false
 
