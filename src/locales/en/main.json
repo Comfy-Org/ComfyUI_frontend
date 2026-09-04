@@ -318,6 +318,9 @@
     "browserReservedKeybinding": "This shortcut is reserved by some browsers and may have unexpected results.",
     "browserReservedKeybindingTooltip": "This shortcut conflicts with browser-reserved shortcuts",
     "keybindingAlreadyExists": "Keybinding already exists on",
+    "invalidExtensionKeybinding": "{name}: invalid keybinding",
+    "invalidExtensionContextKey": "{name}: could not register context key {key}",
+    "invalidExtensionContextKeys": "{name}: contextKeys must be a list of names",
     "keybindingPresets": {
       "importPreset": "Import preset",
       "importKeybindingPreset": "Import keybinding preset",
