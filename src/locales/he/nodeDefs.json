@@ -12832,7 +12832,8 @@
     "display_name": "MiniMax H3 Reference to Video",
     "inputs": {
       "audio_vae": {
-        "name": "audio_vae"
+        "name": "audio_vae",
+        "tooltip": "VAE לשמע. בלעדיו, שמע הייחוס מתנה רק את מקודד הטקסט."
       },
       "clip": {
         "name": "clip"
@@ -12864,7 +12865,8 @@
         "name": "ref_videos"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "VAE לווידאו. בלעדיו, תמונות/סרטוני הייחוס מתנים רק את מקודד הטקסט."
       },
       "width": {
         "name": "width"
@@ -12973,7 +12975,7 @@
     }
   },
   "MinimaxHailuo03FirstLastFrameNode": {
-    "description": "יוצר וידאו מתמונה של פריים ראשון ואופציונלית גם פריים אחרון באמצעות מודל MiniMax H3. יחס הגובה-רוחב של הווידאו תואם לתמונות שסופקו.",
+    "description": "יצירת וידאו מתמונת פריים ראשון ומתמונת פריים אחרון אופציונלית באמצעות מודלי MiniMax H3. יחס הממדים של הווידאו נקבע לפי התמונות שסופקו.",
     "display_name": "MiniMax H3 יצירת וידאו מפריים ראשון ואחרון",
     "inputs": {
       "control_after_generate": {
@@ -13016,7 +13018,7 @@
     }
   },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "יצירת וידאו בהתבסס על תמונות רפרנס, סרטונים ואודיו באמצעות מודל MiniMax H3. התייחסו לרפרנסים בהנחיה לפי הסדר: 'Image 1', 'Image 2', 'Video 1', 'Audio 1' וכן הלאה.",
+    "description": "יצירת וידאו המותנה בתמונות, סרטונים ושמע של ייחוס באמצעות מודלי MiniMax H3. התייחסו להפניות בפרומפט לפי סדרן: 'Image 1', 'Image 2', 'Video 1', 'Audio 1' וכן הלאה.",
     "display_name": "MiniMax H3 רפרנס לווידאו",
     "inputs": {
       "control_after_generate": {
@@ -13091,7 +13093,7 @@
     }
   },
   "MinimaxHailuo03TextToVideoNode": {
-    "description": "יצירת וידאו מהנחיה טקסטואלית באמצעות מודל MiniMax H3.",
+    "description": "יצירת וידאו מפרומפט טקסט באמצעות מודלי MiniMax H3.",
     "display_name": "MiniMax H3 טקסט לווידאו",
     "inputs": {
       "control_after_generate": {
@@ -16972,7 +16974,7 @@
   },
   "Preview3D": {
     "description": "תצוגה מקדימה של קובץ מודל תלת-ממדי מבלי לשמור אותו בתיקיית הפלט של ComfyUI.",
-    "display_name": "תצוגה מקדימה בתלת-ממד ואנימציה",
+    "display_name": "תצוגה מקדימה של 3D והנפשה (מיושן)",
     "inputs": {
       "bg_image": {
         "name": "bg_image"
@@ -18681,6 +18683,10 @@
       "multiple": {
         "name": "multiple",
         "tooltip": "המכפלה הקרובה ביותר של התוצאה לקביעת הרזולוציה הנבחרת."
+      },
+      "preview": {
+        "name": "preview",
+        "tooltip": "תצוגה מקדימה חיה של רזולוציית הפלט המחושבת."
       }
     },
     "outputs": {
