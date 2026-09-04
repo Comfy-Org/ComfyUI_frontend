@@ -1,13 +1,45 @@
+import { reportError } from '@/platform/telemetry/reportError'
+
 export const AGENT_THREAD_STORAGE_KEY = 'Comfy.Agent.ThreadId'
 const AGENT_THREAD_OWNER_STORAGE_KEY = 'Comfy.Agent.ThreadOwnerId'
+const STORAGE_ERROR_TYPE = 'agent_session_memory_storage_failure'
+
+function readStorage(key: string): string | null {
+  try {
+    return localStorage.getItem(key)
+  } catch (error) {
+    reportError(error, { errorType: STORAGE_ERROR_TYPE })
+    return null
+  }
+}
+
+function writeStorage(key: string, value: string): boolean {
+  try {
+    localStorage.setItem(key, value)
+    return true
+  } catch (error) {
+    reportError(error, { errorType: STORAGE_ERROR_TYPE })
+    return false
+  }
+}
+
+function removeStorage(key: string): boolean {
+  try {
+    localStorage.removeItem(key)
+    return true
+  } catch (error) {
+    reportError(error, { errorType: STORAGE_ERROR_TYPE })
+    return false
+  }
+}
 
 export function readAgentSessionMemory(userId?: string | null): string | null {
   if (userId === null) return null
 
-  const threadId = localStorage.getItem(AGENT_THREAD_STORAGE_KEY)
+  const threadId = readStorage(AGENT_THREAD_STORAGE_KEY)
   if (userId === undefined || threadId === null) return threadId
 
-  return localStorage.getItem(AGENT_THREAD_OWNER_STORAGE_KEY) === userId
+  return readStorage(AGENT_THREAD_OWNER_STORAGE_KEY) === userId
     ? threadId
     : null
 }
@@ -18,11 +50,11 @@ export function rememberAgentSessionMemory(
 ): void {
   if (userId === null) return
 
-  localStorage.setItem(AGENT_THREAD_STORAGE_KEY, threadId)
+  if (!writeStorage(AGENT_THREAD_STORAGE_KEY, threadId)) return
   if (userId === undefined) {
-    localStorage.removeItem(AGENT_THREAD_OWNER_STORAGE_KEY)
+    removeStorage(AGENT_THREAD_OWNER_STORAGE_KEY)
   } else {
-    localStorage.setItem(AGENT_THREAD_OWNER_STORAGE_KEY, userId)
+    writeStorage(AGENT_THREAD_OWNER_STORAGE_KEY, userId)
   }
 }
 
@@ -31,10 +63,6 @@ export function hasAgentSessionMemoryFor(userId: string | null): boolean {
 }
 
 export function forgetAgentSessionMemory(): void {
-  try {
-    localStorage.removeItem(AGENT_THREAD_STORAGE_KEY)
-    localStorage.removeItem(AGENT_THREAD_OWNER_STORAGE_KEY)
-  } catch (error) {
-    console.warn('[agent] failed to remove the thread id', error)
-  }
+  removeStorage(AGENT_THREAD_STORAGE_KEY)
+  removeStorage(AGENT_THREAD_OWNER_STORAGE_KEY)
 }
