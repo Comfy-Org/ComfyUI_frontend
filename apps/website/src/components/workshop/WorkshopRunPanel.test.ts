@@ -28,8 +28,14 @@ vi.mock('../../config/workshop-session-state', async () => {
   const { computed, ref } = await import('vue')
   const user = ref<{ uid: string } | null>(null)
   const session = ref<{ token: string } | undefined>(undefined)
-  const ensureFresh = vi.fn(async () => ({ status: 'ok' }))
-  const remint = vi.fn(async () => ({ status: 'ok' }))
+  const ensureFresh = vi.fn(async () => {
+    session.value = { token: 'jwt' }
+    return { status: 'ok' as const }
+  })
+  const remint = vi.fn(async () => {
+    session.value = { token: 'jwt' }
+    return { status: 'ok' as const }
+  })
   sessionHandles.setUser = (next) => {
     user.value = next
   }

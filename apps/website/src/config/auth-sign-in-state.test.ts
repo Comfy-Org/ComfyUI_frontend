@@ -61,11 +61,31 @@ describe('authSignInTransition', () => {
     ).toBe(pending)
   })
 
-  it('sends a returning Firebase user straight into minting', () => {
+  it('sends a returning Firebase user into minting from idle and from an error', () => {
     expect(
       authSignInTransition(idle, { type: 'userRestored', email: 'a@b.co' })
     ).toEqual(minting)
+    const errored: AuthSignInState = {
+      step: 'error',
+      messageKey: 'auth.signIn.error.generic'
+    }
+    expect(
+      authSignInTransition(errored, { type: 'userRestored', email: 'a@b.co' })
+    ).toEqual(minting)
   })
+
+  it.for([
+    ['minting', minting],
+    ['sessionError', sessionError],
+    ['signedIn', { step: 'signedIn', email: 'a@b.co' }]
+  ] as const)(
+    'ignores a userRestored event while %s so an in-flight or settled attempt is not disturbed',
+    ([, from]) => {
+      expect(
+        authSignInTransition(from, { type: 'userRestored', email: 'x@y.co' })
+      ).toBe(from)
+    }
+  )
 
   it.for([
     [

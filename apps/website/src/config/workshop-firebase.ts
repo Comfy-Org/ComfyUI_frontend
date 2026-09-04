@@ -108,12 +108,19 @@ export function onWorkshopUserChanged(
   let unsubscribe: (() => void) | undefined
   let cancelled = false
   void (async () => {
-    const [auth, { onAuthStateChanged }] = await Promise.all([
-      workshopAuth(),
-      import('firebase/auth')
-    ])
-    if (cancelled) return
-    unsubscribe = onAuthStateChanged(auth, callback)
+    try {
+      const [auth, { onAuthStateChanged }] = await Promise.all([
+        workshopAuth(),
+        import('firebase/auth')
+      ])
+      if (cancelled) return
+      unsubscribe = onAuthStateChanged(auth, callback)
+    } catch (error) {
+      // A Firebase chunk that fails to load leaves the visitor signed out
+      // rather than crashing an unhandled rejection.
+      console.error('Workshop auth listener failed to attach', error)
+      if (!cancelled) callback(null)
+    }
   })()
   return () => {
     cancelled = true
