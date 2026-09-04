@@ -137,6 +137,26 @@ describe('TabSubgraphInputs', () => {
     })
   })
 
+  it('omits panel-hidden interior widgets from advanced inputs', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const sourceNode = new LGraphNode('Source')
+    const hiddenWidget = sourceNode.addWidget(
+      'text',
+      'panel-hidden',
+      '',
+      () => {}
+    )
+    hiddenWidget.options.hideInPanel = true
+    subgraph.add(sourceNode)
+
+    renderPanel(host)
+
+    expect(captured.rows.map(({ widget }) => widget.name)).not.toContain(
+      'panel-hidden'
+    )
+  })
+
   it('reflects value changes through the same descriptor without rebuilding it', () => {
     const { host } = buildHostWithPromotedSeed()
     renderPanel(host)

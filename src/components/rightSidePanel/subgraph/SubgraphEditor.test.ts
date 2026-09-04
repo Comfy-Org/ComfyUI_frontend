@@ -9,6 +9,7 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 
@@ -218,6 +219,33 @@ describe('SubgraphEditor', () => {
         .getAllByTestId('subgraph-widget-label')
         .map((el) => el.textContent?.trim())
     ).toEqual(['first'])
+  })
+
+  it('excludes Vue-node-ineligible candidates except pseudo-widgets', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const sourceNode = new LGraphNode('SourceNode')
+    subgraph.add(sourceNode)
+    const hiddenWidget = sourceNode.addWidget('text', 'hidden', '', () => {})
+    const pseudoWidget = sourceNode.addWidget('text', '$$preview', '', () => {})
+    if (!hiddenWidget.visibility || !pseudoWidget.visibility) {
+      throw new Error('Missing concrete widget visibility')
+    }
+    hiddenWidget.visibility.display.vueNode = 'never'
+    pseudoWidget.visibility.display.vueNode = 'never'
+    useSettingStore().settingValues['Comfy.VueNodes.Enabled'] = true
+    useCanvasStore().selectedItems = [host]
+
+    render(SubgraphEditor, {
+      container: document.body.appendChild(document.createElement('div')),
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      within(screen.getByTestId('subgraph-editor-hidden-section'))
+        .getAllByTestId('subgraph-widget-label')
+        .map((element) => element.textContent?.trim())
+    ).toEqual(['$$preview'])
   })
 
   it('demotes linked promoted widgets when "Hide all" is clicked', async () => {

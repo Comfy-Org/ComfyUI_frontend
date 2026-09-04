@@ -35,6 +35,7 @@ import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
 } from '@/stores/previewExposureStore'
+import { deriveWidgetVisibility } from '@/types/widgetVisibility'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SubgraphNodeWidget from './SubgraphNodeWidget.vue'
@@ -182,11 +183,13 @@ const candidateWidgets = computed<WidgetItem[]>(() => {
   const promotedSourceKeys = new Set(activeRows.value.map(activeRowSourceKey))
   return interiorWidgets.value
     .filter(([n, w]) => !promotedSourceKeys.has(`${n.id}:${w.name}`))
-    .filter(
-      ([, w]) =>
-        w.name.startsWith('$$') ||
-        !(w.options.canvasOnly && shouldRenderVueNodes.value)
-    )
+    .filter(([, widget]) => {
+      const visibility = widget.visibility ?? deriveWidgetVisibility(widget)
+      return (
+        widget.name.startsWith('$$') ||
+        !(shouldRenderVueNodes.value && visibility.display.vueNode === 'never')
+      )
+    })
 })
 const filteredCandidates = computed<WidgetItem[]>(() => {
   const query = searchQuery.value.toLowerCase()

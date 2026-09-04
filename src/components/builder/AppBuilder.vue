@@ -31,6 +31,7 @@ import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { renameWidget } from '@/utils/widgetUtil'
 import { useAppMode } from '@/composables/useAppMode'
 import { nodeTypeValidForApp, useAppModeStore } from '@/stores/appModeStore'
+import { deriveWidgetVisibility } from '@/types/widgetVisibility'
 import { cn } from '@comfyorg/tailwind-utils'
 
 type BoundStyle = { top: string; left: string; width: string; height: string }
@@ -138,7 +139,8 @@ function handleClick(e: MouseEvent) {
     else appModeStore.selectedOutputs.splice(index, 1)
     return
   }
-  if (!isSelectInputsMode.value || widget.options.canvasOnly) return
+  const visibility = widget.visibility ?? deriveWidgetVisibility(widget)
+  if (!isSelectInputsMode.value || visibility.display.panel === 'never') return
 
   const widgetId = widget.widgetId
   if (!widgetId) return
@@ -311,6 +313,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
     to="body"
   >
     <div
+      data-testid="builder-selection-overlay"
       :class="
         cn(
           'pointer-events-auto absolute size-full',
