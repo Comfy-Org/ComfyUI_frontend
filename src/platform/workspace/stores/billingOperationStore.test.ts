@@ -2603,6 +2603,35 @@ describe('billingOperationStore', () => {
       expect(mockCloseDialog).not.toHaveBeenCalled()
       expect(mockSettingsDialogShow).not.toHaveBeenCalled()
     })
+
+    it('does not close the dialog when dismissed while the post-success refresh is in flight', async () => {
+      let resolveFetchStatus!: () => void
+      mockFetchStatus.mockImplementation(
+        () =>
+          new Promise<void>((resolve) => {
+            resolveFetchStatus = resolve
+          })
+      )
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-1', 'topup')
+      await vi.advanceTimersByTimeAsync(0)
+
+      // handleSuccess is now awaiting the post-success refresh; the customer
+      // dismisses before it resolves, so the dismissal must still be honored
+      // even though it captured `operation` before this await.
+      store.dismissOperation('op-1')
+      resolveFetchStatus()
+      await terminal
+
+      expect(mockCloseDialog).not.toHaveBeenCalled()
+      expect(mockSettingsDialogShow).not.toHaveBeenCalled()
+    })
   })
 
   describe('multiple operations', () => {
