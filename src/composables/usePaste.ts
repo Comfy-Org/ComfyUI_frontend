@@ -1,5 +1,7 @@
 import { useEventListener } from '@vueuse/core'
 
+import { LAST_COPY_ID_KEY } from '@/composables/useCopy'
+
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -40,21 +42,36 @@ export function cloneDataTransfer(original: DataTransfer): DataTransfer {
   return persistent
 }
 
-function pasteClipboardItems(data: DataTransfer): boolean {
-  const rawData = data.getData('text/html')
-  const match = rawData.match(/data-metadata="([A-Za-z0-9+/=]+)"/)?.[1]
-  if (!match) return false
+function decodeNodeMetadata(rawHtml: string): string | null {
+  const match = rawHtml.match(/data-metadata="([A-Za-z0-9+/=]+)"/)?.[1]
+  if (!match) return null
   try {
     // Decode UTF-8 safe base64
     const binaryString = atob(match)
     const bytes = Uint8Array.from(binaryString, (c) => c.charCodeAt(0))
-    const decodedData = new TextDecoder().decode(bytes)
+    return new TextDecoder().decode(bytes)
+  } catch {
+    return null
+  }
+}
+
+function pasteClipboardItems(data: DataTransfer): boolean {
+  const decodedData = decodeNodeMetadata(data.getData('text/html'))
+  if (decodedData === null) return false
+  try {
     useCanvasStore().getCanvas()._deserializeItems(JSON.parse(decodedData), {})
     return true
   } catch (err) {
     console.error(err)
   }
   return false
+}
+
+/** Stale when the copy that produced it is not the last one made here. */
+function hasStaleNodeMetadata(rawHtml: string): boolean {
+  if (decodeNodeMetadata(rawHtml) === null) return false
+  const copyId = rawHtml.match(/data-copy-id="([^"]+)"/)?.[1]
+  return !copyId || copyId !== localStorage.getItem(LAST_COPY_ID_KEY)
 }
 
 function pasteItemsOnNode(
@@ -236,6 +253,8 @@ export const usePaste = () => {
     const isMediaNodeSelected =
       isImageNodeSelected || isVideoNodeSelected || isAudioNodeSelected
     if (!isMediaNodeSelected && pasteClipboardItems(data)) return
+    const staleMetadataOnMediaNode =
+      isMediaNodeSelected && hasStaleNodeMetadata(data.getData('text/html'))
 
     // No image found. Look for node data
     data = data.getData('text/plain')
@@ -264,8 +283,8 @@ export const usePaste = () => {
         return
       }
 
-      // Litegraph default paste
-      canvas.pasteFromClipboard()
+      // Litegraph default paste.
+      if (!staleMetadataOnMediaNode) canvas.pasteFromClipboard()
     }
   })
 }

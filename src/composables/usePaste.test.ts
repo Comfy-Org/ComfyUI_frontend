@@ -1,10 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type {
   LGraphCanvas,
   LGraph,
   LGraphGroup,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
+import { LAST_COPY_ID_KEY } from '@/composables/useCopy'
 import { app } from '@/scripts/app'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import {
@@ -574,31 +575,84 @@ describe('usePaste', () => {
     })
   })
 
-  it('should skip node metadata paste when a media node is selected', async () => {
-    const mockNode = createMockLGraphNode({
-      is_selected: true,
-      pasteFile: vi.fn(),
-      pasteFiles: vi.fn()
+  describe('media node selected', () => {
+    function setupMediaNodeSelected() {
+      const mockNode = createMockLGraphNode({
+        is_selected: true,
+        pasteFile: vi.fn(),
+        pasteFiles: vi.fn()
+      })
+      mockCanvas.current_node = mockNode
+      vi.mocked(isImageNode).mockReturnValue(true)
+      usePaste()
+    }
+
+    function dispatchMetadataPaste(decoded: string, copyId?: string) {
+      const idAttr = copyId ? ` data-copy-id="${copyId}"` : ''
+      const dataTransfer = new DataTransfer()
+      dataTransfer.setData(
+        'text/html',
+        `<div${idAttr} data-metadata="${btoa(decoded)}"></div>`
+      )
+      dataTransfer.setData('text/plain', 'some text')
+      document.dispatchEvent(
+        new ClipboardEvent('paste', { clipboardData: dataTransfer })
+      )
+    }
+
+    afterEach(() => {
+      localStorage.removeItem('litegrapheditor_clipboard')
+      localStorage.removeItem(LAST_COPY_ID_KEY)
     })
-    mockCanvas.current_node = mockNode
-    vi.mocked(isImageNode).mockReturnValue(true)
 
-    usePaste()
+    it('skips paste entirely for stale node metadata', async () => {
+      setupMediaNodeSelected()
+      dispatchMetadataPaste(JSON.stringify({ nodes: [{ type: 'KSampler' }] }))
 
-    const nodeData = { nodes: [{ type: 'KSampler' }] }
-    const encoded = btoa(JSON.stringify(nodeData))
-    const html = `<div data-metadata="${encoded}"></div>`
+      await vi.waitFor(() => {
+        expect(mockCanvas._deserializeItems).not.toHaveBeenCalled()
+        expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
+      })
+    })
 
-    const dataTransfer = new DataTransfer()
-    dataTransfer.setData('text/html', html)
-    dataTransfer.setData('text/plain', 'some text')
+    it('skips paste when the metadata carries a different copy id', async () => {
+      setupMediaNodeSelected()
+      localStorage.setItem(LAST_COPY_ID_KEY, 'copy-2')
+      dispatchMetadataPaste(
+        JSON.stringify({ nodes: [{ type: 'KSampler' }] }),
+        'copy-1'
+      )
 
-    const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
-    document.dispatchEvent(event)
+      await vi.waitFor(() => {
+        expect(mockCanvas._deserializeItems).not.toHaveBeenCalled()
+        expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
+      })
+    })
 
-    await vi.waitFor(() => {
-      expect(mockCanvas._deserializeItems).not.toHaveBeenCalled()
-      expect(mockCanvas.pasteFromClipboard).toHaveBeenCalled()
+    it('pastes a freshly copied node', async () => {
+      setupMediaNodeSelected()
+      const serialized = JSON.stringify({ nodes: [{ type: 'LoadImage' }] })
+      localStorage.setItem(LAST_COPY_ID_KEY, 'copy-1')
+      dispatchMetadataPaste(serialized, 'copy-1')
+
+      await vi.waitFor(() => {
+        expect(mockCanvas._deserializeItems).not.toHaveBeenCalled()
+        expect(mockCanvas.pasteFromClipboard).toHaveBeenCalled()
+      })
+    })
+
+    it('pastes the internal clipboard after a menu copy left older OS metadata', async () => {
+      setupMediaNodeSelected()
+      const ctrlCCopy = JSON.stringify({ nodes: [{ type: 'KSampler' }] })
+      const menuCopy = JSON.stringify({ nodes: [{ type: 'CLIPTextEncode' }] })
+      localStorage.setItem(LAST_COPY_ID_KEY, 'copy-1')
+      localStorage.setItem('litegrapheditor_clipboard', menuCopy)
+      dispatchMetadataPaste(ctrlCCopy, 'copy-1')
+
+      await vi.waitFor(() => {
+        expect(mockCanvas._deserializeItems).not.toHaveBeenCalled()
+        expect(mockCanvas.pasteFromClipboard).toHaveBeenCalled()
+      })
     })
   })
 })

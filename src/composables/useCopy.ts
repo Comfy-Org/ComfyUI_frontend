@@ -3,8 +3,11 @@ import { useEventListener } from '@vueuse/core'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
 
-const clipboardHTMLWrapper = [
-  '<meta charset="utf-8"><div><span data-metadata="',
+/** Identifies the last in-app copy. Only the id, never the payload. */
+export const LAST_COPY_ID_KEY = 'Comfy.Clipboard.LastCopyId'
+
+const clipboardHTMLWrapper = (id: string | null) => [
+  `<meta charset="utf-8"><div>${id ? `<span data-copy-id="${id}" ` : '<span '}data-metadata="`,
   '"></span></div><span style="white-space:pre-wrap;">Text</span>'
 ]
 const clipboardByteChunkSize = 0x8000
@@ -46,12 +49,21 @@ export const useCopy = () => {
     const canvas = canvasStore.canvas
     if (canvas?.selectedItems) {
       const serializedData = canvas.copyToClipboard()
+      // Before the clipboard write, so the two can only diverge safely.
+      let copyId: string | null = null
+      try {
+        const id = crypto.randomUUID()
+        localStorage.setItem(LAST_COPY_ID_KEY, id)
+        copyId = id
+      } catch (error) {
+        console.error(error)
+      }
       try {
         const base64Data = encodeClipboardData(serializedData)
         // clearData doesn't remove images from clipboard
         e.clipboardData?.setData(
           'text/html',
-          clipboardHTMLWrapper.join(base64Data)
+          clipboardHTMLWrapper(copyId).join(base64Data)
         )
       } catch (error) {
         console.error(error)
