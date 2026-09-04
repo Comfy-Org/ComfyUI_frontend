@@ -32,8 +32,8 @@ export function getExecutionContext(): ExecutionContext {
       const nodeDef = nodeDefStore.nodeDefsByName[node.type]
       const isCustomNode =
         nodeDef?.nodeSource?.type === NodeSourceType.CustomNodes
-      const isApiNode = nodeDef?.api_node === true
-      const isSubgraph = node.isSubgraphNode?.() === true
+      const isApiNode = nodeDef?.api_node
+      const isSubgraph = node.isSubgraphNode?.()
 
       if (isApiNode) {
         metrics.has_api_nodes = true

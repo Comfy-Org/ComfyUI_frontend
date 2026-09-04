@@ -43,6 +43,7 @@ import { app } from '@/scripts/app'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
+import { useAssetsStore } from '@/stores/assetsStore'
 import type { ComfyCommand } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useModelStore } from '@/stores/modelStore'
@@ -67,6 +68,7 @@ import {
   useManagerState
 } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+import { runMintPortsIntentionalClear } from '@/workbench/extensions/agent/crdt/mintPortWiring'
 
 import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelectorDialog'
 
@@ -296,7 +298,6 @@ export function useCoreCommands(): ComfyCommand[] {
           !settingStore.get('Comfy.ConfirmClear') ||
           confirm('Clear workflow?')
         ) {
-          app.clean()
           if (app.canvas.subgraph) {
             // `clear` is not implemented on subgraphs and the parent class's
             // (`LGraph`) `clear` breaks the subgraph structure. For subgraphs,
@@ -304,6 +305,8 @@ export function useCoreCommands(): ComfyCommand[] {
             const subgraph = app.canvas.subgraph
             const nonIoNodes = getAllNonIoNodesInSubgraph(subgraph)
             nonIoNodes.forEach((node) => subgraph.remove(node))
+          } else {
+            runMintPortsIntentionalClear(() => app.clean())
           }
           api.dispatchCustomEvent('graphCleared')
         }
@@ -332,6 +335,7 @@ export function useCoreCommands(): ComfyCommand[] {
       category: 'essentials' as const,
       function: async () => {
         await Promise.all([app.refreshComboInNodes(), modelStore.refresh()])
+        await useAssetsStore().invalidateAll()
         if (!isCloud) {
           await missingModelStore.refreshMissingModels({ reloadDefs: false })
         }

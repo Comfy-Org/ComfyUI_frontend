@@ -77,7 +77,7 @@ export function createMockPositionable(
     pos: [0, 0],
     ...overrides
   }
-  return partial as Partial<Positionable> as Positionable
+  return partial as Positionable
 }
 
 /**
@@ -92,7 +92,7 @@ export function createMockLGraphGroup(
     boundingRect: new Rectangle(0, 0, 100, 100),
     ...overrides
   }
-  return partial as Partial<LGraphGroup> as LGraphGroup
+  return partial as LGraphGroup
 }
 
 /**
@@ -195,8 +195,8 @@ export function createMockCanvasRenderingContext2D(
     strokeStyle: '',
     lineWidth: 1,
     globalAlpha: 1,
-    textAlign: 'left' as CanvasTextAlign,
-    textBaseline: 'alphabetic' as CanvasTextBaseline,
+    textAlign: 'left',
+    textBaseline: 'alphabetic',
     ...overrides
   }
   return partial as CanvasRenderingContext2D
@@ -282,7 +282,7 @@ export function createMockFileList(files: File[]): FileList {
     },
     files
   )
-  return fileList as FileList
+  return fileList
 }
 
 /**
@@ -398,7 +398,7 @@ export function createMockLinks(links: LLink[]): LGraph['links'] {
     map.set(link.id, link)
     record[link.id] = link
   }
-  return Object.assign(map, record) as LGraph['links']
+  return Object.assign(map, record)
 }
 export function reloadSerializedGraph(
   serialized: ISerialisedGraph | SerialisableGraph,

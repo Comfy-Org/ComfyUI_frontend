@@ -1,14 +1,23 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
+import type { ButtonVariants } from '../ui/button'
 import Button from '../ui/button/Button.vue'
 
-const { title, description, cta, href, bg } = defineProps<{
+const {
+  title,
+  description,
+  cta,
+  href,
+  bg,
+  ctaVariant = 'default'
+} = defineProps<{
   title: string
   description: string
   cta: string
   href: string
   bg: string
+  ctaVariant?: ButtonVariants['variant']
 }>()
 </script>
 
@@ -32,7 +41,7 @@ const { title, description, cta, href, bg } = defineProps<{
       </p>
       <Button
         as="span"
-        variant="default"
+        :variant="ctaVariant"
         size="sm"
         class="mt-4 h-auto whitespace-normal"
       >

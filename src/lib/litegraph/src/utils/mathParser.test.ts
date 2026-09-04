@@ -79,7 +79,7 @@ describe('evaluateMathExpression', () => {
       1
     ]
   ])('complex expression: %s', ([input, expected]) => {
-    expect(evaluateMathExpression(input)).toBeCloseTo(expected as number)
+    expect(evaluateMathExpression(input)).toBeCloseTo(expected)
   })
 
   test.for(['', 'abc', '2+', '(2+3', '2+3)', '()', '*3', '2 3', '.', '123..'])(

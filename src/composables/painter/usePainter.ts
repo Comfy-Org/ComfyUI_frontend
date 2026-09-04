@@ -9,15 +9,17 @@ import {
   getEffectiveHardness
 } from '@/composables/maskeditor/brushUtils'
 import { StrokeProcessor } from '@/composables/maskeditor/StrokeProcessor'
+import { setNodeWidgetValue } from '@/core/graph/widgets/nodeWidgetValues'
 import { hexToRgb } from '@/utils/colorUtil'
 import type { Point } from '@/extensions/core/maskeditor/types'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { NodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
 
 type PainterTool = 'brush' | 'eraser'
 
@@ -39,9 +41,6 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
   const toastStore = useToastStore()
 
   const isDirty = ref(false)
-
-  const canvasWidth = ref(512)
-  const canvasHeight = ref(512)
 
   const cursorVisible = ref(false)
 
@@ -81,21 +80,52 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
 
   const litegraphNode = computed(() => {
     if (!nodeId || !app.canvas.graph) return null
-    return app.canvas.graph.getNodeById(nodeId) as LGraphNode | null
+    return app.canvas.graph.getNodeById(nodeId)
   })
 
-  function getWidgetByName(name: string): IBaseWidget | undefined {
-    return litegraphNode.value?.widgets?.find(
-      (w: IBaseWidget) => w.name === name
-    )
+  const widgetValueStore = useWidgetValueStore()
+
+  function storedWidgetValue(name: string): unknown {
+    const node = litegraphNode.value
+    if (!node) return undefined
+    const graphId = node.graph?.rootGraph?.id
+    return graphId
+      ? widgetValueStore.getWidget(widgetId(graphId, node.id, name))?.value
+      : undefined
   }
+
+  function writeWidgetValue(name: string, value: number | string): void {
+    const node = litegraphNode.value
+    const widget = node?.widgets?.find((w) => w.name === name)
+    if (!node || !widget || widget.value === value) return
+    setNodeWidgetValue(node, name, value)
+  }
+
+  function numberWidgetProjection(name: string, fallback: number) {
+    return computed<number>({
+      get: () => {
+        const v = storedWidgetValue(name)
+        return typeof v === 'number' && v > 0 ? v : fallback
+      },
+      set: (v) => writeWidgetValue(name, v)
+    })
+  }
+
+  const canvasWidth = numberWidgetProjection('width', 512)
+  const canvasHeight = numberWidgetProjection('height', 512)
+  const backgroundColor = computed<string>({
+    get: () => {
+      const v = storedWidgetValue('bg_color')
+      return typeof v === 'string' ? v : '#000000'
+    },
+    set: (v) => writeWidgetValue('bg_color', v)
+  })
 
   const tool = ref<PainterTool>(PAINTER_TOOLS.BRUSH)
   const brushSize = ref(20)
   const brushColor = ref('#ffffff')
   const brushOpacity = ref(1)
   const brushHardness = ref(1)
-  const backgroundColor = ref('#000000')
 
   function restoreSettingsFromProperties() {
     const node = litegraphNode.value
@@ -111,9 +141,6 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
       brushOpacity.value = props.painterBrushOpacity as number
     if (props.painterBrushHardness != null)
       brushHardness.value = props.painterBrushHardness as number
-
-    const bgColorWidget = getWidgetByName('bg_color')
-    if (bgColorWidget) backgroundColor.value = bgColorWidget.value as string
   }
 
   function saveSettingsToProperties() {
@@ -125,28 +152,6 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     node.properties.painterBrushColor = brushColor.value
     node.properties.painterBrushOpacity = brushOpacity.value
     node.properties.painterBrushHardness = brushHardness.value
-  }
-
-  function syncCanvasSizeToWidgets() {
-    const widthWidget = getWidgetByName('width')
-    const heightWidget = getWidgetByName('height')
-
-    if (widthWidget && widthWidget.value !== canvasWidth.value) {
-      widthWidget.value = canvasWidth.value
-      widthWidget.callback?.(canvasWidth.value)
-    }
-    if (heightWidget && heightWidget.value !== canvasHeight.value) {
-      heightWidget.value = canvasHeight.value
-      heightWidget.callback?.(canvasHeight.value)
-    }
-  }
-
-  function syncBackgroundColorToWidget() {
-    const bgColorWidget = getWidgetByName('bg_color')
-    if (bgColorWidget && bgColorWidget.value !== backgroundColor.value) {
-      bgColorWidget.value = backgroundColor.value
-      bgColorWidget.callback?.(backgroundColor.value)
-    }
   }
 
   function updateInputImageUrl() {
@@ -167,13 +172,6 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
 
     const urls = nodeOutputStore.getNodeImageUrls(inputNode)
     inputImageUrl.value = urls?.length ? urls[0] : null
-  }
-
-  function syncCanvasSizeFromWidgets() {
-    const w = getWidgetByName('width')
-    const h = getWidgetByName('height')
-    canvasWidth.value = (w?.value as number) ?? 512
-    canvasHeight.value = (h?.value as number) ?? 512
   }
 
   function activeHardness(): number {
@@ -584,16 +582,6 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
 
   function handleInputImageLoad(e: Event) {
     const img = e.target as HTMLImageElement
-    const widthWidget = getWidgetByName('width')
-    const heightWidget = getWidgetByName('height')
-    if (widthWidget) {
-      widthWidget.value = img.naturalWidth
-      widthWidget.callback?.(img.naturalWidth)
-    }
-    if (heightWidget) {
-      heightWidget.value = img.naturalHeight
-      heightWidget.callback?.(img.naturalHeight)
-    }
     canvasWidth.value = img.naturalWidth
     canvasHeight.value = img.naturalHeight
   }
@@ -732,12 +720,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     saveSettingsToProperties
   )
 
-  watch([canvasWidth, canvasHeight], syncCanvasSizeToWidgets)
-
-  watch(backgroundColor, syncBackgroundColorToWidget)
-
   function initialize() {
-    syncCanvasSizeFromWidgets()
     resizeCanvas()
     registerWidgetSerialization()
     restoreSettingsFromProperties()

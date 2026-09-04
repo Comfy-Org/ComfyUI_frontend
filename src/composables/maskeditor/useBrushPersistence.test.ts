@@ -1,16 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
-vi.mock('es-toolkit/compat', async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...(actual as object),
-    debounce: vi.fn((fn: (...args: unknown[]) => void) => {
-      const immediate = (...args: unknown[]) => fn(...args)
-      immediate.cancel = vi.fn()
-      return immediate
-    })
-  }
-})
+vi.mock('es-toolkit/compat', () => ({
+  clamp: (value: number, minimum: number, maximum: number) =>
+    Math.min(maximum, Math.max(minimum, value)),
+  debounce: (fn: (...args: unknown[]) => void) => fn
+}))
 
 vi.mock('@/scripts/utils', () => ({
   getStorageValue: vi.fn((key: string) => localStorage.getItem(key)),

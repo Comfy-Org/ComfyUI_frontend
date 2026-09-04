@@ -169,7 +169,7 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
 
     return {
       value: tooltipText,
-      showDelay: tooltipDelay as number,
+      showDelay: tooltipDelay,
       hideDelay: 0, // Immediate hiding
       disabled:
         !tooltipsEnabled.value ||

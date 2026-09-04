@@ -212,11 +212,10 @@ export const useUserFileStore = defineStore('userFile', () => {
     userFiles.value.filter((file: UserFile) => file.isLoaded)
   )
 
-  const fileTree = computed<TreeExplorerNode<UserFile>>(
-    () =>
-      buildTree<UserFile>(userFiles.value, (userFile: UserFile) =>
-        userFile.path.split('/')
-      ) as TreeExplorerNode<UserFile>
+  const fileTree = computed<TreeExplorerNode<UserFile>>(() =>
+    buildTree<UserFile>(userFiles.value, (userFile: UserFile) =>
+      userFile.path.split('/')
+    )
   )
 
   /**

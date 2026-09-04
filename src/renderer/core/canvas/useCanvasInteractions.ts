@@ -39,7 +39,7 @@ export function useCanvasInteractions() {
   const wheelCapturedByFocusedElement = (event: WheelEvent): boolean => {
     const target = event.target as HTMLElement | null
     const captureElement = target?.closest('[data-capture-wheel="true"]')
-    const active = document.activeElement as Element | null
+    const active = document.activeElement
 
     return !!(captureElement && active && captureElement.contains(active))
   }

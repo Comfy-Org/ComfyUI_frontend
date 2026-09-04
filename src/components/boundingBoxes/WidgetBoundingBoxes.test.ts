@@ -9,7 +9,10 @@ import boundingBoxes from '@/locales/en/main.json'
 import type { BoundingBox } from '@/types/boundingBoxes'
 import { toNodeId } from '@/types/nodeId'
 
-const { appState } = vi.hoisted(() => ({ appState: { node: null as unknown } }))
+const { appState } = vi.hoisted(() => {
+  const appState: { node: unknown } = { node: null }
+  return { appState }
+})
 
 vi.mock('@/scripts/app', () => ({
   app: { canvas: { graph: { getNodeById: () => appState.node } } }
@@ -65,18 +68,17 @@ function prepCanvas(canvas: HTMLCanvasElement) {
   })
   canvas.getContext = (() =>
     fakeCtx) as unknown as HTMLCanvasElement['getContext']
-  canvas.getBoundingClientRect = () =>
-    ({
-      left: 0,
-      top: 0,
-      right: 100,
-      bottom: 100,
-      width: 100,
-      height: 100,
-      x: 0,
-      y: 0,
-      toJSON: () => ({})
-    }) as DOMRect
+  canvas.getBoundingClientRect = () => ({
+    left: 0,
+    top: 0,
+    right: 100,
+    bottom: 100,
+    width: 100,
+    height: 100,
+    x: 0,
+    y: 0,
+    toJSON: () => ({})
+  })
   canvas.setPointerCapture = () => {}
   canvas.releasePointerCapture = () => {}
 }

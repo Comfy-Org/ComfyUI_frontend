@@ -112,7 +112,7 @@ function createMockCanvas(context: unknown = { drawImage: vi.fn() }) {
 function installVideoMocks({
   onVideoCreated,
   onCanvasCreated,
-  canvasContext = { drawImage: vi.fn() } as unknown
+  canvasContext = { drawImage: vi.fn() }
 }: {
   onVideoCreated?: (video: MockVideoElement) => void
   onCanvasCreated?: (canvas: HTMLCanvasElement) => void

@@ -152,7 +152,7 @@ export const useAssetExportStore = defineStore('assetExport', () => {
             bytes_total: exp.bytesTotal,
             bytes_processed: exp.bytesTotal,
             progress: task.status === 'completed' ? 1 : exp.progress,
-            status: task.status as 'completed' | 'failed',
+            status: task.status,
             error: task.error_message ?? (result?.error as string)
           })
         }

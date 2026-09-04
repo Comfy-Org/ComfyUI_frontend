@@ -720,7 +720,7 @@ function evaluatePairsInPage(
           output?: Record<string, { inputs?: Record<string, unknown> }>
         }
         try {
-          prompt = (await window.app!.graphToPrompt()) as typeof prompt
+          prompt = await window.app!.graphToPrompt()
         } catch (error) {
           const detail = String(error)
           if (

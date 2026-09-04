@@ -31,7 +31,7 @@ vi.mock('./locales/en/main.json', () => ({
 }))
 // vue-i18n merges mutate the message tree built from this object, and mocked
 // modules survive vi.resetModules(), so restore it before each test.
-const enNodeDefsMock = vi.hoisted(() => ({}) as Record<string, unknown>)
+const enNodeDefsMock = vi.hoisted<Record<string, unknown>>(() => ({}))
 
 function restoreEnNodeDefsMock() {
   for (const key of Object.keys(enNodeDefsMock)) {

@@ -4,8 +4,6 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { st, t } from '@/i18n'
-import { mapTaskOutputToAssetItem } from '@/platform/assets/composables/media/assetMappers'
-import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -52,7 +50,6 @@ export function useJobMenu(
   const { copyToClipboard } = useCopyToClipboard()
   const litegraphService = useLitegraphService()
   const nodeDefStore = useNodeDefStore()
-  const mediaAssetActions = useMediaAssetActions()
 
   const resolveItem = (item?: JobListItem | null): JobListItem | null =>
     item ?? currentMenuItem()
@@ -207,23 +204,8 @@ export function useJobMenu(
     downloadBlob(filename, blob)
   }
 
-  const deleteJobAsset = async () => {
-    const item = currentMenuItem()
-    if (!item) return
-    const task = item.taskRef as TaskItemImpl | undefined
-    const preview = task?.previewOutput
-    if (!task || !preview) return
-
-    const asset = mapTaskOutputToAssetItem(task, preview)
-    const confirmed = await mediaAssetActions.deleteAssets(asset)
-    if (confirmed) {
-      await queueStore.update()
-    }
-  }
-
   const removeFailedJob = async (task?: TaskItemImpl | null) => {
-    const target =
-      task ?? (currentMenuItem()?.taskRef as TaskItemImpl | undefined)
+    const target = task ?? currentMenuItem()?.taskRef
     if (!target) return
     await queueStore.delete(target)
   }
@@ -296,18 +278,7 @@ export function useJobMenu(
           label: jobMenuCopyJobIdLabel.value,
           icon: 'icon-[lucide--copy]',
           onClick: copyJobId
-        },
-        { kind: 'divider', key: 'd3' },
-        ...(hasPreviewAsset
-          ? [
-              {
-                key: 'delete',
-                label: st('queue.jobMenu.deleteAsset', 'Delete asset'),
-                icon: 'icon-[lucide--trash-2]',
-                onClick: deleteJobAsset
-              }
-            ]
-          : [])
+        }
       ]
     }
     if (state === 'failed') {

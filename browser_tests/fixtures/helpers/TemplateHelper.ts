@@ -1,10 +1,15 @@
+import { expect } from '@playwright/test'
 import type { Page, Route } from '@playwright/test'
 
 import type {
   TemplateInfo,
   WorkflowTemplates
 } from '@/platform/workflow/templates/types/template'
-import { mockTemplateIndex } from '@e2e/fixtures/data/templateFixtures'
+import {
+  makeTemplate,
+  mockTemplateIndex
+} from '@e2e/fixtures/data/templateFixtures'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 const ROUTE_PATTERN_WORKFLOW_TEMPLATES = /\/api\/workflow_templates(?:\?.*)?$/
 const ROUTE_PATTERN_TEMPLATE_INDEX = /\/templates\/index\.json(?:\?.*)?$/
@@ -118,6 +123,30 @@ export class TemplateHelper {
     await this.page.route(ROUTE_PATTERN_TEMPLATE_THUMBNAILS, thumbnailHandler)
   }
 
+  /** Serves `workflowPath` as the named template's graph. */
+  async mockWorkflow(name: string, workflowPath: string): Promise<void> {
+    await this.page.route(`**/templates/${name}.json`, (route) =>
+      route.fulfill({
+        status: 200,
+        path: workflowPath,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store'
+        }
+      })
+    )
+  }
+
+  /** Opens the template browser and loads the named template. */
+  async load(name: string): Promise<void> {
+    await this.page.evaluate(() => {
+      window.app!.extensionManager.command.execute('Comfy.BrowseTemplates')
+    })
+    const card = this.page.getByTestId(TestIds.templates.workflowCard(name))
+    await expect(card).toBeVisible()
+    await card.click()
+  }
+
   getTemplates(): TemplateInfo[] {
     return cloneTemplates(this.templates)
   }
@@ -136,4 +165,29 @@ export function createTemplateHelper(
     emptyConfig()
   )
   return new TemplateHelper(page, config)
+}
+
+/**
+ * Registers a single paid (partner-node) template whose workflow actually
+ * contains a partner node, so tests can exercise the paid-template surfaces.
+ */
+export async function mockPaidTemplate(
+  page: Page,
+  name: string,
+  workflowPath: string
+): Promise<TemplateHelper> {
+  const templates = createTemplateHelper(
+    page,
+    withTemplates([
+      makeTemplate({
+        name,
+        title: 'Paid Template',
+        description: 'Uses partner nodes.',
+        openSource: false
+      })
+    ])
+  )
+  await templates.mock()
+  await templates.mockWorkflow(name, workflowPath)
+  return templates
 }

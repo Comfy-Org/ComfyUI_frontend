@@ -43,18 +43,18 @@ export function usePacksStatus(nodePacks: Ref<NodePack[]>) {
     if (hasImportFailed.value) {
       // Import failed doesn't have a specific status enum, so we return active
       // but the PackStatusMessage will handle it via hasImportFailed prop
-      return 'NodeVersionStatusActive' as NodeVersionStatus
+      return 'NodeVersionStatusActive'
     }
 
     // Find the highest priority status from all packages
     for (const priorityStatus of STATUS_PRIORITY) {
       if (nodePacks.value.some((pack) => pack.status === priorityStatus)) {
-        return priorityStatus as NodeStatus | NodeVersionStatus
+        return priorityStatus
       }
     }
 
     // Default to active if no specific status found
-    return 'NodeVersionStatusActive' as NodeVersionStatus
+    return 'NodeVersionStatusActive'
   })
 
   return {

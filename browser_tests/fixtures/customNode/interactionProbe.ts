@@ -108,7 +108,7 @@ export async function runInteractionProbeChunk(input: {
     }
     created.push(plan.type)
     try {
-      graph.last_node_id = ++window.__cnIdBase!
+      graph.last_node_id = ++window.__cnIdBase
       graph.add(node)
       await stableShapeOf(node)
       const probeConnect = async (

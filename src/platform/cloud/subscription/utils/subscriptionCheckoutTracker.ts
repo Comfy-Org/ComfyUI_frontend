@@ -160,7 +160,7 @@ const normalizeAttempt = (
   }
 
   if (
-    !VALID_TIER_KEYS.has(candidate.tier as TierKey) ||
+    !VALID_TIER_KEYS.has(candidate.tier) ||
     (candidate.cycle !== 'monthly' && candidate.cycle !== 'yearly') ||
     (candidate.checkout_type !== 'new' && candidate.checkout_type !== 'change')
   ) {
@@ -170,12 +170,11 @@ const normalizeAttempt = (
   return {
     attempt_id: candidate.attempt_id,
     started_at_ms: candidate.started_at_ms,
-    tier: candidate.tier as TierKey,
+    tier: candidate.tier,
     cycle: candidate.cycle,
     checkout_type: candidate.checkout_type,
-    ...(candidate.previous_tier &&
-    VALID_TIER_KEYS.has(candidate.previous_tier as TierKey)
-      ? { previous_tier: candidate.previous_tier as TierKey }
+    ...(candidate.previous_tier && VALID_TIER_KEYS.has(candidate.previous_tier)
+      ? { previous_tier: candidate.previous_tier }
       : {}),
     ...(candidate.previous_cycle === 'monthly' ||
     candidate.previous_cycle === 'yearly'

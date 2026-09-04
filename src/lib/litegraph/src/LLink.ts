@@ -52,6 +52,42 @@ export function resolveLinkTopology(topology: LinkTopology): LLink | undefined {
   return linkByTopology.get(toRaw(topology))
 }
 
+/**
+ * Gives a topology that was registered directly by a renderer-free store
+ * mutation its live LiteGraph facade. The store remains the identity owner;
+ * this only installs the adapter used by graph lookup, painting, and link
+ * interactions.
+ */
+export function materializeLinkAdapter(
+  graph: Pick<LGraph, 'rootGraph' | 'id'>,
+  topology: LinkTopology
+): LLink | undefined {
+  const rawTopology = toRaw(topology)
+  const existing = linkByTopology.get(rawTopology)
+  if (existing) return existing
+
+  const scope = graphScopeOf(graph)
+  const registered = useLinkStore().getTopology(scope.rootGraphId, topology.id)
+  if (
+    registered?.graphId !== scope.owningGraphId ||
+    toRaw(registered) !== rawTopology
+  ) {
+    return
+  }
+
+  const link = new LLink(
+    topology.id,
+    topology.type,
+    serializeNodeId(topology.originNodeId),
+    topology.originSlot,
+    serializeNodeId(topology.targetNodeId),
+    topology.targetSlot,
+    topology.parentId
+  )
+  adoptLinkTopology(link, scope, registered)
+  return link
+}
+
 function defineEnumerableTopologyFacade(link: LLink): void {
   topologyFacadeDescriptors ??= [
     'id',

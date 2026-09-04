@@ -34,7 +34,7 @@ describe('NodeSearchContent', () => {
     const onAddNode = vi.fn()
     const onHoverNode = vi.fn()
     const onRemoveFilter =
-      vi.fn<(f: FuseFilterWithValue<ComfyNodeDefImpl, string>) => void>()
+      vi.fn<(f: FuseFilterWithValue<ComfyNodeDefImpl>) => void>()
     const onAddFilter = vi.fn()
     render(NodeSearchContent, {
       props: {

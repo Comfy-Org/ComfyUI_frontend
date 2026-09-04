@@ -25,22 +25,20 @@ const workflowStoreState = vi.hoisted(() => ({
 const routerMocks = vi.hoisted(() => ({
   push: vi.fn().mockResolvedValue(undefined),
   replace: vi.fn().mockResolvedValue(undefined),
-  history: { state: {} as Record<string, unknown> }
+  history: { state: {} }
 }))
 
 const routeHashRef = ref('')
 const currentGraphRef = shallowRef<LGraph | null>(null)
 
-vi.mock('vue-router', async (importOriginal) => {
-  const actual = await importOriginal<typeof VueRouter>()
-  return {
-    ...actual,
-    useRouter: () => ({
-      ...routerMocks,
-      options: { history: routerMocks.history }
-    })
-  }
-})
+vi.mock('vue-router', () => ({
+  NavigationFailureType: { cancelled: 8, duplicated: 16 },
+  isNavigationFailure: vi.fn(() => false),
+  useRouter: () => ({
+    ...routerMocks,
+    options: { history: routerMocks.history }
+  })
+}))
 
 vi.mock('@vueuse/router', () => ({
   useRouteHash: () => routeHashRef
@@ -877,9 +875,9 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     app.rootGraph.subgraphs.set(subgraph.id, subgraph)
     const store = useSubgraphNavigationStore()
     // Consume the initial-load swallow so the watcher publish is live.
-    await store.updateHash('graph', undefined, app.rootGraph as LGraph)
+    await store.updateHash('graph', undefined, app.rootGraph)
 
-    currentGraphRef.value = subgraph as LGraph
+    currentGraphRef.value = subgraph
     await vi.waitFor(() => {
       expect(routerMocks.push).toHaveBeenCalledWith(
         expect.objectContaining({ hash: `#${ids.validSubgraph}` })
@@ -899,18 +897,18 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     app.rootGraph.subgraphs.set(subgraph.id, subgraph)
     const store = useSubgraphNavigationStore()
     // Consume the initial-load swallow so the later publish is live.
-    await store.updateHash('graph', undefined, app.rootGraph as LGraph)
+    await store.updateHash('graph', undefined, app.rootGraph)
 
     // A workflow switch arms the suppression while the canvas sits inside a
     // subgraph; the load then fails so ONLY the finally-publish (stale id by
     // then) runs. Without the entry-point clear this strands the suppression
     // and swallows the next root publish.
-    app.canvas.graph = subgraph as LGraph
+    app.canvas.graph = subgraph
     store.saveCurrentViewport(true)
-    app.canvas.graph = app.rootGraph as LGraph
+    app.canvas.graph = app.rootGraph
     await store.updateHash('workflow-load', -1)
 
-    await store.updateHash('graph', undefined, app.rootGraph as LGraph)
+    await store.updateHash('graph', undefined, app.rootGraph)
 
     await vi.waitFor(() => {
       expect(routerMocks.replace).toHaveBeenCalledWith(

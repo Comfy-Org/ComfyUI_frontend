@@ -33,9 +33,7 @@ export function useSelectionState() {
   const { selectedItems } = storeToRefs(canvasStore)
 
   const selectedNodes = computed(() => {
-    return selectedItems.value.filter((i: unknown) =>
-      isLGraphNode(i)
-    ) as LGraphNode[]
+    return selectedItems.value.filter((i: unknown) => isLGraphNode(i))
   })
 
   const nodeDef = computed(() => {

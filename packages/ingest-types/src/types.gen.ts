@@ -2479,13 +2479,17 @@ export type JobAssetsResponse = {
 }
 
 /**
- * Request body for minting an input-image upload grant.
+ * Request body for minting an input-image or input-audio upload grant.
  */
 export type InputUploadUrlRequest = {
   /**
-   * MIME type of the image to upload. Must be one of image/jpeg,
-   * image/png, image/webp, or image/gif. Advisory: the stored asset's
-   * format always follows the uploaded bytes as decoded server-side.
+   * MIME type of the file to upload. Must be one of the image types
+   * image/jpeg, image/png, image/webp, image/gif, or the audio types
+   * audio/mpeg, audio/mp3, audio/wav, audio/wave, audio/x-wav,
+   * audio/flac, audio/x-flac, audio/ogg.
+   * Advisory: the stored asset's format always follows the uploaded
+   * bytes as identified server-side (decoded for images, sniffed for
+   * audio containers).
    *
    */
   content_type: string
@@ -4211,6 +4215,31 @@ export type AgentSkill = {
 }
 
 /**
+ * The run mode to save.
+ */
+export type AgentRunModePutRequest = {
+  /**
+   * Required and positive for auto_limited; must be absent or null for ask_approval and auto. Bounded at 2^31-1 so the value round-trips exactly through an IEEE-754 JSON number.
+   */
+  credit_limit?: number | null
+  mode: 'ask_approval' | 'auto' | 'auto_limited'
+}
+
+/**
+ * How the agent may spend the caller's credits by running workflows from chat. The saved choice, or the default (ask_approval, no limit) for a caller who never chose.
+ */
+export type AgentRunMode = {
+  /**
+   * The credit ceiling for auto_limited. Always present; null for the other two modes. Bounded at 2^31-1 so the value round-trips exactly through an IEEE-754 JSON number and a client is never bounded by a ceiling it did not send.
+   */
+  credit_limit: number | null
+  /**
+   * ask_approval pauses at every run and asks on the consent card; auto runs without asking; auto_limited runs without asking until credit_limit credits have been spent, then asks again.
+   */
+  mode: 'ask_approval' | 'auto' | 'auto_limited'
+}
+
+/**
  * A user turn posted to the agent.
  */
 export type AgentPostMessageRequest = {
@@ -4346,6 +4375,26 @@ export type AgentAnswerRequest = {
  */
 export type AgentAnswerAccepted = {
   status: 'answered'
+}
+
+/**
+ * Returned when a request to run the agent is declined before the turn starts, because of a billing or account condition on the workspace. The `error` object carries a `message` you can show the user, a `type` that matches the HTTP status, and a more specific `reason` you can branch on to offer the right next step.
+ */
+export type AgentAdmissionError = {
+  error: {
+    /**
+     * A human-readable explanation of why the request was declined, suitable for display.
+     */
+    message: string
+    /**
+     * The specific cause of the denial, for choosing what to show the user. `no_funds`: the workspace is out of credits — prompt them to add credits. `manual_block`: the workspace has been blocked — direct them to support. `funds_unavailable`: billing was temporarily unreachable — retry after the delay given in the `Retry-After` response header.
+     */
+    reason: 'no_funds' | 'manual_block' | 'funds_unavailable'
+    /**
+     * The general category of the denial, matching the HTTP status. `PAYMENT_REQUIRED` (402): the workspace cannot currently pay for a turn. `SERVICE_UNAVAILABLE` (503): billing status could not be checked right now and the request can be retried (see the `Retry-After` response header).
+     */
+    type: 'PAYMENT_REQUIRED' | 'SERVICE_UNAVAILABLE'
+  }
 }
 
 /**
@@ -4688,6 +4737,100 @@ export type AgentGetDraftResponses = {
 
 export type AgentGetDraftResponse =
   AgentGetDraftResponses[keyof AgentGetDraftResponses]
+
+export type AgentGetRunModeData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/agent/run-mode'
+}
+
+export type AgentGetRunModeErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * The run-mode surface is not reachable, from either of two sources, and the two do NOT share a body shape — a client must accept both. Ingest-raised (standard ErrorResponse): the caller is not enrolled in the agent-in-app-experience flag gating the whole /api/agent surface, which defaults off and fails closed, so this is the common answer for a non-enrolled caller. Agent-raised (AgentError): the caller is enrolled but AGENT_RUN_MODE_ENABLED is off in the comfy-agent service. Both answer 404 rather than 403 so the surface is invisible when off. Clients should treat either as "not available" and keep any local state.
+   */
+  404: ErrorResponse | AgentError
+  /**
+   * Internal server error (ingest-raised failures use the standard ErrorResponse shape instead)
+   */
+  500: AgentError
+  /**
+   * Agent service unavailable
+   */
+  502: ErrorResponse
+  /**
+   * The agent proxy is not configured to forward safely (a non-local agent service URL with no shared machine-to-machine secret), so ingest refuses rather than sending unverifiable identity headers.
+   */
+  503: ErrorResponse
+}
+
+export type AgentGetRunModeError =
+  AgentGetRunModeErrors[keyof AgentGetRunModeErrors]
+
+export type AgentGetRunModeResponses = {
+  /**
+   * The caller's run mode (the saved choice, or the default).
+   */
+  200: AgentRunMode
+}
+
+export type AgentGetRunModeResponse =
+  AgentGetRunModeResponses[keyof AgentGetRunModeResponses]
+
+export type AgentPutRunModeData = {
+  body: AgentRunModePutRequest
+  path?: never
+  query?: never
+  url: '/api/agent/run-mode'
+}
+
+export type AgentPutRunModeErrors = {
+  /**
+   * The body was rejected: not JSON, a mode outside the three values, a missing, non-positive or above-maximum credit_limit for auto_limited, or a credit_limit on a limitless mode. The message names what to change.
+   */
+  400: AgentError
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * The run-mode surface is not reachable, from either of two sources, and the two do NOT share a body shape — a client must accept both. Ingest-raised (standard ErrorResponse): the caller is not enrolled in the agent-in-app-experience flag gating the whole /api/agent surface, which defaults off and fails closed, so this is the common answer for a non-enrolled caller. Agent-raised (AgentError): the caller is enrolled but AGENT_RUN_MODE_ENABLED is off in the comfy-agent service. Both answer 404 rather than 403 so the surface is invisible when off. Clients should treat either as "not available" and keep any local state.
+   */
+  404: ErrorResponse | AgentError
+  /**
+   * Request body over the route's transport-level cap (4 KiB); the body is two scalars, so reaching this means the request itself is malformed.
+   */
+  413: ErrorResponse
+  /**
+   * Internal server error (ingest-raised failures use the standard ErrorResponse shape instead)
+   */
+  500: AgentError
+  /**
+   * Agent service unavailable
+   */
+  502: ErrorResponse
+  /**
+   * The agent proxy is not configured to forward safely (a non-local agent service URL with no shared machine-to-machine secret), so ingest refuses rather than sending unverifiable identity headers.
+   */
+  503: ErrorResponse
+}
+
+export type AgentPutRunModeError =
+  AgentPutRunModeErrors[keyof AgentPutRunModeErrors]
+
+export type AgentPutRunModeResponses = {
+  /**
+   * The saved run mode.
+   */
+  200: AgentRunMode
+}
+
+export type AgentPutRunModeResponse =
+  AgentPutRunModeResponses[keyof AgentPutRunModeResponses]
 
 export type AgentListSkillsData = {
   body?: never
@@ -5050,6 +5193,10 @@ export type AgentPostMessageErrors = {
    */
   401: ErrorResponse
   /**
+   * The request to run the agent was declined for a payment reason: the workspace is out of credits or has been blocked. Not retryable as-is — resolve the account condition first.
+   */
+  402: AgentAdmissionError
+  /**
    * Forbidden (workflow or thread not owned by the caller)
    */
   403: AgentError
@@ -5061,6 +5208,10 @@ export type AgentPostMessageErrors = {
    * Agent service unavailable
    */
   502: ErrorResponse
+  /**
+   * The workspace's billing status could not be checked right now (a temporary outage, not a payment problem). Retry the request after the delay given in the Retry-After header.
+   */
+  503: AgentAdmissionError
 }
 
 export type AgentPostMessageError =

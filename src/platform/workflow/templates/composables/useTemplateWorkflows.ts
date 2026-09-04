@@ -11,6 +11,7 @@ import type {
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogStore } from '@/stores/dialogStore'
+import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
 
 export function useTemplateWorkflows() {
   const { t } = useI18n()
@@ -137,9 +138,26 @@ export function useTemplateWorkflows() {
       })
 
       dialogStore.closeDialog()
-      await app.loadGraphData(json, true, true, workflowName, {
-        openSource: 'template'
-      })
+      // Bind the card to the workflow THIS load activated, not the global
+      // active one: asset scans keep loadGraphData pending, and the user can
+      // switch workflows in that window.
+      const loadedWorkflow = await app.loadGraphData(
+        json,
+        true,
+        true,
+        workflowName,
+        { openSource: 'template' }
+      )
+
+      const template = workflowTemplatesStore.enhancedTemplates.find(
+        (tpl) => tpl.name === id && tpl.sourceModule === sourceModule
+      )
+      const educationStore = usePartnerNodesEducationStore()
+      if (template?.isPartnerNode && typeof loadedWorkflow === 'object') {
+        educationStore.requestCard(loadedWorkflow.key)
+      } else {
+        educationStore.dismissCard()
+      }
 
       return true
     } catch (error) {

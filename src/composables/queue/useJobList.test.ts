@@ -49,8 +49,8 @@ vi.mock('@/i18n', () => ({
 let totalPercent: Ref<number>
 let currentNodePercent: Ref<number>
 const ensureProgressRefs = () => {
-  if (!totalPercent) totalPercent = ref(0) as Ref<number>
-  if (!currentNodePercent) currentNodePercent = ref(0) as Ref<number>
+  if (!totalPercent) totalPercent = ref(0)
+  if (!currentNodePercent) currentNodePercent = ref(0)
   return { totalPercent, currentNodePercent }
 }
 vi.mock('@/composables/queue/useQueueProgress', () => ({
@@ -137,7 +137,7 @@ let jobPreviewStoreMock: {
 const ensureJobPreviewStore = () => {
   if (!jobPreviewStoreMock) {
     jobPreviewStoreMock = reactive({
-      previewsByPromptId: {} as Record<string, string>,
+      previewsByPromptId: {},
       isPreviewEnabled: true
     })
   }
@@ -249,7 +249,7 @@ describe('useJobList', () => {
     const mounted = mountUseJobList()
     unmount = mounted.unmount
     api = mounted.composable
-    return api!
+    return api
   }
 
   it('tracks recently added pending jobs and clears the hint after expiry', async () => {

@@ -24,7 +24,7 @@ export function isTypeformIdValid(id: string | undefined | null): boolean {
 }
 
 const loadTypeformScript = createScriptLoader(TYPEFORM_SRC, () =>
-  typeof window.tf?.load === 'function' ? (window.tf as TypeformGlobal) : null
+  typeof window.tf?.load === 'function' ? window.tf : null
 )
 
 function ensureScriptLoaded(): Promise<TypeformGlobal> {

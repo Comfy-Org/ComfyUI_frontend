@@ -216,10 +216,10 @@ class ConversionContext {
     // Reconnect the links
     for (const link of links) {
       const sourceNode = nodesById[link.origin_id]
-      sourceNode.outputs![link.origin_slot]!.links!.push(link.id)
+      sourceNode.outputs![link.origin_slot].links!.push(link.id)
 
       const targetNode = nodesById[link.target_id]
-      targetNode.inputs![link.target_slot]!.link = link.id
+      targetNode.inputs![link.target_slot].link = link.id
     }
   }
 

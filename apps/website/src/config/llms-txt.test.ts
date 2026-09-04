@@ -30,13 +30,15 @@ const vercelRedirectSources = new Set<string>(
  */
 const EXCLUDED_PAGES = new Set([
   '/404',
+  '/agent', // unlisted agent beta waitlist page, noindex
   '/booking-confirmation', // post-form confirmation, no standalone content
   '/individual-submission', // gallery submission form
   '/payment/failed', // checkout return page
   '/payment/success', // checkout return page
   '/case-studies', // "Coming Soon" placeholder
   '/videos', // "Coming Soon" placeholder
-  '/demos' // index is a "Coming Soon" placeholder; the demo pages are listed
+  '/demos', // index is a "Coming Soon" placeholder; the demo pages are listed
+  '/platform/serverless-animation' // noindex temporary motion study, not a real page
 ])
 
 /**

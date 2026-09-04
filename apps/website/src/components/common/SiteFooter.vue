@@ -36,10 +36,11 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
     links: [
       { label: t('nav.comfyLocal', locale), href: routes.download },
       { label: t('nav.comfyCloud', locale), href: routes.cloud },
-      { label: t('nav.comfyApi', locale), href: routes.api },
+      { label: t('nav.developerPlatform', locale), href: routes.platform },
       { label: t('nav.comfyEnterprise', locale), href: routes.enterprise },
-      { label: t('nav.pricing', locale), href: routes.cloudPricing },
+      { label: t('nav.pricing', locale), href: routes.pricing },
       { label: t('nav.mcpServer', locale), href: routes.mcp },
+      { label: t('nav.comfyAgent', locale), href: routes.agent },
       { label: t('nav.comfyCli', locale), href: routes.cli },
       { label: t('nav.supportedModels', locale), href: routes.models },
       { label: t('footer.minimaxH3', locale), href: routes.minimax },

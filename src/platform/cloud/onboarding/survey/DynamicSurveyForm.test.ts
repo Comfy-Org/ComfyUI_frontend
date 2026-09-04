@@ -84,7 +84,7 @@ const branchedSurvey: OnboardingSurvey = {
 describe('DynamicSurveyForm', () => {
   it('renders the real default schema (v3) with its first question and options', () => {
     expect(defaultOnboardingSurvey.version).toBe(3)
-    const firstField = defaultOnboardingSurvey.fields[0]!
+    const firstField = defaultOnboardingSurvey.fields[0]
     renderForm(defaultOnboardingSurvey)
 
     expect(screen.getByText('What do you want to make?')).toBeVisible()

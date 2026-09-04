@@ -331,7 +331,7 @@ export function createEditor(opts: EditorOptions): Editor {
 
   function activeRaster(): RasterData | null {
     const loc = activeLocation()
-    return loc && loc.node.kind === 'raster' ? (loc.node as RasterData) : null
+    return loc && loc.node.kind === 'raster' ? loc.node : null
   }
 
   function currentSelectionMask(): GrayMask | null {
@@ -650,7 +650,7 @@ export function createEditor(opts: EditorOptions): Editor {
       let toParent: GroupData
       let toIndex: number
       if (sib && sib.kind === 'group') {
-        toParent = sib as GroupData
+        toParent = sib
         toIndex = dir === 1 ? 0 : toParent.children.length
       } else if (sib) {
         toParent = parent
@@ -680,10 +680,10 @@ export function createEditor(opts: EditorOptions): Editor {
           ? findNode(doc.root, parentId)?.node
           : doc.root
       if (!target || target.kind !== 'group') return false
-      const toParent = target as GroupData
+      const toParent = target
       if (loc.node.kind === 'group') {
         if (toParent.id === loc.node.id) return false
-        if (findNode(loc.node as GroupData, toParent.id)) return false
+        if (findNode(loc.node, toParent.id)) return false
       }
       let to = Math.max(0, Math.min(toIndex, toParent.children.length))
       loc.parent.children.splice(loc.index, 1)

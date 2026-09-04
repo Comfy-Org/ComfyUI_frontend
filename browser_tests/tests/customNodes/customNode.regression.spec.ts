@@ -340,7 +340,7 @@ for (const entry of manifestEntries) {
               ) as CuratedOutputHashes)
             : null
           const observed = await hashSinkPayloads(
-            result.outputsByNode as Record<string, unknown>,
+            result.outputsByNode,
             async (ref) => {
               const encoded = await comfyPage.page.evaluate(async (file) => {
                 const query = new URLSearchParams({

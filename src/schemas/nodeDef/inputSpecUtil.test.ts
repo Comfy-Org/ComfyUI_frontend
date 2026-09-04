@@ -55,7 +55,7 @@ describe('flattenInputSpecs', () => {
       output_is_list: [false],
       output_name: ['video'],
       output_node: false
-    } as ComfyNodeDefV1
+    }
 
     const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
     const result = flattenInputSpecs(nodeDefImpl.inputs)
@@ -91,7 +91,7 @@ describe('flattenInputSpecs', () => {
       output_is_list: [],
       output_name: [],
       output_node: false
-    } as ComfyNodeDefV1)
+    })
 
     const result = flattenInputSpecs(nodeDefImpl.inputs)
 
@@ -143,7 +143,7 @@ describe('flattenInputSpecs', () => {
       output_is_list: [],
       output_name: [],
       output_node: false
-    } as ComfyNodeDefV1
+    }
 
     const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
     const result = flattenInputSpecs(nodeDefImpl.inputs)
@@ -171,7 +171,7 @@ describe('flattenInputSpecs', () => {
       output_is_list: [],
       output_name: [],
       output_node: false
-    } as ComfyNodeDefV1
+    }
 
     const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
 
@@ -197,7 +197,7 @@ describe('flattenInputSpecs', () => {
       output_is_list: [],
       output_name: [],
       output_node: false
-    } as ComfyNodeDefV1
+    }
 
     const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
 

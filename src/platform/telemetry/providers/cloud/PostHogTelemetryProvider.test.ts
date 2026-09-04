@@ -106,7 +106,7 @@ describe('PostHogTelemetryProvider', () => {
     hoisted.refs.tier = ref<string | null>(null)
     window.__CONFIG__ = {
       posthog_project_token: 'phc_test_token'
-    } as typeof window.__CONFIG__
+    }
   })
 
   describe('initialization', () => {
@@ -401,6 +401,22 @@ describe('PostHogTelemetryProvider', () => {
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         TelemetryEvents.USER_AUTH_COMPLETED,
         { method: 'google', share_id: 'share-1' }
+      )
+    })
+
+    it('captures link dedup drop events with metadata', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackLinkDedupDrop({
+        droppedLinkId: 7,
+        survivorLinkId: 3,
+        target: '12:0'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.LINK_DEDUP_DROP,
+        { droppedLinkId: 7, survivorLinkId: 3, target: '12:0' }
       )
     })
 

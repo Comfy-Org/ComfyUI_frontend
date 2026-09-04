@@ -366,7 +366,7 @@ describe('useAuthStore', () => {
       await balanceRequested
 
       // Firebase transitions directly to account B before the response lands.
-      authStateCallback({ ...mockUser, uid: 'account-b' } as User)
+      authStateCallback({ ...mockUser, uid: 'account-b' })
       resolveBalanceJson({ balance: 4242 })
 
       expect(await pending).toBeNull()
@@ -420,7 +420,7 @@ describe('useAuthStore', () => {
     })
 
     it('fetchBalance prefers the Firebase token over the API key when signed in', async () => {
-      authStateCallback(mockUser as User)
+      authStateCallback(mockUser)
 
       await store.fetchBalance()
 
@@ -2120,7 +2120,7 @@ describe('useAuthStore', () => {
       authStateCallback(mockUser)
 
       // Stale POST resolves successfully after session reset
-      resolveCreate!({
+      resolveCreate({
         ok: true,
         statusText: 'OK',
         json: () => Promise.resolve({ id: 'stale-id' })
@@ -2141,7 +2141,7 @@ describe('useAuthStore', () => {
       ...mockUser,
       uid: 'account-b-id',
       email: 'b@example.com'
-    } as MockUser
+    }
 
     it('does not reset the socket on the initial sign-in', () => {
       // The store is created in beforeEach, which drives the initial

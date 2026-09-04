@@ -88,14 +88,14 @@ describe('ReplyAssetGroup', () => {
     generateModelThumbnail.mockReset().mockResolvedValue(null)
   })
 
-  it('renders image and video previews inline', () => {
+  it('T-09 / PM-652 / FE-1326 renders image and video previews inline', () => {
     renderGroup([image(1), video])
 
     expect(screen.getByRole('img', { name: 'i1.png' })).toBeInTheDocument()
     expect(screen.getByTestId('reply-video-preview')).toBeInTheDocument()
   })
 
-  it('opens the lightbox at the clicked visual asset', async () => {
+  it('T-09 / PM-652 / FE-1326 opens inspect view at the clicked visual asset', async () => {
     renderGroup([image(1), video])
 
     await userEvent.click(screen.getByRole('button', { name: 'clip.mp4' }))

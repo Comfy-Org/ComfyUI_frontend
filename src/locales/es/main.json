@@ -5,6 +5,10 @@
     "feedbackTooltip": "Comentarios",
     "freeTierPartner": "Los nodos de socios requieren un plan de pago",
     "freeTierRuns": "{available} / {MAX_AVAILABLE} ejecuciones restantes",
+    "partnerRunGate": {
+      "signInCaption": "Los nodos asociados requieren una cuenta",
+      "signInToRun": "Inicia sesión para ejecutar"
+    },
     "share": "Compartir",
     "shareTooltip": "Compartir flujo de trabajo"
   },
@@ -34,10 +38,6 @@
     "copy": "Copiar",
     "copyMarkdown": "Copiar como markdown",
     "copyUnavailable": "Solo se puede copiar la conversación actual en esta versión",
-    "crdtConnected": "conectado",
-    "crdtDisconnected": "desconectado",
-    "crdtNoDocument": "sin documento",
-    "crdtStatus": "CRDT {connection} · {workflowId} · {updates} actualizaciones · {frame}",
     "credits": "créditos",
     "delete": "Eliminar",
     "dismiss": "Descartar",
@@ -86,6 +86,7 @@
     "runModeAutoDescription": "Comfy ejecutará flujos de trabajo sin pedir permiso",
     "runModeLimit": "Ejecución automática con límites",
     "runModeLimitDescription": "Comfy solo pedirá confirmación cuando la ejecución de un flujo de trabajo supere tu límite de créditos",
+    "runModeSaveFailed": "No se pudieron guardar los permisos de ejecución. Inténtalo de nuevo.",
     "runModeTriggerAsk": "Preguntar",
     "runModeTriggerAskTooltip": "Pedir permiso",
     "runModeTriggerAuto": "Automático",
@@ -115,6 +116,7 @@
       "Crea un flujo de trabajo de imagen a vídeo con 3 modelos"
     ],
     "switchWorkflow": "Cambiar de flujo de trabajo",
+    "targetNavigationUnavailable": "Este destino del flujo de trabajo ya no está disponible.",
     "thinking": "Pensando...",
     "thought": "Razonamiento",
     "thoughtTimed": "Razonó durante {seconds} segundos",
@@ -126,14 +128,13 @@
     "untitledChat": "Sin título",
     "uploading": "Subiendo"
   },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "Costo por ejecución",
-    "title": "Nodo(s) de API",
-    "totalCost": "Costo total"
-  },
   "apiNodesSignInDialog": {
-    "message": "Este flujo de trabajo contiene nodos de API, que requieren que inicies sesión en tu cuenta para poder ejecutar.",
-    "title": "Se requiere iniciar sesión para usar los nodos de API"
+    "message": "Los nodos asociados se ejecutan en servicios de terceros y usan créditos de tu cuenta. Inicia sesión para conectar tu cuenta.",
+    "partnerNodesInWorkflow": "Nodos asociados en este flujo de trabajo",
+    "signIn": "Iniciar sesión",
+    "title": "Inicia sesión para ejecutar nodos asociados",
+    "tooltip": "Los nodos asociados se ejecutan en servicios de terceros. Usan créditos, la única parte de pago de Comfy.",
+    "whatArePartnerNodes": "¿Qué son los nodos asociados?"
   },
   "appBuilder": {
     "vueNodeSwitch": {
@@ -465,7 +466,6 @@
   },
   "billingOperation": {
     "authenticationFailedDetail": "No pudimos completar la verificación del pago. Inténtalo de nuevo.",
-    "authenticationManagerRequired": "La verificación del pago requiere la atención de un administrador de facturación del espacio de trabajo.",
     "authenticationUnavailable": "La autenticación de pago seguro no está disponible. Actualiza la página e inténtalo de nuevo.",
     "cancelFailed": "No se pudo cancelar la suscripción",
     "cancelTimeout": "La cancelación de la suscripción excedió el tiempo de espera",
@@ -476,7 +476,6 @@
     "processingErrorDetail": "No se pudo procesar tu pago. Inténtalo de nuevo o usa otro método de pago.",
     "reconciliationDetail": "Se recibió tu pago, pero no pudimos terminar de actualizar tu espacio de trabajo. Contacta con soporte e incluye este ID de operación:",
     "reconciliationTitle": "Pago recibido — confirmación pendiente",
-    "retryVerification": "Reintentar verificación",
     "subscriptionActionRequired": "Verifica tu pago para finalizar la configuración de tu espacio de trabajo",
     "subscriptionFailed": "Error al actualizar la suscripción",
     "subscriptionFailedDetail": "No pudimos actualizar tu suscripción. Por favor, inténtalo de nuevo.",
@@ -964,6 +963,7 @@
       "quickPurchase": "Compra rápida",
       "seeDetails": "Ver detalles",
       "selectAmount": "Seleccionar cantidad",
+      "startOver": "Empezar de nuevo",
       "templateNote": "*Generado con la plantilla Wan Fun Control",
       "topUp": "Recargar",
       "unknownError": "Ocurrió un error desconocido",
@@ -1077,6 +1077,7 @@
     "RECRAFT_COLOR": "COLOR RECRAFT",
     "RECRAFT_CONTROLS": "CONTROLES RECRAFT",
     "RECRAFT_V3_STYLE": "ESTILO RECRAFT V3",
+    "RESOLUTION_PREVIEW": "RESOLUTION_PREVIEW",
     "RETARGET_TASK_ID": "ID_TAREA_REDESTINACIÓN",
     "RIG_TASK_ID": "ID_TAREA_ARMADURA",
     "RUNWAY_ALEPH2_KEYFRAME": "RUNWAY_ALEPH2_KEYFRAME",
@@ -2811,14 +2812,18 @@
       "seeMoreOutputs": "Ver más resultados",
       "zoom": "Acercar"
     },
-    "assetDeletedSuccessfully": "Recurso eliminado exitosamente",
-    "deleteAssetDescription": "Este recurso será eliminado permanentemente.",
-    "deleteAssetTitle": "¿Eliminar este recurso?",
-    "deleteSelectedDescription": "{count} recurso(s) será(n) eliminado(s) permanentemente.",
-    "deleteSelectedTitle": "¿Eliminar los recursos seleccionados?",
+    "assetDelete": {
+      "error": "No se pudieron eliminar algunos elementos",
+      "success": "Eliminación completada",
+      "warn": "No se pudieron eliminar algunos elementos"
+    },
+    "assetsDeleted": "Se eliminaron {n} / {total} recursos",
+    "deleteHistoryOnly": "Solo se verá afectado el historial; los archivos permanecerán en el disco",
+    "deleteItems": "Eliminar estos elementos",
+    "deletePermanent": "Se eliminarán permanentemente.",
     "deletingImportedFilesCloudOnly": "La eliminación de archivos importados solo es compatible en la versión cloud",
+    "deletionUnsupported": "Los recursos están habilitados, pero el servidor no admite la eliminación",
     "failedToCreateNode": "No se pudo crear el nodo",
-    "failedToDeleteAsset": "Error al eliminar el recurso",
     "failedToExportWorkflow": "No se pudo exportar el flujo de trabajo",
     "jobIdToast": {
       "copied": "Copiado",
@@ -2826,12 +2831,12 @@
       "jobIdCopied": "ID de trabajo copiado al portapapeles",
       "jobIdCopyFailed": "Error al copiar el ID de trabajo"
     },
+    "jobsDeleted": "Se eliminaron {n} / {total} tareas",
     "noJobIdFound": "No se encontró ID de trabajo para este recurso",
     "noWorkflowDataFound": "No se encontraron datos de flujo de trabajo en este recurso",
     "nodeAddedToWorkflow": "Nodo {nodeType} agregado al flujo de trabajo",
     "nodeTypeNotFound": "Tipo de nodo {nodeType} no encontrado",
     "selection": {
-      "assetsDeletedSuccessfully": "{count} recurso(s) eliminado(s) exitosamente",
       "deleteSelected": "Eliminar",
       "deleteSelectedAll": "Eliminar todo",
       "deselectAll": "Deseleccionar todo",
@@ -2842,7 +2847,6 @@
       "exportStarted": "Preparando exportación ZIP para {count} archivo | Preparando exportación ZIP para {count} archivos",
       "exportWorkflowAll": "Exportar todos los flujos de trabajo",
       "failedToAddNodes": "No se pudieron añadir nodos al flujo de trabajo",
-      "failedToDeleteAssets": "Error al eliminar los recursos seleccionados",
       "insertAllAssetsAsNodes": "Insertar todos los recursos como nodos",
       "multipleSelectedAssets": "Varios recursos seleccionados",
       "noWorkflowsFound": "No se encontraron datos de flujo de trabajo en los recursos seleccionados",
@@ -2850,7 +2854,6 @@
       "nodesAddedToWorkflow": "{count} nodo(s) añadido(s) al flujo de trabajo",
       "openWorkflowAll": "Abrir todos los flujos de trabajo",
       "partialAddNodesSuccess": "{succeeded} añadido(s) correctamente, {failed} fallido(s)",
-      "partialDeleteSuccess": "{succeeded} eliminados correctamente, {failed} fallidos",
       "partialWorkflowsExported": "{succeeded} exportado(s) correctamente, {failed} fallido(s)",
       "partialWorkflowsOpened": "{succeeded} flujo(s) de trabajo abierto(s), {failed} fallido(s)",
       "selectedCount": "Recursos seleccionados: {count}",
@@ -3201,6 +3204,7 @@
     "scail": "scail",
     "schedulers": "programadores",
     "scheduling": "programación",
+    "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "sigmas",
     "sound": "sonido",
@@ -3465,6 +3469,28 @@
     "addColor": "Agregar un color",
     "swatchTitle": "Haz clic para editar · arrastra para reordenar · clic derecho para eliminar"
   },
+  "partnerNodesEducation": {
+    "benefits": {
+      "free": "Gratis de ejecutar",
+      "noDownload": "No requiere configuración",
+      "noVram": "Sin VRAM, tu GPU queda libre",
+      "offline": "Funciona sin conexión"
+    },
+    "included": "Incluido",
+    "muteOpen": "Silenciar clip de pesos abiertos",
+    "mutePartner": "Silenciar clip de nodo asociado",
+    "notIncluded": "No incluido",
+    "openHeader": "ABIERTO",
+    "openTab": "Nodos abiertos",
+    "partnerHeader": "ASOCIADO",
+    "partnerTab": "Nodos asociados",
+    "pitch": "¿Ves la diferencia? Arrastra para comparar.",
+    "reassurance": "Los nodos asociados están aquí cuando quieres más. El resto de Comfy sigue siendo gratis.",
+    "sliderLabel": "Comparar la salida de pesos abiertos y de nodos asociados",
+    "tooltip": "Los nodos asociados ejecutan modelos de código cerrado, como Kling o Veo, en el hardware del proveedor a través de Comfy. Usan créditos; el resto de Comfy sigue siendo gratis.",
+    "unmuteOpen": "Activar sonido del clip de pesos abiertos",
+    "unmutePartner": "Activar sonido del clip de nodo asociado"
+  },
   "progressToast": {
     "allDownloadsCompleted": "Todas las descargas completadas",
     "downloadingModel": "Descargando modelo...",
@@ -3522,7 +3548,6 @@
       "copyErrorMessage": "Copiar mensaje de error",
       "copyJobId": "Copiar ID de trabajo",
       "delete": "Eliminar",
-      "deleteAsset": "Eliminar recurso",
       "download": "Descargar",
       "exportWorkflow": "Exportar flujo de trabajo",
       "inspectAsset": "Inspeccionar recurso",
@@ -4273,8 +4298,6 @@
     "canceledCard": {
       "description": "No se te cobrará de nuevo. Tus funciones seguirán activas hasta {date}.",
       "descriptionWithoutDate": "No se te volverá a cobrar. Tus funciones seguirán activas hasta el final de tu periodo de facturación.",
-      "endedDescription": "Tu suscripción ya no está activa.",
-      "endedTitle": "Tu suscripción ha finalizado",
       "title": "Tu suscripción ha sido cancelada"
     },
     "changePlan": "Cambiar plan",
@@ -4329,6 +4352,7 @@
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "¿Tienes preguntas o buscas soluciones empresariales?",
     "inactive": {
+      "badge": "Inactiva",
       "memberCta": "Ok, entendido",
       "memberDescription": "Pide al propietario del espacio de trabajo que reactive la suscripción para ejecutar flujos de trabajo.",
       "memberRunTooltip": "Contacta al propietario del espacio de trabajo para volver a suscribirte",
@@ -4340,7 +4364,6 @@
     "inactiveTeamTitle": "Suscripción de equipo inactiva",
     "inviteUpTo": "Invita hasta",
     "invoiceHistory": "Historial de facturas",
-    "learnMore": "Más información",
     "manageBilling": "Gestionar facturación",
     "managePlan": "Gestionar plan",
     "manageSubscription": "Gestionar suscripción",
@@ -4468,6 +4491,7 @@
       },
       "refillReplacesNote": "Reemplaza tu recarga mensual. El saldo existente se mantiene.",
       "renewsAt": "Se renueva por {amount} el {date}. Cancela cuando quieras.",
+      "renewsAtAmount": "Se renueva por {amount}. Cancela cuando quieras.",
       "savedPaymentMethod": "Método de pago",
       "showMoreFeatures": "Mostrar más funciones",
       "starting": "Comienza el {date}",
@@ -4607,7 +4631,6 @@
     "videoTemplateBasedCredits": "Videos generados con Wan 2.2 Imagen a Video",
     "viewEnterprise": "Ver empresa",
     "viewMoreDetails": "Ver más detalles",
-    "viewMoreDetailsPlans": "Ver más detalles sobre planes y precios",
     "viewUsageHistory": "Ver historial de uso",
     "whatsIncluded": "Qué está incluido:",
     "workspaceNotSubscribed": "Este espacio de trabajo no tiene una suscripción",
@@ -5038,8 +5061,10 @@
       "failedCount": "No se pudo enviar {count} invitación. Intenta de nuevo. | No se pudieron enviar {count} invitaciones. Intenta de nuevo.",
       "invalidEmailCount": "{count} dirección de correo electrónico no válida | {count} direcciones de correo electrónico no válidas",
       "invitedMessage": "Se envió una invitación a {emails} | Se enviaron invitaciones a {emails}",
+      "pendingInviteCount": "{count} de estas personas ya tienen una invitación pendiente. Se omitirán.",
+      "pendingInviteSingle": "Esta persona ya tiene una invitación pendiente",
       "placeholder": "Introduce el correo electrónico de la persona",
-      "seatLimitReached": "Puedes invitar hasta {count} compañero de equipo. | Puedes invitar hasta {count} compañeros de equipo.",
+      "seatLimitExceeded": "Este espacio de trabajo tiene un límite de {max} miembros. Elimina {overage} para continuar.",
       "title": "Invitar a una persona a este espacio de trabajo"
     },
     "inviteUpsellDialog": {

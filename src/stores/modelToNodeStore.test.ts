@@ -1,13 +1,14 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import {
   ModelNodeProvider,
   useModelToNodeStore
 } from '@/stores/modelToNodeStore'
-import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 const EXPECTED_DEFAULT_TYPES = [
   'checkpoints',
@@ -37,22 +38,8 @@ const EXPECTED_DEFAULT_TYPES = [
   'FlashVSR-v1.1'
 ] as const
 
-type NodeDefStoreType = ReturnType<typeof useNodeDefStore>
-
 function createMockNodeDef(name: string): ComfyNodeDefImpl {
-  const def: ComfyNodeDefV1 = {
-    name,
-    display_name: name,
-    category: 'test',
-    python_module: 'nodes',
-    description: '',
-    input: { required: {}, optional: {} },
-    output: [],
-    output_name: [],
-    output_is_list: [],
-    output_node: false
-  }
-  return new ComfyNodeDefImpl(def)
+  return fromPartial({ name })
 }
 
 const MOCK_NODE_NAMES = [
@@ -89,16 +76,11 @@ const mockNodeDefsByName = Object.fromEntries(
   MOCK_NODE_NAMES.map((name) => [name, createMockNodeDef(name)])
 )
 
-vi.mock('@/stores/nodeDefStore', async (importOriginal) => {
-  const original = await importOriginal<NodeDefStoreType>()
-
-  return {
-    ...original,
-    useNodeDefStore: vi.fn(() => ({
-      nodeDefsByName: mockNodeDefsByName
-    }))
-  }
-})
+vi.mock('@/stores/nodeDefStore', () => ({
+  useNodeDefStore: vi.fn(() => ({
+    nodeDefsByName: mockNodeDefsByName
+  }))
+}))
 
 describe('useModelToNodeStore', () => {
   describe('modelToNodeMap', () => {

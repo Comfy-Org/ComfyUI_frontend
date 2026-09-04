@@ -24,7 +24,7 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
       const size = await comfyPage.page.evaluate(() => {
         const graph = window.graph as TestGraphAccess | undefined
         const node = graph?._nodes_by_id?.['1']
-        return node?.size as [number, number] | undefined
+        return node?.size
       })
       expect(size).toBeDefined()
       expect(size![0]).toBeGreaterThanOrEqual(450)
@@ -804,7 +804,7 @@ test.describe(
     }) => {
       const painterNodes = await comfyPage.nodeOps.getNodeRefsByType('Painter')
       expect(painterNodes).toHaveLength(1)
-      const painterNode = painterNodes[0]!
+      const painterNode = painterNodes[0]
       const maskWidget = await painterNode.getWidgetByName('mask')
       const maskWidgetClientPosition = await maskWidget.getPosition()
       const widgetRowClientHeight = await comfyPage.page.evaluate(

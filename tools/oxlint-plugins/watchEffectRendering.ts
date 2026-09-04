@@ -150,8 +150,7 @@ function runsDirectlyInWatchEffect(
 
   const call = parent as CallExpression
   return (
-    call.arguments.includes(callback as Expression) &&
-    isVueWatchEffect(context, call.callee)
+    call.arguments.includes(callback) && isVueWatchEffect(context, call.callee)
   )
 }
 

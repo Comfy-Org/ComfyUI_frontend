@@ -5,6 +5,10 @@
     "feedbackTooltip": "Geri bildirim",
     "freeTierPartner": "Partner düğümleri için ücretli plan gerekir",
     "freeTierRuns": "{available} / {MAX_AVAILABLE} kullanım kaldı",
+    "partnerRunGate": {
+      "signInCaption": "İş ortağı düğümleri hesap gerektirir",
+      "signInToRun": "Çalıştırmak için oturum açın"
+    },
     "share": "Paylaş",
     "shareTooltip": "İş akışını paylaş"
   },
@@ -34,10 +38,6 @@
     "copy": "Kopyala",
     "copyMarkdown": "Markdown olarak kopyala",
     "copyUnavailable": "Bu sürümde yalnızca geçerli konuşma kopyalanabilir",
-    "crdtConnected": "bağlı",
-    "crdtDisconnected": "bağlantı kesildi",
-    "crdtNoDocument": "belge yok",
-    "crdtStatus": "CRDT {connection} · {workflowId} · {updates} güncelleme · {frame}",
     "credits": "kredi",
     "delete": "Sil",
     "dismiss": "Kapat",
@@ -86,6 +86,7 @@
     "runModeAutoDescription": "Comfy, izin istemeden iş akışlarını çalıştıracak",
     "runModeLimit": "Sınırlarla otomatik çalıştır",
     "runModeLimitDescription": "Comfy, yalnızca iş akışı çalıştırması kredi sınırınızı aştığında onay isteyecek",
+    "runModeSaveFailed": "Çalıştırma izinleri kaydedilemedi. Lütfen tekrar deneyin.",
     "runModeTriggerAsk": "Sor",
     "runModeTriggerAskTooltip": "İzin iste",
     "runModeTriggerAuto": "Otomatik",
@@ -115,6 +116,7 @@
       "3 modelle görüntüden videoya iş akışı oluştur"
     ],
     "switchWorkflow": "İş akışını değiştir",
+    "targetNavigationUnavailable": "Bu iş akışı hedefi artık kullanılamıyor.",
     "thinking": "Düşünüyor...",
     "thought": "Düşünce",
     "thoughtTimed": "{seconds} saniye düşünüldü",
@@ -126,14 +128,13 @@
     "untitledChat": "Başlıksız",
     "uploading": "Yükleniyor"
   },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "Çalıştırma başına maliyet",
-    "title": "API Düğüm(ler)i",
-    "totalCost": "Toplam Maliyet"
-  },
   "apiNodesSignInDialog": {
-    "message": "Bu iş akışı, çalıştırmak için hesabınıza giriş yapmanızı gerektiren API Düğümleri içerir.",
-    "title": "API Düğümlerini Kullanmak İçin Giriş Yapılması Gerekiyor"
+    "message": "İş ortağı düğümleri üçüncü taraf hizmetlerde çalışır ve hesabınızdaki kredileri kullanır. Hesabınızı bağlamak için lütfen oturum açın.",
+    "partnerNodesInWorkflow": "Bu iş akışındaki iş ortağı düğümleri",
+    "signIn": "Oturum Aç",
+    "title": "İş ortağı düğümlerini çalıştırmak için oturum açın",
+    "tooltip": "İş ortağı düğümleri üçüncü taraf hizmetlerde çalışır. Comfy'nin tek ücretli kısmı olan kredileri kullanırlar.",
+    "whatArePartnerNodes": "İş ortağı düğümleri nedir?"
   },
   "appBuilder": {
     "vueNodeSwitch": {
@@ -465,7 +466,6 @@
   },
   "billingOperation": {
     "authenticationFailedDetail": "Ödeme doğrulamasını tamamlayamadık. Lütfen tekrar deneyin.",
-    "authenticationManagerRequired": "Ödeme doğrulaması, çalışma alanı faturalama yöneticisinin ilgisini gerektiriyor.",
     "authenticationUnavailable": "Güvenli ödeme doğrulaması kullanılamıyor. Lütfen yenileyip tekrar deneyin.",
     "cancelFailed": "Abonelik iptali başarısız oldu",
     "cancelTimeout": "Abonelik iptal süresi doldu",
@@ -476,7 +476,6 @@
     "processingErrorDetail": "Ödemeniz işlenemedi. Tekrar deneyin veya başka bir ödeme yöntemi kullanın.",
     "reconciliationDetail": "Ödemeniz alındı, ancak çalışma alanınızı güncellemeyi tamamlayamadık. Destek ekibiyle iletişime geçin ve şu işlem kimliğini ekleyin:",
     "reconciliationTitle": "Ödeme alındı — onay bekleniyor",
-    "retryVerification": "Doğrulamayı yeniden dene",
     "subscriptionActionRequired": "Çalışma alanınızı kurmayı tamamlamak için ödemenizi doğrulayın",
     "subscriptionFailed": "Abonelik güncellemesi başarısız oldu",
     "subscriptionFailedDetail": "Aboneliğinizi güncelleyemedik. Lütfen tekrar deneyin.",
@@ -964,6 +963,7 @@
       "quickPurchase": "Hızlı Satın Alma",
       "seeDetails": "Detayları gör",
       "selectAmount": "Tutar seç",
+      "startOver": "Yeniden başla",
       "templateNote": "*Wan Fun Control şablonu ile oluşturuldu",
       "topUp": "Yükleme Yap",
       "unknownError": "Bilinmeyen bir hata oluştu",
@@ -1077,6 +1077,7 @@
     "RECRAFT_COLOR": "RECRAFT_RENK",
     "RECRAFT_CONTROLS": "RECRAFT_KONTROLLERİ",
     "RECRAFT_V3_STYLE": "RECRAFT_V3_STİLİ",
+    "RESOLUTION_PREVIEW": "RESOLUTION_PREVIEW",
     "RETARGET_TASK_ID": "YENİ_HEDEF_GÖREV_ID",
     "RIG_TASK_ID": "RİG_GÖREV_ID",
     "RUNWAY_ALEPH2_KEYFRAME": "RUNWAY_ALEPH2_KEYFRAME",
@@ -2811,14 +2812,18 @@
       "seeMoreOutputs": "Daha fazla çıktı gör",
       "zoom": "Yakınlaştır"
     },
-    "assetDeletedSuccessfully": "Varlık başarıyla silindi",
-    "deleteAssetDescription": "Bu varlık kalıcı olarak kaldırılacak.",
-    "deleteAssetTitle": "Bu varlık silinsin mi?",
-    "deleteSelectedDescription": "{count} varlık kalıcı olarak kaldırılacak.",
-    "deleteSelectedTitle": "Seçilen varlıklar silinsin mi?",
+    "assetDelete": {
+      "error": "Öğeler silinemedi",
+      "success": "Silme başarılı",
+      "warn": "Bazı öğeler silinemedi"
+    },
+    "assetsDeleted": "{n} / {total} varlık silindi",
+    "deleteHistoryOnly": "Yalnızca geçmiş etkilenir, dosyalar diskte kalır",
+    "deleteItems": "Bu öğeleri sil",
+    "deletePermanent": "Kalıcı olarak kaldırılacaklar.",
     "deletingImportedFilesCloudOnly": "İçe aktarılan dosyaların silinmesi yalnızca bulut sürümünde desteklenir",
+    "deletionUnsupported": "Varlıklar etkin, ancak sunucu silmeyi desteklemiyor",
     "failedToCreateNode": "Düğüm oluşturulamadı",
-    "failedToDeleteAsset": "Varlık silinemedi",
     "failedToExportWorkflow": "İş akışı dışa aktarılamadı",
     "jobIdToast": {
       "copied": "Kopyalandı",
@@ -2826,12 +2831,12 @@
       "jobIdCopied": "İş Kimliği panoya kopyalandı",
       "jobIdCopyFailed": "İş Kimliği kopyalanamadı"
     },
+    "jobsDeleted": "{n} / {total} iş silindi",
     "noJobIdFound": "Bu varlık için iş ID'si bulunamadı",
     "noWorkflowDataFound": "Bu varlıkta iş akışı verisi bulunamadı",
     "nodeAddedToWorkflow": "{nodeType} düğümü iş akışına eklendi",
     "nodeTypeNotFound": "{nodeType} düğüm türü bulunamadı",
     "selection": {
-      "assetsDeletedSuccessfully": "{count} varlık başarıyla silindi",
       "deleteSelected": "Sil",
       "deleteSelectedAll": "Tümünü sil",
       "deselectAll": "Tümünü seçimi kaldır",
@@ -2842,7 +2847,6 @@
       "exportStarted": "{count} dosya için ZIP dışa aktarımı hazırlanıyor | {count} dosya için ZIP dışa aktarımı hazırlanıyor",
       "exportWorkflowAll": "Tüm çalışma akışlarını dışa aktar",
       "failedToAddNodes": "Düğümler çalışma akışına eklenemedi",
-      "failedToDeleteAssets": "Seçilen varlıklar silinemedi",
       "insertAllAssetsAsNodes": "Tüm varlıkları düğüm olarak ekle",
       "multipleSelectedAssets": "Birden fazla varlık seçildi",
       "noWorkflowsFound": "Seçilen varlıklarda çalışma akışı verisi bulunamadı",
@@ -2850,7 +2854,6 @@
       "nodesAddedToWorkflow": "{count} düğüm çalışma akışına eklendi",
       "openWorkflowAll": "Tüm çalışma akışlarını aç",
       "partialAddNodesSuccess": "{succeeded} başarıyla eklendi, {failed} başarısız oldu",
-      "partialDeleteSuccess": "{succeeded} başarıyla silindi, {failed} silinemedi",
       "partialWorkflowsExported": "{succeeded} başarıyla dışa aktarıldı, {failed} başarısız oldu",
       "partialWorkflowsOpened": "{succeeded} çalışma akışı açıldı, {failed} başarısız oldu",
       "selectedCount": "Seçilen Varlıklar: {count}",
@@ -3201,6 +3204,7 @@
     "scail": "scail",
     "schedulers": "zamanlayıcılar",
     "scheduling": "zamanlama",
+    "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "sigmalar",
     "sound": "ses",
@@ -3465,6 +3469,28 @@
     "addColor": "Renk ekle",
     "swatchTitle": "Düzenlemek için tıkla · Sürükleyerek sırala · Kaldırmak için sağ tıkla"
   },
+  "partnerNodesEducation": {
+    "benefits": {
+      "free": "Çalıştırması ücretsiz",
+      "noDownload": "Kurulum gerekmez",
+      "noVram": "VRAM gerekmez, GPU'nuz boş kalır",
+      "offline": "Çevrim dışı çalışır"
+    },
+    "included": "Dahil",
+    "muteOpen": "Açık ağırlıklı clip sesini kapat",
+    "mutePartner": "İş ortağı düğümü clip sesini kapat",
+    "notIncluded": "Dahil değil",
+    "openHeader": "AÇIK",
+    "openTab": "Açık düğümler",
+    "partnerHeader": "İŞ ORTAĞI",
+    "partnerTab": "İş ortağı düğümleri",
+    "pitch": "Farkı görüyor musunuz? Karşılaştırmak için sürükleyin.",
+    "reassurance": "Daha fazlasını istediğinizde iş ortağı düğümleri burada. Comfy'nin geri kalanı ücretsiz kalır.",
+    "sliderLabel": "Açık ağırlıklı ve iş ortağı düğümü çıktısını karşılaştır",
+    "tooltip": "İş ortağı düğümleri, Kling veya Veo gibi kapalı kaynaklı modelleri Comfy üzerinden sağlayıcının donanımında çalıştırır. Kredileri kullanırlar; Comfy'nin geri kalanı ücretsiz kalır.",
+    "unmuteOpen": "Açık ağırlıklı clip sesini aç",
+    "unmutePartner": "İş ortağı düğümü clip sesini aç"
+  },
   "progressToast": {
     "allDownloadsCompleted": "Tüm indirmeler tamamlandı",
     "downloadingModel": "Model indiriliyor...",
@@ -3522,7 +3548,6 @@
       "copyErrorMessage": "Hata mesajını kopyala",
       "copyJobId": "İş Kimliğini Kopyala",
       "delete": "Sil",
-      "deleteAsset": "Varlığı sil",
       "download": "İndir",
       "exportWorkflow": "Çalışma akışını dışa aktar",
       "inspectAsset": "Varlığı İncele",
@@ -4273,8 +4298,6 @@
     "canceledCard": {
       "description": "Tekrar ücretlendirilmeyeceksiniz. Özellikleriniz {date} tarihine kadar aktif kalacak.",
       "descriptionWithoutDate": "Tekrar ücretlendirilmeyeceksiniz. Özellikleriniz fatura dönemi sonuna kadar aktif kalacak.",
-      "endedDescription": "Aboneliğiniz artık aktif değil.",
-      "endedTitle": "Aboneliğiniz sona erdi",
       "title": "Aboneliğiniz iptal edildi"
     },
     "changePlan": "Planı değiştir",
@@ -4329,6 +4352,7 @@
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "Sorularınız mı var veya kurumsal çözüm mü arıyorsunuz?",
     "inactive": {
+      "badge": "Pasif",
       "memberCta": "Tamam, anladım",
       "memberDescription": "Çalışma alanı sahibinizden iş akışlarını çalıştırmak için aboneliği yeniden etkinleştirmesini isteyin.",
       "memberRunTooltip": "Yeniden abone olmak için çalışma alanı sahibinizle iletişime geçin",
@@ -4340,7 +4364,6 @@
     "inactiveTeamTitle": "Pasif ekip aboneliği",
     "inviteUpTo": "Şu kadar kişiyi davet et:",
     "invoiceHistory": "Fatura geçmişi",
-    "learnMore": "Daha fazla bilgi edinin",
     "manageBilling": "Faturalamayı yönet",
     "managePlan": "Planı yönet",
     "manageSubscription": "Aboneliği yönet",
@@ -4468,6 +4491,7 @@
       },
       "refillReplacesNote": "Aylık yenilemeyi değiştirir. Mevcut bakiye korunur.",
       "renewsAt": "{date} tarihinde {amount} tutarında yenilenir. İstediğiniz zaman iptal edin.",
+      "renewsAtAmount": "{amount} tutarında yenilenir. İstediğiniz zaman iptal edin.",
       "savedPaymentMethod": "Ödeme yöntemi",
       "showMoreFeatures": "Daha fazla özelliği göster",
       "starting": "{date} tarihinde başlıyor",
@@ -4607,7 +4631,6 @@
     "videoTemplateBasedCredits": "Wan 2.2 Görselden Videoya ile oluşturulan videolar",
     "viewEnterprise": "Kurumsal çözümü görüntüle",
     "viewMoreDetails": "Daha fazla detay görüntüle",
-    "viewMoreDetailsPlans": "Planlar ve fiyatlandırma hakkında daha fazla detay",
     "viewUsageHistory": "Kullanım geçmişini görüntüle",
     "whatsIncluded": "Dahil olanlar:",
     "workspaceNotSubscribed": "Bu çalışma alanı bir aboneliğe sahip değil",
@@ -5038,8 +5061,10 @@
       "failedCount": "{count} davet gönderilemedi. Tekrar deneyin. | {count} davet gönderilemedi. Tekrar deneyin.",
       "invalidEmailCount": "{count} geçersiz e-posta adresi | {count} geçersiz e-posta adresi",
       "invitedMessage": "{emails} adresine davet gönderildi | {emails} adreslerine davetler gönderildi",
+      "pendingInviteCount": "Bu kişilerden {count} tanesinin zaten bekleyen bir daveti var. Atlanacaklar.",
+      "pendingInviteSingle": "Bu kişinin zaten bekleyen bir daveti var",
       "placeholder": "Kişinin e-posta adresini girin",
-      "seatLimitReached": "En fazla {count} takım arkadaşı davet edebilirsiniz. | En fazla {count} takım arkadaşı davet edebilirsiniz.",
+      "seatLimitExceeded": "Bu çalışma alanı en fazla {max} üyeyle sınırlıdır. Devam etmek için {overage} üyeyi kaldırın.",
       "title": "Bu çalışma alanına birini davet et"
     },
     "inviteUpsellDialog": {

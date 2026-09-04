@@ -25,6 +25,7 @@
   <RerouteMigrationToast />
   <ModelImportProgressDialog />
   <AssetExportProgressDialog />
+  <PartnerNodesEducationCard v-if="!isCloud" />
   <ManagerProgressToast />
   <DesktopCloudNotificationController />
   <UnloadWindowConfirmDialog v-if="!isDesktop" />
@@ -51,6 +52,7 @@ import { runWhenGlobalIdle } from '@/base/common/async'
 import MenuHamburger from '@/components/MenuHamburger.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
+import PartnerNodesEducationCard from '@/components/actionbar/PartnerNodesEducationCard.vue'
 import TourOverlay from '@/platform/onboarding/TourOverlay.vue'
 import FirstRunTour from '@/renderer/extensions/firstRunTour/FirstRunTour.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
@@ -82,10 +84,10 @@ import { app } from '@/scripts/app'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useAppMode } from '@/composables/useAppMode'
-import { useAssetsStore } from '@/stores/assetsStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useAuthStore } from '@/stores/authStore'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useModelStore } from '@/stores/modelStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
@@ -98,6 +100,7 @@ import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { electronAPI } from '@/utils/envUtil'
+import { createUuidv4 } from '@/utils/uuid'
 import BuilderFooterToolbar from '@/components/builder/BuilderFooterToolbar.vue'
 import BuilderMenu from '@/components/builder/BuilderMenu.vue'
 import BuilderToolbar from '@/components/builder/BuilderToolbar.vue'
@@ -243,7 +246,7 @@ const onStatus = async (e: CustomEvent<StatusWsMessageStatus>) => {
   // Only update assets if the assets sidebar is currently open
   // When sidebar is closed, AssetsSidebarTab.vue will refresh on mount
   if (sidebarTabStore.activeSidebarTabId === 'assets' || linearMode.value) {
-    await assetsStore.updateHistory()
+    await assetsStore.outputAssets.loadNew()
   }
 }
 
@@ -252,7 +255,7 @@ const onExecutionSuccess = async () => {
   // Only update assets if the assets sidebar is currently open
   // When sidebar is closed, AssetsSidebarTab.vue will refresh on mount
   if (sidebarTabStore.activeSidebarTabId === 'assets' || linearMode.value) {
-    await assetsStore.updateHistory()
+    await assetsStore.outputAssets.loadNew()
   }
 }
 
@@ -320,7 +323,7 @@ const onGraphReady = () => {
     if (isCloud && telemetry) {
       const tabCountChannel = new BroadcastChannel('comfyui-tab-count')
       const activeTabs = new Map<string, number>()
-      const currentTabId = crypto.randomUUID()
+      const currentTabId = createUuidv4()
 
       // Listen for heartbeats from other tabs
       tabCountChannel.onmessage = (event) => {

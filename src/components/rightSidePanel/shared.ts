@@ -66,9 +66,7 @@ export function searchWidgets<T extends { widget: IBaseWidget }[]>(
   const fuse = new Fuse(searchableList, fuseOptions)
   const results = fuse.search(query.trim())
 
-  const matchedItems = new Set(
-    results.map((result) => list[result.item.index]!)
-  )
+  const matchedItems = new Set(results.map((result) => list[result.item.index]))
 
   return list.filter((item) => matchedItems.has(item)) as T
 }
@@ -194,7 +192,7 @@ function flatItems(
   }
 
   for (let i = 0; i < items.length; i++) {
-    const item = items[i] as Positionable
+    const item = items[i]
 
     if (isLGraphGroup(item)) {
       result.push(item)

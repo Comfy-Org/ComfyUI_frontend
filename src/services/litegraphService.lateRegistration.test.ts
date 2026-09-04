@@ -156,11 +156,6 @@ beforeEach(async () => {
 afterEach(() => {
   Reflect.deleteProperty(LiteGraph, 'onNodeTypeRegistered')
   Reflect.deleteProperty(LiteGraph, 'onNodeTypeReplaced')
-  for (const type of [INSTALLED, LATE]) {
-    if (LiteGraph.registered_node_types[type]) {
-      LiteGraph.unregisterNodeType(type)
-    }
-  }
 })
 
 describe('registering a node definition while a graph is already loaded', () => {

@@ -352,7 +352,7 @@ describe('useWorkspaceBilling', () => {
         // A server ahead of this bundle. Unrepresentable in the current union,
         // which is why the branch cannot be left to the type system alone.
         pending_billing_op_type: 'seat_change'
-      } as unknown as BillingStatusResponse)
+      })
 
       const billing = setupBilling()
       await billing.fetchStatus()

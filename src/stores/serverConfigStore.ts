@@ -90,7 +90,7 @@ export const useServerConfigStore = defineStore('serverConfig', () => {
         }
         return [key, value.toString()]
       })
-    ) as Record<string, string>
+    )
   })
   const commandLineArgs = computed<string>(() => {
     return Object.entries(launchArgs.value)

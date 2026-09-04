@@ -1,4 +1,5 @@
-import { readImageWidgetValue } from '@/composables/maskeditor/imageWidgetAdapter'
+import { IMAGE_WIDGET } from '@/composables/maskeditor/imageWidgetAdapter'
+import { getNodeWidgetValue } from '@/core/graph/widgets/nodeWidgetValues'
 import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
 import type { ImageRef, ImageLayer } from '@/stores/maskEditorDataStore'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -99,7 +100,7 @@ export function useMaskEditorLoader() {
       let nodeImageRef = parseImageRef(nodeImageUrl)
 
       const widgetFilename = extractWidgetStringValue(
-        readImageWidgetValue(node)
+        getNodeWidgetValue(node, IMAGE_WIDGET)
       )
 
       // If we have a widget filename, we should prioritize it over the node image

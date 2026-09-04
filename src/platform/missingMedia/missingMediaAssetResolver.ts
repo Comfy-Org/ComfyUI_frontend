@@ -1,3 +1,4 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { fetchHistoryPage } from '@/platform/remote/comfyui/jobs/fetchJobs'
@@ -14,8 +15,8 @@ interface MediaPathDetectionOptions {
 }
 
 export interface MissingMediaAssetSources {
-  inputAssets: AssetItem[]
-  generatedAssets: AssetItem[]
+  inputAssets: readonly AssetItem[]
+  generatedAssets: readonly AssetItem[]
 }
 
 export interface ResolveMissingMediaAssetSourcesOptions {
@@ -52,8 +53,10 @@ export async function resolveMissingMediaAssetSources({
   try {
     const [inputAssets, generatedAssets] = await Promise.all([
       abortSiblingsOnFailure(
-        isCloud
-          ? assetService.getInputAssetsIncludingPublic(controller.signal)
+        useFeatureFlags().flags.assetsEnabled
+          ? assetService.getAllAssetsByTag('input', true, {
+              signal: controller.signal
+            })
           : Promise.resolve<AssetItem[]>([]),
         controller
       ),

@@ -6,7 +6,7 @@ import { useAssetSelectionStore } from '@/platform/assets/composables/useAssetSe
 import {
   getAssetOutputCount,
   getTotalAssetOutputCount
-} from '@/platform/assets/utils/outputAssetUtil'
+} from '@/platform/assets/utils/outputAssetCountUtil'
 
 export function useAssetSelection() {
   const selectionStore = useAssetSelectionStore()

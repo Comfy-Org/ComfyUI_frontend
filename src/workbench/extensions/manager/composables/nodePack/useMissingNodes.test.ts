@@ -1,27 +1,22 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { effectScope, nextTick, ref } from 'vue'
 
 import type { LGraphNode, LGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
-import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
+import { useMissingNodes as useSharedMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 import { useWorkflowPacks } from '@/workbench/extensions/manager/composables/nodePack/useWorkflowPacks'
 import type { WorkflowPack } from '@/workbench/extensions/manager/composables/nodePack/useWorkflowPacks'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock('@vueuse/core', async () => {
-  const actual = await vi.importActual('@vueuse/core')
-  return {
-    ...actual,
-    createSharedComposable: <Fn extends (...args: unknown[]) => unknown>(
-      fn: Fn
-    ) => fn
-  }
-})
+function useMissingNodes() {
+  const scope = effectScope()
+  onTestFinished(() => scope.stop())
+  return scope.run(useSharedMissingNodes)!
+}
 
-// Mock the dependencies
 vi.mock(
   '@/workbench/extensions/manager/composables/nodePack/useWorkflowPacks',
   () => ({

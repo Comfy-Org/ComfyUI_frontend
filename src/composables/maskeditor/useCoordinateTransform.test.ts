@@ -36,7 +36,7 @@ const createElementWithRect = (rect: Partial<DOMRect>): HTMLElement => {
     y: 0,
     toJSON: () => ({}),
     ...rect
-  } as DOMRect)
+  })
   return el
 }
 
@@ -59,7 +59,7 @@ const createCanvasWithRect = (
     y: 0,
     toJSON: () => ({}),
     ...rect
-  } as DOMRect)
+  })
   return canvas
 }
 
