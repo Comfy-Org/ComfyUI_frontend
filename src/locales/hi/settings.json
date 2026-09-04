@@ -19,7 +19,7 @@
   },
   "Comfy-Desktop_WindowStyle": {
     "name": "विंडो शैली",
-    "tooltip": "कस्टम: सिस्टम टाइटल बार को कॉम्फीयूआई के शीर्ष मेन्यू से बदलें",
+    "tooltip": "कस्टम: सिस्टम टाइटल बार को ComfyUI के शीर्ष menu से बदलें",
     "options": {
       "default": "डिफ़ॉल्ट",
       "custom": "कस्टम"
@@ -27,11 +27,11 @@
   },
   "Comfy_Appearance_DisableAnimations": {
     "name": "एनिमेशन बंद करें",
-    "tooltip": "अधिकांश सीएसएस एनिमेशन और ट्रांज़िशन बंद करता है। जब डिस्प्ले जीपीयू भी जनरेशन के लिए उपयोग हो रहा हो, तो इन्फरेंस तेज़ हो सकता है।"
+    "tooltip": "अधिकांश सीएसएस एनिमेशन और ट्रांज़िशन बंद करता है। जब display GPU भी generation के लिए उपयोग हो रहा हो, तो inference तेज़ हो सकता है।"
   },
   "Comfy_Canvas_BackgroundImage": {
-    "name": "कैनवास बैकग्राउंड छवि",
-    "tooltip": "कैनवास पृष्ठभूमि के लिए छवि यूआरएल। आप आउटपुट पैनल में किसी छवि पर राइट-क्लिक करके \"पृष्ठभूमि के रूप में सेट करें\" चुन सकते हैं, या अपलोड बटन से अपनी छवि अपलोड कर सकते हैं।"
+    "name": "canvas बैकग्राउंड छवि",
+    "tooltip": "canvas पृष्ठभूमि के लिए छवि यूआरएल। आप आउटपुट पैनल में किसी छवि पर राइट-क्लिक करके \"पृष्ठभूमि के रूप में सेट करें\" चुन सकते हैं, या अपलोड बटन से अपनी छवि अपलोड कर सकते हैं।"
   },
   "Comfy_Canvas_LeftMouseClickBehavior": {
     "name": "बाएँ माउस क्लिक का व्यवहार",
@@ -57,23 +57,23 @@
   },
   "Comfy_Canvas_SelectionToolbox": {
     "name": "चयन टूलबॉक्स दिखाएँ",
-    "tooltip": "नोड चुने जाने पर एक फ्लोटिंग टूलबार दिखाएँ, जिससे सामान्य कार्रवाइयों तक जल्दी पहुँचा जा सके।"
+    "tooltip": "node चुने जाने पर एक floating toolbar दिखाएँ, जिससे सामान्य कार्रवाइयों तक जल्दी पहुँचा जा सके।"
   },
   "Comfy_ConfirmClear": {
-    "name": "वर्कफ़्लो साफ़ करते समय पुष्टि माँगें"
+    "name": "workflow साफ़ करते समय पुष्टि माँगें"
   },
   "Comfy_DevMode": {
-    "name": "डेव मोड विकल्प सक्षम करें (एपीआई सहेजना, आदि)"
+    "name": "डेव mode विकल्प सक्षम करें (API सहेजना, आदि)"
   },
   "Comfy_DisableFloatRounding": {
-    "name": "डिफ़ॉल्ट फ्लोट विजेट राउंडिंग बंद करें।",
-    "tooltip": "(पृष्ठ पुनः लोड आवश्यक) जब राउंड नोड द्वारा बैकएंड में सेट हो, तो राउंड बंद नहीं किया जा सकता।"
+    "name": "डिफ़ॉल्ट float widget rounding बंद करें।",
+    "tooltip": "(पृष्ठ पुनः लोड आवश्यक) जब राउंड node द्वारा backend में set हो, तो राउंड बंद नहीं किया जा सकता।"
   },
   "Comfy_DisableSliders": {
-    "name": "नोड विजेट स्लाइडर्स बंद करें"
+    "name": "node widget sliders बंद करें"
   },
   "Comfy_DOMClippingEnabled": {
-    "name": "डीओएम एलिमेंट क्लिपिंग सक्षम करें (सक्षम करने से प्रदर्शन घट सकता है)"
+    "name": "DOM element clipping सक्षम करें (सक्षम करने से प्रदर्शन घट सकता है)"
   },
   "Comfy_EditAttention_Delta": {
     "name": "कंट्रोल+ऊपर/नीचे सटीकता"
@@ -82,7 +82,7 @@
     "name": "सहायता-संकेत सक्षम करें"
   },
   "Comfy_EnableWorkflowViewRestore": {
-    "name": "वर्कफ़्लो में कैनवास स्थिति और ज़ूम स्तर सहेजें और पुनर्स्थापित करें"
+    "name": "workflow में canvas स्थिति और zoom स्तर सहेजें और पुनर्स्थापित करें"
   },
   "Comfy_Execution_PreviewMethod": {
     "name": "लाइव प्रीव्यू विधि",
@@ -96,25 +96,25 @@
     }
   },
   "Comfy_FloatRoundingPrecision": {
-    "name": "फ्लोट विजेट राउंडिंग के दशमलव स्थान [0 = ऑटो]।",
+    "name": "float widget राउंडिंग के दशमलव स्थान [0 = ऑटो]।",
     "tooltip": "(पेज रीलोड आवश्यक)"
   },
   "Comfy_Graph_AutoPanSpeed": {
     "name": "ऑटो-पैन गति",
-    "tooltip": "कैनवास किनारे तक ड्रैग करते समय ऑटो-पैनिंग की अधिकतम गति। ऑटो-पैनिंग बंद करने के लिए 0 सेट करें।"
+    "tooltip": "canvas किनारे तक drag करते समय auto-panning की अधिकतम गति। auto-panning बंद करने के लिए 0 सेट करें।"
   },
   "Comfy_Graph_CanvasInfo": {
-    "name": "नीचे-बाएँ कोने में कैनवास जानकारी दिखाएँ (फ्रेम/सेकंड, आदि)"
+    "name": "नीचे-बाएँ कोने में canvas जानकारी दिखाएँ (frame/second, आदि)"
   },
   "Comfy_Graph_CanvasMenu": {
-    "name": "ग्राफ़ कैनवास मेन्यू दिखाएँ"
+    "name": "ग्राफ़ canvas menu दिखाएँ"
   },
   "Comfy_Graph_CtrlShiftZoom": {
     "name": "तेज़-ज़ूम शॉर्टकट सक्षम करें (कंट्रोल + शिफ्ट + ड्रैग)"
   },
   "Comfy_Graph_DeduplicateSubgraphNodeIds": {
-    "name": "सबग्राफ़ नोड आईडी डीप्रतिलिपि करें",
-    "tooltip": "वर्कफ़्लो लोड करते समय सबग्राफ़ में दोहराई गई नोड आईडी अपने-आप फिर से असाइन करें।"
+    "name": "subgraph node ID डीप्रतिलिपि करें",
+    "tooltip": "workflow लोड करते समय subgraph में दोहराई गई node ID अपने-आप फिर से असाइन करें।"
   },
   "Comfy_Graph_LinkMarkers": {
     "name": "लिंक मध्य-बिंदु मार्कर",
@@ -126,16 +126,16 @@
   },
   "Comfy_Graph_LiveSelection": {
     "name": "लाइव चयन",
-    "tooltip": "सक्षम होने पर, चयन आयत खींचते समय नोड तुरंत चुने या अचयनित किए जाते हैं, जैसा दूसरे डिज़ाइन टूल में होता है।"
+    "tooltip": "सक्षम होने पर, चयन आयत खींचते समय node तुरंत चुने या अचयनित किए जाते हैं, जैसा दूसरे डिज़ाइन टूल में होता है।"
   },
   "Comfy_Graph_ZoomSpeed": {
-    "name": "कैनवास ज़ूम गति"
+    "name": "canvas zoom गति"
   },
   "Comfy_Group_DoubleClickTitleToEdit": {
     "name": "ग्रुप शीर्षक संपादित करने के लिए डबल क्लिक करें"
   },
   "Comfy_GroupSelectedNodes_Padding": {
-    "name": "चयनित नोड्स को ग्रुप करने की पैडिंग"
+    "name": "चयनित nodes को group करने की padding"
   },
   "Comfy_LinkRelease_Action": {
     "name": "लिंक छोड़ने पर कार्रवाई (कोई मॉडिफ़ायर नहीं)",
@@ -155,7 +155,7 @@
   },
   "Comfy_LinkRenderMode": {
     "name": "लिंक रेंडर मोड",
-    "tooltip": "कैनवास पर नोड के बीच कनेक्शन लिंक की दिखावट और दृश्यता नियंत्रित करता है।",
+    "tooltip": "canvas पर node के बीच connection link की दिखावट और दृश्यता नियंत्रित करता है।",
     "options": {
       "Straight": "सीधा",
       "Linear": "लीनियर",
@@ -165,15 +165,15 @@
   },
   "Comfy_Load3D_3DViewerEnable": {
     "name": "3डी व्यूअर (बीटा) सक्षम करें",
-    "tooltip": "चयनित नोड्स के लिए 3डी व्यूअर (बीटा) सक्षम करता है। यह सुविधा आपको पूर्ण आकार 3डी व्यूअर में सीधे 3डी मॉडल देखने और उनसे इंटरैक्ट करने देती है।"
+    "tooltip": "चयनित nodes के लिए 3D viewer (beta) सक्षम करता है। यह सुविधा आपको पूर्ण आकार 3D viewer में सीधे 3D model देखने और उनसे इंटरैक्ट करने देती है।"
   },
   "Comfy_Load3D_BackgroundColor": {
     "name": "प्रारंभिक बैकग्राउंड रंग",
-    "tooltip": "3डी सीन का डिफ़ॉल्ट बैकग्राउंड रंग नियंत्रित करता है। यह सेटिंग नया 3डी विजेट बनने पर बैकग्राउंड की दिखावट तय करती है, लेकिन बाद में हर विजेट के लिए अलग से बदली जा सकती है।"
+    "tooltip": "3D scene का डिफ़ॉल्ट background color नियंत्रित करता है। यह सेटिंग नया 3D widget बनने पर background की दिखावट तय करती है, लेकिन बाद में हर widget के लिए अलग से बदली जा सकती है।"
   },
   "Comfy_Load3D_CameraType": {
     "name": "प्रारंभिक कैमरा प्रकार",
-    "tooltip": "नया 3डी विजेट बनने पर कैमरा डिफ़ॉल्ट रूप से पर्सपेक्टिव होगा या ऑर्थोग्राफिक, यह नियंत्रित करता है। यह डिफ़ॉल्ट बाद में हर विजेट के लिए अलग से बदला जा सकता है।",
+    "tooltip": "नया 3D widget बनने पर कैमरा डिफ़ॉल्ट रूप से पर्सपेक्टिव होगा या ऑर्थोग्राफिक, यह नियंत्रित करता है। यह डिफ़ॉल्ट बाद में हर widget के लिए अलग से बदला जा सकता है।",
     "options": {
       "perspective": "परिप्रेक्ष्य",
       "orthographic": "ऑर्थोग्राफिक"
@@ -185,15 +185,15 @@
   },
   "Comfy_Load3D_LightIntensity": {
     "name": "प्रारंभिक लाइट तीव्रता",
-    "tooltip": "त्रि-आयामी सीन में लाइटिंग का डिफ़ॉल्ट ब्राइटनेस स्तर सेट करता है। यह मान तय करता है कि नया त्रि-आयामी विजेट बनने पर लाइट ऑब्जेक्ट को कितनी तीव्रता से प्रकाशित करेंगी, लेकिन बाद में हर विजेट के लिए अलग से बदला जा सकता है।"
+    "tooltip": "त्रि-आयामी scene में lighting का डिफ़ॉल्ट brightness स्तर सेट करता है। यह मान तय करता है कि नया त्रि-आयामी widget बनने पर light object को कितनी तीव्रता से प्रकाशित करेंगी, लेकिन बाद में हर widget के लिए अलग से बदला जा सकता है।"
   },
   "Comfy_Load3D_LightIntensityMaximum": {
     "name": "लाइट तीव्रता अधिकतम",
-    "tooltip": "त्रि-आयामी सीन के लिए अनुमत अधिकतम लाइट तीव्रता मान सेट करता है। यह किसी भी त्रि-आयामी विजेट में लाइटिंग समायोजित करते समय सेट की जा सकने वाली ऊपरी ब्राइटनेस सीमा तय करता है।"
+    "tooltip": "त्रि-आयामी scene के लिए अनुमत अधिकतम light intensity मान सेट करता है। यह किसी भी त्रि-आयामी widget में lighting समायोजित करते समय सेट की जा सकने वाली ऊपरी brightness सीमा तय करता है।"
   },
   "Comfy_Load3D_LightIntensityMinimum": {
     "name": "लाइट तीव्रता न्यूनतम",
-    "tooltip": "त्रि-आयामी सीन के लिए अनुमत न्यूनतम लाइट तीव्रता मान सेट करता है। यह किसी भी त्रि-आयामी विजेट में लाइटिंग समायोजित करते समय सेट की जा सकने वाली निचली ब्राइटनेस सीमा तय करता है।"
+    "tooltip": "त्रि-आयामी scene के लिए अनुमत न्यूनतम light intensity मान सेट करता है। यह किसी भी त्रि-आयामी widget में lighting समायोजित करते समय सेट की जा सकने वाली निचली brightness सीमा तय करता है।"
   },
   "Comfy_Load3D_PLYEngine": {
     "name": "पॉइंट क्लाउड इंजन",
@@ -205,7 +205,7 @@
   },
   "Comfy_Load3D_ShowGrid": {
     "name": "प्रारंभिक ग्रिड दृश्यता",
-    "tooltip": "नया त्रि-आयामी विजेट बनने पर ग्रिड डिफ़ॉल्ट रूप से दिखाई देगा या नहीं, यह नियंत्रित करता है। यह डिफ़ॉल्ट बाद में हर विजेट के लिए अलग से टॉगल किया जा सकता है।"
+    "tooltip": "नया त्रि-आयामी widget बनने पर grid डिफ़ॉल्ट रूप से दिखाई देगा या नहीं, यह नियंत्रित करता है। यह डिफ़ॉल्ट बाद में हर widget के लिए अलग से टॉगल किया जा सकता है।"
   },
   "Comfy_Locale": {
     "name": "भाषा"
@@ -231,76 +231,76 @@
     }
   },
   "Comfy_Node_AllowImageSizeDraw": {
-    "name": "Show width × height below image preview"
+    "name": "छवि प्रीव्यू के नीचे चौड़ाई × ऊँचाई दिखाएँ"
   },
   "Comfy_Node_AlwaysShowAdvancedWidgets": {
-    "name": "Show advanced widgets on all nodes",
-    "tooltip": "When enabled, advanced widgets are always visible on all nodes without needing to expand them individually."
+    "name": "सभी nodes पर एडवांस्ड widgets हमेशा दिखाएँ",
+    "tooltip": "सक्षम होने पर, उन्नत widgets सभी nodes पर हमेशा दिखाई देते हैं; उन्हें अलग-अलग विस्तारित करने की ज़रूरत नहीं होती।"
   },
   "Comfy_Node_AutoSnapLinkToSlot": {
-    "name": "Auto snap link to node slot",
-    "tooltip": "When dragging a link over a node, the link automatically snaps to a viable input slot on the node."
+    "name": "लिंक को node slot पर ऑटो स्नैप करें",
+    "tooltip": "किसी node पर लिंक खींचते समय, लिंक अपने-आप node के उपयुक्त input slot पर स्नैप हो जाता है।"
   },
   "Comfy_Node_BypassAllLinksOnDelete": {
-    "name": "Keep all links when deleting nodes",
-    "tooltip": "When deleting a node, attempt to reconnect all of its input and output links (bypassing the deleted node)."
+    "name": "node हटाते समय सभी links बनाए रखें",
+    "tooltip": "किसी node को हटाते समय, उसके सभी input और output links को फिर से कनेक्ट करने की कोशिश करें (हटाए गए node को बायपास करते हुए)।"
   },
   "Comfy_Node_DoubleClickTitleToEdit": {
-    "name": "Double click node title to edit"
+    "name": "node शीर्षक संपादित करने के लिए डबल क्लिक करें"
   },
   "Comfy_Node_MiddleClickRerouteNode": {
-    "name": "Middle-click creates a new Reroute node"
+    "name": "मध्य-क्लिक से एक नया Reroute node बनता है"
   },
   "Comfy_Node_Opacity": {
-    "name": "Node opacity"
+    "name": "node अपारदर्शिता"
   },
   "Comfy_Node_ShowDeprecated": {
-    "name": "Show deprecated nodes in search",
-    "tooltip": "Deprecated nodes are hidden by default in the UI, but remain functional in existing workflows that use them."
+    "name": "खोजें में पुराने nodes दिखाएँ",
+    "tooltip": "पुराने nodes UI में डिफ़ॉल्ट रूप से छिपे होते हैं, लेकिन जो workflows उनका उपयोग करते हैं उनमें वे काम करते रहते हैं।"
   },
   "Comfy_Node_ShowExperimental": {
-    "name": "Show experimental nodes in search",
-    "tooltip": "Experimental nodes are marked as such in the UI and may be subject to significant changes or removal in future versions. Use with caution in production workflows."
+    "name": "खोजें में प्रायोगिक nodes दिखाएँ",
+    "tooltip": "प्रायोगिक nodes UI में ऐसे चिह्नित होते हैं और भविष्य के संस्करण में बड़े बदलाव या हटाए जाने के अधीन हो सकते हैं। प्रोडक्शन workflows में सावधानी से उपयोग करें।"
   },
   "Comfy_Node_SnapHighlightsNode": {
-    "name": "Snap highlights node",
-    "tooltip": "When dragging a link over a node with a viable input slot, highlight the node."
+    "name": "स्नैप होने पर node हाइलाइट करें",
+    "tooltip": "उपयुक्त input slot वाले node पर लिंक खींचते समय node को हाइलाइट करें"
   },
   "Comfy_NodeBadge_NodeIdBadgeMode": {
-    "name": "Node ID badge mode",
+    "name": "node ID बैज मोड",
     "options": {
-      "None": "None",
-      "Show all": "Show all"
+      "None": "कोई नहीं",
+      "Show all": "सभी दिखाएँ"
     }
   },
   "Comfy_NodeBadge_NodeLifeCycleBadgeMode": {
-    "name": "Node life cycle badge mode",
+    "name": "node life cycle बैज मोड",
     "options": {
-      "None": "None",
-      "Show all": "Show all"
+      "None": "कोई नहीं",
+      "Show all": "सभी दिखाएँ"
     }
   },
   "Comfy_NodeBadge_NodeSourceBadgeMode": {
-    "name": "Node source badge mode",
+    "name": "node source बैज मोड",
     "options": {
-      "None": "None",
-      "Show all": "Show all",
-      "Hide built-in": "Hide built-in"
+      "None": "कोई नहीं",
+      "Show all": "सभी दिखाएँ",
+      "Hide built-in": "बिल्ट-इन छिपाएँ"
     }
   },
   "Comfy_NodeBadge_ShowApiPricing": {
-    "name": "Show API node pricing badge"
+    "name": "API node pricing बैज दिखाएँ"
   },
   "Comfy_NodeLibrary_NewDesign": {
-    "name": "नई नोड लाइब्रेरी डिज़ाइन",
-    "tooltip": "टैब (आवश्यक, सभी, कस्टम), बेहतर खोज और होवर प्रीव्यू वाली पुनःडिज़ाइन की गई नोड लाइब्रेरी साइडबार सक्षम करें।"
+    "name": "नई node library डिज़ाइन",
+    "tooltip": "टैब (आवश्यक, सभी, कस्टम), बेहतर search और hover preview वाली पुनःडिज़ाइन की गई node library sidebar सक्षम करें।"
   },
   "Comfy_NodeReplacement_Enabled": {
-    "name": "नोड रिप्लेसमेंट सुझाव सक्षम करें",
-    "tooltip": "सक्षम होने पर, ज्ञात विकल्प वाले गायब नोड, गायब नोड डायलॉग में बदले जा सकने योग्य दिखेंगे, ताकि आप विकल्पों की समीक्षा करके उन्हें लागू कर सकें।"
+    "name": "node replacement सुझाव सक्षम करें",
+    "tooltip": "सक्षम होने पर, ज्ञात विकल्प वाले गायब node, गायब node dialog में बदले जा सकने योग्य दिखेंगे, ताकि आप विकल्पों की समीक्षा करके उन्हें लागू कर सकें।"
   },
   "Comfy_NodeSearchBoxImpl": {
-    "name": "नोड खोज बॉक्स इम्प्लीमेंटेशन",
+    "name": "node search box इम्प्लीमेंटेशन",
     "options": {
       "default": "डिफ़ॉल्ट",
       "v1 (legacy)": "व1 (लेगेसी)",
@@ -308,27 +308,27 @@
     }
   },
   "Comfy_NodeSearchBoxImpl_FollowCursor": {
-    "name": "जोड़े गए नोड कर्सर का अनुसरण करें",
-    "tooltip": "सक्षम होने पर, खोज बॉक्स से जोड़े गए नोड रखे जाने के लिए क्लिक होने तक कर्सर का अनुसरण करते हैं। केवल डिफ़ॉल्ट इम्प्लीमेंटेशन पर लागू।"
+    "name": "जोड़े गए nodes कर्सर का अनुसरण करें",
+    "tooltip": "सक्षम होने पर, search box से जोड़े गए nodes रखे जाने के लिए क्लिक होने तक कर्सर का अनुसरण करते हैं। केवल डिफ़ॉल्ट इम्प्लीमेंटेशन पर लागू।"
   },
   "Comfy_NodeSearchBoxImpl_NodePreview": {
-    "name": "नोड प्रीव्यू",
+    "name": "node preview",
     "tooltip": "केवल डिफ़ॉल्ट इम्प्लीमेंटेशन पर लागू"
   },
   "Comfy_NodeSearchBoxImpl_ShowCategory": {
-    "name": "खोजें परिणाम में नोड कैटेगरी दिखाएँ",
+    "name": "खोजें परिणाम में node category दिखाएँ",
     "tooltip": "केवल व1 (लेगेसी) पर लागू"
   },
   "Comfy_NodeSearchBoxImpl_ShowIdName": {
-    "name": "खोजें परिणाम में नोड आईडी नाम दिखाएँ",
+    "name": "खोजें परिणाम में node ID नाम दिखाएँ",
     "tooltip": "लाइटग्राफ (लेगेसी) पर लागू नहीं"
   },
   "Comfy_NodeSearchBoxImpl_ShowNodeFrequency": {
-    "name": "खोज परिणामों में नोड आवृत्ति दिखाएँ",
+    "name": "खोज परिणामों में node frequency दिखाएँ",
     "tooltip": "केवल व1 (लेगेसी) पर लागू"
   },
   "Comfy_NodeSuggestions_number": {
-    "name": "नोड सुझाव की संख्या",
+    "name": "node सुझाव की संख्या",
     "tooltip": "केवल लाइटग्राफ सर्च बॉक्स/कॉन्टेक्स्ट मेन्यू के लिए"
   },
   "Comfy_Notification_ShowVersionUpdates": {
@@ -337,7 +337,7 @@
   },
   "Comfy_Pointer_ClickBufferTime": {
     "name": "पॉइंटर क्लिक ड्रिफ्ट देरी",
-    "tooltip": "पॉइंटर बटन दबाने के बाद, यह वह अधिकतम समय है (मिलीसेकंड में) जिसके दौरान पॉइंटर की हलचल को अनदेखा किया जा सकता है।\n\nक्लिक करते समय पॉइंटर हिलने पर ऑब्जेक्ट को अनजाने में खिसकने से रोकने में मदद करता है।\n\nदूरी सीमा (पॉइंटर क्लिक ड्रिफ्ट) पहले से क्लिक और ड्रैग को अलग करती है; यह समय सीमा केवल तब मायने रखती है जब पॉइंटर स्थिर रखा जाए और फिर छोड़ा जाए। यहाँ लंबी देरी हर पॉइंटरडाउन को ड्रैग शुरू होने से पहले प्रतीक्षा कराती है, जो अचयनित नोड पर क्लिक+ड्रैग करते समय धीमा लगता है। 60 फ्रेम/सेकंड पर लगभग 2 फ्रेम पर्याप्त हैं।"
+    "tooltip": "पॉइंटर बटन दबाने के बाद, यह वह अधिकतम समय है (मिलीसेकंड में) जिसके दौरान पॉइंटर की हलचल को अनदेखा किया जा सकता है।\n\nक्लिक करते समय पॉइंटर हिलने पर ऑब्जेक्ट को अनजाने में खिसकने से रोकने में मदद करता है।\n\nदूरी सीमा (पॉइंटर क्लिक ड्रिफ्ट) पहले से क्लिक और ड्रैग को अलग करती है; यह समय सीमा केवल तब मायने रखती है जब पॉइंटर स्थिर रखा जाए और फिर छोड़ा जाए। यहाँ लंबी देरी हर pointerdown को drag शुरू होने से पहले प्रतीक्षा कराती है, जो अचयनित node पर क्लिक+drag करते समय धीमा लगता है। 60 frame/second पर लगभग 2 frame पर्याप्त हैं।"
   },
   "Comfy_Pointer_ClickDrift": {
     "name": "पॉइंटर क्लिक ड्रिफ्ट (अधिकतम दूरी)",
@@ -349,22 +349,22 @@
   },
   "Comfy_PreviewFormat": {
     "name": "प्रीव्यू छवि फ़ॉर्मैट",
-    "tooltip": "छवि विजेट में प्रीव्यू दिखाते समय उसे हल्की छवि में कन्वर्ट करें, जैसे वेबपी, जेपीईजी, वेबपी;50, आदि।"
+    "tooltip": "छवि widget में प्रीव्यू दिखाते समय उसे हल्की छवि में कन्वर्ट करें, जैसे वेबपी, जेपीईजी, वेबपी;50, आदि।"
   },
   "Comfy_PromptFilename": {
-    "name": "वर्कफ़्लो सहेजते समय फाइलनाम पूछें"
+    "name": "workflow सहेजते समय फाइलनाम पूछें"
   },
   "Comfy_Queue_MaxHistoryItems": {
-    "name": "क्यू इतिहास आकार",
-    "tooltip": "क्यू इतिहास में दिखने वाले टास्क की अधिकतम संख्या।"
+    "name": "queue history आकार",
+    "tooltip": "queue history में दिखने वाले टास्क की अधिकतम संख्या।"
   },
   "Comfy_Queue_QPOV2": {
-    "name": "डोक किया गया जॉब इतिहास/क्यू पैनल",
-    "tooltip": "फ्लोटिंग जॉब क्यू पैनल को जॉब इतिहास साइड पैनल में एम्बेडेड समकक्ष जॉब क्यू से बदलता है। फ्लोटिंग पैनल लेआउट पर लौटने के लिए इसे अक्षम कर सकते हैं।"
+    "name": "डोक किया गया job history/queue panel",
+    "tooltip": "फ्लोटिंग job queue panel को job history साइड panel में एम्बेडेड समकक्ष job queue से बदलता है। फ्लोटिंग panel लेआउट पर लौटने के लिए इसे अक्षम कर सकते हैं।"
   },
   "Comfy_QueueButton_BatchCountLimit": {
     "name": "बैच गिनती सीमा",
-    "tooltip": "एक बटन क्लिक पर क्यू में जोड़े जाने वाले कार्यों की अधिकतम संख्या"
+    "tooltip": "एक बटन click पर queue में जोड़े जाने वाले कार्यों की अधिकतम संख्या"
   },
   "Comfy_RightSidePanel_ShowErrorsTab": {
     "name": "साइड पैनल में समस्याएँ टैब दिखाएँ",
@@ -396,13 +396,13 @@
   },
   "Comfy_SnapToGrid_GridSize": {
     "name": "ग्रिड आकार पर स्नैप करें",
-    "tooltip": "शिफ्ट दबाए रखते हुए नोड को ड्रैग या आकार बदलते समय वे ग्रिड से अलाइन होंगे; यह सेटिंग उस ग्रिड का आकार नियंत्रित करती है।"
+    "tooltip": "शिफ्ट दबाए रखते हुए node को drag या आकार बदलते समय वे grid से अलाइन होंगे; यह सेटिंग उस grid का आकार नियंत्रित करती है।"
   },
   "Comfy_TextareaWidget_FontSize": {
-    "name": "टेक्स्ट एरिया विजेट फॉन्ट आकार"
+    "name": "टेक्स्ट एरिया widget फॉन्ट आकार"
   },
   "Comfy_TextareaWidget_Spellcheck": {
-    "name": "टेक्स्ट एरिया विजेट स्पेलचेक"
+    "name": "टेक्स्ट एरिया widget स्पेलचेक"
   },
   "Comfy_TreeExplorer_ItemPadding": {
     "name": "ट्री एक्सप्लोरर आइटम पैडिंग"
@@ -424,15 +424,15 @@
     }
   },
   "Comfy_Validation_Workflows": {
-    "name": "वर्कफ़्लो वैलिडेट करें"
+    "name": "workflow वैलिडेट करें"
   },
   "Comfy_VueNodes_Enabled": {
-    "name": "आधुनिक नोड डिज़ाइन (नोड 2.0)",
-    "tooltip": "आधुनिक: बेहतर इंटरैक्टिविटी, नेटिव ब्राउज़र सुविधाओं और अपडेटेड विजुअल डिज़ाइन के साथ डीओएम-आधारित रेंडरिंग। क्लासिक: पारंपरिक कैनवास रेंडरिंग।"
+    "name": "आधुनिक node डिज़ाइन (node 2.0)",
+    "tooltip": "आधुनिक: बेहतर इंटरैक्टिविटी, नेटिव ब्राउज़र सुविधाओं और अपडेटेड विजुअल डिज़ाइन के साथ DOM-आधारित रेंडरिंग। क्लासिक: पारंपरिक canvas रेंडरिंग।"
   },
   "Comfy_WidgetControlMode": {
-    "name": "विजेट नियंत्रण मोड",
-    "tooltip": "विजेट मान कब अपडेट हों, यह नियंत्रित करता है (रैंडमाइज़/बढ़ाना/घटाना): प्रॉम्प्ट क्यू में लगने से पहले या बाद में।",
+    "name": "widget नियंत्रण मोड",
+    "tooltip": "widget मान कब अपडेट हों, यह नियंत्रित करता है (रैंडमाइज़/बढ़ाना/घटाना): prompt queue में लगने से पहले या बाद में।",
     "options": {
       "before": "पहले",
       "after": "बाद में"
@@ -453,25 +453,25 @@
     "tooltip": "केवल तब लागू होता है जब स्वतः सहेजना \"देरी के बाद\" पर सेट हो।"
   },
   "Comfy_Workflow_ConfirmDelete": {
-    "name": "वर्कफ़्लो हटाते समय पुष्टि दिखाएँ"
+    "name": "workflow हटाते समय पुष्टि दिखाएँ"
   },
   "Comfy_Workflow_NamedValuesRestore": {
-    "name": "विजेट मान नाम से पुनर्स्थापित करें"
+    "name": "widget मान नाम से पुनर्स्थापित करें"
   },
   "Comfy_Workflow_Persist": {
-    "name": "वर्कफ़्लो स्थिति सहेजें और पेज (री)लोड पर पुनर्स्थापित करें"
+    "name": "workflow स्थिति सहेजें और पेज (री)लोड पर पुनर्स्थापित करें"
   },
   "Comfy_Workflow_ShowMissingModelsWarning": {
     "name": "गायब मॉडल चेतावनी दिखाएँ"
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
-    "name": "वर्कफ़्लो सहेजते समय नोड आईडी क्रमबद्ध करें"
+    "name": "workflow सहेजते समय node ID क्रमबद्ध करें"
   },
   "Comfy_Workflow_WarnBlueprintOverwrite": {
     "name": "मौजूदा सबग्राफ ब्लूप्रिंट ओवरराइट करने से पहले पुष्टि माँगें"
   },
   "Comfy_Workflow_WorkflowTabsPosition": {
-    "name": "खुले वर्कफ़्लो की स्थिति",
+    "name": "खुले workflow की स्थिति",
     "options": {
       "Sidebar": "साइडबार",
       "Topbar": "टॉपबार"
@@ -479,22 +479,22 @@
   },
   "LiteGraph_Canvas_MaximumFps": {
     "name": "अधिकतम फ्रेम/सेकंड",
-    "tooltip": "कैनवास को रेंडर करने की अनुमत अधिकतम फ्रेम प्रति सेकंड संख्या। स्मूथनेस की कीमत पर जीपीयू उपयोग सीमित करता है। अगर 0 है, तो स्क्रीन रीफ्रेश रेट उपयोग होता है। डिफ़ॉल्ट: 0"
+    "tooltip": "canvas को render करने की अनुमत अधिकतम फ्रेम प्रति सेकंड संख्या। स्मूथनेस की कीमत पर GPU उपयोग सीमित करता है। अगर 0 है, तो स्क्रीन रीफ्रेश रेट उपयोग होता है। डिफ़ॉल्ट: 0"
   },
   "LiteGraph_Canvas_MinFontSizeForLOD": {
-    "name": "ज़ूम नोड विवरण स्तर - फॉन्ट आकार थ्रेशहोल्ड",
-    "tooltip": "नोड कब कम-गुणवत्ता एलओडी रेंडरिंग पर स्विच करें, यह नियंत्रित करता है। स्विच कब करना है यह तय करने के लिए पिक्सेल में फॉन्ट आकार उपयोग होता है। अक्षम करने के लिए 0 सेट करें। मान 1-24 एलओडी के लिए न्यूनतम फॉन्ट आकार थ्रेशहोल्ड सेट करते हैं - ज़्यादा मान (24 पिक्सेल) = ज़ूम आउट करते समय नोड को सरलीकृत रेंडरिंग पर जल्दी स्विच करें, कम मान (1 पिक्सेल) = पूर्ण नोड गुणवत्ता को ज़्यादा देर बनाए रखें।"
+    "name": "ज़ूम node विवरण स्तर - फॉन्ट आकार थ्रेशहोल्ड",
+    "tooltip": "node कब कम-गुणवत्ता LOD रेंडरिंग पर स्विच करें, यह नियंत्रित करता है। स्विच कब करना है यह तय करने के लिए पिक्सेल में फॉन्ट आकार उपयोग होता है। अक्षम करने के लिए 0 सेट करें। मान 1-24 LOD के लिए न्यूनतम फॉन्ट आकार थ्रेशहोल्ड सेट करते हैं - ज़्यादा मान (24 पिक्सेल) = ज़ूम आउट करते समय node को सरलीकृत रेंडरिंग पर जल्दी स्विच करें, कम मान (1 पिक्सेल) = पूर्ण node गुणवत्ता को ज़्यादा देर बनाए रखें।"
   },
   "LiteGraph_ContextMenu_Scaling": {
-    "name": "ज़ूम इन होने पर नोड कॉम्बो विजेट मेन्यू (लिस्ट) स्केल करें"
+    "name": "ज़ूम इन होने पर node combo widget menu (list) स्केल करें"
   },
   "LiteGraph_Group_SelectChildrenOnClick": {
     "name": "क्लिक पर ग्रुप के अंदरूनी आइटम चुनें",
-    "tooltip": "सक्षम होने पर, ग्रुप पर क्लिक करने से उसके अंदर के सभी नोड और आइटम चुने जाते हैं।"
+    "tooltip": "सक्षम होने पर, ग्रुप पर क्लिक करने से उसके अंदर के सभी nodes और आइटम चुने जाते हैं।"
   },
   "LiteGraph_Node_DefaultPadding": {
-    "name": "नए नोड्स को हमेशा छोटा करें",
-    "tooltip": "बनते समय नोड का आकार सबसे छोटे संभव आकार पर करें। अक्षम होने पर, नया जोड़ा गया नोड विजेट मान दिखाने के लिए थोड़ा चौड़ा होगा।"
+    "name": "नए nodes को हमेशा छोटा करें",
+    "tooltip": "बनते समय node का आकार सबसे छोटे संभव आकार पर करें। अक्षम होने पर, नया जोड़ा गया node widget मान दिखाने के लिए थोड़ा चौड़ा होगा।"
   },
   "LiteGraph_Node_TooltipDelay": {
     "name": "सहायता-संकेत विलंब"
@@ -505,6 +505,6 @@
   },
   "pysssss_SnapToGrid": {
     "name": "हमेशा ग्रिड पर स्नैप करें",
-    "tooltip": "सक्षम होने पर, नोड को ले जाने या उनका आकार बदलने पर वे अपने-आप ग्रिड से संरेखित होंगे।"
+    "tooltip": "सक्षम होने पर, node को ले जाने या उनका आकार बदलने पर वे अपने-आप grid से संरेखित होंगे।"
   }
 }
