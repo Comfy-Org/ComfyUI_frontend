@@ -292,6 +292,8 @@ operationally inert while its rollout flag is OFF. The flag may be new or
 pre-existing, but it must fail closed in code and be OFF for every Cloud
 production cohort when the PR merges.
 
+![High-risk Cloud PRs either remain inert behind an OFF flag, stay outside the runtime gate, or use an approved exception with validation and rollback.](./images/high-risk-cloud-pr-flag-contract.png)
+
 `clientFeatureFlags.json` advertises client capabilities. It is not a rollout
 control and does not satisfy this policy.
 
