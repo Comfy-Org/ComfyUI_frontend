@@ -25,6 +25,10 @@ runs:
       shell: bash
       run: pnpm locale:check
 
+    - name: Verify ADR naming and index
+      shell: bash
+      run: pnpm adr:check
+
     - name: Typecheck browser tests
       shell: bash
       run: pnpm typecheck:browser
