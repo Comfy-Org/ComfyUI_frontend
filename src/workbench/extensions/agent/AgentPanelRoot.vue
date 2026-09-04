@@ -328,12 +328,8 @@ function activeWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
   if (workflowDetached.value) return undefined
   const active = originWorkflow(origin)
   if (!active) return undefined
-  // captureCanvasState() folds the LIVE canvas into whichever workflow it is
-  // called on, so it is only correct while that workflow is still the active
-  // tab. If the user switched away mid-turn, the originating tab's own
-  // serialized activeState is the snapshot that belongs with this send.
   if (active.path === workflowStore.activeWorkflow?.path)
-    active.changeTracker?.captureCanvasState()
+    active.changeTracker?.prepareForSave()
   const content = active.activeState
   if (!content) return undefined
   return { content }
@@ -375,7 +371,7 @@ function openTabsSnapshot(origin?: TurnOrigin): OpenTabsSnapshot | undefined {
     const workflowId = cloudIdFor(tab)
     return workflowId === undefined
       ? []
-      : [{ workflow_id: workflowId, name: tab.filename }]
+      : [{ workflow_id: workflowId, name: cloudWorkflowName(tab) }]
   })
   if (openTabs.length === 0) return undefined
   // A turn with no origin tab still reports the open tabs (they are context,

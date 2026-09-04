@@ -32,6 +32,7 @@ import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAssetsStore } from '@/stores/assetsStore'
+import { getFilenameDetails } from '@/utils/formatUtil'
 
 const getServerFeature = vi.hoisted(() =>
   vi.fn((_name: string, defaultValue?: unknown) => defaultValue)
@@ -129,6 +130,9 @@ type FakeTab = {
   isTemporary: boolean
   isModified: boolean
   activeState: ComfyWorkflowJSON | null
+  changeTracker?: {
+    prepareForSave: ReturnType<typeof vi.fn>
+  }
   initialMode?: 'app' | 'graph'
   activeMode?: 'builder:inputs'
 }
@@ -357,10 +361,12 @@ async function renderAndSend(text: string): Promise<void> {
 
 function addTab(path: string, overrides: Partial<FakeTab> = {}): FakeTab {
   const slash = path.lastIndexOf('/')
+  const { filename, suffix } = getFilenameDetails(path.slice(slash + 1))
   const tab: FakeTab = {
     path,
     directory: path.slice(0, slash),
-    filename: path.slice(slash + 1).replace(/\.json$/, ''),
+    filename,
+    suffix: suffix ?? undefined,
     isTemporary: false,
     isModified: false,
     activeState: null,
@@ -1373,13 +1379,15 @@ describe('AgentPanelRoot canvas draft on send', () => {
       ],
       links: []
     })
+    const prepareForSave = vi.fn()
     const activeWorkflow = {
       path: 'workflows/video_minimax_h3_i2v.json',
       directory: 'workflows',
       filename: 'video_minimax_h3_i2v',
       isTemporary: false,
       isModified: false,
-      activeState
+      activeState,
+      changeTracker: { prepareForSave }
     }
     hostStores.workflow.tabs.set(activeWorkflow.path, activeWorkflow)
     hostStores.workflow.activeWorkflow = activeWorkflow
@@ -1394,6 +1402,7 @@ describe('AgentPanelRoot canvas draft on send', () => {
       content: "what's on my canvas",
       draft: { content: activeState }
     })
+    expect(prepareForSave).toHaveBeenCalledOnce()
   })
 
   it('omits draft when there is no active tab', async () => {
@@ -2762,8 +2771,6 @@ describe('AgentPanelRoot workflow binding', () => {
       links: []
     })
     const appTab = addTab('workflows/all-in-one-image-edit-models.app.json', {
-      filename: 'all-in-one-image-edit-models',
-      suffix: 'app.json',
       activeState
     })
     hostStores.workflow.activeWorkflow = appTab
@@ -2776,6 +2783,12 @@ describe('AgentPanelRoot workflow binding', () => {
 
     expect(bodies[0]).toMatchObject({
       workflow_id: 'wf-all-in-one',
+      open_tabs: [
+        {
+          workflow_id: 'wf-all-in-one',
+          name: 'all-in-one-image-edit-models.app'
+        }
+      ],
       current_tab: 'wf-all-in-one',
       draft: { content: activeState }
     })
