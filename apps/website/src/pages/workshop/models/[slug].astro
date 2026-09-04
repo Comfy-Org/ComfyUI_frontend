@@ -42,8 +42,6 @@ const { siteUrl, locale, url } = pageContext(
   Astro.currentLocale
 )
 
-const WORKSHOP_OG_IMAGE = 'https://media.comfy.org/website/comfy.webp'
-
 const softwareId = jsonLdId(url, 'software')
 const software = softwareApplicationNode({
   siteUrl,
@@ -52,15 +50,13 @@ const software = softwareApplicationNode({
   url,
   applicationCategory: 'MultimediaApplication',
   authorName: model.provider,
-  description: model.description,
-  image: WORKSHOP_OG_IMAGE
+  description: model.description
 })
 ---
 
 <BaseLayout
   title={`${model.displayName} · Workshop - Comfy`}
   description={model.description}
-  ogImage={WORKSHOP_OG_IMAGE}
   mainEntityId={softwareId}
   breadcrumbs={[
     { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
