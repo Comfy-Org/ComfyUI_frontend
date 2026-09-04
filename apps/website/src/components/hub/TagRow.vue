@@ -69,7 +69,7 @@ watch(allTags, () => nextTick(recompute), { immediate: true })
 const visibleTags = computed(() => allTags.value.slice(0, visibleCount.value))
 const hiddenTags = computed(() => allTags.value.slice(visibleCount.value))
 const pillClass =
-  'inline-flex h-6 w-fit shrink-0 items-center justify-center rounded-full bg-hub-surface px-4 py-1 text-xs font-normal whitespace-nowrap text-content transition-colors'
+  'inline-flex h-6 w-fit shrink-0 items-center justify-center rounded-full bg-hub-surface px-3 py-1 text-xs font-normal whitespace-nowrap text-content transition-colors'
 </script>
 
 <template>

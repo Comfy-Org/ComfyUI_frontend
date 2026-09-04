@@ -379,6 +379,14 @@ const earlierClass = (active: boolean) =>
         class="flex flex-wrap items-center justify-end gap-2 border-t border-transparency-white-t8 p-4"
       >
         <Button
+          variant="outline"
+          size="sm"
+          data-testid="output-use-in-code"
+          @click="emit('useInCode')"
+        >
+          {{ t('workshop.output.useInCode', locale) }}
+        </Button>
+        <Button
           v-if="currentUrl"
           as="a"
           :href="currentUrl"
@@ -388,17 +396,6 @@ const earlierClass = (active: boolean) =>
           data-testid="output-download"
         >
           {{ t('workshop.output.download', locale) }}
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          data-testid="output-use-in-code"
-          @click="emit('useInCode')"
-        >
-          {{ t('workshop.output.useInCode', locale) }}
-        </Button>
-        <Button variant="link" size="sm" @click="emit('retry')">
-          {{ t('workshop.output.runAgain', locale) }}
         </Button>
       </div>
     </template>

@@ -69,6 +69,15 @@ function stringValue(): string {
   return typeof value === 'string' ? value : ''
 }
 
+// Painting the filled part ourselves keeps the track identical across browsers,
+// which accent-color does not.
+function sliderFill(field: { min: number; max: number; defaultValue: number }) {
+  const span = field.max - field.min
+  const value = numberValue(field.defaultValue)
+  const ratio = span > 0 ? (value - field.min) / span : 0
+  return `${Math.min(Math.max(ratio, 0), 1) * 100}%`
+}
+
 function numberValue(fallback: number): number {
   const value = values.value[field.name]
   return typeof value === 'number' ? value : fallback
@@ -188,7 +197,10 @@ function acceptHint(accept: readonly string[]): string {
       :aria-invalid="invalid()"
       :aria-describedby="errorId()"
       :data-testid="`field-${field.name}`"
-      class="accent-primary-comfy-yellow [&::-moz-range-track]:bg-transparency-white-t4 [&::-webkit-slider-runnable-track]:bg-transparency-white-t4 h-2 w-full cursor-pointer disabled:opacity-50 [&::-moz-range-track]:h-2 [&::-moz-range-track]:rounded-full [&::-moz-range-track]:border [&::-moz-range-track]:border-transparency-white-t8 [&::-webkit-slider-runnable-track]:h-2 [&::-webkit-slider-runnable-track]:rounded-full [&::-webkit-slider-runnable-track]:border [&::-webkit-slider-runnable-track]:border-transparency-white-t8"
+      :style="{
+        '--slider-fill': `linear-gradient(to right, var(--color-primary-comfy-yellow) ${sliderFill({ min: field.min, max: field.max, defaultValue: field.defaultValue })}, transparent 0)`
+      }"
+      class="focus-visible:ring-primary-comfy-yellow/50 [&::-moz-range-thumb]:bg-primary-comfy-yellow [&::-moz-range-track]:bg-transparency-white-t4 [&::-moz-range-progress]:bg-primary-comfy-yellow [&::-webkit-slider-runnable-track]:bg-transparency-white-t4 [&::-webkit-slider-thumb]:bg-primary-comfy-yellow h-4 w-full cursor-pointer appearance-none rounded-full bg-transparent outline-none focus-visible:ring-3 disabled:opacity-50 [&::-moz-range-progress]:h-2 [&::-moz-range-progress]:rounded-full [&::-moz-range-thumb]:size-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-track]:h-2 [&::-moz-range-track]:rounded-full [&::-moz-range-track]:border [&::-moz-range-track]:border-transparency-white-t8 [&::-webkit-slider-runnable-track]:h-2 [&::-webkit-slider-runnable-track]:rounded-full [&::-webkit-slider-runnable-track]:border [&::-webkit-slider-runnable-track]:border-transparency-white-t8 [&::-webkit-slider-runnable-track]:[background-image:var(--slider-fill)] [&::-webkit-slider-thumb]:-mt-1 [&::-webkit-slider-thumb]:size-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full"
       @input="onNumber"
     />
 

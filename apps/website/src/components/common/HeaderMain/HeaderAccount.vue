@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { ArrowLeftRight, Check, Coins, LogOut, Settings } from '@lucide/vue'
+import {
+  ArrowLeftRight,
+  Check,
+  Coins,
+  LogOut,
+  Settings,
+  User
+} from '@lucide/vue'
 import {
   DropdownMenuContent,
   DropdownMenuItem,
@@ -62,9 +69,9 @@ const roleLabel = computed(() =>
 const buyingCredits = ref(false)
 
 const itemClass =
-  'flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-primary-comfy-canvas outline-none hover:bg-transparency-white-t4 focus-visible:bg-transparency-white-t4'
+  'flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-base text-primary-comfy-canvas outline-none hover:bg-transparency-white-t4 focus-visible:bg-transparency-white-t4'
 const avatarClass =
-  'grid size-10 shrink-0 place-items-center text-sm font-bold text-primary-warm-white'
+  'grid size-12 shrink-0 place-items-center text-base font-bold text-primary-warm-white'
 </script>
 
 <template>
@@ -80,35 +87,33 @@ const avatarClass =
   </Button>
 
   <DropdownMenuRoot v-else>
-    <div
-      class="bg-transparency-white-t4 flex h-10 items-center gap-1.5 rounded-full border border-transparency-white-t20 p-1"
+    <DropdownMenuTrigger
+      data-testid="header-account"
+      :aria-label="t('nav.accountMenu', locale)"
+      class="bg-transparency-white-t4 focus-visible:ring-primary-comfy-yellow/50 flex h-10 cursor-pointer items-center gap-1.5 rounded-full border border-transparency-white-t20 p-1 outline-none focus-visible:ring-3"
     >
-      <button
-        type="button"
+      <span
         data-testid="header-credits"
-        :title="t('nav.addCredits', locale)"
         :class="
           cn(
-            'flex h-8 cursor-pointer items-center gap-1.5 rounded-full px-3 text-sm font-bold whitespace-nowrap tabular-nums transition-colors',
+            'flex h-8 items-center gap-1.5 rounded-full px-3 text-sm font-bold whitespace-nowrap tabular-nums',
             hasCredits
-              ? 'bg-primary-comfy-yellow/10 text-primary-comfy-yellow hover:bg-primary-comfy-yellow/20'
-              : 'bg-primary-comfy-red/10 hover:bg-primary-comfy-red/20 text-primary-comfy-red'
+              ? 'bg-primary-comfy-yellow/10 text-primary-comfy-yellow'
+              : 'bg-primary-comfy-red/10 text-primary-comfy-red'
           )
         "
-        @click="buyingCredits = true"
       >
         <Coins class="size-4" aria-hidden="true" />
         {{ formattedCredits }}
-      </button>
+      </span>
 
-      <DropdownMenuTrigger
-        data-testid="header-account"
-        :aria-label="t('nav.accountMenu', locale)"
-        class="bg-primary-comfy-plum focus-visible:ring-primary-comfy-yellow/50 grid size-8 shrink-0 cursor-pointer place-items-center rounded-full text-xs font-bold text-primary-warm-white transition-opacity outline-none hover:opacity-90 focus-visible:ring-3"
+      <span
+        class="bg-primary-comfy-plum grid size-8 shrink-0 place-items-center rounded-full text-xs font-bold text-primary-warm-white"
+        aria-hidden="true"
       >
         {{ initials }}
-      </DropdownMenuTrigger>
-    </div>
+      </span>
+    </DropdownMenuTrigger>
 
     <DropdownMenuPortal>
       <DropdownMenuContent
@@ -116,69 +121,72 @@ const avatarClass =
         :side-offset="10"
         class="border-primary-comfy-ink-light bg-site-dropdown z-50 w-80 rounded-2xl border p-2 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
       >
-        <div class="flex items-center gap-3 p-2">
-          <span
-            :class="cn(avatarClass, 'rounded-xl bg-transparency-white-t8')"
-            aria-hidden="true"
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger
+            data-testid="account-workspace"
+            class="hover:bg-transparency-white-t4 data-[state=open]:bg-transparency-white-t4 focus-visible:bg-transparency-white-t4 flex w-full cursor-pointer items-center gap-3 rounded-xl p-2 text-left outline-none"
           >
-            {{ workspaceInitials }}
-          </span>
-          <span class="min-w-0 flex-1">
             <span
-              class="block truncate text-base font-bold text-primary-warm-white"
+              :class="cn(avatarClass, 'rounded-xl bg-transparency-white-t8')"
+              aria-hidden="true"
             >
-              {{ account.workspace }}
+              {{ workspaceInitials }}
             </span>
-            <span
-              class="block truncate text-[11px] font-bold tracking-wider text-primary-warm-gray uppercase"
-            >
-              {{ planLabel }} · {{ roleLabel }}
-            </span>
-          </span>
-
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger
-              :aria-label="t('nav.switchWorkspace', locale)"
-              data-testid="account-workspace"
-              class="grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg text-primary-warm-gray outline-none hover:bg-transparency-white-t8 focus-visible:bg-transparency-white-t8 data-[state=open]:bg-transparency-white-t8"
-            >
-              <ArrowLeftRight class="size-4" aria-hidden="true" />
-            </DropdownMenuSubTrigger>
-            <DropdownMenuPortal>
-              <DropdownMenuSubContent
-                :side-offset="12"
-                class="border-primary-comfy-ink-light bg-site-dropdown z-50 w-72 rounded-2xl border p-2 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
-                data-testid="account-workspaces"
+            <span class="min-w-0 flex-1">
+              <span
+                class="block truncate text-base font-bold text-primary-warm-white"
               >
-                <p
-                  class="px-3 pt-1 pb-2 text-[11px] font-bold tracking-wider text-primary-warm-gray uppercase"
+                {{ account.workspace }}
+              </span>
+              <span
+                class="block truncate text-[11px] font-bold tracking-wider text-primary-warm-gray uppercase"
+              >
+                {{ planLabel }} · {{ roleLabel }}
+              </span>
+            </span>
+            <span
+              class="grid size-8 shrink-0 place-items-center rounded-lg text-primary-warm-gray"
+              aria-hidden="true"
+            >
+              <ArrowLeftRight class="size-4" />
+            </span>
+          </DropdownMenuSubTrigger>
+          <DropdownMenuPortal>
+            <DropdownMenuSubContent
+              side="left"
+              align="start"
+              :side-offset="8"
+              class="border-primary-comfy-ink-light bg-site-dropdown z-50 w-72 rounded-2xl border p-2 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
+              data-testid="account-workspaces"
+            >
+              <p
+                class="px-3 pt-1 pb-2 text-[11px] font-bold tracking-wider text-primary-warm-gray uppercase"
+              >
+                {{ t('nav.workspaces', locale) }}
+              </p>
+              <DropdownMenuItem
+                v-for="workspace in WORKSPACES"
+                :key="workspace"
+                :class="itemClass"
+                :data-testid="`account-workspace-${workspace}`"
+                @click="switchWorkspace(workspace)"
+              >
+                <span
+                  class="grid size-9 shrink-0 place-items-center rounded-lg bg-transparency-white-t8 text-sm font-bold text-primary-warm-white"
+                  aria-hidden="true"
                 >
-                  {{ t('nav.workspaces', locale) }}
-                </p>
-                <DropdownMenuItem
-                  v-for="workspace in WORKSPACES"
-                  :key="workspace"
-                  :class="itemClass"
-                  :data-testid="`account-workspace-${workspace}`"
-                  @click="switchWorkspace(workspace)"
-                >
-                  <span
-                    class="grid size-9 shrink-0 place-items-center rounded-lg bg-transparency-white-t8 text-sm font-bold text-primary-warm-white"
-                    aria-hidden="true"
-                  >
-                    {{ initialsOf(workspace) }}
-                  </span>
-                  <span class="flex-1 truncate">{{ workspace }}</span>
-                  <Check
-                    v-if="workspace === account.workspace"
-                    class="text-primary-comfy-yellow size-4"
-                    aria-hidden="true"
-                  />
-                </DropdownMenuItem>
-              </DropdownMenuSubContent>
-            </DropdownMenuPortal>
-          </DropdownMenuSub>
-        </div>
+                  {{ initialsOf(workspace) }}
+                </span>
+                <span class="flex-1 truncate">{{ workspace }}</span>
+                <Check
+                  v-if="workspace === account.workspace"
+                  class="text-primary-comfy-yellow size-4"
+                  aria-hidden="true"
+                />
+              </DropdownMenuItem>
+            </DropdownMenuSubContent>
+          </DropdownMenuPortal>
+        </DropdownMenuSub>
 
         <DropdownMenuItem
           :class="itemClass"
@@ -223,23 +231,18 @@ const avatarClass =
 
         <div class="flex items-center gap-3 p-2">
           <span
-            :class="
-              cn(
-                avatarClass,
-                'bg-primary-comfy-yellow/80 rounded-full text-primary-comfy-ink'
-              )
-            "
+            :class="cn(avatarClass, 'rounded-full bg-transparency-white-t8')"
             aria-hidden="true"
           >
-            {{ initials }}
+            <User class="size-6 text-primary-warm-gray" />
           </span>
           <span class="min-w-0 flex-1">
             <span
-              class="block truncate text-sm font-bold text-primary-warm-white"
+              class="block truncate text-base font-bold text-primary-warm-white"
             >
               {{ account.name }}
             </span>
-            <span class="block truncate text-sm text-primary-warm-gray">
+            <span class="block truncate text-base text-primary-warm-gray">
               {{ account.email }}
             </span>
           </span>

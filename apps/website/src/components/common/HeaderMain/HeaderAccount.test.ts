@@ -43,10 +43,10 @@ describe('HeaderAccount', () => {
     mountAccount('new')
     await nextTick()
 
-    const chip = screen.getByTestId('header-credits')
-    expect(chip.textContent?.trim()).toBe('0')
+    expect(screen.getByTestId('header-credits').textContent?.trim()).toBe('0')
 
-    await user.click(chip)
+    await user.click(screen.getByTestId('header-account'))
+    await user.click(await screen.findByTestId('account-plan'))
     expect(await screen.findByTestId('buy-credits-dialog')).toBeTruthy()
   })
 

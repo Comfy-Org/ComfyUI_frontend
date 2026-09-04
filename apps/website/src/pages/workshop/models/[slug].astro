@@ -1,4 +1,5 @@
 ---
+import { ArrowRight } from '@lucide/vue'
 import type { GetStaticPaths } from 'astro'
 import BaseLayout from '../../../layouts/BaseLayout.astro'
 import ModelDetail from '../../../components/workshop/ModelDetail.vue'
@@ -180,9 +181,10 @@ const tags = model.capabilities.map((capability) => ({
         </h2>
         <a
           href={routes.workshop}
-          class="text-sm font-bold tracking-wider text-primary-comfy-yellow uppercase hover:underline"
+          class="inline-flex items-center gap-2 text-sm font-bold tracking-wider text-primary-comfy-yellow uppercase hover:underline"
         >
-          {t('workshop.model.browseAll')} →
+          {t('workshop.model.browseAll')}
+          <ArrowRight class="size-4" aria-hidden="true" />
         </a>
       </div>
       <ul class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
