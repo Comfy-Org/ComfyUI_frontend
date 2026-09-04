@@ -24,11 +24,6 @@ type AgentConversationCapability =
     }
   | {
       capability: string
-      status: 'recordable'
-      reason: string
-    }
-  | {
-      capability: string
       status: 'blocked'
       scope?: string
       reason: string
@@ -170,8 +165,8 @@ export const agentConversationCapabilityMatrix: readonly AgentConversationCapabi
     },
     {
       capability: 'agent_ask',
-      status: 'recordable',
-      reason: 'no recording yet'
+      status: 'blocked',
+      reason: 'stack-not-rebased-onto-main'
     },
     {
       capability: 'agent_ask_resolved',

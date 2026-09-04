@@ -75,6 +75,11 @@ describe('agentConversationCapabilityMatrix', () => {
         reason: 'panel-does-not-render-event'
       },
       {
+        capability: 'agent_ask',
+        status: 'blocked',
+        reason: 'stack-not-rebased-onto-main'
+      },
+      {
         capability: 'agent_ask_resolved',
         status: 'blocked',
         reason: 'stack-not-rebased-onto-main'
@@ -89,17 +94,6 @@ describe('agentConversationCapabilityMatrix', () => {
         status: 'blocked',
         scope: 'structural node and link operations',
         reason: 'no-wire-operation-exists'
-      }
-    ])
-    expect(
-      agentConversationCapabilityMatrix.filter(
-        (row) => row.status === 'recordable'
-      )
-    ).toEqual([
-      {
-        capability: 'agent_ask',
-        status: 'recordable',
-        reason: 'no recording yet'
       }
     ])
   })
