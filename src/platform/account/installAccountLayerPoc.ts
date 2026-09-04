@@ -4,6 +4,7 @@ import { getAuth } from 'firebase/auth'
 import type { Pinia } from 'pinia'
 import type { App } from 'vue'
 import { until } from '@vueuse/core'
+import { loadStripe } from '@stripe/stripe-js/pure'
 
 import {
   clearAccountLayerPocExchangeError,
@@ -20,9 +21,25 @@ export function installAccountLayerPoc(
   firebaseApp: FirebaseApp
 ) {
   const auth = getAuth(firebaseApp)
+  const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+  const stripePromise = publishableKey
+    ? loadStripe(publishableKey)
+    : Promise.resolve(null)
   const accountClients = createFrontendAccountClients(
     auth,
-    () => useTeamWorkspaceStore(pinia).activeWorkspaceId
+    () => useTeamWorkspaceStore(pinia).activeWorkspaceId,
+    async (clientSecret) => {
+      const stripe = await stripePromise
+      if (!stripe) return { error: { message: 'Stripe is unavailable' } }
+      const result = await stripe.handleNextAction({ clientSecret })
+      if (!result.error) return {}
+      return {
+        error: {
+          message: result.error.message ?? 'Authentication failed',
+          ...(result.error.code ? { code: result.error.code } : {})
+        }
+      }
+    }
   )
   app.provide(billingClientKey, accountClients.billing)
   Object.assign(window, { __accountLayerPoc: getAccountLayerPocDebug() })

@@ -55,6 +55,9 @@ export interface AccountLayerPocDebug extends Partial<AccountLayerPocSeam> {
   openUrlCalls: number
   lastCheckoutUrl: string | null
   lastOpenedUrl: string | null
+  lastNextAction: Promise<{
+    error?: { message: string; code?: string }
+  }> | null
   payment: BillingState
   operationStore: { activeId: string | null }
   exchangeError: string | null
@@ -90,6 +93,7 @@ const debug: AccountLayerPocDebug = {
   openUrlCalls: 0,
   lastCheckoutUrl: null,
   lastOpenedUrl: null,
+  lastNextAction: null,
   payment: { step: 'select', noChargeConfirmed: false },
   operationStore: { activeId: null },
   exchangeError: null,
@@ -261,7 +265,10 @@ function createFrontendAccountAdapter(
 
 export function createFrontendAccountClients(
   auth: Auth,
-  getActiveWorkspace: () => string | null
+  getActiveWorkspace: () => string | null,
+  handleNextAction?: (
+    clientSecret: string
+  ) => Promise<{ error?: { message: string; code?: string } }>
 ): {
   session: SessionClient
   billing: BillingClient
@@ -370,6 +377,12 @@ export function createFrontendAccountClients(
         debug.lastCheckoutUrl = url
         debug.lastOpenedUrl = url
         return { opened: window.open(url, '_blank') !== null }
+      },
+      handleNextAction(clientSecret) {
+        if (!handleNextAction) return Promise.resolve({})
+        const result = handleNextAction(clientSecret)
+        debug.lastNextAction = result
+        return result
       }
     }
   })
