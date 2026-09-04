@@ -65,7 +65,7 @@ test.describe(
         .toBe('false')
     })
 
-    test.fixme('supports keyboard activation and returns one complementary landmark', async ({
+    test('supports keyboard activation and returns one complementary landmark', async ({
       page
     }) => {
       await bootAgentApp(page, true)
