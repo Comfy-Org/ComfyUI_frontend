@@ -68,6 +68,12 @@ export interface OpSender {
   /** In-flight + queued batch count (observability; 0 = drained). */
   pending(): number
   /**
+   * Reset the sender state for `workflowId` after a lineage break. This clears
+   * its remembered `base_version` clocks and settles its queued and in-flight
+   * batches as undeliverable so old-lineage writes cannot reach the new doc.
+   */
+  resetClock(workflowId: string): void
+  /**
    * Eager abort seam (FE #16637 residual): settle the in-flight batch
    * undeliverable NOW if its mint-time workflow no longer matches
    * `deps.workflowId()`, instead of waiting out the 10 s result-silence
@@ -90,6 +96,7 @@ interface InFlight {
   ops: Op[]
   opIds: Set<string>
   resent: boolean
+  successfulTransmits: number
   timer: ReturnType<typeof setTimeout> | null
 }
 
@@ -105,6 +112,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   // resend cycle, while a mis-attributed settle poisons everything
   // downstream of this seam.
   let staleAnonymousBudget = 0
+  const lastMintedVersion = new Map<string, number>()
 
   function settle(outcome: BatchOutcome): void {
     if (inFlight?.timer) clearTimeout(inFlight.timer)
@@ -135,6 +143,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       }
       return
     }
+    batch.successfulTransmits += 1
     armResultTimeout(batch)
   }
 
@@ -169,6 +178,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       ops: queued.ops,
       opIds: new Set(queued.ops.map((op) => op.op_id)),
       resent: false,
+      successfulTransmits: 0,
       timer: null
     }
     transmit(inFlight, 0)
@@ -200,20 +210,53 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   return {
     enqueue(operations) {
       if (detached || operations.length === 0) return
-      const minted = mintWireOps(operations, {
-        actor: deps.actor(),
-        baseVersion: deps.baseVersion()
-      })
       const workflowId = deps.workflowId()
       if (workflowId === null) {
-        deps.onBatchSettled({ state: 'undeliverable', ops: minted })
+        deps.onBatchSettled({ state: 'undeliverable', ops: [] })
         return
       }
+      const actor = deps.actor()
+      const clockKey = `${workflowId}\u0000${actor}`
+      const observedVersion = deps.baseVersion()
+      const baseVersion = Math.max(
+        observedVersion,
+        lastMintedVersion.get(clockKey) ?? observedVersion
+      )
+      lastMintedVersion.set(clockKey, baseVersion)
+      const minted = mintWireOps(operations, {
+        actor,
+        baseVersion
+      })
       queue.push(...chunkWireOps(minted).map((ops) => ({ workflowId, ops })))
       pump()
     },
     pending() {
       return queue.length + (inFlight ? 1 : 0)
+    },
+    resetClock(workflowId) {
+      const prefix = `${workflowId}\u0000`
+      for (const clockKey of lastMintedVersion.keys()) {
+        if (clockKey.startsWith(prefix)) lastMintedVersion.delete(clockKey)
+      }
+
+      const canceled: Op[][] = []
+      if (inFlight?.workflowId === workflowId) {
+        if (inFlight.timer) clearTimeout(inFlight.timer)
+        staleAnonymousBudget += inFlight.successfulTransmits
+        canceled.push(inFlight.ops)
+        inFlight = null
+      }
+      const retained = queue.filter((batch) => {
+        if (batch.workflowId !== workflowId) return true
+        canceled.push(batch.ops)
+        return false
+      })
+      queue.length = 0
+      queue.push(...retained)
+      for (const ops of canceled) {
+        deps.onBatchSettled({ state: 'undeliverable', ops })
+      }
+      pump()
     },
     abortIfUnbound() {
       if (inFlight && deps.workflowId() !== inFlight.workflowId) {

@@ -462,6 +462,7 @@ export function useAgentCrdtFollower(
     }
     if (detail?.workflowId !== undefined) {
       adapter.clearForReset(detail.workflowId, context)
+      sender.resetClock(detail.workflowId)
       // A lineage break empties the stores but leaves every live adapter
       // standing, and those adapters are what a save serialises. Without a
       // reconcile here the pre-reset nodes survive -- and can be written back

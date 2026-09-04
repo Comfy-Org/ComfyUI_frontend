@@ -25,6 +25,7 @@ describe('createOpSender', () => {
   let resultListener: ((result: OpsResultView) => void) | null
   let transportUp: boolean
   let boundWorkflow: string | null
+  let baseVersion: number
   let sender: ReturnType<typeof createOpSender>
 
   function ackInFlight(): void {
@@ -43,6 +44,7 @@ describe('createOpSender', () => {
     resultListener = null
     transportUp = true
     boundWorkflow = WORKFLOW
+    baseVersion = 41
     sender = createOpSender({
       sendOps: (workflowId, tab, ops) => {
         if (!transportUp) return false
@@ -58,7 +60,7 @@ describe('createOpSender', () => {
       workflowId: () => boundWorkflow,
       tab: TAB,
       actor: () => ACTOR,
-      baseVersion: () => 41,
+      baseVersion: () => baseVersion,
       onBatchSettled: (outcome) => settled.push(outcome)
     })
   })
@@ -97,6 +99,70 @@ describe('createOpSender', () => {
     ackInFlight()
     expect(sender.pending()).toBe(0)
     expect(settled).toHaveLength(2)
+  })
+
+  it('never regresses an actor clock when a reconnect reports an older version', () => {
+    sender.enqueue([addNode(1)])
+    expect(sent[0].ops[0].base_version).toBe(41)
+    ackInFlight()
+
+    baseVersion = 3
+    sender.enqueue([addNode(2)])
+
+    expect(sent[1].ops[0].base_version).toBe(41)
+    expect(sent[1].ops[0].stamp).toEqual([41, ACTOR])
+  })
+
+  it('resetClock lets a new lineage mint at a lower base_version after a doc_reset', () => {
+    sender.enqueue([addNode(1)])
+    expect(sent[0].ops[0].base_version).toBe(41)
+    ackInFlight()
+
+    baseVersion = 3
+    sender.resetClock(WORKFLOW)
+    sender.enqueue([addNode(2)])
+
+    expect(sent[1].ops[0].base_version).toBe(3)
+    expect(sent[1].ops[0].stamp).toEqual([3, ACTOR])
+  })
+
+  it('resetClock settles old-lineage in-flight and queued batches before sending new work', () => {
+    sender.enqueue([addNode(1)])
+    sender.enqueue([addNode(2)])
+    expect(sender.pending()).toBe(2)
+    expect(vi.getTimerCount()).toBe(1)
+
+    baseVersion = 3
+    sender.resetClock(WORKFLOW)
+
+    expect(sender.pending()).toBe(0)
+    expect(vi.getTimerCount()).toBe(0)
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'undeliverable',
+      'undeliverable'
+    ])
+    vi.advanceTimersByTime(20_000)
+    expect(sent).toHaveLength(1)
+
+    sender.enqueue([addNode(3)])
+    expect(sent[1].ops[0].base_version).toBe(3)
+
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+    expect(settled).toHaveLength(2)
+    ackInFlight()
+    expect(settled.at(-1)?.state).toBe('acknowledged')
+  })
+
+  it('resetClock only clears the named workflow, leaving other workflows clamped', () => {
+    sender.enqueue([addNode(1)])
+    ackInFlight()
+
+    sender.resetClock('some-other-workflow')
+
+    baseVersion = 3
+    sender.enqueue([addNode(2)])
+
+    expect(sent[1].ops[0].base_version).toBe(41)
   })
 
   it('retries a down transport with the SAME minted ops and never re-mints', () => {
