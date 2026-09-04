@@ -11,7 +11,8 @@ const {
 
   mockIsCloud,
   mockGetCheckoutAttribution,
-  mockLocalStorage
+  mockLocalStorage,
+  mockReportError
 } = vi.hoisted(() => ({
   mockTelemetry: {
     trackBeginCheckout: vi.fn(),
@@ -34,6 +35,7 @@ const {
     gbraid: 'gbraid-456',
     wbraid: 'wbraid-789'
   })),
+  mockReportError: vi.fn(),
   mockLocalStorage: (() => {
     const store = new Map<string, string>()
 
@@ -67,6 +69,10 @@ Object.defineProperty(globalThis, 'localStorage', {
 
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: vi.fn(() => mockTelemetry)
+}))
+
+vi.mock<unknown>(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mockReportError
 }))
 
 vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
@@ -185,7 +191,6 @@ describe('performSubscriptionCheckout', () => {
   it('continues checkout when attribution collection fails', async () => {
     const checkoutUrl = 'https://checkout.stripe.com/test'
     const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     mockGetCheckoutAttribution.mockRejectedValueOnce(
       new Error('Attribution failed')
@@ -197,10 +202,18 @@ describe('performSubscriptionCheckout', () => {
 
     await performSubscriptionCheckout('pro', 'monthly')
 
-    expect(warnSpy).toHaveBeenCalledWith(
-      '[SubscriptionCheckout] Failed to collect checkout attribution',
-      expect.any(Error)
-    )
+    expect(mockReportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'cloud_checkout_attribution_fallback',
+      tags: {
+        failure_kind: 'degraded',
+        feature_area: 'cloud',
+        operation: 'navigate',
+        outcome: 'recovered',
+        assert_mode: 'soft'
+      },
+      context: { distribution: 'cloud' },
+      level: 'warning'
+    })
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining('/customers/cloud-subscription-checkout/pro'),
       expect.objectContaining({

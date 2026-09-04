@@ -14,6 +14,7 @@ import type {
   CheckoutAttributionMetadata,
   PaymentIntentSource
 } from '@/platform/telemetry/types'
+import { reportError } from '@/platform/telemetry/reportError'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
@@ -103,10 +104,18 @@ async function initiateSubscriptionCheckout(
   try {
     checkoutAttribution = await getCheckoutAttributionForCloud()
   } catch (error) {
-    console.warn(
-      '[SubscriptionCheckout] Failed to collect checkout attribution',
-      error
-    )
+    reportError(error, {
+      errorType: 'cloud_checkout_attribution_fallback',
+      tags: {
+        failure_kind: 'degraded',
+        feature_area: 'cloud',
+        operation: 'navigate',
+        outcome: 'recovered',
+        assert_mode: 'soft'
+      },
+      context: { distribution: __DISTRIBUTION__ },
+      level: 'warning'
+    })
   }
   const checkoutPayload = { ...checkoutAttribution }
 
