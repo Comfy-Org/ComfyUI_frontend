@@ -22,11 +22,9 @@ test.describe('Enterprise pages @smoke', () => {
       })
     ).toBeVisible()
     await expect(page.getByText('LEAD OFFER')).toHaveCount(0)
-    await expect(page.getByRole('link', { name: 'SUBSCRIBE NOW' })).toHaveCount(
-      1
-    )
+    await expect(page.getByRole('link', { name: 'SEE PRICING' })).toHaveCount(1)
     await expect(
-      page.getByRole('link', { name: 'SUBSCRIBE NOW' })
+      page.getByRole('link', { name: 'SEE PRICING' })
     ).toHaveAttribute('href', '/pricing')
     await expect(
       page.getByRole('heading', {

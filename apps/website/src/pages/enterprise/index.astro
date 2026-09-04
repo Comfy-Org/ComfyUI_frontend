@@ -258,8 +258,8 @@ const faqPage = buildFaqPageNode(url, faqs)
       {
         id: 'team-plans',
         label: 'TEAM PLANS',
-        text: 'Invite members, run workflows concurrently, share one credit pool with centralized billing, and manage role-based permissions in a self-serve Comfy Cloud plan.',
-        cta: { label: 'SUBSCRIBE NOW', href: '/pricing' },
+        text: 'Give the team a shared credit pool for Cloud GPU time and partner-model usage, plus centralized billing, Single Sign-On, and App Mode.',
+        cta: { label: 'REQUEST DEMO', href: '/contact/' },
       },
       {
         id: 'commercial-rights',
@@ -340,5 +340,16 @@ const faqPage = buildFaqPageNode(url, faqs)
     heading={'Bring the open standard for visual AI\nto your organization.'}
     subtitle="Bring one known-good environment or the production requirement your team needs to scale. We will map deployment, governance, capacity, commercial terms, and the right implementation path."
     primaryCta={{ label: 'REQUEST DEMO', href: '/contact/' }}
+  />
+  <CtaBands01
+    variant="highlight"
+    bands={[
+      {
+        id: 'team-plans',
+        label: 'Team plans',
+        text: 'Give teams a shared credit pool for Cloud GPU time and partner-model usage, plus centralized billing, single sign-on, and App mode.',
+        cta: { label: 'SEE PRICING', href: '/pricing' },
+      },
+    ]}
   />
 </BaseLayout>
