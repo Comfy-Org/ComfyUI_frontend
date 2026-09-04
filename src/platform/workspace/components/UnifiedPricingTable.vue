@@ -23,21 +23,9 @@
     <div
       class="flex min-h-0 flex-col gap-6 rounded-2xl bg-base-background p-8 xl:flex-1"
     >
-      <!-- Plan-scope description, above the billing toggle (DES-197). While a
-           previous payment attempt settles server-side (FE-1990 variant B) the
-           same slot carries the settling notice instead — same row, same type
-           size, so nothing shifts. CTAs stay enabled: a preview is a free
-           quote request, and the first click after the server settles simply
-           succeeds. -->
-      <p
-        v-if="isPaymentSettling"
-        class="m-0 flex items-center justify-center gap-1.5 text-center text-sm text-muted-foreground"
-      >
-        <i class="icon-[lucide--info] size-4 shrink-0" />
-        {{ t('subscription.settlingNotice') }}
-      </p>
+      <!-- Plan-scope description, above the billing toggle (DES-197). -->
       <I18nT
-        v-else-if="planMode === 'personal'"
+        v-if="planMode === 'personal'"
         keypath="subscription.personalHeader"
         tag="p"
         class="m-0 text-center text-sm text-muted-foreground"
@@ -367,53 +355,90 @@
       </div>
     </div>
 
-    <!-- Footnote: template caveat + contact / pricing links -->
-    <I18nT
-      keypath="subscription.pricingBlurb"
-      tag="p"
-      class="m-0 mt-auto pt-4 text-center text-sm text-text-secondary"
-    >
-      <template #seeDetails>
-        <a
-          :href="VIDEO_TEMPLATE_URL"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
-        >
-          {{ t('subscription.pricingBlurbSeeDetails') }}
-        </a>
-      </template>
-      <template #questions>
-        <a
-          :href="QUESTIONS_URL"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
-        >
-          {{ t('subscription.pricingBlurbQuestions') }}
-        </a>
-      </template>
-      <template #enterpriseDiscussions>
-        <a
-          :href="ENTERPRISE_URL"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
-        >
-          {{ t('subscription.pricingBlurbEnterprise') }}
-        </a>
-      </template>
-      <template #clickHere>
-        <a
-          :href="PRICING_URL"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
-        >
-          {{ t('subscription.pricingBlurbClickHere') }}
-        </a>
-      </template>
-    </I18nT>
+    <!-- Footer slot (DES-974 capability states): the fine-print blurb
+         normally; while subscribing is blocked the same row carries a notice
+         pill saying why. min-h reserves the blurb's two-line wrap height so
+         the swap never shifts the table above it. -->
+    <div class="mt-auto flex min-h-14 items-center justify-center pt-4">
+      <!-- Inverted pill (token pairing from the Button `inverted` variant so
+           it stays high-contrast in both themes). A status region: only its
+           underlined links are interactive. -->
+      <p
+        v-if="footerNotice"
+        role="status"
+        class="m-0 flex flex-wrap items-center justify-center gap-x-1.5 rounded-full bg-base-foreground px-4 py-1.5 text-center text-sm text-base-background"
+      >
+        <i
+          class="icon-[lucide--info] size-4 shrink-0 text-inherit"
+          aria-hidden="true"
+        />
+        <span>{{ footerNotice.message }}</span>
+        <template v-for="(link, index) in footerNotice.links" :key="link.label">
+          <span v-if="index > 0" aria-hidden="true">·</span>
+          <button
+            type="button"
+            :class="
+              cn(
+                'cursor-pointer border-none bg-transparent p-0 font-inter text-sm text-inherit underline hover:opacity-80',
+                link.emphasized && 'font-semibold'
+              )
+            "
+            @click="link.onClick"
+          >
+            {{ link.label }}
+          </button>
+        </template>
+      </p>
+
+      <!-- Footnote: template caveat + contact / pricing links -->
+      <I18nT
+        v-else
+        keypath="subscription.pricingBlurb"
+        tag="p"
+        class="m-0 text-center text-sm text-text-secondary"
+      >
+        <template #seeDetails>
+          <a
+            :href="VIDEO_TEMPLATE_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
+          >
+            {{ t('subscription.pricingBlurbSeeDetails') }}
+          </a>
+        </template>
+        <template #questions>
+          <a
+            :href="QUESTIONS_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
+          >
+            {{ t('subscription.pricingBlurbQuestions') }}
+          </a>
+        </template>
+        <template #enterpriseDiscussions>
+          <a
+            :href="ENTERPRISE_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
+          >
+            {{ t('subscription.pricingBlurbEnterprise') }}
+          </a>
+        </template>
+        <template #clickHere>
+          <a
+            :href="PRICING_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
+          >
+            {{ t('subscription.pricingBlurbClickHere') }}
+          </a>
+        </template>
+      </I18nT>
+    </div>
   </div>
 </template>
 
@@ -447,6 +472,7 @@ import {
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
+import { buildSupportUrl } from '@/platform/support/config'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -502,6 +528,85 @@ const canDowngradeToPersonal = computed(() =>
     ? capabilities.canDowngradeToPersonal.value
     : permissions.value.canDowngradeToPersonal
 )
+
+interface FooterNoticeLink {
+  label: string
+  /** Semibold link — reserved for the one action that saves the user a wait. */
+  emphasized?: boolean
+  onClick: () => void
+}
+
+interface FooterNotice {
+  message: string
+  links: FooterNoticeLink[]
+}
+
+/** Same destination as the `Comfy.ContactSupport` command. */
+function openContactSupport() {
+  window.open(buildSupportUrl(), '_blank', 'noopener,noreferrer')
+}
+
+function contactSupportLink(): FooterNoticeLink {
+  return {
+    label: t('subscription.noticeContactSupport'),
+    onClick: openContactSupport
+  }
+}
+
+/**
+ * The notice for a snapshot that resolved `can_subscribe_self_serve: false`.
+ * The server does not yet say WHY it denied; when the `denied_reason` enum
+ * ships, its cases slot in here. Until then every resolved false takes the
+ * default — the change-in-progress copy, the dominant cause for self-serve
+ * owners; other deny reasons get opener-guard dialogs separately (DES-974).
+ */
+function capabilityDeniedNotice(deniedReason?: string): FooterNotice {
+  switch (deniedReason) {
+    default:
+      return {
+        message: t('subscription.capabilityDeniedNotice'),
+        links: [contactSupportLink()]
+      }
+  }
+}
+
+/**
+ * Which blocked-state notice occupies the footer slot (DES-974), in priority
+ * order: an unreadable snapshot beats a denied capability beats the
+ * click-time settling refusal. Null renders the normal fine-print blurb.
+ * Button disabling is handled by the existing capability gating — the pill
+ * only says why.
+ */
+const footerNotice = computed<FooterNotice | null>(() => {
+  if (isCloud && capabilities.capabilityReadFailed.value) {
+    return {
+      message: t('subscription.capabilityUnreadableNotice'),
+      links: [
+        {
+          label: t('subscription.noticeTryAgain'),
+          // Retrying immediately skips the read's 30-60s backoff wait.
+          emphasized: true,
+          onClick: () => void capabilities.retryCapabilityRead()
+        },
+        contactSupportLink()
+      ]
+    }
+  }
+  if (
+    isCloud &&
+    capabilities.snapshotAuthoritative.value &&
+    !capabilities.canSubscribeSelfServe.value
+  ) {
+    return capabilityDeniedNotice()
+  }
+  if (isPaymentSettling) {
+    return {
+      message: t('subscription.settlingNotice'),
+      links: [contactSupportLink()]
+    }
+  }
+  return null
+})
 
 const planMode = ref<'personal' | 'team'>(initialPlanMode)
 

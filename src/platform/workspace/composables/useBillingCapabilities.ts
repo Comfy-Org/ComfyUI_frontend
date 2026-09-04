@@ -404,6 +404,17 @@ function useBillingCapabilitiesInternal() {
     await initialize()
   }
 
+  /**
+   * Refetches the snapshot now, skipping the backoff wait: cancels the
+   * scheduled retry and any in-flight read, then issues a fresh one. This is
+   * the user-initiated escape hatch from an unreadable endpoint — the timed
+   * retry can otherwise sit out the rest of a 30–60s (or longer) backoff.
+   */
+  async function retryCapabilityRead(): Promise<void> {
+    cancelActiveRead()
+    await fetchCapabilities()
+  }
+
   watch(
     [
       () => authStore.currentUser?.uid,
@@ -427,8 +438,13 @@ function useBillingCapabilitiesInternal() {
     canDowngradeToPersonal,
     isReady,
     snapshotAuthoritative,
+    /** The capability read for the current scope is in its failure state: the
+     *  snapshot could not be read, affordances are failing closed, and a
+     *  backed-off retry is pending. */
+    capabilityReadFailed: readUnavailableForCurrentScope,
     initialize,
-    refresh
+    refresh,
+    retryCapabilityRead
   }
 }
 

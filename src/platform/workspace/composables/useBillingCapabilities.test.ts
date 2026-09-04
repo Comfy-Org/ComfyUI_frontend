@@ -980,4 +980,52 @@ describe('useBillingCapabilities', () => {
     expect(mockGetBillingCapabilities).toHaveBeenCalledOnce()
     expect(billingCapabilities.canTopUp.value).toBe(false)
   })
+
+  it('reports the failed read, and clears it once a read succeeds', async () => {
+    mockGetBillingCapabilities
+      .mockRejectedValueOnce(new Error('unavailable'))
+      .mockResolvedValueOnce(capabilitiesResponse(true))
+
+    await billingCapabilities.initialize()
+    expect(billingCapabilities.capabilityReadFailed.value).toBe(true)
+
+    await billingCapabilities.retryCapabilityRead()
+
+    expect(billingCapabilities.capabilityReadFailed.value).toBe(false)
+    expect(billingCapabilities.canSubscribeSelfServe.value).toBe(true)
+  })
+
+  it('does not report a denial as a failed read', async () => {
+    const { WorkspaceApiError } =
+      await import('@/platform/workspace/api/workspaceApi')
+    mockGetBillingCapabilities.mockRejectedValueOnce(
+      new WorkspaceApiError('Forbidden', 403)
+    )
+
+    await billingCapabilities.initialize()
+
+    expect(billingCapabilities.capabilityReadFailed.value).toBe(false)
+    expect(billingCapabilities.snapshotAuthoritative.value).toBe(true)
+  })
+
+  it('retryCapabilityRead refetches now instead of sitting out the backoff', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0)
+    mockGetBillingCapabilities
+      .mockRejectedValueOnce(new Error('unavailable'))
+      .mockResolvedValueOnce(capabilitiesResponse(true))
+
+    await billingCapabilities.initialize()
+    expect(mockGetBillingCapabilities).toHaveBeenCalledOnce()
+
+    // No timer advance: the user-initiated retry must not wait for retryAt.
+    await billingCapabilities.retryCapabilityRead()
+
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingCapabilities.capabilityReadFailed.value).toBe(false)
+    expect(billingCapabilities.canSubscribeSelfServe.value).toBe(true)
+
+    // The cancelled backoff timer must not fire a third read later.
+    await vi.advanceTimersByTimeAsync(600_000)
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
+  })
 })
