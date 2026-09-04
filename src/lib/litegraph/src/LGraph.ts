@@ -2534,11 +2534,13 @@ export class LGraph
           newLink.targetSlotName === undefined
             ? newLink.tslot
             : tnode.findInputSlot(newLink.targetSlotName)
-        if (targetSlot === -1) continue
-        created = this.inputNode.slots[newLink.oslot].connect(
-          tnode.inputs[targetSlot],
-          tnode
-        )
+        created =
+          targetSlot === -1
+            ? null
+            : this.inputNode.slots[newLink.oslot].connect(
+                tnode.inputs[targetSlot],
+                tnode
+              )
       } else if (newLink.tid == SUBGRAPH_OUTPUT_ID) {
         if (!(this instanceof Subgraph)) {
           console.error('Ignoring link to subgraph outside subgraph')
