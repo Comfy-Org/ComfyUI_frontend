@@ -6,10 +6,12 @@ import { FROZEN_OPS } from '@comfyorg/comfy-multi-player'
 import { z } from 'zod'
 
 import type { zAgentConversationRequest } from '../browser_tests/fixtures/data/agent/agentConversation'
-import { OP_ENVELOPE_KEYS,
+import {
+  OP_ENVELOPE_KEYS,
   mintedIds,
   zAgentConversation,
-  zAgentConversationWorkflow } from '../browser_tests/fixtures/data/agent/agentConversation'
+  zAgentConversationWorkflow
+} from '../browser_tests/fixtures/data/agent/agentConversation'
 import { AGENT_WS_EVENT_TYPES } from '../src/workbench/extensions/agent/schemas/agentApiSchema'
 
 // The replay accepts exactly the agent events the panel itself parses.
