@@ -1410,6 +1410,27 @@ describe('useAgentSession (v1 composition root)', () => {
     )
   })
 
+  it.fails('does not route an unowned agent_active_tab to the visible thread', async () => {
+    const activeTab = vi.fn()
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest(),
+      events: source,
+      workflow: { current: () => undefined, adopted: vi.fn(), activeTab }
+    })
+    session.start()
+    await session.sendMessage('go')
+
+    emit(
+      wire({
+        type: 'agent_active_tab',
+        data: { workflow_id: 'wf-unowned' }
+      })
+    )
+
+    expect(activeTab).not.toHaveBeenCalled()
+  })
+
   it('(l19) a backgrounded thread still records tab links in its own transcript', async () => {
     const activeTab = vi.fn()
     const rest = fakeRest()

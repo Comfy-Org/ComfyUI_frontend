@@ -223,4 +223,32 @@ describe('doc frame client', () => {
       }
     })
   })
+
+  it.fails('rejects malformed operation result arrays', () => {
+    for (const data of [
+      {
+        v: 1,
+        workflow_id: 'wf-1',
+        ok: false,
+        applied: 'op-1',
+        skipped: []
+      },
+      {
+        v: 1,
+        workflow_id: 'wf-1',
+        ok: false,
+        applied: [],
+        skipped: null
+      },
+      {
+        v: 1,
+        workflow_id: 'wf-1',
+        ok: false,
+        applied: ['op-1', 42],
+        skipped: []
+      }
+    ]) {
+      expect(parseServerDocFrame({ type: 'doc_ops_result', data })).toBeNull()
+    }
+  })
 })
