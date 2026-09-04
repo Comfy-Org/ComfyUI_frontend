@@ -82,7 +82,7 @@ function makeExecutedDetail(
     node: nodeId,
     display_node: nodeId,
     output: { images }
-  } as ExecutedWsMessage
+  }
 }
 
 describe('linearOutputStore', () => {

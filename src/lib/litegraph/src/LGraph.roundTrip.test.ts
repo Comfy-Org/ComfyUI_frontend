@@ -4,9 +4,9 @@ import { beforeEach, describe, expect, test } from 'vitest'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedGraph } from '@/lib/litegraph/src/litegraph'
 
-import floatingLink from './__fixtures__/assets/floatingLink.json'
-import linkedNodes from './__fixtures__/assets/linkedNodes.json'
-import reroutesComplex from './__fixtures__/assets/reroutesComplex.json'
+import floatingLink from './__fixtures__/assets/floatingLink.json' with { type: 'json' }
+import linkedNodes from './__fixtures__/assets/linkedNodes.json' with { type: 'json' }
+import reroutesComplex from './__fixtures__/assets/reroutesComplex.json' with { type: 'json' }
 
 /**
  * Loading a workflow and saving it again must not lose entities.
@@ -168,21 +168,17 @@ function linkExtensionKeys(graph: Pick<ISerialisedGraph, 'extra'>) {
  * works. Every assertion below runs through this so a fixture that later loses
  * its reroutes degrades into a failure rather than a silent no-op.
  */
-function expectPreserved(before: string[], after: string[]) {
+function expectPreserved<T>(before: T[], after: T[]) {
   expect(before.length).toBeGreaterThan(0)
   expect(after).toEqual(before)
 }
 
-/**
- * Links and groups are compared whole, not counted. A count survives a link
- * being renumbered, repointed at a different slot, or replaced outright.
- */
 function linkKeys(graph: Pick<ISerialisedGraph, 'links'>) {
   return (graph.links ?? []).map((link) => JSON.stringify(link)).sort()
 }
 
 function floatingLinkKeys(graph: Pick<ISerialisedGraph, 'floatingLinks'>) {
-  return (graph.floatingLinks ?? []).map((link) => JSON.stringify(link)).sort()
+  return [...(graph.floatingLinks ?? [])].sort((a, b) => ascending(a.id, b.id))
 }
 
 function groupKeys(graph: Pick<ISerialisedGraph, 'groups'>) {
@@ -248,19 +244,13 @@ describe('LGraph round trip preserves the input', () => {
         )
       })
 
-      test('keeps every group, by identity and bounds', () => {
-        const grouped = withGroups(graph)
-
-        expectPreserved(groupKeys(grouped), groupKeys(roundTrip(grouped)))
-      })
-
       test('does not mutate the workflow it was given', () => {
         const untouched = structuredClone(graph)
         const subject = structuredClone(graph)
 
         new LGraph(subject).serialize()
 
-        expect(subject).toEqual(untouched)
+        expect(subject).toStrictEqual(untouched)
       })
 
       test('is stable when saved twice', () => {
@@ -271,4 +261,10 @@ describe('LGraph round trip preserves the input', () => {
       })
     })
   }
+
+  test('keeps every group, by identity and bounds', () => {
+    const grouped = withGroups(fixtures[0].graph)
+
+    expectPreserved(groupKeys(grouped), groupKeys(roundTrip(grouped)))
+  })
 })

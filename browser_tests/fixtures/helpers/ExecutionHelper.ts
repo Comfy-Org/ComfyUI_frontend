@@ -14,6 +14,7 @@ const PROMPT_ROUTE_PATTERN = /\/api\/prompt$/
 type RunOptions = {
   nodeErrors?: Record<string, NodeError>
   onPromptRequest?: (requestBody: unknown) => void | Promise<void>
+  beforePromptResponse?: (jobId: string) => void | Promise<void>
 }
 
 /**
@@ -77,7 +78,7 @@ export class ExecutionHelper {
    */
   async run(options: RunOptions = {}): Promise<string> {
     const jobId = `test-job-${++this.jobCounter}`
-    const { nodeErrors = {}, onPromptRequest } = options
+    const { nodeErrors = {}, onPromptRequest, beforePromptResponse } = options
 
     let fulfilled!: () => void
     const prompted = new Promise<void>((r) => {
@@ -88,6 +89,7 @@ export class ExecutionHelper {
       PROMPT_ROUTE_PATTERN,
       async (route) => {
         await onPromptRequest?.(route.request().postDataJSON())
+        await beforePromptResponse?.(jobId)
         await route.fulfill({
           status: 200,
           contentType: 'application/json',

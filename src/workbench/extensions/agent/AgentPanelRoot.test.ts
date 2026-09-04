@@ -3,8 +3,13 @@ import { fromPartial } from '@total-typescript/shoehorn'
 
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  createPinia,
+  disposePinia,
+  getActivePinia,
+  setActivePinia
+} from 'pinia'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 
 // jsdom does not implement ResizeObserver (happy-dom does); stub it before the
@@ -191,8 +196,8 @@ vi.mock('@/renderer/core/canvas/canvasStore', async () => {
   const store = reactive({
     selectedItems: [] as unknown[],
     updateSelectedItems,
-    currentGraph: null as unknown | null,
-    canvas: undefined as unknown
+    currentGraph: null,
+    canvas: undefined
   })
   hostStores.canvas = store
   return { useCanvasStore: () => store }
@@ -294,6 +299,7 @@ import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTab
 import AgentPanelRoot from './AgentPanelRoot.vue'
 
 beforeEach(() => {
+  vi.useRealTimers()
   Element.prototype.scrollIntoView = vi.fn()
   URL.createObjectURL = vi.fn(() => 'blob:mock-url')
   URL.revokeObjectURL = vi.fn()
@@ -316,8 +322,13 @@ beforeEach(() => {
   focusNodeInstance.mockReset()
 })
 
+afterEach(() => {
+  const pinia = getActivePinia()
+  if (pinia) disposePinia(pinia)
+})
+
 const zAgentWsEventForTest = (raw: unknown): AgentChatEvent =>
-  zAgentWsEvent.parse(raw) as AgentChatEvent
+  zAgentWsEvent.parse(raw)
 
 function json(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -2092,12 +2103,13 @@ describe('AgentPanelRoot workflow binding', () => {
       })
     )
 
+    vi.useFakeTimers({ shouldAdvanceTime: true })
     await renderAndSend('work here')
+    vi.useFakeTimers({ shouldAdvanceTime: false })
 
     const activity = useWorkflowTabActivityStore()
     expect(activity.creatingTab).toBe(false)
 
-    vi.useFakeTimers()
     ws.emit('agent_active_tab', {
       workflow_id: 'wf-new',
       name: 'Fresh',
@@ -2115,7 +2127,6 @@ describe('AgentPanelRoot workflow binding', () => {
     await vi.advanceTimersByTimeAsync(1)
     expect(activity.creatingTab).toBe(false)
     expect(hostStores.workflow.tabs.get('workflows/Fresh.json')).toBeDefined()
-    vi.useRealTimers()
   })
 
   it('lowers the creating flag when a newer focus event supersedes the fetch', async () => {
