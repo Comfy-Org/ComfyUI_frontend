@@ -383,7 +383,9 @@ const {
   listThreads,
   loadThread,
   boundWorkflowId,
-  bindWorkflow
+  bindWorkflow,
+  answerAsk,
+  answeringAskIds
 } = useAgentSession({
   rest,
   events,
@@ -419,7 +421,11 @@ const {
   boundWorkflowId,
   graphMutations,
   () => resolvedUserInfo.value?.id ?? null,
-  isBoundWorkflowActive
+  isBoundWorkflowActive,
+  // `app.isGraphReady` is a plain getter; reading `canvasStore.canvas` (set
+  // right after `app.setup()`) makes the follower's graph watch fire once the
+  // root graph exists.
+  () => (canvasStore.canvas && app.isGraphReady ? app.rootGraph : null)
 )
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,
@@ -499,6 +505,13 @@ let activeTabChain: Promise<void> = Promise.resolve()
 function enqueueActiveTab(data: AgentActiveTabData): void {
   const generation = ++activeTabGeneration
   activeTabChain = activeTabChain.then(() => onAgentActiveTab(data, generation))
+}
+
+function onOpenApprovalWorkflow(
+  workflowId: string,
+  workflowName?: string
+): void {
+  enqueueActiveTab({ workflow_id: workflowId, name: workflowName })
 }
 
 function agentTabFilename(name: string | undefined): string | undefined {
@@ -991,26 +1004,11 @@ function onPanelDrop(event: DragEvent): void {
       data-testid="agent-file-input"
       @change="onFilesPicked"
     />
-    <div
-      v-if="crdtStatus.enabled"
-      class="border-b border-border-default bg-base-background px-3 py-1 font-mono text-muted"
-      data-testid="agent-crdt-status"
-    >
-      {{
-        t('agent.crdtStatus', {
-          connection: crdtStatus.connected
-            ? t('agent.crdtConnected')
-            : t('agent.crdtDisconnected'),
-          workflowId: crdtStatus.workflowId ?? t('agent.crdtNoDocument'),
-          updates: crdtStatus.updatesApplied,
-          frame: crdtStatus.lastFrameType ?? '—'
-        })
-      }}
-    </div>
     <AgentPanel
       ref="panelRef"
       :entries
       :editable-turn-id="editableTurnId"
+      :answering-ask-ids="answeringAskIds"
       :user-name="userName"
       :streaming="isStreaming"
       :submitting="isSending || status === 'thinking'"
@@ -1037,6 +1035,8 @@ function onPanelDrop(event: DragEvent): void {
       @focus-tag="onFocusSelectionTag"
       @mention-pick="onMentionPick"
       @feedback="onFeedback"
+      @answer-ask="answerAsk"
+      @open-workflow="onOpenApprovalWorkflow"
       @new-chat="onNewChat"
       @toggle-size="agentPanelStore.toggleMaximize()"
       @close="onClosePanel"

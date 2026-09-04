@@ -1,5 +1,5 @@
 import { render } from '@testing-library/vue'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import TextTickerMultiLine from './TextTickerMultiLine.vue'
@@ -8,18 +8,13 @@ const hoisted = vi.hoisted(() => ({
   widths: [] as { value: number }[]
 }))
 
-vi.mock('@vueuse/core', async () => {
-  const actual = await vi.importActual('@vueuse/core')
-  const { ref } = await import('vue')
-  return {
-    ...actual,
-    useElementSize: () => {
-      const width = ref(0)
-      hoisted.widths.push(width)
-      return { width, height: ref(0) }
-    }
+vi.mock('@vueuse/core', () => ({
+  useElementSize: () => {
+    const width = ref(0)
+    hoisted.widths.push(width)
+    return { width, height: ref(0) }
   }
-})
+}))
 
 describe(TextTickerMultiLine, () => {
   let unmountFn: () => void
