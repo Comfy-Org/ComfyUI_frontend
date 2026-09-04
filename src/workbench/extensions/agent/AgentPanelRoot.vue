@@ -588,6 +588,7 @@ onBeforeUnmount(() => {
 })
 
 const history = useAgentChatHistoryStore()
+let historyGeneration = 0
 
 const { copy } = useClipboard({ legacy: true })
 
@@ -610,9 +611,13 @@ function toChatSession(thread: AgentThreadSummary): ChatSession {
 }
 
 async function refreshHistory(): Promise<void> {
+  const generation = historyGeneration
   try {
-    history.replaceAll((await listThreads()).map(toChatSession))
+    const threads = await listThreads()
+    if (generation !== historyGeneration) return
+    history.replaceAll(threads.map(toChatSession))
   } catch (error) {
+    if (generation !== historyGeneration) return
     surfaceAgentError(
       'agent_api_failed',
       error instanceof Error ? error.message : String(error)
@@ -621,6 +626,14 @@ async function refreshHistory(): Promise<void> {
 }
 
 watch(threadId, (id) => history.setActive(id), { immediate: true })
+watch(
+  () => resolvedUserInfo.value?.id ?? null,
+  () => {
+    historyGeneration++
+    history.replaceAll([])
+    void refreshHistory()
+  }
+)
 
 void refreshHistory()
 
