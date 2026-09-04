@@ -292,45 +292,29 @@ operationally inert while its rollout flag is OFF. The flag may be new or
 pre-existing, but it must fail closed in code and be OFF for every Cloud
 production cohort when the PR merges.
 
-![Risk disputes override the effective PR risk before high-risk Cloud changes enter the default-OFF flag or approved exception paths.](./images/high-risk-cloud-pr-flag-contract.png)
+This gate is Cloud-only; OSS and Desktop feature flags remain unchanged.
 
-`clientFeatureFlags.json` advertises client capabilities. It is not a rollout
-control and does not satisfy this policy.
-
-The merge gate determines runtime scope from the changed files and the classes
-in `.github/risk.json`. Files classified only as `risk-map`, `codeowners`, `ci`,
-`deps`, `build-config`, `website`, `docs`, `i18n-copy`, `storybook`, or `tests`
-are outside this feature-flag gate.
-
-For an in-scope change, the PR template requires only **Flag**. The author must
-provide the exact rollout key; reviewing agents derive all other evidence and
-must not infer or replace the flag.
-
-The reviewing agent derives the remaining evidence from the diff, repository,
-and configured source-of-truth tools such as the PostHog feature flag MCP:
-
-1. Whether the flag is new or existing.
-2. Whether the code path fails closed.
-3. Whether every Cloud production cohort is OFF.
-4. Whether the OFF path preserves existing behavior and has automated coverage.
-5. Whether the flag contains every runtime behavior in the diff.
-
-Missing or ambiguous evidence is inconclusive. Only `pass` satisfies the gate.
-
-If a flag cannot isolate the change safely, document validation and rollback in
-the PR discussion and ask any `comfy_frontend_devs` reviewer to apply the
-`flag-exempt` label. Urgency alone is not an exception.
-
-With the flag OFF, merging the PR must not change observable Cloud behavior or
-cause new side effects.
-
-### Example
+The author provides exactly one field:
 
 ```markdown
 ## Feature flag
 
 - **Flag**: unified_cloud_auth
 ```
+
+No other template evidence is required. The policy check derives everything
+else and verifies that the flag contains the full change, defaults OFF, is OFF
+in production, and preserves tested existing behavior while OFF. Missing
+evidence is inconclusive; only `pass` satisfies the gate.
+
+![Risk disputes override the effective PR risk before high-risk Cloud changes enter the default-OFF flag or approved exception paths.](./images/high-risk-cloud-pr-flag-contract.png)
+
+`clientFeatureFlags.json` advertises client capabilities. It is not a rollout
+control and does not satisfy this policy.
+
+If a flag cannot isolate the change safely, document validation and rollback in
+the PR discussion and ask any `comfy_frontend_devs` reviewer to apply the
+`flag-exempt` label. Urgency alone is not an exception.
 
 ### Backend
 
