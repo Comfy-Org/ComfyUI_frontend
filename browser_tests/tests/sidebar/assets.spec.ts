@@ -1,16 +1,23 @@
-import { expect } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
 
 import type { Asset } from '@comfyorg/ingest-types'
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { assetApiFixture } from '@e2e/fixtures/assetApiFixture'
+import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import {
   AssetsHelper,
   createMockJob,
   createMockJobs
 } from '@e2e/fixtures/helpers/AssetsHelper'
+import {
+  withOutputAssets,
+  withPagination
+} from '@e2e/fixtures/helpers/AssetHelper'
 import type {
   JobDetail,
   RawJobListItem
 } from '@/platform/remote/comfyui/jobs/jobTypes'
+
+const test = mergeTests(comfyPageFixture, assetApiFixture)
 
 // Legacy coverage backed by AssetsHelper's shadow backend. New assets-sidebar
 // browser coverage should use typed route mocks in assetsSidebarTab.spec.ts.
@@ -930,10 +937,6 @@ test.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
 // ==========================================================================
 
 test.describe('Assets sidebar - pagination', () => {
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.assets.clearMocks()
-  })
-
   test('initial load fetches first batch with offset 0', async ({
     comfyPage
   }) => {
@@ -956,6 +959,31 @@ test.describe('Assets sidebar - pagination', () => {
     const url = new URL(req.url())
     expect(url.searchParams.get('offset')).toBe('0')
     expect(Number(url.searchParams.get('limit'))).toBeGreaterThan(0)
+  })
+
+  test.describe('Assets enabled', () => {
+    test.use({
+      modelLibraryOptions: {
+        operators: [withOutputAssets(30), withPagination({ limit: 1 })]
+      },
+      initialLocalStorage: { 'unified-sidebar': '[43, 57]' }
+    })
+
+    test('Pages assets to fill view', async ({ assetApi: _, comfyPage }) => {
+      await comfyPage.featureFlags.setServerFlagsPersistent({ assets: true })
+      const listRequests: URL[] = []
+      comfyPage.page.on('request', (req) => {
+        if (req.method() !== 'GET') return
+        const url = new URL(req.url())
+        if (url.pathname.endsWith('/api/assets')) listRequests.push(url)
+      })
+
+      const tab = comfyPage.menu.assetsTab
+      await tab.open()
+
+      await expect.poll(() => tab.assetCards.count()).toBeGreaterThan(3)
+      expect(listRequests.length).toBeGreaterThan(3)
+    })
   })
 })
 
