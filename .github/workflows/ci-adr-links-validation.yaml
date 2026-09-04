@@ -1,0 +1,16 @@
+# Description: Fails if any tracked file references a docs/adr/*.md path that does not exist
+name: 'CI: ADR Link Validation'
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  adr-links:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check docs/adr references resolve
+        run: ./scripts/cicd/check-adr-links.sh
