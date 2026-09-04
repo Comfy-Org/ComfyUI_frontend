@@ -125,6 +125,11 @@ describe('widgetRegistry', () => {
       expect(shouldRenderAsVue(widget)).toBe(false)
     })
 
+    it('should return false for extension-hidden widget types', () => {
+      expect(shouldRenderAsVue({ type: 'hidden' })).toBe(false)
+      expect(shouldRenderAsVue({ type: 'converted-widget' })).toBe(false)
+    })
+
     it('should return true for widgets with mapped types', () => {
       expect(shouldRenderAsVue({ type: 'text' })).toBe(true)
       expect(shouldRenderAsVue({ type: 'int' })).toBe(true)

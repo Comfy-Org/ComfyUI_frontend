@@ -363,12 +363,20 @@ function processWidget(
   const renderState = ctx.widgetValueStore.getWidgetRenderState(id)
   const options: IWidgetOptions = { ...(widgetState.options ?? {}) }
   if (options.advanced === undefined) options.advanced = renderState?.advanced
-  if (!shouldRenderAsVue({ type, options })) return null
+  const slotInfo = ctx.slotMetadata.get(widgetState.name)
+  // Hidden/converted-widget types normally skip Vue rendering entirely, but a
+  // promoted/converted input still needs its row to reach WidgetGrid so the
+  // socket dot renders — WidgetGrid itself hides the control for these types.
+  // Canvas-only widgets must remain excluded regardless of slot ownership.
+  if (
+    options.canvasOnly ||
+    (!shouldRenderAsVue({ type, options }) && !slotInfo)
+  ) {
+    return null
+  }
 
   const { live, errorTarget, controlWidget, sourceExecutionId } =
     resolveLiveWidgetContext(ctx.rootGraph, ctx.hostNode, liveWidget)
-
-  const slotInfo = ctx.slotMetadata.get(widgetState.name)
   const visible = isWidgetVisible(
     options,
     ctx.showAdvanced,

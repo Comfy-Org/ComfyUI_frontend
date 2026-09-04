@@ -52,6 +52,17 @@ export interface WidgetEventOptions {
   canvas: LGraphCanvas
 }
 
+const storeBackedType: PropertyDescriptor = {
+  configurable: true,
+  enumerable: true,
+  get(this: BaseWidget) {
+    return this['_state'].type
+  },
+  set(this: BaseWidget, value: string) {
+    this['_state'].type = value
+  }
+}
+
 export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   implements IBaseWidget, NodeBindable
 {
@@ -211,7 +222,10 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       },
       deriveWidgetRenderState(this)
     )
-    if (registered) this._state = registered
+    if (registered) {
+      this._state = registered
+      Object.defineProperty(this, 'type', storeBackedType)
+    }
   }
 
   constructor(widget: TWidget & { node: LGraphNode })

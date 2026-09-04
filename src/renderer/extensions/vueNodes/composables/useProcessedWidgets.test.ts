@@ -229,6 +229,77 @@ describe('widget visibility', () => {
     expect(visibilityOf({})).toBe(true)
   })
 
+  it('removes widgets whose type is hidden at runtime', () => {
+    const nodeId = toNodeId(1)
+    const id = widgetId(GRAPH_ID, nodeId, 'runtime-hidden')
+    const state = registerWidgetState(id, { type: 'number' })
+    if (!state) throw new Error('Expected widget registration to succeed')
+
+    expect(processWidgets({ widgetIds: [id] })).toHaveLength(1)
+
+    state.type = 'converted-widget'
+
+    expect(processWidgets({ widgetIds: [id] })).toHaveLength(0)
+  })
+
+  it('keeps the row for a converted/hidden widget that still owns an input slot', () => {
+    const nodeId = toNodeId(1)
+    const id = widgetId(GRAPH_ID, nodeId, 'points_store')
+    const widget = createMockWidget({
+      name: 'points_store',
+      type: 'converted-widget',
+      options: { hidden: true },
+      widgetId: id
+    })
+    const { graph, node } = createGraphWithNode([widget], nodeId)
+    node.inputs = [
+      {
+        name: 'points_store',
+        type: 'STRING',
+        widget: { name: 'points_store' },
+        boundingRect: [0, 0, 0, 0]
+      }
+    ]
+    registerWidgetState(id, { type: 'converted-widget', options: {} })
+
+    const processed = processWidgets({
+      widgetIds: [id],
+      nodeId,
+      rootGraph: graph
+    })
+
+    expect(processed).toHaveLength(1)
+    expect(processed[0]?.slotMetadata).toBeDefined()
+  })
+
+  it('removes canvas-only widgets even when they own an input slot', () => {
+    const nodeId = toNodeId(1)
+    const id = widgetId(GRAPH_ID, nodeId, 'upload')
+    const widget = createMockWidget({
+      name: 'upload',
+      type: 'button',
+      options: { canvasOnly: true },
+      widgetId: id
+    })
+    const { graph, node } = createGraphWithNode([widget], nodeId)
+    node.inputs = [
+      {
+        name: 'upload',
+        type: 'STRING',
+        widget: { name: 'upload' },
+        boundingRect: [0, 0, 0, 0]
+      }
+    ]
+    registerWidgetState(id, {
+      type: 'button',
+      options: { canvasOnly: true }
+    })
+
+    expect(
+      processWidgets({ widgetIds: [id], nodeId, rootGraph: graph })
+    ).toHaveLength(0)
+  })
+
   it('hides hidden widgets', () => {
     expect(visibilityOf({ hidden: true })).toBe(false)
   })
