@@ -511,7 +511,17 @@ defineExpose({
               class="agent-scope bg-agent-surface-raised z-1100 box-border w-max min-w-[186px] rounded-[10px] border border-white/10 p-1 font-inter shadow-lg"
             >
               <DropdownMenuItem
+                v-if="canOpenAssets"
                 class="text-agent-fg data-highlighted:bg-agent-surface-hover mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none"
+                @select="emit('openAssets')"
+              >
+                <span class="icon-[comfy--image-ai-edit] size-4 shrink-0" />
+                <span class="whitespace-nowrap">
+                  {{ t('agent.addFromAssets') }}
+                </span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                class="text-agent-fg data-highlighted:bg-agent-surface-hover box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none"
                 @select="emit('selectNodes')"
               >
                 <span
@@ -519,16 +529,6 @@ defineExpose({
                 />
                 <span class="whitespace-nowrap">
                   {{ t('agent.addNodesFromGraph') }}
-                </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                v-if="canOpenAssets"
-                class="text-agent-fg data-highlighted:bg-agent-surface-hover box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none"
-                @select="emit('openAssets')"
-              >
-                <span class="icon-[comfy--image-ai-edit] size-4 shrink-0" />
-                <span class="whitespace-nowrap">
-                  {{ t('agent.addFromAssets') }}
                 </span>
               </DropdownMenuItem>
               <DropdownMenuSeparator
