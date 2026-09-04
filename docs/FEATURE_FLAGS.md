@@ -303,17 +303,24 @@ reviewer context, not a bypass. Files classified only as `risk-map`,
 `codeowners`, `ci`, `deps`, `build-config`, `website`, `docs`, `i18n-copy`,
 `storybook`, or `tests` are outside this feature-flag gate.
 
-For an in-scope change, complete the PR template with:
+For an in-scope change, the PR template exposes only **Flag**. Leave it blank
+when the flag is evident from the diff. The reviewing agent infers it when
+possible and asks the author for the key when it cannot identify exactly one.
 
-1. The flag key and whether it is new or existing.
-2. Code showing that the flag exists and defaults to OFF.
-3. Source-of-truth evidence that every Cloud production cohort is OFF.
-4. A description of what still runs while the flag is OFF.
-5. An automated test covering the OFF path.
+The reviewing agent derives the remaining evidence from the diff, repository,
+and configured source-of-truth tools such as the PostHog feature flag MCP:
 
-If a flag cannot isolate the change safely, select a fixed exception reason,
-provide validation and rollback evidence, and ask any `comfy_frontend_devs`
-reviewer to apply the `flag-exempt` label. Urgency alone is not an exception.
+1. Whether the flag is new or existing.
+2. Whether the code path fails closed.
+3. Whether every Cloud production cohort is OFF.
+4. Whether the OFF path preserves existing behavior and has automated coverage.
+5. Whether the flag contains every runtime behavior in the diff.
+
+Missing or ambiguous evidence is inconclusive. Only `pass` satisfies the gate.
+
+If a flag cannot isolate the change safely, document validation and rollback in
+the PR discussion and ask any `comfy_frontend_devs` reviewer to apply the
+`flag-exempt` label. Urgency alone is not an exception.
 
 With the flag OFF, merging the PR must not change observable Cloud behavior or
 cause new side effects.
@@ -323,15 +330,7 @@ cause new side effects.
 ```markdown
 ## Feature flag
 
-- **Cloud runtime change**: yes
 - **Flag**: unified_cloud_auth
-- **Flag source**: existing
-- **Default-OFF code evidence**: src/composables/useFeatureFlags.ts:221
-- **Production-OFF evidence**: https://example.internal/flags/unified_cloud_auth
-- **Flag-OFF behavior**: Existing authentication flow remains unchanged.
-- **Flag-OFF test**: src/composables/useFeatureFlags.test.ts:715
-- **Exception**: none
-- **Exception evidence**: N/A
 ```
 
 ### Backend
