@@ -1,0 +1,131 @@
+name: 'PR: Apply Dependabot Lockfile Repair'
+
+on:
+  workflow_run:
+    workflows: ['CI: Repair Dependabot Lockfile']
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: dependabot-lockfile-repair-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: true
+
+jobs:
+  apply:
+    if: >
+      github.repository == 'Comfy-Org/ComfyUI_frontend' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.actor.login == 'dependabot[bot]' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Download repair artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: dependabot-lockfile-repair
+          path: ${{ runner.temp }}/dependabot-lockfile-repair
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Validate repair source
+        id: source
+        uses: actions/github-script@v9
+        env:
+          ARTIFACT_DIR: ${{ runner.temp }}/dependabot-lockfile-repair
+        with:
+          script: |
+            const fs = require('node:fs')
+            const path = require('node:path')
+            const files = fs.readdirSync(process.env.ARTIFACT_DIR).sort()
+            const expectedFiles = ['metadata.json', 'pnpm-lock.yaml']
+
+            if (JSON.stringify(files) !== JSON.stringify(expectedFiles)) {
+              throw new Error('Repair artifact contains unexpected files')
+            }
+            for (const file of files) {
+              if (!fs.lstatSync(path.join(process.env.ARTIFACT_DIR, file)).isFile()) {
+                throw new Error(`Repair artifact entry is not a regular file: ${file}`)
+              }
+            }
+
+            const metadata = JSON.parse(
+              fs.readFileSync(path.join(process.env.ARTIFACT_DIR, 'metadata.json'), 'utf8'),
+            )
+            const run = context.payload.workflow_run
+            const prNumber = metadata.pull_request
+
+            if (!Number.isSafeInteger(prNumber) || prNumber < 1) {
+              throw new Error('Invalid pull request number')
+            }
+            if (metadata.repository !== `${context.repo.owner}/${context.repo.repo}`) {
+              throw new Error('Artifact repository does not match this repository')
+            }
+            if (metadata.head_sha !== run.head_sha) {
+              throw new Error('Artifact SHA does not match the triggering workflow')
+            }
+
+            const { data: pullRequest } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+            })
+
+            if (pullRequest.state !== 'open') {
+              throw new Error('Pull request is no longer open')
+            }
+            if (pullRequest.user.login !== 'dependabot[bot]') {
+              throw new Error('Pull request author is not Dependabot')
+            }
+            if (pullRequest.head.repo?.full_name !== metadata.repository) {
+              throw new Error('Pull request branch is not in this repository')
+            }
+            if (!pullRequest.head.ref.startsWith('dependabot/')) {
+              throw new Error('Pull request is not using a Dependabot branch')
+            }
+            if (pullRequest.head.ref !== metadata.head_ref) {
+              throw new Error('Artifact branch does not match the pull request')
+            }
+            if (pullRequest.head.sha !== metadata.head_sha) {
+              throw new Error('Pull request advanced after the repair was generated')
+            }
+
+            core.setOutput('head-ref', pullRequest.head.ref)
+            core.setOutput('head-sha', pullRequest.head.sha)
+
+      - name: Checkout validated pull request revision
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.source.outputs.head-sha }}
+
+      - name: Apply repaired lockfile
+        id: repair
+        env:
+          REPAIRED_LOCKFILE: ${{ runner.temp }}/dependabot-lockfile-repair/pnpm-lock.yaml
+        run: |
+          test ! -L pnpm-lock.yaml
+          cp "$REPAIRED_LOCKFILE" pnpm-lock.yaml
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          test "$(git diff --name-only)" = "pnpm-lock.yaml"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Commit and push repaired lockfile
+        if: steps.repair.outputs.changed == 'true'
+        env:
+          HEAD_REF: ${{ steps.source.outputs.head-ref }}
+          HEAD_SHA: ${{ steps.source.outputs.head-sha }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add pnpm-lock.yaml
+          git commit -m 'fix: repair Dependabot lockfile'
+          git push origin "HEAD:refs/heads/$HEAD_REF" \
+            --force-with-lease="refs/heads/$HEAD_REF:$HEAD_SHA"
