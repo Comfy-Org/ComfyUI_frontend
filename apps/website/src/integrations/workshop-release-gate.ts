@@ -1,40 +1,56 @@
 import type { AstroIntegration } from 'astro'
+import { rm } from 'node:fs/promises'
+import { fileURLToPath } from 'node:url'
+import { join } from 'node:path'
 
-import { isWorkshopInBuild, isWorkshopRoute } from '../config/workshop-release'
+import { isWorkshopInBuild } from '../config/workshop-release'
 
 /**
- * Removes Workshop routes from a release build.
+ * Keeps Workshop out of a release build.
  *
- * This runs at `astro:routes:resolved`, before anything is rendered, so the
- * pages are never generated and never reach the deployed output. That is the
- * difference that matters: `noindex` and an absent nav link only make a page
- * hard to find, while this makes it absent.
+ * Workshop is unfinished, and `noindex` does not stop a page being deployed —
+ * it only asks a crawler to stay away, while the page stays live at a URL
+ * anyone can share. A release build must not contain those routes at all.
  *
- * Preview and local builds keep the routes, because that is where Workshop is
+ * This runs at `astro:build:done` and removes the emitted directory. The
+ * earlier attempt filtered the route list at `astro:routes:resolved`, which
+ * does not work: that hook reports the resolved routes, and mutating the
+ * array does not stop them being generated. Deleting the output is
+ * unambiguous, and the assertion below makes a silent failure impossible.
+ *
+ * Preview and local builds keep Workshop, because that is where it is
  * reviewed. See `config/workshop-release.ts` for the switch.
  */
 export function workshopReleaseGate(): AstroIntegration {
   return {
     name: 'workshop-release-gate',
     hooks: {
-      'astro:routes:resolved': ({ routes, logger }) => {
+      'astro:build:done': async ({ dir, pages, logger }) => {
         if (isWorkshopInBuild()) return
 
-        // Mutated in place: the hook hands out the live route list, and
-        // returning a new array would be ignored.
-        let removed = 0
-        for (let index = routes.length - 1; index >= 0; index -= 1) {
-          const route = routes[index]
-          if (route !== undefined && isWorkshopRoute(route.pattern)) {
-            routes.splice(index, 1)
-            removed += 1
-          }
+        const built = pages.filter(
+          (page) =>
+            page.pathname === 'workshop' ||
+            page.pathname.startsWith('workshop/')
+        ).length
+
+        const root = fileURLToPath(dir)
+        await rm(join(root, 'workshop'), { recursive: true, force: true })
+
+        // The whole point of this integration is that nothing ships. If the
+        // directory is somehow still there, fail the build rather than let a
+        // release go out with it.
+        const { existsSync } = await import('node:fs')
+        if (existsSync(join(root, 'workshop'))) {
+          throw new Error(
+            'workshop-release-gate could not remove the Workshop output; refusing to ship it.'
+          )
         }
 
         logger.warn(
-          `Workshop is excluded from this build: ${removed} route${
-            removed === 1 ? '' : 's'
-          } removed. Set WORKSHOP_IN_BUILD=1 to include it.`
+          `Workshop is excluded from this build: removed ${built} generated page${
+            built === 1 ? '' : 's'
+          }. Set WORKSHOP_IN_BUILD=1 to include it.`
         )
       }
     }
