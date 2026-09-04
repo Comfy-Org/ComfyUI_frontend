@@ -16,8 +16,8 @@ import type {
 import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
 import { api } from '@/scripts/api'
 import type * as assetsStoreModule from '@/stores/assetsStore'
-import type * as outputAssetUtilModule from '../utils/outputAssetUtil'
 import { assetService } from '../services/assetService'
+import { resolveOutputAssetItems } from '../utils/outputAssetUtil'
 import { useMediaAssetActions } from './useMediaAssetActions'
 
 // Use vi.hoisted to create a mutable reference for isCloud
@@ -162,16 +162,8 @@ vi.mock('../schemas/assetMetadataSchema', () => ({
   getOutputAssetMetadata: mockGetOutputAssetMetadata
 }))
 
-const mockResolveOutputAssetItems = vi.hoisted(() =>
-  vi.fn<typeof outputAssetUtilModule.resolveOutputAssetItems>(async () => [])
-)
-vi.mock('../utils/outputAssetUtil', async (importOriginal) => {
-  const actual = await importOriginal<typeof outputAssetUtilModule>()
-  return {
-    ...actual,
-    resolveOutputAssetItems: mockResolveOutputAssetItems
-  }
-})
+vi.mock('../utils/outputAssetUtil')
+const mockResolveOutputAssetItems = vi.mocked(resolveOutputAssetItems)
 
 const mockDeleteAsset = vi.hoisted(() => vi.fn())
 const mockCreateAssetExport = vi.hoisted(() =>
@@ -1341,6 +1333,55 @@ describe('useMediaAssetActions', () => {
         refreshedCheckpoint
       ])
       expect(assetService.getAssetsPageForNodeType).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('deleteAssets - success', () => {
+    beforeEach(() => {
+      mockIsCloud.value = true
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
+      mockGetAssetType.mockReturnValue('input')
+      mockDeleteAsset.mockResolvedValue(undefined)
+      mockShowDialog.mockImplementation(
+        ({ props }: { props: { onConfirm: (confirmed: boolean) => void } }) => {
+          props.onConfirm(true)
+        }
+      )
+      mockAppGraph.value = { _nodes: [] }
+    })
+
+    it('completes the lifecycle for one confirmed asset record', async () => {
+      const { actions, unmount } = mountMediaActions()
+      const asset = createMockAsset({
+        id: '1cbe0b07-8aef-4f28-8188-dfba48c8fbda',
+        name: 'confirmed.png'
+      })
+      mockInputAssets.items = [asset]
+
+      await expect(actions.deleteAssets(asset)).resolves.toBe(true)
+
+      expect(mockDeleteAsset).toHaveBeenCalledOnce()
+      expect(mockDeleteAsset.mock.calls.map(([id]) => id)).toEqual([asset.id])
+      expect(api.deleteItem).not.toHaveBeenCalled()
+      expect(mockSetAssetDeleting.mock.calls).toEqual([
+        [asset.id, true],
+        [asset.id, false]
+      ])
+      expect(mockInputAssets.items).toEqual([])
+      expect(mockSetAssetDeleting.mock.invocationCallOrder[0]).toBeLessThan(
+        mockDeleteAsset.mock.invocationCallOrder[0]
+      )
+      expect(mockDeleteAsset.mock.invocationCallOrder[0]).toBeLessThan(
+        mockSetAssetDeleting.mock.invocationCallOrder[1]
+      )
+      expect(useToast().add).toHaveBeenCalledWith({
+        severity: 'success',
+        summary: 'mediaAsset.assetDelete.success',
+        detail: 'mediaAsset.assetsDeleted',
+        life: 2000
+      })
+
+      unmount()
     })
   })
 

@@ -178,7 +178,7 @@ function lastEmission(result: RenderResult): OutputSelection {
     | Array<[OutputSelection]>
     | undefined
   expect(emitted).toBeDefined()
-  return emitted![emitted!.length - 1][0] as OutputSelection
+  return emitted![emitted!.length - 1][0]
 }
 
 function historySelectableItems(): HTMLElement[] {

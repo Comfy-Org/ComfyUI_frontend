@@ -33,12 +33,26 @@ export interface NoticePart {
 export interface TabLinkPart {
   type: 'tabLink'
   workflowId: string
+  locatorId?: string
   name?: string
+}
+
+export interface RunApprovalPart {
+  type: 'runApproval'
+  askId: string
+  workflowId?: string
+  workflowName?: string
 }
 
 export type ActivityPart = ThinkingPart | ToolPart
 
-type MessagePart = TextPart | ThinkingPart | ToolPart | NoticePart | TabLinkPart
+type MessagePart =
+  | TextPart
+  | ThinkingPart
+  | ToolPart
+  | NoticePart
+  | TabLinkPart
+  | RunApprovalPart
 
 export interface AssistantMessage {
   id: TurnId
