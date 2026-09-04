@@ -1,4 +1,5 @@
 import {
+  zAgentAdmissionError,
   zAgentAnswerAccepted,
   zAgentRunMode as zGeneratedAgentRunMode,
   zWorkflowListResponse
@@ -7,7 +8,7 @@ import { z } from 'zod'
 
 import { isNodeLocatorId } from '@/types/nodeIdentification'
 
-export { zAgentAnswerAccepted }
+export { zAgentAdmissionError, zAgentAnswerAccepted }
 export type { AgentRunMode as AgentRunModePreference } from '@comfyorg/ingest-types'
 
 const zTurnId = z.string().brand<'TurnId'>()
@@ -124,40 +125,6 @@ export const zAgentCancelAccepted = z.object({
   status: z.literal('cancelling')
 })
 export type AgentCancelAccepted = z.infer<typeof zAgentCancelAccepted>
-
-const zPaymentRequiredAdmissionError = z.discriminatedUnion('reason', [
-  z
-    .object({
-      message: z.string(),
-      type: z.literal('PAYMENT_REQUIRED'),
-      reason: z.literal('no_funds')
-    })
-    .passthrough(),
-  z
-    .object({
-      message: z.string(),
-      type: z.literal('PAYMENT_REQUIRED'),
-      reason: z.literal('manual_block')
-    })
-    .passthrough()
-])
-
-const zServiceUnavailableAdmissionError = z
-  .object({
-    message: z.string(),
-    type: z.literal('SERVICE_UNAVAILABLE'),
-    reason: z.literal('funds_unavailable')
-  })
-  .passthrough()
-
-export const zAgentAdmissionError = z
-  .object({
-    error: z.union([
-      zPaymentRequiredAdmissionError,
-      zServiceUnavailableAdmissionError
-    ])
-  })
-  .passthrough()
 
 export const zAgentError = z.union([
   z.object({ error: z.string() }),

@@ -569,7 +569,7 @@ describe('useAgentSession (v1 composition root)', () => {
     })
   })
 
-  it('does not retry funds_unavailable as a draft-upload failure', async () => {
+  it('does not retry a funds_unavailable denial even when a draft is attached', async () => {
     const message = 'Billing status is temporarily unavailable; please retry.'
     const postMessage = vi
       .fn<
@@ -582,7 +582,7 @@ describe('useAgentSession (v1 composition root)', () => {
       workflow: {
         current: () => undefined,
         adopted: () => {},
-        snapshot: () => ({ content: { nodes: [] }, version: 1 })
+        draft: () => ({ content: { nodes: [] }, version: 1 })
       }
     })
     session.start()
