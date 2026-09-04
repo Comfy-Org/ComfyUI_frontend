@@ -466,7 +466,6 @@
   },
   "billingOperation": {
     "authenticationFailedDetail": "支払いの確認を完了できませんでした。もう一度お試しください。",
-    "authenticationManagerRequired": "支払いの確認には、ワークスペースの請求管理者による対応が必要です。",
     "authenticationUnavailable": "安全な支払い認証を利用できません。更新してもう一度お試しください。",
     "cancelFailed": "サブスクリプションのキャンセルに失敗しました",
     "cancelTimeout": "サブスクリプションのキャンセルがタイムアウトしました",
@@ -477,7 +476,6 @@
     "processingErrorDetail": "お支払いを処理できませんでした。もう一度試すか、別のお支払い方法をご利用ください。",
     "reconciliationDetail": "お支払いを受け取りましたが、ワークスペースの更新を完了できませんでした。サポートにお問い合わせの際は、この操作IDを含めてください:",
     "reconciliationTitle": "支払いを受け取りました — 確認待ち",
-    "retryVerification": "確認を再試行",
     "subscriptionActionRequired": "ワークスペースの設定を完了するにはお支払いを確認してください",
     "subscriptionFailed": "サブスクリプションの更新に失敗しました",
     "subscriptionFailedDetail": "サブスクリプションの更新に失敗しました。もう一度お試しください。",
@@ -965,6 +963,7 @@
       "quickPurchase": "クイック購入",
       "seeDetails": "詳細を見る",
       "selectAmount": "金額を選択",
+      "startOver": "やり直す",
       "templateNote": "*Wan Fun Control テンプレートで生成",
       "topUp": "チャージ",
       "unknownError": "不明なエラーが発生しました",
