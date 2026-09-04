@@ -15,6 +15,20 @@ const mocks = vi.hoisted(() => ({
   beginTour: vi.fn()
 }))
 
+const sharedComposable = vi.hoisted(() => {
+  let reset = () => {}
+
+  function create<T>(composable: () => T): () => T {
+    let result: T | undefined
+    reset = () => {
+      result = undefined
+    }
+    return () => (result ??= composable())
+  }
+
+  return { create, reset: () => reset() }
+})
+
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
     return mocks.isCloud
@@ -23,7 +37,7 @@ vi.mock('@/platform/distribution/types', () => ({
 
 vi.mock('@vueuse/core', () => ({
   breakpointsTailwind: {},
-  createSharedComposable: (composable: () => unknown) => composable,
+  createSharedComposable: sharedComposable.create,
   useBreakpoints: () => ({
     greaterOrEqual: () => ({
       get value() {
@@ -83,6 +97,7 @@ describe('useFirstRunEntry', () => {
     mocks.setSetting.mockImplementation((key: string, value: unknown) => {
       mocks.settings[key] = value
     })
+    sharedComposable.reset()
     // beginTour reports whether a tour actually started; default to the
     // ordinary case so only tests about a refused start have to say so.
     mocks.beginTour.mockResolvedValue(true)
@@ -108,6 +123,15 @@ describe('useFirstRunEntry', () => {
 
       expect(entry.gettingStartedVisible.value).toBe(true)
       expect(mocks.execute).not.toHaveBeenCalled()
+    })
+
+    it('shares first-run state across consumers during one boot', async () => {
+      const startup = useFirstRunEntry()
+      const screen = useFirstRunEntry()
+
+      await startup.handleStartupOutcome('fresh')
+
+      expect(screen.gettingStartedVisible.value).toBe(true)
     })
 
     it.for([...permanentDisqualifiers, ...transientDisqualifiers])(
@@ -162,6 +186,7 @@ describe('useFirstRunEntry', () => {
       await phone.handleStartupOutcome('fresh')
 
       mocks.isDesktopWidth = true
+      sharedComposable.reset()
       const laptop = useFirstRunEntry()
       await laptop.handleStartupOutcome('fresh')
 
@@ -248,6 +273,7 @@ describe('useFirstRunEntry', () => {
     mocks.isDesktopWidth = true
     // What `checkIsNewUser()` reads on the next launch.
     mocks.isNewUser = !mocks.settings['Comfy.TutorialCompleted']
+    sharedComposable.reset()
     const laptop = useFirstRunEntry()
     await laptop.handleStartupOutcome('url-intent')
     await laptop.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
