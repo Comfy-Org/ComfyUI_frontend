@@ -357,46 +357,52 @@ const searchMode = ref<SearchMode>(
 )
 const sortField = ref<string>(initialState.sortField)
 
+const isSearchBacked = computed(() => {
+  const tab = selectedTab.value?.id
+  return (
+    tab === ManagerTab.All ||
+    tab === ManagerTab.NotInstalled ||
+    (searchQuery.value !== '' && tab !== ManagerTab.Unresolved)
+  )
+})
 const packs = useRegistrySearch({
   query: refDebounced(searchQuery, SEARCH_DEBOUNCE_MS),
   searchMode
 })
 const searchResults = computed(() => [...toValue(packs.items)])
-const isSearchLoading = computed(() => toValue(packs.isLoading))
+const isSearchLoading = computed(
+  () => isSearchBacked.value && toValue(packs.isLoading)
+)
 const hasMorePacks = computed(() => toValue(packs.hasMore))
 const suggestions = computed(() => toValue(packs.suggestions))
 const sortOptions = PACK_SORTABLE_FIELDS
-
 const { isLegacyManagerSearch } = useLegacySearchTip(
   searchQuery,
   isNewManagerUI
 )
-
 const filterOptions = computed(() => [
   { name: t('manager.filter.nodePack'), value: 'packs' },
   { name: t('g.nodes'), value: 'nodes' }
 ])
-
 const availableSortOptions = computed(() =>
   sortOptions.map((field) => ({
     name: field.label,
     value: field.id
   }))
 )
-
 const onOptionSelect = (suggestion: QuerySuggestion) => {
   searchQuery.value = suggestion.query
 }
-
 const loadMorePacks = () => packs.loadMore()
 const canLoadMorePacks = computed(
-  () => hasMorePacks.value && !isSearchLoading.value
+  () => hasMorePacks.value && !isSearchLoading.value && isSearchBacked.value
 )
-
 const isInitialLoad = computed(
-  () => searchResults.value.length === 0 && searchQuery.value === ''
+  () =>
+    isSearchBacked.value &&
+    searchResults.value.length === 0 &&
+    searchQuery.value === ''
 )
-
 // Use the new composable for tab-based display packs
 const {
   displayPacks,
