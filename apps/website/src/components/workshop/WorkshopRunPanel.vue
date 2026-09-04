@@ -299,6 +299,17 @@ onBeforeUnmount(() => {
             ><code>{{ JSON.stringify(result.output, null, 2) }}</code></pre>
           </details>
         </div>
+
+        <!--
+          Nothing to show yet. The space is still reserved so pressing Run
+          does not shove the page around, and so the card reads as a place a
+          result will occupy rather than as an empty panel.
+        -->
+        <div
+          v-else
+          aria-hidden="true"
+          class="aspect-video rounded-xl bg-primary-comfy-canvas/3"
+        ></div>
       </div>
     </section>
 
