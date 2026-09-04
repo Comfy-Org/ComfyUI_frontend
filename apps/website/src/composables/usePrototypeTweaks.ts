@@ -20,9 +20,6 @@ export const MODEL_STATES = [
 ] as const
 export type ModelState = (typeof MODEL_STATES)[number]
 
-export const OUTPUT_COUNTS = [1, 4, 9] as const
-type OutputCount = (typeof OUTPUT_COUNTS)[number]
-
 // One control for the whole prototype: V1 is the flat models catalog (11 Sep),
 // V1.1 opens that same catalog as browseable rows per use case, V1.2 moves the
 // categories into a rail beside the grid, and V2 is the screen where workflows,
@@ -37,7 +34,6 @@ const modelState = ref<ModelState>('none')
 const version = ref<Version>('v1')
 // Deprecated and degraded models are invented cases: hidden unless asked for.
 const showStatuses = ref(false)
-const outputCount = ref<OutputCount>(1)
 // The catalogue lists one card per model, as the TDD describes. Grouping the
 // releases of a family behind the newest is an unsettled variant.
 const groupVersions = ref(false)
@@ -74,7 +70,6 @@ export function usePrototypeTweaks() {
     modelState,
     version,
     showStatuses,
-    outputCount,
     groupVersions
   }
 }

@@ -147,7 +147,7 @@ const avatarClass =
             <DropdownMenuSubContent
               side="left"
               align="start"
-              :side-offset="8"
+              :side-offset="24"
               class="border-primary-comfy-ink-light bg-site-dropdown z-50 w-72 rounded-2xl border p-2 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
               data-testid="account-workspaces"
             >

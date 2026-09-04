@@ -8482,7 +8482,6 @@ Enterprise`
   'workshop.filter.other': { en: 'Other', 'zh-CN': '其他' },
   'workshop.input.title': { en: 'Input', 'zh-CN': '输入' },
   'workshop.output.select': { en: 'Output {n}', 'zh-CN': '输出 {n}' },
-  'workshop.proto.outputs': { en: 'Outputs per run', 'zh-CN': '每次输出数' },
   'workshop.filter.label': { en: 'Filter', 'zh-CN': '筛选' },
   'workshop.filter.filterBy': { en: 'Filter by…', 'zh-CN': '筛选…' },
   'workshop.filter.sectionLabel': { en: 'Filter by', 'zh-CN': '筛选条件' },
@@ -8764,8 +8763,8 @@ Enterprise`
   // Workshop – run
   'workshop.run.signIn': { en: 'Sign in to run', 'zh-CN': '登录以运行' },
   'workshop.run.buyCredits': {
-    en: 'Add credits on Comfy Platform',
-    'zh-CN': '在 Comfy Platform 添加积分'
+    en: 'Add credits',
+    'zh-CN': '添加积分'
   },
   'workshop.run.run': { en: 'Run', 'zh-CN': '运行' },
   'workshop.run.cancel': { en: 'Cancel', 'zh-CN': '取消' },
@@ -8831,9 +8830,8 @@ Enterprise`
     'zh-CN': '你的工作区策略禁止了该提供方。'
   },
   'workshop.error.noCredits': {
-    en: 'Not enough credits for this run. Credits are bought on Comfy Platform; your inputs stay here while you do.',
-    'zh-CN':
-      '积分不足，无法运行。积分在 Comfy Platform 购买，期间您的输入会保留在此。'
+    en: 'Not enough credits for this run. Payment happens on Stripe; your inputs stay here while you buy.',
+    'zh-CN': '积分不足，无法运行。支付在 Stripe 完成，期间您的输入会保留在此。'
   },
   'workshop.error.unavailable': {
     en: 'This model is temporarily unavailable.',

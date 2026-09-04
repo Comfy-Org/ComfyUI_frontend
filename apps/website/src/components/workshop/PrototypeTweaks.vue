@@ -23,7 +23,6 @@ import type {
 } from '../../composables/usePrototypeTweaks'
 import {
   MODEL_STATES,
-  OUTPUT_COUNTS,
   RUN_OUTCOMES,
   VERSIONS,
   usePrototypeTweaks
@@ -43,14 +42,8 @@ const { locale = 'en', showRunControls = false } = defineProps<{
 
 const { session, signIn, signOut, setCredits, setSubscribed, setRole } =
   useMockSession()
-const {
-  outcome,
-  modelState,
-  version,
-  showStatuses,
-  outputCount,
-  groupVersions
-} = usePrototypeTweaks()
+const { outcome, modelState, version, showStatuses, groupVersions } =
+  usePrototypeTweaks()
 
 const SESSION_CHOICES: readonly SessionChoice[] = [
   'signedOut',
@@ -88,7 +81,6 @@ onMounted(() => {
     groupVersions.value = shared.groupVersions
   if (shared.outcome) outcome.value = shared.outcome
   if (shared.modelState) modelState.value = shared.modelState
-  if (shared.outputCount) outputCount.value = shared.outputCount
   if (shared.session === 'signedOut') signOut()
   else if (shared.session) signIn(shared.session)
   if (shared.subscribed !== undefined) setSubscribed(shared.subscribed)
@@ -110,8 +102,7 @@ const shareState = computed<ShareState>(() => ({
   balance: zeroBalance.value ? 'zero' : lowBalance.value ? 'low' : 'normal',
   member: isMember.value,
   outcome: outcome.value,
-  modelState: modelState.value,
-  outputCount: outputCount.value
+  modelState: modelState.value
 }))
 const shareUrl = computed(
   () =>
@@ -431,31 +422,6 @@ const selectClass =
                     class="bg-primary-comfy-ink"
                   >
                     {{ t(modelStateLabel[option], locale) }}
-                  </option>
-                </select>
-                <ChevronDown
-                  class="pointer-events-none absolute right-2 size-3.5 text-primary-warm-gray"
-                  aria-hidden="true"
-                />
-              </span>
-            </label>
-            <label class="flex flex-col gap-1">
-              <span class="text-primary-warm-gray">
-                {{ t('workshop.proto.outputs', locale) }}
-              </span>
-              <span class="relative flex items-center">
-                <select
-                  v-model="outputCount"
-                  data-testid="tweak-outputs"
-                  :class="selectClass"
-                >
-                  <option
-                    v-for="count in OUTPUT_COUNTS"
-                    :key="count"
-                    :value="count"
-                    class="bg-primary-comfy-ink"
-                  >
-                    {{ count }}
                   </option>
                 </select>
                 <ChevronDown

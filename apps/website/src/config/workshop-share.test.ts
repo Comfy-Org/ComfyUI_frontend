@@ -18,13 +18,12 @@ describe('share links for the prototype controls', () => {
           balance: 'low',
           member: true,
           outcome: 'timeout',
-          modelState: 'degraded',
-          outputCount: 4
+          modelState: 'degraded'
         },
         '?useCase=edit-images&outcome=stale'
       )
     ).toBe(
-      '?useCase=edit-images&version=v2&session=existing&balance=low&member=1&outcome=timeout&state=degraded&outputs=4'
+      '?useCase=edit-images&version=v2&session=existing&balance=low&member=1&outcome=timeout&state=degraded'
     )
   })
 
@@ -50,15 +49,14 @@ describe('share links for the prototype controls', () => {
   it('decodes a link and ignores values it does not know', () => {
     expect(
       decodeShareSearch(
-        '?version=v2&statuses=1&session=existing&balance=zero&member=1&outputs=9&state=nope&outcome=42'
+        '?version=v2&statuses=1&session=existing&balance=zero&member=1&state=nope&outcome=42'
       )
     ).toEqual({
       version: 'v2',
       showStatuses: true,
       session: 'existing',
       balance: 'zero',
-      member: true,
-      outputCount: 9
+      member: true
     })
     expect(decodeShareSearch('?useCase=text')).toEqual({})
     expect(

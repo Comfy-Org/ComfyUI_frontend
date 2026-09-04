@@ -7,18 +7,17 @@ import { LOW_CREDITS, useMockSession } from '../../composables/useMockSession'
 import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
 import PrototypeTweaks from './PrototypeTweaks.vue'
 
-const { showStatuses, outputCount, outcome, version } = usePrototypeTweaks()
+const { showStatuses, outcome, version } = usePrototypeTweaks()
 
 afterEach(() => {
   showStatuses.value = false
-  outputCount.value = 1
   outcome.value = 'success'
   version.value = 'v1'
   window.history.replaceState(null, '', '/workshop/')
 })
 
 describe('PrototypeTweaks', () => {
-  it('drives the shared status switch and outputs per run', async () => {
+  it('drives the shared status switch', async () => {
     const user = userEvent.setup()
     render(PrototypeTweaks, { props: { showRunControls: true } })
 
@@ -28,23 +27,17 @@ describe('PrototypeTweaks', () => {
     await user.click(statuses)
     expect(showStatuses.value).toBe(true)
     expect(statuses.getAttribute('aria-checked')).toBe('true')
-
-    await user.selectOptions(screen.getByTestId('tweak-outputs'), '4')
-    expect(outputCount.value).toBe(4)
-    await user.selectOptions(screen.getByTestId('tweak-outputs'), '9')
-    expect(outputCount.value).toBe(9)
   })
 
   it('applies a shared link on load and offers one back for the current setup', async () => {
     window.history.replaceState(
       null,
       '',
-      '/workshop/models/demo/?session=existing&balance=low&outputs=4'
+      '/workshop/models/demo/?session=existing&balance=low'
     )
     const user = userEvent.setup()
     render(PrototypeTweaks, { props: { showRunControls: true } })
     const { session } = useMockSession()
-    expect(outputCount.value).toBe(4)
     expect(
       session.value.status === 'signedIn' && session.value.account.credits
     ).toBe(LOW_CREDITS)
@@ -61,7 +54,6 @@ describe('PrototypeTweaks', () => {
     expect(url.value).toContain('session=existing')
     expect(url.value).toContain('balance=low')
     expect(url.value).toContain('outcome=timeout')
-    expect(url.value).toContain('outputs=4')
     expect(url.value).toContain('version=v1.1')
 
     await user.click(screen.getByTestId('tweak-share-copy'))

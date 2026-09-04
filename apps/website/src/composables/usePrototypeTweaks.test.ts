@@ -28,11 +28,10 @@ beforeEach(() => {
 })
 
 describe('usePrototypeTweaks', () => {
-  it('starts on V1 with the invented cases hidden and one output', async () => {
+  it('starts on V1 with the invented cases hidden', async () => {
     const tweaks = await mountTweaks()
     expect(tweaks.version.value).toBe('v1')
     expect(tweaks.showStatuses.value).toBe(false)
-    expect(tweaks.outputCount.value).toBe(1)
     expect(tweaks.outcome.value).toBe('success')
     expect(tweaks.modelState.value).toBe('none')
   })

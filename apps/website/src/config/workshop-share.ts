@@ -6,14 +6,12 @@ import type {
 } from '../composables/usePrototypeTweaks'
 import {
   MODEL_STATES,
-  OUTPUT_COUNTS,
   RUN_OUTCOMES,
   VERSIONS
 } from '../composables/usePrototypeTweaks'
 
 export type SessionChoice = 'signedOut' | AccountKind
 type BalanceChoice = 'normal' | 'zero' | 'low'
-type OutputCount = (typeof OUTPUT_COUNTS)[number]
 
 // Everything the prototype controls can set, so one link reproduces a setup.
 export interface ShareState {
@@ -26,7 +24,6 @@ export interface ShareState {
   readonly member: boolean
   readonly outcome: RunOutcome
   readonly modelState: ModelState
-  readonly outputCount: OutputCount
 }
 
 export const SHARE_DEFAULTS: ShareState = {
@@ -38,8 +35,7 @@ export const SHARE_DEFAULTS: ShareState = {
   balance: 'normal',
   member: false,
   outcome: 'success',
-  modelState: 'none',
-  outputCount: 1
+  modelState: 'none'
 }
 
 const SESSION_CHOICES: readonly SessionChoice[] = [
@@ -58,8 +54,7 @@ const KEYS = {
   balance: 'balance',
   member: 'member',
   outcome: 'outcome',
-  modelState: 'state',
-  outputCount: 'outputs'
+  modelState: 'state'
 } as const
 
 const flag = (value: boolean) => (value ? '1' : '0')
@@ -106,8 +101,7 @@ export function decodeShareSearch(search: string): Partial<ShareState> {
     balance: pick(BALANCE_CHOICES, params.get(KEYS.balance)),
     member: pickFlag(params.get(KEYS.member)),
     outcome: pick(RUN_OUTCOMES, params.get(KEYS.outcome)),
-    modelState: pick(MODEL_STATES, params.get(KEYS.modelState)),
-    outputCount: pick(OUTPUT_COUNTS, params.get(KEYS.outputCount))
+    modelState: pick(MODEL_STATES, params.get(KEYS.modelState))
   }
   return Object.fromEntries(
     Object.entries(decoded).filter(([, value]) => value !== undefined)

@@ -109,8 +109,7 @@ const { session, setCredits, switchWorkspace } = useMockSession()
 const {
   outcome: simOutcome,
   modelState: simGate,
-  showStatuses,
-  outputCount
+  showStatuses
 } = usePrototypeTweaks()
 const signInHref = useSignInHref(locale)
 
@@ -210,15 +209,9 @@ function sampleOutput(): RunOutput {
     }
   }
   const url = examples[0]?.outputUrl ?? ''
-  const urls = Array.from(
-    { length: outputCount.value },
-    (_, index) =>
-      examples[index % Math.max(examples.length, 1)]?.outputUrl ?? url
-  )
   return {
     kind,
     url,
-    ...(urls.length > 1 ? { urls } : {}),
     fileName: `${stem}.${isVideoUrl(url) ? 'mp4' : 'webp'}`
   }
 }

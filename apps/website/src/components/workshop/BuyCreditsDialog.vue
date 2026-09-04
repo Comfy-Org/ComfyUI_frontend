@@ -122,7 +122,7 @@ const packClass = (selected: boolean) =>
           class="inline-flex w-fit items-center gap-2 rounded-full bg-transparency-white-t8 px-3 py-1.5 text-xs text-primary-warm-gray"
         >
           <Lock class="size-3.5" aria-hidden="true" />
-          platform.comfy.org
+          checkout.stripe.com
         </p>
         <DialogTitle class="pr-16">
           {{ t('workshop.credits.checkout', locale) }}
