@@ -9,6 +9,7 @@ import type * as RekaUi from 'reka-ui'
 import './testUtils/mockTanstackVirtualizer'
 
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
+import type { JobId } from '@/schemas/apiSchema'
 
 import JobAssetsList from './JobAssetsList.vue'
 
@@ -16,7 +17,7 @@ const hoisted = vi.hoisted(() => ({
   concurrentExecutionEnabled: { value: false },
   executionStore: {
     focusedJobId: null as string | null,
-    setFocusedJob: vi.fn()
+    setFocusedJob: vi.fn<(jobId: JobId | null) => void>()
   },
   jobDetailsPopoverStub: {
     name: 'JobDetailsPopover',
