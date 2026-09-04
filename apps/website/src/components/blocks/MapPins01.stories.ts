@@ -17,7 +17,7 @@ const worldMarkers: MapPinMarker[] = [
   {
     id: 'nyc',
     coords: { lat: 40.71, lng: -74.01 },
-    label: 'NYC Buildathon'
+    label: 'NYC Hack Night'
   },
   {
     id: 'montreal',
@@ -37,7 +37,7 @@ const worldMarkers: MapPinMarker[] = [
   {
     id: 'paris',
     coords: { lat: 48.86, lng: 2.35 },
-    label: 'Paris Buildathon'
+    label: 'Paris Hack Night'
   },
   {
     id: 'bengaluru',

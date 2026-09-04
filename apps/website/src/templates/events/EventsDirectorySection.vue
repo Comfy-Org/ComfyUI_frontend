@@ -19,7 +19,7 @@ import { resolveRel } from '../../utils/cta'
 import {
   DIRECTORY_FILTER_ALL,
   EVENT_CATEGORIES,
-  EVENT_PROGRAMS,
+  EVENT_ORGANIZERS,
   defaultDirectoryFilters,
   directoryRows,
   filterDirectoryEvents
@@ -28,9 +28,9 @@ import EventsDirectoryList from './EventsDirectoryList.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-// Search ∧ type ∧ program feed whichever view is active, so the whole section
-// is one reactive model: three filter fields plus the view. Everything else —
-// the visible events and the live count — is derived.
+// Search, type and organizer feed whichever view is active, so the whole
+// section is one reactive model: three filter fields plus the view. Everything
+// else, the visible events and the live count, is derived.
 const filters = reactive(defaultDirectoryFilters())
 const view = ref<EventsDirectoryView>('map')
 
@@ -91,7 +91,7 @@ const controlClass =
   'bg-transparency-white-t5 h-11 rounded-full border border-white/15 text-sm text-primary-comfy-canvas'
 
 // `appearance-none` drops the native arrow, so each select is wrapped and gets
-// a ChevronDown overlaid — the same icon the rest of the site uses.
+// a ChevronDown overlaid, the same icon the rest of the site uses.
 const selectClass = cn(
   controlClass,
   'w-full cursor-pointer appearance-none pr-10 pl-4 sm:w-auto'
@@ -104,7 +104,7 @@ const caretClass =
 <template>
   <section
     id="events-directory"
-    class="max-w-9xl mx-auto scroll-mt-24 px-6 py-16 lg:py-24"
+    class="max-w-9xl mx-auto scroll-mt-24 px-6 py-16 lg:px-20 lg:py-24"
   >
     <div class="mx-auto max-w-3xl text-center">
       <h2
@@ -187,24 +187,24 @@ const caretClass =
         <ChevronDown :class="caretClass" aria-hidden="true" />
       </div>
 
-      <label for="events-directory-program" class="sr-only">
-        {{ t('events.directory.programLabel', locale) }}
+      <label for="events-directory-organizer" class="sr-only">
+        {{ t('events.directory.organizerLabel', locale) }}
       </label>
       <div class="relative">
         <select
-          id="events-directory-program"
-          v-model="filters.program"
+          id="events-directory-organizer"
+          v-model="filters.organizer"
           :class="selectClass"
         >
           <option :value="DIRECTORY_FILTER_ALL">
-            {{ t('events.directory.allPrograms', locale) }}
+            {{ t('events.directory.allOrganizers', locale) }}
           </option>
           <option
-            v-for="program in EVENT_PROGRAMS"
-            :key="program"
-            :value="program"
+            v-for="organizer in EVENT_ORGANIZERS"
+            :key="organizer"
+            :value="organizer"
           >
-            {{ t(`events.program.${program}`, locale) }}
+            {{ t(`events.organizer.${organizer}`, locale) }}
           </option>
         </select>
         <ChevronDown :class="caretClass" aria-hidden="true" />

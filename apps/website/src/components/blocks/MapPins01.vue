@@ -37,9 +37,12 @@ let leaflet: typeof Leaflet | null = null
 let map: Leaflet.Map | null = null
 let pinLayer: Leaflet.LayerGroup | null = null
 
-const OCEAN = '#211927'
-const COUNTRY_FILL = '#2a2330'
-const COUNTRY_BORDER = '#3b3242'
+// Ocean/land contrast was 1.12:1, which read as a single flat field. Land is
+// lifted and the water dropped to put them ~1.9:1 apart, enough to separate
+// continents from oceans while staying inside the page's dark palette.
+const OCEAN = '#171320'
+const COUNTRY_FILL = '#4d4359'
+const COUNTRY_BORDER = '#6b5f7d'
 const PIN_FILL = '#f0efed'
 const CLUSTER_FILL = '#f2ff59'
 const CLUSTER_TEXT = '#211927'
@@ -124,7 +127,7 @@ async function mountMap() {
   L.geoJSON(geoJson, {
     style: {
       color: COUNTRY_BORDER,
-      weight: 0.5,
+      weight: 0.75,
       fillColor: COUNTRY_FILL,
       fillOpacity: 1
     }

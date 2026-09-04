@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import type { HTMLAttributes } from 'vue'
 import { ref } from 'vue'
+
+import { cn } from '@comfyorg/tailwind-utils'
 
 import CardArticle01 from './CardArticle01.vue'
 import type { CardArticleItem } from './CardArticle01.vue'
@@ -26,7 +29,8 @@ const {
   tabs,
   allLabel,
   pageSize,
-  loadMoreLabel
+  loadMoreLabel,
+  class: className
 } = defineProps<{
   title?: string
   titleAlign?: 'start' | 'center'
@@ -37,6 +41,7 @@ const {
   allLabel?: string
   pageSize?: number
   loadMoreLabel?: string
+  class?: HTMLAttributes['class']
 }>()
 
 const activeTab = ref(GALLERY_FILTER_ALL)
@@ -49,7 +54,7 @@ const { visibleItems, hasMore, showMore } = useFilteredGallery({
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-16 lg:py-24">
+  <section :class="cn('max-w-9xl mx-auto px-6 py-16 lg:py-24', className)">
     <h2
       v-if="title && !tabs"
       class="text-3xl font-light tracking-tight text-primary-warm-white lg:text-5xl"

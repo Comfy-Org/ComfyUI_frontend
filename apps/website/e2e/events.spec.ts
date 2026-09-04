@@ -298,7 +298,7 @@ test.describe('Events page — desktop @smoke', () => {
     const query = target.location!.en
     const expected = filterDirectoryEvents(
       directoryEvents,
-      { query, category: 'all', program: 'all' },
+      { query, category: 'all', organizer: 'all' },
       'en'
     )
 
@@ -392,7 +392,7 @@ test.describe('Events page — desktop @smoke', () => {
 
     const expected = filterDirectoryEvents(
       directoryEvents,
-      { query: '', category, program: 'all' },
+      { query: '', category, organizer: 'all' },
       'en'
     )
 
@@ -583,7 +583,7 @@ test.describe('Events page — desktop @smoke', () => {
 
     const expected = filterDirectoryEvents(
       directoryEvents,
-      { query: '', category, program: 'all' },
+      { query: '', category, organizer: 'all' },
       'en'
     )
 

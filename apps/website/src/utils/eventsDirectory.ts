@@ -1,4 +1,4 @@
-import type { ComfyEvent, EventCategory, EventProgram } from '../data/events'
+import type { ComfyEvent, EventCategory, EventOrganizer } from '../data/events'
 import type { Locale } from '../i18n/translations'
 import type { CalendarEvent } from './calendar'
 
@@ -11,7 +11,7 @@ import {
 } from '../data/events'
 import { t } from '../i18n/translations'
 
-/** Sentinel for the "no filter" option in the type and program selects. */
+/** Sentinel for the "no filter" option in the type and organizer selects. */
 export const DIRECTORY_FILTER_ALL = 'all'
 
 export const EVENT_CATEGORIES: readonly EventCategory[] = [
@@ -19,14 +19,12 @@ export const EVENT_CATEGORIES: readonly EventCategory[] = [
   'hackathon',
   'workshop',
   'meetup',
-  'buildathon',
   'conference'
 ]
 
-export const EVENT_PROGRAMS: readonly EventProgram[] = [
-  'student',
-  'communityHosts',
-  'official',
+export const EVENT_ORGANIZERS: readonly EventOrganizer[] = [
+  'comfy',
+  'community',
   'partner'
 ]
 
@@ -35,14 +33,14 @@ export type EventsDirectoryView = 'map' | 'cards' | 'calendar'
 export type EventsDirectoryFilters = {
   query: string
   category: EventCategory | typeof DIRECTORY_FILTER_ALL
-  program: EventProgram | typeof DIRECTORY_FILTER_ALL
+  organizer: EventOrganizer | typeof DIRECTORY_FILTER_ALL
 }
 
 export function defaultDirectoryFilters(): EventsDirectoryFilters {
   return {
     query: '',
     category: DIRECTORY_FILTER_ALL,
-    program: DIRECTORY_FILTER_ALL
+    organizer: DIRECTORY_FILTER_ALL
   }
 }
 
@@ -62,7 +60,7 @@ function matchesQuery(
   ].some((field) => field.toLocaleLowerCase(locale).includes(needle))
 }
 
-/** Search ∧ type ∧ program, applied to an already-ordered event list — the
+/** Search, type and organizer, applied to an already-ordered event list. The
  * caller's order (upcoming first, then past) is preserved. */
 export function filterDirectoryEvents(
   events: readonly ComfyEvent[],
@@ -73,8 +71,8 @@ export function filterDirectoryEvents(
     (event) =>
       (filters.category === DIRECTORY_FILTER_ALL ||
         event.category === filters.category) &&
-      (filters.program === DIRECTORY_FILTER_ALL ||
-        event.program === filters.program) &&
+      (filters.organizer === DIRECTORY_FILTER_ALL ||
+        event.organizer === filters.organizer) &&
       matchesQuery(event, filters.query, locale)
   )
 }

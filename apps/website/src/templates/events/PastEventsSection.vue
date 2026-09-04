@@ -16,7 +16,6 @@ const CATEGORY_ORDER = [
   'workshop',
   'hackathon',
   'meetup',
-  'buildathon',
   'conference'
 ] as const
 
@@ -70,6 +69,7 @@ const tabs = computed(() =>
 
 <template>
   <CardArticleGallery01
+    class="lg:px-20"
     :title="t('events.past.title', locale)"
     title-align="center"
     :items

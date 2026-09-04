@@ -17,10 +17,13 @@ const {
   steps,
   cta,
   defaultOpen,
+  titleClass,
   class: className
 } = defineProps<{
   id?: string
   title: string
+  /** Overrides the heading's default weight/size for callers that need it. */
+  titleClass?: HTMLAttributes['class']
   lead?: string
   cta?: { label: string; href: string; newTab?: boolean }
   /** Triggers are numbered from their position, so callers pass titles only. */
@@ -40,7 +43,12 @@ const {
     <div class="flex flex-col gap-12 lg:flex-row lg:gap-24">
       <div class="shrink-0 lg:w-80">
         <h2
-          class="text-3xl font-light tracking-tight text-primary-warm-white lg:text-5xl"
+          :class="
+            cn(
+              'text-3xl font-light tracking-tight text-primary-warm-white lg:text-5xl',
+              titleClass
+            )
+          "
         >
           {{ title }}
         </h2>

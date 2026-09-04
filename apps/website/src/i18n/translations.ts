@@ -6242,9 +6242,9 @@ Enterprise`
     'zh-CN': '创作者，齐聚一堂'
   },
   'events.hero.subtitle': {
-    en: "Livestreams, hackathons, and community meetups — here's how to take part. Bring builders together, anywhere in the world: apply to host a community event.",
+    en: "Livestreams, hackathons, and community meetups. Here's how to take part: bring builders together, anywhere in the world, and apply to host a community event.",
     'zh-CN':
-      '直播、黑客松与社区聚会——这就是参与的方式。把创作者聚到一起，无论身在世界何处：申请主办一场社区活动。'
+      '直播、黑客松与社区聚会。参与方式很简单：把创作者聚到一起，无论身在世界何处，申请主办一场社区活动。'
   },
   'events.hero.prevSlide': {
     en: 'Previous featured event',
@@ -6281,8 +6281,11 @@ Enterprise`
   },
   'events.directory.typeLabel': { en: 'Event type', 'zh-CN': '活动类型' },
   'events.directory.allTypes': { en: 'All types', 'zh-CN': '所有类型' },
-  'events.directory.programLabel': { en: 'Program', 'zh-CN': '项目' },
-  'events.directory.allPrograms': { en: 'All programs', 'zh-CN': '所有项目' },
+  'events.directory.organizerLabel': { en: 'Organizer', 'zh-CN': '主办方' },
+  'events.directory.allOrganizers': {
+    en: 'All organizers',
+    'zh-CN': '所有主办方'
+  },
   'events.directory.viewLabel': { en: 'View', 'zh-CN': '视图' },
   'events.directory.view.map': { en: 'Map', 'zh-CN': '地图' },
   'events.directory.view.cards': { en: 'Cards', 'zh-CN': '卡片' },
@@ -6301,13 +6304,11 @@ Enterprise`
     en: 'No events match those filters yet. Try a broader search.',
     'zh-CN': '没有符合筛选条件的活动。请尝试放宽搜索条件。'
   },
-  'events.program.student': { en: 'Student', 'zh-CN': '学生' },
-  'events.program.communityHosts': {
-    en: 'Community hosts',
-    'zh-CN': '社区主办'
-  },
-  'events.program.official': { en: 'Official', 'zh-CN': '官方' },
-  'events.program.partner': { en: 'Partner', 'zh-CN': '合作伙伴' },
+  // Mirrors the community team's Notion taxonomy for who ran an event.
+  'events.organizer.comfy': { en: 'Comfy', 'zh-CN': 'Comfy 官方' },
+  'events.organizer.community': { en: 'Community', 'zh-CN': '社区' },
+  'events.organizer.partner': { en: 'Partner', 'zh-CN': '合作伙伴' },
+  // Transcribed from the community team's Notion copy for this section.
   'events.host.title': {
     en: 'Host a Comfy event!',
     'zh-CN': '主办一场 Comfy 活动！'
@@ -6315,78 +6316,102 @@ Enterprise`
   'events.host.lead': {
     en: 'Got an event coming up, or an idea in the works? Submit it for review to get support from Comfy.',
     'zh-CN':
-      '有即将举办的活动，或正在酝酿的想法？提交审核，即可获得 Comfy 的支持。'
+      '有活动即将举办，或者有想法正在酝酿？提交给我们审核，获得 Comfy 的支持。'
   },
   'events.host.applyToHost': { en: 'Apply to host', 'zh-CN': '申请主办' },
-  // Step 1 is transcribed from the Figma frame. Steps 2-5 are collapsed in the
-  // design with no copy, so their bodies are written here and want a content
-  // pass (ticket 08).
   'events.host.step1.title': {
-    en: 'Check your event is a good match',
-    'zh-CN': '确认你的活动是否合适'
+    en: 'Is your event eligible?',
+    'zh-CN': '你的活动符合条件吗？'
   },
   'events.host.step1.intro': {
-    en: 'Comfy events are community-run and community-sized. A quick check before you spend time on an application.',
-    'zh-CN':
-      'Comfy 活动由社区自行组织、规模也由社区决定。在你花时间填写申请之前，先做个快速自查。'
+    en: 'Run through this before you spend time on an application.',
+    'zh-CN': '在花时间准备申请之前，先过一遍下面几条。'
   },
   'events.host.step1.checklistLead': {
-    en: 'Before you apply, make sure your event ticks these boxes:',
-    'zh-CN': '申请前，请确认你的活动符合以下条件：'
+    en: 'Make sure your event:',
+    'zh-CN': '请确认你的活动：'
   },
   'events.host.step1.check1': {
-    en: 'Builders and artists as the primary audience',
-    'zh-CN': '以创作者和艺术家为主要受众'
+    en: 'Centers on using Comfy',
+    'zh-CN': '以使用 Comfy 为主要内容'
   },
   'events.host.step1.check2': {
-    en: '20+ participants expected',
-    'zh-CN': '预计有 20 位以上参与者'
+    en: 'Is at least 3 weeks away (so we have time to review your application and get you set up)',
+    'zh-CN': '距离举办至少还有 3 周（这样我们才有时间审核申请并帮你做好准备）'
   },
   'events.host.step1.check3': {
-    en: 'At least 2 weeks away — so we have time to review your application and get you set up',
-    'zh-CN': '至少还有两周时间，以便我们审核申请并帮你做好准备'
+    en: 'Expects 20 or more participants',
+    'zh-CN': '预计有 20 人或以上参与'
   },
   'events.host.step1.whoTitle': {
     en: 'Who can host?',
     'zh-CN': '谁可以主办？'
   },
   'events.host.step1.whoBody': {
-    en: "Anyone passionate about bringing builders together. Our hosts include student organizers, studio leads, custom node authors, community organizers, and people who just love to build. You don't need event planning experience or a large following.",
+    en: "Anyone passionate about bringing the Comfy community together. Our hosts include student organizers, studio leads, custom node authors, community organizers, and people who just love Comfy. You don't need event planning experience or a large following, just an idea and a will to make it happen.",
     'zh-CN':
-      '任何热衷于把创作者聚在一起的人。我们的主办方包括学生组织者、工作室负责人、自定义节点作者、社区组织者，以及单纯热爱创作的人。你不需要办活动的经验，也不需要大量粉丝。'
+      '任何有热情把 Comfy 社区聚到一起的人都可以。我们的主办方里有学生组织者、工作室负责人、自定义节点作者、社区组织者，也有单纯喜欢 Comfy 的人。你不需要办活动的经验，也不需要很多粉丝，有一个想法和把它做成的决心就够了。'
   },
   'events.host.step2.title': {
-    en: 'Plan your event',
-    'zh-CN': '筹划你的活动'
+    en: 'Get planning!',
+    'zh-CN': '开始筹备吧！'
   },
   'events.host.step2.body': {
-    en: 'Settle the date, the venue, and the shape of the day — a talk, a workshop, a build night. Tell us roughly how many people you expect and what you want them to leave with.',
+    en: 'Lock in your concept, venue, and ideal headcount, and get your event page up. If you want a reference, look at what other hosts have run.',
     'zh-CN':
-      '确定日期、场地和当天的形式——演讲、工作坊或共创之夜。告诉我们你预计的人数，以及希望参与者带走什么。'
+      '确定活动主题、场地和理想的参与人数，然后把活动页面做出来。如果想找些参考，可以看看其他主办方办过什么。'
   },
-  'events.host.step3.title': { en: 'Apply', 'zh-CN': '提交申请' },
+  'events.host.step2.browseLink': {
+    en: 'Browse events from the Comfy community',
+    'zh-CN': '浏览 Comfy 社区的活动'
+  },
+  'events.host.step3.title': {
+    en: 'Apply',
+    'zh-CN': '提交申请'
+  },
   'events.host.step3.body': {
-    en: 'Send the details through the application form. One form per event; you can come back and update it if plans move.',
+    en: "Whether you're starting from scratch or already deep in planning, send us your details. Approved hosts get our organizer toolkit and a chance to be featured on our official channels.",
     'zh-CN':
-      '通过申请表提交活动详情。每场活动填写一份；如果计划有变，你可以随时回来更新。'
+      '无论你是从零开始，还是已经在筹备中，把活动详情发给我们。通过审核的主办方将获得我们的主办方工具包，并有机会登上我们的官方渠道。'
   },
   'events.host.step4.title': {
-    en: 'Get approved and receive your event kit',
-    'zh-CN': '通过审核并领取活动礼包'
+    en: 'Receive your organizer toolkit',
+    'zh-CN': '领取你的主办方工具包'
   },
   'events.host.step4.body': {
-    en: 'We review applications as they arrive and reply either way. Approved events get a kit: brand assets, slide templates, and swag for your attendees.',
+    en: "We review every application and reply by email within 5 business days. If your event is eligible, you'll receive:",
     'zh-CN':
-      '我们会在收到申请后尽快审核，无论结果如何都会回复。通过审核的活动会获得一份礼包：品牌素材、幻灯片模板，以及给参与者的周边。'
+      '我们会审核每一份申请，并在 5 个工作日内通过邮件回复。如果你的活动符合条件，你将获得：'
+  },
+  'events.host.step4.item1.title': {
+    en: 'Comfy Event Organizer Playbook',
+    'zh-CN': 'Comfy 活动主办方手册'
+  },
+  'events.host.step4.item1.body': {
+    en: 'It covers everything you need to know about putting on a Comfy event, at any stage of planning.',
+    'zh-CN':
+      '这份指南涵盖了主办一场 Comfy 活动需要知道的一切，无论筹备到哪个阶段都用得上。'
+  },
+  'events.host.step4.item2.title': {
+    en: 'Brand assets and Comfy media',
+    'zh-CN': '品牌素材和 Comfy 影音素材'
+  },
+  'events.host.step4.item2.body': {
+    en: 'Use them in your promotional materials and play them at your event.',
+    'zh-CN': '可用于你的宣传物料，也可以在活动现场播放。'
+  },
+  'events.host.step4.item3.title': {
+    en: 'Your event listed on our event page',
+    'zh-CN': '你的活动登上我们的活动页面'
   },
   'events.host.step5.title': {
-    en: 'Host your event',
-    'zh-CN': '举办你的活动'
+    en: 'Host!',
+    'zh-CN': '举办活动！'
   },
   'events.host.step5.body': {
-    en: 'Run the day. Share what happened afterwards and we will help get it in front of the wider Comfy community.',
+    en: "Have fun. Share what happened, and we'll help get it in front of the wider Comfy community.",
     'zh-CN':
-      '把活动办起来。结束后与我们分享现场情况，我们会帮你把它传播给更广泛的 Comfy 社区。'
+      '好好享受。活动结束后把现场情况分享给我们，我们会帮你把它传播给更广泛的 Comfy 社区。'
   },
   'events.calendar.addToCalendar': {
     en: 'Add to calendar',
@@ -6416,7 +6441,6 @@ Enterprise`
   'events.category.hackathon': { en: 'Hackathon', 'zh-CN': '黑客松' },
   'events.category.workshop': { en: 'Workshop', 'zh-CN': '工作坊' },
   'events.category.meetup': { en: 'Meetup', 'zh-CN': '见面会' },
-  'events.category.buildathon': { en: 'Buildathon', 'zh-CN': '共创马拉松' },
   'events.category.conference': { en: 'Conference', 'zh-CN': '大会' },
 
   // Brand Portal page (/brand)
