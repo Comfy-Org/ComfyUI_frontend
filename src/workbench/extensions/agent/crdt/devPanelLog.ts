@@ -98,6 +98,14 @@ function sanitizeDetail(
   if (Array.isArray(value)) {
     return value.map((item) => sanitizeDetail(item, depth + 1, nextAncestors))
   }
+  if (value instanceof Error) {
+    return { name: value.name, message: value.message }
+  }
+  if (value instanceof Map) return `Map(${value.size})`
+  if (value instanceof Set) return `Set(${value.size})`
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value.toISOString()
+  }
 
   return Object.fromEntries(
     Object.entries(value).map(([key, item]) => {
