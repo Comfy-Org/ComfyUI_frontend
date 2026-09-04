@@ -207,6 +207,22 @@ describe('devPanelLog', () => {
     expect(devEvents.value[0]?.detail).toEqual(detail)
   })
 
+  it('preserves bounded descriptions of non-plain objects', () => {
+    recordDevEvent('doc_update', {
+      error: new TypeError('invalid update'),
+      map: new Map([['token', 'secret']]),
+      set: new Set(['secret']),
+      date: new Date('2026-09-04T06:00:00.000Z')
+    })
+
+    expect(devEvents.value[0]?.detail).toEqual({
+      error: { name: 'TypeError', message: 'invalid update' },
+      map: 'Map(1)',
+      set: 'Set(1)',
+      date: '2026-09-04T06:00:00.000Z'
+    })
+  })
+
   it('collapses values nested beyond the depth cap', () => {
     let detail: Record<string, unknown> = { leaf: 'kept-leaf' }
     for (let i = 0; i < 14; i++) detail = { child: detail }
