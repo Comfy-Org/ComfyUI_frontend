@@ -65,7 +65,7 @@ export function readCrdtSnapshot(
       stamps: readStamps(doc)
     }
   } catch (error) {
-    // A doc this build cannot read (KA-11) still has to produce a report —
+    // A doc this build cannot read still has to produce a report —
     // that failure IS the bug being reported.
     return {
       ...base,

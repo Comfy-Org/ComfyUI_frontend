@@ -50,7 +50,7 @@ describe('Composer', () => {
     setActivePinia(createPinia())
   })
 
-  it('T-21 / PM-678 / FE-1325 hints at ideas, canvas references, and dragged assets', () => {
+  it('hints at ideas, canvas references, and dragged assets', () => {
     mount()
 
     expect(screen.getByText('Describe ideas, @ to reference,')).toBeVisible()

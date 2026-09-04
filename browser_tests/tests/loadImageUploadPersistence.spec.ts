@@ -1,5 +1,5 @@
 /**
- * FE-1425: dropping an image on a Load Image node must survive a browser
+ * Dropping an image on a Load Image node must survive a browser
  * reload without an explicit save. `Comfy.Workflow.Persist` defaults to true
  * and writes a localStorage draft on every `graphChanged`, but the upload
  * commit never nudged the change tracker — and HTML5 drag-and-drop emits no

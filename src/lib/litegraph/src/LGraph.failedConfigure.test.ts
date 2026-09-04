@@ -34,8 +34,6 @@ import { createTestSubgraphData } from './subgraph/__fixtures__/subgraphHelpers'
  * The tests below record current `main` behaviour, including the places where
  * it leaks. Assertions that pin a leak in place are marked LEAK and are a
  * description of today, not a statement that today is correct.
- *
- * Program context: invariant I3 (no ownership leak on failure); QA-2.
  */
 
 const BAD_ID = '11111111-1111-4111-8111-111111111111'

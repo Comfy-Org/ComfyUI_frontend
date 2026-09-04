@@ -26,7 +26,7 @@ There is no separate cloud-versioned feed, and the "learn more" link on every
 release note points at <https://docs.comfy.org/changelog>, which only lists
 ComfyUI versions.
 
-This mismatch broke the feature on Cloud (tracked as **FE-1237**):
+This mismatch broke the feature on Cloud:
 
 - Cloud runs a much higher `cloud_version` (e.g. `0.160.1`) than the ComfyUI
   version the feed entries carry (e.g. `0.27.1`).

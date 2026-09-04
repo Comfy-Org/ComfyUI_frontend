@@ -188,23 +188,19 @@ remains rejected: it clobbers concurrent agent edits mid-turn and kills op-log r
 
 ## Notes
 
-This ADR mirrors two cross-repo workspace decisions (ADR-010 follower direction, ADR-011
-one-branch distribution strategy) into the repository they govern, per the project's
-per-repo governance rule. It relates to [ADR-0003](0003-crdt-based-layout-system.md)
-(CRDT layout) and [ADR-0008](0008-entity-component-system.md) (whose unified `World` was
-dropped in favor of dedicated Pinia stores). Linear FE-1330 tracks the store-migration
-dependency.
+This ADR relates to [ADR-0003](0003-crdt-based-layout-system.md) (CRDT layout) and
+[ADR-0008](0008-entity-component-system.md) (whose unified `World` was dropped in favor
+of dedicated Pinia stores). Migrating the stores remains a separate dependency.
 
 ## Addendum (2026-08-21): spike classification of the follower files
 
-The follower code on this branch splits into a durable core and a disposable spike
-(workspace ADR-013 records the full rationale):
+The follower code on this branch splits into a durable core and a disposable spike:
 
 - **Keep (durable, may receive further tests/E2E):** `docFrameClient`, `followerDoc`,
   `docSchema` + `schemaGuard`, `layoutFollowerBridge`,
   and the `useAgentCrdtFollower` orchestrator shell.
 - **Dispose (spike-only, no further investment):** `semanticProjector`, `diffSnapshots`,
   `graphMutations`, `litegraphMutator`, and `followerSeam.integration.test.ts`. These are
-  the interim ADR-0009-lineage render path and are deleted when the
+  the interim snapshot-diff render path and are deleted when the
   apply-remote-update→store adapter lands. Coverage or review findings on these files
   route to the store-adapter work, not to polishing the spike.

@@ -20,13 +20,13 @@ import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import type { OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
 
-// FE-1902: the doc id is otherwise held only in memory (set on turn ack), so a
+// The doc id is otherwise held only in memory (set on turn ack), so a
 // panel remount loses the binding until the NEXT turn ack. Persist it per-tab
 // in sessionStorage so an in-page remount can rebind immediately. A full page
 // reload deliberately does NOT rebind (see the nonce below): it mints a new
 // nonce, refuses the pre-reload record, and waits for the next turn ack.
 //
-// FEC-5: a bare `docId` string has no owner and no lifetime, so it survives
+// A bare `docId` string has no owner and no lifetime, so it survives
 // (a) a workflow switch in the same browser tab - the NEXT panel mount rebinds
 // to whichever workflow last confirmed a subscribe, not necessarily the one
 // about to become active - and (b) a browser-tab duplication, which clones
@@ -40,8 +40,7 @@ import { createOpSender } from './opSender'
 // slides while the doc keeps delivering frames, so a tab left idle past the
 // window a doc realistically stays relevant is refused rather than trusted
 // indefinitely. (1) closes case (b). Case (a) happens inside one page load,
-// so the nonce cannot see it; it is only BOUNDED by (2), not closed. The
-// `fec-docid-1` reproducer tracks the remaining same-tab window.
+// so the nonce cannot see it; it is only BOUNDED by (2), not closed.
 const DOC_ID_SESSION_KEY = 'Comfy.Agent.CrdtDocId'
 const DOC_ID_TTL_MS = 5 * 60 * 1000
 // Re-stamp the expiry on doc traffic at most this often, so a busy channel
@@ -94,7 +93,7 @@ function readPersistedDocId(): string | null {
       typeof record.nonce !== 'string' ||
       typeof record.expiresAt !== 'number'
     ) {
-      // Legacy/malformed record (e.g. pre-FEC-5 bare-string value): treat as
+      // Legacy/malformed record (e.g. a bare-string value): treat as
       // absent rather than trusting an unscoped id.
       return null
     }
@@ -115,7 +114,7 @@ function clearPersistedDocId(): void {
 }
 
 /**
- * Recency heartbeat budget (BE-9740's FE half): a bound, healthy channel that
+ * Recency heartbeat budget: a bound, healthy channel that
  * delivers NO doc-scoped frame for this long gets ONE active probe - a
  * resubscribe whose state-vector catch-up is a no-op on a healthy channel and
  * exactly the observed recovery on a stale one. A stale channel and an idle
@@ -124,14 +123,14 @@ function clearPersistedDocId(): void {
 export const STALE_AFTER_MS = 30_000
 
 /**
- * s5-metrics-1: per-outcome counters for every `doc_update` the composable's
+ * Per-outcome counters for every `doc_update` the composable's
  * listeners observe, replacing the single overloaded `updatesApplied`
  * observable. Each counter increments exactly once, at the boundary where
  * that outcome is decided — never inferred after the fact. `received` counts
  * only frames the bridge re-dispatched as `doc_update`, so
  * `received === applied + skipped` always holds; `errored`, `gap` and
  * `dropped` are disjoint from it because the bridge returns before
- * re-dispatching in each of those cases (schema gate, FEB-2 seq jump,
+ * re-dispatching in each of those cases (schema gate, sequence jump,
  * stale/duplicate discard). Frames the bridge drops for a workflowId other
  * than its `sentWorkflowId` emit no event and are not counted anywhere.
  * `applied` is tracked independently of `bridge.follower.updatesApplied`
@@ -147,7 +146,7 @@ export interface AgentCrdtOutcomeCounters {
   applied: number
   /** Received but not applied: inactive target, workflow mismatch, or no bound adapter session. */
   skipped: number
-  /** The merged doc failed the KA-11 read gate (`schema_error`). */
+  /** The merged doc failed the read gate (`schema_error`). */
   errored: number
   /** A seq jump was detected upstream; the frame was withheld and a resubscribe forced (`doc_gap`). */
   gap: number
@@ -215,7 +214,7 @@ export function useAgentCrdtFollower(
     dropped: 0
   })
 
-  // Dev-panel tap (poc-4): log every outbound frame with its delivery result.
+  // Log every outbound frame with its delivery result for the dev panel.
   // Wraps locally instead of modifying the exported apiTransport, whose
   // never-throw contract is covered by tests.
   const transport: DocFrameTransport = {
@@ -268,7 +267,7 @@ export function useAgentCrdtFollower(
     onBatchSettled: (outcome) => recordDevEvent('human_ops_settled', outcome)
   })
 
-  // Dev-panel tap (poc-4): track the doc's node-id set so the panel can show
+  // Track the doc's node-id set so the dev panel can show
   // exactly which nodes each doc_update added/removed. Rebuilt from zero on
   // doc_reset (remint) because the lineage broke.
   let knownDocNodeIds: Set<string> = new Set()
@@ -283,7 +282,7 @@ export function useAgentCrdtFollower(
     }
   }
 
-  // FE-1901 (poc-2): a `doc_subscribed {ok:false}` is a SERVER refusal — e.g.
+  // A `doc_subscribed {ok:false}` is a server refusal — e.g.
   // the subscribe raced the doc-host before the turn ack minted the doc. The
   // bridge's transport-level reconcile can never repair it: the frame WAS
   // delivered, so intent already equals reality. Retry the subscribe itself
@@ -300,7 +299,7 @@ export function useAgentCrdtFollower(
   // reality - and a stale channel's intent DOES equal reality).
   let staleProbeTimer: ReturnType<typeof setTimeout> | null = null
 
-  // FEC-5: `Date.now()` of the last persisted-record write by this instance.
+  // `Date.now()` of the last persisted-record write by this instance.
   // A confirmed subscribe always writes; doc-scoped frames re-stamp the expiry
   // no more often than DOC_ID_REFRESH_INTERVAL_MS, so a doc that keeps
   // delivering frames keeps its rebind window instead of lapsing mid-session.
@@ -372,14 +371,14 @@ export function useAgentCrdtFollower(
     if (ok) {
       clearSubscribeRetry()
       armStaleProbe()
-      // FE-1902 (poc-3): only a CONFIRMED binding is worth rebinding to after
+      // Only a confirmed binding is worth rebinding to after
       // a remount — persist on ok, not on intent.
       if (subscribedWorkflowId.value !== null)
         persistConfirmedDocId(subscribedWorkflowId.value)
     } else {
       clearStaleProbe()
       scheduleSubscribeRetry()
-      // FE #16637 residual: a refusal is the earliest signal the sender can
+      // A refusal is the earliest signal the sender can
       // get that its in-flight batch's doc is gone — don't make it wait out
       // the 10 s result-silence window to notice on its own.
       sender.abortIfUnbound()
@@ -505,7 +504,7 @@ export function useAgentCrdtFollower(
     }
   }
   const onSchemaError: EventListener = (event) => {
-    // KA-11 fail-closed: the bridge refused to propagate an unreadable doc, so
+    // The bridge refused to propagate an unreadable doc, so
     // nothing was projected. Surface it as its own status rather than as a
     // generic "disconnected", which is indistinguishable from "never connected".
     connected.value = false
@@ -571,7 +570,7 @@ export function useAgentCrdtFollower(
   api.addEventListener('reconnected', onReconnected)
   api.addEventListener('status', onSocketActivity)
 
-  // FE-1902 (poc-3): distinguish the mount-time null (in-memory doc id died
+  // Distinguish the mount-time null (in-memory doc id died
   // with the previous mount — rebind from sessionStorage) from a later null
   // (a REAL detach, e.g. new chat — drop the persisted id too).
   let initialBind = true

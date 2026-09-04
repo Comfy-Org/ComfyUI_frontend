@@ -39,8 +39,8 @@ function attachmentIconClass(name: string): string {
 }
 
 /**
- * Sent uploads reuse the reply asset grid (Uy, FE-1323): media attachments
- * render as the DES-530 per-count grid with the same hover-play, inspect, and
+ * Sent uploads reuse the reply asset grid: media attachments
+ * render as the per-count grid with the same hover-play, inspect, and
  * audio-card behavior as agent replies. A ref resolves to the uploaded input
  * file; an image without one still has its local preview. Text and other
  * kinds have no grid treatment and keep the compact tiles.

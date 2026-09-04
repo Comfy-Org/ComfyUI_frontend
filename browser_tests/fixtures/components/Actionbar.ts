@@ -45,7 +45,7 @@ export class ComfyActionbar {
   /**
    * The run progress bar draws inside the actionbar card, so it must hug the
    * card's bottom edge. Anything higher overlaps the Run/Cancel button row and
-   * gets painted over by it (FE-1504).
+   * gets painted over by it.
    */
   async expectInlineProgressFlushWithCardBottom() {
     await expect

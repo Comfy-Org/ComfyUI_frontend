@@ -118,7 +118,7 @@ test.describe('Preview as Text node', () => {
         [
           'null text',
           // The shape the Cloud backend produced when it misclassified the
-          // text as a filename and dropped it from the payload (BE-3601).
+          // text as a filename and dropped it from the payload.
           { text: [null] },
           'recovered'
         ],

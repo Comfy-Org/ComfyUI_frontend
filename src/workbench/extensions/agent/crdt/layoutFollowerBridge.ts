@@ -41,7 +41,7 @@ export class LayoutFollowerBridge extends EventTarget {
    * ({@link subscribe}) — because folding one document's history into another
    * merges two unrelated lineages: the next subscribe would carry the old
    * doc's state vector, the host would compute a nonsense delta against it,
-   * and both workflows' nodes would land on one canvas (FEB-5).
+   * and both workflows' nodes would land on one canvas.
    */
   private followerDoc = new FollowerDoc()
   /**
@@ -69,7 +69,7 @@ export class LayoutFollowerBridge extends EventTarget {
    * never on the first successful open.
    */
   private sentWorkflowId: string | null = null
-  /** Set once a merged doc failed the KA-11 read gate; never rendered after. */
+  /** Set once a merged doc failed the read gate; never rendered after. */
   private schemaError: FollowerSchemaError | null = null
   /**
    * Highest doc seq APPLIED since the last subscribe left the transport;
@@ -130,7 +130,7 @@ export class LayoutFollowerBridge extends EventTarget {
     return this.lastSeq ?? this.ackSeq ?? 0
   }
 
-  /** The KA-11 read-gate failure that closed this bridge's read path, if any. */
+  /** The read-gate failure that closed this bridge's read path, if any. */
   get lastSchemaError(): FollowerSchemaError | null {
     return this.schemaError
   }
@@ -145,7 +145,7 @@ export class LayoutFollowerBridge extends EventTarget {
 
   /**
    * Follow a workflow. Subscribing to a DIFFERENT workflow than the one this
-   * bridge's doc holds is a lineage break (FEB-5): the doc is re-minted so
+   * bridge's doc holds is a lineage break: the doc is re-minted so
    * the subscribe carries an empty state vector, and `follower_replaced` is
    * dispatched — unconditionally, even when the send could not leave a closed
    * socket — so consumers rebind their observers to the new doc rather than
@@ -242,7 +242,7 @@ export class LayoutFollowerBridge extends EventTarget {
     // a live frame overtook the ack: see {@link catchUpPending}.
     // Deliberately compares against lastSeq, never ackSeq: while lastSeq is
     // null the catch-up arrives AT ackSeq, so `<= ackSeq` would drop it and
-    // leave the follower on an empty doc (KA-11).
+    // leave the follower on an empty doc.
     const isCatchUp = this.catchUpPending && update.seq === this.ackSeq
     if (!isCatchUp && this.lastSeq !== null && update.seq <= this.lastSeq) {
       this.dispatchEvent(
@@ -280,7 +280,7 @@ export class LayoutFollowerBridge extends EventTarget {
     if (isCatchUp) this.catchUpPending = false
     this.follower.applyRemoteUpdate(update.update)
 
-    // KA-11 read-time gate. The merge itself is unconditional — Yjs bytes are
+    // The read-time gate follows the unconditional Yjs merge — bytes are
     // integrated or they are not — but nothing downstream may READ a doc whose
     // declared schema this build was not written against. Failing closed here,
     // before the frame is re-dispatched, is what keeps a v2 doc from being
@@ -331,8 +331,8 @@ export class LayoutFollowerBridge extends EventTarget {
    * has already been integrated. The host sends `doc_subscribed(seq=N)` and
    * THEN `doc_update(seq=N)` — and sends no catch-up at all when the follower
    * was already current — so recording N as the applied baseline drops the
-   * snapshot as stale and leaves a fresh follower empty (the KA-11
-   * `schema_version=undefined` symptom). The ack seq is kept apart in
+   * snapshot as stale and leaves a fresh follower empty (with
+   * `schema_version=undefined`). The ack seq is kept apart in
    * {@link ackSeq}: it arms the gap detector and backs {@link lastSequence},
    * but only an applied update ever moves {@link lastSeq}. The ack therefore
    * never rewinds a baseline established by an update that arrived first.

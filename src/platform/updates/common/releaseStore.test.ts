@@ -727,7 +727,7 @@ describe('useReleaseStore', () => {
     })
   })
 
-  describe('isCloud environment (FE-1237)', () => {
+  describe('isCloud environment', () => {
     beforeEach(() => {
       mockData.isCloud = true
     })

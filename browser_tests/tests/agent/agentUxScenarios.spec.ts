@@ -8,7 +8,7 @@ const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
 
 test.describe('Linear Agent UX scenarios', { tag: '@cloud' }, () => {
   for (const width of [480, 640]) {
-    test(`X-01 / PM-672 keeps controls usable at ${width}px panel width`, async ({
+    test(`keeps controls usable at ${width}px panel width`, async ({
       comfyPage
     }) => {
       const page = comfyPage.page

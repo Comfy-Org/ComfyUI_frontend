@@ -256,7 +256,7 @@ describe('CreditsTile', () => {
   })
 
   // 1991 cents is what the backend grants for STANDARD's 4,200-credit
-  // allowance; reconstructing it yields 4,201, one above the plan (FE-1451).
+  // allowance; reconstructing it yields 4,201, one above the plan.
   it('clamps monthly remaining to the allowance instead of exceeding it', () => {
     state.canAccessSubscriptionFeatures = true
     state.tier = 'STANDARD'

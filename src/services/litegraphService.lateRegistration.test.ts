@@ -32,7 +32,7 @@ import { widgetId } from '@/types/widgetId'
  * open graph would be invisible to a type-level check and would corrupt
  * exactly the ownership this migration is establishing.
  *
- * Program context: invariant I2 (no silent authority split); QA-11.
+ * Verifies that late registration does not silently split authority.
  */
 
 const GRAPH_ID = '44444444-4444-4444-8444-444444444444'

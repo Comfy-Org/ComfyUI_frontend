@@ -27,8 +27,7 @@ import { registerTestSubgraphNodeTypes } from './subgraph/__fixtures__/subgraphH
  * definition, where node, link, reroute and group IDs collide simultaneously
  * across the root graph and three nested/shared definitions.
  *
- * Program context: invariant I4 (no ambiguous entity ownership across graphs);
- * QA-3. `LGraph.test.ts` already covers node-ID remapping and the reference
+ * `LGraph.test.ts` already covers node-ID remapping and the reference
  * patching that follows it (links, promoted widgets, proxyWidgets), so this
  * file only adds what those tests do not reach: identity-preserving reference
  * remapping under a *simultaneous* collision, the scoping rule for the three
