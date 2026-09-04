@@ -589,14 +589,27 @@ describe('SubscriptionPanelContentWorkspace', () => {
         ).toBeInTheDocument()
       })
 
-      it('never offers Reactivate, even when a legacy rail resolves it true', () => {
+      // The capability alone decides Reactivate — the server closes it for
+      // sales-managed tiers (hideLifecycleCapabilities), and the client adds
+      // no guard of its own on top (settled with the reviewer on #16934).
+      it('hides Reactivate while the capability resolves false', () => {
         endInDays(10)
-        mockCanReactivatePlan.value = true
+        mockCanReactivatePlan.value = false
         renderComponent()
 
         expect(
           screen.queryByRole('button', { name: /reactivate/i })
         ).not.toBeInTheDocument()
+      })
+
+      it('follows the capability if it ever resolves true', () => {
+        endInDays(10)
+        mockCanReactivatePlan.value = true
+        renderComponent()
+
+        expect(
+          screen.getByRole('button', { name: /reactivate/i })
+        ).toBeInTheDocument()
       })
 
       it('falls back to the stock cancelled treatment without an end date', () => {
