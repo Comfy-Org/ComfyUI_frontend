@@ -1621,6 +1621,26 @@ describe('billingOperationStore', () => {
       })
     })
 
+    it('terminates polling for reconciliation_needed while the embedded flag is off', async () => {
+      mockFeatureFlags.embeddedCheckoutEnabled = false
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-reconcile-legacy',
+        status: 'reconciliation_needed',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation(
+        'op-reconcile-legacy',
+        'subscription'
+      )
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect((await terminal).status).toBe('reconciliation_needed')
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledOnce()
+    })
+
     it('handles a redacted retryable status without a capability', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-redacted',

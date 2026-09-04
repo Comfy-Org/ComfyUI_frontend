@@ -24,13 +24,11 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
-import type { Bounds, NodeId } from '@/renderer/core/layout/types'
+import type { Bounds, NodeId, Size } from '@/renderer/core/layout/types'
 import { toNodeId } from '@/types/nodeId'
-import {
-  isBoundsEqual,
-  isSizeEqual
-} from '@/renderer/core/layout/utils/geometry'
+import { isSizeEqual } from '@/renderer/core/layout/utils/geometry'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
+import type { UUID } from '@/utils/uuid'
 
 /**
  * Generic update item for element bounds tracking
@@ -42,8 +40,9 @@ interface ElementBoundsUpdate {
 }
 
 interface CachedNodeMeasurement {
+  rootGraphId: UUID
   nodeId: NodeId
-  bounds: Bounds
+  size: Size
 }
 
 /**
@@ -172,27 +171,26 @@ const resizeObserver = new ResizeObserver((entries) => {
         ? layoutStore.getNodeLayout(rootGraphId, nodeId)
         : null
     const normalizedHeight = removeNodeTitleHeight(height)
+    const measuredSize = { width, height: normalizedHeight }
     const previousMeasurement = cachedNodeMeasurements.get(element)
+    const reportedContentSize =
+      nodeId && rootGraphId
+        ? layoutStore.contentSizeOf(rootGraphId, nodeId)
+        : undefined
     const hasFreshMeasurementPending =
       elementsNeedingFreshMeasurement.has(element)
     const hasMatchingCachedNodeMeasurement =
       previousMeasurement != null &&
+      previousMeasurement.rootGraphId === rootGraphId &&
       previousMeasurement.nodeId === nodeId &&
-      nodeLayout != null &&
-      isBoundsEqual(previousMeasurement.bounds, nodeLayout.bounds)
+      isSizeEqual(previousMeasurement.size, measuredSize) &&
+      reportedContentSize != null &&
+      isSizeEqual(reportedContentSize, measuredSize)
 
-    // ResizeObserver emits entries where nothing changed (e.g. initial observe).
-    // Skip expensive DOM reads when this exact element/node already measured at
-    // the same normalized bounds and size.
-    if (
-      nodeLayout &&
-      !hasFreshMeasurementPending &&
-      isSizeEqual(nodeLayout.size, {
-        width,
-        height: normalizedHeight
-      }) &&
-      hasMatchingCachedNodeMeasurement
-    ) {
+    // ResizeObserver can repeat an unchanged entry (for example after an
+    // initial or changed-size delivery). Skip downstream work only when this
+    // exact element, graph, and node already reported the normalized size.
+    if (!hasFreshMeasurementPending && hasMatchingCachedNodeMeasurement) {
       continue
     }
     if (rootGraphId) {
@@ -222,16 +220,12 @@ const resizeObserver = new ResizeObserver((entries) => {
       width,
       height
     }
-    const normalizedBounds: Bounds = {
-      ...bounds,
-      height: normalizedHeight
-    }
-
     elementsNeedingFreshMeasurement.delete(element)
-    if (nodeId) {
+    if (nodeId && rootGraphId) {
       cachedNodeMeasurements.set(element, {
+        rootGraphId,
         nodeId,
-        bounds: normalizedBounds
+        size: measuredSize
       })
     }
 

@@ -1,6 +1,7 @@
 import { toString } from 'es-toolkit/compat'
 import { shallowRef, toRaw } from 'vue'
 
+import { assert } from '@/base/assert'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
@@ -12,6 +13,7 @@ import {
 } from '@/core/graph/nodeShell/nodeShellLifecycle'
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
+import { reportError } from '@/platform/telemetry/reportError'
 import {
   attachGroupLayout,
   attachNodeLayout,
@@ -19,9 +21,11 @@ import {
   detachGroupLayout,
   detachNodeLayout,
   detachRerouteLayout,
-  materializeRerouteLayout
+  materializeRerouteLayout,
+  releaseNodeLayoutAttachment
 } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { useLinkStore } from '@/stores/linkStore'
 import type { EndpointUpdate } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
@@ -219,6 +223,15 @@ export interface GraphAddOptions {
   dragEvent?: MouseEvent
 }
 
+/** Options for {@link LGraph.remove} method. */
+export interface GraphRemoveOptions {
+  /**
+   * Detach an adapter after another authority has reconciled canonical stores.
+   * Same-id replacement state is left intact.
+   */
+  preserveCanonicalState?: boolean
+}
+
 export interface LGraphExtra extends Dictionary<unknown> {
   reroutes?: SerialisableReroute[]
   linkExtensions?: { id: LinkId; parentId: RerouteId | undefined }[]
@@ -380,14 +393,29 @@ function serialiseStoredNodes(owner: LGraph, sortNodes: boolean) {
     const adapter = adapters.get(state.id)
     return adapter ? [{ adapter, state }] : []
   })
-  if (serialisers.length !== ordered.length) {
-    const missing = ordered.find((state) => !adapters.has(state.id))
-    console.error(
-      `Cannot serialize graph ${owner.id} from store: node ${missing?.id} has no live adapter; using live graph nodes`
-    )
+  if (
+    serialisers.length !== ordered.length ||
+    ordered.length !== adapters.size
+  ) {
+    const liveNodes = [...adapters.values()]
+    const missingState = ordered.find((state) => !adapters.has(state.id))
+    let missingAdapter: LGraphNode | undefined
+    if (missingState === undefined) {
+      const stateIds = new Set(ordered.map((state) => state.id))
+      missingAdapter = liveNodes.find((adapter) => !stateIds.has(adapter.id))
+    }
+    const mismatch = missingState
+      ? `stored node ${missingState.id} has no live adapter`
+      : missingAdapter
+        ? `live node ${missingAdapter.id} has no stored state`
+        : `${ordered.length} stored nodes do not match ${adapters.size} live nodes`
+    reportError(new Error('Graph serialization state mismatch'), {
+      errorType: 'graph_serialization_state_mismatch',
+      context: { graphId: owner.id, mismatch }
+    })
     const nodes = sortNodes
-      ? [...owner._nodes].sort((a, b) => compareNodeIds(a.id, b.id))
-      : owner._nodes
+      ? [...liveNodes].sort((a, b) => compareNodeIds(a.id, b.id))
+      : liveNodes
     return nodes.map((node) => node.serialize())
   }
   return serialisers.map(({ adapter, state }) =>
@@ -397,28 +425,6 @@ function serialiseStoredNodes(owner: LGraph, sortNodes: boolean) {
 
 function serialiseStoredGroups(owner: LGraph) {
   return owner._groups.map((group) => group.serialize())
-}
-
-export function serialiseMutableGraphParts(
-  owner: LGraph,
-  sortNodes: boolean = false
-) {
-  const nodes = sortNodes
-    ? [...owner._nodes].sort((a, b) => compareNodeIds(a.id, b.id))
-    : owner._nodes
-  return {
-    nodes: nodes.map((node) => node.serialize()),
-    groups: owner._groups.map((group) => group.serialize()),
-    links: owner.links.size
-      ? [...owner.links.values()].map((link) => link.asSerialisable())
-      : undefined,
-    floatingLinks: owner.floatingLinks.size
-      ? [...owner.floatingLinks.values()].map((link) => link.asSerialisable())
-      : undefined,
-    reroutes: owner.reroutes.size
-      ? [...owner.reroutes.values()].map((reroute) => reroute.asSerialisable())
-      : undefined
-  }
 }
 
 export class LGraph
@@ -1247,7 +1253,7 @@ export class LGraph
       if (typeof method === 'function') {
         const args =
           params == null ? [] : Array.isArray(params) ? params : [params]
-        ;(method as (...args: unknown[]) => unknown).apply(c, args)
+        Reflect.apply(method, c, args)
       }
     }
   }
@@ -1315,6 +1321,15 @@ export class LGraph
 
     node.id = parseNodeId(node.id) ?? UNASSIGNED_NODE_ID
 
+    const nodeWithSameId = this._nodes_by_id[node.id]
+    if (nodeWithSameId === node) {
+      assert(
+        false,
+        'LGraph.add: re-adding the same node instance (id collision with itself)'
+      )
+      return nodeWithSameId
+    }
+
     if (this._nodes.length >= LiteGraph.MAX_NUMBER_OF_NODES) {
       throw 'LiteGraph: max number of nodes in a graph reached'
     }
@@ -1375,7 +1390,10 @@ export class LGraph
    * Removes a node from the graph
    * @param node the instance of the node
    */
-  remove(node: LGraphNode | LGraphGroup): void {
+  remove(
+    node: LGraphNode | LGraphGroup,
+    options: GraphRemoveOptions = {}
+  ): void {
     // LEGACY: This was changed from constructor === LiteGraph.LGraphGroup
     if (node instanceof LGraphGroup) {
       this.canvasAction((c) => c.deselect(node))
@@ -1395,50 +1413,64 @@ export class LGraph
     if (nodesBeingRemoved.has(node)) return
 
     // not found
-    if (this._nodes_by_id[node.id] == null) {
+    if (this._nodes_by_id[node.id] == null && !options.preserveCanonicalState) {
       console.warn('LiteGraph: node not found', node)
       return
     }
     // cannot be removed
-    if (node.ignore_remove) {
+    if (node.ignore_remove && !options.preserveCanonicalState) {
       console.warn('LiteGraph: node cannot be removed', node)
+      return
+    }
+
+    if (node.graph !== this) {
+      assert(false, 'LGraph.remove: node does not belong to this graph')
       return
     }
 
     nodesBeingRemoved.add(node)
     try {
-      this.batchVersionUpdates(() => this.removeNode(node))
+      this.batchVersionUpdates(() => this.removeNode(node, options))
     } finally {
       nodesBeingRemoved.delete(node)
     }
   }
 
-  private removeNode(node: LGraphNode): void {
+  private removeNode(node: LGraphNode, options: GraphRemoveOptions): void {
+    const successor =
+      options.preserveCanonicalState &&
+      this._nodes_by_id[node.id] !== node &&
+      this._nodes_by_id[node.id] != null
+        ? this._nodes_by_id[node.id]
+        : undefined
+
     // sure? - almost sure is wrong
     this.beforeChange()
 
-    this.events.dispatch('node:before-removed', { node })
+    this.events.dispatch('node:before-removed', { node, successor })
 
-    const { inputs, outputs } = node
+    if (!successor) {
+      const { inputs, outputs } = node
 
-    // disconnect inputs
-    if (inputs) {
-      for (const [i] of inputs.entries()) {
-        if (inputHasLink(this, node.id, i)) node.disconnectInput(i, true)
+      // disconnect inputs
+      if (inputs) {
+        for (const [i] of inputs.entries()) {
+          if (inputHasLink(this, node.id, i)) node.disconnectInput(i, true)
+        }
       }
-    }
 
-    // disconnect outputs
-    if (outputs) {
-      for (const i of outputs.keys()) {
-        if (outputHasLinks(this, node.id, i)) node.disconnectOutput(i)
+      // disconnect outputs
+      if (outputs) {
+        for (const i of outputs.keys()) {
+          if (outputHasLinks(this, node.id, i)) node.disconnectOutput(i)
+        }
       }
-    }
 
-    // Floating links
-    for (const link of this.floatingLinks.values()) {
-      if (link.origin_id === node.id || link.target_id === node.id) {
-        this.removeFloatingLink(link)
+      // Floating links
+      for (const link of this.floatingLinks.values()) {
+        if (link.origin_id === node.id || link.target_id === node.id) {
+          this.removeFloatingLink(link)
+        }
       }
     }
 
@@ -1462,12 +1494,19 @@ export class LGraph
 
     // callback
     node.onRemoved?.()
-    clearNodeOwnedStoreState(node)
+    if (!successor) clearNodeOwnedStoreState(node)
 
     const order = node.order
-    useExecutionOrderStore().remove(graphScopeOf(this), node.id)
-    detachNodeFromStores(this, node)
-    detachNodeLayout(node)
+    if (!successor) {
+      useExecutionOrderStore().remove(graphScopeOf(this), node.id)
+    }
+    if (options.preserveCanonicalState) {
+      node._graphScope = undefined
+      releaseNodeLayoutAttachment(node)
+    } else {
+      detachNodeFromStores(this, node)
+      detachNodeLayout(node)
+    }
 
     node.graph = null
     node.order = order
@@ -1488,7 +1527,9 @@ export class LGraph
     const pos = this._nodes.indexOf(node)
     if (pos != -1) this._nodes.splice(pos, 1)
 
-    delete this._nodes_by_id[node.id]
+    if (this._nodes_by_id[node.id] === node) {
+      delete this._nodes_by_id[node.id]
+    }
     this.onNodeRemoved?.(node)
     this.events.dispatch('node:removed', { node })
 
@@ -1583,7 +1624,7 @@ export class LGraph
     y: number,
     nodeList?: LGraphNode[]
   ): LGraphNode | null {
-    const nodes = nodeList || this._nodes
+    const nodes = nodeList || nodesInRenderOrder(this)
     let i = nodes.length
     while (--i >= 0) {
       const node = nodes[i]
@@ -2212,8 +2253,10 @@ export class LGraph
       // Special handling: Subgraph input node
       i++
       if (link.origin_id === SUBGRAPH_INPUT_ID) {
-        link.target_id = subgraphNode.id
-        link.target_slot = i - 1
+        link.updateEndpoints({
+          targetNodeId: subgraphNode.id,
+          targetSlot: i - 1
+        })
         if (subgraphInput instanceof SubgraphInput) {
           subgraphInput.connect(
             subgraphNode.findInputSlotByType(link.type, true, true),
@@ -2899,7 +2942,10 @@ export class LGraph
 
       let error = false
       const nodeDataMap = new Map<NodeId, ISerialisedNode>()
-      const realignmentDataMap = new Map<NodeId, ISerialisedNode>()
+      const realignmentDataMap = new Map<
+        NodeId,
+        Pick<ISerialisedNode, 'id' | 'inputs'>
+      >()
 
       /**
        * Requested (serialized) id → final id for nodes whose id was
@@ -2945,7 +2991,7 @@ export class LGraph
           }
           nodeDataMap.set(node.id, n_info)
           realignmentDataMap.set(node.id, {
-            ...n_info,
+            id: n_info.id,
             inputs: n_info.inputs?.map((input) => ({ ...input }))
           })
         }

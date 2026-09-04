@@ -1,59 +1,336 @@
 # Comfy
 
-> Comfy is the AI creation engine for visual professionals who demand control over every model, every parameter, and every output. Built around ComfyUI — the open-source node-graph runtime with 60,000+ community nodes and thousands of shared workflows — Comfy ships as a free local app, a managed cloud, an API, and an enterprise platform.
+> Comfy is the AI creation engine for visual professionals who demand control over every model, every parameter, and every output. Built around ComfyUI, the open-source node-graph runtime with 60,000+ community nodes, Comfy ships as a free desktop app, a managed cloud, an API, an MCP server and CLI for AI agents, and an enterprise platform.
 
-The Comfy ecosystem spans four surfaces:
+The Comfy ecosystem spans these surfaces:
 
-- **ComfyUI (local)** — the open-source node-graph runtime that runs models on your own hardware.
-- **Comfy Cloud** — managed ComfyUI in the browser, with hosted models and storage.
-- **Comfy API** — a REST API for triggering workflows from your own apps and pipelines.
-- **Comfy Enterprise** — single-tenant deployments, BYO keys, data ownership, and orchestration for teams.
+- **Comfy Desktop (local)**: the open-source ComfyUI engine, running models on your own hardware.
+- **Comfy Cloud**: managed ComfyUI in the browser, with pre-loaded models, pre-installed custom nodes, and concurrent jobs.
+- **Comfy API**: any ComfyUI workflow deployed as a production endpoint, triggered from your own apps and pipelines.
+- **Comfy MCP**: the full ComfyUI engine exposed over the Model Context Protocol, so any AI agent can build workflows and generate images, video, audio, and 3D.
+- **Comfy CLI**: the same engine from the terminal and from coding agents such as Claude Code, Codex, and Cursor, with JSON output for scripts.
+- **Comfy Enterprise**: ComfyUI for teams, with dedicated GPU compute, SSO and role-based access, bring-your-own API keys, and custom SLAs.
+- **Comfy Developer Platform** (platform.comfy.org): API keys, usage, builds, and serverless deployments for developers.
 
-Studios building with Comfy include Series Entertainment, Moment Factory, Open Story Movement, and Ubisoft (La Forge). Use cases concentrate in VFX & animation, advertising & creative studios, gaming, and eCommerce/fashion.
+How it works: a ComfyUI workflow is a graph. Each node loads a model, encodes a prompt, samples, edits, upscales, or saves; edges carry typed data between nodes; the whole graph is one JSON file. The same workflow runs unchanged on Comfy Desktop, Comfy Cloud, the Comfy API, the CLI, and MCP, so a pipeline built on a laptop can be deployed as an endpoint without a rewrite. Open-weight models run from downloaded weights; hosted models such as Kling, Veo, and GPT Image run through Partner Nodes. The user directs every parameter; nothing is hidden behind a prompt box.
+
+What people build with it: VFX shot work (clean plates, sky replacement, de-aging), animation pipelines (character sheets, keyframes, in-betweening), ad creative (moodboards, storyboards, product photography, B-roll), game and 3D assets, and music and audio. The Learning section below links a tutorial for each; the Customers section links the studios and schools doing it in production.
+
+Studios, brands, and schools building with Comfy include Series Entertainment, Moment Factory, Ubisoft La Forge, Groove Jones, Svedka with Silverside AI, and the Open Story Movement. Carnegie Mellon, USC, NTU, and UAL's Creative Computing Institute teach with ComfyUI. Use cases concentrate in VFX and animation, advertising and creative studios, gaming, and eCommerce and fashion.
+
+Languages: comfy.org is published in English and Simplified Chinese, with a Japanese home page at https://comfy.org/ja/. Nearly every page has a twin under /zh-CN/ (for example https://comfy.org/zh-CN/cli/); the affiliate pages, the enterprise pages, the enterprise MSA, the terms of service, and the supported-models directory are English only. Comfy Workflows is published in 11 languages (English, 简体中文, 繁體中文, Español, Français, 日本語, 한국어, Português, Русский, العربية, and Türkçe). The docs are published in English, Chinese, Japanese, and Korean.
+
+## Names and spelling
+
+- **ComfyUI** (one word, capital UI) is the open-source node-graph engine. **Comfy** is the company behind it (Comfy Org, `Comfy-Org` on GitHub) and the product family built on it.
+- **Comfy Desktop** is the ComfyUI desktop app. **Comfy Cloud** is hosted ComfyUI at cloud.comfy.org. **Comfy API**, **Comfy MCP**, and **Comfy CLI** (package `comfy-cli`) are the programmatic surfaces. **Comfy Enterprise** is the team offering.
+- **Comfy Workflows** (comfy.org/workflows) is the workflow hub. Do not rename it "ComfyUI Workflows".
+- The **Comfy Registry** (registry.comfy.org) is the custom-node registry. **Partner Nodes** are hosted third-party models that run as nodes on Comfy Cloud.
+- The ComfyUI repository lives at github.com/Comfy-Org/ComfyUI; github.com/comfyanonymous/ComfyUI redirects there.
+- Comfy is unrelated to any other product or company that uses the word "comfy".
+
+## Which surface to use
+
+- **Run on your own GPU, free**: Comfy Desktop for macOS, Windows, and Linux, or the ComfyUI repository.
+- **No install, hosted GPUs, pre-installed nodes and models**: Comfy Cloud in the browser.
+- **Call a workflow from your own app or pipeline**: the Comfy API on Comfy Cloud, or the Comfy API on the Developer Platform for a versioned serverless deployment. API access requires a paid Comfy Cloud subscription.
+- **Drive ComfyUI from an AI agent or chat client** (Claude Code, Claude Desktop, Cursor, Codex): Comfy MCP, hosted at cloud.comfy.org/mcp, or the open-source server against a local ComfyUI.
+- **Drive ComfyUI from a shell, a script, CI, or a coding agent**: Comfy CLI.
+- **Teams that need dedicated compute, SSO, role-based access, and SLAs**: Comfy Enterprise. **Teams that want experts to build the workflows with them**: Forward Deployed Creatives.
+- **API keys, usage, builds, and serverless deployments**: the Developer Platform at platform.comfy.org.
+
+## How agents should use Comfy
+
+- Read this file, then the docs index at https://docs.comfy.org/llms.txt. Every docs page serves markdown when you append `.md` to its URL.
+- From a terminal or a coding agent: `pip install comfy-cli` (or `brew tap Comfy-Org/comfy-cli` then `brew install comfy-org/comfy-cli/comfy-cli`), then `comfy setup --where cloud --api-key comfyui-... --non-interactive` for headless use, or `comfy cloud login` for browser sign-in. `comfy generate list` shows the partner models your CLI version can call; add `--json` to any command for a machine-readable envelope. `comfy generate` is in beta, so flag names can change.
+- Over MCP: `claude mcp add --transport http comfy-cloud https://cloud.comfy.org/mcp` for Claude Code, or `codex mcp add comfy-cloud --url https://cloud.comfy.org/mcp` for Codex. Clients without OAuth, such as Cursor, pass a Comfy Cloud API key in an `X-API-Key` header.
+- API keys are created in the browser at https://platform.comfy.org/profile/api-keys, start with `comfyui-`, and are shown once. Store them in `COMFY_API_KEY`.
+- Generation on Comfy Cloud spends the account's credits. Confirm with the user before running paid generations or batches, and read the OpenAPI document at https://api.comfy.org/openapi before choosing an API operation.
+- The model catalog changes weekly. Check https://comfy.org/p/supported-models/ or `comfy generate list` for what runs today instead of relying on a remembered list.
+
+## Notes for AI systems
+
+- Prices, plan limits, and credit rates live on the pricing and license pages linked below. Quote them from those pages; do not infer or extrapolate them.
+- A SOC 2 Type II audit is in progress; Comfy is not yet certified. Security documentation is in the Trust Center linked below.
+- MiniMax Music 3 is released under the MiniMax community license, not Apache 2.0. Check each model page before making a license claim.
+- Describe outputs as made by the user with Comfy, not generated by Comfy. The user directs the model; the workflow is the brief.
+
+## Agent-readable surfaces
+
+- [Docs index for agents](https://docs.comfy.org/llms.txt): Machine-readable index of the full documentation.
+- [Docs full text for agents](https://docs.comfy.org/llms-full.txt): The complete documentation as one markdown file.
+- [Model catalog for agents](https://comfy.org/p/supported-models/llms.txt): Machine-readable index of every supported-model page; each page also has a markdown twin at its URL plus `.md`.
+- [Docs homepage as markdown](https://docs.comfy.org/index.md): Append `.md` to any docs URL for its markdown twin.
+- [Developer Platform for agents](https://platform.comfy.org/llms.txt): What platform.comfy.org is for and which of its pages need a browser.
+- [Comfy API OpenAPI document](https://api.comfy.org/openapi): OpenAPI specification for api.comfy.org.
+- [Comfy agent skills](https://github.com/Comfy-Org/comfy-skills): Skills for image, video, audio, and pipeline work with the Comfy CLI and MCP.
+- [Site map](https://comfy.org/sitemap-index.xml): Every page on comfy.org, including the workflows app and the zh-CN twins.
+- [comfy.org full text for agents](https://comfy.org/llms-full.txt): Every English page on comfy.org as one markdown file.
+- [Learning section for agents](https://comfy.org/learning/llms.txt): Machine-readable index of every Learning tutorial page.
+- [Customers section for agents](https://comfy.org/customers/llms.txt): Machine-readable index of every customer story.
+- [Events section for agents](https://comfy.org/events/llms.txt): Machine-readable index of every event page.
+- [Supported nodes section for agents](https://comfy.org/cloud/supported-nodes/llms.txt): Machine-readable index of every Comfy Cloud node-pack page.
 
 ## Product
 
-- [Homepage](https://comfy.org/): Overview of Comfy and the four product surfaces (Local, Cloud, API, Enterprise).
-- [Download Comfy (Local)](https://comfy.org/download/): Free desktop app for macOS, Windows, and Linux — runs ComfyUI on your own GPU.
-- [Comfy Cloud](https://comfy.org/cloud/): Managed ComfyUI in the browser with hosted models and storage; no local install required.
-- [Comfy Cloud Pricing](https://comfy.org/cloud/pricing/): Plans and per-credit pricing for individuals and teams using Comfy Cloud.
-- [Comfy API](https://comfy.org/api/): REST API for triggering ComfyUI workflows programmatically from external apps.
-- [Comfy Enterprise](https://comfy.org/cloud/enterprise/): Single-tenant ComfyUI deployments with BYO keys, orchestration, and data-ownership guarantees.
+- [Homepage](https://comfy.org/): Overview of Comfy, the AI creation engine for visual professionals, built on the open-source ComfyUI node graph.
+- [Comfy Desktop](https://comfy.org/download/): Free desktop app for macOS, Windows, and Linux that runs the full ComfyUI engine on your own GPU.
+- [Comfy Cloud](https://comfy.org/cloud/): Managed ComfyUI in the browser with pre-loaded models, pre-installed custom nodes, and concurrent jobs; no local install required. The app itself runs at https://cloud.comfy.org (sign-in required).
+- [Comfy Cloud Pricing](https://comfy.org/pricing/): Plans, credits, and what each Comfy Cloud plan includes, for individuals and teams.
+- [Developer Platform](https://comfy.org/platform/): Deploy and scale ComfyUI workflows. Your workflows. Every model. One API.
+- [Developer Platform: Comfy API](https://comfy.org/platform/comfy-api/): Deploy your ComfyUI workflow as a production API. It scales effortlessly with your team or project's needs.
+- [Developer Platform: Models API](https://comfy.org/platform/models/): Call partner models including Seedance, Minimax H3, Nano Banana, and GPT-Image-2. Access the latest models with a single API key.
+- [Developer Platform: Builder](https://comfy.org/platform/builder/): Package custom nodes, models, and Python dependencies into a reproducible build. Run it on Comfy Desktop or deploy it to serverless.
+- [Comfy MCP](https://comfy.org/mcp/): The full ComfyUI engine over the Model Context Protocol, so Claude Code, Claude Desktop, and any MCP client can build workflows and generate images, video, audio, and 3D, on Comfy Cloud or your own machine.
+- [Comfy CLI](https://comfy.org/cli/): The command line for the ComfyUI engine: generate images, video, audio, and 3D from Claude Code, Codex, Cursor, or any shell, with JSON output built for agents and scripts.
+- [Comfy Enterprise](https://comfy.org/enterprise/): ComfyUI for teams: dedicated GPU compute, priority queuing, custom SLAs, team workspaces with role-based access and SSO, bring-your-own API keys, and models cleared for commercial use.
+- [ComfyUI Managed Builds](https://comfy.org/enterprise/managed-builds/): Reproducible ComfyUI environments for Enterprise: pin a release, runtime, custom nodes, and models, then build a deployable image.
+- [Forward Deployed Creatives](https://comfy.org/forward-deployed-creatives/): Comfy experts who embed with your team, build your ComfyUI workflows, and teach your team to scale them.
 - [MiniMax Commercial License](https://comfy.org/minimax/license/): Commercial-use licenses for running MiniMax H3 and MiniMax Audio & Music locally; Comfy is the only official reseller, with Professional and Enterprise tiers.
+- [Request a MiniMax Professional License](https://comfy.org/minimax/license/professional-request/): Intake form for the Professional tier — a fixed-price monthly license covering up to 10 users.
+- [Launches](https://comfy.org/launches/): Everything new in ComfyUI in one place: the latest launches across desktop, cloud, and the core engine.
+
+## Models
+
+- [Supported Models](https://comfy.org/p/supported-models/): Directory of 380+ models that run in ComfyUI: image, video, audio, 3D, and utility models, each with its own page. Machine-readable catalog at https://comfy.org/p/supported-models/llms.txt.
+- [Models Overview](https://comfy.org/models/): Flagship models available on Comfy, with links to each launch page.
+- [Flux 3 (Black Forest Labs, video model)](https://comfy.org/flux-3/): Multimodal model: video with native audio, up to 20 seconds per generation, from text, image, video, or keyframes.
+- [Gemini Omni 1.1 Flash (Google, video model)](https://comfy.org/gemini-omni/): One node covers text to video, image to video, reference to video, editing, and scene extension, with output up to 4K and audio on every clip.
+- [LTX 2.5 (Lightricks, video model)](https://comfy.org/ltx-2.5/): Open weights: free to run on your own GPU, or on Comfy Cloud alongside every other model.
+- [MiniMax H3 (MiniMax, video model)](https://comfy.org/minimax-h3/): Open weights: multi-modal in and out, native stereo audio on every clip, up to 2K and 5-15s per generation.
+- [MiniMax Music 3 (MiniMax, music model)](https://comfy.org/minimax-music-3/): Open-weight text-to-music model, on Comfy Cloud or your own GPU.
+- [Pixal3D + TRELLIS.2 (Image to 3D model)](https://comfy.org/pixal3d-trellis2/): Turn a single image into a textured 3D model you can inspect, download, and continue refining on the graph.
+- [Seedance 2.5 (ByteDance, video model)](https://comfy.org/seedance-2.5/): Cinematic multi-shot video with native audio, from text or image.
+- [Wan 3.0 (Alibaba, video model)](https://comfy.org/wan-3.0/): Up to 30 seconds of video from a text prompt, an image, or video, image, and audio references, with sound produced alongside the picture, on Comfy Cloud.
+- [Wan Animate 2 (Alibaba, character animation model)](https://comfy.org/wan-animate-2/): Open source: transfers motion from a driving video onto your character, on Comfy Cloud or your own hardware.
 
 ## Workflows and Gallery
 
-- [Workflow Gallery](https://comfy.org/gallery/): Curated showcase of ComfyUI outputs — images, video, and 3D — produced by the community.
-- [Community Workflows](https://www.comfy.org/workflows/): Browseable library of community-shared ComfyUI workflows you can load and remix.
+- [Comfy Workflows](https://comfy.org/workflows/): 600+ free, ready-to-run ComfyUI workflows across every model and category; browse, load, and remix.
+- [Top Creators](https://comfy.org/workflows/creators/): The most-used ComfyUI workflow creators on Comfy Workflows.
+- [Gallery](https://comfy.org/gallery/): Curated showcase of work built in ComfyUI: images, video, and 3D from the community.
+
+### Workflow Categories
+
+- [Image Generation Workflows](https://comfy.org/workflows/category/image/): All image generation workflows.
+- [Video Generation Workflows](https://comfy.org/workflows/category/video/): All video generation workflows.
+- [Audio Generation Workflows](https://comfy.org/workflows/category/audio/): All audio generation workflows.
+- [3D Generation Workflows](https://comfy.org/workflows/category/3d/): All 3D generation workflows.
+
+### Workflows by Model
+
+- [All Models](https://comfy.org/workflows/model/): Index of models with workflow collections.
+- [Flux Workflows](https://comfy.org/workflows/model/flux/): ComfyUI workflows using Flux.
+- [Wan Workflows](https://comfy.org/workflows/model/wan/): ComfyUI workflows using Wan.
+- [Kling Workflows](https://comfy.org/workflows/model/kling/): ComfyUI workflows using Kling.
+- [Grok Workflows](https://comfy.org/workflows/model/grok/): ComfyUI workflows using Grok.
+- [Seedance Workflows](https://comfy.org/workflows/model/seedance/): ComfyUI workflows using Seedance.
+- [Qwen Image Workflows](https://comfy.org/workflows/model/qwen-image/): ComfyUI workflows using Qwen Image.
+- [Qwen Image Edit Workflows](https://comfy.org/workflows/model/qwen-image-edit/): ComfyUI workflows using Qwen Image Edit.
+- [Ideogram Workflows](https://comfy.org/workflows/model/ideogram/): ComfyUI workflows using Ideogram.
+- [LTX Workflows](https://comfy.org/workflows/model/ltx/): ComfyUI workflows using LTX.
+- [Z-Image Workflows](https://comfy.org/workflows/model/z-image/): ComfyUI workflows using Z-Image.
+- [Nano Banana Pro Workflows](https://comfy.org/workflows/model/nano-banana-pro/): ComfyUI workflows using Nano Banana Pro.
+
+### Use Cases
+
+- [All Use Cases](https://comfy.org/workflows/use-cases/): Index of workflow use cases.
+- [AI Image to Video](https://comfy.org/workflows/use-cases/ai-image-to-video/): Workflows for animating still images into video.
+- [AI Image Upscaler](https://comfy.org/workflows/use-cases/ai-image-upscaler/): Workflows for upscaling images and video.
+- [AI Image Enhancer](https://comfy.org/workflows/use-cases/ai-image-enhancer/): Workflows for sharpening and enhancing image quality.
+- [AI Image Extender](https://comfy.org/workflows/use-cases/ai-image-extender/): Workflows for extending images beyond their original frame.
+- [AI Anime Generator](https://comfy.org/workflows/use-cases/ai-anime-generator/): Workflows for anime-style imagery.
+- [AI Avatar Generator](https://comfy.org/workflows/use-cases/ai-avatar-generator/): Workflows for avatars.
+- [AI Headshot Generator](https://comfy.org/workflows/use-cases/ai-headshot-generator/): Workflows for professional headshots.
+- [AI Hairstyle Changer](https://comfy.org/workflows/use-cases/ai-hairstyle-changer/): Workflows for changing hairstyles in photos.
+- [AI Interior Design](https://comfy.org/workflows/use-cases/ai-interior-design/): Workflows for interior design.
+- [AI Character Replacement](https://comfy.org/workflows/use-cases/ai-character-replacement/): Workflows for swapping characters in scenes.
+- [AI Caricature Generator](https://comfy.org/workflows/use-cases/ai-caricature-generator/): Workflows for caricatures.
+- [AI Tattoo Generator](https://comfy.org/workflows/use-cases/ai-tattoo-generator/): Workflows for tattoo concepts.
+- [AI Music Generator](https://comfy.org/workflows/use-cases/ai-music-generator/): Workflows for music.
+- [AI Song Generator](https://comfy.org/workflows/use-cases/ai-song-generator/): Workflows for complete songs.
+- [Image to 3D](https://comfy.org/workflows/use-cases/image-to-3d/): Workflows for converting images into 3D models.
+- [Restore Old Photos](https://comfy.org/workflows/use-cases/restore-old-photos/): Workflows for restoring old photographs.
+- [Sprite Sheet Generator](https://comfy.org/workflows/use-cases/sprite-sheet-generator/): Workflows for game sprite sheets.
+
+## Learning
+
+- [Learning Hub](https://comfy.org/learning/): Hands-on ComfyUI tutorials and workflows, organized by discipline.
+
+### ComfyUI Basics
+
+- [ComfyUI Basics](https://comfy.org/learning/basics/): Beginner tutorials: the node graph, text-to-image and image-to-image, LoRAs and ControlNets, then inpainting, outpainting, and upscaling.
+- [Full Node Graph Basics](https://comfy.org/learning/basics/full-node-graph-basics/): A beginner's walkthrough of the ComfyUI node graph.
+- [Text-to-Image and Image-to-Image Workflows](https://comfy.org/learning/basics/text-to-image-image-to-image/): Build a text-to-image workflow, then adapt it for image-to-image.
+- [LoRAs, Style Transfer, and ControlNets](https://comfy.org/learning/basics/loras-style-transfer-controlnets/): What each one does and how to wire them into a ComfyUI workflow.
+- [Inpainting, Outpainting, and Upscaling](https://comfy.org/learning/basics/inpainting-outpainting-upscaling/): Mask and repaint, extend the frame, and add resolution in ComfyUI.
+- [Image-to-Video, Motion Control, and Upscaling](https://comfy.org/learning/basics/image-to-video-motion-control-upscaling/): Animate a still image, steer the shot with motion control, and finish at higher resolution.
+
+### Ad Creative
+
+- [Ad Creative Tutorials](https://comfy.org/learning/ads/): Moodboards, storyboards, product photography, B-roll, OOH visualization, and talent casting.
+- [Moodboard Creation](https://comfy.org/learning/ads/moodboard-creation/): Build campaign moodboards in ComfyUI.
+- [Storyboard Creation](https://comfy.org/learning/ads/storyboard-creation/): Storyboard a spot shot by shot in ComfyUI.
+- [Product Photography](https://comfy.org/learning/ads/product-photography/): Product shots and packshots in ComfyUI.
+- [B-Roll Creation](https://comfy.org/learning/ads/b-roll-creation/): Generate B-roll for ads in ComfyUI.
+- [OOH Visualization](https://comfy.org/learning/ads/ooh-visualization/): Visualize out-of-home placements in ComfyUI.
+- [Talent Casting](https://comfy.org/learning/ads/talent-casting/): Explore casting options in ComfyUI.
+
+### Animation
+
+- [Animation Tutorials](https://comfy.org/learning/animations/): Character sheets, keyframes, in-betweening, backgrounds, and compositing.
+- [Concept Exploration](https://comfy.org/learning/animations/concept-exploration/): Explore animation concepts in ComfyUI.
+- [Character Sheet](https://comfy.org/learning/animations/character-sheet/): Build consistent character sheets in ComfyUI.
+- [Keyframe Exploration](https://comfy.org/learning/animations/keyframe-exploration/): Explore keyframes in ComfyUI.
+- [In-Betweening](https://comfy.org/learning/animations/in-betweening/): Generate in-between frames in ComfyUI.
+- [Background and Asset Generation](https://comfy.org/learning/animations/background-and-asset-generation/): Backgrounds and assets for animation in ComfyUI.
+- [Background and Compositing](https://comfy.org/learning/animations/background-and-compositing/): Composite characters onto backgrounds in ComfyUI.
+
+### VFX
+
+- [VFX Tutorials](https://comfy.org/learning/vfx/): Clean plates, sky replacement, de-aging, mattes, and shot work you can open and run yourself.
+- [Cleanplate Walkthrough](https://comfy.org/learning/vfx/cleanplate-walkthrough/): Build clean plates in ComfyUI.
+- [Sky Replacement](https://comfy.org/learning/vfx/sky-replacement/): Replace skies in ComfyUI.
+- [Deaging Workflow](https://comfy.org/learning/vfx/deaging-workflow/): De-age talent in ComfyUI.
+- [Mattes and Utilities](https://comfy.org/learning/vfx/mattes-and-utilities/): Mattes and utility passes in ComfyUI.
+- [Frame Adjustments](https://comfy.org/learning/vfx/frame-adjustments/): Frame-level adjustments in ComfyUI.
+- [Seedance Demo](https://comfy.org/learning/vfx/seedance-demo/): Seedance for VFX shots in ComfyUI.
+
+### Quick Demos
+
+- [Explore and Use a Community Workflow](https://comfy.org/demos/community-workflows/): Find a community workflow on Comfy Workflows and get it running.
+- [Create a Video from an Image](https://comfy.org/demos/image-to-video/): Use the Image to Video workflow template in ComfyUI to generate a short clip from a single image.
+- [Browse Workflow Templates](https://comfy.org/demos/workflow-templates/): Find and open the workflow templates that ship with ComfyUI.
 
 ## Customers and Case Studies
 
-- [Customer Stories](https://comfy.org/customers/): Index of named customers and how they use ComfyUI in production.
-- [Series Entertainment](https://comfy.org/customers/series-entertainment/): How Series Entertainment rebuilt game and video production around ComfyUI.
-- [Moment Factory](https://comfy.org/customers/moment-factory/): Architectural-scale 3D projection mapping reimagined with ComfyUI at Moment Factory.
-- [Ubisoft — Chord](https://comfy.org/customers/ubisoft-chord/): Ubisoft La Forge open-sourcing the Chord model and its ComfyUI integration.
-- [Open Story Movement](https://comfy.org/customers/open-story-movement/): How an open-source movement around AI storytelling builds on ComfyUI.
+- [Customer Stories](https://comfy.org/customers/): How studios, brands, artists, and universities use Comfy in production.
+- [Series Entertainment](https://comfy.org/customers/series-entertainment/): How Series Entertainment rebuilt game and video production with ComfyUI.
+- [Moment Factory](https://comfy.org/customers/moment-factory/): How Moment Factory reimagined 3D projection mapping at architectural scale with ComfyUI.
+- [Ubisoft CHORD](https://comfy.org/customers/ubisoft-chord/): Ubisoft open-sources the CHORD model with ComfyUI for AAA PBR material generation.
+- [Open Story Movement](https://comfy.org/customers/open-story-movement/): How Doodles, SYSTMS, and open-source tools like ComfyUI are rewriting the rules for artists.
+- [Svedka and Silverside AI](https://comfy.org/customers/svedka-silverside/): How Svedka and Silverside AI made the first AI-generated Super Bowl ad with ComfyUI.
+- [Groove Jones](https://comfy.org/customers/groove-jones/): How Groove Jones delivered a holiday FOOH campaign for Dick's Sporting Goods with Comfy.
+- [Golan Levin, Carnegie Mellon](https://comfy.org/customers/golan-levin/): How Prof. Golan Levin teaches with ComfyUI at Carnegie Mellon University.
+- [Kathy Smith, USC](https://comfy.org/customers/kathy-smith/): Prof. Kathy Smith on USC's Expanded Animation program and ComfyUI.
+- [Ina Conradi, NTU](https://comfy.org/customers/ina-conradi/): How Ina Conradi's NTU students compose architectural-scale public art with ComfyUI.
+- [Xindi Zhang](https://comfy.org/customers/xindi-zhang/): Xindi Zhang's Oscar-shortlisted thesis film, built in ComfyUI.
+- [UAL Creative Computing Institute](https://comfy.org/customers/ual-cci/): Comfy and UAL's Creative Computing Institute announce a Creative Campus partnership.
+
+## Events
+
+- [Events](https://comfy.org/events/): Upcoming livestreams, hackathons, and community meetups, plus recordings of past events.
+- [Local MCP: Run ComfyUI with Your Agent and Hardware](https://comfy.org/events/local-mcp/): Live walkthrough of running ComfyUI locally through MCP from the tools you already use.
+- [Beyond the Models](https://comfy.org/events/beyond-the-models/): Building custom ComfyUI workflows for commercial and film production.
+- [Comfy Creatives Model Jam](https://comfy.org/events/comfy-creatives-model-jam/): The Comfy Creatives community on MiniMax H3, Seedance 2.5, Wan Animate 2, and more.
+- [H3 Sync Sound Challenge](https://comfy.org/events/h3-sync-sound-challenge/): Guest judges review the best MiniMax H3 sync sound entries from the community.
+- [Video Model Showdown](https://comfy.org/events/video-model-showdown/): Open-source and paid AI video models compared head to head, live.
+- [The Future of AI Post Production](https://comfy.org/events/future-ai-post-production/): Ingi Erlingsson on custom LoRAs and motion graphics nodes in post production.
+- [Using ComfyUI MCP with Claude Code](https://comfy.org/events/july-launches/): Driving ComfyUI from Claude Code via Comfy MCP.
+- [Run ComfyUI from Claude and Cursor with Comfy MCP](https://comfy.org/events/comfy-mcp-claude-cursor/): Jo Zhang's live walkthrough of Comfy MCP from Claude and Cursor.
+- [Black Math Hackathon](https://comfy.org/events/black-math-hackathon/): How Black Math built a full hackathon experience in three weeks with ComfyUI.
+- [Reinventing the Production Pipeline](https://comfy.org/events/production-pipeline/): Sarofsky on rebuilding a studio production pipeline with ComfyUI.
+- [June Launches](https://comfy.org/events/june-launches/): Desktop, MCP, and core engine improvements shipped in June.
+- [Krea x Comfy: Founders Live](https://comfy.org/events/krea-founders-live/): The founders of Krea and Comfy in conversation on building creative AI tools.
 
 ## Developers and Documentation
 
-- [ComfyUI Docs](https://docs.comfy.org/): Official documentation for installing, configuring, and extending ComfyUI.
-- [ComfyUI on GitHub](https://github.com/comfyanonymous/ComfyUI): Source repository for the open-source ComfyUI runtime.
-- [Comfy-Org on GitHub](https://github.com/Comfy-Org): Organization-wide repositories — frontend, registry, manager, docs, and tooling.
+- [ComfyUI Docs](https://docs.comfy.org/): Official documentation for installing, configuring, and extending ComfyUI; every page also serves markdown at its URL plus `.md`.
+- [Comfy CLI docs](https://docs.comfy.org/agent-tools/cli.md): Install comfy-cli, connect it to Comfy Cloud or a local ComfyUI, and run workflows from the terminal or a coding agent.
+- [Comfy CLI reference](https://docs.comfy.org/comfy-cli/reference.md): Every comfy-cli command, flag, and JSON envelope.
+- [Comfy MCP docs](https://docs.comfy.org/agent-tools/mcp.md): Connect Claude Code, Claude Desktop, Cursor, and other MCP clients to ComfyUI; the hosted server endpoint is https://cloud.comfy.org/mcp.
+- [Comfy SDKs](https://docs.comfy.org/development/api-development/sdks.md): Official Python and TypeScript SDKs for running ComfyUI workflows from your own application.
+- [Comfy Cloud API](https://docs.comfy.org/development/cloud/overview.md): Trigger ComfyUI workflows from your own code on Comfy Cloud; requires a paid Comfy Cloud subscription.
+- [Serverless API](https://docs.comfy.org/development/serverless/overview.md): Build a versioned ComfyUI environment, deploy it as a managed endpoint, and run workflows through the API.
+- [Getting an API key](https://docs.comfy.org/development/api-development/getting-an-api-key.md): Create and manage the Comfy Platform API key used by the API, the CLI, and the MCP server.
+- [Comfy Developer Platform](https://platform.comfy.org/): Signed-in dashboard for API keys, usage and run history, builds, and serverless deployments.
+- [Supported Nodes on Comfy Cloud](https://comfy.org/cloud/supported-nodes/): 120+ custom-node packs preinstalled on Comfy Cloud, searchable by pack or by node name.
+- [Custom node development](https://docs.comfy.org/custom-nodes/overview.md): How ComfyUI custom nodes work and how to build one.
 - [Comfy Registry](https://registry.comfy.org/): Public registry of ComfyUI custom nodes and extensions, with versioning and search.
+- [ComfyUI on GitHub](https://github.com/Comfy-Org/ComfyUI): Source repository for the open-source ComfyUI runtime.
+- [Comfy-Org on GitHub](https://github.com/Comfy-Org): Organization-wide repositories: frontend, registry, manager, docs, and tooling.
+- [comfy-cli on GitHub](https://github.com/Comfy-Org/comfy-cli): Source for the Comfy CLI.
+- [comfy-mcp on GitHub](https://github.com/Comfy-Org/comfy-mcp): Source for the Comfy MCP server.
+
+## Blog
+
+- [Blog](https://blog.comfy.org/): Product announcements, technical deep-dives, and customer stories.
+- [Blog RSS feed](https://blog.comfy.org/feed): Machine-readable feed of every post.
+- [Gemini Omni 1.1 Flash in ComfyUI](https://blog.comfy.org/p/gemini-omni-11-flash-in-comfyui-faster): 4K output, keyframe interpolation, and conversational video editing in your workflow.
+- [Comfy is now an official reseller of MiniMax H3 commercial licenses](https://blog.comfy.org/p/comfy-is-now-the-only-official-reseller): How to license MiniMax H3 and MiniMax Audio & Music for commercial use through Comfy.
+- [Wan 3.0 in ComfyUI](https://blog.comfy.org/p/wan-30-in-comfyui-native-30-second): Native 30-second video with up to 20 reference assets and instruction-driven editing.
+- [Open sourcing Comfy MCP on local](https://blog.comfy.org/p/open-sourcing-comfy-mcp-on-local): Your agent runs a local ComfyUI and builds workflows around your GPU, models, and custom nodes.
+- [MiniMax Music 3](https://blog.comfy.org/p/minimax-music-3-state-of-the-art): Open-weight music generation: full songs up to five minutes from lyrics and a description.
+- [LTX-2.5 day-0 support in ComfyUI](https://blog.comfy.org/p/ltx-25-day-0-support-in-comfyui): Diffusion fidelity rendering, native multi-shot generation, and a checkpoint built for fine-tuning.
+- [Wan Animate 2 in ComfyUI](https://blog.comfy.org/p/wan-animate-2-is-now-available-in): End-to-end character animation from driving videos.
+- [Seedance 2.5 via Partner Nodes](https://blog.comfy.org/p/seedance-25-is-now-available-via): 30-second single-shot generation, up to 50 reference assets, and prompt-driven video editing.
+- [FLUX 3 via Partner Nodes](https://blog.comfy.org/p/flux-3-is-now-available-via-partner): One multimodal model across video, audio, image, and action, with native audio and 20-second clips.
+- [MiniMax H3 day-0 support in ComfyUI](https://blog.comfy.org/p/minimax-h3-day-0-support-in-comfyui): Open weights, native stereo audio, and 2K video, optimized to run in ComfyUI.
+- [Comfy for Teams](https://blog.comfy.org/p/comfy-for-teams-is-here): Team plans: everyone on your team, on the same stack.
+- [Batch generation in Comfy MCP](https://blog.comfy.org/p/batch-generation-in-comfy-mcp-use): Production use cases people scale with batch generation over MCP.
 
 ## Company
 
 - [About Comfy](https://comfy.org/about/): Company background, mission, and the team behind ComfyUI.
-- [Careers](https://comfy.org/careers/): Open roles across engineering, design, product, and go-to-market.
-- [Contact](https://comfy.org/contact/): Sales, partnership, and general contact form.
-- [Blog](https://blog.comfy.org/): Product announcements, technical deep-dives, and customer stories.
+- [Careers](https://comfy.org/careers/): Open roles across engineering, design, marketing, and more.
+- [Contact](https://comfy.org/contact/): Sales, partnership, and general contact form, with answers on Enterprise, Forward Deployed Creatives, MiniMax licenses, and SOC 2.
+- [Brand Portal](https://comfy.org/brand): Logos, color, typography, and voice guidelines for Comfy.
+- [Affiliate Program](https://comfy.org/affiliates/): 30% recurring commission for 3 months on referred Comfy Cloud subscriptions.
+- [Affiliate Terms](https://comfy.org/affiliates/terms/): Terms and conditions of the Comfy affiliate program.
+- [Trust Center](https://app.vanta.com/comfy.org/trust/o6nu46b16iu3e7fhc41hnz): Security documentation and real-time control status; a SOC 2 Type II audit is in progress.
+- [Status](https://status.comfy.org/): Live service status for Comfy Cloud and the Comfy API.
+- [Support](https://support.comfy.org/): Help center for Comfy Cloud, billing, and account questions.
 - [Privacy Policy](https://comfy.org/privacy-policy/): How Comfy collects, uses, and protects personal information.
-- [Terms of Service](https://comfy.org/terms-of-service/): Terms governing use of ComfyUI and related Comfy services.
+- [Desktop Privacy Policy](https://comfy.org/privacy/desktop/): Privacy policy for Comfy Desktop: processors, lawful basis, retention, and your rights.
+- [Terms of Service](https://comfy.org/terms-of-service/): Terms governing use of Comfy Cloud, Comfy API, and Comfy Enterprise.
+- [Enterprise MSA](https://comfy.org/enterprise-msa/): The master services agreement that governs Comfy Enterprise deployments.
+- [Discord](https://discord.com/invite/comfyorg): The ComfyUI community server.
+- [YouTube](https://www.youtube.com/@ComfyOrg): Livestreams, launch recordings, and tutorials.
+- [X](https://x.com/ComfyUI): Comfy on X.
+- [Reddit](https://www.reddit.com/r/comfyui/): The r/comfyui community.
+
+## 简体中文 (Simplified Chinese)
+
+- [首页](https://comfy.org/zh-CN/): Comfy 中文站首页：面向专业视觉人士的 AI 创作引擎，精确掌控每个模型、每个参数和每个输出。
+- [下载 Comfy 桌面版](https://comfy.org/zh-CN/download/): 免费的桌面应用，在您自己的 GPU 上运行完整的 ComfyUI 引擎。
+- [Comfy Cloud](https://comfy.org/zh-CN/cloud/): 浏览器中的托管 ComfyUI：预加载模型、预安装自定义节点、并发任务。
+- [定价](https://comfy.org/zh-CN/pricing/): Comfy Cloud 各套餐与积分说明。
+- [开发者平台](https://comfy.org/zh-CN/platform/): 部署并扩展 ComfyUI 工作流。你的工作流。所有模型。一个 API。
+- [Comfy MCP](https://comfy.org/zh-CN/mcp/): 通过模型上下文协议，让 Claude Code、Claude Desktop 等 AI 智能体驱动完整的 ComfyUI 引擎。
+- [Comfy CLI](https://comfy.org/zh-CN/cli/): 在终端和 Claude Code、Codex、Cursor 等编程智能体中驱动 ComfyUI 的命令行。
+- [前沿驻场创意人才](https://comfy.org/zh-CN/forward-deployed-creatives/): Comfy 专家驻场加入你的团队，构建并交付 ComfyUI 工作流。
+- [MiniMax 商业许可](https://comfy.org/zh-CN/minimax/license/): 通过 Comfy 获取 MiniMax H3 及音频与音乐模型的商业使用许可。
+- [模型](https://comfy.org/zh-CN/models/): 在 ComfyUI 中运行的主流 AI 模型及其发布页面。
+- [MiniMax H3](https://comfy.org/zh-CN/minimax-h3/): 开源权重视频模型，多模态输入输出，每个片段都带原生立体声音频。
+- [学习中心](https://comfy.org/zh-CN/learning/): 按创作领域分类的 ComfyUI 实战教程与工作流。
+- [活动](https://comfy.org/zh-CN/events/): 直播、黑客松与社区聚会，以及过往活动回放。
+- [客户故事](https://comfy.org/zh-CN/customers/): 工作室、品牌与院校如何在生产中使用 Comfy。
+- [作品集](https://comfy.org/zh-CN/gallery/): 社区在 ComfyUI 中创作的图像、视频与 3D 作品。
+- [Comfy Cloud 自定义节点包](https://comfy.org/zh-CN/cloud/supported-nodes/): Comfy Cloud 预装的自定义节点包，按节点包或节点名搜索。
+- [关于我们](https://comfy.org/zh-CN/about/): ComfyUI 背后的团队和使命。
+- [招聘](https://comfy.org/zh-CN/careers/): 工程、设计、市场营销等开放岗位。
+- [联系我们](https://comfy.org/zh-CN/contact/): 销售、合作与一般咨询。
+- [品牌门户](https://comfy.org/zh-CN/brand/): 标志、色彩、字体与语调。
+
+## 日本語 (Japanese)
+
+- [ホーム](https://comfy.org/ja/): Comfyの日本語トップページ：あらゆるモデル、パラメータ、出力を自在にコントロールできるビジュアルプロフェッショナル向けAIクリエーションエンジン。
 
 ## Optional
 
-- [简体中文 / Chinese homepage](https://comfy.org/zh-CN/): Simplified Chinese localization of the main site.
-- [Series Entertainment — long-form case study](https://comfy.org/cloud/enterprise-case-studies/how-series-entertainment-rebuilt-game-and-video-production-with-comfyui): Extended write-up of the Series Entertainment deployment.
-- [Moment Factory — long-form case study](https://comfy.org/cloud/enterprise-case-studies/comfyui-at-architectural-scale-how-moment-factory-reimagined-3d-projection-mapping): Extended write-up of Moment Factory's projection-mapping pipeline.
-- [Ubisoft Chord announcement (blog)](https://blog.comfy.org/p/ubisoft-open-sources-the-chord-model): Original blog post announcing Ubisoft's open-source Chord model.
+- [简体中文 Workflows (Simplified Chinese)](https://comfy.org/zh/workflows/): Simplified Chinese localization of Comfy Workflows.
+- [繁體中文 Workflows (Traditional Chinese)](https://comfy.org/zh-TW/workflows/): Traditional Chinese localization of Comfy Workflows.
+- [Español Workflows](https://comfy.org/es/workflows/): Spanish localization of Comfy Workflows.
+- [Français Workflows](https://comfy.org/fr/workflows/): French localization of Comfy Workflows.
+- [日本語 Workflows](https://comfy.org/ja/workflows/): Japanese localization of Comfy Workflows.
+- [한국어 Workflows](https://comfy.org/ko/workflows/): Korean localization of Comfy Workflows.
+- [Português Workflows](https://comfy.org/pt-BR/workflows/): Brazilian Portuguese localization of Comfy Workflows.
+- [Русский Workflows](https://comfy.org/ru/workflows/): Russian localization of Comfy Workflows.
+- [العربية Workflows](https://comfy.org/ar/workflows/): Arabic localization of Comfy Workflows.
+- [Türkçe Workflows](https://comfy.org/tr/workflows/): Turkish localization of Comfy Workflows.
+- [Docs in Chinese](https://docs.comfy.org/zh/): ComfyUI documentation in Chinese.
+- [Docs in Japanese](https://docs.comfy.org/ja/): ComfyUI documentation in Japanese.
+- [Docs in Korean](https://docs.comfy.org/ko/): ComfyUI documentation in Korean.
+- [ComfyUI on Wikipedia](https://en.wikipedia.org/wiki/ComfyUI): Encyclopedia entry for the ComfyUI project.
+- [Ubisoft CHORD announcement (blog)](https://blog.comfy.org/p/ubisoft-open-sources-the-chord-model): Original blog post announcing Ubisoft's open-source CHORD model.
 - [Open-source storytelling (blog)](https://blog.comfy.org/p/how-open-source-is-fueling-the-open): Blog post on how open source is fueling the Open Story Movement.

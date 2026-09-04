@@ -13,6 +13,13 @@ import type * as ModelStoreModule from '@/stores/modelStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { fromPartial } from '@total-typescript/shoehorn'
 
+const mockRunMintPortsIntentionalClear = vi.hoisted(() =>
+  vi.fn(<T>(clear: () => T): T => clear())
+)
+vi.mock('@/workbench/extensions/agent/crdt/mintPortWiring', () => ({
+  runMintPortsIntentionalClear: mockRunMintPortsIntentionalClear
+}))
+
 // Mock vue-i18n for useExternalLink
 const mockLocale = ref('en')
 vi.mock('vue-i18n', async () => {
@@ -41,6 +48,9 @@ vi.mock('@/scripts/app', () => {
     copyToClipboard: vi.fn(),
     pasteFromClipboard: vi.fn(),
     selectItems: vi.fn(),
+    deleteSelected: vi.fn(),
+    selectOnly: false,
+    canvas: { dispatchEvent: vi.fn() },
     read_only: false,
     ds: mockDs,
     setDirty: vi.fn()
@@ -68,7 +78,10 @@ vi.mock('@/scripts/app', () => {
 vi.mock('@/scripts/api', () => ({
   api: {
     dispatchCustomEvent: vi.fn(),
-    apiURL: vi.fn(() => 'http://localhost:8188')
+    apiURL: vi.fn(() => 'http://localhost:8188'),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    getServerFeature: vi.fn(() => false)
   }
 }))
 
@@ -284,7 +297,7 @@ describe('useCoreCommands', () => {
       getNodeById: vi.fn(),
       setDirtyCanvas: vi.fn(),
       sendActionToCanvas: vi.fn(),
-      extra: {} as Record<string, unknown>
+      extra: {}
     } as Partial<typeof app.canvas.subgraph> as typeof app.canvas.subgraph
   }
 
@@ -339,6 +352,7 @@ describe('useCoreCommands', () => {
 
     // Mock global confirm
     global.confirm = vi.fn().mockReturnValue(true)
+    mockRunMintPortsIntentionalClear.mockClear()
   })
 
   describe('ClearWorkflow command', () => {
@@ -353,6 +367,7 @@ describe('useCoreCommands', () => {
 
       expect(app.clean).toHaveBeenCalled()
       expect(app.rootGraph.clear).toHaveBeenCalled()
+      expect(mockRunMintPortsIntentionalClear).toHaveBeenCalledOnce()
       expect(api.dispatchCustomEvent).toHaveBeenCalledWith('graphCleared')
     })
 
@@ -368,11 +383,12 @@ describe('useCoreCommands', () => {
       // Execute the command
       await clearCommand.function()
 
-      expect(app.clean).toHaveBeenCalled()
+      expect(app.clean).not.toHaveBeenCalled()
       expect(app.rootGraph.clear).not.toHaveBeenCalled()
+      expect(mockRunMintPortsIntentionalClear).not.toHaveBeenCalled()
 
       // Should only remove user nodes, not input/output nodes
-      const subgraph = app.canvas.subgraph!
+      const subgraph = app.canvas.subgraph
       expect(subgraph.remove).toHaveBeenCalledTimes(2)
       expect(subgraph.remove).toHaveBeenCalledWith(subgraph.nodes[2]) // user1
       expect(subgraph.remove).toHaveBeenCalledWith(subgraph.nodes[3]) // user2
@@ -410,6 +426,7 @@ describe('useCoreCommands', () => {
 
     beforeEach(() => {
       app.canvas.selectedItems = new Set()
+      app.canvas.selectOnly = false
     })
 
     it('should copy selected items when selection exists', async () => {
@@ -439,6 +456,31 @@ describe('useCoreCommands', () => {
 
       // No arguments means "select all items on canvas"
       expect(app.canvas.selectItems).toHaveBeenCalledWith()
+    })
+
+    it('should delete selected items outside selection-only mode', async () => {
+      app.canvas.selectedItems = new Set([
+        {}
+      ]) as typeof app.canvas.selectedItems
+
+      await findCommand('Comfy.Canvas.DeleteSelectedItems').function()
+
+      expect(app.canvas.deleteSelected).toHaveBeenCalledOnce()
+      expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
+    })
+
+    it('should preserve selected items in selection-only mode', async () => {
+      const selectedItem = {}
+      app.canvas.selectedItems = new Set([
+        selectedItem
+      ]) as typeof app.canvas.selectedItems
+      app.canvas.selectOnly = true
+
+      await findCommand('Comfy.Canvas.DeleteSelectedItems').function()
+
+      expect(app.canvas.deleteSelected).not.toHaveBeenCalled()
+      expect(app.canvas.setDirty).not.toHaveBeenCalled()
+      expect([...app.canvas.selectedItems]).toEqual([selectedItem])
     })
   })
 
@@ -769,9 +811,7 @@ describe('useCoreCommands', () => {
     let openSpy: ReturnType<typeof vi.spyOn>
 
     beforeEach(() => {
-      openSpy = vi
-        .spyOn(window, 'open')
-        .mockImplementation(() => null as unknown as Window)
+      openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
     })
 
     it('Comfy.Help.OpenComfyUIIssues opens the GitHub issues URL and tracks telemetry', async () => {

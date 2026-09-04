@@ -11,9 +11,26 @@
     {
       "source": "/(.*)",
       "has": [
-        { "type": "host", "value": "website-frontend-comfyui.vercel.app" }
+        {
+          "type": "host",
+          "value": "website-frontend-comfyui.vercel.app"
+        }
       ],
-      "headers": [{ "key": "X-Robots-Tag", "value": "index, follow" }]
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "index, follow"
+        }
+      ]
+    },
+    {
+      "source": "/((?!.*\\.(?:txt|xml|json|ico|png|jpg|jpeg|webp|avif|gif|svg|css|js|mjs|map|woff|woff2|ttf|otf|eot|mp4|webm|vtt|pdf|zip|webmanifest)$).*)",
+      "headers": [
+        {
+          "key": "Link",
+          "value": "<https://comfy.org/llms.txt>; rel=\"describedby\""
+        }
+      ]
     },
     {
       "source": "/payment/(.*)",
@@ -35,11 +52,6 @@
     }
   ],
   "redirects": [
-    {
-      "source": "/pricing",
-      "destination": "/cloud/pricing",
-      "permanent": true
-    },
     {
       "source": "/career",
       "destination": "/careers",
@@ -71,8 +83,23 @@
       "permanent": false
     },
     {
-      "source": "/enterprise",
-      "destination": "/cloud/enterprise",
+      "source": "/cloud/enterprise",
+      "destination": "/enterprise/",
+      "permanent": true
+    },
+    {
+      "source": "/cloud/enterprise/",
+      "destination": "/enterprise/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/cloud/enterprise",
+      "destination": "/enterprise/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/cloud/enterprise/",
+      "destination": "/enterprise/",
       "permanent": true
     },
     {
@@ -99,6 +126,66 @@
       "source": "/login",
       "destination": "https://cloud.comfy.org/cloud/login",
       "permanent": false
+    },
+    {
+      "source": "/api",
+      "destination": "/platform",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/api",
+      "destination": "/zh-CN/platform",
+      "permanent": true
+    },
+    {
+      "source": "/platform/router",
+      "destination": "/platform/models",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/platform/router",
+      "destination": "/zh-CN/platform/models",
+      "permanent": true
+    },
+    {
+      "source": "/cloud/pricing",
+      "destination": "/pricing",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/cloud/pricing",
+      "destination": "/zh-CN/pricing",
+      "permanent": true
+    },
+    {
+      "source": "/api/",
+      "destination": "/platform",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/api/",
+      "destination": "/zh-CN/platform",
+      "permanent": true
+    },
+    {
+      "source": "/cloud/pricing/",
+      "destination": "/pricing",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/cloud/pricing/",
+      "destination": "/zh-CN/pricing",
+      "permanent": true
+    },
+    {
+      "source": "/platform/router/",
+      "destination": "/platform/models",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/platform/router/",
+      "destination": "/zh-CN/platform/models",
+      "permanent": true
     }
   ]
 }
