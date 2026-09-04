@@ -317,7 +317,7 @@ export function createDummyFolderNodeDef(folderPath: string): ComfyNodeDefImpl {
     output_name: [],
     output_is_list: [],
     output_node: false
-  } as ComfyNodeDefV1)
+  })
 }
 
 /**

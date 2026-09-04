@@ -1038,7 +1038,7 @@ export class LinkConnector {
             link.outputSlot,
             link.inputNode,
             link.inputSlot,
-            undefined!
+            undefined
           )
         }
         continue

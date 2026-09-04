@@ -7,6 +7,7 @@ import { toNodeId } from '@/types/nodeId'
 import type {
   AgentCancelAccepted,
   AgentMessages,
+  AgentRunModePreference,
   AgentThreadSummary,
   AgentTurnAccepted,
   TurnId,
@@ -35,6 +36,17 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
     ),
     getMessages: vi.fn(async (): Promise<AgentMessages> => []),
     listThreads: vi.fn(async (): Promise<AgentThreadSummary[]> => []),
+    getRunMode: vi.fn(
+      async (): Promise<AgentRunModePreference> => ({
+        mode: 'auto',
+        credit_limit: null
+      })
+    ),
+    putRunMode: vi.fn(
+      async (
+        preference: AgentRunModePreference
+      ): Promise<AgentRunModePreference> => preference
+    ),
     listCloudWorkflows: vi.fn(async () => []),
     cancelMessage: vi.fn(
       async (): Promise<AgentCancelAccepted> => ({ status: 'cancelling' })
@@ -468,6 +480,10 @@ describe('useAgentSession (v1 composition root)', () => {
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
     session.start()
+    // Establish a live connection first: only a live->down transition is a
+    // real disconnect. An initial `false` snapshot (no prior `true`) must
+    // not abort turns; see test (g2).
+    status(true)
 
     await session.sendMessage('go')
     emit(delta('msg-1', 'partial'))
@@ -481,6 +497,24 @@ describe('useAgentSession (v1 composition root)', () => {
     // makes no REST calls on a live transition.
     status(true)
     expect(vi.mocked(rest.postMessage).mock.calls.length).toBe(requestsBefore)
+  })
+
+  it('(g2) an initial onStatus(false) snapshot does not abort a surviving turn', async () => {
+    // agentEventSource.onStatus reports the current socket state synchronously
+    // on subscribe, so the very first callback can be `false` before any real
+    // reconnect transition (e.g. the socket hasn't opened yet). That must not
+    // abort a turn that survived a remount.
+    const rest = fakeRest()
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+
+    await session.sendMessage('go')
+    emit(delta('msg-1', 'partial'))
+    expect(session.isStreaming.value).toBe(true)
+
+    status(false)
+    expect(session.isStreaming.value).toBe(true)
   })
 
   it('(h) attachments pass through to the postMessage wire body', async () => {
@@ -922,6 +956,9 @@ describe('useAgentSession (v1 composition root)', () => {
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
     session.start()
+    // Establish a live connection first; only a live->down transition (an
+    // actual socket death) should settle background turns.
+    status(true)
 
     await session.sendMessage('go')
     emit(delta('msg-1', 'partial'))
