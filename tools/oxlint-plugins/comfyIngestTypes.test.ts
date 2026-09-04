@@ -1,5 +1,15 @@
 import { execFileSync } from 'node:child_process'
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
+import { randomUUID } from 'node:crypto'
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  utimesSync,
+  writeFileSync
+} from 'node:fs'
+import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
@@ -11,10 +21,75 @@ const repoConfig = path.resolve('.oxlintrc.json')
 // Probes are written into the trees `pnpm lint` actually lints and are checked
 // through the repo's own .oxlintrc.json, so a scoping or severity regression
 // fails here rather than passing against a bespoke config nothing else uses.
+// Each run owns a unique subdirectory, lints only that directory instead of
+// the whole src/browser_tests trees, and removes it on afterAll, process exit,
+// and SIGINT/SIGTERM; leftovers from a hard-killed run are swept by the next
+// run. (The roots must NOT be gitignored: oxlint honors .gitignore even for
+// explicitly passed targets and with --no-ignore, so ignoring them would make
+// every probe invisible to the very lint call under test.)
 const PROBE_DIR = '__ingest_type_probes__'
-const tsProbeDir = path.resolve('src', PROBE_DIR)
-const vueProbeDir = path.resolve('src/platform', PROBE_DIR)
-const browserTestProbeDir = path.resolve('browser_tests/fixtures', PROBE_DIR)
+const probeRoots = [
+  path.resolve('src', PROBE_DIR),
+  path.resolve('src/platform', PROBE_DIR),
+  path.resolve('browser_tests/fixtures', PROBE_DIR)
+]
+const runId = `run-${process.pid}-${randomUUID().slice(0, 8)}`
+const runDirs = probeRoots.map((root) => path.join(root, runId))
+
+// A run writes its probes once and finishes linting them within seconds, so a
+// probe directory older than five minutes can only be a leftover from an
+// interrupted process. Fresh siblings are left alone so a run that started
+// concurrently is never reaped mid-flight.
+const STALE_PROBE_MS = 5 * 60 * 1000
+
+function sweepStaleProbeRuns(
+  roots: readonly string[],
+  maxAgeMs = STALE_PROBE_MS
+): void {
+  const cutoff = Date.now() - maxAgeMs
+  for (const root of roots) {
+    let entries
+    try {
+      entries = readdirSync(root, { withFileTypes: true })
+    } catch {
+      continue
+    }
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue
+      const child = path.join(root, entry.name)
+      try {
+        if (statSync(child).mtimeMs < cutoff) {
+          rmSync(child, { recursive: true, force: true })
+        }
+      } catch {
+        continue
+      }
+    }
+  }
+}
+
+function removeProbeRun(): void {
+  for (const dir of runDirs) rmSync(dir, { recursive: true, force: true })
+}
+
+// Registered as soon as this run might write probes: afterAll never runs after
+// a crash or a worker timeout. Removing only this run's directories keeps the
+// handler safe while another worker is still running, and rmSync(force) makes
+// the afterAll + exit sequence idempotent.
+let cleanupRegistered = false
+function registerProbeCleanup(): void {
+  if (cleanupRegistered) return
+  cleanupRegistered = true
+  process.on('exit', removeProbeRun)
+  for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+    process.on(signal, () => {
+      removeProbeRun()
+      // Restore default termination semantics: the main vitest process still
+      // handles the signal; this worker must not outlive it.
+      process.exit(signal === 'SIGINT' ? 130 : 143)
+    })
+  }
+}
 
 interface Finding {
   readonly file: string
@@ -207,22 +282,30 @@ describe('comfy/no-duplicate-ingest-type', () => {
   let findings: Finding[]
 
   beforeAll(() => {
-    for (const dir of [tsProbeDir, vueProbeDir, browserTestProbeDir]) {
-      mkdirSync(dir, { recursive: true })
-    }
-    writeFileSync(path.join(tsProbeDir, 'accepted.ts'), accepted)
-    writeFileSync(path.join(tsProbeDir, 'reported.ts'), reportedSource)
-    writeFileSync(path.join(tsProbeDir, 'uninvolved.ts'), uninvolved)
-    writeFileSync(path.join(tsProbeDir, 'unimported.ts'), unimported)
-    writeFileSync(path.join(vueProbeDir, 'Probe.vue'), vueProbe)
-    writeFileSync(path.join(browserTestProbeDir, 'probe.ts'), browserTestProbe)
+    registerProbeCleanup()
+    sweepStaleProbeRuns(probeRoots)
+    for (const dir of runDirs) mkdirSync(dir, { recursive: true })
+    writeFileSync(path.join(runDirs[0], 'accepted.ts'), accepted)
+    writeFileSync(path.join(runDirs[0], 'reported.ts'), reportedSource)
+    writeFileSync(path.join(runDirs[0], 'uninvolved.ts'), uninvolved)
+    writeFileSync(path.join(runDirs[0], 'unimported.ts'), unimported)
+    writeFileSync(path.join(runDirs[1], 'Probe.vue'), vueProbe)
+    writeFileSync(path.join(runDirs[2], 'probe.ts'), browserTestProbe)
 
-    findings = lint(['src', 'browser_tests'])
+    findings = lint(runDirs)
   })
 
   afterAll(() => {
-    for (const dir of [tsProbeDir, vueProbeDir, browserTestProbeDir]) {
-      rmSync(dir, { recursive: true, force: true })
+    removeProbeRun()
+    // Drop the probe roots too when this was the last live run. A concurrent
+    // sibling still owns its own subdirectory, in which case this fails and
+    // the empty-enough root simply stays until the next sweep.
+    for (const root of probeRoots) {
+      try {
+        rmSync(root, { force: true })
+      } catch {
+        continue
+      }
     }
   })
 
@@ -275,6 +358,46 @@ describe('comfy/no-duplicate-ingest-type', () => {
   // Root jsPlugins merge into it rather than being replaced, and fixtures are a
   // likely home for hand-built payloads, so pin that the rule reaches them.
   it('covers browser_tests fixtures, which have their own overrides block', () => {
-    expect(reported(path.join(PROBE_DIR, 'probe.ts'))).toContain('Plan')
+    // Oxlint reports POSIX-style, run-relative filenames; path.join would emit
+    // '\' on Windows and the suffix would never match.
+    expect(reported(`${PROBE_DIR}/${runId}/probe.ts`)).toContain('Plan')
+  })
+})
+
+describe('sweepStaleProbeRuns', () => {
+  const root = path.join(tmpdir(), `ingest-probe-sweep-${randomUUID()}`)
+
+  beforeAll(() => {
+    mkdirSync(root, { recursive: true })
+  })
+
+  afterAll(() => {
+    rmSync(root, { recursive: true, force: true })
+  })
+
+  it('removes probe directories older than the staleness floor', () => {
+    const stale = path.join(root, 'run-crashed')
+    mkdirSync(stale)
+    const old = new Date(Date.now() - STALE_PROBE_MS - 1000)
+    utimesSync(stale, old, old)
+
+    sweepStaleProbeRuns([root])
+
+    expect(existsSync(stale)).toBe(false)
+  })
+
+  it('keeps probe directories a concurrently running worker may still own', () => {
+    const fresh = path.join(root, 'run-live')
+    mkdirSync(fresh)
+
+    sweepStaleProbeRuns([root])
+
+    expect(existsSync(fresh)).toBe(true)
+  })
+
+  it('tolerates a probe root that does not exist', () => {
+    expect(() =>
+      sweepStaleProbeRuns([path.join(root, 'missing')])
+    ).not.toThrow()
   })
 })
