@@ -19,11 +19,13 @@ import {
 import type {
   ModelState,
   RunOutcome,
+  TopUpOutcome,
   Version
 } from '../../composables/usePrototypeTweaks'
 import {
   MODEL_STATES,
   RUN_OUTCOMES,
+  TOP_UP_OUTCOMES,
   VERSIONS,
   usePrototypeTweaks
 } from '../../composables/usePrototypeTweaks'
@@ -42,8 +44,14 @@ const { locale = 'en', showRunControls = false } = defineProps<{
 
 const { session, signIn, signOut, setCredits, setSubscribed, setRole } =
   useMockSession()
-const { outcome, modelState, version, showStatuses, groupVersions } =
-  usePrototypeTweaks()
+const {
+  outcome,
+  modelState,
+  version,
+  showStatuses,
+  groupVersions,
+  topUpOutcome
+} = usePrototypeTweaks()
 
 const SESSION_CHOICES: readonly SessionChoice[] = [
   'signedOut',
@@ -81,6 +89,7 @@ onMounted(() => {
     groupVersions.value = shared.groupVersions
   if (shared.outcome) outcome.value = shared.outcome
   if (shared.modelState) modelState.value = shared.modelState
+  if (shared.topUpOutcome) topUpOutcome.value = shared.topUpOutcome
   if (shared.session === 'signedOut') signOut()
   else if (shared.session) signIn(shared.session)
   if (shared.subscribed !== undefined) setSubscribed(shared.subscribed)
@@ -102,7 +111,8 @@ const shareState = computed<ShareState>(() => ({
   balance: zeroBalance.value ? 'zero' : lowBalance.value ? 'low' : 'normal',
   member: isMember.value,
   outcome: outcome.value,
-  modelState: modelState.value
+  modelState: modelState.value,
+  topUpOutcome: topUpOutcome.value
 }))
 const shareUrl = computed(
   () =>
@@ -148,6 +158,11 @@ const outcomeLabel: Record<RunOutcome, TranslationKey> = {
   provider: 'workshop.proto.outcome.provider',
   rateLimit: 'workshop.proto.outcome.rateLimit',
   timeout: 'workshop.proto.outcome.timeout'
+}
+const topUpOutcomeLabel: Record<TopUpOutcome, TranslationKey> = {
+  landed: 'workshop.proto.topUp.landed',
+  settling: 'workshop.proto.topUp.settling',
+  unresolved: 'workshop.proto.topUp.unresolved'
 }
 const modelStateLabel: Record<ModelState, TranslationKey> = {
   none: 'workshop.proto.gate.none',
@@ -374,6 +389,32 @@ const selectClass =
             >
               <span :class="knobClass(isMember)" />
             </button>
+          </label>
+
+          <label class="flex flex-col gap-1">
+            <span class="text-primary-warm-gray">
+              {{ t('workshop.proto.topUp', locale) }}
+            </span>
+            <span class="relative flex items-center">
+              <select
+                v-model="topUpOutcome"
+                data-testid="tweak-topup"
+                :class="selectClass"
+              >
+                <option
+                  v-for="option in TOP_UP_OUTCOMES"
+                  :key="option"
+                  :value="option"
+                  class="bg-primary-comfy-ink"
+                >
+                  {{ t(topUpOutcomeLabel[option], locale) }}
+                </option>
+              </select>
+              <ChevronDown
+                class="pointer-events-none absolute right-2 size-3.5 text-primary-warm-gray"
+                aria-hidden="true"
+              />
+            </span>
           </label>
 
           <template v-if="showRunControls">

@@ -9,6 +9,7 @@ import {
   EXISTING_CREDITS
 } from '../../composables/useMockSession'
 import type { WorkshopModelDetail } from '../../config/workshop'
+import { SETTLE_DELAY_MS } from '../../lib/workshop/buy-credits'
 import ModelDetail from './ModelDetail.vue'
 
 const prompt = {
@@ -180,6 +181,13 @@ describe('ModelDetail', () => {
     ).toContain('success_url=')
     await user().click(screen.getByTestId('buy-credits-continue'))
     await user().click(await screen.findByTestId('buy-credits-pay'))
+
+    // Stripe redirects the moment the card clears, but the grant follows on a
+    // webhook: the page waits before it can say anything.
+    expect(await screen.findByTestId('buy-credits-polling')).toBeTruthy()
+    vi.advanceTimersByTime(SETTLE_DELAY_MS)
+    await nextTick()
+
     expect((await screen.findByTestId('buy-credits-done')).textContent).toMatch(
       /credits added/i
     )

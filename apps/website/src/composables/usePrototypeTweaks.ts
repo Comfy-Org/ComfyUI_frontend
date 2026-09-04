@@ -20,6 +20,12 @@ export const MODEL_STATES = [
 ] as const
 export type ModelState = (typeof MODEL_STATES)[number]
 
+// What the visitor finds when Stripe sends them back. On this rail completion
+// arrives by webhook, so "settling" and "never arrives" are indistinguishable to
+// the page — the difference is only how long it has been.
+export const TOP_UP_OUTCOMES = ['landed', 'settling', 'unresolved'] as const
+export type TopUpOutcome = (typeof TOP_UP_OUTCOMES)[number]
+
 // One control for the whole prototype: V1 is the flat models catalog (11 Sep),
 // V1.1 opens that same catalog as browseable rows per use case, V1.2 moves the
 // categories into a rail beside the grid, and V2 is the screen where workflows,
@@ -37,6 +43,7 @@ const showStatuses = ref(false)
 // The catalogue lists one card per model, as the TDD describes. Grouping the
 // releases of a family behind the newest is an unsettled variant.
 const groupVersions = ref(false)
+const topUpOutcome = ref<TopUpOutcome>('landed')
 let hydrated = false
 
 function isVersion(value: unknown): value is Version {
@@ -70,6 +77,7 @@ export function usePrototypeTweaks() {
     modelState,
     version,
     showStatuses,
-    groupVersions
+    groupVersions,
+    topUpOutcome
   }
 }
