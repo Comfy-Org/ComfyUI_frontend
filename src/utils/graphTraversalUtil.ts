@@ -653,7 +653,7 @@ export function getNodeByLocatorId(
  * @returns The NodeLocatorId, or undefined if resolution fails
  */
 export function executionIdToNodeLocatorId(
-  rootGraph: LGraph,
+  rootGraph: LGraph | undefined,
   nodeId: string | number
 ): NodeLocatorId | undefined {
   const nodeIdStr = String(nodeId)
@@ -667,6 +667,7 @@ export function executionIdToNodeLocatorId(
   }
 
   // It's an execution node ID — resolve subgraph path
+  if (!rootGraph) return undefined
   const parts = nodeIdStr.split(':')
   const localNodeId = parts.at(-1)!
   const subgraphPath = parts.slice(0, -1)

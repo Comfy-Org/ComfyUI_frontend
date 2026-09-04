@@ -153,16 +153,20 @@ vi.mock('@/stores/jobPreviewStore', () => ({
 }))
 
 // Mock the app import with proper implementation
-vi.mock('@/scripts/app', () => ({
-  app: {
-    rootGraph: {
-      getNodeById: vi.fn(),
-      nodes: [] // Add nodes array for workflowStore iteration
-    },
-    revokePreviews: vi.fn(),
-    nodePreviewImages: {}
+vi.mock('@/scripts/app', () => {
+  const rootGraph = {
+    getNodeById: vi.fn(),
+    nodes: [] // Add nodes array for workflowStore iteration
   }
-}))
+  return {
+    app: {
+      rootGraph,
+      rootGraphOrUndefined: rootGraph,
+      revokePreviews: vi.fn(),
+      nodePreviewImages: {}
+    }
+  }
+})
 
 beforeEach(() => {
   mockActiveWorkflow.value = null
@@ -231,6 +235,11 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
 
       // For numeric IDs, it should convert to string and return as-is
       expect(result).toBe('123')
+    })
+
+    it('should handle IDs before the root graph is initialized', () => {
+      expect(executionIdToNodeLocatorId(undefined, '123')).toBe('123')
+      expect(executionIdToNodeLocatorId(undefined, '123:456')).toBeUndefined()
     })
 
     it('should return undefined when conversion fails', () => {

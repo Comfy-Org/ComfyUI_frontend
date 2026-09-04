@@ -19,14 +19,18 @@ import { toNodeId } from '@/types/nodeId'
 
 import ErrorGroupList from './ErrorGroupList.vue'
 
-vi.mock('@/scripts/app', () => ({
-  app: {
-    rootGraph: {
-      serialize: vi.fn(() => ({})),
-      getNodeById: vi.fn()
+vi.mock('@/scripts/app', () => {
+  const rootGraph = {
+    serialize: vi.fn(() => ({})),
+    getNodeById: vi.fn()
+  }
+  return {
+    app: {
+      rootGraph,
+      rootGraphOrUndefined: rootGraph
     }
   }
-}))
+})
 
 vi.mock('@/utils/graphTraversalUtil', () => ({
   getNodeByExecutionId: vi.fn(),

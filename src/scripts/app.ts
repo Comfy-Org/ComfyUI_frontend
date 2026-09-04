@@ -348,9 +348,9 @@ export class ComfyApp {
 
   get rootGraph(): LGraph {
     if (!this.rootGraphInternal) {
-      throw new TypeError('ComfyApp graph accessed before initialization')
+      console.error('ComfyApp graph accessed before initialization')
     }
-    return this.rootGraphInternal
+    return this.rootGraphInternal!
   }
 
   get rootGraphOrUndefined(): LGraph | undefined {

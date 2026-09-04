@@ -641,7 +641,10 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
       for (const [executionId, nodeError] of Object.entries(
         surfacedNodeErrors.value
       )) {
-        const locatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
+        const locatorId = executionIdToNodeLocatorId(
+          app.rootGraphOrUndefined,
+          executionId
+        )
         if (locatorId) {
           map[locatorId] = nodeError
         }
