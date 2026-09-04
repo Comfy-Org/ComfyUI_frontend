@@ -34,6 +34,18 @@ function print(line: string): void {
   process.stdout.write(`${line}\n`)
 }
 
+function persistManifest(
+  manifestPath: string,
+  manifest: TranslationManifest,
+  manifestUpdates: ReadonlyMap<string, ReadonlyMap<string, string>>
+): void {
+  const nextEntries: TranslationManifest['entries'] = { ...manifest.entries }
+  for (const [key, locales] of manifestUpdates) {
+    nextEntries[key] = { ...nextEntries[key], ...Object.fromEntries(locales) }
+  }
+  saveManifest(manifestPath, { version: 1, entries: nextEntries })
+}
+
 export function collectPending(
   entries: readonly TranslationEntry[],
   manifest: TranslationManifest,
@@ -91,14 +103,12 @@ export function auditExisting(entries: readonly TranslationEntry[]): string[] {
   return errors
 }
 
-async function run(argv: readonly string[]): Promise<void> {
+export async function runPipeline(
+  argv: readonly string[],
+  paths: { sourcePath: string; manifestPath: string }
+): Promise<void> {
   const check = argv.includes('--check')
-  const scriptDir = dirname(fileURLToPath(import.meta.url))
-  const sourcePath = resolve(scriptDir, '../../src/i18n/translations.ts')
-  const manifestPath = resolve(
-    scriptDir,
-    '../../src/i18n/.translations-manifest.json'
-  )
+  const { sourcePath, manifestPath } = paths
   const config = translationPipelineConfig
 
   const { text, entries } = parseTranslations(sourcePath)
@@ -134,6 +144,7 @@ async function run(argv: readonly string[]): Promise<void> {
   for (const error of auditErrors) print(`WARNING: ${error}`)
 
   if (pending.length === 0) {
+    persistManifest(manifestPath, manifest, manifestUpdates)
     print('All website translations.ts locales are up to date.')
     return
   }
@@ -234,11 +245,7 @@ async function run(argv: readonly string[]): Promise<void> {
     writeFileSync(sourcePath, applyEdits(text, edits))
   }
 
-  const nextEntries: TranslationManifest['entries'] = { ...manifest.entries }
-  for (const [key, locales] of manifestUpdates) {
-    nextEntries[key] = { ...nextEntries[key], ...Object.fromEntries(locales) }
-  }
-  saveManifest(manifestPath, { version: 1, entries: nextEntries })
+  persistManifest(manifestPath, manifest, manifestUpdates)
 
   print(
     `Translated ${generated} strings; ${rejected} held back by AI review (will retry next run).`
@@ -249,7 +256,14 @@ const invokedAsScript = process.argv[1]
   ? pathToFileURL(process.argv[1]).href === import.meta.url
   : false
 if (invokedAsScript) {
-  run(process.argv.slice(2)).catch((error: unknown) => {
+  const scriptDir = dirname(fileURLToPath(import.meta.url))
+  runPipeline(process.argv.slice(2), {
+    sourcePath: resolve(scriptDir, '../../src/i18n/translations.ts'),
+    manifestPath: resolve(
+      scriptDir,
+      '../../src/i18n/.translations-manifest.json'
+    )
+  }).catch((error: unknown) => {
     console.error(error instanceof Error ? error.message : error)
     process.exitCode = 1
   })

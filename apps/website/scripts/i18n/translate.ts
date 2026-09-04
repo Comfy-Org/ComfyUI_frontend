@@ -180,15 +180,15 @@ export function createOpenAiTranslator(
           deferralReason = `${items.length} strings were still truncated (finish_reason "length") at maxTruncationSplitDepth ${options.maxTruncationSplitDepth}`
           break
         }
-        const settled = await Promise.allSettled(
-          splitTruncatedBatch(items).map((chunk) =>
-            translateBatch(locale, chunk, splitDepth + 1)
-          )
-        )
+        // Sequential, not Promise.all: this call is already one of
+        // requestConcurrency workers, so fanning its children out in
+        // parallel would let a truncated batch exceed that limit.
         const merged: Record<string, string> = {}
-        for (const result of settled) {
-          if (result.status === 'rejected') throw result.reason
-          Object.assign(merged, result.value)
+        for (const chunk of splitTruncatedBatch(items)) {
+          Object.assign(
+            merged,
+            await translateBatch(locale, chunk, splitDepth + 1)
+          )
         }
         return merged
       }

@@ -29,6 +29,24 @@ describe('loadManifest', () => {
     writeFileSync(path, JSON.stringify({ version: 2 }))
     expect(() => loadManifest(path)).toThrow()
   })
+
+  it('rejects an array in place of entries', () => {
+    const path = join(dir, 'manifest.json')
+    writeFileSync(path, JSON.stringify({ version: 1, entries: [] }))
+    expect(() => loadManifest(path)).toThrow()
+  })
+
+  it('rejects an array in place of a locale map', () => {
+    const path = join(dir, 'manifest.json')
+    writeFileSync(
+      path,
+      JSON.stringify({
+        version: 1,
+        entries: { 'ui.copy': [hashSource('Copy')] }
+      })
+    )
+    expect(() => loadManifest(path)).toThrow()
+  })
 })
 
 describe('saveManifest + loadManifest', () => {

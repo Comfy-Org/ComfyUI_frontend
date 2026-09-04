@@ -56,4 +56,16 @@ describe('tokenErrors', () => {
   it('flags an empty translation of a non-empty source', () => {
     expect(tokenErrors('Save now', '')).toEqual(['empty translation'])
   })
+
+  it('flags a placeholder dropped from one of its two occurrences', () => {
+    expect(
+      tokenErrors('{name} bought {name} a gift', '{name}がプレゼントを買った')
+    ).toEqual(['missing {name}'])
+  })
+
+  it('reports the deficit count when more than one occurrence is missing', () => {
+    expect(tokenErrors('<br><br><br>text', '<br>テキスト')).toEqual([
+      'missing <br>×2'
+    ])
+  })
 })

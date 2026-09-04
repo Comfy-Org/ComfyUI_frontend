@@ -1,9 +1,17 @@
-import { describe, expect, it } from 'vitest'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import type { OutputLocale } from './config'
-import { hashSource } from './manifest'
+import { hashSource, loadManifest } from './manifest'
 import type { TranslationEntry } from './source'
-import { auditExisting, collectPending } from './update-translations'
+import {
+  auditExisting,
+  collectPending,
+  runPipeline
+} from './update-translations'
 
 function entry(key: string, values: Record<string, string>): TranslationEntry {
   return { key, values, insertPoint: 0, replaceRanges: {} }
@@ -100,6 +108,46 @@ describe('collectPending', () => {
         hasExisting: true
       }
     ])
+  })
+})
+
+describe('runPipeline', () => {
+  let dir: string
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'i18n-run-pipeline-'))
+  })
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('persists baseline hashes even when nothing is pending, so a later English edit is queued', async () => {
+    const sourcePath = join(dir, 'translations.ts')
+    const manifestPath = join(dir, '.translations-manifest.json')
+    const fixture = `type Locale = 'en' | 'zh-CN' | 'ja'
+
+const translations = {
+  'ui.copy': {
+    en: 'Copy',
+    'zh-CN': '复制',
+    ja: 'コピー'
+  }
+} as const satisfies Record<
+  string,
+  { en: string; 'zh-CN': string } & Partial<Record<Locale, string>>
+>
+`
+    writeFileSync(sourcePath, fixture)
+
+    await runPipeline([], { sourcePath, manifestPath })
+
+    const manifest = loadManifest(manifestPath)
+    expect(manifest.entries['ui.copy']).toEqual({
+      'zh-CN': hashSource('Copy'),
+      ja: hashSource('Copy')
+    })
+    expect(readFileSync(sourcePath, 'utf8')).toBe(fixture)
   })
 })
 

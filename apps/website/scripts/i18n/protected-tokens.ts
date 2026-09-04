@@ -5,7 +5,7 @@
 // existing zh-CN copy deliberately repoints hrefs at zh-CN-prefixed pages
 // (e.g. `<a href="/cloud/pricing#faq">` becomes `<a href="/zh-CN/cloud/pricing#faq">`),
 // which is a correct localization, not a dropped token — only a tag
-// disappearing or its count changing is a real translation defect.
+// disappearing, or its count changing, is a real translation defect.
 const tagPattern = /<(\/?)([a-zA-Z][a-zA-Z0-9]*)[^<>]*>/g
 const interpolationPattern = /\{[A-Za-z][A-Za-z0-9_]*\}/g
 
@@ -15,24 +15,45 @@ function tagTokens(value: string): string[] {
   )
 }
 
-function uniqueMatches(value: string, pattern: RegExp): string[] {
-  return [...new Set(value.match(pattern) ?? [])]
+function rawTokens(value: string): string[] {
+  return [...tagTokens(value), ...(value.match(interpolationPattern) ?? [])]
 }
 
 export function protectedTokens(value: string): string[] {
-  return [
-    ...new Set([
-      ...tagTokens(value),
-      ...uniqueMatches(value, interpolationPattern)
-    ])
-  ].sort()
+  return [...new Set(rawTokens(value))].sort()
+}
+
+function tokenCounts(value: string): Map<string, number> {
+  const counts = new Map<string, number>()
+  for (const token of rawTokens(value)) {
+    counts.set(token, (counts.get(token) ?? 0) + 1)
+  }
+  return counts
+}
+
+function describeDeficit(token: string, deficit: number): string {
+  return deficit > 1 ? `${token}×${deficit}` : token
 }
 
 export function tokenErrors(source: string, target: string): string[] {
-  const sourceTokens = protectedTokens(source)
-  const targetTokens = protectedTokens(target)
-  const missing = sourceTokens.filter((token) => !targetTokens.includes(token))
-  const added = targetTokens.filter((token) => !sourceTokens.includes(token))
+  const sourceCounts = tokenCounts(source)
+  const targetCounts = tokenCounts(target)
+  const allTokens = [
+    ...new Set([...sourceCounts.keys(), ...targetCounts.keys()])
+  ].sort()
+
+  const missing: string[] = []
+  const added: string[] = []
+  for (const token of allTokens) {
+    const sourceCount = sourceCounts.get(token) ?? 0
+    const targetCount = targetCounts.get(token) ?? 0
+    if (targetCount < sourceCount) {
+      missing.push(describeDeficit(token, sourceCount - targetCount))
+    } else if (targetCount > sourceCount) {
+      added.push(describeDeficit(token, targetCount - sourceCount))
+    }
+  }
+
   return [
     ...(missing.length ? [`missing ${missing.join(', ')}`] : []),
     ...(added.length ? [`added ${added.join(', ')}`] : []),

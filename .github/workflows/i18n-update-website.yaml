@@ -20,7 +20,12 @@ concurrency:
 
 jobs:
   update-website-translations:
-    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    # Checkout uses the dispatcher-supplied branch as its ref, and the steps
+    # below run that ref's code with OPENAI_API_KEY — restrict it to this
+    # pipeline's own branch convention so dispatch can't be pointed at an
+    # arbitrary branch to exfiltrate the secret, mirroring the branch-prefix
+    # gate i18n-update-core.yaml uses for its own dispatched translation runs.
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend' && startsWith(github.event.inputs.branch, 'i18n/')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
