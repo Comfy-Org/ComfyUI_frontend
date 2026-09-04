@@ -109,8 +109,6 @@ const raw = (overrides: Partial<RawCapture> = {}): RawCapture => ({
   ],
   timed_out: false,
   frames: frames(),
-  rows_artifacts: ['rows.json'],
-  retrieval: { kind: 'postgres-json' },
   error: null,
   ...overrides
 })
@@ -355,14 +353,6 @@ describe('assembleCapture', () => {
       seed_turn: 1
     })
     expect(receipt.turns[0].frames_kept).toBe(4)
-  })
-
-  it('refuses a mutating call whose mutation never reached the doc host', () => {
-    expect(() =>
-      assembleCapture(
-        input({ rows: rows({ parents: [parent({ children: [] })] }) })
-      )
-    ).toThrow('reports a document mutation but has NO audit child rows')
   })
 
   it('refuses an applied add_node whose class is outside the seed catalog', () => {

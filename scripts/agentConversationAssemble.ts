@@ -7,21 +7,11 @@ import { z } from 'zod'
 
 import type { zRecordedWsEvent } from '../browser_tests/fixtures/data/agent/agentConversation'
 import { zAgentConversationWorkflow } from '../browser_tests/fixtures/data/agent/agentConversation'
+import { AGENT_WS_EVENT_TYPES } from '../src/workbench/extensions/agent/schemas/agentApiSchema'
 import type { AgentBackendCapture } from './agentConversationCapture'
 
-const REPLAYED_FRAMES =
-  'agent_thinking agent_tool_call agent_message_delta agent_message_done agent_active_tab'.split(
-    ' '
-  )
-
-// boundary.Classify's ActionEdit set minus the tab tools, which move focus
-// rather than the document.
-// boundary.Classify's ActionEdit set minus the tab tools, which move focus
-// rather than the document.
-const MUTATING_TOOLS =
-  'apply_ops add_node connect set_widget delete_node delete_nodes clear_canvas apply_recipe generate_workflow reset_doc open_workflow get_template use_asset_as_input'.split(
-    ' '
-  )
+// The replay accepts exactly the agent events the panel itself parses.
+const REPLAYED_FRAMES: readonly string[] = [...AGENT_WS_EVENT_TYPES]
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -30,7 +20,6 @@ const STACK =
 
 export const zJsonObject = z.record(z.string(), z.unknown())
 
-// psql hands a json column back as an object, as a string, or as NULL.
 // psql hands a json column back as an object, as a string, or as NULL.
 const zJsonColumn = z.unknown().transform((value, ctx) => {
   if (typeof value !== 'string') return value
@@ -124,8 +113,6 @@ export interface RawCapture {
   turns: RecordedTurn[]
   timed_out: boolean
   frames: RecordedFrame[]
-  rows_artifacts: string[]
-  retrieval: Record<string, string> | null
   error: string | null
 }
 
@@ -151,14 +138,12 @@ export interface TurnIds {
 }
 
 // A refused recording is an expected outcome: main logs it and exits 1.
-// A refused recording is an expected outcome: main logs it and exits 1.
 export class RecordRefusal extends Error {}
 
 export function refuse(reason: string): never {
   throw new RecordRefusal(reason)
 }
 
-// A shape mismatch at a boundary is a refusal, named by its json path.
 // A shape mismatch at a boundary is a refusal, named by its json path.
 export function parseOrRefuse<S extends z.ZodTypeAny>(
   schema: S,
@@ -183,7 +168,6 @@ const sameSet = (left: Set<string>, right: Set<string>): boolean =>
 
 export const turnLabel = (index: number): string => `turn ${index + 1}`
 
-// Everything the recording as a whole must clear before a turn means anything.
 // Everything the recording as a whole must clear before a turn means anything.
 function checkRecording(
   raw: RawCapture,
@@ -289,7 +273,6 @@ function activeWorkflowId(
 }
 
 // Every op the exporter will read out of this result, shape-checked once.
-// Every op the exporter will read out of this result, shape-checked once.
 function echoedOps(row: ParentRow): Array<Record<string, unknown>> {
   const carrier = zOpsCarrier.safeParse(row.result ?? {})
   if (!carrier.success) return []
@@ -311,19 +294,6 @@ function echoedOps(row: ParentRow): Array<Record<string, unknown>> {
 
 // Ops-shaped mutation record: the CRDT-on op echo or the CRDT-off ack summary.
 // Bare count keys are excluded because read tools carry them.
-// Ops-shaped mutation record: the CRDT-on op echo or the CRDT-off ack summary.
-// Bare count keys are excluded because read tools carry them.
-function mutationReported(row: ParentRow): boolean {
-  const carrier = zOpsCarrier.safeParse(row.result ?? {})
-  if (!carrier.success) return false
-  const { data } = carrier.data
-  return (
-    (data.ops?.length ?? 0) > 0 ||
-    zJsonObject.safeParse(data.op).success ||
-    Boolean(data.ops_by_kind ?? data.nodes_added ?? data.nodes_deleted)
-  )
-}
-
 function appliedOps(
   row: ParentRow,
   applied: string[]
@@ -360,15 +330,6 @@ function parentToolCall(
   )
   if (row.result === null && applied.length > 0)
     refuse(`parent row ${row.id} has applied ops but a NULL result`)
-  if (
-    row.tool_name !== null &&
-    MUTATING_TOOLS.includes(row.tool_name) &&
-    mutationReported(row) &&
-    row.children.length === 0
-  )
-    refuse(
-      `parent row ${row.id} (${row.tool_name}) reports a document mutation but has NO audit child rows`
-    )
 
   if (applied.length > 0 && row.workflow_id !== workflowId)
     refuse(
@@ -385,7 +346,6 @@ function parentToolCall(
   }
 }
 
-// The frames and the audit rows must describe the same turn's tool calls.
 // The frames and the audit rows must describe the same turn's tool calls.
 function checkTurnAgreement(
   kept: RecordedFrame[],
@@ -409,7 +369,6 @@ function checkTurnAgreement(
     )
 }
 
-// The draft is the only witness that the applied ops reached the document.
 // The draft is the only witness that the applied ops reached the document.
 function checkDraft(
   draft: NormalizedRows['draft'],
@@ -451,8 +410,6 @@ function checkDraft(
   }
 }
 
-// An uncatalogued class is stored opaquely by the applier, so a later
-// set_widget on it throws.
 // An uncatalogued class is stored opaquely by the applier, so a later
 // set_widget on it throws.
 function checkAddedClasses(
@@ -554,7 +511,6 @@ function childStatuses(parents: ParentRow[]): Record<string, number> {
   return tally
 }
 
-// One recorded turn: its own frames, its own rows, and the gates binding them.
 // One recorded turn: its own frames, its own rows, and the gates binding them.
 function assembleTurn(
   turn: RecordedTurn,

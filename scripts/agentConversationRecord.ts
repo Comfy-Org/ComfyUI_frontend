@@ -371,8 +371,6 @@ async function main(argv: string[]): Promise<void> {
     turns: [],
     timed_out: false,
     frames: [],
-    rows_artifacts: [],
-    retrieval: null,
     error: null
   }
 
@@ -407,8 +405,6 @@ async function main(argv: string[]): Promise<void> {
         }
       )
     })
-    raw.rows_artifacts = rows.map((set) => set.path)
-    raw.retrieval = rows[0].retrieval
     writeJson(rawPath, raw)
 
     const { capture, receipt } = assembleCapture({

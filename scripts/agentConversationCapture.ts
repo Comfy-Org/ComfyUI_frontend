@@ -103,7 +103,7 @@ function exportTurn(turn: z.infer<typeof zBackendTurn>, threadId: string) {
       ? undefined
       : frame.at_ms - firstAt
 
-  for (const frame of turn.frames) {
+  for (const [index, frame] of turn.frames.entries()) {
     if (
       frame.data.thread_id !== threadId ||
       frame.data.message_id !== turn.message_id
@@ -141,8 +141,7 @@ function exportTurn(turn: z.infer<typeof zBackendTurn>, threadId: string) {
       }
     }
     response.push({ kind: 'event', event, at_ms })
-    if (turn.cancel_after_frame === turn.frames.indexOf(frame))
-      cancelAfter = response.length - 1
+    if (turn.cancel_after_frame === index) cancelAfter = response.length - 1
   }
 
   const omitted = turn.tool_calls.filter(

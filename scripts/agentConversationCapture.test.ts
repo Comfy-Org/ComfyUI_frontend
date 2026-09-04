@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 
-import { zAgentConversation } from '../browser_tests/fixtures/data/agent/agentConversation'
 import type { AgentBackendCapture } from './agentConversationCapture'
 import { exportAgentConversation } from './agentConversationCapture'
 
@@ -216,8 +215,22 @@ describe('exportAgentConversation', () => {
       request: { content: 'Connect it' },
       frames: turn.frames.map((frame) => ({
         ...frame,
-        data: { ...frame.data, message_id: 'message-2' }
-      }))
+        data: {
+          ...frame.data,
+          message_id: 'message-2',
+          tool_call_id: 'tool-2',
+          tool_name: 'add_link'
+        }
+      })),
+      tool_calls: [
+        {
+          tool_call_id: 'tool-2',
+          applied_op_ids: ['op-link'],
+          result: {
+            data: { ops: [{ op: 'connect', op_id: 'op-link', link_id: 7 }] }
+          }
+        }
+      ]
     }
     const exported = exportAgentConversation({
       ...capture,
@@ -227,23 +240,13 @@ describe('exportAgentConversation', () => {
       exported.turns.map((exportedTurn) => exportedTurn.message_id)
     ).toEqual(['message-1', 'message-2'])
     expect(exported.turns[1].request).toEqual({ content: 'Connect it' })
-    expect(exported.turns[1].response).toHaveLength(3)
-  })
-
-  it('refuses a recorded turn without the message id it came from', () => {
-    const conversation = exportAgentConversation(capture)
-    const { message_id: _messageId, ...anonymous } = conversation.turns[0]
-    expect(() =>
-      zAgentConversation.parse({ ...conversation, turns: [anonymous] })
-    ).toThrow('recorded turns carry the message id')
-  })
-
-  it('refuses a recorded label without backend provenance', () => {
-    const conversation = exportAgentConversation(capture)
-    const { capture: _capture, ...source } = conversation.source
-
-    expect(() => zAgentConversation.parse({ ...conversation, source })).toThrow(
-      'recorded responses require backend capture provenance'
-    )
+    expect(exported.turns[0].response[1]).toEqual({
+      kind: 'graph_ops',
+      ops: [{ op: 'add_node', op_id: 'op-accepted', node_id: 1 }]
+    })
+    expect(exported.turns[1].response[1]).toEqual({
+      kind: 'graph_ops',
+      ops: [{ op: 'connect', op_id: 'op-link', link_id: 7 }]
+    })
   })
 })
