@@ -11,7 +11,8 @@ export const zSubscriptionTier = z.enum([
   'CREATOR',
   'PRO',
   'FOUNDERS_EDITION',
-  'TEAM'
+  'TEAM',
+  'ENTERPRISE'
 ])
 
 /**
@@ -480,6 +481,21 @@ export const zSystemStatsResponse = z.object({
  */
 export const zSubscriptionDuration = z.enum(['MONTHLY', 'ANNUAL'])
 
+export const zSubscriptionDiscount = z.object({
+  amount_off_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  code: z.string(),
+  kind: z.enum(['plan', 'promotion']),
+  name: z.string().optional()
+})
+
 /**
  * Response after successfully subscribing to a billing plan.
  */
@@ -496,11 +512,17 @@ export const zSubscribeResponse = z.object({
 export const zSubscribeRequest = z.object({
   billing_cycle: z.enum(['monthly', 'yearly']).optional(),
   cancel_url: z.string().optional(),
+  checkout_attempt_id: z.string().optional(),
   confirm_reactivation: z.boolean().optional(),
+  confirmation_token: z.string().optional(),
   idempotency_key: z.string().optional(),
   plan_slug: z.string(),
+  promotion_code: z.string().optional(),
   proration_at: z.string().datetime().optional(),
+  quote_id: z.string().optional(),
+  quote_version: z.number().int().optional(),
   return_url: z.string().optional(),
+  saved_payment_method_id: z.string().regex(/^pm_/).optional(),
   team_credit_stop_id: z.string().optional()
 })
 
@@ -547,6 +569,26 @@ export const zSecretProvidersResponse = z.object({
  */
 export const zSecretListResponse = z.object({
   data: z.array(zSecretResponse)
+})
+
+/**
+ * A plan change persisted to take effect at a future billing boundary.
+ */
+export const zScheduledPlanChange = z.object({
+  effective_at: z.string().datetime(),
+  plan_slug: z.string(),
+  team_credit_stop: zTeamCreditStopSummary.nullable()
+})
+
+export const zSavedPaymentMethod = z.object({
+  brand: z.string().optional(),
+  id: z.string().regex(/^pm_/),
+  is_default: z.boolean(),
+  last4: z
+    .string()
+    .regex(/^[0-9]{4}$/)
+    .optional(),
+  type: z.string()
 })
 
 /**
@@ -763,6 +805,15 @@ export const zPreviewPlanInfo = z.object({
  */
 export const zPreviewSubscribeResponse = z.object({
   allowed: z.boolean(),
+  amount_due_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
   cost_next_period_cents: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
@@ -795,12 +846,29 @@ export const zPreviewSubscribeResponse = z.object({
     .max(BigInt('9223372036854775807'), {
       message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     }),
+  currency: z.string().optional(),
   current_plan: zPreviewPlanInfo.optional(),
+  discounts: z.array(zSubscriptionDiscount).optional(),
   effective_at: z.string().datetime(),
   is_immediate: z.boolean(),
   new_plan: zPreviewPlanInfo,
+  payment_method_configuration_id: z.string().optional(),
+  promotion_code: z.string().optional(),
   proration_at: z.string().datetime().optional(),
+  quote_id: z.string().optional(),
+  quote_version: z.number().int().optional(),
   reason: z.string().optional(),
+  renewal_amount_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  renewal_at: z.string().datetime().optional(),
+  requires_reactivation_confirmation: z.boolean().optional(),
   transition_type: z.enum([
     'new_subscription',
     'upgrade',
@@ -813,7 +881,9 @@ export const zPreviewSubscribeResponse = z.object({
  * Request body for previewing the cost of a plan subscription change.
  */
 export const zPreviewSubscribeRequest = z.object({
+  checkout_attempt_id: z.string().optional(),
   plan_slug: z.string(),
+  promotion_code: z.string().optional(),
   team_credit_stop_id: z.string().optional()
 })
 
@@ -1254,6 +1324,7 @@ export const zJobEntry = z.object({
   id: z.string().uuid(),
   outputs_count: z.number().int().optional(),
   preview_output: z.record(z.unknown()).optional(),
+  previewable_outputs_count: z.number().int().optional(),
   status: z.enum([
     'pending',
     'in_progress',
@@ -1374,6 +1445,7 @@ export const zJobDetailResponse = z.object({
   outputs: z.record(z.unknown()).optional(),
   outputs_count: z.number().int().optional(),
   preview_output: z.record(z.unknown()).optional(),
+  previewable_outputs_count: z.number().int().optional(),
   status: z.enum([
     'pending',
     'in_progress',
@@ -1392,6 +1464,7 @@ export const zJobDetailResponse = z.object({
   user_id: z.string().optional(),
   workflow: z.record(z.unknown()).optional(),
   workflow_id: z.string().optional(),
+  workflow_version_id: z.string().optional(),
   workspace_id: z.string().optional()
 })
 
@@ -1412,7 +1485,7 @@ export const zJobAssetsResponse = z.object({
 })
 
 /**
- * Request body for minting an input-image upload grant.
+ * Request body for minting an input-image or input-audio upload grant.
  */
 export const zInputUploadUrlRequest = z.object({
   content_type: z.string().max(64)
@@ -1487,6 +1560,7 @@ export const zHubWorkflowTemplateEntry = z.object({
       outputs: z.array(z.record(z.unknown())).optional()
     })
     .optional(),
+  isApp: z.boolean(),
   isEssential: z.boolean().optional(),
   logos: z.array(z.record(z.unknown())).optional(),
   mediaSubtype: z.string().optional(),
@@ -1550,6 +1624,7 @@ export const zHubWorkflowTemplateEntry = z.object({
 export const zHubWorkflowSummary = z.object({
   custom_nodes: z.array(zLabelRef).optional(),
   description: z.string().optional(),
+  is_app: z.boolean(),
   metadata: z.record(z.unknown()).optional(),
   models: z.array(zLabelRef).optional(),
   name: z.string(),
@@ -1572,6 +1647,7 @@ export const zHubWorkflowDetail = z.object({
   assets: z.array(zAssetInfo),
   custom_nodes: z.array(zLabelRef).optional(),
   description: z.string().optional(),
+  is_app: z.boolean(),
   metadata: z.record(z.unknown()).optional(),
   models: z.array(zLabelRef).optional(),
   name: z.string(),
@@ -1882,6 +1958,17 @@ export const zDeleteSessionResponse = z.object({
 })
 
 /**
+ * The workspace bound to the presented credential, plus how that credential authenticated. Same shape as Workspace with the caller's role and the auth method added, and without created_at (callers of this endpoint want identity, not provenance).
+ */
+export const zCurrentWorkspaceResponse = z.object({
+  auth_method: z.string(),
+  id: z.string(),
+  name: z.string(),
+  role: z.enum(['owner', 'member']).optional(),
+  type: z.enum(['personal', 'team'])
+})
+
+/**
  * Request body for creating a new workspace.
  */
 export const zCreateWorkspaceRequest = z.object({
@@ -1957,6 +2044,7 @@ export const zCreateTopupRequest = z.object({
     .max(BigInt('9223372036854775807'), {
       message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     }),
+  checkout_attempt_id: z.string().optional(),
   idempotency_key: z.string().optional()
 })
 
@@ -2033,6 +2121,17 @@ export const zBulkRevokeApiKeysResponse = z.object({
 })
 
 /**
+ * A tax identifier for a company Stripe customer. Stripe validates the
+ * type/value combination synchronously and verifies VAT/ABN-style IDs
+ * asynchronously.
+ *
+ */
+export const zBillingTaxId = z.object({
+  type: z.string(),
+  value: z.string()
+})
+
+/**
  * Payment lifecycle status
  */
 export const zBillingStatus = z.enum([
@@ -2056,9 +2155,12 @@ export const zBillingStatusResponse = z.object({
   is_active: z.boolean(),
   max_seats: z.number().int(),
   occupied_seats: z.number().int(),
+  payment_intent_client_secret: z.string().optional(),
   pending_billing_op_id: z.string().optional(),
+  pending_billing_op_type: z.enum(['subscription', 'topup']).optional(),
   plan_slug: z.string().optional(),
   renewal_date: z.string().datetime().optional(),
+  scheduled_change: zScheduledPlanChange.nullable(),
   subscription_duration: zSubscriptionDuration.optional(),
   subscription_status: z.enum(['active', 'ended', 'canceled']).optional(),
   subscription_tier: zSubscriptionTier.optional(),
@@ -2079,11 +2181,42 @@ export const zBillingPlansResponse = z.object({
  */
 export const zBillingOpStatusResponse = z.object({
   action_url: z.string().optional(),
+  authentication_state: z
+    .enum([
+      'requires_action',
+      'processing',
+      'failed_retryable',
+      'succeeded',
+      'reconciliation_needed'
+    ])
+    .optional(),
   completed_at: z.string().datetime().optional(),
+  decline_reason: z
+    .enum([
+      'card_declined',
+      'insufficient_funds',
+      'expired_card',
+      'incorrect_cvc',
+      'authentication_required',
+      'authentication_failed',
+      'processing_error',
+      'generic'
+    ])
+    .optional(),
   error_message: z.string().optional(),
   id: z.string(),
+  payment_intent_client_secret: z.string().optional(),
+  recovery_action: z
+    .enum([
+      'retry',
+      'replace_payment_method',
+      'authenticate_payment',
+      'contact_support'
+    ])
+    .optional(),
+  retryable: z.boolean().optional(),
   started_at: z.string().datetime(),
-  status: z.enum(['pending', 'succeeded', 'failed'])
+  status: z.enum(['pending', 'succeeded', 'failed', 'reconciliation_needed'])
 })
 
 /**
@@ -2105,6 +2238,93 @@ export const zBillingEventsResponse = z.object({
   page: z.number().int(),
   total: z.number().int(),
   totalPages: z.number().int()
+})
+
+/**
+ * A billing address for a company Stripe customer. city and postal_code
+ * are optional because some countries (e.g. Hong Kong, the UAE, Panama)
+ * have no postal code and are not collected for them; Stripe validates
+ * what a given country actually requires.
+ *
+ */
+export const zBillingAddress = z.object({
+  city: z.string().optional(),
+  country: z.string(),
+  line1: z.string(),
+  line2: z.string().optional(),
+  postal_code: z.string().optional(),
+  state: z.string().optional()
+})
+
+/**
+ * Fields to set on the workspace's Stripe customer. Every group is
+ * optional; omit a group to leave that part of the customer unchanged.
+ *
+ */
+export const zBillingCompanyDetailsUpdateRequest = z.object({
+  address: zBillingAddress.optional(),
+  company_name: z.string().optional(),
+  tax_id: zBillingTaxId.optional()
+})
+
+/**
+ * Company billing details on file for the workspace's Stripe customer.
+ * A field is absent until the workspace sets it via PATCH
+ * /api/billing/company-details.
+ *
+ */
+export const zBillingCompanyDetailsResponse = z.object({
+  address: zBillingAddress.optional(),
+  company_name: z.string().optional(),
+  tax_id: zBillingTaxId.optional()
+})
+
+export const zBillingCapabilityScope = z.object({
+  user_id: z.string(),
+  workspace_id: z.string()
+})
+
+/**
+ * Identifies capability values currently using safe rollout defaults
+ * instead of deterministic policy results. A true value is UI guidance,
+ * not evidence that the corresponding write will succeed.
+ *
+ */
+export const zBillingCapabilityRolloutDefaults = z.object({
+  can_downgrade_to_personal: z.boolean(),
+  can_subscribe_self_serve: z.boolean(),
+  can_top_up: z.boolean()
+})
+
+/**
+ * Conservative UI guidance. These values do not authorize billing writes;
+ * each write endpoint independently enforces its permission policy.
+ *
+ */
+export const zBillingCapabilities = z.object({
+  can_cancel: z.boolean(),
+  can_change_seats: z.boolean(),
+  can_downgrade_to_personal: z.boolean(),
+  can_invite_members: z.boolean(),
+  can_reactivate: z.boolean(),
+  can_subscribe_self_serve: z.boolean(),
+  can_top_up: z.boolean()
+})
+
+/**
+ * Effective billing UI guidance for one authenticated user and workspace.
+ */
+export const zBillingCapabilitiesResponse = z.object({
+  capabilities: zBillingCapabilities,
+  expires_at: z.string().datetime(),
+  resolved_for: zBillingCapabilityScope,
+  revision: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .lte(BigInt(9007199254740991)),
+  rollout_defaults_applied: zBillingCapabilityRolloutDefaults
 })
 
 /**
@@ -2230,6 +2450,55 @@ export const zAgentThreadCreateRequest = z.object({
 })
 
 /**
+ * A user-authored skill pack to create or replace. Plain JSON — a pack body is small enough that a signed-URL upload would be pure overhead.
+ */
+export const zAgentSkillPublishRequest = z.object({
+  always: z.boolean().optional().default(false),
+  body: z.string(),
+  description: z.string().max(1024),
+  name: z
+    .string()
+    .max(64)
+    .regex(/^[A-Za-z0-9._-]*[A-Za-z0-9_-][A-Za-z0-9._-]*$/)
+})
+
+/**
+ * One of the caller's user-authored skill packs.
+ */
+export const zAgentSkill = z.object({
+  body: z.string(),
+  body_hash: z.string(),
+  created_at: z.string(),
+  description: z.string(),
+  id: z.string(),
+  name: z.string(),
+  updated_at: z.string()
+})
+
+/**
+ * The caller's skill packs, ordered by name.
+ */
+export const zAgentSkillListResponse = z.object({
+  skills: z.array(zAgentSkill)
+})
+
+/**
+ * The run mode to save.
+ */
+export const zAgentRunModePutRequest = z.object({
+  credit_limit: z.number().int().gte(1).lte(2147483647).nullish(),
+  mode: z.enum(['ask_approval', 'auto', 'auto_limited'])
+})
+
+/**
+ * How the agent may spend the caller's credits by running workflows from chat. The saved choice, or the default (ask_approval, no limit) for a caller who never chose.
+ */
+export const zAgentRunMode = z.object({
+  credit_limit: z.number().int().gte(1).lte(2147483647).nullable(),
+  mode: z.enum(['ask_approval', 'auto', 'auto_limited'])
+})
+
+/**
  * A user turn posted to the agent.
  */
 export const zAgentPostMessageRequest = z.object({
@@ -2255,11 +2524,27 @@ export const zAgentPostMessageRequest = z.object({
 })
 
 /**
+ * An unanswered ask attached to its assistant message, so a reload rehydrates the prompt from the ROW rather than from the agent_ask WebSocket event the client missed. Present only while the ask is pending; answer it via POST /agent/threads/{id}/asks/{ask_id}/answer.
+ */
+export const zAgentPendingAsk = z.object({
+  allow_other: z.boolean(),
+  ask_id: z.string(),
+  context: z.record(z.unknown()).optional(),
+  kind: z.enum(['ask_user', 'run_approval']),
+  max_selections: z.number().int(),
+  message_id: z.string(),
+  min_selections: z.number().int(),
+  options: z.array(z.record(z.unknown())),
+  prompt: z.string()
+})
+
+/**
  * A persisted message in an agent thread.
  */
 export const zAgentMessage = z.object({
   content: z.record(z.unknown()).optional(),
   id: z.string(),
+  pending_ask: zAgentPendingAsk.optional(),
   role: z.enum(['user', 'assistant', 'tool', 'system']),
   seq: z.number().int(),
   status: z.enum(['streaming', 'complete', 'error', 'interrupted']),
@@ -2303,6 +2588,17 @@ export const zAgentAnswerRequest = z.object({
  */
 export const zAgentAnswerAccepted = z.object({
   status: z.enum(['answered'])
+})
+
+/**
+ * Returned when a request to run the agent is declined before the turn starts, because of a billing or account condition on the workspace. The `error` object carries a `message` you can show the user, a `type` that matches the HTTP status, and a more specific `reason` you can branch on to offer the right next step.
+ */
+export const zAgentAdmissionError = z.object({
+  error: z.object({
+    message: z.string(),
+    reason: z.enum(['no_funds', 'manual_block', 'funds_unavailable']),
+    type: z.enum(['PAYMENT_REQUIRED', 'SERVICE_UNAVAILABLE'])
+  })
 })
 
 /**
@@ -2445,6 +2741,77 @@ export const zAgentGetDraftData = z.object({
  */
 export const zAgentGetDraftResponse = zAgentDraftSnapshot
 
+export const zAgentLlmMessagesData = z.object({
+  body: z.record(z.unknown()),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * The upstream LLM response, streamed back as Server-Sent Events (text/event-stream) chunk-by-chunk.
+ */
+export const zAgentLlmMessagesResponse = z.string()
+
+export const zAgentGetRunModeData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * The caller's run mode (the saved choice, or the default).
+ */
+export const zAgentGetRunModeResponse = zAgentRunMode
+
+export const zAgentPutRunModeData = z.object({
+  body: zAgentRunModePutRequest,
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * The saved run mode.
+ */
+export const zAgentPutRunModeResponse = zAgentRunMode
+
+export const zAgentListSkillsData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * The caller's skill packs.
+ */
+export const zAgentListSkillsResponse = zAgentSkillListResponse
+
+export const zAgentPublishSkillData = z.object({
+  body: zAgentSkillPublishRequest,
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * An existing pack of the same name was replaced.
+ */
+export const zAgentPublishSkillResponse = zAgentSkill
+
+export const zAgentDeleteSkillData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    name: z
+      .string()
+      .max(64)
+      .regex(/^[A-Za-z0-9._-]*[A-Za-z0-9_-][A-Za-z0-9._-]*$/)
+  }),
+  query: z.never().optional()
+})
+
+/**
+ * The pack was deleted.
+ */
+export const zAgentDeleteSkillResponse = z.void()
+
 export const zAgentListThreadsData = z.object({
   body: z.never().optional(),
   path: z.never().optional(),
@@ -2533,6 +2900,9 @@ export const zListAssetsData = z.object({
     .object({
       include_tags: z.array(z.string()).optional(),
       exclude_tags: z.array(z.string()).optional(),
+      tags_all: z.array(z.string()).optional(),
+      tags_any: z.array(z.string()).optional(),
+      tags_none: z.array(z.string()).optional(),
       name_contains: z.string().optional(),
       metadata_filter: z.string().optional(),
       limit: z.number().int().gte(1).lte(500).optional().default(20),
@@ -2841,6 +3211,9 @@ export const zGetAssetTagHistogramData = z.object({
     .object({
       include_tags: z.array(z.string()).optional(),
       exclude_tags: z.array(z.string()).optional(),
+      tags_all: z.array(z.string()).optional(),
+      tags_any: z.array(z.string()).optional(),
+      tags_none: z.array(z.string()).optional(),
       name_contains: z.string().optional(),
       metadata_filter: z.string().optional(),
       limit: z.number().int().gte(1).lte(1000).optional().default(100),
@@ -2932,6 +3305,17 @@ export const zGetBillingBalanceData = z.object({
  */
 export const zGetBillingBalanceResponse = zBillingBalanceResponse
 
+export const zGetBillingCapabilitiesData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Effective billing capabilities
+ */
+export const zGetBillingCapabilitiesResponse = zBillingCapabilitiesResponse
+
 export const zGetChurnkeyAuthData = z.object({
   body: z.never().optional(),
   path: z.never().optional(),
@@ -2942,6 +3326,29 @@ export const zGetChurnkeyAuthData = z.object({
  * Success
  */
 export const zGetChurnkeyAuthResponse = zChurnkeyAuthResponse
+
+export const zGetBillingCompanyDetailsData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Success
+ */
+export const zGetBillingCompanyDetailsResponse = zBillingCompanyDetailsResponse
+
+export const zUpdateBillingCompanyDetailsData = z.object({
+  body: zBillingCompanyDetailsUpdateRequest,
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Success
+ */
+export const zUpdateBillingCompanyDetailsResponse =
+  zBillingCompanyDetailsResponse
 
 export const zGetBillingEventsData = z.object({
   body: z.never().optional(),
@@ -2976,6 +3383,17 @@ export const zGetBillingOpStatusData = z.object({
  * Billing operation status
  */
 export const zGetBillingOpStatusResponse = zBillingOpStatusResponse
+
+export const zListSavedPaymentMethodsData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Saved payment methods
+ */
+export const zListSavedPaymentMethodsResponse = z.array(zSavedPaymentMethod)
 
 export const zGetPaymentPortalData = z.object({
   body: zPaymentPortalRequest.optional(),
@@ -4309,7 +4727,11 @@ export const zCreateWorkflowUploadUrlResponse = zUploadGrantResponse
 export const zListWorkspaceApiKeysData = z.object({
   body: z.never().optional(),
   path: z.never().optional(),
-  query: z.never().optional()
+  query: z
+    .object({
+      include_revoked: z.boolean().optional().default(false)
+    })
+    .optional()
 })
 
 /**
@@ -4538,6 +4960,17 @@ export const zUpdateWorkspaceData = z.object({
  * Workspace updated
  */
 export const zUpdateWorkspaceResponse = zWorkspace
+
+export const zGetCurrentWorkspaceData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * The credential's workspace
+ */
+export const zGetCurrentWorkspaceResponse = zCurrentWorkspaceResponse
 
 export const zGetStaticExtensionsData = z.object({
   body: z.never().optional(),
