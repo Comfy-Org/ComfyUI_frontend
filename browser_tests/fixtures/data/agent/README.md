@@ -107,6 +107,29 @@ PLAYWRIGHT_TEST_URL=http://localhost:5173 DISTRIBUTION=cloud \
   --project=cloud -g '<case-id>'
 ```
 
+## Import a Langfuse session
+
+A conversation that already ran on a hosted agent can be turned into the same
+fixture from its Langfuse trace instead of re-recording it:
+
+```bash
+AGENT_CLOUD_SHA=<cloud sha> pnpm exec tsx scripts/agentConversationFromLangfuse.ts <caseId> <seedFixture.json> --trace <traceId> --workflow <cloudWorkflowId> --out browser_tests/fixtures/data/agent/conversations/<caseId>.json
+```
+
+`--session <sessionId>` takes every trace of a Langfuse session instead of one
+trace. Credentials come from `~/.config/comfy-agent/langfuse.env`
+(`LANGFUSE_HOST`, `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`; `--env-file`
+points elsewhere) and are never written to any artifact. The importer rebuilds
+the turn's socket frames from the spans the agent exports (`comfy.thread_id`
+and `comfy.turn_id` on every span, `gen_ai.tool.call.id`, `gen_ai.tool.name`
+and `comfy.tool.ok` on tool spans, the turn's input and output when the agent
+ran with content capture on; pass `--prompt` per turn when it did not), then
+reads the turn's audit rows with the recorder's own query (`AGENT_PG_EXEC` must
+reach that environment's Postgres) and runs the same assembly gates as a
+recording. What the trace cannot carry, the fixture will not contain: thinking
+and active-tab frames are absent, and the accepted ops still come only from the
+audit rows.
+
 ## Capture
 
 Record the `/ws` frames for one eval turn and remove unrelated frame types. Keep
