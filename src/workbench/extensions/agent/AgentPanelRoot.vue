@@ -300,11 +300,13 @@ const workflowDetached = ref(false)
 // re-attaching during prepare() cannot pull a later tab into this turn.
 function originWorkflow(origin?: TurnOrigin): ComfyWorkflow | undefined {
   if (origin === null) return undefined
-  return (
-    (origin === undefined
-      ? workflowStore.activeWorkflow
-      : workflowStore.getWorkflowByPath(origin.tabPath)) ?? undefined
-  )
+  return origin === undefined
+    ? (workflowStore.activeWorkflow ?? undefined)
+    : origin.instanceId === undefined
+      ? (workflowStore.getWorkflowByPath(origin.tabPath) ?? undefined)
+      : workflowStore.openWorkflows.find(
+          ({ instanceId }) => instanceId === origin.instanceId
+        )
 }
 
 function activeWorkflowTurnContext(
@@ -314,9 +316,12 @@ function activeWorkflowTurnContext(
   const active = originWorkflow(origin)
   if (!active) return undefined
   const id = cloudIdFor(active)
-  return id === undefined
-    ? { tabPath: active.path }
-    : { id, tabPath: active.path }
+  const context = {
+    tabPath: active.path,
+    instanceId: active.instanceId,
+    isTemporary: active.isTemporary
+  }
+  return id === undefined ? context : { ...context, id }
 }
 
 function activeWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
@@ -388,16 +393,24 @@ function onWorkflowAdopted(
   sent: WorkflowTurnContext | undefined
 ): void {
   if (sent === undefined) return
-  // An unbound tab adopts a workflow only when it was minted for this turn:
-  // an id that already resolves to an open tab belongs to that tab.
-  const adoptable =
-    sent.id === undefined
-      ? boundTabFor(workflowId) === null
-      : sent.id === workflowId
-  if (adoptable) {
-    bindingStore.bind(workflowId, sent.tabPath)
-    tabActivity.setEditing(sent.tabPath)
+  if (sent.instanceId === undefined) return
+  const tab = workflowStore.openWorkflows.find(
+    ({ instanceId }) => instanceId === sent.instanceId
+  )
+  if (!tab) return
+  if (sent.id !== undefined) {
+    if (sent.id === workflowId && cloudIdFor(tab) === workflowId)
+      tabActivity.setEditing(tab.path)
+    return
   }
+  if (
+    !sent.isTemporary ||
+    cloudIdFor(tab) !== undefined ||
+    boundTabFor(workflowId) !== null
+  )
+    return
+  bindingStore.bind(workflowId, tab.path)
+  tabActivity.setEditing(tab.path)
 }
 
 const {

@@ -35,6 +35,8 @@ interface SentTag {
 export interface WorkflowTurnContext {
   id?: string
   tabPath: string
+  instanceId?: string
+  isTemporary?: boolean
 }
 
 /**
@@ -45,13 +47,14 @@ export interface WorkflowTurnContext {
  *   send, where there is nothing to pin to.
  * - `null`: the send had no origin tab at all (panel detached, or no workflow
  *   open when it started).
- * - `{ tabPath }`: pin resolution to that tab.
+ * - `{ tabPath, instanceId? }`: pin resolution to that tab, using its stable
+ *   instance identity when the workflow host provides one.
  *
  * Collapsing `null` into the omitted case is what lets a detached send pick up
  * whichever tab the user selects during prepare(), i.e. exactly the late
  * binding this pin exists to remove.
  */
-export type TurnOrigin = { tabPath: string } | null
+export type TurnOrigin = { tabPath: string; instanceId?: string } | null
 
 type PromptEditState =
   | { phase: 'idle' }
@@ -224,7 +227,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
     // the turn to the tab selected afterwards.
     const originContext = workflow?.current()
     const origin: TurnOrigin =
-      originContext === undefined ? null : { tabPath: originContext.tabPath }
+      originContext === undefined
+        ? null
+        : {
+            tabPath: originContext.tabPath,
+            instanceId: originContext.instanceId
+          }
     // The ack does not say whether the server minted a workflow or echoed
     // the thread's existing one; an unbound tab may only adopt an id the
     // session was not already bound to before this turn.
