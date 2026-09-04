@@ -165,7 +165,7 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
     const hasWidget = node.widgets?.some((w) => w.name === VIDEO_WIDGET_NAME)
     if (!hasWidget) {
       const widget = node.addDOMWidget(VIDEO_WIDGET_NAME, 'video', container, {
-        canvasOnly: true,
+        surfaces: { vueNode: 'never', panel: 'never' },
         hideOnZoom: false
       })
       widget.serialize = false

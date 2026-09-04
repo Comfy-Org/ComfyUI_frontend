@@ -125,7 +125,7 @@ function createAudioNode() {
     value: '',
     callback: vi.fn()
   }
-  const uploadWidget = { label: '', serialize: true, canvasOnly: false }
+  const uploadWidget = { label: '', serialize: true }
   const node = fromAny<LGraphNode, unknown>({
     widgets: [audioWidget, audioUIWidget],
     isUploading: false,

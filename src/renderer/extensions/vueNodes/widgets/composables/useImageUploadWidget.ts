@@ -110,7 +110,7 @@ export const useImageUploadWidget = () => {
       () => openFileSelection(),
       {
         serialize: false,
-        canvasOnly: true
+        surfaces: { vueNode: 'never', panel: 'never' }
       }
     )
     uploadWidget.label = t('g.choose_file_to_upload')

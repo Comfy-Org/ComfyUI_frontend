@@ -32,12 +32,34 @@ describe('deriveWidgetSurfaces', () => {
     [
       { type: 'text', options: { hideInPanel: true } },
       ['shown', 'shown', 'never']
+    ],
+    [
+      { type: 'text', options: { surfaces: { panel: 'never' } } },
+      ['shown', 'shown', 'never']
+    ],
+    [
+      {
+        type: 'combo',
+        options: { canvasOnly: true, surfaces: { vueNode: 'shown' } }
+      },
+      ['shown', 'shown', 'never']
     ]
   ] as const)('applies surface policy for %o', ([widget, expected]) => {
     const surfaces = deriveWidgetSurfaces(widget)
     expect(WIDGET_SURFACES.map((surface) => surfaces[surface])).toEqual(
       expected
     )
+  })
+
+  it('ignores a string surfaces option and applies legacy derivation', () => {
+    const options = { canvasOnly: true }
+    Object.defineProperty(options, 'surfaces', { value: 'hidden' })
+
+    expect(deriveWidgetSurfaces({ type: 'combo', options })).toEqual({
+      canvas: 'shown',
+      vueNode: 'never',
+      panel: 'never'
+    })
   })
 })
 

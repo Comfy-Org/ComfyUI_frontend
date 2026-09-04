@@ -32,7 +32,7 @@ export function useNodeAnimatedImage() {
       element.appendChild(node.imgs[0])
       const widget = node.addDOMWidget(ANIM_PREVIEW_WIDGET, 'img', element, {
         hideOnZoom: false,
-        canvasOnly: true
+        surfaces: { vueNode: 'never', panel: 'never' }
       })
       node.overIndex = 0
 
