@@ -97,7 +97,7 @@ describe('reportError', () => {
     )
   })
 
-  it('flushes an early report when the Desktop bridge becomes available', async () => {
+  it('flushes an early report once Desktop is the only live sink', async () => {
     sentryLive(false)
     datadogLive(false)
     const { reportError, flushErrorReports } = await loadReportError()

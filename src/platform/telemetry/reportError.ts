@@ -3,6 +3,8 @@ import { datadogRum } from '@datadog/browser-rum'
 // eslint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
 import { captureException, isEnabled as isSentryEnabled } from '@sentry/vue'
 
+import type { ComfyDesktop2TelemetryProperties } from '@comfyorg/comfyui-desktop-bridge-types'
+
 import { toError } from '@/utils/errorUtil'
 
 export interface ReportErrorOptions {
@@ -41,11 +43,31 @@ const definedEntriesOf = (
     Object.entries(tags ?? {}).filter(([, value]) => value !== undefined)
   ) as Record<string, string | number | boolean>
 
+type DesktopCaptureException = (
+  error: { message: string; stack?: string },
+  properties: ComfyDesktop2TelemetryProperties
+) => void
+
 interface DesktopExceptionTelemetry {
-  captureException?: (
-    error: { message: string; stack?: string },
-    properties: Record<string, string | number | boolean>
-  ) => void
+  captureException?: DesktopCaptureException
+}
+
+/**
+ * The one Desktop liveness probe, shared by `dispatch` and the flush gate in
+ * `flushErrorReports`. Those two must agree: the gate decides whether to drain
+ * the buffer, and a drained report that `dispatch` then declines is lost, not
+ * re-buffered.
+ *
+ * Structural compatibility shim until the optional method ships in
+ * @comfyorg/comfyui-desktop-bridge-types. Older Desktop builds simply omit it,
+ * while current builds scrub the error and add release context.
+ */
+function desktopExceptionSink(): DesktopCaptureException | undefined {
+  const telemetry = window.__comfyDesktop2?.Telemetry as
+    | DesktopExceptionTelemetry
+    | undefined
+  const capture = telemetry?.captureException
+  return capture ? capture.bind(telemetry) : undefined
 }
 
 function dispatchToDesktop(
@@ -54,15 +76,10 @@ function dispatchToDesktop(
   tags: Record<string, string | number | boolean>,
   level?: ReportErrorOptions['level']
 ): boolean {
-  // Keep this structural compatibility shim until the optional method ships
-  // in @comfyorg/comfyui-desktop-bridge-types. Older Desktop builds simply
-  // omit it, while current builds scrub the error and add release context.
-  const telemetry = window.__comfyDesktop2?.Telemetry as
-    | DesktopExceptionTelemetry
-    | undefined
-  if (!telemetry?.captureException) return false
+  const capture = desktopExceptionSink()
+  if (!capture) return false
 
-  telemetry.captureException(
+  capture(
     { message: error.message, ...(error.stack ? { stack: error.stack } : {}) },
     { ...tags, error_type: errorType, ...(level ? { level } : {}) }
   )
@@ -105,14 +122,7 @@ function dispatch(error: Error, options: ReportErrorOptions): boolean {
  */
 export function flushErrorReports(): void {
   if (!pendingReports.length) return
-  const desktopTelemetry = window.__comfyDesktop2?.Telemetry as
-    | DesktopExceptionTelemetry
-    | undefined
-  if (
-    !isSentryEnabled() &&
-    !isDatadogRumLive() &&
-    !desktopTelemetry?.captureException
-  )
+  if (!isSentryEnabled() && !isDatadogRumLive() && !desktopExceptionSink())
     return
 
   const drained = pendingReports.splice(0, pendingReports.length)
