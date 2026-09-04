@@ -17,7 +17,7 @@ const fixtureText = import.meta.glob('./__fixtures__/agent/*.jsonl', {
   query: '?raw',
   import: 'default',
   eager: true
-}) as Record<string, string>
+})
 
 function jsonlLines(path: string): unknown[] {
   return fixtureText[path]

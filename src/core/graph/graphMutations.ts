@@ -241,7 +241,7 @@ function prepareNode(
     flags: cloneRecord(payload.flags),
     inputs: prepareInputSlots(payload.inputs),
     outputs: prepareOutputSlots(payload.outputs),
-    mode: (Number.isInteger(mode) ? mode : 0) as NodeState['mode'],
+    mode: Number.isInteger(mode) ? mode : 0,
     properties: cloneRecord(payload.properties) as NodeState['properties'],
     lastSerialization: structuredClone(payload) as unknown as ISerialisedNode,
     ...(typeof payload.bgcolor === 'string' && { bgcolor: payload.bgcolor }),
@@ -251,7 +251,7 @@ function prepareNode(
       resizable: payload.resizable
     }),
     ...(typeof payload.shape === 'number' && {
-      shape: payload.shape as NodeState['shape']
+      shape: payload.shape
     }),
     ...(typeof payload.showAdvanced === 'boolean' && {
       showAdvanced: payload.showAdvanced

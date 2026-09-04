@@ -16,7 +16,7 @@ import { createAssistantMessage } from './agentMessageParts'
 const fixtureText = import.meta.glob(
   '../../schemas/__fixtures__/agent/*.jsonl',
   { query: '?raw', import: 'default', eager: true }
-) as Record<string, string>
+)
 
 function fixtureFor(name: string): string {
   const path = Object.keys(fixtureText).find((p) => p.endsWith(`/${name}`))
