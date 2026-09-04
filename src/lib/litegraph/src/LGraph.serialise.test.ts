@@ -294,6 +294,7 @@ describe('LGraph Serialisation', () => {
     node.onConfigure = (data) => {
       configuredData = data
       Object.assign(data, { mutated: true })
+      data.pos[0] = 999
     }
 
     node.configure(saved)
