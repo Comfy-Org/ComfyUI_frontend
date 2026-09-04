@@ -298,18 +298,18 @@ export function useCoreCommands(): ComfyCommand[] {
           !settingStore.get('Comfy.ConfirmClear') ||
           confirm('Clear workflow?')
         ) {
-          runMintPortsIntentionalClear(() => {
-            if (app.canvas.subgraph) {
-              // `clear` is not implemented on subgraphs and the parent class's
-              // (`LGraph`) `clear` breaks the subgraph structure. For subgraphs,
-              // just clear the nodes but preserve input/output nodes and structure
-              const subgraph = app.canvas.subgraph
-              const nonIoNodes = getAllNonIoNodesInSubgraph(subgraph)
-              nonIoNodes.forEach((node) => subgraph.remove(node))
-            } else {
+          if (app.canvas.subgraph) {
+            // `clear` is not implemented on subgraphs and the parent class's
+            // (`LGraph`) `clear` breaks the subgraph structure. For subgraphs,
+            // just clear the nodes but preserve input/output nodes and structure
+            const subgraph = app.canvas.subgraph
+            const nonIoNodes = getAllNonIoNodesInSubgraph(subgraph)
+            nonIoNodes.forEach((node) => subgraph.remove(node))
+          } else {
+            runMintPortsIntentionalClear(() => {
               app.clean()
-            }
-          })
+            })
+          }
           api.dispatchCustomEvent('graphCleared')
         }
       }
