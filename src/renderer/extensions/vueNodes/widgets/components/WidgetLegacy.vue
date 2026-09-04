@@ -71,7 +71,9 @@ onMounted(() => {
   pointer = new CanvasPointer(canvasEl.value)
 })
 onBeforeUnmount(() => {
-  if (widgetInstance) widgetInstance.triggerDraw = () => {}
+  if (!widgetInstance) return
+  widgetInstance.triggerDraw = () => {}
+  widgetInstance.width = undefined
 })
 
 whenever(() => !canvasStore.linearMode, bindWidget)

@@ -56,6 +56,8 @@ function createMockWidgetInstance(): IBaseWidget {
   } as Partial<IBaseWidget> as IBaseWidget
 }
 
+const MEASURED_WIDTH = 150
+
 describe('WidgetLegacy', () => {
   let mockNode: ReturnType<typeof createMockNode>
   let mockWidgetInstance: IBaseWidget
@@ -72,6 +74,11 @@ describe('WidgetLegacy', () => {
       node: mockNode,
       widget: mockWidgetInstance
     })
+
+    vi.spyOn(
+      HTMLCanvasElement.prototype,
+      'getBoundingClientRect'
+    ).mockReturnValue(DOMRect.fromRect({ width: MEASURED_WIDTH }))
   })
 
   afterEach(() => {
@@ -98,10 +105,20 @@ describe('WidgetLegacy', () => {
     expect(mockWidgetInstance.width).toBeUndefined()
   })
 
-  it('sets widget.width when vueNodesMode is true', () => {
+  it('sets widget.width to the measured canvas width when vueNodesMode is true', () => {
     LiteGraph.vueNodesMode = true
     mountWidget()
 
-    expect(mockWidgetInstance.width).toBeDefined()
+    expect(mockWidgetInstance.width).toBe(MEASURED_WIDTH)
+  })
+
+  it('clears widget.width on unmount so LiteGraph mode derives width from node size', () => {
+    LiteGraph.vueNodesMode = true
+    const { unmount } = mountWidget()
+    expect(mockWidgetInstance.width).toBe(MEASURED_WIDTH)
+
+    unmount()
+
+    expect(mockWidgetInstance.width).toBeUndefined()
   })
 })
