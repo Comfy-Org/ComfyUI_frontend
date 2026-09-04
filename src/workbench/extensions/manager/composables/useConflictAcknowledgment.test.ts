@@ -4,10 +4,10 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
 
-const STORAGE_KEYS = [
-  'Comfy.ConflictModalDismissed',
-  'Comfy.ConflictRedDotDismissed',
-  'Comfy.ConflictWarningBannerDismissed'
+const STORAGE_CASES = [
+  ['Comfy.ConflictModalDismissed', 'modal_dismissed'],
+  ['Comfy.ConflictRedDotDismissed', 'red_dot_dismissed'],
+  ['Comfy.ConflictWarningBannerDismissed', 'warning_banner_dismissed']
 ] as const
 
 function setHasConflicts() {
@@ -42,7 +42,9 @@ describe('useConflictAcknowledgment', () => {
   })
 
   it('loads persisted state', () => {
-    for (const key of STORAGE_KEYS) {
+    const { acknowledgmentState } = useConflictAcknowledgment()
+
+    for (const [key, field] of STORAGE_CASES) {
       localStorage.setItem(key, 'true')
       window.dispatchEvent(
         new StorageEvent('storage', {
@@ -51,15 +53,22 @@ describe('useConflictAcknowledgment', () => {
           storageArea: localStorage
         })
       )
+
+      expect(acknowledgmentState.value).toEqual({
+        modal_dismissed: field === 'modal_dismissed',
+        red_dot_dismissed: field === 'red_dot_dismissed',
+        warning_banner_dismissed: field === 'warning_banner_dismissed'
+      })
+
+      localStorage.removeItem(key)
+      window.dispatchEvent(
+        new StorageEvent('storage', {
+          key,
+          newValue: null,
+          storageArea: localStorage
+        })
+      )
     }
-
-    const { acknowledgmentState } = useConflictAcknowledgment()
-
-    expect(acknowledgmentState.value).toEqual({
-      modal_dismissed: true,
-      red_dot_dismissed: true,
-      warning_banner_dismissed: true
-    })
   })
 
   it('marks conflicts as seen across every surface and persists them', async () => {
