@@ -367,7 +367,7 @@ function verdictLabel(entry: MergeTraceEntry): string {
 type CopyState = 'idle' | 'busy' | 'done' | 'failed'
 const logCopyState = ref<CopyState>('idle')
 const reportCopyState = ref<CopyState>('idle')
-const copiedKey = ref<string | null>(null)
+const itemCopy = ref<{ key: string; state: 'done' | 'failed' } | null>(null)
 const reportSources = ref<ReportSources>({ ...DEFAULT_REPORT_SOURCES })
 const { copy } = useClipboard({ legacy: true })
 
@@ -394,14 +394,15 @@ async function writeClipboard(text: string): Promise<boolean> {
 }
 
 async function copyItem(key: string, text: string) {
-  if (!(await writeClipboard(text))) return
-  copiedKey.value = key
+  const ok = await writeClipboard(text)
+  itemCopy.value = { key, state: ok ? 'done' : 'failed' }
   clearTimeout(itemCopyReset)
-  itemCopyReset = setTimeout(() => (copiedKey.value = null), 1600)
+  itemCopyReset = setTimeout(() => (itemCopy.value = null), 1600)
 }
 
-function itemCopyLabel(key: string): string {
-  return copiedKey.value === key ? S.copied : S.copy
+function itemCopyLabel(key: string, idle: string = S.copy): string {
+  if (itemCopy.value?.key !== key) return idle
+  return itemCopy.value.state === 'done' ? S.copied : S.copyFailed
 }
 
 function flashLogCopyState(ok: boolean) {
@@ -850,11 +851,7 @@ function fmtTime(at: number): string {
                   :aria-label="`${S.copy} node id ${nodeId}`"
                   @click="copyItem(`node:${row.event.seq}:${nodeId}`, nodeId)"
                 >
-                  {{
-                    copiedKey === `node:${row.event.seq}:${nodeId}`
-                      ? S.copied
-                      : nodeId
-                  }}
+                  {{ itemCopyLabel(`node:${row.event.seq}:${nodeId}`, nodeId) }}
                 </button>
               </div>
             </div>

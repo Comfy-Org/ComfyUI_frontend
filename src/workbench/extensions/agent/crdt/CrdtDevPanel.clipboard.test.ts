@@ -13,6 +13,7 @@ vi.mock('@vueuse/core', async (importOriginal) => ({
 
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 import CrdtDevPanel from './CrdtDevPanel.vue'
+import { setCrdtDebugEnabled } from './crdtDebugGate'
 import {
   clearDevEvents,
   devEvents,
@@ -61,6 +62,7 @@ function renderPanel(overrides: Partial<AgentCrdtStatus> = {}) {
 
 describe('CrdtDevPanel clipboard controls', () => {
   beforeEach(() => {
+    setCrdtDebugEnabled(true)
     clearDevEvents()
     localStorage.clear()
     writeText.mockClear()
@@ -141,15 +143,26 @@ describe('CrdtDevPanel clipboard controls', () => {
     }
   })
 
-  it('gives no Copied feedback when the clipboard write fails', async () => {
-    writeText.mockRejectedValueOnce(new Error('NotAllowedError'))
-    renderPanel()
+  it('shows transient Copy failed feedback when the clipboard write fails', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      writeText.mockRejectedValueOnce(new Error('NotAllowedError'))
+      renderPanel()
 
-    const docButton = screen.getByRole('button', { name: 'Copy document id' })
-    await userEvent.click(docButton)
+      const docButton = screen.getByRole('button', {
+        name: 'Copy document id'
+      })
+      await userEvent.click(docButton)
 
-    expect(writeText).toHaveBeenCalledOnce()
-    expect(docButton).toHaveTextContent('Copy')
+      expect(writeText).toHaveBeenCalledOnce()
+      expect(docButton).toHaveTextContent('Copy failed')
+
+      await vi.advanceTimersByTimeAsync(1600)
+
+      expect(docButton).toHaveTextContent(/^Copy$/)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('preserves full filtered-log copying', async () => {
