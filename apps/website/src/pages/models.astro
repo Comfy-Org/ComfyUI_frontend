@@ -3,18 +3,27 @@ import BaseLayout from '../layouts/BaseLayout.astro'
 import ModelsHeroSection from '../components/models/ModelsHeroSection.vue'
 import ModelCreationsSection from '../components/models/ModelCreationsSection.vue'
 import AIModelsSection from '../components/product/shared/AIModelsSection.vue'
-import ProductShowcaseSection from '../components/home/ProductShowcaseSection.vue' 
+import ProductShowcaseSection from '../components/home/ProductShowcaseSection.vue'
+import { t } from '../i18n/translations'
+import { pageContext } from '../utils/jsonLd'
+import { localizeHref } from '../config/routes'
+
+const { locale } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
 ---
 
 <BaseLayout
-  title="Models - Comfy"
-  description="Run the world's leading AI models in ComfyUI. Browse every supported model with community workflow templates ready to run."
+  title={t('models.meta.title', locale)}
+  description={t('models.meta.description', locale)}
 >
   <ModelsHeroSection
     modelName="Grok Imagine"
-    ctaHref="/p/supported-models/grok-imagine"
+    ctaHref={localizeHref('/p/supported-models/grok-imagine', locale)}
     videoSrc="https://media.comfy.org/website/models/video_ComfdyUI_00001_.mp4"
-    videoAriaLabel="Grok Imagine output created with ComfyUI"
+    videoAriaLabel={t('models.grokImagine.videoAriaLabel', locale)}
   />
   <ModelCreationsSection client:load />
   <AIModelsSection client:load />

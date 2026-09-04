@@ -3,27 +3,37 @@ import BaseLayout from '../layouts/BaseLayout.astro'
 import ResourceList from '../components/booking-confirmation/ResourceList.vue'
 import HeroSection from '../components/legal/HeroSection.vue'
 import { externalLinks, getRoutes } from '../config/routes'
+import { t } from '../i18n/translations'
+import { pageContext } from '../utils/jsonLd'
 
-const routes = getRoutes('en')
+const { locale } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+
+const routes = getRoutes(locale)
+
+
 
 const resources = [
   {
-    label: 'Learning Center',
+    label: t('bookingConfirmation.resources.learning', locale),
     href: routes.learning,
     display: 'comfy.org/learning'
   },
   {
-    label: 'Workflow templates',
+    label: t('bookingConfirmation.resources.workflows', locale),
     href: externalLinks.workflows,
     display: 'comfy.org/workflows'
   },
   {
-    label: 'Customer stories',
+    label: t('bookingConfirmation.resources.customers', locale),
     href: routes.customers,
     display: 'comfy.org/customers'
   },
   {
-    label: 'Docs',
+    label: t('bookingConfirmation.resources.docs', locale),
     href: externalLinks.docs,
     display: 'docs.comfy.org'
   }
@@ -31,21 +41,24 @@ const resources = [
 ---
 
 <BaseLayout
-  title="You're booked - Comfy"
-  description="Your meeting is booked. Check your email for the calendar invite and meeting link."
+  title={t('bookingConfirmation.meta.title', locale)}
+  description={t('bookingConfirmation.meta.description', locale)}
   noindex
 >
-  <HeroSection title="You're booked." class="text-center" />
+  <HeroSection
+    title={t('bookingConfirmation.hero.title', locale)}
+    class="text-center"
+  />
 
   <section class="-mt-8 px-6 pb-24 lg:-mt-12 lg:pb-40">
     <div
       class="text-primary-comfy-canvas mx-auto flex max-w-2xl flex-col gap-10 text-center text-base font-light lg:text-lg"
     >
-      <p>Check your email for the calendar invite and meeting link!</p>
+      <p>{t('bookingConfirmation.checkEmail', locale)}</p>
 
       <div class="flex flex-col gap-4">
         <h2 class="text-primary-comfy-yellow text-xl font-semibold italic lg:text-2xl">
-          Resources while you wait
+          {t('bookingConfirmation.resources.heading', locale)}
         </h2>
         <ResourceList resources={resources} />
       </div>

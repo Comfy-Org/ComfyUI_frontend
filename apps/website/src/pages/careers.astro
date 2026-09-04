@@ -42,8 +42,8 @@ const roles = itemListNode(
 ---
 
 <BaseLayout
-  title="Careers - Comfy"
-  description="Join the team building the operating system for generative AI. Open roles in engineering, design, marketing, and more."
+  title={t('careers.meta.title', locale)}
+  description={t('careers.meta.description', locale)}
   pageType="CollectionPage"
   mainEntityId={jsonLdId(url, 'itemlist')}
   breadcrumbs={[

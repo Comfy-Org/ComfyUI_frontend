@@ -14,6 +14,13 @@ import {
   organizationId,
   pageContext,
 } from '../../../utils/jsonLd'
+import { localizeHref } from '../../../config/routes'
+
+const { siteUrl, locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
 
 export const getStaticPaths: GetStaticPaths = () => {
   return demos.map((demo) => ({
@@ -27,11 +34,7 @@ const nextDemo = getNextDemo(slug as string)
 const title = t(demo.title, 'zh-CN')
 const description = t(demo.description, 'zh-CN')
 
-const { siteUrl, locale, url } = pageContext(
-  Astro.site,
-  Astro.url.pathname,
-  Astro.currentLocale,
-)
+
 const educationalLevel =
   demo.difficulty === 'beginner'
     ? 'Beginner'
@@ -65,11 +68,11 @@ const learningResource: JsonLdNode = {
   breadcrumbs={[
     {
       name: t('breadcrumb.home', locale),
-      url: absoluteUrl(Astro.site, '/zh-CN'),
+      url: absoluteUrl(Astro.site, localizeHref('/', locale)),
     },
     {
       name: t('demos.breadcrumb.demos', locale),
-      url: absoluteUrl(Astro.site, '/zh-CN/demos'),
+      url: absoluteUrl(Astro.site, localizeHref('/demos', locale)),
     },
     { name: title },
   ]}
@@ -87,21 +90,21 @@ const learningResource: JsonLdNode = {
     description={description}
     difficulty={demo.difficulty}
     estimatedTime={demo.estimatedTime}
-    locale="zh-CN"
+    locale={locale}
   />
 
   <ArcadeEmbed
     arcadeId={demo.arcadeId}
     title={title}
     aspectRatio={demo.aspectRatio}
-    locale="zh-CN"
+    locale={locale}
     client:load
   />
 
   {demo.transcript && (
     <DemoTranscript
       transcript={t(demo.transcript, 'zh-CN')}
-      locale="zh-CN"
+      locale={locale}
       client:visible
     />
   )}
@@ -110,6 +113,6 @@ const learningResource: JsonLdNode = {
     nextTitle={t(nextDemo.title, 'zh-CN')}
     nextSlug={nextDemo.slug}
     nextThumbnail={nextDemo.thumbnail}
-    locale="zh-CN"
+    locale={locale}
   />
 </BaseLayout>

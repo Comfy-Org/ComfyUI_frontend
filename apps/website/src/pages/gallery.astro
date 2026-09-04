@@ -3,9 +3,17 @@ import BaseLayout from '../layouts/BaseLayout.astro'
 import HeroSection from '../components/gallery/HeroSection.vue'
 import GallerySection from '../components/gallery/GallerySection.vue'
 import ContactSection from '../components/gallery/ContactSection.vue'
+import { t } from '../i18n/translations'
+import { pageContext } from '../utils/jsonLd'
+
+const { locale } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
 ---
 
-<BaseLayout title="Gallery - Comfy" description="Work built in ComfyUI by the community: images, video, and 3D. Submit your own to be featured on the site and Comfy's social channels.">
+<BaseLayout title={t('gallery.meta.title', locale)} description={t('gallery.meta.description', locale)}>
   <HeroSection />
   <GallerySection client:load />
   <ContactSection />

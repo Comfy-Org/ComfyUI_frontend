@@ -25,8 +25,8 @@ const productId = jsonLdId(url, 'product')
 ---
 
 <BaseLayout
-  title="Pricing - Comfy Cloud"
-  description="Comfy Cloud plans and credits: start free with 5 GPU runs, then pick Standard, Creator, Pro, or Team for monthly credits, hosted models, and longer workflow runtimes."
+  title={t('pricing.meta.title', locale)}
+  description={t('pricing.meta.description', locale)}
   mainEntityId={productId}
   breadcrumbs={[
     { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },

@@ -2,13 +2,23 @@
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import ContentSection from '../../components/common/ContentSection.vue'
 import HeroSection from '../../components/legal/HeroSection.vue'
+import { t } from '../../i18n/translations'
+import { pageContext } from '../../utils/jsonLd'
+
+const { locale } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+
+
 ---
 
 <BaseLayout
-  title="隐私政策 - Comfy"
-  description="Comfy 隐私政策。了解我们如何收集、使用和保护您的个人信息。"
+  title={t('privacy.meta.title', locale)}
+  description={t('privacy.meta.description', locale)}
   noindex
 >
-  <HeroSection title="隐私政策" />
-  <ContentSection prefix="privacy" locale="zh-CN" client:load />
+  <HeroSection title={t('privacy.hero.title', locale)} />
+  <ContentSection prefix="privacy" locale={locale} client:load />
 </BaseLayout>

@@ -13,6 +13,12 @@ import {
   pageContext
 } from '../../utils/jsonLd'
 
+const { siteUrl, locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale
+)
+
 export async function getStaticPaths() {
   const stories = await loadStories('en')
   return stories.map((entry) => ({
@@ -23,11 +29,7 @@ export async function getStaticPaths() {
 
 const { entry, next } = Astro.props
 
-const { siteUrl, locale, url } = pageContext(
-  Astro.site,
-  Astro.url.pathname,
-  Astro.currentLocale
-)
+
 const article = articleNode({
   siteUrl,
   pageUrl: url,

@@ -17,6 +17,8 @@ import Badge from '../components/ui/badge/Badge.vue'
 import { toggleVariants } from '../components/ui/toggle'
 import BaseLayout from '../layouts/BaseLayout.astro'
 import { highlightInline } from '../lib/highlight'
+import { t } from '../i18n/translations'
+import { pageContext } from '../utils/jsonLd'
 
 const name = 'Image to 3D Model'
 const slugId = 'pixal3d-trellis2'
@@ -311,11 +313,17 @@ const faqJsonLd = {
     acceptedAnswer: { '@type': 'Answer', text: answer }
   }))
 }
+
+const { locale } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
 ---
 
 <BaseLayout
-  title="Pixal3D + TRELLIS.2 in ComfyUI"
-  description="Turn one image into a textured 3D model with Pixal3D and TRELLIS.2 in ComfyUI. Explore examples, download GLBs, and open the workflow."
+  title={t('pixal3dTrellis2.meta.title', locale)}
+  description={t('pixal3dTrellis2.meta.description', locale)}
 >
   <Fragment slot="head">
     <script is:inline type="application/ld+json" set:html={JSON.stringify(softwareAppJsonLd)} />

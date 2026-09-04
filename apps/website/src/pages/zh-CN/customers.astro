@@ -14,42 +14,45 @@ import {
   jsonLdId,
   pageContext
 } from '../../utils/jsonLd'
-
-const stories = (await loadStories('zh-CN')).map(toCardProps)
+import { localizeHref } from '../../config/routes'
 
 const { url, locale } = pageContext(
   Astro.site,
   Astro.url.pathname,
   Astro.currentLocale
 )
+
+const stories = (await loadStories(locale)).map(toCardProps)
+
+
 const collectionLabel = t('nav.customerStories', locale)
 const storyList = itemListNode(
   url,
   collectionLabel,
   stories.map((story) => ({
-    url: absoluteUrl(Astro.site, `/zh-CN/customers/${story.slug}`),
+    url: absoluteUrl(Astro.site, localizeHref(`/customers/${story.slug}`, locale)),
     name: story.title
   }))
 )
 ---
 
 <BaseLayout
-  title="客户故事 - Comfy"
-  description="工作室、品牌、艺术家与高校如何在生产中使用 ComfyUI：Series Entertainment、Moment Factory、Ubisoft、Groove Jones、Svedka 等。"
+  title={t('customers.meta.title', locale)}
+  description={t('customers.meta.description', locale)}
   pageType="CollectionPage"
   mainEntityId={jsonLdId(url, 'itemlist')}
   breadcrumbs={[
     {
       name: t('breadcrumb.home', locale),
-      url: absoluteUrl(Astro.site, '/zh-CN')
+      url: absoluteUrl(Astro.site, localizeHref('/', locale))
     },
     { name: collectionLabel }
   ]}
   extraJsonLd={[storyList]}
 >
-  <HeroSection locale="zh-CN" client:load />
-  <StorySection stories={stories} locale="zh-CN" />
-  <FeedbackSection locale="zh-CN" client:load />
-  <VideoSection locale="zh-CN" client:load />
-  <ContactSection locale="zh-CN" />
+  <HeroSection locale={locale} client:load />
+  <StorySection stories={stories} locale={locale} />
+  <FeedbackSection locale={locale} client:load />
+  <VideoSection locale={locale} client:load />
+  <ContactSection locale={locale} />
 </BaseLayout>

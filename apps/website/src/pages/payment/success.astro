@@ -1,11 +1,19 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import PaymentStatusSection from '../../components/payment/PaymentStatusSection.vue'
+import { t } from '../../i18n/translations'
+import { pageContext } from '../../utils/jsonLd'
+
+const { locale } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
 ---
 
 <BaseLayout
-  title="Payment Successful - Comfy"
-  description="Your payment was processed successfully."
+  title={t('payment.success.meta.title', locale)}
+  description={t('payment.success.meta.description', locale)}
   noindex
 >
   <PaymentStatusSection status="success" />

@@ -13,6 +13,7 @@ import { externalLinks } from '../../config/routes'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import { absoluteUrl, pageContext } from '../../utils/jsonLd'
 import { buildFaqPageNode } from './_faqMetadata'
+import { t } from '../../i18n/translations'
 
 const faqs = [
   {
@@ -107,7 +108,7 @@ const industries = [
   },
 ] as const
 
-const { url } = pageContext(
+const { url, locale } = pageContext(
   Astro.site,
   Astro.url.pathname,
   Astro.currentLocale,
@@ -116,8 +117,8 @@ const faqPage = buildFaqPageNode(url, faqs)
 ---
 
 <BaseLayout
-  title="ComfyUI Managed Builds | Govern ComfyUI across your fleet"
-  description="Create approved, reproducible ComfyUI environments and deploy them across workstations, studios, and customer infrastructure."
+  title={t('enterprise.managedBuilds.meta.title', locale)}
+  description={t('enterprise.managedBuilds.meta.description', locale)}
   pageType="WebPage"
   breadcrumbs={[
     { name: 'Home', url: absoluteUrl(Astro.site, '/') },

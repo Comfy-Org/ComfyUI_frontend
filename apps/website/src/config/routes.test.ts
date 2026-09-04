@@ -25,6 +25,23 @@ describe('localizeHref', () => {
     )
   })
 
+  it('never prefixes a page NESTED under a locale-invariant route', () => {
+    // The two answers to "is this path locale-invariant?" disagreed:
+    // `isLocaleInvariantPath` matched prefixes while this matched only whole
+    // paths, so a per-model page under the catalogue slipped through and
+    // /zh-CN/models linked to /zh-CN/p/supported-models/grok-imagine, which has
+    // never existed. Every individual model page has this shape.
+    expect(localizeHref('/p/supported-models', 'zh-CN')).toBe(
+      '/p/supported-models'
+    )
+    expect(localizeHref('/p/supported-models/grok-imagine', 'zh-CN')).toBe(
+      '/p/supported-models/grok-imagine'
+    )
+    expect(localizeHref('/pixal3d-trellis2/anything', 'ja')).toBe(
+      '/pixal3d-trellis2/anything'
+    )
+  })
+
   it('only localizes the Japanese homepage', () => {
     expect(localizeHref('/', 'ja')).toBe('/ja/')
     expect(localizeHref('/cloud', 'ja')).toBe('/cloud')

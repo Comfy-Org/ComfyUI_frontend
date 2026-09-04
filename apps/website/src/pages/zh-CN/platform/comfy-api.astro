@@ -7,20 +7,30 @@ import ServerlessHero from '../../../templates/platform/ServerlessHero.vue'
 import ServerlessHowItWorksSection from '../../../templates/platform/ServerlessHowItWorksSection.vue'
 import ServerlessScaleSection from '../../../templates/platform/ServerlessScaleSection.vue'
 import { t } from '../../../i18n/translations'
+import { pageContext } from '../../../utils/jsonLd'
+
+const { locale } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+
+
+
 ---
 
 <BaseLayout
-  title={`${t('platform.products.serverless.title', 'zh-CN')} · ${t('platform.meta.title', 'zh-CN')}`}
-  description={t('platform.products.serverless.description', 'zh-CN')}
+  title={`${t('platform.products.serverless.title', locale)} · ${t('platform.meta.title', locale)}`}
+  description={t('platform.products.serverless.description', locale)}
 >
-  <ServerlessHero locale="zh-CN" client:load />
-  <ServerlessHowItWorksSection locale="zh-CN" client:visible />
-  <ServerlessDeploySection locale="zh-CN" client:visible />
-  <ServerlessScaleSection locale="zh-CN" client:visible />
+  <ServerlessHero locale={locale} client:load />
+  <ServerlessHowItWorksSection locale={locale} client:visible />
+  <ServerlessDeploySection locale={locale} client:visible />
+  <ServerlessScaleSection locale={locale} client:visible />
   <ClosingCtaSection
-    locale="zh-CN"
-    heading-after-badge={t('platform.closing.headingAfterBadge', 'zh-CN')}
+    locale={locale}
+    heading-after-badge={t('platform.closing.headingAfterBadge', locale)}
     client:visible
   />
-  <ProductCardsSection locale="zh-CN" label-key="products.labelProducts" />
+  <ProductCardsSection locale={locale} label-key="products.labelProducts" />
 </BaseLayout>

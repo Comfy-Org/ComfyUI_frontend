@@ -12,16 +12,18 @@ import {
   pageContext,
 } from '../../utils/jsonLd'
 
-const packs = await loadPacksForBuild()
-const gridPacks = packs.map(toGridPack)
-
-const title = t('cloudNodes.meta.title', 'en')
-const description = t('cloudNodes.meta.description', 'en')
 const { url, locale } = pageContext(
   Astro.site,
   Astro.url.pathname,
   Astro.currentLocale,
 )
+
+const packs = await loadPacksForBuild()
+const gridPacks = packs.map(toGridPack)
+
+const title = t('cloudNodes.meta.title', locale)
+const description = t('cloudNodes.meta.description', locale)
+
 const packList = itemListNode(
   url,
   title,

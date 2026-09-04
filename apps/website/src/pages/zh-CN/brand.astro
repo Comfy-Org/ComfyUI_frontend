@@ -8,19 +8,29 @@ import BrandVoiceSection from '../../templates/brand/BrandVoiceSection.vue'
 import BrandTrademarkSection from '../../templates/brand/BrandTrademarkSection.vue'
 import BrandQuestionsSection from '../../templates/brand/BrandQuestionsSection.vue'
 import { t } from '../../i18n/translations'
+import { pageContext } from '../../utils/jsonLd'
+
+const { locale } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+
+
+
 ---
 
 <BaseLayout
-  title={t('brand.page.title', 'zh-CN')}
-  description={t('brand.page.description', 'zh-CN')}
+  title={t('brand.page.title', locale)}
+  description={t('brand.page.description', locale)}
 >
   <div class="relative">
     <BrandBackground client:idle />
-    <BrandHeroSection locale="zh-CN" />
-    <BrandLogosSection locale="zh-CN" />
-    <BrandColorSection client:visible locale="zh-CN" />
-    <BrandVoiceSection locale="zh-CN" />
-    <BrandTrademarkSection locale="zh-CN" />
-    <BrandQuestionsSection locale="zh-CN" />
+    <BrandHeroSection locale={locale} />
+    <BrandLogosSection locale={locale} />
+    <BrandColorSection client:visible locale={locale} />
+    <BrandVoiceSection locale={locale} />
+    <BrandTrademarkSection locale={locale} />
+    <BrandQuestionsSection locale={locale} />
   </div>
 </BaseLayout>

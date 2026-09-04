@@ -10,6 +10,16 @@ import BaseLayout from '../layouts/BaseLayout.astro'
 import HeroSection from '../components/legal/HeroSection.vue'
 import LegalContentSection from '../components/legal/LegalContentSection.vue'
 import { t } from '../i18n/translations'
+import { pageContext } from '../utils/jsonLd'
+
+const { locale } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+
+
+
 ---
 
 <BaseLayout
@@ -29,7 +39,7 @@ import { t } from '../i18n/translations'
   </p>
   <LegalContentSection
     prefix="enterprise-msa"
-    locale="en"
+    locale={locale}
     tocLabelKey="enterprise-msa.page.tocLabel"
     client:load
   />

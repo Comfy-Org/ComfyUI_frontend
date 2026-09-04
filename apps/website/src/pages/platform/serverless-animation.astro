@@ -3,11 +3,21 @@ import BaseLayout from '../../layouts/BaseLayout.astro'
 import ServerlessImageHeatmapAnimation from '../../templates/platform/ServerlessImageHeatmapAnimation.vue'
 import ServerlessIsometricStudy from '../../templates/platform/ServerlessIsometricStudy.vue'
 import ServerlessWorkerAnimation from '../../templates/platform/ServerlessWorkerAnimation.vue'
+import { t } from '../../i18n/translations'
+import { pageContext } from '../../utils/jsonLd'
+
+const { locale } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+
+
 ---
 
 <BaseLayout
-  title="Serverless animation comparison · Comfy"
-  description="Temporary side-by-side serverless animation study."
+  title={t('platform.serverlessAnimation.meta.title', locale)}
+  description={t('platform.serverlessAnimation.meta.description', locale)}
   noindex
 >
   <section class="mx-auto w-full max-w-[1600px] px-6 py-16 sm:px-10 lg:px-12">
@@ -32,7 +42,7 @@ import ServerlessWorkerAnimation from '../../templates/platform/ServerlessWorker
             New study
           </span>
         </div>
-        <ServerlessWorkerAnimation locale="en" client:load />
+        <ServerlessWorkerAnimation locale={locale} client:load />
       </article>
 
       <article>
@@ -42,7 +52,7 @@ import ServerlessWorkerAnimation from '../../templates/platform/ServerlessWorker
             3s hold
           </span>
         </div>
-        <ServerlessIsometricStudy locale="en" client:load />
+        <ServerlessIsometricStudy locale={locale} client:load />
       </article>
 
       <article>
@@ -52,7 +62,7 @@ import ServerlessWorkerAnimation from '../../templates/platform/ServerlessWorker
             4 scenes
           </span>
         </div>
-        <ServerlessImageHeatmapAnimation locale="en" client:load />
+        <ServerlessImageHeatmapAnimation locale={locale} client:load />
       </article>
     </div>
   </section>

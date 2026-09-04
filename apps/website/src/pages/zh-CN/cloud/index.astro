@@ -8,18 +8,27 @@ import PricingSection from '../../../components/product/cloud/PricingSection.vue
 import ProductCardsSection from '../../../components/product/cloud/ProductCardsSection.vue'
 import FAQSection from '../../../components/product/cloud/FAQSection.vue'
 import { t } from '../../../i18n/translations'
+import { pageContext } from '../../../utils/jsonLd'
+
+const { locale } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+
+
 ---
 
 <BaseLayout
-  title="Comfy Cloud - 云端 AI"
-  description={t('cloud.hero.subtitle', 'zh-CN')}
-  keywords={['comfyui web app', 'comfyui app', 'comfyui online', 'comfyui cloud', 'ComfyUI 网页版', 'ComfyUI 云端', 'ComfyUI 应用', 'Comfy Cloud', '云端 ComfyUI']}
+  title={t('cloud.meta.title', locale)}
+  description={t('cloud.hero.subtitle', locale)}
+  keywords={t('cloud.meta.keywords', locale).split(', ')}
 >
-  <HeroSection locale="zh-CN" />
-  <ReasonSection locale="zh-CN" />
-  <AIModelsSection locale="zh-CN" />
-  <AudienceSection locale="zh-CN" />
-  <PricingSection locale="zh-CN" />
-  <ProductCardsSection locale="zh-CN" />
-  <FAQSection locale="zh-CN" client:visible />
+  <HeroSection locale={locale} />
+  <ReasonSection locale={locale} />
+  <AIModelsSection locale={locale} />
+  <AudienceSection locale={locale} />
+  <PricingSection locale={locale} />
+  <ProductCardsSection locale={locale} />
+  <FAQSection locale={locale} client:visible />
 </BaseLayout>

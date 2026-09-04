@@ -5,18 +5,28 @@ import ClosingCtaSection from '../../../templates/platform/ClosingCtaSection.vue
 import ModelsApiFeaturesSection from '../../../templates/platform/ModelsApiFeaturesSection.vue'
 import ModelsApiHero from '../../../templates/platform/ModelsApiHero.vue'
 import { t } from '../../../i18n/translations'
+import { pageContext } from '../../../utils/jsonLd'
+
+const { locale } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+
+
+
 ---
 
 <BaseLayout
-  title={`${t('platform.products.models.title', 'zh-CN')} · ${t('platform.meta.title', 'zh-CN')}`}
-  description={t('platform.products.models.description', 'zh-CN')}
+  title={`${t('platform.products.models.title', locale)} · ${t('platform.meta.title', locale)}`}
+  description={t('platform.products.models.description', locale)}
 >
-  <ModelsApiHero locale="zh-CN" client:load />
-  <ModelsApiFeaturesSection locale="zh-CN" />
+  <ModelsApiHero locale={locale} client:load />
+  <ModelsApiFeaturesSection locale={locale} />
   <ClosingCtaSection
-    locale="zh-CN"
-    heading-after-badge={t('platform.closing.headingAfterBadge', 'zh-CN')}
+    locale={locale}
+    heading-after-badge={t('platform.closing.headingAfterBadge', locale)}
     client:visible
   />
-  <ProductCardsSection locale="zh-CN" label-key="products.labelProducts" />
+  <ProductCardsSection locale={locale} label-key="products.labelProducts" />
 </BaseLayout>

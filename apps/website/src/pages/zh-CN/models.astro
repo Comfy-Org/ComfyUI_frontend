@@ -4,20 +4,31 @@ import ModelsHeroSection from '../../components/models/ModelsHeroSection.vue'
 import ModelCreationsSection from '../../components/models/ModelCreationsSection.vue'
 import AIModelsSection from '../../components/product/shared/AIModelsSection.vue'
 import ProductShowcaseSection from '../../components/home/ProductShowcaseSection.vue'
+import { t } from '../../i18n/translations'
+import { pageContext } from '../../utils/jsonLd'
+import { localizeHref } from '../../config/routes'
+
+const { locale } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+
+
 ---
 
 <BaseLayout
-  title="模型 - Comfy"
-  description="在 ComfyUI 中运行世界领先的 AI 模型。浏览所有支持的模型及社区工作流模板。"
+  title={t('models.meta.title', locale)}
+  description={t('models.meta.description', locale)}
 >
   <ModelsHeroSection
-    locale="zh-CN"
+    locale={locale}
     modelName="Grok Imagine"
-    ctaHref="/zh-CN/p/supported-models/grok-imagine"
+    ctaHref={localizeHref('/p/supported-models/grok-imagine', locale)}
     videoSrc="https://media.comfy.org/website/models/video_ComfdyUI_00001_.mp4"
-    videoAriaLabel="使用 ComfyUI 创建的 Grok Imagine 作品"
+    videoAriaLabel={t('models.grokImagine.videoAriaLabel', locale)}
   />
-  <ModelCreationsSection client:load locale="zh-CN" />
-  <AIModelsSection client:load locale="zh-CN" />
-  <ProductShowcaseSection client:load locale="zh-CN" />
+  <ModelCreationsSection client:load locale={locale} />
+  <AIModelsSection client:load locale={locale} />
+  <ProductShowcaseSection client:load locale={locale} />
 </BaseLayout>

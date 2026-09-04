@@ -8,12 +8,21 @@ import PricingSection from '../../components/product/cloud/PricingSection.vue'
 import ProductCardsSection from '../../components/product/cloud/ProductCardsSection.vue'
 import FAQSection from '../../components/product/cloud/FAQSection.vue'
 import { t } from '../../i18n/translations'
+import { pageContext } from '../../utils/jsonLd'
+
+const { locale } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+
+
 ---
 
 <BaseLayout
-  title="Comfy Cloud - AI in the Cloud"
-  description={t('cloud.hero.subtitle', 'en')}
-  keywords={['comfyui web app', 'comfyui app', 'comfyui online', 'comfyui cloud', 'comfy cloud', 'comfy ui application', 'comfyui browser', 'cloud comfyui', 'managed comfyui']}
+  title={t('cloud.meta.title', locale)}
+  description={t('cloud.hero.subtitle', locale)}
+  keywords={t('cloud.meta.keywords', locale).split(', ')}
 >
   <HeroSection />
   <ReasonSection />

@@ -19,29 +19,31 @@ import {
   pageContext,
 } from '../../utils/jsonLd'
 
-const { siteUrl } = pageContext(
+const { siteUrl, locale } = pageContext(
   Astro.site,
   Astro.url.pathname,
   Astro.currentLocale,
 )
+
+
 ---
 
 <BaseLayout
-  title="Comfy - 视觉 AI 的最强可控性"
-  description={t('hero.subtitle', 'zh-CN')}
+  title={t('home.meta.title', locale)}
+  description={t('hero.subtitle', locale)}
   mainEntityId={comfyUiSoftwareId(siteUrl)}
   extraJsonLd={[comfyUiApplicationNode(siteUrl), comfyUiSourceCodeNode(siteUrl)]}
-  keywords={['comfyui app', 'comfyui web app', 'comfyui application', 'ComfyUI 应用', 'ComfyUI 网页版', 'ComfyUI 桌面应用', 'ComfyUI 下载', '可视化 AI', '节点式 AI', '生成式 AI 工作流']}
+  keywords={t('home.meta.keywords', locale).split(', ')}
 >
-  <HeroGraphSection locale="zh-CN" client:load />
+  <HeroGraphSection locale={locale} client:load />
   <SocialProofBarSection />
-  <DeveloperPlatformSection locale="zh-CN" client:visible />
-  <MinimaxLicenseHeroSection locale="zh-CN" client:visible />
-  <ModelReleaseSection locale="zh-CN" client:visible />
-  <FeaturedWorkflowsSection locale="zh-CN" client:load />
-  <ProductShowcaseSection locale="zh-CN" client:load />
-  <IndustriesSection locale="zh-CN" client:load />
-  <GetStartedSection locale="zh-CN" />
-  <ProductCardsSection locale="zh-CN" />
-  <CaseStudySpotlightSection locale="zh-CN" client:load />
+  <DeveloperPlatformSection locale={locale} client:visible />
+  <MinimaxLicenseHeroSection locale={locale} client:visible />
+  <ModelReleaseSection locale={locale} client:visible />
+  <FeaturedWorkflowsSection locale={locale} client:load />
+  <ProductShowcaseSection locale={locale} client:load />
+  <IndustriesSection locale={locale} client:load />
+  <GetStartedSection locale={locale} />
+  <ProductCardsSection locale={locale} />
+  <CaseStudySpotlightSection locale={locale} client:load />
 </BaseLayout>

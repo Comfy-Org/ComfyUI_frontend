@@ -1,16 +1,25 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro'
 import { t } from '../../../i18n/translations'
+import { pageContext } from '../../../utils/jsonLd'
+
+const { locale } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+
+
 ---
 
-<BaseLayout title="演示 - Comfy" description="ComfyUI 的互动演示和教程。">
+<BaseLayout title={t('demos.meta.title', locale)} description={t('demos.meta.description', locale)}>
   <section class="flex min-h-[60vh] items-center justify-center px-6">
     <div class="text-center">
       <h1 class="text-primary-comfy-canvas text-4xl font-light">
-        {t('demos.comingSoon.title', 'zh-CN')}
+        {t('demos.comingSoon.title', locale)}
       </h1>
       <p class="text-primary-warm-gray mt-4 text-sm">
-        {t('demos.comingSoon.body', 'zh-CN')}
+        {t('demos.comingSoon.body', locale)}
       </p>
     </div>
   </section>

@@ -14,6 +14,13 @@ import {
   jsonLdId,
   pageContext,
 } from '../../utils/jsonLd'
+import { localizeHref } from '../../config/routes'
+
+const { locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
 
 const outcome = await fetchRolesForBuild()
 reportAshbyOutcome(outcome)
@@ -27,11 +34,7 @@ if (outcome.status === 'failed') {
 
 const departments = outcome.snapshot.departments
 
-const { locale, url } = pageContext(
-  Astro.site,
-  Astro.url.pathname,
-  Astro.currentLocale,
-)
+
 const roles = itemListNode(
   url,
   t('breadcrumb.careers', locale),
@@ -42,28 +45,28 @@ const roles = itemListNode(
 ---
 
 <BaseLayout
-  title="招聘 - Comfy"
-  description="加入构建生成式 AI 操作系统的团队。工程、设计、市场营销等岗位开放招聘中。"
+  title={t('careers.meta.title', locale)}
+  description={t('careers.meta.description', locale)}
   pageType="CollectionPage"
   mainEntityId={jsonLdId(url, 'itemlist')}
   breadcrumbs={[
     {
       name: t('breadcrumb.home', locale),
-      url: absoluteUrl(Astro.site, '/zh-CN'),
+      url: absoluteUrl(Astro.site, localizeHref('/', locale)),
     },
     { name: t('breadcrumb.careers', locale) },
   ]}
   extraJsonLd={[roles]}
 >
-  <HeroSection locale="zh-CN" />
-  <RolesSection locale="zh-CN" departments={departments} client:visible />
-  <WhyJoinSection locale="zh-CN" client:visible />
+  <HeroSection locale={locale} />
+  <RolesSection locale={locale} departments={departments} client:visible />
+  <WhyJoinSection locale={locale} client:visible />
   <TeamPhotosSection client:visible />
   <FAQSection
     headingKey="careers.faq.heading"
     faqPrefix="careers.faq"
     faqCount={8}
-    locale="zh-CN"
+    locale={locale}
     client:visible
   />
 </BaseLayout>

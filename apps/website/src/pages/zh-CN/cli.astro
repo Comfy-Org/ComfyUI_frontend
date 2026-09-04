@@ -20,12 +20,14 @@ const { siteUrl, locale, url } = pageContext(
   Astro.url.pathname,
   Astro.currentLocale,
 )
+
+
 const { softwareId, nodes: cliJsonLd } = cliPageJsonLd(siteUrl, url, locale)
 ---
 
 <BaseLayout
-  title={t('cli.meta.title', 'zh-CN')}
-  description={t('cli.meta.description', 'zh-CN')}
+  title={t('cli.meta.title', locale)}
+  description={t('cli.meta.description', locale)}
   mainEntityId={softwareId}
   breadcrumbs={[
     { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
@@ -34,14 +36,14 @@ const { softwareId, nodes: cliJsonLd } = cliPageJsonLd(siteUrl, url, locale)
   extraJsonLd={cliJsonLd}
   ogImage="https://media.comfy.org/website/cli/og-v2.jpg"
 >
-  <HeroSection locale="zh-CN" client:load />
-  <SetupSection locale="zh-CN" client:visible />
-  <SessionSection locale="zh-CN" client:visible />
-  <SkillsSection locale="zh-CN" client:visible />
-  <AIModelsSection locale="zh-CN" cards={cliModelCards} client:visible />
-  <AgentsSection locale="zh-CN" />
-  <WhySection locale="zh-CN" />
-  <HowItWorksSection locale="zh-CN" />
-  <ProductCardsSection locale="zh-CN" label-key="products.labelProducts" />
-  <FAQSection client:visible locale="zh-CN" />
+  <HeroSection locale={locale} client:load />
+  <SetupSection locale={locale} client:visible />
+  <SessionSection locale={locale} client:visible />
+  <SkillsSection locale={locale} client:visible />
+  <AIModelsSection locale={locale} cards={cliModelCards} client:visible />
+  <AgentsSection locale={locale} />
+  <WhySection locale={locale} />
+  <HowItWorksSection locale={locale} />
+  <ProductCardsSection locale={locale} label-key="products.labelProducts" />
+  <FAQSection client:visible locale={locale} />
 </BaseLayout>

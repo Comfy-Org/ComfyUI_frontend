@@ -14,6 +14,12 @@ import {
   softwareApplicationNode,
 } from '../../../utils/jsonLd'
 
+const { siteUrl, locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+
 export const getStaticPaths: GetStaticPaths = async () => {
   const packs = await loadPacksForBuild()
   return packs.map((pack) => ({
@@ -23,22 +29,18 @@ export const getStaticPaths: GetStaticPaths = async () => {
 }
 
 const { pack } = Astro.props as { pack: Pack }
-const fallbackDescription = t('cloudNodes.card.unavailableDescription', 'en')
+const fallbackDescription = t('cloudNodes.card.unavailableDescription', locale)
 const description = pack.description || fallbackDescription
-const title = t('cloudNodes.detail.metaTitle', 'en').replace(
+const title = t('cloudNodes.detail.metaTitle', locale).replace(
   '{pack}',
   pack.displayName
 )
-const metaDescription = t('cloudNodes.detail.metaDescription', 'en')
+const metaDescription = t('cloudNodes.detail.metaDescription', locale)
   .replace('{pack}', pack.displayName)
   .replace('{nodeCount}', String(pack.nodes.length))
   .replace('{description}', description)
 
-const { siteUrl, locale, url } = pageContext(
-  Astro.site,
-  Astro.url.pathname,
-  Astro.currentLocale,
-)
+
 const softwareId = jsonLdId(url, 'software')
 const software = softwareApplicationNode({
   siteUrl,

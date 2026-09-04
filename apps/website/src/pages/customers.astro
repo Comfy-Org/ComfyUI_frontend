@@ -10,13 +10,15 @@ import { toCardProps } from '../utils/customers'
 import { loadStories } from '../utils/loadStories'
 import { absoluteUrl, itemListNode, jsonLdId, pageContext } from '../utils/jsonLd'
 
-const stories = (await loadStories('en')).map(toCardProps)
-
 const { url, locale } = pageContext(
   Astro.site,
   Astro.url.pathname,
   Astro.currentLocale
 )
+
+const stories = (await loadStories(locale)).map(toCardProps)
+
+
 const collectionLabel = t('nav.customerStories', locale)
 const storyList = itemListNode(
   url,
@@ -29,8 +31,8 @@ const storyList = itemListNode(
 ---
 
 <BaseLayout
-  title="Customer Stories - Comfy"
-  description="How studios, brands, artists, and universities use ComfyUI in production: Series Entertainment, Moment Factory, Ubisoft, Groove Jones, Svedka, and more."
+  title={t('customers.meta.title', locale)}
+  description={t('customers.meta.description', locale)}
   pageType="CollectionPage"
   mainEntityId={jsonLdId(url, 'itemlist')}
   breadcrumbs={[

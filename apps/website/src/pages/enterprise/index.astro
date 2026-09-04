@@ -12,6 +12,7 @@ import { externalLinks } from '../../config/routes'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import { absoluteUrl, pageContext } from '../../utils/jsonLd'
 import { buildFaqPageNode } from './_faqMetadata'
+import { t } from '../../i18n/translations'
 
 const faqs = [
   {
@@ -171,7 +172,7 @@ const industries = [
   },
 ] as const
 
-const { url } = pageContext(
+const { url, locale } = pageContext(
   Astro.site,
   Astro.url.pathname,
   Astro.currentLocale,
@@ -180,8 +181,8 @@ const faqPage = buildFaqPageNode(url, faqs)
 ---
 
 <BaseLayout
-  title="Comfy Enterprise | Govern visual AI across every team"
-  description="Standardize ComfyUI across teams and runtimes with Managed Builds, self-serve Team plans, commercial model licensing, enterprise security, and hands-on delivery."
+  title={t('enterprise.meta.title', locale)}
+  description={t('enterprise.meta.description', locale)}
   pageType="WebPage"
   breadcrumbs={[
     { name: 'Home', url: absoluteUrl(Astro.site, '/') },

@@ -18,16 +18,18 @@ import {
   pageContext
 } from '../../utils/jsonLd'
 
-const { siteUrl } = pageContext(
+const { siteUrl, locale } = pageContext(
   Astro.site,
   Astro.url.pathname,
   Astro.currentLocale
 )
+
+
 ---
 
 <BaseLayout
   title="Comfy - ビジュアルAIを自在にコントロール"
-  description={t('hero.subtitle', 'ja')}
+  description={t('hero.subtitle', locale)}
   mainEntityId={comfyUiSoftwareId(siteUrl)}
   extraJsonLd={[comfyUiApplicationNode(siteUrl), comfyUiSourceCodeNode(siteUrl)]}
   keywords={[
@@ -40,14 +42,14 @@ const { siteUrl } = pageContext(
     '生成 AI ワークフロー'
   ]}
 >
-  <HeroGraphSection locale="ja" client:load />
+  <HeroGraphSection locale={locale} client:load />
   <SocialProofBarSection />
-  <MinimaxLicenseHeroSection locale="ja" client:visible />
-  <ModelReleaseSection locale="ja" client:visible />
-  <FeaturedWorkflowsSection locale="ja" client:load />
-  <ProductShowcaseSection locale="ja" client:load />
-  <IndustriesSection locale="ja" client:load />
-  <GetStartedSection locale="ja" />
-  <ProductCardsSection locale="ja" />
-  <CaseStudySpotlightSection locale="ja" client:load />
+  <MinimaxLicenseHeroSection locale={locale} client:visible />
+  <ModelReleaseSection locale={locale} client:visible />
+  <FeaturedWorkflowsSection locale={locale} client:load />
+  <ProductShowcaseSection locale={locale} client:load />
+  <IndustriesSection locale={locale} client:load />
+  <GetStartedSection locale={locale} />
+  <ProductCardsSection locale={locale} />
+  <CaseStudySpotlightSection locale={locale} client:load />
 </BaseLayout>

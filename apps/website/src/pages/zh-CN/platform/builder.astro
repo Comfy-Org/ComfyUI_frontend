@@ -7,20 +7,30 @@ import BuilderPillarsSection from '../../../templates/platform/BuilderPillarsSec
 import BuilderProblemSection from '../../../templates/platform/BuilderProblemSection.vue'
 import ClosingCtaSection from '../../../templates/platform/ClosingCtaSection.vue'
 import { t } from '../../../i18n/translations'
+import { pageContext } from '../../../utils/jsonLd'
+
+const { locale } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+
+
+
 ---
 
 <BaseLayout
-  title={`${t('platform.products.builder.title', 'zh-CN')} · ${t('platform.meta.title', 'zh-CN')}`}
-  description={t('platform.products.builder.description', 'zh-CN')}
+  title={`${t('platform.products.builder.title', locale)} · ${t('platform.meta.title', locale)}`}
+  description={t('platform.products.builder.description', locale)}
 >
-  <BuilderHero locale="zh-CN" client:load />
-  <BuilderProblemSection locale="zh-CN" />
-  <BuilderPillarsSection locale="zh-CN" />
-  <BuilderEnterpriseSection locale="zh-CN" />
+  <BuilderHero locale={locale} client:load />
+  <BuilderProblemSection locale={locale} />
+  <BuilderPillarsSection locale={locale} />
+  <BuilderEnterpriseSection locale={locale} />
   <ClosingCtaSection
-    locale="zh-CN"
-    heading-after-badge={t('platform.closing.headingAfterBadge', 'zh-CN')}
+    locale={locale}
+    heading-after-badge={t('platform.closing.headingAfterBadge', locale)}
     client:visible
   />
-  <ProductCardsSection locale="zh-CN" label-key="products.labelProducts" />
+  <ProductCardsSection locale={locale} label-key="products.labelProducts" />
 </BaseLayout>

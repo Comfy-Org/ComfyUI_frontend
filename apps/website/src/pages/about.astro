@@ -16,8 +16,8 @@ const { siteUrl, locale } = pageContext(
 ---
 
 <BaseLayout
-  title="About Us - Comfy"
-  description="Comfy builds ComfyUI, the open-source engine for visual AI, and the desktop, cloud, API, and enterprise products around it. Meet the team and the mission."
+  title={t('about.meta.title', locale)}
+  description={t('about.meta.description', locale)}
   pageType="AboutPage"
   mainEntityId={organizationId(siteUrl)}
   breadcrumbs={[

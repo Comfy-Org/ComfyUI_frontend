@@ -11,23 +11,26 @@ import {
   jsonLdId,
   pageContext,
 } from '../../../utils/jsonLd'
+import { localizeHref } from '../../../config/routes'
 
-const packs = await loadPacksForBuild()
-const gridPacks = packs.map(toGridPack)
-
-const title = t('cloudNodes.meta.title', 'zh-CN')
-const description = t('cloudNodes.meta.description', 'zh-CN')
 const { url, locale } = pageContext(
   Astro.site,
   Astro.url.pathname,
   Astro.currentLocale,
 )
+
+const packs = await loadPacksForBuild()
+const gridPacks = packs.map(toGridPack)
+
+const title = t('cloudNodes.meta.title', locale)
+const description = t('cloudNodes.meta.description', locale)
+
 const packList = itemListNode(
   url,
   title,
   packs.map((pack) => ({
     name: pack.displayName,
-    url: absoluteUrl(Astro.site, `/zh-CN/cloud/supported-nodes/${pack.id}`),
+    url: absoluteUrl(Astro.site, localizeHref(`/cloud/supported-nodes/${pack.id}`, locale)),
   })),
 )
 ---
@@ -40,13 +43,13 @@ const packList = itemListNode(
   breadcrumbs={[
     {
       name: t('breadcrumb.home', locale),
-      url: absoluteUrl(Astro.site, '/zh-CN'),
+      url: absoluteUrl(Astro.site, localizeHref('/', locale)),
     },
-    { name: 'Comfy Cloud', url: absoluteUrl(Astro.site, '/zh-CN/cloud') },
+    { name: 'Comfy Cloud', url: absoluteUrl(Astro.site, localizeHref('/cloud', locale)) },
     { name: t('breadcrumb.supportedNodes', locale) },
   ]}
   extraJsonLd={[packList]}
 >
-  <HeroSection locale="zh-CN" client:visible />
-  <PackGridSection locale="zh-CN" packs={gridPacks} client:visible />
+  <HeroSection locale={locale} client:visible />
+  <PackGridSection locale={locale} packs={gridPacks} client:visible />
 </BaseLayout>

@@ -10,17 +10,19 @@ import { getRoutes } from '../../../config/routes'
 import { t } from '../../../i18n/translations'
 import { absoluteUrl, organizationId, pageContext } from '../../../utils/jsonLd'
 
+const { siteUrl, locale } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+
 // "MiniMax Commercial License - Professional" on HubSpot portal 244637579.
 const HUBSPOT_FORM_ID = '40ef858c-374a-4958-8180-bfa54f0a67fb'
 
 const TITLE = t('minimaxLicense.professionalRequest.title')
 
-const { siteUrl } = pageContext(
-  Astro.site,
-  Astro.url.pathname,
-  Astro.currentLocale,
-)
-const routes = getRoutes('en')
+
+const routes = getRoutes(locale)
 ---
 
 <BaseLayout

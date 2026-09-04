@@ -19,32 +19,24 @@ import {
   pageContext,
 } from "../utils/jsonLd";
 
-const { siteUrl } = pageContext(
+const { siteUrl, locale } = pageContext(
   Astro.site,
   Astro.url.pathname,
   Astro.currentLocale,
 );
+
+
 ---
 
 <BaseLayout
-  title="Comfy - Professional Control of Visual AI"
-  description={t("hero.subtitle", "en")}
+  title={t('home.meta.title', locale)}
+  description={t('hero.subtitle', locale)}
   mainEntityId={comfyUiSoftwareId(siteUrl)}
   extraJsonLd={[
     comfyUiApplicationNode(siteUrl),
     comfyUiSourceCodeNode(siteUrl),
   ]}
-  keywords={[
-    "comfyui app",
-    "comfyui web app",
-    "comfy ui application",
-    "comfyui application",
-    "comfy app",
-    "comfyui",
-    "visual ai app",
-    "node-based ai",
-    "generative ai workflows",
-  ]}
+  keywords={t('home.meta.keywords', locale).split(', ')}
 >
   <HeroGraphSection client:load />
   <SocialProofBarSection />

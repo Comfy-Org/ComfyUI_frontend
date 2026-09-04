@@ -7,20 +7,30 @@ import HeroSection from '../../templates/platform/HeroSection.vue'
 import PricingSection from '../../templates/platform/PricingSection.vue'
 import ProductsSection from '../../templates/platform/ProductsSection.vue'
 import { t } from '../../i18n/translations'
+import { pageContext } from '../../utils/jsonLd'
+
+const { locale } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+
+
+
 ---
 
 <BaseLayout
-  title={t('platform.meta.title', 'zh-CN')}
-  description={t('platform.meta.description', 'zh-CN')}
+  title={t('platform.meta.title', locale)}
+  description={t('platform.meta.description', locale)}
 >
-  <HeroSection locale="zh-CN" client:load />
-  <ProductsSection locale="zh-CN" client:visible />
+  <HeroSection locale={locale} client:load />
+  <ProductsSection locale={locale} client:visible />
   <SocialProofBarSection />
-  <PricingSection locale="zh-CN" />
+  <PricingSection locale={locale} />
   <ClosingCtaSection
-    locale="zh-CN"
-    heading-after-badge={t('platform.closing.headingAfterBadge', 'zh-CN')}
+    locale={locale}
+    heading-after-badge={t('platform.closing.headingAfterBadge', locale)}
     client:visible
   />
-  <ProductCardsSection locale="zh-CN" label-key="products.labelProducts" />
+  <ProductCardsSection locale={locale} label-key="products.labelProducts" />
 </BaseLayout>

@@ -1,9 +1,5 @@
-import {
-  DEFAULT_LOCALE,
-  localeHasRoute,
-  localePrefix,
-  type Locale
-} from './locales'
+import { DEFAULT_LOCALE, localeHasRoute, localePrefix } from './locales'
+import type { Locale } from './locales'
 
 const baseRoutes = {
   home: '/',
@@ -118,7 +114,11 @@ export function localizeHref(
   locale: Locale = DEFAULT_LOCALE
 ): string {
   if (locale === DEFAULT_LOCALE || !href.startsWith('/')) return href
-  if (LOCALE_INVARIANT_PATHS.has(href)) return href
+  // The same predicate the hreflang emitter uses. It matched whole paths here
+  // and prefixes there, so a page nested under an invariant route was localized
+  // by one and not the other: /zh-CN/models linked to
+  // /zh-CN/p/supported-models/grok-imagine, which has never existed.
+  if (isLocaleInvariantPath(href)) return href
   // Only localize a path the locale actually serves. This replaces a hardcoded
   // `locale === 'ja'` branch that sent every Japanese link except the home page
   // to the English page. Deleting that outright would have been worse than the

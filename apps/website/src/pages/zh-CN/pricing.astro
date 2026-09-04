@@ -15,25 +15,28 @@ import {
   pageContext,
   productNode,
 } from '../../utils/jsonLd'
+import { localizeHref } from '../../config/routes'
 
 const { siteUrl, locale, url } = pageContext(
   Astro.site,
   Astro.url.pathname,
   Astro.currentLocale,
 )
+
+
 const productId = jsonLdId(url, 'product')
 ---
 
 <BaseLayout
-  title="定价 - Comfy Cloud"
-  description="Comfy Cloud 套餐与积分：免费开始（5 次 GPU 运行），再选择 Standard、Creator、Pro 或 Team，获得每月积分、托管模型与更长的工作流运行时长。"
+  title={t('pricing.meta.title', locale)}
+  description={t('pricing.meta.description', locale)}
   mainEntityId={productId}
   breadcrumbs={[
     {
       name: t('breadcrumb.home', locale),
-      url: absoluteUrl(Astro.site, '/zh-CN'),
+      url: absoluteUrl(Astro.site, localizeHref('/', locale)),
     },
-    { name: 'Comfy Cloud', url: absoluteUrl(Astro.site, '/zh-CN/cloud') },
+    { name: 'Comfy Cloud', url: absoluteUrl(Astro.site, localizeHref('/cloud', locale)) },
     { name: t('breadcrumb.pricing', locale) },
   ]}
   extraJsonLd={[
@@ -46,15 +49,15 @@ const productId = jsonLdId(url, 'product')
     }),
   ]}
 >
-  <CloudPricingSection locale="zh-CN" client:load />
-  <WhatsIncludedSection locale="zh-CN" />
+  <CloudPricingSection locale={locale} client:load />
+  <WhatsIncludedSection locale={locale} />
   <ResourceCostsSection
-    locale="zh-CN"
-    heading={t('pricing.resourceCosts.heading', 'zh-CN')}
-    note={t('pricing.resourceCosts.note', 'zh-CN')}
+    locale={locale}
+    heading={t('pricing.resourceCosts.heading', locale)}
+    note={t('pricing.resourceCosts.note', locale)}
   />
-  <MinimaxLicenseHeroSection locale="zh-CN" client:visible />
-  <MinimaxLicensePricingSection locale="zh-CN" />
-  <LookingForElseSection locale="zh-CN" />
-  <PricingFaq locale="zh-CN" />
+  <MinimaxLicenseHeroSection locale={locale} client:visible />
+  <MinimaxLicensePricingSection locale={locale} />
+  <LookingForElseSection locale={locale} />
+  <PricingFaq locale={locale} />
 </BaseLayout>
