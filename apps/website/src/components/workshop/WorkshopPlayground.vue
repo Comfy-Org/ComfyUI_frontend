@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import type { WorkshopDetailModel } from '../../config/workshop-detail'
 import { defaultWorkshopValues } from '../../config/workshop-detail'
+import { popWorkshopForm } from '../../config/workshop-return'
 import { withSamplePrompt } from '../../config/workshop-samples'
 import { runTargetFor } from '../../config/workshop-run-target'
 import type { WorkshopSnippetLanguage } from '../../config/workshop-snippets'
@@ -25,6 +26,13 @@ const values = ref(
     model.modality
   )
 )
+
+// A visitor coming back from sign-in or a purchase lands with the form they
+// left; the stash is one-shot, so a plain visit costs one storage read.
+onMounted(() => {
+  const restored = popWorkshopForm(model.slug, model.fields)
+  if (restored) values.value = { ...values.value, ...restored }
+})
 const language = ref<WorkshopSnippetLanguage>('typescript')
 // Playground and API are tabs, not columns: the result deserves the width,
 // and the snippet is something you go and look at rather than watch.

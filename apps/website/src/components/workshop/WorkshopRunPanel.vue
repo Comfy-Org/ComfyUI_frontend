@@ -7,8 +7,12 @@ import type {
   WorkshopFormValues
 } from '../../config/workshop-detail'
 import { useWorkshopCredentials } from '../../config/workshop-credentials-state'
-import { refreshWorkshopCredits } from '../../config/workshop-credits'
+import {
+  refreshWorkshopCredits,
+  workshopPurchaseUrl
+} from '../../config/workshop-credits'
 import { WORKSHOP_ROUTER_BASE_URL } from '../../config/workshop-env'
+import { stashWorkshopForm } from '../../config/workshop-return'
 import type {
   WorkshopRunErrorType,
   WorkshopRunResult
@@ -103,6 +107,7 @@ function onPrimaryClick() {
     return
   }
   if (authFlagEnabled.value) {
+    stashWorkshopForm(model.slug, model.fields, values)
     window.location.assign(
       `/login/?returnTo=${encodeURIComponent(
         window.location.pathname + window.location.search
@@ -111,6 +116,18 @@ function onPrimaryClick() {
     return
   }
   signInOpen.value = true
+}
+
+function purchaseHref(): string {
+  return workshopPurchaseUrl(window.location.pathname + window.location.search)
+}
+
+/**
+ * The purchase leaves the site, so the form is stashed the same way the
+ * sign-in redirect stashes it; refocus re-fetches the balance on return.
+ */
+function onBuyCredits() {
+  stashWorkshopForm(model.slug, model.fields, values)
 }
 
 async function run() {
@@ -296,6 +313,14 @@ onBeforeUnmount(() => {
           >
             {{ result.detail }}
           </p>
+          <a
+            v-if="result.errorType === 'insufficient_credits'"
+            :href="purchaseHref()"
+            class="hover:bg-primary-comfy-yellow/90 bg-primary-comfy-yellow mt-4 inline-flex h-11 items-center rounded-xl px-5 text-sm font-semibold text-primary-comfy-ink transition-colors"
+            @click="onBuyCredits"
+          >
+            {{ t('workshop.run.buyCredits', locale) }}
+          </a>
           <p
             v-if="result.requestId"
             class="mt-3 font-mono text-xs text-primary-comfy-canvas/45"

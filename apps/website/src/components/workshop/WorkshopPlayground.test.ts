@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
 import type { WorkshopDetailModel } from '../../config/workshop-detail'
@@ -27,6 +27,24 @@ const model: WorkshopDetailModel = {
 }
 
 describe('WorkshopPlayground', () => {
+  it('restores a stashed form on mount, exactly once', async () => {
+    sessionStorage.setItem(
+      `comfy.workshop.form.${model.slug}`,
+      JSON.stringify({ prompt: 'Stashed red fox' })
+    )
+
+    render(WorkshopPlayground, { props: { model } })
+
+    const prompt = screen.getByRole('textbox', {
+      name: /Prompt/
+    }) as HTMLTextAreaElement
+    await waitFor(() => expect(prompt.value).toBe('Stashed red fox'))
+    expect(
+      sessionStorage.getItem(`comfy.workshop.form.${model.slug}`),
+      'the stash is consumed by the restore'
+    ).toBeNull()
+  })
+
   it('updates every snippet from the current form values', async () => {
     const user = userEvent.setup()
     render(WorkshopPlayground, { props: { model } })

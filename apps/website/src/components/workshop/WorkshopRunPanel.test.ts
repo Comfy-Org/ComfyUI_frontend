@@ -25,7 +25,8 @@ vi.mock('../../scripts/posthog', async () => {
 })
 
 const refreshCredits = vi.hoisted(() => vi.fn(async () => {}))
-vi.mock('../../config/workshop-credits', () => ({
+vi.mock('../../config/workshop-credits', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
   refreshWorkshopCredits: refreshCredits
 }))
 
@@ -90,6 +91,7 @@ function jsonResponse(status: number, body: unknown, headers = {}) {
 
 beforeEach(() => {
   globalThis.localStorage.clear()
+  globalThis.sessionStorage.clear()
   // The credential lives outside the panel now — it comes from the floating
   // key widget, and in the shipped app it will come from a session.
   useWorkshopCredentials().save('')
@@ -207,6 +209,42 @@ describe('WorkshopRunPanel', () => {
       'no run request may fire while signed out'
     ).not.toHaveBeenCalled()
     expect(screen.queryByRole('dialog')).toBeNull()
+    expect(
+      globalThis.sessionStorage.getItem('comfy.workshop.form.bfl--flux-2-pro'),
+      'the form must be stashed before the page is left'
+    ).toContain('a cat')
+  })
+
+  it('offers the purchase path when a run fails on insufficient credits', async () => {
+    sessionHandles.setUser!({ uid: 'user-1' })
+    sessionHandles.setSessionToken!('jwt')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        jsonResponse(
+          402,
+          { error_type: 'insufficient_credits', detail: 'No credits left.' },
+          { 'X-Comfy-Error-Type': 'insufficient_credits' }
+        )
+      )
+    )
+
+    renderPanel()
+    const user = userEvent.setup()
+    await user.click(runButton())
+
+    const cta = await screen.findByRole('link', {
+      name: 'Buy credits on Comfy Platform'
+    })
+    const href = new URL(cta.getAttribute('href') ?? '')
+    expect(href.origin).toBe('https://platform.comfy.org')
+    expect(href.searchParams.get('returnTo')).toBeTruthy()
+
+    await user.click(cta)
+    expect(
+      globalThis.sessionStorage.getItem('comfy.workshop.form.bfl--flux-2-pro'),
+      'leaving to buy credits must not lose the form'
+    ).toContain('a cat')
   })
 
   it('runs with the token the awaited refresh produced, never the one from before the click', async () => {

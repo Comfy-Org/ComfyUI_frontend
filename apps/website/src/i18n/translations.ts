@@ -142,6 +142,10 @@ const translations = {
     en: 'The request could not be sent.',
     'zh-CN': '请求无法发送。'
   },
+  'workshop.run.buyCredits': {
+    en: 'Buy credits on Comfy Platform',
+    'zh-CN': '在 Comfy Platform 购买积分'
+  },
   'workshop.run.error.sessionRefresh': {
     en: 'Your session could not be refreshed. Sign in again and retry.',
     'zh-CN': '会话刷新失败，请重新登录后重试。'
