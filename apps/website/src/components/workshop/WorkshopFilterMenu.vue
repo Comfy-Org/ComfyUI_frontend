@@ -14,8 +14,6 @@ import { computed, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { CapabilityGroup } from '../../config/workshop'
-import { CAPABILITY_GROUP_LABELS } from '../../config/workshop'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
@@ -23,7 +21,6 @@ export interface FacetMenuOption {
   readonly value: string
   readonly label: string
   readonly count: number
-  readonly group?: CapabilityGroup
 }
 
 type Facet = 'provider' | 'capability' | 'modality'
@@ -78,20 +75,13 @@ const selectedCount = computed(
     capabilities.value.length + providers.value.length + modalities.value.length
 )
 
-// A group heading is drawn on the first option that carries it, so the list
-// stays one flat pass and the search keeps working across groups.
 function visibleOptions(entry: (typeof facets.value)[number]) {
   const needle = search.value[entry.facet].trim().toLowerCase()
-  const matching = needle
+  return needle
     ? entry.options.filter((option) =>
         option.label.toLowerCase().includes(needle)
       )
     : entry.options
-  return matching.map((option, index) => ({
-    ...option,
-    startsGroup:
-      option.group !== undefined && option.group !== matching[index - 1]?.group
-  }))
 }
 
 const modelFor = (facet: Facet) =>
@@ -201,14 +191,6 @@ function clearAll() {
                 v-for="option in visibleOptions(entry)"
                 :key="option.value"
               >
-                <li
-                  v-if="option.startsGroup && option.group"
-                  role="presentation"
-                  class="text-content-muted px-3 pt-3 pb-1 text-2xs font-bold tracking-wider uppercase"
-                  :data-testid="`filter-group-${option.group}`"
-                >
-                  {{ t(CAPABILITY_GROUP_LABELS[option.group], locale) }}
-                </li>
                 <li role="none">
                   <button
                     type="button"

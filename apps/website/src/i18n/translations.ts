@@ -8499,25 +8499,6 @@ Enterprise`
     'zh-CN': '用例'
   },
   'workshop.filter.outputGroup': { en: 'Output', 'zh-CN': '输出' },
-  'workshop.capGroup.createImages': {
-    en: 'Create images',
-    'zh-CN': '创建图像'
-  },
-  'workshop.capGroup.createVideos': {
-    en: 'Create videos',
-    'zh-CN': '创建视频'
-  },
-  'workshop.capGroup.editImages': { en: 'Edit images', 'zh-CN': '编辑图像' },
-  'workshop.capGroup.editVideos': { en: 'Edit videos', 'zh-CN': '编辑视频' },
-  'workshop.capGroup.enhance': {
-    en: 'Enhance images & video',
-    'zh-CN': '增强图像与视频'
-  },
-  'workshop.capGroup.identity': {
-    en: 'Identity & characters',
-    'zh-CN': '身份与角色'
-  },
-  'workshop.capGroup.other': { en: 'Other', 'zh-CN': '其他' },
   'workshop.filter.capabilityGroup': {
     en: 'Categories',
     'zh-CN': '分类'

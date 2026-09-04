@@ -6,12 +6,15 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import { useHubStore } from '../../composables/useHubStore'
 import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
-import type { ModalityFilter } from '../../config/workshop'
-import { MODALITIES, modalityOf, workshopModels } from '../../config/workshop'
+import type { UseCase } from '../../config/workshop'
+import { USE_CASES, useCaseFor, workshopModels } from '../../config/workshop'
 import { groupModels } from '../../config/model-family'
 import hubTemplates from '../../data/hubTemplates.json'
 import { hubWorkflowPath } from '../../lib/hub/workflow-detail'
-import { partnerModelFor } from '../../lib/hub/template-use-case'
+import {
+  partnerModelFor,
+  useCaseForTemplate
+} from '../../lib/hub/template-use-case'
 import { tagDisplayName } from '../../lib/hub/tag-aliases'
 import type { HubTemplate } from '../../lib/hub/types'
 import type { Locale, TranslationKey } from '../../i18n/translations'
@@ -34,42 +37,48 @@ onUnmounted(() => store.reset())
 
 const TABS = ['all', 'nodeGraphs', 'comfyApps', 'models'] as const
 
-// The hub browses by what a thing makes, the same axis as the models list.
-const medium = ref<ModalityFilter>('all')
+// The hub browses by what a thing makes, the same axis and the same vocabulary
+// as the models list, so a workflow and a model answer to the same use case.
+const useCase = ref<UseCase | 'all'>('all')
 
-const mediumLabelKey: Record<ModalityFilter, TranslationKey> = {
+const useCaseLabelKey: Record<UseCase | 'all', TranslationKey> = {
   all: 'workshop.useCase.all',
-  image: 'workshop.filter.image',
-  video: 'workshop.filter.video',
-  audio: 'workshop.filter.audio',
-  '3d': 'workshop.filter.3d',
-  text: 'workshop.filter.text',
-  other: 'workshop.filter.other'
+  'generate-images': 'workshop.useCase.generateImages',
+  'edit-images': 'workshop.useCase.editImages',
+  'generate-videos': 'workshop.useCase.generateVideos',
+  'animate-images': 'workshop.useCase.animateImages',
+  'edit-videos': 'workshop.useCase.editVideos',
+  '3d': 'workshop.useCase.3d',
+  audio: 'workshop.useCase.audio',
+  text: 'workshop.useCase.text'
 }
 
-const inMedium = (value: ModalityFilter) => ({
+const inUseCase = (value: UseCase | 'all') => ({
   models: workshopModels.filter(
-    (model) => value === 'all' || modalityOf(model) === value
+    (model) => value === 'all' || useCaseFor(model) === value
   ),
   templates: templates.filter(
-    (tmpl) => value === 'all' || tmpl.mediaType === value
+    (tmpl) =>
+      value === 'all' || useCaseForTemplate(tmpl, workshopModels) === value
   )
 })
 
-const entryFor = (value: ModalityFilter) => {
-  const { models, templates: scoped } = inMedium(value)
+const entryFor = (value: UseCase | 'all') => {
+  const { models, templates: scoped } = inUseCase(value)
   return {
     value,
     total: groupModels(models, groupVersions.value).length + scoped.length
   }
 }
 
-const mediaTabs = computed(() => [
+const useCaseTabs = computed(() => [
   entryFor('all'),
-  ...MODALITIES.map(entryFor).filter((entry) => entry.total > 0)
+  ...USE_CASES.map(entryFor)
+    .filter((entry) => entry.total > 0)
+    .sort((a, b) => b.total - a.total)
 ])
 
-const scoped = computed(() => inMedium(medium.value))
+const scoped = computed(() => inUseCase(useCase.value))
 
 // The row is for narrowing what the use case already picked, so search stays
 // out of the way until it is asked for.
@@ -88,8 +97,8 @@ onMounted(() => {
   const params = new URLSearchParams(location.search)
   const tab = TABS.find((value) => value === params.get('tab'))
   if (tab) store.setTab(tab)
-  const wanted = MODALITIES.find((value) => value === params.get('medium'))
-  if (wanted) medium.value = wanted
+  const wanted = USE_CASES.find((value) => value === params.get('useCase'))
+  if (wanted) useCase.value = wanted
   for (const type of ['tag', 'model'] as const) {
     const value = params.get(type)
     if (value) store.toggleBadge({ type, value })
@@ -191,22 +200,22 @@ const filteredTemplates = computed(() => {
         data-testid="hub-use-cases"
       >
         <button
-          v-for="entry in mediaTabs"
+          v-for="entry in useCaseTabs"
           :key="entry.value"
           type="button"
-          :aria-pressed="medium === entry.value"
+          :aria-pressed="useCase === entry.value"
           :data-testid="`hub-use-case-${entry.value}`"
           :class="
             cn(
               'flex shrink-0 cursor-pointer items-baseline gap-1.5 border-b-2 pb-3 text-sm font-medium whitespace-nowrap transition-colors',
-              medium === entry.value
+              useCase === entry.value
                 ? 'border-primary-comfy-yellow text-primary-warm-white'
                 : 'text-content-secondary hover:text-content border-transparent'
             )
           "
-          @click="medium = entry.value"
+          @click="useCase = entry.value"
         >
-          {{ t(mediumLabelKey[entry.value], locale) }}
+          {{ t(useCaseLabelKey[entry.value], locale) }}
           <span class="text-content-muted text-xs tabular-nums">
             {{ entry.total }}
           </span>

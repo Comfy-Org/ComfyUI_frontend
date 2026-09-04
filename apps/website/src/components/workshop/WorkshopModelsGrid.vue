@@ -24,10 +24,8 @@ import type {
 import {
   SORT_ORDERS,
   parseCatalogSearch,
-  CAPABILITY_GROUPS,
   MODALITIES,
   USE_CASES,
-  capabilityGroupOf,
   countByFacet,
   countByModality,
   countByUseCase,
@@ -135,17 +133,12 @@ function selectRail(value: UseCase | 'all') {
   useCase.value = value
 }
 
-// Ordered by group so the filter can show where each block begins.
-const capabilityOptions = computed<FacetMenuOption[]>(() => {
-  const order = CAPABILITY_GROUPS.map((group) => group.key)
-  return countByFacet(models, 'capabilities')
-    .map((option) => ({
-      ...option,
-      label: option.value,
-      group: capabilityGroupOf(option.value)
-    }))
-    .sort((a, b) => order.indexOf(a.group) - order.indexOf(b.group))
-})
+const capabilityOptions = computed<FacetMenuOption[]>(() =>
+  countByFacet(models, 'capabilities').map((option) => ({
+    ...option,
+    label: option.value
+  }))
+)
 const providerOptions = computed<FacetMenuOption[]>(() =>
   countByFacet(models, 'provider').map((option) => ({
     ...option,

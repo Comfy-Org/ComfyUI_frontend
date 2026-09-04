@@ -67,7 +67,7 @@ describe('HubBrowse', () => {
     await user.click(screen.getByTestId('hub-use-case-3d'))
     const lead = screen.getAllByTestId('hub-models-lead')
     expect(lead[0].textContent).toContain('Tripo')
-    expect(screen.getByTestId('hub-showing').textContent).toContain('of 40')
+    expect(screen.getByTestId('hub-showing').textContent).toContain('of 39')
 
     await user.click(screen.getByTestId('hub-tab-models'))
     expect(screen.getAllByTestId('workshop-model-card')).toHaveLength(6)

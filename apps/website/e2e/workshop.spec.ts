@@ -77,7 +77,7 @@ test.describe('Workshop catalog', () => {
     await expect(page.getByTestId('workshop-tabs')).toHaveCount(0)
 
     const all = await cards.count()
-    await page.getByTestId('use-case-edit').click()
+    await page.getByTestId('use-case-edit-images').click()
     await expect(cards.first()).toBeVisible()
     expect(await cards.count()).toBeLessThan(all)
     await page.getByTestId('use-case-all').click()

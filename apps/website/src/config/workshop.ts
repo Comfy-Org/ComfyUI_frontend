@@ -4,7 +4,6 @@ import displayOverrides from './workshop-model-display.json'
 import generatedModels from './workshop-models.generated.json'
 import generatedVersions from './workshop-model-versions.generated.json'
 import { usdToCredits } from './credits'
-import type { TranslationKey } from '../i18n/translations'
 
 export const MODALITIES = ['image', 'video', 'audio', '3d', 'text'] as const
 export type Modality = (typeof MODALITIES)[number]
@@ -324,57 +323,6 @@ const CAPABILITY_LABELS: Readonly<Record<string, string>> = {
   'Voice Cloning': 'Voice cloning',
   Music: 'Music',
   'Text to Music': 'Music'
-}
-
-// Eric's launch taxonomy, one level up from the capability labels above. The
-// capabilities are the fine grain of the same axis, so the filter groups them
-// rather than offering a second, competing vocabulary.
-export const CAPABILITY_GROUPS = [
-  { key: 'createImages', capabilities: ['Virtual try-on'] },
-  {
-    key: 'createVideos',
-    capabilities: ['First and last frame', 'Reference video', 'Motion control']
-  },
-  {
-    key: 'editImages',
-    capabilities: [
-      'Image editing',
-      'Inpainting',
-      'Outpainting',
-      'Relighting',
-      'Style reference'
-    ]
-  },
-  { key: 'editVideos', capabilities: ['Video editing'] },
-  { key: 'enhance', capabilities: ['Upscale'] },
-  {
-    key: 'identity',
-    capabilities: ['Character reference', 'Lip sync', 'Voice cloning']
-  },
-  { key: 'other', capabilities: ['Vector output', 'Text to speech', 'Music'] }
-] as const satisfies readonly {
-  key: string
-  capabilities: readonly string[]
-}[]
-export type CapabilityGroup = (typeof CAPABILITY_GROUPS)[number]['key']
-
-export const CAPABILITY_GROUP_LABELS: Record<CapabilityGroup, TranslationKey> =
-  {
-    createImages: 'workshop.capGroup.createImages',
-    createVideos: 'workshop.capGroup.createVideos',
-    editImages: 'workshop.capGroup.editImages',
-    editVideos: 'workshop.capGroup.editVideos',
-    enhance: 'workshop.capGroup.enhance',
-    identity: 'workshop.capGroup.identity',
-    other: 'workshop.capGroup.other'
-  }
-
-export function capabilityGroupOf(capability: string): CapabilityGroup {
-  return (
-    CAPABILITY_GROUPS.find((group) =>
-      (group.capabilities as readonly string[]).includes(capability)
-    )?.key ?? 'other'
-  )
 }
 
 export function capabilitiesFor(
