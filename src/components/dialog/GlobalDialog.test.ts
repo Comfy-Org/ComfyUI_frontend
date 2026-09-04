@@ -40,8 +40,6 @@ vi.mock(
         activeCheckoutActionUrl: ref(null),
         authenticationState: ref(null),
         authenticationError: ref(null),
-        canRetryAuthentication: ref(false),
-        isAuthenticating: ref(false),
         reconciliationOperationId: ref(null),
         isPolling: ref(false),
         isTeamCheckout: computed(() => false),
@@ -55,7 +53,6 @@ vi.mock(
         handleTeamSubscribe: vi.fn(),
         handleSubscriptionPayment: vi.fn(),
         handleTeamSubscriptionPayment: vi.fn(),
-        retryPaymentAuthentication: vi.fn(),
         applyPromotionCode: vi.fn(),
         invalidateQuote: vi.fn(),
         handleResubscribe: vi.fn()

@@ -465,7 +465,6 @@
   },
   "billingOperation": {
     "authenticationFailedDetail": "Nous n’avons pas pu terminer la vérification du paiement. Veuillez réessayer.",
-    "authenticationManagerRequired": "La vérification du paiement nécessite l’intervention d’un responsable de la facturation de l’espace de travail.",
     "authenticationUnavailable": "L’authentification sécurisée du paiement est indisponible. Actualisez la page et réessayez.",
     "cancelFailed": "Échec de l'annulation de l'abonnement",
     "cancelTimeout": "Délai d'annulation de l'abonnement dépassé",
@@ -476,7 +475,6 @@
     "processingErrorDetail": "Votre paiement n’a pas pu être traité. Réessayez ou utilisez un autre mode de paiement.",
     "reconciliationDetail": "Votre paiement a été reçu, mais nous n’avons pas pu terminer la mise à jour de votre espace de travail. Contactez l’assistance et indiquez cet ID d’opération :",
     "reconciliationTitle": "Paiement reçu — confirmation en attente",
-    "retryVerification": "Réessayer la vérification",
     "subscriptionActionRequired": "Vérifiez votre paiement pour finaliser la configuration de votre espace de travail",
     "subscriptionFailed": "Échec de la mise à jour de l'abonnement",
     "subscriptionFailedDetail": "Nous n’avons pas pu mettre à jour votre abonnement. Veuillez réessayer.",
@@ -964,6 +962,7 @@
       "quickPurchase": "Achat rapide",
       "seeDetails": "Voir les détails",
       "selectAmount": "Sélectionner le montant",
+      "startOver": "Recommencer",
       "templateNote": "*Généré avec le modèle Wan Fun Control",
       "topUp": "Recharger",
       "unknownError": "Une erreur inconnue est survenue",

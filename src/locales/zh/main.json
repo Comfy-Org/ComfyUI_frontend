@@ -465,7 +465,6 @@
   },
   "billingOperation": {
     "authenticationFailedDetail": "无法完成付款验证。请重试。",
-    "authenticationManagerRequired": "付款验证需要工作区账单管理员处理。",
     "authenticationUnavailable": "安全支付验证不可用。请刷新后重试。",
     "cancelFailed": "取消订阅失败",
     "cancelTimeout": "订阅取消超时",
@@ -476,7 +475,6 @@
     "processingErrorDetail": "无法处理您的付款。请重试或使用其他支付方式。",
     "reconciliationDetail": "已收到您的付款，但无法完成工作区更新。请联系支持团队，并提供此操作 ID：",
     "reconciliationTitle": "已收到付款 — 等待确认",
-    "retryVerification": "重试验证",
     "subscriptionActionRequired": "请验证您的付款以完成工作区设置",
     "subscriptionFailed": "订阅更新失败",
     "subscriptionFailedDetail": "我们无法更新您的订阅。请重试。",
@@ -964,6 +962,7 @@
       "quickPurchase": "快速购买",
       "seeDetails": "查看详情",
       "selectAmount": "选择金额",
+      "startOver": "重新开始",
       "templateNote": "*使用 Wan Fun Control 模板生成",
       "topUp": "充值",
       "unknownError": "发生未知错误",

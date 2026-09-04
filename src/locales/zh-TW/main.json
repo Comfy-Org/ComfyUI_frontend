@@ -465,7 +465,6 @@
   },
   "billingOperation": {
     "authenticationFailedDetail": "無法完成付款驗證。請再試一次。",
-    "authenticationManagerRequired": "付款驗證需要工作區帳務管理員處理。",
     "authenticationUnavailable": "無法使用安全付款驗證。請重新整理後再試一次。",
     "cancelFailed": "取消訂閱失敗",
     "cancelTimeout": "訂閱取消逾時",
@@ -476,7 +475,6 @@
     "processingErrorDetail": "無法處理您的付款。請再試一次或使用其他付款方式。",
     "reconciliationDetail": "已收到您的付款，但無法完成工作區更新。請聯絡支援人員並提供此操作 ID：",
     "reconciliationTitle": "已收到付款 — 等待確認",
-    "retryVerification": "重試驗證",
     "subscriptionActionRequired": "請驗證您的付款以完成工作區設置",
     "subscriptionFailed": "訂閱更新失敗",
     "subscriptionFailedDetail": "我們無法更新您的訂閱。請再試一次。",
@@ -964,6 +962,7 @@
       "quickPurchase": "快速購買",
       "seeDetails": "查看詳情",
       "selectAmount": "選擇金額",
+      "startOver": "重新開始",
       "templateNote": "*以 Wan Fun Control 範本產生",
       "topUp": "儲值",
       "unknownError": "發生未知錯誤",
