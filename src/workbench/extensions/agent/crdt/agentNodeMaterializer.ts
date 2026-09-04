@@ -146,7 +146,16 @@ function tryCreateSubgraph(
     // constructor remints the id on the next attempt when it finds that
     // metadata, so the retry would never land under the document's id.
     const halfBuilt = rootGraph.subgraphs.get(definition.id)
-    if (halfBuilt) rootGraph.releaseSubgraphs([halfBuilt])
+    if (halfBuilt) {
+      try {
+        rootGraph.releaseSubgraphs([halfBuilt])
+      } catch (rollbackCause) {
+        return new AggregateError(
+          [cause, rollbackCause],
+          `Agent subgraph definition ${definition.id} failed to register and roll back`
+        )
+      }
+    }
     return cause
   }
 }

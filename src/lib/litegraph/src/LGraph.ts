@@ -1540,20 +1540,23 @@ export class LGraph
    * the same id can be registered again later.
    */
   releaseSubgraphs(subgraphs: readonly Subgraph[]): void {
-    for (const subgraph of subgraphs) {
-      const nodes: LGraphNode[] = []
-      visitGraphNodes(subgraph, (node) => nodes.push(node))
-      fireNodeRemovalLifecycles(nodes)
+    try {
+      for (const subgraph of subgraphs) {
+        const nodes: LGraphNode[] = []
+        visitGraphNodes(subgraph, (node) => nodes.push(node))
+        fireNodeRemovalLifecycles(nodes)
+      }
+    } finally {
+      for (const subgraph of subgraphs) {
+        unregisterAllLinkTopologies(subgraph)
+        unregisterAllRerouteChains(subgraph)
+        detachAllNodesFromStores(subgraph)
+        useExecutionOrderStore().clearGraph(graphScopeOf(subgraph))
+        useGraphMetadataStore().clear(this.rootGraph.id, subgraph.id)
+        this.rootGraph.subgraphs.delete(subgraph.id)
+      }
+      detachGraphLayouts(subgraphs)
     }
-    for (const subgraph of subgraphs) {
-      unregisterAllLinkTopologies(subgraph)
-      unregisterAllRerouteChains(subgraph)
-      detachAllNodesFromStores(subgraph)
-      useExecutionOrderStore().clearGraph(graphScopeOf(subgraph))
-      useGraphMetadataStore().clear(this.rootGraph.id, subgraph.id)
-      this.rootGraph.subgraphs.delete(subgraph.id)
-    }
-    detachGraphLayouts(subgraphs)
   }
 
   /**

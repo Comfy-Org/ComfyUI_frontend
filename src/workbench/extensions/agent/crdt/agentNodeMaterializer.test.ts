@@ -87,6 +87,8 @@ class ThrowsOnConfigureNode extends LGraphNode {
   override onConfigure(): void {
     if (configureShouldThrow) throw new Error('interior node rejected')
   }
+
+  override onRemoved(): void {}
 }
 
 class ThrowsOnAddedNode extends LGraphNode {
@@ -1140,6 +1142,36 @@ describe('reconcileAgentAdapters', () => {
       expect(materialized).toEqual([toNodeId(2)])
       expect(graph.getNodeById(toNodeId(2))).toBeInstanceOf(DummyNode)
       expect(graph.getNodeById(toNodeId(1))).toBeUndefined()
+    })
+
+    it('still reconciles root nodes when definition rollback lifecycle cleanup throws', () => {
+      configureShouldThrow = true
+      vi.spyOn(ThrowsOnConfigureNode.prototype, 'onRemoved').mockImplementation(
+        () => {
+          throw new Error('extension cleanup failed')
+        }
+      )
+      const definition = createTestSubgraphData({
+        nodes: [nodePayload(7, 'throws-on-configure')] as never
+      })
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id), nodePayload(2)],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+
+      expect(() =>
+        reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+      ).not.toThrow()
+      expect(graph.subgraphs.has(definition.id)).toBe(false)
+      expect(graph.getNodeById(toNodeId(2))).toBeInstanceOf(DummyNode)
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(
+        expect.any(AggregateError),
+        {
+          errorType: 'agent_subgraph_definitions_failed',
+          context: { graphId: graph.id, definitionId: definition.id }
+        }
+      )
     })
 
     it('retries a failed definition on the next reconcile and reports it once', () => {
