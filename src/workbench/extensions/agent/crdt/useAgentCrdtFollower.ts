@@ -248,6 +248,7 @@ export function useAgentCrdtFollower(
         if (!(event instanceof CustomEvent)) return
         const detail = event.detail as OpsResultView & { failed?: unknown }
         listener({
+          workflowId: detail.workflowId,
           ok: detail.ok,
           applied: detail.applied,
           skipped: detail.skipped,

@@ -312,6 +312,23 @@ describe('createOpSender', () => {
     expect(settled).toHaveLength(0)
   })
 
+  it('ignores an anonymous result for another workflow', () => {
+    sender.enqueue([addNode(1)])
+    boundWorkflow = 'wf-2'
+    sender.abortIfUnbound()
+    sender.enqueue([addNode(2)])
+
+    resultListener?.({
+      workflowId: WORKFLOW,
+      ok: false,
+      applied: [],
+      skipped: []
+    })
+
+    expect(settled).toHaveLength(1)
+    expect(sender.pending()).toBe(1)
+  })
+
   it('a late anonymous failure from an unacknowledged batch never settles the next batch', () => {
     sender.enqueue([addNode(1)])
     vi.advanceTimersByTime(10_000)

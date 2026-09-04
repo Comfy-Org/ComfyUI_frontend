@@ -25,6 +25,7 @@ const SEND_RETRY_INTERVAL_MS = 500
 const RESULT_TIMEOUT_MS = 10_000
 
 export interface OpsResultView {
+  workflowId?: string
   ok: boolean
   applied: string[]
   skipped: string[]
@@ -181,6 +182,11 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       if (staleAnonymousBudget > 0) staleAnonymousBudget--
       return
     }
+    if (
+      result.workflowId !== undefined &&
+      result.workflowId !== inFlight.workflowId
+    )
+      return
     const identified = [...result.applied, ...result.skipped]
     if (result.failure?.op_id) identified.push(result.failure.op_id)
     if (identified.length > 0) {
