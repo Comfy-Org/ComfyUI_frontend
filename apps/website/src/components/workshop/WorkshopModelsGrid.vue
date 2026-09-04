@@ -15,7 +15,7 @@ import {
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
@@ -23,6 +23,7 @@ import { groupModels } from '../../config/model-family'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type {
+  CapabilityGroup,
   LaunchGroup,
   ModalityFilter,
   SortOrder,
@@ -136,6 +137,14 @@ const rail = computed(() =>
 function selectRail(value: LaunchGroup | 'all') {
   launch.value = value
 }
+// The tabs carry the taxonomy's top layer and the filter its second, so the
+// filter only offers the groups that belong to the tab in front.
+const GROUPS_PER_TAB: Record<LaunchGroup, readonly CapabilityGroup[]> = {
+  create: ['createImages', 'createVideos'],
+  edit: ['editImages', 'editVideos', 'enhance'],
+  specialized: ['identity', 'other']
+}
+
 // Ordered by group so the filter can show where each block begins.
 const capabilityOptions = computed<FacetMenuOption[]>(() => {
   const order = CAPABILITY_GROUPS.map((group) => group.key)
@@ -145,7 +154,19 @@ const capabilityOptions = computed<FacetMenuOption[]>(() => {
       label: option.value,
       group: capabilityGroupOf(option.value)
     }))
+    .filter(
+      (option) =>
+        launch.value === 'all' ||
+        GROUPS_PER_TAB[launch.value].includes(option.group)
+    )
     .sort((a, b) => order.indexOf(a.group) - order.indexOf(b.group))
+})
+
+// A selection the tab no longer offers would keep narrowing the grid from
+// somewhere the visitor cannot see.
+watch(launch, () => {
+  const offered = new Set(capabilityOptions.value.map((option) => option.value))
+  capabilities.value = capabilities.value.filter((value) => offered.has(value))
 })
 const providerOptions = computed<FacetMenuOption[]>(() =>
   countByFacet(models, 'provider').map((option) => ({

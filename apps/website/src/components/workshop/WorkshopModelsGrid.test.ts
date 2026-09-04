@@ -92,23 +92,43 @@ describe('WorkshopModelsGrid', () => {
     expect(cardNames()).toEqual([expect.stringContaining('Flux')])
   })
 
-  it('combines the launch tabs with the capability menu', async () => {
+  it('offers only the categories that belong to the open tab', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
     await user.click(screen.getByTestId('use-case-create'))
-    expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
     expect(
       screen.getByTestId('use-case-create').getAttribute('aria-pressed')
     ).toBe('true')
 
     await user.click(screen.getByTestId('workshop-filter'))
     await user.click(await screen.findByTestId('workshop-facet-capability'))
+    expect(screen.queryByTestId('filter-capability-Upscale')).toBeNull()
+
+    await user.click(screen.getByTestId('use-case-edit'))
+    await user.click(screen.getByTestId('workshop-filter'))
+    await user.click(await screen.findByTestId('workshop-facet-capability'))
     await user.click(await screen.findByTestId('filter-capability-Upscale'))
-    expect(cardNames()).toHaveLength(0)
-    expect(screen.getByTestId('workshop-empty')).toBeTruthy()
+    expect(cardNames()).toEqual([expect.stringContaining('Flux')])
 
     await user.click(screen.getByTestId('workshop-filter-clear'))
+    expect(cardNames()).toEqual([
+      expect.stringContaining('Kling AI'),
+      expect.stringContaining('Flux')
+    ])
+  })
+
+  it('drops a category the newly opened tab does not offer', async () => {
+    const user = userEvent.setup()
+    render(WorkshopModelsGrid, { props: { models } })
+
+    await user.click(screen.getByTestId('use-case-edit'))
+    await user.click(screen.getByTestId('workshop-filter'))
+    await user.click(await screen.findByTestId('workshop-facet-capability'))
+    await user.click(await screen.findByTestId('filter-capability-Upscale'))
+    expect(cardNames()).toEqual([expect.stringContaining('Flux')])
+
+    await user.click(screen.getByTestId('use-case-create'))
     expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
   })
 
