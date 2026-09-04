@@ -5,7 +5,7 @@ import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick, onScopeDispose, ref, watch } from 'vue'
+import { defineComponent, h, nextTick } from 'vue'
 
 // jsdom does not implement ResizeObserver (happy-dom does); stub it before the
 // Vue node preview chain constructs its module-level observer at import time.
@@ -32,41 +32,9 @@ const getServerFeature = vi.hoisted(() =>
   vi.fn((_name: string, defaultValue?: unknown) => defaultValue)
 )
 const focusNodeInstance = vi.hoisted(() => vi.fn())
-const assetsStoreMock = vi.hoisted(() => ({
-  inputAssets: { loadNew: vi.fn(() => Promise.resolve()) }
-}))
 
 vi.mock('@/composables/canvas/useFocusNode', () => ({
   useFocusNode: () => ({ focusNodeInstance })
-}))
-
-vi.mock('@/stores/assetsStore', () => ({
-  useAssetsStore: () => assetsStoreMock
-}))
-
-vi.mock('@/stores/queueStore', () => ({
-  ResultItemImpl: class {
-    constructor(data: object) {
-      Object.assign(this, data)
-    }
-  }
-}))
-
-vi.mock('@/scripts/ui', () => ({
-  $el: (tag: string) => document.createElement(tag.split('.')[0])
-}))
-
-vi.mock('@/services/jobOutputCache', () => ({
-  getJobWorkflow: vi.fn()
-}))
-
-vi.mock('@/platform/remote/comfyui/jobs/fetchJobs', () => ({
-  extractWorkflow: vi.fn(),
-  fetchHistoryPage: vi.fn()
-}))
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({ get: () => undefined })
 }))
 
 const ws = vi.hoisted(() => {
@@ -139,23 +107,13 @@ const appMock = vi.hoisted(() => {
 
 vi.mock('@/scripts/app', () => ({ app: appMock }))
 
-vi.mock('@/platform/workflow/validation/schemas/workflowSchema', () => ({
-  validateComfyWorkflow: vi.fn(async (content: unknown) => content)
-}))
-
-vi.mock('@/platform/assets/schemas/mediaAssetSchema', () => ({
-  MIME_ASSET_INFO: 'application/x-comfy-asset-info',
-  parseAssetInfo: (dataTransfer: DataTransfer) => {
-    try {
-      const asset: unknown = JSON.parse(
-        dataTransfer.getData('application/x-comfy-asset-info')
-      )
-      return asset
-    } catch {
-      return undefined
-    }
-  }
-}))
+vi.mock(
+  '@/platform/workflow/validation/schemas/workflowSchema',
+  async (importOriginal) => ({
+    ...(await importOriginal<object>()),
+    validateComfyWorkflow: vi.fn(async (content: unknown) => content)
+  })
+)
 
 type FakeTab = {
   path: string
@@ -297,60 +255,16 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
 
 const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
 
-vi.mock('@vueuse/core', () => {
-  const useStoredRef = (
-    key: string,
-    defaultValue: unknown,
-    options?: {
-      serializer?: {
-        read?: (value: string) => unknown
-      }
-    }
-  ) => {
-    const storedValue = localStorage.getItem(key)
-    return ref(
-      storedValue === null
-        ? structuredClone(defaultValue)
-        : (options?.serializer?.read?.(storedValue) ?? JSON.parse(storedValue))
-    )
-  }
+vi.mock('@vueuse/core', async (importOriginal) => {
+  const { ref } = await import('vue')
   return {
-    createSharedComposable: (composable: () => unknown) => composable,
-    onKeyStroke: (key: string, callback: (event: KeyboardEvent) => void) => {
-      const listener = (event: KeyboardEvent) => {
-        if (event.key === key) callback(event)
-      }
-      window.addEventListener('keydown', listener)
-      const stop = () => window.removeEventListener('keydown', listener)
-      onScopeDispose(stop)
-      return stop
-    },
+    ...(await importOriginal<object>()),
     useClipboard: () => ({
       copy: clipboard.copy,
       copied: ref(false),
       isSupported: ref(true),
       text: ref('')
-    }),
-    useEventListener: (
-      target: EventTarget,
-      event: string,
-      listener: EventListener
-    ) => {
-      target.addEventListener(event, listener)
-      const stop = () => target.removeEventListener(event, listener)
-      onScopeDispose(stop)
-      return stop
-    },
-    useDocumentVisibility: () => ref('visible'),
-    useIntersectionObserver: () => ({ stop: () => {} }),
-    useLocalStorage: useStoredRef,
-    useStorage: useStoredRef,
-    useTimestamp: () => ref(Date.now()),
-    useWindowSize: () => ({
-      width: ref(window.innerWidth),
-      height: ref(window.innerHeight)
-    }),
-    watchDebounced: watch
+    })
   }
 })
 
