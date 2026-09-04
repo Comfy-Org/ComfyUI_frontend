@@ -1,6 +1,38 @@
 type Locale = 'en' | 'zh-CN' | 'ja'
 
 const translations = {
+  'workshop.tab.playground': {
+    en: 'Playground',
+    'zh-CN': '试用'
+  },
+  'workshop.tab.api': {
+    en: 'API',
+    'zh-CN': 'API'
+  },
+  'workshop.run.hideKey': {
+    en: 'Hide the API key field',
+    'zh-CN': '隐藏 API 密钥输入框'
+  },
+  'workshop.run.needKey': {
+    en: 'Add your API key above',
+    'zh-CN': '请在上方填写 API 密钥'
+  },
+  'workshop.run.keySave': {
+    en: 'Use key',
+    'zh-CN': '使用密钥'
+  },
+  'workshop.run.keySaved': {
+    en: 'Saved',
+    'zh-CN': '已保存'
+  },
+  'workshop.run.keyTemporary': {
+    en: 'Temporary — replaced by sign-in.',
+    'zh-CN': '临时方案，登录功能上线后移除。'
+  },
+  'workshop.run.idle': {
+    en: 'Your result will appear here.',
+    'zh-CN': '生成结果将显示在这里。'
+  },
   'workshop.run.heading': {
     en: 'Run it',
     'zh-CN': '运行'
@@ -17,6 +49,23 @@ const translations = {
     en: 'Your key is stored in this browser only and is sent straight to the Comfy API.',
     'zh-CN': '密钥仅保存在此浏览器中，并直接发送至 Comfy API。'
   },
+  'workshop.auth.cta': {
+    en: 'Sign up / Login to Render',
+    'zh-CN': '注册 / 登录后生成'
+  },
+  'workshop.auth.heading': {
+    en: 'Sign in to run this model',
+    'zh-CN': '登录后即可运行该模型'
+  },
+  'workshop.auth.body': {
+    en: 'Runs are billed to your Comfy account. Sign-in is coming to comfy.org; for now, paste an API key.',
+    'zh-CN':
+      '运行将从你的 Comfy 账户扣费。comfy.org 登录功能即将上线，目前请粘贴 API 密钥。'
+  },
+  'workshop.auth.continue': {
+    en: 'Continue',
+    'zh-CN': '继续'
+  },
   'workshop.run.button': {
     en: 'Run',
     'zh-CN': '运行'
@@ -26,8 +75,20 @@ const translations = {
     'zh-CN': '取消'
   },
   'workshop.run.running': {
-    en: 'Running. This can take a minute or two.',
-    'zh-CN': '运行中，可能需要一两分钟。'
+    en: 'Generating',
+    'zh-CN': '生成中'
+  },
+  'workshop.run.wait.video': {
+    en: 'Video models usually take one to three minutes.',
+    'zh-CN': '视频模型通常需要一到三分钟。'
+  },
+  'workshop.run.wait.slow': {
+    en: 'This can take a couple of minutes.',
+    'zh-CN': '这可能需要几分钟。'
+  },
+  'workshop.run.wait.default': {
+    en: 'Most images take under a minute.',
+    'zh-CN': '大多数图片生成不到一分钟。'
   },
   'workshop.run.noMedia': {
     en: 'The model returned no media. The full response is below.',

@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useWorkshopCredentials } from '../../config/workshop-credentials-state'
 import type { WorkshopDetailModel } from '../../config/workshop-detail'
 import WorkshopRunPanel from './WorkshopRunPanel.vue'
 
@@ -41,16 +42,30 @@ function jsonResponse(status: number, body: unknown, headers = {}) {
 
 beforeEach(() => {
   globalThis.localStorage.clear()
+  // The credential lives outside the panel now — it comes from the floating
+  // key widget, and in the shipped app it will come from a session.
+  useWorkshopCredentials().save('')
 })
 
-describe('WorkshopRunPanel', () => {
-  it('cannot run until a key is entered', async () => {
-    renderPanel()
-    const button = screen.getByRole('button', { name: 'Run' })
-    expect((button as HTMLButtonElement).disabled).toBe(true)
+function enterKey(value = 'comfyui-abc') {
+  useWorkshopCredentials().save(value)
+}
 
-    await userEvent.setup().type(screen.getByLabelText('Comfy API key'), 'k')
-    expect((button as HTMLButtonElement).disabled).toBe(false)
+const runButton = () =>
+  screen.getByRole('button', { name: /^(Run|Sign up \/ Login to Render)$/ })
+
+describe('WorkshopRunPanel', () => {
+  it('asks you to sign in before it will run anything', async () => {
+    renderPanel()
+
+    // Not disabled — a dead button tells you nothing. It offers the way in.
+    expect(runButton().textContent).toContain('Sign up / Login to Render')
+    expect((runButton() as HTMLButtonElement).disabled).toBe(false)
+
+    enterKey()
+    await waitFor(() => {
+      expect(runButton().textContent).toContain('Run')
+    })
   })
 
   it('runs the model and shows the image it returned', async () => {
@@ -62,9 +77,8 @@ describe('WorkshopRunPanel', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     renderPanel()
-    const user = userEvent.setup()
-    await user.type(screen.getByLabelText('Comfy API key'), 'comfyui-abc')
-    await user.click(screen.getByRole('button', { name: 'Run' }))
+    enterKey()
+    await userEvent.setup().click(runButton())
 
     await waitFor(() =>
       expect(screen.getByAltText('FLUX 2 Pro').getAttribute('src')).toBe(
@@ -92,9 +106,8 @@ describe('WorkshopRunPanel', () => {
     )
 
     renderPanel()
-    const user = userEvent.setup()
-    await user.type(screen.getByLabelText('Comfy API key'), 'wrong')
-    await user.click(screen.getByRole('button', { name: 'Run' }))
+    enterKey()
+    await userEvent.setup().click(runButton())
 
     const alert = await screen.findByRole('alert')
     expect(alert.textContent).toContain('That API key was not accepted.')
@@ -104,30 +117,16 @@ describe('WorkshopRunPanel', () => {
     expect(alert.textContent).toContain('r1')
   })
 
-  it('remembers the key across a reload but never puts it in the URL', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => Promise.resolve(jsonResponse(200, {})))
-    )
-
-    const { unmount } = renderPanel()
-    const user = userEvent.setup()
-    await user.type(screen.getByLabelText('Comfy API key'), 'comfyui-remember')
-    await user.click(screen.getByRole('button', { name: 'Run' }))
-    await waitFor(() =>
-      expect(
-        screen.queryByText('Running. This can take a minute or two.')
-      ).toBeNull()
-    )
-    unmount()
-
+  it('does not put a credential field in the product UI', () => {
+    // The key is scaffolding and lives in a floating widget outside the
+    // layout; in the shipped app it comes from a session. Persistence is
+    // covered in workshop-credentials.test.ts.
     renderPanel()
-    await waitFor(() =>
-      expect(
-        (screen.getByLabelText('Comfy API key') as HTMLInputElement).value
-      ).toBe('comfyui-remember')
-    )
-    expect(window.location.search).toBe('')
+
+    // The key only exists inside the closed sign-in dialog, which stands in
+    // for a session until comfy.org can start one.
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(screen.queryAllByRole('textbox')).toEqual([])
   })
 
   it('shows the response when a model returns no media', async () => {
@@ -139,9 +138,8 @@ describe('WorkshopRunPanel', () => {
     )
 
     renderPanel()
-    const user = userEvent.setup()
-    await user.type(screen.getByLabelText('Comfy API key'), 'comfyui-abc')
-    await user.click(screen.getByRole('button', { name: 'Run' }))
+    enterKey()
+    await userEvent.setup().click(runButton())
 
     expect(
       await screen.findByText(

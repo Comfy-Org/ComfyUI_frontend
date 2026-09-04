@@ -8,6 +8,8 @@ interface ViteTypeOptions {
 }
 
 interface ImportMetaEnv {
+  /** LOCAL ONLY: route runs through the vendored partner bundle. */
+  readonly PUBLIC_WORKSHOP_PARTNER_PROXY?: string
   readonly PUBLIC_POSTHOG_KEY?: string
   readonly PUBLIC_POSTHOG_API_HOST?: string
   readonly PUBLIC_POSTHOG_UI_HOST?: string
