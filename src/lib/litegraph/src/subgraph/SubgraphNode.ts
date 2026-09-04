@@ -346,8 +346,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           })
         }
 
-        delete input.pos
-        delete input.widget
+        input.pos = undefined
+        input.widget = undefined
         input.widgetId = undefined
         input._widget = undefined
         this.invalidatePromotedViews()
@@ -675,8 +675,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       deriveWidgetRenderState(interiorWidget)
     )
     if (!registered) {
-      delete input.pos
-      delete input.widget
+      input.pos = undefined
+      input.widget = undefined
       input.widgetId = undefined
       input._widget = undefined
       return

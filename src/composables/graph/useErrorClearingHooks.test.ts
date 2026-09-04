@@ -1129,6 +1129,39 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
     expect(executionErrorStore.lastPromptError?.type).toBe('missing_node_type')
   })
 
+  it('preserves same-id successor missing model errors', () => {
+    const graph = new LGraph()
+    const orphan = new LGraphNode('CheckpointLoaderSimple')
+    graph.add(orphan)
+    const successor = new LGraphNode('CheckpointLoaderSimple')
+    successor.id = orphan.id
+    graph._nodes.push(successor)
+    graph._nodes_by_id[orphan.id] = successor
+
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    installErrorClearingHooks(graph)
+
+    const modelStore = useMissingModelStore()
+    modelStore.setMissingModels([
+      fromAny<
+        Parameters<typeof modelStore.setMissingModels>[0][number],
+        unknown
+      >({
+        nodeId: String(successor.id),
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        isAssetSupported: false,
+        name: 'model.safetensors',
+        isMissing: true
+      })
+    ])
+
+    graph.remove(orphan, { preserveCanonicalState: true })
+
+    expect(graph.getNodeById(successor.id)).toBe(successor)
+    expect(modelStore.missingModelCandidates).toHaveLength(1)
+  })
+
   it('removes missing model errors when the graph is cleared', () => {
     const graph = new LGraph()
     const node = new LGraphNode('CheckpointLoaderSimple')

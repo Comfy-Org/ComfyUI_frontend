@@ -20,6 +20,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
+import { useDialogService } from '@/services/dialogService'
 import type {
   ExecutionErrorWsMessage,
   NodeError,
@@ -119,6 +120,25 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
   function runErrorKey(graphId: UUID, workflowPath?: string) {
     return `${workflowPath ?? workflowStore.activeWorkflow?.path ?? ''}:${graphId}`
+  }
+
+  function moveRunErrors(
+    graphId: UUID,
+    oldWorkflowPath: string,
+    newWorkflowPath: string
+  ) {
+    const oldKey = runErrorKey(graphId, oldWorkflowPath)
+    const newKey = runErrorKey(graphId, newWorkflowPath)
+    if (oldKey === newKey) return
+
+    const runErrors = runErrorsByWorkflow.value.get(oldKey)
+    if (runErrors) runErrorsByWorkflow.value.set(newKey, runErrors)
+    else runErrorsByWorkflow.value.delete(newKey)
+    runErrorsByWorkflow.value.delete(oldKey)
+
+    if (activeRunErrorKey.value === oldKey) {
+      activeRunErrorKey.value = newKey
+    }
   }
 
   function captureRunErrorKey() {
@@ -348,6 +368,19 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     key: string | null = activeRunErrorKey.value
   ) {
     updateRunErrors({ executionError: detail }, key)
+  }
+
+  function showExecutionError(
+    detail: ExecutionErrorWsMessage,
+    key: string | null = activeRunErrorKey.value
+  ) {
+    if (key === null || key !== activeRunErrorKey.value) return
+
+    if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
+      showErrorOverlay()
+    } else {
+      useDialogService().showExecutionErrorDialog(detail)
+    }
   }
 
   function recordPromptError(
@@ -836,6 +869,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     // Workflow scoping
     captureRunErrorKey,
     runErrorKey,
+    moveRunErrors,
     setActiveGraph,
 
     // Clearing
@@ -846,6 +880,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
     // Overlay UI
     isErrorOverlayOpen,
+    showExecutionError,
     showErrorOverlay,
     dismissErrorOverlay,
 
