@@ -62,10 +62,10 @@ describe('loadAndApply', () => {
 describe('save', () => {
   it('delays writing settings captured at call time', () => {
     const store = useMaskEditorStore()
-    store.brushSettings.size = 77
+    store.setBrushSize(300)
     const { save } = useBrushPersistence()
     save()
-    store.brushSettings.size = 10
+    store.setBrushSize(10)
 
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
     expect(vi.getTimerCount()).toBe(1)
@@ -73,7 +73,7 @@ describe('save', () => {
     vi.runOnlyPendingTimers()
 
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
-    expect(saved.size).toBe(77)
+    expect(saved.size).toBe(250)
     expect(vi.getTimerCount()).toBe(0)
   })
 })
