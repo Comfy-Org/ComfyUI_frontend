@@ -58,6 +58,15 @@ interface SemanticLayoutMutationPort {
   ): void
 }
 
+interface SemanticLiveWidgetMutationPort {
+  setValue(
+    scope: GraphScope,
+    nodeId: NodeId,
+    name: string,
+    value: WidgetValue
+  ): void
+}
+
 interface GraphMutationBatch {
   addNode(payload: SemanticNodePayload): void
   reconcileNode(payload: SemanticNodePayload): void
@@ -104,6 +113,7 @@ export interface GraphMutations {
 export interface GraphMutationsDeps {
   getScope(): GraphScope | null
   layout: SemanticLayoutMutationPort
+  liveWidgets?: SemanticLiveWidgetMutationPort
 }
 
 type QueuedMutation =
@@ -816,6 +826,12 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           } else {
             widgetStore.setValue(id, mutation.value, context)
           }
+          deps.liveWidgets?.setValue(
+            scope,
+            mutation.nodeId,
+            mutation.name,
+            mutation.value
+          )
           break
         }
         case 'connect': {
