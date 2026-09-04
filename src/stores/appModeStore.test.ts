@@ -462,22 +462,25 @@ describe('appModeStore', () => {
 
   describe('pruneLinearData', () => {
     it('returns empty selections for undefined data', () => {
-      expect(store.pruneLinearData(undefined)).toEqual({
+      expect(store.pruneLinearData(undefined, app.rootGraph)).toEqual({
         inputs: [],
         outputs: []
       })
     })
 
-    it('does not prune when rootGraph is empty', () => {
+    it('does not prune when no graph is provided', () => {
       const originalRootGraph = app.rootGraph
       Object.defineProperty(app, 'rootGraph', { value: null, writable: true })
 
       try {
         expect(
-          store.pruneLinearData({
-            inputs: [[1, 'seed']],
-            outputs: [toNodeId(1)]
-          })
+          store.pruneLinearData(
+            {
+              inputs: [[1, 'seed']],
+              outputs: [toNodeId(1)]
+            },
+            app.rootGraph
+          )
         ).toEqual({
           inputs: [[1, 'seed']],
           outputs: [toNodeId(1)]
@@ -1083,10 +1086,13 @@ describe('appModeStore', () => {
 
       expect(rootGraph.getNodeById(interior.id)).toBeUndefined()
 
-      const result = store.pruneLinearData({
-        inputs: [[interior.id, sourceWidgetName, { height: 120 }]],
-        outputs: []
-      })
+      const result = store.pruneLinearData(
+        {
+          inputs: [[interior.id, sourceWidgetName, { height: 120 }]],
+          outputs: []
+        },
+        app.rootGraph
+      )
 
       expect(result.inputs).toEqual([
         [promotedEntityId, subgraphInputName, { height: 120 }]
@@ -1124,10 +1130,13 @@ describe('appModeStore', () => {
           id == sourceNodeId ? rootNode : id == hostId ? hostNode : null
       )
 
-      const result = store.pruneLinearData({
-        inputs: [[sourceNodeId, sourceWidgetName, { height: 120 }]],
-        outputs: []
-      })
+      const result = store.pruneLinearData(
+        {
+          inputs: [[sourceNodeId, sourceWidgetName, { height: 120 }]],
+          outputs: []
+        },
+        app.rootGraph
+      )
 
       expect(result.inputs).toEqual([
         [rootEntityId, sourceWidgetName, { height: 120 }]
@@ -1140,10 +1149,13 @@ describe('appModeStore', () => {
       vi.mocked(app.rootGraph).nodes = []
       vi.mocked(app.rootGraph).getNodeById = vi.fn(() => null)
 
-      const result = store.pruneLinearData({
-        inputs: [[42, 'widget-name', { height: 42 }]],
-        outputs: []
-      })
+      const result = store.pruneLinearData(
+        {
+          inputs: [[42, 'widget-name', { height: 42 }]],
+          outputs: []
+        },
+        app.rootGraph
+      )
 
       expect(result.inputs).toEqual([])
       expect(warnSpy).toHaveBeenCalledWith(
@@ -1175,10 +1187,13 @@ describe('appModeStore', () => {
           id == hostId ? hostNode : null
       )
 
-      const result = store.pruneLinearData({
-        inputs: [[hostLocator, 'subgraph_input_name']],
-        outputs: []
-      })
+      const result = store.pruneLinearData(
+        {
+          inputs: [[hostLocator, 'subgraph_input_name']],
+          outputs: []
+        },
+        app.rootGraph
+      )
 
       expect(result.inputs).toEqual([[promotedEntityId, 'subgraph_input_name']])
       expect(warnSpy).not.toHaveBeenCalled()
