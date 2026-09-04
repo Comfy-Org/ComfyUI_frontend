@@ -1,4 +1,4 @@
-export type RemoteRequestClient = 'comfyApi'
+type RemoteRequestClient = 'comfyApi'
 
 export interface RemoteRequestDescriptor {
   client: RemoteRequestClient
@@ -10,7 +10,7 @@ export interface RemoteRequestDescriptor {
   maxRetries?: number
 }
 
-export type RemoteAuthBucket = 'apikey' | 'anon'
+type RemoteAuthBucket = 'apikey' | 'anon'
 
 export interface RemoteAuthScope {
   userId?: string | null
