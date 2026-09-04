@@ -107,3 +107,46 @@ test.describe('Contact social proof @smoke', () => {
     })
   }
 })
+
+// Below `lg` the columns stack, so the bar lands between the image and the
+// form rather than beside it; below `md` it swaps to the two-row variant.
+test.describe('Contact social proof @mobile', () => {
+  test.use({ contextOptions: { reducedMotion: 'reduce' } })
+
+  test('stacks the logo bar between the image and the form', async ({
+    page
+  }) => {
+    await page.goto('/contact')
+
+    const formSection = page.locator('section', {
+      has: page.getByRole('heading', {
+        level: 1,
+        name: t('contact.form.heading', 'en')
+      })
+    })
+
+    const bar = formSection
+      .locator('section')
+      .filter({ has: page.getByTestId('social-proof-mobile') })
+    await expect(bar).toBeVisible()
+    await expect(page.getByTestId('social-proof-desktop')).toBeHidden()
+
+    const image = formSection.locator('img').first()
+    const formColumn = formSection.locator('> div').nth(1)
+
+    await expect
+      .poll(async () => {
+        const [imageBox, barBox, formBox] = await Promise.all([
+          image.boundingBox(),
+          bar.boundingBox(),
+          formColumn.boundingBox()
+        ])
+        if (!imageBox || !barBox || !formBox) return null
+        return {
+          belowImage: barBox.y >= imageBox.y + imageBox.height,
+          aboveForm: barBox.y + barBox.height <= formBox.y
+        }
+      })
+      .toEqual({ belowImage: true, aboveForm: true })
+  })
+})
