@@ -54,8 +54,13 @@ vi.mock('@/stores/authStore', () => ({
 }))
 
 vi.mock('@/config/comfyApi', () => ({
-  getComfyCloudBaseUrl: () => 'https://cloud.comfy.test'
+  getComfyApiBaseUrl: () => 'https://api.comfy.test'
 }))
+
+vi.mock('@/platform/distribution/types', () => ({ isCloud: false }))
+
+const fetchApi = vi.hoisted(() => vi.fn())
+vi.mock('@/scripts/api', () => ({ api: { fetchApi } }))
 
 const fetchWithUnifiedRemint = vi.hoisted(() => vi.fn())
 vi.mock('@/platform/auth/unified/remintRetry', () => ({
@@ -114,6 +119,7 @@ describe('useAgentConsent', () => {
     accountAuthState.getUserAuthHeader.mockResolvedValue({
       Authorization: 'Bearer account-a-token'
     })
+    fetchApi.mockReset()
     fetchWithUnifiedRemint.mockReset()
     fetchWithUnifiedRemint.mockResolvedValue(settingResponse(false))
     showSignInDialog.mockReset()
@@ -196,7 +202,7 @@ describe('useAgentConsent', () => {
 
     await vi.waitFor(() => {
       expect(fetchWithUnifiedRemint).toHaveBeenLastCalledWith(
-        'https://cloud.comfy.test/api/settings/Comfy.AgentPanel.ConsentAccepted',
+        'https://api.comfy.test/api/settings/Comfy.AgentPanel.ConsentAccepted',
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
@@ -270,7 +276,7 @@ describe('useAgentConsent', () => {
     expect(settingState.set).not.toHaveBeenCalled()
     expect(fetchWithUnifiedRemint).toHaveBeenCalledOnce()
     expect(fetchWithUnifiedRemint).toHaveBeenCalledWith(
-      'https://cloud.comfy.test/api/settings/Comfy.AgentPanel.ConsentAccepted',
+      'https://api.comfy.test/api/settings/Comfy.AgentPanel.ConsentAccepted',
       expect.objectContaining({ method: 'POST', body: 'true' }),
       false
     )
