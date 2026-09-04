@@ -72,15 +72,38 @@ test.describe('Contact social proof @smoke', () => {
         })
       })
 
-      const bar = formSection.getByTestId('social-proof-desktop')
+      // The testid sits on the w-max marquee row, so measure its section.
+      const bar = formSection
+        .locator('section')
+        .filter({ has: page.getByTestId('social-proof-desktop') })
       await expect(bar).toHaveCount(1)
       await expect(page.getByTestId('social-proof-desktop')).toHaveCount(1)
 
-      const imageBox = await formSection.locator('img').first().boundingBox()
-      const barBox = await bar.boundingBox()
-      expect(barBox?.y).toBeGreaterThanOrEqual(
-        (imageBox?.y ?? 0) + (imageBox?.height ?? 0)
-      )
+      const image = formSection.locator('img').first()
+      const columns = formSection.locator('> div')
+
+      await expect
+        .poll(async () => {
+          const [imageBox, barBox, leftBox, rightBox] = await Promise.all([
+            image.boundingBox(),
+            bar.boundingBox(),
+            columns.nth(0).boundingBox(),
+            columns.nth(1).boundingBox()
+          ])
+          if (!imageBox || !barBox || !leftBox || !rightBox) return null
+          return {
+            barBelowImage: barBox.y >= imageBox.y + imageBox.height,
+            barTracksImage:
+              Math.abs(barBox.x - imageBox.x) < 1 &&
+              Math.abs(barBox.width - imageBox.width) < 1,
+            evenColumns: Math.abs(leftBox.width - rightBox.width) < 1
+          }
+        })
+        .toEqual({
+          barBelowImage: true,
+          barTracksImage: true,
+          evenColumns: true
+        })
     })
   }
 })
