@@ -34,11 +34,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      # pull_request_target keeps this checkout on trusted base-branch code.
+      # Never execute code from the pull request or its selected base branch.
       - name: Checkout policy
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.pull_request.base.sha || github.sha }}
+          ref: ${{ github.event.repository.default_branch }}
           persist-credentials: false
 
       - name: Setup Node.js
