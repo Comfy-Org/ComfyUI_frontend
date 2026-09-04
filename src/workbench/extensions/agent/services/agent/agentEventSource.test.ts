@@ -72,6 +72,7 @@ describe('createAgentEventSource', () => {
     const status = vi.fn()
 
     createAgentEventSource(host).onStatus?.(status)
+    expect(status).toHaveBeenCalledOnce()
     expect(status).toHaveBeenLastCalledWith(false)
 
     emit('reconnecting')

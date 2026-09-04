@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/comfyui-frontend",
-  "version": "1.54.1",
+  "version": "1.54.3",
   "private": true,
   "description": "Official front-end implementation of ComfyUI",
   "homepage": "https://comfy.org",
@@ -9,6 +9,7 @@
   "type": "module",
   "scripts": {
     "build:cloud": "cross-env DISTRIBUTION=cloud vite build --config vite.config.mts",
+    "build:desktop-dist": "cross-env DISTRIBUTION=desktop vite build --config vite.config.mts",
     "build-storybook": "storybook build",
     "build:types": "vite build --config vite.types.config.mts && node scripts/prepare-types.js",
     "build:analyze": "cross-env ANALYZE_BUNDLE=true pnpm build",
@@ -70,6 +71,7 @@
     "test:unit": "vitest run",
     "typecheck": "vue-tsc --noEmit",
     "typecheck:browser": "vue-tsc --project browser_tests/tsconfig.json",
+    "typecheck:build": "vue-tsc --project build/tsconfig.json",
     "typecheck:scripts": "vue-tsc --project scripts/tsconfig.json",
     "typecheck:tools": "vue-tsc --project tools/tsconfig.json",
     "typecheck:website": "pnpm --filter @comfyorg/website run typecheck",

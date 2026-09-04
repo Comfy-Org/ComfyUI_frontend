@@ -10,6 +10,7 @@ import type { AgentEventSource } from '../../services/agent/agentEventSource'
 import { AgentApiError } from '../../services/agent/agentRestClient'
 import type {
   AgentRestClient,
+  DraftSnapshot,
   OpenTabsSnapshot
 } from '../../services/agent/agentRestClient'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
@@ -49,6 +50,7 @@ export interface AgentSessionDeps {
     prepare?(): Promise<void>
     tabs?(): OpenTabsSnapshot | undefined
     activeTab?(data: AgentActiveTabData): void
+    draft?(): DraftSnapshot | undefined
   }
 }
 
@@ -94,6 +96,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
   let ownedGeneration = 0
   let loadGeneration = 0
   let started = false
+  // The status source reports its current state synchronously on subscribe
+  // (see agentEventSource.onStatus), so the first callback is a snapshot,
+  // not a transition. Track whether we've ever observed a live connection so
+  // an initial `false` (still connecting, not yet dropped) doesn't abort a
+  // turn that survived a remount.
+  let everLive = false
 
   const currentUser = useCurrentUser()
   const workspaceStore = useTeamWorkspaceStore()
@@ -157,6 +165,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function start(): void {
     started = true
     ownedGeneration = ++sessionGeneration
+    everLive = false
     // The binding only outlives a remount together with its thread: a page
     // with no surviving thread has no resumed turn the binding could serve.
     if (conversationStore.threadId === null && storageGet() === null) {
@@ -257,6 +266,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const initiatingGeneration = loadGeneration
     const initiatingOwner = ownedGeneration
     async function postTurn(threadId: string) {
+      const draft = workflow?.draft?.()
+      const shouldSendDraft =
+        draft !== undefined && (threadId === 'new' || wfContext !== undefined)
       const input = {
         content: text,
         tabs,
@@ -264,7 +276,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
           tags !== undefined && tags.length > 0
             ? { node_ids: tags.map((tag) => tag.id) }
             : undefined,
-        attachments: attachments?.map((attachment) => attachment.ref)
+        attachments: attachments?.map((attachment) => attachment.ref),
+        ...(shouldSendDraft ? { draft } : {})
       }
       return rest.postMessage(
         threadId,
@@ -472,7 +485,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function onStatus(live: boolean): void {
     if (ownedGeneration !== sessionGeneration) return
-    if (live) return
+    if (live) {
+      everLive = true
+      return
+    }
+    // Only a real live->down transition means a turn's stream was actually
+    // interrupted. An initial `false` (socket not open yet) is not a
+    // reconnect and must not abort a turn that survived a remount.
+    if (!everLive) return
     conversationStore.abortActiveTurn()
     conversationStore.dropBackgroundTurns()
   }

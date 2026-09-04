@@ -5,6 +5,10 @@
     "feedbackTooltip": "Feedback",
     "freeTierPartner": "I nodi partner richiedono un piano a pagamento",
     "freeTierRuns": "{available} / {MAX_AVAILABLE} esecuzioni rimaste",
+    "partnerRunGate": {
+      "signInCaption": "I nodi partner richiedono un account",
+      "signInToRun": "Accedi per eseguire"
+    },
     "share": "Condividi",
     "shareTooltip": "Condividi workflow"
   },
@@ -34,10 +38,6 @@
     "copy": "Copia",
     "copyMarkdown": "Copia come markdown",
     "copyUnavailable": "In questa versione è possibile copiare solo la conversazione corrente",
-    "crdtConnected": "connesso",
-    "crdtDisconnected": "disconnesso",
-    "crdtNoDocument": "nessun documento",
-    "crdtStatus": "CRDT {connection} · {workflowId} · {updates} aggiornamenti · {frame}",
     "credits": "crediti",
     "delete": "Elimina",
     "dismiss": "Ignora",
@@ -86,6 +86,7 @@
     "runModeAutoDescription": "Comfy eseguirà i flussi di lavoro senza chiedere l'autorizzazione",
     "runModeLimit": "Esecuzione automatica con limiti",
     "runModeLimitDescription": "Comfy chiederà conferma solo quando l'esecuzione di un flusso di lavoro supera il tuo limite di crediti",
+    "runModeSaveFailed": "Impossibile salvare le autorizzazioni di esecuzione. Riprova.",
     "runModeTriggerAsk": "Chiedi",
     "runModeTriggerAskTooltip": "Chiedi l'autorizzazione",
     "runModeTriggerAuto": "Automatico",
@@ -115,6 +116,7 @@
       "Crea un flusso di lavoro da immagine a video con 3 modelli"
     ],
     "switchWorkflow": "Cambia flusso di lavoro",
+    "targetNavigationUnavailable": "Questa destinazione del workflow non è più disponibile.",
     "thinking": "Elaborazione in corso...",
     "thought": "Ragionamento",
     "thoughtTimed": "Ragionamento per {seconds} secondi",
@@ -127,8 +129,12 @@
     "uploading": "Caricamento in corso"
   },
   "apiNodesSignInDialog": {
-    "message": "Questo workflow contiene nodi API, che richiedono l'accesso al tuo account per poter essere eseguiti.",
-    "title": "Accesso richiesto per utilizzare i nodi API"
+    "message": "I nodi partner vengono eseguiti su servizi di terze parti e usano i crediti del tuo account. Accedi per collegare il tuo account.",
+    "partnerNodesInWorkflow": "Nodi partner in questo workflow",
+    "signIn": "Accedi",
+    "title": "Accedi per eseguire i nodi partner",
+    "tooltip": "I nodi partner vengono eseguiti su servizi di terze parti. Usano crediti, l'unica parte a pagamento di Comfy.",
+    "whatArePartnerNodes": "Cosa sono i nodi partner?"
   },
   "appBuilder": {
     "vueNodeSwitch": {
@@ -1072,6 +1078,7 @@
     "RECRAFT_COLOR": "COLORE RECRAFT",
     "RECRAFT_CONTROLS": "CONTROLLI RECRAFT",
     "RECRAFT_V3_STYLE": "STILE RECRAFT V3",
+    "RESOLUTION_PREVIEW": "RESOLUTION_PREVIEW",
     "RETARGET_TASK_ID": "ID TASK RETARGET",
     "RIG_TASK_ID": "ID TASK RIG",
     "RUNWAY_ALEPH2_KEYFRAME": "KEYFRAME RUNWAY ALEPH2",
@@ -2806,14 +2813,18 @@
       "seeMoreOutputs": "Vedi altri output",
       "zoom": "Ingrandisci"
     },
-    "assetDeletedSuccessfully": "Risorsa eliminata con successo",
-    "deleteAssetDescription": "Questa risorsa verrà rimossa in modo permanente.",
-    "deleteAssetTitle": "Eliminare questa risorsa?",
-    "deleteSelectedDescription": "{count} risorsa(e) verranno rimosse in modo permanente.",
-    "deleteSelectedTitle": "Eliminare le risorse selezionate?",
+    "assetDelete": {
+      "error": "Eliminazione di alcuni elementi non riuscita",
+      "success": "Eliminazione riuscita",
+      "warn": "Eliminazione di alcuni elementi non riuscita"
+    },
+    "assetsDeleted": "Sono state eliminate {n} / {total} risorse",
+    "deleteHistoryOnly": "Sarà interessata solo la cronologia; i file rimarranno sul disco",
+    "deleteItems": "Elimina questi elementi",
+    "deletePermanent": "Saranno rimossi definitivamente.",
     "deletingImportedFilesCloudOnly": "L'eliminazione dei file importati è supportata solo nella versione cloud",
+    "deletionUnsupported": "Le risorse sono abilitate, ma il server non supporta l'eliminazione",
     "failedToCreateNode": "Impossibile creare il nodo",
-    "failedToDeleteAsset": "Impossibile eliminare la risorsa",
     "failedToExportWorkflow": "Impossibile esportare il workflow",
     "jobIdToast": {
       "copied": "Copiato",
@@ -2821,12 +2832,12 @@
       "jobIdCopied": "ID lavoro copiato negli appunti",
       "jobIdCopyFailed": "Copia dell'ID lavoro non riuscita"
     },
+    "jobsDeleted": "Sono stati eliminati {n} / {total} processi",
     "noJobIdFound": "Nessun ID lavoro trovato per questa risorsa",
     "noWorkflowDataFound": "Nessun dato workflow trovato in questa risorsa",
     "nodeAddedToWorkflow": "Nodo {nodeType} aggiunto al workflow",
     "nodeTypeNotFound": "Tipo di nodo {nodeType} non trovato",
     "selection": {
-      "assetsDeletedSuccessfully": "{count} risorsa eliminata con successo | {count} risorse eliminate con successo",
       "deleteSelected": "Elimina",
       "deleteSelectedAll": "Elimina tutto",
       "deselectAll": "Deseleziona tutto",
@@ -2837,7 +2848,6 @@
       "exportStarted": "Preparazione dell'esportazione ZIP per {count} file | Preparazione dell'esportazione ZIP per {count} file",
       "exportWorkflowAll": "Esporta tutti i workflow",
       "failedToAddNodes": "Impossibile aggiungere i nodi al workflow",
-      "failedToDeleteAssets": "Impossibile eliminare le risorse selezionate",
       "insertAllAssetsAsNodes": "Inserisci tutte le risorse come nodi",
       "multipleSelectedAssets": "Risorse multiple selezionate",
       "noWorkflowsFound": "Nessun dato workflow trovato nelle risorse selezionate",
@@ -2845,7 +2855,6 @@
       "nodesAddedToWorkflow": "{count} nodo(i) aggiunto(i) al workflow",
       "openWorkflowAll": "Apri tutti i workflow",
       "partialAddNodesSuccess": "{succeeded} aggiunti con successo, {failed} non riusciti",
-      "partialDeleteSuccess": "{succeeded} eliminate con successo, {failed} non riuscite",
       "partialWorkflowsExported": "{succeeded} esportato(i) con successo, {failed} non riusciti",
       "partialWorkflowsOpened": "{succeeded} workflow aperto(i), {failed} non riusciti",
       "selectedCount": "{count} selezionato",
@@ -3461,6 +3470,28 @@
     "addColor": "Aggiungi un colore",
     "swatchTitle": "Clicca per modificare · trascina per riordinare · clic destro per rimuovere"
   },
+  "partnerNodesEducation": {
+    "benefits": {
+      "free": "Esecuzione gratuita",
+      "noDownload": "Nessuna configurazione richiesta",
+      "noVram": "Nessuna VRAM, la tua GPU rimane libera",
+      "offline": "Funziona offline"
+    },
+    "included": "Incluso",
+    "muteOpen": "Disattiva audio clip a pesi aperti",
+    "mutePartner": "Disattiva audio clip del nodo partner",
+    "notIncluded": "Non incluso",
+    "openHeader": "APERTO",
+    "openTab": "Nodi aperti",
+    "partnerHeader": "PARTNER",
+    "partnerTab": "Nodi partner",
+    "pitch": "Vedi la differenza? Trascina per confrontare.",
+    "reassurance": "I nodi partner sono disponibili quando vuoi di più. Il resto di Comfy rimane gratuito.",
+    "sliderLabel": "Confronta l'output a pesi aperti e del nodo partner",
+    "tooltip": "I nodi partner eseguono modelli closed-source come Kling o Veo sull'hardware del fornitore, tramite Comfy. Usano crediti; il resto di Comfy rimane gratuito.",
+    "unmuteOpen": "Attiva audio clip a pesi aperti",
+    "unmutePartner": "Attiva audio clip del nodo partner"
+  },
   "progressToast": {
     "allDownloadsCompleted": "Tutti i download completati",
     "downloadingModel": "Download modello...",
@@ -3518,7 +3549,6 @@
       "copyErrorMessage": "Copia messaggio di errore",
       "copyJobId": "Copia ID lavoro",
       "delete": "Elimina",
-      "deleteAsset": "Elimina asset",
       "download": "Scarica",
       "exportWorkflow": "Esporta workflow",
       "inspectAsset": "Ispeziona asset",
@@ -4336,7 +4366,6 @@
     "inactiveTeamTitle": "Abbonamento team inattivo",
     "inviteUpTo": "Invita fino a",
     "invoiceHistory": "Storico fatture",
-    "learnMore": "Scopri di più",
     "manageBilling": "Gestisci fatturazione",
     "managePlan": "Gestisci piano",
     "manageSubscription": "Gestisci abbonamento",
@@ -4464,6 +4493,7 @@
       },
       "refillReplacesNote": "Sostituisce la tua ricarica mensile. Il saldo esistente viene mantenuto.",
       "renewsAt": "Si rinnova a {amount} il {date}. Annulla in qualsiasi momento.",
+      "renewsAtAmount": "Rinnova a {amount}. Annulla in qualsiasi momento.",
       "savedPaymentMethod": "Metodo di pagamento",
       "showMoreFeatures": "Mostra più funzionalità",
       "starting": "Inizio {date}",
@@ -4603,7 +4633,6 @@
     "videoTemplateBasedCredits": "Video generati con Wan 2.2 Image to Video",
     "viewEnterprise": "Vedi enterprise",
     "viewMoreDetails": "Visualizza altri dettagli",
-    "viewMoreDetailsPlans": "Visualizza altri dettagli su piani e prezzi",
     "viewUsageHistory": "Visualizza cronologia utilizzo",
     "whatsIncluded": "Cosa è incluso:",
     "workspaceNotSubscribed": "Questo workspace non ha un abbonamento attivo",

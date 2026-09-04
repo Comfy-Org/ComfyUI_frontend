@@ -1,15 +1,16 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+import type { Ref } from 'vue'
 
 const mocks = vi.hoisted(() => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { ref } = require('vue')
+  const resolvedUserInfo: Ref<{ id: string } | null> = ref({ id: 'user-1' })
+  const activeWorkspaceId: Ref<string | null> = ref('workspace-1')
   return {
-    currentUser: {
-      resolvedUserInfo: ref({ id: 'user-1' } as { id: string } | null)
-    },
-    workspace: { activeWorkspaceId: ref('workspace-1' as string | null) }
+    currentUser: { resolvedUserInfo },
+    workspace: { activeWorkspaceId }
   }
 })
 

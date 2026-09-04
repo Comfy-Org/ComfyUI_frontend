@@ -12832,7 +12832,8 @@
     "display_name": "MiniMax H3 참조 → 비디오",
     "inputs": {
       "audio_vae": {
-        "name": "audio_vae"
+        "name": "audio_vae",
+        "tooltip": "오디오 vae입니다. 이것이 없으면 참조 오디오는 텍스트 인코더만 조건화합니다."
       },
       "clip": {
         "name": "clip"
@@ -12864,7 +12865,8 @@
         "name": "ref_videos"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "비디오 vae입니다. 이것이 없으면 참조 이미지/비디오는 텍스트 인코더만 조건화합니다."
       },
       "width": {
         "name": "width"
@@ -12973,7 +12975,7 @@
     }
   },
   "MinimaxHailuo03FirstLastFrameNode": {
-    "description": "MiniMax H3 모델을 사용하여 첫 프레임 이미지와 선택적 마지막 프레임 이미지로부터 영상을 생성합니다. 영상의 종횡비는 제공된 이미지를 따릅니다.",
+    "description": "MiniMax H3 모델을 사용하여 첫 프레임 이미지와 선택적 마지막 프레임 이미지로 비디오를 생성합니다. 비디오의 종횡비는 제공된 이미지를 따릅니다.",
     "display_name": "MiniMax H3 첫-마지막 프레임 영상 생성",
     "inputs": {
       "control_after_generate": {
@@ -13016,7 +13018,7 @@
     }
   },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "MiniMax H3 모델을 사용하여 참조 이미지, 비디오, 오디오를 기반으로 비디오를 생성합니다. 프롬프트에서 참조는 순서대로 지정하세요: 'Image 1', 'Image 2', 'Video 1', 'Audio 1' 등.",
+    "description": "MiniMax H3 모델을 사용하여 참조 이미지, 비디오 및 오디오를 조건으로 비디오를 생성합니다. 프롬프트에서 참조 항목을 순서대로 '이미지 1', '이미지 2', '비디오 1', '오디오 1' 등으로 지칭하세요.",
     "display_name": "MiniMax H3 참조 기반 비디오",
     "inputs": {
       "control_after_generate": {
@@ -13091,7 +13093,7 @@
     }
   },
   "MinimaxHailuo03TextToVideoNode": {
-    "description": "MiniMax H3 모델을 사용하여 텍스트 프롬프트로부터 비디오를 생성합니다.",
+    "description": "MiniMax H3 모델을 사용하여 텍스트 프롬프트에서 비디오를 생성합니다.",
     "display_name": "MiniMax H3 텍스트 기반 비디오",
     "inputs": {
       "control_after_generate": {
@@ -16972,7 +16974,7 @@
   },
   "Preview3D": {
     "description": "3D 모델 파일을 ComfyUI 출력 디렉토리에 저장하지 않고 미리보기합니다.",
-    "display_name": "3D 미리보기",
+    "display_name": "3D 및 애니메이션 미리보기 (DEPRECATED)",
     "inputs": {
       "bg_image": {
         "name": "bg_image"
@@ -17985,7 +17987,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "스타일이 생성될 출력 유형입니다: 래스터 이미지에는 recraftv4_styles, SVG에는 recraftv4_styles_vector."
+        "tooltip": "스타일을 생성할 모델입니다. Standard 및 Pro는 하나의 스타일 풀을 공유합니다. 래스터 스타일은 모든 Recraft V4 및 V4.1 래스터 모델에서, 벡터 스타일(*_vector)은 모든 V4 및 V4.1 벡터 모델에서 작동합니다."
       }
     },
     "outputs": {
@@ -18681,6 +18683,10 @@
       "multiple": {
         "name": "배수",
         "tooltip": "선택한 해상도를 설정할 때 결과의 가장 가까운 배수입니다."
+      },
+      "preview": {
+        "name": "미리보기",
+        "tooltip": "계산된 출력 해상도의 실시간 미리보기입니다."
       }
     },
     "outputs": {
