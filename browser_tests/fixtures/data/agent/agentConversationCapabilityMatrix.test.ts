@@ -62,7 +62,8 @@ describe('agentConversationCapabilityMatrix', () => {
       'agent_ask',
       'agent_ask_resolved',
       'reset_doc',
-      'subgraph_operations'
+      'promoted_subgraph_widget',
+      'subgraph_internals'
     ])
     expect(
       agentConversationCapabilityMatrix.filter(
@@ -88,12 +89,28 @@ describe('agentConversationCapabilityMatrix', () => {
         capability: 'reset_doc',
         status: 'blocked',
         reason: 'deferred-by-op-vocabulary'
-      },
+      }
+    ])
+    expect(
+      agentConversationCapabilityMatrix.filter(
+        (row) => row.status === 'recordable'
+      )
+    ).toEqual([
       {
-        capability: 'subgraph_operations',
-        status: 'blocked',
-        scope: 'structural node and link operations',
-        reason: 'no-wire-operation-exists'
+        capability: 'promoted_subgraph_widget',
+        status: 'recordable',
+        reason: 'recording-not-yet-captured'
+      }
+    ])
+    expect(
+      agentConversationCapabilityMatrix.filter(
+        (row) => row.status === 'out_of_scope'
+      )
+    ).toEqual([
+      {
+        capability: 'subgraph_internals',
+        status: 'out_of_scope',
+        reason: 'decided 2026-09-04: internals are not part of the suite.'
       }
     ])
   })

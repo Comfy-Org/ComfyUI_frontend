@@ -24,8 +24,18 @@ type AgentConversationCapability =
     }
   | {
       capability: string
+      status: 'recordable'
+      reason: string
+    }
+  | {
+      capability: string
       status: 'blocked'
       scope?: string
+      reason: string
+    }
+  | {
+      capability: string
+      status: 'out_of_scope'
       reason: string
     }
 
@@ -179,9 +189,13 @@ export const agentConversationCapabilityMatrix: readonly AgentConversationCapabi
       reason: 'deferred-by-op-vocabulary'
     },
     {
-      capability: 'subgraph_operations',
-      status: 'blocked',
-      scope: 'structural node and link operations',
-      reason: 'no-wire-operation-exists'
+      capability: 'promoted_subgraph_widget',
+      status: 'recordable',
+      reason: 'recording-not-yet-captured'
+    },
+    {
+      capability: 'subgraph_internals',
+      status: 'out_of_scope',
+      reason: 'decided 2026-09-04: internals are not part of the suite.'
     }
   ]
