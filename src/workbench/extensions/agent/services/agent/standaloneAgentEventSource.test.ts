@@ -166,4 +166,16 @@ describe('createStandaloneAgentEventSource', () => {
 
     expect(sockets).toHaveLength(1)
   })
+
+  it('reports disconnected to status-only listeners on unsubscribe', () => {
+    const { source, sockets } = sourceHarness()
+    const status = vi.fn()
+    const unsubscribe = source.subscribe(vi.fn())
+    source.onStatus?.(status)
+    sockets[0].open()
+
+    unsubscribe()
+
+    expect(status.mock.calls.map(([live]) => live)).toEqual([true, false])
+  })
 })

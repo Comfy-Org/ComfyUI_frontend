@@ -48,16 +48,11 @@ test.describe('Agent harness smoke', { tag: '@agent-harness' }, () => {
     // button under the harness and intercepts pointer clicks on it.
     await composer.press('Enter')
 
-    // The turn has started once assistant text renders (the Stop affordance
-    // is transient and a fast model turn can finish before it is observed);
-    // it has finished when Stop is gone again. A real model turn can be slow,
-    // so the completion window is generous.
     const assistantText = panel.getByTestId('markdown-stream').last()
     await expect(assistantText).toBeVisible({ timeout: 30_000 })
-    const stopButton = panel.getByRole('button', {
-      name: enMessages.agent.stop
-    })
-    await expect(stopButton).toBeHidden({ timeout: 150_000 })
+    await expect(
+      panel.getByRole('button', { name: enMessages.agent.helpful }).last()
+    ).toBeVisible({ timeout: 150_000 })
     await expect(assistantText).not.toHaveText('')
 
     await expect(panel.getByRole('alert')).toHaveCount(0)

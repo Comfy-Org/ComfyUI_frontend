@@ -7,7 +7,12 @@ import { resolve } from 'node:path'
 import type { Options } from './dev-agent-options'
 import { PROJECT_ROOT, USAGE, parseOptions } from './dev-agent-options'
 import { runRecord } from './dev-agent-record-mode'
-import { assertReachable, supervise, waitForHttp } from './dev-agent-supervisor'
+import {
+  assertPortAvailable,
+  assertReachable,
+  supervise,
+  waitForHttp
+} from './dev-agent-supervisor'
 
 async function assertWorkspacePackage(): Promise<void> {
   const manifest = JSON.parse(
@@ -65,6 +70,7 @@ async function run(options: Options): Promise<number> {
   if (!process.env.ANTHROPIC_API_KEY && !process.env.ANTHROPIC_BASE_URL) {
     throw new Error('Set ANTHROPIC_API_KEY or ANTHROPIC_BASE_URL')
   }
+  await assertPortAvailable(options.agentPort)
 
   const dataDir = await mkdtemp(resolve(tmpdir(), 'comfy-agent-integration-'))
   const token = randomBytes(32).toString('hex')
@@ -110,7 +116,15 @@ async function run(options: Options): Promise<number> {
         VITE_AGENT_STANDALONE: 'true'
       }
     )
-    await waitForHttp(frontend, frontendUrl, supervisor.requested, 'Vite')
+    const frontendStartupResult = await Promise.race([
+      waitForHttp(frontend, frontendUrl, supervisor.requested, 'Vite').then(
+        () => null
+      ),
+      supervisor.exitRequested
+    ])
+    if (frontendStartupResult !== null) {
+      return await supervisor.stop(frontendStartupResult)
+    }
     process.stdout.write(
       `\nAgent integration environment ready: ${frontendUrl}\n` +
         `Playwright: PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=${frontendUrl} pnpm exec playwright test browser_tests/tests/agent\n` +

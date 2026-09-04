@@ -8,6 +8,7 @@ import { promisify } from 'node:util'
 
 import type { Options } from './dev-agent-options'
 import {
+  assertPortAvailable,
   assertReachable,
   supervise,
   wait,
@@ -116,8 +117,17 @@ async function redisExecCommand(): Promise<string> {
 }
 
 // Every value is a module constant, so the statement carries no caller input.
+export function parseExecCommand(command: string): string[] {
+  const parts = command.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g)?.map((part) => {
+    const quoted = part.match(/^(?:"([^"]*)"|'([^']*)')$/)
+    return quoted ? (quoted[1] ?? quoted[2] ?? '') : part
+  })
+  if (!parts?.length) throw new Error('--pg-exec must contain a command')
+  return parts
+}
+
 async function seedIdentity(command: string): Promise<void> {
-  const parts = command.split(' ').filter(Boolean)
+  const parts = parseExecCommand(command)
   const sql = [
     `insert into users (id, create_time, update_time, email, name) values ('${RECORD_USER_ID}', now(), now(), 'recorder@local', 'recorder') on conflict (id) do nothing;`,
     `insert into workspaces (id, create_time, update_time, name, created_by_user_id) values ('${RECORD_WORKSPACE_ID}', now(), now(), 'recorder', '${RECORD_USER_ID}') on conflict (id) do nothing;`,
@@ -142,13 +152,24 @@ async function writeCatalog(fixture: string, dataDir: string): Promise<string> {
 }
 
 function recordEnv(options: Options, catalogPath: string, secret: string) {
+  const env = { ...process.env }
+  for (const key of [
+    'AGENT_DATA_DIR',
+    'AGENT_RUNNER_ENDPOINT',
+    'AGENT_SESSION_TOKEN',
+    'PORT'
+  ]) {
+    delete env[key]
+  }
   return {
-    ...process.env,
+    ...env,
+    AGENT_BIND_ADDR: '127.0.0.1',
     AGENT_COMFY_URL: options.comfyUrl,
     AGENT_CRDT_MODE: 'on',
     AGENT_ENGINE: options.engine,
     AGENT_M2M_SECRET: secret,
     AGENT_PORT: String(options.agentPort),
+    AGENT_STANDALONE: 'false',
     // Without this the non-standalone default is cloud, and comfy-cli edits 401 against cloud.comfy.org.
     AGENT_TARGET: 'local',
     AGENT_WIDGET_CATALOG_PATH: catalogPath,
@@ -177,6 +198,7 @@ export async function runRecord(options: Options): Promise<number> {
   if (!process.env.ANTHROPIC_API_KEY && !process.env.ANTHROPIC_BASE_URL) {
     throw new Error('Set ANTHROPIC_API_KEY or ANTHROPIC_BASE_URL')
   }
+  await assertPortAvailable(options.agentPort)
 
   const dataDir = await mkdtemp(resolve(tmpdir(), 'comfy-agent-record-'))
   const secretPath = resolve(dataDir, 'm2m.secret')

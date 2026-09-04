@@ -1,10 +1,28 @@
 import { spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { rm } from 'node:fs/promises'
+import { createServer } from 'node:net'
 
 export async function assertReachable(url: string): Promise<void> {
   const response = await fetch(url, { signal: AbortSignal.timeout(5000) })
   if (!response.ok) throw new Error(`${url} returned HTTP ${response.status}`)
+}
+
+export async function assertPortAvailable(port: number): Promise<void> {
+  const server = createServer()
+  await new Promise<void>((resolveListen, rejectListen) => {
+    server.once('error', rejectListen)
+    server.listen(port, '127.0.0.1', resolveListen)
+  }).catch((error: unknown) => {
+    server.close()
+    throw new Error(
+      `Agent port ${port} is already in use; stop the existing process before starting the harness`,
+      { cause: error }
+    )
+  })
+  await new Promise<void>((resolveClose, rejectClose) =>
+    server.close((error) => (error ? rejectClose(error) : resolveClose()))
+  )
 }
 
 function spawnGroup(
@@ -68,7 +86,7 @@ export async function waitForHttp(
       await wait(500)
     }
   }
-  if (stopped()) return
+  if (stopped()) throw new Error(`${label} stopped before becoming ready`)
   throw new Error(`${label} did not become ready at ${url}`)
 }
 
@@ -76,6 +94,7 @@ export async function waitForHttp(
 export function supervise(dataDir: string) {
   const children: ChildProcess[] = []
   let stopping = false
+  let stopPromise: Promise<void> | null = null
   let requestedExitCode: number | null = null
   let resolveExitRequest: (code: number) => void = () => {}
   const exitRequested = new Promise<number>((resolveExit) => {
@@ -86,14 +105,48 @@ export function supervise(dataDir: string) {
     requestedExitCode = code
     resolveExitRequest(code)
   }
-  const onSigint = () => requestExit(130)
-  const onSigterm = () => requestExit(143)
-  process.once('SIGINT', onSigint)
-  process.once('SIGTERM', onSigterm)
+  const onSignal = (code: number) => {
+    if (requestedExitCode === null) requestExit(code)
+    else void stop(code, true)
+  }
+  const onSigint = () => onSignal(130)
+  const onSigterm = () => onSignal(143)
+  const onSighup = () => onSignal(129)
+  process.on('SIGINT', onSigint)
+  process.on('SIGTERM', onSigterm)
+  process.on('SIGHUP', onSighup)
   function watch(child: ChildProcess): void {
     children.push(child)
-    child.once('exit', (code) => requestExit(code ?? 1))
+    child.once('exit', (code) => requestExit(code || 1))
     child.once('error', () => requestExit(1))
+  }
+  async function stop(exitCode: number, force = false): Promise<number> {
+    const newestFirst = [...children].reverse()
+    if (stopping) {
+      if (force) {
+        for (const child of newestFirst) stopGroup(child, 'SIGKILL')
+      }
+      await stopPromise
+      return exitCode
+    }
+    stopping = true
+    stopPromise = (async () => {
+      const firstSignal = force ? 'SIGKILL' : 'SIGTERM'
+      for (const child of newestFirst) stopGroup(child, firstSignal)
+      if (!force) {
+        await Promise.all(newestFirst.map((child) => waitForExit(child, 2000)))
+        for (const child of newestFirst) {
+          if (!hasExited(child)) stopGroup(child, 'SIGKILL')
+        }
+      }
+      await Promise.all(newestFirst.map((child) => waitForExit(child, 1000)))
+      await rm(dataDir, { force: true, recursive: true })
+      process.removeListener('SIGINT', onSigint)
+      process.removeListener('SIGTERM', onSigterm)
+      process.removeListener('SIGHUP', onSighup)
+    })()
+    await stopPromise
+    return exitCode
   }
   return {
     exitRequested,
@@ -109,20 +162,6 @@ export function supervise(dataDir: string) {
       return child
     },
     // Signalled newest first, so a dependent stops before what it was talking to.
-    stop: async (exitCode: number): Promise<number> => {
-      if (stopping) return exitCode
-      stopping = true
-      const newestFirst = [...children].reverse()
-      for (const child of newestFirst) stopGroup(child, 'SIGTERM')
-      await Promise.all(newestFirst.map((child) => waitForExit(child, 2000)))
-      for (const child of newestFirst) {
-        if (!hasExited(child)) stopGroup(child, 'SIGKILL')
-      }
-      await Promise.all(newestFirst.map((child) => waitForExit(child, 1000)))
-      await rm(dataDir, { force: true, recursive: true })
-      process.removeListener('SIGINT', onSigint)
-      process.removeListener('SIGTERM', onSigterm)
-      return exitCode
-    }
+    stop
   }
 }

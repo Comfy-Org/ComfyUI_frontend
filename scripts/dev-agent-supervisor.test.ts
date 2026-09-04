@@ -4,7 +4,7 @@ import type { ChildProcess } from 'node:child_process'
 import { rm } from 'node:fs/promises'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { supervise } from './dev-agent-supervisor'
+import { supervise, waitForHttp } from './dev-agent-supervisor'
 
 vi.mock('node:child_process', () => {
   const mocked = { spawn: vi.fn() }
@@ -111,6 +111,24 @@ describe('supervise', () => {
     await stopAndFlush(supervisor)
   })
 
+  it('treats an unsolicited clean child exit as failure', async () => {
+    const supervisor = supervise('/tmp/data')
+    supervisor.spawn('service', [], '/cwd', {})
+
+    children[0].exit(0)
+
+    await expect(supervisor.exitRequested).resolves.toBe(1)
+    await stopAndFlush(supervisor)
+  })
+
+  it('does not report HTTP readiness after shutdown starts', async () => {
+    const child = new FakeChild(100)
+
+    await expect(
+      waitForHttp(asChild(child), 'http://127.0.0.1:1', () => true, 'Vite')
+    ).rejects.toThrow('Vite stopped before becoming ready')
+  })
+
   it('maps a signal exit and a spawn error to exit code 1', async () => {
     const bySignal = supervise('/tmp/a')
     bySignal.spawn('a', [], '/cwd', {})
@@ -149,16 +167,33 @@ describe('supervise', () => {
   it('skips children that never got a pid and removes its signal handlers', async () => {
     const sigintBefore = process.listenerCount('SIGINT')
     const sigtermBefore = process.listenerCount('SIGTERM')
+    const sighupBefore = process.listenerCount('SIGHUP')
     vi.mocked(spawn).mockImplementation(() => asChild(new FakeChild(undefined)))
     const supervisor = supervise('/tmp/data')
     supervisor.spawn('a', [], '/cwd', {})
     expect(process.listenerCount('SIGINT')).toBe(sigintBefore + 1)
     expect(process.listenerCount('SIGTERM')).toBe(sigtermBefore + 1)
+    expect(process.listenerCount('SIGHUP')).toBe(sighupBefore + 1)
 
     await expect(stopAndFlush(supervisor)).resolves.toBe(0)
 
     expect(killed).toEqual([])
     expect(process.listenerCount('SIGINT')).toBe(sigintBefore)
     expect(process.listenerCount('SIGTERM')).toBe(sigtermBefore)
+    expect(process.listenerCount('SIGHUP')).toBe(sighupBefore)
+  })
+
+  it('kills children immediately when a signal repeats during teardown', async () => {
+    const supervisor = supervise('/tmp/data')
+    supervisor.spawn('stubborn', [], '/cwd', {})
+
+    process.emit('SIGINT', 'SIGINT')
+    process.emit('SIGINT', 'SIGINT')
+    children[0].exit(null, 'SIGKILL')
+    await vi.advanceTimersByTimeAsync(1000)
+
+    await expect(supervisor.exitRequested).resolves.toBe(130)
+    expect(killed).toContainEqual([-100, 'SIGKILL'])
+    await supervisor.stop(130)
   })
 })

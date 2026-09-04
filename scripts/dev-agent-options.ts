@@ -166,5 +166,24 @@ export function parseOptions(args: string[]): Options {
       `--doc-host-port ${options.docHostPort} collides with the agent health port (agent port + 1)`
     )
   }
+  if (options.engine === 'temporal') {
+    const reservedPorts = new Map<number, string>([
+      [options.agentPort, 'agent'],
+      [options.healthPort, 'agent health'],
+      [options.frontendPort, 'frontend'],
+      [options.docHostPort, 'doc host']
+    ])
+    for (const [portNumber, label] of [
+      [options.temporalPort, 'Temporal'],
+      [options.temporalUiPort, 'Temporal UI']
+    ] as const) {
+      const collision = reservedPorts.get(portNumber)
+      if (collision) {
+        throw new Error(
+          `${label} port ${portNumber} collides with the ${collision} port`
+        )
+      }
+    }
+  }
   return options
 }
