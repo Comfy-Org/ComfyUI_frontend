@@ -1,12 +1,15 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type {
   ActivationOutcome,
   DocumentViewBinding
 } from '@/core/graph/document/activationCoordinator'
 import { createActivationCoordinator } from '@/core/graph/document/activationCoordinator'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { DocumentId } from '@/types/documentId'
 import { toDocumentId } from '@/types/documentId'
+
+vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
 
 function recordingBinding(log: string[], name: string): DocumentViewBinding {
   return {
@@ -72,6 +75,9 @@ describe('createActivationCoordinator', () => {
     })
     expect(coordinator.activeDocumentId()).toBe(docA)
     expect(log).toEqual([`attach:a:${docA}`])
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'document_activation_hydration_failure'
+    })
   })
 
   it('performs an ordered detach-then-attach handoff between documents', async () => {
@@ -206,6 +212,9 @@ describe('createActivationCoordinator', () => {
       `detach:a:${docA}`,
       `detach:b:${docB}`
     ])
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'document_view_binding_attach_failure'
+    })
   })
 
   it('a reentrant deactivate from within attach supersedes the activation', async () => {
@@ -300,6 +309,9 @@ describe('createActivationCoordinator', () => {
       reason: 'handoff-failed'
     })
     expect(coordinator.activeDocumentId()).toBeNull()
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'document_view_binding_previous_detach_failure'
+    })
 
     // A follow-up activate succeeds without re-detaching the failed binding.
     const retry = await coordinator.activate(docB, recordingBinding(log, 'b'))
@@ -330,5 +342,8 @@ describe('createActivationCoordinator', () => {
 
     expect(coordinator.deactivate(docA)).toBe(true)
     expect(coordinator.activeDocumentId()).toBeNull()
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'document_view_binding_detach_failure'
+    })
   })
 })
