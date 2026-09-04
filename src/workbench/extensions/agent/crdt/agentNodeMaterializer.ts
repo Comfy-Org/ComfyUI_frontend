@@ -71,7 +71,10 @@ export function reconcileAgentAdapters(
  */
 const reportedDefinitionFailures = new WeakMap<LGraph, Set<string>>()
 
-/** Interior remints retained for later root-node reprojections. */
+/**
+ * Maps document interior IDs to local projection IDs. Source `proxyWidgets`
+ * must retain document IDs and never serialize these local remints back.
+ */
 const registeredDefinitionNodeIdRemaps = new WeakMap<
   LGraph,
   Map<string, Map<NodeId, SerializedNodeId>>
