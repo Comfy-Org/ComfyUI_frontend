@@ -105,6 +105,42 @@ PLAYWRIGHT_TEST_URL=http://localhost:5173 DISTRIBUTION=cloud \
   --project=cloud -g '<case-id>'
 ```
 
+## Import a Langfuse session
+
+A conversation that already ran on a hosted agent becomes the same fixture
+from its Langfuse trace, without re-recording:
+
+```bash
+AGENT_CLOUD_SHA=<cloud sha> pnpm exec tsx scripts/agentConversationFromLangfuse.ts <caseId> <seedFixture.json> --trace <traceId> --workflow <cloudWorkflowId> --out browser_tests/fixtures/data/agent/conversations/<caseId>.json
+```
+
+`--session <sessionId>` takes every trace of a session. Credentials come from
+`~/.config/comfy-agent/langfuse.env` (`LANGFUSE_HOST`, `LANGFUSE_PUBLIC_KEY`,
+`LANGFUSE_SECRET_KEY`; `--env-file` points elsewhere) and never reach an
+artifact.
+
+The importer reads what the agent's instrumentation emits (cloud
+`harness/telemetry/attrs.go`, `loop/host.go`): the turn span, marked
+`gen_ai.operation.name: invoke_agent`, carries `comfy.thread_id` and
+`comfy.turn_id` (the launch span above it carries the ids but no text); a tool
+span carries `gen_ai.tool.call.id`, `gen_ai.tool.name` and `comfy.tool.ok` and
+reaches its turn through `parentObservationId`; the turn's input and output
+exist only with content capture on (`--prompt` per turn otherwise). It rebuilds
+the tool-call and message frames, reads the audit rows with the recorder's own
+query (`AGENT_PG_EXEC` must reach that environment's Postgres), and runs the
+same assembly gates as a recording. So it imports a session whose audit
+database is still reachable, not any Langfuse session.
+
+UNVERIFIED until the first real trace: that `comfy.turn_id` is the message id
+the audit rows carry; that attributes arrive under `metadata.attributes` (a
+flattened `metadata` key is the fallback); that the page meta carries
+`totalPages` (a short page ends the walk otherwise).
+
+An import keeps `response_side: recorded`: the replies and accepted ops are the
+agent's, only the socket framing was rebuilt, and the replay suite lists
+recorded fixtures only. Thinking and active-tab frames are absent; the trace
+does not carry them.
+
 ## Capture
 
 The recorder keeps the `/ws` frames of the thread with their receipt times and,

@@ -488,7 +488,15 @@ function buildConversation(options: {
   const { input, threadId, workflowId, turns } = options
   const { raw, rows, provenance } = input
   const { workflow } = input.seed.json
-  const note = `RECORDED from Comfy-Org/cloud services/agent running ${STACK} at ${raw.base} (frames: ${raw.frame_source}); NOT a production capture. cloud commit ${provenance.cloudSha}; model ${provenance.model}; thread ${threadId}; messages ${turns.map((turn) => turn.message_id).join(', ')}; workflow ${workflowId} (seeded by throwaway turn ${options.seedMessageId}; turn 1 opens on a fresh workflow and switches to it first because the replay subscribes only on an agent_active_tab frame); agent_tool_calls parent rows ${list(rows.flatMap((set) => set.parents.map((row) => row.id)))}; rows ${rows.map((set) => basename(set.path)).join(', ')}; raw capture sha256 ${input.rawSha256}`
+  const origin =
+    raw.seed_turn === null
+      ? `IMPORTED from ${raw.frame_source} via ${raw.base}; the agent ran on the deployment the trace came from`
+      : `RECORDED from Comfy-Org/cloud services/agent running ${STACK} at ${raw.base} (frames: ${raw.frame_source})`
+  const seeded =
+    options.seedMessageId === null
+      ? 'no seed turn, workflow id given at import'
+      : `seeded by throwaway turn ${options.seedMessageId}`
+  const note = `${origin}; NOT a production capture. cloud commit ${provenance.cloudSha}; model ${provenance.model}; thread ${threadId}; messages ${turns.map((turn) => turn.message_id).join(', ')}; workflow ${workflowId} (${seeded}; turn 1 opens on a fresh workflow and switches to it first because the replay subscribes only on an agent_active_tab frame); agent_tool_calls parent rows ${list(rows.flatMap((set) => set.parents.map((row) => row.id)))}; rows ${rows.map((set) => basename(set.path)).join(', ')}; raw capture sha256 ${input.rawSha256}`
 
   return zAgentConversation.parse({
     schema_version: 'agent-conversation.v2',
