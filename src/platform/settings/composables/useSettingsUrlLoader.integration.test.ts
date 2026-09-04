@@ -1,5 +1,5 @@
+import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type * as VueRouter from 'vue-router'
 import type { Router } from 'vue-router'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
@@ -11,15 +11,6 @@ import { useSettingsUrlLoader } from '@/platform/settings/composables/useSetting
 const STORAGE_KEY = 'Comfy.PreservedQuery.settings'
 
 let testRouter: Router
-
-vi.mock('vue-router', async (importOriginal) => {
-  const actual = await importOriginal<typeof VueRouter>()
-  return {
-    ...actual,
-    useRoute: () => testRouter.currentRoute.value,
-    useRouter: () => testRouter
-  }
-})
 
 const mockShowSettings = vi.hoisted(() => vi.fn())
 
@@ -43,6 +34,22 @@ function createAppLikeRouter(): Router {
   return router
 }
 
+function mountSettingsUrlLoader() {
+  let result: ReturnType<typeof useSettingsUrlLoader> | undefined
+  const { unmount } = render(
+    {
+      setup() {
+        result = useSettingsUrlLoader()
+        return () => null
+      }
+    },
+    { global: { plugins: [testRouter] } }
+  )
+
+  if (!result) throw new Error('Failed to mount settings URL loader')
+  return { ...result, unmount }
+}
+
 describe('useSettingsUrlLoader with real preserved-query boundaries', () => {
   beforeEach(() => {
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SETTINGS)
@@ -53,7 +60,7 @@ describe('useSettingsUrlLoader with real preserved-query boundaries', () => {
   it('opens Plans & Credits and cleans the URL when the param survives to mount', async () => {
     await testRouter.push('/?settings=plan-credits&keep=1')
 
-    const { loadSettingsFromUrl } = useSettingsUrlLoader()
+    const { loadSettingsFromUrl } = mountSettingsUrlLoader()
     loadSettingsFromUrl()
 
     expect(mockShowSettings).toHaveBeenCalledExactlyOnceWith('workspace')
@@ -72,7 +79,7 @@ describe('useSettingsUrlLoader with real preserved-query boundaries', () => {
     await testRouter.push('/cloud/login')
     await testRouter.push('/')
 
-    const { loadSettingsFromUrl } = useSettingsUrlLoader()
+    const { loadSettingsFromUrl } = mountSettingsUrlLoader()
     loadSettingsFromUrl()
 
     expect(mockShowSettings).toHaveBeenCalledExactlyOnceWith('workspace')
@@ -85,11 +92,16 @@ describe('useSettingsUrlLoader with real preserved-query boundaries', () => {
   it('consumes the stash so a later mount does not reopen the dialog', async () => {
     await testRouter.push('/?settings=plan-credits')
     await testRouter.push('/')
-    useSettingsUrlLoader().loadSettingsFromUrl()
+    const firstMount = mountSettingsUrlLoader()
+    firstMount.loadSettingsFromUrl()
+    await vi.waitFor(() =>
+      expect(testRouter.currentRoute.value.fullPath).toBe('/')
+    )
+    firstMount.unmount()
     mockShowSettings.mockClear()
 
     await testRouter.push('/')
-    useSettingsUrlLoader().loadSettingsFromUrl()
+    mountSettingsUrlLoader().loadSettingsFromUrl()
 
     expect(mockShowSettings).not.toHaveBeenCalled()
   })
@@ -97,7 +109,7 @@ describe('useSettingsUrlLoader with real preserved-query boundaries', () => {
   it('strips an unrecognized value without opening or leaving a stash behind', async () => {
     await testRouter.push('/?settings=garbage')
 
-    const { loadSettingsFromUrl } = useSettingsUrlLoader()
+    const { loadSettingsFromUrl } = mountSettingsUrlLoader()
     loadSettingsFromUrl()
 
     expect(mockShowSettings).not.toHaveBeenCalled()

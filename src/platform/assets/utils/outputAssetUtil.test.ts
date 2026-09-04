@@ -8,10 +8,8 @@ import { getOutputKey } from '@/platform/assets/utils/outputKeyUtil'
 import type { ResultItemImpl } from '@/stores/queueStore'
 import type { SerializedNodeId } from '@/types/nodeId'
 
-import {
-  getTotalAssetOutputCount,
-  resolveOutputAssetItems
-} from './outputAssetUtil'
+import { getTotalAssetOutputCount } from './outputAssetCountUtil'
+import { resolveOutputAssetItems } from './outputAssetUtil'
 
 const mocks = vi.hoisted(() => ({
   getJobDetail: vi.fn(),

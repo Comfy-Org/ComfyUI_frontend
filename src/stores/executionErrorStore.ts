@@ -16,6 +16,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
+import { useDialogService } from '@/services/dialogService'
 import type {
   ExecutionErrorWsMessage,
   NodeError,
@@ -207,6 +208,19 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     key: string | null = activeRunErrorKey.value
   ) {
     updateRunErrors({ executionError: detail }, key)
+  }
+
+  function showExecutionError(
+    detail: ExecutionErrorWsMessage,
+    key: string | null = activeRunErrorKey.value
+  ) {
+    if (key === null || key !== activeRunErrorKey.value) return
+
+    if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
+      showErrorOverlay()
+    } else {
+      useDialogService().showExecutionErrorDialog(detail)
+    }
   }
 
   function recordPromptError(
@@ -705,6 +719,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
     // Overlay UI
     isErrorOverlayOpen,
+    showExecutionError,
     showErrorOverlay,
     dismissErrorOverlay,
 
