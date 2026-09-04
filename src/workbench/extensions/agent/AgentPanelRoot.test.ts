@@ -121,6 +121,7 @@ type FakeTab = {
   path: string
   directory: string
   filename: string
+  suffix?: string
   isTemporary: boolean
   isModified: boolean
   activeState: ComfyWorkflowJSON | null
@@ -2754,6 +2755,38 @@ describe('AgentPanelRoot workflow binding', () => {
       ],
       current_tab: 'wf-cloud-current'
     })
+  })
+
+  it('sends a saved app workflow instead of the existing thread workflow', async () => {
+    const activeState = fromPartial<ComfyWorkflowJSON>({
+      nodes: Array.from({ length: 19 }, (_, index) => ({
+        id: index + 1,
+        type: index === 0 ? 'LoadImage' : `ImageEditNode${index}`
+      })),
+      links: []
+    })
+    const appTab = addTab('workflows/all-in-one-image-edit-models.app.json', {
+      filename: 'all-in-one-image-edit-models',
+      suffix: 'app.json',
+      activeState
+    })
+    hostStores.workflow.activeWorkflow = appTab
+    useAgentConversationStore().setThreadId('th-two-node-workflow')
+    const bodies = mockMessagesEndpoint('wf-all-in-one', [
+      { id: 'wf-all-in-one', name: 'all-in-one-image-edit-models.app' }
+    ])
+
+    await renderAndSend('replace the image in the Load Image node')
+
+    expect(bodies[0]).toMatchObject({
+      workflow_id: 'wf-all-in-one',
+      current_tab: 'wf-all-in-one',
+      draft: { content: activeState }
+    })
+    expect(
+      (bodies[0] as { draft: { content: { nodes: unknown[] } } }).draft.content
+        .nodes
+    ).toHaveLength(19)
   })
 
   it('does not resolve temporary tabs through the cloud workflow index', async () => {

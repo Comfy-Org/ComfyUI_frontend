@@ -279,16 +279,21 @@ async function refreshCloudWorkflowIds(): Promise<void> {
   }
 }
 
-function openSavedTabsNamed(filename: string): ComfyWorkflow[] {
+function cloudWorkflowName(tab: ComfyWorkflow): string {
+  return tab.suffix === 'app.json' ? `${tab.filename}.app` : tab.filename
+}
+
+function openSavedTabsNamed(name: string): ComfyWorkflow[] {
   return workflowStore.openWorkflows.filter(
-    (tab) => !tab.isTemporary && tab.filename === filename
+    (tab) => !tab.isTemporary && cloudWorkflowName(tab) === name
   )
 }
 
 function cloudIdFor(tab: ComfyWorkflow): string | undefined {
+  const name = cloudWorkflowName(tab)
   const saved =
-    !tab.isTemporary && openSavedTabsNamed(tab.filename).length === 1
-      ? cloudIdsByName.get(tab.filename)
+    !tab.isTemporary && openSavedTabsNamed(name).length === 1
+      ? cloudIdsByName.get(name)
       : undefined
   return saved ?? bindingStore.workflowIdFor(tab.path)
 }
