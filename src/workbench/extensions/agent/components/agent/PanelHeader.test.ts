@@ -28,6 +28,14 @@ function mount(isMaximized = false) {
 }
 
 describe('PanelHeader', () => {
+  it('exposes the heading id used to label the docked panel', () => {
+    mount()
+
+    expect(
+      screen.getByRole('heading', { name: i18n.global.t('agent.title') })
+    ).toHaveAttribute('id', 'agent-panel-title')
+  })
+
   it('passes the full tooltip config to the button directive', () => {
     mount()
 
