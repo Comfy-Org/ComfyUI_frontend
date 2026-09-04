@@ -67,6 +67,70 @@ const runScripts = (workflow: Workflow) =>
       run: stripComments(step.run!)
     }))
 
+const labelStepRun = () => {
+  const step = Object.values(readWorkflow(WORKFLOW).jobs ?? {})
+    .flatMap((job) => job.steps ?? [])
+    .find((step) => step.name === 'Remove needs-backport label')
+
+  expect(step).toBeDefined()
+  return step!.run ?? ''
+}
+
+/**
+ * The cleanup step's contract is an *order*, not a set of substrings: read the
+ * label list, decide from what was read, and only then delete. Asserting the
+ * pieces individually would pass on a script that deletes first, or that calls
+ * the label absent before reading anything. Each negative control below trips
+ * exactly one of these.
+ */
+const labelStepViolations = (run: string): string[] => {
+  const code = stripComments(run)
+  const violations: string[] = []
+
+  const read = code.search(/\w+=\$\(\s*gh api/)
+  const check = code.search(/grep -qx ['"]needs-backport['"]/)
+  const del = code.search(/gh api[^\n]*--method DELETE/)
+  const earlyExit = code.search(/^\s*exit 0\s*$/m)
+
+  if (!/^\s*set -euo pipefail\s*$/m.test(code)) {
+    violations.push('does not set -euo pipefail')
+  }
+  if (read === -1) {
+    violations.push('does not read the label list into a variable')
+  }
+  if (check === -1) {
+    violations.push('does not test for the needs-backport label')
+  }
+  if (del === -1) {
+    violations.push('does not delete the label over REST')
+  }
+  if (!code.includes('labels/needs-backport')) {
+    violations.push('does not target the needs-backport label endpoint')
+  }
+  // A failed read must not read as "absent": under a pipe the exit status is
+  // grep's, so an API error would take the already-absent branch and exit 0.
+  if (/gh api[^\n|]*\|\s*grep/.test(code)) {
+    violations.push(
+      'pipes the label read straight into grep, so a failed read reads as absence'
+    )
+  }
+  if (read !== -1 && check !== -1 && read > check) {
+    violations.push('checks for the label before reading it')
+  }
+  if (check !== -1 && del !== -1 && check > del) {
+    violations.push('deletes the label before checking for it')
+  }
+  // An already-absent label is the desired end state, so the step short-circuits
+  // rather than letting the DELETE 404 fail the job under `set -e`.
+  if (earlyExit === -1) {
+    violations.push('does not exit 0 when the label is already absent')
+  } else if (del !== -1 && earlyExit > del) {
+    violations.push('exits early only after it has already deleted')
+  }
+
+  return violations
+}
+
 describe('backport workflow token scopes', () => {
   it('runs under PR_GH_TOKEN, which does not carry read:org', () => {
     const workflow = readWorkflow(WORKFLOW)
@@ -98,19 +162,38 @@ describe('backport workflow token scopes', () => {
   })
 
   it('removes needs-backport through the REST labels endpoint, tolerating an already-absent label', () => {
-    const workflow = readWorkflow(WORKFLOW)
-    const step = Object.values(workflow.jobs ?? {})
-      .flatMap((job) => job.steps ?? [])
-      .find((step) => step.name === 'Remove needs-backport label')
+    expect(labelStepViolations(labelStepRun())).toEqual([])
+  })
 
-    expect(step).toBeDefined()
-
-    const run = step!.run ?? ''
-    expect(run).toMatch(/gh api[^\n]*--method DELETE/)
-    expect(run).toContain('labels/needs-backport')
-    // A label that is already gone is the desired end state, not a failure:
-    // the delete endpoint 404s in that case and `bash -e` would fail the job.
-    expect(run).toContain('already absent')
-    expect(run).toMatch(/exit 0/)
+  // Negative controls. Substring assertions alone would pass on every one of
+  // these, which is why the contract above is expressed as ordering.
+  it.for([
+    [
+      'decides from a label list it never read',
+      `set -euo pipefail\nif ! printf '%s\\n' "$LABELS" | grep -qx 'needs-backport'; then\n  echo "already absent"\n  exit 0\nfi\ngh api --silent --method DELETE "$R/labels/needs-backport"`,
+      'does not read the label list into a variable'
+    ],
+    [
+      'reads the label list only after deciding from it',
+      `set -euo pipefail\nif ! printf '%s\\n' "$LABELS" | grep -qx 'needs-backport'; then\n  echo "already absent"\n  exit 0\nfi\nLABELS=$(gh api "$R/labels" --jq '.[].name')\ngh api --silent --method DELETE "$R/labels/needs-backport"`,
+      'checks for the label before reading it'
+    ],
+    [
+      'deletes first and checks afterwards',
+      `set -euo pipefail\ngh api --silent --method DELETE "$R/labels/needs-backport"\nLABELS=$(gh api "$R/labels" --jq '.[].name')\nprintf '%s\\n' "$LABELS" | grep -qx 'needs-backport'`,
+      'deletes the label before checking for it'
+    ],
+    [
+      'treats a failed label read as absence by piping into grep',
+      `set -euo pipefail\nif ! gh api "$R/labels" --jq '.[].name' | grep -qx 'needs-backport'; then\n  echo "already absent"\n  exit 0\nfi\ngh api --silent --method DELETE "$R/labels/needs-backport"`,
+      'pipes the label read straight into grep, so a failed read reads as absence'
+    ],
+    [
+      'omits strict shell mode',
+      `LABELS=$(gh api "$R/labels" --jq '.[].name')\nif ! printf '%s\\n' "$LABELS" | grep -qx 'needs-backport'; then\n  exit 0\nfi\ngh api --silent --method DELETE "$R/labels/needs-backport"`,
+      'does not set -euo pipefail'
+    ]
+  ])('rejects a cleanup step that %s', ([, script, expected]) => {
+    expect(labelStepViolations(script)).toContain(expected)
   })
 })
