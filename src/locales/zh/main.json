@@ -5,6 +5,10 @@
     "feedbackTooltip": "反馈",
     "freeTierPartner": "合作节点需要付费套餐",
     "freeTierRuns": "剩余 {available} / {MAX_AVAILABLE} 次运行",
+    "partnerRunGate": {
+      "signInCaption": "合作伙伴节点需要账户",
+      "signInToRun": "登录以运行"
+    },
     "share": "分享",
     "shareTooltip": "分享工作流"
   },
@@ -34,10 +38,6 @@
     "copy": "复制",
     "copyMarkdown": "复制为 Markdown",
     "copyUnavailable": "此版本只能复制当前对话",
-    "crdtConnected": "已连接",
-    "crdtDisconnected": "已断开连接",
-    "crdtNoDocument": "无文档",
-    "crdtStatus": "CRDT {connection} · {workflowId} · {updates} 次更新 · {frame}",
     "credits": "积分",
     "delete": "删除",
     "dismiss": "关闭",
@@ -86,6 +86,7 @@
     "runModeAutoDescription": "Comfy 将不经许可自动运行工作流",
     "runModeLimit": "有限制地自动运行",
     "runModeLimitDescription": "仅当工作流运行超出您的积分限额时，Comfy 才会确认",
+    "runModeSaveFailed": "无法保存运行权限。请重试。",
     "runModeTriggerAsk": "询问",
     "runModeTriggerAskTooltip": "请求许可",
     "runModeTriggerAuto": "自动",
@@ -115,6 +116,7 @@
       "使用 3 个模型构建图像转视频工作流"
     ],
     "switchWorkflow": "切换工作流",
+    "targetNavigationUnavailable": "此工作流目标已不可用。",
     "thinking": "思考中...",
     "thought": "思考",
     "thoughtTimed": "思考了 {seconds} 秒",
@@ -126,14 +128,13 @@
     "untitledChat": "未命名",
     "uploading": "正在上传"
   },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "每次运行的成本",
-    "title": "API节点",
-    "totalCost": "总成本"
-  },
   "apiNodesSignInDialog": {
-    "message": "此工作流包含API节点，需要您登录账户才能运行。",
-    "title": "使用API节点需要登录"
+    "message": "合作伙伴节点在第三方服务上运行，并使用您账户中的积分。请登录以连接您的账户。",
+    "partnerNodesInWorkflow": "此工作流中的合作伙伴节点",
+    "signIn": "登录",
+    "title": "登录以运行合作伙伴节点",
+    "tooltip": "合作伙伴节点在第三方服务上运行。它们使用积分，这是 Comfy 唯一的付费部分。",
+    "whatArePartnerNodes": "什么是合作伙伴节点？"
   },
   "appBuilder": {
     "vueNodeSwitch": {
@@ -465,7 +466,6 @@
   },
   "billingOperation": {
     "authenticationFailedDetail": "无法完成付款验证。请重试。",
-    "authenticationManagerRequired": "付款验证需要工作区账单管理员处理。",
     "authenticationUnavailable": "安全支付验证不可用。请刷新后重试。",
     "cancelFailed": "取消订阅失败",
     "cancelTimeout": "订阅取消超时",
@@ -476,7 +476,6 @@
     "processingErrorDetail": "无法处理您的付款。请重试或使用其他支付方式。",
     "reconciliationDetail": "已收到您的付款，但无法完成工作区更新。请联系支持团队，并提供此操作 ID：",
     "reconciliationTitle": "已收到付款 — 等待确认",
-    "retryVerification": "重试验证",
     "subscriptionActionRequired": "请验证您的付款以完成工作区设置",
     "subscriptionFailed": "订阅更新失败",
     "subscriptionFailedDetail": "我们无法更新您的订阅。请重试。",
@@ -964,6 +963,7 @@
       "quickPurchase": "快速购买",
       "seeDetails": "查看详情",
       "selectAmount": "选择金额",
+      "startOver": "重新开始",
       "templateNote": "*使用 Wan Fun Control 模板生成",
       "topUp": "充值",
       "unknownError": "发生未知错误",
@@ -1077,6 +1077,7 @@
     "RECRAFT_COLOR": "Recraft 颜色",
     "RECRAFT_CONTROLS": "Recraft 控件",
     "RECRAFT_V3_STYLE": "Recraft V3 风格",
+    "RESOLUTION_PREVIEW": "RESOLUTION_PREVIEW",
     "RETARGET_TASK_ID": "重定向任务ID",
     "RIG_TASK_ID": "RIG_TASK_ID",
     "RUNWAY_ALEPH2_KEYFRAME": "RUNWAY_ALEPH2_KEYFRAME",
@@ -2811,14 +2812,18 @@
       "seeMoreOutputs": "查看更多输出",
       "zoom": "放大"
     },
-    "assetDeletedSuccessfully": "资产删除成功",
-    "deleteAssetDescription": "此资产将被永久删除。",
-    "deleteAssetTitle": "删除此资产？",
-    "deleteSelectedDescription": "{count} 项资产将被永久删除。",
-    "deleteSelectedTitle": "删除所选资产？",
+    "assetDelete": {
+      "error": "项目删除失败",
+      "success": "删除成功",
+      "warn": "部分项目删除失败"
+    },
+    "assetsDeleted": "已删除 {n} / {total} 个资源",
+    "deleteHistoryOnly": "仅影响历史记录，文件将保留在磁盘上",
+    "deleteItems": "删除这些项目",
+    "deletePermanent": "它们将被永久移除。",
     "deletingImportedFilesCloudOnly": "删除导入文件仅支持云版本",
+    "deletionUnsupported": "资源已启用，但服务器不支持删除",
     "failedToCreateNode": "创建节点失败",
-    "failedToDeleteAsset": "删除资产失败",
     "failedToExportWorkflow": "工作流导出失败",
     "jobIdToast": {
       "copied": "已复制",
@@ -2826,12 +2831,12 @@
       "jobIdCopied": "任务 ID 已复制到剪贴板",
       "jobIdCopyFailed": "复制队列 ID 失败"
     },
+    "jobsDeleted": "已删除 {n} / {total} 个任务",
     "noJobIdFound": "该资产不包含任务ID",
     "noWorkflowDataFound": "该资产不包含工作流数据",
     "nodeAddedToWorkflow": "{nodeType} 节点已添加到工作流",
     "nodeTypeNotFound": "节点类型 {nodeType} 不存在",
     "selection": {
-      "assetsDeletedSuccessfully": "已成功删除 {count} 个资产",
       "deleteSelected": "删除",
       "deleteSelectedAll": "全部删除",
       "deselectAll": "取消全选",
@@ -2842,7 +2847,6 @@
       "exportStarted": "正在为{count}个文件准备ZIP导出",
       "exportWorkflowAll": "导出所有工作流",
       "failedToAddNodes": "添加节点到工作流失败",
-      "failedToDeleteAssets": "未能删除所选资产",
       "insertAllAssetsAsNodes": "将所有资源作为节点插入",
       "multipleSelectedAssets": "已选择多个资源",
       "noWorkflowsFound": "所选资源中未找到工作流数据",
@@ -2850,7 +2854,6 @@
       "nodesAddedToWorkflow": "已添加 {count} 个节点到工作流",
       "openWorkflowAll": "打开所有工作流",
       "partialAddNodesSuccess": "成功添加 {succeeded} 个，失败 {failed} 个",
-      "partialDeleteSuccess": "{succeeded} 删除成功, {failed} 失败",
       "partialWorkflowsExported": "成功导出 {succeeded} 个，失败 {failed} 个",
       "partialWorkflowsOpened": "已打开 {succeeded} 个工作流，失败 {failed} 个",
       "selectedCount": "已选择资产：{count}",
@@ -3201,6 +3204,7 @@
     "scail": "scail",
     "schedulers": "调度器",
     "scheduling": "调度",
+    "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "Sigmas",
     "sound": "声音",
@@ -3465,6 +3469,28 @@
     "addColor": "添加颜色",
     "swatchTitle": "点击编辑 · 拖动排序 · 右键移除"
   },
+  "partnerNodesEducation": {
+    "benefits": {
+      "free": "免费运行",
+      "noDownload": "无需配置",
+      "noVram": "无需 VRAM，您的 GPU 保持空闲",
+      "offline": "离线运行"
+    },
+    "included": "已包含",
+    "muteOpen": "将开放权重 clip 静音",
+    "mutePartner": "将合作伙伴节点 clip 静音",
+    "notIncluded": "未包含",
+    "openHeader": "开放",
+    "openTab": "开放节点",
+    "partnerHeader": "合作伙伴",
+    "partnerTab": "合作伙伴节点",
+    "pitch": "看出区别了吗？拖动以比较。",
+    "reassurance": "当您需要更多功能时，合作伙伴节点随时可用。Comfy 的其余部分仍然免费。",
+    "sliderLabel": "比较开放权重与合作伙伴节点输出",
+    "tooltip": "合作伙伴节点通过 Comfy 在提供商的硬件上运行 Kling 或 Veo 等闭源模型。它们使用积分；Comfy 的其余部分仍然免费。",
+    "unmuteOpen": "取消开放权重 clip 静音",
+    "unmutePartner": "取消合作伙伴节点 clip 静音"
+  },
   "progressToast": {
     "allDownloadsCompleted": "所有下载已完成",
     "downloadingModel": "正在下载模型...",
@@ -3522,7 +3548,6 @@
       "copyErrorMessage": "复制报错信息",
       "copyJobId": "复制任务ID",
       "delete": "删除",
-      "deleteAsset": "删除资产",
       "download": "下载",
       "exportWorkflow": "导出工作流",
       "inspectAsset": "查看资产",
@@ -4273,8 +4298,6 @@
     "canceledCard": {
       "description": "您将不再被扣费。您的功能将在 {date} 前保持激活。",
       "descriptionWithoutDate": "您将不会再次被扣费。您的功能将在本计费周期结束前保持激活状态。",
-      "endedDescription": "您的订阅已不再激活。",
-      "endedTitle": "您的订阅已结束",
       "title": "您的订阅已被取消"
     },
     "changePlan": "更改套餐",
@@ -4329,6 +4352,7 @@
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "对企业级有疑问？",
     "inactive": {
+      "badge": "已失效",
       "memberCta": "好的，知道了",
       "memberDescription": "请联系您的工作区所有者，重新激活订阅以运行工作流。",
       "memberRunTooltip": "请联系您的工作区所有者重新订阅",
@@ -4340,7 +4364,6 @@
     "inactiveTeamTitle": "团队订阅已失效",
     "inviteUpTo": "可邀请多达",
     "invoiceHistory": "发票历史",
-    "learnMore": "了解更多",
     "manageBilling": "管理账单",
     "managePlan": "管理订阅",
     "manageSubscription": "管理订阅",
@@ -4468,6 +4491,7 @@
       },
       "refillReplacesNote": "替换您的月度补充。现有余额保留。",
       "renewsAt": "将于 {date} 以 {amount} 续订。可随时取消。",
+      "renewsAtAmount": "按 {amount} 续订。可随时取消。",
       "savedPaymentMethod": "支付方式",
       "showMoreFeatures": "显示更多功能",
       "starting": "{date} 开始",
@@ -4607,7 +4631,6 @@
     "videoTemplateBasedCredits": "使用 Wan 2.2 图像转视频生成的视频",
     "viewEnterprise": "查看企业",
     "viewMoreDetails": "查看更多详情",
-    "viewMoreDetailsPlans": "查看有关订阅和定价的更多信息",
     "viewUsageHistory": "查看使用历史",
     "whatsIncluded": "包含内容：",
     "workspaceNotSubscribed": "此工作区未订阅",
@@ -5038,8 +5061,10 @@
       "failedCount": "无法发送 {count} 个邀请，请重试。",
       "invalidEmailCount": "{count} 个无效邮箱地址",
       "invitedMessage": "已向 {emails} 发送邀请",
+      "pendingInviteCount": "这些人中有 {count} 人已有待处理的邀请，将被跳过。",
+      "pendingInviteSingle": "此人已有待处理的邀请",
       "placeholder": "输入对方邮箱",
-      "seatLimitReached": "最多可邀请 {count} 位队友。",
+      "seatLimitExceeded": "此工作区的成员上限为 {max} 人。请移除 {overage} 人以继续。",
       "title": "邀请他人加入此工作区"
     },
     "inviteUpsellDialog": {

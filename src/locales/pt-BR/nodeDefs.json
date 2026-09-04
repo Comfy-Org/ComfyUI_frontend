@@ -7201,12 +7201,12 @@
     }
   },
   "HiDreamO1ReferenceImages": {
-    "description": "Anexe de 1 a 10 imagens de referência ao condicionamento, uma para instrução de edição ou múltiplas para personalização orientada por sujeito.",
+    "description": "Anexe imagens de referência ordenadas ao condicionamento positivo e negativo.",
     "display_name": "Imagens de Referência HiDream-O1",
     "inputs": {
       "images": {
         "name": "imagens",
-        "tooltip": "Imagens de referência. 1 imagem = edição por instrução; 2-10 imagens = múltiplas referências."
+        "tooltip": "As imagens de referência são usadas na ordem numérica dos soquetes."
       },
       "negative": {
         "name": "negativo"
@@ -12748,6 +12748,46 @@
       }
     }
   },
+  "MiniMaxH3FunControlNetApply": {
+    "description": "Aplique um MiniMax H3 Fun ControlNet a um modelo de texto para vídeo como um patch de modelo.",
+    "display_name": "Aplicar MiniMax H3 Fun ControlNet",
+    "inputs": {
+      "control_video": {
+        "name": "control_video"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "1 marca as regiões a serem regeneradas."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "Vídeo por trás da mask; lido apenas quando uma mask é fornecida."
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MiniMaxH3ImageToVideo": {
     "display_name": "MiniMax H3 Imagem para Vídeo",
     "inputs": {
@@ -12792,7 +12832,8 @@
     "display_name": "MiniMax H3 Referência para Vídeo",
     "inputs": {
       "audio_vae": {
-        "name": "audio_vae"
+        "name": "audio_vae",
+        "tooltip": "VAE de áudio. Sem ele, o áudio de referência condiciona apenas o codificador de texto."
       },
       "clip": {
         "name": "clip"
@@ -12824,7 +12865,8 @@
         "name": "vídeos_ref"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "VAE de vídeo. Sem ele, imagens/vídeos de referência condicionam apenas o codificador de texto."
       },
       "width": {
         "name": "largura"
@@ -12933,7 +12975,7 @@
     }
   },
   "MinimaxHailuo03FirstLastFrameNode": {
-    "description": "Gere vídeo a partir de uma imagem de primeiro frame e, opcionalmente, uma imagem de último frame usando o modelo MiniMax H3. A proporção do vídeo segue as imagens fornecidas.",
+    "description": "Gera vídeo a partir de uma imagem do primeiro quadro e de uma imagem opcional do último quadro usando os modelos MiniMax H3. A proporção do vídeo segue as imagens fornecidas.",
     "display_name": "MiniMax H3 Primeiro-Último-Frame para Vídeo",
     "inputs": {
       "control_after_generate": {
@@ -12976,7 +13018,7 @@
     }
   },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "Gere vídeo condicionado a imagens de referência, vídeos e áudio usando o modelo MiniMax H3. Consulte as referências no prompt pela ordem: 'Imagem 1', 'Imagem 2', 'Vídeo 1', 'Áudio 1' e assim por diante.",
+    "description": "Gera vídeo condicionado por imagens, vídeos e áudio de referência usando os modelos MiniMax H3. Consulte as referências no prompt pela ordem: 'Imagem 1', 'Imagem 2', 'Vídeo 1', 'Áudio 1' e assim por diante.",
     "display_name": "MiniMax H3 Referência para Vídeo",
     "inputs": {
       "control_after_generate": {
@@ -13051,7 +13093,7 @@
     }
   },
   "MinimaxHailuo03TextToVideoNode": {
-    "description": "Gere vídeo a partir de um prompt de texto usando o modelo MiniMax H3.",
+    "description": "Gera vídeo a partir de um prompt de texto usando os modelos MiniMax H3.",
     "display_name": "MiniMax H3 Texto para Vídeo",
     "inputs": {
       "control_after_generate": {
@@ -16932,7 +16974,7 @@
   },
   "Preview3D": {
     "description": "Visualize um arquivo de modelo 3D sem salvá-lo no diretório de saída do ComfyUI.",
-    "display_name": "Pré-visualização 3D & Animação",
+    "display_name": "Pré-visualizar 3D e animação (OBSOLETO)",
     "inputs": {
       "bg_image": {
         "name": "bg_image"
@@ -17945,7 +17987,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Tipo de saída para o qual o estilo é criado: recraftv4_styles para imagens raster, recraftv4_styles_vector para SVG."
+        "tooltip": "Modelo para o qual o estilo é criado. Standard e Pro compartilham um único conjunto de estilos: estilos raster funcionam com todos os modelos raster Recraft V4 e V4.1, estilos vetoriais (*_vector) com todos os modelos vetoriais V4 e V4.1."
       }
     },
     "outputs": {
@@ -18641,6 +18683,10 @@
       "multiple": {
         "name": "múltiplo",
         "tooltip": "Múltiplo mais próximo do resultado para definir a resolução selecionada."
+      },
+      "preview": {
+        "name": "pré-visualização",
+        "tooltip": "Pré-visualização ao vivo da resolução de saída calculada."
       }
     },
     "outputs": {
@@ -21113,6 +21159,23 @@
       },
       "scale": {
         "name": "escala"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaSamplingOptions": {
+    "description": "Defina o deslocamento de fluxo do SenseNova.",
+    "display_name": "Opções de amostragem do SenseNova",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
       }
     },
     "outputs": {

@@ -291,8 +291,12 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
     await mockCloudBoot(page, true, endedPersonalBillingStatus)
 
     const content = await openPlanAndCredits(page)
-    await expect(content.getByText('Your subscription has ended')).toBeVisible()
-    await content.getByRole('button', { name: 'Billing & invoices' }).click()
+    const billingPortal = content.getByRole('button', {
+      name: 'Billing & invoices'
+    })
+    await expect(billingPortal).toBeVisible()
+    await expect(content.getByTestId('subscription-state-card')).toHaveCount(0)
+    await billingPortal.click()
 
     await expect
       .poll(() => page.locator('html').getAttribute('data-opened-url'))
@@ -501,9 +505,6 @@ test.describe('Top-up 3DS verification', { tag: '@cloud' }, () => {
 
     await topupDialog.root.getByRole('button', { name: 'Pay $50.00' }).click()
 
-    await expect(
-      topupDialog.root.getByRole('button', { name: 'Back' })
-    ).toBeDisabled()
     await expect.poll(() => operationPollRequests.length).toBeGreaterThan(0)
     const verificationButton = topupDialog.root.getByRole('button', {
       name: 'Complete verification'

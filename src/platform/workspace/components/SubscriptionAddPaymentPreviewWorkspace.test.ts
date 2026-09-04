@@ -44,9 +44,16 @@ function previewFixture(
   }
 }
 
+// Interpolation values are appended so assertions can verify what a message
+// was given, not just which message was chosen.
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
-    t: (key: string) => key,
+    t: (key: string, named?: Record<string, unknown>) =>
+      named
+        ? `${key}|${Object.entries(named)
+            .map(([name, value]) => `${name}=${String(value)}`)
+            .join(',')}`
+        : key,
     n: (value: number) => value.toLocaleString('en-US'),
     locale: { value: 'en' }
   })
@@ -354,25 +361,27 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     )
   })
 
-  it('renders an explicit retry action after failed verification', async () => {
-    const { emitted } = render(SubscriptionAddPaymentPreviewWorkspace, {
+  it('reports failed verification without offering to resume it', () => {
+    render(SubscriptionAddPaymentPreviewWorkspace, {
       props: {
         tierKey: 'creator',
         embeddedCheckoutEnabled: true,
         authenticationState: 'failed_retryable',
         authenticationError: 'Challenge was closed',
-        canRetryAuthentication: true
+        // A stale action_url from the abandoned challenge can still be present
+        // when the server reports failed_retryable; the button must stay
+        // hidden regardless.
+        actionUrl: 'https://verify.example/sensitive-token'
       },
       global: globalOptions
     })
 
     expect(screen.getByRole('alert')).toHaveTextContent('Challenge was closed')
-    await userEvent.click(
-      screen.getByRole('button', {
-        name: 'billingOperation.retryVerification'
+    expect(
+      screen.queryByRole('button', {
+        name: 'subscription.preview.completeVerification'
       })
-    )
-    expect(emitted().retryAuthentication).toBeTruthy()
+    ).toBeNull()
   })
 
   it('shows reconciliation support guidance with the operation id', () => {
@@ -391,16 +400,60 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     expect(screen.getByText('op-reconcile-123')).toBeTruthy()
   })
 
-  it('does not render a back action on the payment confirmation', () => {
+  it('owns a back action whether or not the payment element is embedded', async () => {
+    const { emitted } = render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: { tierKey: 'creator' },
+      global: {
+        ...globalOptions,
+        stubs: {
+          ...globalOptions.stubs,
+          Button: {
+            props: ['ariaLabel'],
+            template:
+              '<button :aria-label="ariaLabel" @click="$emit(\'click\')"><slot /></button>'
+          }
+        }
+      }
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: 'g.back' }))
+
+    expect(emitted().back).toBeTruthy()
+  })
+
+  it('omits the total row entirely when no quote is available to price it', () => {
     render(SubscriptionAddPaymentPreviewWorkspace, {
-      props: { tierKey: 'creator', isLoading: true },
+      props: {
+        teamPlan: { usd: 700, credits: 147_700, discountedUsd: 665 },
+        previewData: null
+      },
       global: globalOptions
     })
 
+    expect(screen.queryByText('subscription.preview.totalDueToday')).toBeNull()
+  })
+
+  it('prices a legacy preview from the server costs instead of rendering a blank total', () => {
+    const {
+      amount_due_cents,
+      currency,
+      renewal_amount_cents,
+      renewal_at,
+      quote_id,
+      quote_version,
+      ...legacy
+    } = previewFixture('MONTHLY', 2000)
+
+    render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: { tierKey: 'creator', previewData: legacy },
+      global: globalOptions
+    })
+
+    expect(screen.getByText('$20.00')).toBeTruthy()
     expect(
-      screen.queryByRole('button', {
-        name: 'subscription.preview.backToAllPlans'
-      })
-    ).toBeNull()
+      screen.getByText(
+        'subscription.preview.renewsAt|amount=$20.00,date=Jun 19, 2027'
+      )
+    ).toBeTruthy()
   })
 })

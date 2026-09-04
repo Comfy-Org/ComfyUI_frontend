@@ -21,7 +21,7 @@ import {
   usePreviewExposureStore
 } from '@/stores/previewExposureStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { toNodeId } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
@@ -64,7 +64,7 @@ export function findHostInputForPromotion(
  * Host-first resolver for promoted widget value keys.
  *
  * Anchors on the host `SubgraphNode.inputs` (which own the promoted `widgetId`
- * per ADR 0009) and walks host -> interior only to key each host widget by the
+ * per ADR-SUBGRAPH-PROMOTION-0009) and walks host -> interior only to key each host widget by the
  * interior source it projects. Consumers that discover an interior source can
  * then look up the host value key without a per-source reverse walk.
  */
@@ -313,12 +313,13 @@ export function promoteValueWidgetViaSubgraphInput(
   return { ok: true }
 }
 
-function seedNestedPromotedInputState(
+export function seedNestedPromotedInputState(
   subgraphNode: SubgraphNode,
   inputName: string,
   sourceSlot: { widgetId?: WidgetId; label?: string }
 ): void {
   if (!sourceSlot.widgetId) return
+  if (subgraphNode.id === UNASSIGNED_NODE_ID) return
 
   const hostInput = subgraphNode.inputs.find(
     (input) => input._subgraphSlot?.name === inputName
@@ -332,8 +333,7 @@ function seedNestedPromotedInputState(
   const id = widgetId(subgraphNode.rootGraph.id, subgraphNode.id, inputName)
   hostInput.widget ??= { name: inputName }
   hostInput.widget.name = inputName
-  hostInput.widgetId = id
-  store.registerWidget(
+  const registered = store.registerWidget(
     id,
     {
       type: sourceState.type,
@@ -345,6 +345,14 @@ function seedNestedPromotedInputState(
     },
     store.getWidgetRenderState(sourceSlot.widgetId) ?? {}
   )
+  if (!registered) {
+    delete hostInput.widget
+    delete hostInput.widgetId
+    hostInput._widget = undefined
+    return
+  }
+
+  hostInput.widgetId = id
 }
 
 function promotePreviewViaExposure(
@@ -498,7 +506,7 @@ function getParentNodes(): SubgraphNode[] {
 }
 
 export function addWidgetPromotionOptions(
-  options: (IContextMenuValue<unknown> | null)[],
+  options: (IContextMenuValue | null)[],
   widget: IBaseWidget,
   node: LGraphNode
 ) {

@@ -678,7 +678,7 @@ function repairPrimitive(
     } else {
       const primitiveValue = primitiveNode.widgets?.find(
         (w) => w.name === validated.sourceWidgetName
-      )?.value as TWidgetValue | undefined
+      )?.value
       if (primitiveValue !== undefined) {
         applyHostValueToInput(hostInput, {
           ...validated.uniqueEntries[0],

@@ -4,7 +4,11 @@ import { reactive, ref } from 'vue'
 import type { UUID } from '@/utils/uuid'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
-import { isWidgetId, parseWidgetId } from '@/types/widgetId'
+import {
+  isWidgetId,
+  parseWidgetId,
+  widgetId as createWidgetId
+} from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import type { WidgetState, WidgetStateInit } from '@/types/widgetState'
@@ -24,6 +28,38 @@ interface WidgetRestorationState {
   restoreNamed: boolean
 }
 
+interface WidgetValueChange {
+  widgetId: WidgetId
+  value: WidgetValue
+  oldValue: WidgetValue
+  context?: RemoteMutationContext
+}
+
+function setNodeScoped<T>(
+  graphMap: Map<UUID, Map<NodeId, T>>,
+  graphId: UUID,
+  nodeId: NodeId,
+  value: T
+): void {
+  let nodeMap = graphMap.get(graphId)
+  if (!nodeMap) {
+    nodeMap = new Map()
+    graphMap.set(graphId, nodeMap)
+  }
+  nodeMap.set(nodeId, value)
+}
+
+function clearNodeScoped<T>(
+  graphMap: Map<UUID, Map<NodeId, T>>,
+  graphId: UUID,
+  nodeId: NodeId
+): void {
+  const nodeMap = graphMap.get(graphId)
+  if (!nodeMap) return
+  nodeMap.delete(nodeId)
+  if (nodeMap.size === 0) graphMap.delete(graphId)
+}
+
 export function stripGraphPrefix(scopedId: SerializedNodeId): NodeId | null {
   return parseNodeId(String(scopedId).replace(/^(.*:)+/, ''))
 }
@@ -39,17 +75,49 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     Map<NodeId, WidgetRestorationState>
   >()
 
+  const valueChangeListeners = new Set<(change: WidgetValueChange) => void>()
+  const valueMutationContexts = new WeakMap<
+    WidgetState,
+    RemoteMutationContext
+  >()
+
+  function observeValue<TValue extends WidgetValue>(
+    state: WidgetState<TValue>,
+    graphId: UUID
+  ): void {
+    let value = state.value
+    Object.defineProperty(state, 'value', {
+      configurable: true,
+      enumerable: true,
+      get: () => value,
+      set: (nextValue: TValue) => {
+        if (Object.is(value, nextValue)) return
+        const oldValue = value
+        value = nextValue
+        const widgetId = createWidgetId(graphId, state.nodeId, state.name)
+        if (getWidget(widgetId) !== state) return
+        const context = valueMutationContexts.get(state)
+        valueMutationContexts.delete(state)
+        for (const listener of valueChangeListeners) {
+          listener({ widgetId, value, oldValue, context })
+        }
+      }
+    })
+  }
+
+  function onValueChange(
+    listener: (change: WidgetValueChange) => void
+  ): () => void {
+    valueChangeListeners.add(listener)
+    return () => valueChangeListeners.delete(listener)
+  }
+
   function setNodeWidgetRestoration(
     graphId: UUID,
     nodeId: NodeId,
     restoration: WidgetRestorationState
   ): void {
-    let graphRestorations = graphWidgetRestorations.get(graphId)
-    if (!graphRestorations) {
-      graphRestorations = new Map()
-      graphWidgetRestorations.set(graphId, graphRestorations)
-    }
-    graphRestorations.set(nodeId, restoration)
+    setNodeScoped(graphWidgetRestorations, graphId, nodeId, restoration)
   }
 
   function getRestoredWidgetValue(
@@ -71,20 +139,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   }
 
   function clearNodeWidgetRestoration(graphId: UUID, nodeId: NodeId): void {
-    const restorations = graphWidgetRestorations.get(graphId)
-    if (!restorations) return
-    restorations.delete(nodeId)
-    if (restorations.size === 0) graphWidgetRestorations.delete(graphId)
-  }
-
-  function getPositionalRestoredWidgetValue(
-    graphId: UUID,
-    nodeId: NodeId,
-    positionalIndex: number
-  ): WidgetValue | undefined {
-    return graphWidgetRestorations.get(graphId)?.get(nodeId)?.positional[
-      positionalIndex
-    ]
+    clearNodeScoped(graphWidgetRestorations, graphId, nodeId)
   }
 
   function getGraphWidgetStates(graphId: UUID): Map<WidgetId, WidgetState> {
@@ -201,7 +256,13 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     const widgetStates = getGraphWidgetStates(graphId)
     widgetStates.set(widgetId, state)
     appendNodeWidgetOrder(widgetId)
-    return widgetStates.get(widgetId) as WidgetState<TValue, TType, TOptions>
+    const registered = widgetStates.get(widgetId) as WidgetState<
+      TValue,
+      TType,
+      TOptions
+    >
+    observeValue(registered, graphId)
+    return registered
   }
 
   function registerWidgetRenderState(
@@ -240,11 +301,16 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   function setValue(
     widgetId: WidgetId,
     value: WidgetState['value'],
-    _context?: RemoteMutationContext
+    context?: RemoteMutationContext
   ): boolean {
     const state = getWidget(widgetId)
     if (!state) return false
-    state.value = value
+    if (context) valueMutationContexts.set(state, context)
+    try {
+      state.value = value
+    } finally {
+      valueMutationContexts.delete(state)
+    }
     return true
   }
 
@@ -439,9 +505,9 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     setNodeWidgetRestoration,
     clearNodeWidgetRestoration,
     getRestoredWidgetValue,
-    getPositionalRestoredWidgetValue,
     getWidget,
     getWidgetRenderState,
+    onValueChange,
     setValue,
     setLabel,
     updateOptions,

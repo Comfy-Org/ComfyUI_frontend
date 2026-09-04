@@ -1,8 +1,18 @@
-import { zWorkflowListResponse } from '@comfyorg/ingest-types/zod'
+import {
+  zAgentAnswerAccepted,
+  zAgentRunMode as zGeneratedAgentRunMode,
+  zWorkflowListResponse
+} from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
+
+import { isNodeLocatorId } from '@/types/nodeIdentification'
+
+export { zAgentAnswerAccepted }
+export type { AgentRunMode as AgentRunModePreference } from '@comfyorg/ingest-types'
 
 const zTurnId = z.string().brand<'TurnId'>()
 export type TurnId = z.infer<typeof zTurnId>
+export const toTurnId = (value: string): TurnId => zTurnId.parse(value)
 
 export const zAgentTurnAccepted = z
   .object({
@@ -12,6 +22,60 @@ export const zAgentTurnAccepted = z
   })
   .passthrough()
 export type AgentTurnAccepted = z.infer<typeof zAgentTurnAccepted>
+export type AgentAnswerAccepted = z.infer<typeof zAgentAnswerAccepted>
+
+const zAgentAskOption = z
+  .object({
+    id: z.string(),
+    label: z.string(),
+    description: z.string().optional()
+  })
+  .passthrough()
+
+const zAgentPendingAsk = z
+  .object({
+    message_id: z.string(),
+    ask_id: z.string(),
+    kind: z.string().optional(),
+    context: z
+      .object({
+        workflow_id: z.string().optional(),
+        workflow_name: z.string().optional()
+      })
+      .passthrough()
+      .optional(),
+    prompt: z.string(),
+    options: z.array(zAgentAskOption),
+    min_selections: z.number().int(),
+    max_selections: z.number().int(),
+    allow_other: z.boolean()
+  })
+  .passthrough()
+
+export const zAgentRunMode = zGeneratedAgentRunMode.superRefine(
+  ({ mode, credit_limit }, ctx) => {
+    if (
+      mode === 'auto_limited' &&
+      (credit_limit === null ||
+        !Number.isInteger(credit_limit) ||
+        credit_limit <= 0)
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['credit_limit'],
+        message: 'auto_limited requires a positive credit limit'
+      })
+    }
+    if (mode !== 'auto_limited' && credit_limit !== null) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['credit_limit'],
+        message: 'credit limit is only valid for auto_limited'
+      })
+    }
+  }
+)
+export type AgentRunMode = z.infer<typeof zAgentRunMode>['mode']
 
 export const zAgentMessage = z
   .object({
@@ -21,7 +85,8 @@ export const zAgentMessage = z
     role: z.enum(['user', 'assistant', 'tool', 'system']),
     status: z.enum(['streaming', 'complete', 'error', 'interrupted']),
     turn_id: z.string(),
-    content: z.record(z.string(), z.unknown()).optional()
+    content: z.record(z.string(), z.unknown()).optional(),
+    pending_ask: zAgentPendingAsk.optional()
   })
   .passthrough()
 
@@ -81,9 +146,10 @@ const zAgentThinkingData = z
 
 const zAgentToolCallData = z
   .object({
+    tool_call_id: z.string(),
     tool_name: z.string(),
-    status: z.string(),
-    args: z.array(z.string()),
+    status: z.enum(['running', 'success', 'error']),
+    args: z.never().optional(),
     duration_ms: z.number().optional(),
     message_id: z.string(),
     thread_id: z.string()
@@ -119,6 +185,11 @@ const zAgentMessageDoneData = z
 const zAgentActiveTabData = z
   .object({
     workflow_id: z.string(),
+    node_locator_id: z
+      .string()
+      .max(256)
+      .refine((value): boolean => isNodeLocatorId(value))
+      .optional(),
     name: z.string().optional(),
     thread_id: z.string().optional(),
     message_id: z.string().optional()
@@ -151,12 +222,32 @@ const zAgentActiveTabEvent = z.object({
   data: zAgentActiveTabData
 })
 
+const zAgentAskEvent = z.object({
+  type: z.literal('agent_ask'),
+  data: zAgentPendingAsk.extend({ thread_id: z.string() })
+})
+
+const zAgentAskResolvedEvent = z.object({
+  type: z.literal('agent_ask_resolved'),
+  data: z
+    .object({
+      thread_id: z.string(),
+      message_id: z.string(),
+      ask_id: z.string(),
+      status: z.enum(['answered', 'cancelled', 'expired']),
+      selected: z.array(z.string()).nullable()
+    })
+    .passthrough()
+})
+
 export const zAgentWsEvent = z.discriminatedUnion('type', [
   zAgentThinkingEvent,
   zAgentToolCallEvent,
   zAgentMessageDeltaEvent,
   zAgentMessageDoneEvent,
-  zAgentActiveTabEvent
+  zAgentActiveTabEvent,
+  zAgentAskEvent,
+  zAgentAskResolvedEvent
 ])
 export type AgentWsEvent = z.infer<typeof zAgentWsEvent>
 

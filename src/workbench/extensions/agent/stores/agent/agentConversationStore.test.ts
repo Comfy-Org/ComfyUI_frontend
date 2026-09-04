@@ -3,13 +3,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, watch } from 'vue'
 
 import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
-import { zAgentWsEvent } from '../../schemas/agentApiSchema'
+import { zAgentMessages, zAgentWsEvent } from '../../schemas/agentApiSchema'
 import type { AgentChatEvent } from '../../services/agent/agentEventTransport'
 
 import { useAgentConversationStore } from './agentConversationStore'
 
-const chat = (raw: unknown): AgentChatEvent =>
-  zAgentWsEvent.parse(raw) as AgentChatEvent
+const chat = (raw: unknown): AgentChatEvent => zAgentWsEvent.parse(raw)
 const thinking = (id: string, delta: string): AgentChatEvent =>
   chat({
     type: 'agent_thinking',
@@ -23,12 +22,29 @@ const delta = (id: string, text: string): AgentChatEvent =>
 const toolCall = (id: string, name: string, status: string): AgentChatEvent =>
   chat({
     type: 'agent_tool_call',
-    data: { tool_name: name, status, args: [], message_id: id, thread_id: 'th' }
+    data: {
+      tool_call_id: `call-${name}`,
+      tool_name: name,
+      status,
+      message_id: id,
+      thread_id: 'th'
+    }
   })
 const done = (id: string): AgentChatEvent =>
   chat({
     type: 'agent_message_done',
     data: { message_id: id, thread_id: 'th', usage: null }
+  })
+const askResolved = (id: string, askId: string): AgentChatEvent =>
+  chat({
+    type: 'agent_ask_resolved',
+    data: {
+      message_id: id,
+      thread_id: 'th',
+      ask_id: askId,
+      status: 'answered',
+      selected: ['run']
+    }
   })
 
 const T1 = 't1' as TurnId
@@ -201,12 +217,70 @@ describe('useAgentConversationStore', () => {
   it('folds a tool_call into the active turn', () => {
     const store = useAgentConversationStore()
     store.startTurn(T1)
-    store.ingest(toolCall('t1', 'add_node', 'ok'))
+    store.ingest(toolCall('t1', 'add_node', 'success'))
     expect(store.messages[0].parts[0]).toMatchObject({
       type: 'tool',
       name: 'add_node',
       ok: true
     })
+  })
+
+  it('restores a pending run approval as the live turn and continues after it resolves', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'turn-1', 'Run it', 'user-message-1'),
+      zAgentMessages.parse([
+        {
+          id: 'assistant-message-1',
+          thread_id: 'th',
+          seq: 2,
+          role: 'assistant',
+          status: 'streaming',
+          turn_id: 'turn-1',
+          pending_ask: {
+            message_id: 'assistant-message-1',
+            ask_id: 'turn-1:call-1',
+            kind: 'run_approval',
+            context: {
+              workflow_id: 'workflow-1',
+              workflow_name: 'Portrait workflow'
+            },
+            prompt: 'Run workflow “Portrait workflow”?',
+            options: [
+              { id: 'run', label: 'Run' },
+              { id: 'cancel', label: 'Cancel' }
+            ],
+            min_selections: 1,
+            max_selections: 1,
+            allow_other: false
+          }
+        }
+      ])[0]
+    ])
+
+    expect(store.activeTurnId).toBe('assistant-message-1')
+    expect(store.isStreaming).toBe(true)
+    expect(store.messages[0].parts).toContainEqual({
+      type: 'runApproval',
+      askId: 'turn-1:call-1',
+      workflowId: 'workflow-1',
+      workflowName: 'Portrait workflow'
+    })
+
+    store.ingest(askResolved('assistant-message-1', 'turn-1:call-1'))
+    store.ingest(delta('assistant-message-1', 'Running now.'))
+
+    expect(
+      store.messages[0].parts.some(
+        (part) => (part as { type: string }).type === 'runApproval'
+      )
+    ).toBe(false)
+    expect(partTexts(store)).toContain('Running now.')
+    expect(store.isStreaming).toBe(true)
+
+    store.ingest(done('assistant-message-1'))
+    expect(store.isStreaming).toBe(false)
   })
 
   it('recordFailedSend renders [user, assistant(notice)] and leaves the turn idle', () => {
@@ -338,6 +412,43 @@ describe('useAgentConversationStore', () => {
     store.resumeBackgroundTurn()
 
     expect(partTexts(store)).toContain('the awaited reply')
+  })
+
+  it('hydrates transcript turns in sequence order', () => {
+    const store = useAgentConversationStore()
+
+    store.hydrate([
+      historyRow(4, 'assistant', 'turn-b', 'Second reply'),
+      historyRow(2, 'assistant', 'turn-a', 'First reply'),
+      historyRow(1, 'user', 'turn-a', 'First prompt'),
+      historyRow(3, 'user', 'turn-b', 'Second prompt')
+    ])
+
+    expect(store.entries.map((entry) => entry.id)).toEqual([
+      'turn-a',
+      'turn-a',
+      'turn-b',
+      'turn-b'
+    ])
+    expect(partTexts(store)).toEqual(['First reply', 'Second reply'])
+  })
+
+  it('keeps hydrated turn identity stable when persisted row ids change', () => {
+    const store = useAgentConversationStore()
+    const firstRows = [
+      historyRow(1, 'user', 'turn-a', 'Prompt', 'user-row-v1'),
+      historyRow(2, 'assistant', 'turn-a', 'Reply', 'assistant-row-v1')
+    ]
+
+    store.hydrate(firstRows)
+    const firstMessage = store.messages[0]
+    store.hydrate([
+      historyRow(1, 'user', 'turn-a', 'Prompt', 'user-row-v2'),
+      historyRow(2, 'assistant', 'turn-a', 'Reply', 'assistant-row-v2')
+    ])
+
+    expect(store.messages[0].id).toBe(firstMessage.id)
+    expect(store.messages[0].id).toBe('turn-a')
   })
 
   it('keeps an earlier completed turn when a returning live turn repeats its prompt text', () => {

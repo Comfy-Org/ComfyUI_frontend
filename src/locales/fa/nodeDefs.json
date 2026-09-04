@@ -7201,12 +7201,12 @@
     }
   },
   "HiDreamO1ReferenceImages": {
-    "description": "ضمیمه کردن ۱ تا ۱۰ تصویر مرجع به شرط‌دهی؛ یک تصویر برای ویرایش دستور یا چند تصویر برای شخصی‌سازی مبتنی بر سوژه.",
+    "description": "تصاویر مرجعِ مرتب‌شده را به شرطی‌سازی مثبت و منفی پیوست کنید.",
     "display_name": "تصاویر مرجع HiDream-O1",
     "inputs": {
       "images": {
         "name": "تصاویر",
-        "tooltip": "تصاویر مرجع. ۱ تصویر = ویرایش دستور؛ ۲ تا ۱۰ تصویر = مرجع چندگانه."
+        "tooltip": "تصاویر مرجع بر اساس ترتیب عددی سوکت‌ها استفاده می‌شوند."
       },
       "negative": {
         "name": "منفی"
@@ -12748,6 +12748,46 @@
       }
     }
   },
+  "MiniMaxH3FunControlNetApply": {
+    "description": "یک MiniMax H3 Fun ControlNet را به‌عنوان patch مدل به یک مدل متن‌به‌ویدئو اعمال کنید.",
+    "display_name": "اعمال MiniMax H3 Fun ControlNet",
+    "inputs": {
+      "control_video": {
+        "name": "control_video"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "۱ نواحیِ بازتولید را مشخص می‌کند."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "ویدیوی پشت ماسک؛ فقط هنگامی خوانده می‌شود که ماسک ارائه شده باشد."
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MiniMaxH3ImageToVideo": {
     "display_name": "تبدیل تصویر به ویدیو MiniMax H3",
     "inputs": {
@@ -12792,7 +12832,8 @@
     "display_name": "تبدیل مرجع به ویدیو MiniMax H3",
     "inputs": {
       "audio_vae": {
-        "name": "audio_vae"
+        "name": "audio_vae",
+        "tooltip": "VAE صوتی. بدون آن، صوت مرجع فقط انکودر متن را شرطی می‌کند."
       },
       "clip": {
         "name": "clip"
@@ -12824,7 +12865,8 @@
         "name": "ویدیوهای مرجع"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "VAE ویدئو. بدون آن، تصاویر/ویدئوهای مرجع فقط انکودر متن را شرطی می‌کنند."
       },
       "width": {
         "name": "عرض"
@@ -12933,7 +12975,7 @@
     }
   },
   "MinimaxHailuo03FirstLastFrameNode": {
-    "description": "تولید ویدیو از تصویر اولین فریم و در صورت نیاز تصویر آخرین فریم با استفاده از مدل MiniMax H3. نسبت تصویر ویدیو مطابق تصاویر ارائه‌شده خواهد بود.",
+    "description": "با استفاده از مدل‌های MiniMax H3، از تصویر فریم اول و تصویر اختیاری فریم آخر ویدئو تولید کنید. نسبت ابعاد ویدئو از تصاویر ارائه‌شده پیروی می‌کند.",
     "display_name": "تبدیل اولین و آخرین فریم MiniMax H3 به ویدیو",
     "inputs": {
       "control_after_generate": {
@@ -12976,7 +13018,7 @@
     }
   },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "تولید ویدیو بر اساس تصاویر مرجع، ویدیوها و صدا با استفاده از مدل MiniMax H3. به مراجع در پرامپت بر اساس ترتیب آن‌ها اشاره کنید: «تصویر ۱»، «تصویر ۲»، «ویدیو ۱»، «صدا ۱» و به همین ترتیب.",
+    "description": "با استفاده از مدل‌های MiniMax H3، ویدئویی شرطی‌شده بر تصاویر، ویدئوها و صوت مرجع تولید کنید. در prompt به‌ترتیب به مراجع اشاره کنید: 'Image 1'، 'Image 2'، 'Video 1'، 'Audio 1' و غیره.",
     "display_name": "تبدیل مرجع MiniMax H3 به ویدیو",
     "inputs": {
       "control_after_generate": {
@@ -13051,7 +13093,7 @@
     }
   },
   "MinimaxHailuo03TextToVideoNode": {
-    "description": "تولید ویدیو از طریق پرامپت متنی با استفاده از مدل MiniMax H3.",
+    "description": "با استفاده از مدل‌های MiniMax H3، از یک prompt متنی ویدئو تولید کنید.",
     "display_name": "تبدیل متن به ویدیو MiniMax H3",
     "inputs": {
       "control_after_generate": {
@@ -16932,7 +16974,7 @@
   },
   "Preview3D": {
     "description": "پیش‌نمایش یک فایل مدل سه‌بعدی بدون ذخیره آن در پوشه خروجی ComfyUI.",
-    "display_name": "پیش‌نمایش سه‌بعدی و انیمیشن",
+    "display_name": "پیش‌نمایش 3D و انیمیشن (منسوخ‌شده)",
     "inputs": {
       "bg_image": {
         "name": "تصویر پس‌زمینه"
@@ -17945,7 +17987,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "نوع خروجی که سبک برای آن ایجاد می‌شود: recraftv4_styles برای تصاویر رستری و recraftv4_styles_vector برای SVG."
+        "tooltip": "مدلی که سبک برای آن ایجاد می‌شود. Standard و Pro یک مخزن سبک مشترک دارند: سبک‌های raster با همهٔ مدل‌های raster ‏Recraft V4 و V4.1 کار می‌کنند و سبک‌های vector (*_vector) با همهٔ مدل‌های vector ‏V4 و V4.1."
       }
     },
     "outputs": {
@@ -18641,6 +18683,10 @@
       "multiple": {
         "name": "ضرب‌کننده",
         "tooltip": "نزدیک‌ترین مضرب نتیجه برای تنظیم وضوح انتخاب‌شده."
+      },
+      "preview": {
+        "name": "preview",
+        "tooltip": "پیش‌نمایش زندهٔ وضوح خروجی محاسبه‌شده."
       }
     },
     "outputs": {
@@ -21113,6 +21159,23 @@
       },
       "scale": {
         "name": "مقیاس"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaSamplingOptions": {
+    "description": "جابه‌جایی جریان SenseNova را تنظیم کنید.",
+    "display_name": "گزینه‌های نمونه‌گیری SenseNova",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
       }
     },
     "outputs": {

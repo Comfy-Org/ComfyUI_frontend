@@ -7201,12 +7201,12 @@
     }
   },
   "HiDreamO1ReferenceImages": {
-    "description": "Прикрепите 1-10 референсных изображений для кондиционирования: одно для редактирования по инструкции или несколько для персонализации по объекту.",
+    "description": "Подключите упорядоченные эталонные изображения к положительному и отрицательному кондиционированию.",
     "display_name": "Референсные изображения HiDream-O1",
     "inputs": {
       "images": {
         "name": "изображения",
-        "tooltip": "Референсные изображения. 1 изображение = редактирование по инструкции; 2-10 изображений = мульти-референс."
+        "tooltip": "Эталонные изображения используются в числовом порядке входов."
       },
       "negative": {
         "name": "отрицательный"
@@ -12748,6 +12748,46 @@
       }
     }
   },
+  "MiniMaxH3FunControlNetApply": {
+    "description": "Применяет MiniMax H3 Fun ControlNet к модели преобразования текста в видео в качестве патча модели.",
+    "display_name": "Применить MiniMax H3 Fun ControlNet",
+    "inputs": {
+      "control_video": {
+        "name": "control_video"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "1 отмечает области для регенерации."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "Видео под маской; считывается только при наличии маски."
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MiniMaxH3ImageToVideo": {
     "display_name": "MiniMax H3: изображение в видео",
     "inputs": {
@@ -12792,7 +12832,8 @@
     "display_name": "MiniMax H3: референс в видео",
     "inputs": {
       "audio_vae": {
-        "name": "audio_vae"
+        "name": "audio_vae",
+        "tooltip": "Аудио VAE. Без него эталонное аудио задаёт условия только для текстового кодировщика."
       },
       "clip": {
         "name": "clip"
@@ -12824,7 +12865,8 @@
         "name": "реф_видео"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "Видео VAE. Без него эталонные изображения/видео задают условия только для текстового кодировщика."
       },
       "width": {
         "name": "ширина"
@@ -12933,7 +12975,7 @@
     }
   },
   "MinimaxHailuo03FirstLastFrameNode": {
-    "description": "Генерирует видео по изображению первого кадра и, при необходимости, последнего кадра с помощью модели MiniMax H3. Соотношение сторон видео соответствует предоставленным изображениям.",
+    "description": "Генерирует видео по изображению первого кадра и необязательному изображению последнего кадра с помощью моделей MiniMax H3. Соотношение сторон видео соответствует предоставленным изображениям.",
     "display_name": "MiniMax H3: видео по первому и последнему кадру",
     "inputs": {
       "control_after_generate": {
@@ -12976,7 +13018,7 @@
     }
   },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "Генерируйте видео на основе референсных изображений, видео и аудио с помощью модели MiniMax H3. Ссылайтесь на референсы в промпте по их порядку: 'Image 1', 'Image 2', 'Video 1', 'Audio 1' и так далее.",
+    "description": "Генерирует видео с учётом эталонных изображений, видео и аудио с помощью моделей MiniMax H3. Ссылайтесь на эталоны в запросе по их порядку: 'Image 1', 'Image 2', 'Video 1', 'Audio 1' и так далее.",
     "display_name": "MiniMax H3: Референс в видео",
     "inputs": {
       "control_after_generate": {
@@ -13051,7 +13093,7 @@
     }
   },
   "MinimaxHailuo03TextToVideoNode": {
-    "description": "Генерируйте видео по текстовому промпту с помощью модели MiniMax H3.",
+    "description": "Генерирует видео из текстового запроса с помощью моделей MiniMax H3.",
     "display_name": "MiniMax H3: Текст в видео",
     "inputs": {
       "control_after_generate": {
@@ -16932,7 +16974,7 @@
   },
   "Preview3D": {
     "description": "Просмотр 3D-модели без сохранения в выходной каталог ComfyUI.",
-    "display_name": "Предварительный просмотр 3D",
+    "display_name": "Предпросмотр 3D и анимации (УСТАРЕЛО)",
     "inputs": {
       "bg_image": {
         "name": "bg_image"
@@ -17945,7 +17987,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Тип вывода, для которого создаётся стиль: recraftv4_styles для растровых изображений, recraftv4_styles_vector для SVG."
+        "tooltip": "Модель, для которой создаётся стиль. Standard и Pro используют общий пул стилей: растровые стили работают с каждой растровой моделью Recraft V4 и V4.1, векторные стили (*_vector) — с каждой векторной моделью V4 и V4.1."
       }
     },
     "outputs": {
@@ -18641,6 +18683,10 @@
       "multiple": {
         "name": "кратность",
         "tooltip": "Ближайшая кратность результата для установки выбранного разрешения."
+      },
+      "preview": {
+        "name": "preview",
+        "tooltip": "Предпросмотр в реальном времени рассчитанного выходного разрешения."
       }
     },
     "outputs": {
@@ -21113,6 +21159,23 @@
       },
       "scale": {
         "name": "масштаб"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaSamplingOptions": {
+    "description": "Настройте смещение потока SenseNova.",
+    "display_name": "Параметры сэмплирования SenseNova",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
       }
     },
     "outputs": {
