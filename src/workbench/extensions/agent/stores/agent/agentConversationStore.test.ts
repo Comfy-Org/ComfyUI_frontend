@@ -36,7 +36,7 @@ const done = (id: string): AgentChatEvent =>
     data: { message_id: id, thread_id: 'th', usage: null }
   })
 const askResolved = (id: string, askId: string): AgentChatEvent =>
-  ({
+  chat({
     type: 'agent_ask_resolved',
     data: {
       message_id: id,
@@ -45,7 +45,7 @@ const askResolved = (id: string, askId: string): AgentChatEvent =>
       status: 'answered',
       selected: ['run']
     }
-  }) as unknown as AgentChatEvent
+  })
 
 const T1 = 't1' as TurnId
 const T2 = 't2' as TurnId

@@ -49,7 +49,9 @@ function isChatEvent(event: AgentWsEvent): event is AgentChatEvent {
     event.type === 'agent_tool_call' ||
     event.type === 'agent_message_delta' ||
     event.type === 'agent_message_done' ||
-    event.type === 'agent_active_tab'
+    event.type === 'agent_active_tab' ||
+    event.type === 'agent_ask' ||
+    event.type === 'agent_ask_resolved'
   )
 }
 
@@ -112,7 +114,7 @@ function activeTab(
 }
 
 function runApproval(askId = 'turn-1:call-1'): AgentChatEvent {
-  return {
+  return zAgentWsEvent.parse({
     type: 'agent_ask',
     data: {
       thread_id: 't',
@@ -132,11 +134,11 @@ function runApproval(askId = 'turn-1:call-1'): AgentChatEvent {
       max_selections: 1,
       allow_other: false
     }
-  } as unknown as AgentChatEvent
+  })
 }
 
 function askResolved(askId = 'turn-1:call-1'): AgentChatEvent {
-  return {
+  return zAgentWsEvent.parse({
     type: 'agent_ask_resolved',
     data: {
       thread_id: 't',
@@ -145,7 +147,7 @@ function askResolved(askId = 'turn-1:call-1'): AgentChatEvent {
       status: 'answered',
       selected: ['run']
     }
-  } as unknown as AgentChatEvent
+  })
 }
 
 const parts = (m: AssistantMessage) => m.parts
