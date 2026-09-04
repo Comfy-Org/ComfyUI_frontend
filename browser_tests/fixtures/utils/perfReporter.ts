@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto'
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
 
@@ -48,7 +49,7 @@ export function recordMeasurement(
   result: PerfMeasurementResult
 ): PerfMeasurement {
   mkdirSync(TEMP_DIR, { recursive: true })
-  const filename = `${result.measurement.name}-${Date.now()}.json`
+  const filename = `${result.measurement.name}-${Date.now()}-${randomUUID()}.json`
   writeFileSync(join(TEMP_DIR, filename), JSON.stringify(result))
   return result.measurement
 }
