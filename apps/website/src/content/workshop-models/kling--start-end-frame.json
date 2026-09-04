@@ -1,0 +1,116 @@
+{
+  "id": "kling/start-end-frame",
+  "slug": "kling--start-end-frame",
+  "displayName": "Kling Start-End Frame",
+  "provider": "kling",
+  "modality": "video",
+  "description": "Generates a transition video from start + end frames (Kling).",
+  "tags": ["kling", "video", "image-to-video", "start-end-frame"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["kling/start-end-frame"]
+      },
+      "prompt": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 500,
+        "description": "Positive text prompt."
+      },
+      "aspect_ratio": {
+        "type": "string",
+        "enum": ["16:9", "9:16", "1:1"],
+        "description": "Video aspect ratio.",
+        "default": "16:9"
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["end_image"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["start_image"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "cfg_scale": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1,
+        "description": "Classifier-free guidance scale.",
+        "default": 0.5
+      },
+      "mode": {
+        "type": "string",
+        "enum": [
+          "pro mode / 5s duration / kling-v1-5",
+          "pro mode / 10s duration / kling-v1-5",
+          "pro mode / 5s duration / kling-v1-6",
+          "pro mode / 10s duration / kling-v1-6",
+          "pro mode / 5s duration / kling-v2-1",
+          "pro mode / 10s duration / kling-v2-1",
+          "pro mode / 5s duration / kling-v2-5-turbo",
+          "pro mode / 10s duration / kling-v2-5-turbo"
+        ],
+        "description": "Friendly configuration string. Decomposed at body assembly into the wire (mode, duration, model_name) triple. Only configs that support the `image_tail` request field are listed.",
+        "default": "pro mode / 5s duration / kling-v2-5-turbo"
+      },
+      "negative_prompt": {
+        "type": "string",
+        "description": "Negative text prompt. Empty → dropped.",
+        "default": ""
+      }
+    },
+    "required": ["model", "prompt"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "end_image",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    },
+    {
+      "role": "start_image",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    }
+  ]
+}

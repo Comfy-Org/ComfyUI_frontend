@@ -1,0 +1,178 @@
+{
+  "id": "xai/grok-imagine-video-1.5-reference",
+  "slug": "xai--grok-imagine-video-1.5-reference",
+  "displayName": "Grok Imagine Video 1.5 Reference",
+  "provider": "xai",
+  "modality": "video",
+  "description": "Generates a video from up to seven reference images and optional preset voices (Grok Imagine Video 1.5).",
+  "tags": ["grok", "xai", "video", "1.5", "reference", "voice"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["xai/grok-imagine-video-1.5-reference"]
+      },
+      "prompt": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Text with optional @ImageN and @AudioN references."
+      },
+      "aspect_ratio": {
+        "type": "string",
+        "enum": ["16:9", "4:3", "3:2", "1:1", "2:3", "3:4", "9:16"],
+        "default": "16:9"
+      },
+      "duration": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 15,
+        "default": 6
+      },
+      "seed": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 2147483647,
+        "default": 0
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": ["reference_image"]
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": ["role", "value"],
+          "additionalProperties": false
+        }
+      },
+      "resolution": {
+        "type": "string",
+        "enum": ["480p", "720p"],
+        "default": "720p"
+      },
+      "voice_1": {
+        "type": "string",
+        "enum": [
+          "none",
+          "ara",
+          "eve",
+          "leo",
+          "rex",
+          "sal",
+          "carina",
+          "zagan",
+          "helix",
+          "orion",
+          "luna",
+          "iris",
+          "altair",
+          "zenith",
+          "perseus",
+          "helios",
+          "lux",
+          "kepler",
+          "rigel",
+          "cosmo",
+          "celeste",
+          "ursa",
+          "sirius",
+          "lumen",
+          "castor",
+          "naksh",
+          "atlas"
+        ],
+        "default": "none"
+      },
+      "voice_2": {
+        "type": "string",
+        "enum": [
+          "none",
+          "ara",
+          "eve",
+          "leo",
+          "rex",
+          "sal",
+          "carina",
+          "zagan",
+          "helix",
+          "orion",
+          "luna",
+          "iris",
+          "altair",
+          "zenith",
+          "perseus",
+          "helios",
+          "lux",
+          "kepler",
+          "rigel",
+          "cosmo",
+          "celeste",
+          "ursa",
+          "sirius",
+          "lumen",
+          "castor",
+          "naksh",
+          "atlas"
+        ],
+        "default": "none"
+      },
+      "voice_3": {
+        "type": "string",
+        "enum": [
+          "none",
+          "ara",
+          "eve",
+          "leo",
+          "rex",
+          "sal",
+          "carina",
+          "zagan",
+          "helix",
+          "orion",
+          "luna",
+          "iris",
+          "altair",
+          "zenith",
+          "perseus",
+          "helios",
+          "lux",
+          "kepler",
+          "rigel",
+          "cosmo",
+          "celeste",
+          "ursa",
+          "sirius",
+          "lumen",
+          "castor",
+          "naksh",
+          "atlas"
+        ],
+        "default": "none"
+      }
+    },
+    "required": ["model", "prompt"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "reference_image",
+      "required": true,
+      "cardinality": "many",
+      "minItems": 1,
+      "maxItems": 7
+    }
+  ]
+}

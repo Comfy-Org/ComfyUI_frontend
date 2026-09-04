@@ -1,0 +1,121 @@
+{
+  "id": "wan/image-to-video-3.0",
+  "slug": "wan--image-to-video-3.0",
+  "displayName": "Wan 3.0 Image-to-Video",
+  "provider": "wan",
+  "modality": "video",
+  "description": "Generates a video from a first-frame image, with optional last-frame control (Wan 3.0).",
+  "tags": ["wan", "wan3.0", "video", "image-to-video", "audio"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["wan/image-to-video-3.0"]
+      },
+      "prompt": {
+        "type": "string",
+        "maxLength": 20000,
+        "description": "Prompt describing the elements and visual features.",
+        "default": ""
+      },
+      "aspect_ratio": {
+        "type": "string",
+        "enum": ["adaptive", "16:9", "9:16", "1:1", "4:3", "3:4"],
+        "description": "Aspect ratio; `adaptive` derives it from the first frame.",
+        "default": "adaptive"
+      },
+      "duration": {
+        "type": "integer",
+        "description": "Output duration in seconds (2-30), or -1 to let the model pick (the default). With reference videos, input + output must stay within 30 seconds.",
+        "default": -1
+      },
+      "seed": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 2147483647,
+        "description": "Seed.",
+        "default": 42
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["end_image"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["start_image"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "audio": {
+        "type": "boolean",
+        "description": "Whether the output video contains an audio track.",
+        "default": true
+      },
+      "prompt_extend": {
+        "type": "boolean",
+        "description": "Prompt-extend toggle.",
+        "default": true
+      },
+      "resolution": {
+        "type": "string",
+        "enum": ["1080P", "720P", "480P"],
+        "description": "Output video resolution tier (1080P, 720P or 480P)."
+      },
+      "watermark": {
+        "type": "boolean",
+        "description": "Watermark toggle.",
+        "default": false
+      }
+    },
+    "required": ["model", "resolution"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "end_image",
+      "required": false,
+      "cardinality": "single",
+      "minItems": 0,
+      "maxItems": 1
+    },
+    {
+      "role": "start_image",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    }
+  ]
+}

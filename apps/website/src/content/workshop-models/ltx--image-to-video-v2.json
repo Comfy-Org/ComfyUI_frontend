@@ -1,0 +1,179 @@
+{
+  "id": "ltx/image-to-video-v2",
+  "slug": "ltx--image-to-video-v2",
+  "displayName": "LTX-2.5 Image-to-Video",
+  "provider": "ltx",
+  "modality": "video",
+  "description": "Generates an asynchronous LTX-2.5 video from a first frame and optional last frame.",
+  "tags": ["ltx", "lightricks", "ltx-2.5", "video", "image-to-video", "audio"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["ltx/image-to-video-v2"]
+      },
+      "prompt": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 10000
+      },
+      "duration": {
+        "anyOf": [
+          {
+            "type": "number",
+            "enum": [2]
+          },
+          {
+            "type": "number",
+            "enum": [3]
+          },
+          {
+            "type": "number",
+            "enum": [4]
+          },
+          {
+            "type": "number",
+            "enum": [5]
+          },
+          {
+            "type": "number",
+            "enum": [6]
+          },
+          {
+            "type": "number",
+            "enum": [8]
+          },
+          {
+            "type": "number",
+            "enum": [10]
+          },
+          {
+            "type": "number",
+            "enum": [12]
+          },
+          {
+            "type": "number",
+            "enum": [14]
+          },
+          {
+            "type": "number",
+            "enum": [16]
+          },
+          {
+            "type": "number",
+            "enum": [18]
+          },
+          {
+            "type": "number",
+            "enum": [20]
+          }
+        ],
+        "default": 8
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["end_image"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["image"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "fps": {
+        "anyOf": [
+          {
+            "type": "number",
+            "enum": [24]
+          },
+          {
+            "type": "number",
+            "enum": [25]
+          },
+          {
+            "type": "number",
+            "enum": [48]
+          },
+          {
+            "type": "number",
+            "enum": [50]
+          }
+        ],
+        "default": 25
+      },
+      "generate_audio": {
+        "type": "boolean",
+        "default": true
+      },
+      "resolution": {
+        "type": "string",
+        "enum": [
+          "1280x720",
+          "720x1280",
+          "1920x1080",
+          "1080x1920",
+          "2560x1440",
+          "1440x2560",
+          "3840x2160",
+          "2160x3840"
+        ],
+        "default": "1920x1080"
+      },
+      "variant": {
+        "type": "string",
+        "enum": ["LTX-2.5 (Fast)", "LTX-2.5 (Pro)"],
+        "default": "LTX-2.5 (Fast)"
+      }
+    },
+    "required": ["model", "prompt"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "end_image",
+      "required": false,
+      "cardinality": "single",
+      "minItems": 0,
+      "maxItems": 1
+    },
+    {
+      "role": "image",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    }
+  ]
+}

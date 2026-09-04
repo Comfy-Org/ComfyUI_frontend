@@ -1,0 +1,99 @@
+{
+  "id": "topaz/wonder-3.5",
+  "slug": "topaz--wonder-3.5",
+  "displayName": "Topaz Wonder 3.5",
+  "provider": "topaz",
+  "modality": "image",
+  "description": "Enhances an image with selectable strength and optional grain (Topaz Wonder 3.5).",
+  "tags": ["topaz", "wonder-3.5", "image-enhance", "upscale", "image-to-image"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["topaz/wonder-3.5"]
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": ["image"]
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": ["role", "value"],
+          "additionalProperties": false
+        }
+      },
+      "enhancement_strength": {
+        "type": "string",
+        "enum": ["low", "medium", "high"],
+        "default": "high"
+      },
+      "grain": {
+        "type": "boolean",
+        "description": "Add grain to the output image.",
+        "default": false
+      },
+      "grain_density": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1,
+        "default": 0.5
+      },
+      "grain_model": {
+        "type": "string",
+        "enum": ["silver", "gaussian", "grey"],
+        "default": "silver"
+      },
+      "grain_size": {
+        "type": "number",
+        "minimum": 1,
+        "maximum": 5,
+        "default": 1
+      },
+      "grain_strength": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1,
+        "default": 0.5
+      },
+      "output_height": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 32000,
+        "description": "Zero value means to output in the same height as original or output width.",
+        "default": 0
+      },
+      "output_width": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 32000,
+        "description": "Zero value means to calculate automatically (usually it will be original size or output_height if specified).",
+        "default": 0
+      }
+    },
+    "required": ["model"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "image",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    }
+  ]
+}

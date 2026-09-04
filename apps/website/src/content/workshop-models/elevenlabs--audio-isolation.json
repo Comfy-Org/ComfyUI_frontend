@@ -1,0 +1,54 @@
+{
+  "id": "elevenlabs/audio-isolation",
+  "slug": "elevenlabs--audio-isolation",
+  "displayName": "ElevenLabs Audio Isolation",
+  "provider": "elevenlabs",
+  "modality": "audio",
+  "description": "Removes background noise from audio, isolating vocals or speech. Returns the cleaned audio as a downloadable artifact.",
+  "tags": [
+    "elevenlabs",
+    "audio",
+    "isolation",
+    "denoise",
+    "edit",
+    "noise-removal",
+    "vocals"
+  ],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["elevenlabs/audio-isolation"]
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": ["audio"]
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": ["role", "value"],
+          "additionalProperties": false
+        }
+      }
+    },
+    "required": ["model"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "audio",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    }
+  ]
+}

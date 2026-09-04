@@ -1,0 +1,97 @@
+{
+  "id": "tripo/text-to-model",
+  "slug": "tripo--text-to-model",
+  "displayName": "Tripo Text-to-3D",
+  "provider": "tripo",
+  "modality": "3d",
+  "description": "Generates a textured PBR 3D mesh from a text prompt (Tripo Text-to-3D).",
+  "tags": ["tripo", "3d", "text-to-3d", "glb"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["tripo/text-to-model"]
+      },
+      "prompt": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1024,
+        "description": "Text prompt describing the model to generate."
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "face_limit": {
+        "type": "integer",
+        "minimum": -1,
+        "maximum": 2000000,
+        "description": "Face limit; -1 means 'no limit' (dropped on the wire).",
+        "default": -1
+      },
+      "geometry_quality": {
+        "type": "string",
+        "enum": ["standard", "detailed"],
+        "default": "standard"
+      },
+      "image_seed": {
+        "type": "integer",
+        "default": 42
+      },
+      "model_seed": {
+        "type": "integer",
+        "default": 42
+      },
+      "model_version": {
+        "type": "string",
+        "enum": ["v3.0-20250812", "v2.5-20250123", "v1.4-20240625"],
+        "default": "v2.5-20250123"
+      },
+      "negative_prompt": {
+        "type": "string"
+      },
+      "pbr": {
+        "type": "boolean",
+        "default": true
+      },
+      "quad": {
+        "type": "boolean",
+        "default": false
+      },
+      "style": {
+        "type": "string",
+        "enum": [
+          "person:person2cartoon",
+          "animal:venom",
+          "object:clay",
+          "object:steampunk",
+          "object:christmas",
+          "object:barbie",
+          "gold",
+          "ancient_bronze",
+          "None"
+        ],
+        "default": "None"
+      },
+      "texture": {
+        "type": "boolean",
+        "default": true
+      },
+      "texture_quality": {
+        "type": "string",
+        "enum": ["standard", "detailed"],
+        "default": "standard"
+      },
+      "texture_seed": {
+        "type": "integer",
+        "default": 42
+      }
+    },
+    "required": ["model", "prompt"],
+    "additionalProperties": true
+  },
+  "roles": []
+}

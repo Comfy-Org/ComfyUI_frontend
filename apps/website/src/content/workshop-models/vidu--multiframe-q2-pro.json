@@ -1,0 +1,112 @@
+{
+  "id": "vidu/multiframe-q2-pro",
+  "slug": "vidu--multiframe-q2-pro",
+  "displayName": "Vidu Q2 Pro Multiframe",
+  "provider": "vidu",
+  "modality": "video",
+  "description": "Generates a multi-segment video stitched from a start image and 2-9 keyframes (Vidu Q2 Pro).",
+  "tags": ["vidu", "viduq2", "video", "multiframe", "keyframe"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["vidu/multiframe-q2-pro"]
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["image"]
+                },
+                "value": {
+                  "type": "string"
+                },
+                "duration": {
+                  "type": "integer",
+                  "minimum": 2,
+                  "maximum": 7,
+                  "description": "Duration for the segment in seconds (2..7).",
+                  "default": 4
+                },
+                "prompt": {
+                  "type": "string",
+                  "description": "Text prompt for the segment transition.",
+                  "default": ""
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["start_image"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "resolution": {
+        "type": "string",
+        "enum": ["720p", "1080p"],
+        "description": "Resolution of the output video."
+      }
+    },
+    "required": ["model", "resolution"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "image",
+      "required": true,
+      "cardinality": "many",
+      "minItems": 1,
+      "maxItems": 9,
+      "extras": [
+        {
+          "name": "duration",
+          "type": "integer",
+          "required": false,
+          "description": "Duration for the segment in seconds (2..7).",
+          "minimum": 2,
+          "maximum": 7,
+          "default": 4
+        },
+        {
+          "name": "prompt",
+          "type": "string",
+          "required": false,
+          "description": "Text prompt for the segment transition.",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "role": "start_image",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    }
+  ]
+}

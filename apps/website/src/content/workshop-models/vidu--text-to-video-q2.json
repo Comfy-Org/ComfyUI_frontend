@@ -1,0 +1,63 @@
+{
+  "id": "vidu/text-to-video-q2",
+  "slug": "vidu--text-to-video-q2",
+  "displayName": "Vidu Q2 Text-to-Video",
+  "provider": "vidu",
+  "modality": "video",
+  "description": "Generates a video clip from text with optional background music (Vidu Q2).",
+  "tags": ["vidu", "viduq2", "video", "text-to-video"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["vidu/text-to-video-q2"]
+      },
+      "prompt": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 2000,
+        "description": "A textual description for video generation, with a maximum length of 2000 characters."
+      },
+      "aspect_ratio": {
+        "type": "string",
+        "enum": ["16:9", "9:16", "3:4", "4:3", "1:1"],
+        "description": "The aspect ratio of the output video.",
+        "default": "16:9"
+      },
+      "duration": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 10,
+        "description": "Duration of the output video in seconds.",
+        "default": 5
+      },
+      "seed": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 2147483647,
+        "description": "Seed for video generation (0 for random).",
+        "default": 1
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "background_music": {
+        "type": "boolean",
+        "description": "Whether to add background music to the generated video. Wire field: `bgm`.",
+        "default": false
+      },
+      "resolution": {
+        "type": "string",
+        "enum": ["720p", "1080p"],
+        "description": "Resolution of the output video."
+      }
+    },
+    "required": ["model", "prompt", "resolution"],
+    "additionalProperties": true
+  },
+  "roles": []
+}

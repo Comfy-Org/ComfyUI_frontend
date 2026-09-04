@@ -1,0 +1,82 @@
+{
+  "id": "pika/image-to-video",
+  "slug": "pika--image-to-video",
+  "displayName": "Pika 2.2 Image-to-Video",
+  "provider": "pika",
+  "modality": "video",
+  "description": "Animates a still image into a 5s or 10s clip from a start frame (Pika 2.2 image-to-video).",
+  "tags": ["pika", "video", "image-to-video"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["pika/image-to-video"]
+      },
+      "prompt": {
+        "type": "string",
+        "minLength": 1
+      },
+      "duration": {
+        "anyOf": [
+          {
+            "type": "number",
+            "enum": [5]
+          },
+          {
+            "type": "number",
+            "enum": [10]
+          }
+        ],
+        "default": 5
+      },
+      "seed": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 4294967295
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": ["image"]
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": ["role", "value"],
+          "additionalProperties": false
+        }
+      },
+      "negative_prompt": {
+        "type": "string"
+      },
+      "resolution": {
+        "type": "string",
+        "enum": ["1080p", "720p"],
+        "default": "1080p"
+      }
+    },
+    "required": ["model"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "image",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    }
+  ]
+}

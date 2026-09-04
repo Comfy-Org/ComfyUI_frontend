@@ -154,6 +154,59 @@ can't be accidentally committed. Otherwise the `Release: Website` GitHub
 Actions workflow runs the same step on every manual dispatch and opens a PR
 with the refreshed snapshot.
 
+## Workshop (unreleased)
+
+Workshop is being built in the open on `main`, but it is not finished and must
+not appear on comfy.org until we say so. `noindex` cannot enforce that — it asks
+a crawler to stay away while the page stays live at a URL anyone can share — so
+the routes are kept out of the build instead.
+
+That gives three environments:
+
+| Environment      | `VERCEL_ENV` | Workshop | Answers                        |
+| ---------------- | ------------ | -------- | ------------------------------ |
+| Production       | `production` | out      | what is on comfy.org right now |
+| Preview, staging | `preview`    | out      | what ships if we release today |
+| Development      | unset        | in       | what we are building           |
+
+Preview deliberately matches production. A preview carrying an unreleased
+feature cannot answer the question a preview exists for: if we cut a release
+right now — for a hotfix, say — what goes out?
+
+`WORKSHOP_IN_BUILD` overrides it either way, and is how the remaining cases are
+reached without a code change:
+
+| Value   | Effect                | Used by                                        |
+| ------- | --------------------- | ---------------------------------------------- |
+| `1`     | Workshop in the build | a PR labelled `workshop`; production at launch |
+| `0`     | Workshop out          | reproducing a release build locally            |
+| _unset_ | environment default   | everything else                                |
+
+**To review Workshop on a deployed URL,** add the `workshop` label to the PR.
+`ci-vercel-website-preview.yaml` listens for `labeled`/`unlabeled`, so the
+preview rebuilds without needing a push, and the preview comment says which of
+the two builds you are looking at.
+
+**To reproduce the next release locally:**
+
+```bash
+WORKSHOP_IN_BUILD=0 pnpm --filter @comfyorg/website build
+test ! -d apps/website/dist/workshop && echo "no Workshop in this build"
+```
+
+**To launch,** set `WORKSHOP_IN_BUILD=1` in the Vercel _production_ environment
+— and in the _preview_ environment at the same time, so the two go on matching.
+No code change, and reversible by removing it. An unlabelled PR deliberately
+leaves the variable undefined rather than setting it empty, so that the Vercel
+preview value is what governs once it exists.
+
+The switch is `src/config/workshop-release.ts`; the removal is the
+`workshop-release-gate` Astro integration, which deletes the emitted directory
+at `astro:build:done` and throws if it is still there afterwards. It deletes
+output rather than filtering routes at `astro:routes:resolved`, because that
+hook only reports the resolved routes — mutating the array does not stop them
+being generated.
+
 ## HubSpot forms
 
 Pages that collect leads use HubSpot's hosted form embed:

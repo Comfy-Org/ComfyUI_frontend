@@ -1,0 +1,93 @@
+{
+  "id": "bria/eraser",
+  "slug": "bria--eraser",
+  "displayName": "Bria Eraser",
+  "provider": "bria",
+  "modality": "image",
+  "description": "Removes objects or masked areas from an image.",
+  "tags": ["bria", "eraser", "object-removal", "mask", "image-edit"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["bria/eraser"]
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["image"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["mask"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "mask_type": {
+        "type": "string",
+        "enum": ["manual", "automatic"],
+        "default": "manual"
+      },
+      "moderation": {
+        "type": "string",
+        "enum": ["false", "true"],
+        "default": "false"
+      },
+      "visual_input_moderation": {
+        "type": "boolean"
+      },
+      "visual_output_moderation": {
+        "type": "boolean"
+      }
+    },
+    "required": ["model"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "image",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    },
+    {
+      "role": "mask",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    }
+  ]
+}

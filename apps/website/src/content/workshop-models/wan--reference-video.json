@@ -1,0 +1,100 @@
+{
+  "id": "wan/reference-video",
+  "slug": "wan--reference-video",
+  "displayName": "Wan 2.6 Reference-to-Video",
+  "provider": "wan",
+  "modality": "video",
+  "description": "Generates a video from up to three reference clips (Wan 2.6).",
+  "tags": ["wan", "wan2.6", "video", "reference-to-video"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["wan/reference-video"]
+      },
+      "prompt": {
+        "type": "string",
+        "description": "Prompt; use `character1`/`character2`/`character3` to refer to references.",
+        "default": ""
+      },
+      "duration": {
+        "type": "integer",
+        "description": "Video duration in seconds. Allowed values: 5, 10.",
+        "default": 5
+      },
+      "seed": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 2147483647,
+        "description": "Seed.",
+        "default": 0
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": ["reference_video"]
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": ["role", "value"],
+          "additionalProperties": false
+        }
+      },
+      "negative_prompt": {
+        "type": "string",
+        "description": "Negative prompt describing what to avoid.",
+        "default": ""
+      },
+      "shot_type": {
+        "type": "string",
+        "enum": ["single", "multi"],
+        "description": "Single or multi shot."
+      },
+      "size": {
+        "type": "string",
+        "enum": [
+          "720p: 1:1 (960x960)",
+          "720p: 16:9 (1280x720)",
+          "720p: 9:16 (720x1280)",
+          "720p: 4:3 (1088x832)",
+          "720p: 3:4 (832x1088)",
+          "1080p: 1:1 (1440x1440)",
+          "1080p: 16:9 (1920x1080)",
+          "1080p: 9:16 (1080x1920)",
+          "1080p: 4:3 (1632x1248)",
+          "1080p: 3:4 (1248x1632)"
+        ],
+        "description": "Output video size."
+      },
+      "watermark": {
+        "type": "boolean",
+        "description": "Watermark toggle.",
+        "default": false
+      }
+    },
+    "required": ["model", "shot_type", "size"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "reference_video",
+      "required": true,
+      "cardinality": "many",
+      "minItems": 1,
+      "maxItems": 3
+    }
+  ]
+}

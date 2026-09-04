@@ -1,0 +1,51 @@
+{
+  "id": "rodin/sketch",
+  "slug": "rodin--sketch",
+  "displayName": "Hyper3D Rodin Sketch",
+  "provider": "rodin",
+  "modality": "3d",
+  "description": "Generates a 3D mesh from sketch-style references (Hyper3D Rodin Sketch).",
+  "tags": ["rodin", "hyper3d", "deemos", "3d", "image-to-3d", "sketch"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["rodin/sketch"]
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": ["image"]
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": ["role", "value"],
+          "additionalProperties": false
+        }
+      },
+      "Seed": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 65535
+      }
+    },
+    "required": ["model"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "image",
+      "required": true,
+      "cardinality": "many",
+      "minItems": 1,
+      "maxItems": 5
+    }
+  ]
+}

@@ -1,0 +1,105 @@
+{
+  "id": "runway/gen3a-turbo-first-last-frame",
+  "slug": "runway--gen3a-turbo-first-last-frame",
+  "displayName": "Runway Gen-3 Alpha Turbo First-Last Frame",
+  "provider": "runway",
+  "modality": "video",
+  "description": "Generates a transition video from start + end frames (Runway Gen 3a Turbo).",
+  "tags": [
+    "runway",
+    "gen3a",
+    "video",
+    "first-last-frame",
+    "keyframes",
+    "deprecated"
+  ],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["runway/gen3a-turbo-first-last-frame"]
+      },
+      "prompt": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Text prompt for the generation. node.py:342-346 widget; validate_string(min_length=1) at execute."
+      },
+      "aspect_ratio": {
+        "type": "string",
+        "enum": ["768:1280", "1280:768"],
+        "description": "The resolution (aspect ratio) of the output video."
+      },
+      "duration": {
+        "type": "number",
+        "description": "Number of seconds of duration for the output video."
+      },
+      "seed": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 4294967295,
+        "description": "Random seed for generation.",
+        "default": 0
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["end_image"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["start_image"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            }
+          ]
+        }
+      }
+    },
+    "required": ["model", "prompt", "aspect_ratio", "duration"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "end_image",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    },
+    {
+      "role": "start_image",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    }
+  ]
+}

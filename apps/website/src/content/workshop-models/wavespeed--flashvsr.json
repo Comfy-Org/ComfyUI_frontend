@@ -1,0 +1,62 @@
+{
+  "id": "wavespeed/flashvsr",
+  "slug": "wavespeed--flashvsr",
+  "displayName": "FlashVSR",
+  "provider": "wavespeed",
+  "modality": "video",
+  "description": "Upscales a low-resolution or blurry video up to 4K (FlashVSR).",
+  "tags": ["wavespeed", "flashvsr", "video", "upscale", "video-upscale"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["wavespeed/flashvsr"]
+      },
+      "duration": {
+        "type": "number",
+        "minimum": 0,
+        "description": "Duration of the source video in seconds. node.py reads `video.get_duration()` off the IO.Video.Input runtime object; criteria §1.1 makes this a required wrapper-only field at L2 (L3 probes the source and supplies the value). middleware.go:23-26 rejects `duration <= 0` with the same message."
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": ["video"]
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": ["role", "value"],
+          "additionalProperties": false
+        }
+      },
+      "target_resolution": {
+        "type": "string",
+        "enum": ["720p", "1080p", "2K", "4K"],
+        "description": "Target resolution to upscale to. node.py declares the widget without `default=` (criteria doc §2.1: no synthesized L2 default)."
+      }
+    },
+    "required": ["model", "duration", "target_resolution"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "video",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    }
+  ]
+}

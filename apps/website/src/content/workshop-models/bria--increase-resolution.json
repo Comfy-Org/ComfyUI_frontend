@@ -1,0 +1,68 @@
+{
+  "id": "bria/increase-resolution",
+  "slug": "bria--increase-resolution",
+  "displayName": "Bria Increase Resolution",
+  "provider": "bria",
+  "modality": "image",
+  "description": "Upscales an image by 2x or 4x while preserving its content.",
+  "tags": ["bria", "upscale", "increase-resolution", "image-edit"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["bria/increase-resolution"]
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": ["image"]
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": ["role", "value"],
+          "additionalProperties": false
+        }
+      },
+      "desired_increase": {
+        "type": "string",
+        "enum": ["2", "4"],
+        "default": "2"
+      },
+      "moderation": {
+        "type": "string",
+        "enum": ["false", "true"],
+        "default": "false"
+      },
+      "visual_input_moderation": {
+        "type": "boolean"
+      },
+      "visual_output_moderation": {
+        "type": "boolean"
+      }
+    },
+    "required": ["model"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "image",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    }
+  ]
+}

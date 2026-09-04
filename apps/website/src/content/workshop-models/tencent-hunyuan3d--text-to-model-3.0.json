@@ -1,0 +1,50 @@
+{
+  "id": "tencent-hunyuan3d/text-to-model-3.0",
+  "slug": "tencent-hunyuan3d--text-to-model-3.0",
+  "displayName": "Hunyuan3D 3.0 Text-to-3D",
+  "provider": "tencent-hunyuan3d",
+  "modality": "3d",
+  "description": "Generates a 3D mesh from a text prompt (Tencent Hunyuan3D 3.0).",
+  "tags": ["tencent", "hunyuan3d", "3d", "text-to-3d", "3.0"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["tencent-hunyuan3d/text-to-model-3.0"]
+      },
+      "prompt": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1024
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "face_count": {
+        "type": "integer",
+        "minimum": 40000,
+        "maximum": 500000,
+        "default": 40000
+      },
+      "generate_type": {
+        "type": "string",
+        "enum": ["Normal", "LowPoly", "Geometry"],
+        "default": "Normal"
+      },
+      "pbr": {
+        "type": "boolean"
+      },
+      "polygon_type": {
+        "type": "string",
+        "enum": ["triangle", "quadrilateral"]
+      }
+    },
+    "required": ["model", "prompt"],
+    "additionalProperties": true
+  },
+  "roles": []
+}

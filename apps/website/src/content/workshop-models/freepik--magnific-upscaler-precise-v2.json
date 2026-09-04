@@ -1,0 +1,88 @@
+{
+  "id": "freepik/magnific-upscaler-precise-v2",
+  "slug": "freepik--magnific-upscaler-precise-v2",
+  "displayName": "Magnific Precise Upscaler V2",
+  "provider": "freepik",
+  "modality": "image",
+  "description": "Upscales an image at 2x/4x/8x/16x while preserving original detail (Magnific Precise Upscaler V2).",
+  "tags": ["freepik", "magnific", "upscaler", "precise", "edit"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["freepik/magnific-upscaler-precise-v2"]
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": ["image"]
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": ["role", "value"],
+          "additionalProperties": false
+        }
+      },
+      "auto_downscale": {
+        "type": "boolean",
+        "description": "Comfyui-side hint to downscale to fit 10060x10060. Not a wire field; applied at L3. Kept for workflow JSON parity.",
+        "default": false
+      },
+      "flavor": {
+        "type": "string",
+        "enum": ["sublime", "photo", "photo_denoiser"],
+        "description": "Processing style: sublime for general use, photo for photographs, photo_denoiser for noisy photos."
+      },
+      "scale_factor": {
+        "type": "string",
+        "enum": ["2x", "4x", "8x", "16x"],
+        "description": "Scale factor (2x/4x/8x/16x). Translated to int at wire."
+      },
+      "sharpen": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 100,
+        "description": "Image sharpness intensity.",
+        "default": 7
+      },
+      "smart_grain": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 100,
+        "description": "Intelligent grain/texture enhancement.",
+        "default": 7
+      },
+      "ultra_detail": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 100,
+        "description": "Fine detail / micro-detail control.",
+        "default": 30
+      }
+    },
+    "required": ["model", "flavor", "scale_factor"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "image",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    }
+  ]
+}

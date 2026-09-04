@@ -1,6 +1,92 @@
 type Locale = 'en' | 'zh-CN' | 'ja'
 
 const translations = {
+  'home.workshop.heading': {
+    en: 'Run any model, from one place',
+    'zh-CN': '在同一个地方运行任何模型'
+  },
+  'home.workshop.subheading': {
+    en: 'Hundreds of models from the labs building them, with their real inputs and the same API you would call from your own application.',
+    'zh-CN':
+      '汇集数百个来自各大实验室的模型，提供真实的输入参数，以及可在你自己的应用中调用的同一套 API。'
+  },
+  'home.workshop.browseAll': {
+    en: 'Browse all models',
+    'zh-CN': '浏览全部模型'
+  },
+  'workshop.meta.title': {
+    en: 'Comfy Workshop',
+    'zh-CN': 'Comfy Workshop'
+  },
+  'workshop.meta.description': {
+    en: 'Browse and run AI models with Comfy.',
+    'zh-CN': '使用 Comfy 浏览并运行 AI 模型。'
+  },
+  'workshop.hero.eyebrow': {
+    en: 'Comfy Workshop',
+    'zh-CN': 'Comfy Workshop'
+  },
+  'workshop.hero.heading': {
+    en: 'Build with the best AI models',
+    'zh-CN': '使用顶尖 AI 模型进行创作'
+  },
+  'workshop.hero.subtitle': {
+    en: 'Compare models, try their inputs, and use the same API from your own application.',
+    'zh-CN': '比较模型、尝试输入，并在你自己的应用中使用相同的 API。'
+  },
+  'workshop.search.label': {
+    en: 'Search models',
+    'zh-CN': '搜索模型'
+  },
+  'workshop.search.placeholder': {
+    en: 'Search models, providers, and capabilities',
+    'zh-CN': '搜索模型、提供商和功能'
+  },
+  'workshop.provider.label': {
+    en: 'Filter by provider',
+    'zh-CN': '按提供商筛选'
+  },
+  'workshop.provider.all': {
+    en: 'All providers',
+    'zh-CN': '所有提供商'
+  },
+  'workshop.filter.all': { en: 'All', 'zh-CN': '全部' },
+  'workshop.filter.image': { en: 'Image', 'zh-CN': '图像' },
+  'workshop.filter.video': { en: 'Video', 'zh-CN': '视频' },
+  'workshop.filter.audio': { en: 'Audio', 'zh-CN': '音频' },
+  'workshop.filter.3d': { en: '3D', 'zh-CN': '3D' },
+  'workshop.results': {
+    en: '{count} models',
+    'zh-CN': '{count} 个模型'
+  },
+  'workshop.empty': {
+    en: 'No models match these filters.',
+    'zh-CN': '没有符合这些筛选条件的模型。'
+  },
+  'workshop.showMore': {
+    en: 'Show more models',
+    'zh-CN': '显示更多模型'
+  },
+  'workshop.model.breadcrumb': { en: 'Workshop', 'zh-CN': 'Workshop' },
+  'workshop.model.inputs': { en: 'Model inputs', 'zh-CN': '模型输入' },
+  'workshop.model.select': { en: 'Select an option', 'zh-CN': '选择一个选项' },
+  'workshop.model.runNext': {
+    en: 'Run model — sign-in coming next',
+    'zh-CN': '运行模型 — 登录功能即将推出'
+  },
+  'workshop.model.codeLanguage': { en: 'Code language', 'zh-CN': '代码语言' },
+  'workshop.model.copy': { en: 'Copy code', 'zh-CN': '复制代码' },
+  'workshop.model.copied': { en: 'Copied', 'zh-CN': '已复制' },
+  'workshop.model.getApiKey': {
+    en: 'Get your API key',
+    'zh-CN': '获取 API 密钥'
+  },
+  'workshop.model.related': { en: 'Related models', 'zh-CN': '相关模型' },
+  'workshop.model.browseAll': {
+    en: 'Browse all models',
+    'zh-CN': '浏览所有模型'
+  },
+
   // Tags (global, reusable across sections)
   'tags.partnerNodes': {
     en: 'Partner Nodes',

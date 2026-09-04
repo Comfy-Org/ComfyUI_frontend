@@ -1,0 +1,74 @@
+{
+  "id": "bfl/flux-pro-1.1",
+  "slug": "bfl--flux-pro-1.1",
+  "displayName": "FLUX Pro 1.1",
+  "provider": "bfl",
+  "modality": "image",
+  "description": "Generates an image from text at a chosen width and height via the legacy Flux Pro 1.1 endpoint (predates Ultra).",
+  "tags": ["bfl", "flux", "text-to-image", "legacy"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["bfl/flux-pro-1.1"]
+      },
+      "prompt": {
+        "type": "string"
+      },
+      "seed": {
+        "type": "integer"
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": ["reference_image"]
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": ["role", "value"],
+          "additionalProperties": false
+        }
+      },
+      "height": {
+        "type": "integer"
+      },
+      "output_format": {
+        "type": "string",
+        "enum": ["jpeg", "png"]
+      },
+      "prompt_upsampling": {
+        "type": "boolean"
+      },
+      "safety_tolerance": {
+        "type": "integer"
+      },
+      "width": {
+        "type": "integer"
+      }
+    },
+    "required": ["model", "prompt", "height", "width"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "reference_image",
+      "required": false,
+      "cardinality": "single",
+      "minItems": 0,
+      "maxItems": 1
+    }
+  ]
+}

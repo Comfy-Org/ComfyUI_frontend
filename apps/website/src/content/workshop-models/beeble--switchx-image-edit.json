@@ -1,0 +1,116 @@
+{
+  "id": "beeble/switchx-image-edit",
+  "slug": "beeble--switchx-image-edit",
+  "displayName": "SwitchX Image Edit",
+  "provider": "beeble",
+  "modality": "image",
+  "description": "Swaps an image's background, lighting, or costume from a reference image or prompt while preserving the subject (Beeble SwitchX).",
+  "tags": [
+    "beeble",
+    "switchx",
+    "relighting",
+    "compositing",
+    "edit",
+    "image-to-image"
+  ],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["beeble/switchx-image-edit"]
+      },
+      "prompt": {
+        "type": "string",
+        "maxLength": 2000,
+        "description": "Text description of the desired output (max 2000 chars). At least one of prompt or reference_image is required."
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["image"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["mask"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["reference_image"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "alpha_mode": {
+        "type": "string",
+        "enum": ["auto", "fill", "custom", "select"],
+        "description": "How SwitchX decides what to keep vs. regenerate: auto isolates the subject; fill regenerates the whole frame; select propagates a keyframe mask; custom uses a per-frame matte. select/custom require `mask`.",
+        "default": "auto"
+      },
+      "max_resolution": {
+        "type": "string",
+        "enum": ["1080p", "720p"],
+        "description": "Maximum output resolution (1080p or 720p).",
+        "default": "1080p"
+      }
+    },
+    "required": ["model"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "image",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    },
+    {
+      "role": "mask",
+      "required": false,
+      "cardinality": "single",
+      "minItems": 0,
+      "maxItems": 1
+    },
+    {
+      "role": "reference_image",
+      "required": false,
+      "cardinality": "single",
+      "minItems": 0,
+      "maxItems": 1
+    }
+  ]
+}

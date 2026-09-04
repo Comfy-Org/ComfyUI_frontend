@@ -1,0 +1,58 @@
+{
+  "id": "tripo/texture",
+  "slug": "tripo--texture",
+  "displayName": "Tripo Texture",
+  "provider": "tripo",
+  "modality": "3d",
+  "description": "Re-textures an existing Tripo 3D mesh (Tripo Texture).",
+  "tags": ["tripo", "3d", "texture", "model-to-model"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["tripo/texture"]
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "model_task_id": {
+        "type": "string",
+        "description": "The task_id of the model to texture (renamed to `original_model_task_id` on the wire)."
+      },
+      "pbr": {
+        "type": "boolean",
+        "description": "Apply PBR (default true).",
+        "default": true
+      },
+      "texture": {
+        "type": "boolean",
+        "description": "Apply texture (default true).",
+        "default": true
+      },
+      "texture_alignment": {
+        "type": "string",
+        "enum": ["original_image", "geometry"],
+        "description": "Texture alignment (node.py default 'original_image').",
+        "default": "original_image"
+      },
+      "texture_quality": {
+        "type": "string",
+        "enum": ["standard", "detailed"],
+        "description": "Texture quality (node.py default 'standard').",
+        "default": "standard"
+      },
+      "texture_seed": {
+        "type": "integer",
+        "description": "Seed for the texture (node.py default 42).",
+        "default": 42
+      }
+    },
+    "required": ["model", "model_task_id"],
+    "additionalProperties": true
+  },
+  "roles": []
+}

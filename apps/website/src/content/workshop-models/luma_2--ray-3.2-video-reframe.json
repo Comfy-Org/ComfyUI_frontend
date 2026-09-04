@@ -1,0 +1,66 @@
+{
+  "id": "luma_2/ray-3.2-video-reframe",
+  "slug": "luma_2--ray-3.2-video-reframe",
+  "displayName": "Luma Ray 3.2 Reframe",
+  "provider": "luma_2",
+  "modality": "video",
+  "description": "Reframes a source video to a new aspect ratio with Ray 3.2.",
+  "tags": ["luma", "ray-3.2", "video", "reframe", "video-edit", "aspect-ratio"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["luma_2/ray-3.2-video-reframe"]
+      },
+      "prompt": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 6000
+      },
+      "aspect_ratio": {
+        "type": "string",
+        "enum": ["9:16", "3:4", "1:1", "4:3", "16:9", "21:9"]
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": ["image"]
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": ["role", "value"],
+          "additionalProperties": false
+        }
+      },
+      "resolution": {
+        "type": "string",
+        "enum": ["360p", "540p", "720p", "1080p"],
+        "default": "720p"
+      }
+    },
+    "required": ["model", "prompt", "aspect_ratio"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "image",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    }
+  ]
+}

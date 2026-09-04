@@ -1,0 +1,98 @@
+{
+  "id": "kling/motion-control",
+  "slug": "kling--motion-control",
+  "displayName": "Kling 2.6 Motion Control",
+  "provider": "kling",
+  "modality": "video",
+  "description": "Animates a character image with motion taken from a reference video (Kling 2.6).",
+  "tags": ["kling", "video", "motion-control", "image-to-video"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["kling/motion-control"]
+      },
+      "prompt": {
+        "type": "string",
+        "maxLength": 2500,
+        "description": "Text prompt (positive + negative descriptions). Up to 2500 chars; empty allowed.",
+        "default": ""
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["reference_image"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["reference_video"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "character_orientation": {
+        "type": "string",
+        "enum": ["video", "image"],
+        "description": "video → match motion video orientation; image → match reference image orientation."
+      },
+      "keep_original_sound": {
+        "type": "boolean",
+        "description": "Whether to keep the original video's sound. Wire: yes/no.",
+        "default": true
+      },
+      "mode": {
+        "type": "string",
+        "enum": ["pro", "std"],
+        "description": "Video generation mode: pro (high quality) or std (economy)."
+      }
+    },
+    "required": ["model", "character_orientation", "mode"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "reference_image",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    },
+    {
+      "role": "reference_video",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    }
+  ]
+}

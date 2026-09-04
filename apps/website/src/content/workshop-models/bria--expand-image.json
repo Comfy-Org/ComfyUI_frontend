@@ -1,0 +1,121 @@
+{
+  "id": "bria/expand-image",
+  "slug": "bria--expand-image",
+  "displayName": "Bria Expand Image",
+  "provider": "bria",
+  "modality": "image",
+  "description": "Expands an image beyond its borders with generated content.",
+  "tags": ["bria", "expand", "outpaint", "image-edit"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["bria/expand-image"]
+      },
+      "prompt": {
+        "type": "string",
+        "default": ""
+      },
+      "seed": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647,
+        "default": 42
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": ["image"]
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": ["role", "value"],
+          "additionalProperties": false
+        }
+      },
+      "canvas_height": {
+        "type": "integer"
+      },
+      "canvas_width": {
+        "type": "integer"
+      },
+      "expand_mode": {
+        "type": "string",
+        "enum": [
+          "1:1",
+          "2:3",
+          "3:2",
+          "3:4",
+          "4:3",
+          "4:5",
+          "5:4",
+          "9:16",
+          "16:9",
+          "custom_ratio",
+          "manual"
+        ],
+        "default": "1:1"
+      },
+      "image_height": {
+        "type": "integer"
+      },
+      "image_width": {
+        "type": "integer"
+      },
+      "image_x": {
+        "type": "integer"
+      },
+      "image_y": {
+        "type": "integer"
+      },
+      "moderation": {
+        "type": "string",
+        "enum": ["false", "true"],
+        "default": "false"
+      },
+      "negative_prompt": {
+        "type": "string",
+        "default": ""
+      },
+      "prompt_content_moderation": {
+        "type": "boolean"
+      },
+      "ratio_height": {
+        "type": "integer"
+      },
+      "ratio_width": {
+        "type": "integer"
+      },
+      "visual_input_moderation": {
+        "type": "boolean"
+      },
+      "visual_output_moderation": {
+        "type": "boolean"
+      }
+    },
+    "required": ["model"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "image",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    }
+  ]
+}

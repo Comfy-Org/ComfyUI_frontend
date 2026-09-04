@@ -1,0 +1,141 @@
+{
+  "id": "tripo/conversion",
+  "slug": "tripo--conversion",
+  "displayName": "Tripo Conversion",
+  "provider": "tripo",
+  "modality": "3d",
+  "description": "Converts a Tripo 3D mesh to GLTF, USDZ, FBX, OBJ, STL, or 3MF (Tripo Conversion).",
+  "tags": ["tripo", "3d", "conversion", "format-conversion", "model-to-model"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["tripo/conversion"]
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "animate_in_place": {
+        "type": "boolean",
+        "description": "Animate in place (default false; dropped on wire if false).",
+        "default": false
+      },
+      "bake": {
+        "type": "boolean",
+        "description": "Bake (default false; dropped on wire if false).",
+        "default": false
+      },
+      "export_orientation": {
+        "type": "string",
+        "enum": ["align_image", "default"],
+        "description": "Export orientation (default 'default'; dropped on wire when 'default').",
+        "default": "default"
+      },
+      "export_vertex_colors": {
+        "type": "boolean",
+        "description": "Export vertex colors (default false; dropped on wire if false).",
+        "default": false
+      },
+      "face_limit": {
+        "type": "integer",
+        "minimum": -1,
+        "maximum": 2000000,
+        "description": "Face limit (-1 means 'no limit'; dropped on wire when -1).",
+        "default": -1
+      },
+      "fbx_preset": {
+        "type": "string",
+        "enum": ["blender", "mixamo", "3dsmax"],
+        "description": "FBX preset (default blender; dropped on wire when blender).",
+        "default": "blender"
+      },
+      "flatten_bottom": {
+        "type": "boolean",
+        "description": "Flatten bottom (default false; dropped on wire if false).",
+        "default": false
+      },
+      "flatten_bottom_threshold": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1,
+        "description": "Flatten bottom threshold (default 0.0; dropped on wire when 0.0).",
+        "default": 0
+      },
+      "force_symmetry": {
+        "type": "boolean",
+        "description": "Force symmetry (default false; dropped on wire if false).",
+        "default": false
+      },
+      "format": {
+        "type": "string",
+        "enum": ["GLTF", "USDZ", "FBX", "OBJ", "STL", "3MF"],
+        "description": "Target format (GLTF, USDZ, FBX, OBJ, STL, 3MF)."
+      },
+      "original_model_task_id": {
+        "type": "string",
+        "description": "The task_id of the model to convert (MODEL_TASK_ID, RIG_TASK_ID, or RETARGET_TASK_ID)."
+      },
+      "pack_uv": {
+        "type": "boolean",
+        "description": "Pack UVs (default false; dropped on wire if false).",
+        "default": false
+      },
+      "part_names": {
+        "type": "string",
+        "description": "Comma-separated part names (default empty). Split on `,` and trimmed at body-assembly time per node.py:848-851.",
+        "default": ""
+      },
+      "pivot_to_center_bottom": {
+        "type": "boolean",
+        "description": "Pivot to center bottom (default false; dropped on wire if false).",
+        "default": false
+      },
+      "quad": {
+        "type": "boolean",
+        "description": "Apply quad mesh (default false; dropped on wire if false).",
+        "default": false
+      },
+      "scale_factor": {
+        "type": "number",
+        "minimum": 0,
+        "description": "Scale factor (default 1.0; dropped on wire when 1.0).",
+        "default": 1
+      },
+      "texture_format": {
+        "type": "string",
+        "enum": [
+          "BMP",
+          "DPX",
+          "HDR",
+          "JPEG",
+          "OPEN_EXR",
+          "PNG",
+          "TARGA",
+          "TIFF",
+          "WEBP"
+        ],
+        "description": "Texture format (default JPEG; dropped on wire when JPEG).",
+        "default": "JPEG"
+      },
+      "texture_size": {
+        "type": "integer",
+        "minimum": 128,
+        "maximum": 4096,
+        "description": "Texture size (default 4096; dropped on wire when 4096).",
+        "default": 4096
+      },
+      "with_animation": {
+        "type": "boolean",
+        "description": "Include animations (default false; dropped on wire if false).",
+        "default": false
+      }
+    },
+    "required": ["model", "format", "original_model_task_id"],
+    "additionalProperties": true
+  },
+  "roles": []
+}

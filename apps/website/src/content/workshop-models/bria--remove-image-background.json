@@ -1,0 +1,71 @@
+{
+  "id": "bria/remove-image-background",
+  "slug": "bria--remove-image-background",
+  "displayName": "Bria RMBG 2.0",
+  "provider": "bria",
+  "modality": "image",
+  "description": "Removes the background from an image, returning a transparent PNG (RMBG 2.0).",
+  "tags": ["bria", "rmbg", "background-removal", "edit"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["bria/remove-image-background"]
+      },
+      "seed": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 2147483647,
+        "description": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed.",
+        "default": 0
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": ["image"]
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": ["role", "value"],
+          "additionalProperties": false
+        }
+      },
+      "moderation": {
+        "type": "string",
+        "enum": ["false", "true"],
+        "description": "Moderation settings (DynamicCombo parent — see file header).",
+        "default": "false"
+      },
+      "visual_input_moderation": {
+        "type": "boolean"
+      },
+      "visual_output_moderation": {
+        "type": "boolean"
+      }
+    },
+    "required": ["model"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "image",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    }
+  ]
+}

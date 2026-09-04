@@ -1,0 +1,63 @@
+{
+  "id": "tencent-hunyuan3d/3d-texture-edit",
+  "slug": "tencent-hunyuan3d--3d-texture-edit",
+  "displayName": "Hunyuan3D Texture Edit",
+  "provider": "tencent-hunyuan3d",
+  "modality": "3d",
+  "description": "Re-textures an existing FBX 3D mesh from a text prompt (Tencent Hunyuan3D Texture Edit).",
+  "tags": ["tencent", "hunyuan3d", "3d", "texture", "fbx", "model-to-model"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["tencent-hunyuan3d/3d-texture-edit"]
+      },
+      "prompt": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1024,
+        "description": "Describes texture editing. Supports up to 1024 UTF-8 characters."
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": ["model_3d"]
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": ["role", "value"],
+          "additionalProperties": false
+        }
+      },
+      "model_3d_format": {
+        "type": "string",
+        "enum": ["fbx"],
+        "description": "File format of `model_3d_url`. Only `fbx` is supported."
+      }
+    },
+    "required": ["model", "prompt", "model_3d_format"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "model_3d",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    }
+  ]
+}

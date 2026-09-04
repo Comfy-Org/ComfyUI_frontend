@@ -1,0 +1,64 @@
+{
+  "id": "minimax/i2v-01-live",
+  "slug": "minimax--i2v-01-live",
+  "displayName": "Hailuo I2V-01 Live",
+  "provider": "minimax",
+  "modality": "video",
+  "description": "Animates a still character or illustration into living motion (Hailuo I2V-01 Live).",
+  "tags": ["minimax", "video", "image-to-video", "i2v-01-live", "live"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["minimax/i2v-01-live"]
+      },
+      "seed": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 9007199254740991,
+        "description": "The random seed used for creating the noise.",
+        "default": 0
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": ["image"]
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": ["role", "value"],
+          "additionalProperties": false
+        }
+      },
+      "prompt_text": {
+        "type": "string",
+        "description": "Text prompt to guide the video generation.",
+        "default": ""
+      }
+    },
+    "required": ["model"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "image",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    }
+  ]
+}

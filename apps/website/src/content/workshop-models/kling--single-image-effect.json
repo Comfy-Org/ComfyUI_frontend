@@ -1,0 +1,73 @@
+{
+  "id": "kling/single-image-effect",
+  "slug": "kling--single-image-effect",
+  "displayName": "Kling 1.6 Single-Image Effect",
+  "provider": "kling",
+  "modality": "video",
+  "description": "Animates a still image with a stylized effect (Kling 1.6).",
+  "tags": ["kling", "video", "effects", "single-image"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["kling/single-image-effect"]
+      },
+      "duration": {
+        "type": "string",
+        "enum": ["5"],
+        "description": "Video length in seconds. Only 5-second videos are supported."
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": ["image"]
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": ["role", "value"],
+          "additionalProperties": false
+        }
+      },
+      "effect_scene": {
+        "type": "string",
+        "enum": [
+          "bloombloom",
+          "dizzydizzy",
+          "fuzzyfuzzy",
+          "squish",
+          "expansion"
+        ],
+        "description": "Scene Name. Single Image Effects (bloombloom, dizzydizzy, fuzzyfuzzy, squish, expansion)."
+      },
+      "model_name": {
+        "type": "string",
+        "enum": ["kling-v1-6"],
+        "description": "Model Name. Only kling-v1-6 is supported."
+      }
+    },
+    "required": ["model", "duration", "effect_scene", "model_name"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "image",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    }
+  ]
+}

@@ -1,0 +1,188 @@
+{
+  "id": "minimax/hailuo-03-regeneration",
+  "slug": "minimax--hailuo-03-regeneration",
+  "displayName": "Hailuo 03 Video Regeneration",
+  "provider": "minimax",
+  "modality": "video",
+  "description": "Re-renders an unmodified MiniMax H3 768P output at 2K using the exact original prompt and conditioning media.",
+  "tags": [
+    "minimax",
+    "video",
+    "hailuo",
+    "hailuo-03",
+    "regeneration",
+    "2k-rerender",
+    "multimodal"
+  ],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["minimax/hailuo-03-regeneration"]
+      },
+      "prompt": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Exact prompt used for the original MiniMax H3 generation."
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["audio"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["end_image"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["reference_image"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["reference_video"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["start_image"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["video"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "aigc_watermark": {
+        "type": "boolean",
+        "default": false
+      },
+      "resolution": {
+        "type": "string",
+        "enum": ["2K"],
+        "default": "2K"
+      },
+      "source_is_unmodified_h3_768p": {
+        "type": "boolean",
+        "enum": [true],
+        "description": "Confirms that video is an unmodified MiniMax H3 768P output. Other videos are rejected upstream."
+      }
+    },
+    "required": ["model", "prompt", "source_is_unmodified_h3_768p"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "audio",
+      "required": false,
+      "cardinality": "many",
+      "minItems": 0,
+      "maxItems": 3
+    },
+    {
+      "role": "end_image",
+      "required": false,
+      "cardinality": "single",
+      "minItems": 0,
+      "maxItems": 1
+    },
+    {
+      "role": "reference_image",
+      "required": false,
+      "cardinality": "many",
+      "minItems": 0,
+      "maxItems": 9
+    },
+    {
+      "role": "reference_video",
+      "required": false,
+      "cardinality": "many",
+      "minItems": 0,
+      "maxItems": 3
+    },
+    {
+      "role": "start_image",
+      "required": false,
+      "cardinality": "single",
+      "minItems": 0,
+      "maxItems": 1
+    },
+    {
+      "role": "video",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    }
+  ]
+}

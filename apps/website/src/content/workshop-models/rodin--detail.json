@@ -1,0 +1,59 @@
+{
+  "id": "rodin/detail",
+  "slug": "rodin--detail",
+  "displayName": "Hyper3D Rodin Detail",
+  "provider": "rodin",
+  "modality": "3d",
+  "description": "Generates a 3D mesh tuned for fine surface detail from 1-5 reference images (Hyper3D Rodin Detail).",
+  "tags": ["rodin", "hyper3d", "deemos", "3d", "image-to-3d", "detail"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["rodin/detail"]
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": ["image"]
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": ["role", "value"],
+          "additionalProperties": false
+        }
+      },
+      "Material_Type": {
+        "type": "string",
+        "enum": ["PBR", "Shaded"]
+      },
+      "Polygon_count": {
+        "type": "string",
+        "enum": ["4K-Quad", "8K-Quad", "18K-Quad", "50K-Quad", "200K-Triangle"]
+      },
+      "Seed": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 65535
+      }
+    },
+    "required": ["model"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "image",
+      "required": true,
+      "cardinality": "many",
+      "minItems": 1,
+      "maxItems": 5
+    }
+  ]
+}

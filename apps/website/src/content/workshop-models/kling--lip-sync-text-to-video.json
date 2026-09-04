@@ -1,0 +1,133 @@
+{
+  "id": "kling/lip-sync-text-to-video",
+  "slug": "kling--lip-sync-text-to-video",
+  "displayName": "Kling Lip Sync Text-to-Video",
+  "provider": "kling",
+  "modality": "video",
+  "description": "Lipsyncs a talking-head video to synthesized speech from text (Kling).",
+  "tags": ["kling", "video", "lip-sync", "text2video"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["kling/lip-sync-text-to-video"]
+      },
+      "prompt": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120,
+        "description": "Text content to lip-sync. Required when mode is text2video. Maximum length is 120 characters."
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": ["video"]
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": ["role", "value"],
+          "additionalProperties": false
+        }
+      },
+      "voice": {
+        "type": "string",
+        "enum": [
+          "Melody",
+          "Sunny",
+          "Sage",
+          "Ace",
+          "Blossom",
+          "Peppy",
+          "Dove",
+          "Shine",
+          "Anchor",
+          "Lyric",
+          "Tender",
+          "Siren",
+          "Zippy",
+          "Bud",
+          "Sprite",
+          "Candy",
+          "Beacon",
+          "Rock",
+          "Titan",
+          "Grace",
+          "Helen",
+          "Lore",
+          "Crag",
+          "Prattle",
+          "Hearth",
+          "The Reader",
+          "Commercial Lady",
+          "阳光少年",
+          "懂事小弟",
+          "运动少年",
+          "青春少女",
+          "温柔小妹",
+          "元气少女",
+          "阳光男生",
+          "幽默小哥",
+          "文艺小哥",
+          "甜美邻家",
+          "温柔姐姐",
+          "职场女青",
+          "活泼男童",
+          "俏皮女童",
+          "稳重老爸",
+          "温柔妈妈",
+          "严肃上司",
+          "优雅贵妇",
+          "慈祥爷爷",
+          "唠叨爷爷",
+          "唠叨奶奶",
+          "和蔼奶奶",
+          "东北老铁",
+          "重庆小伙",
+          "四川妹子",
+          "潮汕大叔",
+          "台湾男生",
+          "西安掌柜",
+          "天津姐姐",
+          "新闻播报男",
+          "译制片男",
+          "撒娇女友",
+          "刀片烟嗓",
+          "乖巧正太"
+        ],
+        "description": "Friendly voice name. Decomposed at body assembly into the wire (voice_id, voice_language) pair.",
+        "default": "Melody"
+      },
+      "voice_speed": {
+        "type": "number",
+        "minimum": 0.8,
+        "maximum": 2,
+        "description": "Speech Rate. Valid range: 0.8~2.0, accurate to one decimal place.",
+        "default": 1
+      }
+    },
+    "required": ["model", "prompt"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "video",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    }
+  ]
+}

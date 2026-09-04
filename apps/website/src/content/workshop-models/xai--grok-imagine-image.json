@@ -1,0 +1,65 @@
+{
+  "id": "xai/grok-imagine-image",
+  "slug": "xai--grok-imagine-image",
+  "displayName": "Grok Imagine Image",
+  "provider": "xai",
+  "modality": "image",
+  "description": "Generates an image quickly with selectable 1K/2K resolution (Grok Imagine).",
+  "tags": ["grok", "xai", "fast", "image", "text-to-image"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["xai/grok-imagine-image"]
+      },
+      "prompt": {
+        "type": "string",
+        "minLength": 1,
+        "description": "The text prompt used to generate the image."
+      },
+      "aspect_ratio": {
+        "type": "string",
+        "enum": [
+          "1:1",
+          "2:3",
+          "3:2",
+          "3:4",
+          "4:3",
+          "9:16",
+          "16:9",
+          "9:19.5",
+          "19.5:9",
+          "9:20",
+          "20:9",
+          "1:2",
+          "2:1"
+        ],
+        "description": "Aspect ratio of the output image.",
+        "default": "1:1"
+      },
+      "count": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 10,
+        "description": "Number of images to generate.",
+        "default": 1
+      },
+      "seed": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 2147483647,
+        "description": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed.",
+        "default": 0
+      },
+      "resolution": {
+        "type": "string",
+        "enum": ["1K", "2K"],
+        "description": "Resolution of the generated image. node.py declares `IO.Combo.Input(\"resolution\", options=[\"1K\",\"2K\"], optional=True)` with no `default=` (criteria doc §2.1); when undefined the wire field is omitted."
+      }
+    },
+    "required": ["model", "prompt"],
+    "additionalProperties": true
+  },
+  "roles": []
+}

@@ -1,0 +1,51 @@
+{
+  "id": "elevenlabs/sound-effects",
+  "slug": "elevenlabs--sound-effects",
+  "displayName": "ElevenLabs Sound Effects",
+  "provider": "elevenlabs",
+  "modality": "audio",
+  "description": "Generates a sound effect from a text description.",
+  "tags": ["elevenlabs", "audio", "sfx", "sound-effects"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["elevenlabs/sound-effects"]
+      },
+      "prompt": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Text description of the sound effect to generate."
+      },
+      "duration": {
+        "type": "number",
+        "minimum": 0.5,
+        "maximum": 30,
+        "description": "Duration of generated sound in seconds.",
+        "default": 5
+      },
+      "loop": {
+        "type": "boolean",
+        "description": "Create a smoothly looping sound effect.",
+        "default": false
+      },
+      "output_format": {
+        "type": "string",
+        "enum": ["mp3_44100_192", "opus_48000_192"],
+        "description": "Audio output format.",
+        "default": "mp3_44100_192"
+      },
+      "prompt_influence": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1,
+        "description": "How closely generation follows the prompt. Higher values make the sound follow the text more closely.",
+        "default": 0.3
+      }
+    },
+    "required": ["model", "prompt"],
+    "additionalProperties": true
+  },
+  "roles": []
+}

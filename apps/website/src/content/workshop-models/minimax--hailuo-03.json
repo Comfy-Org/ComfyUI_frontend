@@ -1,0 +1,179 @@
+{
+  "id": "minimax/hailuo-03",
+  "slug": "minimax--hailuo-03",
+  "displayName": "Hailuo 03",
+  "provider": "minimax",
+  "modality": "video",
+  "description": "Generates a Hailuo 03 video from text, keyframes, or mixed reference media.",
+  "tags": [
+    "minimax",
+    "video",
+    "hailuo",
+    "hailuo-03",
+    "multimodal",
+    "text-to-video",
+    "reference"
+  ],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["minimax/hailuo-03"]
+      },
+      "prompt": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 7000
+      },
+      "aspect_ratio": {
+        "type": "string",
+        "enum": ["adaptive", "21:9", "16:9", "4:3", "1:1", "3:4", "9:16"],
+        "default": "16:9"
+      },
+      "duration": {
+        "type": "integer",
+        "minimum": 5,
+        "maximum": 15,
+        "default": 5
+      },
+      "seed": {
+        "type": "integer",
+        "minimum": -1,
+        "maximum": 4294967295,
+        "default": -1
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["audio"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["end_image"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["reference_image"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["reference_video"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["start_image"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "aigc_watermark": {
+        "type": "boolean",
+        "default": false
+      },
+      "resolution": {
+        "type": "string",
+        "enum": ["768P", "2K"],
+        "default": "768P"
+      }
+    },
+    "required": ["model", "prompt"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "audio",
+      "required": false,
+      "cardinality": "many",
+      "minItems": 0,
+      "maxItems": 3
+    },
+    {
+      "role": "end_image",
+      "required": false,
+      "cardinality": "single",
+      "minItems": 0,
+      "maxItems": 1
+    },
+    {
+      "role": "reference_image",
+      "required": false,
+      "cardinality": "many",
+      "minItems": 0,
+      "maxItems": 9
+    },
+    {
+      "role": "reference_video",
+      "required": false,
+      "cardinality": "many",
+      "minItems": 0,
+      "maxItems": 3
+    },
+    {
+      "role": "start_image",
+      "required": false,
+      "cardinality": "single",
+      "minItems": 0,
+      "maxItems": 1
+    }
+  ]
+}

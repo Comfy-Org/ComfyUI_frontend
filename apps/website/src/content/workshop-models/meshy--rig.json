@@ -1,0 +1,38 @@
+{
+  "id": "meshy/rig",
+  "slug": "meshy--rig",
+  "displayName": "Meshy Rig",
+  "provider": "meshy",
+  "modality": "3d",
+  "description": "Auto-rigs a humanoid character from a prior Meshy 3D task into a GLB/FBX with optional basic walk/run animations (Meshy Rig).",
+  "tags": ["meshy", "3d", "rig", "rigging", "post-process"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["meshy/rig"]
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "height_meters": {
+        "type": "number",
+        "minimum": 0.1,
+        "maximum": 15,
+        "description": "Approximate height of the character model in meters. Aids scaling and rigging accuracy.",
+        "default": 1.7
+      },
+      "meshy_task_id": {
+        "type": "string",
+        "description": "The task ID of a completed Meshy 3D model that needs to be rigged."
+      }
+    },
+    "required": ["model", "meshy_task_id"],
+    "additionalProperties": true
+  },
+  "roles": []
+}

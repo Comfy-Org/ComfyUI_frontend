@@ -1,0 +1,107 @@
+{
+  "id": "meshy/multi-image-to-model",
+  "slug": "meshy--multi-image-to-model",
+  "displayName": "Meshy Multi-Image-to-3D",
+  "provider": "meshy",
+  "modality": "3d",
+  "description": "Generates a textured 3D mesh from 2-4 images of the same object from different angles (Meshy Multi-Image-to-3D).",
+  "tags": ["meshy", "3d", "mesh", "multi-image-to-3d", "glb"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["meshy/multi-image-to-model"]
+      },
+      "seed": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 2147483647,
+        "description": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed.",
+        "default": 0
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": ["image"]
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": ["role", "value"],
+          "additionalProperties": false
+        }
+      },
+      "enable_pbr": {
+        "type": "boolean",
+        "description": "Generate PBR Maps in addition to the base color. Only applies when should_texture=true."
+      },
+      "pose_mode": {
+        "type": "string",
+        "enum": ["", "A-pose", "T-pose"],
+        "description": "Specify the pose mode. Empty string lets the model decide; lower-cased on the wire."
+      },
+      "should_remesh": {
+        "type": "boolean",
+        "description": "When set to false, returns an unprocessed triangular mesh."
+      },
+      "should_texture": {
+        "type": "boolean",
+        "description": "Determines whether textures are generated. When false, skips the texture phase and returns a mesh without textures."
+      },
+      "symmetry_mode": {
+        "type": "string",
+        "enum": ["auto", "on", "off"],
+        "description": "Controls symmetry behavior during model generation."
+      },
+      "target_polycount": {
+        "type": "integer",
+        "minimum": 100,
+        "maximum": 300000,
+        "description": "Target number of polygons. Only applies when should_remesh=true."
+      },
+      "texture_prompt": {
+        "type": "string",
+        "description": "Optional text prompt to guide texturing. Maximum 600 characters. Only applies when should_texture=true."
+      },
+      "texture_resolution": {
+        "type": "string",
+        "enum": ["2k", "4k", "8k"],
+        "description": "Base color texture resolution. Higher resolutions capture more surface detail; 8k costs 5 extra credits. Only applies when should_texture=true."
+      },
+      "topology": {
+        "type": "string",
+        "enum": ["triangle", "quad"],
+        "description": "Topology of the generated model. Only applies when should_remesh=true."
+      }
+    },
+    "required": [
+      "model",
+      "pose_mode",
+      "should_remesh",
+      "should_texture",
+      "symmetry_mode"
+    ],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "image",
+      "required": true,
+      "cardinality": "many",
+      "minItems": 1,
+      "maxItems": 4
+    }
+  ]
+}

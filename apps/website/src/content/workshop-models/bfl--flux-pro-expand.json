@@ -1,0 +1,79 @@
+{
+  "id": "bfl/flux-pro-expand",
+  "slug": "bfl--flux-pro-expand",
+  "displayName": "FLUX Pro Expand",
+  "provider": "bfl",
+  "modality": "image",
+  "description": "Outpaints an image with per-side pixel expansion (Flux Pro Expand).",
+  "tags": ["bfl", "flux", "expand", "outpaint", "edit", "image-edit"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["bfl/flux-pro-expand"]
+      },
+      "prompt": {
+        "type": "string"
+      },
+      "seed": {
+        "type": "integer"
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": ["image"]
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": ["role", "value"],
+          "additionalProperties": false
+        }
+      },
+      "bottom": {
+        "type": "integer"
+      },
+      "guidance": {
+        "type": "number"
+      },
+      "left": {
+        "type": "integer"
+      },
+      "prompt_upsampling": {
+        "type": "boolean"
+      },
+      "right": {
+        "type": "integer"
+      },
+      "steps": {
+        "type": "integer"
+      },
+      "top": {
+        "type": "integer"
+      }
+    },
+    "required": ["model"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "image",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    }
+  ]
+}

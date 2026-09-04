@@ -1,0 +1,66 @@
+{
+  "id": "bfl/flux-2-pro",
+  "slug": "bfl--flux-2-pro",
+  "displayName": "FLUX 2 Pro",
+  "provider": "bfl",
+  "modality": "image",
+  "description": "Generates an image from text with up to 9 reference images (Flux 2 Pro).",
+  "tags": ["bfl", "flux", "flux-2", "text-to-image"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["bfl/flux-2-pro"]
+      },
+      "prompt": {
+        "type": "string"
+      },
+      "seed": {
+        "type": "integer"
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": ["image"]
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": ["role", "value"],
+          "additionalProperties": false
+        }
+      },
+      "height": {
+        "type": "integer"
+      },
+      "prompt_upsampling": {
+        "type": "boolean"
+      },
+      "width": {
+        "type": "integer"
+      }
+    },
+    "required": ["model"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "image",
+      "required": false,
+      "cardinality": "many",
+      "minItems": 0
+    }
+  ]
+}

@@ -1,0 +1,155 @@
+{
+  "id": "luma/ray-flash-2-image-to-video",
+  "slug": "luma--ray-flash-2-image-to-video",
+  "displayName": "Luma Ray Flash 2 Image-to-Video",
+  "provider": "luma",
+  "modality": "video",
+  "description": "Animates a still image into a video clip, faster and cheaper than Ray 2 (Ray Flash 2).",
+  "tags": ["luma", "ray", "ray-flash-2", "video", "image-to-video"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["luma/ray-flash-2-image-to-video"]
+      },
+      "prompt": {
+        "type": "string",
+        "minLength": 3,
+        "description": "Prompt for the video generation. node.py: `validate_string(prompt, strip_whitespace=False, min_length=3)`."
+      },
+      "duration": {
+        "type": "string",
+        "enum": ["5s", "9s"],
+        "description": "Output duration. node.py declares the widget without `default=`."
+      },
+      "seed": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 18446744073709552000,
+        "description": "Seed for the video generation.",
+        "default": 0
+      },
+      "dispatch_mode": {
+        "type": "string",
+        "enum": ["sync", "async"],
+        "description": "Dispatch mode. \"sync\" (default) blocks until the job completes. \"async\" submits the job and returns immediately with a job ID; poll completion via `job_get`. Named `dispatch_mode` (not bare `mode`) so it never collides with provider-specific `mode` knobs (freepik DynamicCombo, pixverse motion mode, meshy pose mode, …).",
+        "default": "sync"
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["end_image"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["start_image"]
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": ["role", "value"],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "loop": {
+        "type": "boolean",
+        "description": "Whether the generated video should loop.",
+        "default": false
+      },
+      "luma_concepts": {
+        "type": "object",
+        "properties": {
+          "concepts": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "truck_left",
+                "pan_right",
+                "pedestal_down",
+                "low_angle",
+                "pedestal_up",
+                "selfie",
+                "pan_left",
+                "roll_right",
+                "zoom_in",
+                "over_the_shoulder",
+                "orbit_right",
+                "orbit_left",
+                "static",
+                "tiny_planet",
+                "high_angle",
+                "bolt_cam",
+                "dolly_zoom",
+                "overhead",
+                "zoom_out",
+                "handheld",
+                "roll_left",
+                "pov",
+                "aerial_drone",
+                "push_in",
+                "crane_down",
+                "truck_right",
+                "tilt_down",
+                "elevator_doors",
+                "tilt_up",
+                "ground_level",
+                "pull_out",
+                "aerial",
+                "crane_up",
+                "eye_level"
+              ]
+            }
+          }
+        },
+        "required": ["concepts"],
+        "additionalProperties": false,
+        "description": "Optional Camera Concepts chain (from `lumaConcepts(...)`)."
+      },
+      "resolution": {
+        "type": "string",
+        "enum": ["540p", "720p", "1080p", "4k"],
+        "description": "Output resolution (node.py default '540p').",
+        "default": "540p"
+      }
+    },
+    "required": ["model", "prompt", "duration"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "end_image",
+      "required": false,
+      "cardinality": "single",
+      "minItems": 0,
+      "maxItems": 1
+    },
+    {
+      "role": "start_image",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    }
+  ]
+}

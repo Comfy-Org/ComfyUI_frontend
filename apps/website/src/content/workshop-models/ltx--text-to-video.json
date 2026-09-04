@@ -1,0 +1,86 @@
+{
+  "id": "ltx/text-to-video",
+  "slug": "ltx--text-to-video",
+  "displayName": "LTX-2 Text-to-Video",
+  "provider": "ltx",
+  "modality": "video",
+  "description": "Generates a video clip from text with optional audio (LTX-2).",
+  "tags": ["ltx", "lightricks", "video", "text-to-video"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["ltx/text-to-video"]
+      },
+      "prompt": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 10000
+      },
+      "duration": {
+        "anyOf": [
+          {
+            "type": "number",
+            "enum": [6]
+          },
+          {
+            "type": "number",
+            "enum": [8]
+          },
+          {
+            "type": "number",
+            "enum": [10]
+          },
+          {
+            "type": "number",
+            "enum": [12]
+          },
+          {
+            "type": "number",
+            "enum": [14]
+          },
+          {
+            "type": "number",
+            "enum": [16]
+          },
+          {
+            "type": "number",
+            "enum": [18]
+          },
+          {
+            "type": "number",
+            "enum": [20]
+          }
+        ],
+        "default": 8
+      },
+      "fps": {
+        "anyOf": [
+          {
+            "type": "number",
+            "enum": [25]
+          },
+          {
+            "type": "number",
+            "enum": [50]
+          }
+        ],
+        "default": 25
+      },
+      "generate_audio": {
+        "type": "boolean",
+        "description": "When true, the generated video will include AI-generated audio matching the scene.",
+        "default": false
+      },
+      "resolution": {
+        "type": "string",
+        "enum": ["1920x1080", "2560x1440", "3840x2160"],
+        "default": "1920x1080"
+      }
+    },
+    "required": ["model", "prompt"],
+    "additionalProperties": true
+  },
+  "roles": []
+}

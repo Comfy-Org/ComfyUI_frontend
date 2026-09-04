@@ -1,0 +1,51 @@
+{
+  "id": "sonilo/video-to-music",
+  "slug": "sonilo--video-to-music",
+  "displayName": "Sonilo Video-to-Music",
+  "provider": "sonilo",
+  "modality": "music",
+  "description": "Generates music matched to a source video, with an optional style prompt (Sonilo v2m).",
+  "tags": ["sonilo", "music", "video-to-music", "audio"],
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "enum": ["sonilo/video-to-music"]
+      },
+      "prompt": {
+        "type": "string",
+        "maxLength": 1000,
+        "default": ""
+      },
+      "medias": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": ["video"]
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": ["role", "value"],
+          "additionalProperties": false
+        }
+      }
+    },
+    "required": ["model"],
+    "additionalProperties": true
+  },
+  "roles": [
+    {
+      "role": "video",
+      "required": true,
+      "cardinality": "single",
+      "minItems": 1,
+      "maxItems": 1
+    }
+  ]
+}
