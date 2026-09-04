@@ -158,6 +158,23 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
     expect(screen.getByText('$82.50')).toBeTruthy()
   })
 
+  it('renders a separator-bearing unknown tier as readable words', () => {
+    const futurePlan = {
+      ...plan('CREATOR', 'MONTHLY', 3500),
+      slug: 'some-future-tier-monthly',
+      tier: 'SOME_FUTURE_TIER' as unknown as SubscriptionTier
+    }
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: preview({ new_plan: futurePlan })
+      },
+      global: globalOptions
+    })
+
+    expect(screen.getByText('Some Future Tier')).toBeTruthy()
+    expect(screen.getByText('0', { exact: true })).toBeTruthy()
+  })
+
   it('opens verification only from its button without exposing the URL', async () => {
     const actionUrl = 'https://verify.example/sensitive-token'
     const open = vi.spyOn(window, 'open').mockReturnValue({} as Window)
