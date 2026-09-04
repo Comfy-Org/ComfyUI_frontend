@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
+import { readFileSync, readdirSync } from 'node:fs'
+import { join } from 'node:path'
+
 import {
   zAgentConversation,
   zRecordedWsEvent
@@ -87,5 +90,27 @@ describe('zRecordedWsEvent', () => {
     expect(() =>
       zRecordedWsEvent.parse({ type: 'agent_done', data: {} })
     ).toThrow()
+  })
+})
+
+describe('committed recordings', () => {
+  // import.meta.url is not a file URL under vitest, so the loaders are bypassed.
+  const dir = join(
+    process.cwd(),
+    'browser_tests/fixtures/data/agent/conversations'
+  )
+
+  it('every recording parses against the production event union', () => {
+    const files = readdirSync(dir).filter((file) => file.endsWith('.json'))
+    expect(files.length).toBeGreaterThan(0)
+    for (const file of files) {
+      const conversation = zAgentConversation.parse(
+        JSON.parse(readFileSync(join(dir, file), 'utf8'))
+      )
+      const frames = conversation.turns
+        .flatMap((turn) => turn.response)
+        .filter((entry) => entry.kind === 'event')
+      expect(frames.length, file).toBeGreaterThan(0)
+    }
   })
 })
