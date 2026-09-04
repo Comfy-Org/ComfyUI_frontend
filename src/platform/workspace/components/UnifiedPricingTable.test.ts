@@ -599,6 +599,20 @@ describe('UnifiedPricingTable capability gating', () => {
     ).toBeEnabled()
   })
 
+  it('keeps the team CTA live while the capability snapshot is unresolved', () => {
+    mockSnapshotAuthoritative.value = false
+    mockCanManageSubscription.value = false
+    mockCanChangeSeats.value = false
+    mockRawCanReactivate.value = false
+    mockCanDowngradeToPersonal.value = false
+
+    renderComponent({ initialPlanMode: 'team' })
+
+    expect(
+      screen.getByRole('button', { name: 'Subscribe to Team Yearly' })
+    ).toBeEnabled()
+  })
+
   // can_downgrade_to_personal governs leaving a team plan for a personal one, so
   // it must not stand in for permission to buy the team plan.
   it('does not let the downgrade capability alone enable the team CTA', () => {
