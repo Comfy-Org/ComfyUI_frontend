@@ -209,6 +209,8 @@ describe('useAgentCrdtFollower', () => {
 
     expect(transport.send('not json')).toBe(true)
     expect(transport.send('[1,2]')).toBe(true)
+    expect(transport.send('null')).toBe(true)
+    expect(transport.send('42')).toBe(true)
     expect(transport.send('{"type":"doc_subscribe"}')).toBe(true)
 
     const outbound = vi
@@ -218,6 +220,8 @@ describe('useAgentCrdtFollower', () => {
     expect(outbound).toEqual([
       { delivered: true, frame: null, unparsed_chars: 8 },
       { delivered: true, frame: null, unparsed_chars: 5 },
+      { delivered: true, frame: null, unparsed_chars: 4 },
+      { delivered: true, frame: null, unparsed_chars: 2 },
       { delivered: true, frame: { type: 'doc_subscribe' } }
     ])
     expect(JSON.stringify(outbound)).not.toContain('not json')
