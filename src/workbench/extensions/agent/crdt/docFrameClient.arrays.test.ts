@@ -6,11 +6,13 @@ import {
 } from './__fixtures__/docFrameClient'
 import { parseServerDocFrame } from './docFrameClient'
 
-function resultFrame(data: Record<string, unknown>) {
+type DocOpsResultWireData = NonNullable<Parameters<typeof docOpsResultFrame>[0]>
+
+function resultFrame(data: DocOpsResultWireData) {
   return parseServerDocFrame(docOpsResultFrame(data))
 }
 
-const invalidResultFrames: [string, Record<string, unknown>][] = [
+const invalidResultFrames: [string, DocOpsResultWireData][] = [
   ['a non-string applied item', { ok: true, seq: 1, applied: ['op-1', 2] }],
   ['a non-string skipped item', { ok: true, seq: 1, skipped: ['op-1', 2] }],
   ['a non-array applied value', { ok: true, seq: 1, applied: 'op-1' }],
