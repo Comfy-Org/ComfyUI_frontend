@@ -274,6 +274,7 @@ import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { usePartitionedBadges } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
+import { useVueNodeDragAndDrop } from '@/renderer/extensions/vueNodes/composables/useVueNodeDragAndDrop'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
@@ -714,27 +715,6 @@ const nodeMedia = computed(() => {
   return { type, urls } as const
 })
 
-// Drag and drop support
-const isDraggingOver = ref(false)
-
-function handleDragOver(event: DragEvent) {
-  const node = resolveLGraphNode()
-  if (!node || !node.onDragOver) {
-    isDraggingOver.value = false
-    return
-  }
-
-  // Call the litegraph node's onDragOver callback to check if files are valid
-  const canDrop = node.onDragOver(event)
-  isDraggingOver.value = canDrop
-}
-
-function handleDragLeave() {
-  isDraggingOver.value = false
-}
-
-function handleDrop() {
-  isDraggingOver.value = false
-  app.dragOverNode = resolveLGraphNode()
-}
+const { isDraggingOver, handleDragOver, handleDragLeave, handleDrop } =
+  useVueNodeDragAndDrop(lgraphNode, toastErrorHandler)
 </script>
