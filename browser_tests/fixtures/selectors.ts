@@ -109,6 +109,7 @@ export const TestIds = {
     workflowTabs: 'topbar-workflow-tabs',
     integratedTabBarActions: 'integrated-tab-bar-actions',
     actionBarButtons: 'action-bar-buttons',
+    actionBars: 'top-menu-actionbars',
     actionBarCard: 'action-bar-card',
     freeTierQuota: 'free-tier-quota',
     queueInlineProgress: 'queue-inline-progress',
