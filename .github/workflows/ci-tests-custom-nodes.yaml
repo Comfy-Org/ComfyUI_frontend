@@ -392,6 +392,7 @@ jobs:
               ;;
           esac
           pnpm exec playwright test browser_tests/tests/customNodes/ \
+            browser_tests/tests/subgraph/subgraphConvertAutogrowInputs.spec.ts \
             --project=custom-nodes --reporter=list,json,html --workers=1 --retries=0 \
             "${grep_args[@]}" 2>&1 | tee custom-nodes.log
 

@@ -11,7 +11,7 @@ import {
 
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
 import { LGraphGroup } from '@/lib/litegraph/src/litegraph'
-import type { Positionable } from '@/lib/litegraph/src/litegraph'
+import type { Positionable, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   createTestNode,
   createTestWidgetNode
@@ -186,6 +186,117 @@ describe('SubgraphConversion', () => {
       expect(parentLink.target_id).not.toBe(node2.id)
       expect(graph.getNodeById(parentLink.origin_id)).toBeDefined()
       expect(graph.getNodeById(parentLink.target_id)).toBeDefined()
+    })
+    it('reconnects by input name when earlier links shift dynamic slots', () => {
+      const graph = createTestRootGraph()
+      onTestFinished(enableSubgraphNodeCreation(graph))
+
+      const sources = Array.from({ length: 3 }, () =>
+        createTestNode(graph, [], ['number'])
+      )
+      const target = createTestNode(
+        graph,
+        ['number', 'number', 'number'],
+        [],
+        'dynamic target'
+      )
+      sources.forEach((source, index) => source.connect(0, target, index))
+
+      const { subgraph, node: subgraphNode } = graph.convertToSubgraph(
+        new Set<Positionable>([target, ...sources])
+      )
+      const innerTarget = subgraph.nodes.find(
+        (node) => node.title === 'dynamic target'
+      )
+      assert(innerTarget)
+      const targetPrototype = Object.getPrototypeOf(innerTarget) as LGraphNode
+      targetPrototype.onConnectionsChange = function (_type, slot, connected) {
+        if (
+          !connected ||
+          slot !== 0 ||
+          this.findInputSlot('inserted_dynamic_input') !== -1
+        )
+          return
+        this.addInput('inserted_dynamic_input', 'number')
+        const insertedInput = this.inputs.pop()
+        assert(insertedInput)
+        this.inputs.splice(1, 0, insertedInput)
+      }
+
+      graph.unpackSubgraph(subgraphNode)
+
+      const unpackedTarget = graph.nodes.find(
+        (node) => node.title === 'dynamic target'
+      )
+      assert(unpackedTarget)
+      expect(
+        ['input_0', 'input_1', 'input_2'].map((name) =>
+          unpackedTarget.getInputLink(unpackedTarget.findInputSlot(name))
+        )
+      ).toEqual([expect.anything(), expect.anything(), expect.anything()])
+      expect(
+        unpackedTarget.getInputLink(
+          unpackedTarget.findInputSlot('inserted_dynamic_input')
+        )
+      ).toBeNull()
+    })
+    it('reconnects nested subgraph inputs by name after dynamic slots shift', () => {
+      const graph = createTestRootGraph()
+      onTestFinished(enableSubgraphNodeCreation(graph))
+      const seed = createTestNode(graph)
+      const { subgraph: outer } = graph.convertToSubgraph(
+        new Set<Positionable>([seed])
+      )
+      for (const name of ['input_0', 'input_1', 'input_2']) {
+        outer.addInput(name, 'number')
+      }
+      const target = createTestNode(
+        outer,
+        ['number', 'number', 'number'],
+        [],
+        'nested dynamic target'
+      )
+      outer.inputNode.slots.forEach((input, index) =>
+        input.connect(target.inputs[index], target)
+      )
+
+      const { subgraph: nested, node: nestedNode } = outer.convertToSubgraph(
+        new Set<Positionable>([target])
+      )
+      const innerTarget = nested.nodes.find(
+        (node) => node.title === 'nested dynamic target'
+      )
+      assert(innerTarget)
+      const targetPrototype = Object.getPrototypeOf(innerTarget) as LGraphNode
+      targetPrototype.onConnectionsChange = function (_type, slot, connected) {
+        if (
+          !connected ||
+          slot !== 0 ||
+          this.findInputSlot('inserted_dynamic_input') !== -1
+        )
+          return
+        this.addInput('inserted_dynamic_input', 'number')
+        const insertedInput = this.inputs.pop()
+        assert(insertedInput)
+        this.inputs.splice(1, 0, insertedInput)
+      }
+
+      outer.unpackSubgraph(nestedNode)
+
+      const unpackedTarget = outer.nodes.find(
+        (node) => node.title === 'nested dynamic target'
+      )
+      assert(unpackedTarget)
+      expect(
+        ['input_0', 'input_1', 'input_2'].map((name) =>
+          unpackedTarget.getInputLink(unpackedTarget.findInputSlot(name))
+        )
+      ).toEqual([expect.anything(), expect.anything(), expect.anything()])
+      expect(
+        unpackedTarget.getInputLink(
+          unpackedTarget.findInputSlot('inserted_dynamic_input')
+        )
+      ).toBeNull()
     })
     it('Should merge boundary links', () => {
       const subgraph = createTestSubgraph({

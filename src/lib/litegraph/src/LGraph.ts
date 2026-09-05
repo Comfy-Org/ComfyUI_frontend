@@ -2462,6 +2462,7 @@ export class LGraph
       iparent?: RerouteId
       eparent?: RerouteId
       externalFirst: boolean
+      targetSlotName?: string
     }[] = []
     for (const [, link] of subgraphNode.subgraph.links) {
       const outerLink =
@@ -2494,7 +2495,10 @@ export class LGraph
             id: link.id,
             iparent: link.parentId,
             eparent: sublink.parentId,
-            externalFirst: true
+            externalFirst: true,
+            targetSlotName: this.getNodeById(sublink.target_id)?.inputs[
+              sublink.target_slot
+            ]?.name
           })
           sublink.parentId = undefined
         }
@@ -2516,7 +2520,9 @@ export class LGraph
         id: link.id,
         iparent: link.parentId,
         eparent: externalParentId,
-        externalFirst: false
+        externalFirst: false,
+        targetSlotName: subgraphNode.subgraph.getNodeById(link.target_id)
+          ?.inputs[link.target_slot]?.name
       })
     }
     this.remove(subgraphNode)
@@ -2554,10 +2560,17 @@ export class LGraph
         if (newLink.tid === UNASSIGNED_NODE_ID) continue
         const tnode = this.getNodeById(newLink.tid)
         if (!tnode) continue
-        created = this.inputNode.slots[newLink.oslot].connect(
-          tnode.inputs[newLink.tslot],
-          tnode
-        )
+        const targetSlot =
+          newLink.targetSlotName === undefined
+            ? newLink.tslot
+            : tnode.findInputSlot(newLink.targetSlotName)
+        created =
+          targetSlot === -1
+            ? null
+            : this.inputNode.slots[newLink.oslot].connect(
+                tnode.inputs[targetSlot],
+                tnode
+              )
       } else if (newLink.tid == SUBGRAPH_OUTPUT_ID) {
         if (!(this instanceof Subgraph)) {
           console.error('Ignoring link to subgraph outside subgraph')
@@ -2579,7 +2592,11 @@ export class LGraph
         const originNode = this.getNodeById(newLink.oid)
         const targetNode = this.getNodeById(newLink.tid)
         if (!originNode || !targetNode) continue
-        created = originNode.connect(newLink.oslot, targetNode, newLink.tslot)
+        created = originNode.connect(
+          newLink.oslot,
+          targetNode,
+          newLink.targetSlotName ?? newLink.tslot
+        )
       }
       if (!created) {
         console.error('Failed to create link')
