@@ -9061,14 +9061,27 @@ Enterprise`
   'workshop.hub.facets.task': { en: 'Task', 'zh-CN': '任务' },
   'workshop.hub.facets.partner': { en: 'Partner', 'zh-CN': '合作方' },
   'workshop.hub.facets.industry': { en: 'Industry', 'zh-CN': '行业' },
-  'workshop.hub.facets.more': { en: '+ {n} more', 'zh-CN': '+ {n} 更多' },
+  'workshop.hub.facets.allTasks': { en: 'All tasks', 'zh-CN': '全部任务' },
+  'workshop.hub.facets.allModels': { en: 'All models', 'zh-CN': '全部模型' },
+  'workshop.hub.facets.allPartners': {
+    en: 'All partners',
+    'zh-CN': '全部合作方'
+  },
+  'workshop.hub.facets.allIndustries': {
+    en: 'All industries',
+    'zh-CN': '全部行业'
+  },
+  'workshop.hub.facets.selected': {
+    en: '{n} selected',
+    'zh-CN': '已选 {n} 项'
+  },
   'workshop.hub.facets.less': { en: 'Show less', 'zh-CN': '收起' },
   'workshop.hub.facets.show': {
     en: 'Show {n} workflows',
     'zh-CN': '显示 {n} 个工作流'
   },
   'workshop.hub.facets.noResults': { en: 'No matches', 'zh-CN': '无匹配' },
-  'workshop.hub.models': { en: 'MODELS', 'zh-CN': '模型' },
+  'workshop.hub.models': { en: 'Model', 'zh-CN': '模型' },
   'workshop.hub.categories': { en: 'CATEGORIES', 'zh-CN': '分类' },
   'workshop.hub.tryNow': { en: 'Try now', 'zh-CN': '立即试用' },
   'workshop.hub.tag.partnerNodes': {

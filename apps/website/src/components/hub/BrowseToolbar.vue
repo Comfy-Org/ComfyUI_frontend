@@ -1,13 +1,17 @@
 <script setup lang="ts">
 import {
+  ArrowRight,
   ArrowUpDown,
   ChevronDown,
   LayoutGrid,
-  SlidersHorizontal
+  SlidersHorizontal,
+  X
 } from '@lucide/vue'
 import { TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 import type { Component } from 'vue'
 import { computed, ref, useTemplateRef } from 'vue'
+
+import { onClickOutside } from '@vueuse/core'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -24,8 +28,12 @@ export interface FacetGroupConfig {
   readonly key: string
   readonly type: FilterBadge['type']
   readonly label: string
-  /** Segmented groups hold one choice; the rest are chips you switch on. */
-  readonly single?: boolean
+  /** How the group is drawn: one row of options, chips, or a dropdown. */
+  readonly display: 'segmented' | 'chips' | 'select'
+  /** What "nothing chosen" reads as, and the link that opens the whole list. */
+  readonly allLabel: string
+  /** How many chips the group opens with, when it holds more than it shows. */
+  readonly limit?: number
 }
 
 export interface ToolbarLabels {
@@ -35,11 +43,10 @@ export interface ToolbarLabels {
   readonly models: string
   readonly filter: string
   readonly clearAll: string
-  readonly applied: string
   readonly searchPlaceholder: string
   readonly noResults: string
-  readonly more: string
   readonly less: string
+  readonly selected: string
   readonly type: string
   readonly typeAll: string
   readonly sortPopular: string
@@ -60,9 +67,9 @@ const { facetsByType, isBadgeActive, activeCountForType } =
   useFacets(facetInput)
 
 // A facet with sixty values cannot be read as a wall of chips: each group opens
-// with the values that carry the most workflows and hides the tail behind a
-// count, the way the rest of the catalogue reveals long lists.
-const CHIP_LIMIT = 10
+// with the values that carry the most workflows and keeps the tail behind a
+// link.
+const CHIP_LIMIT = 6
 const SEARCH_THRESHOLD = 12
 
 const TABS: { key: HubTab; labelKey: keyof ToolbarLabels; icon: Component }[] =
@@ -82,6 +89,10 @@ const pill = useSlidingUnderline(
 )
 
 const filterOpen = ref(false)
+const panel = useTemplateRef<HTMLElement>('panel')
+onClickOutside(panel, () => (filterOpen.value = false), {
+  ignore: ['[data-testid="hub-filter"]']
+})
 const facetSearch = ref<Record<string, string>>({})
 const expanded = ref<Record<string, boolean>>({})
 
@@ -100,6 +111,7 @@ interface FacetGroup {
   readonly key: string
   readonly type: FilterBadge['type']
   readonly values: readonly FacetValue[]
+  readonly limit?: number
 }
 
 function matchingValues(group: FacetGroup): readonly FacetValue[] {
@@ -115,13 +127,31 @@ function visibleValues(group: FacetGroup): readonly FacetValue[] {
   if (expanded.value[group.key]) return values
   const chosen = values.filter((v) => isBadgeActive(group.type, v.value))
   const rest = values.filter((v) => !isBadgeActive(group.type, v.value))
-  return [...chosen, ...rest].slice(0, CHIP_LIMIT)
+  return [...chosen, ...rest].slice(0, group.limit ?? CHIP_LIMIT)
 }
 
 function hiddenCount(group: FacetGroup): number {
   return expanded.value[group.key]
     ? 0
     : matchingValues(group).length - visibleValues(group).length
+}
+
+const chosenMedia = computed(() =>
+  facetsByType.value.media.values.find((value) =>
+    isBadgeActive('media', value.value)
+  )
+)
+
+const groupLabel = (group: FacetGroupConfig) =>
+  group.type === 'tag' && chosenMedia.value
+    ? `${group.label} · ${chosenMedia.value.displayValue}`
+    : group.label
+
+const selectLabel = (group: FacetGroupConfig) => {
+  const chosen = activeCountForType(group.type)
+  return chosen === 0
+    ? group.allLabel
+    : labels.selected.replace('{n}', String(chosen))
 }
 
 const sortLabel = computed(() =>
@@ -135,11 +165,23 @@ const controlClass =
 // rather than a row you find behind a tab.
 const chipClass = (active: boolean) =>
   cn(
-    'focus-visible:ring-brand inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition-colors outline-none focus-visible:ring-2',
+    'focus-visible:ring-brand inline-flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm transition-colors outline-none focus-visible:ring-2',
     active
-      ? 'border-brand bg-brand text-page'
-      : 'text-content-secondary hover:text-content border-white/15 hover:border-white/30'
+      ? 'border-brand bg-brand text-page font-medium'
+      : 'text-content border-white/15 hover:border-white/40'
   )
+
+// One choice out of a short list reads as a single control, so the options
+// share a border instead of each carrying their own.
+const segmentClass = (active: boolean) =>
+  cn(
+    'focus-visible:ring-brand cursor-pointer rounded-full px-4 py-2 text-sm whitespace-nowrap transition-colors outline-none focus-visible:ring-2',
+    active
+      ? 'bg-brand text-page font-medium'
+      : 'text-content hover:text-primary-warm-white'
+  )
+
+const groupTitleClass = 'text-content-muted text-base'
 </script>
 
 <template>
@@ -245,70 +287,80 @@ const chipClass = (active: boolean) =>
 
     <div
       v-if="filterOpen"
-      class="bg-site-dropdown absolute top-full right-0 z-40 mt-3 flex max-h-[70vh] w-full max-w-3xl scrollbar-thin flex-col gap-5 overflow-y-auto rounded-3xl border border-white/10 p-6 shadow-2xl"
+      ref="panel"
+      class="bg-site-dropdown absolute top-full right-0 z-40 mt-3 flex max-h-[75vh] w-full max-w-4xl scrollbar-thin flex-col gap-7 overflow-y-auto rounded-3xl border border-white/10 p-8 shadow-2xl"
       data-testid="hub-filter-menu"
     >
-      <div class="flex flex-col gap-2">
-        <h3
-          class="text-content-muted text-2xs font-bold tracking-wider uppercase"
-        >
-          {{ labels.type }}
-        </h3>
-        <div class="flex flex-wrap gap-2" role="listbox">
-          <button
-            v-for="tab in TABS"
-            :key="tab.key"
-            type="button"
-            role="option"
-            :aria-selected="store.activeTab.value === tab.key"
-            :class="chipClass(store.activeTab.value === tab.key)"
-            :data-testid="`hub-type-${tab.key}`"
-            @click="store.setTab(tab.key)"
+      <div class="flex flex-wrap gap-x-12 gap-y-7">
+        <div class="flex flex-col gap-3">
+          <h3 :class="groupTitleClass">{{ labels.type }}</h3>
+          <div
+            class="flex w-fit flex-wrap items-center gap-1 rounded-full border border-white/15 p-1"
+            role="listbox"
           >
-            {{ tab.key === 'all' ? labels.typeAll : labels[tab.labelKey] }}
-          </button>
+            <button
+              v-for="tab in TABS"
+              :key="tab.key"
+              type="button"
+              role="option"
+              :aria-selected="store.activeTab.value === tab.key"
+              :class="segmentClass(store.activeTab.value === tab.key)"
+              :data-testid="`hub-type-${tab.key}`"
+              @click="store.setTab(tab.key)"
+            >
+              {{ tab.key === 'all' ? labels.typeAll : labels[tab.labelKey] }}
+            </button>
+          </div>
+        </div>
+
+        <div
+          v-for="group in groups.filter((g) => g.display === 'segmented')"
+          :key="group.key"
+          class="flex flex-col gap-3"
+        >
+          <h3 :class="groupTitleClass">{{ groupLabel(group) }}</h3>
+          <div
+            class="flex w-fit flex-wrap items-center gap-1 rounded-full border border-white/15 p-1"
+            role="listbox"
+            :data-testid="`hub-facet-${group.key}`"
+          >
+            <button
+              type="button"
+              role="option"
+              :aria-selected="activeCountForType(group.type) === 0"
+              :class="segmentClass(activeCountForType(group.type) === 0)"
+              :data-testid="`hub-facet-${group.key}-all`"
+              @click="store.clearBadgesOfType(group.type)"
+            >
+              {{ labels.typeAll }}
+            </button>
+            <button
+              v-for="val in group.values"
+              :key="val.value"
+              type="button"
+              role="option"
+              :aria-selected="isBadgeActive(group.type, val.value)"
+              :class="segmentClass(isBadgeActive(group.type, val.value))"
+              @click="store.selectBadge({ type: group.type, value: val.value })"
+            >
+              {{ val.displayValue }}
+            </button>
+          </div>
         </div>
       </div>
 
-      <div v-for="group in groups" :key="group.key" class="flex flex-col gap-2">
-        <div class="flex items-center gap-3">
-          <h3
-            class="text-content-muted text-2xs font-bold tracking-wider uppercase"
-            :data-testid="`hub-facet-${group.key}`"
-          >
-            {{ group.label }}
-          </h3>
-          <input
-            v-if="expanded[group.key] && group.values.length > SEARCH_THRESHOLD"
-            v-model="facetSearch[group.key]"
-            type="search"
-            :placeholder="labels.searchPlaceholder"
-            :data-testid="`hub-facet-search-${group.key}`"
-            class="text-content placeholder:text-content-muted focus-visible:ring-brand w-48 rounded-lg bg-white/5 px-3 py-1.5 text-xs outline-none focus-visible:ring-2 [&::-webkit-search-cancel-button]:hidden"
-          />
-        </div>
+      <div
+        v-for="group in groups.filter((g) => g.display === 'chips')"
+        :key="group.key"
+        class="flex flex-col gap-3"
+      >
+        <h3 :class="groupTitleClass">{{ groupLabel(group) }}</h3>
         <div
-          :class="
-            cn(
-              'flex flex-wrap gap-2',
-              expanded[group.key] &&
-                'max-h-56 scrollbar-thin content-start overflow-y-auto'
-            )
-          "
+          class="flex flex-wrap items-center gap-3"
           role="listbox"
           aria-multiselectable="true"
+          :data-testid="`hub-facet-${group.key}`"
         >
-          <button
-            v-if="group.single"
-            type="button"
-            role="option"
-            :aria-selected="activeCountForType(group.type) === 0"
-            :class="chipClass(activeCountForType(group.type) === 0)"
-            :data-testid="`hub-facet-${group.key}-all`"
-            @click="store.clearBadgesOfType(group.type)"
-          >
-            {{ labels.typeAll }}
-          </button>
           <button
             v-for="val in visibleValues(group)"
             :key="val.value"
@@ -316,64 +368,123 @@ const chipClass = (active: boolean) =>
             role="option"
             :aria-selected="isBadgeActive(group.type, val.value)"
             :class="chipClass(isBadgeActive(group.type, val.value))"
-            @click="
-              group.single
-                ? store.selectBadge({ type: group.type, value: val.value })
-                : store.toggleBadge({ type: group.type, value: val.value })
-            "
+            @click="store.toggleBadge({ type: group.type, value: val.value })"
           >
             {{ val.displayValue }}
-            <span class="tabular-nums opacity-50">{{ val.count }}</span>
+            <X
+              v-if="isBadgeActive(group.type, val.value)"
+              class="size-3.5"
+              aria-hidden="true"
+            />
           </button>
-          <p
-            v-if="visibleValues(group).length === 0"
-            class="text-content-muted py-1 text-xs"
-          >
-            {{ labels.noResults }}
-          </p>
-        </div>
 
-        <button
-          v-if="hiddenCount(group) > 0 || expanded[group.key]"
-          type="button"
-          class="hover:text-brand focus-visible:ring-brand text-content-secondary w-fit cursor-pointer rounded-lg text-xs font-semibold transition-colors outline-none focus-visible:ring-2"
-          :data-testid="`hub-facet-more-${group.key}`"
-          @click="expanded[group.key] = !expanded[group.key]"
+          <button
+            v-if="hiddenCount(group) > 0 || expanded[group.key]"
+            type="button"
+            class="text-brand hover:text-brand/80 focus-visible:ring-brand inline-flex cursor-pointer items-center gap-1.5 rounded-lg text-sm font-medium transition-colors outline-none focus-visible:ring-2"
+            :data-testid="`hub-facet-more-${group.key}`"
+            @click="expanded[group.key] = !expanded[group.key]"
+          >
+            {{ expanded[group.key] ? labels.less : group.allLabel }}
+            <ArrowRight
+              v-if="!expanded[group.key]"
+              class="size-4"
+              aria-hidden="true"
+            />
+          </button>
+        </div>
+      </div>
+
+      <div class="grid gap-7 sm:grid-cols-2">
+        <div
+          v-for="group in groups.filter((g) => g.display === 'select')"
+          :key="group.key"
+          class="flex flex-col gap-3"
         >
-          {{
-            expanded[group.key]
-              ? labels.less
-              : labels.more.replace('{n}', String(hiddenCount(group)))
-          }}
-        </button>
+          <h3 :class="groupTitleClass">{{ group.label }}</h3>
+          <button
+            type="button"
+            :aria-expanded="expanded[group.key] === true"
+            class="focus-visible:ring-brand flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-white/15 px-5 py-3.5 text-left text-base transition-colors outline-none hover:border-white/30 focus-visible:ring-2"
+            :data-testid="`hub-facet-${group.key}`"
+            @click="expanded[group.key] = !expanded[group.key]"
+          >
+            <span
+              :class="
+                activeCountForType(group.type) > 0
+                  ? 'text-brand'
+                  : 'text-content'
+              "
+            >
+              {{ selectLabel(group) }}
+            </span>
+            <ChevronDown
+              :class="
+                cn(
+                  'text-content-muted size-4 transition-transform',
+                  expanded[group.key] && 'rotate-180'
+                )
+              "
+              aria-hidden="true"
+            />
+          </button>
+
+          <div v-if="expanded[group.key]" class="flex flex-col gap-3">
+            <input
+              v-if="group.values.length > SEARCH_THRESHOLD"
+              v-model="facetSearch[group.key]"
+              type="search"
+              :placeholder="labels.searchPlaceholder"
+              :data-testid="`hub-facet-search-${group.key}`"
+              class="text-content placeholder:text-content-muted focus-visible:ring-brand w-full rounded-xl bg-white/5 px-4 py-2.5 text-sm outline-none focus-visible:ring-2 [&::-webkit-search-cancel-button]:hidden"
+            />
+            <div
+              class="flex max-h-48 scrollbar-thin flex-wrap content-start gap-3 overflow-y-auto"
+              role="listbox"
+              aria-multiselectable="true"
+            >
+              <button
+                v-for="val in matchingValues(group)"
+                :key="val.value"
+                type="button"
+                role="option"
+                :aria-selected="isBadgeActive(group.type, val.value)"
+                :class="chipClass(isBadgeActive(group.type, val.value))"
+                @click="
+                  store.toggleBadge({ type: group.type, value: val.value })
+                "
+              >
+                {{ val.displayValue }}
+              </button>
+              <p
+                v-if="matchingValues(group).length === 0"
+                class="text-content-muted py-1 text-sm"
+              >
+                {{ labels.noResults }}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div
-        class="flex items-center justify-between gap-3 border-t border-white/10 pt-4"
+        class="flex items-center justify-between gap-4 border-t border-white/10 pt-6"
       >
-        <span
-          v-if="totalActiveFilters > 0"
-          class="text-content-secondary text-xs"
-          data-testid="hub-filter-applied"
-        >
-          {{ labels.applied.replace('{n}', String(totalActiveFilters)) }}
-        </span>
-        <button
-          v-if="totalActiveFilters > 0"
-          type="button"
-          class="text-content-secondary hover:text-content mr-auto rounded-lg px-3 py-2 text-xs font-semibold transition-colors hover:bg-white/5"
-          data-testid="hub-filter-clear"
-          @click="store.clearBadges()"
-        >
-          {{ labels.clearAll }}
-        </button>
         <button
           type="button"
-          class="bg-brand text-page hover:bg-brand/90 focus-visible:ring-brand ml-auto cursor-pointer rounded-xl px-5 py-2.5 text-xs font-bold transition-colors outline-none focus-visible:ring-2"
+          class="bg-brand text-page hover:bg-brand/90 focus-visible:ring-brand cursor-pointer rounded-full px-8 py-3.5 text-base font-bold transition-colors outline-none focus-visible:ring-2"
           data-testid="hub-filter-show"
           @click="filterOpen = false"
         >
           {{ labels.showResults.replace('{n}', String(resultCount)) }}
+        </button>
+        <button
+          type="button"
+          class="text-content-secondary hover:text-content cursor-pointer rounded-lg text-base transition-colors"
+          data-testid="hub-filter-clear"
+          @click="store.clearBadges()"
+        >
+          {{ labels.clearAll }}
         </button>
       </div>
     </div>

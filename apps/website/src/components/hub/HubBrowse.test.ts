@@ -54,8 +54,9 @@ describe('HubBrowse', () => {
     const user = userEvent.setup()
     render(HubBrowse)
     await user.click(screen.getByTestId('hub-filter'))
-    await user.click(await screen.findByRole('option', { name: /^Wan \d+$/ }))
-    expect(screen.getByTestId('hub-filter-count').textContent?.trim()).toBe('1')
+    await user.click(screen.getByTestId('hub-facet-models'))
+    await user.click(await screen.findByRole('option', { name: 'Wan' }))
+    expect(screen.getByTestId('hub-filter-count').textContent.trim()).toBe('1')
     expect(screen.getByTestId('hub-showing').textContent).toContain('of 36')
   })
 
@@ -90,13 +91,13 @@ describe('HubBrowse', () => {
     const user = userEvent.setup()
     render(HubBrowse)
     await user.click(screen.getByTestId('hub-filter'))
-    await user.click(await screen.findByRole('option', { name: /^Wan \d+$/ }))
-    expect(screen.getByTestId('hub-filter-applied').textContent).toContain(
+    await user.click(screen.getByTestId('hub-facet-models'))
+    await user.click(await screen.findByRole('option', { name: 'Wan' }))
+    expect(screen.getByTestId('hub-facet-models').textContent).toContain(
       '1 selected'
     )
 
-    await user.click(screen.getByRole('button', { name: 'Clear all' }))
-    expect(screen.queryByTestId('hub-filter-applied')).toBeNull()
+    await user.click(screen.getByTestId('hub-filter-clear'))
     expect(screen.queryByTestId('hub-filter-count')).toBeNull()
   })
 })

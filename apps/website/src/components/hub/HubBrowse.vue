@@ -152,13 +152,12 @@ const toolbarLabels: ToolbarLabels = {
   models: t('workshop.hub.kind.models', locale),
   filter: t('workshop.filter.label', locale),
   clearAll: t('workshop.hub.facets.clearAll', locale),
-  applied: t('workshop.filter.applied', locale),
   searchPlaceholder: t('workshop.hub.facets.search', locale),
   noResults: t('workshop.hub.facets.noResults', locale),
-  more: t('workshop.hub.facets.more', locale),
   type: t('workshop.hub.facets.type', locale),
   typeAll: t('workshop.hub.kind.all', locale),
   less: t('workshop.hub.facets.less', locale),
+  selected: t('workshop.hub.facets.selected', locale),
   sortPopular: t('workshop.hub.sort.popular', locale),
   sortNewest: t('workshop.hub.sort.newest', locale),
   showResults: t('workshop.hub.facets.show', locale)
@@ -168,23 +167,37 @@ const facetsConfig: FacetGroupConfig[] = [
     key: 'media',
     type: 'media',
     label: t('workshop.hub.facets.media', locale),
-    single: true
+    display: 'segmented',
+    allLabel: t('workshop.hub.kind.all', locale)
   },
   {
     key: 'categories',
     type: 'tag',
-    label: t('workshop.hub.facets.task', locale)
+    label: t('workshop.hub.facets.task', locale),
+    display: 'chips',
+    allLabel: t('workshop.hub.facets.allTasks', locale)
   },
-  { key: 'models', type: 'model', label: t('workshop.hub.models', locale) },
+  {
+    key: 'models',
+    type: 'model',
+    label: t('workshop.hub.models', locale),
+    display: 'select',
+    allLabel: t('workshop.hub.facets.allModels', locale)
+  },
   {
     key: 'partners',
     type: 'partner',
-    label: t('workshop.hub.facets.partner', locale)
+    label: t('workshop.hub.facets.partner', locale),
+    display: 'select',
+    allLabel: t('workshop.hub.facets.allPartners', locale)
   },
   {
     key: 'industries',
     type: 'industry',
-    label: t('workshop.hub.facets.industry', locale)
+    label: t('workshop.hub.facets.industry', locale),
+    display: 'chips',
+    allLabel: t('workshop.hub.facets.allIndustries', locale),
+    limit: 8
   }
 ]
 const gridLabels: GridLabels = {
