@@ -149,6 +149,7 @@ export type IWidget =
   | ICompositorWidget
   | IRangeWidget
   | IVideoEditWidget
+  | IResolutionPreviewWidget
   | IBoundingBoxesWidget
   | IColorsWidget
 
@@ -421,6 +422,21 @@ export interface IVideoEditWidget extends IBaseWidget<
 > {
   type: 'videoedit'
   value: VideoEditValue
+}
+
+export interface IWidgetResolutionPreviewOptions extends IWidgetOptions {
+  ratio_widget?: string
+  megapixels_widget?: string
+  multiple_widget?: string
+}
+
+export interface IResolutionPreviewWidget extends IBaseWidget<
+  undefined,
+  'resolutionpreview',
+  IWidgetResolutionPreviewOptions
+> {
+  type: 'resolutionpreview'
+  value: undefined
 }
 
 /**
