@@ -456,6 +456,24 @@ describe('useAgentConversationStore', () => {
     expect(partTexts(store)).toEqual(['First reply', 'Second reply'])
   })
 
+  it('hydrates persisted workflow reference chips on their original user turn', () => {
+    const user = historyRow(1, 'user', 'turn-a', 'Compare these')
+    user.content = {
+      text: 'Compare these',
+      workflow_references: [
+        { workflow_id: 'wf-reference', name: 'Reference workflow' }
+      ]
+    }
+    const store = useAgentConversationStore()
+
+    store.hydrate([user, historyRow(2, 'assistant', 'turn-a', 'Done')])
+
+    expect(store.entries[0]).toMatchObject({
+      role: 'user',
+      workflowReferences: [{ id: 'wf-reference', name: 'Reference workflow' }]
+    })
+  })
+
   it('keeps hydrated turn identity stable when persisted row ids change', () => {
     const store = useAgentConversationStore()
     const firstRows = [
