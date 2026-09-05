@@ -70,7 +70,7 @@ const modelsTabs = modelsApiCodeTabs
         class="group bg-transparency-white-t4 relative flex scroll-mt-24 flex-col rounded-4xl border border-transparent p-6 transition-colors hover:border-white/25 lg:scroll-mt-36 lg:p-10"
       >
         <a
-          :href="routes.platformModels"
+          :href="routes.platformRouter"
           :aria-label="t('platform.products.models.title', locale)"
           class="absolute inset-0 z-0 rounded-4xl"
         ></a>
@@ -86,9 +86,6 @@ const modelsTabs = modelsApiCodeTabs
             :show-logo="false"
             compact
           />
-          <Badge variant="accent" size="xs">
-            {{ t('nav.badgeComingSoon', locale) }}
-          </Badge>
         </div>
         <p
           class="pointer-events-none relative z-10 mt-3 text-sm/relaxed font-light text-primary-comfy-canvas"

@@ -27,7 +27,7 @@ const baseRoutes = {
   agent: '/agent',
   platform: '/platform',
   platformComfyApi: '/platform/comfy-api',
-  platformModels: '/platform/models',
+  platformRouter: '/platform/router',
   platformBuilder: '/platform/builder',
   cli: '/cli',
   minimax: '/minimax-h3',
