@@ -35,17 +35,42 @@ describe('resolveAgentPaywallPresentation', () => {
       resolveServerCapabilities({
         distribution: 'cloud',
         role: 'owner',
+        tier: 'STANDARD',
         canTopUp: testCase.canTopUp,
         canSubscribeSelfServe: testCase.canSubscribeSelfServe
       })
     ).toEqual(testCase.expected)
   })
 
+  it.for([
+    { tier: 'STANDARD' as const, showUpgrade: true },
+    { tier: 'CREATOR' as const, showUpgrade: true },
+    { tier: 'PRO' as const, showUpgrade: false },
+    { tier: 'FOUNDERS_EDITION' as const, showUpgrade: false },
+    { tier: 'TEAM' as const, showUpgrade: false },
+    { tier: 'ENTERPRISE' as const, showUpgrade: false },
+    { tier: null, showUpgrade: false }
+  ])(
+    'offers Upgrade plan only from a personal tier with a higher tier ($tier)',
+    ({ tier, showUpgrade }) => {
+      expect(
+        resolveServerCapabilities({
+          distribution: 'cloud',
+          role: 'owner',
+          tier,
+          canTopUp: true,
+          canSubscribeSelfServe: true
+        })
+      ).toEqual({ kind: 'subscribed', showUpgrade })
+    }
+  )
+
   it('keeps role and distribution overrides outside Cloud owners', () => {
     expect(
       resolveServerCapabilities({
         distribution: 'cloud',
         role: 'member',
+        tier: 'STANDARD',
         canTopUp: true,
         canSubscribeSelfServe: true
       })
@@ -54,6 +79,7 @@ describe('resolveAgentPaywallPresentation', () => {
       resolveServerCapabilities({
         distribution: 'local',
         role: 'owner',
+        tier: null,
         canTopUp: true,
         canSubscribeSelfServe: false
       })

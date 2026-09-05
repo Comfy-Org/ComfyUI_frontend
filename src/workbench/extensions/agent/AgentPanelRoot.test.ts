@@ -3,6 +3,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import type { SubscriptionTier } from '@comfyorg/ingest-types'
 import { createTestingPinia } from '@pinia/testing'
 import {
   createPinia,
@@ -326,6 +327,9 @@ const paywallCapabilities = vi.hoisted(() => ({
   canSubscribeSelfServe: true,
   isReady: true
 }))
+const paywallBilling = vi.hoisted(() => ({
+  tier: 'STANDARD' as SubscriptionTier | null
+}))
 
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', async () => {
   const { computed } = await import('vue')
@@ -333,6 +337,13 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', async () => {
     useWorkspaceUI: () => ({
       workspaceRole: computed(() => paywallWorkspace.role)
     })
+  }
+})
+
+vi.mock('@/composables/billing/useBillingContext', async () => {
+  const { computed } = await import('vue')
+  return {
+    useBillingContext: () => ({ tier: computed(() => paywallBilling.tier) })
   }
 })
 
@@ -388,6 +399,7 @@ beforeEach(() => {
   paywallCapabilities.canTopUp = true
   paywallCapabilities.canSubscribeSelfServe = true
   paywallCapabilities.isReady = true
+  paywallBilling.tier = 'STANDARD'
 })
 
 afterEach(() => {
@@ -487,6 +499,28 @@ describe('AgentPanelRoot paywall actions', () => {
       screen.queryByRole('button', { name: /upgrade|subscribe/i })
     ).not.toBeInTheDocument()
   })
+
+  it.for(['PRO', 'TEAM'] as const)(
+    'shows Add credits only for a %s owner even when self-serve subscription is allowed',
+    async (tier) => {
+      paywallBilling.tier = tier
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      useAgentConversationStore().messages.push({
+        id: 'msg-paywall' as TurnId,
+        role: 'assistant',
+        parts: [{ type: 'paywall' }],
+        streaming: false,
+        thinking: false
+      })
+
+      expect(
+        await screen.findByRole('button', { name: 'Add credits' })
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: /upgrade|subscribe/i })
+      ).not.toBeInTheDocument()
+    }
+  )
 
   it('keeps Add credits but hides Upgrade when self-serve subscription is unavailable', async () => {
     paywallCapabilities.canSubscribeSelfServe = false
