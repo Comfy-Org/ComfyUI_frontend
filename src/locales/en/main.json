@@ -1,6 +1,7 @@
 {
   "g": {
     "shortcutSuffix": " ({shortcut})",
+    "megapixelsValue": "{count} MP",
     "user": "User",
     "you": "You",
     "currentUser": "Current user",
