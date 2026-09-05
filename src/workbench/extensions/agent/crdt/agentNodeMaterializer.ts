@@ -227,7 +227,10 @@ function reconcile(
   const materialized: NodeId[] = []
   for (const state of records) {
     const live = graph._nodes_by_id[state.id]
-    if (live && nodeStore.ownsNode(scope, live._state)) continue
+    if (live && nodeStore.ownsNode(scope, live._state)) {
+      reconfigureSubgraphInstance(graph, live, state.lastSerialization)
+      continue
+    }
     const serialised = state.lastSerialization
     if (!serialised) continue
     if (pendingDefinitions.has(state.type)) continue
@@ -247,6 +250,65 @@ function reconcile(
     graph.remove(orphan, { preserveCanonicalState: true })
   }
   return materialized
+}
+
+/**
+ * A `reconcileNode` on an incumbent replaces the node's slots with the
+ * payload's and clears every widget record of that node before registering
+ * the payload's own. A subgraph instance derives both from its definition, not
+ * from the payload: the op layer stores a bare instance (`inputs` absent or
+ * partial, promoted host writes positional in `widgets_values`), and on load
+ * `SubgraphNode.configure()` rebuilds the slots from the definition and binds
+ * the promoted widgets from the interior. After an in-place reconcile the live
+ * instance is left with the payload's flattened slots and no promoted widgets,
+ * so repeat exactly what load does while retaining renderer-owned layout.
+ *
+ * Untouched incumbents keep their definition-backed inputs and outputs and are
+ * left alone.
+ */
+function reconfigureSubgraphInstance(
+  graph: MaterializableGraph,
+  live: LGraphNode,
+  serialised: ISerialisedNode | undefined
+): void {
+  if (!live.isSubgraphNode() || !serialised) return
+  const declaredInputs = live.subgraph.inputNode.slots
+  const declaredOutputs = live.subgraph.outputNode.slots
+  const inputsIntact =
+    live.inputs.length === declaredInputs.length &&
+    live.inputs.every((input) => input._subgraphSlot !== undefined)
+  const outputsIntact =
+    live.outputs.length === declaredOutputs.length &&
+    live.outputs.every(
+      (output, index) =>
+        output.name === declaredOutputs[index]?.name &&
+        output.type === declaredOutputs[index]?.type
+    )
+  if (inputsIntact && outputsIntact) return
+  // `configure()` falls back to the class static title for an empty title.
+  const currentTitle = live.title
+  const {
+    inputs: _inputs,
+    outputs: _outputs,
+    ...definitionOwnedInfo
+  } = withNamedWidgetValues(serialised)
+  const info = {
+    ...definitionOwnedInfo,
+    title: currentTitle || ' ',
+    pos: [live.pos[0], live.pos[1]],
+    size: [live.size[0], live.size[1]],
+    flags: { ...live.flags }
+  } satisfies ISerialisedNode
+  try {
+    withNamedValuesRestore(() => live.configure(info))
+  } catch (cause) {
+    reportError(cause, {
+      errorType: 'agent_node_reconfigure_failed',
+      context: { graphId: graph.id, nodeId: String(live.id) }
+    })
+  } finally {
+    live.title = currentTitle
+  }
 }
 
 function materialize(
