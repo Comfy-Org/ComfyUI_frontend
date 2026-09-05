@@ -86,6 +86,40 @@ describe('storageKeys', () => {
   })
 
   describe('StorageKeys', () => {
+    it('reproduces R-50: an authenticated A → B switch shares the personal draft key', async () => {
+      sessionStorage.removeItem('Comfy.Workspace.Current')
+      const { getWorkspaceId, StorageKeys } = await import('./storageKeys')
+      const path = 'workflows/shared-path.json'
+
+      // Current-risk characterization only: shared storage is not desired behavior.
+      const userA = { uid: 'user-a' }
+      const workspaceForUserA = getWorkspaceId()
+      const draftKeyForUserA = StorageKeys.draftPayload(path, workspaceForUserA)
+      const expectedKey = `Comfy.Workflow.Draft.v2:personal:${StorageKeys.draftKey(path)}`
+      localStorage.setItem(draftKeyForUserA, userA.uid)
+      const draftKeysBeforeIdentityChange = Object.keys(localStorage).filter(
+        (key) => key.startsWith('Comfy.Workflow.Draft.v2:')
+      )
+
+      const userB = { uid: 'user-b' }
+      const workspaceForUserB = getWorkspaceId()
+      const draftKeyForUserB = StorageKeys.draftPayload(path, workspaceForUserB)
+
+      expect(userB.uid).not.toBe(userA.uid)
+      expect(workspaceForUserA).toBe('personal')
+      expect(workspaceForUserB).toBe('personal')
+      expect([draftKeyForUserA, draftKeyForUserB]).toEqual([
+        expectedKey,
+        expectedKey
+      ])
+      expect(localStorage.getItem(draftKeyForUserB)).toBe(userA.uid)
+      expect(
+        Object.keys(localStorage).filter((key) =>
+          key.startsWith('Comfy.Workflow.Draft.v2:')
+        )
+      ).toEqual(draftKeysBeforeIdentityChange)
+    })
+
     it('generates draftIndex key with workspace scope', async () => {
       const { StorageKeys } = await import('./storageKeys')
 
