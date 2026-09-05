@@ -638,27 +638,46 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
               mutation.node.state,
               context
             )
-            widgetStore.clearNode(
-              scope.rootGraphId,
-              mutation.node.state.id,
-              context
+            const retainedWidgetIds = new Set(
+              mutation.node.widgets.map(({ name }) =>
+                widgetId(scope.rootGraphId, mutation.node.state.id, name)
+              )
             )
+            for (const id of widgetStore.getNodeWidgetIds(
+              scope.rootGraphId,
+              mutation.node.state.id
+            )) {
+              if (!retainedWidgetIds.has(id)) widgetStore.deleteWidget(id)
+            }
           } else {
             nodeStore.registerNode(scope, mutation.node.state, context)
           }
           for (const widget of mutation.node.widgets) {
+            const id = widgetId(
+              scope.rootGraphId,
+              mutation.node.state.id,
+              widget.name
+            )
+            const incumbentWidget = widgetStore.getWidget(id)
             widgetStore.registerWidget(
-              widgetId(scope.rootGraphId, mutation.node.state.id, widget.name),
+              id,
               {
                 name: widget.name,
                 type: widget.type,
-                value: widget.value,
+                value:
+                  mutation.kind === 'reconcileNode' &&
+                  incumbentWidget?.type === widget.type
+                    ? incumbentWidget.value
+                    : widget.value,
                 options: {},
                 label: widget.name
               },
               {},
               context
             )
+            if (mutation.kind === 'reconcileNode' && existing) {
+              widgetStore.setValue(id, widget.value, context)
+            }
           }
           if (!existing) {
             deps.layout.createNode(

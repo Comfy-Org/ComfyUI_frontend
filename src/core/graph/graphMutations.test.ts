@@ -228,6 +228,9 @@ describe('graphMutations', () => {
     const graph = mutations()
     graph.addNode(node(1, { seed: 1, stale: 'old' }), context)
     const [existing] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    const seedWidget = useWidgetValueStore().getWidget(
+      widgetId('root', toNodeId(1), 'seed')
+    )
     createLayout.mockClear()
     deleteLayouts.mockClear()
 
@@ -245,8 +248,8 @@ describe('graphMutations', () => {
     expect(reconciled.title).toBe('Seeded authority')
     expect(
       useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), 'seed'))
-        ?.value
-    ).toBe(42)
+    ).toBe(seedWidget)
+    expect(seedWidget?.value).toBe(42)
     expect(
       useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), 'stale'))
     ).toBeUndefined()

@@ -904,6 +904,47 @@ describe('reconcileAgentAdapters', () => {
         })
       ])
     })
+
+    it('keeps a live widget bound through an ordinary remote reconcile', async () => {
+      const scope = graphScopeOf(graph)
+      const mutations = remoteMutations(scope)
+      mutations.addNode(
+        { ...nodePayload(1, 'widget-node'), widgets_values: { value: 7 } },
+        REMOTE
+      )
+      reconcileAgentAdapters(graph)
+      await settle()
+
+      const node = graph.getNodeById(toNodeId(1))!
+      const liveWidget = node.widgets![0]
+      mutations.batch({ ...REMOTE, opId: 'reconcile-value' }, (batch) =>
+        batch.reconcileNode({
+          ...nodePayload(1, 'widget-node'),
+          widgets_values: { value: 9 }
+        })
+      )
+
+      expect(reconcileAgentAdapters(graph)).toEqual([])
+      expect(liveWidget.value).toBe(9)
+      expect(
+        useWidgetValueStore().getWidget(
+          widgetId(scope.rootGraphId, toNodeId(1), 'value')
+        )?.value
+      ).toBe(9)
+
+      liveWidget.value = 10
+      await settle()
+
+      expect(minted).toEqual([
+        expect.objectContaining({
+          op: 'set_widget',
+          node_id: toNodeId(1),
+          widget: 'value',
+          value: 10,
+          old: 9
+        })
+      ])
+    })
   })
 
   describe('subgraph definitions', () => {
