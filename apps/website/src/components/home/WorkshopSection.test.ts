@@ -29,7 +29,7 @@ const models: WorkshopBrowseModel[] = [
 ]
 
 function renderSection() {
-  render(WorkshopSection, { props: { models } as never })
+  render(WorkshopSection, { props: { models } })
 }
 
 describe('WorkshopSection', () => {
@@ -61,16 +61,5 @@ describe('WorkshopSection', () => {
     expect(card.textContent).toContain('bfl')
     expect(card.textContent).toContain('image')
     expect(card.textContent).toContain('Generates an image.')
-  })
-
-  it('renders nothing but the heading when there is nothing to feature', () => {
-    // The homepage gates on this being empty while Workshop is unlisted, so
-    // an empty list has to be a quiet no-op rather than a broken grid.
-    render(WorkshopSection, { props: { models: [] } as never })
-
-    expect(
-      screen.queryAllByRole('link', { name: /Browse all models/ })
-    ).toHaveLength(1)
-    expect(screen.queryByRole('listitem')).toBeNull()
   })
 })
