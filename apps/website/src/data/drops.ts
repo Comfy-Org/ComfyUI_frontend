@@ -57,7 +57,6 @@ export const drops: readonly Drop[] = [
     id: 'comfy-cloud-nodes',
     badge: NEW_BADGE,
     category: MODELS_AND_NODES,
-    // Placeholder art, same as the other drops until the asset lands.
     media: imageFor('Drops_2x2card_CloudNodes.jpg', {
       en: 'Comfy Cloud Nodes',
       'zh-CN': 'Comfy Cloud 节点'

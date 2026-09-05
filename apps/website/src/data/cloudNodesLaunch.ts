@@ -107,9 +107,9 @@ export const cloudNodesPage: ModelLaunchPage = {
           'zh-CN': '为什么这些节点标记为测试版？'
         },
         answer: {
-          en: 'Because the curated set is still changing: nodes may gain or lose options, and a workflow may be retired. It is not a statement about reliability or billing, runs are real and charges are final. The [BETA] marker is on the node name itself so you see it before you use one.',
+          en: 'Because the curated set is still changing: nodes may gain or lose options, and a workflow may be retired. It is not a statement about reliability, runs are real and are billed the same as any other partner node. The [BETA] marker is on the node name itself so you see it before you use one.',
           'zh-CN':
-            '因为精选节点集仍在调整：节点的选项可能增减，某个工作流也可能被下线。这与稳定性或计费无关，运行是真实的，费用也是最终的。[BETA] 标记就在节点名称上，你在使用前就能看到。'
+            '因为精选节点集仍在调整：节点的选项可能增减，某个工作流也可能被下线。这与稳定性无关，运行是真实的，计费方式与其他合作伙伴节点一致。[BETA] 标记就在节点名称上，你在使用前就能看到。'
         }
       },
       {

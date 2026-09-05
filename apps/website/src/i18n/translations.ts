@@ -8382,9 +8382,9 @@ Enterprise`
       'Comfy Cloud 节点：在我们的 GPU 上运行开源模型，就在你的 ComfyUI 里'
   },
   'cloudNodesLaunch.meta.description': {
-    en: 'Drop a Comfy Cloud node into a local graph and run open models on Comfy Cloud GPUs. No subscription, no downloads, billed per second in credits.',
+    en: 'Drop a Comfy Cloud node into a local graph and run open models on Comfy Cloud GPUs. No subscription, no downloads, billed per GPU-second in credits.',
     'zh-CN':
-      '把 Comfy Cloud 节点放进本地工作流，即可在 Comfy Cloud 的 GPU 上运行开源模型。无需订阅，无需下载，按秒计费。'
+      '把 Comfy Cloud 节点放进本地工作流，即可在 Comfy Cloud 的 GPU 上运行开源模型。无需订阅，无需下载，按 GPU 秒数以积分计费。'
   },
   'cloudNodesLaunch.breadcrumb.model': {
     en: 'Comfy Cloud Nodes',
