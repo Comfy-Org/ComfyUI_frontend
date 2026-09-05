@@ -56,7 +56,7 @@ const AssetsListItemStub = defineComponent({
     :data-preview-url="previewUrl"
     :data-is-video-preview="isVideoPreview"
     data-testid="assets-list-item"
-  ><button data-testid="preview-click-trigger" @click="$emit('preview-click')" /><slot /></div>`
+  ><button data-testid="preview-click-trigger" @click="$emit('preview-click', $event)" /><slot /></div>`
 })
 
 const buildAsset = (id: string, name: string): AssetItem =>
@@ -172,5 +172,47 @@ describe('AssetsSidebarListView', () => {
     await fireEvent.dblClick(stub)
 
     expect(onPreviewAsset).toHaveBeenCalledWith(imageAsset)
+  })
+
+  it('does not emit preview-asset when preview is clicked with a selection modifier held', async () => {
+    const imageAsset = {
+      ...buildAsset('image-asset-mod', 'image.png'),
+      preview_url: '/api/view/image.png',
+      user_metadata: {}
+    } satisfies AssetItem
+
+    const onPreviewAsset = vi.fn()
+    const { container } = renderListView([buildOutputItem(imageAsset)], {
+      'onPreview-asset': onPreviewAsset
+    })
+
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    const trigger = container.querySelector(
+      '[data-testid="preview-click-trigger"]'
+    )!
+    // eslint-disable-next-line testing-library/prefer-user-event
+    await fireEvent.click(trigger, { ctrlKey: true })
+
+    expect(onPreviewAsset).not.toHaveBeenCalled()
+  })
+
+  it('does not emit preview-asset when double-clicked with a selection modifier held', async () => {
+    const imageAsset = {
+      ...buildAsset('image-asset-dbl-mod', 'image.png'),
+      preview_url: '/api/view/image.png',
+      user_metadata: {}
+    } satisfies AssetItem
+
+    const onPreviewAsset = vi.fn()
+    const { container } = renderListView([buildOutputItem(imageAsset)], {
+      'onPreview-asset': onPreviewAsset
+    })
+
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    const stub = container.querySelector('[data-testid="assets-list-item"]')!
+    // eslint-disable-next-line testing-library/prefer-user-event
+    await fireEvent.dblClick(stub, { shiftKey: true })
+
+    expect(onPreviewAsset).not.toHaveBeenCalled()
   })
 })

@@ -44,8 +44,8 @@
             @mouseleave="onAssetLeave(item.asset.id)"
             @contextmenu.prevent.stop="emit('context-menu', $event, item.asset)"
             @click.stop="emit('select-asset', item.asset, selectableAssets)"
-            @dblclick.stop="emit('preview-asset', item.asset)"
-            @preview-click="emit('preview-asset', item.asset)"
+            @dblclick.stop="openPreview($event, item.asset)"
+            @preview-click="openPreview($event, item.asset)"
             @stack-toggle="void toggleStack(item.asset)"
           >
             <template v-if="hoveredAssetId === item.asset.id" #actions>
@@ -188,5 +188,12 @@ function onAssetLeave(assetId: string) {
   if (hoveredAssetId.value === assetId) {
     hoveredAssetId.value = null
   }
+}
+
+function openPreview(event: MouseEvent, asset: AssetItem) {
+  const hasSelectionModifier = event.shiftKey || event.metaKey || event.ctrlKey
+  if (hasSelectionModifier) return
+
+  emit('preview-asset', asset)
 }
 </script>
