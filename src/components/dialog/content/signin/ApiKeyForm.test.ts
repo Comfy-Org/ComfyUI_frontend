@@ -14,7 +14,10 @@ import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import ApiKeyForm from './ApiKeyForm.vue'
 
 const mockStoreApiKey = vi.fn()
+// apiKeySchema requires the comfyui- prefix and a total length of 72.
+const VALID_API_KEY = `comfyui-${'a'.repeat(64)}`
 const mockLoadingRef = ref(false)
+const mockIsValidatingRef = ref(false)
 
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: vi.fn(() => ({
@@ -26,7 +29,10 @@ vi.mock('@/stores/authStore', () => ({
 
 vi.mock('@/stores/apiKeyAuthStore', () => ({
   useApiKeyAuthStore: vi.fn(() => ({
-    storeApiKey: mockStoreApiKey
+    storeApiKey: mockStoreApiKey,
+    get isValidating() {
+      return mockIsValidatingRef.value
+    }
   }))
 }))
 
@@ -59,6 +65,8 @@ const i18n = createI18n({
 describe('ApiKeyForm', () => {
   beforeEach(() => {
     mockLoadingRef.value = false
+    mockIsValidatingRef.value = false
+    mockStoreApiKey.mockReset()
   })
 
   function renderComponent(props: Record<string, unknown> = {}) {
@@ -90,6 +98,13 @@ describe('ApiKeyForm', () => {
     expect(onBack).toHaveBeenCalled()
   })
 
+  it('blocks a second submission while a key is being validated', () => {
+    mockIsValidatingRef.value = true
+    renderComponent()
+
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
+  })
+
   it('shows loading state when submitting', () => {
     mockLoadingRef.value = true
     const { container } = renderComponent()
@@ -97,6 +112,29 @@ describe('ApiKeyForm', () => {
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const submitButton = container.querySelector('button[type="submit"]')
     expect(submitButton).toBeDisabled()
+  })
+
+  it('emits success once the key has been accepted', async () => {
+    mockStoreApiKey.mockResolvedValue(true)
+    const onSuccess = vi.fn()
+    const { user } = renderComponent({ onSuccess })
+
+    await user.type(screen.getByLabelText('API Key'), VALID_API_KEY)
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    await vi.waitFor(() => expect(onSuccess).toHaveBeenCalled())
+  })
+
+  it('does not emit success when the key was not accepted', async () => {
+    mockStoreApiKey.mockResolvedValue(undefined)
+    const onSuccess = vi.fn()
+    const { user } = renderComponent({ onSuccess })
+
+    await user.type(screen.getByLabelText('API Key'), VALID_API_KEY)
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    await vi.waitFor(() => expect(mockStoreApiKey).toHaveBeenCalled())
+    expect(onSuccess).not.toHaveBeenCalled()
   })
 
   it('displays help text and links correctly', () => {
