@@ -118,7 +118,12 @@ export class WorkflowHelper {
     await this.comfyPage.workflowUploadInput.setInputFiles(
       assetPath(`${workflowName}.json`)
     )
-    await expect(this.comfyPage.workflowUploadInput).toHaveValue('')
+    // The app clears the input only after it has finished processing the
+    // file; large workflows (hundreds of nodes) can take well over the 5s
+    // default on CI hardware.
+    await expect(this.comfyPage.workflowUploadInput).toHaveValue('', {
+      timeout: 30_000
+    })
     await this.comfyPage.nextFrame()
     if (test.info().tags.includes('@vue-nodes')) {
       await this.comfyPage.vueNodes.waitForNodes()
@@ -228,6 +233,18 @@ export class WorkflowHelper {
   async switchToTab(tabName: string): Promise<void> {
     await this.comfyPage.menu.topbar.getWorkflowTab(tabName).click()
     await this.waitForWorkflowIdle()
+    await expect
+      .poll(() => this.comfyPage.menu.topbar.getActiveTabName(), {
+        message: `active tab is ${tabName}`
+      })
+      .toContain(tabName)
+    // Keyboard shortcuts need canvas focus; after clicking a tab the focus
+    // sits on the tab button and Ctrl+Z would go nowhere.
+    await this.comfyPage.canvas.focus()
+    await this.comfyPage.nextFrame()
+    if (this.comfyPage.isVueNodes) {
+      await this.comfyPage.vueNodes.waitForNodes()
+    }
   }
 
   async getExportedWorkflow(options: { api: true }): Promise<ComfyApiWorkflow>

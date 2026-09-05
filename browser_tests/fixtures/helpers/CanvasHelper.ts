@@ -15,6 +15,16 @@ type NodeGeometry = {
   size: Point
 }
 
+/** Shared tolerance for canvas position assertions, in graph pixels. */
+export const CANVAS_POSITION_TOLERANCE = 5
+
+/**
+ * Where `dragGroup` grabs a group: inside its titlebar, relative to the
+ * group's top-left corner. Exported so specs that probe the same point
+ * (e.g. stale-position hit tests) cannot drift from the helper.
+ */
+export const GROUP_TITLE_GRAB_OFFSET: Position = { x: 50, y: 15 }
+
 export class CanvasHelper {
   constructor(
     private page: Page,
@@ -150,6 +160,94 @@ export class CanvasHelper {
     await this.page.mouse.move(target.x, target.y, { steps: 20 })
     await this.page.mouse.up()
     await nextFrame(this.page)
+  }
+
+  /**
+   * Instantly centers the view on a graph-space point at a fixed scale (no
+   * animation) and returns the point's client coordinates. `anchorShift`
+   * offsets the screen anchor horizontally — alternate it between
+   * consecutive clicks so they never land on the same pixels and cannot
+   * register as a double-click.
+   */
+  async centerViewOn(
+    point: Position,
+    options?: { scale?: number; anchorShift?: number }
+  ): Promise<Position> {
+    const scale = options?.scale ?? 0.9
+    const anchorShift = options?.anchorShift ?? 0
+    const [x, y] = await this.page.evaluate(
+      ({ p, scale, shift }) => {
+        const canvas = window.app!.canvas
+        const rect = canvas.canvas.getBoundingClientRect()
+        canvas.ds.scale = scale
+        canvas.ds.offset = [
+          (rect.width / 2 + shift) / scale - p.x,
+          rect.height / (2 * scale) - p.y
+        ]
+        canvas.setDirty(true, true)
+        return window.app!.canvasPosToClientPos([p.x, p.y])
+      },
+      { p: point, scale, shift: anchorShift }
+    )
+    await nextFrame(this.page)
+    return { x, y }
+  }
+
+  /**
+   * Creates a reroute the way a user does — Alt+click on the link into the
+   * node's first input — and returns its position. Idempotent under retry: a
+   * click is only issued while no new reroute exists, so a delayed click
+   * effect can never mint a second reroute.
+   */
+  async createRerouteOnInputLink(nodeId: NodeId): Promise<Position> {
+    const baseline = await this.page.evaluate(() =>
+      [...window.app!.graph.reroutes.keys()].map(String)
+    )
+    const findNew = () =>
+      this.page.evaluate((known) => {
+        const fresh = [...window.app!.graph.reroutes.values()].find(
+          (reroute) => !known.includes(String(reroute.id))
+        )
+        return fresh ? { x: fresh.pos[0], y: fresh.pos[1] } : null
+      }, baseline)
+
+    let created: Position | null = null
+    let attempt = 0
+    await expect(async () => {
+      created = await findNew()
+      if (created) return
+      attempt += 1
+      const midpoint = await this.page.evaluate((targetNodeId) => {
+        const graph = window.app!.graph
+        const node = graph.getNodeById(targetNodeId)
+        if (!node) throw new Error(`Node ${targetNodeId} not found`)
+        const linkId = node.inputs?.[0]?.link
+        if (linkId == null) throw new Error('Expected existing link on input 0')
+        const link = graph.getLink(linkId)
+        if (!link) throw new Error(`Link ${linkId} not found`)
+        const source = graph.getNodeById(link.origin_id)
+        if (!source) throw new Error(`Link source ${link.origin_id} not found`)
+        const [outX, outY] = source.getOutputPos(link.origin_slot)
+        const [inX, inY] = node.getInputPos(0)
+        return { x: (outX + inX) / 2, y: (outY + inY) / 2 }
+      }, nodeId)
+      // Alternate the anchor so a retried click never lands on the same
+      // pixels as the previous attempt and cannot register as a
+      // double-click.
+      const client = await this.centerViewOn(midpoint, {
+        anchorShift: attempt % 2 === 0 ? 80 : -80
+      })
+      await this.page.keyboard.down('Alt')
+      try {
+        await this.page.mouse.click(client.x, client.y)
+      } finally {
+        await this.page.keyboard.up('Alt')
+      }
+      await nextFrame(this.page)
+      created = await findNew()
+      expect(created, 'Alt+click on the link creates a reroute').not.toBeNull()
+    }).toPass({ timeout: 10_000 })
+    return created!
   }
 
   async moveMouseToEmptyArea(): Promise<void> {
@@ -340,17 +438,20 @@ export class CanvasHelper {
     deltaY: number
   }): Promise<void> {
     const { name, deltaX, deltaY } = options
-    const screenPos = await this.page.evaluate((title) => {
-      const app = window.app!
-      const groups = app.graph.groups
-      const group = groups.find((g: { title: string }) => g.title === title)
-      if (!group) return null
-      const clientPos = app.canvasPosToClientPos([
-        group.pos[0] + 50,
-        group.pos[1] + 15
-      ])
-      return { x: clientPos[0], y: clientPos[1] }
-    }, name)
+    const screenPos = await this.page.evaluate(
+      ({ title, grabOffset }) => {
+        const app = window.app!
+        const groups = app.graph.groups
+        const group = groups.find((g: { title: string }) => g.title === title)
+        if (!group) return null
+        const clientPos = app.canvasPosToClientPos([
+          group.pos[0] + grabOffset.x,
+          group.pos[1] + grabOffset.y
+        ])
+        return { x: clientPos[0], y: clientPos[1] }
+      },
+      { title: name, grabOffset: GROUP_TITLE_GRAB_OFFSET }
+    )
     if (!screenPos) throw new Error(`Group "${name}" not found`)
 
     await this.dragAndDrop(screenPos, {
