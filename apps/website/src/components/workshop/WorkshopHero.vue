@@ -24,7 +24,7 @@ const slots = useSlots()
     :class="
       cn(
         'relative isolate -mx-6 -mt-16 overflow-hidden px-6 pt-16 lg:-mx-8 lg:-mt-24 lg:px-8 lg:pt-24',
-        slots.default ? 'mb-2' : 'mb-10 pb-8'
+        slots.default ? 'mb-8' : 'mb-10 pb-8'
       )
     "
     data-testid="workshop-hero"

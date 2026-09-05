@@ -7,12 +7,13 @@ import {
 } from '@lucide/vue'
 import { TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 import type { Component } from 'vue'
-import { computed, ref } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { FacetTemplate, FacetValue } from '../../composables/useFacets'
 import { useFacets } from '../../composables/useFacets'
+import { useSlidingUnderline } from '../../composables/useSlidingUnderline'
 import type { FilterBadge, HubTab } from '../../composables/useHubStore'
 import { useHubStore } from '../../composables/useHubStore'
 import IconApps from './IconApps.vue'
@@ -67,6 +68,14 @@ const TABS: { key: HubTab; labelKey: keyof ToolbarLabels; icon: Component }[] =
     { key: 'comfyApps', labelKey: 'comfyApps', icon: IconApps },
     { key: 'models', labelKey: 'models', icon: IconModel }
   ]
+
+const tabsRef = useTemplateRef<{ $el: HTMLElement }>('tabs')
+const tabsEl = computed(() => tabsRef.value?.$el ?? null)
+const pill = useSlidingUnderline(
+  tabsEl,
+  () => store.activeTab.value,
+  '[data-state="active"]'
+)
 
 const filterOpen = ref(false)
 const facetSearch = ref<Record<string, string>>({})
@@ -133,20 +142,29 @@ const chipClass = (active: boolean) =>
   <div class="flex flex-col gap-3">
     <div class="flex flex-wrap items-center gap-2">
       <TabsRoot
+        ref="tabs"
         :model-value="store.activeTab.value"
         class="flex scrollbar-hide min-w-0 shrink-0 overflow-x-auto"
         @update:model-value="store.setTab($event as HubTab)"
       >
         <TabsList
-          class="inline-flex items-center gap-1 rounded-xl bg-white/8 p-1"
+          class="relative inline-flex items-center gap-1 rounded-xl bg-white/8 p-1"
         >
+          <span
+            aria-hidden="true"
+            class="pointer-events-none absolute inset-y-1 left-0 rounded-lg bg-primary-warm-white transition-[translate,width] duration-300 ease-out"
+            :style="{
+              width: `${pill.width}px`,
+              translate: `${pill.left}px 0`
+            }"
+          />
           <TabsTrigger
             v-for="tab in TABS"
             :key="tab.key"
             :value="tab.key"
             :aria-label="labels[tab.labelKey]"
             :data-testid="`hub-tab-${tab.key}`"
-            class="group text-content-secondary hover:text-content focus-visible:ring-brand focus-visible:ring-offset-page data-[state=active]:bg-primary-warm-white data-[state=active]:text-page data-[state=active]:hover:bg-primary-warm-white inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold whitespace-nowrap transition-colors outline-none hover:bg-white/8 focus-visible:ring-2 focus-visible:ring-offset-1 sm:px-3.5"
+            class="group text-content-muted hover:text-content focus-visible:ring-brand focus-visible:ring-offset-page data-[state=active]:text-page relative z-10 inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold whitespace-nowrap transition-colors outline-none hover:bg-white/8 focus-visible:ring-2 focus-visible:ring-offset-1 sm:px-3.5"
           >
             <component
               :is="tab.icon"
@@ -277,7 +295,7 @@ const chipClass = (active: boolean) =>
         <button
           v-if="hiddenCount(group) > 0 || expanded[group.key]"
           type="button"
-          class="hover:text-brand focus-visible:ring-brand w-fit cursor-pointer rounded-lg text-xs font-semibold text-content-secondary transition-colors outline-none focus-visible:ring-2"
+          class="hover:text-brand focus-visible:ring-brand text-content-secondary w-fit cursor-pointer rounded-lg text-xs font-semibold transition-colors outline-none focus-visible:ring-2"
           :data-testid="`hub-facet-more-${group.key}`"
           @click="expanded[group.key] = !expanded[group.key]"
         >

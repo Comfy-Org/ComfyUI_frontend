@@ -8,12 +8,11 @@ import {
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
-
-import { useResizeObserver } from '@vueuse/core'
+import { computed, onMounted, ref, useTemplateRef } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
+import { useSlidingUnderline } from '../../composables/useSlidingUnderline'
 import { groupModels } from '../../config/model-family'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -245,23 +244,8 @@ const tabClass = (current: boolean) =>
         )
   )
 
-// One underline that travels to the tab you picked, rather than a border that
-// blinks out under one heading and in under the next.
 const navRef = useTemplateRef<HTMLElement>('nav')
-const underline = ref({ left: 0, width: 0 })
-
-function measureUnderline() {
-  const current = navRef.value?.querySelector<HTMLElement>(
-    '[aria-pressed="true"]'
-  )
-  underline.value = current
-    ? { left: current.offsetLeft, width: current.offsetWidth }
-    : { left: 0, width: 0 }
-}
-
-onMounted(measureUnderline)
-useResizeObserver(navRef, measureUnderline)
-watch([useCase, rail], () => void nextTick(measureUnderline))
+const underline = useSlidingUnderline(navRef, () => [useCase.value, rail.value])
 
 const chipClass = (active: boolean) =>
   cn(
@@ -289,7 +273,7 @@ const menuItemClass =
       v-if="showRail"
       :class="
         railBeside &&
-        'lg:sticky lg:top-28 lg:max-h-[calc(100vh-9rem)] lg:scrollbar-thin lg:self-start lg:overflow-y-auto'
+        'lg:sticky lg:top-28 lg:max-h-[calc(100vh-9rem)] lg:scrollbar-thin lg:self-start lg:overflow-y-auto lg:pt-4'
       "
     >
       <nav

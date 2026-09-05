@@ -5,7 +5,6 @@ import BaseLayout from '../../../layouts/BaseLayout.astro'
 import ModelDetail from '../../../components/workshop/ModelDetail.vue'
 import ModelStatus from '../../../components/workshop/ModelStatus.vue'
 import PrototypeTweaks from '../../../components/workshop/PrototypeTweaks.vue'
-import StaticFrame from '../../../components/workshop/StaticFrame.vue'
 import WorkshopModelCard from '../../../components/workshop/WorkshopModelCard.vue'
 import { getRoutes } from '../../../config/routes'
 import {
@@ -85,23 +84,8 @@ const tags = model.capabilities.map((capability) => ({
         <li class="text-primary-warm-white" aria-current="page">{model.name}</li>
       </ol>
     </nav>
-    <header
-      class="relative mx-8 mb-12 overflow-hidden rounded-4.5xl lg:mx-10"
-      data-testid="model-hero"
-    >
-      {
-        model.thumbnailUrl && (
-          <StaticFrame
-            src={model.thumbnailUrl}
-            class="absolute inset-0 size-full object-cover [mask-image:linear-gradient(to_right,transparent_45%,black_85%)]"
-            client:load
-          />
-        )
-      }
-
-      <div
-        class="relative flex min-h-52 flex-col justify-center gap-6 py-8 pr-8 lg:min-h-60 lg:py-10 lg:pr-10"
-      >
+    <header class="mx-8 mb-12 lg:mx-10" data-testid="model-hero">
+      <div class="flex flex-col justify-center gap-6 pr-8 lg:pr-10">
         <div class="flex max-w-2xl flex-col gap-3">
         <div class="flex flex-wrap items-center gap-3">
           <p

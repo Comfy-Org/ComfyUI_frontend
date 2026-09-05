@@ -1,12 +1,20 @@
 <script setup lang="ts">
-import { Search } from '@lucide/vue'
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { Search, X } from '@lucide/vue'
+import {
+  computed,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  useTemplateRef
+} from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { useHubStore } from '../../composables/useHubStore'
 import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
 import type { UseCase } from '../../config/workshop'
+import { useSlidingUnderline } from '../../composables/useSlidingUnderline'
 import { USE_CASES, useCaseFor, workshopModels } from '../../config/workshop'
 import { groupModels } from '../../config/model-family'
 import hubTemplates from '../../data/hubTemplates.json'
@@ -53,13 +61,35 @@ const useCaseLabelKey: Record<UseCase | 'all', TranslationKey> = {
   text: 'workshop.useCase.text'
 }
 
+// Arriving from the home row means "show me this provider": the models it makes
+// and the workflows that run them.
+const provider = ref<string>()
+
+const providerModels = computed(() =>
+  provider.value
+    ? new Set(
+        workshopModels
+          .filter((model) => model.provider === provider.value)
+          .map((model) => model.name.toLowerCase())
+      )
+    : undefined
+)
+
+const runsProviderModel = (tmpl: HubTemplate) => {
+  const names = providerModels.value
+  return !names || tmpl.models.some((name) => names.has(name.toLowerCase()))
+}
+
 const inUseCase = (value: UseCase | 'all') => ({
   models: workshopModels.filter(
-    (model) => value === 'all' || useCaseFor(model) === value
+    (model) =>
+      (value === 'all' || useCaseFor(model) === value) &&
+      (!provider.value || model.provider === provider.value)
   ),
   templates: templates.filter(
     (tmpl) =>
-      value === 'all' || useCaseForTemplate(tmpl, workshopModels) === value
+      (value === 'all' || useCaseForTemplate(tmpl, workshopModels) === value) &&
+      runsProviderModel(tmpl)
   )
 })
 
@@ -70,6 +100,9 @@ const totalIn = (value: UseCase | 'all') => {
 
 // In the catalogue's reading order, and without printing the tally: the row
 // names use cases, it is not a report.
+const navRef = useTemplateRef<HTMLElement>('nav')
+const underline = useSlidingUnderline(navRef, () => useCase.value)
+
 const useCaseTabs = computed(() => [
   { value: 'all' as const },
   ...USE_CASES.filter((value) => totalIn(value) > 0).map((value) => ({ value }))
@@ -96,6 +129,7 @@ onMounted(() => {
   if (tab) store.setTab(tab)
   const wanted = USE_CASES.find((value) => value === params.get('useCase'))
   if (wanted) useCase.value = wanted
+  provider.value = params.get('provider') ?? undefined
   for (const type of ['tag', 'model'] as const) {
     const value = params.get(type)
     if (value) store.toggleBadge({ type, value })
@@ -195,10 +229,19 @@ const filteredTemplates = computed(() => {
       data-testid="hub-heading"
     >
       <nav
-        class="mt-12 flex scrollbar-thin gap-6 overflow-x-auto border-b border-white/10"
+        ref="nav"
+        class="relative mt-12 flex scrollbar-thin gap-6 overflow-x-auto border-b border-white/10"
         :aria-label="t('workshop.media.label', locale)"
         data-testid="hub-use-cases"
       >
+        <span
+          aria-hidden="true"
+          class="pointer-events-none absolute bottom-0 h-0.5 rounded-full bg-primary-warm-white transition-[translate,width] duration-300 ease-out"
+          :style="{
+            width: `${underline.width}px`,
+            translate: `${underline.left}px 0`
+          }"
+        />
         <button
           v-for="entry in useCaseTabs"
           :key="entry.value"
@@ -207,10 +250,10 @@ const filteredTemplates = computed(() => {
           :data-testid="`hub-use-case-${entry.value}`"
           :class="
             cn(
-              'flex shrink-0 cursor-pointer items-baseline gap-1.5 border-b-2 pb-3 text-sm font-medium whitespace-nowrap transition-colors',
+              'flex shrink-0 cursor-pointer items-baseline gap-1.5 pb-3 text-sm font-medium whitespace-nowrap transition-colors',
               useCase === entry.value
-                ? 'border-primary-warm-white text-primary-warm-white'
-                : 'text-content-secondary hover:text-content border-transparent'
+                ? 'text-primary-warm-white'
+                : 'text-content-muted hover:text-content'
             )
           "
           @click="useCase = entry.value"
@@ -219,6 +262,17 @@ const filteredTemplates = computed(() => {
         </button>
       </nav>
     </WorkshopHero>
+
+    <button
+      v-if="provider"
+      type="button"
+      class="text-page bg-brand hover:bg-brand/90 mb-6 inline-flex cursor-pointer items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold transition-colors"
+      data-testid="hub-provider-chip"
+      @click="provider = undefined"
+    >
+      {{ provider }}
+      <X class="size-3.5" aria-hidden="true" />
+    </button>
 
     <WorkflowGrid
       :templates="filteredTemplates"
