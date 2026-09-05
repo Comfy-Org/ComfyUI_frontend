@@ -48,6 +48,10 @@ Keep widely-recognized technical terms in English rather than inventing German e
 German compounds are written closed, not spaced: "Bildgenerierung", not "Bild Generierung". Where a compound joins an English technical term to a German noun, hyphenate: "Node-Editor", "Workflow-Vorlage".
 Prefer the imperative for button labels ("Speichern", "Abbrechen") and avoid the infinitive-with-zu form, which reads like documentation rather than an interface.`
 
+const swedishGuidance = `Use clear, idiomatic Swedish suitable for a professional creative-technology interface. Prefer concise imperative labels such as "Spara", "Avbryt" and "Läs in".
+Keep widely recognized technical terms and product names in English: node, workflow, prompt, queue, canvas, widget, seed, sampler, checkpoint, VAE, CLIP, LoRA, ControlNet, API, GPU and CUDA.
+Use established Swedish interface terminology: "inställningar", "bildruta", "bildförhållande", "arbetsflöde", "kö" and "verktygstips". Preserve all placeholders, identifiers, option values and code-like literals exactly.`
+
 export const translationPipelineConfig: TranslationPipelineConfig = {
   entry: 'src/locales/en',
   output: 'src/locales',
@@ -81,6 +85,7 @@ export const translationPipelineConfig: TranslationPipelineConfig = {
     { code: 'fa', name: 'Persian', guidance: persianGuidance },
     { code: 'he', name: 'Hebrew', guidance: hebrewGuidance },
     { code: 'it', name: 'Italian' },
-    { code: 'de', name: 'German', guidance: germanGuidance }
+    { code: 'de', name: 'German', guidance: germanGuidance },
+    { code: 'sv', name: 'Swedish', guidance: swedishGuidance }
   ]
 }
