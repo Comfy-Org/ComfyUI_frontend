@@ -20,6 +20,7 @@ import type {
   AgentPanelOpenedMetadata,
   AgentReconnectFailedMetadata,
   AgentReconnectStartedMetadata,
+  AgentReconnectSucceededMetadata,
   AgentWorkflowAppliedMetadata,
   AuthErrorMetadata,
   AuthMetadata,
@@ -710,6 +711,12 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackAgentReconnectStarted(metadata: AgentReconnectStartedMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_RECONNECT_STARTED, metadata)
+  }
+
+  trackAgentReconnectSucceeded(
+    metadata: AgentReconnectSucceededMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.AGENT_RECONNECT_SUCCEEDED, metadata)
   }
 
   trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {

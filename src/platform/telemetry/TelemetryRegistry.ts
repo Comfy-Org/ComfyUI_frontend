@@ -8,6 +8,7 @@ import type {
   AgentPanelOpenedMetadata,
   AgentReconnectFailedMetadata,
   AgentReconnectStartedMetadata,
+  AgentReconnectSucceededMetadata,
   AgentWorkflowAppliedMetadata,
   AuthErrorMetadata,
   AuthMetadata,
@@ -388,6 +389,14 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackAgentReconnectStarted(metadata: AgentReconnectStartedMetadata): void {
     this.dispatch((provider) => provider.trackAgentReconnectStarted?.(metadata))
+  }
+
+  trackAgentReconnectSucceeded(
+    metadata: AgentReconnectSucceededMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentReconnectSucceeded?.(metadata)
+    )
   }
 
   trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {

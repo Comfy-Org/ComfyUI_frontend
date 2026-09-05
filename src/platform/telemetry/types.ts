@@ -593,6 +593,17 @@ export interface AgentReconnectStartedMetadata extends Record<string, unknown> {
   offline_duration_ms: number | null
 }
 
+export interface AgentReconnectSucceededMetadata extends Record<
+  string,
+  unknown
+> {
+  attempt: number
+  reconnect_duration_ms: number
+  replayed_bytes: number
+  from_version: number
+  to_version: number
+}
+
 /**
  * Widget (input/parameter) favorite toggle tracking metadata.
  * Used to measure discoverability of the right side panel favoriting feature.
@@ -1107,6 +1118,7 @@ export interface TelemetryProvider {
   trackAgentWorkflowApplied?(metadata: AgentWorkflowAppliedMetadata): void
   trackAgentReconnectFailed?(metadata: AgentReconnectFailedMetadata): void
   trackAgentReconnectStarted?(metadata: AgentReconnectStartedMetadata): void
+  trackAgentReconnectSucceeded?(metadata: AgentReconnectSucceededMetadata): void
 
   // Right side panel widget favorite events
   trackWidgetFavoriteToggled?(metadata: WidgetFavoriteToggledMetadata): void
@@ -1275,6 +1287,7 @@ export const TelemetryEvents = {
   AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',
   AGENT_RECONNECT_FAILED: 'app:agent_reconnect_failed',
   AGENT_RECONNECT_STARTED: 'app:agent_reconnect_started',
+  AGENT_RECONNECT_SUCCEEDED: 'app:agent_reconnect_succeeded',
 
   // Right Side Panel Widget Favorites
   WIDGET_FAVORITE_TOGGLED: 'app:widget_favorite_toggled',
