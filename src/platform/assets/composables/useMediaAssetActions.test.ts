@@ -18,8 +18,10 @@ import { useMediaAssetActions } from './useMediaAssetActions'
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
 
 const mockDownloadFile = vi.hoisted(() => vi.fn())
+const mockDownloadFileAsync = vi.hoisted(() => vi.fn(() => Promise.resolve()))
 vi.mock('@/base/common/downloadUtil', () => ({
-  downloadFile: mockDownloadFile
+  downloadFile: mockDownloadFile,
+  downloadFileAsync: mockDownloadFileAsync
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
@@ -535,7 +537,7 @@ describe('useMediaAssetActions', () => {
   })
 
   describe('downloadAssets', () => {
-    it('downloads the injected media asset when called without explicit assets', () => {
+    it('downloads the injected media asset when called without explicit assets', async () => {
       const mediaAsset = createMockMediaAsset({
         id: 'context-asset',
         name: 'context-name.png',
@@ -546,13 +548,19 @@ describe('useMediaAssetActions', () => {
       const { actions, unmount } = mountMediaActions(mediaAsset)
       actions.downloadAssets()
 
-      expect(mockDownloadFile).toHaveBeenCalledOnce()
-      expect(mockDownloadFile).toHaveBeenCalledWith(
+      expect(mockDownloadFileAsync).toHaveBeenCalledOnce()
+      expect(mockDownloadFileAsync).toHaveBeenCalledWith(
         'https://example.com/context-preview.png',
         'Context image.png'
       )
+      expect(mockDownloadFile).not.toHaveBeenCalled()
       expect(mockCreateAssetExport).not.toHaveBeenCalled()
       expect(mockTrackExport).not.toHaveBeenCalled()
+      await vi.waitFor(() => {
+        expect(useToast().add).toHaveBeenCalledWith(
+          expect.objectContaining({ severity: 'success' })
+        )
+      })
 
       unmount()
     })
@@ -562,13 +570,14 @@ describe('useMediaAssetActions', () => {
       actions.downloadAssets()
 
       expect(mockDownloadFile).not.toHaveBeenCalled()
+      expect(mockDownloadFileAsync).not.toHaveBeenCalled()
       expect(mockCreateAssetExport).not.toHaveBeenCalled()
       expect(mockTrackExport).not.toHaveBeenCalled()
 
       unmount()
     })
 
-    it('keeps single explicit assets on the direct download path in cloud', () => {
+    it('keeps single explicit assets on the direct download path in cloud', async () => {
       mockIsCloud.value = true
       mockGetOutputAssetMetadata.mockReturnValue({
         jobId: 'job1',
@@ -586,13 +595,38 @@ describe('useMediaAssetActions', () => {
       const actions = useMediaAssetActions()
       actions.downloadAssets([asset])
 
-      expect(mockDownloadFile).toHaveBeenCalledOnce()
-      expect(mockDownloadFile).toHaveBeenCalledWith(
+      expect(mockDownloadFileAsync).toHaveBeenCalledOnce()
+      expect(mockDownloadFileAsync).toHaveBeenCalledWith(
         'https://example.com/single-output.png',
         'single-output.png'
       )
+      expect(mockDownloadFile).not.toHaveBeenCalled()
       expect(mockCreateAssetExport).not.toHaveBeenCalled()
       expect(mockTrackExport).not.toHaveBeenCalled()
+      await vi.waitFor(() => {
+        expect(useToast().add).toHaveBeenCalledWith(
+          expect.objectContaining({ severity: 'success' })
+        )
+      })
+    })
+
+    it('shows an error toast when a direct download fails', async () => {
+      mockDownloadFileAsync.mockRejectedValueOnce(new Error('Network error'))
+      const actions = useMediaAssetActions()
+
+      actions.downloadAssets([
+        createMockAsset({
+          id: 'failed-download',
+          name: 'failed.png',
+          preview_url: 'https://example.com/failed.png'
+        })
+      ])
+
+      await vi.waitFor(() => {
+        expect(useToast().add).toHaveBeenCalledWith(
+          expect.objectContaining({ severity: 'error' })
+        )
+      })
     })
 
     it('uses ZIP export for an injected single multi-output asset in cloud', async () => {
@@ -619,6 +653,7 @@ describe('useMediaAssetActions', () => {
       })
 
       expect(mockDownloadFile).not.toHaveBeenCalled()
+      expect(mockDownloadFileAsync).not.toHaveBeenCalled()
       expect(mockCreateAssetExport).toHaveBeenCalledWith({
         job_ids: ['job1'],
         naming_strategy: 'preserve',

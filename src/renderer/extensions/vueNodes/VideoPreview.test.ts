@@ -8,8 +8,12 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 
 import VideoPreview from '@/renderer/extensions/vueNodes/VideoPreview.vue'
 
+vi.mock('primevue', () => ({
+  useToast: () => ({ add: vi.fn() })
+}))
+
 vi.mock('@/base/common/downloadUtil', () => ({
-  downloadFile: vi.fn()
+  downloadFileAsync: vi.fn().mockResolvedValue(undefined)
 }))
 
 const i18n = createI18n({
