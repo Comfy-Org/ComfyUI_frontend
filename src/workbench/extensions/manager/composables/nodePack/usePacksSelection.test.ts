@@ -14,16 +14,6 @@ vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
   })
 }))
 
-vi.mock('vue-i18n', async () => {
-  const actual = await vi.importActual('vue-i18n')
-  return {
-    ...actual,
-    useI18n: () => ({
-      t: vi.fn((key) => key)
-    })
-  }
-})
-
 type NodePack = components['schemas']['Node']
 
 describe('usePacksSelection', () => {
