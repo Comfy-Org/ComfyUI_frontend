@@ -61,6 +61,9 @@ interface VisualTile extends Tile {
   left: string
   right: string
   texture: string
+  topPoints: readonly Point[]
+  leftPoints: readonly Point[]
+  rightPoints: readonly Point[]
 }
 
 type Point = readonly [number, number]
@@ -201,14 +204,23 @@ const visualTiles = computed<VisualTile[]>(() =>
     const height = targetHeight * visibleProgress
     const level = targetHeight / MAX_HEIGHT
 
-    const geometry = { ...tile, height }
+    const topPoints = tileCorners(tile, height)
+    const base = tileCorners(tile, 0)
+    const leftPoints = [topPoints[0], topPoints[3], base[3], base[0]]
+    const rightPoints = [topPoints[3], topPoints[2], base[2], base[3]]
+    const svgFallback = !canvasReady.value
     return {
       ...tile,
       height,
-      transform: tileTransform(geometry),
-      left: leftFace(geometry),
-      right: rightFace(geometry),
-      texture: texturedFaces(geometry),
+      topPoints,
+      leftPoints,
+      rightPoints,
+      transform: svgFallback ? tileTransform({ ...tile, height }) : '',
+      left: svgFallback ? polygonPoints(leftPoints) : '',
+      right: svgFallback ? polygonPoints(rightPoints) : '',
+      texture: svgFallback
+        ? `${polygonPath(leftPoints)} ${polygonPath(rightPoints)} ${polygonPath(topPoints)}`
+        : '',
       textureShadeOpacity:
         (1 - clamp(height / MAX_HEIGHT)) * MAX_TEXTURE_SHADE_OPACITY,
       topFill:
@@ -247,25 +259,12 @@ function polygonPath(points: readonly Point[]) {
   return `${points.map(([x, y], index) => `${index ? 'L' : 'M'}${x},${y}`).join('')}Z`
 }
 
-function leftFace(tile: Tile & { height: number }) {
-  const top = tileCorners(tile, tile.height)
-  const base = tileCorners(tile, 0)
-
-  return polygonPoints([top[0], top[3], base[3], base[0]])
-}
-
-function rightFace(tile: Tile & { height: number }) {
-  const top = tileCorners(tile, tile.height)
-  const base = tileCorners(tile, 0)
-
-  return polygonPoints([top[3], top[2], base[2], base[3]])
-}
-
-function texturedFaces(tile: Tile & { height: number }) {
-  const top = tileCorners(tile, tile.height)
-  const base = tileCorners(tile, 0)
-
-  return `${polygonPath([top[0], top[3], base[3], base[0]])} ${polygonPath([top[3], top[2], base[2], base[3]])} ${polygonPath(top)}`
+function tracePolygon(ctx: CanvasRenderingContext2D, points: readonly Point[]) {
+  ctx.moveTo(...points[0])
+  for (let index = 1; index < points.length; index++) {
+    ctx.lineTo(...points[index])
+  }
+  ctx.closePath()
 }
 
 let context: CanvasRenderingContext2D | null = null
@@ -315,20 +314,26 @@ watchEffect(() => {
   ctx.clearRect(0, 0, 760, 360)
   for (const tile of visualTiles.value) {
     if (tile.height > 0.5) {
-      const top = tileCorners(tile, tile.height)
-      const base = tileCorners(tile, 0)
-      const faces = new Path2D(tile.texture)
+      ctx.save()
+      ctx.beginPath()
+      tracePolygon(ctx, tile.leftPoints)
+      tracePolygon(ctx, tile.rightPoints)
+      tracePolygon(ctx, tile.topPoints)
       ctx.fillStyle = texture
-      ctx.fill(faces)
+      ctx.fill()
       ctx.fillStyle = ink
       ctx.globalAlpha = tile.textureShadeOpacity
-      ctx.fill(faces)
+      ctx.fill()
       ctx.globalAlpha = 0.12
-      ctx.fill(new Path2D(polygonPath([top[0], top[3], base[3], base[0]])))
+      ctx.beginPath()
+      tracePolygon(ctx, tile.leftPoints)
+      ctx.fill()
       ctx.fillStyle = plum
       ctx.globalAlpha = 0.06
-      ctx.fill(new Path2D(polygonPath([top[3], top[2], base[2], base[3]])))
-      ctx.globalAlpha = 1
+      ctx.beginPath()
+      tracePolygon(ctx, tile.rightPoints)
+      ctx.fill()
+      ctx.restore()
     }
     ctx.save()
     ctx.transform(ISO_X, -ISO_Y, ISO_X, ISO_Y, tile.x, tile.y - tile.height)

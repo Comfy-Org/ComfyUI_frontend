@@ -13,10 +13,10 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
-const outerTrackId = useId()
-const innerTrackId = useId()
-const endpointClipId = useId()
-const endpointFadeId = useId()
+const outerTrackId = `how-it-works-outer-${useId()}`
+const innerTrackId = `how-it-works-inner-${useId()}`
+const endpointClipId = `how-it-works-clip-${useId()}`
+const endpointFadeId = `how-it-works-fade-${useId()}`
 
 const stepNumbers = [1, 2, 3] as const
 
