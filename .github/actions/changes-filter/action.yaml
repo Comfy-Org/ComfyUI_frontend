@@ -3,6 +3,20 @@
 # skip footgun where a job gated on e.g. `app-website-changes == 'true'`
 # would never run on push.
 #
+# `evaluate-candidate` opts a caller out of that default for merge_group only,
+# via `candidate-should-run`. dorny/paths-filter diffs `merge_group.base_sha`
+# (the target branch tip) against `merge_group.head_sha` (GitHub's temporary
+# merge commit for the candidate), which already folds in every queue entry
+# ahead of it - so this is whole-queue relevance, not an isolated diff of the
+# candidate's own PR. It still fails safely (an irrelevant-looking entry can
+# only be false-positive-relevant when an entry ahead of it touched a gated
+# path, never false-negative), but it is not the per-candidate optimization
+# the name implies; a later, unrelated entry queued behind a `src/**` change
+# still runs the gated suites. Opt in only from a workflow that emits its
+# required check on every event whatever the verdict - a check GitHub never
+# creates leaves the queue waiting forever. Omitting the input keeps the
+# output 'true'.
+#
 # Shared dependency files (root package.json, pnpm-lock.yaml,
 # pnpm-workspace.yaml) are folded into every app-* and packages-changes
 # output so a lockfile bump correctly invalidates each granular gate. They
@@ -19,10 +33,22 @@ description: >
   Computes typed *-changes outputs and a back-compat should-run for
   path-gated CI jobs.
 
+inputs:
+  evaluate-candidate:
+    description: >
+      Evaluate the relevance predicate for merge_group candidates too, so
+      `candidate-should-run` can be false there. Left off, merge-queue
+      candidates keep the unconditional 'true' every other output uses.
+    required: false
+    default: 'false'
+
 outputs:
   should-run:
-    description: 'Any file outside `apps/`, `docs/`, `.storybook/`, or `**/*.md` changed.'
+    description: 'Any file outside `apps/`, `docs/`, `.storybook/`, or `**/*.md` changed. Ignores `evaluate-candidate`; read `candidate-should-run` to act on merge_group.'
     value: ${{ github.event_name != 'pull_request' || steps.relevant.outputs.relevant == 'true' }}
+  candidate-should-run:
+    description: 'As `should-run`, but also evaluated for merge-queue candidates when `evaluate-candidate` is set. That evaluation is against the accumulated merge-group diff (base branch tip vs. the temporary merge commit, which includes every queue entry ahead of this one), not this candidate PR in isolation.'
+    value: ${{ (github.event_name != 'pull_request' && github.event_name != 'merge_group') || (github.event_name == 'merge_group' && inputs.evaluate-candidate != 'true') || steps.relevant.outputs.relevant == 'true' }}
   app-website-changes:
     description: 'Shared deps or `apps/website/**` changed.'
     value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.app_website == 'true' }}
@@ -70,7 +96,7 @@ runs:
             - 'pnpm-workspace.yaml'
 
     - name: Filter relevant changes
-      if: ${{ github.event_name == 'pull_request' }}
+      if: ${{ github.event_name == 'pull_request' || (github.event_name == 'merge_group' && inputs.evaluate-candidate == 'true') }}
       id: relevant
       uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
       with:
