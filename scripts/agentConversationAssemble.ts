@@ -5,11 +5,10 @@ import { basename } from 'node:path'
 import { FROZEN_OPS } from '@comfyorg/comfy-multi-player'
 import { z } from 'zod'
 
-import type {
-  zAgentConversationRequest,
-  zRecordedWsEvent
-} from '../browser_tests/fixtures/data/agent/agentConversation'
+import type { zAgentConversationRequest } from '../browser_tests/fixtures/data/agent/agentConversation'
 import {
+  OP_ENVELOPE_KEYS,
+  mintedIds,
   zAgentConversation,
   zAgentConversationWorkflow
 } from '../browser_tests/fixtures/data/agent/agentConversation'
@@ -71,15 +70,20 @@ export const zRowsDump = z.object({
   )
 })
 
-// The socket carries frames without a data object; the replay union does not.
-// The exporter's candidate set: data.ops when it is a list, else data.op.
+// The candidate set: data.ops when it is a list, else data.op.
 const zOpsCarrier = z.object({
   data: z
     .object({ ops: z.array(z.unknown()).optional().catch(undefined) })
     .passthrough()
 })
 
-export type RecordedFrame = z.infer<typeof zRecordedWsEvent>
+// Every socket frame the recorder saw, agent event or not; zAgentConversation
+// narrows the kept ones to the production event union.
+export interface RecordedFrame {
+  type: string
+  data: Record<string, unknown>
+  at_ms?: number
+}
 type GraphOps = Array<Record<string, unknown>>
 
 // What the assembler hands to zAgentConversation, which narrows the op payloads.
@@ -290,7 +294,7 @@ function activeWorkflowId(
   return workflowId.data
 }
 
-// Every op the exporter will read out of this result, shape-checked once.
+// Every op the assembler will read out of this result, shape-checked once.
 function echoedOps(row: ParentRow): Array<Record<string, unknown>> {
   const carrier = zOpsCarrier.safeParse(row.result ?? {})
   if (!carrier.success) return []
@@ -305,7 +309,7 @@ function echoedOps(row: ParentRow): Array<Record<string, unknown>> {
   )
   if (offFrozen.size > 0)
     refuse(
-      `parent row ${row.id} echoes op kinds ${list(offFrozen)} outside the exporter frozen set`
+      `parent row ${row.id} echoes op kinds ${list(offFrozen)} outside the frozen op set`
     )
   return ops.data
 }
@@ -327,7 +331,12 @@ function appliedOps(
     refuse(
       `parent row ${row.id} applied op ids ${missing.join(', ')} are not echoed in its result`
     )
-  const ops = applied.map((opId) => byId.get(opId)!)
+  // The envelope is the wire's, not the operation's; the replay mints its own.
+  const ops = applied.map((opId) => {
+    const op = { ...byId.get(opId)! }
+    for (const key of OP_ENVELOPE_KEYS) delete op[key]
+    return op
+  })
   // A node id of 0 is a real id, so only a missing one refuses.
   if (
     ops.some((op) => op.op === 'delete_node' && (op.node_id ?? null) === null)
@@ -373,8 +382,7 @@ function buildResponse(
         ? undefined
         : frame.at_ms - firstAt
     const data = { ...frame.data }
-    delete data.thread_id
-    delete data.message_id
+    for (const key of Object.keys(mintedIds)) delete data[key]
 
     if (frame.type === 'agent_tool_call') {
       const { status, tool_call_id: toolCallId } = frame.data
@@ -491,28 +499,32 @@ function buildConversation(options: {
   const { workflow } = input.seed.json
   const note = `RECORDED from Comfy-Org/cloud services/agent running ${STACK} at ${raw.base} (frames: ${raw.frame_source}); NOT a production capture. cloud commit ${provenance.cloudSha}; model ${provenance.model}; thread ${threadId}; messages ${turns.map((turn) => turn.message_id).join(', ')}; workflow ${workflowId} (seeded by throwaway turn ${options.seedMessageId}; turn 1 opens on a fresh workflow and switches to it first because the replay subscribes only on an agent_active_tab frame); agent_tool_calls parent rows ${list(rows.flatMap((set) => set.parents.map((row) => row.id)))}; rows ${rows.map((set) => basename(set.path)).join(', ')}; raw capture sha256 ${input.rawSha256}`
 
-  return zAgentConversation.parse({
-    schema_version: 'agent-conversation.v2',
-    source: {
-      repo: 'Comfy-Org/ComfyUI_frontend',
-      suite: 'agent',
-      case_id: raw.case_id,
-      response_side: 'recorded',
-      note,
-      capture: {
-        backend: 'Comfy-Org/cloud',
-        thread_id: threadId,
-        exported_at: provenance.exportedAt
-      }
+  return parseOrRefuse(
+    zAgentConversation,
+    {
+      schema_version: 'agent-conversation.v2',
+      source: {
+        repo: 'Comfy-Org/ComfyUI_frontend',
+        suite: 'agent',
+        case_id: raw.case_id,
+        response_side: 'recorded',
+        note,
+        capture: {
+          backend: 'Comfy-Org/cloud',
+          thread_id: threadId,
+          exported_at: provenance.exportedAt
+        }
+      },
+      workflow: {
+        id: workflowId,
+        name: workflow.name,
+        catalog: workflow.catalog,
+        seed: workflow.seed
+      },
+      turns
     },
-    workflow: {
-      id: workflowId,
-      name: workflow.name,
-      catalog: workflow.catalog,
-      seed: workflow.seed
-    },
-    turns
-  })
+    'assembled conversation'
+  )
 }
 
 interface TurnReceipt {

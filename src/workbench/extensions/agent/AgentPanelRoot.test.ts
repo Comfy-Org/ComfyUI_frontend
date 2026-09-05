@@ -3,18 +3,23 @@ import { fromPartial } from '@total-typescript/shoehorn'
 
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  createPinia,
+  disposePinia,
+  getActivePinia,
+  setActivePinia
+} from 'pinia'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 
 // jsdom does not implement ResizeObserver (happy-dom does); stub it before the
 // Vue node preview chain constructs its module-level observer at import time.
 vi.hoisted(() => {
-  globalThis.ResizeObserver ??= class {
+  globalThis.ResizeObserver = class {
     observe() {}
     unobserve() {}
     disconnect() {}
-  } as unknown as typeof ResizeObserver
+  }
 })
 
 import { i18n } from '@/i18n'
@@ -135,6 +140,7 @@ const hostStores = vi.hoisted(() => ({
       graph?: { id?: string }
       id: string | number
     }) => string
+    createNewTemporary: ReturnType<typeof vi.fn>
   },
   canvas: null as unknown as {
     selectedItems: unknown[]
@@ -147,6 +153,23 @@ const hostStores = vi.hoisted(() => ({
 vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
   const { reactive } = await import('vue')
   const tabs = new Map<string, FakeTab>()
+  const createTab = (path?: string, data?: ComfyWorkflowJSON) => {
+    const requested = (path ?? 'Unsaved Workflow.json').replace(/\.json$/, '')
+    let stem = requested
+    let counter = 2
+    while (tabs.has(`workflows/${stem}.json`))
+      stem = `${requested} (${counter++})`
+    const tab: FakeTab = {
+      path: `workflows/${stem}.json`,
+      directory: 'workflows',
+      filename: stem,
+      isTemporary: true,
+      isModified: false,
+      activeState: data ?? null
+    }
+    tabs.set(tab.path, tab)
+    return tab
+  }
   const store = reactive({
     activeWorkflow: null as FakeTab | null,
     get openWorkflows() {
@@ -161,23 +184,8 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
     closeWorkflow: vi.fn(async (tab: FakeTab) => {
       tabs.delete(tab.path)
     }),
-    createTemporary: (path?: string, data?: ComfyWorkflowJSON) => {
-      const requested = (path ?? 'Unsaved Workflow.json').replace(/\.json$/, '')
-      let stem = requested
-      let counter = 2
-      while (tabs.has(`workflows/${stem}.json`))
-        stem = `${requested} (${counter++})`
-      const tab: FakeTab = {
-        path: `workflows/${stem}.json`,
-        directory: 'workflows',
-        filename: stem,
-        isTemporary: true,
-        isModified: false,
-        activeState: data ?? null
-      }
-      tabs.set(tab.path, tab)
-      return tab
-    }
+    createTemporary: createTab,
+    createNewTemporary: vi.fn(createTab)
   })
   hostStores.workflow = store
   return { useWorkflowStore: () => store }
@@ -294,6 +302,7 @@ import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTab
 import AgentPanelRoot from './AgentPanelRoot.vue'
 
 beforeEach(() => {
+  vi.useRealTimers()
   Element.prototype.scrollIntoView = vi.fn()
   URL.createObjectURL = vi.fn(() => 'blob:mock-url')
   URL.revokeObjectURL = vi.fn()
@@ -314,6 +323,11 @@ beforeEach(() => {
   workflowService.saveWorkflowAs.mockClear()
   workflowService.openWorkflow.mockClear()
   focusNodeInstance.mockReset()
+})
+
+afterEach(() => {
+  const pinia = getActivePinia()
+  if (pinia) disposePinia(pinia)
 })
 
 const zAgentWsEventForTest = (raw: unknown): AgentChatEvent =>
@@ -2092,12 +2106,13 @@ describe('AgentPanelRoot workflow binding', () => {
       })
     )
 
+    vi.useFakeTimers({ shouldAdvanceTime: true })
     await renderAndSend('work here')
+    vi.useFakeTimers({ shouldAdvanceTime: false })
 
     const activity = useWorkflowTabActivityStore()
     expect(activity.creatingTab).toBe(false)
 
-    vi.useFakeTimers()
     ws.emit('agent_active_tab', {
       workflow_id: 'wf-new',
       name: 'Fresh',
@@ -2115,7 +2130,6 @@ describe('AgentPanelRoot workflow binding', () => {
     await vi.advanceTimersByTimeAsync(1)
     expect(activity.creatingTab).toBe(false)
     expect(hostStores.workflow.tabs.get('workflows/Fresh.json')).toBeDefined()
-    vi.useRealTimers()
   })
 
   it('lowers the creating flag when a newer focus event supersedes the fetch', async () => {
@@ -2399,9 +2413,10 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(workflowService.openWorkflow).toHaveBeenCalled()
     )
     const minted = hostStores.workflow.tabs.get('workflows/Video test.json')
+    expect(hostStores.workflow.createNewTemporary).toHaveBeenCalled()
     expect(minted?.filename).toBe('Video test')
-    // Blank, not the default template: the follower keeps template links it does not displace.
-    expect(minted?.activeState).toMatchObject({ nodes: [], links: [] })
+    expect(minted?.activeState?.nodes).toHaveLength(0)
+    expect(minted?.activeState?.links).toHaveLength(0)
     // The host minted the doc server-side; the follower fills the canvas.
     // Nothing loads, saves, or adopts here.
     expect(workflowService.saveWorkflowAs).not.toHaveBeenCalled()
@@ -2630,7 +2645,7 @@ describe('AgentPanelRoot workflow binding', () => {
       'fetch',
       vi.fn(async (url: string, init?: RequestInit) => {
         if (url.includes('/messages') && init?.method === 'POST') {
-          bodies.push(JSON.parse(String(init?.body)))
+          bodies.push(JSON.parse(String(init.body)))
           return new Response(JSON.stringify(ack('wf-cloud-current', 'm-1')), {
             status: 202,
             headers: { 'Content-Type': 'application/json' }
@@ -2698,7 +2713,7 @@ describe('AgentPanelRoot workflow binding', () => {
       'fetch',
       vi.fn(async (url: string, init?: RequestInit) => {
         if (url.includes('/messages') && init?.method === 'POST') {
-          bodies.push(JSON.parse(String(init?.body)))
+          bodies.push(JSON.parse(String(init.body)))
           return new Response(JSON.stringify(ack('wf-42', 'm-1')), {
             status: 202,
             headers: { 'Content-Type': 'application/json' }

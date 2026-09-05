@@ -383,8 +383,6 @@ test.describe(
       const saveNodes =
         await comfyPage.nodeOps.getNodeRefsByType('SaveAnimatedWEBP')
       const saveAnimatedWebpNode = saveNodes[0]
-      if (!saveAnimatedWebpNode)
-        throw new Error('SaveAnimatedWEBP node not found')
 
       // Simulate the graph executing
       await comfyPage.page.evaluate(
@@ -434,7 +432,6 @@ test.describe('Load audio widget', { tag: ['@screenshot', '@widget'] }, () => {
 
     const [loadAudioNode] =
       await comfyPage.nodeOps.getNodeRefsByType('LoadAudio')
-    if (!loadAudioNode) throw new Error('LoadAudio node not found')
     const audioWidget = await loadAudioNode.getWidgetByName('audio')
     const uploadWidget = await loadAudioNode.getWidgetByName('upload')
     const filename = 'test-audio.wav'

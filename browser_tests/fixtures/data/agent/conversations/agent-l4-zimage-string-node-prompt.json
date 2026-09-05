@@ -295,36 +295,24 @@
                 "properties": {},
                 "widgets_values": [null]
               },
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "b41f1bc5b13f44efb10bb51847859813",
-              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "node_id": 3876406316923056,
-              "class_type": "PrimitiveStringMultiline",
-              "base_version": 2
+              "class_type": "PrimitiveStringMultiline"
             },
             {
               "op": "set_widget",
               "old": null,
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "90d12d67f1a54617af277c333f9880be",
-              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "value": "a red bicycle on a pier at dusk",
               "widget": "value",
-              "node_id": 3876406316923056,
-              "base_version": 2
+              "node_id": 3876406316923056
             },
             {
               "op": "connect",
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "c0b8ec72e8d64de7bcf9b45125f6c207",
-              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "link_id": 1887935066439213,
               "to_node": 6,
               "to_slot": 1,
               "from_node": 3876406316923056,
               "from_slot": 0,
-              "link_type": "STRING",
-              "base_version": 2
+              "link_type": "STRING"
             },
             {
               "op": "add_node",
@@ -354,49 +342,33 @@
                 "properties": {},
                 "widgets_values": [null]
               },
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "a5da691f2d07486aa354c5ee7c7fb6f1",
-              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "node_id": 3880387162517873,
-              "class_type": "CLIPTextEncode",
-              "base_version": 2
+              "class_type": "CLIPTextEncode"
             },
             {
               "op": "set_widget",
               "old": null,
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "d02e085ef78d41109f09ed846715fdfa",
-              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "value": "",
               "widget": "text",
-              "node_id": 3880387162517873,
-              "base_version": 2
+              "node_id": 3880387162517873
             },
             {
               "op": "connect",
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "54508721c33e478b94db088a93568f4c",
-              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "link_id": 2636276550287764,
               "to_node": 3880387162517873,
               "to_slot": 0,
               "from_node": 4,
               "from_slot": 1,
-              "link_type": "CLIP",
-              "base_version": 2
+              "link_type": "CLIP"
             },
             {
               "op": "connect",
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "98f104d28a664643b45551a76f4b6733",
-              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "link_id": 2833535472085255,
               "to_node": 3,
               "to_slot": 2,
               "from_node": 3880387162517873,
               "from_slot": 0,
-              "link_type": "CONDITIONING",
-              "base_version": 2
+              "link_type": "CONDITIONING"
             },
             {
               "op": "add_node",
@@ -420,25 +392,17 @@
                 "properties": {},
                 "widgets_values": [512, 512, 1]
               },
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "9e977850c86447acb7359b7a9b484a83",
-              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "node_id": 3876084544359242,
-              "class_type": "EmptyLatentImage",
-              "base_version": 2
+              "class_type": "EmptyLatentImage"
             },
             {
               "op": "connect",
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "c9e0686dff2245fa90d9e720c0133928",
-              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "link_id": 2211554611670965,
               "to_node": 3,
               "to_slot": 3,
               "from_node": 3876084544359242,
               "from_slot": 0,
-              "link_type": "LATENT",
-              "base_version": 2
+              "link_type": "LATENT"
             }
           ],
           "at_ms": 14347

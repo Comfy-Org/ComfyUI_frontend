@@ -62,6 +62,7 @@ export function createMockLGraphNode(
     renderingSize: size,
     title: 'Test Node',
     mode: LGraphEventMode.ALWAYS,
+    flags: {},
     ...nodeOverrides
   })
 }
@@ -293,6 +294,15 @@ export function createMockChangeTracker(
   overrides: Partial<ChangeTracker> = {}
 ): ChangeTracker {
   const partial = {
+    initialState: {
+      last_node_id: 0,
+      last_link_id: 0,
+      nodes: [],
+      links: [],
+      groups: [],
+      config: {},
+      version: 0.4
+    },
     activeState: {
       last_node_id: 0,
       last_link_id: 0,

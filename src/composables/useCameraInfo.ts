@@ -59,7 +59,7 @@ export function useCameraInfo(nodeRef: MaybeRef<LGraphNode | null>) {
 
   const initialize = (container: HTMLElement): void => {
     const raw = toRaw(node.value)
-    if (!raw || !container) return
+    if (!raw) return
     if (viewport) cleanup()
 
     try {

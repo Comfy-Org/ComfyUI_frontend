@@ -9,14 +9,13 @@ import type {
   AgentMessages,
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { ServerDocWireFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
+import { DOC_PROTOCOL_VERSION } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
-import type { DocFrame } from '@e2e/fixtures/agentConversationHostDoc'
-import {
-  DOC_PROTOCOL_VERSION,
-  HostDoc
-} from '@e2e/fixtures/agentConversationHostDoc'
+import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
+import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import type {
   AgentConversation,
   AgentConversationTurn,
@@ -25,15 +24,12 @@ import type {
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
 
 import { compareNodeIds, toNodeId } from '@/types/nodeId'
-import { knownTool } from '@/workbench/extensions/agent/services/agent/agentToolGlyph'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const THREAD_ID = 'e9a2f3d1-7c44-4b2e-9a01-5f6d8c7b3a10'
 // One synthetic message id per turn; the recorded ids never reach the page.
 const turnId = (turn: number): string =>
   `0c5b1e77-2d4a-4f9e-8b63-1a2c3d4e5${turn.toString(16).padStart(3, '0')}`
-// useAgentSession.ts keeps THREAD_STORAGE_KEY module-private.
-const THREAD_STORAGE_KEY = 'Comfy.Agent.ThreadId'
 const SOCKET_SID = '7d1f2e3a-4b5c-4d6e-8f90-1a2b3c4d5e6f'
 const PANEL_MOUNT_TIMEOUT = 30_000
 const SUBSCRIBE_TIMEOUT = 15_000
@@ -46,13 +42,21 @@ type NodeBody = {
   id: number | string
   type: string
   title?: string
-  inputs?: Array<{ name: string }>
+  inputs?: Array<{ name: string; widget?: unknown }>
   outputs?: Array<{ name: string }>
 }
 
 interface RecordedToolCall {
-  name: string
-  ok: boolean
+  callId: string
+  failed: boolean
+}
+
+interface RecordedConnect {
+  fromNode: string
+  fromSlot: number
+  toNode: string
+  toSlot: number
+  targetWidgetBacked: boolean
 }
 
 interface RecordedWidgetValue {
@@ -61,32 +65,15 @@ interface RecordedWidgetValue {
   value: string | number
 }
 
-// The panel's row label: the known-tool table, else the humanized tool name (ToolCallCard.vue).
-function toolRowLabel(name: string): string {
-  const known = knownTool(name)?.labelKey
-  const label = known
-    ? enMessages.agent[
-        known.replace('agent.', '') as keyof typeof enMessages.agent
-      ]
-    : undefined
-  if (typeof label === 'string') return label
-  const spaced = name.replaceAll('_', ' ')
-  return spaced.charAt(0).toUpperCase() + spaced.slice(1)
-}
-
-// Connected link slots by name; a node definition may render slots the recording never listed.
-interface GraphNodeSnapshot {
-  id: string
-  inputs: string[]
-  outputs: string[]
-}
-
 // Runs one recorded prompt/response through the real panel over a routed /ws socket.
 class AgentConversationHarness {
   readonly postedMessages: string[] = []
+  // Every cancel the panel issued, so a missing one cannot pass unnoticed.
+  readonly cancelRequests: { threadId: string; messageId: string }[] = []
   // Human-op minting is observable only on the client side of the socket.
   readonly clientFrames: { type?: unknown; data?: unknown }[] = []
   readonly panel: Locator
+  readonly vueNodes: VueNodeHelpers
 
   private readonly host: HostDoc
   private socket: WebSocketRoute | null = null
@@ -103,6 +90,7 @@ class AgentConversationHarness {
     const { workflow } = conversation
     this.host = new HostDoc(workflow.id, workflow.seed, workflow.catalog)
     this.panel = page.locator('#agent-panel-root')
+    this.vueNodes = new VueNodeHelpers(page)
   }
 
   async boot(agentFlag: boolean): Promise<void> {
@@ -142,20 +130,12 @@ class AgentConversationHarness {
     await expect.poll(() => this.postedMessages.length).toBeGreaterThan(turn)
     expect(this.postedMessages[turn]).toContain(content)
     // Replay frames are dropped until the page has applied the ack's thread id.
-    await expect
-      .poll(() =>
-        this.page.evaluate(
-          (key) => localStorage.getItem(key),
-          THREAD_STORAGE_KEY
-        )
-      )
-      .toBe(THREAD_ID)
+    // useAgentSession records the user turn straight after storing that id, so
+    // the rendered turn says the ack landed without reading private storage.
+    await expect(this.panel.getByText(content).first()).toBeVisible()
   }
 
-  async replayResponse(
-    turn = 0,
-    afterEntry?: (index: number) => Promise<void>
-  ): Promise<void> {
+  async replayResponse(turn = 0): Promise<void> {
     const startedAt = Date.now()
     const entries = this.conversation.turns[turn].response.entries()
     for (const [index, entry] of entries) {
@@ -172,16 +152,12 @@ class AgentConversationHarness {
       else {
         await this.waitForSubscribe()
         this.send(this.host.apply(entry.ops))
-        await afterEntry?.(index)
       }
       // The recorded turn was stopped here, so the panel stops here too.
       if (index === this.conversation.turns[turn].cancel_after)
         await this.stopTurn()
     }
-    this.replayElapsedMs = Date.now() - startedAt
   }
-
-  replayElapsedMs = 0
 
   async runTurns(): Promise<void> {
     for (const turn of this.conversation.turns.keys()) {
@@ -191,8 +167,17 @@ class AgentConversationHarness {
     }
   }
 
-  private entries(): AgentConversationTurn['response'] {
-    return this.conversation.turns.flatMap((turn) => turn.response)
+  // Everything the recording played through the given turn (all turns by default).
+  private entries(throughTurn?: number): AgentConversationTurn['response'] {
+    const last = throughTurn === undefined ? undefined : throughTurn + 1
+    return this.conversation.turns
+      .slice(0, last)
+      .flatMap((turn) => turn.response)
+  }
+
+  // The thread and message the ack handed the panel for this turn.
+  cancelTarget(turn = 0): { threadId: string; messageId: string } {
+    return { threadId: THREAD_ID, messageId: turnId(turn) }
   }
 
   async stopTurn(): Promise<void> {
@@ -209,9 +194,9 @@ class AgentConversationHarness {
   }
 
   // Doc-id filter: a stray template node must not pin the template here.
-  private nodeBodies(): NodeBody[] {
+  private nodeBodies(throughTurn?: number): NodeBody[] {
     const seed = this.conversation.workflow.seed.nodes as NodeBody[]
-    const added = this.entries().flatMap((entry) =>
+    const added = this.entries(throughTurn).flatMap((entry) =>
       entry.kind === 'graph_ops'
         ? entry.ops.flatMap((op) =>
             op.op === 'add_node' ? [op.node as NodeBody] : []
@@ -221,113 +206,27 @@ class AgentConversationHarness {
     return [...seed, ...added]
   }
 
-  // The doc keeps no titles or slot names; those come from the node bodies the turn started from or added.
-  expectedGraph(): GraphNodeSnapshot[] {
-    const graph = this.host.graph()
-    const bodies = this.nodeBodies()
-    const byType = new Map(bodies.map((body) => [body.type, body]))
-    const byId = new Map(bodies.map((body) => [String(body.id), body]))
-    const catalog = this.conversation.workflow.catalog.types as Record<
-      string,
-      { widget_order: string[] }
-    >
-    const links = Object.values(graph.links) as Array<
-      [unknown, unknown, number, unknown, number, string]
-    >
-    return Object.entries(graph.nodes)
-      .map(([id, node]) => {
-        const type = String(node.type)
-        const body = byId.get(id) ?? byType.get(type)
-        const widgets = new Set(catalog[type]?.widget_order ?? [])
-        const inputNames = (body?.inputs ?? []).map((slot) => slot.name)
-        const outputNames = (body?.outputs ?? []).map((slot) => slot.name)
-        return {
-          id,
-          // Widget-backed inputs render as widgets, not slot rows.
-          inputs: [
-            ...new Set(
-              links
-                .filter((link) => String(link[3]) === id)
-                .map((link) => inputNames[link[4]])
-                .filter((name) => name !== undefined && !widgets.has(name))
-            )
-          ].sort(),
-          // One slot can feed several links.
-          outputs: [
-            ...new Set(
-              links
-                .filter((link) => String(link[1]) === id)
-                .map((link) => outputNames[link[2]])
-                .filter((name) => name !== undefined)
-            )
-          ].sort()
-        }
-      })
-      .sort((a, b) => compareNodeIds(toNodeId(a.id), toNodeId(b.id)))
-  }
-
-  // The panel starts a new tool group whenever thinking or text interrupts the calls.
-  // ToolCallGroup.vue merges consecutive calls of the same tool into one row.
-  // One row per run of same-tool calls; the card shows ×N for a run longer than one.
-  toolRowCounts(): Array<{ label: string; times: number; rows: number }> {
-    const rows = new Map<
-      string,
-      { label: string; times: number; rows: number }
-    >()
-    for (const group of this.toolCallGroups()) {
-      const runs: Array<{ name: string; times: number }> = []
-      for (const call of group) {
-        const previous = runs.at(-1)
-        if (previous?.name === call.name) previous.times += 1
-        else runs.push({ name: call.name, times: 1 })
-      }
-      for (const { name, times } of runs) {
-        const key = `${name}/${times}`
-        const row = rows.get(key) ?? {
-          label: toolRowLabel(name),
-          times,
-          rows: 0
-        }
-        row.rows += 1
-        rows.set(key, row)
-      }
+  // One row per recorded tool call; failed when the recording reported an
+  // error status for it. The panel's own grouping and coalescing rules are the
+  // thing under test, so they are not reproduced here.
+  recordedToolCalls(throughTurn?: number): RecordedToolCall[] {
+    const calls = new Map<string, RecordedToolCall>()
+    for (const entry of this.entries(throughTurn)) {
+      if (entry.kind !== 'event' || entry.event.type !== 'agent_tool_call')
+        continue
+      const { tool_call_id: callId, status } = entry.event.data
+      const call = calls.get(callId) ?? { callId, failed: false }
+      if (status === 'error') call.failed = true
+      calls.set(callId, call)
     }
-    return [...rows.values()]
-  }
-
-  toolCallGroups(): RecordedToolCall[][] {
-    const groups: RecordedToolCall[][] = []
-    for (const turn of this.conversation.turns) {
-      let current: RecordedToolCall[] = []
-      for (const entry of turn.response) {
-        if (entry.kind !== 'event') continue
-        const { type, data } = entry.event
-        if (type === 'agent_tool_call') {
-          if (data.status !== 'running')
-            current.push({
-              name: String(data.tool_name),
-              ok: data.status === 'success'
-            })
-          continue
-        }
-        if (
-          (type === 'agent_thinking' || type === 'agent_message_delta') &&
-          current.length > 0
-        ) {
-          groups.push(current)
-          current = []
-        }
-      }
-      if (current.length > 0) groups.push(current)
-    }
-    return groups
+    return [...calls.values()]
   }
 
   // Last write wins per widget; the rendered control shows only the final value.
-  recordedWidgetValues(): RecordedWidgetValue[] {
+  recordedWidgetValues(throughTurn?: number): RecordedWidgetValue[] {
     const graph = this.host.graph()
     const latest = new Map<string, RecordedWidgetValue>()
-    for (const entry of this.entries()) {
+    for (const entry of this.entries(throughTurn)) {
       if (entry.kind !== 'graph_ops') continue
       for (const op of entry.ops) {
         if (op.op !== 'set_widget') continue
@@ -344,19 +243,19 @@ class AgentConversationHarness {
     return [...latest.values()]
   }
 
-  addedNodeIds(): string[] {
+  addedNodeIds(throughTurn?: number): string[] {
     const graph = this.host.graph()
     const seedIds = new Set(
       this.conversation.workflow.seed.nodes.map((node) => String(node.id))
     )
-    return this.nodeBodies()
+    return this.nodeBodies(throughTurn)
       .map((body) => String(body.id))
       .filter((id) => !seedIds.has(id) && id in graph.nodes)
   }
 
-  removedNodeIds(): string[] {
+  removedNodeIds(throughTurn?: number): string[] {
     const graph = this.host.graph()
-    return this.nodeBodies()
+    return this.nodeBodies(throughTurn)
       .map((body) => String(body.id))
       .filter((id) => !(id in graph.nodes))
   }
@@ -365,32 +264,66 @@ class AgentConversationHarness {
     return this.host.graph()
   }
 
-  async graphSnapshot(): Promise<GraphNodeSnapshot[]> {
-    const docNodeIds = new Set(Object.keys(this.host.graph().nodes))
-    const snapshot = await this.page
+  documentNodeIds(): string[] {
+    return Object.keys(this.host.graph().nodes).sort((a, b) =>
+      compareNodeIds(toNodeId(a), toNodeId(b))
+    )
+  }
+
+  // The assistant text a turn recorded, concatenated as the panel streams it.
+  recordedAssistantText(turn: number): string {
+    return this.conversation.turns[turn].response
+      .flatMap((entry) =>
+        entry.kind === 'event' && entry.event.type === 'agent_message_delta'
+          ? [entry.event.data.delta]
+          : []
+      )
+      .join('')
+  }
+
+  // Every concrete connect whose endpoints survive in the document, with the
+  // target marked when it is a widget-backed input: those render no slot row
+  // on an uncollapsed node (NodeSlots.vue), so only the origin can be asserted
+  // for them. A grown connect names no to_slot and is skipped.
+  recordedConnects(throughTurn?: number): RecordedConnect[] {
+    const present = new Set(Object.keys(this.host.graph().nodes))
+    const bodies = this.nodeBodies(throughTurn)
+    return this.entries(throughTurn)
+      .flatMap((entry) =>
+        entry.kind === 'graph_ops'
+          ? entry.ops.flatMap((op) =>
+              op.op === 'connect' && op.grow == null
+                ? [
+                    {
+                      fromNode: String(op.from_node),
+                      fromSlot: op.from_slot,
+                      toNode: String(op.to_node),
+                      toSlot: op.to_slot,
+                      targetWidgetBacked:
+                        bodies.find(
+                          (body) => String(body.id) === String(op.to_node)
+                        )?.inputs?.[op.to_slot]?.widget != null
+                    }
+                  ]
+                : []
+            )
+          : []
+      )
+      .filter(
+        (connect) =>
+          present.has(connect.fromNode) && present.has(connect.toNode)
+      )
+  }
+
+  async renderedNodeIds(): Promise<string[]> {
+    const ids = await this.page
       .locator('[data-node-id]')
       .evaluateAll((nodes) =>
-        nodes.map((node) => {
-          // Widget sockets are dot-only and carry no name.
-          const connected = (selector: string) =>
-            Array.from(
-              node.querySelectorAll(
-                `${selector}.lg-slot--connected:not(.lg-slot--dot-only)`
-              )
-            )
-              .map((slot) => slot.textContent?.trim() ?? '')
-              .filter((name) => name !== '')
-              .sort()
-          return {
-            id: node.getAttribute('data-node-id') ?? '',
-            inputs: connected('.lg-slot--input'),
-            outputs: connected('.lg-slot--output')
-          }
-        })
+        nodes.map((node) => node.getAttribute('data-node-id') ?? '')
       )
-    return snapshot
-      .filter((node) => docNodeIds.has(node.id))
-      .sort((a, b) => compareNodeIds(toNodeId(a.id), toNodeId(b.id)))
+    return ids
+      .filter((id) => id !== '')
+      .sort((a, b) => compareNodeIds(toNodeId(a), toNodeId(b)))
   }
 
   private async mockAgentApi(): Promise<void> {
@@ -416,6 +349,14 @@ class AgentConversationHarness {
       return route.fulfill(jsonRoute(history))
     })
     await page.route('**/api/agent/threads/*/messages/*/cancel', (route) => {
+      const target = /\/threads\/([^/]+)\/messages\/([^/]+)\/cancel/.exec(
+        route.request().url()
+      )
+      if (target)
+        this.cancelRequests.push({
+          threadId: target[1],
+          messageId: target[2]
+        })
       const cancelled: AgentCancelAccepted = { status: 'cancelling' }
       return route.fulfill(jsonRoute(cancelled))
     })
@@ -442,7 +383,7 @@ class AgentConversationHarness {
     return parsed.data
   }
 
-  private send(frame: AgentWsEvent | DocFrame): void {
+  private send(frame: AgentWsEvent | ServerDocWireFrame): void {
     if (!this.socket) throw new Error('the app has not opened /ws yet')
     this.socket.send(JSON.stringify(frame))
   }
@@ -469,7 +410,7 @@ class AgentConversationHarness {
       }
       if (workflow_id === this.conversation.workflow.id && Array.isArray(ops)) {
         // The applier validates each payload; the wire frame only guarantees an array.
-        const applied = this.host.applyClient(ops as Op[])
+        const { applied, update } = this.host.applyClient(ops as Op[])
         this.send({
           type: 'doc_ops_result',
           data: {
@@ -480,6 +421,11 @@ class AgentConversationHarness {
             skipped: []
           }
         })
+        // An accepted batch also reaches subscribers as an authoritative
+        // doc_update. Without it the follower never sees its own ops come back,
+        // and later host deltas cannot fill the gap because they are encoded
+        // from a state vector that already includes them.
+        this.send(update)
       }
       return
     }

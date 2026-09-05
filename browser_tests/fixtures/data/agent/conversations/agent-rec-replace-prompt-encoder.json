@@ -278,49 +278,33 @@
                 "properties": {},
                 "widgets_values": [null]
               },
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "4c4d739392f14272939cf46a335652c8",
-              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "node_id": 4181654812796082,
-              "class_type": "CLIPTextEncode",
-              "base_version": 2
+              "class_type": "CLIPTextEncode"
             },
             {
               "op": "connect",
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "f1cd3aef4b984b04a9611a53f69763ba",
-              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "link_id": 3320191292493608,
               "to_node": 4181654812796082,
               "to_slot": 0,
               "from_node": 4,
               "from_slot": 1,
-              "link_type": "CLIP",
-              "base_version": 2
+              "link_type": "CLIP"
             },
             {
               "op": "connect",
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "4f4de6968f124e23a3114f8c88a1a766",
-              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "link_id": 2686273519871711,
               "to_node": 3,
               "to_slot": 1,
               "from_node": 4181654812796082,
               "from_slot": 0,
-              "link_type": "CONDITIONING",
-              "base_version": 2
+              "link_type": "CONDITIONING"
             },
             {
               "op": "set_widget",
               "old": null,
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "279c55a82f09416f9fa68e47ee11fafc",
-              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "value": "a photo of a pier",
               "widget": "text",
-              "node_id": 4181654812796082,
-              "base_version": 2
+              "node_id": 4181654812796082
             }
           ],
           "at_ms": 10451
@@ -343,11 +327,7 @@
           "ops": [
             {
               "op": "delete_node",
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "b141d8503ee54cde94d3a4e3f6b5204f",
-              "stamp": [3, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "node_id": 6,
-              "base_version": 3,
               "removed_links": [1]
             }
           ],

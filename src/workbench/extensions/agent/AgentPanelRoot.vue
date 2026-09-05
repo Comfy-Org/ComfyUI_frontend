@@ -384,7 +384,9 @@ const {
   listThreads,
   loadThread,
   boundWorkflowId,
-  bindWorkflow
+  bindWorkflow,
+  answerAsk,
+  answeringAskIds
 } = useAgentSession({
   rest,
   events,
@@ -420,7 +422,11 @@ const {
   boundWorkflowId,
   graphMutations,
   () => resolvedUserInfo.value?.id ?? null,
-  isBoundWorkflowActive
+  isBoundWorkflowActive,
+  // `app.isGraphReady` is a plain getter; reading `canvasStore.canvas` (set
+  // right after `app.setup()`) makes the follower's graph watch fire once the
+  // root graph exists.
+  () => (canvasStore.canvas && app.isGraphReady ? app.rootGraph : null)
 )
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,
@@ -502,6 +508,13 @@ function enqueueActiveTab(data: AgentActiveTabData): void {
   activeTabChain = activeTabChain.then(() => onAgentActiveTab(data, generation))
 }
 
+function onOpenApprovalWorkflow(
+  workflowId: string,
+  workflowName?: string
+): void {
+  enqueueActiveTab({ workflow_id: workflowId, name: workflowName })
+}
+
 function agentTabFilename(name: string | undefined): string | undefined {
   const cleaned = [
     ...(name ?? '')
@@ -539,7 +552,6 @@ async function onAgentActiveTab(
       })
       return
     }
-    // The tab starts blank: the host seeds the doc at bind and the default template's node ids collide with agent docs.
     const creatingStartedAt = Date.now()
     tabActivity.setCreating(true)
     const remainingCreatingTime =
@@ -547,7 +559,7 @@ async function onAgentActiveTab(
     if (remainingCreatingTime > 0)
       await new Promise((resolve) => setTimeout(resolve, remainingCreatingTime))
     if (stale()) return
-    const tab = workflowStore.createTemporary(
+    const tab = workflowStore.createNewTemporary(
       agentTabFilename(data.name),
       blankGraph
     )
@@ -997,6 +1009,7 @@ function onPanelDrop(event: DragEvent): void {
       ref="panelRef"
       :entries
       :editable-turn-id="editableTurnId"
+      :answering-ask-ids="answeringAskIds"
       :user-name="userName"
       :streaming="isStreaming"
       :submitting="isSending || status === 'thinking'"
@@ -1023,6 +1036,8 @@ function onPanelDrop(event: DragEvent): void {
       @focus-tag="onFocusSelectionTag"
       @mention-pick="onMentionPick"
       @feedback="onFeedback"
+      @answer-ask="answerAsk"
+      @open-workflow="onOpenApprovalWorkflow"
       @new-chat="onNewChat"
       @toggle-size="agentPanelStore.toggleMaximize()"
       @close="onClosePanel"

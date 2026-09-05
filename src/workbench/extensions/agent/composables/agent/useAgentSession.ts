@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 
 import { i18n } from '@/i18n'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { AgentActiveTabData, TurnId } from '../../schemas/agentApiSchema'
 import { isAgentEvent, parseAgentWsEvent } from '../../schemas/agentApiSchema'
 import { AgentApiError } from '../../services/agent/agentRestClient'
@@ -81,6 +82,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
   const notices = ref<SessionNotice[]>([])
   const promptEditState = ref<PromptEditState>({ phase: 'idle' })
   const sending = ref(false)
+  const answeringAskIds = ref<ReadonlySet<string>>(new Set())
+
+  function setAskAnswering(askId: string, answering: boolean): void {
+    const next = new Set(answeringAskIds.value)
+    if (answering) next.add(askId)
+    else next.delete(askId)
+    answeringAskIds.value = next
+  }
 
   let localErrorCount = 0
   function nextLocalErrorId(): TurnId {
@@ -192,7 +201,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     promptEditState.value = { phase: 'idle' }
     sending.value = true
-    stopRequestedWhileSending = false
+    stopRequestedWhileSending.value = false
     if (workflow?.prepare)
       await Promise.race([
         workflow.prepare().catch(() => undefined),
@@ -239,8 +248,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         tags?.map((tag) => `${tag.title} #${tag.id}`)
       )
       conversationStore.startTurn(turnId)
-      if (stopRequestedWhileSending) {
-        stopRequestedWhileSending = false
+      if (wasStopRequestedWhileSending()) {
+        stopRequestedWhileSending.value = false
         void stopTurn()
       }
       return true
@@ -262,14 +271,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
-  let stopRequestedWhileSending = false
+  const stopRequestedWhileSending = ref(false)
+  const wasStopRequestedWhileSending = () => stopRequestedWhileSending.value
 
   async function stopTurn(): Promise<void> {
     const threadId = conversationStore.threadId
     const turnId = conversationStore.activeTurnId
     if (threadId === null || turnId === null) {
       // The POST has not acked yet; remember the intent and cancel on ack.
-      if (sending.value) stopRequestedWhileSending = true
+      if (sending.value) stopRequestedWhileSending.value = true
       return
     }
     promptEditState.value = { phase: 'stopping', turnId }
@@ -283,6 +293,42 @@ export function useAgentSession(deps: AgentSessionDeps) {
         return
       }
       promptEditState.value = { phase: 'idle' }
+      pushError(error instanceof Error ? error.message : String(error))
+    }
+  }
+
+  async function answerAsk(
+    askId: string,
+    selection: 'run' | 'cancel'
+  ): Promise<void> {
+    const currentThreadId = conversationStore.threadId
+    const messageId = conversationStore.activeTurnId
+    if (
+      currentThreadId === null ||
+      messageId === null ||
+      answeringAskIds.value.has(askId)
+    )
+      return
+    setAskAnswering(askId, true)
+    try {
+      await rest.answerAsk(currentThreadId, askId, [selection])
+      // Keep the actions disabled until the canonical resolution frame arrives.
+    } catch (error) {
+      setAskAnswering(askId, false)
+      if (error instanceof AgentApiError && error.status === 409) {
+        conversationStore.ingest({
+          type: 'agent_ask_resolved',
+          data: {
+            thread_id: currentThreadId,
+            message_id: messageId,
+            ask_id: askId,
+            status: 'answered',
+            selected: null
+          }
+        })
+        return
+      }
+      reportError(error, { errorType: 'agent_ask_answer_failed' })
       pushError(error instanceof Error ? error.message : String(error))
     }
   }
@@ -340,6 +386,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return
     }
     const event = parsed.data
+    if (event.type === 'agent_ask_resolved')
+      setAskAnswering(event.data.ask_id, false)
     switch (event.type) {
       case 'agent_active_tab':
         // Every thread records the link in its own transcript; only the thread
@@ -357,8 +405,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
           event.type === 'agent_message_done' &&
           promptEditState.value.phase === 'stopping' &&
           event.data.message_id === promptEditState.value.turnId &&
-          (event.data.thread_id === undefined ||
-            event.data.thread_id === conversationStore.threadId)
+          event.data.thread_id === conversationStore.threadId
         )
           promptEditState.value = {
             phase: 'ready',
@@ -401,6 +448,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     stop,
     sendMessage,
     stopTurn,
+    answerAsk,
+    answeringAskIds: computed(() => answeringAskIds.value),
     newChat,
     listThreads,
     loadThread,
