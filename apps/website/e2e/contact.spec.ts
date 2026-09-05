@@ -51,3 +51,102 @@ test.describe('Contact form embed @smoke', () => {
     })
   }
 })
+
+// The logo bar is rendered only by FormSection now; losing it there would
+// strip both locales of social proof while every page still renders.
+test.describe('Contact social proof @smoke', () => {
+  // The hero entrance tween translates the image, so geometry is only stable
+  // once useHeroAnimation opts out.
+  test.use({ contextOptions: { reducedMotion: 'reduce' } })
+
+  for (const { locale, path } of CONTACT_FORMS) {
+    test(`anchors the ${locale} logo bar beneath the hero image`, async ({
+      page
+    }) => {
+      await page.goto(path)
+
+      const formSection = page.locator('section', {
+        has: page.getByRole('heading', {
+          level: 1,
+          name: t('contact.form.heading', locale)
+        })
+      })
+
+      // The testid sits on the w-max marquee row, so measure its section.
+      const bar = formSection
+        .locator('section')
+        .filter({ has: page.getByTestId('social-proof-desktop') })
+      await expect(bar).toHaveCount(1)
+      await expect(page.getByTestId('social-proof-desktop')).toHaveCount(1)
+
+      const image = formSection.locator('img').first()
+      const columns = formSection.locator('> div')
+
+      await expect
+        .poll(async () => {
+          const [imageBox, barBox, leftBox, rightBox] = await Promise.all([
+            image.boundingBox(),
+            bar.boundingBox(),
+            columns.nth(0).boundingBox(),
+            columns.nth(1).boundingBox()
+          ])
+          if (!imageBox || !barBox || !leftBox || !rightBox) return null
+          return {
+            barBelowImage: barBox.y >= imageBox.y + imageBox.height,
+            barTracksImage:
+              Math.abs(barBox.x - imageBox.x) < 1 &&
+              Math.abs(barBox.width - imageBox.width) < 1,
+            evenColumns: Math.abs(leftBox.width - rightBox.width) < 1
+          }
+        })
+        .toEqual({
+          barBelowImage: true,
+          barTracksImage: true,
+          evenColumns: true
+        })
+    })
+  }
+})
+
+// Below `lg` the columns stack, so the bar lands between the image and the
+// form rather than beside it; below `md` it swaps to the two-row variant.
+test.describe('Contact social proof @mobile', () => {
+  test.use({ contextOptions: { reducedMotion: 'reduce' } })
+
+  test('stacks the logo bar between the image and the form', async ({
+    page
+  }) => {
+    await page.goto('/contact')
+
+    const formSection = page.locator('section', {
+      has: page.getByRole('heading', {
+        level: 1,
+        name: t('contact.form.heading', 'en')
+      })
+    })
+
+    const bar = formSection
+      .locator('section')
+      .filter({ has: page.getByTestId('social-proof-mobile') })
+    await expect(bar).toBeVisible()
+    await expect(page.getByTestId('social-proof-desktop')).toBeHidden()
+
+    const image = formSection.locator('img').first()
+    const formColumn = formSection.locator('> div').nth(1)
+
+    await expect
+      .poll(async () => {
+        const [imageBox, barBox, formBox] = await Promise.all([
+          image.boundingBox(),
+          bar.boundingBox(),
+          formColumn.boundingBox()
+        ])
+        if (!imageBox || !barBox || !formBox) return null
+        return {
+          belowImage: barBox.y >= imageBox.y + imageBox.height,
+          aboveForm: barBox.y + barBox.height <= formBox.y
+        }
+      })
+      .toEqual({ belowImage: true, aboveForm: true })
+  })
+})
