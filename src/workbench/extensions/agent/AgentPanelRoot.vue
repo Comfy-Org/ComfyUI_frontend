@@ -54,6 +54,11 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
+import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { isCloud } from '@/platform/distribution/types'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 import AgentPanel from './components/agent/AgentPanel.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
@@ -82,6 +87,8 @@ import type {
 import { useAgentSession } from './composables/agent/useAgentSession'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { createAgentRestClient } from './services/agent/agentRestClient'
+import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
+import { resolveAgentPaywallPresentation } from './services/agent/agentPaywallPresentation'
 import type {
   DraftSnapshot,
   OpenTabsSnapshot
@@ -102,6 +109,28 @@ const CrdtDevPanel = defineAsyncComponent(
 
 const { t } = useI18n()
 const toast = useToastStore()
+const { open: openAccountPrecondition } = useAccountPreconditionDialog()
+const { showPricingTable } = useSubscriptionDialog()
+const { workspaceRole } = useWorkspaceUI()
+const {
+  canTopUp,
+  canSubscribeSelfServe,
+  isReady: billingCapabilitiesReady
+} = useBillingCapabilities()
+const paywallPresentation = computed(() =>
+  resolveAgentPaywallPresentation({
+    distribution: isCloud ? 'cloud' : 'local',
+    role: workspaceRole.value,
+    // The initial false/false pair is not an authoritative sales-managed
+    // result while the shared capability source initializes in the background.
+    canTopUp: billingCapabilitiesReady.value
+      ? canTopUp.value
+      : workspaceRole.value === 'owner',
+    canSubscribeSelfServe: billingCapabilitiesReady.value
+      ? canSubscribeSelfServe.value
+      : workspaceRole.value === 'owner'
+  })
+)
 const sidebarTabStore = useSidebarTabStore()
 const { isBuilderMode } = useAppMode()
 
@@ -113,6 +142,15 @@ const userName = computed(
 const rest = createAgentRestClient()
 
 const events = createAgentEventSource(api)
+
+function onPaywallAction(action: AgentPaywallAction): void {
+  if (action === 'upgrade') {
+    showPricingTable({ reason: 'upgrade_to_add_credits' })
+    return
+  }
+  // 'subscribe' also goes through credits so the out_of_credits reason is kept.
+  openAccountPrecondition('credits')
+}
 
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
@@ -1070,6 +1108,7 @@ function onPanelDrop(event: DragEvent): void {
       :workflow-detached="workflowDetached"
       :get-mention-nodes="mentionableNodes"
       :get-mention-assets="mentionableAssets"
+      :paywall-presentation="paywallPresentation"
       @select-tab="onSelectTab"
       @clear-workflow="onClearWorkflow"
       @send="onSend"
@@ -1083,6 +1122,7 @@ function onPanelDrop(event: DragEvent): void {
       @feedback="onFeedback"
       @answer-ask="answerAsk"
       @open-workflow="onOpenApprovalWorkflow"
+      @paywall-action="onPaywallAction"
       @new-chat="onNewChat"
       @toggle-size="agentPanelStore.toggleMaximize()"
       @close="onClosePanel"

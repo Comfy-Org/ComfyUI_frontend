@@ -1,4 +1,5 @@
 import {
+  zAgentAdmissionError as zGeneratedAgentAdmissionError,
   zAgentAnswerAccepted,
   zAgentRunMode as zGeneratedAgentRunMode,
   zWorkflowListResponse
@@ -125,9 +126,12 @@ export const zAgentCancelAccepted = z.object({
 })
 export type AgentCancelAccepted = z.infer<typeof zAgentCancelAccepted>
 
-export const zAgentError = z.object({
-  error: z.string()
-})
+export const zAgentAdmissionError = zGeneratedAgentAdmissionError
+
+export const zAgentError = z.union([
+  z.object({ error: z.string() }),
+  zAgentAdmissionError
+])
 
 export const zUploadImageResult = z.object({
   name: z.string(),

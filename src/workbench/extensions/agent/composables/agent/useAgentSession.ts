@@ -3,7 +3,11 @@ import { computed, ref } from 'vue'
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { AgentActiveTabData, TurnId } from '../../schemas/agentApiSchema'
-import { isAgentEvent, parseAgentWsEvent } from '../../schemas/agentApiSchema'
+import {
+  isAgentEvent,
+  parseAgentWsEvent,
+  zAgentAdmissionError
+} from '../../schemas/agentApiSchema'
 import { AgentApiError } from '../../services/agent/agentRestClient'
 import type {
   AgentRestClient,
@@ -89,6 +93,28 @@ let sessionGeneration = 0
  * newChat/loadThread clear it.
  */
 let rememberedWorkflowId: string | null = null
+
+function parseAdmissionError(error: unknown) {
+  if (!(error instanceof AgentApiError)) return undefined
+  const parsed = zAgentAdmissionError.safeParse(error.body)
+  if (!parsed.success) return undefined
+  return { ...parsed.data.error, retryAfterSeconds: error.retryAfterSeconds }
+}
+
+function admissionNoticeText(admission: {
+  message: string
+  reason: string
+  retryAfterSeconds?: number
+}): string {
+  if (
+    admission.reason !== 'funds_unavailable' ||
+    admission.retryAfterSeconds === undefined
+  ) {
+    return admission.message
+  }
+  const count = Math.max(1, Math.ceil(admission.retryAfterSeconds))
+  return `${admission.message} ${i18n.global.t('agent.retryAfter', { count }, count)}`
+}
 
 export function useAgentSession(deps: AgentSessionDeps) {
   const { rest, events, workflow } = deps
@@ -305,6 +331,19 @@ export function useAgentSession(deps: AgentSessionDeps) {
       }
       return true
     } catch (error) {
+      const admission = parseAdmissionError(error)
+      if (admission?.reason === 'no_funds') {
+        conversationStore.recordPaywall(nextLocalErrorId(), text)
+        return false
+      }
+      if (admission !== undefined) {
+        conversationStore.recordFailedSend(
+          nextLocalErrorId(),
+          text,
+          admissionNoticeText(admission)
+        )
+        return false
+      }
       const message =
         error instanceof AgentApiError
           ? error.message

@@ -44,6 +44,10 @@ export interface RunApprovalPart {
   workflowName?: string
 }
 
+export interface PaywallPart {
+  type: 'paywall'
+}
+
 export type ActivityPart = ThinkingPart | ToolPart
 
 type MessagePart =
@@ -53,6 +57,7 @@ type MessagePart =
   | NoticePart
   | TabLinkPart
   | RunApprovalPart
+  | PaywallPart
 
 export interface AssistantMessage {
   id: TurnId
