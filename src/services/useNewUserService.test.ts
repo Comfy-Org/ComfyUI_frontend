@@ -150,6 +150,20 @@ describe('useNewUserService', () => {
       expect(service.isNewUser()).toBe(false)
     })
 
+    it('should identify existing user when V3 draft index has entries', async () => {
+      mockSettingStore.settingValues = {}
+      mockSettingStore.get.mockReturnValue(undefined)
+      mockLocalStorage.getItem.mockImplementation((key: string) => {
+        if (key === 'Comfy.Workflow.DraftIndex.v3:personal')
+          return '{"v":3,"updatedAt":1,"order":["workflows/Untitled.json"],"entries":{"workflows/Untitled.json":{"path":"workflows/Untitled.json","name":"Untitled","isTemporary":true,"updatedAt":1}}}'
+        return null
+      })
+
+      await service.initializeIfNewUser()
+
+      expect(service.isNewUser()).toBe(false)
+    })
+
     it('should identify new user when V2 draft index exists but is empty', async () => {
       mockSettingStore.settingValues = {}
       mockSettingStore.get.mockReturnValue(undefined)

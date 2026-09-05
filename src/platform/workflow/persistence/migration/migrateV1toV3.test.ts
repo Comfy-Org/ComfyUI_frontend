@@ -1,10 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { hashPath } from '../base/hashUtil'
-import { readOpenPaths } from '../base/storageIO'
-import { isV2MigrationComplete, migrateV1toV2 } from './migrateV1toV2'
+import { readIndex, readOpenPaths, readPayload } from '../base/storageIO'
+import { isV3MigrationComplete, migrateV1toV3 } from './migrateV1toV3'
 
-describe('migrateV1toV2', () => {
+describe('migrateV1toV3', () => {
   const workspaceId = 'test-workspace'
 
   beforeEach(() => {
@@ -28,44 +27,66 @@ describe('migrateV1toV2', () => {
     )
   }
 
-  describe('isV2MigrationComplete', () => {
-    it('returns false when no V2 index exists', () => {
-      expect(isV2MigrationComplete(workspaceId)).toBe(false)
+  describe('isV3MigrationComplete', () => {
+    it('returns false when no V3 index exists', () => {
+      expect(isV3MigrationComplete(workspaceId)).toBe(false)
     })
 
-    it('returns true when V2 index exists', () => {
+    it('returns true when V3 index exists', () => {
       localStorage.setItem(
-        `Comfy.Workflow.DraftIndex.v2:${workspaceId}`,
-        JSON.stringify({ v: 2, order: [], entries: {}, updatedAt: Date.now() })
+        `Comfy.Workflow.DraftIndex.v3:${workspaceId}`,
+        JSON.stringify({ v: 3, order: [], entries: {}, updatedAt: Date.now() })
       )
-      expect(isV2MigrationComplete(workspaceId)).toBe(true)
+      expect(isV3MigrationComplete(workspaceId)).toBe(true)
     })
   })
 
-  describe('migrateV1toV2', () => {
-    it('returns -1 if V2 already exists', () => {
+  describe('migrateV1toV3', () => {
+    it('returns -1 if V3 already exists', () => {
       localStorage.setItem(
-        `Comfy.Workflow.DraftIndex.v2:${workspaceId}`,
-        JSON.stringify({ v: 2, order: [], entries: {}, updatedAt: Date.now() })
+        `Comfy.Workflow.DraftIndex.v3:${workspaceId}`,
+        JSON.stringify({ v: 3, order: [], entries: {}, updatedAt: Date.now() })
       )
 
-      expect(migrateV1toV2(workspaceId)).toBe(-1)
+      expect(migrateV1toV3(workspaceId)).toBe(-1)
     })
 
-    it('creates empty V2 index if no V1 data', () => {
-      expect(migrateV1toV2(workspaceId)).toBe(0)
+    it('returns -1 without writing V3 while a V2 index exists', () => {
+      localStorage.setItem(
+        `Comfy.Workflow.Drafts:${workspaceId}`,
+        JSON.stringify({
+          'workflows/stale.json': {
+            data: '{"id":"stale"}',
+            updatedAt: 1000,
+            name: 'stale',
+            isTemporary: false
+          }
+        })
+      )
+      localStorage.setItem(
+        `Comfy.Workflow.DraftIndex.v2:${workspaceId}`,
+        JSON.stringify({ v: 2, updatedAt: 2000, order: [], entries: {} })
+      )
+
+      expect(migrateV1toV3(workspaceId)).toBe(-1)
+      expect(readIndex(workspaceId)).toBeNull()
+      expect(readPayload(workspaceId, 'workflows/stale.json')).toBeNull()
+    })
+
+    it('creates empty V3 index if no V1 data', () => {
+      expect(migrateV1toV3(workspaceId)).toBe(0)
 
       const indexJson = localStorage.getItem(
-        `Comfy.Workflow.DraftIndex.v2:${workspaceId}`
+        `Comfy.Workflow.DraftIndex.v3:${workspaceId}`
       )
       expect(indexJson).not.toBeNull()
 
       const index = JSON.parse(indexJson!)
-      expect(index.v).toBe(2)
+      expect(index.v).toBe(3)
       expect(index.order).toEqual([])
     })
 
-    it('migrates V1 drafts to V2 format', () => {
+    it('migrates V1 drafts to V3 format', () => {
       const v1Drafts = {
         'workflows/a.json': {
           data: '{"nodes":[1]}',
@@ -82,25 +103,22 @@ describe('migrateV1toV2', () => {
       }
       setV1Data(v1Drafts, ['workflows/a.json', 'workflows/b.json'])
 
-      const migrated = migrateV1toV2(workspaceId)
+      const migrated = migrateV1toV3(workspaceId)
       expect(migrated).toBe(2)
 
-      // Check V2 index
+      // Check V3 index
       const indexJson = localStorage.getItem(
-        `Comfy.Workflow.DraftIndex.v2:${workspaceId}`
+        `Comfy.Workflow.DraftIndex.v3:${workspaceId}`
       )
       const index = JSON.parse(indexJson!)
       expect(index.order).toHaveLength(2)
 
       // Check payloads
-      const keyA = hashPath('workflows/a.json')
-      const keyB = hashPath('workflows/b.json')
-
       const payloadA = localStorage.getItem(
-        `Comfy.Workflow.Draft.v2:${workspaceId}:${keyA}`
+        `Comfy.Workflow.Draft.v3:${workspaceId}:workflows/a.json`
       )
       const payloadB = localStorage.getItem(
-        `Comfy.Workflow.Draft.v2:${workspaceId}:${keyB}`
+        `Comfy.Workflow.Draft.v3:${workspaceId}:workflows/b.json`
       )
 
       expect(payloadA).not.toBeNull()
@@ -108,6 +126,35 @@ describe('migrateV1toV2', () => {
 
       expect(JSON.parse(payloadA!).data).toBe('{"nodes":[1]}')
       expect(JSON.parse(payloadB!).data).toBe('{"nodes":[2]}')
+      expect(JSON.parse(payloadA!).path).toBe('workflows/a.json')
+      expect(JSON.parse(payloadB!).path).toBe('workflows/b.json')
+    })
+
+    it('preserves known colliding V2-hash paths from the V1 blob', () => {
+      setV1Data(
+        {
+          'workflows/ewip.json': {
+            data: '{"id":"a"}',
+            updatedAt: 1000,
+            name: 'a',
+            isTemporary: true
+          },
+          'workflows/4hbab.json': {
+            data: '{"id":"b"}',
+            updatedAt: 2000,
+            name: 'b',
+            isTemporary: true
+          }
+        },
+        ['workflows/ewip.json', 'workflows/4hbab.json']
+      )
+
+      expect(migrateV1toV3(workspaceId)).toBe(2)
+      expect(
+        JSON.parse(
+          localStorage.getItem(`Comfy.Workflow.DraftIndex.v3:${workspaceId}`)!
+        ).order
+      ).toEqual(['workflows/ewip.json', 'workflows/4hbab.json'])
     })
 
     it('preserves LRU order during migration', () => {
@@ -137,18 +184,18 @@ describe('migrateV1toV2', () => {
         'workflows/third.json'
       ])
 
-      migrateV1toV2(workspaceId)
+      migrateV1toV3(workspaceId)
 
       const indexJson = localStorage.getItem(
-        `Comfy.Workflow.DraftIndex.v2:${workspaceId}`
+        `Comfy.Workflow.DraftIndex.v3:${workspaceId}`
       )
       const index = JSON.parse(indexJson!)
 
       // Order should be preserved (oldest to newest)
       const expectedOrder = [
-        hashPath('workflows/first.json'),
-        hashPath('workflows/second.json'),
-        hashPath('workflows/third.json')
+        'workflows/first.json',
+        'workflows/second.json',
+        'workflows/third.json'
       ]
       expect(index.order).toEqual(expectedOrder)
     })
@@ -196,7 +243,7 @@ describe('migrateV1toV2', () => {
 
       // Run migration (simulating upgrade from pre-V2 to V2)
       const clientId = 'client-123'
-      const result = migrateV1toV2(workspaceId, clientId)
+      const result = migrateV1toV3(workspaceId, clientId)
       expect(result).toBe(3)
 
       // V2 tab state should be readable via the V2 API
@@ -224,7 +271,7 @@ describe('migrateV1toV2', () => {
       setV1Data(v1Drafts, ['workflows/a.json'])
 
       // No V1 tab state keys in localStorage
-      migrateV1toV2(workspaceId)
+      migrateV1toV3(workspaceId)
 
       const openPaths = readOpenPaths('any-client-id', workspaceId)
 

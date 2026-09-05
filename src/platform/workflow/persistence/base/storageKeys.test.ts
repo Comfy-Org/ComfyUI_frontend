@@ -90,15 +90,15 @@ describe('storageKeys', () => {
       const { StorageKeys } = await import('./storageKeys')
 
       expect(StorageKeys.draftIndex('ws-123')).toBe(
-        'Comfy.Workflow.DraftIndex.v2:ws-123'
+        'Comfy.Workflow.DraftIndex.v3:ws-123'
       )
     })
 
-    it('generates draftPayload key with hash', async () => {
+    it('generates draftPayload key with full path', async () => {
       const { StorageKeys } = await import('./storageKeys')
       const key = StorageKeys.draftPayload('workflows/test.json', 'ws-1')
 
-      expect(key).toMatch(/^Comfy\.Workflow\.Draft\.v2:ws-1:[0-9a-f]{8}$/)
+      expect(key).toBe('Comfy.Workflow.Draft.v3:ws-1:workflows/test.json')
     })
 
     it('generates consistent draftKey from path', async () => {
@@ -107,7 +107,7 @@ describe('storageKeys', () => {
       const key2 = StorageKeys.draftKey('workflows/test.json')
 
       expect(key1).toBe(key2)
-      expect(key1).toMatch(/^[0-9a-f]{8}$/)
+      expect(key1).toBe('workflows/test.json')
     })
 
     it('generates activePath key with clientId', async () => {
@@ -128,9 +128,9 @@ describe('storageKeys', () => {
       const { StorageKeys } = await import('./storageKeys')
 
       expect(StorageKeys.prefixes.draftIndex).toBe(
-        'Comfy.Workflow.DraftIndex.v2:'
+        'Comfy.Workflow.DraftIndex.v3:'
       )
-      expect(StorageKeys.prefixes.draftPayload).toBe('Comfy.Workflow.Draft.v2:')
+      expect(StorageKeys.prefixes.draftPayload).toBe('Comfy.Workflow.Draft.v3:')
       expect(StorageKeys.prefixes.activePath).toBe('Comfy.Workflow.ActivePath:')
       expect(StorageKeys.prefixes.openPaths).toBe('Comfy.Workflow.OpenPaths:')
     })

@@ -20,7 +20,7 @@ const arbMeta = fc.record({
 })
 
 describe('draftCacheV2 properties', () => {
-  it('characterizes R-78 draft cache aliasing for known colliding paths', () => {
+  it('keeps known colliding V2-hash paths independent', () => {
     let index = createEmptyIndex()
     index = upsertEntry(index, 'workflows/ewip.json', {
       name: 'draft-a',
@@ -33,10 +33,13 @@ describe('draftCacheV2 properties', () => {
       updatedAt: 2
     }).index
 
-    // R-78 current-risk characterization: these paths share the same 32-bit draft key.
-    expect(index.order).toEqual(['684dbc71'])
-    expect(Object.keys(index.entries)).toHaveLength(1)
+    expect(index.order).toEqual(['workflows/ewip.json', 'workflows/4hbab.json'])
+    expect(Object.keys(index.entries)).toHaveLength(2)
     expect(getEntryByPath(index, 'workflows/ewip.json')).toMatchObject({
+      name: 'draft-a',
+      path: 'workflows/ewip.json'
+    })
+    expect(getEntryByPath(index, 'workflows/4hbab.json')).toMatchObject({
       name: 'draft-b',
       path: 'workflows/4hbab.json'
     })

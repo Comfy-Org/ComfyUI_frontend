@@ -1,13 +1,13 @@
 /**
- * V2 Storage I/O - localStorage read/write with error handling.
+ * V3 Storage I/O - localStorage read/write with error handling.
  *
  * Handles quota management, orphan cleanup, and graceful degradation.
  */
 
 import type {
   ActivePathPointer,
-  DraftIndexV2,
-  DraftPayloadV2,
+  DraftIndexV3,
+  DraftPayloadV3,
   OpenPathsPointer
 } from './draftTypes'
 import { StorageKeys } from './storageKeys'
@@ -85,22 +85,56 @@ function isQuotaExceeded(error: unknown): boolean {
   )
 }
 
-function isValidIndex(value: unknown): value is DraftIndexV2 {
+function isValidIndex(value: unknown): value is DraftIndexV3 {
   if (typeof value !== 'object' || value === null) return false
   const obj = value as Record<string, unknown>
+  if (
+    obj.v !== 3 ||
+    typeof obj.updatedAt !== 'number' ||
+    !Array.isArray(obj.order) ||
+    !obj.order.every((key) => typeof key === 'string') ||
+    new Set(obj.order).size !== obj.order.length ||
+    typeof obj.entries !== 'object' ||
+    obj.entries === null
+  ) {
+    return false
+  }
+
+  const order = obj.order
+  const entries = obj.entries as Record<string, unknown>
+  const entryKeys = Object.keys(entries)
+
+  return entryKeys.every((key) => {
+    const entry = entries[key]
+    if (typeof entry !== 'object' || entry === null) return false
+    const meta = entry as Record<string, unknown>
+    return (
+      order.includes(key) &&
+      meta.path === key &&
+      typeof meta.name === 'string' &&
+      typeof meta.isTemporary === 'boolean' &&
+      typeof meta.updatedAt === 'number'
+    )
+  })
+}
+
+function isValidPayload(
+  value: unknown,
+  expectedPath: string
+): value is DraftPayloadV3 {
+  if (typeof value !== 'object' || value === null) return false
+  const payload = value as Record<string, unknown>
   return (
-    obj.v === 2 &&
-    typeof obj.updatedAt === 'number' &&
-    Array.isArray(obj.order) &&
-    typeof obj.entries === 'object' &&
-    obj.entries !== null
+    payload.path === expectedPath &&
+    typeof payload.data === 'string' &&
+    typeof payload.updatedAt === 'number'
   )
 }
 
 /**
  * Reads and parses the draft index from localStorage.
  */
-export function readIndex(workspaceId: string): DraftIndexV2 | null {
+export function readIndex(workspaceId: string): DraftIndexV3 | null {
   if (!isStorageReadable()) return null
 
   try {
@@ -120,7 +154,7 @@ export function readIndex(workspaceId: string): DraftIndexV2 | null {
 /**
  * Writes the draft index to localStorage.
  */
-export function writeIndex(workspaceId: string, index: DraftIndexV2): boolean {
+export function writeIndex(workspaceId: string, index: DraftIndexV3): boolean {
   if (!isStorageAvailable()) return false
 
   try {
@@ -139,7 +173,7 @@ export function writeIndex(workspaceId: string, index: DraftIndexV2): boolean {
 export function readPayload(
   workspaceId: string,
   draftKey: string
-): DraftPayloadV2 | null {
+): DraftPayloadV3 | null {
   if (!isStorageReadable()) return null
 
   try {
@@ -147,7 +181,8 @@ export function readPayload(
     const json = localStorage.getItem(key)
     if (!json) return null
 
-    return JSON.parse(json) as DraftPayloadV2
+    const parsed = JSON.parse(json)
+    return isValidPayload(parsed, draftKey) ? parsed : null
   } catch {
     return null
   }
@@ -159,7 +194,7 @@ export function readPayload(
 export function writePayload(
   workspaceId: string,
   draftKey: string,
-  payload: DraftPayloadV2
+  payload: DraftPayloadV3
 ): boolean {
   if (!isStorageAvailable()) return false
 
@@ -556,6 +591,8 @@ export function clearAllWorkflowStorage(): void {
   const localPrefixes = [
     StorageKeys.prefixes.draftIndex,
     StorageKeys.prefixes.draftPayload,
+    'Comfy.Workflow.DraftIndex.v2:',
+    'Comfy.Workflow.Draft.v2:',
     StorageKeys.prefixes.lastActivePath,
     StorageKeys.prefixes.lastOpenPaths,
     'Comfy.Workflow.Drafts:',

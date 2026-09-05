@@ -7,7 +7,6 @@ import type { reportError } from '@/platform/telemetry/reportError'
 
 import { createEmptyIndex } from '../base/draftCacheV2'
 import { MAX_DRAFTS } from '../base/draftTypes'
-import { hashPath } from '../base/hashUtil'
 import { readIndex, resetStorageAvailable } from '../base/storageIO'
 import { StorageKeys } from '../base/storageKeys'
 import { useWorkflowDraftStoreV2 } from './workflowDraftStoreV2'
@@ -39,7 +38,7 @@ function quotaError(): DOMException {
 }
 
 function payloadKey(path: string): string {
-  return `${PAYLOAD_PREFIX}${hashPath(path)}`
+  return `${PAYLOAD_PREFIX}${path}`
 }
 
 let activeSpy: MockInstance | null = null
@@ -96,7 +95,7 @@ describe('workflowDraftStoreV2', () => {
       expect(result).toBe(true)
 
       const index = readIndex(WORKSPACE)
-      expect(index?.v).toBe(2)
+      expect(index?.v).toBe(3)
       expect(index?.order).toHaveLength(1)
 
       const payloadKeys = Object.keys(localStorage).filter((k) =>
@@ -124,6 +123,33 @@ describe('workflowDraftStoreV2', () => {
       expect(draft!.name).toBe('test-updated')
       expect(draft!.isTemporary).toBe(false)
       expect(draft!.updatedAt).toEqual(expect.any(Number))
+    })
+
+    it('saves, reads, and deletes known colliding V2-hash paths independently', () => {
+      const store = useWorkflowDraftStoreV2()
+      const pathA = 'workflows/ewip.json'
+      const pathB = 'workflows/4hbab.json'
+
+      expect(
+        store.saveDraft(pathA, '{"id":"a"}', {
+          name: 'a',
+          isTemporary: true
+        })
+      ).toBe(true)
+      expect(
+        store.saveDraft(pathB, '{"id":"b"}', {
+          name: 'b',
+          isTemporary: true
+        })
+      ).toBe(true)
+
+      expect(store.getDraft(pathA)?.data).toBe('{"id":"a"}')
+      expect(store.getDraft(pathB)?.data).toBe('{"id":"b"}')
+      expect(readIndex(WORKSPACE)?.order).toEqual([pathA, pathB])
+
+      store.removeDraft(pathA)
+      expect(store.getDraft(pathA)).toBeNull()
+      expect(store.getDraft(pathB)?.data).toBe('{"id":"b"}')
     })
 
     it('keeps payload updatedAt stable when only recency is refreshed', () => {
@@ -242,10 +268,10 @@ describe('workflowDraftStoreV2', () => {
     }
 
     function seedDraftDirect(path: string, data: string, name: string) {
-      const key = hashPath(path)
+      const key = path
       localStorage.setItem(
         payloadKey(path),
-        JSON.stringify({ data, updatedAt: Date.now() })
+        JSON.stringify({ path, data, updatedAt: Date.now() })
       )
       const index = readIndexFromStorage()
       if (!index.order.includes(key)) index.order.push(key)
@@ -361,7 +387,11 @@ describe('workflowDraftStoreV2', () => {
         isTemporary: true
       })
 
-      const envelope = JSON.stringify({ data, updatedAt: 0 })
+      const envelope = JSON.stringify({
+        path: 'workflows/multibyte.json',
+        data,
+        updatedAt: 0
+      })
       const expectedBytes = new TextEncoder().encode(envelope).length
       expect(expectedBytes).toBeGreaterThan(data.length)
 
@@ -399,8 +429,8 @@ describe('workflowDraftStoreV2', () => {
       expect(indexFailureInjected).toBe(true)
 
       const persisted = readIndexFromStorage()
-      expect(persisted.order).not.toContain(hashPath('workflows/incoming.json'))
-      expect(persisted.order).not.toContain(hashPath('workflows/a.json'))
+      expect(persisted.order).not.toContain('workflows/incoming.json')
+      expect(persisted.order).not.toContain('workflows/a.json')
       expect(store.getDraft('workflows/incoming.json')).toBeNull()
     })
   })

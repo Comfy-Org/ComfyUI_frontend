@@ -2,8 +2,8 @@ import type { Page, Request, Response } from '@playwright/test'
 
 import type {
   ActivePathPointer,
-  DraftIndexV2,
-  DraftPayloadV2,
+  DraftIndexV3,
+  DraftPayloadV3,
   OpenPathsPointer
 } from '@/platform/workflow/persistence/base/draftTypes'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
@@ -28,8 +28,8 @@ export async function installCustomNodeBlankStartup(page: Page): Promise<void> {
   const path = CUSTOM_NODE_BLANK_WORKFLOW_PATH
   const draftKey = StorageKeys.draftKey(path)
   const updatedAt = Date.now()
-  const index: DraftIndexV2 = {
-    v: 2,
+  const index: DraftIndexV3 = {
+    v: 3,
     updatedAt,
     order: [draftKey],
     entries: {
@@ -41,7 +41,8 @@ export async function installCustomNodeBlankStartup(page: Page): Promise<void> {
       }
     }
   }
-  const payload: DraftPayloadV2 = {
+  const payload: DraftPayloadV3 = {
+    path,
     data: JSON.stringify(CUSTOM_NODE_BLANK_GRAPH),
     updatedAt
   }

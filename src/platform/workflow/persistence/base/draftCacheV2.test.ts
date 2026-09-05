@@ -10,13 +10,12 @@ import {
   touchOrder,
   upsertEntry
 } from './draftCacheV2'
-import { hashPath } from './hashUtil'
 
 describe('draftCacheV2', () => {
   describe('createEmptyIndex', () => {
-    it('creates index with version 2', () => {
+    it('creates index with version 3', () => {
       const index = createEmptyIndex()
-      expect(index.v).toBe(2)
+      expect(index.v).toBe(3)
       expect(index.order).toEqual([])
       expect(index.entries).toEqual({})
     })
@@ -67,8 +66,8 @@ describe('draftCacheV2', () => {
         updatedAt: 2000
       }).index
 
-      const keyA = hashPath('workflows/a.json')
-      const keyB = hashPath('workflows/b.json')
+      const keyA = 'workflows/a.json'
+      const keyB = 'workflows/b.json'
       expect(index.order).toEqual([keyA, keyB])
 
       const { index: updated } = upsertEntry(index, 'workflows/a.json', {
@@ -106,7 +105,7 @@ describe('draftCacheV2', () => {
 
       expect(updated.order).toHaveLength(3)
       expect(evicted).toHaveLength(1)
-      expect(evicted[0]).toBe(hashPath('workflows/draft0.json'))
+      expect(evicted[0]).toBe('workflows/draft0.json')
     })
 
     it('does not evict the entry being upserted', () => {
@@ -147,7 +146,7 @@ describe('draftCacheV2', () => {
 
       expect(updated.order).toHaveLength(0)
       expect(Object.keys(updated.entries)).toHaveLength(0)
-      expect(removedKey).toBe(hashPath('workflows/test.json'))
+      expect(removedKey).toBe('workflows/test.json')
     })
 
     it('returns null for non-existent path', () => {
@@ -239,8 +238,8 @@ describe('draftCacheV2', () => {
         'c'
       )
 
-      const keyB = hashPath('workflows/b.json')
-      const keyC = hashPath('workflows/c.json')
+      const keyB = 'workflows/b.json'
+      const keyC = 'workflows/c.json'
       expect(result!.index.order).toEqual([keyB, keyC])
     })
   })
@@ -259,7 +258,7 @@ describe('draftCacheV2', () => {
         updatedAt: 2000
       }).index
 
-      expect(getMostRecentKey(index)).toBe(hashPath('workflows/b.json'))
+      expect(getMostRecentKey(index)).toBe('workflows/b.json')
     })
 
     it('returns null for empty index', () => {
@@ -301,12 +300,12 @@ describe('draftCacheV2', () => {
         updatedAt: 2000
       }).index
 
-      const existingKeys = new Set([hashPath('workflows/a.json')])
+      const existingKeys = new Set(['workflows/a.json'])
       const cleaned = removeOrphanedEntries(index, existingKeys)
 
       expect(cleaned.order).toHaveLength(1)
       expect(Object.keys(cleaned.entries)).toHaveLength(1)
-      expect(cleaned.entries[hashPath('workflows/a.json')]).toBeDefined()
+      expect(cleaned.entries['workflows/a.json']).toBeDefined()
     })
 
     it('preserves order of remaining entries', () => {
@@ -327,8 +326,8 @@ describe('draftCacheV2', () => {
         updatedAt: 3000
       }).index
 
-      const keyA = hashPath('workflows/a.json')
-      const keyC = hashPath('workflows/c.json')
+      const keyA = 'workflows/a.json'
+      const keyC = 'workflows/c.json'
       const existingKeys = new Set([keyA, keyC])
       const cleaned = removeOrphanedEntries(index, existingKeys)
 

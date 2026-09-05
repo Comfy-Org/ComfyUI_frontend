@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { DraftIndexV2, DraftPayloadV2 } from './draftTypes'
+import type { DraftIndexV3, DraftPayloadV3 } from './draftTypes'
 import {
   clearAllWorkflowStorage,
   clearWorkflowRestoreState,
@@ -28,12 +28,12 @@ describe('storageIO', () => {
     const workspaceId = 'test-workspace'
 
     it('reads and writes index', () => {
-      const index: DraftIndexV2 = {
-        v: 2,
+      const index: DraftIndexV3 = {
+        v: 3,
         updatedAt: Date.now(),
-        order: ['abc123'],
+        order: ['workflows/test.json'],
         entries: {
-          abc123: {
+          'workflows/test.json': {
             path: 'workflows/test.json',
             name: 'test',
             isTemporary: true,
@@ -46,8 +46,8 @@ describe('storageIO', () => {
 
       const read = readIndex(workspaceId)
       expect(read).not.toBeNull()
-      expect(read!.v).toBe(2)
-      expect(read!.order).toEqual(['abc123'])
+      expect(read!.v).toBe(3)
+      expect(read!.order).toEqual(['workflows/test.json'])
     })
 
     it('returns null for missing index', () => {
@@ -56,7 +56,7 @@ describe('storageIO', () => {
 
     it('returns null for invalid JSON', () => {
       localStorage.setItem(
-        'Comfy.Workflow.DraftIndex.v2:test-workspace',
+        'Comfy.Workflow.DraftIndex.v3:test-workspace',
         'invalid'
       )
       expect(readIndex(workspaceId)).toBeNull()
@@ -64,9 +64,30 @@ describe('storageIO', () => {
 
     it('returns null for wrong version', () => {
       localStorage.setItem(
-        'Comfy.Workflow.DraftIndex.v2:test-workspace',
+        'Comfy.Workflow.DraftIndex.v3:test-workspace',
         JSON.stringify({ v: 1 })
       )
+      expect(readIndex(workspaceId)).toBeNull()
+    })
+
+    it('returns null when an index key does not match its canonical path', () => {
+      localStorage.setItem(
+        'Comfy.Workflow.DraftIndex.v3:test-workspace',
+        JSON.stringify({
+          v: 3,
+          updatedAt: 1,
+          order: ['workflows/key.json'],
+          entries: {
+            'workflows/key.json': {
+              path: 'workflows/other.json',
+              name: 'other',
+              isTemporary: true,
+              updatedAt: 1
+            }
+          }
+        })
+      )
+
       expect(readIndex(workspaceId)).toBeNull()
     })
   })
@@ -76,7 +97,8 @@ describe('storageIO', () => {
     const draftKey = 'abc12345'
 
     it('reads and writes payload', () => {
-      const payload: DraftPayloadV2 = {
+      const payload: DraftPayloadV3 = {
+        path: draftKey,
         data: '{"nodes":[]}',
         updatedAt: Date.now()
       }
@@ -92,8 +114,22 @@ describe('storageIO', () => {
       expect(readPayload(workspaceId, 'missing')).toBeNull()
     })
 
+    it('returns null when a payload path does not match its storage key', () => {
+      localStorage.setItem(
+        'Comfy.Workflow.Draft.v3:test-workspace:workflows/key.json',
+        JSON.stringify({
+          path: 'workflows/other.json',
+          data: '{}',
+          updatedAt: 1
+        })
+      )
+
+      expect(readPayload(workspaceId, 'workflows/key.json')).toBeNull()
+    })
+
     it('deletes payload', () => {
-      const payload: DraftPayloadV2 = {
+      const payload: DraftPayloadV3 = {
+        path: draftKey,
         data: '{}',
         updatedAt: Date.now()
       }
@@ -105,9 +141,21 @@ describe('storageIO', () => {
     })
 
     it('deletes multiple payloads', () => {
-      writePayload(workspaceId, 'key1', { data: '{}', updatedAt: 1 })
-      writePayload(workspaceId, 'key2', { data: '{}', updatedAt: 2 })
-      writePayload(workspaceId, 'key3', { data: '{}', updatedAt: 3 })
+      writePayload(workspaceId, 'key1', {
+        path: 'key1',
+        data: '{}',
+        updatedAt: 1
+      })
+      writePayload(workspaceId, 'key2', {
+        path: 'key2',
+        data: '{}',
+        updatedAt: 2
+      })
+      writePayload(workspaceId, 'key3', {
+        path: 'key3',
+        data: '{}',
+        updatedAt: 3
+      })
 
       deletePayloads(workspaceId, ['key1', 'key3'])
 
@@ -119,9 +167,9 @@ describe('storageIO', () => {
 
   describe('getPayloadKeys', () => {
     it('returns all payload keys for workspace', () => {
-      localStorage.setItem('Comfy.Workflow.Draft.v2:ws-1:abc', '{"data":""}')
-      localStorage.setItem('Comfy.Workflow.Draft.v2:ws-1:def', '{"data":""}')
-      localStorage.setItem('Comfy.Workflow.Draft.v2:ws-2:ghi', '{"data":""}')
+      localStorage.setItem('Comfy.Workflow.Draft.v3:ws-1:abc', '{"data":""}')
+      localStorage.setItem('Comfy.Workflow.Draft.v3:ws-1:def', '{"data":""}')
+      localStorage.setItem('Comfy.Workflow.Draft.v3:ws-2:ghi', '{"data":""}')
       localStorage.setItem('unrelated-key', 'value')
 
       const keys = getPayloadKeys('ws-1')
@@ -133,13 +181,13 @@ describe('storageIO', () => {
 
   describe('deleteOrphanPayloads', () => {
     it('deletes payloads not in index', () => {
-      localStorage.setItem('Comfy.Workflow.Draft.v2:ws-1:keep', '{"data":""}')
+      localStorage.setItem('Comfy.Workflow.Draft.v3:ws-1:keep', '{"data":""}')
       localStorage.setItem(
-        'Comfy.Workflow.Draft.v2:ws-1:orphan1',
+        'Comfy.Workflow.Draft.v3:ws-1:orphan1',
         '{"data":""}'
       )
       localStorage.setItem(
-        'Comfy.Workflow.Draft.v2:ws-1:orphan2',
+        'Comfy.Workflow.Draft.v3:ws-1:orphan2',
         '{"data":""}'
       )
 
@@ -278,6 +326,11 @@ describe('storageIO', () => {
 
   describe('clearAllWorkflowStorage', () => {
     it('clears all restorable workflow keys from localStorage', () => {
+      localStorage.setItem('Comfy.Workflow.DraftIndex.v3:ws-1', '{}')
+      localStorage.setItem(
+        'Comfy.Workflow.Draft.v3:ws-1:workflows/a.json',
+        '{}'
+      )
       localStorage.setItem('Comfy.Workflow.DraftIndex.v2:ws-1', '{}')
       localStorage.setItem('Comfy.Workflow.Draft.v2:ws-1:abc', '{}')
       localStorage.setItem('Comfy.Workflow.Draft.v2:ws-2:def', '{}')
@@ -346,7 +399,7 @@ describe('storageIO', () => {
       expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
       expect(
         isolatedStorageIO.writeIndex('ws-1', {
-          v: 2,
+          v: 3,
           updatedAt: 1,
           order: [],
           entries: {}
@@ -354,6 +407,7 @@ describe('storageIO', () => {
       ).toBe(false)
       expect(
         isolatedStorageIO.writePayload('ws-1', 'draft-1', {
+          path: 'draft-1',
           data: '{}',
           updatedAt: 1
         })
@@ -429,6 +483,7 @@ describe('storageIO', () => {
         isolatedStorageIO.prepareWorkflowWorkspaceTransition()
       expect(
         isolatedStorageIO.writePayload('ws-1', 'blocked', {
+          path: 'blocked',
           data: '{}',
           updatedAt: 1
         })
@@ -438,6 +493,7 @@ describe('storageIO', () => {
 
       expect(
         isolatedStorageIO.writePayload('ws-1', 'resumed', {
+          path: 'resumed',
           data: '{}',
           updatedAt: 2
         })
@@ -455,6 +511,7 @@ describe('storageIO', () => {
       expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
       expect(
         isolatedStorageIO.writePayload('ws-1', 'draft', {
+          path: 'draft',
           data: '{}',
           updatedAt: 1
         })
@@ -501,6 +558,7 @@ describe('storageIO', () => {
       const isolatedStorageIO = await import('./storageIO')
 
       isolatedStorageIO.writePayload('ws-1', 'draft', {
+        path: 'draft',
         data: '{}',
         updatedAt: 1
       })

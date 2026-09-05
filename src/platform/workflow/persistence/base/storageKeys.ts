@@ -1,8 +1,6 @@
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { isCloud } from '@/platform/distribution/types'
 
-import { hashPath } from './hashUtil'
-
 /**
  * Gets the current workspace ID from sessionStorage.
  * Returns 'personal' for personal workspace or when no workspace is set.
@@ -29,7 +27,7 @@ export function getWorkspaceId(): string {
 }
 
 /**
- * Storage key generators for V2 workflow persistence.
+ * Storage key generators for workflow persistence.
  *
  * localStorage keys are scoped by workspaceId.
  * sessionStorage keys are scoped by clientId.
@@ -40,23 +38,22 @@ export const StorageKeys = {
    * Contains LRU order and metadata for all drafts.
    */
   draftIndex(workspaceId: string): string {
-    return `Comfy.Workflow.DraftIndex.v2:${workspaceId}`
+    return `Comfy.Workflow.DraftIndex.v3:${workspaceId}`
   },
 
   /**
    * Individual draft payload key for localStorage.
-   * @param path - Workflow path (will be hashed to create key)
+   * @param path - Canonical workflow path
    */
   draftPayload(path: string, workspaceId: string): string {
-    const draftKey = hashPath(path)
-    return `Comfy.Workflow.Draft.v2:${workspaceId}:${draftKey}`
+    return `Comfy.Workflow.Draft.v3:${workspaceId}:${path}`
   },
 
   /**
-   * Creates a draft key (hash) from a workflow path.
+   * Uses the complete canonical path as the collision-free draft identity.
    */
   draftKey(path: string): string {
-    return hashPath(path)
+    return path
   },
 
   /**
@@ -92,8 +89,8 @@ export const StorageKeys = {
    * Prefix patterns for cleanup operations.
    */
   prefixes: {
-    draftIndex: 'Comfy.Workflow.DraftIndex.v2:',
-    draftPayload: 'Comfy.Workflow.Draft.v2:',
+    draftIndex: 'Comfy.Workflow.DraftIndex.v3:',
+    draftPayload: 'Comfy.Workflow.Draft.v3:',
     activePath: 'Comfy.Workflow.ActivePath:',
     openPaths: 'Comfy.Workflow.OpenPaths:',
     lastActivePath: 'Comfy.Workflow.LastActivePath:',
