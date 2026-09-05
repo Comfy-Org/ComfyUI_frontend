@@ -267,6 +267,44 @@ describe('useAgentCrdtFollower', () => {
     })
   })
 
+  it('binds a workflow switch only after the bridge replaces its lineage', async () => {
+    const { unmount, workflowId } = mountFollower('wf-1')
+    const oldFollower = bridge().follower
+    const replacementFollower = {
+      updatesApplied: 0,
+      doc: { getMap: () => ({ toJSON: () => ({}) }) }
+    }
+    adapterState.bind.mockClear()
+    bridge().subscribe.mockImplementationOnce((next: string) => {
+      bridge().follower = replacementFollower
+      bridge().dispatchEvent(
+        new CustomEvent('follower_replaced', {
+          detail: { workflowId: next }
+        })
+      )
+    })
+
+    workflowId.value = 'wf-2'
+    await nextTick()
+
+    expect(adapterState.bind).toHaveBeenCalledTimes(1)
+    expect(adapterState.bind).toHaveBeenCalledWith(
+      'wf-2',
+      replacementFollower,
+      {
+        source: 'agent-remote',
+        actor: 'agent:replay',
+        opId: 'follower-bind:wf-2'
+      }
+    )
+    expect(adapterState.bind).not.toHaveBeenCalledWith(
+      'wf-2',
+      oldFollower,
+      expect.anything()
+    )
+    unmount()
+  })
+
   it('FE-1902: persists a binding only once the server confirms it', () => {
     const { unmount } = mountFollower('wf-1')
     expect(persistedRecord()).toBeNull()

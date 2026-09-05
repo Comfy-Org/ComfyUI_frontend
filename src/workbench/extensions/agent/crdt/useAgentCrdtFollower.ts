@@ -616,6 +616,19 @@ export function useAgentCrdtFollower(
     else bridge.subscribe(next)
     sender.abortIfUnbound()
   }
+  const bindTarget = (next: string): void => {
+    if (boundWorkflowId === next) {
+      subscribedWorkflowId.value = next
+      retarget(next)
+      return
+    }
+    if (boundWorkflowId !== null) adapter.unbind(boundWorkflowId)
+    boundWorkflowId = next
+    subscribedWorkflowId.value = next
+    const previousFollower = bridge.follower
+    retarget(next)
+    if (bridge.follower === previousFollower) bindFollower(next)
+  }
   watch(
     [workflowId, isTargetActive],
     ([next, active], previous) => {
@@ -642,13 +655,7 @@ export function useAgentCrdtFollower(
         initialBind = false
         if (persisted !== null) {
           recordDevEvent('rebind', { workflowId: persisted })
-          if (boundWorkflowId !== persisted) {
-            if (boundWorkflowId !== null) adapter.unbind(boundWorkflowId)
-            bindFollower(persisted)
-            boundWorkflowId = persisted
-          }
-          subscribedWorkflowId.value = persisted
-          retarget(persisted)
+          bindTarget(persisted)
           if (justActivated) reconcileLiveGraph(persisted)
           return
         }
@@ -662,13 +669,7 @@ export function useAgentCrdtFollower(
         return
       }
       initialBind = false
-      if (boundWorkflowId !== next) {
-        if (boundWorkflowId !== null) adapter.unbind(boundWorkflowId)
-        bindFollower(next)
-        boundWorkflowId = next
-      }
-      subscribedWorkflowId.value = next
-      retarget(next)
+      bindTarget(next)
       if (justActivated) reconcileLiveGraph(next)
     },
     { immediate: true }

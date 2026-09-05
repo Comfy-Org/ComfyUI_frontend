@@ -194,6 +194,63 @@ describe('EcsFollowerAdapter integration', () => {
     host.destroy()
   })
 
+  it('keeps first-frame reconciliation armed after an empty bind baseline', () => {
+    const mutations = createGraphMutations({
+      getScope: () => scope,
+      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+    })
+    mutations.addNode(
+      {
+        id: 1,
+        type: 'Source',
+        title: 'Local baseline',
+        inputs: [],
+        outputs: []
+      },
+      {
+        source: 'agent-remote',
+        actor: 'bootstrap',
+        opId: 'local-seed'
+      }
+    )
+
+    const host = mint(
+      {
+        nodes: [
+          {
+            id: 1,
+            type: 'Source',
+            title: 'Host baseline',
+            inputs: [],
+            outputs: []
+          }
+        ],
+        links: []
+      },
+      catalog
+    )
+    const follower = new FollowerDoc()
+    const adapter = new EcsFollowerAdapter(mutations)
+    expect(
+      adapter.bind('wf', follower, {
+        source: 'agent-remote',
+        actor: 'agent:replay',
+        opId: 'follower-bind:wf'
+      })
+    ).toBe(true)
+
+    const update = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(update)
+    expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(true)
+    expect(useNodeDataStore().getNode('root', toNodeId(1))?.title).toBe(
+      'Host baseline'
+    )
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
   it('removes local-only state from the first authoritative snapshot', () => {
     const deleteLayouts = vi.fn()
     const mutations = createGraphMutations({

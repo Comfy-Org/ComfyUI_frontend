@@ -250,7 +250,9 @@ export class EcsFollowerAdapter {
       for (const node of nodes) batch.reconcileNode(node)
       for (const link of links) batch.connect(link)
     })
-    if (applied) session.reconcileNextFrame = false
+    if (applied && (nodes.length > 0 || links.length > 0)) {
+      session.reconcileNextFrame = false
+    }
     return applied
   }
 
