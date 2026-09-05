@@ -79,6 +79,9 @@ jobs:
           override_pr: ${{ steps.pr-meta.outputs.number }}
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
+          override_commit: ${{ github.event.workflow_run.head_sha }}
+          override_branch: ${{ github.event.workflow_run.head_branch }}
+          override_pr: ${{ github.event.workflow_run.pull_requests[0].number }}
 
       - name: Download packaged HTML report
         if: steps.coverage.outputs.has-coverage == 'true'
