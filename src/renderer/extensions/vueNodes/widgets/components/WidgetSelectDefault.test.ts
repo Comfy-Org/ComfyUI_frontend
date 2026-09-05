@@ -430,6 +430,26 @@ describe('WidgetSelectDefault', () => {
       expect(screen.getByTestId('widget-select-default-trigger')).toBeDisabled()
     })
 
+    it('closes an open overlay when widget options become disabled', async () => {
+      const { rerender, user } = renderComponent(createWidget(['a', 'b']), 'a')
+
+      await openDropdown(user)
+      expect(
+        screen.getByTestId('widget-select-default-overlay')
+      ).toBeInTheDocument()
+
+      await rerender({
+        widget: createWidget(['a', 'b'], { disabled: true })
+      })
+
+      await waitFor(() => {
+        expect(
+          screen.queryByTestId('widget-select-default-overlay')
+        ).not.toBeInTheDocument()
+      })
+      expect(screen.getByTestId('widget-select-default-trigger')).toBeDisabled()
+    })
+
     it('uses getOptionLabel for trigger and option labels', async () => {
       const { user } = renderComponent(
         createWidget(['hash-a'], {

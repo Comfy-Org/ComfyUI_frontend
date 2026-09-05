@@ -6,12 +6,14 @@ import EditableText from '@/components/common/EditableText.vue'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { assetService } from '@/platform/assets/services/assetService'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import {
   getComponent,
   shouldExpand
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import { resolveLinkedWidgetDisplay } from '@/renderer/extensions/vueNodes/widgets/utils/linkedWidgetDisplay'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -88,9 +90,21 @@ const simplifiedWidget = computed((): SimplifiedWidget => {
       ? widgetValueStore.getWidget(widgetId(graphId, bareNodeId, widget.name))
       : undefined
   const widgetName = widgetState?.name ?? widget.name
-  const widgetType = widgetState?.type ?? widget.type
+  const widgetType = widget.type
 
   const baseOptions = widgetState?.options ?? widget.options
+  const spec = nodeDefStore.getInputSpecForWidget(node, widgetName)
+  const nodeDef = nodeDefStore.fromLGraphNode(node)
+  const linkedDisplay = resolveLinkedWidgetDisplay(
+    { name: widgetName, type: widgetType, spec },
+    baseOptions,
+    {
+      assetApiEnabled: assetService.isAssetAPIEnabled(),
+      coreNodeType: nodeDef?.isCoreNode ? nodeDef.name : undefined,
+      linked: isLinked.value,
+      useAssetBrowser: assetService.shouldUseAssetBrowser(node.type, widgetName)
+    }
+  )
   const disabled = isLinked.value || !!widget.disabled || undefined
   return {
     name: widgetName,
@@ -99,8 +113,9 @@ const simplifiedWidget = computed((): SimplifiedWidget => {
       ? widgetState.value
       : widget.value) as SimplifiedWidgetValue,
     label: widgetState?.label ?? widget.label,
+    linkedDisplay,
     options: { ...baseOptions, disabled },
-    spec: nodeDefStore.getInputSpecForWidget(node, widgetName),
+    spec,
     controlWidget: getControlWidget(widget)
   }
 })

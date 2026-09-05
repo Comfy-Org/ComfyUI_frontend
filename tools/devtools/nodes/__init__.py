@@ -9,6 +9,8 @@ from .errors import (
     NODE_DISPLAY_NAME_MAPPINGS as errors_display_name_mappings,
 )
 from .inputs import (
+    LinkedStandardWidgetSource,
+    LinkedStandardWidgets,
     LongComboDropdown,
     NodeWithBooleanInput,
     NodeWithColorInput,
@@ -67,6 +69,8 @@ __all__ = [
     "ErrorRaiseNodeWithMessage",
     "ExperimentalNode",
     "LoadAnimatedImageTest",
+    "LinkedStandardWidgetSource",
+    "LinkedStandardWidgets",
     "LongComboDropdown",
     "MultiSelectNode",
     "NodeWithBooleanInput",

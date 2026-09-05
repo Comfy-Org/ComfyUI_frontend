@@ -286,6 +286,20 @@ describe('WidgetToggleSwitch Value Binding', () => {
       }
     })
 
+    it('disables ToggleGroup when disabled is set', () => {
+      const widget = createToggleWidget(false, {
+        on: 'yes',
+        off: 'no',
+        disabled: true
+      })
+      mountComponent(widget, false)
+
+      const buttons = screen.getAllByRole('button')
+      for (const button of buttons) {
+        expect(button).toBeDisabled()
+      }
+    })
+
     it('keeps an implicit switch unchanged when read_only is set', async () => {
       const widget = createToggleWidget(false, { read_only: true })
       const onModelUpdate = vi.fn()
@@ -312,6 +326,47 @@ describe('WidgetToggleSwitch Value Binding', () => {
 
       expect(onModelUpdate).not.toHaveBeenCalled()
       expect(control).not.toBeChecked()
+    })
+
+    it('exposes a linked status on the implicit switch surface', () => {
+      const widget = createToggleWidget(false)
+      widget.linkedDisplay = 'switch'
+      mountComponent(widget, false)
+
+      const content = screen.getByTestId('linked-widget-content')
+      const control = screen.getByRole('switch', { hidden: true })
+      expect(content).toHaveAttribute('inert')
+      expect(content).toHaveAttribute('aria-hidden', 'true')
+      expect(control).toBeDisabled()
+      expect(screen.queryByRole('switch')).toBeNull()
+      control.focus()
+      expect(control).not.toHaveFocus()
+      expect(
+        screen.getByRole('img', {
+          name: 'test_toggle: Linked input'
+        })
+      ).toHaveAttribute('data-linked-display', 'switch')
+    })
+
+    it('keeps labeled linked toggles disabled behind one control status', () => {
+      const widget = createToggleWidget(false, {
+        on: 'enabled',
+        off: 'disabled'
+      })
+      widget.linkedDisplay = 'control'
+      mountComponent(widget, false)
+
+      const content = screen.getByTestId('linked-widget-content')
+      const controls = screen.getAllByRole('button', { hidden: true })
+      expect(content).toHaveAttribute('inert')
+      expect(content).toHaveAttribute('aria-hidden', 'true')
+      expect(screen.queryByRole('button')).toBeNull()
+      for (const control of controls) expect(control).toBeDisabled()
+      expect(
+        screen.getByRole('img', {
+          name: 'test_toggle: Linked input'
+        })
+      ).toHaveAttribute('data-linked-display', 'control')
     })
 
     it('does not emit when clicking already-selected option', async () => {

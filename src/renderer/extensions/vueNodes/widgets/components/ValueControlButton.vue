@@ -33,7 +33,7 @@ const textMap: Record<ControlOptions, string | null> = {
     :aria-label="t('widgets.valueControl.' + mode)"
     :class="
       cn(
-        'flex shrink-0 cursor-pointer items-center justify-center border-none focus-visible:ring-2 focus-visible:ring-primary-background focus-visible:ring-offset-1 focus-visible:outline-none',
+        'flex shrink-0 cursor-pointer items-center justify-center border-none focus-visible:ring-2 focus-visible:ring-primary-background focus-visible:ring-offset-1 focus-visible:outline-none disabled:cursor-default disabled:opacity-50',
         variant === 'badge' ? 'h-4.5 w-8 rounded-full' : 'size-6 rounded-sm',
         mode !== 'fixed'
           ? 'bg-primary-background/30 hover:bg-primary-background-hover/30'

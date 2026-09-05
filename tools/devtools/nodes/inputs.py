@@ -257,6 +257,113 @@ class SimpleSlider:
         return (value,)
 
 
+class LinkedStandardWidgetSource:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {}}
+
+    RETURN_TYPES = (
+        "STRING",
+        "INT",
+        "FLOAT",
+        "FLOAT",
+        "BOOLEAN",
+        "BOOLEAN",
+        "COMBO",
+        "COLOR",
+        "STRING",
+    )
+    RETURN_NAMES = (
+        "plain_text",
+        "integer",
+        "number",
+        "slider",
+        "switch",
+        "labeled_toggle",
+        "select",
+        "color",
+        "textarea",
+    )
+    FUNCTION = "source_values"
+    CATEGORY = "DevTools"
+
+    def source_values(self):
+        return (
+            "upstream text",
+            1,
+            2.5,
+            0.5,
+            False,
+            True,
+            "Option 1",
+            "#ffffff",
+            "upstream multiline text",
+        )
+
+
+class LinkedStandardWidgets:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "plain_text": (
+                    "STRING",
+                    {"default": "STALE PLAIN TEXT"},
+                ),
+                "integer": (
+                    "INT",
+                    {"default": 314, "min": 0, "max": 1_000, "step": 1},
+                ),
+                "number": (
+                    "FLOAT",
+                    {"default": 9.875, "min": 0, "max": 10, "step": 0.125},
+                ),
+                "slider": (
+                    "FLOAT",
+                    {
+                        "default": 0.73,
+                        "display": "slider",
+                        "min": 0,
+                        "max": 1,
+                        "step": 0.01,
+                    },
+                ),
+                "switch": ("BOOLEAN", {"default": True}),
+                "labeled_toggle": (
+                    "BOOLEAN",
+                    {
+                        "default": False,
+                        "label_on": "STALE ON",
+                        "label_off": "STALE OFF",
+                    },
+                ),
+                "select": (
+                    "COMBO",
+                    {
+                        "default": "STALE SELECT VALUE",
+                        "options": ["Option 1", "STALE SELECT VALUE"],
+                    },
+                ),
+                "color": ("COLOR", {"default": "#22c55d"}),
+                "textarea": (
+                    "STRING",
+                    {
+                        "default": "STALE MULTILINE PROMPT",
+                        "multiline": True,
+                    },
+                ),
+            }
+        }
+
+    RETURN_TYPES = ()
+    OUTPUT_NODE = True
+    FUNCTION = "inspect"
+    CATEGORY = "DevTools"
+
+    def inspect(self, **_inputs):
+        return ()
+
+
 class NodeWithSeedInput:
     @classmethod
     def INPUT_TYPES(cls):
@@ -458,6 +565,8 @@ NODE_CLASS_MAPPINGS = {
     "DevToolsNodeWithBooleanInput": NodeWithBooleanInput,
     "DevToolsNodeWithColorInput": NodeWithColorInput,
     "DevToolsSimpleSlider": SimpleSlider,
+    "DevToolsLinkedStandardWidgetSource": LinkedStandardWidgetSource,
+    "DevToolsLinkedStandardWidgets": LinkedStandardWidgets,
     "DevToolsNodeWithSeedInput": NodeWithSeedInput,
     "DevToolsNodeWithValidation": NodeWithValidation,
     "DevToolsNodeWithV2ComboInput": NodeWithV2ComboInput,
@@ -483,6 +592,8 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DevToolsNodeWithBooleanInput": "Node With Boolean Input",
     "DevToolsNodeWithColorInput": "Node With Color Input",
     "DevToolsSimpleSlider": "Simple Slider",
+    "DevToolsLinkedStandardWidgetSource": "Linked Standard Widget Source",
+    "DevToolsLinkedStandardWidgets": "Linked Standard Widgets",
     "DevToolsNodeWithSeedInput": "Node With Seed Input",
     "DevToolsNodeWithValidation": "Node With Validation",
     "DevToolsNodeWithV2ComboInput": "Node With V2 Combo Input",
@@ -506,6 +617,8 @@ __all__ = [
     "NodeWithStringInput",
     "NodeWithUnionInput",
     "NodeWithBooleanInput",
+    "LinkedStandardWidgetSource",
+    "LinkedStandardWidgets",
     "NodeWithColorInput",
     "SimpleSlider",
     "NodeWithSeedInput",

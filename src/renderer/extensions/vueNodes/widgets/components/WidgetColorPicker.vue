@@ -1,6 +1,10 @@
 <template>
-  <WidgetLayoutField :widget="widget">
-    <ColorPicker v-model="localValue" @update:model-value="onUpdate" />
+  <WidgetLayoutField :widget="widget" linked-status-rounded="lg">
+    <ColorPicker
+      v-model="localValue"
+      :disabled="Boolean(widget.options?.disabled)"
+      @update:model-value="onUpdate"
+    />
   </WidgetLayoutField>
 </template>
 

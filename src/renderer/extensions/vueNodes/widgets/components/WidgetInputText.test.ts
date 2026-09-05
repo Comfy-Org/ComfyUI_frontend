@@ -169,6 +169,34 @@ describe('WidgetInputText Value Binding', () => {
       expect(textarea).not.toBeInTheDocument()
     })
 
+    it('restores the same text control after a link is removed', async () => {
+      const widget = createInputTextWidget('stale prompt', {
+        disabled: true
+      })
+      widget.linkedDisplay = 'control'
+      const { rerender } = renderComponent(widget, 'stale prompt')
+
+      const linkedInput = screen.getByRole('textbox', { hidden: true })
+      expect(linkedInput).toBeDisabled()
+      expect(screen.queryByRole('textbox')).toBeNull()
+      expect(screen.getByTestId('linked-widget-content')).toHaveAttribute(
+        'inert'
+      )
+      expect(
+        screen.getByRole('img', { name: 'test_input: Linked input' })
+      ).toBeVisible()
+
+      await rerender({
+        widget: createInputTextWidget('stale prompt'),
+        modelValue: 'stale prompt'
+      })
+
+      expect(screen.queryByRole('img')).toBeNull()
+      expect(screen.getByRole('textbox')).toBeVisible()
+      expect(screen.getByRole('textbox')).toBeEnabled()
+      expect(screen.getByRole('textbox')).toHaveValue('stale prompt')
+    })
+
     it('marks the text input as invalid', () => {
       const widget = createInputTextWidget('invalid value')
       renderComponent(widget, 'invalid value', { invalid: true })

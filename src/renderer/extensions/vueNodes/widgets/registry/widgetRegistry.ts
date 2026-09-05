@@ -331,6 +331,28 @@ export const shouldRenderAsVue = (widget: {
   return !widget.options?.canvasOnly && !!widget.type
 }
 
+export type LinkedWidgetFamily = 'boolean' | 'combo' | 'control' | 'textarea'
+
+const linkedWidgetFamilies = new Map<Component, LinkedWidgetFamily>([
+  [WidgetInputText, 'control'],
+  [WidgetInputNumber, 'control'],
+  [WidgetToggleSwitch, 'boolean'],
+  [WidgetSelect, 'combo'],
+  [WidgetColorPicker, 'control'],
+  [WidgetTextarea, 'textarea']
+])
+
+const LINKED_WIDGET_EXCLUDED_ALIASES = new Set(['asset', 'gradientslider'])
+
+export function getLinkedWidgetFamily(
+  type: string
+): LinkedWidgetFamily | undefined {
+  if (LINKED_WIDGET_EXCLUDED_ALIASES.has(type)) return undefined
+
+  const component = getComponent(type)
+  return component ? linkedWidgetFamilies.get(component) : undefined
+}
+
 const EXPANDING_TYPES = [
   'textarea',
   'markdown',

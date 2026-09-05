@@ -235,18 +235,23 @@ export async function expectResolvedPromotedModelSuppressesStaleInteriorErrors(
     const node = comfyPage.vueNodes.getNodeByTitle(step.nodeTitle)
     await expect(node).toBeVisible()
 
-    const staleCombo = node.getByRole('combobox', {
-      name: PROMOTED_MODEL_WIDGET_NAME,
+    const linkedStatus = node.getByRole('img', {
+      name: `${PROMOTED_MODEL_WIDGET_NAME}: Linked input`,
       exact: true
     })
     await expect(
-      staleCombo,
-      `${step.nodeTitle} should expose the stale linked interior widget`
-    ).toBeDisabled()
+      linkedStatus,
+      `${step.nodeTitle} should expose the linked interior status`
+    ).toBeVisible()
+    const staleValue = node.getByText(staleModelName, { exact: true })
     await expect(
-      staleCombo,
-      `${step.nodeTitle} should keep the stale interior value`
-    ).toContainText(staleModelName)
+      staleValue,
+      `${step.nodeTitle} should retain the stale interior value`
+    ).toBeAttached()
+    await expect(
+      staleValue,
+      `${step.nodeTitle} should hide the stale interior value`
+    ).toBeHidden()
     await expectNoMissingModelUi(comfyPage)
   }
 }

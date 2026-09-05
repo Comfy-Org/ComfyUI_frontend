@@ -28,12 +28,18 @@ watch(controlModel, props.widget.controlWidget.update)
 <template>
   <div class="relative grid grid-cols-subgrid">
     <component :is="component" v-bind="$attrs" v-model="modelValue" :widget>
-      <Popover>
+      <Popover v-if="!widget.linkedDisplay && !widget.options?.disabled">
         <template #button>
           <ValueControlButton :mode="controlModel" class="mr-1 self-center" />
         </template>
         <ValueControlPopover v-model="controlModel" />
       </Popover>
+      <ValueControlButton
+        v-else
+        :mode="controlModel"
+        disabled
+        class="mr-1 self-center"
+      />
     </component>
   </div>
 </template>

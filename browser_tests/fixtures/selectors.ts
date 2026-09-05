@@ -174,6 +174,8 @@ export const TestIds = {
   widgets: {
     container: 'node-widgets',
     widget: 'node-widget',
+    linkedContent: 'linked-widget-content',
+    linkedPlaceholder: 'linked-widget-placeholder',
     layoutFieldLabel: 'widget-layout-field-label',
     formDropdownMenu: 'form-dropdown-menu',
     decrement: 'decrement',

@@ -27,7 +27,7 @@ const WidgetStub = {
   name: 'WidgetStub',
   props: ['widget', 'nodeId', 'nodeType', 'modelValue', 'invalid'],
   template:
-    '<div class="widget-stub" :data-node-type="nodeType" :data-name="widget.name" :aria-invalid="invalid || undefined">{{ nodeType }}</div>'
+    '<button class="widget-stub" :data-linked-display="widget.linkedDisplay" :data-node-type="nodeType" :data-name="widget.name" :aria-invalid="invalid || undefined" :disabled="widget.options?.disabled" :inert="widget.linkedDisplay ? true : undefined">{{ modelValue }}</button>'
 }
 
 const AppInputStub = {

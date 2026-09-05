@@ -1,0 +1,134 @@
+{
+  "id": "bc8526ee-e7ce-4b81-9a55-12a34d43cc3a",
+  "revision": 0,
+  "last_node_id": 2,
+  "last_link_id": 9,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "DevToolsLinkedStandardWidgetSource",
+      "pos": [-1600, 100],
+      "size": [360, 270],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        { "name": "plain_text", "type": "STRING", "links": [1] },
+        { "name": "integer", "type": "INT", "links": [2] },
+        { "name": "number", "type": "FLOAT", "links": [3] },
+        { "name": "slider", "type": "FLOAT", "links": [4] },
+        { "name": "switch", "type": "BOOLEAN", "links": [5] },
+        { "name": "labeled_toggle", "type": "BOOLEAN", "links": [6] },
+        { "name": "select", "type": "COMBO", "links": [7] },
+        { "name": "color", "type": "COLOR", "links": [8] },
+        { "name": "textarea", "type": "STRING", "links": [9] }
+      ],
+      "properties": {
+        "Node name for S&R": "DevToolsLinkedStandardWidgetSource"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 2,
+      "type": "DevToolsLinkedStandardWidgets",
+      "pos": [200, 100],
+      "size": [560, 620],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "plain_text",
+          "type": "STRING",
+          "widget": { "name": "plain_text" },
+          "link": 1
+        },
+        {
+          "name": "integer",
+          "type": "INT",
+          "widget": { "name": "integer" },
+          "link": 2
+        },
+        {
+          "name": "number",
+          "type": "FLOAT",
+          "widget": { "name": "number" },
+          "link": 3
+        },
+        {
+          "name": "slider",
+          "type": "FLOAT",
+          "widget": { "name": "slider" },
+          "link": 4
+        },
+        {
+          "name": "switch",
+          "type": "BOOLEAN",
+          "widget": { "name": "switch" },
+          "link": 5
+        },
+        {
+          "name": "labeled_toggle",
+          "type": "BOOLEAN",
+          "widget": { "name": "labeled_toggle" },
+          "link": 6
+        },
+        {
+          "name": "select",
+          "type": "COMBO",
+          "widget": { "name": "select" },
+          "link": 7
+        },
+        {
+          "name": "color",
+          "type": "COLOR",
+          "widget": { "name": "color" },
+          "link": 8
+        },
+        {
+          "name": "textarea",
+          "type": "STRING",
+          "widget": { "name": "textarea" },
+          "link": 9
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "DevToolsLinkedStandardWidgets"
+      },
+      "widgets_values": [
+        "STALE PLAIN TEXT",
+        314,
+        9.875,
+        0.73,
+        true,
+        false,
+        "STALE SELECT VALUE",
+        "#22c55d",
+        "STALE MULTILINE PROMPT"
+      ]
+    }
+  ],
+  "links": [
+    [1, 1, 0, 2, 0, "STRING"],
+    [2, 1, 1, 2, 1, "INT"],
+    [3, 1, 2, 2, 2, "FLOAT"],
+    [4, 1, 3, 2, 3, "FLOAT"],
+    [5, 1, 4, 2, 4, "BOOLEAN"],
+    [6, 1, 5, 2, 5, "BOOLEAN"],
+    [7, 1, 6, 2, 6, "COMBO"],
+    [8, 1, 7, 2, 7, "COLOR"],
+    [9, 1, 8, 2, 8, "STRING"]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 1,
+      "offset": [0, 0]
+    },
+    "frontendVersion": "1.28.6"
+  },
+  "version": 0.4
+}

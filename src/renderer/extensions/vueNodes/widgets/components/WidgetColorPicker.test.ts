@@ -19,12 +19,14 @@ const WidgetLayoutFieldStub = defineComponent({
 const ColorPickerStub = defineComponent({
   name: 'ColorPicker',
   props: {
+    disabled: { type: Boolean, default: false },
     modelValue: { type: String, default: '' }
   },
   emits: ['update:modelValue'],
   template: `<input
     data-testid="color-picker-input"
     :value="modelValue"
+    :disabled
     @input="$emit('update:modelValue', $event.target.value)"
   />`
 })
@@ -97,6 +99,13 @@ describe('WidgetColorPicker Value Binding', () => {
       renderComponent(widget, '#ff0000')
 
       expect(screen.getByTestId('color-picker-input')).toBeInTheDocument()
+    })
+
+    it('disables the color picker from widget options', () => {
+      const widget = createColorWidget('#ff0000', { disabled: true })
+      renderComponent(widget, '#ff0000')
+
+      expect(screen.getByTestId('color-picker-input')).toBeDisabled()
     })
 
     it('renders layout field wrapper', () => {

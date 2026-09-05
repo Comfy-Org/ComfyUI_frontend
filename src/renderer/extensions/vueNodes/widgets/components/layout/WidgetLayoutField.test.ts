@@ -9,7 +9,7 @@ import WidgetLayoutField from './WidgetLayoutField.vue'
 
 type WidgetShape = Pick<
   SimplifiedWidget<string>,
-  'name' | 'label' | 'borderStyle'
+  'name' | 'label' | 'borderStyle' | 'linkedDisplay'
 >
 
 function renderField(
@@ -96,6 +96,33 @@ describe('WidgetLayoutField', () => {
       const el = screen.getByTestId('slot-border')
       expect(el.dataset.border).toContain('custom-border')
     })
+
+    it('preserves linked content in place while exposing only its status', async () => {
+      const { rerender } = render(WidgetLayoutField, {
+        props: {
+          widget: { name: 'prompt', linkedDisplay: 'control' }
+        },
+        slots: {
+          default:
+            '<button data-testid="linked-control" disabled>stale prompt</button>'
+        }
+      })
+
+      const content = screen.getByTestId('linked-widget-content')
+      const control = screen.getByRole('button', { hidden: true })
+      expect(content).toHaveAttribute('inert')
+      expect(content).toHaveAttribute('aria-hidden', 'true')
+      expect(control).toBeDisabled()
+      expect(screen.queryByRole('button')).toBeNull()
+      expect(
+        screen.getByRole('img', { name: 'prompt: Linked input' })
+      ).toBeVisible()
+
+      await rerender({ widget: { name: 'prompt' } })
+
+      expect(screen.queryByRole('img')).toBeNull()
+      expect(screen.getByRole('button', { name: 'stale prompt' })).toBeVisible()
+    })
   })
 
   // user-event models clicks/keyboard but not raw pointerdown/move/up.
@@ -106,11 +133,14 @@ describe('WidgetLayoutField', () => {
   describe('Pointer-event isolation', () => {
     // The slot wrapper stops pointerdown/move/up so inner controls can capture
     // drags without triggering node selection/drag on the outer canvas.
-    function renderInsideParent(onParentPointer: (type: string) => void) {
+    function renderInsideParent(
+      onParentPointer: (type: string) => void,
+      widget: WidgetShape = { name: 'seed' }
+    ) {
       const Harness = defineComponent({
         components: { WidgetLayoutField },
         setup: () => ({
-          widget: { name: 'seed' },
+          widget,
           onDown: () => onParentPointer('pointerdown'),
           onMove: () => onParentPointer('pointermove'),
           onUp: () => onParentPointer('pointerup')
@@ -145,6 +175,26 @@ describe('WidgetLayoutField', () => {
         await dispatch(inner)
 
         expect(parentSpy).not.toHaveBeenCalled()
+      }
+    )
+
+    it.for([
+      ['pointerdown', fireEvent.pointerDown],
+      ['pointermove', fireEvent.pointerMove],
+      ['pointerup', fireEvent.pointerUp]
+    ] as const)(
+      'allows linked status %s to propagate to the parent',
+      async ([type, dispatch]) => {
+        renderInsideParent(vi.fn(), {
+          name: 'seed',
+          linkedDisplay: 'control'
+        })
+        const parentSpy = vi.fn()
+        screen.getByTestId('parent').addEventListener(type, parentSpy)
+
+        await dispatch(screen.getByRole('img', { name: 'seed: Linked input' }))
+
+        expect(parentSpy).toHaveBeenCalledTimes(1)
       }
     )
 

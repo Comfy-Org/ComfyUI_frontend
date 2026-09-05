@@ -732,11 +732,16 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
         const outerNode = comfyPage.vueNodes.getNodeLocator('5')
         await expect(outerNode).toBeVisible()
 
-        const textarea = outerNode
-          .getByRole('textbox', { name: 'string_a' })
-          .first()
-        await expect(textarea).toBeVisible()
+        await expect(
+          outerNode.getByRole('img', {
+            name: 'string_a: Linked input',
+            exact: true
+          })
+        ).toBeVisible()
+        const textarea = outerNode.getByTestId(TestIds.widgets.linkedContent)
+        await expect(textarea).toHaveCount(1)
         await expect(textarea).toBeDisabled()
+        await expect(textarea).toBeHidden()
       })
 
       test('No legacy-prefixed or disconnected widgets remain on the node', async ({

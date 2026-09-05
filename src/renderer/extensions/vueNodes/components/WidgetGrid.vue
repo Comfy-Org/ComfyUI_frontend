@@ -42,31 +42,39 @@
             dot-only
           />
         </div>
-        <AppInput
+        <div
           v-if="!isConvertedWidget(widget)"
-          :widget-id="widget.widgetId"
-          :name="widget.simplified.name"
-          :enable="canSelectInputs && !widget.simplified.options?.disabled"
+          class="contents"
+          @contextmenu="widget.handleContextMenu"
         >
-          <component
-            :is="widget.vueComponent"
-            v-tooltip.left="widget.tooltipConfig ?? EMPTY_TOOLTIP"
-            :model-value="widget.simplified.value"
-            :widget="widget.simplified"
-            :node-id
-            :node-type
-            :invalid="widget.hasError"
-            :aria-invalid="widget.hasError || undefined"
-            :class="
-              cn(
-                'col-span-2',
-                widget.hasError && 'font-bold text-node-stroke-error'
-              )
+          <AppInput
+            :widget-id="widget.widgetId"
+            :name="widget.simplified.name"
+            :enable="
+              canSelectInputs &&
+              !widget.simplified.options?.disabled &&
+              !widget.simplified.linkedDisplay
             "
-            @update:model-value="widget.updateHandler"
-            @contextmenu="widget.handleContextMenu"
-          />
-        </AppInput>
+          >
+            <component
+              :is="widget.vueComponent"
+              v-tooltip.left="widget.tooltipConfig ?? EMPTY_TOOLTIP"
+              :model-value="widget.simplified.value"
+              :widget="widget.simplified"
+              :node-id
+              :node-type
+              :invalid="widget.hasError"
+              :aria-invalid="widget.hasError || undefined"
+              :class="
+                cn(
+                  'col-span-2',
+                  widget.hasError && 'font-bold text-node-stroke-error'
+                )
+              "
+              @update:model-value="widget.updateHandler"
+            />
+          </AppInput>
+        </div>
       </div>
     </template>
   </div>

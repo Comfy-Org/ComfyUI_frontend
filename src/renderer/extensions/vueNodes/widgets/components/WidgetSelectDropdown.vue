@@ -183,6 +183,7 @@ async function updateFiles(files: File[]) {
       :show-base-model-filter
       :base-model-options
       :is-uploading
+      :close-on-disable="Boolean(widget.linkedDisplay)"
       v-bind="combinedProps"
       :loading-more="toValue(outputAssets.isLoading)"
       class="w-full"

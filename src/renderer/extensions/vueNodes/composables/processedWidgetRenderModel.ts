@@ -8,6 +8,7 @@ import type {
   IBaseWidget,
   IWidgetOptions
 } from '@/lib/litegraph/src/types/widgets'
+import { assetService } from '@/platform/assets/services/assetService'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import type {
@@ -20,6 +21,7 @@ import {
   getComponent,
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import { resolveLinkedWidgetDisplay } from '@/renderer/extensions/vueNodes/widgets/utils/linkedWidgetDisplay'
 import { app } from '@/scripts/app'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -332,6 +334,7 @@ function widgetNodeLocatorId(
 
 interface WidgetProcessingContext {
   nodeData: NodeState
+  coreNodeType?: string
   showAdvanced: boolean
   rootGraph: LGraph | null
   /** Root graph id, known even before `app.isGraphReady`. */
@@ -376,6 +379,22 @@ function processWidget(
   const widgetOptions = isDisabled ? { ...options, disabled: true } : options
   const value = normalizeWidgetValue(widgetState.value)
   const bareWidgetId = stripGraphPrefix(widgetState.nodeId)
+  const spec = live
+    ? ctx.nodeDefStore.getInputSpecForWidget(live.node, live.widget.name)
+    : undefined
+  const linkedDisplay = resolveLinkedWidgetDisplay(
+    { name: widgetState.name, type, spec },
+    options,
+    {
+      assetApiEnabled: assetService.isAssetAPIEnabled(),
+      coreNodeType: ctx.coreNodeType,
+      linked: Boolean(slotInfo?.linked),
+      useAssetBrowser: assetService.shouldUseAssetBrowser(
+        ctx.nodeData.type,
+        widgetState.name
+      )
+    }
+  )
   const linkedUpstream: LinkedUpstreamInfo | undefined =
     slotInfo?.linked && slotInfo.originNodeId
       ? { nodeId: slotInfo.originNodeId, outputName: slotInfo.originOutputName }
@@ -402,22 +421,23 @@ function processWidget(
     callback: updateHandler,
     controlWidget,
     label: widgetState.label,
+    linkedDisplay,
     linkedUpstream,
     nodeLocatorId: widgetNodeLocatorId(ctx, bareWidgetId, sourceExecutionId),
     options: widgetOptions,
-    spec: live
-      ? ctx.nodeDefStore.getInputSpecForWidget(live.node, live.widget.name)
-      : undefined
+    spec
   }
 
   const valueTooltip =
     isTooltipValueType(type) && String(value).length > 10
       ? String(value)
       : undefined
-  const tooltipConfig = ctx.ui.getTooltipConfig(
-    { name: widgetState.name, tooltip: renderState?.tooltip },
-    valueTooltip
-  )
+  const tooltipConfig = linkedDisplay
+    ? { disabled: true }
+    : ctx.ui.getTooltipConfig(
+        { name: widgetState.name, tooltip: renderState?.tooltip },
+        valueTooltip
+      )
   const handleContextMenu = (e: PointerEvent) => {
     e.preventDefault()
     e.stopPropagation()
@@ -495,8 +515,12 @@ export function computeProcessedWidgets({
     graphRef,
     nodeData.id
   )
+  const nodeDef = hostNode
+    ? nodeDefStore.fromLGraphNode(hostNode)
+    : nodeDefStore.nodeDefsByName[nodeData.type]
   const ctx: WidgetProcessingContext = {
     nodeData,
+    coreNodeType: nodeDef?.isCoreNode ? nodeDef.name : undefined,
     showAdvanced,
     rootGraph,
     rootGraphId: graphId,

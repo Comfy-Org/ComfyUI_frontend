@@ -1,7 +1,8 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { createTestingPinia } from '@pinia/testing'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import { computed, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
@@ -13,6 +14,12 @@ import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/co
 import WidgetSelectDropdown from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { createMockWidget } from './widgetTestUtils'
+
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: { modelUploadButtonEnabled: false }
+  })
+}))
 
 const mockCheckState = vi.hoisted(() => vi.fn())
 const mockAssetsData = vi.hoisted(() => ({ items: [] as AssetItem[] }))
@@ -190,6 +197,52 @@ describe('WidgetSelectDropdown', () => {
       nodeType: 'CheckpointLoaderSimple'
     })
     expect(screen.getByText('model_a.safetensors')).toBeDefined()
+  })
+
+  it('closes an open core selector when it becomes linked', async () => {
+    mockItemsRef.value = [
+      { id: 'input-0', name: 'stale.png', label: 'stale.png' }
+    ]
+    mockSelectedSetRef.value = new Set(['input-0'])
+    const widget = createMockWidget<string | undefined>({
+      value: 'stale.png',
+      name: 'image',
+      type: 'asset',
+      options: {
+        values: ['stale.png']
+      }
+    })
+    const { rerender } = renderComponent(widget, 'stale.png')
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: 'stale.png' }))
+    expect(await screen.findByTestId('form-dropdown-menu')).toBeVisible()
+
+    const linkedWidget: SimplifiedWidget<string | undefined> = {
+      ...widget,
+      linkedDisplay: 'control',
+      options: { ...widget.options, disabled: true }
+    }
+    await rerender({ widget: linkedWidget, modelValue: 'stale.png' })
+
+    await waitFor(() =>
+      expect(screen.queryByTestId('form-dropdown-menu')).not.toBeInTheDocument()
+    )
+
+    const content = screen.getByTestId('linked-widget-content')
+    expect(content).toHaveAttribute('inert')
+    expect(content).toHaveAttribute('aria-hidden', 'true')
+    expect(
+      screen.queryByRole('button', { name: 'stale.png' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('img', { name: 'image: Linked input' })
+    ).toBeVisible()
+    for (const button of within(content).getAllByRole('button', {
+      hidden: true
+    })) {
+      expect(button).toBeDisabled()
+    }
   })
 
   describe('composable wiring', () => {

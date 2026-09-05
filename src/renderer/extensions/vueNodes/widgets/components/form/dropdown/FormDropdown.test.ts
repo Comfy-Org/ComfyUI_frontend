@@ -81,6 +81,9 @@ const MockPopover = {
 }
 
 interface MountDropdownOptions {
+  closeOnDisable?: boolean
+  disabled?: boolean
+  isOpen?: boolean
   searcher?: (
     query: string,
     items: FormDropdownItem[],
@@ -105,6 +108,9 @@ function mountDropdown(
   const result = render(FormDropdown, {
     props: {
       items,
+      closeOnDisable: options.closeOnDisable,
+      disabled: options.disabled,
+      ...(options.isOpen === undefined ? {} : { isOpen: options.isOpen }),
       multiple: options.multiple,
       selected: options.selected,
       searcher: options.searcher,
@@ -455,6 +461,56 @@ describe('FormDropdown', () => {
     await flushPromises()
 
     expect(onUpdateIsOpen).toHaveBeenLastCalledWith(false)
+  })
+
+  it('closes when a linked display disables the dropdown', async () => {
+    const onUpdateIsOpen = vi.fn()
+    const items = [createItem('1', 'alpha')]
+    const { rerender, user } = mountDropdown(items, {
+      closeOnDisable: true,
+      onUpdateIsOpen
+    })
+    await openDropdown(user)
+
+    expect(onUpdateIsOpen).toHaveBeenLastCalledWith(true)
+
+    await rerender({
+      items,
+      closeOnDisable: true,
+      disabled: true,
+      'onUpdate:isOpen': onUpdateIsOpen
+    })
+
+    expect(onUpdateIsOpen).toHaveBeenLastCalledWith(false)
+  })
+
+  it('closes when mounted disabled with closeOnDisable', () => {
+    const onUpdateIsOpen = vi.fn()
+    mountDropdown([createItem('1', 'alpha')], {
+      closeOnDisable: true,
+      disabled: true,
+      isOpen: true,
+      onUpdateIsOpen
+    })
+
+    expect(onUpdateIsOpen).toHaveBeenCalledWith(false)
+  })
+
+  it('stays open when disabled without closeOnDisable', async () => {
+    const onUpdateIsOpen = vi.fn()
+    const items = [createItem('1', 'alpha')]
+    const { rerender, user } = mountDropdown(items, { onUpdateIsOpen })
+    await openDropdown(user)
+
+    expect(onUpdateIsOpen).toHaveBeenLastCalledWith(true)
+
+    await rerender({
+      items,
+      disabled: true,
+      'onUpdate:isOpen': onUpdateIsOpen
+    })
+
+    expect(onUpdateIsOpen).toHaveBeenLastCalledWith(true)
   })
 
   it('stays open on a pointerdown inside the menu', async () => {

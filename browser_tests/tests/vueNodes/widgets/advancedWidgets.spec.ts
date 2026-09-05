@@ -87,7 +87,7 @@ test.describe('Advanced Widget Visibility', { tag: '@vue-nodes' }, () => {
     await expect(widgets).toHaveCount(2)
   })
 
-  test('should keep connected advanced widgets visible when advanced inputs are hidden', async ({
+  test('should show linked status for connected advanced widgets when advanced inputs are hidden', async ({
     comfyPage
   }) => {
     const node = getNode(comfyPage)
@@ -124,7 +124,10 @@ test.describe('Advanced Widget Visibility', { tag: '@vue-nodes' }, () => {
 
     await node.getByText(HIDE_ADVANCED_INPUTS).click()
 
-    await expect(maxShiftWidget).toBeVisible()
+    await expect(
+      node.getByRole('img', { name: 'max_shift: Linked input' })
+    ).toBeVisible()
+    await expect(maxShiftWidget).toBeHidden()
     await expect(baseShiftWidget).toBeHidden()
   })
 

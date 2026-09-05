@@ -435,12 +435,18 @@ test.describe(
             .toEqual(expect.arrayContaining(['string_a', 'value']))
 
           const subgraphNode = comfyPage.vueNodes.getNodeLocator('5')
-          const linkedTextarea = subgraphNode.getByRole('textbox', {
-            name: 'string_a',
-            exact: true
-          })
-          await expect(linkedTextarea).toBeVisible()
+          await expect(
+            subgraphNode.getByRole('img', {
+              name: 'string_a: Linked input',
+              exact: true
+            })
+          ).toBeVisible()
+          const linkedTextarea = subgraphNode.getByTestId(
+            TestIds.widgets.linkedContent
+          )
+          await expect(linkedTextarea).toHaveCount(1)
           await expect(linkedTextarea).toBeDisabled()
+          await expect(linkedTextarea).toBeHidden()
 
           const allTextareas = subgraphNode.getByRole('textbox')
           await expect(allTextareas.first()).toBeVisible()

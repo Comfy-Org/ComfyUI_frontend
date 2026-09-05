@@ -416,9 +416,12 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       const subgraphNode = comfyPage.vueNodes.getNodeLocator('19')
       await expect(subgraphNode).toBeVisible()
 
-      const seedWidget = subgraphNode.getByLabel('seed', { exact: true })
-      await expect(seedWidget).toBeVisible()
-      await SubgraphHelper.expectWidgetBelowHeader(subgraphNode, seedWidget)
+      const seedStatus = subgraphNode.getByRole('img', {
+        name: 'renamed_seed: Linked input',
+        exact: true
+      })
+      await expect(seedStatus).toBeVisible()
+      await SubgraphHelper.expectWidgetBelowHeader(subgraphNode, seedStatus)
 
       await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
 
@@ -472,16 +475,17 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
         )
         .toBe(RENAMED_LABEL)
 
-      const seedWidgetAfter = subgraphNodeAfter.getByLabel('seed', {
+      const seedStatusAfter = subgraphNodeAfter.getByRole('img', {
+        name: `${RENAMED_LABEL}: Linked input`,
         exact: true
       })
-      await expect(seedWidgetAfter).toBeVisible()
+      await expect(seedStatusAfter).toBeVisible()
       await expect(
         subgraphNodeAfter.getByText(RENAMED_LABEL, { exact: true })
       ).toBeVisible()
       await SubgraphHelper.expectWidgetBelowHeader(
         subgraphNodeAfter,
-        seedWidgetAfter
+        seedStatusAfter
       )
     })
   })

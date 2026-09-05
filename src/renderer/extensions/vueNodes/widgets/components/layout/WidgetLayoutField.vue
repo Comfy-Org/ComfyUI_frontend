@@ -5,13 +5,20 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { widget, rootClass } = defineProps<{
+import LinkedWidgetStatus from '../LinkedWidgetStatus.vue'
+
+const {
+  widget,
+  rootClass,
+  linkedStatusRounded = 'md'
+} = defineProps<{
   widget: Pick<
     SimplifiedWidget<string | number | undefined>,
-    'name' | 'label' | 'borderStyle'
+    'name' | 'label' | 'borderStyle' | 'linkedDisplay'
   >
   rootClass?: string
   noBorder?: boolean
+  linkedStatusRounded?: 'md' | 'lg'
 }>()
 
 const hideLayoutField = useHideLayoutField()
@@ -21,6 +28,13 @@ const borderStyle = computed(() =>
     widget.borderStyle
   )
 )
+const linkedDisplay = computed(() =>
+  widget.linkedDisplay === 'control' ? widget.linkedDisplay : undefined
+)
+
+function stopWidgetPointer(event: PointerEvent) {
+  if (!linkedDisplay.value) event.stopPropagation()
+}
 </script>
 
 <template>
@@ -46,15 +60,28 @@ const borderStyle = computed(() =>
       <div
         :class="
           cn(
-            'min-w-0 cursor-default rounded-md transition-all',
+            'relative min-w-0 cursor-default rounded-md transition-all',
             !noBorder && borderStyle
           )
         "
-        @pointerdown.stop
-        @pointermove.stop
-        @pointerup.stop
+        @pointerdown="stopWidgetPointer"
+        @pointermove="stopWidgetPointer"
+        @pointerup="stopWidgetPointer"
       >
-        <slot :border-style />
+        <div
+          :class="cn('contents', linkedDisplay && 'invisible')"
+          :aria-hidden="linkedDisplay ? 'true' : undefined"
+          :inert="linkedDisplay ? true : undefined"
+          :data-testid="linkedDisplay ? 'linked-widget-content' : undefined"
+        >
+          <slot :border-style />
+        </div>
+        <LinkedWidgetStatus
+          v-if="linkedDisplay"
+          :display="linkedDisplay"
+          :widget
+          :rounded="linkedStatusRounded"
+        />
       </div>
     </div>
   </div>

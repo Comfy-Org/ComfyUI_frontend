@@ -4,7 +4,13 @@
       v-if="hasLabels"
       type="single"
       :model-value="modelValue ? 'on' : 'off'"
-      :disabled="Boolean(widget.options?.read_only)"
+      :disabled="
+        Boolean(
+          widget.linkedDisplay ||
+          widget.options?.read_only ||
+          widget.options?.disabled
+        )
+      "
       :class="
         cn(
           WidgetInputBaseClass,
@@ -25,18 +31,26 @@
       v-else
       :class="
         cn(
-          '-m-1 flex w-fit items-center gap-2 rounded-full p-1',
+          'relative -m-1 flex w-fit items-center gap-2 rounded-full p-1',
           hideLayoutField || 'ml-auto',
           borderStyle
         )
       "
     >
-      <Switch
-        v-model="modelValue"
-        :disabled="Boolean(widget.options?.disabled)"
-        :readonly="Boolean(widget.options?.read_only)"
-        :aria-label="widget.name"
-      />
+      <div
+        :class="cn('contents', isLinkedSwitch && 'invisible')"
+        :aria-hidden="isLinkedSwitch ? 'true' : undefined"
+        :inert="isLinkedSwitch ? true : undefined"
+        :data-testid="isLinkedSwitch ? 'linked-widget-content' : undefined"
+      >
+        <Switch
+          v-model="modelValue"
+          :disabled="isLinkedSwitch || Boolean(widget.options?.disabled)"
+          :readonly="Boolean(widget.options?.read_only)"
+          :aria-label="widget.name"
+        />
+      </div>
+      <LinkedWidgetStatus v-if="isLinkedSwitch" display="switch" :widget />
     </div>
   </WidgetLayoutField>
 </template>
@@ -53,6 +67,7 @@ import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { WidgetInputBaseClass } from './layout'
+import LinkedWidgetStatus from './LinkedWidgetStatus.vue'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 const { widget } = defineProps<{
@@ -67,6 +82,7 @@ const { t } = useI18n()
 const hasLabels = computed(() => {
   return widget.options?.on != null || widget.options?.off != null
 })
+const isLinkedSwitch = computed(() => widget.linkedDisplay === 'switch')
 
 function handleOptionChange(value: string | undefined) {
   if (value) {

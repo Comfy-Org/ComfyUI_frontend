@@ -1,4 +1,5 @@
 import type { TooltipOptions } from 'primevue'
+import { fromAny } from '@total-typescript/shoehorn'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -17,6 +18,7 @@ import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetD
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useLinkStore } from '@/stores/linkStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetRenderState } from '@/stores/widgetValueStore'
 import {
@@ -25,12 +27,26 @@ import {
 } from '@/types/nodeIdentification'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
+import type { LinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
 
 const GRAPH_ID = 'graph-test'
+const NODE_ID = toNodeId(1)
+
+const { isAssetAPIEnabled, shouldUseAssetBrowser, showNodeOptions } =
+  vi.hoisted(() => ({
+    isAssetAPIEnabled: vi.fn(() => false),
+    shouldUseAssetBrowser: vi.fn(() => false),
+    showNodeOptions: vi.fn()
+  }))
+
+vi.mock('@/composables/graph/useMoreOptionsMenu', () => ({ showNodeOptions }))
+vi.mock('@/platform/assets/services/assetService', () => ({
+  assetService: { isAssetAPIEnabled, shouldUseAssetBrowser }
+}))
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
@@ -73,10 +89,11 @@ function createNode(
 function createGraphWithNode(
   widgets: IBaseWidget[],
   id: NodeId = toNodeId(1),
-  type = 'TestNode'
+  type = 'TestNode',
+  graphId = GRAPH_ID
 ): { graph: LGraph; node: LGraphNode } {
   const graph = new LGraph()
-  graph.id = GRAPH_ID
+  graph.id = graphId
   const node = createNode(widgets, id, type)
   graph.add(node)
   return { graph, node }
@@ -115,7 +132,8 @@ function processWidgets({
   nodeType = 'TestNode',
   showAdvanced = false,
   subgraphId,
-  rootGraph = null
+  rootGraph = null,
+  ui = noopUi
 }: {
   widgetIds: readonly WidgetId[]
   nodeId?: NodeId
@@ -123,11 +141,13 @@ function processWidgets({
   showAdvanced?: boolean
   subgraphId?: string | null
   rootGraph?: LGraph | null
+  ui?: typeof noopUi
 }) {
+  const graphId = rootGraph?.id ?? GRAPH_ID
   return computeProcessedWidgets({
     nodeData: {
       id: nodeId,
-      graphId: subgraphId ?? GRAPH_ID,
+      graphId: subgraphId ?? graphId,
       type: nodeType,
       title: 'Test',
       mode: 0,
@@ -137,12 +157,80 @@ function processWidgets({
       properties: {}
     },
     widgetIds,
-    graphId: GRAPH_ID,
+    graphId,
     showAdvanced,
     isGraphReady: rootGraph !== null,
     rootGraph,
-    ui: noopUi
+    ui
   })
+}
+
+function createLinkedWidgetFixture({
+  name = 'prompt',
+  type = 'text',
+  nodeType = 'TestNode',
+  value = 'local value',
+  options = {},
+  renderState = {},
+  linkId = toLinkId(1),
+  nodeId = NODE_ID,
+  graphId = GRAPH_ID
+}: {
+  name?: string
+  type?: string
+  nodeType?: string
+  value?: IBaseWidget['value']
+  options?: IBaseWidget['options']
+  renderState?: WidgetRenderState
+  linkId?: LinkId
+  nodeId?: NodeId
+  graphId?: string
+} = {}) {
+  const id = widgetId(graphId, nodeId, name)
+  const widget = createMockWidget({ name, type, value, widgetId: id })
+  const { graph, node } = createGraphWithNode(
+    [widget],
+    nodeId,
+    nodeType,
+    graphId
+  )
+  const originNode = createNode([], toNodeId(2), 'OriginNode')
+  originNode.outputs = [
+    {
+      name: 'value',
+      type: 'STRING',
+      links: [linkId],
+      boundingRect: [0, 0, 0, 0]
+    }
+  ]
+  graph.add(originNode)
+  node.inputs = [
+    {
+      name,
+      type: 'STRING',
+      link: linkId,
+      boundingRect: [0, 0, 0, 0],
+      widget: { name }
+    }
+  ]
+  registerWidgetState(id, { type, value, options }, renderState)
+
+  const scope = {
+    rootGraphId: toRootGraphId(graphId),
+    owningGraphId: toOwningGraphId(graphId)
+  }
+  const topology = {
+    id: linkId,
+    graphId: scope.owningGraphId,
+    originNodeId: originNode.id,
+    originSlot: 0,
+    targetNodeId: nodeId,
+    targetSlot: 0,
+    type: 'STRING'
+  }
+  useLinkStore().registerLink(scope, topology)
+
+  return { graph, id, nodeId, scope, topology, widget }
 }
 
 describe('widget slot ownership', () => {
@@ -569,6 +657,248 @@ describe('computeProcessedWidgets', () => {
 
     expect(result[0].vueComponent).toBe(WidgetLegacy)
     expect(result[0].vueComponent).not.toBe(WidgetDOM)
+  })
+})
+
+describe('computeProcessedWidgets linked presentation', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    isAssetAPIEnabled.mockReturnValue(false)
+    shouldUseAssetBrowser.mockReturnValue(false)
+    showNodeOptions.mockClear()
+  })
+
+  it('hides a linked standard value and disables its mounted control', () => {
+    const { graph, id } = createLinkedWidgetFixture({
+      type: 'text',
+      value: 'stale local prompt'
+    })
+
+    const [linked] = processWidgets({
+      widgetIds: [id],
+      rootGraph: graph
+    })
+
+    expect(linked.simplified.linkedDisplay).toBe('control')
+    expect(linked.simplified.value).toBe('stale local prompt')
+    expect(linked.simplified.options?.disabled).toBe(true)
+    expect(linked.tooltipConfig.disabled).toBe(true)
+    expect(linked.simplified.linkedUpstream).toEqual({
+      nodeId: toNodeId(2),
+      outputName: 'value'
+    })
+  })
+
+  it('uses the live widget type for linked display policy', () => {
+    const { graph, id, widget } = createLinkedWidgetFixture({
+      type: 'number'
+    })
+    widget.type = 'gradientslider'
+
+    const [linked] = processWidgets({
+      widgetIds: [id],
+      rootGraph: graph
+    })
+
+    expect(linked.simplified.type).toBe('gradientslider')
+    expect(linked.simplified.linkedDisplay).toBeUndefined()
+  })
+
+  it('restores the standard widget state after disconnect', () => {
+    const { graph, id, scope, topology } = createLinkedWidgetFixture({
+      type: 'text',
+      value: 'local prompt'
+    })
+
+    expect(
+      processWidgets({ widgetIds: [id], rootGraph: graph })[0].simplified
+        .linkedDisplay
+    ).toBe('control')
+
+    useLinkStore().deleteLink(scope, topology)
+    const [unlinked] = processWidgets({ widgetIds: [id], rootGraph: graph })
+
+    expect(unlinked.simplified.linkedDisplay).toBeUndefined()
+    expect(unlinked.simplified.value).toBe('local prompt')
+    expect(unlinked.simplified.options?.disabled).toBeUndefined()
+    expect(unlinked.simplified.linkedUpstream).toBeUndefined()
+    expect(unlinked.tooltipConfig.disabled).toBeUndefined()
+  })
+
+  it('distinguishes unlabeled switches from labeled toggle groups', () => {
+    const switchFixture = createLinkedWidgetFixture({
+      name: 'enabled',
+      type: 'boolean'
+    })
+    const [linkedSwitch] = processWidgets({
+      widgetIds: [switchFixture.id],
+      rootGraph: switchFixture.graph,
+      nodeId: switchFixture.nodeId
+    })
+
+    const toggleFixture = createLinkedWidgetFixture({
+      name: 'mode',
+      type: 'boolean',
+      value: false,
+      options: { off: 'Disabled', on: 'Enabled' },
+      linkId: toLinkId(2),
+      nodeId: toNodeId(3),
+      graphId: 'graph-toggle'
+    })
+    const [linkedToggle] = processWidgets({
+      widgetIds: [toggleFixture.id],
+      rootGraph: toggleFixture.graph,
+      nodeId: toggleFixture.nodeId
+    })
+
+    expect(linkedSwitch.simplified.linkedDisplay).toBe('switch')
+    expect(linkedToggle.simplified.linkedDisplay).toBe('control')
+  })
+
+  it.for([
+    ['String', false, WidgetLegacy],
+    ['CoMbO', true, WidgetDOM]
+  ] as const)(
+    'keeps the unregistered mixed-case %s fallback visible',
+    ([type, isDOMWidget, component]) => {
+      const fixture = createLinkedWidgetFixture({
+        type,
+        renderState: { isDOMWidget }
+      })
+
+      const [processed] = processWidgets({
+        widgetIds: [fixture.id],
+        rootGraph: fixture.graph
+      })
+
+      expect(processed.simplified.linkedDisplay).toBeUndefined()
+      expect(processed.simplified.options?.disabled).toBe(true)
+      expect(processed.vueComponent).toBe(component)
+    }
+  )
+
+  it.for([
+    { name: 'asset alias', type: 'asset', spec: undefined },
+    {
+      name: 'upload-media COMBO',
+      type: 'COMBO',
+      spec: {
+        type: 'COMBO',
+        name: 'image',
+        image_upload: true
+      }
+    }
+  ] as const)('keeps the linked $name rendered', ({ type, spec }) => {
+    const fixture = createLinkedWidgetFixture({ name: 'image', type })
+    vi.spyOn(useNodeDefStore(), 'getInputSpecForWidget').mockReturnValue(spec)
+
+    const [processed] = processWidgets({
+      widgetIds: [fixture.id],
+      rootGraph: fixture.graph
+    })
+
+    expect(processed.simplified.linkedDisplay).toBeUndefined()
+    expect(processed.simplified.options?.disabled).toBe(true)
+  })
+
+  it.for(['LoadImage', 'LoadImageMask', 'LoadImageOutput'])(
+    'hides and disables a linked core %s selector',
+    (nodeType) => {
+      const fixture = createLinkedWidgetFixture({
+        name: 'image',
+        type: 'asset',
+        nodeType
+      })
+      vi.spyOn(useNodeDefStore(), 'fromLGraphNode').mockReturnValue(
+        fromAny({ name: nodeType, isCoreNode: true })
+      )
+      vi.spyOn(useNodeDefStore(), 'getInputSpecForWidget').mockReturnValue({
+        type: 'COMBO',
+        name: 'image',
+        image_upload: true
+      })
+
+      const [processed] = processWidgets({
+        widgetIds: [fixture.id],
+        nodeType,
+        rootGraph: fixture.graph
+      })
+
+      expect(processed.simplified.linkedDisplay).toBe('control')
+      expect(processed.simplified.options?.disabled).toBe(true)
+    }
+  )
+
+  it('keeps an asset-browser combo rendered while hiding an ordinary combo', () => {
+    shouldUseAssetBrowser.mockReturnValue(true)
+    const fixture = createLinkedWidgetFixture({
+      name: 'ckpt_name',
+      type: 'combo'
+    })
+
+    expect(
+      processWidgets({
+        widgetIds: [fixture.id],
+        rootGraph: fixture.graph
+      })[0].simplified.linkedDisplay
+    ).toBeUndefined()
+
+    shouldUseAssetBrowser.mockReturnValue(false)
+    expect(
+      processWidgets({
+        widgetIds: [fixture.id],
+        rootGraph: fixture.graph
+      })[0].simplified.linkedDisplay
+    ).toBe('control')
+  })
+
+  it('keeps upstream metadata for a linked relay widget', () => {
+    const fixture = createLinkedWidgetFixture({ type: 'range' })
+    const [processed] = processWidgets({
+      widgetIds: [fixture.id],
+      rootGraph: fixture.graph
+    })
+
+    expect(processed.simplified.linkedDisplay).toBeUndefined()
+    expect(processed.simplified.options?.disabled).toBe(true)
+    expect(processed.simplified.linkedUpstream).toEqual({
+      nodeId: toNodeId(2),
+      outputName: 'value'
+    })
+  })
+
+  it('retains widget actions for a hidden linked widget', () => {
+    const handleNodeRightClick = vi.fn()
+    const event = fromAny<PointerEvent, unknown>({
+      preventDefault: vi.fn(),
+      stopPropagation: vi.fn()
+    })
+    const fixture = createLinkedWidgetFixture({ type: 'text' })
+
+    processWidgets({
+      widgetIds: [fixture.id],
+      rootGraph: fixture.graph,
+      ui: { ...noopUi, handleNodeRightClick }
+    })[0].handleContextMenu(event)
+
+    expect(handleNodeRightClick).toHaveBeenCalledWith(event, NODE_ID)
+    expect(showNodeOptions).toHaveBeenCalledWith(event, 'prompt')
+  })
+
+  it('retains widget actions when the widget is unlinked', () => {
+    const event = fromAny<PointerEvent, unknown>({
+      preventDefault: vi.fn(),
+      stopPropagation: vi.fn()
+    })
+    const id = widgetId(GRAPH_ID, NODE_ID, 'prompt')
+    registerWidgetState(id, { type: 'text' })
+
+    processWidgets({
+      widgetIds: [id],
+      ui: noopUi
+    })[0].handleContextMenu(event)
+
+    expect(showNodeOptions).toHaveBeenCalledWith(event, 'prompt')
   })
 })
 
