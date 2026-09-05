@@ -160,7 +160,7 @@ function transferNodeState(node: LGraphNode, replacement: LGraphNode): void {
     titleMode: undefined,
     ...replacementState
   } satisfies {
-    [K in Exclude<keyof NodeState, 'graphId' | 'id'>]-?:
+    [K in Exclude<keyof NodeState, 'graphId' | 'id' | 'nodeIncarnation'>]-?:
       | NodeState[K]
       | undefined
   })

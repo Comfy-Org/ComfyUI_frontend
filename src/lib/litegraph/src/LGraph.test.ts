@@ -204,6 +204,18 @@ describe('LGraph', () => {
     expect(result1).toEqual(result2)
   })
 
+  it('restores node incarnation from saved workflow bytes', () => {
+    const graph = createGraph(new DummyNode())
+    graph.nodes[0]._state.nodeIncarnation = 'incarnation-1'
+    const savedBytes = JSON.stringify(graph.serialize())
+
+    const restored = new LGraph()
+    restored.configure(JSON.parse(savedBytes) as ISerialisedGraph)
+
+    expect(restored.nodes[0]._state.nodeIncarnation).toBe('incarnation-1')
+    expect(restored.serialize().nodes[0].node_incarnation).toBe('incarnation-1')
+  })
+
   it('sorts numeric and non-numeric node IDs deterministically', () => {
     const graph = new LGraph()
     for (const id of ['beta', '10', 'alpha', '2']) {

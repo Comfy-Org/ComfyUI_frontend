@@ -21,6 +21,7 @@ const nodeCanonicalFields = {
   title: true,
   id: true,
   type: true,
+  node_incarnation: true,
   pos: true,
   size: true,
   flags: true,

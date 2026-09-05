@@ -19,6 +19,7 @@ import { isWidgetId, widgetId } from '@/types/widgetId'
 
 export interface SemanticNodePayload extends Record<string, unknown> {
   id: string | number
+  nodeIncarnation?: string
   type: string
 }
 
@@ -242,6 +243,9 @@ function prepareNode(
     inputs: prepareInputSlots(payload.inputs),
     outputs: prepareOutputSlots(payload.outputs),
     mode: Number.isInteger(mode) ? mode : 0,
+    ...(typeof payload.nodeIncarnation === 'string' && {
+      nodeIncarnation: payload.nodeIncarnation
+    }),
     properties: cloneRecord(payload.properties) as NodeState['properties'],
     lastSerialization: structuredClone(payload) as unknown as ISerialisedNode,
     ...(typeof payload.bgcolor === 'string' && { bgcolor: payload.bgcolor }),

@@ -1,5 +1,6 @@
 import {
   linksMap,
+  NODE_INCARNATION_KEY,
   nodesMap,
   OPAQUE_WIDGETS_KEY
 } from '@comfyorg/comfy-multi-player'
@@ -38,10 +39,14 @@ function readSemanticNode(doc: Y.Doc, id: string): SemanticNodePayload | null {
       payload.widgets_values = value.toJSON()
     } else if (key === OPAQUE_WIDGETS_KEY) {
       payload.widgets_values = plain(value)
-    } else {
+    } else if (key !== NODE_INCARNATION_KEY) {
       payload[key] = plain(value)
     }
   })
+  const nodeIncarnation = source.get(NODE_INCARNATION_KEY)
+  if (typeof nodeIncarnation === 'string') {
+    payload.nodeIncarnation = nodeIncarnation
+  }
   payload.id = id
   payload.type = type
   return payload as SemanticNodePayload
