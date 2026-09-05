@@ -1292,7 +1292,8 @@
     "paused": "Paused",
     "resume": "Resume Download",
     "cancel": "Cancel Download",
-    "cancelled": "Cancelled"
+    "cancelled": "Cancelled",
+    "failed": "Failed"
   },
   "layerEditor": {
     "title": "Compositor",

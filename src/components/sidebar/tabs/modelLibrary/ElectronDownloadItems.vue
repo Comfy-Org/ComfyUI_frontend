@@ -1,10 +1,10 @@
 <template>
-  <div v-if="inProgressDownloads.length > 0" class="mx-6 mb-4">
+  <div v-if="incompleteDownloads.length > 0" class="mx-6 mb-4">
     <div class="my-4 text-lg">
       {{ $t('electronFileDownload.inProgress') }}
     </div>
 
-    <template v-for="download in inProgressDownloads" :key="download.url">
+    <template v-for="download in incompleteDownloads" :key="download.url">
       <DownloadItem :download="download" />
     </template>
   </div>
@@ -18,5 +18,5 @@ import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import DownloadItem from './DownloadItem.vue'
 
 const electronDownloadStore = useElectronDownloadStore()
-const { inProgressDownloads } = storeToRefs(electronDownloadStore)
+const { incompleteDownloads } = storeToRefs(electronDownloadStore)
 </script>
