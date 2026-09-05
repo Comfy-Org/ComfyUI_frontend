@@ -45,6 +45,12 @@
       ]
     },
     {
+      "class": "deploy-config",
+      "tier": "R3",
+      "why": "the production deploy manifest for the public comfy.org website — build command, response headers and redirects. apps/website/vercel.json today redirects /login to an external host and sets X-Robots-Tag for every visitor, so an edit can repoint a login link at an attacker-controlled domain or strip a header for anonymous traffic, and it takes effect ON DEPLOY rather than behind a flag. That is the same \"runs outside the PR's own review\" property that puts ci at R3, and R2's mitigation (feature flag, default OFF) is structurally inapplicable to a deploy manifest — there is nothing to flag off",
+      "paths": ["**/vercel.json"]
+    },
+    {
       "class": "deps",
       "tier": "R3",
       "why": "manifests and the pnpm catalog pull in code nobody in the PR wrote",
@@ -207,12 +213,36 @@
     {
       "class": "build-config",
       "tier": "R2",
-      "why": "build config decides what ships in the bundle",
+      "why": "build config decides what ships in the bundle. The globs are `**/`-prefixed because the non-root copies matter as much as the root ones — apps/website/tsconfig.json, apps/website/tsconfig.stories.json, apps/desktop-ui/tsconfig.json, tools/tsconfig.json, apps/desktop-ui/index.html and apps/website/scripts/process-videos.sh all matched NOTHING while their root twins graded R2",
       "paths": [
         "**/vite.config.*",
-        "tsconfig*.json",
-        "index.html",
-        "scripts/**"
+        "**/tsconfig*.json",
+        "**/index.html",
+        "**/scripts/**"
+      ]
+    },
+    {
+      "class": "repo-tooling",
+      "tier": "R2",
+      "why": "the toolchain configs, which matched NO path rule before this and so floored at the default R0 — the same \"nothing matched anything\" gap app-code closes for product code, left open for the repo's own tooling. These files decide what the quality gates actually check (eslint.config.ts, .oxlintrc.json, .oxfmtrc.json, .stylelintrc.json, knip.config.ts, lint-staged.config.ts), what the test suites run (playwright*.config.ts, vitest*.setup.ts, and the tools/oxlint-plugins custom rules .oxlintrc.json loads), and what the review, pinning, coverage and dead-code gates enforce (.coderabbit.yaml, .pinact.yaml, codecov.yml, .fallowrc.jsonc, .fallow-baselines/**) — weakening one silently weakens every PR that follows it, and that is not visible in the diff of those later PRs. R2 is the same \"standard — normal review\" lane build-config carries, for the same reason. The config globs are `**/`-prefixed rather than root-only: a gate config decides what it checks WHEREVER it lives, so apps/desktop-ui/vitest.config.mts and .agents/checks/eslint.strict.config.js grade the same as their root twins instead of sitting at R0 beside them. .husky/** and tools/** are listed by directory because what matters there is extensionless (pre-commit, pre-push run arbitrary shell on every commit and push — strictly higher-privilege than the .oxfmtrc.json this rule already covered) or arbitrarily named (the oxlint plugin sources and their vitestCleanup.config.json). A suppression baseline counts as a gate: editing .fallow-baselines/*.json silences findings exactly as editing the config that produces them would. The build entry points stay in build-config, now `**/`-prefixed THERE so non-root copies are covered; the overlap on vite.config.mts is harmless because both rules are R2 and worst-wins means a rule can only ever raise a tier",
+      "paths": [
+        "**/*.config.ts",
+        "**/*.config.js",
+        "**/*.config.cjs",
+        "**/*.config.mjs",
+        "**/*.config.mts",
+        "**/*.config.json",
+        "**/.oxlintrc.json",
+        "**/.oxfmtrc.json",
+        "**/.stylelintrc.json",
+        "**/.fallowrc.*",
+        "**/.coderabbit.yaml",
+        "**/.pinact.yaml",
+        "**/codecov.yml",
+        "**/vitest*.setup.ts",
+        ".fallow-baselines/**",
+        ".husky/**",
+        "tools/**"
       ]
     },
     {
@@ -236,6 +266,40 @@
       "tier": "R2",
       "why": "the marketing site is production and had no rule at all \u2014 but it is copy and layout, so it cannot corrupt a saved workflow or move money",
       "paths": ["apps/website/**"]
+    },
+    {
+      "class": "app-code",
+      "tier": "R2",
+      "why": "ordinary product code — the app users actually run. R2 is the rubric's \"standard — normal review\" lane, and without this rule the general case of a src/ or apps/ path matched NOTHING: an ordinary product PR floored at the default R0 and was graded off the provenance axis alone, which collapses R1 and R2 into one indistinguishable lane. This is the catchall under the specific R3/R2 classes above, not a replacement for them — worst-wins means auth, serialization, extension-contract and core-infra keep their higher tiers wherever they also match. `**` crosses directory separators, so these globs cover src/renderer/**, src/components/**, src/composables/**, src/extensions/** and the src/platform/** remainder without enumerating them. The extension list has to be enumerated (the format has no brace alternation) and covers everything under src/ or apps/ that SHIPS AND EXECUTES, STYLES OR CONFIGURES THE APP — not just TypeScript: .css (src/assets/css/style.css holds the semantic theme tokens AGENTS.md routes every color through, and a stripped rule there is a user-visible regression), .json (src/assets/palettes/*, apps/website/src/data/*.snapshot.json and src/config/generated-models.json feed the running app and the public site), .html (app entry points), the GPU shader sources (.frag is the only one in the tree today; the .vert/.glsl/.wgsl siblings are pre-listed on purpose, because the failure this class exists to prevent IS an extension the allowlist did not anticipate, and an unused glob costs nothing), and the .mts/.cts/.mjs/.cjs/.tsx variants so src/ and apps/ stay SYMMETRIC — the earlier ts/tsx/vue/js/astro allowlist was asymmetric between the two roots and left apps/desktop-ui/vitest.config.mts at R0 next to its R2 sibling. Binary assets (images, fonts, media fixtures, public/**) are deliberately NOT listed: they do not execute and carry no reviewable logic. KNOWN COST: tests, stories and fixtures in this repo sit NEXT TO the module they exercise (src/foo.test.ts, src/foo.stories.ts, src/**/__fixtures__/*.json), and the map format has no negation — a glob cannot subtract, since glob2re escapes every regex metacharacter — so a test-only or story-only PR under src/ now floors R2 instead of R0. Accepted deliberately: under-grading product code is the dangerous direction, over-grading a test-only PR is merely noisy. browser_tests/** sits outside src/ and apps/ and is unaffected",
+      "paths": [
+        "src/**/*.ts",
+        "src/**/*.tsx",
+        "src/**/*.mts",
+        "src/**/*.cts",
+        "src/**/*.js",
+        "src/**/*.mjs",
+        "src/**/*.cjs",
+        "src/**/*.vue",
+        "src/**/*.css",
+        "src/**/*.json",
+        "src/**/*.html",
+        "src/**/*.frag",
+        "src/**/*.vert",
+        "src/**/*.glsl",
+        "src/**/*.wgsl",
+        "apps/**/*.ts",
+        "apps/**/*.tsx",
+        "apps/**/*.mts",
+        "apps/**/*.cts",
+        "apps/**/*.js",
+        "apps/**/*.mjs",
+        "apps/**/*.cjs",
+        "apps/**/*.vue",
+        "apps/**/*.astro",
+        "apps/**/*.css",
+        "apps/**/*.json",
+        "apps/**/*.html"
+      ]
     },
     {
       "class": "docs",
