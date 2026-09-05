@@ -15,18 +15,23 @@ echo "Waiting up to $((timeout_seconds / 3600))h for ${TAG} on ${TARGET_BRANCH}.
 
 deadline=$((SECONDS + timeout_seconds))
 while ((SECONDS < deadline)); do
-  if git_error=$(git ls-remote --exit-code --tags "https://github.com/${REPO}.git" "refs/tags/${TAG}" 2>&1); then
+  remaining=$((deadline - SECONDS))
+  if git_error=$(timeout "${remaining}s" git ls-remote --exit-code --tags "https://github.com/${REPO}.git" "refs/tags/${TAG}" 2>&1); then
     echo "${TAG} found — the bump PR has been merged."
     exit 0
   else
     status=$?
-    if ((status != 2)); then
+    if ((status == 124)); then
+      break
+    elif ((status != 2)); then
       echo "::error title=Unexpected error polling for release tag::${git_error}"
       exit "$status"
     fi
   fi
-  echo "${TAG} not found yet; $((deadline - SECONDS))s of budget left."
-  sleep "$poll_seconds"
+  remaining=$((deadline - SECONDS))
+  ((remaining > 0)) || break
+  echo "${TAG} not found yet; ${remaining}s of budget left."
+  sleep "$((poll_seconds < remaining ? poll_seconds : remaining))"
 done
 
 readonly RECOVERY="gh run rerun ${RUN_ID} --failed"
