@@ -8808,6 +8808,10 @@ Enterprise`
     'zh-CN': '此输出可能包含敏感内容。'
   },
   'workshop.output.expand': { en: 'Expand', 'zh-CN': '放大' },
+  'workshop.output.play': { en: 'Play', 'zh-CN': '播放' },
+  'workshop.output.pause': { en: 'Pause', 'zh-CN': '暂停' },
+  'workshop.output.soundOn': { en: 'Turn sound on', 'zh-CN': '打开声音' },
+  'workshop.output.soundOff': { en: 'Turn sound off', 'zh-CN': '关闭声音' },
   'workshop.output.collapse': { en: 'Close', 'zh-CN': '关闭' },
   'workshop.output.reveal': { en: 'Click to reveal', 'zh-CN': '点击查看' },
   'workshop.output.cancelled': {

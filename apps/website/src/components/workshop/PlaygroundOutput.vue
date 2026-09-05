@@ -13,6 +13,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 import VideoPlayer from '../common/VideoPlayer.vue'
+import OutputTransport from './OutputTransport.vue'
 import type { Modality } from '../../config/workshop'
 import { isVideoUrl } from '../../config/workshop-playground'
 import type { RunFailure, RunOutput, RunState } from '../../config/workshop-run'
@@ -46,8 +47,6 @@ const elapsed = computed(() =>
   state.status === 'running' ? formatElapsed(now - state.startedAt) : '0:00'
 )
 
-// A still has nothing to play, so the panel gives it the one control the
-// player would have offered: the room to be looked at.
 const expanded = ref(false)
 onKeyStroke('Escape', () => (expanded.value = false))
 
@@ -73,6 +72,18 @@ const latest = computed(() =>
     : undefined
 )
 const shown = computed(() => viewing.value ?? latest.value)
+
+// What the panel offers follows what the model makes, not what the mock media
+// happens to be: a video or audio result gets a transport, an image only the
+// room to be looked at. Both can be opened large.
+const plays = computed(
+  () =>
+    (modality === 'video' || modality === 'audio') &&
+    shown.value?.kind !== 'text'
+)
+const expandable = computed(
+  () => modality !== 'audio' && shown.value?.kind !== 'text'
+)
 const outputs = computed(() =>
   shown.value
     ? shown.value.urls?.length
@@ -276,12 +287,7 @@ const earlierClass = (active: boolean) =>
           </div>
         </div>
         <button
-          v-if="
-            currentUrl &&
-            !blurred &&
-            !isVideoUrl(currentUrl) &&
-            shown.kind !== 'text'
-          "
+          v-if="currentUrl && !blurred && expandable && !isVideoUrl(currentUrl)"
           type="button"
           :aria-label="t('workshop.output.expand', locale)"
           :class="cn(mediaControlClass, 'absolute top-3 right-3')"
@@ -290,6 +296,12 @@ const earlierClass = (active: boolean) =>
         >
           <Maximize2 class="size-4" aria-hidden="true" />
         </button>
+
+        <OutputTransport
+          v-if="plays && !blurred && !isVideoUrl(currentUrl)"
+          :locale
+          class="absolute inset-x-0 bottom-0"
+        />
         <button
           v-if="blurred"
           type="button"
