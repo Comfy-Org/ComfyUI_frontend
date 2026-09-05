@@ -8,6 +8,7 @@
   "repository": "https://github.com/Comfy-Org/ComfyUI_frontend",
   "type": "module",
   "scripts": {
+    "adr:check": "tsx scripts/check-adrs.ts",
     "build:cloud": "cross-env DISTRIBUTION=cloud vite build --config vite.config.mts",
     "build:desktop-dist": "cross-env DISTRIBUTION=desktop vite build --config vite.config.mts",
     "build-storybook": "storybook build",
