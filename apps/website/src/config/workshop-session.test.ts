@@ -282,7 +282,7 @@ describe('ensureFreshWorkshopSession', () => {
 
     expect(
       result.status === 'ok' && result.session.token,
-      'the run path must carry the minted token, never the expired one (ADR 0011)'
+      'the run path must carry the minted token, never the expired one (AUTH-CREDENTIALS-0011)'
     ).toBe('workspace-jwt')
   })
 })
