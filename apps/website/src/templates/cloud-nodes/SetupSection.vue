@@ -2,8 +2,11 @@
 import BenefitsGrid01 from '../../components/blocks/BenefitsGrid01.vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { cloudNodesCtas } from './ctas'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+
+const ctas = cloudNodesCtas(locale)
 
 const stepNumbers = [1, 2, 3] as const
 
@@ -19,6 +22,7 @@ const steps = stepNumbers.map((n) => ({
     <BenefitsGrid01
       :heading="t('cloudNodesLaunch.setup.heading', locale)"
       :benefits="steps"
+      :primary-cta="ctas.update"
     />
   </section>
 </template>

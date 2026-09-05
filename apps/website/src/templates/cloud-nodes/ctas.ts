@@ -16,6 +16,7 @@ export interface CloudNodesCta {
 export function cloudNodesCtas(locale: Locale): {
   getStarted: CloudNodesCta
   docs: CloudNodesCta
+  update: CloudNodesCta
   setup: CloudNodesCta
 } {
   return {
@@ -27,6 +28,11 @@ export function cloudNodesCtas(locale: Locale): {
     docs: {
       label: t('cloudNodesLaunch.cta.docs', locale),
       href: externalLinks.docsCloudNodes,
+      target: '_blank'
+    },
+    update: {
+      label: t('cloudNodesLaunch.cta.update', locale),
+      href: externalLinks.docsUpdateComfyUI,
       target: '_blank'
     },
     setup: {

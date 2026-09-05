@@ -8398,6 +8398,10 @@ Enterprise`
     en: 'Read the Docs',
     'zh-CN': '查看文档'
   },
+  'cloudNodesLaunch.cta.update': {
+    en: 'How to Update ComfyUI',
+    'zh-CN': '如何更新 ComfyUI'
+  },
   'cloudNodesLaunch.cta.setup': {
     en: 'How to Start',
     'zh-CN': '如何开始'
@@ -8433,8 +8437,8 @@ Enterprise`
       'ComfyUI 画布上的 Comfy Cloud Flux 2 文生图节点，连接到 Save Image 节点'
   },
   'cloudNodesLaunch.setup.heading': {
-    en: 'Three steps, no install',
-    'zh-CN': '三步搞定，无需安装'
+    en: 'Three steps to your first run',
+    'zh-CN': '三步完成首次运行'
   },
   'cloudNodesLaunch.setup.step1.label': {
     en: 'Update ComfyUI',
