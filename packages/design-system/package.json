@@ -15,12 +15,14 @@
   },
   "files": [
     "src/css",
-    "src/icons"
+    "src/icons",
+    "src/workspaceAvatar.ts"
   ],
   "type": "module",
   "exports": {
     "./css/*": "./src/css/*",
-    "./icons/*": "./src/icons/*"
+    "./icons/*": "./src/icons/*",
+    "./workspaceAvatar": "./src/workspaceAvatar.ts"
   },
   "publishConfig": {
     "access": "public"
