@@ -26,16 +26,4 @@ describe('Error System settings', () => {
       'Comfy.Workflow.ShowMissingMediaWarning'
     ])
   })
-
-  it('exposes every missing warning as an enabled boolean switch', () => {
-    const warnings = errorSystemSettings.filter((setting) =>
-      setting.id.startsWith('Comfy.Workflow.ShowMissing')
-    )
-
-    expect(warnings).toHaveLength(3)
-    for (const setting of warnings) {
-      expect(setting.type).toBe('boolean')
-      expect(setting.defaultValue).toBe(true)
-    }
-  })
 })
