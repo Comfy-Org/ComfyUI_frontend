@@ -63,13 +63,13 @@ const ctaButtons = [
     </a>
 
     <!-- Desktop nav links -->
-    <HeaderMainDesktop :locale :show-workshop class="hidden lg:block" />
-    <HeaderMainMobile :locale :show-workshop class="lg:hidden" />
+    <HeaderMainDesktop :locale :show-workshop class="hidden xl:block" />
+    <HeaderMainMobile :locale :show-workshop class="xl:hidden" />
 
     <!-- Desktop CTA buttons -->
     <div
       data-testid="desktop-nav-cta"
-      class="hidden shrink-0 items-center gap-2 lg:flex"
+      class="hidden shrink-0 items-center gap-2 xl:flex"
     >
       <!-- Get Yoland to sign a contract of permission before killing this -->
       <GitHubStarBadge v-if="githubStars" :stars="githubStars" />
