@@ -16,6 +16,12 @@ concurrency:
   group: i18n-update-core-${{ github.head_ref || github.ref }}
   cancel-in-progress: false
 
+env:
+  # Backend commit that first pinned comfyui-frontend-package 1.51.9.
+  # Keep core/1.51 locale generation on its matching node registry instead of
+  # today's master; newer node definitions can otherwise trigger false prunes.
+  COMFYUI_CORE_1_51_PIN: 40b9898582d15a753227712e8c863e466e290e0b
+
 jobs:
   update-locales:
     # Branch detection: Only run for manual dispatch or version-bump-* branches from main repo
@@ -43,6 +49,9 @@ jobs:
         uses: ./.github/actions/setup-comfyui-server
         with:
           launch_server: true
+          # An empty ref preserves the default-branch behavior for main,
+          # cloud releases, and manual dispatches.
+          comfyui_ref: ${{ github.base_ref == 'core/1.51' && env.COMFYUI_CORE_1_51_PIN || '' }}
       - name: Setup Playwright
         uses: ./.github/actions/setup-playwright
 
