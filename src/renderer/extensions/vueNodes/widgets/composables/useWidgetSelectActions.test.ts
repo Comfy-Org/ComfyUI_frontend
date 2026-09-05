@@ -205,5 +205,46 @@ describe('useWidgetSelectActions', () => {
         '500 - Internal Server Error'
       )
     })
+
+    it('only shows the in-progress alert when an upload is skipped', async () => {
+      const { api } = await import('@/scripts/api')
+      let finishUpload: ((response: Response) => void) | undefined
+      vi.mocked(api.fetchApi).mockReturnValue(
+        new Promise((resolve) => {
+          finishUpload = resolve
+        })
+      )
+
+      const modelValue = ref<string | undefined>()
+      const { handleFilesUpdate } = useWidgetSelectActions({
+        modelValue,
+        dropdownItems: computed(() => []),
+        widget: () =>
+          fromPartial<SimplifiedWidget<string | undefined>>({
+            name: 'test',
+            type: 'combo',
+            options: { values: [] }
+          }),
+        uploadFolder: () => 'input',
+        uploadSubfolder: () => undefined
+      })
+
+      const firstUpload = handleFilesUpdate([new File(['first'], 'first.png')])
+      await handleFilesUpdate([new File(['second'], 'second.png')])
+
+      const toastStore = useToastStore()
+      expect(toastStore.addAlert).toHaveBeenCalledOnce()
+      expect(toastStore.addAlert).toHaveBeenCalledWith(
+        'Upload already in progress'
+      )
+
+      finishUpload?.(
+        fromPartial<Response>({
+          status: 200,
+          json: () => Promise.resolve({ name: 'first.png', subfolder: '' })
+        })
+      )
+      await firstUpload
+    })
   })
 })
