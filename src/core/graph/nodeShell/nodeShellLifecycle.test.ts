@@ -29,7 +29,7 @@ describe('node shell teardown', () => {
     return getWidgetIds(node.widgets ?? [])
   }
 
-  it('releases widget state owned by a removed node', () => {
+  it('releases widget order tracking for a removed node, but keeps its value for undo', () => {
     const subgraph = createTestSubgraph()
     const rootGraphId = subgraph.rootGraph.id
     const node = addWidgetedNode(subgraph)
@@ -43,7 +43,7 @@ describe('node shell teardown', () => {
     subgraph.remove(node)
 
     expect(widgetValueStore.getNodeWidgetIds(rootGraphId, node.id)).toEqual([])
-    expect(widgetValueStore.getWidget(widgetId)).toBeUndefined()
+    expect(widgetValueStore.getWidget(widgetId)?.value).toBe('a value')
   })
 
   it('drops the preview exposures a removed host node owned', () => {
@@ -98,5 +98,45 @@ describe('node shell teardown', () => {
 
     expect(widgetValueStore.getNodeWidgetIds(graphId, node.id)).toEqual([])
     expect(widgetValueStore.getWidget(widgetId)).toBeUndefined()
+  })
+
+  describe('keep-values on removeNode (undo of a deletion)', () => {
+    it('keeps widget values in the store immediately after removal', () => {
+      const graph = new LGraph()
+      const node = addWidgetedNode(graph)
+      node.widgets![0].value = 'a distinct edited value'
+      const [widgetId] = widgetIdsOf(node)
+      const widgetValueStore = useWidgetValueStore()
+
+      graph.remove(node)
+
+      expect(widgetValueStore.getWidget(widgetId)?.value).toBe(
+        'a distinct edited value'
+      )
+    })
+
+    it('restores the edited value when the removed node is re-added (undo of delete)', () => {
+      const graph = new LGraph()
+      const node = addWidgetedNode(graph)
+      node.widgets![0].value = 'a distinct edited value'
+
+      graph.remove(node)
+      graph.add(node)
+
+      expect(node.widgets![0].value).toBe('a distinct edited value')
+    })
+
+    it('still discards values when a whole graph is cleared', () => {
+      const graph = new LGraph()
+      const graphId = graph.id
+      const node = addWidgetedNode(graph)
+      const [widgetId] = widgetIdsOf(node)
+      const widgetValueStore = useWidgetValueStore()
+
+      graph.clear()
+
+      expect(widgetValueStore.getNodeWidgetIds(graphId, node.id)).toEqual([])
+      expect(widgetValueStore.getWidget(widgetId)).toBeUndefined()
+    })
   })
 })

@@ -7,6 +7,7 @@ import { registerNodeState, unregisterNodeState } from './nodeShellState'
 
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { WidgetDetachMode } from '@/stores/clearNodeOwnedStoreState'
 import type { NodeId } from '@/types/nodeId'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { UUID } from '@/utils/uuid'
@@ -33,13 +34,6 @@ export function attachNodeToStores(
     getWidgetIds(node.widgets)
   )
 }
-
-/**
- * Whether a detached node's widget values leave the store with it. A node that
- * may come back — undo of a deletion — keeps its values and drops only its
- * ordering; a node whose whole graph is going away takes its values along.
- */
-type WidgetDetachMode = 'keep-values' | 'discard-values'
 
 function releaseNodePreviewExposures(
   rootGraphId: UUID,

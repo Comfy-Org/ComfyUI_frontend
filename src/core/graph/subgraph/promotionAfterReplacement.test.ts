@@ -126,7 +126,7 @@ function reloadHost(
 
 describe('promoted widget survival across host replacement', () => {
   describe('same-id host replacement', () => {
-    it('recreates promoted widget state when the host is replaced', async () => {
+    it('carries the promoted widget id and value through an ordinary same-id replacement', async () => {
       const { subgraph, host } = buildPromotedHost(true)
       const store = useWidgetValueStore()
       const valueId = promotedWidgetId(host, 'value')
@@ -139,19 +139,23 @@ describe('promoted widget survival across host replacement', () => {
       subgraph.rootGraph.remove(host)
       await flushDeferredCleanup()
 
-      expect(store.getWidget(valueId)).toBeUndefined()
+      expect(store.getWidget(valueId)?.value).toBe(null)
 
       const replacement = createTestSubgraphNode(subgraph, { id: HOST_ID })
       subgraph.rootGraph.add(replacement)
 
+      // `registerWidget` keeps a same-typed re-registration's existing store
+      // value over the interior widget's live default (#13073, #13773), so
+      // the edited values from before removal carry over rather than
+      // resetting to the interior node's own current value.
       expect(promotedWidgetId(replacement, 'value')).toBe(valueId)
       expect(promotedWidgetId(replacement, 'count')).toBe(countId)
-      expect(promotedValue(replacement, 'value')).toBe('initial')
-      expect(promotedValue(replacement, 'count')).toBe(5)
+      expect(promotedValue(replacement, 'value')).toBe(null)
+      expect(promotedValue(replacement, 'count')).toBe(42)
 
       expect(upstream.connect(0, replacement, 0)).toBeTruthy()
       expect(replacement.inputs[0].link).not.toBeNull()
-      expect(promotedValue(replacement, 'value')).toBe('initial')
+      expect(promotedValue(replacement, 'value')).toBe(null)
     })
 
     it('discards the null host value when the interior widget type changes', async () => {
@@ -182,7 +186,9 @@ describe('promoted widget survival across host replacement', () => {
       subgraph.rootGraph.remove(host)
       await flushDeferredCleanup()
 
-      expect(store.getWidget(valueId)).toBeUndefined()
+      // The value survives removal, but the last host's removal still releases
+      // the subgraph definition, so a same-id replacement has nothing to promote.
+      expect(store.getWidget(valueId)?.value).toBe(null)
 
       const replacement = createTestSubgraphNode(subgraph, { id: HOST_ID })
       subgraph.rootGraph.add(replacement)
