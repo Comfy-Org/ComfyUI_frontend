@@ -1,0 +1,61 @@
+# Description: Generates missing/stale customer-story and FAQ translations
+# under apps/website/src/content/, using OpenAI, gated by the pipeline's own
+# AI review pass (see apps/website/scripts/i18n-content/review.ts). Manual
+# dispatch only for now — same rationale as i18n-update-website.yaml.
+#
+# Dispatch with `gh workflow run i18n-update-website-content.yaml --ref
+# <branch>`: no custom branch input. github.ref_name is the ref GitHub itself
+# resolved the dispatch against — unlike a free-text input, it can't be
+# spoofed to a fork PR merge ref or an arbitrary string, so it's safe to both
+# check out and use as the push target.
+name: 'i18n: Update Website Content'
+
+on:
+  workflow_dispatch: {}
+
+concurrency:
+  group: i18n-update-website-content-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  update-website-content-translations:
+    # i18n/-prefixed is this pipeline's own branch convention: narrows which
+    # refs this job will ever check out or push to, on top of github.ref_name
+    # already being a real branch GitHub resolved the dispatch against.
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend' && startsWith(github.ref_name, 'i18n/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          # Untrusted code from this ref runs in the next two steps with
+          # OPENAI_API_KEY in its environment; a persisted PR_GH_TOKEN in
+          # .git/config would be readable by that same code. Push with an
+          # explicit credential in its own step instead.
+          persist-credentials: false
+
+      - name: Setup ComfyUI Frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Update website content translations
+        run: pnpm --filter website i18n-content:translate
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+      - name: Format
+        run: pnpm format
+
+      - name: Commit and push generated translations
+        env:
+          PR_GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
+        run: |
+          git add apps/website/src/content/
+          if git diff --cached --quiet; then
+            echo "No new translations generated."
+            exit 0
+          fi
+          git -c user.name=github-actions -c user.email=github-actions@github.com \
+            commit -m 'Update website content translations'
+          git push "https://x-access-token:${PR_GH_TOKEN}@github.com/${{ github.repository }}.git" "HEAD:refs/heads/$GITHUB_REF_NAME"
