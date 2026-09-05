@@ -368,7 +368,10 @@ jobs:
   # MATRIX_EXPECT_SHARDS makes a dead shard withhold rather than PASS. Every
   # criterion is a ratio, so three shards produce a perfectly plausible
   # number, and on PASS that partial population would be saved as the
-  # baseline the next run is measured against.
+  # baseline the next run is measured against. The aggregate therefore trusts
+  # these verdicts rather than the raw matrix job result: a shard can time out
+  # after uploading a complete artifact, while a missing artifact still makes
+  # the corresponding verdict fail closed.
   matrix-verdict:
     name: matrix-verdict (${{ matrix.renderer }})
     needs: [changes, corpus, ecosystem-matrix]
@@ -587,7 +590,6 @@ jobs:
           for check in \
             "pin-status:$PIN_STATUS_RESULT" \
             "corpus:$CORPUS_RESULT" \
-            "shards:$SHARDS_RESULT" \
             "verdicts:$VERDICTS_RESULT" \
             "detection-proofs:$PROOFS_RESULT"; do
             if [ "${check#*:}" != success ]; then
@@ -597,5 +599,8 @@ jobs:
           if [ "${#failures[@]}" -ne 0 ]; then
             echo "::error::ecosystem matrix did not pass completely: ${failures[*]}"
             exit 1
+          fi
+          if [ "$SHARDS_RESULT" != success ]; then
+            echo "::notice::raw shard result was $SHARDS_RESULT; complete artifacts passed both renderer verdicts"
           fi
           echo 'ecosystem matrix passed in both renderers with both detection proofs'
