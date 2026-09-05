@@ -7,12 +7,19 @@ import type {
 } from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 
-import type { ServerDocWireFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
+import type { ServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import { DOC_PROTOCOL_VERSION } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
 import { mintWireOps } from '@/workbench/extensions/agent/crdt/opEnvelope'
 
-const HOST_ACTOR = 'agent:comfy'
+const HOST_ACTOR = 'agent:comfy:host'
+
+// The shape the fake host puts on the wire; production's parseServerDocFrame
+// validates each one at send time.
+export interface HostFrame {
+  type: ServerDocFrame['type']
+  data: Record<string, unknown>
+}
 
 function toBase64(bytes: Uint8Array): string {
   return Buffer.from(bytes).toString('base64')
@@ -39,7 +46,7 @@ export class HostDoc {
     return readGraph(this.doc)
   }
 
-  subscribed(): ServerDocWireFrame {
+  subscribed(): HostFrame {
     return {
       type: 'doc_subscribed',
       data: {
@@ -51,14 +58,14 @@ export class HostDoc {
     }
   }
 
-  catchUp(stateVectorB64: string): ServerDocWireFrame {
+  catchUp(stateVectorB64: string): HostFrame {
     const update = Y.encodeStateAsUpdate(this.doc, fromBase64(stateVectorB64))
     return this.updateFrame(update, HOST_ACTOR, [])
   }
 
   // Client batches arrive already minted; the real host folds them into the same
   // doc and broadcasts the result, so every subscriber converges on them.
-  applyClient(ops: Op[]): { applied: string[]; update: ServerDocWireFrame } {
+  applyClient(ops: Op[]): { applied: string[]; update: HostFrame } {
     const before = Y.encodeStateVector(this.doc)
     const result = applyOps(this.doc, ops, this.catalog)
     const rejected = result.outcomes.filter((o) => o.outcome !== 'applied')
@@ -78,7 +85,7 @@ export class HostDoc {
     }
   }
 
-  apply(operations: GraphOperation[]): ServerDocWireFrame {
+  apply(operations: GraphOperation[]): HostFrame {
     const before = Y.encodeStateVector(this.doc)
     const ops = mintWireOps(operations, {
       actor: HOST_ACTOR,
@@ -102,7 +109,7 @@ export class HostDoc {
     update: Uint8Array,
     actor: string,
     opIds: string[]
-  ): ServerDocWireFrame {
+  ): HostFrame {
     return {
       type: 'doc_update',
       data: {

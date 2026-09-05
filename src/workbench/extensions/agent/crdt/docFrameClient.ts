@@ -86,11 +86,6 @@ export type ServerDocFrame =
   | { type: 'awareness'; data: DocAwareness }
 
 /** A frame as it travels the wire, before {@link parseServerDocFrame} reads it. */
-export interface ServerDocWireFrame {
-  type: ServerDocFrame['type']
-  data: WireData
-}
-
 export interface DocFrameTransport {
   /**
    * Best-effort send. Returns `true` when the frame left the transport and
