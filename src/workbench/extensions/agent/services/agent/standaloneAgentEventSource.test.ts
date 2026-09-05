@@ -37,9 +37,10 @@ class FakeSocket extends EventTarget {
   }
 }
 
-function sourceHarness() {
+function sourceHarness(endpoint = '/api/agent/events') {
   const sockets: FakeSocket[] = []
   const source = createStandaloneAgentEventSource({
+    endpoint,
     createSocket(url) {
       const socket = new FakeSocket(url)
       sockets.push(socket)
@@ -50,7 +51,21 @@ function sourceHarness() {
 }
 
 describe('createStandaloneAgentEventSource', () => {
-  it('connects through the same-origin agent proxy and delivers JSON frames', () => {
+  it.for([
+    ['http://agent.test/api/agent/events', 'ws:'],
+    ['https://agent.test/api/agent/events', 'wss:']
+  ])('transforms %s into a %s socket endpoint', ([endpoint, protocol]) => {
+    const { source, sockets } = sourceHarness(endpoint)
+
+    source.subscribe(vi.fn())
+
+    const socketUrl = new URL(sockets[0].url)
+    expect(socketUrl.protocol).toBe(protocol)
+    expect(socketUrl.host).toBe('agent.test')
+    expect(socketUrl.pathname).toBe('/api/agent/events')
+  })
+
+  it('delivers JSON frames from the same-origin agent proxy', () => {
     const { source, sockets } = sourceHarness()
     const seen = vi.fn()
     const status = vi.fn()
@@ -60,7 +75,6 @@ describe('createStandaloneAgentEventSource', () => {
     sockets[0].open()
     sockets[0].receive({ type: 'agent_message_delta', data: { delta: 'hi' } })
 
-    expect(new URL(sockets[0].url).pathname).toBe('/api/agent/events')
     expect(status).toHaveBeenCalledWith(true)
     expect(seen).toHaveBeenCalledWith({
       type: 'agent_message_delta',
