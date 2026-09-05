@@ -445,9 +445,12 @@ async function onSelectTab(path: string): Promise<boolean> {
         return failSelection()
     }
     if (!isCurrent()) return false
-    if (!(await refreshCloudWorkflowIds())) return failSelection()
-    if (!isCurrent()) return false
-    const workflowId = cloudIdFor(tab)
+    let workflowId = cloudIdFor(tab)
+    if (workflowId === undefined) {
+      if (!(await refreshCloudWorkflowIds())) return failSelection()
+      if (!isCurrent()) return false
+      workflowId = cloudIdFor(tab)
+    }
     if (workflowId === undefined) return failSelection()
     if ((await workflowService.openWorkflow(tab)) === false)
       return failSelection(t('agent.targetNavigationUnavailable'))
