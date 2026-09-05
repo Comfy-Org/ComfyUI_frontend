@@ -244,11 +244,6 @@ jobs:
           FAILED=""
           SUCCESS=""
 
-          CREATED_BRANCHES_FILE="$(
-            mktemp "$RUNNER_TEMP/backport-branches-XXXXXX"
-          )"
-          echo "CREATED_BRANCHES_FILE=$CREATED_BRANCHES_FILE" >> "$GITHUB_ENV"
-
           # Get PR data for manual triggers
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             PR_DATA=$(gh pr view ${{ inputs.pr_number }} --json title,mergeCommit)
@@ -310,7 +305,6 @@ jobs:
               # A push failure for one target must not abort the loop and
               # prevent remaining targets from being attempted.
               if "${PUSH_CMD[@]}"; then
-                echo "${BACKPORT_BRANCH}" >> "$CREATED_BRANCHES_FILE"
                 SUCCESS="${SUCCESS}${TARGET_BRANCH}:${BACKPORT_BRANCH} "
                 echo "Successfully created backport branch: ${BACKPORT_BRANCH}"
               else
@@ -339,18 +333,13 @@ jobs:
           echo "success=${SUCCESS}" >> $GITHUB_OUTPUT
           echo "failed=${FAILED}" >> $GITHUB_OUTPUT
 
-          if [ -s "$CREATED_BRANCHES_FILE" ]; then
-            CREATED_LIST=$(paste -sd' ' "$CREATED_BRANCHES_FILE")
-            echo "created-branches=${CREATED_LIST}" >> $GITHUB_OUTPUT
-          else
-            echo "created-branches=" >> $GITHUB_OUTPUT
-          fi
-
-          if [ -n "${FAILED}" ]; then
-            exit 1
-          fi
+          # Do not exit non-zero when only some targets failed: the clean
+          # backports must still get their PRs (next step) and the conflicts
+          # must still be reported. A dedicated final step re-reds the run so
+          # the failure stays visible and retryable.
 
       - name: Create PR for each successful backport
+        id: create-prs
         if: steps.filter-targets.outputs.skip != 'true' && steps.backport.outputs.success
         env:
           GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
@@ -388,17 +377,35 @@ jobs:
                 fi
                 gh pr merge "${PR_NUM}" --auto --squash --repo "${{ github.repository }}" \
                   || echo "::warning::Failed to enable auto-merge for PR #${PR_NUM}"
-                gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Successfully backported to #${PR_NUM}"
+                # Non-fatal: a merged source PR can be locked, and under `set -e`
+                # a failed comment would abort the loop before the remaining
+                # targets ran and before pr-create-failed was written below.
+                gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Successfully backported to #${PR_NUM}" \
+                  || echo "::warning::Could not comment on PR #${PR_NUMBER} (backported to #${PR_NUM})."
               fi
             else
               echo "::error::Failed to create PR for ${target}: ${PR_URL}"
-              # Still try to comment on the original PR about the failure
-              gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Backport branch created but PR creation failed for \`${target}\`. Please create the PR manually from branch \`${branch}\`"
+              # Record it: a pushed branch with no PR must keep needs-backport
+              # and re-red the run, otherwise the branch is stranded silently
+              # and nothing retries it.
+              PR_CREATE_FAILED="${PR_CREATE_FAILED} ${target}"
+              # Also non-fatal, for the same reason: losing this notice must not
+              # also lose the record that the branch was stranded.
+              gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Backport branch created but PR creation failed for \`${target}\`. Please create the PR manually from branch \`${branch}\`" \
+                || echo "::warning::Could not comment on PR #${PR_NUMBER} about the failed PR creation for ${target}."
             fi
           done
 
+          echo "pr-create-failed=${PR_CREATE_FAILED# }" >> $GITHUB_OUTPUT
+
+      # Runs whenever a target failed, independent of whether the PR-creation
+      # step for the clean targets succeeded — a hiccup there must not suppress
+      # the conflict reports.
       - name: Comment on failures
-        if: steps.filter-targets.outputs.skip != 'true' && failure() && steps.backport.outputs.failed
+        if: >-
+          !cancelled() &&
+          steps.filter-targets.outputs.skip != 'true' &&
+          steps.backport.outputs.failed != ''
         env:
           BACKPORT_AGENT_PROMPT_TEMPLATE: |
             Backport PR #${PR_NUMBER} (${PR_URL}) to ${target}.
@@ -457,15 +464,22 @@ jobs:
             MERGE_COMMIT=$(jq -r '.pull_request.merge_commit_sha' "$GITHUB_EVENT_PATH")
           fi
 
-          # Post a comment without letting a single failed `gh pr comment` (e.g.
-          # a locked issue, as happened for PR #13359, or a transient API error)
-          # abort the step under `set -e` and swallow the remaining failures.
-          post_comment() {
+          # A merged PR can be locked (the CLA check locks merged PRs), which
+          # makes `gh pr comment` fail and would otherwise swallow the failure
+          # notice entirely. Fall back to a tracking issue that mentions the
+          # author so a failed backport is never reported to nobody — the exact
+          # gap that left PRs #14018-#14021 to be backported by hand.
+          notify() {
             local body="$1"
             local context="$2"
-            if ! gh pr comment "${PR_NUMBER}" --body "${body}"; then
-              echo "::warning::Could not comment on PR #${PR_NUMBER} about ${context}. Manual backport required."
+            if gh pr comment "${PR_NUMBER}" --body "${body}"; then
+              return
             fi
+            echo "::warning::Could not comment on PR #${PR_NUMBER} (${context}); opening a tracking issue instead."
+            local title="Backport of #${PR_NUMBER} to ${target} failed"
+            gh issue create --title "${title}" --body "${body}" --label backport \
+              || gh issue create --title "${title}" --body "${body}" \
+              || echo "::warning::Also failed to open a tracking issue for #${PR_NUMBER} (${context})."
           }
 
           for failure in ${{ steps.backport.outputs.failed }}; do
@@ -475,16 +489,16 @@ jobs:
             BACKPORT_BRANCH="backport-${PR_NUMBER}-to-${SAFE_TARGET}"
 
             if [ "${reason}" = "branch-missing" ]; then
-              post_comment "@${PR_AUTHOR} Backport failed: Branch \`${target}\` does not exist" "missing branch ${target}"
+              notify "@${PR_AUTHOR} Backport failed: Branch \`${target}\` does not exist" "missing branch ${target}"
 
             elif [ "${reason}" = "already-exists" ]; then
-              post_comment "@${PR_AUTHOR} Commit \`${MERGE_COMMIT}\` already exists on branch \`${target}\`. No backport needed." "already-backported ${target}"
+              notify "@${PR_AUTHOR} Commit \`${MERGE_COMMIT}\` already exists on branch \`${target}\`. No backport needed." "already-backported ${target}"
 
             elif [ "${reason}" = "branch-create-failed" ]; then
-              gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Backport to \`${target}\` failed: could not create the backport branch. Please retry or backport manually."
+              notify "@${PR_AUTHOR} Backport to \`${target}\` failed: could not create the backport branch. Please retry or backport manually." "branch-create-failed ${target}"
 
             elif [ "${reason}" = "push-failed" ]; then
-              gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Backport to \`${target}\` cherry-picked cleanly but the push failed. Please retry or push the backport branch manually."
+              notify "@${PR_AUTHOR} Backport to \`${target}\` cherry-picked cleanly but the push failed. Please retry or push the backport branch manually." "push-failed ${target}"
 
             elif [ "${reason}" = "conflicts" ]; then
               CONFLICTS_INLINE=$(echo "${conflicts}" | tr ',' ' ')
@@ -517,28 +531,38 @@ jobs:
               export target MERGE_COMMIT_SHORT BACKPORT_BRANCH CONFLICTS_BLOCK AGENT_PROMPT PR_AUTHOR STACK_HINT
               COMMENT_BODY=$(envsubst '${target} ${MERGE_COMMIT_SHORT} ${BACKPORT_BRANCH} ${CONFLICTS_BLOCK} ${AGENT_PROMPT} ${PR_AUTHOR} ${STACK_HINT}' <<<"$COMMENT_BODY_TEMPLATE")
 
-              post_comment "${COMMENT_BODY}" "cherry-pick conflict on ${target} (backport manually onto ${BACKPORT_BRANCH})"
+              notify "${COMMENT_BODY}" "cherry-pick conflict on ${target} (backport manually onto ${BACKPORT_BRANCH})"
             fi
           done
 
-      - name: Cleanup stranded backport branches
-        if: steps.filter-targets.outputs.skip != 'true' && failure()
-        run: |
-          FILE="${CREATED_BRANCHES_FILE:-}"
-
-          if [ -z "$FILE" ] || [ ! -f "$FILE" ]; then
-            echo "No backport branches recorded for cleanup"
-            exit 0
-          fi
-
-          while IFS= read -r branch; do
-            [ -z "$branch" ] && continue
-            printf 'Deleting branch %s\n' "${branch}"
-            if ! git push origin --delete "$branch"; then
-              echo "::warning::Failed to delete ${branch}"
-            fi
-          done < "$FILE"
-
+      # Only clear needs-backport once every target succeeded. If any target
+      # failed, the label stays so a re-run retries the remainder (targets that
+      # already landed are skipped by "Filter already backported targets").
       - name: Remove needs-backport label
-        if: steps.filter-targets.outputs.skip != 'true' && success()
-        run: gh pr edit ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }} --remove-label "needs-backport"
+        if: >-
+          steps.filter-targets.outputs.skip != 'true' &&
+          steps.backport.outputs.failed == '' &&
+          steps.create-prs.outputs.pr-create-failed == ''
+        run: gh api --method DELETE "repos/${{ github.repository }}/issues/${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}/labels/needs-backport" || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Re-red the run for partial failures, after the clean backports have
+      # been turned into PRs and the conflicts reported above.
+      - name: Fail if any backport target failed
+        if: >-
+          !cancelled() &&
+          steps.filter-targets.outputs.skip != 'true' &&
+          (steps.backport.outputs.failed != '' ||
+           steps.create-prs.outputs.pr-create-failed != '')
+        env:
+          FAILED_TARGETS: ${{ steps.backport.outputs.failed }}
+          PR_CREATE_FAILED: ${{ steps.create-prs.outputs.pr-create-failed }}
+        run: |
+          if [ -n "${FAILED_TARGETS}" ]; then
+            echo "::error::One or more backport targets failed: ${FAILED_TARGETS}"
+          fi
+          if [ -n "${PR_CREATE_FAILED}" ]; then
+            echo "::error::Backport branches were pushed but PR creation failed: ${PR_CREATE_FAILED}"
+          fi
+          exit 1
