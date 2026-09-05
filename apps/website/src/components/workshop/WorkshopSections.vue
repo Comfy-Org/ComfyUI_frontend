@@ -33,6 +33,14 @@ const {
 
 const emit = defineEmits<{ open: [UseCase] }>()
 
+// Router does not report a curated set yet, so the row that opens the listing
+// is the catalogue's own most-run models. It reads as an editor's shelf and
+// costs nothing to keep true as the catalogue grows.
+const FEATURED_LIMIT = 6
+const featured = computed(() =>
+  groupByFamily(sortWorkshopModels(models, 'popular')).slice(0, FEATURED_LIMIT)
+)
+
 const sections = computed(() =>
   USE_CASES.map((useCase) => {
     const matches = groupByFamily(
@@ -60,6 +68,33 @@ const unplaced = computed(() =>
 
 <template>
   <div class="flex flex-col gap-12" data-testid="workshop-sections">
+    <section
+      v-if="featured.length"
+      aria-labelledby="section-featured"
+      data-testid="section-featured"
+    >
+      <h2
+        id="section-featured"
+        class="mb-5 text-xl font-medium text-primary-warm-white"
+      >
+        {{ t('workshop.sections.featured', locale) }}
+      </h2>
+      <CardRow :locale>
+        <li
+          v-for="family in featured"
+          :key="family.key"
+          class="w-72 shrink-0 snap-start"
+        >
+          <WorkshopModelCard
+            :model="family.latest"
+            :version-count="family.versions.length"
+            :locale
+            :show-status="showStatuses"
+          />
+        </li>
+      </CardRow>
+    </section>
+
     <section
       v-for="section in sections"
       :key="section.useCase"

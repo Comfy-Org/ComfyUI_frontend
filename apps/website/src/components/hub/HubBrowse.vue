@@ -68,14 +68,11 @@ const totalIn = (value: UseCase | 'all') => {
   return groupModels(models, groupVersions.value).length + scoped.length
 }
 
-// Ordered by how much of the catalogue sits behind each, without printing the
-// tally: the row names use cases, it is not a report.
+// In the catalogue's reading order, and without printing the tally: the row
+// names use cases, it is not a report.
 const useCaseTabs = computed(() => [
   { value: 'all' as const },
-  ...USE_CASES.map((value) => ({ value, total: totalIn(value) }))
-    .filter((entry) => entry.total > 0)
-    .sort((a, b) => b.total - a.total)
-    .map(({ value }) => ({ value }))
+  ...USE_CASES.filter((value) => totalIn(value) > 0).map((value) => ({ value }))
 ])
 
 const scoped = computed(() => inUseCase(useCase.value))

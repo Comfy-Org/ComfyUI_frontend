@@ -269,15 +269,17 @@ export function splitTask(
 // The catalog is organised by what a visitor wants to do: what the model
 // produces and, for images and videos, whether it starts from a prompt or
 // from existing media. Models with an unknown modality only show up under "All".
+// Images lead, then video, then what makes neither: a reading order that holds
+// however the counts move.
 export const USE_CASES = [
   'generate-images',
   'edit-images',
   'generate-videos',
   'animate-images',
   'edit-videos',
+  'text',
   '3d',
-  'audio',
-  'text'
+  'audio'
 ] as const
 export type UseCase = (typeof USE_CASES)[number]
 

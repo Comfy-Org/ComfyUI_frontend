@@ -8438,6 +8438,7 @@ Enterprise`
     en: 'V2 · Workflows, apps and models',
     'zh-CN': 'V2 · 工作流、应用与模型'
   },
+  'workshop.sections.featured': { en: 'Featured', 'zh-CN': '精选' },
   'workshop.sections.seeAll': { en: 'See all', 'zh-CN': '查看全部' },
   'workshop.sections.provider': { en: 'All providers', 'zh-CN': '所有提供方' },
   'workshop.sections.scrollBack': {

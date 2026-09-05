@@ -107,8 +107,8 @@ const railBeside = computed(() => version.value === 'v1.2')
 
 const railLabel: TranslationKey = 'workshop.launch.label'
 
-// One flat list of use cases, ordered by how much of the catalogue sits behind
-// each. Every model belongs to exactly one, so the order is an honest ranking.
+// One flat list of use cases, in the catalogue's own reading order. Only the
+// ones nothing falls into drop out.
 const rail = computed(() => {
   const counts = countByUseCase(models)
   return [
@@ -117,13 +117,11 @@ const rail = computed(() => {
       label: t('workshop.launch.allUseCases', locale),
       current: useCase.value === 'all'
     },
-    ...USE_CASES.filter((value) => counts[value] > 0)
-      .sort((a, b) => counts[b] - counts[a])
-      .map((value) => ({
-        value,
-        label: t(useCaseLabelKey[value], locale),
-        current: useCase.value === value
-      }))
+    ...USE_CASES.filter((value) => counts[value] > 0).map((value) => ({
+      value,
+      label: t(useCaseLabelKey[value], locale),
+      current: useCase.value === value
+    }))
   ]
 })
 
