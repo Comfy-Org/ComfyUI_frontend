@@ -8,14 +8,10 @@ import {
   relatedWorkshopModels,
   toDetailModel
 } from '../../../config/workshop-detail'
+import { workshopModelSeo } from '../../../config/workshop-seo'
 import { t } from '../../../i18n/translations'
 import BaseLayout from '../../../layouts/BaseLayout.astro'
-import {
-  absoluteUrl,
-  jsonLdId,
-  pageContext,
-  softwareApplicationNode
-} from '../../../utils/jsonLd'
+import { pageContext } from '../../../utils/jsonLd'
 
 export const getStaticPaths: GetStaticPaths = async () => {
   // One pass over the collection: every page needs the whole set anyway to
@@ -42,31 +38,22 @@ const { siteUrl, locale, url } = pageContext(
   Astro.currentLocale
 )
 
-const softwareId = jsonLdId(url, 'software')
-const software = softwareApplicationNode({
+const seo = workshopModelSeo({
+  site: Astro.site,
   siteUrl,
-  id: softwareId,
-  name: model.displayName,
   url,
-  applicationCategory: 'MultimediaApplication',
-  authorName: model.provider,
-  description: model.description
+  workshopName: t('workshop.model.breadcrumb', locale),
+  homeName: t('breadcrumb.home', locale),
+  model
 })
 ---
 
 <BaseLayout
   title={`${model.displayName} · Workshop - Comfy`}
   description={model.description}
-  mainEntityId={softwareId}
-  breadcrumbs={[
-    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
-    {
-      name: t('workshop.model.breadcrumb', locale),
-      url: absoluteUrl(Astro.site, '/workshop')
-    },
-    { name: model.displayName }
-  ]}
-  extraJsonLd={[software]}
+  mainEntityId={seo.mainEntityId}
+  breadcrumbs={seo.breadcrumbs}
+  extraJsonLd={seo.extraJsonLd}
   noindex
 >
   <main class="mx-auto max-w-10xl px-6 py-12 lg:px-8 lg:py-16">
