@@ -18,7 +18,12 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { toNodeId } from '@/types/nodeId'
 
 const billingMock = vi.hoisted(() => ({
-  canRunWorkflows: true
+  canRunWorkflows: true,
+  showsSubscribeToRunPrompt: false
+}))
+
+const distributionMock = vi.hoisted(() => ({
+  isCloud: true
 }))
 
 const overlayMock = vi.hoisted(() => ({
@@ -28,8 +33,15 @@ const overlayMock = vi.hoisted(() => ({
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    canRunWorkflows: billingMock.canRunWorkflows
+    canRunWorkflows: billingMock.canRunWorkflows,
+    showsSubscribeToRunPrompt: billingMock.showsSubscribeToRunPrompt
   })
+}))
+
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return distributionMock.isCloud
+  }
 }))
 
 vi.mock('@/components/error/useErrorOverlayState', () => ({
@@ -105,14 +117,17 @@ function renderControls({
   hasError = false,
   missingResource,
   canRunWorkflows = true,
+  showsSubscribeToRunPrompt = false,
   mobile = false
 }: {
   hasError?: boolean
   missingResource?: MissingResource
   canRunWorkflows?: boolean
+  showsSubscribeToRunPrompt?: boolean
   mobile?: boolean
 } = {}) {
   billingMock.canRunWorkflows = canRunWorkflows
+  billingMock.showsSubscribeToRunPrompt = showsSubscribeToRunPrompt
 
   const pinia = createTestingPinia({
     createSpy: vi.fn,
@@ -146,7 +161,12 @@ function renderControls({
           template: '<div><slot name="button" /><slot /></div>'
         },
         ScrubableNumberInput: true,
-        SubscribeToRunButton: true
+        FreeTierQuota: {
+          template: '<div data-testid="free-tier-quota" />'
+        },
+        SubscribeToRunButton: {
+          template: '<button data-testid="subscribe-to-run-button" />'
+        }
       }
     }
   })
@@ -169,8 +189,21 @@ function clearMissingResource(resource: MissingResource) {
 describe('LinearControls', () => {
   beforeEach(() => {
     billingMock.canRunWorkflows = true
+    billingMock.showsSubscribeToRunPrompt = false
+    distributionMock.isCloud = true
     overlayMock.overlayMessage = 'KSampler is missing a required input: model'
     overlayMock.overlayTitle = 'Required input missing'
+  })
+
+  it('keeps Cloud-only quota and subscription controls hidden off Cloud', () => {
+    distributionMock.isCloud = false
+
+    renderControls({ showsSubscribeToRunPrompt: true })
+
+    expect(
+      screen.queryByTestId('subscribe-to-run-button')
+    ).not.toBeInTheDocument()
+    expect(screen.queryByTestId('free-tier-quota')).not.toBeInTheDocument()
   })
 
   it.for([
