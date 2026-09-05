@@ -36,6 +36,7 @@ export const TestIds = {
     zoomPercentageInput: 'zoom-percentage-input'
   },
   dialogs: {
+    overlay: 'dialog-overlay',
     settings: 'settings-dialog',
     settingsContainer: 'settings-container',
     settingsTabAbout: 'settings-tab-about',
