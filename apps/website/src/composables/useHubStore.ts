@@ -1,7 +1,9 @@
 import { ref } from 'vue'
 
+export type FilterBadgeType = 'tag' | 'model' | 'media' | 'partner' | 'industry'
+
 export interface FilterBadge {
-  readonly type: 'tag' | 'model'
+  readonly type: FilterBadgeType
   readonly value: string
 }
 
@@ -33,6 +35,16 @@ export function useHubStore() {
       filterBadges.value = filterBadges.value.some((b) => sameBadge(b, badge))
         ? filterBadges.value.filter((b) => !sameBadge(b, badge))
         : [...filterBadges.value, badge]
+    },
+    // Media is one choice, not a set: picking a new one replaces the old.
+    selectBadge(badge: FilterBadge) {
+      const others = filterBadges.value.filter((b) => b.type !== badge.type)
+      filterBadges.value = filterBadges.value.some((b) => sameBadge(b, badge))
+        ? others
+        : [...others, badge]
+    },
+    clearBadgesOfType(type: FilterBadgeType) {
+      filterBadges.value = filterBadges.value.filter((b) => b.type !== type)
     },
     clearBadges() {
       filterBadges.value = []

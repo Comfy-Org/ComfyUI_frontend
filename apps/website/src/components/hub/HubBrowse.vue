@@ -11,6 +11,7 @@ import {
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import type { FilterBadgeType } from '../../composables/useHubStore'
 import { useHubStore } from '../../composables/useHubStore'
 import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
 import type { UseCase } from '../../config/workshop'
@@ -24,6 +25,7 @@ import {
   useCaseForTemplate
 } from '../../lib/hub/template-use-case'
 import { tagDisplayName } from '../../lib/hub/tag-aliases'
+import { withFacetFields } from '../../lib/hub/facet-fields'
 import type { HubTemplate } from '../../lib/hub/types'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -38,7 +40,9 @@ const { locale = 'en', embedded = false } = defineProps<{
   embedded?: boolean
 }>()
 
-const templates = hubTemplates as HubTemplate[]
+const templates = (hubTemplates as HubTemplate[]).map((template) =>
+  withFacetFields(template, workshopModels)
+)
 const store = useHubStore()
 const { groupVersions } = usePrototypeTweaks()
 onUnmounted(() => store.reset())
@@ -152,17 +156,35 @@ const toolbarLabels: ToolbarLabels = {
   searchPlaceholder: t('workshop.hub.facets.search', locale),
   noResults: t('workshop.hub.facets.noResults', locale),
   more: t('workshop.hub.facets.more', locale),
+  type: t('workshop.hub.facets.type', locale),
+  typeAll: t('workshop.hub.kind.all', locale),
   less: t('workshop.hub.facets.less', locale),
   sortPopular: t('workshop.hub.sort.popular', locale),
   sortNewest: t('workshop.hub.sort.newest', locale),
   showResults: t('workshop.hub.facets.show', locale)
 }
 const facetsConfig: FacetGroupConfig[] = [
-  { key: 'models', type: 'model', label: t('workshop.hub.models', locale) },
+  {
+    key: 'media',
+    type: 'media',
+    label: t('workshop.hub.facets.media', locale),
+    single: true
+  },
   {
     key: 'categories',
     type: 'tag',
-    label: t('workshop.hub.categories', locale)
+    label: t('workshop.hub.facets.task', locale)
+  },
+  { key: 'models', type: 'model', label: t('workshop.hub.models', locale) },
+  {
+    key: 'partners',
+    type: 'partner',
+    label: t('workshop.hub.facets.partner', locale)
+  },
+  {
+    key: 'industries',
+    type: 'industry',
+    label: t('workshop.hub.facets.industry', locale)
   }
 ]
 const gridLabels: GridLabels = {
@@ -201,14 +223,26 @@ const modelFamilies = computed(() =>
 
 const filteredTemplates = computed(() => {
   const badges = store.filterBadges.value
-  const tags = badges.filter((b) => b.type === 'tag').map((b) => b.value)
-  const models = badges.filter((b) => b.type === 'model').map((b) => b.value)
+  const chosen = (type: FilterBadgeType) =>
+    badges.filter((b) => b.type === type).map((b) => b.value)
+  const tags = chosen('tag')
+  const models = chosen('model')
+  const media = chosen('media')
+  const partners = chosen('partner')
+  const industries = chosen('industry')
   const query = store.searchQuery.value.trim().toLowerCase()
   return scoped.value.templates.filter(
     (tmpl) =>
       (tags.length === 0 || tags.some((tag) => tmpl.tags.includes(tag))) &&
       (models.length === 0 ||
         models.some((model) => tmpl.models.includes(model))) &&
+      (media.length === 0 || media.includes(tmpl.mediaType)) &&
+      (partners.length === 0 ||
+        (tmpl.partner !== undefined && partners.includes(tmpl.partner))) &&
+      (industries.length === 0 ||
+        industries.some((industry) =>
+          (tmpl.industries as readonly string[]).includes(industry)
+        )) &&
       (query === '' ||
         tmpl.title.toLowerCase().includes(query) ||
         tmpl.models.some((m) => m.toLowerCase().includes(query)) ||

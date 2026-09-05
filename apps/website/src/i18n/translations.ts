@@ -9056,6 +9056,11 @@ Enterprise`
   'workshop.hub.sort.newest': { en: 'Newest', 'zh-CN': '最新' },
   'workshop.hub.facets.clearAll': { en: 'Clear all', 'zh-CN': '全部清除' },
   'workshop.hub.facets.search': { en: 'Search…', 'zh-CN': '搜索…' },
+  'workshop.hub.facets.type': { en: 'Type', 'zh-CN': '类型' },
+  'workshop.hub.facets.media': { en: 'Media', 'zh-CN': '媒体' },
+  'workshop.hub.facets.task': { en: 'Task', 'zh-CN': '任务' },
+  'workshop.hub.facets.partner': { en: 'Partner', 'zh-CN': '合作方' },
+  'workshop.hub.facets.industry': { en: 'Industry', 'zh-CN': '行业' },
   'workshop.hub.facets.more': { en: '+ {n} more', 'zh-CN': '+ {n} 更多' },
   'workshop.hub.facets.less': { en: 'Show less', 'zh-CN': '收起' },
   'workshop.hub.facets.show': {

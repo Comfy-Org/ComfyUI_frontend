@@ -2,12 +2,16 @@ import type { Ref } from 'vue'
 import { computed } from 'vue'
 
 import { tagDisplayName } from '../lib/hub/tag-aliases'
+import { mediaName } from '../lib/hub/media-names'
 import type { FilterBadge } from './useHubStore'
 import { useHubStore } from './useHubStore'
 
 export interface FacetTemplate {
   readonly tags: readonly string[]
   readonly models: readonly string[]
+  readonly mediaType?: string
+  readonly partner?: string
+  readonly industries?: readonly string[]
 }
 
 export interface FacetValue {
@@ -29,7 +33,13 @@ const FACET_SOURCES: Record<
   }
 > = {
   model: { field: (t) => t.models, display: (v) => v },
-  tag: { field: (t) => t.tags, display: tagDisplayName }
+  tag: { field: (t) => t.tags, display: tagDisplayName },
+  media: {
+    field: (t) => (t.mediaType ? [t.mediaType] : []),
+    display: mediaName
+  },
+  partner: { field: (t) => (t.partner ? [t.partner] : []), display: (v) => v },
+  industry: { field: (t) => t.industries ?? [], display: (v) => v }
 }
 
 function buildFacet(
@@ -51,7 +61,10 @@ export function useFacets(templates: Ref<readonly FacetTemplate[]>) {
   const store = useHubStore()
   const facetsByType = computed<Record<FilterBadge['type'], Facet>>(() => ({
     model: buildFacet(templates.value, 'model'),
-    tag: buildFacet(templates.value, 'tag')
+    tag: buildFacet(templates.value, 'tag'),
+    media: buildFacet(templates.value, 'media'),
+    partner: buildFacet(templates.value, 'partner'),
+    industry: buildFacet(templates.value, 'industry')
   }))
   const isBadgeActive = (type: FilterBadge['type'], value: string) =>
     store.filterBadges.value.some((b) => b.type === type && b.value === value)

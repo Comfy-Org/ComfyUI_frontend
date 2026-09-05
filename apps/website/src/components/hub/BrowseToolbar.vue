@@ -24,6 +24,8 @@ export interface FacetGroupConfig {
   readonly key: string
   readonly type: FilterBadge['type']
   readonly label: string
+  /** Segmented groups hold one choice; the rest are chips you switch on. */
+  readonly single?: boolean
 }
 
 export interface ToolbarLabels {
@@ -38,6 +40,8 @@ export interface ToolbarLabels {
   readonly noResults: string
   readonly more: string
   readonly less: string
+  readonly type: string
+  readonly typeAll: string
   readonly sortPopular: string
   readonly sortNewest: string
   readonly showResults: string
@@ -139,7 +143,7 @@ const chipClass = (active: boolean) =>
 </script>
 
 <template>
-  <div class="flex flex-col gap-3">
+  <div class="relative flex flex-col gap-3">
     <div class="flex flex-wrap items-center gap-2">
       <TabsRoot
         ref="tabs"
@@ -241,9 +245,31 @@ const chipClass = (active: boolean) =>
 
     <div
       v-if="filterOpen"
-      class="bg-site-dropdown flex flex-col gap-5 rounded-2xl border border-white/10 p-5"
+      class="bg-site-dropdown absolute top-full right-0 z-40 mt-3 flex max-h-[70vh] w-full max-w-3xl scrollbar-thin flex-col gap-5 overflow-y-auto rounded-3xl border border-white/10 p-6 shadow-2xl"
       data-testid="hub-filter-menu"
     >
+      <div class="flex flex-col gap-2">
+        <h3
+          class="text-content-muted text-2xs font-bold tracking-wider uppercase"
+        >
+          {{ labels.type }}
+        </h3>
+        <div class="flex flex-wrap gap-2" role="listbox">
+          <button
+            v-for="tab in TABS"
+            :key="tab.key"
+            type="button"
+            role="option"
+            :aria-selected="store.activeTab.value === tab.key"
+            :class="chipClass(store.activeTab.value === tab.key)"
+            :data-testid="`hub-type-${tab.key}`"
+            @click="store.setTab(tab.key)"
+          >
+            {{ tab.key === 'all' ? labels.typeAll : labels[tab.labelKey] }}
+          </button>
+        </div>
+      </div>
+
       <div v-for="group in groups" :key="group.key" class="flex flex-col gap-2">
         <div class="flex items-center gap-3">
           <h3
@@ -273,13 +299,28 @@ const chipClass = (active: boolean) =>
           aria-multiselectable="true"
         >
           <button
+            v-if="group.single"
+            type="button"
+            role="option"
+            :aria-selected="activeCountForType(group.type) === 0"
+            :class="chipClass(activeCountForType(group.type) === 0)"
+            :data-testid="`hub-facet-${group.key}-all`"
+            @click="store.clearBadgesOfType(group.type)"
+          >
+            {{ labels.typeAll }}
+          </button>
+          <button
             v-for="val in visibleValues(group)"
             :key="val.value"
             type="button"
             role="option"
             :aria-selected="isBadgeActive(group.type, val.value)"
             :class="chipClass(isBadgeActive(group.type, val.value))"
-            @click="store.toggleBadge({ type: group.type, value: val.value })"
+            @click="
+              group.single
+                ? store.selectBadge({ type: group.type, value: val.value })
+                : store.toggleBadge({ type: group.type, value: val.value })
+            "
           >
             {{ val.displayValue }}
             <span class="tabular-nums opacity-50">{{ val.count }}</span>
