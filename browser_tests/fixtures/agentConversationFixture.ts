@@ -9,12 +9,15 @@ import type {
   AgentMessages,
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import type { ServerDocWireFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
-import { DOC_PROTOCOL_VERSION } from '@/workbench/extensions/agent/crdt/docFrameClient'
+import {
+  DOC_PROTOCOL_VERSION,
+  parseServerDocFrame
+} from '@/workbench/extensions/agent/crdt/docFrameClient'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
+import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import type {
   AgentConversation,
@@ -321,9 +324,10 @@ class AgentConversationHarness {
       .evaluateAll((nodes) =>
         nodes.map((node) => node.getAttribute('data-node-id') ?? '')
       )
-    return ids
-      .filter((id) => id !== '')
-      .sort((a, b) => compareNodeIds(toNodeId(a), toNodeId(b)))
+    // Three components emit data-node-id, so one node can appear twice.
+    return [...new Set(ids.filter((id) => id !== ''))].sort((a, b) =>
+      compareNodeIds(toNodeId(a), toNodeId(b))
+    )
   }
 
   private async mockAgentApi(): Promise<void> {
@@ -383,7 +387,14 @@ class AgentConversationHarness {
     return parsed.data
   }
 
-  private send(frame: AgentWsEvent | ServerDocWireFrame): void {
+  private send(frame: AgentWsEvent | HostFrame): void {
+    // Every host frame must satisfy production's own parser, so a host that
+    // stopped emitting a required field fails here, not silently on the client.
+    if (
+      (frame.type.startsWith('doc_') || frame.type === 'awareness') &&
+      parseServerDocFrame(frame) === null
+    )
+      throw new Error(`host frame ${frame.type} is not a valid doc frame`)
     if (!this.socket) throw new Error('the app has not opened /ws yet')
     this.socket.send(JSON.stringify(frame))
   }
