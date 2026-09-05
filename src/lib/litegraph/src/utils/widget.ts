@@ -29,6 +29,16 @@ export function evaluateInput(input: string): number | undefined {
   return newValue
 }
 
+export function findComboValueIndex(
+  values: readonly (string | number)[],
+  currentValue: string | number
+): number {
+  const exactIndex = values.indexOf(currentValue)
+  return exactIndex === -1
+    ? values.findIndex((value) => String(value) === String(currentValue))
+    : exactIndex
+}
+
 export function getWidgetIds(
   widgets: readonly { readonly widgetId?: WidgetId }[]
 ): WidgetId[] {

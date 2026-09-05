@@ -204,8 +204,8 @@ export interface IStringComboWidget extends IBaseWidget<
   value: string
 }
 
-type ComboWidgetValues =
-  | string[]
+export type ComboWidgetValues =
+  | (string | number)[]
   | Record<string, string>
   | ((widget?: IComboWidget, node?: LGraphNode) => string[])
 
