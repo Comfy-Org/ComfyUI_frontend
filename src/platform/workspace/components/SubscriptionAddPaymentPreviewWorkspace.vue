@@ -271,6 +271,7 @@
         :verification-pending="Boolean(actionUrl) || verificationRecoveryActive"
         :can-submit="quoteIsCurrent"
         @submitting-change="stripeSubmissionPending = $event"
+        @provider-unreachable-change="providerUnreachable = $event"
         @confirm="confirmPayment"
       />
 
@@ -316,8 +317,10 @@
         {{ $t('subscription.preview.subscribeToPlan', { plan: tierName }) }}
       </Button>
 
-      <!-- Terms Agreement (below the pay action, like Stripe checkout) -->
-      <SubscriptionTermsNote class="mt-2" />
+      <!-- Terms Agreement (below the pay action, like Stripe checkout).
+           Hidden while the payment provider is unreachable: with no way to
+           pay, there is nothing to agree to. -->
+      <SubscriptionTermsNote v-if="!providerUnreachableActive" class="mt-2" />
     </div>
   </div>
 </template>
@@ -462,6 +465,13 @@ const selectedMethod = computed({
 
 const promotionCode = ref(previewData?.promotion_code ?? '')
 const stripeSubmissionPending = ref(false)
+// Reported by the capture selector when the Stripe SDK cannot load (1b).
+// Gated on the selector actually being rendered so a stale report cannot
+// outlive the capture form it described.
+const providerUnreachable = ref(false)
+const providerUnreachableActive = computed(
+  () => captureMode.value && quoteReady.value && providerUnreachable.value
+)
 const interactionLocked = computed(
   () => isLoading || isApplyingPromotionCode || stripeSubmissionPending.value
 )

@@ -48,7 +48,10 @@ const i18n = createI18n({
           stripeMethodChoice: 'Choose a payment method',
           alipayRenewalNote: 'Alipay renewal note',
           payAndSubscribe: 'Pay and subscribe',
-          stripeUnavailable: 'Stripe is unavailable'
+          stripeUnavailable: 'Stripe is unavailable',
+          providerUnreachableTitle: "We can't take payments right now",
+          providerUnreachableBody: "We can't reach our payment provider.",
+          providerUnreachableRetry: 'Try again'
         }
       }
     }
@@ -115,6 +118,7 @@ describe('UnifiedStripePaymentSelector', () => {
       terms: { card: 'never' }
     })
     expect(stripeMocks.mount).toHaveBeenCalledTimes(1)
+    expect(screen.queryByText("We can't take payments right now")).toBeNull()
 
     await user.click(
       screen.getByRole('button', {
@@ -198,15 +202,85 @@ describe('UnifiedStripePaymentSelector', () => {
     ).toBeDisabled()
   })
 
-  it('shows unavailable state when Stripe fails to load', async () => {
+  it('shows the provider-unreachable state instead of the card form when the SDK fails to load', async () => {
+    stripeMocks.loadStripe.mockRejectedValue(new Error('load failed'))
+
+    const { emitted } = renderSelector()
+
+    expect(
+      await screen.findByText("We can't take payments right now")
+    ).toBeTruthy()
+    expect(
+      screen.getByText("We can't reach our payment provider.")
+    ).toBeTruthy()
+    expect(stripeMocks.stripe.elements).not.toHaveBeenCalled()
+    expect(stripeMocks.mount).not.toHaveBeenCalled()
+    // Try again replaces the pay button outright: there is nothing to pay with.
+    expect(
+      screen.queryByRole('button', { name: 'Pay and subscribe' })
+    ).toBeNull()
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy()
+    expect(emitted().providerUnreachableChange).toEqual([[false], [true]])
+  })
+
+  it('re-attempts the SDK load in place from Try again', async () => {
+    const user = userEvent.setup()
+    stripeMocks.loadStripe.mockRejectedValueOnce(new Error('load failed'))
+
+    renderSelector()
+
+    expect(
+      await screen.findByText("We can't take payments right now")
+    ).toBeTruthy()
+
+    await user.click(screen.getByRole('button', { name: 'Try again' }))
+
+    await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalledTimes(1))
+    expect(stripeMocks.loadStripe).toHaveBeenCalledTimes(2)
+    expect(screen.queryByText("We can't take payments right now")).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
+    expect(
+      screen.getByRole('button', { name: 'Pay and subscribe' })
+    ).toBeEnabled()
+  })
+
+  it('keeps the unreachable state when the retry fails again', async () => {
+    const user = userEvent.setup()
     stripeMocks.loadStripe.mockRejectedValue(new Error('load failed'))
 
     renderSelector()
 
-    expect(await screen.findByText('Stripe is unavailable')).toBeTruthy()
     expect(
-      screen.getByRole('button', { name: 'Pay and subscribe' })
-    ).toBeDisabled()
+      await screen.findByText("We can't take payments right now")
+    ).toBeTruthy()
+
+    await user.click(screen.getByRole('button', { name: 'Try again' }))
+
+    expect(
+      await screen.findByText("We can't take payments right now")
+    ).toBeTruthy()
+    expect(stripeMocks.loadStripe).toHaveBeenCalledTimes(2)
+    expect(stripeMocks.mount).not.toHaveBeenCalled()
+  })
+
+  it('treats a payment element load error as provider unreachable', async () => {
+    renderSelector()
+    await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalledTimes(1))
+
+    const loaderrorHandler = stripeMocks.on.mock.calls.find(
+      ([event]) => event === 'loaderror'
+    )?.[1]
+    expect(loaderrorHandler).toBeTypeOf('function')
+    loaderrorHandler()
+
+    expect(
+      await screen.findByText("We can't take payments right now")
+    ).toBeTruthy()
+    expect(stripeMocks.destroy).toHaveBeenCalledTimes(1)
+    expect(
+      screen.queryByRole('button', { name: 'Pay and subscribe' })
+    ).toBeNull()
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy()
   })
 
   it('updates Stripe Elements when the quote changes', async () => {
