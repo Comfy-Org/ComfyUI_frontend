@@ -8,6 +8,124 @@
     "share": "Paylaş",
     "shareTooltip": "İş akışını paylaş"
   },
+  "agent": {
+    "addFromAssets": "Varlıklar panelinden ekle",
+    "addNodesFromGraph": "Graftan düğüm ekle",
+    "addPromptToSend": "Göndermek için istem ekle",
+    "addToPrompt": "İsteme ekle",
+    "alpha": "ALFA",
+    "askComfyAgent": "Comfy Agent'a sor",
+    "assetNotAttachable": "Görseller, videolar, ses dosyaları, 3B modeller ve metin dosyaları eklenebilir",
+    "attach": "Dosya ekle",
+    "attachFiles": "Görüntü veya dosya ekle",
+    "attachmentTooLarge": "{name}, {limit} sınırını aşıyor",
+    "attachmentUploadFailed": "{name} yüklenemedi",
+    "backToPreviousChat": "Önceki sohbete dön",
+    "caption": "Yapay zekâ ajanı hata yapabilir",
+    "captionExpanded": "Yapay zekâ aracısı hata yapabilir. Yanıtınızı iki kez kontrol edin.",
+    "changeWorkflowForChat": "Bu sohbetin iş akışını değiştir",
+    "chatOptions": "Sohbet seçenekleri",
+    "chooseWorkflow": "Bir iş akışı seç",
+    "chooseWorkflowForChat": "Bu sohbet için bir iş akışı seç",
+    "close": "Kapat",
+    "coachBody": "Ondan grafikler oluşturmasını veya düzenlemesini isteyin.",
+    "coachTitle": "Ajanla tanışın",
+    "copied": "Kopyalandı!",
+    "copy": "Kopyala",
+    "copyMarkdown": "Markdown olarak kopyala",
+    "copyUnavailable": "Bu sürümde yalnızca mevcut konuşma kopyalanabilir",
+    "crdtConnected": "bağlı",
+    "crdtDisconnected": "bağlantı kesildi",
+    "crdtNoDocument": "belge yok",
+    "crdtStatus": "CRDT {connection} · {workflowId} · {updates} güncelleme · {frame}",
+    "credits": "krediler",
+    "delete": "Sil",
+    "dismiss": "Kapat",
+    "dontWorkInWorkflow": "Bir iş akışında çalışma",
+    "downloadAssets": "Varlıkları indir",
+    "dragAndDropAssets": "Varlıkları buraya sürükleyip bırakın",
+    "focusNode": "Tuvalde göster",
+    "focusNodeLabel": "{node} düğümünü tuvalde göster",
+    "friend": "orada",
+    "gotIt": "Anladım",
+    "greeting": "Merhaba {name},",
+    "greetingQuestion": "Ne oluşturmak istiyorsunuz?",
+    "helpful": "Yararlı",
+    "history": "Sohbet geçmişi",
+    "historyCurrent": "Geçerli",
+    "historyEarlier": "Daha önce",
+    "historyEmpty": "Henüz konuşma yok",
+    "historyToday": "Bugün",
+    "historyYesterday": "Dün",
+    "latest": "En yeni",
+    "loadFailed": "Ajan paneli yüklenemedi.",
+    "malformedEvent": "Ajan, bu panelin okuyamadığı bir olay gönderdi",
+    "maximize": "Paneli büyüt",
+    "mention": "Bir düğümden bahset",
+    "minimize": "Paneli küçült",
+    "modelAuto": "Otomatik",
+    "newChat": "Yeni sohbet",
+    "newChatTitle": "Başlıksız",
+    "noNodesToMention": "Bu iş akışında düğüm yok",
+    "nodeSelection": {
+      "bannerSubtitle": "Referans olarak eklemek için bir veya daha fazla düğüm seçin",
+      "bannerTitle": "Graftan düğüm ekle",
+      "exit": "Moddan çık",
+      "selectNode": "Düğüm seç"
+    },
+    "notHelpful": "Yararlı değil",
+    "openWorkflowTab": "{name} aç",
+    "placeholder": "Fikirleri açıklayın, başvurmak için {'@'},\ngraftan düğüm ekleyin veya varlıkları sürükleyip bırakın",
+    "ranToolCalls": "{count} araç çağrısı çalıştırıldı | {count} araç çağrısı çalıştırıldı",
+    "ranToolCallsTimed": "{seconds} saniye boyunca {count} araç çağrısı çalıştırıldı | {seconds} saniye boyunca {count} araç çağrısı çalıştırıldı",
+    "remove": "Kaldır",
+    "removeNodeLabel": "{node} referansını kaldır",
+    "runModeAsk": "İş akışı çalışmadan önce sor",
+    "runModeAskDescription": "Comfy, her iş akışı çalıştırmasından önce onay isteyecek",
+    "runModeAuto": "Onay olmadan otomatik çalıştır",
+    "runModeAutoDescription": "Comfy, izin istemeden iş akışlarını çalıştıracak",
+    "runModeLimit": "Sınırlarla otomatik çalıştır",
+    "runModeLimitDescription": "Comfy, yalnızca bir iş akışı çalıştırması kredi sınırınızı aştığında onay isteyecek",
+    "runModeTriggerAsk": "Sor",
+    "runModeTriggerAskTooltip": "İzin iste",
+    "runModeTriggerAuto": "Otomatik",
+    "runModeTriggerAutoLimit": "Otomatik (sınırlı)",
+    "runModeTriggerAutoLimitTooltip": "Kredi sınırına ulaşıldığında sor",
+    "runModeTriggerAutoTooltip": "İzin istemeden iş akışını çalıştır",
+    "runNotice": "Aracı grafiği değiştirebilir. İş akışını yürütmek için çalıştır'a tıklamanız gerekir.",
+    "runNoticeExpanded": "Aracı iş akışınızı değiştirebilir. Yürütmek için çalıştır'a tıklamanız gerekir.",
+    "runPermissions": "Çalıştırma izinleri",
+    "runPermissionsDescription": "Aracının ne zaman onayınıza ihtiyaç duyacağını seçin",
+    "saveChanges": "Değişiklikleri kaydet",
+    "searchWorkflows": "İş akışlarında ara",
+    "selectWorkflowToGenerate": "Oluşturma yapılacak iş akışını seç",
+    "send": "Gönder",
+    "sendBusy": "Zaten bir mesaj gönderiliyor",
+    "sendFailed": "Mesaj gönderilemedi",
+    "showChatHistory": "Sohbet geçmişini göster",
+    "showLess": "Daha azını göster",
+    "showMore": "Daha fazlasını göster",
+    "skip": "Atla",
+    "stop": "Durdur",
+    "suggestedPrompts": [
+      "Hokey maskeli sarı bir ördek oluştur",
+      "Kaydedilmiş iş akışlarımı listele",
+      "Cilt yükseltme için en iyi iş akışını bul",
+      "Seçili düğümü açıkla",
+      "3 modelli, görüntüden videoya bir iş akışı oluştur"
+    ],
+    "switchWorkflow": "İş akışını değiştir",
+    "thinking": "Düşünüyor...",
+    "thought": "Düşünce",
+    "thoughtTimed": "{seconds} saniye düşündü",
+    "title": "Comfy Agent",
+    "toolForgotPreference": "Bir tercih unutuldu",
+    "toolOpenedNewTab": "Yeni bir sekme açıldı",
+    "toolSavedPreference": "Bir tercih kaydedildi",
+    "toolSwitchedTabs": "Sekmeler değiştirildi",
+    "untitledChat": "Başlıksız",
+    "uploading": "Yükleniyor"
+  },
   "apiNodesCostBreakdown": {
     "costPerRun": "Çalıştırma başına maliyet",
     "title": "API Düğüm(ler)i",
@@ -949,6 +1067,7 @@
     "MODEL_TASK_ID": "MODEL_GÖREV_ID",
     "MOGE_GEOMETRY": "MOGE_GEOMETRY",
     "MOGE_MODEL": "MOGE_MODEL",
+    "MULTIVIEW_TASK_ID": "MULTIVIEW_TASK_ID",
     "NOISE": "GÜRÜLTÜ",
     "OPENAI_CHAT_CONFIG": "OPENAI_SOHBET_YAPILANDIRMASI",
     "OPENAI_INPUT_FILES": "OPENAI_GİRİŞ_DOSYALARI",
@@ -959,6 +1078,7 @@
     "RECRAFT_COLOR": "RECRAFT_RENK",
     "RECRAFT_CONTROLS": "RECRAFT_KONTROLLERİ",
     "RECRAFT_V3_STYLE": "RECRAFT_V3_STİLİ",
+    "RESOLUTION_PREVIEW": "RESOLUTION_PREVIEW",
     "RETARGET_TASK_ID": "YENİ_HEDEF_GÖREV_ID",
     "RIG_TASK_ID": "RİG_GÖREV_ID",
     "RUNWAY_ALEPH2_KEYFRAME": "RUNWAY_ALEPH2_KEYFRAME",
@@ -966,6 +1086,7 @@
     "SAM3D_BODY_MODEL": "SAM3D_BODY_MODEL",
     "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "ÖRNEKLEYİCİ",
+    "SEGMENT_TASK_ID": "SEGMENT_TASK_ID",
     "SHAPE_SUBDIVIDES": "SHAPE_SUBDIVIDES",
     "SIGMAS": "SİGMALAR",
     "SPLAT": "SPLAT",
@@ -977,6 +1098,7 @@
     "UPSCALE_MODEL": "YÜKSELTME_MODELİ",
     "VAE": "VAE",
     "VIDEO": "VİDEO",
+    "VIDEO_EDIT": "VIDEO_EDIT",
     "VOXEL": "VOXEL",
     "WAN_CAMERA_EMBEDDING": "WAN_KAMERA_GÖMÜLMESİ",
     "WEBCAM": "WEBCAM"
@@ -1073,6 +1195,18 @@
       }
     },
     "promptErrors": {
+      "agent_api_failed": {
+        "desc": "Comfy Agent bir sunucu hatasıyla karşılaştı.",
+        "title": "Comfy Agent hatası"
+      },
+      "apply_failed": {
+        "desc": "Bir ajan düzenlemesi iş akışı belgesine uygulanamadı.",
+        "title": "Ajan düzenlemesi başarısız oldu"
+      },
+      "guard_trip": {
+        "desc": "Gelen bir ajan güncellemesi, beklenen iş akışı belgesi yapısıyla eşleşmediği için engellendi.",
+        "title": "Ajan güncellemesi engellendi"
+      },
       "missing_node_type": {
         "desc": "Bir düğüm türü eksik veya kullanılamıyor. Çalışma akışı bozulmuş olabilir veya özel bir düğüm gerektiriyor olabilir.",
         "title": "Eksik düğüm türü"
@@ -1080,6 +1214,14 @@
       "no_prompt": {
         "desc": "Sunucuya gönderilen çalışma akışı verisi boş. Bu beklenmeyen bir sistem hatası olabilir.",
         "title": "Çalışma akışı verisi boş"
+      },
+      "op_rejected": {
+        "desc": "İş akışı belgesi bir ajan düzenlemesini reddetti. Tuval ve paylaşılan belge, bir sonraki güncellemeye kadar kısa süreliğine farklı olabilir.",
+        "title": "Ajan düzenlemesi reddedildi"
+      },
+      "prefix_abort": {
+        "desc": "Bir grup ajan düzenlemesi yarıda durdu. Kalan düzenlemeler otomatik olarak yeniden denenir.",
+        "title": "Ajan düzenlemeleri kısmen uygulandı"
       },
       "prompt_no_outputs": {
         "desc": "Çalışma akışında sonuç üretecek herhangi bir çıktı düğümü (örn. Görseli Kaydet, Görseli Önizle) bulunmuyor.",
@@ -1497,6 +1639,8 @@
     "addNewKeybinding": "Yeni kısayol tuşu ekle",
     "addNode": "Bir düğüm ekle...",
     "addNodeFilterCondition": "Düğüm filtresi koşulu ekle",
+    "agentModified": "Ajan bu iş akışını güncelledi",
+    "agentWorking": "Ajan bu iş akışı üzerinde çalışıyor",
     "all": "Tümü",
     "allKeybindingsReset": "Tüm kısayol tuşları varsayılana sıfırlandı",
     "amount": "Miktar",
@@ -1715,6 +1859,7 @@
     "moreWorkflows": "Daha fazla iş akışı",
     "mostRelevant": "En alakalı",
     "multiSelectDropdown": "Çoklu seçim açılır menüsü",
+    "mute": "Sessize al",
     "nMoreKeybindings": "+ {count} tane daha",
     "nMoreKeybindingsCompact": "+ {count}",
     "name": "Ad",
@@ -1870,6 +2015,7 @@
     "triggerPhrase": "Tetikleyici ifade",
     "unknownError": "Bilinmeyen hata",
     "unknownFile": "Bilinmeyen dosya",
+    "unmute": "Sesi aç",
     "untitled": "Başlıksız",
     "update": "Güncelle",
     "updateAvailable": "Güncelleme Mevcut",
@@ -2343,11 +2489,13 @@
     "menuBar": {
       "bgColor": "Arka Plan Rengi",
       "bgImage": "Arka Plan Görseli",
+      "customUp": "Özel üst yön",
       "deleteRecording": "Kaydı Sil",
       "downloadRecording": "Kaydı İndir",
       "fov": "Görüş Açısı (FOV)",
       "intensity": "Yoğunluk",
       "material": "Malzeme",
+      "naturalUp": "Doğal üst yön",
       "originalMaterialOnly": "Sadece orijinal malzeme",
       "panorama": "Panorama",
       "record": "Kaydet",
@@ -2409,8 +2557,8 @@
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "Sürüm {version} çekirdek düğümleri:",
-    "outdatedVersion": "Bu iş akışı ComfyUI'nin daha yeni bir sürümüyle oluşturulmuş ({version}). Bazı düğümler düzgün çalışmayabilir.",
-    "outdatedVersionGeneric": "Bu iş akışı ComfyUI'nin daha yeni bir sürümüyle oluşturulmuş. Bazı düğümler düzgün çalışmayabilir.",
+    "newerVersionRequired": "Bazı düğümler daha yeni bir ComfyUI sürümü gerektiriyor (geçerli: {version}). Tüm düğümleri kullanmak için lütfen güncelleyin.",
+    "newerVersionRequiredGeneric": "Bazı düğümler daha yeni bir ComfyUI sürümü gerektiriyor. Tüm düğümleri kullanmak için lütfen güncelleyin.",
     "unknownVersion": "bilinmeyen"
   },
   "logsTerminal": {
@@ -2953,6 +3101,7 @@
     "Luma": "Luma",
     "Magnific": "Magnific",
     "Meshy": "Meshy",
+    "Meta": "Meta",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
@@ -2989,6 +3138,7 @@
     "clip": "klip",
     "color": "renk",
     "combine": "birleştir",
+    "comfy cloud": "comfy cloud",
     "compositing": "birleştirme",
     "cond pair": "çift koşul",
     "cond single": "tek koşul",
@@ -2998,7 +3148,6 @@
     "create": "oluştur",
     "custom": "özel",
     "dancer": "dansçı",
-    "dataset": "veri seti",
     "debug": "hata ayıklama",
     "detection": "tespit",
     "experimental": "deneysel",
@@ -3037,7 +3186,6 @@
     "mochi": "mochi",
     "model": "model",
     "model specific": "model özel",
-    "model_patches": "model_patches",
     "move": "move",
     "multigpu": "çoklu gpu",
     "noise": "gürültü",
@@ -3058,6 +3206,7 @@
     "scail": "scail",
     "schedulers": "zamanlayıcılar",
     "scheduling": "zamanlama",
+    "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "sigmalar",
     "sound": "ses",
@@ -3083,7 +3232,6 @@
     "utilities": "yardımcılar",
     "vace": "vace",
     "video": "video",
-    "video_models": "video_modelleri",
     "void": "void",
     "wan": "wan",
     "z-image": "z-image"
@@ -3221,26 +3369,15 @@
     "done": "Bitti",
     "firstRun": {
       "nudge": {
-        "animate": {
-          "detail": "Görüntüden videoya · 5 sn.",
-          "title": "Canlandır"
-        },
-        "body": "Her biri az önce oluşturduğunuz görüntüyle başlar.",
-        "explore": "Tüm şablonlara göz at",
-        "fallback": {
+        "dismiss": "Şimdi değil",
+        "explore": "Şablonları keşfet",
+        "noTour": {
           "body": "Şablonlara göz atın ve oluşturmak için bir şey seçin.",
           "title": "Bunun gibi yüzlercesi daha var"
         },
-        "loadFailed": "Bu şablon yüklenemedi. Lütfen tekrar deneyin.",
-        "restyle": {
-          "detail": "İş ortağı modeli · Herhangi bir ücretli plan",
-          "title": "Nano Banana ile yeniden biçimlendir"
-        },
-        "title": "İlk çıktınız. Sırada neler var.",
-        "upscale": {
-          "badge": "4x",
-          "detail": "Aynı görüntü, daha fazla ayrıntı",
-          "title": "Yükselt"
+        "ran": {
+          "body": "Az önce ilkini oluşturdunuz. Başka neler oluşturabileceğinizi keşfedin.",
+          "title": "Bu, yüzlercesinden biriydi"
         }
       },
       "prompt": {
@@ -4336,6 +4473,7 @@
       },
       "refillReplacesNote": "Aylık yenilemeyi değiştirir. Mevcut bakiye korunur.",
       "renewsAt": "{date} tarihinde {amount} tutarında yenilenir. İstediğiniz zaman iptal edin.",
+      "renewsAtAmount": "{amount} tutarında yenilenir. İstediğiniz zaman iptal edin.",
       "savedPaymentMethod": "Ödeme yöntemi",
       "showMoreFeatures": "Daha fazla özelliği göster",
       "starting": "{date} tarihinde başlıyor",

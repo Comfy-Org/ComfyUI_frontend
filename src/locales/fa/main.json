@@ -8,6 +8,124 @@
     "share": "اشتراک‌گذاری",
     "shareTooltip": "اشتراک‌گذاری گردش‌کار"
   },
+  "agent": {
+    "addFromAssets": "افزودن از پنل دارایی‌ها",
+    "addNodesFromGraph": "افزودن nodeها از گراف",
+    "addPromptToSend": "افزودن یک prompt برای ارسال",
+    "addToPrompt": "افزودن به prompt",
+    "alpha": "آلفا",
+    "askComfyAgent": "از Comfy Agent بپرسید",
+    "assetNotAttachable": "می‌توان تصاویر، ویدئو، صدا، مدل‌های سه‌بعدی و فایل‌های متنی را پیوست کرد",
+    "attach": "پیوست کردن فایل",
+    "attachFiles": "پیوست کردن تصویر یا فایل",
+    "attachmentTooLarge": "{name} بزرگ‌تر از {limit} است",
+    "attachmentUploadFailed": "{name} بارگذاری نشد",
+    "backToPreviousChat": "بازگشت به گفت‌وگوی قبلی",
+    "caption": "عامل هوش مصنوعی ممکن است اشتباه کند",
+    "captionExpanded": "عامل هوش مصنوعی ممکن است اشتباه کند. پاسخ خود را دوباره بررسی کنید.",
+    "changeWorkflowForChat": "تغییر workflow برای این گفت‌وگو",
+    "chatOptions": "گزینه‌های گفت‌وگو",
+    "chooseWorkflow": "یک workflow انتخاب کنید",
+    "chooseWorkflowForChat": "برای این گفت‌وگو یک workflow انتخاب کنید",
+    "close": "بستن",
+    "coachBody": "از آن بخواهید نمودارها را بسازد یا ویرایش کند.",
+    "coachTitle": "آشنایی با عامل",
+    "copied": "کپی شد!",
+    "copy": "کپی",
+    "copyMarkdown": "کپی به‌صورت markdown",
+    "copyUnavailable": "در این نسخه فقط گفت‌وگوی فعلی قابل کپی است",
+    "crdtConnected": "متصل",
+    "crdtDisconnected": "قطع‌شده",
+    "crdtNoDocument": "بدون سند",
+    "crdtStatus": "CRDT {connection} · {workflowId} · {updates} به‌روزرسانی · {frame}",
+    "credits": "اعتبار",
+    "delete": "حذف",
+    "dismiss": "رد کردن",
+    "dontWorkInWorkflow": "در یک workflow کار نکنید",
+    "downloadAssets": "دانلود دارایی‌ها",
+    "dragAndDropAssets": "دارایی‌ها را اینجا بکشید و رها کنید",
+    "focusNode": "نمایش روی بوم",
+    "focusNodeLabel": "نمایش {node} روی بوم",
+    "friend": "آنجا",
+    "gotIt": "متوجه شدم",
+    "greeting": "سلام {name}،",
+    "greetingQuestion": "می‌خواهید چه چیزی بسازید؟",
+    "helpful": "مفید",
+    "history": "تاریخچهٔ گفت‌وگو",
+    "historyCurrent": "فعلی",
+    "historyEarlier": "قدیمی‌تر",
+    "historyEmpty": "هنوز گفت‌وگویی وجود ندارد",
+    "historyToday": "امروز",
+    "historyYesterday": "دیروز",
+    "latest": "آخرین",
+    "loadFailed": "بارگیری پنل عامل ناموفق بود.",
+    "malformedEvent": "عامل رویدادی ارسال کرد که این پنل نتوانست آن را بخواند",
+    "maximize": "بیشینه‌سازی پنل",
+    "mention": "اشاره به یک node",
+    "minimize": "کمینه‌سازی پنل",
+    "modelAuto": "خودکار",
+    "newChat": "گفت‌وگوی جدید",
+    "newChatTitle": "بدون عنوان",
+    "noNodesToMention": "هیچ nodeی در این workflow وجود ندارد",
+    "nodeSelection": {
+      "bannerSubtitle": "یک یا چند node را برای افزودن به‌عنوان مرجع انتخاب کنید",
+      "bannerTitle": "افزودن nodeها از گراف",
+      "exit": "خروج از حالت",
+      "selectNode": "انتخاب node"
+    },
+    "notHelpful": "غیرمفید",
+    "openWorkflowTab": "باز کردن {name}",
+    "placeholder": "ایده‌ها را توضیح دهید، برای ارجاع {'@'} را وارد کنید،\nnodeها را از گراف اضافه کنید یا دارایی‌ها را بکشید و رها کنید",
+    "ranToolCalls": "{count} فراخوانی ابزار اجرا شد | {count} فراخوانی ابزار اجرا شد",
+    "ranToolCallsTimed": "{count} فراخوانی ابزار به‌مدت {seconds} ثانیه اجرا شد | {count} فراخوانی ابزار به‌مدت {seconds} ثانیه اجرا شد",
+    "remove": "حذف",
+    "removeNodeLabel": "حذف مرجع {node}",
+    "runModeAsk": "پیش از اجرای workflow بپرس",
+    "runModeAskDescription": "Comfy پیش از هر اجرای workflow درخواست تأیید می‌کند",
+    "runModeAuto": "اجرای خودکار بدون تأیید",
+    "runModeAutoDescription": "Comfy workflowها را بدون درخواست مجوز اجرا می‌کند",
+    "runModeLimit": "اجرای خودکار با محدودیت",
+    "runModeLimitDescription": "Comfy فقط زمانی تأیید می‌گیرد که اجرای workflow از سقف اعتبار شما فراتر رود",
+    "runModeTriggerAsk": "پرسیدن",
+    "runModeTriggerAskTooltip": "درخواست مجوز",
+    "runModeTriggerAuto": "خودکار",
+    "runModeTriggerAutoLimit": "خودکار (محدود)",
+    "runModeTriggerAutoLimitTooltip": "هنگام رسیدن به سقف اعتبار بپرس",
+    "runModeTriggerAutoTooltip": "اجرای workflow بدون مجوز",
+    "runNotice": "عامل می‌تواند گراف را تغییر دهد. برای اجرای workflow باید روی اجرا کلیک کنید.",
+    "runNoticeExpanded": "عامل می‌تواند workflow شما را تغییر دهد. برای اجرا باید روی اجرا کلیک کنید.",
+    "runPermissions": "مجوزهای اجرا",
+    "runPermissionsDescription": "زمان نیاز عامل به رضایت شما را انتخاب کنید",
+    "saveChanges": "ذخیره تغییرات",
+    "searchWorkflows": "جست‌وجوی workflowها",
+    "selectWorkflowToGenerate": "یک workflow برای تولید انتخاب کنید",
+    "send": "ارسال",
+    "sendBusy": "پیامی از قبل در حال ارسال است",
+    "sendFailed": "ارسال پیام ناموفق بود",
+    "showChatHistory": "نمایش تاریخچهٔ گفت‌وگو",
+    "showLess": "نمایش کمتر",
+    "showMore": "نمایش بیشتر",
+    "skip": "رد کردن",
+    "stop": "توقف",
+    "suggestedPrompts": [
+      "یک اردک زرد با ماسک هاکی تولید کن",
+      "workflowهای ذخیره‌شدهٔ من را فهرست کن",
+      "بهترین workflow برای ارتقای کیفیت پوست را پیدا کن",
+      "node انتخاب‌شده را توضیح بده",
+      "یک workflow برای تبدیل تصویر به ویدئو با ۳ مدل بساز"
+    ],
+    "switchWorkflow": "تغییر workflow",
+    "thinking": "در حال فکر کردن...",
+    "thought": "اندیشه",
+    "thoughtTimed": "اندیشیدن برای {seconds} ثانیه",
+    "title": "Comfy Agent",
+    "toolForgotPreference": "یک ترجیح فراموش شد",
+    "toolOpenedNewTab": "یک زبانهٔ جدید باز شد",
+    "toolSavedPreference": "یک ترجیح ذخیره شد",
+    "toolSwitchedTabs": "زبانه‌ها تغییر کردند",
+    "untitledChat": "بدون عنوان",
+    "uploading": "در حال بارگذاری"
+  },
   "apiNodesCostBreakdown": {
     "costPerRun": "هزینه هر اجرا",
     "title": "API Node(ها)",
@@ -949,6 +1067,7 @@
     "MODEL_TASK_ID": "شناسه وظیفه مدل",
     "MOGE_GEOMETRY": "هندسه MOGE",
     "MOGE_MODEL": "مدل MOGE",
+    "MULTIVIEW_TASK_ID": "MULTIVIEW_TASK_ID",
     "NOISE": "نویز",
     "OPENAI_CHAT_CONFIG": "پیکربندی گفتگوی OpenAI",
     "OPENAI_INPUT_FILES": "فایل‌های ورودی OpenAI",
@@ -959,6 +1078,7 @@
     "RECRAFT_COLOR": "رنگ Recraft",
     "RECRAFT_CONTROLS": "کنترل‌های Recraft",
     "RECRAFT_V3_STYLE": "سبک Recraft V3",
+    "RESOLUTION_PREVIEW": "RESOLUTION_PREVIEW",
     "RETARGET_TASK_ID": "شناسه وظیفه Retarget",
     "RIG_TASK_ID": "شناسه وظیفه Rig",
     "RUNWAY_ALEPH2_KEYFRAME": "RUNWAY_ALEPH2_KEYFRAME",
@@ -966,6 +1086,7 @@
     "SAM3D_BODY_MODEL": "SAM3D_BODY_MODEL",
     "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "نمونه‌گیر",
+    "SEGMENT_TASK_ID": "SEGMENT_TASK_ID",
     "SHAPE_SUBDIVIDES": "SHAPE_SUBDIVIDES",
     "SIGMAS": "سیگماها",
     "SPLAT": "SPLAT",
@@ -977,6 +1098,7 @@
     "UPSCALE_MODEL": "مدل بزرگ‌نمایی",
     "VAE": "vae",
     "VIDEO": "ویدیو",
+    "VIDEO_EDIT": "VIDEO_EDIT",
     "VOXEL": "وُکسل",
     "WAN_CAMERA_EMBEDDING": "جاسازی دوربین WAN",
     "WEBCAM": "وب‌کم"
@@ -1073,6 +1195,18 @@
       }
     },
     "promptErrors": {
+      "agent_api_failed": {
+        "desc": "Comfy Agent با خطای سرور مواجه شد.",
+        "title": "خطای Comfy Agent"
+      },
+      "apply_failed": {
+        "desc": "یک ویرایش عامل نتوانست روی سند workflow اعمال شود.",
+        "title": "ویرایش عامل ناموفق بود"
+      },
+      "guard_trip": {
+        "desc": "یک به‌روزرسانی دریافتی از عامل با ساختار مورد انتظار سند workflow مطابقت نداشت و مسدود شد.",
+        "title": "به‌روزرسانی عامل مسدود شد"
+      },
       "missing_node_type": {
         "desc": "یک نوع node وجود ندارد یا در دسترس نیست. ممکن است workflow خراب شده باشد یا به node سفارشی نیاز داشته باشد.",
         "title": "نوع node وجود ندارد"
@@ -1080,6 +1214,14 @@
       "no_prompt": {
         "desc": "داده‌های ورک‌فلو ارسال‌شده به سرور خالی است. این ممکن است یک خطای غیرمنتظره سیستمی باشد.",
         "title": "داده‌های workflow خالی است"
+      },
+      "op_rejected": {
+        "desc": "سند workflow یک ویرایش عامل را نپذیرفت. ممکن است بوم و سند مشترک تا به‌روزرسانی بعدی، موقتاً متفاوت باشند.",
+        "title": "ویرایش عامل رد شد"
+      },
+      "prefix_abort": {
+        "desc": "یک دسته از ویرایش‌های عامل در میانه متوقف شد. ویرایش‌های باقی‌مانده به‌طور خودکار دوباره امتحان می‌شوند.",
+        "title": "ویرایش‌های عامل به‌طور جزئی اعمال شدند"
       },
       "prompt_no_outputs": {
         "desc": "در این ورک‌فلو هیچ نود خروجی (مانند Save Image یا Preview Image) برای تولید نتیجه وجود ندارد.",
@@ -1497,6 +1639,8 @@
     "addNewKeybinding": "افزودن کلید میانبر جدید",
     "addNode": "افزودن node...",
     "addNodeFilterCondition": "افزودن شرط فیلتر node",
+    "agentModified": "عامل این workflow را به‌روزرسانی کرد",
+    "agentWorking": "عامل در حال کار روی این workflow است",
     "all": "همه",
     "allKeybindingsReset": "همه کلیدهای میانبر به پیش‌فرض بازنشانی شدند",
     "amount": "مقدار",
@@ -1715,6 +1859,7 @@
     "moreWorkflows": "workflowهای بیشتر",
     "mostRelevant": "مرتبط‌ترین",
     "multiSelectDropdown": "لیست کشویی چندانتخابی",
+    "mute": "بی‌صدا کردن",
     "nMoreKeybindings": "+ {count} بیشتر",
     "nMoreKeybindingsCompact": "+ {count}",
     "name": "نام",
@@ -1870,6 +2015,7 @@
     "triggerPhrase": "عبارت trigger",
     "unknownError": "خطای ناشناخته",
     "unknownFile": "فایل ناشناخته",
+    "unmute": "لغو بی‌صدا",
     "untitled": "بدون عنوان",
     "update": "به‌روزرسانی",
     "updateAvailable": "به‌روزرسانی موجود است",
@@ -2343,11 +2489,13 @@
     "menuBar": {
       "bgColor": "رنگ پس‌زمینه",
       "bgImage": "تصویر پس‌زمینه",
+      "customUp": "بالای سفارشی",
       "deleteRecording": "حذف ضبط‌شده",
       "downloadRecording": "دانلود ضبط‌شده",
       "fov": "زاویه دید (FOV)",
       "intensity": "شدت",
       "material": "متریال",
+      "naturalUp": "بالای طبیعی",
       "originalMaterialOnly": "فقط متریال اصلی",
       "panorama": "پانوراما",
       "record": "ضبط",
@@ -2409,8 +2557,8 @@
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "nodeهای اصلی از نسخه {version}:",
-    "outdatedVersion": "این workflow با نسخه جدیدتری از ComfyUI ({version}) ایجاد شده است. برخی nodeها ممکن است به درستی کار نکنند.",
-    "outdatedVersionGeneric": "این workflow با نسخه جدیدتری از ComfyUI ایجاد شده است. برخی nodeها ممکن است به درستی کار نکنند.",
+    "newerVersionRequired": "برخی nodeها به نسخه جدیدتری از ComfyUI نیاز دارند (فعلی: {version}). لطفاً برای استفاده از همه nodeها به‌روزرسانی کنید.",
+    "newerVersionRequiredGeneric": "برخی nodeها به نسخه جدیدتری از ComfyUI نیاز دارند. لطفاً برای استفاده از همه nodeها به‌روزرسانی کنید.",
     "unknownVersion": "نامشخص"
   },
   "logsTerminal": {
@@ -2953,6 +3101,7 @@
     "Luma": "Luma",
     "Magnific": "Magnific",
     "Meshy": "Meshy",
+    "Meta": "Meta",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
@@ -2989,6 +3138,7 @@
     "clip": "clip",
     "color": "رنگ",
     "combine": "ترکیب",
+    "comfy cloud": "comfy cloud",
     "compositing": "ترکیب‌بندی",
     "cond pair": "جفت شرط",
     "cond single": "شرط تکی",
@@ -2998,7 +3148,6 @@
     "create": "ایجاد",
     "custom": "سفارشی",
     "dancer": "رقصنده",
-    "dataset": "dataset",
     "debug": "اشکال‌زدایی",
     "detection": "شناسایی",
     "experimental": "آزمایشی",
@@ -3037,7 +3186,6 @@
     "mochi": "mochi",
     "model": "مدل",
     "model specific": "مدل خاص",
-    "model_patches": "model_patches",
     "move": "move",
     "multigpu": "چند GPU",
     "noise": "نویز",
@@ -3058,6 +3206,7 @@
     "scail": "scail",
     "schedulers": "زمان‌بندی‌ها",
     "scheduling": "زمان‌بندی",
+    "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "سیگماها",
     "sound": "صدا",
@@ -3083,7 +3232,6 @@
     "utilities": "ابزارها",
     "vace": "vace",
     "video": "ویدیو",
-    "video_models": "مدل‌های ویدئویی",
     "void": "void",
     "wan": "wan",
     "z-image": "z-image"
@@ -3221,26 +3369,15 @@
     "done": "پایان",
     "firstRun": {
       "nudge": {
-        "animate": {
-          "detail": "تصویر به ویدیو · ۵ثانیه",
-          "title": "متحرک‌سازی"
-        },
-        "body": "هرکدام از تصویری که همین حالا ساختید شروع می‌شوند.",
-        "explore": "مرور همه قالب‌ها",
-        "fallback": {
+        "dismiss": "فعلاً نه",
+        "explore": "کاوش قالب‌ها",
+        "noTour": {
           "body": "قالب‌ها را مرور کنید و چیزی برای ساختن انتخاب کنید.",
-          "title": "صدها مورد دیگر از همین نوع"
+          "title": "صدها مورد دیگر نیز وجود دارد"
         },
-        "loadFailed": "آن قالب بارگیری نشد. لطفاً دوباره تلاش کنید.",
-        "restyle": {
-          "detail": "مدل شریک · هر طرح پولی",
-          "title": "بازسبک‌سازی با Nano Banana"
-        },
-        "title": "اولین خروجی شما. مرحله بعدی این است.",
-        "upscale": {
-          "badge": "۴×",
-          "detail": "همان تصویر، جزئیات بیشتر",
-          "title": "افزایش وضوح"
+        "ran": {
+          "body": "تازه اولین مورد خود را ساختید. ببینید چه چیزهای دیگری می‌توانید بسازید.",
+          "title": "این یکی از صدها مورد بود"
         }
       },
       "prompt": {
@@ -4336,6 +4473,7 @@
       },
       "refillReplacesNote": "جایگزین شارژ ماهانه شما می‌شود. موجودی فعلی حفظ می‌شود.",
       "renewsAt": "در {date} با مبلغ {amount} تمدید می‌شود. هر زمان می‌توانید لغو کنید.",
+      "renewsAtAmount": "با مبلغ {amount} تمدید می‌شود. هر زمان می‌توانید لغو کنید.",
       "savedPaymentMethod": "روش پرداخت",
       "showMoreFeatures": "نمایش امکانات بیشتر",
       "starting": "شروع از {date}",

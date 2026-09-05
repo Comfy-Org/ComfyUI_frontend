@@ -8,6 +8,124 @@
     "share": "Compartilhar",
     "shareTooltip": "Compartilhar fluxo de trabalho"
   },
+  "agent": {
+    "addFromAssets": "Adicionar pelo painel de ativos",
+    "addNodesFromGraph": "Adicionar nós do grafo",
+    "addPromptToSend": "Adicionar um prompt para enviar",
+    "addToPrompt": "Adicionar ao prompt",
+    "alpha": "ALFA",
+    "askComfyAgent": "Perguntar ao Comfy Agent",
+    "assetNotAttachable": "Imagens, vídeos, áudios, modelos 3D e arquivos de texto podem ser anexados",
+    "attach": "Anexar um arquivo",
+    "attachFiles": "Anexar imagens ou arquivos",
+    "attachmentTooLarge": "{name} é maior que {limit}",
+    "attachmentUploadFailed": "Não foi possível enviar {name}",
+    "backToPreviousChat": "Voltar ao chat anterior",
+    "caption": "O agente de IA pode cometer erros",
+    "captionExpanded": "O agente de IA pode cometer erros. Verifique sua resposta novamente.",
+    "changeWorkflowForChat": "Alterar o workflow deste chat",
+    "chatOptions": "Opções de chat",
+    "chooseWorkflow": "Escolher um workflow",
+    "chooseWorkflowForChat": "Escolher um workflow para este chat",
+    "close": "Fechar",
+    "coachBody": "Peça para ele criar ou editar grafos.",
+    "coachTitle": "Conheça o agente",
+    "copied": "Copiado!",
+    "copy": "Copiar",
+    "copyMarkdown": "Copiar como markdown",
+    "copyUnavailable": "Somente a conversa atual pode ser copiada nesta versão",
+    "crdtConnected": "conectado",
+    "crdtDisconnected": "desconectado",
+    "crdtNoDocument": "sem documento",
+    "crdtStatus": "CRDT {connection} · {workflowId} · {updates} atualizações · {frame}",
+    "credits": "créditos",
+    "delete": "Excluir",
+    "dismiss": "Dispensar",
+    "dontWorkInWorkflow": "Não trabalhar em um workflow",
+    "downloadAssets": "Baixar recursos",
+    "dragAndDropAssets": "Arraste e solte recursos aqui",
+    "focusNode": "Mostrar no canvas",
+    "focusNodeLabel": "Mostrar {node} no canvas",
+    "friend": "aí",
+    "gotIt": "Entendi",
+    "greeting": "Olá, {name},",
+    "greetingQuestion": "O que você quer criar?",
+    "helpful": "Útil",
+    "history": "Histórico de chats",
+    "historyCurrent": "Atual",
+    "historyEarlier": "Anteriores",
+    "historyEmpty": "Ainda não há conversas",
+    "historyToday": "Hoje",
+    "historyYesterday": "Ontem",
+    "latest": "Mais recente",
+    "loadFailed": "Não foi possível carregar o painel do agente.",
+    "malformedEvent": "O agente enviou um evento que este painel não conseguiu ler",
+    "maximize": "Maximizar painel",
+    "mention": "Mencionar um nó",
+    "minimize": "Minimizar painel",
+    "modelAuto": "Automático",
+    "newChat": "Novo chat",
+    "newChatTitle": "Sem título",
+    "noNodesToMention": "Não há nós neste fluxo de trabalho",
+    "nodeSelection": {
+      "bannerSubtitle": "Selecione um ou mais nós para adicionar como referência",
+      "bannerTitle": "Adicionar nós do grafo",
+      "exit": "Sair do modo",
+      "selectNode": "Selecionar nó"
+    },
+    "notHelpful": "Não foi útil",
+    "openWorkflowTab": "Abrir {name}",
+    "placeholder": "Descreva ideias, {'@'} para referenciar,\nadicione nós do grafo ou arraste recursos",
+    "ranToolCalls": "Executou {count} chamada de ferramenta | Executou {count} chamadas de ferramenta",
+    "ranToolCallsTimed": "Executou {count} chamada de ferramenta por {seconds} segundos | Executou {count} chamadas de ferramenta por {seconds} segundos",
+    "remove": "Remover",
+    "removeNodeLabel": "Remover referência a {node}",
+    "runModeAsk": "Perguntar antes de executar um workflow",
+    "runModeAskDescription": "O Comfy pedirá aprovação antes de cada execução de workflow",
+    "runModeAuto": "Executar automaticamente sem aprovação",
+    "runModeAutoDescription": "O Comfy executará workflows sem pedir permissão",
+    "runModeLimit": "Executar automaticamente com limites",
+    "runModeLimitDescription": "O Comfy só confirmará quando a execução de um workflow exceder seu limite de créditos",
+    "runModeTriggerAsk": "Perguntar",
+    "runModeTriggerAskTooltip": "Pedir permissão",
+    "runModeTriggerAuto": "Automático",
+    "runModeTriggerAutoLimit": "Automático (limitado)",
+    "runModeTriggerAutoLimitTooltip": "Perguntar quando o limite de créditos for atingido",
+    "runModeTriggerAutoTooltip": "Executar workflow sem permissão",
+    "runNotice": "O agente pode modificar o grafo. Você precisará clicar em Executar para executar o fluxo de trabalho.",
+    "runNoticeExpanded": "O agente pode modificar seu fluxo de trabalho. Você precisará clicar em Executar para executar.",
+    "runPermissions": "Permissões de execução",
+    "runPermissionsDescription": "Escolha quando o agente precisa do seu consentimento",
+    "saveChanges": "Salvar alterações",
+    "searchWorkflows": "Pesquisar workflows",
+    "selectWorkflowToGenerate": "Selecionar um workflow para gerar",
+    "send": "Enviar",
+    "sendBusy": "Uma mensagem já está sendo enviada",
+    "sendFailed": "Não foi possível enviar a mensagem",
+    "showChatHistory": "Mostrar histórico de chats",
+    "showLess": "Mostrar menos",
+    "showMore": "Mostrar mais",
+    "skip": "Pular",
+    "stop": "Parar",
+    "suggestedPrompts": [
+      "Gere um pato amarelo com uma mask de hóquei",
+      "Liste meus fluxos de trabalho salvos",
+      "Encontre o melhor fluxo de trabalho para aumento de resolução de pele",
+      "Explique o nó selecionado",
+      "Crie um fluxo de trabalho de imagem para vídeo com 3 modelos"
+    ],
+    "switchWorkflow": "Trocar de workflow",
+    "thinking": "Pensando...",
+    "thought": "Raciocínio",
+    "thoughtTimed": "Raciocinou por {seconds} segundos",
+    "title": "Comfy Agent",
+    "toolForgotPreference": "Esqueceu uma preferência",
+    "toolOpenedNewTab": "Abriu uma nova aba",
+    "toolSavedPreference": "Salvou uma preferência",
+    "toolSwitchedTabs": "Alternou entre abas",
+    "untitledChat": "Sem título",
+    "uploading": "Enviando"
+  },
   "apiNodesCostBreakdown": {
     "costPerRun": "Custo por execução",
     "title": "Nó(s) de API",
@@ -949,6 +1067,7 @@
     "MODEL_TASK_ID": "ID DA TAREFA DO MODELO",
     "MOGE_GEOMETRY": "MOGE_GEOMETRY",
     "MOGE_MODEL": "MOGE_MODEL",
+    "MULTIVIEW_TASK_ID": "MULTIVIEW_TASK_ID",
     "NOISE": "RUÍDO",
     "OPENAI_CHAT_CONFIG": "CONFIGURAÇÃO DE CHAT OPENAI",
     "OPENAI_INPUT_FILES": "ARQUIVOS DE ENTRADA OPENAI",
@@ -959,6 +1078,7 @@
     "RECRAFT_COLOR": "COR RECRAFT",
     "RECRAFT_CONTROLS": "CONTROLES RECRAFT",
     "RECRAFT_V3_STYLE": "ESTILO RECRAFT V3",
+    "RESOLUTION_PREVIEW": "RESOLUTION_PREVIEW",
     "RETARGET_TASK_ID": "ID DA TAREFA DE REDIRECIONAMENTO",
     "RIG_TASK_ID": "ID DA TAREFA DE RIG",
     "RUNWAY_ALEPH2_KEYFRAME": "RUNWAY_ALEPH2_KEYFRAME",
@@ -966,6 +1086,7 @@
     "SAM3D_BODY_MODEL": "SAM3D_BODY_MODEL",
     "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "AMOSTRADOR",
+    "SEGMENT_TASK_ID": "SEGMENT_TASK_ID",
     "SHAPE_SUBDIVIDES": "SHAPE_SUBDIVIDES",
     "SIGMAS": "SIGMAS",
     "SPLAT": "SPLAT",
@@ -977,6 +1098,7 @@
     "UPSCALE_MODEL": "MODELO DE AUMENTO DE RESOLUÇÃO",
     "VAE": "vae",
     "VIDEO": "VÍDEO",
+    "VIDEO_EDIT": "VIDEO_EDIT",
     "VOXEL": "VOXEL",
     "WAN_CAMERA_EMBEDDING": "EMBEDDING DE CÂMERA WAN",
     "WEBCAM": "WEBCAM"
@@ -1073,6 +1195,18 @@
       }
     },
     "promptErrors": {
+      "agent_api_failed": {
+        "desc": "O Comfy Agent encontrou um erro no servidor.",
+        "title": "Erro do Comfy Agent"
+      },
+      "apply_failed": {
+        "desc": "Não foi possível aplicar uma edição do agente ao documento do fluxo de trabalho.",
+        "title": "Falha na edição do agente"
+      },
+      "guard_trip": {
+        "desc": "Uma atualização recebida do agente não correspondia à estrutura esperada do documento do fluxo de trabalho e foi bloqueada.",
+        "title": "Atualização do agente bloqueada"
+      },
       "missing_node_type": {
         "desc": "Um tipo de nó está ausente ou indisponível. O fluxo de trabalho pode estar corrompido ou requerer um nó personalizado.",
         "title": "Tipo de nó ausente"
@@ -1080,6 +1214,14 @@
       "no_prompt": {
         "desc": "Os dados do fluxo de trabalho enviados ao servidor estão vazios. Isso pode ser um erro inesperado do sistema.",
         "title": "Dados do fluxo de trabalho estão vazios"
+      },
+      "op_rejected": {
+        "desc": "O documento do fluxo de trabalho recusou uma edição do agente. A tela e o documento compartilhado podem divergir brevemente até a próxima atualização.",
+        "title": "Edição do agente rejeitada"
+      },
+      "prefix_abort": {
+        "desc": "Um lote de edições do agente foi interrompido no meio do processo. As edições restantes são repetidas automaticamente.",
+        "title": "Edições do agente parcialmente aplicadas"
       },
       "prompt_no_outputs": {
         "desc": "O fluxo de trabalho não contém nenhum nó de saída (ex: Salvar Imagem, Visualizar Imagem) para produzir um resultado.",
@@ -1497,6 +1639,8 @@
     "addNewKeybinding": "Adicionar novo atalho",
     "addNode": "Adicionar um nó...",
     "addNodeFilterCondition": "Adicionar condição de filtro de nó",
+    "agentModified": "O agente atualizou este fluxo de trabalho",
+    "agentWorking": "O agente está trabalhando neste fluxo de trabalho",
     "all": "Todos",
     "allKeybindingsReset": "Todos os atalhos redefinidos para o padrão",
     "amount": "Quantidade",
@@ -1715,6 +1859,7 @@
     "moreWorkflows": "Mais fluxos de trabalho",
     "mostRelevant": "Mais relevante",
     "multiSelectDropdown": "Menu suspenso de seleção múltipla",
+    "mute": "Silenciar",
     "nMoreKeybindings": "+ {count} mais",
     "nMoreKeybindingsCompact": "+ {count}",
     "name": "Nome",
@@ -1870,6 +2015,7 @@
     "triggerPhrase": "Frase de gatilho",
     "unknownError": "Erro desconhecido",
     "unknownFile": "Arquivo desconhecido",
+    "unmute": "Ativar som",
     "untitled": "Sem título",
     "update": "Atualizar",
     "updateAvailable": "Atualização disponível",
@@ -2343,11 +2489,13 @@
     "menuBar": {
       "bgColor": "Cor de fundo",
       "bgImage": "Imagem de fundo",
+      "customUp": "Eixo superior personalizado",
       "deleteRecording": "Excluir gravação",
       "downloadRecording": "Baixar gravação",
       "fov": "Campo de visão",
       "intensity": "Intensidade",
       "material": "Material",
+      "naturalUp": "Eixo superior natural",
       "originalMaterialOnly": "Apenas material original",
       "panorama": "Panorama",
       "record": "Gravar",
@@ -2409,8 +2557,8 @@
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "Nós principais da versão {version}:",
-    "outdatedVersion": "Este fluxo de trabalho foi criado com uma versão mais recente do ComfyUI ({version}). Alguns nós podem não funcionar corretamente.",
-    "outdatedVersionGeneric": "Este fluxo de trabalho foi criado com uma versão mais recente do ComfyUI. Alguns nós podem não funcionar corretamente.",
+    "newerVersionRequired": "Alguns nós exigem uma versão mais recente do ComfyUI (atual: {version}). Atualize para usar todos os nós.",
+    "newerVersionRequiredGeneric": "Alguns nós exigem uma versão mais recente do ComfyUI. Atualize para usar todos os nós.",
     "unknownVersion": "desconhecida"
   },
   "logsTerminal": {
@@ -2953,6 +3101,7 @@
     "Luma": "Luma",
     "Magnific": "Magnific",
     "Meshy": "Meshy",
+    "Meta": "Meta",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
@@ -2989,6 +3138,7 @@
     "clip": "clip",
     "color": "cor",
     "combine": "combinar",
+    "comfy cloud": "comfy cloud",
     "compositing": "composição",
     "cond pair": "par_de_condições",
     "cond single": "condição_simples",
@@ -2998,7 +3148,6 @@
     "create": "criar",
     "custom": "personalizado",
     "dancer": "dançarino",
-    "dataset": "dataset",
     "debug": "depuração",
     "detection": "detecção",
     "experimental": "experimental",
@@ -3037,7 +3186,6 @@
     "mochi": "mochi",
     "model": "modelo",
     "model specific": "modelo específico",
-    "model_patches": "model_patches",
     "move": "move",
     "multigpu": "multigpu",
     "noise": "ruído",
@@ -3058,6 +3206,7 @@
     "scail": "scail",
     "schedulers": "agendadores",
     "scheduling": "agendamento",
+    "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "sigmas",
     "sound": "som",
@@ -3083,7 +3232,6 @@
     "utilities": "utilitários",
     "vace": "vace",
     "video": "vídeo",
-    "video_models": "modelos_de_vídeo",
     "void": "void",
     "wan": "wan",
     "z-image": "z-image"
@@ -3221,26 +3369,15 @@
     "done": "Concluir",
     "firstRun": {
       "nudge": {
-        "animate": {
-          "detail": "Imagem para vídeo · 5 s",
-          "title": "Anime-a"
+        "dismiss": "Agora não",
+        "explore": "Explorar modelos",
+        "noTour": {
+          "body": "Navegue pelos modelos e escolha algo para criar.",
+          "title": "Há centenas mais de onde essa veio"
         },
-        "body": "Cada um começa com a imagem que você acabou de criar.",
-        "explore": "Explorar todos os modelos",
-        "fallback": {
-          "body": "Explore os modelos e escolha algo para criar.",
-          "title": "Centenas de outras opções de onde esta veio"
-        },
-        "loadFailed": "Não foi possível carregar esse modelo. Tente novamente.",
-        "restyle": {
-          "detail": "Modelo parceiro · Qualquer plano pago",
-          "title": "Redefina o estilo com Nano Banana"
-        },
-        "title": "Seu primeiro resultado. Veja o que vem a seguir.",
-        "upscale": {
-          "badge": "4x",
-          "detail": "Mesma imagem, mais detalhes",
-          "title": "Aumente a resolução"
+        "ran": {
+          "body": "Você acabou de criar a primeira. Explore o que mais pode criar.",
+          "title": "Essa foi uma entre centenas"
         }
       },
       "prompt": {
@@ -4336,6 +4473,7 @@
       },
       "refillReplacesNote": "Substitui sua recarga mensal. O saldo existente é mantido.",
       "renewsAt": "Renova por {amount} em {date}. Cancele a qualquer momento.",
+      "renewsAtAmount": "Renova por {amount}. Cancele quando quiser.",
       "savedPaymentMethod": "Método de pagamento",
       "showMoreFeatures": "Mostrar mais recursos",
       "starting": "Começando em {date}",

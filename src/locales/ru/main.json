@@ -8,6 +8,124 @@
     "share": "Поделиться",
     "shareTooltip": "Поделиться рабочим процессом"
   },
+  "agent": {
+    "addFromAssets": "Добавить из панели ресурсов",
+    "addNodesFromGraph": "Добавить ноды из графа",
+    "addPromptToSend": "Добавить prompt для отправки",
+    "addToPrompt": "Добавить в промпт",
+    "alpha": "АЛЬФА",
+    "askComfyAgent": "Спросить Comfy Agent",
+    "assetNotAttachable": "Можно прикреплять изображения, видео, аудио, 3D-модели и текстовые файлы",
+    "attach": "Прикрепить файл",
+    "attachFiles": "Прикрепить изображения или файлы",
+    "attachmentTooLarge": "{name} больше {limit}",
+    "attachmentUploadFailed": "Не удалось загрузить {name}",
+    "backToPreviousChat": "Вернуться к предыдущему чату",
+    "caption": "ИИ-агент может допускать ошибки",
+    "captionExpanded": "ИИ-агент может ошибаться. Перепроверьте ответ.",
+    "changeWorkflowForChat": "Изменить рабочий процесс для этого чата",
+    "chatOptions": "Настройки чата",
+    "chooseWorkflow": "Выберите рабочий процесс",
+    "chooseWorkflowForChat": "Выберите рабочий процесс для этого чата",
+    "close": "Закрыть",
+    "coachBody": "Попросите его создать или изменить графы.",
+    "coachTitle": "Познакомьтесь с агентом",
+    "copied": "Скопировано!",
+    "copy": "Копировать",
+    "copyMarkdown": "Копировать как Markdown",
+    "copyUnavailable": "В этой версии можно скопировать только текущий разговор",
+    "crdtConnected": "подключено",
+    "crdtDisconnected": "отключено",
+    "crdtNoDocument": "нет документа",
+    "crdtStatus": "CRDT {connection} · {workflowId} · обновлений: {updates} · {frame}",
+    "credits": "кредиты",
+    "delete": "Удалить",
+    "dismiss": "Закрыть",
+    "dontWorkInWorkflow": "Не работать в рабочем процессе",
+    "downloadAssets": "Скачать ресурсы",
+    "dragAndDropAssets": "Перетащите ресурсы сюда",
+    "focusNode": "Показать на холсте",
+    "focusNodeLabel": "Показать {node} на холсте",
+    "friend": "там",
+    "gotIt": "Понятно",
+    "greeting": "Здравствуйте, {name},",
+    "greetingQuestion": "Что вы хотите создать?",
+    "helpful": "Полезно",
+    "history": "История чатов",
+    "historyCurrent": "Текущий",
+    "historyEarlier": "Ранее",
+    "historyEmpty": "Разговоров пока нет",
+    "historyToday": "Сегодня",
+    "historyYesterday": "Вчера",
+    "latest": "Последние",
+    "loadFailed": "Не удалось загрузить панель агента.",
+    "malformedEvent": "Агент отправил событие, которое эта панель не смогла прочитать",
+    "maximize": "Развернуть панель",
+    "mention": "Упомянуть ноду",
+    "minimize": "Свернуть панель",
+    "modelAuto": "Авто",
+    "newChat": "Новый чат",
+    "newChatTitle": "Без названия",
+    "noNodesToMention": "В этом рабочем процессе нет узлов",
+    "nodeSelection": {
+      "bannerSubtitle": "Выберите одну или несколько нод для добавления в качестве ссылки",
+      "bannerTitle": "Добавить ноды из графа",
+      "exit": "Выйти из режима",
+      "selectNode": "Выбрать ноду"
+    },
+    "notHelpful": "Не полезно",
+    "openWorkflowTab": "Открыть {name}",
+    "placeholder": "Опишите идеи, {'@'} для ссылки,\nдобавьте ноды из графа или перетащите ресурсы",
+    "ranToolCalls": "Выполнен {count} вызов инструмента | Выполнено {count} вызовов инструмента",
+    "ranToolCallsTimed": "Выполнен {count} вызов инструмента за {seconds} секунд | Выполнено {count} вызовов инструмента за {seconds} секунд",
+    "remove": "Удалить",
+    "removeNodeLabel": "Удалить ссылку на {node}",
+    "runModeAsk": "Спрашивать перед запуском рабочего процесса",
+    "runModeAskDescription": "Comfy будет запрашивать подтверждение перед каждым запуском рабочего процесса",
+    "runModeAuto": "Автозапуск без подтверждения",
+    "runModeAutoDescription": "Comfy будет запускать рабочие процессы без запроса разрешения",
+    "runModeLimit": "Автозапуск с ограничениями",
+    "runModeLimitDescription": "Comfy будет запрашивать подтверждение, только если запуск рабочего процесса превысит ваш лимит кредитов",
+    "runModeTriggerAsk": "Спросить",
+    "runModeTriggerAskTooltip": "Запрашивать разрешение",
+    "runModeTriggerAuto": "Авто",
+    "runModeTriggerAutoLimit": "Автоматически (с ограничением)",
+    "runModeTriggerAutoLimitTooltip": "Спрашивать при достижении лимита кредитов",
+    "runModeTriggerAutoTooltip": "Запускать рабочий процесс без разрешения",
+    "runNotice": "Агент может изменять граф. Чтобы выполнить рабочий процесс, нажмите «Запустить».",
+    "runNoticeExpanded": "Агент может изменять ваш рабочий процесс. Чтобы выполнить его, нажмите «Запустить».",
+    "runPermissions": "Разрешения на запуск",
+    "runPermissionsDescription": "Выберите, когда агенту нужно ваше согласие",
+    "saveChanges": "Сохранить изменения",
+    "searchWorkflows": "Поиск рабочих процессов",
+    "selectWorkflowToGenerate": "Выберите рабочий процесс для генерации",
+    "send": "Отправить",
+    "sendBusy": "Сообщение уже отправляется",
+    "sendFailed": "Не удалось отправить сообщение",
+    "showChatHistory": "Показать историю чатов",
+    "showLess": "Показать меньше",
+    "showMore": "Показать больше",
+    "skip": "Пропустить",
+    "stop": "Остановить",
+    "suggestedPrompts": [
+      "Создай жёлтую утку в хоккейной маске",
+      "Покажи мои сохранённые рабочие процессы",
+      "Найди лучший рабочий процесс для увеличения детализации кожи",
+      "Объясни выбранную ноду",
+      "Создай рабочий процесс для преобразования изображения в видео с 3 моделями"
+    ],
+    "switchWorkflow": "Сменить рабочий процесс",
+    "thinking": "Думаю...",
+    "thought": "Размышление",
+    "thoughtTimed": "Размышлял в течение {seconds} сек.",
+    "title": "Comfy Agent",
+    "toolForgotPreference": "Настройка забыта",
+    "toolOpenedNewTab": "Открыта новая вкладка",
+    "toolSavedPreference": "Настройка сохранена",
+    "toolSwitchedTabs": "Вкладки переключены",
+    "untitledChat": "Без названия",
+    "uploading": "Загрузка"
+  },
   "apiNodesCostBreakdown": {
     "costPerRun": "Стоимость за запуск",
     "title": "API Node(s)",
@@ -949,6 +1067,7 @@
     "MODEL_TASK_ID": "ID_ЗАДАЧИ_МОДЕЛИ",
     "MOGE_GEOMETRY": "MOGE_ГЕОМЕТРИЯ",
     "MOGE_MODEL": "MOGE_МОДЕЛЬ",
+    "MULTIVIEW_TASK_ID": "MULTIVIEW_TASK_ID",
     "NOISE": "ШУМ",
     "OPENAI_CHAT_CONFIG": "КОНФИГУРАЦИЯ_ЧАТА_OPENAI",
     "OPENAI_INPUT_FILES": "ВХОДНЫЕ_ФАЙЛЫ_OPENAI",
@@ -959,6 +1078,7 @@
     "RECRAFT_COLOR": "RECRAFT_ЦВЕТ",
     "RECRAFT_CONTROLS": "RECRAFT_УПРАВЛЕНИЯ",
     "RECRAFT_V3_STYLE": "RECRAFT_V3_СТИЛЬ",
+    "RESOLUTION_PREVIEW": "RESOLUTION_PREVIEW",
     "RETARGET_TASK_ID": "ID_ЗАДАЧИ_РЕТАРГЕТИНГА",
     "RIG_TASK_ID": "RIG_TASK_ID",
     "RUNWAY_ALEPH2_KEYFRAME": "RUNWAY_ALEPH2_KEYFRAME",
@@ -966,6 +1086,7 @@
     "SAM3D_BODY_MODEL": "SAM3D_BODY_MODEL",
     "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "СЭМПЛЕР",
+    "SEGMENT_TASK_ID": "SEGMENT_TASK_ID",
     "SHAPE_SUBDIVIDES": "SHAPE_SUBDIVIDES",
     "SIGMAS": "СИГМЫ",
     "SPLAT": "SPLAT",
@@ -977,6 +1098,7 @@
     "UPSCALE_MODEL": "МОДЕЛЬ_АПСКЕЙЛА",
     "VAE": "VAE",
     "VIDEO": "ВИДЕО",
+    "VIDEO_EDIT": "VIDEO_EDIT",
     "VOXEL": "ВОКСЕЛ",
     "WAN_CAMERA_EMBEDDING": "WAN_CAMERA_EMBEDDING",
     "WEBCAM": "ВЕБ-КАМЕРА"
@@ -1073,6 +1195,18 @@
       }
     },
     "promptErrors": {
+      "agent_api_failed": {
+        "desc": "Comfy Agent столкнулся с ошибкой сервера.",
+        "title": "Ошибка Comfy Agent"
+      },
+      "apply_failed": {
+        "desc": "Не удалось применить изменение агента к документу рабочего процесса.",
+        "title": "Не удалось применить изменение агента"
+      },
+      "guard_trip": {
+        "desc": "Входящее обновление агента не соответствовало ожидаемой структуре документа рабочего процесса и было заблокировано.",
+        "title": "Обновление агента заблокировано"
+      },
       "missing_node_type": {
         "desc": "Тип узла отсутствует или недоступен. Рабочий процесс может быть повреждён или требует пользовательский узел.",
         "title": "Отсутствует тип узла"
@@ -1080,6 +1214,14 @@
       "no_prompt": {
         "desc": "Данные рабочего процесса, отправленные на сервер, пусты. Это может быть неожиданной системной ошибкой.",
         "title": "Данные рабочего процесса отсутствуют"
+      },
+      "op_rejected": {
+        "desc": "Документ рабочего процесса отклонил изменение агента. Холст и общий документ могут кратковременно отличаться до следующего обновления.",
+        "title": "Изменение агента отклонено"
+      },
+      "prefix_abort": {
+        "desc": "Пакет изменений агента был остановлен на середине. Остальные изменения будут повторены автоматически.",
+        "title": "Изменения агента применены частично"
       },
       "prompt_no_outputs": {
         "desc": "В рабочем процессе отсутствуют выходные узлы (например, Сохранить изображение, Просмотр изображения) для получения результата.",
@@ -1497,6 +1639,8 @@
     "addNewKeybinding": "Добавить новое сочетание клавиш",
     "addNode": "Добавить узел...",
     "addNodeFilterCondition": "Добавить условие фильтрации узла",
+    "agentModified": "Агент обновил этот рабочий процесс",
+    "agentWorking": "Агент работает с этим рабочим процессом",
     "all": "Все",
     "allKeybindingsReset": "Все сочетания клавиш сброшены по умолчанию",
     "amount": "Количество",
@@ -1715,6 +1859,7 @@
     "moreWorkflows": "Больше рабочих процессов",
     "mostRelevant": "Наиболее релевантные",
     "multiSelectDropdown": "Выпадающий список множественного выбора",
+    "mute": "Выключить звук",
     "nMoreKeybindings": "+ ещё {count}",
     "nMoreKeybindingsCompact": "+ {count}",
     "name": "Имя",
@@ -1870,6 +2015,7 @@
     "triggerPhrase": "Триггерная фраза",
     "unknownError": "Неизвестная ошибка",
     "unknownFile": "Неизвестный файл",
+    "unmute": "Включить звук",
     "untitled": "Без названия",
     "update": "Обновить",
     "updateAvailable": "Доступно обновление",
@@ -2343,11 +2489,13 @@
     "menuBar": {
       "bgColor": "Цвет фона",
       "bgImage": "Фоновое изображение",
+      "customUp": "Пользовательское направление вверх",
       "deleteRecording": "Удалить запись",
       "downloadRecording": "Скачать запись",
       "fov": "Угол обзора",
       "intensity": "Интенсивность",
       "material": "Материал",
+      "naturalUp": "Естественное направление вверх",
       "originalMaterialOnly": "Только оригинальный материал",
       "panorama": "Панорама",
       "record": "Запись",
@@ -2409,8 +2557,8 @@
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "Базовые узлы из версии {version}:",
-    "outdatedVersion": "Этот рабочий процесс был создан в более новой версии ComfyUI ({version}). Некоторые узлы могут работать некорректно.",
-    "outdatedVersionGeneric": "Этот рабочий процесс был создан в более новой версии ComfyUI. Некоторые узлы могут работать некорректно.",
+    "newerVersionRequired": "Некоторым узлам требуется более новая версия ComfyUI (текущая: {version}). Обновитесь, чтобы использовать все узлы.",
+    "newerVersionRequiredGeneric": "Некоторым узлам требуется более новая версия ComfyUI. Обновитесь, чтобы использовать все узлы.",
     "unknownVersion": "неизвестно"
   },
   "logsTerminal": {
@@ -2953,6 +3101,7 @@
     "Luma": "Luma",
     "Magnific": "Magnific",
     "Meshy": "Meshy",
+    "Meta": "Meta",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
@@ -2989,6 +3138,7 @@
     "clip": "clip",
     "color": "цвет",
     "combine": "объединить",
+    "comfy cloud": "comfy cloud",
     "compositing": "композиционирование",
     "cond pair": "условие_пара",
     "cond single": "условие_одиночное",
@@ -2998,7 +3148,6 @@
     "create": "создать",
     "custom": "пользовательский",
     "dancer": "танцор",
-    "dataset": "dataset",
     "debug": "отладка",
     "detection": "детекция",
     "experimental": "экспериментальное",
@@ -3037,7 +3186,6 @@
     "mochi": "mochi",
     "model": "модель",
     "model specific": "модель-специфичный",
-    "model_patches": "model_patches",
     "move": "move",
     "multigpu": "multigpu",
     "noise": "шум",
@@ -3058,6 +3206,7 @@
     "scail": "scail",
     "schedulers": "schedulers",
     "scheduling": "scheduling",
+    "sensenova": "sensenova",
     "shader": "шейдер",
     "sigmas": "сигмы",
     "sound": "звук",
@@ -3083,7 +3232,6 @@
     "utilities": "утилиты",
     "vace": "vace",
     "video": "видео",
-    "video_models": "видео-модели",
     "void": "void",
     "wan": "wan",
     "z-image": "z-image"
@@ -3221,26 +3369,15 @@
     "done": "Готово",
     "firstRun": {
       "nudge": {
-        "animate": {
-          "detail": "Изображение в видео · 5 с",
-          "title": "Анимируйте"
-        },
-        "body": "Каждый из них начинается с только что созданного изображения.",
-        "explore": "Просмотреть все шаблоны",
-        "fallback": {
+        "dismiss": "Не сейчас",
+        "explore": "Просмотреть шаблоны",
+        "noTour": {
           "body": "Просмотрите шаблоны и выберите, что создать.",
-          "title": "И это лишь малая часть"
+          "title": "Это только начало — впереди ещё сотни"
         },
-        "loadFailed": "Не удалось загрузить этот шаблон. Повторите попытку.",
-        "restyle": {
-          "detail": "Партнёрская модель · Любой платный тариф",
-          "title": "Измените стиль с Nano Banana"
-        },
-        "title": "Ваш первый результат. Что дальше.",
-        "upscale": {
-          "badge": "4x",
-          "detail": "То же изображение, больше деталей",
-          "title": "Увеличьте разрешение"
+        "ran": {
+          "body": "Вы только что создали свой первый. Узнайте, что ещё можно создать.",
+          "title": "Это лишь один из сотен"
         }
       },
       "prompt": {
@@ -4336,6 +4473,7 @@
       },
       "refillReplacesNote": "Заменяет ваше ежемесячное пополнение. Текущий баланс сохраняется.",
       "renewsAt": "Продление на сумму {amount} {date}. Отменить можно в любое время.",
+      "renewsAtAmount": "Продлевается за {amount}. Отменить можно в любое время.",
       "savedPaymentMethod": "Способ оплаты",
       "showMoreFeatures": "Показать больше функций",
       "starting": "Начинается {date}",
