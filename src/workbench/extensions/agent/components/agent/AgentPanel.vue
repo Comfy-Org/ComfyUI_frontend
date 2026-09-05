@@ -43,6 +43,8 @@ const {
   activeTab = null,
   workflowTabs = [],
   visibleTabPath = null,
+  selectingTabPath = null,
+  selectTab = async () => false,
   workflowDetached = false,
   getMentionNodes = () => [],
   sessionId = null,
@@ -65,6 +67,8 @@ const {
   activeTab?: ActiveTab | null
   workflowTabs?: ActiveTab[]
   visibleTabPath?: string | null
+  selectingTabPath?: string | null
+  selectTab?: (path: string) => Promise<boolean>
   workflowDetached?: boolean
   getMentionNodes?: () => SelectedNode[]
   sessionId?: string | null
@@ -89,7 +93,6 @@ const emit = defineEmits<{
   requestWorkflowReferences: []
   removeWorkflowReference: [id: string]
   feedback: [turnId: string, vote: 'up' | 'down' | null]
-  selectTab: [path: string]
   newChat: []
   toggleSize: []
   close: []
@@ -353,6 +356,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             :available-workflows="availableWorkflows"
             :editable-workflow-id="editableWorkflowId"
             :has-workflow-target="!workflowDetached"
+            :target-selecting="selectingTabPath !== null"
             :get-mention-nodes="getMentionNodes"
             @send="onComposerSend"
             @stop="emit('stop')"
@@ -372,9 +376,10 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
                 :active-tab="activeTab"
                 :tabs="workflowTabs"
                 :visible-tab-path="visibleTabPath"
+                :selecting-tab-path="selectingTabPath"
+                :select-tab="selectTab"
                 :detached="workflowDetached"
                 :disabled="streaming || submitting"
-                @select-tab="emit('selectTab', $event)"
               />
             </template>
           </Composer>

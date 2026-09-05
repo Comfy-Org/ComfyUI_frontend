@@ -29,17 +29,18 @@ const {
   activeTab,
   tabs,
   visibleTabPath = null,
+  selectingTabPath = null,
+  selectTab = async () => false,
   detached = false,
   disabled = false
 } = defineProps<{
   activeTab: ActiveTab | null
   tabs: ActiveTab[]
   visibleTabPath?: string | null
+  selectingTabPath?: string | null
+  selectTab?: (path: string) => Promise<boolean>
   detached?: boolean
   disabled?: boolean
-}>()
-const emit = defineEmits<{
-  selectTab: [path: string]
 }>()
 
 const { t } = useI18n()
@@ -72,6 +73,15 @@ function openPicker(): void {
 }
 
 defineExpose({ openPicker })
+
+function onOpenChange(value: boolean): void {
+  if (selectingTabPath === null) open.value = value
+}
+
+async function onSelectTab(path: string): Promise<void> {
+  if (disabled || selectingTabPath !== null) return
+  if (await selectTab(path)) open.value = false
+}
 
 const tabSections = computed(() => {
   const normalizedQuery = query.value.trim().toLowerCase()
@@ -108,7 +118,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
     ref="selectorRoot"
     class="flex w-full items-center justify-between gap-1.5"
   >
-    <DropdownMenuRoot v-model:open="open">
+    <DropdownMenuRoot :open="open" @update:open="onOpenChange">
       <TooltipProvider v-bind="AGENT_REKA_TOOLTIP_PROVIDER_PROPS">
         <TooltipRoot>
           <DropdownMenuTrigger as-child>
@@ -172,6 +182,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
           <input
             ref="searchInput"
             v-model="query"
+            :disabled="selectingTabPath !== null"
             type="text"
             :placeholder="t('agent.searchWorkflows')"
             class="text-agent-fg placeholder:text-agent-fg-muted mb-1 h-8 w-full rounded-[10px] border border-white/15 bg-transparent px-2.5 py-1 text-[14px]/5 outline-none"
@@ -180,7 +191,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
           <DropdownMenuRadioGroup
             :model-value="current?.path ?? ''"
             class="max-h-52 overflow-y-auto"
-            @update:model-value="emit('selectTab', $event)"
+            @update:model-value="onSelectTab"
           >
             <div
               v-for="section in tabSections"
@@ -198,10 +209,24 @@ function onSearchKeydown(event: KeyboardEvent): void {
                 v-for="tab in section.tabs"
                 :key="tab.path"
                 :value="tab.path"
+                :disabled="disabled || selectingTabPath !== null"
+                :aria-busy="selectingTabPath === tab.path || undefined"
                 class="text-agent-fg box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none data-highlighted:bg-[#404040]"
+                @select.prevent
               >
                 <span
-                  v-if="tabActivity.editingTabPath === tab.path"
+                  v-if="selectingTabPath === tab.path"
+                  role="status"
+                  class="flex size-4 shrink-0 items-center justify-center"
+                >
+                  <span
+                    class="text-agent-fg-subtle icon-[lucide--loader-circle] size-4 motion-safe:animate-spin"
+                    aria-hidden="true"
+                  />
+                  <span class="sr-only">{{ t('agent.savingWorkflow') }}</span>
+                </span>
+                <span
+                  v-else-if="tabActivity.editingTabPath === tab.path"
                   role="img"
                   :aria-label="t('g.agentWorking')"
                   class="text-agent-fg-subtle icon-[lucide--loader-circle] size-4 shrink-0 motion-safe:animate-spin"

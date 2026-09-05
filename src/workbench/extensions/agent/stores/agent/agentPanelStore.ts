@@ -4,6 +4,7 @@ import { computed, ref, watch } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
 import type { AgentPanelCloseSource } from '@/platform/telemetry/types'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
 const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
@@ -18,6 +19,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const gateSettled = ref(false)
   const width = ref(PANEL_MIN_WIDTH)
   const dismissedSelectionSignature = ref<string | null>(null)
+  const selectedWorkflow = ref<ComfyWorkflow | null>(null)
 
   let openedAt: number | null = null
 
@@ -70,6 +72,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     width,
     isMaximized,
     dismissedSelectionSignature,
+    selectedWorkflow,
     toggle,
     close,
     setWidth,

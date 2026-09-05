@@ -95,6 +95,20 @@ describe('Composer', () => {
     expect(getMentionNodes).not.toHaveBeenCalled()
   })
 
+  it('retains the draft on Enter while a workflow selection is saving', async () => {
+    const { emitted, rerender } = mount({ targetSelecting: true })
+    const box = screen.getByRole('textbox')
+    await userEvent.type(box, 'keep this draft{Enter}')
+    expect(box).toHaveValue('keep this draft')
+    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
+    expect(emitted().send).toBeUndefined()
+
+    await rerender({ targetSelecting: false })
+    expect(emitted().send).toBeUndefined()
+    await userEvent.keyboard('{Enter}')
+    expect(emitted().send).toHaveLength(1)
+  })
+
   it('disables send when empty and enables once text is typed', async () => {
     mount()
     const send = screen.getByRole('button', { name: 'Send' })

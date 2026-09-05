@@ -5208,6 +5208,7 @@
     "searchWorkflows": "Search workflows",
     "currentTab": "Current tab",
     "otherOpenWorkflows": "Other open workflows",
+    "savingWorkflow": "Saving workflow",
     "selectWorkflowToGenerate": "Select a workflow to generate in",
     "switchWorkflow": "Switch workflow",
     "modelAuto": "Auto",

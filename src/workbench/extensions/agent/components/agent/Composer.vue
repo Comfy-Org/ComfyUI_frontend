@@ -38,6 +38,7 @@ const {
   availableWorkflows = [],
   editableWorkflowId,
   hasWorkflowTarget = false,
+  targetSelecting = false,
   getMentionNodes = () => []
 } = defineProps<{
   streaming?: boolean
@@ -49,6 +50,7 @@ const {
   availableWorkflows?: WorkflowReference[]
   editableWorkflowId?: string
   hasWorkflowTarget?: boolean
+  targetSelecting?: boolean
   getMentionNodes?: () => SelectedNode[]
 }>()
 const emit = defineEmits<{
@@ -342,6 +344,7 @@ const placeholderHint = computed(() => {
 
 const composer = useComposer({
   onSend: (text, attachments) => {
+    if (targetSelecting) return false
     if (!hasWorkflowTarget) {
       emit('workflowTargetRequired')
       return false
@@ -702,7 +705,9 @@ defineExpose({
             <button
               type="button"
               :aria-label="running ? t('agent.stop') : t('agent.send')"
-              :disabled="!running && !composer.canSend.value"
+              :disabled="
+                targetSelecting || (!running && !composer.canSend.value)
+              "
               :class="
                 cn(
                   'flex size-8 items-center justify-center rounded-xl transition-colors',

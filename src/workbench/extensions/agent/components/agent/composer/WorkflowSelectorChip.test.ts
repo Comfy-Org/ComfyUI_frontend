@@ -2,7 +2,7 @@ import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type { ComponentProps } from 'vue-component-type-helpers'
@@ -130,18 +130,20 @@ describe('WorkflowSelectorChip', () => {
     ).toHaveTextContent('upscale')
   })
 
-  it('emits one selected tab path from the controlled radio group', async () => {
-    const { user, emitted } = renderChip()
+  it('awaits one selected tab path before closing the controlled menu', async () => {
+    const selectTab = vi.fn(async () => true)
+    const { user } = renderChip({ selectTab })
     await user.click(trigger())
     await user.click(await screen.findByText('upscale'))
 
-    expect(emitted('selectTab')).toEqual([['workflows/upscale.json']])
+    expect(selectTab).toHaveBeenCalledExactlyOnceWith('workflows/upscale.json')
+    expect(screen.queryByRole('menu')).toBeNull()
 
     await user.click(trigger())
     expect(
       await screen.findByRole('menuitemradio', { checked: true })
     ).toHaveTextContent('portrait')
-    expect(emitted('selectTab')).toHaveLength(1)
+    expect(selectTab).toHaveBeenCalledTimes(1)
   })
 
   it('shows the choose-a-workflow placeholder without an active tab', async () => {

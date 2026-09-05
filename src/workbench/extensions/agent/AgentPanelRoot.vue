@@ -265,19 +265,21 @@ const cloudIdsByName = computed(() => {
   )
 })
 
-async function refreshCloudWorkflowIds(): Promise<void> {
+async function refreshCloudWorkflowIds(): Promise<boolean> {
   const generation = ++cloudWorkflowRefreshGeneration
   try {
     const workflows = await rest.listCloudWorkflows()
-    if (generation !== cloudWorkflowRefreshGeneration) return
+    if (generation !== cloudWorkflowRefreshGeneration) return false
     cloudWorkflowIndex.value = workflows.flatMap(({ id, name }) =>
       name === undefined ? [] : [{ id, name }]
     )
+    return true
   } catch (error) {
-    if (generation !== cloudWorkflowRefreshGeneration) return
+    if (generation !== cloudWorkflowRefreshGeneration) return false
     reportError(error, {
       errorType: 'agent_cloud_workflow_ids_refresh_failed'
     })
+    return false
   }
 }
 
@@ -318,9 +320,9 @@ const availableWorkflowReferences = computed<WorkflowReference[]>(() => {
   }
   return [...byId.values()]
 })
-const selectedTarget = ref<ComfyWorkflow | null>(
-  workflowStore.activeWorkflow ?? null
-)
+const { selectedWorkflow: selectedTarget } = storeToRefs(agentPanelStore)
+const selectingTarget = ref<ComfyWorkflow | null>(null)
+let targetSelectionGeneration = 0
 const workflowDetached = computed(() => selectedTarget.value === null)
 
 // Resolves the tab a turn is attributed to. `null` (the send had no origin
@@ -400,44 +402,66 @@ const workflowTabs = computed<ActiveTab[]>(() =>
   }))
 )
 
-async function onSelectTab(path: string): Promise<void> {
+async function onSelectTab(path: string): Promise<boolean> {
   const tab = workflowStore.getWorkflowByPath(path)
-  if (!tab || isSending.value || status.value !== 'idle') return
-  const previousView = workflowStore.activeWorkflow
-  try {
-    const saved = tab.isTemporary
-      ? await workflowService.saveWorkflowAs(tab)
-      : tab.isModified
-        ? await workflowService.saveWorkflow(tab)
-        : true
-    if (!saved) return
-    await refreshCloudWorkflowIds()
-    const workflowId = cloudIdFor(tab)
-    if (workflowId === undefined) {
+  if (
+    !tab ||
+    selectingTarget.value ||
+    isSending.value ||
+    status.value !== 'idle'
+  )
+    return false
+  selectingTarget.value = tab
+  const generation = ++targetSelectionGeneration
+  const isCurrent = () =>
+    generation === targetSelectionGeneration &&
+    workflowStore.openWorkflows.includes(tab)
+  const failSelection = (detail = t('shareWorkflow.saveFailedDescription')) => {
+    if (isCurrent())
       toast.add({
         severity: 'warn',
         summary: t('shareWorkflow.saveFailedTitle'),
-        detail: t('shareWorkflow.saveFailedDescription')
+        detail
       })
-      return
+    return false
+  }
+  try {
+    if (tab.isTemporary) {
+      if (!(await refreshCloudWorkflowIds())) return failSelection()
+      if (!isCurrent()) return false
+      const names = new Set([
+        ...cloudWorkflowIndex.value.map(({ name }) => name),
+        ...workflowStore.workflows
+          .filter((workflow) => workflow.path !== tab.path)
+          .map(cloudWorkflowName)
+      ])
+      const appSuffix = tab.initialMode === 'app' ? '.app' : ''
+      const stem = tab.filename.replace(/ \(\d+\)$/, '')
+      let filename = tab.filename
+      let counter = 2
+      while (names.has(`${filename}${appSuffix}`))
+        filename = `${stem} (${counter++})`
+      if (!(await workflowService.saveWorkflowAs(tab, { filename })))
+        return failSelection()
+    } else if (tab.isModified) {
+      if (!(await workflowService.saveWorkflow(tab))) return failSelection()
     }
-    await workflowService.openWorkflow(tab)
+    if (!isCurrent()) return false
+    if (!(await refreshCloudWorkflowIds())) return failSelection()
+    if (!isCurrent()) return false
+    const workflowId = cloudIdFor(tab)
+    if (workflowId === undefined) return failSelection()
+    if ((await workflowService.openWorkflow(tab)) === false)
+      return failSelection(t('agent.targetNavigationUnavailable'))
+    if (!isCurrent()) return false
+    bindingStore.bind(workflowId, tab.path)
     selectedTarget.value = tab
     removeWorkflowReference(workflowId)
+    return true
   } catch (error) {
-    if (
-      previousView !== null &&
-      workflowStore.activeWorkflow?.path !== previousView.path
-    )
-      await workflowService.openWorkflow(previousView)
-    toast.add({
-      severity: 'warn',
-      summary: t('shareWorkflow.saveFailedTitle'),
-      detail:
-        error instanceof Error
-          ? error.message
-          : t('shareWorkflow.saveFailedDescription')
-    })
+    return failSelection(error instanceof Error ? error.message : undefined)
+  } finally {
+    selectingTarget.value = null
   }
 }
 
@@ -484,8 +508,10 @@ function onWorkflowAdopted(
 async function onWorkflowRestored(
   workflowId: string | undefined
 ): Promise<void> {
+  const generation = ++targetSelectionGeneration
   if (workflowId === undefined) return
   await refreshCloudWorkflowIds()
+  if (generation !== targetSelectionGeneration) return
   const target = boundTabFor(workflowId)
   if (target === null) {
     selectedTarget.value = null
@@ -498,10 +524,12 @@ async function onWorkflowRestored(
   }
   try {
     await workflowService.openWorkflow(target)
+    if (generation !== targetSelectionGeneration) return
     bindingStore.bind(workflowId, target.path)
     selectedTarget.value = target
     removeWorkflowReference(workflowId)
   } catch {
+    if (generation !== targetSelectionGeneration) return
     toast.add({
       severity: 'warn',
       detail: t('agent.targetNavigationUnavailable'),
@@ -536,7 +564,9 @@ const {
     current: activeWorkflowTurnContext,
     adopted: onWorkflowAdopted,
     restored: onWorkflowRestored,
-    prepare: refreshCloudWorkflowIds,
+    prepare: async () => {
+      await refreshCloudWorkflowIds()
+    },
     tabs: openTabsSnapshot,
     activeTab: enqueueActiveTab,
     draft: activeWorkflowDraft
@@ -782,6 +812,7 @@ async function onAgentActiveTab(
 start()
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
+  ++targetSelectionGeneration
   mintPortWiring.detach()
   exitNodeSelectionMode()
   stop()
@@ -827,6 +858,7 @@ watch(threadId, (id) => history.setActive(id), { immediate: true })
 void refreshHistory()
 
 async function onSelectHistory(id: string): Promise<void> {
+  ++targetSelectionGeneration
   exitNodeSelectionMode()
   await loadThread(id)
   void refreshHistory()
@@ -861,6 +893,7 @@ function onSend(
   attachments: ComposerAttachment[],
   references: WorkflowReference[] = []
 ): void {
+  if (selectingTarget.value || selectedTarget.value === null) return
   exitNodeSelectionMode()
   const nodeTags = consumeSelection()
   workflowReferences.value = []
@@ -890,6 +923,7 @@ function onDeleteHistory(id: string): void {
 }
 
 function onNewChat(): void {
+  ++targetSelectionGeneration
   exitNodeSelectionMode()
   workflowReferences.value = []
   newChat()
@@ -1199,9 +1233,10 @@ function onPanelDrop(event: DragEvent): void {
       :active-tab="activeTab"
       :workflow-tabs="workflowTabs"
       :visible-tab-path="workflowStore.activeWorkflow?.path ?? null"
+      :selecting-tab-path="selectingTarget?.path ?? null"
+      :select-tab="onSelectTab"
       :workflow-detached="workflowDetached"
       :get-mention-nodes="mentionableNodes"
-      @select-tab="onSelectTab"
       @send="onSend"
       @stop="onStop"
       @attach="onAttach"
