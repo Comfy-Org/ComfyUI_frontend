@@ -281,4 +281,20 @@ describe('useSessionCookie', () => {
       'session denied'
     )
   })
+
+  it('surfaces a plain-text proxy body instead of dropping it', async () => {
+    mockGetIdToken.mockResolvedValue('firebase-id-token')
+    vi.mocked(globalThis.fetch).mockResolvedValue(
+      new Response('upstream connect error', {
+        status: 502,
+        statusText: 'Bad Gateway'
+      })
+    )
+    const { useSessionCookie } =
+      await import('@/platform/auth/session/useSessionCookie')
+
+    await expect(useSessionCookie().createSessionOrThrow()).rejects.toThrow(
+      'upstream connect error'
+    )
+  })
 })
