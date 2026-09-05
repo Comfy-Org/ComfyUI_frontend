@@ -17,6 +17,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import {
+  hasPreservedQuery,
   hydratePreservedQuery,
   mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
@@ -283,7 +284,16 @@ export function useWorkflowPersistenceV2() {
     }
   }
 
-  const loadTemplateFromUrlIfPresent = async () => {
+  const hasTemplateIntent = (): boolean => {
+    if (route.query.template && typeof route.query.template === 'string') {
+      return true
+    }
+    return hasPreservedQuery(TEMPLATE_NAMESPACE)
+  }
+
+  const loadTemplateFromUrlIfPresent = async (): Promise<
+    string | undefined
+  > => {
     const query = await ensureTemplateQueryFromIntent()
     const hasTemplateUrl = query.template && typeof query.template === 'string'
 
@@ -417,6 +427,7 @@ export function useWorkflowPersistenceV2() {
   }
 
   return {
+    hasTemplateIntent,
     initializeWorkflow,
     loadSharedWorkflowFromUrlIfPresent,
     loadTemplateFromUrlIfPresent,

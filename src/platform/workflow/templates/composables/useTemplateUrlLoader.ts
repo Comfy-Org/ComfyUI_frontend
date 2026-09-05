@@ -1,4 +1,5 @@
 import { useToast } from 'primevue/usetoast'
+import { readonly, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -33,6 +34,10 @@ export function useTemplateUrlLoader() {
   const SUPPORTED_MODES = ['linear'] as const
   type SupportedMode = (typeof SUPPORTED_MODES)[number]
 
+  const isLoading = ref(false)
+  const error = shallowRef<Error | null>(null)
+  const hasAttempted = ref(false)
+
   /**
    * Validates parameter format to prevent path traversal and injection attacks
    * Allows: letters, numbers, underscores, hyphens, and dots (for version numbers)
@@ -66,6 +71,9 @@ export function useTemplateUrlLoader() {
    * @returns the id of the template that loaded, if one did
    */
   const loadTemplateFromUrl = async (): Promise<string | undefined> => {
+    error.value = null
+    hasAttempted.value = false
+
     const templateParam = route.query.template
 
     if (!templateParam || typeof templateParam !== 'string') {
@@ -106,6 +114,8 @@ export function useTemplateUrlLoader() {
       )
     }
 
+    isLoading.value = true
+
     try {
       await templateWorkflows.loadTemplates()
 
@@ -126,15 +136,16 @@ export function useTemplateUrlLoader() {
       }
 
       if (modeParam === 'linear') {
-        // Set linear mode after successful template load
         useTelemetry()?.trackEnterLinear({ source: 'template_url' })
         canvasStore.linearMode = true
       }
       return sourceParam === 'default' ? templateParam : undefined
-    } catch (error) {
+    } catch (e) {
+      const caught = e instanceof Error ? e : new Error(String(e))
+      error.value = caught
       console.error(
         '[useTemplateUrlLoader] Failed to load template from URL:',
-        error
+        caught
       )
       toast.add({
         severity: 'error',
@@ -142,12 +153,17 @@ export function useTemplateUrlLoader() {
         detail: t('g.errorLoadingTemplate')
       })
     } finally {
+      isLoading.value = false
+      hasAttempted.value = true
       cleanupUrlParams()
       clearPreservedQuery(TEMPLATE_NAMESPACE)
     }
   }
 
   return {
-    loadTemplateFromUrl
+    loadTemplateFromUrl,
+    isLoading: readonly(isLoading),
+    error: readonly(error),
+    hasAttempted: readonly(hasAttempted)
   }
 }
