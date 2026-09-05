@@ -6,7 +6,3 @@ results.json
 
 # Platform-specific Playwright snapshots (CI runs Linux)
 *-win32.png
-
-# Local-only: partner-node bundle for running models. Not for production.
-src/vendor/
-.env.local
