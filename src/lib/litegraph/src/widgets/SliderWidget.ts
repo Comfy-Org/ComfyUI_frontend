@@ -1,6 +1,7 @@
 import { clamp } from 'es-toolkit/compat'
 
 import type { ISliderWidget } from '@/lib/litegraph/src/types/widgets'
+import { formatNumericWidgetValue } from '@/lib/litegraph/src/utils/widget'
 
 import { BaseWidget } from './BaseWidget'
 import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
@@ -59,7 +60,10 @@ export class SliderWidget
     if (showText) {
       ctx.textAlign = 'center'
       ctx.fillStyle = this.text_color
-      const fixedValue = this.value.toFixed(this.options.precision ?? 3)
+      const fixedValue = formatNumericWidgetValue(
+        this.value,
+        this.options.precision ?? 3
+      )
       ctx.fillText(
         `${this.label || this.name}  ${fixedValue}`,
         width * 0.5,

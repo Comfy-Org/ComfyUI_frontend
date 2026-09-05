@@ -1,7 +1,10 @@
 import { clamp } from 'es-toolkit/compat'
 
 import type { IKnobWidget } from '@/lib/litegraph/src/types/widgets'
-import { getWidgetStep } from '@/lib/litegraph/src/utils/widget'
+import {
+  formatNumericWidgetValue,
+  getWidgetStep
+} from '@/lib/litegraph/src/utils/widget'
 
 import { BaseWidget } from './BaseWidget'
 import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
@@ -169,7 +172,10 @@ export class KnobWidget extends BaseWidget<IKnobWidget> implements IKnobWidget {
     if (showText) {
       ctx.textAlign = 'center'
       ctx.fillStyle = this.text_color
-      const fixedValue = this.value.toFixed(this.options.precision ?? 3)
+      const fixedValue = formatNumericWidgetValue(
+        this.value,
+        this.options.precision ?? 3
+      )
       ctx.fillText(
         `${this.label || this.name}\n${fixedValue}`,
         width * 0.5,
