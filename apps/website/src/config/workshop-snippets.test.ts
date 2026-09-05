@@ -2,8 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { describe, expect, it } from 'vitest'
 
 import type { WorkshopField } from './workshop-detail'
-import { defaultWorkshopValues } from './workshop-detail'
-import { buildWorkshopInput, buildRouterSnippet } from './workshop-snippets'
+import { buildWorkshopInput, buildWorkshopSnippet } from './workshop-snippets'
 
 const fields: WorkshopField[] = [
   {
@@ -43,19 +42,13 @@ const promptOnly = [
   }
 ]
 
-/**
- * Whether a shell would accept the command. `bash -n` parses without running,
- * which is the only check that actually answers the question — counting
- * quotes cannot, because the correct escape for an apostrophe (`'\''`)
- * deliberately contains an odd number of them.
- */
-function parsesAsShellCommand(command: string): boolean {
-  try {
-    execFileSync('bash', ['-n'], { input: command, stdio: 'pipe' })
-    return true
-  } catch {
-    return false
-  }
+function executeWithStubCurl(command: string): string[] {
+  const output = execFileSync(
+    'bash',
+    ['-c', `curl() { printf '%s\\0' "$@"; }\n${command}`],
+    { encoding: 'utf8' }
+  )
+  return output.split('\0').filter(Boolean)
 }
 
 describe('Workshop snippets', () => {
@@ -95,19 +88,11 @@ describe('Workshop snippets', () => {
     })
   })
 
-  it('uses generated defaults', () => {
-    expect(defaultWorkshopValues(fields)).toEqual({
-      prompt: undefined,
-      enhance: true,
-      media_image: undefined
-    })
-  })
-
   it.for(['typescript', 'python', 'http'] as const)(
     'builds the %s snippet from the current values',
     (language) => {
       expect(
-        buildRouterSnippet(language, 'bfl/flux-3', fields, {
+        buildWorkshopSnippet(language, 'bfl/flux-3', fields, {
           prompt: 'A red fox',
           enhance: true
         })
@@ -131,17 +116,14 @@ describe('Workshop snippets', () => {
     })
   })
 
-  it('stays a valid shell command when a prompt contains an apostrophe', () => {
-    // Apostrophes are ordinary in prompts. Interpolating raw JSON into a
-    // single-quoted argument ends the quote early and the command no longer
-    // parses, which `bash -n` rejects.
-    const snippet = buildRouterSnippet('http', 'bfl/flux-2-pro', promptOnly, {
+  it('preserves an apostrophe in the HTTP request payload', () => {
+    const snippet = buildWorkshopSnippet('http', 'bfl/flux-2-pro', promptOnly, {
       prompt: "don't stop"
     })
+    const args = executeWithStubCurl(snippet)
+    const dataIndex = args.indexOf('--data')
 
-    expect(parsesAsShellCommand(snippet)).toBe(true)
-    // And the apostrophe survives into the payload rather than being dropped.
-    expect(snippet).toContain('don')
-    expect(snippet).toContain('t stop')
+    expect(dataIndex).toBeGreaterThan(-1)
+    expect(JSON.parse(args[dataIndex + 1])).toEqual({ prompt: "don't stop" })
   })
 })
