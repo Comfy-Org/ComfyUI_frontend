@@ -41,7 +41,8 @@ const baseRoutes = {
   geminiOmni: '/gemini-omni',
   wanAnimate2: '/wan-animate-2',
   wan3: '/wan-3.0',
-  brand: '/brand'
+  brand: '/brand',
+  workshop: '/workshop'
 } as const
 
 type RouteKey = keyof typeof baseRoutes
@@ -69,6 +70,10 @@ type Routes = Readonly<Record<RouteKey, string>>
 // minimaxLicenseProfessionalRequest: embeds an English-only HubSpot intake
 // form, so no localized variant exists. See the comment header in
 // src/pages/minimax/license/professional-request.astro.
+//
+// workshop: the model workshop lives only at /workshop (src/pages/workshop/);
+// there is no /<locale>/workshop page, so a prefixed link 404s. The route is
+// also omitted from deployed builds until config/workshop-release.ts enables it.
 const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'affiliates',
   'affiliateTerms',
@@ -77,7 +82,8 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'enterprise',
   'managedBuilds',
   'models',
-  'minimaxLicenseProfessionalRequest'
+  'minimaxLicenseProfessionalRequest',
+  'workshop'
 ])
 
 // pixal3d-trellis2: a bespoke English launch page with no Chinese version,
@@ -88,8 +94,13 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
 // /platform/ each have a zh-CN twin and it does not, so without this the
 // emitter advertises a Chinese page that 404s.
 const LOCALE_INVARIANT_EXTRA_PATHS = [
+  // Auth surfaces render one page for every locale (copy localizes in the
+  // island); a /zh-CN twin does not exist and must not be advertised.
+  '/forgot-password',
+  '/login',
   '/pixal3d-trellis2',
-  '/platform/serverless-animation'
+  '/platform/serverless-animation',
+  '/signup'
 ]
 
 const LOCALE_INVARIANT_PATHS = new Set<string>([

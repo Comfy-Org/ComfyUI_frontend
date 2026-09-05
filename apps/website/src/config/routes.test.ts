@@ -150,3 +150,13 @@ describe('getRoutes minimaxLicense', () => {
     expect(getRoutes('zh-CN').minimaxLicense).toBe('/zh-CN/minimax/license')
   })
 })
+
+describe('getRoutes workshop', () => {
+  it('serves the workshop page at its canonical path for en', () => {
+    expect(getRoutes('en').workshop).toBe('/workshop')
+  })
+
+  it('never prefixes the English-only workshop page for zh-CN', () => {
+    expect(getRoutes('zh-CN').workshop).toBe('/workshop')
+  })
+})

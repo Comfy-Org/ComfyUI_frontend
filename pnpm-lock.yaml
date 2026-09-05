@@ -475,6 +475,9 @@ importers:
       '@atlaskit/pragmatic-drag-and-drop':
         specifier: ^1.3.1
         version: 1.8.1
+      '@comfyorg/auth-core':
+        specifier: workspace:*
+        version: link:packages/auth-core
       '@comfyorg/comfy-multi-player':
         specifier: 0.2.1
         version: 0.2.1
@@ -938,9 +941,15 @@ importers:
       '@astrojs/sitemap':
         specifier: 'catalog:'
         version: 3.7.3
+      '@comfyorg/auth-core':
+        specifier: workspace:*
+        version: link:../../packages/auth-core
       '@comfyorg/design-system':
         specifier: workspace:*
         version: link:../../packages/design-system
+      '@comfyorg/ingest-types':
+        specifier: workspace:*
+        version: link:../../packages/ingest-types
       '@comfyorg/object-info-parser':
         specifier: workspace:*
         version: link:../../packages/object-info-parser
@@ -968,6 +977,9 @@ importers:
       cva:
         specifier: 'catalog:'
         version: 1.0.0-beta.4(typescript@6.0.3)
+      firebase:
+        specifier: 'catalog:'
+        version: 11.10.0
       gsap:
         specifier: 'catalog:'
         version: 3.15.0
@@ -1050,6 +1062,34 @@ importers:
       vue-component-type-helpers:
         specifier: 'catalog:'
         version: 3.3.9
+      vue-tsc:
+        specifier: 'catalog:'
+        version: 3.3.9(typescript@6.0.3)
+
+  packages/auth-core:
+    dependencies:
+      '@comfyorg/shared-frontend-utils':
+        specifier: workspace:*
+        version: link:../shared-frontend-utils
+      '@vueuse/core':
+        specifier: 'catalog:'
+        version: 14.4.0(vue@3.5.41(typescript@6.0.3))
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.41(typescript@6.0.3)
+      zod:
+        specifier: 'catalog:'
+        version: 3.25.76
+    devDependencies:
+      '@testing-library/vue':
+        specifier: 'catalog:'
+        version: 8.1.0(@vue/compiler-dom@3.5.41)(@vue/compiler-sfc@3.5.41)(@vue/server-renderer@3.5.41)(vue@3.5.41(typescript@6.0.3))
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.11(@types/node@25.9.5)(@vitest/coverage-v8@4.1.11)(@vitest/ui@4.1.11)(happy-dom@20.10.6)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
       vue-tsc:
         specifier: 'catalog:'
         version: 3.3.9(typescript@6.0.3)

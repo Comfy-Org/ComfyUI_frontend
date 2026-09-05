@@ -2,6 +2,9 @@
 
 @import 'tailwindcss';
 @import '@comfyorg/design-system/css/base.css';
+/* Tailwind's auto-detection skips node_modules, so classes used only inside
+   the shared auth components would silently generate nothing. */
+@source '../../node_modules/@comfyorg/auth-core/src';
 @import 'tw-animate-css';
 
 /* PP Formula's native vertical metrics place the baseline too high, so caps

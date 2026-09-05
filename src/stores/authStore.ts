@@ -20,6 +20,11 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { useFirebaseAuth } from 'vuefire'
 
+import {
+  signUpWithProvisioning,
+  socialSignInWithProvisioning
+} from '@comfyorg/auth-core/provisioning'
+
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
@@ -702,38 +707,21 @@ export const useAuthStore = defineStore('auth', () => {
     password: string,
     turnstileToken?: string
   ): Promise<UserCredential> => {
-    // Drive create + customer inside one action so a failed customer step can
-    // roll back the just-created Firebase user. createCustomer is where the
-    // Turnstile token is validated server-side; if it fails (rejection, 5xx,
-    // network) the Firebase user is already created and, without rollback, the
-    // account is orphaned — every retry then fails "email already in use",
-    // permanently bricking signup. Rollback is scoped to register only; login /
-    // social sign-in must never delete an existing user on a customer hiccup.
-    const result = await executeAuthAction(async (authInstance) => {
-      const credential = await createUserWithEmailAndPassword(
-        authInstance,
-        email,
-        password
-      )
-      try {
-        await createCustomer(
-          turnstileToken ? { turnstile_token: turnstileToken } : undefined
-        )
-      } catch (error) {
-        // Best-effort rollback of the user created in THIS call; never let a
-        // cleanup failure mask the original error.
-        try {
-          await credential.user.delete()
-        } catch (deleteError) {
+    const result = await executeAuthAction((authInstance) =>
+      signUpWithProvisioning({
+        createUser: () =>
+          createUserWithEmailAndPassword(authInstance, email, password),
+        provisionCustomer: () =>
+          createCustomer(
+            turnstileToken ? { turnstile_token: turnstileToken } : undefined
+          ),
+        onRollbackFailure: (error) =>
           console.warn(
             'Failed to roll back orphaned Firebase user after customer creation failed',
-            deleteError
+            error
           )
-        }
-        throw error
-      }
-      return credential
-    })
+      })
+    )
 
     useTelemetry()?.trackAuth({
       method: 'email',
@@ -749,9 +737,11 @@ export const useAuthStore = defineStore('auth', () => {
   const loginWithGoogle = async (options?: {
     isNewUser?: boolean
   }): Promise<UserCredential> => {
-    const result = await executeAuthAction(
-      (authInstance) => signInWithPopup(authInstance, googleProvider),
-      { createCustomer: true }
+    const result = await executeAuthAction((authInstance) =>
+      socialSignInWithProvisioning({
+        signIn: () => signInWithPopup(authInstance, googleProvider),
+        provisionCustomer: () => createCustomer()
+      })
     )
 
     const additionalUserInfo = getAdditionalUserInfo(result)
@@ -769,9 +759,11 @@ export const useAuthStore = defineStore('auth', () => {
   const loginWithGithub = async (options?: {
     isNewUser?: boolean
   }): Promise<UserCredential> => {
-    const result = await executeAuthAction(
-      (authInstance) => signInWithPopup(authInstance, githubProvider),
-      { createCustomer: true }
+    const result = await executeAuthAction((authInstance) =>
+      socialSignInWithProvisioning({
+        signIn: () => signInWithPopup(authInstance, githubProvider),
+        provisionCustomer: () => createCustomer()
+      })
     )
 
     const additionalUserInfo = getAdditionalUserInfo(result)

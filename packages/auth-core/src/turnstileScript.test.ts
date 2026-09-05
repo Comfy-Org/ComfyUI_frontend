@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { TurnstileApi } from '@/composables/auth/turnstileScript'
+import type { TurnstileApi } from './turnstileScript'
 
 const TURNSTILE_SRC =
   'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'
@@ -51,7 +51,7 @@ const scriptCount = () => inserted.filter((s) => s.src === TURNSTILE_SRC).length
  */
 async function freshLoadTurnstile() {
   vi.resetModules()
-  const mod = await import('@/composables/auth/turnstileScript')
+  const mod = await import('./turnstileScript')
   return mod.loadTurnstile
 }
 

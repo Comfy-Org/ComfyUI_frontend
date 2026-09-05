@@ -18,8 +18,16 @@ import NavColumn from './NavColumn.vue'
 import NavFeaturedCard from './NavFeaturedCard.vue'
 import NewBadge from './NewBadge.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
-const mainNavigation = getMainNavigation(locale)
+const {
+  locale = 'en',
+  showWorkshop = false,
+  compact = false
+} = defineProps<{
+  locale?: Locale
+  showWorkshop?: boolean
+  compact?: boolean
+}>()
+const mainNavigation = getMainNavigation(locale, showWorkshop)
 const currentPath = useCurrentPath()
 
 function isNavItemActive(navItem: NavItem, path: string): boolean {
@@ -42,6 +50,7 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
         <template v-if="navItem.columns?.length">
           <NavigationMenuTrigger
             :active="isNavItemActive(navItem, currentPath)"
+            :class="compact ? 'px-2' : undefined"
           >
             <span class="inline-flex items-center gap-1">
               <span class="ppformula-text-center">{{ navItem.label }}</span>
@@ -70,7 +79,7 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
           v-else
           as-child
           :active="isNavItemActive(navItem, currentPath)"
-          :class="navigationMenuTriggerStyle()"
+          :class="[navigationMenuTriggerStyle(), compact ? 'px-2' : undefined]"
         >
           <a :href="navItem.href" class="ppformula-text-center">{{
             navItem.label
