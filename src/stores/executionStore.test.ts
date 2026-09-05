@@ -546,17 +546,20 @@ describe('useExecutionStore - reconcileInitializingJobs', () => {
 })
 
 describe('useExecutionStore - workflowStatus', () => {
+  const graphAId = '11111111-1111-4111-8111-111111111111'
+  const graphBId = '22222222-2222-4222-8222-222222222222'
+
   let store: ReturnType<typeof useExecutionStore>
   type Workflow = Parameters<typeof store.storeJob>[0]['workflow']
-  const makeWorkflow = (path: string): Workflow => {
-    const workflow: Partial<Workflow> = {
+  const makeWorkflow = (path: string, graphId: string): Workflow =>
+    ({
       path,
-      filename: path.split('/').pop()
-    }
-    return workflow as Workflow
-  }
-  const workflowA = makeWorkflow('/workflows/a.json')
-  const workflowB = makeWorkflow('/workflows/b.json')
+      filename: path.split('/').pop(),
+      activeState: { id: graphId },
+      initialState: { id: graphId }
+    }) as Workflow
+  const workflowA = makeWorkflow('/workflows/a.json', graphAId)
+  const workflowB = makeWorkflow('/workflows/b.json', graphBId)
 
   function fireExecutionStart(jobId: string) {
     const handler = apiEventHandlers.get('execution_start')
@@ -602,7 +605,9 @@ describe('useExecutionStore - workflowStatus', () => {
   }
 
   function callStoreJob(jobId: string, workflow: Workflow) {
-    store.registerJobWorkflowIdMapping(jobId, workflow.path)
+    const graphId = workflow.activeState?.id ?? workflow.initialState?.id
+    if (!graphId) throw new Error('workflow graph ID missing')
+    store.registerJobWorkflowIdMapping(jobId, graphId)
     store.storeJob({
       nodes: ['1'],
       id: jobId,
