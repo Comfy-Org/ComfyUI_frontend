@@ -54,6 +54,10 @@ export const useSelectionStore = defineStore('selection', () => {
     return created
   }
 
+  function clearRoot(rootGraphId: RootGraphId): void {
+    roots.delete(rootGraphId)
+  }
+
   function selectedKeys(scope: GraphScope): readonly SelectableKey[] {
     return stateOf(scope).order
   }
@@ -62,5 +66,5 @@ export const useSelectionStore = defineStore('selection', () => {
     return stateOf(scope).order.includes(key)
   }
 
-  return { apply, selectedKeys, isSelected }
+  return { apply, clearRoot, selectedKeys, isSelected }
 })
