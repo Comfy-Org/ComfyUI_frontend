@@ -49,8 +49,8 @@ German compounds are written closed, not spaced: "Bildgenerierung", not "Bild Ge
 Prefer the imperative for button labels ("Speichern", "Abbrechen") and avoid the infinitive-with-zu form, which reads like documentation rather than an interface.`
 
 const swedishGuidance = `Use clear, idiomatic Swedish suitable for a professional creative-technology interface. Prefer concise imperative labels such as "Spara", "Avbryt" and "Läs in".
-Keep widely recognized technical terms and product names in English: node, workflow, prompt, queue, canvas, widget, seed, sampler, checkpoint, VAE, CLIP, LoRA, ControlNet, API, GPU and CUDA.
-Use established Swedish interface terminology: "inställningar", "bildruta", "bildförhållande", "arbetsflöde", "kö" and "verktygstips". Preserve all placeholders, identifiers, option values and code-like literals exactly.`
+Use established Swedish interface terminology consistently: "nod"/"noder", "arbetsflöde", "kö", "arbetsyta", "widget"/"widgetar", "inställningar", "bildruta", "bildförhållande" and "verktygstips".
+Keep product names and technical identifiers in English: seed, sampler, checkpoint, VAE, CLIP, LoRA, ControlNet, API, GPU and CUDA. Preserve all placeholders, identifiers, option values and code-like literals exactly.`
 
 export const translationPipelineConfig: TranslationPipelineConfig = {
   entry: 'src/locales/en',

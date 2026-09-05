@@ -33,7 +33,7 @@
   "Comfy_Canvas_ToggleSelected_Pin": { "label": "Fäst/lossa valda objekt" },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": { "label": "Koppla förbi/återaktivera valda noder" },
   "Comfy_Canvas_ToggleSelectedNodes_Collapse": { "label": "Fäll ihop/expandera valda noder" },
-  "Comfy_Canvas_ToggleSelectedNodes_Mute": { "label": "Tysta/aktivera ljud för valda noder" },
+  "Comfy_Canvas_ToggleSelectedNodes_Mute": { "label": "Inaktivera/aktivera valda noder" },
   "Comfy_Canvas_ToggleSelectedNodes_Pin": { "label": "Fäst/lossa valda noder" },
   "Comfy_Canvas_Unlock": { "label": "Lås upp arbetsytan" },
   "Comfy_Canvas_ZoomIn": { "label": "Zooma in" },
