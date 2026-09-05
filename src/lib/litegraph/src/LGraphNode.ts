@@ -179,7 +179,7 @@ function serialiseWidgetValues(widgets: IBaseWidget[]) {
   const positional: TWidgetValue[] = []
   const named: Record<string, TWidgetValue> = {}
   for (const widget of widgets) {
-    if (widget.serialize === false) continue
+    if (!widget || widget.serialize === false) continue
     const value = widget.value
     const serialisedValue =
       value != null && typeof value === 'object'
@@ -1190,7 +1190,7 @@ export class LGraphNode
 
         let positionalIndex = 0
         for (const widget of this.widgets) {
-          if (widget.serialize === false) continue
+          if (!widget || widget.serialize === false) continue
           const restored = useWidgetValueStore().getRestoredWidgetValue(
             graphId,
             this.id,

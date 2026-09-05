@@ -143,6 +143,15 @@ describe('widgets view', () => {
     expect(storedOrder(node)).toEqual(['b', 'a'])
   })
 
+  it('commits order when a widget entry is deleted, leaving a hole', () => {
+    const { node } = createNodeWithWidgets({ a: 10, b: 20 })
+
+    delete node.widgets![0]
+
+    expect(node.widgets![0]).toBeUndefined()
+    expect(storedOrder(node)).toEqual(['b'])
+  })
+
   it('normalizes a plain widget pushed into the live array', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
