@@ -1,4 +1,5 @@
 import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { getComboWidgetInventory } from '@/core/graph/widgets/comboWidgetInventory'
 import type { FlattenableWorkflowGraph } from '@/platform/workflow/core/utils/workflowFlattening'
 import { flattenWorkflowNodes } from '@/platform/workflow/core/utils/workflowFlattening'
 import type { MissingModelCandidate, MissingModelViewModel } from './types'
@@ -32,6 +33,31 @@ export type MissingModelWorkflowData = FlattenableWorkflowGraph & {
   models?: ModelFile[]
 }
 
+type DeferredVerification = (
+  signal?: AbortSignal
+) => Promise<boolean | undefined>
+
+const pendingVerifications = new WeakMap<
+  MissingModelCandidate,
+  DeferredVerification
+>()
+
+export function hasPendingVerification(
+  candidate: MissingModelCandidate
+): boolean {
+  return pendingVerifications.has(candidate)
+}
+
+function copyCandidate(
+  candidate: MissingModelCandidate,
+  overrides: Partial<MissingModelCandidate> = {}
+): MissingModelCandidate {
+  const copy = { ...candidate, ...overrides }
+  const verify = pendingVerifications.get(candidate)
+  if (verify) pendingVerifications.set(copy, verify)
+  return copy
+}
+
 function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
   return widget.type === 'combo'
 }
@@ -60,13 +86,12 @@ function enrichCandidateFromNodeProperties(
       (!candidate.directory || candidate.directory === m.directory)
   )
   if (!match) return candidate
-  return {
-    ...candidate,
+  return copyCandidate(candidate, {
     directory: candidate.directory ?? match.directory,
     url: candidate.url ?? match.url,
     hash: candidate.hash ?? match.hash,
     hashType: candidate.hashType ?? match.hash_type
-  }
+  })
 }
 
 function isAssetWidget(widget: IBaseWidget): widget is IAssetWidget {
@@ -117,8 +142,8 @@ export function isModelFileName(name: string): boolean {
  * Scan COMBO and asset widgets on configured graph nodes for model-like values.
  * Must be called after `graph.configure()` so widget name/value mappings are accurate.
  *
- * Non-asset-supported nodes: `isMissing` resolved immediately via widget options.
- * Asset-supported nodes: `isMissing` left `undefined` for async verification.
+ * `isMissing` resolves immediately from static combo options and stays
+ * `undefined` for asset-supported nodes and loading remote combos.
  */
 export function scanAllModelCandidates(
   rootGraph: LGraph,
@@ -288,10 +313,7 @@ function scanComboWidget(
     target.nodeType,
     target.definitionWidgetName
   )
-  const options = resolveComboValues(target.definitionWidget)
-  const inOptions = options.includes(value)
-
-  return {
+  const candidate: MissingModelCandidate = {
     nodeId: target.executionId,
     ...(target.sourceExecutionId && {
       sourceExecutionId: target.sourceExecutionId
@@ -301,7 +323,44 @@ function scanComboWidget(
     isAssetSupported: nodeIsAssetSupported,
     name: value,
     directory: getDirectory?.(target.nodeType),
-    isMissing: nodeIsAssetSupported ? undefined : !inOptions
+    isMissing: undefined
+  }
+  if (nodeIsAssetSupported) return candidate
+
+  const isAbsentFromOptions = () =>
+    !resolveComboValues(target.definitionWidget).includes(value)
+  const inventory = getComboWidgetInventory(target.definitionWidget)
+  if (inventory && inventory.getStatus() !== 'ready') {
+    pendingVerifications.set(candidate, async (signal) => {
+      await untilSettledOrAborted(inventory.waitForSettled(), signal)
+      if (signal?.aborted || inventory.getStatus() !== 'ready') {
+        return undefined
+      }
+      if (target.valueWidget.value !== value) return undefined
+      return isAbsentFromOptions()
+    })
+    return candidate
+  }
+
+  candidate.isMissing = isAbsentFromOptions()
+  return candidate
+}
+
+async function untilSettledOrAborted(
+  settled: Promise<void>,
+  signal?: AbortSignal
+): Promise<void> {
+  if (!signal) return settled
+  if (signal.aborted) return
+  let onAbort = () => {}
+  const aborted = new Promise<void>((resolve) => {
+    onAbort = resolve
+    signal.addEventListener('abort', onAbort, { once: true })
+  })
+  try {
+    await Promise.race([settled, aborted])
+  } finally {
+    signal.removeEventListener('abort', onAbort)
   }
 }
 
@@ -312,7 +371,7 @@ export function enrichWithEmbeddedMetadata(
   const allNodes = flattenWorkflowNodes(graphData)
   const embeddedModels = collectEmbeddedModels(allNodes, graphData)
 
-  const enriched = candidates.map((c) => ({ ...c }))
+  const enriched = candidates.map((c) => copyCandidate(c))
   const candidatesByKey = new Map<string, MissingModelCandidate[]>()
   for (const c of enriched) {
     const dirKey = `${c.name}::${c.directory ?? ''}`
@@ -401,6 +460,18 @@ export async function verifyAssetSupportedCandidates(
   signal?: AbortSignal,
   assetsStore?: AssetVerifier
 ): Promise<void> {
+  if (signal?.aborted) return
+
+  await Promise.all(
+    candidates.map(async (candidate) => {
+      const verify = pendingVerifications.get(candidate)
+      if (!verify) return
+      pendingVerifications.delete(candidate)
+      const isMissing = await verify(signal)
+      if (!signal?.aborted) candidate.isMissing = isMissing
+    })
+  )
+
   if (signal?.aborted) return
 
   const pendingCandidates = candidates.filter(

@@ -4,11 +4,13 @@ import { assetService } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
 import {
   enrichWithEmbeddedMetadata,
+  hasPendingVerification,
   scanAllModelCandidates,
   verifyAssetSupportedCandidates
 } from '@/platform/missingModel/missingModelScan'
 import type { MissingModelWorkflowData } from '@/platform/missingModel/missingModelScan'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -19,6 +21,7 @@ import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { MissingNodeType } from '@/types/comfy'
 import {
+  getNodeByExecutionId,
   isCandidateScopeActive,
   isMissingCandidateActive
 } from '@/utils/graphTraversalUtil'
@@ -137,6 +140,7 @@ export async function runMissingModelPipeline({
   const confirmedCandidates = enrichedCandidates.filter(
     (c) => c.isMissing === true
   )
+  const hasDeferredCandidates = enrichedCandidates.some(hasPendingVerification)
   const downloadableCandidates = confirmedCandidates.filter(hasDownloadMetadata)
 
   const missingModels: ModelFile[] = downloadableCandidates.map(toModelFile)
@@ -147,44 +151,72 @@ export async function runMissingModelPipeline({
     missingModelCandidates: confirmedCandidates
   })
 
-  if (enrichedCandidates.length) {
-    if (isCloud) {
-      void verifyAssetSupportedCandidates(enrichedCandidates, controller.signal)
-        .then(() => {
-          if (controller.signal.aborted) return
-          // Re-check ancestor: user may have bypassed a container
-          // while verification was in flight.
-          const confirmedAfterReverify = enrichedCandidates.filter((c) =>
-            isMissingCandidateActive(graph, c)
-          )
-          useExecutionErrorStore().surfaceMissingModels(
-            confirmedAfterReverify,
-            { silent }
-          )
-          cacheModelCandidates(activeWf, confirmedAfterReverify)
-        })
-        .catch((err) => {
-          if (controller.signal.aborted) return
-          console.warn(
-            '[Missing Model Pipeline] Asset verification failed:',
-            err
-          )
-          useToastStore().add({
-            severity: 'warn',
-            summary: st(
-              'toastMessages.missingModelVerificationFailed',
-              'Failed to verify missing models. Some models may not be shown in the Issues tab.'
-            ),
-            life: 5000
-          })
-        })
-    } else {
-      if (!confirmedCandidates.length) {
-        clearMissingModels(activeWf, silent)
-        return { missingModels, confirmedCandidates }
-      }
+  if (!enrichedCandidates.length) {
+    clearMissingModels(activeWf, silent)
+    return { missingModels, confirmedCandidates }
+  }
 
-      void api
+  // Re-check at surface time: the user may have bypassed a container or
+  // changed the selection while verification or folder paths were in flight.
+  const isStillSelected = (candidate: MissingModelCandidate) => {
+    if (candidate.nodeId == null) return true
+    const node = getNodeByExecutionId(graph, String(candidate.nodeId))
+    const widget = node?.widgets?.find((w) => w.name === candidate.widgetName)
+    return !widget || widget.value === candidate.name
+  }
+  const surfaceActiveCandidates = () => {
+    const confirmed = enrichedCandidates.filter(
+      (c) => isMissingCandidateActive(graph, c) && isStillSelected(c)
+    )
+    useExecutionErrorStore().surfaceMissingModels(confirmed, { silent })
+    cacheModelCandidates(activeWf, confirmed)
+  }
+  const reportVerificationFailure = (err: unknown) => {
+    if (controller.signal.aborted) return
+    console.warn(
+      '[Missing Model Pipeline] Missing model verification failed:',
+      err
+    )
+    reportError(err, { errorType: 'missing_model_verification_failed' })
+    useToastStore().add({
+      severity: 'warn',
+      summary: st(
+        'toastMessages.missingModelVerificationFailed',
+        'Failed to verify missing models. Some models may not be shown in the Issues tab.'
+      ),
+      life: 5000
+    })
+  }
+
+  if (isCloud) {
+    void verifyAssetSupportedCandidates(enrichedCandidates, controller.signal)
+      .then(() => {
+        if (controller.signal.aborted) return
+        surfaceActiveCandidates()
+      })
+      .catch(reportVerificationFailure)
+    return { missingModels, confirmedCandidates }
+  }
+
+  if (!confirmedCandidates.length && !hasDeferredCandidates) {
+    clearMissingModels(activeWf, silent)
+    return { missingModels, confirmedCandidates }
+  }
+
+  const verification = hasDeferredCandidates
+    ? verifyAssetSupportedCandidates(enrichedCandidates, controller.signal)
+    : Promise.resolve()
+  void verification
+    .then(async () => {
+      if (controller.signal.aborted) return
+      const hasActiveMissing = enrichedCandidates.some((c) =>
+        isMissingCandidateActive(graph, c)
+      )
+      if (!hasActiveMissing) {
+        clearMissingModels(activeWf, silent)
+        return
+      }
+      await api
         .getFolderPaths()
         .then((paths) => {
           if (controller.signal.aborted) return
@@ -198,28 +230,23 @@ export async function runMissingModelPipeline({
         })
         .finally(() => {
           if (controller.signal.aborted) return
-          useExecutionErrorStore().surfaceMissingModels(confirmedCandidates, {
-            silent
-          })
-          cacheModelCandidates(activeWf, confirmedCandidates)
+          surfaceActiveCandidates()
         })
+    })
+    .catch(reportVerificationFailure)
 
-      const missingModelMetadata =
-        import('@/platform/missingModel/missingModelMetadata')
-      void Promise.allSettled(
-        downloadableCandidates.map(async (c) => {
-          const { fetchAndStoreModelMetadata } = await missingModelMetadata
-          await fetchAndStoreModelMetadata(
-            c.url,
-            missingModelStore,
-            controller.signal
-          )
-        })
+  const missingModelMetadata =
+    import('@/platform/missingModel/missingModelMetadata')
+  void Promise.allSettled(
+    downloadableCandidates.map(async (c) => {
+      const { fetchAndStoreModelMetadata } = await missingModelMetadata
+      await fetchAndStoreModelMetadata(
+        c.url,
+        missingModelStore,
+        controller.signal
       )
-    }
-  } else {
-    clearMissingModels(activeWf, silent)
-  }
+    })
+  )
 
   return { missingModels, confirmedCandidates }
 }
