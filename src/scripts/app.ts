@@ -125,6 +125,7 @@ import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 
 import { getWorkflowMode } from '@/utils/appMode'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
+import { ensureNonZeroUuid } from '@/utils/uuid'
 import {
   collectAllNodes,
   forEachNode,
@@ -884,10 +885,6 @@ export class ComfyApp {
         useAccountPreconditionDialog().open(precondition, {
           nodeType: detail.node_type
         })
-      } else if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
-        useExecutionErrorStore().showErrorOverlay()
-      } else {
-        useDialogService().showExecutionErrorDialog(detail)
       }
       this.canvas.draw(true, true)
     })
@@ -1767,6 +1764,7 @@ export class ComfyApp {
           // user switches tabs while the request is in flight.
           const queuedWorkflow = useWorkspaceStore().workflow
             .activeWorkflow as ComfyWorkflow
+          const queuedRunErrorKey = executionErrorStore.captureRunErrorKey()
           const startTime = performance.now()
           const p = await this.graphToPrompt(this.rootGraph).catch(
             (error: unknown) => {
@@ -1825,7 +1823,10 @@ export class ComfyApp {
                 ...(workflowContext && { workflowContext })
               })
             }
-            executionErrorStore.recordNodeErrors(res.node_errors ?? null)
+            executionErrorStore.recordNodeErrors(
+              res.node_errors ?? null,
+              queuedRunErrorKey
+            )
             queueResultOverride = null
             try {
               if (res.prompt_id) {
@@ -1936,15 +1937,21 @@ export class ComfyApp {
               // Keep the legacy result before empty node errors are normalized.
               const nodeErrors = error.response.node_errors
               queueResultOverride = !nodeErrors
-              executionErrorStore.recordNodeErrors(nodeErrors ?? null)
+              executionErrorStore.recordNodeErrors(
+                nodeErrors ?? null,
+                queuedRunErrorKey
+              )
 
               // Store prompt-level error separately only when no node-specific errors exist,
               // because node errors already carry the full context. Prompt-level errors
               // (e.g. prompt_no_outputs, no_prompt) lack node IDs and need their own path.
-              if (!executionErrorStore.hasNodeError) {
+              if (!nodeErrors || Object.keys(nodeErrors).length === 0) {
                 const promptError = normalizePromptError(error.response.error)
                 if (promptError) {
-                  executionErrorStore.recordPromptError(promptError)
+                  executionErrorStore.recordPromptError(
+                    promptError,
+                    queuedRunErrorKey
+                  )
                 }
               }
 
@@ -2562,7 +2569,7 @@ export class ComfyApp {
     const nodeOutputStore = useNodeOutputStore()
     nodeOutputStore.resetAllOutputsAndPreviews()
     const executionErrorStore = useExecutionErrorStore()
-    executionErrorStore.clearRunErrors()
+    executionErrorStore.setActiveGraph(null)
     useMissingNodesErrorStore().setMissingNodeTypes([])
 
     useDomWidgetStore().clear()
@@ -2571,7 +2578,10 @@ export class ComfyApp {
     // (`LGraph`) `clear` breaks the subgraph structure.
     if (this.rootGraph && !this.canvas.subgraph) {
       this.rootGraph.clear()
+      ensureNonZeroUuid(this.rootGraph)
     }
+
+    executionErrorStore.setActiveGraph(this.rootGraph?.id ?? null)
   }
 
   clientPosToCanvasPos(pos: Vector2): Vector2 {
