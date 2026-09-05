@@ -174,6 +174,38 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   test.describe('composer sizing', () => {
     test.use({ viewport: { width: 1920, height: 1080 } })
 
+    test('gives the content the full height below the CRDT banner', async ({
+      comfyPage
+    }) => {
+      const page = comfyPage.page
+      await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+
+      const panel = page.locator('#agent-panel-root')
+      const banner = panel.getByTestId('agent-crdt-status')
+      const content = panel.locator(':scope > section')
+      const send = panel.getByRole('button', { name: enMessages.agent.send })
+      await expect(panel).toBeVisible()
+      await expect(banner).toBeVisible()
+
+      await expect
+        .poll(async () => {
+          const [root, bannerBox, contentBox] = await Promise.all([
+            panel.boundingBox(),
+            banner.boundingBox(),
+            content.boundingBox()
+          ])
+          if (!root || !bannerBox || !contentBox) return null
+          return {
+            left: contentBox.x - root.x,
+            width: contentBox.width - root.width,
+            top: contentBox.y - (bannerBox.y + bannerBox.height),
+            bottom: root.y + root.height - (contentBox.y + contentBox.height)
+          }
+        })
+        .toEqual({ left: 0, width: 0, top: 0, bottom: 0 })
+      await expect(send).toBeInViewport()
+    })
+
     test('caps long text at 400px and scrolls internally', async ({
       comfyPage
     }) => {

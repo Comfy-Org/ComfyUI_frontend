@@ -182,7 +182,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
 
 <template>
   <section
-    class="bg-agent-surface text-agent-fg @container flex h-full flex-col overflow-hidden"
+    class="bg-agent-surface text-agent-fg @container flex flex-col overflow-hidden"
   >
     <PanelHeader
       :is-maximized="isMaximized"
