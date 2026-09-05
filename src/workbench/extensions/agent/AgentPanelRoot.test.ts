@@ -3104,7 +3104,10 @@ describe('AgentPanelRoot workflow binding', () => {
 
     expect(bodies[0]).toMatchObject({
       content: 'tune it',
-      selection: { node_ids: ['7'] }
+      selection: {
+        node_ids: ['7'],
+        workflow_id: 'wf-42'
+      }
     })
   })
 
