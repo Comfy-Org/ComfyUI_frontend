@@ -3,14 +3,18 @@ import { expect } from '@playwright/test'
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { listRecordedConversations } from '@e2e/fixtures/data/agent/agentConversation'
 
-// A probe the rendered markdown must contain: the first line of the recorded
-// text with the markup characters the renderer consumes removed.
-function textProbe(text: string): string {
-  return text
-    .replace(/[*_`#>]/g, '')
-    .split('\n')[0]
-    .trim()
-    .slice(0, 60)
+// A run of words the rendered markdown must contain: images dropped, links
+// reduced to their label, bare URLs and markup characters removed. A turn
+// whose text is only a link yields no probe and is covered by the count floor.
+function textProbe(text: string): string | null {
+  const words = text
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/https?:\/\/\S+/g, '')
+    .replace(/[*_`#>|]/g, '')
+    .split(/\s+/)
+    .filter((word) => word.length > 0)
+  return words.length >= 3 ? words.slice(0, 6).join(' ') : null
 }
 
 test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
@@ -35,9 +39,11 @@ test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
           const text = agentConversation.recordedAssistantText(turn).trim()
           if (text !== '') {
             turnsWithText += 1
-            await expect(
-              streams.filter({ hasText: textProbe(text) })
-            ).not.toHaveCount(0)
+            const probe = textProbe(text)
+            if (probe !== null)
+              await expect(streams.filter({ hasText: probe })).not.toHaveCount(
+                0
+              )
             // MarkdownStream renders once per text group, so a turn can own
             // several; every turn with text still owns at least one.
             await expect
