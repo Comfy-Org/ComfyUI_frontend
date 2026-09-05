@@ -50,10 +50,12 @@ vi.mock('@/scripts/app', () => {
     selectItems: vi.fn(),
     deleteSelected: vi.fn(),
     selectOnly: false,
-    canvas: { dispatchEvent: vi.fn() },
     read_only: false,
+    finalizeGhostPlacement: vi.fn(),
     ds: mockDs,
-    setDirty: vi.fn()
+    setDirty: vi.fn(),
+    state: { ghostNodeId: null as number | null },
+    canvas: { dispatchEvent: vi.fn() }
   }
 
   return {
@@ -344,6 +346,7 @@ describe('useCoreCommands', () => {
 
     // Reset app state
     app.canvas.subgraph = undefined
+    app.canvas.state.ghostNodeId = null
 
     // Mock settings store
     vi.mocked(useSettingStore).mockReturnValue(createMockSettingStore(false))
@@ -883,6 +886,34 @@ describe('useCoreCommands', () => {
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({ severity: 'error' })
       )
+    })
+  })
+
+  describe('Ghost placement guards', () => {
+    function findCommand(id: string) {
+      return useCoreCommands().find((cmd) => cmd.id === id)!
+    }
+
+    describe('DeleteSelectedItems', () => {
+      it('cancels ghost placement when active and skips deletion', async () => {
+        app.canvas.state.ghostNodeId = 42
+
+        await findCommand('Comfy.Canvas.DeleteSelectedItems').function()
+
+        expect(app.canvas.finalizeGhostPlacement).toHaveBeenCalledWith(true)
+        expect(app.canvas.deleteSelected).not.toHaveBeenCalled()
+      })
+
+      it('deletes selected items when no ghost is active', async () => {
+        app.canvas.selectedItems = new Set([
+          {}
+        ]) as typeof app.canvas.selectedItems
+
+        await findCommand('Comfy.Canvas.DeleteSelectedItems').function()
+
+        expect(app.canvas.finalizeGhostPlacement).not.toHaveBeenCalled()
+        expect(app.canvas.deleteSelected).toHaveBeenCalled()
+      })
     })
   })
 })

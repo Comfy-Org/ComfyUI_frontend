@@ -948,6 +948,10 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.10.5',
       function: () => {
         if (app.canvas.selectOnly) return
+        if (app.canvas.state.ghostNodeId != null) {
+          app.canvas.finalizeGhostPlacement(true)
+          return
+        }
         if (app.canvas.selectedItems.size === 0) {
           app.canvas.canvas.dispatchEvent(
             new CustomEvent('litegraph:no-items-selected', { bubbles: true })
