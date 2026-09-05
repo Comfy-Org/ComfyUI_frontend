@@ -87,6 +87,7 @@ import type {
   OpenTabsSnapshot
 } from './services/agent/agentRestClient'
 import { createAgentEventSource } from './services/agent/agentEventSource'
+import { createStandaloneAgentEventSource } from './services/agent/standaloneAgentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import {
@@ -112,7 +113,10 @@ const userName = computed(
 
 const rest = createAgentRestClient()
 
-const events = createAgentEventSource(api)
+const events =
+  import.meta.env.VITE_AGENT_STANDALONE === 'true'
+    ? createStandaloneAgentEventSource()
+    : createAgentEventSource(api)
 
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
