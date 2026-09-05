@@ -83,7 +83,7 @@ describe('cloud run overlay', () => {
     ).toThrow(/expectedRunnableNodeTypesSha256/)
   })
 
-  it.each([
+  it.for([
     '/tmp/workflow.json',
     'C:\\tmp\\workflow.json',
     '../workflow.json',

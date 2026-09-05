@@ -137,6 +137,12 @@
   },
   "overrides": [
     {
+      "files": ["scripts/**"],
+      "rules": {
+        "no-console": "allow"
+      }
+    },
+    {
       "files": ["**/*.{stories,test,spec}.ts", "**/*.stories.vue"],
       "rules": {
         "no-console": "allow"
