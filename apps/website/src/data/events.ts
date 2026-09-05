@@ -104,6 +104,12 @@ function eventPageHref(id: string): LocalizedText {
 export const eventVideoId = (event: ComfyEvent): string | undefined =>
   event.recordingVideoId ?? event.liveVideoId
 
+/** Still image for a piece of media, for og:image and VideoObject thumbnails —
+ * a video's own src is not a usable image. */
+export const eventMediaThumbnail = (
+  media: EventMedia | undefined
+): string | undefined => (media?.type === 'video' ? media.poster : media?.src)
+
 const EVENT_DURATION_MS = 60 * 60 * 1000
 const SITE_ORIGIN = 'https://comfy.org'
 
@@ -425,16 +431,24 @@ const events: readonly ComfyEvent[] = [
     },
     startDateTime: '2026-09-02T10:00:00-07:00',
     liveVideoId: '2_vEJJU_MUU',
-    media: eventImage('09.02-comfy-h3-sync.jpg', {
-      en: 'Comfy H3 Sync Sound Challenge guest judge livestream',
-      'zh-CN': 'Comfy H3 同步声音挑战赛特邀评委直播'
-    }),
-    featured: {
-      order: 1,
-      media: eventImage('09.02-comfy-h3-sync.jpg', {
+    media: eventVideo(
+      '09.02-comfy-h3-sync.mp4',
+      {
         en: 'Comfy H3 Sync Sound Challenge guest judge livestream',
         'zh-CN': 'Comfy H3 同步声音挑战赛特邀评委直播'
-      }),
+      },
+      '09.02-comfy-h3-sync.jpg'
+    ),
+    featured: {
+      order: 1,
+      media: eventVideo(
+        '09.02-comfy-h3-sync.mp4',
+        {
+          en: 'Comfy H3 Sync Sound Challenge guest judge livestream',
+          'zh-CN': 'Comfy H3 同步声音挑战赛特邀评委直播'
+        },
+        '09.02-comfy-h3-sync.jpg'
+      ),
       showTitle: false
     }
   },
