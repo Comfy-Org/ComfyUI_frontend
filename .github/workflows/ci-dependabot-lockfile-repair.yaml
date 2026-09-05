@@ -25,6 +25,7 @@ jobs:
       - name: Checkout pull request
         uses: actions/checkout@v7
         with:
+          ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
 
       - name: Install pnpm
@@ -38,26 +39,9 @@ jobs:
       - name: Repair lockfile
         run: pnpm install --lockfile-only --ignore-scripts --no-frozen-lockfile
 
-      - name: Prepare repair artifact
-        env:
-          HEAD_REF: ${{ github.event.pull_request.head.ref }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          REPOSITORY: ${{ github.repository }}
-        run: |
-          mkdir dependabot-lockfile-repair
-          cp pnpm-lock.yaml dependabot-lockfile-repair/pnpm-lock.yaml
-          jq -n \
-            --arg head_ref "$HEAD_REF" \
-            --arg head_sha "$HEAD_SHA" \
-            --argjson pull_request "$PR_NUMBER" \
-            --arg repository "$REPOSITORY" \
-            '{head_ref: $head_ref, head_sha: $head_sha, pull_request: $pull_request, repository: $repository}' \
-            > dependabot-lockfile-repair/metadata.json
-
       - name: Upload repair artifact
         uses: actions/upload-artifact@v6
         with:
           name: dependabot-lockfile-repair
-          path: dependabot-lockfile-repair
+          path: pnpm-lock.yaml
           retention-days: 1

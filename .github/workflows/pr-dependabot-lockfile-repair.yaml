@@ -7,7 +7,7 @@ on:
 
 permissions:
   actions: read
-  contents: write
+  contents: read
   pull-requests: read
 
 concurrency:
@@ -25,7 +25,29 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: Checkout trusted workflow revision
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Resolve pull request
+        id: pr
+        uses: ./.github/actions/resolve-pr-from-workflow-run
+
+      - name: Validate repair target
+        if: steps.pr.outputs.skip != 'true'
+        env:
+          HEAD_REF: ${{ github.event.workflow_run.head_branch }}
+          PR_AUTHOR: ${{ steps.pr.outputs.author }}
+        run: |
+          test "$PR_AUTHOR" = 'dependabot[bot]'
+          case "$HEAD_REF" in
+            dependabot/*) ;;
+            *) exit 1 ;;
+          esac
+
       - name: Download repair artifact
+        if: steps.pr.outputs.skip != 'true'
         uses: actions/download-artifact@v8
         with:
           name: dependabot-lockfile-repair
@@ -33,82 +55,22 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ github.event.workflow_run.id }}
 
-      - name: Validate repair source
-        id: source
-        uses: actions/github-script@v9
-        env:
-          ARTIFACT_DIR: ${{ runner.temp }}/dependabot-lockfile-repair
-        with:
-          script: |
-            const fs = require('node:fs')
-            const path = require('node:path')
-            const files = fs.readdirSync(process.env.ARTIFACT_DIR).sort()
-            const expectedFiles = ['metadata.json', 'pnpm-lock.yaml']
-
-            if (JSON.stringify(files) !== JSON.stringify(expectedFiles)) {
-              throw new Error('Repair artifact contains unexpected files')
-            }
-            for (const file of files) {
-              if (!fs.lstatSync(path.join(process.env.ARTIFACT_DIR, file)).isFile()) {
-                throw new Error(`Repair artifact entry is not a regular file: ${file}`)
-              }
-            }
-
-            const metadata = JSON.parse(
-              fs.readFileSync(path.join(process.env.ARTIFACT_DIR, 'metadata.json'), 'utf8'),
-            )
-            const run = context.payload.workflow_run
-            const prNumber = metadata.pull_request
-
-            if (!Number.isSafeInteger(prNumber) || prNumber < 1) {
-              throw new Error('Invalid pull request number')
-            }
-            if (metadata.repository !== `${context.repo.owner}/${context.repo.repo}`) {
-              throw new Error('Artifact repository does not match this repository')
-            }
-            if (metadata.head_sha !== run.head_sha) {
-              throw new Error('Artifact SHA does not match the triggering workflow')
-            }
-
-            const { data: pullRequest } = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: prNumber,
-            })
-
-            if (pullRequest.state !== 'open') {
-              throw new Error('Pull request is no longer open')
-            }
-            if (pullRequest.user.login !== 'dependabot[bot]') {
-              throw new Error('Pull request author is not Dependabot')
-            }
-            if (pullRequest.head.repo?.full_name !== metadata.repository) {
-              throw new Error('Pull request branch is not in this repository')
-            }
-            if (!pullRequest.head.ref.startsWith('dependabot/')) {
-              throw new Error('Pull request is not using a Dependabot branch')
-            }
-            if (pullRequest.head.ref !== metadata.head_ref) {
-              throw new Error('Artifact branch does not match the pull request')
-            }
-            if (pullRequest.head.sha !== metadata.head_sha) {
-              throw new Error('Pull request advanced after the repair was generated')
-            }
-
-            core.setOutput('head-ref', pullRequest.head.ref)
-            core.setOutput('head-sha', pullRequest.head.sha)
-
       - name: Checkout validated pull request revision
+        if: steps.pr.outputs.skip != 'true'
         uses: actions/checkout@v7
         with:
-          ref: ${{ steps.source.outputs.head-sha }}
+          ref: ${{ steps.pr.outputs.head-sha }}
+          token: ${{ secrets.PR_GH_TOKEN }}
 
       - name: Apply repaired lockfile
+        if: steps.pr.outputs.skip != 'true'
         id: repair
         env:
           REPAIRED_LOCKFILE: ${{ runner.temp }}/dependabot-lockfile-repair/pnpm-lock.yaml
         run: |
           test ! -L pnpm-lock.yaml
+          test -f "$REPAIRED_LOCKFILE"
+          test ! -L "$REPAIRED_LOCKFILE"
           cp "$REPAIRED_LOCKFILE" pnpm-lock.yaml
           if git diff --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
@@ -120,8 +82,8 @@ jobs:
       - name: Commit and push repaired lockfile
         if: steps.repair.outputs.changed == 'true'
         env:
-          HEAD_REF: ${{ steps.source.outputs.head-ref }}
-          HEAD_SHA: ${{ steps.source.outputs.head-sha }}
+          HEAD_REF: ${{ github.event.workflow_run.head_branch }}
+          HEAD_SHA: ${{ steps.pr.outputs.head-sha }}
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
