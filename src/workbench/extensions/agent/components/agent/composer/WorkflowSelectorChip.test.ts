@@ -48,9 +48,7 @@ beforeEach(() => {
 })
 
 function renderChip(
-  props: Partial<ComponentProps<typeof WorkflowSelectorChip>> & {
-    visibleTabPath?: string | null
-  } = {}
+  props: Partial<ComponentProps<typeof WorkflowSelectorChip>> = {}
 ) {
   const user = userEvent.setup()
   const emitted = render(WorkflowSelectorChip, {
@@ -59,7 +57,7 @@ function renderChip(
       tabs,
       visibleTabPath: tabs[0].path,
       ...props
-    } as ComponentProps<typeof WorkflowSelectorChip>,
+    },
     global: { plugins: [i18n, pinia] }
   })
   return { user, ...emitted }
@@ -211,16 +209,12 @@ describe('WorkflowSelectorChip', () => {
 
     await user.click(trigger())
     const row = await screen.findByRole('menuitemradio', { name: /upscale/ })
-    const unsavedDot = within(row).getByTestId('unsaved-dot')
-    const targetIndicator = within(row).getByTestId('workflow-target-indicator')
-    expect(unsavedDot).toBeInTheDocument()
-    expect(unsavedDot).not.toHaveClass('ml-auto')
-    expect(targetIndicator).toHaveClass('ml-auto')
+    expect(within(row).getByTestId('unsaved-dot')).toBeInTheDocument()
     expect(row).not.toBeChecked()
   })
 
   it('filters the tab list as the search input is typed into', async () => {
-    const { user } = renderChip()
+    const { user } = renderChip({ visibleTabPath: tabs[1].path })
     await user.click(trigger())
 
     const search = await screen.findByPlaceholderText(

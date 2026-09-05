@@ -5206,6 +5206,8 @@
     "selectWorkflowForAgent": "Select a workflow for agent to work in",
     "chooseWorkflowForChat": "Choose a workflow for this chat",
     "searchWorkflows": "Search workflows",
+    "currentTab": "Current tab",
+    "otherOpenWorkflows": "Other open workflows",
     "selectWorkflowToGenerate": "Select a workflow to generate in",
     "switchWorkflow": "Switch workflow",
     "modelAuto": "Auto",

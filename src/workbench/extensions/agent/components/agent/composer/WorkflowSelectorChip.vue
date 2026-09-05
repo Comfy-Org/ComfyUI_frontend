@@ -28,11 +28,13 @@ import type { ActiveTab } from '../../../types/activeTab'
 const {
   activeTab,
   tabs,
+  visibleTabPath = null,
   detached = false,
   disabled = false
 } = defineProps<{
   activeTab: ActiveTab | null
   tabs: ActiveTab[]
+  visibleTabPath?: string | null
   detached?: boolean
   disabled?: boolean
 }>()
@@ -71,11 +73,27 @@ function openPicker(): void {
 
 defineExpose({ openPicker })
 
-const filteredTabs = computed(() =>
-  tabs.filter((tab) =>
-    tab.name.toLowerCase().includes(query.value.trim().toLowerCase())
+const tabSections = computed(() => {
+  const normalizedQuery = query.value.trim().toLowerCase()
+  const filteredTabs = tabs.filter((tab) =>
+    tab.name.toLowerCase().includes(normalizedQuery)
   )
-)
+  const visibleTab = filteredTabs.find((tab) => tab.path === visibleTabPath)
+  const otherTabs = filteredTabs.filter((tab) => tab.path !== visibleTabPath)
+
+  return [
+    {
+      key: 'current',
+      label: t('agent.currentTab'),
+      tabs: visibleTab ? [visibleTab] : []
+    },
+    {
+      key: 'other',
+      label: t('agent.otherOpenWorkflows'),
+      tabs: otherTabs
+    }
+  ].filter((section) => section.tabs.length > 0)
+})
 
 // Suppress keys from the dropdown's typeahead while typing in the search box,
 // but let Escape bubble to reka's dismiss (a window keydown listener) so the
@@ -149,7 +167,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
           align="start"
           :side-offset="8"
           :reference="composerReference"
-          class="agent-scope bg-agent-surface-raised z-1100 box-border max-h-64 w-(--reka-dropdown-menu-trigger-width) overflow-y-auto rounded-[10px] border border-white/10 p-1 font-inter shadow-lg"
+          class="agent-scope bg-agent-surface-raised z-1100 box-border w-(--reka-dropdown-menu-trigger-width) overflow-hidden rounded-[10px] border border-white/10 p-1 font-inter shadow-lg"
         >
           <input
             ref="searchInput"
@@ -161,39 +179,43 @@ function onSearchKeydown(event: KeyboardEvent): void {
           />
           <DropdownMenuRadioGroup
             :model-value="current?.path ?? ''"
+            class="max-h-52 overflow-y-auto"
             @update:model-value="emit('selectTab', $event)"
           >
-            <DropdownMenuRadioItem
-              v-for="tab in filteredTabs"
-              :key="tab.path"
-              :value="tab.path"
-              class="text-agent-fg box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none data-highlighted:bg-[#404040]"
+            <div
+              v-for="section in tabSections"
+              :key="section.key"
+              role="group"
+              :aria-label="section.label"
             >
-              <span
-                v-if="tabActivity.editingTabPath === tab.path"
-                role="img"
-                :aria-label="t('g.agentWorking')"
-                class="text-agent-fg-subtle icon-[lucide--loader-circle] size-4 shrink-0 motion-safe:animate-spin"
-              />
-              <span
-                v-else
-                class="text-agent-fg-subtle icon-[comfy--workflow] size-4 shrink-0"
-              />
-              <span class="truncate">{{ tab.name }}</span>
-              <span
-                v-if="
-                  tabActivity.unseenModifiedPaths.has(tab.path) ||
-                  tab.isPersisted === false ||
-                  tab.modified ||
-                  tab.path === current?.path
-                "
-                class="ml-auto flex shrink-0 items-center gap-1.5"
+              <div
+                aria-hidden="true"
+                class="text-agent-fg-muted px-1.5 py-1 text-[11px]/4 font-medium"
               >
+                {{ section.label }}
+              </div>
+              <DropdownMenuRadioItem
+                v-for="tab in section.tabs"
+                :key="tab.path"
+                :value="tab.path"
+                class="text-agent-fg box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none data-highlighted:bg-[#404040]"
+              >
+                <span
+                  v-if="tabActivity.editingTabPath === tab.path"
+                  role="img"
+                  :aria-label="t('g.agentWorking')"
+                  class="text-agent-fg-subtle icon-[lucide--loader-circle] size-4 shrink-0 motion-safe:animate-spin"
+                />
+                <span
+                  v-else
+                  class="text-agent-fg-subtle icon-[comfy--workflow] size-4 shrink-0"
+                />
+                <span class="min-w-0 truncate">{{ tab.name }}</span>
                 <span
                   v-if="tabActivity.unseenModifiedPaths.has(tab.path)"
                   role="img"
                   :aria-label="t('g.agentModified')"
-                  class="flex size-4 items-center justify-center"
+                  class="flex size-4 shrink-0 items-center justify-center"
                 >
                   <span class="size-2 rounded-full bg-primary-background" />
                 </span>
@@ -204,15 +226,17 @@ function onSearchKeydown(event: KeyboardEvent): void {
                 >
                   <span class="bg-agent-fg size-2 rounded-full" />
                 </span>
-                <span class="flex size-4 shrink-0 items-center justify-center">
+                <span
+                  class="ml-auto flex size-4 shrink-0 items-center justify-center"
+                >
                   <DropdownMenuItemIndicator
                     class="flex size-4 items-center justify-center"
                   >
                     <span class="icon-[lucide--check] size-4" />
                   </DropdownMenuItemIndicator>
                 </span>
-              </span>
-            </DropdownMenuRadioItem>
+              </DropdownMenuRadioItem>
+            </div>
           </DropdownMenuRadioGroup>
         </DropdownMenuContent>
       </DropdownMenuPortal>

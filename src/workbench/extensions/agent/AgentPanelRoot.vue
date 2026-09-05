@@ -1198,6 +1198,7 @@ function onPanelDrop(event: DragEvent): void {
       :editable-workflow-id="editableWorkflowId"
       :active-tab="activeTab"
       :workflow-tabs="workflowTabs"
+      :visible-tab-path="workflowStore.activeWorkflow?.path ?? null"
       :workflow-detached="workflowDetached"
       :get-mention-nodes="mentionableNodes"
       @select-tab="onSelectTab"

@@ -42,6 +42,7 @@ const {
   editableWorkflowId,
   activeTab = null,
   workflowTabs = [],
+  visibleTabPath = null,
   workflowDetached = false,
   getMentionNodes = () => [],
   sessionId = null,
@@ -63,6 +64,7 @@ const {
   editableWorkflowId?: string
   activeTab?: ActiveTab | null
   workflowTabs?: ActiveTab[]
+  visibleTabPath?: string | null
   workflowDetached?: boolean
   getMentionNodes?: () => SelectedNode[]
   sessionId?: string | null
@@ -369,6 +371,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
                 ref="workflowSelectorRef"
                 :active-tab="activeTab"
                 :tabs="workflowTabs"
+                :visible-tab-path="visibleTabPath"
                 :detached="workflowDetached"
                 :disabled="streaming || submitting"
                 @select-tab="emit('selectTab', $event)"
