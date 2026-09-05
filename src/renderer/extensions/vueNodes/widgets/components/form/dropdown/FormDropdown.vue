@@ -382,7 +382,7 @@ function showPicker() {
         :candidate-label
         :is-selected="internalIsSelected"
         :max-selectable
-        :loading-more="loadingMore"
+        :loading-more
         :on-load-more
         :can-load-more
         @close="closeDropdown"
