@@ -16,6 +16,7 @@ echo "Waiting up to $((timeout_seconds / 3600))h for ${TAG} on ${TARGET_BRANCH}.
 deadline=$((SECONDS + timeout_seconds))
 while ((SECONDS < deadline)); do
   remaining=$((deadline - SECONDS))
+  ((remaining > 0)) || break
   if git_error=$(timeout "${remaining}s" git ls-remote --exit-code --tags "https://github.com/${REPO}.git" "refs/tags/${TAG}" 2>&1); then
     echo "${TAG} found — the bump PR has been merged."
     exit 0
