@@ -223,6 +223,7 @@ watch(
       <span
         v-for="cell in visualCells"
         :key="cell.id"
+        data-testid="activity-cell"
         :class="
           cn(
             'bg-primary-comfy-yellow rounded-sm transition-[opacity,box-shadow] duration-150',
