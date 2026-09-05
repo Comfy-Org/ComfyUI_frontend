@@ -518,6 +518,11 @@ describe('useErrorOverlayState', () => {
     await nextTick()
 
     expect(screen.getByTestId('visible')).toHaveTextContent('false')
+
+    useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
+    await nextTick()
+
+    expect(screen.getByTestId('visible')).toHaveTextContent('true')
   })
 
   it('does not show when a raw error has no resolved overlay message', async () => {
