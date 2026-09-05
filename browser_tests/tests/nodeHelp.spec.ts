@@ -454,3 +454,88 @@ This is English documentation.
     })
   })
 })
+
+test.describe('Node Help V2 Sidebar', { tag: ['@slow', '@ui'] }, () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', true)
+    await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
+  })
+
+  async function openNodeInfoViaMoreOptions(comfyPage: ComfyPage) {
+    await expect(comfyPage.selectionToolbox).toBeVisible()
+
+    const moreOptionsButton = comfyPage.selectionToolbox.getByTestId(
+      'more-options-button'
+    )
+    await expect(moreOptionsButton).toBeVisible()
+    await moreOptionsButton.click()
+
+    const nodeInfoEntry = comfyPage.contextMenu.menuItem('Node Info')
+    await expect(nodeInfoEntry).toBeVisible()
+    await nodeInfoEntry.click()
+  }
+
+  test('opens node help in the V2 sidebar from Node Info', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow('default')
+
+    const ksamplerNodes = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+    if (ksamplerNodes.length === 0) {
+      throw new Error('No KSampler nodes found in the workflow')
+    }
+
+    await selectNodeWithPan(comfyPage, ksamplerNodes[0])
+    await openNodeInfoViaMoreOptions(comfyPage)
+
+    const sidebar = comfyPage.menu.nodeLibraryTabV2
+    await expect(sidebar.nodeHelpContent).toBeVisible()
+    await expect(sidebar.sidebarContent).toContainText('KSampler')
+    await expect(sidebar.searchInput).toBeHidden()
+  })
+
+  test('returns to the V2 node library from the help page', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow('default')
+
+    const ksamplerNodes = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+    if (ksamplerNodes.length === 0) {
+      throw new Error('No KSampler nodes found in the workflow')
+    }
+
+    await selectNodeWithPan(comfyPage, ksamplerNodes[0])
+    await openNodeInfoViaMoreOptions(comfyPage)
+
+    const sidebar = comfyPage.menu.nodeLibraryTabV2
+    await expect(sidebar.nodeHelpContent).toBeVisible()
+    await sidebar.helpBackButton.click()
+
+    await expect(sidebar.searchInput).toBeVisible()
+    await expect(sidebar.nodeHelpContent).toBeHidden()
+  })
+
+  test('shows documentation for the selected node', async ({ comfyPage }) => {
+    await comfyPage.page.route('**/docs/KSampler/en.md', async (route) => {
+      await route.fulfill({
+        status: 200,
+        body: '# KSampler Help\n\nKSampler documentation content.'
+      })
+    })
+    await comfyPage.workflow.loadWorkflow('default')
+
+    const ksamplerNodes = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+    if (ksamplerNodes.length === 0) {
+      throw new Error('No KSampler nodes found in the workflow')
+    }
+
+    await selectNodeWithPan(comfyPage, ksamplerNodes[0])
+    await openNodeInfoViaMoreOptions(comfyPage)
+
+    const sidebar = comfyPage.menu.nodeLibraryTabV2
+    await expect(sidebar.sidebarContent).toContainText('KSampler Help')
+    await expect(sidebar.sidebarContent).toContainText(
+      'KSampler documentation content'
+    )
+  })
+})

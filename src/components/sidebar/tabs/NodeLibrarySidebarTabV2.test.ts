@@ -1,9 +1,12 @@
 import { createTestingPinia } from '@pinia/testing'
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 import NodeLibrarySidebarTabV2 from './NodeLibrarySidebarTabV2.vue'
 
@@ -75,6 +78,28 @@ vi.mock('@/components/ui/search-input/SearchInput.vue', () => ({
   }
 }))
 
+const mockCurrentHelpNode = ref<ComfyNodeDefImpl | null>(null)
+const mockIsHelpOpen = ref(false)
+const mockCloseHelp = vi.fn()
+
+vi.mock('@/stores/workspace/nodeHelpStore', () => ({
+  useNodeHelpStore: () => ({
+    currentHelpNode: mockCurrentHelpNode,
+    isHelpOpen: mockIsHelpOpen,
+    closeHelp: mockCloseHelp
+  })
+}))
+
+vi.mock('./nodeLibrary/NodeHelpPage.vue', () => ({
+  default: {
+    name: 'NodeHelpPage',
+    template:
+      '<div data-testid="node-help-page">{{ node.display_name }}<button aria-label="Back" @click="$emit(\'close\')">Back</button></div>',
+    props: ['node'],
+    emits: ['close']
+  }
+}))
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -92,6 +117,8 @@ const i18n = createI18n({
 describe('NodeLibrarySidebarTabV2', () => {
   beforeEach(() => {
     hoisted.mockSearchNode.mockReturnValue([])
+    mockCurrentHelpNode.value = null
+    mockIsHelpOpen.value = false
   })
 
   function renderComponent() {
@@ -173,6 +200,52 @@ describe('NodeLibrarySidebarTabV2', () => {
 
       expect(screen.queryByText(/No nodes match/)).not.toBeInTheDocument()
       expect(screen.getByTestId('all-panel')).toBeInTheDocument()
+    })
+  })
+
+  describe('node help integration', () => {
+    it('shows node help instead of the library when help is open', async () => {
+      mockCurrentHelpNode.value = fromPartial<ComfyNodeDefImpl>({
+        name: 'KSampler',
+        display_name: 'KSampler'
+      })
+      mockIsHelpOpen.value = true
+
+      renderComponent()
+      await nextTick()
+
+      expect(screen.getByTestId('node-help-page')).toHaveTextContent('KSampler')
+      expect(screen.queryByTestId('search-box')).not.toBeInTheDocument()
+    })
+
+    it('returns to the library when help closes', async () => {
+      mockCurrentHelpNode.value = fromPartial<ComfyNodeDefImpl>({
+        name: 'KSampler',
+        display_name: 'KSampler'
+      })
+      mockIsHelpOpen.value = true
+
+      renderComponent()
+      mockCurrentHelpNode.value = null
+      mockIsHelpOpen.value = false
+      await nextTick()
+
+      expect(screen.queryByTestId('node-help-page')).not.toBeInTheDocument()
+      expect(screen.getByTestId('search-box')).toBeInTheDocument()
+    })
+
+    it('closes help from the back button', async () => {
+      const user = userEvent.setup()
+      mockCurrentHelpNode.value = fromPartial<ComfyNodeDefImpl>({
+        name: 'KSampler',
+        display_name: 'KSampler'
+      })
+      mockIsHelpOpen.value = true
+
+      renderComponent()
+      await user.click(screen.getByRole('button', { name: 'Back' }))
+
+      expect(mockCloseHelp).toHaveBeenCalledOnce()
     })
   })
 })
