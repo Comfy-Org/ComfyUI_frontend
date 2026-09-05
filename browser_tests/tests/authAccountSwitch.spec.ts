@@ -328,7 +328,7 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
       await page.getByRole('button', { name: 'Use email instead' }).click()
       await page.getByLabel('Email').fill(ACCOUNT_B.email)
       await page.getByLabel('Password').fill('password')
-      await page.getByRole('button', { name: 'Sign in' }).click()
+      await page.getByRole('button', { name: 'Sign in', exact: true }).click()
 
       await expect(
         page.getByRole('button', { name: 'Current user' })

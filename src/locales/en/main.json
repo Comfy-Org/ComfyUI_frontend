@@ -1076,7 +1076,7 @@
   "helpCenter": {
     "feedback": "Give Feedback",
     "docs": "Docs",
-    "github": "Github",
+    "github": "GitHub",
     "help": "Help & Support",
     "systemStatus": "System Status",
     "managerExtension": "Manager Extension",
@@ -2577,7 +2577,7 @@
       "loginButton": "Sign in",
       "orContinueWith": "Or continue with",
       "loginWithGoogle": "Log in with Google",
-      "loginWithGithub": "Log in with Github",
+      "loginWithGithub": "Log in with GitHub",
       "googleSsoInAppBrowserNotice": "If you opened this from an in-app browser (e.g. Instagram, LinkedIn), Google sign-in may not work. Use GitHub or email, or open this page in your device's default browser.",
       "termsText": "By clicking \"Next\" or \"Sign Up\", you agree to our",
       "termsLink": "Terms of Use",
@@ -2592,8 +2592,8 @@
       "freeTierBadge": "Eligible for Free Tier",
       "freeTierDescription": "Sign up with Google to get {credits} free credits every month. No card needed.",
       "freeTierDescriptionGeneric": "Sign up with Google to get free credits every month. No card needed.",
-      "backToSocialLogin": "Sign up with Google or Github instead",
-      "backToGithubLogin": "Sign up with Github instead"
+      "backToSocialLogin": "Sign in with Google or GitHub instead",
+      "backToGithubLogin": "Sign up with GitHub instead"
     },
     "signup": {
       "title": "Create an account",
@@ -2605,7 +2605,8 @@
       "signUpButton": "Sign up",
       "signIn": "Sign in",
       "signUpWithGoogle": "Sign up with Google",
-      "signUpWithGithub": "Sign up with Github",
+      "signUpWithGithub": "Sign up with GitHub",
+      "backToSocialSignUp": "Sign up with Google or GitHub instead",
       "regionRestrictionChina": "In accordance with local regulatory requirements, our services are temporarily unavailable to users located in China.",
       "personalDataConsentLabel": "I agree to the processing of my personal data.",
       "emailNotEligibleForFreeTier": "Email sign-up is not eligible for Free Tier."

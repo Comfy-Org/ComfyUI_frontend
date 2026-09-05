@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import CloudLoginView from '@/platform/cloud/onboarding/CloudLoginView.vue'
 
 vi.mock('@/composables/auth/useAuthActions', () => ({
@@ -107,6 +108,19 @@ describe('CloudLoginView', () => {
     expect(
       screen.queryByRole('button', { name: 'auth.login.loginWithGoogle' })
     ).not.toBeInTheDocument()
+  })
+
+  it('returns to the social buttons with sign-in wording, not sign-up', async () => {
+    const user = (await import('@testing-library/user-event')).default.setup()
+    await renderLoginView('/cloud/login', enMessages)
+
+    await user.click(screen.getByRole('button', { name: 'Use email instead' }))
+
+    expect(
+      screen.getByRole('button', {
+        name: 'Sign in with Google or GitHub instead'
+      })
+    ).toBeInTheDocument()
   })
 
   it.for([true, false])(

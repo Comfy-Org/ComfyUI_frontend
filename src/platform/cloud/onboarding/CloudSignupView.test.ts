@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import CloudSignupView from '@/platform/cloud/onboarding/CloudSignupView.vue'
 
 vi.mock('@/composables/auth/useAuthActions', () => ({
@@ -65,7 +66,10 @@ const MESSAGES = {
   }
 }
 
-async function renderSignupView(url = '/cloud/signup') {
+async function renderSignupView(
+  url = '/cloud/signup',
+  messages: typeof MESSAGES = MESSAGES
+) {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
@@ -87,7 +91,7 @@ async function renderSignupView(url = '/cloud/signup') {
     global: {
       plugins: [
         router,
-        createI18n({ legacy: false, locale: 'en', messages: { en: MESSAGES } })
+        createI18n({ legacy: false, locale: 'en', messages: { en: messages } })
       ],
       stubs: { SignUpForm: { template: '<form data-testid="signup-form" />' } }
     }
@@ -221,6 +225,19 @@ describe('CloudSignupView', () => {
       ).toBeInTheDocument()
     })
     expect(screen.queryByTestId('signup-form')).not.toBeInTheDocument()
+  })
+
+  it('returns to the social buttons with sign-up wording', async () => {
+    const user = (await import('@testing-library/user-event')).default.setup()
+    await renderSignupView('/cloud/signup', enMessages)
+
+    await user.click(screen.getByRole('button', { name: 'Use email instead' }))
+
+    expect(
+      screen.getByRole('button', {
+        name: 'Sign up with Google or GitHub instead'
+      })
+    ).toBeInTheDocument()
   })
 
   it.for([

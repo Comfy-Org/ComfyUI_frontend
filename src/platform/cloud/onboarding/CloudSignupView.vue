@@ -78,7 +78,7 @@
           :class="CLOUD_AUTH_LINK_BUTTON_CLASS"
           @click="switchToSocialLogin"
         >
-          {{ t('auth.login.backToSocialLogin') }}
+          {{ t('auth.signup.backToSocialSignUp') }}
         </button>
       </template>
     </div>
