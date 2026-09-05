@@ -20,6 +20,7 @@ import { useFocusNode } from '@/composables/canvas/useFocusNode'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { createGraphMutations } from '@/core/graph/graphMutations'
+import { setNodeWidgetValue } from '@/core/graph/widgets/nodeWidgetValues'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -93,7 +94,10 @@ import {
   isCrdtDebugEnabled,
   resolveDebugPanelEnabled
 } from './crdt/crdtDebugGate'
-import { attachMintPortWiring } from './crdt/mintPortWiring'
+import {
+  attachMintPortWiring,
+  runMintPortsSuppressed
+} from './crdt/mintPortWiring'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 
 const CrdtDevPanel = defineAsyncComponent(
@@ -178,6 +182,16 @@ const graphMutations = (workflowId: string) => {
             timestamp
           }))
         )
+      }
+    },
+    liveWidgets: {
+      setValue(scope, nodeId, name, value) {
+        const graph = app.graph
+        if (graph.rootGraph.id !== scope.rootGraphId) return
+        const node = graph.getNodeById(nodeId)
+        if (!node) return
+        runMintPortsSuppressed(() => setNodeWidgetValue(node, name, value))
+        app.canvas?.setDirty(true)
       }
     }
   })
