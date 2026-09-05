@@ -2096,6 +2096,64 @@ describe('AgentPanelRoot workflow binding', () => {
     ).toHaveTextContent('other')
   })
 
+  it('saves an unsaved workflow and resolves its Cloud id before changing target and view', async () => {
+    makeTab('wf-42')
+    const scratch = addTab('workflows/scratch.json', { isTemporary: true })
+    mockMessagesEndpoint('wf-scratch', [{ id: 'wf-scratch', name: 'scratch' }])
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    )
+    await userEvent.click(await screen.findByText('scratch'))
+
+    await vi.waitFor(() =>
+      expect(workflowService.saveWorkflowAs).toHaveBeenCalledWith(scratch)
+    )
+    expect(workflowService.openWorkflow).toHaveBeenCalledWith(scratch)
+    expect(hostStores.workflow.activeWorkflow?.path).toBe(scratch.path)
+    expect(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    ).toHaveTextContent('scratch')
+  })
+
+  it.for([
+    ['save cancellation', false] as const,
+    ['save failure', new Error('save failed')] as const
+  ])('preserves target, view, and draft after %s', async ([_label, result]) => {
+    const current = makeTab('wf-42')
+    const scratch = addTab('workflows/scratch.json', { isTemporary: true })
+    if (result instanceof Error)
+      workflowService.saveWorkflowAs.mockRejectedValueOnce(result)
+    else workflowService.saveWorkflowAs.mockResolvedValueOnce(result)
+    mockMessagesEndpoint('wf-42')
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const textbox = screen.getByRole('textbox')
+    await userEvent.type(textbox, 'keep this draft')
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    )
+    await userEvent.click(await screen.findByText('scratch'))
+
+    await vi.waitFor(() =>
+      expect(workflowService.saveWorkflowAs).toHaveBeenCalledWith(scratch)
+    )
+    expect(hostStores.workflow.activeWorkflow?.path).toBe(current.path)
+    expect(textbox).toHaveValue('keep this draft')
+    expect(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    ).toHaveTextContent('current')
+  })
+
   it('transitions the bound tab from editing to modified when the turn completes', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')

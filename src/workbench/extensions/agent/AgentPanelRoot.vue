@@ -410,8 +410,8 @@ async function onSelectTab(path: string): Promise<void> {
     if (workflowId === undefined) {
       toast.add({
         severity: 'warn',
-        summary: t('agent.saveFailedTitle'),
-        detail: t('agent.saveFailedDescription')
+        summary: t('shareWorkflow.saveFailedTitle'),
+        detail: t('shareWorkflow.saveFailedDescription')
       })
       return
     }
@@ -426,11 +426,11 @@ async function onSelectTab(path: string): Promise<void> {
       await workflowService.openWorkflow(previousView)
     toast.add({
       severity: 'warn',
-      summary: t('agent.saveFailedTitle'),
+      summary: t('shareWorkflow.saveFailedTitle'),
       detail:
         error instanceof Error
           ? error.message
-          : t('agent.saveFailedDescription')
+          : t('shareWorkflow.saveFailedDescription')
     })
   }
 }
