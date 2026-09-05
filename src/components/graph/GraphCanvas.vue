@@ -166,6 +166,7 @@ import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useGroupContextMenu } from '@/composables/graph/useGroupContextMenu'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
+import { useViewportCulling } from '@/composables/graph/useViewportCulling'
 import type { NodeState } from '@/types/nodeState'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
@@ -190,6 +191,7 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import { arrangeForLegacyRender } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { notifyLayoutChanges } from '@/renderer/core/canvas/litegraph/notifyLayoutChanges'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useTransformSettling } from '@/renderer/core/layout/transform/useTransformSettling'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
@@ -321,12 +323,34 @@ watch(
 )
 
 const nodeDataStore = useNodeDataStore()
-const allNodes = computed((): NodeState[] => {
+const rootGraphId = computed(() => canvasStore.rootGraphId)
+const rawNodes = computed((): NodeState[] => {
   const { rootGraphId } = canvasStore
   const graphId = canvasStore.currentGraph?.id
   if (!rootGraphId || graphId === undefined) return []
   return nodeDataStore.getGraphNodesFor(rootGraphId, graphId)
 })
+
+const canvasElement = computed(() => canvasStore.canvas?.canvas)
+const { isTransforming } = useTransformSettling(canvasElement, {
+  settleDelay: 256
+})
+
+const { mountedNodeIds } = useViewportCulling({
+  rawNodes,
+  rootGraphId,
+  getViewportSize: () => {
+    const rect = canvasStore.canvas?.canvas?.getBoundingClientRect()
+    return { width: rect?.width ?? 0, height: rect?.height ?? 0 }
+  },
+  isTransforming,
+  canvasElement
+})
+
+const allNodes = computed(() =>
+  rawNodes.value.filter((node) => mountedNodeIds.value.has(node.id))
+)
+
 function onLinkOverlayReady(el: HTMLCanvasElement) {
   if (!canvasStore.canvas) return
   canvasStore.canvas.overlayCanvas = el
