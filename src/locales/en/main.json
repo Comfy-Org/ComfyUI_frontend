@@ -2689,6 +2689,15 @@
     },
     "personalDataConsentRequired": "You must agree to the processing of your personal data."
   },
+  "settingsPlans": {
+    "title": "Plans",
+    "subtitle": "Plans run on Comfy Cloud and their credits work on this install too.",
+    "billedYearlyToggle": "Billed yearly",
+    "creditsAYear": "{credits} credits a year",
+    "creditsAMonth": "{credits} credits a month",
+    "perDollar": "{credits} per dollar",
+    "choosePlan": "Choose {tier}"
+  },
   "credits": {
     "activity": "Activity",
     "workspaceCredits": "Workspace credits",
