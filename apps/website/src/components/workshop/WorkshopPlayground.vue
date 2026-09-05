@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import type { WorkshopDetailModel } from '../../config/workshop-detail'
 import { defaultWorkshopValues } from '../../config/workshop-detail'
+import { popWorkshopForm } from '../../config/workshop-return'
 import type { WorkshopSnippetLanguage } from '../../config/workshop-snippets'
 import {
   WORKSHOP_SNIPPET_LANGUAGES,
@@ -18,6 +19,13 @@ const { model, locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
 const values = ref(defaultWorkshopValues(model.fields))
+
+// A visitor coming back from sign-in or a purchase lands with the form they
+// left; the stash is one-shot, so a plain visit costs one storage read.
+onMounted(() => {
+  const restored = popWorkshopForm(model.slug, model.fields)
+  if (restored) values.value = { ...values.value, ...restored }
+})
 const language = ref<WorkshopSnippetLanguage>('typescript')
 const copied = ref(false)
 const snippet = computed(() =>
