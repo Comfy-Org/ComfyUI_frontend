@@ -50,6 +50,7 @@ describe("public API", () => {
       expect.objectContaining({
         mint: expect.any(Function),
         applyOps: expect.any(Function),
+        inspectOps: expect.any(Function),
         project: expect.any(Function),
         migrate: expect.any(Function),
         compareStampKeys: expect.any(Function),
