@@ -69,7 +69,7 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
           (node) => node.type === 'PrimitiveNode'
         )
         const widget = primitive?.widgets?.[0]
-        const values = widget?.options?.values
+        const values = widget?.options.values
         return {
           isArray: Array.isArray(values),
           length: Array.isArray(values) ? values.length : 0,
@@ -101,7 +101,7 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
         const primitive = window.app!.graph.nodes.find(
           (node) => node.type === 'PrimitiveNode'
         )
-        const output = primitive?.outputs?.[0]
+        const output = primitive?.outputs[0]
         if (!output?.widget) throw new Error('Expected primitive output widget')
 
         output.widget = { name: output.widget.name }

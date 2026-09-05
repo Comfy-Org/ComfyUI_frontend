@@ -8,7 +8,7 @@ const updateFrame = (seq: unknown) => ({
     v: 1,
     workflow_id: 'wf-1',
     seq,
-    update_b64: encodeBase64(new Uint8Array())
+    update_b64: encodeBase64(new Uint8Array([1]))
   }
 })
 
@@ -47,11 +47,6 @@ const docOpsResultFrame = (seq?: unknown) => ({
   }
 })
 
-const sequencedFrameTypes: ReadonlyArray<'doc_subscribed' | 'doc_reset'> = [
-  'doc_subscribed',
-  'doc_reset'
-]
-
 describe('doc frame numeric domains', () => {
   it.for([-1, 1.5, Number.POSITIVE_INFINITY, Number.NaN])(
     'rejects an invalid doc_update seq: %s',
@@ -67,25 +62,45 @@ describe('doc frame numeric domains', () => {
     }
   )
 
-  describe.for(sequencedFrameTypes)('%s seq', (type) => {
+  describe('doc_reset seq', () => {
     it.for([-1, 1.5, Number.POSITIVE_INFINITY, Number.NaN, '1'])(
       'rejects an invalid value: %s',
       (seq) => {
-        expect(parseServerDocFrame(sequencedFrame(type, seq))).toBeNull()
+        expect(parseServerDocFrame(sequencedFrame('doc_reset', seq))).toBeNull()
       }
     )
 
     it('accepts zero', () => {
-      expect(parseServerDocFrame(sequencedFrame(type, 0))?.data).toMatchObject({
-        seq: 0
-      })
+      expect(
+        parseServerDocFrame(sequencedFrame('doc_reset', 0))?.data
+      ).toMatchObject({ seq: 0 })
     })
   })
 
   it.for([-1, 1.5, Number.POSITIVE_INFINITY, Number.NaN, '1'])(
-    'rejects an invalid doc_ops_result seq: %s',
+    'omits an invalid doc_subscribed seq while preserving the ack: %s',
     (seq) => {
-      expect(parseServerDocFrame(docOpsResultFrame(seq))).toBeNull()
+      expect(
+        parseServerDocFrame(sequencedFrame('doc_subscribed', seq))
+      ).toEqual({
+        type: 'doc_subscribed',
+        data: { workflowId: 'wf-1', ok: true }
+      })
+    }
+  )
+
+  it.for([-1, 1.5, Number.POSITIVE_INFINITY, Number.NaN, '1'])(
+    'omits an invalid doc_ops_result seq while preserving the result: %s',
+    (seq) => {
+      expect(parseServerDocFrame(docOpsResultFrame(seq))).toEqual({
+        type: 'doc_ops_result',
+        data: {
+          workflowId: 'wf-1',
+          ok: true,
+          applied: [],
+          skipped: []
+        }
+      })
     }
   )
 

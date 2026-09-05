@@ -48,14 +48,6 @@ const mockSubscriptionStatus = vi.hoisted(() => ({
   value: null as BillingSubscriptionStatus | null
 }))
 
-vi.mock('vue', async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...(actual as object),
-    defineAsyncComponent: vi.fn((loader) => loader)
-  }
-})
-
 vi.mock('@/stores/dialogStore', () => ({
   useDialogStore: () => ({
     closeDialog: mockCloseDialog

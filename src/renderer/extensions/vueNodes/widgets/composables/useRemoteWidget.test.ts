@@ -22,15 +22,11 @@ const mockCloudAuth = vi.hoisted(() => ({
   authHeader: null as { Authorization: string } | null
 }))
 
-vi.mock('axios', async (importOriginal) => {
-  const actual = await importOriginal<typeof axios>()
-  return {
-    default: {
-      ...actual,
-      get: vi.fn()
-    }
+vi.mock('axios', () => ({
+  default: {
+    get: vi.fn()
   }
-})
+}))
 
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
@@ -794,7 +790,7 @@ describe('useRemoteWidget', () => {
       const waiting = hook.waitForInventory()
 
       mockAxiosResponse(['replacement'])
-      hook.refreshValue?.()
+      hook.refreshValue()
       resolveOriginal({ data: ['original'], status: 200 })
       await waiting
 
@@ -829,7 +825,7 @@ describe('useRemoteWidget', () => {
       const waiting = hook.waitForInventory()
 
       mockAxiosResponse(['replacement'])
-      hook.refreshValue?.()
+      hook.refreshValue()
       resolveOriginal({ data: ['original'], status: 200 })
       await waiting
 

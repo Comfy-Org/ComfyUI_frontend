@@ -87,6 +87,9 @@ const S = {
   allLevels: 'all levels',
   allKinds: 'all kinds',
   clear: 'Clear',
+  copy: 'Copy',
+  copyDocumentId: 'Copy document id',
+  copyLogDetail: 'Copy log detail',
   copyLog: 'Copy log',
   copyReport: 'Copy full report',
   copying: 'Collecting…',
@@ -222,6 +225,7 @@ const docState = shallowRef<CrdtDebugSnapshot | null>(null)
 let pollHandle: ReturnType<typeof setInterval> | undefined
 let logCopyReset: ReturnType<typeof setTimeout> | undefined
 let reportCopyReset: ReturnType<typeof setTimeout> | undefined
+let itemCopyReset: ReturnType<typeof setTimeout> | undefined
 
 function poll() {
   if (!open.value || tab.value !== 'status') return
@@ -237,6 +241,7 @@ onBeforeUnmount(() => {
   if (pollHandle !== undefined) clearInterval(pollHandle)
   clearTimeout(logCopyReset)
   clearTimeout(reportCopyReset)
+  clearTimeout(itemCopyReset)
 })
 
 watch(tab, poll)
@@ -271,9 +276,26 @@ const matchingEvents = computed<readonly DevEvent[]>(() =>
   )
 )
 
-// Newest first, capped for render cost — the copy actions use the full set.
-const visibleEvents = computed(() =>
-  [...matchingEvents.value].reverse().slice(0, 150)
+interface LogRow {
+  event: DevEvent
+  detail: string
+  excerpt: string
+  nodeIds: readonly string[]
+}
+
+const visibleLogRows = computed<readonly LogRow[]>(() =>
+  [...matchingEvents.value]
+    .reverse()
+    .slice(0, 150)
+    .map((event) => {
+      const detail = stringifyDetail(event.detail)
+      return {
+        event,
+        detail,
+        excerpt: truncateDetail(detail),
+        nodeIds: eventNodeIds(event)
+      }
+    })
 )
 
 const level = ref<CrdtLogLevel>(crdtLogLevel())
@@ -345,6 +367,7 @@ function verdictLabel(entry: MergeTraceEntry): string {
 type CopyState = 'idle' | 'busy' | 'done' | 'failed'
 const logCopyState = ref<CopyState>('idle')
 const reportCopyState = ref<CopyState>('idle')
+const itemCopy = ref<{ key: string; state: 'done' | 'failed' } | null>(null)
 const reportSources = ref<ReportSources>({ ...DEFAULT_REPORT_SOURCES })
 const { copy } = useClipboard({ legacy: true })
 
@@ -368,6 +391,18 @@ async function writeClipboard(text: string): Promise<boolean> {
   } catch {
     return false
   }
+}
+
+async function copyItem(key: string, text: string) {
+  const ok = await writeClipboard(text)
+  itemCopy.value = { key, state: ok ? 'done' : 'failed' }
+  clearTimeout(itemCopyReset)
+  itemCopyReset = setTimeout(() => (itemCopy.value = null), 1600)
+}
+
+function itemCopyLabel(key: string, idle: string = S.copy): string {
+  if (itemCopy.value?.key !== key) return idle
+  return itemCopy.value.state === 'done' ? S.copied : S.copyFailed
 }
 
 function flashLogCopyState(ok: boolean) {
@@ -522,22 +557,30 @@ const chipLabel = computed(
   () => `CRDT ${status.connected ? 'live' : 'off'} · ${status.updatesApplied}`
 )
 
-function fmtDetail(detail: unknown, limit = 400): string {
+function stringifyDetail(detail: unknown): string {
   try {
     const raw = JSON.stringify(detail, (_key, value) =>
       value instanceof Uint8Array ? `Uint8Array(${value.length})` : value
     )
-    if (raw === undefined) return ''
-    return raw.length > limit ? `${raw.slice(0, limit)}…` : raw
+    return raw ?? ''
   } catch {
     return String(detail)
   }
 }
 
-function eventDetail(event: DevEvent): string {
-  return expanded.value === event.seq
-    ? fmtDetail(event.detail, 20_000)
-    : fmtDetail(event.detail)
+function truncateDetail(detail: string, limit = 200): string {
+  return detail.length > limit ? `${detail.slice(0, limit)}…` : detail
+}
+
+function eventNodeIds(event: DevEvent): string[] {
+  if (event.kind !== 'doc_nodes_changed') return []
+  const detail = event.detail as {
+    added?: unknown[]
+    removed?: unknown[]
+  } | null
+  return [...(detail?.added ?? []), ...(detail?.removed ?? [])].filter(
+    (id): id is string => typeof id === 'string'
+  )
 }
 
 function fmtTime(at: number): string {
@@ -660,7 +703,20 @@ function fmtTime(at: number): string {
                   <td class="text-agent-fg-muted pr-2 align-top">
                     {{ row[0] }}
                   </td>
-                  <td class="break-all">{{ row[1]() }}</td>
+                  <td class="break-all">
+                    {{ row[1]() }}
+                    <button
+                      v-if="row[0] === 'doc id' && status.workflowId"
+                      type="button"
+                      class="border-agent-border hover:bg-agent-surface-hover ml-1 cursor-pointer rounded-sm border px-1.5 py-0.5"
+                      :aria-label="S.copyDocumentId"
+                      @click="
+                        copyItem(`doc:${status.workflowId}`, status.workflowId)
+                      "
+                    >
+                      {{ itemCopyLabel(`doc:${status.workflowId}`) }}
+                    </button>
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -738,38 +794,67 @@ function fmtTime(at: number): string {
           </div>
 
           <div class="space-y-1" data-testid="crdt-dev-panel-log">
-            <button
-              v-for="event in visibleEvents"
-              :key="event.seq"
-              type="button"
-              class="border-agent-border hover:bg-agent-surface-hover block w-full cursor-pointer border-b pb-1 text-left"
-              @click="expanded = expanded === event.seq ? null : event.seq"
+            <div
+              v-for="row in visibleLogRows"
+              :key="row.event.seq"
+              class="border-agent-border border-b pb-1"
             >
-              <div class="flex items-baseline gap-1">
-                <span class="text-agent-fg-muted">{{ fmtTime(event.at) }}</span>
-                <span
-                  :class="
-                    cn(
-                      'border-agent-border rounded-sm border px-1',
-                      event.level === 'warn' &&
-                        'text-agent-danger border-agent-danger'
-                    )
-                  "
-                  >{{ event.scope }}</span
-                >
-                <span class="font-bold">{{ event.kind }}</span>
-              </div>
-              <div
-                :class="
-                  cn(
-                    'text-agent-fg-muted break-all',
-                    expanded !== event.seq && 'line-clamp-2'
-                  )
+              <button
+                type="button"
+                class="hover:bg-agent-surface-hover block w-full cursor-pointer text-left"
+                @click="
+                  expanded = expanded === row.event.seq ? null : row.event.seq
                 "
               >
-                {{ eventDetail(event) }}
+                <div class="flex items-baseline gap-1">
+                  <span class="text-agent-fg-muted">{{
+                    fmtTime(row.event.at)
+                  }}</span>
+                  <span
+                    :class="
+                      cn(
+                        'border-agent-border rounded-sm border px-1',
+                        row.event.level === 'warn' &&
+                          'text-agent-danger border-agent-danger'
+                      )
+                    "
+                    >{{ row.event.scope }}</span
+                  >
+                  <span class="font-bold">{{ row.event.kind }}</span>
+                </div>
+                <div class="text-agent-fg-muted break-all">
+                  {{
+                    expanded === row.event.seq
+                      ? truncateDetail(row.detail, 20_000)
+                      : row.excerpt
+                  }}
+                </div>
+              </button>
+              <div
+                v-if="row.detail || row.nodeIds.length"
+                class="mt-1 flex flex-wrap gap-1"
+              >
+                <button
+                  v-if="row.detail"
+                  type="button"
+                  class="border-agent-border hover:bg-agent-surface-hover cursor-pointer rounded-sm border px-1.5 py-0.5"
+                  :aria-label="S.copyLogDetail"
+                  @click="copyItem(`detail:${row.event.seq}`, row.detail)"
+                >
+                  {{ itemCopyLabel(`detail:${row.event.seq}`) }}
+                </button>
+                <button
+                  v-for="nodeId in row.nodeIds"
+                  :key="nodeId"
+                  type="button"
+                  class="border-agent-border hover:bg-agent-surface-hover cursor-pointer rounded-sm border px-1.5 py-0.5"
+                  :aria-label="`${S.copy} node id ${nodeId}`"
+                  @click="copyItem(`node:${row.event.seq}:${nodeId}`, nodeId)"
+                >
+                  {{ itemCopyLabel(`node:${row.event.seq}:${nodeId}`, nodeId) }}
+                </button>
               </div>
-            </button>
+            </div>
           </div>
         </template>
 
@@ -850,7 +935,9 @@ function fmtTime(at: number): string {
               </div>
               <div class="text-agent-fg-muted break-all">
                 {{ S.survivingWidgets }}:
-                {{ fmtDetail(simulation.survivingWidgets) }}
+                {{
+                  truncateDetail(stringifyDetail(simulation.survivingWidgets))
+                }}
               </div>
             </section>
 

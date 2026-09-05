@@ -184,7 +184,7 @@ describe('UsageLogsTable', () => {
     mockCustomerEventsService.hasAdditionalInfo.mockImplementation(
       (event: AuditLog) => {
         const { amount, api_name, model, ...otherParams } =
-          (event.params as Record<string, unknown>) ?? {}
+          event.params as Record<string, unknown>
         return Object.keys(otherParams).length > 0
       }
     )

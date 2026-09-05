@@ -228,8 +228,10 @@ export async function runMissingModelPipeline({
             err
           )
         })
-      if (controller.signal.aborted) return
-      surfaceActiveCandidates()
+        .finally(() => {
+          if (controller.signal.aborted) return
+          surfaceActiveCandidates()
+        })
     })
     .catch(reportVerificationFailure)
 
