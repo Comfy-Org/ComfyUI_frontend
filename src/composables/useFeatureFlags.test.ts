@@ -269,16 +269,13 @@ describe('useFeatureFlags', () => {
   })
 
   describe('nodeLibraryEssentialsEnabled', () => {
-    beforeEach(() => {
-      vi.mocked(distributionTypes).isNightly = true
-    })
-
     afterEach(() => {
       vi.mocked(distributionTypes).isNightly = false
       remoteConfig.value = {}
     })
 
     it('defaults on when nightly serves no value for the flag', () => {
+      vi.mocked(distributionTypes).isNightly = true
       vi.mocked(api.getServerFeature).mockImplementation(
         (_path, defaultValue) => defaultValue
       )
@@ -288,6 +285,7 @@ describe('useFeatureFlags', () => {
     })
 
     it('lets a remote config false turn off the nightly default', () => {
+      vi.mocked(distributionTypes).isNightly = true
       remoteConfig.value = { node_library_essentials_enabled: false }
       vi.mocked(api.getServerFeature).mockImplementation(
         (_path, defaultValue) => defaultValue
@@ -298,6 +296,7 @@ describe('useFeatureFlags', () => {
     })
 
     it('lets a served server false turn off the nightly default', () => {
+      vi.mocked(distributionTypes).isNightly = true
       vi.mocked(api.getServerFeature).mockImplementation(
         (path, defaultValue) =>
           path === ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED
@@ -307,6 +306,38 @@ describe('useFeatureFlags', () => {
 
       const { flags } = useFeatureFlags()
       expect(flags.nodeLibraryEssentialsEnabled).toBe(false)
+    })
+
+    it('should default to true in production when no remote config or server flag is set', () => {
+      vi.mocked(distributionTypes).isNightly = false
+      vi.stubEnv('DEV', false)
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+      expect(flags.nodeLibraryEssentialsEnabled).toBe(true)
+      expect(api.getServerFeature).toHaveBeenCalledWith(
+        ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED,
+        true
+      )
+
+      vi.unstubAllEnvs()
+    })
+
+    it('should return false in production when the server feature flag explicitly disables it', () => {
+      vi.mocked(distributionTypes).isNightly = false
+      vi.stubEnv('DEV', false)
+      vi.mocked(api.getServerFeature).mockImplementation((path) => {
+        if (path === ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED)
+          return false
+        return undefined
+      })
+
+      const { flags } = useFeatureFlags()
+      expect(flags.nodeLibraryEssentialsEnabled).toBe(false)
+
+      vi.unstubAllEnvs()
     })
   })
 

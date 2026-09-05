@@ -186,7 +186,7 @@ export function useFeatureFlags() {
       return resolveFlag(
         ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED,
         remoteConfig.value.node_library_essentials_enabled,
-        isNightly || import.meta.env.DEV
+        true
       )
     },
     get workflowSharingEnabled() {
