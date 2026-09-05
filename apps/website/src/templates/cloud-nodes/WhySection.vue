@@ -19,7 +19,6 @@ const reasons: Reason[] = reasonNumbers.map((n) => ({
   <ReasonsSplit01
     :heading="t('cloudNodesLaunch.why.heading', locale)"
     :heading-highlight="t('cloudNodesLaunch.why.headingHighlight', locale)"
-    highlight-class="text-primary-comfy-yellow"
     :subtitle="t('cloudNodesLaunch.why.subtitle', locale)"
     :reasons="reasons"
   />

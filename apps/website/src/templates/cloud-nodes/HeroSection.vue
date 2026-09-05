@@ -27,12 +27,11 @@ const features = featureNumbers.map((n) =>
     :features="features"
     :primary-cta="ctas.getStarted"
     :secondary-cta="ctas.docs"
-    video-src="https://media.comfy.org/website/cloud-nodes/nodegraph-crisp.mp4"
+    video-src="https://media.comfy.org/website/cloud-nodes/hero_v1.mp4"
     video-poster="https://media.comfy.org/website/cloud-nodes/hero-poster_v1.webp"
     :video-aria-label="t('cloudNodesLaunch.hero.videoAlt', locale)"
     video-autoplay
     video-loop
     video-minimal
-    video-hide-controls
   />
 </template>

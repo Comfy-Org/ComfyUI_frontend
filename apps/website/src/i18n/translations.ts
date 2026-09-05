@@ -8516,46 +8516,29 @@ Enterprise`
     en: 'What actually runs on our side',
     'zh-CN': '我们这边究竟运行什么'
   },
-  'cloudNodesLaunch.howItWorks.1.title': {
-    en: 'A pinned workflow',
-    'zh-CN': '锁定版本的工作流'
+  'cloudNodesLaunch.howItWorks.subheading': {
+    en: 'One curated workflow per node, pinned to a fixed model version.',
+    'zh-CN': '每个节点对应一套精选工作流，并锁定具体模型版本。'
   },
-  'cloudNodesLaunch.howItWorks.1.description': {
-    en: 'Each node maps to one curated workflow on a fixed model version, so a saved graph keeps producing the same result over time.',
+  'cloudNodesLaunch.howItWorks.1.label': {
+    en: 'A saved graph keeps producing the same result over time, because the model version behind the node does not move.',
     'zh-CN':
-      '每个节点对应一套精选工作流，并锁定具体模型版本，因此保存的工作流会持续产出一致的结果。'
+      '保存的工作流会持续产出一致的结果，因为节点背后的模型版本不会变动。'
   },
-  'cloudNodesLaunch.howItWorks.2.title': {
-    en: 'Your graph stays put',
-    'zh-CN': '你的工作流留在本地'
-  },
-  'cloudNodesLaunch.howItWorks.2.description': {
-    en: "Only the node's own inputs leave your machine. Everything else in the workflow keeps running locally, exactly as before.",
+  'cloudNodesLaunch.howItWorks.2.label': {
+    en: 'Only the node\u2019s own inputs leave your machine. Everything else in the workflow keeps running locally.',
     'zh-CN':
-      '只有该节点自身的输入会离开你的机器。工作流中的其他部分仍在本地运行，和以前完全一样。'
+      '只有该节点自身的输入会离开你的机器，工作流中的其他部分仍在本地运行。'
   },
-  'cloudNodesLaunch.howItWorks.3.title': {
-    en: 'A normal output socket',
-    'zh-CN': '普通的输出接口'
-  },
-  'cloudNodesLaunch.howItWorks.3.description': {
+  'cloudNodesLaunch.howItWorks.3.label': {
     en: 'Results come back as IMAGE, VIDEO or AUDIO. No upload step, no second application, no environment to maintain.',
     'zh-CN':
       '结果以 IMAGE、VIDEO 或 AUDIO 的形式返回。无需上传，无需第二个应用，也无需维护运行环境。'
   },
-  'cloudNodesLaunch.howItWorks.4.title': {
-    en: 'Metered per GPU-second',
-    'zh-CN': '按 GPU 秒计量'
-  },
-  'cloudNodesLaunch.howItWorks.4.description': {
-    en: 'You are charged for execution time rather than per generation. A short image is a few seconds; video runs longer.',
+  'cloudNodesLaunch.howItWorks.4.label': {
+    en: 'You are charged for execution time rather than per generation, so a short image costs meaningfully less than a long video.',
     'zh-CN':
-      '按实际执行时间计费，而不是按次计费。生成一张图通常只需几秒，视频则更久。'
-  },
-  'cloudNodesLaunch.howItWorks.footnote': {
-    en: 'In beta: the curated set is still changing, so options may be added or removed and a workflow may be retired.',
-    'zh-CN':
-      '测试版：精选节点集仍在调整，选项可能增减，某个工作流也可能被下线。'
+      '按实际执行时间计费，而不是按次计费，因此生成一张图远比一段长视频便宜。'
   },
   'cloudNodesLaunch.why.heading': {
     en: 'Built for the models\n',
