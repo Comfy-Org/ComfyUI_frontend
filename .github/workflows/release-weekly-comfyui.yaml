@@ -213,10 +213,24 @@ jobs:
           ref: v${{ needs.resolve-version.outputs.target_version }}
           path: release
 
+      # Tags published before this repo adopted `packageManager` declare no
+      # pnpm version, and pnpm/action-setup fails closed on them. Supply a
+      # fallback only for those tags: passing `version` when the manifest does
+      # pin pnpm makes the action throw "Multiple versions of pnpm specified".
+      - name: Resolve legacy pnpm version
+        id: legacy-pnpm
+        env:
+          LEGACY_PNPM_FALLBACK: '10.33.0'
+        run: |
+          set -euo pipefail
+          VERSION="$(node "$RUNNER_TEMP/cicd/resolve-legacy-pnpm-version.js" release/package.json "$LEGACY_PNPM_FALLBACK")"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
       - name: Install pnpm
         uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
         with:
           package_json_file: release/package.json
+          version: ${{ steps.legacy-pnpm.outputs.version }}
 
       - uses: actions/setup-node@v6
         with:
