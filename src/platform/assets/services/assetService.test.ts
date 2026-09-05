@@ -9,6 +9,7 @@ import {
   assetService
 } from '@/platform/assets/services/assetService'
 import { api } from '@/scripts/api'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
 const mockSettingStoreGet = vi.hoisted(() => vi.fn(() => false))
@@ -39,11 +40,13 @@ vi.mock('@/platform/settings/settingStore', () => ({
 vi.mock('@/stores/modelToNodeStore', () => {
   const registeredNodeTypes: Record<string, string> = {
     CheckpointLoaderSimple: 'ckpt_name',
-    LoraLoader: 'lora_name'
+    LoraLoader: 'lora_name',
+    LoadChatGLM3: 'chatglm3_checkpoint'
   }
   const nodeTypeCategories: Record<string, string> = {
     CheckpointLoaderSimple: 'checkpoints',
-    LoraLoader: 'loras'
+    LoraLoader: 'loras',
+    LoadChatGLM3: 'LLM/checkpoints'
   }
   return {
     useModelToNodeStore: vi.fn(() => ({
@@ -752,6 +755,25 @@ describe(assetService.getAssetModels, () => {
     expect(diffusion).toEqual([{ name: 'dual_use.safetensors', pathIndex: 0 }])
     // Both folder reads resolve from a single memoized models walk.
     expect(fetchApiMock).toHaveBeenCalledTimes(1)
+  })
+
+  it.fails("resolves models when queried by the node-widget's full category path, not just the bucket's top-level folder key", async () => {
+    mockSupportsModelTypeTags.value = false
+    const category =
+      useModelToNodeStore().getCategoryForNodeType('LoadChatGLM3')
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'chatglm3',
+          name: 'chatglm3-checkpoint.safetensors',
+          tags: ['models', 'LLM/checkpoints']
+        })
+      ])
+    )
+
+    const models = await assetService.getAssetModels(category!)
+
+    expect(models).not.toEqual([])
   })
 })
 
