@@ -8,31 +8,46 @@
 # after stripping build noise that differs run-to-run without meaning anything:
 #   - hashed asset filenames   /_astro/name.Bx7f3kQ.css  ->  /_astro/name.HASH.css
 #   - astro-island uids        uid="Z1abc23"             ->  uid="UID"
-#   - ISO timestamps           2026-09-04T20:01:55.880Z  ->  TIMESTAMP
+#   - island render timings
 # Everything else must be byte-identical or it is reported.
-set -uo pipefail
-BASE="$1"; CAND="$2"; LABEL="${3:-candidate}"
+set -euo pipefail
+export LC_ALL=C
+if [ "$#" -lt 2 ] || [ "$#" -gt 3 ]; then
+  echo 'Usage: compare-build-to-main.sh <baseline-dist> <candidate-dist> [label]' >&2
+  exit 2
+fi
+BASE=$(cd "$1" && pwd)
+CAND=$(cd "$2" && pwd)
+LABEL="${3:-candidate}"
+compare_tmp=$(mktemp -d)
+trap 'rm -rf "$compare_tmp"' EXIT
 norm() {
   sed -E \
-    -e 's#(/_(astro|website)/[A-Za-z0-9_.-]+)\.[A-Za-z0-9_-]{6,}\.(css|js|mjs|woff2?|png|jpe?g|webp|avif|svg)#\1.HASH.\2#g' \
-    -e 's#uid="[A-Za-z0-9_-]+"#uid="UID"#g' -e 's#server-render-time="[0-9.]+"#server-render-time="T"#g' \
-    -e 's#[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2})#TIMESTAMP#g' \
+    -e 's#(/_(astro|website)/[A-Za-z0-9_.-]+)\.[A-Za-z0-9_-]{6,}\.(css|js|mjs|woff2?|png|jpe?g|webp|avif|svg)#\1.HASH.\3#g' \
+    -e 's#(<astro-island[^>]* )uid="[A-Za-z0-9_-]+"#\1uid="UID"#g' \
+    -e 's#(<astro-island[^>]* )server-render-time="[0-9.]+"#\1server-render-time="T"#g' \
     "$1"
 }
-cd "$BASE" && find . -name '*.html' | sort > /tmp/cmp-base.list
-cd "$CAND" && find . -name '*.html' | sort > /tmp/cmp-cand.list
-removed=$(comm -23 /tmp/cmp-base.list /tmp/cmp-cand.list)
-added=$(comm -13 /tmp/cmp-base.list /tmp/cmp-cand.list)
-common=$(comm -12 /tmp/cmp-base.list /tmp/cmp-cand.list)
+(cd "$BASE" && find . -type f -name '*.html' | sort) > "$compare_tmp/base"
+(cd "$CAND" && find . -type f -name '*.html' | sort) > "$compare_tmp/candidate"
+if [ ! -s "$compare_tmp/base" ] || [ ! -s "$compare_tmp/candidate" ]; then
+  echo 'Both inputs must contain built HTML pages.' >&2
+  exit 2
+fi
+removed=$(comm -23 "$compare_tmp/base" "$compare_tmp/candidate")
+added=$(comm -13 "$compare_tmp/base" "$compare_tmp/candidate")
+common=$(comm -12 "$compare_tmp/base" "$compare_tmp/candidate")
 changed=0; changed_list=""
 while IFS= read -r f; do
   [ -z "$f" ] && continue
-  if ! cmp -s <(norm "$BASE/$f") <(norm "$CAND/$f"); then
+  norm "$BASE/$f" > "$compare_tmp/base-page"
+  norm "$CAND/$f" > "$compare_tmp/candidate-page"
+  if ! cmp -s "$compare_tmp/base-page" "$compare_tmp/candidate-page"; then
     changed=$((changed+1)); changed_list="$changed_list$f"$'\n'
   fi
 done <<< "$common"
-n_base=$(wc -l < /tmp/cmp-base.list | tr -d ' ')
-n_cand=$(wc -l < /tmp/cmp-cand.list | tr -d ' ')
+n_base=$(wc -l < "$compare_tmp/base" | tr -d ' ')
+n_cand=$(wc -l < "$compare_tmp/candidate" | tr -d ' ')
 n_removed=$(printf '%s' "$removed" | grep -c . || true)
 n_added=$(printf '%s' "$added" | grep -c . || true)
 n_added_ws=$(printf '%s' "$added" | grep -c '^\./workshop/' || true)
@@ -44,7 +59,8 @@ printf '  existing changed     %s\n  removed              %s\n  added           
 [ "$n_added" -gt 0 ] && [ "$n_added" != "$n_added_ws" ] && { echo "  --- added OUTSIDE /workshop ---"; printf '%s\n' "$added" | grep -v '^\./workshop/' | head -20; }
 # shared CSS: token-level comparison (split on { } ;). Splitting on } alone
 # mis-reports a minified Tailwind v4 file as one giant rule.
-tok() { cat "$1"/_website/*.css "$1"/_astro/*.css 2>/dev/null | tr '{};' '\n\n\n' | sed '/^[[:space:]]*$/d' | sort -u; }
+tok() { find "$1" -type f -name '*.css' \( -path '*/_website/*' -o -path '*/_astro/*' \) -exec cat {} + | tr '{};' '\n' | sed '/^[[:space:]]*$/d' | sort -u; }
 printf '  css tokens removed   %s\n  css tokens added     %s\n' "$(comm -23 <(tok "$BASE") <(tok "$CAND") | grep -c . || true)" "$(comm -13 <(tok "$BASE") <(tok "$CAND") | grep -c . || true)"
-b=$(ls "$BASE"/_website/*.css 2>/dev/null | head -1); c=$(ls "$CAND"/_website/*.css 2>/dev/null | head -1)
+b=$(find "$BASE" -type f -path '*/_website/*.css' -print -quit); c=$(find "$CAND" -type f -path '*/_website/*.css' -print -quit)
 [ -n "$b" ] && [ -n "$c" ] && printf '  css gzipped          %s -> %s bytes (%+d)\n' "$(gzip -c "$b" | wc -c | tr -d ' ')" "$(gzip -c "$c" | wc -c | tr -d ' ')" "$(( $(gzip -c "$c" | wc -c) - $(gzip -c "$b" | wc -c) ))"
+test "$changed" -eq 0 && test "$n_removed" -eq 0
