@@ -5,23 +5,12 @@ import type {
 
 import { externalLinks } from '../config/routes'
 
-// Comfy Cloud nodes are a feature launch rather than a model launch, but the
-// shape is the same: one hero, how it works, pricing, FAQ. Reusing the template
-// means no new components and the same locale coverage the model pages get.
+// A feature launch rather than a model launch, but the page shape is the same,
+// so the model-launch template covers it with no new components.
 //
-// The launch film, encoded to the site's web video profile and served from
-// media.comfy.org. It is 15s, 1280x720, and carries its own soundtrack.
-//
-// The poster is cut from the film's own node-graph beat (t=2.6s) rather than
-// frame 0: it shows a real `Comfy Cloud Flux 2 Text to Image` node on canvas
-// with its widgets and BETA pill legible, which is the single clearest frame
-// for explaining what this page is about. Frame 0 is a near-black orbit shot
-// and reads as an empty box before the video loads.
-//
-// The `_v1` suffixes are not decoration. These objects ship
-// `cache-control: public,max-age=3600`, so the edge keeps serving old bytes for
-// up to an hour no matter how many times the same key is re-uploaded. A new key
-// is the only same-hour bust — version the filename again on the next swap.
+// The 15s launch film. Its poster is cut from the node-graph beat rather than
+// frame 0, which is a near-black orbit shot. media.comfy.org objects are cached
+// for an hour, so bump the `_v1` suffix rather than re-uploading a key.
 const media = {
   hero: {
     kind: 'video',
@@ -40,9 +29,7 @@ export const cloudNodesPage: ModelLaunchPage = {
   breadcrumbLabelKey: 'cloudNodesLaunch.breadcrumb.model',
   breadcrumbUpdatedKey: 'cloudNodesLaunch.breadcrumb.updated',
   hero: {
-    // The film carries its own title cards, so an 'overlay' layout would stack
-    // site copy on top of burnt-in copy. Lead with the media instead, the way
-    // /minimax reads, and let the heading sit under it.
+    // The film has burnt-in title cards, so 'overlay' would double up the copy.
     layout: 'media-first',
     videoSrc: media.hero.src,
     posterSrc: media.hero.posterSrc,
@@ -78,8 +65,7 @@ export const cloudNodesPage: ModelLaunchPage = {
           'zh-CN': '更新到 v0.34.5 或更高版本'
         },
         description: {
-          // Never a bare version number: this copy outlives the release, and
-          // "v0.34.5" alone reads as "only this version" the day v0.34.6 ships.
+          // Always "or later": a bare version reads as "only this version".
           en: 'The Comfy Cloud nodes ship in ComfyUI v0.34.5. Update and restart, and they appear in the node library alongside every other partner node.',
           'zh-CN':
             'Comfy Cloud 节点随 ComfyUI v0.34.5 发布。更新并重启后，它们会与其他合作伙伴节点一同出现在节点库中。'
@@ -121,6 +107,20 @@ export const cloudNodesPage: ModelLaunchPage = {
           en: 'No. These behave like every other partner node: an account and credits are enough. There is no plan floor.',
           'zh-CN':
             '不需要。它们与其他合作伙伴节点一样，只需账号和积分即可使用，没有套餐门槛。'
+        }
+      },
+      {
+        // Count matches `get_node_list()` in comfy_api_nodes/nodes_comfy_cloud.py,
+        // which registers eight of the nine node classes the file defines.
+        id: 'which-models',
+        question: {
+          en: 'Which models can I run?',
+          'zh-CN': '可以运行哪些模型？'
+        },
+        answer: {
+          en: 'Eight nodes at launch. Four text-to-image (Flux 2, Mage Flow, Mage Flow Turbo, Z-Image Turbo), three MiniMax H3 video nodes (text, image, and first-last frame to video), and MiniMax Music 3 for audio.',
+          'zh-CN':
+            '首发八个节点：四个文生图（Flux 2、Mage Flow、Mage Flow Turbo、Z-Image Turbo），三个 MiniMax H3 视频节点（文生视频、图生视频、首尾帧生视频），以及用于音频的 MiniMax Music 3。'
         }
       },
       {
