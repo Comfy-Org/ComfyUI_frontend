@@ -9,12 +9,13 @@ import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 
-const { downloadAssets } = vi.hoisted(() => ({
-  downloadAssets: vi.fn()
+const { downloadAssets, isAssetDeleting } = vi.hoisted(() => ({
+  downloadAssets: vi.fn(),
+  isAssetDeleting: vi.fn(() => false)
 }))
 
 vi.mock('@/stores/assetsStore', () => ({
-  useAssetsStore: () => ({ isAssetDeleting: () => false })
+  useAssetsStore: () => ({ isAssetDeleting })
 }))
 
 vi.mock('../composables/useMediaAssetActions', () => ({
@@ -65,7 +66,6 @@ function renderCard(
 }
 
 function dispatchDragStart(
-  container: Element,
   init: { ctrlKey?: boolean; metaKey?: boolean } = {}
 ) {
   const dataTransfer = new DataTransfer()
@@ -77,34 +77,33 @@ function dispatchDragStart(
     ctrlKey: { value: init.ctrlKey ?? false, configurable: true },
     metaKey: { value: init.metaKey ?? false, configurable: true }
   })
-  // eslint-disable-next-line testing-library/no-node-access -- the draggable card intentionally has no interactive role
-  container.querySelector('[data-asset-id="a"]')!.dispatchEvent(event)
+  screen.getByTestId('media-asset-card').dispatchEvent(event)
   return { event, add }
 }
 
 describe('MediaAssetCard', () => {
   describe('dragStart', () => {
     it('cancels the native drag when Ctrl is held so a marquee can start over the card', () => {
-      const { container } = renderCard()
+      renderCard()
 
-      const { event, add } = dispatchDragStart(container, { ctrlKey: true })
+      const { event, add } = dispatchDragStart({ ctrlKey: true })
 
       expect(event.defaultPrevented).toBe(true)
       expect(add).not.toHaveBeenCalled()
     })
 
     it('cancels the native drag when Meta is held', () => {
-      const { container } = renderCard()
+      renderCard()
 
-      const { event } = dispatchDragStart(container, { metaKey: true })
+      const { event } = dispatchDragStart({ metaKey: true })
 
       expect(event.defaultPrevented).toBe(true)
     })
 
     it('includes the asset metadata with display_name in the drag payload', () => {
-      const { container } = renderCard()
+      renderCard()
 
-      const { event, add } = dispatchDragStart(container)
+      const { event, add } = dispatchDragStart()
 
       expect(event.defaultPrevented).toBe(false)
       expect(add).toHaveBeenNthCalledWith(
@@ -124,9 +123,9 @@ describe('MediaAssetCard', () => {
     })
 
     it('offers the preview URL as a uri-list flavour for external drop targets', () => {
-      const { container } = renderCard()
+      renderCard()
 
-      const { add } = dispatchDragStart(container)
+      const { add } = dispatchDragStart()
 
       expect(add).toHaveBeenNthCalledWith(
         2,
@@ -160,14 +159,13 @@ describe('MediaAssetCard', () => {
 
   it('selects the asset from the image preview and inspects it on double click', async () => {
     const user = userEvent.setup()
-    const { container, emitted } = renderCard({
+    const { emitted } = renderCard({
       loading: false,
       selected: true
     })
     const preview = await screen.findByRole('img', { name: 'a.png' })
     const outsideClick = vi.fn()
-    // eslint-disable-next-line testing-library/no-container -- verifies the card's event boundary against its rendered parent
-    container.addEventListener('click', outsideClick)
+    window.addEventListener('click', outsideClick)
 
     await user.click(preview)
     expect(emitted().select).toHaveLength(1)
@@ -177,16 +175,16 @@ describe('MediaAssetCard', () => {
     await user.dblClick(preview)
     expect(emitted().select).toHaveLength(3)
     expect(emitted().zoom).toEqual([[asset]])
+    window.removeEventListener('click', outsideClick)
   })
 
   it('selects non-video assets from the preview', async () => {
     const user = userEvent.setup()
-    const { container, emitted } = renderCard({
+    const { emitted } = renderCard({
       loading: false,
       asset: { ...asset, name: 'model.glb' }
     })
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- verifies the preview event boundary independently of its async media component
-    const preview = container.querySelector('.aspect-square')!
+    const preview = screen.getByTestId('media-asset-preview')
 
     await user.click(preview)
 
@@ -202,16 +200,11 @@ describe('MediaAssetCard', () => {
     '$modifier-clicks a video preview to select without starting playback',
     async ({ keyDown, keyUp }) => {
       const user = userEvent.setup()
-      const { container, emitted } = renderCard({
+      const { emitted } = renderCard({
         loading: false,
         asset: { ...asset, name: 'clip.mp4' }
       })
-      const video = await vi.waitFor(() => {
-        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
-        const element = container.querySelector('video')
-        expect(element).toBeInTheDocument()
-        return element!
-      })
+      const video = await screen.findByLabelText<HTMLVideoElement>('clip.mp4')
       const playSpy = vi
         .spyOn(video, 'play')
         .mockImplementation(() => Promise.resolve())
@@ -232,17 +225,12 @@ describe('MediaAssetCard', () => {
 
   it('disables native controls for compact video cards', async () => {
     const user = userEvent.setup()
-    const { container } = renderCard({
+    renderCard({
       loading: false,
       asset: { ...asset, name: 'clip.mp4' },
       showNativeVideoControls: false
     })
-    const video = await vi.waitFor(() => {
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
-      const element = container.querySelector('video')
-      expect(element).toBeInTheDocument()
-      return element!
-    })
+    const video = await screen.findByLabelText<HTMLVideoElement>('clip.mp4')
     const pauseSpy = vi.spyOn(video, 'pause').mockImplementation(() => {})
 
     Object.defineProperty(video, 'paused', {
@@ -251,9 +239,7 @@ describe('MediaAssetCard', () => {
     })
 
     await fireEvent.play(video)
-    // eslint-disable-next-line testing-library/no-node-access -- the video hover target has no role
-    const hoverTarget = video.parentElement!
-    await user.hover(hoverTarget)
+    await user.hover(screen.getByTestId('media-video'))
 
     expect(video.controls).toBe(false)
     expect(
@@ -267,23 +253,19 @@ describe('MediaAssetCard', () => {
 
   it('preserves action focus when the pointer leaves a playing compact video', async () => {
     const user = userEvent.setup()
-    const { container } = renderCard({
+    renderCard({
       loading: false,
       asset: { ...asset, name: 'clip.mp4' },
       showNativeVideoControls: false
     })
-    const video = await vi.waitFor(() => {
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
-      const element = container.querySelector('video')
-      expect(element).toBeInTheDocument()
-      return element!
-    })
+    const video = await screen.findByLabelText<HTMLVideoElement>('clip.mp4')
 
-    // eslint-disable-next-line testing-library/no-node-access -- the video hover target has no role
-    const hoverTarget = video.parentElement!
+    const hoverTarget = screen.getByTestId('media-video')
     const selectionControl = screen.getByRole('button', {
       name: 'assetBrowser.ariaLabel.assetCard'
     })
+    await user.tab()
+    expect(screen.getByRole('button', { name: 'g.play' })).toHaveFocus()
     await user.tab()
     expect(selectionControl).toHaveFocus()
     await user.tab()
@@ -297,6 +279,13 @@ describe('MediaAssetCard', () => {
     await user.unhover(hoverTarget)
 
     expect(downloadButton).toHaveFocus()
+  })
+
+  it('removes the preview area from the tab order while the asset is deleting', () => {
+    isAssetDeleting.mockReturnValue(true)
+    renderCard({ loading: false })
+
+    expect(screen.getByTestId('media-asset-preview')).toHaveAttribute('inert')
   })
 
   it('selects the asset from the info area or selection control', async () => {

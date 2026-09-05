@@ -4,6 +4,7 @@
     reaching the panel's empty-space deselection handler.
   -->
   <div
+    data-testid="media-asset-card"
     :class="
       cn(
         'flex cursor-pointer flex-col overflow-hidden rounded-lg p-2 transition-colors duration-200',
@@ -22,7 +23,9 @@
   >
     <!-- Top Area: Media Preview -->
     <div
+      data-testid="media-asset-preview"
       class="relative aspect-square overflow-hidden p-0"
+      :inert="isDeleting"
       @click.stop="handlePreviewClick"
       @dblclick.stop="fileKind === 'image' && handleZoomClick()"
     >
