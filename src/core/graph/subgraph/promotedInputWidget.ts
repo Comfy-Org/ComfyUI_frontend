@@ -1,9 +1,17 @@
-import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { INodeInputSlot, Point } from '@/lib/litegraph/src/interfaces'
+import type {
+  CanvasPointerEvent,
+  LGraphCanvas,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
+import type {
+  IBaseWidget,
+  TWidgetValue
+} from '@/lib/litegraph/src/types/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { NodeId } from '@/types/nodeId'
 
+import { resolveConcretePromotedWidget } from './resolveConcretePromotedWidget'
 import { resolveSubgraphInputTarget } from './resolveSubgraphInputTarget'
 
 /**
@@ -38,6 +46,53 @@ export function inputForWidget(
 }
 
 /**
+ * Forwards a promoted widget's value change to the interior source widget's
+ * callback. The store-backed projected widget only carries the value in
+ * {@link useWidgetValueStore}, so without this the interior widget.callback
+ * set by custom node extensions never fires when the host edits the promoted
+ * value — this is the bridge that keeps that contract intact.
+ *
+ * The host {@link useWidgetValueStore} entry stays the sole authoritative
+ * value (ADR-SUBGRAPH-PROMOTION-0009). `sourceWidget` is resolved by
+ * definition, not by host instance — every host of a shared subgraph
+ * definition resolves to the same interior widget object — so writing to it
+ * must not outlive this call, or a host's edit leaks into every sibling host
+ * of that definition. The value is written immediately before invoking the
+ * callback, mirroring the write-then-invoke order of
+ * {@link BaseWidget.setValue} so first-party
+ * callbacks that ignore their callback args and read their captured widget's
+ * own `.value` (e.g. `useImageUploadWidget`) observe the fresh value, then
+ * restored to its prior value once the callback returns.
+ */
+export function invokePromotedWidgetSourceCallback(
+  node: LGraphNode,
+  input: INodeInputSlot,
+  value: TWidgetValue,
+  canvas?: LGraphCanvas,
+  pos?: Point,
+  e?: CanvasPointerEvent
+): void {
+  const source = promotedInputSource(node, input)
+  if (!source) return
+
+  const resolution = resolveConcretePromotedWidget(
+    node,
+    source.nodeId,
+    source.widgetName
+  )
+  if (resolution.status !== 'resolved') return
+
+  const { node: sourceNode, widget: sourceWidget } = resolution.resolved
+  const priorValue = sourceWidget.value
+  sourceWidget.value = value
+  try {
+    sourceWidget.callback?.(value, canvas, sourceNode, pos, e)
+  } finally {
+    sourceWidget.value = priorValue
+  }
+}
+
+/**
  * Projects a promoted subgraph input into an ordinary widget descriptor. The
  * descriptor is store-backed: type/value/options read live from
  * {@link useWidgetValueStore} by widgetId (mirroring BaseWidget), so the row
@@ -47,7 +102,10 @@ export function inputForWidget(
  * `label` is the mutable display label. Returns null when the input is not a
  * promoted widget input.
  */
-export function promotedInputWidget(input: INodeInputSlot): IBaseWidget | null {
+export function promotedInputWidget(
+  node: LGraphNode,
+  input: INodeInputSlot
+): IBaseWidget | null {
   const id = input.widgetId
   if (!id) return null
   const store = useWidgetValueStore()
@@ -86,15 +144,16 @@ export function promotedInputWidget(input: INodeInputSlot): IBaseWidget | null {
     // so the value setter above is never invoked; BaseWidget.setValue writes its
     // own local state and then calls this callback, which is the only bridge
     // back to the store.
-    callback(next) {
+    callback(next, canvas, _node, pos, e) {
       store.setValue(id, next)
+      invokePromotedWidgetSourceCallback(node, input, next, canvas, pos, e)
     }
   }
 }
 
 export function promotedInputWidgets(node: LGraphNode): IBaseWidget[] {
   return node.inputs.flatMap((input) => {
-    const widget = promotedInputWidget(input)
+    const widget = promotedInputWidget(node, input)
     return widget ? [widget] : []
   })
 }

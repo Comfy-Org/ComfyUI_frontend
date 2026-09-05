@@ -288,7 +288,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const id = input.widgetId
     if (!id) return
 
-    input._widget = createPromotedWidgetStoreProjection(input, id)
+    input._widget = createPromotedWidgetStoreProjection(this, input, id)
     return input._widget
   }
 

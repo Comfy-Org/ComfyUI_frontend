@@ -179,7 +179,47 @@ test.describe(
     )
 
     test.describe('Promoted Widget Reactivity', { tag: ['@vue-nodes'] }, () => {
-      // https://github.com/Comfy-Org/ComfyUI_frontend/issues/14495
+      test.fail(
+        'Promoted and interior widgets stay in sync across navigation',
+        async ({ comfyPage }) => {
+          await comfyPage.workflow.loadWorkflow(
+            'subgraphs/subgraph-with-promoted-text-widget'
+          )
+
+          const testContent = 'promoted-value-sync-test'
+
+          const promotedTextarea = comfyPage.vueNodes
+            .getNodeLocator('11')
+            .getByRole('textbox', { name: 'text' })
+          await promotedTextarea.fill(testContent)
+
+          await comfyPage.vueNodes.enterSubgraph('11')
+
+          const interiorTextarea = comfyPage.page
+            .locator('[data-node-id]')
+            .getByRole('textbox', { name: 'text' })
+            .first()
+          await expect(interiorTextarea).toHaveValue(testContent)
+
+          const updatedInteriorContent = 'interior-value-sync-test'
+          await interiorTextarea.fill(updatedInteriorContent)
+
+          await comfyPage.subgraph.exitViaBreadcrumb()
+
+          await expect(
+            comfyPage.vueNodes
+              .getNodeLocator('11')
+              .getByRole('textbox', { name: 'text' })
+          ).toHaveValue(updatedInteriorContent)
+        }
+      )
+
+      // Open bug #14495 — drop `test.fail` when the fix lands. Root cause:
+      // SubgraphNode's 'input-disconnected' handler deletes the promoted
+      // input's widgetValueStore entry once the interior link drops, so the
+      // reconnect's `_setWidget` reseeds it from the interior widget's
+      // current value instead of preserving the host's edit. Pre-existing on
+      // `main`; not caused by this PR's callback-restore change.
       test('Promoted STRING widget edit survives a rebind of the interior link', async ({
         comfyPage
       }) => {

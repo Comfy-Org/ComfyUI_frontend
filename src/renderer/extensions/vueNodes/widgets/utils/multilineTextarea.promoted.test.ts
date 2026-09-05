@@ -20,6 +20,9 @@ const WIDGET_ID = makeWidgetId('graph-1', toNodeId('node-1'), 'prompt')
 function subgraphNode(): LGraphNode {
   const node = fromAny<LGraphNode, unknown>({
     id: 'node-1',
+    // Not a real promotion link (see `linkedSubgraphNode` below for that) —
+    // callback-forwarding is a no-op here since `isSubgraphNode()` is false.
+    isSubgraphNode: () => false,
     graph: {
       rootGraph: { id: 'graph-1' },
       getNodeById: (id: unknown) =>
@@ -27,6 +30,42 @@ function subgraphNode(): LGraphNode {
     }
   })
   return node
+}
+
+/**
+ * A subgraph-host node whose promoted `prompt` input link fully resolves down
+ * to `sourceWidget` on a leaf interior node, so
+ * `invokePromotedWidgetSourceCallback` can resolve through it end to end.
+ */
+function linkedSubgraphNode(sourceWidget: IBaseWidget): LGraphNode {
+  const leafNode = {
+    id: toNodeId('leaf-node'),
+    isSubgraphNode: () => false,
+    getWidgetFromSlot: () => sourceWidget,
+    widgets: [sourceWidget]
+  }
+
+  const link = {
+    resolve: () => ({ inputNode: leafNode, input: { name: 'prompt' } })
+  }
+
+  const subgraph = {
+    inputNode: { slots: [{ name: 'prompt', linkIds: [1] }] },
+    getLink: (id: number) => (id === 1 ? link : undefined),
+    getNodeById: (id: unknown) => (id === leafNode.id ? leafNode : undefined)
+  }
+
+  const node: Record<string, unknown> = {
+    id: 'node-1',
+    isSubgraphNode: () => true,
+    subgraph
+  }
+  node.graph = {
+    rootGraph: { id: 'graph-1' },
+    getNodeById: (id: unknown) => (id === toNodeId('node-1') ? node : undefined)
+  }
+
+  return fromAny<LGraphNode, unknown>(node)
 }
 
 function textareaSource(): IBaseWidget {
@@ -84,6 +123,51 @@ describe('createPromotedMultilineWidget', () => {
     element.dispatchEvent(new Event('input'))
 
     expect(useWidgetValueStore().getWidget(WIDGET_ID)?.value).toBe('edited')
+  })
+
+  it('forwards edits to the interior source widget callback with the fresh value', () => {
+    let observedDuringCallback: unknown
+    const sourceWidget = fromAny<
+      IBaseWidget & { callback: (...args: unknown[]) => void },
+      unknown
+    >({
+      name: 'prompt',
+      type: 'string',
+      value: 'stale',
+      callback: vi.fn(() => {
+        observedDuringCallback = sourceWidget.value
+      })
+    })
+    const host = linkedSubgraphNode(sourceWidget)
+
+    const widget = createPromotedMultilineWidget({
+      subgraphNode: host,
+      input: fromAny({ name: 'prompt', widgetId: WIDGET_ID }),
+      widgetId: WIDGET_ID,
+      sourceWidget: textareaSource()
+    })
+    const element = (
+      widget as unknown as DOMWidget<HTMLTextAreaElement, string>
+    ).element
+
+    element.value = 'fresh-value'
+    element.dispatchEvent(new Event('input'))
+
+    // The interior widget's own `.value` must be fresh by the time its
+    // callback observes it, not the stale value from before the edit.
+    expect(observedDuringCallback).toBe('fresh-value')
+    expect(sourceWidget.callback).toHaveBeenCalledTimes(1)
+    expect(sourceWidget.callback).toHaveBeenCalledWith(
+      'fresh-value',
+      undefined,
+      expect.objectContaining({ id: toNodeId('leaf-node') }),
+      undefined,
+      undefined
+    )
+    // The interior widget is shared across every host of a subgraph
+    // definition, so its `.value` must not persist the edit once the
+    // callback returns — only the host's own widgetValueStore entry does.
+    expect(sourceWidget.value).toBe('stale')
   })
 
   it('falls back to the canvas projection for non-DOM widgets', () => {

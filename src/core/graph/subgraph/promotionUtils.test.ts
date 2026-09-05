@@ -42,7 +42,7 @@ function writePromotedInputValue(
 function promotedWidgetRef(host: SubgraphNode, name: string): IBaseWidget {
   const input = host.inputs.find((input) => input.name === name)
   if (!input?.widgetId) throw new Error(`Missing promoted input ${name}`)
-  const widget = promotedInputWidget(input)
+  const widget = promotedInputWidget(host, input)
   if (!widget) throw new Error(`Missing promoted input ${name}`)
   return widget
 }
