@@ -21,14 +21,15 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
 
   let openedAt: number | null = null
 
-  watch(
-    () => enabled.value && isOpen.value,
-    (docked) => {
-      if (!docked || openedAt !== null) return
-      openedAt = Date.now()
-      useTelemetry()?.trackAgentPanelOpened({ source: 'restored' })
-    }
-  )
+  // Single source of truth for "the panel is actually taking up dock space" -
+  // consumed wherever that condition would otherwise be re-derived inline.
+  const docked = computed(() => enabled.value && isOpen.value)
+
+  watch(docked, (isDocked) => {
+    if (!isDocked || openedAt !== null) return
+    openedAt = Date.now()
+    useTelemetry()?.trackAgentPanelOpened({ source: 'restored' })
+  })
 
   const isMaximized = computed(() => width.value === PANEL_MAX_WIDTH)
 
@@ -69,6 +70,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     gateSettled,
     width,
     isMaximized,
+    docked,
     dismissedSelectionSignature,
     toggle,
     close,
