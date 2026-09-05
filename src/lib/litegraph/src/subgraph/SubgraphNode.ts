@@ -73,7 +73,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   override get type(): SubgraphId {
-    return super.type as SubgraphId
+    return super.type
   }
 
   override set type(value: string) {
@@ -157,7 +157,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         if (existingInput) {
           this._addSubgraphInputListeners(subgraphInput, existingInput)
           const linkId = subgraphInput.linkIds[0]
-          if (linkId === undefined) return
 
           const link = this.subgraph.getLink(linkId)
           if (!link) return
@@ -216,7 +215,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       (e) => {
         const { index, newName } = e.detail
         const input = this.inputs.at(index)
-        if (!input) throw new Error('Subgraph input not found')
+        if (!input) {
+          console.error('Subgraph input not found')
+          return
+        }
 
         input.label = newName
         // Do NOT change input.widget.name — it is the stable internal
@@ -242,7 +244,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       (e) => {
         const { index, newName } = e.detail
         const output = this.outputs.at(index)
-        if (!output) throw new Error('Subgraph output not found')
+        if (!output) {
+          console.error('Subgraph output not found')
+          return
+        }
 
         output.label = newName
         this.graph?.trigger('node:slot-label:changed', {
@@ -340,9 +345,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           })
         }
 
-        delete input.pos
-        delete input.widget
-        delete input.widgetId
+        input.pos = undefined
+        input.widget = undefined
+        input.widgetId = undefined
         input._widget = undefined
         this.invalidatePromotedViews()
       },
@@ -358,7 +363,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const slotsByName = new Map<string, SubgraphInput[]>()
 
     for (const slot of subgraphSlots) {
-      const signature = `${slot.name}:${String(slot.type)}`
+      const signature = `${slot.name}:${slot.type}`
       const signatureSlots = slotsBySignature.get(signature)
       if (signatureSlots) {
         signatureSlots.push(slot)
@@ -379,7 +384,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       slots: SubgraphInput[] | undefined
     ): SubgraphInput | undefined => {
       if (!slots) return undefined
-      return slots.find((slot) => !assignedSlotIds.has(String(slot.id)))
+      return slots.find((slot) => !assignedSlotIds.has(slot.id))
     }
 
     for (const input of this.inputs) {
@@ -388,7 +393,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         existingSlot &&
         this.subgraph.inputNode.slots.some((slot) => slot === existingSlot)
       ) {
-        assignedSlotIds.add(String(existingSlot.id))
+        assignedSlotIds.add(existingSlot.id)
         continue
       }
 
@@ -399,7 +404,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
       if (matchedSlot) {
         input._subgraphSlot = matchedSlot
-        assignedSlotIds.add(String(matchedSlot.id))
+        assignedSlotIds.add(matchedSlot.id)
       } else {
         delete input._subgraphSlot
       }
@@ -554,10 +559,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     )
 
     for (const input of this.inputs) {
-      delete input.widget
-      delete input.pos
-      delete input.widgetId
-      this._clearPromotedWidget(input)
       const subgraphInput = input._subgraphSlot
       if (!subgraphInput) continue
       this._resolveInputWidget(subgraphInput, input)
@@ -648,21 +649,39 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     input.widget.name = subgraphInput.name
     if (inputWidget) Object.setPrototypeOf(input.widget, inputWidget)
 
+    if (this.id === UNASSIGNED_NODE_ID) {
+      // Registering now would key the store under a construction-time id
+      // shared by every not-yet-added SubgraphNode (e.g. a clipboard clone
+      // that gets discarded), letting a later unrelated instance inherit
+      // this value. onAdded() performs the deferred registration once a
+      // real id is assigned.
+      input.widgetId = undefined
+      return
+    }
+
     const id = widgetId(this.rootGraph.id, this.id, subgraphInput.name)
     const store = useWidgetValueStore()
-    input.widgetId = id
-    store.registerWidget(
+    const registered = store.registerWidget(
       id,
       {
         type: interiorWidget.type,
         value: interiorWidget.value,
-        options: cloneDeep(interiorWidget.options ?? {}),
+        options: cloneDeep(interiorWidget.options),
         label: input.label ?? subgraphInput.name,
         serialize: interiorWidget.serialize,
         disabled: interiorWidget.disabled
       },
       deriveWidgetRenderState(interiorWidget)
     )
+    if (!registered) {
+      input.pos = undefined
+      input.widget = undefined
+      input.widgetId = undefined
+      input._widget = undefined
+      return
+    }
+
+    input.widgetId = id
     input._widget =
       this.createPromotedHostWidget(input, id, interiorWidget) ??
       this._projectPromotedWidget(input)
@@ -697,7 +716,38 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   override onAdded(_graph: LGraph): void {
-    this.rebuildInputWidgetBindings()
+    const store = useWidgetValueStore()
+    for (const input of this.inputs) {
+      const previousId = input.widgetId
+      if (!previousId) {
+        // Registration deferred by _setWidget while this.id was still
+        // UNASSIGNED_NODE_ID (e.g. widget resolution during construction).
+        // Perform it now that a real id is assigned.
+        if (input._subgraphSlot)
+          this._resolveInputWidget(input._subgraphSlot, input)
+        continue
+      }
+      const nextId = widgetId(this.rootGraph.id, this.id, input.name)
+      if (nextId === previousId) continue
+
+      const state = store.getWidget(previousId)
+      if (!state) continue
+      const renderState = store.getWidgetRenderState(previousId)
+      const migrated = store.registerWidget(
+        nextId,
+        { ...state },
+        { ...renderState }
+      )
+      if (!migrated) continue
+      store.setValue(nextId, state.value)
+      store.deleteWidget(previousId)
+      input.widgetId = nextId
+      this._clearPromotedWidget(input)
+      if (input._subgraphSlot) {
+        this._resolveInputWidget(input._subgraphSlot, input)
+      }
+      input._widget ??= this._projectPromotedWidget(input)
+    }
   }
 
   /**
@@ -966,7 +1016,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
   getSlotShape(slot: SubgraphInput, extraInput?: INodeInputSlot) {
     const shapes = slot.linkIds.map(
-      (id) => this.subgraph.links[id]?.resolve(this.subgraph)?.input?.shape
+      (id) => this.subgraph.getLink(id)?.resolve(this.subgraph).input?.shape
     )
     if (extraInput) shapes.push(extraInput.shape)
     return shapes.every((shape) => shape === shapes[0]) ? shapes[0] : undefined

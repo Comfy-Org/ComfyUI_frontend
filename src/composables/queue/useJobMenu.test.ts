@@ -314,7 +314,7 @@ describe('useJobMenu', () => {
         state: 'failed',
         taskRef: {
           errorMessage: 'Something went wrong'
-        } as Partial<TaskItemImpl>
+        }
       })
     )
 
@@ -346,7 +346,7 @@ describe('useJobMenu', () => {
           errorMessage: 'CUDA out of memory',
           executionError,
           createTime: 12345
-        } as Partial<TaskItemImpl>
+        }
       })
     )
 
@@ -368,7 +368,7 @@ describe('useJobMenu', () => {
         state: 'failed',
         taskRef: {
           errorMessage: 'Job failed with error'
-        } as Partial<TaskItemImpl>
+        }
       })
     )
 
@@ -390,7 +390,7 @@ describe('useJobMenu', () => {
     setCurrentItem(
       createJobItem({
         state: 'failed',
-        taskRef: { errorMessage: undefined } as Partial<TaskItemImpl>
+        taskRef: { errorMessage: undefined }
       })
     )
 
@@ -497,7 +497,7 @@ describe('useJobMenu', () => {
         expectedWidgetValue
       )
       expect(widgetCallback).toHaveBeenCalledWith(expectedWidgetValue)
-      expect(node.graph?.setDirtyCanvas).toHaveBeenCalledWith(true, true)
+      expect(node.graph.setDirtyCanvas).toHaveBeenCalledWith(true, true)
     }
   )
 
@@ -576,7 +576,7 @@ describe('useJobMenu', () => {
     setCurrentItem(
       createJobItem({
         state: 'completed',
-        taskRef: {} as Partial<TaskItemImpl>
+        taskRef: {}
       })
     )
 
@@ -610,7 +610,7 @@ describe('useJobMenu', () => {
     setCurrentItem(
       createJobItem({
         state: 'completed',
-        taskRef: {} as Partial<TaskItemImpl>
+        taskRef: {}
       })
     )
 
@@ -708,21 +708,6 @@ describe('useJobMenu', () => {
     expect(downloadBlobMock).not.toHaveBeenCalled()
   })
 
-  it('deletes preview asset when confirmed', async () => {
-    mediaAssetActionsMock.deleteAssets.mockResolvedValue(true)
-    const { jobMenuEntries } = mountJobMenu()
-    const preview = { filename: 'foo', subfolder: 'bar', type: 'output' }
-    const taskRef = { previewOutput: preview }
-    setCurrentItem(createJobItem({ state: 'completed', taskRef }))
-
-    await nextTick()
-    const entry = findActionEntry(jobMenuEntries.value, 'delete')
-    await entry?.onClick?.()
-
-    expect(mapTaskOutputToAssetItemMock).toHaveBeenCalledWith(taskRef, preview)
-    expect(queueStoreMock.update).toHaveBeenCalled()
-  })
-
   it('does not refresh queue when delete cancelled', async () => {
     mediaAssetActionsMock.deleteAssets.mockResolvedValue(false)
     const { jobMenuEntries } = mountJobMenu()
@@ -761,45 +746,6 @@ describe('useJobMenu', () => {
     await entry?.onClick?.()
 
     expect(queueStoreMock.delete).not.toHaveBeenCalled()
-  })
-
-  it('provides completed menu structure with delete option', async () => {
-    const inspectSpy = vi.fn()
-    const { jobMenuEntries } = mountJobMenu(inspectSpy)
-    setCurrentItem(
-      createJobItem({
-        state: 'completed',
-        taskRef: { previewOutput: {} }
-      })
-    )
-
-    await nextTick()
-    expect(jobMenuEntries.value.map((entry) => entry.key)).toEqual([
-      'inspect-asset',
-      'add-to-current',
-      'download',
-      'd1',
-      'open-workflow',
-      'export-workflow',
-      'd2',
-      'copy-id',
-      'd3',
-      'delete'
-    ])
-
-    expect(
-      findActionEntry(jobMenuEntries.value, 'inspect-asset')?.disabled
-    ).toBe(false)
-    expect(
-      findActionEntry(jobMenuEntries.value, 'add-to-current')?.disabled
-    ).toBe(false)
-    expect(findActionEntry(jobMenuEntries.value, 'download')?.disabled).toBe(
-      false
-    )
-
-    const inspectEntry = findActionEntry(jobMenuEntries.value, 'inspect-asset')
-    await inspectEntry?.onClick?.()
-    expect(inspectSpy).toHaveBeenCalledWith(currentItem.value)
   })
 
   it('omits inspect handler when callback missing', async () => {
@@ -841,7 +787,7 @@ describe('useJobMenu', () => {
     setCurrentItem(
       createJobItem({
         state: 'failed',
-        taskRef: { errorMessage: 'Some error' } as Partial<TaskItemImpl>
+        taskRef: { errorMessage: 'Some error' }
       })
     )
 

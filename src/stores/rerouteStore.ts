@@ -111,9 +111,9 @@ export const useRerouteStore = defineStore('reroute', () => {
   }
 
   /**
-   * Registers a reroute's chain state.
-   * @returns The store-held reactive state — callers keep it as their live
-   * state object so later field writes are tracked.
+   * @returns The registered chain. Re-registering the same raw chain under the
+   * same owner returns the incumbent; `undefined` means a distinct chain
+   * occupies its ID.
    */
   function registerReroute(
     scope: GraphScope,

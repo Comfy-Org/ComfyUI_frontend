@@ -1,10 +1,13 @@
+import { createTestingPinia } from '@pinia/testing'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
+import type * as VueI18n from 'vue-i18n'
 
 import type {
   WorkspacePendingInvite,
   WorkspaceMember
 } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import {
   filterBySearch,
@@ -249,7 +252,8 @@ describe('sortPendingInvites', () => {
 })
 
 const mockToastAdd = vi.fn()
-const mockResendInvite = vi.fn()
+const mockResendInvite =
+  vi.fn<(inviteId: string) => Promise<WorkspacePendingInvite>>()
 const mockShowRemoveMemberDialog = vi.fn()
 const mockShowRevokeInviteDialog = vi.fn()
 const mockShowChangeMemberRoleDialog = vi.fn()
@@ -259,10 +263,6 @@ const mockShowInviteMemberDialog = vi.fn()
 const mockShowInviteMemberUpsellDialog = vi.fn()
 
 const {
-  mockActiveWorkspace,
-  mockMembers,
-  mockPendingInvites,
-  mockOriginalOwnerId,
   mockMaxSeats,
   mockOccupiedSeats,
   mockPermissions,
@@ -272,18 +272,14 @@ const {
   mockIsTeamPlan,
   mockSubscriptionStatus,
   mockWorkspaceRole,
-  mockSubscription
+  mockSubscription,
+  mockCanChangeSeats,
+  mockCanInviteMembers
 } = vi.hoisted(() => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
   const { ref } = require('vue') as typeof import('vue')
 
   return {
-    mockActiveWorkspace: ref<{ type: 'personal' | 'team' } | null>({
-      type: 'personal'
-    }),
-    mockMembers: ref<WorkspaceMember[]>([]),
-    mockPendingInvites: ref<WorkspacePendingInvite[]>([]),
-    mockOriginalOwnerId: ref<string | null>(null),
     mockMaxSeats: ref<number | null>(73),
     mockOccupiedSeats: ref<number | null>(0),
     mockPermissions: ref({
@@ -306,7 +302,7 @@ const {
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
       headerGridCols: 'grid-cols-[50%_40%_10%]',
       showEditWorkspaceMenuItem: true,
-      workspaceMenuAction: 'delete' as 'delete' | null,
+      workspaceMenuAction: 'delete',
       workspaceMenuDisabledTooltip: null as string | null
     }),
     mockCanAccessSubscriptionFeatures: ref(true),
@@ -314,6 +310,8 @@ const {
     mockIsTeamPlan: ref(true),
     mockSubscriptionStatus: ref<string | null>('active'),
     mockWorkspaceRole: ref<'owner' | 'member'>('owner'),
+    mockCanChangeSeats: ref(true),
+    mockCanInviteMembers: ref(true),
     mockSubscription: ref<{ tier: string; isCancelled?: boolean } | null>({
       tier: 'PRO',
       isCancelled: false
@@ -321,30 +319,71 @@ const {
   }
 })
 
+let workspaceStore: ReturnType<typeof useTeamWorkspaceStore> & {
+  activeWorkspaceId: string | null
+}
+let workspaceType: 'personal' | 'team' = 'personal'
+let workspaceMembers: WorkspaceMember[] = []
+let workspacePendingInvites: WorkspacePendingInvite[] = []
+
+function updateWorkspaceStore() {
+  workspaceStore.workspaces = [
+    {
+      id: 'workspace-one',
+      name: 'Test workspace',
+      type: workspaceType,
+      role: 'owner',
+      created_at: '2025-01-01',
+      joined_at: '2025-01-01',
+      isSubscribed: true,
+      subscriptionPlan: null,
+      subscriptionTier: workspaceType === 'team' ? 'PRO' : 'FREE',
+      members: workspaceMembers,
+      pendingInvites: workspacePendingInvites
+    }
+  ]
+  workspaceStore.activeWorkspaceId = 'workspace-one'
+}
+
+const mockActiveWorkspace = {
+  set value(workspace: { type: 'personal' | 'team' } | null) {
+    if (!workspace) {
+      workspaceStore.workspaces = []
+      workspaceStore.activeWorkspaceId = null
+      return
+    }
+    workspaceType = workspace.type
+    updateWorkspaceStore()
+  }
+}
+
+const mockMembers = {
+  set value(members: WorkspaceMember[]) {
+    workspaceMembers = members
+    updateWorkspaceStore()
+  }
+}
+
+const mockPendingInvites = {
+  set value(pendingInvites: WorkspacePendingInvite[]) {
+    workspacePendingInvites = pendingInvites
+    updateWorkspaceStore()
+  }
+}
+
+function setOriginalOwner(id = 'creator-1') {
+  mockMembers.value = [
+    createMember({ id, role: 'owner', isOriginalOwner: true })
+  ]
+}
+
 vi.mock('primevue/usetoast', () => ({
   useToast: () => ({ add: mockToastAdd })
 }))
 
-vi.mock('vue-i18n', () => ({
+vi.mock('vue-i18n', async (importOriginal) => ({
+  ...(await importOriginal<typeof VueI18n>()),
   useI18n: () => ({ t: (key: string) => key })
-}))
-
-vi.mock('pinia', async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...(actual as object),
-    storeToRefs: (store: Record<string, unknown>) => store
-  }
-})
-
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    activeWorkspace: mockActiveWorkspace,
-    members: mockMembers,
-    pendingInvites: mockPendingInvites,
-    originalOwnerId: mockOriginalOwnerId,
-    resendInvite: mockResendInvite
-  })
 }))
 
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
@@ -352,6 +391,15 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
     permissions: mockPermissions,
     uiConfig: mockUiConfig,
     workspaceRole: mockWorkspaceRole
+  })
+}))
+
+vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+
+vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
+  useBillingCapabilities: () => ({
+    canChangeSeats: mockCanChangeSeats,
+    canInviteMembers: mockCanInviteMembers
   })
 }))
 
@@ -373,7 +421,6 @@ vi.mock(
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     canAccessSubscriptionFeatures: mockCanAccessSubscriptionFeatures,
-    isActiveSubscription: mockCanAccessSubscriptionFeatures,
     isInitialized: mockIsInitialized,
     isTeamPlan: mockIsTeamPlan,
     subscription: mockSubscription,
@@ -424,11 +471,14 @@ vi.mock('@/composables/useFeatureFlags', () => ({
 
 describe('useMembersPanel', () => {
   beforeEach(() => {
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
+    workspaceStore = useTeamWorkspaceStore(pinia)
+    vi.mocked(workspaceStore.resendInvite).mockImplementation(mockResendInvite)
+    workspaceType = 'personal'
+    workspaceMembers = []
+    workspacePendingInvites = []
+    updateWorkspaceStore()
     mockBillingControlEnabled.value = true
-    mockActiveWorkspace.value = { type: 'personal' }
-    mockMembers.value = []
-    mockPendingInvites.value = []
-    mockOriginalOwnerId.value = null
     mockMaxSeats.value = 73
     mockOccupiedSeats.value = 0
     mockCanAccessSubscriptionFeatures.value = true
@@ -436,6 +486,8 @@ describe('useMembersPanel', () => {
     mockIsTeamPlan.value = true
     mockSubscriptionStatus.value = 'active'
     mockWorkspaceRole.value = 'owner'
+    mockCanChangeSeats.value = true
+    mockCanInviteMembers.value = true
     mockSubscription.value = { tier: 'PRO', isCancelled: false }
     mockPermissions.value = {
       canViewOtherMembers: true,
@@ -622,7 +674,7 @@ describe('useMembersPanel', () => {
 
   describe('handleResendInvite', () => {
     it('resends the invite and shows a success toast', async () => {
-      mockResendInvite.mockResolvedValue(undefined)
+      mockResendInvite.mockResolvedValue(createInvite({ id: 'inv-1' }))
       const panel = await setup()
       await panel.handleResendInvite(createInvite({ id: 'inv-1' }))
       expect(mockResendInvite).toHaveBeenCalledWith('inv-1')
@@ -799,13 +851,14 @@ describe('useMembersPanel', () => {
 
     it('returns no actions without member-management permission', async () => {
       mockWorkspaceRole.value = 'member'
+      mockCanChangeSeats.value = false
       const panel = await setup()
 
       expect(panel.memberMenuItems(createMember())).toEqual([])
     })
 
     it('returns no actions for the workspace creator', async () => {
-      mockOriginalOwnerId.value = 'creator-1'
+      setOriginalOwner()
       const panel = await setup()
       const items = panel.memberMenuItems(
         createMember({ id: 'creator-1', role: 'owner' })
@@ -828,7 +881,7 @@ describe('useMembersPanel', () => {
 
     it('keeps the creator menu hidden when the flag is disabled', async () => {
       mockBillingControlEnabled.value = false
-      mockOriginalOwnerId.value = 'creator-1'
+      setOriginalOwner()
       const panel = await setup()
 
       expect(
@@ -839,7 +892,7 @@ describe('useMembersPanel', () => {
 
   describe('isOriginalOwner', () => {
     it('protects the matching creator in a personal workspace', async () => {
-      mockOriginalOwnerId.value = 'creator-1'
+      setOriginalOwner()
       const panel = await setup()
       expect(panel.isOriginalOwner(createMember({ id: 'creator-1' }))).toBe(
         true
@@ -849,7 +902,7 @@ describe('useMembersPanel', () => {
 
     it('treats an additional workspace creator as an ordinary owner', async () => {
       mockActiveWorkspace.value = { type: 'team' }
-      mockOriginalOwnerId.value = 'creator-1'
+      setOriginalOwner()
       const panel = await setup()
 
       expect(panel.isOriginalOwner(createMember({ id: 'creator-1' }))).toBe(
@@ -986,8 +1039,36 @@ describe('useMembersPanel', () => {
 
     it('hides the invite button for workspace members', async () => {
       mockWorkspaceRole.value = 'member'
+      mockCanInviteMembers.value = false
       const panel = await setup()
       expect(panel.showInviteButton.value).toBe(false)
+    })
+
+    it('hides invite actions when the server denies invitations', async () => {
+      mockCanInviteMembers.value = false
+      const panel = await setup()
+
+      expect(panel.showInviteButton.value).toBe(false)
+      await panel.handleResendInvite(createInvite({ id: 'inv-1' }))
+      panel.handleRevokeInvite(createInvite({ id: 'inv-1' }))
+      panel.handleInviteMember()
+
+      expect(mockResendInvite).not.toHaveBeenCalled()
+      expect(mockShowRevokeInviteDialog).not.toHaveBeenCalled()
+      expect(mockShowInviteMemberDialog).not.toHaveBeenCalled()
+    })
+
+    it('hides member management when the server denies seat changes', async () => {
+      mockCanChangeSeats.value = false
+      const panel = await setup()
+      const member = createMember({ id: 'member-1' })
+
+      expect(panel.permissions.value.canManageMembers).toBe(false)
+      panel.handleRemoveMember(member)
+      panel.handleChangeRole(member, 'owner')
+
+      expect(mockShowRemoveMemberDialog).not.toHaveBeenCalled()
+      expect(mockShowChangeMemberRoleDialog).not.toHaveBeenCalled()
     })
 
     it('keeps invite disabled while billing is initializing', async () => {

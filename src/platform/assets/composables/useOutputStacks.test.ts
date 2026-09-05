@@ -3,20 +3,16 @@ import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type * as OutputAssetUtil from '@/platform/assets/utils/outputAssetUtil'
 import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
+import { getOutputKey } from '@/platform/assets/utils/outputKeyUtil'
 
 const mocks = vi.hoisted(() => ({
   resolveOutputAssetItems: vi.fn()
 }))
 
-vi.mock('@/platform/assets/utils/outputAssetUtil', async (importOriginal) => {
-  const actual = await importOriginal<typeof OutputAssetUtil>()
-  return {
-    ...actual,
-    resolveOutputAssetItems: mocks.resolveOutputAssetItems
-  }
-})
+vi.mock('@/platform/assets/utils/outputAssetUtil', () => ({
+  resolveOutputAssetItems: mocks.resolveOutputAssetItems
+}))
 
 type Deferred<T> = {
   promise: Promise<T>
@@ -74,7 +70,11 @@ describe('useOutputStacks', () => {
       expect.objectContaining({ jobId: 'job-1' }),
       {
         createdAt: parent.created_at,
-        excludeOutputKey: 'node-1-outputs-parent.png'
+        excludeOutputKey: getOutputKey({
+          nodeId: 'node-1',
+          subfolder: 'outputs',
+          filename: 'parent.png'
+        })
       }
     )
     expect(isStackExpanded(parent)).toBe(true)

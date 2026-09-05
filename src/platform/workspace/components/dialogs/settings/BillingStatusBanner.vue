@@ -83,16 +83,13 @@ type BannerAction = 'addCredits' | 'reactivate' | 'updatePayment'
 
 const { t, d } = useI18n()
 const { renewalDate, subscription, manageSubscription } = useBillingContext()
-const { permissions } = useWorkspaceUI()
+const { permissions, canReactivatePlan } = useWorkspaceUI()
 const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
 const { kind, dismiss } = useBillingBanner()
 const { isResubscribing, handleResubscribe } = useResubscribe()
 const dialogService = useDialogService()
 
 const canManage = computed(() => permissions.value.canManageSubscription)
-const canManageLifecycle = computed(
-  () => permissions.value.canManageSubscriptionLifecycle
-)
 const cycleResetDate = computed(() => {
   const raw = renewalDate.value
   return raw ? d(new Date(raw), { month: 'short', day: 'numeric' }) : ''
@@ -153,7 +150,7 @@ const banner = computed<BannerView | null>(() => {
         muted: true,
         title: t(`${bs}.ending.title`, { date: planEndDate.value }),
         body: t(`${bs}.ending.body`),
-        action: canManageLifecycle.value ? 'reactivate' : null,
+        action: canReactivatePlan.value ? 'reactivate' : null,
         dismissible: false
       }
     default:

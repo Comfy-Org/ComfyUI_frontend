@@ -47,17 +47,31 @@ export class CanvasHelper {
     await nextFrame(this.page)
   }
 
-  async panWithTouch(offset: Position, safeSpot?: Position): Promise<void> {
+  async panWithTouch(
+    offset: Position,
+    safeSpot?: Position,
+    steps: number = 1
+  ): Promise<void> {
+    if (!Number.isInteger(steps) || steps <= 0) {
+      throw new RangeError('steps must be a finite positive integer')
+    }
     safeSpot = safeSpot || { x: 10, y: 10 }
     const client = await this.page.context().newCDPSession(this.page)
     await client.send('Input.dispatchTouchEvent', {
       type: 'touchStart',
       touchPoints: [safeSpot]
     })
-    await client.send('Input.dispatchTouchEvent', {
-      type: 'touchMove',
-      touchPoints: [{ x: offset.x + safeSpot.x, y: offset.y + safeSpot.y }]
-    })
+    for (let step = 1; step <= steps; step++) {
+      await client.send('Input.dispatchTouchEvent', {
+        type: 'touchMove',
+        touchPoints: [
+          {
+            x: safeSpot.x + (offset.x * step) / steps,
+            y: safeSpot.y + (offset.y * step) / steps
+          }
+        ]
+      })
+    }
     await client.send('Input.dispatchTouchEvent', {
       type: 'touchEnd',
       touchPoints: []
@@ -299,8 +313,10 @@ export class CanvasHelper {
 
       expect(reroutes).toHaveLength(Object.keys(expectedReroutes).length)
       for (const reroute of reroutes) {
+        if (!(reroute.id in expectedReroutes)) {
+          throw new Error(`Unexpected reroute ${reroute.id}`)
+        }
         const expected = expectedReroutes[reroute.id]
-        if (!expected) throw new Error(`Unexpected reroute ${reroute.id}`)
         expect(reroute.x).toBeCloseTo(expected.x, 1)
         expect(reroute.y).toBeCloseTo(expected.y, 1)
       }

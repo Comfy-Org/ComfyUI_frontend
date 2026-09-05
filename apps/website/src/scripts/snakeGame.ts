@@ -53,9 +53,12 @@ const COLORS = readColors()
 function requireElement<T extends Element>(
   id: string,
   guard: (el: Element) => el is T
-): T {
+): T | undefined {
   const el = document.getElementById(id)
-  if (!el || !guard(el)) throw new Error(`Missing element: #${id}`)
+  if (!el || !guard(el)) {
+    console.error(`Missing element: #${id}`)
+    return
+  }
   return el
 }
 
@@ -377,6 +380,8 @@ const svg = requireElement('game', isSVGSVG)
 const startCta = requireElement('startCta', isSVGText)
 const scoreNowEl = requireElement('scoreNow', isHTMLSpan)
 const scoreBestEl = requireElement('scoreBest', isHTMLSpan)
+const canStart =
+  board && pauseOverlay && svg && startCta && scoreNowEl && scoreBestEl
 
 let best = loadBest()
 let waitingToStart = true
@@ -407,8 +412,8 @@ function saveBest(v: number) {
 }
 
 function updateScoreDisplay() {
-  scoreNowEl.textContent = String(score)
-  scoreBestEl.textContent = String(best)
+  if (scoreNowEl) scoreNowEl.textContent = String(score)
+  if (scoreBestEl) scoreBestEl.textContent = String(best)
 }
 
 const cellsEqual = (a: Cell, b: Cell) => a.i === b.i && a.j === b.j
@@ -425,7 +430,7 @@ function reset() {
   score = 0
   alive = true
   paused = false
-  setOverlayVisible(pauseOverlay, false)
+  if (pauseOverlay) setOverlayVisible(pauseOverlay, false)
   chompStart = 0
   foodDropStart = 0
   explodeStart = 0
@@ -492,7 +497,7 @@ function step() {
 function gameOver() {
   alive = false
   paused = false
-  setOverlayVisible(pauseOverlay, false)
+  if (pauseOverlay) setOverlayVisible(pauseOverlay, false)
   if (tickHandle !== null) {
     window.clearInterval(tickHandle)
     tickHandle = null
@@ -500,7 +505,7 @@ function gameOver() {
   triggerExplosion()
   restartTimeout = window.setTimeout(() => {
     waitingToStart = true
-    startCta.removeAttribute('display')
+    startCta?.removeAttribute('display')
     reset()
   }, EXPLODE_DURATION_MS + 300)
 }
@@ -550,12 +555,12 @@ function render() {
           '</g>'
       )
     }
-    board.innerHTML = parts.join('')
+    if (board) board.innerHTML = parts.join('')
     return
   }
 
   if (!alive) {
-    board.innerHTML = parts.join('')
+    if (board) board.innerHTML = parts.join('')
     return
   }
 
@@ -590,7 +595,7 @@ function render() {
     )
   }
 
-  board.innerHTML = parts.join('')
+  if (board) board.innerHTML = parts.join('')
 }
 
 function updateViewBox() {
@@ -604,7 +609,7 @@ function updateViewBox() {
   const minY = topY - padY
   const w = rightX - leftX + padX * 2
   const h = botY - topY + padY * 2
-  svg.setAttribute('viewBox', minX + ' ' + minY + ' ' + w + ' ' + h)
+  svg?.setAttribute('viewBox', minX + ' ' + minY + ' ' + w + ' ' + h)
 }
 
 // ------- INPUT -------
@@ -613,6 +618,7 @@ let keyboardUntil = 0
 let mousePos: { x: number; y: number } | null = null
 
 function mouseToSvg(e: MouseEvent): { x: number; y: number } | null {
+  if (!svg) return null
   const pt = svg.createSVGPoint()
   pt.x = e.clientX
   pt.y = e.clientY
@@ -630,8 +636,8 @@ function onMouseLeave() {
   mousePos = null
 }
 
-svg.addEventListener('mousemove', onMouseMove)
-svg.addEventListener('mouseleave', onMouseLeave)
+svg?.addEventListener('mousemove', onMouseMove)
+svg?.addEventListener('mouseleave', onMouseLeave)
 
 function mouseTargetDir(): Dir | null {
   if (!mousePos || !snake) return null
@@ -670,7 +676,7 @@ function onKeyDown(e: KeyboardEvent) {
     e.preventDefault()
     if (alive) {
       paused = !paused
-      setOverlayVisible(pauseOverlay, paused)
+      if (pauseOverlay) setOverlayVisible(pauseOverlay, paused)
     }
     return
   }
@@ -683,7 +689,7 @@ function onKeyDown(e: KeyboardEvent) {
   if (turn) nextDir = turn
 }
 
-document.addEventListener('keydown', onKeyDown)
+if (canStart) document.addEventListener('keydown', onKeyDown)
 
 function startGame() {
   if (restartTimeout !== null) {
@@ -691,7 +697,7 @@ function startGame() {
     restartTimeout = null
   }
   waitingToStart = false
-  startCta.setAttribute('display', 'none')
+  startCta?.setAttribute('display', 'none')
   if (tickHandle !== null) window.clearInterval(tickHandle)
   tickHandle = window.setInterval(step, TICK_MS)
 }
@@ -710,17 +716,18 @@ function destroy() {
     animationHandle = null
   }
   document.removeEventListener('keydown', onKeyDown)
-  svg.removeEventListener('mousemove', onMouseMove)
-  svg.removeEventListener('mouseleave', onMouseLeave)
-  svg.removeEventListener('click', onSvgClick)
+  svg?.removeEventListener('mousemove', onMouseMove)
+  svg?.removeEventListener('mouseleave', onMouseLeave)
+  svg?.removeEventListener('click', onSvgClick)
 }
 
 function onSvgClick() {
   if (waitingToStart) startGame()
 }
 
-svg.addEventListener('click', onSvgClick)
-
-updateViewBox()
-reset()
-window.addEventListener('pagehide', destroy)
+if (canStart) {
+  svg.addEventListener('click', onSvgClick)
+  updateViewBox()
+  reset()
+  window.addEventListener('pagehide', destroy)
+}

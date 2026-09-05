@@ -360,7 +360,7 @@ export function applyLayerState(
 
   if (state.order) {
     const ids = state.order
-      .map((index) => layers[index]?.id)
+      .map((index) => layers.at(index)?.id)
       .filter((id): id is string => id !== undefined)
     if (ids.length > 0) ops.setLayerOrder(ids)
   }

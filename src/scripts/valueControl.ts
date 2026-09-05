@@ -18,9 +18,7 @@ export function nextValueForLinkedTarget(params: {
   target: IBaseWidget
   linkedWidgets: IBaseWidget[] | undefined
   nodeId: unknown
-  isPartialExecution: boolean | undefined
 }): IBaseWidget['value'] | undefined {
-  if (params.isPartialExecution) return undefined
   const linked = params.linkedWidgets
   if (!linked) return undefined
 

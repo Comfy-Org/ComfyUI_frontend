@@ -9,8 +9,11 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { LLink } from '@/lib/litegraph/src/LLink'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useLinkStore } from '@/stores/linkStore'
 import { toLinkId } from '@/types/linkId'
+import { toNodeId } from '@/types/nodeId'
 import { createMockCanvas2DContext } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock('@/renderer/core/layout/store/layoutStore')
@@ -19,6 +22,7 @@ function createMockCtx(): CanvasRenderingContext2D {
   return createMockCanvas2DContext({
     translate: vi.fn(),
     scale: vi.fn(),
+    drawImage: vi.fn(),
     fillText: vi.fn(),
     measureText: vi.fn().mockReturnValue({ width: 50 }),
     closePath: vi.fn(),
@@ -94,6 +98,9 @@ describe('drawConnections', () => {
     canvas = new LGraphCanvas(canvasElement, graph, {
       skip_render: true
     })
+    Object.defineProperty(canvas.ctx, 'canvas', { value: canvasElement })
+    canvas.bgctx = createMockCtx()
+    Object.defineProperty(canvas.bgctx, 'canvas', { value: canvas.bgcanvas })
 
     LiteGraph.vueNodesMode = false
     vi.mocked(layoutStore.getNodeLayout).mockReturnValue(null)
@@ -162,7 +169,7 @@ describe('drawConnections', () => {
     expect(arrangeSpy).not.toHaveBeenCalled()
   })
 
-  it('renders links in target z-order instead of generated id order', () => {
+  it('preserves target z-order for standalone and both-layer draws', () => {
     const sourceNode = new LGraphNode('Source')
     sourceNode.pos = [100, 100]
     sourceNode.addOutput('out', 'STRING')
@@ -197,7 +204,337 @@ describe('drawConnections', () => {
     canvas.drawConnections(createMockCtx())
 
     expect([...canvas.renderedPaths]).toEqual([secondLink, firstLink])
+
+    canvas.draw(true, true)
+
+    expect([...canvas.renderedPaths]).toEqual([secondLink, firstLink])
   })
+
+  it('uses the new graph render order when a render callback swaps graphs', () => {
+    const oldSource = new LGraphNode('Old source')
+    oldSource.addOutput('out', 'STRING')
+    graph.add(oldSource)
+    const oldTarget = new LGraphNode('Old target')
+    oldTarget.addInput('in', 'STRING')
+    graph.add(oldTarget)
+    createTestLink(graph, oldSource, 0, oldTarget, 0)
+
+    const newGraph = new LGraph()
+    const newSource = new LGraphNode('New source')
+    newSource.addOutput('out', 'STRING')
+    newGraph.add(newSource)
+    const newTarget = new LGraphNode('New target')
+    newTarget.addInput('in', 'STRING')
+    newGraph.add(newTarget)
+    createTestLink(newGraph, newSource, 0, newTarget, 0)
+
+    const oldTargetPosition = vi.spyOn(oldTarget, 'getInputPos')
+    const newTargetPosition = vi.spyOn(newTarget, 'getInputPos')
+    vi.spyOn(canvas, 'renderLink').mockImplementation(() => {})
+    const drawNode = vi.spyOn(canvas, 'drawNode').mockImplementation(() => {})
+    canvas.bgcanvas = canvas.canvas
+    canvas.bgctx = canvas.ctx
+    canvas.visible_area.set([0, 0, 800, 600])
+    canvas.onRenderBackground = () => {
+      canvas.setGraph(newGraph)
+      return false
+    }
+
+    canvas.draw(true, true)
+
+    expect(oldTargetPosition).not.toHaveBeenCalled()
+    expect(newTargetPosition).toHaveBeenCalled()
+    expect(drawNode.mock.calls.map(([node]) => node)).toEqual([
+      newSource,
+      newTarget
+    ])
+  })
+
+  it('defers a graph swap in onRender until its background can be drawn', () => {
+    const oldSource = new LGraphNode('Old source')
+    oldSource.addOutput('out', 'STRING')
+    graph.add(oldSource)
+    const oldTarget = new LGraphNode('Old target')
+    oldTarget.addInput('in', 'STRING')
+    graph.add(oldTarget)
+    createTestLink(graph, oldSource, 0, oldTarget, 0)
+
+    const newGraph = new LGraph()
+    const newSource = new LGraphNode('New source')
+    newSource.addOutput('out', 'STRING')
+    newGraph.add(newSource)
+    const newTarget = new LGraphNode('New target')
+    newTarget.addInput('in', 'STRING')
+    newGraph.add(newTarget)
+    createTestLink(newGraph, newSource, 0, newTarget, 0)
+    const oldTargetPosition = vi.spyOn(oldTarget, 'getInputPos')
+    const newTargetPosition = vi.spyOn(newTarget, 'getInputPos')
+    vi.spyOn(canvas, 'renderLink').mockImplementation(() => {})
+    const drawNode = vi.spyOn(canvas, 'drawNode').mockImplementation(() => {})
+    canvas.visible_area.set([0, 0, 800, 600])
+    canvas.onRender = () => canvas.setGraph(newGraph)
+
+    canvas.draw(true, true)
+
+    expect(oldTargetPosition).toHaveBeenCalled()
+    expect(newTargetPosition).not.toHaveBeenCalled()
+    expect(drawNode).not.toHaveBeenCalled()
+
+    oldTargetPosition.mockClear()
+    drawNode.mockClear()
+    canvas.draw(true, true)
+
+    expect(oldTargetPosition).not.toHaveBeenCalled()
+    expect(newTargetPosition).toHaveBeenCalled()
+    expect(drawNode.mock.calls.map(([node]) => node)).toEqual([
+      newSource,
+      newTarget
+    ])
+  })
+
+  it('rejects a cached render order from a replaced graph', () => {
+    const oldSource = new LGraphNode('Old source')
+    oldSource.id = toNodeId(1)
+    oldSource.addOutput('out', 'STRING')
+    graph.add(oldSource)
+    const oldTarget = new LGraphNode('Old target')
+    oldTarget.id = toNodeId(2)
+    oldTarget.addInput('in', 'STRING')
+    graph.add(oldTarget)
+    createTestLink(graph, oldSource, 0, oldTarget, 0)
+
+    const newGraph = new LGraph()
+    const newSource = new LGraphNode('New source')
+    newSource.id = toNodeId(1)
+    newSource.addOutput('out', 'STRING')
+    newGraph.add(newSource)
+    const newTarget = new LGraphNode('New target')
+    newTarget.id = toNodeId(2)
+    newTarget.addInput('in', 'STRING')
+    newGraph.add(newTarget)
+    createTestLink(newGraph, newSource, 0, newTarget, 0)
+
+    const oldTargetPosition = vi.spyOn(oldTarget, 'getInputPos')
+    const newTargetPosition = vi.spyOn(newTarget, 'getInputPos')
+    vi.spyOn(canvas, 'renderLink').mockImplementation(() => {})
+    canvas.setGraph(newGraph)
+
+    canvas.drawConnections(createMockCtx(), [oldSource, oldTarget], graph)
+
+    expect(oldTargetPosition).not.toHaveBeenCalled()
+    expect(newTargetPosition).toHaveBeenCalled()
+  })
+
+  it.for([245, 500, 1_000])(
+    'builds render order once for a both-layer draw at %i nodes',
+    { timeout: 10_000 },
+    (nodeCount) => {
+      for (let index = 0; index < nodeCount; index++) {
+        const node = new LGraphNode(`Node ${index}`)
+        vi.spyOn(node, 'updateArea').mockImplementation(() => {})
+        graph.add(node)
+      }
+      canvas.visible_area.set([0, 0, 800, 600])
+      vi.mocked(layoutStore.getNodeLayout).mockClear()
+      const sort = vi.spyOn(Array.prototype, 'sort')
+
+      canvas.draw(true, true)
+
+      expect(layoutStore.getNodeLayout).toHaveBeenCalledTimes(nodeCount)
+      expect(
+        sort.mock.instances.filter(
+          (items) => Array.isArray(items) && items.length === nodeCount
+        )
+      ).toHaveLength(1)
+    }
+  )
+
+  it('shares render order with same-canvas and links-on-top passes', () => {
+    const sourceNode = new LGraphNode('Source')
+    sourceNode.addOutput('out', 'STRING')
+    graph.add(sourceNode)
+    const firstTarget = new LGraphNode('First target')
+    firstTarget.addInput('in', 'STRING')
+    graph.add(firstTarget)
+    const secondTarget = new LGraphNode('Second target')
+    secondTarget.addInput('in', 'STRING')
+    graph.add(secondTarget)
+    const secondLink = createTestLink(graph, sourceNode, 0, secondTarget, 0)
+    const firstLink = createTestLink(graph, sourceNode, 0, firstTarget, 0)
+    vi.mocked(layoutStore.getNodeLayout).mockImplementation(
+      (_graphId, nodeId) => ({
+        id: nodeId,
+        position: { x: 0, y: 0 },
+        size: { width: 100, height: 100 },
+        zIndex: nodeId === firstTarget.id ? 2 : 1,
+        visible: true,
+        bounds: { x: 0, y: 0, width: 100, height: 100 }
+      })
+    )
+    canvas.bgcanvas = canvas.canvas
+    canvas.bgctx = canvas.ctx
+    graph.config.links_ontop = true
+    canvas.visible_area.set([0, 0, 800, 600])
+    vi.mocked(layoutStore.getNodeLayout).mockClear()
+    vi.spyOn(canvas, 'renderLink').mockImplementation(() => {})
+
+    canvas.draw(true, true)
+
+    expect(layoutStore.getNodeLayout).toHaveBeenCalledTimes(3)
+    expect([...canvas.renderedPaths]).toEqual([secondLink, firstLink])
+  })
+
+  it('looks up each input and preserves rendered link identity', () => {
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'INT')
+    graph.add(source)
+
+    const targets = Array.from({ length: 2 }, (_, index) => {
+      const target = new LGraphNode(`Target ${index}`)
+      target.addInput('connected', 'INT')
+      target.addInput('unconnected', 'INT')
+      graph.add(target)
+      return target
+    })
+    const expectedLinks = targets.map((target) =>
+      createTestLink(graph, source, 0, target, 0)
+    )
+    const inputLookup = vi.spyOn(useLinkStore(), 'getInputSlotLink')
+    const resolveLink = vi.spyOn(graph, 'getLink')
+    canvas.visible_area.set([0, 0, 800, 600])
+    vi.spyOn(canvas, 'renderLink').mockImplementation(() => {})
+
+    canvas.drawConnections(createMockCtx())
+
+    expect(inputLookup).toHaveBeenCalledTimes(4)
+    expect(resolveLink).toHaveBeenCalledTimes(2)
+    const renderedLinks = [...canvas.renderedPaths]
+    expect(renderedLinks).toHaveLength(expectedLinks.length)
+    for (const [index, expectedLink] of expectedLinks.entries()) {
+      expect(renderedLinks[index]).toBe(expectedLink)
+    }
+
+    const scopes = inputLookup.mock.calls.map(([scope]) => scope)
+    expect(new Set(scopes).size).toBe(1)
+  })
+
+  it.for([245, 500, 1_000])(
+    'reuses render order across both passes at %i nodes',
+    { timeout: 10_000 },
+    (nodeCount) => {
+      for (let index = 0; index < nodeCount; index++) {
+        const node = new LGraphNode(`Node ${index}`)
+        vi.spyOn(node, 'updateArea').mockImplementation(() => {})
+        graph.add(node)
+      }
+      canvas.visible_area.set([0, 0, 800, 600])
+      vi.mocked(layoutStore.getNodeLayout).mockClear()
+      const sort = vi.spyOn(Array.prototype, 'sort')
+
+      canvas.computeVisibleNodes()
+      const foregroundLayoutReads = vi.mocked(layoutStore.getNodeLayout).mock
+        .calls.length
+      const foregroundSorts = sort.mock.calls.length
+
+      canvas.drawConnections(createMockCtx())
+      const totalLayoutReads = vi.mocked(layoutStore.getNodeLayout).mock.calls
+        .length
+
+      expect(foregroundLayoutReads).toBe(nodeCount)
+      expect(totalLayoutReads - foregroundLayoutReads).toBe(0)
+      expect(foregroundSorts).toBe(1)
+      expect(
+        sort.mock.instances.filter(
+          (items) => Array.isArray(items) && items.length === nodeCount
+        )
+      ).toHaveLength(1)
+    }
+  )
+
+  it.for([
+    { connectedRatio: 0, fanOut: 1, hiddenEvery: 0 },
+    { connectedRatio: 0.25, fanOut: 1, hiddenEvery: 2 },
+    { connectedRatio: 1, fanOut: 8, hiddenEvery: 3 }
+  ])(
+    'scans inputs once and preserves rendered link identity at $connectedRatio occupancy and $fanOut fan-out',
+    ({ connectedRatio, fanOut, hiddenEvery }) => {
+      const nodeCount = 8
+      const inputsPerNode = 4
+      const targets = Array.from({ length: nodeCount }, (_, nodeIndex) => {
+        const target = new LGraphNode(`Target ${nodeIndex}`)
+        target.pos = [300, nodeIndex * 80]
+        for (let slot = 0; slot < inputsPerNode; slot++) {
+          target.addInput(`in ${slot}`, 'INT')
+        }
+        graph.add(target)
+        return target
+      })
+      const allInputs = targets.flatMap((target) =>
+        target.inputs.map((_, slot) => ({ target, slot }))
+      )
+      const connectedCount = Math.floor(allInputs.length * connectedRatio)
+      const sources = Array.from(
+        { length: Math.ceil(connectedCount / fanOut) },
+        (_, sourceIndex) => {
+          const source = new LGraphNode(`Source ${sourceIndex}`)
+          source.pos = [0, sourceIndex * 80]
+          source.addOutput('out', 'INT')
+          graph.add(source)
+          return source
+        }
+      )
+      const expectedLinks = allInputs
+        .slice(0, connectedCount)
+        .map(({ target, slot }, index) =>
+          createTestLink(
+            graph,
+            sources[Math.floor(index / fanOut)],
+            0,
+            target,
+            slot
+          )
+        )
+
+      vi.mocked(layoutStore.getNodeLayout).mockImplementation(
+        (_graphId, nodeId) => {
+          const nodeIndex = targets.findIndex((node) => node.id === nodeId)
+          return {
+            id: nodeId,
+            position: { x: 0, y: 0 },
+            size: { width: 100, height: 100 },
+            zIndex: nodeIndex,
+            visible:
+              !hiddenEvery || nodeIndex < 0 || nodeIndex % hiddenEvery !== 0,
+            bounds: { x: 0, y: 0, width: 100, height: 100 }
+          }
+        }
+      )
+      const linkStore = useLinkStore()
+      const inputLookup = vi.spyOn(linkStore, 'getInputSlotLink')
+      const resolveLink = vi.spyOn(graph, 'getLink')
+      canvas.visible_area.set([0, 0, 800, 3_000])
+      vi.spyOn(canvas, 'renderLink').mockImplementation(() => {})
+
+      canvas.drawConnections(createMockCtx())
+
+      const scannedInputs = allInputs.length
+      const scopes = new Set(inputLookup.mock.calls.map(([scope]) => scope))
+      expect(inputLookup).toHaveBeenCalledTimes(scannedInputs)
+      expect(resolveLink).toHaveBeenCalledTimes(connectedCount)
+      expect([...canvas.renderedPaths]).toEqual(expectedLinks)
+      expect(scopes.size).toBe(1)
+      expect(new Set(expectedLinks.map((link) => link.origin_id)).size).toBe(
+        connectedCount ? Math.ceil(connectedCount / fanOut) : 0
+      )
+
+      const compatibilityIds = allInputs.map(
+        ({ target, slot }) => target.inputs[slot].link
+      )
+      expect(compatibilityIds.filter((id) => id != null)).toEqual(
+        expectedLinks.map((link) => link.id)
+      )
+    }
+  )
 
   it('connects, draws, and serializes without deprecation warnings', () => {
     const sourceNode = new LGraphNode('Source')
@@ -230,6 +567,33 @@ describe('drawConnections', () => {
     } finally {
       warningCallbacks.mockRestore()
     }
+  })
+
+  it('isolates subgraph rendering from root-graph topology', () => {
+    const subgraph = createTestSubgraph({ nodeCount: 2 })
+    const [subgraphSource, subgraphTarget] = subgraph.nodes
+    const subgraphLink = subgraphSource.connect(0, subgraphTarget, 0)!
+
+    const rootSource = new LGraphNode('Root source')
+    rootSource.addOutput('out', '*')
+    subgraph.rootGraph.add(rootSource)
+    const rootTarget = new LGraphNode('Root target')
+    rootTarget.addInput('in', '*')
+    subgraph.rootGraph.add(rootTarget)
+    const rootLink = rootSource.connect(0, rootTarget, 0)!
+    canvas.setGraph(subgraph)
+    canvas.visible_area.set([0, 0, 800, 600])
+    const inputLookup = vi.spyOn(useLinkStore(), 'getInputSlotLink')
+    vi.spyOn(canvas, 'renderLink').mockImplementation(() => {})
+    inputLookup.mockClear()
+
+    canvas.drawConnections(createMockCtx())
+
+    expect([...canvas.renderedPaths]).toEqual([subgraphLink])
+    expect(canvas.renderedPaths).not.toContain(rootLink)
+    expect(
+      new Set(inputLookup.mock.calls.map(([scope]) => scope.owningGraphId))
+    ).toEqual(new Set([subgraph.id]))
   })
   it('positions widget-input slots when display name differs from slot.widget.name', () => {
     const sourceNode = new LGraphNode('Source')

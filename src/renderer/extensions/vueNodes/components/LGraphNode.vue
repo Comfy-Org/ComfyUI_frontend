@@ -10,7 +10,7 @@
     :data-ghost="nodeData.flags?.ghost || undefined"
     :class="
       cn(
-        'group/node lg-node absolute isolate text-xs',
+        'group/node lg-node absolute isolate touch-none text-xs',
         'flex flex-col contain-layout contain-style',
         isLightTheme
           ? 'drop-shadow-md drop-shadow-black/15'
@@ -417,7 +417,7 @@ async function nodeOnPointerdown(event: PointerEvent) {
   const node = resolveLGraphNode()
   if (event.altKey && node) {
     const result = LGraphCanvas.cloneNodes([node])
-    if (result?.created?.length) {
+    if (result?.created.length) {
       const [newNode] = result.created
       const newNodeId =
         typeof newNode.id === 'number' ? toNodeId(newNode.id) : newNode.id
@@ -666,7 +666,7 @@ const showAdvancedInputsButton = computed(() => {
   const hasAdvancedWidgets = widgetIds.value.some((id) => {
     const renderState = widgetValueStore.getWidgetRenderState(id)
     const widgetState = widgetValueStore.getWidget(id)
-    return renderState?.advanced ?? widgetState?.options?.advanced
+    return renderState?.advanced ?? widgetState?.options.advanced
   })
   const alwaysShowAdvanced = settingStore.get(
     'Comfy.Node.AlwaysShowAdvancedWidgets'

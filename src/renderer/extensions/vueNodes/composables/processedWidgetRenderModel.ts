@@ -136,13 +136,16 @@ function buildSlotMetadata(
       linked,
       originNodeId: link?.originNodeId,
       originOutputName: link
-        ? originNode?.outputs?.[link.originSlot]?.name
+        ? originNode?.outputs[link.originSlot]?.name
         : undefined,
       promoted: input.widgetId !== undefined,
       type: String(input.type)
     }
-    if (input.name) metadata.set(input.name, slotInfo)
-    if (input.widget?.name) metadata.set(input.widget.name, slotInfo)
+    const widgetName = input.widget?.name
+    if (widgetName) metadata.set(widgetName, slotInfo)
+    else if ((input.widgetId !== undefined || linked) && input.name) {
+      metadata.set(input.name, slotInfo)
+    }
   })
   return metadata
 }
@@ -226,7 +229,7 @@ function createWidgetUpdateHandler({
       live.node.widgets?.forEach((w) => w.triggerDraw?.())
     }
 
-    const options = { min: widgetOptions?.min, max: widgetOptions?.max }
+    const options = { min: widgetOptions.min, max: widgetOptions.max }
     if (errorTarget) {
       executionErrorStore.clearWidgetRelatedErrors(
         errorTarget.executionId,
@@ -321,11 +324,9 @@ function widgetNodeLocatorId(
     if (sourceLocator) return sourceLocator
   }
   if (!bareWidgetId) return undefined
-  return (
-    createNodeLocatorId(
-      subgraphIdFromState(ctx.nodeData, ctx.rootGraphId),
-      bareWidgetId
-    ) ?? undefined
+  return createNodeLocatorId(
+    subgraphIdFromState(ctx.nodeData, ctx.rootGraphId),
+    bareWidgetId
   )
 }
 
@@ -358,7 +359,7 @@ function processWidget(
   const liveWidget = ctx.liveWidgets.get(id)
   const type = liveWidget?.type ?? widgetState.type
   const renderState = ctx.widgetValueStore.getWidgetRenderState(id)
-  const options: IWidgetOptions = { ...(widgetState.options ?? {}) }
+  const options: IWidgetOptions = { ...widgetState.options }
   if (options.advanced === undefined) options.advanced = renderState?.advanced
   if (!shouldRenderAsVue({ type, options })) return null
 
@@ -438,8 +439,10 @@ function processWidget(
     widgetId: id,
     renderKey: `${id}:${type}`,
     vueComponent:
-      getComponent(type) ||
-      (renderState?.isDOMWidget ? WidgetDOM : WidgetLegacy),
+      !renderState?.isDOMWidget && typeof liveWidget?.draw === 'function'
+        ? WidgetLegacy
+        : getComponent(type) ||
+          (renderState?.isDOMWidget ? WidgetDOM : WidgetLegacy),
     simplified,
     visible,
     updateHandler,

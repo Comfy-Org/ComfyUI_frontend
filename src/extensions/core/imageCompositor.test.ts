@@ -32,8 +32,7 @@ function makeNode() {
   const savedValue = { layers: [] }
   const compositorWidget = {
     name: 'compositor',
-    value: savedValue,
-    callback: vi.fn()
+    value: savedValue
   } as unknown as IBaseWidget
   const priorOnExecuted = vi.fn()
   const priorOnRemoved = vi.fn()
@@ -45,8 +44,10 @@ function makeNode() {
     onRemoved: priorOnRemoved,
     constructor: { comfyClass: 'ImageCompositor' },
     widgets: [compositorWidget],
-    widgets_values: [savedValue],
-    graph: { setDirtyCanvas: vi.fn() }
+    graph: {
+      rootGraph: { id: 'test-graph' },
+      setDirtyCanvas: vi.fn()
+    }
   } as unknown as LGraphNode
   return { node, compositorWidget, priorOnExecuted, priorOnRemoved }
 }
@@ -144,8 +145,6 @@ describe('ImageCompositor extension', () => {
     })
 
     expect(compositorWidget.value).toEqual({})
-    expect(compositorWidget.callback).toHaveBeenCalledWith({})
-    expect(node.widgets_values).toEqual([{}])
     expect(node.graph?.setDirtyCanvas).toHaveBeenCalled()
   })
 

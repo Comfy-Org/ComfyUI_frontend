@@ -47,7 +47,6 @@ test.describe('Numeric combo stepping', { tag: ['@widget', '@canvas'] }, () => {
         const node = window.app!.canvas.graph!.getNodeById(nodeId)
         if (!node) throw new Error(`Node ${nodeId} not found.`)
         const widget = node.widgets![widgetIndex]
-        if (!widget) throw new Error(`Widget ${widgetIndex} not found.`)
 
         const [nodeX, nodeY, nodeWidth] = node.getBounding()
         return window.app!.canvasPosToClientPos([

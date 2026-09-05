@@ -2,6 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
 
@@ -36,20 +37,21 @@ function fanOut(count: number) {
   return { graph, source, targets }
 }
 
-describe('legacy slot link removal', () => {
+describe('legacy slot link compatibility', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  it('propagates input.link = null to the far end of the link', () => {
-    const { source, target } = connectedPair()
+  it('disconnects when legacy code assigns input.link = null', () => {
+    const { source, target, link } = connectedPair()
 
     target.inputs[0].link = null
 
     expect(target.isInputConnected(0)).toBe(false)
     expect(source.isOutputConnected(0)).toBe(false)
     expect(source.outputs[0].links).toBeNull()
-    expect(source.getOutputNodes(0) ?? []).toHaveLength(0)
+    expect(source.getOutputNodes(0)).toBeNull()
+    expect(target.graph!.links.has(link.id)).toBe(false)
   })
 
   it('disconnects the links a filter-and-reassign drops', () => {
@@ -125,11 +127,20 @@ describe('legacy slot link additions', () => {
     const [id] = output.links!
 
     output.links = []
-    output.links!.push(id)
+    output.links.push(id)
 
     expect(source.isOutputConnected(0)).toBe(false)
     expect(target.isInputConnected(0)).toBe(false)
     expect(output.links).toEqual([])
+  })
+
+  it('normalises a copied slot before applying null-assignment compatibility', () => {
+    const { source, target } = connectedPair()
+    target.inputs[0] = { ...target.inputs[0] }
+
+    target.inputs[0].link = null
+
+    expect(source.isOutputConnected(0)).toBe(false)
   })
 })
 
@@ -225,6 +236,25 @@ describe('comfyui-promptchain indexed slot replacement', () => {
     expect(forced.target.inputs.map((input) => input.name)).toEqual(
       layoutBefore
     )
+  })
+
+  it('reads the live link id back through a spread copy', () => {
+    const { target } = autogrowChain(2, [0])
+    const linkId = target.getInputLink(0)!.id
+
+    const copy: INodeInputSlot = { ...target.inputs[0] }
+    target.inputs[0] = copy
+
+    expect(target.inputs[0].link).toBe(linkId)
+  })
+
+  it('keeps connected inputs when the pack re-reads slot.link', () => {
+    const { target } = autogrowChain(4, [0, 1, 2])
+
+    replaceSlotsWithLabelledCopies(target)
+    trimEmptyAutogrowSlots(target)
+
+    expect(target.inputs).toHaveLength(4)
   })
 
   it('retains every link in the serialized workflow after trimming slots', () => {

@@ -12,6 +12,7 @@ import { warnDeprecated } from '@/lib/litegraph/src/utils/feedback'
 import { findComboValueIndex } from '@/lib/litegraph/src/utils/widget'
 
 import { BaseSteppedWidget } from './BaseSteppedWidget'
+import { extensionValue } from './BaseWidget'
 import type { WidgetEventOptions } from './BaseWidget'
 
 /**
@@ -59,9 +60,11 @@ export class ComboWidget
       }
     }
 
-    const { values: rawValues } = this.options
+    const rawValues = extensionValue(this.options.values)
     if (rawValues) {
-      const values = typeof rawValues === 'function' ? rawValues() : rawValues
+      const values = extensionValue(
+        typeof rawValues === 'function' ? rawValues() : rawValues
+      )
 
       if (values && !Array.isArray(values)) {
         return values[this.value]
@@ -71,8 +74,11 @@ export class ComboWidget
   }
 
   private getValues(node: LGraphNode): Values {
-    const { values } = this.options
-    if (values == null) throw new Error('[ComboWidget]: values is required')
+    const values = extensionValue(this.options.values)
+    if (values == null) {
+      console.error('[ComboWidget]: values is required')
+      return []
+    }
 
     return typeof values === 'function' ? values(this, node) : values
   }
@@ -170,9 +176,7 @@ export class ComboWidget
       const getOptionLabel = this.options.getOptionLabel
       for (const value of values_list) {
         try {
-          const label = getOptionLabel
-            ? getOptionLabel(String(value))
-            : String(value)
+          const label = getOptionLabel(String(value))
           menu.addItem(label, toContextMenuValue(value, label), menuOptions)
         } catch (err) {
           console.error('Failed to map value:', err)
@@ -189,7 +193,7 @@ export class ComboWidget
       scale: Math.max(1, canvas.ds.scale),
       event: e,
       className: 'dark',
-      callback: (value?: string | number | IContextMenuValue<unknown>) => {
+      callback: (value?: string | number | IContextMenuValue) => {
         if (value === undefined || typeof value === 'object') return
         this.setValue(
           values != values_list ? text_values.indexOf(value) : value,
