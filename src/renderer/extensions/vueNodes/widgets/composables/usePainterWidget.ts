@@ -5,12 +5,9 @@ import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 
 export const usePainterWidget = (): ComfyWidgetConstructorV2 => {
   return (node: LGraphNode, inputSpec: InputSpecV2): IBaseWidget => {
-    return node.addWidget(
-      'painter',
-      inputSpec.name,
-      (inputSpec.default as string) ?? '',
-      null,
-      { serialize: true, canvasOnly: false }
-    )
+    return node.addWidget('painter', inputSpec.name, inputSpec.default, null, {
+      serialize: true,
+      canvasOnly: false
+    })
   }
 }

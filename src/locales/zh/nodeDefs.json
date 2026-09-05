@@ -6433,7 +6433,7 @@
     }
   },
   "GetImageSize": {
-    "description": "返回图像的宽度和高度，并原样传递图像。",
+    "description": "返回图像的宽度、高度和批次大小。",
     "display_name": "获取图像尺寸",
     "inputs": {
       "image": {
@@ -12706,6 +12706,84 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MetaMuseImageEditApi": {
+    "description": "使用 Meta 的 Muse Image 模型，根据文本提示词编辑或合并最多 10 张参考图像。",
+    "display_name": "Meta Muse 图像编辑",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "要使用的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_enable_image_search": {
+        "name": "enable_image_search"
+      },
+      "model_enable_shell": {
+        "name": "enable_shell"
+      },
+      "model_enable_web_search": {
+        "name": "enable_web_search"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_strength": {
+        "name": "reasoning_strength"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MetaMuseImageTextToImageApi": {
+    "description": "使用 Meta 的 Muse Image 模型根据文本提示词生成图像，该模型会在渲染前对提示词进行推理。",
+    "display_name": "Meta Muse 文生图",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "要使用的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_enable_image_search": {
+        "name": "enable_image_search"
+      },
+      "model_enable_shell": {
+        "name": "enable_shell"
+      },
+      "model_enable_web_search": {
+        "name": "enable_web_search"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_strength": {
+        "name": "reasoning_strength"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -23492,10 +23570,12 @@
         "name": "原地动画"
       },
       "bake": {
-        "name": "烘焙"
+        "name": "烘焙",
+        "tooltip": "将高级材质烘焙到基础纹理中，以获得更广泛的兼容性。"
       },
       "export_orientation": {
-        "name": "导出朝向"
+        "name": "导出朝向",
+        "tooltip": "导出模型的前向轴。default 保留 Tripo 的 +x。"
       },
       "export_vertex_colors": {
         "name": "导出顶点色"
@@ -23504,13 +23584,15 @@
         "name": "面数限制"
       },
       "fbx_preset": {
-        "name": "fbx预设"
+        "name": "fbx预设",
+        "tooltip": "FBX 兼容性预设。bake_scale 会将缩放变换烘焙到几何体中。"
       },
       "flatten_bottom": {
         "name": "平滑底部"
       },
       "flatten_bottom_threshold": {
-        "name": "平滑底部阈值"
+        "name": "平滑底部阈值",
+        "tooltip": "与 flatten_bottom 配合使用的底部压平深度。"
       },
       "force_symmetry": {
         "name": "强制对称"
@@ -23543,15 +23625,66 @@
         "name": "纹理大小"
       },
       "with_animation": {
-        "name": "加入动画"
+        "name": "加入动画",
+        "tooltip": "保留绑定或重定向模型的骨架和动画。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": "已转换为所请求格式的模型。Tripo 提供的 OBJ 为 ZIP 压缩包（网格、材质和纹理）。"
+      }
+    }
+  },
+  "TripoEditMultiviewNode": {
+    "description": "通过针对各视图的文本指令编辑 Tripo：图像转多视图结果的视图。未提供指令的视图将保持不变。将图像输入 Tripo：多视图转模型；编辑后的集合无法再次编辑。",
+    "display_name": "Tripo：编辑多视图",
+    "inputs": {
+      "back_prompt": {
+        "name": "back_prompt"
+      },
+      "front_prompt": {
+        "name": "front_prompt"
+      },
+      "left_prompt": {
+        "name": "left_prompt"
+      },
+      "multiview_task_id": {
+        "name": "multiview_task_id"
+      },
+      "right_prompt": {
+        "name": "right_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "前视图",
+        "tooltip": null
+      },
+      "1": {
+        "name": "左侧",
+        "tooltip": null
+      },
+      "2": {
+        "name": "后方",
+        "tooltip": null
+      },
+      "3": {
+        "name": "右侧",
+        "tooltip": null
       }
     }
   },
   "TripoImageToModelNode": {
     "display_name": "Tripo：图像转模型",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "将带纹理的模型缩放至以米为单位的真实尺寸。Tripo 将尺寸存储为模型的场景变换，并在模型转换、绑定骨骼或重定向时将其烘焙；未启用纹理时将被忽略。"
+      },
       "face_limit": {
-        "name": "面数限制"
+        "name": "面数限制",
+        "tooltip": "最大面数。-1 让 Tripo 自适应选择（v3.x standard 约 140 万面，detailed 约 200 万面）。Tripo 会静默限制：v2.5 为 500,000，四边形网格为 150,000。"
       },
       "geometry_quality": {
         "name": "几何质量"
@@ -23570,22 +23703,31 @@
         "name": "朝向"
       },
       "pbr": {
-        "name": "PBR"
+        "name": "PBR",
+        "tooltip": "PBR 材质贴图（基础颜色、金属度、粗糙度、法线）。需要启用 texture。"
       },
       "quad": {
-        "name": "四边形"
+        "name": "四边形",
+        "tooltip": "四边形网格输出。Tripo 以 FBX 格式提供四边形网格，因此结果会出现在 FBX 输出中，而 GLB 输出保持为空。"
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "采用干净手工风格拓扑的低多边形网格（500-20,000 面；四边形为 500-10,000 面）。最适合简单主体；复杂主体可能失败。"
       },
       "style": {
-        "name": "风格"
+        "name": "风格",
+        "tooltip": "Tripo 已不再支持，将被忽略。为兼容旧工作流而保留。"
       },
       "texture": {
-        "name": "纹理"
+        "name": "纹理",
+        "tooltip": "生成纹理贴图。关闭时返回无材质几何体，并忽略 pbr。"
       },
       "texture_alignment": {
         "name": "纹理对齐"
       },
       "texture_quality": {
-        "name": "纹理质量"
+        "name": "纹理质量",
+        "tooltip": "detailed = 高清纹理，extreme = 8K 超高清纹理。"
       },
       "texture_seed": {
         "name": "纹理种子"
@@ -23602,6 +23744,41 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "启用 quad 时为空。"
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "仅在启用 quad 时填充。"
+      }
+    }
+  },
+  "TripoImageToMultiviewNode": {
+    "description": "生成主体的前、左、后、右视图。将它们输入 Tripo：多视图转模型，或先使用 Tripo：编辑多视图进行优化。",
+    "display_name": "Tripo：图像转多视图",
+    "inputs": {
+      "image": {
+        "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "多视图 task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "前方",
+        "tooltip": null
+      },
+      "2": {
+        "name": "左侧",
+        "tooltip": null
+      },
+      "3": {
+        "name": "后方",
+        "tooltip": null
+      },
+      "4": {
+        "name": "右侧",
         "tooltip": null
       }
     }
@@ -23622,11 +23799,43 @@
       }
     }
   },
+  "TripoMeshCompleteNode": {
+    "description": "补全分割模型的部件并修复缺失区域。",
+    "display_name": "Tripo：补全网格部件",
+    "inputs": {
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "要补全的部件名称，以逗号分隔。留空则补全所有部件。"
+      },
+      "segment_task_id": {
+        "name": "segment_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "模型 task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo：多视图转模型",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "将带纹理模型缩放至其以米为单位的现实尺寸。Tripo 将尺寸存储为模型的场景变换，并在转换、绑定或重定向模型时将其烘焙；无纹理时忽略。"
+      },
       "face_limit": {
-        "name": "面数限制"
+        "name": "面数限制",
+        "tooltip": "最大面数。-1 让 Tripo 自适应选择（v3.x standard 约 140 万面，detailed 约 200 万面）。Tripo 会静默限制：v2.5 为 500,000，四边形网格为 150,000。"
       },
       "geometry_quality": {
         "name": "几何质量"
@@ -23654,20 +23863,27 @@
         "name": "朝向"
       },
       "pbr": {
-        "name": "PBR"
+        "name": "PBR",
+        "tooltip": "PBR 材质贴图（基础颜色、金属度、粗糙度、法线）。需要启用 texture。"
       },
       "quad": {
         "name": "四边形",
-        "tooltip": "此参数已弃用，无任何作用。"
+        "tooltip": "四边形网格输出。Tripo 以 FBX 格式提供四边形网格，因此结果会出现在 FBX 输出中，而 GLB 输出保持为空。"
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "采用干净手工风格拓扑的低多边形网格（500-20,000 面；四边形为 500-10,000 面）。最适合简单主体；复杂主体可能失败。"
       },
       "texture": {
-        "name": "纹理"
+        "name": "纹理",
+        "tooltip": "生成纹理贴图。关闭时返回无材质几何体，并忽略 pbr。"
       },
       "texture_alignment": {
         "name": "纹理对齐"
       },
       "texture_quality": {
-        "name": "纹理质量"
+        "name": "纹理质量",
+        "tooltip": "detailed = 高清纹理，extreme = 8K 超高清纹理。"
       },
       "texture_seed": {
         "name": "纹理种子"
@@ -23684,7 +23900,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "启用 quad 时为空。"
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "仅在启用 quad 时填充。"
       }
     }
   },
@@ -23698,7 +23918,7 @@
       },
       "compress_geometry": {
         "name": "压缩几何体",
-        "tooltip": "应用基于几何体的压缩。编辑前需解压。"
+        "tooltip": "应用 meshopt 几何压缩（EXT_meshopt_compression）。文件更小，但 ComfyUI 的 3D 预览无法显示；编辑前请解压缩。"
       },
       "enable_image_autofix": {
         "name": "启用图像自动修复",
@@ -23748,7 +23968,7 @@
       },
       "compress_geometry": {
         "name": "压缩几何体",
-        "tooltip": "应用基于几何体的压缩。编辑前需解压。"
+        "tooltip": "应用 meshopt 几何压缩（EXT_meshopt_compression）。文件更小，但 ComfyUI 的 3D 预览无法显示；编辑前请解压缩。"
       },
       "export_uv": {
         "name": "导出 UV",
@@ -23807,7 +24027,7 @@
       },
       "compress_geometry": {
         "name": "压缩几何体",
-        "tooltip": "应用基于几何体的压缩。编辑前请先解压。"
+        "tooltip": "应用 meshopt 几何压缩（EXT_meshopt_compression）。文件更小，但 ComfyUI 的 3D 预览无法显示；编辑前请解压缩。"
       },
       "export_uv": {
         "name": "导出 UV",
@@ -23854,11 +24074,24 @@
   "TripoRetargetNode": {
     "display_name": "Tripo: 重定向绑定模型",
     "inputs": {
+      "animate_in_place": {
+        "name": "animate_in_place",
+        "tooltip": "原地播放动画，不产生根节点位移。"
+      },
       "animation": {
-        "name": "动画"
+        "name": "动画",
+        "tooltip": "preset:* 动画适用于两种绑定模型；preset:biped:* 动画需要使用 model v1.0-20240301 创建的绑定。"
+      },
+      "export_with_geometry": {
+        "name": "export_with_geometry",
+        "tooltip": "在导出中包含网格；关闭时仅导出动画骨架。"
       },
       "original_model_task_id": {
         "name": "原始模型任务ID"
+      },
+      "out_format": {
+        "name": "out_format",
+        "tooltip": "输出文件格式；结果会显示在对应的输出端。"
       }
     },
     "outputs": {
@@ -23872,15 +24105,97 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "当 out_format 为 glb 时填充。"
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "当 out_format 为 fbx 时填充。"
+      }
+    }
+  },
+  "TripoRetopologyNode": {
+    "description": "从高面数模型重建具有干净拓扑的低面数网格。",
+    "display_name": "Tripo：重新拓扑",
+    "inputs": {
+      "bake": {
+        "name": "bake",
+        "tooltip": "将源纹理烘焙到低面数网格上。"
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "目标面数：500-20,000 个三角形或 500-10,000 个四边形。-1 让 Tripo 选择。"
+      },
+      "model_task_id": {
+        "name": "model_task_id"
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "来自 Tripo: Segment Model 的以逗号分隔的部件名称。留空则处理整个模型。"
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "四边形网格输出。Tripo 将四边形网格以 FBX 形式提供，因此结果会出现在 FBX 输出上，GLB 输出保持为空。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "模型 task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": "启用 quad 时为空。"
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "仅在启用 quad 时填充。"
+      }
+    }
+  },
+  "TripoRigCheckNode": {
+    "description": "检查模型是否可以绑定，以及 Tripo 推荐的骨架类型。",
+    "display_name": "Tripo：绑定检查",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "riggable",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_type",
+        "tooltip": "推荐骨架：biped、quadruped、hexapod、octopod、avian、serpentine 或 aquatic；模型不可绑定时为“others”。"
       }
     }
   },
   "TripoRigNode": {
     "display_name": "Tripo: 绑定模型",
     "inputs": {
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "v1.0：仅限人形（双足）角色，提供 90 多种动画预设。v2.5：非人形生物（四足、六足、八足、鸟类、蛇形、水生）。"
+      },
       "original_model_task_id": {
         "name": "原始模型任务ID"
+      },
+      "out_format": {
+        "name": "out_format",
+        "tooltip": "输出文件格式；结果将出现在对应的输出端口。"
+      },
+      "rig_type": {
+        "name": "rig_type",
+        "tooltip": "骨骼类型。'auto' 会先运行 Tripo 的免费骨骼检测，并使用推荐类型。"
+      },
+      "spec": {
+        "name": "spec",
+        "tooltip": "骨骼命名：Tripo 原生或兼容 Mixamo。Tripo 无法将其动画预设重定向到使用 mixamo spec 制作的 v1.0 骨骼；对于 Tripo：重定向绑定模型，请使用 tripo。"
       }
     },
     "outputs": {
@@ -23894,7 +24209,38 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "当 out_format 为 glb 时填充。"
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "当 out_format 为 fbx 时填充。"
+      }
+    }
+  },
+  "TripoSegmentNode": {
+    "description": "将模型拆分为多个部件。部件名称可输入到 Tripo：补全网格部件、Tripo：重拓扑和 Tripo：转换模型。",
+    "display_name": "Tripo：分割模型",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "segment task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "part_names",
+        "tooltip": "以逗号分隔的部件名称。"
       }
     }
   },
@@ -23996,8 +24342,13 @@
   "TripoTextToModelNode": {
     "display_name": "Tripo: 文本转模型",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "将带纹理模型按其以米为单位的现实尺寸进行缩放。Tripo 将尺寸保存为模型的场景变换，并会在模型转换、绑定或重定向时将其烘焙；未使用纹理时将被忽略。"
+      },
       "face_limit": {
-        "name": "面数限制"
+        "name": "面数限制",
+        "tooltip": "最大面数。-1 让 Tripo 自适应选择（v3.x standard 约 140 万面，detailed 约 200 万面）。Tripo 会静默限制：v2.5 为 500,000，四边形网格为 150,000。"
       },
       "geometry_quality": {
         "name": "几何质量"
@@ -24012,25 +24363,35 @@
         "name": "模型版本"
       },
       "negative_prompt": {
-        "name": "负面提示词"
+        "name": "负面提示词",
+        "tooltip": "最多 255 个字符。"
       },
       "pbr": {
-        "name": "PBR"
+        "name": "PBR",
+        "tooltip": "PBR 材质贴图（基础颜色、金属度、粗糙度、法线）。需要 texture。"
       },
       "prompt": {
         "name": "提示词"
       },
       "quad": {
-        "name": "四边形"
+        "name": "四边形",
+        "tooltip": "四边形网格输出。Tripo 将四边形网格以 FBX 格式提供，因此结果会出现在 FBX 输出端口，GLB 输出端口保持为空。"
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "采用干净手工风格拓扑的低多边形网格（500-20,000 面；四边形为 500-10,000 面）。最适合简单主体；复杂主体可能失败。"
       },
       "style": {
-        "name": "风格"
+        "name": "风格",
+        "tooltip": "Tripo 已不再支持，将被忽略。保留以兼容旧工作流。"
       },
       "texture": {
-        "name": "纹理"
+        "name": "纹理",
+        "tooltip": "生成纹理贴图。关闭时仅返回几何体并忽略 pbr。"
       },
       "texture_quality": {
-        "name": "纹理质量"
+        "name": "纹理质量",
+        "tooltip": "detailed = 高清纹理，extreme = 8K 超高清纹理。"
       },
       "texture_seed": {
         "name": "纹理种子"
@@ -24047,7 +24408,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "启用 quad 时为空。"
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "仅在启用 quad 时填充。"
       }
     }
   },
@@ -24057,21 +24422,40 @@
       "model_task_id": {
         "name": "模型任务ID"
       },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "纹理模型：v3.0 用于由 v3.x 生成的网格，v2.5 用于由 v2.5 生成的网格。"
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "来自 Tripo: Segment Model 的以逗号分隔的待生成纹理部件名称。留空将为每个部件生成纹理。"
+      },
       "pbr": {
-        "name": "PBR"
+        "name": "PBR",
+        "tooltip": "PBR 材质贴图（基础颜色、金属度、粗糙度、法线）；关闭时提供纯色纹理。"
+      },
+      "reference": {
+        "name": "reference",
+        "tooltip": "用于指导纹理的参考图像。不能与 texture_prompt 或 style_image 结合使用。"
+      },
+      "style_image": {
+        "name": "style_image",
+        "tooltip": "纹理艺术风格的参考图像。仅与 texture_prompt 一起使用。"
       },
       "texture": {
-        "name": "纹理"
+        "name": "纹理",
+        "tooltip": "忽略：此节点始终生成纹理。保留以兼容旧工作流。"
       },
       "texture_alignment": {
         "name": "纹理对齐"
       },
       "texture_prompt": {
         "name": "texture_prompt",
-        "tooltip": "用于纹理生成的可选文本引导。对于导入的模型（Tripo：导入模型），实际操作中需要提供，因为这些模型没有可用于推断颜色的源图像。"
+        "tooltip": "用于纹理生成的可选文本引导。对于导入的模型（Tripo：导入模型），实际使用时必需，因为它们不带可用于推断颜色的源图像。不能与参考图像结合使用。"
       },
       "texture_quality": {
-        "name": "纹理质量"
+        "name": "纹理质量",
+        "tooltip": "detailed = 高清纹理，extreme = 8K 超高清纹理。"
       },
       "texture_seed": {
         "name": "纹理种子"
@@ -24088,7 +24472,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "当源为四边形网格或 FBX 导入时为空。"
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "对于四边形网格和 FBX 导入，Tripo 返回 FBX；否则为空。"
       }
     }
   },

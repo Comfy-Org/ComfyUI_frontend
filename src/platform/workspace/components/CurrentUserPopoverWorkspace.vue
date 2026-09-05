@@ -58,6 +58,7 @@
             <WorkspaceProfilePic
               class="size-6 shrink-0 text-xs"
               :workspace-name="workspaceName"
+              :subscription-tier="activeWorkspace?.subscriptionTier"
             />
             <span class="truncate text-sm text-base-foreground">
               {{ workspaceName }}
@@ -279,7 +280,8 @@ const workspaceStore = useTeamWorkspaceStore()
 const {
   initState,
   workspaceName,
-  isInPersonalWorkspace: isPersonalWorkspace
+  isInPersonalWorkspace: isPersonalWorkspace,
+  activeWorkspace
 } = storeToRefs(workspaceStore)
 const { permissions, canReactivatePlan, canOpenPricingSurface } =
   useWorkspaceUI()

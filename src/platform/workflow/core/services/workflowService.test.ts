@@ -652,7 +652,7 @@ describe('useWorkflowService', () => {
       expect(calls).toHaveLength(2)
       expect(calls[1][3]).toMatchObject({ path: 'workflows/retained.json' })
       expect(calls[1][0]).toEqual(retained.activeState)
-      expect(workflowStore.activeWorkflow?.path).toBe('workflows/retained.json')
+      expect(workflowStore.activeWorkflow.path).toBe('workflows/retained.json')
     })
 
     it('serializes rapid workflow opens so the final selection stays active', async () => {
@@ -705,7 +705,7 @@ describe('useWorkflowService', () => {
           .mocked(app.loadGraphData)
           .mock.calls.map((call) => call[4]?.workflowNavigationId)
       ).toEqual([1, 2])
-      expect(workflowStore.activeWorkflow?.path).toBe(second.path)
+      expect(workflowStore.activeWorkflow.path).toBe(second.path)
     })
 
     it('continues with the next workflow when the previous load fails', async () => {
@@ -750,7 +750,7 @@ describe('useWorkflowService', () => {
       expect(
         vi.mocked(app.loadGraphData).mock.calls.map((call) => call[3])
       ).toEqual([first, second])
-      expect(workflowStore.activeWorkflow?.path).toBe(second.path)
+      expect(workflowStore.activeWorkflow.path).toBe(second.path)
     })
 
     it('closes an inactive workflow without waiting for an unrelated load', async () => {
@@ -941,7 +941,7 @@ describe('useWorkflowService', () => {
         warnIfUnsaved: false
       })
 
-      expect(workflowStore.activeWorkflow?.path).toBe(next.path)
+      expect(workflowStore.activeWorkflow.path).toBe(next.path)
       expect(app.loadGraphData).toHaveBeenCalledWith(
         expect.anything(),
         true,
@@ -995,7 +995,7 @@ describe('useWorkflowService', () => {
       await Promise.all([firstOpen, secondOpen, close])
 
       expect(workflowStore.openWorkflows).not.toContain(second)
-      expect(workflowStore.activeWorkflow?.path).toBe(current.path)
+      expect(workflowStore.activeWorkflow.path).toBe(current.path)
     })
 
     it('does not let an older close override a newer workflow selection', async () => {
@@ -1048,7 +1048,7 @@ describe('useWorkflowService', () => {
       await Promise.all([firstOpen, secondOpen, close, finalOpen])
 
       expect(workflowStore.openWorkflows).not.toContain(second)
-      expect(workflowStore.activeWorkflow?.path).toBe(final.path)
+      expect(workflowStore.activeWorkflow.path).toBe(final.path)
       expect(
         vi.mocked(app.loadGraphData).mock.calls.map((call) => call[3])
       ).toEqual([first, second, final])
@@ -1110,7 +1110,7 @@ describe('useWorkflowService', () => {
       ])
 
       expect(workflowStore.openWorkflows).not.toContain(closing)
-      expect(workflowStore.activeWorkflow?.path).toBe(current.path)
+      expect(workflowStore.activeWorkflow.path).toBe(current.path)
     })
 
     it('serializes a newer selection after the last-tab replacement', async () => {
@@ -1168,7 +1168,7 @@ describe('useWorkflowService', () => {
 
       expect(maxConcurrentLoads).toBe(1)
       expect(workflowStore.openWorkflows).not.toContain(closing)
-      expect(workflowStore.activeWorkflow?.path).toBe(final.path)
+      expect(workflowStore.activeWorkflow.path).toBe(final.path)
       expect(
         vi.mocked(app.loadGraphData).mock.calls.map((call) => call[3])
       ).toEqual([undefined, final])
@@ -1216,7 +1216,7 @@ describe('useWorkflowService', () => {
 
       expect(app.loadGraphData).toHaveBeenCalledOnce()
       expect(workflowStore.openWorkflows).not.toContain(closing)
-      expect(workflowStore.activeWorkflow?.path).toBe(replacement.path)
+      expect(workflowStore.activeWorkflow.path).toBe(replacement.path)
     })
 
     it('keeps a valid active workflow when closing tabs concurrently', async () => {
@@ -1257,7 +1257,7 @@ describe('useWorkflowService', () => {
       expect(app.loadGraphData).toHaveBeenCalledOnce()
       expect(workflowStore.openWorkflows).not.toContain(first)
       expect(workflowStore.openWorkflows).not.toContain(second)
-      expect(workflowStore.activeWorkflow?.path).toBe(replacement.path)
+      expect(workflowStore.activeWorkflow.path).toBe(replacement.path)
     })
 
     it('never selects a workflow that is itself closing as the replacement', async () => {
@@ -1321,7 +1321,7 @@ describe('useWorkflowService', () => {
         survivor,
         expect.anything()
       )
-      expect(workflowStore.activeWorkflow?.path).toBe(survivor.path)
+      expect(workflowStore.activeWorkflow.path).toBe(survivor.path)
     })
 
     it('skips a closing candidate in the index-shift fallback', async () => {
@@ -1390,7 +1390,7 @@ describe('useWorkflowService', () => {
       const loadedPaths = vi
         .mocked(app.loadGraphData)
         .mock.calls.map(
-          (call) => (call?.[3] as { path?: string } | undefined)?.path
+          (call) => (call[3] as { path?: string } | undefined)?.path
         )
       expect(loadedPaths).toContain(survivor.path)
       expect(loadedPaths).not.toContain(closingNeighbor.path)
@@ -1544,7 +1544,7 @@ describe('useWorkflowService', () => {
 
       expect(app.loadGraphData).toHaveBeenCalledTimes(2)
       expect(workflowStore.openWorkflows).not.toContain(closing)
-      expect(workflowStore.activeWorkflow?.path).toBe(replacement.path)
+      expect(workflowStore.activeWorkflow.path).toBe(replacement.path)
     })
   })
 
@@ -2538,7 +2538,7 @@ describe('useWorkflowService', () => {
     function captureLinearModeAtSaveTime() {
       let value: boolean | undefined
       vi.mocked(workflowStore.saveWorkflow).mockImplementation(async () => {
-        value = app.rootGraph.extra?.linearMode as boolean | undefined
+        value = app.rootGraph.extra.linearMode as boolean | undefined
       })
       return () => value
     }
