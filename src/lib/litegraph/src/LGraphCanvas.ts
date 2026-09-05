@@ -40,12 +40,7 @@ import { detachSerialisedLinks } from './linkDeduplication'
 import { parseNodeId, serializeNodeId, toNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { LLink, slotFloatingLinks } from './LLink'
-import {
-  inputHasLink,
-  inputLinkId,
-  outputLinkIds,
-  outputLinks
-} from './node/slotLinks'
+import { inputHasLink, nodeLinkIds, outputLinks } from './node/slotLinks'
 import type { LinkId } from './LLink'
 import { Reroute } from './Reroute'
 import type { RerouteId } from './Reroute'
@@ -4647,22 +4642,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     this.onNodeSelected?.(item)
 
-    // Highlight links
-    const { graph: highlightGraph } = this
-    if (item.inputs && highlightGraph) {
-      for (const [i] of item.inputs.entries()) {
-        const linkId = inputLinkId(highlightGraph, item.id, i)
-        if (linkId == null) continue
-        this.highlighted_links[linkId] = true
-      }
-    }
-    if (item.outputs && highlightGraph) {
-      for (const id of item.outputs.flatMap((_, i) =>
-        outputLinkIds(highlightGraph, item.id, i)
-      )) {
-        this.highlighted_links[id] = true
-      }
-    }
+    this.#highlightLinksOf(item)
   }
 
   /**
@@ -4697,31 +4677,23 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     this.onNodeDeselected?.(item)
 
-    // Should be moved to top of function, and throw if null
     const { graph } = this
     if (!graph) return
 
-    // Clear link highlight
-    if (item.inputs) {
-      for (const [i] of item.inputs.entries()) {
-        const linkId = inputLinkId(graph, item.id, i)
-        if (linkId == null) continue
-
-        const node = LLink.getOriginNode(graph, linkId)
-        if (node && this.selectedItems.has(node)) continue
-
-        delete this.highlighted_links[linkId]
-      }
+    for (const linkId of nodeLinkIds(graph, item)) {
+      const origin = LLink.getOriginNode(graph, linkId)
+      const target = LLink.getTargetNode(graph, linkId)
+      if (origin && this.selectedItems.has(origin)) continue
+      if (target && this.selectedItems.has(target)) continue
+      delete this.highlighted_links[linkId]
     }
-    if (item.outputs) {
-      for (const id of item.outputs.flatMap((_, i) =>
-        outputLinkIds(graph, item.id, i)
-      )) {
-        const node = LLink.getTargetNode(graph, id)
-        if (node && this.selectedItems.has(node)) continue
+  }
 
-        delete this.highlighted_links[id]
-      }
+  #highlightLinksOf(node: LGraphNode): void {
+    const { graph } = this
+    if (!graph) return
+    for (const linkId of nodeLinkIds(graph, node)) {
+      this.highlighted_links[linkId] = true
     }
   }
 
@@ -4860,25 +4832,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.highlighted_links = {}
 
     if (keepSelected instanceof LGraphNode) {
-      // Handle old object lookup
       if (oldNode) this.selected_nodes[oldNode.id] = oldNode
-
-      // Highlight links
-      const { graph: rehighlightGraph } = this
-      if (keepSelected.inputs && rehighlightGraph) {
-        for (const [i] of keepSelected.inputs.entries()) {
-          const linkId = inputLinkId(rehighlightGraph, keepSelected.id, i)
-          if (linkId == null) continue
-          this.highlighted_links[linkId] = true
-        }
-      }
-      if (keepSelected.outputs && rehighlightGraph) {
-        for (const id of keepSelected.outputs.flatMap((_, i) =>
-          outputLinkIds(rehighlightGraph, keepSelected.id, i)
-        )) {
-          this.highlighted_links[id] = true
-        }
-      }
+      this.#highlightLinksOf(keepSelected)
     }
 
     // Only set selectionChanged if selection actually changed

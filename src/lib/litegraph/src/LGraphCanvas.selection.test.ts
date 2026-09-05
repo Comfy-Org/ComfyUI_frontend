@@ -254,6 +254,23 @@ describe('LGraphCanvas selection', () => {
       expect(a.selected).toBe(false)
       expect(b.selected).toBe(false)
     })
+
+    it('keeps a link highlighted while either endpoint stays selected', () => {
+      a.addOutput('out', 'number')
+      b.addInput('in', 'number')
+      a.connect(0, b, 0)
+      canvas.selectItems([a, b])
+
+      canvas.deselect(a)
+      expect(Object.keys(canvas.highlighted_links)).toHaveLength(1)
+
+      canvas.select(a)
+      canvas.deselect(b)
+      expect(Object.keys(canvas.highlighted_links)).toHaveLength(1)
+
+      canvas.deselect(a)
+      expect(Object.keys(canvas.highlighted_links)).toHaveLength(0)
+    })
   })
 
   describe('programmatic API', () => {
