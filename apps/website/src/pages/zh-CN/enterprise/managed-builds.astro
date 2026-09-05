@@ -1,0 +1,320 @@
+---
+import BenefitsGrid01 from '../../../components/blocks/BenefitsGrid01.vue'
+import BuildConfiguratorSplit01 from '../../../components/blocks/BuildConfiguratorSplit01.vue'
+import CardSplitContent02 from '../../../components/blocks/CardSplitContent02.vue'
+import CompareTable01 from '../../../components/blocks/CompareTable01.vue'
+import CtaBands01 from '../../../components/blocks/CtaBands01.vue'
+import FAQSplit01 from '../../../components/blocks/FAQSplit01.vue'
+import FeatureRows02 from '../../../components/blocks/FeatureRows02.vue'
+import HeroProduct01 from '../../../components/blocks/HeroProduct01.vue'
+import StepsCards01 from '../../../components/blocks/StepsCards01.vue'
+import IndustriesSection from '../../../components/home/IndustriesSection.vue'
+import DistributionsScene from '../../../components/product/enterprise/DistributionsScene.vue'
+import { t } from '../../../i18n/translations'
+import BaseLayout from '../../../layouts/BaseLayout.astro'
+import ClosingCtaSection from '../../../templates/platform/ClosingCtaSection.vue'
+import { absoluteUrl, pageContext } from '../../../utils/jsonLd'
+import { buildFaqPageNode } from '../../enterprise/_faqMetadata'
+
+const faqs = [
+  {
+    id: 'what',
+    question: '什么是 ComfyUI Managed Build？',
+    answer:
+      'Managed Build 是一个受批准、可复现的 ComfyUI 环境。它固定团队所需的 ComfyUI 版本、自定义节点、模型和依赖，让同一套环境可以在多台设备间分配和更新。',
+  },
+  {
+    id: 'where',
+    question: 'Managed Builds 在哪里运行？',
+    answer:
+      'Managed Builds 运行在您的工作站、工作室 GPU 服务器或客户的云基础设施上。您的 Comfy Workflows 保留在运行它们的设备上。',
+  },
+  {
+    id: 'models',
+    question: '我们可以使用私有模型和自己的供应商密钥吗？',
+    answer:
+      '可以。团队可以纳入私有微调模型，治理构建中可用的模型与合作伙伴供应商，并使用受支持的供应商密钥和现有合同。',
+  },
+  {
+    id: 'nodes',
+    question: '如何治理自定义节点？',
+    answer:
+      '管理员选择每个构建应包含哪些自定义节点，然后将它们与环境的其余部分一起固定，实现受控发布。',
+  },
+  {
+    id: 'access',
+    question: '如何分配用户和团队？',
+    answer:
+      '企业身份和 SSO 可以控制对受批准构建的访问。团队直接获得分配给他们的环境，而无需逐台配置设备。',
+  },
+  {
+    id: 'usage',
+    question: '可以获取哪些用量与审计信息？',
+    answer:
+      '在 Developer Platform 上按模型和合作伙伴追踪用量。身份验证、构建分配、发布、留存和导出要求会在企业安全审查中明确界定。',
+  },
+  {
+    id: 'start',
+    question: '如何开始？',
+    answer:
+      '申请演示并带上一个可用的环境。Comfy 工程师将梳理当前配置、部署目标、治理要求、上手方案，以及通向第一个受批准构建的路径。',
+  },
+] as const
+
+const governanceRows = [
+  {
+    id: 'build-policy',
+    term: '构建策略',
+    description: '固定受批准构建中包含的 ComfyUI 版本、自定义节点、模型和依赖。',
+  },
+  {
+    id: 'model-policy',
+    term: '模型策略与 BYOK',
+    description:
+      '选择团队可用的合作伙伴模型、开源模型和私有模型。使用受支持的供应商密钥和现有合同。',
+  },
+  {
+    id: 'people-access',
+    term: '人员与访问',
+    description: '使用企业身份和 SSO 将受批准的环境分配给需要的团队。',
+  },
+  {
+    id: 'usage-records',
+    term: '用量可见性与审计要求',
+    description:
+      '在 Developer Platform 上按模型和合作伙伴追踪用量。在企业安全审查中界定身份验证、构建分配、发布、留存和导出要求。',
+  },
+] as const
+
+const compareRows = [
+  {
+    id: 'packaging',
+    feature: '自定义节点打包',
+    cells: ['包含', '包含'],
+  },
+  {
+    id: 'sharing',
+    feature: '团队共享',
+    cells: ['不包含', '仅限 Enterprise'],
+  },
+  {
+    id: 'governance',
+    feature: '治理',
+    cells: ['不包含', '仅限 Enterprise'],
+  },
+  {
+    id: 'python',
+    feature: 'Python 依赖自动解析',
+    cells: ['包含', '包含'],
+  },
+] as const
+
+const { url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+const faqPage = buildFaqPageNode(url, faqs)
+---
+
+<BaseLayout
+  title="ComfyUI Managed Builds | 治理整个团队的 ComfyUI"
+  description="创建受批准、可复现的 ComfyUI 环境，并将其部署到工作站、工作室与客户基础设施。"
+  pageType="WebPage"
+  breadcrumbs={[
+    { name: '首页', url: absoluteUrl(Astro.site, '/zh-CN') },
+    { name: 'Enterprise', url: absoluteUrl(Astro.site, '/zh-CN/enterprise/') },
+    { name: 'ComfyUI Managed Builds' },
+  ]}
+  extraJsonLd={[faqPage]}
+>
+  <HeroProduct01
+    headingTag="h1"
+    title="MANAGED BUILDS"
+    tag="BETA"
+    body="治理团队运行的模型、自定义节点和依赖。创建 ComfyUI 的托管发行版，并将同一个构建部署到任何地方——本地或无服务器云端。"
+    primaryCta={{ label: '申请演示', href: '/zh-CN/contact/' }}
+  >
+    <DistributionsScene slot="media" client:load />
+  </HeroProduct01>
+
+  <BuildConfiguratorSplit01
+    eyebrow="MANAGED BUILDS"
+    heading={'一个受批准的 ComfyUI 环境，随团队运行到任何地方。'}
+    body="定义团队获准运行的 ComfyUI 版本、自定义节点、模型和依赖。无论工作在哪里进行，都交付同一个版本化构建。"
+    features={[
+      '私有自定义节点与模型',
+      '使用受支持的供应商密钥和现有合同',
+      '通过企业身份分配受批准的构建',
+    ]}
+    releasesLabel="COMFYUI 版本"
+    releases={['v0.3.41', 'v0.3.40', 'v0.3.38']}
+    environmentsLabel="PYTHON · PYTORCH · CUDA"
+    environments={[
+      { id: 'env-current', python: '3.12', torch: '2.6', cuda: '12.8' },
+      { id: 'env-previous', python: '3.12', torch: '2.5', cuda: '12.4' },
+      { id: 'env-legacy', python: '3.11', torch: '2.5', cuda: '12.4' },
+    ]}
+    nodesLabel="自定义节点"
+    nodes={[
+      { id: 'manager', label: 'ComfyUI-Manager', selected: true },
+      { id: 'ipadapter', label: 'IPAdapter Plus', selected: true },
+      { id: 'controlnet', label: 'ControlNet Aux' },
+      { id: 'videohelper', label: 'VideoHelperSuite', selected: true },
+      { id: 'studio-nodes', label: 'studio-nodes（私有）', selected: true },
+    ]}
+    modelsLabel="模型"
+    models={[
+      { id: 'flux', label: 'FLUX 3', selected: true },
+      { id: 'wan', label: 'Wan 3.0' },
+      { id: 'sdxl', label: 'SDXL Base', selected: true },
+      { id: 'ltx', label: 'LTX-2.5' },
+      { id: 'brand-lora', label: 'brand-lora（私有）', selected: true },
+    ]}
+    cta={{ label: '申请演示', href: '/zh-CN/contact/' }}
+    moreOptionsLabel="更多选项"
+    nodesUnit="个节点"
+    modelsUnit="个模型"
+    pinnedLabel="已固定"
+    client:visible
+  />
+
+  <FeatureRows02
+    heading="整个团队共用一个 ComfyUI 构建"
+    rows={[
+      {
+        id: 'packaging',
+        term: '环境打包',
+        description:
+          '用一个版本化构建取代零散的安装脚本、依赖矩阵和逐台设备的修补。',
+      },
+      {
+        id: 'governance',
+        term: '节点治理',
+        description:
+          'ComfyUI 生态涵盖 5,000+ 扩展和 60,000+ 社区节点。固定并批准每个构建中包含的节点。',
+      },
+      {
+        id: 'rollout',
+        term: '上手与发布',
+        description:
+          '通过企业身份分配可用的构建，让新成员快速上手，并在版本就绪时让整个团队一起升级。',
+      },
+    ]}
+  />
+
+  <div id="how-it-works" class="scroll-mt-24">
+    <StepsCards01
+      heading="从一套可用配置到受批准的团队环境"
+      steps={[
+        {
+          id: 'define',
+          title: '定义构建',
+          description: '从一个可用的环境开始，或导入您已在运行的配置快照。',
+        },
+        {
+          id: 'build',
+          title: '一次构建',
+          description:
+            '固定 ComfyUI 版本、Python 和 CUDA 版本、自定义节点、模型和依赖。',
+        },
+        {
+          id: 'update',
+          title: '有计划地更新',
+          description:
+            '由您决定何时发布新版本。让团队一起升级，而不影响进行中的工作。',
+        },
+        {
+          id: 'deploy',
+          title: '发布到整个团队',
+          description:
+            '通过 Comfy Desktop 或您的 GPU 服务器分配构建。通过 Developer Platform 部署端点。',
+        },
+      ]}
+    />
+  </div>
+
+  <CardSplitContent02
+    title="治理构建、模型、人员与用量。"
+    imageSrc="/assets/enterprise/govern-matrix-city.webp"
+  />
+  <FeatureRows02
+    class="pt-0 lg:pt-0"
+    rows={governanceRows}
+    footnote="计算图保持灵活。围绕它的环境则成为组织受批准、可审查的运营模式。"
+  />
+
+  <BenefitsGrid01
+    heading="随时接受您的安全审查"
+    columns={2}
+    numbered={false}
+    contained={false}
+    benefits={[
+      {
+        id: 'local',
+        title: '工作流保留在本地',
+        description:
+          '对于本地部署，您的 Comfy Workflows 和输出保留在运行它们的设备上。Comfy 不会使用客户数据进行训练。',
+      },
+      {
+        id: 'private-assets',
+        title: '私有模型与节点',
+        description: '将内部节点包和微调模型纳入团队掌控的构建中。',
+      },
+      {
+        id: 'access',
+        title: '身份认证与 BYOK',
+        description:
+          '通过企业身份控制构建分配，并使用受支持的供应商密钥和现有合同。',
+      },
+      {
+        id: 'usage',
+        title: '审计要求',
+        description:
+          '定义组织所需的模型、合作伙伴、身份验证、发布、留存和导出事件。',
+      },
+    ]}
+    footnote="提供 DPA 与企业协议。数据在美国的 Google Cloud 上处理。99.5% 工作流执行可用性 SLA。SOC 2 Type II 审计正在进行中。"
+  />
+
+  <CompareTable01
+    heading="Builder 与 Managed Builds 对比"
+    subtitle="Builder 是自助打包和测试环境的方式。Managed Builds 在此之上增加团队共享与企业级治理。"
+    columns={['BUILDER', 'MANAGED BUILDS']}
+    rows={compareRows}
+  />
+
+  <FAQSplit01
+    id="faq"
+    heading="关于 Managed Builds 的常见问题。"
+    faqs={faqs}
+    client:visible
+  />
+
+  <IndustriesSection
+    heading="与工作室共同打造"
+    locale="zh-CN"
+    client:visible
+  />
+
+  <ClosingCtaSection
+    locale="zh-CN"
+    heading-after-badge={t('platform.closing.headingAfterBadge', 'zh-CN')}
+    client:visible
+  />
+
+  <CtaBands01
+    variant="highlight"
+    bands={[
+      {
+        id: 'fdc',
+        label: 'Forward Deployed Creatives',
+        text: '是建设者，而不是顾问。Forward Deployed Creatives 在受批准的环境中构建生产级 Comfy Workflows，并与将要拥有和扩展这些工作流的团队并肩工作。',
+        cta: {
+          label: '查看服务详情',
+          href: '/zh-CN/forward-deployed-creatives/',
+        },
+      },
+    ]}
+  />
+</BaseLayout>

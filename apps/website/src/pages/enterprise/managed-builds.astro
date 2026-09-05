@@ -1,16 +1,18 @@
 ---
 import BenefitsGrid01 from '../../components/blocks/BenefitsGrid01.vue'
 import BuildConfiguratorSplit01 from '../../components/blocks/BuildConfiguratorSplit01.vue'
+import CardSplitContent02 from '../../components/blocks/CardSplitContent02.vue'
+import CompareTable01 from '../../components/blocks/CompareTable01.vue'
 import CtaBands01 from '../../components/blocks/CtaBands01.vue'
-import CtaCenter01 from '../../components/blocks/CtaCenter01.vue'
 import FAQSplit01 from '../../components/blocks/FAQSplit01.vue'
-import FeatureGrid02 from '../../components/blocks/FeatureGrid02.vue'
+import FeatureRows02 from '../../components/blocks/FeatureRows02.vue'
 import HeroProduct01 from '../../components/blocks/HeroProduct01.vue'
-import ReasonsSplit01 from '../../components/blocks/ReasonsSplit01.vue'
-import StepsGrid01 from '../../components/blocks/StepsGrid01.vue'
+import StepsCards01 from '../../components/blocks/StepsCards01.vue'
+import IndustriesSection from '../../components/home/IndustriesSection.vue'
 import DistributionsScene from '../../components/product/enterprise/DistributionsScene.vue'
-import { externalLinks } from '../../config/routes'
+import { t } from '../../i18n/translations'
 import BaseLayout from '../../layouts/BaseLayout.astro'
+import ClosingCtaSection from '../../templates/platform/ClosingCtaSection.vue'
 import { absoluteUrl, pageContext } from '../../utils/jsonLd'
 import { buildFaqPageNode } from './_faqMetadata'
 
@@ -59,51 +61,53 @@ const faqs = [
   },
 ] as const
 
-const governanceBenefits = [
+const governanceRows = [
   {
     id: 'build-policy',
-    title: 'Build policy',
+    term: 'Build policy',
     description:
       'Pin the ComfyUI release, custom nodes, models, and dependencies that belong in an approved build.',
   },
   {
     id: 'model-policy',
-    title: 'Model policy and BYOK',
+    term: 'Model policy and BYOK',
     description:
       'Choose the partner, open, and private models teams can use. Bring supported provider keys and existing contracts.',
   },
   {
     id: 'people-access',
-    title: 'People and access',
+    term: 'People and access',
     description:
       'Use company identity and SSO to assign approved environments to the teams that need them.',
   },
   {
     id: 'usage-records',
-    title: 'Usage visibility and audit requirements',
+    term: 'Usage visibility and audit requirements',
     description:
       'Track usage by model and partner on the Developer Platform. Scope authentication, build-assignment, release, retention, and export requirements during enterprise security review.',
   },
 ] as const
 
-const industries = [
+const compareRows = [
   {
-    id: 'games',
-    title: 'Game studios',
-    description:
-      'Keep art, UA, and marketing teams on one pinned toolchain while each group works in the Comfy Workflows built for its job.',
+    id: 'packaging',
+    feature: 'Custom nodes packaging',
+    cells: ['Included', 'Included'],
   },
   {
-    id: 'vfx',
-    title: 'VFX and animation',
-    description:
-      'Lock the environment per show, keep private nodes and models inside the build, and run IP-sensitive work on infrastructure you control.',
+    id: 'sharing',
+    feature: 'Team sharing',
+    cells: ['Not included', 'Enterprise only'],
   },
   {
-    id: 'onboarding',
-    title: 'Studios you onboard',
-    description:
-      'Give a new studio or client an approved build aligned to its stack, then release updates deliberately instead of repeating setup by hand.',
+    id: 'governance',
+    feature: 'Governance',
+    cells: ['Not included', 'Enterprise only'],
+  },
+  {
+    id: 'python',
+    feature: 'Python dependency auto-resolution',
+    cells: ['Included', 'Included'],
   },
 ] as const
 
@@ -129,29 +133,29 @@ const faqPage = buildFaqPageNode(url, faqs)
   <HeroProduct01
     headingTag="h1"
     title="MANAGED BUILDS"
-    body="Govern the models, custom nodes, and dependencies your team runs. Create a managed distribution of ComfyUI and deploy the same build on local infrastructure or through the Developer Platform."
+    tag="BETA"
+    body="Govern the models, custom nodes, and dependencies your team runs. Create a managed distribution of ComfyUI and deploy the same build anywhere, local or serverless cloud."
     primaryCta={{ label: 'REQUEST DEMO', href: '/contact/' }}
   >
     <DistributionsScene slot="media" client:load />
   </HeroProduct01>
 
   <BuildConfiguratorSplit01
-    client:visible
-    heading="One approved ComfyUI environment, everywhere your team runs it."
+    eyebrow="MANAGED BUILDS"
+    heading={'One approved ComfyUI environment,\neverywhere your team runs it.'}
     body="Define the ComfyUI release, custom nodes, models, and dependencies your team is approved to run. Ship the same versioned build wherever the work happens."
     features={[
       'Private custom nodes and models',
       'Use supported provider keys and existing contracts',
       'Assign approved builds through company identity',
     ]}
-    eyebrow="MANAGED BUILDS"
-    panelTitle="Define your build"
     releasesLabel="COMFYUI RELEASE"
-    releases={['v0.34.2', 'v0.34.0', 'v0.33.1']}
+    releases={['v0.3.41', 'v0.3.40', 'v0.3.38']}
     environmentsLabel="PYTHON · PYTORCH · CUDA"
     environments={[
-      { id: 'env-1', python: '3.12', torch: '2.12.1', cuda: '13.0' },
-      { id: 'env-2', python: '3.11', torch: '2.8.0', cuda: '12.8' },
+      { id: 'env-current', python: '3.12', torch: '2.6', cuda: '12.8' },
+      { id: 'env-previous', python: '3.12', torch: '2.5', cuda: '12.4' },
+      { id: 'env-legacy', python: '3.11', torch: '2.5', cuda: '12.4' },
     ]}
     nodesLabel="CUSTOM NODES"
     nodes={[
@@ -159,12 +163,7 @@ const faqPage = buildFaqPageNode(url, faqs)
       { id: 'ipadapter', label: 'IPAdapter Plus', selected: true },
       { id: 'controlnet', label: 'ControlNet Aux' },
       { id: 'videohelper', label: 'VideoHelperSuite', selected: true },
-      {
-        id: 'studio-nodes',
-        label: 'studio-nodes (private)',
-        selected: true,
-        mono: true,
-      },
+      { id: 'studio-nodes', label: 'studio-nodes (private)', selected: true },
     ]}
     modelsLabel="MODELS"
     models={[
@@ -174,33 +173,28 @@ const faqPage = buildFaqPageNode(url, faqs)
       { id: 'ltx', label: 'LTX-2.5' },
       { id: 'brand-lora', label: 'brand-lora (private)', selected: true },
     ]}
-    cta={{
-      label: 'REQUEST DEMO',
-      href: '/contact/',
-    }}
+    cta={{ label: 'REQUEST DEMO', href: '/contact/' }}
+    client:visible
   />
 
-  <FeatureGrid02
-    heading="Stop rebuilding the operating layer around ComfyUI."
-    steps={[
+  <FeatureRows02
+    heading="One ComfyUI build for the whole team"
+    rows={[
       {
         id: 'packaging',
-        number: '01',
-        title: 'Environment packaging',
+        term: 'Environment packaging',
         description:
           'Replace one-off install scripts, dependency matrices, and machine-specific fixes with one versioned build.',
       },
       {
-        id: 'upkeep',
-        number: '02',
-        title: 'Admin and upkeep',
+        id: 'governance',
+        term: 'Node governance',
         description:
           'ComfyUI’s ecosystem spans 5,000+ extensions and 60,000+ community nodes. Pin and approve the nodes included in each build.',
       },
       {
         id: 'rollout',
-        number: '03',
-        title: 'Onboarding and rollout',
+        term: 'Onboarding and rollout',
         description:
           'Assign known-good builds through company identity, onboard new teammates, and move the fleet together when a release is ready.',
       },
@@ -208,45 +202,52 @@ const faqPage = buildFaqPageNode(url, faqs)
   />
 
   <div id="how-it-works" class="scroll-mt-24">
-    <StepsGrid01
-      heading="From one working setup to an approved fleet."
+    <StepsCards01
+      heading="From one working setup to an approved fleet"
       steps={[
         {
           id: 'define',
-          label: 'Define the build',
+          title: 'Define the build',
           description:
             'Start from a known-good environment or import a snapshot of a setup you already run.',
         },
         {
           id: 'build',
-          label: 'Build it once',
+          title: 'Build it once',
           description:
             'Pin the ComfyUI release, Python and CUDA versions, custom nodes, models, and dependencies.',
         },
         {
-          id: 'deploy',
-          label: 'Roll out to the fleet',
-          description:
-            'Assign the build through Comfy Desktop or your GPU servers. Deploy endpoints through the Developer Platform.',
-        },
-        {
           id: 'update',
-          label: 'Update deliberately',
+          title: 'Update deliberately',
           description:
             'Cut a new version when you decide. Move the team together without changing work already in flight.',
+        },
+        {
+          id: 'deploy',
+          title: 'Roll out to the fleet',
+          description:
+            'Assign the build through Comfy Desktop or your GPU servers. Deploy endpoints through the Developer Platform.',
         },
       ]}
     />
   </div>
 
-  <BenefitsGrid01
-    heading="Govern the build, models, people, and usage."
-    benefits={governanceBenefits}
+  <CardSplitContent02
+    title="Govern the build, models, people, and usage."
+    imageSrc="/assets/enterprise/govern-matrix-city.webp"
+  />
+  <FeatureRows02
+    class="pt-0 lg:pt-0"
+    rows={governanceRows}
     footnote="The graph stays flexible. The environment around it becomes an approved, reviewable operating model for the organization."
   />
 
   <BenefitsGrid01
-    heading="Ready for your security review."
+    heading="Ready for your security review"
+    columns={2}
+    numbered={false}
+    contained={false}
     benefits={[
       {
         id: 'local',
@@ -274,40 +275,13 @@ const faqPage = buildFaqPageNode(url, faqs)
       },
     ]}
     footnote="DPA and enterprise agreement available. US processing on Google Cloud. 99.5% workflow-execution uptime SLA. SOC 2 Type II audit in progress."
-    primaryCta={{
-      label: 'VIEW TRUST CENTER',
-      href: externalLinks.trustCenter,
-      target: '_blank',
-    }}
-    secondaryCta={{ label: 'REQUEST DEMO', href: '/contact/' }}
   />
 
-  <ReasonsSplit01
-    heading={'Built with studios\n'}
-    headingHighlight="in the room."
-    highlightClass="text-primary-comfy-yellow"
-    subtitle="For teams that need ComfyUI to move between people, productions, and partners without changing underneath them."
-    reasons={industries}
-  />
-
-  <CtaBands01
-    bands={[
-      {
-        id: 'platform',
-        label: 'DEVELOPER PLATFORM',
-        text: 'Run approved Comfy Workflows as endpoints with dedicated GPU capacity, priority queueing, and enterprise SLA terms through the Developer Platform.',
-        cta: { label: 'SEE THE PLATFORM', href: '/api/' },
-      },
-      {
-        id: 'fdc',
-        label: 'FORWARD DEPLOYED CREATIVES',
-        text: 'Builders, not advisors. Forward Deployed Creatives build production Comfy Workflows inside approved environments, alongside the teams that will own and extend them.',
-        cta: {
-          label: 'VIEW THE OFFERING',
-          href: '/forward-deployed-creatives/',
-        },
-      },
-    ]}
+  <CompareTable01
+    heading="Builder vs. Managed Builds"
+    subtitle="Builder is self-serve for packaging and testing your own environment. Managed Builds adds team sharing and enterprise governance."
+    columns={['BUILDER', 'MANAGED BUILDS']}
+    rows={compareRows}
   />
 
   <FAQSplit01
@@ -316,9 +290,27 @@ const faqPage = buildFaqPageNode(url, faqs)
     faqs={faqs}
     client:visible
   />
-  <CtaCenter01
-    heading={'Your approved ComfyUI setup,\nready for the whole team.'}
-    subtitle="Start with one known-good environment. Comfy engineers will map deployment targets, governance requirements, onboarding, and the path to your first approved build."
-    primaryCta={{ label: 'REQUEST DEMO', href: '/contact/' }}
+
+  <IndustriesSection
+    heading="Built with studios in the room"
+    client:visible
+  />
+
+  <ClosingCtaSection
+    locale="en"
+    heading-after-badge={t('platform.closing.headingAfterBadge', 'en')}
+    client:visible
+  />
+
+  <CtaBands01
+    variant="highlight"
+    bands={[
+      {
+        id: 'fdc',
+        label: 'Forward Deployed Creatives',
+        text: 'Builders, not advisors. Forward Deployed Creatives build production Comfy Workflows inside approved environments, alongside the teams that will own and extend them.',
+        cta: { label: 'VIEW THE OFFERING', href: '/forward-deployed-creatives/' },
+      },
+    ]}
   />
 </BaseLayout>

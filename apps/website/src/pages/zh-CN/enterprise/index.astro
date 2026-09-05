@@ -1,0 +1,315 @@
+---
+import IndustriesSection from '@/components/home/IndustriesSection.vue'
+import BenefitsGrid01 from '../../../components/blocks/BenefitsGrid01.vue'
+import BuildConfiguratorSplit01 from '../../../components/blocks/BuildConfiguratorSplit01.vue'
+import CardSplitContent02 from '../../../components/blocks/CardSplitContent02.vue'
+import CtaBands01 from '../../../components/blocks/CtaBands01.vue'
+import CtaCenter01 from '../../../components/blocks/CtaCenter01.vue'
+import FAQSplit01 from '../../../components/blocks/FAQSplit01.vue'
+import FeatureRows02 from '../../../components/blocks/FeatureRows02.vue'
+import HeroSplit01 from '../../../components/blocks/HeroSplit01.vue'
+import OfferGrid01 from '../../../components/blocks/OfferGrid01.vue'
+import SectionIntro01 from '../../../components/blocks/SectionIntro01.vue'
+import EnterpriseHeroScene from '../../../components/product/enterprise/EnterpriseHeroScene.vue'
+import { externalLinks } from '../../../config/routes'
+import BaseLayout from '../../../layouts/BaseLayout.astro'
+import { absoluteUrl, pageContext } from '../../../utils/jsonLd'
+import { buildFaqPageNode } from '../../enterprise/_faqMetadata'
+
+const faqs = [
+  {
+    id: 'what-is-enterprise',
+    question: 'Comfy Enterprise 包含哪些内容？',
+    answer:
+      'Comfy Enterprise 可以组合 ComfyUI Managed Builds、专属生产算力与支持、模型商用授权以及 Forward Deployed Creatives。只需要共享 Cloud 用量的团队可以从自助式 Team 方案开始。',
+  },
+  {
+    id: 'where-runs',
+    question: '我们的 Comfy Workflows 可以在哪里运行？',
+    answer:
+      'Comfy Workflows 可以在本地、您掌控的基础设施上，或通过 Developer Platform 运行。ComfyUI Managed Builds 专为您的设备和基础设施上的受批准环境而设计。',
+  },
+  {
+    id: 'builds-vs-managed-builds',
+    question: 'Builds 与 ComfyUI Managed Builds 有什么区别？',
+    answer:
+      'Builds 是将 ComfyUI、自定义节点、模型和依赖打包成可复现环境的自助方式。ComfyUI Managed Builds 在此之上增加了团队分发、治理、受控发布、企业条款，以及覆盖组织所有运行环境的支持。',
+  },
+  {
+    id: 'commercial-models',
+    question: '我们可以将模型用于商业用途吗？',
+    answer:
+      '在 Cloud 上，所有模型均已获得商用授权。在本地，授权因供应商而异，可按需获取商用条款。Comfy 也是 MiniMax 商用授权的官方经销商。',
+  },
+  {
+    id: 'security',
+    question: 'Comfy 如何支持安全审查？',
+    answer: `提供 SSO 和 DPA。Comfy 不会使用客户数据进行训练，SOC 2 Type II 审计正在进行中。请在 [Comfy Trust Center](${externalLinks.trustCenter}) 查看当前的安全控制措施。`,
+  },
+  {
+    id: 'usage',
+    question: '可以获取哪些用量与审计信息？',
+    answer:
+      '在 Developer Platform 上按模型和合作伙伴追踪用量。身份验证、构建分配、发布、留存和导出要求会在企业安全审查中明确界定。',
+  },
+  {
+    id: 'team-plan',
+    question: '有自助式 Team 方案吗？',
+    answer:
+      '有。Team 是自助式 Comfy Cloud 方案，支持成员邀请、并发运行工作流、集中计费的共享积分池以及基于角色的权限管理。共享工作流、素材和项目即将推出。',
+  },
+  {
+    id: 'capacity-and-support',
+    question: '提供哪些生产算力与支持？',
+    answer:
+      '企业协议可包含专属 GPU 算力、优先排队、上手指导、直接对接 Comfy 工程师，以及按您的需求界定的可用性与响应承诺。',
+  },
+] as const
+
+const enterpriseOffers = [
+  {
+    id: 'commercial-licensing',
+    label: '商业权利',
+    title: '模型授权',
+    description: 'MiniMax 商用条款现已提供，本地模型条款可按供应商申请获取。',
+    cta: {
+      label: '查看 MINIMAX 授权',
+      href: '/zh-CN/minimax/license/',
+    },
+  },
+  {
+    id: 'forward-deployed-creatives',
+    label: '驻场交付',
+    title: 'Forward Deployed Creatives',
+    description:
+      '与 ComfyUI 专家合作，与您的创意和技术团队一起设计生产级 Comfy Workflows，并为您的团队留下可运行、可审查、可扩展的工作流。',
+    cta: {
+      label: '查看服务详情',
+      href: '/zh-CN/forward-deployed-creatives/',
+    },
+  },
+] as const
+
+const governanceRows = [
+  {
+    id: 'build-policy',
+    term: '构建策略',
+    description: '固定受批准构建中包含的 ComfyUI 版本、自定义节点、模型和依赖。',
+  },
+  {
+    id: 'model-policy',
+    term: '模型策略与 BYOK',
+    description:
+      '选择团队可用的合作伙伴模型、开源模型和私有模型。使用受支持的供应商密钥和现有合同。',
+  },
+  {
+    id: 'people-access',
+    term: '人员与访问',
+    description: '使用企业身份和 SSO 将受批准的环境分配给需要的团队。',
+  },
+  {
+    id: 'usage-records',
+    term: '用量可见性与审计要求',
+    description:
+      '在 Developer Platform 上按模型和合作伙伴追踪用量。在企业安全审查中界定身份验证、构建分配、发布、留存和导出要求。',
+  },
+] as const
+
+const productionRows = [
+  {
+    id: 'dedicated-capacity',
+    term: '专属 GPU 算力',
+    description:
+      '通过 Developer Platform 为生产工作负载预留 GPU 算力，并按您的部署方案确定规模。',
+  },
+  {
+    id: 'priority-queueing',
+    term: '优先排队',
+    description: '需求高峰时，生产任务优先于标准共享算力流量运行。',
+  },
+  {
+    id: 'deployment',
+    term: '灵活部署',
+    description:
+      '在 Comfy Cloud 上、通过 Developer Platform，或在您掌控的基础设施上运行 Comfy Workflows。',
+  },
+  {
+    id: 'support',
+    term: '定制 SLA 与支持',
+    description:
+      '获得上手指导、优先支持、直接对接 Comfy 工程团队，以及协议中界定的响应承诺。',
+  },
+] as const
+
+const { url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+const faqPage = buildFaqPageNode(url, faqs)
+---
+
+<BaseLayout
+  title="Comfy Enterprise | 治理每个团队的视觉 AI"
+  description="通过 Managed Builds、自助式 Team 方案、模型商用授权、企业级安全与驻场交付，让 ComfyUI 在各团队与运行环境中标准化。"
+  pageType="WebPage"
+  breadcrumbs={[
+    { name: '首页', url: absoluteUrl(Astro.site, '/zh-CN') },
+    { name: 'Enterprise' },
+  ]}
+  extraJsonLd={[faqPage]}
+>
+  <HeroSplit01
+    badgeText="ENTERPRISE"
+    title={'治理每个团队、每个运行环境中的 ComfyUI。'}
+    subtitle="借助 ComfyUI Managed Builds、生产算力、商用授权与驻场实施支持，让团队构建、运行和部署视觉 AI 的方式标准化。"
+    features={[
+      '受批准、可复现的 ComfyUI Managed Builds',
+      '专属 GPU 算力、优先排队与企业级 SLA',
+      '商用授权、安全审查与驻场交付',
+    ]}
+    primaryCta={{ label: '申请演示', href: '/zh-CN/contact/' }}
+    secondaryCta={{
+      label: '查看 TRUST CENTER',
+      href: externalLinks.trustCenter,
+      target: '_blank',
+    }}
+    mediaWrapperClass="hidden lg:block"
+  >
+    <EnterpriseHeroScene slot="media" client:load />
+  </HeroSplit01>
+
+  <SectionIntro01
+    eyebrow="与 COMFY 一起规模化"
+    heading="视觉 AI 的开放标准，随时服务您的组织。"
+    subtitle="您的团队构建工作流。Comfy 负责运行、治理，并为其提供商用授权。"
+    maxWidth="xl"
+  />
+
+  <BuildConfiguratorSplit01
+    eyebrow="MANAGED BUILDS"
+    heading={'一个受批准的 ComfyUI 环境，随团队运行到任何地方。'}
+    body="定义团队获准运行的 ComfyUI 版本、自定义节点、模型和依赖。无论工作在哪里进行，都交付同一个版本化构建。"
+    features={[
+      '私有自定义节点与模型',
+      '使用受支持的供应商密钥和现有合同',
+      '通过企业身份分配受批准的构建',
+    ]}
+    releasesLabel="COMFYUI 版本"
+    releases={['v0.3.41', 'v0.3.40', 'v0.3.38']}
+    environmentsLabel="PYTHON · PYTORCH · CUDA"
+    environments={[
+      { id: 'env-current', python: '3.12', torch: '2.6', cuda: '12.8' },
+      { id: 'env-previous', python: '3.12', torch: '2.5', cuda: '12.4' },
+      { id: 'env-legacy', python: '3.11', torch: '2.5', cuda: '12.4' },
+    ]}
+    nodesLabel="自定义节点"
+    nodes={[
+      { id: 'manager', label: 'ComfyUI-Manager', selected: true },
+      { id: 'ipadapter', label: 'IPAdapter Plus', selected: true },
+      { id: 'controlnet', label: 'ControlNet Aux' },
+      { id: 'videohelper', label: 'VideoHelperSuite', selected: true },
+      { id: 'studio-nodes', label: 'studio-nodes（私有）', selected: true },
+    ]}
+    modelsLabel="模型"
+    models={[
+      { id: 'flux', label: 'FLUX 3', selected: true },
+      { id: 'wan', label: 'Wan 3.0' },
+      { id: 'sdxl', label: 'SDXL Base', selected: true },
+      { id: 'ltx', label: 'LTX-2.5' },
+      { id: 'brand-lora', label: 'brand-lora（私有）', selected: true },
+    ]}
+    cta={{ label: '申请演示', href: '/zh-CN/contact/' }}
+    moreOptionsLabel="更多选项"
+    nodesUnit="个节点"
+    modelsUnit="个模型"
+    pinnedLabel="已固定"
+    client:visible
+  />
+
+  <OfferGrid01 offers={enterpriseOffers} />
+
+  <CardSplitContent02
+    title="治理构建、模型、人员与用量。"
+    imageSrc="https://media.comfy.org/website/enterprise/enterprise-featured.png"
+  />
+  <FeatureRows02
+    class="pt-0 lg:pt-0"
+    rows={governanceRows}
+    footnote="计算图保持灵活。围绕它的环境则成为组织受批准、可审查的运营模式。"
+  />
+
+  <CardSplitContent02
+    title="面向生产的算力与支持。"
+    imageSrc="/assets/enterprise/capacity-checker-falls.webp"
+    reverse
+  />
+  <FeatureRows02
+    class="pt-0 lg:pt-0"
+    rows={productionRows}
+    footnote="Enterprise 包含 99.5% 工作流执行可用性 SLA。专属算力、响应承诺与定制 SLA 条款在您的协议中界定。"
+  />
+
+  <IndustriesSection
+    heading="与工作室共同打造"
+    locale="zh-CN"
+    client:visible
+  />
+
+  <BenefitsGrid01
+    heading="更顺畅的安全审查路径。"
+    numbered={false}
+    benefits={[
+      {
+        id: 'soc2',
+        title: 'SOC 2',
+        description: 'Type II 审计正在进行中。',
+      },
+      {
+        id: 'sso',
+        title: '身份认证',
+        description: '企业团队可使用单点登录（SSO）。',
+      },
+      {
+        id: 'data',
+        title: '数据控制',
+        description:
+          '对于本地部署，您的 Comfy Workflows 和输出保留在运行它们的设备上。Comfy 不会使用客户数据进行训练。',
+      },
+      {
+        id: 'dpa',
+        title: '采购流程',
+        description: '提供 DPA 与企业协议。',
+      },
+    ]}
+    footnote="数据在美国的 Google Cloud 上处理。Enterprise 包含 99.5% 工作流执行可用性 SLA。"
+    primaryCta={{
+      label: '查看 TRUST CENTER',
+      href: externalLinks.trustCenter,
+      target: '_blank',
+    }}
+  />
+
+  <FAQSplit01
+    id="faq"
+    heading="关于 Enterprise 的常见问题。"
+    faqs={faqs}
+    client:visible
+  />
+  <CtaCenter01
+    heading={'把视觉 AI 的开放标准\n带进您的组织。'}
+    subtitle="带上一个可用的环境，或您的团队需要规模化的生产需求。我们将为您梳理部署、治理、算力、商业条款以及合适的实施路径。"
+    primaryCta={{ label: '申请演示', href: '/zh-CN/contact/' }}
+  />
+  <CtaBands01
+    variant="highlight"
+    bands={[
+      {
+        id: 'team-plans',
+        label: 'Team 方案',
+        text: '为团队提供覆盖 Cloud GPU 时长与合作伙伴模型用量的共享积分池，外加集中计费、单点登录和 App 模式。',
+        cta: { label: '查看定价', href: '/zh-CN/pricing' },
+      },
+    ]}
+  />
+</BaseLayout>
