@@ -12,7 +12,8 @@ export class NumberWidget
 
   override get _displayValue() {
     if (this.computedDisabled) return ''
-    return this.value.toFixed(
+    const value: unknown = this.value
+    return Number(value).toFixed(
       this.options.precision !== undefined ? this.options.precision : 3
     )
   }
