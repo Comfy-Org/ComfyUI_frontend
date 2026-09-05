@@ -36,6 +36,7 @@ const mediaLabel: Record<string, string> = {
   audio: t('workshop.hub.io.audio'),
   '3d': t('workshop.hub.io.3d')
 }
+const hasCustomNodes = (details.requiresCustomNodes?.length ?? 0) > 0
 const pillClass =
   'inline-flex h-6 items-center rounded-2xl bg-transparency-white-t8 px-3 text-[11px] leading-none font-bold tracking-wider text-primary-warm-white uppercase'
 const downloadUrl = `https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/${encodeURIComponent(template.name)}.json`
@@ -81,6 +82,17 @@ const comments = [
             {template.title}
           </h1>
 
+          {
+            details.description && (
+              <p
+                class="max-w-2xl text-base leading-relaxed text-primary-comfy-canvas/80"
+                data-testid="workflow-summary"
+              >
+                {details.description}
+              </p>
+            )
+          }
+
           <p class="text-content-secondary flex items-center gap-2 text-base">
             <span
               class="bg-brand text-page grid size-5 shrink-0 place-items-center rounded-full text-2xs font-bold"
@@ -125,26 +137,26 @@ const comments = [
     </header>
 
     <div class="px-8 lg:px-10">
-      <ModelDetail model={model} clone={clone} client:load>
+      <ModelDetail model={model} clone={clone} stepped client:load>
         <div slot="details" class="flex flex-col gap-8">
           <section class="grid gap-8 lg:grid-cols-12" data-testid="workflow-about">
-            <div class="lg:col-span-7">
-              <h2 class="text-xs font-bold tracking-wider text-primary-warm-gray uppercase">
-                {t('workshop.workflow.about')}
-              </h2>
-              <p class="mt-4 text-base leading-relaxed text-primary-comfy-canvas/80">
-                {details.description ?? ''}
-              </p>
-              {
-                details.requiresCustomNodes && details.requiresCustomNodes.length > 0 && (
-                  <p class="mt-4 text-sm text-primary-warm-gray">
-                    {t('workshop.workflow.customNodes')}: {details.requiresCustomNodes.join(', ')}
+            {
+              hasCustomNodes && (
+                <div class="lg:col-span-7">
+                  <h2 class="text-xs font-bold tracking-wider text-primary-warm-gray uppercase">
+                    {t('workshop.workflow.customNodes')}
+                  </h2>
+                  <p class="mt-4 text-sm text-primary-comfy-canvas/80">
+                    {details.requiresCustomNodes?.join(', ')}
                   </p>
-                )
-              }
-            </div>
+                </div>
+              )
+            }
             <div
-              class="bg-transparency-white-t4 rounded-2xl border border-transparency-white-t8 p-5 lg:col-span-5"
+              class:list={[
+                'bg-transparency-white-t4 rounded-2xl border border-transparency-white-t8 p-5',
+                hasCustomNodes ? 'lg:col-span-5' : 'lg:col-span-12'
+              ]}
               data-testid="workflow-io"
             >
               <h2 class="text-xs font-bold tracking-wider text-primary-warm-gray uppercase">

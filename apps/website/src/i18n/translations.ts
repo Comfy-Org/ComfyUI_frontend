@@ -8527,6 +8527,16 @@ Enterprise`
     en: 'Price: high to low',
     'zh-CN': '价格：从高到低'
   },
+  'workshop.form.step.inputs': { en: 'Inputs', 'zh-CN': '输入' },
+  'workshop.form.step.inputsNote': {
+    en: 'What this run starts from.',
+    'zh-CN': '本次运行的起点。'
+  },
+  'workshop.form.step.output': { en: 'Output', 'zh-CN': '输出' },
+  'workshop.form.step.outputNote': {
+    en: 'How the result comes out.',
+    'zh-CN': '结果的输出方式。'
+  },
   'workshop.form.advanced': { en: 'Advanced settings', 'zh-CN': '高级设置' },
   'workshop.signIn.meta.title': {
     en: 'Sign in · Comfy Workshop',

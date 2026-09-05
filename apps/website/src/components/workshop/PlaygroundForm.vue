@@ -2,6 +2,8 @@
 import { ChevronDown } from '@lucide/vue'
 import { computed } from 'vue'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import type {
   FieldErrors,
   FieldSchema,
@@ -10,17 +12,22 @@ import type {
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import PlaygroundField from './PlaygroundField.vue'
+import StepHeading from './StepHeading.vue'
 
 const {
   schema,
   errors,
   locale = 'en',
-  disabled = false
+  disabled = false,
+  stepped = false
 } = defineProps<{
   schema: readonly FieldSchema[]
   errors: FieldErrors
   locale?: Locale
   disabled?: boolean
+  /** Draws the groups the form already computes as numbered steps. The names
+   * come from what each group holds, so they hold for any schema. */
+  stepped?: boolean
 }>()
 
 const values = defineModel<FormValues>({ required: true })
@@ -44,25 +51,46 @@ const groups = computed(() => {
     advanced: rest.filter((field) => field.kind === 'toggle')
   }
 })
+
+const stepClass =
+  'rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4 p-5'
 </script>
 
 <template>
   <div class="flex flex-col gap-8" data-testid="playground-form">
-    <PlaygroundField
-      v-for="field in groups.primary"
-      :key="field.name"
-      v-model="values"
-      :field
-      :errors
-      :locale
-      :disabled
-    />
+    <div
+      v-if="groups.primary.length"
+      :class="cn('flex flex-col gap-8', stepped && stepClass)"
+      data-testid="playground-inputs"
+    >
+      <StepHeading
+        v-if="stepped"
+        :step="1"
+        :title="t('workshop.form.step.inputs', locale)"
+        :note="t('workshop.form.step.inputsNote', locale)"
+      />
+      <PlaygroundField
+        v-for="field in groups.primary"
+        :key="field.name"
+        v-model="values"
+        :field
+        :errors
+        :locale
+        :disabled
+      />
+    </div>
 
     <div
       v-if="groups.settings.length"
-      class="flex flex-col gap-8"
+      :class="cn('flex flex-col gap-8', stepped && stepClass)"
       data-testid="playground-settings"
     >
+      <StepHeading
+        v-if="stepped"
+        :step="groups.primary.length ? 2 : 1"
+        :title="t('workshop.form.step.output', locale)"
+        :note="t('workshop.form.step.outputNote', locale)"
+      />
       <PlaygroundField
         v-for="field in groups.settings"
         :key="field.name"
