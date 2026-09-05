@@ -646,7 +646,8 @@ export default defineConfig([
   {
     files: ['apps/website/**/*.vue'],
     rules: {
-      '@intlify/vue-i18n/no-raw-text': 'off'
+      '@intlify/vue-i18n/no-raw-text': 'off',
+      'vue/no-v-html': 'error'
     }
   },
   // Astro exposes virtual modules (astro:content, astro:assets, ...) that the
