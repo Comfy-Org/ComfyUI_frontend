@@ -217,7 +217,7 @@ describe('comfy/no-duplicate-ingest-type', () => {
     writeFileSync(path.join(vueProbeDir, 'Probe.vue'), vueProbe)
     writeFileSync(path.join(browserTestProbeDir, 'probe.ts'), browserTestProbe)
 
-    findings = lint(['src', 'browser_tests'])
+    findings = lint([tsProbeDir, vueProbeDir, browserTestProbeDir])
   })
 
   afterAll(() => {
