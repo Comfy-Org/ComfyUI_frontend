@@ -31,7 +31,12 @@ import {
   collectCrdtDebugReport
 } from './crdtDebugReport'
 import type { CrdtLogScope, DevEvent, DevEventKind } from './devPanelLog'
-import { clearDevEvents, devEvents, stringifyDevEvents } from './devPanelLog'
+import {
+  clearDevEvents,
+  devEventReplacer,
+  devEvents,
+  stringifyDevEvents
+} from './devPanelLog'
 import type { MergeScenario, MergeSimulation } from './mergeScenarios'
 import { getMergeScenarios, runScenario } from './mergeScenarios'
 import type { MergeTraceEntry, NodeLifecycleRow } from './mergeTrace'
@@ -90,6 +95,7 @@ const S = {
   copy: 'Copy',
   copyDocumentId: 'Copy document id',
   copyLogDetail: 'Copy log detail',
+  moreNodeIds: (count: number) => `+${count} more`,
   copyLog: 'Copy log',
   copyReport: 'Copy full report',
   copying: 'Collecting…',
@@ -238,6 +244,8 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  unmounted = true
+  itemCopyRequest++
   if (pollHandle !== undefined) clearInterval(pollHandle)
   clearTimeout(logCopyReset)
   clearTimeout(reportCopyReset)
@@ -281,19 +289,28 @@ interface LogRow {
   detail: string
   excerpt: string
   nodeIds: readonly string[]
+  hiddenNodeIdCount: number
 }
+
+const MAX_RETAINED_DETAIL_CODE_POINTS = 20_000
+const MAX_NODE_ID_BUTTONS = 50
 
 const visibleLogRows = computed<readonly LogRow[]>(() =>
   [...matchingEvents.value]
     .reverse()
     .slice(0, 150)
     .map((event) => {
-      const detail = stringifyDetail(event.detail)
+      const detail = truncateDetail(
+        stringifyDetail(event.detail),
+        MAX_RETAINED_DETAIL_CODE_POINTS
+      )
+      const allNodeIds = eventNodeIds(event)
       return {
         event,
         detail,
         excerpt: truncateDetail(detail),
-        nodeIds: eventNodeIds(event)
+        nodeIds: allNodeIds.slice(0, MAX_NODE_ID_BUTTONS),
+        hiddenNodeIdCount: Math.max(0, allNodeIds.length - MAX_NODE_ID_BUTTONS)
       }
     })
 )
@@ -370,6 +387,8 @@ const reportCopyState = ref<CopyState>('idle')
 const itemCopy = ref<{ key: string; state: 'done' | 'failed' } | null>(null)
 const reportSources = ref<ReportSources>({ ...DEFAULT_REPORT_SOURCES })
 const { copy } = useClipboard({ legacy: true })
+let itemCopyRequest = 0
+let unmounted = false
 
 const copyReportLabel = computed(() => {
   if (reportCopyState.value === 'busy') return S.copying
@@ -394,7 +413,9 @@ async function writeClipboard(text: string): Promise<boolean> {
 }
 
 async function copyItem(key: string, text: string) {
+  const request = ++itemCopyRequest
   const ok = await writeClipboard(text)
+  if (unmounted || request !== itemCopyRequest) return
   itemCopy.value = { key, state: ok ? 'done' : 'failed' }
   clearTimeout(itemCopyReset)
   itemCopyReset = setTimeout(() => (itemCopy.value = null), 1600)
@@ -559,28 +580,39 @@ const chipLabel = computed(
 
 function stringifyDetail(detail: unknown): string {
   try {
-    const raw = JSON.stringify(detail, (_key, value) =>
-      value instanceof Uint8Array ? `Uint8Array(${value.length})` : value
-    )
-    return raw ?? ''
+    return JSON.stringify(detail, devEventReplacer()) ?? ''
   } catch {
     return String(detail)
   }
 }
 
 function truncateDetail(detail: string, limit = 200): string {
-  return detail.length > limit ? `${detail.slice(0, limit)}…` : detail
+  if (detail.length <= limit) return detail
+  let end = 0
+  let count = 0
+  for (const codePoint of detail) {
+    if (count === limit) break
+    end += codePoint.length
+    count++
+  }
+  return end < detail.length ? `${detail.slice(0, end)}…` : detail
 }
 
 function eventNodeIds(event: DevEvent): string[] {
   if (event.kind !== 'doc_nodes_changed') return []
   const detail = event.detail as {
-    added?: unknown[]
-    removed?: unknown[]
+    added?: unknown
+    removed?: unknown
   } | null
-  return [...(detail?.added ?? []), ...(detail?.removed ?? [])].filter(
-    (id): id is string => typeof id === 'string'
-  )
+  const added = Array.isArray(detail?.added) ? detail.added : []
+  const removed = Array.isArray(detail?.removed) ? detail.removed : []
+  return [
+    ...new Set(
+      [...added, ...removed].filter(
+        (id): id is string => typeof id === 'string'
+      )
+    )
+  ]
 }
 
 function fmtTime(at: number): string {
@@ -853,6 +885,12 @@ function fmtTime(at: number): string {
                 >
                   {{ itemCopyLabel(`node:${row.event.seq}:${nodeId}`, nodeId) }}
                 </button>
+                <span
+                  v-if="row.hiddenNodeIdCount"
+                  class="text-agent-fg-muted px-1.5 py-0.5"
+                >
+                  {{ S.moreNodeIds(row.hiddenNodeIdCount) }}
+                </span>
               </div>
             </div>
           </div>

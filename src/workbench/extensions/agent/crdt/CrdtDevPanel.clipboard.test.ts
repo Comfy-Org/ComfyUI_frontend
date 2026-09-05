@@ -53,6 +53,10 @@ const status: AgentCrdtStatus = {
   }
 }
 
+async function flushPromises() {
+  await new Promise((resolve) => setTimeout(resolve, 0))
+}
+
 function renderPanel(overrides: Partial<AgentCrdtStatus> = {}) {
   localStorage.setItem('Comfy.Agent.CrdtDevPanel.open', 'true')
   return render(CrdtDevPanel, {
@@ -129,7 +133,7 @@ describe('CrdtDevPanel clipboard controls', () => {
       const docButton = screen.getByRole('button', {
         name: 'Copy document id'
       })
-      expect(docButton).toHaveTextContent('Copy')
+      expect(docButton).toHaveTextContent(/^Copy$/)
 
       await userEvent.click(docButton)
 
@@ -137,7 +141,7 @@ describe('CrdtDevPanel clipboard controls', () => {
 
       await vi.advanceTimersByTimeAsync(1600)
 
-      expect(docButton).toHaveTextContent('Copy')
+      expect(docButton).toHaveTextContent(/^Copy$/)
     } finally {
       vi.useRealTimers()
     }
@@ -181,6 +185,123 @@ describe('CrdtDevPanel clipboard controls', () => {
     expect(writeText).toHaveBeenCalledExactlyOnceWith(
       stringifyDevEvents(devEvents.value.filter((e) => e.kind === 'doc_update'))
     )
+  })
+
+  it('handles malformed and duplicate node-id lists and caps their controls', async () => {
+    const user = userEvent.setup()
+    recordDevEvent('doc_nodes_changed', { added: 1, removed: 'node' })
+    recordDevEvent('doc_nodes_changed', {
+      added: Array.from({ length: 52 }, (_, index) => `node-${index}`),
+      removed: ['node-0', 'node-51']
+    })
+    renderPanel()
+    await user.click(screen.getByTestId('crdt-dev-panel-tab-log'))
+
+    expect(
+      screen.getAllByRole('button', { name: /^Copy node id / })
+    ).toHaveLength(50)
+    expect(screen.getByText('+2 more')).toBeInTheDocument()
+    expect(
+      screen.getAllByRole('button', { name: 'Copy node id node-0' })
+    ).toHaveLength(1)
+  })
+
+  it('serializes circular and bigint details without losing their content', async () => {
+    const user = userEvent.setup()
+    const detail: { count: bigint; self?: unknown } = { count: 7n }
+    detail.self = detail
+    recordDevEvent('doc_update', detail)
+    renderPanel()
+    await user.click(screen.getByTestId('crdt-dev-panel-tab-log'))
+    await user.click(screen.getByRole('button', { name: 'Copy log detail' }))
+
+    expect(writeText).toHaveBeenCalledExactlyOnceWith(
+      '{"count":"7","self":"[Circular]"}'
+    )
+  })
+
+  it('falls back to String() when a detail refuses to serialize', async () => {
+    const user = userEvent.setup()
+    recordDevEvent('doc_update', {
+      toJSON() {
+        throw new Error('not serializable')
+      }
+    })
+    renderPanel()
+    await user.click(screen.getByTestId('crdt-dev-panel-tab-log'))
+
+    expect(screen.getByText('[object Object]')).toBeInTheDocument()
+  })
+
+  it('bounds retained details and truncates excerpts on code-point boundaries', async () => {
+    const user = userEvent.setup()
+    recordDevEvent('doc_update', 'x'.repeat(20_100))
+    recordDevEvent('doc_reset', `${'x'.repeat(198)}😀tail`)
+    renderPanel()
+    await user.click(screen.getByTestId('crdt-dev-panel-tab-log'))
+
+    expect(screen.getByText(`"${'x'.repeat(198)}😀…`)).toBeInTheDocument()
+    const detailButtons = screen.getAllByRole('button', {
+      name: 'Copy log detail'
+    })
+    await user.click(detailButtons[1])
+    expect(String(writeText.mock.calls[0][0])).toHaveLength(20_001)
+    expect(writeText.mock.calls[0][0]).toMatch(/…$/)
+  })
+
+  it('keeps feedback on the latest click when writes settle out of order', async () => {
+    let resolveFirst: (() => void) | undefined
+    let resolveSecond: (() => void) | undefined
+    writeText
+      .mockImplementationOnce(
+        () => new Promise<void>((resolve) => (resolveFirst = resolve))
+      )
+      .mockImplementationOnce(
+        () => new Promise<void>((resolve) => (resolveSecond = resolve))
+      )
+    recordDevEvent('doc_nodes_changed', {
+      added: ['node-a', 'node-b'],
+      removed: []
+    })
+    renderPanel()
+    await userEvent.click(screen.getByTestId('crdt-dev-panel-tab-log'))
+    const first = screen.getByRole('button', { name: 'Copy node id node-a' })
+    const second = screen.getByRole('button', { name: 'Copy node id node-b' })
+
+    first.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    second.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(writeText).toHaveBeenCalledTimes(2)
+    resolveSecond?.()
+    await vi.waitFor(() => expect(second).toHaveTextContent(/^Copied$/))
+    resolveFirst?.()
+    await flushPromises()
+
+    expect(second).toHaveTextContent(/^Copied$/)
+    expect(first).toHaveTextContent(/^node-a$/)
+  })
+
+  it('does not update feedback after unmount', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      let resolveWrite: (() => void) | undefined
+      writeText.mockImplementationOnce(
+        () => new Promise<void>((resolve) => (resolveWrite = resolve))
+      )
+      const panel = renderPanel()
+      screen
+        .getByRole('button', { name: 'Copy document id' })
+        .dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      expect(writeText).toHaveBeenCalledOnce()
+
+      panel.unmount()
+      expect(vi.getTimerCount()).toBe(0)
+      resolveWrite?.()
+      await flushPromises()
+
+      expect(vi.getTimerCount()).toBe(0)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('omits unavailable controls without writing', async () => {
