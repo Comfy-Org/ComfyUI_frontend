@@ -21,6 +21,32 @@ const collection = (JSON.parse(readFileSync(CATALOG, 'utf8')) as unknown[]).map(
 )
 
 describe('deriveWorkshopFields', () => {
+  it('does not invent defaults for optional booleans', () => {
+    const fields = deriveWorkshopFields(
+      { properties: { enabled: { type: 'boolean' } } },
+      []
+    )
+    expect(fields[0]).toMatchObject({ kind: 'toggle', required: false })
+    expect(fields[0]).not.toHaveProperty('defaultValue')
+  })
+
+  it('preserves the catalog true-only regeneration constraint without a false default', () => {
+    const model = collection.find(
+      (model) => model.id === 'minimax/hailuo-03-regeneration'
+    )
+    expect(model).toBeDefined()
+    if (!model) throw new Error('Missing regeneration model')
+    const field = deriveWorkshopFields(model.parameters, model.roles).find(
+      (field) => field.name === 'source_is_unmodified_h3_768p'
+    )
+    expect(field).toMatchObject({
+      kind: 'select',
+      options: [true],
+      required: true
+    })
+    expect(field).not.toHaveProperty('defaultValue')
+  })
+
   it('maps Router properties and media roles to form controls', () => {
     expect(
       deriveWorkshopFields(
