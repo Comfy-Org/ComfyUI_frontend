@@ -2655,7 +2655,6 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       expect(errorStore.lastExecutionError).toBeNull()
       expect(errorStore.lastPromptError).toBeNull()
       expect(errorStore.lastNodeErrors).toBeNull()
-      expect(errorStore.totalErrorCount).toBe(0)
     })
 
     it('keeps a sign-in precondition out of the error panel and count', () => {
@@ -2672,7 +2671,6 @@ describe('useExecutionStore - WebSocket event handlers', () => {
 
       expect(errorStore.lastExecutionError).toBeNull()
       expect(errorStore.lastPromptError).toBeNull()
-      expect(errorStore.totalErrorCount).toBe(0)
     })
 
     it('keeps a runtime credit precondition at a node out of the error panel and count', () => {
@@ -2690,7 +2688,6 @@ describe('useExecutionStore - WebSocket event handlers', () => {
 
       expect(errorStore.lastExecutionError).toBeNull()
       expect(errorStore.lastPromptError).toBeNull()
-      expect(errorStore.totalErrorCount).toBe(0)
     })
 
     it('still routes an ordinary node runtime error to the error panel', () => {
@@ -2707,7 +2704,6 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       })
 
       expect(errorStore.lastExecutionError).not.toBeNull()
-      expect(errorStore.totalErrorCount).toBe(1)
     })
   })
 

@@ -1,5 +1,6 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
@@ -24,10 +25,12 @@ import * as missingModelScan from '@/platform/missingModel/missingModelScan'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { app } from '@/scripts/app'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 import { seedRequiredInputMissingNodeError } from '@/utils/__tests__/executionErrorTestUtils'
+import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 
@@ -968,6 +971,164 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
     expect(modelStore.missingModelCandidates).toBeNull()
   })
 
+  it('clears the resolved missing-node prompt error after deleting its last node', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('MissingNode')
+    graph.add(node)
+
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    installErrorClearingHooks(graph)
+
+    const nodesStore = useMissingNodesErrorStore()
+    nodesStore.setMissingNodeTypes([
+      {
+        type: 'MissingNode',
+        nodeId: String(node.id),
+        isReplaceable: false
+      }
+    ])
+    const executionErrorStore = useExecutionErrorStore()
+    executionErrorStore.recordPromptError({
+      type: 'missing_node_type',
+      message: 'MissingNode is unavailable',
+      details: ''
+    })
+
+    graph.remove(node)
+
+    expect(nodesStore.missingNodesError).toBeNull()
+    expect(executionErrorStore.lastPromptError).toBeNull()
+  })
+
+  it('keeps the missing-node prompt while graph loading removes its node', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('MissingNode')
+    graph.add(node)
+
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    installErrorClearingHooks(graph)
+
+    const nodesStore = useMissingNodesErrorStore()
+    nodesStore.setMissingNodeTypes([
+      {
+        type: 'MissingNode',
+        nodeId: String(node.id),
+        isReplaceable: false
+      }
+    ])
+    const executionErrorStore = useExecutionErrorStore()
+    executionErrorStore.recordPromptError({
+      type: 'missing_node_type',
+      message: 'MissingNode is unavailable',
+      details: ''
+    })
+
+    ChangeTracker.isLoadingGraph = true
+    try {
+      graph.remove(node)
+    } finally {
+      ChangeTracker.isLoadingGraph = false
+    }
+
+    expect(nodesStore.missingNodesError).toBeNull()
+    expect(executionErrorStore.lastPromptError?.type).toBe('missing_node_type')
+  })
+
+  it('retires the surviving prompt error once the load settles', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('MissingNode')
+    graph.add(node)
+
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    installErrorClearingHooks(graph)
+
+    const nodesStore = useMissingNodesErrorStore()
+    nodesStore.setMissingNodeTypes([
+      {
+        type: 'MissingNode',
+        nodeId: String(node.id),
+        isReplaceable: false
+      }
+    ])
+    const executionErrorStore = useExecutionErrorStore()
+    executionErrorStore.recordPromptError({
+      type: 'missing_node_type',
+      message: 'MissingNode is unavailable',
+      details: ''
+    })
+
+    ChangeTracker.isLoadingGraph = true
+    try {
+      graph.remove(node)
+    } finally {
+      ChangeTracker.isLoadingGraph = false
+    }
+    expect(executionErrorStore.lastPromptError?.type).toBe('missing_node_type')
+
+    // loadGraphData runs this after clearing isLoadingGraph.
+    executionErrorStore.retireResolvedMissingNodePromptError()
+
+    expect(executionErrorStore.lastPromptError).toBeNull()
+  })
+
+  it('keeps a desynced missing-node prompt error after deleting an unrelated node', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('UnrelatedNode')
+    graph.add(node)
+
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    installErrorClearingHooks(graph)
+
+    const executionErrorStore = useExecutionErrorStore()
+    executionErrorStore.recordPromptError({
+      type: 'missing_node_type',
+      message: 'MissingNode is unavailable',
+      details: ''
+    })
+
+    graph.remove(node)
+
+    expect(executionErrorStore.lastPromptError?.type).toBe('missing_node_type')
+  })
+
+  it('keeps the missing-node prompt error while other missing nodes remain', () => {
+    const graph = new LGraph()
+    const deletedNode = new LGraphNode('MissingNodeA')
+    const remainingNode = new LGraphNode('MissingNodeB')
+    graph.add(deletedNode)
+    graph.add(remainingNode)
+
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    installErrorClearingHooks(graph)
+
+    const nodesStore = useMissingNodesErrorStore()
+    nodesStore.setMissingNodeTypes([
+      {
+        type: 'MissingNodeA',
+        nodeId: String(deletedNode.id),
+        isReplaceable: false
+      },
+      {
+        type: 'MissingNodeB',
+        nodeId: String(remainingNode.id),
+        isReplaceable: false
+      }
+    ])
+    const executionErrorStore = useExecutionErrorStore()
+    executionErrorStore.recordPromptError({
+      type: 'missing_node_type',
+      message: 'Node types are unavailable',
+      details: ''
+    })
+
+    graph.remove(deletedNode)
+
+    expect(nodesStore.missingNodesError?.nodeTypes).toEqual([
+      expect.objectContaining({ type: 'MissingNodeB' })
+    ])
+    expect(executionErrorStore.lastPromptError?.type).toBe('missing_node_type')
+  })
+
   it('preserves same-id successor missing model errors', () => {
     const graph = new LGraph()
     const orphan = new LGraphNode('CheckpointLoaderSimple')
@@ -1174,6 +1335,38 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
 
     expect(host.widgets).toHaveLength(0)
     expect(mediaStore.missingMediaCandidates).toBeNull()
+  })
+
+  it('retires an absorbed promoted media error when its host is deleted', async () => {
+    const {
+      rootGraph,
+      hosts: [host],
+      sourceNodes: [sourceNode]
+    } = createPromotedMediaRuntime()
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
+    installErrorClearingHooks(rootGraph)
+
+    const mediaStore = useMissingMediaStore()
+    mediaStore.setMissingMedia([createPromotedMissingMediaCandidate(host)])
+    const errorStore = useExecutionErrorStore()
+    const sourceExecutionId = createNodeExecutionId([host.id, sourceNode.id])
+    if (!sourceExecutionId) {
+      throw new Error('Expected a promoted source execution ID')
+    }
+    errorStore.recordNodeErrors({
+      [sourceExecutionId]: nodeError([
+        validationError('value_not_in_list', 'image', {
+          received_value: 'missing-host.png'
+        })
+      ])
+    })
+
+    rootGraph.remove(host)
+    await nextTick()
+
+    expect(mediaStore.missingMediaCandidates).toBeNull()
+    expect(errorStore.lastNodeErrors).toBeNull()
   })
 
   it('keeps promoted missing media until the last fanout consumer is deleted', () => {

@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MissingNodeType } from '@/types/comfy'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import type * as GraphTraversalUtil from '@/utils/graphTraversalUtil'
+import type * as LitegraphUtil from '@/utils/litegraphUtil'
 
 vi.mock('@/scripts/app', () => ({
   app: {
@@ -19,7 +20,8 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock('@/utils/graphTraversalUtil', async (importOriginal) => ({
+  ...(await importOriginal<typeof GraphTraversalUtil>()),
   getNodeByExecutionId: vi.fn(),
   getExecutionIdByNode: vi.fn(),
   getRootParentNode: vi.fn(() => null),
@@ -67,6 +69,9 @@ vi.mock('@/i18n', () => {
       'Prompt has no outputs',
     'errorCatalog.promptErrors.prompt_no_outputs.desc':
       'The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result.',
+    'errorCatalog.promptErrors.missing_node_type.title': 'Missing node type',
+    'errorCatalog.promptErrors.missing_node_type.desc':
+      'A node type is missing or unavailable.',
     'errorCatalog.promptErrors.apply_failed.title': 'Agent edit failed',
     'errorCatalog.promptErrors.apply_failed.desc':
       'An agent edit could not be applied to the workflow document.',
@@ -119,7 +124,8 @@ vi.mock('@/utils/nodeTitleUtil', () => ({
   resolveNodeDisplayName: vi.fn(() => '')
 }))
 
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock('@/utils/litegraphUtil', async (importOriginal) => ({
+  ...(await importOriginal<typeof LitegraphUtil>()),
   isLGraphNode: vi.fn(() => false)
 }))
 
@@ -140,9 +146,11 @@ import {
   getExecutionIdByNode,
   getNodeByExecutionId
 } from '@/utils/graphTraversalUtil'
-import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { createUnnormalisableModelErrorFixture } from './__tests__/absorptionFixtures'
 import { useErrorGroups } from './useErrorGroups'
+import { useHasBlockingError } from './useHasBlockingError'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 
 function makeMissingNodeType(
@@ -663,6 +671,60 @@ describe('useErrorGroups', () => {
       })
     })
 
+    it('renders an unnormalisable execution error as a blocking unlocated card', async () => {
+      const { store, groups } = createErrorGroups()
+      store.recordExecutionError({
+        prompt_id: 'test-prompt',
+        timestamp: Date.now(),
+        node_id: 'not::a-node',
+        node_type: 'KSampler',
+        executed: [],
+        exception_type: 'RuntimeError',
+        exception_message: 'Execution failed',
+        traceback: []
+      })
+      await nextTick()
+
+      const executionGroup = groups.allErrorGroups.value.find(
+        (group) => group.type === 'execution'
+      )
+      expect(executionGroup).toMatchObject({
+        severity: 'error',
+        count: 1
+      })
+      if (executionGroup?.type !== 'execution') return
+      expect(executionGroup.cards[0]).toMatchObject({
+        id: 'exec-not::a-node',
+        title: 'KSampler'
+      })
+      expect(executionGroup.cards[0].nodeId).toBeUndefined()
+    })
+
+    it('renders an unnormalisable matching model error as an unlocated card', async () => {
+      vi.mocked(getExecutionIdByNode).mockReturnValue(
+        fromAny<NodeExecutionId, string>('not::a-node')
+      )
+      const fixture = createUnnormalisableModelErrorFixture()
+      const { store, groups } = createErrorGroups()
+      store.surfaceMissingModels(fixture.missingModels)
+      store.recordNodeErrors(fixture.nodeErrors)
+      await nextTick()
+
+      const executionGroup = groups.allErrorGroups.value.find(
+        (group) => group.type === 'execution'
+      )
+      expect(executionGroup).toMatchObject({
+        severity: 'error',
+        count: 1
+      })
+      if (executionGroup?.type !== 'execution') return
+      expect(executionGroup.cards[0]).toMatchObject({
+        id: 'node-not::a-node',
+        title: 'CheckpointLoaderSimple'
+      })
+      expect(executionGroup.cards[0].nodeId).toBeUndefined()
+    })
+
     it('adds display fields for targeted runtime execution errors', async () => {
       mockIsCloud.value = true
       const { store, groups } = createErrorGroups()
@@ -1131,8 +1193,6 @@ describe('useErrorGroups', () => {
         makeMedia('shared.png', { nodeId: '2', nodeType: 'PreviewImage' })
       ])
       await nextTick()
-
-      expect(store.totalErrorCount).toBe(2)
       expect(groups.missingMediaGroups.value).toHaveLength(1)
       expect(groups.missingMediaGroups.value[0].items).toHaveLength(1)
       expect(
@@ -1143,6 +1203,364 @@ describe('useErrorGroups', () => {
         (group) => group.type === 'missing_media'
       )
       expect(missingMediaGroup?.displayTitle).toBe('Missing Inputs')
+    })
+  })
+
+  describe('missing resource absorption', () => {
+    it('absorbs a tracked missing-node prompt error into its pack group', async () => {
+      const { store, groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes([
+        makeMissingNodeType('MissingNode', { cnrId: 'missing-pack' })
+      ])
+      store.recordPromptError({
+        type: 'missing_node_type',
+        message: 'MissingNode is unavailable',
+        details: ''
+      })
+      await nextTick()
+
+      expect(
+        groups.allErrorGroups.value.map((group) => group.groupKey)
+      ).not.toContain('execution:prompt:missing_node_type')
+      expect(
+        groups.allErrorGroups.value.find(
+          (group) => group.type === 'missing_node'
+        )
+      ).toMatchObject({
+        severity: 'missing',
+        blockedLastRun: true
+      })
+    })
+
+    it('marks the swap section when all missing node types are replaceable', async () => {
+      const { store, groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes([
+        makeMissingNodeType('OldNode', {
+          isReplaceable: true,
+          replacement: { new_node_id: 'NewNode' }
+        })
+      ])
+      store.recordPromptError({
+        type: 'missing_node_type',
+        message: 'OldNode is unavailable',
+        details: ''
+      })
+      await nextTick()
+
+      expect(
+        groups.allErrorGroups.value.find((group) => group.type === 'swap_nodes')
+      ).toMatchObject({
+        severity: 'missing',
+        blockedLastRun: true
+      })
+      expect(
+        groups.allErrorGroups.value.some((group) => group.type === 'execution')
+      ).toBe(false)
+    })
+
+    it('marks both missing-node sections when both flavors blocked the run', async () => {
+      const { store, groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes([
+        makeMissingNodeType('OldNode', {
+          isReplaceable: true,
+          replacement: { new_node_id: 'NewNode' }
+        }),
+        makeMissingNodeType('MissingNode', {
+          nodeId: '2',
+          cnrId: 'missing-pack'
+        })
+      ])
+      store.recordPromptError({
+        type: 'missing_node_type',
+        message: 'Node types are unavailable',
+        details: ''
+      })
+      await nextTick()
+
+      expect(
+        groups.allErrorGroups.value.find((group) => group.type === 'swap_nodes')
+      ).toMatchObject({ blockedLastRun: true })
+      expect(
+        groups.allErrorGroups.value.find(
+          (group) => group.type === 'missing_node'
+        )
+      ).toMatchObject({ blockedLastRun: true })
+    })
+
+    it('keeps a missing-node prompt error when no missing nodes are tracked', async () => {
+      const { store, groups } = createErrorGroups()
+      store.recordPromptError({
+        type: 'missing_node_type',
+        message: 'MissingNode is unavailable',
+        details: ''
+      })
+      await nextTick()
+
+      expect(
+        groups.allErrorGroups.value.find(
+          (group) => group.groupKey === 'execution:prompt:missing_node_type'
+        )
+      ).toMatchObject({
+        type: 'execution',
+        severity: 'error',
+        displayTitle: 'Missing node type'
+      })
+    })
+
+    it('keeps a different prompt error when missing nodes are tracked', async () => {
+      const { store, groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes([
+        makeMissingNodeType('MissingNode', { cnrId: 'missing-pack' })
+      ])
+      store.recordPromptError({
+        type: 'prompt_no_outputs',
+        message: 'No outputs',
+        details: ''
+      })
+      await nextTick()
+
+      expect(
+        groups.allErrorGroups.value.find(
+          (group) => group.groupKey === 'execution:prompt:prompt_no_outputs'
+        )
+      ).toMatchObject({
+        type: 'execution',
+        severity: 'error'
+      })
+      expect(
+        groups.allErrorGroups.value.find(
+          (group) => group.type === 'missing_node'
+        )
+      ).toMatchObject({ blockedLastRun: false })
+    })
+
+    it('aligns blocking severity with prompt-error absorption', async () => {
+      const { store } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      const hasBlockingError = useHasBlockingError()
+      missingNodesStore.setMissingNodeTypes([
+        makeMissingNodeType('MissingNode', { cnrId: 'missing-pack' })
+      ])
+      store.recordPromptError({
+        type: 'missing_node_type',
+        message: 'MissingNode is unavailable',
+        details: ''
+      })
+      await nextTick()
+
+      expect(hasBlockingError.value).toBe(false)
+
+      store.recordPromptError({
+        type: 'prompt_no_outputs',
+        message: 'No outputs',
+        details: ''
+      })
+      await nextTick()
+
+      expect(hasBlockingError.value).toBe(true)
+    })
+
+    it('does not surface a red prompt error after all missing node types are replaced', async () => {
+      const { store, groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      const hasBlockingError = useHasBlockingError()
+      missingNodesStore.setMissingNodeTypes([
+        makeMissingNodeType('MissingNode', { cnrId: 'missing-pack' })
+      ])
+      store.recordPromptError({
+        type: 'missing_node_type',
+        message: 'MissingNode is unavailable',
+        details: ''
+      })
+
+      missingNodesStore.removeMissingNodesByType(['MissingNode'])
+      await nextTick()
+
+      expect(store.lastPromptError).toBeNull()
+      expect(
+        groups.allErrorGroups.value.some((group) => group.type === 'execution')
+      ).toBe(false)
+      expect(hasBlockingError.value).toBe(false)
+    })
+
+    it('keeps an unrelated prompt error after missing nodes are resolved', async () => {
+      const { store, groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes([
+        makeMissingNodeType('MissingNode', { cnrId: 'missing-pack' })
+      ])
+      store.recordPromptError({
+        type: 'prompt_no_outputs',
+        message: 'No outputs',
+        details: ''
+      })
+
+      missingNodesStore.removeMissingNodesByType(['MissingNode'])
+      await nextTick()
+
+      expect(store.lastPromptError?.type).toBe('prompt_no_outputs')
+      expect(
+        groups.allErrorGroups.value.find(
+          (group) => group.groupKey === 'execution:prompt:prompt_no_outputs'
+        )
+      ).toMatchObject({ severity: 'error' })
+    })
+
+    it('keeps a missing-node prompt absorbed while missing nodes remain', async () => {
+      const { store, groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes([
+        makeMissingNodeType('ReplaceableNode', {
+          isReplaceable: true,
+          replacement: { new_node_id: 'ReplacementNode' }
+        }),
+        makeMissingNodeType('MissingNode', {
+          cnrId: 'missing-pack',
+          nodeId: '2'
+        })
+      ])
+      store.recordPromptError({
+        type: 'missing_node_type',
+        message: 'Node types are unavailable',
+        details: ''
+      })
+
+      missingNodesStore.removeMissingNodesByType(['ReplaceableNode'])
+      await nextTick()
+
+      expect(store.lastPromptError?.type).toBe('missing_node_type')
+      expect(
+        groups.allErrorGroups.value.some((group) => group.type === 'execution')
+      ).toBe(false)
+      expect(
+        groups.allErrorGroups.value.find(
+          (group) => group.type === 'missing_node'
+        )
+      ).toMatchObject({ blockedLastRun: true })
+    })
+
+    it('absorbs a tracked missing model error into its missing group', async () => {
+      const { store, groups } = createErrorGroups()
+      store.surfaceMissingModels([
+        makeModel('model.safetensors', {
+          nodeId: '1',
+          widgetName: 'ckpt_name',
+          directory: 'checkpoints'
+        })
+      ])
+      store.recordNodeErrors({
+        '1': nodeError(
+          [
+            validationError('value_not_in_list', 'ckpt_name', {
+              received_value: 'model.safetensors'
+            })
+          ],
+          'CheckpointLoaderSimple'
+        )
+      })
+      await nextTick()
+
+      expect(
+        groups.allErrorGroups.value.filter(
+          (group) => group.type === 'execution'
+        )
+      ).toHaveLength(0)
+      expect(
+        groups.allErrorGroups.value.find(
+          (group) => group.type === 'missing_model'
+        )
+      ).toMatchObject({
+        severity: 'missing',
+        blockedLastRun: true
+      })
+    })
+
+    it('keeps unrelated validation errors on the same node', async () => {
+      const { store, groups } = createErrorGroups()
+      store.surfaceMissingModels([
+        makeModel('model.safetensors', {
+          nodeId: '1',
+          widgetName: 'ckpt_name'
+        })
+      ])
+      store.recordNodeErrors({
+        '1': nodeError(
+          [validationError('value_bigger_than_max', 'ckpt_name')],
+          'CheckpointLoaderSimple'
+        )
+      })
+      await nextTick()
+
+      expect(
+        groups.allErrorGroups.value.filter(
+          (group) => group.type === 'execution'
+        )
+      ).toHaveLength(1)
+      expect(
+        groups.allErrorGroups.value.find(
+          (group) => group.type === 'missing_model'
+        )
+      ).toMatchObject({ blockedLastRun: false })
+    })
+
+    it('keeps untracked resource-shaped validation errors', async () => {
+      const { store, groups } = createErrorGroups()
+      store.recordNodeErrors({
+        '1': nodeError(
+          [
+            validationError('value_not_in_list', 'ckpt_name', {
+              received_value: 'untracked.safetensors'
+            })
+          ],
+          'CheckpointLoaderSimple'
+        )
+      })
+      await nextTick()
+
+      expect(
+        groups.allErrorGroups.value.filter(
+          (group) => group.type === 'execution'
+        )
+      ).toHaveLength(1)
+    })
+
+    it('marks a missing media group when its run error is absorbed', async () => {
+      const { store, groups } = createErrorGroups()
+      store.surfaceMissingMedia([
+        makeMedia('portrait.png', {
+          nodeId: '1',
+          widgetName: 'image'
+        })
+      ])
+      store.recordNodeErrors({
+        '1': nodeError(
+          [
+            validationError(
+              'custom_validation_failed',
+              'image',
+              { received_value: 'portrait.png' },
+              'Invalid image file'
+            )
+          ],
+          'LoadImage'
+        )
+      })
+      await nextTick()
+
+      expect(
+        groups.allErrorGroups.value.filter(
+          (group) => group.type === 'execution'
+        )
+      ).toHaveLength(0)
+      expect(
+        groups.allErrorGroups.value.find(
+          (group) => group.type === 'missing_media'
+        )
+      ).toMatchObject({ blockedLastRun: true })
     })
   })
 

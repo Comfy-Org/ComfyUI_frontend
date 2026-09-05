@@ -1,15 +1,18 @@
 import { expect } from '@playwright/test'
 import type { Locator } from '@playwright/test'
 
+import type { NodeError } from '@/schemas/apiSchema'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import {
   interceptClipboardWrite,
   getClipboardText
 } from '@e2e/fixtures/utils/clipboardSpy'
 import {
   cleanupFakeModel,
-  loadWorkflowAndOpenErrorsTab
+  loadWorkflowAndOpenErrorsTab,
+  openErrorsTab
 } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 
 const FAKE_MODEL_NAME = 'fake_model.safetensors'
@@ -79,6 +82,94 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
     await expect(
       modelsGroup.getByTestId(TestIds.dialogs.missingModelLocate)
     ).toHaveCount(2)
+  })
+
+  test.describe('Validation absorption', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting(
+        'Comfy.Workflow.WorkflowTabsPosition',
+        'Sidebar'
+      )
+      await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
+      const nodeErrors = {
+        '1': {
+          class_type: 'CheckpointLoaderSimple',
+          dependent_outputs: [],
+          errors: [
+            {
+              type: 'value_not_in_list',
+              message: 'Value not in list',
+              details: '',
+              extra_info: {
+                input_name: 'ckpt_name',
+                received_value: FAKE_MODEL_NAME
+              }
+            }
+          ]
+        }
+      } satisfies Record<string, NodeError>
+      await new ExecutionHelper(comfyPage).mockValidationFailure(nodeErrors)
+    })
+
+    test('Should keep an absorbed missing-model validation failure amber across workflow switches', async ({
+      comfyPage
+    }) => {
+      await comfyPage.command.executeCommand('Comfy.QueuePrompt')
+      const errorOverlay = comfyPage.page.getByTestId(
+        TestIds.dialogs.errorOverlay
+      )
+      await expect(errorOverlay).toBeVisible()
+      await errorOverlay
+        .getByTestId(TestIds.dialogs.errorOverlaySeeErrors)
+        .click()
+
+      await expect(
+        comfyPage.page.locator('section[data-testid^="error-group-"]')
+      ).toHaveCount(1)
+      await expect(
+        comfyPage.page.getByTestId(TestIds.dialogs.missingModelsGroup)
+      ).toBeVisible()
+      await expect(
+        comfyPage.page
+          .getByTestId(TestIds.dialogs.missingModelsGroup)
+          .getByTestId(TestIds.propertiesPanel.blockedLastRunIndicator)
+      ).toBeVisible()
+      const hero = comfyPage.page.getByTestId(
+        TestIds.propertiesPanel.errorsSummaryHero
+      )
+      await expect(hero).toContainText('Setup required')
+      await expect(
+        comfyPage.page.getByTestId(
+          TestIds.propertiesPanel.errorsSummaryFilters
+        ),
+        'fully absorbed run has one severity, so no filter chips render'
+      ).toBeHidden()
+      await expect(
+        comfyPage.page
+          .getByTestId(TestIds.propertiesPanel.errorsTab)
+          .getByTestId(TestIds.propertiesPanel.tabIcon)
+      ).toHaveAccessibleName('Setup required')
+
+      await comfyPage.menu.workflowsTab.open()
+      await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+      await expect(
+        comfyPage.page.getByTestId(TestIds.dialogs.missingModelsGroup)
+      ).toBeHidden()
+
+      await comfyPage.menu.workflowsTab.open()
+      await comfyPage.menu.workflowsTab.switchToWorkflow('missing_models')
+      await openErrorsTab(comfyPage)
+
+      await expect(
+        comfyPage.page.locator('section[data-testid^="error-group-"]')
+      ).toHaveCount(1)
+      await expect(
+        comfyPage.page
+          .getByTestId(TestIds.dialogs.missingModelsGroup)
+          .getByTestId(TestIds.propertiesPanel.blockedLastRunIndicator)
+      ).toBeVisible()
+      await expect(hero).toContainText('Setup required')
+    })
   })
 
   test('Should copy model URL to clipboard', async ({ comfyPage }) => {

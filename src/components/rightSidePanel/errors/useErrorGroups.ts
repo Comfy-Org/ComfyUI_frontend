@@ -44,6 +44,9 @@ import {
   tryNormalizeNodeExecutionId
 } from '@/types/nodeIdentification'
 
+import type { MissingResourceAbsorption } from './missingResourceAbsorption'
+import { useErrorClassification } from './useErrorClassification'
+
 const PROMPT_CARD_ID = '__prompt__'
 
 const AGENT_PROMPT_ERROR_TYPE_LIST = [
@@ -179,7 +182,8 @@ function toSortedGroups(groupsMap: Map<string, GroupEntry>): ErrorGroup[] {
         displayMessage: groupData.displayMessage,
         count: countExecutionCards(cards),
         cards,
-        priority: groupData.priority
+        priority: groupData.priority,
+        blockedLastRun: false
       }
     })
     .sort((a, b) => {
@@ -260,6 +264,8 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   const canvasStore = useCanvasStore()
   const { inferPackFromNodeName } = useComfyRegistryStore()
   const collapseState = reactive<Record<string, boolean>>({})
+
+  const errorClassification = useErrorClassification()
 
   const selectedNodeInfo = computed(() => {
     const rootGraph = app.rootGraphOrUndefined
@@ -365,17 +371,43 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     card.errors.push(error)
   }
 
+  function addUnlocatedErrorToGroup(
+    groupsMap: Map<string, GroupEntry>,
+    cardId: string,
+    classType: string,
+    error: CataloguedErrorItem
+  ) {
+    const cards = getOrCreateGroup(
+      groupsMap,
+      error.catalogId,
+      error.displayTitle ?? classType,
+      1,
+      error.displayMessage
+    )
+    if (!cards.has(cardId)) {
+      cards.set(cardId, {
+        id: cardId,
+        title: classType,
+        errors: []
+      })
+    }
+    cards.get(cardId)?.errors.push(error)
+  }
+
   function processPromptError(
     groupsMap: Map<string, GroupEntry>,
     filterBySelection = false
-  ) {
+  ): boolean {
+    const classifiedPromptError = errorClassification.value.promptError
     if (
       (filterBySelection && selectedNodeInfo.value.nodeIds) ||
-      !executionErrorStore.lastPromptError
+      !classifiedPromptError
     )
-      return
+      return false
 
-    const error = executionErrorStore.lastPromptError
+    const { error, isAbsorbed } = classifiedPromptError
+    if (isAbsorbed) return true
+
     const resolvedDisplay = resolveRunErrorMessage({
       kind: 'prompt',
       error,
@@ -404,71 +436,99 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
         }
       ]
     })
+    return false
   }
 
   function processNodeErrors(
     groupsMap: Map<string, GroupEntry>,
     filterBySelection = false
-  ) {
-    if (!executionErrorStore.surfacedNodeErrors) return
+  ): Set<MissingResourceAbsorption> {
+    const blockedMissingGroups = new Set<MissingResourceAbsorption>()
 
-    for (const [rawNodeId, nodeError] of Object.entries(
-      executionErrorStore.surfacedNodeErrors
-    )) {
-      const nodeId = tryNormalizeNodeExecutionId(rawNodeId)
-      if (!nodeId) continue
-      const nodeDisplayName =
-        resolveNodeInfo(nodeId).title || nodeError.class_type
-      for (const e of nodeError.errors) {
-        addNodeErrorToGroup(
-          groupsMap,
-          nodeId,
-          nodeError.class_type,
-          'node',
-          {
-            message: e.message,
-            details: e.details,
-            ...resolveRunErrorMessage({
-              kind: 'node_validation',
-              error: e,
-              nodeDisplayName
-            })
-          },
-          filterBySelection
-        )
+    for (const classifiedNodeError of errorClassification.value.nodeErrors) {
+      const { rawNodeId, nodeId, nodeError } = classifiedNodeError
+      if (filterBySelection && !nodeId) continue
+      const nodeDisplayName = nodeId
+        ? resolveNodeInfo(nodeId).title || nodeError.class_type
+        : nodeError.class_type
+
+      for (const { error, absorption } of classifiedNodeError.errors) {
+        if (absorption) {
+          blockedMissingGroups.add(absorption)
+          continue
+        }
+
+        const cataloguedError = {
+          message: error.message,
+          details: error.details,
+          ...resolveRunErrorMessage({
+            kind: 'node_validation',
+            error,
+            nodeDisplayName
+          })
+        }
+        if (nodeId) {
+          addNodeErrorToGroup(
+            groupsMap,
+            nodeId,
+            nodeError.class_type,
+            'node',
+            cataloguedError,
+            filterBySelection
+          )
+        } else {
+          addUnlocatedErrorToGroup(
+            groupsMap,
+            `node-${rawNodeId}`,
+            nodeError.class_type,
+            cataloguedError
+          )
+        }
       }
     }
+
+    return blockedMissingGroups
   }
 
   function processExecutionError(
     groupsMap: Map<string, GroupEntry>,
     filterBySelection = false
   ) {
-    if (!executionErrorStore.lastExecutionError) return
+    const classifiedExecutionError = errorClassification.value.executionError
+    if (!classifiedExecutionError) return
 
-    const e = executionErrorStore.lastExecutionError
-    if (e.node_id == null) return
-    const nodeId = tryNormalizeNodeExecutionId(e.node_id)
-    if (!nodeId) return
-
-    addNodeErrorToGroup(
-      groupsMap,
-      nodeId,
-      e.node_type,
-      'exec',
-      {
-        message: `${e.exception_type}: ${e.exception_message}`,
-        details: e.traceback.join('\n'),
-        isRuntimeError: true,
-        exceptionType: e.exception_type,
-        ...resolveRunErrorMessage({
-          kind: 'execution',
-          error: e,
-          nodeDisplayName: resolveNodeInfo(nodeId).title || e.node_type
-        })
-      },
-      filterBySelection
-    )
+    const { error, nodeId } = classifiedExecutionError
+    if (filterBySelection && !nodeId) return
+    const cataloguedError = {
+      message: `${error.exception_type}: ${error.exception_message}`,
+      details: error.traceback.join('\n'),
+      isRuntimeError: true,
+      exceptionType: error.exception_type,
+      ...resolveRunErrorMessage({
+        kind: 'execution',
+        error,
+        nodeDisplayName: nodeId
+          ? resolveNodeInfo(nodeId).title || error.node_type
+          : error.node_type
+      })
+    }
+    if (nodeId) {
+      addNodeErrorToGroup(
+        groupsMap,
+        nodeId,
+        error.node_type,
+        'exec',
+        cataloguedError,
+        filterBySelection
+      )
+    } else {
+      addUnlocatedErrorToGroup(
+        groupsMap,
+        `exec-${error.node_id}`,
+        error.node_type,
+        cataloguedError
+      )
+    }
   }
 
   // Async pack-ID resolution for missing node types that lack a cnrId
@@ -630,6 +690,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
    * emphasis to the canvas selection); groups reduced to zero are omitted.
    */
   function buildMissingNodeGroups(
+    blockedLastRun: boolean,
     includeGroup: (nodeTypes: MissingNodeType[]) => boolean = () => true
   ): ErrorGroup[] {
     const error = missingNodesStore.missingNodesError
@@ -650,6 +711,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
         groupKey: 'swap_nodes',
         count: swapCount,
         priority: 0,
+        blockedLastRun,
         ...resolveMissingErrorMessage({
           kind: 'swap_nodes',
           nodeTypes: error.nodeTypes,
@@ -666,6 +728,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
         groupKey: 'missing_node',
         count: packCount,
         priority: 1,
+        blockedLastRun,
         ...resolveMissingErrorMessage({
           kind: 'missing_node',
           nodeTypes: error.nodeTypes,
@@ -685,7 +748,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     )
   })
 
-  function buildMissingModelGroups(): ErrorGroup[] {
+  function buildMissingModelGroups(blockedLastRun: boolean): ErrorGroup[] {
     if (!missingModelGroups.value.length) return []
     const count = countMissingModels(missingModelGroups.value)
     return [
@@ -695,6 +758,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
         groupKey: 'missing_model',
         count,
         priority: 2,
+        blockedLastRun,
         ...resolveMissingErrorMessage({
           kind: 'missing_model',
           groups: missingModelGroups.value,
@@ -711,7 +775,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     return groupCandidatesByMediaType(candidates)
   })
 
-  function buildMissingMediaGroups(): ErrorGroup[] {
+  function buildMissingMediaGroups(blockedLastRun: boolean): ErrorGroup[] {
     if (!missingMediaGroups.value.length) return []
     const totalRows = countMissingMediaReferences(missingMediaGroups.value)
     return [
@@ -721,6 +785,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
         groupKey: 'missing_media',
         count: totalRows,
         priority: 3,
+        blockedLastRun,
         ...resolveMissingErrorMessage({
           kind: 'missing_media',
           groups: missingMediaGroups.value,
@@ -786,7 +851,9 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     return groupCandidatesByMediaType(matched)
   })
 
-  function buildMissingModelGroupsForSelection(): ErrorGroup[] {
+  function buildMissingModelGroupsForSelection(
+    blockedLastRun: boolean
+  ): ErrorGroup[] {
     if (!missingModelGroupsForSelection.value.length) return []
     const count = countMissingModels(missingModelGroupsForSelection.value)
     return [
@@ -796,6 +863,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
         groupKey: 'missing_model',
         count,
         priority: 2,
+        blockedLastRun,
         ...resolveMissingErrorMessage({
           kind: 'missing_model',
           groups: missingModelGroupsForSelection.value,
@@ -806,7 +874,9 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     ]
   }
 
-  function buildMissingMediaGroupsForSelection(): ErrorGroup[] {
+  function buildMissingMediaGroupsForSelection(
+    blockedLastRun: boolean
+  ): ErrorGroup[] {
     if (!missingMediaGroupsForSelection.value.length) return []
     const totalRows = countMissingMediaReferences(
       missingMediaGroupsForSelection.value
@@ -818,6 +888,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
         groupKey: 'missing_media',
         count: totalRows,
         priority: 3,
+        blockedLastRun,
         ...resolveMissingErrorMessage({
           kind: 'missing_media',
           groups: missingMediaGroupsForSelection.value,
@@ -831,15 +902,15 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   const allErrorGroups = computed<ErrorGroup[]>(() => {
     const groupsMap = new Map<string, GroupEntry>()
 
-    processPromptError(groupsMap)
-    processNodeErrors(groupsMap)
+    const promptErrorAbsorbed = processPromptError(groupsMap)
+    const blockedMissingGroups = processNodeErrors(groupsMap)
     processExecutionError(groupsMap)
 
     return [
       ...toSortedGroups(groupsMap),
-      ...buildMissingNodeGroups(),
-      ...buildMissingModelGroups(),
-      ...buildMissingMediaGroups()
+      ...buildMissingNodeGroups(promptErrorAbsorbed),
+      ...buildMissingModelGroups(blockedMissingGroups.has('missing_model')),
+      ...buildMissingMediaGroups(blockedMissingGroups.has('missing_media'))
     ]
   })
 
@@ -853,17 +924,20 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     if (!hasSelection.value) return []
 
     const groupsMap = new Map<string, GroupEntry>()
-    processPromptError(groupsMap, true)
-    processNodeErrors(groupsMap, true)
+    void processPromptError(groupsMap, true)
+    void processNodeErrors(groupsMap, true)
     processExecutionError(groupsMap, true)
 
+    // Selection groups drive emphasis only; blockedLastRun cannot be computed
+    // selection-accurately here (absorption is a graph-wide fact), so it is
+    // uniformly false rather than a graph-wide flag masquerading as scoped.
     return [
       ...toSortedGroups(groupsMap),
-      ...buildMissingNodeGroups((nodeTypes) =>
+      ...buildMissingNodeGroups(false, (nodeTypes) =>
         someNodeTypeInSelection(nodeTypes, selectionMatchedAssetNodeIds.value)
       ),
-      ...buildMissingModelGroupsForSelection(),
-      ...buildMissingMediaGroupsForSelection()
+      ...buildMissingModelGroupsForSelection(false),
+      ...buildMissingMediaGroupsForSelection(false)
     ]
   })
 

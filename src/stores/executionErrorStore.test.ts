@@ -2,6 +2,7 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { createTestingPinia } from '@pinia/testing'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import {
@@ -12,6 +13,7 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import {
   createNodeExecutionId,
   createNodeLocatorId
@@ -901,6 +903,197 @@ describe('added-node error scan coordination', () => {
 
     finishOtherGraph()
     expect(store.hasPendingAddedNodeErrorScan(graphB, executionId)).toBe(false)
+  })
+})
+
+describe('absorbed-error retirement on candidate resolution', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  const execId = createNodeExecutionId([1])
+  if (!execId) {
+    throw new Error('Expected a node execution ID')
+  }
+
+  function absorbedModelCandidate() {
+    return {
+      nodeId: execId,
+      nodeType: 'CheckpointLoaderSimple',
+      widgetName: 'ckpt_name',
+      isAssetSupported: false,
+      name: 'model.safetensors',
+      directory: 'checkpoints',
+      isMissing: true
+    }
+  }
+
+  const absorbedError = () =>
+    validationError('value_not_in_list', 'ckpt_name', {
+      received_value: 'model.safetensors'
+    })
+  const blockingError = () =>
+    validationError('required_input_missing', 'positive')
+
+  it('retires an absorbed validation error when its candidate resolves', async () => {
+    const store = useExecutionErrorStore()
+    const modelStore = useMissingModelStore()
+    modelStore.setMissingModels([absorbedModelCandidate()])
+    store.recordNodeErrors({
+      '1': nodeError([absorbedError(), blockingError()])
+    })
+    await nextTick()
+
+    modelStore.setMissingModels([])
+    await nextTick()
+
+    expect(store.lastNodeErrors?.['1'].errors).toEqual([blockingError()])
+  })
+
+  it('drops the node entry entirely when only absorbed errors remain', async () => {
+    const store = useExecutionErrorStore()
+    const modelStore = useMissingModelStore()
+    modelStore.setMissingModels([absorbedModelCandidate()])
+    store.recordNodeErrors({ '1': nodeError([absorbedError()]) })
+    await nextTick()
+
+    modelStore.removeMissingModelsByNodeId(execId)
+    await nextTick()
+
+    expect(store.lastNodeErrors).toBeNull()
+  })
+
+  it('keeps absorbed errors when a rescan rebuilds equivalent candidates', async () => {
+    const store = useExecutionErrorStore()
+    const modelStore = useMissingModelStore()
+    modelStore.setMissingModels([absorbedModelCandidate()])
+    store.recordNodeErrors({ '1': nodeError([absorbedError()]) })
+    await nextTick()
+
+    modelStore.setMissingModels([absorbedModelCandidate()])
+    await nextTick()
+
+    expect(store.lastNodeErrors?.['1'].errors).toEqual([absorbedError()])
+  })
+
+  it('keeps absorbed errors when candidates reset during a graph load', async () => {
+    const store = useExecutionErrorStore()
+    const modelStore = useMissingModelStore()
+    modelStore.setMissingModels([absorbedModelCandidate()])
+    store.recordNodeErrors({ '1': nodeError([absorbedError()]) })
+    await nextTick()
+
+    ChangeTracker.isLoadingGraph = true
+    try {
+      modelStore.setMissingModels([])
+      await nextTick()
+
+      expect(store.lastNodeErrors?.['1'].errors).toEqual([absorbedError()])
+    } finally {
+      ChangeTracker.isLoadingGraph = false
+    }
+  })
+
+  it('retires a promoted media combo error stored under the host id', async () => {
+    const { rootGraph } = createBoundaryLinkedSubgraph()
+    mockGraphReady(rootGraph)
+
+    const store = useExecutionErrorStore()
+    const mediaStore = useMissingMediaStore()
+    mediaStore.setMissingMedia([
+      {
+        nodeId: '12',
+        nodeType: 'LoadImage',
+        widgetName: 'seed',
+        mediaType: 'image',
+        name: 'portrait.png',
+        isMissing: true
+      }
+    ])
+    store.recordNodeErrors({
+      '12:5': nodeError([
+        validationError('value_not_in_list', 'seed_input', {
+          received_value: 'portrait.png'
+        })
+      ])
+    })
+    await nextTick()
+
+    mediaStore.removeMissingMediaByNodeId(createNodeExecutionId([toNodeId(12)]))
+    await nextTick()
+
+    expect(store.lastNodeErrors).toBeNull()
+  })
+
+  it('retires a promoted media error stored under the host id', async () => {
+    const { rootGraph } = createBoundaryLinkedSubgraph()
+    mockGraphReady(rootGraph)
+
+    const store = useExecutionErrorStore()
+    const mediaStore = useMissingMediaStore()
+    // Production scanning keys promoted media by the host execution id and
+    // the boundary (renamed) widget, while the raw error stays interior.
+    // Shaped like a promoted-widget scan result: keyed by the host, carrying
+    // the interior identity the host widget name hides.
+    mediaStore.setMissingMedia([
+      {
+        nodeId: '12',
+        nodeType: 'LoadImage',
+        widgetName: 'seed',
+        sourceExecutionId: createNodeExecutionId([toNodeId(12), toNodeId(5)]),
+        sourceWidgetName: 'seed_input',
+        mediaType: 'image',
+        name: 'portrait.png',
+        isMissing: true
+      }
+    ])
+    store.recordNodeErrors({
+      '12:5': nodeError([
+        validationError(
+          'custom_validation_failed',
+          'seed_input',
+          { received_value: 'portrait.png' },
+          'Invalid image file'
+        )
+      ])
+    })
+    await nextTick()
+
+    mediaStore.removeMissingMediaByNodeId(createNodeExecutionId([toNodeId(12)]))
+    await nextTick()
+
+    expect(store.lastNodeErrors).toBeNull()
+  })
+
+  it('retires media-absorbed errors when the node leaves tracking', async () => {
+    const store = useExecutionErrorStore()
+    const mediaStore = useMissingMediaStore()
+    mediaStore.setMissingMedia([
+      {
+        nodeId: execId,
+        nodeType: 'LoadImage',
+        widgetName: 'image',
+        mediaType: 'image',
+        name: 'portrait.png',
+        isMissing: true
+      }
+    ])
+    store.recordNodeErrors({
+      '1': nodeError([
+        validationError(
+          'custom_validation_failed',
+          'image',
+          { received_value: 'portrait.png' },
+          'Invalid image file'
+        )
+      ])
+    })
+    await nextTick()
+
+    mediaStore.removeMissingMediaByNodeId(execId)
+    await nextTick()
+
+    expect(store.lastNodeErrors).toBeNull()
   })
 })
 
