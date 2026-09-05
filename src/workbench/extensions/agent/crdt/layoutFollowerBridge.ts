@@ -341,14 +341,25 @@ export class LayoutFollowerBridge extends EventTarget {
    * the intent/reality disagreement so the next `reconcile()` (any status
    * frame) retries, instead of the bridge holding a subscription that does not
    * exist server-side and going silently deaf.
+   *
+   * `ok: true` with no valid `seq` is a malformed ack, not a usable one: the
+   * parser (`parseServerDocFrame`) strips an invalid `seq` rather than reject
+   * the whole frame, so this arrives as `ok: true` with `subscribed.seq`
+   * `undefined`. Treating that as a real ack would leave both {@link ackSeq}
+   * and {@link lastSeq} `null`, so {@link lastSequence} falls back to `0` and
+   * the gap-detector baseline in `onDocUpdate` is `null` too — the very first
+   * frame, whatever its seq, would be accepted unconditionally instead of
+   * being checked for a gap. Routed through the same failure/retry path as
+   * `ok: false` instead: REALITY is cleared so the next `reconcile()` retries
+   * the subscribe.
    */
   private readonly onDocSubscribed: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     const subscribed = event.detail as DocSubscribed
     if (subscribed.workflowId !== this.sentWorkflowId) return
-    if (subscribed.ok) {
-      this.ackSeq = subscribed.seq ?? null
-      this.catchUpPending = this.ackSeq !== null
+    if (subscribed.ok && subscribed.seq !== undefined) {
+      this.ackSeq = subscribed.seq
+      this.catchUpPending = true
     } else this.sentWorkflowId = null
     this.dispatchEvent(new CustomEvent(event.type, { detail: event.detail }))
   }

@@ -34,6 +34,7 @@ export interface DocUpdate {
 export interface DocSubscribed {
   workflowId: string
   ok: boolean
+  /** Cloud omits seq=0; successful subscriptions require docstore seq>=1. */
   seq?: number
   code?: string
   message?: string
@@ -311,7 +312,7 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
       data: {
         workflowId: data.workflow_id,
         ok: data.ok,
-        ...(isSequence(data.seq) && { seq: data.seq }),
+        ...(isSequence(data.seq) && data.seq > 0 && { seq: data.seq }),
         ...(code !== undefined && { code }),
         ...(message !== undefined && { message })
       }
