@@ -1127,6 +1127,15 @@ function requireOutputSlot(src: Y.Map<unknown>, op: ConnectOp): Y.Array<unknown>
 function requireOpOnlyValid(op: ConnectOp): void {
   requireOutputSlotDomain(op);
 
+  if (op.path !== undefined) {
+    if (!Array.isArray(op.path) || op.path.length === 0) {
+      throw new OpRejectedError("malformed_op", "connect: path must be a non-empty array when present");
+    }
+    if (op.grow != null) {
+      throw new OpRejectedError("malformed_op", "connect: interior autogrow is not supported");
+    }
+  }
+
   if (op.node_incarnation !== undefined && (typeof op.node_incarnation !== "string" || op.node_incarnation.length === 0)) {
     throw new OpRejectedError("malformed_op", "connect: node_incarnation must be a non-empty string");
   }
@@ -1174,10 +1183,124 @@ function requireOpOnlyValid(op: ConnectOp): void {
   }
 }
 
+interface InteriorConnectScope {
+  nodes: Y.Map<Y.Map<unknown>>;
+  links: Y.Map<unknown>;
+  definition: Y.Map<unknown>;
+}
+
+/** Resolve the definition addressed by an interior connect's instance path. */
+function resolveInteriorConnectScope(
+  doc: Y.Doc,
+  op: ConnectOp,
+  catalog?: WidgetCatalog,
+): InteriorConnectScope | null {
+  if (!op.path || op.path.length === 0) return null;
+  const host = resolveInteriorNode(doc, op.path.map(String), catalog);
+  if (host === null) return null;
+  const hostType = String(host.get("type") ?? "");
+  const definition = resolveDefinition(doc, hostType);
+  if (!definition) {
+    throw new OpRejectedError(
+      "not_a_subgraph",
+      `node ${String(host.get("id"))} is not a subgraph; cannot connect inside it`,
+    );
+  }
+  const definitionId = String(definition.get("id") ?? hostType);
+  const instances = countDefinitionInstances(doc, definitionId, catalog);
+  if (instances > 1) {
+    throw new OpRejectedError(
+      "shared_definition_unforked",
+      `definition ${definitionId} is instantiated ${instances} times; interior writes to shared definitions are rejected until forking is specced (schema §5.3)`,
+    );
+  }
+  const nodes = definition.get("nodes");
+  const links = definition.get("links");
+  if (!(nodes instanceof Y.Map) || !(links instanceof Y.Map)) {
+    throw new OpRejectedError("malformed_op", `subgraph definition ${definitionId} has malformed graph storage`);
+  }
+  return { nodes: nodes as Y.Map<Y.Map<unknown>>, links, definition };
+}
+
+function applyInteriorConnect(
+  doc: Y.Doc,
+  op: ConnectOp,
+  scope: InteriorConnectScope,
+): SuccessfulOutcome {
+  const linkRefusal = arrayItemRefusal(op.link_id) ?? mapValueRefusal(op.link_id);
+  if (linkRefusal !== null) {
+    throw new OpRejectedError("malformed_op", `connect: link_id: ${linkRefusal}`);
+  }
+
+  const src = scope.nodes.get(String(op.from_node));
+  const dst = scope.nodes.get(String(op.to_node));
+  if (!dst) return "no-op";
+  const sourceOutputs = src ? requireOutputSlot(src, op) : null;
+  const toIdx = op.to_slot as number;
+  const inputs = dst.get("inputs");
+  if (!(inputs instanceof Y.Array) || toIdx >= inputs.length) {
+    throw new OpRejectedError(
+      "input_slot_missing",
+      `connect: input slot ${String(toIdx)} not found on node ${String(op.to_node)}`,
+    );
+  }
+  const input = inputs.get(toIdx);
+  if (!(input instanceof Y.Map)) {
+    throw new OpRejectedError("input_slot_missing", `connect: input slot ${toIdx} is not a slot record`);
+  }
+
+  if (!claimLinkIdentity(doc, op, scope)) return "lww-dropped";
+  const stamps = stampsMap(doc);
+  const targetKey = stampTargetKey(op);
+  const prior = stamps.get(targetKey) as StampKey | undefined;
+  const key = stampKey(op);
+  if (prior != null && compareStampKeys(key, prior) <= 0) return "lww-dropped";
+  mset(stamps, targetKey, key);
+
+  const previous = input.get("link");
+  if (previous != null && previous !== op.link_id) removeLinkInScope(scope, previous);
+  if (!src || !sourceOutputs) return "no-op";
+
+  const linkKey = String(op.link_id);
+  if (!scope.links.has(linkKey)) {
+    mset(scope.links, linkKey, {
+      id: op.link_id,
+      origin_id: op.from_node,
+      origin_slot: op.from_slot,
+      target_id: op.to_node,
+      target_slot: toIdx,
+      type: op.link_type,
+    });
+  }
+  const linkOrder = scope.definition.get("link_order");
+  const orderedIds = Array.isArray(linkOrder) ? [...linkOrder] : [];
+  if (!orderedIds.some((id) => String(id) === linkKey)) {
+    orderedIds.push(linkKey);
+    mset(scope.definition, "link_order", orderedIds);
+  }
+  mset(input, "link", op.link_id);
+  const output = sourceOutputs.get(op.from_slot) as Y.Map<unknown>;
+  let outputLinks = output.get("links");
+  if (!(outputLinks instanceof Y.Array)) {
+    outputLinks = new Y.Array<unknown>();
+    mset(output, "links", outputLinks);
+  }
+  if (!(outputLinks as Y.Array<unknown>).toArray().includes(op.link_id)) {
+    apush(outputLinks as Y.Array<unknown>, op.link_id);
+  }
+  return "applied";
+}
+
 function applyConnect(doc: Y.Doc, op: ConnectOp, catalog?: WidgetCatalog): SuccessfulOutcome {
   // OP-ONLY validation first, before ANY document read decides the outcome
   // (KA-4, Amendment A6).
   requireOpOnlyValid(op);
+
+  if (op.path && op.path.length > 0) {
+    const scope = resolveInteriorConnectScope(doc, op, catalog);
+    if (scope === null) return "no-op";
+    return applyInteriorConnect(doc, op, scope);
+  }
 
   const nodes = nodesMap(doc);
   const dst = nodes.get(String(op.to_node));
@@ -1319,17 +1442,25 @@ function applyConnect(doc: Y.Doc, op: ConnectOp, catalog?: WidgetCatalog): Succe
 }
 
 /** Claim the normalized complete-tuple link register (schema Amendment A18). */
-function claimLinkIdentity(doc: Y.Doc, op: ConnectOp): boolean {
+function claimLinkIdentity(doc: Y.Doc, op: ConnectOp, scope?: InteriorConnectScope): boolean {
   const stamps = stampsMap(doc);
   const normalizedId = String(op.link_id);
-  const targetKey = JSON.stringify(["link", normalizedId]);
+  const targetKey = JSON.stringify([
+    "link",
+    ...(scope && op.path ? [op.path.map(String)] : []),
+    normalizedId,
+  ]);
   const prior = stamps.get(targetKey) as StampKey | undefined;
   const key = stampKey(op);
   if (prior != null && compareStampKeys(key, prior) <= 0) return false;
 
-  const links = linksMap(doc);
+  const links = scope?.links ?? linksMap(doc);
   if (links.has(normalizedId)) mdel(links, normalizedId);
-  scrubLinkRefs(doc, (candidate) => candidate != null && String(candidate) === normalizedId);
+  if (scope) {
+    scrubNodeLinkRefs(scope.nodes, (candidate) => candidate != null && String(candidate) === normalizedId);
+  } else {
+    scrubLinkRefs(doc, (candidate) => candidate != null && String(candidate) === normalizedId);
+  }
   mset(stamps, targetKey, key);
   return true;
 }
@@ -1663,9 +1794,26 @@ function removeLink(doc: Y.Doc, linkId: unknown): void {
   scrubLinkRefs(doc, (candidate) => candidate != null && String(candidate) === key);
 }
 
+function removeLinkInScope(scope: InteriorConnectScope, linkId: unknown): void {
+  const key = String(linkId);
+  if (scope.links.has(key)) mdel(scope.links, key);
+  scrubNodeLinkRefs(scope.nodes, (candidate) => candidate != null && String(candidate) === key);
+  const linkOrder = scope.definition.get("link_order");
+  if (Array.isArray(linkOrder)) {
+    mset(scope.definition, "link_order", linkOrder.filter((id) => String(id) !== key));
+  }
+}
+
 /** Scrub input/output references selected by one shared link-id predicate. */
 function scrubLinkRefs(doc: Y.Doc, shouldRemove: (linkId: unknown) => boolean): void {
-  nodesMap(doc).forEach((node) => {
+  scrubNodeLinkRefs(nodesMap(doc), shouldRemove);
+}
+
+function scrubNodeLinkRefs(
+  nodes: Y.Map<Y.Map<unknown>>,
+  shouldRemove: (linkId: unknown) => boolean,
+): void {
+  nodes.forEach((node) => {
     const ins = node.get("inputs");
     if (ins instanceof Y.Array) {
       ins.forEach((slot: unknown) => {

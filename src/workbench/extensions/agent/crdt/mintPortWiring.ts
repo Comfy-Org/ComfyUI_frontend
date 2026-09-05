@@ -140,6 +140,12 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
   const deletedListeners = new Set<DeletedListener>()
   const setListeners = new Set<SetListener>()
 
+  function resolveInteriorPath(owningGraphId: string): string[] | null {
+    const graph = deps.getGraph()
+    if (!graph) return null
+    return findSubgraphNodePathById(graph as unknown as LGraph, owningGraphId)
+  }
+
   const linkPort = attachLinkMintPort({
     events: {
       onPlaced(listener) {
@@ -154,6 +160,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     session,
     isEnabled: deps.isEnabled,
     isDocBound: deps.isDocBound,
+    resolveInteriorPath,
     enqueue: deps.enqueue
   })
 
@@ -191,11 +198,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
       if (!graph) return null
       return graph.rootGraph?.id ?? graph.id
     },
-    resolveInteriorPath(owningGraphId) {
-      const graph = deps.getGraph()
-      if (!graph) return null
-      return findSubgraphNodePathById(graph as unknown as LGraph, owningGraphId)
-    },
+    resolveInteriorPath,
     enqueue: deps.enqueue
   })
 
