@@ -52,7 +52,10 @@ const ctaButtons = [
         class="col-span-full row-span-full h-8"
       />
       <div
-        class="relative col-span-full row-span-full h-10 w-0 overflow-clip transition-[width] xl:w-36"
+        :class="[
+          'relative col-span-full row-span-full h-10 w-0 overflow-clip transition-[width]',
+          showWorkshop ? '2xl:w-36' : 'xl:w-36'
+        ]"
       >
         <img
           src="/icons/logo.svg"
@@ -66,12 +69,13 @@ const ctaButtons = [
     <HeaderMainDesktop
       :locale
       :show-workshop
-      :class="showWorkshop ? 'hidden 2xl:block' : 'hidden lg:block'"
+      :compact="showWorkshop"
+      :class="showWorkshop ? 'hidden xl:block' : 'hidden lg:block'"
     />
     <HeaderMainMobile
       :locale
       :show-workshop
-      :class="showWorkshop ? '2xl:hidden' : 'lg:hidden'"
+      :class="showWorkshop ? 'xl:hidden' : 'lg:hidden'"
     />
 
     <!-- Desktop CTA buttons -->
@@ -79,7 +83,7 @@ const ctaButtons = [
       data-testid="desktop-nav-cta"
       :class="
         showWorkshop
-          ? 'hidden shrink-0 items-center gap-2 2xl:flex'
+          ? 'hidden shrink-0 items-center gap-2 xl:flex'
           : 'hidden shrink-0 items-center gap-2 lg:flex'
       "
     >
