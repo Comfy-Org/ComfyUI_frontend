@@ -160,13 +160,46 @@ export class EcsFollowerAdapter {
       while (session.frameQueue.length > 0) {
         const frame = session.frameQueue.shift()
         if (!frame) continue
-        const committed = this.applyQueuedFrame(session, frame)
+        const committed = this.applyQueuedFrame(session, frameContext(frame))
         if (frame === update) updateCommitted = committed
       }
     } finally {
       session.applying = false
     }
     return updateCommitted
+  }
+
+  /** True while a target has mutations retained from a dropped batch. */
+  hasPending(workflowId: string): boolean {
+    const session = this.targets.get(workflowId)
+    if (!session) return false
+    return (
+      session.nodeActions.size > 0 ||
+      session.changedWidgets.size > 0 ||
+      session.changedLinks.size > 0
+    )
+  }
+
+  /**
+   * Re-drain retained mutations once the scope becomes available with no
+   * further `doc_update` frame to trigger the normal retry path. A no-op if
+   * nothing is pending or another drain (frame or retry) is already running,
+   * so a caller may call this speculatively on every scope-ready signal.
+   */
+  retryPending(workflowId: string): boolean {
+    const session = this.targets.get(workflowId)
+    if (!session || session.applying) return false
+    if (!this.hasPending(workflowId)) return false
+    session.applying = true
+    try {
+      return this.applyQueuedFrame(session, {
+        source: 'agent-remote',
+        actor: 'agent-scope-recovery',
+        opId: `scope-recovery:${workflowId}`
+      })
+    } finally {
+      session.applying = false
+    }
   }
 
   /** Explicit lineage reset only; reconnect/gap recovery never calls it. */
@@ -215,7 +248,10 @@ export class EcsFollowerAdapter {
     return session
   }
 
-  private applyQueuedFrame(session: TargetSession, update: DocUpdate): boolean {
+  private applyQueuedFrame(
+    session: TargetSession,
+    context: RemoteMutationContext
+  ): boolean {
     const nodeActions = new Map(session.nodeActions)
     const changedWidgets = new Map(
       [...session.changedWidgets].map(([id, names]) => [id, new Set(names)])
@@ -223,7 +259,6 @@ export class EcsFollowerAdapter {
     const replacedWidgetMaps = new Set(session.replacedWidgetMaps)
     const changedLinkIds = new Set(session.changedLinks)
     const reconcile = session.reconcileNextFrame
-    this.discardSessionPending(session)
 
     const replacedNodeIds = new Set(
       [...nodeActions]
@@ -246,7 +281,7 @@ export class EcsFollowerAdapter {
     const removedLinkIds = [...changedLinkIds].flatMap((id) =>
       session.links.has(id) ? [] : [Number(id)]
     )
-    const committed = session.mutations.batch(frameContext(update), (batch) => {
+    const committed = session.mutations.batch(context, (batch) => {
       if (reconcile) {
         const nodes = [...session.nodes.keys()].flatMap((id) => {
           const payload = readSemanticNode(session.follower.doc, id)
@@ -301,13 +336,25 @@ export class EcsFollowerAdapter {
       }
     })
 
-    // Only clear the reconciliation flag once the batch actually commits.
-    // A rejected batch (no scope, or validation failure) must leave
-    // reconcileNextFrame set so the next frame retries authoritative
-    // cleanup instead of falling through to incremental handling with
-    // stale local-only graph state still present.
-    if (committed) session.reconcileNextFrame = false
+    // A false batch has two causes with opposite remedies: no scope yet
+    // (transient, retain the pending mutations for the next frame) or a
+    // prepare() rejection (deterministic, retrying would poison every later
+    // frame for this target). An empty batch is true iff the scope exists.
+    // Either way, only clear reconcileNextFrame and the pending node/widget/
+    // link work once we know the batch committed or was deterministically
+    // rejected — never on a transient no-scope drop, which must retry.
+    if (committed || this.scopeAvailable(session, context)) {
+      session.reconcileNextFrame = false
+      this.discardSessionPending(session)
+    }
     return committed
+  }
+
+  private scopeAvailable(
+    session: TargetSession,
+    context: RemoteMutationContext
+  ): boolean {
+    return session.mutations.batch(context, () => {})
   }
 
   private discardSessionPending(session: TargetSession): void {

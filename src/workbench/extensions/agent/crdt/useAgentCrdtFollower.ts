@@ -1,6 +1,7 @@
 import { computed, onBeforeUnmount, readonly, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { createUuidv4 } from '@/utils/uuid'
@@ -407,17 +408,42 @@ export function useAgentCrdtFollower(
     refreshPersistedDocId()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
-    const applied = adapter.applyFrame(update)
-    outcomes.value = applied
+    let projected = false
+    let threw = false
+    try {
+      projected = adapter.applyFrame(update)
+    } catch (error) {
+      threw = true
+      reportError(error, { errorType: 'agent_crdt_apply_frame_failure' })
+    }
+    outcomes.value = projected
       ? { ...outcomes.value, applied: outcomes.value.applied + 1 }
       : { ...outcomes.value, skipped: outcomes.value.skipped + 1 }
-    if (applied) reconcileLiveGraph(update.workflowId)
+    if (projected) reconcileLiveGraph(update.workflowId)
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
       actor: update.actor,
-      bytes: update.update instanceof Uint8Array ? update.update.length : null
+      bytes: update.update instanceof Uint8Array ? update.update.length : null,
+      projected
     })
+    if (!projected) {
+      recordDevEvent('doc_update_dropped', {
+        workflowId: update.workflowId,
+        seq: update.seq
+      })
+      // No resubscribe: the follower doc already holds these bytes, so a
+      // state-vector Resync returns only an ack and would reset the seq gap
+      // detector. The adapter retains transiently unprojected mutations and
+      // retries them on the next delivered frame.
+      if (!threw) {
+        reportError(new Error('agent CRDT frame dropped'), {
+          errorType: 'agent_crdt_frame_dropped',
+          level: 'warning',
+          context: { workflowId: update.workflowId, seq: update.seq }
+        })
+      }
+    }
     const ids = currentDocNodeIds()
     const added = [...ids].filter((id) => !knownDocNodeIds.has(id))
     const removed = [...knownDocNodeIds].filter((id) => !ids.has(id))
@@ -536,6 +562,33 @@ export function useAgentCrdtFollower(
       event instanceof CustomEvent ? (event.detail ?? null) : null
     )
   }
+  const onApplyError: EventListener = (event) => {
+    // FEC-2 fail-closed: `Y.applyUpdate` rejected the bytes, so the bridge
+    // never merged or dispatched this frame — nothing was applied or
+    // projected. Report it (this is the uncaught-throw path FEC-2 closes) and
+    // surface the same way a schema failure does, since both are read-path
+    // gates that drop one frame without tearing down the subscription.
+    connected.value = false
+    lastFrameType.value = event.type
+    clearStaleProbe()
+    const detail =
+      event instanceof CustomEvent
+        ? (event.detail as {
+            workflowId?: string
+            seq?: number
+            error?: unknown
+          } | null)
+        : null
+    outcomes.value = { ...outcomes.value, errored: outcomes.value.errored + 1 }
+    reportError(detail?.error ?? new Error('agent CRDT apply_error'), {
+      errorType: 'agent_crdt_apply_update_failure',
+      context: { workflowId: detail?.workflowId, seq: detail?.seq }
+    })
+    recordDevEvent('apply_error', {
+      workflowId: detail?.workflowId,
+      seq: detail?.seq
+    })
+  }
   const onReconnected: EventListener = () => {
     connected.value = false
     clearStaleProbe()
@@ -557,6 +610,17 @@ export function useAgentCrdtFollower(
    */
   const onSocketActivity: EventListener = () => {
     bridge.reconcile()
+    // KA-10 (scope-hydration recovery): also probe here so a tab that stays
+    // active the whole time (scope hydrates asynchronously after subscribe,
+    // with no later doc_update) still gets drained — not just on activation.
+    // Guarded on `hasPending` so a healthy idle channel doesn't emit a dev
+    // event on every heartbeat.
+    const target = subscribedWorkflowId.value
+    if (isTargetActive.value && target !== null && adapter.hasPending(target))
+      recordDevEvent('scope_retry', {
+        workflowId: target,
+        projected: adapter.retryPending(target)
+      })
   }
 
   bridge.addEventListener('doc_subscribed', onSubscribed)
@@ -567,6 +631,7 @@ export function useAgentCrdtFollower(
   bridge.addEventListener('schema_error', onSchemaError)
   bridge.addEventListener('doc_gap', onGap)
   bridge.addEventListener('doc_stale', onStale)
+  bridge.addEventListener('apply_error', onApplyError)
   api.addEventListener('reconnected', onReconnected)
   api.addEventListener('status', onSocketActivity)
 
@@ -647,6 +712,10 @@ export function useAgentCrdtFollower(
           }
           subscribedWorkflowId.value = persisted
           retarget(persisted)
+          recordDevEvent('scope_retry', {
+            workflowId: persisted,
+            projected: adapter.retryPending(persisted)
+          })
           if (justActivated) reconcileLiveGraph(persisted)
           return
         }
@@ -667,6 +736,14 @@ export function useAgentCrdtFollower(
       }
       subscribedWorkflowId.value = next
       retarget(next)
+      // KA-10 (scope-hydration recovery): the tab's scope can finish
+      // hydrating with no further doc_update to trigger the normal drain in
+      // `onUpdate`/`applyQueuedFrame`. Probe once on every activation; a no-op
+      // when nothing is pending or the scope still isn't ready.
+      recordDevEvent('scope_retry', {
+        workflowId: next,
+        projected: adapter.retryPending(next)
+      })
       if (justActivated) reconcileLiveGraph(next)
     },
     { immediate: true }
@@ -688,6 +765,7 @@ export function useAgentCrdtFollower(
       bridge.removeEventListener('schema_error', onSchemaError)
       bridge.removeEventListener('doc_gap', onGap)
       bridge.removeEventListener('doc_stale', onStale)
+      bridge.removeEventListener('apply_error', onApplyError)
       sender.detach()
       adapter.destroy()
       bridge.destroy()

@@ -51,6 +51,8 @@ const adapterState = vi.hoisted(() => ({
   applyFrame: vi.fn(() => true),
   clearForReset: vi.fn(),
   discardPending: vi.fn(),
+  hasPending: vi.fn(() => false),
+  retryPending: vi.fn(() => false),
   destroy: vi.fn()
 }))
 
@@ -108,6 +110,8 @@ vi.mock('./ecsFollowerAdapter', () => ({
     applyFrame = adapterState.applyFrame
     clearForReset = adapterState.clearForReset
     discardPending = adapterState.discardPending
+    hasPending = adapterState.hasPending
+    retryPending = adapterState.retryPending
     destroy = adapterState.destroy
   }
 }))
@@ -124,12 +128,18 @@ vi.mock('./devPanelLog', () => ({
   recordDevEvent: vi.fn()
 }))
 
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: vi.fn()
+}))
 vi.mock('@/scripts/api', () => ({ api: apiState.api }))
 vi.mock('@/scripts/app', () => ({ app: { graph: null, canvas: null } }))
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({ userId: 'user-1' })
 }))
 
+import { reportError } from '@/platform/telemetry/reportError'
+
+import { recordDevEvent } from './devPanelLog'
 import { STALE_AFTER_MS, useAgentCrdtFollower } from './useAgentCrdtFollower'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 
@@ -581,6 +591,21 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
+    it('counts errored on an apply_error and does not touch applied/received', () => {
+      const { unmount, status } = mountFollower('wf-1')
+
+      dispatchFrame('apply_error', {
+        workflowId: 'wf-1',
+        seq: 7,
+        error: new Error('malformed update')
+      })
+
+      expect(status().outcomes.errored).toBe(1)
+      expect(status().outcomes.received).toBe(0)
+      expect(status().outcomes.applied).toBe(0)
+      unmount()
+    })
+
     it('counts gap on the bridge doc_gap signal, which never becomes a doc_update', () => {
       const { unmount, status } = mountFollower('wf-1')
 
@@ -664,6 +689,72 @@ describe('useAgentCrdtFollower', () => {
       })
       unmount()
     })
+  })
+
+  it('records a dropped doc_update without resubscribing', () => {
+    const { unmount } = mountFollower('wf-1')
+    adapterState.applyFrame.mockReturnValueOnce(false)
+
+    const update = { workflowId: 'wf-1', seq: 7 }
+    dispatchFrame('doc_update', update)
+
+    expect(recordDevEvent).toHaveBeenCalledWith(
+      'doc_update',
+      expect.objectContaining({ projected: false })
+    )
+    expect(recordDevEvent).toHaveBeenCalledWith('doc_update_dropped', {
+      workflowId: 'wf-1',
+      seq: 7
+    })
+    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'agent_crdt_frame_dropped',
+        level: 'warning',
+        context: { workflowId: 'wf-1', seq: 7 }
+      })
+    )
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+    expect(adapterState.bind).toHaveBeenCalledOnce()
+    unmount()
+  })
+
+  it('reports a throwing applyFrame once and still records the drop', () => {
+    const { unmount } = mountFollower('wf-1')
+    const failure = new Error('boom')
+    adapterState.applyFrame.mockImplementationOnce(() => {
+      throw failure
+    })
+
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 8 })
+
+    expect(recordDevEvent).toHaveBeenCalledWith('doc_update_dropped', {
+      workflowId: 'wf-1',
+      seq: 8
+    })
+    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledWith(failure, {
+      errorType: 'agent_crdt_apply_frame_failure'
+    })
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  it('records an applied doc_update without a drop event', () => {
+    const { unmount } = mountFollower('wf-1')
+
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 7 })
+
+    expect(recordDevEvent).toHaveBeenCalledWith(
+      'doc_update',
+      expect.objectContaining({ projected: true })
+    )
+    expect(recordDevEvent).not.toHaveBeenCalledWith(
+      'doc_update_dropped',
+      expect.anything()
+    )
+    unmount()
   })
 
   describe('live-graph reconcile', () => {
