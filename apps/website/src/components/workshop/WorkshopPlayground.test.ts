@@ -31,15 +31,7 @@ describe('WorkshopPlayground', () => {
     const user = userEvent.setup()
     render(WorkshopPlayground, { props: { model } })
 
-    // The prompt arrives pre-filled with a sample, so replace it rather than
-    // typing on the end of it.
-    const prompt = screen.getByRole('textbox', { name: /Prompt/ })
-    await user.clear(prompt)
-    await user.type(prompt, 'Red fox')
-
-    // The snippet lives behind the API tab now: the result gets the column
-    // beside the form, matching the platform playground.
-    await user.click(screen.getByRole('tab', { name: 'API' }))
+    await user.type(screen.getByRole('textbox', { name: /Prompt/ }), 'Red fox')
     expect(screen.getByText(/"prompt": "Red fox"/)).toBeTruthy()
 
     const typeScriptTab = screen.getByRole('tab', { name: 'TypeScript' })
