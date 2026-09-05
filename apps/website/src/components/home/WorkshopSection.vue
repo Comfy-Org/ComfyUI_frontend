@@ -71,7 +71,7 @@ const { models, locale = 'en' } = defineProps<{
           </p>
           <ArrowRight
             aria-hidden="true"
-            class="group-hover:text-primary-comfy-yellow mt-auto size-5 shrink-0 self-end pt-6 text-primary-comfy-canvas/50 transition-transform group-hover:translate-x-1"
+            class="group-hover:text-primary-comfy-yellow mt-auto size-5 shrink-0 self-end text-primary-comfy-canvas/50 transition-transform group-hover:translate-x-1"
           />
         </a>
       </li>

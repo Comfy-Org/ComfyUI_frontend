@@ -19,6 +19,7 @@ const user: WorkshopSessionUser = {
 
 const mintBody = (overrides: Record<string, unknown> = {}) => ({
   token: 'workspace-jwt',
+  permissions: ['workspace:read'],
   expires_at: new Date(Date.now() + 90 * 60 * 1000).toISOString(),
   workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
   role: 'owner',
@@ -34,6 +35,7 @@ const jsonResponse = (status: number, body: unknown) =>
 const cachedSession = (overrides: Partial<WorkshopSession> = {}) => {
   const session: WorkshopSession = {
     token: 'cached-jwt',
+    permissions: ['workspace:read'],
     expiresAt: Date.now() + 60 * 60 * 1000,
     uid: 'user-1',
     workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
@@ -176,6 +178,71 @@ describe('ensureFreshWorkshopSession', () => {
     expect(a).toEqual(b)
   })
 
+  it('aborts a hung request at the configured timeout', async () => {
+    const fetchImpl = vi.fn(
+      (_url: URL | RequestInfo, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          if (init?.signal?.aborted) {
+            reject(new DOMException('Aborted', 'AbortError'))
+            return
+          }
+          init?.signal?.addEventListener('abort', () =>
+            reject(new DOMException('Aborted', 'AbortError'))
+          )
+        })
+    )
+
+    const result = await ensureFreshWorkshopSession(user, {
+      fetchImpl,
+      timeoutMs: 1
+    })
+
+    expect(result).toEqual({ status: 'error', reason: 'timeout' })
+  })
+
+  it('also times out while Firebase is still resolving its ID token', async () => {
+    const slowUser: WorkshopSessionUser = {
+      uid: 'user-1',
+      getIdToken: () => new Promise<string>(() => {})
+    }
+    const fetchImpl = vi.fn()
+
+    const result = await ensureFreshWorkshopSession(slowUser, {
+      fetchImpl,
+      timeoutMs: 1
+    })
+
+    expect(result).toEqual({ status: 'error', reason: 'timeout' })
+    expect(fetchImpl).not.toHaveBeenCalled()
+  })
+
+  it('forwards caller cancellation to the request', async () => {
+    const controller = new AbortController()
+    const fetchImpl = vi.fn(
+      (_url: URL | RequestInfo, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          if (init?.signal?.aborted) {
+            reject(new DOMException('Aborted', 'AbortError'))
+            return
+          }
+          init?.signal?.addEventListener('abort', () =>
+            reject(new DOMException('Aborted', 'AbortError'))
+          )
+        })
+    )
+
+    const pending = ensureFreshWorkshopSession(user, {
+      fetchImpl,
+      signal: controller.signal
+    })
+    controller.abort()
+
+    await expect(pending).resolves.toEqual({
+      status: 'error',
+      reason: 'aborted'
+    })
+  })
+
   it('never shares an in-flight mint across different users', async () => {
     const other = { uid: 'user-2', getIdToken: async () => 'other-token' }
     let releaseFirst!: (response: Response) => void
@@ -253,6 +320,32 @@ describe('remintWorkshopSession', () => {
     expect(forcedResult.status === 'ok' && forcedResult.session.token).toBe(
       'forced-jwt'
     )
+  })
+
+  it('does not let an older mint clear a newer forced single-flight', async () => {
+    let releaseFirst!: (response: Response) => void
+    let releaseForced!: (response: Response) => void
+    const fetchImpl = vi
+      .fn()
+      .mockImplementationOnce(
+        () => new Promise<Response>((resolve) => (releaseFirst = resolve))
+      )
+      .mockImplementationOnce(
+        () => new Promise<Response>((resolve) => (releaseForced = resolve))
+      )
+
+    const first = ensureFreshWorkshopSession(user, { fetchImpl })
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledOnce())
+    const forced = remintWorkshopSession(user, { fetchImpl })
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(2))
+
+    releaseFirst(jsonResponse(200, mintBody({ token: 'older-jwt' })))
+    await first
+    const joinedForced = remintWorkshopSession(user, { fetchImpl })
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+    releaseForced(jsonResponse(200, mintBody({ token: 'forced-jwt' })))
+    expect(await joinedForced).toEqual(await forced)
   })
 })
 

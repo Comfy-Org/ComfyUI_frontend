@@ -33,10 +33,10 @@ export default defineConfig({
         'src/content/**',
         'src/i18n/**',
         'src/content.config.ts',
-        // Thin Firebase-SDK boundary: its exports dynamically import
-        // firebase/auth, which vi.mock cannot intercept in this workspace, so
-        // it is exercised through its consumers (which mock this module) and
-        // its sequencing logic is tested in @comfyorg/auth-core.
+        // Thin Firebase SDK boundary: pure provisioning behavior is tested in
+        // workshop-firebase.test.ts, while popup/listener wiring is exercised
+        // through consumers that mock this module. SDK-owned branches are not
+        // meaningful patch-coverage targets here.
         'src/config/workshop-firebase.ts'
       ]
     }

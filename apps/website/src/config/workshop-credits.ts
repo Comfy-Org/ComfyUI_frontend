@@ -3,11 +3,11 @@
  *
  * Conversion goes through the shared creditsUtil rounding so this chip never
  * disagrees with what platform.comfy.org renders for the same balance.
- * Refresh triggers: the session appearing or changing (sign-in, re-mint),
- * window refocus, and run completion — refocus is what closes the purchase
- * round trip without platform.comfy.org having to honor a return URL.
+ * Refresh triggers: the session appearing or changing (sign-in, re-mint)
+ * and window refocus. Refocus also picks up a balance changed in another tab.
  */
-import { computed, ref, watch } from 'vue'
+import type { BillingBalanceResponse } from '@comfyorg/ingest-types'
+import { computed, effectScope, ref, watch } from 'vue'
 
 import { centsToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
 
@@ -15,16 +15,9 @@ import { useWorkshopAuthFlag } from '../scripts/posthog'
 import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
 import { useWorkshopSession } from './workshop-session-state'
 
-export function microsToCredits(micros: number): number {
-  return centsToCredits(micros / 10_000)
-}
-
-/** Where credits are bought (decision: platform, Sep 2). */
-export function workshopPurchaseUrl(returnTo: string): string {
-  const url = new URL('https://platform.comfy.org/')
-  url.searchParams.set('utm_source', 'comfy_workshop')
-  url.searchParams.set('returnTo', returnTo)
-  return url.toString()
+/** Despite the field names, this endpoint returns cents. */
+export function balanceToCredits(cents: number): number {
+  return centsToCredits(cents)
 }
 
 type BalanceState =
@@ -63,12 +56,14 @@ async function fetchBalance(
   } catch {
     return { status: 'error' }
   }
-  const micros = readMicros(body)
-  if (micros === undefined) return { status: 'error' }
-  return { status: 'ok', credits: microsToCredits(micros) }
+  const cents = readBalanceCents(body)
+  if (cents === undefined) return { status: 'error' }
+  return { status: 'ok', credits: balanceToCredits(cents) }
 }
 
-function readMicros(body: unknown): number | undefined {
+function readBalanceCents(
+  body: unknown
+): BillingBalanceResponse['amount_micros'] | undefined {
   if (typeof body !== 'object' || body === null) return undefined
   if (
     'effective_balance_micros' in body &&
@@ -86,30 +81,30 @@ function readMicros(body: unknown): number | undefined {
 let inFlight: Promise<void> | undefined
 let inFlightIdentity: string | undefined
 
-const identityKey = (uid: string, workspaceId: string | undefined) =>
-  `${uid}|${workspaceId ?? ''}`
+const identityKey = (uid: string, token: string) => `${uid}|${token}`
 
 /**
  * Refresh the chip balance for the live session.
  *
- * Session-change, refocus and run-completion can all fire together; without
+ * Session-change and refocus can fire together; without
  * dedupe they race and the last fetch to resolve wins, so a slow earlier read
  * can overwrite a fresh later one. Concurrent callers for the same identity
  * therefore share one in-flight refresh; a caller for a different identity
- * (a user or workspace switch) starts its own rather than reusing a read
+ * (a user or token switch) starts its own rather than reusing a read
  * that is fetching for whoever came before.
  */
 export function refreshWorkshopCredits(
-  fetchImpl: typeof fetch = globalThis.fetch
+  fetchImpl: typeof fetch = globalThis.fetch,
+  options: { readonly force?: boolean } = {}
 ): Promise<void> {
   const { session } = useWorkshopSession()
   const active = session.value
-  const identity = active
-    ? identityKey(active.uid, active.workspace?.id)
-    : undefined
+  const identity = active ? identityKey(active.uid, active.token) : undefined
 
   if (inFlight !== undefined && inFlightIdentity === identity) {
-    return inFlight
+    return options.force
+      ? inFlight.then(() => refreshWorkshopCredits(fetchImpl))
+      : inFlight
   }
 
   inFlightIdentity = identity
@@ -131,57 +126,73 @@ async function runRefresh(fetchImpl: typeof fetch): Promise<void> {
     return
   }
   const uid = active.uid
-  const workspaceId = active.workspace?.id
-  let result = await fetchBalance(active.token, fetchImpl)
+  let token = active.token
+  let result = await fetchBalance(token, fetchImpl)
   // One re-mint on a stale token, mirroring the run path's single retry.
   // Other failures are not the token's fault, so no mint is spent on them.
   if (result.status === 'error' && result.unauthorized) {
     const reminted = await remint()
     if (reminted?.status === 'ok') {
-      result = await fetchBalance(reminted.session.token, fetchImpl)
+      token = reminted.session.token
+      result = await fetchBalance(token, fetchImpl)
     }
   }
-  // Publish only if the same user AND workspace is still signed in: a
-  // sign-out, a user switch, or a workspace switch mid-fetch must not show a
-  // balance that belongs to the identity we started with.
+  // Publish only if the same user and token are still live. A sign-out, user
+  // switch, or re-mint must not publish an older read.
   const live = session.value
-  if (live?.uid === uid && live?.workspace?.id === workspaceId) {
+  if (live?.uid === uid && live.token === token) {
     balance.value = result
   }
 }
 
+let stopActive: (() => void) | undefined
+
 function begin(): void {
   const { session } = useWorkshopSession()
-  watch(
-    () => session.value?.token,
-    (token) => {
-      if (!token) {
-        balance.value = { status: 'unknown' }
-        return
-      }
-      void refreshWorkshopCredits()
-    },
-    { immediate: true }
-  )
-  window.addEventListener('focus', () => {
-    if (session.value !== undefined) void refreshWorkshopCredits()
+  const activeScope = effectScope(true)
+  activeScope.run(() => {
+    watch(
+      () => session.value?.token,
+      (token) => {
+        if (!token) {
+          balance.value = { status: 'unknown' }
+          return
+        }
+        void refreshWorkshopCredits()
+      },
+      { immediate: true }
+    )
   })
+  const onFocus = () => {
+    if (session.value !== undefined) {
+      void refreshWorkshopCredits(globalThis.fetch, { force: true })
+    }
+  }
+  window.addEventListener('focus', onFocus)
+  stopActive = () => {
+    activeScope.stop()
+    window.removeEventListener('focus', onFocus)
+  }
 }
 
 function start(): void {
   if (started || typeof window === 'undefined') return
   started = true
-  // No listeners until the flag is on, so a flag-off page installs nothing
-  // and stays byte-identical to the site before sign-in existed.
+  // This detached scope gives the module singleton its own lifetime instead
+  // of binding its watchers to whichever component calls this first.
+  const lifecycle = effectScope(true)
   const enabled = useWorkshopAuthFlag()
-  if (enabled.value) {
-    begin()
-    return
-  }
-  const stop = watch(enabled, (on) => {
-    if (!on) return
-    stop()
-    begin()
+  lifecycle.run(() => {
+    watch(
+      enabled,
+      (on) => {
+        stopActive?.()
+        stopActive = undefined
+        if (on) begin()
+        else balance.value = { status: 'unknown' }
+      },
+      { immediate: true }
+    )
   })
 }
 

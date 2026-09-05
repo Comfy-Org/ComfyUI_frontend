@@ -1,14 +1,27 @@
-import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { readFile, writeFile } from 'node:fs/promises'
+import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 import { workshopModelSchema } from '../src/content/workshop-models.schema'
 import type { WorkshopModelEntry } from '../src/content/workshop-models.schema'
 
-/** One file per model, loaded as an Astro content collection. */
-const COLLECTION_DIR = resolve(
+/**
+ * The whole catalog as one packed file, loaded by Astro's `file()` loader.
+ *
+ * One JSON array, one model per line. Nobody reads this: a script writes it,
+ * the Zod schema validates it and `getCollection()` consumes it, so it is
+ * sized for the repository rather than for a reader. Packed it is 270 lines
+ * and 494 KB against 25,296 lines and 719 KB as a file per model.
+ *
+ * A line per model is what makes it a data file rather than a blob: adding a
+ * model adds a line, dropping one removes a line, and a changed model is a
+ * changed line. It is marked `linguist-generated` in `.gitattributes` so it
+ * collapses in review, and excluded in `.oxfmtrc.json` so the formatter does
+ * not unpack it back to one field per line.
+ */
+const CATALOG = resolve(
   import.meta.dirname,
-  '../src/content/workshop-models'
+  '../src/content/workshop-models.json'
 )
 
 /** Everything about the snapshot that is not about one model. */
@@ -16,15 +29,6 @@ const MANIFEST = resolve(
   import.meta.dirname,
   '../src/config/workshop-catalog.manifest.json'
 )
-
-/** Whether two JSON documents differ in content rather than in formatting. */
-function sameJson(a: string, b: string): boolean {
-  try {
-    return JSON.stringify(JSON.parse(a)) === JSON.stringify(JSON.parse(b))
-  } catch {
-    return false
-  }
-}
 
 function slugFor(id: string): string {
   return id.replaceAll('/', '--')
@@ -89,11 +93,7 @@ export function buildWorkshopCatalog(input: unknown): WorkshopModelEntry[] {
   if (ids.size !== catalog.length) throw new Error('Duplicate partner model id')
   if (slugs.size !== catalog.length) throw new Error('Duplicate Workshop slug')
 
-  // Deliberately unsorted. Each model is its own file, so the only thing an
-  // order could affect is the sequence of independent writes. `localeCompare`
-  // was also host-dependent: `p/ä` and `p/z` swap between LANG=C and
-  // LANG=sv_SE.UTF-8, which would churn the committed output.
-  return catalog
+  return catalog.toSorted((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
 }
 
 async function loadModels(modulePath: string): Promise<unknown> {
@@ -113,41 +113,28 @@ async function main(): Promise<void> {
   }
 
   const catalog = buildWorkshopCatalog(await loadModels(resolve(modulePath)))
-  await writeCollection(catalog, sourceRef)
+  await writeCatalog(catalog, sourceRef)
 }
 
 /**
- * Writes one file per model and prunes any model the source no longer has,
- * so a removed model leaves the collection instead of lingering as a page
- * nothing links to. Files are only rewritten when their content changes,
- * which keeps an unrelated regeneration out of the diff.
+ * Writes the catalog as one packed array and the manifest beside it.
+ *
+ * A model the source no longer has simply is not written, so the file is the
+ * snapshot rather than an accumulation -- there is nothing to prune, which is
+ * what a file per model needed and could get wrong.
+ *
+ * Written only when the content differs, so an unrelated regeneration stays
+ * out of the diff.
  */
-async function writeCollection(
+async function writeCatalog(
   catalog: readonly WorkshopModelEntry[],
   sourceRef: string
 ): Promise<void> {
-  await mkdir(COLLECTION_DIR, { recursive: true })
+  const lines = catalog.map((model) => JSON.stringify(model))
+  const next = `[\n${lines.join(',\n')}\n]\n`
 
-  const keep = new Set(catalog.map((model) => `${model.slug}.json`))
-  const existing = await readdir(COLLECTION_DIR).catch(() => [] as string[])
-  for (const file of existing) {
-    if (file.endsWith('.json') && !keep.has(file)) {
-      await rm(join(COLLECTION_DIR, file))
-    }
-  }
-
-  for (const model of catalog) {
-    const path = join(COLLECTION_DIR, `${model.slug}.json`)
-    const next = `${JSON.stringify(model, null, 2)}\n`
-    const previous = await readFile(path, 'utf8').catch(() => undefined)
-    // Compare parsed content, not text. These files are formatted by the
-    // repo's formatter after they are written, so a byte comparison reports
-    // every model as changed on the next run and buries a real one-model
-    // diff in 268 files of reflowed arrays.
-    if (previous === undefined || !sameJson(previous, next)) {
-      await writeFile(path, next)
-    }
-  }
+  const previous = await readFile(CATALOG, 'utf8').catch(() => undefined)
+  if (previous !== next) await writeFile(CATALOG, next)
 
   const manifest = `${JSON.stringify({ sourceRef, modelCount: catalog.length }, null, 2)}\n`
   const previousManifest = await readFile(MANIFEST, 'utf8').catch(

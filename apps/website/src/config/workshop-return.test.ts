@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { WorkshopField } from './workshop-detail'
 import {
   popWorkshopForm,
+  requestedReturnPath,
   safeReturnPath,
   stashWorkshopForm
 } from './workshop-return'
@@ -70,6 +71,14 @@ const fields: readonly WorkshopField[] = [
     integer: true,
     step: 1,
     defaultValue: 20
+  },
+  {
+    kind: 'select',
+    name: 'quality',
+    label: 'Quality',
+    required: false,
+    options: ['draft', 'high'],
+    defaultValue: 'high'
   }
 ]
 
@@ -104,6 +113,15 @@ describe('stashWorkshopForm / popWorkshopForm', () => {
     ).toEqual({ prompt: 'a cat' })
   })
 
+  it('preserves a deliberately cleared optional field', () => {
+    stashWorkshopForm('flux', fields, { prompt: 'a cat', steps: undefined })
+
+    expect(popWorkshopForm('flux', fields)).toEqual({
+      prompt: 'a cat',
+      steps: undefined
+    })
+  })
+
   it('keeps stashes for different models apart', () => {
     stashWorkshopForm('flux', fields, { prompt: 'a cat' })
     stashWorkshopForm('kling', fields, { prompt: 'a dog' })
@@ -130,6 +148,20 @@ describe('stashWorkshopForm / popWorkshopForm', () => {
     ).toBeUndefined()
   })
 
+  it('rejects values that no longer match their field kind or options', () => {
+    sessionStorage.setItem(
+      'comfy.workshop.form.flux',
+      JSON.stringify({
+        prompt: 7,
+        steps: '30',
+        hd: 'yes',
+        quality: 'retired-option'
+      })
+    )
+
+    expect(popWorkshopForm('flux', fields)).toBeUndefined()
+  })
+
   it('degrades to no stash when storage throws', () => {
     const spy = vi.spyOn(sessionStorage, 'setItem').mockImplementation(() => {
       throw new DOMException('quota', 'QuotaExceededError')
@@ -140,5 +172,21 @@ describe('stashWorkshopForm / popWorkshopForm', () => {
     ).not.toThrow()
     spy.mockRestore()
     expect(popWorkshopForm('flux', fields)).toBeUndefined()
+  })
+})
+
+describe('requestedReturnPath', () => {
+  it('does not invent a redirect for a direct visit to sign-in', () => {
+    expect(requestedReturnPath('')).toBeUndefined()
+    expect(requestedReturnPath('?returnTo=')).toBeUndefined()
+  })
+
+  it('accepts a safe explicit destination and contains an unsafe one', () => {
+    expect(
+      requestedReturnPath('?returnTo=%2Fworkshop%2Fmodels%2Fflux%2F')
+    ).toBe('/workshop/models/flux/')
+    expect(requestedReturnPath('?returnTo=https%3A%2F%2Fevil.com')).toBe(
+      '/workshop/'
+    )
   })
 })

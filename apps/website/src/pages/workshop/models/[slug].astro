@@ -80,40 +80,25 @@ const software = softwareApplicationNode({
       </span>
     </nav>
 
-    {/*
-      Hero band. The prototype carries a model still behind this; we have no
-      per-model art yet, so the space is reserved and left empty rather than
-      filled with a stand-in. When the content pack lands, the image drops in
-      behind this same block and nothing else moves.
-    */}
-    <header
-      class="relative mb-12 min-h-72 overflow-hidden rounded-3xl border border-primary-comfy-canvas/10 bg-primary-comfy-canvas/[0.04]"
-    >
-      <div
-        aria-hidden="true"
-        class="pointer-events-none absolute inset-0 bg-gradient-to-tr from-primary-comfy-ink via-primary-comfy-ink/85 to-transparent"
-      >
-      </div>
-      <div class="relative max-w-4xl p-8 lg:p-10">
-        <p class="text-sm tracking-widest text-primary-comfy-yellow uppercase">
-          {model.provider}
-        </p>
-        <h1 class="mt-3 text-4xl font-bold text-primary-comfy-canvas lg:text-6xl">
-          {model.displayName}
-        </h1>
-        <p class="mt-5 text-lg text-primary-comfy-canvas/70">
-          {model.description}
-        </p>
-        <ul class="mt-6 flex flex-wrap gap-2">
-          {
-            model.tags.slice(0, 8).map((tag) => (
-              <li class="rounded-full bg-primary-comfy-canvas/8 px-3 py-1 text-xs text-primary-comfy-canvas/65">
-                {tag}
-              </li>
-            ))
-          }
-        </ul>
-      </div>
+    <header class="mb-12 max-w-4xl">
+      <p class="text-sm tracking-widest text-primary-comfy-yellow uppercase">
+        {model.provider}
+      </p>
+      <h1 class="mt-3 text-4xl font-bold text-primary-comfy-canvas lg:text-6xl">
+        {model.displayName}
+      </h1>
+      <p class="mt-5 text-lg text-primary-comfy-canvas/70">
+        {model.description}
+      </p>
+      <ul class="mt-6 flex flex-wrap gap-2">
+        {
+          model.tags.slice(0, 8).map((tag) => (
+            <li class="rounded-full bg-primary-comfy-canvas/8 px-3 py-1 text-xs text-primary-comfy-canvas/65">
+              {tag}
+            </li>
+          ))
+        }
+      </ul>
     </header>
 
     <WorkshopPlayground model={model} client:load />
