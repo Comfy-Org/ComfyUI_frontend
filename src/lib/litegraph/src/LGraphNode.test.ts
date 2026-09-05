@@ -725,6 +725,45 @@ describe('LGraphNode', () => {
       expect(node.widgets![0].value).toBe(1)
       expect(node.widgets![1].value).toBe(100)
     })
+
+    test('should serialize a widget that only options.serialize excludes', () => {
+      const node = new LGraphNode('TestNode')
+      node.serialize_widgets = true
+
+      node.addWidget('number', 'seed', 42, null)
+      // options.serialize is the API-prompt flag (read by graphToPrompt in
+      // src/utils/executionUtil.ts). It must not affect the workflow file.
+      node.addWidget('combo', 'control_after_generate', 'fixed', null, {
+        values: ['fixed', 'increment'],
+        serialize: false
+      })
+      node.addWidget('number', 'steps', 20, null)
+      expect(node.widgets![1].serialize).toBeUndefined()
+
+      const serialized = node.serialize()
+
+      expect(serialized.widgets_values).toEqual([42, 'fixed', 20])
+      expect(serialized.widgets_values_named).toEqual({
+        seed: 42,
+        control_after_generate: 'fixed',
+        steps: 20
+      })
+    })
+
+    test('should compact a non-trailing widget.serialize === false', () => {
+      const node = new LGraphNode('TestNode')
+      node.serialize_widgets = true
+
+      node.addWidget('number', 'steps', 20, null)
+      node.addWidget('button', 'action', 'Click', null)
+      node.widgets![1].serialize = false
+      node.addWidget('number', 'seed', 12345, null)
+
+      const serialized = node.serialize()
+
+      expect(serialized.widgets_values_named).not.toHaveProperty('action')
+      expect(serialized.widgets_values).toStrictEqual([20, 12345])
+    })
   })
 
   describe('getInputSlotPos', () => {

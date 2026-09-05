@@ -109,4 +109,37 @@ describe('graphToPrompt widget serialization', () => {
 
     expect(await promptInputs(graph, node)).not.toHaveProperty('prompt')
   })
+
+  it('omits a widget whose options.serialize is false, keeping its siblings', async () => {
+    const graph = new LGraph()
+    const node = addNode(graph, 'KSampler')
+    node.addWidget('number', 'seed', 42, () => undefined, {})
+    // Mirrors src/scripts/widgets.ts:144 — control_after_generate is excluded
+    // from the API prompt while still being persisted in the workflow file.
+    node.addWidget(
+      'combo',
+      'control_after_generate',
+      'fixed',
+      () => undefined,
+      {
+        values: ['fixed', 'increment'],
+        serialize: false
+      }
+    )
+    node.addWidget('number', 'steps', 20, () => undefined, {})
+
+    expect(await promptInputs(graph, node)).toEqual({ seed: 42, steps: 20 })
+  })
+
+  it('includes a widget excluded from the workflow file by widget.serialize', async () => {
+    const graph = new LGraph()
+    const node = addNode(graph, 'KSampler')
+    node.addWidget('number', 'seed', 42, () => undefined, {})
+    const preview = node.addWidget('number', 'preview', 7, () => undefined, {})
+    // widget.serialize is the workflow-persistence flag. The two flags are
+    // independent: this one must not affect the API prompt.
+    preview.serialize = false
+
+    expect(await promptInputs(graph, node)).toEqual({ seed: 42, preview: 7 })
+  })
 })
