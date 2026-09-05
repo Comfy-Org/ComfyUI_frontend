@@ -58,7 +58,7 @@ describe('NodeSearchCategorySidebar', () => {
       ...screen.queryAllByRole('treeitem')
     ]
     const btn = candidates.find((b) =>
-      exact ? b.textContent?.trim() === text : b.textContent?.includes(text)
+      exact ? b.textContent.trim() === text : b.textContent.includes(text)
     )
     expect(btn, `Expected to find a button with text "${text}"`).toBeDefined()
     await user.click(btn!)

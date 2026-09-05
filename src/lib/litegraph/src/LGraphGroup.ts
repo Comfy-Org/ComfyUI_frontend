@@ -98,15 +98,14 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     // TODO: Object instantiation pattern requires too much boilerplate and null checking.  ID should be passed in via constructor.
     this.id = toGroupId(id ?? -1)
     this.title = title || 'Group'
-
     const { pale_blue } = LGraphCanvas.node_colors
-    this.color = pale_blue ? pale_blue.groupcolor : '#AAA'
+    this.color = pale_blue.groupcolor
   }
 
   /** @inheritdoc {@link IColorable.setColorOption} */
   setColorOption(colorOption: ColorOption | null): void {
     if (colorOption == null) {
-      delete this.color
+      this.color = undefined
     } else {
       this.color = colorOption.groupcolor
     }
@@ -127,8 +126,6 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   }
 
   set pos(v) {
-    if (!v || v.length < 2) return
-
     this.setBounds(v[0], v[1], this._size[0], this._size[1])
   }
 
@@ -138,8 +135,6 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   }
 
   set size(v) {
-    if (!v || v.length < 2) return
-
     this.setBounds(
       this._pos[0],
       this._pos[1],
@@ -310,7 +305,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     if (this.pinned) return
 
     this.pos = [this._pos[0] + deltaX, this._pos[1] + deltaY]
-    if (skipChildren === true) return
+    if (skipChildren) return
 
     for (const item of this._children) {
       item.move(deltaX, deltaY)
@@ -420,7 +415,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
    * @param padding The padding around the group
    */
   addNodes(nodes: LGraphNode[], padding: number = 10): void {
-    if (!this._nodes && nodes.length === 0) return
+    if (nodes.length === 0) return
     this.resizeTo([...this.children, ...this._nodes, ...nodes], padding)
   }
 

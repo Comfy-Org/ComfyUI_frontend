@@ -57,8 +57,9 @@ test.describe('Subgraph Search Aliases', { tag: ['@subgraph'] }, () => {
       .poll(() =>
         comfyPage.page.evaluate(() => {
           const subgraph = window.app!.canvas.subgraph
-          return (subgraph?.extra as Record<string, unknown>)
-            ?.BlueprintDescription
+          if (!subgraph) return undefined
+          return (subgraph.extra as Record<string, unknown>)
+            .BlueprintDescription
         })
       )
       .toBe('This is a test description')

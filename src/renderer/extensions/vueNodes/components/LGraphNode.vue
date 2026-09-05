@@ -10,7 +10,7 @@
     :data-ghost="nodeData.flags?.ghost || undefined"
     :class="
       cn(
-        'group/node lg-node absolute isolate text-xs',
+        'group/node lg-node absolute isolate touch-none text-xs',
         'flex flex-col contain-layout contain-style',
         isLightTheme
           ? 'drop-shadow-md drop-shadow-black/15'
@@ -153,7 +153,11 @@
         >
           <NodeSlots :node-data />
 
-          <NodeWidgets v-if="hasRenderableWidgets" :node-data />
+          <NodeWidgets
+            v-if="hasRenderableWidgets"
+            :node-data
+            :widget-ids="renderedWidgetIds"
+          />
 
           <div v-if="hasCustomContent" class="flex min-h-0 flex-1 flex-col">
             <NodeContent v-if="nodeMedia" :node-data :media="nodeMedia" />
@@ -275,6 +279,10 @@ import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useNodePreviewState'
+import {
+  shouldHideLinkedCoreLoadAudioPlayer,
+  shouldHideLinkedCoreMediaInputPreview
+} from '@/renderer/extensions/vueNodes/utils/linkedCoreMediaUtils'
 import { nonWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
 import { nodeHasError } from '@/renderer/extensions/vueNodes/utils/nodeErrorState'
 import {
@@ -409,7 +417,7 @@ async function nodeOnPointerdown(event: PointerEvent) {
   const node = resolveLGraphNode()
   if (event.altKey && node) {
     const result = LGraphCanvas.cloneNodes([node])
-    if (result?.created?.length) {
+    if (result?.created.length) {
       const [newNode] = result.created
       const newNodeId =
         typeof newNode.id === 'number' ? toNodeId(newNode.id) : newNode.id
@@ -627,14 +635,25 @@ const { hideExecutedOutput } = useGLSLPreview(lgraphNode)
 
 const widgetValueStore = useWidgetValueStore()
 const widgetIds = computed(() => {
-  const graphId = app.rootGraph?.id
+  const graphId = canvasStore.rootGraphId
   const bareNodeId = stripGraphPrefix(nodeData.id)
   if (!graphId || !bareNodeId) return []
 
   return widgetValueStore.getNodeWidgetIds(graphId, bareNodeId) ?? []
 })
 
-const hasRenderableWidgets = computed(() => widgetIds.value.length > 0)
+const renderedWidgetIds = computed(() => {
+  const node = lgraphNode.value
+  if (!node || !shouldHideLinkedCoreLoadAudioPlayer(node))
+    return widgetIds.value
+
+  return widgetIds.value.filter((id) => {
+    const widget = widgetValueStore.getWidget(id)
+    return widget?.name !== 'audioUI' || widget.type !== 'audioUI'
+  })
+})
+
+const hasRenderableWidgets = computed(() => renderedWidgetIds.value.length > 0)
 
 const showAdvancedInputsButton = computed(() => {
   const node = lgraphNode.value
@@ -647,7 +666,7 @@ const showAdvancedInputsButton = computed(() => {
   const hasAdvancedWidgets = widgetIds.value.some((id) => {
     const renderState = widgetValueStore.getWidgetRenderState(id)
     const widgetState = widgetValueStore.getWidget(id)
-    return renderState?.advanced ?? widgetState?.options?.advanced
+    return renderState?.advanced ?? widgetState?.options.advanced
   })
   const alwaysShowAdvanced = settingStore.get(
     'Comfy.Node.AlwaysShowAdvancedWidgets'
@@ -678,6 +697,7 @@ const nodeMedia = computed(() => {
     return undefined
 
   if (node instanceof SubgraphNode) return undefined
+  if (shouldHideLinkedCoreMediaInputPreview(node, newOutputs)) return undefined
 
   const urls = nodeOutputs.getNodeImageUrls(node)
   if (!urls?.length) return undefined

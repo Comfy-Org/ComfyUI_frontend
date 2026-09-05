@@ -23,7 +23,7 @@ const FIRST_FAQ = FAQS[0]
 const PRICING_HEADING = t('pricing.title', 'en')
 const REVIEWS_HEADING = t('minimax.reviews.heading', 'en')
 const HIGHLIGHT_CTA = t('minimax.reviews.highlightCta', 'en')
-const MCP_ROUTE = getRoutes('en').mcp
+const LICENSE_ROUTE = getRoutes('en').minimaxLicense
 const FIRST_REVIEW = creatorReviews[0]
 const HERO_VIDEO_PATTERN = /hero-sizzle\.mp4/
 const HERO_FALLBACK_IMAGE_SELECTOR = 'img[src*="hero-fallback.jpg"]'
@@ -110,13 +110,15 @@ test.describe('MiniMax H3 page — link targets', () => {
     await expect(primary).toHaveAttribute('rel', /noopener/)
   })
 
-  test('MCP highlight card CTA links to the MCP page', async ({ page }) => {
+  test('highlight card CTA links to the MiniMax license page', async ({
+    page
+  }) => {
     const reviewsSection = page.locator('section').filter({
       has: page.getByRole('heading', { level: 2, name: REVIEWS_HEADING })
     })
     const cta = reviewsSection.getByRole('link', { name: HIGHLIGHT_CTA })
     await cta.scrollIntoViewIfNeeded()
-    await expect(cta).toHaveAttribute('href', MCP_ROUTE)
+    await expect(cta).toHaveAttribute('href', LICENSE_ROUTE)
   })
 })
 

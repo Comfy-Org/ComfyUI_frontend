@@ -12,6 +12,9 @@ vi.mock('@/scripts/app', () => ({
     rootGraph: {
       serialize: vi.fn(() => ({})),
       getNodeById: vi.fn()
+    },
+    get rootGraphOrUndefined() {
+      return this.rootGraph
     }
   }
 }))
@@ -64,6 +67,9 @@ vi.mock('@/i18n', () => {
       'Prompt has no outputs',
     'errorCatalog.promptErrors.prompt_no_outputs.desc':
       'The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result.',
+    'errorCatalog.promptErrors.apply_failed.title': 'Agent edit failed',
+    'errorCatalog.promptErrors.apply_failed.desc':
+      'An agent edit could not be applied to the workflow document.',
     'errorCatalog.runtimeErrors.execution_failed.title': 'Execution failed',
     'errorCatalog.runtimeErrors.execution_failed.message':
       'Node threw an error during execution.',
@@ -423,6 +429,43 @@ describe('useErrorGroups', () => {
       expect(swapIdx).toBeLessThan(missingIdx)
     })
 
+    it('places every error-severity group before missing-severity groups', async () => {
+      const { store, groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      store.recordPromptError({
+        type: 'prompt_no_outputs',
+        message: 'No outputs',
+        details: ''
+      })
+      store.recordNodeErrors({
+        '1': nodeError([validationError('required_input_missing', 'model')])
+      })
+      store.surfaceMissingModels([
+        makeModel('model.safetensors', { nodeId: '2' })
+      ])
+      store.surfaceMissingMedia([makeMedia('portrait.png', { nodeId: '3' })])
+      missingNodesStore.setMissingNodeTypes([
+        makeMissingNodeType('MissingNode', {
+          nodeId: '4',
+          cnrId: 'missing-pack'
+        })
+      ])
+      await nextTick()
+
+      const errorIndices = groups.allErrorGroups.value.flatMap(
+        (group, index) => (group.severity === 'error' ? [index] : [])
+      )
+      const missingIndices = groups.allErrorGroups.value.flatMap(
+        (group, index) => (group.severity === 'missing' ? [index] : [])
+      )
+
+      expect(errorIndices.length).toBeGreaterThan(0)
+      expect(missingIndices.length).toBeGreaterThan(0)
+      expect(Math.max(...errorIndices)).toBeLessThan(
+        Math.min(...missingIndices)
+      )
+    })
+
     it('uses fallback catalog grouping for unknown node validation errors', async () => {
       const { store, groups } = createErrorGroups()
       store.recordNodeErrors({
@@ -504,7 +547,7 @@ describe('useErrorGroups', () => {
           '@/utils/graphTraversalUtil'
         )
       vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) => {
-        return actualGetNodeByExecutionId(rootGraph, String(nodeId))
+        return actualGetNodeByExecutionId(rootGraph, nodeId)
       })
       store.recordNodeErrors({
         '12:5': nodeError(
@@ -605,7 +648,6 @@ describe('useErrorGroups', () => {
         (g) => g.type === 'execution'
       )
       expect(execGroups.length).toBeGreaterThan(0)
-      if (execGroups[0].type !== 'execution') return
       expect(execGroups[0].cards[0].errors[0]).toMatchObject({
         message: 'RuntimeError: mat1 and mat2 shapes cannot be multiplied',
         details: 'line 1\nline 2',
@@ -669,6 +711,26 @@ describe('useErrorGroups', () => {
           g.type === 'execution' && g.displayTitle === 'Prompt has no outputs'
       )
       expect(promptGroup).toBeDefined()
+    })
+
+    it('carries prompt error details onto the card item', async () => {
+      const { store, groups } = createErrorGroups()
+      store.recordPromptError({
+        type: 'apply_failed',
+        message: 'An agent edit could not be applied to the workflow document.',
+        details: 'op_rejected: unknown_widget at seed'
+      })
+      await nextTick()
+
+      const promptGroup = groups.allErrorGroups.value.find(
+        (g) => g.groupKey === 'execution:prompt:apply_failed'
+      )
+      expect(promptGroup).toBeDefined()
+      const details =
+        promptGroup && 'cards' in promptGroup
+          ? promptGroup.cards[0]?.errors[0]?.details
+          : undefined
+      expect(details).toBe('op_rejected: unknown_widget at seed')
     })
 
     it('includes prompt error when a node is selected', async () => {
@@ -828,7 +890,6 @@ describe('useErrorGroups', () => {
         (g) => g.type === 'execution'
       )
       for (const group of executionGroups) {
-        if (group.type !== 'execution') continue
         const hasMatch = group.cards.some(
           (c) =>
             c.title.toLowerCase().includes('sampler') ||
@@ -1135,7 +1196,7 @@ describe('useErrorGroups', () => {
       const selectedNode = { id: '1' }
       vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
         fromAny<LGraphNode, unknown>(
-          String(nodeId) === '1' ? selectedNode : { id: String(nodeId) }
+          nodeId === '1' ? selectedNode : { id: nodeId }
         )
       )
       canvasStore.selectedItems = fromAny<
@@ -1168,7 +1229,7 @@ describe('useErrorGroups', () => {
         (g) => g.type === 'execution'
       )
       const displayedCardIds = executionGroups.flatMap((g) =>
-        g.type === 'execution' ? g.cards.map((c) => c.id) : []
+        g.cards.map((c) => c.id)
       )
       expect(displayedCardIds).toContain('node-1')
       expect(displayedCardIds).toContain('node-2')
@@ -1180,7 +1241,7 @@ describe('useErrorGroups', () => {
       const canvasStore = useCanvasStore()
       vi.mocked(isLGraphNode).mockReturnValue(true)
       vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
-        fromAny<LGraphNode, unknown>({ id: String(nodeId) })
+        fromAny<LGraphNode, unknown>({ id: nodeId })
       )
       canvasStore.selectedItems = fromAny<
         typeof canvasStore.selectedItems,
@@ -1213,7 +1274,7 @@ describe('useErrorGroups', () => {
       const canvasStore = useCanvasStore()
       vi.mocked(isLGraphNode).mockReturnValue(true)
       vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
-        fromAny<LGraphNode, unknown>({ id: String(nodeId) })
+        fromAny<LGraphNode, unknown>({ id: nodeId })
       )
       canvasStore.selectedItems = fromAny<
         typeof canvasStore.selectedItems,
@@ -1244,7 +1305,7 @@ describe('useErrorGroups', () => {
       const selectedNode = { id: '7' }
       vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
         fromAny<LGraphNode, unknown>(
-          String(nodeId) === '2:5' ? selectedNode : undefined
+          nodeId === '2:5' ? selectedNode : undefined
         )
       )
       canvasStore.selectedItems = fromAny<

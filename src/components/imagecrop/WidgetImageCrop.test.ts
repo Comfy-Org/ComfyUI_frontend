@@ -125,7 +125,7 @@ function makeWidget(
     value: { x: 0, y: 0, width: 512, height: 512 },
     options: {},
     ...overrides
-  } as SimplifiedWidget<Bounds>
+  }
 }
 
 function renderWidget(

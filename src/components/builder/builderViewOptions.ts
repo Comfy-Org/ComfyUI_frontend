@@ -7,9 +7,10 @@ export function setWorkflowDefaultView(
   openAsApp: boolean
 ) {
   workflow.initialMode = openAsApp ? 'app' : 'graph'
-  const extra = (app.rootGraph.extra ??= {})
+  const extra = app.rootGraphOrUndefined?.extra
+  if (!extra) return
   extra.linearMode = openAsApp
-  workflow.changeTracker?.captureCanvasState()
+  workflow.changeTracker.captureCanvasState()
   useTelemetry()?.trackDefaultViewSet({
     default_view: openAsApp ? 'app' : 'graph'
   })

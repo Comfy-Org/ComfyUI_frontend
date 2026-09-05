@@ -12,7 +12,10 @@ import {
   LGraphNode as LGraphNodeClass,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
+import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
 
 import {
   createTestRootGraph,
@@ -30,6 +33,7 @@ vi.mock('@/services/litegraphService', () => ({
 
 const PROMOTED_INPUT = 'value'
 const EXTERNAL_INPUT = 'signal'
+const CONVERTIBLE_NODE_TYPE = 'test/convertible-promoted-widget'
 
 function addInteriorNodes(definition: Subgraph) {
   const withWidget = new LGraphNodeClass('Interior')
@@ -91,14 +95,22 @@ function promotedId(node: SubgraphNode) {
 }
 
 function convertPromotedWidgetNode(rootGraph: LGraph): SubgraphNode {
-  const producer = new LGraphNodeClass('Producer')
-  producer.addOutput('out', 'number')
-  rootGraph.add(producer)
+  const producer = createTestNode(rootGraph, [], ['number'])
 
-  const node = new LGraphNodeClass('Convertible')
-  const input = node.addInput(PROMOTED_INPUT, 'number')
-  input.widget = { name: PROMOTED_INPUT }
-  node.addWidget('number', PROMOTED_INPUT, 0, () => {})
+  if (!(CONVERTIBLE_NODE_TYPE in LiteGraph.registered_node_types)) {
+    class ConvertibleNode extends LGraphNodeClass {
+      constructor() {
+        super('Convertible')
+        const input = this.addInput(PROMOTED_INPUT, 'number')
+        input.widget = { name: PROMOTED_INPUT }
+        this.addWidget('number', PROMOTED_INPUT, 0, () => {})
+      }
+    }
+    LiteGraph.registerNodeType(CONVERTIBLE_NODE_TYPE, ConvertibleNode)
+  }
+
+  const node = LiteGraph.createNode(CONVERTIBLE_NODE_TYPE)
+  if (!node) throw new Error('expected a convertible node')
   rootGraph.add(node)
 
   if (!producer.connect(0, node, 0)) throw new Error('expected an input link')
@@ -199,7 +211,7 @@ describe('duplicated subgraph deleted in both orders (I4)', () => {
     expectSurvivorUndamaged(buildScenario(), 1)
   })
 
-  it.fails('releases promoted widget state when an instance is removed', () => {
+  it('releases promoted widget state when an instance is removed', () => {
     const scenario = buildScenario()
     const removed = scenario.instances[0]
     const removedWidgetId = promotedId(removed)
@@ -211,7 +223,7 @@ describe('duplicated subgraph deleted in both orders (I4)', () => {
     ).toBeUndefined()
   })
 
-  it.fails('gives converted subgraphs independent promoted widgets (#15565)', () => {
+  it('gives converted subgraphs independent promoted widgets (#15565)', () => {
     const rootGraph = createTestRootGraph()
     registerTestSubgraphNodeTypes(rootGraph)
     const first = convertPromotedWidgetNode(rootGraph)
@@ -219,6 +231,11 @@ describe('duplicated subgraph deleted in both orders (I4)', () => {
 
     expect(first.id).not.toBe(second.id)
     expect(promotedId(first)).not.toBe(promotedId(second))
+    expect(
+      useWidgetValueStore().getWidget(
+        widgetId(rootGraph.id, UNASSIGNED_NODE_ID, PROMOTED_INPUT)
+      )
+    ).toBeUndefined()
 
     const id = promotedId(first)
     if (!id) throw new Error('expected a promoted widget id')
@@ -226,6 +243,33 @@ describe('duplicated subgraph deleted in both orders (I4)', () => {
     expect(useWidgetValueStore().setValue(id, 999)).toBe(true)
     expect(promotedValueOf(first)).toBe(999)
     expect(promotedValueOf(second)).toBe(before)
+  })
+
+  it('does not leak a discarded clipboard clone value into a later unrelated instance (#16250)', () => {
+    const rootGraph = createTestRootGraph()
+    registerTestSubgraphNodeTypes(rootGraph)
+    const definition = createSharedDefinition(rootGraph)
+
+    const original = instantiate(definition, rootGraph, 111)
+
+    // Simulate the clipboard's clone-and-discard: construct a clone (which
+    // runs constructor-time widget resolution while its id is still
+    // UNASSIGNED_NODE_ID), then drop it without ever calling graph.add().
+    const clone = original.clone()
+    expect(clone).not.toBeNull()
+
+    expect(
+      useWidgetValueStore().getWidget(
+        widgetId(rootGraph.id, UNASSIGNED_NODE_ID, PROMOTED_INPUT)
+      )
+    ).toBeUndefined()
+
+    // A later, unrelated instance with the same promoted input name/type
+    // must not inherit anything left behind by the discarded clone.
+    const unrelated = instantiate(definition, rootGraph, 555)
+
+    expect(promotedValueOf(unrelated)).toBe(555)
+    expect(promotedId(unrelated)).not.toBe(promotedId(original))
   })
 
   it('keeps the shared definition only while a nested instance references it', () => {

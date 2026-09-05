@@ -2,10 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type {
-  INodeInputSlot,
-  INodeOutputSlot
-} from '@/lib/litegraph/src/interfaces'
+import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
 
@@ -40,20 +37,21 @@ function fanOut(count: number) {
   return { graph, source, targets }
 }
 
-describe('legacy slot link removal', () => {
+describe('legacy slot link compatibility', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  it('propagates input.link = null to the far end of the link', () => {
-    const { source, target } = connectedPair()
+  it('disconnects when legacy code assigns input.link = null', () => {
+    const { source, target, link } = connectedPair()
 
     target.inputs[0].link = null
 
     expect(target.isInputConnected(0)).toBe(false)
     expect(source.isOutputConnected(0)).toBe(false)
     expect(source.outputs[0].links).toBeNull()
-    expect(source.getOutputNodes(0) ?? []).toHaveLength(0)
+    expect(source.getOutputNodes(0)).toBeNull()
+    expect(target.graph!.links.has(link.id)).toBe(false)
   })
 
   it('disconnects the links a filter-and-reassign drops', () => {
@@ -107,57 +105,42 @@ describe('legacy slot link removal', () => {
   })
 })
 
-describe('legacy slot link creation and plain-object slots (uncovered)', () => {
+describe('legacy slot link additions', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  it.fails('restores a link from a saved id', () => {
+  it('ignores assigning a disconnected id to an input', () => {
     const { source, target } = connectedPair()
     const saved = target.inputs[0].link
 
     target.inputs[0].link = null
-    expect(source.isOutputConnected(0)).toBe(false)
-
     target.inputs[0].link = saved
-    expect(target.inputs[0].link).toBe(saved)
-    expect(source.isOutputConnected(0)).toBe(true)
+
+    expect(target.inputs[0].link).toBeNull()
+    expect(source.isOutputConnected(0)).toBe(false)
   })
 
-  it.fails('reconnects a link pushed back onto the output view', () => {
+  it('ignores adding a disconnected id to an output view', () => {
     const { source, target } = connectedPair()
     const output = source.outputs[0]
     const [id] = output.links!
 
     output.links = []
-    expect(source.isOutputConnected(0)).toBe(false)
+    output.links.push(id)
 
-    output.links!.push(id)
-    expect(source.isOutputConnected(0)).toBe(true)
-    expect(target.isInputConnected(0)).toBe(true)
+    expect(source.isOutputConnected(0)).toBe(false)
+    expect(target.isInputConnected(0)).toBe(false)
+    expect(output.links).toEqual([])
   })
 
-  it.fails('disconnects through a plain-object input slot', () => {
-    // The shape the one confirmed-broken pack uses: replace the slot with a
-    // spread copy, then mutate that. `link` is an accessor, so the copy carries
-    // neither the shim nor the current id.
+  it('normalises a copied slot before applying null-assignment compatibility', () => {
     const { source, target } = connectedPair()
-    const copy: INodeInputSlot = { ...target.inputs[0] }
-    target.inputs[0] = copy
+    target.inputs[0] = { ...target.inputs[0] }
 
     target.inputs[0].link = null
 
     expect(source.isOutputConnected(0)).toBe(false)
-  })
-
-  it.fails('disconnects through a plain-object output slot', () => {
-    const { source, target } = connectedPair()
-    const copy: INodeOutputSlot = { ...source.outputs[0] }
-    source.outputs[0] = copy
-
-    source.outputs[0].links = []
-
-    expect(target.isInputConnected(0)).toBe(false)
   })
 })
 
@@ -255,7 +238,7 @@ describe('comfyui-promptchain indexed slot replacement', () => {
     )
   })
 
-  it.fails('reads the live link id back through a spread copy', () => {
+  it('reads the live link id back through a spread copy', () => {
     const { target } = autogrowChain(2, [0])
     const linkId = target.getInputLink(0)!.id
 
@@ -265,7 +248,7 @@ describe('comfyui-promptchain indexed slot replacement', () => {
     expect(target.inputs[0].link).toBe(linkId)
   })
 
-  it.fails('keeps connected inputs when the pack re-reads slot.link', () => {
+  it('keeps connected inputs when the pack re-reads slot.link', () => {
     const { target } = autogrowChain(4, [0, 1, 2])
 
     replaceSlotsWithLabelledCopies(target)

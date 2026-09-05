@@ -2,13 +2,13 @@ import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadat
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
 import type { JobOutputAsset } from '@/platform/remote/comfyui/jobs/jobTypes'
+import { getOutputKey } from '@/platform/assets/utils/outputKeyUtil'
 import {
   getJobAssets,
   getJobDetail,
   getPreviewableOutputsFromJobDetail
 } from '@/services/jobOutputCache'
 import type { ResultItemImpl } from '@/stores/queueStore'
-import type { SerializedNodeId } from '@/types/nodeId'
 
 type OutputAssetMapOptions = {
   jobId: string
@@ -24,12 +24,6 @@ type ResolveOutputAssetItemsOptions = {
   excludeOutputKey?: string
 }
 
-type OutputKeyParts = {
-  nodeId?: SerializedNodeId | null
-  subfolder?: string | null
-  filename?: string | null
-}
-
 function shouldLoadFullOutputs(
   outputCount: OutputAssetMetadata['outputCount'],
   outputsLength: number
@@ -41,34 +35,9 @@ function shouldLoadFullOutputs(
   )
 }
 
-export function getAssetOutputCount(
-  asset: Pick<AssetItem, 'user_metadata'>
-): number {
-  const count = asset.user_metadata?.outputCount
-  return typeof count === 'number' && count > 0 ? count : 1
-}
-
-export function getTotalAssetOutputCount(
-  assets: Pick<AssetItem, 'user_metadata'>[]
-): number {
-  return assets.reduce((sum, asset) => sum + getAssetOutputCount(asset), 0)
-}
-
-export function getOutputKey({
-  nodeId,
-  subfolder,
-  filename
-}: OutputKeyParts): string | null {
-  if (nodeId == null || subfolder == null || !filename) {
-    return null
-  }
-
-  return `${nodeId}-${subfolder}-${filename}`
-}
-
 /**
  * Maps a job's outputs to AssetItems with ids derived from the composite
- * `<nodeId>-<subfolder>-<filename>` key. Records sharing a composite key are
+ * `[nodeId, subfolder, filename]` key. Records sharing a composite key are
  * dropped after the first to keep `:key` unique in VirtualGrid — colliding
  * ids cause Vue to reuse one DOM node and visibly duplicate the asset on
  * scroll.

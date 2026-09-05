@@ -211,7 +211,7 @@ function link(
   vs: WebGLShader,
   fs: WebGLShader
 ): WebGLProgram {
-  const p = gl.createProgram()!
+  const p = gl.createProgram()
   gl.attachShader(p, vs)
   gl.attachShader(p, fs)
   gl.linkProgram(p)
@@ -268,7 +268,7 @@ export function createWebGLCompositor(): Compositor {
 
   function makeTarget(w: number, h: number): Target | null {
     const g = gl!
-    const tex = g.createTexture()!
+    const tex = g.createTexture()
     g.bindTexture(g.TEXTURE_2D, tex)
     g.texImage2D(
       g.TEXTURE_2D,
@@ -285,7 +285,7 @@ export function createWebGLCompositor(): Compositor {
     g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MAG_FILTER, g.LINEAR)
     g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_S, g.CLAMP_TO_EDGE)
     g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_T, g.CLAMP_TO_EDGE)
-    const fbo = g.createFramebuffer()!
+    const fbo = g.createFramebuffer()
     g.bindFramebuffer(g.FRAMEBUFFER, fbo)
     g.framebufferTexture2D(
       g.FRAMEBUFFER,
@@ -419,7 +419,7 @@ export function createWebGLCompositor(): Compositor {
     src: HTMLCanvasElement | ImageBitmap | OffscreenCanvas
   ): WebGLTexture {
     const g = gl!
-    const tex = g.createTexture()!
+    const tex = g.createTexture()
     g.bindTexture(g.TEXTURE_2D, tex)
     g.pixelStorei(g.UNPACK_FLIP_Y_WEBGL, true)
     g.texImage2D(g.TEXTURE_2D, 0, g.RGBA, g.RGBA, g.UNSIGNED_BYTE, src)
@@ -509,14 +509,11 @@ export function createWebGLCompositor(): Compositor {
         c.width = width
         c.height = height
       }
-      const ctx = (c as HTMLCanvasElement | OffscreenCanvas).getContext(
-        'webgl2',
-        {
-          alpha: true,
-          premultipliedAlpha: false,
-          preserveDrawingBuffer: true
-        }
-      ) as WebGL2RenderingContext | null
+      const ctx = c.getContext('webgl2', {
+        alpha: true,
+        premultipliedAlpha: false,
+        preserveDrawingBuffer: true
+      })
       if (!ctx) return false
       if (!ctx.getExtension('EXT_color_buffer_float')) return false
       canvas = c
@@ -527,7 +524,7 @@ export function createWebGLCompositor(): Compositor {
         if (canvas !== c) return
         contextLost = true
         if (disposed) return
-        console.warn('[pentrado] WebGL context lost — recreating')
+        console.warn('[LayerEditor] WebGL context lost — recreating')
         queueMicrotask(() => {
           if (recover()) onRestored?.()
         })
@@ -850,7 +847,7 @@ export function createWebGLCompositor(): Compositor {
       g.enable(g.SCISSOR_TEST)
       g.scissor(clip.x, height - (clip.y + clip.h), clip.w, clip.h)
     }
-    g.useProgram(presentProg!)
+    g.useProgram(presentProg)
     g.bindFramebuffer(g.FRAMEBUFFER, null)
     g.viewport(0, 0, width, height)
     g.clearColor(0, 0, 0, 0)
@@ -864,7 +861,7 @@ export function createWebGLCompositor(): Compositor {
 
   function blit(src: Target, dst: Target): void {
     const g = gl!
-    g.useProgram(copyProg!)
+    g.useProgram(copyProg)
     g.bindFramebuffer(g.FRAMEBUFFER, dst.fbo)
     g.viewport(0, 0, dst.width, dst.height)
     g.activeTexture(g.TEXTURE0)
