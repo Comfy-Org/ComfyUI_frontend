@@ -1052,6 +1052,11 @@ Enterprise`
     en: 'The full power of\nComfyUI — from\nanywhere.',
     'zh-CN': 'ComfyUI 的全部能力\n随时随地。'
   },
+  'cloud.meta.description': {
+    en: 'Comfy Cloud runs ComfyUI in your browser on hosted GPUs. Pre-installed custom nodes, commercially licensed models, no setup. Open a tab and start creating.',
+    'zh-CN':
+      'Comfy Cloud 让你在浏览器中运行 ComfyUI，由云端 GPU 驱动。预装自定义节点，提供商用授权模型，无需本地配置。打开标签页即可开始创作。'
+  },
   'cloud.hero.subtitle': {
     en: 'The easiest way to start with ComfyUI. Pre-loaded models. Pre-installed custom nodes. Concurrent jobs. The full power of ComfyUI on Blackwell RTX 6000 Pros. Open a tab and start creating.',
     'zh-CN':

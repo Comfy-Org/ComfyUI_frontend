@@ -59,38 +59,43 @@ function toggle(index: number) {
           :key="index"
           class="border-b border-primary-comfy-canvas/20"
         >
-          <button
-            :id="`faq-trigger-${index}`"
-            type="button"
-            :aria-expanded="expanded[index]"
-            :aria-controls="`faq-panel-${index}`"
-            :class="
-              cn(
-                'flex w-full cursor-pointer items-center justify-between text-left',
-                index === 0 ? 'pb-6' : 'py-6'
-              )
-            "
-            @click="toggle(index)"
-          >
-            <span
+          <!-- Real heading so each question is machine-readable for AI search;
+               preflight resets h3 to inherited font and zero margin, so the
+               accordion renders pixel-identical. -->
+          <h3>
+            <button
+              :id="`faq-trigger-${index}`"
+              type="button"
+              :aria-expanded="expanded[index]"
+              :aria-controls="`faq-panel-${index}`"
               :class="
                 cn(
-                  'text-lg font-light md:text-xl',
-                  expanded[index]
-                    ? 'text-primary-comfy-yellow'
-                    : 'text-primary-comfy-canvas'
+                  'flex w-full cursor-pointer items-center justify-between text-left',
+                  index === 0 ? 'pb-6' : 'py-6'
                 )
               "
+              @click="toggle(index)"
             >
-              {{ faq.question }}
-            </span>
-            <span
-              class="text-primary-comfy-yellow ml-4 shrink-0 text-2xl"
-              aria-hidden="true"
-            >
-              {{ expanded[index] ? '−' : '+' }}
-            </span>
-          </button>
+              <span
+                :class="
+                  cn(
+                    'text-lg font-light md:text-xl',
+                    expanded[index]
+                      ? 'text-primary-comfy-yellow'
+                      : 'text-primary-comfy-canvas'
+                  )
+                "
+              >
+                {{ faq.question }}
+              </span>
+              <span
+                class="text-primary-comfy-yellow ml-4 shrink-0 text-2xl"
+                aria-hidden="true"
+              >
+                {{ expanded[index] ? '−' : '+' }}
+              </span>
+            </button>
+          </h3>
           <section
             v-show="expanded[index]"
             :id="`faq-panel-${index}`"
