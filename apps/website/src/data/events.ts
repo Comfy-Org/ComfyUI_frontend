@@ -18,9 +18,10 @@ export type ComfyEvent = {
   location?: LocalizedText
   /** Hand-written display date shown on upcoming rows. */
   dateLabel?: LocalizedText
-  /** ISO start; drives upcoming/past classification, past-section sort order,
-   * and VideoObject uploadDate. Approximate (set to the recording's publish
-   * date) for events that predate this field. */
+  /** ISO start; drives upcoming/past classification and past-section sort order,
+   * while serving only as the fallback for VideoObject.uploadDate when
+   * recordingPublishDate is unavailable. Approximate (set to the recording's
+   * publish date) for events that predate this field. */
   startDateTime: string
   /** Defaults to one hour after the start. */
   endDateTime?: string
@@ -34,6 +35,8 @@ export type ComfyEvent = {
   liveVideoId?: string
   /** Supersedes liveVideoId once the recording is published. */
   recordingVideoId?: string
+  /** Actual date the recording was published on YouTube (e.g. '2026-07-16'), if different from startDateTime. */
+  recordingPublishDate?: string
   featured?: {
     order: number
     media: EventMedia
@@ -86,11 +89,6 @@ const launchesHref: LocalizedText = {
   'zh-CN': localizeHref('/launches', 'zh-CN')
 }
 
-export function youtubeWatchHref(videoId: string): LocalizedText {
-  const href = `https://www.youtube.com/watch?v=${videoId}`
-  return { en: href, 'zh-CN': href }
-}
-
 export const eventPath = (event: { id: string }): string =>
   `/events/${event.id}`
 
@@ -101,8 +99,13 @@ function eventPageHref(id: string): LocalizedText {
   }
 }
 
-export const eventVideoId = (event: ComfyEvent): string | undefined =>
-  event.recordingVideoId ?? event.liveVideoId
+export const eventVideoId = (
+  event: Pick<ComfyEvent, 'recordingVideoId' | 'liveVideoId'>
+): string | undefined => event.recordingVideoId ?? event.liveVideoId
+
+export const eventVideoUploadDate = (
+  event: Pick<ComfyEvent, 'recordingPublishDate' | 'startDateTime'>
+): string => event.recordingPublishDate ?? event.startDateTime
 
 const EVENT_DURATION_MS = 60 * 60 * 1000
 const SITE_ORIGIN = 'https://comfy.org'
@@ -626,7 +629,8 @@ const events: readonly ComfyEvent[] = [
       'zh-CN': '七月发布直播回放'
     }),
     startDateTime: '2026-07-29',
-    recordingVideoId: '8RGN69h_xTU'
+    recordingVideoId: '8RGN69h_xTU',
+    recordingPublishDate: '2026-07-30'
   },
   {
     id: 'black-math-hackathon',
@@ -664,7 +668,8 @@ const events: readonly ComfyEvent[] = [
       'zh-CN': '通过 Comfy MCP 在 Claude/Cursor 中运行 ComfyUI 的直播回放'
     }),
     startDateTime: '2026-07-08',
-    recordingVideoId: 'sX2sJ5-4MS4'
+    recordingVideoId: 'sX2sJ5-4MS4',
+    recordingPublishDate: '2026-07-16'
   },
   {
     id: 'production-pipeline',
@@ -683,7 +688,8 @@ const events: readonly ComfyEvent[] = [
       'zh-CN': '重塑生产流水线直播回放'
     }),
     startDateTime: '2026-07-08',
-    recordingVideoId: 'dsYggO4lsSo'
+    recordingVideoId: 'dsYggO4lsSo',
+    recordingPublishDate: '2026-07-09'
   },
   {
     id: 'june-launches',
@@ -702,7 +708,8 @@ const events: readonly ComfyEvent[] = [
       'zh-CN': '六月发布直播回放'
     }),
     startDateTime: '2026-06-29',
-    recordingVideoId: 'yo7b_zHd20g'
+    recordingVideoId: 'yo7b_zHd20g',
+    recordingPublishDate: '2026-06-30'
   },
   {
     id: 'krea-founders-live',
@@ -722,6 +729,7 @@ const events: readonly ComfyEvent[] = [
     }),
     startDateTime: '2026-06-23',
     recordingVideoId: '31jiUhCEjJ4',
+    recordingPublishDate: '2026-06-24',
     featured: {
       order: 3,
       media: eventVideo(
