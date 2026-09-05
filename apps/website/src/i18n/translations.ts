@@ -8399,6 +8399,10 @@ Enterprise`
     en: 'Open Models',
     'zh-CN': '开源模型'
   },
+  'cloudNodesLaunch.hero.tagBeta': {
+    en: 'Beta',
+    'zh-CN': '测试版'
+  },
   'cloudNodesLaunch.hero.tagPayPerRun': {
     en: 'Pay Per GPU-Second',
     'zh-CN': '按 GPU 秒计费'

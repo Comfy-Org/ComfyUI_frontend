@@ -36,6 +36,7 @@ export const cloudNodesPage: ModelLaunchPage = {
     // Phones get the poster rather than a 2.8MB download they cannot hear.
     mobileFallbackImageSrc: media.hero.posterSrc,
     badgeKeys: [
+      'cloudNodesLaunch.hero.tagBeta',
       'cloudNodesLaunch.hero.tagNoSubscription',
       'cloudNodesLaunch.hero.tagOpenModels',
       'cloudNodesLaunch.hero.tagPayPerRun'
@@ -97,6 +98,20 @@ export const cloudNodesPage: ModelLaunchPage = {
   faq: {
     headingKey: 'cloudNodesLaunch.faq.heading',
     items: [
+      {
+        // Every node ships a [BETA] suffix in its display name, so the page has
+        // to say what that means before someone spends credits finding out.
+        id: 'beta',
+        question: {
+          en: 'Why are these marked beta?',
+          'zh-CN': '为什么这些节点标记为测试版？'
+        },
+        answer: {
+          en: 'Because the curated set is still changing: nodes may gain or lose options, and a workflow may be retired. It is not a statement about reliability or billing, runs are real and charges are final. The [BETA] marker is on the node name itself so you see it before you use one.',
+          'zh-CN':
+            '因为精选节点集仍在调整：节点的选项可能增减，某个工作流也可能被下线。这与稳定性或计费无关，运行是真实的，费用也是最终的。[BETA] 标记就在节点名称上，你在使用前就能看到。'
+        }
+      },
       {
         id: 'subscription',
         question: {
