@@ -1,15 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
 
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useExternalLink } from '@/composables/useExternalLink'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type * as DistributionModule from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import type * as ModelStoreModule from '@/stores/modelStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { fromPartial } from '@total-typescript/shoehorn'
 
@@ -20,17 +17,9 @@ vi.mock('@/workbench/extensions/agent/crdt/mintPortWiring', () => ({
   runMintPortsIntentionalClear: mockRunMintPortsIntentionalClear
 }))
 
-// Mock vue-i18n for useExternalLink
-const mockLocale = ref('en')
-vi.mock('vue-i18n', async () => {
-  const actual = await vi.importActual('vue-i18n')
-  return {
-    ...actual,
-    useI18n: vi.fn(() => ({
-      locale: mockLocale
-    }))
-  }
-})
+vi.mock('@/components/sidebar/tabs/ModelLibrarySidebarTab.vue', () => ({
+  default: {}
+}))
 
 vi.mock('@/scripts/app', () => {
   const mockGraphClear = vi.fn()
@@ -59,7 +48,6 @@ vi.mock('@/scripts/app', () => {
   return {
     app: {
       clean: vi.fn(() => {
-        // Simulate app.clean() calling graph.clear() only when not in subgraph
         mockGraphClear()
       }),
       openClipspace: vi.fn(),
@@ -84,17 +72,12 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 const mockModelStoreRefresh = vi.fn().mockResolvedValue(undefined)
-vi.mock('@/stores/modelStore', async (importOriginal) => {
-  const actual = await importOriginal<typeof ModelStoreModule>()
-  return {
-    ...actual,
-    useModelStore: () => ({ refresh: mockModelStoreRefresh })
-  }
-})
+vi.mock('@/stores/modelStore', () => ({
+  useModelStore: () => ({ refresh: mockModelStoreRefresh })
+}))
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
-vi.mock('@/platform/distribution/types', async (importOriginal) => ({
-  ...(await importOriginal<typeof DistributionModule>()),
+vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
     return mockDistributionState.isCloud
   }
@@ -259,13 +242,9 @@ describe('useCoreCommands', () => {
 
   const createMockSubgraph = () => {
     const mockNodes = [
-      // Mock input node
       createMockNode(1, 'SubgraphInputNode'),
-      // Mock output node
       createMockNode(2, 'SubgraphOutputNode'),
-      // Mock user node
       createMockNode(3, 'SomeUserNode'),
-      // Another mock user node
       createMockNode(4, 'AnotherUserNode')
     ]
 
@@ -342,13 +321,10 @@ describe('useCoreCommands', () => {
     mockModelStoreRefresh.mockResolvedValue(undefined)
     mockMissingModelStoreRefresh.mockResolvedValue(undefined)
 
-    // Reset app state
     app.canvas.subgraph = undefined
 
-    // Mock settings store
     vi.mocked(useSettingStore).mockReturnValue(createMockSettingStore(false))
 
-    // Mock global confirm
     global.confirm = vi.fn().mockReturnValue(true)
     mockRunMintPortsIntentionalClear.mockClear()
   })
@@ -360,7 +336,6 @@ describe('useCoreCommands', () => {
         (cmd) => cmd.id === 'Comfy.ClearWorkflow'
       )!
 
-      // Execute the command
       await clearCommand.function()
 
       expect(app.clean).toHaveBeenCalled()
@@ -370,7 +345,6 @@ describe('useCoreCommands', () => {
     })
 
     it('should preserve input/output nodes when clearing subgraph', async () => {
-      // Set up subgraph context
       app.canvas.subgraph = mockSubgraph
 
       const commands = useCoreCommands()
@@ -378,39 +352,34 @@ describe('useCoreCommands', () => {
         (cmd) => cmd.id === 'Comfy.ClearWorkflow'
       )!
 
-      // Execute the command
       await clearCommand.function()
 
       expect(app.clean).not.toHaveBeenCalled()
       expect(app.rootGraph.clear).not.toHaveBeenCalled()
       expect(mockRunMintPortsIntentionalClear).not.toHaveBeenCalled()
 
-      // Should only remove user nodes, not input/output nodes
       const subgraph = app.canvas.subgraph
       expect(subgraph.remove).toHaveBeenCalledTimes(2)
-      expect(subgraph.remove).toHaveBeenCalledWith(subgraph.nodes[2]) // user1
-      expect(subgraph.remove).toHaveBeenCalledWith(subgraph.nodes[3]) // user2
-      expect(subgraph.remove).not.toHaveBeenCalledWith(subgraph.nodes[0]) // input1
-      expect(subgraph.remove).not.toHaveBeenCalledWith(subgraph.nodes[1]) // output1
+      expect(subgraph.remove).toHaveBeenCalledWith(subgraph.nodes[2])
+      expect(subgraph.remove).toHaveBeenCalledWith(subgraph.nodes[3])
+      expect(subgraph.remove).not.toHaveBeenCalledWith(subgraph.nodes[0])
+      expect(subgraph.remove).not.toHaveBeenCalledWith(subgraph.nodes[1])
 
       expect(api.dispatchCustomEvent).toHaveBeenCalledWith('graphCleared')
     })
 
     it('should respect confirmation setting', async () => {
-      // Mock confirmation required
       vi.mocked(useSettingStore).mockReturnValue(createMockSettingStore(true))
 
-      global.confirm = vi.fn().mockReturnValue(false) // User cancels
+      global.confirm = vi.fn().mockReturnValue(false)
 
       const commands = useCoreCommands()
       const clearCommand = commands.find(
         (cmd) => cmd.id === 'Comfy.ClearWorkflow'
       )!
 
-      // Execute the command
       await clearCommand.function()
 
-      // Should not clear anything when user cancels
       expect(app.clean).not.toHaveBeenCalled()
       expect(app.rootGraph.clear).not.toHaveBeenCalled()
       expect(api.dispatchCustomEvent).not.toHaveBeenCalled()
@@ -452,7 +421,6 @@ describe('useCoreCommands', () => {
     it('should select all items', async () => {
       await findCommand('Comfy.Canvas.SelectAll').function()
 
-      // No arguments means "select all items on canvas"
       expect(app.canvas.selectItems).toHaveBeenCalledWith()
     })
 

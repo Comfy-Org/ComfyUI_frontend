@@ -1,11 +1,11 @@
+import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
-import type * as VueI18nModule from 'vue-i18n'
+import { createI18n } from 'vue-i18n'
 
 import * as comfyCredits from '@/base/credits/comfyCredits'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 
-// Shared mock state (reset in beforeEach)
 let mockBillingBalance: {
   amountMicros: number
   cloudCreditBalanceMicros?: number
@@ -13,21 +13,15 @@ let mockBillingBalance: {
 } | null = null
 let mockBillingIsLoading = false
 
-vi.mock(
-  'vue-i18n',
-  async (importOriginal: () => Promise<typeof VueI18nModule>) => {
-    const actual = await importOriginal()
-    return {
-      ...actual,
-      useI18n: () => ({
-        t: () => 'Credits',
-        locale: { value: 'en-US' }
-      })
-    }
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en-US',
+  messages: {
+    'en-US': {},
+    'de-DE': {}
   }
-)
+})
 
-// Mock useBillingContext - returns computed refs that read from module-level state
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     balance: computed(() => mockBillingBalance),
@@ -35,23 +29,41 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
+function mountComposable(): ReturnType<typeof useSubscriptionCredits> {
+  let composable!: ReturnType<typeof useSubscriptionCredits>
+  render(
+    {
+      setup() {
+        composable = useSubscriptionCredits()
+        return () => null
+      }
+    },
+    { global: { plugins: [i18n] } }
+  )
+  return composable
+}
+
 describe('useSubscriptionCredits', () => {
   beforeEach(() => {
     mockBillingBalance = null
     mockBillingIsLoading = false
+    i18n.global.locale.value = 'en-US'
   })
 
   describe('totalCredits', () => {
     it('should return "0" when balance is null', () => {
       mockBillingBalance = null
-      const { totalCredits } = useSubscriptionCredits()
+      const { totalCredits } = mountComposable()
       expect(totalCredits.value).toBe('0')
     })
 
-    it('should format amountMicros correctly', () => {
-      mockBillingBalance = { amountMicros: 100 }
-      const { totalCredits } = useSubscriptionCredits()
-      expect(totalCredits.value).toBe('211')
+    it('should reactively format amountMicros for the active locale', () => {
+      mockBillingBalance = { amountMicros: 100_000 }
+      const { totalCredits } = mountComposable()
+      expect(totalCredits.value).toBe('211,000')
+
+      i18n.global.locale.value = 'de-DE'
+      expect(totalCredits.value).toBe('211.000')
     })
 
     it('should handle formatting errors by throwing', () => {
@@ -61,7 +73,7 @@ describe('useSubscriptionCredits', () => {
       })
 
       mockBillingBalance = { amountMicros: 100 }
-      const { totalCredits } = useSubscriptionCredits()
+      const { totalCredits } = mountComposable()
       expect(() => totalCredits.value).toThrow('Formatting error')
       formatSpy.mockRestore()
     })
@@ -70,7 +82,7 @@ describe('useSubscriptionCredits', () => {
   describe('monthlyBonusCredits', () => {
     it('should return "0" when cloudCreditBalanceMicros is missing', () => {
       mockBillingBalance = { amountMicros: 100 }
-      const { monthlyBonusCredits } = useSubscriptionCredits()
+      const { monthlyBonusCredits } = mountComposable()
       expect(monthlyBonusCredits.value).toBe('0')
     })
 
@@ -79,7 +91,7 @@ describe('useSubscriptionCredits', () => {
         amountMicros: 300,
         cloudCreditBalanceMicros: 200
       }
-      const { monthlyBonusCredits } = useSubscriptionCredits()
+      const { monthlyBonusCredits } = mountComposable()
       expect(monthlyBonusCredits.value).toBe('422')
     })
   })
@@ -87,7 +99,7 @@ describe('useSubscriptionCredits', () => {
   describe('prepaidCredits', () => {
     it('should return "0" when prepaidBalanceMicros is missing', () => {
       mockBillingBalance = { amountMicros: 100 }
-      const { prepaidCredits } = useSubscriptionCredits()
+      const { prepaidCredits } = mountComposable()
       expect(prepaidCredits.value).toBe('0')
     })
 
@@ -96,7 +108,7 @@ describe('useSubscriptionCredits', () => {
         amountMicros: 500,
         prepaidBalanceMicros: 300
       }
-      const { prepaidCredits } = useSubscriptionCredits()
+      const { prepaidCredits } = mountComposable()
       expect(prepaidCredits.value).toBe('633')
     })
   })
@@ -109,7 +121,7 @@ describe('useSubscriptionCredits', () => {
         prepaidBalanceMicros: 300
       }
       const { monthlyBonusCreditsValue, prepaidCreditsValue } =
-        useSubscriptionCredits()
+        mountComposable()
       expect(monthlyBonusCreditsValue.value).toBe(422)
       expect(prepaidCreditsValue.value).toBe(633)
     })
@@ -117,7 +129,7 @@ describe('useSubscriptionCredits', () => {
     it('defaults missing fields to zero', () => {
       mockBillingBalance = { amountMicros: 100 }
       const { monthlyBonusCreditsValue, prepaidCreditsValue } =
-        useSubscriptionCredits()
+        mountComposable()
       expect(monthlyBonusCreditsValue.value).toBe(0)
       expect(prepaidCreditsValue.value).toBe(0)
     })
@@ -126,12 +138,11 @@ describe('useSubscriptionCredits', () => {
   describe('isLoadingBalance', () => {
     it('should reflect billingContext.isLoading', () => {
       mockBillingIsLoading = true
-      const { isLoadingBalance } = useSubscriptionCredits()
+      const { isLoadingBalance } = mountComposable()
       expect(isLoadingBalance.value).toBe(true)
 
       mockBillingIsLoading = false
-      // Need to re-get the composable since computed caches the value
-      const { isLoadingBalance: reloaded } = useSubscriptionCredits()
+      const { isLoadingBalance: reloaded } = mountComposable()
       expect(reloaded.value).toBe(false)
     })
   })
