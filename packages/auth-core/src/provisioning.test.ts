@@ -81,6 +81,7 @@ describe('signUpWithProvisioning', () => {
         provisionCustomer: async () => {
           throw failure
         },
+        // A telemetry sink can throw; it must never displace the original error.
         onRollbackFailure: () => {
           throw new Error('telemetry sink blew up')
         }

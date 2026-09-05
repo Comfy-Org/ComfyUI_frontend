@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { onBeforeUnmount, ref, watch } from 'vue'
 
 import SocialAuthButtons from '@comfyorg/auth-core/SocialAuthButtons.vue'
 
@@ -9,12 +9,8 @@ import type {
   AuthSignInState
 } from '../../config/auth-sign-in-state'
 import { authSignInTransition } from '../../config/auth-sign-in-state'
-import {
-  signInWorkshopWithGitHub,
-  signInWorkshopWithGoogle,
-  warmWorkshopAuth
-} from '../../config/workshop-firebase'
-import { safeReturnPath } from '../../config/workshop-return'
+import { requestedReturnPath } from '../../config/workshop-return'
+import type { WorkshopSessionUser } from '../../config/workshop-session'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -27,29 +23,30 @@ const { mode = 'signIn', locale = 'en' } = defineProps<{
 }>()
 
 const enabled = useWorkshopAuthFlag()
-const { user, ensureFresh, signOut } = useWorkshopSession()
+const {
+  user,
+  ensureFresh,
+  signOut: signOutWorkshopSession
+} = useWorkshopSession()
 const state = ref<AuthSignInState>({ step: 'idle' })
+const loadWorkshopFirebase = () => import('../../config/workshop-firebase')
 
 function dispatch(event: AuthSignInEvent) {
   state.value = authSignInTransition(state.value, event)
 }
 
-/**
- * The whole page exists to send the visitor back where they came from; a
- * missing or unsafe returnTo lands on the Workshop home.
- */
-function navigateBack() {
-  window.location.assign(
-    safeReturnPath(new URLSearchParams(window.location.search).get('returnTo'))
-  )
+function navigateBackIfRequested(): void {
+  const destination = requestedReturnPath(window.location.search)
+  if (!destination) return
+  window.location.assign(destination)
 }
 
-async function runMint() {
-  const result = await ensureFresh()
+async function runMint(currentUser?: WorkshopSessionUser): Promise<void> {
+  const result = await ensureFresh(currentUser)
   if (state.value.step !== 'minting') return
   if (result?.status === 'ok') {
     dispatch({ type: 'mintSucceeded' })
-    navigateBack()
+    navigateBackIfRequested()
   } else {
     dispatch({ type: 'mintFailed' })
   }
@@ -58,69 +55,65 @@ async function runMint() {
 async function signInWith(provider: AuthSignInProvider) {
   if (state.value.step === 'pending' || state.value.step === 'minting') return
   dispatch({ type: 'signInStarted', provider })
+  let firebase: Awaited<ReturnType<typeof loadWorkshopFirebase>> | undefined
   try {
+    firebase = await loadWorkshopFirebase()
     const credential =
       provider === 'google'
-        ? await signInWorkshopWithGoogle()
-        : await signInWorkshopWithGitHub()
+        ? await firebase.signInWorkshopWithGoogle()
+        : await firebase.signInWorkshopWithGitHub()
     dispatch({
       type: 'popupSucceeded',
       email: credential.user.email ?? credential.user.displayName ?? ''
     })
-    await runMint()
+    await runMint(credential.user)
   } catch (error) {
-    dispatch({ type: 'signInFailed', error })
+    if (firebase?.isWorkshopProvisioningError(error)) {
+      dispatch({
+        type: 'provisioningFailed',
+        email: error.user.email ?? error.user.displayName ?? ''
+      })
+    } else {
+      dispatch({ type: 'signInFailed', error })
+    }
   }
 }
 
-async function retryMint() {
+async function retryMint(): Promise<void> {
   dispatch({ type: 'mintRetried' })
   await runMint()
 }
 
-/**
- * Sign-out only transitions on success: a failed sign-out leaves the user
- * signed in, and the session listener drives the state when it clears.
- */
-async function signOutHere() {
+async function signOut() {
+  // A failed sign-out leaves the user signed in; the auth-state listener
+  // drives the transition when it actually clears. Routing it to a sign-in
+  // error would strand a signed-in user on an error screen.
   try {
-    await signOut()
+    await signOutWorkshopSession()
   } catch (error) {
     console.error('Workshop sign-out failed', error)
-    return
   }
-  dispatch({ type: 'signedOut' })
 }
 
-// The session state module owns the Firebase listener; this watch turns a
-// restored user into this page's minting step.
-function watchUser() {
-  return watch(
-    user,
-    (restored) => {
-      if (!restored) {
-        dispatch({ type: 'signedOut' })
-        return
-      }
-      const before = state.value.step
-      dispatch({
-        type: 'userRestored',
-        email: restored.email ?? restored.displayName ?? ''
-      })
-      if (before !== state.value.step && state.value.step === 'minting') {
-        void runMint()
-      }
-    },
-    { immediate: true }
-  )
-}
-
-let stopUserWatch: (() => void) | undefined
-onMounted(() => {
-  void warmWorkshopAuth()
-  stopUserWatch = watchUser()
-})
-onBeforeUnmount(() => stopUserWatch?.())
+const stopUserWatch = watch(
+  user,
+  (restored) => {
+    if (!restored) {
+      dispatch({ type: 'signedOut' })
+      return
+    }
+    const before = state.value.step
+    dispatch({
+      type: 'userRestored',
+      email: restored.email ?? restored.displayName ?? ''
+    })
+    if (before !== state.value.step && state.value.step === 'minting') {
+      void runMint(restored)
+    }
+  },
+  { immediate: true }
+)
+onBeforeUnmount(stopUserWatch)
 </script>
 
 <template>
@@ -136,35 +129,31 @@ onBeforeUnmount(() => stopUserWatch?.())
       <p class="mt-3 text-sm break-all text-primary-comfy-canvas/70">
         {{ t('auth.signIn.signedInAs', locale) }} {{ state.email }}
       </p>
-      <a
-        href="/workshop/"
-        class="hover:bg-primary-comfy-yellow/90 bg-primary-comfy-yellow mt-6 flex h-12 w-full items-center justify-center rounded-xl font-semibold text-primary-comfy-ink transition-colors"
-      >
-        {{ t('auth.signIn.backToWorkshop', locale) }}
-      </a>
-    </template>
-
-    <template v-else-if="state.step === 'sessionError'">
-      <h1 class="text-2xl font-semibold text-primary-comfy-canvas">
-        {{ t('auth.signIn.heading', locale) }}
-      </h1>
       <p
+        v-if="state.messageKey"
         role="alert"
-        class="mt-4 rounded-xl border border-red-500/30 bg-red-500/5 p-4 text-sm text-primary-comfy-canvas"
+        class="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 text-sm text-primary-comfy-canvas"
       >
-        {{ t('auth.signIn.error.session', locale) }}
+        {{ t(state.messageKey, locale) }}
       </p>
       <button
+        v-if="state.messageKey === 'auth.signIn.error.session'"
         type="button"
         class="hover:bg-primary-comfy-yellow/90 bg-primary-comfy-yellow mt-4 flex h-12 w-full items-center justify-center rounded-xl font-semibold text-primary-comfy-ink transition-colors"
         @click="retryMint"
       >
         {{ t('auth.signIn.retry', locale) }}
       </button>
+      <a
+        href="/workshop/"
+        class="hover:bg-primary-comfy-yellow/90 bg-primary-comfy-yellow mt-6 flex h-12 w-full items-center justify-center rounded-xl font-semibold text-primary-comfy-ink transition-colors"
+      >
+        {{ t('auth.signIn.backToWorkshop', locale) }}
+      </a>
       <button
         type="button"
         class="mt-3 flex h-12 w-full items-center justify-center rounded-xl border border-primary-comfy-canvas/25 text-sm text-primary-comfy-canvas transition-colors hover:border-primary-comfy-canvas/40"
-        @click="signOutHere"
+        @click="signOut"
       >
         {{ t('auth.signIn.signOut', locale) }}
       </button>

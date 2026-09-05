@@ -41,3 +41,12 @@ export function safeReturnPath(raw: string | null | undefined): string {
     return WORKSHOP_HOME
   }
 }
+
+/**
+ * Resolve an explicit return destination. A plain visit to the sign-in page
+ * has no destination and must remain there after sign-in.
+ */
+export function requestedReturnPath(search: string): string | undefined {
+  const raw = new URLSearchParams(search).get('returnTo')
+  return raw ? safeReturnPath(raw) : undefined
+}

@@ -27,6 +27,7 @@
     "@astrojs/sitemap": "catalog:",
     "@comfyorg/auth-core": "workspace:*",
     "@comfyorg/design-system": "workspace:*",
+    "@comfyorg/ingest-types": "workspace:*",
     "@comfyorg/object-info-parser": "workspace:*",
     "@comfyorg/shared-frontend-utils": "workspace:*",
     "@comfyorg/tailwind-utils": "workspace:*",

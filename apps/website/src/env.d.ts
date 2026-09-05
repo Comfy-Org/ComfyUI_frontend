@@ -8,8 +8,6 @@ interface ViteTypeOptions {
 }
 
 interface ImportMetaEnv {
-  /** LOCAL ONLY: route runs through the vendored partner bundle. */
-  readonly PUBLIC_WORKSHOP_PARTNER_PROXY?: string
   /** 'staging' points every Workshop backend at the staging family. */
   readonly PUBLIC_WORKSHOP_CLOUD_ENV?: string
   /** '1' forces the Workshop auth flag on — PostHog only runs in PROD builds. */
