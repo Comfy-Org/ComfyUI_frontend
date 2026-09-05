@@ -291,6 +291,12 @@ function openSavedTabsNamed(name: string): ComfyWorkflow[] {
   )
 }
 
+function savedWorkflowsNamed(name: string): ComfyWorkflow[] {
+  return workflowStore.workflows.filter(
+    (workflow) => !workflow.isTemporary && cloudWorkflowName(workflow) === name
+  )
+}
+
 function cloudIdFor(tab: ComfyWorkflow): string | undefined {
   const name = cloudWorkflowName(tab)
   const saved =
@@ -644,6 +650,19 @@ function boundTabFor(workflowId: string): ComfyWorkflow | null {
   return null
 }
 
+function storedWorkflowFor(workflowId: string): ComfyWorkflow | null {
+  const boundPath = bindingStore.tabPathFor(workflowId)
+  const bound =
+    boundPath === undefined ? null : workflowStore.getWorkflowByPath(boundPath)
+  if (bound) return bound
+  for (const [name, id] of cloudIdsByName.value) {
+    if (id !== workflowId) continue
+    const matches = savedWorkflowsNamed(name)
+    return matches.length === 1 ? matches[0] : null
+  }
+  return null
+}
+
 let activeTabGeneration = 0
 let activeTabChain: Promise<void> = Promise.resolve()
 
@@ -660,17 +679,21 @@ function onOpenApprovalWorkflow(
 }
 
 async function onOpenReferenceWorkflow(workflowId: string): Promise<void> {
-  await refreshCloudWorkflowIds()
-  const target = boundTabFor(workflowId)
-  if (target === null) {
-    toast.add({
-      severity: 'warn',
-      detail: t('agent.targetNavigationUnavailable'),
-      life: 5000
-    })
-    return
-  }
   try {
+    await Promise.all([
+      refreshCloudWorkflowIds(),
+      workflowStore.syncWorkflows()
+    ])
+    const target = storedWorkflowFor(workflowId)
+    if (target === null) {
+      toast.add({
+        severity: 'warn',
+        detail: t('agent.targetNavigationUnavailable'),
+        life: 5000
+      })
+      return
+    }
+    bindingStore.bind(workflowId, target.path)
     await workflowService.openWorkflow(target)
   } catch {
     toast.add({
