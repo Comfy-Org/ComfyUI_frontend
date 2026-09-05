@@ -42,6 +42,19 @@ describe('authSignInTransition', () => {
     ).toBe(pending)
   })
 
+  it('keeps the Firebase identity visible when customer setup fails', () => {
+    expect(
+      authSignInTransition(pending, {
+        type: 'provisioningFailed',
+        email: 'a@b.co'
+      })
+    ).toEqual({
+      step: 'signedIn',
+      email: 'a@b.co',
+      messageKey: 'auth.signIn.error.provisioning'
+    })
+  })
+
   it('restores a returning visitor straight to signedIn', () => {
     expect(
       authSignInTransition(idle, { type: 'userRestored', email: 'a@b.co' })

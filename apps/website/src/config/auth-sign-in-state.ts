@@ -14,12 +14,17 @@ export type AuthSignInState =
   | { readonly step: 'idle' }
   | { readonly step: 'pending'; readonly provider: AuthSignInProvider }
   | { readonly step: 'error'; readonly messageKey: TranslationKey }
-  | { readonly step: 'signedIn'; readonly email: string }
+  | {
+      readonly step: 'signedIn'
+      readonly email: string
+      readonly messageKey?: TranslationKey
+    }
 
 export type AuthSignInEvent =
   | { readonly type: 'signInStarted'; readonly provider: AuthSignInProvider }
   | { readonly type: 'signInSucceeded'; readonly email: string }
   | { readonly type: 'signInFailed'; readonly error: unknown }
+  | { readonly type: 'provisioningFailed'; readonly email: string }
   | { readonly type: 'userRestored'; readonly email: string }
   | { readonly type: 'signedOut' }
 
@@ -50,6 +55,12 @@ export function authSignInTransition(
       return {
         step: 'error',
         messageKey: ERROR_KEYS[classifyAuthError(event.error).kind]
+      }
+    case 'provisioningFailed':
+      return {
+        step: 'signedIn',
+        email: event.email,
+        messageKey: 'auth.signIn.error.provisioning'
       }
     case 'userRestored':
       // Firebase's restore listener also fires mid-popup; the in-flight
