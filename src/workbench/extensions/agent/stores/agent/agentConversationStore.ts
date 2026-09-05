@@ -50,6 +50,7 @@ export const useAgentConversationStore = defineStore(
     const userAttachments = ref(new Map<TurnId, UserAttachment[]>())
     const userTags = ref(new Map<TurnId, string[]>())
     const userWorkflowReferences = ref(new Map<TurnId, WorkflowReference[]>())
+    const latestWorkflowId = ref<string>()
 
     let transport: AgentEventTransport | null = null
     let liveMessage: AssistantMessage | null = null
@@ -238,6 +239,7 @@ export const useAgentConversationStore = defineStore(
       userTexts.value = new Map()
       userTags.value = new Map()
       userWorkflowReferences.value = new Map()
+      latestWorkflowId.value = undefined
       dropAttachmentPreviews()
       threadId.value = null
       hydratedMessageIds = new Set()
@@ -251,7 +253,8 @@ export const useAgentConversationStore = defineStore(
       messages.value = transcript.messages
       userTexts.value = transcript.userTexts
       userTags.value = new Map()
-      userWorkflowReferences.value = new Map()
+      userWorkflowReferences.value = transcript.userWorkflowReferences
+      latestWorkflowId.value = transcript.latestWorkflowId
       hydratedMessageIds = transcript.rowIds
       hydratedAssistantTurnIds = transcript.assistantTurnIds
       dropAttachmentPreviews()
@@ -302,6 +305,7 @@ export const useAgentConversationStore = defineStore(
       threadId,
       isStreaming,
       status,
+      latestWorkflowId,
       recordUser,
       setThreadId,
       recordFailedSend,

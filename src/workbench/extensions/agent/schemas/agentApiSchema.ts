@@ -85,6 +85,7 @@ export const zAgentMessage = z
     role: z.enum(['user', 'assistant', 'tool', 'system']),
     status: z.enum(['streaming', 'complete', 'error', 'interrupted']),
     turn_id: z.string(),
+    workflow_id: z.string().optional(),
     content: z.record(z.string(), z.unknown()).optional(),
     pending_ask: zAgentPendingAsk.optional()
   })

@@ -72,6 +72,7 @@ export interface AgentSessionDeps {
     // TurnOrigin for why "no origin tab" is a value rather than an omission.
     current(origin?: TurnOrigin): WorkflowTurnContext | undefined
     adopted(workflowId: string, sent: WorkflowTurnContext | undefined): void
+    restored?(workflowId: string | undefined): Promise<void> | void
     prepare?(): Promise<void>
     tabs?(
       origin?: TurnOrigin,
@@ -186,6 +187,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const history = await rest.getMessages(threadId)
       if (conversationStore.threadId !== threadId || !isCurrent()) return false
       conversationStore.hydrate(history)
+      await workflow?.restored?.(conversationStore.latestWorkflowId)
+      if (conversationStore.threadId !== threadId || !isCurrent()) return false
       return true
     } catch (error) {
       if (!isCurrent()) return false

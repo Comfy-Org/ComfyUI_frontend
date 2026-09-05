@@ -475,6 +475,35 @@ function onWorkflowAdopted(
   }
 }
 
+async function onWorkflowRestored(
+  workflowId: string | undefined
+): Promise<void> {
+  if (workflowId === undefined) return
+  await refreshCloudWorkflowIds()
+  const target = boundTabFor(workflowId)
+  if (target === null) {
+    selectedTarget.value = null
+    toast.add({
+      severity: 'warn',
+      detail: t('agent.targetNavigationUnavailable'),
+      life: 5000
+    })
+    return
+  }
+  try {
+    await workflowService.openWorkflow(target)
+    bindingStore.bind(workflowId, target.path)
+    selectedTarget.value = target
+    removeWorkflowReference(workflowId)
+  } catch {
+    toast.add({
+      severity: 'warn',
+      detail: t('agent.targetNavigationUnavailable'),
+      life: 5000
+    })
+  }
+}
+
 const {
   sendMessage,
   stopTurn,
@@ -500,6 +529,7 @@ const {
   workflow: {
     current: activeWorkflowTurnContext,
     adopted: onWorkflowAdopted,
+    restored: onWorkflowRestored,
     prepare: refreshCloudWorkflowIds,
     tabs: openTabsSnapshot,
     activeTab: enqueueActiveTab,
@@ -627,6 +657,28 @@ function onOpenApprovalWorkflow(
   workflowName?: string
 ): void {
   enqueueActiveTab({ workflow_id: workflowId, name: workflowName })
+}
+
+async function onOpenReferenceWorkflow(workflowId: string): Promise<void> {
+  await refreshCloudWorkflowIds()
+  const target = boundTabFor(workflowId)
+  if (target === null) {
+    toast.add({
+      severity: 'warn',
+      detail: t('agent.targetNavigationUnavailable'),
+      life: 5000
+    })
+    return
+  }
+  try {
+    await workflowService.openWorkflow(target)
+  } catch {
+    toast.add({
+      severity: 'warn',
+      detail: t('agent.targetNavigationUnavailable'),
+      life: 5000
+    })
+  }
 }
 
 function agentTabFilename(name: string | undefined): string | undefined {
@@ -1139,6 +1191,7 @@ function onPanelDrop(event: DragEvent): void {
       @feedback="onFeedback"
       @answer-ask="answerAsk"
       @open-workflow="onOpenApprovalWorkflow"
+      @open-reference-workflow="onOpenReferenceWorkflow"
       @new-chat="onNewChat"
       @toggle-size="agentPanelStore.toggleMaximize()"
       @close="onClosePanel"

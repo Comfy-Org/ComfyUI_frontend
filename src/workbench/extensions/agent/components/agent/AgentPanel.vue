@@ -99,6 +99,7 @@ const emit = defineEmits<{
   renameChat: [title: string]
   answerAsk: [askId: string, selection: 'run' | 'cancel']
   openWorkflow: [workflowId: string, workflowName?: string]
+  openReferenceWorkflow: [workflowId: string, workflowName: string]
 }>()
 
 const showHistory = ref(false)
@@ -322,6 +323,10 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           @open-workflow="
             (workflowId, workflowName) =>
               emit('openWorkflow', workflowId, workflowName)
+          "
+          @open-reference-workflow="
+            (workflowId, workflowName) =>
+              emit('openReferenceWorkflow', workflowId, workflowName)
           "
         />
       </div>

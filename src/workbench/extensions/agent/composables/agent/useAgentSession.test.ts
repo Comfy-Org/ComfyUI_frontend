@@ -1941,6 +1941,36 @@ describe('thread resume (B17)', () => {
     })
   })
 
+  it('restores the target from the latest persisted user message', async () => {
+    const older = historyRow(1, 'user', 'turn-a', 'First')
+    older.workflow_id = 'wf-a'
+    const latest = historyRow(3, 'user', 'turn-b', 'Second')
+    latest.workflow_id = 'wf-b'
+    const restored = vi.fn()
+    const session = useAgentSession({
+      rest: fakeRest({
+        getMessages: vi.fn(
+          async (): Promise<AgentMessages> => [
+            latest,
+            historyRow(2, 'assistant', 'turn-a', 'Done'),
+            older
+          ]
+        )
+      }),
+      events: fakeEvents().source,
+      workflow: {
+        current: () => undefined,
+        adopted: vi.fn(),
+        restored
+      }
+    })
+    session.start()
+
+    await session.loadThread('th-9')
+
+    expect(restored).toHaveBeenCalledWith('wf-b')
+  })
+
   it('listThreads returns the REST client thread list', async () => {
     const listThreads = vi.fn(
       async (): Promise<AgentThreadSummary[]> => [

@@ -102,6 +102,21 @@ describe('UserMessage', () => {
     ).toBeVisible()
   })
 
+  it('emits navigation without changing the editable target when a sent chip is clicked', async () => {
+    const view = renderMessage({
+      text: 'Compare this',
+      workflowReferences: [{ id: 'wf-reference', name: 'Reference' }]
+    })
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Open Reference' })
+    )
+
+    expect(view.emitted('openReferenceWorkflow')).toEqual([
+      ['wf-reference', 'Reference']
+    ])
+  })
+
   it('renders a caption-only placeholder tile for a preview-less attachment', () => {
     renderMessage({ text: '', attachments: [{ name: 'clip.bin' }] })
 
