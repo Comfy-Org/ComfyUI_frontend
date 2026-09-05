@@ -286,6 +286,46 @@ function nodeKey(nodeId: NodeId): string {
   return String(nodeId)
 }
 
+/**
+ * Context-free `connect` preconditions shared by `prepare()` and the follower
+ * frame filter (ecsFollowerAdapter), so the two callers cannot drift. Endpoint
+ * existence is owned by the caller's context (simulated store vs follower
+ * doc): pass the resolved slot list, or `null` when the endpoint is absent.
+ * Graph-ownership checks stay with `prepare()`. Returns the rejection reason,
+ * or `null` when the link is connectable.
+ */
+export function connectRejection(
+  link: SemanticLinkPayload,
+  endpoints: {
+    originOutputs: readonly unknown[] | null
+    targetInputs: readonly unknown[] | null
+  }
+): string | null {
+  if (
+    !Number.isInteger(link.id) ||
+    link.id < 0 ||
+    !Number.isInteger(link.originSlot) ||
+    link.originSlot < 0 ||
+    !Number.isInteger(link.targetSlot) ||
+    link.targetSlot < 0
+  ) {
+    return 'connect requires non-negative integer ids and slots'
+  }
+  if (!endpoints.originOutputs) {
+    return `connect origin node ${link.originNodeId} does not exist`
+  }
+  if (!endpoints.targetInputs) {
+    return `connect target node ${link.targetNodeId} does not exist`
+  }
+  if (link.originSlot >= endpoints.originOutputs.length) {
+    return `connect origin slot ${link.originSlot} does not exist`
+  }
+  if (link.targetSlot >= endpoints.targetInputs.length) {
+    return `connect target slot ${link.targetSlot} does not exist`
+  }
+  return null
+}
+
 function removeIncidentLinks(
   links: Map<LinkId, LinkTopology>,
   nodeId: NodeId
@@ -392,16 +432,23 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           break
         }
         case 'connect': {
-          if (
-            !Number.isInteger(mutation.link.id) ||
-            mutation.link.id < 0 ||
-            !Number.isInteger(mutation.link.originSlot) ||
-            mutation.link.originSlot < 0 ||
-            !Number.isInteger(mutation.link.targetSlot) ||
-            mutation.link.targetSlot < 0
-          ) {
-            return 'connect requires non-negative integer ids and slots'
-          }
+          const origin = nodes.get(
+            nodeKey(toNodeId(mutation.link.originNodeId))
+          )
+          const target = nodes.get(
+            nodeKey(toNodeId(mutation.link.targetNodeId))
+          )
+          const originOutputs = mutation.link.originOutputs
+            ? prepareOutputSlots(mutation.link.originOutputs)
+            : (origin?.outputs ?? [])
+          const targetInputs = mutation.link.targetInputs
+            ? prepareInputSlots(mutation.link.targetInputs)
+            : (target?.inputs ?? [])
+          const rejection = connectRejection(mutation.link, {
+            originOutputs: origin ? originOutputs : null,
+            targetInputs: target ? targetInputs : null
+          })
+          if (rejection) return rejection
           const topology = prepareTopology(mutation.link, scope)
           const incumbent = linkStore.getTopology(
             scope.rootGraphId,
@@ -409,26 +456,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           )
           if (incumbent && incumbent.graphId !== scope.owningGraphId) {
             return `link id ${topology.id} belongs to graph ${incumbent.graphId}`
-          }
-          const origin = nodes.get(nodeKey(topology.originNodeId))
-          if (!origin) {
-            return `connect origin node ${topology.originNodeId} does not exist`
-          }
-          const target = nodes.get(nodeKey(topology.targetNodeId))
-          if (!target) {
-            return `connect target node ${topology.targetNodeId} does not exist`
-          }
-          const originOutputs = mutation.link.originOutputs
-            ? prepareOutputSlots(mutation.link.originOutputs)
-            : origin.outputs
-          const targetInputs = mutation.link.targetInputs
-            ? prepareInputSlots(mutation.link.targetInputs)
-            : target.inputs
-          if (topology.originSlot >= originOutputs.length) {
-            return `connect origin slot ${topology.originSlot} does not exist`
-          }
-          if (topology.targetSlot >= targetInputs.length) {
-            return `connect target slot ${topology.targetSlot} does not exist`
           }
           links.delete(topology.id)
           for (const [id, incumbent] of links) {

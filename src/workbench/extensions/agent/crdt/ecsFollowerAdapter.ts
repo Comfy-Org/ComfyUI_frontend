@@ -5,6 +5,7 @@ import {
 } from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 
+import { connectRejection } from '@/core/graph/graphMutations'
 import type {
   GraphMutations,
   SemanticLinkPayload,
@@ -91,6 +92,31 @@ function readNodeSlots<TKey extends 'inputs' | 'outputs'>(
   ) as SemanticLinkPayload[TKey extends 'inputs'
     ? 'targetInputs'
     : 'originOutputs']
+}
+
+/**
+ * Applies graphMutations' shared `connect` preconditions against the follower
+ * doc so an unrepresentable link is dropped from a frame BEFORE it reaches
+ * the batch. graphMutations.batch short-circuits, returning an error string,
+ * on the first invalid mutation (crdt-1) — one dangling or slot-out-of-range
+ * link must never take a frame's unrelated valid node/widget/link changes
+ * down with it.
+ *
+ * Endpoint presence is judged by `readSemanticNode`, not by raw Y-doc
+ * membership: a node that is in the doc but unreadable (missing `type`) is
+ * skipped by applyQueuedFrame's addNode pass, so `prepare` would still see
+ * it as absent. Returns the rejection reason, or null when connectable.
+ */
+function frameConnectRejection(
+  link: SemanticLinkPayload,
+  doc: Y.Doc
+): string | null {
+  const origin = readSemanticNode(doc, String(link.originNodeId))
+  const target = readSemanticNode(doc, String(link.targetNodeId))
+  return connectRejection(link, {
+    originOutputs: origin ? (link.originOutputs ?? []) : null,
+    targetInputs: target ? (link.targetInputs ?? []) : null
+  })
 }
 
 function frameContext(update: DocUpdate): RemoteMutationContext {
@@ -254,7 +280,14 @@ export class EcsFollowerAdapter {
         })
         const links = [...session.links.keys()].flatMap((id) => {
           const link = readSemanticLink(session.follower.doc, id)
-          return link ? [link] : []
+          if (!link) return []
+          const reason = frameConnectRejection(link, session.follower.doc)
+          if (!reason) return [link]
+          console.warn(
+            '[agent-crdt] follower frame dropped unrepresentable link',
+            { workflowId: session.workflowId, linkId: link.id, reason }
+          )
+          return []
         })
         batch.removeMissing(
           nodes.map(({ id }) => toNodeId(id)),
@@ -297,7 +330,16 @@ export class EcsFollowerAdapter {
       }
       for (const id of changedLinkIds) {
         const link = readSemanticLink(session.follower.doc, id)
-        if (link) batch.connect(link)
+        if (!link) continue
+        const reason = frameConnectRejection(link, session.follower.doc)
+        if (reason) {
+          console.warn(
+            '[agent-crdt] follower frame dropped unrepresentable link',
+            { workflowId: session.workflowId, linkId: link.id, reason }
+          )
+          continue
+        }
+        batch.connect(link)
       }
     })
 
