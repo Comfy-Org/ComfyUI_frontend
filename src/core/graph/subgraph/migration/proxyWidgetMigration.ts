@@ -731,13 +731,10 @@ function migratePreview(
 
   const hostNodeLocator = getPreviewExposureHostLocator(hostNode)
   if (!hostNodeLocator) return { ok: false, reason: 'missingSourceNode' }
-  const existing = store
-    .getExposures(hostNode.rootGraph.id, hostNodeLocator)
-    .find(
-      (exposure) =>
-        exposure.sourceNodeId === entry.normalized.sourceNodeId &&
-        exposure.sourcePreviewName === plan.sourcePreviewName
-    )
+  const existing = store.findExposure(hostNode.rootGraph.id, hostNodeLocator, {
+    sourceNodeId: entry.normalized.sourceNodeId,
+    sourcePreviewName: plan.sourcePreviewName
+  })
   if (existing) return { ok: true, previewName: existing.name }
 
   const added = store.addExposure(hostNode.rootGraph.id, hostNodeLocator, {
