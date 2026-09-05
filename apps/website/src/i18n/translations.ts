@@ -2132,6 +2132,10 @@ Enterprise`
     en: 'Building an operating\nsystem for Gen AI',
     'zh-CN': '构建生成式 AI 的\n\u201C操作系统\u201D'
   },
+  'careers.hero.videoAlt': {
+    en: 'Showcase reel of AI imagery and video generated with ComfyUI',
+    'zh-CN': 'ComfyUI 生成的 AI 图像与视频精选合集'
+  },
   'careers.hero.body1': {
     en: "We're building the world's leading visual AI platform \u2014 open, modular, and designed for those who want control, quality and scale in their creative process.",
     'zh-CN':
