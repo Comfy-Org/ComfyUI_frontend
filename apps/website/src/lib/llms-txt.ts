@@ -56,9 +56,10 @@ export function findRedirectedLinks(
     .map(({ link }) => link)
 }
 
-export interface CanonicalDrift {
-  link: LlmsTxtLink
-  canonical: string
+export interface CanonicalDriftResult {
+  drift: { link: LlmsTxtLink; canonical: string }[]
+  /** Links whose built page had a canonical to compare against. */
+  checked: number
 }
 
 /**
@@ -67,16 +68,20 @@ export interface CanonicalDrift {
  * know about. `canonicalFor` looks up a built page's own `rel="canonical"`
  * href by pathname; a path with no built page (an external site's route
  * shape, e.g. the Comfy Workflows app) is skipped, matching the existing
- * coverage test's handling of those routes.
+ * coverage test's handling of those routes. `checked` counts only links that
+ * were actually compared, so a caller can detect a vacuous pass (e.g. every
+ * link skipped because `dist/` was never built).
  */
 export function findCanonicalDrift(
   links: LlmsTxtLink[],
   canonicalFor: (path: string) => string | undefined
-): CanonicalDrift[] {
-  const drift: CanonicalDrift[] = []
+): CanonicalDriftResult {
+  const drift: CanonicalDriftResult['drift'] = []
+  let checked = 0
   for (const { path, link } of internalLinks(links)) {
     const canonical = canonicalFor(path)
     if (canonical === undefined) continue
+    checked++
     const canonicalUrl = new URL(canonical)
     const linkUrl = new URL(link.url)
     if (
@@ -86,5 +91,5 @@ export function findCanonicalDrift(
       drift.push({ link, canonical })
     }
   }
-  return drift
+  return { drift, checked }
 }
