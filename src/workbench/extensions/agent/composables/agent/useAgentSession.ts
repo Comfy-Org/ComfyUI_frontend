@@ -118,24 +118,27 @@ export function useAgentSession(deps: AgentSessionDeps) {
   /**
    * `app:agent_error` (TEL-8): fires at every FE-visible agent failure site,
    * pre- or post-acceptance, that is not already covered by the backend's
-   * `agent_turn_failed`. `turn_accepted` is the stage itself (a turn is
-   * accepted exactly when the failure is post-acceptance). `retryable`
-   * defaults from the stage too: a pre-acceptance failure never started a
-   * turn, so retrying is always safe, while a post-acceptance failure may
-   * have left server-side state the caller cannot fully retry. Override
-   * `retryable` per call site when that default is wrong.
+   * `agent_turn_failed`. Both booleans default from the stage — a
+   * pre-acceptance failure never started a turn, so nothing was accepted and
+   * retrying is always safe, while a post-acceptance failure may have left
+   * server-side state the caller cannot fully retry — and both are
+   * overridable, because the stage and the two facts it approximates can
+   * disagree. A history load that fails on the resume path is a request the
+   * server never accepted (`pre_acceptance`) issued while an accepted turn is
+   * still streaming (`turn_accepted: true`), and a failed cancel is
+   * `post_acceptance` yet safe to send again.
    */
   function trackAgentError(
     errorClass: AgentErrorClass,
     stage: AgentErrorMetadata['failure_stage'],
     uiTreatment: AgentErrorMetadata['ui_treatment'],
-    retryable: boolean = stage === 'pre_acceptance'
+    overrides: { retryable?: boolean; turnAccepted?: boolean } = {}
   ): void {
     useTelemetry()?.trackAgentError({
       error_class: errorClass,
       failure_stage: stage,
-      retryable,
-      turn_accepted: stage === 'post_acceptance',
+      retryable: overrides.retryable ?? stage === 'pre_acceptance',
+      turn_accepted: overrides.turnAccepted ?? stage === 'post_acceptance',
       ui_treatment: uiTreatment
     })
   }
