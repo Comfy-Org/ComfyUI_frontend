@@ -993,7 +993,7 @@ describe('Load3d', () => {
       const mocks = setupLoadInternal()
 
       await ctx.load3d.loadModel('a.glb')
-      ;(ctx.cameraManager.reset as ReturnType<typeof vi.fn>).mockClear()
+      ctx.cameraManager.reset.mockClear()
       mocks.getCameraState.mockClear()
       mocks.setCameraState.mockClear()
 
@@ -1014,7 +1014,7 @@ describe('Load3d', () => {
       }))
       // First load (active type stays perspective per the default mock).
       await ctx.load3d.loadModel('a.glb')
-      ;(ctx.cameraManager.toggleCamera as ReturnType<typeof vi.fn>).mockClear()
+      ctx.cameraManager.toggleCamera.mockClear()
 
       await ctx.load3d.loadModel('b.glb')
 
@@ -1028,7 +1028,7 @@ describe('Load3d', () => {
       const mocks = setupLoadInternal()
       await ctx.load3d.loadModel('a.glb')
       ctx.load3d.clearModel()
-      ;(ctx.cameraManager.reset as ReturnType<typeof vi.fn>).mockClear()
+      ctx.cameraManager.reset.mockClear()
       mocks.getCameraState.mockClear()
 
       await ctx.load3d.loadModel('b.glb')

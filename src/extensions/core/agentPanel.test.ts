@@ -93,7 +93,7 @@ async function loadEntryAndSetup(): Promise<void> {
     (e) => e.name === 'Comfy.AgentPanel'
   )
   expect(ext).toBeDefined()
-  ext!.setup!({} as Parameters<NonNullable<ComfyExtension['setup']>>[0])
+  void ext!.setup!({} as Parameters<NonNullable<ComfyExtension['setup']>>[0])
   for (let i = 0; i < 2000 && mocks.flagListener === null; i++) await flush()
   expect(mocks.flagListener).toBeTypeOf('function')
 }
@@ -189,7 +189,7 @@ describe('AgentPanel extension flag gate', () => {
     const selectItems = vi.fn()
     mocks.agentStore.enabled = true
 
-    extension!.beforeLoadGraph!({} as never)
+    void extension!.beforeLoadGraph!({} as never)
 
     expect(mocks.notifyBeforeGraphLoad).toHaveBeenCalledOnce()
     expect(mocks.nodeSelectionStore.beginWorkflowLoad).toHaveBeenCalledOnce()
@@ -199,7 +199,7 @@ describe('AgentPanel extension flag gate', () => {
     mocks.getNodeByLocatorId.mockReturnValue(secondNode)
     mocks.workflowStore.activeWorkflow = { path: 'workflows/second.json' }
 
-    extension!.afterLoadGraph!({
+    void extension!.afterLoadGraph!({
       rootGraph,
       canvas: {
         selectItems
@@ -220,7 +220,7 @@ describe('AgentPanel extension flag gate', () => {
       (item) => item.name === 'Comfy.AgentPanel'
     )
 
-    extension!.afterConfigureGraph!([], {} as never)
+    void extension!.afterConfigureGraph!([], {} as never)
 
     expect(mocks.notifyAfterGraphConfigure).toHaveBeenCalledOnce()
   })
@@ -241,7 +241,10 @@ describe('AgentPanel extension flag gate', () => {
     mocks.nodeSelectionStore.nodeIds.mockReturnValue([locator])
     mocks.getNodeByLocatorId.mockReturnValue(subgraphNode)
 
-    extension!.afterLoadGraph!({ rootGraph, canvas: { selectItems } } as never)
+    void extension!.afterLoadGraph!({
+      rootGraph,
+      canvas: { selectItems }
+    } as never)
 
     expect(mocks.getNodeByLocatorId).toHaveBeenCalledWith(rootGraph, locator)
     expect(selectItems).toHaveBeenCalledWith([subgraphNode])
@@ -258,7 +261,7 @@ describe('AgentPanel extension flag gate', () => {
     )
     mocks.agentStore.isOpen = false
 
-    extension!.beforeLoadGraph!({} as never)
+    void extension!.beforeLoadGraph!({} as never)
 
     expect(mocks.notifyBeforeGraphLoad).toHaveBeenCalledOnce()
     expect(mocks.nodeSelectionStore.beginWorkflowLoad).not.toHaveBeenCalled()
@@ -273,7 +276,7 @@ describe('AgentPanel extension flag gate', () => {
     mocks.agentStore.isOpen = false
     mocks.nodeSelectionStore.isLoadingWorkflow = true
 
-    extension!.afterLoadGraph!({} as never)
+    void extension!.afterLoadGraph!({} as never)
 
     expect(mocks.nodeSelectionStore.finishWorkflowLoad).toHaveBeenCalledOnce()
     expect(mocks.getNodeByLocatorId).not.toHaveBeenCalled()
@@ -288,7 +291,10 @@ describe('AgentPanel extension flag gate', () => {
     )
     mocks.nodeSelectionStore.isLoadingWorkflow = true
 
-    extension!.onGraphLoadError!(new Error('bad workflow json'), {} as never)
+    void extension!.onGraphLoadError!(
+      new Error('bad workflow json'),
+      {} as never
+    )
 
     expect(mocks.nodeSelectionStore.finishWorkflowLoad).toHaveBeenCalledOnce()
   })
@@ -320,7 +326,7 @@ describe('AgentPanel extension flag gate', () => {
       (item) => item.name === 'Comfy.AgentPanel'
     )
 
-    extension!.beforeLoadGraph!({} as never)
+    void extension!.beforeLoadGraph!({} as never)
 
     expect(mocks.nodeSelectionStore.beginWorkflowLoad).not.toHaveBeenCalled()
   })

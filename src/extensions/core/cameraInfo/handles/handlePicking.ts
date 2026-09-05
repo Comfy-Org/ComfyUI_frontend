@@ -18,22 +18,22 @@ function toScreenPx(
   )
 }
 
-export function pickHandleAtPointer<T extends string>(
+export function pickHandleAtPointer(
   raycaster: THREE.Raycaster,
   pointerNdc: THREE.Vector2,
   camera: THREE.Camera,
   targets: THREE.Object3D[],
   canvas: CanvasSize
-): T | null {
+): string | null {
   if (targets.length === 0) return null
 
   raycaster.setFromCamera(pointerNdc, camera)
   const hits = raycaster.intersectObjects(targets, false)
-  if (hits.length > 0) return hits[0].object.userData.handleType as T
+  if (hits.length > 0) return hits[0].object.userData.handleType as string
 
   const pointerPx = toScreenPx(pointerNdc.x, pointerNdc.y, canvas)
   const world = new THREE.Vector3()
-  let best: T | null = null
+  let best: string | null = null
   let bestDistance = PICK_PIXEL_RADIUS
   for (const target of targets) {
     target.getWorldPosition(world)
@@ -44,7 +44,7 @@ export function pickHandleAtPointer<T extends string>(
     const distance = px.distanceTo(pointerPx)
     if (distance < bestDistance) {
       bestDistance = distance
-      best = target.userData.handleType as T
+      best = target.userData.handleType as string
     }
   }
   return best

@@ -1,3 +1,4 @@
+import type * as ThreeModule from 'three'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { DEFAULT_MODEL_CAPABILITIES } from './ModelAdapter'
@@ -9,7 +10,7 @@ const { rendererCtor } = vi.hoisted(() => ({
 }))
 
 vi.mock('three', async () => {
-  const actual = await vi.importActual<typeof import('three')>('three')
+  const actual = await vi.importActual<typeof ThreeModule>('three')
   return {
     ...actual,
     WebGLRenderer: class {
@@ -217,15 +218,13 @@ describe('createLoad3d', () => {
 
     it('getBoundsFromAdapter returns null', () => {
       const instance = createLoad3d(createContainer()) as unknown as FakeLoad3d
-      expect(
-        instance.deps.modelManager.getBoundsFromAdapter({} as never)
-      ).toBeNull()
+      expect(instance.deps.modelManager.getBoundsFromAdapter({})).toBeNull()
     })
 
     it('disposeModelViaAdapter is a no-op', () => {
       const instance = createLoad3d(createContainer()) as unknown as FakeLoad3d
       expect(() =>
-        instance.deps.modelManager.disposeModelViaAdapter({} as never)
+        instance.deps.modelManager.disposeModelViaAdapter({})
       ).not.toThrow()
     })
 
@@ -259,9 +258,7 @@ describe('createLoad3d', () => {
       const instance = withAdapter(makeAdapter({ computeBounds }))
       const model = { fake: 'model' }
 
-      const result = instance.deps.modelManager.getBoundsFromAdapter(
-        model as never
-      )
+      const result = instance.deps.modelManager.getBoundsFromAdapter(model)
 
       expect(computeBounds).toHaveBeenCalledWith(model)
       expect(result).toBe('bbox-result')
@@ -269,9 +266,7 @@ describe('createLoad3d', () => {
 
     it('getBoundsFromAdapter returns null when adapter has no computeBounds', () => {
       const instance = withAdapter(makeAdapter())
-      expect(
-        instance.deps.modelManager.getBoundsFromAdapter({} as never)
-      ).toBeNull()
+      expect(instance.deps.modelManager.getBoundsFromAdapter({})).toBeNull()
     })
 
     it('disposeModelViaAdapter delegates to adapter.disposeModel', () => {
@@ -279,7 +274,7 @@ describe('createLoad3d', () => {
       const instance = withAdapter(makeAdapter({ disposeModel }))
       const model = { fake: 'model' }
 
-      instance.deps.modelManager.disposeModelViaAdapter(model as never)
+      instance.deps.modelManager.disposeModelViaAdapter(model)
 
       expect(disposeModel).toHaveBeenCalledWith(model)
     })

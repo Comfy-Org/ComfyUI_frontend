@@ -85,14 +85,12 @@ describe('SplatModelAdapter', () => {
       fileBytes: buf,
       fileName: 'scene.splat'
     })
-    expect(result!.object).toBeInstanceOf(THREE.Group)
-    expect(result!.object.children).toHaveLength(1)
-    expect(result!.capabilities.lighting).toBe(false)
+    expect(result.object).toBeInstanceOf(THREE.Group)
+    expect(result.object.children).toHaveLength(1)
+    expect(result.capabilities.lighting).toBe(false)
 
     expect(ctx.setOriginalModel).toHaveBeenCalledTimes(1)
-    expect(ctx.setOriginalModel).toHaveBeenCalledWith(
-      result!.object.children[0]
-    )
+    expect(ctx.setOriginalModel).toHaveBeenCalledWith(result.object.children[0])
   })
 
   it('rotates the splat 180° around X (OpenCV → three.js convention)', async () => {
@@ -102,7 +100,7 @@ describe('SplatModelAdapter', () => {
       'scene.splat'
     )
 
-    const splat = result!.object.children[0]
+    const splat = result.object.children[0]
     expect(splat.quaternion.x).toBe(1)
     expect(splat.quaternion.y).toBe(0)
     expect(splat.quaternion.z).toBe(0)
@@ -128,7 +126,7 @@ describe('SplatModelAdapter', () => {
         '/api/view?',
         'scene.splat'
       )
-      const group = result!.object
+      const group = result.object
       const splat = group.children[0]
       splat.position.set(10, 0, 0)
 
@@ -161,7 +159,7 @@ describe('SplatModelAdapter', () => {
         'scene.splat'
       )
 
-      adapter.disposeModel(result!.object)
+      adapter.disposeModel(result.object)
 
       expect(splatMeshSpies.dispose).toHaveBeenCalledOnce()
     })

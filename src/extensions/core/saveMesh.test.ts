@@ -262,7 +262,7 @@ describe('Comfy.SaveGLB.onNodeOutputsUpdated', () => {
     const node = makeNode()
     getNodeByLocatorIdMock.mockReturnValue(node)
 
-    ext.onNodeOutputsUpdated!({
+    ext.onNodeOutputsUpdated({
       '7': {
         '3d': [{ filename: 'mesh.glb', subfolder: 'sub', type: 'output' }]
       }
@@ -284,7 +284,7 @@ describe('Comfy.SaveGLB.onNodeOutputsUpdated', () => {
     const node = makeNode()
     getNodeByLocatorIdMock.mockReturnValue(node)
 
-    ext.onNodeOutputsUpdated!({ '7': {} } as never)
+    ext.onNodeOutputsUpdated({ '7': {} } as never)
 
     expect(getNodeByLocatorIdMock).not.toHaveBeenCalled()
     expect(configureForSaveMeshMock).not.toHaveBeenCalled()
@@ -294,7 +294,7 @@ describe('Comfy.SaveGLB.onNodeOutputsUpdated', () => {
     const ext = await loadSaveMeshExtensionFresh()
     getNodeByLocatorIdMock.mockReturnValue(null)
 
-    ext.onNodeOutputsUpdated!({
+    ext.onNodeOutputsUpdated({
       '7': {
         '3d': [{ filename: 'mesh.glb', subfolder: 'sub', type: 'output' }]
       }
@@ -308,7 +308,7 @@ describe('Comfy.SaveGLB.onNodeOutputsUpdated', () => {
     const node = makeNode({ comfyClass: 'Preview3D' })
     getNodeByLocatorIdMock.mockReturnValue(node)
 
-    ext.onNodeOutputsUpdated!({
+    ext.onNodeOutputsUpdated({
       '7': {
         '3d': [{ filename: 'mesh.glb', subfolder: 'sub', type: 'output' }]
       }
@@ -330,7 +330,7 @@ describe('Comfy.SaveGLB.onNodeOutputsUpdated', () => {
     ).value = 'sub/mesh.glb'
     getNodeByLocatorIdMock.mockReturnValue(node)
 
-    ext.onNodeOutputsUpdated!({
+    ext.onNodeOutputsUpdated({
       '7': {
         '3d': [{ filename: 'mesh.glb', subfolder: 'sub', type: 'output' }]
       }
