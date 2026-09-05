@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import WorkshopSection from "../components/home/WorkshopSection.vue";
 import ProductCardsSection from "../components/home/ProductCardsSection.vue";
 import HeroGraphSection from "../components/hero/HeroGraphSection.vue";
 import SocialProofBarSection from "../components/common/SocialProofBarSection.vue";
@@ -11,6 +12,10 @@ import ProductShowcaseSection from "../components/home/ProductShowcaseSection.vu
 import FeaturedWorkflowsSection from "../components/home/FeaturedWorkflowsSection.vue";
 import CaseStudySpotlightSection from "../components/home/CaseStudySpotlightSection.vue";
 import GetStartedSection from "../components/home/GetStartedSection.vue";
+import { getCollection } from "astro:content";
+import { isWorkshopInBuild } from "../config/workshop-release";
+import { toBrowseModel } from "../config/workshop";
+import { featuredWorkshopModels } from "../config/workshop-featured";
 import { t } from "../i18n/translations";
 import {
   comfyUiApplicationNode,
@@ -24,6 +29,17 @@ const { siteUrl } = pageContext(
   Astro.url.pathname,
   Astro.currentLocale,
 );
+
+// The same switch that decides whether Workshop is built at all. A release
+// build has no Workshop routes, so the homepage must not link to them; one
+// control rather than two that can drift apart.
+const workshopModels = !isWorkshopInBuild()
+  ? []
+  : featuredWorkshopModels(
+      (await getCollection("workshopModels")).map((entry) =>
+        toBrowseModel(entry.data),
+      ),
+    );
 ---
 
 <BaseLayout
@@ -52,6 +68,7 @@ const { siteUrl } = pageContext(
   <MinimaxLicenseHeroSection client:visible />
   <ModelReleaseSection client:visible />
   <FeaturedWorkflowsSection client:load />
+  {workshopModels.length > 0 && <WorkshopSection models={workshopModels} />}
   <ProductShowcaseSection client:load />
   <IndustriesSection client:load />
   <GetStartedSection />
