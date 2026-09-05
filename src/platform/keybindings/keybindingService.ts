@@ -8,12 +8,14 @@ import { CORE_KEYBINDINGS } from './defaults'
 import { KeyComboImpl } from './keyCombo'
 import { KeybindingImpl } from './keybinding'
 import { useKeybindingStore } from './keybindingStore'
+import { useRaisedSurfaceStore } from './raisedSurfaceStore'
 
 export function useKeybindingService() {
   const keybindingStore = useKeybindingStore()
   const commandStore = useCommandStore()
   const settingStore = useSettingStore()
   const dialogStore = useDialogStore()
+  const raisedSurfaceStore = useRaisedSurfaceStore()
 
   async function keybindHandler(event: KeyboardEvent) {
     const keyCombo = KeyComboImpl.fromEvent(event)
@@ -50,6 +52,16 @@ export function useKeybindingService() {
           return
         }
       }
+      if (
+        event.key === 'Escape' &&
+        !event.ctrlKey &&
+        !event.altKey &&
+        !event.metaKey &&
+        raisedSurfaceStore.isAnyOpen
+      ) {
+        return
+      }
+
       if (isModalOpen(dialogStore.dialogStack.length)) {
         // Bare keys still have to reach inputs inside the dialog.
         if (keyCombo.ctrl) {
