@@ -6,6 +6,7 @@ import tailwindcss from '@tailwindcss/vite'
 import { isExcludedFromSitemap } from './src/config/indexing'
 import { redirects } from './src/config/redirects'
 import { markdownTwins } from './src/integrations/markdown-twins'
+import { workshopReleaseGate } from './src/integrations/workshop-release-gate'
 import { sitemapAlternates } from './src/lib/hreflang'
 
 const LOCALES = ['en', 'zh-CN', 'ja'] as const
@@ -33,7 +34,8 @@ export default defineConfig({
       filter: (page) => !isExcludedFromSitemap(page),
       serialize: (item) => ({ ...item, links: sitemapAlternates(item.url) })
     }),
-    markdownTwins()
+    markdownTwins(),
+    workshopReleaseGate()
   ],
   vite: {
     plugins: [tailwindcss()],
