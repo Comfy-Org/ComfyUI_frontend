@@ -107,7 +107,12 @@ function retireAgentSubgraphDefinitions(graph: MaterializableGraph): void {
   } finally {
     const nodeDefStore = useNodeDefStore()
     for (const id of ids) {
-      if (LiteGraph.registered_node_types[id]) LiteGraph.unregisterNodeType(id)
+      // `unregisterNodeType` throws on an unknown type, and a reset can reach
+      // an id whose registration never landed, so the presence check has to
+      // stay. Index access is typed non-optional here, so probe the key the
+      // way `LiteGraphGlobal` itself does.
+      if (Object.hasOwn(LiteGraph.registered_node_types, id))
+        LiteGraph.unregisterNodeType(id)
       nodeDefStore.removeNodeDef(id)
     }
     ids.clear()
