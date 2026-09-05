@@ -23,6 +23,7 @@ import {
   createTestSubgraphNode,
   enableSubgraphNodeCreation
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import { reportError } from '@/platform/telemetry/reportError'
 // Mirrors the production bridge in AgentPanelRoot.vue, which takes the same
 // exemption to drive the real layout store.
@@ -185,9 +186,12 @@ function nodePayload(id: number, type = 'dummy') {
     type,
     pos: [0, 0],
     size: [100, 80],
+    flags: {},
+    order: 0,
+    mode: 0,
     inputs: [],
     outputs: []
-  }
+  } satisfies ISerialisedNode
 }
 
 /** Commit a remote add to the stores only, the way a follower frame does. */
@@ -919,6 +923,82 @@ describe('reconcileAgentAdapters', () => {
       expect((instance as SubgraphNode).subgraph.nodes).toHaveLength(1)
       // Interior nodes belong to the subgraph, never to the root scope.
       expect(graph._nodes).toHaveLength(1)
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('reserves same-frame root ids before remapping colliding subgraph interiors', () => {
+      const definition = createTestSubgraphData({
+        nodes: [nodePayload(7, 'widget-node')],
+        widgets: [{ id: 7, name: 'value' }]
+      })
+      const rootNode = {
+        ...nodePayload(7, definition.id),
+        properties: { proxyWidgets: [['7', 'value']] }
+      }
+      const { follower } = seedDocument(graph, {
+        nodes: [rootNode],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+      const definitions = readSubgraphDefinitions(follower.doc)
+
+      expect(reconcileAgentAdapters(graph, definitions)).toEqual([toNodeId(7)])
+
+      const instance = graph.getNodeById(toNodeId(7))
+      expect(instance).toBeInstanceOf(SubgraphNode)
+      const subgraph = (instance as SubgraphNode).subgraph
+      const interior = subgraph.nodes[0]
+      expect(interior.id).not.toBe(toNodeId(7))
+      expect(definitions[0].nodes?.[0].id).toBe(7)
+      expect(toNodeId(subgraph.widgets[0].id)).toBe(interior.id)
+      expect(instance?.properties.proxyWidgets).toEqual([
+        [String(interior.id), 'value']
+      ])
+
+      expect(reconcileAgentAdapters(graph, definitions)).toEqual([])
+      expect(graph.getNodeById(toNodeId(7))).toBe(instance)
+      expect(subgraph.nodes[0]).toBe(interior)
+
+      const mutations = remoteMutations(graphScopeOf(graph))
+      mutations.deleteNode(toNodeId(7), [], REMOTE)
+      mutations.addNode(rootNode, { ...REMOTE, opId: 'op-recreate-7' })
+      expect(reconcileAgentAdapters(graph, definitions)).toEqual([toNodeId(7)])
+      expect(graph.getNodeById(toNodeId(7))?.properties.proxyWidgets).toEqual([
+        [String(interior.id), 'value']
+      ])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('patches root proxyWidgets once when a remint chains into a later interior id', () => {
+      const definition = createTestSubgraphData({
+        nodes: [nodePayload(7, 'widget-node'), nodePayload(8)],
+        widgets: [{ id: 7, name: 'value' }]
+      })
+      const rootNode = {
+        ...nodePayload(7, definition.id),
+        properties: { proxyWidgets: [['7', 'value']] }
+      }
+      const { follower } = seedDocument(graph, {
+        nodes: [rootNode],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+      // Mint from the colliding id so 7 -> 8 collides with interior 8 -> 9.
+      graph.state.lastNodeId = 7
+
+      expect(
+        reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+      ).toEqual([toNodeId(7)])
+
+      const instance = graph.getNodeById(toNodeId(7)) as SubgraphNode
+      const subgraph = instance.subgraph
+      const interiorIds = subgraph.nodes.map(({ id }) => id)
+      expect(new Set(interiorIds).size).toBe(2)
+      expect(interiorIds).not.toContain(toNodeId(7))
+      expect(toNodeId(subgraph.widgets[0].id)).toBe(interiorIds[0])
+      expect(instance.properties.proxyWidgets).toEqual([
+        [String(interiorIds[0]), 'value']
+      ])
       expect(reportError).not.toHaveBeenCalled()
     })
 
