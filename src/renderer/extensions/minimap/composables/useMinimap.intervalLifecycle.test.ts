@@ -54,6 +54,8 @@ const mockCanvas = {
   setDirty: vi.fn()
 }
 
+const mockCompletedActivePalette = { light_theme: false }
+
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: vi.fn(() => ({ canvas: mockCanvas }))
 }))
@@ -67,7 +69,7 @@ vi.mock('@/platform/settings/settingStore', () => ({
 
 vi.mock('@/stores/workspace/colorPaletteStore', () => ({
   useColorPaletteStore: vi.fn(() => ({
-    completedActivePalette: { light_theme: false }
+    completedActivePalette: mockCompletedActivePalette
   }))
 }))
 
@@ -142,6 +144,7 @@ describe('useMinimap change-detection interval', () => {
     vi.useFakeTimers()
     context = createMockCanvas2DContext()
     mockNodes[0].pos = [0, 0]
+    mockCompletedActivePalette.light_theme = false
   })
 
   afterEach(() => {
@@ -169,6 +172,17 @@ describe('useMinimap change-detection interval', () => {
     await vi.advanceTimersByTimeAsync(POLL_MS * 5)
 
     expect(drawCalls()).toBe(settled)
+  })
+
+  it('redraws after the palette theme changes without a graph edit', async () => {
+    await initMinimap()
+    await vi.advanceTimersByTimeAsync(POLL_MS + 10)
+    const settled = drawCalls()
+
+    mockCompletedActivePalette.light_theme = true
+    await vi.advanceTimersByTimeAsync(POLL_MS + 10)
+
+    expect(drawCalls()).toBeGreaterThan(settled)
   })
 
   it('stops polling when hidden and resumes only after the next interval', async () => {

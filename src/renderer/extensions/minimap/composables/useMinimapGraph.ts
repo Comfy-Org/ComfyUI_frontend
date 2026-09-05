@@ -6,6 +6,7 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 
@@ -69,6 +70,13 @@ function computeGraphDigests(graph: LGraph): GraphDigests {
   // operations, and zIndex alone fires one per widget pointerdown.
   let geometry = mixIn(layoutStore.nodeGeometryVersion, graph._nodes.length)
   let visual = 0
+
+  // The renderer derives its theme-aware colors from this flag. Include it in
+  // the digest so a palette switch repaints even when the graph is untouched.
+  visual = mixIn(
+    visual,
+    useColorPaletteStore().completedActivePalette.light_theme ? 1 : 0
+  )
 
   for (const node of graph._nodes) {
     const [x, y] = node.pos
