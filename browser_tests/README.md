@@ -636,11 +636,11 @@ fix so the bug stays fixed:
    the per-op audit rows (`agent_tool_calls` parent and child rows) the
    exporter reads. The same agent in standalone mode
    (SQLite, no doc host) never writes them, so it can only
-   yield text-only or tool-error turns. Record it with the recorder that
-   lives beside the fixtures under `browser_tests/fixtures/data/agent/`,
-   which writes the conversation JSON into `conversations/` marked
-   `response_side: 'recorded'`. Never write `graph_ops` by hand and never
-   relabel a synthesized response as recorded.
+   yield text-only or tool-error turns. Record it with the recorder
+   (`scripts/agentConversationRecord.ts`, landing in #16782; until it merges,
+   record from that PR's branch), which writes the conversation JSON into
+   `conversations/` marked `response_side: 'recorded'`. Never write
+   `graph_ops` by hand and never relabel a synthesized response as recorded.
 2. **Add the replay case.** Drive the fixture through the conversation
    replay fixture (`agentConversationFixture`), asserting the
    canvas-observable outcome the bug corrupted (graph end-state or
@@ -650,7 +650,7 @@ fix so the bug stays fixed:
    run lines in the PR description. A replay case that never went red
    against the bug does not count as regression coverage.
 
-Name the case after the behavior it protects (`agent-<behavior-slug>.json`, with the fix PR cited in the spec header and the fixture's `source.note`). The exporter writes the provenance the replay keeps: `source.capture` (thread and message ids) and `source.note` (row ids and the raw capture hash), which is enough to re-export the recording.
+Name the case after the behavior it protects (`agent-<behavior-slug>.json`, with the fix PR cited in the fixture's `source.note`). The exporter writes the provenance the replay keeps: `source.capture` (thread and message ids) and `source.note` (row ids and the raw capture hash), which is enough to re-export the recording.
 
 ## Test Data & Typed API Mocks
 

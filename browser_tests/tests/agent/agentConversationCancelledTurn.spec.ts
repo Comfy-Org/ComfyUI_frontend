@@ -28,18 +28,26 @@ test.describe('Agent cancelled turn replay', { tag: '@cloud' }, () => {
     ).toContainText(tail)
     // The recorded frames keep arriving either way, so without this the test
     // stays green when the panel never issues the cancel at all.
-    expect(agentConversation.cancelRequests).toEqual([
-      agentConversation.cancelTarget(0)
-    ])
+    await expect
+      .poll(() => agentConversation.cancelRequests)
+      .toEqual([agentConversation.cancelTarget(0)])
     await expect
       .poll(() => agentConversation.renderedNodeIds())
-      .toEqual(expect.arrayContaining(agentConversation.documentNodeIds()))
-    // Each connect the recording asked for must leave its ORIGIN slot row
-    // connected. Only the origin: outputs always render, while a
-    // widget-backed input renders no slot dot to assert.
-    for (const { fromNode, fromSlot } of agentConversation.recordedConnects())
+      .toEqual(agentConversation.documentNodeIds())
+    for (const connect of agentConversation.recordedConnects()) {
       await expect(
-        agentConversation.vueNodes.getOutputSlotRow(fromNode, fromSlot)
+        agentConversation.vueNodes.getOutputSlotRow(
+          connect.fromNode,
+          connect.fromSlot
+        )
       ).toHaveClass(/lg-slot--connected/)
+      if (!connect.targetWidgetBacked)
+        await expect(
+          agentConversation.vueNodes.getInputSlotRow(
+            connect.toNode,
+            connect.toSlot
+          )
+        ).toHaveClass(/lg-slot--connected/)
+    }
   })
 })

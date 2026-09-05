@@ -42,12 +42,21 @@ type NodeBody = {
   id: number | string
   type: string
   title?: string
-  inputs?: Array<{ name: string }>
+  inputs?: Array<{ name: string; widget?: unknown }>
   outputs?: Array<{ name: string }>
 }
 
 interface RecordedToolCall {
-  ok: boolean
+  callId: string
+  failed: boolean
+}
+
+interface RecordedConnect {
+  fromNode: string
+  fromSlot: number
+  toNode: string
+  toSlot: number
+  targetWidgetBacked: boolean
 }
 
 interface RecordedWidgetValue {
@@ -158,8 +167,12 @@ class AgentConversationHarness {
     }
   }
 
-  private entries(): AgentConversationTurn['response'] {
-    return this.conversation.turns.flatMap((turn) => turn.response)
+  // Everything the recording played through the given turn (all turns by default).
+  private entries(throughTurn?: number): AgentConversationTurn['response'] {
+    const last = throughTurn === undefined ? undefined : throughTurn + 1
+    return this.conversation.turns
+      .slice(0, last)
+      .flatMap((turn) => turn.response)
   }
 
   // The thread and message the ack handed the panel for this turn.
@@ -181,9 +194,9 @@ class AgentConversationHarness {
   }
 
   // Doc-id filter: a stray template node must not pin the template here.
-  private nodeBodies(): NodeBody[] {
+  private nodeBodies(throughTurn?: number): NodeBody[] {
     const seed = this.conversation.workflow.seed.nodes as NodeBody[]
-    const added = this.entries().flatMap((entry) =>
+    const added = this.entries(throughTurn).flatMap((entry) =>
       entry.kind === 'graph_ops'
         ? entry.ops.flatMap((op) =>
             op.op === 'add_node' ? [op.node as NodeBody] : []
@@ -193,24 +206,27 @@ class AgentConversationHarness {
     return [...seed, ...added]
   }
 
-  // Every terminal tool call the recording carried, in order. The panel's own
-  // grouping and coalescing rules are the thing under test, so they are not
-  // reproduced here; the spec asserts what the rendered rows show.
-  recordedToolCalls(): RecordedToolCall[] {
-    return this.entries().flatMap((entry) =>
-      entry.kind === 'event' &&
-      entry.event.type === 'agent_tool_call' &&
-      entry.event.data.status !== 'running'
-        ? [{ ok: entry.event.data.status === 'success' }]
-        : []
-    )
+  // One row per recorded tool call; failed when the recording reported an
+  // error status for it. The panel's own grouping and coalescing rules are the
+  // thing under test, so they are not reproduced here.
+  recordedToolCalls(throughTurn?: number): RecordedToolCall[] {
+    const calls = new Map<string, RecordedToolCall>()
+    for (const entry of this.entries(throughTurn)) {
+      if (entry.kind !== 'event' || entry.event.type !== 'agent_tool_call')
+        continue
+      const { tool_call_id: callId, status } = entry.event.data
+      const call = calls.get(callId) ?? { callId, failed: false }
+      if (status === 'error') call.failed = true
+      calls.set(callId, call)
+    }
+    return [...calls.values()]
   }
 
   // Last write wins per widget; the rendered control shows only the final value.
-  recordedWidgetValues(): RecordedWidgetValue[] {
+  recordedWidgetValues(throughTurn?: number): RecordedWidgetValue[] {
     const graph = this.host.graph()
     const latest = new Map<string, RecordedWidgetValue>()
-    for (const entry of this.entries()) {
+    for (const entry of this.entries(throughTurn)) {
       if (entry.kind !== 'graph_ops') continue
       for (const op of entry.ops) {
         if (op.op !== 'set_widget') continue
@@ -227,19 +243,19 @@ class AgentConversationHarness {
     return [...latest.values()]
   }
 
-  addedNodeIds(): string[] {
+  addedNodeIds(throughTurn?: number): string[] {
     const graph = this.host.graph()
     const seedIds = new Set(
       this.conversation.workflow.seed.nodes.map((node) => String(node.id))
     )
-    return this.nodeBodies()
+    return this.nodeBodies(throughTurn)
       .map((body) => String(body.id))
       .filter((id) => !seedIds.has(id) && id in graph.nodes)
   }
 
-  removedNodeIds(): string[] {
+  removedNodeIds(throughTurn?: number): string[] {
     const graph = this.host.graph()
-    return this.nodeBodies()
+    return this.nodeBodies(throughTurn)
       .map((body) => String(body.id))
       .filter((id) => !(id in graph.nodes))
   }
@@ -265,13 +281,14 @@ class AgentConversationHarness {
       .join('')
   }
 
-  // The origin side of every concrete connect whose endpoints survive. Only the
-  // origin is asserted: outputs always render (NodeSlots.vue), while a
-  // widget-backed input renders no slot dot at all, so a target row can be
-  // legitimately absent. A grown connect names no to_slot either.
-  recordedConnects(): Array<{ fromNode: string; fromSlot: number }> {
+  // Every concrete connect whose endpoints survive in the document, with the
+  // target marked when it is a widget-backed input: those render no slot row
+  // on an uncollapsed node (NodeSlots.vue), so only the origin can be asserted
+  // for them. A grown connect names no to_slot and is skipped.
+  recordedConnects(throughTurn?: number): RecordedConnect[] {
     const present = new Set(Object.keys(this.host.graph().nodes))
-    return this.entries()
+    const bodies = this.nodeBodies(throughTurn)
+    return this.entries(throughTurn)
       .flatMap((entry) =>
         entry.kind === 'graph_ops'
           ? entry.ops.flatMap((op) =>
@@ -280,7 +297,12 @@ class AgentConversationHarness {
                     {
                       fromNode: String(op.from_node),
                       fromSlot: op.from_slot,
-                      toNode: String(op.to_node)
+                      toNode: String(op.to_node),
+                      toSlot: op.to_slot,
+                      targetWidgetBacked:
+                        bodies.find(
+                          (body) => String(body.id) === String(op.to_node)
+                        )?.inputs?.[op.to_slot]?.widget != null
                     }
                   ]
                 : []
