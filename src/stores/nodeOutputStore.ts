@@ -14,6 +14,7 @@ import type {
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { clone } from '@/scripts/utils'
+import { useNodeImageStore } from '@/stores/nodeImageStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeId } from '@/types/nodeId'
@@ -432,6 +433,8 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       delete app.nodePreviewImages[nodeLocatorId]
     }
 
+    useNodeImageStore().clearState(nodeLocatorId)
+
     return hadOutputs
   }
 
@@ -497,6 +500,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     nodeOutputs.value = {}
     app.nodeOutputs = {}
     revokeAllPreviews()
+    useNodeImageStore().clearAll()
   }
 
   function syncLegacyNodeImgs(
