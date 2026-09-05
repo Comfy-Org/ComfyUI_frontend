@@ -12832,7 +12832,8 @@
     "display_name": "MiniMax H3 Referenz zu Video",
     "inputs": {
       "audio_vae": {
-        "name": "audio_vae"
+        "name": "audio_vae",
+        "tooltip": "Audio-VAE. Ohne dieses konditioniert Referenzaudio nur den Text-Encoder."
       },
       "clip": {
         "name": "clip"
@@ -12864,7 +12865,8 @@
         "name": "ref_videos"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "Video-VAE. Ohne dieses konditionieren Referenzbilder/-videos nur den Text-Encoder."
       },
       "width": {
         "name": "width"
@@ -16972,7 +16974,7 @@
   },
   "Preview3D": {
     "description": "Zeigt eine Vorschau einer 3D-Modelldatei an, ohne sie im ComfyUI-Ausgabeverzeichnis zu speichern.",
-    "display_name": "3D- und Animationsvorschau",
+    "display_name": "3D- & Animationsvorschau (VERALTET)",
     "inputs": {
       "bg_image": {
         "name": "bg_image"
@@ -17985,7 +17987,7 @@
       },
       "model": {
         "name": "Modell",
-        "tooltip": "Ausgabetyp, für den der Stil erstellt wird: recraftv4_styles für Rasterbilder, recraftv4_styles_vector für SVG."
+        "tooltip": "Modell, für das der Stil erstellt wird. Standard und Pro nutzen einen gemeinsamen Stilpool: Rasterstile funktionieren mit jedem Recraft V4- und V4.1-Rastermodell, Vektorstile (*_vector) mit jedem V4- und V4.1-Vektormodell."
       }
     },
     "outputs": {

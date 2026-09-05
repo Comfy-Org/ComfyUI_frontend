@@ -2486,11 +2486,13 @@
     "menuBar": {
       "bgColor": "رنگ پس‌زمینه",
       "bgImage": "تصویر پس‌زمینه",
+      "customUp": "بالای سفارشی",
       "deleteRecording": "حذف ضبط‌شده",
       "downloadRecording": "دانلود ضبط‌شده",
       "fov": "زاویه دید (FOV)",
       "intensity": "شدت",
       "material": "متریال",
+      "naturalUp": "بالای طبیعی",
       "originalMaterialOnly": "فقط متریال اصلی",
       "panorama": "پانوراما",
       "record": "ضبط",

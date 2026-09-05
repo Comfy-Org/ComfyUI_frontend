@@ -12832,7 +12832,8 @@
     "display_name": "MiniMax H3 Référence vers Vidéo",
     "inputs": {
       "audio_vae": {
-        "name": "audio_vae"
+        "name": "audio_vae",
+        "tooltip": "VAE audio. Sans lui, l’audio de référence conditionne uniquement l’encodeur de texte."
       },
       "clip": {
         "name": "clip"
@@ -12864,7 +12865,8 @@
         "name": "vidéos_de_référence"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "VAE vidéo. Sans lui, les images/vidéos de référence conditionnent uniquement l’encodeur de texte."
       },
       "width": {
         "name": "largeur"
@@ -16972,7 +16974,7 @@
   },
   "Preview3D": {
     "description": "Prévisualisez un fichier de modèle 3D sans l'enregistrer dans le répertoire de sortie ComfyUI.",
-    "display_name": "Aperçu 3D",
+    "display_name": "Aperçu 3D et animation (OBSOLÈTE)",
     "inputs": {
       "bg_image": {
         "name": "bg_image"
@@ -17985,7 +17987,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Type de sortie pour lequel le style est créé : recraftv4_styles pour les images matricielles, recraftv4_styles_vector pour les SVG."
+        "tooltip": "Modèle pour lequel le style est créé. Standard et Pro partagent un même pool de styles : les styles raster fonctionnent avec tous les modèles raster Recraft V4 et V4.1, les styles vectoriels (*_vector) avec tous les modèles vectoriels V4 et V4.1."
       }
     },
     "outputs": {

@@ -2486,11 +2486,13 @@
     "menuBar": {
       "bgColor": "Couleur de fond",
       "bgImage": "Image de fond",
+      "customUp": "Haut personnalisé",
       "deleteRecording": "Supprimer l'enregistrement",
       "downloadRecording": "Télécharger l'enregistrement",
       "fov": "Champ de vision",
       "intensity": "Intensité",
       "material": "Matériau",
+      "naturalUp": "Haut naturel",
       "originalMaterialOnly": "Matériau d'origine uniquement",
       "panorama": "Panorama",
       "record": "Enregistrer",

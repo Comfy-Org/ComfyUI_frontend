@@ -2486,11 +2486,13 @@
     "menuBar": {
       "bgColor": "צבע רקע",
       "bgImage": "תמונת רקע",
+      "customUp": "כיוון מעלה מותאם אישית",
       "deleteRecording": "מחק הקלטה",
       "downloadRecording": "הורד הקלטה",
       "fov": "שדה ראייה (FOV)",
       "intensity": "עוצמה",
       "material": "חומר",
+      "naturalUp": "כיוון מעלה טבעי",
       "originalMaterialOnly": "חומר מקורי בלבד",
       "panorama": "פנורמה",
       "record": "הקלט",

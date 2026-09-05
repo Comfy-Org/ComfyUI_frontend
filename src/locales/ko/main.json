@@ -2486,11 +2486,13 @@
     "menuBar": {
       "bgColor": "배경색",
       "bgImage": "배경 이미지",
+      "customUp": "사용자 지정 위",
       "deleteRecording": "녹화 삭제",
       "downloadRecording": "녹화 다운로드",
       "fov": "시야각",
       "intensity": "강도",
       "material": "재질",
+      "naturalUp": "자연스러운 위",
       "originalMaterialOnly": "원본 재질만",
       "panorama": "파노라마",
       "record": "녹화",

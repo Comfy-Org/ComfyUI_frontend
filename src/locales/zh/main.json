@@ -2486,11 +2486,13 @@
     "menuBar": {
       "bgColor": "背景颜色",
       "bgImage": "背景图片",
+      "customUp": "自定义向上",
       "deleteRecording": "删除录制视频",
       "downloadRecording": "下载录制视频",
       "fov": "视场角",
       "intensity": "强度",
       "material": "材质",
+      "naturalUp": "自然向上",
       "originalMaterialOnly": "仅原始材质",
       "panorama": "全景",
       "record": "录制",
