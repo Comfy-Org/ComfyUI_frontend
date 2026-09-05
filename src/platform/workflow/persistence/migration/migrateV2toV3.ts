@@ -146,8 +146,9 @@ export function migrateV2toV3(workspaceId: string = getWorkspaceId()): number {
   }
 
   const drafts: Array<{ meta: DraftEntryMeta; payload: DraftPayloadV2 }> = []
+  const entriesByKey: Partial<Record<string, DraftEntryMeta>> = v2Index.entries
   for (const draftKey of v2Index.order) {
-    const meta = v2Index.entries[draftKey]
+    const meta = entriesByKey[draftKey]
     if (!meta) continue
     const payload = readV2Payload(workspaceId, draftKey)
     if (!payload) {

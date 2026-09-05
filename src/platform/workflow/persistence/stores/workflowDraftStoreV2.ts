@@ -88,7 +88,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     return emptyIndex
   }
 
-  function getCachedIndex(workspaceId: string): DraftIndexV2 | null {
+  function getCachedIndex(workspaceId: string): DraftIndexV3 | null {
     return indexCacheByWorkspace.value[workspaceId]
   }
 
@@ -214,9 +214,9 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   }
 
   function getIndexEntry(
-    index: DraftIndexV2,
+    index: DraftIndexV3,
     key: string
-  ): DraftIndexV2['entries'][string] | undefined {
+  ): DraftIndexV3['entries'][string] | undefined {
     return index.entries[key]
   }
 

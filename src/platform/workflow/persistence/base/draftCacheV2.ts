@@ -163,7 +163,8 @@ export function getEntryByPath(
   index: DraftIndexV3,
   path: string
 ): DraftEntryMeta | null {
-  const entry = index.entries[path]
+  const entriesByKey: Partial<Record<string, DraftEntryMeta>> = index.entries
+  const entry = entriesByKey[path]
   return entry?.path === path ? entry : null
 }
 
