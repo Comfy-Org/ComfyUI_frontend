@@ -232,7 +232,7 @@ test.describe('Model playground', () => {
     await run.click()
     const output = page.getByTestId('playground-output')
     await expect(output).toHaveAttribute('data-state', 'running')
-    await page.getByTestId('run-cancel').click()
+    await run.click()
     await expect(output).toHaveAttribute('data-state', 'cancelled')
 
     await page.getByRole('button', { name: 'Run again' }).click()
