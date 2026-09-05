@@ -847,7 +847,11 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
     expect(projected).toHaveLength(0)
     // …and the failure is distinguishable, not a silent "disconnected".
     expect(schemaErrors).toEqual([
-      { workflowId: WORKFLOW_ID, found: SCHEMA_VERSION + 1 }
+      expect.objectContaining({
+        workflowId: WORKFLOW_ID,
+        found: SCHEMA_VERSION + 1,
+        message: expect.stringContaining('meta.schema_version')
+      })
     ])
     expect(bridge.lastSchemaError).toBeInstanceOf(FollowerSchemaError)
     expect(error).toHaveBeenCalled()
@@ -870,7 +874,11 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
 
     expect(projected).toHaveLength(0)
     expect(schemaErrors).toEqual([
-      { workflowId: WORKFLOW_ID, found: undefined }
+      expect.objectContaining({
+        workflowId: WORKFLOW_ID,
+        found: undefined,
+        message: expect.stringContaining('meta.schema_version')
+      })
     ])
     error.mockRestore()
   })

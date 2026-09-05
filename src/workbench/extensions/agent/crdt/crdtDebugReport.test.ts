@@ -44,6 +44,7 @@ const SNAPSHOT: CrdtDebugSnapshot = {
     workflowId: 'doc-1',
     updatesApplied: 3,
     lastFrameType: 'doc_update',
+    schemaError: null,
     outcomes: {
       received: 3,
       applied: 3,

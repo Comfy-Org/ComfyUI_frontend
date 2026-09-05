@@ -464,7 +464,19 @@ const {
   // `app.isGraphReady` is a plain getter; reading `canvasStore.canvas` (set
   // right after `app.setup()`) makes the follower's graph watch fire once the
   // root graph exists.
-  () => (canvasStore.canvas && app.isGraphReady ? app.rootGraph : null)
+  () => (canvasStore.canvas && app.isGraphReady ? app.rootGraph : null),
+  t('agent.schemaMismatchDetail')
+)
+watch(
+  () => crdtStatus.value.schemaError,
+  (detail) => {
+    if (detail !== null)
+      toast.add({
+        severity: 'warn',
+        summary: t('agent.schemaMismatch'),
+        detail
+      })
+  }
 )
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,
