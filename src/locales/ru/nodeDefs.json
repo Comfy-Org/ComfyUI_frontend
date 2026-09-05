@@ -2763,6 +2763,260 @@
       }
     }
   },
+  "ComfyCloudFlux2TextToImageNode": {
+    "description": "BETA. Набор узлов Comfy Cloud всё ещё меняется: параметры могут добавляться или удаляться, а рабочий процесс может быть выведен из эксплуатации. Генерирует изображение по текстовому запросу с Flux 2 dev. Turbo использует выбранную LoRA и короткое расписание, немного жертвуя точностью ради гораздо более быстрого выполнения; отключите его для полного прохода dev без LoRA. Работает на GPU Comfy Cloud, тарификация зависит от времени работы: {'$'}0.001295/GPU-секунда (0.27 кредита). Оплата кредитами, подписка Cloud не требуется.",
+    "display_name": "Comfy Cloud Flux 2 Текст в изображение [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "Общий бюджет пикселей. 1.0 — примерно 1024x1024 при квадратном соотношении сторон."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "turbo": {
+        "name": "turbo",
+        "tooltip": "Запускает Turbo LoRA с коротким расписанием, немного жертвуя точностью ради гораздо более быстрого выполнения. При отключении выполняется полный проход dev без LoRA."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMageFlowTextToImageNode": {
+    "description": "BETA. Набор узлов Comfy Cloud всё ещё меняется: параметры могут добавляться или удаляться, а рабочий процесс может быть выведен из эксплуатации. Генерирует изображение по текстовому запросу с Mage-Flow за полный проход из 30 шагов. Принимает негативный запрос, который дистиллированный turbo-вариант не может эффективно использовать. Работает на GPU Comfy Cloud, тарификация зависит от времени работы: {'$'}0.001295/GPU-секунда (0.27 кредита). Оплата кредитами, подписка Cloud не требуется.",
+    "display_name": "Comfy Cloud Mage Flow Текст в изображение [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "Общий бюджет пикселей. 1.0 — примерно 1024x1024 при квадратном соотношении сторон."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Оставьте пустым, чтобы сохранить негативный запрос, для которого была настроена эта цепочка обработки."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMageFlowTurboTextToImageNode": {
+    "description": "BETA. Набор узлов Comfy Cloud всё ещё меняется: параметры могут добавляться или удаляться, а рабочий процесс может быть выведен из эксплуатации. Генерирует изображение по текстовому запросу с дистиллированным Mage-Flow за 4 шага при cfg 1. Требует примерно седьмую часть времени GPU полного прохода, что делает его удобным для итераций. Работает на GPU Comfy Cloud, тарификация зависит от времени работы: {'$'}0.001295/GPU-секунда (0.27 кредита). Оплата кредитами, подписка Cloud не требуется.",
+    "display_name": "Comfy Cloud Mage Flow Turbo Текст в изображение [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "Общий бюджет пикселей. 1.0 — примерно 1024x1024 при квадратном соотношении сторон."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Оставьте пустым, чтобы сохранить негативный запрос, для которого была настроена эта цепочка обработки."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3FirstLastFrameToVideoNode": {
+    "description": "BETA. Набор узлов Comfy Cloud всё ещё меняется: параметры могут добавляться или удаляться, а рабочий процесс может быть выведен из эксплуатации. Генерирует движение между двумя ключевыми кадрами с подходящей звуковой дорожкой, используя MiniMax H3. Укажите начальный и конечный кадры, и модель заполнит сцену между ними. Последний кадр необязателен: не указывайте его, и движение будет развиваться от первого кадра. Работает на GPU Comfy Cloud, тарификация зависит от времени работы: {'$'}0.001295/GPU-секунда (0.27 кредита). Оплата кредитами, подписка Cloud не требуется.",
+    "display_name": "Comfy Cloud MiniMax H3 Первый-последний кадр в видео [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "duration_seconds": {
+        "name": "duration_seconds",
+        "tooltip": "Длительность в секундах. Цепочка обработки квантует длительность с шагом 17 кадров при 24fps, поэтому длительность клипа будет отличаться от указанной примерно не более чем на две трети секунды."
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Бюджет размера кадра. 720p требует примерно вдвое больше GPU-секунд, чем 480p."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3ImageToVideoNode": {
+    "description": "БЕТА. Набор узлов Comfy Cloud всё ещё меняется: параметры могут добавляться или удаляться, а рабочий процесс может быть выведен из эксплуатации. Анимирует статичное изображение в видео с подходящей звуковой дорожкой с помощью MiniMax H3. Подайте последний кадр clip, и последовательность продолжится, поэтому объединение нескольких результатов создаёт более длинный план. Работает на GPU Comfy Cloud; оплата зависит от времени работы: {'$'}0.001295 за GPU-секунду (0.27 кредитов). Оплата кредитами, подписка Cloud не требуется.",
+    "display_name": "Comfy Cloud MiniMax H3 Изображение в видео [БЕТА]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "duration_seconds": {
+        "name": "duration_seconds",
+        "tooltip": "Длительность в секундах. Конвейер квантует длительность с шагом 17 кадров при 24 fps, поэтому длительность clip отличается от указанной примерно не более чем на две трети секунды."
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "prompt": {
+        "name": "промпт"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Ограничение на размер кадра. 720p требует примерно вдвое больше GPU-секунд, чем 480p."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3TextToVideoNode": {
+    "description": "БЕТА. Набор узлов Comfy Cloud всё ещё меняется: параметры могут добавляться или удаляться, а рабочий процесс может быть выведен из эксплуатации. Создаёт видео с подходящей звуковой дорожкой из текстового промпта с помощью MiniMax H3. Изображение и звук создаются за один проход, а не добавляются после. Работает на GPU Comfy Cloud; оплата зависит от времени работы: {'$'}0.001295 за GPU-секунду (0.27 кредитов). Оплата кредитами, подписка Cloud не требуется.",
+    "display_name": "Comfy Cloud MiniMax H3 Текст в видео [БЕТА]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "duration_seconds": {
+        "name": "duration_seconds",
+        "tooltip": "Длительность в секундах. Конвейер квантует длительность с шагом 17 кадров при 24 fps, поэтому длительность clip отличается от указанной примерно не более чем на две трети секунды."
+      },
+      "prompt": {
+        "name": "промпт"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Ограничение на размер кадра. 720p требует примерно вдвое больше GPU-секунд, чем 480p."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxMusic3TextToAudioNode": {
+    "description": "БЕТА. Набор узлов Comfy Cloud всё ещё меняется: параметры могут добавляться или удаляться, а рабочий процесс может быть выведен из эксплуатации. Создаёт полную песню из описания с помощью MiniMax Music 3. Промпт задаёт стиль, инструменты и настроение; текст песни исполняется, а не описывается, а пустой текст оставляет трек инструментальным. Работает на GPU Comfy Cloud; оплата зависит от времени работы: {'$'}0.001295 за GPU-секунду (0.27 кредитов). Оплата кредитами, подписка Cloud не требуется.",
+    "display_name": "Comfy Cloud MiniMax Music 3 Текст в аудио [БЕТА]",
+    "inputs": {
+      "audio_quality": {
+        "name": "audio_quality",
+        "tooltip": "Битрейт mp3. V0 — переменный и самый высокий из трёх вариантов качества."
+      },
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "lyrics": {
+        "name": "текст песни",
+        "tooltip": "Слова для исполнения. Оставьте пустым для инструментальной композиции."
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "Максимальная длительность трека. Модель может завершить песню раньше."
+      },
+      "prompt": {
+        "name": "промпт"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudZImageTurboNode": {
+    "description": "БЕТА. Набор узлов Comfy Cloud всё ещё меняется: параметры могут добавляться или удаляться, а рабочий процесс может быть выведен из эксплуатации. Создаёт изображение из текстового промпта с помощью Z-Image Turbo за 8 шагов. Один из самых быстрых и дешёвых узлов, поэтому он лучше всего подходит для итераций. Работает на GPU Comfy Cloud; оплата зависит от времени работы: {'$'}0.001295 за GPU-секунду (0.27 кредитов). Оплата кредитами, подписка Cloud не требуется.",
+    "display_name": "Comfy Cloud Z-Image Turbo Текст в изображение [БЕТА]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "Общий лимит пикселей. 1.0 — примерно 1024x1024 при квадратном соотношении сторон."
+      },
+      "prompt": {
+        "name": "промпт"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyMathExpression": {
     "display_name": "Математическое выражение",
     "inputs": {
@@ -6433,7 +6687,7 @@
     }
   },
   "GetImageSize": {
-    "description": "Возвращает ширину и высоту изображения и передаёт его без изменений.",
+    "description": "Возвращает ширину, высоту и размер пакета изображения.",
     "display_name": "Получить размер изображения",
     "inputs": {
       "image": {
@@ -7201,12 +7455,12 @@
     }
   },
   "HiDreamO1ReferenceImages": {
-    "description": "Прикрепите 1-10 референсных изображений для кондиционирования: одно для редактирования по инструкции или несколько для персонализации по объекту.",
+    "description": "Подключает упорядоченные эталонные изображения к положительному и отрицательному кондиционированию.",
     "display_name": "Референсные изображения HiDream-O1",
     "inputs": {
       "images": {
         "name": "изображения",
-        "tooltip": "Референсные изображения. 1 изображение = редактирование по инструкции; 2-10 изображений = мульти-референс."
+        "tooltip": "Эталонные изображения используются в числовом порядке сокетов."
       },
       "negative": {
         "name": "отрицательный"
@@ -12710,6 +12964,84 @@
       }
     }
   },
+  "MetaMuseImageEditApi": {
+    "description": "Редактирует или объединяет до 10 эталонных изображений по текстовому запросу с помощью модели Meta Muse Image.",
+    "display_name": "Редактирование изображений Meta Muse",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Используемая модель."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_enable_image_search": {
+        "name": "enable_image_search"
+      },
+      "model_enable_shell": {
+        "name": "enable_shell"
+      },
+      "model_enable_web_search": {
+        "name": "enable_web_search"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_strength": {
+        "name": "reasoning_strength"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MetaMuseImageTextToImageApi": {
+    "description": "Генерирует изображения из текстового запроса с помощью модели Meta Muse Image, которая анализирует запрос перед рендерингом.",
+    "display_name": "Meta Muse Image: текст в изображение",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Используемая модель."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_enable_image_search": {
+        "name": "enable_image_search"
+      },
+      "model_enable_shell": {
+        "name": "enable_shell"
+      },
+      "model_enable_web_search": {
+        "name": "enable_web_search"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_strength": {
+        "name": "reasoning_strength"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MiniMaxH3AddGuide": {
     "description": "Закрепите изображение, короткий clip, аудио или clip с его звуковой дорожкой на любом кадре видео MiniMax H3. Объедините несколько узлов в цепочку, чтобы закрепить несколько кадров.",
     "display_name": "Добавить направляющую для MiniMax H3",
@@ -12744,6 +13076,46 @@
     "outputs": {
       "0": {
         "name": "positive",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3FunControlNetApply": {
+    "description": "Применяет MiniMax H3 Fun ControlNet к модели преобразования текста в видео в качестве патча модели.",
+    "display_name": "Применить MiniMax H3 Fun ControlNet",
+    "inputs": {
+      "control_video": {
+        "name": "control_video"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "1 отмечает области для повторной генерации."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "Видео за mask; считывается только при наличии mask."
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -12792,7 +13164,8 @@
     "display_name": "MiniMax H3: референс в видео",
     "inputs": {
       "audio_vae": {
-        "name": "audio_vae"
+        "name": "audio_vae",
+        "tooltip": "Аудио VAE. Без него эталонное аудио влияет только на текстовый энкодер."
       },
       "clip": {
         "name": "clip"
@@ -12824,7 +13197,8 @@
         "name": "реф_видео"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "Видео VAE. Без него эталонные изображения/видео влияют только на текстовый энкодер."
       },
       "width": {
         "name": "ширина"
@@ -12933,7 +13307,7 @@
     }
   },
   "MinimaxHailuo03FirstLastFrameNode": {
-    "description": "Генерирует видео по изображению первого кадра и, при необходимости, последнего кадра с помощью модели MiniMax H3. Соотношение сторон видео соответствует предоставленным изображениям.",
+    "description": "Создание видео из изображения первого кадра и необязательного изображения последнего кадра с помощью моделей MiniMax H3. Соотношение сторон видео соответствует предоставленным изображениям.",
     "display_name": "MiniMax H3: видео по первому и последнему кадру",
     "inputs": {
       "control_after_generate": {
@@ -12976,7 +13350,7 @@
     }
   },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "Генерируйте видео на основе референсных изображений, видео и аудио с помощью модели MiniMax H3. Ссылайтесь на референсы в промпте по их порядку: 'Image 1', 'Image 2', 'Video 1', 'Audio 1' и так далее.",
+    "description": "Создание видео с учётом эталонных изображений, видео и аудио с помощью моделей MiniMax H3. Ссылайтесь на эталоны в prompt по порядку: «Image 1», «Image 2», «Video 1», «Audio 1» и так далее.",
     "display_name": "MiniMax H3: Референс в видео",
     "inputs": {
       "control_after_generate": {
@@ -13051,7 +13425,7 @@
     }
   },
   "MinimaxHailuo03TextToVideoNode": {
-    "description": "Генерируйте видео по текстовому промпту с помощью модели MiniMax H3.",
+    "description": "Создание видео из текстового prompt с помощью моделей MiniMax H3.",
     "display_name": "MiniMax H3: Текст в видео",
     "inputs": {
       "control_after_generate": {
@@ -16932,7 +17306,7 @@
   },
   "Preview3D": {
     "description": "Просмотр 3D-модели без сохранения в выходной каталог ComfyUI.",
-    "display_name": "Предварительный просмотр 3D",
+    "display_name": "Предпросмотр 3D и анимации (УСТАРЕЛО)",
     "inputs": {
       "bg_image": {
         "name": "bg_image"
@@ -17945,7 +18319,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Тип вывода, для которого создаётся стиль: recraftv4_styles для растровых изображений, recraftv4_styles_vector для SVG."
+        "tooltip": "Модель, для которой создаётся стиль. Standard и Pro используют общий пул стилей: растровые стили работают с любой растровой моделью Recraft V4 и V4.1, векторные стили (*_vector) — с любой векторной моделью V4 и V4.1."
       }
     },
     "outputs": {
@@ -18641,6 +19015,10 @@
       "multiple": {
         "name": "кратность",
         "tooltip": "Ближайшая кратность результата для установки выбранного разрешения."
+      },
+      "preview": {
+        "name": "preview",
+        "tooltip": "Предпросмотр в реальном времени рассчитанного выходного разрешения."
       }
     },
     "outputs": {
@@ -21121,6 +21499,23 @@
       }
     }
   },
+  "SenseNovaSamplingOptions": {
+    "description": "Установите сдвиг потока SenseNova.",
+    "display_name": "Параметры сэмплирования SenseNova",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SetClipHooks": {
     "display_name": "Установить хуки CLIP",
     "inputs": {
@@ -23429,10 +23824,12 @@
         "name": "анимировать на месте"
       },
       "bake": {
-        "name": "запечь"
+        "name": "запечь",
+        "tooltip": "Запечь расширенные материалы в базовые текстуры для более широкой совместимости."
       },
       "export_orientation": {
-        "name": "экспортировать ориентацию"
+        "name": "экспортировать ориентацию",
+        "tooltip": "Ось направления экспортируемой модели. default сохраняет +x Tripo."
       },
       "export_vertex_colors": {
         "name": "экспортировать цвета вершин"
@@ -23441,13 +23838,15 @@
         "name": "face_limit"
       },
       "fbx_preset": {
-        "name": "FBX-пресет"
+        "name": "FBX-пресет",
+        "tooltip": "Предустановка совместимости FBX. bake_scale запекает преобразование масштаба в геометрию."
       },
       "flatten_bottom": {
         "name": "выравнивание низа"
       },
       "flatten_bottom_threshold": {
-        "name": "порог выравнивания низа"
+        "name": "порог выравнивания низа",
+        "tooltip": "Глубина выравнивания, используемая с flatten_bottom."
       },
       "force_symmetry": {
         "name": "принудительная симметрия"
@@ -23480,15 +23879,66 @@
         "name": "texture_size"
       },
       "with_animation": {
-        "name": "с анимацией"
+        "name": "с анимацией",
+        "tooltip": "Сохранить скелет и анимацию моделей с риггингом или ретаргетингом."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": "Преобразованная модель в запрошенном формате. Tripo предоставляет OBJ в виде ZIP-архива (сетка, материал и текстуры)."
+      }
+    }
+  },
+  "TripoEditMultiviewNode": {
+    "description": "Редактирует ракурсы результата Tripo: Image to Multiview с текстовыми инструкциями для каждого ракурса. Ракурсы без инструкции остаются без изменений. Передайте изображения в Tripo: Multiview to Model; отредактированный набор нельзя редактировать повторно.",
+    "display_name": "Tripo: Редактирование мультиракурса",
+    "inputs": {
+      "back_prompt": {
+        "name": "back_prompt"
+      },
+      "front_prompt": {
+        "name": "front_prompt"
+      },
+      "left_prompt": {
+        "name": "left_prompt"
+      },
+      "multiview_task_id": {
+        "name": "multiview_task_id"
+      },
+      "right_prompt": {
+        "name": "right_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "front",
+        "tooltip": null
+      },
+      "1": {
+        "name": "left",
+        "tooltip": null
+      },
+      "2": {
+        "name": "back",
+        "tooltip": null
+      },
+      "3": {
+        "name": "right",
+        "tooltip": null
       }
     }
   },
   "TripoImageToModelNode": {
     "display_name": "Tripo: Изображение в модель",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Масштабирует текстурированные модели до их реального размера в метрах. Tripo сохраняет размер как трансформацию сцены модели и запекает его при конвертации, риггинге или ретаргетинге модели; без текстуры игнорируется."
+      },
       "face_limit": {
-        "name": "face_limit"
+        "name": "face_limit",
+        "tooltip": "Максимальное число граней. Значение -1 позволяет Tripo выбирать адаптивно (около 1,4 млн граней для v3.x standard, 2 млн для detailed). Tripo незаметно ограничивает значение: v2.5 — до 500 000, quad-сетки — до 150 000."
       },
       "geometry_quality": {
         "name": "качество геометрии"
@@ -23507,22 +23957,31 @@
         "name": "orientation"
       },
       "pbr": {
-        "name": "pbr"
+        "name": "pbr",
+        "tooltip": "Карты PBR-материала (базовый цвет, металличность, шероховатость, нормали). Требует texture."
       },
       "quad": {
-        "name": "quad"
+        "name": "quad",
+        "tooltip": "Вывод quad-сетки. Tripo предоставляет quad-сетки как FBX, поэтому результат поступает на выход FBX, а выход GLB остаётся пустым."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Низкополигональная сетка с аккуратной топологией ручной работы (500–20 000 полигонов, quad 500–10 000). Лучше всего подходит для простых объектов; на сложных возможны сбои."
       },
       "style": {
-        "name": "style"
+        "name": "style",
+        "tooltip": "Больше не поддерживается Tripo и игнорируется. Сохранено для старых workflows."
       },
       "texture": {
-        "name": "texture"
+        "name": "texture",
+        "tooltip": "Создавать карты текстур. При отключении возвращается только геометрия, а pbr игнорируется."
       },
       "texture_alignment": {
         "name": "texture_alignment"
       },
       "texture_quality": {
-        "name": "texture_quality"
+        "name": "texture_quality",
+        "tooltip": "detailed = текстуры HD, extreme = текстуры 8K Ultra."
       },
       "texture_seed": {
         "name": "texture_seed"
@@ -23539,6 +23998,41 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "Пусто, если включён quad."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Заполняется только при включённом quad."
+      }
+    }
+  },
+  "TripoImageToMultiviewNode": {
+    "description": "Генерирует виды объекта спереди, слева, сзади и справа. Передайте их в Tripo: Многовидовое представление в модель или сначала уточните с помощью Tripo: Редактирование многовидового представления.",
+    "display_name": "Tripo: Изображение в многовидовое представление",
+    "inputs": {
+      "image": {
+        "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "task_id многовидового представления",
+        "tooltip": null
+      },
+      "1": {
+        "name": "спереди",
+        "tooltip": null
+      },
+      "2": {
+        "name": "слева",
+        "tooltip": null
+      },
+      "3": {
+        "name": "сзади",
+        "tooltip": null
+      },
+      "4": {
+        "name": "справа",
         "tooltip": null
       }
     }
@@ -23559,11 +24053,43 @@
       }
     }
   },
+  "TripoMeshCompleteNode": {
+    "description": "Дополняет части сегментированной модели и восстанавливает отсутствующие области.",
+    "display_name": "Tripo: Дополнить части сетки",
+    "inputs": {
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "Разделённые запятыми названия частей для дополнения. Если пусто, дополняются все части."
+      },
+      "segment_task_id": {
+        "name": "segment_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "task_id модели",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: Мультивью в модель",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Масштабирует текстурированные модели до их реального размера в метрах. Tripo сохраняет размер как трансформацию сцены модели и запекает его при конвертации, риггинге или ретаргетинге модели; без текстуры игнорируется."
+      },
       "face_limit": {
-        "name": "лимит_лиц"
+        "name": "лимит_лиц",
+        "tooltip": "Максимальное число полигонов. -1 позволяет Tripo выбирать адаптивно (около 1,4 млн полигонов для стандартного v3.x, 2 млн для detailed). Tripo без уведомления ограничивает значение: для v2.5 — 500 000, для сеток quad — 150 000."
       },
       "geometry_quality": {
         "name": "качество геометрии"
@@ -23591,20 +24117,27 @@
         "name": "ориентация"
       },
       "pbr": {
-        "name": "PBR"
+        "name": "PBR",
+        "tooltip": "Карты PBR-материала (базовый цвет, металличность, шероховатость, нормали). Требуется texture."
       },
       "quad": {
         "name": "квад",
-        "tooltip": "Этот параметр устарел и больше не используется."
+        "tooltip": "Вывод quad-сетки. Tripo предоставляет quad-сетки в формате FBX, поэтому результат поступает на выход FBX, а выход GLB остаётся пустым."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Низкополигональная сетка с аккуратной топологией ручной работы (500–20 000 полигонов, quad 500–10 000). Лучше всего подходит для простых объектов; на сложных возможны сбои."
       },
       "texture": {
-        "name": "текстура"
+        "name": "текстура",
+        "tooltip": "Генерировать карты текстур. При выключении возвращается только геометрия, а pbr игнорируется."
       },
       "texture_alignment": {
         "name": "выравнивание_текстуры"
       },
       "texture_quality": {
-        "name": "качество_текстуры"
+        "name": "качество_текстуры",
+        "tooltip": "detailed = текстуры HD, extreme = текстуры Ultra 8K."
       },
       "texture_seed": {
         "name": "сид_текстуры"
@@ -23621,7 +24154,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "Пусто, если включён quad."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Заполняется только при включённом quad."
       }
     }
   },
@@ -23635,7 +24172,7 @@
       },
       "compress_geometry": {
         "name": "сжать_геометрию",
-        "tooltip": "Применить сжатие на основе геометрии. Декомпрессируйте перед редактированием."
+        "tooltip": "Применить сжатие геометрии meshopt (EXT_meshopt_compression). Файлы станут меньше, но 3D-предпросмотр ComfyUI не сможет их отобразить; распакуйте перед редактированием."
       },
       "enable_image_autofix": {
         "name": "включить_автоисправление_изображения",
@@ -23685,7 +24222,7 @@
       },
       "compress_geometry": {
         "name": "сжать_геометрию",
-        "tooltip": "Применить сжатие на основе геометрии. Декомпрессируйте перед редактированием."
+        "tooltip": "Применить сжатие геометрии meshopt (EXT_meshopt_compression). Файлы станут меньше, но 3D-предпросмотр ComfyUI не сможет их отобразить; распакуйте перед редактированием."
       },
       "export_uv": {
         "name": "экспорт_uv",
@@ -23744,7 +24281,7 @@
       },
       "compress_geometry": {
         "name": "compress_geometry",
-        "tooltip": "Применить сжатие на основе геометрии. Распакуйте перед редактированием."
+        "tooltip": "Применить сжатие геометрии meshopt (EXT_meshopt_compression). Файлы станут меньше, но 3D-предпросмотр ComfyUI не сможет их отобразить; распакуйте перед редактированием."
       },
       "export_uv": {
         "name": "export_uv",
@@ -23791,11 +24328,24 @@
   "TripoRetargetNode": {
     "display_name": "Tripo: Перепривязка ригнутой модели",
     "inputs": {
+      "animate_in_place": {
+        "name": "animate_in_place",
+        "tooltip": "Воспроизводить анимацию на месте, без смещения корня."
+      },
       "animation": {
-        "name": "анимация"
+        "name": "анимация",
+        "tooltip": "Анимации preset:* работают с обеими моделями рига; анимации preset:biped:* требуют риг, созданный с моделью v1.0-20240301."
+      },
+      "export_with_geometry": {
+        "name": "export_with_geometry",
+        "tooltip": "Включать сетку в экспорт; при выключении экспортируется только анимированный скелет."
       },
       "original_model_task_id": {
         "name": "идентификатор_задачи_исходной_модели"
+      },
+      "out_format": {
+        "name": "out_format",
+        "tooltip": "Формат выходного файла; результат поступает на соответствующий выход."
       }
     },
     "outputs": {
@@ -23809,15 +24359,97 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "Заполняется, когда out_format имеет значение glb."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Заполняется, когда out_format имеет значение fbx."
+      }
+    }
+  },
+  "TripoRetopologyNode": {
+    "description": "Перестраивает низкополигональную сетку с чистой топологией из высокополигональной модели.",
+    "display_name": "Tripo: Ретопология",
+    "inputs": {
+      "bake": {
+        "name": "bake",
+        "tooltip": "Запекать текстуры исходной модели на низкополигональную сетку."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Целевое число граней: 500–20 000 треугольников или 500–10 000 четырёхугольников. -1 позволяет Tripo выбрать значение."
+      },
+      "model_task_id": {
+        "name": "model_task_id"
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "Имена частей из Tripo: Segment Model, разделённые запятыми. Пустое значение обрабатывает всю модель."
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "Вывод сетки из четырёхугольников. Tripo предоставляет такие сетки в формате FBX, поэтому результат поступает на выход FBX, а выход GLB остаётся пустым."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": "Пусто, когда quad включён."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Заполняется только при включённом quad."
+      }
+    }
+  },
+  "TripoRigCheckNode": {
+    "description": "Проверяет, можно ли создать риг для модели, и какой тип скелета рекомендует Tripo.",
+    "display_name": "Tripo: Проверка рига",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "riggable",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_type",
+        "tooltip": "Рекомендуемый скелет: biped, quadruped, hexapod, octopod, avian, serpentine или aquatic; «others», если для модели нельзя создать риг."
       }
     }
   },
   "TripoRigNode": {
     "display_name": "Tripo: Риггинг модели",
     "inputs": {
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "v1.0: только гуманоидные персонажи (biped), более 90 предустановок анимации. v2.5: негуманоидные существа (quadruped, hexapod, octopod, avian, serpentine, aquatic)."
+      },
       "original_model_task_id": {
         "name": "идентификатор_задачи_исходной_модели"
+      },
+      "out_format": {
+        "name": "out_format",
+        "tooltip": "Формат выходного файла; результат поступает на соответствующий выход."
+      },
+      "rig_type": {
+        "name": "rig_type",
+        "tooltip": "Тип скелета. «auto» сначала запускает бесплатную проверку рига Tripo и использует рекомендуемый тип."
+      },
+      "spec": {
+        "name": "spec",
+        "tooltip": "Именование костей: нативное Tripo или совместимое с Mixamo. Tripo не может переназначать свои предустановки анимации на риг v1.0, созданный со спецификацией mixamo; для Tripo: Retarget rigged model используйте tripo."
       }
     },
     "outputs": {
@@ -23831,7 +24463,38 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "Заполняется, когда out_format имеет значение glb."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Заполняется, когда out_format имеет значение fbx."
+      }
+    }
+  },
+  "TripoSegmentNode": {
+    "description": "Разделяет модель на части. Имена частей подаются в Tripo: Завершение частей сетки, Tripo: Ретопологию и Tripo: Конвертацию модели.",
+    "display_name": "Tripo: Сегментация модели",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "task_id сегментации",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "part_names",
+        "tooltip": "Имена частей, разделённые запятыми."
       }
     }
   },
@@ -23933,8 +24596,13 @@
   "TripoTextToModelNode": {
     "display_name": "Tripo: Текст в модель",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Масштабировать текстурированные модели до их реального размера в метрах. Tripo сохраняет размер как трансформацию сцены модели и применяет его при конвертации, риггинге или ретаргетинге модели; без texture игнорируется."
+      },
       "face_limit": {
-        "name": "face_limit"
+        "name": "face_limit",
+        "tooltip": "Максимальное число граней. -1 позволяет Tripo выбирать адаптивно (около 1,4 млн граней для стандартного v3.x, 2 млн для detailed). Tripo без уведомления ограничивает: v2.5 — до 500 000, quad-сетки — до 150 000."
       },
       "geometry_quality": {
         "name": "качество геометрии"
@@ -23949,25 +24617,35 @@
         "name": "версия_модели"
       },
       "negative_prompt": {
-        "name": "негативный_промпт"
+        "name": "негативный_промпт",
+        "tooltip": "До 255 символов."
       },
       "pbr": {
-        "name": "PBR"
+        "name": "PBR",
+        "tooltip": "Карты PBR-материала (базовый цвет, металличность, шероховатость, нормали). Требуется texture."
       },
       "prompt": {
         "name": "промпт"
       },
       "quad": {
-        "name": "quad"
+        "name": "quad",
+        "tooltip": "Вывод quad-сетки. Tripo предоставляет quad-сетки в формате FBX, поэтому результат поступает на выход FBX, а выход GLB остаётся пустым."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Низкополигональная сетка с чистой топологией в стиле ручной работы (500–20 000 граней, quad 500–10 000). Лучше всего подходит для простых объектов; сложные могут завершиться ошибкой."
       },
       "style": {
-        "name": "стиль"
+        "name": "стиль",
+        "tooltip": "Больше не поддерживается Tripo и игнорируется. Сохранено для старых рабочих процессов."
       },
       "texture": {
-        "name": "текстура"
+        "name": "текстура",
+        "tooltip": "Генерировать карты текстур. При выключении возвращается геометрия без текстур, а pbr игнорируется."
       },
       "texture_quality": {
-        "name": "texture_quality"
+        "name": "texture_quality",
+        "tooltip": "detailed = текстуры HD, extreme = текстуры 8K Ultra."
       },
       "texture_seed": {
         "name": "texture_seed"
@@ -23984,7 +24662,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "Пусто, когда включён quad."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Заполняется только при включённом quad."
       }
     }
   },
@@ -23994,21 +24676,40 @@
       "model_task_id": {
         "name": "model_task_id"
       },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "Модель текстурирования: v3.0 для сеток, созданных в v3.x, v2.5 для сеток, созданных в v2.5."
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "Имена частей из Tripo: Сегментация модели, разделённые запятыми, для текстурирования. Если пусто, текстурируются все части."
+      },
       "pbr": {
-        "name": "pbr"
+        "name": "pbr",
+        "tooltip": "Карты PBR-материала (базовый цвет, металличность, шероховатость, нормали); при выключении создаётся простая цветная текстура."
+      },
+      "reference": {
+        "name": "reference",
+        "tooltip": "Эталонные изображения, направляющие создание текстур. Нельзя сочетать с texture_prompt или style_image."
+      },
+      "style_image": {
+        "name": "style_image",
+        "tooltip": "Эталонное изображение для художественного стиля текстур. Используется только вместе с texture_prompt."
       },
       "texture": {
-        "name": "texture"
+        "name": "texture",
+        "tooltip": "Игнорируется: этот узел всегда генерирует текстуры. Сохранено для старых рабочих процессов."
       },
       "texture_alignment": {
         "name": "texture_alignment"
       },
       "texture_prompt": {
         "name": "texture_prompt",
-        "tooltip": "Необязательное текстовое описание для текстурирования. На практике требуется для импортированных моделей (Tripo: Импорт модели), которые не содержат исходного изображения для определения цветов."
+        "tooltip": "Необязательная текстовая подсказка для текстурирования. На практике требуется для импортированных моделей (Tripo: Импорт модели), у которых нет исходного изображения для определения цветов. Нельзя сочетать с эталонными изображениями."
       },
       "texture_quality": {
-        "name": "texture_quality"
+        "name": "texture_quality",
+        "tooltip": "detailed = текстуры HD, extreme = текстуры 8K Ultra."
       },
       "texture_seed": {
         "name": "texture_seed"
@@ -24025,7 +24726,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "Пусто, когда источником является quad-сетка или импортированный FBX."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Tripo возвращает FBX для quad-сеток и импортов FBX; в остальных случаях пусто."
       }
     }
   },

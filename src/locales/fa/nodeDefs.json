@@ -2763,6 +2763,260 @@
       }
     }
   },
+  "ComfyCloudFlux2TextToImageNode": {
+    "description": "BETA. مجموعه nodeهای Comfy Cloud همچنان در حال تغییر است: ممکن است گزینه‌هایی اضافه یا حذف شوند و یک workflow بازنشسته شود. با Flux ۲ dev از یک prompt متنی تصویر تولید می‌کند. Turbo، LoRA انتخاب‌شده و یک زمان‌بندی کوتاه را جایگزین می‌کند و در ازای کاهش اندک وفاداری، اجرا را بسیار سریع‌تر می‌سازد؛ برای اجرای کامل dev بدون LoRA آن را خاموش کنید. روی یک GPU در Comfy Cloud اجرا می‌شود و هزینه آن بر اساس مدت اجرا با نرخ {'$'}۰.۰۰۱۲۹۵/GPU-second (۰.۲۷ اعتبار) محاسبه می‌شود. پرداخت با اعتبار انجام می‌شود و به اشتراک Cloud نیازی نیست.",
+    "display_name": "Comfy Cloud Flux ۲ متن به تصویر [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "بودجه کل پیکسل. ۱.۰ در نسبت مربعی تقریباً ۱۰۲۴×۱۰۲۴ است."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "turbo": {
+        "name": "turbo",
+        "tooltip": "Turbo LoRA را با زمان‌بندی کوتاه اجرا می‌کند و در ازای کاهش اندک وفاداری، اجرا را بسیار سریع‌تر می‌سازد. حالت خاموش، اجرای کامل dev را بدون LoRA انجام می‌دهد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMageFlowTextToImageNode": {
+    "description": "BETA. مجموعه nodeهای Comfy Cloud همچنان در حال تغییر است: ممکن است گزینه‌هایی اضافه یا حذف شوند و یک workflow بازنشسته شود. با Mage-Flow در یک اجرای کامل ۳۰ مرحله‌ای از یک prompt متنی تصویر تولید می‌کند. یک prompt منفی می‌پذیرد که گونه turbo تقطیرشده نمی‌تواند به‌خوبی از آن استفاده کند. روی یک GPU در Comfy Cloud اجرا می‌شود و هزینه آن بر اساس مدت اجرا با نرخ {'$'}۰.۰۰۱۲۹۵/GPU-second (۰.۲۷ اعتبار) محاسبه می‌شود. پرداخت با اعتبار انجام می‌شود و به اشتراک Cloud نیازی نیست.",
+    "display_name": "Comfy Cloud Mage Flow متن به تصویر [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "بودجه کل پیکسل. ۱.۰ در نسبت مربعی تقریباً ۱۰۲۴×۱۰۲۴ است."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "برای حفظ prompt منفی که این pipeline با آن تنظیم شده است، خالی بگذارید."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMageFlowTurboTextToImageNode": {
+    "description": "BETA. مجموعه nodeهای Comfy Cloud همچنان در حال تغییر است: ممکن است گزینه‌هایی اضافه یا حذف شوند و یک workflow بازنشسته شود. با Mage-Flow تقطیرشده در ۴ مرحله و cfg ۱ از یک prompt متنی تصویر تولید می‌کند. تقریباً یک‌هفتم زمان GPU اجرای کامل را نیاز دارد، بنابراین برای تکرار مناسب است. روی یک GPU در Comfy Cloud اجرا می‌شود و هزینه آن بر اساس مدت اجرا با نرخ {'$'}۰.۰۰۱۲۹۵/GPU-second (۰.۲۷ اعتبار) محاسبه می‌شود. پرداخت با اعتبار انجام می‌شود و به اشتراک Cloud نیازی نیست.",
+    "display_name": "Comfy Cloud Mage Flow Turbo متن به تصویر [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "بودجه کل پیکسل. ۱.۰ در نسبت مربعی تقریباً ۱۰۲۴×۱۰۲۴ است."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "برای حفظ prompt منفی که این pipeline با آن تنظیم شده است، خالی بگذارید."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3FirstLastFrameToVideoNode": {
+    "description": "BETA. مجموعه nodeهای Comfy Cloud همچنان در حال تغییر است: ممکن است گزینه‌هایی اضافه یا حذف شوند و یک workflow بازنشسته شود. با استفاده از MiniMax H۳، حرکت میان دو فریم کلیدی را همراه با موسیقی متن هماهنگ تولید می‌کند. فریم آغازین و پایانی را بدهید تا مدل نمای میان آن‌ها را تکمیل کند. فریم آخر اختیاری است: آن را حذف کنید تا حرکت به‌جای آن از فریم اول ادامه یابد. روی یک GPU در Comfy Cloud اجرا می‌شود و هزینه آن بر اساس مدت اجرا با نرخ {'$'}۰.۰۰۱۲۹۵/GPU-second (۰.۲۷ اعتبار) محاسبه می‌شود. پرداخت با اعتبار انجام می‌شود و به اشتراک Cloud نیازی نیست.",
+    "display_name": "Comfy Cloud MiniMax H۳ فریم اول-آخر به ویدئو [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "duration_seconds": {
+        "name": "duration_seconds",
+        "tooltip": "طول بر حسب ثانیه. این pipeline با گام‌های ۱۷ فریمی در ۲۴fps کوانتیزه می‌کند، بنابراین طول clip با حدود دو سوم ثانیه اختلاف به این مقدار می‌رسد."
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "فریم_آخر"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "بودجه اندازه فریم. ۷۲۰p تقریباً دو برابر ۴۸۰p ثانیه-GPU هزینه دارد."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3ImageToVideoNode": {
+    "description": "BETA. مجموعه nodeهای Comfy Cloud همچنان در حال تغییر است: ممکن است گزینه‌هایی افزوده یا حذف شوند و یک workflow کنار گذاشته شود. با استفاده از MiniMax H3، یک تصویر ثابت را به ویدیویی با موسیقی متن هماهنگ متحرک می‌کند. فریم پایانی یک clip را به آن بدهید تا توالی را ادامه دهد؛ بنابراین با زنجیره‌کردن چند مورد، نمایی طولانی‌تر می‌سازید. روی یک GPU در Comfy Cloud اجرا می‌شود و هزینه بر اساس مدت اجرا با نرخ {'$'}۰.۰۰۱۲۹۵/GPU-second (۰.۲۷ اعتبار) محاسبه می‌شود. پرداخت با اعتبار است و به اشتراک Cloud نیازی نیست.",
+    "display_name": "Comfy Cloud MiniMax H3 تبدیل تصویر به ویدیو [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبت_ابعاد"
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "duration_seconds": {
+        "name": "مدت_زمان_برحسب_ثانیه",
+        "tooltip": "مدت برحسب ثانیه. pipeline در گام‌های ۱۷ فریمی و با ۲۴fps کوانتیزه می‌کند؛ بنابراین طول clip در حدود دو سوم ثانیه با این مقدار اختلاف خواهد داشت."
+      },
+      "first_frame": {
+        "name": "فریم_اول"
+      },
+      "prompt": {
+        "name": "پرامپت"
+      },
+      "resolution": {
+        "name": "وضوح",
+        "tooltip": "بودجه اندازه فریم. ۷۲۰p تقریباً دو برابر ۴۸۰p، GPU-second هزینه دارد."
+      },
+      "seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3TextToVideoNode": {
+    "description": "BETA. مجموعه nodeهای Comfy Cloud همچنان در حال تغییر است: ممکن است گزینه‌هایی افزوده یا حذف شوند و یک workflow کنار گذاشته شود. با استفاده از MiniMax H3، از یک پرامپت متنی ویدیویی با موسیقی متن هماهنگ تولید می‌کند. تصویر و صدا در یک مرحله تولید می‌شوند، نه اینکه بعداً صداگذاری شوند. روی یک GPU در Comfy Cloud اجرا می‌شود و هزینه بر اساس مدت اجرا با نرخ {'$'}۰.۰۰۱۲۹۵/GPU-second (۰.۲۷ اعتبار) محاسبه می‌شود. پرداخت با اعتبار است و به اشتراک Cloud نیازی نیست.",
+    "display_name": "Comfy Cloud MiniMax H3 تبدیل متن به ویدیو [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبت_ابعاد"
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "duration_seconds": {
+        "name": "مدت_زمان_برحسب_ثانیه",
+        "tooltip": "مدت برحسب ثانیه. pipeline در گام‌های ۱۷ فریمی و با ۲۴fps کوانتیزه می‌کند؛ بنابراین طول clip در حدود دو سوم ثانیه با این مقدار اختلاف خواهد داشت."
+      },
+      "prompt": {
+        "name": "پرامپت"
+      },
+      "resolution": {
+        "name": "وضوح",
+        "tooltip": "بودجه اندازه فریم. ۷۲۰p تقریباً دو برابر ۴۸۰p، GPU-second هزینه دارد."
+      },
+      "seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxMusic3TextToAudioNode": {
+    "description": "BETA. مجموعه nodeهای Comfy Cloud همچنان در حال تغییر است: ممکن است گزینه‌هایی افزوده یا حذف شوند و یک workflow کنار گذاشته شود. با MiniMax Music 3، از یک توضیح یک آهنگ کامل تولید می‌کند. پرامپت سبک، سازبندی و حال‌وهوا را تعیین می‌کند؛ متن ترانه خوانده می‌شود، نه توصیف، و خالی‌گذاشتن آن قطعه را بی‌کلام می‌کند. روی یک GPU در Comfy Cloud اجرا می‌شود و هزینه بر اساس مدت اجرا با نرخ {'$'}۰.۰۰۱۲۹۵/GPU-second (۰.۲۷ اعتبار) محاسبه می‌شود. پرداخت با اعتبار است و به اشتراک Cloud نیازی نیست.",
+    "display_name": "Comfy Cloud MiniMax Music 3 تبدیل متن به صدا [BETA]",
+    "inputs": {
+      "audio_quality": {
+        "name": "کیفیت_صدا",
+        "tooltip": "نرخ بیت mp3. V0 متغیر است و بالاترین کیفیت را در میان این سه دارد."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "lyrics": {
+        "name": "متن_ترانه",
+        "tooltip": "واژه‌هایی که باید خوانده شوند. برای موسیقی بی‌کلام خالی بگذارید."
+      },
+      "max_duration": {
+        "name": "حداکثر_مدت",
+        "tooltip": "بیشترین مدت اجرای قطعه. مدل ممکن است آهنگ را زودتر پایان دهد."
+      },
+      "prompt": {
+        "name": "پرامپت"
+      },
+      "seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudZImageTurboNode": {
+    "description": "BETA. مجموعه nodeهای Comfy Cloud همچنان در حال تغییر است: ممکن است گزینه‌هایی افزوده یا حذف شوند و یک workflow کنار گذاشته شود. با Z-Image Turbo در ۸ گام، از یک پرامپت متنی تصویر تولید می‌کند. یکی از سریع‌ترین و ارزان‌ترین nodeهای اینجاست و برای تکرار مناسب است. روی یک GPU در Comfy Cloud اجرا می‌شود و هزینه بر اساس مدت اجرا با نرخ {'$'}۰.۰۰۱۲۹۵/GPU-second (۰.۲۷ اعتبار) محاسبه می‌شود. پرداخت با اعتبار است و به اشتراک Cloud نیازی نیست.",
+    "display_name": "Comfy Cloud Z-Image Turbo تبدیل متن به تصویر [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبت_ابعاد"
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "megapixels": {
+        "name": "مگاپیکسل",
+        "tooltip": "بودجهٔ کل پیکسل‌ها. ۱٫۰ در نسبت مربعی تقریباً برابر با ۱۰۲۴×۱۰۲۴ است."
+      },
+      "prompt": {
+        "name": "پرامپت"
+      },
+      "seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyMathExpression": {
     "display_name": "عبارت ریاضی",
     "inputs": {
@@ -6433,7 +6687,7 @@
     }
   },
   "GetImageSize": {
-    "description": "عرض و ارتفاع تصویر را بازمی‌گرداند و تصویر را بدون تغییر عبور می‌دهد.",
+    "description": "عرض، ارتفاع و اندازهٔ دستهٔ تصویر را برمی‌گرداند.",
     "display_name": "دریافت ابعاد تصویر",
     "inputs": {
       "image": {
@@ -7201,12 +7455,12 @@
     }
   },
   "HiDreamO1ReferenceImages": {
-    "description": "ضمیمه کردن ۱ تا ۱۰ تصویر مرجع به شرط‌دهی؛ یک تصویر برای ویرایش دستور یا چند تصویر برای شخصی‌سازی مبتنی بر سوژه.",
+    "description": "تصاویر مرجع مرتب‌شده را به شرطی‌سازی مثبت و منفی متصل می‌کند.",
     "display_name": "تصاویر مرجع HiDream-O1",
     "inputs": {
       "images": {
         "name": "تصاویر",
-        "tooltip": "تصاویر مرجع. ۱ تصویر = ویرایش دستور؛ ۲ تا ۱۰ تصویر = مرجع چندگانه."
+        "tooltip": "تصاویر مرجع بر اساس ترتیب عددی سوکت‌ها استفاده می‌شوند."
       },
       "negative": {
         "name": "منفی"
@@ -12710,6 +12964,84 @@
       }
     }
   },
+  "MetaMuseImageEditApi": {
+    "description": "با استفاده از مدل Muse Image متا، حداکثر ۱۰ تصویر مرجع را با هدایت یک prompt متنی ویرایش یا ترکیب می‌کند.",
+    "display_name": "ویرایش تصویر Meta Muse",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "مدل مورد استفاده."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_enable_image_search": {
+        "name": "enable_image_search"
+      },
+      "model_enable_shell": {
+        "name": "enable_shell"
+      },
+      "model_enable_web_search": {
+        "name": "enable_web_search"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_strength": {
+        "name": "reasoning_strength"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MetaMuseImageTextToImageApi": {
+    "description": "با استفاده از مدل Muse Image متا، تصاویر را از یک prompt متنی تولید می‌کند؛ این مدل پیش از رندر کردن دربارهٔ prompt استدلال می‌کند.",
+    "display_name": "تبدیل متن به تصویر Meta Muse",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "مدل مورد استفاده."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_enable_image_search": {
+        "name": "enable_image_search"
+      },
+      "model_enable_shell": {
+        "name": "enable_shell"
+      },
+      "model_enable_web_search": {
+        "name": "enable_web_search"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_strength": {
+        "name": "reasoning_strength"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MiniMaxH3AddGuide": {
     "description": "یک تصویر، یک clip کوتاه، صدا، یا یک clip همراه با موسیقی متن آن را در هر فریم از یک ویدیوی MiniMax H3 تثبیت کنید. برای تثبیت چندین فریم، چند node را به‌صورت زنجیره‌ای متصل کنید.",
     "display_name": "افزودن راهنما برای MiniMax H3",
@@ -12744,6 +13076,46 @@
     "outputs": {
       "0": {
         "name": "مثبت",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3FunControlNetApply": {
+    "description": "یک MiniMax H3 Fun ControlNet را به‌عنوان وصلهٔ مدل روی یک مدل تبدیل متن به ویدئو اعمال می‌کند.",
+    "display_name": "اعمال MiniMax H3 Fun ControlNet",
+    "inputs": {
+      "control_video": {
+        "name": "control_video"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "۱ ناحیه‌هایی را که باید بازتولید شوند مشخص می‌کند."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "ویدئو پشت mask؛ فقط هنگام ارائهٔ mask خوانده می‌شود."
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -12792,7 +13164,8 @@
     "display_name": "تبدیل مرجع به ویدیو MiniMax H3",
     "inputs": {
       "audio_vae": {
-        "name": "audio_vae"
+        "name": "audio_vae",
+        "tooltip": "صوت VAE. بدون آن، صوت مرجع فقط text encoder را شرطی می‌کند."
       },
       "clip": {
         "name": "clip"
@@ -12824,7 +13197,8 @@
         "name": "ویدیوهای مرجع"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "ویدئو VAE. بدون آن، تصاویر/ویدئوهای مرجع فقط text encoder را شرطی می‌کنند."
       },
       "width": {
         "name": "عرض"
@@ -12933,7 +13307,7 @@
     }
   },
   "MinimaxHailuo03FirstLastFrameNode": {
-    "description": "تولید ویدیو از تصویر اولین فریم و در صورت نیاز تصویر آخرین فریم با استفاده از مدل MiniMax H3. نسبت تصویر ویدیو مطابق تصاویر ارائه‌شده خواهد بود.",
+    "description": "با استفاده از مدل‌های MiniMax H3، از یک تصویر فریم اول و یک تصویر اختیاری فریم آخر ویدئو تولید می‌کند. نسبت ابعاد ویدئو از تصاویر ارائه‌شده پیروی می‌کند.",
     "display_name": "تبدیل اولین و آخرین فریم MiniMax H3 به ویدیو",
     "inputs": {
       "control_after_generate": {
@@ -12976,7 +13350,7 @@
     }
   },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "تولید ویدیو بر اساس تصاویر مرجع، ویدیوها و صدا با استفاده از مدل MiniMax H3. به مراجع در پرامپت بر اساس ترتیب آن‌ها اشاره کنید: «تصویر ۱»، «تصویر ۲»، «ویدیو ۱»، «صدا ۱» و به همین ترتیب.",
+    "description": "با استفاده از مدل‌های MiniMax H3، ویدئویی شرطی‌شده با تصاویر، ویدئوها و صوت مرجع تولید می‌کند. در prompt، با ترتیب مراجع به آن‌ها ارجاع دهید: «Image 1»، «Image 2»، «Video 1»، «Audio 1» و غیره.",
     "display_name": "تبدیل مرجع MiniMax H3 به ویدیو",
     "inputs": {
       "control_after_generate": {
@@ -13051,7 +13425,7 @@
     }
   },
   "MinimaxHailuo03TextToVideoNode": {
-    "description": "تولید ویدیو از طریق پرامپت متنی با استفاده از مدل MiniMax H3.",
+    "description": "با استفاده از مدل‌های MiniMax H3، از یک prompt متنی ویدئو تولید می‌کند.",
     "display_name": "تبدیل متن به ویدیو MiniMax H3",
     "inputs": {
       "control_after_generate": {
@@ -16932,7 +17306,7 @@
   },
   "Preview3D": {
     "description": "پیش‌نمایش یک فایل مدل سه‌بعدی بدون ذخیره آن در پوشه خروجی ComfyUI.",
-    "display_name": "پیش‌نمایش سه‌بعدی و انیمیشن",
+    "display_name": "پیش‌نمایش 3D و انیمیشن (منسوخ‌شده)",
     "inputs": {
       "bg_image": {
         "name": "تصویر پس‌زمینه"
@@ -17945,7 +18319,7 @@
       },
       "model": {
         "name": "مدل",
-        "tooltip": "نوع خروجی که سبک برای آن ایجاد می‌شود: recraftv4_styles برای تصاویر رستری و recraftv4_styles_vector برای SVG."
+        "tooltip": "مدلی که style برای آن ایجاد می‌شود. Standard و Pro از یک مجموعه style مشترک استفاده می‌کنند: styleهای raster با همهٔ مدل‌های raster ‏Recraft V4 و V4.1 و styleهای vector ‏(*_vector) با همهٔ مدل‌های vector ‏V4 و V4.1 کار می‌کنند."
       }
     },
     "outputs": {
@@ -18641,6 +19015,10 @@
       "multiple": {
         "name": "ضرب‌کننده",
         "tooltip": "نزدیک‌ترین مضرب نتیجه برای تنظیم وضوح انتخاب‌شده."
+      },
+      "preview": {
+        "name": "preview",
+        "tooltip": "پیش‌نمایش زنده از وضوح خروجی محاسبه‌شده."
       }
     },
     "outputs": {
@@ -21121,6 +21499,23 @@
       }
     }
   },
+  "SenseNovaSamplingOptions": {
+    "description": "جابجایی جریان SenseNova را تنظیم کنید.",
+    "display_name": "گزینه‌های نمونه‌گیری SenseNova",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SetClipHooks": {
     "display_name": "تنظیم Hookهای CLIP",
     "inputs": {
@@ -23429,10 +23824,12 @@
         "name": "انیمیشن در محل"
       },
       "bake": {
-        "name": "بِیک"
+        "name": "بِیک",
+        "tooltip": "برای سازگاری گسترده‌تر، مواد پیشرفته را در textureهای پایه بیک می‌کند."
       },
       "export_orientation": {
-        "name": "خروجی جهت"
+        "name": "خروجی جهت",
+        "tooltip": "محور رو به جلوی مدل صادرشده. ‏default ‏+x مربوط به Tripo را حفظ می‌کند."
       },
       "export_vertex_colors": {
         "name": "خروجی رنگ رأس‌ها"
@@ -23441,13 +23838,15 @@
         "name": "محدودیت چهره"
       },
       "fbx_preset": {
-        "name": "پیش‌تنظیم FBX"
+        "name": "پیش‌تنظیم FBX",
+        "tooltip": "پیش‌تنظیم سازگاری FBX. ‏bake_scale تبدیل مقیاس را در هندسه بیک می‌کند."
       },
       "flatten_bottom": {
         "name": "تخت کردن پایین"
       },
       "flatten_bottom_threshold": {
-        "name": "آستانه تخت کردن پایین"
+        "name": "آستانه تخت کردن پایین",
+        "tooltip": "عمق تخت‌سازی که با flatten_bottom استفاده می‌شود."
       },
       "force_symmetry": {
         "name": "اجبار تقارن"
@@ -23480,15 +23879,66 @@
         "name": "اندازه تکسچر"
       },
       "with_animation": {
-        "name": "با انیمیشن"
+        "name": "با انیمیشن",
+        "tooltip": "اسکلت و انیمیشن مدل‌های ریگ‌شده یا بازهدف‌گیری‌شده را حفظ می‌کند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": "مدل تبدیل‌شده در قالب درخواستی. OBJ توسط Tripo به‌صورت آرشیو ZIP (مش، ماده و textureها) ارائه می‌شود."
+      }
+    }
+  },
+  "TripoEditMultiviewNode": {
+    "description": "نماهای نتیجهٔ Tripo: Image to Multiview را با دستورهای متنی جداگانه برای هر نما ویرایش می‌کند. نماهای بدون دستور بدون تغییر می‌مانند. تصاویر را به Tripo: Multiview to Model بدهید؛ یک مجموعهٔ ویرایش‌شده را نمی‌توان دوباره ویرایش کرد.",
+    "display_name": "Tripo: ویرایش چندنما",
+    "inputs": {
+      "back_prompt": {
+        "name": "back_prompt"
+      },
+      "front_prompt": {
+        "name": "front_prompt"
+      },
+      "left_prompt": {
+        "name": "left_prompt"
+      },
+      "multiview_task_id": {
+        "name": "multiview_task_id"
+      },
+      "right_prompt": {
+        "name": "right_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "front",
+        "tooltip": null
+      },
+      "1": {
+        "name": "left",
+        "tooltip": null
+      },
+      "2": {
+        "name": "back",
+        "tooltip": null
+      },
+      "3": {
+        "name": "right",
+        "tooltip": null
       }
     }
   },
   "TripoImageToModelNode": {
     "display_name": "Tripo: تصویر به مدل",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "مدل‌های دارای بافت را به اندازه واقعی آن‌ها بر حسب متر مقیاس‌بندی می‌کند. Tripo اندازه را به‌عنوان تبدیل صحنه مدل ذخیره می‌کند و هنگام تبدیل، ریگ‌گذاری یا هدف‌گیری مجدد مدل، آن را اعمال می‌کند؛ بدون بافت نادیده گرفته می‌شود."
+      },
       "face_limit": {
-        "name": "محدودیت چهره"
+        "name": "محدودیت چهره",
+        "tooltip": "حداکثر تعداد face. مقدار -۱ به Tripo اجازه می‌دهد به‌صورت تطبیقی انتخاب کند (حدود ۱٫۴M face در standard ‏v3.x و ۲M در detailed). Tripo بی‌صدا محدود می‌کند: ‏v2.5 روی ۵۰۰٬۰۰۰ و مش‌های quad روی ۱۵۰٬۰۰۰."
       },
       "geometry_quality": {
         "name": "کیفیت هندسه"
@@ -23507,22 +23957,31 @@
         "name": "جهت"
       },
       "pbr": {
-        "name": "PBR"
+        "name": "PBR",
+        "tooltip": "نقشه‌های مادهٔ PBR (رنگ پایه، متالیک، زبری، نرمال). به texture نیاز دارد."
       },
       "quad": {
-        "name": "quad"
+        "name": "quad",
+        "tooltip": "خروجی مش quad. ‏Tripo مش‌های quad را به‌صورت FBX ارائه می‌کند، بنابراین نتیجه در خروجی FBX قرار می‌گیرد و خروجی GLB خالی می‌ماند."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "مش کم‌چندضلعی با توپولوژی تمیز و به‌سبک دست‌ساز (۵۰۰-۲۰٬۰۰۰ وجه، quad ۵۰۰-۱۰٬۰۰۰). برای سوژه‌های ساده بهترین است؛ ممکن است برای موارد پیچیده ناموفق باشد."
       },
       "style": {
-        "name": "سبک"
+        "name": "سبک",
+        "tooltip": "دیگر توسط Tripo پشتیبانی نمی‌شود و نادیده گرفته می‌شود. برای workflowهای قدیمی نگه داشته شده است."
       },
       "texture": {
-        "name": "تکسچر"
+        "name": "تکسچر",
+        "tooltip": "نقشه‌های texture تولید می‌کند. در حالت خاموش، هندسهٔ بدون پوشش برمی‌گرداند و pbr را نادیده می‌گیرد."
       },
       "texture_alignment": {
         "name": "تراز تکسچر"
       },
       "texture_quality": {
-        "name": "کیفیت تکسچر"
+        "name": "کیفیت تکسچر",
+        "tooltip": "detailed = textureهای HD، ‏extreme = textureهای Ultra 8K."
       },
       "texture_seed": {
         "name": "بذر تکسچر"
@@ -23539,6 +23998,41 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "وقتی quad فعال است خالی می‌ماند."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "فقط وقتی quad فعال است پر می‌شود."
+      }
+    }
+  },
+  "TripoImageToMultiviewNode": {
+    "description": "نماهای روبه‌رو، چپ، پشت و راست سوژه را تولید می‌کند. آن‌ها را به Tripo: Multiview to Model بدهید، یا ابتدا با Tripo: Edit Multiview اصلاحشان کنید.",
+    "display_name": "Tripo: تصویر به چندنما",
+    "inputs": {
+      "image": {
+        "name": "تصویر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "شناسه وظیفه چندنما",
+        "tooltip": null
+      },
+      "1": {
+        "name": "روبه‌رو",
+        "tooltip": null
+      },
+      "2": {
+        "name": "چپ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "پشت",
+        "tooltip": null
+      },
+      "4": {
+        "name": "راست",
         "tooltip": null
       }
     }
@@ -23559,11 +24053,43 @@
       }
     }
   },
+  "TripoMeshCompleteNode": {
+    "description": "بخش‌های یک مدل بخش‌بندی‌شده را تکمیل می‌کند و نواحی گمشده را ترمیم می‌کند.",
+    "display_name": "Tripo: تکمیل بخش‌های مش",
+    "inputs": {
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "نام بخش‌ها برای تکمیل، با ویرگول جدا شوند. خالی بودن، همه بخش‌ها را تکمیل می‌کند."
+      },
+      "segment_task_id": {
+        "name": "segment_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "شناسه وظیفه مدل",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: چندنما به مدل",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "مدل‌های دارای بافت را به اندازه واقعی آن‌ها بر حسب متر مقیاس‌بندی می‌کند. Tripo اندازه را به‌عنوان تبدیل صحنه مدل ذخیره می‌کند و هنگام تبدیل، ریگ‌گذاری یا هدف‌گیری مجدد مدل، آن را اعمال می‌کند؛ بدون بافت نادیده گرفته می‌شود."
+      },
       "face_limit": {
-        "name": "محدودیت وجه"
+        "name": "محدودیت وجه",
+        "tooltip": "حداکثر تعداد وجه‌ها. ‎-۱ به Tripo اجازه می‌دهد به‌صورت تطبیقی انتخاب کند (حدود ۱.۴M وجه در استاندارد v3.x، و ۲M در detailed). Tripo بدون اطلاع محدود می‌کند: v2.5 به ۵۰۰٬۰۰۰، و مش‌های quad به ۱۵۰٬۰۰۰."
       },
       "geometry_quality": {
         "name": "کیفیت هندسه"
@@ -23591,20 +24117,27 @@
         "name": "جهت"
       },
       "pbr": {
-        "name": "PBR"
+        "name": "PBR",
+        "tooltip": "نقشه‌های متریال PBR (رنگ پایه، فلزی، زبری، نرمال). به بافت نیاز دارد."
       },
       "quad": {
         "name": "چهارضلعی",
-        "tooltip": "این پارامتر منسوخ شده است و هیچ تأثیری ندارد."
+        "tooltip": "خروجی مش quad. Tripo مش‌های quad را به‌صورت FBX ارائه می‌کند؛ بنابراین نتیجه در خروجی FBX می‌آید و خروجی GLB خالی می‌ماند."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "مش کم‌چندضلعی با توپولوژی تمیز و به‌سبک دست‌ساز (۵۰۰-۲۰٬۰۰۰ وجه، quad ۵۰۰-۱۰٬۰۰۰). برای سوژه‌های ساده بهترین است؛ ممکن است برای موارد پیچیده ناموفق باشد."
       },
       "texture": {
-        "name": "تکسچر"
+        "name": "تکسچر",
+        "tooltip": "نقشه‌های بافت را تولید می‌کند. در حالت خاموش، هندسه بدون پوشش بازگردانده می‌شود و pbr نادیده گرفته می‌شود."
       },
       "texture_alignment": {
         "name": "تراز تکسچر"
       },
       "texture_quality": {
-        "name": "کیفیت تکسچر"
+        "name": "کیفیت تکسچر",
+        "tooltip": "detailed = بافت‌های HD، extreme = بافت‌های Ultra ۸K."
       },
       "texture_seed": {
         "name": "بذر تکسچر"
@@ -23621,7 +24154,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "وقتی quad فعال است خالی می‌ماند."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "فقط وقتی quad فعال است پر می‌شود."
       }
     }
   },
@@ -23635,7 +24172,7 @@
       },
       "compress_geometry": {
         "name": "compress_geometry",
-        "tooltip": "فشرده‌سازی مبتنی بر هندسه. قبل از ویرایش، از حالت فشرده خارج کنید."
+        "tooltip": "فشرده‌سازی هندسه meshopt را اعمال می‌کند (EXT_meshopt_compression). فایل‌ها کوچک‌تر می‌شوند، اما پیش‌نمایش سه‌بعدی ComfyUI نمی‌تواند آن‌ها را نمایش دهد؛ پیش از ویرایش از حالت فشرده خارج کنید."
       },
       "enable_image_autofix": {
         "name": "enable_image_autofix",
@@ -23685,7 +24222,7 @@
       },
       "compress_geometry": {
         "name": "compress_geometry",
-        "tooltip": "فشرده‌سازی مبتنی بر هندسه. قبل از ویرایش، از حالت فشرده خارج کنید."
+        "tooltip": "فشرده‌سازی هندسه meshopt را اعمال می‌کند (EXT_meshopt_compression). فایل‌ها کوچک‌تر می‌شوند، اما پیش‌نمایش سه‌بعدی ComfyUI نمی‌تواند آن‌ها را نمایش دهد؛ پیش از ویرایش از حالت فشرده خارج کنید."
       },
       "export_uv": {
         "name": "export_uv",
@@ -23744,7 +24281,7 @@
       },
       "compress_geometry": {
         "name": "فشرده‌سازی هندسه",
-        "tooltip": "فشرده‌سازی مبتنی بر هندسه را اعمال می‌کند. قبل از ویرایش، از حالت فشرده خارج کنید."
+        "tooltip": "فشرده‌سازی هندسه meshopt را اعمال می‌کند (EXT_meshopt_compression). فایل‌ها کوچک‌تر می‌شوند، اما پیش‌نمایش سه‌بعدی ComfyUI نمی‌تواند آن‌ها را نمایش دهد؛ پیش از ویرایش از حالت فشرده خارج کنید."
       },
       "export_uv": {
         "name": "خروجی UV",
@@ -23791,11 +24328,24 @@
   "TripoRetargetNode": {
     "display_name": "Tripo: هدف‌گذاری مجدد مدل ریگ‌شده",
     "inputs": {
+      "animate_in_place": {
+        "name": "animate_in_place",
+        "tooltip": "انیمیشن را بدون جابه‌جایی ریشه، در جای خود پخش کنید."
+      },
       "animation": {
-        "name": "انیمیشن"
+        "name": "انیمیشن",
+        "tooltip": "انیمیشن‌های preset:* با هر دو مدل ریگ کار می‌کنند؛ انیمیشن‌های preset:biped:* به ریگی نیاز دارند که با مدل v1.0-20240301 ساخته شده باشد."
+      },
+      "export_with_geometry": {
+        "name": "export_with_geometry",
+        "tooltip": "مش را در خروجی بگنجانید؛ در حالت خاموش فقط اسکلت متحرک صادر می‌شود."
       },
       "original_model_task_id": {
         "name": "شناسه وظیفه مدل اصلی"
+      },
+      "out_format": {
+        "name": "out_format",
+        "tooltip": "قالب فایل خروجی؛ نتیجه در خروجی متناظر قرار می‌گیرد."
       }
     },
     "outputs": {
@@ -23809,15 +24359,97 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "وقتی out_format برابر glb باشد، مقداردهی می‌شود."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "وقتی out_format برابر fbx باشد، مقداردهی می‌شود."
+      }
+    }
+  },
+  "TripoRetopologyNode": {
+    "description": "یک مش کم‌پلی با توپولوژی تمیز را از یک مدل پرپلی بازسازی می‌کند.",
+    "display_name": "Tripo: بازتوپولوژی",
+    "inputs": {
+      "bake": {
+        "name": "bake",
+        "tooltip": "بافت‌های مبدأ را روی مش کم‌پلی بیک کنید."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "تعداد وجه هدف: ۵۰۰ تا ۲۰٬۰۰۰ مثلث یا ۵۰۰ تا ۱۰٬۰۰۰ چهارضلعی. ‎-۱ انتخاب را به Tripo واگذار می‌کند."
+      },
+      "model_task_id": {
+        "name": "model_task_id"
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "نام بخش‌ها از Tripo: Segment Model، جداشده با ویرگول. خالی بودن، کل مدل را پردازش می‌کند."
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "خروجی مش چهارضلعی. Tripo مش‌های چهارضلعی را به‌صورت FBX ارائه می‌کند؛ بنابراین نتیجه در خروجی FBX می‌آید و خروجی GLB خالی می‌ماند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": "وقتی quad فعال باشد خالی است."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "فقط وقتی quad فعال باشد مقداردهی می‌شود."
+      }
+    }
+  },
+  "TripoRigCheckNode": {
+    "description": "بررسی می‌کند که آیا یک مدل قابل ریگ‌کردن است و Tripo کدام نوع اسکلت را پیشنهاد می‌کند.",
+    "display_name": "Tripo: بررسی ریگ",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "riggable",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_type",
+        "tooltip": "اسکلت پیشنهادی: biped، quadruped، hexapod، octopod، avian، serpentine یا aquatic؛ اگر مدل قابل ریگ‌کردن نباشد، 'others'."
       }
     }
   },
   "TripoRigNode": {
     "display_name": "Tripo: ریگ مدل",
     "inputs": {
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "v1.0: فقط شخصیت‌های انسان‌نما (biped)، بیش از 90+ پیش‌تنظیم انیمیشن. v2.5: موجودات غیرانسان‌نما (quadruped، hexapod، octopod، avian، serpentine، aquatic)."
+      },
       "original_model_task_id": {
         "name": "شناسه وظیفه مدل اصلی"
+      },
+      "out_format": {
+        "name": "out_format",
+        "tooltip": "قالب فایل خروجی؛ نتیجه در خروجی متناظر قرار می‌گیرد."
+      },
+      "rig_type": {
+        "name": "rig_type",
+        "tooltip": "نوع اسکلت. 'auto' ابتدا بررسی ریگ رایگان Tripo را اجرا می‌کند و از نوع پیشنهادی استفاده می‌کند."
+      },
+      "spec": {
+        "name": "spec",
+        "tooltip": "نام‌گذاری استخوان‌ها: بومی Tripo یا سازگار با Mixamo. Tripo نمی‌تواند پیش‌تنظیم‌های انیمیشن خود را روی ریگ v1.0 ساخته‌شده با مشخصات mixamo بازهدف‌گیری کند؛ برای مدل ریگ‌شده Tripo: Retarget از tripo استفاده کنید."
       }
     },
     "outputs": {
@@ -23831,7 +24463,38 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "وقتی out_format برابر glb باشد، مقداردهی می‌شود."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "وقتی out_format برابر fbx باشد، پر می‌شود."
+      }
+    }
+  },
+  "TripoSegmentNode": {
+    "description": "یک مدل را به بخش‌ها تقسیم می‌کند. نام بخش‌ها به Tripo: تکمیل بخش‌های مش، Tripo: بازتوپولوژی و Tripo: تبدیل مدل ارسال می‌شوند.",
+    "display_name": "Tripo: بخش‌بندی مدل",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "segment task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "part_names",
+        "tooltip": "نام بخش‌ها، جداشده با ویرگول."
       }
     }
   },
@@ -23933,8 +24596,13 @@
   "TripoTextToModelNode": {
     "display_name": "Tripo: متن به مدل",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "مدل‌های دارای بافت را بر اساس اندازهٔ واقعی‌شان بر حسب متر مقیاس می‌کند. Tripo اندازه را به‌عنوان تبدیل صحنهٔ مدل ذخیره می‌کند و هنگام تبدیل، rigging یا retargeting مدل آن را اعمال می‌کند؛ بدون texture نادیده گرفته می‌شود."
+      },
       "face_limit": {
-        "name": "محدودیت وجه"
+        "name": "محدودیت وجه",
+        "tooltip": "حداکثر تعداد وجه. ‎-۱ به Tripo اجازه می‌دهد به‌صورت تطبیقی انتخاب کند (حدود ۱.۴M وجه در استاندارد v3.x و ۲M در detailed). Tripo بی‌صدا محدود می‌کند: v2.5 روی ۵۰۰٬۰۰۰ و مش‌های quad روی ۱۵۰٬۰۰۰."
       },
       "geometry_quality": {
         "name": "کیفیت هندسه"
@@ -23949,25 +24617,35 @@
         "name": "نسخه مدل"
       },
       "negative_prompt": {
-        "name": "پرامپت منفی"
+        "name": "پرامپت منفی",
+        "tooltip": "حداکثر ۲۵۵ نویسه."
       },
       "pbr": {
-        "name": "PBR"
+        "name": "PBR",
+        "tooltip": "نقشه‌های متریال PBR (رنگ پایه، فلزی، زبری، نرمال). به texture نیاز دارد."
       },
       "prompt": {
         "name": "پرامپت"
       },
       "quad": {
-        "name": "چهارضلعی"
+        "name": "چهارضلعی",
+        "tooltip": "خروجی مش quad. Tripo مش‌های quad را به‌صورت FBX ارائه می‌کند؛ بنابراین نتیجه در خروجی FBX می‌آید و خروجی GLB خالی می‌ماند."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "مش کم‌پلی با توپولوژی تمیز و سبک دست‌ساز (۵۰۰ تا ۲۰٬۰۰۰ وجه، quad: ۵۰۰ تا ۱۰٬۰۰۰). برای سوژه‌های ساده بهترین است؛ ممکن است برای سوژه‌های پیچیده ناموفق باشد."
       },
       "style": {
-        "name": "استایل"
+        "name": "استایل",
+        "tooltip": "دیگر توسط Tripo پشتیبانی نمی‌شود و نادیده گرفته می‌شود. برای workflowهای قدیمی نگه داشته شده است."
       },
       "texture": {
-        "name": "تکسچر"
+        "name": "تکسچر",
+        "tooltip": "نقشه‌های بافت را تولید می‌کند. حالت خاموش هندسهٔ بدون بافت را برمی‌گرداند و pbr را نادیده می‌گیرد."
       },
       "texture_quality": {
-        "name": "کیفیت تکسچر"
+        "name": "کیفیت تکسچر",
+        "tooltip": "detailed = بافت‌های HD، extreme = بافت‌های Ultra ۸K."
       },
       "texture_seed": {
         "name": "بذر تکسچر"
@@ -23984,7 +24662,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "وقتی quad فعال باشد خالی است."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "فقط وقتی quad فعال باشد، پر می‌شود."
       }
     }
   },
@@ -23994,21 +24676,40 @@
       "model_task_id": {
         "name": "شناسه وظیفه مدل"
       },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "مدل بافت: v3.0 برای مش‌های تولیدشده با v3.x، و v2.5 برای مش‌های تولیدشده با v2.5."
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "نام بخش‌های جداشده با ویرگول از Tripo: بخش‌بندی مدل برای بافت‌گذاری. خالی بودن، همهٔ بخش‌ها را بافت‌گذاری می‌کند."
+      },
       "pbr": {
-        "name": "PBR"
+        "name": "PBR",
+        "tooltip": "نقشه‌های متریال PBR (رنگ پایه، فلزی، زبری، نرمال)؛ حالت خاموش بافت رنگ ساده می‌دهد."
+      },
+      "reference": {
+        "name": "reference",
+        "tooltip": "تصاویر مرجع برای هدایت بافت‌ها. با texture_prompt یا style_image قابل ترکیب نیست."
+      },
+      "style_image": {
+        "name": "style_image",
+        "tooltip": "تصویر مرجع برای سبک هنری بافت‌ها. فقط همراه با texture_prompt استفاده می‌شود."
       },
       "texture": {
-        "name": "بافت"
+        "name": "بافت",
+        "tooltip": "نادیده گرفته می‌شود: این node همیشه بافت تولید می‌کند. برای workflowهای قدیمی نگه داشته شده است."
       },
       "texture_alignment": {
         "name": "تراز بافت"
       },
       "texture_prompt": {
         "name": "texture_prompt",
-        "tooltip": "راهنمای متنی اختیاری برای تکسچر دادن. در عمل برای مدل‌های واردشده (Tripo: وارد کردن مدل) که تصویر مرجعی برای استخراج رنگ ندارند، الزامی است."
+        "tooltip": "راهنمای متنی اختیاری برای بافت‌گذاری. در عمل برای مدل‌های واردشده (Tripo: وارد کردن مدل) لازم است، زیرا تصویری مبدأ برای استنباط رنگ‌ها ندارند. با تصاویر مرجع قابل ترکیب نیست."
       },
       "texture_quality": {
-        "name": "کیفیت بافت"
+        "name": "کیفیت بافت",
+        "tooltip": "detailed = بافت‌های HD، extreme = بافت‌های Ultra ۸K."
       },
       "texture_seed": {
         "name": "بذر بافت"
@@ -24025,7 +24726,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "وقتی مبدأ یک مش quad یا یک واردسازی FBX باشد، خالی است."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Tripo برای مش‌های quad و واردسازی‌های FBX، FBX برمی‌گرداند؛ در غیر این صورت خالی است."
       }
     }
   },

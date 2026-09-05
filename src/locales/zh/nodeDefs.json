@@ -2763,6 +2763,260 @@
       }
     }
   },
+  "ComfyCloudFlux2TextToImageNode": {
+    "description": "测试版。Comfy Cloud 节点集仍在不断调整：可能会添加或移除选项，也可能会停用工作流。使用 Flux 2 dev 根据文本提示词生成图像。Turbo 会使用所选 LoRA 和较短的调度，以牺牲少许保真度换取更快的运行速度；关闭后将使用不含 LoRA 的完整 dev 流程。在 Comfy Cloud GPU 上运行，按运行时长计费，费率为 {'$'}0.001295/GPU-秒（0.27 积分）。使用积分支付，无需 Cloud 订阅。",
+    "display_name": "Comfy Cloud Flux 2 文生图 [测试版]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "总像素预算。正方形比例下，1.0 约为 1024x1024。"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "turbo": {
+        "name": "turbo",
+        "tooltip": "使用短调度运行 Turbo LoRA，以牺牲少许保真度换取更快的运行速度。关闭后将使用不含 LoRA 的完整 dev 流程。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMageFlowTextToImageNode": {
+    "description": "测试版。Comfy Cloud 节点集仍在不断调整：可能会添加或移除选项，也可能会停用工作流。使用 Mage-Flow 通过完整的 30 步流程根据文本提示词生成图像。它接受负面提示词，而蒸馏 turbo 变体无法很好地使用负面提示词。在 Comfy Cloud GPU 上运行，按运行时长计费，费率为 {'$'}0.001295/GPU-秒（0.27 积分）。使用积分支付，无需 Cloud 订阅。",
+    "display_name": "Comfy Cloud Mage Flow 文生图 [测试版]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "总像素预算。正方形比例下，1.0 约为 1024x1024。"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "留空以保留为此流程调优的负面提示词。"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMageFlowTurboTextToImageNode": {
+    "description": "测试版。Comfy Cloud 节点集仍在不断调整：可能会添加或移除选项，也可能会停用工作流。使用蒸馏版 Mage-Flow，以 cfg 1 运行 4 步，根据文本提示词生成图像。GPU 时间约为完整流程的七分之一，适合用于迭代。在 Comfy Cloud GPU 上运行，按运行时长计费，费率为 {'$'}0.001295/GPU-秒（0.27 积分）。使用积分支付，无需 Cloud 订阅。",
+    "display_name": "Comfy Cloud Mage Flow Turbo 文生图 [测试版]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "总像素预算。正方形比例下，1.0 约为 1024x1024。"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "留空以保留为此流程调优的负面提示词。"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3FirstLastFrameToVideoNode": {
+    "description": "测试版。Comfy Cloud 节点集仍在不断调整：可能会添加或移除选项，也可能会停用工作流。使用 MiniMax H3 生成两个关键帧之间的运动，并配有匹配的音轨。提供起始帧和结束帧，模型会补全两者之间的镜头。结束帧为可选项：省略后，运动将从起始帧继续发展。在 Comfy Cloud GPU 上运行，按运行时长计费，费率为 {'$'}0.001295/GPU-秒（0.27 积分）。使用积分支付，无需 Cloud 订阅。",
+    "display_name": "Comfy Cloud MiniMax H3 首尾帧转视频 [测试版]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "duration_seconds": {
+        "name": "duration_seconds",
+        "tooltip": "时长（秒）。该流程会在 24fps 下量化为每 17 帧一档，因此片段时长与此值的误差约在三分之二秒以内。"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "帧尺寸预算。720p 所需的 GPU-秒数约为 480p 的两倍。"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3ImageToVideoNode": {
+    "description": "测试版。Comfy Cloud 节点集仍在调整中：选项可能会增加或移除，工作流也可能会停用。使用 MiniMax H3 将静态图像制作成带有匹配配乐的视频。输入片段的结尾帧后，它会继续该序列，因此串联多个节点可生成更长的镜头。运行于 Comfy Cloud GPU，按运行时长计费，费率为 {'$'}0.001295/GPU 秒（0.27 积分）。使用积分支付，无需 Cloud 订阅。",
+    "display_name": "Comfy Cloud MiniMax H3 图像转视频 [测试版]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "duration_seconds": {
+        "name": "duration_seconds",
+        "tooltip": "时长（秒）。该流程会按 24fps 的 17 帧步长进行量化，因此片段时长与此值的误差约在三分之二秒以内。"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "帧尺寸预算。720p 所需的 GPU 秒数约为 480p 的两倍。"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3TextToVideoNode": {
+    "description": "测试版。Comfy Cloud 节点集仍在调整中：选项可能会增加或移除，工作流也可能会停用。使用 MiniMax H3 根据文本提示词生成带有匹配配乐的视频。画面和音频会在同一次生成中输出，而不是后期配音。运行于 Comfy Cloud GPU，按运行时长计费，费率为 {'$'}0.001295/GPU 秒（0.27 积分）。使用积分支付，无需 Cloud 订阅。",
+    "display_name": "Comfy Cloud MiniMax H3 文本转视频 [测试版]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "duration_seconds": {
+        "name": "duration_seconds",
+        "tooltip": "时长（秒）。该流程会按 24fps 的 17 帧步长进行量化，因此片段时长与此值的误差约在三分之二秒以内。"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "帧尺寸预算。720p 所需的 GPU 秒数约为 480p 的两倍。"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxMusic3TextToAudioNode": {
+    "description": "测试版。Comfy Cloud 节点集仍在调整中：选项可能会增加或移除，工作流也可能会停用。使用 MiniMax Music 3 根据描述生成完整歌曲。提示词决定风格、配器和氛围；歌词会被演唱而非描述，留空歌词则生成纯音乐曲目。运行于 Comfy Cloud GPU，按运行时长计费，费率为 {'$'}0.001295/GPU 秒（0.27 积分）。使用积分支付，无需 Cloud 订阅。",
+    "display_name": "Comfy Cloud MiniMax Music 3 文本转音频 [测试版]",
+    "inputs": {
+      "audio_quality": {
+        "name": "audio_quality",
+        "tooltip": "mp3 比特率。V0 为可变比特率，且是三种中质量最高的。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "lyrics": {
+        "name": "lyrics",
+        "tooltip": "要演唱的歌词。留空则生成纯音乐。"
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "曲目的最长时长。模型可能会提前结束歌曲。"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudZImageTurboNode": {
+    "description": "测试版。Comfy Cloud 节点集仍在调整中：选项可能会增加或移除，工作流也可能会停用。使用 Z-Image Turbo 在 8 步内根据文本提示词生成图像。这是此处最快且最便宜的节点之一，适合用于迭代。运行于 Comfy Cloud GPU，按运行时长计费，费率为 {'$'}0.001295/GPU 秒（0.27 积分）。使用积分支付，无需 Cloud 订阅。",
+    "display_name": "Comfy Cloud Z-Image Turbo 文本转图像 [测试版]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "总像素预算。正方形比例下，1.0 约为 1024x1024。"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyMathExpression": {
     "display_name": "数学表达式",
     "inputs": {
@@ -6433,7 +6687,7 @@
     }
   },
   "GetImageSize": {
-    "description": "返回图像的宽度和高度，并原样传递图像。",
+    "description": "返回图像的宽度、高度和批次大小。",
     "display_name": "获取图像尺寸",
     "inputs": {
       "image": {
@@ -7201,12 +7455,12 @@
     }
   },
   "HiDreamO1ReferenceImages": {
-    "description": "为条件添加 1-10 张参考图像，一张用于编辑指令，多张用于主体个性化。",
+    "description": "将有序参考图像附加到正向和负向条件引导。",
     "display_name": "HiDream-O1 参考图像",
     "inputs": {
       "images": {
         "name": "参考图像",
-        "tooltip": "参考图像。1 张 = 指令编辑；2-10 张 = 多参考。"
+        "tooltip": "参考图像按数字插槽顺序使用。"
       },
       "negative": {
         "name": "负向"
@@ -12710,6 +12964,84 @@
       }
     }
   },
+  "MetaMuseImageEditApi": {
+    "description": "使用 Meta 的 Muse Image 模型，根据文本提示编辑或组合最多 10 张参考图像。",
+    "display_name": "Meta Muse 图像编辑",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "要使用的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_enable_image_search": {
+        "name": "enable_image_search"
+      },
+      "model_enable_shell": {
+        "name": "enable_shell"
+      },
+      "model_enable_web_search": {
+        "name": "enable_web_search"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_reasoning_strength": {
+        "name": "reasoning_strength"
+      },
+      "model_seed": {
+        "name": "种子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MetaMuseImageTextToImageApi": {
+    "description": "使用 Meta 的 Muse Image 模型根据文本提示生成图像，该模型会在渲染前对提示进行推理。",
+    "display_name": "Meta Muse 图像文生图",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "要使用的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_enable_image_search": {
+        "name": "enable_image_search"
+      },
+      "model_enable_shell": {
+        "name": "enable_shell"
+      },
+      "model_enable_web_search": {
+        "name": "enable_web_search"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_reasoning_strength": {
+        "name": "reasoning_strength"
+      },
+      "model_seed": {
+        "name": "种子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MiniMaxH3AddGuide": {
     "description": "在 MiniMax H3 视频的任意帧锚定图像、短片段、音频，或带原声的片段。串联多个节点可锚定多个帧。",
     "display_name": "为 MiniMax H3 添加引导",
@@ -12744,6 +13076,46 @@
     "outputs": {
       "0": {
         "name": "positive",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3FunControlNetApply": {
+    "description": "将 MiniMax H3 Fun ControlNet 作为模型补丁应用到文生视频模型。",
+    "display_name": "应用 MiniMax H3 Fun ControlNet",
+    "inputs": {
+      "control_video": {
+        "name": "control_video"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "mask": {
+        "name": "蒙版",
+        "tooltip": "1 标记需要重新生成的区域。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "mask 后方的视频；仅在提供 mask 时读取。"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "strength": {
+        "name": "强度"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -12792,7 +13164,8 @@
     "display_name": "MiniMax H3 参考转视频",
     "inputs": {
       "audio_vae": {
-        "name": "audio_vae"
+        "name": "audio_vae",
+        "tooltip": "音频 VAE。没有它时，参考音频仅对文本编码器提供条件。"
       },
       "clip": {
         "name": "clip"
@@ -12824,7 +13197,8 @@
         "name": "参考视频"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "视频 VAE。没有它时，参考图像/视频仅对文本编码器提供条件。"
       },
       "width": {
         "name": "宽度"
@@ -12933,7 +13307,7 @@
     }
   },
   "MinimaxHailuo03FirstLastFrameNode": {
-    "description": "使用 MiniMax H3 模型，根据首帧图像和可选的末帧图像生成视频。视频的宽高比与所提供的图像一致。",
+    "description": "使用 MiniMax H3 模型根据首帧图像和可选的末帧图像生成视频。视频的宽高比遵循所提供的图像。",
     "display_name": "MiniMax H3 首帧-末帧生成视频",
     "inputs": {
       "control_after_generate": {
@@ -12976,7 +13350,7 @@
     }
   },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "使用 MiniMax H3 模型，根据参考图像、视频和音频生成视频。在提示词中按顺序引用参考内容：'图像 1'、'图像 2'、'视频 1'、'音频 1'，依此类推。",
+    "description": "使用 MiniMax H3 模型生成以参考图像、视频和音频为条件的视频。在提示词中按顺序引用参考素材：'Image 1'、'Image 2'、'Video 1'、'Audio 1'，依此类推。",
     "display_name": "MiniMax H3 参考生成视频",
     "inputs": {
       "control_after_generate": {
@@ -13051,7 +13425,7 @@
     }
   },
   "MinimaxHailuo03TextToVideoNode": {
-    "description": "使用 MiniMax H3 模型，根据文本提示词生成视频。",
+    "description": "使用 MiniMax H3 模型根据文本提示词生成视频。",
     "display_name": "MiniMax H3 文本生成视频",
     "inputs": {
       "control_after_generate": {
@@ -16932,7 +17306,7 @@
   },
   "Preview3D": {
     "description": "预览 3D 模型文件，无需将其保存到 ComfyUI 输出目录。",
-    "display_name": "预览3D",
+    "display_name": "预览 3D 和动画（已弃用）",
     "inputs": {
       "bg_image": {
         "name": "背景图像"
@@ -17945,7 +18319,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "为风格创建的输出类型：recraftv4_styles 用于光栅图像，recraftv4_styles_vector 用于 SVG。"
+        "tooltip": "为其创建风格的模型。Standard 和 Pro 共用一个风格池：栅格风格适用于所有 Recraft V4 和 V4.1 栅格模型，矢量风格（*_vector）适用于所有 V4 和 V4.1 矢量模型。"
       }
     },
     "outputs": {
@@ -18641,6 +19015,10 @@
       "multiple": {
         "name": "倍数",
         "tooltip": "将所选分辨率设置为结果的最近倍数。"
+      },
+      "preview": {
+        "name": "预览",
+        "tooltip": "计算得到的输出分辨率实时预览。"
       }
     },
     "outputs": {
@@ -21121,6 +21499,23 @@
       }
     }
   },
+  "SenseNovaSamplingOptions": {
+    "description": "设置 SenseNova 流偏移。",
+    "display_name": "SenseNova 采样选项",
+    "inputs": {
+      "model": {
+        "name": "模型"
+      },
+      "shift": {
+        "name": "偏移"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SetClipHooks": {
     "display_name": "设置CLIP约束",
     "inputs": {
@@ -23429,10 +23824,12 @@
         "name": "原地动画"
       },
       "bake": {
-        "name": "烘焙"
+        "name": "烘焙",
+        "tooltip": "将高级材质烘焙到基础纹理中，以获得更广泛的兼容性。"
       },
       "export_orientation": {
-        "name": "导出朝向"
+        "name": "导出朝向",
+        "tooltip": "导出模型的前向轴。default 保留 Tripo 的 +x。"
       },
       "export_vertex_colors": {
         "name": "导出顶点色"
@@ -23441,13 +23838,15 @@
         "name": "面数限制"
       },
       "fbx_preset": {
-        "name": "fbx预设"
+        "name": "fbx预设",
+        "tooltip": "FBX 兼容性预设。bake_scale 会将缩放变换烘焙到几何体中。"
       },
       "flatten_bottom": {
         "name": "平滑底部"
       },
       "flatten_bottom_threshold": {
-        "name": "平滑底部阈值"
+        "name": "平滑底部阈值",
+        "tooltip": "与 flatten_bottom 配合使用的压平深度。"
       },
       "force_symmetry": {
         "name": "强制对称"
@@ -23480,15 +23879,66 @@
         "name": "纹理大小"
       },
       "with_animation": {
-        "name": "加入动画"
+        "name": "加入动画",
+        "tooltip": "保留绑定或重定向模型的骨骼和动画。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": "所请求格式的已转换模型。Tripo 以 ZIP 压缩包形式提供 OBJ（网格、材质和纹理）。"
+      }
+    }
+  },
+  "TripoEditMultiviewNode": {
+    "description": "使用按视图提供的文本指令编辑 Tripo: Image to Multiview 结果的各个视图。未提供指令的视图保持不变。将图像输入 Tripo: Multiview to Model；编辑后的集合无法再次编辑。",
+    "display_name": "Tripo：编辑多视图",
+    "inputs": {
+      "back_prompt": {
+        "name": "back_prompt"
+      },
+      "front_prompt": {
+        "name": "front_prompt"
+      },
+      "left_prompt": {
+        "name": "left_prompt"
+      },
+      "multiview_task_id": {
+        "name": "multiview_task_id"
+      },
+      "right_prompt": {
+        "name": "right_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "前方",
+        "tooltip": null
+      },
+      "1": {
+        "name": "左侧",
+        "tooltip": null
+      },
+      "2": {
+        "name": "后方",
+        "tooltip": null
+      },
+      "3": {
+        "name": "右侧",
+        "tooltip": null
       }
     }
   },
   "TripoImageToModelNode": {
     "display_name": "Tripo：图像转模型",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "将带纹理模型按其现实世界尺寸缩放为米。Tripo 将尺寸存储为模型的场景变换，并在模型转换、绑定或重定向时烘焙该尺寸；无纹理时将被忽略。"
+      },
       "face_limit": {
-        "name": "面数限制"
+        "name": "面数限制",
+        "tooltip": "最大面数。-1 让 Tripo 自适应选择（v3.x standard 约 140 万面，detailed 约 200 万面）。Tripo 会静默限制：v2.5 为 500,000，四边形网格为 150,000。"
       },
       "geometry_quality": {
         "name": "几何质量"
@@ -23507,22 +23957,31 @@
         "name": "朝向"
       },
       "pbr": {
-        "name": "PBR"
+        "name": "PBR",
+        "tooltip": "PBR 材质贴图（基础颜色、金属度、粗糙度、法线）。需要 texture。"
       },
       "quad": {
-        "name": "四边形"
+        "name": "四边形",
+        "tooltip": "四边形网格输出。Tripo 以 FBX 格式提供四边形网格，因此结果会出现在 FBX 输出中，而 GLB 输出保持为空。"
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "具有干净、手工制作风格拓扑的低多边形网格（500-20,000 个面，四边形面 500-10,000）。最适合简单主体；复杂主体可能失败。"
       },
       "style": {
-        "name": "风格"
+        "name": "风格",
+        "tooltip": "Tripo 已不再支持，将被忽略。保留以兼容旧版工作流。"
       },
       "texture": {
-        "name": "纹理"
+        "name": "纹理",
+        "tooltip": "生成纹理贴图。关闭时仅返回裸几何体，并忽略 pbr。"
       },
       "texture_alignment": {
         "name": "纹理对齐"
       },
       "texture_quality": {
-        "name": "纹理质量"
+        "name": "纹理质量",
+        "tooltip": "detailed = 高清纹理，extreme = 8K 超高清纹理。"
       },
       "texture_seed": {
         "name": "纹理种子"
@@ -23539,6 +23998,41 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "启用 quad 时为空。"
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "仅在启用 quad 时有值。"
+      }
+    }
+  },
+  "TripoImageToMultiviewNode": {
+    "description": "生成主体的前、左、后、右视图。将它们输入 Tripo：多视图转模型，或先使用 Tripo：编辑多视图进行优化。",
+    "display_name": "Tripo：图像转多视图",
+    "inputs": {
+      "image": {
+        "name": "图像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "多视图 task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "前视图",
+        "tooltip": null
+      },
+      "2": {
+        "name": "左视图",
+        "tooltip": null
+      },
+      "3": {
+        "name": "后视图",
+        "tooltip": null
+      },
+      "4": {
+        "name": "右视图",
         "tooltip": null
       }
     }
@@ -23559,11 +24053,43 @@
       }
     }
   },
+  "TripoMeshCompleteNode": {
+    "description": "补全分割模型的部件并修复缺失区域。",
+    "display_name": "Tripo：补全网格部件",
+    "inputs": {
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "要补全的部件名称，以逗号分隔。留空则补全所有部件。"
+      },
+      "segment_task_id": {
+        "name": "segment_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "模型 task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo：多视图转模型",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "将带纹理模型按其现实世界尺寸缩放为米。Tripo 将尺寸存储为模型的场景变换，并在模型转换、绑定或重定向时烘焙该尺寸；无纹理时将被忽略。"
+      },
       "face_limit": {
-        "name": "面数限制"
+        "name": "面数限制",
+        "tooltip": "最大面数。-1 让 Tripo 自适应选择（v3.x standard 约 140 万个面，detailed 为 200 万个面）。Tripo 会静默限制：v2.5 为 500,000，四边形网格为 150,000。"
       },
       "geometry_quality": {
         "name": "几何质量"
@@ -23591,20 +24117,27 @@
         "name": "朝向"
       },
       "pbr": {
-        "name": "PBR"
+        "name": "PBR",
+        "tooltip": "PBR 材质贴图（基础颜色、金属度、粗糙度、法线）。需要 texture。"
       },
       "quad": {
         "name": "四边形",
-        "tooltip": "此参数已弃用，无任何作用。"
+        "tooltip": "四边形网格输出。Tripo 以 FBX 形式提供四边形网格，因此结果会出现在 FBX 输出中，GLB 输出保持为空。"
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "具有干净、手工制作风格拓扑的低多边形网格（500-20,000 个面，四边形面 500-10,000）。最适合简单主体；复杂主体可能失败。"
       },
       "texture": {
-        "name": "纹理"
+        "name": "纹理",
+        "tooltip": "生成纹理贴图。关闭时返回裸几何体并忽略 pbr。"
       },
       "texture_alignment": {
         "name": "纹理对齐"
       },
       "texture_quality": {
-        "name": "纹理质量"
+        "name": "纹理质量",
+        "tooltip": "detailed = HD 纹理，extreme = 8K Ultra 纹理。"
       },
       "texture_seed": {
         "name": "纹理种子"
@@ -23621,7 +24154,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "启用 quad 时为空。"
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "仅在启用 quad 时有值。"
       }
     }
   },
@@ -23635,7 +24172,7 @@
       },
       "compress_geometry": {
         "name": "压缩几何体",
-        "tooltip": "应用基于几何体的压缩。编辑前需解压。"
+        "tooltip": "应用 meshopt 几何压缩（EXT_meshopt_compression）。文件更小，但 ComfyUI 的 3D 预览无法显示；编辑前请先解压缩。"
       },
       "enable_image_autofix": {
         "name": "启用图像自动修复",
@@ -23685,7 +24222,7 @@
       },
       "compress_geometry": {
         "name": "压缩几何体",
-        "tooltip": "应用基于几何体的压缩。编辑前需解压。"
+        "tooltip": "应用 meshopt 几何压缩（EXT_meshopt_compression）。文件更小，但 ComfyUI 的 3D 预览无法显示；编辑前请先解压缩。"
       },
       "export_uv": {
         "name": "导出 UV",
@@ -23744,7 +24281,7 @@
       },
       "compress_geometry": {
         "name": "压缩几何体",
-        "tooltip": "应用基于几何体的压缩。编辑前请先解压。"
+        "tooltip": "应用 meshopt 几何压缩（EXT_meshopt_compression）。文件更小，但 ComfyUI 的 3D 预览无法显示；编辑前请先解压缩。"
       },
       "export_uv": {
         "name": "导出 UV",
@@ -23791,11 +24328,24 @@
   "TripoRetargetNode": {
     "display_name": "Tripo: 重定向绑定模型",
     "inputs": {
+      "animate_in_place": {
+        "name": "animate_in_place",
+        "tooltip": "原地播放动画，不产生根节点位移。"
+      },
       "animation": {
-        "name": "动画"
+        "name": "动画",
+        "tooltip": "preset:* 动画可用于两种骨骼绑定模型；preset:biped:* 动画需要使用 model v1.0-20240301 创建的骨骼绑定。"
+      },
+      "export_with_geometry": {
+        "name": "export_with_geometry",
+        "tooltip": "导出时包含网格；关闭时仅导出动画骨骼。"
       },
       "original_model_task_id": {
         "name": "原始模型任务ID"
+      },
+      "out_format": {
+        "name": "out_format",
+        "tooltip": "输出文件格式；结果会出现在对应的输出中。"
       }
     },
     "outputs": {
@@ -23809,15 +24359,97 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "当 out_format 为 glb 时填充。"
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "当 out_format 为 fbx 时填充。"
+      }
+    }
+  },
+  "TripoRetopologyNode": {
+    "description": "从高模重建具有干净拓扑的低模网格。",
+    "display_name": "Tripo：重新拓扑",
+    "inputs": {
+      "bake": {
+        "name": "bake",
+        "tooltip": "将源纹理烘焙到低模网格上。"
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "目标面数：500-20,000 个三角形或 500-10,000 个四边形。-1 让 Tripo 自动选择。"
+      },
+      "model_task_id": {
+        "name": "model_task_id"
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "来自 Tripo：分割模型的以逗号分隔的部件名称。留空则处理整个模型。"
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "输出四边形网格。Tripo 将四边形网格以 FBX 格式提供，因此结果会出现在 FBX 输出端，GLB 输出端保持为空。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": "启用 quad 时为空。"
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "仅在启用 quad 时填充。"
+      }
+    }
+  },
+  "TripoRigCheckNode": {
+    "description": "检查模型是否可绑定骨骼，以及 Tripo 推荐的骨骼类型。",
+    "display_name": "Tripo：骨骼检查",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "riggable",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_type",
+        "tooltip": "推荐骨骼：biped、quadruped、hexapod、octopod、avian、serpentine 或 aquatic；模型无法绑定骨骼时为“others”。"
       }
     }
   },
   "TripoRigNode": {
     "display_name": "Tripo: 绑定模型",
     "inputs": {
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "v1.0：仅限人形（biped）角色，提供 90+ 个动画预设。v2.5：非人形生物（quadruped、hexapod、octopod、avian、serpentine、aquatic）。"
+      },
       "original_model_task_id": {
         "name": "原始模型任务ID"
+      },
+      "out_format": {
+        "name": "out_format",
+        "tooltip": "输出文件格式；结果会出现在对应的输出端。"
+      },
+      "rig_type": {
+        "name": "rig_type",
+        "tooltip": "骨骼类型。“auto”会先运行 Tripo 的免费骨骼检查，并使用推荐类型。"
+      },
+      "spec": {
+        "name": "spec",
+        "tooltip": "骨骼命名：Tripo 原生或 Mixamo 兼容。Tripo 无法将其动画预设重定向到使用 mixamo 规范制作的 v1.0 骨骼；请将 tripo 用于 Tripo：重定向已绑定骨骼的模型。"
       }
     },
     "outputs": {
@@ -23831,7 +24463,38 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "当 out_format 为 glb 时填充。"
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "当 out_format 为 fbx 时填充。"
+      }
+    }
+  },
+  "TripoSegmentNode": {
+    "description": "将模型拆分为多个部件。部件名称可输入到 Tripo：完成网格部件、Tripo：重拓扑和 Tripo：转换模型。",
+    "display_name": "Tripo：分割模型",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "分割 task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "part_names",
+        "tooltip": "以逗号分隔的部件名称。"
       }
     }
   },
@@ -23933,8 +24596,13 @@
   "TripoTextToModelNode": {
     "display_name": "Tripo: 文本转模型",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "将带纹理的模型按其以米为单位的现实尺寸缩放。Tripo 将该尺寸存储为模型的场景变换，并会在转换、绑定骨骼或重定向模型时将其烘焙到模型中；未启用 texture 时会被忽略。"
+      },
       "face_limit": {
-        "name": "面数限制"
+        "name": "面数限制",
+        "tooltip": "最大面数。-1 让 Tripo 自适应选择（v3.x standard 约 140 万个面，detailed 约 200 万个面）。Tripo 会静默限制：v2.5 为 500,000，四边形网格为 150,000。"
       },
       "geometry_quality": {
         "name": "几何质量"
@@ -23949,25 +24617,35 @@
         "name": "模型版本"
       },
       "negative_prompt": {
-        "name": "负面提示词"
+        "name": "负面提示词",
+        "tooltip": "最多 255 个字符。"
       },
       "pbr": {
-        "name": "PBR"
+        "name": "PBR",
+        "tooltip": "PBR 材质贴图（基础颜色、金属度、粗糙度、法线）。需要启用 texture。"
       },
       "prompt": {
         "name": "提示词"
       },
       "quad": {
-        "name": "四边形"
+        "name": "四边形",
+        "tooltip": "四边形网格输出。Tripo 以 FBX 格式提供四边形网格，因此结果会出现在 FBX 输出中，GLB 输出保持为空。"
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "具有干净、手工制作风格拓扑的低多边形网格（500-20,000 个面，四边形为 500-10,000 个面）。最适合简单主体；复杂主体可能会失败。"
       },
       "style": {
-        "name": "风格"
+        "name": "风格",
+        "tooltip": "Tripo 不再支持且会被忽略。为兼容旧工作流而保留。"
       },
       "texture": {
-        "name": "纹理"
+        "name": "纹理",
+        "tooltip": "生成纹理贴图。关闭时返回裸几何体并忽略 pbr。"
       },
       "texture_quality": {
-        "name": "纹理质量"
+        "name": "纹理质量",
+        "tooltip": "detailed = 高清纹理，extreme = 8K 超高清纹理。"
       },
       "texture_seed": {
         "name": "纹理种子"
@@ -23984,7 +24662,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "启用 quad 时为空。"
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "仅在启用 quad 时填充。"
       }
     }
   },
@@ -23994,21 +24676,40 @@
       "model_task_id": {
         "name": "模型任务ID"
       },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "纹理模型：v3.x 生成的网格使用 v3.0，v2.5 生成的网格使用 v2.5。"
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "来自 Tripo：分割模型、要进行纹理生成的以逗号分隔的部件名称。留空则为所有部件生成纹理。"
+      },
       "pbr": {
-        "name": "PBR"
+        "name": "PBR",
+        "tooltip": "PBR 材质贴图（基础颜色、金属度、粗糙度、法线）；关闭时提供纯色纹理。"
+      },
+      "reference": {
+        "name": "reference",
+        "tooltip": "引导纹理生成的参考图像。不能与 texture_prompt 或 style_image 组合使用。"
+      },
+      "style_image": {
+        "name": "style_image",
+        "tooltip": "用于纹理艺术风格的参考图像。仅与 texture_prompt 一起使用。"
       },
       "texture": {
-        "name": "纹理"
+        "name": "纹理",
+        "tooltip": "已忽略：此节点始终生成纹理。为兼容旧工作流而保留。"
       },
       "texture_alignment": {
         "name": "纹理对齐"
       },
       "texture_prompt": {
         "name": "texture_prompt",
-        "tooltip": "用于纹理生成的可选文本引导。对于导入的模型（Tripo：导入模型），实际操作中需要提供，因为这些模型没有可用于推断颜色的源图像。"
+        "tooltip": "用于纹理生成的可选文本引导。对于导入的模型（Tripo：导入模型），实际使用时必须提供，因为其不带可用于推断颜色的源图像。不能与参考图像组合使用。"
       },
       "texture_quality": {
-        "name": "纹理质量"
+        "name": "纹理质量",
+        "tooltip": "detailed = 高清纹理，extreme = 8K 超高清纹理。"
       },
       "texture_seed": {
         "name": "纹理种子"
@@ -24025,7 +24726,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "源模型为四边形网格或 FBX 导入时为空。"
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Tripo 为四边形网格和 FBX 导入返回 FBX；否则为空。"
       }
     }
   },
