@@ -464,7 +464,7 @@ describe('useAgentSession (v1 composition root)', () => {
     ).toBe(false)
   })
 
-  it('ignores a stale answer failure after switching threads', async () => {
+  it('records a 409 resolution after switching threads', async () => {
     let rejectAnswer: ((reason?: unknown) => void) | undefined
     const answerAsk = vi.fn<AgentRestClient['answerAsk']>(
       () =>
@@ -485,16 +485,21 @@ describe('useAgentSession (v1 composition root)', () => {
     await vi.waitFor(() => expect(answerAsk).toHaveBeenCalledOnce())
     await session.loadThread('th-2')
 
-    const conversationStore = useAgentConversationStore()
-    const ingest = vi.spyOn(conversationStore, 'ingest')
     rejectAnswer?.(new AgentApiError('already answered', 409, undefined))
     await pendingAnswer
 
+    const conversationStore = useAgentConversationStore()
     expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
-    expect(ingest).not.toHaveBeenCalled()
     expect(session.notices.value).toEqual([])
     expect(reportError).not.toHaveBeenCalled()
     expect(conversationStore.threadId).toBe('th-2')
+
+    await session.loadThread('th-1')
+    expect(
+      conversationStore.messages[0].parts.some(
+        (part) => part.type === 'runApproval'
+      )
+    ).toBe(false)
   })
 
   it('reports a stale non-409 answer failure without mutating the new thread', async () => {
