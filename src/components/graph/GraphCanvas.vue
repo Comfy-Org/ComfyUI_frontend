@@ -82,9 +82,9 @@
     @pointermove.capture="forwardPointerMovePanEvent"
     @keydown.space="forwardSpaceKeyEvent"
   >
-    <!-- Vue nodes rendered based on graph nodes -->
+    <!-- Vue nodes rendered progressively to avoid long-task UI freezes -->
     <LGraphNode
-      v-for="nodeData in allNodes"
+      v-for="nodeData in visibleNodes"
       :key="nodeData.id"
       :node-data
       :data-node-id="nodeData.id"
@@ -166,6 +166,7 @@ import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useGroupContextMenu } from '@/composables/graph/useGroupContextMenu'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
+import { useProgressiveNodeRendering } from '@/composables/graph/useProgressiveNodeRendering'
 import type { NodeState } from '@/types/nodeState'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
@@ -311,15 +312,6 @@ watchEffect((onCleanup) => {
   if (canvas) onCleanup(notifyLayoutChanges(canvas))
 })
 
-watch(
-  () => canvasStore.isInSubgraph,
-  (newValue, oldValue) => {
-    if (oldValue && !newValue) {
-      useWorkflowStore().updateActiveGraph()
-    }
-  }
-)
-
 const nodeDataStore = useNodeDataStore()
 const allNodes = computed((): NodeState[] => {
   const { rootGraphId } = canvasStore
@@ -327,6 +319,26 @@ const allNodes = computed((): NodeState[] => {
   if (!rootGraphId || graphId === undefined) return []
   return nodeDataStore.getGraphNodesFor(rootGraphId, graphId)
 })
+
+const {
+  visibleNodes,
+  start: startProgressiveRender,
+  reset: resetProgressiveRender
+} = useProgressiveNodeRendering(allNodes)
+
+watch(
+  () => canvasStore.isInSubgraph,
+  (newValue, oldValue) => {
+    if (oldValue && !newValue) {
+      useWorkflowStore().updateActiveGraph()
+    }
+    if (shouldRenderVueNodes.value) {
+      resetProgressiveRender()
+      startProgressiveRender()
+    }
+  }
+)
+
 function onLinkOverlayReady(el: HTMLCanvasElement) {
   if (!canvasStore.canvas) return
   canvasStore.canvas.overlayCanvas = el
