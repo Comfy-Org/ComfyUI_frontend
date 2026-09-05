@@ -131,11 +131,12 @@ function breadcrumbNode(pageUrl: string, crumbs: Crumb[]): JsonLdNode {
 export function itemListNode(
   pageUrl: string,
   name: string,
-  items: { url: string; name?: string }[]
+  items: { url: string; name?: string }[],
+  id = jsonLdId(pageUrl, 'itemlist')
 ): JsonLdNode {
   return {
     '@type': 'ItemList',
-    '@id': jsonLdId(pageUrl, 'itemlist'),
+    '@id': id,
     name,
     numberOfItems: items.length,
     itemListElement: items.map((item, index) => ({
