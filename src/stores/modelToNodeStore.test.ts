@@ -35,7 +35,10 @@ const EXPECTED_DEFAULT_TYPES = [
   'ipadapter',
   'nlf',
   'FlashVSR',
-  'FlashVSR-v1.1'
+  'FlashVSR-v1.1',
+  'background_removal',
+  'frame_interpolation',
+  'film'
 ] as const
 
 function createMockNodeDef(name: string): ComfyNodeDefImpl {
@@ -69,7 +72,10 @@ const MOCK_NODE_NAMES = [
   'IPAdapterModelLoader',
   'LoadNLFModel',
   'FlashVSRNode',
-  'LTXICLoRALoaderModelOnly'
+  'LTXICLoRALoaderModelOnly',
+  'LoadBackgroundRemovalModel',
+  'FrameInterpolationModelLoader',
+  'FILM VFI'
 ] as const
 
 const mockNodeDefsByName = Object.fromEntries(
@@ -230,7 +236,10 @@ describe('useModelToNodeStore', () => {
       ['sams', 'SAMLoader', 'model_name'],
       ['ipadapter', 'IPAdapterModelLoader', 'ipadapter_file'],
       ['FlashVSR', 'FlashVSRNode', ''],
-      ['FlashVSR-v1.1', 'FlashVSRNode', '']
+      ['FlashVSR-v1.1', 'FlashVSRNode', ''],
+      ['background_removal', 'LoadBackgroundRemovalModel', 'bg_removal_name'],
+      ['frame_interpolation', 'FrameInterpolationModelLoader', 'model_name'],
+      ['film', 'FILM VFI', 'ckpt_name']
     ])(
       'should return correct provider for %s',
       ([modelType, expectedNodeName, expectedKey]) => {
