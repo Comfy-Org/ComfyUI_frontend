@@ -2358,6 +2358,58 @@ describe('AgentPanelRoot workflow binding', () => {
     ).toHaveTextContent('other')
   })
 
+  it.for(['binding', 'cloud index', 'temporary binding'] as const)(
+    'selects an existing Cloud workflow without saving its edits via %s',
+    async (identitySource) => {
+      makeTab('wf-42')
+      const draft = fromPartial<ComfyWorkflowJSON>({
+        id: 'local-graph-id',
+        nodes: [
+          { id: 91, type: 'CLIPTextEncode', widgets_values: ['latest edit'] }
+        ]
+      })
+      const other = addTab('workflows/other.json', {
+        isTemporary: identitySource === 'temporary binding',
+        isModified: true,
+        activeState: draft
+      })
+      if (identitySource !== 'cloud index')
+        useAgentWorkflowTabBindingStore().bind('wf-other', other.path)
+      const bodies = mockMessagesEndpoint(
+        'wf-other',
+        identitySource === 'cloud index'
+          ? [{ id: 'wf-other', name: 'other' }]
+          : []
+      )
+      renderWithSelectedTarget()
+
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.switchWorkflow')
+        })
+      )
+      await userEvent.click(
+        await screen.findByRole('menuitemradio', { name: 'other' })
+      )
+      await vi.waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+      expect(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.switchWorkflow')
+        })
+      ).toHaveTextContent('other')
+      expect(workflowService.saveWorkflow).not.toHaveBeenCalled()
+      expect(workflowService.saveWorkflowAs).not.toHaveBeenCalled()
+      expect(other.isModified).toBe(true)
+
+      await sendFromComposer('use my latest edits')
+      expect(bodies[0]).toMatchObject({
+        workflow_id: 'wf-other',
+        current_tab: 'wf-other',
+        draft: { content: draft }
+      })
+    }
+  )
+
   it('automatically numbers a Cloud name collision before changing target and view', async () => {
     makeTab('wf-42')
     const scratch = addTab('workflows/scratch.json', { isTemporary: true })
