@@ -72,7 +72,30 @@ const config: KnipConfig = {
     // Agent review check config, not part of the build
     '.agents/checks/eslint.strict.config.js',
     // Devtools extensions, included dynamically
-    'tools/devtools/web/**'
+    'tools/devtools/web/**',
+    // Deprecated stub re-exporting from `@/extension-api`. Will be removed
+    // once PKG2 (`@comfyorg/extension-api`) ships and downstream imports
+    // migrate to the package path.
+    'src/types/extensionV2.ts',
+    // D18 Phase 1 scaffolding — empty registries the loader will populate
+    // in Phase 2 once side-effect registration moves out of
+    // extension-api-service. See decisions/D18-pure-functions-loader-registration.md.
+    'src/services/registries/**',
+    // D18 Phase 1 — brand symbol + isBrandedExtension guard. Currently
+    // consumed only by the define* call sites inside extension-api-service;
+    // the type-guard and getBrandKind are exported for the Phase 2 loader.
+    'src/extension-api/brand.ts',
+    // Strangler-pattern v2 conversions of core extensions. Not yet wired
+    // into the bootstrap (registration lands in a follow-up PR alongside
+    // the v1→v2 cut-over). Tracked by I-EXT (#12144).
+    'src/extensions/core/noteNode.v2.ts',
+    'src/extensions/core/rerouteNode.v2.ts',
+    'src/extensions/core/slotDefaults.v2.ts',
+    // W6.P3.D — defineWidget+mount showcase port (D-widget-converge / A12).
+    'src/extensions/core/webcamCapture.v2.ts',
+    // W6.P4.D — canvas-units canary + escape-hatch annotation example
+    // (D-coord-space / A13).
+    'src/extensions/core/coordSpaceDemo.v2.ts'
   ],
   vite: {
     config: ['vite?(.*).config.mts']
