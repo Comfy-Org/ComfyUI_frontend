@@ -279,7 +279,7 @@ the aggregate passes only after all expensive dependencies report skipped.
 
 ## Detection proof (counter-evidence)
 
-`detection-proof/corpus/` is a synthetic corpus of eight poison packs, each
+`detection-proof/corpus/` is a synthetic corpus of nine poison packs, each
 broken in exactly one measured way, plus three clean controls. The
 `matrix-detection-proof` job runs the real matrix over it and passes only if
 `verify_detection.py` sees every channel fire with its exact poison message
@@ -299,6 +299,7 @@ delta criteria are exempted there and covered by verdict unit tests.
 | poison-customnodes-throw | `registerCustomNodes` throws    | `hookErrors` (app containment)   |
 | poison-op-break          | `onNodeCreated` throws          | `load`/`addNode` op errs (gated) |
 | poison-serialize-throw   | `onSerialize` throws            | `serialize` op err (gated)       |
+| poison-reload-loss       | restored graph drops values     | `reload` op err (gated)          |
 | poison-desync            | drops a live widget's store row | signature drift (`wn`, counts)   |
 | poison-foreign-widget    | erases prototype methods        | operation error (gated)          |
 | poison-store-read-throw  | widget-store read throws        | operation desync (gated)         |

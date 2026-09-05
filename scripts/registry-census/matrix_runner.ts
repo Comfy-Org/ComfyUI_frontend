@@ -5,6 +5,7 @@
  * $MATRIX_OUT/<pack>.json for cross-branch diffing.
  */
 import { createTestingPinia } from '@pinia/testing'
+import { isEqual } from 'es-toolkit'
 import { setActivePinia } from 'pinia'
 import fs from 'node:fs'
 import { vi } from 'vitest'
@@ -17,6 +18,7 @@ import type {
   Point
 } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { useWidgetValueStore } from '@/stores/widgetValueStore'
 
@@ -70,6 +72,48 @@ interface OpRecord {
   desync: string
   dispatching: boolean
   note: string
+}
+
+const normalizeReloadGraph = (
+  serialized: ISerialisedGraph,
+  mangled: Set<string>
+) => ({
+  nodes: serialized.nodes.map((node) => ({
+    id: node.id,
+    widgets_values_named: Object.fromEntries(
+      Object.entries(node.widgets_values_named ?? {}).filter(
+        ([name]) => !mangled.has(`${node.id}:${name}`)
+      )
+    )
+  }))
+})
+
+const reloadGraph = (
+  serialized: ISerialisedGraph,
+  mangled: Set<string>,
+  pinia: ReturnType<typeof createTestingPinia>,
+  LGraphClass: typeof LGraph
+): string => {
+  setActivePinia(createTestingPinia({ stubActions: false }))
+  try {
+    const graph = new LGraphClass()
+    graph.configure(structuredClone(serialized))
+    const reloadedSerialized = S(graph.serialize())
+    if (
+      !isEqual(
+        normalizeReloadGraph(serialized, mangled),
+        normalizeReloadGraph(
+          JSON.parse(reloadedSerialized) as ISerialisedGraph,
+          mangled
+        )
+      )
+    ) {
+      throw new Error('serialized graph changed after reload')
+    }
+    return reloadedSerialized
+  } finally {
+    setActivePinia(pinia)
+  }
 }
 
 const COMBO = (o: string[]) => [o, {}]
@@ -247,7 +291,8 @@ export async function runPack(
   vi.spyOn(console, 'warn').mockImplementation(() => {})
   vi.spyOn(console, 'log').mockImplementation(() => {})
   vi.spyOn(console, 'info').mockImplementation(() => {})
-  setActivePinia(createTestingPinia({ stubActions: false }))
+  const pinia = createTestingPinia({ stubActions: false })
+  setActivePinia(pinia)
 
   // safe is the filename this row is written under; carrying it in the row
   // lets the verdict job cross-check filename against row identity.
@@ -294,7 +339,7 @@ export async function runPack(
         output_is_list: [],
         output_node: name === 'SaveImage',
         ...(d as object)
-      } as Parameters<typeof svc.registerNodeDef>[1])
+      })
     } catch (e) {
       regErrs.push(`${name}:${errMsg(e)}`)
     }
@@ -530,9 +575,9 @@ export async function runPack(
     'wConvert',
     () => {
       const k = byType('KSampler')
-      const w = k?.widgets?.find((x) => x.name === 'steps') as
-        | ConvertibleWidget
-        | undefined
+      const w: ConvertibleWidget | undefined = k?.widgets?.find(
+        (x) => x.name === 'steps'
+      )
       if (k && w) {
         w.origType = w.type
         w.origComputeSize = w.computeSize
@@ -660,13 +705,10 @@ export async function runPack(
     row.serialized = S(graph.serialize())
   })
   await op('reload', () => {
-    const g2 = new LGraph()
-    g2.configure(
-      structuredClone(JSON.parse(String(row.serialized ?? '{}'))) as Parameters<
-        typeof g2.configure
-      >[0]
-    )
-    row.reloadedNodes = g2._nodes.length
+    const serialized = JSON.parse(
+      String(row.serialized ?? '{}')
+    ) as ISerialisedGraph
+    row.reloadedSerialized = reloadGraph(serialized, mangled, pinia, LGraph)
   })
   await op('graphToPrompt', async () => {
     const p = await app.graphToPrompt(graph)
