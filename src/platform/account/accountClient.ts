@@ -16,6 +16,7 @@ import type {
   BillingCommands,
   BillingOperationResponse,
   BillingState,
+  IdentityPort,
   SessionClient,
   StorageKey,
   TransportRequest,
@@ -178,7 +179,6 @@ async function responseBody(response: Response): Promise<unknown> {
 }
 
 function createFrontendAccountAdapter(
-  auth: Auth,
   getActiveWorkspace: () => string | null
 ): AccountHostAdapter {
   return {
@@ -191,14 +191,6 @@ function createFrontendAccountAdapter(
         return setTimeout(fn, delayMs)
       },
       cancel: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>)
-    },
-    async acquireIdentity(options) {
-      const user = auth.currentUser
-      if (!user) return null
-      return {
-        userId: user.uid,
-        token: await user.getIdToken(options?.forceRefresh ?? false)
-      }
     },
     getActiveWorkspace,
     storage: {
@@ -265,6 +257,7 @@ function createFrontendAccountAdapter(
 
 export function createFrontendAccountClients(
   auth: Auth,
+  identity: IdentityPort,
   getActiveWorkspace: () => string | null,
   handleNextAction?: (
     clientSecret: string
@@ -274,8 +267,8 @@ export function createFrontendAccountClients(
   billing: BillingClient
   billingCommands: BillingCommands
 } {
-  const adapter = createFrontendAccountAdapter(auth, getActiveWorkspace)
-  const session = createSessionClient(adapter)
+  const adapter = createFrontendAccountAdapter(getActiveWorkspace)
+  const session = createSessionClient(adapter, identity)
   const billing = createBillingClient(session, adapter)
   let operationRecord: AccountLayerOperationRecord | null = null
   let operationContext: Omit<AccountLayerOperationRecord, 'id'> = {

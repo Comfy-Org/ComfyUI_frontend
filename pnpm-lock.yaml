@@ -474,7 +474,7 @@ importers:
         version: 1.8.1
       '@comfyorg/account':
         specifier: file:../../.concept-poc/account-layer-refactor/07-poc/comfyorg-account-0.0.0-poc.tgz
-        version: file:../../.concept-poc/account-layer-refactor/07-poc/comfyorg-account-0.0.0-poc.tgz(vue@3.5.41(typescript@6.0.3))
+        version: file:../../.concept-poc/account-layer-refactor/07-poc/comfyorg-account-0.0.0-poc.tgz(firebase@11.10.0)(vue@3.5.41(typescript@6.0.3))
       '@comfyorg/comfy-multi-player':
         specifier: 0.2.1
         version: 0.2.1
@@ -1618,11 +1618,14 @@ packages:
     engines: {node: '>= 20.12.0'}
 
   '@comfyorg/account@file:../../.concept-poc/account-layer-refactor/07-poc/comfyorg-account-0.0.0-poc.tgz':
-    resolution: {integrity: sha512-0iu3f+U+Gx60WLMvQYlO0FhP5+lMLpGnBNVJXVq3Abww9NakHJouhnUkdn11Yj9eN4nunbqm8UVFHBuQEMzunA==, tarball: file:../../.concept-poc/account-layer-refactor/07-poc/comfyorg-account-0.0.0-poc.tgz}
+    resolution: {integrity: sha512-2SkO6sipEIlf8bpgSJbrLhHpGEQCczKqkzPj8NEaeTEiGO8LecAwUw3TedFasxIODLURbI3cHHGWncxbgQjChg==, tarball: file:../../.concept-poc/account-layer-refactor/07-poc/comfyorg-account-0.0.0-poc.tgz}
     version: 0.0.0-poc
     peerDependencies:
+      firebase: '>=11 <13'
       vue: '>=3.5 <4'
     peerDependenciesMeta:
+      firebase:
+        optional: true
       vue:
         optional: true
 
@@ -10067,8 +10070,9 @@ snapshots:
       fast-wrap-ansi: 0.2.2
       sisteransi: 1.0.5
 
-  '@comfyorg/account@file:../../.concept-poc/account-layer-refactor/07-poc/comfyorg-account-0.0.0-poc.tgz(vue@3.5.41(typescript@6.0.3))':
+  '@comfyorg/account@file:../../.concept-poc/account-layer-refactor/07-poc/comfyorg-account-0.0.0-poc.tgz(firebase@11.10.0)(vue@3.5.41(typescript@6.0.3))':
     optionalDependencies:
+      firebase: 11.10.0
       vue: 3.5.41(typescript@6.0.3)
 
   '@comfyorg/comfy-multi-player@0.2.1':

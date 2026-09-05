@@ -1,3 +1,4 @@
+import { createFirebaseIdentity } from '@comfyorg/account/firebase'
 import { billingClientKey } from '@comfyorg/account/vue'
 import type { FirebaseApp } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
@@ -21,12 +22,14 @@ export function installAccountLayerPoc(
   firebaseApp: FirebaseApp
 ) {
   const auth = getAuth(firebaseApp)
+  const identity = createFirebaseIdentity({ auth })
   const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
   const stripePromise = publishableKey
     ? loadStripe(publishableKey)
     : Promise.resolve(null)
   const accountClients = createFrontendAccountClients(
     auth,
+    identity,
     () => useTeamWorkspaceStore(pinia).activeWorkspaceId,
     async (clientSecret) => {
       const stripe = await stripePromise
