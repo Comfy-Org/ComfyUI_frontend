@@ -8430,6 +8430,10 @@ Enterprise`
     en: 'V1 test 2 · Categories in a side rail',
     'zh-CN': 'V1 测试 2 · 类别侧边栏'
   },
+  'workshop.proto.version.v2_1': {
+    en: 'V2 test 1',
+    'zh-CN': 'V2 测试 1'
+  },
   'workshop.proto.version.v2': {
     en: 'V2 · Workflows, apps and models',
     'zh-CN': 'V2 · 工作流、应用与模型'
@@ -8793,6 +8797,8 @@ Enterprise`
     en: 'This output may be sensitive.',
     'zh-CN': '此输出可能包含敏感内容。'
   },
+  'workshop.output.expand': { en: 'Expand', 'zh-CN': '放大' },
+  'workshop.output.collapse': { en: 'Close', 'zh-CN': '关闭' },
   'workshop.output.reveal': { en: 'Click to reveal', 'zh-CN': '点击查看' },
   'workshop.output.cancelled': {
     en: 'Run cancelled. No credits were charged.',

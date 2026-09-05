@@ -137,7 +137,8 @@ const versionLabel: Record<Version, TranslationKey> = {
   v1: 'workshop.proto.version.v1',
   'v1.1': 'workshop.proto.version.v1_1',
   'v1.2': 'workshop.proto.version.v1_2',
-  v2: 'workshop.proto.version.v2'
+  v2: 'workshop.proto.version.v2',
+  'v2.1': 'workshop.proto.version.v2_1'
 }
 
 const outcomeLabel: Record<RunOutcome, TranslationKey> = {

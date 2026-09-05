@@ -15,7 +15,7 @@ const { version } = usePrototypeTweaks()
 </script>
 
 <template>
-  <HubBrowse v-if="version === 'v2'" :locale />
+  <HubBrowse v-if="version === 'v2' || version === 'v2.1'" :locale />
   <template v-else>
     <WorkshopHero subtitle-key="workshop.hero.subtitle" :locale />
     <WorkshopModelsGrid :models :locale />

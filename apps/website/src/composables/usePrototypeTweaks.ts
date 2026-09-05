@@ -22,9 +22,10 @@ export type ModelState = (typeof MODEL_STATES)[number]
 
 // One control for the whole prototype: V1 is the flat models catalog (11 Sep),
 // V1.1 opens that same catalog as browseable rows per use case, V1.2 moves the
-// categories into a rail beside the grid, and V2 is the screen where workflows,
-// apps and models live together (GA 30 Sep).
-export const VERSIONS = ['v1', 'v1.1', 'v1.2', 'v2'] as const
+// categories into a rail beside the grid, V2 is the screen where workflows,
+// apps and models live together (GA 30 Sep), and V2.1 is where V2's own
+// variants are tried without disturbing what V2 shows.
+export const VERSIONS = ['v1', 'v1.1', 'v1.2', 'v2', 'v2.1'] as const
 export type Version = (typeof VERSIONS)[number]
 
 const VERSION_KEY = 'comfy-workshop-version'
