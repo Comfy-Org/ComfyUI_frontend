@@ -70,18 +70,33 @@ const onVideoPause = () => {
   emit('videoPlayingStateChanged', false)
 }
 
+// Native media controls live in user-agent shadow DOM, so a click on them is
+// indistinguishable from a click on the video itself: same `target`, same
+// `composedPath()`. Position is the only signal, and the strip is roughly the
+// bottom 38px in WebKit and the bottom 64px in Chromium. Use the larger
+// value: over-guarding a few extra px on WebKit is a minor inconvenience,
+// under-guarding on Chromium defeats this fix entirely.
+const NATIVE_CONTROLS_STRIP_PX = 64
+
+function isOverNativeControls(event: MouseEvent, video: HTMLVideoElement) {
+  const { bottom, height } = video.getBoundingClientRect()
+  if (height <= 0) return false
+  const stripHeight = Math.min(NATIVE_CONTROLS_STRIP_PX, height / 2)
+  const distanceFromBottom = bottom - event.clientY
+  return distanceFromBottom >= 0 && distanceFromBottom <= stripHeight
+}
+
 async function onVideoClick(event: MouseEvent) {
-  if (
-    event.shiftKey ||
-    event.metaKey ||
-    event.ctrlKey ||
-    shouldShowControls.value
-  ) {
+  const video = videoElement.value
+  if (!video) return
+
+  // Clicks elsewhere on the video keep bubbling so modifier-select still works.
+  if (shouldShowControls.value) {
+    if (isOverNativeControls(event, video)) event.stopPropagation()
     return
   }
 
-  const video = videoElement.value
-  if (!video) return
+  if (event.shiftKey || event.metaKey || event.ctrlKey) return
 
   if (video.paused || video.ended) {
     await video.play().catch(() => {})
