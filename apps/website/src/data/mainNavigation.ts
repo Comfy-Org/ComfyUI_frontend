@@ -132,7 +132,10 @@ export function getMainNavigation(locale: Locale): NavItem[] {
               href: routes.fdct,
               badge: 'new'
             },
-            { label: t('nav.gallery', locale), href: routes.gallery },
+            {
+              label: t('nav.customerStories', locale),
+              href: routes.customers
+            },
             {
               label: t('nav.events', locale),
               href: routes.events,

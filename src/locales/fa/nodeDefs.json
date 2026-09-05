@@ -6433,7 +6433,7 @@
     }
   },
   "GetImageSize": {
-    "description": "عرض و ارتفاع تصویر را بازمی‌گرداند و تصویر را بدون تغییر عبور می‌دهد.",
+    "description": "عرض، ارتفاع و اندازهٔ دسته‌ای تصویر را بازمی‌گرداند.",
     "display_name": "دریافت ابعاد تصویر",
     "inputs": {
       "image": {
@@ -12710,6 +12710,84 @@
       }
     }
   },
+  "MetaMuseImageEditApi": {
+    "description": "با استفاده از مدل Muse Image شرکت Meta، تا 10 تصویر مرجع را با هدایت یک متن راهنما ویرایش یا ترکیب می‌کند.",
+    "display_name": "ویرایش تصویر Meta Muse",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "مدل مورد استفاده."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_enable_image_search": {
+        "name": "enable_image_search"
+      },
+      "model_enable_shell": {
+        "name": "enable_shell"
+      },
+      "model_enable_web_search": {
+        "name": "enable_web_search"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_strength": {
+        "name": "reasoning_strength"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MetaMuseImageTextToImageApi": {
+    "description": "با استفاده از مدل Muse Image شرکت Meta، از یک متن راهنما تصویر تولید می‌کند؛ این مدل پیش از رندر کردن دربارهٔ متن راهنما استدلال می‌کند.",
+    "display_name": "تبدیل متن به تصویر Meta Muse Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "مدل مورد استفاده."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_enable_image_search": {
+        "name": "enable_image_search"
+      },
+      "model_enable_shell": {
+        "name": "enable_shell"
+      },
+      "model_enable_web_search": {
+        "name": "enable_web_search"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_strength": {
+        "name": "reasoning_strength"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MiniMaxH3AddGuide": {
     "description": "یک تصویر، یک clip کوتاه، audio یا یک clip همراه با موسیقی متن آن را در هر فریم از یک ویدیوی MiniMax H3 لنگرگذاری کنید. برای لنگرگذاری چندین فریم، چند node را زنجیره کنید.",
     "display_name": "افزودن راهنما برای MiniMax H3",
@@ -12832,7 +12910,8 @@
     "display_name": "تبدیل مرجع به ویدیو MiniMax H3",
     "inputs": {
       "audio_vae": {
-        "name": "audio_vae"
+        "name": "audio_vae",
+        "tooltip": "VAE صوتی. بدون آن، صوت مرجع فقط انکودر متن را شرطی می‌کند."
       },
       "clip": {
         "name": "clip"
@@ -12864,7 +12943,8 @@
         "name": "ویدیوهای مرجع"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "VAE ویدئو. بدون آن، تصاویر/ویدئوهای مرجع فقط انکودر متن را شرطی می‌کنند."
       },
       "width": {
         "name": "عرض"
@@ -12973,7 +13053,7 @@
     }
   },
   "MinimaxHailuo03FirstLastFrameNode": {
-    "description": "تولید ویدیو از تصویر اولین فریم و در صورت نیاز تصویر آخرین فریم با استفاده از مدل MiniMax H3. نسبت تصویر ویدیو مطابق تصاویر ارائه‌شده خواهد بود.",
+    "description": "با استفاده از مدل‌های MiniMax H3، از تصویر فریم اول و تصویر اختیاری فریم آخر ویدئو تولید کنید. نسبت ابعاد ویدئو از تصاویر ارائه‌شده پیروی می‌کند.",
     "display_name": "تبدیل اولین و آخرین فریم MiniMax H3 به ویدیو",
     "inputs": {
       "control_after_generate": {
@@ -13016,7 +13096,7 @@
     }
   },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "تولید ویدیو بر اساس تصاویر مرجع، ویدیوها و صدا با استفاده از مدل MiniMax H3. به مراجع در پرامپت بر اساس ترتیب آن‌ها اشاره کنید: «تصویر ۱»، «تصویر ۲»، «ویدیو ۱»، «صدا ۱» و به همین ترتیب.",
+    "description": "با استفاده از مدل‌های MiniMax H3، ویدئویی شرطی‌شده بر تصاویر، ویدئوها و صوت مرجع تولید کنید. در prompt به‌ترتیب به مراجع اشاره کنید: 'Image 1'، 'Image 2'، 'Video 1'، 'Audio 1' و غیره.",
     "display_name": "تبدیل مرجع MiniMax H3 به ویدیو",
     "inputs": {
       "control_after_generate": {
@@ -13091,7 +13171,7 @@
     }
   },
   "MinimaxHailuo03TextToVideoNode": {
-    "description": "تولید ویدیو از طریق پرامپت متنی با استفاده از مدل MiniMax H3.",
+    "description": "با استفاده از مدل‌های MiniMax H3، از یک prompt متنی ویدئو تولید کنید.",
     "display_name": "تبدیل متن به ویدیو MiniMax H3",
     "inputs": {
       "control_after_generate": {
@@ -16972,7 +17052,7 @@
   },
   "Preview3D": {
     "description": "پیش‌نمایش یک فایل مدل سه‌بعدی بدون ذخیره آن در پوشه خروجی ComfyUI.",
-    "display_name": "پیش‌نمایش سه‌بعدی و انیمیشن",
+    "display_name": "پیش‌نمایش 3D و انیمیشن (منسوخ‌شده)",
     "inputs": {
       "bg_image": {
         "name": "تصویر پس‌زمینه"
@@ -17985,7 +18065,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "نوع خروجی که سبک برای آن ایجاد می‌شود: recraftv4_styles برای تصاویر رستری و recraftv4_styles_vector برای SVG."
+        "tooltip": "مدلی که سبک برای آن ایجاد می‌شود. Standard و Pro یک مخزن سبک مشترک دارند: سبک‌های raster با همهٔ مدل‌های raster ‏Recraft V4 و V4.1 کار می‌کنند و سبک‌های vector (*_vector) با همهٔ مدل‌های vector ‏V4 و V4.1."
       }
     },
     "outputs": {
@@ -18681,6 +18761,10 @@
       "multiple": {
         "name": "ضرب‌کننده",
         "tooltip": "نزدیک‌ترین مضرب نتیجه برای تنظیم وضوح انتخاب‌شده."
+      },
+      "preview": {
+        "name": "preview",
+        "tooltip": "پیش‌نمایش زندهٔ وضوح خروجی محاسبه‌شده."
       }
     },
     "outputs": {
@@ -23486,10 +23570,12 @@
         "name": "انیمیشن در محل"
       },
       "bake": {
-        "name": "بِیک"
+        "name": "بِیک",
+        "tooltip": "برای سازگاری گسترده‌تر، مواد پیشرفته را در بافت‌های پایه بیک می‌کند."
       },
       "export_orientation": {
-        "name": "خروجی جهت"
+        "name": "خروجی جهت",
+        "tooltip": "محور رو به جلوی مدل صادرشده. ‏default مقدار +x مربوط به Tripo را حفظ می‌کند."
       },
       "export_vertex_colors": {
         "name": "خروجی رنگ رأس‌ها"
@@ -23498,13 +23584,15 @@
         "name": "محدودیت چهره"
       },
       "fbx_preset": {
-        "name": "پیش‌تنظیم FBX"
+        "name": "پیش‌تنظیم FBX",
+        "tooltip": "پیش‌تنظیم سازگاری FBX. ‏bake_scale تبدیل مقیاس را در هندسه بیک می‌کند."
       },
       "flatten_bottom": {
         "name": "تخت کردن پایین"
       },
       "flatten_bottom_threshold": {
-        "name": "آستانه تخت کردن پایین"
+        "name": "آستانه تخت کردن پایین",
+        "tooltip": "عمق تخت‌سازی که با flatten_bottom استفاده می‌شود."
       },
       "force_symmetry": {
         "name": "اجبار تقارن"
@@ -23537,15 +23625,66 @@
         "name": "اندازه تکسچر"
       },
       "with_animation": {
-        "name": "با انیمیشن"
+        "name": "با انیمیشن",
+        "tooltip": "اسکلت و انیمیشن مدل‌های ریگ‌شده یا بازهدف‌گذاری‌شده را حفظ می‌کند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": "مدل تبدیل‌شده در قالب درخواست‌شده. Tripo فایل OBJ را به‌صورت بایگانی ZIP (مش، ماده و بافت‌ها) ارائه می‌کند."
+      }
+    }
+  },
+  "TripoEditMultiviewNode": {
+    "description": "نماهای نتیجهٔ Tripo: Image to Multiview را با دستورهای متنی برای هر نما ویرایش می‌کند. نماهای بدون دستور بدون تغییر می‌مانند. تصاویر را به Tripo: Multiview to Model وارد کنید؛ یک مجموعهٔ ویرایش‌شده را نمی‌توان دوباره ویرایش کرد.",
+    "display_name": "Tripo: Edit Multiview",
+    "inputs": {
+      "back_prompt": {
+        "name": "back_prompt"
+      },
+      "front_prompt": {
+        "name": "front_prompt"
+      },
+      "left_prompt": {
+        "name": "left_prompt"
+      },
+      "multiview_task_id": {
+        "name": "multiview_task_id"
+      },
+      "right_prompt": {
+        "name": "right_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "front",
+        "tooltip": null
+      },
+      "1": {
+        "name": "چپ",
+        "tooltip": null
+      },
+      "2": {
+        "name": "پشت",
+        "tooltip": null
+      },
+      "3": {
+        "name": "راست",
+        "tooltip": null
       }
     }
   },
   "TripoImageToModelNode": {
     "display_name": "Tripo: تصویر به مدل",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "مدل‌های دارای تکسچر را در اندازهٔ واقعی‌شان بر حسب متر مقیاس می‌کند. Tripo اندازه را به‌عنوان تبدیل صحنهٔ مدل ذخیره می‌کند و هنگام تبدیل، rig کردن یا retarget کردن مدل آن را اعمال می‌کند؛ بدون تکسچر نادیده گرفته می‌شود."
+      },
       "face_limit": {
-        "name": "محدودیت چهره"
+        "name": "محدودیت چهره",
+        "tooltip": "حداکثر تعداد وجه‌ها. ‎-۱ به Tripo اجازه می‌دهد به‌صورت تطبیقی انتخاب کند (حدود ۱٫۴M وجه در حالت استاندارد v۳.x و ۲M در حالت detailed). Tripo بی‌صدا محدود می‌کند: v۲.۵ روی ۵۰۰٬۰۰۰ و مش‌های quad روی ۱۵۰٬۰۰۰."
       },
       "geometry_quality": {
         "name": "کیفیت هندسه"
@@ -23564,22 +23703,31 @@
         "name": "جهت"
       },
       "pbr": {
-        "name": "PBR"
+        "name": "PBR",
+        "tooltip": "نقشه‌های متریال PBR (رنگ پایه، فلزی، زبری، نرمال). به تکسچر نیاز دارد."
       },
       "quad": {
-        "name": "quad"
+        "name": "quad",
+        "tooltip": "خروجی مش quad. Tripo مش‌های quad را به‌صورت FBX ارائه می‌کند؛ بنابراین نتیجه در خروجی FBX می‌آید و خروجی GLB خالی می‌ماند."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "مش کم‌پلی با توپولوژی تمیز و سبک دست‌ساز (۵۰۰–۲۰٬۰۰۰ وجه، quad ۵۰۰–۱۰٬۰۰۰). برای سوژه‌های ساده بهترین است؛ سوژه‌های پیچیده ممکن است ناموفق باشند."
       },
       "style": {
-        "name": "سبک"
+        "name": "سبک",
+        "tooltip": "دیگر توسط Tripo پشتیبانی نمی‌شود و نادیده گرفته می‌شود. برای workflowهای قدیمی نگه داشته شده است."
       },
       "texture": {
-        "name": "تکسچر"
+        "name": "تکسچر",
+        "tooltip": "نقشه‌های تکسچر را تولید می‌کند. غیرفعال، هندسهٔ خام را برمی‌گرداند و pbr را نادیده می‌گیرد."
       },
       "texture_alignment": {
         "name": "تراز تکسچر"
       },
       "texture_quality": {
-        "name": "کیفیت تکسچر"
+        "name": "کیفیت تکسچر",
+        "tooltip": "detailed = تکسچرهای HD، extreme = تکسچرهای Ultra ۸K."
       },
       "texture_seed": {
         "name": "بذر تکسچر"
@@ -23596,6 +23744,41 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "هنگام فعال بودن quad خالی است."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "فقط هنگام فعال بودن quad پر می‌شود."
+      }
+    }
+  },
+  "TripoImageToMultiviewNode": {
+    "description": "نماهای جلو، چپ، پشت و راست سوژه را تولید می‌کند. آن‌ها را به Tripo: Multiview to Model بدهید، یا ابتدا با Tripo: Edit Multiview اصلاحشان کنید.",
+    "display_name": "Tripo: تصویر به چندنما",
+    "inputs": {
+      "image": {
+        "name": "تصویر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "task_id چندنما",
+        "tooltip": null
+      },
+      "1": {
+        "name": "جلو",
+        "tooltip": null
+      },
+      "2": {
+        "name": "چپ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "پشت",
+        "tooltip": null
+      },
+      "4": {
+        "name": "راست",
         "tooltip": null
       }
     }
@@ -23616,11 +23799,43 @@
       }
     }
   },
+  "TripoMeshCompleteNode": {
+    "description": "بخش‌های یک مدل قطعه‌بندی‌شده را تکمیل و نواحی ازدست‌رفته را ترمیم می‌کند.",
+    "display_name": "Tripo: تکمیل بخش‌های مش",
+    "inputs": {
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "نام بخش‌ها برای تکمیل، با کاما جدا شوند. خالی بودن همهٔ بخش‌ها را تکمیل می‌کند."
+      },
+      "segment_task_id": {
+        "name": "segment_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "task_id مدل",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: چندنما به مدل",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "مدل‌های دارای تکسچر را به اندازه واقعی آن‌ها بر حسب متر مقیاس‌بندی می‌کند. Tripo اندازه را به‌صورت تبدیل صحنه مدل ذخیره می‌کند و هنگام تبدیل، ریگ‌کردن یا بازهدف‌گیری مدل آن را بیک می‌کند؛ بدون تکسچر نادیده گرفته می‌شود."
+      },
       "face_limit": {
-        "name": "محدودیت وجه"
+        "name": "محدودیت وجه",
+        "tooltip": "حداکثر تعداد وجه‌ها. ‎-۱ به Tripo اجازه می‌دهد به‌صورت تطبیقی انتخاب کند (حدود ۱٫۴M وجه در حالت استاندارد v۳.x و ۲M در حالت detailed). Tripo بی‌صدا محدود می‌کند: v۲.۵ روی ۵۰۰٬۰۰۰ و مش‌های quad روی ۱۵۰٬۰۰۰."
       },
       "geometry_quality": {
         "name": "کیفیت هندسه"
@@ -23648,20 +23863,27 @@
         "name": "جهت"
       },
       "pbr": {
-        "name": "PBR"
+        "name": "PBR",
+        "tooltip": "نقشه‌های متریال PBR (رنگ پایه، فلزی، زبری، نرمال). به تکسچر نیاز دارد."
       },
       "quad": {
         "name": "چهارضلعی",
-        "tooltip": "این پارامتر منسوخ شده است و هیچ تأثیری ندارد."
+        "tooltip": "خروجی مش quad. Tripo مش‌های quad را به‌صورت FBX ارائه می‌کند؛ بنابراین نتیجه در خروجی FBX می‌آید و خروجی GLB خالی می‌ماند."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "مش کم‌پلی با توپولوژی تمیز و سبک دست‌ساز (۵۰۰–۲۰٬۰۰۰ وجه، quad ۵۰۰–۱۰٬۰۰۰). برای سوژه‌های ساده بهترین است؛ سوژه‌های پیچیده ممکن است ناموفق باشند."
       },
       "texture": {
-        "name": "تکسچر"
+        "name": "تکسچر",
+        "tooltip": "نقشه‌های تکسچر را تولید می‌کند. غیرفعال، هندسهٔ خام را برمی‌گرداند و pbr را نادیده می‌گیرد."
       },
       "texture_alignment": {
         "name": "تراز تکسچر"
       },
       "texture_quality": {
-        "name": "کیفیت تکسچر"
+        "name": "کیفیت تکسچر",
+        "tooltip": "detailed = تکسچرهای HD، extreme = تکسچرهای Ultra ۸K."
       },
       "texture_seed": {
         "name": "بذر تکسچر"
@@ -23678,7 +23900,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "وقتی quad فعال است، خالی است."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "فقط وقتی quad فعال است، پر می‌شود."
       }
     }
   },
@@ -23692,7 +23918,7 @@
       },
       "compress_geometry": {
         "name": "compress_geometry",
-        "tooltip": "فشرده‌سازی مبتنی بر هندسه. قبل از ویرایش، از حالت فشرده خارج کنید."
+        "tooltip": "فشرده‌سازی هندسه meshopt ‏(EXT_meshopt_compression) را اعمال می‌کند. فایل‌ها کوچک‌تر می‌شوند، اما پیش‌نمایش سه‌بعدی ComfyUI نمی‌تواند آن‌ها را نمایش دهد؛ پیش از ویرایش از حالت فشرده خارج کنید."
       },
       "enable_image_autofix": {
         "name": "enable_image_autofix",
@@ -23742,7 +23968,7 @@
       },
       "compress_geometry": {
         "name": "compress_geometry",
-        "tooltip": "فشرده‌سازی مبتنی بر هندسه. قبل از ویرایش، از حالت فشرده خارج کنید."
+        "tooltip": "فشرده‌سازی هندسه meshopt ‏(EXT_meshopt_compression) را اعمال می‌کند. فایل‌ها کوچک‌تر می‌شوند، اما پیش‌نمایش سه‌بعدی ComfyUI نمی‌تواند آن‌ها را نمایش دهد؛ پیش از ویرایش از حالت فشرده خارج کنید."
       },
       "export_uv": {
         "name": "export_uv",
@@ -23801,7 +24027,7 @@
       },
       "compress_geometry": {
         "name": "فشرده‌سازی هندسه",
-        "tooltip": "فشرده‌سازی مبتنی بر هندسه را اعمال می‌کند. قبل از ویرایش، از حالت فشرده خارج کنید."
+        "tooltip": "فشرده‌سازی هندسه meshopt ‏(EXT_meshopt_compression) را اعمال می‌کند. فایل‌ها کوچک‌تر می‌شوند، اما پیش‌نمایش سه‌بعدی ComfyUI نمی‌تواند آن‌ها را نمایش دهد؛ پیش از ویرایش از حالت فشرده خارج کنید."
       },
       "export_uv": {
         "name": "خروجی UV",
@@ -23848,11 +24074,24 @@
   "TripoRetargetNode": {
     "display_name": "Tripo: هدف‌گذاری مجدد مدل ریگ‌شده",
     "inputs": {
+      "animate_in_place": {
+        "name": "animate_in_place",
+        "tooltip": "انیمیشن را بدون جابه‌جایی ریشه، درجا پخش می‌کند."
+      },
       "animation": {
-        "name": "انیمیشن"
+        "name": "انیمیشن",
+        "tooltip": "انیمیشن‌های preset:* با هر دو مدل rig کار می‌کنند؛ انیمیشن‌های preset:biped:* به rigi نیاز دارند که با مدل v1.0-20240301 ساخته شده باشد."
+      },
+      "export_with_geometry": {
+        "name": "export_with_geometry",
+        "tooltip": "مش را در خروجی لحاظ می‌کند؛ در حالت غیرفعال فقط اسکلت متحرک صادر می‌شود."
       },
       "original_model_task_id": {
         "name": "شناسه وظیفه مدل اصلی"
+      },
+      "out_format": {
+        "name": "out_format",
+        "tooltip": "قالب فایل خروجی؛ نتیجه در خروجی متناظر ارائه می‌شود."
       }
     },
     "outputs": {
@@ -23866,15 +24105,97 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "وقتی out_format برابر glb باشد، پر می‌شود."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "وقتی out_format برابر fbx باشد، پر می‌شود."
+      }
+    }
+  },
+  "TripoRetopologyNode": {
+    "description": "یک مش کم‌پُلی با توپولوژی تمیز را از یک مدل پُرپُلی بازسازی می‌کند.",
+    "display_name": "Tripo: بازتوپولوژی",
+    "inputs": {
+      "bake": {
+        "name": "bake",
+        "tooltip": "تکسچرهای منبع را روی مش کم‌پُلی بیک می‌کند."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "تعداد وجه هدف: ۵۰۰–۲۰٬۰۰۰ مثلث یا ۵۰۰–۱۰٬۰۰۰ quad. مقدار -۱ انتخاب را به Tripo واگذار می‌کند."
+      },
+      "model_task_id": {
+        "name": "model_task_id"
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "نام بخش‌ها از Tripo: Segment Model، جداشده با کاما. خالی بودن، کل مدل را پردازش می‌کند."
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "خروجی مش quad. ‏Tripo مش‌های quad را به‌صورت FBX ارائه می‌کند؛ بنابراین نتیجه در خروجی FBX می‌آید و خروجی GLB خالی می‌ماند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "task_id مدل",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": "وقتی quad فعال است، خالی است."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "فقط وقتی quad فعال است، پر می‌شود."
+      }
+    }
+  },
+  "TripoRigCheckNode": {
+    "description": "بررسی می‌کند که آیا یک مدل قابل ریگ‌کردن است و Tripo کدام نوع اسکلت را توصیه می‌کند.",
+    "display_name": "Tripo: بررسی ریگ",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "riggable",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_type",
+        "tooltip": "اسکلت پیشنهادی: biped، quadruped، hexapod، octopod، avian، serpentine یا aquatic؛ اگر مدل قابل ریگ‌کردن نباشد، 'others'."
       }
     }
   },
   "TripoRigNode": {
     "display_name": "Tripo: ریگ مدل",
     "inputs": {
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "v1.0: فقط شخصیت‌های انسان‌نما (دوپا)، بیش از ۹۰ پیش‌تنظیم انیمیشن. v2.5: موجودات غیرانسان‌نما (چهارپا، شش‌پا، هشت‌پا، پرنده‌سان، مارسان، آبزی)."
+      },
       "original_model_task_id": {
         "name": "شناسه وظیفه مدل اصلی"
+      },
+      "out_format": {
+        "name": "out_format",
+        "tooltip": "قالب فایل خروجی؛ نتیجه در خروجی متناظر قرار می‌گیرد."
+      },
+      "rig_type": {
+        "name": "rig_type",
+        "tooltip": "نوع اسکلت. «auto» ابتدا بررسی رایگان ریگ Tripo را اجرا می‌کند و از نوع پیشنهادی استفاده می‌کند."
+      },
+      "spec": {
+        "name": "spec",
+        "tooltip": "نام‌گذاری استخوان‌ها: بومی Tripo یا سازگار با Mixamo. Tripo نمی‌تواند پیش‌تنظیم‌های انیمیشن خود را روی ریگ v1.0 ساخته‌شده با مشخصات mixamo بازهدف‌گذاری کند؛ برای Tripo: بازهدف‌گذاری مدل ریگ‌شده از tripo استفاده کنید."
       }
     },
     "outputs": {
@@ -23888,7 +24209,38 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "وقتی out_format برابر glb باشد، پر می‌شود."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "وقتی out_format برابر fbx باشد، پر می‌شود."
+      }
+    }
+  },
+  "TripoSegmentNode": {
+    "description": "یک مدل را به بخش‌ها تقسیم می‌کند. نام بخش‌ها به Tripo: تکمیل بخش‌های مش، Tripo: بازتوپولوژی و Tripo: تبدیل مدل داده می‌شوند.",
+    "display_name": "Tripo: بخش‌بندی مدل",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "segment task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "part_names",
+        "tooltip": "نام بخش‌ها با جداکنندهٔ ویرگول."
       }
     }
   },
@@ -23990,8 +24342,13 @@
   "TripoTextToModelNode": {
     "display_name": "Tripo: متن به مدل",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "مدل‌های بافت‌دار را به اندازهٔ واقعی آن‌ها بر حسب متر مقیاس می‌کند. Tripo اندازه را به‌عنوان تبدیل صحنهٔ مدل ذخیره می‌کند و هنگام تبدیل، ریگ‌کردن یا بازهدف‌گذاری مدل آن را بیک می‌کند؛ بدون texture نادیده گرفته می‌شود."
+      },
       "face_limit": {
-        "name": "محدودیت وجه"
+        "name": "محدودیت وجه",
+        "tooltip": "حداکثر تعداد وجه‌ها. -1 به Tripo اجازه می‌دهد به‌صورت تطبیقی انتخاب کند (حدود ۱.۴M وجه در حالت استاندارد v3.x و ۲M در detailed). Tripo بی‌صدا محدود می‌کند: v2.5 تا ۵۰۰٬۰۰۰، مش‌های quad تا ۱۵۰٬۰۰۰."
       },
       "geometry_quality": {
         "name": "کیفیت هندسه"
@@ -24006,25 +24363,35 @@
         "name": "نسخه مدل"
       },
       "negative_prompt": {
-        "name": "پرامپت منفی"
+        "name": "پرامپت منفی",
+        "tooltip": "تا ۲۵۵ نویسه."
       },
       "pbr": {
-        "name": "PBR"
+        "name": "PBR",
+        "tooltip": "نقشه‌های متریال PBR (رنگ پایه، فلزی، زبری، نرمال). به texture نیاز دارد."
       },
       "prompt": {
         "name": "پرامپت"
       },
       "quad": {
-        "name": "چهارضلعی"
+        "name": "چهارضلعی",
+        "tooltip": "خروجی مش quad. Tripo مش‌های quad را به‌صورت FBX ارائه می‌کند، بنابراین نتیجه در خروجی FBX قرار می‌گیرد و خروجی GLB خالی می‌ماند."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "مش کم‌پلی با توپولوژی تمیز و سبک دست‌ساز (۵۰۰ تا ۲۰٬۰۰۰ وجه، quad: ۵۰۰ تا ۱۰٬۰۰۰). برای سوژه‌های ساده بهترین است؛ سوژه‌های پیچیده ممکن است ناموفق باشند."
       },
       "style": {
-        "name": "استایل"
+        "name": "استایل",
+        "tooltip": "دیگر توسط Tripo پشتیبانی نمی‌شود و نادیده گرفته می‌شود. برای workflowهای قدیمی نگه داشته شده است."
       },
       "texture": {
-        "name": "تکسچر"
+        "name": "تکسچر",
+        "tooltip": "نقشه‌های بافت را تولید می‌کند. خاموش بودن، هندسهٔ خام را برمی‌گرداند و pbr را نادیده می‌گیرد."
       },
       "texture_quality": {
-        "name": "کیفیت تکسچر"
+        "name": "کیفیت تکسچر",
+        "tooltip": "detailed = بافت‌های HD، extreme = بافت‌های Ultra ۸K."
       },
       "texture_seed": {
         "name": "بذر تکسچر"
@@ -24041,7 +24408,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "وقتی quad فعال باشد، خالی است."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "فقط وقتی quad فعال باشد، پر می‌شود."
       }
     }
   },
@@ -24051,21 +24422,40 @@
       "model_task_id": {
         "name": "شناسه وظیفه مدل"
       },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "مدل بافت: v3.0 برای مش‌های تولیدشده با v3.x، و v2.5 برای مش‌های تولیدشده با v2.5."
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "نام بخش‌ها، جداشده با ویرگول، از Tripo: Segment Model برای بافت‌دهی. اگر خالی باشد، همهٔ بخش‌ها بافت‌دهی می‌شوند."
+      },
       "pbr": {
-        "name": "PBR"
+        "name": "PBR",
+        "tooltip": "نقشه‌های متریال PBR (رنگ پایه، فلزی، زبری، نرمال)؛ خاموش بودن یک بافت تک‌رنگ می‌دهد."
+      },
+      "reference": {
+        "name": "reference",
+        "tooltip": "تصاویر مرجع برای هدایت بافت‌ها. نمی‌تواند با texture_prompt یا style_image ترکیب شود."
+      },
+      "style_image": {
+        "name": "style_image",
+        "tooltip": "تصویر مرجع برای سبک هنری بافت‌ها. فقط همراه با texture_prompt استفاده می‌شود."
       },
       "texture": {
-        "name": "بافت"
+        "name": "بافت",
+        "tooltip": "نادیده گرفته می‌شود: این node همیشه بافت تولید می‌کند. برای workflowهای قدیمی نگه داشته شده است."
       },
       "texture_alignment": {
         "name": "تراز بافت"
       },
       "texture_prompt": {
         "name": "texture_prompt",
-        "tooltip": "راهنمای متنی اختیاری برای تکسچر دادن. در عمل برای مدل‌های واردشده (Tripo: وارد کردن مدل) که تصویر مرجعی برای استخراج رنگ ندارند، الزامی است."
+        "tooltip": "راهنمایی متنی اختیاری برای بافت‌دهی. در عمل برای مدل‌های واردشده (Tripo: وارد کردن مدل) لازم است، زیرا هیچ تصویر مبدئی برای استنباط رنگ‌ها ندارند. با تصاویر مرجع قابل ترکیب نیست."
       },
       "texture_quality": {
-        "name": "کیفیت بافت"
+        "name": "کیفیت بافت",
+        "tooltip": "detailed = بافت‌های HD، extreme = بافت‌های Ultra ۸K."
       },
       "texture_seed": {
         "name": "بذر بافت"
@@ -24082,7 +24472,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "وقتی منبع یک مش چهارضلعی یا یک واردسازی FBX باشد، خالی است."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Tripo برای مش‌های چهارضلعی و واردسازی‌های FBX، FBX برمی‌گرداند؛ در غیر این صورت خالی است."
       }
     }
   },

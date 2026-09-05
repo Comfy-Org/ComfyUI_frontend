@@ -161,7 +161,6 @@ const {
   mockResubscribe,
   mockToastAdd,
   mockStartOperation,
-  mockRetryPaymentAuthentication,
   mockGetOperation,
   mockSubscriptionActionOperation,
   mockListSavedPaymentMethods,
@@ -178,58 +177,60 @@ const {
   mockCanReactivatePlan,
   mockCapabilities,
   mockSubscription
-} = vi.hoisted(() => ({
-  mockSubscribe: vi.fn(),
-  mockPreviewSubscribe: vi.fn(),
-  mockFetchPlans: vi.fn(),
-  mockFetchStatus: vi.fn(),
-  mockFetchBalance: vi.fn(),
-  mockOpen: vi.fn(),
-  mockGetBillingStatus: vi.fn(),
-  mockGetPaymentPortalUrl: vi.fn(),
-  mockPlans: { value: [] as Plan[] },
-  mockResubscribe: vi.fn(),
-  mockToastAdd: vi.fn(),
-  mockStartOperation: vi.fn(),
-  mockRetryPaymentAuthentication: vi.fn(),
-  mockGetOperation: vi.fn(),
-  mockSubscriptionActionOperation: {
-    value: undefined as MockSubscriptionActionOperation | undefined
-  },
-  mockListSavedPaymentMethods: vi.fn(),
-  mockTrackBeginCheckout: vi.fn(),
-  mockTrackBillingEvent: vi.fn(),
-  mockShowDowngradeToPersonalDialog: vi.fn(),
-  mockUserId: { value: 'user-1' as string | null },
-  mockIsTeamPlan: { value: false },
-  mockShouldUseWorkspaceBilling: { value: true },
-  mockIncompleteEmbeddedPreview: { value: false },
-  mockSetActiveWorkspaceIdImpl: {
-    value: undefined as ((workspaceId: string) => void) | undefined
-  },
-  mockSetActiveWorkspaceId: vi.fn<(workspaceId: string) => void>(
-    (workspaceId) => {
-      mockSetActiveWorkspaceIdImpl.value?.(workspaceId)
-    }
-  ),
-  mockPermissions: {
-    value: {
-      canManageSubscription: true,
-      canManageSubscriptionLifecycle: true,
-      canDowngradeToPersonal: true
-    }
-  },
-  mockCanReactivatePlan: { value: true },
-  mockCapabilities: {
-    value: {
-      canSubscribeSelfServe: true,
-      canReactivate: true,
-      canChangeSeats: true,
-      canDowngradeToPersonal: true
-    }
-  },
-  mockSubscription: { value: null as { isCancelled: boolean } | null }
-}))
+} = vi.hoisted(() => {
+  const nullableString = (value: string | null) => ({ value })
+  return {
+    mockSubscribe: vi.fn(),
+    mockPreviewSubscribe: vi.fn(),
+    mockFetchPlans: vi.fn(),
+    mockFetchStatus: vi.fn(),
+    mockFetchBalance: vi.fn(),
+    mockOpen: vi.fn(),
+    mockGetBillingStatus: vi.fn(),
+    mockGetPaymentPortalUrl: vi.fn(),
+    mockPlans: { value: [] as Plan[] },
+    mockResubscribe: vi.fn(),
+    mockToastAdd: vi.fn(),
+    mockStartOperation: vi.fn(),
+    mockGetOperation: vi.fn(),
+    mockSubscriptionActionOperation: {
+      value: undefined as MockSubscriptionActionOperation | undefined
+    },
+    mockListSavedPaymentMethods: vi.fn(),
+    mockTrackBeginCheckout: vi.fn(),
+    mockTrackBillingEvent: vi.fn(),
+    mockShowDowngradeToPersonalDialog: vi.fn(),
+    mockUserId: nullableString('user-1'),
+    mockIsTeamPlan: { value: false },
+    mockShouldUseWorkspaceBilling: { value: true },
+    mockIncompleteEmbeddedPreview: { value: false },
+    mockSetActiveWorkspaceIdImpl: {
+      value: undefined as ((workspaceId: string) => void) | undefined
+    },
+    mockSetActiveWorkspaceId: vi.fn<(workspaceId: string) => void>(
+      (workspaceId) => {
+        mockSetActiveWorkspaceIdImpl.value?.(workspaceId)
+      }
+    ),
+    mockPermissions: {
+      value: {
+        canManageSubscription: true,
+        canManageSubscriptionLifecycle: true,
+        canDowngradeToPersonal: true
+      }
+    },
+    mockCanReactivatePlan: { value: true },
+    mockCapabilities: {
+      value: {
+        canSubscribeSelfServe: true,
+        canReactivate: true,
+        canChangeSeats: true,
+        canDowngradeToPersonal: true
+      }
+    },
+    mockSubscription: { value: null as { isCancelled: boolean } | null }
+  }
+})
 
 async function previewSubscribe(...args: unknown[]) {
   const response = await mockPreviewSubscribe(...args)
@@ -349,7 +350,6 @@ vi.mock('@/platform/workspace/api/workspaceApi', () => ({
 vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
   useBillingOperationStore: () => ({
     startOperation: mockStartOperation,
-    retryPaymentAuthentication: mockRetryPaymentAuthentication,
     getOperation: mockGetOperation,
     get subscriptionActionOperation() {
       return mockSubscriptionActionOperation.value
@@ -465,7 +465,6 @@ describe('useSubscriptionCheckout', () => {
     mockFetchPlans.mockReset()
     mockFetchStatus.mockReset()
     mockStartOperation.mockReset()
-    mockRetryPaymentAuthentication.mockReset()
     mockListSavedPaymentMethods.mockReset()
     mockSubscriptionActionOperation.value = undefined
     mockPlans.value = allPlans()
@@ -485,7 +484,7 @@ describe('useSubscriptionCheckout', () => {
     mockShowDowngradeToPersonalDialog.mockResolvedValue(null)
     mockUserId.value = 'user-1'
     mockIsTeamPlan.value = false
-    mockOpen.mockReturnValue({} as Window)
+    mockOpen.mockReturnValue({})
     mockGetBillingStatus.mockResolvedValue({ billing_status: 'paid' })
     mockGetPaymentPortalUrl.mockResolvedValue({
       url: 'https://billing.stripe.com/portal'
@@ -2689,29 +2688,22 @@ describe('useSubscriptionCheckout', () => {
       expect(checkout.isPolling.value).toBe(true)
     })
 
-    it('surfaces and retries recovered failed authentication', async () => {
+    it('surfaces recovered failed authentication and releases the confirm action', async () => {
       mockSubscriptionActionOperation.value = {
         opId: 'op-recovered-3ds',
         status: 'pending',
         workspaceId: 'workspace-1',
         authenticationState: 'failed_retryable',
         errorMessage: 'Challenge was closed',
-        canRetryAuthentication: true,
+        canRetryAuthentication: false,
         isAuthenticating: false
       }
-      mockRetryPaymentAuthentication.mockResolvedValue(true)
 
       const checkout = await setup()
 
       expect(checkout.authenticationState.value).toBe('failed_retryable')
       expect(checkout.authenticationError.value).toBe('Challenge was closed')
-      expect(checkout.canRetryAuthentication.value).toBe(true)
       expect(checkout.isPolling.value).toBe(false)
-
-      await checkout.retryPaymentAuthentication()
-      expect(mockRetryPaymentAuthentication).toHaveBeenCalledWith(
-        'op-recovered-3ds'
-      )
     })
 
     it('surfaces an operation that needs reconciliation', async () => {

@@ -1,12 +1,15 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 
 import type {
+  AgentAnswerAccepted,
   AgentCancelAccepted,
   AgentMessages,
+  AgentRunModePreference,
   AgentThreadSummary,
   AgentTurnAccepted,
   TurnId,
@@ -19,10 +22,13 @@ import type {
   PostMessageInput
 } from '../../services/agent/agentRestClient'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
+import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 
 import type { SelectedNode } from './useCanvasSelection'
-import type { AgentEventSource } from './useAgentSession'
+import type { AgentEventSource, TurnOrigin } from './useAgentSession'
 import { useAgentSession } from './useAgentSession'
+
+vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
 
 function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
   const base: AgentRestClient = {
@@ -35,9 +41,23 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
     ),
     getMessages: vi.fn(async (): Promise<AgentMessages> => []),
     listThreads: vi.fn(async (): Promise<AgentThreadSummary[]> => []),
+    getRunMode: vi.fn(
+      async (): Promise<AgentRunModePreference> => ({
+        mode: 'auto',
+        credit_limit: null
+      })
+    ),
+    putRunMode: vi.fn(
+      async (
+        preference: AgentRunModePreference
+      ): Promise<AgentRunModePreference> => preference
+    ),
     listCloudWorkflows: vi.fn(async () => []),
     cancelMessage: vi.fn(
       async (): Promise<AgentCancelAccepted> => ({ status: 'cancelling' })
+    ),
+    answerAsk: vi.fn(
+      async (): Promise<AgentAnswerAccepted> => ({ status: 'answered' })
     ),
     uploadImage: vi.fn(
       async (): Promise<UploadImageResult> => ({
@@ -74,6 +94,15 @@ function fakeEvents() {
   }
 }
 
+// Mirrors AgentPanelRoot's originWorkflow(): an explicit `null` origin means
+// the send had no origin tab and must resolve to nothing, while an omitted
+// origin falls back to whatever tab is active right now.
+const pathFor = (
+  origin: TurnOrigin | undefined,
+  activePath: string | undefined
+): string | undefined =>
+  origin === null ? undefined : (origin?.tabPath ?? activePath)
+
 const wire = (raw: unknown): unknown => zAgentWsEvent.parse(raw)
 const thinking = (id: string, delta: string) =>
   wire({
@@ -89,6 +118,39 @@ const done = (id: string) =>
   wire({
     type: 'agent_message_done',
     data: { message_id: id, thread_id: 'th-1', usage: null }
+  })
+const runApproval = (id: string, askId = 'turn-1:call-1') =>
+  wire({
+    type: 'agent_ask',
+    data: {
+      thread_id: 'th-1',
+      message_id: id,
+      ask_id: askId,
+      kind: 'run_approval',
+      context: {
+        workflow_id: 'workflow-1',
+        workflow_name: 'Portrait workflow'
+      },
+      prompt: 'Run it?',
+      options: [
+        { id: 'run', label: 'Run' },
+        { id: 'cancel', label: 'Cancel' }
+      ],
+      min_selections: 1,
+      max_selections: 1,
+      allow_other: false
+    }
+  })
+const askResolved = (id: string, askId = 'turn-1:call-1') =>
+  wire({
+    type: 'agent_ask_resolved',
+    data: {
+      thread_id: 'th-1',
+      message_id: id,
+      ask_id: askId,
+      status: 'answered',
+      selected: ['run']
+    }
   })
 const deltaIn = (threadId: string, id: string, text: string) =>
   wire({
@@ -120,6 +182,7 @@ describe('useAgentSession (v1 composition root)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
+    vi.mocked(reportError).mockClear()
   })
 
   it('(a) posts to new, adopts ids, records the user turn, and renders a settled reply', async () => {
@@ -357,6 +420,89 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.isStreaming.value).toBe(false)
   })
 
+  it('answers a run approval once and stays busy until its resolution event', async () => {
+    const answerAsk = vi.fn(
+      async (): Promise<AgentAnswerAccepted> => ({ status: 'answered' })
+    )
+    const rest = fakeRest({ answerAsk })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    await session.sendMessage('build it')
+    emit(runApproval('msg-1'))
+
+    const first = session.answerAsk('turn-1:call-1', 'run')
+    const duplicate = session.answerAsk('turn-1:call-1', 'run')
+
+    expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(true)
+    await Promise.all([first, duplicate])
+    expect(answerAsk).toHaveBeenCalledTimes(1)
+    expect(answerAsk).toHaveBeenCalledWith('th-1', 'turn-1:call-1', ['run'])
+    expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(true)
+
+    emit(askResolved('msg-1'))
+    expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
+    expect(
+      useAgentConversationStore().messages[0].parts.some(
+        (part) => part.type === 'runApproval'
+      )
+    ).toBe(false)
+  })
+
+  it('collapses a stale approval on 409 without surfacing an error', async () => {
+    const answerAsk = vi
+      .fn<AgentRestClient['answerAsk']>()
+      .mockRejectedValue(new AgentApiError('already answered', 409, undefined))
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ answerAsk }),
+      events: source
+    })
+    session.start()
+    await session.sendMessage('build it')
+    emit(runApproval('msg-1'))
+
+    await session.answerAsk('turn-1:call-1', 'cancel')
+
+    expect(reportError).not.toHaveBeenCalled()
+    expect(session.notices.value).toEqual([])
+    expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
+    expect(
+      useAgentConversationStore().messages[0].parts.some(
+        (part) => part.type === 'runApproval'
+      )
+    ).toBe(false)
+  })
+
+  it('retains and re-enables an approval after a non-409 answer failure', async () => {
+    const answerAsk = vi
+      .fn<AgentRestClient['answerAsk']>()
+      .mockRejectedValue(new AgentApiError('backend blip', 500, undefined))
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ answerAsk }),
+      events: source
+    })
+    session.start()
+    await session.sendMessage('build it')
+    emit(runApproval('msg-1'))
+
+    await session.answerAsk('turn-1:call-1', 'run')
+
+    expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+      errorType: 'agent_ask_answer_failed'
+    })
+    expect(session.notices.value).toEqual([
+      { level: 'error', text: 'backend blip' }
+    ])
+    expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
+    expect(
+      useAgentConversationStore().messages[0].parts.some(
+        (part) => part.type === 'runApproval'
+      )
+    ).toBe(true)
+  })
+
   it('(d) stopTurn cancels the active turn; a 409 is swallowed and the socket settles it', async () => {
     const postMessage = vi
       .fn<
@@ -468,6 +614,10 @@ describe('useAgentSession (v1 composition root)', () => {
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
     session.start()
+    // Establish a live connection first: only a live->down transition is a
+    // real disconnect. An initial `false` snapshot (no prior `true`) must
+    // not abort turns; see test (g2).
+    status(true)
 
     await session.sendMessage('go')
     emit(delta('msg-1', 'partial'))
@@ -481,6 +631,24 @@ describe('useAgentSession (v1 composition root)', () => {
     // makes no REST calls on a live transition.
     status(true)
     expect(vi.mocked(rest.postMessage).mock.calls.length).toBe(requestsBefore)
+  })
+
+  it('(g2) an initial onStatus(false) snapshot does not abort a surviving turn', async () => {
+    // agentEventSource.onStatus reports the current socket state synchronously
+    // on subscribe, so the very first callback can be `false` before any real
+    // reconnect transition (e.g. the socket hasn't opened yet). That must not
+    // abort a turn that survived a remount.
+    const rest = fakeRest()
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+
+    await session.sendMessage('go')
+    emit(delta('msg-1', 'partial'))
+    expect(session.isStreaming.value).toBe(true)
+
+    status(false)
+    expect(session.isStreaming.value).toBe(true)
   })
 
   it('(h) attachments pass through to the postMessage wire body', async () => {
@@ -526,11 +694,11 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it('(h4) the turn post never carries a draft field (upload retired)', async () => {
-    const postMessage = vi.fn(async () => ({
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
       thread_id: 'th-1',
       message_id: 'msg-1',
       workflow_id: 'wf-1'
-    })) as unknown as AgentRestClient['postMessage']
+    }))
     const rest = fakeRest({ postMessage })
     const { source } = fakeEvents()
     const adopted = vi.fn()
@@ -549,6 +717,324 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(vi.mocked(postMessage).mock.calls[0][1]).not.toHaveProperty('draft')
     expect(adopted).toHaveBeenCalledWith('wf-1', undefined)
     expect(session.boundWorkflowId.value).toBe('wf-1')
+  })
+
+  it('(h5) a workflow.draft() snapshot is forwarded on the turn (PM-813/ecw-128)', async () => {
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
+      thread_id: 'th-1',
+      message_id: 'msg-1',
+      workflow_id: 'wf-1'
+    }))
+    const rest = fakeRest({ postMessage })
+    const { source } = fakeEvents()
+    const draftSnapshot = {
+      content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] }
+    }
+    const session = useAgentSession({
+      rest,
+      events: source,
+      workflow: {
+        current: () => undefined,
+        adopted: vi.fn(),
+        draft: () => draftSnapshot
+      }
+    })
+    session.start()
+
+    await session.sendMessage('what is on my canvas')
+
+    const body = postMessage.mock.calls[0][1]
+    expect(body.draft).toEqual(draftSnapshot)
+  })
+
+  it('(h6) no draft field is sent when workflow.draft() returns undefined (e.g. detached tab)', async () => {
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
+      thread_id: 'th-1',
+      message_id: 'msg-1',
+      workflow_id: 'wf-1'
+    }))
+    const rest = fakeRest({ postMessage })
+    const { source } = fakeEvents()
+    const session = useAgentSession({
+      rest,
+      events: source,
+      workflow: {
+        current: () => undefined,
+        adopted: vi.fn(),
+        draft: () => undefined
+      }
+    })
+    session.start()
+
+    await session.sendMessage('what is on my canvas')
+
+    expect(vi.mocked(postMessage).mock.calls[0][1]).not.toHaveProperty('draft')
+  })
+
+  it('(h7) a tab switch while prepare() is pending does not reattribute the send to the new tab', async () => {
+    const postMessage = vi.fn(async () => ({
+      thread_id: 'th-1',
+      message_id: 'msg-1',
+      workflow_id: 'wf-1'
+    })) as unknown as AgentRestClient['postMessage']
+    const rest = fakeRest({ postMessage })
+    const { source } = fakeEvents()
+    const adopted = vi.fn()
+    let releasePrepare: () => void = () => undefined
+    const prepare = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          releasePrepare = resolve
+        })
+    )
+    let activePath = 'tab-a'
+    const idForPath = (path: string) => (path === 'tab-a' ? 'wf-a' : 'wf-b')
+    const session = useAgentSession({
+      rest,
+      events: source,
+      workflow: {
+        // Mirrors the real deps: honor an explicit origin (resolved
+        // post-prepare) and fall back to whatever tab is active right now
+        // when called with no argument (the pre-await identity capture).
+        current: (origin) => {
+          const path = pathFor(origin, activePath)
+          return path === undefined
+            ? undefined
+            : { id: idForPath(path), tabPath: path }
+        },
+        adopted,
+        prepare,
+        tabs: (origin) => {
+          const path = pathFor(origin, activePath)
+          return {
+            open_tabs: [{ workflow_id: 'wf-a', name: 'tab-a' }],
+            current_tab: path === undefined ? undefined : idForPath(path)
+          }
+        }
+      }
+    })
+    session.start()
+
+    const sendPromise = session.sendMessage('hello')
+    // Simulate the user switching tabs while prepare() is still in flight.
+    activePath = 'tab-b'
+    releasePrepare()
+    await sendPromise
+
+    expect(adopted).toHaveBeenCalledWith('wf-1', {
+      id: 'wf-a',
+      tabPath: 'tab-a'
+    })
+    expect(vi.mocked(postMessage).mock.calls[0][1]).toMatchObject({
+      workflowId: 'wf-a',
+      tabs: { current_tab: 'wf-a' }
+    })
+  })
+
+  it('(h8) the draft snapshot follows the originating tab, not the tab switched to during prepare()', async () => {
+    const postMessage = vi.fn(async () => ({
+      thread_id: 'th-1',
+      message_id: 'msg-1',
+      workflow_id: 'wf-1'
+    })) as unknown as AgentRestClient['postMessage']
+    const rest = fakeRest({ postMessage })
+    const { source } = fakeEvents()
+    let releasePrepare: () => void = () => undefined
+    const prepare = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          releasePrepare = resolve
+        })
+    )
+    let activePath = 'tab-a'
+    const idForPath = (path: string) => (path === 'tab-a' ? 'wf-a' : 'wf-b')
+    const session = useAgentSession({
+      rest,
+      events: source,
+      workflow: {
+        current: (origin) => {
+          const path = pathFor(origin, activePath)
+          return path === undefined
+            ? undefined
+            : { id: idForPath(path), tabPath: path }
+        },
+        adopted: vi.fn(),
+        prepare,
+        // The draft is read on the same post-await leg as current()/tabs(), so
+        // it has to honor the same pinned identity or the turn ships one tab's
+        // canvas under another tab's workflow id.
+        draft: (origin) => {
+          const path = pathFor(origin, activePath)
+          return path === undefined
+            ? undefined
+            : { content: { nodes: [{ id: 1, type: path }], links: [] } }
+        }
+      }
+    })
+    session.start()
+
+    const sendPromise = session.sendMessage('what is on my canvas')
+    activePath = 'tab-b'
+    releasePrepare()
+    await sendPromise
+
+    expect(vi.mocked(postMessage).mock.calls[0][1]).toMatchObject({
+      workflowId: 'wf-a',
+      draft: { content: { nodes: [{ id: 1, type: 'tab-a' }], links: [] } }
+    })
+  })
+
+  it('(h9) a send that starts with no origin tab is not reattributed to a tab attached during prepare()', async () => {
+    const postMessage = vi.fn(async () => ({
+      thread_id: 'th-1',
+      message_id: 'msg-1',
+      workflow_id: 'wf-b'
+    })) as unknown as AgentRestClient['postMessage']
+    const rest = fakeRest({ postMessage })
+    const { source } = fakeEvents()
+    const adopted = vi.fn()
+    let releasePrepare: () => void = () => undefined
+    const prepare = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          releasePrepare = resolve
+        })
+    )
+    // The panel is detached when the user hits send, so there is no origin
+    // tab: activeWorkflowTurnContext() returns undefined for every lookup
+    // while `detached` holds, exactly like the real deps.
+    let detached = true
+    let activePath: string | undefined = undefined
+    const resolve = (origin: TurnOrigin | undefined) =>
+      detached ? undefined : pathFor(origin, activePath)
+    const session = useAgentSession({
+      rest,
+      events: source,
+      workflow: {
+        current: (origin) => {
+          const path = resolve(origin)
+          return path === undefined ? undefined : { id: 'wf-b', tabPath: path }
+        },
+        adopted,
+        prepare,
+        tabs: (origin) => {
+          const path = resolve(origin)
+          return {
+            open_tabs: [{ workflow_id: 'wf-b', name: 'tab-b' }],
+            current_tab: path === undefined ? undefined : 'wf-b'
+          }
+        },
+        draft: (origin) => {
+          const path = resolve(origin)
+          return path === undefined
+            ? undefined
+            : { content: { nodes: [{ id: 1, type: path }], links: [] } }
+        }
+      }
+    })
+    session.start()
+
+    const sendPromise = session.sendMessage('hello')
+    // The user re-attaches (onSelectTab clears workflowDetached) and selects
+    // tab-b while prepare() is still in flight.
+    detached = false
+    activePath = 'tab-b'
+    releasePrepare()
+    await sendPromise
+
+    const sent = vi.mocked(postMessage).mock.calls[0][1]
+    expect(sent).not.toHaveProperty('workflowId')
+    expect(sent).not.toHaveProperty('draft')
+    expect(sent.tabs?.current_tab).toBeUndefined()
+    // open_tabs is context, not attribution, so it still travels.
+    expect(sent.tabs?.open_tabs).toEqual([
+      { workflow_id: 'wf-b', name: 'tab-b' }
+    ])
+    // The ack echoes wf-b; with no origin tab there is nothing to bind it to.
+    expect(adopted).toHaveBeenCalledWith('wf-b', undefined)
+  })
+
+  it('(h6) a bind landing in the prepare()/POST window makes an echoed id read as an echo', async () => {
+    // Regression for the r3929083595 race: priorWorkflowId was snapshotted
+    // before prepare(), so a bindWorkflow() landing in that window (a late
+    // agent_active_tab frame, loadThread, an overlapping send) left the guard
+    // comparing the echoed id against a stale pre-turn binding and
+    // re-binding the origin tab to a workflow the mid-turn event had already
+    // bound elsewhere.
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(
+      () =>
+        new Promise<AgentTurnAccepted>((resolve) =>
+          resolve({
+            thread_id: 'th-1',
+            message_id: 'msg-1',
+            workflow_id: 'wf-x'
+          })
+        )
+    )
+    const rest = fakeRest({ postMessage })
+    const { source } = fakeEvents()
+    const adopted = vi.fn()
+    const session = useAgentSession({
+      rest,
+      events: source,
+      workflow: {
+        current: () => undefined,
+        adopted
+      }
+    })
+    session.start()
+
+    const sendPromise = session.sendMessage('hello')
+    // The mid-turn bind establishes the thread's existing workflow while the
+    // POST is in flight; the ack then echoes exactly that id.
+    session.bindWorkflow('wf-x')
+    await sendPromise
+
+    // An echo of the current binding is not a mint: no re-adoption.
+    expect(adopted).not.toHaveBeenCalled()
+    expect(session.boundWorkflowId.value).toBe('wf-x')
+  })
+
+  it('(h10) reload does not adopt a resumed thread workflow onto an unsaved tab', async () => {
+    useAgentWorkflowTabBindingStore().bind(
+      'wf-existing',
+      'workflows/existing.json'
+    )
+    setActivePinia(createPinia())
+    localStorage.setItem('Comfy.Agent.ThreadId', 'th-existing')
+
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
+      thread_id: 'th-existing',
+      message_id: 'msg-1',
+      workflow_id: 'wf-existing'
+    }))
+    const getMessages = vi.fn<AgentRestClient['getMessages']>(async () => [])
+    const adopted = vi.fn()
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage, getMessages }),
+      events: fakeEvents().source,
+      workflow: {
+        current: () => ({ tabPath: 'workflows/scratch.json' }),
+        adopted
+      }
+    })
+    session.start()
+    await vi.waitFor(() =>
+      expect(getMessages).toHaveBeenCalledWith('th-existing')
+    )
+    await session.loadThread('th-existing')
+
+    expect(session.boundWorkflowId.value).toBeNull()
+    await session.sendMessage('resume here')
+
+    expect(postMessage).toHaveBeenCalledWith(
+      'th-existing',
+      expect.not.objectContaining({ workflowId: expect.anything() })
+    )
+    expect(adopted).not.toHaveBeenCalled()
+    expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-existing')).toBe(
+      'workflows/existing.json'
+    )
   })
 
   it("(i2) loadThread drops the previous thread's workflow binding", async () => {
@@ -870,6 +1356,9 @@ describe('useAgentSession (v1 composition root)', () => {
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
     session.start()
+    // Establish a live connection first; only a live->down transition (an
+    // actual socket death) should settle background turns.
+    status(true)
 
     await session.sendMessage('go')
     emit(delta('msg-1', 'partial'))

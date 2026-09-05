@@ -141,7 +141,9 @@ export function useJobMenu(
     }
     if (!nodeType || !widgetName) return
 
-    const nodeDef = nodeDefStore.nodeDefsByName[nodeType]
+    const nodeDef = Object.hasOwn(nodeDefStore.nodeDefsByName, nodeType)
+      ? nodeDefStore.nodeDefsByName[nodeType]
+      : undefined
     if (!nodeDef) return
     const node = withNodeAddSource('programmatic', () =>
       litegraphService.addNodeOnGraph(nodeDef, {
@@ -205,8 +207,7 @@ export function useJobMenu(
   }
 
   const removeFailedJob = async (task?: TaskItemImpl | null) => {
-    const target =
-      task ?? (currentMenuItem()?.taskRef as TaskItemImpl | undefined)
+    const target = task ?? currentMenuItem()?.taskRef
     if (!target) return
     await queueStore.delete(target)
   }
@@ -228,7 +229,7 @@ export function useJobMenu(
     const item = currentMenuItem()
     const state = item?.state
     if (!state) return []
-    const hasPreviewAsset = !!item?.taskRef?.previewOutput
+    const hasPreviewAsset = !!item.taskRef?.previewOutput
     if (state === 'completed') {
       return [
         {

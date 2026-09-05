@@ -174,7 +174,7 @@ export const externalLinks = {
   mcpEndpoint: 'https://cloud.comfy.org/mcp',
   mcpSkills: 'https://github.com/Comfy-Org/comfy-skills',
   platform: 'https://platform.comfy.org',
-  platformBuilds: 'https://platform.comfy.org/builds',
+  platformBuilds: 'https://platform.comfy.org/profile/builds',
   platformUsage: 'https://platform.comfy.org/profile/usage',
   reddit: 'https://www.reddit.com/r/comfyui/',
   support: 'https://support.comfy.org/hc/en-us',

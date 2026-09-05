@@ -6433,7 +6433,7 @@
     }
   },
   "GetImageSize": {
-    "description": "Resmin genişlik ve yüksekliğini döndürür ve değiştirmeden iletir.",
+    "description": "Görüntünün genişliğini, yüksekliğini ve toplu iş boyutunu döndürür.",
     "display_name": "Resim Boyutunu Al",
     "inputs": {
       "image": {
@@ -12710,6 +12710,84 @@
       }
     }
   },
+  "MetaMuseImageEditApi": {
+    "description": "Meta'nın Muse Image modelini kullanarak, bir metin istemi rehberliğinde en fazla 10 referans görüntüyü düzenler veya birleştirir.",
+    "display_name": "Meta Muse Görüntü Düzenleme",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Kullanılacak model."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_enable_image_search": {
+        "name": "enable_image_search"
+      },
+      "model_enable_shell": {
+        "name": "enable_shell"
+      },
+      "model_enable_web_search": {
+        "name": "enable_web_search"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_strength": {
+        "name": "reasoning_strength"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MetaMuseImageTextToImageApi": {
+    "description": "İşlemeden önce istem üzerinde çıkarım yapan Meta'nın Muse Image modelini kullanarak bir metin isteminden görüntüler oluşturur.",
+    "display_name": "Meta Muse Metinden Görüntüye",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Kullanılacak model."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_enable_image_search": {
+        "name": "enable_image_search"
+      },
+      "model_enable_shell": {
+        "name": "enable_shell"
+      },
+      "model_enable_web_search": {
+        "name": "enable_web_search"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_strength": {
+        "name": "reasoning_strength"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MiniMaxH3AddGuide": {
     "description": "Bir görüntüyü, kısa bir clip'i, sesi veya film müziğiyle birlikte bir clip'i MiniMax H3 videosunun herhangi bir karesine sabitleyin. Birden fazla kareyi sabitlemek için birkaç düğümü zincirleyin.",
     "display_name": "MiniMax H3 için Kılavuz Ekle",
@@ -12832,7 +12910,8 @@
     "display_name": "MiniMax H3 Referanstan Videoya",
     "inputs": {
       "audio_vae": {
-        "name": "audio_vae"
+        "name": "audio_vae",
+        "tooltip": "Ses VAE. Bu olmadan referans ses yalnızca metin kodlayıcıyı koşullandırır."
       },
       "clip": {
         "name": "clip"
@@ -12864,7 +12943,8 @@
         "name": "ref_videolar"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "Video VAE. Bu olmadan referans görüntüler/videolar yalnızca metin kodlayıcıyı koşullandırır."
       },
       "width": {
         "name": "genişlik"
@@ -12973,7 +13053,7 @@
     }
   },
   "MinimaxHailuo03FirstLastFrameNode": {
-    "description": "MiniMax H3 modeli ile ilk kare görseli ve isteğe bağlı son kare görseli kullanarak video üretin. Videonun en-boy oranı verilen görsellere göre ayarlanır.",
+    "description": "MiniMax H3 modellerini kullanarak ilk kare görüntüsünden ve isteğe bağlı son kare görüntüsünden video oluşturun. Videonun en-boy oranı sağlanan görüntüleri takip eder.",
     "display_name": "MiniMax H3 İlk-Son-Kare'den Videoya",
     "inputs": {
       "control_after_generate": {
@@ -13016,7 +13096,7 @@
     }
   },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "MiniMax H3 modeliyle referans görseller, videolar ve sesler kullanarak video oluşturun. Prompt içindeki referanslara sıralarına göre atıfta bulunun: 'Görsel 1', 'Görsel 2', 'Video 1', 'Ses 1' şeklinde devam eder.",
+    "description": "MiniMax H3 modellerini kullanarak referans görüntüler, videolar ve sesle koşullandırılmış video oluşturun. İstemde referanslara sıralarına göre başvurun: 'Image 1', 'Image 2', 'Video 1', 'Audio 1' vb.",
     "display_name": "MiniMax H3 Referans ile Videoya",
     "inputs": {
       "control_after_generate": {
@@ -13091,7 +13171,7 @@
     }
   },
   "MinimaxHailuo03TextToVideoNode": {
-    "description": "MiniMax H3 modeliyle metin promptundan video oluşturun.",
+    "description": "MiniMax H3 modellerini kullanarak bir metin isteminden video oluşturun.",
     "display_name": "MiniMax H3 Metinden Videoya",
     "inputs": {
       "control_after_generate": {
@@ -16972,7 +17052,7 @@
   },
   "Preview3D": {
     "description": "Bir 3D model dosyasını ComfyUI çıktı dizinine kaydetmeden önizleyin.",
-    "display_name": "3D Önizleme",
+    "display_name": "3B ve Animasyon Önizleme (KULLANIMDAN KALDIRILDI)",
     "inputs": {
       "bg_image": {
         "name": "bg_image"
@@ -17985,7 +18065,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Stilin oluşturulacağı çıktı türü: raster görüntüler için recraftv4_styles, SVG için recraftv4_styles_vector."
+        "tooltip": "Stilin oluşturulduğu model. Standard ve Pro aynı stil havuzunu paylaşır: raster stiller tüm Recraft V4 ve V4.1 raster modelleriyle, vektör stilleri (*_vector) ise tüm V4 ve V4.1 vektör modelleriyle çalışır."
       }
     },
     "outputs": {
@@ -18681,6 +18761,10 @@
       "multiple": {
         "name": "kat",
         "tooltip": "Seçilen çözünürlüğü ayarlamak için sonucun en yakın katı."
+      },
+      "preview": {
+        "name": "preview",
+        "tooltip": "Hesaplanan çıktı çözünürlüğünün canlı önizlemesi."
       }
     },
     "outputs": {
@@ -23486,10 +23570,12 @@
         "name": "animate_in_place"
       },
       "bake": {
-        "name": "bake"
+        "name": "bake",
+        "tooltip": "Daha geniş uyumluluk için gelişmiş malzemeleri temel dokulara işler."
       },
       "export_orientation": {
-        "name": "export_orientation"
+        "name": "export_orientation",
+        "tooltip": "Dışa aktarılan modelin ileri ekseni. default, Tripo'nun +x eksenini korur."
       },
       "export_vertex_colors": {
         "name": "export_vertex_colors"
@@ -23498,13 +23584,15 @@
         "name": "yüz_sınırı"
       },
       "fbx_preset": {
-        "name": "fbx_preset"
+        "name": "fbx_preset",
+        "tooltip": "FBX uyumluluk ön ayarı. bake_scale, ölçek dönüşümünü geometriye işler."
       },
       "flatten_bottom": {
         "name": "flatten_bottom"
       },
       "flatten_bottom_threshold": {
-        "name": "flatten_bottom_threshold"
+        "name": "flatten_bottom_threshold",
+        "tooltip": "flatten_bottom ile kullanılan düzleştirme derinliği."
       },
       "force_symmetry": {
         "name": "force_symmetry"
@@ -23537,15 +23625,66 @@
         "name": "doku_boyutu"
       },
       "with_animation": {
-        "name": "with_animation"
+        "name": "with_animation",
+        "tooltip": "Riglenmiş veya yeniden hedeflenmiş modellerin iskeletini ve animasyonunu korur."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": "İstenen biçimde dönüştürülen model. OBJ, Tripo tarafından ZIP arşivi olarak teslim edilir (mesh, malzeme ve dokular)."
+      }
+    }
+  },
+  "TripoEditMultiviewNode": {
+    "description": "Tripo: Görüntüden Çoklu Görünüme sonucunun görünümlerini, görünüm başına metin yönergeleriyle düzenler. Yönergesi olmayan görünümler değişmeden kalır. Görüntüleri Tripo: Çoklu Görünümden Modele besleyin; düzenlenmiş bir set yeniden düzenlenemez.",
+    "display_name": "Tripo: Çoklu Görünümü Düzenle",
+    "inputs": {
+      "back_prompt": {
+        "name": "back_prompt"
+      },
+      "front_prompt": {
+        "name": "front_prompt"
+      },
+      "left_prompt": {
+        "name": "left_prompt"
+      },
+      "multiview_task_id": {
+        "name": "multiview_task_id"
+      },
+      "right_prompt": {
+        "name": "right_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "front",
+        "tooltip": null
+      },
+      "1": {
+        "name": "sol",
+        "tooltip": null
+      },
+      "2": {
+        "name": "arka",
+        "tooltip": null
+      },
+      "3": {
+        "name": "sağ",
+        "tooltip": null
       }
     }
   },
   "TripoImageToModelNode": {
     "display_name": "Tripo: Görüntüden Modele",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Dokulu modelleri gerçek dünyadaki metre cinsinden boyutlarına ölçeklendirir. Tripo, boyutu modelin sahne dönüşümü olarak depolar ve model dönüştürüldüğünde, riglendiğinde veya yeniden hedeflendiğinde kalıcı olarak uygular; doku olmadan yok sayılır."
+      },
       "face_limit": {
-        "name": "yüz_sınırı"
+        "name": "yüz_sınırı",
+        "tooltip": "Maksimum yüz sayısı. -1, Tripo'nun uyarlamalı olarak seçim yapmasını sağlar (v3.x standardında yaklaşık 1,4M yüz, detailed'da 2M). Tripo sessizce sınırlar: v2.5'te 500.000, dörtgen ağlarda 150.000."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -23564,22 +23703,31 @@
         "name": "yönlendirme"
       },
       "pbr": {
-        "name": "pbr"
+        "name": "pbr",
+        "tooltip": "PBR malzeme haritaları (temel renk, metaliklik, pürüzlülük, normal). Doku gerektirir."
       },
       "quad": {
-        "name": "dörtlü"
+        "name": "dörtlü",
+        "tooltip": "Dörtgen ağ çıktısı. Tripo, dörtgen ağları FBX olarak sunar; bu nedenle sonuç FBX çıktısına gelir ve GLB çıktısı boş kalır."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Temiz, el yapımı tarzı topolojiye sahip düşük poligonlu ağ (500-20.000 yüz, dörtgen için 500-10.000). Basit nesneler için en iyisidir; karmaşık olanlar başarısız olabilir."
       },
       "style": {
-        "name": "stil"
+        "name": "stil",
+        "tooltip": "Tripo tarafından artık desteklenmiyor ve yok sayılıyor. Eski iş akışları için tutuluyor."
       },
       "texture": {
-        "name": "doku"
+        "name": "doku",
+        "tooltip": "Doku haritaları oluşturur. Kapalı olduğunda çıplak geometri döner ve pbr yok sayılır."
       },
       "texture_alignment": {
         "name": "doku_hizalama"
       },
       "texture_quality": {
-        "name": "doku_kalitesi"
+        "name": "doku_kalitesi",
+        "tooltip": "detailed = HD dokular, extreme = 8K Ultra dokular."
       },
       "texture_seed": {
         "name": "doku_tohumu"
@@ -23596,6 +23744,41 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "quad etkinleştirildiğinde boştur."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Yalnızca quad etkinleştirildiğinde doldurulur."
+      }
+    }
+  },
+  "TripoImageToMultiviewNode": {
+    "description": "Nesnenin ön, sol, arka ve sağ görünümlerini oluşturur. Bunları Tripo: Çoklu Görünümden Modele düğümüne verin veya önce Tripo: Çoklu Görünümü Düzenle ile iyileştirin.",
+    "display_name": "Tripo: Görüntüden Çoklu Görünüme",
+    "inputs": {
+      "image": {
+        "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "multiview task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ön",
+        "tooltip": null
+      },
+      "2": {
+        "name": "sol",
+        "tooltip": null
+      },
+      "3": {
+        "name": "arka",
+        "tooltip": null
+      },
+      "4": {
+        "name": "sağ",
         "tooltip": null
       }
     }
@@ -23616,11 +23799,43 @@
       }
     }
   },
+  "TripoMeshCompleteNode": {
+    "description": "Bölümlere ayrılmış bir modelin parçalarını tamamlar ve eksik bölgeleri onarır.",
+    "display_name": "Tripo: Ağ Parçalarını Tamamla",
+    "inputs": {
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "Tamamlanacak, virgülle ayrılmış parça adları. Boş bırakılırsa her parça tamamlanır."
+      },
+      "segment_task_id": {
+        "name": "segment_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: Çok Bakışlıdan Modele",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Dokulu modelleri metre cinsinden gerçek dünya boyutlarına ölçeklendirin. Tripo boyutu modelin sahne dönüşümü olarak depolar ve model dönüştürüldüğünde, riglendiğinde veya yeniden hedeflendiğinde buna işler; doku olmadan yok sayılır."
+      },
       "face_limit": {
-        "name": "yüz_sınırı"
+        "name": "yüz_sınırı",
+        "tooltip": "Maksimum yüz sayısı. -1, Tripo'nun uyarlamalı olarak seçim yapmasını sağlar (v3.x standardında yaklaşık 1,4M yüz, detailed'da 2M). Tripo sessizce sınırlar: v2.5'te 500.000, dörtgen ağlarda 150.000."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -23648,20 +23863,27 @@
         "name": "yönlendirme"
       },
       "pbr": {
-        "name": "pbr"
+        "name": "pbr",
+        "tooltip": "PBR malzeme haritaları (temel renk, metaliklik, pürüzlülük, normal). Doku gerektirir."
       },
       "quad": {
         "name": "dörtgen",
-        "tooltip": "Bu parametre kullanımdan kaldırılmıştır ve hiçbir şey yapmaz."
+        "tooltip": "Dörtgen ağ çıktısı. Tripo, dörtgen ağları FBX olarak sunar; bu nedenle sonuç FBX çıktısına gelir ve GLB çıktısı boş kalır."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Temiz, el yapımı tarzı topolojiye sahip düşük poligonlu ağ (500-20.000 yüz, dörtgen için 500-10.000). Basit nesneler için en iyisidir; karmaşık olanlar başarısız olabilir."
       },
       "texture": {
-        "name": "doku"
+        "name": "doku",
+        "tooltip": "Doku haritaları oluşturur. Kapalı olduğunda çıplak geometri döner ve pbr yok sayılır."
       },
       "texture_alignment": {
         "name": "doku_hizalama"
       },
       "texture_quality": {
-        "name": "doku_kalitesi"
+        "name": "doku_kalitesi",
+        "tooltip": "detailed = HD dokular, extreme = 8K Ultra dokular."
       },
       "texture_seed": {
         "name": "doku_tohumu"
@@ -23678,7 +23900,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "quad etkinleştirildiğinde boştur."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Yalnızca quad etkinleştirildiğinde doldurulur."
       }
     }
   },
@@ -23692,7 +23918,7 @@
       },
       "compress_geometry": {
         "name": "geometriyi_sıkıştır",
-        "tooltip": "Geometri tabanlı sıkıştırma uygula. Düzenlemeden önce aç."
+        "tooltip": "meshopt geometri sıkıştırmasını (EXT_meshopt_compression) uygulayın. Dosyalar küçülür, ancak ComfyUI'nin 3B önizlemesi bunları görüntüleyemez; düzenlemeden önce sıkıştırmayı açın."
       },
       "enable_image_autofix": {
         "name": "görüntü_oto_düzeltme_aktif",
@@ -23742,7 +23968,7 @@
       },
       "compress_geometry": {
         "name": "geometriyi_sıkıştır",
-        "tooltip": "Geometri tabanlı sıkıştırma uygula. Düzenlemeden önce aç."
+        "tooltip": "meshopt geometri sıkıştırmasını (EXT_meshopt_compression) uygulayın. Dosyalar küçülür, ancak ComfyUI'nin 3B önizlemesi bunları görüntüleyemez; düzenlemeden önce sıkıştırmayı açın."
       },
       "export_uv": {
         "name": "uv_dışa_aktar",
@@ -23801,7 +24027,7 @@
       },
       "compress_geometry": {
         "name": "geometriyi_sıkıştır",
-        "tooltip": "Geometri tabanlı sıkıştırma uygula. Düzenlemeden önce açın."
+        "tooltip": "meshopt geometri sıkıştırmasını (EXT_meshopt_compression) uygulayın. Dosyalar küçülür, ancak ComfyUI'nin 3B önizlemesi bunları görüntüleyemez; düzenlemeden önce sıkıştırmayı açın."
       },
       "export_uv": {
         "name": "uv_dışa_aktar",
@@ -23848,11 +24074,24 @@
   "TripoRetargetNode": {
     "display_name": "Tripo: Riglenmiş Modeli Yeniden Hedefle",
     "inputs": {
+      "animate_in_place": {
+        "name": "animate_in_place",
+        "tooltip": "Animasyonu kök yer değiştirmesi olmadan yerinde oynatın."
+      },
       "animation": {
-        "name": "animasyon"
+        "name": "animasyon",
+        "tooltip": "preset:* animasyonları her iki rig modeliyle de çalışır; preset:biped:* animasyonları, model v1.0-20240301 ile oluşturulmuş bir rig gerektirir."
+      },
+      "export_with_geometry": {
+        "name": "export_with_geometry",
+        "tooltip": "Mesh'i dışa aktarmaya dahil edin; kapalıyken yalnızca animasyonlu iskelet dışa aktarılır."
       },
       "original_model_task_id": {
         "name": "orijinal_model_görev_id"
+      },
+      "out_format": {
+        "name": "out_format",
+        "tooltip": "Çıktı dosyası biçimi; sonuç eşleşen çıktıda gelir."
       }
     },
     "outputs": {
@@ -23866,15 +24105,97 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "out_format glb olduğunda doldurulur."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "out_format fbx olduğunda doldurulur."
+      }
+    }
+  },
+  "TripoRetopologyNode": {
+    "description": "Yüksek poligonlu bir modelden temiz topolojili düşük poligonlu bir mesh oluşturur.",
+    "display_name": "Tripo: Retopoloji",
+    "inputs": {
+      "bake": {
+        "name": "bake",
+        "tooltip": "Kaynak dokuları düşük poligonlu mesh üzerine işleyin."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Hedef yüz sayısı: 500-20.000 üçgen veya 500-10.000 dörtgen. -1, Tripo'nun seçmesine izin verir."
+      },
+      "model_task_id": {
+        "name": "model_task_id"
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "Tripo: Segment Model'den virgülle ayrılmış parça adları. Boş bırakılırsa modelin tamamı işlenir."
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "Dörtgen mesh çıktısı. Tripo, dörtgen mesh'leri FBX olarak sunar; bu nedenle sonuç FBX çıktısına gelir ve GLB çıktısı boş kalır."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": "quad etkinleştirildiğinde boştur."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Yalnızca quad etkinleştirildiğinde doldurulur."
+      }
+    }
+  },
+  "TripoRigCheckNode": {
+    "description": "Bir modelin riglenip riglenemeyeceğini ve Tripo'nun hangi iskelet türünü önerdiğini denetler.",
+    "display_name": "Tripo: Rig Kontrolü",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "riggable",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_type",
+        "tooltip": "Önerilen iskelet: biped, quadruped, hexapod, octopod, avian, serpentine veya aquatic; model riglenemiyorsa 'others'."
       }
     }
   },
   "TripoRigNode": {
     "display_name": "Tripo: Modeli Rigle",
     "inputs": {
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "v1.0: yalnızca insansı (iki ayaklı) karakterler, 90'dan fazla animasyon ön ayarı. v2.5: insansı olmayan yaratıklar (dört ayaklı, altı ayaklı, sekiz ayaklı, kuş, yılanımsı, sucul)."
+      },
       "original_model_task_id": {
         "name": "orijinal_model_görev_id"
+      },
+      "out_format": {
+        "name": "out_format",
+        "tooltip": "Çıktı dosyası biçimi; sonuç, eşleşen çıktıda görünür."
+      },
+      "rig_type": {
+        "name": "rig_type",
+        "tooltip": "İskelet türü. 'auto' önce Tripo'nun ücretsiz rig denetimini çalıştırır ve önerilen türü kullanır."
+      },
+      "spec": {
+        "name": "spec",
+        "tooltip": "Kemik adlandırması: Tripo yerel veya Mixamo uyumlu. Tripo, mixamo spec ile oluşturulmuş bir v1.0 rig üzerine animasyon ön ayarlarını yeniden hedefleyemez; Tripo: Riglenmiş modeli yeniden hedefle için tripo kullanın."
       }
     },
     "outputs": {
@@ -23888,7 +24209,38 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "out_format glb olduğunda doldurulur."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "out_format fbx olduğunda doldurulur."
+      }
+    }
+  },
+  "TripoSegmentNode": {
+    "description": "Bir modeli parçalara ayırır. Parça adları Tripo: Complete Mesh Parts, Tripo: Retopology ve Tripo: Convert model düğümlerine aktarılır.",
+    "display_name": "Tripo: Modeli Bölümlere Ayır",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "segment task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "part_names",
+        "tooltip": "Parçaların virgülle ayrılmış adları."
       }
     }
   },
@@ -23990,8 +24342,13 @@
   "TripoTextToModelNode": {
     "display_name": "Tripo: Metinden Modele",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Dokulu modelleri metre cinsinden gerçek dünya boyutlarına ölçekler. Tripo boyutu modelin sahne dönüşümü olarak saklar ve model dönüştürüldüğünde, riglendiğinde veya yeniden hedeflendiğinde uygular; doku olmadan yok sayılır."
+      },
       "face_limit": {
-        "name": "yüz_sınırı"
+        "name": "yüz_sınırı",
+        "tooltip": "Maksimum yüz sayısı. -1, Tripo'nun uyarlanabilir şekilde seçim yapmasına izin verir (v3.x standard için yaklaşık 1,4M yüz, detailed için 2M). Tripo sessizce sınırlar: v2.5 için 500.000, dörtgen ağlar için 150.000."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -24006,25 +24363,35 @@
         "name": "model_versiyonu"
       },
       "negative_prompt": {
-        "name": "olumsuz_istek"
+        "name": "olumsuz_istek",
+        "tooltip": "En fazla 255 karakter."
       },
       "pbr": {
-        "name": "pbr"
+        "name": "pbr",
+        "tooltip": "PBR malzeme haritaları (temel renk, metaliklik, pürüzlülük, normal). texture gerektirir."
       },
       "prompt": {
         "name": "istek"
       },
       "quad": {
-        "name": "dörtgen"
+        "name": "dörtgen",
+        "tooltip": "Dörtgen ağ çıktısı. Tripo dörtgen ağları FBX olarak sunar; bu nedenle sonuç FBX çıktısında görünür ve GLB çıktısı boş kalır."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Temiz, el yapımı tarzda topolojiye sahip düşük poligonlu ağ (500-20.000 yüz, dörtgen için 500-10.000). Basit konular için en iyisidir; karmaşık olanlar başarısız olabilir."
       },
       "style": {
-        "name": "stil"
+        "name": "stil",
+        "tooltip": "Artık Tripo tarafından desteklenmiyor ve yok sayılıyor. Eski iş akışları için tutulmuştur."
       },
       "texture": {
-        "name": "doku"
+        "name": "doku",
+        "tooltip": "Doku haritaları oluşturur. Kapalı olduğunda yalnızca geometri döner ve pbr yok sayılır."
       },
       "texture_quality": {
-        "name": "doku_kalitesi"
+        "name": "doku_kalitesi",
+        "tooltip": "detailed = HD dokular, extreme = 8K Ultra dokular."
       },
       "texture_seed": {
         "name": "doku_tohumu"
@@ -24041,7 +24408,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "quad etkin olduğunda boştur."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Yalnızca quad etkin olduğunda doldurulur."
       }
     }
   },
@@ -24051,21 +24422,40 @@
       "model_task_id": {
         "name": "model_görev_id"
       },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "Doku modeli: v3.x ile oluşturulmuş ağlar için v3.0, v2.5 ile oluşturulmuş ağlar için v2.5."
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "Dokulanacak Tripo: Segment Model parça adları, virgülle ayrılmıştır. Boş bırakılırsa her parça dokulanır."
+      },
       "pbr": {
-        "name": "pbr"
+        "name": "pbr",
+        "tooltip": "PBR malzeme haritaları (temel renk, metaliklik, pürüzlülük, normal); kapalıyken düz renkli bir doku verir."
+      },
+      "reference": {
+        "name": "referans",
+        "tooltip": "Dokulara yön veren referans görüntüleri. texture_prompt veya style_image ile birleştirilemez."
+      },
+      "style_image": {
+        "name": "style_image",
+        "tooltip": "Dokuların sanatsal stili için referans görüntü. Yalnızca texture_prompt ile birlikte kullanılır."
       },
       "texture": {
-        "name": "doku"
+        "name": "doku",
+        "tooltip": "Yok sayılır: bu düğüm her zaman doku oluşturur. Eski iş akışları için tutulmuştur."
       },
       "texture_alignment": {
         "name": "doku_hizalama"
       },
       "texture_prompt": {
         "name": "texture_prompt",
-        "tooltip": "Dokulandırma için isteğe bağlı metin rehberi. Pratikte, renkleri çıkarmak için kaynak görseli olmayan aktarılan modeller (Tripo: Model İçe Aktar) için gereklidir."
+        "tooltip": "Doku oluşturma için isteğe bağlı metin yönlendirmesi. Renk çıkarımı yapılacak kaynak görüntü taşımayan içe aktarılmış modeller (Tripo: Import Model) için pratikte gereklidir. Referans görüntüleriyle birleştirilemez."
       },
       "texture_quality": {
-        "name": "doku_kalitesi"
+        "name": "doku_kalitesi",
+        "tooltip": "detailed = HD dokular, extreme = 8K Ultra dokular."
       },
       "texture_seed": {
         "name": "doku_tohumu"
@@ -24082,7 +24472,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "Kaynak bir dörtgen ağ veya FBX içe aktarımı olduğunda boştur."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Tripo, dörtgen ağlar ve FBX içe aktarımları için FBX döndürür; aksi halde boştur."
       }
     }
   },

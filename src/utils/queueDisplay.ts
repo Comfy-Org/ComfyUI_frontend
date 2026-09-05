@@ -43,7 +43,7 @@ export const iconForJobState = (state: JobState): string => {
 
 const buildTitle = (task: TaskItemImpl, t: (k: string) => string): string => {
   const prefix = t('g.job')
-  const shortId = String(task.jobId ?? '').split('-')[0]
+  const shortId = task.jobId.split('-')[0]
   const idx = task.job.priority
   if (typeof idx === 'number') return `${prefix} #${idx}`
   if (shortId) return `${prefix} ${shortId}`
@@ -56,7 +56,7 @@ const buildQueuedTime = (
   formatClockTimeFn: (ts: number, locale: string) => string
 ): string => {
   const ts = task.createTime
-  return ts !== undefined ? formatClockTimeFn(ts, locale) : ''
+  return formatClockTimeFn(ts, locale)
 }
 
 export const buildJobDisplay = (
@@ -143,18 +143,10 @@ export const buildJobDisplay = (
       showClear: false
     }
   }
-  if (state === 'failed') {
-    return {
-      iconName: iconForJobState(state),
-      primary: ctx.t('g.failed'),
-      secondary: ctx.t('g.failed'),
-      showClear: true
-    }
-  }
   return {
     iconName: iconForJobState(state),
-    primary: buildTitle(task, ctx.t),
-    secondary: '',
+    primary: ctx.t('g.failed'),
+    secondary: ctx.t('g.failed'),
     showClear: true
   }
 }

@@ -34,7 +34,7 @@ describe('NodeSearchContent', () => {
     const onAddNode = vi.fn()
     const onHoverNode = vi.fn()
     const onRemoveFilter =
-      vi.fn<(f: FuseFilterWithValue<ComfyNodeDefImpl, string>) => void>()
+      vi.fn<(f: FuseFilterWithValue<ComfyNodeDefImpl>) => void>()
     const onAddFilter = vi.fn()
     render(NodeSearchContent, {
       props: {
@@ -84,7 +84,7 @@ describe('NodeSearchContent', () => {
   ) {
     const btn = screen
       .getAllByRole('button')
-      .find((b) => b.textContent?.trim() === text)
+      .find((b) => b.textContent.trim() === text)
     expect(btn, `Expected filter button "${text}"`).toBeDefined()
     return user.click(btn!)
   }
@@ -202,7 +202,7 @@ describe('NodeSearchContent', () => {
       renderComponent()
       const texts = screen
         .getAllByRole('button')
-        .map((b) => b.textContent?.trim())
+        .map((b) => b.textContent.trim())
       expect(texts).not.toContain('Essentials')
     })
 
@@ -342,7 +342,7 @@ describe('NodeSearchContent', () => {
         const texts = screen
           .queryAllByTestId('node-item')
           .map((i) => i.textContent)
-        expect(texts.some((t) => t?.includes('Load Checkpoint'))).toBe(false)
+        expect(texts.some((t) => t.includes('Load Checkpoint'))).toBe(false)
       })
     })
 
@@ -569,7 +569,7 @@ describe('NodeSearchContent', () => {
 
       const chipTexts = screen
         .getAllByTestId('filter-chip')
-        .map((c) => c.textContent ?? '')
+        .map((c) => c.textContent)
       expect(chipTexts).toHaveLength(2)
       expect(chipTexts.some((t) => t.includes('IMAGE'))).toBe(true)
       expect(chipTexts.some((t) => t.includes('LATENT'))).toBe(true)

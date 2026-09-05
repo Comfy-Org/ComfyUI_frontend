@@ -193,12 +193,6 @@ export function useSubscriptionCheckout(
   const authenticationError = computed(
     () => activeCheckoutOperation.value?.errorMessage ?? null
   )
-  const canRetryAuthentication = computed(
-    () => activeCheckoutOperation.value?.canRetryAuthentication ?? false
-  )
-  const isAuthenticating = computed(
-    () => activeCheckoutOperation.value?.isAuthenticating ?? false
-  )
   const reconciliationOperationId = computed(() =>
     activeCheckoutOperation.value?.status === 'reconciliation_needed'
       ? activeCheckoutOperation.value.opId
@@ -367,23 +361,29 @@ export function useSubscriptionCheckout(
     preview: PreviewSubscribeResponse,
     ignoreTimeDerivedTodayValues = false
   ): string {
-    const planSnapshot = (
-      plan: PreviewSubscribeResponse['new_plan'] | undefined
-    ) =>
-      plan
-        ? [
-            plan.slug,
-            plan.tier,
-            plan.duration,
-            plan.price_cents,
-            plan.credits_cents,
-            plan.seat_summary?.seat_count,
-            plan.seat_summary?.total_cost_cents,
-            plan.seat_summary?.total_credits_cents,
-            plan.period_start,
-            plan.period_end
-          ]
-        : null
+    type RuntimePlan = Omit<
+      NonNullable<PreviewSubscribeResponse['new_plan']>,
+      'seat_summary'
+    > & {
+      seat_summary?: PreviewSubscribeResponse['new_plan']['seat_summary']
+    }
+
+    const planSnapshot = (plan: RuntimePlan | undefined) => {
+      if (!plan) return null
+      const { seat_summary: seatSummary } = plan
+      return [
+        plan.slug,
+        plan.tier,
+        plan.duration,
+        plan.price_cents,
+        plan.credits_cents,
+        seatSummary?.seat_count,
+        seatSummary?.total_cost_cents,
+        seatSummary?.total_credits_cents,
+        plan.period_start,
+        plan.period_end
+      ]
+    }
 
     return JSON.stringify([
       preview.allowed,
@@ -1341,12 +1341,6 @@ export function useSubscriptionCheckout(
     }
   }
 
-  async function retryPaymentAuthentication() {
-    const opId = activeCheckoutOperation.value?.opId
-    if (!opId) return
-    await billingOperationStore.retryPaymentAuthentication(opId)
-  }
-
   async function handleTeamSubscription(
     confirmReactivation = false,
     confirmationToken?: string,
@@ -1363,7 +1357,7 @@ export function useSubscriptionCheckout(
     if (!beginCheckoutMutation()) return
 
     const teamCheckout = selectedTeamCheckout.value
-    if (!teamCheckout?.stop.id) {
+    if (!teamCheckout.stop.id) {
       toast.add({
         severity: 'error',
         summary: t('subscription.teamPlan.name'),
@@ -1558,8 +1552,6 @@ export function useSubscriptionCheckout(
     activeCheckoutActionUrl,
     authenticationState,
     authenticationError,
-    canRetryAuthentication,
-    isAuthenticating,
     reconciliationOperationId,
     isPolling,
     isTeamCheckout,
@@ -1573,7 +1565,6 @@ export function useSubscriptionCheckout(
     handleTeamSubscribe: handleTeamSubscription,
     handleSubscriptionPayment,
     handleTeamSubscriptionPayment,
-    retryPaymentAuthentication,
     applyPromotionCode,
     invalidateQuote,
     handleResubscribe
