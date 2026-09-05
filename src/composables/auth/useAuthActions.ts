@@ -2,6 +2,11 @@ import { FirebaseError } from 'firebase/app'
 import { AuthErrorCodes } from 'firebase/auth'
 import { ref } from 'vue'
 
+import {
+  classifyAuthError,
+  isFirebaseAuthErrorLike
+} from '@comfyorg/auth-core/firebaseAuthError'
+
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { watchForTopupBalanceUpdate } from '@/composables/billing/topupBalanceRefresh'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -23,13 +28,6 @@ import { useAuthStore } from '@/stores/authStore'
 import type { BillingPortalTargetTier } from '@/stores/authStore'
 import { usdToMicros } from '@/utils/formatUtil'
 
-/** Popup outcomes the user or their browser caused, not app faults. */
-const POPUP_PERMISSION_ERROR_CODES: readonly string[] = [
-  AuthErrorCodes.POPUP_CLOSED_BY_USER,
-  AuthErrorCodes.EXPIRED_POPUP_REQUEST,
-  AuthErrorCodes.POPUP_BLOCKED
-]
-
 /**
  * Service for Firebase Auth actions.
  * All actions are wrapped with error handling.
@@ -45,22 +43,16 @@ export const useAuthActions = () => {
   const reportAuthFlowError =
     (authAction: AuthFlowAction) => (error: unknown) => {
       useTelemetry()?.trackAuthFailed({
-        error_code: error instanceof FirebaseError ? error.code : 'unknown',
+        error_code: isFirebaseAuthErrorLike(error) ? error.code : 'unknown',
         auth_action: authAction
       })
       reportError(error)
     }
 
   const reportError = (error: unknown) => {
+    const classification = classifyAuthError(error)
     // Ref: https://firebase.google.com/docs/auth/admin/errors
-    if (
-      error instanceof FirebaseError &&
-      [
-        'auth/unauthorized-domain',
-        'auth/invalid-dynamic-link-domain',
-        'auth/unauthorized-continue-uri'
-      ].includes(error.code)
-    ) {
+    if (classification.kind === 'unauthorized-domain') {
       accessError.value = true
       toastStore.add({
         severity: 'error',
@@ -70,33 +62,29 @@ export const useAuthActions = () => {
           email: 'support@comfy.org'
         })
       })
-    } else if (
-      error instanceof FirebaseError &&
-      error.message.toLowerCase().includes('signup_blocked')
-    ) {
-      // Match on `error.message`, not `error.code`: Firebase `beforeUserCreated`
-      // rejections collapse the thrown code into a generic `auth/internal-error`,
-      // so the message is the only reliable channel. `signup_blocked` is a
-      // cross-repo contract token; matched case-insensitively.
+    } else if (classification.kind === 'signup-blocked') {
       toastStore.add({
         severity: 'error',
         summary: t('g.error'),
         detail: t('auth.errors.signupBlocked')
       })
-    } else if (
-      error instanceof FirebaseError &&
-      POPUP_PERMISSION_ERROR_CODES.includes(error.code)
-    ) {
+    } else if (classification.kind === 'popup-dismissed') {
       toastStore.add({
         severity: 'warn',
         summary: t('g.warning'),
-        detail: st(`auth.errors.${error.code}`, t('auth.errors.generic'))
+        detail: st(
+          `auth.errors.${classification.code}`,
+          t('auth.errors.generic')
+        )
       })
-    } else if (error instanceof FirebaseError) {
+    } else if (classification.kind === 'auth') {
       toastStore.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: st(`auth.errors.${error.code}`, t('auth.errors.generic'))
+        detail: st(
+          `auth.errors.${classification.code}`,
+          t('auth.errors.generic')
+        )
       })
     } else {
       toastErrorHandler(error)

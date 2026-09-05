@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 
 import type { TurnstileApi, TurnstileRenderOptions } from './turnstileScript'
@@ -30,10 +30,6 @@ const baseProps = {
   expiredMessage: 'Challenge expired',
   failedMessage: 'Verification failed'
 }
-
-beforeEach(() => {
-  vi.useFakeTimers({ shouldAdvanceTime: true })
-})
 
 afterEach(() => {
   delete window.turnstile
@@ -73,9 +69,11 @@ describe('TurnstileWidget', () => {
       props: { ...baseProps, loader: async () => api }
     })
     await flush()
+    // The load timeout fires first, marking the widget unavailable.
     await vi.advanceTimersByTimeAsync(9_000)
     expect(emitted('update:unavailable').at(-1)).toEqual([true])
 
+    // Then the challenge resolves late — the parent must be un-blocked.
     options().callback?.('late-token')
 
     expect(emitted('update:token').at(-1)).toEqual(['late-token'])
@@ -166,6 +164,8 @@ describe('TurnstileWidget', () => {
     })
     render(Host)
     await flush()
+    // Let the load timeout mark the widget unavailable first, so the reset's
+    // second chance is observable as a real false transition.
     await vi.advanceTimersByTimeAsync(9_000)
     expect(unavailableUpdates.at(-1)).toBe(true)
 

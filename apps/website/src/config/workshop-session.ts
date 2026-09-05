@@ -12,31 +12,31 @@
  * The cache lives in sessionStorage keyed to the Firebase uid, so a token
  * survives a reload but can never be served to a different signed-in user.
  */
+import type { ExchangeTokenResponse } from '@comfyorg/ingest-types'
+
 import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
 
 const STORAGE_KEY = 'comfy.workshop.session.v1'
 
 /** Re-mint anything closer than this to expiry; the TTL is ~90 minutes. */
 const FRESH_MARGIN_MS = 5 * 60 * 1000
+const SESSION_MINT_TIMEOUT_MS = 15_000
 
-export interface WorkshopSession {
+export interface WorkshopSession extends Pick<
+  ExchangeTokenResponse,
+  'permissions' | 'role' | 'token' | 'workspace'
+> {
   readonly token: string
   /** ms since epoch */
   readonly expiresAt: number
   readonly uid: string
-  readonly workspace: {
-    readonly id: string
-    readonly name: string
-    readonly type: 'personal' | 'team'
-  }
-  readonly role: 'owner' | 'member'
 }
 
 export type WorkshopSessionResult =
   | { readonly status: 'ok'; readonly session: WorkshopSession }
   | {
       readonly status: 'error'
-      readonly reason: 'network' | 'http' | 'malformed'
+      readonly reason: 'aborted' | 'network' | 'http' | 'malformed' | 'timeout'
       readonly httpStatus?: number
     }
 
@@ -50,6 +50,8 @@ export interface WorkshopSessionOptions {
   readonly fetchImpl?: typeof fetch
   readonly baseUrl?: string
   readonly now?: () => number
+  readonly signal?: AbortSignal
+  readonly timeoutMs?: number
 }
 
 export function isWorkshopSessionFresh(
@@ -95,6 +97,26 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
+function abortable<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
+  if (signal.aborted) {
+    return Promise.reject(new DOMException('Aborted', 'AbortError'))
+  }
+  return new Promise<T>((resolve, reject) => {
+    const onAbort = () => reject(new DOMException('Aborted', 'AbortError'))
+    signal.addEventListener('abort', onAbort, { once: true })
+    promise.then(
+      (value) => {
+        signal.removeEventListener('abort', onAbort)
+        resolve(value)
+      },
+      (error: unknown) => {
+        signal.removeEventListener('abort', onAbort)
+        reject(error)
+      }
+    )
+  })
+}
+
 function isWorkshopSession(value: unknown): value is WorkshopSession {
   if (!isRecord(value)) return false
   const workspace = value.workspace
@@ -102,6 +124,8 @@ function isWorkshopSession(value: unknown): value is WorkshopSession {
     typeof value.token === 'string' &&
     typeof value.expiresAt === 'number' &&
     typeof value.uid === 'string' &&
+    Array.isArray(value.permissions) &&
+    value.permissions.every((permission) => typeof permission === 'string') &&
     isRecord(workspace) &&
     typeof workspace.id === 'string' &&
     typeof workspace.name === 'string' &&
@@ -114,22 +138,45 @@ async function mintWorkshopSession(
   user: WorkshopSessionUser,
   options: WorkshopSessionOptions
 ): Promise<WorkshopSessionResult> {
-  const { fetchImpl = globalThis.fetch, baseUrl = WORKSHOP_CLOUD_BASE_URL } =
-    options
+  const {
+    fetchImpl = globalThis.fetch,
+    baseUrl = WORKSHOP_CLOUD_BASE_URL,
+    signal,
+    timeoutMs = SESSION_MINT_TIMEOUT_MS
+  } = options
+
+  if (signal?.aborted) return { status: 'error', reason: 'aborted' }
+
+  const controller = new AbortController()
+  const abort = () => controller.abort()
+  signal?.addEventListener('abort', abort, { once: true })
+  const timeout = globalThis.setTimeout(() => controller.abort(), timeoutMs)
 
   let response: Response
   try {
+    const idToken = await abortable(user.getIdToken(), controller.signal)
     response = await fetchImpl(`${baseUrl}/api/auth/token`, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${await user.getIdToken()}`,
+        Authorization: `Bearer ${idToken}`,
         'Content-Type': 'application/json'
       },
       // Empty body: the backend resolves the personal workspace.
-      body: JSON.stringify({})
+      body: JSON.stringify({}),
+      signal: controller.signal
     })
   } catch {
-    return { status: 'error', reason: 'network' }
+    return {
+      status: 'error',
+      reason: signal?.aborted
+        ? 'aborted'
+        : controller.signal.aborted
+          ? 'timeout'
+          : 'network'
+    }
+  } finally {
+    globalThis.clearTimeout(timeout)
+    signal?.removeEventListener('abort', abort)
   }
 
   if (!response.ok) {
@@ -155,6 +202,10 @@ async function mintWorkshopSession(
     typeof workspace.id !== 'string' ||
     typeof workspace.name !== 'string' ||
     (workspace.type !== 'personal' && workspace.type !== 'team') ||
+    !Array.isArray(body.permissions) ||
+    !body.permissions.every(
+      (permission): permission is string => typeof permission === 'string'
+    ) ||
     (body.role !== 'owner' && body.role !== 'member')
   ) {
     return { status: 'error', reason: 'malformed' }
@@ -162,6 +213,7 @@ async function mintWorkshopSession(
 
   const session: WorkshopSession = {
     token: body.token,
+    permissions: body.permissions,
     expiresAt,
     uid: user.uid,
     workspace: {
@@ -199,6 +251,7 @@ function sharedMint(
   inFlightUid = user.uid
   inFlightForced = forced
   const mint = mintWorkshopSession(user, options).finally(() => {
+    if (inFlight !== mint) return
     inFlight = undefined
     inFlightUid = undefined
     inFlightForced = false

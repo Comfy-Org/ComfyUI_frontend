@@ -1,22 +1,28 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 
 import TurnstileWidget from '@comfyorg/auth-core/TurnstileWidget.vue'
-import { useTurnstileGate } from '@comfyorg/auth-core/turnstile'
+import {
+  isTurnstileEnabled,
+  useTurnstileGate
+} from '@comfyorg/auth-core/turnstile'
 
 import { authSchemasFor } from '../../config/auth-schemas'
 import { WORKSHOP_TURNSTILE_SITE_KEY } from '../../config/workshop-env'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { useWorkshopTurnstileMode } from '../../scripts/posthog'
 
 const {
   mode,
   locale = 'en',
-  disabled = false
+  disabled = false,
+  forgotPasswordHref = '/forgot-password/'
 } = defineProps<{
   mode: 'signIn' | 'signUp'
   locale?: Locale
   disabled?: boolean
+  forgotPasswordHref?: string
 }>()
 
 const emit = defineEmits<{
@@ -33,11 +39,18 @@ const email = ref('')
 const password = ref('')
 const confirmPassword = ref('')
 const fieldErrors = ref<Partial<Record<string, string>>>({})
+const turnstileWidget =
+  useTemplateRef<InstanceType<typeof TurnstileWidget>>('turnstileWidget')
 
-// The Cloudflare hostname allowlist decides whether the widget can render;
-// the gate falls open on `unavailable` so a blocked host never bricks
-// sign-up — the server's own policy is the enforcement.
-const turnstileEnabled = computed(() => mode === 'signUp')
+// Unknown or absent flag variants normalize to off. That keeps an unverified
+// hostname/sitekey from rendering a broken challenge; the server remains the
+// enforcement boundary for shadow/enforce mode.
+const turnstileMode = useWorkshopTurnstileMode()
+const turnstileEnabled = computed(
+  () =>
+    mode === 'signUp' &&
+    isTurnstileEnabled(turnstileMode.value, WORKSHOP_TURNSTILE_SITE_KEY)
+)
 const { token, unavailable, waiting } = useTurnstileGate(turnstileEnabled)
 
 const submitDisabled = computed(() => disabled || waiting.value)
@@ -76,6 +89,12 @@ function submit() {
     ...(token.value ? { turnstileToken: token.value } : {})
   })
 }
+
+function resetTurnstile(): void {
+  turnstileWidget.value?.reset()
+}
+
+defineExpose({ resetTurnstile })
 </script>
 
 <template>
@@ -117,7 +136,7 @@ function submit() {
     </label>
     <a
       v-if="mode === 'signIn'"
-      href="/forgot-password/"
+      :href="forgotPasswordHref"
       class="hover:text-primary-comfy-yellow -mt-2 self-start text-xs text-primary-comfy-canvas/55 underline"
     >
       {{ t('auth.signIn.forgotPassword', locale) }}
@@ -145,6 +164,7 @@ function submit() {
 
     <TurnstileWidget
       v-if="turnstileEnabled"
+      ref="turnstileWidget"
       v-model:token="token"
       v-model:unavailable="unavailable"
       :site-key="WORKSHOP_TURNSTILE_SITE_KEY"

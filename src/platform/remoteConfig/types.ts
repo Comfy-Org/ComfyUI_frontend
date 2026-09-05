@@ -2,6 +2,8 @@ import type { PostHogConfig } from 'posthog-js'
 
 import type { TelemetryEventName } from '@/platform/telemetry/types'
 
+export type { TurnstileMode } from '@comfyorg/auth-core/turnstile'
+
 /**
  * Server health alert configuration from the backend
  */
@@ -137,11 +139,3 @@ export type RemoteConfig = {
   // TurnstileMode — that resolver is the single narrowing boundary.
   signup_turnstile?: string
 }
-
-/**
- * Gate mode for the signup Turnstile challenge.
- * - 'off': do not render the widget
- * - 'shadow': render the widget but never block submit (observe only)
- * - 'enforce': block submit until the challenge is solved
- */
-export type TurnstileMode = 'off' | 'shadow' | 'enforce'

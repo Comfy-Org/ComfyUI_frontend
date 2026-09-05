@@ -26,7 +26,6 @@ dist
 dist-ssr
 *.local
 # Claude configuration
-.claude/settings.json
 .claude/*.local.json
 .claude/*.local.md
 .claude/*.local.txt

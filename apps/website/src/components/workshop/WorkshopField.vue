@@ -70,16 +70,13 @@ const acceptByType = {
 
 <template>
   <label class="flex flex-col gap-2">
-    <!-- Uppercase label with the description beneath, per the prototype. -->
-    <span
-      class="text-xs font-medium tracking-wider text-primary-comfy-canvas/80 uppercase"
-    >
+    <span class="text-sm font-medium text-primary-comfy-canvas">
       {{ field.label }}
       <span v-if="field.required" class="text-primary-comfy-yellow">*</span>
     </span>
     <span
       v-if="'hint' in field && field.hint"
-      class="-mt-1 text-xs text-primary-comfy-canvas/50"
+      class="text-xs text-primary-comfy-canvas/55"
     >
       {{ field.hint }}
     </span>
@@ -112,7 +109,7 @@ const acceptByType = {
     >
       <option
         v-for="option in field.suggestions"
-        :key="option"
+        :key="String(option)"
         :value="option"
       />
     </datalist>
@@ -126,7 +123,11 @@ const acceptByType = {
       <option v-if="field.defaultValue === undefined" value="">
         {{ t('workshop.model.select', locale) }}
       </option>
-      <option v-for="option in field.options" :key="option" :value="option">
+      <option
+        v-for="option in field.options"
+        :key="String(option)"
+        :value="option"
+      >
         {{ option }}
       </option>
     </select>
