@@ -78,7 +78,7 @@ export function buildSubgraphExecutionPaths(
     nodes: readonly FlattenableWorkflowNode[],
     parentPrefix: string
   ) {
-    for (const n of nodes ?? []) {
+    for (const n of nodes) {
       if (typeof n.type !== 'string' || !subgraphDefMap.has(n.type)) continue
       if (visited.has(n.type)) continue
 

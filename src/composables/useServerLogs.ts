@@ -32,7 +32,7 @@ export const useServerLogs = (options: UseServerLogsOptions = {}) => {
   let stopTaskStarted: ReturnType<typeof useEventListener> | null = null
 
   const isValidLogEvent = (event: CustomEvent<LogsWsMessage>) =>
-    event?.type === LOGS_MESSAGE_TYPE && event.detail?.entries?.length > 0
+    event.type === LOGS_MESSAGE_TYPE && event.detail.entries.length > 0
 
   const parseLogMessage = (event: CustomEvent<LogsWsMessage>) =>
     event.detail.entries.map((e) => e.m).filter(messageFilter)
@@ -50,13 +50,13 @@ export const useServerLogs = (options: UseServerLogsOptions = {}) => {
   }
 
   const handleTaskStarted = (event: CustomEvent<ManagerWsTaskStartedMsg>) => {
-    if (ui_id && event?.detail?.ui_id === ui_id) {
+    if (ui_id && event.detail.ui_id === ui_id) {
       isTaskStarted.value = true
     }
   }
 
   const handleTaskDone = (event: CustomEvent<ManagerWsTaskDoneMsg>) => {
-    if (ui_id && event?.detail?.ui_id === ui_id) {
+    if (ui_id && event.detail.ui_id === ui_id) {
       isTaskStarted.value = false
     }
   }

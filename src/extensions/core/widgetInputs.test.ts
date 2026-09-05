@@ -10,6 +10,7 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { LegacyWidget } from '@/lib/litegraph/src/widgets/LegacyWidget'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
@@ -239,6 +240,24 @@ describe('PrimitiveNode', () => {
       type: 'asset',
       value: 'serialized.safetensors'
     })
+  })
+
+  it('uses the legacy fallback for unsupported widget types', () => {
+    const graph = new LGraph()
+    const target = new LGraphNode('Target')
+    graph.add(target)
+    target.addInput('value', 'CUSTOM_WIDGET')
+    target.inputs[0].widget = {
+      name: 'value',
+      [GET_CONFIG]: () => ['CUSTOM_WIDGET', {}]
+    }
+
+    const primitive = new PrimitiveNode('Primitive')
+    graph.add(primitive)
+    primitive.connect(0, target, 0)
+
+    expect(primitive.widgets?.[0]).toBeInstanceOf(LegacyWidget)
+    expect(primitive.widgets?.[0].type).toBe('custom_widget')
   })
 
   it('restores its serialized value after a reroute resolves its widget config', () => {

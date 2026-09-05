@@ -98,7 +98,7 @@ export const useImageUploadWidget = () => {
           oldValue,
           fileComboWidget
         )
-        useWorkflowStore().activeWorkflow?.changeTracker?.captureCanvasState()
+        useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
       }
     })
 
@@ -128,10 +128,16 @@ export const useImageUploadWidget = () => {
     // The value isn't set immediately so we need to wait a moment
     // No change callbacks seem to be fired on initial setting of the value
     requestAnimationFrame(() => {
-      if (fileComboWidget.value != null)
-        nodeOutputStore.setNodeOutputs(node, String(fileComboWidget.value), {
+      const fileValue = fileComboWidget.value as
+        | string
+        | number
+        | null
+        | undefined
+      if (fileValue != null) {
+        nodeOutputStore.setNodeOutputs(node, String(fileValue), {
           isAnimated
         })
+      }
       showPreview({ block: false })
     })
 
