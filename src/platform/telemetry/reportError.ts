@@ -3,6 +3,8 @@ import { datadogRum } from '@datadog/browser-rum'
 // eslint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
 import { captureException, isEnabled as isSentryEnabled } from '@sentry/vue'
 
+import type { ComfyDesktop2TelemetryProperties } from '@comfyorg/comfyui-desktop-bridge-types'
+
 import { toError } from '@/utils/errorUtil'
 
 export interface ReportErrorOptions {
@@ -41,6 +43,49 @@ const definedEntriesOf = (
     Object.entries(tags ?? {}).filter(([, value]) => value !== undefined)
   ) as Record<string, string | number | boolean>
 
+type DesktopCaptureException = (
+  error: { message: string; stack?: string },
+  properties: ComfyDesktop2TelemetryProperties
+) => void
+
+interface DesktopExceptionTelemetry {
+  captureException?: DesktopCaptureException
+}
+
+/**
+ * The one Desktop liveness probe, shared by `dispatch` and the flush gate in
+ * `flushErrorReports`. Those two must agree: the gate decides whether to drain
+ * the buffer, and a drained report that `dispatch` then declines is lost, not
+ * re-buffered.
+ *
+ * Structural compatibility shim until the optional method ships in
+ * @comfyorg/comfyui-desktop-bridge-types. Older Desktop builds simply omit it,
+ * while current builds scrub the error and add release context.
+ */
+function desktopExceptionSink(): DesktopCaptureException | undefined {
+  const telemetry = window.__comfyDesktop2?.Telemetry as
+    | DesktopExceptionTelemetry
+    | undefined
+  const capture = telemetry?.captureException
+  return capture ? capture.bind(telemetry) : undefined
+}
+
+function dispatchToDesktop(
+  error: Error,
+  errorType: string,
+  tags: Record<string, string | number | boolean>,
+  level?: ReportErrorOptions['level']
+): boolean {
+  const capture = desktopExceptionSink()
+  if (!capture) return false
+
+  capture(
+    { message: error.message, ...(error.stack ? { stack: error.stack } : {}) },
+    { ...tags, error_type: errorType, ...(level ? { level } : {}) }
+  )
+  return true
+}
+
 function dispatch(error: Error, options: ReportErrorOptions): boolean {
   const { errorType, context, level } = options
   const tags = definedEntriesOf(options.tags)
@@ -62,8 +107,9 @@ function dispatch(error: Error, options: ReportErrorOptions): boolean {
       ...(level ? { level } : {})
     })
   }
+  const desktopLive = dispatchToDesktop(error, errorType, tags, level)
 
-  return sentryLive || datadogLive
+  return sentryLive || datadogLive || desktopLive
 }
 
 /**
@@ -76,7 +122,8 @@ function dispatch(error: Error, options: ReportErrorOptions): boolean {
  */
 export function flushErrorReports(): void {
   if (!pendingReports.length) return
-  if (!isSentryEnabled() && !isDatadogRumLive()) return
+  if (!isSentryEnabled() && !isDatadogRumLive() && !desktopExceptionSink())
+    return
 
   const drained = pendingReports.splice(0, pendingReports.length)
   for (const { error, options } of drained) {
