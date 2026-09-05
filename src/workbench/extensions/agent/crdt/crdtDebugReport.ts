@@ -53,6 +53,9 @@ const REDACTED = '[redacted by the debug report]'
 const SHARING_WARNING =
   'Review before sharing: this section can contain values you did not choose to publish.'
 
+/** Heads the CRDT event log both in the report and in the panel's copied log. */
+export const EVENT_LOG_WARNING = `${SHARING_WARNING} Operation payload values are redacted; op ids and workflow ids appear verbatim.`
+
 /**
  * Redaction must RECURSE. A single top-level pass reads as sufficient and is
  * not: `Comfy.Server.LaunchArgs` is a `Record<string, string>` of the flags
@@ -238,16 +241,55 @@ function json(value: unknown): string {
   }
 }
 
-function redactEventPayloads(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(redactEventPayloads)
-  if (!isRecord(value)) return value
+export function redactEventPayloads(
+  value: readonly DevEvent[]
+): readonly DevEvent[]
+export function redactEventPayloads(value: unknown): unknown
+export function redactEventPayloads(value: unknown): unknown {
+  return redactPayloadTree(value, 0)
+}
+
+/**
+ * Every wire-op field that carries user workflow content: `set_widget.value`
+ * and its informational `old` (the value before the write), the verbatim node
+ * snapshot on `add_node`, `widgets_values` inside any snapshot, and the full
+ * `reset_doc.workflow`. Events record whole ops (`ws_out` frames,
+ * `human_ops_settled` outcomes), so masking `value` alone still leaks the
+ * previous prompt through `old`.
+ */
+const CONTENT_KEYS: ReadonlySet<string> = new Set([
+  'value',
+  'old',
+  'widgets_values',
+  'node',
+  'workflow'
+])
+
+/**
+ * Runs before `devEventReplacer`, so anything it rebuilds is what the
+ * replacer sees. Binary views stay intact for the replacer to summarize
+ * (`Object.entries(new Uint8Array(4))` would otherwise flatten them into
+ * index-keyed records), and the depth cap turns a cyclic detail into a marker
+ * instead of a `RangeError` that `copyLog` would swallow.
+ */
+function redactPayloadTree(value: unknown, depth: number): unknown {
+  if (depth > MAX_REDACTION_DEPTH) return DEPTH_LIMIT_REDACTED
+  if (Array.isArray(value)) {
+    return value.map((item) => redactPayloadTree(item, depth + 1))
+  }
+  if (!isRecord(value) || isBinary(value)) return value
   return Object.fromEntries(
     Object.entries(value).map(([key, nested]) => [
       key,
-      key === 'value' || key === 'widgets_values' || key === 'node'
-        ? REDACTED
-        : redactEventPayloads(nested)
+      CONTENT_KEYS.has(key) ? REDACTED : redactPayloadTree(nested, depth + 1)
     ])
+  )
+}
+
+function isBinary(value: object): boolean {
+  return (
+    ArrayBuffer.isView(value) ||
+    Object.prototype.toString.call(value) === '[object ArrayBuffer]'
   )
 }
 
@@ -474,7 +516,7 @@ export async function collectCrdtDebugReport(
 
   sections.push(
     '## CRDT event log',
-    `${SHARING_WARNING} Operation payload values are redacted; op ids and workflow ids appear verbatim.`,
+    EVENT_LOG_WARNING,
     fence(
       'json',
       truncate(json(redactEventPayloads(input.events)), MAX_SECTION_CHARS)

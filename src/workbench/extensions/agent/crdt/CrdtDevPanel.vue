@@ -28,7 +28,9 @@ import type { ReportIdentifiers, ReportSources } from './crdtDebugReport'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import {
   DEFAULT_REPORT_SOURCES,
-  collectCrdtDebugReport
+  EVENT_LOG_WARNING,
+  collectCrdtDebugReport,
+  redactEventPayloads
 } from './crdtDebugReport'
 import type { CrdtLogScope, DevEvent, DevEventKind } from './devPanelLog'
 import { clearDevEvents, devEvents, stringifyDevEvents } from './devPanelLog'
@@ -420,7 +422,9 @@ function flashReportCopyState(ok: boolean) {
 async function copyLog() {
   try {
     flashLogCopyState(
-      await writeClipboard(stringifyDevEvents(matchingEvents.value))
+      await writeClipboard(
+        `${EVENT_LOG_WARNING}\n\n${stringifyDevEvents(redactEventPayloads(matchingEvents.value))}`
+      )
     )
   } catch {
     flashLogCopyState(false)

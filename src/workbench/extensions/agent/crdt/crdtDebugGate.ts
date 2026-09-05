@@ -68,6 +68,7 @@ export function resolveDebugPanelEnabled(
  */
 let cachedEnabled: boolean | null = null
 let cachedStoredEnabled: string | null = null
+let storedEnabledRead = false
 let cachedLevel: CrdtLogLevel | null = null
 
 function isLogLevel(value: unknown): value is CrdtLogLevel {
@@ -165,14 +166,17 @@ export function isCrdtDebugEnabled(): boolean {
 }
 
 function readStoredEnabled(): string | null {
-  if (cachedStoredEnabled === null)
+  if (!storedEnabledRead) {
     cachedStoredEnabled = readStorage(ENABLED_KEY)
+    storedEnabledRead = true
+  }
   return cachedStoredEnabled
 }
 
 export function setCrdtDebugEnabled(enabled: boolean): void {
   cachedEnabled = enabled
   cachedStoredEnabled = String(enabled)
+  storedEnabledRead = true
   writeStorage(ENABLED_KEY, String(enabled))
 }
 

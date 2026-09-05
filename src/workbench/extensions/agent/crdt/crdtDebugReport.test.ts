@@ -294,6 +294,79 @@ describe('collectCrdtDebugReport', () => {
     expect(report).not.toContain('private prompt')
   })
 
+  it('redacts the previous widget value and reset workflows from settled ops', async () => {
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [
+        {
+          seq: 1,
+          at: 0,
+          kind: 'human_ops_settled',
+          scope: 'doc',
+          level: 'debug',
+          detail: {
+            ok: true,
+            ops: [
+              {
+                op: 'set_widget',
+                op_id: 'op-old',
+                node_id: 'A',
+                widget: 'text',
+                value: 'new prompt',
+                old: 'previous prompt'
+              },
+              {
+                op: 'reset_doc',
+                op_id: 'op-reset',
+                workflow: { nodes: [{ widgets_values: ['reset prompt'] }] }
+              }
+            ]
+          }
+        }
+      ]
+    })
+
+    expect(report).toContain('op-old')
+    expect(report).toContain('op-reset')
+    expect(report).not.toContain('new prompt')
+    expect(report).not.toContain('previous prompt')
+    expect(report).not.toContain('reset prompt')
+  })
+
+  it('keeps binary event details summarized instead of flattening them', async () => {
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [
+        {
+          seq: 1,
+          at: 0,
+          kind: 'doc_update',
+          scope: 'doc',
+          level: 'info',
+          detail: { bytes: new Uint8Array([1, 2, 3]) }
+        }
+      ]
+    })
+
+    expect(report).toContain('Uint8Array(3)')
+    expect(report).not.toContain('"0": 1')
+  })
+
+  it('renders a cyclic event detail without throwing', async () => {
+    const detail: Record<string, unknown> = { kind: 'loop' }
+    detail.self = detail
+
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [
+        { seq: 1, at: 0, kind: 'doc_gap', scope: 'doc', level: 'warn', detail }
+      ]
+    })
+
+    expect(report).toContain('redacted at depth limit')
+    expect(report).not.toContain('unserializable')
+  })
+
   it('redacts a credential nested under an innocuous key', async () => {
     getSettings.mockResolvedValue({
       'Comfy.Server.LaunchArgs': { '--api-token': 'nested-do-not-leak' },
