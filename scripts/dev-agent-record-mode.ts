@@ -12,7 +12,7 @@ import {
   spawnGroup,
   supervise,
   wait,
-  waitForHttp
+  waitForStartup
 } from './dev-agent-supervisor'
 
 const execFileAsync = promisify(execFile)
@@ -226,6 +226,15 @@ export async function runRecord(options: Options): Promise<number> {
       DOC_HOST_PORT: String(options.docHostPort)
     })
     supervisor.watch(docHost)
+    const docHostStartupResult = await waitForStartup(
+      docHost,
+      `http://127.0.0.1:${options.docHostPort}/health`,
+      'Doc host',
+      supervisor
+    )
+    if (docHostStartupResult !== null) {
+      return await supervisor.stop(docHostStartupResult)
+    }
     const agent = spawnGroup(
       'bash',
       ['start.sh'],
@@ -234,15 +243,12 @@ export async function runRecord(options: Options): Promise<number> {
     )
     supervisor.watch(agent)
 
-    const startupResult = await Promise.race([
-      waitForHttp(
-        agent,
-        `${agentUrl}/health`,
-        supervisor.requested,
-        'Standalone agent'
-      ).then(() => null),
-      supervisor.exitRequested
-    ])
+    const startupResult = await waitForStartup(
+      agent,
+      `${agentUrl}/health`,
+      'Standalone agent',
+      supervisor
+    )
     if (startupResult !== null) return await supervisor.stop(startupResult)
     const cloudSha = (
       await execFileAsync('git', ['-C', options.cloudRepo, 'rev-parse', 'HEAD'])

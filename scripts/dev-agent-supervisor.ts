@@ -72,6 +72,21 @@ export async function waitForHttp(
   throw new Error(`${label} did not become ready at ${url}`)
 }
 
+export function waitForStartup(
+  child: ChildProcess,
+  url: string,
+  label: string,
+  supervisor: {
+    exitRequested: Promise<number>
+    requested: () => boolean
+  }
+): Promise<number | null> {
+  return Promise.race([
+    waitForHttp(child, url, supervisor.requested, label).then(() => null),
+    supervisor.exitRequested
+  ])
+}
+
 // One lifecycle for a spawned group: the first exit reason wins and teardown runs once.
 export function supervise(dataDir: string) {
   const children: ChildProcess[] = []
