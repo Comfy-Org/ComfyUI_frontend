@@ -23,9 +23,13 @@
 # dependencies still resolve fresh, and the runner image updates independently.
 name: 'CI: Tests Custom Nodes'
 # An override run tests different code than the ref it is attributed to, so say
-# so in the Actions list as well as in the check-run names below. Without the
+# so in the Actions list as well as in the check-run names below. `record_interactions`
+# and a non-clean `detection_proof_row` also change what is tested, so they are named
+# too. `record_interactions` forces GREP_FILTER to `interaction profiles`, so it
+# replaces the `grep` label rather than sitting beside it - printing the caller's
+# `grep` there would name a filter that is not the one in effect. Without any
 # override this is the default run name.
-run-name: "CI: Tests Custom Nodes${{ inputs.branch && format(' [branch: {0}]', inputs.branch) || '' }}${{ inputs.comfyui_ref && format(' [comfyui: {0}]', inputs.comfyui_ref) || '' }}${{ inputs.grep && format(' [grep: {0}]', inputs.grep) || '' }}"
+run-name: "CI: Tests Custom Nodes${{ inputs.branch && format(' [branch: {0}]', inputs.branch) || '' }}${{ inputs.comfyui_ref && format(' [comfyui: {0}]', inputs.comfyui_ref) || '' }}${{ inputs.record_interactions && ' [record_interactions]' || inputs.grep && format(' [grep: {0}]', inputs.grep) || '' }}${{ inputs.detection_proof_row && inputs.detection_proof_row != '0' && format(' [proof_row: {0}]', inputs.detection_proof_row) || '' }}"
 
 on:
   schedule:
@@ -105,10 +109,13 @@ jobs:
     # `comfyui_ref` swaps the core the suite runs against, and `grep` narrows the
     # suite and (per its own description) skips the exact-count gate, so either
     # one can publish a weaker or unrelated result under the full run's name.
-    # `detection_proof_row` is already in the matrix name and `record_interactions`
-    # already changes the shard list, so both are self-distinguishing. With no
+    # `detection_proof_row` is already in the matrix name, and `record_interactions`
+    # already changes the shard list to a `core:1/1` that no ordinary run produces,
+    # so this job's name cannot collide on either. `record_interactions` still
+    # replaces the `grep` label, because it forces GREP_FILTER to `interaction
+    # profiles` and the caller's `grep` is then not the filter that ran. With no
     # override the name is byte-identical to the matrix default.
-    name: "custom_nodes_e2e (${{ matrix.shard }}, ${{ matrix.proof_row }})${{ inputs.branch && format(' [branch: {0}]', inputs.branch) || '' }}${{ inputs.comfyui_ref && format(' [comfyui: {0}]', inputs.comfyui_ref) || '' }}${{ inputs.grep && format(' [grep: {0}]', inputs.grep) || '' }}"
+    name: "custom_nodes_e2e (${{ matrix.shard }}, ${{ matrix.proof_row }})${{ inputs.branch && format(' [branch: {0}]', inputs.branch) || '' }}${{ inputs.comfyui_ref && format(' [comfyui: {0}]', inputs.comfyui_ref) || '' }}${{ inputs.record_interactions && ' [record_interactions]' || inputs.grep && format(' [grep: {0}]', inputs.grep) || '' }}"
     needs: changes
     if: needs.changes.outputs.should-run == 'true'
     strategy:
@@ -461,7 +468,15 @@ jobs:
     # Same masquerade guard as the matrix job above: this is the aggregate name
     # a reader treats as "the suite result for this commit", so a branch override
     # must not be able to publish under it.
-    name: "E2E Custom Nodes Test${{ inputs.branch && format(' [branch: {0}]', inputs.branch) || '' }}${{ inputs.comfyui_ref && format(' [comfyui: {0}]', inputs.comfyui_ref) || '' }}${{ inputs.grep && format(' [grep: {0}]', inputs.grep) || '' }}"
+    #
+    # This job has no matrix, so unlike the job above it gets nothing for free:
+    # `record_interactions` (one `core:1/1` shard under a forced grep) and a
+    # `detection_proof_row` other than the clean `0` (deliberately broken source,
+    # where red is the expected result) would otherwise both publish their verdict
+    # under the untagged aggregate name. Every dispatch input that changes what is
+    # tested is therefore named here explicitly. A schedule run leaves the whole
+    # `inputs` context empty, so the nightly still publishes the bare name.
+    name: "E2E Custom Nodes Test${{ inputs.branch && format(' [branch: {0}]', inputs.branch) || '' }}${{ inputs.comfyui_ref && format(' [comfyui: {0}]', inputs.comfyui_ref) || '' }}${{ inputs.record_interactions && ' [record_interactions]' || inputs.grep && format(' [grep: {0}]', inputs.grep) || '' }}${{ inputs.detection_proof_row && inputs.detection_proof_row != '0' && format(' [proof_row: {0}]', inputs.detection_proof_row) || '' }}"
     if: always()
     needs: [changes, custom_nodes_e2e]
     runs-on: ubuntu-latest
