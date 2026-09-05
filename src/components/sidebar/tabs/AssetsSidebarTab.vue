@@ -113,10 +113,11 @@
           :selectable-assets="listViewSelectableAssets"
           :is-stack-expanded="isListViewStackExpanded"
           :toggle-stack="toggleListViewStack"
+          :on-load-more="loadMoreAssets"
+          :can-load-more="canLoadMoreAssets"
           @select-asset="handleAssetSelect"
           @preview-asset="handleZoomClick"
           @context-menu="handleAssetContextMenu"
-          @approach-end="handleApproachEnd"
         />
         <div v-else class="size-full">
           <AssetsSidebarGridView
@@ -125,10 +126,11 @@
             :show-output-count
             :get-output-count
             :grid-mode
+            :on-load-more="loadMoreAssets"
+            :can-load-more="canLoadMoreAssets"
             @select-asset="handleAssetSelect"
             @toggle-asset-selection="handleAssetSelectionToggle"
             @context-menu="handleAssetContextMenu"
-            @approach-end="handleApproachEnd"
             @zoom="handleZoomClick"
             @output-count-click="enterFolderView"
           />
@@ -181,7 +183,6 @@
 import {
   unrefElement,
   useAsyncState,
-  useDebounceFn,
   useStorage,
   useTimeoutFn
 } from '@vueuse/core'
@@ -673,7 +674,8 @@ const copyJobId = async () => {
   }
 }
 
-const handleApproachEnd = useDebounceFn(async () => {
-  if (!isInFolderView.value) await currentAssets.value.loadMore()
-}, 300)
+const loadMoreAssets = () => currentAssets.value.loadMore()
+const canLoadMoreAssets = computed(
+  () => !isInFolderView.value && toValue(currentAssets.value.hasMore)
+)
 </script>
