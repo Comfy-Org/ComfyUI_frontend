@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { WorkshopDetailModel } from '../../config/workshop-detail'
 import WorkshopPlayground from './WorkshopPlayground.vue'
@@ -90,5 +90,21 @@ describe('WorkshopPlayground', () => {
     expect(screen.getByRole('tab', { selected: true })).toBe(pythonTab)
     expect(screen.getByText(/comfy\.models\.run\("bfl\/flux-3"/)).toBeTruthy()
     expect(screen.getByText(/"prompt": "Red fox"/)).toBeTruthy()
+  })
+
+  it('copies the selected snippet and confirms the action', async () => {
+    const writeText = vi
+      .spyOn(navigator.clipboard, 'writeText')
+      .mockResolvedValue(undefined)
+    render(WorkshopPlayground, { props: { model } })
+
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: 'Copy code' }))
+
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("comfy.models.run('bfl/flux-3'")
+    )
+    expect(screen.getByRole('button', { name: 'Copied' })).toBeTruthy()
   })
 })
