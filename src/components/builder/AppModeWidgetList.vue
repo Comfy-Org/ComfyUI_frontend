@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import WidgetDescription from '@/components/builder/WidgetDescription.vue'
 import { useAppModeWidgetResizing } from '@/components/builder/useAppModeWidgetResizing'
+import { getLoaderDropIndicator } from '@/components/builder/useLoaderDropIndicator'
 import { useResolvedSelectedInputs } from '@/components/builder/useResolvedSelectedInputs'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -13,18 +14,14 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
 import type { WidgetId } from '@/types/widgetId'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
-import { extractWidgetStringValue } from '@/composables/maskeditor/useMaskEditorLoader'
-import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import DropZone from '@/renderer/extensions/linearMode/DropZone.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
-import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { parseImageWidgetValue } from '@/utils/imageUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 import { HideLayoutFieldKey, WidgetHeightKey } from '@/types/widgetTypes'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
@@ -118,32 +115,12 @@ const mappedSelections = computed((): WidgetEntry[] => {
 })
 
 function getDropIndicator(node: LGraphNode, id: WidgetId) {
-  if (node.type !== 'LoadImage') return undefined
-
-  const stringValue = extractWidgetStringValue(
-    widgetValueStore.getWidget(id)?.value
-  )
-
-  const { filename, subfolder, type } = stringValue
-    ? parseImageWidgetValue(stringValue)
-    : { filename: '', subfolder: '', type: 'input' }
-
-  const buildImageUrl = () => {
-    if (!filename) return undefined
-    const params = new URLSearchParams({ filename, subfolder, type })
-    appendCloudResParam(params, filename)
-    return api.apiURL(`/view?${params}${app.getPreviewFormatParam()}`)
-  }
-
-  const imageUrl = buildImageUrl()
-
-  return {
-    iconClass: 'icon-[lucide--image]',
-    imageUrl,
-    label: mobile ? undefined : t('linearMode.dragAndDropImage'),
-    onClick: () => node.widgets?.[1]?.callback?.(undefined),
-    onMaskEdit: imageUrl ? () => maskEditor.openMaskEditor(node) : undefined
-  }
+  return getLoaderDropIndicator(node, id, {
+    mobile,
+    label: t,
+    onMaskEdit: maskEditor.openMaskEditor,
+    widgetValueStore
+  })
 }
 
 function nodeToNodeData(node: LGraphNode, id: WidgetId) {
