@@ -612,8 +612,7 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
         ? this.comfyDynamic.autogrow[key]
         : undefined
       if (!autogrowGroup) return
-      if (app.configuringGraph && input.widget)
-        ensureWidgetForInput(node, input)
+      if (input.widget) ensureWidgetForInput(node, input)
       if (iscon) {
         if (swappingConnection || !linf) return
         autogrowInputConnected(slot, this)
