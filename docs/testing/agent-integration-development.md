@@ -85,9 +85,10 @@ Paste the recorder command it prints, one `--prompt` per turn.
 5. Export `ANTHROPIC_API_KEY`. `ANTHROPIC_BASE_URL` may be used instead for a local
    compatible model endpoint.
 
-The root dependency on `@comfyorg/comfy-multi-player` must use `workspace:`. The
-launcher refuses an npm pin or `pnpm link`, because either one would bypass the source
-tree whose HMR behavior this environment exists to exercise.
+The root dependency on `@comfyorg/comfy-multi-player` may use the published npm
+package or `workspace:`. The launcher warns that package source edits will not
+hot-reload when the published package is selected, and refuses `pnpm link`; use
+`workspace:` when developing the package alongside the frontend.
 
 ## How it works
 
