@@ -175,12 +175,16 @@ import { SUPPORTED_MESH_EXTENSIONS } from '@/extensions/core/load3d/constants'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import {
   pasteAudioNode,
-  pasteAudioNodes,
   pasteImageNode,
-  pasteImageNodes,
-  pasteVideoNode,
-  pasteVideoNodes
+  pasteVideoNode
 } from '@/composables/usePaste'
+import {
+  handleAudioFileList,
+  handleFileList,
+  handleVideoFileList,
+  positionBatchNodes,
+  positionNodes
+} from '@/composables/useDrop'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -471,6 +475,45 @@ export class ComfyApp {
   }
 
   /**
+   * @deprecated Use {@link handleFileList} from @/composables/useDrop instead
+   */
+  async handleFileList(fileList: File[]): Promise<LGraphNode[]> {
+    return handleFileList(this.canvas, fileList)
+  }
+
+  /**
+   * @deprecated Use {@link handleAudioFileList} from @/composables/useDrop instead
+   */
+  async handleAudioFileList(fileList: File[]): Promise<LGraphNode[]> {
+    return handleAudioFileList(this.canvas, fileList)
+  }
+
+  /**
+   * @deprecated Use {@link handleVideoFileList} from @/composables/useDrop instead
+   */
+  async handleVideoFileList(fileList: File[]): Promise<LGraphNode[]> {
+    return handleVideoFileList(this.canvas, fileList)
+  }
+
+  /**
+   * @deprecated Use {@link positionNodes} from @/composables/useDrop instead
+   */
+  positionNodes(nodes: LGraphNode[], precedingNodes: LGraphNode[] = []): void {
+    positionNodes(this.canvas, nodes, precedingNodes)
+  }
+
+  /**
+   * @deprecated Use {@link positionBatchNodes} from @/composables/useDrop instead
+   */
+  positionBatchNodes(
+    nodes: LGraphNode[],
+    batchNode: LGraphNode,
+    precedingNodes: LGraphNode[] = []
+  ): void {
+    positionBatchNodes(this.canvas, nodes, batchNode, precedingNodes)
+  }
+
+  /**
    * Resets the canvas view to the default
    * @deprecated Use {@link useLitegraphService().resetView} instead
    */
@@ -744,6 +787,7 @@ export class ComfyApp {
         const workspace = useWorkspaceStore()
         try {
           workspace.spinner = true
+          const dropBatchNodes: LGraphNode[] = []
           const imageFiles = files.filter(hasImageType)
           const audioFiles = files.filter(hasAudioType)
           const videoFiles = files.filter(hasVideoType)
@@ -759,13 +803,31 @@ export class ComfyApp {
 
           if (hasMultipleMedia) {
             if (imageFiles.length > 0) {
-              await this.handleFileList(imageFiles)
+              dropBatchNodes.push(
+                ...(await handleFileList(
+                  this.canvas,
+                  imageFiles,
+                  dropBatchNodes
+                ))
+              )
             }
             if (audioFiles.length > 0) {
-              await this.handleAudioFileList(audioFiles)
+              dropBatchNodes.push(
+                ...(await handleAudioFileList(
+                  this.canvas,
+                  audioFiles,
+                  dropBatchNodes
+                ))
+              )
             }
             if (videoFiles.length > 0) {
-              await this.handleVideoFileList(videoFiles)
+              dropBatchNodes.push(
+                ...(await handleVideoFileList(
+                  this.canvas,
+                  videoFiles,
+                  dropBatchNodes
+                ))
+              )
             }
             for (const file of files.filter((f) => !isMediaFile(f))) {
               await this.handleFile(file, 'file_drop', handleFileOptions)
@@ -776,7 +838,18 @@ export class ComfyApp {
             }
           }
 
-          this.positionNodes(createdNodes)
+          // A file above (e.g. a dropped workflow JSON) may have called
+          // loadGraphData and replaced the graph out from under us. Any
+          // dropBatchNodes or createdNodes from before that point are now
+          // detached, and positioning against/repositioning them would be
+          // wrong.
+          const liveDropBatchNodes = dropBatchNodes.filter(
+            (node) => node.graph === this.canvas.graph
+          )
+          const liveCreatedNodes = createdNodes.filter(
+            (node) => node.graph === this.canvas.graph
+          )
+          positionNodes(this.canvas, liveCreatedNodes, liveDropBatchNodes)
         } finally {
           workspace.spinner = false
         }
@@ -2214,87 +2287,6 @@ export class ComfyApp {
     }
     modelWidget.value = uploadedPath
     return node
-  }
-
-  /**
-   * Loads multiple files, connects to a batch node, and selects them
-   * @param {FileList} fileList
-   */
-  async handleFileList(fileList: File[]) {
-    if (fileList.length === 0) return
-    if (!fileList[0].type.startsWith('image')) return
-
-    const imageNodes = await pasteImageNodes(this.canvas, fileList)
-    if (imageNodes.length === 0) return
-
-    if (imageNodes.length > 1) {
-      const batchImagesNode = await createNode(this.canvas, 'BatchImagesNode')
-      if (!batchImagesNode) return
-
-      this.positionBatchNodes(imageNodes, batchImagesNode)
-      this.canvas.selectItems([...imageNodes, batchImagesNode])
-
-      imageNodes.forEach((imageNode, index) => {
-        imageNode.connect(0, batchImagesNode, index)
-      })
-    } else {
-      this.canvas.selectItems(imageNodes)
-    }
-  }
-
-  async handleAudioFileList(fileList: File[]) {
-    const audioNodes = await pasteAudioNodes(this.canvas, fileList)
-    if (audioNodes.length === 0) return
-
-    this.positionNodes(audioNodes)
-    this.canvas.selectItems(audioNodes)
-  }
-
-  async handleVideoFileList(fileList: File[]) {
-    const videoNodes = await pasteVideoNodes(this.canvas, fileList)
-    if (videoNodes.length === 0) return
-
-    this.positionNodes(videoNodes)
-    this.canvas.selectItems(videoNodes)
-  }
-
-  /**
-   * Positions batched nodes in drag and drop
-   * @param nodes
-   * @param batchNode
-   */
-  positionNodes(nodes: LGraphNode[]): void {
-    if (nodes.length <= 1) return
-
-    const [x, y] = nodes[0].getBounding()
-    const nodeHeight = 150
-
-    nodes.forEach((node, index) => {
-      if (index > 0) {
-        node.pos = [x, y + nodeHeight * index + 25 * (index + 1)]
-      }
-    })
-
-    this.canvas.graph?.change()
-  }
-
-  positionBatchNodes(nodes: LGraphNode[], batchNode: LGraphNode): void {
-    const [x, y, width] = nodes[0].getBounding()
-    batchNode.pos = [x + width + 100, y + 30]
-
-    // Retrieving Node Height is inconsistent
-    let height = 0
-    if (nodes[0].type === 'LoadImage') {
-      height = 344
-    }
-
-    nodes.forEach((node, index) => {
-      if (index > 0) {
-        node.pos = [x, y + height * index + 25 * (index + 1)]
-      }
-    })
-
-    this.canvas.graph?.change()
   }
 
   // @deprecated
