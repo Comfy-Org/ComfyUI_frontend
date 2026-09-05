@@ -122,4 +122,10 @@ describe('useAgentChatHistoryStore', () => {
 
     expect(store.activeId).toBe('a')
   })
+
+  // #16206 ADAPT: main and integration-truth PRs #16373/#16375 do not expose
+  // account/workspace-scoped history persistence yet; enable with that surface.
+  it.todo('clears only an active id absent from refreshed sessions')
+  it.todo('tolerates malformed persisted title and tombstone shapes')
+  it.todo('rotates persisted metadata when the account or workspace changes')
 })

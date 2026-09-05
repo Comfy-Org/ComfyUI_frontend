@@ -66,6 +66,14 @@ describe('GlobalToast', () => {
     expect(toastStore.removeAllRequested).toBe(false)
   })
 
+  it('places the main toast at the bottom right', () => {
+    renderToast()
+    // eslint-disable-next-line testing-library/no-node-access -- the auto-stub has no accessible selector
+    const [main] = document.body.querySelectorAll('toast-stub')
+
+    expect(main.getAttribute('position')).toBe('bottom-right')
+  })
+
   it('holds messages raised during node selection mode until it exits', async () => {
     renderToast()
     const toastStore = useToastStore()

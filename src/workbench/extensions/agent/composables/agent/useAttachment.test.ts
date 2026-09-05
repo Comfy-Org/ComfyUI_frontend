@@ -162,6 +162,95 @@ describe('useAttachment', () => {
     expect(upload).not.toHaveBeenCalled()
   })
 
+  it.fails('settles a rejected deferred resolver as an upload error', async () => {
+    const upload = vi.fn()
+    const registry = chipRegistry()
+    const { addDeferredFile } = useAttachment({ upload, ...registry })
+
+    await expect(
+      addDeferredFile('missing.mp4', () => Promise.reject(new Error('gone')))
+    ).resolves.toBeUndefined()
+  })
+
+  it.fails('removes a deferred chip when its resolver rejects', async () => {
+    const upload = vi.fn()
+    const registry = chipRegistry()
+    const { addDeferredFile } = useAttachment({ upload, ...registry })
+
+    await addDeferredFile('missing.mp4', () =>
+      Promise.reject(new Error('gone'))
+    ).catch(() => undefined)
+
+    expect(registry.chips).toEqual([])
+  })
+
+  it('does not upload when a deferred resolver rejects', async () => {
+    const upload = vi.fn()
+    const registry = chipRegistry()
+    const { addDeferredFile } = useAttachment({ upload, ...registry })
+
+    await expect(
+      addDeferredFile('missing.mp4', () => Promise.reject(new Error('gone')))
+    ).rejects.toThrow('gone')
+
+    expect(upload).not.toHaveBeenCalled()
+  })
+
+  it.fails('reports a rejected deferred resolver', async () => {
+    const upload = vi.fn()
+    const onError = vi.fn()
+    const registry = chipRegistry()
+    const { addDeferredFile } = useAttachment({
+      upload,
+      onError,
+      ...registry
+    })
+
+    await addDeferredFile('missing.mp4', () =>
+      Promise.reject(new Error('gone'))
+    ).catch(() => undefined)
+
+    expect(onError).toHaveBeenCalledOnce()
+  })
+
+  // 12-T4: remove `.fails` when a batch stages before uploads settle concurrently.
+  it.fails('[12-T4 regression] stages a whole batch before concurrent uploads settle', async () => {
+    const resolvers: Array<(result: { ref: string }) => void> = []
+    const upload = vi.fn(
+      () =>
+        new Promise<{ ref: string }>((resolve) => {
+          resolvers.push(resolve)
+        })
+    )
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, ...registry })
+    const pending = addFiles([
+      fileOfSize('a.png', 1),
+      fileOfSize('b.png', 1),
+      fileOfSize('c.png', 1)
+    ])
+
+    expect(registry.chips.map(({ name }) => name)).toEqual([
+      'a.png',
+      'b.png',
+      'c.png'
+    ])
+    registry.remove(registry.chips[1].id)
+    resolvers[2]({ ref: 'c.png' })
+    resolvers[0]({ ref: 'a.png' })
+    resolvers[1]({ ref: 'b.png' })
+    await pending
+    expect(registry.chips.map(({ ref }) => ref)).toEqual(['a.png', 'c.png'])
+  })
+
+  it.todo(
+    '[12 server-limit surface] uses the server-declared video limit once #16373 or #16375 exposes it'
+  )
+
+  it.todo(
+    '[12 server-limit surface] rejects video above the server-declared limit once #16373 or #16375 exposes it'
+  )
+
   it('removes an oversized deferred chip and reports the resolved limit', async () => {
     const upload = vi.fn()
     const onError = vi.fn()
