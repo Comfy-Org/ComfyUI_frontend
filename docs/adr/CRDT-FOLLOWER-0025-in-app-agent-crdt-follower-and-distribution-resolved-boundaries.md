@@ -186,6 +186,58 @@ write path and the follower invariant coexist by design. Whole-graph replace as 
 mutation primitive (client re-sends the full graph, server diffs and re-mints ops)
 remains rejected: it clobbers concurrent agent edits mid-turn and kills op-log replay.
 
+## Provisional amendment (2026-09-04) — optional sequence metadata fails soft
+
+This amendment becomes accepted after 2026-09-06T12:30Z if Christian raises no objection during
+the program's 48-hour ratification window. The parser behavior is already implemented on `main`;
+the provisional status applies to the governing decision record.
+
+The parser distinguishes sequence values by their effect on document correctness:
+
+- `doc_update.seq`, `doc_reset.seq`, and the document identity formed by wire fields
+  `workflow_id` plus `lineage_seq` (mapped to `workflowId` and `lineageSeq`) are
+  load-bearing. Missing or malformed values reject the frame because accepting them
+  could apply bytes in the wrong order or onto the wrong document incarnation.
+- `doc_subscribed.seq` and `doc_ops_result.seq` are optional delivery and recovery hints.
+  A non-negative safe integer is retained; an absent, null, or malformed value is omitted
+  while the rest of the valid acknowledgement or result is accepted.
+- Optional metadata may fail soft only when every load-bearing field remains independently
+  valid. On `doc_subscribed`, `lineage_seq` must not exceed `seq`. If `seq` is absent,
+  null, or malformed, only migration lineage `0` is provably bounded: that acknowledgement
+  remains valid with `seq` omitted, while a positive lineage is rejected. The
+  `doc_ops_result` frame has no load-bearing field that depends on its optional `seq`.
+
+Discarding a valid `doc_subscribed` frame leaves the client unconfirmed even though the
+server completed the subscription. Discarding a valid `doc_ops_result` frame throws away
+the operation outcome: `opSender.ts` waits 10 seconds, resends the same `op_id` values
+once, then settles unacknowledged after a second silent window. A refused subscription
+settles its bound batch as undeliverable immediately. Neither failure mode protects
+document state. Treating an invalid optional sequence as absent preserves the
+authoritative frame while disabling only sequence-assisted recovery, provided no
+load-bearing consistency check depends on that sequence.
+
+```text
+incoming document frame
+          │
+          ├── load-bearing sequence or lineage invalid ──► reject frame
+          │
+          └── optional ack/result sequence invalid
+                         │
+                         ├── dependent lineage still valid ─► omit sequence
+                         │                                     │
+                         │                                     ▼
+                         │                              accept valid frame
+                         └── lineage cannot be bounded ───────► reject frame
+```
+
+This amendment selects the parser behavior merged in
+[#16668](https://github.com/Comfy-Org/ComfyUI_frontend/pull/16668) and supersedes the
+earlier request to reject an invalid-present `doc_ops_result.seq` in
+[#16487](https://github.com/Comfy-Org/ComfyUI_frontend/pull/16487#discussion_r3917181360).
+The same classification applies to future protocol metadata: fields that establish
+document identity or mutation order fail closed; optional observability or recovery hints
+fail soft unless their frame contract explicitly makes them mandatory.
+
 ## Notes
 
 This ADR mirrors two cross-repo workspace decisions (ADR-010 follower direction, ADR-011
@@ -208,3 +260,13 @@ The follower code on this branch splits into a durable core and a disposable spi
   the interim SUBGRAPH-PROMOTION-0009-lineage render path and are deleted when the
   apply-remote-update→store adapter lands. Coverage or review findings on these files
   route to the store-adapter work, not to polishing the spike.
+
+## Glossary
+
+- **Acknowledgement (ack):** A server response confirming subscription or operation
+  handling.
+- **Fail closed:** Reject a frame when accepting it could corrupt or misidentify state.
+- **Fail soft:** Preserve a valid frame while omitting optional malformed metadata.
+- **Lineage:** The identity of one continuous incarnation of a workflow document.
+- **Load-bearing field:** A field required to interpret or mutate document state safely.
+- **Sequence:** A non-negative safe integer describing document delivery order.
