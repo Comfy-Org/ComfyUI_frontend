@@ -547,7 +547,9 @@ const zNodeData = z.object({
   inputs: z.record(zNodeInputName, zNodeInputValue),
   class_type: z.string(),
   _meta: z.object({
-    title: z.string()
+    title: z.string(),
+    cnr_id: z.string().optional(),
+    ver: z.string().optional()
   })
 })
 

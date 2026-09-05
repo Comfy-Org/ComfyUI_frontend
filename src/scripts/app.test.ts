@@ -1434,6 +1434,86 @@ describe('ComfyApp', () => {
       expect(mockCanvas.subgraph).toBeNull()
     })
 
+    it('picks up _meta pack identity for API JSON placeholders', async () => {
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const cleanupErrorHooks = installErrorClearingHooks(graph)
+      const missingNodesStore = useMissingNodesErrorStore()
+      const nodeReplacementStore = useNodeReplacementStore()
+      vi.spyOn(nodeReplacementStore, 'load').mockResolvedValue()
+
+      try {
+        await app.loadApiJson(
+          {
+            '1': {
+              class_type: 'UninstalledPackNode',
+              inputs: {},
+              _meta: {
+                title: 'Uninstalled',
+                cnr_id: 'some-pack',
+                ver: '9.9.9'
+              }
+            }
+          },
+          ''
+        )
+
+        const [placeholder] = graph.nodes
+        expect(placeholder?.properties).toMatchObject({
+          cnr_id: 'some-pack',
+          ver: '9.9.9'
+        })
+        expect(missingNodesStore.missingNodesError?.nodeTypes).toEqual([
+          expect.objectContaining({
+            type: 'UninstalledPackNode',
+            cnrId: 'some-pack'
+          })
+        ])
+      } finally {
+        cleanupErrorHooks()
+      }
+    })
+
+    it('ignores non-string _meta pack identity for API JSON placeholders', async () => {
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const cleanupErrorHooks = installErrorClearingHooks(graph)
+      const missingNodesStore = useMissingNodesErrorStore()
+      const nodeReplacementStore = useNodeReplacementStore()
+      vi.spyOn(nodeReplacementStore, 'load').mockResolvedValue()
+      const apiData: unknown = {
+        '1': {
+          class_type: 'UninstalledPackNode',
+          inputs: {},
+          _meta: {
+            title: 'Uninstalled',
+            cnr_id: {},
+            ver: []
+          }
+        }
+      }
+      if (!app.isApiJson(apiData)) throw new Error('Expected valid API JSON')
+
+      try {
+        await app.loadApiJson(apiData, '')
+
+        const [placeholder] = graph.nodes
+        expect(placeholder?.properties).not.toHaveProperty('cnr_id')
+        expect(placeholder?.properties).not.toHaveProperty('ver')
+        const [missingNodeType] =
+          missingNodesStore.missingNodesError?.nodeTypes ?? []
+        expect(
+          typeof missingNodeType === 'string'
+            ? undefined
+            : missingNodeType?.cnrId
+        ).toBeUndefined()
+      } finally {
+        cleanupErrorHooks()
+      }
+    })
+
     it('remaps flattened subgraph ids to colon-free local ids', async () => {
       const graph = new LGraph()
       Reflect.set(app, 'rootGraphInternal', graph)

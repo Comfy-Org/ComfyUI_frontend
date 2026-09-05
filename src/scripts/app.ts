@@ -2357,6 +2357,10 @@ export class ComfyApp {
         | Extract<MissingNodeType, { type: string }>
         | undefined
       if (!node) {
+        const cnrId =
+          typeof data._meta?.cnr_id === 'string' ? data._meta.cnr_id : undefined
+        const packVersion =
+          typeof data._meta?.ver === 'string' ? data._meta.ver : undefined
         const missingNode = new LGraphNode(
           data._meta?.title ?? data.class_type,
           sanitizeNodeName(data.class_type)
@@ -2395,10 +2399,17 @@ export class ComfyApp {
         )
         placeholderEntry = {
           type: data.class_type,
+          cnrId,
           isReplaceable: replacement !== null,
           replacement: replacement ?? undefined
         }
         missingNodeTypes.push(placeholderEntry)
+        if (cnrId) {
+          node.properties.cnr_id = cnrId
+        }
+        if (packVersion) {
+          node.properties.ver = packVersion
+        }
       }
       node.id = nodeId
       node.title = data._meta?.title ?? node.title
