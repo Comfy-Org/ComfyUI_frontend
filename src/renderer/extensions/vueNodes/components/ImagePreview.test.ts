@@ -9,6 +9,7 @@ import { createI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import ImagePreview from '@/renderer/extensions/vueNodes/components/ImagePreview.vue'
+import { api } from '@/scripts/api'
 
 // Mock downloadFile to avoid DOM errors
 vi.mock('@/base/common/downloadUtil', () => ({
@@ -34,6 +35,9 @@ const i18n = createI18n({
       g: {
         editOrMaskImage: 'Edit or mask image',
         downloadImage: 'Download image',
+        saveImageToOutput: 'Save image to output',
+        imageSavedToOutput: 'Image saved to output',
+        failedToSaveImageToOutput: 'Failed to save image to output',
         removeImage: 'Remove image',
         viewImageOfTotal: 'View image {index} of {total}',
         imagePreview:
@@ -192,6 +196,59 @@ describe('ImagePreview', () => {
     await user.click(downloadButton)
 
     expect(downloadFile).toHaveBeenCalledWith(defaultProps.imageUrls[0])
+  })
+
+  it('uploads the original preview image to the output folder', async () => {
+    const blob = new Blob(['image bytes'], { type: 'image/png' })
+    const fetchApi = vi
+      .spyOn(api, 'fetchApi')
+      .mockImplementation(async (route) => {
+        if (route.startsWith('/view?')) {
+          return {
+            ok: true,
+            status: 200,
+            statusText: 'OK',
+            blob: async () => blob
+          } as Response
+        }
+
+        return {
+          status: 200,
+          statusText: 'OK',
+          json: async () => ({ name: 'test.png', subfolder: 'previews' })
+        } as Response
+      })
+
+    renderImagePreview({
+      imageUrls: [
+        '/api/view?filename=test.png&subfolder=previews&type=temp&channel=rgba&preview=webp&rand=123'
+      ]
+    })
+    const user = userEvent.setup()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Save image to output' })
+    )
+
+    const calls = fetchApi.mock.calls
+    const viewCall = calls.find(([route]) =>
+      route?.startsWith('/view?filename=test.png')
+    )
+    const uploadCall = calls.find(([route]) => route === '/upload/image')
+
+    expect(viewCall?.[0]).toBe(
+      '/view?filename=test.png&subfolder=previews&type=temp'
+    )
+    expect(uploadCall?.[0]).toBe('/upload/image')
+    expect(uploadCall?.[1]?.method).toBe('POST')
+
+    const body = uploadCall?.[1]?.body as FormData
+    expect(body.get('type')).toBe('output')
+    expect(body.get('subfolder')).toBe('previews')
+    const uploadedImage = body.get('image')
+    expect(uploadedImage).toBeInstanceOf(File)
+    expect((uploadedImage as File).name).toBe('test.png')
+    expect((uploadedImage as File).type).toBe('image/png')
   })
 
   it('switches images when navigation dots are clicked', async () => {
