@@ -1623,4 +1623,67 @@ describe('SubgraphWidgetPromotion', () => {
       })
     })
   })
+
+  describe('legacy widgets_values with control_after_generate padding', () => {
+    it('does not shift values into the wrong promoted widget on configure', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [
+          { name: 'seed', type: 'INT' },
+          { name: 'steps', type: 'INT' },
+          { name: 'sampler_name', type: 'COMBO' }
+        ]
+      })
+
+      const sampler = new LGraphNode('Sampler')
+      const seedInput = sampler.addInput('seed', 'INT')
+      const stepsInput = sampler.addInput('steps', 'INT')
+      const samplerNameInput = sampler.addInput('sampler_name', 'COMBO')
+      seedInput.widget = { name: 'seed' }
+      stepsInput.widget = { name: 'steps' }
+      samplerNameInput.widget = { name: 'sampler_name' }
+
+      const seedWidget = sampler.addWidget('number', 'seed', 0, () => {})
+      const controlWidget = sampler.addWidget(
+        'combo',
+        'control_after_generate',
+        'randomize',
+        () => {},
+        {
+          values: ['fixed', 'increment', 'decrement', 'randomize'],
+          serialize: false
+        }
+      )
+      fromAny<Record<symbol, unknown>, unknown>(controlWidget)[
+        IS_CONTROL_WIDGET
+      ] = true
+      controlWidget.beforeQueued = () => {}
+      controlWidget.afterQueued = () => {}
+      seedWidget.linkedWidgets = [controlWidget]
+      sampler.addWidget('number', 'steps', 20, () => {})
+      sampler.addWidget('combo', 'sampler_name', 'euler', () => {}, {
+        values: ['euler', 'dpmpp_2m']
+      })
+
+      subgraph.add(sampler)
+      subgraph.inputNode.slots[0].connect(seedInput, sampler)
+      subgraph.inputNode.slots[1].connect(stepsInput, sampler)
+      subgraph.inputNode.slots[2].connect(samplerNameInput, sampler)
+
+      const hostNode = createTestSubgraphNode(subgraph)
+
+      // Legacy/imported subgraph instances may serialize widgets_values with
+      // an extra slot for the control_after_generate companion widget,
+      // mirroring the underlying node's own widget layout, even though the
+      // companion is never itself a promoted input.
+      const serialized = hostNode.serialize()
+      serialized.widgets_values = [123456, 'fixed', 30, 'dpmpp_2m']
+      hostNode.configure(serialized)
+
+      expect(promotedWidgetStateByName(hostNode, 'seed').value).toBe(123456)
+      expect(promotedWidgetStateByName(hostNode, 'steps').value).toBe(30)
+      expect(promotedWidgetStateByName(hostNode, 'sampler_name').value).toBe(
+        'dpmpp_2m'
+      )
+    })
+  })
 })
