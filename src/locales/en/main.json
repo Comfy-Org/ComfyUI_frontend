@@ -5195,7 +5195,7 @@
     "attachmentTooLarge": "{name} is larger than {limit}",
     "attachmentUploadFailed": "{name} could not be uploaded",
     "mention": "Mention a node",
-    "changeWorkflowForChat": "Change the workflow for this chat",
+    "changeWorkflowForChat": "Change the workflow that the agent can edit",
     "chatOptions": "Chat options",
     "chooseWorkflow": "Choose a workflow",
     "chooseWorkflowForChat": "Choose a workflow for this chat",
