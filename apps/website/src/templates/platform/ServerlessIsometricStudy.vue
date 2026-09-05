@@ -1,6 +1,19 @@
 <script setup lang="ts">
-import { useElementVisibility, useRafFn } from '@vueuse/core'
-import { computed, ref, useId, useTemplateRef, watch } from 'vue'
+import {
+  useDocumentVisibility,
+  useElementVisibility,
+  useRafFn
+} from '@vueuse/core'
+import {
+  computed,
+  onMounted,
+  onUnmounted,
+  ref,
+  useId,
+  useTemplateRef,
+  watch,
+  watchEffect
+} from 'vue'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import type { Locale } from '../../i18n/translations'
@@ -44,12 +57,19 @@ interface VisualTile extends Tile {
   height: number
   textureShadeOpacity: number
   topFill: string
+  transform: string
+  left: string
+  right: string
+  texture: string
 }
 
 type Point = readonly [number, number]
 
 const stageRef = useTemplateRef<HTMLElement>('stageRef')
+const canvasRef = useTemplateRef<HTMLCanvasElement>('canvasRef')
+const canvasReady = ref(false)
 const onScreen = useElementVisibility(stageRef)
+const documentVisibility = useDocumentVisibility()
 const elapsed = ref(0)
 const reducedMotion = prefersReducedMotion()
 
@@ -181,9 +201,14 @@ const visualTiles = computed<VisualTile[]>(() =>
     const height = targetHeight * visibleProgress
     const level = targetHeight / MAX_HEIGHT
 
+    const geometry = { ...tile, height }
     return {
       ...tile,
       height,
+      transform: tileTransform(geometry),
+      left: leftFace(geometry),
+      right: rightFace(geometry),
+      texture: texturedFaces(geometry),
       textureShadeOpacity:
         (1 - clamp(height / MAX_HEIGHT)) * MAX_TEXTURE_SHADE_OPACITY,
       topFill:
@@ -197,11 +222,11 @@ const visualTiles = computed<VisualTile[]>(() =>
   })
 )
 
-function tileTransform(tile: VisualTile) {
+function tileTransform(tile: Tile & { height: number }) {
   return `matrix(${ISO_X} ${-ISO_Y} ${ISO_X} ${ISO_Y} ${tile.x} ${tile.y - tile.height})`
 }
 
-function tileCorners(tile: VisualTile, elevation: number): readonly Point[] {
+function tileCorners(tile: Tile, elevation: number): readonly Point[] {
   const topY = tile.y - elevation
   const halfWidth = TILE_WIDTH / 2
   const halfHeight = TILE_HEIGHT / 2
@@ -222,26 +247,101 @@ function polygonPath(points: readonly Point[]) {
   return `${points.map(([x, y], index) => `${index ? 'L' : 'M'}${x},${y}`).join('')}Z`
 }
 
-function leftFace(tile: VisualTile) {
+function leftFace(tile: Tile & { height: number }) {
   const top = tileCorners(tile, tile.height)
   const base = tileCorners(tile, 0)
 
   return polygonPoints([top[0], top[3], base[3], base[0]])
 }
 
-function rightFace(tile: VisualTile) {
+function rightFace(tile: Tile & { height: number }) {
   const top = tileCorners(tile, tile.height)
   const base = tileCorners(tile, 0)
 
   return polygonPoints([top[3], top[2], base[2], base[3]])
 }
 
-function texturedFaces(tile: VisualTile) {
+function texturedFaces(tile: Tile & { height: number }) {
   const top = tileCorners(tile, tile.height)
   const base = tileCorners(tile, 0)
 
   return `${polygonPath([top[0], top[3], base[3], base[0]])} ${polygonPath([top[3], top[2], base[2], base[3]])} ${polygonPath(top)}`
 }
+
+let context: CanvasRenderingContext2D | null = null
+let texture: CanvasPattern | null = null
+let ink = ''
+let plum = ''
+let yellow = ''
+
+onMounted(() => {
+  context = canvasRef.value?.getContext('2d') ?? null
+  if (!context || !stageRef.value) return
+  const style = getComputedStyle(stageRef.value)
+  ink = style.getPropertyValue('--color-primary-comfy-ink').trim()
+  plum = style.getPropertyValue('--color-primary-comfy-plum').trim()
+  yellow = style.getPropertyValue('--color-primary-comfy-yellow').trim()
+  const image = new Image()
+  image.onload = () => {
+    if (!context) return
+    const source = document.createElement('canvas')
+    source.width = 760
+    source.height = 360
+    const sourceContext = source.getContext('2d')
+    if (!sourceContext) return
+    const scale = Math.max(760 / image.width, 360 / image.height)
+    sourceContext.drawImage(
+      image,
+      (760 - image.width * scale) / 2,
+      (360 - image.height * scale) / 2,
+      image.width * scale,
+      image.height * scale
+    )
+    texture = context.createPattern(source, 'repeat')
+    canvasReady.value = texture !== null
+  }
+  image.src = '/assets/platform/serverless/isometric-texture.webp'
+})
+
+onUnmounted(() => {
+  context = null
+  texture = null
+})
+
+watchEffect(() => {
+  if (!canvasReady.value || !context || !texture) return
+  const ctx = context
+  ctx.setTransform(2, 0, 0, 2, 0, 0)
+  ctx.clearRect(0, 0, 760, 360)
+  for (const tile of visualTiles.value) {
+    if (tile.height > 0.5) {
+      const top = tileCorners(tile, tile.height)
+      const base = tileCorners(tile, 0)
+      const faces = new Path2D(tile.texture)
+      ctx.fillStyle = texture
+      ctx.fill(faces)
+      ctx.fillStyle = ink
+      ctx.globalAlpha = tile.textureShadeOpacity
+      ctx.fill(faces)
+      ctx.globalAlpha = 0.12
+      ctx.fill(new Path2D(polygonPath([top[0], top[3], base[3], base[0]])))
+      ctx.fillStyle = plum
+      ctx.globalAlpha = 0.06
+      ctx.fill(new Path2D(polygonPath([top[3], top[2], base[2], base[3]])))
+      ctx.globalAlpha = 1
+    }
+    ctx.save()
+    ctx.transform(ISO_X, -ISO_Y, ISO_X, ISO_Y, tile.x, tile.y - tile.height)
+    ctx.fillStyle = tile.topFill
+      .replace('var(--color-primary-comfy-yellow)', yellow)
+      .replace('var(--color-primary-comfy-plum)', plum)
+      .replace('var(--color-primary-comfy-ink)', ink)
+    ctx.beginPath()
+    ctx.roundRect(0, 0, TILE_SIZE, TILE_SIZE, 4)
+    ctx.fill()
+    ctx.restore()
+  }
+})
 
 const { pause, resume } = useRafFn(
   ({ delta }) => {
@@ -251,9 +351,9 @@ const { pause, resume } = useRafFn(
 )
 
 watch(
-  onScreen,
-  (visible) => {
-    if (visible && !reducedMotion) resume()
+  [onScreen, documentVisibility],
+  ([visible, tabVisibility]) => {
+    if (visible && tabVisibility === 'visible' && !reducedMotion) resume()
     else pause()
   },
   { immediate: true }
@@ -271,6 +371,13 @@ watch(
     :data-reset-indicator-height="resetIndicatorHeight"
     class="relative aspect-16/7 min-h-[207px] w-full overflow-hidden rounded-3xl bg-primary-comfy-ink lg:min-h-72"
   >
+    <canvas
+      ref="canvasRef"
+      width="1520"
+      height="720"
+      class="absolute inset-0 size-full object-contain"
+      aria-hidden="true"
+    />
     <svg
       viewBox="0 0 760 360"
       class="absolute inset-0 size-full"
@@ -327,45 +434,35 @@ watch(
         />
       </g>
 
-      <g v-for="tile in visualTiles" :key="tile.id">
-        <template v-if="tile.height > 0.5">
-          <path :d="texturedFaces(tile)" :fill="`url(#${textureId})`" />
-          <g
-            :opacity="tile.textureShadeOpacity"
-            :data-texture-shade="tile.textureShadeOpacity"
-          >
-            <polygon
-              :points="leftFace(tile)"
+      <g v-if="!canvasReady" v-memo="[visualTiles]">
+        <g v-for="tile in visualTiles" :key="tile.id">
+          <template v-if="tile.height > 0.5">
+            <path :d="tile.texture" :fill="`url(#${textureId})`" />
+            <path
+              :d="tile.texture"
               fill="var(--color-primary-comfy-ink)"
+              :opacity="tile.textureShadeOpacity"
+              :data-texture-shade="tile.textureShadeOpacity"
             />
             <polygon
-              :points="rightFace(tile)"
+              :points="tile.left"
               fill="var(--color-primary-comfy-ink)"
+              fill-opacity="0.12"
             />
-          </g>
-          <polygon
-            :points="leftFace(tile)"
-            fill="var(--color-primary-comfy-ink)"
-            fill-opacity="0.12"
+            <polygon
+              :points="tile.right"
+              fill="var(--color-primary-comfy-plum)"
+              fill-opacity="0.06"
+            />
+          </template>
+          <rect
+            :width="TILE_SIZE"
+            :height="TILE_SIZE"
+            rx="4"
+            :transform="tile.transform"
+            :fill="tile.topFill"
           />
-          <polygon
-            :points="rightFace(tile)"
-            fill="var(--color-primary-comfy-plum)"
-            fill-opacity="0.06"
-          />
-          <polygon
-            :points="polygonPoints(tileCorners(tile, tile.height))"
-            fill="var(--color-primary-comfy-ink)"
-            :fill-opacity="tile.textureShadeOpacity"
-          />
-        </template>
-        <rect
-          :width="TILE_SIZE"
-          :height="TILE_SIZE"
-          rx="4"
-          :transform="tileTransform(tile)"
-          :fill="tile.topFill"
-        />
+        </g>
       </g>
     </svg>
   </div>
