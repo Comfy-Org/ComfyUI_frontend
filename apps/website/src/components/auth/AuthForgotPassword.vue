@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { classifyAuthError } from '@comfyorg/auth-core/firebaseAuthError'
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 
 import { authSchemasFor } from '../../config/auth-schemas'
 import { sendWorkshopPasswordReset } from '../../config/workshop-firebase'
+import { requestedReturnPath } from '../../config/workshop-return'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { useWorkshopAuthFlag } from '../../scripts/posthog'
@@ -15,6 +16,7 @@ const { locale = 'en' } = defineProps<{
 const enabled = useWorkshopAuthFlag()
 const email = ref('')
 const fieldError = ref('')
+const signInHref = ref('/login/')
 
 type ResetState = 'idle' | 'sending' | 'sent' | 'error'
 const state = ref<ResetState>('idle')
@@ -49,6 +51,13 @@ function isUnknownEmailError(error: unknown): boolean {
       classified.code === 'auth/invalid-email')
   )
 }
+
+onMounted(() => {
+  const destination = requestedReturnPath(window.location.search)
+  if (destination) {
+    signInHref.value = `/login/?returnTo=${encodeURIComponent(destination)}`
+  }
+})
 </script>
 
 <template>
@@ -105,7 +114,7 @@ function isUnknownEmailError(error: unknown): boolean {
     </form>
 
     <p class="mt-6 text-center text-sm">
-      <a href="/login/" class="text-primary-comfy-yellow hover:underline">
+      <a :href="signInHref" class="text-primary-comfy-yellow hover:underline">
         {{ t('auth.forgot.backToSignIn', locale) }}
       </a>
     </p>

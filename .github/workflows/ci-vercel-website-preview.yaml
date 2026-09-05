@@ -3,7 +3,10 @@ name: 'CI: Vercel Website Preview'
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    # `labeled`/`unlabeled` so adding or removing the `workshop` label rebuilds
+    # the preview, which is otherwise only refreshed by a push. Same reason
+    # cloud-dispatch-build.yaml listens for it.
+    types: [opened, synchronize, reopened, labeled, unlabeled]
     branches-ignore:
       - 'core/**'
       - 'cloud/**'
@@ -59,7 +62,23 @@ jobs:
           WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
           WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
           WEBSITE_CLOUD_API_KEY: ${{ secrets.WEBSITE_CLOUD_API_KEY }}
-        run: vercel build
+          WORKSHOP_LABELLED: ${{ contains(github.event.pull_request.labels.*.name, 'workshop') }}
+        # A preview has to answer "what goes out if we release right now?", so
+        # by default it matches production and leaves the unreleased Workshop
+        # feature out. Label a PR `workshop` to build it in and get a review URL.
+        #
+        # Set only when labelled, rather than always set with an empty value.
+        # An unlabelled PR must leave the variable undefined so that whatever
+        # `vercel pull` fetched for the preview environment still governs --
+        # otherwise, on the day Workshop launches, setting it in Vercel would
+        # take effect in production while every preview kept overriding it back
+        # off, and preview would stop matching production again.
+        # See apps/website/src/config/workshop-release.ts.
+        run: |
+          if [ "$WORKSHOP_LABELLED" = "true" ]; then
+            export WORKSHOP_IN_BUILD=1
+          fi
+          VERCEL_ENV=preview vercel build
 
       - name: Fetch head commit metadata
         id: head-commit
@@ -107,15 +126,24 @@ jobs:
         env:
           DEPLOY_URL: ${{ steps.deploy.outputs.url }}
           ALIAS_OK: ${{ steps.alias-set.outcome == 'success' }}
+          WORKSHOP_LABELLED: ${{ contains(github.event.pull_request.labels.*.name, 'workshop') }}
         run: |
           if [[ "$ALIAS_OK" == "true" ]]; then
             STABLE_URL="https://$ALIAS_HOST"
           else
             STABLE_URL="$DEPLOY_URL"
           fi
+          # Say which of the two builds this is. Without it, a reviewer who
+          # finds Workshop missing cannot tell the gate from a bug.
+          if [[ "$WORKSHOP_LABELLED" == "true" ]]; then
+            BUILD_NOTE="Includes the unreleased **Workshop** feature (\`workshop\` label)."
+          else
+            BUILD_NOTE="Matches production — what ships if we release right now."
+          fi
           mkdir -p temp/vercel-preview
           echo "$DEPLOY_URL" > temp/vercel-preview/url.txt
           echo "$STABLE_URL" > temp/vercel-preview/stable-url.txt
+          echo "$BUILD_NOTE" > temp/vercel-preview/build-note.txt
           {
             echo "**Preview:** $STABLE_URL"
             if [[ "$ALIAS_OK" == "true" ]]; then
@@ -123,6 +151,7 @@ jobs:
             else
               echo "_Stable alias update failed — URL reflects this commit only._"
             fi
+            echo "$BUILD_NOTE"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload preview metadata
