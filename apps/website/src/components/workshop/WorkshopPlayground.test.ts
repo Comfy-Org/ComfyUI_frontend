@@ -34,7 +34,12 @@ describe('WorkshopPlayground', () => {
     await user.type(screen.getByRole('textbox', { name: /Prompt/ }), 'Red fox')
     expect(screen.getByText(/"prompt": "Red fox"/)).toBeTruthy()
 
-    await user.click(screen.getByRole('tab', { name: 'Python' }))
+    const typeScriptTab = screen.getByRole('tab', { name: 'TypeScript' })
+    typeScriptTab.focus()
+    await user.keyboard('{ArrowRight}')
+
+    const pythonTab = screen.getByRole('tab', { name: 'Python' })
+    expect(screen.getByRole('tab', { selected: true })).toBe(pythonTab)
     expect(screen.getByText(/comfy\.models\.run\("bfl\/flux-3"/)).toBeTruthy()
     expect(screen.getByText(/"prompt": "Red fox"/)).toBeTruthy()
   })
