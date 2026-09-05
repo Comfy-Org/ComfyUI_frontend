@@ -22,6 +22,32 @@
 # version's CDN artifact - so no source surface moves underneath a run. Python
 # dependencies still resolve fresh, and the runner image updates independently.
 name: 'CI: Tests Custom Nodes'
+# An override run tests different code than the ref it is attributed to, so say
+# so in the Actions list as well as in the check-run names below. `record_interactions`
+# and a non-clean `detection_proof_row` also change what is tested, so they are named
+# too.
+#
+# The leading `[dispatch]` is the discriminator that makes the whole scheme sound.
+# Every other suffix is driven by a non-default input, so a `workflow_dispatch`
+# left at its defaults rendered every one of them empty and published under the
+# nightly's bare name - while testing only proof row 0, where a schedule also
+# covers rows 1, 2, 3, 9 and 15. A green defaults dispatch could therefore
+# supersede a red nightly on the same SHA: the exact masquerade this workflow's
+# naming exists to close, left open on the most common dispatch path. Keying it
+# on `github.event_name` rather than on any input is what closes it, because no
+# input value can make a dispatch look like a schedule.
+#
+# Order is deliberate: GitHub truncates long check-run names, so the short,
+# high-signal discriminators (`[dispatch]`, `[proof_row: N]`,
+# `[record_interactions]`) come first and the unbounded free-text ones
+# (`branch`, `comfyui`, `grep`) trail, where truncation costs the least.
+#
+# The `grep` label is derived from the filter actually in effect, not from
+# `inputs.grep`: `record_interactions` forces GREP_FILTER to `interaction
+# profiles`, and a non-clean `detection_proof_row` replaces it with a
+# proof-specific regex, so in both cases printing the caller's `grep` would name
+# a filter that never ran. Without any override this is the default run name.
+run-name: "CI: Tests Custom Nodes${{ github.event_name == 'workflow_dispatch' && ' [dispatch]' || '' }}${{ inputs.detection_proof_row && inputs.detection_proof_row != '0' && format(' [proof_row: {0}]', inputs.detection_proof_row) || '' }}${{ inputs.record_interactions && ' [record_interactions]' || '' }}${{ inputs.branch && format(' [branch: {0}]', inputs.branch) || '' }}${{ inputs.comfyui_ref && format(' [comfyui: {0}]', inputs.comfyui_ref) || '' }}${{ !inputs.record_interactions && (inputs.detection_proof_row == '0' || inputs.detection_proof_row == '') && inputs.grep && format(' [grep: {0}]', inputs.grep) || '' }}"
 
 on:
   schedule:
@@ -89,6 +115,31 @@ jobs:
   # access to its backend's queue. Parallelism comes from the shard matrix
   # instead, and every job owns a separate backend.
   custom_nodes_e2e:
+    # GitHub attributes a job's check run to the ref the workflow was dispatched
+    # from, not to whatever `branch` told the checkout to test, and a newer check
+    # suite supersedes the ref's earlier one of the same name. So a dispatch aimed
+    # at some other branch used to overwrite this ref's real grade: two overrides
+    # aimed at a fix branch turned three genuine `main` nightly failures into
+    # `success` for every rollup query. The suffix keeps an override's results
+    # visible under their own names, where they cannot masquerade as the ref's.
+    #
+    # Every input that changes WHAT is tested earns a suffix, not just `branch`:
+    # `comfyui_ref` swaps the core the suite runs against, and `grep` narrows the
+    # suite and (per its own description) skips the exact-count gate, so either
+    # one can publish a weaker or unrelated result under the full run's name.
+    # `detection_proof_row` is already in the matrix name, and `record_interactions`
+    # already changes the shard list to a `core:1/1` that no ordinary run produces,
+    # so this job's name cannot collide on either.
+    #
+    # `[dispatch]` is still required here for the same reason as on the aggregate:
+    # a defaults dispatch runs proof row 0 on the ordinary shard list, so every
+    # one of its matrix names was byte-identical to the nightly's row-0 jobs.
+    #
+    # The `grep` label keys off `matrix.proof_row`, not `inputs.detection_proof_row`,
+    # because with `detection_proof_row: all` the effective filter differs per job:
+    # only the row-0 jobs run the caller's `grep`, and the rest run a proof regex.
+    # With no override the name is byte-identical to the matrix default.
+    name: "custom_nodes_e2e (${{ matrix.shard }}, ${{ matrix.proof_row }})${{ github.event_name == 'workflow_dispatch' && ' [dispatch]' || '' }}${{ inputs.record_interactions && ' [record_interactions]' || '' }}${{ inputs.branch && format(' [branch: {0}]', inputs.branch) || '' }}${{ inputs.comfyui_ref && format(' [comfyui: {0}]', inputs.comfyui_ref) || '' }}${{ !inputs.record_interactions && matrix.proof_row == '0' && inputs.grep && format(' [grep: {0}]', inputs.grep) || '' }}"
     needs: changes
     if: needs.changes.outputs.should-run == 'true'
     strategy:
@@ -401,7 +452,14 @@ jobs:
         if: always() && matrix.proof_row == '0'
         env:
           SUITE_OUTCOME: ${{ steps.suite.outcome }}
-          GREP_FILTER: ${{ inputs.grep }}
+          # The same effective filter the suite step ran, not the caller's raw
+          # `grep`: this gate reads GREP_FILTER to decide whether to enforce the
+          # exact expected count, so under `record_interactions` (which forces
+          # `interaction profiles`) the raw input made it demand the full-suite
+          # count from a filtered run - and made two `record_interactions`
+          # dispatches differing only in `grep` gate differently under identical
+          # names.
+          GREP_FILTER: ${{ inputs.record_interactions && 'interaction profiles' || inputs.grep }}
         run: pnpm exec tsx scripts/cicd/custom-node-results.ts ordinary
 
       - name: Assert deliberate failure independence
@@ -417,7 +475,10 @@ jobs:
         env:
           BRANCH_TESTED: ${{ inputs.branch || github.ref_name }}
           COMFYUI_REF_USED: ${{ inputs.comfyui_ref || env.COMFYUI_PIN }}
-          GREP_FILTER: ${{ inputs.grep }}
+          # Report the filter that ran, for the same reason the gate above uses
+          # it: the summary table's "Grep filter" row is read as a record of what
+          # the run covered.
+          GREP_FILTER: ${{ inputs.record_interactions && 'interaction profiles' || inputs.grep }}
         run: python3 scripts/cicd/custom-nodes-summary.py
 
       - name: Upload Playwright report and raw diagnostics
@@ -438,7 +499,21 @@ jobs:
           if-no-files-found: error
 
   custom-nodes-e2e-status:
-    name: E2E Custom Nodes Test
+    # Same masquerade guard as the matrix job above: this is the aggregate name
+    # a reader treats as "the suite result for this commit", so a branch override
+    # must not be able to publish under it.
+    #
+    # This job has no matrix, so unlike the job above it gets nothing for free:
+    # `record_interactions` (one `core:1/1` shard under a forced grep) and a
+    # `detection_proof_row` other than the clean `0` (deliberately broken source,
+    # where red is the expected result) would otherwise both publish their verdict
+    # under the untagged aggregate name. Every dispatch input that changes what is
+    # tested is therefore named here explicitly, and `[dispatch]` covers the case
+    # no input can: a dispatch left at its defaults, which renders every
+    # input-driven suffix empty and would otherwise publish this exact bare name
+    # off the back of proof row 0 alone. A schedule run leaves the whole `inputs`
+    # context empty and is not a dispatch, so the nightly still publishes bare.
+    name: "E2E Custom Nodes Test${{ github.event_name == 'workflow_dispatch' && ' [dispatch]' || '' }}${{ inputs.detection_proof_row && inputs.detection_proof_row != '0' && format(' [proof_row: {0}]', inputs.detection_proof_row) || '' }}${{ inputs.record_interactions && ' [record_interactions]' || '' }}${{ inputs.branch && format(' [branch: {0}]', inputs.branch) || '' }}${{ inputs.comfyui_ref && format(' [comfyui: {0}]', inputs.comfyui_ref) || '' }}${{ !inputs.record_interactions && (inputs.detection_proof_row == '0' || inputs.detection_proof_row == '') && inputs.grep && format(' [grep: {0}]', inputs.grep) || '' }}"
     if: always()
     needs: [changes, custom_nodes_e2e]
     runs-on: ubuntu-latest
