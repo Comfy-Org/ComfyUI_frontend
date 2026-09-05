@@ -36,6 +36,7 @@ export type DevEventKind =
   | 'stale_probe'
   | 'doc_gap'
   | 'doc_stale'
+  | 'mint_divergence'
   | 'agent_node_adapters_materialized'
 
 export interface DevEvent {

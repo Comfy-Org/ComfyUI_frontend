@@ -1,10 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
+import { docLog } from './crdtLog'
 import type { GraphOperation } from './graphOperations'
 import { createMintSession } from './mintSession'
 import type { MintSession } from './mintSession'
 import { attachWidgetMintPort } from './widgetMintPort'
 import type { WidgetMintPort, WidgetSetView } from './widgetMintPort'
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: vi.fn()
+}))
+vi.mock('./crdtLog', () => ({
+  docLog: { warn: vi.fn() }
+}))
 
 const ROOT = 'root-uuid'
 
@@ -107,26 +117,38 @@ describe('attachWidgetMintPort', () => {
   })
 
   it('surfaces an unresolvable interior write observably instead of minting', () => {
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
     deliver(widgetSet({ graphId: 'subgraph-uuid' }))
 
     expect(minted).toEqual([])
-    expect(consoleError).toHaveBeenCalledOnce()
-    consoleError.mockRestore()
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'crdt_widget_owner_unresolvable',
+      tags: {
+        failure_kind: 'invariant',
+        feature_area: 'crdt',
+        operation: 'sync',
+        outcome: 'failed'
+      },
+      context: { hasRootGraph: true, graphId: 'subgraph-uuid', nodeId: '7' },
+      level: 'error'
+    })
+    expect(docLog.warn).toHaveBeenCalledWith(
+      'mint_divergence',
+      expect.any(String),
+      { hasRootGraph: true, graphId: 'subgraph-uuid', nodeId: '7' }
+    )
   })
 
   it('surfaces a write with no open root graph observably', () => {
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
     root = null
     deliver(widgetSet())
 
     expect(minted).toEqual([])
-    expect(consoleError).toHaveBeenCalledOnce()
-    consoleError.mockRestore()
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        context: expect.objectContaining({ hasRootGraph: false })
+      })
+    )
   })
 
   it('stops minting after detach', () => {

@@ -6,6 +6,7 @@ import type { GraphScope } from '@/types/graphScopeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import type { LinkTopology } from '@/types/linkTopology'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import { useLinkStore } from '@/stores/linkStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
@@ -20,6 +21,8 @@ import {
   runMintPortsIntentionalClear
 } from './mintPortWiring'
 import type { MintPortWiring, MintableGraph } from './mintPortWiring'
+
+vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
 
 const ROOT_ID = 'root-uuid'
 
@@ -131,9 +134,6 @@ describe('attachMintPortWiring', () => {
   })
 
   it('maps a replace to PLACED, never DELETED (no false disconnect surfaces)', async () => {
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
     const linkStore = useLinkStore()
     const incumbent = topology(41)
     linkStore.registerLink(ROOT_SCOPE, incumbent)
@@ -146,8 +146,7 @@ describe('attachMintPortWiring', () => {
 
     const connects = minted.filter((operation) => operation.op === 'connect')
     expect(connects.map((operation) => operation.link_id)).toEqual([41, 42])
-    expect(consoleError).not.toHaveBeenCalled()
-    consoleError.mockRestore()
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('carries a real severed link into the delete_node mint', async () => {
