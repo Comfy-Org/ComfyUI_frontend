@@ -24,6 +24,10 @@ import {
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
 import { reportAssertFailure } from '@/platform/telemetry/assertFailureReporter'
+import {
+  markStoresPending,
+  markStoresReady
+} from '@/platform/telemetry/storeReadiness'
 import { syncHostUserIdWithFirebaseAuth } from '@/platform/telemetry/hostUserIdSync'
 import { flushErrorReports } from '@/platform/telemetry/reportError'
 import '@/lib/litegraph/public/css/litegraph.css'
@@ -48,6 +52,8 @@ if (isCloud) stripPaymentReturnParams()
 const { refreshRemoteConfig } =
   await import('@/platform/remoteConfig/refreshRemoteConfig')
 await refreshRemoteConfig({ useAuth: false })
+
+markStoresPending()
 
 if (isCloud) {
   const { initTelemetry } = await import('@/platform/telemetry/initTelemetry')
@@ -169,6 +175,8 @@ app
     firebaseApp,
     modules: [VueFireAuth()]
   })
+
+markStoresReady()
 
 if (isCloud && hasHostTelemetryBridge) {
   syncHostUserIdWithFirebaseAuth()
