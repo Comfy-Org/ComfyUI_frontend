@@ -23,7 +23,9 @@ describe('indexing policy', () => {
     '/zh-CN/booking-confirmation/',
     '/case-studies',
     '/zh-CN/videos/',
-    '/demos'
+    '/demos',
+    '/workshop',
+    '/workshop/models/bfl--flux-3/'
   ])('marks %s as noindex', (pathname) => {
     expect(isNoindexPathname(pathname)).toBe(true)
     expect(isExcludedFromSitemap(`https://comfy.org${pathname}`)).toBe(true)

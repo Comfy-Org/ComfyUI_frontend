@@ -1,6 +1,60 @@
 type Locale = 'en' | 'zh-CN' | 'ja'
 
 const translations = {
+  'workshop.meta.title': {
+    en: 'Comfy Workshop',
+    'zh-CN': 'Comfy Workshop'
+  },
+  'workshop.meta.description': {
+    en: 'Browse and run AI models with Comfy.',
+    'zh-CN': '使用 Comfy 浏览并运行 AI 模型。'
+  },
+  'workshop.hero.eyebrow': {
+    en: 'Comfy Workshop',
+    'zh-CN': 'Comfy Workshop'
+  },
+  'workshop.hero.heading': {
+    en: 'Build with the best AI models',
+    'zh-CN': '使用顶尖 AI 模型进行创作'
+  },
+  'workshop.hero.subtitle': {
+    en: 'Compare models, try their inputs, and use the same API from your own application.',
+    'zh-CN': '比较模型、尝试输入，并在你自己的应用中使用相同的 API。'
+  },
+  'workshop.search.label': {
+    en: 'Search models',
+    'zh-CN': '搜索模型'
+  },
+  'workshop.search.placeholder': {
+    en: 'Search models, providers, and capabilities',
+    'zh-CN': '搜索模型、提供商和功能'
+  },
+  'workshop.provider.label': {
+    en: 'Filter by provider',
+    'zh-CN': '按提供商筛选'
+  },
+  'workshop.provider.all': {
+    en: 'All providers',
+    'zh-CN': '所有提供商'
+  },
+  'workshop.filter.all': { en: 'All', 'zh-CN': '全部' },
+  'workshop.filter.image': { en: 'Image', 'zh-CN': '图像' },
+  'workshop.filter.video': { en: 'Video', 'zh-CN': '视频' },
+  'workshop.filter.audio': { en: 'Audio', 'zh-CN': '音频' },
+  'workshop.filter.3d': { en: '3D', 'zh-CN': '3D' },
+  'workshop.results': {
+    en: '{count} models',
+    'zh-CN': '{count} 个模型'
+  },
+  'workshop.empty': {
+    en: 'No models match these filters.',
+    'zh-CN': '没有符合这些筛选条件的模型。'
+  },
+  'workshop.showMore': {
+    en: 'Show more models',
+    'zh-CN': '显示更多模型'
+  },
+
   // Tags (global, reusable across sections)
   'tags.partnerNodes': {
     en: 'Partner Nodes',
