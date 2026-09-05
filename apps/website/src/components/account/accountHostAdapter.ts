@@ -2,7 +2,6 @@ import { AccountError, MalformedResponseError } from '@comfyorg/account/core'
 import type {
   AccountHostAdapter,
   BillingBalanceResponse,
-  IdentitySnapshot,
   StorageKey,
   TransportRequest,
   WorkspaceCredential
@@ -44,7 +43,6 @@ function storageName(key: StorageKey): string {
 
 export function createWebsiteAccountHostAdapter(
   apiBaseUrl: string,
-  identity: () => IdentitySnapshot | null,
   workspaceId: () => string | null
 ): AccountHostAdapter {
   return {
@@ -53,9 +51,6 @@ export function createWebsiteAccountHostAdapter(
       now: Date.now,
       schedule: (fn, delayMs) => setTimeout(fn, delayMs),
       cancel: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>)
-    },
-    async acquireIdentity() {
-      return identity()
     },
     getActiveWorkspace: workspaceId,
     storage: {

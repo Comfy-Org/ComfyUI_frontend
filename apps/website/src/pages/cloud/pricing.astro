@@ -43,7 +43,7 @@ const productId = jsonLdId(url, 'product')
 >
   {
     import.meta.env.PUBLIC_ACCOUNT_LAYER_POC === '1' && (
-      <AccountIsland client:load />
+      <AccountIsland client:only="vue" />
     )
   }
   <MinimaxLicenseHeroSection client:visible />
