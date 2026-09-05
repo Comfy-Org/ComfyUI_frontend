@@ -22,8 +22,16 @@ concurrency:
   # Must carry the resolved target: on workflow_dispatch the event PR number is
   # empty, and on pull_request the inputs are empty — one expression serves
   # both. Trailing run_id keeps two no-input dispatches from cancelling each
-  # other. Keep a dispatched batch under ~40 numbers (255-char group cap).
-  group: ${{ github.workflow }}-${{ inputs.pr_numbers || inputs.pr_number || github.event.pull_request.number || github.run_id }}
+  # other. Irrelevant label events get unique groups so their skipped jobs
+  # cannot cancel an in-flight grade. Keep a dispatched batch under ~40
+  # numbers (255-char group cap).
+  group: >-
+    ${{ github.workflow }}-${{ inputs.pr_numbers || inputs.pr_number || github.event.pull_request.number || github.run_id }}-${{
+      contains(fromJSON('["labeled", "unlabeled"]'), github.event.action) &&
+      !startsWith(github.event.label.name, 'risk-dispute:') &&
+      github.run_id ||
+      'grade'
+    }}
   cancel-in-progress: true
 
 permissions:
