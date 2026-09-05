@@ -12,16 +12,18 @@ interface CloudBootOptions {
   features: RemoteConfig
   /** Body for `/api/settings` (defaults to `{}`). */
   settings?: unknown
+  /** `'server'` lets `/api/object_info` reach the backend so real node definitions load. */
+  objectInfo?: 'server'
 }
 
 /**
- * Stub the core endpoints the cloud app hits on boot so a raw `page` reaches the
- * working app without falling through to the OSS devtools backend. Specs layer
- * their own feature- or flow-specific routes on top.
+ * Stub the endpoints every cloud boot path mocks the same way. Callers layer
+ * their own workspace, billing or flow routes on top; Playwright matches the
+ * most recently registered handler first, so those overrides still win.
  */
-export async function mockCloudBoot(
+export async function mockCloudBootRoutes(
   page: Page,
-  { features, settings = {} }: CloudBootOptions
+  { features, settings = {}, objectInfo }: CloudBootOptions
 ) {
   await page.route('**/api/features', (r) => r.fulfill(jsonRoute(features)))
   await page.route('**/api/system_stats', (r) =>
@@ -36,20 +38,30 @@ export async function mockCloudBoot(
       })
     )
   )
-  await page.route('**/api/user', (r) =>
-    r.fulfill(jsonRoute({ status: 'active' }))
-  )
   await page.route('**/api/settings', (r) => r.fulfill(jsonRoute(settings)))
   await page.route('**/api/userdata**', (r) => r.fulfill(jsonRoute([])))
   await page.route('**/api/extensions', (r) => r.fulfill(jsonRoute([])))
-  await page.route('**/api/object_info', (r) => r.fulfill(jsonRoute({})))
+  if (objectInfo !== 'server')
+    await page.route('**/api/object_info', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/global_subgraphs', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/i18n', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/auth/session', (r) =>
     r.fulfill(jsonRoute({ token: 'mock-workspace-token' }))
   )
-  await mockWorkspace(page, workspace('personal', 'owner'), [])
   await page.route('**/releases**', (r) => r.fulfill(jsonRoute([])))
+}
+
+/**
+ * Stub the core endpoints the cloud app hits on boot so a raw `page` reaches the
+ * working app without falling through to the OSS devtools backend. Specs layer
+ * their own feature- or flow-specific routes on top.
+ */
+export async function mockCloudBoot(page: Page, options: CloudBootOptions) {
+  await mockCloudBootRoutes(page, options)
+  await page.route('**/api/user', (r) =>
+    r.fulfill(jsonRoute({ status: 'active' }))
+  )
+  await mockWorkspace(page, workspace('personal', 'owner'), [])
 }
 
 /**

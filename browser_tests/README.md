@@ -612,6 +612,46 @@ test.afterEach(async ({ comfyPage }) => {
 `debugShowCanvasOverlay()`, `debugGetCanvasDataURL()` are for local debugging
 only. Never commit them.
 
+## Replay coverage for agent bug fixes
+
+### Playbook
+
+```bash
+DISTRIBUTION=cloud DEV_SERVER_COMFYUI_URL=http://127.0.0.1:8188 pnpm dev
+```
+
+```bash
+PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://localhost:5173 DISTRIBUTION=cloud pnpm exec playwright test agentConversation --project=cloud
+```
+
+Watch one: add `--headed -g <case id>`. Recorded gaps: `AGENT_REPLAY_TIMING=recorded`.
+
+When a fix changes how the agent's turns affect the app (graph edits,
+CRDT frames, panel state), add a conversation replay case alongside the
+fix so the bug stays fixed:
+
+1. **Capture the conversation.** Reproduce the bug's turn against the
+   cloud agent run locally in its non-standalone mode, with Postgres,
+   Redis and the doc host beside it: that is the only mode that writes
+   the per-op audit rows (`agent_tool_calls` parent and child rows) the
+   exporter reads. The same agent in standalone mode
+   (SQLite, no doc host) never writes them, so it can only
+   yield text-only or tool-error turns. Record it with the recorder
+   (`scripts/agentConversationRecord.ts`, landing in #16782; until it merges,
+   record from that PR's branch), which writes the conversation JSON into
+   `conversations/` marked `response_side: 'recorded'`. Never write
+   `graph_ops` by hand and never relabel a synthesized response as recorded.
+2. **Add the replay case.** Drive the fixture through the conversation
+   replay fixture (`agentConversationFixture`), asserting the
+   canvas-observable outcome the bug corrupted (graph end-state or
+   panel state - not mock call counts, not model text).
+3. **Prove it bites.** Before merging, run the case once against the
+   fix's parent commit (red) and once at the fix (green); paste both
+   run lines in the PR description. A replay case that never went red
+   against the bug does not count as regression coverage.
+
+Name the case after the behavior it protects (`agent-<behavior-slug>.json`, with the fix PR cited in the fixture's `source.note`). The exporter writes the provenance the replay keeps: `source.capture` (thread and message ids) and `source.note` (row ids and the raw capture hash), which is enough to re-export the recording.
+
 ## Test Data & Typed API Mocks
 
 Mock data in `fixtures/data/` exports **typed** objects that conform to
