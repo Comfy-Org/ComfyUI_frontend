@@ -9,14 +9,12 @@ import {
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { Positionable } from '@/lib/litegraph/src/interfaces'
-import { LLink } from '@/lib/litegraph/src/LLink'
 import {
   LGraphGroup,
   LGraphNode,
   Reroute,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
-import { nodeLinkIds } from '@/lib/litegraph/src/node/slotLinks'
 import { SubgraphIONodeBase } from '@/lib/litegraph/src/subgraph/SubgraphIONodeBase'
 import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
 import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
@@ -78,26 +76,6 @@ export function setCanvasItemSelected(
   })
 }
 
-export function syncNodeLinkHighlights(
-  canvas: LGraphCanvas,
-  node: LGraphNode
-): void {
-  const { graph } = canvas
-  if (!graph) return
-  for (const linkId of nodeLinkIds(graph, node)) {
-    const origin = LLink.getOriginNode(graph, linkId)
-    const target = LLink.getTargetNode(graph, linkId)
-    if (
-      (origin && canvas.selectedItems.has(origin)) ||
-      (target && canvas.selectedItems.has(target))
-    ) {
-      canvas.highlighted_links[linkId] = true
-    } else {
-      delete canvas.highlighted_links[linkId]
-    }
-  }
-}
-
 export function applyCanvasSelection(
   canvas: LGraphCanvas,
   command: SelectionCommand
@@ -107,7 +85,6 @@ export function applyCanvasSelection(
 
 export function releaseCanvasSelection(canvas: LGraphCanvas): void {
   for (const item of canvas.selectedItems) item.selected = undefined
-  canvas.selected_nodes = {}
   canvas.selected_group = null
   canvas.selectedItems.clear()
 }
