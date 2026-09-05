@@ -45,7 +45,8 @@ export enum ServerFeatureFlag {
   CHURNKEY_APP_ID = 'churnkey_app_id',
   SIGNUP_TURNSTILE = 'signup_turnstile',
   SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags',
-  ONBOARDING_TOUR_ENABLED = 'onboarding_tour_enabled'
+  ONBOARDING_TOUR_ENABLED = 'onboarding_tour_enabled',
+  NEW_USER_DEFAULT_TEMPLATE_TAB = 'new_user_default_template_tab'
 }
 
 function reportFeatureFlagEvaluation<T>(flagKey: string, value: T): T {
@@ -294,6 +295,22 @@ export function useFeatureFlags() {
     },
     get assetsEnabled() {
       return isCloud || resolveFlag('assets', undefined, false)
+    },
+    /**
+     * Template category id shown by default when the template selector
+     * opens for a new user during onboarding. Used for A/B testing the
+     * onboarding tab via PostHog feature flags. Returns `undefined` when
+     * unset so callers fall back to the built-in default.
+     */
+    get newUserDefaultTemplateTab(): string | undefined {
+      const remote = remoteConfig.value.new_user_default_template_tab?.trim()
+      const value = resolveFlag<string | undefined>(
+        ServerFeatureFlag.NEW_USER_DEFAULT_TEMPLATE_TAB,
+        remote ? remote : undefined,
+        undefined
+      )
+      const normalized = value?.trim()
+      return normalized ? normalized : undefined
     }
   })
 
