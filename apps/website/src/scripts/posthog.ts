@@ -3,6 +3,7 @@ import posthog from 'posthog-js'
 import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
 
 import type { Platform } from '@/composables/useDownloadUrl'
+import type { CliClientId } from '@/config/cliClients'
 import type { ConnectionId, McpClientId } from '@/config/mcpClients'
 
 const POSTHOG_KEY =
@@ -21,16 +22,6 @@ const ANALYTICS_EVENT = {
   mcpConnectionTabClicked: 'website:mcp_connection_tab_clicked',
   mcpClientTabClicked: 'website:mcp_client_tab_clicked'
 } as const
-
-export type CliClientId =
-  | 'claude-code'
-  | 'codex'
-  | 'cursor'
-  | 'gemini-cli'
-  | 'openclaw'
-  | 'hermes'
-  | 'terminal'
-  | 'ci'
 
 type AnalyticsEvent =
   | { name: typeof ANALYTICS_EVENT.pageview; properties?: undefined }
