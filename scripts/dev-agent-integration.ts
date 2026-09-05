@@ -4,6 +4,7 @@ import { access, mkdtemp, readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
 
+import { smokeCommand } from './dev-agent-commands'
 import type { Options } from './dev-agent-options'
 import { PROJECT_ROOT, USAGE, parseOptions } from './dev-agent-options'
 import { preflightAgent } from './dev-agent-preflight'
@@ -110,7 +111,7 @@ async function run(options: Options): Promise<number> {
     await waitForHttp(frontend, frontendUrl, supervisor.requested, 'Vite')
     process.stdout.write(
       `\nAgent integration environment ready: ${frontendUrl}\n` +
-        `Playwright: PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=${frontendUrl} pnpm exec playwright test browser_tests/tests/agent\n` +
+        `Playwright: ${smokeCommand(frontendUrl)}\n` +
         'Press Ctrl-C to stop the frontend and standalone agent.\n\n'
     )
 
