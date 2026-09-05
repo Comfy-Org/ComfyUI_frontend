@@ -139,9 +139,11 @@ const hostStores = vi.hoisted(() => ({
   workflow: null as unknown as {
     activeWorkflow: FakeTab | null
     openWorkflows: FakeTab[]
+    workflows: FakeTab[]
     tabs: Map<string, FakeTab>
     openTabPaths: Set<string>
     getWorkflowByPath: (path: string) => FakeTab | null
+    syncWorkflows: ReturnType<typeof vi.fn>
     nodeToNodeLocatorId: (node: {
       graph?: { id?: string }
       id: string | number
@@ -167,9 +169,13 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
         return tab === undefined ? [] : [tab]
       })
     },
+    get workflows() {
+      return [...tabs.values()]
+    },
     tabs,
     openTabPaths,
     getWorkflowByPath: (path: string) => tabs.get(path) ?? null,
+    syncWorkflows: vi.fn(async () => undefined),
     nodeToNodeLocatorId: (node: {
       graph?: { id?: string }
       id: string | number
@@ -336,6 +342,7 @@ beforeEach(() => {
   workflowService.saveWorkflow.mockClear()
   workflowService.saveWorkflowAs.mockClear()
   workflowService.openWorkflow.mockClear()
+  hostStores.workflow.syncWorkflows.mockClear()
   focusNodeInstance.mockReset()
   socketSend.mockReset()
 })
@@ -2990,6 +2997,46 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(
       await screen.findByRole('button', { name: 'Open duck' })
     ).toBeInTheDocument()
+  })
+
+  it('syncs and opens a closed workflow from a sent reference chip without changing the Agent target', async () => {
+    const current = makeTab('wf-cloud-current')
+    const reference = addTab('workflows/reference.json')
+    hostStores.workflow.openTabPaths.delete(reference.path)
+    mockMessagesEndpoint('wf-cloud-current', [
+      { id: 'wf-cloud-current', name: 'current' },
+      { id: 'wf-reference', name: 'reference' }
+    ])
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const conversation = useAgentConversationStore()
+    const historyMessageId = 'history-message' as TurnId
+    conversation.startTurn(historyMessageId)
+    conversation.recordUser(
+      historyMessageId,
+      'Compare these',
+      undefined,
+      undefined,
+      [{ id: 'wf-reference', name: 'reference' }]
+    )
+    conversation.ingest({
+      type: 'agent_message_done',
+      data: { message_id: 'history-message', thread_id: 'th-history' }
+    })
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Open reference' })
+    )
+
+    await vi.waitFor(() =>
+      expect(workflowService.openWorkflow).toHaveBeenCalledWith(reference)
+    )
+    expect(hostStores.workflow.syncWorkflows).toHaveBeenCalledOnce()
+    expect(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    ).toHaveTextContent(current.filename)
   })
 
   it('sends every open tab that has a cloud id with the message', async () => {
