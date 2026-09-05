@@ -2029,6 +2029,107 @@ describe('AgentPanelRoot workflow binding', () => {
     return bodies
   }
 
+  it('requires explicit selection on first entry even with an unsaved canvas', async () => {
+    makeTab().isTemporary = true
+    const bodies = mockMessagesEndpoint('wf-new')
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const textbox = screen.getByRole('textbox')
+    await userEvent.type(textbox, 'build here{Enter}')
+    expect(
+      await screen.findByPlaceholderText(i18n.global.t('agent.searchWorkflows'))
+    ).toHaveFocus()
+    expect(screen.queryByRole('menuitemradio', { checked: true })).toBeNull()
+    expect(textbox).toHaveValue('build here')
+    expect(bodies).toHaveLength(0)
+    expect(workflowService.saveWorkflowAs).not.toHaveBeenCalled()
+  })
+
+  it('keeps a saving row open until automatic save and target selection complete', async () => {
+    makeTab('wf-42')
+    const scratch = addTab('workflows/scratch.json', { isTemporary: true })
+    const cloudWorkflows: { id: string; name: string }[] = []
+    const bodies = mockMessagesEndpoint('wf-scratch', cloudWorkflows)
+    let resolveSave = () => {}
+    const save = new Promise<boolean>((resolve) => {
+      resolveSave = () => resolve(true)
+    })
+    workflowService.saveWorkflowAs.mockImplementationOnce(async () => {
+      await save
+      scratch.isTemporary = false
+      cloudWorkflows.push({ id: 'wf-scratch', name: 'scratch' })
+      return true
+    })
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const textbox = screen.getByRole('textbox')
+    await userEvent.type(textbox, 'keep this prompt')
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitemradio', { name: 'scratch' })
+    )
+    const row = await screen.findByRole('menuitemradio', { name: /scratch/ })
+    expect(within(row).getByRole('status')).toHaveTextContent('Saving workflow')
+    expect(row).not.toBeChecked()
+    expect(
+      screen.getByRole('menuitemradio', { name: 'current' })
+    ).toHaveAttribute('aria-disabled', 'true')
+    expect(workflowService.saveWorkflowAs).toHaveBeenCalledWith(scratch, {
+      filename: 'scratch'
+    })
+    expect(workflowService.openWorkflow).not.toHaveBeenCalled()
+    resolveSave()
+    await vi.waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+    expect(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    ).toHaveTextContent('scratch')
+    expect(textbox).toHaveValue('keep this prompt')
+    expect(bodies).toHaveLength(0)
+  })
+
+  it('keeps the menu and draft available to retry after an automatic save failure', async () => {
+    makeTab('wf-42')
+    const scratch = addTab('workflows/scratch.json', { isTemporary: true })
+    const cloudWorkflows: { id: string; name: string }[] = []
+    mockMessagesEndpoint('wf-scratch', cloudWorkflows)
+    workflowService.saveWorkflowAs.mockRejectedValueOnce(
+      new Error('save unavailable')
+    )
+    workflowService.saveWorkflowAs.mockImplementationOnce(async () => {
+      scratch.isTemporary = false
+      cloudWorkflows.push({ id: 'wf-scratch', name: 'scratch' })
+      return true
+    })
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const textbox = screen.getByRole('textbox')
+    await userEvent.type(textbox, 'keep draft')
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitemradio', { name: 'scratch' })
+    )
+    await vi.waitFor(() =>
+      expect(useToastStore().messagesToAdd).toHaveLength(1)
+    )
+    expect(
+      screen.getByRole('menuitemradio', { name: 'scratch' })
+    ).not.toHaveAttribute('aria-disabled', 'true')
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(textbox).toHaveValue('keep draft')
+    await userEvent.click(
+      screen.getByRole('menuitemradio', { name: 'scratch' })
+    )
+    await vi.waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+    expect(workflowService.saveWorkflowAs).toHaveBeenCalledTimes(2)
+  })
+
   it('keeps the selected Agent target when the visible graph tab changes', async () => {
     makeTab('wf-42')
     const bodies = mockMessagesEndpoint('wf-42')
