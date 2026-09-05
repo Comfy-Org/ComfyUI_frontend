@@ -78,7 +78,7 @@ jobs:
           if [ "$WORKSHOP_LABELLED" = "true" ]; then
             export WORKSHOP_IN_BUILD=1
           fi
-          vercel build
+          VERCEL_ENV=preview vercel build
 
       - name: Fetch head commit metadata
         id: head-commit
