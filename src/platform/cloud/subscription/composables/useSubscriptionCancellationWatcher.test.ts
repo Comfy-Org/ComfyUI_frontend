@@ -37,14 +37,9 @@ describe('useSubscriptionCancellationWatcher', () => {
     options: Parameters<typeof useSubscriptionCancellationWatcher>[0]
   ): ReturnType<typeof useSubscriptionCancellationWatcher> => {
     const scope = effectScope()
-    let result: ReturnType<typeof useSubscriptionCancellationWatcher> | null =
-      null
-    scope.run(() => {
-      result = useSubscriptionCancellationWatcher(options)
-    })
-    if (!result) {
-      throw new Error('Failed to initialize cancellation watcher')
-    }
+    const result = scope.run(() => useSubscriptionCancellationWatcher(options))
+    if (!result) throw new Error('Expected watcher scope to run')
+
     activeScopes.push(scope)
     return result
   }

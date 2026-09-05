@@ -188,9 +188,7 @@ describe('useWidgetSelectItems', () => {
 
       expect(dropdownItems.value).toHaveLength(2)
       expect(
-        dropdownItems.value.every(
-          (item) => !String(item.id).startsWith('missing-')
-        )
+        dropdownItems.value.every((item) => !item.id.startsWith('missing-'))
       ).toBe(true)
     })
 
@@ -205,9 +203,7 @@ describe('useWidgetSelectItems', () => {
       await nextTick()
 
       expect(
-        dropdownItems.value.every(
-          (item) => !String(item.id).startsWith('missing-')
-        )
+        dropdownItems.value.every((item) => !item.id.startsWith('missing-'))
       ).toBe(true)
     })
 
@@ -220,9 +216,7 @@ describe('useWidgetSelectItems', () => {
       )
       expect(dropdownItems.value).toHaveLength(2)
       expect(
-        dropdownItems.value.every(
-          (item) => !String(item.id).startsWith('missing-')
-        )
+        dropdownItems.value.every((item) => !item.id.startsWith('missing-'))
       ).toBe(true)
     })
 
@@ -235,9 +229,7 @@ describe('useWidgetSelectItems', () => {
       )
       expect(dropdownItems.value).toHaveLength(2)
       expect(
-        dropdownItems.value.every(
-          (item) => !String(item.id).startsWith('missing-')
-        )
+        dropdownItems.value.every((item) => !item.id.startsWith('missing-'))
       ).toBe(true)
     })
   })

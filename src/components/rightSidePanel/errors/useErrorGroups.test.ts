@@ -12,6 +12,9 @@ vi.mock('@/scripts/app', () => ({
     rootGraph: {
       serialize: vi.fn(() => ({})),
       getNodeById: vi.fn()
+    },
+    get rootGraphOrUndefined() {
+      return this.rootGraph
     }
   }
 }))
@@ -545,7 +548,7 @@ describe('useErrorGroups', () => {
           '@/utils/graphTraversalUtil'
         )
       vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) => {
-        return actualGetNodeByExecutionId(rootGraph, String(nodeId))
+        return actualGetNodeByExecutionId(rootGraph, nodeId)
       })
       store.recordNodeErrors({
         '12:5': nodeError(
@@ -646,7 +649,6 @@ describe('useErrorGroups', () => {
         (g) => g.type === 'execution'
       )
       expect(execGroups.length).toBeGreaterThan(0)
-      if (execGroups[0].type !== 'execution') return
       expect(execGroups[0].cards[0].errors[0]).toMatchObject({
         message: 'RuntimeError: mat1 and mat2 shapes cannot be multiplied',
         details: 'line 1\nline 2',
@@ -889,7 +891,6 @@ describe('useErrorGroups', () => {
         (g) => g.type === 'execution'
       )
       for (const group of executionGroups) {
-        if (group.type !== 'execution') continue
         const hasMatch = group.cards.some(
           (c) =>
             c.title.toLowerCase().includes('sampler') ||
@@ -1219,7 +1220,7 @@ describe('useErrorGroups', () => {
       const selectedNode = { id: '1' }
       vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
         fromAny<LGraphNode, unknown>(
-          String(nodeId) === '1' ? selectedNode : { id: String(nodeId) }
+          nodeId === '1' ? selectedNode : { id: nodeId }
         )
       )
       canvasStore.selectedItems = fromAny<
@@ -1252,7 +1253,7 @@ describe('useErrorGroups', () => {
         (g) => g.type === 'execution'
       )
       const displayedCardIds = executionGroups.flatMap((g) =>
-        g.type === 'execution' ? g.cards.map((c) => c.id) : []
+        g.cards.map((c) => c.id)
       )
       expect(displayedCardIds).toContain('node-1')
       expect(displayedCardIds).toContain('node-2')
@@ -1264,7 +1265,7 @@ describe('useErrorGroups', () => {
       const canvasStore = useCanvasStore()
       vi.mocked(isLGraphNode).mockReturnValue(true)
       vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
-        fromAny<LGraphNode, unknown>({ id: String(nodeId) })
+        fromAny<LGraphNode, unknown>({ id: nodeId })
       )
       canvasStore.selectedItems = fromAny<
         typeof canvasStore.selectedItems,
@@ -1297,7 +1298,7 @@ describe('useErrorGroups', () => {
       const canvasStore = useCanvasStore()
       vi.mocked(isLGraphNode).mockReturnValue(true)
       vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
-        fromAny<LGraphNode, unknown>({ id: String(nodeId) })
+        fromAny<LGraphNode, unknown>({ id: nodeId })
       )
       canvasStore.selectedItems = fromAny<
         typeof canvasStore.selectedItems,
@@ -1328,7 +1329,7 @@ describe('useErrorGroups', () => {
       const selectedNode = { id: '7' }
       vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
         fromAny<LGraphNode, unknown>(
-          String(nodeId) === '2:5' ? selectedNode : undefined
+          nodeId === '2:5' ? selectedNode : undefined
         )
       )
       canvasStore.selectedItems = fromAny<

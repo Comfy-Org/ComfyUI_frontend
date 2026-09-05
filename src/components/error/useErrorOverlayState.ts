@@ -18,18 +18,13 @@ type OverlayCopy = { title?: string; message: string }
 function resolveSingleOverlayCopy(group: ErrorGroup): OverlayCopy | undefined {
   if (group.type === 'execution') {
     const [card] = group.cards
-    const [error] = card?.errors ?? []
-    const message =
-      error?.toastMessage ??
-      error?.displayMessage ??
-      error?.message ??
-      group.displayMessage ??
-      group.displayTitle
+    const [error] = card.errors
+    const message = error.toastMessage ?? error.displayMessage ?? error.message
 
     if (!message) return undefined
 
     return {
-      title: error?.toastTitle ?? error?.displayTitle ?? group.displayTitle,
+      title: error.toastTitle ?? error.displayTitle ?? group.displayTitle,
       message
     }
   }
@@ -75,9 +70,7 @@ function hasSingleRowWithAtMostOneReference(
   rows: Array<{ referencingNodes: readonly unknown[] }>
 ): boolean {
   const row = rows[0]
-  return (
-    rows.length === 1 && row !== undefined && row.referencingNodes.length <= 1
-  )
+  return rows.length === 1 && row.referencingNodes.length <= 1
 }
 
 interface OverlayGroupContext {

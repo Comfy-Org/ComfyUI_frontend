@@ -79,12 +79,10 @@ function reconcileNodeErrorFlags(
   forEachNode(rootGraph, (node) => {
     setNodeHasErrors(node, flaggedNodes.has(node))
 
-    if (node.inputs) {
-      const ownErrors = errorsByNode.get(node)
-      for (const slot of node.inputs) {
-        slot.hasErrors =
-          !!slot.name && !!ownErrors && hasErrorForSlot(ownErrors, slot.name)
-      }
+    const ownErrors = errorsByNode.get(node)
+    for (const slot of node.inputs) {
+      slot.hasErrors =
+        !!slot.name && !!ownErrors && hasErrorForSlot(ownErrors, slot.name)
     }
   })
 }
