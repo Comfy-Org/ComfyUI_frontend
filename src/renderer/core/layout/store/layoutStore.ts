@@ -1051,12 +1051,10 @@ class LayoutStoreImpl {
   ): boolean {
     const { nodeId } = operation
     const nodeKey = makeScopedLayoutKey(operation.graphId, nodeId)
-    const isDuplicate = this.ynodes.has(nodeKey)
-    assert(
-      !isDuplicate,
-      `LayoutStore.createNode: node ${nodeId} already exists in the layout store - refusing to overwrite its existing layout`
-    )
-    if (isDuplicate) return false
+    // A remote add can legitimately replay under an id whose layout entry a
+    // stale node's owner never cleared (successor-owned state); tolerate it
+    // as a no-op rather than asserting, matching handleCreateGroup below.
+    if (this.ynodes.has(nodeKey)) return false
 
     this.ynodes.set(nodeKey, layoutToYNode(operation.layout))
     this.highestZIndex = Math.max(this.highestZIndex, operation.layout.zIndex)
