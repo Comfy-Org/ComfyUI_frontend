@@ -8026,26 +8026,6 @@ Enterprise`
     en: 'Contact sales',
     'zh-CN': '联系销售'
   },
-  'pricing.lookingForElse.heading': {
-    en: 'Looking for something else?',
-    'zh-CN': '在找别的方案？'
-  },
-  'pricing.lookingForElse.community.title': {
-    en: 'Community Edition',
-    'zh-CN': '社区版'
-  },
-  'pricing.lookingForElse.community.description': {
-    en: 'A standard, self-hosted version of ComfyUI is available on GitHub.',
-    'zh-CN': '标准的自托管版 ComfyUI 已在 GitHub 上提供。'
-  },
-  'pricing.lookingForElse.community.github': {
-    en: 'View on GitHub',
-    'zh-CN': '前往 GitHub'
-  },
-  'pricing.lookingForElse.community.docs': {
-    en: 'Self-hosting docs',
-    'zh-CN': '自托管文档'
-  },
   'pricing.resourceCosts.note': {
     en: 'Applies to the Comfy API on the Developer Platform.',
     'zh-CN': '仅适用于开发者平台上的 Comfy API。'
