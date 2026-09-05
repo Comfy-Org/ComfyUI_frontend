@@ -242,7 +242,7 @@ const structuredData = shouldNoindex
     <HeaderMain
       locale={locale}
       github-stars={githubStars}
-      show-workshop={isWorkshopInBuild()}
+      {...(isWorkshopInBuild() ? { showWorkshop: true } : {})}
       client:load
     />
     <!-- Horizontal clip lives here (not on <html>, which must stay overflow:
