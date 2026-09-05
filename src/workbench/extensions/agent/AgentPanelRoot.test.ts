@@ -3859,13 +3859,21 @@ describe('AgentPanelRoot workflow binding', () => {
     mockMessagesEndpoint('wf-42')
     const selection = await startVueNodeSelection()
 
+    const selectionStore = useAgentNodeSelectionStore()
+    selectionStore.saveNodeIds('workflows/current.json', ['9', '12'])
+
     const active = hostStores.workflow.activeWorkflow
     if (!active) throw new Error('expected an active workflow')
     active.path = 'workflows/renamed.json'
     active.filename = 'renamed'
     await nextTick()
 
-    expect(useAgentNodeSelectionStore().isActive).toBe(true)
+    expect(selectionStore.isActive).toBe(true)
+    expect(selectionStore.nodeIds('workflows/current.json')).toEqual([])
+    expect(selectionStore.nodeIds('workflows/renamed.json')).toEqual([
+      '9',
+      '12'
+    ])
     expect(selection.canvas.multi_select).toBe(true)
     expect(selection.canvas.allow_dragnodes).toBe(false)
     expect(selection.canvas.selectOnly).toBe(true)

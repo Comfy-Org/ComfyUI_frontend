@@ -262,4 +262,14 @@ describe('agentNodeSelectionStore', () => {
     expect(store.isLoadingWorkflow).toBe(false)
     expect(store.restoredNodeIds).toBeNull()
   })
+
+  it('moves saved node selections when a workflow is renamed', () => {
+    const store = useAgentNodeSelectionStore()
+
+    store.saveNodeIds('workflows/original.json', ['9', '12'])
+    store.moveNodeIds('workflows/original.json', 'workflows/renamed.json')
+
+    expect(store.nodeIds('workflows/original.json')).toEqual([])
+    expect(store.nodeIds('workflows/renamed.json')).toEqual(['9', '12'])
+  })
 })
