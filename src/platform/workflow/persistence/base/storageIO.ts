@@ -10,6 +10,7 @@ import type {
   DraftPayloadV2,
   OpenPathsPointer
 } from './draftTypes'
+import { AGENT_CRDT_DOC_ID_SESSION_KEY } from './storageKeyConstants'
 import { StorageKeys } from './storageKeys'
 
 type StorageAvailability = 'available' | 'unavailable'
@@ -466,7 +467,8 @@ const sessionRestorePrefixes = [
 const sessionRestoreKeys = [
   'Comfy.PreviousWorkflow',
   'Comfy.OpenWorkflowsPaths',
-  'Comfy.ActiveWorkflowIndex'
+  'Comfy.ActiveWorkflowIndex',
+  AGENT_CRDT_DOC_ID_SESSION_KEY
 ]
 
 function removeStorageKeys(

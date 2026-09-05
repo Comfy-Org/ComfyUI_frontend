@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { fromPartial } from '@total-typescript/shoehorn'
 
-import { render, screen, within } from '@testing-library/vue'
+import { cleanup, render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import {
   createPinia,
@@ -10,7 +10,12 @@ import {
   setActivePinia
 } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
+import type { Ref } from 'vue'
+
+import type * as PersistedDocIdModule from './crdt/persistedDocId'
+import type * as AgentCrdtFollowerModule from './crdt/useAgentCrdtFollower'
+import type * as MintPortWiringModule from './crdt/mintPortWiring'
 
 // jsdom does not implement ResizeObserver (happy-dom does); stub it before the
 // Vue node preview chain constructs its module-level observer at import time.
@@ -58,8 +63,12 @@ const ws = vi.hoisted(() => {
   const emit = (type: string, data?: unknown): void => {
     for (const listener of listeners.get(type) ?? []) listener({ detail: data })
   }
+  const emitCustom = (type: string, data?: unknown): void => {
+    for (const listener of listeners.get(type) ?? [])
+      listener(new CustomEvent(type, { detail: data }))
+  }
   const clear = (): void => listeners.clear()
-  return { add, remove, emit, clear }
+  return { add, remove, emit, emitCustom, clear }
 })
 
 vi.mock('@/scripts/api', () => ({
@@ -304,6 +313,67 @@ vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => telemetry
 }))
 
+// FE-1969: record the CRDT follower's inputs and stub the persisted doc id it
+// would restore, so tests can assert how AgentPanelRoot.vue resolves
+// `isBoundWorkflowActive` without a subscribe/persist round trip.
+const crdtFollowerCalls = vi.hoisted(
+  () =>
+    [] as {
+      workflowId: string | null
+      workflowIdRef: Ref<string | null>
+      active: boolean
+      isTargetActive: Ref<boolean>
+    }[]
+)
+const persistedCrdtDocId = vi.hoisted(() => ({ value: null as string | null }))
+// The stub keeps the real module's contract between its two entry points: a
+// clear is what makes the next reconcile return null. Without that link a test
+// could assert the call happened while the record it names stayed restorable.
+const clearPersistedCrdtDocId = vi.hoisted(() => vi.fn())
+vi.mock('./crdt/persistedDocId', async (importOriginal) => {
+  const actual = await importOriginal<typeof PersistedDocIdModule>()
+  return {
+    ...actual,
+    reconcilePersistedDocId: () => persistedCrdtDocId.value,
+    clearPersistedDocId: () => {
+      clearPersistedCrdtDocId()
+      persistedCrdtDocId.value = null
+    }
+  }
+})
+vi.mock('./crdt/useAgentCrdtFollower', async (importOriginal) => {
+  const actual = await importOriginal<typeof AgentCrdtFollowerModule>()
+  return {
+    ...actual,
+    useAgentCrdtFollower: (
+      ...args: Parameters<typeof actual.useAgentCrdtFollower>
+    ) => {
+      const [workflowId, , , isTargetActive = ref(true)] = args
+      crdtFollowerCalls.push({
+        workflowId: workflowId.value,
+        workflowIdRef: workflowId,
+        active: isTargetActive.value,
+        isTargetActive
+      })
+      return actual.useAgentCrdtFollower(...args)
+    }
+  }
+})
+
+const mintPortWiringDeps = vi.hoisted(() => ({
+  current: null as MintPortWiringModule.MintPortWiringDeps | null
+}))
+vi.mock('./crdt/mintPortWiring', async (importOriginal) => {
+  const actual = await importOriginal<typeof MintPortWiringModule>()
+  return {
+    ...actual,
+    attachMintPortWiring: (deps: MintPortWiringModule.MintPortWiringDeps) => {
+      mintPortWiringDeps.current = deps
+      return actual.attachMintPortWiring(deps)
+    }
+  }
+})
+
 import type { TurnId } from './schemas/agentApiSchema'
 import { zAgentWsEvent } from './schemas/agentApiSchema'
 import { MAX_ATTACHMENT_BYTES } from './composables/agent/useAttachment'
@@ -321,6 +391,9 @@ beforeEach(() => {
   URL.createObjectURL = vi.fn(() => 'blob:mock-url')
   URL.revokeObjectURL = vi.fn()
   localStorage.clear()
+  persistedCrdtDocId.value = null
+  clearPersistedCrdtDocId.mockClear()
+  mintPortWiringDeps.current = null
   getServerFeature.mockReset()
   getServerFeature.mockImplementation(
     (_name: string, defaultValue?: unknown) => defaultValue
@@ -2095,6 +2168,184 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(activity.unseenModifiedPaths.has('workflows/current.json')).toBe(
       true
     )
+  })
+
+  describe('FE-1969: CRDT follower activity without an in-memory binding', () => {
+    // `boundWorkflowId` (useAgentSession.ts) is module-level and may carry a
+    // value from an earlier test; "New chat" on a throwaway instance resets it.
+    async function resetSessionBinding(): Promise<void> {
+      const throwaway = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      await userEvent.click(
+        screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+      )
+      throwaway.unmount()
+      cleanup()
+      crdtFollowerCalls.length = 0
+      // The throwaway's own "New chat" clears the persisted record, so the spy
+      // has to start from zero here or a test would credit the helper's call to
+      // the gesture it is actually exercising.
+      clearPersistedCrdtDocId.mockClear()
+    }
+
+    it('drives the follower active when the active tab is bound to the restorable doc', async () => {
+      await resetSessionBinding()
+      makeTab('wf-42')
+      mockMessagesEndpoint('wf-42')
+      persistedCrdtDocId.value = 'wf-42'
+
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+      expect(crdtFollowerCalls.at(-1)).toMatchObject({
+        workflowId: 'wf-42',
+        active: true
+      })
+    })
+
+    it('keeps the restored workflow as the follower target after switching away and back', async () => {
+      await resetSessionBinding()
+      const restored = makeTab('wf-42')
+      const other = addTab('workflows/other.json')
+      mockMessagesEndpoint('wf-42')
+      persistedCrdtDocId.value = 'wf-42'
+
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      const follower = crdtFollowerCalls.at(-1)
+      expect(follower?.workflowIdRef.value).toBe('wf-42')
+
+      hostStores.workflow.activeWorkflow = other
+      await nextTick()
+      expect(follower?.workflowIdRef.value).toBeNull()
+
+      hostStores.workflow.activeWorkflow = restored
+      await nextTick()
+      expect(follower?.workflowIdRef.value).toBe('wf-42')
+    })
+
+    it('keeps mint ports closed until the server acknowledges the active binding', async () => {
+      await resetSessionBinding()
+      makeTab('wf-42')
+      mockMessagesEndpoint('wf-42')
+      persistedCrdtDocId.value = 'wf-42'
+
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      const isDocBound = mintPortWiringDeps.current?.isDocBound
+      expect(isDocBound).toBeTypeOf('function')
+      expect(isDocBound?.()).toBe(false)
+
+      ws.emitCustom('doc_subscribed', {
+        v: 1,
+        workflow_id: 'wf-42',
+        ok: true,
+        seq: 1
+      })
+      expect(isDocBound?.()).toBe(true)
+
+      ws.emitCustom('doc_subscribed', {
+        v: 1,
+        workflow_id: 'wf-42',
+        ok: false,
+        seq: 1
+      })
+      expect(isDocBound?.()).toBe(false)
+    })
+
+    it('keeps the follower inactive when the active tab is bound to a different doc', async () => {
+      await resetSessionBinding()
+      makeTab('wf-42')
+      mockMessagesEndpoint('wf-42')
+      persistedCrdtDocId.value = 'wf-other'
+
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+      expect(crdtFollowerCalls.at(-1)).toMatchObject({
+        workflowId: null,
+        active: false
+      })
+    })
+
+    it('keeps the follower inactive when a tab binding persists but no doc is restorable', async () => {
+      await resetSessionBinding()
+      makeTab('wf-42')
+      mockMessagesEndpoint('wf-42')
+
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+      expect(crdtFollowerCalls.at(-1)).toMatchObject({
+        workflowId: null,
+        active: false
+      })
+    })
+
+    it('deactivates a restored follower when a new chat detaches the workflow', async () => {
+      await resetSessionBinding()
+      makeTab('wf-42')
+      mockMessagesEndpoint('wf-42')
+      persistedCrdtDocId.value = 'wf-42'
+
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      const follower = crdtFollowerCalls.at(-1)
+      expect(follower?.isTargetActive.value).toBe(true)
+
+      await userEvent.click(
+        screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+      )
+
+      expect(follower?.isTargetActive.value).toBe(false)
+    })
+
+    // `workflowDetached` is component state and cannot carry the detach on its
+    // own: `DockedAgentPanel.vue` mounts this panel under `v-if="docked"`, so
+    // closing and reopening the dock resets the flag to `false` while the
+    // localStorage tab binding and the persisted doc-id record both survive.
+    // Deactivating the follower is therefore not enough — the record the
+    // restore fallback reads has to go with it, or the detached doc rebinds
+    // and resumes projecting into the graph.
+    it('does not restore the detached doc after the panel remounts', async () => {
+      await resetSessionBinding()
+      makeTab('wf-42')
+      mockMessagesEndpoint('wf-42')
+      persistedCrdtDocId.value = 'wf-42'
+
+      const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      expect(crdtFollowerCalls.at(-1)?.isTargetActive.value).toBe(true)
+
+      await userEvent.click(
+        screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+      )
+      panel.unmount()
+      cleanup()
+      crdtFollowerCalls.length = 0
+
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+      expect(crdtFollowerCalls.at(-1)).toMatchObject({
+        workflowId: null,
+        active: false
+      })
+    })
+
+    // The composer's clear-workflow chip sets the same flag but is a
+    // context-scoping gesture, not a session boundary, so it deliberately keeps
+    // the record. Whether it should discard replica continuity too is the open
+    // question in blocked-on-christian #371; this pins today's behaviour so
+    // that ruling changes a test on purpose rather than silently.
+    it('keeps the restorable doc when the chip detaches the workflow', async () => {
+      await resetSessionBinding()
+      makeTab('wf-42')
+      mockMessagesEndpoint('wf-42')
+      persistedCrdtDocId.value = 'wf-42'
+
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.dontWorkInWorkflow')
+        })
+      )
+
+      expect(clearPersistedCrdtDocId).not.toHaveBeenCalled()
+      expect(persistedCrdtDocId.value).toBe('wf-42')
+    })
   })
 
   it('clears the spinner and creating flags when the panel unmounts mid-turn', async () => {

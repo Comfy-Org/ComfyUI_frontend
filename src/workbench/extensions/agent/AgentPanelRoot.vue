@@ -94,6 +94,10 @@ import {
   resolveDebugPanelEnabled
 } from './crdt/crdtDebugGate'
 import { attachMintPortWiring } from './crdt/mintPortWiring'
+import {
+  clearPersistedDocId,
+  reconcilePersistedDocId
+} from './crdt/persistedDocId'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 
 const CrdtDevPanel = defineAsyncComponent(
@@ -438,15 +442,50 @@ const {
   }
 })
 
-const isBoundWorkflowActive = computed(() => {
-  const bound = boundWorkflowId.value
+// FE-1969: `boundWorkflowId` is the in-memory session binding and is reset
+// whenever the session restarts within the same page load — a panel remount,
+// or a reload inside the record's TTL. The follower can still rebind to the doc
+// it persisted for this page load, but only if this computed drives it with
+// `active=true`. "New chat" is deliberately not one of those cases: it ends the
+// session, so `onNewChat` drops the record and there is nothing left to
+// restore. The
+// fallback is scoped to that one doc: the active tab's persisted tab binding
+// counts only when it names the doc the follower would restore, so a tab that
+// merely carries a stale binding, or a second bound tab, never reads as
+// active and never keeps the follower projecting into a background tab.
+// `reconcilePersistedDocId()` is not a pure read: it adopts and re-stamps the
+// record on a reload, drops it on a nonce mismatch, and consults untracked
+// `sessionStorage` and `Date.now()`. Calling it from inside the computed getter
+// therefore let an unrelated re-render consume or rewrite the record the
+// follower was about to read, and the cached value never invalidated when the
+// record lapsed. Resolve it at the explicit lifecycle points that used to drive
+// re-evaluation and let the getter read only reactive state.
+const restorableDocId = ref<string | null>(null)
+watch(
+  [workflowDetached, () => workflowStore.activeWorkflow, boundWorkflowId],
+  () => {
+    restorableDocId.value = reconcilePersistedDocId()
+  },
+  { immediate: true }
+)
+
+function restorableWorkflowIdFor(tabPath: string): string | null {
+  const persisted = bindingStore.workflowIdFor(tabPath)
+  if (persisted === undefined) return null
+  return persisted === restorableDocId.value ? persisted : null
+}
+const activeBoundWorkflowId = computed(() => {
+  if (workflowDetached.value) return null
   const active = workflowStore.activeWorkflow
-  return (
-    bound !== null &&
-    active !== null &&
-    boundTabFor(bound)?.path === active.path
-  )
+  if (active === null) return null
+  const bound = boundWorkflowId.value ?? restorableWorkflowIdFor(active.path)
+  return bound !== null && boundTabFor(bound)?.path === active.path
+    ? bound
+    : null
 })
+const isBoundWorkflowActive = computed(
+  () => activeBoundWorkflowId.value !== null
+)
 
 // The CRDT follower is the inbound content channel: subscribes to the
 // session's bound workflow while its tab is active. Suspending the background
@@ -455,9 +494,10 @@ const isBoundWorkflowActive = computed(() => {
 const {
   status: crdtStatus,
   debugSnapshot: crdtDebugSnapshot,
+  acknowledgedWorkflowId,
   enqueueHumanOperations
 } = useAgentCrdtFollower(
-  boundWorkflowId,
+  activeBoundWorkflowId,
   graphMutations,
   () => resolvedUserInfo.value?.id ?? null,
   isBoundWorkflowActive,
@@ -468,7 +508,9 @@ const {
 )
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,
-  isDocBound: () => isBoundWorkflowActive.value,
+  isDocBound: () =>
+    acknowledgedWorkflowId.value !== null &&
+    acknowledgedWorkflowId.value === activeBoundWorkflowId.value,
   enqueue: enqueueHumanOperations,
   layoutChanges: (listener) => layoutStore.onChange(listener),
   localActorPrefix: ACTOR_CONFIG.USER_PREFIX,
@@ -743,6 +785,21 @@ function onDeleteHistory(id: string): void {
 
 function onNewChat(): void {
   exitNodeSelectionMode()
+  // FEC-5: ending the session must also end the document's claim on the graph,
+  // and `workflowDetached` cannot carry that on its own. The flag is component
+  // state, but `DockedAgentPanel.vue` mounts this panel under `v-if="docked"`,
+  // so closing the dock — or reloading inside the record's TTL — resets it to
+  // `false` while the localStorage tab binding and the persisted doc-id record
+  // both survive; the restore fallback then rebinds the very document the user
+  // left. The follower cannot drop the record itself: a detach and a
+  // backgrounded tab both reach it as `active=false`, and clearing on that edge
+  // would defeat the restore this panel exists to provide.
+  //
+  // Scoped to "New chat" deliberately. The clear-workflow chip is a
+  // context-scoping gesture, and whether it should also discard replica
+  // continuity is the open question in blocked-on-christian #371; all three
+  // alternatives there clear on "New chat", so only that half is settled.
+  clearPersistedDocId()
   workflowDetached.value = true
   newChat()
 }

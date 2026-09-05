@@ -20,100 +20,12 @@ import type { GraphOperation } from './graphOperations'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import type { OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
-
-// FE-1902: the doc id is otherwise held only in memory (set on turn ack), so a
-// panel remount loses the binding until the NEXT turn ack. Persist it per-tab
-// in sessionStorage so an in-page remount can rebind immediately. A full page
-// reload deliberately does NOT rebind (see the nonce below): it mints a new
-// nonce, refuses the pre-reload record, and waits for the next turn ack.
-//
-// FEC-5: a bare `docId` string has no owner and no lifetime, so it survives
-// (a) a workflow switch in the same browser tab - the NEXT panel mount rebinds
-// to whichever workflow last confirmed a subscribe, not necessarily the one
-// about to become active - and (b) a browser-tab duplication, which clones
-// sessionStorage verbatim into a second tab that never subscribed to that doc
-// at all. Neither case can be caught by re-checking `workflowId`, because the
-// whole reason a rebind is attempted is that the caller does NOT yet know
-// which workflow it's asking about. Instead the persisted record carries (1)
-// a per-page-load session nonce, so a value only ever rebinds within the
-// SAME top-level navigation that wrote it - a duplicated tab gets a fresh
-// nonce and its inherited record is refused - and (2) a short expiry that
-// slides while the doc keeps delivering frames, so a tab left idle past the
-// window a doc realistically stays relevant is refused rather than trusted
-// indefinitely. (1) closes case (b). Case (a) happens inside one page load,
-// so the nonce cannot see it; it is only BOUNDED by (2), not closed. The
-// `fec-docid-1` reproducer tracks the remaining same-tab window.
-const DOC_ID_SESSION_KEY = 'Comfy.Agent.CrdtDocId'
-const DOC_ID_TTL_MS = 5 * 60 * 1000
-// Re-stamp the expiry on doc traffic at most this often, so a busy channel
-// does not turn every frame into a sessionStorage write.
-const DOC_ID_REFRESH_INTERVAL_MS = DOC_ID_TTL_MS / 2
-
-// One nonce per page load (module scope = one per top-level navigation, since
-// a full reload re-evaluates the module). A tab duplicated mid-session
-// inherits sessionStorage's persisted record but gets its own module
-// instance and thus its own nonce, so the inherited record's nonce mismatches
-// and is refused.
-const pageSessionNonce = createUuidv4()
-
-interface PersistedDocIdRecord {
-  docId: string
-  nonce: string
-  expiresAt: number
-}
-
-function safeSessionStorage(): Storage | null {
-  try {
-    return window.sessionStorage
-  } catch {
-    return null
-  }
-}
-
-function persistDocId(docId: string): void {
-  try {
-    const record: PersistedDocIdRecord = {
-      docId,
-      nonce: pageSessionNonce,
-      expiresAt: Date.now() + DOC_ID_TTL_MS
-    }
-    safeSessionStorage()?.setItem(DOC_ID_SESSION_KEY, JSON.stringify(record))
-  } catch {
-    // Quota / privacy mode: persistence is best-effort.
-  }
-}
-
-// Returns the persisted doc id ONLY when it was written by this same page
-// load and has not expired.
-function readPersistedDocId(): string | null {
-  try {
-    const raw = safeSessionStorage()?.getItem(DOC_ID_SESSION_KEY)
-    if (!raw) return null
-    const record = JSON.parse(raw) as Partial<PersistedDocIdRecord>
-    if (
-      typeof record.docId !== 'string' ||
-      typeof record.nonce !== 'string' ||
-      typeof record.expiresAt !== 'number'
-    ) {
-      // Legacy/malformed record (e.g. pre-FEC-5 bare-string value): treat as
-      // absent rather than trusting an unscoped id.
-      return null
-    }
-    if (record.nonce !== pageSessionNonce) return null
-    if (Date.now() >= record.expiresAt) return null
-    return record.docId
-  } catch {
-    return null
-  }
-}
-
-function clearPersistedDocId(): void {
-  try {
-    safeSessionStorage()?.removeItem(DOC_ID_SESSION_KEY)
-  } catch {
-    // Best-effort.
-  }
-}
+import {
+  clearPersistedDocId,
+  DOC_ID_REFRESH_INTERVAL_MS,
+  persistDocId,
+  reconcilePersistedDocId
+} from './persistedDocId'
 
 /**
  * Recency heartbeat budget (BE-9740's FE half): a bound, healthy channel that
@@ -202,7 +114,7 @@ export function useAgentCrdtFollower(
    */
   getGraph: () => MaterializableGraph | null = () => null
 ) {
-  const connected = ref(false)
+  const acknowledgedWorkflowId = ref<string | null>(null)
   const updatesApplied = ref(0)
   const lastFrameType = ref<string | null>(null)
   const subscribedWorkflowId = ref<string | null>(null)
@@ -311,7 +223,7 @@ export function useAgentCrdtFollower(
     lastPersistedAt = Date.now()
   }
   const refreshPersistedDocId = (): void => {
-    const docId = subscribedWorkflowId.value
+    const docId = acknowledgedWorkflowId.value
     if (docId === null) return
     if (Date.now() - lastPersistedAt < DOC_ID_REFRESH_INTERVAL_MS) return
     persistConfirmedDocId(docId)
@@ -367,7 +279,7 @@ export function useAgentCrdtFollower(
     if (!(event instanceof CustomEvent)) return
     if (!isTargetActive.value) return
     const ok = event.detail?.ok === true
-    connected.value = ok
+    acknowledgedWorkflowId.value = ok ? bridge.subscribedWorkflowId : null
     lastFrameType.value = event.type
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
@@ -375,8 +287,8 @@ export function useAgentCrdtFollower(
       armStaleProbe()
       // FE-1902 (poc-3): only a CONFIRMED binding is worth rebinding to after
       // a remount — persist on ok, not on intent.
-      if (subscribedWorkflowId.value !== null)
-        persistConfirmedDocId(subscribedWorkflowId.value)
+      if (acknowledgedWorkflowId.value !== null)
+        persistConfirmedDocId(acknowledgedWorkflowId.value)
     } else {
       clearStaleProbe()
       scheduleSubscribeRetry()
@@ -466,7 +378,7 @@ export function useAgentCrdtFollower(
     // reconcile here the pre-reset nodes survive -- and can be written back
     // -- until some later frame happens to arrive.
     reconcileLiveGraph(detail.workflowId)
-    connected.value = false
+    acknowledgedWorkflowId.value = null
     updatesApplied.value = 0
     lastFrameType.value = event.type
     clearStaleProbe()
@@ -507,7 +419,7 @@ export function useAgentCrdtFollower(
     // KA-11 fail-closed: the bridge refused to propagate an unreadable doc, so
     // nothing was projected. Surface it as its own status rather than as a
     // generic "disconnected", which is indistinguishable from "never connected".
-    connected.value = false
+    acknowledgedWorkflowId.value = null
     lastFrameType.value = event.type
     clearStaleProbe()
     const detail =
@@ -537,7 +449,7 @@ export function useAgentCrdtFollower(
     )
   }
   const onReconnected: EventListener = () => {
-    connected.value = false
+    acknowledgedWorkflowId.value = null
     clearStaleProbe()
     recordDevEvent('reconnected', null)
     bridge.resubscribe()
@@ -623,7 +535,7 @@ export function useAgentCrdtFollower(
       const justActivated = active && previous?.[1] === false
       clearSubscribeRetry()
       clearStaleProbe()
-      connected.value = false
+      acknowledgedWorkflowId.value = null
       knownDocNodeIds = new Set()
       if (!active) {
         if (next !== null) initialBind = false
@@ -636,7 +548,7 @@ export function useAgentCrdtFollower(
         return
       }
       if (next === null) {
-        const persisted = initialBind ? readPersistedDocId() : null
+        const persisted = initialBind ? reconcilePersistedDocId() : null
         initialBind = false
         if (persisted !== null) {
           recordDevEvent('rebind', { workflowId: persisted })
@@ -698,7 +610,7 @@ export function useAgentCrdtFollower(
 
   const status = computed<AgentCrdtStatus>(() => ({
     enabled: true,
-    connected: connected.value,
+    connected: acknowledgedWorkflowId.value !== null,
     workflowId: subscribedWorkflowId.value,
     updatesApplied: updatesApplied.value,
     lastFrameType: lastFrameType.value,
@@ -716,6 +628,7 @@ export function useAgentCrdtFollower(
   return {
     status: readonly(status),
     debugSnapshot,
+    acknowledgedWorkflowId: readonly(acknowledgedWorkflowId),
     enqueueHumanOperations: (operations: GraphOperation[]) =>
       sender.enqueue(operations)
   }

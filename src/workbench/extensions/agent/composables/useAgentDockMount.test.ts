@@ -9,6 +9,7 @@ vi.mock('@/platform/telemetry', () => ({ useTelemetry: () => undefined }))
 const { loadDockedAgentPanel } = vi.hoisted(() => ({
   loadDockedAgentPanel: vi.fn(() => ({ name: 'DockedAgentPanel' }))
 }))
+const CRDT_DOC_ID_KEY = 'Comfy.Agent.CrdtDocId'
 vi.mock(
   '@/workbench/extensions/agent/components/agent/DockedAgentPanel.vue',
   () => ({ __esModule: true, default: loadDockedAgentPanel() })
@@ -30,15 +31,23 @@ describe('useAgentDockMount', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
+    sessionStorage.clear()
   })
 
   it('returns an inert mount on non-cloud distributions', () => {
     vi.stubGlobal('__DISTRIBUTION__', 'localhost')
+    const inheritedRecord = JSON.stringify({
+      docId: 'wf-from-another-tab',
+      nonce: 'foreign-page',
+      expiresAt: Date.now() + 60_000
+    })
+    sessionStorage.setItem(CRDT_DOC_ID_KEY, inheritedRecord)
 
     const { docked, DockedAgentPanel } = useAgentDockMount()
 
     expect(docked.value).toBe(false)
     expect(DockedAgentPanel).toBeNull()
+    expect(sessionStorage.getItem(CRDT_DOC_ID_KEY)).toBe(inheritedRecord)
   })
 
   it('docks only once the gate enables and the panel opens on cloud', async () => {
@@ -62,5 +71,23 @@ describe('useAgentDockMount', () => {
     expect(loadDockedAgentPanel).toHaveBeenCalledOnce()
     store.close('close_button')
     expect(docked.value).toBe(false)
+  })
+
+  it('consumes an inherited CRDT binding before the cloud panel opens', () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    sessionStorage.setItem(
+      CRDT_DOC_ID_KEY,
+      JSON.stringify({
+        docId: 'wf-from-another-tab',
+        nonce: 'foreign-page',
+        expiresAt: Date.now() + 60_000
+      })
+    )
+
+    const { docked } = useAgentDockMount()
+
+    expect(docked.value).toBe(false)
+    expect(loadDockedAgentPanel).not.toHaveBeenCalled()
+    expect(sessionStorage.getItem(CRDT_DOC_ID_KEY)).toBeNull()
   })
 })
