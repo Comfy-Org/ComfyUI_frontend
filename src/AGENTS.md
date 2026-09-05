@@ -16,8 +16,9 @@
   })
   ```
 
-  `errorType` is a stable slug. It lands as the `error_type` Sentry tag and the
-  `error_type` RUM context field, so one query works against either console.
+  `errorType` is a stable slug. It lands as native RUM `error.type` and the
+  `error_type` Sentry tag. The legacy `error_type` RUM context field is retained
+  for existing queries; prefer `@error.type` for new Datadog queries.
   Pick a slug that names the failure, not the symptom, and reuse the existing
   one if the failure already has a name.
 
