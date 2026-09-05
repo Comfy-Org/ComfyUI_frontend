@@ -426,7 +426,7 @@ async function onSelectTab(path: string): Promise<boolean> {
     return false
   }
   try {
-    if (tab.isTemporary) {
+    if (tab.isTemporary && cloudIdFor(tab) === undefined) {
       if (!(await refreshCloudWorkflowIds())) return failSelection()
       if (!isCurrent()) return false
       const names = new Set([
@@ -443,8 +443,6 @@ async function onSelectTab(path: string): Promise<boolean> {
         filename = `${stem} (${counter++})`
       if (!(await workflowService.saveWorkflowAs(tab, { filename })))
         return failSelection()
-    } else if (tab.isModified) {
-      if (!(await workflowService.saveWorkflow(tab))) return failSelection()
     }
     if (!isCurrent()) return false
     if (!(await refreshCloudWorkflowIds())) return failSelection()
