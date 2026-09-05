@@ -404,26 +404,41 @@ function buildResponse(
   return { response, cancelAfter }
 }
 
-// The frames and the audit rows must describe the same turn's tool calls.
+const repeated = (values: string[]): string[] => [
+  ...new Set(values.filter((value, index) => values.indexOf(value) !== index))
+]
+
+// The frames and the audit rows must describe the same turn's tool calls, one
+// terminal frame and one parent row each. Set equality alone hides multiplicity:
+// a second terminal frame replays the call's ops again, and a second parent row
+// is silently dropped from the replay while still counting toward the draft.
 function checkTurnAgreement(
   kept: RecordedFrame[],
   rows: ParentRow[],
   label: string
 ): void {
-  const frameCalls = new Set(
-    kept
-      .filter(
-        (frame) =>
-          frame.type === 'agent_tool_call' && frame.data.status !== 'running'
-      )
-      .flatMap(
-        (frame) => z.string().safeParse(frame.data.tool_call_id).data ?? []
-      )
-  )
-  const rowCalls = new Set(rows.map((row) => row.tool_call_id))
-  if (!sameSet(frameCalls, rowCalls))
+  const frameCalls = kept
+    .filter(
+      (frame) =>
+        frame.type === 'agent_tool_call' && frame.data.status !== 'running'
+    )
+    .flatMap(
+      (frame) => z.string().safeParse(frame.data.tool_call_id).data ?? []
+    )
+  const repeatedFrames = repeated(frameCalls)
+  if (repeatedFrames.length > 0)
     refuse(
-      `${label}: frames ${list(frameCalls)} and audit parent rows ${list(rowCalls)} disagree; the rows are not this turn`
+      `${label}: tool calls ${list(repeatedFrames)} carry more than one terminal frame; the replay would apply their ops once per frame`
+    )
+  const rowCalls = rows.map((row) => row.tool_call_id)
+  const repeatedRows = repeated(rowCalls)
+  if (repeatedRows.length > 0)
+    refuse(
+      `${label}: audit parent rows repeat tool calls ${list(repeatedRows)}; only one operation list per call can be the turn's`
+    )
+  if (!sameSet(new Set(frameCalls), new Set(rowCalls)))
+    refuse(
+      `${label}: frames ${list(new Set(frameCalls))} and audit parent rows ${list(new Set(rowCalls))} disagree; the rows are not this turn`
     )
 }
 
