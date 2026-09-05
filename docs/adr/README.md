@@ -12,6 +12,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | -------- | ---------- |
 | [AUTH-BILLING-0014](AUTH-BILLING-0014-billing-attempt-context-and-workspace-scope.md)                            | Billing Attempt Context and Workspace Scope                     | Proposed | 2026-07-28 |
 | [AUTH-CREDENTIALS-0011](AUTH-CREDENTIALS-0011-cloud-credential-lifecycle-invariants.md)                          | Cloud Credential Lifecycle Invariants                           | Proposed | 2026-07-09 |
+| [CANVAS-SELECTION-0028](CANVAS-SELECTION-0028-single-selection-store.md)                                         | Single Selection Store                                          | Proposed | 2026-09-04 |
 | [CRDT-FOLLOWER-0025](CRDT-FOLLOWER-0025-in-app-agent-crdt-follower-and-distribution-resolved-boundaries.md)      | In-App Agent CRDT Follower and Distribution-Resolved Boundaries | Proposed | 2026-08-21 |
 | [CRDT-LAYOUT-0003](CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md)                                 | CRDT Layout Intent and Local Measurement                        | Proposed | 2025-08-27 |
 | [CRDT-MINT-0018](CRDT-MINT-0018-merge-identity-for-node-transfers.md)                                            | Merge Identity for Node Transfers                               | Proposed | 2026-08-25 |
