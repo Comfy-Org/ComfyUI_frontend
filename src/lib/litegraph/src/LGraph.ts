@@ -2,6 +2,7 @@ import { toString } from 'es-toolkit/compat'
 import { shallowRef, toRaw } from 'vue'
 
 import { assert } from '@/base/assert'
+import { adoptPromotedWidgetValue } from '@/core/graph/subgraph/adoptPromotedWidgetValue'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
@@ -2464,10 +2465,25 @@ export class LGraph
       externalFirst: boolean
     }[] = []
     for (const [, link] of subgraphNode.subgraph.links) {
+      const hostInput =
+        link.origin_id === SUBGRAPH_INPUT_ID
+          ? subgraphNode.inputs[link.origin_slot]
+          : undefined
+      if (link.origin_id === SUBGRAPH_INPUT_ID && !hostInput) {
+        console.error('Missing host input when unpacking subgraph')
+        continue
+      }
       const outerLink =
         link.origin_id === SUBGRAPH_INPUT_ID
           ? inputLink(this, subgraphNode.id, link.origin_slot)
           : undefined
+      if (link.origin_id === SUBGRAPH_INPUT_ID && !outerLink) {
+        const interiorNode = this.getNodeById(nodeIdMap.get(link.target_id))
+        if (hostInput && interiorNode) {
+          adoptPromotedWidgetValue(hostInput, interiorNode, link.target_slot)
+        }
+        continue
+      }
       const originId =
         link.origin_id === SUBGRAPH_INPUT_ID
           ? outerLink?.origin_id

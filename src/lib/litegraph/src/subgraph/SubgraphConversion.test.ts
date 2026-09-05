@@ -6,18 +6,20 @@ import {
   describe,
   expect,
   it,
-  onTestFinished
+  onTestFinished,
+  vi
 } from 'vitest'
 
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
 import { LGraphGroup } from '@/lib/litegraph/src/litegraph'
-import type { Positionable } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, Positionable } from '@/lib/litegraph/src/litegraph'
 import {
   createTestNode,
   createTestWidgetNode
 } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import { useLinkStore } from '@/stores/linkStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toRerouteId } from '@/types/rerouteId'
 
@@ -326,6 +328,97 @@ describe('SubgraphConversion', () => {
       }
       expect(linkRefCount).toBe(4)
     })
+
+    describe('Unconnected boundary inputs', () => {
+      function createPromotedWidgetSubgraph(interiorNodeCount = 1) {
+        const subgraph = createTestSubgraph({
+          inputs: [{ name: 'value', type: 'number' }]
+        })
+        const subgraphNode = createTestSubgraphNode(subgraph)
+        const graph = subgraphNode.graph!
+        graph.add(subgraphNode)
+
+        for (let i = 0; i < interiorNodeCount; i++) {
+          const inner = createTestWidgetNode(subgraph)
+          inner.inputs[0].widget = { name: 'text_widget' }
+          const widget = inner.getWidgetFromSlot(inner.inputs[0])
+          assert(widget)
+          widget.value = 'stale interior value'
+          subgraph.inputNode.slots[0].connect(inner.inputs[0], inner)
+        }
+
+        const { widgetId } = subgraphNode.inputs[0]
+        assert(widgetId)
+        return { graph, subgraphNode, hostWidgetId: widgetId }
+      }
+
+      function readUnpackedWidgetValues(graph: LGraph) {
+        return graph.nodes.map(
+          (node) => node.getWidgetFromSlot(node.inputs[0])?.value
+        )
+      }
+
+      it('Should not report a missing link for a promoted widget input', () => {
+        const { graph, subgraphNode } = createPromotedWidgetSubgraph()
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+        graph.unpackSubgraph(subgraphNode)
+
+        expect(errorSpy).not.toHaveBeenCalled()
+      })
+
+      it('Should hand the promoted host value to the interior widget', () => {
+        const { graph, subgraphNode, hostWidgetId } =
+          createPromotedWidgetSubgraph()
+        useWidgetValueStore().setValue(hostWidgetId, 'host edit')
+
+        graph.unpackSubgraph(subgraphNode)
+
+        expect(readUnpackedWidgetValues(graph)).toEqual(['host edit'])
+      })
+
+      it('Should leave the interior value alone when the host has no value', () => {
+        const { graph, subgraphNode } = createPromotedWidgetSubgraph()
+
+        graph.unpackSubgraph(subgraphNode)
+
+        expect(readUnpackedWidgetValues(graph)).toEqual([
+          'stale interior value'
+        ])
+      })
+
+      it('Should hand the promoted host value to every interior widget it feeds', () => {
+        const { graph, subgraphNode, hostWidgetId } =
+          createPromotedWidgetSubgraph(2)
+        useWidgetValueStore().setValue(hostWidgetId, 'host edit')
+
+        graph.unpackSubgraph(subgraphNode)
+
+        expect(readUnpackedWidgetValues(graph)).toEqual([
+          'host edit',
+          'host edit'
+        ])
+      })
+
+      it('Should not report a missing link for an unconnected plain input', () => {
+        const subgraph = createTestSubgraph({
+          inputs: [{ name: 'value', type: 'number' }]
+        })
+        const subgraphNode = createTestSubgraphNode(subgraph)
+        const graph = subgraphNode.graph!
+        graph.add(subgraphNode)
+
+        const inner = createTestNode(subgraph, ['number'])
+        subgraph.inputNode.slots[0].connect(inner.inputs[0], inner)
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+        graph.unpackSubgraph(subgraphNode)
+
+        expect(errorSpy).not.toHaveBeenCalled()
+        expect(graph.nodes.length).toBe(1)
+      })
+    })
+
     it('Should truncate cyclic reroute chains instead of aborting unpack', () => {
       const subgraph = createTestSubgraph({
         outputs: [{ name: 'value', type: 'number' }]
