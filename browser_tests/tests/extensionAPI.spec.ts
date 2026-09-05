@@ -21,9 +21,7 @@ test.describe('Topbar commands', () => {
           {
             id: 'foo',
             label: 'foo-command',
-            function: () => {
-              window.foo = true
-            }
+            function: () => {}
           }
         ],
         menuCommands: [
@@ -34,11 +32,10 @@ test.describe('Topbar commands', () => {
         ]
       })
     })
+    await comfyPage.command.mockCommand('foo')
 
     await comfyPage.menu.topbar.triggerTopbarCommand(['ext', 'foo-command'])
-    await expect
-      .poll(() => comfyPage.page.evaluate(() => window.foo))
-      .toBe(true)
+    await expect.poll(() => comfyPage.command.getExecutionCount('foo')).toBe(1)
   })
 
   test('Should not allow register command defined in other extension', async ({
@@ -69,9 +66,7 @@ test.describe('Topbar commands', () => {
         commands: [
           {
             id: 'TestCommand',
-            function: () => {
-              window.TestCommand = true
-            }
+            function: () => {}
           }
         ],
         keybindings: [
@@ -82,11 +77,12 @@ test.describe('Topbar commands', () => {
         ]
       })
     })
+    await comfyPage.command.mockCommand('TestCommand')
 
     await comfyPage.page.keyboard.press('k')
     await expect
-      .poll(() => comfyPage.page.evaluate(() => window.TestCommand))
-      .toBe(true)
+      .poll(() => comfyPage.command.getExecutionCount('TestCommand'))
+      .toBe(1)
   })
 
   test.describe('Settings', () => {
@@ -362,16 +358,13 @@ test.describe('Topbar commands', () => {
               id: 'test.selection.command',
               label: 'Test Command',
               icon: 'pi pi-star',
-              function: () => {
-                ;(window as unknown as Record<string, unknown>)[
-                  'selectionCommandExecuted'
-                ] = true
-              }
+              function: () => {}
             }
           ],
           getSelectionToolboxCommands: () => ['test.selection.command']
         })
       })
+      await comfyPage.command.mockCommand('test.selection.command')
 
       await comfyPage.nodeOps.selectNodes(['CLIP Text Encode (Prompt)'])
 
@@ -383,14 +376,9 @@ test.describe('Topbar commands', () => {
 
       await expect
         .poll(() =>
-          comfyPage.page.evaluate(
-            () =>
-              (window as unknown as Record<string, unknown>)[
-                'selectionCommandExecuted'
-              ]
-          )
+          comfyPage.command.getExecutionCount('test.selection.command')
         )
-        .toBe(true)
+        .toBe(1)
     })
   })
 })
