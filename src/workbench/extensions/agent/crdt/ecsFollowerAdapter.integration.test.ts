@@ -792,7 +792,14 @@ describe('EcsFollowerAdapter integration', () => {
           .getGraphNodesFor('root', 'root')
           .map(({ id }) => id)
       ).toEqual(['1'])
-      expect(useWidgetValueStore().clearNode).toHaveBeenCalledTimes(1)
+      // `reconcileNode` drops only the widgets the frame removed. Wiping the
+      // node's whole widget set here is what discarded the surviving siblings'
+      // values, so the removal must stay scoped to the stale id.
+      expect(useWidgetValueStore().clearNode).not.toHaveBeenCalled()
+      expect(useWidgetValueStore().deleteWidget).toHaveBeenCalledTimes(1)
+      expect(useWidgetValueStore().deleteWidget).toHaveBeenCalledWith(
+        widgetId('root', toNodeId(1), 'stale')
+      )
       destroy()
     })
 
