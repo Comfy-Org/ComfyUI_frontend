@@ -17,25 +17,29 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
-import type { Bounds, NodeId, Size } from '@/renderer/core/layout/types'
-import { toNodeId } from '@/types/nodeId'
-import { isSizeEqual } from '@/renderer/core/layout/utils/geometry'
+import type { Bounds, NodeId } from '@/renderer/core/layout/types'
+import { LayoutSource } from '@/renderer/core/layout/types'
+import {
+  isBoundsEqual,
+  isSizeEqual
+} from '@/renderer/core/layout/utils/geometry'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
+import { createRafBatch } from '@/utils/rafBatch'
 import type { UUID } from '@/utils/uuid'
 
 /**
  * Generic update item for element bounds tracking
  */
 interface ElementBoundsUpdate {
-  id: NodeId
+  /** Element identifier (could be nodeId, widgetId, slotId, etc.) */
+  id: string
   /** Updated bounds */
   bounds: Bounds
 }
 
 interface CachedNodeMeasurement {
-  rootGraphId: UUID
   nodeId: NodeId
-  size: Size
+  bounds: Bounds
 }
 
 /**
@@ -44,9 +48,8 @@ interface CachedNodeMeasurement {
 interface ElementTrackingConfig {
   /** Data attribute name (e.g., 'nodeId') */
   dataAttribute: string
-  syncSlots?: boolean
   /** Handler for processing bounds updates. Omit for signal-only entries. */
-  updateHandler?: (updates: ElementBoundsUpdate[]) => void
+  updateHandler?: (rootGraphId: UUID, updates: ElementBoundsUpdate[]) => void
 }
 
 /**
@@ -57,20 +60,20 @@ const trackingConfigs = new Map<string, ElementTrackingConfig>([
     'node',
     {
       dataAttribute: 'nodeId',
-      updateHandler: (updates) => {
-        const { rootGraphId } = useCanvasStore()
-        if (!rootGraphId) return
-
-        for (const { id, bounds } of updates) {
-          layoutStore.reportContentSize(rootGraphId, id, {
-            width: bounds.width,
-            height: removeNodeTitleHeight(bounds.height)
-          })
-        }
+      updateHandler: (rootGraphId, updates) => {
+        const nodeUpdates = updates.map(({ id, bounds }) => ({
+          nodeId: id as NodeId,
+          bounds
+        }))
+        layoutStore.batchUpdateNodeBounds(rootGraphId, nodeUpdates, {
+          source: LayoutSource.Vue
+        })
       }
     }
   ],
-  ['widgets-grid', { dataAttribute: 'widgetsGridNodeId', syncSlots: true }]
+  // Signal-only: outer node stays at its persisted min-h floor during
+  // widget hydration, so the inner grid's RO is the only slot-drift signal.
+  ['widgets-grid', { dataAttribute: 'widgetsGridNodeId' }]
 ])
 
 // Elements whose ResizeObserver fired while the tab was hidden
@@ -84,10 +87,44 @@ function markElementForFreshMeasurement(element: HTMLElement) {
   cachedNodeMeasurements.delete(element)
 }
 
-watch(visibility, (state) => {
-  if (state !== 'visible' || deferredElements.size === 0) return
+interface PendingMeasurement {
+  width: number
+  height: number
+}
 
-  // Re-observe deferred elements to trigger fresh measurements
+// RAF-batched pending measurements keyed by element. Coalesces multiple RO
+// callbacks fired during the same frame (e.g. while a splitter is animated
+// open) into a single layoutStore write, and defers measurement until after
+// the canvas RO has had a chance to update lgCanvas.ds. This prevents
+// transient off-screen position writes from stale DOM→canvas conversion.
+const pendingMeasurements = new Map<HTMLElement, PendingMeasurement>()
+const rafBatch = createRafBatch(() => {
+  flushPendingMeasurements()
+})
+
+function deferElementsForHiddenTab(elements: Iterable<HTMLElement>) {
+  for (const element of elements) {
+    deferredElements.add(element)
+    markElementForFreshMeasurement(element)
+    resizeObserver.unobserve(element)
+  }
+}
+
+watch(visibility, (state) => {
+  // Tab is hidden mid-flight: a scheduled RAF would be suspended by the
+  // browser and only resume on re-show, at which point flushPendingMeasurements
+  // would see visibility === 'visible' and write stale bounds. Re-defer
+  // anything pending immediately so it gets a fresh measurement on revisit.
+  if (state === 'hidden') {
+    if (pendingMeasurements.size === 0) return
+    deferElementsForHiddenTab(pendingMeasurements.keys())
+    pendingMeasurements.clear()
+    rafBatch.cancel()
+    return
+  }
+
+  if (deferredElements.size === 0) return
+
   for (const element of deferredElements) {
     if (element.isConnected) {
       markElementForFreshMeasurement(element)
@@ -97,20 +134,25 @@ watch(visibility, (state) => {
   deferredElements.clear()
 })
 
-// Single ResizeObserver instance for all Vue elements
-const resizeObserver = new ResizeObserver((entries) => {
-  const { linearMode, rootGraphId } = useCanvasStore()
-  if (linearMode) return
+function flushPendingMeasurements() {
+  if (pendingMeasurements.size === 0) return
 
-  // Skip measurements when tab is hidden — bounding rects are unreliable
+  if (useCanvasStore().linearMode) {
+    pendingMeasurements.clear()
+    return
+  }
+
+  // RO callbacks that fired while the tab was visible can still land in the
+  // flush after a hidden→visible flip if scheduling raced. Re-defer.
   if (visibility.value === 'hidden') {
-    for (const entry of entries) {
-      if (entry.target instanceof HTMLElement) {
-        deferredElements.add(entry.target)
-        markElementForFreshMeasurement(entry.target)
-        resizeObserver.unobserve(entry.target)
-      }
-    }
+    deferElementsForHiddenTab(pendingMeasurements.keys())
+    pendingMeasurements.clear()
+    return
+  }
+
+  const { rootGraphId } = useCanvasStore()
+  if (!rootGraphId) {
+    pendingMeasurements.clear()
     return
   }
 
@@ -118,11 +160,10 @@ const resizeObserver = new ResizeObserver((entries) => {
   const conv = useSharedCanvasPositionConversion()
   // Group updates by type, then flush via each config's handler
   const updatesByType = new Map<string, ElementBoundsUpdate[]>()
-  const slotSyncElements = new Map<NodeId, HTMLElement>()
-  for (const entry of entries) {
-    if (!(entry.target instanceof HTMLElement)) continue
-    const element = entry.target
+  // Track nodes whose slots should be resynced after node size changes
+  const nodesNeedingSlotResync = new Map<NodeId, HTMLElement>()
 
+  for (const [element, measurement] of pendingMeasurements) {
     // Find which type this element belongs to
     let elementType: string | undefined
     let elementId: string | undefined
@@ -137,53 +178,37 @@ const resizeObserver = new ResizeObserver((entries) => {
     }
 
     if (!elementType || !elementId) continue
-    const config = trackingConfigs.get(elementType)
-    const nodeId = toNodeId(elementId)
-    if (config?.syncSlots) {
-      slotSyncElements.set(nodeId, element)
-      continue
-    }
+    const nodeId: NodeId | undefined =
+      elementType === 'node' ? (elementId as NodeId) : undefined
 
-    // Use borderBoxSize when available; fall back to contentRect for older engines/tests
-    // Border box is the border included FULL wxh DOM value.
-    const borderBox = Array.isArray(entry.borderBoxSize)
-      ? entry.borderBoxSize[0]
-      : {
-          inlineSize: entry.contentRect.width,
-          blockSize: entry.contentRect.height
-        }
-    const width = Math.max(0, borderBox.inlineSize)
-    const height = Math.max(0, borderBox.blockSize)
+    const { width, height } = measurement
 
-    const nodeLayout =
-      nodeId && rootGraphId
-        ? layoutStore.getNodeLayout(rootGraphId, nodeId)
-        : null
+    const nodeLayout = nodeId
+      ? layoutStore.getNodeLayoutRef(rootGraphId, nodeId).value
+      : null
     const normalizedHeight = removeNodeTitleHeight(height)
-    const measuredSize = { width, height: normalizedHeight }
     const previousMeasurement = cachedNodeMeasurements.get(element)
-    const reportedContentSize =
-      nodeId && rootGraphId
-        ? layoutStore.contentSizeOf(rootGraphId, nodeId)
-        : undefined
     const hasFreshMeasurementPending =
       elementsNeedingFreshMeasurement.has(element)
     const hasMatchingCachedNodeMeasurement =
       previousMeasurement != null &&
-      previousMeasurement.rootGraphId === rootGraphId &&
       previousMeasurement.nodeId === nodeId &&
-      isSizeEqual(previousMeasurement.size, measuredSize) &&
-      reportedContentSize != null &&
-      isSizeEqual(reportedContentSize, measuredSize)
+      nodeLayout != null &&
+      isBoundsEqual(previousMeasurement.bounds, nodeLayout.bounds)
 
-    // ResizeObserver can repeat an unchanged entry (for example after an
-    // initial or changed-size delivery). Skip downstream work only when this
-    // exact element, graph, and node already reported the normalized size.
-    if (!hasFreshMeasurementPending && hasMatchingCachedNodeMeasurement) {
+    // ResizeObserver emits entries where nothing changed (e.g. initial observe).
+    // Skip expensive DOM reads when this exact element/node already measured at
+    // the same normalized bounds and size.
+    if (
+      nodeLayout &&
+      !hasFreshMeasurementPending &&
+      isSizeEqual(nodeLayout.size, {
+        width,
+        height: normalizedHeight
+      }) &&
+      hasMatchingCachedNodeMeasurement
+    ) {
       continue
-    }
-    if (rootGraphId) {
-      slotSyncElements.set(nodeId, element)
     }
 
     // Use existing position from layout store (source of truth) rather than
@@ -209,13 +234,21 @@ const resizeObserver = new ResizeObserver((entries) => {
       width,
       height
     }
+    const normalizedBounds: Bounds = {
+      ...bounds,
+      height: normalizedHeight
+    }
+
     elementsNeedingFreshMeasurement.delete(element)
-    if (nodeId && rootGraphId) {
+    if (nodeId) {
       cachedNodeMeasurements.set(element, {
-        rootGraphId,
         nodeId,
-        size: measuredSize
+        bounds: normalizedBounds
       })
+    }
+
+    if (nodeLayout && isBoundsEqual(nodeLayout.bounds, normalizedBounds)) {
+      continue
     }
 
     let updates = updatesByType.get(elementType)
@@ -223,17 +256,67 @@ const resizeObserver = new ResizeObserver((entries) => {
       updates = []
       updatesByType.set(elementType, updates)
     }
-    updates.push({ id: nodeId, bounds })
+    updates.push({ id: elementId, bounds })
+
+    // If this entry is a node, mark it for slot layout resync
+    if (nodeId) {
+      nodesNeedingSlotResync.set(nodeId, element)
+    }
   }
 
+  pendingMeasurements.clear()
+
+  if (updatesByType.size === 0 && nodesNeedingSlotResync.size === 0) return
+
+  // Flush per-type
   for (const [type, updates] of updatesByType) {
     const config = trackingConfigs.get(type)
-    if (config?.updateHandler && updates.length) config.updateHandler(updates)
-  }
-  if (rootGraphId) {
-    for (const [nodeId, element] of slotSyncElements) {
-      syncSlotOffsets(element, rootGraphId, nodeId)
+    if (config?.updateHandler && updates.length) {
+      config.updateHandler(rootGraphId, updates)
     }
+  }
+
+  // After node bounds are updated, refresh slot cached offsets and layouts
+  for (const [nodeId, element] of nodesNeedingSlotResync) {
+    syncSlotOffsets(element, rootGraphId, nodeId)
+  }
+}
+
+// Single ResizeObserver instance for all Vue elements
+const resizeObserver = new ResizeObserver((entries) => {
+  if (useCanvasStore().linearMode) {
+    pendingMeasurements.clear()
+    return
+  }
+
+  for (const entry of entries) {
+    if (!(entry.target instanceof HTMLElement)) continue
+    const element = entry.target
+
+    // Signal-only widgets-grid resize: the outer node stays at its
+    // persisted min-h floor during widget hydration, so this RO firing is
+    // observed only to keep the element tracked. WidgetGrid.vue owns its
+    // own slot resync via its layoutKey watch (syncSlotOffsets), so no
+    // further action is needed here.
+    if (element.dataset.widgetsGridNodeId) continue
+
+    // Use borderBoxSize when available; fall back to contentRect for older
+    // engines/tests. Border box is the full w×h DOM value including border.
+    const borderBox = Array.isArray(entry.borderBoxSize)
+      ? entry.borderBoxSize[0]
+      : {
+          inlineSize: entry.contentRect.width,
+          blockSize: entry.contentRect.height
+        }
+
+    pendingMeasurements.set(element, {
+      width: Math.max(0, borderBox.inlineSize),
+      height: Math.max(0, borderBox.blockSize)
+    })
+  }
+
+  if (pendingMeasurements.size > 0) {
+    rafBatch.schedule()
   }
 })
 
