@@ -14,21 +14,20 @@ const NAMESPACE = PRESERVED_QUERY_NAMESPACES.TOPUP
 
 /**
  * Opens the credit top-up dialog from a `?topup=1` deep link, to send existing
- * paid users straight to buying more credits (lifecycle emails).
+ * paid users straight to the appropriate billing action (lifecycle emails).
  *
- * Gated to users who can top up; an ineligible user is a silent no-op with the
- * param stripped. Survives the login redirect via the preserved-query system,
- * like the pricing URL loader.
+ * The dialog service owns capability routing for owners and members. Survives
+ * the login redirect via the preserved-query system, like the pricing URL
+ * loader.
  */
 export function useTopUpUrlLoader() {
   const route = useRoute()
   const router = useRouter()
   const dialogService = useDialogService()
-  const { canTopUp, canSubscribeSelfServe, initialize } =
-    useBillingCapabilities()
+  const { canTopUp, initialize } = useBillingCapabilities()
   const telemetry = useTelemetry()
 
-  /** Reads `?topup=`, strips it, and opens the dialog when the gate allows. */
+  /** Reads `?topup=`, strips it, and delegates valid values to the dialog. */
   async function loadTopUpFromUrl() {
     hydratePreservedQuery(NAMESPACE)
     const query =
@@ -51,8 +50,6 @@ export function useTopUpUrlLoader() {
     // Only a non-empty string value opens the dialog; an empty/array param
     // just gets stripped above.
     if (!shouldOpen) return
-
-    if (!canTopUp.value && !canSubscribeSelfServe.value) return
 
     if (canTopUp.value) {
       telemetry?.trackAddApiCreditButtonClicked({ source: 'deep_link' })

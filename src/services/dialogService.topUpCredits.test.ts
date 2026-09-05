@@ -6,11 +6,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const showDialog = vi.hoisted(() => vi.fn())
 const closeDialog = vi.hoisted(() => vi.fn())
+const addToast = vi.hoisted(() => vi.fn())
 const state = vi.hoisted(() => ({
   type: 'workspace' as 'workspace' | 'legacy',
+  role: 'owner' as 'owner' | 'member',
   canTopUp: true,
   canSubscribeSelfServe: false,
   isReady: true,
+  snapshotAuthoritative: true,
   initialize: vi.fn()
 }))
 
@@ -28,9 +31,18 @@ vi.mock('@/platform/telemetry', () => ({
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 vi.mock('@/platform/distribution/types', () => ({
+  get DISTRIBUTION() {
+    return mockIsCloud.value ? 'cloud' : 'desktop'
+  },
   get isCloud() {
     return mockIsCloud.value
   }
+}))
+
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
+  useTeamWorkspaceStore: () => ({
+    activeWorkspace: { role: state.role }
+  })
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
@@ -57,12 +69,17 @@ vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
         return state.isReady
       }
     },
+    snapshotAuthoritative: {
+      get value() {
+        return state.snapshotAuthoritative
+      }
+    },
     initialize: () => state.initialize()
   })
 }))
 
 vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ add: vi.fn() })
+  useToastStore: () => ({ add: addToast })
 }))
 
 const showSubscriptionDialog = vi.hoisted(() => vi.fn())
@@ -79,9 +96,11 @@ import { useDialogService } from '@/services/dialogService'
 describe('showTopUpCreditsDialog', () => {
   beforeEach(() => {
     state.type = 'workspace'
+    state.role = 'owner'
     state.canTopUp = true
     state.canSubscribeSelfServe = false
     state.isReady = true
+    state.snapshotAuthoritative = true
     state.initialize = vi.fn()
     mockIsCloud.value = true
   })
@@ -97,6 +116,7 @@ describe('showTopUpCreditsDialog', () => {
   })
 
   it('shows the contact-admin notice to team members instead of the purchase dialog', async () => {
+    state.role = 'member'
     state.canTopUp = false
     state.canSubscribeSelfServe = false
 
@@ -127,7 +147,7 @@ describe('showTopUpCreditsDialog', () => {
     expect(args.key).toBe('top-up-credits')
   })
 
-  it('does not show workspace-admin copy for denied legacy billing', async () => {
+  it('shows account-manager guidance for denied sales-managed billing', async () => {
     state.type = 'legacy'
     state.canTopUp = false
 
@@ -135,6 +155,12 @@ describe('showTopUpCreditsDialog', () => {
 
     expect(showDialog).not.toHaveBeenCalled()
     expect(showSubscriptionDialog).not.toHaveBeenCalled()
+    expect(addToast).toHaveBeenCalledWith({
+      severity: 'warn',
+      summary: 'subscription.salesManagedRunBlockedTitle',
+      detail: 'subscription.salesManagedRunBlockedDetail',
+      life: 5000
+    })
   })
 
   it('awaits an in-flight capability read instead of dropping the request', async () => {
@@ -158,6 +184,7 @@ describe('showTopUpCreditsDialog', () => {
   it('does not route when capabilities stay unresolved after initializing', async () => {
     state.canTopUp = false
     state.isReady = false
+    state.snapshotAuthoritative = false
 
     await useDialogService().showTopUpCreditsDialog()
 

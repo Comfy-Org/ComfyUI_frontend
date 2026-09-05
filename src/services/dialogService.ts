@@ -9,9 +9,11 @@ import TopUpCreditsDialogContentLegacy from '@/components/dialog/content/TopUpCr
 import InsufficientCreditsMemberDialog from '@/platform/workspace/components/InsufficientCreditsMemberDialog.vue'
 import TopUpCreditsDialogContentWorkspace from '@/platform/workspace/components/TopUpCreditsDialogContentWorkspace.vue'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { resolveAgentPaywallPresentation } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
-import { isCloud } from '@/platform/distribution/types'
+import { DISTRIBUTION, isCloud } from '@/platform/distribution/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -344,13 +346,29 @@ export const useDialogService = () => {
     isInsufficientCredits?: boolean
   }) {
     const { type } = useBillingContext()
-    const { canTopUp, canSubscribeSelfServe, isReady, initialize } =
-      useBillingCapabilities()
+    const workspaceStore = useTeamWorkspaceStore()
+    const {
+      canTopUp,
+      canSubscribeSelfServe,
+      isReady,
+      snapshotAuthoritative,
+      initialize
+    } = useBillingCapabilities()
     // A capability read still in flight has to be awaited here, or a top-up
     // triggered during that window is silently dropped with no recovery UI.
     if (!isReady.value) await initialize()
     if (!isReady.value) return
-    if (!canTopUp.value && canSubscribeSelfServe.value) {
+
+    const presentation = resolveAgentPaywallPresentation({
+      distribution: DISTRIBUTION,
+      role: workspaceStore.activeWorkspace?.role ?? 'owner',
+      hasAuthoritativeCapabilities: snapshotAuthoritative.value,
+      canTopUp: canTopUp.value,
+      canSubscribeSelfServe: canSubscribeSelfServe.value
+    })
+
+    if (presentation.kind === 'unknown') return
+    if (presentation.kind === 'subscriptionRequired') {
       await showSubscriptionRequiredDialog({
         reason: options?.isInsufficientCredits
           ? 'out_of_credits'
@@ -358,8 +376,16 @@ export const useDialogService = () => {
       })
       return
     }
-
-    if (!canTopUp.value && type.value === 'workspace') {
+    if (presentation.kind === 'salesManaged') {
+      useToastStore().add({
+        severity: 'warn',
+        summary: t('subscription.salesManagedRunBlockedTitle'),
+        detail: t('subscription.salesManagedRunBlockedDetail'),
+        life: 5000
+      })
+      return
+    }
+    if (presentation.kind === 'member') {
       return dialogStore.showDialog({
         key: 'insufficient-credits-member',
         component: InsufficientCreditsMemberDialog,
@@ -375,7 +401,6 @@ export const useDialogService = () => {
         }
       })
     }
-    if (!canTopUp.value) return
 
     const component =
       type.value === 'workspace'

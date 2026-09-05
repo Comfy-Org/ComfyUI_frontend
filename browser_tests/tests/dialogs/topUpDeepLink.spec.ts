@@ -82,7 +82,9 @@ test.describe('Top-up deep link', { tag: '@cloud' }, () => {
     await expect(page).not.toHaveURL(/[?&]topup=/)
   })
 
-  test('is a silent no-op for a team member', async ({ page }) => {
+  test('routes a denied team member to contact-admin guidance', async ({
+    page
+  }) => {
     test.slow()
     const teamWorkspace = workspace('team', 'member')
     await setupCloudApp(page, {
@@ -103,14 +105,46 @@ test.describe('Top-up deep link', { tag: '@cloud' }, () => {
 
     await page.goto(`${APP_URL}/?topup=1`)
 
-    // The loader strips the param for everyone before the eligibility gate, so
+    // The loader strips the param before delegating to the dialog policy, so
     // waiting for the clean URL is a real "loader ran" signal. window.app's
     // extensionManager is assigned in App.vue setup, long before the loader
     // runs at the tail of GraphCanvas onMounted, so it would resolve too early.
     await page.waitForURL((url) => !url.searchParams.has('topup'), {
       timeout: 45_000
     })
+    await expect(
+      page.getByTestId('insufficient-credits-member-message')
+    ).toBeVisible()
     await expect(topUpDialog(page)).toBeHidden()
+  })
+
+  test('routes a denied team owner to account-manager guidance', async ({
+    page
+  }) => {
+    test.slow()
+    const teamWorkspace = workspace('team', 'owner')
+    await setupCloudApp(page, {
+      workspace: teamWorkspace,
+      members: [
+        member({
+          email: CLOUD_SELF_EMAIL,
+          role: 'owner',
+          is_original_owner: true
+        })
+      ],
+      billingCapabilities: createBillingCapabilities(teamWorkspace.id, {
+        can_top_up: false,
+        can_subscribe_self_serve: false
+      })
+    })
+
+    await page.goto(`${APP_URL}/?topup=1`)
+
+    await expect(page.getByText('Plan inactive')).toBeVisible({
+      timeout: 45_000
+    })
+    await expect(topUpDialog(page)).toBeHidden()
+    await expect(page).not.toHaveURL(/[?&]topup=/)
   })
 
   test('preserves the deep link until capabilities finish loading', async ({
@@ -144,7 +178,7 @@ test.describe('Top-up deep link', { tag: '@cloud' }, () => {
     await expect(page).not.toHaveURL(/[?&]topup=/)
   })
 
-  test('uses the top-up fallback when capabilities are unavailable', async ({
+  test('silently no-ops when capabilities are unavailable', async ({
     page
   }) => {
     test.slow()
@@ -155,7 +189,10 @@ test.describe('Top-up deep link', { tag: '@cloud' }, () => {
 
     await page.goto(`${APP_URL}/?topup=1`)
 
-    await expect(topUpDialog(page)).toBeVisible({ timeout: 45_000 })
+    await page.waitForURL((url) => !url.searchParams.has('topup'), {
+      timeout: 45_000
+    })
+    await expect(topUpDialog(page)).toBeHidden()
     await expect(page).not.toHaveURL(/[?&]topup=/)
   })
 })
