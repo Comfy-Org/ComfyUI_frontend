@@ -3,14 +3,10 @@ import { getCollection } from 'astro:content'
 
 import WorkshopCatalog from '../../components/workshop/WorkshopCatalog.vue'
 import { toBrowseModel } from '../../config/workshop'
+import { workshopCatalogSeo } from '../../config/workshop-seo'
 import { t } from '../../i18n/translations'
 import BaseLayout from '../../layouts/BaseLayout.astro'
-import {
-  absoluteUrl,
-  itemListNode,
-  jsonLdId,
-  pageContext
-} from '../../utils/jsonLd'
+import { pageContext } from '../../utils/jsonLd'
 
 // Projected at build time so the island receives card-sized records. The
 // models' input schemas are the bulk of each entry and the browse page has
@@ -25,26 +21,23 @@ const { locale, url } = pageContext(
   Astro.currentLocale
 )
 const title = t('workshop.meta.title', locale)
-const modelList = itemListNode(
+const seo = workshopCatalogSeo({
+  site: Astro.site,
   url,
   title,
-  models.map((model) => ({
-    url: absoluteUrl(Astro.site, model.href),
-    name: model.name
-  }))
-)
+  workshopName: t('workshop.model.breadcrumb', locale),
+  homeName: t('breadcrumb.home', locale),
+  models
+})
 ---
 
 <BaseLayout
   title={title}
   description={t('workshop.meta.description', locale)}
   pageType="CollectionPage"
-  mainEntityId={jsonLdId(url, 'itemlist')}
-  breadcrumbs={[
-    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
-    { name: title }
-  ]}
-  extraJsonLd={[modelList]}
+  mainEntityId={seo.mainEntityId}
+  breadcrumbs={seo.breadcrumbs}
+  extraJsonLd={seo.extraJsonLd}
   noindex
 >
   <main class="mx-auto max-w-10xl px-6 py-16 lg:px-8 lg:py-24">

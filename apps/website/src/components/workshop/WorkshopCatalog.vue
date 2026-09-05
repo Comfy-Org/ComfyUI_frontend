@@ -7,6 +7,7 @@ import type {
   WorkshopOutputFilter
 } from '../../config/workshop'
 import {
+  WORKSHOP_INITIAL_MODEL_LIMIT,
   WORKSHOP_OUTPUTS,
   countWorkshopOutputs,
   filterWorkshopModels
@@ -22,7 +23,7 @@ const { models, locale = 'en' } = defineProps<{
 const query = ref('')
 const output = ref<WorkshopOutputFilter>('all')
 const provider = ref('all')
-const visibleLimit = ref(48)
+const visibleLimit = ref(WORKSHOP_INITIAL_MODEL_LIMIT)
 
 const counts = computed(() => countWorkshopOutputs(models))
 const providers = computed(() =>
@@ -40,7 +41,7 @@ const displayedModels = computed(() =>
 )
 
 watch([query, output, provider], () => {
-  visibleLimit.value = 48
+  visibleLimit.value = WORKSHOP_INITIAL_MODEL_LIMIT
 })
 
 const outputLabelKeys: Record<WorkshopOutputFilter, TranslationKey> = {
@@ -173,7 +174,7 @@ const outputOptions: readonly WorkshopOutputFilter[] = [
     v-if="displayedModels.length < visibleModels.length"
     type="button"
     class="hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow mx-auto mt-8 block rounded-full border border-primary-comfy-canvas/15 px-6 py-3 text-sm text-primary-comfy-canvas transition-colors"
-    @click="visibleLimit += 48"
+    @click="visibleLimit += WORKSHOP_INITIAL_MODEL_LIMIT"
   >
     {{ t('workshop.showMore', locale) }}
   </button>
