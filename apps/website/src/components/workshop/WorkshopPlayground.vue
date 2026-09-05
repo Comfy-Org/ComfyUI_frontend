@@ -1,10 +1,14 @@
 <script setup lang="ts">
+import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 import { computed, ref } from 'vue'
 
 import type { WorkshopDetailModel } from '../../config/workshop-detail'
 import { defaultWorkshopValues } from '../../config/workshop-detail'
-import { runTargetFor } from '../../config/workshop-run-target'
 import type { WorkshopSnippetLanguage } from '../../config/workshop-snippets'
+import {
+  WORKSHOP_SNIPPET_LANGUAGES,
+  buildWorkshopSnippet
+} from '../../config/workshop-snippets'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import WorkshopForm from './WorkshopForm.vue'
@@ -13,12 +17,11 @@ const { model, locale = 'en' } = defineProps<{
   model: WorkshopDetailModel
   locale?: Locale
 }>()
-const runTarget = computed(() => runTargetFor(model))
 const values = ref(defaultWorkshopValues(model.fields))
 const language = ref<WorkshopSnippetLanguage>('typescript')
 const copied = ref(false)
 const snippet = computed(() =>
-  runTarget.value.buildSnippet(language.value, model, values.value)
+  buildWorkshopSnippet(language.value, model.id, model.fields, values.value)
 )
 
 async function copySnippet() {
@@ -41,44 +44,43 @@ const languageLabels: Record<WorkshopSnippetLanguage, string> = {
     <WorkshopForm v-model="values" :model="model" :locale="locale" />
 
     <section>
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <div
-          role="tablist"
-          :aria-label="t('workshop.model.codeLanguage', locale)"
-          class="flex gap-1"
-        >
-          <button
-            v-for="option in runTarget.snippetLanguages"
-            :key="option"
-            type="button"
-            role="tab"
-            :aria-selected="language === option"
-            class="rounded-full px-4 py-2 text-sm transition-colors"
-            :class="
-              language === option
-                ? 'bg-primary-comfy-yellow text-primary-comfy-ink'
-                : 'text-primary-comfy-canvas/65 hover:text-primary-comfy-canvas'
-            "
-            @click="language = option"
+      <TabsRoot v-model="language">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <TabsList
+            :aria-label="t('workshop.model.codeLanguage', locale)"
+            class="flex gap-1"
           >
-            {{ languageLabels[option] }}
+            <TabsTrigger
+              v-for="option in WORKSHOP_SNIPPET_LANGUAGES"
+              :key="option"
+              :value="option"
+              class="focus-visible:ring-primary-comfy-yellow/50 data-[state=active]:bg-primary-comfy-yellow cursor-pointer rounded-full px-4 py-2 text-sm text-primary-comfy-canvas/65 transition-colors hover:text-primary-comfy-canvas focus-visible:ring-2 focus-visible:outline-none data-[state=active]:text-primary-comfy-ink"
+            >
+              {{ languageLabels[option] }}
+            </TabsTrigger>
+          </TabsList>
+          <button
+            type="button"
+            class="text-primary-comfy-yellow text-sm hover:underline"
+            @click="copySnippet"
+          >
+            {{
+              copied
+                ? t('workshop.model.copied', locale)
+                : t('workshop.model.copy', locale)
+            }}
           </button>
         </div>
-        <button
-          type="button"
-          class="text-primary-comfy-yellow text-sm hover:underline"
-          @click="copySnippet"
+        <TabsContent
+          v-for="option in WORKSHOP_SNIPPET_LANGUAGES"
+          :key="option"
+          :value="option"
         >
-          {{
-            copied
-              ? t('workshop.model.copied', locale)
-              : t('workshop.model.copy', locale)
-          }}
-        </button>
-      </div>
-      <pre
-        class="mt-3 max-h-168 overflow-auto rounded-2xl border border-primary-comfy-canvas/10 bg-black p-6 text-sm/relaxed text-primary-comfy-canvas"
-      ><code>{{ snippet }}</code></pre>
+          <pre
+            class="mt-3 max-h-168 overflow-auto rounded-2xl border border-primary-comfy-canvas/10 bg-black p-6 text-sm/relaxed text-primary-comfy-canvas"
+          ><code>{{ buildWorkshopSnippet(option, model.id, model.fields, values) }}</code></pre>
+        </TabsContent>
+      </TabsRoot>
       <a
         href="https://platform.comfy.org/profile/api-keys"
         target="_blank"
