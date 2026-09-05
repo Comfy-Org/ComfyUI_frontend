@@ -1,5 +1,8 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { watch } from 'vue'
+
+const { reportError } = vi.hoisted(() => ({ reportError: vi.fn() }))
+vi.mock('@/platform/telemetry/reportError', () => ({ reportError }))
 
 import {
   clearDevEvents,
@@ -13,6 +16,7 @@ describe('devPanelLog', () => {
   beforeEach(() => {
     setCrdtDebugEnabled(true)
     clearDevEvents()
+    reportError.mockClear()
   })
 
   it('records events with monotonically increasing sequence numbers', () => {
@@ -94,6 +98,160 @@ describe('devPanelLog', () => {
       clamped: 'Uint8ClampedArray(3)',
       view: 'DataView(2)'
     })
+  })
+
+  it('removes sensitive fields before storing an event', () => {
+    recordDevEvent('ws_out', {
+      delivered: true,
+      authorization: 'Bearer secret-auth',
+      frame: {
+        type: 'doc_ops',
+        data: {
+          v: 1,
+          workflow_id: 'wf-1',
+          tab: 'tab-1',
+          access_token: 'secret-token',
+          ops: [
+            {
+              op: 'set_widget',
+              op_id: 'op-123',
+              node_id: 42,
+              name: 'seed',
+              value: 'secret-op-value',
+              old: 'secret-old-value',
+              outcome: 'applied'
+            },
+            {
+              op: 'add_node',
+              op_id: 'op-456',
+              class_type: 'CLIPTextEncode',
+              node: { id: 43, widgets_values: ['secret-widget', 12] }
+            }
+          ]
+        }
+      },
+      binary: new Uint8Array([1, 2, 3])
+    })
+
+    expect(devEvents.value[0]).toMatchObject({
+      kind: 'ws_out',
+      detail: {
+        delivered: true,
+        authorization: '[REDACTED]',
+        frame: {
+          type: 'doc_ops',
+          data: {
+            v: 1,
+            workflow_id: 'wf-1',
+            tab: 'tab-1',
+            access_token: '[REDACTED]',
+            ops: [
+              {
+                op: 'set_widget',
+                op_id: 'op-123',
+                node_id: 42,
+                name: 'seed',
+                value: '[REDACTED]',
+                old: '[REDACTED]',
+                outcome: 'applied'
+              },
+              {
+                op: 'add_node',
+                op_id: 'op-456',
+                class_type: 'CLIPTextEncode',
+                node: '[REDACTED]'
+              }
+            ]
+          }
+        },
+        binary: 'Uint8Array(3)'
+      }
+    })
+    expect(JSON.stringify(devEvents.value)).not.toMatch(
+      /secret-(auth|token|op-value|old-value|widget)/
+    )
+  })
+
+  it('redacts common key formats without hiding structural metadata', () => {
+    recordDevEvent('doc_subscribed', {
+      accessToken: 'secret-camel',
+      'x-api-key': 'secret-header',
+      token_count: 3,
+      context: 'kept-context',
+      prompt_id: 'kept-prompt-id',
+      class_type: 'kept-class'
+    })
+
+    expect(devEvents.value[0]?.detail).toEqual({
+      accessToken: '[REDACTED]',
+      'x-api-key': '[REDACTED]',
+      token_count: 3,
+      context: 'kept-context',
+      prompt_id: 'kept-prompt-id',
+      class_type: 'kept-class'
+    })
+  })
+
+  it('keeps server error messages on failed frames', () => {
+    const detail = {
+      workflowId: 'wf-1',
+      ok: false,
+      applied: [],
+      skipped: ['op-1'],
+      code: 'op_failed',
+      message: 'unknown node 7',
+      failed: { op_id: 'op-1', code: 'unknown_node', message: 'unknown node 7' }
+    }
+    recordDevEvent('doc_ops_result', detail)
+
+    expect(devEvents.value[0]?.detail).toEqual(detail)
+  })
+
+  it('preserves bounded descriptions of non-plain objects', () => {
+    recordDevEvent('doc_update', {
+      error: new TypeError('invalid update'),
+      map: new Map([['token', 'secret']]),
+      set: new Set(['secret']),
+      date: new Date('2026-09-04T06:00:00.000Z')
+    })
+
+    expect(devEvents.value[0]?.detail).toEqual({
+      error: { name: 'TypeError', message: 'invalid update' },
+      map: 'Map(1)',
+      set: 'Set(1)',
+      date: '2026-09-04T06:00:00.000Z'
+    })
+  })
+
+  it('collapses values nested beyond the depth cap', () => {
+    let detail: Record<string, unknown> = { leaf: 'kept-leaf' }
+    for (let i = 0; i < 14; i++) detail = { child: detail }
+    recordDevEvent('doc_update', detail)
+
+    const serialized = stringifyDevEvents(devEvents.value)
+    expect(serialized).toContain('[REDACTED]')
+    expect(serialized).not.toContain('kept-leaf')
+    expect(serialized.match(/"child":/g)).toHaveLength(13)
+  })
+
+  it('redacts and reports details that cannot be inspected safely', () => {
+    const detail = new Proxy(
+      {},
+      {
+        ownKeys() {
+          throw new Error('secret payload')
+        }
+      }
+    )
+
+    expect(() => recordDevEvent('doc_update', detail)).not.toThrow()
+    expect(devEvents.value[0]?.detail).toBe('[REDACTED]')
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'Failed to sanitize CRDT dev event detail'
+      }),
+      { errorType: 'crdt_dev_event_sanitization_failed' }
+    )
   })
 
   it('keeps a value referenced twice from sibling positions', () => {
