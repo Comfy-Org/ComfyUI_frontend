@@ -1,7 +1,6 @@
 import { useEventListener, whenever } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, markRaw, ref, shallowRef } from 'vue'
-import type { Raw } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
 
@@ -13,10 +12,13 @@ import type {
   LGraphNode,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
+import { resolveSelectable } from '@/lib/litegraph/src/utils/selectableItems'
 import { promoteRecommendedWidgets } from '@/core/graph/subgraph/promotionUtils'
+import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { app } from '@/scripts/app'
+import { graphScopeOf } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 
@@ -35,14 +37,7 @@ export const useCanvasStore = defineStore('canvas', () => {
    * The root LGraphCanvas object is a shallow ref.
    */
   const canvas = shallowRef<LGraphCanvas | null>(null)
-  /**
-   * The selected items on the canvas. All stored items are raw.
-   */
-  const selectedItems = ref<Raw<Positionable>[]>([])
-  const updateSelectedItems = () => {
-    const items = Array.from(canvas.value?.selectedItems ?? [])
-    selectedItems.value = items.map((item) => markRaw(item))
-  }
+  const selectionStore = useSelectionStore()
 
   // Reactive scale percentage that syncs with app.canvas.ds.scale
   const appScalePercentage = ref(100)
@@ -117,7 +112,15 @@ export const useCanvasStore = defineStore('canvas', () => {
   const isInSubgraph = ref(false)
   const isGhostPlacing = ref(false)
 
-  // Provide selection state to all Vue nodes
+  /** The selected items of the on-screen graph, derived from the selection store. */
+  const selectedItems = computed<Positionable[]>(() => {
+    const graph = currentGraph.value
+    if (!graph) return []
+    return selectionStore
+      .selectedKeys(graphScopeOf(graph))
+      .flatMap((key) => resolveSelectable(graph, key) ?? [])
+  })
+
   const selectedNodeIds = computed<Set<NodeId>>(
     () =>
       new Set(selectedItems.value.filter(isLGraphNode).map((item) => item.id))
@@ -134,7 +137,6 @@ export const useCanvasStore = defineStore('canvas', () => {
         'node:before-removed',
         (e: CustomEvent<{ node: LGraphNode }>) => {
           newCanvas.deselect(e.detail.node)
-          updateSelectedItems()
         }
       )
 
@@ -192,7 +194,6 @@ export const useCanvasStore = defineStore('canvas', () => {
     appScalePercentage,
     linearMode,
     isReadOnly,
-    updateSelectedItems,
     getCanvas,
     setAppZoomFromPercentage,
     initScaleSync,

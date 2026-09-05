@@ -9,8 +9,8 @@ import { createI18n } from 'vue-i18n'
 import BypassButton from '@/components/graph/selectionToolbox/BypassButton.vue'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 function getMockLGraphNode(): LGraphNode {
@@ -22,7 +22,6 @@ vi.mock('@/utils/litegraphUtil', () => ({
 }))
 
 describe('BypassButton', () => {
-  let canvasStore: ReturnType<typeof useCanvasStore>
   let commandStore: ReturnType<typeof useCommandStore>
 
   const i18n = createI18n({
@@ -40,7 +39,6 @@ describe('BypassButton', () => {
   })
 
   beforeEach(() => {
-    canvasStore = useCanvasStore()
     commandStore = useCommandStore()
   })
 
@@ -61,19 +59,19 @@ describe('BypassButton', () => {
   }
 
   it('should render bypass button', () => {
-    canvasStore.selectedItems = [getMockLGraphNode()]
+    setCanvasSelection([getMockLGraphNode()])
     renderComponent()
     expect(screen.getByTestId('bypass-button')).toBeInTheDocument()
   })
 
   it('should have correct test id', () => {
-    canvasStore.selectedItems = [getMockLGraphNode()]
+    setCanvasSelection([getMockLGraphNode()])
     renderComponent()
     expect(screen.getByTestId('bypass-button')).toBeInTheDocument()
   })
 
   it('should execute bypass command when clicked', async () => {
-    canvasStore.selectedItems = [getMockLGraphNode()]
+    setCanvasSelection([getMockLGraphNode()])
     const executeSpy = vi.spyOn(commandStore, 'execute').mockResolvedValue()
 
     const { user } = renderComponent()
@@ -88,7 +86,7 @@ describe('BypassButton', () => {
     const bypassedNode = Object.assign(getMockLGraphNode(), {
       mode: LGraphEventMode.BYPASS
     })
-    canvasStore.selectedItems = [bypassedNode]
+    setCanvasSelection([bypassedNode])
     vi.spyOn(commandStore, 'execute').mockResolvedValue()
     const { user } = renderComponent()
 
@@ -100,7 +98,7 @@ describe('BypassButton', () => {
 
   it('should handle multiple selected items', () => {
     vi.spyOn(commandStore, 'execute').mockResolvedValue()
-    canvasStore.selectedItems = [getMockLGraphNode(), getMockLGraphNode()]
+    setCanvasSelection([getMockLGraphNode(), getMockLGraphNode()])
     renderComponent()
     expect(screen.getByTestId('bypass-button')).toBeInTheDocument()
   })

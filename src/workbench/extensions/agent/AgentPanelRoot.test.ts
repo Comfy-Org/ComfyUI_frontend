@@ -138,7 +138,7 @@ const hostStores = vi.hoisted(() => ({
   },
   canvas: null as unknown as {
     selectedItems: unknown[]
-    updateSelectedItems: () => void
+    syncFakeSelection: () => void
     currentGraph: unknown | null
     canvas: unknown
   }
@@ -185,12 +185,12 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
 
 vi.mock('@/renderer/core/canvas/canvasStore', async () => {
   const { reactive } = await import('vue')
-  const updateSelectedItems = () => {
+  const syncFakeSelection = () => {
     hostStores.canvas.selectedItems = [...(appMock.canvas?.selectedItems ?? [])]
   }
   const store = reactive({
     selectedItems: [] as unknown[],
-    updateSelectedItems,
+    syncFakeSelection,
     currentGraph: null,
     canvas: undefined
   })
@@ -448,9 +448,16 @@ function setupNodeSelectionCanvas() {
   const selectItems = vi.fn((items: unknown[], add = false) => {
     if (!add) selectedItems.clear()
     for (const item of items) selectedItems.add(item)
+    hostStores.canvas.syncFakeSelection()
   })
-  const deselect = vi.fn((node: unknown) => selectedItems.delete(node))
-  const deselectAll = vi.fn(() => selectedItems.clear())
+  const deselect = vi.fn((node: unknown) => {
+    selectedItems.delete(node)
+    hostStores.canvas.syncFakeSelection()
+  })
+  const deselectAll = vi.fn(() => {
+    selectedItems.clear()
+    hostStores.canvas.syncFakeSelection()
+  })
   const graph = {
     nodes,
     getNodeById: (id: string | number) =>
@@ -555,7 +562,7 @@ async function startVueNodeSelection() {
     if (!state.canvas.multi_select) state.selectedItems.clear()
     if (state.selectedItems.has(node)) state.selectedItems.delete(node)
     else state.selectedItems.add(node)
-    hostStores.canvas.updateSelectedItems()
+    hostStores.canvas.syncFakeSelection()
   })
   const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
   renderCanvasNodeButtons(state.nodes, selectClickedNode)
@@ -3084,7 +3091,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     showRootGraph(state, [rootTwin])
     state.selectedItems.add(rootTwin)
-    hostStores.canvas.updateSelectedItems()
+    hostStores.canvas.syncFakeSelection()
     await nextTick()
 
     await userEvent.click(
@@ -3138,7 +3145,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     state.selectedItems.clear()
     state.selectedItems.add(state.nodes[0])
-    hostStores.canvas.updateSelectedItems()
+    hostStores.canvas.syncFakeSelection()
     await nextTick()
 
     expect(screen.getByText('KSampler')).toBeInTheDocument()
@@ -3157,7 +3164,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.click(await screen.findByText('KSampler'))
     state.selectedItems.clear()
     state.selectedItems.add(state.nodes[0])
-    hostStores.canvas.updateSelectedItems()
+    hostStores.canvas.syncFakeSelection()
     state.selectItems.mockClear()
 
     await enterNodeSelectionMode()
@@ -3194,7 +3201,7 @@ describe('AgentPanelRoot workflow binding', () => {
     showRootGraph(state, [rootNode])
     state.selectedItems.clear()
     state.selectedItems.add(rootNode)
-    hostStores.canvas.updateSelectedItems()
+    hostStores.canvas.syncFakeSelection()
     state.selectItems.mockClear()
     await nextTick()
 
@@ -3361,7 +3368,7 @@ describe('AgentPanelRoot workflow binding', () => {
     const selectLegacyNode = (node: SelectionTestNode) => {
       if (!state.canvas.multi_select) state.selectedItems.clear()
       state.selectedItems.add(node)
-      hostStores.canvas.updateSelectedItems()
+      hostStores.canvas.syncFakeSelection()
     }
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     renderCanvasNodeButtons(state.nodes, selectLegacyNode)
@@ -3394,7 +3401,7 @@ describe('AgentPanelRoot workflow binding', () => {
     const toggleNode = (node: SelectionTestNode) => {
       if (state.selectedItems.has(node)) state.selectedItems.delete(node)
       else state.selectedItems.add(node)
-      hostStores.canvas.updateSelectedItems()
+      hostStores.canvas.syncFakeSelection()
     }
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     renderCanvasNodeButtons(state.nodes, toggleNode)
@@ -3425,12 +3432,12 @@ describe('AgentPanelRoot workflow binding', () => {
 
     await enterNodeSelectionMode()
     state.selectedItems.add(state.nodes[0])
-    hostStores.canvas.updateSelectedItems()
+    hostStores.canvas.syncFakeSelection()
     state.selectItems.mockClear()
 
     state.selectedItems.clear()
     state.selectedItems.add(state.nodes[1])
-    hostStores.canvas.updateSelectedItems()
+    hostStores.canvas.syncFakeSelection()
     await nextTick()
 
     expect([...state.selectedItems]).toEqual([state.nodes[1]])
@@ -3553,7 +3560,7 @@ describe('AgentPanelRoot workflow binding', () => {
     selection.selectedItems.clear()
     selection.selectedItems.add(secondNode)
     hostStores.canvas.currentGraph = secondGraph
-    hostStores.canvas.updateSelectedItems()
+    hostStores.canvas.syncFakeSelection()
     await nextTick()
 
     expect(nodeSelectionStore.isLoadingWorkflow).toBe(false)
@@ -3569,7 +3576,7 @@ describe('AgentPanelRoot workflow binding', () => {
     nodeSelectionStore.beginWorkflowLoad()
     nodeSelectionStore.restoreNodeIds(['9'])
     state.selectedItems.add(state.nodes[0])
-    hostStores.canvas.updateSelectedItems()
+    hostStores.canvas.syncFakeSelection()
     useAgentPanelStore().isOpen = true
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })

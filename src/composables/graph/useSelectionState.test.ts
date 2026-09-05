@@ -6,9 +6,9 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { isImageNode, isLGraphNode } from '@/utils/litegraphUtil'
 import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 import {
@@ -53,12 +53,9 @@ function createMockNodeDef() {
 }
 
 function selectSingleNodeWithNodeDef(id: number) {
-  const canvasStore = useCanvasStore()
   const nodeDefStore = useNodeDefStore()
 
-  canvasStore.$state.selectedItems = [
-    createMockLGraphNode({ id, type: 'TestNode' })
-  ]
+  setCanvasSelection([createMockLGraphNode({ id, type: 'TestNode' })])
   vi.mocked(nodeDefStore.fromLGraphNode).mockReturnValue(createMockNodeDef())
 }
 
@@ -107,29 +104,26 @@ describe('useSelectionState', () => {
     })
 
     test('should return true when items selected', () => {
-      const canvasStore = useCanvasStore()
       const node1 = createMockLGraphNode({ id: 1 })
       const node2 = createMockLGraphNode({ id: 2 })
-      canvasStore.$state.selectedItems = [node1, node2]
+      setCanvasSelection([node1, node2])
 
       const { hasAnySelection } = useSelectionState()
       expect(hasAnySelection.value).toBe(true)
     })
 
     test('hasMultipleSelection should be true when 2+ items selected', () => {
-      const canvasStore = useCanvasStore()
       const node1 = createMockLGraphNode({ id: 1 })
       const node2 = createMockLGraphNode({ id: 2 })
-      canvasStore.$state.selectedItems = [node1, node2]
+      setCanvasSelection([node1, node2])
 
       const { hasMultipleSelection } = useSelectionState()
       expect(hasMultipleSelection.value).toBe(true)
     })
 
     test('hasMultipleSelection should be false when only 1 item selected', () => {
-      const canvasStore = useCanvasStore()
       const node1 = createMockLGraphNode({ id: 1 })
-      canvasStore.$state.selectedItems = [node1]
+      setCanvasSelection([node1])
 
       const { hasMultipleSelection } = useSelectionState()
       expect(hasMultipleSelection.value).toBe(false)
@@ -138,13 +132,8 @@ describe('useSelectionState', () => {
 
   describe('Node Type Filtering', () => {
     test('should pick only LGraphNodes from mixed selections', () => {
-      const canvasStore = useCanvasStore()
       const graphNode = createMockLGraphNode({ id: 3 })
-      canvasStore.$state.selectedItems = [
-        graphNode,
-        mockComment,
-        mockConnection
-      ]
+      setCanvasSelection([graphNode, mockComment, mockConnection])
 
       const { selectedNodes } = useSelectionState()
       expect(selectedNodes.value).toHaveLength(1)
@@ -154,12 +143,11 @@ describe('useSelectionState', () => {
 
   describe('Node State Computation', () => {
     test('should detect bypassed nodes', () => {
-      const canvasStore = useCanvasStore()
       const bypassedNode = createMockLGraphNode({
         id: 4,
         mode: LGraphEventMode.BYPASS
       })
-      canvasStore.$state.selectedItems = [bypassedNode]
+      setCanvasSelection([bypassedNode])
 
       const { selectedNodes } = useSelectionState()
       const isBypassed = selectedNodes.value.some(
@@ -169,13 +157,12 @@ describe('useSelectionState', () => {
     })
 
     test('should detect pinned/collapsed states', () => {
-      const canvasStore = useCanvasStore()
       const pinnedNode = createMockLGraphNode({ id: 5, pinned: true })
       const collapsedNode = createMockLGraphNode({
         id: 6,
         flags: { collapsed: true }
       })
-      canvasStore.$state.selectedItems = [pinnedNode, collapsedNode]
+      setCanvasSelection([pinnedNode, collapsedNode])
 
       const { selectedNodes } = useSelectionState()
       const isPinned = selectedNodes.value.some((n) => n.pinned)
@@ -191,9 +178,8 @@ describe('useSelectionState', () => {
     })
 
     test('should provide non-reactive state computation', () => {
-      const canvasStore = useCanvasStore()
       const node = createMockLGraphNode({ id: 7, pinned: true })
-      canvasStore.$state.selectedItems = [node]
+      setCanvasSelection([node])
 
       const { selectedNodes } = useSelectionState()
       const isPinned = selectedNodes.value.some((n) => n.pinned)
@@ -209,7 +195,7 @@ describe('useSelectionState', () => {
       expect(isBypassed).toBe(false)
 
       // Test with empty selection using new composable instance
-      canvasStore.$state.selectedItems = []
+      setCanvasSelection([])
       const { selectedNodes: newSelectedNodes } = useSelectionState()
       const newIsPinned = newSelectedNodes.value.some((n) => n.pinned)
       expect(newIsPinned).toBe(false)
@@ -229,12 +215,11 @@ describe('useSelectionState', () => {
     })
 
     test('should not open the right side panel for multiple selected nodes', () => {
-      const canvasStore = useCanvasStore()
       const rightSidePanelStore = useRightSidePanelStore()
-      canvasStore.$state.selectedItems = [
+      setCanvasSelection([
         createMockLGraphNode({ id: 9, type: 'TestNode' }),
         createMockLGraphNode({ id: 10, type: 'TestNode' })
-      ]
+      ])
 
       const { canOpenNodeInfo, openNodeInfo } = useSelectionState()
       expect(canOpenNodeInfo.value).toBe(false)
