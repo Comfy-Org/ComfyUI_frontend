@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -53,6 +54,25 @@ describe("purity", () => {
       dependencies?: Record<string, string>;
     };
     expect(Object.keys(packageJson.dependencies ?? {}).sort()).toEqual(["yjs"]);
+  });
+
+  it("makes the production gate fail on a planted framework dependency", () => {
+    const fixture = mkdtempSync(join(tmpdir(), "purity-"));
+    try {
+      writeFileSync(
+        join(fixture, "package.json"),
+        JSON.stringify({ dependencies: { react: "^19.0.0", yjs: "^13.6.27" } }),
+      );
+      const run = spawnSync(process.execPath, [join(root, "scripts", "check-purity.mjs")], {
+        encoding: "utf8",
+        env: { ...process.env, PURITY_ROOT: fixture },
+      });
+      expect(run.status).toBe(1);
+      expect(run.stderr).toContain("runtime dependencies must be exactly {yjs}");
+      expect(run.stderr).toContain("{react, yjs}");
+    } finally {
+      rmSync(fixture, { recursive: true, force: true });
+    }
   });
 
   it("test environment itself is bare node (no DOM globals)", () => {
