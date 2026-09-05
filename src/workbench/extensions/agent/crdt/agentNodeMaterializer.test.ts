@@ -969,6 +969,8 @@ describe('reconcileAgentAdapters', () => {
       // A local rename lives in the store only; the reconcile payload still
       // has no `title`, and `configure()` would otherwise reset it.
       instance.title = 'Renamed Instance'
+      instance.pos = [400, 500]
+      instance.size = [400, 300]
 
       const stateVector = Y.encodeStateVector(host)
       const result = applyOps(
@@ -1007,7 +1009,37 @@ describe('reconcileAgentAdapters', () => {
       expect(useWidgetValueStore().getWidget(promotedWidgetId)?.value).toBe(42)
       expect(instance.widgets).toHaveLength(1)
       expect(instance.widgets[0]?.value).toBe(42)
+      expect([...instance.pos]).toEqual([400, 500])
+      expect([...instance.size]).toEqual([400, 300])
       expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('restores an output-only subgraph instance after a bare reconcile', () => {
+      const source = createTestSubgraph({
+        outputs: [{ name: 'result', type: 'number' }]
+      })
+      const definition = source.asSerialisable()
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id)],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+      const definitions = readSubgraphDefinitions(follower.doc)
+      reconcileAgentAdapters(graph, definitions)
+
+      const instance = graph.getNodeById(toNodeId(1)) as SubgraphNode
+      expect(instance.inputs).toHaveLength(0)
+      expect(instance.outputs).toHaveLength(1)
+
+      remoteMutations(graphScopeOf(graph)).batch(
+        { ...REMOTE, opId: 'op-bare-reconcile' },
+        (batch) => batch.reconcileNode(nodePayload(1, definition.id))
+      )
+      expect(instance.outputs).toHaveLength(0)
+
+      expect(reconcileAgentAdapters(graph, definitions)).toEqual([])
+      expect(instance.outputs).toHaveLength(1)
+      expect(instance.outputs[0]?.name).toBe('result')
     })
 
     it('reports a throwing subgraph instance reconfigure and keeps materializing the other records', () => {
