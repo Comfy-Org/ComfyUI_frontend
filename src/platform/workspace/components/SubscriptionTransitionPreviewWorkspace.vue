@@ -279,6 +279,7 @@
 </template>
 
 <script setup lang="ts">
+import { isVerificationRecoveryActive } from '@/platform/workspace/utils/verificationRecovery'
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -345,12 +346,12 @@ const emit = defineEmits<{
 }>()
 
 const { locale, n, t, te } = useI18n()
-const verificationRecoveryActive = computed(
-  () =>
-    embeddedCheckoutEnabled &&
-    (authenticationState === 'requires_action' ||
-      authenticationState === 'failed_retryable' ||
-      Boolean(reconciliationOperationId))
+const verificationRecoveryActive = computed(() =>
+  isVerificationRecoveryActive({
+    embeddedCheckoutEnabled,
+    authenticationState,
+    reconciliationOperationId
+  })
 )
 const quoteIsUsable = computed(() => !embeddedCheckoutEnabled || quoteIsCurrent)
 const interactionLocked = computed(() => isLoading || isApplyingPromotionCode)
