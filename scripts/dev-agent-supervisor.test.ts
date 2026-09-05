@@ -1,8 +1,23 @@
 // @vitest-environment node
+import { EventEmitter } from 'node:events'
 import type { ChildProcess } from 'node:child_process'
+import { rm } from 'node:fs/promises'
 import { describe, expect, it, vi } from 'vitest'
 
-import { waitForStartup } from './dev-agent-supervisor'
+import { supervise, waitForStartup } from './dev-agent-supervisor'
+
+vi.mock('node:fs/promises', () => ({ rm: vi.fn() }))
+
+class FakeChild extends EventEmitter {
+  exitCode: number | null = null
+  signalCode: NodeJS.Signals | null = null
+  readonly pid = 100
+
+  exit(code: number): void {
+    this.exitCode = code
+    this.emit('exit', code)
+  }
+}
 
 describe('waitForStartup', () => {
   it('returns a child failure without waiting for HTTP readiness', async () => {
@@ -33,5 +48,52 @@ describe('waitForStartup', () => {
     requestExit(9)
 
     await expect(startup).resolves.toBe(9)
+  })
+})
+
+describe('supervise teardown', () => {
+  it('kills an orphaned process group before deleting its data', async () => {
+    vi.useFakeTimers()
+    let alive = true
+    const signals: NodeJS.Signals[] = []
+    vi.spyOn(process, 'kill').mockImplementation((_pid, signal) => {
+      if (signal === 0 && !alive) {
+        throw Object.assign(new Error('missing'), { code: 'ESRCH' })
+      }
+      if (signal === 'SIGTERM' || signal === 'SIGKILL') signals.push(signal)
+      if (signal === 'SIGKILL') alive = false
+      return true
+    })
+    const child = new FakeChild()
+    const supervisor = supervise('/tmp/agent-data')
+    supervisor.watch(child as unknown as ChildProcess)
+    child.exit(0)
+
+    const stopped = supervisor.stop(1)
+    await vi.advanceTimersByTimeAsync(3000)
+
+    await expect(stopped).resolves.toBe(1)
+    expect(signals).toEqual(['SIGTERM', 'SIGKILL'])
+    expect(rm).toHaveBeenCalledWith('/tmp/agent-data', {
+      force: true,
+      recursive: true
+    })
+  })
+
+  it('preserves data when a process group survives escalation', async () => {
+    vi.useFakeTimers()
+    vi.spyOn(process, 'kill').mockReturnValue(true)
+    const child = new FakeChild()
+    const supervisor = supervise('/tmp/agent-data')
+    supervisor.watch(child as unknown as ChildProcess)
+    child.exit(0)
+
+    const stopped = expect(supervisor.stop(1)).rejects.toThrow(
+      'Process groups 100 are still running; preserved /tmp/agent-data'
+    )
+    await vi.advanceTimersByTimeAsync(3000)
+
+    await stopped
+    expect(rm).not.toHaveBeenCalled()
   })
 })

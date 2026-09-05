@@ -25,13 +25,36 @@ function hasExited(child: ChildProcess): boolean {
   return child.exitCode !== null || child.signalCode !== null
 }
 
-function stopGroup(child: ChildProcess, signal: NodeJS.Signals): void {
-  if (child.pid === undefined || hasExited(child)) return
+function isMissingProcess(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === 'ESRCH'
+  )
+}
+
+function groupIsAlive(child: ChildProcess): boolean {
+  if (child.pid === undefined) return false
+  if (process.platform === 'win32') return !hasExited(child)
   try {
-    if (process.platform === 'win32') child.kill(signal)
-    else process.kill(-child.pid, signal)
-  } catch {
-    child.kill(signal)
+    process.kill(-child.pid, 0)
+    return true
+  } catch (error) {
+    return !isMissingProcess(error)
+  }
+}
+
+function stopGroup(child: ChildProcess, signal: NodeJS.Signals): void {
+  if (child.pid === undefined) return
+  if (process.platform === 'win32') {
+    if (!hasExited(child)) child.kill(signal)
+    return
+  }
+  try {
+    process.kill(-child.pid, signal)
+  } catch (error) {
+    if (!isMissingProcess(error) && !hasExited(child)) child.kill(signal)
   }
 }
 
@@ -48,6 +71,15 @@ async function waitForExit(
     new Promise<void>((resolveExit) => child.once('exit', () => resolveExit())),
     wait(timeoutMs)
   ])
+}
+
+async function waitForGroupExit(
+  child: ChildProcess,
+  timeoutMs: number
+): Promise<void> {
+  if (process.platform === 'win32') return await waitForExit(child, timeoutMs)
+  const deadline = Date.now() + timeoutMs
+  while (groupIsAlive(child) && Date.now() < deadline) await wait(50)
 }
 
 export async function waitForHttp(
@@ -113,15 +145,28 @@ export function supervise(dataDir: string) {
       if (stopping) return exitCode
       stopping = true
       const newestFirst = [...children].reverse()
-      for (const child of newestFirst) stopGroup(child, 'SIGTERM')
-      await Promise.all(newestFirst.map((child) => waitForExit(child, 2000)))
-      for (const child of newestFirst) {
-        if (!hasExited(child)) stopGroup(child, 'SIGKILL')
+      try {
+        for (const child of newestFirst) stopGroup(child, 'SIGTERM')
+        await Promise.all(
+          newestFirst.map((child) => waitForGroupExit(child, 2000))
+        )
+        for (const child of newestFirst) {
+          if (groupIsAlive(child)) stopGroup(child, 'SIGKILL')
+        }
+        await Promise.all(
+          newestFirst.map((child) => waitForGroupExit(child, 1000))
+        )
+        const liveGroups = newestFirst.filter(groupIsAlive)
+        if (liveGroups.length > 0) {
+          throw new Error(
+            `Process groups ${liveGroups.map((child) => child.pid).join(', ')} are still running; preserved ${dataDir}`
+          )
+        }
+        await rm(dataDir, { force: true, recursive: true })
+      } finally {
+        process.removeListener('SIGINT', onSigint)
+        process.removeListener('SIGTERM', onSigterm)
       }
-      await Promise.all(newestFirst.map((child) => waitForExit(child, 1000)))
-      await rm(dataDir, { force: true, recursive: true })
-      process.removeListener('SIGINT', onSigint)
-      process.removeListener('SIGTERM', onSigterm)
       return exitCode
     },
     watch: (child: ChildProcess) => {
