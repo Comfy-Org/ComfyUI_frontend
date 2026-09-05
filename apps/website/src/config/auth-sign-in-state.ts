@@ -8,7 +8,7 @@ import { classifyAuthError } from '@comfyorg/auth-core/firebaseAuthError'
 
 import type { TranslationKey } from '../i18n/translations'
 
-export type AuthSignInProvider = 'google' | 'github'
+export type AuthSignInProvider = 'google' | 'github' | 'email'
 
 export type AuthSignInState =
   | { readonly step: 'idle' }
@@ -23,7 +23,7 @@ export type AuthSignInState =
 
 export type AuthSignInEvent =
   | { readonly type: 'signInStarted'; readonly provider: AuthSignInProvider }
-  | { readonly type: 'popupSucceeded'; readonly email: string }
+  | { readonly type: 'credentialSucceeded'; readonly email: string }
   | { readonly type: 'signInFailed'; readonly error: unknown }
   | { readonly type: 'provisioningFailed'; readonly email: string }
   | { readonly type: 'userRestored'; readonly email: string }
@@ -43,6 +43,23 @@ const ERROR_KEYS: Record<
   unknown: 'auth.signIn.error.generic'
 }
 
+/**
+ * Email failures a visitor can act on get their own copy. Firebase collapses
+ * wrong-password and user-not-found into invalid-credential when email
+ * enumeration protection is on, so all three read the same.
+ */
+const EMAIL_ERROR_KEYS: Partial<Record<string, TranslationKey>> = {
+  'auth/invalid-credential': 'auth.signIn.error.invalidCredentials',
+  'auth/wrong-password': 'auth.signIn.error.invalidCredentials',
+  'auth/user-not-found': 'auth.signIn.error.invalidCredentials',
+  'auth/invalid-email': 'auth.signIn.error.invalidCredentials',
+  // Deliberate UX tradeoff: signup identifies an existing account so the
+  // visitor can switch to sign-in. Password reset itself remains neutral and
+  // never reveals whether an address exists.
+  'auth/email-already-in-use': 'auth.signIn.error.emailInUse',
+  'auth/too-many-requests': 'auth.signIn.error.tooManyRequests'
+}
+
 export function authSignInTransition(
   state: AuthSignInState,
   event: AuthSignInEvent
@@ -53,13 +70,19 @@ export function authSignInTransition(
       return state.step === 'pending' || state.step === 'minting'
         ? state
         : { step: 'pending', provider: event.provider }
-    case 'popupSucceeded':
+    case 'credentialSucceeded':
       return { step: 'minting', email: event.email }
-    case 'signInFailed':
+    case 'signInFailed': {
+      const classified = classifyAuthError(event.error)
+      const emailKey =
+        classified.kind === 'auth'
+          ? EMAIL_ERROR_KEYS[classified.code]
+          : undefined
       return {
         step: 'error',
-        messageKey: ERROR_KEYS[classifyAuthError(event.error).kind]
+        messageKey: emailKey ?? ERROR_KEYS[classified.kind]
       }
+    }
     case 'provisioningFailed':
       return {
         step: 'signedIn',

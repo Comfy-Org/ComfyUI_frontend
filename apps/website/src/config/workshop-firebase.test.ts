@@ -22,12 +22,27 @@ describe('provisionCustomer', () => {
   it('bounds the POST with an abort signal so a hung request cannot strand sign-in', async () => {
     const fetchImpl = vi.fn(async () => new Response(null, { status: 201 }))
 
-    await provisionCustomer(user, fetchImpl)
+    await provisionCustomer(user, { fetchImpl })
 
     const [, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit]
     expect(
       init.signal,
       'a provisioning POST without an abort signal hangs sign-in forever'
     ).toBeInstanceOf(AbortSignal)
+  })
+
+  it('sends the Turnstile token using the customer API wire name', async () => {
+    const fetchImpl = vi.fn(async () => new Response(null, { status: 201 }))
+
+    await provisionCustomer(user, {
+      turnstileToken: 'cf-token',
+      fetchImpl
+    })
+
+    const [, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit]
+    expect(JSON.parse(String(init.body))).toEqual({
+      signup_source: 'comfy-workshop',
+      turnstile_token: 'cf-token'
+    })
   })
 })

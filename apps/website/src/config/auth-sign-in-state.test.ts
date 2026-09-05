@@ -23,9 +23,9 @@ describe('authSignInTransition', () => {
     ).toBe(started)
   })
 
-  it('mints a workspace session after the popup succeeds', () => {
+  it('mints a workspace session after authentication succeeds', () => {
     const minting = authSignInTransition(pending, {
-      type: 'popupSucceeded',
+      type: 'credentialSucceeded',
       email: 'a@b.co'
     })
     expect(minting).toEqual({ step: 'minting', email: 'a@b.co' })
@@ -98,6 +98,21 @@ describe('authSignInTransition', () => {
       'a non-Firebase failure',
       new Error('customers 500'),
       'auth.signIn.error.generic'
+    ],
+    [
+      'a wrong email/password pair',
+      { code: 'auth/invalid-credential', message: 'x' },
+      'auth.signIn.error.invalidCredentials'
+    ],
+    [
+      'an email already registered',
+      { code: 'auth/email-already-in-use', message: 'x' },
+      'auth.signIn.error.emailInUse'
+    ],
+    [
+      'a rate-limited account',
+      { code: 'auth/too-many-requests', message: 'x' },
+      'auth.signIn.error.tooManyRequests'
     ]
   ] as const)('maps %s to its message key', ([, error, messageKey]) => {
     expect(

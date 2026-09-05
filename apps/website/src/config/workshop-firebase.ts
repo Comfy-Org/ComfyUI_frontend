@@ -16,11 +16,13 @@ import {
   GoogleAuthProvider,
   getAuth,
   onAuthStateChanged,
-  signInWithPopup,
-  signOut
+  signInWithPopup
 } from 'firebase/auth'
 
-import { socialSignInWithProvisioning } from '@comfyorg/auth-core/provisioning'
+import {
+  signUpWithProvisioning,
+  socialSignInWithProvisioning
+} from '@comfyorg/auth-core/provisioning'
 
 import {
   WORKSHOP_FIREBASE_OPTIONS,
@@ -70,10 +72,16 @@ export function isWorkshopProvisioningError(
   return error instanceof WorkshopProvisioningError
 }
 
+interface ProvisionCustomerOptions {
+  readonly turnstileToken?: string
+  readonly fetchImpl?: typeof fetch
+}
+
 export async function provisionCustomer(
   user: ProvisionableUser,
-  fetchImpl: typeof fetch = globalThis.fetch
+  options: ProvisionCustomerOptions = {}
 ): Promise<void> {
+  const { turnstileToken, fetchImpl = globalThis.fetch } = options
   const token = await user.getIdToken()
   const response = await fetchImpl(`${WORKSHOP_ROUTER_BASE_URL}/customers`, {
     method: 'POST',
@@ -81,7 +89,10 @@ export async function provisionCustomer(
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ signup_source: 'comfy-workshop' }),
+    body: JSON.stringify({
+      signup_source: 'comfy-workshop',
+      ...(turnstileToken ? { turnstile_token: turnstileToken } : {})
+    }),
     signal: AbortSignal.timeout(WORKSHOP_PROVISION_TIMEOUT_MS)
   })
   if (!isCustomerProvisioned(response.status, response.ok)) {
@@ -117,8 +128,64 @@ export function signInWorkshopWithGitHub(): Promise<UserCredential> {
   return socialSignIn(new GithubAuthProvider())
 }
 
-export function signOutWorkshop(): Promise<void> {
-  return signOut(workshopAuth())
+export async function signInWorkshopWithEmail(
+  email: string,
+  password: string
+): Promise<UserCredential> {
+  const [auth, { signInWithEmailAndPassword }] = await Promise.all([
+    workshopAuth(),
+    import('firebase/auth')
+  ])
+  // Sign-in provisions too, mirroring the platform app: an account created
+  // elsewhere may reach billing surfaces here first.
+  return socialSignInWithProvisioning({
+    signIn: () => signInWithEmailAndPassword(auth, email, password),
+    provisionCustomer: (credential) => provisionCustomer(credential.user)
+  })
+}
+
+/**
+ * Creation and provisioning as one sequence: the tested auth-core rollback
+ * deletes the just-created Firebase user when provisioning fails, so a
+ * rejected Turnstile token can never orphan an account that then bricks
+ * every retry with email-already-in-use.
+ */
+export async function signUpWorkshopWithEmail(
+  email: string,
+  password: string,
+  turnstileToken?: string
+): Promise<UserCredential> {
+  const [auth, { createUserWithEmailAndPassword }] = await Promise.all([
+    workshopAuth(),
+    import('firebase/auth')
+  ])
+  return signUpWithProvisioning({
+    createUser: () => createUserWithEmailAndPassword(auth, email, password),
+    provisionCustomer: (credential) =>
+      provisionCustomer(credential.user, { turnstileToken }),
+    onRollbackFailure: (error) => {
+      console.warn(
+        'Failed to roll back orphaned Firebase user after customer creation failed',
+        error
+      )
+    }
+  })
+}
+
+export async function sendWorkshopPasswordReset(email: string): Promise<void> {
+  const [auth, { sendPasswordResetEmail }] = await Promise.all([
+    workshopAuth(),
+    import('firebase/auth')
+  ])
+  return sendPasswordResetEmail(auth, email)
+}
+
+export async function signOutWorkshop(): Promise<void> {
+  const [auth, { signOut }] = await Promise.all([
+    workshopAuth(),
+    import('firebase/auth')
+  ])
+  return signOut(auth)
 }
 
 /** Fires with the restored user (or null) once Firebase settles, then on every change. */

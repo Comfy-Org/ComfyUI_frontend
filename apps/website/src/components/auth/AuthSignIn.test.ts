@@ -12,6 +12,9 @@ const handles = vi.hoisted(() => ({
   signOut: vi.fn(),
   google: vi.fn(),
   github: vi.fn(),
+  emailSignIn: vi.fn(),
+  emailSignUp: vi.fn(),
+  turnstileReset: vi.fn(),
   isProvisioningError: vi.fn()
 }))
 
@@ -19,12 +22,31 @@ vi.mock('../../scripts/posthog', async () => {
   const { ref } = await import('vue')
   const flag = ref(true)
   handles.flag = flag
-  return { useWorkshopAuthFlag: () => flag }
+  return {
+    useWorkshopAuthFlag: () => flag,
+    useWorkshopTurnstileMode: () => ref('shadow')
+  }
+})
+
+vi.mock('@comfyorg/auth-core/TurnstileWidget.vue', async () => {
+  const { defineComponent, h, onMounted } = await import('vue')
+  return {
+    default: defineComponent({
+      emits: ['update:token', 'update:unavailable'],
+      setup(_, { emit, expose }) {
+        expose({ reset: handles.turnstileReset })
+        onMounted(() => emit('update:token', 'cf-token'))
+        return () => h('div', { 'data-testid': 'turnstile' })
+      }
+    })
+  }
 })
 
 vi.mock('../../config/workshop-firebase', () => ({
   signInWorkshopWithGoogle: handles.google,
   signInWorkshopWithGitHub: handles.github,
+  signInWorkshopWithEmail: handles.emailSignIn,
+  signUpWorkshopWithEmail: handles.emailSignUp,
   signOutWorkshop: handles.signOut,
   isWorkshopProvisioningError: handles.isProvisioningError
 }))
@@ -52,6 +74,9 @@ beforeEach(() => {
   handles.signOut.mockReset().mockResolvedValue(undefined)
   handles.google.mockReset()
   handles.github.mockReset()
+  handles.emailSignIn.mockReset()
+  handles.emailSignUp.mockReset()
+  handles.turnstileReset.mockReset()
   handles.isProvisioningError.mockReset().mockReturnValue(false)
   window.history.replaceState({}, '', '/')
 })
@@ -126,6 +151,42 @@ describe('AuthSignIn', () => {
       .click(screen.getByRole('button', { name: /continue with github/i }))
 
     expect(await screen.findByRole('alert')).toBeTruthy()
+  })
+
+  it('discards a spent Turnstile token when email signup fails', async () => {
+    handles.emailSignUp.mockRejectedValue({
+      code: 'auth/network-request-failed',
+      message: 'x'
+    })
+    render(AuthSignIn, { props: { mode: 'signUp' } })
+    const user = userEvent.setup()
+
+    await user.type(screen.getByLabelText('Email'), 'user@example.com')
+    await user.type(screen.getByLabelText('Password'), 'Password1!')
+    await user.type(screen.getByLabelText('Confirm password'), 'Password1!')
+    await user.click(screen.getByRole('button', { name: /create account/i }))
+
+    await waitFor(() => expect(handles.emailSignUp).toHaveBeenCalledOnce())
+    expect(handles.emailSignUp).toHaveBeenCalledWith(
+      'user@example.com',
+      'Password1!',
+      'cf-token'
+    )
+    expect(handles.turnstileReset).toHaveBeenCalledOnce()
+  })
+
+  it('keeps a safe return destination through the forgot-password flow', async () => {
+    window.history.replaceState(
+      {},
+      '',
+      '/login/?returnTo=%2Fworkshop%2Fmodels%2Fexample%2F'
+    )
+    render(AuthSignIn)
+
+    const link = await screen.findByRole('link', { name: /forgot password/i })
+    expect(link.getAttribute('href')).toBe(
+      '/forgot-password/?returnTo=%2Fworkshop%2Fmodels%2Fexample%2F'
+    )
   })
 
   it('keeps the signed-in identity visible when provisioning fails', async () => {

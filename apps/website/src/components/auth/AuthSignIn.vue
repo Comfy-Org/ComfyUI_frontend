@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref, watch } from 'vue'
+import { onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
 
 import SocialAuthButtons from '@comfyorg/auth-core/SocialAuthButtons.vue'
 
@@ -15,6 +15,7 @@ import { useWorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { useWorkshopAuthFlag } from '../../scripts/posthog'
+import AuthEmailForm from './AuthEmailForm.vue'
 
 const { mode = 'signIn', locale = 'en' } = defineProps<{
   /** Same flow either way for social providers; only the copy differs. */
@@ -30,6 +31,16 @@ const {
 } = useWorkshopSession()
 const state = ref<AuthSignInState>({ step: 'idle' })
 const loadWorkshopFirebase = () => import('../../config/workshop-firebase')
+type WorkshopFirebase = Awaited<ReturnType<typeof loadWorkshopFirebase>>
+type AuthenticatedUser = WorkshopSessionUser & {
+  readonly email: string | null
+  readonly displayName: string | null
+}
+const emailForm =
+  useTemplateRef<InstanceType<typeof AuthEmailForm>>('emailForm')
+const forgotPasswordHref = ref('/forgot-password/')
+const signInHref = ref('/login/')
+const signUpHref = ref('/signup/')
 
 function dispatch(event: AuthSignInEvent) {
   state.value = authSignInTransition(state.value, event)
@@ -52,22 +63,29 @@ async function runMint(currentUser?: WorkshopSessionUser): Promise<void> {
   }
 }
 
-async function signInWith(provider: AuthSignInProvider) {
+async function completeSignIn(
+  provider: AuthSignInProvider,
+  authenticate: (
+    firebase: WorkshopFirebase
+  ) => Promise<{ user: AuthenticatedUser }>
+) {
   if (state.value.step === 'pending' || state.value.step === 'minting') return
   dispatch({ type: 'signInStarted', provider })
   let firebase: Awaited<ReturnType<typeof loadWorkshopFirebase>> | undefined
   try {
     firebase = await loadWorkshopFirebase()
-    const credential =
-      provider === 'google'
-        ? await firebase.signInWorkshopWithGoogle()
-        : await firebase.signInWorkshopWithGitHub()
+    const credential = await authenticate(firebase)
     dispatch({
-      type: 'popupSucceeded',
+      type: 'credentialSucceeded',
       email: credential.user.email ?? credential.user.displayName ?? ''
     })
     await runMint(credential.user)
   } catch (error) {
+    if (provider === 'email' && mode === 'signUp') {
+      // Turnstile tokens are single-use. Any failed attempt consumes this
+      // token, so require a fresh challenge before another submission.
+      emailForm.value?.resetTurnstile()
+    }
     if (firebase?.isWorkshopProvisioningError(error)) {
       dispatch({
         type: 'provisioningFailed',
@@ -77,6 +95,33 @@ async function signInWith(provider: AuthSignInProvider) {
       dispatch({ type: 'signInFailed', error })
     }
   }
+}
+
+function signInWith(provider: 'google' | 'github') {
+  return completeSignIn(provider, (firebase) =>
+    provider === 'google'
+      ? firebase.signInWorkshopWithGoogle()
+      : firebase.signInWorkshopWithGitHub()
+  )
+}
+
+function submitEmail(credentials: {
+  email: string
+  password: string
+  turnstileToken?: string
+}) {
+  return completeSignIn('email', (firebase) =>
+    mode === 'signUp'
+      ? firebase.signUpWorkshopWithEmail(
+          credentials.email,
+          credentials.password,
+          credentials.turnstileToken
+        )
+      : firebase.signInWorkshopWithEmail(
+          credentials.email,
+          credentials.password
+        )
+  )
 }
 
 async function retryMint(): Promise<void> {
@@ -114,6 +159,15 @@ const stopUserWatch = watch(
   { immediate: true }
 )
 onBeforeUnmount(stopUserWatch)
+
+onMounted(() => {
+  const destination = requestedReturnPath(window.location.search)
+  if (!destination) return
+  const query = `?returnTo=${encodeURIComponent(destination)}`
+  forgotPasswordHref.value = `/forgot-password/${query}`
+  signInHref.value = `/login/${query}`
+  signUpHref.value = `/signup/${query}`
+})
 </script>
 
 <template>
@@ -186,6 +240,24 @@ onBeforeUnmount(stopUserWatch)
         />
       </div>
 
+      <div
+        class="my-6 flex items-center gap-3 text-xs text-primary-comfy-canvas/45 uppercase"
+        aria-hidden="true"
+      >
+        <span class="h-px flex-1 bg-primary-comfy-canvas/15"></span>
+        {{ t('auth.signIn.or', locale) }}
+        <span class="h-px flex-1 bg-primary-comfy-canvas/15"></span>
+      </div>
+
+      <AuthEmailForm
+        ref="emailForm"
+        :mode="mode"
+        :locale="locale"
+        :disabled="state.step === 'pending' || state.step === 'minting'"
+        :forgot-password-href="forgotPasswordHref"
+        @submit="submitEmail"
+      />
+
       <p
         v-if="state.step === 'pending' || state.step === 'minting'"
         aria-live="polite"
@@ -209,13 +281,19 @@ onBeforeUnmount(stopUserWatch)
       <p class="mt-6 text-center text-sm text-primary-comfy-canvas/55">
         <template v-if="mode === 'signUp'">
           {{ t('auth.signUp.haveAccount', locale) }}
-          <a href="/login/" class="text-primary-comfy-yellow hover:underline">
+          <a
+            :href="signInHref"
+            class="text-primary-comfy-yellow hover:underline"
+          >
             {{ t('auth.signUp.signInLink', locale) }}
           </a>
         </template>
         <template v-else>
           {{ t('auth.signIn.newHere', locale) }}
-          <a href="/signup/" class="text-primary-comfy-yellow hover:underline">
+          <a
+            :href="signUpHref"
+            class="text-primary-comfy-yellow hover:underline"
+          >
             {{ t('auth.signIn.signUpLink', locale) }}
           </a>
         </template>
