@@ -52,6 +52,17 @@ export type ComfyWidgetConstructor = (
   widgetName?: string
 ) => { widget: IBaseWidget; minWidth?: number; minHeight?: number }
 
+export type CustomComfyWidgetConstructor = (
+  ...args: Parameters<ComfyWidgetConstructor>
+) =>
+  | {
+      widget?: IBaseWidget
+      minWidth?: number
+      minHeight?: number
+    }
+  | IBaseWidget
+  | undefined
+
 /**
  * Transforms a V2 widget constructor to a V1 widget constructor.
  * @param widgetConstructorV2 The V2 widget constructor to transform.
@@ -181,7 +192,7 @@ export function addValueControlWidgets(
     widgets.push(comboFilter)
   }
 
-  function applyWidgetControl(isPartialExecution: boolean | undefined) {
+  function applyWidgetControl() {
     if (
       node.inputs?.some(
         (input, index) =>
@@ -194,8 +205,7 @@ export function addValueControlWidgets(
     const next = nextValueForLinkedTarget({
       target: targetWidget,
       linkedWidgets: targetWidget.linkedWidgets,
-      nodeId: node.id,
-      isPartialExecution
+      nodeId: node.id
     })
     if (next === undefined) return
 
@@ -203,19 +213,19 @@ export function addValueControlWidgets(
     targetWidget.callback?.(next)
   }
 
-  valueControl.beforeQueued = ({ isPartialExecution } = {}) => {
+  valueControl.beforeQueued = () => {
     if (controlValueRunBefore()) {
       // Don't run on first execution
       if (valueControl[HAS_EXECUTED]) {
-        applyWidgetControl(isPartialExecution)
+        applyWidgetControl()
       }
     }
     valueControl[HAS_EXECUTED] = true
   }
 
-  valueControl.afterQueued = ({ isPartialExecution } = {}) => {
+  valueControl.afterQueued = () => {
     if (!controlValueRunBefore()) {
-      applyWidgetControl(isPartialExecution)
+      applyWidgetControl()
     }
   }
 

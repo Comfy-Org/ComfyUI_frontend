@@ -18,7 +18,7 @@ function def(overrides: Partial<ComfyNodeDefV1>): ComfyNodeDefV1 {
     output_node: false,
     python_module: 'test.module',
     ...overrides
-  } as ComfyNodeDefV1
+  }
 }
 
 // `KSampler` is chosen because the shipped zh bundle translates both fields and

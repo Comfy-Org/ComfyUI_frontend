@@ -1,12 +1,13 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import SubscriptionRequiredDialogContentUnified from './SubscriptionRequiredDialogContentUnified.vue'
 
 const mockHandleSubscribeTeamClick = vi.fn()
+const mockHandleBackToPricing = vi.fn()
 const mockHandleSubscribeClick = vi.fn()
 const mockInvalidateQuote = vi.fn()
 const mockIsInPersonalWorkspace = ref(false)
@@ -34,22 +35,19 @@ vi.mock('@/platform/workspace/composables/useSubscriptionCheckout', () => ({
     activeCheckoutActionUrl: ref(null),
     authenticationState: ref(null),
     authenticationError: ref(null),
-    canRetryAuthentication: ref(false),
-    isAuthenticating: ref(false),
     reconciliationOperationId: ref(null),
     isPolling: ref(false),
     isTeamCheckout: computed(() => false),
     previewVariant: computed(() => mockPreviewVariant.value),
     handleSubscribeClick: mockHandleSubscribeClick,
     handleSubscribeTeamClick: mockHandleSubscribeTeamClick,
-    handleBackToPricing: vi.fn(),
+    handleBackToPricing: mockHandleBackToPricing,
     handleSuccessClose: vi.fn(),
     handleAddCreditCard: vi.fn(),
     handleConfirmTransition: vi.fn(),
     handleTeamSubscribe: vi.fn(),
     handleSubscriptionPayment: vi.fn(),
     handleTeamSubscriptionPayment: vi.fn(),
-    retryPaymentAuthentication: vi.fn(),
     applyPromotionCode: vi.fn(),
     invalidateQuote: mockInvalidateQuote,
     handleResubscribe: vi.fn()
@@ -112,9 +110,12 @@ function renderComponent(props: Record<string, unknown> = {}) {
             <span data-testid="payment-element-enabled">{{ usePaymentElement }}</span>
             <button data-testid="saved-method-btn" @click="$emit('update:selectedSavedMethodId', 'pm_other')">Saved method</button>
             <button data-testid="new-method-btn" @click="$emit('changePaymentMethod')">New method</button>
+            <button aria-label="Back" @click="$emit('back')">Back</button>
           </div>`
         },
-        SubscriptionTransitionPreviewWorkspace: { template: '<div />' },
+        SubscriptionTransitionPreviewWorkspace: {
+          template: '<div data-testid="transition-preview" />'
+        },
         SubscriptionSuccessWorkspace: { template: '<div />' }
       }
     }
@@ -248,4 +249,41 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
     })
     expect(mockHandleSubscribeClick).not.toHaveBeenCalled()
   })
+
+  it.for(['team-change', 'personal-change'])(
+    'withholds the transition confirm until its preview arrives (%s)',
+    async (previewVariant) => {
+      mockCheckoutStep.value = 'preview'
+      mockPreviewVariant.value = previewVariant
+      mockSelectedTeamStop.value = TEAM_PAYLOAD.stop
+      mockPreviewData.value = null
+
+      renderComponent()
+
+      expect(screen.queryByTestId('transition-preview')).toBeNull()
+
+      mockPreviewData.value = { amount_due_cents: 1600, currency: 'usd' }
+      await nextTick()
+
+      expect(screen.getByTestId('transition-preview')).toBeTruthy()
+    }
+  )
+
+  it.for([true, false])(
+    'leaves the confirm step its own header and back action (embedded: %s)',
+    async (embeddedCheckoutEnabled) => {
+      mockCheckoutStep.value = 'preview'
+      mockPreviewVariant.value = 'team-new'
+      mockSelectedTeamStop.value = TEAM_PAYLOAD.stop
+
+      renderComponent({ embeddedCheckoutEnabled })
+
+      expect(screen.queryByText('Choose your plan')).toBeNull()
+      expect(screen.getAllByRole('button', { name: 'Back' })).toHaveLength(1)
+
+      await userEvent.click(screen.getByRole('button', { name: 'Back' }))
+
+      expect(mockHandleBackToPricing).toHaveBeenCalled()
+    }
+  )
 })

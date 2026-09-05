@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 
-import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphGroup } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
   shouldHideLinkedCoreMediaInputActions,
@@ -173,9 +173,7 @@ export function useMoreOptionsMenu() {
     const states = computeSelectionFlags()
 
     // Detect single group selection context (and no nodes explicitly selected)
-    const selectedGroups = selectedItems.value.filter(
-      isLGraphGroup
-    ) as LGraphGroup[]
+    const selectedGroups = selectedItems.value.filter(isLGraphGroup)
     const groupContext: LGraphGroup | null =
       selectedGroups.length === 1 && selectedNodes.value.length === 0
         ? selectedGroups[0]
@@ -184,7 +182,7 @@ export function useMoreOptionsMenu() {
 
     // For single node selection, also get LiteGraph menu items to merge
     const litegraphOptions: MenuOption[] = []
-    const node: LGraphNode | undefined = selectedNodes.value[0]
+    const node = selectedNodes.value.at(0)
     const hideLinkedInputActions = node
       ? shouldHideLinkedCoreMediaInputActions(node)
       : false
@@ -199,6 +197,7 @@ export function useMoreOptionsMenu() {
     if (hideLinkedInputPreview) unavailableCoreMediaActionKinds.add('preview')
     if (
       selectedNodes.value.length === 1 &&
+      node &&
       !groupContext &&
       canvasStore.canvas
     ) {
@@ -295,11 +294,11 @@ export function useMoreOptionsMenu() {
     }
     const [widgetName] = hoveredWidget.value ?? []
     const widget = node?.widgets?.find((w) => w.name === widgetName)
-    if (widget) {
+    if (node && widget) {
       const widgetOptions = convertContextMenuToOptions(
         getExtraOptionsForWidget(node, widget)
       )
-      if (widgetOptions) {
+      if (widgetOptions.length > 0) {
         options.push(...widgetOptions)
         options.push({ type: 'divider' })
       }

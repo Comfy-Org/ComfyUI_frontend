@@ -52,7 +52,7 @@ interface StrippedPrefix {
 function stripLegacyPrefixes(sourceWidgetName: string): StrippedPrefix {
   let remaining = sourceWidgetName
   let deepestPrefixId: NodeId | undefined
-  while (true) {
+  for (;;) {
     const match = LEGACY_PROXY_WIDGET_PREFIX_PATTERN.exec(remaining)
     if (!match) return { sourceWidgetName: remaining, deepestPrefixId }
     deepestPrefixId = toNodeId(match[1])
@@ -341,7 +341,7 @@ function classify(
   }
 
   if (sourceNode.type === PRIMITIVE_NODE_TYPE) {
-    const bypassedTo = sourceNode.properties?.[PROXY_BYPASS_MARKER_PROPERTY]
+    const bypassedTo = sourceNode.properties[PROXY_BYPASS_MARKER_PROPERTY]
     if (typeof bypassedTo === 'string') {
       const existingInput = hostNode.inputs.find(
         (input) => input.name === bypassedTo
@@ -486,7 +486,8 @@ function repairCreateSubgraphInput(
     return { ok: false, reason: 'missingSubgraphInput' }
   }
 
-  const slotType = String(slot.type ?? sourceWidget.type ?? '*')
+  // oxlint-disable-next-line typescript/no-unnecessary-condition -- legacy workflow slots may omit type at runtime
+  const slotType = String(slot.type ?? '*')
   const newSubgraphInput = addUniqueSubgraphInput(
     subgraph,
     sourceWidgetName,
@@ -543,7 +544,7 @@ function userRenamedTitle(primitiveNode: LGraphNode): string | undefined {
 function validateCohort(
   cohort: readonly PendingEntry[]
 ): CohortValidationOk | { ok: false } {
-  const first = cohort[0]
+  const first = cohort.at(0)
   if (!first || first.plan.kind !== 'primitiveBypass') return { ok: false }
   const { primitiveNodeId, sourceWidgetName } = first.plan
   for (const entry of cohort) {
@@ -603,15 +604,17 @@ function repairPrimitive(
   if (!targets?.length)
     return failPrimitive('no targets to reconnect', validated)
 
-  const primitiveOutput = primitiveNode.outputs?.[0]
+  const primitiveOutput = primitiveNode.outputs.at(0)
   if (!primitiveOutput) return failPrimitive('primitive has no output')
+  // oxlint-disable-next-line typescript/no-unnecessary-condition -- legacy workflow slots may omit type at runtime
   const primitiveOutputType = String(primitiveOutput.type ?? '*')
 
   for (const target of targets) {
     const targetNode = subgraph.getNodeById(target.targetNodeId)
     if (!targetNode) return failPrimitive('target node missing', target)
-    const targetSlot = targetNode.inputs?.[target.targetSlot]
+    const targetSlot = targetNode.inputs.at(target.targetSlot)
     if (!targetSlot) return failPrimitive('target slot missing', target)
+    // oxlint-disable-next-line typescript/no-unnecessary-condition -- legacy workflow slots may omit type at runtime
     const targetType = String(targetSlot.type ?? '*')
     if (
       targetType !== primitiveOutputType &&
@@ -656,7 +659,7 @@ function repairPrimitive(
       const targetNode = subgraph.getNodeById(target.targetNodeId)
       if (!targetNode)
         throw new Error(`target node ${target.targetNodeId} disappeared`)
-      const targetSlot = targetNode.inputs?.[target.targetSlot]
+      const targetSlot = targetNode.inputs.at(target.targetSlot)
       if (!targetSlot)
         throw new Error(`target slot ${target.targetSlot} disappeared`)
       const link = newSubgraphInput.connect(targetSlot, targetNode)
@@ -679,7 +682,7 @@ function repairPrimitive(
     } else {
       const primitiveValue = primitiveNode.widgets?.find(
         (w) => w.name === validated.sourceWidgetName
-      )?.value as TWidgetValue | undefined
+      )?.value
       if (primitiveValue !== undefined) {
         applyHostValueToInput(hostInput, {
           ...validated.uniqueEntries[0],
@@ -690,7 +693,6 @@ function repairPrimitive(
     }
   }
 
-  primitiveNode.properties ??= {}
   primitiveNode.properties[PROXY_BYPASS_MARKER_PROPERTY] = newSubgraphInput.name
 
   return {

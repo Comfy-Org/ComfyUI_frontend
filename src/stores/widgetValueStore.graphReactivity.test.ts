@@ -103,8 +103,8 @@ describe('Widget input link reactivity', () => {
   it('exposes linked widget input slots through the live node inputs', () => {
     const { node } = createWidgetInputGraph()
 
-    expect(node.inputs?.[0]?.widget?.name).toBe('prompt')
-    expect(node.inputs?.[0]?.link).not.toBeNull()
+    expect(node.inputs[0].widget?.name).toBe('prompt')
+    expect(node.inputs[0].link).not.toBeNull()
   })
 
   it('marks a widget input slot as linked when connected to a SubgraphInput', () => {
@@ -119,7 +119,7 @@ describe('Widget input link reactivity', () => {
 
     expect(subgraph.inputNode.slots[0].connect(input, node)).not.toBeNull()
 
-    expect(node.inputs?.[0]?.link).not.toBeNull()
+    expect(node.inputs[0].link).not.toBeNull()
     expect(
       linkedWidgetedInputs(node.id, node.inputs, graphScopeOf(subgraph)).map(
         (s) => s.name

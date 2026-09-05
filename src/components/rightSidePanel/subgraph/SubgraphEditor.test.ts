@@ -96,12 +96,12 @@ describe('SubgraphEditor', () => {
     expect(
       within(shown)
         .getAllByTestId('subgraph-widget-label')
-        .map((el) => el.textContent?.trim())
+        .map((el) => el.textContent.trim())
     ).toEqual(['first', 'second', '$$canvas-image-preview'])
     expect(
       within(screen.getByTestId('draggable-list'))
         .getAllByTestId('subgraph-widget-label')
-        .map((el) => el.textContent?.trim())
+        .map((el) => el.textContent.trim())
     ).toEqual(['first', 'second'])
     expect(
       within(shown).getAllByTestId('subgraph-widget-drag-handle')
@@ -157,7 +157,7 @@ describe('SubgraphEditor', () => {
     expect(
       within(shown)
         .getAllByTestId('subgraph-widget-label')
-        .map((el) => el.textContent?.trim())
+        .map((el) => el.textContent.trim())
     ).toEqual(['first', 'second'])
 
     const rowFor = (sourceNode: LGraphNode) => {
@@ -180,7 +180,7 @@ describe('SubgraphEditor', () => {
     expect(
       within(shown)
         .getAllByTestId('subgraph-widget-label')
-        .map((el) => el.textContent?.trim())
+        .map((el) => el.textContent.trim())
     ).toEqual(['second', 'first'])
   })
 
@@ -216,7 +216,7 @@ describe('SubgraphEditor', () => {
     expect(
       within(shown)
         .getAllByTestId('subgraph-widget-label')
-        .map((el) => el.textContent?.trim())
+        .map((el) => el.textContent.trim())
     ).toEqual(['first'])
   })
 

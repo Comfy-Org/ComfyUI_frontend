@@ -2,7 +2,6 @@ import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { TestIds } from '@e2e/fixtures/selectors'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import {
   getPromotedWidgetNames,
@@ -539,14 +538,14 @@ test.describe(
             return await comfyPage.page.evaluate(() => {
               const graph = window.app!.canvas.graph
               if (!graph || !('inputNode' in graph)) return null
-              return graph.inputs?.[0]?.name ?? null
+              return graph.inputs.at(0)?.name ?? null
             })
           })
           .not.toBeNull()
         const removedSlotName = await comfyPage.page.evaluate(() => {
           const graph = window.app!.canvas.graph
           if (!graph || !('inputNode' in graph)) return null
-          return graph.inputs?.[0]?.name ?? null
+          return graph.inputs.at(0)?.name ?? null
         })
 
         await comfyPage.subgraph.removeSlot('input')
@@ -610,7 +609,7 @@ test.describe(
       })
     })
 
-    test.fail(
+    test(
       'Promoted text widget is removed when source node is deleted inside the subgraph',
       { tag: '@vue-nodes' },
       async ({ comfyPage }) => {
@@ -634,7 +633,7 @@ test.describe(
           .poll(() => getPromotedWidgetNames(comfyPage, subgraphNodeId))
           .toContain('text')
         await expect(
-          subgraphNode.getByTestId(TestIds.widgets.domWidgetTextarea)
+          subgraphNode.getByRole('textbox', { name: 'text' })
         ).toBeVisible()
 
         await comfyPage.vueNodes.enterSubgraph(subgraphNodeId)
@@ -651,7 +650,7 @@ test.describe(
           comfyPage.vueNodes.getNodeLocator(subgraphNodeId)
         await expect(subgraphNodeAfter).toBeVisible()
         await expect(
-          subgraphNodeAfter.getByTestId(TestIds.widgets.domWidgetTextarea)
+          subgraphNodeAfter.getByRole('textbox', { name: 'text' })
         ).toBeHidden()
       }
     )

@@ -6298,6 +6298,42 @@
       }
     }
   },
+  "GeminiVideoOmniV2": {
+    "description": "使用 Google Gemini Omni Flash 模型，根據文字提示生成含音訊的影片。可選擇提供參考圖片及／或影片，以引導或編輯結果。請直接在提示詞中描述所需長度（3-10 秒）。",
+    "display_name": "Google Gemini Omni（影片）",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於生成影片的 Gemini 影片模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "長寬比"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_task_type": {
+        "name": "任務類型"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "GenerateTracks",
     "inputs": {
@@ -6364,6 +6400,22 @@
       }
     }
   },
+  "Get3DComponents": {
+    "description": "將 3D 模型檔案（GLB、GLTF、OBJ、STL）解析為可編輯的 MESH，供網格處理節點（簡化、重新網格化、UV 展開、烘焙、...）使用。所有場景節點／基本圖元會在套用其變換後合併為單一網格；紋理與材質係數取自第一個材質。MeshToFile3D 的對應節點。",
+    "display_name": "取得 3D 元件",
+    "inputs": {
+      "model_3d": {
+        "name": "3D 模型",
+        "tooltip": "來自 Load 3D 或其他 3D 節點的 3D 模型檔案。不支援 FBX/USDZ，請先轉換為 GLB。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "網格",
+        "tooltip": null
+      }
+    }
+  },
   "GetICLoRAParameters": {
     "description": "從已載入 LoRA 模型的 safetensors 中提取 IC-LoRA 參數，並將其輸出給 LTXVAddGuide（例如 reference_downscale_factor）。",
     "display_name": "取得 IC-LoRA 參數",
@@ -6381,7 +6433,7 @@
     }
   },
   "GetImageSize": {
-    "description": "回傳圖片的寬度和高度，並保持原樣傳遞。",
+    "description": "傳回圖片的寬度、高度與批次大小。",
     "display_name": "取得圖片尺寸",
     "inputs": {
       "image": {
@@ -7081,7 +7133,7 @@
       },
       "mode": {
         "name": "模式",
-        "tooltip": "「speed」速度較快；「precision」可產生更高品質的唇形同步，但價格為兩倍。"
+        "tooltip": "'speed' 較快；'precision' 可產生品質更高的唇形同步，但費用較高。"
       },
       "output_language": {
         "name": "目標語言",
@@ -7149,12 +7201,12 @@
     }
   },
   "HiDreamO1ReferenceImages": {
-    "description": "附加 1-10 張參考圖像於條件設定，一張用於編輯指令，多張用於主題個人化。",
+    "description": "將依序排列的參考影像附加至正向與負向條件設定。",
     "display_name": "HiDream-O1 參考圖像",
     "inputs": {
       "images": {
         "name": "參考圖像",
-        "tooltip": "參考圖像。1 張 = 編輯指令；2-10 張 = 多重參考。"
+        "tooltip": "參考影像會依數字插槽順序使用。"
       },
       "negative": {
         "name": "負向"
@@ -12658,6 +12710,84 @@
       }
     }
   },
+  "MetaMuseImageEditApi": {
+    "description": "使用 Meta 的 Muse Image 模型，依文字提示編輯或合併最多 10 張參考圖片。",
+    "display_name": "Meta Muse 圖片編輯",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "要使用的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_enable_image_search": {
+        "name": "enable_image_search"
+      },
+      "model_enable_shell": {
+        "name": "enable_shell"
+      },
+      "model_enable_web_search": {
+        "name": "enable_web_search"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_reasoning_strength": {
+        "name": "reasoning_strength"
+      },
+      "model_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MetaMuseImageTextToImageApi": {
+    "description": "使用 Meta 的 Muse Image 模型從文字提示產生圖片；該模型會在算繪前對提示詞進行推理。",
+    "display_name": "Meta Muse 圖片文字轉圖片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "要使用的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_enable_image_search": {
+        "name": "enable_image_search"
+      },
+      "model_enable_shell": {
+        "name": "enable_shell"
+      },
+      "model_enable_web_search": {
+        "name": "enable_web_search"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_reasoning_strength": {
+        "name": "reasoning_strength"
+      },
+      "model_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MiniMaxH3AddGuide": {
     "description": "在 MiniMax H3 影片的任意影格錨定影像、短片段、音訊，或含其音軌的片段。串聯多個節點即可錨定多個影格。",
     "display_name": "為 MiniMax H3 新增引導",
@@ -12692,6 +12822,46 @@
     "outputs": {
       "0": {
         "name": "positive",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3FunControlNetApply": {
+    "description": "將 MiniMax H3 Fun ControlNet 作為模型修補套用至文字轉影片模型。",
+    "display_name": "套用 MiniMax H3 Fun ControlNet",
+    "inputs": {
+      "control_video": {
+        "name": "control_video"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "1 標示要重新生成的區域。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "遮罩後方的影片；僅在提供遮罩時讀取。"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -12740,7 +12910,8 @@
     "display_name": "MiniMax H3 參考轉影片",
     "inputs": {
       "audio_vae": {
-        "name": "audio_vae"
+        "name": "audio_vae",
+        "tooltip": "音訊 VAE。若未提供，參考音訊將僅用於條件化文字編碼器。"
       },
       "clip": {
         "name": "clip"
@@ -12772,7 +12943,8 @@
         "name": "參考影片"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "影片 VAE。若未提供，參考圖片／影片將僅用於條件化文字編碼器。"
       },
       "width": {
         "name": "寬度"
@@ -12881,7 +13053,7 @@
     }
   },
   "MinimaxHailuo03FirstLastFrameNode": {
-    "description": "使用 MiniMax H3 模型，根據首幀圖像與（可選）末幀圖像生成影片。影片長寬比將依據所提供的圖像。",
+    "description": "使用 MiniMax H3 模型，根據首幀圖片及可選的末幀圖片生成影片。影片的長寬比會依照提供的圖片。",
     "display_name": "MiniMax H3 首末幀生成影片",
     "inputs": {
       "control_after_generate": {
@@ -12924,7 +13096,7 @@
     }
   },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "使用 MiniMax H3 模型，根據參考圖片、影片與音訊生成影片。在提示詞中依照順序引用參考資料：'Image 1'、'Image 2'、'Video 1'、'Audio 1'，依此類推。",
+    "description": "使用 MiniMax H3 模型，根據參考圖片、影片及音訊生成影片。在提示詞中請依序引用參考資料：「Image 1」、「Image 2」、「Video 1」、「Audio 1」等。",
     "display_name": "MiniMax H3 參考生成影片",
     "inputs": {
       "control_after_generate": {
@@ -16596,6 +16768,238 @@
       }
     }
   },
+  "PixverseV6ExtendVideoNode": {
+    "description": "使用 PixVerse 延續既有影片，亦可選擇使用原生音訊。來源影片須少於 40 秒，且任一邊不得超過 1920px。輸出會保留來源的解析度，因此品質設定影響的是延續內容的渲染效果，而非影格尺寸。",
+    "display_name": "PixVerse V6 延伸影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "模型與生成設定。"
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_style": {
+        "name": "風格"
+      },
+      "video": {
+        "name": "影片",
+        "tooltip": "要延續的影片。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FirstLastFrameNode": {
+    "description": "使用 PixVerse 生成從第一影格轉換至最後影格的影片，亦可選擇使用原生音訊。輸出會保留第一影格的長寬比。",
+    "display_name": "PixVerse V6 首尾影格轉影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "模型與生成設定。"
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_style": {
+        "name": "風格"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FusionVideoNode": {
+    "description": "使用 PixVerse 將參考主體、背景與影片合成為影片。請在提示詞中以名稱指定要放入場景的參考資料，例如「{'@'}Subject1 穿越 {'@'}Background1」。連接參考影片會將模型切換為 Omni 模式，輸出長度會與最長的參考影片相同。",
+    "display_name": "PixVerse V6 融合（參考資料轉影片）",
+    "inputs": {
+      "backgrounds": {
+        "name": "背景",
+        "tooltip": "主體要放入其中的場景參考圖片。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "模型與生成設定。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration_seconds": {
+        "name": "持續時間（秒）"
+      },
+      "model_generate_audio": {
+        "name": "產生音訊"
+      },
+      "model_negative_prompt": {
+        "name": "負面提示詞"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_style": {
+        "name": "風格"
+      },
+      "subjects": {
+        "name": "主體",
+        "tooltip": "要放入場景中的主體參考圖片。"
+      },
+      "videos": {
+        "name": "影片",
+        "tooltip": "用於借用主體、動作、構圖或風格的參考影片。最多兩部，總長度最多 15 秒。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6ImageToVideoNode": {
+    "description": "使用 PixVerse 將圖像製作成動畫，可選擇加入原生音訊。輸出會保留輸入圖像的長寬比。",
+    "display_name": "PixVerse V6 圖像轉影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "image": {
+        "name": "圖像"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "模型與生成設定。"
+      },
+      "model_duration_seconds": {
+        "name": "持續時間（秒）"
+      },
+      "model_generate_audio": {
+        "name": "產生音訊"
+      },
+      "model_multi_clip": {
+        "name": "多片段"
+      },
+      "model_negative_prompt": {
+        "name": "負面提示詞"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_style": {
+        "name": "風格"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6TextToVideoNode": {
+    "description": "使用 PixVerse 根據文字提示詞生成影片，可選擇加入原生音訊。",
+    "display_name": "PixVerse V6 文字轉影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "模型與生成設定。"
+      },
+      "model_aspect_ratio": {
+        "name": "長寬比"
+      },
+      "model_duration_seconds": {
+        "name": "持續時間（秒）"
+      },
+      "model_generate_audio": {
+        "name": "產生音訊"
+      },
+      "model_multi_clip": {
+        "name": "多片段"
+      },
+      "model_negative_prompt": {
+        "name": "負面提示詞"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_style": {
+        "name": "風格"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PolyexponentialScheduler": {
     "display_name": "多指數排程器",
     "inputs": {
@@ -16648,7 +17052,7 @@
   },
   "Preview3D": {
     "description": "預覽 3D 模型檔案，無需儲存至 ComfyUI 輸出目錄。",
-    "display_name": "3D 預覽",
+    "display_name": "預覽 3D 與動畫（已淘汰）",
     "inputs": {
       "bg_image": {
         "name": "bg_image"
@@ -17540,7 +17944,7 @@
     }
   },
   "RecraftStyleV3LogoRaster": {
-    "description": "選擇 realistic_image 風格及可選的子風格。",
+    "description": "選擇 logo_raster 風格與子風格。",
     "display_name": "Recraft Style - 標誌點陣圖",
     "inputs": {
       "substyle": {
@@ -17651,6 +18055,26 @@
       }
     }
   },
+  "RecraftV4CreateStyleNode": {
+    "description": "從 1 至 10 張參考圖片建立可重複使用的 Recraft V4 風格。傳回的 style_id 可用於相同輸出類型的所有 Recraft V4 與 V4.1 模型。所有圖片的總大小上限為 10 MB。",
+    "display_name": "Recraft V4 建立風格",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "定義風格的參考圖片。相似的參考圖片可提高匹配精確度，多樣化的參考圖片則可擴大風格範圍。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "建立此風格所適用的模型。Standard 與 Pro 共用同一個風格池：點陣風格可搭配所有 Recraft V4 與 V4.1 點陣模型，向量風格（*_vector）可搭配所有 V4 與 V4.1 向量模型。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_id",
+        "tooltip": null
+      }
+    }
+  },
   "RecraftV4TextToImageNode": {
     "description": "使用 Recraft V4 或 V4 Pro 模型產生圖像。",
     "display_name": "Recraft V4 文字轉圖像",
@@ -17660,7 +18084,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "用於生成的模型。"
+        "tooltip": "用於生成的模型。recraftv4_styles 模型專為風格一致的生成而設計，且一律需要 style_id 或 style_references。"
       },
       "model_size": {
         "name": "size"
@@ -17684,10 +18108,26 @@
       "seed": {
         "name": "seed",
         "tooltip": "決定節點是否重新執行的種子值；實際結果無論種子如何都不保證可重現。"
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "要套用的 Recraft V4 風格 UUID，例如來自 Recraft V4 建立風格節點或先前執行的 style_id 輸出。無法與 style_references 合併使用。"
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "遵循風格的程度：precise 會精確重現細節，flexible 會匹配整體外觀。僅在提供風格時使用。"
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "用於即時建立風格的參考圖片，會在生成費用之外另行計費。建立的風格會以 style_id 傳回供重複使用。無法與 style_id 合併使用。"
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -17701,7 +18141,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "用於生成的模型。"
+        "tooltip": "用於生成的模型。recraftv4_styles 模型專為風格一致的生成而設計，且一律需要 style_id 或 style_references。"
       },
       "model_size": {
         "name": "size"
@@ -17725,10 +18165,26 @@
       "seed": {
         "name": "seed",
         "tooltip": "決定節點是否重新執行的種子值；實際結果無論種子如何都不保證可重現。"
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "要套用的 Recraft V4 向量風格 UUID，例如來自 Recraft V4 建立風格節點或先前執行的 style_id 輸出。無法與 style_references 合併使用。"
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "遵循風格的程度：precise 會精確重現細節，flexible 會匹配整體外觀。僅在提供風格時使用。"
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "用於即時建立向量風格的參考圖片，會在生成費用之外另行計費。建立的風格會以 style_id 傳回供重複使用。無法與 style_id 合併使用。"
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -18305,6 +18761,10 @@
       "multiple": {
         "name": "倍數",
         "tooltip": "將所選解析度設為結果的最接近倍數。"
+      },
+      "preview": {
+        "name": "預覽",
+        "tooltip": "即時計算出的輸出解析度預覽。"
       }
     },
     "outputs": {
@@ -20785,6 +21245,23 @@
       }
     }
   },
+  "SenseNovaSamplingOptions": {
+    "description": "設定 SenseNova 流程偏移。",
+    "display_name": "SenseNova 取樣選項",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SetClipHooks": {
     "display_name": "設定 CLIP 掛鉤",
     "inputs": {
@@ -23093,10 +23570,12 @@
         "name": "原地動畫"
       },
       "bake": {
-        "name": "烘焙"
+        "name": "烘焙",
+        "tooltip": "將進階材質烘焙至基礎紋理，以提升相容性。"
       },
       "export_orientation": {
-        "name": "匯出方向"
+        "name": "匯出方向",
+        "tooltip": "匯出模型的前向軸。default 會保留 Tripo 的 +x。"
       },
       "export_vertex_colors": {
         "name": "匯出頂點色"
@@ -23105,13 +23584,15 @@
         "name": "面數限制"
       },
       "fbx_preset": {
-        "name": "FBX 預設"
+        "name": "FBX 預設",
+        "tooltip": "FBX 相容性預設。bake_scale 會將縮放變換烘焙至幾何體。"
       },
       "flatten_bottom": {
         "name": "底部平整化"
       },
       "flatten_bottom_threshold": {
-        "name": "平整化閾值"
+        "name": "平整化閾值",
+        "tooltip": "與 flatten_bottom 搭配使用的壓平深度。"
       },
       "force_symmetry": {
         "name": "強制對稱"
@@ -23144,15 +23625,66 @@
         "name": "紋理尺寸"
       },
       "with_animation": {
-        "name": "包含動畫"
+        "name": "包含動畫",
+        "tooltip": "保留已綁定骨架或重定向模型的骨架與動畫。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": "所需格式的已轉換模型。Tripo 提供的 OBJ 為 ZIP 封存檔（網格、材質與紋理）。"
+      }
+    }
+  },
+  "TripoEditMultiviewNode": {
+    "description": "使用各視角的文字指示，編輯 Tripo: Image to Multiview 的結果視圖。未提供指示的視圖會保持不變。將圖片輸入 Tripo: Multiview to Model；編輯過的集合無法再次編輯。",
+    "display_name": "Tripo：編輯多視角",
+    "inputs": {
+      "back_prompt": {
+        "name": "back_prompt"
+      },
+      "front_prompt": {
+        "name": "front_prompt"
+      },
+      "left_prompt": {
+        "name": "left_prompt"
+      },
+      "multiview_task_id": {
+        "name": "multiview_task_id"
+      },
+      "right_prompt": {
+        "name": "right_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "前方",
+        "tooltip": null
+      },
+      "1": {
+        "name": "左側",
+        "tooltip": null
+      },
+      "2": {
+        "name": "後方",
+        "tooltip": null
+      },
+      "3": {
+        "name": "右側",
+        "tooltip": null
       }
     }
   },
   "TripoImageToModelNode": {
     "display_name": "Tripo：圖像轉模型",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "將具有貼圖的模型依公尺單位縮放至其真實世界尺寸。Tripo 會將尺寸儲存為模型的場景變換，並在模型轉換、綁定骨架或重新定向時套用；未啟用 texture 時會忽略。"
+      },
       "face_limit": {
-        "name": "面數限制"
+        "name": "面數限制",
+        "tooltip": "最大面數。-1 讓 Tripo 自動選擇（v3.x standard 約 140 萬面，detailed 約 200 萬面）。Tripo 會在背景限制：v2.5 為 500,000，四邊形網格為 150,000。"
       },
       "geometry_quality": {
         "name": "幾何品質"
@@ -23171,22 +23703,31 @@
         "name": "方向"
       },
       "pbr": {
-        "name": "PBR"
+        "name": "PBR",
+        "tooltip": "PBR 材質貼圖（基礎色、金屬度、粗糙度、法線）。需要啟用 texture。"
       },
       "quad": {
-        "name": "四邊形"
+        "name": "四邊形",
+        "tooltip": "四邊形網格輸出。Tripo 會將四邊形網格以 FBX 提供，因此結果會出現在 FBX 輸出，而 GLB 輸出會保持空白。"
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "具有乾淨、手工製作風格拓撲的低多邊形網格（500 至 20,000 面；四邊形為 500 至 10,000 面）。最適合簡單主體；複雜主體可能失敗。"
       },
       "style": {
-        "name": "風格"
+        "name": "風格",
+        "tooltip": "Tripo 已不再支援並會忽略此項。為了相容舊版工作流程而保留。"
       },
       "texture": {
-        "name": "紋理"
+        "name": "紋理",
+        "tooltip": "產生貼圖。關閉時僅傳回幾何體並忽略 pbr。"
       },
       "texture_alignment": {
         "name": "紋理對齊"
       },
       "texture_quality": {
-        "name": "紋理品質"
+        "name": "紋理品質",
+        "tooltip": "detailed = HD 貼圖，extreme = 8K Ultra 貼圖。"
       },
       "texture_seed": {
         "name": "紋理種子"
@@ -23203,6 +23744,41 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "啟用 quad 時為空白。"
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "僅在啟用 quad 時才會填入。"
+      }
+    }
+  },
+  "TripoImageToMultiviewNode": {
+    "description": "產生主體的前方、左側、後方與右側視圖。將它們輸入 Tripo：多視角轉模型，或先使用 Tripo：編輯多視角進行細修。",
+    "display_name": "Tripo：影像轉多視角",
+    "inputs": {
+      "image": {
+        "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "多視角 task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "前方",
+        "tooltip": null
+      },
+      "2": {
+        "name": "左側",
+        "tooltip": null
+      },
+      "3": {
+        "name": "後方",
+        "tooltip": null
+      },
+      "4": {
+        "name": "右側",
         "tooltip": null
       }
     }
@@ -23223,11 +23799,43 @@
       }
     }
   },
+  "TripoMeshCompleteNode": {
+    "description": "補全已分割模型的部件並修復缺失區域。",
+    "display_name": "Tripo：補全網格部件",
+    "inputs": {
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "要補全的部件名稱，以逗號分隔。留空會補全所有部件。"
+      },
+      "segment_task_id": {
+        "name": "segment_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "模型 task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo：多視角轉模型",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "將具紋理模型縮放至其以公尺為單位的真實尺寸。Tripo 會將尺寸儲存為模型的場景變換，並在模型轉換、綁定骨架或重定向時烘焙至模型中；未使用紋理時會忽略此設定。"
+      },
       "face_limit": {
-        "name": "face_limit"
+        "name": "face_limit",
+        "tooltip": "最大面數。-1 讓 Tripo 自動選擇（v3.x standard 約 140 萬面，detailed 約 200 萬面）。Tripo 會在背景限制：v2.5 為 500,000，四邊形網格為 150,000。"
       },
       "geometry_quality": {
         "name": "幾何品質"
@@ -23255,20 +23863,27 @@
         "name": "orientation"
       },
       "pbr": {
-        "name": "pbr"
+        "name": "pbr",
+        "tooltip": "PBR 材質貼圖（基礎色、金屬度、粗糙度、法線）。需要啟用 texture。"
       },
       "quad": {
         "name": "quad",
-        "tooltip": "此參數已棄用，無任何作用。"
+        "tooltip": "四邊形網格輸出。Tripo 會將四邊形網格以 FBX 提供，因此結果會出現在 FBX 輸出，而 GLB 輸出會保持空白。"
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "具有乾淨、手工製作風格拓撲的低多邊形網格（500 至 20,000 面；四邊形為 500 至 10,000 面）。最適合簡單主體；複雜主體可能失敗。"
       },
       "texture": {
-        "name": "texture"
+        "name": "texture",
+        "tooltip": "產生貼圖。關閉時僅傳回幾何體並忽略 pbr。"
       },
       "texture_alignment": {
         "name": "texture_alignment"
       },
       "texture_quality": {
-        "name": "texture_quality"
+        "name": "texture_quality",
+        "tooltip": "detailed = HD 貼圖，extreme = 8K Ultra 貼圖。"
       },
       "texture_seed": {
         "name": "texture_seed"
@@ -23285,7 +23900,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "啟用 quad 時為空。"
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "僅在啟用 quad 時才會填入。"
       }
     }
   },
@@ -23299,7 +23918,7 @@
       },
       "compress_geometry": {
         "name": "壓縮幾何",
-        "tooltip": "套用幾何壓縮。編輯前請先解壓縮。"
+        "tooltip": "套用 meshopt 幾何壓縮 (EXT_meshopt_compression)。檔案較小，但 ComfyUI 的 3D 預覽無法顯示；編輯前請先解壓縮。"
       },
       "enable_image_autofix": {
         "name": "啟用圖片自動修正",
@@ -23349,7 +23968,7 @@
       },
       "compress_geometry": {
         "name": "壓縮幾何",
-        "tooltip": "套用幾何壓縮。編輯前請先解壓縮。"
+        "tooltip": "套用 meshopt 幾何壓縮 (EXT_meshopt_compression)。檔案較小，但 ComfyUI 的 3D 預覽無法顯示；編輯前請先解壓縮。"
       },
       "export_uv": {
         "name": "匯出 UV",
@@ -23408,7 +24027,7 @@
       },
       "compress_geometry": {
         "name": "壓縮幾何",
-        "tooltip": "套用幾何壓縮。編輯前請先解壓縮。"
+        "tooltip": "套用 meshopt 幾何壓縮 (EXT_meshopt_compression)。檔案較小，但 ComfyUI 的 3D 預覽無法顯示；編輯前請先解壓縮。"
       },
       "export_uv": {
         "name": "匯出 UV",
@@ -23452,38 +24071,27 @@
       }
     }
   },
-  "TripoRefineNode": {
-    "description": "僅精修由 v1.4 Tripo 模型建立的草稿模型。",
-    "display_name": "Tripo: 精修草稿模型",
-    "inputs": {
-      "model_task_id": {
-        "name": "model_task_id",
-        "tooltip": "必須是 v1.4 Tripo 模型"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "模型檔案",
-        "tooltip": null
-      },
-      "1": {
-        "name": "模型任務 ID",
-        "tooltip": null
-      },
-      "2": {
-        "name": "GLB",
-        "tooltip": null
-      }
-    }
-  },
   "TripoRetargetNode": {
     "display_name": "Tripo: 重新定位骨架模型",
     "inputs": {
+      "animate_in_place": {
+        "name": "animate_in_place",
+        "tooltip": "原地播放動畫，不產生根節點位移。"
+      },
       "animation": {
-        "name": "animation"
+        "name": "animation",
+        "tooltip": "preset:* 動畫可搭配兩種骨架模型使用；preset:biped:* 動畫需要使用 model v1.0-20240301 建立的骨架。"
+      },
+      "export_with_geometry": {
+        "name": "export_with_geometry",
+        "tooltip": "在匯出中包含網格；關閉時僅匯出動畫骨架。"
       },
       "original_model_task_id": {
         "name": "original_model_task_id"
+      },
+      "out_format": {
+        "name": "out_format",
+        "tooltip": "輸出檔案格式；結果會出現在對應的輸出端。"
       }
     },
     "outputs": {
@@ -23497,15 +24105,97 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "當 out_format 為 glb 時會填入。"
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "當 out_format 為 fbx 時會填入。"
+      }
+    }
+  },
+  "TripoRetopologyNode": {
+    "description": "從高多邊形模型重建具有乾淨拓撲的低多邊形網格。",
+    "display_name": "Tripo：重新拓撲",
+    "inputs": {
+      "bake": {
+        "name": "bake",
+        "tooltip": "將來源紋理烘焙到低多邊形網格上。"
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "目標面數：500 至 20,000 個三角形，或 500 至 10,000 個四邊形。-1 讓 Tripo 自行選擇。"
+      },
+      "model_task_id": {
+        "name": "model_task_id"
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "來自 Tripo: Segment Model 的以逗號分隔零件名稱。留空則處理整個模型。"
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "四邊形網格輸出。Tripo 會以 FBX 提供四邊形網格，因此結果會出現在 FBX 輸出，GLB 輸出會維持空白。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": "啟用 quad 時為空。"
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "僅在啟用 quad 時才會填入。"
+      }
+    }
+  },
+  "TripoRigCheckNode": {
+    "description": "檢查模型是否可進行骨架綁定，以及 Tripo 建議的骨架類型。",
+    "display_name": "Tripo：骨架綁定檢查",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "riggable",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_type",
+        "tooltip": "建議的骨架：biped、quadruped、hexapod、octopod、avian、serpentine 或 aquatic；模型無法綁定骨架時為 'others'。"
       }
     }
   },
   "TripoRigNode": {
     "display_name": "Tripo: 骨架模型",
     "inputs": {
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "v1.0：僅限人形（雙足）角色，提供 90 種以上動畫預設集。v2.5：非人形生物（四足、六足、八足、鳥類、蛇形、水生）。"
+      },
       "original_model_task_id": {
         "name": "原始模型任務ID"
+      },
+      "out_format": {
+        "name": "out_format",
+        "tooltip": "輸出檔案格式；結果會出現在相符的輸出端。"
+      },
+      "rig_type": {
+        "name": "rig_type",
+        "tooltip": "骨架類型。'auto' 會先執行 Tripo 的免費骨架檢查，並使用建議的類型。"
+      },
+      "spec": {
+        "name": "spec",
+        "tooltip": "骨骼命名：Tripo 原生或相容於 Mixamo。Tripo 無法將其動畫預設集重新定向至使用 mixamo spec 建立的 v1.0 骨架；請使用 tripo 搭配 Tripo：重新定向已綁定骨架的模型。"
       }
     },
     "outputs": {
@@ -23519,7 +24209,38 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "當 out_format 為 glb 時會填入。"
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "當 out_format 為 fbx 時會填入。"
+      }
+    }
+  },
+  "TripoSegmentNode": {
+    "description": "將模型分割為多個部分。部分名稱可傳入 Tripo：完成網格部分、Tripo：重新拓撲及 Tripo：轉換模型。",
+    "display_name": "Tripo：分割模型",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "segment task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "part_names",
+        "tooltip": "以逗號分隔的部分名稱。"
       }
     }
   },
@@ -23621,8 +24342,13 @@
   "TripoTextToModelNode": {
     "display_name": "Tripo：文字轉模型",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "將已貼圖模型縮放為以公尺為單位的實際尺寸。Tripo 會將尺寸儲存為模型的場景變換，並在模型轉換、綁定骨架或重新定向時套用；未使用貼圖時會忽略。"
+      },
       "face_limit": {
-        "name": "面數限制"
+        "name": "面數限制",
+        "tooltip": "最大面數。-1 讓 Tripo 自動選擇（v3.x standard 約為 140 萬面，detailed 為 200 萬面）。Tripo 會靜默限制：v2.5 為 500,000，四邊形網格為 150,000。"
       },
       "geometry_quality": {
         "name": "幾何品質"
@@ -23637,25 +24363,35 @@
         "name": "模型版本"
       },
       "negative_prompt": {
-        "name": "負向提示詞"
+        "name": "負向提示詞",
+        "tooltip": "最多 255 個字元。"
       },
       "pbr": {
-        "name": "PBR材質"
+        "name": "PBR材質",
+        "tooltip": "PBR 材質貼圖（基礎顏色、金屬度、粗糙度、法線）。需要啟用 texture。"
       },
       "prompt": {
         "name": "提示詞"
       },
       "quad": {
-        "name": "四邊形"
+        "name": "四邊形",
+        "tooltip": "四邊形網格輸出。Tripo 會以 FBX 提供四邊形網格，因此結果會出現在 FBX 輸出端，而 GLB 輸出端會保持空白。"
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "具備乾淨手工風格拓撲的低多邊形網格（500-20,000 面，四邊形為 500-10,000 面）。最適合簡單主體；複雜主體可能會失敗。"
       },
       "style": {
-        "name": "風格"
+        "name": "風格",
+        "tooltip": "Tripo 已不再支援且會忽略。為了舊版工作流程而保留。"
       },
       "texture": {
-        "name": "紋理"
+        "name": "紋理",
+        "tooltip": "產生貼圖。關閉時僅回傳幾何模型，並忽略 pbr。"
       },
       "texture_quality": {
-        "name": "紋理品質"
+        "name": "紋理品質",
+        "tooltip": "detailed = HD 貼圖，extreme = 8K Ultra 貼圖。"
       },
       "texture_seed": {
         "name": "紋理種子"
@@ -23672,7 +24408,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "啟用 quad 時為空白。"
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "僅在啟用 quad 時填入。"
       }
     }
   },
@@ -23682,21 +24422,40 @@
       "model_task_id": {
         "name": "模型任務ID"
       },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "貼圖模型：v3.0 用於以 v3.x 產生的網格，v2.5 用於以 v2.5 產生的網格。"
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "要套用紋理的 Tripo：分割模型零件名稱，以逗號分隔。留空會為每個零件產生紋理。"
+      },
       "pbr": {
-        "name": "PBR材質"
+        "name": "PBR材質",
+        "tooltip": "PBR 材質貼圖（基礎顏色、金屬度、粗糙度、法線）；關閉時會產生純色貼圖。"
+      },
+      "reference": {
+        "name": "參考",
+        "tooltip": "用於引導紋理的參考影像。無法與 texture_prompt 或 style_image 併用。"
+      },
+      "style_image": {
+        "name": "style_image",
+        "tooltip": "紋理藝術風格的參考影像。僅與 texture_prompt 搭配使用。"
       },
       "texture": {
-        "name": "紋理"
+        "name": "紋理",
+        "tooltip": "忽略：此節點一律會產生貼圖。為了舊版工作流程而保留。"
       },
       "texture_alignment": {
         "name": "紋理對齊"
       },
       "texture_prompt": {
         "name": "texture_prompt",
-        "tooltip": "材質處理的選用文字指引。實際上，對於匯入的模型（Tripo：匯入模型）必須提供，因為這些模型沒有來源圖像可推斷顏色。"
+        "tooltip": "用於貼圖的可選文字引導。實務上匯入的模型（Tripo：匯入模型）必須提供，因其不含可供推斷顏色的來源影像。無法與參考影像併用。"
       },
       "texture_quality": {
-        "name": "紋理品質"
+        "name": "紋理品質",
+        "tooltip": "detailed = HD 貼圖，extreme = 8K Ultra 貼圖。"
       },
       "texture_seed": {
         "name": "紋理種子"
@@ -23713,7 +24472,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "若來源為四邊形網格或 FBX 匯入，則為空。"
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Tripo 會為四邊形網格與 FBX 匯入回傳 FBX；否則為空。"
       }
     }
   },
@@ -24405,61 +25168,11 @@
       },
       "resolution": {
         "name": "解析度",
-        "tooltip": "輸出影片解析度。veo-3.1-lite 與 veo-3.0 模型不支援 4K。"
+        "tooltip": "輸出影片解析度。veo-3.1-lite 模型不支援 4K。"
       },
       "seed": {
         "name": "種子值",
         "tooltip": "影片生成的種子值（0表示隨機）"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "VeoVideoGenerationNode": {
-    "description": "使用 Google 的 Veo API 根據文字提示生成影片",
-    "display_name": "Google Veo2 影片生成",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "長寬比",
-        "tooltip": "輸出影片的長寬比"
-      },
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "duration_seconds": {
-        "name": "持續秒數",
-        "tooltip": "輸出影片的秒數"
-      },
-      "enhance_prompt": {
-        "name": "增強提示詞",
-        "tooltip": "是否使用 AI 協助增強提示詞"
-      },
-      "image": {
-        "name": "影像",
-        "tooltip": "可選的參考圖片，用於引導影片生成"
-      },
-      "model": {
-        "name": "model",
-        "tooltip": "用於影片生成的 Veo 2 模型"
-      },
-      "negative_prompt": {
-        "name": "負向提示詞",
-        "tooltip": "用於引導影片中應避免內容的負面文字提示"
-      },
-      "person_generation": {
-        "name": "生成人物",
-        "tooltip": "是否允許在影片中生成人物"
-      },
-      "prompt": {
-        "name": "提示詞",
-        "tooltip": "影片的文字描述"
-      },
-      "seed": {
-        "name": "種子",
-        "tooltip": "影片生成的種子（0 為隨機）"
       }
     },
     "outputs": {
@@ -24482,6 +25195,23 @@
       "strict_duration": {
         "name": "嚴格時長",
         "tooltip": "若為 True，當指定時長無法達成時，將產生錯誤。"
+      },
+      "video": {
+        "name": "影片"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VideoCrop": {
+    "display_name": "裁切影片",
+    "inputs": {
+      "crop": {
+        "name": "裁切",
+        "tooltip": "以像素指定裁切區域。寬度／高度為零時保留完整影格。"
       },
       "video": {
         "name": "影片"
@@ -24594,6 +25324,27 @@
       },
       "model": {
         "name": "model"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "修剪影片（進階）",
+    "inputs": {
+      "strict_duration": {
+        "name": "嚴格持續時間",
+        "tooltip": "若為 True，當無法使用指定的持續時間時，將引發錯誤。"
+      },
+      "trim": {
+        "name": "修剪",
+        "tooltip": "使用起始／結束影格修剪範圍。"
+      },
+      "video": {
+        "name": "影片"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

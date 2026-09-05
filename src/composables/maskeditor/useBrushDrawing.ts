@@ -65,7 +65,6 @@ export function useBrushDrawing(initialSettings?: {
 
     if (
       isRgbLayer &&
-      currentTool &&
       (currentTool === Tools.Eraser || currentTool === Tools.PaintPen)
     ) {
       drawRgbShape(
@@ -114,7 +113,7 @@ export function useBrushDrawing(initialSettings?: {
       mask_ctx.fillStyle = blendMode
       mask_ctx.globalCompositeOperation = CompositionOperation.SourceOver
       rgb_ctx.globalCompositeOperation = CompositionOperation.SourceOver
-    } else if (compositionOperation === CompositionOperation.DestinationOut) {
+    } else {
       mask_ctx.globalCompositeOperation = CompositionOperation.DestinationOut
       rgb_ctx.globalCompositeOperation = CompositionOperation.DestinationOut
     }

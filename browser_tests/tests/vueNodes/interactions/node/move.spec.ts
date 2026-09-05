@@ -427,22 +427,24 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
       // Disable minimap (gets in way of the node on small screens)
       await comfyPage.settings.setSetting('Comfy.Minimap.Visible', false)
 
-      const loadCheckpointHeaderPos =
-        await getLoadCheckpointHeaderPos(comfyPage)
+      const [node] = await comfyPage.nodeOps.getNodeRefsByTitle('Save Image')
+      await node.centerOnNode()
+      const nodeHeaderPos = await getHeaderPos(comfyPage, 'Save Image')
       await comfyPage.canvasOps.panWithTouch(
         {
           x: 64,
           y: 64
         },
-        loadCheckpointHeaderPos
+        nodeHeaderPos,
+        10
       )
 
       await expect
-        .poll(() => getHeaderPos(comfyPage, 'Load Checkpoint').then((p) => p.x))
-        .toBeCloseTo(loadCheckpointHeaderPos.x + 64, 0)
+        .poll(() => getHeaderPos(comfyPage, 'Save Image').then((p) => p.x))
+        .toBeCloseTo(nodeHeaderPos.x + 64, 0)
       await expect
-        .poll(() => getHeaderPos(comfyPage, 'Load Checkpoint').then((p) => p.y))
-        .toBeCloseTo(loadCheckpointHeaderPos.y + 64, 0)
+        .poll(() => getHeaderPos(comfyPage, 'Save Image').then((p) => p.y))
+        .toBeCloseTo(nodeHeaderPos.y + 64, 0)
     }
   )
 })
