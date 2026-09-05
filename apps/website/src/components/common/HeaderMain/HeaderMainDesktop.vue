@@ -18,8 +18,11 @@ import NavColumn from './NavColumn.vue'
 import NavFeaturedCard from './NavFeaturedCard.vue'
 import NewBadge from './NewBadge.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
-const mainNavigation = getMainNavigation(locale)
+const { locale = 'en', showWorkshop = false } = defineProps<{
+  locale?: Locale
+  showWorkshop?: boolean
+}>()
+const mainNavigation = getMainNavigation(locale, showWorkshop)
 const currentPath = useCurrentPath()
 
 function isNavItemActive(navItem: NavItem, path: string): boolean {
