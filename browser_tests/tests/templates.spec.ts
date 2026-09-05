@@ -273,6 +273,28 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     }
   )
 
+  // Extension stylesheets are unlayered, and unlayered rules outrank every
+  // rule in a cascade layer, so a bare `.hidden` from a custom node beats our
+  // layered Tailwind display variants.
+  test('filter controls survive an extension stylesheet that defines .hidden', async ({
+    comfyPage
+  }) => {
+    await comfyPage.page.setViewportSize({ width: 1440, height: 900 })
+    await comfyPage.page.addStyleTag({ content: '.hidden { display: none }' })
+
+    await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
+    await expect(comfyPage.templates.content).toBeVisible()
+
+    await expect(comfyPage.templatesDialog.modelFilter).toBeVisible()
+    await expect(comfyPage.templatesDialog.mobileFiltersToggle).toBeHidden()
+    await expect(
+      comfyPage.templatesDialog.root.getByRole('heading', {
+        name: 'All Templates',
+        exact: true
+      })
+    ).toBeVisible()
+  })
+
   test(
     'template cards display overlay tags correctly',
     { tag: '@screenshot' },
