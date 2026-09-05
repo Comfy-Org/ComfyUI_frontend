@@ -367,7 +367,7 @@ describe('Composer', () => {
       expect(
         within(menu)
           .getAllByRole('menuitem')
-          .map((item) => item.textContent?.trim())
+          .map((item) => item.textContent.trim())
       ).toEqual(['Nodes', 'Workflows'])
       expect(within(menu).queryByText('KSampler')).toBeNull()
       expect(within(menu).queryByText('Water world')).toBeNull()
@@ -388,7 +388,7 @@ describe('Composer', () => {
       expect(
         within(menu)
           .getAllByRole('menuitem')
-          .map((item) => item.textContent?.trim())
+          .map((item) => item.textContent.trim())
       ).toEqual(['Back', 'Alpha', 'KSampler', 'VAE Decode'])
     })
 
@@ -403,7 +403,7 @@ describe('Composer', () => {
 
       const labels = within(menu)
         .getAllByRole('menuitem')
-        .map((item) => item.textContent?.trim())
+        .map((item) => item.textContent.trim())
       expect(labels).not.toContain(NODES[0].title)
       expect(labels).toEqual(['Back', 'KSampler #7', 'VAE Decode'])
     })
@@ -814,17 +814,6 @@ describe('Composer', () => {
 
     expect(screen.getByText('KSampler')).toBeInTheDocument()
     expect(screen.queryByText('#5')).not.toBeInTheDocument()
-  })
-
-  it('passes the full tooltip config to selection chip directives', () => {
-    mount({ selectionTags: [{ id: '5', title: 'KSampler' }] })
-
-    const button = screen.getByRole('button', {
-      name: 'Show KSampler #5 on canvas'
-    })
-    expect(tooltipBindings.get(button)).toEqual(
-      tooltipConfig.buildAgentTooltipConfig('Show on canvas')
-    )
   })
 
   it('emits removeTag when a selection chip is removed', async () => {

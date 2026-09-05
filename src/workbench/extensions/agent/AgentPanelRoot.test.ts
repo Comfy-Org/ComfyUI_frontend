@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import {
@@ -21,7 +23,6 @@ vi.hoisted(() => {
 })
 
 import { i18n } from '@/i18n'
-import { assetService } from '@/platform/assets/services/assetService'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { app } from '@/scripts/app'
@@ -3098,11 +3099,9 @@ describe('AgentPanelRoot workflow binding', () => {
     makeTab('wf-current')
     const other = addTab('workflows/other.json')
     useAgentWorkflowTabBindingStore().bind('wf-other', other.path)
-    mockMessagesEndpoint(
-      'wf-current',
-      { status: 404, body: { error: 'none' } },
-      [{ id: 'wf-remote', name: 'Remote workflow' }]
-    )
+    mockMessagesEndpoint('wf-current', [
+      { id: 'wf-remote', name: 'Remote workflow' }
+    ])
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await userEvent.type(screen.getByRole('textbox'), '@')
@@ -3120,11 +3119,7 @@ describe('AgentPanelRoot workflow binding', () => {
       isTemporary: true
     })
     const cloudWorkflows: { id: string; name: string }[] = []
-    mockMessagesEndpoint(
-      'wf-current',
-      { status: 404, body: { error: 'none' } },
-      cloudWorkflows
-    )
+    mockMessagesEndpoint('wf-current', cloudWorkflows)
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     const textbox = screen.getByRole('textbox')
@@ -3136,7 +3131,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     await userEvent.keyboard('{Escape}')
     await userEvent.clear(textbox)
-    savedLater.isTemporary = false
+    hostStores.workflow.getWorkflowByPath(savedLater.path)!.isTemporary = false
     cloudWorkflows.push({
       id: 'wf-video',
       name: 'video_minimax_h3_i2v'
