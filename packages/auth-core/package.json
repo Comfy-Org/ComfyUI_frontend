@@ -14,6 +14,7 @@
     "./TurnstileWidget.vue": "./src/TurnstileWidget.vue"
   },
   "scripts": {
+    "lint": "oxlint src --type-aware && eslint src",
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
@@ -25,6 +26,7 @@
   "devDependencies": {
     "@testing-library/vue": "catalog:",
     "typescript": "catalog:",
+    "vitest": "catalog:",
     "vue-tsc": "catalog:"
   }
 }
