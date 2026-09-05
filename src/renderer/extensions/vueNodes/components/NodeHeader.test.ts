@@ -140,6 +140,21 @@ describe('NodeHeader.vue', () => {
     expect(onCollapse).toHaveBeenCalled()
   })
 
+  it('does not bubble pointer down from the collapse button', async () => {
+    const { user } = renderHeader()
+    const onPointerDown = vi.fn()
+    screen
+      .getByTestId('node-header-1')
+      .addEventListener('pointerdown', onPointerDown)
+
+    await user.pointer({
+      keys: '[MouseLeft]',
+      target: screen.getByTestId('node-collapse-button')
+    })
+
+    expect(onPointerDown).not.toHaveBeenCalled()
+  })
+
   it('shows the current node title and updates when prop changes', async () => {
     const { rerender } = renderHeader({
       nodeData: makeNodeData({ title: 'Original' })

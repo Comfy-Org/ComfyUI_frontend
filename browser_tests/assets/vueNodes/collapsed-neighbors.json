@@ -1,0 +1,78 @@
+{
+  "id": "4050769c-f6e4-4ac0-9279-524c85509fa8",
+  "revision": 0,
+  "last_node_id": 39,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 37,
+      "type": "KSampler",
+      "pos": [300, 300],
+      "size": [428, 437],
+      "flags": { "collapsed": true },
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        { "name": "model", "type": "MODEL", "link": null },
+        { "name": "positive", "type": "CONDITIONING", "link": null },
+        { "name": "negative", "type": "CONDITIONING", "link": null },
+        { "name": "latent_image", "type": "LATENT", "link": null }
+      ],
+      "outputs": [{ "name": "LATENT", "type": "LATENT", "links": null }],
+      "properties": { "Node name for S&R": "KSampler" },
+      "widgets_values": [0, "randomize", 20, 8, "euler", "simple", 1]
+    },
+    {
+      "id": 38,
+      "type": "VAEDecode",
+      "pos": [529, 300],
+      "size": [225, 107],
+      "flags": { "collapsed": true },
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        { "name": "samples", "type": "LATENT", "link": null },
+        { "name": "vae", "type": "VAE", "link": null }
+      ],
+      "outputs": [{ "name": "IMAGE", "type": "IMAGE", "links": null }],
+      "properties": { "Node name for S&R": "VAEDecode" }
+    },
+    {
+      "id": 39,
+      "type": "CLIPTextEncode",
+      "pos": [758, 300],
+      "size": [240, 155],
+      "flags": { "collapsed": true },
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        { "name": "clip", "type": "CLIP", "link": null },
+        {
+          "name": "text",
+          "type": "STRING",
+          "widget": { "name": "text" },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": null
+        }
+      ],
+      "properties": { "Node name for S&R": "CLIPTextEncode" },
+      "widgets_values": [""]
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 1,
+      "offset": [0, 0]
+    }
+  },
+  "version": 0.4
+}

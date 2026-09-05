@@ -94,12 +94,12 @@
           <SlotConnectionDot
             v-if="hasInputs"
             multi
-            class="absolute left-0 -translate-x-1/2"
+            class="pointer-events-none absolute left-0 -translate-x-1/2"
           />
           <SlotConnectionDot
             v-if="nodeData.outputs.length"
             multi
-            class="absolute right-0 translate-x-1/2"
+            class="pointer-events-none absolute right-0 translate-x-1/2"
           />
           <NodeSlots :node-data unified />
         </template>
