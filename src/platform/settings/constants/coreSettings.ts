@@ -437,6 +437,14 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: 'title'
   },
   {
+    id: 'Comfy.ModelLibrary.HuggingFaceMirror',
+    name: 'HuggingFace mirror URL',
+    tooltip:
+      'Optional mirror for Hugging Face model downloads. Leave empty to use the official huggingface.co (e.g. https://hf-mirror.com). Applies to the "Download All missing models" workflow button and the file-size probe shown in the UI.',
+    type: 'text',
+    defaultValue: ''
+  },
+  {
     id: 'Comfy.Locale',
     name: 'Language',
     type: 'combo',

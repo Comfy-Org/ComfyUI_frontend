@@ -343,6 +343,7 @@ const zSettings = z.object({
   'Comfy.LinkRelease.Action': zLinkReleaseTriggerAction,
   'Comfy.LinkRelease.ActionShift': zLinkReleaseTriggerAction,
   'Comfy.ModelLibrary.AutoLoadAll': z.boolean(),
+  'Comfy.ModelLibrary.HuggingFaceMirror': z.string(),
   'Comfy.ModelLibrary.NameFormat': z.enum(['filename', 'title']),
   'Comfy.NodeSearchBoxImpl.NodePreview': z.boolean(),
   'Comfy.NodeSearchBoxImpl.FollowCursor': z.boolean(),
