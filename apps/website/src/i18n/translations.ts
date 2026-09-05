@@ -1,6 +1,19 @@
 type Locale = 'en' | 'zh-CN' | 'ja'
 
 const translations = {
+  'home.workshop.heading': {
+    en: 'Run any model, from one place',
+    'zh-CN': '在同一个地方运行任何模型'
+  },
+  'home.workshop.subheading': {
+    en: 'Hundreds of models from the labs building them, with their real inputs and the same API you would call from your own application.',
+    'zh-CN':
+      '汇集数百个来自各大实验室的模型，提供真实的输入参数，以及可在你自己的应用中调用的同一套 API。'
+  },
+  'home.workshop.browseAll': {
+    en: 'Browse all models',
+    'zh-CN': '浏览全部模型'
+  },
   'workshop.meta.title': {
     en: 'Comfy Workshop',
     'zh-CN': 'Comfy Workshop'
