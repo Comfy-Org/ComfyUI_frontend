@@ -192,6 +192,31 @@ describe('attachMintPortWiring', () => {
     expect(minted).toEqual([{ op: 'clear', removed_nodes: ['1', '2'] }])
   })
 
+  it('restores disconnect minting after an intentional clear throws', async () => {
+    const linkStore = useLinkStore()
+    const severed = topology(41)
+    linkStore.registerLink(ROOT_SCOPE, severed)
+    minted.length = 0
+
+    expect(() =>
+      wiring.runIntentionalClear(() => {
+        throw new Error('clear failed')
+      })
+    ).toThrow('clear failed')
+
+    linkStore.deleteLink(ROOT_SCOPE, severed)
+    await afterSweep()
+
+    expect(minted).toEqual([
+      {
+        op: 'disconnect',
+        link_id: toLinkId(41),
+        to_node: toNodeId(2),
+        to_slot: 3
+      }
+    ])
+  })
+
   it('mints a name-keyed set_widget with the pre-write value from the real store', () => {
     const widgetStore = useWidgetValueStore()
     const id = widgetId(ROOT_ID, toNodeId(7), 'seed')
