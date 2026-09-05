@@ -609,6 +609,9 @@ test.describe(
         const subgraphNodeAfter =
           comfyPage.vueNodes.getNodeLocator(subgraphNodeId)
         await expect(subgraphNodeAfter).toBeVisible()
+        await expect
+          .poll(() => getPromotedWidgetNames(comfyPage, subgraphNodeId))
+          .not.toContain('text')
         await expect(
           subgraphNodeAfter.getByRole('textbox', { name: 'text' })
         ).toBeHidden()
