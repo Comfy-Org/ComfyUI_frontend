@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 
 import type { TurnstileApi, TurnstileRenderOptions } from './turnstileScript'
@@ -30,10 +30,6 @@ const baseProps = {
   expiredMessage: 'Challenge expired',
   failedMessage: 'Verification failed'
 }
-
-beforeEach(() => {
-  vi.useFakeTimers({ shouldAdvanceTime: true })
-})
 
 afterEach(() => {
   delete window.turnstile
