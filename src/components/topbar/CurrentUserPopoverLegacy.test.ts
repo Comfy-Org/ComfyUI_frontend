@@ -55,6 +55,7 @@ function makeSubscription(
     tier: 'CREATOR',
     duration: 'MONTHLY',
     planSlug: null,
+    scheduledChange: null,
     renewalDate: null,
     endDate: null,
     isCancelled: false,

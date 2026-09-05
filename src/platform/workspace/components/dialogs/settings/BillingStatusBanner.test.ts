@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import type { SubscriptionInfo } from '@/composables/billing/types'
 import type {
   BillingStatus,
   WorkspaceType
@@ -14,6 +15,7 @@ interface Subscription {
   hasFunds: boolean
   isCancelled: boolean
   endDate: string | null
+  scheduledChange: SubscriptionInfo['scheduledChange']
 }
 
 const state = vi.hoisted(() => ({
@@ -25,7 +27,8 @@ const state = vi.hoisted(() => ({
   subscription: {
     hasFunds: true,
     isCancelled: false,
-    endDate: null
+    endDate: null,
+    scheduledChange: null
   } as Subscription | null,
   renewalDate: null as string | null,
   workspaceType: 'team' as WorkspaceType,
@@ -70,6 +73,9 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     isTeamPlan: computed(() => state.isTeamPlan),
     billingStatus: computed(() => state.billingStatus as BillingStatus | null),
     subscription: computed(() => state.subscription),
+    plans: computed(() => [
+      { slug: 'pro-annual', tier: 'PRO', duration: 'ANNUAL' }
+    ]),
     renewalDate: computed(() => state.renewalDate),
     manageSubscription: state.manageSubscription,
     fetchStatus: vi.fn(),
@@ -144,11 +150,21 @@ const i18n = createI18n({
             body: 'Members keep full access until then. Reactivate to keep your shared credits and seats.',
             reactivate: 'Reactivate plan'
           },
+          planChange: {
+            title: 'Your plan changes to {plan} on {date}',
+            body: 'Your current plan stays active until then.'
+          },
           updatePayment: 'Update payment'
         }
       },
       subscription: {
-        upgradeToAddCredits: 'Upgrade to add credits'
+        upgradeToAddCredits: 'Upgrade to add credits',
+        teamPlanName: 'Team',
+        unknownTierName: 'Unknown',
+        tiers: {
+          pro: { name: 'Pro' },
+          enterprise: { name: 'Enterprise' }
+        }
       }
     }
   }
@@ -171,7 +187,25 @@ function renderBanner() {
 }
 
 function exhausted() {
-  state.subscription = { hasFunds: false, isCancelled: false, endDate: null }
+  state.subscription = {
+    hasFunds: false,
+    isCancelled: false,
+    endDate: null,
+    scheduledChange: null
+  }
+}
+
+function scheduledFor(planSlug: string) {
+  state.subscription = {
+    hasFunds: true,
+    isCancelled: false,
+    endDate: null,
+    scheduledChange: {
+      plan_slug: planSlug,
+      effective_at: '2026-10-01T00:00:00Z',
+      team_credit_stop: null
+    }
+  }
 }
 
 // The spend gate folds billing_status into is_active, so the backend never emits
@@ -193,7 +227,12 @@ describe('BillingStatusBanner', () => {
     state.canAccessSubscriptionFeatures = true
     state.isTeamPlan = true
     state.billingStatus = 'paid'
-    state.subscription = { hasFunds: true, isCancelled: false, endDate: null }
+    state.subscription = {
+      hasFunds: true,
+      isCancelled: false,
+      endDate: null,
+      scheduledChange: null
+    }
     state.renewalDate = null
     state.workspaceType = 'team'
     state.canManageSubscription = true
@@ -211,13 +250,23 @@ describe('BillingStatusBanner', () => {
 
   it('renders nothing when billing control is rolled back, even out of credits', () => {
     state.billingControlEnabled = false
-    state.subscription = { hasFunds: false, isCancelled: false, endDate: null }
+    state.subscription = {
+      hasFunds: false,
+      isCancelled: false,
+      endDate: null,
+      scheduledChange: null
+    }
     renderBanner()
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 
   it('shows out-of-credits with an Add credits action for owners', async () => {
-    state.subscription = { hasFunds: false, isCancelled: false, endDate: null }
+    state.subscription = {
+      hasFunds: false,
+      isCancelled: false,
+      endDate: null,
+      scheduledChange: null
+    }
     renderBanner()
 
     expect(screen.getByRole('status')).toHaveTextContent('Out of credits')
@@ -244,7 +293,12 @@ describe('BillingStatusBanner', () => {
   })
 
   it('shows out-of-credits contact-admin copy without an Add credits action for members', () => {
-    state.subscription = { hasFunds: false, isCancelled: false, endDate: null }
+    state.subscription = {
+      hasFunds: false,
+      isCancelled: false,
+      endDate: null,
+      scheduledChange: null
+    }
     state.canManageSubscription = false
     state.canTopUp = false
     renderBanner()
@@ -352,7 +406,8 @@ describe('BillingStatusBanner', () => {
     state.subscription = {
       hasFunds: true,
       isCancelled: true,
-      endDate: '2026-08-01T00:00:00Z'
+      endDate: '2026-08-01T00:00:00Z',
+      scheduledChange: null
     }
     renderBanner()
 
@@ -374,7 +429,8 @@ describe('BillingStatusBanner', () => {
     state.subscription = {
       hasFunds: true,
       isCancelled: true,
-      endDate: '2026-08-01T00:00:00Z'
+      endDate: '2026-08-01T00:00:00Z',
+      scheduledChange: null
     }
     renderBanner()
 
@@ -388,7 +444,8 @@ describe('BillingStatusBanner', () => {
     state.subscription = {
       hasFunds: true,
       isCancelled: true,
-      endDate: '2026-08-01T00:00:00Z'
+      endDate: '2026-08-01T00:00:00Z',
+      scheduledChange: null
     }
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
@@ -405,7 +462,8 @@ describe('BillingStatusBanner', () => {
     state.subscription = {
       hasFunds: true,
       isCancelled: true,
-      endDate: '2026-08-01T00:00:00Z'
+      endDate: '2026-08-01T00:00:00Z',
+      scheduledChange: null
     }
     state.canManageSubscription = true
     state.canManageSubscriptionLifecycle = true
@@ -418,5 +476,28 @@ describe('BillingStatusBanner', () => {
     expect(
       screen.queryByRole('button', { name: 'Reactivate plan' })
     ).not.toBeInTheDocument()
+  })
+
+  it('names the destination plan and date for a scheduled change', () => {
+    scheduledFor('pro-annual')
+    renderBanner()
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Your plan changes to Pro on Oct 1, 2026'
+    )
+  })
+
+  it('quotes no price for a scheduled change', () => {
+    scheduledFor('pro-annual')
+    renderBanner()
+
+    expect(screen.getByRole('status')).not.toHaveTextContent('$')
+  })
+
+  it('stays silent when the destination plan is absent from the catalog', () => {
+    scheduledFor('plan-the-client-does-not-know')
+    renderBanner()
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 })

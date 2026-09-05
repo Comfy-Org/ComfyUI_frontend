@@ -3227,6 +3227,10 @@
         "body": "Members keep full access until then. Reactivate to keep your shared credits and seats.",
         "reactivate": "Reactivate plan"
       },
+      "planChange": {
+        "title": "Your plan changes to {plan} on {date}",
+        "body": "Your current plan stays active until then."
+      },
       "updatePayment": "Update payment"
     },
     "invite": "Invite",

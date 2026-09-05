@@ -14,7 +14,8 @@ const funded: BillingBannerInputs = {
   isCancelled: false,
   endDate: null,
   canManage: true,
-  outOfCreditsDismissed: false
+  outOfCreditsDismissed: false,
+  hasScheduledChange: false
 }
 
 // The backend folds billing_status into is_active, so every spend-denying status
@@ -137,5 +138,42 @@ describe('deriveBillingBanner', () => {
         billingStatus: 'inactive'
       })
     ).toBeNull()
+  })
+
+  it('shows the plan change banner when the server reports a scheduled change', () => {
+    expect(derive({ hasScheduledChange: true })).toBe('planChange')
+  })
+
+  it('shows the plan change banner to members, since it has no action', () => {
+    expect(derive({ hasScheduledChange: true, canManage: false })).toBe(
+      'planChange'
+    )
+  })
+
+  it('prefers the ending banner when the plan is cancelled, not changing', () => {
+    expect(
+      derive({
+        hasScheduledChange: true,
+        isCancelled: true,
+        endDate: '2026-08-01T00:00:00Z'
+      })
+    ).toBe('ending')
+  })
+
+  it('shows no plan change banner to a member whose plan is cancelled', () => {
+    expect(
+      derive({
+        hasScheduledChange: true,
+        isCancelled: true,
+        endDate: '2026-08-01T00:00:00Z',
+        canManage: false
+      })
+    ).toBeNull()
+  })
+
+  it('keeps out-of-credits ahead of a scheduled change', () => {
+    expect(derive({ hasScheduledChange: true, hasFunds: false })).toBe(
+      'outOfCredits'
+    )
   })
 })
