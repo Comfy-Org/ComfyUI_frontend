@@ -52,6 +52,21 @@ export interface AuthMetadata {
   utm_campaign?: string
 }
 
+/**
+ * Metadata for a Firebase auth-state clear (currentUser -> null transition).
+ *
+ * Diagnostic event for the un-reproduced MCP-induced web logout: it names the
+ * layer responsible for each clear so a real occurrence self-diagnoses in the
+ * field. `user_initiated: false` is the bug we're hunting — a spontaneous
+ * Firebase clear, not a user logout.
+ */
+export interface AuthClearedMetadata {
+  user_initiated: boolean
+  previous_user_id?: string
+  oauth_request_in_flight: boolean
+  visibility_state: DocumentVisibilityState
+}
+
 export type AuthFlowAction =
   | 'email_sign_in'
   | 'email_sign_up'
@@ -980,6 +995,7 @@ export interface TelemetryProvider {
   // Authentication flow events
   trackSignupOpened?(): void
   trackAuth?(metadata: AuthMetadata): void
+  trackAuthCleared?(metadata: AuthClearedMetadata): void
   trackAuthFailed?(metadata: AuthErrorMetadata): void
   trackUnifiedAuthRetry?(metadata: UnifiedAuthRetryMetadata): void
   trackUnifiedAuthRefresh?(metadata: UnifiedAuthRefreshMetadata): void
@@ -1323,6 +1339,7 @@ export function normalizeExecutionTriggerSource(
  */
 export type TelemetryEventProperties =
   | AuthMetadata
+  | AuthClearedMetadata
   | OnboardingTourMetadata
   | AuthErrorMetadata
   | UnifiedAuthRetryMetadata
