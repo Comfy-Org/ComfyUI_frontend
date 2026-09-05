@@ -302,39 +302,39 @@ export const useLitegraphService = () => {
     if (!widgetConstructor || inputSpec.forceInput) return
 
     const widgetsBefore = new Set(node.widgets ?? [])
-    const result =
-      widgetConstructor(
-        node,
-        inputName,
-        transformInputSpecV2ToV1(widgetInputSpec),
-        app
-      ) ?? {}
-    const { minWidth = 1, minHeight = 1 } = result
-    const returnedWidget = result.widget
+    const result = widgetConstructor(
+      node,
+      inputName,
+      transformInputSpecV2ToV1(widgetInputSpec),
+      app
+    )
+    const wrappedResult = result && !('type' in result) ? result : undefined
+    const { minWidth = 1, minHeight = 1 } = wrappedResult ?? {}
+    const returnedWidget = result && 'type' in result ? result : result?.widget
+    if (returnedWidget) {
+      // oxlint-disable-next-line typescript/no-unnecessary-condition -- extension widgets may omit options at runtime
+      returnedWidget.options ??= {}
+    }
     const widget =
-      returnedWidget &&
-      (node.widgets?.find(
+      (node.widgets ?? []).find(
         (candidate) =>
           candidate === returnedWidget ||
           (!widgetsBefore.has(candidate) &&
-            candidate.name === returnedWidget.name)
-      ) ??
-        toConcreteWidget(returnedWidget, node))
+            (!returnedWidget || candidate.name === returnedWidget.name))
+      ) ?? (returnedWidget ? toConcreteWidget(returnedWidget, node) : undefined)
+    if (!widget) return
 
-    if (widget) {
-      widget.label = resolveLabel(
-        widget.label ?? widgetInputSpec.display_name ?? inputName
-      )
-      widget.options ??= {}
-      Object.assign(widget.options, {
-        advanced: inputSpec.advanced,
-        hidden: inputSpec.hidden
-      })
-      if (inputSpec.hidden !== undefined) widget.hidden = inputSpec.hidden
-      if (dynamic) widget.tooltip = inputSpec.tooltip
-    }
+    widget.label = resolveLabel(
+      widget.label ?? widgetInputSpec.display_name ?? inputName
+    )
+    Object.assign(widget.options, {
+      advanced: inputSpec.advanced,
+      hidden: inputSpec.hidden
+    })
+    if (inputSpec.hidden !== undefined) widget.hidden = inputSpec.hidden
+    if (dynamic) widget.tooltip = inputSpec.tooltip
 
-    if (!widget?.options?.socketless) {
+    if (!widget.options.socketless) {
       const inputSpecV1 = transformInputSpecV2ToV1(widgetInputSpec)
       node.addInput(inputName, inputSpec.type, {
         shape: inputSpec.isOptional ? RenderShape.HollowCircle : undefined,
@@ -502,7 +502,7 @@ export const useLitegraphService = () => {
 
         data.widgets_values = migrateWidgetsValues(
           ComfyNode.nodeData.inputs,
-          this.widgets ?? [],
+          this.widgets,
           data.widgets_values ?? []
         )
 
@@ -881,7 +881,7 @@ export const useLitegraphService = () => {
         if (e.key === 'ArrowLeft') {
           // @ts-expect-error fixme ts strict error
           this.imageIndex -= 1
-        } else if (e.key === 'ArrowRight') {
+        } else {
           // @ts-expect-error fixme ts strict error
           this.imageIndex += 1
         }
@@ -950,18 +950,16 @@ export const useLitegraphService = () => {
     )
 
     const graph = useWorkflowStore().activeSubgraph ?? app.graph
-    if (!graph || !node) return null
+    if (!node) return null
 
     graph.add(node, addOptions)
     return node
   }
 
   function getCanvasCenter(): Point {
-    const dpi = Math.max(window.devicePixelRatio ?? 1, 1)
-    const visibleArea = app.canvas?.ds?.visible_area
-    if (!visibleArea) {
-      return [0, 0]
-    }
+    const dpi = Math.max(window.devicePixelRatio || 1, 1)
+    if (!app.isGraphReady) return [0, 0]
+    const visibleArea = app.canvas.ds.visible_area
     const [x, y, w, h] = visibleArea
     return [x + w / dpi / 2, y + h / dpi / 2]
   }

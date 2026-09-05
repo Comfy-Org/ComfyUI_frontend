@@ -17,6 +17,7 @@ import {
   rememberAgentSessionMemory
 } from '../../services/agent/agentSessionMemory'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
+import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 
 export interface AgentEventSource {
   subscribe(listener: (raw: unknown) => void): () => void
@@ -40,9 +41,25 @@ interface SentTag {
 }
 
 export interface WorkflowTurnContext {
-  id: string
+  id?: string
   tabPath: string
 }
+
+/**
+ * Which tab a turn belongs to, resolved once before prepare() and then handed
+ * to every post-await lookup. The three states are deliberately distinct:
+ *
+ * - omitted: resolve whatever tab is active right now. Only correct outside a
+ *   send, where there is nothing to pin to.
+ * - `null`: the send had no origin tab at all (panel detached, or no workflow
+ *   open when it started).
+ * - `{ tabPath }`: pin resolution to that tab.
+ *
+ * Collapsing `null` into the omitted case is what lets a detached send pick up
+ * whichever tab the user selects during prepare(), i.e. exactly the late
+ * binding this pin exists to remove.
+ */
+export type TurnOrigin = { tabPath: string } | null
 
 type PromptEditState =
   | { phase: 'idle' }
@@ -54,12 +71,17 @@ export interface AgentSessionDeps {
   events: AgentEventSource
   identity?: () => string | null
   workflow?: {
-    current(): WorkflowTurnContext | undefined
+    // origin, when given, pins resolution to the tab that initiated the send
+    // instead of whatever tab is active when this is called - it is read
+    // after prepare() so cloud ids it resolves are fresh, but must still
+    // describe the pre-await originating tab, not a later switch. See
+    // TurnOrigin for why "no origin tab" is a value rather than an omission.
+    current(origin?: TurnOrigin): WorkflowTurnContext | undefined
     adopted(workflowId: string, sent: WorkflowTurnContext | undefined): void
     prepare?(): Promise<void>
-    tabs?(): OpenTabsSnapshot | undefined
+    tabs?(origin?: TurnOrigin): OpenTabsSnapshot | undefined
     activeTab?(data: AgentActiveTabData): void
-    draft?(): DraftSnapshot | undefined
+    draft?(origin?: TurnOrigin): DraftSnapshot | undefined
   }
 }
 
@@ -78,6 +100,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   const { rest, events, workflow } = deps
 
   const conversationStore = useAgentConversationStore()
+  const bindingStore = useAgentWorkflowTabBindingStore()
   /**
    * The workflow the session is bound to (set on turn ack or an active-tab
    * switch, cleared by newChat/loadThread) - the CRDT follower's subscribe
@@ -114,7 +137,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       notices.value = []
       promptEditState.value = { phase: 'idle' }
       sending.value = false
-      stopRequestedWhileSending = false
+      stopRequestedWhileSending.value = false
       boundWorkflowId.value = null
       rememberedWorkflowId = null
       forgetAgentSessionMemory()
@@ -235,21 +258,38 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     promptEditState.value = { phase: 'idle' }
     sending.value = true
-    stopRequestedWhileSending = false
+    stopRequestedWhileSending.value = false
     const operationGeneration = identityGeneration
     const isCurrentIdentity = () => operationGeneration === identityGeneration
+    // Capture the originating tab identity before the first await: prepare()
+    // can take up to PREPARE_TIMEOUT_MS, and a tab switch while it is
+    // pending must not reattribute this send to the newly active tab. The id
+    // lookups themselves stay post-await (prepare() is what warms them), but
+    // pinned to this originating path rather than whatever is active later.
+    // A send that starts with no origin tab must stay that way: `null` is not
+    // "resolve the active tab", or re-attaching during prepare() reattributes
+    // the turn to the tab selected afterwards.
+    const originContext = workflow?.current()
+    const origin: TurnOrigin =
+      originContext === undefined ? null : { tabPath: originContext.tabPath }
     if (workflow?.prepare)
       await Promise.race([
         workflow.prepare().catch(() => undefined),
         new Promise<void>((resolve) => setTimeout(resolve, PREPARE_TIMEOUT_MS))
       ])
     if (!isCurrentIdentity()) return false
-    const wfContext = workflow?.current()
-    const tabs = workflow?.tabs?.()
+    const wfContext = workflow?.current(origin)
+    const tabs = workflow?.tabs?.(origin)
     async function postTurn(threadId: string) {
-      const draft = workflow?.draft?.()
+      const draft = workflow?.draft?.(origin)
+      // An unsaved tab now yields a context carrying only its tabPath, so a
+      // merely-defined wfContext no longer implies the tab has a workflow the
+      // thread could own. An existing thread takes a draft only from a tab
+      // with a real workflow id; otherwise an unbound scratch tab would leak
+      // its canvas into someone else's thread.
       const shouldSendDraft =
-        draft !== undefined && (threadId === 'new' || wfContext !== undefined)
+        draft !== undefined &&
+        (threadId === 'new' || wfContext?.id !== undefined)
       const input = {
         content: text,
         tabs,
@@ -262,7 +302,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
       }
       return rest.postMessage(
         threadId,
-        wfContext ? { ...input, workflowId: wfContext.id } : input
+        wfContext?.id !== undefined
+          ? { ...input, workflowId: wfContext.id }
+          : input
       )
     }
     try {
@@ -271,8 +313,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
       conversationStore.setThreadId(ack.thread_id)
       rememberAgentSessionMemory(ack.thread_id, deps.identity?.())
       if (ack.workflow_id !== undefined) {
+        // The ack does not say whether the server minted a workflow or echoed
+        // the thread's existing one. The persisted binding store preserves
+        // ownership across reloads; the session binding covers a bind that
+        // lands while this request is in flight.
+        const boundAtAck = boundWorkflowId.value
         bindWorkflow(ack.workflow_id)
-        workflow?.adopted(ack.workflow_id, wfContext)
+        const shouldAdopt =
+          wfContext?.id !== undefined ||
+          (ack.workflow_id !== boundAtAck &&
+            bindingStore.tabPathFor(ack.workflow_id) === undefined)
+        if (shouldAdopt) workflow?.adopted(ack.workflow_id, wfContext)
       }
       const turnId = ack.message_id as TurnId
       conversationStore.recordUser(
@@ -286,8 +337,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         tags?.map((tag) => `${tag.title} #${tag.id}`)
       )
       conversationStore.startTurn(turnId)
-      if (stopRequestedWhileSending) {
-        stopRequestedWhileSending = false
+      if (wasStopRequestedWhileSending()) {
+        stopRequestedWhileSending.value = false
         void stopTurn()
       }
       return true
@@ -310,14 +361,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
-  let stopRequestedWhileSending = false
+  const stopRequestedWhileSending = ref(false)
+  const wasStopRequestedWhileSending = () => stopRequestedWhileSending.value
 
   async function stopTurn(): Promise<void> {
     const threadId = conversationStore.threadId
     const turnId = conversationStore.activeTurnId
     if (threadId === null || turnId === null) {
       // The POST has not acked yet; remember the intent and cancel on ack.
-      if (sending.value) stopRequestedWhileSending = true
+      if (sending.value) stopRequestedWhileSending.value = true
       return
     }
     promptEditState.value = { phase: 'stopping', turnId }
@@ -441,8 +493,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
           event.type === 'agent_message_done' &&
           promptEditState.value.phase === 'stopping' &&
           event.data.message_id === promptEditState.value.turnId &&
-          (event.data.thread_id === undefined ||
-            event.data.thread_id === conversationStore.threadId)
+          event.data.thread_id === conversationStore.threadId
         )
           promptEditState.value = {
             phase: 'ready',

@@ -138,9 +138,13 @@ async function buildLayer(
     layer.right = placed.left + placed.canvas.width
     layer.bottom = placed.top + placed.canvas.height
   }
-  if (node.kind === 'fill') layer.vectorFill = fillToVectorContent(node.fill)
-  else if (node.kind === 'raster')
-    await applyPlacedLayer(layer, node, deps, linkedFiles)
+  switch (node.kind) {
+    case 'fill':
+      layer.vectorFill = fillToVectorContent(node.fill)
+      break
+    case 'raster':
+      await applyPlacedLayer(layer, node, deps, linkedFiles)
+  }
   return layer
 }
 
@@ -175,21 +179,20 @@ export function rasterizeLeafPlaced(
   content: PsdContentSource
 ): PlacedLeaf | null {
   const bounds = leafPlacedBounds(node.transform, doc)
-  let captured: HTMLCanvasElement | null = null
+  const captured: HTMLCanvasElement[] = []
   const ctx: RenderNodeCtx = {
     compositor: null as unknown as Compositor,
     content: content as ContentStore,
     renderChild: () => null,
     placed: (_key, _stamp, bitmap, tf, linear) => {
-      captured = placeBitmap(
+      const canvas = placeBitmap(
         bitmap,
         { ...tf, x: tf.x - bounds.x, y: tf.y - bounds.y },
         bounds.w,
         bounds.h
       )
-      return captured
-        ? { source: captured, rect: bounds, linear: !!linear }
-        : null
+      if (canvas) captured.push(canvas)
+      return canvas ? { source: canvas, rect: bounds, linear: !!linear } : null
     },
     region: { x: 0, y: 0, w: bounds.w, h: bounds.h },
     devicePixelRatio: 1
@@ -199,7 +202,8 @@ export function rasterizeLeafPlaced(
   } catch {
     return null
   }
-  return captured ? { canvas: captured, left: bounds.x, top: bounds.y } : null
+  const canvas = captured.at(-1)
+  return canvas ? { canvas, left: bounds.x, top: bounds.y } : null
 }
 
 export function maskToPlacedCanvas(

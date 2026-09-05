@@ -6433,7 +6433,7 @@
     }
   },
   "GetImageSize": {
-    "description": "Возвращает ширину и высоту изображения и передаёт его без изменений.",
+    "description": "Возвращает ширину, высоту и размер пакета изображения.",
     "display_name": "Получить размер изображения",
     "inputs": {
       "image": {
@@ -12706,6 +12706,84 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MetaMuseImageEditApi": {
+    "description": "Редактирует или объединяет до 10 эталонных изображений по текстовому запросу с помощью модели Muse Image от Meta.",
+    "display_name": "Meta Muse Image: Редактирование",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Используемая модель."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_enable_image_search": {
+        "name": "enable_image_search"
+      },
+      "model_enable_shell": {
+        "name": "enable_shell"
+      },
+      "model_enable_web_search": {
+        "name": "enable_web_search"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_strength": {
+        "name": "reasoning_strength"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MetaMuseImageTextToImageApi": {
+    "description": "Генерирует изображения по текстовому запросу с помощью модели Muse Image от Meta, которая анализирует запрос перед рендерингом.",
+    "display_name": "Meta Muse Image: Текст в изображение",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Используемая модель."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_enable_image_search": {
+        "name": "enable_image_search"
+      },
+      "model_enable_shell": {
+        "name": "enable_shell"
+      },
+      "model_enable_web_search": {
+        "name": "enable_web_search"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_strength": {
+        "name": "reasoning_strength"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -23492,10 +23570,12 @@
         "name": "анимировать на месте"
       },
       "bake": {
-        "name": "запечь"
+        "name": "запечь",
+        "tooltip": "Запекает продвинутые материалы в базовые текстуры для более широкой совместимости."
       },
       "export_orientation": {
-        "name": "экспортировать ориентацию"
+        "name": "экспортировать ориентацию",
+        "tooltip": "Направление передней оси экспортированной модели. default сохраняет ось +x Tripo."
       },
       "export_vertex_colors": {
         "name": "экспортировать цвета вершин"
@@ -23504,13 +23584,15 @@
         "name": "face_limit"
       },
       "fbx_preset": {
-        "name": "FBX-пресет"
+        "name": "FBX-пресет",
+        "tooltip": "Предустановка совместимости FBX. bake_scale запекает преобразование масштаба в геометрию."
       },
       "flatten_bottom": {
         "name": "выравнивание низа"
       },
       "flatten_bottom_threshold": {
-        "name": "порог выравнивания низа"
+        "name": "порог выравнивания низа",
+        "tooltip": "Глубина выравнивания, используемая с flatten_bottom."
       },
       "force_symmetry": {
         "name": "принудительная симметрия"
@@ -23543,15 +23625,66 @@
         "name": "texture_size"
       },
       "with_animation": {
-        "name": "с анимацией"
+        "name": "с анимацией",
+        "tooltip": "Сохраняет скелет и анимацию моделей с риггингом или ретаргетингом."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": "Преобразованная модель в запрошенном формате. Tripo предоставляет OBJ в виде ZIP-архива (сетка, материал и текстуры)."
+      }
+    }
+  },
+  "TripoEditMultiviewNode": {
+    "description": "Редактирует ракурсы результата Tripo: Image to Multiview с помощью текстовых инструкций для каждого ракурса. Ракурсы без инструкции остаются без изменений. Передайте изображения в Tripo: Multiview to Model; отредактированный набор нельзя редактировать повторно.",
+    "display_name": "Tripo: Редактирование ракурсов",
+    "inputs": {
+      "back_prompt": {
+        "name": "back_prompt"
+      },
+      "front_prompt": {
+        "name": "front_prompt"
+      },
+      "left_prompt": {
+        "name": "left_prompt"
+      },
+      "multiview_task_id": {
+        "name": "multiview_task_id"
+      },
+      "right_prompt": {
+        "name": "right_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "front",
+        "tooltip": null
+      },
+      "1": {
+        "name": "слева",
+        "tooltip": null
+      },
+      "2": {
+        "name": "сзади",
+        "tooltip": null
+      },
+      "3": {
+        "name": "справа",
+        "tooltip": null
       }
     }
   },
   "TripoImageToModelNode": {
     "display_name": "Tripo: Изображение в модель",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Масштабирует текстурированные модели до их реального размера в метрах. Tripo сохраняет размер как трансформацию сцены модели и запекает его при конвертации, риггинге или ретаргетинге модели; без texture игнорируется."
+      },
       "face_limit": {
-        "name": "face_limit"
+        "name": "face_limit",
+        "tooltip": "Максимальное число граней. -1 позволяет Tripo адаптивно выбрать значение (около 1,4 млн граней для v3.x standard, 2 млн для detailed). Tripo незаметно ограничивает значение: v2.5 — до 500 000, quad-сетки — до 150 000."
       },
       "geometry_quality": {
         "name": "качество геометрии"
@@ -23570,22 +23703,31 @@
         "name": "orientation"
       },
       "pbr": {
-        "name": "pbr"
+        "name": "pbr",
+        "tooltip": "Карты PBR-материалов (базовый цвет, металличность, шероховатость, нормали). Требует texture."
       },
       "quad": {
-        "name": "quad"
+        "name": "quad",
+        "tooltip": "Вывод quad-сетки. Tripo предоставляет quad-сетки в формате FBX, поэтому результат поступает на выход FBX, а выход GLB остаётся пустым."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Низкополигональная сетка с чистой топологией в стиле ручной работы (500–20 000 граней, quad 500–10 000). Лучше всего подходит для простых объектов; со сложными возможны ошибки."
       },
       "style": {
-        "name": "style"
+        "name": "style",
+        "tooltip": "Больше не поддерживается Tripo и игнорируется. Сохранено для старых workflows."
       },
       "texture": {
-        "name": "texture"
+        "name": "texture",
+        "tooltip": "Генерирует карты текстур. При отключении возвращает только геометрию и игнорирует pbr."
       },
       "texture_alignment": {
         "name": "texture_alignment"
       },
       "texture_quality": {
-        "name": "texture_quality"
+        "name": "texture_quality",
+        "tooltip": "detailed = текстуры HD, extreme = текстуры Ultra 8K."
       },
       "texture_seed": {
         "name": "texture_seed"
@@ -23602,6 +23744,41 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "Пусто, когда включён quad."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Заполняется только при включённом quad."
+      }
+    }
+  },
+  "TripoImageToMultiviewNode": {
+    "description": "Генерирует виды объекта спереди, слева, сзади и справа. Подайте их в Tripo: Multiview to Model или сначала уточните с помощью Tripo: Edit Multiview.",
+    "display_name": "Tripo: Из изображения в мультиракурс",
+    "inputs": {
+      "image": {
+        "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "task_id мультиракурса",
+        "tooltip": null
+      },
+      "1": {
+        "name": "спереди",
+        "tooltip": null
+      },
+      "2": {
+        "name": "слева",
+        "tooltip": null
+      },
+      "3": {
+        "name": "сзади",
+        "tooltip": null
+      },
+      "4": {
+        "name": "справа",
         "tooltip": null
       }
     }
@@ -23622,11 +23799,43 @@
       }
     }
   },
+  "TripoMeshCompleteNode": {
+    "description": "Дополняет части сегментированной модели и восстанавливает отсутствующие области.",
+    "display_name": "Tripo: Дополнение частей сетки",
+    "inputs": {
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "Названия частей для дополнения, разделённые запятыми. Если пусто, дополняются все части."
+      },
+      "segment_task_id": {
+        "name": "segment_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "task_id модели",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: Мультивью в модель",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Масштабировать модели с текстурами до их реального размера в метрах. Tripo хранит размер как трансформацию сцены модели и запекает его при конвертации, риггинге или ретаргетинге модели; без текстуры игнорируется."
+      },
       "face_limit": {
-        "name": "лимит_лиц"
+        "name": "лимит_лиц",
+        "tooltip": "Максимальное число граней. -1 позволяет Tripo адаптивно выбрать значение (около 1,4 млн граней для v3.x standard, 2 млн для detailed). Tripo незаметно ограничивает значение: v2.5 — до 500 000, quad-сетки — до 150 000."
       },
       "geometry_quality": {
         "name": "качество геометрии"
@@ -23654,20 +23863,27 @@
         "name": "ориентация"
       },
       "pbr": {
-        "name": "PBR"
+        "name": "PBR",
+        "tooltip": "Карты PBR-материалов (базовый цвет, металличность, шероховатость, нормали). Требует texture."
       },
       "quad": {
         "name": "квад",
-        "tooltip": "Этот параметр устарел и больше не используется."
+        "tooltip": "Вывод quad-сетки. Tripo предоставляет quad-сетки в формате FBX, поэтому результат поступает на выход FBX, а выход GLB остаётся пустым."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Низкополигональная сетка с чистой топологией в стиле ручной работы (500–20 000 граней, quad 500–10 000). Лучше всего подходит для простых объектов; со сложными возможны ошибки."
       },
       "texture": {
-        "name": "текстура"
+        "name": "текстура",
+        "tooltip": "Генерирует карты текстур. При отключении возвращает только геометрию и игнорирует pbr."
       },
       "texture_alignment": {
         "name": "выравнивание_текстуры"
       },
       "texture_quality": {
-        "name": "качество_текстуры"
+        "name": "качество_текстуры",
+        "tooltip": "detailed = текстуры HD, extreme = текстуры Ultra 8K."
       },
       "texture_seed": {
         "name": "сид_текстуры"
@@ -23684,7 +23900,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "Пусто, когда включён quad."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Заполняется только при включённом quad."
       }
     }
   },
@@ -23698,7 +23918,7 @@
       },
       "compress_geometry": {
         "name": "сжать_геометрию",
-        "tooltip": "Применить сжатие на основе геометрии. Декомпрессируйте перед редактированием."
+        "tooltip": "Применить сжатие геометрии meshopt (EXT_meshopt_compression). Файлы будут меньше, но 3D-предпросмотр ComfyUI не сможет их отобразить; перед редактированием распакуйте их."
       },
       "enable_image_autofix": {
         "name": "включить_автоисправление_изображения",
@@ -23748,7 +23968,7 @@
       },
       "compress_geometry": {
         "name": "сжать_геометрию",
-        "tooltip": "Применить сжатие на основе геометрии. Декомпрессируйте перед редактированием."
+        "tooltip": "Применить сжатие геометрии meshopt (EXT_meshopt_compression). Файлы будут меньше, но 3D-предпросмотр ComfyUI не сможет их отобразить; перед редактированием распакуйте их."
       },
       "export_uv": {
         "name": "экспорт_uv",
@@ -23807,7 +24027,7 @@
       },
       "compress_geometry": {
         "name": "compress_geometry",
-        "tooltip": "Применить сжатие на основе геометрии. Распакуйте перед редактированием."
+        "tooltip": "Применить сжатие геометрии meshopt (EXT_meshopt_compression). Файлы будут меньше, но 3D-предпросмотр ComfyUI не сможет их отобразить; перед редактированием распакуйте их."
       },
       "export_uv": {
         "name": "export_uv",
@@ -23854,11 +24074,24 @@
   "TripoRetargetNode": {
     "display_name": "Tripo: Перепривязка ригнутой модели",
     "inputs": {
+      "animate_in_place": {
+        "name": "animate_in_place",
+        "tooltip": "Воспроизводить анимацию на месте, без смещения корня."
+      },
       "animation": {
-        "name": "анимация"
+        "name": "анимация",
+        "tooltip": "Анимации preset:* работают с обеими моделями рига; анимации preset:biped:* требуют рига, созданного моделью v1.0-20240301."
+      },
+      "export_with_geometry": {
+        "name": "export_with_geometry",
+        "tooltip": "Включить сетку в экспорт; при отключении экспортируется только анимированный скелет."
       },
       "original_model_task_id": {
         "name": "идентификатор_задачи_исходной_модели"
+      },
+      "out_format": {
+        "name": "out_format",
+        "tooltip": "Формат выходного файла; результат поступает на соответствующий выход."
       }
     },
     "outputs": {
@@ -23872,15 +24105,97 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "Заполняется, когда out_format имеет значение glb."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Заполняется, когда out_format имеет значение fbx."
+      }
+    }
+  },
+  "TripoRetopologyNode": {
+    "description": "Перестраивает низкополигональную сетку с чистой топологией из высокополигональной модели.",
+    "display_name": "Tripo: Ретопология",
+    "inputs": {
+      "bake": {
+        "name": "bake",
+        "tooltip": "Запечь исходные текстуры на низкополигональную сетку."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Целевое число граней: 500–20 000 треугольников или 500–10 000 четырёхугольников. Значение -1 позволяет Tripo выбрать самостоятельно."
+      },
+      "model_task_id": {
+        "name": "model_task_id"
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "Названия частей из Tripo: Segment Model, разделённые запятыми. Пустое значение обрабатывает всю модель."
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "Вывод сетки из четырёхугольников. Tripo предоставляет четырёхугольные сетки в формате FBX, поэтому результат поступает на выход FBX, а выход GLB остаётся пустым."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": "Пусто, когда включён quad."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Заполняется только при включённом quad."
+      }
+    }
+  },
+  "TripoRigCheckNode": {
+    "description": "Проверяет, можно ли создать риг для модели и какой тип скелета рекомендует Tripo.",
+    "display_name": "Tripo: Проверка рига",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "riggable",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_type",
+        "tooltip": "Рекомендуемый скелет: biped, quadruped, hexapod, octopod, avian, serpentine или aquatic; 'others', если для модели невозможно создать риг."
       }
     }
   },
   "TripoRigNode": {
     "display_name": "Tripo: Риггинг модели",
     "inputs": {
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "v1.0: только гуманоидные (двуногие) персонажи, более 90 предустановок анимации. v2.5: негуманоидные существа (четвероногие, шестиногие, восьминогие, птицы, змеевидные, водные)."
+      },
       "original_model_task_id": {
         "name": "идентификатор_задачи_исходной_модели"
+      },
+      "out_format": {
+        "name": "out_format",
+        "tooltip": "Формат выходного файла; результат поступает на соответствующий выход."
+      },
+      "rig_type": {
+        "name": "rig_type",
+        "tooltip": "Тип скелета. «auto» сначала запускает бесплатную проверку рига Tripo и использует рекомендуемый тип."
+      },
+      "spec": {
+        "name": "spec",
+        "tooltip": "Имена костей: нативный формат Tripo или совместимый с Mixamo. Tripo не может переназначать свои предустановки анимации на риг v1.0, созданный со спецификацией mixamo; используйте tripo для Tripo: Retarget rigged model."
       }
     },
     "outputs": {
@@ -23894,7 +24209,38 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "Заполняется, когда out_format имеет значение glb."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Заполняется, когда out_format имеет значение fbx."
+      }
+    }
+  },
+  "TripoSegmentNode": {
+    "description": "Разделяет модель на части. Имена частей передаются в Tripo: Complete Mesh Parts, Tripo: Retopology и Tripo: Convert model.",
+    "display_name": "Tripo: Сегментировать модель",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "segment task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "part_names",
+        "tooltip": "Имена частей, разделённые запятыми."
       }
     }
   },
@@ -23996,8 +24342,13 @@
   "TripoTextToModelNode": {
     "display_name": "Tripo: Текст в модель",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Масштабирует текстурированные модели до их реального размера в метрах. Tripo сохраняет размер как трансформацию сцены модели и применяет его при конвертации, риггинге или переназначении модели; без texture игнорируется."
+      },
       "face_limit": {
-        "name": "face_limit"
+        "name": "face_limit",
+        "tooltip": "Максимальное число полигонов. -1 позволяет Tripo выбирать адаптивно (около 1.4M полигонов для v3.x standard, 2M для detailed). Tripo незаметно ограничивает: v2.5 — до 500,000, quad-сетки — до 150,000."
       },
       "geometry_quality": {
         "name": "качество геометрии"
@@ -24012,25 +24363,35 @@
         "name": "версия_модели"
       },
       "negative_prompt": {
-        "name": "негативный_промпт"
+        "name": "негативный_промпт",
+        "tooltip": "До 255 символов."
       },
       "pbr": {
-        "name": "PBR"
+        "name": "PBR",
+        "tooltip": "Карты материалов PBR (базовый цвет, металличность, шероховатость, нормали). Требует texture."
       },
       "prompt": {
         "name": "промпт"
       },
       "quad": {
-        "name": "quad"
+        "name": "quad",
+        "tooltip": "Вывод quad-сетки. Tripo передаёт quad-сетки в формате FBX, поэтому результат поступает на выход FBX, а выход GLB остаётся пустым."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Низкополигональная сетка с чистой топологией в стиле ручной работы (500–20,000 полигонов, quad 500–10,000). Лучше всего подходит для простых объектов; сложные могут не обработаться."
       },
       "style": {
-        "name": "стиль"
+        "name": "стиль",
+        "tooltip": "Больше не поддерживается Tripo и игнорируется. Сохранено для старых workflows."
       },
       "texture": {
-        "name": "текстура"
+        "name": "текстура",
+        "tooltip": "Создаёт карты текстур. Выключение возвращает только геометрию и игнорирует pbr."
       },
       "texture_quality": {
-        "name": "texture_quality"
+        "name": "texture_quality",
+        "tooltip": "detailed = текстуры HD, extreme = текстуры 8K Ultra."
       },
       "texture_seed": {
         "name": "texture_seed"
@@ -24047,7 +24408,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "Пусто, если quad включён."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Заполняется только при включённом quad."
       }
     }
   },
@@ -24057,21 +24422,40 @@
       "model_task_id": {
         "name": "model_task_id"
       },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "Модель текстур: v3.0 для сеток, созданных с v3.x, v2.5 для сеток, созданных с v2.5."
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "Разделённые запятыми названия частей из Tripo: Segment Model для текстурирования. Если пусто, текстурируются все части."
+      },
       "pbr": {
-        "name": "pbr"
+        "name": "pbr",
+        "tooltip": "Карты материалов PBR (базовый цвет, металличность, шероховатость, нормали); при выключении создаётся текстура сплошного цвета."
+      },
+      "reference": {
+        "name": "reference",
+        "tooltip": "Эталонные изображения, определяющие текстуры. Нельзя использовать вместе с texture_prompt или style_image."
+      },
+      "style_image": {
+        "name": "style_image",
+        "tooltip": "Эталонное изображение для художественного стиля текстур. Используется только вместе с texture_prompt."
       },
       "texture": {
-        "name": "texture"
+        "name": "texture",
+        "tooltip": "Игнорируется: этот узел всегда создаёт текстуры. Сохранено для старых workflows."
       },
       "texture_alignment": {
         "name": "texture_alignment"
       },
       "texture_prompt": {
         "name": "texture_prompt",
-        "tooltip": "Необязательное текстовое описание для текстурирования. На практике требуется для импортированных моделей (Tripo: Импорт модели), которые не содержат исходного изображения для определения цветов."
+        "tooltip": "Необязательная текстовая подсказка для текстурирования. На практике необходима для импортированных моделей (Tripo: Import Model), у которых нет исходного изображения для определения цветов. Нельзя сочетать с эталонными изображениями."
       },
       "texture_quality": {
-        "name": "texture_quality"
+        "name": "texture_quality",
+        "tooltip": "detailed = текстуры HD, extreme = текстуры 8K Ultra."
       },
       "texture_seed": {
         "name": "texture_seed"
@@ -24088,7 +24472,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "Пусто, если источником является четырёхугольная сетка или импорт FBX."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Tripo возвращает FBX для четырёхугольных сеток и импортов FBX; в остальных случаях пусто."
       }
     }
   },
