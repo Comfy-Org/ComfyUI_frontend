@@ -75,7 +75,6 @@ function liftValidationError(
   const lifted = liftNodeErrorsToBoundary(rootGraph, {
     [liftedSourceNodeId]: nodeError([error])
   })[liftedHostNodeId]?.errors[0]
-  if (!lifted) throw new Error('Expected validation error to be lifted')
   return lifted
 }
 
@@ -147,7 +146,6 @@ describe('missing resource validation error absorption', () => {
         validationError('value_not_in_list', 'ckpt_name')
       ])
     })[sourceExecutionId]?.errors[0]
-    if (!error) throw new Error('Expected validation error to remain interior')
 
     expect(
       classifyValidationErrorAbsorption(

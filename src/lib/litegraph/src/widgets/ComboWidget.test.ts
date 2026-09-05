@@ -462,7 +462,7 @@ describe('ComboWidget', () => {
       const mockContextMenu = vi
         .fn<typeof LiteGraph.ContextMenu>()
         .mockImplementation(function (_values, options) {
-          capturedCallback = options.callback
+          capturedCallback = options?.callback
         })
       LiteGraph.ContextMenu = mockContextMenu as Partial<
         typeof LiteGraph.ContextMenu
@@ -506,7 +506,7 @@ describe('ComboWidget', () => {
       const mockContextMenu = vi
         .fn<typeof LiteGraph.ContextMenu>()
         .mockImplementation(function (_values, options) {
-          capturedCallback = options.callback
+          capturedCallback = options?.callback
         })
       LiteGraph.ContextMenu = mockContextMenu as Partial<
         typeof LiteGraph.ContextMenu
@@ -834,7 +834,7 @@ describe('ComboWidget', () => {
         const mockContextMenu = vi
           .fn<typeof LiteGraph.ContextMenu>()
           .mockImplementation(function (_values, options) {
-            capturedCallback = options.callback
+            capturedCallback = options?.callback
             this.addItem = mockAddItem
           })
         LiteGraph.ContextMenu = mockContextMenu as Partial<
@@ -889,7 +889,7 @@ describe('ComboWidget', () => {
         const mockContextMenu = vi
           .fn<typeof LiteGraph.ContextMenu>()
           .mockImplementation(function (_values, options) {
-            capturedCallback = options.callback
+            capturedCallback = options?.callback
             this.addItem = mockAddItem
           })
         LiteGraph.ContextMenu = mockContextMenu as Partial<

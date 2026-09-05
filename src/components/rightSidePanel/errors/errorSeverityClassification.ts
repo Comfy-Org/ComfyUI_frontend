@@ -61,7 +61,10 @@ export function classifyPanelErrors(
   const executionError = input.executionError
     ? {
         error: input.executionError,
-        nodeId: tryNormalizeNodeExecutionId(input.executionError.node_id)
+        nodeId:
+          input.executionError.node_id == null
+            ? null
+            : tryNormalizeNodeExecutionId(input.executionError.node_id)
       }
     : null
 

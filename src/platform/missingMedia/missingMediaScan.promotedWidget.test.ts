@@ -256,7 +256,6 @@ describe('scanAllMediaCandidates — promoted host widgets', () => {
       sourceIds: [42, 43],
       depth: 2
     })
-    if (!lastInnerHost) throw new Error('Expected nested fanout branch')
     lastInnerHost.mode = LGraphEventMode.BYPASS
 
     const result = scanAllMediaCandidates(graph, false)

@@ -83,7 +83,7 @@ async function nodeIdsByType(
   classTypes: string[]
 ): Promise<string[]> {
   return await page.evaluate((types) => {
-    const nodes = window.app!.graph.nodes ?? []
+    const nodes = window.app!.graph.nodes
     return nodes
       .filter((node) => {
         const n = node as { comfyClass?: string; type?: string }
@@ -176,8 +176,8 @@ for (const entry of manifestEntries) {
             servedExtensionPaths,
             entry.pack
           )
-          const exclusion = FRONTEND_ASSET_EXCLUSIONS[entry.pack]
-          if (exclusion) {
+          if (entry.pack in FRONTEND_ASSET_EXCLUSIONS) {
+            const exclusion = FRONTEND_ASSET_EXCLUSIONS[entry.pack]
             expect(packIdentity(entry)).toBe(exclusion.deployRef)
             expect(webDirectory).toBe(exclusion.webDirectory)
             expect(

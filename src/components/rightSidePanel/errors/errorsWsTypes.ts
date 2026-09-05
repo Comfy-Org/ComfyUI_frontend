@@ -25,7 +25,7 @@ export interface NodeError {
 export interface ExecutionErrorWsMessage {
   prompt_id: string
   timestamp: number
-  node_id: WsNodeId
+  node_id?: WsNodeId | null
   node_type: string
   executed: WsNodeId[]
   exception_message: string

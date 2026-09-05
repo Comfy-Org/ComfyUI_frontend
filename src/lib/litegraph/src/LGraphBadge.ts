@@ -64,7 +64,7 @@ export class LGraphBadge {
   }
 
   get visible() {
-    return (this.text?.length ?? 0) > 0 || !!this.icon
+    return this.text.length > 0 || !!this.icon
   }
 
   getWidth(ctx: CanvasRenderingContext2D) {
@@ -102,12 +102,7 @@ export class LGraphBadge {
     // Draw badge background
     ctx.fillStyle = this.bgColor
     ctx.beginPath()
-    if (ctx.roundRect) {
-      ctx.roundRect(x + badgeX, y, badgeWidth, this.height, this.cornerRadius)
-    } else {
-      // Fallback for browsers that don't support roundRect
-      ctx.rect(x + badgeX, y, badgeWidth, this.height)
-    }
+    ctx.roundRect(x + badgeX, y, badgeWidth, this.height, this.cornerRadius)
     ctx.fill()
 
     let drawX = x + badgeX + this.padding

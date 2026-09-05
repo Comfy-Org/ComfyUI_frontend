@@ -29,15 +29,19 @@ const { mockFocusNode, mockRefreshMissingModels } = vi.hoisted(() => ({
   mockRefreshMissingModels: vi.fn()
 }))
 
-vi.mock('@/scripts/app', () => ({
-  app: {
-    refreshMissingModels: mockRefreshMissingModels,
-    rootGraph: {
-      serialize: vi.fn(() => ({})),
-      getNodeById: vi.fn()
+vi.mock('@/scripts/app', () => {
+  const rootGraph = {
+    serialize: vi.fn(() => ({})),
+    getNodeById: vi.fn()
+  }
+  return {
+    app: {
+      refreshMissingModels: mockRefreshMissingModels,
+      rootGraph,
+      rootGraphOrUndefined: rootGraph
     }
   }
-}))
+})
 
 vi.mock('@/utils/graphTraversalUtil', () => ({
   collectAllNodes: vi.fn(() => []),
@@ -248,7 +252,7 @@ describe('TabErrors.vue', () => {
         NonNullable<ReturnType<typeof getNodeByExecutionId>>,
         unknown
       >({
-        title: titles[String(nodeId)] ?? ''
+        title: titles[nodeId] ?? ''
       })
     })
 
@@ -738,7 +742,7 @@ describe('TabErrors.vue', () => {
         NonNullable<ReturnType<typeof getNodeByExecutionId>>,
         unknown
       >({
-        title: titles[String(nodeId)] ?? ''
+        title: titles[nodeId] ?? ''
       })
     })
 
@@ -1128,7 +1132,7 @@ describe('TabErrors.vue', () => {
     const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockImplementation((_, executionId) =>
       fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
-        id: String(executionId),
+        id: executionId,
         title: 'Node'
       })
     )
@@ -1192,7 +1196,7 @@ describe('TabErrors.vue', () => {
     const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockImplementation((_, executionId) =>
       fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
-        id: String(executionId),
+        id: executionId,
         title: 'Node'
       })
     )

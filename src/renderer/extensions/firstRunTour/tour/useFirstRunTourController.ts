@@ -91,7 +91,7 @@ function useFirstRunTourControllerInternal() {
       // so an unconditional branch here would re-read that stale value and put
       // the card back on "your result lands right here" after the watcher
       // below has already failed the run.
-      if (status === 'running' && previous?.[0] !== 'running')
+      if (status === 'running' && previous[0] !== 'running')
         runState.value = 'generating'
       else if (status === 'completed') runState.value = 'succeeded'
       else if (status === 'failed') runState.value = 'failed'
@@ -99,7 +99,7 @@ function useFirstRunTourControllerInternal() {
       // reporting an outcome. Both end the run, and neither says so.
       else if (refused && runState.value === 'generating')
         runState.value = 'failed'
-      else if (status === undefined && previous?.[0] === 'running')
+      else if (status === undefined && previous[0] === 'running')
         runState.value = 'failed'
     }
   )
@@ -256,8 +256,8 @@ function useFirstRunTourControllerInternal() {
     await delay(INTRO_PREVIEW_MS)
     // The preview is long enough for the canvas to go away underneath it, and
     // the holds watcher cannot catch that: there is no active tour to end yet.
-    const started =
-      canvasContextHolds.value && (await engine.startTour('firstRun'))
+    const contextStillHolds = (): boolean => canvasContextHolds.value
+    const started = contextStillHolds() && (await engine.startTour('firstRun'))
     if (!started) {
       releaseFirstRunTargets()
       tourWorkflow.value = null
