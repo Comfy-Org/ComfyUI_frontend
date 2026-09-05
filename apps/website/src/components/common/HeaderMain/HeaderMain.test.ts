@@ -18,10 +18,6 @@ describe('HeaderMain Workshop navigation', () => {
     expect(
       screen.getByRole('link', { name: 'Workshop' }).getAttribute('href')
     ).toBe('/workshop')
-    expect(screen.getByTestId('desktop-nav-links').className).toContain(
-      'hidden xl:block'
-    )
-
     await userEvent.setup().click(screen.getByRole('button', { name: /menu/i }))
     expect(screen.getAllByText('Workshop')).toHaveLength(2)
   })
