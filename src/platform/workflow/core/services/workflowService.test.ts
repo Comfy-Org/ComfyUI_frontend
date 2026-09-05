@@ -81,7 +81,10 @@ const draftStoreMocks = vi.hoisted(() => ({
   saveDraft: vi.fn(() => true),
   getDraft: vi.fn(),
   removeDraft: vi.fn(),
-  markDraftUsed: vi.fn()
+  markDraftUsed: vi.fn(),
+  isPersistencePaused: vi.fn(() => false),
+  shouldNotifySaveFailure: vi.fn(() => true),
+  markSaveSucceeded: vi.fn()
 }))
 
 const subgraphNavigationMocks = vi.hoisted(() => ({
@@ -405,7 +408,8 @@ describe('useWorkflowService', () => {
         JSON.stringify(activeWorkflow.activeState),
         {
           name: activeWorkflow.key,
-          isTemporary: activeWorkflow.isTemporary
+          isTemporary: activeWorkflow.isTemporary,
+          isModified: activeWorkflow.isModified
         }
       )
     })
