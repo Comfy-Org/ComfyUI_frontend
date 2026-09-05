@@ -10,8 +10,8 @@
         {{ workspaceName }}
       </h1>
     </header>
-    <TabsRoot v-model="activeTab">
-      <TabsList class="flex items-center gap-2 pb-1">
+    <TabsRoot v-model="activeTab" class="flex min-h-0 flex-1 flex-col">
+      <TabsList class="flex shrink-0 items-center gap-2 pb-1">
         <TabsTrigger
           value="plan"
           :class="
@@ -42,12 +42,12 @@
         </TabsTrigger>
       </TabsList>
 
-      <BillingStatusBanner class="mt-4" />
+      <BillingStatusBanner class="mt-4 shrink-0" />
 
-      <TabsContent value="plan" class="mt-4">
+      <TabsContent value="plan" class="mt-4 min-h-0 flex-1 overflow-auto">
         <SubscriptionPanelContentWorkspace />
       </TabsContent>
-      <TabsContent value="members" class="mt-4">
+      <TabsContent value="members" class="mt-4 min-h-0 flex-1">
         <MembersPanelContent :key="workspaceRole" />
       </TabsContent>
     </TabsRoot>
