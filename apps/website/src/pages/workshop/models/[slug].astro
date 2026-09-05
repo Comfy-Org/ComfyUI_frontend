@@ -1,0 +1,103 @@
+---
+import type { GetStaticPaths } from 'astro'
+import { getCollection } from 'astro:content'
+
+import WorkshopForm from '../../../components/workshop/WorkshopForm.vue'
+import type { WorkshopDetailModel } from '../../../config/workshop-detail'
+import {
+  relatedWorkshopModels,
+  toDetailModel
+} from '../../../config/workshop-detail'
+import { t } from '../../../i18n/translations'
+import BaseLayout from '../../../layouts/BaseLayout.astro'
+
+export const getStaticPaths: GetStaticPaths = async () => {
+  // One pass over the collection: every page needs the whole set anyway to
+  // pick its related models, and Astro calls this once per build.
+  const models = (await getCollection('workshopModels')).map((entry) =>
+    toDetailModel(entry.data)
+  )
+  return models.map((model) => ({
+    params: { slug: model.slug },
+    props: { model, related: relatedWorkshopModels(model, models) }
+  }))
+}
+
+interface Props {
+  model: WorkshopDetailModel
+  related: readonly WorkshopDetailModel[]
+}
+
+const { model, related } = Astro.props
+---
+
+<BaseLayout
+  title={`${model.displayName} · Workshop - Comfy`}
+  description={model.description}
+  noindex
+>
+  <main class="mx-auto max-w-10xl px-6 py-12 lg:px-8 lg:py-16">
+    <nav aria-label="Breadcrumb" class="mb-8 text-sm text-primary-comfy-canvas/55">
+      <a href="/workshop/" class="hover:text-primary-comfy-yellow">
+        {t('workshop.model.breadcrumb')}
+      </a>
+      <span aria-hidden="true" class="mx-2">/</span>
+      <span aria-current="page" class="text-primary-comfy-canvas">
+        {model.displayName}
+      </span>
+    </nav>
+
+    <header class="mb-12 max-w-4xl">
+      <p class="text-sm tracking-widest text-primary-comfy-yellow uppercase">
+        {model.provider}
+      </p>
+      <h1 class="mt-3 text-4xl font-bold text-primary-comfy-canvas lg:text-6xl">
+        {model.displayName}
+      </h1>
+      <p class="mt-5 text-lg text-primary-comfy-canvas/70">
+        {model.description}
+      </p>
+      <ul class="mt-6 flex flex-wrap gap-2">
+        {
+          model.tags.slice(0, 8).map((tag) => (
+            <li class="rounded-full bg-primary-comfy-canvas/8 px-3 py-1 text-xs text-primary-comfy-canvas/65">
+              {tag}
+            </li>
+          ))
+        }
+      </ul>
+    </header>
+
+    <div class="max-w-2xl">
+      <WorkshopForm model={model} client:load />
+    </div>
+
+    <section class="mt-20 border-t border-primary-comfy-canvas/10 pt-10">
+      <div class="flex items-center justify-between gap-4">
+        <h2 class="text-2xl font-semibold text-primary-comfy-canvas">
+          {t('workshop.model.related')}
+        </h2>
+        <a href="/workshop/" class="text-sm text-primary-comfy-yellow hover:underline">
+          {t('workshop.model.browseAll')}
+        </a>
+      </div>
+      <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {
+          related.map((candidate) => (
+            <a
+              href={`/workshop/models/${candidate.slug}/`}
+              class="rounded-2xl border border-primary-comfy-canvas/10 bg-primary-comfy-canvas/5 p-5 transition-colors hover:border-primary-comfy-yellow/60"
+            >
+              <p class="text-xs tracking-wider text-primary-comfy-yellow uppercase">
+                {candidate.provider}
+              </p>
+              <h3 class="mt-2 font-medium text-primary-comfy-canvas">
+                {candidate.displayName}
+              </h3>
+            </a>
+          ))
+        }
+      </div>
+    </section>
+  </main>
+</BaseLayout>
