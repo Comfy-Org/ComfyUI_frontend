@@ -309,6 +309,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       answeringAskIds.value.has(askId)
     )
       return
+    const answerOwnedGeneration = ownedGeneration
+    const answerSessionGeneration = sessionGeneration
     const generation = loadGeneration
     const isCurrent = () =>
       generation === loadGeneration && ownedGeneration === sessionGeneration
@@ -321,7 +323,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // the failure lands on a thread the user already left.
       setAskAnswering(askId, false)
       if (error instanceof AgentApiError && error.status === 409) {
-        if (ownedGeneration !== sessionGeneration) return
+        if (
+          answerOwnedGeneration !== ownedGeneration ||
+          answerSessionGeneration !== sessionGeneration
+        )
+          return
         conversationStore.ingest({
           type: 'agent_ask_resolved',
           data: {

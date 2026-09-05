@@ -522,6 +522,7 @@ describe('useAgentSession (v1 composition root)', () => {
     const pendingAnswer = session.answerAsk('turn-1:call-1', 'run')
     await vi.waitFor(() => expect(answerAsk).toHaveBeenCalledOnce())
     session.stop()
+    session.start()
 
     const conversationStore = useAgentConversationStore()
     const ingest = vi.spyOn(conversationStore, 'ingest')
