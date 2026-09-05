@@ -41,7 +41,7 @@
 
   "ignoreExports": [
     // Public extension API surface, deliberately exported for the 40+ custom-node
-    // ecosystem (ADR 0003 / 0008). No internal importer by design.
+    // ecosystem (ADR-LAYOUT / ADR-ECS). No internal importer by design.
     { "file": "src/types/index.ts", "exports": ["*"] },
     { "file": "src/lib/litegraph/src/litegraph.ts", "exports": ["*"] },
     { "file": "src/scripts/ui/menu/index.ts", "exports": ["*"] },
