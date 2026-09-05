@@ -81,6 +81,12 @@ function refreshPromotedRows() {
   promotedRows.value = node ? buildPromotedRows(node) : []
 }
 watch(activeNode, refreshPromotedRows, { immediate: true })
+
+// `node.subgraph.nodes` and each widget's `computedDisabled` are plain
+// litegraph state, not Vue-reactive, so promoting or demoting a widget
+// wouldn't otherwise invalidate `interiorWidgets` below. Track the same
+// events that refresh `promotedRows` to force it to recompute too.
+const promotionVersion = ref(0)
 useEventListener(
   () => activeNode.value?.subgraph.events,
   [
@@ -90,7 +96,10 @@ useEventListener(
     'removing-input',
     'inputs-reordered'
   ],
-  refreshPromotedRows
+  () => {
+    refreshPromotedRows()
+    promotionVersion.value++
+  }
 )
 
 function promotedRowSource(row: PromotedRow): PromotedSource | undefined {
@@ -157,6 +166,7 @@ function updateActivePromotedRows(
 const interiorWidgets = computed<WidgetItem[]>(() => {
   const node = activeNode.value
   if (!node) return []
+  void promotionVersion.value
   const { updatePreviews } = useLitegraphService()
   const interiorNodes = node.subgraph.nodes
   for (const node of interiorNodes) {

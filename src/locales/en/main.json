@@ -4292,6 +4292,7 @@
     "addFavorite": "Favorite",
     "removeFavorite": "Unfavorite",
     "showInput": "Show input",
+    "hideInput": "Hide input",
     "locateNode": "Locate node on canvas",
     "locateNodeFor": "Locate {item}",
     "favorites": "FAVORITED INPUTS",

@@ -1,8 +1,13 @@
-import { render } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
+import {
+  demoteWidget,
+  promoteValueWidgetViaSubgraphInput,
+  promoteWidget
+} from '@/core/graph/subgraph/promotionUtils'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
@@ -23,7 +28,15 @@ vi.mock('@/services/litegraphService', () => ({
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: { en: { rightSidePanel: { inputs: 'Inputs', inputsNone: 'None' } } }
+  messages: {
+    en: {
+      rightSidePanel: {
+        inputs: 'Inputs',
+        inputsNone: 'None',
+        advancedInputs: 'Advanced Inputs'
+      }
+    }
+  }
 })
 
 const captured: { rows: { node: LGraphNode; widget: IBaseWidget }[] } = {
@@ -119,5 +132,58 @@ describe('TabSubgraphInputs', () => {
       100
     )
     expect(seedRow.widget.value).toBe(100)
+  })
+
+  it('shows a widget in Advanced Inputs immediately after Hide input, and lets it be re-shown', async () => {
+    const { host, sourceNode } = buildHostWithPromotedSeed()
+    const seedWidget = sourceNode.widgets?.find((w) => w.name === 'seed')
+    if (!seedWidget) throw new Error('Missing seed widget')
+
+    const AdvancedAwareSectionWidgetsStub = {
+      props: {
+        widgets: { type: Array, default: () => [] },
+        showNodeName: { type: Boolean, default: false }
+      },
+      setup(props: Record<string, unknown>) {
+        return () =>
+          h(
+            'div',
+            {
+              'data-testid': props.showNodeName
+                ? 'advanced-inputs-section'
+                : 'main-inputs-section'
+            },
+            (props.widgets as { widget: IBaseWidget }[]).map((row) =>
+              h('span', row.widget.name)
+            )
+          )
+      }
+    }
+
+    render(TabSubgraphInputs, {
+      props: { node: host },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          SectionWidgets: AdvancedAwareSectionWidgetsStub,
+          PanelSearchHeader: true,
+          CollapseToggleButton: true
+        }
+      }
+    })
+
+    expect(screen.queryByTestId('advanced-inputs-section')).toBeNull()
+
+    demoteWidget(sourceNode, seedWidget, [host])
+    await nextTick()
+
+    expect(screen.getByTestId('advanced-inputs-section').textContent).toContain(
+      'seed'
+    )
+
+    promoteWidget(sourceNode, seedWidget, [host])
+    await nextTick()
+
+    expect(screen.queryByTestId('advanced-inputs-section')).toBeNull()
   })
 })
