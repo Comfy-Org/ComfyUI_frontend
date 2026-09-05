@@ -2358,6 +2358,70 @@ describe('AgentPanelRoot workflow binding', () => {
     ).toHaveTextContent('other')
   })
 
+  it.for([true, false])(
+    'only waits for the Cloud index when target identity is missing (bound: %s)',
+    async (hasBinding) => {
+      makeTab('wf-42')
+      const other = addTab('workflows/other.json')
+      if (hasBinding)
+        useAgentWorkflowTabBindingStore().bind('wf-other', other.path)
+      let finishLookup = () => {}
+      const pendingLookup = new Promise<void>((resolve) => {
+        finishLookup = resolve
+      })
+      let lookupCount = 0
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (url: string) => {
+          if (url.includes('/workflows')) {
+            lookupCount++
+            await pendingLookup
+            return json(200, {
+              data: [{ id: 'wf-other', name: 'other' }],
+              pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+            })
+          }
+          if (url.includes('/agent/threads')) return json(200, { threads: [] })
+          return json(200, {})
+        })
+      )
+      renderWithSelectedTarget()
+      await vi.waitFor(() => expect(lookupCount).toBe(1))
+      try {
+        await userEvent.click(
+          screen.getByRole('button', {
+            name: i18n.global.t('agent.switchWorkflow')
+          })
+        )
+        await userEvent.click(
+          await screen.findByRole('menuitemradio', { name: 'other' })
+        )
+        if (hasBinding) {
+          await vi.waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+          expect(lookupCount).toBe(1)
+        } else {
+          await vi.waitFor(() => expect(lookupCount).toBe(2))
+          expect(workflowService.openWorkflow).not.toHaveBeenCalled()
+          expect(
+            screen.getByRole('menuitemradio', { name: 'current' })
+          ).toBeChecked()
+          finishLookup()
+          await vi.waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+        }
+        expect(workflowService.openWorkflow).toHaveBeenCalledWith(other)
+        expect(
+          screen.getByRole('button', {
+            name: i18n.global.t('agent.switchWorkflow')
+          })
+        ).toHaveTextContent('other')
+      } finally {
+        finishLookup()
+        await pendingLookup
+        await nextTick()
+      }
+    }
+  )
+
   it.for(['binding', 'cloud index', 'temporary binding'] as const)(
     'selects an existing Cloud workflow without saving its edits via %s',
     async (identitySource) => {
