@@ -10,9 +10,14 @@ import HeaderMainDesktop from './HeaderMainDesktop.vue'
 import HeaderMainMobile from './HeaderMainMobile.vue'
 import Button from '@/components/ui/button/Button.vue'
 
-const { locale = 'en', githubStars = '' } = defineProps<{
+const {
+  locale = 'en',
+  githubStars = '',
+  showWorkshop = false
+} = defineProps<{
   locale?: Locale
   githubStars?: string
+  showWorkshop?: boolean
 }>()
 const routes = getRoutes(locale)
 const workshopAuthEnabled = useWorkshopAuthFlag()
@@ -65,13 +70,13 @@ const ctaButtons = [
     </a>
 
     <!-- Desktop nav links -->
-    <HeaderMainDesktop :locale class="hidden lg:block" />
-    <HeaderMainMobile :locale class="lg:hidden" />
+    <HeaderMainDesktop :locale :show-workshop class="hidden 2xl:block" />
+    <HeaderMainMobile :locale :show-workshop class="2xl:hidden" />
 
     <!-- Desktop CTA buttons -->
     <div
       data-testid="desktop-nav-cta"
-      class="hidden shrink-0 items-center gap-2 lg:flex"
+      class="hidden shrink-0 items-center gap-2 2xl:flex"
     >
       <!-- Get Yoland to sign a contract of permission before killing this -->
       <GitHubStarBadge v-if="githubStars" :stars="githubStars" />
