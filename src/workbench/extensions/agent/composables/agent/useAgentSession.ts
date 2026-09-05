@@ -174,6 +174,47 @@ export function useAgentSession(deps: AgentSessionDeps) {
     })
   }
 
+  /**
+   * The last malformed-frame capture: which turn it belonged to (`null` for the
+   * idle stretch between turns) and whether the user saw it. A stream that has
+   * drifted from the schema, or a hostile one, repeats the same frame
+   * indefinitely, so the capture is deduped per turn rather than per frame —
+   * one report carries the same signal without an unbounded PostHog queue
+   * behind it. A later frame in the same turn is still reported if it escalates
+   * to something the user sees, since that is the case worth a dashboard.
+   */
+  let malformedStreamReport: {
+    turnId: TurnId | null
+    visible: boolean
+  } | null = null
+
+  /**
+   * Every frame that fails `parseAgentWsEvent` is schema drift worth measuring,
+   * not just the `agent_message_done` sub-case that reaches the user: the rest
+   * are dropped with a `console.warn` no cloud console can see. `uiTreatment`
+   * records which of the two the user actually saw. A malformed frame is never
+   * retryable — nothing here can be re-sent — and `post_acceptance` is claimed
+   * only when a turn really was running.
+   */
+  function trackMalformedStreamEvent(
+    activeTurnId: TurnId | null,
+    uiTreatment: AgentErrorMetadata['ui_treatment']
+  ): void {
+    const visible = uiTreatment !== 'none'
+    if (
+      malformedStreamReport?.turnId === activeTurnId &&
+      (malformedStreamReport.visible || !visible)
+    )
+      return
+    malformedStreamReport = { turnId: activeTurnId, visible }
+    trackAgentError(
+      'malformed_stream_event',
+      activeTurnId === null ? 'pre_acceptance' : 'post_acceptance',
+      uiTreatment,
+      { retryable: false }
+    )
+  }
+
   function start(): void {
     ownedGeneration = ++sessionGeneration
     everLive = false
@@ -463,6 +504,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (!parsed.success) {
       const messageId = (raw as { data?: { message_id?: unknown } }).data
         ?.message_id
+      // Read before the abort below clears it, or every aborted turn reports
+      // itself as having had no turn.
+      const activeTurnId = conversationStore.activeTurnId
+      let uiTreatment: AgentErrorMetadata['ui_treatment'] = 'none'
       if (type === 'agent_message_done') {
         if (
           typeof messageId !== 'string' ||
@@ -470,15 +515,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
         ) {
           conversationStore.abortActiveTurn()
           pushError(i18n.global.t('agent.malformedEvent'))
-          trackAgentError(
-            'malformed_stream_event',
-            'post_acceptance',
-            'error_overlay'
-          )
+          uiTreatment = 'error_overlay'
         } else {
           conversationStore.settleBackgroundTurn(messageId)
         }
       }
+      trackMalformedStreamEvent(activeTurnId, uiTreatment)
       console.warn('[agent] dropping malformed agent event', parsed.error)
       return
     }

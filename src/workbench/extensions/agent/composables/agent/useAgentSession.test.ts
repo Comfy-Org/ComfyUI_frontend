@@ -1876,6 +1876,74 @@ describe('app:agent_error telemetry (TEL-8)', () => {
     })
   })
 
+  it('does not claim an accepted turn for a malformed frame on an idle session', async () => {
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest: fakeRest(), events: source })
+    session.start()
+
+    emit({ type: 'agent_message_done', data: { thread_id: 'th-1' } })
+
+    expect(telemetryState.trackAgentError).toHaveBeenCalledWith({
+      error_class: 'malformed_stream_event',
+      failure_stage: 'pre_acceptance',
+      retryable: false,
+      turn_accepted: false,
+      ui_treatment: 'error_overlay'
+    })
+  })
+
+  it('bounds a repeating malformed stream to one report per turn', async () => {
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest: fakeRest(), events: source })
+    session.start()
+    await session.sendMessage('go')
+
+    for (let i = 0; i < 20; i++)
+      emit({ type: 'agent_message_done', data: { thread_id: 'th-1' } })
+
+    // One for the turn the first frame aborted, one for the idle session the
+    // other nineteen arrived into. The count is what matters: a stream that
+    // never stops repeating cannot grow the capture count with it.
+    expect(telemetryState.trackAgentError).toHaveBeenCalledTimes(2)
+  })
+
+  it('tracks malformed frames of event types that never reach the user', async () => {
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest: fakeRest(), events: source })
+    session.start()
+    await session.sendMessage('go')
+
+    emit({ type: 'agent_message_delta', data: { thread_id: 'th-1' } })
+
+    expect(telemetryState.trackAgentError).toHaveBeenCalledWith({
+      error_class: 'malformed_stream_event',
+      failure_stage: 'post_acceptance',
+      retryable: false,
+      turn_accepted: true,
+      ui_treatment: 'none'
+    })
+    expect(session.notices.value).toEqual([])
+  })
+
+  it('still reports the frame that escalates to the user after a silent one', async () => {
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest: fakeRest(), events: source })
+    session.start()
+    await session.sendMessage('go')
+
+    emit({ type: 'agent_message_delta', data: { thread_id: 'th-1' } })
+    emit({ type: 'agent_message_done', data: { thread_id: 'th-1' } })
+
+    expect(telemetryState.trackAgentError).toHaveBeenCalledTimes(2)
+    expect(telemetryState.trackAgentError).toHaveBeenLastCalledWith({
+      error_class: 'malformed_stream_event',
+      failure_stage: 'post_acceptance',
+      retryable: false,
+      turn_accepted: true,
+      ui_treatment: 'error_overlay'
+    })
+  })
+
   it('tracks a pre-acceptance thread-history load failure', async () => {
     const rest = fakeRest({
       getMessages: vi.fn(async () => {
