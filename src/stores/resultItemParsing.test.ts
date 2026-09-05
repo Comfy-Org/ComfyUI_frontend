@@ -130,6 +130,14 @@ describe(parseNodeOutput, () => {
     expect(result[0].mediaType).toBe('images')
   })
 
+  it('parses inline text outputs', () => {
+    const result = parseNodeOutput('1', makeOutput({ text: ['hello'] }))
+
+    expect(result).toStrictEqual([
+      expect.objectContaining({ content: 'hello', isText: true })
+    ])
+  })
+
   it('excludes non-ResultItem array items', () => {
     const output = fromPartial<NodeExecutionOutput>({
       images: [{ filename: 'img.png', subfolder: '', type: 'output' }],
