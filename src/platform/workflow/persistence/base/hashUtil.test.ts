@@ -1,42 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { fnv1a, hashPath } from './hashUtil'
-
-describe('fnv1a', () => {
-  it('returns consistent hash for same input', () => {
-    const hash1 = fnv1a('workflows/test.json')
-    const hash2 = fnv1a('workflows/test.json')
-    expect(hash1).toBe(hash2)
-  })
-
-  it('returns different hashes for different inputs', () => {
-    const hash1 = fnv1a('workflows/a.json')
-    const hash2 = fnv1a('workflows/b.json')
-    expect(hash1).not.toBe(hash2)
-  })
-
-  it('returns unsigned 32-bit integer', () => {
-    const hash = fnv1a('test')
-    expect(hash).toBeGreaterThanOrEqual(0)
-    expect(hash).toBeLessThanOrEqual(0xffffffff)
-  })
-
-  it('handles empty string', () => {
-    const hash = fnv1a('')
-    expect(hash).toBe(2166136261)
-  })
-
-  it('handles unicode characters', () => {
-    const hash = fnv1a('workflows/工作流程.json')
-    expect(hash).toBeGreaterThanOrEqual(0)
-    expect(hash).toBeLessThanOrEqual(0xffffffff)
-  })
-
-  it('handles special characters', () => {
-    const hash = fnv1a('workflows/My Workflow (Copy 2).json')
-    expect(hash).toBeGreaterThanOrEqual(0)
-  })
-})
+import { hashPath } from './hashUtil'
 
 describe('hashPath', () => {
   it('returns 8-character hex string', () => {
@@ -44,10 +8,9 @@ describe('hashPath', () => {
     expect(result).toMatch(/^[0-9a-f]{8}$/)
   })
 
-  it('pads short hashes with leading zeros', () => {
-    const result = hashPath('')
-    expect(result).toHaveLength(8)
-    expect(result).toBe('811c9dc5')
+  it('keys the same path the same way it did in earlier releases', () => {
+    expect(hashPath('')).toBe('811c9dc5')
+    expect(hashPath('workflows/Untitled.json')).toBe('325d5d45')
   })
 
   it('returns consistent results', () => {
