@@ -13,13 +13,12 @@ These are the primary architectural guardrails. Every entity/litegraph change mu
 
 ### Command Pattern (ADR-LAYOUT)
 
-All entity state mutations MUST be expressible as **serializable, idempotent, deterministic commands**. This is required for CRDT sync, undo/redo, cross-environment portability, and gateway backends.
+Durable entity-geometry mutations MUST flow through explicit, serializable `LayoutOperation` objects rather than direct property access. This requirement covers persistent node, group, and reroute geometry. It does not make commands mandatory for every entity mutation: non-layout stores currently expose direct actions, and graph operations still coordinate imperative class callbacks.
 
 Flag:
 
-- **Direct spatial mutation** — `node.pos = ...`, `node.size = ...`, `group.pos = ...` outside of a store or command. All spatial data flows through `layoutStore` commands.
-- **Imperative fire-and-forget mutation** — Any new API that mutates entity state as a side effect rather than producing a serializable command object. Systems should produce command batches, not execute mutations directly.
-- **Void-returning mutation APIs** — New entity mutation functions that return `void` instead of a result type (`{ status: 'applied' | 'rejected' | 'no-op' }`). Commands need error/rejection semantics.
+- **Direct durable spatial mutation** — `node.pos = ...`, `node.size = ...`, `group.pos = ...` outside of `layoutStore` operations.
+- **Bypassing layout operations** — New APIs that mutate persistent node, group, or reroute geometry without applying a `LayoutOperation`.
 - **Auto-incrementing IDs in new entity code** — New entity creation using auto-increment counters without acknowledging the CRDT collision problem. Concurrent environments need globally unique, stable identifiers.
 
 ### ECS Architecture (ADR-ECS)
