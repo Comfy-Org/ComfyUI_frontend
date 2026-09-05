@@ -33,6 +33,7 @@ import { LayoutSource } from '@/renderer/core/layout/types'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { GraphScope } from '@/types/graphScopeId'
@@ -971,6 +972,88 @@ describe('reconcileAgentAdapters', () => {
       expect(registered?.nodes.map((node) => node.id)).toEqual([toNodeId(7)])
       expect(created).toHaveBeenCalledOnce()
       expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('preserves a pre-existing definition across an agent document reset', () => {
+      const definition = createTestSubgraphData()
+      const preExisting = graph.createSubgraph(definition)
+      reconcileAgentAdapters(graph, [definition])
+
+      reconcileAgentAdapters(graph, [], { replaceSubgraphDefinitions: true })
+
+      expect(graph.subgraphs.get(definition.id)).toBe(preExisting)
+      expect(LiteGraph.registered_node_types[definition.id]).toBeDefined()
+    })
+
+    it('retires an agent definition from every registry after a document reset', () => {
+      const definition = createTestSubgraphData({
+        nodes: [nodePayload(7)] as never
+      })
+      const { adapter, follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id)],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+      LiteGraph.registerNodeType(
+        definition.id,
+        LiteGraph.registered_node_types[definition.id]
+      )
+      useNodeDefStore().addNodeDef({
+        name: definition.id,
+        display_name: definition.name,
+        category: 'subgraph',
+        python_module: 'nodes',
+        description: '',
+        input: {},
+        output: [],
+        output_is_list: [],
+        output_name: [],
+        output_node: false
+      })
+
+      expect(graph.subgraphs.has(definition.id)).toBe(true)
+      expect(useNodeDefStore().nodeDefsByName[definition.id]).toBeDefined()
+      expect(LiteGraph.registered_node_types[definition.id]).toBeDefined()
+
+      adapter.clearForReset('workflow', REMOTE)
+      reconcileAgentAdapters(graph, [], { replaceSubgraphDefinitions: true })
+
+      expect(graph.subgraphs.has(definition.id)).toBe(false)
+      expect(useNodeDefStore().nodeDefsByName[definition.id]).toBeUndefined()
+      expect(LiteGraph.registered_node_types[definition.id]).toBeUndefined()
+      expect(graph.getNodeById(toNodeId(1))).toBeFalsy()
+    })
+
+    it('recreates a reused definition id from the replacement document', () => {
+      const definition = createTestSubgraphData({
+        nodes: [nodePayload(7)] as never
+      })
+      const first = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id)],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(first.follower.doc))
+      const stale = graph.subgraphs.get(definition.id)
+
+      first.adapter.clearForReset('workflow', REMOTE)
+      const replacement = { ...definition, nodes: [nodePayload(8)] as never }
+      const second = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id)],
+        links: [],
+        definitions: { subgraphs: [replacement] }
+      })
+      reconcileAgentAdapters(
+        graph,
+        readSubgraphDefinitions(second.follower.doc),
+        { replaceSubgraphDefinitions: true }
+      )
+
+      const current = graph.subgraphs.get(definition.id)
+      expect(current).not.toBe(stale)
+      expect(current?.nodes.map((node) => node.id)).toEqual([toNodeId(8)])
+      expect(graph.getNodeById(toNodeId(1))).toBeInstanceOf(SubgraphNode)
     })
 
     it('carries interior widget values into the instantiated subgraph', () => {
