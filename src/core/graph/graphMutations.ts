@@ -225,7 +225,7 @@ function widgetEntries(payload: SemanticNodePayload): PreparedNode['widgets'] {
 function hasTitle(
   payload: SemanticNodePayload
 ): payload is SemanticNodePayload & { title: string } {
-  return typeof payload.title === 'string' && payload.title.length > 0
+  return typeof payload.title === 'string'
 }
 
 function prepareNode(
@@ -355,10 +355,11 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           }
           const node = prepareNode(mutation.payload, scope)
           const key = nodeKey(node.state.id)
-          const incumbent = nodeStore.getNode(scope.rootGraphId, node.state.id)
-          if (incumbent && incumbent.graphId !== scope.owningGraphId) {
-            return `node id ${key} belongs to graph ${incumbent.graphId}`
+          const registered = nodeStore.getNode(scope.rootGraphId, node.state.id)
+          if (registered && registered.graphId !== scope.owningGraphId) {
+            return `node id ${key} belongs to graph ${registered.graphId}`
           }
+          const incumbent = nodes.get(key)
           // A reconcile payload without a title leaves the title unspecified;
           // it does not rename the node to its type. The incumbent's title
           // may have come from the node class (`configure()` falls back to
@@ -369,6 +370,9 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             !hasTitle(mutation.payload)
           ) {
             node.state.title = incumbent.title
+            if (node.state.lastSerialization) {
+              node.state.lastSerialization.title = incumbent.title
+            }
           }
           if (mutation.kind === 'addNode' && nodes.has(key)) {
             return `node id ${key} is already registered`

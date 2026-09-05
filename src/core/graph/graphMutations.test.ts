@@ -270,10 +270,42 @@ describe('graphMutations', () => {
     const [reconciled] = useNodeDataStore().getGraphNodesFor('root', 'root')
     expect(reconciled).toBe(existing)
     expect(reconciled.title).toBe('Load Checkpoint')
+    expect(reconciled.lastSerialization?.title).toBe('Load Checkpoint')
     expect(
       useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), 'seed'))
         ?.value
     ).toBe(7)
+  })
+
+  it('keeps a title introduced earlier in the same batch', () => {
+    const graph = mutations()
+
+    expect(
+      graph.batch(context, (batch) => {
+        batch.addNode({ ...node(1), title: 'Batch title' })
+        const { title: _title, ...untitled } = node(1, { seed: 7 })
+        batch.reconcileNode(untitled)
+      })
+    ).toBe(true)
+
+    const [reconciled] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    expect(reconciled.title).toBe('Batch title')
+    expect(reconciled.lastSerialization?.title).toBe('Batch title')
+  })
+
+  it('applies an intentionally empty title', () => {
+    const graph = mutations()
+    graph.addNode({ ...node(1), title: 'Initial title' }, context)
+
+    expect(
+      graph.batch(context, (batch) => {
+        batch.reconcileNode({ ...node(1), title: '' })
+      })
+    ).toBe(true)
+
+    const [reconciled] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    expect(reconciled.title).toBe('')
+    expect(reconciled.lastSerialization?.title).toBe('')
   })
 
   it('updates endpoint slot records while retaining the supplied link id', () => {
