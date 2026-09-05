@@ -10,7 +10,7 @@ function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === 'string')
 }
 
-type FieldOption = string | number
+type FieldOption = string | number | boolean
 
 export type WorkshopCatalogField =
   | {
@@ -52,7 +52,7 @@ export type WorkshopCatalogField =
       readonly label: string
       readonly hint?: string
       readonly required: boolean
-      readonly defaultValue: boolean
+      readonly defaultValue?: boolean
     }
   | {
       readonly kind: 'media'
@@ -82,7 +82,9 @@ function primitiveOptions(schema: Record<string, unknown>): FieldOption[] {
   if (Array.isArray(schema.enum)) {
     return schema.enum.filter(
       (value): value is FieldOption =>
-        typeof value === 'string' || typeof value === 'number'
+        typeof value === 'string' ||
+        typeof value === 'number' ||
+        typeof value === 'boolean'
     )
   }
   if (!Array.isArray(schema.anyOf)) return []
@@ -138,7 +140,9 @@ function fieldFor(
   }
   if (options.length > 0) {
     const defaultValue =
-      typeof schema.default === 'string' || typeof schema.default === 'number'
+      typeof schema.default === 'string' ||
+      typeof schema.default === 'number' ||
+      typeof schema.default === 'boolean'
         ? schema.default
         : undefined
     return {
@@ -173,7 +177,9 @@ function fieldFor(
     return {
       kind: 'toggle',
       ...common,
-      defaultValue: typeof schema.default === 'boolean' ? schema.default : false
+      ...(typeof schema.default === 'boolean'
+        ? { defaultValue: schema.default }
+        : {})
     }
   }
   if (schema.type === 'string') {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { safeReturnPath } from './workshop-return'
+import { requestedReturnPath, safeReturnPath } from './workshop-return'
 
 describe('safeReturnPath', () => {
   it('passes a same-origin absolute path through', () => {
@@ -28,5 +28,21 @@ describe('safeReturnPath', () => {
       safeReturnPath(raw),
       'the browser strips C0 control chars before parsing, so /<TAB>//evil.com resolves cross-origin'
     ).toBe('/workshop/')
+  })
+})
+
+describe('requestedReturnPath', () => {
+  it('does not invent a redirect for a direct visit to sign-in', () => {
+    expect(requestedReturnPath('')).toBeUndefined()
+    expect(requestedReturnPath('?returnTo=')).toBeUndefined()
+  })
+
+  it('accepts a safe explicit destination and contains an unsafe one', () => {
+    expect(
+      requestedReturnPath('?returnTo=%2Fworkshop%2Fmodels%2Fflux%2F')
+    ).toBe('/workshop/models/flux/')
+    expect(requestedReturnPath('?returnTo=https%3A%2F%2Fevil.com')).toBe(
+      '/workshop/'
+    )
   })
 })

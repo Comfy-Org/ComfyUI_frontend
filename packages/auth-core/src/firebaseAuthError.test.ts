@@ -53,6 +53,9 @@ describe('classifyAuthError', () => {
     ['null', null],
     ['undefined', undefined],
     ['a string', 'auth/popup-blocked'],
+    // The message half of the structural guard: an auth/ code with a missing
+    // or non-string message must still land in 'unknown' — otherwise the
+    // .toLowerCase() signup_blocked check throws on a non-string message.
     ['an auth/ code with no message', { code: 'auth/internal-error' }],
     [
       'an auth/ code with a non-string message',
