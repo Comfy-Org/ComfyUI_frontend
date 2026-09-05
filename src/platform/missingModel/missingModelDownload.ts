@@ -1,8 +1,18 @@
 import { downloadUrlToHfRepoUrl, isCivitaiModelUrl } from '@/utils/formatUtil'
 import { isDesktop } from '@/platform/distribution/types'
+import { api } from '@/scripts/api'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import type { AssetDownload } from '@/stores/assetDownloadStore'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import type { ComfyDesktop2Bridge } from '@/types'
+
+class ModelDownloadError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'ModelDownloadError'
+  }
+}
 
 const ALLOWED_SOURCES = [
   'https://civitai.com/',
@@ -37,10 +47,156 @@ function isModelUrlAllowlisted(url: string): boolean {
 
 const MODEL_LIBRARY_TAB_ID = 'model-library'
 
+function isRemoteComfyUISession(): boolean {
+  if (typeof window === 'undefined') return false
+  if (window.__comfyDesktop2Remote) return true
+  const host = window.location.hostname.toLowerCase()
+  return host !== 'localhost' && host !== '127.0.0.1' && host !== '[::1]'
+}
+
 export interface ModelWithUrl {
   name: string
   url: string
   directory: string
+}
+
+function makeDownloadEntry(
+  key: string,
+  model: ModelWithUrl,
+  status: AssetDownload['status'],
+  progress = 0,
+  error?: string
+): AssetDownload {
+  const store = useMissingModelStore()
+  const bytesTotal = store.fileSizes[model.url] ?? 0
+  return {
+    taskId: key,
+    assetName: model.name,
+    bytesTotal,
+    bytesDownloaded: Math.round(bytesTotal * progress),
+    progress,
+    status,
+    lastUpdate: Date.now(),
+    modelType: model.directory,
+    error
+  }
+}
+
+async function pollServerDownloadProgress(
+  model: ModelWithUrl,
+  stateKey: string,
+  stop: { value: boolean }
+) {
+  const store = useMissingModelStore()
+  while (!stop.value) {
+    try {
+      const params = new URLSearchParams({
+        save_dir: model.directory,
+        filename: model.name
+      })
+      const response = await api.fetchApi(
+        `/download_model/progress?${params.toString()}`
+      )
+      if (response.ok) {
+        const data = await response.json()
+        const progress = Number(data.progress ?? 0)
+        const bytesTotal = Number(
+          data.bytes_total ?? store.fileSizes[model.url] ?? 0
+        )
+        const bytesDownloaded = Number(data.bytes_downloaded ?? 0)
+        const status: AssetDownload['status'] =
+          data.status === 'completed'
+            ? 'completed'
+            : data.status === 'failed'
+              ? 'failed'
+              : 'running'
+        store.setDirectDownload(stateKey, {
+          taskId: stateKey,
+          assetName: model.name,
+          bytesTotal: bytesTotal || bytesDownloaded,
+          bytesDownloaded,
+          progress:
+            status === 'completed'
+              ? 1
+              : Math.max(
+                  progress,
+                  bytesTotal ? bytesDownloaded / bytesTotal : 0
+                ),
+          status,
+          lastUpdate: Date.now(),
+          modelType: model.directory,
+          error: data.error
+        })
+        if (status === 'completed' || status === 'failed') break
+      }
+    } catch {
+      // Keep polling while the main request runs.
+    }
+    await new Promise((resolve) => setTimeout(resolve, 750))
+  }
+}
+
+async function downloadModelViaServer(
+  model: ModelWithUrl,
+  stateKey?: string
+): Promise<void> {
+  const store = useMissingModelStore()
+  if (stateKey) {
+    store.setDirectDownload(
+      stateKey,
+      makeDownloadEntry(stateKey, model, 'running')
+    )
+  }
+
+  const stop = { value: false }
+  const pollPromise = stateKey
+    ? pollServerDownloadProgress(model, stateKey, stop)
+    : Promise.resolve()
+
+  try {
+    const response = await api.fetchApi('/download_model', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        url: model.url,
+        save_dir: model.directory,
+        filename: model.name
+      })
+    })
+    if (!response.ok) {
+      let message = `Download failed (${response.status})`
+      try {
+        const body = await response.json()
+        if (body?.error) message = body.error
+      } catch {
+        // Ignore malformed error responses.
+      }
+      throw new ModelDownloadError(message)
+    }
+    if (stateKey) {
+      store.setDirectDownload(
+        stateKey,
+        makeDownloadEntry(stateKey, model, 'completed', 1)
+      )
+    }
+  } catch (error) {
+    if (stateKey) {
+      store.setDirectDownload(
+        stateKey,
+        makeDownloadEntry(
+          stateKey,
+          model,
+          'failed',
+          0,
+          error instanceof Error ? error.message : String(error)
+        )
+      )
+    }
+    throw error
+  } finally {
+    stop.value = true
+    await pollPromise
+  }
 }
 
 async function startDesktop2ModelDownload(
@@ -118,29 +274,28 @@ export function isModelDownloadable(model: ModelWithUrl): boolean {
   return true
 }
 
-export function downloadModel(
+export async function downloadModel(
   model: ModelWithUrl,
-  paths: Record<string, string[]>
-): void {
+  paths: Record<string, string[]>,
+  stateKey?: string
+): Promise<void> {
   if (!isModelDownloadable(model)) return
 
   const desktop2Bridge = window.__comfyDesktop2
-  const isRemote =
-    desktop2Bridge?.isRemote?.() ?? window.__comfyDesktop2Remote ?? false
-  if (desktop2Bridge?.downloadModel && !isRemote) {
-    void startDesktop2ModelDownload(desktop2Bridge, model)
+  if (isRemoteComfyUISession() || !isDesktop) {
+    await downloadModelViaServer(model, stateKey)
     return
   }
 
-  if (!isDesktop) {
-    openUrlInNewTab(model.url, model.name)
+  if (desktop2Bridge?.downloadModel) {
+    await startDesktop2ModelDownload(desktop2Bridge, model)
     return
   }
 
   const modelPaths = paths[model.directory]
   if (modelPaths[0]) {
     useSidebarTabStore().activeSidebarTabId = MODEL_LIBRARY_TAB_ID
-    void useElectronDownloadStore().start({
+    await useElectronDownloadStore().start({
       url: model.url,
       savePath: modelPaths[0],
       filename: model.name
