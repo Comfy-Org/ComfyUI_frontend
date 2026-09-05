@@ -2411,7 +2411,8 @@ describe('AgentPanelRoot workflow binding', () => {
     )
     const minted = hostStores.workflow.tabs.get('workflows/Video test.json')
     expect(minted?.filename).toBe('Video test')
-    expect(minted?.activeState).toMatchObject({ nodes: [], links: [] })
+    expect(minted?.activeState?.nodes).toHaveLength(0)
+    expect(minted?.activeState?.links).toHaveLength(0)
     // The host minted the doc server-side; the follower fills the canvas.
     // Nothing loads, saves, or adopts here.
     expect(workflowService.saveWorkflowAs).not.toHaveBeenCalled()
