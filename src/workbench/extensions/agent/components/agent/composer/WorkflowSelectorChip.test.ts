@@ -23,7 +23,9 @@ const i18n = createI18n({
         chooseWorkflow: enMessages.agent.chooseWorkflow,
         selectWorkflowForAgent: 'Select a workflow for agent to work in',
         chooseWorkflowForChat: enMessages.agent.chooseWorkflowForChat,
-        searchWorkflows: enMessages.agent.searchWorkflows
+        searchWorkflows: enMessages.agent.searchWorkflows,
+        currentTab: 'Current tab',
+        otherOpenWorkflows: 'Other open workflows'
       },
       g: {
         agentWorking: enMessages.g.agentWorking,
@@ -46,11 +48,18 @@ beforeEach(() => {
 })
 
 function renderChip(
-  props: Partial<ComponentProps<typeof WorkflowSelectorChip>> = {}
+  props: Partial<ComponentProps<typeof WorkflowSelectorChip>> & {
+    visibleTabPath?: string | null
+  } = {}
 ) {
   const user = userEvent.setup()
   const emitted = render(WorkflowSelectorChip, {
-    props: { activeTab: tabs[0], tabs, ...props },
+    props: {
+      activeTab: tabs[0],
+      tabs,
+      visibleTabPath: tabs[0].path,
+      ...props
+    } as ComponentProps<typeof WorkflowSelectorChip>,
     global: { plugins: [i18n, pinia] }
   })
   return { user, ...emitted }
@@ -83,6 +92,33 @@ describe('WorkflowSelectorChip', () => {
       'portrait',
       'upscale'
     ])
+    expect(
+      within(screen.getByRole('group', { name: 'Current tab' })).getByRole(
+        'menuitemradio'
+      )
+    ).toHaveTextContent('portrait')
+    expect(
+      within(
+        screen.getByRole('group', { name: 'Other open workflows' })
+      ).getByRole('menuitemradio')
+    ).toHaveTextContent('upscale')
+  })
+
+  it('separates the visible tab section from the checked Agent target', async () => {
+    const { user } = renderChip({ visibleTabPath: tabs[1].path })
+    await user.click(trigger())
+
+    const visibleRow = within(
+      await screen.findByRole('group', { name: 'Current tab' })
+    ).getByRole('menuitemradio')
+    const targetRow = within(
+      screen.getByRole('group', { name: 'Other open workflows' })
+    ).getByRole('menuitemradio')
+
+    expect(visibleRow).toHaveTextContent('upscale')
+    expect(visibleRow).not.toBeChecked()
+    expect(targetRow).toHaveTextContent('portrait')
+    expect(targetRow).toBeChecked()
   })
 
   it('exposes only the active tab as the checked menu item', async () => {
@@ -139,6 +175,11 @@ describe('WorkflowSelectorChip', () => {
     expect(trigger()).not.toHaveTextContent('portrait')
     await user.click(trigger())
     expect(screen.queryByRole('menuitemradio', { checked: true })).toBeNull()
+    expect(
+      within(screen.getByRole('group', { name: 'Current tab' })).getByRole(
+        'menuitemradio'
+      )
+    ).toHaveTextContent('portrait')
   })
 
   it('shows unsaved dots on a modified active workflow trigger and row', async () => {
@@ -170,7 +211,11 @@ describe('WorkflowSelectorChip', () => {
 
     await user.click(trigger())
     const row = await screen.findByRole('menuitemradio', { name: /upscale/ })
-    expect(within(row).getByTestId('unsaved-dot')).toBeInTheDocument()
+    const unsavedDot = within(row).getByTestId('unsaved-dot')
+    const targetIndicator = within(row).getByTestId('workflow-target-indicator')
+    expect(unsavedDot).toBeInTheDocument()
+    expect(unsavedDot).not.toHaveClass('ml-auto')
+    expect(targetIndicator).toHaveClass('ml-auto')
     expect(row).not.toBeChecked()
   })
 
@@ -185,6 +230,12 @@ describe('WorkflowSelectorChip', () => {
 
     const items = screen.getAllByRole('menuitemradio')
     expect(items.map((item) => item.textContent.trim())).toEqual(['upscale'])
+    expect(
+      screen.getByRole('group', { name: 'Current tab' })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('group', { name: 'Other open workflows' })
+    ).toBeNull()
   })
 
   it('closes the dropdown on Escape from the focused search input', async () => {

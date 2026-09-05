@@ -2043,6 +2043,23 @@ describe('AgentPanelRoot workflow binding', () => {
     await nextTick()
 
     expect(await screen.findAllByText('current')).not.toHaveLength(0)
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    )
+    const visibleRow = within(
+      await screen.findByRole('group', { name: 'Current tab' })
+    ).getByRole('menuitemradio')
+    const targetRow = within(
+      screen.getByRole('group', { name: 'Other open workflows' })
+    ).getByRole('menuitemradio')
+    expect(visibleRow).toHaveTextContent('other')
+    expect(visibleRow).not.toBeChecked()
+    expect(targetRow).toHaveTextContent('current')
+    expect(targetRow).toBeChecked()
+    await userEvent.keyboard('{Escape}')
+
     await sendFromComposer('keep editing current')
     expect(bodies[0]).toMatchObject({
       workflow_id: 'wf-42',
