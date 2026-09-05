@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   clearCompositorLayers,
   getCompositorBBoxes,
+  getCompositorCanvas,
   getCompositorInputsFingerprint,
   getCompositorLayers
 } from '@/renderer/extensions/compositor/composables/useCompositorLayers'
@@ -108,6 +109,29 @@ describe('ImageCompositor extension', () => {
     })
 
     expect(getCompositorBBoxes(node)).toBeUndefined()
+  })
+
+  it('caches the document canvas reported by the backend', () => {
+    const { node } = createdNode()
+
+    node.onExecuted?.({
+      compositor_layers: [{ filename: 'a.png' }],
+      compositor_inputs: ['hash-a'],
+      compositor_canvas: [{ w: 1280, h: 1280 }]
+    })
+
+    expect(getCompositorCanvas(node)).toEqual({ w: 1280, h: 1280 })
+  })
+
+  it('leaves the canvas cache empty when the output has none', () => {
+    const { node } = createdNode()
+
+    node.onExecuted?.({
+      compositor_layers: [{ filename: 'a.png' }],
+      compositor_inputs: ['hash-a']
+    })
+
+    expect(getCompositorCanvas(node)).toBeUndefined()
   })
 
   it('resets the compositor widget when the state is stale', () => {

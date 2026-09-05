@@ -46,7 +46,9 @@ watch(
 )
 
 function onChange(): void {
-  const next = Number(draft.value)
+  const raw = draft.value
+  const next =
+    typeof raw === 'string' && raw.trim() === '' ? Number.NaN : Number(raw)
   if (Number.isFinite(next)) {
     const low = min ?? -Infinity
     const high = max ?? Infinity
