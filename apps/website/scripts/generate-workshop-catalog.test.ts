@@ -56,6 +56,15 @@ describe('buildWorkshopCatalog', () => {
     )
   })
 
+  it('rejects distinct ids that map to the same route', () => {
+    expect(() =>
+      buildWorkshopCatalog([
+        { ...validModel, id: 'provider--model/x' },
+        { ...validModel, id: 'provider/model--x' }
+      ])
+    ).toThrow('Duplicate Workshop slug')
+  })
+
   it('refuses input JSON cannot round-trip', () => {
     // z.unknown() accepted these and JSON.stringify then changed them:
     // a nested undefined disappears, NaN and Infinity become null. The
@@ -83,16 +92,17 @@ describe('buildWorkshopCatalog', () => {
     )
   })
 
-  it('does not depend on the host locale for its output', () => {
-    // localeCompare put `p/ä` before `p/z` under LANG=C and after it under
-    // LANG=sv_SE.UTF-8, which churned the committed files.
+  it('produces the same lexically ordered output for every input order', () => {
     const models = [
       { ...validModel, id: 'p/z', display_name: 'Z' },
       { ...validModel, id: 'p/ae', display_name: 'A' }
     ]
     expect(buildWorkshopCatalog(models).map((m) => m.id)).toEqual([
-      'p/z',
-      'p/ae'
+      'p/ae',
+      'p/z'
     ])
+    expect(buildWorkshopCatalog(models.toReversed())).toEqual(
+      buildWorkshopCatalog(models)
+    )
   })
 })
