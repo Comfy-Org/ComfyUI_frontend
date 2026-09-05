@@ -1,3 +1,4 @@
+import { assert } from '@/base/assert'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { materializeLinkAdapter } from '@/lib/litegraph/src/LLink'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -6,6 +7,8 @@ import type {
   ExportedSubgraph,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
+import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
+import { getWidgetIds } from '@/lib/litegraph/src/utils/widget'
 import { reportError } from '@/platform/telemetry/reportError'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import { useLinkStore } from '@/stores/linkStore'
@@ -44,7 +47,7 @@ export type MaterializableGraph = Pick<
  * @param subgraphDefinitions explicitly created definitions present in the
  * document. Root nodes typed by a definition id can only materialize once the
  * definition is registered on the root graph.
- * @returns ids that received a new live node.
+ * @returns ids that received a new or rebound live node.
  */
 export function reconcileAgentAdapters(
   graph: MaterializableGraph,
@@ -258,10 +261,6 @@ function materialize(
 ): boolean {
   const nodeStore = useNodeDataStore()
   const widgetStore = useWidgetValueStore()
-  const node =
-    LiteGraph.createNode(state.type, state.title) ?? missingNode(state)
-  node.id = state.id
-
   const widgets = widgetStore.getNodeWidgets(scope.rootGraphId, state.id).map(
     (widget): WidgetStateInit => ({
       disabled: widget.disabled,
@@ -274,6 +273,36 @@ function materialize(
       y: widget.y
     })
   )
+
+  if (orphan?.type === state.type) {
+    nodeStore.deleteNode(scope, state)
+    const registered = nodeStore.registerNode(scope, orphan._state)
+    // ADR 0016: same-state re-registration is idempotent; rejection here is
+    // lifecycle corruption rather than a recoverable input collision.
+    assert(registered, 'Failed to rebind incumbent node state')
+    orphan._state = registered
+    orphan._graphScope = scope
+    nodeStore.updateNode(scope, state.id, state)
+
+    const values = new Map(
+      widgets.map((widget) => [widget.name ?? '', widget.value])
+    )
+    for (const widget of orphan.widgets ?? []) {
+      if (!isNodeBindable(widget)) continue
+      widget.setNodeId(state.id)
+      if (values.has(widget.name)) widget.value = values.get(widget.name)
+    }
+    widgetStore.setNodeWidgetOrder(
+      scope.rootGraphId,
+      state.id,
+      getWidgetIds(orphan.widgets ?? [])
+    )
+    return true
+  }
+
+  const node =
+    LiteGraph.createNode(state.type, state.title) ?? missingNode(state)
+  node.id = state.id
   const restore = () => {
     nodeStore.registerNode(scope, state)
     for (const widget of widgets) {

@@ -67,6 +67,12 @@ class WidgetNode extends LGraphNode {
   }
 }
 
+class ApiHydratedWidgetNode extends LGraphNode {
+  constructor() {
+    super('api-hydrated-widget-node')
+  }
+}
+
 /** Widget values observed by `onConfigure`, in configure order. */
 const configuredWidgetValues: unknown[] = []
 
@@ -115,6 +121,9 @@ const CATALOG: WidgetCatalog = {
   types: {
     dummy: { widget_order: [] },
     'widget-node': { widget_order: ['value'] },
+    'api-hydrated-widget-node': {
+      widget_order: ['hydrated', 'secondary']
+    },
     'configure-capture': { widget_order: ['value'] },
     'throws-on-configure': { widget_order: [] }
   }
@@ -204,6 +213,7 @@ beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
   LiteGraph.registerNodeType('dummy', DummyNode)
   LiteGraph.registerNodeType('widget-node', WidgetNode)
+  LiteGraph.registerNodeType('api-hydrated-widget-node', ApiHydratedWidgetNode)
   LiteGraph.registerNodeType('configure-capture', ConfigureCapturingWidgetNode)
   LiteGraph.registerNodeType('throws-on-configure', ThrowsOnConfigureNode)
   LiteGraph.registerNodeType('throws-on-added', ThrowsOnAddedNode)
@@ -425,27 +435,67 @@ describe('reconcileAgentAdapters', () => {
       expect(graph.getNodeById(toNodeId(1))).toBe(live)
     })
 
-    it('replaces a node whose record was re-created under the same id', () => {
+    it('preserves a same-type node whose record was re-created', () => {
       const graph = new LGraph()
-      const scope = seedAgentAddedNode(graph, 1)
+      const scope = graphScopeOf(graph)
+      remoteMutations(scope).addNode(
+        { ...nodePayload(1, 'widget-node'), widgets_values: { value: 7 } },
+        REMOTE
+      )
       reconcileAgentAdapters(graph)
-      const stale = graph.getNodeById(toNodeId(1))
-      expect(stale).toBeDefined()
+      const incumbent = graph.getNodeById(toNodeId(1))!
+      expect(incumbent.widgets).toHaveLength(1)
 
       const mutations = remoteMutations(scope)
       mutations.deleteNode(toNodeId(1), [], REMOTE)
-      mutations.addNode(nodePayload(1), { ...REMOTE, opId: 'op-1-again' })
+      mutations.addNode(
+        { ...nodePayload(1, 'widget-node'), widgets_values: { value: 8 } },
+        { ...REMOTE, opId: 'op-1-again' }
+      )
 
       const materialized = reconcileAgentAdapters(graph)
 
       expect(materialized).toEqual([toNodeId(1)])
       expect(graph._nodes).toHaveLength(1)
-      const replacement = graph.getNodeById(toNodeId(1))
-      expect(replacement?.id).toBe(toNodeId(1))
-      expect(replacement).not.toBe(stale)
-      expect(graph._nodes).not.toContain(stale)
-      expect(stale?.graph).toBeNull()
+      expect(graph.getNodeById(toNodeId(1))).toBe(incumbent)
+      expect(incumbent.widgets).toHaveLength(1)
+      expect(incumbent.widgets?.[0].value).toBe(8)
       expect(graph.serialize().nodes).toHaveLength(1)
+    })
+
+    it('preserves widgets added after construction when re-adding the same id', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      const mutations = remoteMutations(scope)
+      mutations.addNode(
+        {
+          ...nodePayload(1, 'api-hydrated-widget-node'),
+          widgets_values: { hydrated: 7, secondary: 70 }
+        },
+        REMOTE
+      )
+      reconcileAgentAdapters(graph)
+      const incumbent = graph.getNodeById(toNodeId(1))!
+      incumbent.addWidget('number', 'hydrated', 7, () => {})
+      incumbent.addWidget('number', 'secondary', 70, () => {})
+
+      mutations.deleteNode(toNodeId(1), [], REMOTE)
+      mutations.addNode(
+        {
+          ...nodePayload(1, 'api-hydrated-widget-node'),
+          widgets_values: { hydrated: 8, secondary: 80 }
+        },
+        { ...REMOTE, opId: 'op-1-again' }
+      )
+
+      expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(1)])
+      expect(graph.getNodeById(toNodeId(1))).toBe(incumbent)
+      expect(
+        incumbent.widgets?.map(({ name, value }) => ({ name, value }))
+      ).toEqual([
+        { name: 'hydrated', value: 8 },
+        { name: 'secondary', value: 80 }
+      ])
     })
 
     it('runs stale-node lifecycle without clearing successor-owned state', () => {
@@ -487,7 +537,7 @@ describe('reconcileAgentAdapters', () => {
       expect(
         mutations.addNode(
           {
-            ...nodePayload(1, 'widget-node'),
+            ...nodePayload(1, 'dummy'),
             outputs: [{ name: 'value', type: '*', links: [9] }],
             widgets_values: { value: 7 }
           },
@@ -754,12 +804,22 @@ describe('reconcileAgentAdapters', () => {
     it('does not echo a remote re-create or delete back as local operations', async () => {
       const scope = graphScopeOf(graph)
       const mutations = remoteMutations(scope)
-      mutations.addNode(nodePayload(1), REMOTE)
+      mutations.addNode(
+        { ...nodePayload(1, 'widget-node'), widgets_values: { value: 7 } },
+        REMOTE
+      )
       reconcileAgentAdapters(graph)
+      const incumbent = graph.getNodeById(toNodeId(1))!
 
       mutations.deleteNode(toNodeId(1), [], REMOTE)
-      mutations.addNode(nodePayload(1), { ...REMOTE, opId: 'op-1-again' })
+      mutations.addNode(
+        { ...nodePayload(1, 'widget-node'), widgets_values: { value: 8 } },
+        { ...REMOTE, opId: 'op-1-again' }
+      )
       reconcileAgentAdapters(graph)
+      expect(graph.getNodeById(toNodeId(1))).toBe(incumbent)
+      expect(incumbent.widgets?.[0].value).toBe(8)
+
       mutations.deleteNode(toNodeId(1), [], REMOTE)
       reconcileAgentAdapters(graph)
       await settle()
@@ -841,6 +901,47 @@ describe('reconcileAgentAdapters', () => {
           widget: 'value',
           value: 8,
           old: 7
+        })
+      ])
+    })
+
+    it('keeps a live widget bound through an ordinary remote reconcile', async () => {
+      const scope = graphScopeOf(graph)
+      const mutations = remoteMutations(scope)
+      mutations.addNode(
+        { ...nodePayload(1, 'widget-node'), widgets_values: { value: 7 } },
+        REMOTE
+      )
+      reconcileAgentAdapters(graph)
+      await settle()
+
+      const node = graph.getNodeById(toNodeId(1))!
+      const liveWidget = node.widgets![0]
+      mutations.batch({ ...REMOTE, opId: 'reconcile-value' }, (batch) =>
+        batch.reconcileNode({
+          ...nodePayload(1, 'widget-node'),
+          widgets_values: { value: 9 }
+        })
+      )
+
+      expect(reconcileAgentAdapters(graph)).toEqual([])
+      expect(liveWidget.value).toBe(9)
+      expect(
+        useWidgetValueStore().getWidget(
+          widgetId(scope.rootGraphId, toNodeId(1), 'value')
+        )?.value
+      ).toBe(9)
+
+      liveWidget.value = 10
+      await settle()
+
+      expect(minted).toEqual([
+        expect.objectContaining({
+          op: 'set_widget',
+          node_id: toNodeId(1),
+          widget: 'value',
+          value: 10,
+          old: 9
         })
       ])
     })
