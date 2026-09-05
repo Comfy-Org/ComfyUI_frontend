@@ -1030,7 +1030,8 @@ describe('reconcileAgentAdapters', () => {
       const definitions = readSubgraphDefinitions(follower.doc)
       reconcileAgentAdapters(graph, definitions)
 
-      const instance = graph.getNodeById(toNodeId(1)) as SubgraphNode
+      const instance = graph.getNodeById(toNodeId(1))
+      if (!instance) throw new Error('Expected subgraph instance')
       expect(instance.inputs).toHaveLength(0)
       expect(instance.outputs).toHaveLength(1)
 
