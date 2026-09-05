@@ -1679,6 +1679,72 @@ describe('app:agent_error telemetry (TEL-8)', () => {
     setActivePinia(createPinia())
     localStorage.clear()
     telemetryState.trackAgentError.mockClear()
+    vi.mocked(reportError).mockClear()
+  })
+
+  it('reports unexpected agent failures to the unified error sinks', async () => {
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({
+        getMessages: vi.fn(async () => {
+          throw new Error('history boom')
+        }),
+        cancelMessage: vi.fn(async () => {
+          throw new AgentApiError('cancel boom', 500, null)
+        })
+      }),
+      events: source
+    })
+    session.start()
+    await session.loadThread('th-9')
+    await session.sendMessage('go')
+    await session.stopTurn()
+    emit({ type: 'agent_message_done', data: { thread_id: 'th-1' } })
+
+    const errorTypes = vi
+      .mocked(reportError)
+      .mock.calls.map(([, options]) => options.errorType)
+    expect(errorTypes).toEqual([
+      'agent_history_load_failed',
+      'agent_cancel_turn_failed',
+      'agent_malformed_stream_event'
+    ])
+  })
+
+  it('reports a rejected send to the unified error sinks', async () => {
+    const rest = fakeRest({
+      postMessage: vi.fn(async () => {
+        throw new AgentApiError('boom', 500, null)
+      })
+    })
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+
+    await session.sendMessage('make me a cat')
+
+    expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+      errorType: 'agent_send_message_failed'
+    })
+  })
+
+  it('keeps the expected 404 history and 409 cancel races out of the sinks', async () => {
+    const session = useAgentSession({
+      rest: fakeRest({
+        getMessages: vi.fn(async () => {
+          throw new AgentApiError('gone', 404, null)
+        }),
+        cancelMessage: vi.fn(async () => {
+          throw new AgentApiError('already done', 409, null)
+        })
+      }),
+      events: fakeEvents().source
+    })
+    session.start()
+    await session.loadThread('th-gone')
+    await session.sendMessage('go')
+    await session.stopTurn()
+
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('tracks a pre-acceptance request failure from a rejected postMessage', async () => {

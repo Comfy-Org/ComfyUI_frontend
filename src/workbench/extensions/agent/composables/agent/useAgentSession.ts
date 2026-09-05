@@ -194,9 +194,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * are dropped with a `console.warn` no cloud console can see. `uiTreatment`
    * records which of the two the user actually saw. A malformed frame is never
    * retryable — nothing here can be re-sent — and `post_acceptance` is claimed
-   * only when a turn really was running.
+   * only when a turn really was running. The same dedup bounds what reaches the
+   * unified Sentry/RUM sinks, which carry the parse failure itself rather than
+   * the normalized class.
    */
   function trackMalformedStreamEvent(
+    cause: unknown,
     activeTurnId: TurnId | null,
     uiTreatment: AgentErrorMetadata['ui_treatment']
   ): void {
@@ -207,6 +210,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
       return
     malformedStreamReport = { turnId: activeTurnId, visible }
+    reportError(cause, {
+      errorType: 'agent_malformed_stream_event',
+      tags: { ui_treatment: uiTreatment }
+    })
     trackAgentError(
       'malformed_stream_event',
       activeTurnId === null ? 'pre_acceptance' : 'post_acceptance',
@@ -278,6 +285,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         localStorage.removeItem(THREAD_STORAGE_KEY)
         return false
       }
+      reportError(error, { errorType: 'agent_history_load_failed' })
       pushError(error instanceof Error ? error.message : String(error))
       trackAgentError(
         'history_load_failed',
@@ -386,6 +394,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
           : error instanceof Error
             ? error.message
             : String(error)
+      reportError(error, { errorType: 'agent_send_message_failed' })
       conversationStore.recordFailedSend(
         nextLocalErrorId(),
         text,
@@ -419,6 +428,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     } catch (error) {
       if (error instanceof AgentApiError && error.status === 409) return
       promptEditState.value = { phase: 'idle' }
+      reportError(error, { errorType: 'agent_cancel_turn_failed' })
       pushError(error instanceof Error ? error.message : String(error))
       // The line above returned the prompt to idle and the turn is still
       // running, so cancelling again is safe; the already-finished race is
@@ -520,7 +530,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
           conversationStore.settleBackgroundTurn(messageId)
         }
       }
-      trackMalformedStreamEvent(activeTurnId, uiTreatment)
+      trackMalformedStreamEvent(parsed.error, activeTurnId, uiTreatment)
       console.warn('[agent] dropping malformed agent event', parsed.error)
       return
     }
