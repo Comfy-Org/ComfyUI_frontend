@@ -100,13 +100,6 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-vi.mock('@/lib/litegraph/src/litegraph', async (importOriginal) => ({
-  ...(await importOriginal()),
-  LiteGraph: {
-    createNode: vi.fn()
-  }
-}))
-
 vi.mock('@/utils/litegraphUtil', () => ({
   createNode: vi.fn(),
   isAudioNode: vi.fn(),
@@ -662,7 +655,6 @@ describe('cloneDataTransfer', () => {
 
     const cloned = cloneDataTransfer(original)
 
-    // Files are added from both .files and .items, causing duplicates
     expect(cloned.files.length).toBeGreaterThanOrEqual(2)
     expect(Array.from(cloned.files)).toContain(file1)
     expect(Array.from(cloned.files)).toContain(file2)
@@ -696,7 +688,6 @@ describe('cloneDataTransfer', () => {
     const cloned = cloneDataTransfer(original)
 
     expect(cloned.getData('text/plain')).toBe('test')
-    // Files are added from both .files and .items
     expect(cloned.files.length).toBeGreaterThanOrEqual(1)
     expect(Array.from(cloned.files)).toContain(file)
   })
