@@ -41,9 +41,25 @@ const accountLabel = computed(() => {
   const account = t('auth.header.account', locale)
   const current = balance.value
   return current.status === 'ok'
-    ? `${account}, ${current.credits.toLocaleString()} ${t('auth.header.credits', locale)}`
+    ? `${account}, ${formatCredits(current.credits)}`
     : account
 })
+
+function formatCredits(credits: number): string {
+  const key = credits === 1 ? 'auth.header.credit' : 'auth.header.credits'
+  return `${credits.toLocaleString(locale)} ${t(key, locale)}`
+}
+
+const sessionRetryPending = ref(false)
+async function retrySession(): Promise<void> {
+  if (sessionRetryPending.value) return
+  sessionRetryPending.value = true
+  try {
+    await ensureFresh()
+  } finally {
+    sessionRetryPending.value = false
+  }
+}
 
 async function signOutFromMenu() {
   menuOpen.value = false
@@ -64,10 +80,19 @@ async function signOutFromMenu() {
     <button
       v-else-if="!session"
       type="button"
+      :aria-busy="sessionRetryPending"
+      :disabled="sessionRetryPending"
       class="flex h-10 items-center gap-2 rounded-2xl border border-red-500/40 px-4 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase transition-colors hover:border-red-500/70"
-      @click="ensureFresh"
+      @click="retrySession"
     >
-      {{ t('auth.header.sessionRetry', locale) }}
+      {{
+        t(
+          sessionRetryPending
+            ? 'auth.header.sessionRetrying'
+            : 'auth.header.sessionRetry',
+          locale
+        )
+      }}
     </button>
 
     <div v-else ref="menuRoot" class="relative">
@@ -97,8 +122,7 @@ async function signOutFromMenu() {
           v-if="balance.status === 'ok'"
           class="text-xs font-bold text-primary-comfy-canvas tabular-nums"
         >
-          {{ balance.credits.toLocaleString() }}
-          {{ t('auth.header.credits', locale) }}
+          {{ formatCredits(balance.credits) }}
         </span>
       </button>
 

@@ -44,6 +44,11 @@ const EXCLUDED_PAGES = new Set([
   '/platform/serverless-animation' // noindex temporary motion study, not a real page
 ])
 
+const LLMS_TXT_NOINDEX_EXCEPTIONS = new Set([
+  '/privacy-policy',
+  '/terms-of-service'
+])
+
 /**
  * A page kept out of search indexes has no business in llms.txt either, so
  * the noindex policy in ./indexing is the second source of exclusions.
@@ -52,7 +57,10 @@ const EXCLUDED_PAGES = new Set([
  * remember.
  */
 function isExcludedPage(page: string): boolean {
-  return EXCLUDED_PAGES.has(page) || isNoindexPathname(page)
+  return (
+    EXCLUDED_PAGES.has(page) ||
+    (isNoindexPathname(page) && !LLMS_TXT_NOINDEX_EXCEPTIONS.has(page))
+  )
 }
 
 /**
@@ -182,10 +190,7 @@ describe('llms.txt', () => {
   })
 
   it('does not list excluded pages by accident', () => {
-    const linked = new Set(internalPaths)
-    const listedButExcluded = [...EXCLUDED_PAGES].filter((page) =>
-      linked.has(page)
-    )
+    const listedButExcluded = internalPaths.filter(isExcludedPage)
     expect(listedButExcluded).toEqual([])
   })
 
