@@ -3545,6 +3545,10 @@ Enterprise`
     en: 'Comfy Enterprise',
     'zh-CN': 'Comfy 企业版'
   },
+  'nav.managedBuilds': {
+    en: 'Managed Builds',
+    'zh-CN': '托管构建'
+  },
   'nav.comfyHub': { en: 'Comfy Workflows', 'zh-CN': 'Comfy Workflows' },
   'nav.fdct': {
     en: 'Forward Deployed Creatives',
