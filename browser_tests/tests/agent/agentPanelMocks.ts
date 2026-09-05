@@ -17,7 +17,7 @@ const THREAD_ID = 'd4c016c4-3b8c-44cf-97de-1ae27e43e718'
 const TURN_ID = '3818ba00-d772-4a3f-98c1-9312725b577d'
 const WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
 
-const TURN_ACCEPTED: AgentTurnAccepted = {
+export const TURN_ACCEPTED: AgentTurnAccepted = {
   message_id: TURN_ID,
   thread_id: THREAD_ID,
   workflow_id: WORKFLOW_ID
@@ -44,6 +44,28 @@ export const TOOL_CALL_EVENT: AgentWsEvent = {
     tool_name: 'set_widget',
     status: 'success',
     duration_ms: 1300,
+    message_id: TURN_ID,
+    thread_id: THREAD_ID
+  }
+}
+
+export const BUILD_VIDEO_GRAPH_TOOL_EVENT: AgentWsEvent = {
+  type: 'agent_tool_call',
+  data: {
+    tool_call_id: 'call-build-video-graph',
+    tool_name: 'add_node',
+    status: 'success',
+    duration_ms: 2100,
+    message_id: TURN_ID,
+    thread_id: THREAD_ID
+  }
+}
+
+export const VIDEO_GRAPH_DONE_EVENT: AgentWsEvent = {
+  type: 'agent_message_delta',
+  data: {
+    delta:
+      'The Wan 2.2 two-stage graph is ready. Empty Latent Video controls the 832x480 resolution, length 81, and CreateVideo runs at 16 fps.',
     message_id: TURN_ID,
     thread_id: THREAD_ID
   }
