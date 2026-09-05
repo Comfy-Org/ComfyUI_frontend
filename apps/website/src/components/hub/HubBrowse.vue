@@ -154,7 +154,6 @@ const toolbarLabels: ToolbarLabels = {
   clearAll: t('workshop.hub.facets.clearAll', locale),
   searchPlaceholder: t('workshop.hub.facets.search', locale),
   noResults: t('workshop.hub.facets.noResults', locale),
-  type: t('workshop.hub.facets.type', locale),
   typeAll: t('workshop.hub.kind.all', locale),
   less: t('workshop.hub.facets.less', locale),
   selected: t('workshop.hub.facets.selected', locale),

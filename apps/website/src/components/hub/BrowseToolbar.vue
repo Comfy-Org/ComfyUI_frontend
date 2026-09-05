@@ -7,7 +7,15 @@ import {
   SlidersHorizontal,
   X
 } from '@lucide/vue'
-import { TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
+import {
+  PopoverContent,
+  PopoverPortal,
+  PopoverRoot,
+  PopoverTrigger,
+  TabsList,
+  TabsRoot,
+  TabsTrigger
+} from 'reka-ui'
 import type { Component } from 'vue'
 import { computed, ref, useTemplateRef } from 'vue'
 
@@ -47,7 +55,6 @@ export interface ToolbarLabels {
   readonly noResults: string
   readonly less: string
   readonly selected: string
-  readonly type: string
   readonly typeAll: string
   readonly sortPopular: string
   readonly sortNewest: string
@@ -91,7 +98,7 @@ const pill = useSlidingUnderline(
 const filterOpen = ref(false)
 const panel = useTemplateRef<HTMLElement>('panel')
 onClickOutside(panel, () => (filterOpen.value = false), {
-  ignore: ['[data-testid="hub-filter"]']
+  ignore: ['[data-testid="hub-filter"]', '[data-reka-popper-content-wrapper]']
 })
 const facetSearch = ref<Record<string, string>>({})
 const expanded = ref<Record<string, boolean>>({})
@@ -292,27 +299,6 @@ const groupTitleClass = 'text-content-muted text-base'
       data-testid="hub-filter-menu"
     >
       <div class="flex flex-wrap gap-x-12 gap-y-7">
-        <div class="flex flex-col gap-3">
-          <h3 :class="groupTitleClass">{{ labels.type }}</h3>
-          <div
-            class="flex w-fit flex-wrap items-center gap-1 rounded-full border border-white/15 p-1"
-            role="listbox"
-          >
-            <button
-              v-for="tab in TABS"
-              :key="tab.key"
-              type="button"
-              role="option"
-              :aria-selected="store.activeTab.value === tab.key"
-              :class="segmentClass(store.activeTab.value === tab.key)"
-              :data-testid="`hub-type-${tab.key}`"
-              @click="store.setTab(tab.key)"
-            >
-              {{ tab.key === 'all' ? labels.typeAll : labels[tab.labelKey] }}
-            </button>
-          </div>
-        </div>
-
         <div
           v-for="group in groups.filter((g) => g.display === 'segmented')"
           :key="group.key"
@@ -402,68 +388,79 @@ const groupTitleClass = 'text-content-muted text-base'
           class="flex flex-col gap-3"
         >
           <h3 :class="groupTitleClass">{{ group.label }}</h3>
-          <button
-            type="button"
-            :aria-expanded="expanded[group.key] === true"
-            class="focus-visible:ring-brand flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-white/15 px-5 py-3.5 text-left text-base transition-colors outline-none hover:border-white/30 focus-visible:ring-2"
-            :data-testid="`hub-facet-${group.key}`"
-            @click="expanded[group.key] = !expanded[group.key]"
+          <PopoverRoot
+            :open="expanded[group.key] === true"
+            @update:open="expanded[group.key] = $event"
           >
-            <span
-              :class="
-                activeCountForType(group.type) > 0
-                  ? 'text-brand'
-                  : 'text-content'
-              "
-            >
-              {{ selectLabel(group) }}
-            </span>
-            <ChevronDown
-              :class="
-                cn(
-                  'text-content-muted size-4 transition-transform',
-                  expanded[group.key] && 'rotate-180'
-                )
-              "
-              aria-hidden="true"
-            />
-          </button>
-
-          <div v-if="expanded[group.key]" class="flex flex-col gap-3">
-            <input
-              v-if="group.values.length > SEARCH_THRESHOLD"
-              v-model="facetSearch[group.key]"
-              type="search"
-              :placeholder="labels.searchPlaceholder"
-              :data-testid="`hub-facet-search-${group.key}`"
-              class="text-content placeholder:text-content-muted focus-visible:ring-brand w-full rounded-xl bg-white/5 px-4 py-2.5 text-sm outline-none focus-visible:ring-2 [&::-webkit-search-cancel-button]:hidden"
-            />
-            <div
-              class="flex max-h-48 scrollbar-thin flex-wrap content-start gap-3 overflow-y-auto"
-              role="listbox"
-              aria-multiselectable="true"
-            >
+            <PopoverTrigger as-child>
               <button
-                v-for="val in matchingValues(group)"
-                :key="val.value"
                 type="button"
-                role="option"
-                :aria-selected="isBadgeActive(group.type, val.value)"
-                :class="chipClass(isBadgeActive(group.type, val.value))"
-                @click="
-                  store.toggleBadge({ type: group.type, value: val.value })
-                "
+                class="focus-visible:ring-brand flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-white/15 px-5 py-3.5 text-left text-base transition-colors outline-none hover:border-white/30 focus-visible:ring-2"
+                :data-testid="`hub-facet-${group.key}`"
               >
-                {{ val.displayValue }}
+                <span
+                  :class="
+                    activeCountForType(group.type) > 0
+                      ? 'text-brand'
+                      : 'text-content'
+                  "
+                >
+                  {{ selectLabel(group) }}
+                </span>
+                <ChevronDown
+                  :class="
+                    cn(
+                      'text-content-muted size-4 transition-transform',
+                      expanded[group.key] && 'rotate-180'
+                    )
+                  "
+                  aria-hidden="true"
+                />
               </button>
-              <p
-                v-if="matchingValues(group).length === 0"
-                class="text-content-muted py-1 text-sm"
+            </PopoverTrigger>
+
+            <PopoverPortal>
+              <PopoverContent
+                align="start"
+                :side-offset="8"
+                class="bg-site-dropdown z-50 flex w-(--reka-popover-trigger-width) flex-col gap-3 rounded-2xl border border-white/10 p-4 shadow-2xl"
               >
-                {{ labels.noResults }}
-              </p>
-            </div>
-          </div>
+                <input
+                  v-if="group.values.length > SEARCH_THRESHOLD"
+                  v-model="facetSearch[group.key]"
+                  type="search"
+                  :placeholder="labels.searchPlaceholder"
+                  :data-testid="`hub-facet-search-${group.key}`"
+                  class="text-content placeholder:text-content-muted focus-visible:ring-brand w-full rounded-xl bg-white/5 px-4 py-2.5 text-sm outline-none focus-visible:ring-2 [&::-webkit-search-cancel-button]:hidden"
+                />
+                <div
+                  class="flex max-h-64 scrollbar-thin flex-wrap content-start gap-2 overflow-y-auto"
+                  role="listbox"
+                  aria-multiselectable="true"
+                >
+                  <button
+                    v-for="val in matchingValues(group)"
+                    :key="val.value"
+                    type="button"
+                    role="option"
+                    :aria-selected="isBadgeActive(group.type, val.value)"
+                    :class="chipClass(isBadgeActive(group.type, val.value))"
+                    @click="
+                      store.toggleBadge({ type: group.type, value: val.value })
+                    "
+                  >
+                    {{ val.displayValue }}
+                  </button>
+                  <p
+                    v-if="matchingValues(group).length === 0"
+                    class="text-content-muted py-1 text-sm"
+                  >
+                    {{ labels.noResults }}
+                  </p>
+                </div>
+              </PopoverContent>
+            </PopoverPortal>
+          </PopoverRoot>
         </div>
       </div>
 
@@ -472,19 +469,19 @@ const groupTitleClass = 'text-content-muted text-base'
       >
         <button
           type="button"
-          class="bg-brand text-page hover:bg-brand/90 focus-visible:ring-brand cursor-pointer rounded-full px-8 py-3.5 text-base font-bold transition-colors outline-none focus-visible:ring-2"
-          data-testid="hub-filter-show"
-          @click="filterOpen = false"
-        >
-          {{ labels.showResults.replace('{n}', String(resultCount)) }}
-        </button>
-        <button
-          type="button"
           class="text-content-secondary hover:text-content cursor-pointer rounded-lg text-base transition-colors"
           data-testid="hub-filter-clear"
           @click="store.clearBadges()"
         >
           {{ labels.clearAll }}
+        </button>
+        <button
+          type="button"
+          class="bg-brand text-page hover:bg-brand/90 focus-visible:ring-brand cursor-pointer rounded-full px-8 py-3.5 text-base font-bold transition-colors outline-none focus-visible:ring-2"
+          data-testid="hub-filter-show"
+          @click="filterOpen = false"
+        >
+          {{ labels.showResults.replace('{n}', String(resultCount)) }}
         </button>
       </div>
     </div>
