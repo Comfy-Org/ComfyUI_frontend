@@ -132,10 +132,6 @@ export const useLitegraphSettings = () => {
   })
 
   watchEffect(() => {
-    CanvasPointer.bufferTime = settingStore.get('Comfy.Pointer.ClickBufferTime')
-  })
-
-  watchEffect(() => {
     CanvasPointer.maxClickDrift = settingStore.get('Comfy.Pointer.ClickDrift')
   })
 
