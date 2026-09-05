@@ -3532,6 +3532,10 @@ Enterprise`
   // CLI – nav + breadcrumb
   'nav.comfyCli': { en: 'Comfy CLI', 'zh-CN': 'Comfy CLI' },
   'breadcrumb.cli': { en: 'Comfy CLI', 'zh-CN': 'Comfy CLI' },
+  'breadcrumb.cloudNodes': {
+    en: 'Comfy Cloud Nodes',
+    'zh-CN': 'Comfy Cloud 节点'
+  },
 
   // SiteNav
   'nav.products': { en: 'Products', 'zh-CN': '产品' },
@@ -8386,99 +8390,295 @@ Enterprise`
     'zh-CN':
       '把 Comfy Cloud 节点放进本地工作流，即可在 Comfy Cloud 的 GPU 上运行开源模型。无需订阅，无需下载，按 GPU 秒数以积分计费。'
   },
-  'cloudNodesLaunch.breadcrumb.model': {
-    en: 'Comfy Cloud Nodes',
-    'zh-CN': 'Comfy Cloud 节点'
+  'cloudNodesLaunch.cta.getStarted': {
+    en: 'Get Started',
+    'zh-CN': '开始使用'
   },
-  'cloudNodesLaunch.breadcrumb.updated': { en: 'New', 'zh-CN': '全新' },
-  'cloudNodesLaunch.hero.tagNoSubscription': {
-    en: 'No Subscription',
-    'zh-CN': '无需订阅'
+  'cloudNodesLaunch.cta.docs': {
+    en: 'Read the Docs',
+    'zh-CN': '查看文档'
   },
-  'cloudNodesLaunch.hero.tagOpenModels': {
-    en: 'Open Models',
-    'zh-CN': '开源模型'
-  },
-  'cloudNodesLaunch.hero.tagBeta': {
-    en: 'Beta',
-    'zh-CN': '测试版'
-  },
-  'cloudNodesLaunch.hero.tagPayPerRun': {
-    en: 'Pay Per GPU-Second',
-    'zh-CN': '按 GPU 秒计费'
+  'cloudNodesLaunch.cta.setup': {
+    en: 'How to Start',
+    'zh-CN': '如何开始'
   },
   'cloudNodesLaunch.hero.title': {
+    en: 'Our GPUs.',
+    'zh-CN': '我们的 GPU。'
+  },
+  'cloudNodesLaunch.hero.titleHighlight': {
     en: 'Your graph.',
     'zh-CN': '你的工作流。'
   },
-  'cloudNodesLaunch.hero.titleRest': {
-    en: '\nOur GPUs.',
-    'zh-CN': '\n我们的 GPU。'
-  },
-  'cloudNodesLaunch.hero.description': {
-    en: 'Comfy Cloud nodes run the newest open models on our GPUs from inside your own ComfyUI. Nothing to download, no VRAM floor, and no plan to buy. You are billed per GPU-second in credits, the same way every other partner node works.',
+  'cloudNodesLaunch.hero.subtitle': {
+    en: 'Comfy Cloud nodes run the newest open models on our GPUs from inside your own ComfyUI. Drop one into the graph you already have and wire it like any other node.',
     'zh-CN':
-      'Comfy Cloud 节点让你在自己的 ComfyUI 中，用我们的 GPU 运行最新的开源模型。无需下载，没有显存门槛，也不用购买套餐。按 GPU 秒数以积分计费，与其他合作伙伴节点完全一致。'
+      'Comfy Cloud 节点让你在自己的 ComfyUI 中，用我们的 GPU 运行最新的开源模型。把它放进你已有的工作流，像其他节点一样连线即可。'
   },
-  'cloudNodesLaunch.hero.primaryCta': {
-    en: 'Get Started',
-    'zh-CN': '开始使用'
+  'cloudNodesLaunch.hero.feature1': {
+    en: 'No subscription',
+    'zh-CN': '无需订阅'
   },
-  'cloudNodesLaunch.hero.secondaryCta': {
-    en: 'See Pricing',
-    'zh-CN': '查看价格'
+  'cloudNodesLaunch.hero.feature2': {
+    en: 'Nothing to download, no VRAM floor',
+    'zh-CN': '无需下载，没有显存门槛'
   },
-  'cloudNodesLaunch.pricing.banner.title': {
-    en: '50% off GPU time for launch',
-    'zh-CN': '上线特惠：GPU 时长五折'
+  'cloudNodesLaunch.hero.feature3': {
+    en: 'Billed per GPU-second in credits',
+    'zh-CN': '按 GPU 秒数以积分计费'
   },
-  'cloudNodesLaunch.pricing.banner.subtitle': {
-    en: 'Every Comfy Cloud node runs at half the usual GPU rate through 11:59pm PT on Monday, September 7. The discount comes off your bill, so the node still shows the standard rate.',
+  'cloudNodesLaunch.hero.videoAlt': {
+    en: 'A Comfy Cloud Flux 2 Text to Image node on the ComfyUI canvas, wired to a Save Image node',
     'zh-CN':
-      '截至太平洋时间 9 月 7 日（周一）23:59，所有 Comfy Cloud 节点均以常规 GPU 费率的一半运行。折扣在结算时抵扣，因此节点上仍显示标准费率。'
+      'ComfyUI 画布上的 Comfy Cloud Flux 2 文生图节点，连接到 Save Image 节点'
   },
-  'cloudNodesLaunch.pricing.banner.cta': {
-    en: 'Claim the offer',
-    'zh-CN': '领取优惠'
-  },
-  'cloudNodesLaunch.steps.heading': {
+  'cloudNodesLaunch.setup.heading': {
     en: 'Three steps, no install',
     'zh-CN': '三步搞定，无需安装'
   },
-  'cloudNodesLaunch.steps.step': { en: 'Step', 'zh-CN': '步骤' },
-  'cloudNodesLaunch.steps.primaryCta': {
-    en: 'Get Started',
-    'zh-CN': '开始使用'
+  'cloudNodesLaunch.setup.step1.label': {
+    en: 'Update ComfyUI',
+    'zh-CN': '更新 ComfyUI'
+  },
+  'cloudNodesLaunch.setup.step1.description': {
+    en: 'Update to v0.34.5 or later and restart. The nodes are part of ComfyUI core, so there is nothing to install separately.',
+    'zh-CN':
+      '更新到 v0.34.5 或更高版本并重启。这些节点属于 ComfyUI 核心，无需单独安装。'
+  },
+  'cloudNodesLaunch.setup.step2.label': {
+    en: 'Find a node',
+    'zh-CN': '找到节点'
+  },
+  'cloudNodesLaunch.setup.step2.description': {
+    en: 'Search the node library for \\u201cComfy Cloud\\u201d. Every node carries a [BETA] suffix in its display name.',
+    'zh-CN':
+      '在节点库中搜索“Comfy Cloud”。每个节点的显示名称都带有 [BETA] 后缀。'
+  },
+  'cloudNodesLaunch.setup.step3.label': {
+    en: 'Wire it in and run',
+    'zh-CN': '连线并运行'
+  },
+  'cloudNodesLaunch.setup.step3.description': {
+    en: 'Wire it like any other node. The model runs on our GPUs and the result comes back into the same canvas.',
+    'zh-CN':
+      '像其他节点一样连线。模型在我们的 GPU 上运行，结果会回到同一张画布。'
+  },
+  'cloudNodesLaunch.models.heading': {
+    en: 'Eight nodes, six models',
+    'zh-CN': '八个节点，六个模型'
+  },
+  'cloudNodesLaunch.models.subtitle': {
+    en: 'Image, video and audio at launch. Every image and clip below is a real output from the model on the card, generated on Comfy Cloud.',
+    'zh-CN':
+      '首发覆盖图像、视频与音频。下方的图片与视频，均为对应模型在 Comfy Cloud 上的真实输出。'
+  },
+  'cloudNodesLaunch.models.footnote': {
+    en: 'The full node list and their inputs live in the docs.',
+    'zh-CN': '完整的节点列表及其输入参数见文档。'
+  },
+  'cloudNodesLaunch.models.footnoteLink': {
+    en: 'See the node reference',
+    'zh-CN': '查看节点参考'
+  },
+  'cloudNodesLaunch.models.oneNode': {
+    en: '1 node',
+    'zh-CN': '1 个节点'
+  },
+  'cloudNodesLaunch.models.threeNodes': {
+    en: '3 nodes',
+    'zh-CN': '3 个节点'
+  },
+  'cloudNodesLaunch.models.flux2': {
+    en: 'Flux 2',
+    'zh-CN': 'Flux 2'
+  },
+  'cloudNodesLaunch.models.minimaxH3': {
+    en: 'MiniMax H3',
+    'zh-CN': 'MiniMax H3'
+  },
+  'cloudNodesLaunch.models.zImageTurbo': {
+    en: 'Z-Image Turbo',
+    'zh-CN': 'Z-Image Turbo'
+  },
+  'cloudNodesLaunch.models.mageFlow': {
+    en: 'Mage Flow',
+    'zh-CN': 'Mage Flow'
+  },
+  'cloudNodesLaunch.models.mageFlowTurbo': {
+    en: 'Mage Flow Turbo',
+    'zh-CN': 'Mage Flow Turbo'
+  },
+  'cloudNodesLaunch.models.minimaxMusic3': {
+    en: 'MiniMax Music 3',
+    'zh-CN': 'MiniMax Music 3'
+  },
+  'cloudNodesLaunch.howItWorks.heading': {
+    en: 'What actually runs on our side',
+    'zh-CN': '我们这边究竟运行什么'
+  },
+  'cloudNodesLaunch.howItWorks.1.title': {
+    en: 'A pinned workflow',
+    'zh-CN': '锁定版本的工作流'
+  },
+  'cloudNodesLaunch.howItWorks.1.description': {
+    en: 'Each node maps to one curated workflow on a fixed model version, so a saved graph keeps producing the same result over time.',
+    'zh-CN':
+      '每个节点对应一套精选工作流，并锁定具体模型版本，因此保存的工作流会持续产出一致的结果。'
+  },
+  'cloudNodesLaunch.howItWorks.2.title': {
+    en: 'Your graph stays put',
+    'zh-CN': '你的工作流留在本地'
+  },
+  'cloudNodesLaunch.howItWorks.2.description': {
+    en: "Only the node's own inputs leave your machine. Everything else in the workflow keeps running locally, exactly as before.",
+    'zh-CN':
+      '只有该节点自身的输入会离开你的机器。工作流中的其他部分仍在本地运行，和以前完全一样。'
+  },
+  'cloudNodesLaunch.howItWorks.3.title': {
+    en: 'A normal output socket',
+    'zh-CN': '普通的输出接口'
+  },
+  'cloudNodesLaunch.howItWorks.3.description': {
+    en: 'Results come back as IMAGE, VIDEO or AUDIO. No upload step, no second application, no environment to maintain.',
+    'zh-CN':
+      '结果以 IMAGE、VIDEO 或 AUDIO 的形式返回。无需上传，无需第二个应用，也无需维护运行环境。'
+  },
+  'cloudNodesLaunch.howItWorks.4.title': {
+    en: 'Metered per GPU-second',
+    'zh-CN': '按 GPU 秒计量'
+  },
+  'cloudNodesLaunch.howItWorks.4.description': {
+    en: 'You are charged for execution time rather than per generation. A short image is a few seconds; video runs longer.',
+    'zh-CN':
+      '按实际执行时间计费，而不是按次计费。生成一张图通常只需几秒，视频则更久。'
+  },
+  'cloudNodesLaunch.howItWorks.footnote': {
+    en: 'In beta: the curated set is still changing, so options may be added or removed and a workflow may be retired.',
+    'zh-CN':
+      '测试版：精选节点集仍在调整，选项可能增减，某个工作流也可能被下线。'
+  },
+  'cloudNodesLaunch.why.heading': {
+    en: 'Built for the models\n',
+    'zh-CN': '为那些跑不动的\n'
+  },
+  'cloudNodesLaunch.why.headingHighlight': {
+    en: "your machine can't hold",
+    'zh-CN': '模型而生'
+  },
+  'cloudNodesLaunch.why.subtitle': {
+    en: 'This is not a push to move you off local. Keep running what your machine handles well.',
+    'zh-CN': '这不是要把你从本地推走。你的机器跑得动的，继续在本地跑。'
+  },
+  'cloudNodesLaunch.why.1.title': {
+    en: 'The VRAM wall',
+    'zh-CN': '显存的墙'
+  },
+  'cloudNodesLaunch.why.1.description': {
+    en: 'Every ComfyUI user meets CUDA error: out of memory eventually. A model ships, you want to try it, and it does not fit on your card.',
+    'zh-CN':
+      '每个 ComfyUI 用户迟早都会遇到 CUDA error: out of memory。新模型发布了，你想试试，却装不进你的显卡。'
+  },
+  'cloudNodesLaunch.why.2.title': {
+    en: 'Renting a box is not the answer',
+    'zh-CN': '租一台机器并不是答案'
+  },
+  'cloudNodesLaunch.why.2.description': {
+    en: 'The thing you actually want to keep is your workflow: the graph you built, the nodes around it, the outputs you route onward.',
+    'zh-CN':
+      '你真正想保留的是自己的工作流：你搭好的图、周围的节点，以及往下游输送的输出。'
+  },
+  'cloudNodesLaunch.why.3.title': {
+    en: 'No plan to buy',
+    'zh-CN': '不必购买套餐'
+  },
+  'cloudNodesLaunch.why.3.description': {
+    en: 'An account and credits are enough, the same as every other partner node. There is no plan floor and no monthly minimum.',
+    'zh-CN':
+      '只需账号和积分，与其他合作伙伴节点一样。没有套餐门槛，也没有每月最低消费。'
+  },
+  'cloudNodesLaunch.why.4.title': {
+    en: 'One node, not a migration',
+    'zh-CN': '只是一个节点，而不是迁移'
+  },
+  'cloudNodesLaunch.why.4.description': {
+    en: 'You add a node to the graph you already have. Nothing else about your setup changes.',
+    'zh-CN': '你只是在已有的工作流里加一个节点。其他一切都不用改。'
   },
   'cloudNodesLaunch.faq.heading': {
     en: 'Frequently asked questions',
     'zh-CN': '常见问题'
   },
-  'cloudNodesLaunch.runOptions.heading': {
-    en: 'Run it your way',
-    'zh-CN': '按你的方式运行'
+  'cloudNodesLaunch.faq.1.q': {
+    en: 'Why are these marked beta?',
+    'zh-CN': '为什么这些节点标记为测试版？'
   },
-  'cloudNodesLaunch.runOptions.subtitle': {
-    en: 'Keep the models you already run on your own machine. Reach for a Comfy Cloud node only for the ones you cannot.',
+  'cloudNodesLaunch.faq.1.a': {
+    en: 'Because the curated set is still changing: nodes may gain or lose options, and a workflow may be retired. It is not a statement about reliability, runs are real and are billed the same as any other partner node. The [BETA] marker is on the node name itself so you see it before you use one.',
     'zh-CN':
-      '你已经能在本机运行的模型，继续在本机跑。只有跑不动的，才交给 Comfy Cloud 节点。'
+      '因为精选节点集仍在调整：节点的选项可能增减，某个工作流也可能被下线。这与稳定性无关，运行是真实的，计费方式与其他合作伙伴节点一致。[BETA] 标记就在节点名称上，你在使用前就能看到。'
   },
-  'cloudNodesLaunch.runOptions.cta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
-  'cloudNodesLaunch.reviews.heading': {
-    en: 'Built for people who already have a workflow',
-    'zh-CN': '为已有工作流的创作者而生'
+  'cloudNodesLaunch.faq.2.q': {
+    en: 'Do I need a Comfy Cloud subscription?',
+    'zh-CN': '我需要订阅 Comfy Cloud 吗？'
   },
-  'cloudNodesLaunch.reviews.highlightTitle': {
-    en: 'Drive Comfy from your editor',
-    'zh-CN': '在编辑器中驱动 Comfy'
+  'cloudNodesLaunch.faq.2.a': {
+    en: 'No. These behave like every other partner node: an account and credits are enough. There is no plan floor.',
+    'zh-CN':
+      '不需要。它们与其他合作伙伴节点一样，只需账号和积分即可使用，没有套餐门槛。'
   },
-  'cloudNodesLaunch.reviews.highlightDescription': {
-    en: 'The same Cloud GPUs are reachable over MCP, so an agent can run these workflows for you.',
-    'zh-CN': '同样的云端 GPU 也可通过 MCP 访问，让智能体替你运行这些工作流。'
+  'cloudNodesLaunch.faq.3.q': {
+    en: 'Which models can I run?',
+    'zh-CN': '可以运行哪些模型？'
   },
-  'cloudNodesLaunch.reviews.highlightCta': {
-    en: 'GET STARTED',
-    'zh-CN': '开始使用'
+  'cloudNodesLaunch.faq.3.a': {
+    en: 'Eight nodes at launch. Four text-to-image (Flux 2, Mage Flow, Mage Flow Turbo, Z-Image Turbo), three MiniMax H3 video nodes (text, image, and first-last frame to video), and MiniMax Music 3 for audio.',
+    'zh-CN':
+      '首发八个节点：四个文生图（Flux 2、Mage Flow、Mage Flow Turbo、Z-Image Turbo），三个 MiniMax H3 视频节点（文生视频、图生视频、首尾帧生视频），以及用于音频的 MiniMax Music 3。'
+  },
+  'cloudNodesLaunch.faq.4.q': {
+    en: 'What actually runs on your side?',
+    'zh-CN': '究竟有哪些内容在你们那边运行？'
+  },
+  'cloudNodesLaunch.faq.4.a': {
+    en: 'A curated workflow per node, pinned to an exact model version so a saved graph keeps producing the same thing. Your graph, prompts and inputs stay on your machine apart from what the node sends.',
+    'zh-CN':
+      '每个节点对应一套精选工作流，并锁定具体模型版本，因此保存的工作流会持续产出一致的结果。除节点发送的内容外，你的工作流、提示词与输入都保留在本机。'
+  },
+  'cloudNodesLaunch.faq.5.q': {
+    en: 'How is it billed?',
+    'zh-CN': '如何计费？'
+  },
+  'cloudNodesLaunch.faq.5.a': {
+    en: 'Per GPU-second in credits, shown on the node before you run. A short image generation is a few seconds; video is longer.',
+    'zh-CN':
+      '按 GPU 秒数以积分计费，运行前会在节点上显示。生成一张图通常只需几秒，视频则更久。'
+  },
+  'cloudNodesLaunch.faq.6.q': {
+    en: 'Can I use my own LoRAs or checkpoints?',
+    'zh-CN': '可以使用我自己的 LoRA 或模型吗？'
+  },
+  'cloudNodesLaunch.faq.6.a': {
+    en: 'Not yet. Each node exposes a fixed set of weights we host. Bringing your own is the obvious next step and is not in this first release.',
+    'zh-CN':
+      '暂时还不行。每个节点仅提供我们托管的固定权重集合。自带模型是后续的明确方向，但不在首个版本中。'
+  },
+  'cloudNodesLaunch.faq.7.q': {
+    en: 'Does this replace running locally?',
+    'zh-CN': '这会取代本地运行吗？'
+  },
+  'cloudNodesLaunch.faq.7.a': {
+    en: 'No, and it should not. Keep running what your machine handles well. These nodes exist for the models it cannot, without asking you to leave your workflow.',
+    'zh-CN':
+      '不会，也不应该。本机跑得动的继续在本机跑。这些节点是为跑不动的模型准备的，同时让你无需离开自己的工作流。'
+  },
+  'cloudNodesLaunch.closing.heading': {
+    en: 'Run the model, not the hardware',
+    'zh-CN': '专注模型，而不是硬件'
+  },
+  'cloudNodesLaunch.closing.subtitle': {
+    en: 'Update to v0.34.5 or later, search the node library for Comfy Cloud, and wire one in.',
+    'zh-CN':
+      '更新到 v0.34.5 或更高版本，在节点库中搜索 Comfy Cloud，然后连线使用。'
   },
   'footer.cloudNodes': {
     en: 'Comfy Cloud Nodes',

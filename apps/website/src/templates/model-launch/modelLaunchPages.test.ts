@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 
-import { cloudNodesPage } from '../../data/cloudNodesLaunch'
 import { flux3Page } from '../../data/flux3'
 import { geminiOmniPage } from '../../data/geminiOmni'
 import { ltxPage } from '../../data/ltx'
@@ -25,8 +24,7 @@ const pages: { name: string; page: ModelLaunchPage }[] = [
   { name: 'ltx', page: ltxPage },
   { name: 'geminiOmni', page: geminiOmniPage },
   { name: 'wanAnimate2', page: wanAnimate2Page },
-  { name: 'wan3', page: wan3Page },
-  { name: 'cloudNodes', page: cloudNodesPage }
+  { name: 'wan3', page: wan3Page }
 ]
 
 const VIDEO_URL = /^https:\/\/media\.comfy\.org\/.+\.(webm|mp4)$/
