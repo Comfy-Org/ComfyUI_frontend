@@ -161,7 +161,7 @@ const errorAssertionRestrictions = [
 const noZodForRemoteApiTypes = {
   selector: "ImportDeclaration[source.value='zod']",
   message:
-    'Do not hand-write new Zod schemas for remote API types. Use generated types from packages/ingest-types (@comfyorg/ingest-types) instead. See browser_tests/README.md "Sources of truth for mock types".'
+    'Do not hand-write new Zod schemas for remote API types. Use generated schemas from @comfyorg/ingest-types/zod instead; for re-declared generated TypeScript declarations, see comfy/no-duplicate-ingest-type. See browser_tests/README.md "Sources of truth for mock types".'
 } as const
 
 export default defineConfig([
@@ -395,7 +395,14 @@ export default defineConfig([
   // 'error' once those are derived from stores instead.
   {
     files: ['src/**/*.ts', 'src/**/*.vue'],
-    ignores: ['**/*.test.ts', '**/*.spec.ts'],
+    ignores: [
+      '**/*.test.ts',
+      '**/*.spec.ts',
+      // This warning-only block also uses no-restricted-syntax and must not
+      // replace the stricter remote-specific selectors above.
+      'src/platform/remote/**/*.ts',
+      'src/platform/remote/**/*.vue'
+    ],
     rules: {
       'no-restricted-syntax': [
         'warn',

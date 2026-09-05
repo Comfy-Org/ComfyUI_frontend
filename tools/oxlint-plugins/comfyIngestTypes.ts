@@ -221,13 +221,13 @@ function keysOmittedThenRedeclared(
 }
 
 function duplicateMessage(name: string): string {
-  return `'${name}' is imported from ${GENERATED_PACKAGE} and re-declared here. Re-export the generated type, or give the local model a distinct name (e.g. '${name}View') so the contract and the local view cannot be confused — see docs/guidance/typescript.md.`
+  return `'${name}' is imported from ${GENERATED_PACKAGE} and re-declared here. Re-export the generated type, or give the local model a distinct name (e.g. '${name}View') so the contract and the local view cannot be confused. For remote response schemas, also see comfy/no-new-zod-for-remote-api-types — see docs/guidance/typescript.md.`
 }
 
 function driftMessage(name: string, keys: readonly string[]): string {
   const plural = keys.length > 1
   const list = keys.map((key) => `'${key}'`).join(', ')
-  return `'${name}' omits ${list} from the generated '${name}' and re-declares ${plural ? 'them' : 'it'}, silently replacing the API contract for ${plural ? 'those fields' : 'that field'}. Keep the generated ${plural ? 'fields' : 'field'}, relax presence with 'Partial<Pick<...>>' so the ${plural ? 'types' : 'type'} still ${plural ? 'come' : 'comes'} from the contract, or rename the local model — see docs/guidance/typescript.md.`
+  return `'${name}' omits ${list} from the generated '${name}' and re-declares ${plural ? 'them' : 'it'}, silently replacing the API contract for ${plural ? 'those fields' : 'that field'}. Keep the generated ${plural ? 'fields' : 'field'}, relax presence with 'Partial<Pick<...>>' so the ${plural ? 'types' : 'type'} still ${plural ? 'come' : 'comes'} from the contract, or rename the local model. For remote response schemas, also see comfy/no-new-zod-for-remote-api-types — see docs/guidance/typescript.md.`
 }
 
 // Imports and key aliases are only complete once the file has been walked, so
