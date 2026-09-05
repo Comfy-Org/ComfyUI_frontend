@@ -1,0 +1,26 @@
+name: AGENTS.md Integrity
+
+# Thin caller for the shared reusable AGENTS.md integrity check. It enforces the
+# Comfy "AGENTS.md, done right" standard: one thin (<200-line) top-level
+# AGENTS.md as the single source of truth, a one-line `@AGENTS.md` CLAUDE.md
+# shim, a sibling shim for every nested (monorepo) AGENTS.md, and no divergent
+# .cursorrules. The checker lives in Comfy-Org/github-workflows (single source
+# of truth) and is loaded from the pinned `workflows_ref` — never from this
+# repo's checkout — so a PR can't rewrite the check.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  agents-md:
+    permissions:
+      contents: read
+    # SHA-pinned per zizmor `unpinned-uses: hash-pin`. Bump this SHA (and keep
+    # `workflows_ref` matching) to pick up upstream checker changes; once this
+    # repo is registered with the agents-md caller bump dispatcher, those SHA
+    # bumps are opened automatically.
+    uses: Comfy-Org/github-workflows/.github/workflows/agents-md-integrity.yml@af848b3e36ca6d6087f32b0020875cb33a5400b3 # github-workflows main (af848b3)
+    with:
+      workflows_ref: af848b3e36ca6d6087f32b0020875cb33a5400b3
