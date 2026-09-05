@@ -43,6 +43,7 @@ import {
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
 import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
+import { extensionValue } from '@/lib/litegraph/src/utils/extensionValue'
 import type { DragAndScale } from './DragAndScale'
 import type { LGraph } from './LGraph'
 import { LGraphBadge } from './LGraphBadge'
@@ -180,11 +181,39 @@ function serialiseWidgetValues(widgets: IBaseWidget[]) {
   const named: Record<string, TWidgetValue> = {}
   for (const widget of widgets) {
     if (widget.serialize === false) continue
-    const value = widget.value
-    const serialisedValue =
-      value != null && typeof value === 'object'
-        ? JSON.parse(JSON.stringify(value))
-        : (value ?? null)
+    // `serializeWorkflowValue` is the saved-file counterpart of
+    // `serializeValue`, which only the prompt builder consults. A widget that
+    // sets neither serialises its own value, as it always has.
+    const value = widget.serializeWorkflowValue
+      ? widget.serializeWorkflowValue()
+      : widget.value
+    let serialisedValue: TWidgetValue
+    // A scalar has nothing to deep-copy and cannot be unserializable, so the
+    // round-trip is pure cost — and the value that pays most for it is the one
+    // it helps least: a multiline prompt, stringified and parsed on every save,
+    // clone and prompt build. Non-finite numbers stay on the JSON path, which
+    // is what turns them into null.
+    if (
+      value === null ||
+      value === undefined ||
+      typeof value === 'string' ||
+      typeof value === 'boolean' ||
+      (typeof value === 'number' && Number.isFinite(value))
+    ) {
+      positional.push(value ?? null)
+      named[widget.name] = value ?? null
+      continue
+    }
+    try {
+      const json = extensionValue(JSON.stringify(value))
+      if (json == null) throw new TypeError()
+      serialisedValue = JSON.parse(json) as TWidgetValue
+    } catch (error) {
+      throw new TypeError(
+        `Widget '${widget.name}' returned a non-serializable workflow value.`,
+        { cause: error }
+      )
+    }
     positional.push(serialisedValue)
     named[widget.name] = serialisedValue
   }
@@ -690,6 +719,15 @@ export class LGraphNode
   declare comfyDynamic?: Record<string, object>
   declare comfyClass?: string
   declare isVirtualNode?: boolean
+  /**
+   * A virtual node whose outputs the prompt builder's RESOLUTION pass
+   * substitutes. Execution-time link walking must stop at this node and
+   * report it as the origin — the legacy virtual shapes below
+   * (`resolveVirtualOutput`, same-slot `getInputLink` pass-through) cannot
+   * express a computed source like Get/Set, and guessing with them silently
+   * drops the consumer's input.
+   */
+  declare resolutionOwned?: boolean
   applyToGraph?(extraLinks?: LLink[]): void
 
   isSubgraphNode(): this is SubgraphNode {

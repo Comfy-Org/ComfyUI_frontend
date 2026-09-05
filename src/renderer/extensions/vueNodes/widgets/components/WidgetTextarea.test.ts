@@ -2,6 +2,8 @@ import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { subscribeWidgetTextInteraction } from '@/platform/nodeApi/widgetTextInteraction'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetTextarea from './WidgetTextarea.vue'
@@ -291,6 +293,40 @@ describe('WidgetTextarea Value Binding', () => {
 
       expect(onUpdateModelValue).toHaveBeenCalledWith(formattedText)
     })
+  })
+
+  it('dispatches text interactions for the live widget', async () => {
+    const sourceWidget = new LGraphNode('Host', 'Host').addWidget(
+      'text',
+      'test_textarea',
+      'hello',
+      () => {}
+    )
+    const widget = createTextareaWidget('hello')
+    widget.sourceWidget = sourceWidget
+    const listener = vi.fn()
+    const unsubscribe = subscribeWidgetTextInteraction(
+      sourceWidget,
+      listener,
+      vi.fn()
+    )
+    try {
+      renderComponent(widget, 'hello')
+      const user = userEvent.setup()
+      const textarea = screen.getByRole('textbox')
+
+      await user.clear(textarea)
+      expect(listener).toHaveBeenLastCalledWith(
+        expect.objectContaining({ kind: 'input', value: '' })
+      )
+
+      await user.type(textarea, 'world')
+      expect(listener).toHaveBeenLastCalledWith(
+        expect.objectContaining({ kind: 'input', value: 'world' })
+      )
+    } finally {
+      unsubscribe()
+    }
   })
 })
 

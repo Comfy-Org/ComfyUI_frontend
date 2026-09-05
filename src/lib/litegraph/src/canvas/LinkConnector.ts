@@ -993,9 +993,7 @@ export class LinkConnector {
       // Dropping new output link
       const output = node.findOutputByType(firstLink.fromSlot.type)?.slot
       if (output === undefined) {
-        console.warn(
-          `Could not find slot for link type: [${firstLink.fromSlot.type}].`
-        )
+        this._reportUnplaced(node, firstLink, 'output', event)
         return
       }
 
@@ -1004,14 +1002,39 @@ export class LinkConnector {
       // Dropping new input link
       const input = node.findInputByType(firstLink.fromSlot.type)?.slot
       if (input === undefined) {
-        console.warn(
-          `Could not find slot for link type: [${firstLink.fromSlot.type}].`
-        )
+        this._reportUnplaced(node, firstLink, 'input', event)
         return
       }
 
       this._dropOnInput(node, input)
     }
+  }
+
+  /**
+   * Offers the drop to anything that can place it across more than one slot,
+   * and warns only if nothing does.
+   *
+   * A node whose single slot carries a bundle — a context, a pipe — wants to
+   * unpack it into several of the peer's slots, which no one-slot search can
+   * express. Packs did this by replacing `connectByType` on the prototype for
+   * every node in the document, which changed link routing for every other
+   * pack as a side effect.
+   */
+  private _reportUnplaced(
+    node: LGraphNode,
+    link: RenderLink,
+    side: 'input' | 'output',
+    event: CanvasPointerEvent
+  ): void {
+    const handled = !this.events.dispatch('link-unplaced', {
+      node,
+      link,
+      side,
+      event
+    })
+    if (handled) return
+
+    console.warn(`Could not find slot for link type: [${link.fromSlot.type}].`)
   }
 
   /** @returns `true` if at least one link accepted {@link input}. */
