@@ -10,7 +10,7 @@ import { zAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSche
 
 // A recording keeps every production field except the two ids the replay
 // mints per run (agentConversationFixture stampTurn).
-const mintedIds: { thread_id: true; message_id: true } = {
+export const mintedIds: { thread_id: true; message_id: true } = {
   thread_id: true,
   message_id: true
 }
@@ -45,7 +45,7 @@ const OP_ENVELOPE: Record<keyof OpBase, true> = {
   base_version: true,
   stamp: true
 }
-const OP_ENVELOPE_KEYS = Object.keys(OP_ENVELOPE)
+export const OP_ENVELOPE_KEYS = Object.keys(OP_ENVELOPE)
 
 // The vocabulary and the absence of the envelope are checked here; the applier
 // validates each payload at replay time, which is the rest of GraphOperation.
@@ -96,14 +96,14 @@ const zWidgetCatalog = z
   })
   .strict()
 
-const zAgentConversationWorkflow = z.object({
+export const zAgentConversationWorkflow = z.object({
   id: z.string().uuid(),
   name: z.string().min(1),
   catalog: zWidgetCatalog,
   seed: zWorkflowJson
 })
 
-const zAgentConversationRequest = z.object({
+export const zAgentConversationRequest = z.object({
   content: z.string().min(1)
 })
 

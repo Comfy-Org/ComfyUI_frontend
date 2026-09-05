@@ -630,17 +630,16 @@ When a fix changes how the agent's turns affect the app (graph edits,
 CRDT frames, panel state), add a conversation replay case alongside the
 fix so the bug stays fixed:
 
-1. **Capture the conversation.** Reproduce the bug's turn against the
-   cloud agent run locally in its non-standalone mode, with Postgres,
-   Redis and the doc host beside it: that is the only mode that writes
-   the per-op audit rows (`agent_tool_calls` parent and child rows) the
-   exporter reads. The same agent in standalone mode
-   (SQLite, no doc host) never writes them, so it can only
-   yield text-only or tool-error turns. Record it with the recorder
-   (`scripts/agentConversationRecord.ts`, landing in #16782; until it merges,
-   record from that PR's branch), which writes the conversation JSON into
-   `conversations/` marked `response_side: 'recorded'`. Never write
-   `graph_ops` by hand and never relabel a synthesized response as recorded.
+1. **Record the conversation.** Reproduce the bug's turn with
+   `scripts/agentConversationRecord.ts` against the non-standalone local
+   stack (Postgres + doc host), which is the only place the doc host
+   writes the audit rows a replay asserts. That one command records the
+   turn and writes the conversation JSON under
+   `browser_tests/fixtures/data/agent/conversations/`, marked
+   `response_side: 'recorded'`; see
+   `fixtures/data/agent/README.md` for the stack recipe, the command and
+   the capture format. Never write `graph_ops` by hand and never relabel
+   a synthesized response as recorded.
 2. **Add the replay case.** Drive the fixture through the conversation
    replay fixture (`agentConversationFixture`), asserting the
    canvas-observable outcome the bug corrupted (graph end-state or
@@ -650,7 +649,7 @@ fix so the bug stays fixed:
    run lines in the PR description. A replay case that never went red
    against the bug does not count as regression coverage.
 
-Name the case after the behavior it protects (`agent-<behavior-slug>.json`, with the fix PR cited in the fixture's `source.note`). The exporter writes the provenance the replay keeps: `source.capture` (thread and message ids) and `source.note` (row ids and the raw capture hash), which is enough to re-export the recording.
+Name the case after the behavior it protects (`agent-<behavior-slug>.json`, with the fix PR cited in the fixture's `source.note`). The recorder writes the provenance the replay keeps: `source.capture` (backend, thread id, export time), `turns[].message_id`, and `source.note` (row ids and the raw capture hash). A bad fixture is re-recorded, never edited.
 
 ## Test Data & Typed API Mocks
 
