@@ -25,6 +25,7 @@ export interface DocOp {
 export interface DocUpdate {
   workflowId: string
   seq: number
+  lineageSeq: number
   update: Uint8Array
   actor?: string
   /** Accepted semantic op identities folded into this effect frame (DQ-9). */
@@ -35,6 +36,7 @@ export interface DocSubscribed {
   workflowId: string
   ok: boolean
   seq?: number
+  lineageSeq?: number
   code?: string
   message?: string
 }
@@ -75,6 +77,7 @@ interface DocAwareness {
 export interface DocReset {
   workflowId: string
   seq: number
+  lineageSeq: number
   actor?: string
 }
 
@@ -107,6 +110,7 @@ interface WireData {
   v?: unknown
   workflow_id?: unknown
   seq?: unknown
+  lineage_seq?: unknown
   update_b64?: unknown
   actor?: unknown
   op_ids?: unknown
@@ -283,6 +287,8 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
   if (
     frame.type === 'doc_update' &&
     isSequence(data.seq) &&
+    isSequence(data.lineage_seq) &&
+    data.lineage_seq <= data.seq &&
     typeof data.update_b64 === 'string'
   ) {
     const update = decodeBase64(data.update_b64)
@@ -294,6 +300,7 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
       data: {
         workflowId: data.workflow_id,
         seq: data.seq,
+        lineageSeq: data.lineage_seq,
         update,
         ...(actor !== undefined && { actor }),
         ...(isStringArray(data.op_ids) && {
@@ -303,7 +310,20 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
     }
   }
 
-  if (frame.type === 'doc_subscribed' && typeof data.ok === 'boolean') {
+  // The server omits `lineage_seq` from the ack while a doc is still on the
+  // migration default lineage 0 (`omitempty`), so absent means 0 here. A
+  // present value must still be a well-formed lineage: unlike `seq`, lineage
+  // is load-bearing on the ack, so a malformed one rejects the frame.
+  const ackLineageSeq = isAbsent(data.lineage_seq) ? 0 : data.lineage_seq
+  if (
+    frame.type === 'doc_subscribed' &&
+    typeof data.ok === 'boolean' &&
+    (!data.ok ||
+      (isSequence(ackLineageSeq) &&
+        (isSequence(data.seq)
+          ? ackLineageSeq <= data.seq
+          : ackLineageSeq === 0)))
+  ) {
     const code = parseBoundedString(data.code, MAX_ERROR_CODE_LENGTH)
     const message = parseBoundedString(data.message, MAX_ERROR_MESSAGE_LENGTH)
     return {
@@ -312,6 +332,8 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
         workflowId: data.workflow_id,
         ok: data.ok,
         ...(isSequence(data.seq) && { seq: data.seq }),
+        ...(data.ok &&
+          isSequence(ackLineageSeq) && { lineageSeq: ackLineageSeq }),
         ...(code !== undefined && { code }),
         ...(message !== undefined && { message })
       }
@@ -344,13 +366,19 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
     }
   }
 
-  if (frame.type === 'doc_reset' && isSequence(data.seq)) {
+  if (
+    frame.type === 'doc_reset' &&
+    isSequence(data.seq) &&
+    isSequence(data.lineage_seq) &&
+    data.lineage_seq === data.seq
+  ) {
     const actor = parseAdvisoryActor(data.actor)
     return {
       type: frame.type,
       data: {
         workflowId: data.workflow_id,
         seq: data.seq,
+        lineageSeq: data.lineage_seq,
         ...(actor !== undefined && { actor })
       }
     }
@@ -416,11 +444,16 @@ export class DocFrameClient extends EventTarget {
   }
 
   /** @returns whether the subscribe frame actually left the transport. */
-  subscribe(workflowId: string, stateVector: Uint8Array): boolean {
+  subscribe(
+    workflowId: string,
+    stateVector: Uint8Array,
+    knownLineageSeq: number
+  ): boolean {
     return this.send('doc_subscribe', {
       v: DOC_PROTOCOL_VERSION,
       workflow_id: workflowId,
-      state_vector_b64: encodeBase64(stateVector)
+      state_vector_b64: encodeBase64(stateVector),
+      known_lineage_seq: knownLineageSeq
     })
   }
 

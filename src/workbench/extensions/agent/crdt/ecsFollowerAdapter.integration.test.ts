@@ -121,6 +121,7 @@ describe('EcsFollowerAdapter integration', () => {
       adapter.applyFrame({
         workflowId: 'wf',
         seq: 1,
+        lineageSeq: 1,
         update,
         actor: 'agent:test',
         opIds: ['bootstrap']
@@ -223,7 +224,9 @@ describe('EcsFollowerAdapter integration', () => {
     const update = Y.encodeStateAsUpdate(host)
     follower.applyRemoteUpdate(update)
 
-    expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(true)
+    expect(
+      adapter.applyFrame({ workflowId: 'wf', seq: 1, lineageSeq: 1, update })
+    ).toBe(true)
     expect(
       useNodeDataStore()
         .getGraphNodesFor('root', 'root')
@@ -284,7 +287,9 @@ describe('EcsFollowerAdapter integration', () => {
     // reconciliation must not be consumed — local-only node 99 survives.
     scopeAvailable = false
     deleteLayouts.mockClear()
-    expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(false)
+    expect(
+      adapter.applyFrame({ workflowId: 'wf', seq: 1, lineageSeq: 1, update })
+    ).toBe(false)
     expect(
       useNodeDataStore()
         .getGraphNodesFor('root', 'root')
@@ -296,7 +301,9 @@ describe('EcsFollowerAdapter integration', () => {
     // clears the stale local-only node instead of falling through to
     // incremental handling.
     scopeAvailable = true
-    expect(adapter.applyFrame({ workflowId: 'wf', seq: 2, update })).toBe(true)
+    expect(
+      adapter.applyFrame({ workflowId: 'wf', seq: 2, lineageSeq: 1, update })
+    ).toBe(true)
     expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
     expect(deleteLayouts).toHaveBeenCalledWith(
       scope,
@@ -337,7 +344,9 @@ describe('EcsFollowerAdapter integration', () => {
     const update = Y.encodeStateAsUpdate(host)
     follower.applyRemoteUpdate(update)
 
-    expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(true)
+    expect(
+      adapter.applyFrame({ workflowId: 'wf', seq: 1, lineageSeq: 1, update })
+    ).toBe(true)
     expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
     expect(
       useNodeDataStore()
@@ -404,6 +413,7 @@ describe('EcsFollowerAdapter integration', () => {
       adapter.applyFrame({
         workflowId: 'wf',
         seq: 1,
+        lineageSeq: 1,
         update,
         actor: 'agent:test',
         opIds: ['prefix']
@@ -454,6 +464,7 @@ describe('EcsFollowerAdapter integration', () => {
         adapter.applyFrame({
           workflowId: 'wf',
           seq,
+          lineageSeq: 1,
           update,
           actor: 'agent:test',
           opIds: [operationId]
@@ -554,6 +565,7 @@ describe('EcsFollowerAdapter integration', () => {
       const frame: DocUpdate = {
         workflowId: 'wf',
         seq,
+        lineageSeq: 1,
         update,
         actor: 'agent:test',
         opIds: [operationId]
@@ -735,6 +747,7 @@ describe('EcsFollowerAdapter integration', () => {
         adapter.applyFrame({
           workflowId: 'wf',
           seq: 1,
+          lineageSeq: 1,
           update: initial,
           actor: 'agent:test',
           opIds: ['add']
@@ -756,6 +769,7 @@ describe('EcsFollowerAdapter integration', () => {
           adapter.applyFrame({
             workflowId: 'wf',
             seq,
+            lineageSeq: 1,
             update,
             actor: 'agent:test',
             opIds: [`op-${seq}`]
@@ -875,6 +889,7 @@ describe('EcsFollowerAdapter integration', () => {
       adapter.applyFrame({
         workflowId: 'wf',
         seq: 1,
+        lineageSeq: 1,
         update,
         actor: 'agent:test',
         opIds: ['op-1']
@@ -923,6 +938,7 @@ describe('EcsFollowerAdapter integration', () => {
     const frameA: DocUpdate = {
       workflowId: 'wf-a',
       seq: 1,
+      lineageSeq: 1,
       update: updateA,
       actor: 'agent:test',
       opIds: ['a']
@@ -930,6 +946,7 @@ describe('EcsFollowerAdapter integration', () => {
     const frameB: DocUpdate = {
       workflowId: 'wf-b',
       seq: 1,
+      lineageSeq: 1,
       update: updateB,
       actor: 'agent:test',
       opIds: ['b']
@@ -1044,6 +1061,7 @@ describe('EcsFollowerAdapter integration', () => {
           adapter.applyFrame({
             workflowId: 'wf',
             seq: 1,
+            lineageSeq: 1,
             update,
             actor: 'agent:test',
             opIds: ops.map(({ op_id }) => op_id)
@@ -1066,6 +1084,7 @@ describe('EcsFollowerAdapter integration', () => {
             adapter.applyFrame({
               workflowId: 'wf',
               seq: ++seq,
+              lineageSeq: 1,
               update,
               actor: 'agent:test',
               opIds: [singleOp.op_id]
