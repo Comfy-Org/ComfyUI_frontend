@@ -273,15 +273,11 @@ export function useAgentCrdtFollower(
   // exactly which nodes each doc_update added/removed. Rebuilt from zero on
   // doc_reset (remint) because the lineage broke.
   let knownDocNodeIds: Set<string> = new Set()
+  // `getMap` defines the root when it is absent; only read a root that exists.
   const currentDocNodeIds = (): Set<string> => {
-    try {
-      const doc = bridge.follower.doc as unknown as {
-        getMap: (k: string) => { toJSON: () => Record<string, unknown> }
-      }
-      return new Set(Object.keys(doc.getMap('nodes').toJSON()))
-    } catch {
-      return new Set()
-    }
+    const doc = bridge.follower.doc
+    if (!doc.share.has('nodes')) return new Set()
+    return new Set(doc.getMap('nodes').keys())
   }
 
   // FE-1901 (poc-2): a `doc_subscribed {ok:false}` is a SERVER refusal — e.g.

@@ -297,7 +297,7 @@ describe('LGraph.configure that throws partway through', () => {
     expect(configuredEvents).toBe(1)
   })
 
-  it('LEAK: a nested definition that fails stays registered on an otherwise empty graph', () => {
+  it('does not publish a nested definition whose configuration fails', () => {
     const graph = new LGraph()
     const created: string[] = []
     graph.events.addEventListener('subgraph-created', (event) => {
@@ -306,7 +306,7 @@ describe('LGraph.configure that throws partway through', () => {
 
     expect(() => graph.configure(failingNestedWorkflow())).toThrow()
 
-    expect(created).toEqual([NESTED_DEFINITION_ID])
+    expect(created).toEqual([])
     expect(graph.subgraphs.has(NESTED_DEFINITION_ID)).toBe(true)
     expect(graph.empty).toBe(true)
   })

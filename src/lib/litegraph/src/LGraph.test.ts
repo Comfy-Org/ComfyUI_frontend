@@ -2158,6 +2158,38 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     expect(definitions).toEqual(original)
   })
 
+  it('publishes a nested definition before the definition that instantiates it twice', () => {
+    const graph = new LGraph()
+    const innerId = createUuidv4()
+    const outerId = createUuidv4()
+    const innerNode = (id: number) => ({
+      id,
+      type: innerId,
+      pos: [id * 200, 0] as [number, number],
+      size: [100, 100] as [number, number],
+      flags: {},
+      order: id,
+      mode: 0,
+      inputs: [],
+      outputs: [],
+      properties: {}
+    })
+    const created: string[] = []
+    graph.events.addEventListener('subgraph-created', (event) => {
+      created.push(event.detail.subgraph.id)
+    })
+
+    graph.createSubgraphs([
+      createTestSubgraphData({
+        id: outerId,
+        nodes: [innerNode(1), innerNode(2)]
+      }),
+      createTestSubgraphData({ id: innerId })
+    ])
+
+    expect(created).toEqual([innerId, outerId])
+  })
+
   it('remaps duplicate link IDs across subgraph definitions', () => {
     const { graph } = configureFromFixture()
     const ids = [...graph.subgraphs.values()].flatMap((subgraph) => [

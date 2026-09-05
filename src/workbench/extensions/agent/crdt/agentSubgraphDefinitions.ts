@@ -81,7 +81,31 @@ function readInteriorNode(source: unknown): Record<string, unknown> | null {
   return node
 }
 
-function readDefinition(source: Y.Map<unknown>): ExportedSubgraph {
+function isExportedSubgraph(value: unknown): value is ExportedSubgraph {
+  if (typeof value !== 'object' || value === null) return false
+  const graph = value as Record<string, unknown>
+  const state = graph.state
+  if (typeof state !== 'object' || state === null) return false
+  const counters = state as Record<string, unknown>
+  return (
+    typeof graph.id === 'string' &&
+    typeof graph.name === 'string' &&
+    (graph.version === 0 || graph.version === 1) &&
+    typeof graph.revision === 'number' &&
+    typeof graph.inputNode === 'object' &&
+    graph.inputNode !== null &&
+    typeof graph.outputNode === 'object' &&
+    graph.outputNode !== null &&
+    typeof counters.lastNodeId === 'number' &&
+    typeof counters.lastLinkId === 'number' &&
+    typeof counters.lastGroupId === 'number' &&
+    typeof counters.lastRerouteId === 'number' &&
+    (graph.nodes === undefined || Array.isArray(graph.nodes)) &&
+    (graph.links === undefined || Array.isArray(graph.links))
+  )
+}
+
+function readDefinition(source: Y.Map<unknown>): ExportedSubgraph | null {
   const definition: Record<string, unknown> = {}
   source.forEach((value, key) => {
     if (key === NODE_ORDER || key === LINK_ORDER || !isReadableKey(key)) return
@@ -100,7 +124,7 @@ function readDefinition(source: Y.Map<unknown>): ExportedSubgraph {
       definition[key] = plain(value)
     }
   })
-  return definition as unknown as ExportedSubgraph
+  return isExportedSubgraph(definition) ? definition : null
 }
 
 /**
@@ -119,7 +143,9 @@ export function readSubgraphDefinitions(doc: Y.Doc): ExportedSubgraph[] {
   // shared type in place; that is a read-side view, not new content.)
   if (!doc.share.has(DEFINITIONS_ROOT)) return definitions
   doc.getMap<unknown>(DEFINITIONS_ROOT).forEach((value) => {
-    if (value instanceof Y.Map) definitions.push(readDefinition(value))
+    if (!(value instanceof Y.Map)) return
+    const definition = readDefinition(value)
+    if (definition) definitions.push(definition)
   })
   return definitions
 }
