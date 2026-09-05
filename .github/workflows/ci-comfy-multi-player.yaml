@@ -1,0 +1,103 @@
+name: 'CI: Comfy Multi-Player'
+
+on:
+  pull_request:
+    branches-ignore: [wip/*, draft/*, temp/*]
+    paths:
+      - 'packages/comfy-multi-player/**'
+      - 'src/workbench/extensions/agent/crdt/**'
+      - 'scripts/cicd/check-comfy-multi-player-workspace.ts'
+      - '.github/actions/setup-frontend/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - '.github/workflows/ci-comfy-multi-player.yaml'
+  push:
+    branches: [main, master, dev*, core/*]
+    paths:
+      - 'packages/comfy-multi-player/**'
+      - 'src/workbench/extensions/agent/crdt/**'
+      - 'scripts/cicd/check-comfy-multi-player-workspace.ts'
+      - '.github/actions/setup-frontend/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - '.github/workflows/ci-comfy-multi-player.yaml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    name: package / source resolution / follower contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup frontend workspace
+        uses: ./.github/actions/setup-frontend
+
+      - name: Verify workspace source resolution
+        run: pnpm check:comfy-multi-player-workspace
+
+      - name: Build and type-check package
+        run: pnpm --filter @comfyorg/comfy-multi-player run typecheck
+
+      - name: Verify conformance corpus
+        run: pnpm --filter @comfyorg/comfy-multi-player run verify:corpus
+
+      - name: Verify package boundaries
+        run: |
+          pnpm --filter @comfyorg/comfy-multi-player run check:purity
+          pnpm --filter @comfyorg/comfy-multi-player run check:stateless
+          pnpm --filter @comfyorg/comfy-multi-player run check:imports
+          pnpm --filter @comfyorg/comfy-multi-player run check:pins
+
+      - name: Verify review profiles
+        run: |
+          pnpm --filter @comfyorg/comfy-multi-player run check:profile-claims
+          pnpm --filter @comfyorg/comfy-multi-player run check:coderabbit
+
+      - name: Test package
+        run: pnpm --filter @comfyorg/comfy-multi-player test
+
+      - name: Test clock ordering matrix
+        run: pnpm --filter @comfyorg/comfy-multi-player run test:clock-matrix
+
+      - name: Test frontend follower against workspace source
+        run: pnpm exec vitest run src/workbench/extensions/agent/crdt
+
+      - name: Verify published package boundary
+        working-directory: packages/comfy-multi-player
+        run: |
+          pnpm pack --json --pack-destination "$RUNNER_TEMP" > "$RUNNER_TEMP/comfy-multi-player-pack.json"
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process'
+          import { readFile } from 'node:fs/promises'
+
+          const packed = JSON.parse(
+            await readFile(`${process.env.RUNNER_TEMP}/comfy-multi-player-pack.json`, 'utf8')
+          )
+          const files = new Set(packed.files.map(({ path }) => path))
+          for (const required of ['dist/index.js', 'dist/index.d.ts']) {
+            if (!files.has(required)) throw new Error(`package is missing ${required}`)
+          }
+          const source = [...files].find((path) => path.startsWith('src/'))
+          if (source) throw new Error(`package unexpectedly includes ${source}`)
+
+          const manifest = JSON.parse(
+            execFileSync('tar', ['-xOf', packed.filename, 'package/package.json'], {
+              encoding: 'utf8'
+            })
+          )
+          if (manifest.main !== './dist/index.js') throw new Error('published main is not dist')
+          if (manifest.types !== './dist/index.d.ts') throw new Error('published types are not dist')
+          const rootExport = manifest.exports?.['.']
+          if (rootExport?.import !== './dist/index.js' || rootExport?.types !== './dist/index.d.ts') {
+            throw new Error('published exports are not dist')
+          }
+          NODE

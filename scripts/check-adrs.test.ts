@@ -3,7 +3,11 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, test } from 'vitest'
 
-import { findLegacyAdrReferences, validateAdrDirectory } from './check-adrs'
+import {
+  findLegacyAdrReferences,
+  isScannedForLegacyReferences,
+  validateAdrDirectory
+} from './check-adrs'
 
 const temporaryDirectories: string[] = []
 
@@ -95,5 +99,28 @@ describe('findLegacyAdrReferences', () => {
     expect(
       findLegacyAdrReferences('ADR-CRDT-LAYOUT-0003 amendment (2026-08-23)')
     ).toEqual([])
+  })
+})
+
+describe('isScannedForLegacyReferences', () => {
+  // Paths are joined from parts so this file does not itself contain a literal
+  // legacy reference, which the repository-wide scan would flag.
+  test.for(
+    [
+      ['packages/comfy-multi-player/docs/adr/', '0001-op-based-crdt-v1.md'],
+      ['packages/comfy-multi-player/docs/', 'INVARIANTS.md'],
+      ['packages/comfy-multi-player/src/', 'types.ts']
+    ].map((parts) => parts.join(''))
+  )('skips the self-governed ADR corpus in %s', (filename) => {
+    expect(isScannedForLegacyReferences(filename)).toBe(false)
+  })
+
+  test.for([
+    'docs/adr/README.md',
+    'docs/adr/ECS-0008-entity-component-system.md',
+    'src/workbench/extensions/agent/crdt/ecsFollowerAdapter.ts',
+    'packages/design-system/docs/notes.md'
+  ])('still scans this repository own file %s', (filename) => {
+    expect(isScannedForLegacyReferences(filename)).toBe(true)
   })
 })

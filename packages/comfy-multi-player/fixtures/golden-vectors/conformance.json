@@ -1,0 +1,13 @@
+{
+  "format_version": 1,
+  "comment": "Canonical language-agnostic op-applier/project conformance vectors. Success sessions are listed in cases; rejection/retry ApplyResult and mutation vectors are listed in result_cases; the Y.Doc wire layout (schema §1 root-map names and reserved node keys) is in wire_layout.",
+  "catalog": "../catalog.json",
+  "result_cases": "rejection-retry.json",
+  "wire_layout": "wire-layout.json",
+  "cases": [
+    { "name": "large-build", "session": "../session-large-build.session.jsonl" },
+    { "name": "edit-heavy", "session": "../session-edit-heavy.session.jsonl" },
+    { "name": "subgraph", "session": "../session-subgraph.session.jsonl" },
+    { "name": "frontend-only-notes", "session": "../session-frontend-only-notes.session.jsonl" }
+  ]
+}

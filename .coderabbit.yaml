@@ -125,6 +125,17 @@ reviews:
         of importing `@comfyorg/comfy-multi-player`, `DISTRIBUTION`/`isCloud`/
         `isDesktop` checks scattered outside the agent connection boundary, and
         auth reduced to `isCloud` instead of `authStore.getAuthHeader()`.
+    - path: 'packages/comfy-multi-player/**'
+      instructions: |
+        Treat `packages/comfy-multi-player/AGENTS.md`,
+        `packages/comfy-multi-player/docs/INVARIANTS.md`, and the concern
+        profiles under `packages/comfy-multi-player/.agents/checks/` as
+        required review context. Preserve the browser/Node purity boundary,
+        the single shared applier, and every cited `KA-*` and `FC-*` invariant.
+        The root `ci-comfy-multi-player.yaml` workflow must keep source
+        resolution, typecheck, corpus, purity, statelessness, import, pin,
+        review-profile, package test, clock-matrix, frontend follower, and
+        packed-artifact gates non-fatal only on success.
     - path: '**/*.test.ts'
       instructions: |
         Treat `.agents/checks/test-quality.md`, `docs/testing/README.md`,

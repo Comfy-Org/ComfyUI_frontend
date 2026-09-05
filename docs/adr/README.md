@@ -20,6 +20,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [DEVEX-BUILD-0010](DEVEX-BUILD-0010-remove-nx-orchestration.md)                                                  | Remove Nx Orchestration                                         | Accepted | 2026-05-19 |
 | [DEVEX-LINT-0015](DEVEX-LINT-0015-adopt-fallow-with-new-only-baselines.md)                                       | Adopt Fallow with New-Only Baselines                            | Proposed | 2026-06-29 |
 | [DEVEX-MONOREPO-0002](DEVEX-MONOREPO-0002-adopt-a-pnpm-workspace-monorepo.md)                                    | Adopt a pnpm Workspace Monorepo                                 | Accepted | 2025-08-25 |
+| [DEVEX-MONOREPO-0028](DEVEX-MONOREPO-0028-comfy-multi-player-is-a-frontend-workspace-package.md)                 | Comfy Multi-Player Is a Frontend Workspace Package              | Accepted | 2026-09-02 |
 | [ECS-0008](ECS-0008-entity-component-system.md)                                                                  | Entity Component System                                         | Proposed | 2026-03-23 |
 | [ECS-IDENTITY-0016](ECS-IDENTITY-0016-entity-id-collision-policy-and-recovery.md)                                | Entity ID Collision Policy and Recovery                         | Proposed | 2026-08-24 |
 | [ECS-SLOTS-0017](ECS-SLOTS-0017-slot-records-as-the-source-of-truth.md)                                          | Slot Records as the Source of Truth                             | Accepted | 2026-08-24 |
