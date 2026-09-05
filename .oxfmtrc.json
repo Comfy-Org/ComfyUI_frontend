@@ -15,6 +15,6 @@
     "src/locales/**/*.json",
     "**/__fixtures__/**/*.json",
     "apps/website/src/content/**/*.mdx",
-    "apps/website/src/config/workshop-catalog.generated.json"
+    "apps/website/src/content/workshop-models.json"
   ]
 }

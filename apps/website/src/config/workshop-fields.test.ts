@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
@@ -6,22 +6,47 @@ import { describe, expect, it } from 'vitest'
 import { workshopModelSchema } from '../content/workshop-models.schema'
 import { deriveWorkshopFields } from './workshop-fields'
 
-const COLLECTION = join(
+// The committed catalog: one packed array, a model per line. Read it the way
+// the content loader does rather than scanning a directory that no longer
+// exists, and validate every entry so the test fails on a bad catalog.
+const CATALOG = join(
   dirname(fileURLToPath(import.meta.url)),
   '..',
   'content',
-  'workshop-models'
+  'workshop-models.json'
 )
 
-const collection = readdirSync(COLLECTION)
-  .filter((file) => file.endsWith('.json'))
-  .map((file) =>
-    workshopModelSchema.parse(
-      JSON.parse(readFileSync(join(COLLECTION, file), 'utf8'))
-    )
-  )
+const collection = (JSON.parse(readFileSync(CATALOG, 'utf8')) as unknown[]).map(
+  (entry) => workshopModelSchema.parse(entry)
+)
 
 describe('deriveWorkshopFields', () => {
+  it('does not invent defaults for optional booleans', () => {
+    const fields = deriveWorkshopFields(
+      { properties: { enabled: { type: 'boolean' } } },
+      []
+    )
+    expect(fields[0]).toMatchObject({ kind: 'toggle', required: false })
+    expect(fields[0]).not.toHaveProperty('defaultValue')
+  })
+
+  it('preserves the catalog true-only regeneration constraint without a false default', () => {
+    const model = collection.find(
+      (model) => model.id === 'minimax/hailuo-03-regeneration'
+    )
+    expect(model).toBeDefined()
+    if (!model) throw new Error('Missing regeneration model')
+    const field = deriveWorkshopFields(model.parameters, model.roles).find(
+      (field) => field.name === 'source_is_unmodified_h3_768p'
+    )
+    expect(field).toMatchObject({
+      kind: 'select',
+      options: [true],
+      required: true
+    })
+    expect(field).not.toHaveProperty('defaultValue')
+  })
+
   it('maps Router properties and media roles to form controls', () => {
     expect(
       deriveWorkshopFields(
@@ -107,8 +132,12 @@ describe('deriveWorkshopFields', () => {
     for (const model of collection) {
       const fields = deriveWorkshopFields(model.parameters, model.roles)
       const fieldNames = new Set(fields.map((field) => field.name))
+      // JSON Schema says `required` is an array of strings, but the schema
+      // types it as arbitrary JSON, so narrow rather than assume.
       const required = Array.isArray(model.parameters.required)
-        ? model.parameters.required
+        ? model.parameters.required.filter(
+            (name): name is string => typeof name === 'string'
+          )
         : []
       for (const name of required) {
         if (['model', 'medias', 'dispatch_mode'].includes(name)) continue
