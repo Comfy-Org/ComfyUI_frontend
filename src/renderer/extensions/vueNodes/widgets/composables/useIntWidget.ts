@@ -5,6 +5,7 @@ import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { isIntInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 import { addValueControlWidget } from '@/scripts/widgets'
+import { SAFE_INTEGER_MAX } from '@/scripts/valueControl'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 
 function onValueChange(this: INumericWidget, v: number) {
@@ -50,8 +51,16 @@ export const useIntWidget = () => {
           : 'number'
 
     const step = inputSpec.step ?? 1
-    /** Assertion {@link inputSpec.default} */
+    
+    const inputSpecAny = inputSpec as any
+    const component = inputSpecAny.component
+
+    const max =
+      component === 'SetRandomInt'
+        ? Math.min(inputSpec.max ?? SAFE_INTEGER_MAX, SAFE_INTEGER_MAX)
+        : (inputSpec.max ?? 2048)
     const defaultValue = (inputSpec.default as number | undefined) ?? 0
+    
     const widget = node.addWidget(
       widgetType,
       inputSpec.name,
@@ -59,13 +68,18 @@ export const useIntWidget = () => {
       onValueChange,
       {
         min: inputSpec.min ?? 0,
-        max: inputSpec.max ?? 2048,
-        /** @deprecated Use step2 instead. The 10x value is a legacy implementation. */
+        max,
         step: step * 10,
         step2: step,
-        precision: 0
-      }
+        precision: 0,
+        component: component
+      } as any
     )
+    
+    if (component) {
+      if (!widget.options) widget.options = {};
+      (widget.options as any).component = component;
+    }
 
     const controlAfterGenerate =
       inputSpec.control_after_generate ??

@@ -1,5 +1,8 @@
 import { isComboWidget } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  IWidgetOptions
+} from '@/lib/litegraph/src/types/widgets'
 
 import { IS_CONTROL_WIDGET } from './controlWidgetMarker'
 
@@ -34,7 +37,7 @@ export function nextValueForLinkedTarget(params: {
   })
 }
 
-const SAFE_INTEGER_MAX = 1125899906842624
+export const SAFE_INTEGER_MAX = 1125899906842624
 const SAFE_INTEGER_MIN = -1125899906842624
 
 export function isValueControlWidget(widget: IBaseWidget): boolean {
@@ -129,6 +132,15 @@ function computeNextComboValue(
   return values[currentIndex]
 }
 
+export function randomizeNumberValue(options: IWidgetOptions): number {
+  const { min: rawMin = 0, max: rawMax = 1, step2 = 1 } = options
+  const max = Math.min(SAFE_INTEGER_MAX, rawMax)
+  const min = Math.max(SAFE_INTEGER_MIN, rawMin)
+  const range = (max - min) / step2
+  const next = Math.floor(Math.random() * range) * step2 + min
+  return Math.min(Math.max(next, min), max)
+}
+
 function computeNextNumberValue(
   target: IBaseWidget,
   mode: ValueControlMode
@@ -138,7 +150,6 @@ function computeNextNumberValue(
   const { min: rawMin = 0, max: rawMax = 1, step2 = 1 } = target.options
   const max = Math.min(SAFE_INTEGER_MAX, rawMax)
   const min = Math.max(SAFE_INTEGER_MIN, rawMin)
-  const range = (max - min) / step2
 
   let next = target.value
   switch (mode) {
@@ -150,7 +161,7 @@ function computeNextNumberValue(
       next -= step2
       break
     case 'randomize':
-      next = Math.floor(Math.random() * range) * step2 + min
+      next = randomizeNumberValue(target.options)
       break
   }
 
