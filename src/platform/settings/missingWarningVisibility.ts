@@ -13,9 +13,12 @@ type VisibilitySettingId =
   | (typeof MISSING_WARNING_SETTING_IDS)[MissingWarningKind]
 
 /** A setting that is not registered yet reads as enabled. */
-function isEnabled(id: VisibilitySettingId): boolean {
-  const value: boolean | undefined = useSettingStore().get(id)
+function enabledByDefault(value: boolean | undefined): boolean {
   return value ?? true
+}
+
+function isEnabled(id: VisibilitySettingId): boolean {
+  return enabledByDefault(useSettingStore().get(id))
 }
 
 export function isIssuesTabEnabled(): boolean {
