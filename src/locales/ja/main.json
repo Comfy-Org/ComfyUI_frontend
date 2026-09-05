@@ -8,6 +8,124 @@
     "share": "共有",
     "shareTooltip": "ワークフローを共有"
   },
+  "agent": {
+    "addFromAssets": "アセットパネルから追加",
+    "addNodesFromGraph": "グラフからノードを追加",
+    "addPromptToSend": "送信するプロンプトを追加",
+    "addToPrompt": "プロンプトに追加",
+    "alpha": "アルファ",
+    "askComfyAgent": "Comfy Agent に質問",
+    "assetNotAttachable": "画像、動画、音声、3Dモデル、テキストファイルを添付できます",
+    "attach": "ファイルを添付",
+    "attachFiles": "画像またはファイルを添付",
+    "attachmentTooLarge": "{name} は {limit} を超えています",
+    "attachmentUploadFailed": "{name} をアップロードできませんでした",
+    "backToPreviousChat": "前のチャットに戻る",
+    "caption": "AIエージェントは誤る可能性があります",
+    "captionExpanded": "AIエージェントは誤ることがあります。応答を再確認してください。",
+    "changeWorkflowForChat": "このチャットのワークフローを変更",
+    "chatOptions": "チャットオプション",
+    "chooseWorkflow": "ワークフローを選択",
+    "chooseWorkflowForChat": "このチャットのワークフローを選択",
+    "close": "閉じる",
+    "coachBody": "グラフの作成や編集を依頼できます。",
+    "coachTitle": "エージェントについて",
+    "copied": "コピーしました！",
+    "copy": "コピー",
+    "copyMarkdown": "Markdownとしてコピー",
+    "copyUnavailable": "このバージョンでは、現在の会話のみコピーできます",
+    "crdtConnected": "接続済み",
+    "crdtDisconnected": "切断済み",
+    "crdtNoDocument": "ドキュメントなし",
+    "crdtStatus": "CRDT {connection} · {workflowId} · {updates} 件の更新 · {frame}",
+    "credits": "クレジット",
+    "delete": "削除",
+    "dismiss": "閉じる",
+    "dontWorkInWorkflow": "ワークフローで作業しない",
+    "downloadAssets": "アセットをダウンロード",
+    "dragAndDropAssets": "ここにアセットをドラッグ＆ドロップ",
+    "focusNode": "キャンバスに表示",
+    "focusNodeLabel": "{node}をキャンバスに表示",
+    "friend": "そこ",
+    "gotIt": "了解",
+    "greeting": "こんにちは、{name}さん、",
+    "greetingQuestion": "何を作りたいですか？",
+    "helpful": "役に立った",
+    "history": "チャット履歴",
+    "historyCurrent": "現在",
+    "historyEarlier": "以前",
+    "historyEmpty": "会話はまだありません",
+    "historyToday": "今日",
+    "historyYesterday": "昨日",
+    "latest": "最新",
+    "loadFailed": "エージェントパネルの読み込みに失敗しました。",
+    "malformedEvent": "エージェントがこのパネルで読み取れないイベントを送信しました",
+    "maximize": "パネルを最大化",
+    "mention": "ノードをメンション",
+    "minimize": "パネルを最小化",
+    "modelAuto": "自動",
+    "newChat": "新しいチャット",
+    "newChatTitle": "無題",
+    "noNodesToMention": "このワークフローにはノードがありません",
+    "nodeSelection": {
+      "bannerSubtitle": "参照として追加するノードを1つ以上選択",
+      "bannerTitle": "グラフからノードを追加",
+      "exit": "モードを終了",
+      "selectNode": "ノードを選択"
+    },
+    "notHelpful": "役に立たなかった",
+    "openWorkflowTab": "{name}を開く",
+    "placeholder": "アイデアを説明し、{'@'} で参照、\nグラフからノードを追加するか、アセットをドラッグしてください",
+    "ranToolCalls": "{count} 件のツール呼び出しを実行 | {count} 件のツール呼び出しを実行",
+    "ranToolCallsTimed": "{seconds} 秒間で {count} 件のツール呼び出しを実行 | {seconds} 秒間で {count} 件のツール呼び出しを実行",
+    "remove": "削除",
+    "removeNodeLabel": "{node}の参照を削除",
+    "runModeAsk": "ワークフロー実行前に確認",
+    "runModeAskDescription": "Comfy はワークフローを実行する前に毎回承認を求めます",
+    "runModeAuto": "承認なしで自動実行",
+    "runModeAutoDescription": "Comfy は許可を求めずにワークフローを実行します",
+    "runModeLimit": "制限付きで自動実行",
+    "runModeLimitDescription": "Comfy はワークフローの実行がクレジット上限を超える場合にのみ確認します",
+    "runModeTriggerAsk": "確認",
+    "runModeTriggerAskTooltip": "許可を求める",
+    "runModeTriggerAuto": "自動",
+    "runModeTriggerAutoLimit": "自動（制限あり）",
+    "runModeTriggerAutoLimitTooltip": "クレジット上限に達したら確認する",
+    "runModeTriggerAutoTooltip": "許可なくワークフローを実行",
+    "runNotice": "エージェントはグラフを変更できます。ワークフローを実行するには、実行をクリックする必要があります。",
+    "runNoticeExpanded": "エージェントはワークフローを変更できます。実行するには、実行をクリックする必要があります。",
+    "runPermissions": "実行の許可",
+    "runPermissionsDescription": "エージェントが同意を必要とするタイミングを選択",
+    "saveChanges": "変更を保存",
+    "searchWorkflows": "ワークフローを検索",
+    "selectWorkflowToGenerate": "生成に使用するワークフローを選択",
+    "send": "送信",
+    "sendBusy": "すでにメッセージを送信中です",
+    "sendFailed": "メッセージの送信に失敗しました",
+    "showChatHistory": "チャット履歴を表示",
+    "showLess": "表示を減らす",
+    "showMore": "もっと表示",
+    "skip": "スキップ",
+    "stop": "停止",
+    "suggestedPrompts": [
+      "ホッケーマスクを付けた黄色いアヒルを生成",
+      "保存したワークフローを一覧表示",
+      "肌のアップスケーリングに最適なワークフローを探す",
+      "選択したノードを説明",
+      "3つのモデルで画像から動画を作成するワークフローを構築"
+    ],
+    "switchWorkflow": "ワークフローを切り替え",
+    "thinking": "考え中...",
+    "thought": "思考",
+    "thoughtTimed": "{seconds}秒間思考",
+    "title": "Comfy Agent",
+    "toolForgotPreference": "設定を忘れました",
+    "toolOpenedNewTab": "新しいタブを開きました",
+    "toolSavedPreference": "設定を保存しました",
+    "toolSwitchedTabs": "タブを切り替えました",
+    "untitledChat": "無題",
+    "uploading": "アップロード中"
+  },
   "apiNodesCostBreakdown": {
     "costPerRun": "実行あたりのコスト",
     "title": "APIノード",
@@ -949,6 +1067,7 @@
     "MODEL_TASK_ID": "モデルタスクID",
     "MOGE_GEOMETRY": "MOGE_GEOMETRY",
     "MOGE_MODEL": "MOGE_MODEL",
+    "MULTIVIEW_TASK_ID": "MULTIVIEW_TASK_ID",
     "NOISE": "ノイズ",
     "OPENAI_CHAT_CONFIG": "OpenAIチャット設定",
     "OPENAI_INPUT_FILES": "OpenAI入力ファイル",
@@ -959,6 +1078,7 @@
     "RECRAFT_COLOR": "Recraftカラー",
     "RECRAFT_CONTROLS": "Recraftコントロール",
     "RECRAFT_V3_STYLE": "Recraft V3スタイル",
+    "RESOLUTION_PREVIEW": "RESOLUTION_PREVIEW",
     "RETARGET_TASK_ID": "リターゲットタスクID",
     "RIG_TASK_ID": "リグタスクID",
     "RUNWAY_ALEPH2_KEYFRAME": "RUNWAY_ALEPH2_KEYFRAME",
@@ -966,6 +1086,7 @@
     "SAM3D_BODY_MODEL": "SAM3D_BODY_MODEL",
     "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "サンプラー",
+    "SEGMENT_TASK_ID": "SEGMENT_TASK_ID",
     "SHAPE_SUBDIVIDES": "SHAPE_SUBDIVIDES",
     "SIGMAS": "シグマ",
     "SPLAT": "スプラット",
@@ -977,6 +1098,7 @@
     "UPSCALE_MODEL": "アップスケールモデル",
     "VAE": "VAE",
     "VIDEO": "ビデオ",
+    "VIDEO_EDIT": "VIDEO_EDIT",
     "VOXEL": "ボクセル",
     "WAN_CAMERA_EMBEDDING": "WANカメラ埋め込み",
     "WEBCAM": "ウェブカメラ"
@@ -1073,6 +1195,18 @@
       }
     },
     "promptErrors": {
+      "agent_api_failed": {
+        "desc": "Comfy Agent でサーバーエラーが発生しました。",
+        "title": "Comfy Agent エラー"
+      },
+      "apply_failed": {
+        "desc": "エージェントの編集をワークフロードキュメントに適用できませんでした。",
+        "title": "エージェントの編集に失敗しました"
+      },
+      "guard_trip": {
+        "desc": "受信したエージェントの更新が想定されたワークフロードキュメントの形式と一致しなかったため、ブロックされました。",
+        "title": "エージェントの更新がブロックされました"
+      },
       "missing_node_type": {
         "desc": "ノードタイプが存在しないか利用できません。ワークフローが破損しているか、カスタムノードが必要な場合があります。",
         "title": "ノードタイプがありません"
@@ -1080,6 +1214,14 @@
       "no_prompt": {
         "desc": "サーバーに送信されたワークフローデータが空です。これは予期しないシステムエラーの可能性があります。",
         "title": "ワークフローデータが空です"
+      },
+      "op_rejected": {
+        "desc": "ワークフロードキュメントがエージェントによる編集を拒否しました。次回の更新まで、キャンバスと共有ドキュメントが一時的に異なる場合があります。",
+        "title": "エージェントの編集が拒否されました"
+      },
+      "prefix_abort": {
+        "desc": "エージェントによる一連の編集が途中で停止しました。残りの編集は自動的に再試行されます。",
+        "title": "エージェントの編集が一部適用されました"
       },
       "prompt_no_outputs": {
         "desc": "ワークフローに出力ノード（例：画像を保存、画像をプレビュー）が含まれていないため、結果を生成できません。",
@@ -1497,6 +1639,8 @@
     "addNewKeybinding": "新しいキーバインドを追加",
     "addNode": "ノードを追加...",
     "addNodeFilterCondition": "ノードフィルター条件を追加",
+    "agentModified": "エージェントがこのワークフローを更新しました",
+    "agentWorking": "エージェントがこのワークフローを処理中です",
     "all": "すべて",
     "allKeybindingsReset": "すべてのキーバインドがデフォルトにリセットされました",
     "amount": "量",
@@ -1715,6 +1859,7 @@
     "moreWorkflows": "さらに多くのワークフロー",
     "mostRelevant": "最も関連性の高い",
     "multiSelectDropdown": "複数選択ドロップダウン",
+    "mute": "ミュート",
     "nMoreKeybindings": "+ {count} 件以上",
     "nMoreKeybindingsCompact": "+ {count}",
     "name": "名前",
@@ -1870,6 +2015,7 @@
     "triggerPhrase": "トリガーフレーズ",
     "unknownError": "不明なエラー",
     "unknownFile": "不明なファイル",
+    "unmute": "ミュート解除",
     "untitled": "無題",
     "update": "更新",
     "updateAvailable": "更新が利用可能",
@@ -2343,11 +2489,13 @@
     "menuBar": {
       "bgColor": "背景色",
       "bgImage": "背景画像",
+      "customUp": "カスタム上方向",
       "deleteRecording": "録画を削除",
       "downloadRecording": "録画をダウンロード",
       "fov": "視野角 (FOV)",
       "intensity": "強度",
       "material": "マテリアル",
+      "naturalUp": "自然な上方向",
       "originalMaterialOnly": "オリジナルマテリアルのみ",
       "panorama": "パノラマ",
       "record": "録画",
@@ -2409,8 +2557,8 @@
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "バージョン{version}のコアノード:",
-    "outdatedVersion": "このワークフローは新しいバージョンのComfyUI（{version}）で作成されました。一部のノードが正しく動作しない場合があります。",
-    "outdatedVersionGeneric": "このワークフローは新しいバージョンのComfyUIで作成されました。一部のノードが正しく動作しない場合があります。",
+    "newerVersionRequired": "一部のノードには新しいバージョンのComfyUIが必要です（現在: {version}）。すべてのノードを使用するには更新してください。",
+    "newerVersionRequiredGeneric": "一部のノードには新しいバージョンのComfyUIが必要です。すべてのノードを使用するには更新してください。",
     "unknownVersion": "不明"
   },
   "logsTerminal": {
@@ -2953,6 +3101,7 @@
     "Luma": "Luma",
     "Magnific": "Magnific",
     "Meshy": "Meshy",
+    "Meta": "Meta",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
@@ -2989,6 +3138,7 @@
     "clip": "クリップ",
     "color": "カラー",
     "combine": "結合",
+    "comfy cloud": "comfy cloud",
     "compositing": "合成",
     "cond pair": "条件ペア",
     "cond single": "条件単体",
@@ -2998,7 +3148,6 @@
     "create": "作成",
     "custom": "カスタム",
     "dancer": "ダンサー",
-    "dataset": "dataset",
     "debug": "デバッグ",
     "detection": "検出",
     "experimental": "実験的",
@@ -3037,7 +3186,6 @@
     "mochi": "mochi",
     "model": "モデル",
     "model specific": "モデル固有",
-    "model_patches": "model_patches",
     "move": "move",
     "multigpu": "マルチGPU",
     "noise": "ノイズ",
@@ -3058,6 +3206,7 @@
     "scail": "scail",
     "schedulers": "スケジューラー",
     "scheduling": "スケジューリング",
+    "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "シグマ",
     "sound": "サウンド",
@@ -3083,7 +3232,6 @@
     "utilities": "ユーティリティ",
     "vace": "vace",
     "video": "ビデオ",
-    "video_models": "ビデオモデル",
     "void": "void",
     "wan": "wan",
     "z-image": "z-image"
@@ -3221,26 +3369,15 @@
     "done": "完了",
     "firstRun": {
       "nudge": {
-        "animate": {
-          "detail": "画像から動画 · 5秒",
-          "title": "アニメーション化"
-        },
-        "body": "どれも、作成したばかりの画像から始まります。",
-        "explore": "すべてのテンプレートを閲覧",
-        "fallback": {
+        "dismiss": "今はしない",
+        "explore": "テンプレートを探す",
+        "noTour": {
           "body": "テンプレートを閲覧して、作成するものを選びましょう。",
-          "title": "さらに数百種類あります"
+          "title": "ほかにも数百種類あります"
         },
-        "loadFailed": "そのテンプレートを読み込めませんでした。もう一度お試しください。",
-        "restyle": {
-          "detail": "パートナーモデル · 有料プランならどれでも利用可能",
-          "title": "Nano Bananaでスタイル変更"
-        },
-        "title": "最初の出力ができました。次はこちらです。",
-        "upscale": {
-          "badge": "4x",
-          "detail": "同じ画像を、より精細に",
-          "title": "高解像度化"
+        "ran": {
+          "body": "たった今、最初の作品を作成しました。ほかに何が作れるか見てみましょう。",
+          "title": "これは数百あるうちの1つです"
         }
       },
       "prompt": {
@@ -4336,6 +4473,7 @@
       },
       "refillReplacesNote": "月間補充を置き換えます。既存の残高は保持されます。",
       "renewsAt": "{date}に{amount}で更新されます。いつでもキャンセルできます。",
+      "renewsAtAmount": "{amount}で更新されます。いつでもキャンセルできます。",
       "savedPaymentMethod": "お支払い方法",
       "showMoreFeatures": "さらに機能を表示",
       "starting": "{date}から開始",

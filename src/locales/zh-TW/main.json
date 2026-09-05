@@ -8,6 +8,124 @@
     "share": "分享",
     "shareTooltip": "分享工作流程"
   },
+  "agent": {
+    "addFromAssets": "從資產面板新增",
+    "addNodesFromGraph": "從圖表加入節點",
+    "addPromptToSend": "新增要傳送的提示詞",
+    "addToPrompt": "加入提示詞",
+    "alpha": "ALPHA",
+    "askComfyAgent": "詢問 Comfy Agent",
+    "assetNotAttachable": "可附加圖片、影片、音訊、3D 模型及文字檔",
+    "attach": "附加檔案",
+    "attachFiles": "附加圖片或檔案",
+    "attachmentTooLarge": "{name} 大於 {limit}",
+    "attachmentUploadFailed": "無法上傳 {name}",
+    "backToPreviousChat": "返回上一個對話",
+    "caption": "AI 代理可能會犯錯",
+    "captionExpanded": "AI 代理可能會犯錯。請再次確認您的回應。",
+    "changeWorkflowForChat": "變更此聊天的工作流程",
+    "chatOptions": "聊天選項",
+    "chooseWorkflow": "選擇工作流程",
+    "chooseWorkflowForChat": "選擇此聊天的工作流程",
+    "close": "關閉",
+    "coachBody": "請它建立或編輯圖表。",
+    "coachTitle": "認識代理程式",
+    "copied": "已複製！",
+    "copy": "複製",
+    "copyMarkdown": "複製為 Markdown",
+    "copyUnavailable": "此版本僅能複製目前的對話",
+    "crdtConnected": "已連線",
+    "crdtDisconnected": "已中斷連線",
+    "crdtNoDocument": "沒有文件",
+    "crdtStatus": "CRDT {connection} · {workflowId} · {updates} 次更新 · {frame}",
+    "credits": "點數",
+    "delete": "刪除",
+    "dismiss": "關閉",
+    "dontWorkInWorkflow": "不使用工作流程",
+    "downloadAssets": "下載資產",
+    "dragAndDropAssets": "將資產拖放至此處",
+    "focusNode": "在畫布上顯示",
+    "focusNodeLabel": "在畫布上顯示 {node}",
+    "friend": "那裡",
+    "gotIt": "知道了",
+    "greeting": "您好，{name}，",
+    "greetingQuestion": "您想製作什麼？",
+    "helpful": "有幫助",
+    "history": "對話紀錄",
+    "historyCurrent": "目前",
+    "historyEarlier": "較早",
+    "historyEmpty": "尚無對話",
+    "historyToday": "今天",
+    "historyYesterday": "昨天",
+    "latest": "最新",
+    "loadFailed": "代理面板載入失敗。",
+    "malformedEvent": "代理程式傳送了此面板無法讀取的事件",
+    "maximize": "最大化面板",
+    "mention": "提及節點",
+    "minimize": "最小化面板",
+    "modelAuto": "自動",
+    "newChat": "新增對話",
+    "newChatTitle": "未命名",
+    "noNodesToMention": "此工作流程中沒有節點",
+    "nodeSelection": {
+      "bannerSubtitle": "選取一個或多個節點以作為參照",
+      "bannerTitle": "從圖表加入節點",
+      "exit": "離開模式",
+      "selectNode": "選取節點"
+    },
+    "notHelpful": "沒有幫助",
+    "openWorkflowTab": "開啟 {name}",
+    "placeholder": "描述想法，使用 {'@'} 參照，\n從圖表加入節點或拖曳資產",
+    "ranToolCalls": "已執行 {count} 次工具呼叫 | 已執行 {count} 次工具呼叫",
+    "ranToolCallsTimed": "已執行 {count} 次工具呼叫，耗時 {seconds} 秒 | 已執行 {count} 次工具呼叫，耗時 {seconds} 秒",
+    "remove": "移除",
+    "removeNodeLabel": "移除 {node} 參照",
+    "runModeAsk": "執行工作流程前先詢問",
+    "runModeAskDescription": "Comfy 會在每次執行工作流程前要求核准",
+    "runModeAuto": "不經核准自動執行",
+    "runModeAutoDescription": "Comfy 會在不詢問權限的情況下執行工作流程",
+    "runModeLimit": "受限自動執行",
+    "runModeLimitDescription": "只有工作流程執行超過您的點數上限時，Comfy 才會要求確認",
+    "runModeTriggerAsk": "詢問",
+    "runModeTriggerAskTooltip": "詢問權限",
+    "runModeTriggerAuto": "自動",
+    "runModeTriggerAutoLimit": "自動（受限）",
+    "runModeTriggerAutoLimitTooltip": "達到點數上限時詢問",
+    "runModeTriggerAutoTooltip": "不詢問權限，直接執行工作流程",
+    "runNotice": "代理可修改圖表。您需要點擊「執行」來執行工作流程。",
+    "runNoticeExpanded": "代理可修改您的工作流程。您需要點擊「執行」來執行。",
+    "runPermissions": "執行權限",
+    "runPermissionsDescription": "選擇代理程式何時需要您的同意",
+    "saveChanges": "儲存變更",
+    "searchWorkflows": "搜尋工作流程",
+    "selectWorkflowToGenerate": "選擇要用於生成的工作流程",
+    "send": "傳送",
+    "sendBusy": "已有訊息正在傳送",
+    "sendFailed": "訊息傳送失敗",
+    "showChatHistory": "顯示對話紀錄",
+    "showLess": "顯示更少",
+    "showMore": "顯示更多",
+    "skip": "略過",
+    "stop": "停止",
+    "suggestedPrompts": [
+      "生成一隻戴著曲棍球面具的黃色鴨子",
+      "列出我已儲存的工作流程",
+      "尋找最適合皮膚放大的工作流程",
+      "說明選取的節點",
+      "建立一個使用 3 個模型的圖像轉影片工作流程"
+    ],
+    "switchWorkflow": "切換工作流程",
+    "thinking": "思考中...",
+    "thought": "思考",
+    "thoughtTimed": "思考了 {seconds} 秒",
+    "title": "Comfy Agent",
+    "toolForgotPreference": "已忘記偏好設定",
+    "toolOpenedNewTab": "已開啟新分頁",
+    "toolSavedPreference": "已儲存偏好設定",
+    "toolSwitchedTabs": "已切換分頁",
+    "untitledChat": "未命名",
+    "uploading": "正在上傳"
+  },
   "apiNodesCostBreakdown": {
     "costPerRun": "每次執行成本",
     "title": "API 節點",
@@ -949,6 +1067,7 @@
     "MODEL_TASK_ID": "模型任務ID",
     "MOGE_GEOMETRY": "MOGE_幾何",
     "MOGE_MODEL": "MOGE_模型",
+    "MULTIVIEW_TASK_ID": "MULTIVIEW_TASK_ID",
     "NOISE": "雜訊",
     "OPENAI_CHAT_CONFIG": "OpenAI聊天配置",
     "OPENAI_INPUT_FILES": "OpenAI輸入檔案",
@@ -959,6 +1078,7 @@
     "RECRAFT_COLOR": "RECRAFT 顏色",
     "RECRAFT_CONTROLS": "RECRAFT 控制",
     "RECRAFT_V3_STYLE": "RECRAFT V3 風格",
+    "RESOLUTION_PREVIEW": "RESOLUTION_PREVIEW",
     "RETARGET_TASK_ID": "重定向任務ID",
     "RIG_TASK_ID": "綁定任務ID",
     "RUNWAY_ALEPH2_KEYFRAME": "RUNWAY_ALEPH2_KEYFRAME",
@@ -966,6 +1086,7 @@
     "SAM3D_BODY_MODEL": "SAM3D_BODY_MODEL",
     "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "取樣器",
+    "SEGMENT_TASK_ID": "SEGMENT_TASK_ID",
     "SHAPE_SUBDIVIDES": "SHAPE_SUBDIVIDES",
     "SIGMAS": "Sigma 值",
     "SPLAT": "SPLAT",
@@ -977,6 +1098,7 @@
     "UPSCALE_MODEL": "升頻模型",
     "VAE": "VAE",
     "VIDEO": "影片",
+    "VIDEO_EDIT": "VIDEO_EDIT",
     "VOXEL": "體素",
     "WAN_CAMERA_EMBEDDING": "Wan相機嵌入",
     "WEBCAM": "網路攝影機"
@@ -1073,6 +1195,18 @@
       }
     },
     "promptErrors": {
+      "agent_api_failed": {
+        "desc": "Comfy Agent 發生伺服器錯誤。",
+        "title": "Comfy Agent 錯誤"
+      },
+      "apply_failed": {
+        "desc": "無法將代理編輯套用至工作流程文件。",
+        "title": "代理編輯失敗"
+      },
+      "guard_trip": {
+        "desc": "傳入的代理更新不符合預期的工作流程文件結構，因此已遭封鎖。",
+        "title": "代理更新遭封鎖"
+      },
       "missing_node_type": {
         "desc": "缺少或無法取得某個節點類型。工作流程可能已損壞或需要自訂節點。",
         "title": "缺少節點類型"
@@ -1080,6 +1214,14 @@
       "no_prompt": {
         "desc": "傳送到伺服器的工作流程資料為空。這可能是系統的非預期錯誤。",
         "title": "工作流程資料為空"
+      },
+      "op_rejected": {
+        "desc": "工作流程文件拒絕了代理編輯。在下次更新前，畫布與共用文件可能會暫時不一致。",
+        "title": "代理編輯遭拒"
+      },
+      "prefix_abort": {
+        "desc": "一批代理編輯中途停止。其餘編輯將自動重試。",
+        "title": "代理編輯已部分套用"
       },
       "prompt_no_outputs": {
         "desc": "工作流程中沒有包含任何輸出節點（例如：儲存圖像、預覽圖像），無法產生結果。",
@@ -1497,6 +1639,8 @@
     "addNewKeybinding": "新增快捷鍵",
     "addNode": "新增節點...",
     "addNodeFilterCondition": "新增節點篩選條件",
+    "agentModified": "代理已更新此工作流程",
+    "agentWorking": "代理正在處理此工作流程",
     "all": "全部",
     "allKeybindingsReset": "所有快捷鍵已重設為預設值",
     "amount": "數量",
@@ -1715,6 +1859,7 @@
     "moreWorkflows": "更多工作流程",
     "mostRelevant": "最相關",
     "multiSelectDropdown": "多選下拉式選單",
+    "mute": "靜音",
     "nMoreKeybindings": "+ 還有 {count} 個",
     "nMoreKeybindingsCompact": "+ {count}",
     "name": "名稱",
@@ -1870,6 +2015,7 @@
     "triggerPhrase": "觸發詞",
     "unknownError": "未知錯誤",
     "unknownFile": "未知檔案",
+    "unmute": "取消靜音",
     "untitled": "未命名",
     "update": "更新",
     "updateAvailable": "有可用更新",
@@ -2343,11 +2489,13 @@
     "menuBar": {
       "bgColor": "背景顏色",
       "bgImage": "背景圖片",
+      "customUp": "自訂向上",
       "deleteRecording": "刪除錄影",
       "downloadRecording": "下載錄影",
       "fov": "視野(FOV)",
       "intensity": "強度",
       "material": "材質",
+      "naturalUp": "自然向上",
       "originalMaterialOnly": "僅原始材質",
       "panorama": "全景",
       "record": "錄製",
@@ -2409,8 +2557,8 @@
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "來自版本 {version} 的核心節點：",
-    "outdatedVersion": "此工作流程是以較新版本的 ComfyUI（{version}）建立的。部分節點可能無法正確運作。",
-    "outdatedVersionGeneric": "此工作流程是以較新版本的 ComfyUI 建立的。部分節點可能無法正確運作。",
+    "newerVersionRequired": "部分節點需要較新版本的 ComfyUI（目前版本：{version}）。請更新以使用所有節點。",
+    "newerVersionRequiredGeneric": "部分節點需要較新版本的 ComfyUI。請更新以使用所有節點。",
     "unknownVersion": "未知"
   },
   "logsTerminal": {
@@ -2953,6 +3101,7 @@
     "Luma": "Luma",
     "Magnific": "Magnific",
     "Meshy": "Meshy",
+    "Meta": "Meta",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
@@ -2989,6 +3138,7 @@
     "clip": "CLIP",
     "color": "顏色",
     "combine": "合併",
+    "comfy cloud": "comfy cloud",
     "compositing": "合成",
     "cond pair": "條件配對",
     "cond single": "單一條件",
@@ -2998,7 +3148,6 @@
     "create": "建立",
     "custom": "自訂",
     "dancer": "舞者",
-    "dataset": "資料集",
     "debug": "除錯",
     "detection": "偵測",
     "experimental": "實驗性",
@@ -3037,7 +3186,6 @@
     "mochi": "mochi",
     "model": "模型",
     "model specific": "模型專用",
-    "model_patches": "model_patches",
     "move": "move",
     "multigpu": "多GPU",
     "noise": "雜訊",
@@ -3058,6 +3206,7 @@
     "scail": "scail",
     "schedulers": "排程器",
     "scheduling": "排程",
+    "sensenova": "sensenova",
     "shader": "著色器",
     "sigmas": "西格瑪值",
     "sound": "聲音",
@@ -3083,7 +3232,6 @@
     "utilities": "工具",
     "vace": "vace",
     "video": "影片",
-    "video_models": "影片模型",
     "void": "void",
     "wan": "wan",
     "z-image": "z-image"
@@ -3221,26 +3369,15 @@
     "done": "完成",
     "firstRun": {
       "nudge": {
-        "animate": {
-          "detail": "圖片轉影片 · 5 秒",
-          "title": "製作動畫"
+        "dismiss": "現在不要",
+        "explore": "探索範本",
+        "noTour": {
+          "body": "瀏覽範本並挑選要打造的內容。",
+          "title": "還有數百個等著您"
         },
-        "body": "每個項目都從您剛建立的圖片開始。",
-        "explore": "瀏覽所有範本",
-        "fallback": {
-          "body": "瀏覽範本，挑選想建立的內容。",
-          "title": "還有數百種更多選擇"
-        },
-        "loadFailed": "無法載入該範本。請再試一次。",
-        "restyle": {
-          "detail": "合作夥伴模型 · 任一付費方案",
-          "title": "使用 Nano Banana 重新設計風格"
-        },
-        "title": "您的第一個輸出成果。接下來可以這樣做。",
-        "upscale": {
-          "badge": "4x",
-          "detail": "相同圖片，更多細節",
-          "title": "放大圖片"
+        "ran": {
+          "body": "您剛剛完成第一個。探索還能打造什麼。",
+          "title": "那只是數百個中的一個"
         }
       },
       "prompt": {
@@ -4336,6 +4473,7 @@
       },
       "refillReplacesNote": "將取代您的月度補充。現有餘額將保留。",
       "renewsAt": "將於 {date} 以 {amount} 續訂。可隨時取消。",
+      "renewsAtAmount": "將以 {amount} 續訂。可隨時取消。",
       "savedPaymentMethod": "付款方式",
       "showMoreFeatures": "顯示更多功能",
       "starting": "自 {date} 開始",

@@ -2763,6 +2763,260 @@
       }
     }
   },
+  "ComfyCloudFlux2TextToImageNode": {
+    "description": "BETA. O conjunto de nós do Comfy Cloud ainda está mudando: opções podem ser adicionadas ou removidas, e um fluxo de trabalho pode ser descontinuado. Gera uma imagem a partir de um prompt de texto com Flux 2 dev. O Turbo usa a LoRA escolhida e uma programação curta, trocando um pouco de fidelidade por uma execução muito mais rápida; desative-o para usar a passagem dev completa sem LoRA. É executado em uma GPU do Comfy Cloud, cobrada pelo tempo de execução a {'$'}0.001295/segundo de GPU (0.27 créditos). Pago em créditos, sem necessidade de assinatura do Cloud.",
+    "display_name": "Comfy Cloud Flux 2 Texto para imagem [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "Orçamento total de pixels. 1.0 equivale a cerca de 1024x1024 em proporção quadrada."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "turbo": {
+        "name": "turbo",
+        "tooltip": "Executa a LoRA Turbo com uma programação curta, trocando um pouco de fidelidade por uma execução muito mais rápida. Desativado executa a passagem dev completa sem LoRA."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMageFlowTextToImageNode": {
+    "description": "BETA. O conjunto de nós do Comfy Cloud ainda está mudando: opções podem ser adicionadas ou removidas, e um fluxo de trabalho pode ser descontinuado. Gera uma imagem a partir de um prompt de texto com Mage-Flow em uma passagem completa de 30 etapas. Aceita um prompt negativo, que a variante turbo destilada não consegue usar bem. É executado em uma GPU do Comfy Cloud, cobrada pelo tempo de execução a {'$'}0.001295/segundo de GPU (0.27 créditos). Pago em créditos, sem necessidade de assinatura do Cloud.",
+    "display_name": "Comfy Cloud Mage Flow Texto para imagem [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "Orçamento total de pixels. 1.0 equivale a cerca de 1024x1024 em proporção quadrada."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Deixe vazio para manter o prompt negativo com o qual este pipeline foi ajustado."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMageFlowTurboTextToImageNode": {
+    "description": "BETA. O conjunto de nós do Comfy Cloud ainda está mudando: opções podem ser adicionadas ou removidas, e um fluxo de trabalho pode ser descontinuado. Gera uma imagem a partir de um prompt de texto com Mage-Flow destilado em 4 etapas com cfg 1. Usa aproximadamente um sétimo do tempo de GPU da passagem completa, sendo ideal para iteração. É executado em uma GPU do Comfy Cloud, cobrada pelo tempo de execução a {'$'}0.001295/segundo de GPU (0.27 créditos). Pago em créditos, sem necessidade de assinatura do Cloud.",
+    "display_name": "Comfy Cloud Mage Flow Turbo Texto para imagem [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "Orçamento total de pixels. 1.0 equivale a cerca de 1024x1024 em proporção quadrada."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Deixe vazio para manter o prompt negativo com o qual este pipeline foi ajustado."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3FirstLastFrameToVideoNode": {
+    "description": "BETA. O conjunto de nós do Comfy Cloud ainda está mudando: opções podem ser adicionadas ou removidas, e um fluxo de trabalho pode ser descontinuado. Gera o movimento entre dois quadros-chave, com uma trilha sonora correspondente, usando MiniMax H3. Forneça os quadros inicial e final, e o modelo preenche a cena entre eles. O último quadro é opcional: omita-o e o movimento seguirá a partir do primeiro quadro. É executado em uma GPU do Comfy Cloud, cobrada pelo tempo de execução a {'$'}0.001295/segundo de GPU (0.27 créditos). Pago em créditos, sem necessidade de assinatura do Cloud.",
+    "display_name": "Comfy Cloud MiniMax H3 Primeiro-Último quadro para vídeo [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "duration_seconds": {
+        "name": "duration_seconds",
+        "tooltip": "Duração em segundos. O pipeline quantiza em etapas de 17 quadros a 24 fps, portanto o clipe fica dentro de cerca de dois terços de segundo deste valor."
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Orçamento de tamanho do quadro. 720p custa aproximadamente o dobro de segundos de GPU que 480p."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3ImageToVideoNode": {
+    "description": "BETA. O conjunto de nós do Comfy Cloud ainda está mudando: opções podem ser adicionadas ou removidas, e um fluxo de trabalho pode ser descontinuado. Anima uma imagem estática em um vídeo com uma trilha sonora correspondente, usando MiniMax H3. Forneça o quadro final de um clipe e ele continuará a sequência, portanto encadear vários cria uma tomada mais longa. Executa em uma GPU do Comfy Cloud, cobrada pelo tempo de execução a {'$'}0.001295/GPU-segundo (0,27 créditos). Pago em créditos, não requer assinatura do Comfy Cloud.",
+    "display_name": "Comfy Cloud MiniMax H3 Imagem para Vídeo [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "duration_seconds": {
+        "name": "duration_seconds",
+        "tooltip": "Duração em segundos. O pipeline quantiza em incrementos de 17 quadros a 24fps, portanto o clipe fica a cerca de dois terços de segundo desta duração."
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Orçamento de tamanho do quadro. 720p custa aproximadamente o dobro de GPU-segundos que 480p."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3TextToVideoNode": {
+    "description": "BETA. O conjunto de nós do Comfy Cloud ainda está mudando: opções podem ser adicionadas ou removidas, e um fluxo de trabalho pode ser descontinuado. Gera um vídeo com uma trilha sonora correspondente a partir de um prompt de texto, usando MiniMax H3. Imagem e áudio são produzidos na mesma etapa, em vez de serem dublados posteriormente. Executa em uma GPU do Comfy Cloud, cobrada pelo tempo de execução a {'$'}0.001295/GPU-segundo (0,27 créditos). Pago em créditos, não requer assinatura do Comfy Cloud.",
+    "display_name": "Comfy Cloud MiniMax H3 Texto para Vídeo [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "duration_seconds": {
+        "name": "duration_seconds",
+        "tooltip": "Duração em segundos. O pipeline quantiza em incrementos de 17 quadros a 24fps, portanto o clipe fica a cerca de dois terços de segundo desta duração."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Orçamento de tamanho do quadro. 720p custa aproximadamente o dobro de GPU-segundos que 480p."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxMusic3TextToAudioNode": {
+    "description": "BETA. O conjunto de nós do Comfy Cloud ainda está mudando: opções podem ser adicionadas ou removidas, e um fluxo de trabalho pode ser descontinuado. Gera uma música completa a partir de uma descrição com MiniMax Music 3. O prompt define o estilo, a instrumentação e o clima; as letras são cantadas, não descritas, e deixar a letra vazia torna a faixa instrumental. Executa em uma GPU do Comfy Cloud, cobrada pelo tempo de execução a {'$'}0.001295/GPU-segundo (0,27 créditos). Pago em créditos, não requer assinatura do Comfy Cloud.",
+    "display_name": "Comfy Cloud MiniMax Music 3 Texto para Áudio [BETA]",
+    "inputs": {
+      "audio_quality": {
+        "name": "audio_quality",
+        "tooltip": "Taxa de bits de mp3. V0 é variável e tem a maior qualidade entre as três opções."
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "lyrics": {
+        "name": "letra",
+        "tooltip": "Palavras para cantar. Deixe vazio para uma faixa instrumental."
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "Duração máxima da faixa. O modelo pode encerrar a música antes."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudZImageTurboNode": {
+    "description": "BETA. O conjunto de nós do Comfy Cloud ainda está mudando: opções podem ser adicionadas ou removidas, e um fluxo de trabalho pode ser descontinuado. Gera uma imagem a partir de um prompt de texto com Z-Image Turbo em 8 etapas. Um dos nós mais rápidos e baratos aqui, o que o torna ideal para iterações. Executa em uma GPU do Comfy Cloud, cobrada pelo tempo de execução a {'$'}0.001295/GPU-segundo (0,27 créditos). Pago em créditos, não requer assinatura do Comfy Cloud.",
+    "display_name": "Comfy Cloud Z-Image Turbo Texto para Imagem [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "Orçamento total de pixels. 1.0 equivale a aproximadamente 1024x1024 em proporção quadrada."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyMathExpression": {
     "display_name": "Expressão Matemática",
     "inputs": {
@@ -6433,7 +6687,7 @@
     }
   },
   "GetImageSize": {
-    "description": "Retorna a largura e altura da imagem, e a repassa inalterada.",
+    "description": "Retorna a largura, a altura e o tamanho do lote da imagem.",
     "display_name": "Obter Tamanho da Imagem",
     "inputs": {
       "image": {
@@ -7133,7 +7387,7 @@
       },
       "mode": {
         "name": "modo",
-        "tooltip": "'speed' é mais rápido; 'precision' produz sincronização labial de maior qualidade pelo dobro do preço."
+        "tooltip": "'speed' é mais rápido; 'precision' produz sincronização labial de maior qualidade por um preço mais alto."
       },
       "output_language": {
         "name": "idioma de saída",
@@ -7201,12 +7455,12 @@
     }
   },
   "HiDreamO1ReferenceImages": {
-    "description": "Anexe de 1 a 10 imagens de referência ao condicionamento, uma para instrução de edição ou múltiplas para personalização orientada por sujeito.",
+    "description": "Anexa imagens de referência ordenadas ao condicionamento positivo e negativo.",
     "display_name": "Imagens de Referência HiDream-O1",
     "inputs": {
       "images": {
         "name": "imagens",
-        "tooltip": "Imagens de referência. 1 imagem = edição por instrução; 2-10 imagens = múltiplas referências."
+        "tooltip": "As imagens de referência são usadas na ordem numérica dos conectores."
       },
       "negative": {
         "name": "negativo"
@@ -12710,6 +12964,84 @@
       }
     }
   },
+  "MetaMuseImageEditApi": {
+    "description": "Edita ou combina até 10 imagens de referência, orientado por um prompt de texto usando o modelo Muse Image da Meta.",
+    "display_name": "Edição de Imagem Meta Muse",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Modelo a ser usado."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_enable_image_search": {
+        "name": "enable_image_search"
+      },
+      "model_enable_shell": {
+        "name": "enable_shell"
+      },
+      "model_enable_web_search": {
+        "name": "enable_web_search"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_strength": {
+        "name": "reasoning_strength"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MetaMuseImageTextToImageApi": {
+    "description": "Gera imagens a partir de um prompt de texto usando o modelo Muse Image da Meta, que raciocina sobre o prompt antes de renderizar.",
+    "display_name": "Meta Muse Image Texto para Imagem",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Modelo a ser usado."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_enable_image_search": {
+        "name": "enable_image_search"
+      },
+      "model_enable_shell": {
+        "name": "enable_shell"
+      },
+      "model_enable_web_search": {
+        "name": "enable_web_search"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_strength": {
+        "name": "reasoning_strength"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MiniMaxH3AddGuide": {
     "description": "Ancore uma imagem, um clip curto, áudio ou um clip com sua trilha sonora em qualquer quadro de um vídeo MiniMax H3. Encadeie vários nós para ancorar vários quadros.",
     "display_name": "Adicionar guia para MiniMax H3",
@@ -12744,6 +13076,46 @@
     "outputs": {
       "0": {
         "name": "positive",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3FunControlNetApply": {
+    "description": "Aplica um MiniMax H3 Fun ControlNet a um modelo de texto para vídeo como um patch de modelo.",
+    "display_name": "Aplicar MiniMax H3 Fun ControlNet",
+    "inputs": {
+      "control_video": {
+        "name": "control_video"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "1 marca as regiões a serem regeneradas."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "Vídeo por trás da máscara; lido apenas quando uma máscara é fornecida."
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -12792,7 +13164,8 @@
     "display_name": "MiniMax H3 Referência para Vídeo",
     "inputs": {
       "audio_vae": {
-        "name": "audio_vae"
+        "name": "audio_vae",
+        "tooltip": "VAE de áudio. Sem ele, o áudio de referência apenas condiciona o codificador de texto."
       },
       "clip": {
         "name": "clip"
@@ -12824,7 +13197,8 @@
         "name": "vídeos_ref"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "VAE de vídeo. Sem ele, imagens/vídeos de referência apenas condicionam o codificador de texto."
       },
       "width": {
         "name": "largura"
@@ -12933,7 +13307,7 @@
     }
   },
   "MinimaxHailuo03FirstLastFrameNode": {
-    "description": "Gere vídeo a partir de uma imagem de primeiro frame e, opcionalmente, uma imagem de último frame usando o modelo MiniMax H3. A proporção do vídeo segue as imagens fornecidas.",
+    "description": "Gera vídeo a partir de uma imagem de primeiro quadro e de uma imagem opcional de último quadro usando os modelos MiniMax H3. A proporção do vídeo segue as imagens fornecidas.",
     "display_name": "MiniMax H3 Primeiro-Último-Frame para Vídeo",
     "inputs": {
       "control_after_generate": {
@@ -12976,7 +13350,7 @@
     }
   },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "Gere vídeo condicionado a imagens de referência, vídeos e áudio usando o modelo MiniMax H3. Consulte as referências no prompt pela ordem: 'Imagem 1', 'Imagem 2', 'Vídeo 1', 'Áudio 1' e assim por diante.",
+    "description": "Gera vídeo condicionado por imagens, vídeos e áudio de referência usando os modelos MiniMax H3. Consulte as referências no prompt pela ordem: 'Imagem 1', 'Imagem 2', 'Vídeo 1', 'Áudio 1' e assim por diante.",
     "display_name": "MiniMax H3 Referência para Vídeo",
     "inputs": {
       "control_after_generate": {
@@ -13051,7 +13425,7 @@
     }
   },
   "MinimaxHailuo03TextToVideoNode": {
-    "description": "Gere vídeo a partir de um prompt de texto usando o modelo MiniMax H3.",
+    "description": "Gera vídeo a partir de um prompt de texto usando os modelos MiniMax H3.",
     "display_name": "MiniMax H3 Texto para Vídeo",
     "inputs": {
       "control_after_generate": {
@@ -16932,7 +17306,7 @@
   },
   "Preview3D": {
     "description": "Visualize um arquivo de modelo 3D sem salvá-lo no diretório de saída do ComfyUI.",
-    "display_name": "Pré-visualização 3D & Animação",
+    "display_name": "Pré-visualizar 3D e animação (OBSOLETO)",
     "inputs": {
       "bg_image": {
         "name": "bg_image"
@@ -17945,7 +18319,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Tipo de saída para o qual o estilo é criado: recraftv4_styles para imagens raster, recraftv4_styles_vector para SVG."
+        "tooltip": "Modelo para o qual o estilo é criado. Standard e Pro compartilham um único conjunto de estilos: estilos raster funcionam com todos os modelos raster Recraft V4 e V4.1, estilos vetoriais (*_vector) com todos os modelos vetoriais V4 e V4.1."
       }
     },
     "outputs": {
@@ -18641,6 +19015,10 @@
       "multiple": {
         "name": "múltiplo",
         "tooltip": "Múltiplo mais próximo do resultado para definir a resolução selecionada."
+      },
+      "preview": {
+        "name": "preview",
+        "tooltip": "Pré-visualização ao vivo da resolução de saída calculada."
       }
     },
     "outputs": {
@@ -21121,6 +21499,23 @@
       }
     }
   },
+  "SenseNovaSamplingOptions": {
+    "description": "Define o deslocamento de fluxo do SenseNova.",
+    "display_name": "Opções de amostragem do SenseNova",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SetClipHooks": {
     "display_name": "Definir Hooks do CLIP",
     "inputs": {
@@ -23429,10 +23824,12 @@
         "name": "animar_no_local"
       },
       "bake": {
-        "name": "bake"
+        "name": "bake",
+        "tooltip": "Incorpora materiais avançados nas texturas base para maior compatibilidade."
       },
       "export_orientation": {
-        "name": "exportar_orientação"
+        "name": "exportar_orientação",
+        "tooltip": "Eixo frontal do modelo exportado. default mantém o +x do Tripo."
       },
       "export_vertex_colors": {
         "name": "exportar_cores_dos_vértices"
@@ -23441,13 +23838,15 @@
         "name": "limite_de_faces"
       },
       "fbx_preset": {
-        "name": "preset_fbx"
+        "name": "preset_fbx",
+        "tooltip": "Predefinição de compatibilidade FBX. bake_scale incorpora a transformação de escala à geometria."
       },
       "flatten_bottom": {
         "name": "achatar_base"
       },
       "flatten_bottom_threshold": {
-        "name": "limite_achatamento_base"
+        "name": "limite_achatamento_base",
+        "tooltip": "Profundidade de achatamento usada com flatten_bottom."
       },
       "force_symmetry": {
         "name": "forçar_simetria"
@@ -23480,15 +23879,66 @@
         "name": "tamanho_da_textura"
       },
       "with_animation": {
-        "name": "com_animação"
+        "name": "com_animação",
+        "tooltip": "Mantém o esqueleto e a animação de modelos rigados ou redirecionados."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": "Modelo convertido no formato solicitado. O OBJ é fornecido pelo Tripo como um arquivo ZIP (malha, material e texturas)."
+      }
+    }
+  },
+  "TripoEditMultiviewNode": {
+    "description": "Edita as vistas de um resultado de Tripo: Image to Multiview com instruções de texto por vista. Vistas sem instrução permanecem inalteradas. Insira as imagens em Tripo: Multiview to Model; um conjunto editado não pode ser editado novamente.",
+    "display_name": "Tripo: Editar multiview",
+    "inputs": {
+      "back_prompt": {
+        "name": "back_prompt"
+      },
+      "front_prompt": {
+        "name": "front_prompt"
+      },
+      "left_prompt": {
+        "name": "left_prompt"
+      },
+      "multiview_task_id": {
+        "name": "multiview_task_id"
+      },
+      "right_prompt": {
+        "name": "right_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "front",
+        "tooltip": null
+      },
+      "1": {
+        "name": "left",
+        "tooltip": null
+      },
+      "2": {
+        "name": "back",
+        "tooltip": null
+      },
+      "3": {
+        "name": "right",
+        "tooltip": null
       }
     }
   },
   "TripoImageToModelNode": {
     "display_name": "Tripo: Imagem para Modelo",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Dimensiona modelos texturizados para seu tamanho real em metros. Tripo armazena o tamanho como a transformação de cena do modelo e o incorpora quando o modelo é convertido, recebe rig ou é retargetizado; ignorado sem textura."
+      },
       "face_limit": {
-        "name": "limite_de_faces"
+        "name": "limite_de_faces",
+        "tooltip": "Contagem máxima de faces. -1 permite que o Tripo escolha adaptativamente (cerca de 1,4M de faces no v3.x standard, 2M no detailed). O Tripo limita silenciosamente: v2.5 a 500.000, malhas quad a 150.000."
       },
       "geometry_quality": {
         "name": "qualidade_da_geometria"
@@ -23507,22 +23957,31 @@
         "name": "orientação"
       },
       "pbr": {
-        "name": "pbr"
+        "name": "pbr",
+        "tooltip": "Mapas de material PBR (cor base, metálico, rugosidade, normal). Requer texture."
       },
       "quad": {
-        "name": "quad"
+        "name": "quad",
+        "tooltip": "Saída de malha quad. O Tripo fornece malhas quad como FBX, portanto o resultado chega na saída FBX e a saída GLB permanece vazia."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Malha de baixa poligonagem com topologia limpa em estilo artesanal (500 a 20.000 faces, quads de 500 a 10.000). Ideal para objetos simples; objetos complexos podem falhar."
       },
       "style": {
-        "name": "estilo"
+        "name": "estilo",
+        "tooltip": "Não é mais compatível com o Tripo e é ignorado. Mantido para fluxos de trabalho antigos."
       },
       "texture": {
-        "name": "textura"
+        "name": "textura",
+        "tooltip": "Gera mapas de textura. Desativado retorna geometria sem texturas e ignora pbr."
       },
       "texture_alignment": {
         "name": "alinhamento_da_textura"
       },
       "texture_quality": {
-        "name": "qualidade_da_textura"
+        "name": "qualidade_da_textura",
+        "tooltip": "detailed = texturas HD, extreme = texturas Ultra 8K."
       },
       "texture_seed": {
         "name": "semente_da_textura"
@@ -23539,6 +23998,41 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "Vazio quando quad está ativado."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Preenchido apenas quando quad está ativado."
+      }
+    }
+  },
+  "TripoImageToMultiviewNode": {
+    "description": "Gera vistas frontal, esquerda, traseira e direita do objeto. Insira-as em Tripo: Múltiplas vistas para modelo ou refine-as primeiro com Tripo: Editar múltiplas vistas.",
+    "display_name": "Tripo: Imagem para múltiplas vistas",
+    "inputs": {
+      "image": {
+        "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "task_id de múltiplas vistas",
+        "tooltip": null
+      },
+      "1": {
+        "name": "frente",
+        "tooltip": null
+      },
+      "2": {
+        "name": "esquerda",
+        "tooltip": null
+      },
+      "3": {
+        "name": "traseira",
+        "tooltip": null
+      },
+      "4": {
+        "name": "direita",
         "tooltip": null
       }
     }
@@ -23559,11 +24053,43 @@
       }
     }
   },
+  "TripoMeshCompleteNode": {
+    "description": "Completa as partes de um modelo segmentado e repara regiões ausentes.",
+    "display_name": "Tripo: Completar partes da malha",
+    "inputs": {
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "Nomes das partes a completar, separados por vírgulas. Vazio completa todas as partes."
+      },
+      "segment_task_id": {
+        "name": "segment_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "task_id do modelo",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: Multiview para Modelo",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Dimensiona modelos texturizados para seu tamanho real em metros. Tripo armazena o tamanho como a transformação de cena do modelo e o incorpora quando o modelo é convertido, recebe rig ou é retargetizado; ignorado sem textura."
+      },
       "face_limit": {
-        "name": "limite_de_faces"
+        "name": "limite_de_faces",
+        "tooltip": "Contagem máxima de faces. -1 permite que Tripo escolha adaptativamente (cerca de 1,4 M de faces no padrão v3.x, 2 M em detailed). Tripo limita silenciosamente: v2.5 a 500.000, malhas quad a 150.000."
       },
       "geometry_quality": {
         "name": "qualidade_da_geometria"
@@ -23591,20 +24117,27 @@
         "name": "orientação"
       },
       "pbr": {
-        "name": "pbr"
+        "name": "pbr",
+        "tooltip": "Mapas de material PBR (cor base, metálico, rugosidade, normal). Requer textura."
       },
       "quad": {
         "name": "quad",
-        "tooltip": "Este parâmetro está obsoleto e não faz nada."
+        "tooltip": "Saída de malha quad. Tripo fornece malhas quad como FBX, portanto o resultado chega pela saída FBX e a saída GLB permanece vazia."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Malha de baixa poligonagem com topologia limpa em estilo artesanal (500 a 20.000 faces, quads de 500 a 10.000). Ideal para objetos simples; objetos complexos podem falhar."
       },
       "texture": {
-        "name": "textura"
+        "name": "textura",
+        "tooltip": "Gera mapas de textura. Desativado retorna geometria sem textura e ignora pbr."
       },
       "texture_alignment": {
         "name": "alinhamento_da_textura"
       },
       "texture_quality": {
-        "name": "qualidade_da_textura"
+        "name": "qualidade_da_textura",
+        "tooltip": "detailed = texturas HD, extreme = texturas Ultra 8K."
       },
       "texture_seed": {
         "name": "semente_da_textura"
@@ -23621,7 +24154,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "Vazio quando quad está ativado."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Preenchido apenas quando quad está ativado."
       }
     }
   },
@@ -23635,7 +24172,7 @@
       },
       "compress_geometry": {
         "name": "comprimir_geometria",
-        "tooltip": "Aplicar compressão baseada em geometria. Descompacte antes de editar."
+        "tooltip": "Aplica compressão de geometria meshopt (EXT_meshopt_compression). Arquivos menores, mas a prévia 3D do ComfyUI não pode exibi-los; descompacte antes de editar."
       },
       "enable_image_autofix": {
         "name": "habilitar_autoajuste_imagem",
@@ -23685,7 +24222,7 @@
       },
       "compress_geometry": {
         "name": "comprimir_geometria",
-        "tooltip": "Aplicar compressão baseada em geometria. Descompacte antes de editar."
+        "tooltip": "Aplica compressão de geometria meshopt (EXT_meshopt_compression). Arquivos menores, mas a prévia 3D do ComfyUI não pode exibi-los; descompacte antes de editar."
       },
       "export_uv": {
         "name": "exportar_uv",
@@ -23744,7 +24281,7 @@
       },
       "compress_geometry": {
         "name": "compress_geometry",
-        "tooltip": "Aplica compressão baseada em geometria. Descompacte antes de editar."
+        "tooltip": "Aplica compressão de geometria meshopt (EXT_meshopt_compression). Arquivos menores, mas a prévia 3D do ComfyUI não pode exibi-los; descompacte antes de editar."
       },
       "export_uv": {
         "name": "export_uv",
@@ -23791,11 +24328,24 @@
   "TripoRetargetNode": {
     "display_name": "Tripo: Retarget para modelo com rig",
     "inputs": {
+      "animate_in_place": {
+        "name": "animate_in_place",
+        "tooltip": "Reproduz a animação no lugar, sem deslocamento da raiz."
+      },
       "animation": {
-        "name": "animação"
+        "name": "animação",
+        "tooltip": "As animações preset:* funcionam com ambos os modelos com rig; as animações preset:biped:* exigem um rig criado com o modelo v1.0-20240301."
+      },
+      "export_with_geometry": {
+        "name": "export_with_geometry",
+        "tooltip": "Inclui a malha na exportação; desativado exporta apenas o esqueleto animado."
       },
       "original_model_task_id": {
         "name": "id_da_tarefa_do_modelo_original"
+      },
+      "out_format": {
+        "name": "out_format",
+        "tooltip": "Formato do arquivo de saída; o resultado é fornecido na saída correspondente."
       }
     },
     "outputs": {
@@ -23809,15 +24359,97 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "Preenchido quando out_format é glb."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Preenchido quando out_format é fbx."
+      }
+    }
+  },
+  "TripoRetopologyNode": {
+    "description": "Reconstrói uma malha low-poly com topologia limpa a partir de um modelo high-poly.",
+    "display_name": "Tripo: Retopologia",
+    "inputs": {
+      "bake": {
+        "name": "bake",
+        "tooltip": "Aplica as texturas de origem à malha low-poly."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Contagem de faces desejada: 500-20,000 triângulos ou 500-10,000 quads. -1 permite que o Tripo escolha."
+      },
+      "model_task_id": {
+        "name": "model_task_id"
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "Nomes de peças separados por vírgulas de Tripo: Segment Model. Vazio processa o modelo inteiro."
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "Saída de malha de quads. O Tripo entrega malhas de quads como FBX, portanto o resultado é fornecido na saída FBX e a saída GLB permanece vazia."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": "Vazio quando quad está ativado."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Preenchido apenas quando quad está ativado."
+      }
+    }
+  },
+  "TripoRigCheckNode": {
+    "description": "Verifica se um modelo pode receber rig e qual tipo de esqueleto o Tripo recomenda.",
+    "display_name": "Tripo: Verificação de Rig",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "riggable",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_type",
+        "tooltip": "Esqueleto recomendado: biped, quadruped, hexapod, octopod, avian, serpentine ou aquatic; 'others' quando o modelo não pode receber rig."
       }
     }
   },
   "TripoRigNode": {
     "display_name": "Tripo: Rig no modelo",
     "inputs": {
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "v1.0: apenas personagens humanoides (biped), mais de 90 predefinições de animação. v2.5: criaturas não humanoides (quadruped, hexapod, octopod, avian, serpentine, aquatic)."
+      },
       "original_model_task_id": {
         "name": "id_da_tarefa_do_modelo_original"
+      },
+      "out_format": {
+        "name": "out_format",
+        "tooltip": "Formato do arquivo de saída; o resultado é fornecido na saída correspondente."
+      },
+      "rig_type": {
+        "name": "rig_type",
+        "tooltip": "Tipo de esqueleto. 'auto' executa primeiro a verificação de rig gratuita do Tripo e usa o tipo recomendado."
+      },
+      "spec": {
+        "name": "spec",
+        "tooltip": "Nomeação de ossos: nativa do Tripo ou compatível com Mixamo. O Tripo não pode redirecionar suas predefinições de animação para um rig v1.0 criado com a especificação mixamo; use tripo para Tripo: Retarget modelo com rig."
       }
     },
     "outputs": {
@@ -23831,7 +24463,38 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "Preenchido quando out_format é glb."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Preenchido quando out_format é fbx."
+      }
+    }
+  },
+  "TripoSegmentNode": {
+    "description": "Divide um modelo em partes. Os nomes das partes alimentam Tripo: Completar Partes da Malha, Tripo: Retopologia e Tripo: Converter modelo.",
+    "display_name": "Tripo: Segmentar Modelo",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "segment task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "part_names",
+        "tooltip": "Nomes das partes separados por vírgulas."
       }
     }
   },
@@ -23933,8 +24596,13 @@
   "TripoTextToModelNode": {
     "display_name": "Tripo: Texto para Modelo",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Dimensiona modelos texturizados para seu tamanho real em metros. Tripo armazena o tamanho como a transformação de cena do modelo e o incorpora quando o modelo é convertido, rigged ou retargeted; ignorado sem textura."
+      },
       "face_limit": {
-        "name": "limite_de_faces"
+        "name": "limite_de_faces",
+        "tooltip": "Contagem máxima de faces. -1 permite que Tripo escolha de forma adaptativa (cerca de 1,4M de faces no padrão v3.x, 2M em detailed). Tripo limita silenciosamente: v2.5 a 500.000, malhas quad a 150.000."
       },
       "geometry_quality": {
         "name": "qualidade_da_geometria"
@@ -23949,25 +24617,35 @@
         "name": "versão_do_modelo"
       },
       "negative_prompt": {
-        "name": "prompt_negativo"
+        "name": "prompt_negativo",
+        "tooltip": "Até 255 caracteres."
       },
       "pbr": {
-        "name": "pbr"
+        "name": "pbr",
+        "tooltip": "Mapas de material PBR (cor base, metálico, rugosidade, normal). Requer textura."
       },
       "prompt": {
         "name": "prompt"
       },
       "quad": {
-        "name": "quad"
+        "name": "quad",
+        "tooltip": "Saída de malha quad. Tripo entrega malhas quad como FBX, portanto o resultado chega na saída FBX e a saída GLB permanece vazia."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Malha low-poly com topologia limpa em estilo artesanal (500-20.000 faces, quad 500-10.000). Ideal para objetos simples; objetos complexos podem falhar."
       },
       "style": {
-        "name": "estilo"
+        "name": "estilo",
+        "tooltip": "Não é mais compatível com Tripo e é ignorado. Mantido para fluxos de trabalho antigos."
       },
       "texture": {
-        "name": "textura"
+        "name": "textura",
+        "tooltip": "Gera mapas de textura. Desativado retorna geometria sem textura e ignora pbr."
       },
       "texture_quality": {
-        "name": "qualidade_da_textura"
+        "name": "qualidade_da_textura",
+        "tooltip": "detailed = texturas HD, extreme = texturas Ultra 8K."
       },
       "texture_seed": {
         "name": "semente_da_textura"
@@ -23984,7 +24662,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "Vazio quando quad está ativado."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Preenchido somente quando quad está ativado."
       }
     }
   },
@@ -23994,21 +24676,40 @@
       "model_task_id": {
         "name": "model_task_id"
       },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "Modelo de textura: v3.0 para malhas geradas com v3.x, v2.5 para malhas geradas com v2.5."
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "Nomes das partes separados por vírgulas de Tripo: Segmentar Modelo para texturizar. Vazio texturiza todas as partes."
+      },
       "pbr": {
-        "name": "pbr"
+        "name": "pbr",
+        "tooltip": "Mapas de material PBR (cor base, metálico, rugosidade, normal); desativado fornece uma textura de cor simples."
+      },
+      "reference": {
+        "name": "reference",
+        "tooltip": "Imagens de referência que orientam as texturas. Não podem ser combinadas com texture_prompt ou style_image."
+      },
+      "style_image": {
+        "name": "style_image",
+        "tooltip": "Imagem de referência para o estilo artístico das texturas. Usada somente junto com texture_prompt."
       },
       "texture": {
-        "name": "textura"
+        "name": "textura",
+        "tooltip": "Ignorado: este nó sempre gera texturas. Mantido para fluxos de trabalho antigos."
       },
       "texture_alignment": {
         "name": "alinhamento_textura"
       },
       "texture_prompt": {
         "name": "texture_prompt",
-        "tooltip": "Orientação textual opcional para texturização. Necessário na prática para modelos importados (Tripo: Importar Modelo), que não possuem imagem de origem para inferir cores."
+        "tooltip": "Orientação textual opcional para texturização. Na prática, obrigatória para modelos importados (Tripo: Importar Modelo), que não possuem imagem de origem para inferir as cores. Não pode ser combinada com imagens de referência."
       },
       "texture_quality": {
-        "name": "qualidade_textura"
+        "name": "qualidade_textura",
+        "tooltip": "detailed = texturas HD, extreme = texturas Ultra 8K."
       },
       "texture_seed": {
         "name": "semente_textura"
@@ -24025,7 +24726,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "Vazio quando a origem é uma malha quad ou uma importação FBX."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Tripo retorna FBX para malhas quad e importações FBX; vazio caso contrário."
       }
     }
   },
@@ -24755,6 +25460,23 @@
       }
     }
   },
+  "VideoCrop": {
+    "display_name": "Recortar Vídeo",
+    "inputs": {
+      "crop": {
+        "name": "crop",
+        "tooltip": "Região de recorte em pixels. Largura/altura zero mantém o quadro completo."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VideoFrameSample": {
     "description": "Amostre um número fixo de quadros de um vídeo usando várias estratégias.",
     "display_name": "Amostrar Quadro de Vídeo",
@@ -24856,6 +25578,27 @@
       },
       "model": {
         "name": "model"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "Recortar Vídeo (Avançado)",
+    "inputs": {
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "Se Verdadeiro, quando a duração especificada não for possível, será gerado um erro."
+      },
+      "trim": {
+        "name": "trim",
+        "tooltip": "Janela de recorte usando quadros inicial/final."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

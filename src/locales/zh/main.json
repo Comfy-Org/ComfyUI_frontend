@@ -8,6 +8,124 @@
     "share": "分享",
     "shareTooltip": "分享工作流"
   },
+  "agent": {
+    "addFromAssets": "从资源面板添加",
+    "addNodesFromGraph": "从工作流中添加节点",
+    "addPromptToSend": "添加要发送的提示词",
+    "addToPrompt": "添加到提示词",
+    "alpha": "内测版",
+    "askComfyAgent": "询问 Comfy Agent",
+    "assetNotAttachable": "可附加图像、视频、音频、3D 模型和文本文件",
+    "attach": "附加文件",
+    "attachFiles": "附加图像或文件",
+    "attachmentTooLarge": "{name} 大于 {limit}",
+    "attachmentUploadFailed": "无法上传 {name}",
+    "backToPreviousChat": "返回上一个对话",
+    "caption": "AI 智能代理可能会出错",
+    "captionExpanded": "AI 智能体可能会出错。请仔细核对回复。",
+    "changeWorkflowForChat": "更改此聊天的工作流",
+    "chatOptions": "聊天选项",
+    "chooseWorkflow": "选择工作流",
+    "chooseWorkflowForChat": "为此聊天选择工作流",
+    "close": "关闭",
+    "coachBody": "让它构建或编辑工作流图。",
+    "coachTitle": "认识智能体",
+    "copied": "已复制！",
+    "copy": "复制",
+    "copyMarkdown": "复制为 Markdown",
+    "copyUnavailable": "此版本中只能复制当前对话",
+    "crdtConnected": "已连接",
+    "crdtDisconnected": "已断开连接",
+    "crdtNoDocument": "无文档",
+    "crdtStatus": "CRDT {connection} · {workflowId} · {updates} 次更新 · {frame}",
+    "credits": "积分",
+    "delete": "删除",
+    "dismiss": "关闭",
+    "dontWorkInWorkflow": "不在工作流中操作",
+    "downloadAssets": "下载资源",
+    "dragAndDropAssets": "将资源拖放到此处",
+    "focusNode": "在画布上显示",
+    "focusNodeLabel": "在画布上显示 {node}",
+    "friend": "那里",
+    "gotIt": "知道了",
+    "greeting": "你好，{name}，",
+    "greetingQuestion": "你想创作什么？",
+    "helpful": "有帮助",
+    "history": "聊天记录",
+    "historyCurrent": "当前",
+    "historyEarlier": "更早",
+    "historyEmpty": "尚无对话",
+    "historyToday": "今天",
+    "historyYesterday": "昨天",
+    "latest": "最新",
+    "loadFailed": "无法加载智能代理面板。",
+    "malformedEvent": "智能体发送了此面板无法读取的事件",
+    "maximize": "最大化面板",
+    "mention": "提及节点",
+    "minimize": "最小化面板",
+    "modelAuto": "自动",
+    "newChat": "新建对话",
+    "newChatTitle": "未命名",
+    "noNodesToMention": "此工作流中没有节点",
+    "nodeSelection": {
+      "bannerSubtitle": "选择一个或多个节点以添加为参考",
+      "bannerTitle": "从工作流中添加节点",
+      "exit": "退出模式",
+      "selectNode": "选择节点"
+    },
+    "notHelpful": "没有帮助",
+    "openWorkflowTab": "打开 {name}",
+    "placeholder": "描述想法，使用 {'@'} 进行引用，\n从工作流中添加节点或拖入资源",
+    "ranToolCalls": "已运行 {count} 次工具调用 | 已运行 {count} 次工具调用",
+    "ranToolCallsTimed": "已运行 {count} 次工具调用，耗时 {seconds} 秒 | 已运行 {count} 次工具调用，耗时 {seconds} 秒",
+    "remove": "移除",
+    "removeNodeLabel": "移除 {node} 引用",
+    "runModeAsk": "工作流运行前询问",
+    "runModeAskDescription": "每次运行工作流前，Comfy 都会请求批准",
+    "runModeAuto": "无需批准自动运行",
+    "runModeAutoDescription": "Comfy 将无需请求许可即可运行工作流",
+    "runModeLimit": "限额自动运行",
+    "runModeLimitDescription": "仅当工作流运行超出您的积分限额时，Comfy 才会确认",
+    "runModeTriggerAsk": "询问",
+    "runModeTriggerAskTooltip": "请求许可",
+    "runModeTriggerAuto": "自动",
+    "runModeTriggerAutoLimit": "自动（受限）",
+    "runModeTriggerAutoLimitTooltip": "达到额度限制时询问",
+    "runModeTriggerAutoTooltip": "无需许可即可运行工作流",
+    "runNotice": "智能体可以修改工作流图。你需要点击“运行”来执行工作流。",
+    "runNoticeExpanded": "智能体可以修改你的工作流。你需要点击“运行”来执行。",
+    "runPermissions": "运行权限",
+    "runPermissionsDescription": "选择代理何时需要您的同意",
+    "saveChanges": "保存更改",
+    "searchWorkflows": "搜索工作流",
+    "selectWorkflowToGenerate": "选择要生成内容的工作流",
+    "send": "发送",
+    "sendBusy": "已有消息正在发送",
+    "sendFailed": "消息发送失败",
+    "showChatHistory": "显示聊天记录",
+    "showLess": "显示更少",
+    "showMore": "显示更多",
+    "skip": "跳过",
+    "stop": "停止",
+    "suggestedPrompts": [
+      "生成一只戴着曲棍球面具的黄色鸭子",
+      "列出我保存的工作流",
+      "查找最适合皮肤放大的工作流",
+      "解释所选节点",
+      "构建一个使用 3 个模型的图像转视频工作流"
+    ],
+    "switchWorkflow": "切换工作流",
+    "thinking": "思考中...",
+    "thought": "思考",
+    "thoughtTimed": "思考了 {seconds} 秒",
+    "title": "Comfy Agent",
+    "toolForgotPreference": "已忘记偏好设置",
+    "toolOpenedNewTab": "已打开新标签页",
+    "toolSavedPreference": "已保存偏好设置",
+    "toolSwitchedTabs": "已切换标签页",
+    "untitledChat": "未命名",
+    "uploading": "正在上传"
+  },
   "apiNodesCostBreakdown": {
     "costPerRun": "每次运行的成本",
     "title": "API节点",
@@ -949,6 +1067,7 @@
     "MODEL_TASK_ID": "模型任务ID",
     "MOGE_GEOMETRY": "MOGE几何",
     "MOGE_MODEL": "MOGE模型",
+    "MULTIVIEW_TASK_ID": "MULTIVIEW_TASK_ID",
     "NOISE": "噪波",
     "OPENAI_CHAT_CONFIG": "OpenAI对话文件",
     "OPENAI_INPUT_FILES": "OpenAI输入文件",
@@ -959,6 +1078,7 @@
     "RECRAFT_COLOR": "Recraft 颜色",
     "RECRAFT_CONTROLS": "Recraft 控件",
     "RECRAFT_V3_STYLE": "Recraft V3 风格",
+    "RESOLUTION_PREVIEW": "RESOLUTION_PREVIEW",
     "RETARGET_TASK_ID": "重定向任务ID",
     "RIG_TASK_ID": "RIG_TASK_ID",
     "RUNWAY_ALEPH2_KEYFRAME": "RUNWAY_ALEPH2_KEYFRAME",
@@ -966,6 +1086,7 @@
     "SAM3D_BODY_MODEL": "SAM3D_BODY_MODEL",
     "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "采样器",
+    "SEGMENT_TASK_ID": "SEGMENT_TASK_ID",
     "SHAPE_SUBDIVIDES": "SHAPE_SUBDIVIDES",
     "SIGMAS": "Sigmas",
     "SPLAT": "SPLAT",
@@ -977,6 +1098,7 @@
     "UPSCALE_MODEL": "放大模型",
     "VAE": "VAE",
     "VIDEO": "视频",
+    "VIDEO_EDIT": "VIDEO_EDIT",
     "VOXEL": "体素",
     "WAN_CAMERA_EMBEDDING": "WAN 摄像头嵌入",
     "WEBCAM": "摄像头"
@@ -1073,6 +1195,18 @@
       }
     },
     "promptErrors": {
+      "agent_api_failed": {
+        "desc": "Comfy Agent 遇到服务器错误。",
+        "title": "Comfy Agent 错误"
+      },
+      "apply_failed": {
+        "desc": "无法将智能代理编辑应用到工作流文档。",
+        "title": "智能代理编辑失败"
+      },
+      "guard_trip": {
+        "desc": "传入的智能代理更新与预期的工作流文档结构不匹配，已被阻止。",
+        "title": "智能代理更新被阻止"
+      },
       "missing_node_type": {
         "desc": "缺少或不可用的节点类型。工作流可能已损坏或需要自定义节点。",
         "title": "缺少节点类型"
@@ -1080,6 +1214,14 @@
       "no_prompt": {
         "desc": "发送到服务器的工作流数据为空。这可能是系统的意外错误。",
         "title": "工作流数据为空"
+      },
+      "op_rejected": {
+        "desc": "工作流文档拒绝了智能代理编辑。在下次更新前，画布和共享文档可能会暂时不一致。",
+        "title": "智能代理编辑被拒绝"
+      },
+      "prefix_abort": {
+        "desc": "一批智能代理编辑中途停止。剩余编辑将自动重试。",
+        "title": "智能代理编辑已部分应用"
       },
       "prompt_no_outputs": {
         "desc": "工作流未包含任何输出节点（如保存图像、预览图像），无法生成结果。",
@@ -1497,6 +1639,8 @@
     "addNewKeybinding": "添加新快捷键",
     "addNode": "添加节点...",
     "addNodeFilterCondition": "添加节点筛选条件",
+    "agentModified": "智能代理已更新此工作流",
+    "agentWorking": "智能代理正在处理此工作流",
     "all": "全部",
     "allKeybindingsReset": "所有快捷键已重置为默认值",
     "amount": "数量",
@@ -1715,6 +1859,7 @@
     "moreWorkflows": "更多工作流",
     "mostRelevant": "最相关",
     "multiSelectDropdown": "多选下拉框",
+    "mute": "静音",
     "nMoreKeybindings": "还有 + {count} 个",
     "nMoreKeybindingsCompact": "+ {count}",
     "name": "名称",
@@ -1870,6 +2015,7 @@
     "triggerPhrase": "触发短语",
     "unknownError": "未知错误",
     "unknownFile": "未知文件",
+    "unmute": "取消静音",
     "untitled": "无标题",
     "update": "更新",
     "updateAvailable": "有更新可用",
@@ -2343,11 +2489,13 @@
     "menuBar": {
       "bgColor": "背景颜色",
       "bgImage": "背景图片",
+      "customUp": "自定义向上",
       "deleteRecording": "删除录制视频",
       "downloadRecording": "下载录制视频",
       "fov": "视场角",
       "intensity": "强度",
       "material": "材质",
+      "naturalUp": "自然向上",
       "originalMaterialOnly": "仅原始材质",
       "panorama": "全景",
       "record": "录制",
@@ -2409,8 +2557,8 @@
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "核心节点来源于 {version} 版本。",
-    "outdatedVersion": "这个工作流由新版 ComfyUI（{version}）创建，部分节点可能无法正常运行。",
-    "outdatedVersionGeneric": "这个工作流由新版 ComfyUI 创建，部分节点可能无法正常运行。",
+    "newerVersionRequired": "部分节点需要较新版本的 ComfyUI（当前版本：{version}）。请更新以使用所有节点。",
+    "newerVersionRequiredGeneric": "部分节点需要较新版本的 ComfyUI。请更新以使用所有节点。",
     "unknownVersion": "未知"
   },
   "logsTerminal": {
@@ -2953,6 +3101,7 @@
     "Luma": "Luma",
     "Magnific": "Magnific",
     "Meshy": "Meshy",
+    "Meta": "Meta",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
@@ -2989,6 +3138,7 @@
     "clip": "CLIP",
     "color": "颜色",
     "combine": "组合",
+    "comfy cloud": "comfy cloud",
     "compositing": "合成",
     "cond pair": "条件对",
     "cond single": "条件单",
@@ -2998,7 +3148,6 @@
     "create": "创建",
     "custom": "自定义",
     "dancer": "舞者",
-    "dataset": "数据集",
     "debug": "调试",
     "detection": "检测",
     "experimental": "实验性",
@@ -3037,7 +3186,6 @@
     "mochi": "mochi",
     "model": "模型",
     "model specific": "模型专用",
-    "model_patches": "model_patches",
     "move": "move",
     "multigpu": "多GPU",
     "noise": "噪波",
@@ -3058,6 +3206,7 @@
     "scail": "scail",
     "schedulers": "调度器",
     "scheduling": "调度",
+    "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "Sigmas",
     "sound": "声音",
@@ -3083,7 +3232,6 @@
     "utilities": "实用工具",
     "vace": "vace",
     "video": "视频",
-    "video_models": "视频模型",
     "void": "void",
     "wan": "wan",
     "z-image": "z-image"
@@ -3221,26 +3369,15 @@
     "done": "完成",
     "firstRun": {
       "nudge": {
-        "animate": {
-          "detail": "图像转视频 · 5 秒",
-          "title": "将其制作成动画"
+        "dismiss": "暂不",
+        "explore": "探索模板",
+        "noTour": {
+          "body": "浏览模板并选择要构建的内容。",
+          "title": "还有数百个可供探索"
         },
-        "body": "每项都以您刚刚创建的图像为起点。",
-        "explore": "浏览所有模板",
-        "fallback": {
-          "body": "浏览模板并选择要创建的内容。",
-          "title": "还有数百个类似模板"
-        },
-        "loadFailed": "无法加载该模板。请重试。",
-        "restyle": {
-          "detail": "合作伙伴模型 · 任意付费套餐",
-          "title": "使用 Nano Banana 重新设计风格"
-        },
-        "title": "您的第一个输出。接下来是这些。",
-        "upscale": {
-          "badge": "4x",
-          "detail": "同一图像，更多细节",
-          "title": "放大图像"
+        "ran": {
+          "body": "你刚刚创建了第一个。探索还能构建什么。",
+          "title": "这只是数百个中的一个"
         }
       },
       "prompt": {
@@ -4336,6 +4473,7 @@
       },
       "refillReplacesNote": "替换您的月度补充。现有余额保留。",
       "renewsAt": "将于 {date} 以 {amount} 续订。可随时取消。",
+      "renewsAtAmount": "将于 {amount} 续订。可随时取消。",
       "savedPaymentMethod": "支付方式",
       "showMoreFeatures": "显示更多功能",
       "starting": "{date} 开始",
