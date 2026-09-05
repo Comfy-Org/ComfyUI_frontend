@@ -73,9 +73,7 @@ function renderPreview(options: IWidgetResolutionPreviewOptions = {}) {
 }
 
 function displayedValue(): string {
-  return (
-    screen.getByTestId('resolution-preview-value').textContent?.trim() ?? ''
-  )
+  return screen.getByTestId('resolution-preview-value').textContent.trim()
 }
 
 describe('WidgetResolutionPreview', () => {

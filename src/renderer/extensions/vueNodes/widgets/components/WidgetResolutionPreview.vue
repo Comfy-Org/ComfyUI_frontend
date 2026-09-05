@@ -25,11 +25,11 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { nodeWidgetId } from '@/core/graph/widgets/nodeWidgetValues'
 import type { IWidgetResolutionPreviewOptions } from '@/lib/litegraph/src/types/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { widgetId } from '@/types/widgetId'
 import { useWidgetHeight } from '@/types/widgetTypes'
 import { resolveNode } from '@/utils/litegraphUtil'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -50,9 +50,9 @@ const hostNode = computed(() =>
 
 function siblingValue(name: string): unknown {
   const node = hostNode.value
-  if (!node) return undefined
-  const id = nodeWidgetId(node, name)
-  return id ? widgetValueStore.getWidget(id)?.value : undefined
+  const graphId = node?.graph?.rootGraph.id
+  if (!node || !graphId) return undefined
+  return widgetValueStore.getWidget(widgetId(graphId, node.id, name))?.value
 }
 
 // Python round() ties to even; Math.round ties up.
