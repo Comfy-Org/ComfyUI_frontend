@@ -17,6 +17,11 @@ import type { ActiveTab } from '../../types/activeTab'
 import type { TurnId } from '../../schemas/agentApiSchema'
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
+import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '../../services/agent/agentPaywallPresentation'
+import type {
+  AgentPaywallAction,
+  AgentPaywallPresentation
+} from '../../services/agent/agentPaywallPresentation'
 import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
 import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
 
@@ -42,6 +47,7 @@ const {
   workflowDetached = false,
   getMentionNodes = () => [],
   getMentionAssets = async () => [],
+  paywallPresentation = DEFAULT_AGENT_PAYWALL_PRESENTATION,
   sessionId = null,
   customTitle,
   historyGroups,
@@ -61,6 +67,7 @@ const {
   workflowDetached?: boolean
   getMentionNodes?: () => SelectedNode[]
   getMentionAssets?: () => AssetItem[] | Promise<AssetItem[]>
+  paywallPresentation?: AgentPaywallPresentation
   sessionId?: string | null
   customTitle?: string
   historyGroups: HistoryGroups
@@ -77,6 +84,7 @@ const emit = defineEmits<{
   focusTag: [id: string]
   mentionPick: [node: SelectedNode]
   feedback: [turnId: string, vote: 'up' | 'down' | null]
+  paywallAction: [action: AgentPaywallAction]
   selectTab: [path: string]
   clearWorkflow: []
   newChat: []
@@ -291,6 +299,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           :entries="entries"
           :editable-turn-id="editableTurnId"
           :answering-ask-ids="answeringAskIds"
+          :paywall-presentation="paywallPresentation"
           @edit-prompt="composerRef?.replaceDraft($event)"
           @feedback="(id, vote) => emit('feedback', id, vote)"
           @answer-ask="
@@ -300,6 +309,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             (workflowId, workflowName) =>
               emit('openWorkflow', workflowId, workflowName)
           "
+          @paywall-action="emit('paywallAction', $event)"
         />
       </div>
     </template>

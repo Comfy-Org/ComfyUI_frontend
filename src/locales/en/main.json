@@ -5253,6 +5253,19 @@
     "runModeTriggerAutoLimit": "Auto (limited)",
     "runModeTriggerAutoLimitTooltip": "Ask when credit limit is reached",
     "showMore": "Show more",
-    "showLess": "Show less"
+    "showLess": "Show less",
+    "paywall": {
+      "title": "Out of credits",
+      "body": {
+        "subscribed": "This workspace has spent its monthly credits and its top-up balance. Add credits to keep the agent running.",
+        "subscriptionRequired": "You've run out of available credits.",
+        "member": "This workspace has used all its credits. Ask your workspace owner to add more.",
+        "salesManaged": "This workspace is billed through your Comfy account team. Contact them to add credits.",
+        "local": "You've spent your credit balance. Add credits to keep the agent running."
+      },
+      "addCredits": "Add credits",
+      "subscribe": "Subscribe",
+      "upgradePlan": "Upgrade plan"
+    }
   }
 }

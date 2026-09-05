@@ -1,4 +1,5 @@
 import {
+  zAgentAdmissionError,
   zAgentAnswerAccepted,
   zAgentRunMode as zGeneratedAgentRunMode,
   zWorkflowListResponse
@@ -7,7 +8,7 @@ import { z } from 'zod'
 
 import { isNodeLocatorId } from '@/types/nodeIdentification'
 
-export { zAgentAnswerAccepted }
+export { zAgentAdmissionError, zAgentAnswerAccepted }
 export type { AgentRunMode as AgentRunModePreference } from '@comfyorg/ingest-types'
 
 const zTurnId = z.string().brand<'TurnId'>()
@@ -125,9 +126,10 @@ export const zAgentCancelAccepted = z.object({
 })
 export type AgentCancelAccepted = z.infer<typeof zAgentCancelAccepted>
 
-export const zAgentError = z.object({
-  error: z.string()
-})
+export const zAgentError = z.union([
+  z.object({ error: z.string() }),
+  zAgentAdmissionError
+])
 
 export const zUploadImageResult = z.object({
   name: z.string(),
