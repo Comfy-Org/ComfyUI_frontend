@@ -6,13 +6,9 @@ import { resolve } from 'node:path'
 
 import type { Options } from './dev-agent-options'
 import { PROJECT_ROOT, USAGE, parseOptions } from './dev-agent-options'
+import { preflightAgent } from './dev-agent-preflight'
 import { runRecord } from './dev-agent-record-mode'
-import {
-  assertReachable,
-  spawnGroup,
-  supervise,
-  waitForHttp
-} from './dev-agent-supervisor'
+import { spawnGroup, supervise, waitForHttp } from './dev-agent-supervisor'
 
 async function assertWorkspacePackage(): Promise<void> {
   const manifest = JSON.parse(
@@ -64,16 +60,10 @@ function standaloneEnv(
 async function run(options: Options): Promise<number> {
   await assertWorkspacePackage()
   await access(options.airBin, constants.X_OK)
-  const agentDir = resolve(options.cloudRepo, 'services/agent')
-  await access(resolve(agentDir, '.air.toml'))
-  await assertReachable(`${options.comfyUrl.replace(/\/$/, '')}/system_stats`)
-  if (!process.env.ANTHROPIC_API_KEY && !process.env.ANTHROPIC_BASE_URL) {
-    throw new Error('Set ANTHROPIC_API_KEY or ANTHROPIC_BASE_URL')
-  }
+  const { agentDir, agentUrl } = await preflightAgent(options, ['.air.toml'])
 
   const dataDir = await mkdtemp(resolve(tmpdir(), 'comfy-agent-integration-'))
   const token = randomBytes(32).toString('hex')
-  const agentUrl = `http://127.0.0.1:${options.agentPort}`
   const supervisor = supervise(dataDir)
   try {
     const agent = spawnGroup(

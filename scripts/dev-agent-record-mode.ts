@@ -1,14 +1,14 @@
 import { execFile } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
-import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { createConnection } from 'node:net'
 import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
 import { promisify } from 'node:util'
 
 import type { Options } from './dev-agent-options'
+import { preflightAgent } from './dev-agent-preflight'
 import {
-  assertReachable,
   spawnGroup,
   supervise,
   wait,
@@ -168,16 +168,13 @@ function recordEnv(options: Options, catalogPath: string, secret: string) {
 }
 
 export async function runRecord(options: Options): Promise<number> {
-  const agentDir = resolve(options.cloudRepo, 'services/agent')
-  await access(resolve(agentDir, 'start.sh'))
-  await access(resolve(agentDir, 'dochost/start.sh'))
+  const { agentDir, agentUrl } = await preflightAgent(options, [
+    'start.sh',
+    'dochost/start.sh'
+  ])
   await assertListening(PG_PORT, 'Postgres')
   await assertListening(REDIS_PORT, 'Redis')
   if (options.engine === 'temporal') await assertTemporalCli()
-  await assertReachable(`${options.comfyUrl.replace(/\/$/, '')}/system_stats`)
-  if (!process.env.ANTHROPIC_API_KEY && !process.env.ANTHROPIC_BASE_URL) {
-    throw new Error('Set ANTHROPIC_API_KEY or ANTHROPIC_BASE_URL')
-  }
 
   const dataDir = await mkdtemp(resolve(tmpdir(), 'comfy-agent-record-'))
   const secretPath = resolve(dataDir, 'm2m.secret')
@@ -196,7 +193,6 @@ export async function runRecord(options: Options): Promise<number> {
     throw error
   }
 
-  const agentUrl = `http://127.0.0.1:${options.agentPort}`
   const supervisor = supervise(dataDir)
   try {
     if (options.engine === 'temporal') {
