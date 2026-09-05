@@ -7,12 +7,12 @@ import AuthSignIn from './AuthSignIn.vue'
 
 const handles = vi.hoisted(() => ({
   flag: undefined as { value: boolean } | undefined,
-  onUserChanged: vi.fn(),
+  user: undefined as { value: unknown } | undefined,
+  ensureFresh: vi.fn(),
   signOut: vi.fn(),
   google: vi.fn(),
   github: vi.fn(),
-  isProvisioningError: vi.fn(),
-  emitUser: undefined as ((user: unknown) => void) | undefined
+  isProvisioningError: vi.fn()
 }))
 
 vi.mock('../../scripts/posthog', async () => {
@@ -26,54 +26,63 @@ vi.mock('../../config/workshop-firebase', () => ({
   signInWorkshopWithGoogle: handles.google,
   signInWorkshopWithGitHub: handles.github,
   signOutWorkshop: handles.signOut,
-  isWorkshopProvisioningError: handles.isProvisioningError,
-  onWorkshopUserChanged: (cb: (user: unknown) => void) => {
-    handles.emitUser = cb
-    handles.onUserChanged()
-    return () => {}
-  }
+  isWorkshopProvisioningError: handles.isProvisioningError
 }))
+
+vi.mock('../../config/workshop-session-state', async () => {
+  const { ref } = await import('vue')
+  const user = ref(null)
+  handles.user = user
+  return {
+    useWorkshopSession: () => ({
+      user,
+      ensureFresh: handles.ensureFresh,
+      signOut: handles.signOut
+    })
+  }
+})
 
 beforeEach(() => {
   handles.flag!.value = true
-  handles.onUserChanged.mockClear()
+  handles.user!.value = null
+  handles.ensureFresh.mockReset().mockResolvedValue({
+    status: 'ok',
+    session: { token: 'workspace-jwt' }
+  })
   handles.signOut.mockReset().mockResolvedValue(undefined)
   handles.google.mockReset()
   handles.github.mockReset()
   handles.isProvisioningError.mockReset().mockReturnValue(false)
-  handles.emitUser = undefined
+  window.history.replaceState({}, '', '/')
 })
 
 describe('AuthSignIn', () => {
-  it('does not attach the Firebase listener when the auth flag is off', () => {
+  it('does not render sign-in controls when the auth flag is off', () => {
     handles.flag!.value = false
     render(AuthSignIn)
 
-    expect(
-      handles.onUserChanged,
-      'a flag-off page must not load Firebase or attach its listener'
-    ).not.toHaveBeenCalled()
+    expect(screen.queryByRole('button')).toBeNull()
   })
 
-  it('attaches the listener when the flag is on', async () => {
-    render(AuthSignIn)
-    await waitFor(() => expect(handles.onUserChanged).toHaveBeenCalledOnce())
-  })
-
-  it('attaches the listener when the flag turns on after mount', async () => {
+  it('renders sign-in controls when the flag turns on after mount', async () => {
     handles.flag!.value = false
     render(AuthSignIn)
 
     handles.flag!.value = true
 
-    await waitFor(() => expect(handles.onUserChanged).toHaveBeenCalledOnce())
+    expect(
+      await screen.findByRole('button', { name: /continue with google/i })
+    ).toBeTruthy()
   })
 
   it('keeps a signed-in user on the signed-in screen when sign-out fails', async () => {
     handles.signOut.mockRejectedValue(new Error('network'))
     render(AuthSignIn)
-    await waitFor(() => expect(handles.onUserChanged).toHaveBeenCalledOnce())
-    handles.emitUser?.({ email: 'a@b.co', displayName: null })
+    handles.user!.value = {
+      uid: 'user-1',
+      email: 'a@b.co',
+      displayName: null
+    }
 
     await screen.findByText(/a@b\.co/)
     await userEvent
@@ -90,7 +99,7 @@ describe('AuthSignIn', () => {
 
   it('signs in through the Google button and shows the signed-in identity', async () => {
     handles.google.mockResolvedValue({
-      user: { email: 'user@example.com', displayName: null }
+      user: { uid: 'user-1', email: 'user@example.com', displayName: null }
     })
     render(AuthSignIn)
 
@@ -99,6 +108,9 @@ describe('AuthSignIn', () => {
       .click(screen.getByRole('button', { name: /continue with google/i }))
 
     await waitFor(() => expect(handles.google).toHaveBeenCalledOnce())
+    expect(handles.ensureFresh).toHaveBeenCalledWith(
+      expect.objectContaining({ uid: 'user-1' })
+    )
     expect(await screen.findByText(/user@example\.com/)).toBeTruthy()
   })
 
@@ -132,5 +144,24 @@ describe('AuthSignIn', () => {
     expect(screen.getByRole('alert').textContent).toContain(
       'account setup did not finish'
     )
+  })
+
+  it('keeps sign-out reachable and offers retry when session minting fails', async () => {
+    handles.google.mockResolvedValue({
+      user: { uid: 'user-1', email: 'user@example.com', displayName: null }
+    })
+    handles.ensureFresh.mockResolvedValueOnce({
+      status: 'error',
+      reason: 'network'
+    })
+    render(AuthSignIn)
+
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: /continue with google/i }))
+
+    expect(await screen.findByText(/user@example\.com/)).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Retry session' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Sign out' })).toBeTruthy()
   })
 })

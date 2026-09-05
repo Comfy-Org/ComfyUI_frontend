@@ -182,6 +182,18 @@ const translations = {
     en: 'You are signed in, but account setup did not finish. Please try again shortly.',
     'zh-CN': '您已登录，但账户设置尚未完成。请稍后重试。'
   },
+  'auth.signIn.error.session': {
+    en: 'You are signed in, but your workspace session could not be started. Retry, or sign out and back in.',
+    'zh-CN': '您已登录，但工作区会话无法启动。请重试，或退出后重新登录。'
+  },
+  'auth.signIn.retry': {
+    en: 'Retry session',
+    'zh-CN': '重试会话'
+  },
+  'auth.signIn.starting': {
+    en: 'Starting your workspace session…',
+    'zh-CN': '正在启动工作区会话…'
+  },
 
   // Tags (global, reusable across sections)
   'tags.partnerNodes': {
