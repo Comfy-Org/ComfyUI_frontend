@@ -9,6 +9,12 @@ import type {
 } from '@/platform/assets/schemas/assetSchema'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { assetService } from '@/platform/assets/services/assetService'
+import { reportError } from '@/platform/telemetry/reportError'
+import { api } from '@/scripts/api'
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: vi.fn()
+}))
 
 // Mock the api module
 vi.mock('@/scripts/api', () => ({
@@ -1360,6 +1366,25 @@ describe('assetsStore - Model Assets Cache (non-cloud)', () => {
       expect.anything()
     )
     expect(store.getAssets('tag:models')).toHaveLength(2)
+  })
+})
+
+describe('assetsStore - failure reporting', () => {
+  it('reports history fetch failures to telemetry and still logs them', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const failure = new Error('history unavailable')
+    vi.mocked(api.getHistory).mockRejectedValueOnce(failure)
+
+    const store = useAssetsStore()
+    await store.outputAssets.loadNew()
+
+    expect(reportError).toHaveBeenCalledWith(failure, {
+      errorType: 'assets_history_fetch_failure'
+    })
+    expect(consoleError).toHaveBeenCalledWith(
+      'Error fetching history assets:',
+      failure
+    )
   })
 })
 
