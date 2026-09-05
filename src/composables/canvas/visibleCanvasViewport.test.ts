@@ -34,4 +34,16 @@ describe('visibleCanvasViewport', () => {
 
     expect(visibleCanvasViewport(canvas)).toEqual([0, 0, 300, 450])
   })
+
+  it('Gate 5: ignores stale isOpen/width state while the feature flag is off', () => {
+    const panel = useAgentPanelStore()
+    panel.enabled = false
+    panel.isOpen = true
+    panel.setWidth(500)
+    const canvas = {
+      canvas: { width: 1600, height: 900 }
+    } as LGraphCanvas
+
+    expect(visibleCanvasViewport(canvas)).toEqual([0, 0, 800, 450])
+  })
 })
