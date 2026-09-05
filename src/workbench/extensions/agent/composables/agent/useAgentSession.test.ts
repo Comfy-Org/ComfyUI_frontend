@@ -502,6 +502,35 @@ describe('useAgentSession (v1 composition root)', () => {
     ).toBe(false)
   })
 
+  it('ignores a 409 resolution after the session stops', async () => {
+    let rejectAnswer: ((reason?: unknown) => void) | undefined
+    const answerAsk = vi.fn<AgentRestClient['answerAsk']>(
+      () =>
+        new Promise<AgentAnswerAccepted>((_, reject) => {
+          rejectAnswer = reject
+        })
+    )
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ answerAsk }),
+      events: source
+    })
+    session.start()
+    await session.sendMessage('build it')
+    emit(runApproval('msg-1'))
+
+    const pendingAnswer = session.answerAsk('turn-1:call-1', 'run')
+    await vi.waitFor(() => expect(answerAsk).toHaveBeenCalledOnce())
+    session.stop()
+
+    const conversationStore = useAgentConversationStore()
+    const ingest = vi.spyOn(conversationStore, 'ingest')
+    rejectAnswer?.(new AgentApiError('already answered', 409, undefined))
+    await pendingAnswer
+
+    expect(ingest).not.toHaveBeenCalled()
+  })
+
   it('reports a stale non-409 answer failure without mutating the new thread', async () => {
     let rejectAnswer: ((reason?: unknown) => void) | undefined
     const answerAsk = vi.fn<AgentRestClient['answerAsk']>(

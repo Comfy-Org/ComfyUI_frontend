@@ -178,7 +178,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     unsubscribeStatus?.()
     unsubscribe = null
     unsubscribeStatus = null
-    const stoppedGeneration = ownedGeneration
+    if (ownedGeneration !== sessionGeneration) return
+    const stoppedGeneration = ++sessionGeneration
     queueMicrotask(() => {
       if (stoppedGeneration !== sessionGeneration) return
       conversationStore.abortActiveTurn()
