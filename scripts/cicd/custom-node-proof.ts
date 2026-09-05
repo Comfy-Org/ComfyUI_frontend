@@ -70,11 +70,11 @@ function digest(path: string): string {
   return createHash('sha256').update(readFileSync(path)).digest('hex')
 }
 
-export function assertNoCommittedSourceTierSwitch(): void {
+export function assertNoCommittedSourceTierSwitch(cwd?: string): void {
   const result = spawnSync(
     'git',
     ['grep', '-n', SOURCE_TIER_SWITCH, '--', 'src/'],
-    { encoding: 'utf8' }
+    { encoding: 'utf8', cwd }
   )
   if (result.status === 1) return
   if (result.status === 0)
