@@ -1044,10 +1044,9 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('tears down totally on unmount, even when the bridge destroy throws', () => {
+  it('tears down totally on unmount, even when an early cleanup throws', () => {
     // Vue routes an onBeforeUnmount throw through the app error channel, so
-    // the throw is absorbed there; the contract under test is that the
-    // client teardown and listener removal still ran.
+    // the throw is absorbed there; every later cleanup must still run.
     const hookErrors: unknown[] = []
     const workflowId = ref<string | null>('wf-1')
     const host = defineComponent({
@@ -1065,19 +1064,17 @@ describe('useAgentCrdtFollower', () => {
         }
       }
     })
-    bridge().destroy.mockImplementation(() => {
-      throw new Error('half-dead bridge')
+    apiState.api.removeEventListener.mockImplementation((type, listener) => {
+      if (type === 'reconnected') throw new Error('listener removal failed')
+      apiState.target.removeEventListener(type, listener)
     })
 
     unmount()
 
-    expect(String(hookErrors[0])).toContain('half-dead bridge')
+    expect(String(hookErrors[0])).toContain('listener removal failed')
     expect(clientState.destroy).toHaveBeenCalled()
     expect(adapterState.destroy).toHaveBeenCalled()
-    expect(apiState.api.removeEventListener).toHaveBeenCalledWith(
-      'reconnected',
-      expect.any(Function)
-    )
+    expect(bridge().destroy).toHaveBeenCalled()
     expect(apiState.api.removeEventListener).toHaveBeenCalledWith(
       'status',
       expect.any(Function)
