@@ -182,6 +182,9 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
       }
       tabs.set(tab.path, tab)
       return tab
+    },
+    createNewTemporary(path?: string, data?: ComfyWorkflowJSON) {
+      return this.createTemporary(path, data)
     }
   })
   hostStores.workflow = store
