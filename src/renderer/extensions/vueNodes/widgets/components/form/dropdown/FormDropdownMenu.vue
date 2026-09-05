@@ -152,7 +152,7 @@ const onWheel = (event: WheelEvent) => {
       @search-enter="emit('search-enter')"
     />
     <div
-      v-if="items.length === 0"
+      v-if="items.length === 0 && !canLoadMore"
       class="flex h-50 items-center justify-center"
     >
       <i

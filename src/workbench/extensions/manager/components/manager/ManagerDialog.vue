@@ -111,7 +111,7 @@
         :node-names="unresolvedNodeNames"
       />
       <NoResultsPlaceholder
-        v-else-if="displayPacks.length === 0"
+        v-else-if="displayPacks.length === 0 && !canLoadMorePacks"
         :title="emptyStateTitle"
         :message="emptyStateMessage"
       />
