@@ -14,6 +14,12 @@ export interface IdentitySnapshot {
   userId: UserId
   token: string
 }
+export interface IdentityPort {
+  acquire(options?: {
+    forceRefresh?: boolean
+  }): Promise<IdentitySnapshot | null>
+  subscribe?(listener: (identity: IdentitySnapshot | null) => void): () => void
+}
 export interface WorkspaceCredential {
   token: string
   workspaceId: WorkspaceId
@@ -95,9 +101,6 @@ export interface AccountOperations {
 export interface AccountHostAdapter {
   namespace: Namespace
   scheduler: SchedulerPort
-  acquireIdentity(options?: {
-    forceRefresh?: boolean
-  }): Promise<IdentitySnapshot | null>
   getActiveWorkspace(): WorkspaceId | null
   storage: {
     read(key: StorageKey): Promise<unknown | null>
@@ -190,7 +193,8 @@ function isRecord(
 }
 
 export function createSessionClient(
-  adapter: AccountHostAdapter
+  adapter: AccountHostAdapter,
+  identity: IdentityPort
 ): SessionClient {
   let state: SessionState = { phase: 'idle' }
   let generation = 0
@@ -217,14 +221,14 @@ export function createSessionClient(
     }, delay)
   }
   async function identityAndKey(workspaceId?: string, forceRefresh = false) {
-    const identity = await adapter.acquireIdentity({ forceRefresh })
+    const snapshot = await identity.acquire({ forceRefresh })
     const workspace = workspaceId ?? adapter.getActiveWorkspace()
-    if (!identity || !workspace) throw new AccountError('No active account')
+    if (!snapshot || !workspace) throw new AccountError('No active account')
     return {
-      identity,
+      identity: snapshot,
       key: {
         namespace: adapter.namespace,
-        userId: identity.userId,
+        userId: snapshot.userId,
         workspaceId: workspace
       }
     }

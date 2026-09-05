@@ -11,6 +11,7 @@ import type {
   TransportRequest,
   WorkspaceCredential
 } from './index'
+import { createFakeIdentity } from './testing/identity'
 
 class FakeScheduler implements SchedulerPort {
   time = 0
@@ -51,6 +52,7 @@ function adapter(kind: 'map' | 'json' = 'map') {
   let balanceBody: unknown = { balance: 7 }
   let balanceStatus = 200
   let clearFails = false
+  const identity = createFakeIdentity({ userId: 'user', token: 'identity' })
   const key = (value: {
     namespace: string
     userId: string
@@ -62,7 +64,6 @@ function adapter(kind: 'map' | 'json' = 'map') {
   const host: AccountHostAdapter = {
     namespace: `fake-${kind}`,
     scheduler,
-    acquireIdentity: async () => ({ userId: 'user', token: 'identity' }),
     getActiveWorkspace: () => workspace,
     storage: {
       read: async (value) => records.get(key(value)) ?? null,
@@ -107,6 +108,7 @@ function adapter(kind: 'map' | 'json' = 'map') {
   }
   return {
     host,
+    identity,
     scheduler,
     records,
     trace,
@@ -159,9 +161,9 @@ describe.for(['map', 'json'] as const)(
   (kind) => {
     it('TP-1a: restores, exchanges, persists, reads balance, and clears', async () => {
       const fake = adapter(kind)
-      const first = createSessionClient(fake.host)
+      const first = createSessionClient(fake.host, fake.identity)
       await first.establishSession()
-      const second = createSessionClient(fake.host)
+      const second = createSessionClient(fake.host, fake.identity)
       await second.bootstrap()
       expect(second.getState().phase).toBe('authenticated')
       const billing = createBillingClient(second, fake.host)
@@ -185,7 +187,7 @@ describe.for(['map', 'json'] as const)(
             }),
         { bad: true }
       )
-      const client = createSessionClient(fake.host)
+      const client = createSessionClient(fake.host, fake.identity)
       await client.bootstrap()
       expect(client.getState().phase).toBe('signed-out')
     })
@@ -194,7 +196,7 @@ describe.for(['map', 'json'] as const)(
 
 it('TP-2a PM-4: refresh fires at expiry minus five minutes, not one ms earlier', async () => {
   const fake = adapter()
-  const client = createSessionClient(fake.host)
+  const client = createSessionClient(fake.host, fake.identity)
   await client.establishSession()
   expect(fake.trace).toHaveLength(1)
   fake.scheduler.advance(299_999)
@@ -205,7 +207,7 @@ it('TP-2a PM-4: refresh fires at expiry minus five minutes, not one ms earlier',
 
 it('TP-2a S146: transient refresh retains credential and caps retry', async () => {
   const fake = adapter()
-  const client = createSessionClient(fake.host)
+  const client = createSessionClient(fake.host, fake.identity)
   await client.establishSession()
   fake.host.transport = async () => {
     throw new AccountError('offline')
@@ -229,7 +231,7 @@ it('TP-2b: idempotent 401 replays once; unsafe and second 401 do not loop', asyn
     status: ++calls <= 2 ? 401 : 200,
     body: {}
   })
-  const client = createSessionClient(fake.host)
+  const client = createSessionClient(fake.host, fake.identity)
   await expect(client.establishSession()).rejects.toThrow('exchange 401')
   expect(calls).toBe(2)
   fake.host.operations.exchange.idempotent = false
@@ -265,7 +267,7 @@ it('regression: balance 401 refreshes the session and replays with the new crede
       ? { status: 401, body: {} }
       : { status: 200, body: { balance: 7 } }
   }
-  const session = createSessionClient(fake.host)
+  const session = createSessionClient(fake.host, fake.identity)
   await session.establishSession()
   const billing = createBillingClient(session, fake.host)
 
@@ -282,7 +284,7 @@ it('regression: balance 401 refreshes the session and replays with the new crede
 
 it('TP-4 PM-3: credits preserve 7, 0, -2 and reject malformed payloads', async () => {
   const fake = adapter()
-  const session = createSessionClient(fake.host)
+  const session = createSessionClient(fake.host, fake.identity)
   await session.establishSession()
   const billing = createBillingClient(session, fake.host)
   for (const balance of [7, 0, -2]) {
@@ -306,7 +308,7 @@ it('TP-4 PM-3: credits preserve 7, 0, -2 and reject malformed payloads', async (
 
 it('TP-4 PM-2: a late workspace A balance cannot replace B', async () => {
   const fake = adapter()
-  const session = createSessionClient(fake.host)
+  const session = createSessionClient(fake.host, fake.identity)
   await session.establishSession()
   const billing = createBillingClient(session, fake.host)
   let release: ((value: { status: number; body: unknown }) => void) | undefined
@@ -324,7 +326,7 @@ it('TP-4 PM-2: a late workspace A balance cannot replace B', async () => {
 
 it('does not restore a cleared session after an in-flight refresh fails', async () => {
   const fake = adapter()
-  const client = createSessionClient(fake.host)
+  const client = createSessionClient(fake.host, fake.identity)
   await client.establishSession()
   let rejectRefresh: ((error: Error) => void) | undefined
   fake.host.transport = () =>
@@ -343,7 +345,7 @@ it('does not restore a cleared session after an in-flight refresh fails', async 
 
 it('billing dispose unsubscribes from the session and clears listeners', async () => {
   const fake = adapter()
-  const session = createSessionClient(fake.host)
+  const session = createSessionClient(fake.host, fake.identity)
   await session.establishSession()
   const billing = createBillingClient(session, fake.host)
   const listener = vi.fn()
@@ -360,7 +362,7 @@ it('billing dispose unsubscribes from the session and clears listeners', async (
 
 it('TP-3a: clear failure reports failure while remaining signed out', async () => {
   const fake = adapter()
-  const client = createSessionClient(fake.host)
+  const client = createSessionClient(fake.host, fake.identity)
   await client.establishSession()
   fake.failClear()
   expect((await client.clearSession()).ok).toBe(false)

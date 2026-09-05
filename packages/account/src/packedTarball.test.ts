@@ -20,7 +20,7 @@ function run(command: string, args: string[], cwd: string) {
 }
 
 describe('packed package', () => {
-  it('TP-5: packed tarball resolves ./core and ./vue under Node ESM and TS nodenext/bundler', () => {
+  it('TP-5: packed tarball resolves all entries under Node ESM and TS nodenext/bundler', () => {
     run('pnpm', ['build'], packageRoot)
     const packOutput: unknown = JSON.parse(
       run(
@@ -53,6 +53,7 @@ describe('packed package', () => {
         '--ignore-scripts',
         join(tempRoot, tarballName),
         'typescript@5.9.2',
+        'firebase@11.10.0',
         'vue@3.5.21'
       ],
       consumerRoot
@@ -63,7 +64,7 @@ describe('packed package', () => {
       [
         '--input-type=module',
         '-e',
-        "const core=await import('@comfyorg/account/core'); const vue=await import('@comfyorg/account/vue'); if(!core.createBillingApiClient||!core.reduceBilling||!vue.CheckoutSteps) throw new Error('billing exports missing'); console.log('node-esm-ok')"
+        "const core=await import('@comfyorg/account/core'); const firebase=await import('@comfyorg/account/firebase'); const vue=await import('@comfyorg/account/vue'); if(!core.createBillingApiClient||!core.reduceBilling||!firebase.createFirebaseIdentity||!vue.CheckoutSteps) throw new Error('exports missing'); console.log('node-esm-ok')"
       ],
       consumerRoot
     )
@@ -71,7 +72,7 @@ describe('packed package', () => {
 
     writeFileSync(
       join(consumerRoot, 'consumer.ts'),
-      "import { createBillingApiClient, reduceBilling } from '@comfyorg/account/core'\nimport { CheckoutSteps } from '@comfyorg/account/vue'\nvoid createBillingApiClient\nvoid reduceBilling\nvoid CheckoutSteps\n"
+      "import { createBillingApiClient, reduceBilling } from '@comfyorg/account/core'\nimport { createFirebaseIdentity } from '@comfyorg/account/firebase'\nimport { CheckoutSteps } from '@comfyorg/account/vue'\nvoid createBillingApiClient\nvoid reduceBilling\nvoid createFirebaseIdentity\nvoid CheckoutSteps\n"
     )
     for (const [module, moduleResolution] of [
       ['NodeNext', 'NodeNext'],
