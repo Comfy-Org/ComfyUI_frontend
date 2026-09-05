@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { ModelThumbnailResult } from '@/components/load3d/modelThumbnail'
 import { i18n } from '@/i18n'
 
 import type { ReplyAsset } from '../../../utils/replyAssets'
@@ -26,11 +27,20 @@ vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({
 }))
 
 const generateModelThumbnail = vi.hoisted(() =>
-  vi.fn(async (): Promise<string | null> => null)
+  vi.fn(
+    async (
+      _modelUrl: string,
+      _assetName: string,
+      _callerSignal?: AbortSignal
+    ): Promise<ModelThumbnailResult> => ({ status: 'failed' })
+  )
 )
 vi.mock('@/components/load3d/modelThumbnail', () => ({
   generateModelThumbnail
 }))
+
+const reportError = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry/reportError', () => ({ reportError }))
 
 const image = (n: number): ReplyAsset => ({
   url: `https://x/i${n}.png`,
@@ -85,7 +95,8 @@ describe('ReplyAssetGroup', () => {
     isAssetPreviewSupported.mockReset().mockReturnValue(false)
     findServerPreviewUrl.mockReset().mockResolvedValue(null)
     findOutputAsset.mockReset().mockResolvedValue(undefined)
-    generateModelThumbnail.mockReset().mockResolvedValue(null)
+    generateModelThumbnail.mockReset().mockResolvedValue({ status: 'failed' })
+    reportError.mockReset()
   })
 
   it('T-09 / PM-652 / FE-1326 renders image and video previews inline', () => {
@@ -207,15 +218,232 @@ describe('ReplyAssetGroup', () => {
 
   it('generates a thumbnail offscreen when the server has none', async () => {
     isAssetPreviewSupported.mockReturnValue(true)
-    generateModelThumbnail.mockResolvedValue('data:image/png;base64,gen')
+    generateModelThumbnail.mockResolvedValue({
+      status: 'rendered',
+      dataUrl: 'data:image/png;base64,gen'
+    })
     renderGroup([model])
 
     const thumb = await screen.findByRole('img', { name: 'mesh.glb' })
     expect(thumb).toHaveAttribute('src', 'data:image/png;base64,gen')
     expect(generateModelThumbnail).toHaveBeenCalledWith(
       'https://x/mesh.glb',
-      'mesh.glb'
+      'mesh.glb',
+      expect.any(AbortSignal)
     )
+  })
+
+  it('does not generate a thumbnail after unmounting during preview lookup', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    let resolvePreview!: (value: string | null) => void
+    findServerPreviewUrl.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolvePreview = resolve
+      })
+    )
+    const { unmount } = renderGroup([model])
+
+    unmount()
+    resolvePreview(null)
+    await Promise.resolve()
+
+    expect(generateModelThumbnail).not.toHaveBeenCalled()
+  })
+
+  it('reports preview lookup failures and retries generation on a timed pass', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    findServerPreviewUrl.mockRejectedValueOnce(new Error('preview failed'))
+    renderGroup([model])
+
+    await waitFor(() =>
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'agent_reply_asset_preview_failure'
+      })
+    )
+    expect(generateModelThumbnail).not.toHaveBeenCalled()
+
+    // A rejected lookup schedules a bounded retry rather than requiring a
+    // re-render to pick it back up (see modelThumbnailSrc / scheduleThumbnailRetry:
+    // deleting the key on failure was tried and found inert, since nothing
+    // re-triggers the watcher once the message stops changing).
+    await vi.advanceTimersByTimeAsync(2000)
+    await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalledOnce())
+  })
+
+  it('does not report a lookup failure for a strand abandoned by unmount', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    let rejectPreview!: (error: Error) => void
+    findServerPreviewUrl.mockReturnValueOnce(
+      new Promise((_, reject) => {
+        rejectPreview = reject
+      })
+    )
+    const { unmount } = renderGroup([model])
+
+    unmount()
+    rejectPreview(new Error('preview failed'))
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('cancels a pending retry when the viewer close finds a server preview', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    vi.useFakeTimers()
+    try {
+      renderGroup([model])
+      await vi.waitFor(() =>
+        expect(generateModelThumbnail).toHaveBeenCalledOnce()
+      )
+      await vi.waitFor(() => expect(vi.getTimerCount()).toBe(1))
+
+      findServerPreviewUrl.mockResolvedValue('https://x/mesh_preview.png')
+      await userEvent.click(screen.getByRole('button', { name: 'mesh.glb' }))
+      const dialog = showDialog.mock.calls.at(-1)?.[0]
+      dialog.dialogComponentProps.onClose()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(vi.getTimerCount()).toBe(0)
+      await vi.advanceTimersByTimeAsync(10_000)
+      expect(generateModelThumbnail).toHaveBeenCalledOnce()
+      expect(screen.getByRole('img', { name: 'mesh.glb' })).toHaveAttribute(
+        'src',
+        'https://x/mesh_preview.png'
+      )
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('leaves a model that failed to render as a placeholder', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    renderGroup([model])
+    await vi.waitFor(() =>
+      expect(generateModelThumbnail).toHaveBeenCalledOnce()
+    )
+
+    vi.useFakeTimers()
+    try {
+      await vi.advanceTimersByTimeAsync(30_000)
+    } finally {
+      vi.useRealTimers()
+    }
+
+    expect(generateModelThumbnail).toHaveBeenCalledOnce()
+    expect(screen.queryByRole('img', { name: 'mesh.glb' })).toBeNull()
+  })
+
+  it('bounds retries to exactly the initial attempt plus MAX_THUMBNAIL_RETRY_ATTEMPTS', async () => {
+    // Regression coverage for a bug where every retry rescheduled with
+    // attempts=0 instead of the incremented count, so a persistently
+    // failing render never reached MAX_THUMBNAIL_RETRY_ATTEMPTS and kept
+    // rescheduling every THUMBNAIL_RETRY_DELAY_MS indefinitely.
+    isAssetPreviewSupported.mockReturnValue(true)
+    vi.useFakeTimers()
+    try {
+      renderGroup([model])
+      await vi.waitFor(() =>
+        expect(generateModelThumbnail).toHaveBeenCalledOnce()
+      )
+
+      // MAX_THUMBNAIL_RETRY_ATTEMPTS = 2, THUMBNAIL_RETRY_DELAY_MS = 2000:
+      // the initial call plus 2 retries is 3 total calls, then the retry
+      // budget is spent and no further calls are scheduled.
+      await vi.advanceTimersByTimeAsync(2_000)
+      expect(generateModelThumbnail).toHaveBeenCalledTimes(2)
+      await vi.advanceTimersByTimeAsync(2_000)
+      expect(generateModelThumbnail).toHaveBeenCalledTimes(3)
+
+      // No timer left pending once the budget is spent.
+      expect(vi.getTimerCount()).toBe(0)
+      await vi.advanceTimersByTimeAsync(10_000)
+      expect(generateModelThumbnail).toHaveBeenCalledTimes(3)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('cancels a pending retry timer when the asset is hidden', async () => {
+    // Regression coverage: a retry scheduled while the tile was visible
+    // used to keep a bare setTimeout with no per-url handle, so
+    // `hideThumbnail` (fired by "Show less" / the asset leaving
+    // visibleVisual) had nothing to cancel. The retry fired anyway and
+    // called loadModelThumbnail for an asset the watcher had already
+    // dropped from thumbnailState.
+    isAssetPreviewSupported.mockReturnValue(true)
+    vi.useFakeTimers()
+    try {
+      const { rerender } = renderGroup([model])
+      await vi.waitFor(() =>
+        expect(generateModelThumbnail).toHaveBeenCalledOnce()
+      )
+      await vi.waitFor(() => expect(vi.getTimerCount()).toBe(1))
+
+      // The failed render schedules a retry in THUMBNAIL_RETRY_DELAY_MS.
+      // Hide the asset before that retry fires.
+      await rerender({ assets: [audio] })
+
+      await vi.advanceTimersByTimeAsync(10_000)
+      expect(generateModelThumbnail).toHaveBeenCalledOnce()
+      expect(vi.getTimerCount()).toBe(0)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('aborts queued generation when unmounted', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    // Keep the render pending so the strand is still 'loading' (not yet
+    // settled to 'ready'/'gaveUp') when unmount fires — a mock that
+    // resolves immediately would let the retry-on-failure transition win
+    // the race and leave nothing in flight to abort.
+    let resolveGenerate!: (result: {
+      status: 'rendered'
+      dataUrl: string
+    }) => void
+    generateModelThumbnail.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveGenerate = resolve
+      })
+    )
+    const { unmount } = renderGroup([model])
+    await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalledOnce())
+
+    const [, , signal] = generateModelThumbnail.mock.calls[0]
+    expect(signal?.aborted).toBe(false)
+
+    unmount()
+
+    expect(signal?.aborted).toBe(true)
+    resolveGenerate({ status: 'rendered', dataUrl: 'data:image/png;base64,x' })
+  })
+
+  it('clears a pending thumbnail refresh when unmounted', async () => {
+    vi.useFakeTimers()
+    try {
+      isAssetPreviewSupported.mockReturnValue(true)
+      const { unmount } = renderGroup([model])
+      await vi.waitFor(() => expect(findServerPreviewUrl).toHaveBeenCalled())
+      // The initial lookup's fallback render (default mock: 'failed') has
+      // already scheduled its own bounded retry alongside the dialog-close
+      // refresh below, so two independent timers are pending at this point.
+      await vi.waitFor(() => expect(vi.getTimerCount()).toBe(1))
+      await userEvent.click(screen.getByRole('button', { name: 'mesh.glb' }))
+      const dialog = showDialog.mock.calls.at(-1)?.[0]
+      dialog.dialogComponentProps.onClose()
+      await vi.advanceTimersByTimeAsync(0)
+      const callsBeforeUnmount = findServerPreviewUrl.mock.calls.length
+      expect(vi.getTimerCount()).toBe(2)
+
+      unmount()
+      expect(vi.getTimerCount()).toBe(0)
+
+      await vi.advanceTimersByTimeAsync(2_000)
+      expect(findServerPreviewUrl).toHaveBeenCalledTimes(callsBeforeUnmount)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('refreshes the tile thumbnail after the viewer closes', async () => {
@@ -260,5 +488,79 @@ describe('ReplyAssetGroup', () => {
     await userEvent.click(toggle()!)
     expect(thumbs()).toHaveLength(12)
     expect(toggle()).toHaveTextContent('Show more')
+  })
+
+  it('generates thumbnails only for currently visible 3D entries', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    const models = Array.from({ length: 13 }, (_, n) => ({
+      ...model,
+      url: `https://x/mesh-${n}.glb`,
+      filename: `mesh-${n}.glb`
+    }))
+    renderGroup(models)
+    await waitFor(() => expect(findServerPreviewUrl).toHaveBeenCalledTimes(12))
+    await waitFor(() =>
+      expect(generateModelThumbnail).toHaveBeenCalledTimes(12)
+    )
+    expect(generateModelThumbnail).not.toHaveBeenCalledWith(
+      'https://x/mesh-12.glb',
+      'mesh-12.glb',
+      expect.any(AbortSignal)
+    )
+
+    await userEvent.click(toggle()!)
+    await waitFor(() =>
+      expect(generateModelThumbnail).toHaveBeenCalledWith(
+        'https://x/mesh-12.glb',
+        'mesh-12.glb',
+        expect.any(AbortSignal)
+      )
+    )
+    expect(generateModelThumbnail).toHaveBeenCalledTimes(13)
+  })
+
+  it('aborts a hidden render and restarts it on re-render without leaving the tile permanently blank', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    let resolveGenerate!: (result: {
+      status: 'rendered'
+      dataUrl: string
+    }) => void
+    generateModelThumbnail.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveGenerate = resolve
+      })
+    )
+    const { rerender } = renderGroup([model])
+    await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalledOnce())
+    const [, , firstSignal] = generateModelThumbnail.mock.calls[0]
+
+    // The asset drops out of visibleVisual (e.g. the message shrinking to
+    // just the audio track) before its render settles.
+    await rerender({ assets: [audio] })
+    expect(firstSignal?.aborted).toBe(true)
+
+    // A late resolution of the aborted strand must not resurrect it as the
+    // tile's src (it is no longer the owning strand for that url).
+    resolveGenerate({ status: 'rendered', dataUrl: 'data:image/png;base64,x' })
+    await Promise.resolve()
+
+    // The asset becomes visible again: it must restart, not stay
+    // permanently blank (the bug this replaced state model fixes).
+    generateModelThumbnail.mockResolvedValueOnce({
+      status: 'rendered',
+      dataUrl: 'data:image/png;base64,restarted'
+    })
+    await rerender({ assets: [model] })
+    await waitFor(() =>
+      expect(generateModelThumbnail).toHaveBeenCalledWith(
+        model.url,
+        model.filename,
+        expect.any(AbortSignal)
+      )
+    )
+    const restartedCall = generateModelThumbnail.mock.calls.find(
+      (call) => call[0] === model.url && call[2] !== firstSignal
+    )
+    expect(restartedCall).toBeDefined()
   })
 })

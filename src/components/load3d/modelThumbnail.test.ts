@@ -2,15 +2,20 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { generateModelThumbnail } from './modelThumbnail'
 
+const createLoad3d = vi.hoisted(() => vi.fn())
+vi.mock('@/extensions/core/load3d/createLoad3d', () => ({ createLoad3d }))
+
 const isAssetPreviewSupported = vi.hoisted(() => vi.fn(() => false))
-const persistThumbnail = vi.hoisted(() => vi.fn(async () => {}))
+const persistThumbnail = vi.hoisted(() =>
+  vi.fn(async (_assetName: string, _blob: Blob) => {})
+)
 vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({
   isAssetPreviewSupported,
   persistThumbnail
 }))
 
-const createLoad3d = vi.hoisted(() => vi.fn())
-vi.mock('@/extensions/core/load3d/createLoad3d', () => ({ createLoad3d }))
+const reportError = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry/reportError', () => ({ reportError }))
 
 function mockInstance(overrides: Record<string, unknown> = {}) {
   return {
@@ -26,6 +31,7 @@ describe('generateModelThumbnail', () => {
     createLoad3d.mockReset()
     isAssetPreviewSupported.mockReset().mockReturnValue(false)
     persistThumbnail.mockReset()
+    reportError.mockReset()
   })
 
   it('renders offscreen, returns the data url, and disposes the instance', async () => {
@@ -37,28 +43,86 @@ describe('generateModelThumbnail', () => {
       'a.glb'
     )
 
-    expect(result).toBe('data:image/png;base64,thumb')
-    expect(instance.loadModel).toHaveBeenCalledWith('/api/view?filename=a.glb')
+    expect(result).toEqual({
+      status: 'rendered',
+      dataUrl: 'data:image/png;base64,thumb'
+    })
+    expect(instance.loadModel).toHaveBeenCalledWith(
+      '/api/view?filename=a.glb',
+      undefined,
+      { silent: true }
+    )
     expect(instance.remove).toHaveBeenCalledTimes(1)
     expect(persistThumbnail).not.toHaveBeenCalled()
   })
 
-  it('persists the thumbnail when the asset API is available', async () => {
-    isAssetPreviewSupported.mockReturnValue(true)
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({ blob: () => Promise.resolve(new Blob()) })
-    )
-    createLoad3d.mockReturnValue(mockInstance())
+  it('releases the queue the moment a running render is aborted', async () => {
+    vi.useFakeTimers()
+    try {
+      const stalled = mockInstance({
+        loadModel: vi.fn(() => new Promise(() => {}))
+      })
+      const next = mockInstance()
+      createLoad3d.mockReturnValueOnce(stalled).mockReturnValueOnce(next)
+      const controller = new AbortController()
 
-    await generateModelThumbnail('/a.glb', 'a.glb')
+      const abortedRun = generateModelThumbnail(
+        '/slow.glb',
+        'slow.glb',
+        controller.signal
+      )
+      const nextRun = generateModelThumbnail('/next.glb', 'next.glb')
+      await vi.advanceTimersByTimeAsync(0)
+      expect(createLoad3d).toHaveBeenCalledTimes(1)
 
-    await vi.waitFor(() =>
-      expect(persistThumbnail).toHaveBeenCalledWith('a.glb', expect.any(Blob))
-    )
+      controller.abort()
+      await vi.advanceTimersByTimeAsync(0)
+
+      await expect(abortedRun).resolves.toEqual({ status: 'cancelled' })
+      await expect(nextRun).resolves.toEqual({
+        status: 'rendered',
+        dataUrl: 'data:image/png;base64,thumb'
+      })
+      expect(stalled.remove).toHaveBeenCalledOnce()
+      // The abandoned `stalled` render's underlying withTimeout deadline is
+      // not cancelled by the caller abort (see module doc: the transfer and
+      // parse are not abortable and run to completion in the background),
+      // so a live timer for it — and for `next`'s own in-flight deadline —
+      // is expected here, not zero.
+      expect(reportError).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
-  it('returns null and still disposes when the model fails to load', async () => {
+  it('skips a queued render whose caller aborted before its turn', async () => {
+    const blocked = mockInstance({
+      loadModel: vi.fn(() => new Promise(() => {}))
+    })
+    const skipped = mockInstance()
+    createLoad3d.mockReturnValueOnce(blocked).mockReturnValueOnce(skipped)
+    const controller = new AbortController()
+
+    vi.useFakeTimers()
+    try {
+      const blockedRun = generateModelThumbnail('/stuck.glb', 'stuck.glb')
+      const skippedRun = generateModelThumbnail(
+        '/next.glb',
+        'next.glb',
+        controller.signal
+      )
+      controller.abort()
+      await vi.advanceTimersByTimeAsync(15_000)
+
+      await expect(blockedRun).resolves.toEqual({ status: 'failed' })
+      await expect(skippedRun).resolves.toEqual({ status: 'cancelled' })
+      expect(createLoad3d).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('reports a failed render and still disposes the instance', async () => {
     const instance = mockInstance({
       loadModel: vi.fn().mockRejectedValue(new Error('bad model'))
     })
@@ -66,7 +130,7 @@ describe('generateModelThumbnail', () => {
 
     const result = await generateModelThumbnail('/broken.glb', 'broken.glb')
 
-    expect(result).toBeNull()
+    expect(result).toEqual({ status: 'failed' })
     expect(instance.remove).toHaveBeenCalledTimes(1)
   })
 
@@ -93,21 +157,47 @@ describe('generateModelThumbnail', () => {
 
   it('times out a stuck load, disposes it, and advances the queue', async () => {
     vi.useFakeTimers()
-    const stuck = mockInstance({
-      loadModel: vi.fn(() => new Promise<void>(() => {}))
-    })
-    const next = mockInstance()
-    createLoad3d.mockReturnValueOnce(stuck).mockReturnValueOnce(next)
+    try {
+      const stuck = mockInstance({
+        loadModel: vi.fn(() => new Promise<void>(() => {}))
+      })
+      const next = mockInstance()
+      createLoad3d.mockReturnValueOnce(stuck).mockReturnValueOnce(next)
 
-    const stuckRun = generateModelThumbnail('/stuck.glb', 'stuck.glb')
-    const nextRun = generateModelThumbnail('/next.glb', 'next.glb')
-    await vi.waitFor(() => expect(createLoad3d).toHaveBeenCalledTimes(1))
+      const stuckRun = generateModelThumbnail('/stuck.glb', 'stuck.glb')
+      const nextRun = generateModelThumbnail('/next.glb', 'next.glb')
+      await vi.waitFor(() => expect(createLoad3d).toHaveBeenCalledTimes(1))
 
-    await vi.advanceTimersByTimeAsync(15_000)
+      await vi.advanceTimersByTimeAsync(15_000)
 
-    await expect(stuckRun).resolves.toBeNull()
-    await expect(nextRun).resolves.toBe('data:image/png;base64,thumb')
-    expect(stuck.remove).toHaveBeenCalledTimes(1)
-    expect(next.loadModel).toHaveBeenCalledWith('/next.glb')
+      await expect(stuckRun).resolves.toEqual({ status: 'failed' })
+      await expect(nextRun).resolves.toEqual({
+        status: 'rendered',
+        dataUrl: 'data:image/png;base64,thumb'
+      })
+      expect(stuck.remove).toHaveBeenCalledTimes(1)
+      expect(next.loadModel).toHaveBeenCalledWith('/next.glb', undefined, {
+        silent: true
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('persists a supported asset thumbnail after rendering', async () => {
+    const instance = mockInstance()
+    createLoad3d.mockReturnValue(instance)
+    isAssetPreviewSupported.mockReturnValue(true)
+    const blob = new Blob(['thumbnail'], { type: 'image/png' })
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(blob))
+
+    await generateModelThumbnail('/model.glb', 'model.glb')
+    await vi.waitFor(() => expect(persistThumbnail).toHaveBeenCalledOnce())
+
+    const [assetName, persistedBlob] = persistThumbnail.mock.calls[0]
+    expect(assetName).toBe('model.glb')
+    expect(persistedBlob).toBeInstanceOf(Blob)
+    expect(persistedBlob.type).toBe('image/png')
+    await expect(persistedBlob.text()).resolves.toBe('thumbnail')
   })
 })

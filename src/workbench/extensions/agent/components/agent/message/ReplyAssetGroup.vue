@@ -1,12 +1,21 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, ref, watch } from 'vue'
+import {
+  computed,
+  defineAsyncComponent,
+  markRaw,
+  onBeforeUnmount,
+  ref,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { generateModelThumbnail } from '@/components/load3d/modelThumbnail'
 import {
   findOutputAsset,
   findServerPreviewUrl,
   isAssetPreviewSupported
 } from '@/platform/assets/utils/assetPreviewUtil'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -62,34 +71,175 @@ const galleryItems = computed(() =>
 )
 const galleryIndex = ref(-1)
 
-const modelThumbnails = ref<Record<string, string>>({})
+/**
+ * One entry per model url. Three parallel structures (a thumbnail map, an
+ * abort-controller map, a retried-once set) used to track this and could
+ * disagree — a `''` placeholder meant both "in flight" and "gave up",
+ * which is what let a hidden/re-shown tile end up permanently blank (see
+ * `setVisible` below). Now dropping the entry and aborting its render are
+ * the same synchronous act, so the watcher can always tell an owned strand
+ * from a superseded one.
+ *
+ * `controller` must be `markRaw`: a `ref`/reactive object deep-proxies
+ * nested objects, so an unwrapped `state.controller === controller`
+ * comparison would compare a proxy against the raw controller and always
+ * be false, silently disowning every pending strand.
+ */
+type ThumbnailState =
+  | { phase: 'loading'; controller: AbortController }
+  | {
+      phase: 'retryPending'
+      timeout: ReturnType<typeof setTimeout>
+      attempts: number
+    }
+  | { phase: 'ready'; src: string }
+  | { phase: 'gaveUp'; attempts: number }
+
+const MAX_THUMBNAIL_RETRY_ATTEMPTS = 2
+const THUMBNAIL_RETRY_DELAY_MS = 2000
+
+const thumbnailState = ref<Record<string, ThumbnailState>>({})
 const assetNames = ref<Record<string, string>>({})
+/** Dialog-close refresh timers; not tied to a url, so bulk-cleared on unmount. */
+const refreshTimeouts = new Set<ReturnType<typeof setTimeout>>()
+let mounted = true
+
+/** Stop whatever `state` has in flight: an abortable render or a pending retry. */
+function cancelThumbnailState(state: ThumbnailState | undefined): void {
+  if (state?.phase === 'loading') state.controller.abort()
+  else if (state?.phase === 'retryPending') clearTimeout(state.timeout)
+}
+
+onBeforeUnmount(() => {
+  mounted = false
+  for (const state of Object.values(thumbnailState.value)) {
+    cancelThumbnailState(state)
+  }
+  for (const timeout of refreshTimeouts) clearTimeout(timeout)
+  refreshTimeouts.clear()
+})
+
+/** Whether `url`'s current entry is still the `loading` strand owned by `controller`. */
+function owns(url: string, controller: AbortController): boolean {
+  const state = thumbnailState.value[url]
+  return state?.phase === 'loading' && state.controller === controller
+}
+
+/**
+ * Look up a server-rendered preview, falling back to an offscreen render.
+ * Per-url controller: `hideThumbnail` aborts it when the asset leaves
+ * `visibleVisual` ("Show less" no longer leaves hidden renders running
+ * against the shared queue), and `showThumbnail` restarts it, so Show more
+ * -> Show less -> Show more never strands a tile blank.
+ */
+function loadModelThumbnail(url: string, filename: string, attempts = 0): void {
+  const controller = markRaw(new AbortController())
+  thumbnailState.value[url] = { phase: 'loading', controller }
+
+  void findServerPreviewUrl(filename)
+    .then(async (preview) => {
+      if (!mounted || !owns(url, controller)) return
+      if (preview) {
+        thumbnailState.value[url] = { phase: 'ready', src: preview }
+        return
+      }
+      const result = await generateModelThumbnail(
+        url,
+        filename,
+        controller.signal
+      )
+      if (!mounted || !owns(url, controller)) return
+      if (result.status === 'rendered') {
+        thumbnailState.value[url] = { phase: 'ready', src: result.dataUrl }
+      } else if (result.status === 'failed') {
+        scheduleThumbnailRetry(url, filename, attempts)
+      }
+      // 'cancelled' leaves no entry here — hideThumbnail already removed it
+      // synchronously when the abort was issued.
+    })
+    .catch((error) => {
+      // An aborted or unmounted strand affected no tile, so its lookup
+      // failure is not a user-visible one worth reporting.
+      if (!mounted || !owns(url, controller)) return
+      scheduleThumbnailRetry(url, filename, attempts)
+      reportError(error, {
+        errorType: 'agent_reply_asset_preview_failure'
+      })
+    })
+}
+
+/**
+ * A `failed` render may be a transient 15s deadline expiry rather than a
+ * genuinely unrenderable model, so it gets a bounded retry instead of
+ * pinning the box icon for the message's lifetime. Deliberately does not
+ * check visibility when the retry fires: declining on hidden would strand
+ * a url in `gaveUp` with its budget already spent (permanently iconless)
+ * -- the exact bug this guards against. The cost of always spending the
+ * retry is at most one render for a tile the user may have hidden, which
+ * the next `setVisible(url, false)` aborts.
+ */
+function scheduleThumbnailRetry(
+  url: string,
+  filename: string,
+  attempts: number
+): void {
+  if (attempts >= MAX_THUMBNAIL_RETRY_ATTEMPTS) {
+    thumbnailState.value[url] = { phase: 'gaveUp', attempts }
+    return
+  }
+  const timeout = setTimeout(() => {
+    if (!mounted) return
+    loadModelThumbnail(url, filename, attempts + 1)
+  }, THUMBNAIL_RETRY_DELAY_MS)
+  thumbnailState.value[url] = {
+    phase: 'retryPending',
+    timeout: markRaw(timeout),
+    attempts: attempts + 1
+  }
+}
+
+/**
+ * Called from the visibility watcher below when a 3D asset leaves
+ * `visibleVisual` ("Show less", or the message re-rendering with fewer
+ * assets). Aborts its in-flight render (if any) and drops the entry,
+ * freeing the shared render queue instead of leaving it running hidden.
+ */
+function hideThumbnail(url: string): void {
+  cancelThumbnailState(thumbnailState.value[url])
+  delete thumbnailState.value[url]
+}
+
+/**
+ * Called when a 3D asset is (re)visible. Starts a fresh load unless one is
+ * already in flight, ready, or has spent its retry budget — so Show more
+ * -> Show less -> Show more restarts a hidden render rather than leaving
+ * the tile permanently blank.
+ */
+function showThumbnail(url: string, filename: string): void {
+  if (!thumbnailState.value[url]) loadModelThumbnail(url, filename)
+}
 
 watch(
-  () => assets.filter((asset) => asset.kind === '3D' || asset.kind === 'audio'),
+  () => [
+    ...visibleVisual.value.filter((asset) => asset.kind === '3D'),
+    ...visibleAudio.value
+  ],
   (lookups) => {
     if (!isAssetPreviewSupported()) return
-    for (const { url, filename, kind } of lookups) {
-      if (kind === '3D' && !(url in modelThumbnails.value)) {
-        modelThumbnails.value[url] = ''
-        void findServerPreviewUrl(filename)
-          .then(async (preview) => {
-            if (preview) {
-              modelThumbnails.value[url] = preview
-              return
-            }
-            const { generateModelThumbnail } =
-              await import('@/components/load3d/modelThumbnail')
-            const generated = await generateModelThumbnail(url, filename)
-            if (generated) modelThumbnails.value[url] = generated
-          })
-          .catch(() => {})
-      }
+    const visible3D = lookups.filter((asset) => asset.kind === '3D')
+    const visibleUrls = new Set(visible3D.map((asset) => asset.url))
+    for (const url of Object.keys(thumbnailState.value)) {
+      if (!visibleUrls.has(url)) hideThumbnail(url)
+    }
+    for (const { url, filename } of visible3D) {
+      showThumbnail(url, filename)
+    }
+    for (const { url, filename } of lookups) {
       if (!(url in assetNames.value)) {
         assetNames.value[url] = ''
         void findOutputAsset(filename)
           .then((record) => {
-            if (record?.name) assetNames.value[url] = record.name
+            if (mounted && record?.name) assetNames.value[url] = record.name
           })
           .catch(() => {})
       }
@@ -106,14 +256,34 @@ const MediaLightbox = defineAsyncComponent(
 )
 
 function refreshModelThumbnail(asset: ReplyAsset, retry = true): void {
-  if (!isAssetPreviewSupported() || modelThumbnails.value[asset.url]) return
-  void findServerPreviewUrl(asset.filename).then((preview) => {
-    if (preview) {
-      modelThumbnails.value[asset.url] = preview
-    } else if (retry) {
-      setTimeout(() => refreshModelThumbnail(asset, false), 2000)
-    }
-  })
+  const state = thumbnailState.value[asset.url]
+  if (!mounted || !isAssetPreviewSupported() || state?.phase === 'ready') return
+  void findServerPreviewUrl(asset.filename)
+    .then((preview) => {
+      if (!mounted) return
+      if (preview) {
+        // Overwriting a `loading` or `retryPending` entry here would drop
+        // its controller/timer unreachable, so neither unmount nor the
+        // watcher could ever cancel it. Cancel first.
+        cancelThumbnailState(thumbnailState.value[asset.url])
+        thumbnailState.value[asset.url] = { phase: 'ready', src: preview }
+      } else if (retry) {
+        const timeout = setTimeout(() => {
+          refreshTimeouts.delete(timeout)
+          refreshModelThumbnail(asset, false)
+        }, 2000)
+        refreshTimeouts.add(timeout)
+      }
+    })
+    .catch((error) => {
+      if (!mounted) return
+      reportError(error, { errorType: 'agent_reply_asset_preview_failure' })
+    })
+}
+
+function modelThumbnailSrc(url: string): string {
+  const state = thumbnailState.value[url]
+  return state?.phase === 'ready' ? state.src : ''
 }
 
 function inspect(asset: ReplyAsset): void {
@@ -184,8 +354,8 @@ function stopPreview(event: Event): void {
           @mouseleave="stopPreview"
         />
         <img
-          v-else-if="modelThumbnails[asset.url]"
-          :src="modelThumbnails[asset.url]"
+          v-else-if="modelThumbnailSrc(asset.url)"
+          :src="modelThumbnailSrc(asset.url)"
           :alt="asset.label ?? asset.filename"
           loading="lazy"
           :class="multi ? 'size-full object-cover' : 'block h-auto max-w-full'"

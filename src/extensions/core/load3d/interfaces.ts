@@ -251,6 +251,13 @@ export interface LoadModelOptions {
    * (e.g. shared workflows on a fresh machine).
    */
   silentOnNotFound?: boolean
+  /**
+   * When true, raise no toast and reject with the underlying error
+   * instead. Use for offscreen renders the viewer never asked for (e.g.
+   * thumbnail generation), which have no surface to show a toast on and
+   * need the real cause for their own reporting.
+   */
+  silent?: boolean
 }
 
 export interface SceneOverlay {
@@ -261,6 +268,20 @@ export interface SceneOverlay {
   dispose(): void
 }
 
+/**
+ * Outcome of a `loadModel` call. A caller that ignores this and assumes
+ * success can run its post-load steps (camera restore, widget commit,
+ * capability capture) against a torn-down manager or a scene that never
+ * received a model:
+ * - `'loaded'` — a model was fetched, parsed, and handed to `setupModel`.
+ * - `'cancelled'` — a newer `loadModel` or `dispose()` superseded this load;
+ *   the manager may already be torn down.
+ * - `'empty'` — no adapter claimed the file, or the URL had no filename;
+ *   `{ silent: true }` throws instead of returning this.
+ * - `'failed'` — the load threw (network, parse, or an unknown file type).
+ */
+export type LoadModelOutcome = 'loaded' | 'cancelled' | 'empty' | 'failed'
+
 export interface LoaderManagerInterface {
   init(): void
   dispose(): void
@@ -268,5 +289,5 @@ export interface LoaderManagerInterface {
     url: string,
     originalFileName?: string,
     options?: LoadModelOptions
-  ): Promise<void>
+  ): Promise<LoadModelOutcome>
 }
