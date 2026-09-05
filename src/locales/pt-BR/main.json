@@ -346,8 +346,19 @@
     "index": "{current} / {total}"
   },
   "billingOperation": {
+    "authenticationFailedDetail": "Não foi possível concluir a verificação do pagamento. Tente novamente.",
+    "authenticationManagerRequired": "A verificação do pagamento requer a atenção de um gerente de cobrança do espaço de trabalho.",
+    "authenticationUnavailable": "A autenticação de pagamento seguro está indisponível. Atualize a página e tente novamente.",
     "cancelFailed": "Falha ao cancelar a assinatura",
     "cancelTimeout": "Tempo esgotado ao cancelar a assinatura",
+    "expiredCardDetail": "Este cartão expirou. Use uma forma de pagamento diferente.",
+    "incorrectCvcDetail": "O código de segurança do cartão está incorreto. Verifique-o e tente novamente.",
+    "insufficientFundsDetail": "Esta forma de pagamento não tem fundos suficientes. Tente outra forma de pagamento ou entre em contato com seu banco.",
+    "paymentDeclinedDetail": "Seu banco recusou este pagamento. Tente outra forma de pagamento ou entre em contato com seu banco.",
+    "processingErrorDetail": "Não foi possível processar seu pagamento. Tente novamente ou use outra forma de pagamento.",
+    "reconciliationDetail": "Seu pagamento foi recebido, mas não foi possível concluir a atualização do seu espaço de trabalho. Entre em contato com o suporte e inclua este ID da operação:",
+    "reconciliationTitle": "Pagamento recebido — confirmação pendente",
+    "retryVerification": "Tentar verificar novamente",
     "subscriptionActionRequired": "Verifique seu pagamento para finalizar a configuração do seu workspace",
     "subscriptionFailed": "Falha ao atualizar a assinatura",
     "subscriptionFailedDetail": "Não foi possível atualizar sua assinatura. Por favor, tente novamente.",
@@ -808,7 +819,7 @@
       "buy": "Comprar",
       "buyCredits": "Continuar para o pagamento",
       "buyNow": "Comprar agora",
-      "chargedImmediatelyNote": "Seu cartão salvo será cobrado imediatamente.",
+      "chargedImmediatelyNote": "A forma de pagamento salva será cobrada imediatamente.",
       "confirmSubtitle": "Os créditos são adicionados a este workspace assim que o pagamento for concluído.",
       "confirmTitle": "Confirmar",
       "contactUs": "Fale conosco",
@@ -4247,9 +4258,15 @@
     "prepaidDescription": "Créditos pré-pagos",
     "preview": {
       "addCreditCard": "Adicionar cartão de crédito",
+      "addNewPaymentMethod": "Adicionar nova forma de pagamento",
       "afterThat": "Depois disso",
+      "alipay": "Alipay",
+      "alipayRenewalNote": "A autorização do Alipay também será usada para renovações automáticas e compras futuras.",
+      "applyPromoCode": "Aplicar",
+      "applyQuoteBeforeContinuing": "Aplique o código promocional para atualizar sua cotação antes de continuar.",
       "backToAllPlans": "Voltar para todos os planos",
       "billedEachMonth": "{amount} cobrados a cada mês. Cancele a qualquer momento.",
+      "changePaymentMethod": "Alterar",
       "commitment": "compromisso",
       "completeVerification": "Concluir verificação",
       "confirm": "Confirmar",
@@ -4264,6 +4281,11 @@
       "creditsRefillTo": "Créditos recarregados para",
       "creditsYoullGetToday": "Créditos que você receberá hoje",
       "currentMonthly": "plano mensal",
+      "discount": {
+        "plan": "Desconto do plano",
+        "promotion": "Código promocional"
+      },
+      "discountComposition": "Descontos",
       "eachMonthCreditsRefill": "A cada mês os créditos são recarregados para",
       "eachYearCreditsRefill": "A cada ano, os créditos recarregam para",
       "ends": "Termina em {date}",
@@ -4271,11 +4293,17 @@
       "hideFeatures": "Ocultar recursos",
       "newMonthlySubscription": "Nova assinatura mensal",
       "nextPaymentDue": "Próximo pagamento em {date}. Cancele a qualquer momento.",
+      "payAndSubscribe": "Pagar e assinar",
+      "paymentMethod": "Forma de pagamento",
       "paymentPopupBlocked": "Não foi possível abrir a página de pagamento — permita pop-ups e tente novamente.",
       "perMember": "/ membro",
       "privacyPolicy": "Política de Privacidade",
+      "promoCodePlaceholder": "Código promocional",
       "proratedCharge": "Cobrança proporcional para {plan}",
       "proratedRefund": "Reembolso proporcional para {plan}",
+      "quoteRefreshFailed": "Sua cotação expirou e não pôde ser atualizada. Escolha seu plano novamente.",
+      "quoteStale": "Sua cotação foi alterada. Revise o valor atualizado e tente novamente.",
+      "quoteUnavailable": "Indisponível",
       "reactivation": {
         "amountChanged": "O valor da cobrança mudou desde a sua confirmação — revise e tente novamente",
         "checkboxLabel": "Entendo que serei cobrado {amount} hoje",
@@ -4291,16 +4319,20 @@
         "upgradeBody": "Sua {plan} estava programada para terminar em {date}. Fazer o upgrade agora a reativa — você será cobrado {amount} hoje, e ela será renovada automaticamente em {nextDate} em vez de encerrar."
       },
       "refillReplacesNote": "Substitui sua recarga mensal. O saldo existente é mantido.",
+      "renewsAt": "Renova por {amount} em {date}. Cancele a qualquer momento.",
+      "savedPaymentMethod": "Forma de pagamento",
       "showMoreFeatures": "Mostrar mais recursos",
       "starting": "Começando em {date}",
       "startingToday": "Começando hoje",
       "startsOn": "Começa em {date}",
       "stayOnUntil": "Você permanecerá no {plan} até {date}.",
+      "stripeMethodChoice": "Seus dados de pagamento são processados com segurança pela Stripe.",
+      "stripeUnavailable": "As opções de pagamento estão indisponíveis. Atualize a página e tente novamente.",
       "subscribeToPlan": "Assinar {plan}",
       "switchToPlan": "Mudar para {plan}",
       "switchesToday": "Trocas hoje",
       "terms": "Termos",
-      "termsAgreement": "Ao continuar, você concorda com os {terms} e {privacy} da Comfy Org.",
+      "termsAgreement": "Ao continuar, você concorda com os {terms} e a {privacy} da Comfy Org e autoriza a Comfy Org a cobrar sua forma de pagamento a cada período de cobrança até que você cancele.",
       "totalDueToday": "Total devido hoje",
       "yearlySubscription": "Assinatura anual",
       "youllBeCharged": "Você será cobrado"
@@ -4348,6 +4380,8 @@
       "inviteSubtext": "Você também pode convidar pessoas depois em Configurações",
       "inviteTitle": "Convide sua equipe",
       "planUpdated": "Seu plano foi atualizado com sucesso.",
+      "promoApplied": "{code} aplicado.",
+      "promoRenews": "Renova por {amount} em {date}",
       "receiptEmailed": "Um recibo foi enviado para seu e-mail.",
       "sendInvites": "Enviar convites"
     },
@@ -4383,6 +4417,9 @@
       "creator": {
         "feature1": "Importe seus próprios modelos",
         "name": "Criador"
+      },
+      "enterprise": {
+        "name": "Enterprise"
       },
       "founder": {
         "name": "Edição do Fundador"

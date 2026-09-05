@@ -346,8 +346,19 @@
     "index": "{current} / {total}"
   },
   "billingOperation": {
+    "authenticationFailedDetail": "نتوانستیم تأیید پرداخت را تکمیل کنیم. لطفاً دوباره تلاش کنید.",
+    "authenticationManagerRequired": "تأیید پرداخت به رسیدگی مدیر صورتحساب workspace نیاز دارد.",
+    "authenticationUnavailable": "احراز هویت امن پرداخت در دسترس نیست. لطفاً صفحه را تازه‌سازی کرده و دوباره تلاش کنید.",
     "cancelFailed": "لغو اشتراک ناموفق بود",
     "cancelTimeout": "مهلت لغو اشتراک به پایان رسید",
+    "expiredCardDetail": "این کارت منقضی شده است. از روش پرداخت دیگری استفاده کنید.",
+    "incorrectCvcDetail": "کد امنیتی کارت نادرست است. آن را بررسی کرده و دوباره تلاش کنید.",
+    "insufficientFundsDetail": "این روش پرداخت موجودی کافی ندارد. روش پرداخت دیگری را امتحان کنید یا با بانک خود تماس بگیرید.",
+    "paymentDeclinedDetail": "بانک شما این پرداخت را رد کرد. روش پرداخت دیگری را امتحان کنید یا با بانک خود تماس بگیرید.",
+    "processingErrorDetail": "پرداخت شما پردازش نشد. دوباره تلاش کنید یا از روش پرداخت دیگری استفاده کنید.",
+    "reconciliationDetail": "پرداخت شما دریافت شد، اما نتوانستیم به‌روزرسانی workspace شما را تکمیل کنیم. با پشتیبانی تماس بگیرید و این شناسه عملیات را ارائه کنید:",
+    "reconciliationTitle": "پرداخت دریافت شد — در انتظار تأیید",
+    "retryVerification": "تلاش مجدد برای تأیید",
     "subscriptionActionRequired": "برای تکمیل راه‌اندازی فضای کاری، پرداخت خود را تأیید کنید",
     "subscriptionFailed": "به‌روزرسانی اشتراک ناموفق بود",
     "subscriptionFailedDetail": "امکان به‌روزرسانی اشتراک شما وجود ندارد. لطفاً دوباره تلاش کنید.",
@@ -808,7 +819,7 @@
       "buy": "خرید",
       "buyCredits": "ادامه به پرداخت",
       "buyNow": "هم‌اکنون خرید کنید",
-      "chargedImmediatelyNote": "کارت ذخیره‌شده شما بلافاصله شارژ می‌شود.",
+      "chargedImmediatelyNote": "روش پرداخت ذخیره‌شده شما فوراً شارژ می‌شود.",
       "confirmSubtitle": "اعتبارها به محض تکمیل پرداخت به این ورک‌اسپیس افزوده می‌شوند.",
       "confirmTitle": "تأیید",
       "contactUs": "با ما تماس بگیرید",
@@ -4247,9 +4258,15 @@
     "prepaidDescription": "اعتبارهای پیش‌پرداخت",
     "preview": {
       "addCreditCard": "افزودن کارت اعتباری",
+      "addNewPaymentMethod": "افزودن روش پرداخت جدید",
       "afterThat": "پس از آن",
+      "alipay": "Alipay",
+      "alipayRenewalNote": "مجوز Alipay همچنین برای تمدیدهای خودکار و خریدهای آینده استفاده خواهد شد.",
+      "applyPromoCode": "اعمال",
+      "applyQuoteBeforeContinuing": "پیش از ادامه، کد تخفیف را اعمال کنید تا پیش‌فاکتور شما تازه‌سازی شود.",
       "backToAllPlans": "بازگشت به همه طرح‌ها",
       "billedEachMonth": "{amount} هر ماه صورتحساب می‌شود. در هر زمان قابل لغو است.",
+      "changePaymentMethod": "تغییر",
       "commitment": "تعهد",
       "completeVerification": "تکمیل احراز هویت",
       "confirm": "تأیید",
@@ -4264,6 +4281,11 @@
       "creditsRefillTo": "اعتبارها به این مقدار شارژ می‌شوند",
       "creditsYoullGetToday": "اعتبارهایی که امروز دریافت می‌کنید",
       "currentMonthly": "طرح ماهانه",
+      "discount": {
+        "plan": "تخفیف طرح",
+        "promotion": "کد تخفیف"
+      },
+      "discountComposition": "تخفیف‌ها",
       "eachMonthCreditsRefill": "هر ماه اعتبار به این مقدار بازنشانی می‌شود",
       "eachYearCreditsRefill": "هر سال اعتبارها شارژ می‌شوند تا",
       "ends": "پایان در {date}",
@@ -4271,11 +4293,17 @@
       "hideFeatures": "مخفی کردن امکانات",
       "newMonthlySubscription": "اشتراک ماهانه جدید",
       "nextPaymentDue": "پرداخت بعدی در {date}. هر زمان می‌توانید لغو کنید.",
+      "payAndSubscribe": "پرداخت و اشتراک",
+      "paymentMethod": "روش پرداخت",
       "paymentPopupBlocked": "امکان باز کردن صفحه پرداخت وجود ندارد — لطفاً پاپ‌آپ‌ها را فعال کنید و دوباره تلاش کنید.",
       "perMember": "/ هر عضو",
       "privacyPolicy": "سیاست حفظ حریم خصوصی",
+      "promoCodePlaceholder": "کد تخفیف",
       "proratedCharge": "هزینه متناسب برای {plan}",
       "proratedRefund": "بازپرداخت متناسب برای {plan}",
+      "quoteRefreshFailed": "پیش‌فاکتور شما منقضی شده و نتوانستیم آن را تازه‌سازی کنیم. دوباره طرح خود را انتخاب کنید.",
+      "quoteStale": "پیش‌فاکتور شما تغییر کرده است. مبلغ به‌روزشده را بررسی کرده و دوباره تلاش کنید.",
+      "quoteUnavailable": "در دسترس نیست",
       "reactivation": {
         "amountChanged": "مبلغ پرداختی از زمان تأیید شما تغییر کرده است — لطفاً بررسی و دوباره تلاش کنید",
         "checkboxLabel": "متوجه شدم که امروز مبلغ {amount} از من دریافت خواهد شد",
@@ -4291,16 +4319,20 @@
         "upgradeBody": "اشتراک {plan} شما قرار بود در تاریخ {date} به پایان برسد. با ارتقاء اکنون، اشتراک شما مجدداً فعال می‌شود — امروز مبلغ {amount} از شما دریافت می‌شود و به جای پایان یافتن، در تاریخ {nextDate} به صورت خودکار تمدید خواهد شد."
       },
       "refillReplacesNote": "جایگزین شارژ ماهانه شما می‌شود. موجودی فعلی حفظ می‌شود.",
+      "renewsAt": "در {date} با مبلغ {amount} تمدید می‌شود. هر زمان خواستید لغو کنید.",
+      "savedPaymentMethod": "روش پرداخت",
       "showMoreFeatures": "نمایش امکانات بیشتر",
       "starting": "شروع از {date}",
       "startingToday": "شروع از امروز",
       "startsOn": "شروع از {date}",
       "stayOnUntil": "تا {date} در {plan} باقی خواهید ماند.",
+      "stripeMethodChoice": "اطلاعات پرداخت شما به‌صورت امن توسط Stripe پردازش می‌شود.",
+      "stripeUnavailable": "گزینه‌های پرداخت در دسترس نیستند. لطفاً صفحه را تازه‌سازی کرده و دوباره تلاش کنید.",
       "subscribeToPlan": "اشتراک پلن {plan}",
       "switchToPlan": "تغییر به پلن {plan}",
       "switchesToday": "تغییرات امروز",
       "terms": "شرایط",
-      "termsAgreement": "با ادامه، شما با {terms} و {privacy} Comfy Org موافقت می‌کنید.",
+      "termsAgreement": "با ادامه، با {terms} و {privacy} متعلق به Comfy Org موافقت می‌کنید و به Comfy Org اجازه می‌دهید تا در هر دوره صورتحساب، تا زمان لغو شما، از روش پرداختتان هزینه دریافت کند.",
       "totalDueToday": "مبلغ قابل پرداخت امروز",
       "yearlySubscription": "اشتراک سالانه",
       "youllBeCharged": "شما مبلغ زیر را پرداخت خواهید کرد"
@@ -4348,6 +4380,8 @@
       "inviteSubtext": "می‌توانید بعداً از بخش تنظیمات نیز افراد را دعوت کنید",
       "inviteTitle": "تیم خود را دعوت کنید",
       "planUpdated": "پلن شما با موفقیت به‌روزرسانی شد.",
+      "promoApplied": "{code} اعمال شد.",
+      "promoRenews": "در {date} با مبلغ {amount} تمدید می‌شود",
       "receiptEmailed": "رسید به ایمیل شما ارسال شد.",
       "sendInvites": "ارسال دعوت‌نامه"
     },
@@ -4383,6 +4417,9 @@
       "creator": {
         "feature1": "امکان وارد کردن مدل‌های شخصی",
         "name": "خالق"
+      },
+      "enterprise": {
+        "name": "سازمانی"
       },
       "founder": {
         "name": "نسخه بنیان‌گذاران"

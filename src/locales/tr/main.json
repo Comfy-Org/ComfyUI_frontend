@@ -346,8 +346,19 @@
     "index": "{current} / {total}"
   },
   "billingOperation": {
+    "authenticationFailedDetail": "Ödeme doğrulamasını tamamlayamadık. Lütfen tekrar deneyin.",
+    "authenticationManagerRequired": "Ödeme doğrulaması, çalışma alanı faturalama yöneticisinin ilgilenmesini gerektiriyor.",
+    "authenticationUnavailable": "Güvenli ödeme doğrulaması kullanılamıyor. Lütfen sayfayı yenileyip tekrar deneyin.",
     "cancelFailed": "Abonelik iptali başarısız oldu",
     "cancelTimeout": "Abonelik iptal süresi doldu",
+    "expiredCardDetail": "Bu kartın süresi dolmuş. Farklı bir ödeme yöntemi kullanın.",
+    "incorrectCvcDetail": "Kart güvenlik kodu yanlış. Kontrol edip tekrar deneyin.",
+    "insufficientFundsDetail": "Bu ödeme yönteminde yeterli bakiye yok. Başka bir ödeme yöntemi deneyin veya bankanızla iletişime geçin.",
+    "paymentDeclinedDetail": "Bankanız bu ödemeyi reddetti. Başka bir ödeme yöntemi deneyin veya bankanızla iletişime geçin.",
+    "processingErrorDetail": "Ödemeniz işlenemedi. Tekrar deneyin veya başka bir ödeme yöntemi kullanın.",
+    "reconciliationDetail": "Ödemeniz alındı, ancak çalışma alanınızı güncellemeyi tamamlayamadık. Destek ekibiyle iletişime geçin ve şu işlem kimliğini ekleyin:",
+    "reconciliationTitle": "Ödeme alındı — onay bekleniyor",
+    "retryVerification": "Doğrulamayı yeniden dene",
     "subscriptionActionRequired": "Çalışma alanınızı kurmayı tamamlamak için ödemenizi doğrulayın",
     "subscriptionFailed": "Abonelik güncellemesi başarısız oldu",
     "subscriptionFailedDetail": "Aboneliğinizi güncelleyemedik. Lütfen tekrar deneyin.",
@@ -808,7 +819,7 @@
       "buy": "Satın Al",
       "buyCredits": "Ödemeye devam et",
       "buyNow": "Şimdi al",
-      "chargedImmediatelyNote": "Kayıtlı kartınız hemen ücretlendirilir.",
+      "chargedImmediatelyNote": "Kayıtlı ödeme yönteminiz hemen ücretlendirilir.",
       "confirmSubtitle": "Ödeme tamamlandığında krediler bu çalışma alanına eklenir.",
       "confirmTitle": "Onayla",
       "contactUs": "Bize ulaşın",
@@ -4247,9 +4258,15 @@
     "prepaidDescription": "Ön ödemeli krediler",
     "preview": {
       "addCreditCard": "Kredi kartı ekle",
+      "addNewPaymentMethod": "Yeni ödeme yöntemi ekle",
       "afterThat": "Bundan sonra",
+      "alipay": "Alipay",
+      "alipayRenewalNote": "Alipay yetkilendirmesi, otomatik yenilemeler ve gelecekteki satın alımlar için de kullanılacaktır.",
+      "applyPromoCode": "Uygula",
+      "applyQuoteBeforeContinuing": "Devam etmeden önce teklifinizi yenilemek için promosyon kodunu uygulayın.",
       "backToAllPlans": "Tüm planlara geri dön",
       "billedEachMonth": "Her ay {amount} faturalandırılır. İstediğiniz zaman iptal edebilirsiniz.",
+      "changePaymentMethod": "Değiştir",
       "commitment": "taahhüt",
       "completeVerification": "Doğrulamayı tamamla",
       "confirm": "Onayla",
@@ -4264,6 +4281,11 @@
       "creditsRefillTo": "Krediler yenilenir",
       "creditsYoullGetToday": "Bugün alacağınız krediler",
       "currentMonthly": "aylık plan",
+      "discount": {
+        "plan": "Plan indirimi",
+        "promotion": "Promosyon kodu"
+      },
+      "discountComposition": "İndirimler",
       "eachMonthCreditsRefill": "Her ay krediler yenilenir",
       "eachYearCreditsRefill": "Her yıl krediler şu miktara yenilenir",
       "ends": "{date} tarihinde bitiyor",
@@ -4271,11 +4293,17 @@
       "hideFeatures": "Özellikleri gizle",
       "newMonthlySubscription": "Yeni aylık abonelik",
       "nextPaymentDue": "Sonraki ödeme {date} tarihinde. İstediğiniz zaman iptal edebilirsiniz.",
+      "payAndSubscribe": "Öde ve abone ol",
+      "paymentMethod": "Ödeme yöntemi",
       "paymentPopupBlocked": "Ödeme sayfası açılamadı — lütfen açılır pencerelere izin verin ve tekrar deneyin.",
       "perMember": "/ üye",
       "privacyPolicy": "Gizlilik Politikası",
+      "promoCodePlaceholder": "Promosyon kodu",
       "proratedCharge": "{plan} için orantılı ücret",
       "proratedRefund": "{plan} için orantılı iade",
+      "quoteRefreshFailed": "Teklifinizin süresi doldu ve yenilenemedi. Planınızı yeniden seçin.",
+      "quoteStale": "Teklifiniz değişti. Güncellenen tutarı inceleyip tekrar deneyin.",
+      "quoteUnavailable": "Kullanılamıyor",
       "reactivation": {
         "amountChanged": "Onayladığınızdan beri ücret değişti — lütfen gözden geçirip tekrar deneyin",
         "checkboxLabel": "Bugün {amount} ücretlendirileceğimi anladım",
@@ -4291,16 +4319,20 @@
         "upgradeBody": "{plan} aboneliğinizin {date} tarihinde sona ermesi planlanmıştı. Şimdi yükseltirseniz yeniden etkinleşir — bugün {amount} ücretlendirileceksiniz ve aboneliğiniz sona ermek yerine {nextDate} tarihinde otomatik olarak yenilenecek."
       },
       "refillReplacesNote": "Aylık yenilemeyi değiştirir. Mevcut bakiye korunur.",
+      "renewsAt": "{date} tarihinde {amount} tutarından yenilenir. İstediğiniz zaman iptal edin.",
+      "savedPaymentMethod": "Ödeme yöntemi",
       "showMoreFeatures": "Daha fazla özelliği göster",
       "starting": "{date} tarihinde başlıyor",
       "startingToday": "Bugünden itibaren başlıyor",
       "startsOn": "{date} tarihinde başlar",
       "stayOnUntil": "{plan} planında {date} tarihine kadar kalacaksınız.",
+      "stripeMethodChoice": "Ödeme bilgileriniz Stripe tarafından güvenli bir şekilde işlenir.",
+      "stripeUnavailable": "Ödeme seçenekleri kullanılamıyor. Lütfen sayfayı yenileyip tekrar deneyin.",
       "subscribeToPlan": "{plan} planına abone ol",
       "switchToPlan": "{plan} planına geç",
       "switchesToday": "Bugünkü değişiklikler",
       "terms": "Şartlar",
-      "termsAgreement": "Devam ederek Comfy Org'un {terms} ve {privacy} politikasını kabul etmiş olursunuz.",
+      "termsAgreement": "Devam ederek Comfy Org'un {terms} ve {privacy} belgelerini kabul eder ve iptal edene kadar Comfy Org'un her faturalama döneminde ödeme yönteminizi ücretlendirmesine izin verirsiniz.",
       "totalDueToday": "Bugün ödenecek toplam tutar",
       "yearlySubscription": "Yıllık abonelik",
       "youllBeCharged": "Şu kadar ücretlendirileceksiniz"
@@ -4348,6 +4380,8 @@
       "inviteSubtext": "Ayrıca daha sonra Ayarlar'dan da kişi davet edebilirsiniz",
       "inviteTitle": "Ekibinizi davet edin",
       "planUpdated": "Planınız başarıyla güncellendi.",
+      "promoApplied": "{code} uygulandı.",
+      "promoRenews": "{date} tarihinde {amount} tutarından yenilenir",
       "receiptEmailed": "Makbuz e-posta ile gönderildi.",
       "sendInvites": "Davetleri gönder"
     },
@@ -4383,6 +4417,9 @@
       "creator": {
         "feature1": "Kendi modellerinizi içe aktarın",
         "name": "Yaratıcı"
+      },
+      "enterprise": {
+        "name": "Kurumsal"
       },
       "founder": {
         "name": "Kurucu Sürümü"
