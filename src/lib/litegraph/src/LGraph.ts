@@ -1340,6 +1340,14 @@ export class LGraph
       return
     }
 
+    const isDuplicateNode =
+      node.graph === this && this._nodes_by_id[node.id] === node
+    assert(
+      !isDuplicateNode,
+      `LGraph.add: node "${node.type}" (id: ${node.id}) is already present in this graph - refusing to add the same node instance again`
+    )
+    if (isDuplicateNode) return
+
     node.id = parseNodeId(node.id) ?? UNASSIGNED_NODE_ID
 
     const nodeWithSameId = this._nodes_by_id[node.id]

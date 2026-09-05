@@ -332,7 +332,47 @@ describe('LGraph', () => {
     expect(graph.last_node_id).toBe(7)
   })
 
-  describe('duplicate node-instance invariants', () => {
+  it('rejects adding the same node instance twice', () => {
+    vi.stubEnv('DEV', true)
+    try {
+      const graph = new LGraph()
+      const node = new DummyNode()
+      graph.add(node)
+
+      expect(() => graph.add(node)).toThrow(/already present in this graph/)
+      expect(graph.nodes).toHaveLength(1)
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
+  it('does not throw but still refuses the duplicate add outside DEV', () => {
+    vi.stubEnv('DEV', false)
+    try {
+      const graph = new LGraph()
+      const node = new DummyNode()
+      graph.add(node)
+
+      expect(() => graph.add(node)).not.toThrow()
+      expect(graph.nodes).toHaveLength(1)
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
+  it('allows adding two different instances of the same node type', () => {
+    const graph = new LGraph()
+    const node1 = new DummyNode()
+    const node2 = new DummyNode()
+
+    expect(() => {
+      graph.add(node1)
+      graph.add(node2)
+    }).not.toThrow()
+    expect(graph.nodes).toHaveLength(2)
+  })
+
+  describe('cross-graph remove invariants', () => {
     function createGraphsSharingANodeId() {
       const ownerGraph = new LGraph()
       const node = new LGraphNode('owned')
@@ -351,23 +391,9 @@ describe('LGraph', () => {
       vi.spyOn(console, 'error').mockImplementation(() => {})
     })
 
-    describe('in DEV', () => {
-      beforeEach(() => {
-        vi.stubEnv('DEV', true)
-      })
-
-      it('rejects re-adding a node instance already in the graph', () => {
-        const graph = new LGraph()
-        const node = new LGraphNode('re-added')
-        graph.add(node)
-
-        expect(() => graph.add(node)).toThrow(
-          'LGraph.add: re-adding the same node instance (id collision with itself)'
-        )
-        expect(graph.nodes).toHaveLength(1)
-      })
-
-      it('rejects removing a node that belongs to another graph', () => {
+    it('rejects removing a node that belongs to another graph', () => {
+      vi.stubEnv('DEV', true)
+      try {
         const { ownerGraph, node, otherGraph, impostor } =
           createGraphsSharingANodeId()
 
@@ -376,27 +402,14 @@ describe('LGraph', () => {
         )
         expect(otherGraph.nodes).toEqual([impostor])
         expect(ownerGraph.nodes).toEqual([node])
-      })
+      } finally {
+        vi.unstubAllEnvs()
+      }
     })
 
-    describe('outside DEV, where assertions only report', () => {
-      beforeEach(() => {
-        vi.stubEnv('DEV', false)
-      })
-
-      it('re-adding a node instance is a no-op rather than a duplicate', () => {
-        const graph = new LGraph()
-        const node = new LGraphNode('re-added')
-        graph.add(node)
-        const { id } = node
-
-        expect(graph.add(node)).toBe(node)
-        expect(graph.nodes).toEqual([node])
-        expect(node.id).toBe(id)
-        expect(graph.getNodeById(id)).toBe(node)
-      })
-
-      it('a cross-graph remove leaves both graphs intact', () => {
+    it('leaves both graphs intact outside DEV', () => {
+      vi.stubEnv('DEV', false)
+      try {
         const { ownerGraph, node, otherGraph, impostor } =
           createGraphsSharingANodeId()
 
@@ -406,23 +419,25 @@ describe('LGraph', () => {
         expect(otherGraph.getNodeById(toNodeId(1))).toBe(impostor)
         expect(ownerGraph.nodes).toEqual([node])
         expect(node.graph).toBe(ownerGraph)
-      })
+      } finally {
+        vi.unstubAllEnvs()
+      }
     })
+  })
 
-    it('renumbers a distinct node instance that collides on id', () => {
-      const graph = new LGraph()
-      const first = new LGraphNode('first')
-      Reflect.set(first, 'id', 3)
-      graph.add(first)
+  it('renumbers a distinct node instance that collides on id', () => {
+    const graph = new LGraph()
+    const first = new LGraphNode('first')
+    Reflect.set(first, 'id', 3)
+    graph.add(first)
 
-      const collidingDuplicate = new LGraphNode('second')
-      Reflect.set(collidingDuplicate, 'id', 3)
+    const collidingDuplicate = new LGraphNode('second')
+    Reflect.set(collidingDuplicate, 'id', 3)
 
-      expect(() => graph.add(collidingDuplicate)).not.toThrow()
-      expect(collidingDuplicate.id).not.toBe(first.id)
-      expect(graph.getNodeById(toNodeId(3))).toBe(first)
-      expect(graph.getNodeById(collidingDuplicate.id)).toBe(collidingDuplicate)
-    })
+    expect(() => graph.add(collidingDuplicate)).not.toThrow()
+    expect(collidingDuplicate.id).not.toBe(first.id)
+    expect(graph.getNodeById(toNodeId(3))).toBe(first)
+    expect(graph.getNodeById(collidingDuplicate.id)).toBe(collidingDuplicate)
   })
 
   test('can be instantiated', ({ expect }) => {

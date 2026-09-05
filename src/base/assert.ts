@@ -32,8 +32,12 @@ export function hasRumAssertReporter(): boolean {
  * Reporters forward `message` to external telemetry, so it must be a static
  * description of the invariant. Never interpolate user data (workflow names,
  * paths, prompts) into it.
+ *
+ * Returns `void`, not `asserts condition` — outside DEV this returns
+ * normally even when `condition` is false, so callers must keep their own
+ * guard after calling this rather than relying on type narrowing.
  */
-export function assert(condition: unknown, message: string): asserts condition {
+export function assert(condition: unknown, message: string): void {
   if (condition) return
 
   const formatted = `${ASSERTION_FAILURE_PREFIX}${message}`

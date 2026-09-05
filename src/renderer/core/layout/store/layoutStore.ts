@@ -3,6 +3,7 @@ import { computed, ref, shallowReactive } from 'vue'
 import type { ComputedRef } from 'vue'
 import * as Y from 'yjs'
 
+import { assert } from '@/base/assert'
 import { toGroupId } from '@/types/groupId'
 import { toNodeId } from '@/types/nodeId'
 import type { GroupId } from '@/types/groupId'
@@ -968,6 +969,10 @@ class LayoutStoreImpl {
     const ynode = this.ynodes.get(
       makeScopedLayoutKey(operation.graphId, nodeId)
     )
+    assert(
+      !!ynode,
+      `LayoutStore.moveNode: node ${nodeId} is not registered in the layout store - cannot position an unregistered node`
+    )
     if (!ynode) return false
 
     const size = yNodeToLayout(ynode).size
@@ -990,6 +995,10 @@ class LayoutStoreImpl {
     const { nodeId } = operation
     const ynode = this.ynodes.get(
       makeScopedLayoutKey(operation.graphId, nodeId)
+    )
+    assert(
+      !!ynode,
+      `LayoutStore.resizeNode: node ${nodeId} is not registered in the layout store - cannot resize an unregistered node`
     )
     if (!ynode) return false
 
@@ -1042,6 +1051,9 @@ class LayoutStoreImpl {
   ): boolean {
     const { nodeId } = operation
     const nodeKey = makeScopedLayoutKey(operation.graphId, nodeId)
+    // A remote add can legitimately replay under an id whose layout entry a
+    // stale node's owner never cleared (successor-owned state); tolerate it
+    // as a no-op rather than asserting, matching handleCreateGroup below.
     if (this.ynodes.has(nodeKey)) return false
 
     this.ynodes.set(nodeKey, layoutToYNode(operation.layout))

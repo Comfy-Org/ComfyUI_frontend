@@ -1,5 +1,6 @@
 import { toValue } from 'vue'
 
+import { assert } from '@/base/assert'
 import {
   createNodeShellState,
   setTrackedNodeState
@@ -1910,11 +1911,18 @@ export class LGraphNode
    * remove an existing output slot
    */
   removeOutput(slot: number): void {
+    const { outputs } = this
+    const isValidSlot = slot >= 0 && slot < outputs.length
+    assert(
+      isValidSlot,
+      `LGraphNode.removeOutput: slot ${slot} is out of bounds for node "${this.type}" (id: ${this.id}) with ${outputs.length} outputs`
+    )
+    if (!isValidSlot) return
+
     // Only disconnect if node is part of a graph
     if (this.graph) {
       this.disconnectOutput(slot)
     }
-    const { outputs } = this
     outputs.splice(slot, 1)
 
     // Only update link indices if node is part of a graph. Ascending order:
@@ -1976,6 +1984,11 @@ export class LGraphNode
    */
   removeInput(slot: number): void {
     const { graph, inputs } = this
+    const isValidSlot = slot >= 0 && slot < inputs.length
+    assert(
+      isValidSlot,
+      `LGraphNode.removeInput: slot ${slot} is out of bounds for node "${this.type}" (id: ${this.id}) with ${inputs.length} inputs`
+    )
     const slotInfo = legacyArrayItem(inputs, slot)
     if (!slotInfo) return
 
@@ -2260,6 +2273,14 @@ export class LGraphNode
   ): TPlainWidget | WidgetTypeMap[TPlainWidget['type']] {
     this.widgets ||= []
     const widget = toConcreteWidget(custom_widget, this)
+
+    const isDuplicateWidget = this.widgets.includes(widget)
+    assert(
+      !isDuplicateWidget,
+      `LGraphNode.addCustomWidget: widget "${widget.name}" is already registered on node "${this.type}" (id: ${this.id}) - refusing to add the same widget instance again`
+    )
+    if (isDuplicateWidget) return widget
+
     this.widgets.push(widget)
 
     // Only register with store if node has a valid ID (is already in a graph).
