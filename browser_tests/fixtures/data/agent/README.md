@@ -78,23 +78,27 @@ a sandbox that overrides `HOME`, so point `COMFY_BIN` at an installation that
 works without a home directory. A turn recorded without it produces an answer
 reporting tool failures rather than a usable fixture.
 
-Environment, all optional except the two provenance values:
+Environment. Five values are required: the two provenance values and the three the recorder needs to reach the stack (the CLI refuses to start without them); the rest are optional.
 
-| Variable                              | Purpose                                                          |
-| ------------------------------------- | ---------------------------------------------------------------- |
-| `AGENT_CLOUD_SHA`, `AGENT_MODEL`      | recorded into the fixture note; both required                    |
-| `AGENT_FULLSTACK_URL`                 | agent base URL, default `http://127.0.0.1:8086`                  |
-| `AGENT_M2M_SECRET_FILE`               | path to the shared secret, read at runtime and never printed     |
-| `AGENT_WORKSPACE_ID`, `AGENT_USER_ID` | identity headers, as seeded by the launcher                      |
-| `AGENT_REDIS_EXEC`, `AGENT_PG_EXEC`   | commands that reach the stack's Redis and Postgres (the launcher |
-|                                       | prints `docker exec` forms when the CLIs are not on PATH)        |
-| `AGENT_ATTEMPT`                       | attempt label in every artifact name; defaults to a UTC stamp    |
-| `AGENT_TURN_TIMEOUT`                  | milliseconds to wait for the turn, default 180000                |
+| Variable                              | Purpose                                                                |
+| ------------------------------------- | ---------------------------------------------------------------------- |
+| `AGENT_CLOUD_SHA`, `AGENT_MODEL`      | recorded into the fixture note; both required                          |
+| `AGENT_FULLSTACK_URL`                 | agent base URL, default `http://127.0.0.1:8086`                        |
+| `AGENT_M2M_SECRET_FILE`               | path to the shared secret, read at runtime and never printed; required |
+| `AGENT_WORKSPACE_ID`, `AGENT_USER_ID` | identity headers, as seeded by the launcher; required                  |
+| `AGENT_REDIS_EXEC`, `AGENT_PG_EXEC`   | commands that reach the stack's Redis and Postgres (the launcher       |
+|                                       | prints `docker exec` forms when the CLIs are not on PATH)              |
+| `AGENT_ATTEMPT`                       | attempt label in every artifact name; defaults to a UTC stamp          |
+| `AGENT_TURN_TIMEOUT`                  | milliseconds to wait for the turn, default 180000                      |
 
 Alongside the fixture the command writes a `recordings/` directory holding the
-raw frames, one retrieved row set per turn, and a receipt (turn IDs, parent rows, applied ops, dropped-frame
-counts, artifact hashes). Those are provenance for the recording, not committed
-fixtures. Use `--work <dir>` to put them elsewhere.
+raw frames, one retrieved row set per turn (the parent rows and their applied
+ops live there), and a receipt: per turn the message id, kept-frame count,
+parent and mutating-parent counts, child status counts, and the row file path
+with its hash; overall the thread and workflow ids, dropped-frame counts, draft
+counts, and the raw and seed artifact paths with hashes. Those are provenance
+for the recording, not committed fixtures. Use `--work <dir>` to put them
+elsewhere.
 
 A refused recording names the gate it failed and appends the reason to
 `recordings/<case-id>.refused.jsonl`. Re-record with a new `AGENT_ATTEMPT`
