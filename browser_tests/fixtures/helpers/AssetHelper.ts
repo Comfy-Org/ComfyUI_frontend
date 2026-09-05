@@ -21,9 +21,9 @@ interface MutationRecord {
 }
 
 interface PaginationOptions {
-  total?: number
-  hasMore?: boolean
   limit?: number
+  hasMore?: boolean
+  total?: number
 }
 interface AssetConfig {
   readonly assets: ReadonlyMap<string, Asset>

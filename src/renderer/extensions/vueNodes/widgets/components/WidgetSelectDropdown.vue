@@ -150,9 +150,6 @@ const acceptTypes = computed(() => {
 
 const layoutMode = ref<LayoutMode>(props.defaultLayoutMode ?? 'grid')
 
-const loadMoreAssets = () => outputAssets.loadMore()
-const canLoadMoreAssets = computed(() => toValue(outputAssets.hasMore))
-
 const isUploading = ref(false)
 async function updateFiles(files: File[]) {
   isUploading.value = true
@@ -183,8 +180,8 @@ async function updateFiles(files: File[]) {
       :is-uploading
       v-bind="combinedProps"
       :loading-more="toValue(outputAssets.isLoading)"
-      :on-load-more="loadMoreAssets"
-      :can-load-more="canLoadMoreAssets"
+      :on-load-more="() => outputAssets.loadMore()"
+      :can-load-more="outputAssets.hasMore"
       class="w-full"
       @update:selected="updateSelectedItems"
       @update:files="updateFiles"

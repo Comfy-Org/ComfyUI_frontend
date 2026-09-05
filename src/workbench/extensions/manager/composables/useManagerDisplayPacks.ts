@@ -45,8 +45,6 @@ export function useManagerDisplayPacks(
   const tabType = computed(() => toValue(selectedTabId) as ManagerTab | null)
   const isEmptySearch = computed(() => toValue(searchQuery) === '')
 
-  // Sorting is only valid on fully-fetched lists (installed/workflow); paged
-  // search results are ordered by the API, never re-sorted client-side.
   const sortPacks = (packs: NodePack[]) => {
     const field = toValue(sortField)
     if (!field || packs.length === 0) return packs

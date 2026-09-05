@@ -4,7 +4,7 @@
     <VirtualGrid
       class="flex-1"
       :items="assetItems"
-      :grid-style="gridStyle"
+      :grid-style
       :on-load-more
       :can-load-more
     >
