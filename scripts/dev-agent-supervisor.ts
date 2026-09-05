@@ -95,12 +95,14 @@ export async function waitForHttp(
     }
     try {
       await assertReachable(url)
-      return
     } catch {
       await wait(500)
+      continue
     }
+    if (stopped()) throw new Error(`${label} stopped before becoming ready`)
+    return
   }
-  if (stopped()) return
+  if (stopped()) throw new Error(`${label} stopped before becoming ready`)
   throw new Error(`${label} did not become ready at ${url}`)
 }
 
@@ -114,8 +116,8 @@ export function waitForStartup(
   }
 ): Promise<number | null> {
   return Promise.race([
-    waitForHttp(child, url, supervisor.requested, label).then(() => null),
-    supervisor.exitRequested
+    supervisor.exitRequested,
+    waitForHttp(child, url, supervisor.requested, label).then(() => null)
   ])
 }
 

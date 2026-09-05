@@ -9,7 +9,7 @@ import type { Options } from './dev-agent-options'
 import { PROJECT_ROOT, USAGE, parseOptions } from './dev-agent-options'
 import { preflightAgent } from './dev-agent-preflight'
 import { runRecord } from './dev-agent-record-mode'
-import { spawnGroup, supervise, waitForHttp } from './dev-agent-supervisor'
+import { spawnGroup, supervise, waitForStartup } from './dev-agent-supervisor'
 
 async function assertWorkspacePackage(): Promise<void> {
   const manifest = JSON.parse(
@@ -74,15 +74,12 @@ async function run(options: Options): Promise<number> {
       standaloneEnv(options, dataDir, token)
     )
     supervisor.watch(agent)
-    const startupResult = await Promise.race([
-      waitForHttp(
-        agent,
-        `${agentUrl}/health`,
-        supervisor.requested,
-        'Standalone agent'
-      ).then(() => null),
-      supervisor.exitRequested
-    ])
+    const startupResult = await waitForStartup(
+      agent,
+      `${agentUrl}/health`,
+      'Standalone agent',
+      supervisor
+    )
     if (startupResult !== null) return await supervisor.stop(startupResult)
     const frontendUrl = `http://127.0.0.1:${options.frontendPort}`
     const frontend = spawnGroup(
@@ -108,7 +105,15 @@ async function run(options: Options): Promise<number> {
       }
     )
     supervisor.watch(frontend)
-    await waitForHttp(frontend, frontendUrl, supervisor.requested, 'Vite')
+    const frontendStartupResult = await waitForStartup(
+      frontend,
+      frontendUrl,
+      'Vite',
+      supervisor
+    )
+    if (frontendStartupResult !== null) {
+      return await supervisor.stop(frontendStartupResult)
+    }
     process.stdout.write(
       `\nAgent integration environment ready: ${frontendUrl}\n` +
         `Playwright: ${smokeCommand(frontendUrl)}\n` +

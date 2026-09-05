@@ -49,6 +49,26 @@ describe('waitForStartup', () => {
 
     await expect(startup).resolves.toBe(9)
   })
+
+  it('preserves a fatal exit when HTTP becomes ready at the same boundary', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn<typeof fetch>()
+        .mockResolvedValue(new Response(null, { status: 200 }))
+    )
+    const child = {
+      exitCode: null,
+      signalCode: null
+    } as unknown as ChildProcess
+
+    await expect(
+      waitForStartup(child, 'http://127.0.0.1:6207', 'Vite', {
+        exitRequested: Promise.resolve(7),
+        requested: () => true
+      })
+    ).resolves.toBe(7)
+  })
 })
 
 describe('supervise teardown', () => {
