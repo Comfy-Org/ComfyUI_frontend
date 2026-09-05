@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { addAutogrow } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import type { CurveData } from '@/components/curve/types'
 import { t } from '@/i18n'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -1432,6 +1433,130 @@ describe('ComfyApp', () => {
       expect(mockCanvas.setGraph).toHaveBeenCalledWith(graph)
       expect(mockCanvas.graph).toBe(graph)
       expect(mockCanvas.subgraph).toBeNull()
+    })
+
+    it('retries unresolved autogrow links without reconnecting successes', async () => {
+      const graph = new LGraph()
+      const previousAppGraph = Reflect.get(app, 'rootGraphInternal')
+      const previousSingletonGraph = Reflect.get(
+        singletonApp,
+        'rootGraphInternal'
+      )
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const sourceType = 'test/ApiSourceNode'
+      const targetType = 'test/ApiTargetNode'
+      const targetConnectionChanges = vi.fn()
+      class ApiSourceNode extends LGraphNode {
+        constructor(title = 'ApiSourceNode') {
+          super(title)
+          this.addOutput('out', 'LATENT')
+        }
+      }
+      class ApiTargetNode extends LGraphNode {
+        constructor(title = 'ApiTargetNode') {
+          super(title)
+          this.widgets = []
+          addAutogrow(this, {
+            min: 0,
+            prefix: 'test',
+            input: { required: { value: ['LATENT', {}] } }
+          })
+        }
+        override onConnectionsChange(...args: unknown[]) {
+          targetConnectionChanges(...args)
+        }
+      }
+      LiteGraph.registerNodeType(sourceType, ApiSourceNode)
+      LiteGraph.registerNodeType(targetType, ApiTargetNode)
+
+      try {
+        await app.loadApiJson(
+          {
+            '2': {
+              class_type: targetType,
+              inputs: {
+                '0.test2': ['1', 0],
+                '0.test1': ['1', 0],
+                '0.test0': ['1', 0]
+              },
+              _meta: { title: 'Api Target' }
+            },
+            '1': {
+              class_type: sourceType,
+              inputs: {},
+              _meta: { title: 'Api Source' }
+            }
+          },
+          ''
+        )
+
+        expect(targetConnectionChanges).toHaveBeenCalledTimes(3)
+        expect(graph.links.size).toBe(3)
+      } finally {
+        Reflect.set(app, 'rootGraphInternal', previousAppGraph)
+        Reflect.set(singletonApp, 'rootGraphInternal', previousSingletonGraph)
+        LiteGraph.unregisterNodeType(sourceType)
+        LiteGraph.unregisterNodeType(targetType)
+      }
+    })
+
+    it('does not retry a connection vetoed by an extension callback', async () => {
+      const graph = new LGraph()
+      const previousAppGraph = Reflect.get(app, 'rootGraphInternal')
+      const previousSingletonGraph = Reflect.get(
+        singletonApp,
+        'rootGraphInternal'
+      )
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const sourceType = 'test/ApiVetoSourceNode'
+      const targetType = 'test/ApiVetoTargetNode'
+      const connectionAttempts = vi.fn()
+      class ApiVetoSourceNode extends LGraphNode {
+        constructor(title = 'ApiVetoSourceNode') {
+          super(title)
+          this.addOutput('out', 'LATENT')
+        }
+      }
+      class ApiVetoTargetNode extends LGraphNode {
+        constructor(title = 'ApiVetoTargetNode') {
+          super(title)
+          this.addInput('input', 'LATENT')
+        }
+        override onConnectInput() {
+          connectionAttempts()
+          return false
+        }
+      }
+      LiteGraph.registerNodeType(sourceType, ApiVetoSourceNode)
+      LiteGraph.registerNodeType(targetType, ApiVetoTargetNode)
+
+      try {
+        await app.loadApiJson(
+          {
+            '2': {
+              class_type: targetType,
+              inputs: { input: ['1', 0] },
+              _meta: { title: 'API Veto Target' }
+            },
+            '1': {
+              class_type: sourceType,
+              inputs: {},
+              _meta: { title: 'API Veto Source' }
+            }
+          },
+          ''
+        )
+
+        expect(connectionAttempts).toHaveBeenCalledOnce()
+        expect(graph.links.size).toBe(0)
+      } finally {
+        Reflect.set(app, 'rootGraphInternal', previousAppGraph)
+        Reflect.set(singletonApp, 'rootGraphInternal', previousSingletonGraph)
+        LiteGraph.unregisterNodeType(sourceType)
+        LiteGraph.unregisterNodeType(targetType)
+      }
     })
 
     it('remaps flattened subgraph ids to colon-free local ids', async () => {
