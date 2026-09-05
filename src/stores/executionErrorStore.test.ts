@@ -26,11 +26,26 @@ vi.mock('@/platform/distribution/types', () => ({
   isCloud: false
 }))
 
-const mockShowErrorsTab = vi.hoisted(() => ({ value: false }))
+const mockSettings = vi.hoisted(() => ({
+  values: {} as Record<string, boolean>,
+  reset() {
+    this.values = {
+      'Comfy.RightSidePanel.ShowErrorsTab': false,
+      'Comfy.Workflow.ShowMissingNodesWarning': true,
+      'Comfy.Workflow.ShowMissingModelsWarning': true,
+      'Comfy.Workflow.ShowMissingMediaWarning': true
+    }
+  }
+}))
+mockSettings.reset()
+
+beforeEach(() => {
+  mockSettings.reset()
+})
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn(() => ({
-    get: vi.fn(() => mockShowErrorsTab.value)
+    get: vi.fn((key: string) => mockSettings.values[key])
   }))
 }))
 
@@ -624,7 +639,7 @@ describe('executionErrorStore — node error operations', () => {
 
 describe('surfaceMissingModels — silent option', () => {
   beforeEach(() => {
-    mockShowErrorsTab.value = true
+    mockSettings.values['Comfy.RightSidePanel.ShowErrorsTab'] = true
   })
 
   it('opens error overlay when silent is not specified and setting is enabled', () => {
@@ -689,9 +704,59 @@ describe('surfaceMissingModels — silent option', () => {
   })
 })
 
+describe('per-kind visibility', () => {
+  it.for([
+    {
+      kind: 'models',
+      settingId: 'Comfy.Workflow.ShowMissingModelsWarning',
+      surface: (store: ReturnType<typeof useExecutionErrorStore>) =>
+        store.surfaceMissingModels([
+          fromAny({
+            name: 'model.safetensors',
+            nodeId: toNodeId('1'),
+            nodeType: 'Loader',
+            widgetName: 'ckpt',
+            isMissing: true,
+            isAssetSupported: false
+          })
+        ]),
+      rawCount: () => useMissingModelStore().missingModelCandidates?.length
+    },
+    {
+      kind: 'media',
+      settingId: 'Comfy.Workflow.ShowMissingMediaWarning',
+      surface: (store: ReturnType<typeof useExecutionErrorStore>) =>
+        store.surfaceMissingMedia([
+          fromAny({
+            name: 'photo.png',
+            nodeId: toNodeId('1'),
+            nodeType: 'LoadImage',
+            widgetName: 'image',
+            mediaType: 'image',
+            isMissing: true
+          })
+        ]),
+      rawCount: () => useMissingMediaStore().missingMediaCandidates?.length
+    }
+  ])(
+    'stores missing $kind but keeps the overlay closed while its warning is off',
+    ({ settingId, surface, rawCount }) => {
+      mockSettings.values['Comfy.RightSidePanel.ShowErrorsTab'] = true
+      mockSettings.values[settingId] = false
+      const store = useExecutionErrorStore()
+
+      surface(store)
+
+      expect(rawCount()).toBe(1)
+      expect(store.isErrorOverlayOpen).toBe(false)
+      expect(store.hasMissingError).toBe(false)
+    }
+  )
+})
+
 describe('surfaceMissingMedia — silent option', () => {
   beforeEach(() => {
-    mockShowErrorsTab.value = true
+    mockSettings.values['Comfy.RightSidePanel.ShowErrorsTab'] = true
   })
 
   it('opens error overlay when silent is not specified and setting is enabled', () => {

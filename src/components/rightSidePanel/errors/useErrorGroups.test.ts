@@ -132,6 +132,7 @@ vi.mock(
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
@@ -1030,6 +1031,29 @@ describe('useErrorGroups', () => {
         (g) => g.directory === null && !g.isAssetSupported
       )
       expect(unsupported).toBeUndefined()
+    })
+
+    it('drops the missing_model group while its warning is off and restores it when on', async () => {
+      const { store, groups } = createErrorGroups()
+      const settingStore = useSettingStore()
+      store.surfaceMissingModels([makeModel('model_a.safetensors')])
+      await nextTick()
+      expect(groups.missingModelGroups.value).toHaveLength(1)
+
+      settingStore.settingValues['Comfy.Workflow.ShowMissingModelsWarning'] =
+        false
+      await nextTick()
+
+      expect(groups.missingModelGroups.value).toEqual([])
+      expect(
+        groups.allErrorGroups.value.some((g) => g.type === 'missing_model')
+      ).toBe(false)
+
+      settingStore.settingValues['Comfy.Workflow.ShowMissingModelsWarning'] =
+        true
+      await nextTick()
+
+      expect(groups.missingModelGroups.value).toHaveLength(1)
     })
 
     it('includes missing_model group in allErrorGroups', async () => {

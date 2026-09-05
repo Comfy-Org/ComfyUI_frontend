@@ -79,6 +79,7 @@ import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { isMissingWarningVisible } from '@/platform/settings/missingWarningVisibility'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { graphHasMissingNodes } from '@/workbench/extensions/manager/utils/graphHasMissingNodes'
 
@@ -90,8 +91,10 @@ interface Props {
 const { item, isActive } = defineProps<Props>()
 
 const nodeDefStore = useNodeDefStore()
-const hasMissingNodes = computed(() =>
-  graphHasMissingNodes(app.rootGraph, nodeDefStore.nodeDefsByName)
+const hasMissingNodes = computed(
+  () =>
+    isMissingWarningVisible('nodes') &&
+    graphHasMissingNodes(app.rootGraph, nodeDefStore.nodeDefsByName)
 )
 
 const { t } = useI18n()

@@ -7,6 +7,7 @@ import {
 } from '@/types/nodeIdentification'
 
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 const mockNodeLocatorIdToNodeExecutionId = vi.hoisted(() =>
   vi.fn((nodeLocatorId: string) => nodeLocatorId)
@@ -69,6 +70,27 @@ describe('missingModelStore', () => {
 
       expect(store.missingModelCandidates).not.toBeNull()
       expect(store.missingModelCandidates).toHaveLength(1)
+      expect(store.hasMissingModels).toBe(true)
+    })
+
+    it('hides derived state while the missing models warning is off', () => {
+      const settingStore = useSettingStore()
+      const store = useMissingModelStore()
+      store.setMissingModels([makeModelCandidate('model_a.safetensors')])
+      expect(store.hasMissingModels).toBe(true)
+
+      settingStore.settingValues['Comfy.Workflow.ShowMissingModelsWarning'] =
+        false
+
+      expect(store.missingModelCandidates).toHaveLength(1)
+      expect(store.visibleMissingModelCandidates).toBeNull()
+      expect(store.hasMissingModels).toBe(false)
+      expect(store.missingModelCount).toBe(0)
+      expect(store.missingModelNodeIds.size).toBe(0)
+
+      settingStore.settingValues['Comfy.Workflow.ShowMissingModelsWarning'] =
+        true
+
       expect(store.hasMissingModels).toBe(true)
     })
 

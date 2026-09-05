@@ -9,6 +9,7 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -38,6 +39,29 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
     const store = useExecutionErrorStore()
     return { graph, nodeA, nodeB, store }
   }
+
+  it('follows the missing nodes warning for legacy has_errors flags', async () => {
+    const { nodeA, nodeB } = setupGraphWithStore()
+    const settingStore = useSettingStore()
+    useMissingNodesErrorStore().setMissingNodeTypes([
+      { type: 'GoneNode', nodeId: String(nodeA.id), isReplaceable: false }
+    ])
+    await nextTick()
+    expect(nodeA.has_errors).toBe(true)
+    expect(nodeB.has_errors).toBeFalsy()
+
+    settingStore.settingValues['Comfy.Workflow.ShowMissingNodesWarning'] = false
+    await nextTick()
+    expect(nodeA.has_errors).toBe(false)
+
+    settingStore.settingValues['Comfy.Workflow.ShowMissingNodesWarning'] = true
+    await nextTick()
+    expect(nodeA.has_errors).toBe(true)
+
+    settingStore.settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = false
+    await nextTick()
+    expect(nodeA.has_errors).toBe(true)
+  })
 
   it('sets has_errors on nodes referenced in lastNodeErrors', async () => {
     const { nodeA, nodeB, store } = setupGraphWithStore()
