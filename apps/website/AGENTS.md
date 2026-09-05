@@ -1,0 +1,519 @@
+# comfy.org (`apps/website`)
+
+The marketing site: **Astro, statically built, with Vue islands.** It is not the
+ComfyUI frontend. The repository-root `AGENTS.md` and linked guidance still
+apply, including package management, security, testing, Git and ADR rules.
+This file adds the website-specific context below. The graph-editor architecture
+applies when a change touches that app; the website itself uses Astro pages.
+
+What is different, concretely:
+
+- Pages are `.astro`, rendered at build time. A `.vue` file here is an island,
+  hydrated only where a page asks for it.
+- There is no runtime server. Every request is answered by a file emitted at
+  build time, so "does this ship?" is decided by what the build writes.
+- Tests are this package's own: `pnpm --filter @comfyorg/website test:unit`
+  (vitest) and `test:e2e` (playwright, `apps/website/playwright.config.ts`).
+  `browser_tests/` at the root belongs to the other app.
+
+## Developing from main
+
+Follow the repository's `CONTRIBUTING.md` for branch and review policy.
+Workshop currently uses stacked PRs; review each against its declared base
+and verify the combined release build before landing changes on main.
+
+**What is on main is what is released.** A push to `main` runs
+`vercel build --prod` and deploys comfy.org. There is no staging environment
+holding different contents; a PR preview is the same build with
+`VERCEL_ENV=preview`. So there is no gap between merged and public:
+
+> Anything merged to main is live on comfy.org on the next deploy, unless
+> something in the build deliberately keeps it out.
+
+That is the whole reason unfinished work can be developed from main at all, and
+the discipline it demands:
+
+**Do**
+
+- Keep an unreleased feature's routes **out of the build**, so there is no URL
+  to find (see the Workshop gate below), or put its entry points behind a
+  switch that defaults off — `src/config/features.ts` is the small version of
+  this (`export const SHOW_FREE_TIER = false`).
+- Give the switch **one definition** that every entry point reads. A nav item
+  and a homepage section gated on different conditions will drift, and one of
+  them will ship early.
+- **Prove it**, by building the release shape and counting what is emitted —
+  page count, exit code, and no directory for the feature. The exact probe
+  is the first item under _Reviewing a change here_ → P0.
+- Assume a partially-built feature is **reachable by anyone who guesses the
+  URL**, and design for that.
+- When a change low in a stack alters something tests read, **run the suite on
+  the branches that carry those tests**, not on the branch that made the
+  change. Packing the catalog deleted a directory three test files scanned;
+  the suite passed on the branch that did it — which carries none of them —
+  and was red on seven branches above for hours. Builds were verified at
+  every hop; tests at none.
+
+**Don't**
+
+- Rely on `noindex`. It asks a crawler to stay away. The page is still live and
+  shareable.
+- Rely on nothing linking to it. An unlinked page is a public page with a
+  quieter front door, and it will be found in a sitemap, an `llms.txt`, or an
+  OG-image request.
+- Rely on a runtime flag to keep pages off the server. This is a static build:
+  a PostHog flag can hide a link in the browser, but the HTML is already
+  deployed. Runtime flags gate _visibility_; only the build gates _existence_.
+
+## Reviewing a change here
+
+Work top-down, checking all applicable tiers even when one has a finding. Every item says
+what to check, how, and what failure looks like. "How" is a command or a file;
+if you cannot run it, say so rather than guess. The probes are written to be
+followed literally and to come back clean on the current tree — where one
+names a known hit, that hit is documented beside it. A probe that returns
+something not explained here is a lead to investigate, not automatically a
+finding. Confirm the reachable behavior and impact before reporting it.
+
+Every command below runs from `apps/website`. From anywhere else, prefix
+`pnpm` commands with `--filter @comfyorg/website` and paths with
+`apps/website/` — a `grep … src` run from the repository root searches the
+ComfyUI app instead and reports nothing useful.
+
+### P0 — would this break main's deployability, or leak something?
+
+A push to main deploys comfy.org. Anything here is a blocker.
+
+- **Unreleased feature reachable in a release build.** _How:_
+  `WORKSHOP_IN_BUILD=0 pnpm build && test ! -d dist/workshop` must exit 0.
+  Only after that succeeds, inspect HTML links with
+  `rg -n 'href=["\x27]/workshop(/|["\x27])' dist -g '*.html'` (no matches expected).
+  _Failure:_ exit ≠ 0, the directory exists, or any page links to it. Check
+  the exit code first: a gate that removes its output and then throws is
+  correct by page count and still fails every deploy.
+- **Entry point on a different switch than the routes.** _How:_ grep the
+  literal path, not the word — `grep -rlE "['\"]/workshop" src` — and classify
+  every hit; do not count them. `*.test.ts` → ignore.
+  `src/config/workshop-release.ts` → the switch itself; ignore.
+  `src/config/indexing.ts` and `src/config/routes.ts` → metadata lists that
+  name the path in order to exclude or annotate it; ignore. A file under `src/pages/workshop/` or
+  `src/components/workshop/` → the feature itself; ignore. Anything else that
+  renders — an `.astro` page, a `.vue` island — must either read
+  `isWorkshopInBuild()` itself or be rendered only by a parent that does:
+  `grep -rl <ComponentName> src/pages` and check each parent. On the current
+  tree the only such hit is `src/components/home/WorkshopSection.vue`,
+  rendered solely by `src/pages/index.astro`, which gates it at the call site.
+  _Failure:_ a rendered surface reaches `/workshop` with no gate on that path
+  — including one gated on `noindex`, a runtime flag, or a second constant.
+  Do not grep for the word `workshop`: it appears in prompt copy on
+  `pixal3d-trellis2.astro` and will always false-positive.
+- **Secret in the client bundle.** Astro inlines every `PUBLIC_*` variable
+  into the browser bundle. _How:_
+  `grep -rhoE "PUBLIC_[A-Z0-9_]+" src astro.config.ts | sort -u` (do not glob
+  `.env*` — none exist locally and zsh aborts the command). Expected, and
+  legitimately public: `PUBLIC_CUSTOMERIO_WRITE_KEY`, `PUBLIC_POSTHOG_KEY`,
+  `PUBLIC_POSTHOG_API_HOST`, `PUBLIC_POSTHOG_UI_HOST` — analytics write keys
+  and hosts are meant for browsers. _Failure:_ any other `PUBLIC_` name, or one
+  of those four assigned something that is not a publishable key. Also grep
+  the change for `import.meta.env.` inside `.vue` files: a non-`PUBLIC_` name
+  there is not a leak (Astro leaves it undefined) but is a bug, since the
+  island runs in the browser.
+- **Existing pages changed by accident.** _How:_ build main at
+  `git merge-base origin/main HEAD` and this branch in release shape, then
+  `scripts/compare-build-to-main.sh <main-dist> <this-dist>`. _Failure:_
+  `existing changed > 0` or `removed > 0`. Expect CSS tokens added and a few
+  hundred gzipped bytes if Workshop components changed — see "What the gate
+  does not keep out"; that is not a page change.
+- **A redirect shadowing a new page.** _How:_ for each new file in
+  `src/pages`, `grep -nE '"source": "/<path>/?"' vercel.json` — sources match
+  exactly, so check both `/<path>` and `/<path>/`. _Failure:_ a match. The
+  page works under `astro dev`, which never reads `vercel.json`, and 307s
+  once deployed.
+
+### P1 — correctness and data integrity
+
+- **Remote data not validated.** _How:_ any new `fetch` in `src/utils` or
+  `scripts/` is followed by a Zod `parse`/`safeParse`, and a stale/failed
+  fetch falls back to the committed snapshot rather than throwing (except in
+  production, deliberately). _Failure:_ `JSON.parse` of a response used
+  directly; `as SomeType` on network data.
+- **Generated file without both markers.** _How:_ a new or moved generated
+  artifact appears in **both** `.gitattributes` (`linguist-generated=true`)
+  and `.oxfmtrc.json` `ignorePatterns`. _Failure:_ either missing — the second
+  one is silent until the next commit reformats the whole file.
+- **Generator not idempotent.** _How:_ if you can run it, run it twice;
+  `git status` is clean after the second run. `generate:workshop-catalog`
+  needs the private partner bundle, so for that one read the write path
+  instead: it must compare parsed content to what is on disk and skip the
+  write when equal (`writeCatalog` does). In all generators,
+  `grep -rn localeCompare scripts/` → nothing on a committed-output path.
+  _Failure:_ a diff on re-run, an unconditional write, or locale-dependent
+  order.
+- **JSON-LD emitted raw.** _How:_
+  `grep -rl 'application/ld+json' src --include='*.astro' --include='*.vue' | xargs grep -L escapeJsonLd`
+  → nothing. _Failure:_ a file listed. Today it lists
+  `src/pages/pixal3d-trellis2.astro`; its values are page constants, so no
+  live exposure, but it is the rule broken and the pattern to catch.
+- **User- or registry-controlled string rendered as HTML.** _How:_
+  `grep -rn 'set:html\|v-html' src` — every site's input must be a build-time
+  constant or pass through `escapeJsonLd` / the cloud-nodes sanitiser
+  (`safeExternalUrl` in `src/utils/cloudNodes.ts`). At the time of writing
+  there are five `set:html` and eleven `v-html` sites, all fed by build-time
+  constants; the review question is only whether a _new_ one takes untrusted
+  input. Do not report the existing ones.
+- **Tests exist on branches the change does not touch.** _How:_ if the change
+  alters something tests read (a data file, a directory, a schema), run
+  `pnpm test:unit` on every open branch that carries those tests, not only the
+  one that made the change. _Failure:_ green here, red above.
+
+### P2 — conventions the squash and the tooling depend on
+
+- **PR title** is `type(scope): lowercase imperative` — it becomes the commit
+  on main verbatim. Scopes in use: `website`, `workshop`, `auth`, `billing`,
+  `agent`, `deps`.
+- **PR body** follows `.github/pull_request_template.md` — Summary, Changes,
+  Review Focus — because `PR_BODY` becomes the commit body. An empty Review
+  Focus on a non-trivial change is a finding.
+- **No AI co-author trailers** on commits. Advisory check, but policy.
+- **`translations.ts` additions** are new keys only; a conflict there is
+  resolved by keeping both sides and checking for duplicate keys, never by
+  picking one.
+- **Islands do not take `v-model` from `.astro`** — `defineModel` is absent
+  from the generated props type. A new island that needs an initial value
+  seeds itself and emits.
+- **A page emitted only for `en`** is listed in `LOCALE_INVARIANT_EXTRA_PATHS`
+  in `src/config/routes.ts`, or `check:hreflang` will advertise a `zh-CN` twin
+  that 404s.
+
+### P3 — quality and coverage
+
+- **Unit tests** for new code under `src/config` and `scripts/`; that is where
+  the logic lives, and it is the only automated check for Workshop.
+- **e2e and visual run against the dev shape.** `ci-website-e2e.yaml` builds
+  with no `VERCEL_ENV`, so Workshop is _in_ — e2e never exercises what ships.
+  Visual snapshots (`e2e/visual-responsive.spec.ts-snapshots`, 26 Linux PNGs,
+  4 breakpoints) are **section-scoped**, so a new section does not fail them;
+  a change inside a snapshotted section fails `website-e2e`, which _is_
+  required, until regenerated via `pr-update-website-screenshots.yaml` (label,
+  slash command, or the checkbox in the E2E comment). Workshop has **zero**
+  e2e coverage.
+- **`target="_blank"` without `rel="noopener"`** — modern browsers imply it,
+  so this is hygiene, not a hole; ~36 exist.
+
+### Do not flag
+
+Things a reviewer will see and must not report as findings:
+
+- **`src/content/workshop-models.json` is huge and unreadable.** Generated,
+  packed one model per line by design, `linguist-generated`. Review the
+  generator, not the output.
+- **A `risk:*` label on the PR.** Applied by `ci-pr-risk.yml`, advisory,
+  grader-owned; nothing gates or merges on it. Not evidence of anything.
+- **`Check for AI agent co-author trailers` failing** on branch commits.
+  Advisory, and squash discards branch messages. Mention, do not block.
+- **`/workshop/` present on a preview.** If the PR carries the `workshop`
+  label, that is the requested build. If it does not, that _is_ a P0.
+- **CSS tokens added / a few hundred gzipped bytes** in the release build when
+  Workshop components changed. Known, measured, documented. Page changes are
+  the finding; asset deltas are not.
+- **`translations.ts` growing at the top** and merge conflicts there. Normal.
+- **The required `test` check passing.** It proves nothing about this package.
+  Read `website-unit`, `website-unit-gate` and `build` instead.
+- **No CODEOWNERS entry for `apps/website`.** There is none; the Assignee is
+  the reviewer, per `CONTRIBUTING.md`.
+
+## How the site is generated
+
+`astro build` emits static HTML into `dist/`. Files in `src/pages` are routes:
+`about.astro` is one page, `[slug].astro` is as many pages as its
+`getStaticPaths` returns. Integrations run in the order declared in
+`astro.config.ts` — `vue`, `mdx`, `sitemap`, `markdownTwins`,
+`workshopReleaseGate` — and the last of those runs at `astro:build:done`, after
+everything is on disk.
+
+CI then runs validators that read `dist/` and exit non-zero: `validate:jsonld`,
+`validate:llms-txt-links`, `check:hreflang`. They catch a cluster pointing at a
+page the build never produced, which is the usual symptom of a route quietly
+disappearing.
+
+For scale, the September 4 baseline built **738 HTML pages** with
+`WORKSHOP_IN_BUILD=0 pnpm build` from `apps/website`; the then-current Workshop
+stack built 1,007 with `WORKSHOP_IN_BUILD=1`. Counts change as main gains pages;
+compare builds at a recorded commit instead of treating these as fixed targets.
+
+### Comparing a build to main
+
+The proof that a change does not touch existing pages is a page-by-page diff
+of two builds — main at the commit your branch contains
+(`git merge-base origin/main HEAD`), and yours. A raw diff reports every page
+changed; three things differ on every build and mean nothing:
+
+- hashed asset filenames — under **`/_website/`**, not `/_astro/`
+- `<astro-island uid="…">`
+- `server-render-time="…"` on every island
+
+Normalise those and the honest number appears. Compare the shared CSS at
+token level (split on `{};`) and by gzipped size; splitting on `}` alone
+reports a minified Tailwind file as one giant rule. On macOS, `stat -f '%z'`
+is not byte size — use `wc -c`.
+
+`scripts/compare-build-to-main.sh <baseline-dist> <candidate-dist> [label]`
+does all of this. It is not yet wired into CI; that would need a cached build
+of main to compare against, which is a cost decision, not a code one.
+
+### What is generated today
+
+Committed to the repo, refreshed by a script, never fetched at build time:
+
+| Artifact                             | Script                         | Notes                                 |
+| ------------------------------------ | ------------------------------ | ------------------------------------- |
+| `src/data/ashby-roles.snapshot.json` | `ashby:refresh-snapshot`       | fallback for `/careers`               |
+| `src/data/cloud-nodes.snapshot.json` | `cloud-nodes:refresh-snapshot` | fallback for `/cloud/supported-nodes` |
+| `src/config/generated-models.json`   | `generate:models`              | model marketing pages                 |
+| `src/content/workshop-models.json`   | `generate:workshop-catalog`    | 268 Router models, packed             |
+
+Produced by the build and never committed: everything in `dist/`, the sitemap,
+and the markdown twins (`markdownTwins` writes ~309 `.md` twins, section
+indexes and `/llms-full.txt`).
+
+## Running things here
+
+Use the package scripts. Two ways of reaching past them waste time:
+
+- **`npx vitest` fails** with `globalThis.localStorage?.clear is not a
+function` — the root setup file expects an environment the package script
+  configures. Use `pnpm test:unit`, which takes a path argument fine.
+- **`npx astro` can resolve to a globally cached Astro** rather than the
+  workspace one, especially in a fresh worktree, and dies with a misleading
+  `createRenderEntry is not a function` from content collections. Use
+  `./node_modules/.bin/astro` or `pnpm build`.
+
+`pnpm typecheck` is `astro check && vue-tsc --noEmit` — both, and Astro files
+are only covered by the first.
+
+## Build-time data, and the snapshot rule
+
+Several pages are rendered from remote APIs at build time, each with a
+committed snapshot as fallback: Ashby (`careers`), Comfy Cloud `object_info`
+(`cloud/supported-nodes`, see
+[`src/components/cloud-nodes/AGENTS.md`](src/components/cloud-nodes/AGENTS.md)),
+and the Workshop catalog below.
+
+Invariants that hold across all of them:
+
+- **Never prefix a build-time secret with `PUBLIC_`.** Astro inlines `PUBLIC_*`
+  into the client bundle. A key named that way is published.
+- **Validate every remote response with Zod.** The fetcher does not trust the
+  network, and the snapshot exists so a flaky upstream cannot fail a build.
+- **Production is strict where preview is lenient.** `cloudNodes.build.ts`
+  throws on stale data only when `VERCEL_ENV === 'production'`. A consequence
+  worth knowing: `VERCEL_ENV=production pnpm build` **fails locally** without
+  `WEBSITE_CLOUD_API_KEY`. To reproduce a release build without the key, leave
+  `VERCEL_ENV` unset and use `WORKSHOP_IN_BUILD=0`.
+
+## Generated files are committed, packed, and marked
+
+Generated data lives in the repo so builds need no network and no private
+credentials. It is sized for the repository rather than for a reader, because
+nobody reads it — a script writes it, a schema validates it, a loader consumes
+it.
+
+Two entries are needed for every such file, and forgetting either is silent:
+
+- `.gitattributes` → `linguist-generated=true`, so it collapses in review
+- `.oxfmtrc.json` → `ignorePatterns`, or the formatter unpacks it on the next
+  commit and every line churns
+
+**Generators must be deterministic and idempotent.** Compare canonical output
+before writing, so a re-run with no upstream change rewrites nothing.
+Never sort committed output with `localeCompare` — it is
+host-dependent (`p/ä,p/z` under `LANG=C`, `p/z,p/ä` under `LANG=sv_SE.UTF-8`)
+and churns the diff by locale. Use a plain lexical comparison.
+
+## Deploys and previews
+
+Vercel's git integration is **off** (`vercel.json` → `github.enabled: false`).
+Everything runs from `.github/workflows/ci-vercel-website-preview.yaml`:
+
+| Trigger        | Command               | `VERCEL_ENV` | Lands                                     |
+| -------------- | --------------------- | ------------ | ----------------------------------------- |
+| PR             | `vercel build`        | `preview`    | `comfy-website-preview-pr-<N>.vercel.app` |
+| push to `main` | `vercel build --prod` | `production` | comfy.org                                 |
+
+Project: `vercel.com/comfyui/website-frontend`. `website-frontend-comfyui.vercel.app`
+serves it directly; comfy.org is the same deployment behind Cloudflare.
+
+**Redirects in `vercel.json` win over pages.** Vercel evaluates them before
+static files, so a page whose path matches a redirect `source` is never
+served — and `astro dev` / `astro preview` do not read `vercel.json`, so it
+works locally and only fails deployed. Live instance: `vercel.json` sends
+`/login` to `cloud.comfy.org/cloud/login` (307), while `src/pages/login.astro`
+exists on the sign-in branch; `/login` bounces, `/login/` serves the page.
+Grep `vercel.json` for the path before adding a page.
+
+**The repo is squash-merge only**, with the commit message built from
+`PR_TITLE` + `PR_BODY`. So a PR title _is_ the commit message on main — use
+conventional commits (`feat(scope): lowercase imperative`), and note that
+branch commit messages never reach main's history.
+
+## What CI enforces, and what it only reports
+
+Main's required checks are exactly:
+
+```text
+cla-assistant · test · lint-and-format · e2e-status · website-e2e
+```
+
+**None of the website's unit or build checks are in that list.**
+`ci-website-unit.yaml` reports as `website-unit` / `website-unit-gate` and
+`ci-website-build.yaml` as `build`; both run, both go red, neither blocks. The
+required `test` is the repository-root vitest job, whose include is
+`src/**/*.{ts,vue}` (`vite.config.mts`) — `pnpm exec vitest list` at the root
+collects zero `apps/website` files — so on a website-only PR it passes
+without running a single website test. Observed on #16871: `test` pass,
+`website-unit` fail, merge button available.
+
+Until `website-unit-gate` and `build` are added to the required set (a repo
+setting, not a workflow change), a green merge button on a website PR proves
+nothing about its tests. Read the checks list, not the button.
+
+`Check for AI agent co-author trailers` is also advisory. It fails on any
+commit carrying `Co-Authored-By: <AI agent>`; the repo rejects those as policy
+(`.agents/skills/disabling-ai-attribution`). Squash-merge discards branch
+commit messages, so the trailers never reach main — but do not add them.
+
+## Vue islands
+
+Astro's Vue integration only surfaces `defineProps` in the generated component
+type. **A `defineModel` is not in the props type**, so an `.astro` page cannot
+pass `v-model` or `:modelValue` to an island — `vue-tsc` rejects it and no
+annotation fixes it. Islands that need an initial value seed themselves and
+emit; tests should assert on `emitted()` rather than pass a model prop.
+
+## i18n
+
+`src/i18n/translations.ts` is one flat key map (`en`, `zh-CN`). Because every
+feature appends near the top, **merge conflicts in it are almost always
+additive** — two branches adding different keys. Keep both sides and close the
+brace; check for duplicate keys afterwards rather than picking a side.
+
+## Workshop
+
+Unreleased. Browse and run the models Comfy's Router exposes. Lives across
+`scripts/generate-workshop-catalog.ts`, `src/config/workshop-*`,
+`src/content/workshop-models.json`, `src/integrations/workshop-release-gate.ts`
+and `src/pages/workshop/`.
+
+### It must not reach comfy.org until we say so
+
+`noindex` does not achieve that — it asks a crawler to stay away while the page
+stays live at a URL anyone can share. The routes are kept out of the build
+instead.
+
+| Environment      | `VERCEL_ENV` | Workshop | Answers                        |
+| ---------------- | ------------ | -------- | ------------------------------ |
+| Production       | `production` | out      | what is on comfy.org right now |
+| Preview, staging | `preview`    | out      | what ships if we release today |
+| Development      | unset        | in       | what we are building           |
+
+Preview matches production **deliberately**. A preview carrying an unreleased
+feature cannot answer the one question a preview exists for: if we cut a
+release right now, for a hotfix say, what goes out?
+
+`WORKSHOP_IN_BUILD=1` overrides it. CI sets it on a PR labelled `workshop`, and
+that is how the feature gets a review URL; production gets it on launch day. No
+code change either time. An unlabelled PR leaves the variable **undefined**
+rather than empty, so that the Vercel environment value governs once it exists
+— otherwise launch would turn Workshop on in production while every preview
+overrode it back off. `CI: Website Build` builds the excluded shape too, and
+asserts the directory is gone **and** the build exited 0.
+
+### Two ways the gate has already broken
+
+Both cost a debugging session. Do not reintroduce them.
+
+- **`astro:routes:resolved` cannot stop a route being generated.** The hook
+  reports resolved routes; mutating the array changes nothing. The gate removes
+  emitted output at `astro:build:done` instead, and throws if it is still there.
+- **No dynamic `import()` inside `astro:build:done`.** By that hook Vite's
+  module runner is closed and it throws "Vite module runner has been closed".
+  Import statically.
+
+The second one is the more instructive failure: it removed the output correctly
+and _then_ failed the build, so page counts looked right while every deploy
+died. **Verify a build by counting emitted files _and_ checking the exit code.**
+Either alone will lie to you.
+
+The 268 model pages come from `getStaticPaths`, so they can be skipped at the
+source; only `/workshop/index.astro` is a static route that has to be removed
+after the fact.
+
+### What the gate does not keep out
+
+The gate removes **routes**. Three things leak past it into a release build,
+all measured against main at the same commit our branch contains:
+
+| Leak                                                  | Where               | Size           | Reachable?                               |
+| ----------------------------------------------------- | ------------------- | -------------- | ---------------------------------------- |
+| 56 Tailwind utilities, 0 removed                      | `BaseLayout.*.css`  | +336 B gzipped | no — no page on main carries the classes |
+| `WorkshopCatalog.*.js`, `WorkshopPlayground.*.js`     | `_website/`         | 16.7 KB        | no — imported by nothing                 |
+| 27 `workshop.*` strings ("Comfy Workshop", hero copy) | `translations.*.js` | +821 B gzipped | **yes** — every page's islands import it |
+
+Why each happens:
+
+- **Tailwind v4 scans source, not built routes.** `src/styles/global.css` is
+  `@import 'tailwindcss'` with no `@source`, so a gated component still
+  contributes its classes. ON and OFF builds produce byte-identical CSS.
+- **Islands are compiled for pages that are then deleted.** The gate runs at
+  `astro:build:done`; by then the model pages' islands are already chunks.
+  Returning `[]` from `getStaticPaths` when the gate is off would stop both the
+  268 renders and their chunks at the source.
+- **`translations.ts` is one map, bundled whole into every island.** Any key
+  added for an unreleased feature ships in production JS immediately. This is
+  the only one of the three a user actually receives, and it is also why the
+  chunk is 474 KB / 125 KB gzipped for every visitor regardless of feature.
+
+None of these changes what an existing page renders — nothing on main
+references the added classes, chunks or keys. They are byte changes to shared
+assets, and a small text leak of the feature's existence. Know they exist
+before claiming "release shape == main".
+
+### The catalog
+
+`src/content/workshop-models.json` — one packed JSON array, a line per model,
+generated by `pnpm generate:workshop-catalog <partner-client.mjs> <ref>` from a
+**private** repo's bundle, which is why it is committed rather than fetched.
+
+Loaded with Astro's `file()` loader, not `glob()`: `file()` takes an array of
+objects with unique `id`s, which these have. Consumers read `entry.data` and
+never the collection's generated id, so the loader is free to change.
+
+### The single most expensive thing to know
+
+**A model's `parameters` describe a normalized authoring shape that neither
+backend accepts.** Measured across 259 models: **0** request bodies match the
+form's shape, **0** request URLs are derivable from the model `id`, and 106
+remap the id to a string absent from the catalog.
+
+```text
+our form  {"model":"vertexai/gemini-2.5-flash-image","prompt":"a red cube"}
+the wire  {"contents":[…],"generationConfig":{…},"systemInstruction":{…}}
+```
+
+Both Comfy Router and `/proxy/*` want the partner's raw native protocol, and
+the partner-node bundle is the translator between the two — request builders,
+media strategies, per-provider poll loops, response normalization.
+
+Consequences to hold on to:
+
+- **A 200 does not mean the input arrived.** Router accepts
+  `bfl/flux-kontext-max` while silently dropping the reference image, and names
+  Ideogram's field `text_prompt`, so a `prompt` is discarded and the run
+  succeeds with the wrong result. Treat any "just post the form" change as
+  wrong until proven otherwise.
+- **Only 14 of ~200 Router models have an authored input schema**, so Router
+  cannot be the source of these forms today.
+- **BFL results are billed and then lost** (FE-2032). Polling bypasses the
+  proxy and races a hardcoded region list `["us1","us2","us3","us4","eu1"]`;
+  `eu2` appears nowhere in the bundle, so an `eu2` job is unreachable. This
+  affects platform.comfy.org too, not just here.

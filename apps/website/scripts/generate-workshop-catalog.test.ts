@@ -55,4 +55,54 @@ describe('buildWorkshopCatalog', () => {
       'Duplicate partner model id'
     )
   })
+
+  it('rejects distinct ids that map to the same route', () => {
+    expect(() =>
+      buildWorkshopCatalog([
+        { ...validModel, id: 'provider--model/x' },
+        { ...validModel, id: 'provider/model--x' }
+      ])
+    ).toThrow('Duplicate Workshop slug')
+  })
+
+  it('refuses input JSON cannot round-trip', () => {
+    // z.unknown() accepted these and JSON.stringify then changed them:
+    // a nested undefined disappears, NaN and Infinity become null. The
+    // generator would have committed data its own validation never saw.
+    // The message names the offending model and the exact field path.
+    expect(() =>
+      buildWorkshopCatalog([{ ...validModel, parameters: { nan: Number.NaN } }])
+    ).toThrow(/index 0 \(provider\/model-v1\): parameters\.nan/)
+
+    expect(() =>
+      buildWorkshopCatalog([
+        { ...validModel, parameters: { inf: Number.POSITIVE_INFINITY } }
+      ])
+    ).toThrow(/index 0 \(provider\/model-v1\): parameters\.inf/)
+  })
+
+  it('reports a malformed element instead of throwing on property access', () => {
+    // A blind `as Record` cast used to make this a bare TypeError before the
+    // schema ever ran, losing the index and the field name.
+    expect(() => buildWorkshopCatalog([null])).toThrow(
+      /Invalid partner model at index 0/
+    )
+    expect(() => buildWorkshopCatalog([42])).toThrow(
+      /Invalid partner model at index 0/
+    )
+  })
+
+  it('produces the same lexically ordered output for every input order', () => {
+    const models = [
+      { ...validModel, id: 'p/z', display_name: 'Z' },
+      { ...validModel, id: 'p/ae', display_name: 'A' }
+    ]
+    expect(buildWorkshopCatalog(models).map((m) => m.id)).toEqual([
+      'p/ae',
+      'p/z'
+    ])
+    expect(buildWorkshopCatalog(models.toReversed())).toEqual(
+      buildWorkshopCatalog(models)
+    )
+  })
 })

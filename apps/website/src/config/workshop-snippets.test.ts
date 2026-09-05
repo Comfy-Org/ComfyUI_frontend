@@ -1,8 +1,8 @@
+import { execFileSync } from 'node:child_process'
 import { describe, expect, it } from 'vitest'
 
 import type { WorkshopField } from './workshop-detail'
-import { defaultWorkshopValues } from './workshop-detail'
-import { buildWorkshopInput, buildRouterSnippet } from './workshop-snippets'
+import { buildWorkshopInput, buildWorkshopSnippet } from './workshop-snippets'
 
 const fields: WorkshopField[] = [
   {
@@ -30,6 +30,26 @@ const fields: WorkshopField[] = [
     accept: 'image'
   }
 ]
+
+const promptOnly = [
+  {
+    kind: 'text' as const,
+    name: 'prompt',
+    label: 'Prompt',
+    required: true,
+    multiline: true,
+    valueType: 'string' as const
+  }
+]
+
+function executeWithStubCurl(command: string): string[] {
+  const output = execFileSync(
+    'bash',
+    ['-c', `curl() { printf '%s\\0' "$@"; }\n${command}`],
+    { encoding: 'utf8' }
+  )
+  return output.split('\0').filter(Boolean)
+}
 
 describe('Workshop snippets', () => {
   it('builds Router input and groups media roles', () => {
@@ -68,19 +88,11 @@ describe('Workshop snippets', () => {
     })
   })
 
-  it('uses generated defaults', () => {
-    expect(defaultWorkshopValues(fields)).toEqual({
-      prompt: undefined,
-      enhance: true,
-      media_image: undefined
-    })
-  })
-
   it.for(['typescript', 'python', 'http'] as const)(
     'builds the %s snippet from the current values',
     (language) => {
       expect(
-        buildRouterSnippet(language, 'bfl/flux-3', fields, {
+        buildWorkshopSnippet(language, 'bfl/flux-3', fields, {
           prompt: 'A red fox',
           enhance: true
         })
@@ -102,5 +114,16 @@ describe('Workshop snippets', () => {
     expect(buildWorkshopInput(complex, { inputs: '[{"text":"Hi"}]' })).toEqual({
       inputs: [{ text: 'Hi' }]
     })
+  })
+
+  it('preserves an apostrophe in the HTTP request payload', () => {
+    const snippet = buildWorkshopSnippet('http', 'bfl/flux-2-pro', promptOnly, {
+      prompt: "don't stop"
+    })
+    const args = executeWithStubCurl(snippet)
+    const dataIndex = args.indexOf('--data')
+
+    expect(dataIndex).toBeGreaterThan(-1)
+    expect(JSON.parse(args[dataIndex + 1])).toEqual({ prompt: "don't stop" })
   })
 })
