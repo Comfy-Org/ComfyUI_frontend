@@ -1,6 +1,7 @@
 import { computed, onBeforeUnmount, readonly, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
+import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { createUuidv4 } from '@/utils/uuid'
@@ -293,6 +294,8 @@ export function useAgentCrdtFollower(
   const SUBSCRIBE_RETRY_MAX_ATTEMPTS = 6
   let subscribeRetryTimer: ReturnType<typeof setTimeout> | null = null
   let subscribeRetryAttempt = 0
+  let subscribeRetryStartedAt: number | null = null
+  let subscribeRetryFailureReported = false
 
   // The recency heartbeat: armed only while a subscribe is CONFIRMED (bound +
   // healthy by definition), slid forward by every doc-scoped frame, cancelled
@@ -300,6 +303,15 @@ export function useAgentCrdtFollower(
   // `resubscribe()` (not `reconcile()`, which no-ops while intent equals
   // reality - and a stale channel's intent DOES equal reality).
   let staleProbeTimer: ReturnType<typeof setTimeout> | null = null
+
+  // BE-9740 (started leg): the last moment a doc-scoped frame confirmed the
+  // channel was alive. `onReconnected` diffs against this to report how long
+  // the follower was actually offline, not just how long since mount.
+  let lastActivityAt: number | null = null
+  let reconnectAttempt = 0
+  const markActivity = (): void => {
+    lastActivityAt = performance.now()
+  }
 
   // FEC-5: `Date.now()` of the last persisted-record write by this instance.
   // A confirmed subscribe always writes; doc-scoped frames re-stamp the expiry
@@ -342,13 +354,46 @@ export function useAgentCrdtFollower(
       subscribeRetryTimer = null
     }
     subscribeRetryAttempt = 0
+    subscribeRetryStartedAt = null
+    subscribeRetryFailureReported = false
+  }
+
+  const reportSubscribeRetryExhausted = (): void => {
+    if (
+      subscribeRetryFailureReported ||
+      subscribeRetryAttempt < SUBSCRIBE_RETRY_MAX_ATTEMPTS
+    )
+      return
+    // The pending timer here is the final attempt's answer deadline.
+    if (subscribeRetryTimer !== null) {
+      clearTimeout(subscribeRetryTimer)
+      subscribeRetryTimer = null
+    }
+    subscribeRetryFailureReported = true
+    useTelemetry()?.trackAgentReconnectFailed({
+      attempt: subscribeRetryAttempt,
+      error_class: 'subscription_refused',
+      retryable: true,
+      reconnect_duration_ms: Math.max(
+        0,
+        Math.round(
+          performance.now() - (subscribeRetryStartedAt ?? performance.now())
+        )
+      )
+    })
   }
 
   const scheduleSubscribeRetry = (): void => {
+    // A refusal after the final attempt is the exhaustion signal itself; it
+    // must win over the answer deadline armed below.
+    if (subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) {
+      reportSubscribeRetryExhausted()
+      return
+    }
     if (subscribeRetryTimer !== null) return
-    if (subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) return
     const target = subscribedWorkflowId.value
     if (target === null) return
+    subscribeRetryStartedAt ??= performance.now()
     const delay = SUBSCRIBE_RETRY_BASE_MS * 2 ** subscribeRetryAttempt
     subscribeRetryAttempt += 1
     subscribeRetryTimer = setTimeout(() => {
@@ -360,6 +405,18 @@ export function useAgentCrdtFollower(
         workflowId: target
       })
       bridge.resubscribe()
+      // The final attempt has no retry to reveal a silently dropped answer,
+      // so treat silence for one more backoff step as a refusal. A confirmed
+      // subscribe cancels this through clearSubscribeRetry.
+      if (subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) {
+        subscribeRetryTimer = setTimeout(
+          () => {
+            subscribeRetryTimer = null
+            reportSubscribeRetryExhausted()
+          },
+          SUBSCRIBE_RETRY_BASE_MS * 2 ** subscribeRetryAttempt
+        )
+      }
     }, delay)
   }
 
@@ -373,6 +430,8 @@ export function useAgentCrdtFollower(
     if (ok) {
       clearSubscribeRetry()
       armStaleProbe()
+      reconnectAttempt = 0
+      markActivity()
       // FE-1902 (poc-3): only a CONFIRMED binding is worth rebinding to after
       // a remount — persist on ok, not on intent.
       if (subscribedWorkflowId.value !== null)
@@ -404,6 +463,7 @@ export function useAgentCrdtFollower(
       return
     }
     if (staleProbeTimer !== null) armStaleProbe()
+    markActivity()
     refreshPersistedDocId()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
@@ -537,6 +597,21 @@ export function useAgentCrdtFollower(
     )
   }
   const onReconnected: EventListener = () => {
+    // Only a workflow already bound to this follower has a connection to
+    // lose; a reconnect firing before any subscribe intent exists is the
+    // initial-open case, not a loss/recovery, and is not reported.
+    if (subscribedWorkflowId.value !== null) {
+      reconnectAttempt += 1
+      useTelemetry()?.trackAgentReconnectStarted({
+        disconnect_class: 'socket_reconnect',
+        attempt: reconnectAttempt,
+        last_seen_version: bridge.lastSequence,
+        offline_duration_ms:
+          lastActivityAt === null
+            ? null
+            : Math.max(0, Math.round(performance.now() - lastActivityAt))
+      })
+    }
     connected.value = false
     clearStaleProbe()
     recordDevEvent('reconnected', null)

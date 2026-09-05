@@ -54,6 +54,11 @@ const adapterState = vi.hoisted(() => ({
   destroy: vi.fn()
 }))
 
+const telemetryState = vi.hoisted(() => ({
+  trackAgentReconnectFailed: vi.fn(),
+  trackAgentReconnectStarted: vi.fn()
+}))
+
 const materializerState = vi.hoisted(() => ({
   reconcileAgentAdapters: vi.fn(() => [] as NodeId[])
 }))
@@ -125,6 +130,9 @@ vi.mock('./devPanelLog', () => ({
 }))
 
 vi.mock('@/scripts/api', () => ({ api: apiState.api }))
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => telemetryState
+}))
 vi.mock('@/scripts/app', () => ({ app: { graph: null, canvas: null } }))
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({ userId: 'user-1' })
@@ -244,6 +252,7 @@ describe('useAgentCrdtFollower', () => {
     dispatchFrame('doc_subscribed', { ok: false })
     vi.advanceTimersByTime(60_000)
     expect(bridge().resubscribe).toHaveBeenCalledTimes(6)
+    expect(telemetryState.trackAgentReconnectFailed).toHaveBeenCalledOnce()
     unmount()
   })
 
@@ -258,6 +267,98 @@ describe('useAgentCrdtFollower', () => {
 
     expect(bridge().resubscribe).not.toHaveBeenCalled()
     expect(status().connected).toBe(true)
+    unmount()
+  })
+
+  it('reports retry exhaustion exactly once with normalized metadata', () => {
+    vi.useFakeTimers({ toFake: ['performance', 'setTimeout', 'clearTimeout'] })
+    vi.setSystemTime(1_000)
+    const { unmount } = mountFollower('wf-1')
+
+    for (let attempt = 0; attempt < 6; attempt++) {
+      dispatchFrame('doc_subscribed', { ok: false })
+      vi.advanceTimersByTime(500 * 2 ** attempt)
+    }
+    // The final attempt was sent but not yet answered: no verdict yet.
+    expect(telemetryState.trackAgentReconnectFailed).not.toHaveBeenCalled()
+
+    dispatchFrame('doc_subscribed', { ok: false })
+    dispatchFrame('doc_subscribed', { ok: false })
+    vi.advanceTimersByTime(60_000)
+
+    expect(telemetryState.trackAgentReconnectFailed).toHaveBeenCalledOnce()
+    expect(telemetryState.trackAgentReconnectFailed).toHaveBeenCalledWith({
+      attempt: 6,
+      error_class: 'subscription_refused',
+      retryable: true,
+      reconnect_duration_ms: 31_500
+    })
+    unmount()
+  })
+
+  it('does not report exhaustion when the final attempt is confirmed', () => {
+    vi.useFakeTimers()
+    const { unmount, status } = mountFollower('wf-1')
+
+    for (let attempt = 0; attempt < 6; attempt++) {
+      dispatchFrame('doc_subscribed', { ok: false })
+      vi.advanceTimersByTime(500 * 2 ** attempt)
+    }
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(6)
+
+    dispatchFrame('doc_subscribed', { ok: true })
+    vi.advanceTimersByTime(60_000)
+
+    expect(telemetryState.trackAgentReconnectFailed).not.toHaveBeenCalled()
+    expect(status().connected).toBe(true)
+    unmount()
+  })
+
+  it('reports exhaustion when the final attempt is never answered', () => {
+    vi.useFakeTimers({ toFake: ['performance', 'setTimeout', 'clearTimeout'] })
+    vi.setSystemTime(1_000)
+    const { unmount } = mountFollower('wf-1')
+
+    for (let attempt = 0; attempt < 6; attempt++) {
+      dispatchFrame('doc_subscribed', { ok: false })
+      vi.advanceTimersByTime(500 * 2 ** attempt)
+    }
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(6)
+
+    // Silence for one more backoff step (500 * 2 ** 6) counts as a refusal.
+    vi.advanceTimersByTime(32_000 - 1)
+    expect(telemetryState.trackAgentReconnectFailed).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(1)
+
+    expect(telemetryState.trackAgentReconnectFailed).toHaveBeenCalledOnce()
+    expect(telemetryState.trackAgentReconnectFailed).toHaveBeenCalledWith(
+      expect.objectContaining({ attempt: 6, reconnect_duration_ms: 63_500 })
+    )
+    unmount()
+  })
+
+  it('preserves the retry budget across reconnects but leaves bridge recovery active', () => {
+    vi.useFakeTimers()
+    const { unmount } = mountFollower('wf-1')
+
+    for (let attempt = 0; attempt < 6; attempt++) {
+      dispatchFrame('doc_subscribed', { ok: false })
+      vi.advanceTimersByTime(500 * 2 ** attempt)
+    }
+    dispatchFrame('doc_subscribed', { ok: false })
+    expect(telemetryState.trackAgentReconnectFailed).toHaveBeenCalledWith(
+      expect.objectContaining({ retryable: true })
+    )
+
+    bridge().resubscribe.mockClear()
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    dispatchFrame('doc_subscribed', { ok: false })
+    vi.advanceTimersByTime(60_000)
+    expect(bridge().resubscribe).toHaveBeenCalledOnce()
+
+    bridge().reconcile.mockClear()
+    apiState.target.dispatchEvent(new Event('status'))
+    expect(bridge().reconcile).toHaveBeenCalledOnce()
     unmount()
   })
 
@@ -442,6 +543,59 @@ describe('useAgentCrdtFollower', () => {
     expect(status().connected).toBe(false)
     expect(bridge().resubscribe).toHaveBeenCalled()
     expect(adapterState.clearForReset).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  it('reports reconnect started exactly once per socket reconnect, retaining lastSequence', () => {
+    vi.useFakeTimers({ toFake: ['performance', 'setTimeout', 'clearTimeout'] })
+    vi.setSystemTime(1_000)
+    const { unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+
+    vi.advanceTimersByTime(5_000)
+    apiState.target.dispatchEvent(new Event('reconnected'))
+
+    expect(telemetryState.trackAgentReconnectStarted).toHaveBeenCalledOnce()
+    expect(telemetryState.trackAgentReconnectStarted).toHaveBeenCalledWith({
+      disconnect_class: 'socket_reconnect',
+      attempt: 1,
+      last_seen_version: 41,
+      offline_duration_ms: 5_000
+    })
+    unmount()
+  })
+
+  it('counts successive reconnect attempts and resets after a confirmed subscribe', () => {
+    vi.useFakeTimers()
+    const { unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    expect(telemetryState.trackAgentReconnectStarted).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ attempt: 1 })
+    )
+    expect(telemetryState.trackAgentReconnectStarted).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ attempt: 2 })
+    )
+
+    dispatchFrame('doc_subscribed', { ok: true })
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    expect(telemetryState.trackAgentReconnectStarted).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({ attempt: 1 })
+    )
+    unmount()
+  })
+
+  it('does not report reconnect started when no subscribe intent exists yet', () => {
+    const { unmount } = mountFollower(null)
+
+    apiState.target.dispatchEvent(new Event('reconnected'))
+
+    expect(telemetryState.trackAgentReconnectStarted).not.toHaveBeenCalled()
     unmount()
   })
 

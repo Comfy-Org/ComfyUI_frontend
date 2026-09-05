@@ -580,6 +580,18 @@ export interface AgentWorkflowAppliedMetadata extends Record<string, unknown> {
   workflow_id: string
   target: 'active_tab_switch' | 'active_tab_open'
 }
+export interface AgentReconnectFailedMetadata extends Record<string, unknown> {
+  attempt: number
+  error_class: 'subscription_refused'
+  retryable: boolean
+  reconnect_duration_ms: number
+}
+export interface AgentReconnectStartedMetadata extends Record<string, unknown> {
+  disconnect_class: 'socket_reconnect'
+  attempt: number
+  last_seen_version: number
+  offline_duration_ms: number | null
+}
 
 /**
  * Widget (input/parameter) favorite toggle tracking metadata.
@@ -1093,6 +1105,8 @@ export interface TelemetryProvider {
   trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
   trackAgentAttachButtonClicked?(): void
   trackAgentWorkflowApplied?(metadata: AgentWorkflowAppliedMetadata): void
+  trackAgentReconnectFailed?(metadata: AgentReconnectFailedMetadata): void
+  trackAgentReconnectStarted?(metadata: AgentReconnectStartedMetadata): void
 
   // Right side panel widget favorite events
   trackWidgetFavoriteToggled?(metadata: WidgetFavoriteToggledMetadata): void
@@ -1259,6 +1273,8 @@ export const TelemetryEvents = {
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',
   AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
   AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',
+  AGENT_RECONNECT_FAILED: 'app:agent_reconnect_failed',
+  AGENT_RECONNECT_STARTED: 'app:agent_reconnect_started',
 
   // Right Side Panel Widget Favorites
   WIDGET_FAVORITE_TOGGLED: 'app:widget_favorite_toggled',
