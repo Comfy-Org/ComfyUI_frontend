@@ -109,6 +109,12 @@ describe('useNodeBadge', () => {
     await nextTick()
 
     expect(canvas.setDirty).not.toHaveBeenCalled()
+
+    canvasReady = true
+    badgeMode.value = false
+    await nextTick()
+
+    expect(canvas.setDirty).toHaveBeenCalledWith(true, true)
     component.unmount()
   })
 
