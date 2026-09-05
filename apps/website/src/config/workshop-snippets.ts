@@ -1,8 +1,7 @@
 import type { WorkshopField, WorkshopFormValues } from './workshop-detail'
 export type WorkshopSnippetLanguage = 'typescript' | 'python' | 'http'
 
-/** The languages Router can be called in. Another target may offer fewer. */
-export const ROUTER_SNIPPET_LANGUAGES: readonly WorkshopSnippetLanguage[] = [
+export const WORKSHOP_SNIPPET_LANGUAGES: readonly WorkshopSnippetLanguage[] = [
   'typescript',
   'python',
   'http'
@@ -73,11 +72,7 @@ function shellSingleQuote(value: string): string {
   return value.replaceAll("'", `'\\''`)
 }
 
-/**
- * Router's own snippets. Reached through `runTargetFor` rather than called
- * directly, so a page never has to know which backend it is describing.
- */
-export function buildRouterSnippet(
+export function buildWorkshopSnippet(
   language: WorkshopSnippetLanguage,
   modelId: string,
   fields: readonly WorkshopField[],

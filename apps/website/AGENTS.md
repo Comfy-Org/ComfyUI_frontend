@@ -1,11 +1,10 @@
 # comfy.org (`apps/website`)
 
 The marketing site: **Astro, statically built, with Vue islands.** It is not the
-ComfyUI frontend. The repository-root `AGENTS.md` describes that other
-application — Vue 3 Composition API throughout, litegraph, the ECS and CRDT
-layers, `browser_tests/` — and **none of it governs this directory.** Read it
-for repo-wide conventions (package manager, commit format, PR process) and
-ignore its architecture sections here.
+ComfyUI frontend. The repository-root `AGENTS.md` and linked guidance still
+apply, including package management, security, testing, Git and ADR rules.
+This file adds the website-specific context below. The graph-editor architecture
+applies when a change touches that app; the website itself uses Astro pages.
 
 What is different, concretely:
 
@@ -19,12 +18,9 @@ What is different, concretely:
 
 ## Developing from main
 
-Every PR targets `main`. Branches may be long-running — the largest comparable
-feature ran 100 commits before landing — but they land as **one PR to main**,
-not as a chain of PRs each reviewing the one below. The eight closest website
-features in the history are all `base=main`, between 509 and 7,046 lines,
-including a numbered series (`website/02-…`, `03-`, `06-`) whose slices each
-went to main independently.
+Follow the repository's `CONTRIBUTING.md` for branch and review policy.
+Workshop currently uses stacked PRs; review each against its declared base
+and verify the combined release build before landing changes on main.
 
 **What is on main is what is released.** A push to `main` runs
 `vercel build --prod` and deploys comfy.org. There is no staging environment
@@ -68,17 +64,16 @@ the discipline it demands:
 - Rely on a runtime flag to keep pages off the server. This is a static build:
   a PostHog flag can hide a link in the browser, but the HTML is already
   deployed. Runtime flags gate _visibility_; only the build gates _existence_.
-- Merge a feature branch into another feature branch as a review strategy.
 
 ## Reviewing a change here
 
-Work top-down and stop at the first tier with a real finding. Every item says
+Work top-down, checking all applicable tiers even when one has a finding. Every item says
 what to check, how, and what failure looks like. "How" is a command or a file;
 if you cannot run it, say so rather than guess. The probes are written to be
 followed literally and to come back clean on the current tree — where one
 names a known hit, that hit is documented beside it. A probe that returns
-something not explained here is a finding; a probe that returns exactly what
-is explained here is not.
+something not explained here is a lead to investigate, not automatically a
+finding. Confirm the reachable behavior and impact before reporting it.
 
 Every command below runs from `apps/website`. From anywhere else, prefix
 `pnpm` commands with `--filter @comfyorg/website` and paths with
@@ -90,8 +85,9 @@ ComfyUI app instead and reports nothing useful.
 A push to main deploys comfy.org. Anything here is a blocker.
 
 - **Unreleased feature reachable in a release build.** _How:_
-  `WORKSHOP_IN_BUILD=0 pnpm build; echo exit=$?` then `test ! -d dist/workshop`
-  and `grep -rl '/workshop' dist --include='*.html' | wc -l` → 0.
+  `WORKSHOP_IN_BUILD=0 pnpm build && test ! -d dist/workshop` must exit 0.
+  Only after that succeeds, inspect HTML links with
+  `rg -n 'href=["\x27]/workshop(/|["\x27])' dist -g '*.html'` (no matches expected).
   _Failure:_ exit ≠ 0, the directory exists, or any page links to it. Check
   the exit code first: a gate that removes its output and then throws is
   correct by page count and still fails every deploy.
@@ -240,7 +236,10 @@ CI then runs validators that read `dist/` and exit non-zero: `validate:jsonld`,
 page the build never produced, which is the usual symptom of a route quietly
 disappearing.
 
-For scale: `main` builds **738 pages**; with Workshop included it is 1,007.
+For scale, the September 4 baseline built **738 HTML pages** with
+`WORKSHOP_IN_BUILD=0 pnpm build` from `apps/website`; the then-current Workshop
+stack built 1,007 with `WORKSHOP_IN_BUILD=1`. Counts change as main gains pages;
+compare builds at a recorded commit instead of treating these as fixed targets.
 
 ### Comparing a build to main
 
@@ -325,9 +324,9 @@ Two entries are needed for every such file, and forgetting either is silent:
 - `.oxfmtrc.json` → `ignorePatterns`, or the formatter unpacks it on the next
   commit and every line churns
 
-**Generators must be deterministic and idempotent.** Compare parsed content
-rather than bytes before writing, so a re-run with no upstream change rewrites
-nothing. Never sort committed output with `localeCompare` — it is
+**Generators must be deterministic and idempotent.** Compare canonical output
+before writing, so a re-run with no upstream change rewrites nothing.
+Never sort committed output with `localeCompare` — it is
 host-dependent (`p/ä,p/z` under `LANG=C`, `p/z,p/ä` under `LANG=sv_SE.UTF-8`)
 and churns the diff by locale. Use a plain lexical comparison.
 
@@ -361,7 +360,7 @@ branch commit messages never reach main's history.
 
 Main's required checks are exactly:
 
-```
+```text
 cla-assistant · test · lint-and-format · e2e-status · website-e2e
 ```
 
@@ -496,7 +495,7 @@ backend accepts.** Measured across 259 models: **0** request bodies match the
 form's shape, **0** request URLs are derivable from the model `id`, and 106
 remap the id to a string absent from the catalog.
 
-```
+```text
 our form  {"model":"vertexai/gemini-2.5-flash-image","prompt":"a red cube"}
 the wire  {"contents":[…],"generationConfig":{…},"systemInstruction":{…}}
 ```
