@@ -264,6 +264,44 @@ describe('assembleConversation', () => {
       for (const key of OP_ENVELOPE_KEYS) expect(op).not.toHaveProperty(key)
   })
 
+  it('accepts a node the ops delete and then add back', () => {
+    const { receipt } = assembleConversation(
+      input({
+        rows: rows({
+          parents: [
+            parent({
+              result: {
+                ok: true,
+                data: {
+                  ops: [
+                    { op: 'delete_node', op_id: 'op-1', node_id: 4 },
+                    {
+                      op: 'add_node',
+                      op_id: 'op-2',
+                      node_id: 4,
+                      class_type: 'KSampler'
+                    }
+                  ]
+                }
+              },
+              children: [
+                { op_id: 'op-1', status: 'ok' },
+                { op_id: 'op-2', status: 'ok' }
+              ]
+            })
+          ],
+          draft: { nodes: [{ id: 3 }, { id: 4 }], links: [] }
+        })
+      })
+    )
+
+    expect(receipt).toMatchObject({
+      added_nodes: 0,
+      deleted_nodes: 0,
+      unexplained_draft_nodes: 0
+    })
+  })
+
   it('refuses a tool call whose terminal frame arrived twice', () => {
     const doubled = frames()
     doubled.splice(
@@ -634,7 +672,7 @@ describe('assembleConversation', () => {
       assembleConversation(
         input({ rows: rows({ draft: { nodes: [{ id: 3 }], links: [] } }) })
       )
-    ).toThrow('lacks seed node ids')
+    ).toThrow('lacks node ids')
   })
 
   it('refuses a draft that still holds a deleted node', () => {
