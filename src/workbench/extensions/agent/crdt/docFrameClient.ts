@@ -122,7 +122,7 @@ interface WireData {
   op_id?: unknown
 }
 
-function decodeBase64(value: string): Uint8Array | null {
+export function decodeBase64(value: string): Uint8Array | null {
   if (value === '' || value.length % 4 !== 0) return null
   const padding = value.endsWith('==') ? 2 : value.endsWith('=') ? 1 : 0
   if (value.length > MAX_DOC_UPDATE_B64_LENGTH) return null

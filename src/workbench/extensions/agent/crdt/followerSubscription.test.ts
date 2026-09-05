@@ -24,7 +24,7 @@ import { describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import type { DocFrameTransport, DocOp, DocUpdate } from './docFrameClient'
-import { DocFrameClient, encodeBase64 } from './docFrameClient'
+import { DocFrameClient, decodeBase64, encodeBase64 } from './docFrameClient'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 
@@ -316,6 +316,132 @@ describe('FE-TEARDOWN-1 — teardown completes with a dead socket', () => {
     expect(projected).toHaveLength(0)
     expect(second.projected).toHaveLength(1)
     warn.mockRestore()
+  })
+})
+
+describe('s2-2 — cold subscribe and warm reconnect remain distinct', () => {
+  it('a cold mount sends an empty state vector and pulls the full host state', () => {
+    const { transport, bridge } = wire()
+    const host = mint({ nodes: [], links: [] }, { types: {} })
+    const first = new Y.Map<unknown>()
+    first.set('type', 'LoadImage')
+    const second = new Y.Map<unknown>()
+    second.set('type', 'SaveImage')
+    nodesMap(host).set('1', first)
+    nodesMap(host).set('2', second)
+
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+
+    const subscribes = transport.framesOfType('doc_subscribe') as {
+      data: { state_vector_b64: string }
+    }[]
+    expect(subscribes).toHaveLength(1)
+    const requestedVector = decodeBase64(subscribes[0].data.state_vector_b64)
+    expect(requestedVector).not.toBeNull()
+    if (requestedVector === null) return
+    expect(requestedVector).toEqual(Y.encodeStateVector(new Y.Doc()))
+
+    const fullState = Y.encodeStateAsUpdate(host, requestedVector)
+    transport.deliver('doc_update', docUpdateFrame(fullState))
+
+    expect(nodesMap(bridge.follower.doc).toJSON()).toEqual(
+      nodesMap(host).toJSON()
+    )
+    expect(bridge.follower.updatesApplied).toBe(1)
+  })
+
+  it('a warm reconnect requests and applies only missed state without re-applying the catch-up', () => {
+    const { transport, bridge } = wire()
+    const stale: number[] = []
+    bridge.addEventListener('doc_stale', (event) => {
+      stale.push((event as CustomEvent<{ seq: number }>).detail.seq)
+    })
+    const host = mint({ nodes: [], links: [] }, { types: {} })
+    const node = new Y.Map<unknown>()
+    node.set('type', 'LoadImage')
+    node.set('pos', [10, 20])
+    nodesMap(host).set('1', node)
+
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(Y.encodeStateAsUpdate(host), WORKFLOW_ID, 1)
+    )
+    const retained = bridge.follower
+    expect(bridge.lastSequence).toBe(1)
+
+    node.set('pos', [30, 40])
+    const missedNode = new Y.Map<unknown>()
+    missedNode.set('type', 'PreviewImage')
+    nodesMap(host).set('2', missedNode)
+
+    bridge.resubscribe()
+    // The doc is retained; only the seq baseline restarts with the subscribe.
+    expect(bridge.lastSequence).toBe(0)
+    const subscribes = transport.framesOfType('doc_subscribe') as {
+      data: { state_vector_b64: string }
+    }[]
+    expect(subscribes).toHaveLength(2)
+    const resumeVector = decodeBase64(subscribes[1].data.state_vector_b64)
+    expect(resumeVector).not.toBeNull()
+    if (resumeVector === null) return
+    expect(resumeVector).toEqual(retained.stateVector())
+
+    // Wire order: the host acks the resubscribe, then sends the catch-up.
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 2
+    })
+    expect(bridge.lastSequence).toBe(2)
+
+    const missedState = Y.encodeStateAsUpdate(host, resumeVector)
+    expect(missedState).not.toEqual(Y.encodeStateAsUpdate(host))
+    transport.deliver('doc_update', docUpdateFrame(missedState, WORKFLOW_ID, 2))
+
+    expect(bridge.follower).toBe(retained)
+    expect(nodesMap(bridge.follower.doc).toJSON()).toEqual(
+      nodesMap(host).toJSON()
+    )
+    expect(bridge.follower.updatesApplied).toBe(2)
+    expect(bridge.lastSequence).toBe(2)
+
+    transport.deliver('doc_update', docUpdateFrame(missedState, WORKFLOW_ID, 2))
+    expect(bridge.follower.updatesApplied).toBe(2)
+    expect(stale).toEqual([2])
+  })
+
+  it('a channel-close refusal resubscribes from the retained state vector', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
+    const retained = bridge.follower
+    const resumeVector = encodeBase64(retained.stateVector())
+    expect(bridge.lastSequence).toBe(1)
+
+    // `resubscribe` is the relay's channel-close code (doc_relay.go
+    // handleWorkflowChannelClose): the fanout was interrupted and the follower
+    // must subscribe again with its state vector.
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: false,
+      code: 'resubscribe'
+    })
+    bridge.reconcile()
+
+    const subscribes = transport.framesOfType('doc_subscribe') as {
+      data: { state_vector_b64: string }
+    }[]
+    expect(subscribes).toHaveLength(2)
+    expect(subscribes[1].data.state_vector_b64).toBe(resumeVector)
+    expect(bridge.follower).toBe(retained)
+    expect(bridge.follower.updatesApplied).toBe(1)
+    expect(bridge.lastSequence).toBe(0)
   })
 })
 
