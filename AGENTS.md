@@ -226,6 +226,11 @@ When working from a TDD or design doc, record its tradeoffs, alternatives consid
 3. **No god-object growth**: Do not add methods to `LGraphNode`, `LGraphCanvas`, `LGraph`, or `Subgraph`. Extract to systems, stores, or composables.
 4. **Plain data components**: ECS components are plain data objects — no methods, no back-references to parent entities. Behavior belongs in systems (pure functions).
 5. **Extension ecosystem impact**: Changes to entity callbacks (`onConnectionsChange`, `onRemoved`, `onAdded`, `onConnectInput/Output`, `onConfigure`, `onWidgetChanged`), `node.widgets` access, `node.serialize`, or `graph._version++` affect 40+ custom node repos and require migration guidance.
+6. **One spatial authority**: Entity-layout spatial indexes and queries belong behind `layoutStore`. Renderers may cache query results, but must not build parallel QuadTrees or other indexes from layout snapshots. Store-owned derived indexes must stay synchronized for every write path, including remote Yjs updates.
+7. **Signals over version polling**: Consumers subscribe to authoritative store or interaction signals. Version counters are cache keys and diagnostics, not polling APIs; do not add interval scans to discover layout, selection, focus, media, or gesture changes.
+8. **Keep renderer coordination out of entity stores**: DOM measurement readiness, mount queues, debounce timers, and other renderer lifecycle state belong to renderer-scoped services or composables with one explicit owner, not `layoutStore` or another entity-data store.
+9. **Conservative geometry optimizations**: Do not cull child, slot, or link geometry using parent bounds unless containment is explicitly established. Custom-node overrides, absolute slot positions, DOM measurements, and reroutes may place rendered geometry outside entity bounds; uncertain cases must take the exact rendering path.
+10. **Separate decisions from scheduling**: Keep visibility/eligibility decisions pure and independently testable. Mount admission, delayed eviction, backpressure, and cancellation belong in explicit schedulers rather than one timing-heavy composable or store.
 
 ## Common Pitfalls
 
