@@ -650,6 +650,14 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             mutation.node.state.id
           )
           if (mutation.kind === 'reconcileNode' && existing) {
+            for (const input of existing.inputs) {
+              if (
+                '_listenerController' in input &&
+                input._listenerController instanceof AbortController
+              ) {
+                input._listenerController.abort()
+              }
+            }
             nodeStore.updateNode(
               scope,
               mutation.node.state.id,

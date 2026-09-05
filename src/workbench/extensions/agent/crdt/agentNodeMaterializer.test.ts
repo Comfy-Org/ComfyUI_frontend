@@ -966,6 +966,8 @@ describe('reconcileAgentAdapters', () => {
       const promotedWidgetId = instance.inputs[0]?.widgetId
       if (!promotedWidgetId) throw new Error('Missing promoted widgetId')
       expect(useWidgetValueStore().getWidget(promotedWidgetId)?.value).toBe(0)
+      const replacedInputController = instance.inputs[0]?._listenerController
+      expect(replacedInputController?.signal.aborted).toBe(false)
       // A local rename lives in the store only; the reconcile payload still
       // has no `title`, and `configure()` would otherwise reset it.
       instance.title = 'Renamed Instance'
@@ -1000,6 +1002,7 @@ describe('reconcileAgentAdapters', () => {
           opIds: ['op-promoted']
         })
       ).toBe(true)
+      expect(replacedInputController?.signal.aborted).toBe(true)
       expect(reconcileAgentAdapters(graph, definitions)).toEqual([])
 
       expect(graph.getNodeById(toNodeId(1))).toBe(instance)
