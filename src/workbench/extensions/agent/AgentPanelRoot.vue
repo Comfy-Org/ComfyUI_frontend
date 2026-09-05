@@ -20,6 +20,7 @@ import { useFocusNode } from '@/composables/canvas/useFocusNode'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { createGraphMutations } from '@/core/graph/graphMutations'
+import type { GraphMutations } from '@/core/graph/graphMutations'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -49,6 +50,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useGraphDocumentStore } from '@/stores/graphDocumentStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
@@ -125,22 +127,76 @@ const tabActivity = useWorkflowTabActivityStore()
 const CREATING_TAB_MIN_DURATION_MS = 500
 
 const canvasStore = useCanvasStore()
-const graphMutationsByWorkflow = new Map<
-  string,
-  ReturnType<typeof createGraphMutations>
->()
+const graphDocumentStore = useGraphDocumentStore()
+const graphMutationsByWorkflow = new Map<string, GraphMutations>()
+/**
+ * Resolve the live document for a workflow id, creating the registry entry
+ * when none exists. Never captured: a workflow id can be remapped to a new
+ * document after the previous one closes, so callers re-resolve per use.
+ */
+const resolveDocumentId = (workflowId: string) =>
+  graphDocumentStore.resolveWorkflowTarget(workflowId)?.documentId ??
+  graphDocumentStore.createDocument({ workflowId })
+/**
+ * Record every successful write against the target's document so its
+ * revision advances (ADR-0024 dirty tracking). Each method resolves the
+ * document id when the write starts — not at wrapper creation (the workflow
+ * may have been rebound to a new document since) and not at success time
+ * (the write itself can synchronously trigger a rebind, and the mutation
+ * belongs to the document that was bound when the write began).
+ */
+const withMutationTracking = (
+  inner: GraphMutations,
+  workflowId: string
+): GraphMutations => {
+  const tracked = (write: () => boolean): boolean => {
+    const documentId = resolveDocumentId(workflowId)
+    const committed = write()
+    if (committed && documentId) graphDocumentStore.markMutated(documentId)
+    return committed
+  }
+  return {
+    batch: (context, define) => tracked(() => inner.batch(context, define)),
+    addNode: (payload, context) =>
+      tracked(() => inner.addNode(payload, context)),
+    setWidget: (nodeId, name, value, context) =>
+      tracked(() => inner.setWidget(nodeId, name, value, context)),
+    connect: (link, context) => tracked(() => inner.connect(link, context)),
+    deleteNode: (nodeId, removedLinkIds, context) =>
+      tracked(() => inner.deleteNode(nodeId, removedLinkIds, context)),
+    clearSemanticGraph: (context) =>
+      tracked(() => inner.clearSemanticGraph(context))
+  }
+}
 const graphMutations = (workflowId: string) => {
   const existing = graphMutationsByWorkflow.get(workflowId)
   if (existing) return existing
+  // Document identity is early-bound (ADR-0024): the registry entry is
+  // created when the target is first addressed, not at commit time. Commit
+  // scope resolution then records/refreshes the entry's scope, so a target
+  // whose tab is momentarily unresolved still commits into its own document.
+  resolveDocumentId(workflowId)
   const mutations = createGraphMutations({
     getScope() {
+      // No bound tab means no live scope: refuse the write instead of
+      // replaying it against the last remembered scope (the tab may have
+      // been closed, and its ids may be reused when the workflow reopens).
       const rootGraphId = boundTabFor(workflowId)?.activeState?.id
-      return rootGraphId
-        ? {
-            rootGraphId: toRootGraphId(rootGraphId),
-            owningGraphId: toOwningGraphId(rootGraphId)
-          }
+      if (!rootGraphId) return null
+      const documentId = resolveDocumentId(workflowId)
+      const registered = documentId
+        ? (graphDocumentStore.getDocument(documentId)?.scope ?? null)
         : null
+      const scope = {
+        rootGraphId: toRootGraphId(rootGraphId),
+        owningGraphId: toOwningGraphId(rootGraphId)
+      }
+      if (documentId) {
+        if (!registered) graphDocumentStore.hydrateDocument(documentId, scope)
+        else if (registered.rootGraphId !== scope.rootGraphId)
+          graphDocumentStore.rebindScope(documentId, scope)
+      }
+      return scope
     },
     layout: {
       createNode(scope, nodeId, layout, context) {
@@ -181,8 +237,9 @@ const graphMutations = (workflowId: string) => {
       }
     }
   })
-  graphMutationsByWorkflow.set(workflowId, mutations)
-  return mutations
+  const tracked = withMutationTracking(mutations, workflowId)
+  graphMutationsByWorkflow.set(workflowId, tracked)
+  return tracked
 }
 const { focusNodeInstance } = useFocusNode()
 
