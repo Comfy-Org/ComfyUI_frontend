@@ -47,6 +47,7 @@ import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { blankGraph } from '@/scripts/defaultGraph'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
@@ -551,9 +552,6 @@ async function onAgentActiveTab(
       })
       return
     }
-    // A new agent workflow opens as an EMPTY tab: the host minted its doc
-    // server-side (seed-at-bind), and the follower fills the canvas through
-    // the ordinary subscribe catch-up - no snapshot fetch, no draft apply.
     const creatingStartedAt = Date.now()
     tabActivity.setCreating(true)
     const remainingCreatingTime =
@@ -561,7 +559,10 @@ async function onAgentActiveTab(
     if (remainingCreatingTime > 0)
       await new Promise((resolve) => setTimeout(resolve, remainingCreatingTime))
     if (stale()) return
-    const tab = workflowStore.createTemporary(agentTabFilename(data.name))
+    const tab = workflowStore.createNewTemporary(
+      agentTabFilename(data.name),
+      blankGraph
+    )
     tabActivity.setCreating(false)
     await workflowService.openWorkflow(tab)
     if (stale()) {

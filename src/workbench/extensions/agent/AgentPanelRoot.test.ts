@@ -140,6 +140,7 @@ const hostStores = vi.hoisted(() => ({
       graph?: { id?: string }
       id: string | number
     }) => string
+    createNewTemporary: ReturnType<typeof vi.fn>
   },
   canvas: null as unknown as {
     selectedItems: unknown[]
@@ -152,6 +153,23 @@ const hostStores = vi.hoisted(() => ({
 vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
   const { reactive } = await import('vue')
   const tabs = new Map<string, FakeTab>()
+  const createTab = (path?: string, data?: ComfyWorkflowJSON) => {
+    const requested = (path ?? 'Unsaved Workflow.json').replace(/\.json$/, '')
+    let stem = requested
+    let counter = 2
+    while (tabs.has(`workflows/${stem}.json`))
+      stem = `${requested} (${counter++})`
+    const tab: FakeTab = {
+      path: `workflows/${stem}.json`,
+      directory: 'workflows',
+      filename: stem,
+      isTemporary: true,
+      isModified: false,
+      activeState: data ?? null
+    }
+    tabs.set(tab.path, tab)
+    return tab
+  }
   const store = reactive({
     activeWorkflow: null as FakeTab | null,
     get openWorkflows() {
@@ -166,23 +184,8 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
     closeWorkflow: vi.fn(async (tab: FakeTab) => {
       tabs.delete(tab.path)
     }),
-    createTemporary: (path?: string, data?: ComfyWorkflowJSON) => {
-      const requested = (path ?? 'Unsaved Workflow.json').replace(/\.json$/, '')
-      let stem = requested
-      let counter = 2
-      while (tabs.has(`workflows/${stem}.json`))
-        stem = `${requested} (${counter++})`
-      const tab: FakeTab = {
-        path: `workflows/${stem}.json`,
-        directory: 'workflows',
-        filename: stem,
-        isTemporary: true,
-        isModified: false,
-        activeState: data ?? null
-      }
-      tabs.set(tab.path, tab)
-      return tab
-    }
+    createTemporary: createTab,
+    createNewTemporary: vi.fn(createTab)
   })
   hostStores.workflow = store
   return { useWorkflowStore: () => store }
@@ -2410,7 +2413,10 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(workflowService.openWorkflow).toHaveBeenCalled()
     )
     const minted = hostStores.workflow.tabs.get('workflows/Video test.json')
+    expect(hostStores.workflow.createNewTemporary).toHaveBeenCalled()
     expect(minted?.filename).toBe('Video test')
+    expect(minted?.activeState?.nodes).toHaveLength(0)
+    expect(minted?.activeState?.links).toHaveLength(0)
     // The host minted the doc server-side; the follower fills the canvas.
     // Nothing loads, saves, or adopts here.
     expect(workflowService.saveWorkflowAs).not.toHaveBeenCalled()
