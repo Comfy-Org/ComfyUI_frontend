@@ -471,7 +471,8 @@ export function useAgentCrdtFollower(
     // Count and report only. A state-vector resubscribe cannot redeliver this
     // frame: the bridge merged its Yjs bytes before dispatching, so the host's
     // catch-up delta is empty, and the adapter dropped its pending diff before
-    // batching. Healing needs an empty-vector resubscribe, which ADR-0024
+    // batching. Healing needs an empty-vector resubscribe, which
+    // docs/adr/GRAPH-DOCUMENT-0024-graph-activation-and-document-objects-for-in-app-agent-targets.md
     // reserves for an explicit doc_reset. The channel itself is healthy, so
     // `connected` stays as the subscription reported it.
     if (!projectionFailureReported) {
