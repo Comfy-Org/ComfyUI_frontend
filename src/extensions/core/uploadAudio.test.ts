@@ -4,13 +4,25 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ComfyExtension } from '@/types/comfy'
 
-const { mockAddAlert, mockApiURL, mockFetchApi, mockRegisterExtension } =
-  vi.hoisted(() => ({
-    mockAddAlert: vi.fn(),
-    mockApiURL: vi.fn((url: string) => `api:${url}`),
-    mockFetchApi: vi.fn(),
-    mockRegisterExtension: vi.fn()
-  }))
+const {
+  mockAddAlert,
+  mockApiURL,
+  mockFetchApi,
+  mockMediaRecorderStart,
+  mockMediaRecorderStop,
+  mockRegisterExtension,
+  mockReportError,
+  mockStopAllTracks
+} = vi.hoisted(() => ({
+  mockAddAlert: vi.fn(),
+  mockApiURL: vi.fn((url: string) => `api:${url}`),
+  mockFetchApi: vi.fn(),
+  mockMediaRecorderStart: vi.fn(),
+  mockMediaRecorderStop: vi.fn(),
+  mockRegisterExtension: vi.fn(),
+  mockReportError: vi.fn(),
+  mockStopAllTracks: vi.fn()
+}))
 
 let capturedDragDrop: ((files: File[]) => Promise<File[] | never[]>) | undefined
 let capturedFileSelect:
@@ -21,7 +33,14 @@ let capturedPaste: ((files: File[]) => Promise<File[] | never[]>) | undefined
 type AudioUploadWidget = (node: LGraphNode, inputName: string) => unknown
 
 vi.mock('extendable-media-recorder', () => ({
-  MediaRecorder: class MockMediaRecorder {}
+  MediaRecorder: class MockMediaRecorder {
+    start = mockMediaRecorderStart
+    stop = mockMediaRecorderStop
+  }
+}))
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
 }))
 
 vi.mock('@/composables/node/useNodeDragAndDrop', () => ({
@@ -91,7 +110,7 @@ vi.mock('@/utils/graphTraversalUtil', () => ({
 }))
 
 vi.mock('@/services/audioService', () => ({
-  useAudioService: () => ({})
+  useAudioService: () => ({ stopAllTracks: mockStopAllTracks })
 }))
 
 function createFile(name = 'clip.mp3'): File {
@@ -300,5 +319,67 @@ describe('Comfy.AudioWidget AUDIO_UI widget', () => {
 
     expect(domWidget.serialize).toBe(false)
     expect(domWidget.options.serialize).toBe(false)
+  })
+})
+
+type AudioRecordWidget = (node: LGraphNode, inputName: string) => unknown
+
+async function loadAudioRecordWidget() {
+  vi.resetModules()
+  mockRegisterExtension.mockClear()
+  await import('./uploadAudio')
+  const extension = mockRegisterExtension.mock.calls
+    .map(([extension]) => extension as ComfyExtension)
+    .find((extension) => extension.name === 'Comfy.RecordAudio')
+  if (!extension)
+    throw new Error('Comfy.RecordAudio extension was not registered')
+  const widgets = await extension.getCustomWidgets!(fromAny({}))
+  return (widgets as Record<string, AudioRecordWidget>).AUDIO_RECORD
+}
+
+describe('Comfy.RecordAudio AUDIO_RECORD widget', () => {
+  it('reports a recorder start failure after the microphone was granted', async () => {
+    const accessError = new Error('recorder start failed')
+    mockMediaRecorderStart.mockImplementationOnce(() => {
+      throw accessError
+    })
+    mockMediaRecorderStop.mockImplementationOnce(() => {
+      throw new Error('recorder stop failed')
+    })
+    vi.stubGlobal('navigator', {
+      mediaDevices: { getUserMedia: vi.fn().mockResolvedValue({}) }
+    })
+    const AUDIO_RECORD = await loadAudioRecordWidget()
+    const audioUIWidget = {
+      element: document.createElement('audio'),
+      options: {} as Record<string, unknown>
+    }
+    const recordWidget = { label: '', type: '' }
+    let record: (() => Promise<void>) | undefined
+    const node = fromAny<LGraphNode, unknown>({
+      addDOMWidget: vi.fn(() => audioUIWidget),
+      addWidget: vi.fn(
+        (_type, _name, _value, callback: () => Promise<void>) => {
+          record = callback
+          return recordWidget
+        }
+      )
+    })
+    AUDIO_RECORD(node, 'record')
+
+    await record!()
+
+    expect(mockReportError).toHaveBeenCalledTimes(1)
+    expect(mockReportError).toHaveBeenCalledWith(accessError, {
+      errorType: 'extensions_audio_recorder_start_failed',
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'assets',
+        operation: 'execute',
+        outcome: 'recovered'
+      },
+      level: 'error'
+    })
+    expect(mockMediaRecorderStop).toHaveBeenCalledTimes(1)
   })
 })

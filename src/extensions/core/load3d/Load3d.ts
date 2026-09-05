@@ -337,7 +337,9 @@ class Load3d extends Viewport3d {
     if (this.loadingPromise) {
       try {
         await this.loadingPromise
-      } catch (e) {}
+      } catch (e) {
+        // Serialization only: the rejection already reached the loadModel caller.
+      }
     }
 
     this.loadingPromise = this._loadModelInternal(
@@ -354,7 +356,9 @@ class Load3d extends Viewport3d {
       last = this.loadingPromise
       try {
         await last
-      } catch (e) {}
+      } catch (e) {
+        // Serialization only: the rejection already reached the loadModel caller.
+      }
     }
   }
 

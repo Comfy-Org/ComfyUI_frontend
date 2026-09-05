@@ -2,6 +2,7 @@ import { downloadBlob } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogService } from '@/services/dialogService'
 import type { ComfyExtension } from '@/types/comfy'
@@ -100,7 +101,18 @@ class ManageTemplates extends ComfyDialog {
     if (res.status === 200) {
       try {
         templates = await res.json()
-      } catch (error) {}
+      } catch (error) {
+        reportError(error, {
+          errorType: 'extensions_node_templates_load_swallowed',
+          tags: {
+            failure_kind: 'caught_unexpected',
+            feature_area: 'extensions',
+            operation: 'load',
+            outcome: 'recovered'
+          },
+          level: 'error'
+        })
+      }
     } else if (res.status !== 404) {
       console.error(res.status + ' ' + res.statusText)
     }

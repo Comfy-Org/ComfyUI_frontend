@@ -23,10 +23,16 @@ import { SCHEMA_VERSION, mint, nodesMap } from '@comfyorg/comfy-multi-player'
 import { describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 import type { DocFrameTransport, DocOp, DocUpdate } from './docFrameClient'
 import { DocFrameClient, encodeBase64 } from './docFrameClient'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: vi.fn()
+}))
 
 const WORKFLOW_ID = 'wf-1'
 
@@ -270,7 +276,6 @@ describe('human op gating around subscription acknowledgement', () => {
 
 describe('FE-TEARDOWN-1 — teardown completes with a dead socket', () => {
   it('releases every transport listener and the doc when unsubscribe cannot send', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const { transport, client, bridge, projected } = wire()
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
@@ -285,6 +290,16 @@ describe('FE-TEARDOWN-1 — teardown completes with a dead socket', () => {
 
     expect(transport.listenerCount).toBe(0)
     expect(bridge.subscribedWorkflowId).toBeNull()
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_doc_frame_send_swallowed',
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'agent',
+        operation: 'sync',
+        outcome: 'recovered'
+      },
+      level: 'error'
+    })
 
     // The torn-down bridge is inert: a frame arriving after the socket recovers
     // must not reach it. A bridge that survived here would double-apply every
@@ -293,11 +308,9 @@ describe('FE-TEARDOWN-1 — teardown completes with a dead socket', () => {
     transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
     expect(projected).toHaveLength(0)
     expect(bridge.follower.updatesApplied).toBe(0)
-    warn.mockRestore()
   })
 
   it('a doc_update delivered mid-teardown cannot resurrect the follower', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const { transport, client, bridge, projected } = wire()
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
@@ -315,7 +328,6 @@ describe('FE-TEARDOWN-1 — teardown completes with a dead socket', () => {
 
     expect(projected).toHaveLength(0)
     expect(second.projected).toHaveLength(1)
-    warn.mockRestore()
   })
 })
 
