@@ -582,6 +582,32 @@ export interface AgentWorkflowAppliedMetadata extends Record<string, unknown> {
 }
 
 /**
+ * Normalized agent failure class, shared across `app:agent_error` sites so
+ * failures stay comparable regardless of where in the turn lifecycle they
+ * occurred (pre-acceptance request failure, busy-state rejection, or a
+ * post-acceptance stream/event error not represented by `agent_turn_failed`).
+ */
+export type AgentErrorClass =
+  | 'request_failed'
+  | 'send_busy'
+  | 'malformed_stream_event'
+  | 'cancel_failed'
+  | 'history_load_failed'
+export interface AgentErrorMetadata extends Record<string, unknown> {
+  error_class: AgentErrorClass
+  failure_stage: 'pre_acceptance' | 'post_acceptance'
+  retryable: boolean
+  turn_accepted: boolean
+  /**
+   * What the user saw. `none` is a failure the FE handled silently — currently
+   * a malformed stream frame that is dropped with a `console.warn` no cloud
+   * console can read — and separates "our schema drifted" from "the drift
+   * reached a user".
+   */
+  ui_treatment: 'inline_notice' | 'error_overlay' | 'toast' | 'none'
+}
+
+/**
  * Widget (input/parameter) favorite toggle tracking metadata.
  * Used to measure discoverability of the right side panel favoriting feature.
  */
@@ -1093,6 +1119,7 @@ export interface TelemetryProvider {
   trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
   trackAgentAttachButtonClicked?(): void
   trackAgentWorkflowApplied?(metadata: AgentWorkflowAppliedMetadata): void
+  trackAgentError?(metadata: AgentErrorMetadata): void
 
   // Right side panel widget favorite events
   trackWidgetFavoriteToggled?(metadata: WidgetFavoriteToggledMetadata): void
@@ -1259,6 +1286,7 @@ export const TelemetryEvents = {
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',
   AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
   AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',
+  AGENT_ERROR: 'app:agent_error',
 
   // Right Side Panel Widget Favorites
   WIDGET_FAVORITE_TOGGLED: 'app:widget_favorite_toggled',
