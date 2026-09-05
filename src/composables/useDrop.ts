@@ -20,7 +20,7 @@ const KNOWN_SETTLED_NODE_HEIGHTS: Partial<Record<string, number>> = {
 }
 
 function getStackingHeight(node: LGraphNode): number {
-  return KNOWN_SETTLED_NODE_HEIGHTS[node.type ?? ''] ?? node.size[1]
+  return KNOWN_SETTLED_NODE_HEIGHTS[node.type] ?? node.size[1]
 }
 
 /**

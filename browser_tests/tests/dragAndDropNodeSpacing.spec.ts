@@ -78,7 +78,7 @@ test.describe('Drag and drop node spacing', { tag: ['@ui'] }, () => {
     await expect(async () => {
       const nodes = await comfyPage.page.evaluate<NodeBox[]>(() =>
         window.app!.graph.nodes.map((node) => ({
-          type: node.type ?? '',
+          type: node.type,
           pos: [node.pos[0], node.pos[1]],
           size: [node.size[0], node.size[1]]
         }))
