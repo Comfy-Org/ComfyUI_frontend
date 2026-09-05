@@ -854,6 +854,88 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
     error.mockRestore()
   })
 
+  it('keeps the read gate closed until an explicit reset replaces the doc', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { transport, bridge, projected, schemaErrors } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+
+    // Adapted from #16663 (which ran on the frozen base's package API):
+    // `initDoc`/`metaMap` are module-private in @comfyorg/comfy-multi-player
+    // 0.2.1, so the host doc is minted via the public surface and the meta map
+    // is reached through Yjs directly. Version literals are reader-relative:
+    // this build reads SCHEMA_VERSION, so "too new" is SCHEMA_VERSION + 1.
+    const host = mint({ nodes: [], links: [] }, { types: {} })
+    const incompatibleNode = new Y.Map<unknown>()
+    incompatibleNode.set('type', 'SchemaV3Node')
+    nodesMap(host).set('incompatible', incompatibleNode)
+    host.getMap('meta').set('schema_version', SCHEMA_VERSION + 1)
+    const incompatibleUpdate = Y.encodeStateAsUpdate(host)
+    const incompatibleState = Y.encodeStateVector(host)
+    const follower = bridge.follower
+
+    transport.deliver('doc_update', docUpdateFrame(incompatibleUpdate))
+
+    const retainedError = bridge.lastSchemaError
+    expect(retainedError).toBeInstanceOf(FollowerSchemaError)
+    expect(nodesMap(follower.doc).get('incompatible')?.get('type')).toBe(
+      'SchemaV3Node'
+    )
+    expect(projected).toHaveLength(0)
+
+    host.getMap('meta').set('schema_version', SCHEMA_VERSION)
+    const compatibleNode = new Y.Map<unknown>()
+    compatibleNode.set('type', 'SchemaV2Node')
+    nodesMap(host).set('compatible', compatibleNode)
+    const compatibleUpdate = Y.encodeStateAsUpdate(host, incompatibleState)
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(compatibleUpdate, WORKFLOW_ID, 2)
+    )
+
+    expect(bridge.follower).toBe(follower)
+    expect(nodesMap(follower.doc).get('incompatible')?.get('type')).toBe(
+      'SchemaV3Node'
+    )
+    expect(nodesMap(follower.doc).has('compatible')).toBe(false)
+    expect(follower.updatesApplied).toBe(1)
+    expect(bridge.lastSequence).toBe(1)
+    expect(projected).toHaveLength(0)
+    expect(schemaErrors).toEqual([
+      { workflowId: WORKFLOW_ID, found: SCHEMA_VERSION + 1 }
+    ])
+    expect(bridge.lastSchemaError).toBe(retainedError)
+    expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
+
+    transport.deliver('doc_reset', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      seq: 2
+    })
+
+    expect(bridge.follower).not.toBe(follower)
+    expect(bridge.follower.updatesApplied).toBe(0)
+    expect(bridge.follower.doc.getMap('nodes').size).toBe(0)
+    expect(bridge.lastSchemaError).toBeNull()
+    const subscribes = transport.framesOfType('doc_subscribe') as {
+      data: { state_vector_b64: string }
+    }[]
+    expect(subscribes).toHaveLength(2)
+    expect(subscribes[1].data.state_vector_b64).toBe(
+      encodeBase64(Y.encodeStateVector(new Y.Doc()))
+    )
+
+    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
+
+    expect(bridge.follower.updatesApplied).toBe(1)
+    expect(projected).toEqual([expect.objectContaining({ seq: 1 })])
+    expect(schemaErrors).toEqual([
+      { workflowId: WORKFLOW_ID, found: SCHEMA_VERSION + 1 }
+    ])
+    expect(bridge.lastSchemaError).toBeNull()
+    error.mockRestore()
+  })
+
   it('refuses a doc that declares no schema_version at all', () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { transport, bridge, projected, schemaErrors } = wire()
