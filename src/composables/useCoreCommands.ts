@@ -1,7 +1,7 @@
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useCanvasViewportInsets } from '@/composables/canvas/useCanvasViewportInsets'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
-import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
 import { startModelNodeDragFromAsset } from '@/composables/node/startModelNodeDragFromAsset'
 import { useExternalLink } from '@/composables/useExternalLink'
@@ -112,6 +112,7 @@ export function useCoreCommands(): ComfyCommand[] {
   const { trackRunButton } = useRunButtonTelemetry()
   const { staticUrls, buildDocsUrl } = useExternalLink()
   const settingStore = useSettingStore()
+  const canvasViewportInsets = useCanvasViewportInsets()
 
   const bottomPanelStore = useBottomPanelStore()
 
@@ -430,7 +431,7 @@ export function useCoreCommands(): ComfyCommand[] {
           return
         }
         app.canvas.fitViewToSelectionAnimated({
-          viewport: visibleCanvasViewport(app.canvas)
+          insets: () => canvasViewportInsets.value
         })
       }
     },
