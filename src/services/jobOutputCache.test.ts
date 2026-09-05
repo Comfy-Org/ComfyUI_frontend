@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/platform/assets/composables/media/assetMappers')
 
+import type * as FetchJobsModule from '@/platform/remote/comfyui/jobs/fetchJobs'
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import { api } from '@/scripts/api'
 import type {
@@ -13,12 +14,14 @@ import {
   findActiveIndex,
   getJobAssets,
   getJobDetail,
+  getJobApiPrompt,
   getJobWorkflow,
   getOutputsForTask
 } from '@/services/jobOutputCache'
 import { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
 
-vi.mock('@/platform/remote/comfyui/jobs/fetchJobs', () => ({
+vi.mock('@/platform/remote/comfyui/jobs/fetchJobs', async (importOriginal) => ({
+  ...(await importOriginal<typeof FetchJobsModule>()),
   fetchJobDetail: vi.fn(),
   extractWorkflow: vi.fn()
 }))
@@ -461,6 +464,58 @@ describe('jobOutputCache', () => {
       const result = await getJobWorkflow(jobId)
 
       expect(result).toBeUndefined()
+    })
+  })
+
+  describe('getJobApiPrompt', () => {
+    const apiPrompt = { '1': { class_type: 'KSampler', inputs: {} } }
+
+    function jobWithWorkflow(jobId: string, workflow: unknown): JobDetail {
+      return {
+        id: jobId,
+        status: 'completed',
+        create_time: Date.now(),
+        priority: 0,
+        outputs: {},
+        workflow
+      }
+    }
+
+    it('returns the stored API prompt for an API-submitted job', async () => {
+      const jobId = uniqueId('job-api')
+      vi.mocked(api.getJobDetail).mockResolvedValue(
+        jobWithWorkflow(jobId, { prompt: apiPrompt })
+      )
+
+      await expect(getJobApiPrompt(jobId)).resolves.toEqual(apiPrompt)
+    })
+
+    it('returns the stored API prompt when extra_data is null', async () => {
+      const jobId = uniqueId('job-api-null')
+      vi.mocked(api.getJobDetail).mockResolvedValue(
+        jobWithWorkflow(jobId, { prompt: apiPrompt, extra_data: null })
+      )
+
+      await expect(getJobApiPrompt(jobId)).resolves.toEqual(apiPrompt)
+    })
+
+    it('returns undefined when the job embeds an editor workflow', async () => {
+      const jobId = uniqueId('job-embedded')
+      vi.mocked(api.getJobDetail).mockResolvedValue(
+        jobWithWorkflow(jobId, {
+          prompt: apiPrompt,
+          extra_data: { extra_pnginfo: { workflow: { nodes: [] } } }
+        })
+      )
+
+      await expect(getJobApiPrompt(jobId)).resolves.toBeUndefined()
+    })
+
+    it('returns undefined when job detail not found', async () => {
+      const jobId = uniqueId('job-api-missing')
+      vi.mocked(api.getJobDetail).mockResolvedValue(undefined)
+
+      await expect(getJobApiPrompt(jobId)).resolves.toBeUndefined()
     })
   })
 })
