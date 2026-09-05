@@ -4,7 +4,7 @@
 import { defineAsyncComponent } from 'vue'
 import type { Component } from 'vue'
 
-import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
+import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 
 const WidgetButton = defineAsyncComponent(
   () => import('../components/WidgetButton.vue')
@@ -57,6 +57,9 @@ const Load3D = defineAsyncComponent(
 const Load3DAdvanced = defineAsyncComponent(
   () => import('@/components/load3d/Load3DAdvanced.vue')
 )
+const CameraInfo = defineAsyncComponent(
+  () => import('@/components/cameraInfo/CameraInfo.vue')
+)
 const WidgetImageCrop = defineAsyncComponent(
   () => import('@/components/imagecrop/WidgetImageCrop.vue')
 )
@@ -84,6 +87,9 @@ const WidgetVideoEdit = defineAsyncComponent(
 )
 const WidgetColors = defineAsyncComponent(
   () => import('@/components/palette/WidgetColors.vue')
+)
+const WidgetResolutionPreview = defineAsyncComponent(
+  () => import('../components/WidgetResolutionPreview.vue')
 )
 
 export const FOR_TESTING = {
@@ -205,6 +211,14 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
     }
   ],
   [
+    'cameraInfo',
+    {
+      component: CameraInfo,
+      aliases: ['CAMERA_INFO_STATE'],
+      essential: false
+    }
+  ],
+  [
     'imagecrop',
     {
       component: WidgetImageCrop,
@@ -275,6 +289,14 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
       aliases: ['COLORS'],
       essential: false
     }
+  ],
+  [
+    'resolutionpreview',
+    {
+      component: WidgetResolutionPreview,
+      aliases: ['RESOLUTION_PREVIEW'],
+      essential: false
+    }
   ]
 ]
 
@@ -302,7 +324,10 @@ export const isEssential = (type: string): boolean => {
   return widgets.get(canonicalType)?.essential || false
 }
 
-export const shouldRenderAsVue = (widget: Partial<SafeWidgetData>): boolean => {
+export const shouldRenderAsVue = (widget: {
+  options?: Pick<IWidgetOptions, 'canvasOnly'>
+  type?: string
+}): boolean => {
   return !widget.options?.canvasOnly && !!widget.type
 }
 
@@ -312,6 +337,7 @@ const EXPANDING_TYPES = [
   'textPreview',
   'load3D',
   'load3DAdvanced',
+  'cameraInfo',
   'curve',
   'painter',
   'compositor',

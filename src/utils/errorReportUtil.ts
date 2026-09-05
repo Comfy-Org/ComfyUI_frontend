@@ -31,9 +31,7 @@ export function generateErrorReport(error: ErrorReportData): string {
 
   return `
 # ComfyUI Error Report
-${
-  error
-    ? `## Error Details
+## Error Details
 - **Node ID:** ${error.nodeId || 'N/A'}
 - **Node Type:** ${error.nodeType || 'N/A'}
 - **Exception Type:** ${error.exceptionType || 'N/A'}
@@ -41,9 +39,7 @@ ${
 ## Stack Trace
 \`\`\`
 ${error.traceback || 'No stack trace available'}
-\`\`\``
-    : ''
-}
+\`\`\`
 ## System Information
 - **ComfyUI Version:** ${systemStats.system.comfyui_version}
 - **Arguments:** ${systemStats.system.argv.join(' ')}

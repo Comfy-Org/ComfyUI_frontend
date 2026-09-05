@@ -16,12 +16,9 @@ import type { ChartData } from 'chart.js'
 import Chart from 'primevue/chart'
 import { computed } from 'vue'
 
-import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
-import type { ChartInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-type ChartWidgetOptions = NonNullable<ChartInputSpec['options']> &
-  IWidgetOptions
+import type { ChartWidgetOptions } from './WidgetChart.types'
 
 const value = defineModel<ChartData>({ required: true })
 

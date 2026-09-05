@@ -31,7 +31,7 @@
           size="unset"
           :disabled="Boolean(paymentRecoveryLock)"
           :class="queueMenuTriggerClass"
-          :aria-label="t('menu.run')"
+          :aria-label="t('menu.runOptions')"
           data-testid="queue-mode-menu-trigger"
         >
           <TinyChevronIcon />

@@ -166,7 +166,11 @@ test.describe('Output History', { tag: '@ui' }, () => {
       { times: 1 }
     )
     // Trigger queue refresh
+    const queueRefresh = comfyPage.page.waitForResponse(
+      /\/api\/jobs\?status=in_progress/
+    )
     exec.status(1)
+    await queueRefresh
     await comfyPage.nextFrame()
 
     await expect(comfyPage.appMode.cancelRunButton).toBeVisible()

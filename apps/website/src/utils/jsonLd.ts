@@ -57,7 +57,10 @@ export function pageContext(
 ): PageContext & { url: string } {
   return {
     siteUrl: siteUrlFrom(site),
-    locale: currentLocale === 'zh-CN' ? 'zh-CN' : 'en',
+    locale:
+      currentLocale === 'zh-CN' || currentLocale === 'ja'
+        ? currentLocale
+        : 'en',
     url: absoluteUrl(site, pathname)
   }
 }
@@ -413,7 +416,8 @@ export interface VideoObjectInput {
   name: string
   description: string
   thumbnailUrl: string
-  contentUrl: string
+  /** Self-hosted media URL; omit for embed-only videos (set embedUrl instead). */
+  contentUrl?: string
   uploadDate: string
   locale: Locale
   embedUrl?: string

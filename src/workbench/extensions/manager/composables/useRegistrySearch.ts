@@ -80,7 +80,7 @@ export function useRegistrySearch(
       )
     }
 
-    if (options.append && searchResults.value?.length) {
+    if (options.append && searchResults.value.length) {
       searchResults.value = searchResults.value.concat(sortedPacks)
     } else {
       searchResults.value = sortedPacks

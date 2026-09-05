@@ -48,8 +48,8 @@ describe('nodeIdentification', () => {
         expect(isNodeLocatorId(undefined)).toBe(false)
       })
 
-      it('should validate UUID format correctly', () => {
-        // Valid UUID formats
+      it('should require a valid UUID as the subgraph prefix', () => {
+        // Valid subgraph UUIDs (node IDs like "123" are sequential integers, not UUIDs)
         expect(
           isNodeLocatorId('00000000-0000-0000-0000-000000000000:123')
         ).toBe(true)
@@ -57,7 +57,7 @@ describe('nodeIdentification', () => {
           isNodeLocatorId('A1B2C3D4-E5F6-7890-ABCD-EF1234567890:123')
         ).toBe(true)
 
-        // Invalid UUID formats
+        // Invalid subgraph UUID prefixes
         expect(isNodeLocatorId('00000000-0000-0000-0000-00000000000:123')).toBe(
           false
         ) // Too short

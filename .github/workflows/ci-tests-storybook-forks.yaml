@@ -50,12 +50,13 @@ jobs:
 
       - name: Download and Deploy Storybook
         if: steps.pr.outputs.skip != 'true' && github.event.action == 'completed' && github.event.workflow_run.conclusion == 'success'
-        uses: actions/download-artifact@v8
+        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          run-id: ${{ github.event.workflow_run.id }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          run_id: ${{ github.event.workflow_run.id }}
           name: storybook-static
           path: storybook-static
+          if_no_artifact_found: warn
 
       - name: Handle Storybook Completion — deploy and generate section
         if: steps.pr.outputs.skip != 'true' && github.event.action == 'completed'
@@ -77,7 +78,7 @@ jobs:
       - name: Read storybook section
         id: section
         if: steps.pr.outputs.skip != 'true' && github.event.action == 'completed' && hashFiles('storybook-section.md') != ''
-        uses: juliangruber/read-file-action@b549046febe0fe86f8cb4f93c24e284433f9ab58 # v1.1.7
+        uses: juliangruber/read-file-action@271ff311a4947af354c6abcd696a306553b9ec18 # v1.1.8
         with:
           path: storybook-section.md
 

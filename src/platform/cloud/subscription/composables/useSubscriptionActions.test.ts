@@ -9,6 +9,14 @@ const mockShowTopUpCreditsDialog = vi.fn()
 const mockExecute = vi.fn()
 const mockToastAdd = vi.fn()
 
+const { mockReportError } = vi.hoisted(() => ({
+  mockReportError: vi.fn()
+}))
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
+}))
+
 vi.mock('@/platform/updates/common/toastStore', () => ({
   useToastStore: () => ({ add: mockToastAdd })
 }))
@@ -69,6 +77,7 @@ Object.defineProperty(window, 'open', {
 describe('useSubscriptionActions', () => {
   beforeEach(() => {
     mockIsCloud.value = true
+    mockReportError.mockReset()
   })
 
   describe('handleAddApiCredits', () => {
@@ -118,13 +127,47 @@ describe('useSubscriptionActions', () => {
       expect(mockTrackHelpResourceClicked).not.toHaveBeenCalled()
     })
 
-    it('should handle errors gracefully', async () => {
+    it('tells the user when contacting support fails, and stops loading', async () => {
       mockExecute.mockRejectedValueOnce(new Error('Command failed'))
       const { handleMessageSupport, isLoadingSupport } =
         useSubscriptionActions()
 
       await handleMessageSupport()
+
       expect(isLoadingSupport.value).toBe(false)
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'error',
+          detail: 'Command failed'
+        })
+      )
+    })
+
+    it('reports a failed support request so it is visible without the user', async () => {
+      const failure = new Error('Command failed')
+      mockExecute.mockRejectedValueOnce(failure)
+      const { handleMessageSupport } = useSubscriptionActions()
+
+      await handleMessageSupport()
+
+      expect(mockReportError).toHaveBeenCalledWith(failure, {
+        errorType: 'contact_support_failed'
+      })
+    })
+
+    // Commands run arbitrary registered functions, including ones contributed
+    // by extensions, so the rejected value is not guaranteed to be an Error.
+    // Normalizing it is reportError's job, covered in reportError.test.ts; what
+    // matters here is that the raw cause reaches the reporter at all.
+    it('reports a thrown non-Error', async () => {
+      mockExecute.mockRejectedValueOnce('Command failed')
+      const { handleMessageSupport } = useSubscriptionActions()
+
+      await handleMessageSupport()
+
+      expect(mockReportError).toHaveBeenCalledWith('Command failed', {
+        errorType: 'contact_support_failed'
+      })
     })
   })
 

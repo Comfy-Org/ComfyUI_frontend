@@ -36,13 +36,9 @@ vi.mock('@/components/dialog/confirm/confirmDialog', () => ({
   showConfirmDialog: vi.fn()
 }))
 
-vi.mock('@vueuse/core', async () => {
-  const actual = await vi.importActual<Record<string, unknown>>('@vueuse/core')
-  return {
-    ...actual,
-    useImage: () => ({ isLoading: false, error: null })
-  }
-})
+vi.mock('@vueuse/core', () => ({
+  useImage: () => ({ isLoading: false, error: null })
+}))
 
 const HASH = 'blake3:abc123def456'
 const ORIGINAL_FILENAME = 'sunset_photo.png'

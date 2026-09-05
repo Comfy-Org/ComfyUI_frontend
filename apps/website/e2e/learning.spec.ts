@@ -10,6 +10,7 @@ import {
   populatedCategories,
   recommendedFor,
   tutorialDescription,
+  tutorialMetaTitle,
   tutorialPath
 } from '../src/data/learningTutorials'
 import { externalLinks } from '../src/config/routes'
@@ -26,25 +27,41 @@ const categoryNav = (page: Page, locale: 'en' | 'zh-CN' = 'en') =>
 // metadata helpers, so these assertions catch a regression in the helpers or
 // the underlying strings — not just the wiring.
 const EXPECTED_META = {
+  basics: {
+    heading: 'ComfyUI Basics',
+    description:
+      'Beginner ComfyUI tutorials: learn the node graph, LoRAs, style transfer, and ControlNets from the ground up.',
+    metaDescription:
+      'Free ComfyUI tutorials for beginners: the node graph, text-to-image and image-to-image, LoRAs and ControlNets, then inpainting, outpainting, and upscaling.',
+    title: 'ComfyUI Basics for Beginners: Node Graph, LoRAs, ControlNet'
+  },
   vfx: {
     heading: 'VFX Tutorials',
     description:
-      'Hands-on ComfyUI VFX tutorials — cleanplates, sky replacement, de-aging, mattes, and shot work you can open and run yourself.',
-    title: 'VFX Tutorials - Comfy'
+      'Hands-on ComfyUI VFX tutorials: cleanplates, sky replacement, de-aging, mattes, and shot work you can open and run yourself.',
+    metaDescription:
+      'Free ComfyUI VFX tutorials with the workflows behind them: cleanplates, sky replacement, deaging, mattes, and frame adjustments for your own shots.',
+    title: 'ComfyUI VFX Tutorials: Cleanplates, Sky Replacement, Deaging'
   },
   animations: {
     heading: 'Animation Tutorials',
     description:
-      'Hands-on ComfyUI animation tutorials — character sheets, keyframes, in-betweening, backgrounds, and compositing you can run yourself.',
-    title: 'Animation Tutorials - Comfy'
+      'Hands-on ComfyUI animation tutorials: character sheets, keyframes, in-betweening, backgrounds, and compositing you can run yourself.',
+    metaDescription:
+      'Free ComfyUI animation tutorials with workflows: character sheets, keyframes, in-betweening, backgrounds, and compositing, from concept art to final shot.',
+    title: 'ComfyUI Animation Tutorials: Character Sheets and Keyframes'
   },
   ads: {
     heading: 'Ad Creative Tutorials',
     description:
-      'Hands-on ComfyUI ad creative tutorials — moodboards, storyboards, product photography, B-roll, and campaign assets you can run yourself.',
-    title: 'Ad Creative Tutorials - Comfy'
+      'Hands-on ComfyUI ad creative tutorials: moodboards, storyboards, product photography, B-roll, and campaign assets you can run yourself.',
+    metaDescription:
+      'Free ComfyUI tutorials for ad creative, each with its workflow: moodboards, storyboards, product photography, talent casting, B-roll, and OOH mockups.',
+    title: 'ComfyUI Ad Creative Tutorials: Moodboards to Product Shots'
   }
 } as const
+
+const ROOT_TITLE = 'ComfyUI Tutorials: Free Video Series from Basics to VFX'
 
 test.describe('Learning page @smoke', () => {
   test.beforeEach(async ({ page }) => {
@@ -52,7 +69,7 @@ test.describe('Learning page @smoke', () => {
   })
 
   test('has correct title', async ({ page }) => {
-    await expect(page).toHaveTitle('Learning - Comfy')
+    await expect(page).toHaveTitle(ROOT_TITLE)
   })
 
   test('sidebar shows the page heading and a link per category', async ({
@@ -108,41 +125,34 @@ test.describe('Learning page @smoke', () => {
     }
   })
 
-  test('tutorials with a workflow link expose an external Try Workflow link', async ({
+  test('tutorials with a CTA link expose their labelled external link', async ({
     page
   }) => {
     const linkedTutorials = learningTutorials.filter(
       (tutorial) => tutorial.href
     )
-    const workflowLinks = page.getByRole('link', {
-      name: t('cta.tryWorkflow', 'en')
-    })
-    const hrefs = await workflowLinks.evaluateAll((links) =>
-      links.map((link) => link.getAttribute('href'))
-    )
+    expect(linkedTutorials.length).toBeGreaterThan(0)
     for (const tutorial of linkedTutorials) {
-      expect(hrefs).toContain(tutorial.href)
+      const link = page.locator(`a[href="${tutorial.href}"]`)
+      await expect(link).toContainText(
+        t(tutorial.ctaLabelKey ?? 'cta.tryWorkflow', 'en')
+      )
     }
   })
 
-  test('newTab tutorials open their workflow link in a new tab', async ({
+  test('newTab tutorials open their CTA link in a new tab', async ({
     page
   }) => {
-    const links = page.getByRole('link', { name: t('cta.tryWorkflow', 'en') })
-    const attrs = await links.evaluateAll((elements) =>
-      elements.map((element) => ({
-        href: element.getAttribute('href') ?? '',
-        target: element.getAttribute('target')
-      }))
+    const linkedTutorials = learningTutorials.filter(
+      (tutorial) => tutorial.href
     )
-    // The page-level CTA shares the label; only judge tutorial links.
-    const tutorialAttrs = attrs.filter(({ href }) =>
-      learningTutorials.some((item) => item.href === href)
-    )
-    expect(tutorialAttrs.length).toBeGreaterThan(0)
-    for (const { href, target } of tutorialAttrs) {
-      const tutorial = learningTutorials.find((item) => item.href === href)
-      expect(target, href).toBe(tutorial?.newTab ? '_blank' : null)
+    for (const tutorial of linkedTutorials) {
+      const link = page.locator(`a[href="${tutorial.href}"]`)
+      if (tutorial.newTab) {
+        await expect(link).toHaveAttribute('target', '_blank')
+      } else {
+        await expect(link).not.toHaveAttribute('target', '_blank')
+      }
     }
   })
 
@@ -192,7 +202,7 @@ test.describe('Learning category pages @smoke', () => {
     await expect(page).toHaveTitle(EXPECTED_META.vfx.title)
     await expect(page.locator('meta[name="description"]')).toHaveAttribute(
       'content',
-      EXPECTED_META.vfx.description
+      EXPECTED_META.vfx.metaDescription
     )
   })
 
@@ -205,7 +215,7 @@ test.describe('Learning category pages @smoke', () => {
 
     await page.goBack()
     await expect(page).toHaveURL('/learning')
-    await expect(page).toHaveTitle('Learning - Comfy')
+    await expect(page).toHaveTitle(ROOT_TITLE)
     await expect(
       categoryNav(page).locator('a[href="/learning"]')
     ).toHaveAttribute('aria-current', 'page')
@@ -239,6 +249,16 @@ test.describe('Learning category pages @smoke', () => {
 
 test.describe('Learning tutorial page @smoke', () => {
   const [firstTutorial] = learningTutorials
+  const selfHostedTutorial = learningTutorials.find(
+    (tutorial) => tutorial.videoSrc && !tutorial.youtubeId
+  )
+  const youtubeTutorial = learningTutorials.find(
+    (tutorial) => tutorial.youtubeId
+  )
+  const workflowTutorial = learningTutorials.find((tutorial) => tutorial.href)
+  if (!selfHostedTutorial || !youtubeTutorial || !workflowTutorial) {
+    throw new Error('expected self-hosted, youtube, and workflow tutorials')
+  }
 
   test('a thumbnail navigates to the dedicated tutorial page', async ({
     page
@@ -251,16 +271,16 @@ test.describe('Learning tutorial page @smoke', () => {
       .click()
 
     await expect(page).toHaveURL(tutorialPath(firstTutorial))
-    await expect(page).toHaveTitle(`${firstTutorial.title.en} - Comfy`)
+    await expect(page).toHaveTitle(tutorialMetaTitle(firstTutorial, 'en'))
   })
 
   test('the page exposes an indexable heading and autoplay video', async ({
     page
   }) => {
-    await page.goto(tutorialPath(firstTutorial))
+    await page.goto(tutorialPath(selfHostedTutorial))
 
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      firstTutorial.title.en
+      selfHostedTutorial.title.en
     )
     // Attribute-level autoplay check: blockExternalMedia aborts the video
     // request, so actual playback never starts in e2e.
@@ -268,6 +288,20 @@ test.describe('Learning tutorial page @smoke', () => {
     await expect(video).toBeVisible()
     await expect(video).toHaveAttribute('autoplay', '')
     await expect(video).toHaveAttribute('muted', '')
+  })
+
+  test('youtube tutorials embed a nocookie iframe instead of a video', async ({
+    page
+  }) => {
+    await page.goto(tutorialPath(youtubeTutorial))
+
+    await expect(page.locator('video')).toHaveCount(0)
+    const iframe = page.locator('iframe[src*="youtube-nocookie.com/embed/"]')
+    await expect(iframe).toBeVisible()
+    await expect(iframe).toHaveAttribute(
+      'src',
+      new RegExp(`/embed/${youtubeTutorial.youtubeId}\\b`)
+    )
   })
 
   test('the breadcrumb links back to the directory and category', async ({
@@ -301,12 +335,13 @@ test.describe('Learning tutorial page @smoke', () => {
     }
   })
 
-  test('links to the workflow from the title block', async ({ page }) => {
-    if (!firstTutorial.href) throw new Error('expected a workflow link')
-    await page.goto(tutorialPath(firstTutorial))
+  test('links to the CTA target from the title block', async ({ page }) => {
+    await page.goto(tutorialPath(workflowTutorial))
 
-    const workflowLink = page.locator(`a[href="${firstTutorial.href}"]`)
-    await expect(workflowLink).toHaveText(t('cta.tryWorkflow', 'en'))
+    const ctaLink = page.locator(`a[href="${workflowTutorial.href}"]`)
+    await expect(ctaLink).toHaveText(
+      t(workflowTutorial.ctaLabelKey ?? 'cta.tryWorkflow', 'en')
+    )
   })
 
   test('the chapter strip links to same-category siblings', async ({
@@ -345,7 +380,7 @@ test.describe('Learning tutorial page @smoke', () => {
   test('renders under the zh-CN locale', async ({ page }) => {
     const zhPath = `/zh-CN${tutorialPath(firstTutorial)}`
     await page.goto(zhPath)
-    await expect(page).toHaveTitle(`${firstTutorial.title['zh-CN']} - Comfy`)
+    await expect(page).toHaveTitle(tutorialMetaTitle(firstTutorial, 'zh-CN'))
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       firstTutorial.title['zh-CN']
     )
@@ -395,7 +430,7 @@ test.describe('Learning page (zh-CN) @smoke', () => {
   test('renders localized title, sidebar, and tutorials', async ({ page }) => {
     await page.goto('/zh-CN/learning')
 
-    await expect(page).toHaveTitle('学习 - Comfy')
+    await expect(page).toHaveTitle('ComfyUI 教程：免费视频系列，从基础到 VFX')
     await expect(page.getByRole('heading', { level: 1 })).toContainText(
       /[一-鿿]/
     )

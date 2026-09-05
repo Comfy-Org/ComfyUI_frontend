@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
@@ -11,12 +11,24 @@ import { runMissingMediaPipeline } from '@/platform/missingMedia/missingMediaPip
 import * as missingMediaScan from '@/platform/missingMedia/missingMediaScan'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+
+const { activeWorkflow } = vi.hoisted(() => {
+  const activeWorkflow: Pick<ComfyWorkflow, 'pendingWarnings'> = {
+    pendingWarnings: null
+  }
+  return { activeWorkflow }
+})
 
 // The real store reaches authStore -> firebase setPersistence, which has no
 // config under vitest. Mirrors missingModelPipeline.test.ts.
 vi.mock('@/stores/workspaceStore', () => ({
-  useWorkspaceStore: () => ({ workflow: { activeWorkflow: null } })
+  useWorkspaceStore: () => ({ workflow: { activeWorkflow } })
 }))
+
+beforeEach(() => {
+  activeWorkflow.pendingWarnings = null
+})
 
 async function startPendingWorkflowLoadMediaVerification(
   rootGraph: LGraph,
@@ -82,5 +94,29 @@ describe('runMissingMediaPipeline', () => {
 
     expect.soft(pendingCandidate.isMissing).toBe(true)
     expect(useMissingMediaStore().missingMediaCandidates).toBeNull()
+  })
+
+  it('neither surfaces nor caches workflow-load media when the promoted host value changed during verification', async () => {
+    const {
+      rootGraph,
+      hosts: [host]
+    } = createPromotedMediaRuntime()
+    const pendingCandidate = {
+      ...createPromotedMissingMediaCandidate(host),
+      isMissing: undefined
+    }
+    const resolveVerification = await startPendingWorkflowLoadMediaVerification(
+      rootGraph,
+      pendingCandidate
+    )
+
+    const hostWidget = host.widgets.at(0)
+    if (!hostWidget) throw new Error('Expected promoted image host widget')
+    hostWidget.value = 'user-picked-valid.png'
+    resolveVerification()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect.soft(useMissingMediaStore().missingMediaCandidates).toBeNull()
+    expect(activeWorkflow.pendingWarnings).toBeNull()
   })
 })

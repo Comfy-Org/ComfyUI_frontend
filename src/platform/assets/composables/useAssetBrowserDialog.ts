@@ -26,7 +26,7 @@ interface BrowseOptions {
 const DIALOG_KEY = 'global-asset-browser'
 const ASSET_BROWSER_DIALOG_PROPS = {
   contentClass:
-    'w-fit max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-1rem)] border-none bg-transparent shadow-none'
+    'w-fit max-w-[calc(100vw-var(--workspace-inset-right,0px)-1rem)] sm:max-w-[calc(100vw-var(--workspace-inset-right,0px)-1rem)] border-none bg-transparent shadow-none'
 } satisfies DialogComponentProps
 
 export const useAssetBrowserDialog = () => {

@@ -426,8 +426,9 @@ describe('useKeybindingPresetService', () => {
       expect(store.savedPresetData?.newBindings).toHaveLength(1)
       expect(store.savedPresetData?.newBindings[0].commandId).toBe('new.cmd')
       expect(Object.keys(store.getUserKeybindings())).toHaveLength(1)
-      const bindings = Object.values(store.getUserKeybindings())
-      expect(bindings[0].commandId).toBe('new.cmd')
+      expect(
+        store.getUserKeybindingValues().map(({ commandId }) => commandId)
+      ).toEqual(['new.cmd'])
     })
 
     it('applies unset bindings from preset', async () => {
@@ -450,9 +451,9 @@ describe('useKeybindingPresetService', () => {
       service.applyPreset(preset)
 
       expect(store.currentPresetName).toBe('vim')
-      const unset = Object.values(store.getUserUnsetKeybindings())
-      expect(unset).toHaveLength(1)
-      expect(unset[0].commandId).toBe('test.selectAll')
+      expect(
+        store.getUserUnsetKeybindingValues().map(({ commandId }) => commandId)
+      ).toEqual(['test.selectAll'])
     })
   })
 

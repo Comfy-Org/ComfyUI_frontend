@@ -63,7 +63,7 @@ function buildNodeDef(): ComfyNodeDefImpl {
     output_is_list: [false],
     output_name: ['video'],
     output_node: false
-  } as ComfyNodeDefV1
+  }
 
   return new ComfyNodeDefImpl(nodeDef)
 }
@@ -99,7 +99,7 @@ describe('NodePreviewCard', () => {
       output_is_list: [],
       output_name: [],
       output_node: false
-    } as ComfyNodeDefV1)
+    })
 
     renderComponent(nodeDefImpl)
 

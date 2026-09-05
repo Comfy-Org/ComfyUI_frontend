@@ -1,12 +1,9 @@
 <script setup lang="ts">
 import { useDebounceFn } from '@vueuse/core'
-import { computed, provide, ref, toRef } from 'vue'
+import { computed, provide, ref, toRef, toValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { SUPPORTED_EXTENSIONS_ACCEPT } from '@/extensions/core/load3d/constants'
-import { useAssetsApi } from '@/platform/assets/composables/media/useAssetsApi'
-import { useFlatOutputAssets } from '@/platform/assets/composables/media/useFlatOutputAssets'
-import { isCloud } from '@/platform/distribution/types'
 import FormDropdown from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue'
 import { AssetKindKey } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { LayoutMode } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
@@ -15,6 +12,7 @@ import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/compo
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
 import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
 import type { ResultItemType } from '@/schemas/apiSchema'
+import { useAssetsStore } from '@/stores/assetsStore'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import type { AssetKind } from '@/types/widgetTypes'
 import {
@@ -58,10 +56,7 @@ const stringModelValue = computed({
 })
 
 const { t } = useI18n()
-
-const outputMediaAssets = isCloud
-  ? useFlatOutputAssets()
-  : useAssetsApi('output')
+const outputAssets = useAssetsStore().outputAssets
 
 const combinedProps = computed(() =>
   filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS)
@@ -94,7 +89,7 @@ const {
   getOptionLabel: () => props.widget.options?.getOptionLabel,
   modelValue: stringModelValue,
   assetKind: () => props.assetKind,
-  outputMediaAssets,
+  outputMediaAssets: outputAssets,
   assetData,
   isAssetMode: () => props.isAssetMode
 })
@@ -156,20 +151,8 @@ const acceptTypes = computed(() => {
 
 const layoutMode = ref<LayoutMode>(props.defaultLayoutMode ?? 'grid')
 
-function handleIsOpenUpdate(isOpen: boolean) {
-  if (isOpen && !outputMediaAssets.loading.value) {
-    void outputMediaAssets.refresh()
-  }
-}
-
 const handleApproachEnd = useDebounceFn(async () => {
-  if (
-    outputMediaAssets.hasMore.value &&
-    !outputMediaAssets.loading.value &&
-    !outputMediaAssets.isLoadingMore.value
-  ) {
-    await outputMediaAssets.loadMore()
-  }
+  if (outputAssets.hasMore) await outputAssets.loadMore()
 }, 300)
 
 const isUploading = ref(false)
@@ -201,11 +184,10 @@ async function updateFiles(files: File[]) {
       :base-model-options
       :is-uploading
       v-bind="combinedProps"
-      :loading-more="outputMediaAssets.isLoadingMore.value"
+      :loading-more="toValue(outputAssets.isLoading)"
       class="w-full"
       @update:selected="updateSelectedItems"
       @update:files="updateFiles"
-      @update:is-open="handleIsOpenUpdate"
       @approach-end="handleApproachEnd"
     />
   </WidgetLayoutField>

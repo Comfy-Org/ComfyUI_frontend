@@ -32,7 +32,7 @@ const mockRect = (el: HTMLElement, width: number) => {
     x: 0,
     y: 0,
     toJSON: () => ({})
-  } as DOMRect)
+  })
 }
 
 describe('CompareSliderThumbnail', () => {

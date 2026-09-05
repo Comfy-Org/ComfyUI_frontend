@@ -13,7 +13,7 @@
 @plugin "./lucideStrokePlugin.js";
 
 /* Safelist dynamic comfy icons for node library folders */
-@source inline("icon-[comfy--{ai-model,anthropic,bfl,bria,bytedance,claude,comfy-logo,credits,elevenlabs,extensions-blocks,file-output,gemini,grok,hitpaw,ideogram,image-ai-edit,kling,ltxv,luma,magnific,mask,meshy,minimax,moonvalley-marey,node,openai,pin,pixverse,play,recraft,reve,rodin,runway,sora,stability-ai,template,tencent,topaz,tripo,veo,vidu,wan,wavespeed,workflow,quiver}]");
+@source inline("icon-[comfy--{ai-model,anthropic,bfl,bria,bytedance,claude,comfy-cloud,comfy-logo,credits,elevenlabs,extensions-blocks,file-output,gemini,grok,hitpaw,ideogram,image-ai-edit,kling,ltxv,luma,magnific,mask,meshy,minimax,moonvalley-marey,node,openai,pin,pixverse,play,recraft,reve,rodin,runway,sora,stability-ai,template,tencent,topaz,tripo,veo,vidu,wan,wavespeed,workflow,quiver}]");
 
 /* Badge icon names are built at runtime, so the scanner cannot find them. */
 @source inline("icon-mask-[comfy--{3d-decomp,ai-model,anthropic,batch-images-node,bfl,bria,brightness-contrast,bytedance,canny,canny-to-image,canny-to-video,channels,chromatic-aberration,claude,comfy-c,comfy-logo,credits,depth-to-image,depth-to-video,dial,elevenlabs,extensions-blocks,file-output,frames-to-video,gemini,get-video-components,glow,grain,grok,hitpaw,ideogram,image-ai-edit,image-batch,image-blur,image-canny,image-captioning,image-collage,image-compare,image-depth,image-edit,image-inpaint,image-invert,image-outpaint,image-outpainting,image-remove-background,image-rotate,image-select-object-segmentation,image-shader,image-sharpen,image-to-3d,image-to-image,image-to-layers,image-to-video,image-upscale,image-vectorize,kling,load-3d,load-audio,load-video,lora-loader,ltxv,luma,magnific,mask,meshy,minimax,moonvalley-marey,node,open-ai-chat-node,openai,pin,pixverse,play,pose-to-image,pose-to-video,quiver,recraft,reve,rodin,runway,save-3d,save-audio,save-video,send,sora,stability-ai,template,tencent,text-prompt-enhance,text-to-3d,text-to-audio,text-to-image,text-to-video,topaz,tripo,veo,video-captioning,video-edit,video-enhance,video-extract-frame,video-inpaint,video-interpolation,video-select-object-segmentation,video-slice,video-split-screen,video-trim,video-upscale,vidu,voice-clone,wan,wavespeed,workflow}]");
@@ -52,6 +52,7 @@
   --color-gold-500: #fdab34;
   --color-gold-600: #fd9903;
   --color-gold-700: #c77700;
+  --color-gold-800: #8c6a38;
 
   --color-credit: #ddbd31;
 
@@ -235,6 +236,8 @@
   --inverted-background-hover: var(--color-charcoal-600);
   --warning-background: var(--color-gold-400);
   --warning-background-hover: var(--color-gold-500);
+  --warning-foreground: var(--color-gold-800);
+  --warning-on-background: var(--color-charcoal-800);
   --success-background: var(--color-jade-600);
   --border-default: var(--color-smoke-600);
   --border-subtle: var(--color-smoke-400);
@@ -388,6 +391,8 @@
   --inverted-background-hover: var(--color-smoke-200);
   --warning-background: var(--color-gold-600);
   --warning-background-hover: var(--color-gold-500);
+  --warning-foreground: var(--color-gold-600);
+  --warning-on-background: var(--color-charcoal-800);
   --success-background: var(--color-jade-600);
   --border-default: var(--color-charcoal-200);
   --border-subtle: var(--color-charcoal-300);
@@ -563,6 +568,8 @@
   --color-inverted-background-hover: var(--inverted-background-hover);
   --color-warning-background: var(--warning-background);
   --color-warning-background-hover: var(--warning-background-hover);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-on-background: var(--warning-on-background);
   --color-success-background: var(--success-background);
   --color-border-default: var(--border-default);
   --color-border-subtle: var(--border-subtle);

@@ -276,6 +276,14 @@ describe('fetchJobs', () => {
 
       expect(result).toEqual({ Running: [], Pending: [] })
     })
+
+    it('propagates errors when requested', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: false, status: 500 })
+
+      await expect(
+        fetchQueue(mockFetch, { throwOnError: true })
+      ).rejects.toThrow('Failed to fetch jobs: 500')
+    })
   })
 
   describe('fetchJobDetail', () => {

@@ -185,7 +185,7 @@ describe('OpenSharedWorkflowDialogContent', () => {
       await flushPromises()
 
       const buttons = container.querySelectorAll('footer button')
-      await userEvent.click(buttons[buttons.length - 1] as HTMLElement)
+      await userEvent.click(buttons[buttons.length - 1])
       expect(onConfirm).toHaveBeenCalledWith(payload)
     })
 
@@ -285,7 +285,7 @@ describe('OpenSharedWorkflowDialogContent', () => {
       await flushPromises()
 
       const buttons = container.querySelectorAll('footer button')
-      await userEvent.click(buttons[buttons.length - 1] as HTMLElement)
+      await userEvent.click(buttons[buttons.length - 1])
       expect(onConfirm).toHaveBeenCalledWith(assetsPayload)
     })
 

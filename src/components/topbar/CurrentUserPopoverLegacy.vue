@@ -30,9 +30,47 @@
       </span>
     </div>
 
+    <div v-if="showWorkspaceSwitcher" class="relative">
+      <Button
+        ref="workspaceSwitcherTrigger"
+        v-tooltip="{ value: workspaceName, showDelay: 300 }"
+        variant="muted-textonly"
+        class="flex h-auto w-full items-center justify-between rounded-lg px-4 py-2 hover:bg-secondary-background-hover"
+        :aria-expanded="isWorkspaceSwitcherOpen"
+        aria-haspopup="menu"
+        aria-controls="workspace-switcher-panel"
+        data-testid="workspace-switcher-trigger"
+        @click="isWorkspaceSwitcherOpen = !isWorkspaceSwitcherOpen"
+        @keydown.escape.stop="isWorkspaceSwitcherOpen = false"
+      >
+        <div class="flex w-0 flex-1 items-center gap-2">
+          <WorkspaceProfilePic
+            class="size-6 shrink-0 text-xs"
+            :workspace-name="workspaceName"
+            :subscription-tier="tier"
+          />
+          <span class="truncate text-sm text-base-foreground">
+            {{ workspaceName }}
+          </span>
+        </div>
+        <i class="pi pi-chevron-down shrink-0 text-sm text-muted-foreground" />
+      </Button>
+
+      <div
+        v-if="isWorkspaceSwitcherOpen"
+        id="workspace-switcher-panel"
+        ref="workspaceSwitcherPanel"
+        role="menu"
+        class="absolute top-0 right-full z-10 mr-4 rounded-lg border border-border-default bg-base-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
+        data-testid="workspace-switcher-panel"
+      >
+        <WorkspaceSwitcherPopover @select="isWorkspaceSwitcherOpen = false" />
+      </div>
+    </div>
+
     <!-- Credits Section -->
     <div
-      v-if="canAccessSubscriptionFeatures"
+      v-if="canAccessSubscriptionFeatures || showWorkspaceSwitcher"
       class="flex items-center gap-2 px-4 py-2"
     >
       <i class="icon-[lucide--coins] text-sm text-credit" />
@@ -51,16 +89,7 @@
         <i class="icon-[lucide--circle-help]" />
       </Button>
       <Button
-        v-if="isCloud && isFreeTier"
-        variant="subscribe"
-        size="sm"
-        data-testid="upgrade-to-add-credits-button"
-        @click="handleUpgradeToAddCredits"
-      >
-        {{ $t('subscription.upgradeToAddCredits') }}
-      </Button>
-      <Button
-        v-else
+        v-if="showAddCredits"
         variant="secondary"
         size="sm"
         class="text-base-foreground"
@@ -69,16 +98,6 @@
       >
         {{ $t('subscription.addCredits') }}
       </Button>
-    </div>
-
-    <div v-else-if="isCloud" class="flex justify-center px-4">
-      <SubscribeButton
-        :fluid="false"
-        :label="$t('subscription.subscribeToComfyCloud')"
-        size="sm"
-        button-variant="subscribe"
-        @subscribed="handleSubscribed"
-      />
     </div>
 
     <Divider class="mx-0 my-2" />
@@ -96,39 +115,14 @@
     </div>
 
     <div
-      v-if="isCloud"
-      class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
-      data-testid="plans-pricing-menu-item"
-      @click="handleOpenPlansAndPricing"
-    >
-      <i class="icon-[lucide--receipt-text] text-sm text-muted-foreground" />
-      <span class="flex-1 text-sm text-base-foreground">{{
-        $t('subscription.plansAndPricing')
-      }}</span>
-      <span
-        v-if="canUpgrade"
-        class="rounded-full bg-base-foreground px-1.5 py-0.5 text-xs font-bold text-base-background"
-      >
-        {{ $t('subscription.upgrade') }}
-      </span>
-    </div>
-
-    <div
-      v-if="canAccessSubscriptionFeatures"
+      v-if="canAccessSubscriptionFeatures || showWorkspaceSwitcher"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="manage-plan-menu-item"
       @click="handleOpenPlanAndCreditsSettings"
     >
-      <i
-        :class="
-          cn(
-            'size-4 text-muted-foreground',
-            isCloud ? 'icon-[lucide--credit-card]' : 'icon-[lucide--coins]'
-          )
-        "
-      />
+      <i class="icon-[lucide--coins] size-4 text-muted-foreground" />
       <span class="flex-1 text-sm text-base-foreground">{{
-        planAndCreditsLabel
+        $t('credits.credits')
       }}</span>
     </div>
 
@@ -159,10 +153,11 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
+import { onClickOutside } from '@vueuse/core'
+import { storeToRefs } from 'pinia'
 import Divider from 'primevue/divider'
 import Skeleton from 'primevue/skeleton'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
@@ -171,12 +166,13 @@ import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
-import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
-import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
+import WorkspaceSwitcherPopover from '@/platform/workspace/components/WorkspaceSwitcherPopover.vue'
 import { useWorkspaceTierLabel } from '@/platform/workspace/composables/useWorkspaceTierLabel'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 
 const emit = defineEmits<{
@@ -191,17 +187,38 @@ const settingsDialog = useSettingsDialog()
 const dialogService = useDialogService()
 const {
   canAccessSubscriptionFeatures,
-  isFreeTier,
   tier,
   subscription,
   balance,
   isLoading,
-  fetchStatus,
   fetchBalance
 } = useBillingContext()
 const { formatTierName } = useWorkspaceTierLabel()
-const subscriptionDialog = useSubscriptionDialog()
-const { locale, t } = useI18n()
+const { locale } = useI18n()
+
+const { initState, workspaces, workspaceName } = storeToRefs(
+  useTeamWorkspaceStore()
+)
+const isWorkspaceSwitcherOpen = ref(false)
+const workspaceSwitcherTrigger = useTemplateRef('workspaceSwitcherTrigger')
+const workspaceSwitcherPanel = useTemplateRef('workspaceSwitcherPanel')
+
+onClickOutside(
+  workspaceSwitcherPanel,
+  () => {
+    isWorkspaceSwitcherOpen.value = false
+  },
+  { ignore: [workspaceSwitcherTrigger] }
+)
+
+const showWorkspaceSwitcher = computed(
+  () => initState.value === 'ready' && workspaces.value.length > 0
+)
+
+const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
+const showAddCredits = computed(
+  () => canTopUp.value || canSubscribeSelfServe.value
+)
 
 const subscriptionTierName = computed(() =>
   formatTierName(tier.value, subscription.value?.duration === 'ANNUAL')
@@ -220,37 +237,15 @@ const formattedBalance = computed(() => {
   })
 })
 
-const canUpgrade = computed(() => {
-  const currentTier = tier.value
-  return (
-    currentTier === 'FREE' ||
-    currentTier === 'FOUNDERS_EDITION' ||
-    currentTier === 'STANDARD' ||
-    currentTier === 'CREATOR'
-  )
-})
-
-const planAndCreditsLabel = computed(() =>
-  isCloud ? t('subscription.managePlan') : t('credits.credits')
-)
-
 const handleOpenUserSettings = () => {
   settingsDialog.show('user')
   emit('close')
 }
 
-const handleOpenPlansAndPricing = () => {
-  subscriptionDialog.showPricingTable({ reason: 'avatar_menu_plans' })
-  emit('close')
-}
-
 const handleOpenPlanAndCreditsSettings = () => {
-  if (isCloud) {
-    settingsDialog.show('subscription')
-  } else {
-    settingsDialog.show('credits')
-  }
-
+  // 'workspace' is the V1 Plan & Credits panel; the legacy 'credits' panel is
+  // hidden from the settings menu and only reachable by key.
+  settingsDialog.show('workspace')
   emit('close')
 }
 
@@ -268,18 +263,9 @@ const handleOpenPartnerNodesInfo = () => {
   emit('close')
 }
 
-const handleUpgradeToAddCredits = () => {
-  subscriptionDialog.showPricingTable({ reason: 'upgrade_to_add_credits' })
-  emit('close')
-}
-
 const handleLogout = async () => {
   await handleSignOut()
   emit('close')
-}
-
-const handleSubscribed = async () => {
-  await fetchStatus()
 }
 
 onMounted(() => {

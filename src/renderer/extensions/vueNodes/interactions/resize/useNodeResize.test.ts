@@ -21,7 +21,7 @@ vi.mock('@vueuse/core', () => ({
   useEventListener: vi.fn(
     (eventName: string, handler: (...args: unknown[]) => void) => {
       if (eventName === 'pointermove' || eventName === 'pointerup') {
-        eventHandlers[eventName] = handler as (e: PointerEvent) => void
+        eventHandlers[eventName] = handler
       }
       return vi.fn()
     }
@@ -58,14 +58,16 @@ vi.mock('@/renderer/extensions/vueNodes/composables/useShiftKeySync', () => ({
   })
 }))
 
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+  useCanvasStore: () => ({ rootGraphId: 'root-graph' })
+}))
+
 vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
     isResizingVueNodes: { value: false },
-    getNodeLayoutRef: vi.fn(() => ({
-      value: {
-        position: { x: 100, y: 200 },
-        size: { width: 300, height: 400 }
-      }
+    getNodeLayout: vi.fn(() => ({
+      position: { x: 100, y: 200 },
+      size: { width: 300, height: 400 }
     }))
   }
 }))
@@ -91,7 +93,7 @@ function createMockNodeElement(
       right: width,
       bottom: h,
       toJSON: () => {}
-    } as DOMRect
+    }
   }
   return element
 }
@@ -132,7 +134,7 @@ function startResizeAt(
     currentTarget: handle,
     clientX,
     clientY
-  } as Partial<PointerEvent>)
+  })
   startResize(downEvent, corner)
 }
 
@@ -307,7 +309,7 @@ describe('useNodeResize', () => {
           right: width,
           bottom: h,
           toJSON: () => {}
-        } as DOMRect
+        }
       }
       return element
     }
@@ -336,7 +338,7 @@ describe('useNodeResize', () => {
 
       // First move: clamp uses initial minContentHeight = 150
       simulateMove(0, -300)
-      const firstPayload = cb.mock.calls.at(-1)![0] as ResizeCallbackPayload
+      const firstPayload = cb.mock.calls.at(-1)![0]
       expect(firstPayload.size.height).toBe(150)
 
       // Content reflows taller (e.g. painter switches to compact layout)
@@ -345,7 +347,7 @@ describe('useNodeResize', () => {
       // Second move at the same position must reflect the new minimum,
       // not the value captured at drag start.
       simulateMove(0, -300)
-      const secondPayload = cb.mock.calls.at(-1)![0] as ResizeCallbackPayload
+      const secondPayload = cb.mock.calls.at(-1)![0]
       expect(secondPayload.size.height).toBe(280)
     })
 
@@ -360,14 +362,14 @@ describe('useNodeResize', () => {
       startResizeAt(startResize, h, 'NW')
 
       simulateMove(0, 500)
-      const firstPayload = cb.mock.calls.at(-1)![0] as ResizeCallbackPayload
+      const firstPayload = cb.mock.calls.at(-1)![0]
       expect(firstPayload.size.height).toBe(150)
       expect(firstPayload.position!.y).toBe(450) // 200 + 400 - 150
 
       currentMinHeight = 220
 
       simulateMove(0, 500)
-      const secondPayload = cb.mock.calls.at(-1)![0] as ResizeCallbackPayload
+      const secondPayload = cb.mock.calls.at(-1)![0]
       expect(secondPayload.size.height).toBe(220)
       expect(secondPayload.position!.y).toBe(380) // 200 + 400 - 220
     })
@@ -422,7 +424,7 @@ describe('useNodeResize', () => {
       startResizeAt(startResize, h, 'SE')
       simulateMove(53, 27)
 
-      const payload = cb.mock.calls.at(-1)![0] as ResizeCallbackPayload
+      const payload = cb.mock.calls.at(-1)![0]
       expect(payload.size.width).toBe(350) // 353 -> 350
       expect(payload.size.height).toBe(430) // 427 -> 430
       expect(payload.position).toBeUndefined()
@@ -448,7 +450,7 @@ describe('useNodeResize', () => {
       // applySnapToSize rounds -> 360, 430
       simulateMove(-53, -27)
 
-      const payload = cb.mock.calls.at(-1)![0] as ResizeCallbackPayload
+      const payload = cb.mock.calls.at(-1)![0]
       expect(payload.position).toEqual({ x: 40, y: 170 })
       expect(payload.size).toEqual({ width: 360, height: 430 })
     })
@@ -496,7 +498,7 @@ describe('useNodeResize', () => {
       // First move drives newWidth to 340 (below breakpoint). Probe must use
       // 340, not the DOM's currently-applied 400, to return 280.
       simulateMove(-60, -300)
-      const payload = cb.mock.calls.at(-1)![0] as ResizeCallbackPayload
+      const payload = cb.mock.calls.at(-1)![0]
       expect(payload.size.height).toBe(280)
     })
 

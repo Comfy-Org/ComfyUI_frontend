@@ -202,7 +202,7 @@ describe('VideoEditPanel', () => {
     renderPanel()
 
     expect(screen.getByTestId('video-playback-controls')).toBeTruthy()
-    expect(screen.getByTestId('playback-timecode').textContent?.trim()).toBe(
+    expect(screen.getByTestId('playback-timecode').textContent.trim()).toBe(
       '0:00 / 0:10'
     )
     expect(screen.getByRole('button', { name: 'Play' })).toBeTruthy()

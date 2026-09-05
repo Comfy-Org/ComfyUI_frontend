@@ -67,7 +67,7 @@ export class ComfyCommandImpl implements ComfyCommand {
   }
 
   get keybinding(): KeybindingImpl | null {
-    return useKeybindingStore().getKeybindingByCommandId(this.id)
+    return useKeybindingStore().getKeybindingByCommandId(this.id) ?? null
   }
 }
 
@@ -76,7 +76,7 @@ export const useCommandStore = defineStore('command', () => {
   const commands = computed(() => Object.values(commandsById.value))
 
   const registerCommand = (command: ComfyCommand) => {
-    if (commandsById.value[command.id]) {
+    if (command.id in commandsById.value) {
       console.warn(`Command ${command.id} already registered`)
     }
     commandsById.value[command.id] = new ComfyCommandImpl(command)
@@ -100,15 +100,14 @@ export const useCommandStore = defineStore('command', () => {
       metadata?: Record<string, unknown>
     }
   ) => {
-    const command = getCommand(commandId)
-    if (command) {
-      await wrapWithErrorHandlingAsync(
-        () => command.function(options?.metadata),
-        options?.errorHandler
-      )()
-    } else {
+    if (!(commandId in commandsById.value)) {
       throw new Error(`Command ${commandId} not found`)
     }
+    const command = getCommand(commandId)
+    await wrapWithErrorHandlingAsync(
+      () => command.function(options?.metadata),
+      options?.errorHandler
+    )()
   }
 
   const isRegistered = (command: string) => {

@@ -33,6 +33,12 @@ jobs:
       pull-requests: write
       issues: write
 
+    # `gh pr view <n>` fails with the auto-provided GITHUB_TOKEN even with
+    # pull-requests: write, which is what silently broke manual dispatch.
+    # Steps needing a different token still set GH_TOKEN themselves.
+    env:
+      GH_TOKEN: ${{ secrets.PR_GH_TOKEN || secrets.GH_TOKEN }}
+
     steps:
       - name: Validate inputs for manual triggers
         if: github.event_name == 'workflow_dispatch'
@@ -43,13 +49,15 @@ jobs:
             exit 1
           fi
 
-          # Validate PR exists and is merged
-          if ! gh pr view "${{ inputs.pr_number }}" --json merged >/dev/null 2>&1; then
-            echo "::error::PR #${{ inputs.pr_number }} not found or inaccessible."
+          # Validate PR exists and is merged. The gh error is surfaced rather
+          # than discarded: an auth failure and a genuinely missing PR are
+          # indistinguishable once it is swallowed.
+          if ! PR_VIEW_ERR=$(gh pr view "${{ inputs.pr_number }}" --json state 2>&1 >/dev/null); then
+            echo "::error::PR #${{ inputs.pr_number }} not found or inaccessible: ${PR_VIEW_ERR}"
             exit 1
           fi
 
-          MERGED=$(gh pr view "${{ inputs.pr_number }}" --json merged --jq '.merged')
+          MERGED=$(gh pr view "${{ inputs.pr_number }}" --json state --jq '.state == "MERGED"')
           if [ "$MERGED" != "true" ]; then
             echo "::error::PR #${{ inputs.pr_number }} is not merged. Only merged PRs can be backported."
             exit 1
@@ -61,7 +69,6 @@ jobs:
             exit 1
           fi
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
 
       - name: Checkout repository
@@ -82,7 +89,6 @@ jobs:
       - name: Collect backport targets
         id: targets
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: |
           TARGETS=()
@@ -151,7 +157,6 @@ jobs:
           FORCE_RERUN_INPUT: >-
             ${{ github.event_name == 'workflow_dispatch' && inputs.force_rerun
             || 'false' }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: >-
             ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number
             || github.event.pull_request.number }}
@@ -234,7 +239,6 @@ jobs:
         id: backport
         env:
           PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: |
           FAILED=""
@@ -396,7 +400,6 @@ jobs:
       - name: Comment on failures
         if: steps.filter-targets.outputs.skip != 'true' && failure() && steps.backport.outputs.failed
         env:
-          GH_TOKEN: ${{ github.token }}
           BACKPORT_AGENT_PROMPT_TEMPLATE: |
             Backport PR #${PR_NUMBER} (${PR_URL}) to ${target}.
             Cherry-pick merge commit ${MERGE_COMMIT} onto new branch
@@ -539,5 +542,3 @@ jobs:
       - name: Remove needs-backport label
         if: steps.filter-targets.outputs.skip != 'true' && success()
         run: gh pr edit ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }} --remove-label "needs-backport"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

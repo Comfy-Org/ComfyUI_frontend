@@ -27,14 +27,14 @@ export class NodeOperationsHelper {
 
   async getGraphNodesCount(): Promise<number> {
     return await this.page.evaluate(() => {
-      return window.app?.graph?.nodes?.length || 0
+      return window.app?.graph.nodes.length || 0
     })
   }
 
   async getSelectedGraphNodesCount(): Promise<number> {
     return await this.page.evaluate(() => {
       return (
-        window.app?.graph?.nodes?.filter(
+        window.app?.graph.nodes.filter(
           (node: LGraphNode) => node.is_selected === true
         ).length || 0
       )
@@ -43,7 +43,7 @@ export class NodeOperationsHelper {
 
   async getSelectedNodeIds(): Promise<NodeId[]> {
     const selectedNodeIds = await this.page.evaluate(() => {
-      const selected = window.app?.canvas?.selected_nodes
+      const selected = window.app?.canvas.selected_nodes
       if (!selected) return []
       return Object.keys(selected)
     })
@@ -68,7 +68,7 @@ export class NodeOperationsHelper {
       ([nodeType, opts, pos]) => {
         const node = window.LiteGraph!.createNode(nodeType)!
         const addOpts: Record<string, unknown> = { ...opts }
-        if (opts?.ghost && pos) {
+        if (opts.ghost && pos) {
           addOpts.dragEvent = new MouseEvent('click', {
             clientX: pos.x,
             clientY: pos.y
@@ -95,15 +95,9 @@ export class NodeOperationsHelper {
     return await this.page.evaluate(() => window.app!.graph.nodes.length)
   }
 
-  async getNodes(): Promise<LGraphNode[]> {
-    return await this.page.evaluate(() => {
-      return window.app!.graph.nodes
-    })
-  }
-
   async waitForGraphNodes(count: number): Promise<void> {
     await this.page.waitForFunction((count) => {
-      return window.app?.canvas.graph?.nodes?.length === count
+      return window.app?.canvas.graph?.nodes.length === count
     }, count)
   }
 
@@ -141,6 +135,15 @@ export class NodeOperationsHelper {
     )
   }
 
+  async getNodeRefByType(
+    type: string,
+    includeSubgraph: boolean = false
+  ): Promise<NodeReference> {
+    const node = (await this.getNodeRefsByType(type, includeSubgraph)).at(0)
+    if (!node) throw new Error(`Node of type "${type}" not found`)
+    return node
+  }
+
   async getNodeRefsByTitle(title: string): Promise<NodeReference[]> {
     return Promise.all(
       (
@@ -151,6 +154,12 @@ export class NodeOperationsHelper {
         }, title)
       ).map((id: SerializedNodeId) => this.getNodeRefById(id))
     )
+  }
+
+  async getNodeRefByTitle(title: string): Promise<NodeReference> {
+    const node = (await this.getNodeRefsByTitle(title)).at(0)
+    if (!node) throw new Error(`Node titled "${title}" not found`)
+    return node
   }
 
   async selectNodes(nodeTitles: string[]): Promise<void> {
@@ -226,8 +235,11 @@ export class NodeOperationsHelper {
     title: string,
     delta: { x: number; y: number }
   ): Promise<{ nodeRef: NodeReference; node: VueNodeFixture; size: Size }> {
-    const [nodeRef] = await this.getNodeRefsByTitle(title)
-    if (!nodeRef) throw new Error(`No node titled "${title}" on the canvas`)
+    const nodeRefs = await this.getNodeRefsByTitle(title)
+    if (nodeRefs.length === 0) {
+      throw new Error(`No node titled "${title}" on the canvas`)
+    }
+    const nodeRef = nodeRefs[0]
 
     // Saved pans can leave the node too low for a downward drag to stay onscreen.
     await nodeRef.centerOnNode()
@@ -301,7 +313,7 @@ function applyNodePositions(
   positions: Record<string, [number, number]>
 ): void {
   for (const node of data.nodes) {
-    const pos = positions[String(node.id)]
-    if (pos) node.pos = pos
+    const id = String(node.id)
+    if (Object.hasOwn(positions, id)) node.pos = positions[id]
   }
 }

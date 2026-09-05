@@ -12,6 +12,10 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import type { ResultItemImpl } from '@/stores/queueStore'
 
+/* MediaLightbox retains this component via KeepAlive include, which matches on
+   the registered component name. */
+defineOptions({ name: 'ResultVideo' })
+
 const props = defineProps<{
   result: ResultItemImpl
 }>()

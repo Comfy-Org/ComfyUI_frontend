@@ -8,6 +8,9 @@
   "ignorePatterns": [
     "packages/registry-types/src/comfyRegistryTypes.ts",
     "public/materialdesignicons.min.css",
+    "scripts/registry-census/corpus.pins.json",
+    "scripts/registry-census/detection-proof/**",
+    "src/__ecs_matrix__/**",
     "src/types/generatedManagerTypes.ts",
     "src/locales/**/*.json",
     "**/__fixtures__/**/*.json",

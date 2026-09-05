@@ -2,7 +2,7 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-image=ghcr.io/comfy-org/comfyui-ci-container:0.0.21
+image=ghcr.io/comfy-org/comfyui-ci-container:0.0.22
 version="${image##*:}"
 fallback_image="comfyui-ci-container-local:$version"
 port="${COMFYUI_PORT:-8188}"

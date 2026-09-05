@@ -28,10 +28,10 @@ const ButtonStub = {
 
 describe('WidgetButton Interactions', () => {
   const createButtonWidget = (
-    overrides: Partial<SimplifiedWidget<void, ButtonWidgetOptions>> = {}
-  ) => createMockWidget<void>({ ...BUTTON_DEFAULTS, ...overrides })
+    overrides: Partial<SimplifiedWidget<undefined, ButtonWidgetOptions>> = {}
+  ) => createMockWidget<undefined>({ ...BUTTON_DEFAULTS, ...overrides })
 
-  const mountComponent = (widget: SimplifiedWidget<void>) => {
+  const mountComponent = (widget: SimplifiedWidget<undefined>) => {
     const user = userEvent.setup()
     const result = render(WidgetButton, {
       global: {

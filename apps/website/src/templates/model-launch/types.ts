@@ -38,6 +38,11 @@ export interface ModelLaunchHero {
   // never fetch videoSrc. Opt-in: pages that omit it keep playing the video
   // at every viewport size, as they did before this field existed.
   mobileFallbackImageSrc?: string
+  // Lightweight encode played below the 768px breakpoint in place of videoSrc,
+  // for pages whose full clip is too heavy for phones. Once the client mounts
+  // it wins over mobileFallbackImageSrc, which keeps covering SSR and the
+  // first client tick.
+  mobileVideoSrc?: string
   // 'content-first' puts the badges, heading, CTAs and prompt bar above the
   // video. 'media-first' leads with the video, which is how /minimax reads.
   // 'overlay' centres the eyebrow, heading and CTAs on top of the media behind
@@ -139,7 +144,8 @@ export interface ModelLaunchClosingCta {
 interface ModelLaunchStep {
   id: string
   title: LocalizedText
-  description: LocalizedText
+  // Optional: a step can be a title on its own, with no supporting line.
+  description?: LocalizedText
 }
 
 export interface ModelLaunchSteps {
@@ -148,6 +154,27 @@ export interface ModelLaunchSteps {
   items: readonly ModelLaunchStep[]
   primaryCta?: ModelLaunchCta
   secondaryCta?: ModelLaunchCta
+}
+
+interface ModelLaunchComparisonColumn {
+  id: string
+  label: LocalizedText
+}
+
+interface ModelLaunchComparisonRow {
+  id: string
+  label: LocalizedText
+  // One cell per column, in `columns` order.
+  cells: readonly LocalizedText[]
+}
+
+// A feature/tier comparison table, e.g. Professional vs Enterprise on
+// /minimax/license. The first column holds the row labels; `columns` are the
+// remaining headers.
+export interface ModelLaunchComparison {
+  headingKey: TranslationKey
+  columns: readonly ModelLaunchComparisonColumn[]
+  rows: readonly ModelLaunchComparisonRow[]
 }
 
 export interface ModelLaunchRunOptions {
@@ -174,6 +201,7 @@ export type ModelLaunchSection =
   | 'gallery'
   | 'audioGallery'
   | 'steps'
+  | 'comparison'
   | 'pricing'
   | 'faq'
   | 'closingCta'
@@ -188,6 +216,7 @@ export const DEFAULT_SECTION_ORDER: readonly ModelLaunchSection[] = [
   'pricing',
   'faq',
   'steps',
+  'comparison',
   'closingCta'
 ]
 
@@ -204,6 +233,7 @@ export interface ModelLaunchPage {
   pricing?: ModelLaunchPricing
   faq?: ModelLaunchFaqSection
   steps?: ModelLaunchSteps
+  comparison?: ModelLaunchComparison
   // Pages that end on a steps CTA row do not need a separate closing CTA.
   closingCta?: ModelLaunchClosingCta
   // Reorders the optional body sections for this page only. Defaults to

@@ -138,7 +138,7 @@ describe('CloudHeroCarousel', () => {
 
     await user.click(screen.getByRole('button', { name: 'Next slide' }))
 
-    expect(liveRegion?.textContent?.trim()).toBe('Model 1, slide 2 of 3')
+    expect(liveRegion?.textContent.trim()).toBe('Model 1, slide 2 of 3')
   })
 
   it('renders navigation only when there is more than one slide', async () => {

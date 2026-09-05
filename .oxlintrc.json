@@ -8,6 +8,9 @@
     "dist/*",
     "packages/registry-types/src/comfyRegistryTypes.ts",
     "playwright-report/*",
+    "scripts/patch-playwright-agents.js",
+    "scripts/registry-census/detection-proof/**",
+    "src/__ecs_matrix__/**",
     "src/extensions/core/*",
     "src/scripts/*",
     "src/types/generatedManagerTypes.ts",
@@ -24,9 +27,10 @@
     "vitest",
     "vue"
   ],
-  "jsPlugins": ["./tools/oxlint-plugins/comfyIngestTypes.ts"],
+  "jsPlugins": ["./tools/oxlint-plugins/comfy.ts"],
   "rules": {
     "comfy/no-duplicate-ingest-type": "error",
+    "comfy/no-render-in-watch-effect": "error",
     "no-async-promise-executor": "off",
     "no-console": [
       "error",
@@ -83,7 +87,16 @@
     "vitest/require-to-throw-message": "off",
     "typescript/no-this-alias": "off",
     "typescript/no-useless-default-assignment": "off",
-    "typescript/no-unnecessary-parameter-property-assignment": "off",
+    "typescript/no-unnecessary-boolean-literal-compare": "error",
+    "typescript/no-unnecessary-condition": "error",
+    "typescript/no-unnecessary-parameter-property-assignment": "error",
+    "typescript/no-unnecessary-qualifier": "error",
+    "typescript/no-unnecessary-template-expression": "error",
+    "typescript/no-unnecessary-type-arguments": "error",
+    "typescript/no-unnecessary-type-assertion": "error",
+    "typescript/no-unnecessary-type-constraint": "error",
+    "typescript/no-unnecessary-type-conversion": "error",
+    "typescript/no-unnecessary-type-parameters": "error",
     "typescript/no-unsafe-declaration-merging": "off",
     "typescript/no-unused-vars": "off",
     "unicorn/no-empty-file": "off",
@@ -127,6 +140,37 @@
       "files": ["**/*.{stories,test,spec}.ts", "**/*.stories.vue"],
       "rules": {
         "no-console": "allow"
+      }
+    },
+    {
+      "files": ["**/*.test.{ts,tsx}"],
+      "rules": {
+        "comfy/no-module-scope-vitest-mocks": "error",
+        "comfy/no-persistent-litegraph-registration": "error",
+        "comfy/no-redundant-litegraph-cleanup": "error",
+        "comfy/no-redundant-vitest-cleanup": "error"
+      }
+    },
+    {
+      "files": [
+        "apps/**/*.test.{ts,tsx}",
+        "packages/object-info-parser/**/*.test.{ts,tsx}"
+      ],
+      "rules": {
+        "comfy/no-persistent-litegraph-registration": "off",
+        "comfy/no-redundant-litegraph-cleanup": "off"
+      }
+    },
+    {
+      "files": ["tools/test-recorder/**/*.ts"],
+      "rules": {
+        "no-console": "allow"
+      }
+    },
+    {
+      "files": ["browser_tests/tests/**/*.spec.ts", "apps/*/e2e/**/*.spec.ts"],
+      "rules": {
+        "comfy/no-comfy-page-setup-call": "error"
       }
     },
     {

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { EffectScope, Ref } from 'vue'
 import { effectScope, ref } from 'vue'
 
@@ -11,9 +11,6 @@ vi.mock('@/platform/telemetry', () => ({
 }))
 
 import { useSearchQueryTracking } from './useSearchQueryTracking'
-
-const DEBOUNCE_FLUSH_MS = 600
-const flush = () => new Promise((r) => setTimeout(r, DEBOUNCE_FLUSH_MS))
 
 describe('useSearchQueryTracking', () => {
   const scopes: EffectScope[] = []
@@ -30,6 +27,10 @@ describe('useSearchQueryTracking', () => {
     return scope
   }
 
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+
   afterEach(() => {
     scopes.forEach((s) => s.stop())
     scopes.length = 0
@@ -40,7 +41,7 @@ describe('useSearchQueryTracking', () => {
     const results = ref<string[]>(['a', 'b', 'c'])
     track(query, results)
     query.value = '  hello  '
-    await flush()
+    await vi.advanceTimersByTimeAsync(500)
     expect(hoisted.trackSearchQuery).toHaveBeenCalledExactlyOnceWith({
       surface: 'node_sidebar',
       query: 'hello',
@@ -55,7 +56,7 @@ describe('useSearchQueryTracking', () => {
     const results = ref<string[]>([])
     track(query, results)
     query.value = 'nothingmatches'
-    await flush()
+    await vi.advanceTimersByTimeAsync(500)
     expect(hoisted.trackSearchQuery).toHaveBeenCalledExactlyOnceWith({
       surface: 'node_sidebar',
       query: 'nothingmatches',
@@ -70,7 +71,7 @@ describe('useSearchQueryTracking', () => {
     const results = ref<string[]>(['a', 'b'])
     track(query, results)
     query.value = '   '
-    await flush()
+    await vi.advanceTimersByTimeAsync(500)
     expect(hoisted.trackSearchQuery).not.toHaveBeenCalled()
   })
 
@@ -80,7 +81,7 @@ describe('useSearchQueryTracking', () => {
     const scope = track(query, results)
     query.value = 'hello'
     scope.stop()
-    await flush()
+    await vi.advanceTimersByTimeAsync(500)
     expect(hoisted.trackSearchQuery).not.toHaveBeenCalled()
   })
 
@@ -90,7 +91,7 @@ describe('useSearchQueryTracking', () => {
     track(query, results)
     const long = 'x'.repeat(250)
     query.value = long
-    await flush()
+    await vi.advanceTimersByTimeAsync(500)
     expect(hoisted.trackSearchQuery).toHaveBeenCalledExactlyOnceWith({
       surface: 'node_sidebar',
       query: 'x'.repeat(100),

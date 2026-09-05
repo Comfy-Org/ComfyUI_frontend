@@ -37,7 +37,7 @@ test.describe('Feature Flags', { tag: ['@slow', '@settings'] }, () => {
 
       // Monitor for server feature flags
       const checkInterval = setInterval(() => {
-        const flags = window.app?.api?.serverFeatureFlags?.value
+        const flags = window.app?.api.serverFeatureFlags.value
         if (flags && Object.keys(flags).length > 0) {
           window.__capturedMessages!.serverFeatureFlags = flags
           clearInterval(checkInterval)
@@ -68,7 +68,7 @@ test.describe('Feature Flags', { tag: ['@slow', '@settings'] }, () => {
       expect(flags?.type).toBe('feature_flags')
       expect(flags?.data).not.toBeNull()
       expect(flags?.data).toHaveProperty('supports_preview_metadata')
-      expect(typeof flags?.data?.supports_preview_metadata).toBe('boolean')
+      expect(typeof flags?.data.supports_preview_metadata).toBe('boolean')
     }).toPass({ timeout: 5000 })
 
     // Verify server sent feature flags back
@@ -295,8 +295,8 @@ test.describe('Feature Flags', { tag: ['@slow', '@settings'] }, () => {
       // Monitor when feature flags arrive by checking periodically
       const checkFeatureFlags = setInterval(() => {
         if (
-          window.app?.api?.serverFeatureFlags?.value
-            ?.supports_preview_metadata !== undefined
+          window.app?.api.serverFeatureFlags.value.supports_preview_metadata !==
+          undefined
         ) {
           window.__appReadiness!.featureFlagsReceived = true
           clearInterval(checkFeatureFlags)
@@ -333,8 +333,8 @@ test.describe('Feature Flags', { tag: ['@slow', '@settings'] }, () => {
     // Wait for feature flags to be received
     await newPage.waitForFunction(
       () =>
-        window.app?.api?.serverFeatureFlags?.value
-          ?.supports_preview_metadata !== undefined,
+        window.app?.api.serverFeatureFlags.value.supports_preview_metadata !==
+        undefined,
       {
         timeout: 10000
       }
@@ -346,7 +346,7 @@ test.describe('Feature Flags', { tag: ['@slow', '@settings'] }, () => {
         () => window.app!.api.serverFeatureFlags.value
       )
       expect(flags).toHaveProperty('supports_preview_metadata')
-      expect(typeof flags?.supports_preview_metadata).toBe('boolean')
+      expect(typeof flags.supports_preview_metadata).toBe('boolean')
       expect(flags).toHaveProperty('max_upload_size')
     }).toPass({ timeout: 5000 })
 

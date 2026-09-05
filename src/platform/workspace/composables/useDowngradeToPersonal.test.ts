@@ -1,20 +1,23 @@
+import { createTestingPinia } from '@pinia/testing'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
+import type { ListMembersParams } from '@/platform/workspace/api/workspaceApi'
 import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import {
   ReactivationConfirmationRequiredError,
   useDowngradeToPersonal
 } from './useDowngradeToPersonal'
 
-const mockMembers = ref<WorkspaceMember[]>([])
 const mockUserEmail = ref<string | null>(null)
 const mockSubscription = ref<{ isCancelled: boolean } | null>(null)
 const mockIsInitialized = ref(true)
-const mockRemoveMember = vi.hoisted(() => vi.fn())
-const mockFetchMembers = vi.hoisted(() => vi.fn())
+const mockRemoveMember = vi.fn<(userId: string) => Promise<void>>()
+const mockFetchMembers =
+  vi.fn<(params?: ListMembersParams) => Promise<WorkspaceMember[]>>()
 const mockSubscribe = vi.hoisted(() => vi.fn())
 const mockPreviewSubscribe = vi.hoisted(() => vi.fn())
 const mockFetchStatus = vi.hoisted(() => vi.fn())
@@ -26,31 +29,50 @@ const mockPermissions = vi.hoisted(() => ({
     canDowngradeToPersonal: true
   }
 }))
+const mockCanDowngradeToPersonal = vi.hoisted(() => ({ value: true }))
 
-vi.mock('pinia', async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...(actual as object),
-    storeToRefs: (store: Record<string, unknown>) => store
+let workspaceStore: ReturnType<typeof useTeamWorkspaceStore> & {
+  activeWorkspaceId: string | null
+}
+
+const mockMembers = {
+  get value() {
+    return workspaceStore.members
+  },
+  set value(members: WorkspaceMember[]) {
+    workspaceStore.workspaces = [
+      {
+        id: 'workspace-one',
+        name: 'Team workspace',
+        type: 'team',
+        role: 'owner',
+        created_at: '2025-01-01',
+        joined_at: '2025-01-01',
+        isSubscribed: true,
+        subscriptionPlan: null,
+        subscriptionTier: 'PRO',
+        members,
+        pendingInvites: []
+      }
+    ]
+    workspaceStore.activeWorkspaceId = 'workspace-one'
   }
-})
-
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    members: mockMembers,
-    removeMember: mockRemoveMember,
-    fetchMembers: mockFetchMembers
-  })
-}))
+}
 
 vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
-  useBillingOperationStore: () => ({
-    startOperation: mockStartOperation
-  })
+  useBillingOperationStore: () => ({ startOperation: mockStartOperation })
 }))
 
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({ permissions: mockPermissions })
+}))
+
+vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+
+vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
+  useBillingCapabilities: () => ({
+    canDowngradeToPersonal: mockCanDowngradeToPersonal
+  })
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
@@ -114,7 +136,13 @@ describe('useDowngradeToPersonal', () => {
   let windowOpen: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
+    workspaceStore = useTeamWorkspaceStore(pinia)
+    vi.mocked(workspaceStore.removeMember).mockImplementation(mockRemoveMember)
+    vi.mocked(workspaceStore.fetchMembers).mockImplementation(mockFetchMembers)
     mockMembers.value = []
+    mockRemoveMember.mockResolvedValue()
+    mockFetchMembers.mockResolvedValue([])
     mockUserEmail.value = null
     // Once loaded (isInitialized true), subscription is never null in
     // production — it's at least a FREE-tier record. Default to that
@@ -132,6 +160,7 @@ describe('useDowngradeToPersonal', () => {
       canManageSubscription: true,
       canDowngradeToPersonal: true
     }
+    mockCanDowngradeToPersonal.value = true
     windowOpen = vi.spyOn(window, 'open').mockReturnValue({} as Window)
   })
 
@@ -195,6 +224,21 @@ describe('useDowngradeToPersonal', () => {
   describe('downgradeToPersonal', () => {
     it('rejects a promoted owner before previewing or removing members', async () => {
       mockPermissions.value.canDowngradeToPersonal = false
+      mockCanDowngradeToPersonal.value = false
+      mockMembers.value = teamWithOwnerAnd('m1')
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
+        'subscription.downgrade.notAllowed'
+      )
+      expect(mockPreviewSubscribe).not.toHaveBeenCalled()
+      expect(mockRemoveMember).not.toHaveBeenCalled()
+      expect(mockSubscribe).not.toHaveBeenCalled()
+    })
+
+    it('rejects a client-side owner when the server denies the downgrade', async () => {
+      mockPermissions.value.canDowngradeToPersonal = true
+      mockCanDowngradeToPersonal.value = false
       mockMembers.value = teamWithOwnerAnd('m1')
       const { downgradeToPersonal } = useDowngradeToPersonal()
 
@@ -210,6 +254,7 @@ describe('useDowngradeToPersonal', () => {
       mockMembers.value = teamWithOwnerAnd('m1')
       mockPreviewSubscribe.mockImplementation(async () => {
         mockPermissions.value.canDowngradeToPersonal = false
+        mockCanDowngradeToPersonal.value = false
         return { allowed: true }
       })
       const { downgradeToPersonal } = useDowngradeToPersonal()
@@ -225,6 +270,7 @@ describe('useDowngradeToPersonal', () => {
       mockMembers.value = teamWithOwnerAnd('m1', 'm2')
       mockRemoveMember.mockImplementation(async () => {
         mockPermissions.value.canDowngradeToPersonal = false
+        mockCanDowngradeToPersonal.value = false
       })
       const { downgradeToPersonal } = useDowngradeToPersonal()
 
@@ -912,6 +958,7 @@ describe('useDowngradeToPersonal', () => {
         canManageSubscription: false,
         canDowngradeToPersonal: false
       }
+      mockCanDowngradeToPersonal.value = false
       const { refreshMembers } = useDowngradeToPersonal()
 
       await expect(refreshMembers()).rejects.toThrow(
@@ -922,6 +969,7 @@ describe('useDowngradeToPersonal', () => {
 
     it('rejects a promoted owner after refreshing the original-owner signal', async () => {
       mockPermissions.value.canDowngradeToPersonal = false
+      mockCanDowngradeToPersonal.value = false
       const { refreshMembers } = useDowngradeToPersonal()
 
       await expect(refreshMembers()).rejects.toThrow(

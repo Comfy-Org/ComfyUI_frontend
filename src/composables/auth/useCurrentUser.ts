@@ -12,9 +12,14 @@ export const useCurrentUser = () => {
   const apiKeyStore = useApiKeyAuthStore()
 
   const firebaseUser = computed(() => authStore.currentUser)
-  const isApiKeyLogin = computed(() => apiKeyStore.isAuthenticated)
+  // A Firebase session takes precedence on every auth rail (see
+  // authStore.getUserAuthHeader), so a stored key behind a Firebase login is
+  // not an API-key session.
+  const isApiKeyLogin = computed(
+    () => apiKeyStore.isAuthenticated && firebaseUser.value === null
+  )
   const isLoggedIn = computed(
-    () => !!isApiKeyLogin.value || firebaseUser.value !== null
+    () => isApiKeyLogin.value || firebaseUser.value !== null
   )
 
   const resolvedUserInfo = computed<AuthUserInfo | null>(() => {

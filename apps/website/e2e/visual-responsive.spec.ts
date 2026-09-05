@@ -3,6 +3,7 @@ import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
+import { waitForIsland } from './fixtures/islands'
 import { VIEWPORTS } from './viewports'
 
 test.describe.configure({ timeout: 60_000 })
@@ -63,7 +64,7 @@ test.describe('Pricing', { tag: '@visual' }, () => {
   for (const vp of VIEWPORTS) {
     test(`pricing-tiers-${vp.name}`, async ({ page }) => {
       await page.setViewportSize({ width: vp.width, height: vp.height })
-      await navigateAndSettle(page, '/cloud/pricing')
+      await navigateAndSettle(page, '/pricing')
       await assertNoOverflow(page)
 
       const section = page.locator('section', {
@@ -76,12 +77,29 @@ test.describe('Pricing', { tag: '@visual' }, () => {
   }
 })
 
+// Pricing renders a native <details> FAQ; Enterprise renders FAQSplit01, whose
+// Reka accordion has no <details> at all. Each page names its own trigger and
+// its own "this entry is open" marker.
 const FAQ_PAGES = [
-  { name: 'pricing', url: '/cloud/pricing' },
-  { name: 'enterprise', url: '/cloud/enterprise' }
+  {
+    name: 'pricing',
+    url: '/pricing',
+    // PricingFaq.astro is plain markup — there is no island to wait for.
+    island: false,
+    trigger: 'details > summary',
+    opened: 'details[open]'
+  },
+  {
+    name: 'enterprise',
+    url: '/enterprise',
+    // FAQSplit01.vue, mounted client:visible.
+    island: true,
+    trigger: 'button[data-slot="accordion-trigger"]',
+    opened: '[data-slot="accordion-item"][data-state="open"]'
+  }
 ]
 
-for (const { name, url } of FAQ_PAGES) {
+for (const { name, url, island, trigger, opened } of FAQ_PAGES) {
   test.describe(`${name} FAQ`, { tag: '@visual' }, () => {
     for (const vp of VIEWPORTS) {
       test(`${name}-faq-${vp.name}`, async ({ page }) => {
@@ -89,10 +107,17 @@ for (const { name, url } of FAQ_PAGES) {
         await navigateAndSettle(page, url)
 
         const faq = page.locator('#faq')
-        await faq.scrollIntoViewIfNeeded()
-        const summaries = faq.locator('details > summary')
-        await summaries.nth(0).click()
-        await summaries.nth(1).click()
+        if (island) await waitForIsland(page, faq)
+        else await faq.scrollIntoViewIfNeeded()
+
+        const triggers = faq.locator(trigger)
+        // Fail in seconds when the FAQ markup changes. Clicking a selector that
+        // matches nothing instead burns the whole 60s test timeout, on every
+        // retry and every viewport — enough to blow the job's time budget.
+        await expect(triggers.nth(1)).toBeVisible()
+        await triggers.nth(0).click()
+        await triggers.nth(1).click()
+        await expect(faq.locator(opened)).toHaveCount(2)
 
         await expect(faq).toHaveScreenshot(`${name}-faq-${vp.name}.png`)
       })
@@ -150,8 +175,9 @@ test.describe('Overflow guards', { tag: '@visual' }, () => {
   const pages = [
     '/',
     '/cloud',
-    '/cloud/enterprise',
-    '/cloud/pricing',
+    '/enterprise',
+    '/enterprise/managed-builds',
+    '/pricing',
     '/contact',
     '/download',
     '/gallery',

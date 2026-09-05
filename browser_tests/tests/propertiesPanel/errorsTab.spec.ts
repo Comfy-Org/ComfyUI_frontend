@@ -19,6 +19,8 @@ test.describe('Errors tab - common', { tag: '@ui' }, () => {
 
       const panel = new PropertiesPanelHelper(comfyPage.page)
       await expect(panel.errorsTabIcon).toBeVisible()
+      // Missing resources alone are setup warnings, not blocking errors.
+      await expect(panel.errorsTabIcon).toHaveAccessibleName('Setup required')
     })
 
     test('Should not show Errors tab when setting is disabled', async ({
@@ -38,6 +40,7 @@ test.describe('Errors tab - common', { tag: '@ui' }, () => {
 
   test.describe('Search and filter', () => {
     test.beforeEach(async ({ comfyPage }) => {
+      // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
       await comfyPage.setup()
     })
 

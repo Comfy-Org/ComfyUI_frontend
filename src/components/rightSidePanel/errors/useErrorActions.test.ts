@@ -39,9 +39,7 @@ describe('useErrorActions', () => {
       trackUiButtonClicked: mocks.trackUiButtonClicked,
       trackHelpResourceClicked: mocks.trackHelpResourceClicked
     }
-    windowOpenSpy = vi
-      .spyOn(window, 'open')
-      .mockImplementation(() => null as unknown as Window)
+    windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
   })
 
   afterEach(() => {

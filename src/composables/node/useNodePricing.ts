@@ -118,17 +118,34 @@ type PricingResult =
     }
   | { type: 'list_usd'; usd: number[]; format?: CreditFormatOptions }
 
-const PRICING_RESULT_TYPES = ['text', 'usd', 'range_usd', 'list_usd'] as const
-
 /** Type guard to validate that a value is a PricingResult. */
-const isPricingResult = (value: unknown): value is PricingResult =>
-  typeof value === 'object' &&
-  value !== null &&
-  'type' in value &&
-  typeof (value as { type: unknown }).type === 'string' &&
-  PRICING_RESULT_TYPES.includes(
-    (value as { type: string }).type as (typeof PRICING_RESULT_TYPES)[number]
-  )
+const isPricingResult = (value: unknown): value is PricingResult => {
+  if (typeof value !== 'object' || value === null || !('type' in value)) {
+    return false
+  }
+
+  switch (value.type) {
+    case 'text':
+      return 'text' in value && typeof value.text === 'string'
+    case 'usd':
+      return 'usd' in value && typeof value.usd === 'number'
+    case 'range_usd':
+      return (
+        'min_usd' in value &&
+        typeof value.min_usd === 'number' &&
+        'max_usd' in value &&
+        typeof value.max_usd === 'number'
+      )
+    case 'list_usd':
+      return (
+        'usd' in value &&
+        Array.isArray(value.usd) &&
+        value.usd.every((usd) => typeof usd === 'number')
+      )
+    default:
+      return false
+  }
+}
 
 /**
  * Widget values are normalized based on their declared type:
@@ -152,22 +169,7 @@ type CompiledJsonataPricingRule = JsonataPricingRule & {
   _compiled: Expression | null
 }
 
-/**
- * Shape of nodeData attached to LGraphNode constructor for API nodes.
- * Uses Pick from schema type to ensure consistency.
- */
-type NodeConstructorData = Partial<
-  Pick<ComfyNodeDef, 'name' | 'api_node' | 'price_badge'>
->
-
-/**
- * Extract nodeData from an LGraphNode's constructor.
- * Centralizes the `as any` cast needed to access this runtime property.
- */
-const getNodeConstructorData = (
-  node: LGraphNode
-): NodeConstructorData | undefined =>
-  (node.constructor as { nodeData?: NodeConstructorData }).nodeData
+const getNodeConstructorData = (node: LGraphNode) => node.constructor.nodeData
 
 type JsonataEvalContext = {
   widgets: Record<string, NormalizedWidgetValue>
@@ -251,19 +253,18 @@ const buildJsonataContext = (
 
   const inputs: Record<string, { connected: boolean }> = {}
   for (const name of rule.depends_on.inputs) {
-    const slot = node.inputs?.find((x: INodeInputSlot) => x.name === name)
-    inputs[name] = { connected: slot?.link != null }
+    const index = node.inputs.findIndex((x: INodeInputSlot) => x.name === name)
+    inputs[name] = { connected: index !== -1 && node.isInputConnected(index) }
   }
 
   // Count connected inputs per autogrow group
   const inputGroups: Record<string, number> = {}
   for (const groupName of rule.depends_on.input_groups) {
     const prefix = groupName + '.'
-    inputGroups[groupName] =
-      node.inputs?.filter(
-        (inp: INodeInputSlot) =>
-          inp.name?.startsWith(prefix) && inp.link != null
-      ).length ?? 0
+    inputGroups[groupName] = node.inputs.filter(
+      (inp: INodeInputSlot, index: number) =>
+        inp.name.startsWith(prefix) && node.isInputConnected(index)
+    ).length
   }
 
   return { widgets, inputs, inputGroups }
@@ -327,8 +328,7 @@ export const formatPricingResult = (
     !('type' in result) &&
     'usd' in result
   ) {
-    const r = result as { usd: unknown }
-    const usd = asFiniteNumber(r.usd)
+    const usd = asFiniteNumber(result.usd)
     if (usd === null) return ''
     if (valueOnly) return formatCreditsValue(usd)
     return formatCreditsLabel(usd, defaults)
@@ -342,7 +342,7 @@ export const formatPricingResult = (
   }
 
   if (result.type === 'text') {
-    return result.text ?? ''
+    return result.text
   }
 
   if (result.type === 'usd') {
@@ -368,11 +368,8 @@ export const formatPricingResult = (
     return formatCreditsRangeLabel(minUsd, maxUsd, fmt)
   }
 
-  if (result.type === 'list_usd') {
-    const arr = Array.isArray(result.usd) ? result.usd : null
-    if (!arr) return ''
-
-    const usdValues = arr
+  {
+    const usdValues = result.usd
       .map(asFiniteNumber)
       .filter((x): x is number => x != null)
 
@@ -385,8 +382,6 @@ export const formatPricingResult = (
     }
     return formatCreditsListLabel(usdValues, fmt)
   }
-
-  return ''
 }
 
 // -----------------------------
@@ -412,12 +407,8 @@ const compiledRulesCache = new Map<string, CompiledJsonataPricingRule | null>()
  * Convert a PriceBadge from node definition to a JsonataPricingRule.
  */
 const priceBadgeToRule = (priceBadge: PriceBadge): JsonataPricingRule => ({
-  engine: priceBadge.engine ?? 'jsonata',
-  depends_on: {
-    widgets: priceBadge.depends_on?.widgets ?? [],
-    inputs: priceBadge.depends_on?.inputs ?? [],
-    input_groups: priceBadge.depends_on?.input_groups ?? []
-  },
+  engine: priceBadge.engine,
+  depends_on: priceBadge.depends_on,
   expr: priceBadge.expr
 })
 
@@ -469,12 +460,29 @@ const getNodeRevisionRef = (nodeId: NodeId): Ref<number> => {
 }
 
 // WeakMaps avoid memory leaks when nodes are removed.
-type CacheEntry = { sig: string; label: string }
 type InflightEntry = { sig: string; promise: Promise<void> }
 
-const cache = new WeakMap<LGraphNode, CacheEntry>()
-const desiredSig = new WeakMap<LGraphNode, string>()
+const MAX_CACHED_SIGNATURES = 8
+const cache = new WeakMap<LGraphNode, Map<string, string>>()
 const inflight = new WeakMap<LGraphNode, InflightEntry>()
+
+function nodeSigCache(node: LGraphNode): Map<string, string> {
+  const existing = cache.get(node)
+  if (existing) return existing
+  const next = new Map<string, string>()
+  cache.set(node, next)
+  return next
+}
+
+function cacheLabel(node: LGraphNode, sig: string, label: string): void {
+  const sigCache = nodeSigCache(node)
+  sigCache.delete(sig)
+  sigCache.set(sig, label)
+  for (const oldest of sigCache.keys()) {
+    if (sigCache.size <= MAX_CACHED_SIGNATURES) break
+    sigCache.delete(oldest)
+  }
+}
 
 const scheduleEvaluation = (
   node: LGraphNode,
@@ -482,8 +490,6 @@ const scheduleEvaluation = (
   ctx: JsonataEvalContext,
   sig: string
 ) => {
-  desiredSig.set(node, sig)
-
   const running = inflight.get(node)
   if (running && running.sig === sig) return
 
@@ -491,19 +497,11 @@ const scheduleEvaluation = (
 
   const promise = Promise.resolve(rule._compiled.evaluate(ctx))
     .then((res) => {
-      const label = formatPricingResult(res)
-
-      // Ignore stale results: if the node changed while we were evaluating,
-      // desiredSig will no longer match.
-      if (desiredSig.get(node) !== sig) return
-
-      cache.set(node, { sig, label })
+      cacheLabel(node, sig, formatPricingResult(res))
     })
     .catch(() => {
       // Cache empty to avoid retry-spam for same signature
-      if (desiredSig.get(node) === sig) {
-        cache.set(node, { sig, label: '' })
-      }
+      cacheLabel(node, sig, '')
     })
     .finally(() => {
       const cur = inflight.get(node)
@@ -528,8 +526,8 @@ const getRuleForNode = (
   const nodeData = getNodeConstructorData(node)
   if (!nodeData?.api_node) return undefined
 
-  const nodeName = nodeData?.name ?? ''
-  const priceBadge = nodeData?.price_badge
+  const nodeName = nodeData.name
+  const priceBadge = nodeData.price_badge
 
   if (!priceBadge) return undefined
 
@@ -568,32 +566,20 @@ export const useNodePricing = () => {
 
     const rule = getRuleForNode(node)
     if (!rule) return ''
-    if (rule.engine !== 'jsonata') return ''
     if (!rule._compiled) return ''
 
     const ctx = buildJsonataContext(node, rule, widgetOverrides)
     const sig = buildSignature(ctx, rule)
 
-    const cached = cache.get(node)
-    if (cached && cached.sig === sig) {
-      return cached.label
-    }
+    const sigCache = cache.get(node)
+    const hit = sigCache?.get(sig)
+    if (hit !== undefined) return hit
 
     // Cache miss: start async evaluation.
-    // Return last-known label (if any) to avoid flicker; otherwise return empty.
+    // Return the last-known label (if any) to avoid flicker.
     scheduleEvaluation(node, rule, ctx, sig)
-    return cached?.label ?? ''
-  }
-
-  /**
-   * Expose raw pricing config for tooling/debug UI.
-   * (Strips compiled expression from returned object.)
-   */
-  const getNodePricingConfig = (node: LGraphNode) => {
-    const rule = getRuleForNode(node)
-    if (!rule) return undefined
-    const { _compiled, ...config } = rule
-    return config
+    const labels = [...(sigCache?.values() ?? [])]
+    return labels.at(-1) ?? ''
   }
 
   /**
@@ -604,20 +590,15 @@ export const useNodePricing = () => {
     const priceBadge = getNodePriceBadge(nodeType)
     if (!priceBadge) return []
 
-    const dependsOn = priceBadge.depends_on ?? {
-      widgets: [],
-      inputs: [],
-      input_groups: []
-    }
-
-    const widgetNames = (dependsOn.widgets ?? []).map((w) => w.name)
+    const dependsOn = priceBadge.depends_on
+    const widgetNames = dependsOn.widgets.map((w) => w.name)
 
     // Dedupe while preserving order
     const out: string[] = []
     for (const n of [
       ...widgetNames,
-      ...(dependsOn.inputs ?? []),
-      ...(dependsOn.input_groups ?? [])
+      ...dependsOn.inputs,
+      ...dependsOn.input_groups
     ]) {
       if (!out.includes(n)) out.push(n)
     }
@@ -632,12 +613,11 @@ export const useNodePricing = () => {
     if (!priceBadge) return false
 
     const dependsOn = priceBadge.depends_on
-    if (!dependsOn) return false
 
     return (
-      (dependsOn.widgets?.length ?? 0) > 0 ||
-      (dependsOn.inputs?.length ?? 0) > 0 ||
-      (dependsOn.input_groups?.length ?? 0) > 0
+      dependsOn.widgets.length > 0 ||
+      dependsOn.inputs.length > 0 ||
+      dependsOn.input_groups.length > 0
     )
   }
 
@@ -646,7 +626,7 @@ export const useNodePricing = () => {
    */
   const getInputGroupPrefixes = (nodeType: string): string[] => {
     const priceBadge = getNodePriceBadge(nodeType)
-    return priceBadge?.depends_on?.input_groups ?? []
+    return priceBadge?.depends_on.input_groups ?? []
   }
 
   /**
@@ -654,31 +634,16 @@ export const useNodePricing = () => {
    */
   const getInputNames = (nodeType: string): string[] => {
     const priceBadge = getNodePriceBadge(nodeType)
-    return priceBadge?.depends_on?.inputs ?? []
-  }
-
-  /**
-   * Trigger price recalculation for a node (call when inputs change).
-   * Forces re-evaluation by calling getNodeDisplayPrice which will detect
-   * the signature change and schedule a new evaluation.
-   */
-  const triggerPriceRecalculation = (node: LGraphNode): void => {
-    const nodeData = getNodeConstructorData(node)
-    if (!nodeData?.api_node) return
-
-    // Call getNodeDisplayPrice to trigger evaluation if signature changed
-    getNodeDisplayPrice(node)
+    return priceBadge?.depends_on.inputs ?? []
   }
 
   return {
     getNodeDisplayPrice,
-    getNodePricingConfig,
     getRelevantWidgetNames,
     hasDynamicPricing,
     getInputGroupPrefixes,
     getInputNames,
     getNodeRevisionRef, // Each node has its own independent ref, so updates to one won't trigger others
-    triggerPriceRecalculation,
     pricingRevision: readonly(pricingTick) // reactive invalidation signal
   }
 }
@@ -687,15 +652,21 @@ export const useNodePricing = () => {
  * Extract default value from an input spec.
  */
 function extractDefaultFromSpec(spec: unknown[]): unknown {
-  const specOptions = spec[1] as Record<string, unknown> | undefined
+  const specOptions = spec[1]
 
   // Check for explicit default
-  if (specOptions && 'default' in specOptions) {
+  if (
+    typeof specOptions === 'object' &&
+    specOptions &&
+    'default' in specOptions
+  ) {
     return specOptions.default
   }
   // COMBO/DYNAMICCOMBO type with options array
   if (
+    typeof specOptions === 'object' &&
     specOptions &&
+    'options' in specOptions &&
     Array.isArray(specOptions.options) &&
     specOptions.options.length > 0
   ) {
@@ -706,7 +677,7 @@ function extractDefaultFromSpec(spec: unknown[]): unknown {
       firstOption !== null &&
       'key' in firstOption
     ) {
-      return (firstOption as { key: unknown }).key
+      return firstOption.key
     }
     // Standard combo: options are primitive values
     return firstOption
@@ -741,7 +712,7 @@ export const evaluateNodeDefPricing = memoize(
 
       // Build widgets context using depends_on.widgets (matches buildJsonataContext)
       const widgets: Record<string, NormalizedWidgetValue> = {}
-      for (const dep of priceBadge.depends_on?.widgets ?? []) {
+      for (const dep of priceBadge.depends_on.widgets) {
         const spec = allInputs[dep.name]
         let rawValue: unknown = null
         if (Array.isArray(spec)) {
@@ -756,13 +727,13 @@ export const evaluateNodeDefPricing = memoize(
 
       // Build inputs context: assume all inputs are disconnected in preview
       const inputs: Record<string, { connected: boolean }> = {}
-      for (const name of priceBadge.depends_on?.inputs ?? []) {
+      for (const name of priceBadge.depends_on.inputs) {
         inputs[name] = { connected: false }
       }
 
       // Build inputGroups context: assume 0 connected inputs in preview
       const inputGroups: Record<string, number> = {}
-      for (const groupName of priceBadge.depends_on?.input_groups ?? []) {
+      for (const groupName of priceBadge.depends_on.input_groups) {
         inputGroups[groupName] = 0
       }
 

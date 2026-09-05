@@ -1,0 +1,20 @@
+name: Check AI Co-Authors
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check-ai-co-authors:
+    name: Check for AI agent co-author trailers
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Check commits for AI co-author trailers
+        run: bash .github/scripts/check-ai-co-authors.sh "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}"

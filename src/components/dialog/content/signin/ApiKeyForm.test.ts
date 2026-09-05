@@ -109,5 +109,11 @@ describe('ApiKeyForm', () => {
       'href',
       `${getComfyPlatformBaseUrl()}/login`
     )
+    expect(
+      screen.getByRole('link', { name: 'About non-whitelisted sites' })
+    ).toHaveAttribute(
+      'href',
+      'https://docs.comfy.org/tutorials/partner-nodes/overview#log-in-with-comfyui-account-api-key-on-non-whitelisted-websites'
+    )
   })
 })

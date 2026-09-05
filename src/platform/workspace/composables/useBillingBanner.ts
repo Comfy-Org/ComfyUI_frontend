@@ -18,7 +18,7 @@ export interface BillingBannerInputs {
   v1PaymentRecovery: boolean
   isTeamPlan: boolean
   isLoaded: boolean
-  isActiveSubscription: boolean
+  canAccessSubscriptionFeatures: boolean
   billingStatus: BillingStatus | null
   hasFunds: boolean | null
   isCancelled: boolean
@@ -44,7 +44,7 @@ export function deriveBillingBanner(
     }
   }
 
-  if (!inputs.isActiveSubscription) return null
+  if (!inputs.canAccessSubscriptionFeatures) return null
   if (!inputs.billingControlEnabled) return null
 
   if (inputs.hasFunds === false && !inputs.outOfCreditsDismissed) {
@@ -59,7 +59,7 @@ export function deriveBillingBanner(
 
 function useBillingBannerInternal() {
   const {
-    isActiveSubscription,
+    canAccessSubscriptionFeatures,
     billingStatus,
     subscription,
     isTeamPlan,
@@ -78,7 +78,7 @@ function useBillingBannerInternal() {
       v1PaymentRecovery: flags.v1PaymentRecovery,
       isTeamPlan: isTeamPlan.value,
       isLoaded: subscription.value !== null,
-      isActiveSubscription: isActiveSubscription.value,
+      canAccessSubscriptionFeatures: canAccessSubscriptionFeatures.value,
       billingStatus: billingStatus.value,
       hasFunds: subscription.value?.hasFunds ?? null,
       isCancelled: subscription.value?.isCancelled ?? false,

@@ -29,6 +29,29 @@ describe('getSafePreviousFullPath', () => {
     expect(getSafePreviousFullPath(query)).toBeNull()
   })
 
+  test('takes the first entry when the param is repeated', () => {
+    const query: LocationQuery = {
+      previousFullPath: [
+        encodeURIComponent('/first'),
+        encodeURIComponent('//evil.com')
+      ]
+    }
+    expect(
+      getSafePreviousFullPath(query),
+      'reading the last entry would let an attacker override a legitimate value by appending a second one'
+    ).toBe('/first')
+  })
+
+  test('rejects a repeated param whose first entry is unsafe', () => {
+    const query: LocationQuery = {
+      previousFullPath: [
+        encodeURIComponent('https://evil.com'),
+        encodeURIComponent('/safe')
+      ]
+    }
+    expect(getSafePreviousFullPath(query)).toBeNull()
+  })
+
   test('rejects malformed encodings', () => {
     const query: LocationQuery = {
       previousFullPath: '%E0%A4%A'

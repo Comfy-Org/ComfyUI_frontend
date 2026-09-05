@@ -14,6 +14,7 @@
         :key="badge.provider"
         :label="badge.provider"
         test-id="logo-badge"
+        :delay-duration="0"
         ring-class="focus-visible:ring-white"
         trigger-class="flex size-7 items-center justify-center rounded-full bg-black/30 backdrop-blur-[20px]"
       >
@@ -37,6 +38,7 @@
         v-if="logo.extraProviders.length"
         :label="logo.extraProviders"
         test-id="logo-extra"
+        :delay-duration="0"
         ring-class="focus-visible:ring-white"
         trigger-class="flex h-7 min-w-7 items-center justify-center rounded-full bg-black/30 px-1.5 text-xs font-medium text-white backdrop-blur-[20px]"
       >

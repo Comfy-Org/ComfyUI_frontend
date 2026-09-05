@@ -1,11 +1,12 @@
 import type {
   AcceptInviteResponse,
   BillingBalanceResponse,
+  BillingCapabilitiesResponse,
   BillingEventsResponse,
   BillingOpStatusResponse,
   BillingPlansResponse,
   BillingStatus,
-  BillingStatusResponse as GeneratedBillingStatusResponse,
+  BillingStatusResponse,
   CancelSubscriptionRequest,
   CancelSubscriptionResponse,
   ChurnkeyAuthResponse,
@@ -13,6 +14,7 @@ import type {
   CreateTopupRequest,
   CreateTopupResponse,
   CreateWorkspaceRequest,
+  CurrentWorkspaceResponse,
   ListInvitesResponse,
   ListMembersResponse,
   ListWorkspacesResponse,
@@ -21,10 +23,11 @@ import type {
   PaymentPortalResponse,
   PendingInvite,
   Plan,
-  PreviewSubscribeRequest as GeneratedPreviewSubscribeRequest,
+  PreviewSubscribeRequest,
   PreviewSubscribeResponse,
   ResubscribeRequest,
   ResubscribeResponse,
+  SavedPaymentMethod,
   SubscribeRequest,
   SubscribeResponse,
   SubscriptionDuration,
@@ -42,23 +45,19 @@ import {
   UNKNOWN_ERROR_CODE,
   errorResponseFromBody
 } from '@/platform/remote/comfyui/errors'
+import { attachCapabilityRevisionInterceptor } from '@/platform/workspace/api/capabilityRevision'
 import type {
   WorkspaceId,
   WorkspaceInviteId
 } from '@/platform/workspace/workspaceTypes'
-import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import type { UserId } from '@/types/authTypes'
 
+import { workspaceApiUrl } from './workspaceApiUrl'
+
 export type WorkspaceType = 'personal' | 'team'
 export type WorkspaceRole = 'owner' | 'member'
-export type BillingRail = NonNullable<
-  GeneratedBillingStatusResponse['billing_rail']
->
-
-export type { WorkspaceWithRole }
-
-export type { ListWorkspacesResponse }
+export type BillingRail = NonNullable<BillingStatusResponse['billing_rail']>
 
 export type Member = GeneratedMember & {
   // Per-member monthly credit limit UI (FE-1277). The cloud OpenAPI carries
@@ -76,7 +75,9 @@ export type { PendingInvite }
 
 export type { SubscriptionTier }
 export type { SubscriptionDuration }
-
+export type { WorkspaceWithRole }
+export type { ListWorkspacesResponse }
+export type { CurrentWorkspaceResponse }
 export type { Plan }
 export type { BillingPlansResponse }
 export type { TeamCreditStops }
@@ -84,11 +85,12 @@ export type { TeamCreditStopSummary }
 
 type SubscribeBillingCycle = 'monthly' | 'yearly'
 
-interface PreviewSubscribeRequest extends GeneratedPreviewSubscribeRequest {
-  billing_cycle?: SubscribeBillingCycle
-}
-
 export interface SubscribeOptions {
+  confirmationToken?: string
+  promotionCode?: string
+  quoteId?: string
+  quoteVersion?: number
+  savedPaymentMethodId?: string
   returnUrl?: string
   cancelUrl?: string
   teamCreditStopId?: string
@@ -99,7 +101,7 @@ export interface SubscribeOptions {
 
 export interface PreviewSubscribeOptions {
   teamCreditStopId?: string
-  billingCycle?: SubscribeBillingCycle
+  promotionCode?: string
 }
 
 export type { SubscribeResponse }
@@ -107,35 +109,23 @@ export type { SubscribeResponse }
 export type { PreviewSubscribeResponse }
 
 export type BillingSubscriptionStatus = NonNullable<
-  GeneratedBillingStatusResponse['subscription_status']
+  BillingStatusResponse['subscription_status']
 >
 
 export type { BillingStatus }
-
-type SpecRequiredButOmittedByOlderDeployments =
-  | 'max_seats'
-  | 'occupied_seats'
-  | 'team_credit_stop'
-
-export type BillingStatusResponse = Omit<
-  GeneratedBillingStatusResponse,
-  SpecRequiredButOmittedByOlderDeployments
-> &
-  Partial<
-    Pick<
-      GeneratedBillingStatusResponse,
-      SpecRequiredButOmittedByOlderDeployments
-    >
-  > & {
-    // Not yet part of the ingest OpenAPI spec; scheduled-plan-change display
-    // ships ahead of the backend documenting these fields.
-    scheduled_plan_slug?: string
-    change_at?: string
-  }
+export type { BillingStatusResponse }
 
 export type { BillingBalanceResponse }
+export type { BillingCapabilitiesResponse }
 export type { CreateTopupResponse }
 export type { BillingOpStatusResponse }
+export type { SavedPaymentMethod }
+export type BillingAuthenticationState = NonNullable<
+  BillingOpStatusResponse['authentication_state']
+>
+export type BillingDeclineReason = NonNullable<
+  BillingOpStatusResponse['decline_reason']
+>
 
 interface GetBillingEventsParams {
   page?: number
@@ -161,9 +151,10 @@ const workspaceApiClient = axios.create({
 
 // acceptInvite opts out via __skipUnifiedRemint (it is deliberately Firebase-authed).
 attachUnifiedRemintInterceptor(workspaceApiClient)
+attachCapabilityRevisionInterceptor(workspaceApiClient)
 
 async function getAuthHeaderOrThrow() {
-  return useAuthStore().getAuthHeaderOrThrow()
+  return useAuthStore().getWorkspaceAuthHeaderOrThrow()
 }
 
 function handleAxiosError(err: unknown): never {
@@ -193,7 +184,24 @@ export const workspaceApi = {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.get<ListWorkspacesResponse>(
-        api.apiURL('/workspaces'),
+        workspaceApiUrl('/workspaces'),
+        { headers }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
+   * Get the workspace bound to the current credential
+   * GET /api/workspaces/current
+   */
+  async getCurrentWorkspace(): Promise<CurrentWorkspaceResponse> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.get<CurrentWorkspaceResponse>(
+        workspaceApiUrl('/workspaces/current'),
         { headers }
       )
       return response.data
@@ -210,7 +218,7 @@ export const workspaceApi = {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.post<WorkspaceWithRole>(
-        api.apiURL('/workspaces'),
+        workspaceApiUrl('/workspaces'),
         payload,
         { headers }
       )
@@ -231,7 +239,7 @@ export const workspaceApi = {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.patch<WorkspaceWithRole>(
-        api.apiURL(`/workspaces/${workspaceId}`),
+        workspaceApiUrl(`/workspaces/${workspaceId}`),
         payload,
         { headers }
       )
@@ -249,7 +257,7 @@ export const workspaceApi = {
     const headers = await getAuthHeaderOrThrow()
     try {
       await workspaceApiClient.delete(
-        api.apiURL(`/workspaces/${workspaceId}`),
+        workspaceApiUrl(`/workspaces/${workspaceId}`),
         {
           headers
         }
@@ -266,7 +274,7 @@ export const workspaceApi = {
   async leave(): Promise<void> {
     const headers = await getAuthHeaderOrThrow()
     try {
-      await workspaceApiClient.post(api.apiURL('/workspace/leave'), null, {
+      await workspaceApiClient.post(workspaceApiUrl('/workspace/leave'), null, {
         headers
       })
     } catch (err) {
@@ -282,7 +290,7 @@ export const workspaceApi = {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.get<ListMembersResponse>(
-        api.apiURL('/workspace/members'),
+        workspaceApiUrl('/workspace/members'),
         { headers, params }
       )
       return response.data
@@ -299,7 +307,7 @@ export const workspaceApi = {
     const headers = await getAuthHeaderOrThrow()
     try {
       await workspaceApiClient.delete(
-        api.apiURL(`/workspace/members/${userId}`),
+        workspaceApiUrl(`/workspace/members/${userId}`),
         { headers }
       )
     } catch (err) {
@@ -315,7 +323,7 @@ export const workspaceApi = {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.patch<Member>(
-        api.apiURL(`/workspace/members/${userId}`),
+        workspaceApiUrl(`/workspace/members/${userId}`),
         { role },
         { headers }
       )
@@ -333,7 +341,7 @@ export const workspaceApi = {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.get<ListInvitesResponse>(
-        api.apiURL('/workspace/invites'),
+        workspaceApiUrl('/workspace/invites'),
         { headers }
       )
       return response.data
@@ -350,7 +358,7 @@ export const workspaceApi = {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.post<PendingInvite>(
-        api.apiURL('/workspace/invites'),
+        workspaceApiUrl('/workspace/invites'),
         payload,
         { headers }
       )
@@ -368,7 +376,7 @@ export const workspaceApi = {
     const headers = await getAuthHeaderOrThrow()
     try {
       await workspaceApiClient.delete(
-        api.apiURL(`/workspace/invites/${inviteId}`),
+        workspaceApiUrl(`/workspace/invites/${inviteId}`),
         { headers }
       )
     } catch (err) {
@@ -380,7 +388,9 @@ export const workspaceApi = {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.post<PendingInvite>(
-        api.apiURL(`/workspace/invites/${encodeURIComponent(inviteId)}/resend`),
+        workspaceApiUrl(
+          `/workspace/invites/${encodeURIComponent(inviteId)}/resend`
+        ),
         null,
         { headers }
       )
@@ -399,7 +409,7 @@ export const workspaceApi = {
     const headers = await useAuthStore().getFirebaseAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.post<AcceptInviteResponse>(
-        api.apiURL(`/invites/${token}/accept`),
+        workspaceApiUrl(`/invites/${token}/accept`),
         null,
         { headers, __skipUnifiedRemint: true }
       )
@@ -417,7 +427,7 @@ export const workspaceApi = {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.get<BillingStatusResponse>(
-        api.apiURL('/billing/status'),
+        workspaceApiUrl('/billing/status'),
         { headers }
       )
       return response.data
@@ -434,9 +444,29 @@ export const workspaceApi = {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.get<BillingBalanceResponse>(
-        api.apiURL('/billing/balance'),
+        workspaceApiUrl('/billing/balance'),
         { headers }
       )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
+   * Get billing capabilities for the current workspace
+   * GET /api/billing/capabilities
+   */
+  async getBillingCapabilities(
+    signal?: AbortSignal
+  ): Promise<BillingCapabilitiesResponse> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response =
+        await workspaceApiClient.get<BillingCapabilitiesResponse>(
+          workspaceApiUrl('/billing/capabilities'),
+          { headers, timeout: 10_000, signal }
+        )
       return response.data
     } catch (err) {
       handleAxiosError(err)
@@ -451,7 +481,20 @@ export const workspaceApi = {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.get<BillingPlansResponse>(
-        api.apiURL('/billing/plans'),
+        workspaceApiUrl('/billing/plans'),
+        { headers }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  async listSavedPaymentMethods(): Promise<SavedPaymentMethod[]> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.get<SavedPaymentMethod[]>(
+        workspaceApiUrl('/billing/payment-methods'),
         { headers }
       )
       return response.data
@@ -471,11 +514,11 @@ export const workspaceApi = {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.post<PreviewSubscribeResponse>(
-        api.apiURL('/billing/preview-subscribe'),
+        workspaceApiUrl('/billing/preview-subscribe'),
         {
           plan_slug: planSlug,
           team_credit_stop_id: options.teamCreditStopId,
-          billing_cycle: options.billingCycle
+          promotion_code: options.promotionCode
         } satisfies PreviewSubscribeRequest,
         { headers }
       )
@@ -493,12 +536,29 @@ export const workspaceApi = {
     planSlug: string,
     options: SubscribeOptions = {}
   ): Promise<SubscribeResponse> {
+    if (
+      options.confirmationToken !== undefined &&
+      options.savedPaymentMethodId !== undefined
+    ) {
+      throw new TypeError(
+        'confirmationToken and savedPaymentMethodId are mutually exclusive'
+      )
+    }
+    // JSON drops `undefined` but keeps `''`, so an empty credential would reach
+    // the API as a present-but-meaningless value.
+    const confirmationToken = options.confirmationToken || undefined
+    const savedPaymentMethodId = options.savedPaymentMethodId || undefined
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.post<SubscribeResponse>(
-        api.apiURL('/billing/subscribe'),
+        workspaceApiUrl('/billing/subscribe'),
         {
           plan_slug: planSlug,
+          confirmation_token: confirmationToken,
+          promotion_code: options.promotionCode,
+          quote_id: options.quoteId,
+          quote_version: options.quoteVersion,
+          saved_payment_method_id: savedPaymentMethodId,
           return_url: options.returnUrl,
           cancel_url: options.cancelUrl,
           team_credit_stop_id: options.teamCreditStopId,
@@ -525,7 +585,7 @@ export const workspaceApi = {
     try {
       const response =
         await workspaceApiClient.post<CancelSubscriptionResponse>(
-          api.apiURL('/billing/subscription/cancel'),
+          workspaceApiUrl('/billing/subscription/cancel'),
           {
             idempotency_key: idempotencyKey
           } satisfies CancelSubscriptionRequest,
@@ -541,7 +601,7 @@ export const workspaceApi = {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.get<unknown>(
-        api.apiURL('/billing/churnkey/auth'),
+        workspaceApiUrl('/billing/churnkey/auth'),
         { headers }
       )
       return churnkeyAuthResponseSchema.parse(response.data)
@@ -558,7 +618,7 @@ export const workspaceApi = {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.post<ResubscribeResponse>(
-        api.apiURL('/billing/subscription/resubscribe'),
+        workspaceApiUrl('/billing/subscription/resubscribe'),
         { idempotency_key: idempotencyKey } satisfies ResubscribeRequest,
         { headers }
       )
@@ -578,7 +638,7 @@ export const workspaceApi = {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.post<PaymentPortalResponse>(
-        api.apiURL('/billing/payment-portal'),
+        workspaceApiUrl('/billing/payment-portal'),
         { return_url: returnUrl } satisfies PaymentPortalRequest,
         { headers }
       )
@@ -599,7 +659,7 @@ export const workspaceApi = {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.post<CreateTopupResponse>(
-        api.apiURL('/billing/topup'),
+        workspaceApiUrl('/billing/topup'),
         {
           amount_cents: amountCents,
           idempotency_key: idempotencyKey
@@ -622,7 +682,7 @@ export const workspaceApi = {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.get<BillingEventsResponse>(
-        api.apiURL('/billing/events'),
+        workspaceApiUrl('/billing/events'),
         { headers, params }
       )
       return response.data
@@ -639,7 +699,7 @@ export const workspaceApi = {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.get<BillingOpStatusResponse>(
-        api.apiURL(`/billing/ops/${opId}`),
+        workspaceApiUrl(`/billing/ops/${encodeURIComponent(opId)}`),
         { headers, timeout: 30_000 }
       )
       return response.data

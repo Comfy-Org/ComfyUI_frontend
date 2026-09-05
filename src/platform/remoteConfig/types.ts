@@ -93,6 +93,7 @@ export type RemoteConfig = {
   server_health_alert?: ServerHealthAlert
   max_upload_size?: number
   comfy_api_base_url?: string
+  comfy_cloud_base_url?: string
   comfy_platform_base_url?: string
   firebase_config?: FirebaseRuntimeConfig
   firebase_env?: 'dev'
@@ -108,6 +109,8 @@ export type RemoteConfig = {
   manager_survey_url?: string
   linear_toggle_enabled?: boolean
   partner_node_governance_enabled?: boolean
+  /** Kill switch for the local partner-nodes run gate; defaults on client-side. */
+  partner_run_gate_enabled?: boolean
   user_secrets_enabled?: boolean
   node_library_essentials_enabled?: boolean
   supports_model_type_tags?: boolean
@@ -117,12 +120,14 @@ export type RemoteConfig = {
     used: number
     remaining: number
   }
+  free_tier_job_allowance_enabled?: boolean
   new_free_tier_subscriptions?: boolean
   workflow_sharing_enabled?: boolean
   comfyhub_upload_enabled?: boolean
   comfyhub_profile_gate_enabled?: boolean
   unified_cloud_auth?: boolean
   billing_control_enabled?: boolean
+  legacy_billing_migration_enabled?: boolean
   v1_payment_recovery?: boolean
   churnkey_app_id?: string
   sentry_dsn?: string

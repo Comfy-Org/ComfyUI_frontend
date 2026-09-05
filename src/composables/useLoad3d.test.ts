@@ -316,12 +316,11 @@ describe('useLoad3d', () => {
     })
 
     it('should restore camera config from node properties', async () => {
-      ;(
-        mockNode.properties!['Camera Config'] as Record<string, unknown>
-      ).state = {
-        position: { x: 1, y: 2, z: 3 },
-        target: { x: 0, y: 0, z: 0 }
-      }
+      ;(mockNode.properties['Camera Config'] as Record<string, unknown>).state =
+        {
+          position: { x: 1, y: 2, z: 3 },
+          target: { x: 0, y: 0, z: 0 }
+        }
 
       const composable = useLoad3d(mockNode)
       const containerRef = document.createElement('div')
@@ -392,7 +391,7 @@ describe('useLoad3d', () => {
     it('should handle missing container or node', async () => {
       const composable = useLoad3d(mockNode)
 
-      await composable.initializeLoad3d(null!)
+      await composable.initializeLoad3d(null)
 
       expect(createLoad3d).not.toHaveBeenCalled()
     })
@@ -508,7 +507,7 @@ describe('useLoad3d', () => {
       const containerRef = document.createElement('div')
       await composable.initializeLoad3d(containerRef)
 
-      mockNode.onRemoved?.()
+      mockNode.onRemoved()
 
       expect(existingOnRemoved).toHaveBeenCalledTimes(1)
     })
@@ -521,7 +520,7 @@ describe('useLoad3d', () => {
       const containerRef = document.createElement('div')
       await composable.initializeLoad3d(containerRef)
 
-      mockNode.onResize?.([512, 512] as Size)
+      mockNode.onResize([512, 512] as Size)
 
       expect(existingOnResize).toHaveBeenCalledTimes(1)
     })
@@ -793,7 +792,7 @@ describe('useLoad3d', () => {
     })
 
     it('should use resource folder for upload', async () => {
-      mockNode.properties!['Resource Folder'] = 'subfolder'
+      mockNode.properties['Resource Folder'] = 'subfolder'
       vi.mocked(Load3dUtils.uploadFile).mockResolvedValue('uploaded-image.jpg')
 
       const composable = useLoad3d(mockNode)
@@ -1230,10 +1229,10 @@ describe('useLoad3d', () => {
     })
 
     it('should handle missing configurations', async () => {
-      delete mockNode.properties!['Scene Config']
-      delete mockNode.properties!['Model Config']
-      delete mockNode.properties!['Camera Config']
-      delete mockNode.properties!['Light Config']
+      delete mockNode.properties['Scene Config']
+      delete mockNode.properties['Model Config']
+      delete mockNode.properties['Camera Config']
+      delete mockNode.properties['Light Config']
 
       const composable = useLoad3d(mockNode)
       const containerRef = document.createElement('div')
@@ -1246,7 +1245,7 @@ describe('useLoad3d', () => {
 
     it('should handle background image with existing config', async () => {
       ;(
-        mockNode.properties!['Scene Config'] as {
+        mockNode.properties['Scene Config'] as {
           backgroundImage: string
         }
       ).backgroundImage = 'existing.jpg'
@@ -1274,7 +1273,7 @@ describe('useLoad3d', () => {
     })
 
     it('should restore gizmo config from node properties', async () => {
-      ;(mockNode.properties!['Model Config'] as Record<string, unknown>).gizmo =
+      ;(mockNode.properties['Model Config'] as Record<string, unknown>).gizmo =
         {
           enabled: true,
           mode: 'rotate',
@@ -1298,7 +1297,7 @@ describe('useLoad3d', () => {
     })
 
     it('should add default gizmo config when missing from saved config', async () => {
-      mockNode.properties!['Model Config'] = {
+      mockNode.properties['Model Config'] = {
         upDirection: 'original',
         materialMode: 'original',
         showSkeleton: false
@@ -1314,7 +1313,7 @@ describe('useLoad3d', () => {
     })
 
     it('should add default scale when gizmo config lacks scale', async () => {
-      ;(mockNode.properties!['Model Config'] as Record<string, unknown>).gizmo =
+      ;(mockNode.properties['Model Config'] as Record<string, unknown>).gizmo =
         {
           enabled: false,
           mode: 'translate',
@@ -1588,7 +1587,7 @@ describe('useLoad3d', () => {
       originalFetch = globalThis.fetch
       globalThis.fetch = vi.fn().mockResolvedValue({
         blob: () => Promise.resolve(new Blob(['x'], { type: 'image/png' }))
-      } as unknown as Response)
+      })
     })
 
     afterEach(() => {
@@ -1746,7 +1745,7 @@ describe('useLoad3d', () => {
       await composable.initializeLoad3d(document.createElement('div'))
       expect(cb).toHaveBeenCalledTimes(1)
 
-      mockNode.onRemoved?.()
+      if (mockNode.onRemoved) mockNode.onRemoved()
 
       composable.cleanup()
       await composable.initializeLoad3d(document.createElement('div'))
@@ -1807,7 +1806,7 @@ describe('useLoad3d', () => {
       composable.waitForLoad3d(leakedWait)
       composable.onLoad3dReady(leakedReady)
 
-      mockNode.onRemoved?.()
+      if (mockNode.onRemoved) mockNode.onRemoved()
 
       await composable.initializeLoad3d(document.createElement('div'))
 
@@ -1824,7 +1823,7 @@ describe('useLoad3d', () => {
       composable.onLoad3dReady(vi.fn())
       composable.onLoad3dReady(vi.fn())
 
-      mockNode.onRemoved?.()
+      mockNode.onRemoved()
 
       expect(originalOnRemoved).toHaveBeenCalledTimes(1)
     })

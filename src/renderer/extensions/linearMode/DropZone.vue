@@ -48,7 +48,7 @@ function onIndicatorClick(e: MouseEvent) {
 const { isOverDropZone } = useDropZone(dropZoneRef, {
   onDrop: (_files, event) => {
     // Stop propagation to prevent global handlers from creating a new node
-    event?.stopPropagation()
+    event.stopPropagation()
 
     if (onDragDrop && event) {
       onDragDrop(event)

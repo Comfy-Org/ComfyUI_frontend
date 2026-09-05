@@ -25,10 +25,8 @@ export function useCopyToClipboard() {
     let success = false
 
     try {
-      if (navigator.clipboard) {
-        await navigator.clipboard.writeText(text)
-        success = true
-      }
+      await navigator.clipboard.writeText(text)
+      success = true
     } catch {
       // Modern clipboard API failed, fall through to legacy
     }

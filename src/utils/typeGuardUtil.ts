@@ -30,7 +30,9 @@ export const isNonNullish = <T>(item: T | undefined | null): item is T =>
  * These nodes are essential to subgraph structure and should not be removed.
  */
 export const isSubgraphIoNode = (
-  node: LGraphNode
+  node: Omit<LGraphNode, 'constructor'> & {
+    constructor?: LGraphNode['constructor']
+  }
 ): node is LGraphNode & {
   constructor: { comfyClass: 'SubgraphInputNode' | 'SubgraphOutputNode' }
 } => {

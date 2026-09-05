@@ -6,6 +6,28 @@ import { nextFrame } from '@e2e/fixtures/utils/timing'
 export class CommandHelper {
   constructor(private readonly page: Page) {}
 
+  async mockCommand(commandId: string): Promise<void> {
+    await this.page.evaluate((commandId) => {
+      const command = window.app?.extensionManager.command.commands.find(
+        ({ id }) => id === commandId
+      )
+      if (!command) throw new Error(`Command not found: ${commandId}`)
+
+      const executionCounts = (window.__commandExecutionCounts ??= {})
+      executionCounts[commandId] = 0
+      command.function = () => {
+        executionCounts[commandId] = (executionCounts[commandId] ?? 0) + 1
+      }
+    }, commandId)
+  }
+
+  async getExecutionCount(commandId: string): Promise<number> {
+    return await this.page.evaluate(
+      (commandId) => window.__commandExecutionCounts?.[commandId] ?? 0,
+      commandId
+    )
+  }
+
   async executeCommand(
     commandId: string,
     metadata?: Record<string, unknown>

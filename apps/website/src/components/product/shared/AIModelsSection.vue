@@ -7,67 +7,16 @@ import { externalLinks } from '../../../config/routes'
 import { t } from '../../../i18n/translations'
 import BrandButton from '../../common/BrandButton.vue'
 import CardArrow from '../../common/CardArrow.vue'
+import type { AiModelCard } from './aiModelCards'
+import { defaultAiModelCards } from './aiModelCards'
 
-type ModelCard = {
-  titleKey:
-    | 'cloud.aiModels.card.grokImagine'
-    | 'cloud.aiModels.card.nanoBananaPro'
-    | 'cloud.aiModels.card.seedance20'
-    | 'cloud.aiModels.card.qwenImageEdit'
-    | 'cloud.aiModels.card.wan22TextToVideo'
-    | 'cloud.aiModels.card.gptImage2'
-  imageSrc: string
-  badgeIcon: string
-  badgeClass: string
-}
+const { locale = 'en', cards = defaultAiModelCards } = defineProps<{
+  locale?: Locale
+  cards?: AiModelCard[]
+}>()
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
-
-const badgeBase =
-  'bg-white/20 text-white backdrop-blur-sm group-hover:bg-primary-comfy-yellow group-hover:text-primary-comfy-ink'
-
-const modelCards: ModelCard[] = [
-  {
-    titleKey: 'cloud.aiModels.card.seedance20',
-    imageSrc:
-      'https://media.comfy.org/website/cloud/ai-models/seedance-20.webm',
-    badgeIcon: '/icons/ai-models/bytedance.svg',
-    badgeClass: `${badgeBase} rounded-2xl`
-  },
-  {
-    titleKey: 'cloud.aiModels.card.nanoBananaPro',
-    imageSrc:
-      'https://media.comfy.org/website/cloud/ai-models/nano-banana-pro.webp',
-    badgeIcon: '/icons/ai-models/gemini.svg',
-    badgeClass: `${badgeBase} rounded-2xl`
-  },
-  {
-    titleKey: 'cloud.aiModels.card.grokImagine',
-    imageSrc: 'https://media.comfy.org/website/cloud/ai-models/grok-video.webm',
-    badgeIcon: '/icons/ai-models/grok.svg',
-    badgeClass: `${badgeBase} rounded-2xl`
-  },
-  {
-    titleKey: 'cloud.aiModels.card.qwenImageEdit',
-    imageSrc:
-      'https://media.comfy.org/website/cloud/ai-models/qwen-image-edit.webp',
-    badgeIcon: '/icons/ai-models/qwen.svg',
-    badgeClass: `${badgeBase} rounded-2xl`
-  },
-  {
-    titleKey: 'cloud.aiModels.card.wan22TextToVideo',
-    imageSrc: 'https://media.comfy.org/website/cloud/ai-models/wan-22.webm',
-    badgeIcon: '/icons/ai-models/wan.svg',
-    badgeClass: `${badgeBase} rounded-2xl`
-  },
-  {
-    titleKey: 'cloud.aiModels.card.gptImage2',
-    imageSrc:
-      'https://media.comfy.org/website/cloud/ai-models/gpt-image-2.webm',
-    badgeIcon: '/icons/ai-models/openai.svg',
-    badgeClass: `${badgeBase} rounded-2xl`
-  }
-]
+const badgeClass =
+  'bg-white/20 text-white backdrop-blur-sm group-hover:bg-primary-comfy-yellow group-hover:text-primary-comfy-ink rounded-2xl'
 
 const cardClass =
   'group relative h-72 cursor-pointer overflow-hidden rounded-3xl bg-black/40 lg:col-span-4 lg:aspect-square lg:h-auto'
@@ -100,7 +49,7 @@ const cardClass =
         <div class="rounded-4xl bg-white/8 p-2 lg:p-1.5">
           <div class="grid grid-cols-1 gap-2 lg:grid-cols-12">
             <a
-              v-for="card in modelCards"
+              v-for="card in cards"
               :key="card.titleKey"
               :href="externalLinks.workflows"
               :class="cardClass"
@@ -116,8 +65,9 @@ const cardClass =
                 playsinline
               >
                 <track
+                  v-if="card.trackSrc"
                   kind="descriptions"
-                  :src="card.imageSrc.replace('.webm', '.vtt')"
+                  :src="card.trackSrc"
                   srclang="en"
                   default
                 />
@@ -139,7 +89,7 @@ const cardClass =
                 :class="
                   cn(
                     'absolute top-5 right-5 flex h-12 min-w-12 items-center justify-center px-3 lg:top-6 lg:right-6',
-                    card.badgeClass
+                    badgeClass
                   )
                 "
               >
@@ -155,7 +105,7 @@ const cardClass =
               </div>
 
               <p
-                class="text-primary-warm-white absolute right-20 bottom-6 left-6 text-2xl/tight font-light whitespace-pre-line drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] lg:top-6 lg:right-auto lg:bottom-auto lg:text-3xl"
+                class="absolute right-20 bottom-6 left-6 text-2xl/tight font-light whitespace-pre-line text-primary-warm-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] lg:top-6 lg:right-auto lg:bottom-auto lg:text-3xl"
               >
                 {{ t(card.titleKey, locale) }}
               </p>

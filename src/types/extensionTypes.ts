@@ -110,8 +110,9 @@ export interface ExtensionManager {
   dialog: ReturnType<typeof useDialogService>
   command: CommandManager
   setting: {
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- Custom extensions declare settings outside the generated schema.
     get: <T = unknown>(id: string) => T | undefined
-    set: <T = unknown>(id: string, value: T) => void
+    set: (id: string, value: unknown) => void
   }
   workflow: ReturnType<typeof useWorkflowStore>
 

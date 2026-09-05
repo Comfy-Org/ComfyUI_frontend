@@ -8,6 +8,7 @@ import CloudRunButtonWrapper from './CloudRunButtonWrapper.vue'
 const mockCanRunWorkflows = ref(true)
 const mockIsInitialized = ref(true)
 const mockBillingStatus = ref<string | null>('paid')
+const mockSubscriptionTier = ref<string | null>(null)
 const state = vi.hoisted(() => ({
   v1PaymentRecovery: true,
   canManageSubscription: true,
@@ -29,6 +30,9 @@ vi.mock('@/composables/billing/useBillingContext', async () => {
         () => mockIsInitialized.value && !mockCanRunWorkflows.value
       ),
       billingStatus: mockBillingStatus,
+      subscription: computed(() =>
+        mockSubscriptionTier.value ? { tier: mockSubscriptionTier.value } : null
+      ),
       manageSubscription: state.manageSubscription,
       fetchStatus: state.fetchStatus,
       fetchBalance: state.fetchBalance
@@ -98,6 +102,7 @@ describe('CloudRunButtonWrapper', () => {
     mockCanRunWorkflows.value = true
     mockIsInitialized.value = true
     mockBillingStatus.value = 'paid'
+    mockSubscriptionTier.value = null
     state.v1PaymentRecovery = true
     state.canManageSubscription = true
   })
@@ -129,6 +134,145 @@ describe('CloudRunButtonWrapper', () => {
 
     expect(screen.getByTestId('subscribe-to-run-button')).toBeInTheDocument()
     expect(screen.queryByTestId('queue-button')).not.toBeInTheDocument()
+  })
+
+  it('keeps the run button without a subscribe upsell on a sales-managed plan', () => {
+    mockCanRunWorkflows.value = false
+    mockSubscriptionTier.value = 'ENTERPRISE'
+    renderWrapper()
+
+    expect(screen.getByTestId('queue-button')).toBeInTheDocument()
+    expect(
+      screen.queryByTestId('subscribe-to-run-button')
+    ).not.toBeInTheDocument()
+  })
+
+  it('keeps the run button without a subscribe upsell on an unrecognized tier', () => {
+    mockCanRunWorkflows.value = false
+    mockSubscriptionTier.value = 'GALACTIC'
+    renderWrapper()
+
+    expect(screen.getByTestId('queue-button')).toBeInTheDocument()
+    expect(
+      screen.queryByTestId('subscribe-to-run-button')
+    ).not.toBeInTheDocument()
+  })
+
+  it('refreshes stale billing state on focus and restores Run', async () => {
+    mockCanRunWorkflows.value = false
+    mockBillingStatus.value = 'inactive'
+    state.fetchStatus.mockImplementationOnce(async () => {
+      mockBillingStatus.value = 'paid'
+      mockCanRunWorkflows.value = true
+    })
+    renderWrapper()
+
+    window.dispatchEvent(new Event('focus'))
+
+    await waitFor(() => {
+      expect(state.fetchStatus).toHaveBeenCalledOnce()
+      expect(state.fetchBalance).toHaveBeenCalledOnce()
+      expect(screen.getByRole('button', { name: 'Run' })).toBeInTheDocument()
+    })
+  })
+
+  it('refreshes stale billing state when the app becomes visible', async () => {
+    const visibilityState = vi
+      .spyOn(document, 'visibilityState', 'get')
+      .mockReturnValue('visible')
+    try {
+      mockCanRunWorkflows.value = false
+      mockBillingStatus.value = 'inactive'
+      state.fetchStatus.mockImplementationOnce(async () => {
+        mockBillingStatus.value = 'paid'
+        mockCanRunWorkflows.value = true
+      })
+      renderWrapper()
+
+      document.dispatchEvent(new Event('visibilitychange'))
+
+      await waitFor(() => {
+        expect(state.fetchStatus).toHaveBeenCalledOnce()
+        expect(state.fetchBalance).toHaveBeenCalledOnce()
+        expect(screen.getByRole('button', { name: 'Run' })).toBeInTheDocument()
+      })
+    } finally {
+      visibilityState.mockRestore()
+    }
+  })
+
+  it('deduplicates simultaneous focus and visibility refreshes', async () => {
+    let resolveRefresh!: () => void
+    const refresh = new Promise<void>((resolve) => {
+      resolveRefresh = resolve
+    })
+    const visibilityState = vi
+      .spyOn(document, 'visibilityState', 'get')
+      .mockReturnValue('visible')
+    try {
+      mockCanRunWorkflows.value = false
+      mockBillingStatus.value = 'inactive'
+      state.fetchStatus.mockReturnValueOnce(refresh)
+      state.fetchBalance.mockReturnValueOnce(refresh)
+      renderWrapper()
+
+      window.dispatchEvent(new Event('focus'))
+      document.dispatchEvent(new Event('visibilitychange'))
+
+      expect(state.fetchStatus).toHaveBeenCalledOnce()
+      expect(state.fetchBalance).toHaveBeenCalledOnce()
+
+      resolveRefresh()
+      await refresh
+    } finally {
+      visibilityState.mockRestore()
+    }
+  })
+
+  it('does not refresh billing while Run is already available', () => {
+    renderWrapper()
+
+    window.dispatchEvent(new Event('focus'))
+
+    expect(state.fetchStatus).not.toHaveBeenCalled()
+    expect(state.fetchBalance).not.toHaveBeenCalled()
+  })
+
+  it('ignores visibility changes while the app remains hidden', () => {
+    const visibilityState = vi
+      .spyOn(document, 'visibilityState', 'get')
+      .mockReturnValue('hidden')
+    try {
+      mockCanRunWorkflows.value = false
+      mockBillingStatus.value = 'inactive'
+      renderWrapper()
+
+      document.dispatchEvent(new Event('visibilitychange'))
+
+      expect(state.fetchStatus).not.toHaveBeenCalled()
+      expect(state.fetchBalance).not.toHaveBeenCalled()
+    } finally {
+      visibilityState.mockRestore()
+    }
+  })
+
+  it('retries a failed stale billing refresh on the next focus', async () => {
+    mockCanRunWorkflows.value = false
+    mockBillingStatus.value = 'inactive'
+    state.fetchStatus.mockRejectedValueOnce(new Error('Status unavailable'))
+    state.fetchBalance.mockRejectedValueOnce(new Error('Balance unavailable'))
+    renderWrapper()
+
+    window.dispatchEvent(new Event('focus'))
+    await waitFor(() => expect(state.fetchStatus).toHaveBeenCalledOnce())
+    await new Promise((resolve) => setTimeout(resolve))
+
+    window.dispatchEvent(new Event('focus'))
+
+    await waitFor(() => {
+      expect(state.fetchStatus).toHaveBeenCalledTimes(2)
+      expect(state.fetchBalance).toHaveBeenCalledTimes(2)
+    })
   })
 
   it('unlocks the run button once the subscription becomes active again', async () => {
@@ -171,6 +315,17 @@ describe('CloudRunButtonWrapper', () => {
       key: 'subscription-paused'
     })
     expect(state.manageSubscription).toHaveBeenCalledOnce()
+  })
+
+  it('does not refresh paused billing before the recovery portal is opened', () => {
+    mockCanRunWorkflows.value = false
+    mockBillingStatus.value = 'paused'
+    renderWrapper()
+
+    window.dispatchEvent(new Event('focus'))
+
+    expect(state.fetchStatus).not.toHaveBeenCalled()
+    expect(state.fetchBalance).not.toHaveBeenCalled()
   })
 
   it('keeps recovery open and surfaces portal failures', async () => {

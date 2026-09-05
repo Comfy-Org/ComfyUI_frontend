@@ -46,7 +46,7 @@ function makeWidget(
     value,
     name: 'grad',
     type: 'gradientslider',
-    options: options as IWidgetGradientSliderOptions
+    options: options
   }) as SimplifiedWidget<number, IWidgetGradientSliderOptions>
 }
 

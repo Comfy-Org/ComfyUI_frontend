@@ -132,6 +132,7 @@ async function openBulkMenu(user: ReturnType<typeof userEvent.setup>) {
 
 describe('PartnerNodeAccessPanel', () => {
   beforeEach(() => {
+    vi.useRealTimers()
     mockGovernedWorkspaceId.value = 'workspace-one'
     mockStatus.value = 'configured'
     mockWorkspaceRole.value = 'owner'
@@ -742,7 +743,7 @@ describe('PartnerNodeAccessPanel', () => {
     await options.footerProps.onConfirm()
 
     expect(openSpy).toHaveBeenCalledWith(
-      'https://www.comfy.org/enterprise',
+      'https://comfy.org/cloud/enterprise/',
       '_blank'
     )
     expect(mockCloseDialog).toHaveBeenCalled()

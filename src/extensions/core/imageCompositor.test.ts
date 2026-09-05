@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   clearCompositorLayers,
   getCompositorBBoxes,
+  getCompositorCanvas,
   getCompositorInputsFingerprint,
   getCompositorLayers
 } from '@/renderer/extensions/compositor/composables/useCompositorLayers'
@@ -31,8 +32,7 @@ function makeNode() {
   const savedValue = { layers: [] }
   const compositorWidget = {
     name: 'compositor',
-    value: savedValue,
-    callback: vi.fn()
+    value: savedValue
   } as unknown as IBaseWidget
   const priorOnExecuted = vi.fn()
   const priorOnRemoved = vi.fn()
@@ -44,8 +44,10 @@ function makeNode() {
     onRemoved: priorOnRemoved,
     constructor: { comfyClass: 'ImageCompositor' },
     widgets: [compositorWidget],
-    widgets_values: [savedValue],
-    graph: { setDirtyCanvas: vi.fn() }
+    graph: {
+      rootGraph: { id: 'test-graph' },
+      setDirtyCanvas: vi.fn()
+    }
   } as unknown as LGraphNode
   return { node, compositorWidget, priorOnExecuted, priorOnRemoved }
 }
@@ -110,6 +112,29 @@ describe('ImageCompositor extension', () => {
     expect(getCompositorBBoxes(node)).toBeUndefined()
   })
 
+  it('caches the document canvas reported by the backend', () => {
+    const { node } = createdNode()
+
+    node.onExecuted?.({
+      compositor_layers: [{ filename: 'a.png' }],
+      compositor_inputs: ['hash-a'],
+      compositor_canvas: [{ w: 1280, h: 1280 }]
+    })
+
+    expect(getCompositorCanvas(node)).toEqual({ w: 1280, h: 1280 })
+  })
+
+  it('leaves the canvas cache empty when the output has none', () => {
+    const { node } = createdNode()
+
+    node.onExecuted?.({
+      compositor_layers: [{ filename: 'a.png' }],
+      compositor_inputs: ['hash-a']
+    })
+
+    expect(getCompositorCanvas(node)).toBeUndefined()
+  })
+
   it('resets the compositor widget when the state is stale', () => {
     const { node, compositorWidget } = createdNode()
 
@@ -120,8 +145,6 @@ describe('ImageCompositor extension', () => {
     })
 
     expect(compositorWidget.value).toEqual({})
-    expect(compositorWidget.callback).toHaveBeenCalledWith({})
-    expect(node.widgets_values).toEqual([{}])
     expect(node.graph?.setDirtyCanvas).toHaveBeenCalled()
   })
 

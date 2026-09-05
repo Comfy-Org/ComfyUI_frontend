@@ -87,14 +87,14 @@ reviews:
           If none of those paths appear in the changed files, pass immediately.
 
           When applicable, check for:
-          1. **Command pattern (ADR 0003)**: Entity state mutations must be serializable, idempotent, deterministic commands — not imperative fire-and-forget side effects. Flag direct spatial mutation (`node.pos =`, `node.size =`, `group.pos =`) outside of a store or command, and any new void-returning mutation API that should produce a command object.
-          2. **God-object growth (ADR 0008)**: New methods/properties added to `LGraphNode`, `LGraphCanvas`, `LGraph`, or `Subgraph` that add responsibilities rather than extracting/migrating existing ones.
-          3. **ECS data/behavior separation (ADR 0008)**: Component-like data structures that contain methods or back-references to parent entities. ECS components must be plain data. New OOP instance patterns (`node.someProperty`, `node.someMethod()`) for data that should be a World component.
-          4. **Extension ecosystem (ADR 0008)**: Changes to extension-facing callbacks (`onConnectionsChange`, `onRemoved`, `onAdded`, `onConfigure`, `onConnectInput/Output`, `onWidgetChanged`), `node.widgets` access, `node.serialize` overrides, or `graph._version++` without migration guidance. These affect 40+ custom node repos.
+          1. **Command pattern (ADR-LAYOUT)**: Entity state mutations must be serializable, idempotent, deterministic commands — not imperative fire-and-forget side effects. Flag direct spatial mutation (`node.pos =`, `node.size =`, `group.pos =`) outside of a store or command, and any new void-returning mutation API that should produce a command object.
+          2. **God-object growth (ADR-ECS)**: New methods/properties added to `LGraphNode`, `LGraphCanvas`, `LGraph`, or `Subgraph` that add responsibilities rather than extracting/migrating existing ones.
+          3. **ECS data/behavior separation (ADR-ECS)**: Component-like data structures that contain methods or back-references to parent entities. ECS components must be plain data. New OOP instance patterns (`node.someProperty`, `node.someMethod()`) for data that should be a World component.
+          4. **Extension ecosystem (ADR-ECS)**: Changes to extension-facing callbacks (`onConnectionsChange`, `onRemoved`, `onAdded`, `onConfigure`, `onConnectInput/Output`, `onWidgetChanged`), `node.widgets` access, `node.serialize` overrides, or `graph._version++` without migration guidance. These affect 40+ custom node repos.
 
           Pass if none of these patterns are found in the diff.
 
-          When warning, reference the specific ADR by number and link to `docs/adr/` for context. Frame findings as directional guidance since ADR 0003 and 0008 are in Proposed status.
+          When warning, reference the specific ADR by identifier and link to `docs/adr/` for context. Frame findings as directional guidance since ADR-LAYOUT and ADR-ECS are in Proposed status.
 
   path_instructions:
     - path: '**/*.ts'
@@ -114,6 +114,17 @@ reviews:
         Treat `docs/adr/README.md` as required review context. For widget
         serialization changes, also read
         `docs/WIDGET_SERIALIZATION.md`.
+    - path: 'src/workbench/extensions/agent/**'
+      instructions: |
+        Treat `.agents/checks/follower-boundary.md` and
+        `docs/adr/FOLLOWER-in-app-agent-crdt-follower-and-distribution-resolved-boundaries.md` as
+        required review context. Flag: the follower writing the shared doc,
+        client-sent raw Yjs `update_b64`, layout/presence fields in the shared
+        semantic doc, an optimistic overlay merged back as a Yjs update,
+        `op_id` regeneration on retry, a second applier reimplemented instead
+        of importing `@comfyorg/comfy-multi-player`, `DISTRIBUTION`/`isCloud`/
+        `isDesktop` checks scattered outside the agent connection boundary, and
+        auth reduced to `isCloud` instead of `authStore.getAuthHeader()`.
     - path: '**/*.test.ts'
       instructions: |
         Treat `.agents/checks/test-quality.md`, `docs/testing/README.md`,

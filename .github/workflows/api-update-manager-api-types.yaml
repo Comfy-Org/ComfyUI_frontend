@@ -21,7 +21,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Install pnpm
-        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -50,17 +50,17 @@ jobs:
       - name: Generate Manager API types
         run: |
           echo "Generating TypeScript types from ComfyUI-Manager@${{ steps.manager-info.outputs.commit }}..."
-          pnpm dlx openapi-typescript ./ComfyUI-Manager/openapi.yaml --output ./src/types/generatedManagerTypes.ts
+          pnpm dlx openapi-typescript ./ComfyUI-Manager/openapi.yaml --output ./src/workbench/extensions/manager/types/generatedManagerTypes.ts
 
       - name: Validate generated types
         run: |
-          if [ ! -f ./src/types/generatedManagerTypes.ts ]; then
+          if [ ! -f ./src/workbench/extensions/manager/types/generatedManagerTypes.ts ]; then
             echo "Error: Types file was not generated."
             exit 1
           fi
 
           # Check if file is not empty
-          if [ ! -s ./src/types/generatedManagerTypes.ts ]; then
+          if [ ! -s ./src/workbench/extensions/manager/types/generatedManagerTypes.ts ]; then
             echo "Error: Generated types file is empty."
             exit 1
           fi
@@ -68,12 +68,12 @@ jobs:
       - name: Lint generated types
         run: |
           echo "Linting generated ComfyUI-Manager API types..."
-          pnpm lint:fix:no-cache -- ./src/types/generatedManagerTypes.ts
+          pnpm lint:fix:no-cache -- ./src/workbench/extensions/manager/types/generatedManagerTypes.ts
 
       - name: Check for changes
         id: check-changes
         run: |
-          if [[ -z $(git status --porcelain ./src/types/generatedManagerTypes.ts) ]]; then
+          if [[ -z $(git status --porcelain ./src/workbench/extensions/manager/types/generatedManagerTypes.ts) ]]; then
             echo "No changes to ComfyUI-Manager API types detected."
             echo "changed=false" >> $GITHUB_OUTPUT
             exit 0
@@ -84,7 +84,7 @@ jobs:
 
       - name: Create Pull Request
         if: steps.check-changes.outputs.changed == 'true'
-        uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0 # v8.1.0
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           token: ${{ secrets.PR_GH_TOKEN }}
           commit-message: '[chore] Update ComfyUI-Manager API types from ComfyUI-Manager@${{ steps.manager-info.outputs.commit }}'
@@ -103,4 +103,4 @@ jobs:
           labels: Manager
           delete-branch: true
           add-paths: |
-            src/types/generatedManagerTypes.ts
+            src/workbench/extensions/manager/types/generatedManagerTypes.ts

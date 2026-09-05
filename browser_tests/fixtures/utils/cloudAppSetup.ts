@@ -1,4 +1,8 @@
 import type { Page } from '@playwright/test'
+import type {
+  BillingCapabilitiesResponse,
+  BillingStatusResponse
+} from '@comfyorg/ingest-types'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type {
@@ -44,6 +48,11 @@ interface CloudAppSetupOptions {
   members?: Member[]
   /** Merged over the default boot features. */
   features?: RemoteConfig
+  billingStatus?: BillingStatusResponse
+  billingCapabilities?:
+    | BillingCapabilitiesResponse
+    | Promise<BillingCapabilitiesResponse>
+  billingCapabilitiesStatus?: number
 }
 
 /**
@@ -53,14 +62,26 @@ interface CloudAppSetupOptions {
  */
 export async function setupCloudApp(
   page: Page,
-  { workspace, members = [], features }: CloudAppSetupOptions
+  {
+    workspace,
+    members = [],
+    features,
+    billingStatus,
+    billingCapabilities,
+    billingCapabilitiesStatus
+  }: CloudAppSetupOptions
 ) {
   await mockCloudBoot(page, {
     features: features ?? {},
     settings: DEFAULT_SETTINGS
   })
   await mockGraphBootExtras(page)
-  await mockBilling(page)
+  await mockBilling(page, {
+    workspaceId: workspace.id,
+    billingStatus,
+    billingCapabilities,
+    billingCapabilitiesStatus
+  })
   await mockWorkspace(page, workspace, members)
   await bootCloud(page)
 }

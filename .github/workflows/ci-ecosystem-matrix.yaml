@@ -1,0 +1,601 @@
+# Required gate: on relevant PRs and every merge candidate, execute every
+# registry pack's frontend JS in both supported renderers.
+#
+# The corpus is a mirror of the frontend JS of EVERY registry pack (~5,100
+# packs). Only the executable surface is kept - .js/.mjs plus the text assets
+# a module can import - and binary assets are staged as empty placeholders so
+# their imports still resolve. That is what makes it cacheable: ~0.3GB
+# compressed against the repo's shared 10GB budget. Keeping every asset byte
+# put it at 6.0GB, which evicted itself mid-run (run 31753242605: three of
+# four shards found no corpus at all).
+#
+# Every pinned pack is fetched at the commit named in corpus.pins.json, which is
+# checked in and bumped by hand. Within one exact cache, both sides of a
+# comparison measure the same bytes, so a red delta is attributable to the diff.
+# Packs added since the last pin bump track their registry ref when a cache is
+# built. The pin-status job below leads every run with how old that snapshot is.
+#
+# The upstream static idiom scan (L1) is deliberately absent: its
+# false-positive/negative rate was judged too high to act on. Packs are
+# measured by executing their code - the ecosystem matrix - instead.
+#
+# Provenance: scripts/registry-census/ is vendored from
+# Comfy-Org/ComfyUI_ECS_Compat_Check (private, migration-phase instrument
+# slated for archival) - see scripts/registry-census/README.md.
+name: 'CI: Custom Nodes Ecosystem Matrix'
+
+on:
+  # Required workflows must emit their aggregate check for every candidate.
+  # A paths filter would leave unrelated PRs and merge-queue commits waiting
+  # forever for a check GitHub never creates.
+  pull_request:
+  merge_group:
+  # Refreshes the corpus and writes the baseline every relevant PR measures.
+  # Actions cache scoping means only a default-branch run can produce an entry
+  # that other branches restore.
+  push:
+    branches: [main]
+    paths:
+      - '**'
+      - '!apps/**'
+      - '!docs/**'
+      - '!.storybook/**'
+      - '!**/*.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ecosystem-matrix-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' }}
+
+env:
+  PYTHON_VERSION: '3.11'
+  CORPUS_CACHE_FAMILY: registry-corpus-
+  CORPUS_CACHE_PREFIX: registry-corpus-v6-
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      should-run: ${{ github.event_name == 'pull_request' && github.event.pull_request.changed_files >= 3000 || steps.changes.outputs.should-run }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Detect relevant changes
+        id: changes
+        uses: ./.github/actions/changes-filter
+
+  # First job in the run, and deliberately dependency-free so its annotation
+  # and step summary land at the top. Stale pins are the one failure mode this
+  # instrument cannot detect from the inside: everything stays green while the
+  # ecosystem it claims to measure moves on without it.
+  pin-status:
+    needs: changes
+    if: needs.changes.outputs.should-run == 'true' && github.repository == 'Comfy-Org/ComfyUI_frontend'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: How old is the corpus, and how do I bump it
+        run: python3 scripts/registry-census/pins.py
+
+  corpus:
+    needs: changes
+    if: needs.changes.outputs.should-run == 'true' && github.repository == 'Comfy-Org/ComfyUI_frontend'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # contents: read only. The fetch step below holds a token (for the
+    # codeload rate limit) while extracting untrusted archives, so this job
+    # must not also carry actions: write - cache pruning runs as its own job.
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # An ubuntu-latest image bump must not silently change the interpreter
+      # under a verdict whose whole value is run-to-run comparability.
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      # Exact key only, deliberately no restore-keys. The key covers the pin
+      # set and the code that defines corpus readiness, so neither changed
+      # commits nor changed validation rules can restore an older cache.
+      - name: Restore corpus cache
+        id: restore
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: .census
+          key: ${{ env.CORPUS_CACHE_PREFIX }}${{ hashFiles('scripts/registry-census/corpus.pins.json', 'scripts/registry-census/fetch_corpus.py', 'scripts/registry-census/validate_corpus.py') }}
+
+      # A cache hit already carries the snapshot and exact corpus consumed by
+      # the shards. Repeating the registry crawl and missing-pack retries would
+      # take five minutes and be discarded because Actions caches are immutable.
+      - name: Refresh registry snapshot
+        if: steps.restore.outputs.cache-hit != 'true'
+        run: python3 scripts/registry-census/refresh_registry.py
+
+      # Authenticated codeload: anonymous fetches are rate-limited per IP, and
+      # a run where many packs drift at once exhausts that budget partway
+      # through. Run 31738365496 failed 145 of 150 attempted fetches this way
+      # and reported it as an ecosystem-wide outage. This job only downloads
+      # and unpacks archives; pack code executes in ecosystem-matrix, which
+      # checks out with persist-credentials: false.
+      #
+      # Fetches at the commits named in corpus.pins.json, so this only does
+      # real work on a cold cache or a pin bump. Prints the pin banner first.
+      - name: Fetch corpus
+        id: fetch
+        if: steps.restore.outputs.cache-hit != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 scripts/registry-census/fetch_corpus.py
+
+      - name: Validate corpus cache
+        run: python3 scripts/registry-census/validate_corpus.py
+
+      # corpus.lock.json records the ETag and resolved tree of every pack this
+      # run measured - the identity a published figure has to be cited with.
+      # registry-stale.json is present only when the snapshot is a fallback.
+      - name: Upload corpus provenance
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: corpus-lock
+          path: |
+            .census/*.json
+            .census/data/registry.json
+          retention-days: 30
+          if-no-files-found: error
+          include-hidden-files: true
+
+      # Same key as the restore, so concurrent runs on the same pins and
+      # readiness code race for one key with the loser rejected as a duplicate.
+      #
+      # Saved on any event, not just main. The shards are separate jobs and
+      # this cache is the only thing that carries the corpus to them: gating
+      # the save to the default branch meant a PR could never run the matrix
+      # at all, which is what reddened run 31827717441. Affordable now that
+      # the corpus is ~0.16GB rather than the 6.0GB that evicted itself.
+      #
+      # corpus.ready.json is written only after the fetch meets its population
+      # floor. A lockfile alone is not enough: it is written even when most
+      # targets failed so the provenance of that failure can be inspected.
+      - name: Save corpus cache
+        if: |
+          steps.restore.outputs.cache-hit != 'true'
+          && steps.fetch.outcome == 'success'
+          && hashFiles('.census/corpus.ready.json') != ''
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: .census
+          key: ${{ env.CORPUS_CACHE_PREFIX }}${{ hashFiles('scripts/registry-census/corpus.pins.json', 'scripts/registry-census/fetch_corpus.py', 'scripts/registry-census/validate_corpus.py') }}
+
+  # Keep only the newest corpus generation against the repo's shared 10GB
+  # budget. Branch-scoped, so a PR's entry is never deleted out from under it
+  # - those expire with the PR. Its own job so `corpus`, which holds a token
+  # while extracting untrusted archives, stays at contents: read.
+  prune-corpus-cache:
+    needs: corpus
+    if: |
+      needs.corpus.result == 'success'
+      && github.event_name != 'pull_request'
+      && github.repository == 'Comfy-Org/ComfyUI_frontend'
+      && github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: write
+    steps:
+      # --ref, or this enumerates every branch's entries and deletes a PR's
+      # corpus out from under it. --limit, because the default of 30 leaves a
+      # larger backlog permanently unpruned. pipefail, because the exit status
+      # otherwise comes from the loop, which succeeds over empty input - so a
+      # failing `gh cache list` would let pruning stop while the step reads
+      # green.
+      - name: Prune superseded corpus caches
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh cache list --repo "$GITHUB_REPOSITORY" \
+            --key "$CORPUS_CACHE_FAMILY" \
+            --ref "refs/heads/${GITHUB_REF_NAME}" \
+            --limit 100 --sort created_at --order desc \
+            --json id --jq '.[1:][].id' > ids.txt
+          while read -r id; do
+            gh cache delete "$id" --repo "$GITHUB_REPOSITORY" || true
+          done < ids.txt
+
+  # The execution rung between the corpus (every pack fetched) and the E2E
+  # gates (browser + backend): every JS-shipping pack's real extension code
+  # is imported and driven against the real frontend runtime under vitest -
+  # registration lifecycle, a user-operation battery, serialize/reload.
+  # Sharded 4 ways; vitest additionally parallelizes per core within a
+  # shard (~4.7s of test time per pack, measured).
+  #
+  # A shard checks harness integrity only: every built spec must write its
+  # per-pack row. vitest's own exit code is ignored here because pack code
+  # leaks unhandled rejections. Each renderer gets an independent ecosystem
+  # PASS/FAIL verdict over its four shards.
+  ecosystem-matrix:
+    name: ecosystem-matrix (${{ matrix.renderer }}, shard ${{ matrix.shard }})
+    needs: corpus
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        renderer: [legacy, vue]
+        shard: [1, 2, 3, 4]
+    env:
+      MATRIX_RENDERER: ${{ matrix.renderer }}
+      MATRIX_VUE: ${{ matrix.renderer == 'vue' && '1' || '' }}
+    steps:
+      # This job EXECUTES unreviewed third-party pack code under vitest;
+      # the checkout must not leave a usable git credential behind for it.
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      # The corpus job saved this exact key; same-run caches are visible to
+      # later jobs. Restore-only, exact key, and fail-on-cache-miss: a prefix
+      # fallback here would hand the shard a corpus pinned to different
+      # commits, and `corpus missing` further down is a much clearer failure
+      # than a green verdict over the wrong packs.
+      - name: Restore corpus cache
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: .census
+          key: ${{ env.CORPUS_CACHE_PREFIX }}${{ hashFiles('scripts/registry-census/corpus.pins.json', 'scripts/registry-census/fetch_corpus.py', 'scripts/registry-census/validate_corpus.py') }}
+          fail-on-cache-miss: true
+
+      # node_cache: false - setup-node's post step writes the pnpm store
+      # AFTER this job has executed ~1,900 packs' code, and the publish
+      # workflows restore that same lockfile-derived key while holding
+      # NPM_TOKEN and id-token: write. Slower installs here; no write path
+      # out of the job that runs unreviewed code.
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          include_build_step: false
+          node_cache: 'false'
+
+      - name: Build shard fixture
+        run: python3 scripts/registry-census/build_matrix.py --shard ${{ matrix.shard }}/4
+
+      # Every built spec gets its stub row BEFORE vitest starts: no failure
+      # mode - worker crash, collection kill, hang - can produce a missing
+      # row, only an incomplete one, which the verdict counts and reports.
+      - name: Pre-create stub rows
+        run: |
+          python3 - <<'PY'
+          import json, os
+          manifest = json.load(open('src/__ecs_matrix__/manifest.json'))
+          os.makedirs('matrix-rows', exist_ok=True)
+          for pack, entry in manifest.items():
+              if 'entries' in entry:
+                  json.dump(
+                      {'pack': pack, 'incomplete': True},
+                      open(os.path.join('matrix-rows', entry['safe'] + '.json'), 'w'),
+                  )
+          PY
+
+      - name: Run the matrix
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          specs=(src/__ecs_matrix__/*.matrix.test.ts)
+          built=${#specs[@]}
+          if [ "$built" -eq 0 ]; then
+            echo "::error::no pack specs built - corpus missing or empty"
+            exit 1
+          fi
+          MATRIX_OUT="$PWD/matrix-rows" pnpm exec vitest run \
+            --config vitest.matrix.config.mts > matrix-rows/_vitest-shard.log 2>&1 \
+            || echo "vitest exited nonzero - tolerated, pack code may leak unhandled errors"
+          tail -25 matrix-rows/_vitest-shard.log
+          cp src/__ecs_matrix__/manifest.json "matrix-rows/_manifest-shard-${{ matrix.shard }}.json"
+
+          # nullglob makes an empty match an empty array rather than the
+          # literal pattern, so these counts stay honest when nothing ran.
+          spec_names=()
+          for f in "${specs[@]}"; do
+            spec_names+=("$(basename "$f" .matrix.test.ts)")
+          done
+          row_names=()
+          for f in matrix-rows/*.json; do
+            name=$(basename "$f" .json)
+            case "$name" in _manifest*) continue ;; esac
+            row_names+=("$name")
+          done
+          echo "specs=$built rows=${#row_names[@]}"
+          if [ "${#row_names[@]}" -ne "$built" ]; then
+            echo "::error::matrix wrote ${#row_names[@]} rows for $built specs - harness failure, not pack noise"
+            comm -23 \
+              <(printf '%s\n' "${spec_names[@]}" | sort) \
+              <(printf '%s\n' "${row_names[@]}" | sort) \
+              | sed 's/^/::error::missing row: /'
+            exit 1
+          fi
+
+      # The shard log is the only record of WHY a shard died, so it rides
+      # inside matrix-rows/ rather than as a second upload path: two paths
+      # make upload-artifact re-root the artifact at their common ancestor,
+      # which put every row one directory deeper than the verdict job looks
+      # and emptied the population (run 31829344129, 'no matrix rows'). The
+      # leading underscore and .log keep it out of both consumers' globs.
+      - name: Upload rows
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: ecosystem-matrix-${{ matrix.renderer }}-shard-${{ matrix.shard }}
+          path: matrix-rows/
+          retention-days: 30
+          if-no-files-found: warn
+
+  # Each renderer's four shards merge into their own table and verdict. A
+  # failure on one renderer cannot hide inside the other renderer's population.
+  #
+  # MATRIX_EXPECT_SHARDS makes a dead shard withhold rather than PASS. Every
+  # criterion is a ratio, so three shards produce a perfectly plausible
+  # number, and on PASS that partial population would be saved as the
+  # baseline the next run is measured against.
+  matrix-verdict:
+    name: matrix-verdict (${{ matrix.renderer }})
+    needs: [changes, corpus, ecosystem-matrix]
+    # A single failed shard must degrade to a withheld verdict over the rows
+    # that exist, not to a skipped check that reads as nothing happened. Not
+    # always(): a cancelled run would find no rows, exit 2, and manufacture a
+    # red out of someone pressing the stop button.
+    if: |
+      !cancelled()
+      && needs.changes.outputs.should-run == 'true'
+      && github.repository == 'Comfy-Org/ComfyUI_frontend'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        renderer: [legacy, vue]
+    env:
+      MATRIX_RENDERER: ${{ matrix.renderer }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      # continue-on-error: when the corpus job fails, no shard ran and no
+      # artifact exists - the verdict step must still run so the summarizer
+      # reports the documented no-rows exit (2) instead of an opaque
+      # download failure.
+      - name: Merge shard rows
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          pattern: ecosystem-matrix-${{ matrix.renderer }}-shard-*
+          path: matrix-rows
+          merge-multiple: true
+
+      # A stale registry means a different denominator, and that denominator
+      # feeds the delta gate. refresh_registry.py records the fallback in
+      # registry-stale.json; the summarizer surfaces it in the report and
+      # stores it in metrics.json rather than leaving it in a job log.
+      - name: Fetch corpus provenance
+        if: needs.corpus.result == 'success'
+        uses: actions/download-artifact@v8
+        with:
+          name: corpus-lock
+          path: corpus-lock
+
+      # The baseline this PR is measured against: main's last green run. The
+      # primary key never hits (saves carry a run_attempt suffix), so
+      # restore-keys serves the newest save. A re-run can restore this same
+      # run's earlier attempt - metrics carry runId and the summarizer skips
+      # the delta rather than compare a run against itself.
+      - name: Restore baseline metrics
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: matrix-metrics
+          key: matrix-metrics-${{ matrix.renderer }}-${{ github.run_id }}
+          restore-keys: matrix-metrics-${{ matrix.renderer }}-
+
+      - name: Verdict
+        id: verdict
+        env:
+          MATRIX_RUN_ID: ${{ github.run_id }}
+          MATRIX_EXPECT_SHARDS: '4'
+        run: |
+          MATRIX_OUT="$PWD/matrix-rows" \
+          MATRIX_PREV="$PWD/matrix-metrics/metrics.json" \
+          MATRIX_METRICS_OUT="$PWD/matrix-metrics/metrics.json" \
+          MATRIX_STALE_MARKER="$PWD/corpus-lock/registry-stale.json" \
+            python3 scripts/registry-census/summarize_matrix.py
+
+      # Baseline-from-health, and only from main: a PR must not publish its
+      # own numbers as the baseline every later PR is measured against, and a
+      # FAILing run must not ratchet the baseline down to its own eroded
+      # numbers.
+      - name: Save baseline metrics
+        if: |
+          github.event_name != 'pull_request'
+          && github.ref_name == github.event.repository.default_branch
+          && steps.verdict.outcome == 'success'
+          && hashFiles('matrix-metrics/metrics.json') != ''
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: matrix-metrics
+          key: matrix-metrics-${{ matrix.renderer }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Upload combined result
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: ecosystem-matrix-${{ matrix.renderer }}-combined
+          path: matrix-rows/
+          retention-days: 30
+          if-no-files-found: warn
+
+  # Counter-evidence: the matrix runs over a synthetic corpus where every
+  # pack breaks exactly one measurement channel (detection-proof/corpus/),
+  # then this job requires BOTH that every channel fired with its poison
+  # message AND that each poison pack breaches the criterion it targets
+  # (verify_detection.py). A green matrix is only meaningful while this stays
+  # green: a runner or frontend change that blinds a channel reds THIS job
+  # instead of silently hollowing out the check. No corpus/cache dependency -
+  # the poison fixture is checked in, so this runs for every relevant
+  # candidate even when the corpus is cold.
+  matrix-detection-proof:
+    name: matrix-detection-proof (${{ matrix.renderer }})
+    needs: changes
+    if: needs.changes.outputs.should-run == 'true' && github.repository == 'Comfy-Org/ComfyUI_frontend'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        renderer: [legacy, vue]
+    env:
+      MATRIX_RENDERER: ${{ matrix.renderer }}
+      MATRIX_VUE: ${{ matrix.renderer == 'vue' && '1' || '' }}
+    steps:
+      # Runs the poison packs (and the same harness that runs real pack
+      # code); same rule as the shard jobs - no persisted credential.
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          include_build_step: false
+          node_cache: 'false'
+
+      - name: Gate unit tests
+        run: python3 -m unittest discover -s scripts/registry-census -p 'test_*.py' -v
+
+      - name: Build poison fixture
+        run: CENSUS_ROOT=scripts/registry-census/detection-proof python3 scripts/registry-census/build_matrix.py
+
+      - name: Run the matrix over the poison corpus
+        run: |
+          MATRIX_OUT="$PWD/matrix-proof" pnpm exec vitest run \
+            --config vitest.matrix.config.mts 2>&1 | tail -15 \
+            || echo "vitest exited nonzero - tolerated, poison packs leak by design"
+
+      - name: Every channel must fire and must gate
+        run: MATRIX_OUT="$PWD/matrix-proof" python3 scripts/registry-census/verify_detection.py
+
+      # Exit code must be exactly 1 (criteria FAIL): exit 2 would mean the
+      # harness gate withheld the verdict, which on this corpus is itself a
+      # detection failure.
+      - name: Verdict must FAIL on poison
+        run: |
+          set +e
+          MATRIX_OUT="$PWD/matrix-proof" python3 scripts/registry-census/summarize_matrix.py > proof-verdict.txt 2>&1
+          rc=$?
+          set -e
+          tail -8 proof-verdict.txt
+          if [ "$rc" -ne 1 ]; then
+            echo "::error::expected verdict FAIL (exit 1) on the poison corpus, got exit $rc"
+            exit 1
+          fi
+          echo "verdict correctly FAILED on the poison corpus"
+
+  ecosystem-matrix-status:
+    name: Custom Nodes Ecosystem Matrix test
+    if: always()
+    needs:
+      - changes
+      - pin-status
+      - corpus
+      - ecosystem-matrix
+      - matrix-verdict
+      - matrix-detection-proof
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Enforce complete matrix result
+        shell: bash
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          EVENT_NAME: ${{ github.event_name }}
+          SHOULD_RUN: ${{ needs.changes.outputs.should-run }}
+          PIN_STATUS_RESULT: ${{ needs.pin-status.result }}
+          CORPUS_RESULT: ${{ needs.corpus.result }}
+          SHARDS_RESULT: ${{ needs.ecosystem-matrix.result }}
+          VERDICTS_RESULT: ${{ needs.matrix-verdict.result }}
+          PROOFS_RESULT: ${{ needs.matrix-detection-proof.result }}
+        run: |
+          set -euo pipefail
+          [ "$CHANGES_RESULT" = success ] || { echo "::error::change detection ended with $CHANGES_RESULT"; exit 1; }
+          case "$SHOULD_RUN" in
+            true) ;;
+            false)
+              [ "$EVENT_NAME" = pull_request ] || { echo "::error::change detection returned false for $EVENT_NAME"; exit 1; }
+              ;;
+            *) echo "::error::change detection returned invalid value '$SHOULD_RUN'"; exit 1 ;;
+          esac
+          if [ "$SHOULD_RUN" = false ]; then
+            for result in "$PIN_STATUS_RESULT" "$CORPUS_RESULT" "$SHARDS_RESULT" "$VERDICTS_RESULT" "$PROOFS_RESULT"; do
+              [ "$result" = skipped ] || { echo "::error::irrelevant-change dependency ended with $result"; exit 1; }
+            done
+            echo 'ecosystem matrix not applicable to this pull request'
+            exit 0
+          fi
+          failures=()
+          for check in \
+            "pin-status:$PIN_STATUS_RESULT" \
+            "corpus:$CORPUS_RESULT" \
+            "shards:$SHARDS_RESULT" \
+            "verdicts:$VERDICTS_RESULT" \
+            "detection-proofs:$PROOFS_RESULT"; do
+            if [ "${check#*:}" != success ]; then
+              failures+=("$check")
+            fi
+          done
+          if [ "${#failures[@]}" -ne 0 ]; then
+            echo "::error::ecosystem matrix did not pass completely: ${failures[*]}"
+            exit 1
+          fi
+          echo 'ecosystem matrix passed in both renderers with both detection proofs'

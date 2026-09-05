@@ -111,7 +111,7 @@ export class MovingOutputLink extends MovingLinkBase {
     const { inputNode, inputSlot, fromReroute } = this
 
     // Creating a new link removes floating prop - check before connecting
-    const floatingTerminus = reroute?.floating?.slotType === 'output'
+    const floatingTerminus = reroute.floating?.slotType === 'output'
 
     // Connect the first reroute of the link being dragged to the reroute being dropped on
     if (fromReroute) {

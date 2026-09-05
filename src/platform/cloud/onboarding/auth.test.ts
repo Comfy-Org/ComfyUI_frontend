@@ -13,7 +13,10 @@ vi.mock('@/scripts/api', () => ({
 
 vi.mock('@sentry/vue', () => ({
   addBreadcrumb: vi.fn(),
-  captureException: vi.fn()
+  captureException: vi.fn(),
+  // reportError() probes this; without it the probe throws, reportError
+  // swallows it, and the report silently never happens.
+  isEnabled: vi.fn(() => false)
 }))
 
 function mockResponse({

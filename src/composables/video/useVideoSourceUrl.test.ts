@@ -31,7 +31,7 @@ vi.mock('@/platform/distribution/cloudPreviewUtil', () => ({
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: () => ({
-    nodeToNodeLocatorId: (node: { id: string }) => String(node.id)
+    nodeToNodeLocatorId: (node: { id: string }) => node.id
   })
 }))
 

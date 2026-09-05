@@ -63,7 +63,7 @@ vi.mock('vue-i18n', () => ({
     t: vi.fn((key: string, params?: unknown) => {
       if (key === 'g.error') return 'Error'
       if (key === 'templateWorkflows.error.templateNotFound') {
-        return `Template "${(params as { templateName?: string })?.templateName}" not found`
+        return `Template "${(params as { templateName?: string }).templateName}" not found`
       }
       if (key === 'g.errorLoadingTemplate') return 'Failed to load template'
       return key

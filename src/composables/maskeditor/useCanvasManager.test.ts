@@ -178,7 +178,7 @@ describe('useCanvasManager', () => {
     it('should throw error when context missing', async () => {
       const manager = useCanvasManager()
 
-      mockStore.imgCtx = null! as CanvasRenderingContext2D
+      mockStore.imgCtx = null!
 
       const origImage = createMockImage(512, 512)
       const maskImage = createMockImage(512, 512)
@@ -271,7 +271,7 @@ describe('useCanvasManager', () => {
     it('should return early when context missing', async () => {
       const manager = useCanvasManager()
 
-      mockStore.maskCtx = null! as CanvasRenderingContext2D
+      mockStore.maskCtx = null!
 
       await manager.updateMaskColor()
 

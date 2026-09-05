@@ -1,40 +1,9 @@
 {
   "files": {
     "commands.json": "6474557ea9947c6983e84c03b40b75573307717d",
-    "main.json": "b417a114d87667ee8111e6d3c575337bf7adef8f",
-    "nodeDefs.json": "93c778a69bfe43a07e3bf07d1ecfadc26bf44661",
-    "settings.json": "1028b58bfb4f3e4f5025cd8d933bd19085c291e3"
-  },
-  "knownViolations": {
-    "main.json": [
-      "[\"assetBrowser\",\"civitaiLinkExample\"]",
-      "[\"assetBrowser\",\"civitaiLinkLabel\"]",
-      "[\"assetBrowser\",\"jobId\"]",
-      "[\"assetBrowser\",\"uploadModelDescription2\"]",
-      "[\"assetBrowser\",\"uploadModelDescription3\"]",
-      "[\"g\",\"disabling\"]",
-      "[\"g\",\"enabling\"]",
-      "[\"g\",\"itemsSelected\"]",
-      "[\"g\",\"searchPlaceholder\"]",
-      "[\"g\",\"updating\"]",
-      "[\"linearMode\",\"downloadAll\"]",
-      "[\"manager\",\"changingVersion\"]",
-      "[\"manager\",\"failed\"]",
-      "[\"manager\",\"uninstalling\"]",
-      "[\"rightSidePanel\",\"missingModels\",\"gatedModelsHint\"]",
-      "[\"subscription\",\"creditsRemainingThisMonth\"]",
-      "[\"subscription\",\"creditsRemainingThisYear\"]",
-      "[\"subscription\",\"inviteUpTo\"]",
-      "[\"subscription\",\"preview\",\"creditsRefillMonthlyTo\"]",
-      "[\"toastMessages\",\"failedToAccessBillingPortal\"]",
-      "[\"workspace\",\"addedToWorkspace\"]",
-      "[\"workspacePanel\",\"inviteLimitReached\"]",
-      "[\"workspacePanel\",\"members\",\"membersCount\"]"
-    ],
-    "nodeDefs.json": [
-      "[\"ByteDanceSeedAudio\",\"description\"]",
-      "[\"LTXVDurationPredictor\",\"description\"]"
-    ]
+    "main.json": "d0875dac5f912da853e81aa9a854ce8bc3c001c8",
+    "nodeDefs.json": "36bc8dc5a2dddbd25c9b14ff464486db230672c4",
+    "settings.json": "d98b3a74e42f6295680a656e0c20f1c075a07911"
   },
   "version": 1
 }

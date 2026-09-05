@@ -42,7 +42,7 @@ export interface CustomEventDispatcher<
     type: T,
     detail: EventMap[T]
   ): boolean
-  dispatch<T extends keyof PickNevers<EventMap>>(type: T): boolean
+  dispatch(type: keyof PickNevers<EventMap>): boolean
 }
 
 /**
@@ -98,7 +98,7 @@ export class CustomEventTarget<
     type: T,
     detail: EventMap[T]
   ): boolean
-  dispatch<T extends keyof PickNevers<EventMap>>(type: T): boolean
+  dispatch(type: keyof PickNevers<EventMap>): boolean
   dispatch<T extends keyof EventMap>(type: T, detail?: EventMap[T]) {
     const event = new CustomEvent(type as string, { detail, cancelable: true })
     return super.dispatchEvent(event)
@@ -110,7 +110,7 @@ export class CustomEventTarget<
     options?: boolean | AddEventListenerOptions
   ): void {
     // Assertion: Contravariance on CustomEvent => Event
-    super.addEventListener(type as string, listener as EventListener, options)
+    super.addEventListener(type, listener as EventListener, options)
   }
 
   override removeEventListener<K extends Keys>(
@@ -119,11 +119,7 @@ export class CustomEventTarget<
     options?: boolean | EventListenerOptions
   ): void {
     // Assertion: Contravariance on CustomEvent => Event
-    super.removeEventListener(
-      type as string,
-      listener as EventListener,
-      options
-    )
+    super.removeEventListener(type, listener as EventListener, options)
   }
 
   /** @deprecated Use {@link dispatch}. */

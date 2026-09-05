@@ -3,12 +3,8 @@ import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { adjustColor } from '@/utils/colorUtil'
 
-import { MinimapDataSourceFactory } from './data/MinimapDataSourceFactory'
-import type {
-  IMinimapDataSource,
-  MinimapNodeData,
-  MinimapRenderContext
-} from './types'
+import { MinimapDataSource } from './data/MinimapDataSource'
+import type { MinimapNodeData, MinimapRenderContext } from './types'
 
 /**
  * Get theme-aware colors for the minimap
@@ -61,7 +57,7 @@ function getNodeColor(
  */
 function renderGroups(
   ctx: CanvasRenderingContext2D,
-  dataSource: IMinimapDataSource,
+  dataSource: MinimapDataSource,
   offsetX: number,
   offsetY: number,
   context: MinimapRenderContext,
@@ -96,7 +92,7 @@ function renderGroups(
  */
 function renderNodes(
   ctx: CanvasRenderingContext2D,
-  dataSource: IMinimapDataSource,
+  dataSource: MinimapDataSource,
   offsetX: number,
   offsetY: number,
   context: MinimapRenderContext,
@@ -180,7 +176,7 @@ function renderNodes(
  */
 function renderConnections(
   ctx: CanvasRenderingContext2D,
-  dataSource: IMinimapDataSource,
+  dataSource: MinimapDataSource,
   offsetX: number,
   offsetY: number,
   context: MinimapRenderContext,
@@ -253,8 +249,7 @@ export function renderMinimapToCanvas(
   // Clear canvas
   ctx.clearRect(0, 0, context.width, context.height)
 
-  // Create unified data source (Dependency Inversion)
-  const dataSource = MinimapDataSourceFactory.create(graph)
+  const dataSource = new MinimapDataSource(graph)
 
   // Fast path for empty graph
   if (!dataSource.hasData()) {

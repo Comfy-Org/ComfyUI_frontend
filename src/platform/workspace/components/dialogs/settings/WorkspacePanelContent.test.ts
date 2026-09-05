@@ -1,3 +1,4 @@
+import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -5,24 +6,26 @@ import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import WorkspacePanelContent from './WorkspacePanelContent.vue'
 
-const mockFetchMembers = vi.fn()
-const mockFetchPendingInvites = vi.fn()
+const { mockMaxSeats, mockIsPlanLoading } = vi.hoisted(() => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
+  const { ref } = require('vue') as typeof import('vue')
 
-const { mockMaxSeats, mockIsPlanLoading, mockMembers, mockWorkspaceType } =
-  vi.hoisted(() => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
-    const { ref } = require('vue') as typeof import('vue')
+  return {
+    mockMaxSeats: ref<number | null>(20),
+    mockIsPlanLoading: ref(false)
+  }
+})
 
-    return {
-      mockMaxSeats: ref<number | null>(20),
-      mockIsPlanLoading: ref(false),
-      mockMembers: ref<WorkspaceMember[]>([]),
-      mockWorkspaceType: ref<'personal' | 'team'>('team')
-    }
-  })
+let pinia: ReturnType<typeof createTestingPinia>
+let workspaceStore: ReturnType<typeof useTeamWorkspaceStore> & {
+  activeWorkspaceId: string | null
+}
+let members: WorkspaceMember[]
+let workspaceType: 'personal' | 'team'
 
 vi.mock('@/platform/workspace/composables/useTeamPlan', () => ({
   useTeamPlan: () => ({
@@ -34,36 +37,11 @@ vi.mock('@/platform/workspace/composables/useTeamPlan', () => ({
   })
 }))
 
-vi.mock('pinia', async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...(actual as object),
-    storeToRefs: (store: Record<string, unknown>) => store
-  }
-})
-
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
-  const { computed, ref } = require('vue') as typeof import('vue')
-  return {
-    useTeamWorkspaceStore: () => ({
-      workspaceName: ref('Acme Team'),
-      isInPersonalWorkspace: computed(
-        () => mockWorkspaceType.value === 'personal'
-      ),
-      members: mockMembers,
-      fetchMembers: mockFetchMembers,
-      fetchPendingInvites: mockFetchPendingInvites
-    })
-  }
-})
-
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
   const { ref } = require('vue') as typeof import('vue')
   return {
     useWorkspaceUI: () => ({
-      workspaceType: mockWorkspaceType,
       workspaceRole: ref('owner')
     })
   }
@@ -113,20 +91,43 @@ function createMember(id: string): WorkspaceMember {
 }
 
 function renderComponent() {
+  workspaceStore.workspaces = [
+    {
+      id: 'workspace-one',
+      name: 'Acme Team',
+      type: workspaceType,
+      role: 'owner',
+      created_at: '2025-01-01',
+      joined_at: '2025-01-01',
+      isSubscribed: true,
+      subscriptionPlan: null,
+      subscriptionTier: workspaceType === 'team' ? 'PRO' : 'FREE',
+      members,
+      pendingInvites: []
+    }
+  ]
+  workspaceStore.activeWorkspaceId = 'workspace-one'
+
   return render(WorkspacePanelContent, {
     global: {
-      plugins: [i18n],
+      plugins: [pinia, i18n],
       stubs: { WorkspaceProfilePic: true }
     }
   })
 }
 
-describe('WorkspacePanelContent billing banner', () => {
-  beforeEach(() => {
-    mockMembers.value = []
-    mockWorkspaceType.value = 'team'
-  })
+beforeEach(() => {
+  pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
+  workspaceStore = useTeamWorkspaceStore(pinia)
+  vi.mocked(workspaceStore.fetchMembers).mockResolvedValue([])
+  vi.mocked(workspaceStore.fetchPendingInvites).mockResolvedValue([])
+  mockMaxSeats.value = 20
+  mockIsPlanLoading.value = false
+  members = []
+  workspaceType = 'team'
+})
 
+describe('WorkspacePanelContent billing banner', () => {
   it('keeps the legacy tabs without Activity and shares one banner', async () => {
     renderComponent()
 
@@ -156,70 +157,63 @@ describe('WorkspacePanelContent billing banner', () => {
 })
 
 describe('WorkspacePanelContent members tab label', () => {
-  beforeEach(() => {
-    mockMaxSeats.value = 20
-    mockIsPlanLoading.value = false
-    mockMembers.value = []
-    mockWorkspaceType.value = 'team'
-  })
-
   it('shows the counted label for Team plans with multiple members', () => {
-    mockMembers.value = [createMember('1'), createMember('2')]
+    members = [createMember('1'), createMember('2')]
     renderComponent()
     expect(screen.getByText(/workspacePanel\.tabs\.membersCount/)).toBeTruthy()
   })
 
   it('drops the count when the owner is the only member', () => {
-    mockMembers.value = [createMember('1')]
+    members = [createMember('1')]
     renderComponent()
     expect(screen.getByText('workspacePanel.members.header')).toBeTruthy()
     expect(screen.queryByText(/workspacePanel\.tabs\.membersCount/)).toBeNull()
   })
 
   it('shows the plain Members label for a personal plan', () => {
-    mockWorkspaceType.value = 'personal'
+    workspaceType = 'personal'
     mockMaxSeats.value = 1
-    mockMembers.value = [createMember('1'), createMember('2')]
+    members = [createMember('1'), createMember('2')]
     renderComponent()
     expect(screen.getByText('workspacePanel.members.header')).toBeTruthy()
     expect(screen.queryByText(/workspacePanel\.tabs\.membersCount/)).toBeNull()
   })
 
   it('fetches members and pending invites for a Team plan', () => {
-    mockWorkspaceType.value = 'team'
+    workspaceType = 'team'
     renderComponent()
-    expect(mockFetchMembers).toHaveBeenCalled()
-    expect(mockFetchPendingInvites).toHaveBeenCalled()
+    expect(workspaceStore.fetchMembers).toHaveBeenCalled()
+    expect(workspaceStore.fetchPendingInvites).toHaveBeenCalled()
   })
 
   it('does not fetch member data for a personal plan', () => {
-    mockWorkspaceType.value = 'personal'
+    workspaceType = 'personal'
     mockMaxSeats.value = 1
     renderComponent()
-    expect(mockFetchMembers).not.toHaveBeenCalled()
-    expect(mockFetchPendingInvites).not.toHaveBeenCalled()
+    expect(workspaceStore.fetchMembers).not.toHaveBeenCalled()
+    expect(workspaceStore.fetchPendingInvites).not.toHaveBeenCalled()
   })
 
   it('waits for billing initialization before fetching member data', () => {
     mockIsPlanLoading.value = true
     renderComponent()
-    expect(mockFetchMembers).not.toHaveBeenCalled()
-    expect(mockFetchPendingInvites).not.toHaveBeenCalled()
+    expect(workspaceStore.fetchMembers).not.toHaveBeenCalled()
+    expect(workspaceStore.fetchPendingInvites).not.toHaveBeenCalled()
   })
 
   it('fetches team member data while seat capacity is unresolved', () => {
-    mockWorkspaceType.value = 'team'
+    workspaceType = 'team'
     mockMaxSeats.value = null
     renderComponent()
-    expect(mockFetchMembers).toHaveBeenCalled()
-    expect(mockFetchPendingInvites).toHaveBeenCalled()
+    expect(workspaceStore.fetchMembers).toHaveBeenCalled()
+    expect(workspaceStore.fetchPendingInvites).toHaveBeenCalled()
   })
 
   it('fetches personal member data while seat capacity is unresolved', () => {
-    mockWorkspaceType.value = 'personal'
+    workspaceType = 'personal'
     mockMaxSeats.value = null
     renderComponent()
-    expect(mockFetchMembers).toHaveBeenCalled()
-    expect(mockFetchPendingInvites).toHaveBeenCalled()
+    expect(workspaceStore.fetchMembers).toHaveBeenCalled()
+    expect(workspaceStore.fetchPendingInvites).toHaveBeenCalled()
   })
 })

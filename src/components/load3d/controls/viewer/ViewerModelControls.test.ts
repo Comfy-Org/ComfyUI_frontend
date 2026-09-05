@@ -101,7 +101,7 @@ describe('ViewerModelControls', () => {
       const [upDirectionSelect] = screen.getAllByRole('combobox')
       const options = getOptions(upDirectionSelect)
 
-      expect(options.map((o) => o.textContent?.trim())).toEqual([
+      expect(options.map((o) => o.textContent.trim())).toEqual([
         'Original',
         '-X',
         '+X',
@@ -124,7 +124,7 @@ describe('ViewerModelControls', () => {
         'normal',
         'wireframe'
       ])
-      expect(options.map((o) => o.textContent?.trim())).toEqual([
+      expect(options.map((o) => o.textContent.trim())).toEqual([
         'Original',
         'Normal',
         'Wireframe'
@@ -139,7 +139,7 @@ describe('ViewerModelControls', () => {
       const options = getOptions(materialModeSelect)
 
       expect(options).toHaveLength(4)
-      expect(options[1].textContent?.trim()).toBe('Point Cloud')
+      expect(options[1].textContent.trim()).toBe('Point Cloud')
       expect(options[1].getAttribute('value')).toBe('pointCloud')
     })
   })

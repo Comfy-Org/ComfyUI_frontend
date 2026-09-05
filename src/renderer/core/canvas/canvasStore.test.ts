@@ -93,7 +93,7 @@ describe('useCanvasStore', () => {
       store.initScaleSync()
 
       app.canvas.ds.scale = 2.0
-      app.canvas.ds.onChanged!(app.canvas.ds.scale, app.canvas.ds.offset)
+      app.canvas.ds.onChanged(app.canvas.ds.scale, app.canvas.ds.offset)
 
       expect(originalHandler).toHaveBeenCalledWith(2.0, app.canvas.ds.offset)
     })
@@ -131,6 +131,25 @@ describe('useCanvasStore', () => {
         'selectedItems must not contain the node when onRemoved fires'
       ).toBe(false)
       expect(store.selectedItems).toEqual([])
+    })
+  })
+
+  describe('rootGraphId', () => {
+    it('tracks the graph id reassigned by a workflow load', async () => {
+      const graph = new LGraph()
+      const fakeCanvas = {
+        canvas: document.createElement('canvas'),
+        graph,
+        selectedItems: new Set()
+      }
+      store.canvas = fakeCanvas as unknown as LGraphCanvas
+      await nextTick()
+      expect(store.rootGraphId).toBe(graph.id)
+
+      const workflowId = '11111111-1111-4111-8111-111111111111'
+      graph.configure({ ...graph.serialize(), id: workflowId })
+
+      expect(store.rootGraphId).toBe(workflowId)
     })
   })
 

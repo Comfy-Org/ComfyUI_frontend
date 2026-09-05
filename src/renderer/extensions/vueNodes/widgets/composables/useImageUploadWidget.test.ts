@@ -19,7 +19,16 @@ const mocks = vi.hoisted(() => ({
   capturedUploadOptions: undefined as CapturedImageUploadOptions | undefined,
   openFileSelection: vi.fn(),
   setNodeOutputs: vi.fn(),
-  showPreview: vi.fn()
+  showPreview: vi.fn(),
+  captureCanvasState: vi.fn()
+}))
+
+vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
+  useWorkflowStore: () => ({
+    activeWorkflow: {
+      changeTracker: { captureCanvasState: mocks.captureCanvasState }
+    }
+  })
 }))
 
 vi.mock('@/composables/node/useNodeImage', () => ({
@@ -49,27 +58,38 @@ vi.mock('@/stores/nodeOutputStore', () => ({
 
 vi.mock('@/utils/litegraphUtil', () => ({
   addToComboValues: (widget: IComboWidget, value: string) => {
-    const values = widget.options?.values
+    const values = widget.options.values
     if (Array.isArray(values) && !values.includes(value)) {
       values.push(value)
     }
   }
 }))
 
-function createUploadNode() {
+function createUploadNode(initialValue: string = 'missing.png') {
   const onWidgetChanged = vi.fn()
-  const node = new LGraphNode('LoadImage')
-  node.type = 'LoadImage'
+  const node = new LGraphNode('LoadImage', 'LoadImage')
   node.onWidgetChanged = onWidgetChanged
   const fileComboWidget = node.addWidget(
     'combo',
     'image',
-    'missing.png',
+    initialValue,
     () => undefined,
     { values: ['missing.png'] }
   ) as IComboWidget
 
   return { fileComboWidget, node, onWidgetChanged }
+}
+
+function construct(node: LGraphNode) {
+  useImageUploadWidget()(
+    node,
+    'upload',
+    [
+      'IMAGEUPLOAD',
+      { imageInputName: 'image', image_upload: true }
+    ] as InputSpec,
+    fromPartial({})
+  )
 }
 
 const outputFolderCases: {
@@ -96,22 +116,14 @@ const outputFolderCases: {
 describe('useImageUploadWidget', () => {
   beforeEach(() => {
     mocks.capturedUploadOptions = undefined
+    mocks.captureCanvasState.mockClear()
     vi.stubGlobal('requestAnimationFrame', vi.fn())
   })
 
   it('emits onWidgetChanged after upload changes the combo widget value', () => {
     const { fileComboWidget, node, onWidgetChanged } = createUploadNode()
-    const constructor = useImageUploadWidget()
 
-    constructor(
-      node,
-      'upload',
-      [
-        'IMAGEUPLOAD',
-        { imageInputName: 'image', image_upload: true }
-      ] as InputSpec,
-      fromPartial({})
-    )
+    construct(node)
 
     mocks.capturedUploadOptions?.onUploadComplete(['uploaded.png'])
 
@@ -125,6 +137,32 @@ describe('useImageUploadWidget', () => {
       'missing.png',
       fileComboWidget
     )
+  })
+
+  it('previews the combo value once the initial frame runs', () => {
+    const { node } = createUploadNode('beach.jpg')
+    const frame = vi.fn()
+    vi.stubGlobal('requestAnimationFrame', frame)
+
+    construct(node)
+    frame.mock.calls[0][0]()
+
+    expect(mocks.setNodeOutputs).toHaveBeenCalledWith(node, 'beach.jpg', {
+      isAnimated: false
+    })
+  })
+
+  it('does not preview a combo whose value is still unset', () => {
+    const { fileComboWidget, node } = createUploadNode()
+    Object.assign(fileComboWidget, { value: undefined })
+    const frame = vi.fn()
+    vi.stubGlobal('requestAnimationFrame', frame)
+
+    construct(node)
+    frame.mock.calls[0][0]()
+
+    expect(mocks.setNodeOutputs).not.toHaveBeenCalled()
+    expect(mocks.showPreview).toHaveBeenCalled()
   })
 
   it.for(outputFolderCases)('$name', ({ value, expected }) => {
@@ -148,5 +186,48 @@ describe('useImageUploadWidget', () => {
     mocks.capturedUploadOptions?.onUploadComplete([value])
 
     expect(fileComboWidget.value).toBe(expected)
+  })
+
+  it('captures canvas state after upload so the draft persists the new value', () => {
+    const { fileComboWidget, node } = createUploadNode()
+    const constructor = useImageUploadWidget()
+
+    constructor(
+      node,
+      'upload',
+      [
+        'IMAGEUPLOAD',
+        { imageInputName: 'image', image_upload: true }
+      ] as InputSpec,
+      fromPartial({})
+    )
+
+    mocks.capturedUploadOptions?.onUploadComplete(['uploaded.png'])
+
+    expect(fileComboWidget.value).toBe('uploaded.png')
+    expect(mocks.captureCanvasState).toHaveBeenCalled()
+  })
+
+  it('captures canvas state when the server keeps the optimistic filename', () => {
+    const { fileComboWidget, node } = createUploadNode()
+    const constructor = useImageUploadWidget()
+
+    constructor(
+      node,
+      'upload',
+      [
+        'IMAGEUPLOAD',
+        { imageInputName: 'image', image_upload: true }
+      ] as InputSpec,
+      fromPartial({})
+    )
+
+    mocks.capturedUploadOptions?.onUploadStart?.([
+      new File([], 'uploaded.png', { type: 'image/png' })
+    ])
+    mocks.capturedUploadOptions?.onUploadComplete(['uploaded.png'])
+
+    expect(fileComboWidget.value).toBe('uploaded.png')
+    expect(mocks.captureCanvasState).toHaveBeenCalled()
   })
 })

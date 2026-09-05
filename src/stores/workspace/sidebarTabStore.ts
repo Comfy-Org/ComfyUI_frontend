@@ -42,9 +42,9 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
       return `Toggle ${tabTitle} Sidebar`
     }
     const tooltipFunction = tab.tooltip
-      ? te(String(tab.tooltip))
+      ? te(tab.tooltip)
         ? () => t(String(tab.tooltip))
-        : String(tab.tooltip)
+        : tab.tooltip
       : undefined
 
     const menubarLabelFunction = () => {
@@ -87,7 +87,7 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
         ) {
           await commandStore.commands
             .find((cmd) => cmd.id === 'Comfy.BrowseModelAssets')
-            ?.function?.()
+            ?.function()
           return
         }
 
