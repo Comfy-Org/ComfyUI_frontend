@@ -60,6 +60,7 @@ test.describe('Agent harness smoke', { tag: '@agent-harness' }, () => {
     await expect(stopButton).toBeHidden({ timeout: 150_000 })
     await expect(assistantText).not.toHaveText('')
 
-    await expect(panel.getByRole('alert')).toHaveCount(0)
+    // Agent failures render as danger notices, not ARIA alerts.
+    await expect(panel.locator('[class~="text-agent-danger"]')).toHaveCount(0)
   })
 })
