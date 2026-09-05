@@ -22,6 +22,7 @@ const MOBILE_VIEWPORT = { width: 360, height: 800 }
 
 describe('NodeSearchContent', () => {
   beforeEach(() => {
+    vi.useRealTimers()
     setupTestPinia()
     setViewport(DESKTOP_VIEWPORT)
     const settings = useSettingStore()
@@ -84,7 +85,7 @@ describe('NodeSearchContent', () => {
   ) {
     const btn = screen
       .getAllByRole('button')
-      .find((b) => b.textContent?.trim() === text)
+      .find((b) => b.textContent.trim() === text)
     expect(btn, `Expected filter button "${text}"`).toBeDefined()
     return user.click(btn!)
   }
@@ -202,7 +203,7 @@ describe('NodeSearchContent', () => {
       renderComponent()
       const texts = screen
         .getAllByRole('button')
-        .map((b) => b.textContent?.trim())
+        .map((b) => b.textContent.trim())
       expect(texts).not.toContain('Essentials')
     })
 
@@ -342,7 +343,7 @@ describe('NodeSearchContent', () => {
         const texts = screen
           .queryAllByTestId('node-item')
           .map((i) => i.textContent)
-        expect(texts.some((t) => t?.includes('Load Checkpoint'))).toBe(false)
+        expect(texts.some((t) => t.includes('Load Checkpoint'))).toBe(false)
       })
     })
 
@@ -569,7 +570,7 @@ describe('NodeSearchContent', () => {
 
       const chipTexts = screen
         .getAllByTestId('filter-chip')
-        .map((c) => c.textContent ?? '')
+        .map((c) => c.textContent)
       expect(chipTexts).toHaveLength(2)
       expect(chipTexts.some((t) => t.includes('IMAGE'))).toBe(true)
       expect(chipTexts.some((t) => t.includes('LATENT'))).toBe(true)

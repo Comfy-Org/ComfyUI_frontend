@@ -136,16 +136,20 @@ vi.mock('@/stores/jobPreviewStore', () => ({
 }))
 
 // Mock the app import with proper implementation
-vi.mock('@/scripts/app', () => ({
-  app: {
-    rootGraph: {
-      getNodeById: vi.fn(),
-      nodes: [] // Add nodes array for workflowStore iteration
-    },
-    revokePreviews: vi.fn(),
-    nodePreviewImages: {}
+vi.mock('@/scripts/app', () => {
+  const rootGraph = {
+    getNodeById: vi.fn(),
+    nodes: [] // Add nodes array for workflowStore iteration
   }
-}))
+  return {
+    app: {
+      rootGraph,
+      rootGraphOrUndefined: rootGraph,
+      revokePreviews: vi.fn(),
+      nodePreviewImages: {}
+    }
+  }
+})
 
 beforeEach(() => {
   mockActiveWorkflow.value = null
@@ -214,6 +218,11 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
 
       // For numeric IDs, it should convert to string and return as-is
       expect(result).toBe('123')
+    })
+
+    it('should handle IDs before the root graph is initialized', () => {
+      expect(executionIdToNodeLocatorId(undefined, '123')).toBe('123')
+      expect(executionIdToNodeLocatorId(undefined, '123:456')).toBeUndefined()
     })
 
     it('should return undefined when conversion fails', () => {
@@ -1930,6 +1939,21 @@ describe('useExecutionStore - RAF batching', () => {
 
       expect(Object.keys(store.nodeProgressStates)).toHaveLength(0)
     })
+
+    it('accepts a snapshot that omits the previously executing node', () => {
+      const handler = getRegisteredHandler('progress_state')
+      handler(makeProgressStateEvent('1', 'running'))
+      vi.advanceTimersToNextFrame()
+
+      handler(
+        new CustomEvent('progress_state', {
+          detail: { prompt_id: 'job-1', nodes: {} }
+        })
+      )
+
+      expect(() => vi.advanceTimersToNextFrame()).not.toThrow()
+      expect(store.nodeProgressStates).toEqual({})
+    })
   })
 
   describe('pending RAF is discarded when execution completes', () => {
@@ -2232,7 +2256,7 @@ describe('useExecutionStore - RAF batching', () => {
 describe('useExecutionStore - WebSocket event handlers', () => {
   let store: ReturnType<typeof useExecutionStore>
 
-  function fire<T>(event: string, detail: T) {
+  function fire(event: string, detail: unknown) {
     const handler = apiEventHandlers.get(event)
     if (!handler) throw new Error(`${event} handler not bound`)
     handler(new CustomEvent(event, { detail }))

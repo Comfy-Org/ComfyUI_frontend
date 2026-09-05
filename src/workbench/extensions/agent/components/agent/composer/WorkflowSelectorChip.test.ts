@@ -2,7 +2,7 @@ import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type { ComponentProps } from 'vue-component-type-helpers'
@@ -41,6 +41,7 @@ const tabs = [
 let pinia: Pinia
 
 beforeEach(() => {
+  vi.useRealTimers()
   pinia = createPinia()
   setActivePinia(pinia)
 })
@@ -75,7 +76,7 @@ describe('WorkflowSelectorChip', () => {
     await user.click(trigger())
 
     const items = await screen.findAllByRole('menuitemradio')
-    expect(items.map((item) => item.textContent?.trim())).toEqual([
+    expect(items.map((item) => item.textContent.trim())).toEqual([
       'portrait',
       'upscale'
     ])
@@ -213,7 +214,7 @@ describe('WorkflowSelectorChip', () => {
     await user.type(search, 'ups')
 
     const items = screen.getAllByRole('menuitemradio')
-    expect(items.map((item) => item.textContent?.trim())).toEqual(['upscale'])
+    expect(items.map((item) => item.textContent.trim())).toEqual(['upscale'])
   })
 
   it('closes the dropdown on Escape from the focused search input', async () => {

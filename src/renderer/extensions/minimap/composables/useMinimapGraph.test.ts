@@ -107,6 +107,23 @@ describe('useMinimapGraph', () => {
     expect(onGraphChangedMock).toHaveBeenCalled()
   })
 
+  it('notifies on connection change after running the original callback', () => {
+    const originalOnConnectionChange = vi.fn()
+    mockGraph.onConnectionChange = originalOnConnectionChange
+
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+
+    graphManager.setupEventListeners()
+    mockGraph.onConnectionChange(mockGraph._nodes[0])
+
+    expect(originalOnConnectionChange).toHaveBeenCalledWith(mockGraph._nodes[0])
+    expect(onGraphChangedMock).toHaveBeenCalledTimes(1)
+    expect(originalOnConnectionChange.mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(onGraphChangedMock).mock.invocationCallOrder[0]
+    )
+  })
+
   it('should prevent duplicate event listener setup', () => {
     const graphRef = ref(mockGraph) as Ref<LGraph | null>
     const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)

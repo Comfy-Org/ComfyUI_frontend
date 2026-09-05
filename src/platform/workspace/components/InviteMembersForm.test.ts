@@ -95,6 +95,7 @@ function submitButton() {
 
 describe('InviteMembersForm', () => {
   beforeEach(() => {
+    vi.useRealTimers()
     mockPendingInvites.value = []
     mockFetchPendingInvites.mockResolvedValue([...mockPendingInvites.value])
     mockFetchStatus.mockResolvedValue(undefined)

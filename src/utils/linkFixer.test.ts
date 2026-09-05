@@ -64,14 +64,19 @@ function createGraph({
   links
 }: {
   nodes: ISerialisedNode[]
-  links: SerialisedLLinkArray[]
-}): ISerialisedGraph {
+  links: (SerialisedLLinkArray | null)[]
+}): Omit<ISerialisedGraph, 'links'> & {
+  links: (SerialisedLLinkArray | null)[]
+} {
   return {
     id: 'b4e984f1-b421-4d24-b8b4-ff895793af13',
     revision: 0,
     version: 0.4,
     last_node_id: Math.max(...nodes.map((node) => Number(node.id)), 0),
-    last_link_id: Math.max(...links.map((link) => link[0]), 0),
+    last_link_id: Math.max(
+      ...links.flatMap((link) => (link ? [link[0]] : [])),
+      0
+    ),
     nodes,
     links,
     groups: []
@@ -267,6 +272,15 @@ describe('fixBadLinks', () => {
     expect(graph.links).toEqual([])
   })
 
+  it('removes null links in fix mode', () => {
+    const graph = createGraph({ nodes: [], links: [null] })
+
+    const result = fixBadLinks(graph, { fix: true })
+
+    expect(result.hasBadLinks).toBe(false)
+    expect(graph.links).toEqual([])
+  })
+
   it('deletes stale links from live graph link maps', () => {
     const linkId = toLinkId(1)
     const originNode = fromAny<LGraphNode, unknown>({
@@ -299,7 +313,7 @@ describe('fixBadLinks', () => {
       deleted: 1
     })
     expect(links.has(linkId)).toBe(false)
-    expect(originNode.outputs?.[0]?.links).toEqual([])
+    expect(originNode.outputs[0].links).toEqual([])
   })
 
   it('suppresses logger calls in silent mode while still applying fixes', () => {

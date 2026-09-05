@@ -152,12 +152,12 @@ export class LinkConnector {
       : null
     if (linkId == null) {
       // No link connected, check for a floating link
-      const [floatingLink] = slotFloatingLinks(
+      const floatingLink = slotFloatingLinks(
         network,
         'input',
         node.id,
         node.inputs.indexOf(input)
-      )
+      ).at(0)
       if (floatingLink?.parentId == null) return
 
       try {
@@ -259,7 +259,7 @@ export class LinkConnector {
           renderLinks.push(renderLink)
 
           this.listenUntilReset('input-moved', (e) => {
-            if ('link' in e.detail && e.detail.link) {
+            if ('link' in e.detail) {
               e.detail.link.disconnect(network, 'output')
             }
           })
@@ -353,7 +353,7 @@ export class LinkConnector {
 
           const subgraphOutputNode = network.outputNode
           const subgraphOutput = network.outputs.at(link.target_slot)
-          if (!subgraphOutputNode || !subgraphOutput) {
+          if (!subgraphOutput) {
             console.error('No subgraph output found for link.')
             continue
           }
@@ -752,7 +752,7 @@ export class LinkConnector {
 
           // Only reuse the slot if the next link's type would be compatible
           // Otherwise, keep using EmptySubgraphOutput to create a new slot
-          const nextLink = renderLinks[renderLinks.indexOf(link) + 1]
+          const nextLink = renderLinks.at(renderLinks.indexOf(link) + 1)
           if (nextLink && link.fromSlot.type === nextLink.fromSlot.type) {
             targetSlot = createdSlot
           } else {
@@ -798,7 +798,7 @@ export class LinkConnector {
 
           // Only reuse the slot if the next link's type would be compatible
           // Otherwise, keep using EmptySubgraphInput to create a new slot
-          const nextLink = renderLinks[renderLinks.indexOf(link) + 1]
+          const nextLink = renderLinks.at(renderLinks.indexOf(link) + 1)
           if (nextLink && link.fromSlot.type === nextLink.fromSlot.type) {
             targetSlot = createdSlot
           } else {
@@ -985,7 +985,7 @@ export class LinkConnector {
     if (!mayContinue) return
 
     // Assume all links are the same type, disallow loopback
-    const firstLink = this.renderLinks[0]
+    const firstLink = this.renderLinks.at(0)
     if (!firstLink) return
 
     // Use a single type check before looping; ensures all dropped links go to the same slot
@@ -1104,7 +1104,7 @@ export class LinkConnector {
 
       const afterRerouteId =
         link instanceof MovingLinkBase
-          ? link.link?.parentId
+          ? link.link.parentId
           : link.fromReroute?.id
 
       return {
