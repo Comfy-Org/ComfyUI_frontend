@@ -239,7 +239,8 @@ function replaceWithMapping(
   newNode: LGraphNode,
   replacement: NodeReplacement,
   nodeGraph: LGraph,
-  idx: number
+  idx: number,
+  serialized: ISerialisedNode
 ): boolean {
   const order = node.order
   newNode.id = node.id
@@ -256,8 +257,11 @@ function replaceWithMapping(
     return false
   }
 
-  const serialized = node.last_serialization ?? node.serialize()
   if (serialized.title != null) newNode.title = serialized.title
+  if (serialized.color != null) newNode.color = serialized.color
+  if (serialized.bgcolor != null) newNode.bgcolor = serialized.bgcolor
+  if (serialized.boxcolor != null) newNode.boxcolor = serialized.boxcolor
+  if (serialized.shape != null) newNode.shape = serialized.shape
   if (serialized.properties) {
     newNode.properties = { ...serialized.properties }
     if ('Node name for S&R' in newNode.properties) {
@@ -491,21 +495,25 @@ export function useNodeReplacement() {
           replacement.input_mapping != null ||
           replacement.output_mapping != null
 
+        // Snapshot the live node before any graph mutation: a placeholder the
+        // user renamed or recoloured carries those edits only on serialize()
+        // output, and one snapshot keeps the mapping and the value transfer
+        // reading the same state.
+        const serialized = node.serialize()
+
         const effectiveReplacement = hasMapping
           ? replacement
           : {
               ...replacement,
-              ...generateDefaultMapping(
-                node.last_serialization ?? node.serialize(),
-                newNode
-              )
+              ...generateDefaultMapping(serialized, newNode)
             }
         const replaced = replaceWithMapping(
           node,
           newNode,
           effectiveReplacement,
           nodeGraph,
-          idx
+          idx,
+          serialized
         )
         if (!replaced) {
           recordReplacementFailure(match.type)

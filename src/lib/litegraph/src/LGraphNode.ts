@@ -1,3 +1,4 @@
+import { omit, pickBy } from 'es-toolkit'
 import { toValue } from 'vue'
 
 import {
@@ -151,6 +152,18 @@ import type { WidgetTypeMap } from './widgets/widgetMap'
 // #region Types
 
 export type { NodeProperty } from '@/types/nodeState'
+
+/**
+ * Serialised keys a missing-node placeholder mirrors from the live node rather
+ * than replaying from the file it was loaded with.
+ */
+const PLACEHOLDER_LIVE_DECORATIONS = [
+  'title',
+  'color',
+  'bgcolor',
+  'boxcolor',
+  'shape'
+] as const satisfies readonly (keyof ISerialisedNode)[]
 
 interface INodePropertyInfo {
   name?: string
@@ -1226,6 +1239,15 @@ export class LGraphNode
     } finally {
       useWidgetValueStore().clearNodeWidgetRestoration(graphId, this.id)
     }
+
+    // The missing-node error UI just added placeholder widgets via
+    // `onConfigure` above, which auto-expands the node to fit them
+    // (`addWidget` -> `expandToFitContent`). A placeholder has no
+    // definition to re-derive a real size from, so the recorded size —
+    // the sole record `serialize()` has of it — is restored afterward.
+    if (this.constructor === LGraphNode && info.size) {
+      this.size = [info.size[0], info.size[1]]
+    }
   }
 
   /**
@@ -1249,12 +1271,47 @@ export class LGraphNode
     }
 
     // special case for when there were errors
-    if (this.constructor === LGraphNode && state.lastSerialization)
+    if (this.constructor === LGraphNode && state.lastSerialization) {
+      // Only an expanded placeholder whose file recorded a size has a live
+      // size worth keeping. Vue nodes mode drops the CSS width/height floors
+      // on collapse, so a collapsed node's `size` measures the collapsed card
+      // rather than the expanded geometry a reload has to restore — which
+      // `collapse()` has already captured into `last_serialization`. With no
+      // recorded size there is no definition to compute a real one from, so
+      // keeping the live size would invent a dimension the file never had.
+      const carriesLiveSize =
+        state.lastSerialization.size != null && !state.flags.collapsed
+
+      // The live node owns its decorations, so the file's recorded values are
+      // dropped before whatever is set now is re-applied: skipping them
+      // instead would let a cleared decoration resurrect the recorded one.
+      // `title` mirrors the normal path's guard against the class default.
+      const liveDecorations = pickBy(
+        {
+          title:
+            state.title === this.constructor.title ? undefined : state.title,
+          color: state.color,
+          bgcolor: state.bgcolor,
+          boxcolor: state.boxcolor,
+          shape: state.shape
+        },
+        Boolean
+      )
+
       return {
-        ...LiteGraph.cloneObject(state.lastSerialization),
+        ...omit(
+          LiteGraph.cloneObject(state.lastSerialization),
+          PLACEHOLDER_LIVE_DECORATIONS
+        ),
         mode: o.mode,
-        pos: o.pos
+        pos: o.pos,
+        // Required by the workflow schema, so an empty object rather than a
+        // missing key represents "no flags".
+        flags: o.flags ?? {},
+        ...(carriesLiveSize && { size: o.size }),
+        ...liveDecorations
       }
+    }
 
     o.inputs = state.inputs.map((input, i) =>
       inputAsSerialisable(input, this, i)
@@ -3741,6 +3798,37 @@ export class LGraphNode
     if (!this.collapsible && !force) return
     if (!this.graph) throw new NullGraphError()
     this.graph.incrementVersion()
+
+    // A missing-node placeholder has no definition to re-derive an expanded
+    // size from, so `last_serialization.size` is the sole record of it and has
+    // to track the live node in BOTH directions. Both halves run before the
+    // flag flips, because in Vue nodes mode `size` is a DOM measurement of
+    // whichever card is currently rendered and the other card's measurement
+    // only lands a frame later:
+    //   collapsing captures `size` while it still measures the expanded card;
+    //   expanding restores `size`, which still measures the collapsed card, so
+    //   that neither a serialize() inside that window nor an immediate second
+    //   collapse can substitute the collapsed dimensions for the recorded ones.
+    // A recorded serialization without a size still gets none, matching
+    // `serialize()`.
+    const recordedSerialization = this.last_serialization
+    if (
+      this.constructor === LGraphNode &&
+      recordedSerialization?.size != null
+    ) {
+      if (this.flags.collapsed) {
+        this.size = recordedSerialization.size
+      } else {
+        // Replaced rather than mutated in place: `LGraph.configure()` assigns
+        // `last_serialization` by reference straight out of the caller's
+        // workflow data, which this node does not own.
+        this.last_serialization = {
+          ...recordedSerialization,
+          size: [this.size[0], this.size[1]]
+        }
+      }
+    }
+
     this.flags.collapsed = !this.flags.collapsed
     this.setDirtyCanvas(true, true)
   }

@@ -28,6 +28,7 @@ exports[`LGraph > supports schema v0.4 graphs > oldSchemaGraph 1`] = `
   "links": [],
   "nodes": [
     {
+      "flags": {},
       "id": 1,
       "mode": 0,
       "pos": [
