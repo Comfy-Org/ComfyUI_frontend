@@ -298,9 +298,6 @@ export class LayoutFollowerBridge extends EventTarget {
       this.resubscribe()
       return
     }
-    if (this.lastSeq === null || update.seq > this.lastSeq)
-      this.lastSeq = update.seq
-    if (isCatchUp) this.catchUpPending = false
     try {
       this.follower.applyRemoteUpdate(update.update)
     } catch {
@@ -311,6 +308,9 @@ export class LayoutFollowerBridge extends EventTarget {
       )
       return
     }
+    if (this.lastSeq === null || update.seq > this.lastSeq)
+      this.lastSeq = update.seq
+    if (isCatchUp) this.catchUpPending = false
 
     // KA-11 read-time gate. The merge itself is unconditional — Yjs bytes are
     // integrated or they are not — but nothing downstream may READ a doc whose

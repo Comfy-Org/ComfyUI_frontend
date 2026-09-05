@@ -760,9 +760,11 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
 
-    vi.spyOn(bridge.follower, 'applyRemoteUpdate').mockImplementation(() => {
-      throw new Error('corrupt Yjs update')
-    })
+    vi.spyOn(bridge.follower, 'applyRemoteUpdate').mockImplementationOnce(
+      () => {
+        throw new Error('corrupt Yjs update')
+      }
+    )
 
     transport.deliver(
       'doc_update',
@@ -772,6 +774,64 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
     expect(updateOutcomes).toEqual(['received', 'errored'])
     expect(projected).toHaveLength(0)
     expect(bridge.subscribedWorkflowId).toBe(WORKFLOW_ID)
+
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 2)
+    )
+
+    expect(updateOutcomes).toEqual([
+      'received',
+      'errored',
+      'received',
+      'applied'
+    ])
+    expect(bridge.follower.updatesApplied).toBe(1)
+    expect(bridge.lastSequence).toBe(2)
+    expect(projected).toHaveLength(1)
+  })
+
+  it('keeps the catch-up window open when applying the catch-up update fails', () => {
+    const { transport, bridge, projected, updateOutcomes } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 5)
+    )
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 4
+    })
+
+    vi.spyOn(bridge.follower, 'applyRemoteUpdate').mockImplementationOnce(
+      () => {
+        throw new Error('corrupt catch-up update')
+      }
+    )
+
+    const catchUp = hostDocUpdate((doc) => {
+      const node = new Y.Map<unknown>()
+      node.set('type', 'PreviewImage')
+      nodesMap(doc).set('3', node)
+    })
+    transport.deliver('doc_update', docUpdateFrame(catchUp, WORKFLOW_ID, 4))
+    transport.deliver('doc_update', docUpdateFrame(catchUp, WORKFLOW_ID, 4))
+
+    expect(updateOutcomes).toEqual([
+      'received',
+      'applied',
+      'received',
+      'errored',
+      'received',
+      'applied'
+    ])
+    expect(bridge.follower.updatesApplied).toBe(2)
+    expect(bridge.lastSequence).toBe(5)
+    expect(projected).toHaveLength(2)
   })
 
   it('s5-metrics-1: dispatches doc_stale at the exact boundary a duplicate is discarded', () => {
