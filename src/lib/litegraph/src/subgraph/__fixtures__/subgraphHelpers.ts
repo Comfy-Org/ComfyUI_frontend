@@ -48,7 +48,7 @@ class FixtureStringConcatenateNode extends LGraphNode {
 }
 
 export function cleanupComplexPromotionFixtureNodeType(): void {
-  if (!LiteGraph.registered_node_types[FIXTURE_STRING_CONCAT_TYPE]) return
+  if (!(FIXTURE_STRING_CONCAT_TYPE in LiteGraph.registered_node_types)) return
   LiteGraph.unregisterNodeType(FIXTURE_STRING_CONCAT_TYPE)
 }
 

@@ -34,8 +34,7 @@ test.describe('Vue Nodes Canvas Pan', { tag: '@vue-nodes' }, () => {
     )
     await comfyPage.workflow.loadWorkflow('vueNodes/simple-triple')
     const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
-    const [nodeRef] = await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
-    if (!nodeRef) throw new Error('KSampler is not rendered')
+    const nodeRef = await comfyPage.nodeOps.getNodeRefByTitle('KSampler')
     const softExpect = expect.configure({ soft: true })
 
     await test.step('Space + click on a node starts a pan', async () => {
@@ -113,8 +112,7 @@ test.describe('Vue Nodes Canvas Pan', { tag: '@vue-nodes' }, () => {
     async ({ comfyPage, comfyMouse }) => {
       await comfyPage.workflow.loadWorkflow('vueNodes/simple-triple')
       const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
-      const [nodeRef] = await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
-      if (!nodeRef) throw new Error('KSampler is not rendered')
+      const nodeRef = await comfyPage.nodeOps.getNodeRefByTitle('KSampler')
       const positionBeforeDrag = [
         ...(await nodeRef.getProperty<[number, number]>('pos'))
       ]
@@ -158,9 +156,9 @@ test.describe('Vue Nodes Canvas Pan', { tag: '@vue-nodes' }, () => {
     async ({ comfyPage, comfyMouse }) => {
       await comfyPage.workflow.loadWorkflow('vueNodes/simple-triple')
       const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
-      const [nodeRef] = await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
+      const nodeRef = await comfyPage.nodeOps.getNodeRefByTitle('KSampler')
       const headerBox = await node.header.boundingBox()
-      if (!nodeRef || !headerBox) throw new Error('KSampler is not rendered')
+      if (!headerBox) throw new Error('KSampler is not rendered')
       const start = {
         x: headerBox.x + headerBox.width / 2,
         y: headerBox.y + headerBox.height / 2

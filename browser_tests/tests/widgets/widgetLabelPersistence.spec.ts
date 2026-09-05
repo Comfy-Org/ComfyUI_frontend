@@ -51,7 +51,7 @@ test.describe('Widget label persistence (regression #13861)', () => {
     // includes it, mirroring a user who renames then deletes.
     await comfyPage.page.evaluate(() => {
       const store = window.app!.extensionManager as WorkspaceStore
-      store.workflow.activeWorkflow?.changeTracker?.captureCanvasState()
+      store.workflow.activeWorkflow?.changeTracker.captureCanvasState()
     })
 
     const node = (
