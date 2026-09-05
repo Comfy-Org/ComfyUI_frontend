@@ -141,6 +141,7 @@ const hostStores = vi.hoisted(() => ({
     activeWorkflow: FakeTab | null
     openWorkflows: FakeTab[]
     tabs: Map<string, FakeTab>
+    openTabPaths: Set<string>
     getWorkflowByPath: (path: string) => FakeTab | null
     nodeToNodeLocatorId: (node: {
       graph?: { id?: string }
@@ -158,19 +159,25 @@ const hostStores = vi.hoisted(() => ({
 vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
   const { reactive } = await import('vue')
   const tabs = new Map<string, FakeTab>()
+  const openTabPaths = reactive(new Set<string>())
   const store = reactive({
     activeWorkflow: null as FakeTab | null,
     get openWorkflows() {
-      return Array.from(tabs.values())
+      return Array.from(openTabPaths).flatMap((path) => {
+        const tab = tabs.get(path)
+        return tab === undefined ? [] : [tab]
+      })
     },
     tabs,
+    openTabPaths,
     getWorkflowByPath: (path: string) => tabs.get(path) ?? null,
     nodeToNodeLocatorId: (node: {
       graph?: { id?: string }
       id: string | number
     }) => (node.graph?.id ? `${node.graph.id}:${node.id}` : String(node.id)),
     closeWorkflow: vi.fn(async (tab: FakeTab) => {
-      tabs.delete(tab.path)
+      openTabPaths.delete(tab.path)
+      if (tab.isTemporary) tabs.delete(tab.path)
     }),
     createTemporary: (path?: string, data?: ComfyWorkflowJSON) => {
       const requested = (path ?? 'Unsaved Workflow.json').replace(/\.json$/, '')
@@ -187,6 +194,7 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
         activeState: data ?? null
       }
       tabs.set(tab.path, tab)
+      openTabPaths.add(tab.path)
       return tab
     }
   })
@@ -226,7 +234,10 @@ const workflowService = vi.hoisted(() => ({
   ),
   openWorkflow: vi.fn(async (tab: { path: string }) => {
     const known = hostStores.workflow.tabs.get(tab.path)
-    if (known) hostStores.workflow.activeWorkflow = known
+    if (known) {
+      hostStores.workflow.openTabPaths.add(tab.path)
+      hostStores.workflow.activeWorkflow = known
+    }
   })
 }))
 
@@ -315,6 +326,7 @@ beforeEach(() => {
     (_name: string, defaultValue?: unknown) => defaultValue
   )
   hostStores.workflow.tabs.clear()
+  hostStores.workflow.openTabPaths.clear()
   hostStores.workflow.activeWorkflow = null
   hostStores.canvas.selectedItems = []
   hostStores.canvas.currentGraph = null
@@ -373,6 +385,7 @@ function addTab(path: string, overrides: Partial<FakeTab> = {}): FakeTab {
     ...overrides
   }
   hostStores.workflow.tabs.set(tab.path, tab)
+  hostStores.workflow.openTabPaths.add(tab.path)
   return tab
 }
 
@@ -1390,6 +1403,7 @@ describe('AgentPanelRoot canvas draft on send', () => {
       changeTracker: { prepareForSave }
     }
     hostStores.workflow.tabs.set(activeWorkflow.path, activeWorkflow)
+    hostStores.workflow.openTabPaths.add(activeWorkflow.path)
     hostStores.workflow.activeWorkflow = activeWorkflow
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
@@ -1962,6 +1976,7 @@ describe('AgentPanelRoot workflow binding', () => {
         id === undefined ? null : fromPartial<ComfyWorkflowJSON>({ id })
     }
     hostStores.workflow.tabs.set(tab.path, tab)
+    hostStores.workflow.openTabPaths.add(tab.path)
     hostStores.workflow.activeWorkflow = tab
     if (id !== undefined) useAgentWorkflowTabBindingStore().bind(id, tab.path)
     return tab
@@ -2688,8 +2703,8 @@ describe('AgentPanelRoot workflow binding', () => {
   })
 
   it('does not resolve two same-named open saved tabs to one cloud id', async () => {
-    makeTab()
-    addTab('workflows/archive/current.json')
+    const current = makeTab()
+    const archived = addTab('workflows/archive/current.json')
     const bodies = mockMessagesEndpoint('wf-fresh', [
       { id: 'wf-cloud-current', name: 'current' }
     ])
@@ -2698,6 +2713,12 @@ describe('AgentPanelRoot workflow binding', () => {
 
     expect(bodies[0]).not.toHaveProperty('workflow_id')
     expect(bodies[0]).not.toHaveProperty('open_tabs')
+    expect(
+      useAgentWorkflowTabBindingStore().workflowIdFor(current.path)
+    ).toBeUndefined()
+    expect(
+      useAgentWorkflowTabBindingStore().workflowIdFor(archived.path)
+    ).toBeUndefined()
   })
 
   it('excludes ambiguous and nameless cloud records from resolution', async () => {
@@ -2740,6 +2761,72 @@ describe('AgentPanelRoot workflow binding', () => {
       workflow_id: 'wf-42',
       open_tabs: [{ workflow_id: 'wf-42', name: 'current' }]
     })
+  })
+
+  it('does not adopt a minted workflow when a saved tab cloud lookup fails', async () => {
+    const tab = makeTab()
+    const bodies: unknown[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.includes('/messages') && init?.method === 'POST') {
+          bodies.push(JSON.parse(String(init.body)))
+          return json(202, ack('wf-fresh'))
+        }
+        if (url.includes('/workflows')) return json(500, { error: 'failed' })
+        if (url.includes('/agent/threads'))
+          return json(200, { threads: [], pagination: { page: 1 } })
+        return json(200, [])
+      })
+    )
+
+    await renderAndSend('first message')
+
+    expect(bodies[0]).not.toHaveProperty('workflow_id')
+    expect(
+      useAgentWorkflowTabBindingStore().workflowIdFor(tab.path)
+    ).toBeUndefined()
+  })
+
+  it('does not adopt a minted workflow after cloud preparation times out', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const tab = makeTab()
+    const bodies: unknown[] = []
+    let workflowRequests = 0
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.includes('/messages') && init?.method === 'POST') {
+          bodies.push(JSON.parse(String(init.body)))
+          return json(202, ack('wf-fresh'))
+        }
+        if (url.includes('/workflows')) {
+          workflowRequests++
+          if (workflowRequests > 1)
+            return new Promise<Response>(() => undefined)
+          return json(200, {
+            data: [],
+            pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+          })
+        }
+        if (url.includes('/agent/threads'))
+          return json(200, { threads: [], pagination: { page: 1 } })
+        return json(200, [])
+      })
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await vi.waitFor(() => expect(workflowRequests).toBe(1))
+    await userEvent.type(screen.getByRole('textbox'), 'first message')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() => expect(workflowRequests).toBe(2))
+    await vi.advanceTimersByTimeAsync(3000)
+
+    await vi.waitFor(() => expect(bodies).toHaveLength(1))
+    expect(bodies[0]).not.toHaveProperty('workflow_id')
+    expect(
+      useAgentWorkflowTabBindingStore().workflowIdFor(tab.path)
+    ).toBeUndefined()
   })
 
   it('resolves saved tabs to their cloud workflow ids by name', async () => {
@@ -2954,6 +3041,23 @@ describe('AgentPanelRoot workflow binding', () => {
         String(frame).includes('doc_subscribe')
       )
     ).toBe(false)
+  })
+
+  it('does not bind an unsaved tab to a workflow whose saved tab is closed', async () => {
+    const saved = makeTab('wf-42')
+    hostStores.workflow.openTabPaths.delete(saved.path)
+    const scratch = addTab('workflows/Scratch.json', { isTemporary: true })
+    hostStores.workflow.activeWorkflow = scratch
+    mockMessagesEndpoint('wf-42')
+
+    await renderAndSend('first message')
+
+    expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-42')).toBe(
+      saved.path
+    )
+    expect(
+      useAgentWorkflowTabBindingStore().workflowIdFor(scratch.path)
+    ).toBeUndefined()
   })
 
   it('stages a mention pick once and reports the tag gesture', async () => {
@@ -3175,7 +3279,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.type(screen.getByRole('textbox'), 'build a graph')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await vi.waitFor(() => expect(workflowRequests).toBe(2))
-    hostStores.workflow.tabs.delete(origin.path)
+    hostStores.workflow.openTabPaths.delete(origin.path)
     hostStores.workflow.activeWorkflow = replacement
     releasePreparation()
 

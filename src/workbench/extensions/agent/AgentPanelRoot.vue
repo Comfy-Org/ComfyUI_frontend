@@ -308,7 +308,9 @@ function originWorkflow(origin?: TurnOrigin): ComfyWorkflow | undefined {
   return (
     (origin === undefined
       ? workflowStore.activeWorkflow
-      : workflowStore.getWorkflowByPath(origin.tabPath)) ?? undefined
+      : workflowStore.openWorkflows.find(
+          (workflow) => workflow.path === origin.tabPath
+        )) ?? undefined
   )
 }
 
@@ -319,6 +321,8 @@ function activeWorkflowTurnContext(
   const active = originWorkflow(origin)
   if (!active) return undefined
   const id = cloudIdFor(active)
+  if (id === undefined && !active.isTemporary && origin !== undefined)
+    return undefined
   return id === undefined
     ? { tabPath: active.path }
     : { id, tabPath: active.path }
@@ -393,7 +397,8 @@ function onWorkflowAdopted(
   // an id that already resolves to an open tab belongs to that tab.
   const adoptable =
     sent.id === undefined
-      ? boundTabFor(workflowId) === null
+      ? bindingStore.tabPathFor(workflowId) === undefined &&
+        boundTabFor(workflowId) === null
       : sent.id === workflowId
   if (adoptable) {
     bindingStore.bind(workflowId, sent.tabPath)
