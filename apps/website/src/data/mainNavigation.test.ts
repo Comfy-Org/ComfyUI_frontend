@@ -12,7 +12,7 @@ describe('getMainNavigation', () => {
     )
 
     expect(managedBuildsEntry).toMatchObject({
-      label: 'Enterprise Managed Builds',
+      label: 'Managed Builds',
       href: '/enterprise/managed-builds'
     })
   })
