@@ -9,13 +9,17 @@ import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWor
 
 const {
   mockCreateInvite,
+  mockFetchPendingInvites,
   mockFetchStatus,
+  mockPendingInvites,
   mockToastAdd,
   mockTrackInviteSent,
   mockTrackInviteFailed
 } = vi.hoisted(() => ({
   mockCreateInvite: vi.fn(),
+  mockFetchPendingInvites: vi.fn(),
   mockFetchStatus: vi.fn(),
+  mockPendingInvites: { value: [] as WorkspacePendingInvite[] },
   mockToastAdd: vi.fn(),
   mockTrackInviteSent: vi.fn(),
   mockTrackInviteFailed: vi.fn()
@@ -29,7 +33,11 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => ({
     createInvite: mockCreateInvite as (
       email: string
-    ) => Promise<WorkspacePendingInvite>
+    ) => Promise<WorkspacePendingInvite>,
+    fetchPendingInvites: mockFetchPendingInvites,
+    get pendingInvites() {
+      return [...mockPendingInvites.value]
+    }
   })
 }))
 
@@ -87,6 +95,9 @@ function submitButton() {
 
 describe('InviteMembersForm', () => {
   beforeEach(() => {
+    vi.useRealTimers()
+    mockPendingInvites.value = []
+    mockFetchPendingInvites.mockResolvedValue([...mockPendingInvites.value])
     mockFetchStatus.mockResolvedValue(undefined)
     mockCreateInvite.mockImplementation(async (email: string) =>
       pendingInviteFor(email)
@@ -149,7 +160,51 @@ describe('InviteMembersForm', () => {
     expect(submitButton()).toBeEnabled()
     expect(mockFetchStatus).toHaveBeenCalledOnce()
     await waitFor(() => expect(consoleError).toHaveBeenCalledWith(refreshError))
-    consoleError.mockRestore()
+  })
+
+  it('ignores stale cached invites when pending invites cannot be refreshed', async () => {
+    const refreshError = new Error('pending invites failed')
+    mockPendingInvites.value.push(pendingInviteFor('stale@example.com'))
+    mockFetchPendingInvites.mockRejectedValueOnce(refreshError)
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { user, emitted } = renderForm()
+
+    await user.type(emailInput(), 'stale@example.com{Enter}')
+    await waitFor(() => expect(consoleError).toHaveBeenCalledWith(refreshError))
+
+    expect(
+      screen.queryByText(
+        'workspacePanel.inviteMemberDialog.pendingInviteSingle'
+      )
+    ).not.toBeInTheDocument()
+    await user.click(submitButton())
+
+    await waitFor(() =>
+      expect(emitted().submitted).toEqual([[['stale@example.com']]])
+    )
+  })
+
+  it('revalidates emails after pending invites finish loading', async () => {
+    let resolvePendingInvites: (
+      invites: WorkspacePendingInvite[]
+    ) => void = () => {}
+    mockFetchPendingInvites.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolvePendingInvites = resolve
+        })
+    )
+    const { user } = renderForm()
+
+    await user.type(emailInput(), 'valid@example.com{Enter}')
+    await user.click(submitButton())
+    await user.type(emailInput(), 'invalid{Enter}')
+    resolvePendingInvites([])
+
+    await waitFor(() =>
+      expect(submitButton()).toHaveAttribute('aria-busy', 'false')
+    )
+    expect(mockCreateInvite).not.toHaveBeenCalled()
   })
 
   it('keeps failed emails for retry and emits all invited emails after recovery', async () => {
@@ -207,17 +262,70 @@ describe('InviteMembersForm', () => {
     expect(mockFetchStatus).not.toHaveBeenCalled()
   })
 
-  it('caps the number of chips at maxSeats', async () => {
+  it('keeps over-limit chips visible and blocks submission', async () => {
     const { user } = renderForm({ maxSeats: 2 })
 
     await user.type(emailInput(), 'a@b.com,b@b.com,c@b.com{Enter}')
 
     expect(screen.getByText('a@b.com')).toBeInTheDocument()
     expect(screen.getByText('b@b.com')).toBeInTheDocument()
-    expect(screen.queryByText('c@b.com')).not.toBeInTheDocument()
+    expect(screen.getByText('c@b.com')).toBeInTheDocument()
     expect(
-      screen.getByText('workspacePanel.inviteMemberDialog.seatLimitReached')
+      screen.getByText('workspacePanel.inviteMemberDialog.seatLimitExceeded')
     ).toBeInTheDocument()
+    expect(submitButton()).toBeDisabled()
+  })
+
+  it('blocks submission while workspace occupancy is unresolved', async () => {
+    const { user } = renderForm({ maxSeats: 1, occupiedSeats: null })
+
+    await user.type(emailInput(), 'a@b.com{Enter}')
+
+    expect(submitButton()).toBeDisabled()
+    expect(
+      screen.queryByText('workspacePanel.inviteMemberDialog.seatLimitExceeded')
+    ).not.toBeInTheDocument()
+  })
+
+  it('disables submit when every email has a pending invite', async () => {
+    const pendingInvite = pendingInviteFor('ALREADY@EXAMPLE.COM')
+    mockPendingInvites.value.push(pendingInvite)
+    mockFetchPendingInvites.mockResolvedValueOnce([pendingInvite])
+    const { user } = renderForm()
+
+    await user.type(emailInput(), 'already@example.com{Enter}')
+
+    expect(
+      screen.getByText('workspacePanel.inviteMemberDialog.pendingInviteSingle')
+    ).toBeInTheDocument()
+    expect(submitButton()).toBeDisabled()
+    expect(mockCreateInvite).not.toHaveBeenCalled()
+  })
+
+  it('skips pending invites and sends the rest of the batch', async () => {
+    const pendingInvites = [
+      pendingInviteFor('first@example.com'),
+      pendingInviteFor('second@example.com')
+    ]
+    mockPendingInvites.value.push(...pendingInvites)
+    mockFetchPendingInvites.mockResolvedValueOnce(pendingInvites)
+    const { user, emitted } = renderForm({ maxSeats: 3, occupiedSeats: 2 })
+
+    await user.type(
+      emailInput(),
+      'first@example.com,second@example.com,new@example.com{Enter}'
+    )
+
+    expect(
+      screen.getByText('workspacePanel.inviteMemberDialog.pendingInviteCount')
+    ).toBeInTheDocument()
+    expect(submitButton()).toBeEnabled()
+
+    await user.click(submitButton())
+
+    await waitFor(() => expect(mockCreateInvite).toHaveBeenCalledOnce())
+    expect(mockCreateInvite).toHaveBeenCalledWith('new@example.com')
+    expect(emitted().submitted).toEqual([[['new@example.com']]])
   })
 
   it('caps unlimited workspaces to one invite batch', async () => {

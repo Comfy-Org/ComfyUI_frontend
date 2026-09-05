@@ -112,7 +112,7 @@ function createMockCanvas(context: unknown = { drawImage: vi.fn() }) {
 function installVideoMocks({
   onVideoCreated,
   onCanvasCreated,
-  canvasContext = { drawImage: vi.fn() } as unknown
+  canvasContext = { drawImage: vi.fn() }
 }: {
   onVideoCreated?: (video: MockVideoElement) => void
   onCanvasCreated?: (canvas: HTMLCanvasElement) => void
@@ -188,7 +188,6 @@ describe('useVideoFilmstrip', () => {
     vi.mocked(fetchVideoMetadata).mockResolvedValueOnce({
       fps: 24,
       duration: 10,
-      frame_count: 240,
       width: 512,
       height: 512,
       size: 5 * 1024 * 1024
@@ -219,7 +218,6 @@ describe('useVideoFilmstrip', () => {
     vi.mocked(fetchVideoMetadata).mockResolvedValueOnce({
       fps: 24,
       duration: 8,
-      frame_count: null,
       width: 640,
       height: 360,
       size: 1024
@@ -358,13 +356,11 @@ describe('useVideoFilmstrip', () => {
     expect(bitmap.close).toHaveBeenCalledTimes(1)
   })
 
-  it('leaves the thumbnail empty when the capture fails', async () => {
-    vi.stubGlobal(
-      'createImageBitmap',
-      vi.fn(async () => {
-        throw new Error('decode failed')
-      })
-    )
+  it('leaves the thumbnail empty when every capture attempt fails', async () => {
+    const createImageBitmapMock = vi.fn(async () => {
+      throw new Error('decode failed')
+    })
+    vi.stubGlobal('createImageBitmap', createImageBitmapMock)
     vi.stubGlobal('OffscreenCanvas', MockOffscreenCanvas)
     installVideoMocks()
 
@@ -373,10 +369,73 @@ describe('useVideoFilmstrip', () => {
       useVideoFilmstrip(videoUrl)
     )
 
+    await vi.advanceTimersByTimeAsync(6000)
     await vi.waitFor(() => expect(loading.value).toBe(false))
 
+    expect(createImageBitmapMock.mock.calls.length).toBeGreaterThan(1)
     expect(thumbnail.value).toBe('')
     expect(error.value).toBeNull()
+
+    const attemptsAtTimeout = createImageBitmapMock.mock.calls.length
+    await vi.advanceTimersByTimeAsync(5000)
+    expect(createImageBitmapMock.mock.calls.length).toBe(attemptsAtTimeout)
+  })
+
+  it('stops polling for a frame when the load is superseded', async () => {
+    const bitmap = { width: 171, height: 96, close: vi.fn() }
+    const videos: MockVideoElement[] = []
+    const createImageBitmapMock = vi.fn(async () => {
+      if (videos.length === 1) throw new Error('decode failed')
+      return bitmap
+    })
+    vi.stubGlobal('createImageBitmap', createImageBitmapMock)
+    vi.stubGlobal('OffscreenCanvas', MockOffscreenCanvas)
+    installVideoMocks({
+      onVideoCreated: (video) => {
+        videos.push(video)
+      }
+    })
+
+    const videoUrl = ref('https://example.com/first.mp4')
+    const { thumbnail, error, loading } = runWithScope(() =>
+      useVideoFilmstrip(videoUrl)
+    )
+    await vi.advanceTimersByTimeAsync(500)
+    const attemptsBeforeSwitch = createImageBitmapMock.mock.calls.length
+    expect(attemptsBeforeSwitch).toBeGreaterThan(1)
+
+    videoUrl.value = 'https://example.com/second.mp4'
+    await vi.waitFor(() => expect(loading.value).toBe(false))
+
+    expect(videos[0].src).toBe('')
+    expect(error.value).toBeNull()
+    expect(thumbnail.value).not.toBe('')
+
+    const attemptsAfterSettle = createImageBitmapMock.mock.calls.length
+    await vi.advanceTimersByTimeAsync(5000)
+    expect(createImageBitmapMock.mock.calls.length).toBe(attemptsAfterSettle)
+  })
+
+  it('retries the capture when the frame is not yet decodable', async () => {
+    const bitmap = { width: 171, height: 96, close: vi.fn() }
+    const createImageBitmapMock = vi
+      .fn(async () => bitmap)
+      .mockRejectedValueOnce(new Error('The image source is not usable.'))
+      .mockRejectedValueOnce(new Error('The image source is not usable.'))
+    vi.stubGlobal('createImageBitmap', createImageBitmapMock)
+    vi.stubGlobal('OffscreenCanvas', MockOffscreenCanvas)
+    installVideoMocks()
+
+    const videoUrl = ref('https://example.com/video.mp4')
+    const { thumbnail, loading } = runWithScope(() =>
+      useVideoFilmstrip(videoUrl)
+    )
+
+    await vi.advanceTimersByTimeAsync(3000)
+    await vi.waitFor(() => expect(loading.value).toBe(false))
+
+    expect(createImageBitmapMock).toHaveBeenCalledTimes(3)
+    expect(thumbnail.value).not.toBe('')
   })
 
   it('downscales the captured thumbnail to the filmstrip height', async () => {

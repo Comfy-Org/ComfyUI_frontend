@@ -8,7 +8,8 @@ const tierKeyMap: Record<string, string> = {
   CREATOR: 'creator',
   PRO: 'pro',
   FOUNDER: 'founder',
-  FOUNDERS_EDITION: 'founder'
+  FOUNDERS_EDITION: 'founder',
+  ENTERPRISE: 'enterprise'
 }
 
 interface WorkspaceSubscriptionInfo {
@@ -42,7 +43,9 @@ export function useWorkspaceTierLabel() {
 
     if (!workspace.subscriptionPlan) return null
 
-    const planSlug = workspace.subscriptionPlan
+    // Plan identifiers arrive in both cases: comfy-api sends uppercase slugs,
+    // cloud sends lowercase ones (e.g. enterprise plan rows).
+    const planSlug = workspace.subscriptionPlan.toUpperCase()
     const tierMatch = Object.keys(tierKeyMap)
       .sort((a, b) => b.length - a.length)
       .find((tier) => planSlug === tier || planSlug.startsWith(`${tier}_`))

@@ -4,7 +4,6 @@ import { ref } from 'vue'
 import { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import {
   clearCoachmarks,
   targetMounted
@@ -68,6 +67,9 @@ vi.mock('@/scripts/app', () => ({
     get rootGraph() {
       return appState.graph
     },
+    get rootGraphOrUndefined() {
+      return appState.graph
+    },
     get canvas() {
       return appState.graph
         ? {
@@ -94,7 +96,6 @@ function loadTemplate(templateId: keyof typeof TOUR_ROLE_PINS): LGraph {
     node.updateArea()
   }
   appState.graph = graph
-  layoutStore.initializeFromLiteGraph(graph.nodes)
   useCanvasStore().currentGraph = graph
   return graph
 }

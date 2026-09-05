@@ -7,6 +7,7 @@ import type {
   IBaseWidget,
   IWidgetOptions
 } from '@/lib/litegraph/src/types/widgets'
+import { toGroupId } from '@/types/groupId'
 import { toNodeId } from '@/types/nodeId'
 import { describe, expect, it, beforeEach } from 'vitest'
 import {
@@ -144,7 +145,7 @@ describe('computedSectionDataList', () => {
     name: string,
     options: IWidgetOptions = {}
   ): IBaseWidget {
-    return { name, type: 'number', options, y: 0 } as IBaseWidget
+    return { name, type: 'number', options, y: 0 }
   }
 
   it('omits hideInPanel widgets while keeping the rest on the node', () => {
@@ -188,8 +189,8 @@ describe('flatAndCategorizeSelectedItems', () => {
   let testNode3: LGraphNode
 
   beforeEach(() => {
-    testGroup1 = new LGraphGroup('Group 1', 1)
-    testGroup2 = new LGraphGroup('Group 2', 2)
+    testGroup1 = new LGraphGroup('Group 1', toGroupId(1))
+    testGroup2 = new LGraphGroup('Group 2', toGroupId(2))
     testNode1 = new LGraphNode('Node 1')
     testNode2 = new LGraphNode('Node 2')
     testNode3 = new LGraphNode('Node 3')

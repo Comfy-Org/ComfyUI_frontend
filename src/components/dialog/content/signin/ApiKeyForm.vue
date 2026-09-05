@@ -56,7 +56,7 @@
             </a>
             <span class="mx-1">•</span>
             <a
-              href="https://docs.comfy.org/tutorials/api-nodes/overview#log-in-with-api-key-on-non-whitelisted-websites"
+              href="https://docs.comfy.org/tutorials/partner-nodes/overview#log-in-with-comfyui-account-api-key-on-non-whitelisted-websites"
               target="_blank"
               class="cursor-pointer text-blue-500"
             >

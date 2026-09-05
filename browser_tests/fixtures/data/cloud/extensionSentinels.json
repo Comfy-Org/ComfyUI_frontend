@@ -1,0 +1,21 @@
+{
+  "ComfyUI-KJNodes": ["KJNodes.GetNode"],
+  "ComfyUI-LTXVideo": ["LTXVideo.SparseTrackEditor"],
+  "ComfyUI-Upscaler-Tensorrt": ["UpscalerTensorrt.CustomResize"],
+  "ComfyUI-test-framework": ["comfyui.test.framework.auto.save.api"],
+  "ComfyUI_Fill-Nodes": ["Fill-Nodes.TetrisGame"],
+  "ControlAltAI-Nodes": ["ControlAltAI.IntegerSettingsAdvanced"],
+  "RES4LYF": ["Comfy.RES4LYF.DisplayInfo"],
+  "basic_data_handling": ["Basic data handling: dynamic input"],
+  "comfyui-PlyPreview": ["plypreview.gaussianpreview"],
+  "comfyui-enricos-nodes": ["ComfyUI.Enrico.ColorPicker"],
+  "comfyui-inpaint-cropandstitch": ["inpaint-cropandstitch.showcontrol"],
+  "comfyui-itools": ["iTools.compareNode"],
+  "comfyui-qwenmultiangle": ["ComfyUI.QwenMultiangle"],
+  "comfyui-rmbg": ["AILab.colorWidget"],
+  "comfyui-sam3": ["comfyui.sam3.video_dynamic"],
+  "comfyui-videohelpersuite": ["VideoHelperSuite.Core"],
+  "comfyui-workflow-prettier": ["comfyui.workflow.prettier"],
+  "radiance": ["Radiance.IO"],
+  "vewd": ["vewd"]
+}

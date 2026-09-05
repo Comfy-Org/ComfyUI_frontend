@@ -26,7 +26,7 @@ export const zResultItem = z.object({
 })
 export type ResultItem = z.infer<typeof zResultItem>
 // Uses .passthrough() because custom nodes can output arbitrary keys.
-// See docs/adr/0007-node-execution-output-passthrough-schema.md
+// See docs/adr/NODE-OUTPUTS-0007-output-passthrough-for-extensible-nodes.md
 const zOutputs = z
   .object({
     audio: z.array(zResultItem).optional(),
@@ -104,7 +104,7 @@ const zExecutionInterruptedWsMessage = zExecutionWsMessageBase.extend({
   executed: z.array(zNodeId)
 })
 const zExecutionErrorWsMessage = zExecutionWsMessageBase.extend({
-  node_id: zNodeId,
+  node_id: zNodeId.nullish(),
   node_type: zNodeType,
   executed: z.array(zNodeId),
   exception_message: z.string(),
@@ -195,7 +195,7 @@ export type NotificationWsMessage = z.infer<typeof zNotificationWsMessage>
 export const zTaskOutput = z.record(zNodeId, zOutputs)
 export type TaskOutput = z.infer<typeof zTaskOutput>
 
-const zEmbeddingsResponse = z.array(z.string())
+export const zEmbeddingsResponse = z.array(z.string())
 const zExtensionsResponse = z.array(z.string())
 const zError = z.object({
   type: z.string(),

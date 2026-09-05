@@ -30,7 +30,7 @@ const mockShow = vi.hoisted(() => vi.fn())
 const mockStartOperation = vi.hoisted(() => vi.fn())
 const mockGetOperation = vi.hoisted(() => vi.fn())
 const mockSetWorkspaceBillingRail = vi.hoisted(() => vi.fn())
-const mockCaptureException = vi.hoisted(() => vi.fn())
+const mockReportError = vi.hoisted(() => vi.fn())
 const mockActiveWorkspaceId = vi.hoisted(() => ({ value: 'workspace-1' }))
 
 // Hoisted so the vi.mock factory below can reference it: a plain top-level
@@ -75,8 +75,8 @@ vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
   })
 }))
 
-vi.mock('@sentry/vue', () => ({
-  captureException: mockCaptureException
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
 }))
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
@@ -123,6 +123,7 @@ const activeStatus = {
   max_seats: 73,
   occupied_seats: 72,
   has_funds: true,
+  team_credit_stop: null,
   subscription_status: 'active' as const,
   subscription_tier: 'CREATOR' as const,
   subscription_duration: 'MONTHLY' as const,
@@ -135,6 +136,7 @@ const freeStatus = {
   max_seats: 0,
   occupied_seats: 100,
   has_funds: true,
+  team_credit_stop: null,
   subscription_tier: 'FREE' as const,
   plan_slug: 'free'
 }
@@ -253,9 +255,7 @@ describe('useWorkspaceBilling', () => {
         ...activeStatus,
         billing_rail: 'stripe',
         subscription_status: 'canceled',
-        cancel_at: '2026-06-01T00:00:00Z',
-        scheduled_plan_slug: 'pro-annual',
-        change_at: '2026-07-01T00:00:00Z'
+        cancel_at: '2026-06-01T00:00:00Z'
       })
 
       const billing = setupBilling()
@@ -266,8 +266,6 @@ describe('useWorkspaceBilling', () => {
         tier: 'CREATOR',
         duration: 'MONTHLY',
         planSlug: 'creator-monthly',
-        scheduledPlanSlug: 'pro-annual',
-        changeAt: '2026-07-01T00:00:00Z',
         renewalDate: '2026-05-01T00:00:00Z',
         endDate: '2026-06-01T00:00:00Z',
         isCancelled: true,
@@ -322,7 +320,7 @@ describe('useWorkspaceBilling', () => {
         undefined,
         actionUrl
       )
-      expect(mockCaptureException).not.toHaveBeenCalled()
+      expect(mockReportError).not.toHaveBeenCalled()
     })
 
     it('recovers a pending top-up as a top-up, not a subscription', async () => {
@@ -354,16 +352,16 @@ describe('useWorkspaceBilling', () => {
         // A server ahead of this bundle. Unrepresentable in the current union,
         // which is why the branch cannot be left to the type system alone.
         pending_billing_op_type: 'seat_change'
-      } as unknown as BillingStatusResponse)
+      })
 
       const billing = setupBilling()
       await billing.fetchStatus()
 
-      expect(mockCaptureException).toHaveBeenCalledWith(
+      expect(mockReportError).toHaveBeenCalledWith(
         expect.objectContaining({
           message: expect.stringContaining('seat_change')
         }),
-        { tags: { error_type: 'billing_unknown_resume_mode' } }
+        { errorType: 'billing_unknown_resume_mode' }
       )
       // Recovery is preserved deliberately: without it the customer has no way
       // back to the payment page, while a wrong panel clears on reload.

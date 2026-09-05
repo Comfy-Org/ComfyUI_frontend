@@ -1,3 +1,4 @@
+import { toGroupId } from '@/types/groupId'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
@@ -26,12 +27,12 @@ vi.mock('@/utils/nodeFilterUtil', () => ({
 
 // Mock comment/connection objects with additional properties
 const mockComment = {
-  ...createMockPositionable({ id: 999 }),
+  ...createMockPositionable({ id: toGroupId(999) }),
   type: 'comment',
   isNode: false
 }
 const mockConnection = {
-  ...createMockPositionable({ id: 1000 }),
+  ...createMockPositionable({ id: toGroupId(1000) }),
   type: 'connection',
   isNode: false
 }
@@ -88,11 +89,11 @@ describe('useSelectionState', () => {
     // Setup mock utility functions
     vi.mocked(isLGraphNode).mockImplementation((item: unknown) => {
       const typedItem = item as { isNode?: boolean }
-      return typedItem?.isNode !== false
+      return typedItem.isNode !== false
     })
     vi.mocked(isImageNode).mockImplementation((node: unknown) => {
       const typedNode = node as { type?: string }
-      return typedNode?.type === 'ImageNode'
+      return typedNode.type === 'ImageNode'
     })
     vi.mocked(filterOutputNodes).mockImplementation((nodes) =>
       nodes.filter((n) => n.type === 'OutputNode')
@@ -177,9 +178,9 @@ describe('useSelectionState', () => {
       canvasStore.$state.selectedItems = [pinnedNode, collapsedNode]
 
       const { selectedNodes } = useSelectionState()
-      const isPinned = selectedNodes.value.some((n) => n.pinned === true)
+      const isPinned = selectedNodes.value.some((n) => n.pinned)
       const isCollapsed = selectedNodes.value.some(
-        (n) => n.flags?.collapsed === true
+        (n) => n.flags.collapsed === true
       )
       const isBypassed = selectedNodes.value.some(
         (n) => n.mode === LGraphEventMode.BYPASS
@@ -195,9 +196,9 @@ describe('useSelectionState', () => {
       canvasStore.$state.selectedItems = [node]
 
       const { selectedNodes } = useSelectionState()
-      const isPinned = selectedNodes.value.some((n) => n.pinned === true)
+      const isPinned = selectedNodes.value.some((n) => n.pinned)
       const isCollapsed = selectedNodes.value.some(
-        (n) => n.flags?.collapsed === true
+        (n) => n.flags.collapsed === true
       )
       const isBypassed = selectedNodes.value.some(
         (n) => n.mode === LGraphEventMode.BYPASS
@@ -210,7 +211,7 @@ describe('useSelectionState', () => {
       // Test with empty selection using new composable instance
       canvasStore.$state.selectedItems = []
       const { selectedNodes: newSelectedNodes } = useSelectionState()
-      const newIsPinned = newSelectedNodes.value.some((n) => n.pinned === true)
+      const newIsPinned = newSelectedNodes.value.some((n) => n.pinned)
       expect(newIsPinned).toBe(false)
     })
   })

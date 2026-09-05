@@ -11,17 +11,7 @@ import type { useWorkspaceStore } from '@/stores/workspaceStore'
  * Provides typed access to graph internals without requiring `any`.
  */
 export interface TestGraphAccess {
-  _nodes_by_id: Record<string, LGraphNode>
-}
-
-/**
- * Client-side growth triggers the DevTools `Node Runtime Reflow` node exposes on
- * its instance (see `tools/devtools/web/runtimeReflow.js`). Used by the runtime
- * reflow E2E spec to emulate the two custom-node growth idioms.
- */
-export interface RuntimeReflowNode {
-  growByWidget: () => void
-  growByPreview: () => void
+  _nodes_by_id: Partial<Record<string, LGraphNode>>
 }
 
 interface AppReadiness {
@@ -47,6 +37,7 @@ declare global {
     TestCommand?: boolean
     changeCount?: number
     widgetValue?: unknown
+    __commandExecutionCounts?: Record<string, number>
 
     // Feature flags test globals
     __capturedMessages?: CapturedMessages

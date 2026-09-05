@@ -41,17 +41,9 @@ const layoutLoader = oauthLayout?.component
 const consentLoader = consentRoute?.component
 
 /**
- * Resolved here rather than inside the test.
- *
- * These are the real loaders, so calling them compiles `OAuthLayoutView.vue`,
- * `OAuthConsentView.vue` and everything they import — seconds of work even on
- * an idle machine. Awaited inside a test body that time is billed against the
- * 5 s test timeout, which is what made this test fail under a loaded worker
- * pool while passing in isolation (#14666). At module scope it is collection
- * cost, which nothing times out, and the test itself becomes synchronous.
- *
- * The loaders are still the ones the router will call: a route pointing at a
- * module that does not exist still fails here, at import time.
+ * At module scope, not in the test body: these real loaders compile the views
+ * and everything they import, and inside `it()` that is billed against the 5 s
+ * test timeout (#14666). Collection time is untimed.
  */
 const resolvedComponents = await Promise.all(
   [layoutLoader, consentLoader].map(async (loader) =>
@@ -259,14 +251,14 @@ describe('oauthConsentRedirect', () => {
   })
 
   it('mints the Cloud session cookie before redirecting to consent when resuming OAuth', async () => {
-    // Regression: an already-signed-in user (Firebase) carries no Cloud session
-    // cookie, so the consent challenge fetch fails unless the cookie is minted
-    // here, mirroring the post-login resume path.
     captureOAuthRequestId({ oauth_request_id: VALID_REQUEST_ID })
 
     const target = await oauthConsentRedirect()
 
-    expect(createSessionOrThrow).toHaveBeenCalledOnce()
+    expect(
+      createSessionOrThrow,
+      'an already-signed-in Firebase user carries no Cloud session cookie, so the consent challenge fetch fails without this'
+    ).toHaveBeenCalledOnce()
     expect(target).toEqual({
       name: 'cloud-oauth-consent',
       query: { oauth_request_id: VALID_REQUEST_ID }
@@ -292,5 +284,122 @@ describe('oauthConsentRedirect', () => {
     } finally {
       warn.mockRestore()
     }
+  })
+})
+
+const cloudLayout = cloudOnboardingRoutes.find((r) => r.path === '/cloud')
+
+const guardedRoutes = ['cloud-login', 'cloud-signup'].map((name) => {
+  const route = cloudLayout?.children?.find((c) => c.name === name)
+  if (Array.isArray(route?.beforeEnter)) {
+    throw new Error(
+      `${name} now has an array of beforeEnter guards; runGuard drives only one`
+    )
+  }
+  if (typeof route?.beforeEnter !== 'function') {
+    throw new Error(`${name} has no beforeEnter guard`)
+  }
+  return [name, route.beforeEnter, `/cloud/${route.path}`] as const
+})
+
+type GuardedRoute = (typeof guardedRoutes)[number]
+
+async function runGuard(
+  [name, guard, path]: GuardedRoute,
+  query: Record<string, string>
+) {
+  const next = vi.fn()
+  const to = { query, name, path }
+  await (
+    guard as unknown as (
+      to: unknown,
+      from: unknown,
+      next: unknown
+    ) => Promise<void>
+  )(to, undefined, next)
+  return next.mock.calls[0]?.[0]
+}
+
+describe.for(guardedRoutes)('%s beforeEnter', (route) => {
+  beforeEach(() => {
+    isLoggedIn.value = false
+    clearOAuthRequestId()
+    createSessionOrThrow.mockReset().mockResolvedValue(undefined)
+  })
+
+  it('lets a signed-out visitor through to the form', async () => {
+    expect(await runGuard(route, {})).toBeUndefined()
+  })
+
+  it('redirects a signed-in visitor away from the auth page', async () => {
+    isLoggedIn.value = true
+
+    expect(await runGuard(route, {})).toEqual({ name: 'cloud-user-check' })
+  })
+
+  it('sends a signed-in visitor straight to consent mid-OAuth', async () => {
+    isLoggedIn.value = true
+    captureOAuthRequestId({ oauth_request_id: VALID_REQUEST_ID })
+
+    expect(await runGuard(route, {})).toEqual({
+      name: 'cloud-oauth-consent',
+      query: { oauth_request_id: VALID_REQUEST_ID }
+    })
+    expect(
+      createSessionOrThrow,
+      'routing to consent without the session cookie leaves the view making an unauthenticated request'
+    ).toHaveBeenCalledOnce()
+  })
+
+  it('honours ?switchAccount for a signed-in visitor', async () => {
+    isLoggedIn.value = true
+
+    expect(
+      await runGuard(route, { switchAccount: '1' }),
+      'without this escape hatch a signed-in user can never reach the form to switch accounts'
+    ).toBeUndefined()
+  })
+
+  it('does not mint a session cookie when it lets the visitor through', async () => {
+    isLoggedIn.value = true
+
+    await runGuard(route, { switchAccount: '1' })
+
+    expect(createSessionOrThrow).not.toHaveBeenCalled()
+  })
+})
+
+describe('legacy /cloud/oauth/consent redirect', () => {
+  const legacyRoute = cloudOnboardingRoutes.find(
+    (r) => r.path === '/cloud/oauth/consent'
+  )
+
+  it('preserves the query the backend 302s with', () => {
+    const redirect = legacyRoute?.redirect
+    if (typeof redirect !== 'function') {
+      throw new Error('legacy consent route has no redirect function')
+    }
+
+    const to = {
+      name: undefined,
+      path: '/cloud/oauth/consent',
+      fullPath: `/cloud/oauth/consent?oauth_request_id=${VALID_REQUEST_ID}`,
+      query: { oauth_request_id: VALID_REQUEST_ID },
+      hash: '',
+      params: {},
+      matched: [],
+      meta: {},
+      redirectedFrom: undefined
+    }
+
+    const target = redirect(to, to)
+
+    expect(
+      target,
+      'the backend still 302s to the old path, and dropping the query strands the consent view with no request to consent to'
+    ).toEqual({
+      path: '/oauth/consent',
+      query: { oauth_request_id: VALID_REQUEST_ID }
+    })
   })
 })

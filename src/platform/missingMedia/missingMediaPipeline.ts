@@ -16,7 +16,6 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 interface RunMissingMediaPipelineOptions {
-  /** Must be the root graph: candidates are keyed by root-relative execution id. */
   rootGraph: LGraph
   silent?: boolean
 }
@@ -72,7 +71,7 @@ export async function runMissingMediaPipeline({
           severity: 'warn',
           summary: st(
             'toastMessages.missingMediaVerificationFailed',
-            'Failed to verify missing media. Some inputs may not be shown in the Errors tab.'
+            'Failed to verify missing media. Some inputs may not be shown in the Issues tab.'
           ),
           life: 5000
         })

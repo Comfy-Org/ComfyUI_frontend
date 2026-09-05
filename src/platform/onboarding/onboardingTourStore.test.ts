@@ -1,7 +1,7 @@
 import type { DetachedWindowAPI } from 'happy-dom'
 import { createPinia, disposePinia, setActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import type { Ref } from 'vue'
 
@@ -36,11 +36,10 @@ vi.mock('@/platform/telemetry', () => ({
 }))
 
 const appModeMock = vi.hoisted(
-  () =>
-    ({ mode: null, hasOutputs: null }) as {
-      mode: Ref<AppMode> | null
-      hasOutputs: Ref<boolean> | null
-    }
+  (): { mode: Ref<AppMode> | null; hasOutputs: Ref<boolean> | null } => ({
+    mode: null,
+    hasOutputs: null
+  })
 )
 vi.mock('@/composables/useAppMode', async () => {
   const { ref: r } = await import('vue')
@@ -147,6 +146,8 @@ describe('onboardingTourStore', () => {
     modeRef.value = mode
     outputsRef.value = hasOutputs
   }
+
+  beforeEach(() => enterApp('app', false))
 
   it('auto-opens when entering a populated app it has not seen', async () => {
     mountStore()
@@ -873,8 +874,6 @@ describe('onboardingTourStore', () => {
       store.next()
       await nextTick()
       const superseded = attempts[0]
-      if (!superseded) throw new Error('no attempt to supersede')
-
       superseded.fail(new Error('the superseded attempt blew up'))
       await nextTick()
       await nextTick()

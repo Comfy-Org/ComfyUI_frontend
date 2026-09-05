@@ -1,11 +1,11 @@
 import { render, screen, waitFor } from '@testing-library/vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 
 import { useRegionGate } from '@/composables/auth/useRegionGate'
 
 const detection = vi.hoisted(() => ({
-  outcome: Promise.resolve(false) as Promise<boolean>
+  outcome: Promise.resolve(false)
 }))
 vi.mock('@/utils/networkUtil', () => ({
   isInChina: () => detection.outcome
@@ -22,10 +22,6 @@ const currentStatus = () => screen.getByRole('status').textContent
 
 beforeEach(() => {
   detection.outcome = Promise.resolve(false)
-})
-
-afterEach(() => {
-  vi.useRealTimers()
 })
 
 describe('useRegionGate', () => {

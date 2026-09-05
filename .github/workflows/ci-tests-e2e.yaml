@@ -29,6 +29,8 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
+    env:
+      EXPECTED_FRONTEND_COMMIT: ${{ github.sha }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -39,7 +41,12 @@ jobs:
         env:
           COLLECT_COVERAGE: 'true'
 
-      # Upload only built dist/ (containerized test jobs will pnpm install without cache)
+      - name: Verify localhost Assets default
+        run: pnpm test:assets-flag-artifact
+        env:
+          EXPECTED_DISTRIBUTION: localhost
+
+      # Upload only verified dist/ (containerized test jobs will pnpm install without cache)
       - name: Upload built frontend
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
@@ -47,8 +54,18 @@ jobs:
           path: dist/
           retention-days: 1
 
+      - name: Build and verify desktop Assets default
+        run: |
+          pnpm build:desktop-dist
+          pnpm test:assets-flag-artifact
+        env:
+          EXPECTED_DISTRIBUTION: desktop
+          VITE_USE_LEGACY_DEFAULT_GRAPH: 'true'
+
       - name: Build cloud frontend
         uses: ./.github/actions/build-cloud-frontend
+        with:
+          expected_commit: ${{ github.sha }}
 
   # Sharded chromium tests
   playwright-tests-chromium-sharded:
@@ -56,7 +73,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.21
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.22
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -114,7 +131,7 @@ jobs:
     needs: setup
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.21
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.22
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -172,7 +189,7 @@ jobs:
     if: ${{ !cancelled() && needs.changes.outputs.should-run == 'true' }}
     steps:
       - name: Install pnpm
-        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
         with:
           version: 10
 
@@ -203,18 +220,42 @@ jobs:
   # expanded check names so PRs with no e2e-relevant changes aren't stuck.
   e2e-status:
     if: ${{ always() }}
-    needs: [changes, playwright-tests-chromium-sharded, playwright-tests]
+    needs:
+      [
+        changes,
+        playwright-tests-chromium-sharded,
+        playwright-tests,
+        playwright-video-new-tests
+      ]
     runs-on: ubuntu-latest
     steps:
       - name: Check E2E results
         env:
+          CHANGES: ${{ needs.changes.result }}
           SHOULD_RUN: ${{ needs.changes.outputs.should-run }}
           SHARDED: ${{ needs.playwright-tests-chromium-sharded.result }}
           BROWSERS: ${{ needs.playwright-tests.result }}
+          VIDEO: ${{ needs.playwright-video-new-tests.result }}
         run: |
+          echo "changes=$CHANGES should_run=$SHOULD_RUN sharded=$SHARDED browsers=$BROWSERS video=$VIDEO"
+          [[ "$CHANGES" != "success" ]] && echo "changes gate did not complete ($CHANGES)" && exit 1
           [[ "$SHOULD_RUN" != "true" ]] && echo "E2E skipped" && exit 0
-          [[ "$SHARDED" != "success" || "$BROWSERS" != "success" ]] && echo "E2E failed" && exit 1
+          [[ "$SHARDED" == "failure" || "$BROWSERS" == "failure" || "$VIDEO" == "failure" ]] && echo "E2E failed" && exit 1
+          [[ "$SHARDED" == "cancelled" || "$BROWSERS" == "cancelled" || "$VIDEO" == "cancelled" ]] && echo "E2E cancelled, not failed" && exit 1
+          [[ "$SHARDED" != "success" || "$BROWSERS" != "success" || ( "$VIDEO" != "success" && "$VIDEO" != "skipped" ) ]] && echo "E2E failed" && exit 1
           echo "E2E passed"
+
+  upload-e2e-coverage:
+    needs: [changes, playwright-tests-chromium-sharded]
+    if: >-
+      ${{
+        always() &&
+        needs.changes.outputs.should-run == 'true' &&
+        needs.playwright-tests-chromium-sharded.result != 'cancelled'
+      }}
+    uses: ./.github/workflows/ci-tests-e2e-coverage-package.yaml
+    with:
+      source_sha: ${{ github.event.pull_request.head.sha || github.sha }}
 
   # Records video only for spec files newly added in this PR, to keep cost bounded.
   playwright-video-new-tests:
@@ -223,7 +264,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.21
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.22
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -242,8 +283,20 @@ jobs:
         id: detect
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          BASE_SHA="${{ github.event.pull_request.base.sha }}"
-          NEW_FILES=$(git diff --name-only --diff-filter=A "$BASE_SHA"...HEAD -- browser_tests/tests | grep '\.spec\.ts$' || true)
+          # HEAD is refs/pull/N/merge, so its first parent is the base tip the PR was merged
+          # onto. pull_request.base.sha is recorded when the PR opens and does not follow the
+          # base branch, so diffing against it attributes every spec the base gained since
+          # then to this PR.
+          if [ "$(git rev-parse --verify --quiet HEAD^2)" = "${{ github.event.pull_request.head.sha }}" ]; then
+            DIFF_RANGE="$(git rev-parse HEAD^1)..HEAD"
+          else
+            DIFF_RANGE="${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}"
+          fi
+          # git diff and grep are separate statements (not piped) so a git diff failure
+          # (e.g. the fallback sha isn't in the local object store) surfaces as a build
+          # error instead of silently reading as "no new specs" and no-oping the video job.
+          ADDED_FILES=$(git diff --name-only --diff-filter=A "$DIFF_RANGE" -- browser_tests/tests)
+          NEW_FILES=$(printf '%s\n' "$ADDED_FILES" | grep '\.spec\.ts$' || true)
 
           if [ -z "$NEW_FILES" ]; then
             echo "has-new-tests=false" >> "$GITHUB_OUTPUT"
@@ -275,18 +328,89 @@ jobs:
         if: steps.detect.outputs.has-new-tests == 'true'
         run: pnpm install --frozen-lockfile
 
-      - name: Run new test(s) with video recording
+      - name: Find safely recordable new tests
         if: steps.detect.outputs.has-new-tests == 'true'
+        id: recordable
+        env:
+          NEW_SPEC_FILES: ${{ steps.detect.outputs.files }}
+        run: |
+          FILES=$(echo "$NEW_SPEC_FILES" | tr '\n' ' ')
+          AUDIT_EXIT=0
+          AUDIT_OUTPUT=$(pnpm exec playwright test --project=audit --list --pass-with-no-tests $FILES 2>&1) || AUDIT_EXIT=$?
+          echo "$AUDIT_OUTPUT"
+
+          if [ "$AUDIT_EXIT" -ne 0 ]; then
+            exit "$AUDIT_EXIT"
+          fi
+
+          if ! echo "$AUDIT_OUTPUT" | grep -Fxq 'Total: 0 tests in 0 files'; then
+            {
+              echo '## New-test video walkthrough'
+              echo
+              echo '### Cannot skip safely: audit tests have no regular CI coverage'
+              echo
+              echo 'At least one newly added test is routed to the `audit` project. Unlike the other projects excluded by Chromium, no regular CI job executes audit tests.'
+              echo 'This video job only records the `chromium` project, so it fails rather than allowing the PR to pass without executing the new audit test.'
+              echo
+              echo 'Detected files:'
+              echo '```text'
+              echo "$NEW_SPEC_FILES"
+              echo '```'
+              echo
+              echo 'Audit discovery output:'
+              echo '```text'
+              echo "$AUDIT_OUTPUT"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          LIST_EXIT=0
+          LIST_OUTPUT=$(pnpm exec playwright test --project=chromium --list --pass-with-no-tests $FILES 2>&1) || LIST_EXIT=$?
+          echo "$LIST_OUTPUT"
+
+          if [ "$LIST_EXIT" -ne 0 ]; then
+            exit "$LIST_EXIT"
+          fi
+
+          if ! echo "$LIST_OUTPUT" | grep -Fxq 'Total: 0 tests in 0 files'; then
+            echo "has-tests=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "has-tests=false" >> "$GITHUB_OUTPUT"
+          {
+            echo '## New-test video walkthrough'
+            echo
+            echo '### Skipped safely: no Chromium-eligible tests'
+            echo
+            echo 'The workflow detected newly added Playwright spec files, but none of their tests are eligible for the `chromium` project used to record walkthroughs.'
+            echo 'This commonly happens when every test uses a project-routing tag excluded by Chromium: `@perf`, `@cloud`, or `@mobile`.'
+            echo 'The regular project-specific E2E jobs still run these tests. This video job succeeds without creating an empty report or video artifact.'
+            echo
+            echo 'Detected files:'
+            echo '```text'
+            echo "$NEW_SPEC_FILES"
+            echo '```'
+            echo
+            echo 'Playwright discovery output:'
+            echo '```text'
+            echo "$LIST_OUTPUT"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Run new test(s) with video recording
+        if: steps.recordable.outputs.has-tests == 'true'
         env:
           RECORD_VIDEO: 'true'
           SLOW_MO: '1000'
           NEW_SPEC_FILES: ${{ steps.detect.outputs.files }}
         run: |
           FILES=$(echo "$NEW_SPEC_FILES" | tr '\n' ' ')
-          pnpm exec playwright test --project=chromium $FILES
+          pnpm exec playwright test --project=chromium --timeout=60000 $FILES
 
       - name: Upload new-test report (with embedded video)
-        if: ${{ !cancelled() && steps.detect.outputs.has-new-tests == 'true' }}
+        if: ${{ !cancelled() && steps.recordable.outputs.has-tests == 'true' }}
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: playwright-report-new-tests

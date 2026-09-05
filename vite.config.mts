@@ -12,12 +12,13 @@ import IconsResolver from 'unplugin-icons/resolver'
 import Icons from 'unplugin-icons/vite'
 import Components from 'unplugin-vue-components/vite'
 import typegpuPlugin from 'unplugin-typegpu/vite'
+import { resolve } from 'path'
 import { defineConfig } from 'vitest/config'
 import type { ProxyOptions } from 'vite'
 import { createHtmlPlugin } from 'vite-plugin-html'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
-import { comfyAPIPlugin } from './build/plugins'
+import { comfyAPIPlugin } from './build/plugins/comfyAPIPlugin.ts'
 
 dotenvConfig()
 
@@ -31,6 +32,7 @@ const GENERATE_SOURCEMAP = process.env.GENERATE_SOURCEMAP !== 'false'
 const COLLECT_COVERAGE = process.env.COLLECT_COVERAGE === 'true'
 const IS_STORYBOOK = process.env.npm_lifecycle_event === 'storybook'
 const TEST_SYSTEM_TIME = Date.parse('2024-06-15T12:00:00Z')
+const BROWSER_TESTS_DIR = resolve('browser_tests')
 
 const CRITICAL_COVERAGE_DIRS = [
   'src/base',
@@ -110,6 +112,18 @@ const VITE_OG_DESC =
 const VITE_OG_IMAGE = `${VITE_OG_URL}/assets/images/og-image.png`
 const VITE_OG_KEYWORDS = 'ComfyUI, Comfy Cloud, ComfyUI online'
 
+export function getCanonicalTags(distribution: string | undefined) {
+  return distribution === 'cloud'
+    ? [
+        {
+          tag: 'link',
+          attrs: { rel: 'canonical', href: `${VITE_OG_URL}/` },
+          injectTo: 'head' as const
+        }
+      ]
+    : []
+}
+
 // Auto-detect cloud mode from DEV_SERVER_COMFYUI_URL
 const DEV_SERVER_COMFYUI_ENV_URL = process.env.DEV_SERVER_COMFYUI_URL
 const IS_CLOUD_URL = DEV_SERVER_COMFYUI_ENV_URL?.includes('.comfy.org')
@@ -145,6 +159,36 @@ if (!GIT_COMMIT) {
   }
 }
 
+/**
+ * Escape hatch for a poisoned CDN/browser cache.
+ *
+ * A content hash only changes when the chunk's own bytes change, so a routine
+ * redeploy leaves stable vendor chunks — `rolldown-runtime`, `vendor-*` — at
+ * byte-identical URLs. When one of those has been pinned as a 404 by an
+ * intermediary or a browser (IR-105), redeploying cannot dislodge it: the
+ * client never re-requests a URL it believes it already has.
+ *
+ * Setting ASSET_CACHE_BUST inserts its value into every emitted asset name, so
+ * every URL is new and nothing can be served from a poisoned entry.
+ *
+ * Only ever increment this. Clearing it reverts filenames to exactly the names
+ * that were poisoned in the first place.
+ */
+function assetCacheBustNames() {
+  const salt = process.env.ASSET_CACHE_BUST
+  if (!salt) return {}
+  if (!/^[a-zA-Z0-9]+$/.test(salt)) {
+    throw new Error(
+      `ASSET_CACHE_BUST must be alphanumeric (got "${salt}") — it becomes part of every asset filename.`
+    )
+  }
+  return {
+    entryFileNames: `assets/[name]-cb${salt}-[hash].js`,
+    chunkFileNames: `assets/[name]-cb${salt}-[hash].js`,
+    assetFileNames: `assets/[name]-cb${salt}-[hash][extname]`
+  }
+}
+
 // Disable Vue DevTools for production cloud distribution
 const DISABLE_VUE_PLUGINS =
   process.env.DISABLE_VUE_PLUGINS === 'true' ||
@@ -164,7 +208,7 @@ const cloudProxyConfig =
 
 function handleGcsRedirect(
   proxyRes: IncomingMessage,
-  _req: IncomingMessage,
+  req: IncomingMessage,
   res: ServerResponse
 ) {
   const location = proxyRes.headers.location
@@ -186,8 +230,11 @@ function handleGcsRedirect(
     return
   }
 
-  // GCS redirect detected - fetch server-side to avoid CORS
-  fetch(location)
+  // GCS redirect detected - fetch server-side to avoid CORS. Range headers
+  // are forwarded and the partial-content response relayed so ranged reads
+  // behave like production, where the browser talks to GCS directly.
+  const rangeHeader = req.headers.range
+  fetch(location, rangeHeader ? { headers: { range: rangeHeader } } : undefined)
     .then(async (gcsResponse) => {
       if (!gcsResponse.body) {
         res.statusCode = 500
@@ -196,15 +243,24 @@ function handleGcsRedirect(
       }
 
       // Set response headers from GCS
-      res.statusCode = 200
+      res.statusCode = gcsResponse.status
       res.setHeader(
         'Content-Type',
         gcsResponse.headers.get('content-type') || 'application/octet-stream'
       )
 
-      const contentLength = gcsResponse.headers.get('content-length')
-      if (contentLength) {
-        res.setHeader('Content-Length', contentLength)
+      for (const header of [
+        'content-length',
+        'content-range',
+        'accept-ranges',
+        'cache-control',
+        'etag',
+        'last-modified'
+      ]) {
+        const value = gcsResponse.headers.get(header)
+        if (value) {
+          res.setHeader(header, value)
+        }
       }
 
       // Convert Web ReadableStream to Node.js stream and pipe to client
@@ -350,6 +406,19 @@ export default defineConfig({
     tailwindcss(),
     typegpuPlugin({}),
     comfyAPIPlugin(IS_DEV),
+    {
+      name: 'emit-build-manifest',
+      generateBundle() {
+        this.emitFile({
+          type: 'asset',
+          fileName: 'build-manifest.json',
+          source: JSON.stringify({
+            commit: GIT_COMMIT,
+            distribution: DISTRIBUTION
+          })
+        })
+      }
+    },
     // Exclude proprietary fonts from non-cloud builds
     {
       name: 'exclude-proprietary-fonts',
@@ -400,11 +469,17 @@ export default defineConfig({
     {
       name: 'inject-twitter-meta',
       transformIndexHtml(html) {
-        if (DISTRIBUTION !== 'cloud') return html
+        if (DISTRIBUTION !== 'cloud') {
+          return {
+            html,
+            tags: [{ tag: 'title', children: 'ComfyUI', injectTo: 'head' }]
+          }
+        }
 
         return {
           html,
           tags: [
+            ...getCanonicalTags(DISTRIBUTION),
             // Basic SEO
             { tag: 'title', children: VITE_OG_TITLE, injectTo: 'head' },
             {
@@ -601,6 +676,7 @@ export default defineConfig({
       },
       output: {
         keepNames: true,
+        ...assetCacheBustNames(),
         codeSplitting: {
           groups: [
             // Framework core - highest priority, very stable
@@ -715,9 +791,6 @@ export default defineConfig({
       process.env.npm_package_version
     ),
     __COMFYUI_FRONTEND_COMMIT__: JSON.stringify(GIT_COMMIT),
-    __SENTRY_ENABLED__: JSON.stringify(
-      !(process.env.NODE_ENV === 'development' || !process.env.SENTRY_DSN)
-    ),
     __SENTRY_DSN__: JSON.stringify(process.env.SENTRY_DSN || ''),
     __ALGOLIA_APP_ID__: JSON.stringify(process.env.ALGOLIA_APP_ID || ''),
     __ALGOLIA_API_KEY__: JSON.stringify(process.env.ALGOLIA_API_KEY || ''),
@@ -728,10 +801,13 @@ export default defineConfig({
 
   resolve: {
     alias: {
+      '@/base/credits/comfyCredits':
+        '/packages/shared-frontend-utils/src/creditsUtil.ts',
       '@/utils/formatUtil': '/packages/shared-frontend-utils/src/formatUtil.ts',
       '@/utils/networkUtil':
         '/packages/shared-frontend-utils/src/networkUtil.ts',
-      '@': '/src'
+      '@': '/src',
+      '@e2e': BROWSER_TESTS_DIR
     }
   },
 
@@ -772,7 +848,9 @@ export default defineConfig({
       'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       'packages/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       'scripts/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
-      'tools/oxlint-plugins/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
+      'browser_tests/**/*.test.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+      'tools/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+      'build/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
     ],
     coverage: {
       provider: 'v8',
@@ -793,6 +871,7 @@ export default defineConfig({
       }
     },
     exclude: [
+      'src/__ecs_matrix__/**',
       '**/node_modules/**',
       '**/dist/**',
       '**/cypress/**',

@@ -12,9 +12,13 @@ import type { NodeId } from '@/types/nodeId'
 export function canvasNodeTarget(nodeId: NodeId): RectTarget {
   const { camera } = useTransformState()
   const canvasStore = useCanvasStore()
-  const layout = layoutStore.getNodeLayoutRef(nodeId)
   const resolvedGraph = canvasStore.currentGraph
   const scope = effectScope(true)
+  const layout = resolvedGraph
+    ? scope.run(() =>
+        layoutStore.getNodeLayoutRef(resolvedGraph.rootGraph.id, nodeId)
+      )
+    : null
   const canvasBounds = scope.run(() =>
     useElementBounding(() => canvasStore.canvas?.canvas)
   )!
@@ -26,7 +30,7 @@ export function canvasNodeTarget(nodeId: NodeId): RectTarget {
       // A collapsed node renders no widget for a step to point at.
       if (canvasStore.currentGraph?.getNodeById(nodeId)?.collapsed) return null
 
-      const bounds = layout.value?.bounds
+      const bounds = layout?.value?.bounds
       if (!bounds) return null
 
       // Bounds are the body box; the node renders a title height above it.
@@ -41,7 +45,7 @@ export function canvasNodeTarget(nodeId: NodeId): RectTarget {
     },
     onMove: (notify) => {
       const stopWatch = watch(
-        () => [camera.x, camera.y, camera.z, layout.value],
+        () => [camera.x, camera.y, camera.z, layout?.value],
         notify,
         { flush: 'post' }
       )

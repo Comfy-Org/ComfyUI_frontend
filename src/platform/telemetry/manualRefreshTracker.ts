@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
 import { datadogRum } from '@datadog/browser-rum'
 
 const REFRESH_COUNT_KEY = 'Comfy.ManualRefreshCount'
@@ -22,7 +23,7 @@ export function trackUserManualRefresh(): void {
   const [navigationEntry] = performance.getEntriesByType(
     'navigation'
   ) as PerformanceNavigationTiming[]
-  if (navigationEntry?.type !== 'reload') return
+  if (navigationEntry.type !== 'reload') return
 
   const sessionId = datadogRum.getInternalContext()?.session_id
   if (!sessionId) return

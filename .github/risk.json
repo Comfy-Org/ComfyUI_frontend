@@ -13,7 +13,6 @@
   ],
   "tiers": ["R0", "R1", "R2", "R3"],
   "default_tier": "R0",
-
   "path_rules": [
     {
       "class": "risk-map",
@@ -81,30 +80,62 @@
       ]
     },
     {
+      "class": "service-endpoints",
+      "tier": "R3",
+      "paths": [
+        "src/config/comfyApi.ts",
+        "src/config/firebase.ts",
+        "src/config/turnstile.ts"
+      ],
+      "why": "Baked in at build time: the api.comfy.org / platform.comfy.org base URLs, the Firebase project credentials and the Turnstile signup sitekey. Pointing a release at the wrong backend or shipping a bad key is not recoverable by a revert alone. Listed as exact files rather than src/config/** so clientFeatureFlags.json stays in the R2 flag lane."
+    },
+    {
       "class": "billing",
       "tier": "R3",
-      "why": "billing / credits — money moves",
+      "why": "billing / credits \u2014 money moves. Scoped to the application source tree: an unscoped **/ token glob matched the marketing site, e2e specs, PNG snapshots, stories, locale files and docs on filename characters alone Churnkey is the cancellation/retention vendor flow and workspaceApi carries credit limits, credit stops and billing_rail; neither has a money token in its path, so even the scoped globs above cannot see them. workspaceApi.ts is listed exactly rather than as workspaceApi* \u2014 its sibling workspaceApiUrl.ts is a 7-line URL builder, and sweeping it in would reintroduce the over-grading #15415 just removed.",
       "paths": [
-        "**/billing/**",
-        "**/pricing/**",
-        "**/credits/**",
-        "**/subscription/**",
-        "**/*billing*",
-        "**/*Billing*",
-        "**/*subscription*",
-        "**/*Subscription*",
-        "**/*credit*",
-        "**/*Credit*",
-        "**/*price*",
-        "**/*Price*",
-        "**/*pricing*",
-        "**/*Pricing*"
+        "src/**/billing/**",
+        "src/**/pricing/**",
+        "src/**/credit/**",
+        "src/**/credits/**",
+        "src/**/subscription/**",
+        "src/**/*TopUp*.vue",
+        "src/platform/**/*billing*",
+        "src/platform/**/*Billing*",
+        "src/platform/**/*subscription*",
+        "src/platform/**/*Subscription*",
+        "src/platform/**/*credit*",
+        "src/platform/**/*Credit*",
+        "src/platform/**/*price*",
+        "src/platform/**/*Price*",
+        "src/platform/**/*pricing*",
+        "src/platform/**/*Pricing*",
+        "src/stores/*billing*",
+        "src/stores/*Billing*",
+        "src/stores/*credit*",
+        "src/stores/*Credit*",
+        "src/services/*billing*",
+        "src/services/*Billing*",
+        "src/services/*credit*",
+        "src/services/*Credit*",
+        "src/config/*billing*",
+        "src/config/*Billing*",
+        "src/config/*credit*",
+        "src/config/*Credit*",
+        "src/config/*price*",
+        "src/config/*Price*",
+        "src/config/*pricing*",
+        "src/config/*Pricing*",
+        "src/config/*subscription*",
+        "src/config/*Subscription*",
+        "src/platform/cloud/churnkey/**",
+        "src/platform/workspace/api/workspaceApi.ts"
       ]
     },
     {
       "class": "workflow-serialization",
       "tier": "R3",
-      "why": "saved user workflows are persistent state — a bad schema or serialize change corrupts files on save and does not cleanly revert",
+      "why": "saved user workflows are persistent state \u2014 a bad schema or serialize change corrupts files on save and does not cleanly revert comfyWorkflow.ts JSON.stringify()s the active graph state and writes it via save({force:true}), so it is a writer of the on-disk format despite sitting outside the persistence tree.",
       "paths": [
         "src/lib/litegraph/src/serialization*",
         "src/lib/litegraph/src/LGraph.ts",
@@ -117,15 +148,15 @@
         "src/platform/workflow/core/services/workflowService.ts",
         "src/platform/workflow/persistence/**",
         "src/platform/workflow/validation/schemas/**",
-        "src/utils/migration/**"
+        "src/utils/migration/**",
+        "src/platform/workflow/management/stores/comfyWorkflow.ts"
       ]
     },
     {
       "class": "extension-contract",
       "tier": "R3",
-      "why": "entity callbacks, node.widgets, serialize and the app/api surface are consumed by 40+ custom-node repos — consumers break out of band (ADR 0003/0008)",
+      "why": "entity callbacks, node.widgets, serialize and the app/api surface are consumed by 40+ custom-node repos \u2014 consumers break out of band (ADR-LAYOUT/ADR-ECS) src/lib/litegraph/src/types/widgets.ts imports Bounds, CompositorWidgetValue and CurveData from these three modules, so they enter the @comfyorg/comfyui-frontend-types rollup (rollupTypes: true) and are part of the published surface even though they do not live under a schemas/ path.",
       "paths": [
-        "packages/comfyui-desktop-bridge-types/**",
         "packages/*/src/schemas/**",
         "src/core/schemas/**",
         "src/schemas/**",
@@ -146,7 +177,10 @@
         "src/lib/litegraph/src/LGraph.ts",
         "src/lib/litegraph/src/LGraphNode.ts",
         "src/lib/litegraph/src/LGraphCanvas.ts",
-        "src/lib/litegraph/src/subgraph/**"
+        "src/lib/litegraph/src/subgraph/**",
+        "src/renderer/core/layout/types.ts",
+        "src/renderer/extensions/compositor/components/types.ts",
+        "src/components/curve/types.ts"
       ]
     },
     {
@@ -159,11 +193,10 @@
         "src/schemas/nodeDefSchema.ts"
       ]
     },
-
     {
       "class": "flag-defaults",
       "tier": "R2",
-      "why": "the flag config and flag plumbing are the rollout lever — flipping a default changes behavior for every user at once",
+      "why": "the flag config and flag plumbing are the rollout lever \u2014 flipping a default changes behavior for every user at once",
       "paths": [
         "src/config/clientFeatureFlags.json",
         "**/useFeatureFlags*",
@@ -185,7 +218,7 @@
     {
       "class": "core-infra",
       "tier": "R2",
-      "why": "cross-cutting state, API layer, routing, bootstrap, canvas engine and published packages — blast radius is every feature, and packages/** breaks consumers out of band",
+      "why": "cross-cutting state, API layer, routing, bootstrap, canvas engine and published packages \u2014 blast radius is every feature, and packages/** breaks consumers out of band",
       "paths": [
         "src/stores/**",
         "src/services/**",
@@ -198,7 +231,12 @@
         "packages/**"
       ]
     },
-
+    {
+      "class": "website",
+      "tier": "R2",
+      "why": "the marketing site is production and had no rule at all \u2014 but it is copy and layout, so it cannot corrupt a saved workflow or move money",
+      "paths": ["apps/website/**"]
+    },
     {
       "class": "docs",
       "tier": "R0",
@@ -234,14 +272,12 @@
       ]
     }
   ],
-
   "provenance_tiers": {
     "runbook": "R0",
     "agent-supervised": "R1",
     "human": "R1",
     "external": "R3"
   },
-
   "reversibility": {
     "irreversible_classes": ["workflow-serialization", "secrets"],
     "delete_sensitive_classes": [
@@ -266,7 +302,6 @@
       "**/testdata/**"
     ]
   },
-
   "flippable_flag_paths": [
     "**/useFeatureFlags*",
     "**/useVueFeatureFlags*",

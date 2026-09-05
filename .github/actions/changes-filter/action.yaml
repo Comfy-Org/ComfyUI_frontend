@@ -26,9 +26,6 @@ outputs:
   app-website-changes:
     description: 'Shared deps or `apps/website/**` changed.'
     value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.app_website == 'true' }}
-  app-desktop-changes:
-    description: 'Shared deps or `apps/desktop-ui/**` changed.'
-    value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.app_desktop == 'true' }}
   app-frontend-changes:
     description: 'Shared deps or `src/**` changed.'
     value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.app_frontend == 'true' }}
@@ -36,7 +33,7 @@ outputs:
     description: 'Shared deps or `packages/**` changed.'
     value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.packages == 'true' }}
   storybook-changes:
-    description: 'Shared deps or `.storybook/**` changed.'
+    description: 'Shared deps, `.storybook/**`, `build/**`, or `vite.config.mts` changed.'
     value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.storybook == 'true' }}
   docs-changes:
     description: '`docs/**` or any `**/*.md` changed (deps NOT folded in).'
@@ -51,19 +48,19 @@ runs:
     - name: Filter typed changes
       if: ${{ github.event_name == 'pull_request' }}
       id: filter
-      uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+      uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
       with:
         filters: |
           app_website:
             - 'apps/website/**'
-          app_desktop:
-            - 'apps/desktop-ui/**'
           app_frontend:
             - 'src/**'
           packages:
             - 'packages/**'
           storybook:
             - '.storybook/**'
+            - 'build/**'
+            - 'vite.config.mts'
           docs:
             - 'docs/**'
             - '**/*.md'
@@ -75,7 +72,7 @@ runs:
     - name: Filter relevant changes
       if: ${{ github.event_name == 'pull_request' }}
       id: relevant
-      uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+      uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
       with:
         predicate-quantifier: 'every'
         filters: |

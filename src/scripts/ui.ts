@@ -3,11 +3,13 @@ import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { runMintPortsIntentionalClear } from '@/workbench/extensions/agent/crdt/mintPortWiring'
 import { useTelemetry } from '@/platform/telemetry'
 import { WORKFLOW_ACCEPT_STRING } from '@/platform/workflow/core/types/formats'
 import { type StatusWsMessageStatus } from '@/schemas/apiSchema'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useCommandStore } from '@/stores/commandStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 import { api } from './api'
@@ -308,10 +310,7 @@ class ComfyList {
                     const workflow = await extractWorkflow(job)
                     await app.loadGraphData(workflow, true, false)
                     if ('outputs' in job && job.outputs) {
-                      app.nodeOutputs = {}
-                      for (const [key, value] of Object.entries(job.outputs)) {
-                        app.nodeOutputs[key] = value
-                      }
+                      useNodeOutputStore().restoreOutputs(job.outputs)
                     }
                   }
                 }),
@@ -693,7 +692,7 @@ export class ComfyUI {
               !useSettingStore().get('Comfy.ConfirmClear') ||
               confirm('Clear workflow?')
             ) {
-              app.clean()
+              runMintPortsIntentionalClear(() => app.clean())
               useLitegraphService().resetView()
               api.dispatchCustomEvent('graphCleared')
             }
@@ -731,23 +730,24 @@ export class ComfyUI {
   }
 
   setStatus(status: StatusWsMessageStatus | null) {
-    this.queueSize.textContent =
-      'Queue size: ' + (status ? status.exec_info.queue_remaining : 'ERR')
-    if (status) {
-      if (
-        this.lastQueueSize != 0 &&
-        status.exec_info.queue_remaining == 0 &&
-        this.autoQueueEnabled &&
-        (this.autoQueueMode === 'instant' || this.graphHasChanged) &&
-        !app.lastExecutionError
-      ) {
-        app.queuePrompt(0, this.batchCount, {
-          intent: { trigger_source: 'auto_queue' }
-        })
-        status.exec_info.queue_remaining += this.batchCount
-        this.graphHasChanged = false
-      }
-      this.lastQueueSize = status.exec_info.queue_remaining
+    const queueRemaining = status?.exec_info?.queue_remaining
+    if (queueRemaining == null) return
+
+    this.queueSize.textContent = 'Queue size: ' + queueRemaining
+    if (
+      this.lastQueueSize != 0 &&
+      queueRemaining == 0 &&
+      this.autoQueueEnabled &&
+      (this.autoQueueMode === 'instant' || this.graphHasChanged) &&
+      !app.lastExecutionError
+    ) {
+      app.queuePrompt(0, this.batchCount, {
+        intent: { trigger_source: 'auto_queue' }
+      })
+      this.graphHasChanged = false
+      this.lastQueueSize = queueRemaining + this.batchCount
+    } else {
+      this.lastQueueSize = queueRemaining
     }
   }
 }

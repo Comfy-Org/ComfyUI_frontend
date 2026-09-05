@@ -50,14 +50,24 @@ const mockWorkspaceBalance: BillingBalanceResponse = {
 
 async function mockCloudBoot(
   page: Page,
-  subscriptionStatus: BillingStatusResponse,
+  subscriptionStatus: Partial<BillingStatusResponse>,
   remoteConfig: RemoteConfig = {},
   billingRail?: BillingStatusResponse['billing_rail']
 ) {
+  const resolvedSubscriptionStatus: BillingStatusResponse = {
+    is_active: false,
+    has_funds: false,
+    max_seats: 0,
+    occupied_seats: 0,
+    team_credit_stop: null,
+    ...subscriptionStatus,
+    ...(billingRail === undefined ? {} : { billing_rail: billingRail })
+  }
   const billingRequests = {
     legacyStatus: 0,
     legacyBalance: 0,
-    workspaceStatus: 0
+    workspaceStatus: 0,
+    workspaceBalance: 0
   }
 
   await page.route('**/api/features', (r) => r.fulfill(jsonRoute(remoteConfig)))
@@ -111,20 +121,16 @@ async function mockCloudBoot(
   })
   await page.route('**/customers/cloud-subscription-status', (r) => {
     billingRequests.legacyStatus++
-    return r.fulfill(jsonRoute(subscriptionStatus))
+    return r.fulfill(jsonRoute(resolvedSubscriptionStatus))
   })
 
   // Cloud personal workspaces route through `/api/billing/*`.
   await page.route('**/api/billing/status', (r) => {
     billingRequests.workspaceStatus++
-    return r.fulfill(
-      jsonRoute({
-        ...subscriptionStatus,
-        billing_rail: billingRail
-      })
-    )
+    return r.fulfill(jsonRoute(resolvedSubscriptionStatus))
   })
   await page.route('**/api/billing/balance', (r) => {
+    billingRequests.workspaceBalance++
     return r.fulfill(jsonRoute(mockWorkspaceBalance))
   })
   await page.route('**/api/billing/plans', (r) =>
@@ -200,6 +206,31 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
     expect(billingRequests.legacyBalance).toBeGreaterThan(0)
   })
 
+  test('rollout flag migrates a legacy Stripe workspace to workspace billing', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+
+    const billingRequests = await mockCloudBoot(
+      page,
+      {
+        is_active: true,
+        subscription_tier: 'PRO',
+        subscription_duration: 'MONTHLY',
+        has_funds: true
+      },
+      { legacy_billing_migration_enabled: true },
+      'legacy_stripe'
+    )
+    await bootApp(page)
+
+    await expect
+      .poll(() => billingRequests.workspaceBalance, { timeout: 30_000 })
+      .toBeGreaterThan(0)
+    expect(billingRequests.legacyStatus).toBe(0)
+    expect(billingRequests.legacyBalance).toBe(0)
+  })
+
   test('subscribe-to-run routes an inactive FREE user to the pricing table', async ({
     page
   }) => {
@@ -233,5 +264,58 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
     await expect(
       page.getByRole('heading', { name: 'Choose a Plan' })
     ).toBeVisible()
+  })
+
+  test('keeps the free-tier quota inside the top action bars', async ({
+    page
+  }) => {
+    test.fixme(
+      true,
+      'Activates after slice PR 16185 merges: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16185'
+    )
+    test.setTimeout(60_000)
+
+    const freeTierRemoteConfig = {
+      subscription_required: true,
+      free_tier_job_allowance_enabled: true,
+      free_tier_balance: { allowance: 5, remaining: 3, used: 2 }
+    } satisfies RemoteConfig
+
+    await mockCloudBoot(
+      page,
+      {
+        is_active: false,
+        subscription_tier: 'FREE',
+        subscription_duration: 'MONTHLY',
+        renewal_date: '2099-02-20T10:00:00Z',
+        has_funds: false
+      },
+      freeTierRemoteConfig,
+      'stripe'
+    )
+    await bootApp(page)
+
+    const actionBars = page.getByTestId('top-menu-actionbars')
+    const quota = actionBars.getByTestId('free-tier-quota')
+    await expect(quota).toBeVisible()
+
+    await expect
+      .poll(async () => {
+        const [quotaBox, actionBarsBox] = await Promise.all([
+          quota.boundingBox(),
+          actionBars.boundingBox()
+        ])
+        if (!quotaBox || !actionBarsBox) return Number.POSITIVE_INFINITY
+
+        return Math.max(
+          actionBarsBox.x - quotaBox.x,
+          actionBarsBox.y - quotaBox.y,
+          quotaBox.x + quotaBox.width - (actionBarsBox.x + actionBarsBox.width),
+          quotaBox.y +
+            quotaBox.height -
+            (actionBarsBox.y + actionBarsBox.height)
+        )
+      })
+      .toBeLessThanOrEqual(0)
   })
 })

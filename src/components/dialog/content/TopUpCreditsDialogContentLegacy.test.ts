@@ -53,8 +53,9 @@ vi.mock('@/platform/telemetry', () => ({
   })
 }))
 
-vi.mock('@/platform/telemetry/topupTracker', () => ({
-  clearTopupTracking: vi.fn()
+const mockClearPendingTopup = vi.hoisted(() => vi.fn())
+vi.mock('@/composables/billing/usePendingTopup', () => ({
+  usePendingTopup: () => ({ clearPendingTopup: mockClearPendingTopup })
 }))
 
 vi.mock('@/composables/useExternalLink', () => ({
@@ -129,7 +130,7 @@ describe('TopUpCreditsDialogContentLegacy', () => {
     mockShouldUseWorkspaceBilling.value = false
   })
 
-  it('shows the subscription settings panel after a successful purchase', async () => {
+  it('shows Plan & Credits after a successful Cloud purchase', async () => {
     mockPurchaseCreditsDirect.mockResolvedValue(undefined)
 
     renderDialog()
@@ -137,17 +138,27 @@ describe('TopUpCreditsDialogContentLegacy', () => {
 
     expect(mockPurchaseCreditsDirect).toHaveBeenCalledWith(50)
     expect(mockCloseDialog).toHaveBeenCalled()
-    expect(mockShowSettings).toHaveBeenCalledWith('subscription')
+    expect(mockShowSettings).toHaveBeenCalledWith('workspace')
+    expect(mockClearPendingTopup).not.toHaveBeenCalled()
   })
 
-  it('shows the credits settings panel when subscriptions are disabled', async () => {
+  it('clears the pending top-up marker when the user closes the dialog', async () => {
+    renderDialog()
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Close' }))
+
+    expect(mockClearPendingTopup).toHaveBeenCalled()
+    expect(mockCloseDialog).toHaveBeenCalled()
+  })
+
+  it('shows Plan & Credits when no billing rail is active', async () => {
     mockIsSubscriptionEnabled.mockReturnValue(false)
     mockPurchaseCreditsDirect.mockResolvedValue(undefined)
 
     renderDialog()
     await clickBuyCredits()
 
-    expect(mockShowSettings).toHaveBeenCalledWith('credits')
+    expect(mockShowSettings).toHaveBeenCalledWith('workspace')
   })
 
   it('shows the workspace settings panel when workspace billing is active', async () => {

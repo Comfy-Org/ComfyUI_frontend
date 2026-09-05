@@ -4,9 +4,12 @@
 import type { Locator, Page } from '@playwright/test'
 
 import { TestIds } from '@e2e/fixtures/selectors'
+import { comfyExpect as expect } from '@e2e/fixtures/utils/customMatchers'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { toNodeId } from '@/types/nodeId'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
+
+const GRAPH_SIZE_GROWTH: [number, number] = [90, 100]
 
 export class VueNodeHelpers {
   /**
@@ -55,6 +58,22 @@ export class VueNodeHelpers {
     )
   }
 
+  getOutputSlotRow(nodeId: string, slotIndex: number): Locator {
+    return this.getNodeLocator(nodeId)
+      .locator('.lg-slot--output')
+      .filter({
+        has: this.page.locator(
+          `[data-slot-key="${getSlotKey(toNodeId(nodeId), slotIndex, false)}"]`
+        )
+      })
+  }
+
+  getOutputSlotConnectionDot(nodeId: string, slotIndex: number): Locator {
+    return this.getOutputSlotRow(nodeId, slotIndex).getByTestId(
+      TestIds.node.slotConnectionDot
+    )
+  }
+
   /**
    * Get locator for Vue nodes by the node's title (displayed name in the header).
    * Matches against the actual title element, not the full node body.
@@ -82,6 +101,32 @@ export class VueNodeHelpers {
         .map((n) => n.getAttribute('data-node-id'))
         .filter((id): id is string => id !== null)
     )
+  }
+
+  async expectGraphSizeGrowth(nodeId: string, label: string): Promise<void> {
+    const node = this.getNodeLocator(nodeId)
+    const before = await node.boundingBox()
+    if (!before) throw new Error(`${label}: node is not rendered`)
+
+    const scale = await this.page.evaluate(
+      ({ id, growth }) => {
+        const node = window.app?.canvas.graph?.getNodeById(id)
+        if (!node) throw new Error(`Node ${id} not found`)
+
+        node.setSize([
+          node.renderingSize[0] + growth[0],
+          node.renderingSize[1] + growth[1]
+        ])
+        return window.app!.canvas.ds.scale
+      },
+      { id: toNodeId(nodeId), growth: GRAPH_SIZE_GROWTH }
+    )
+
+    await expect(node, label).toHaveBounds({
+      ...before,
+      width: before.width + GRAPH_SIZE_GROWTH[0] * scale,
+      height: before.height + GRAPH_SIZE_GROWTH[1] * scale
+    })
   }
 
   /**
@@ -273,7 +318,7 @@ export class VueNodeHelpers {
     const nodeId = toNodeId(rawNodeId)
     return await this.page.evaluate(
       ([nodeId, type, slotId]) => {
-        const node = app?.canvas?.graph?.getNodeById(nodeId)
+        const node = app?.canvas.graph?.getNodeById(nodeId)
         if (!node) return false
 
         return type === 'in'
