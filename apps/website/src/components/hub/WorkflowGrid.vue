@@ -84,6 +84,7 @@ const showingText = computed(() =>
         :templates="facetSource"
         :facets-config="facetsConfig"
         :labels="toolbarLabels"
+        :result-count="sortedTemplates.length"
       >
         <template #search><slot name="search" /></template>
       </BrowseToolbar>

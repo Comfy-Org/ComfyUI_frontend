@@ -121,7 +121,8 @@ const toolbarLabels: ToolbarLabels = {
   searchPlaceholder: t('workshop.hub.facets.search', locale),
   noResults: t('workshop.hub.facets.noResults', locale),
   sortPopular: t('workshop.hub.sort.popular', locale),
-  sortNewest: t('workshop.hub.sort.newest', locale)
+  sortNewest: t('workshop.hub.sort.newest', locale),
+  showResults: t('workshop.hub.facets.show', locale)
 }
 const facetsConfig: FacetGroupConfig[] = [
   { key: 'models', type: 'model', label: t('workshop.hub.models', locale) },

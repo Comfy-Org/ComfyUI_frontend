@@ -378,6 +378,7 @@ function useInCode() {
             v-else-if="gate === 'noCredits'"
             size="lg"
             class="w-full px-5"
+            :title="t('workshop.credits.title', locale)"
             data-testid="run-button"
             data-gate="noCredits"
             @click="buyingCredits = true"
@@ -441,16 +442,14 @@ function useInCode() {
             }}
           </Button>
           <p
-            v-if="gate === 'noCredits'"
+            v-if="gate === 'noCredits' && credits > 0"
             class="text-xs text-primary-warm-gray"
             data-testid="gate-note"
           >
             {{
-              credits > 0
-                ? t('workshop.error.lowCredits', locale)
-                    .replace('{credits}', String(credits))
-                    .replace('{n}', String(creditsPerRun))
-                : t('workshop.error.noCredits', locale)
+              t('workshop.error.lowCredits', locale)
+                .replace('{credits}', String(credits))
+                .replace('{n}', String(creditsPerRun))
             }}
           </p>
           <p

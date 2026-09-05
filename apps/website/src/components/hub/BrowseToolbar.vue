@@ -1,21 +1,11 @@
 <script setup lang="ts">
 import {
   ArrowUpDown,
-  Check,
   ChevronDown,
   LayoutGrid,
   SlidersHorizontal
 } from '@lucide/vue'
-import {
-  PopoverContent,
-  PopoverPortal,
-  PopoverRoot,
-  PopoverTrigger,
-  TabsContent,
-  TabsList,
-  TabsRoot,
-  TabsTrigger
-} from 'reka-ui'
+import { TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 import type { Component } from 'vue'
 import { computed, ref } from 'vue'
 
@@ -47,12 +37,14 @@ export interface ToolbarLabels {
   readonly noResults: string
   readonly sortPopular: string
   readonly sortNewest: string
+  readonly showResults: string
 }
 
-const { templates, facetsConfig, labels } = defineProps<{
+const { templates, facetsConfig, labels, resultCount } = defineProps<{
   templates: readonly FacetTemplate[]
   facetsConfig: readonly FacetGroupConfig[]
   labels: ToolbarLabels
+  resultCount: number
 }>()
 
 const store = useHubStore()
@@ -71,7 +63,6 @@ const TABS: { key: HubTab; labelKey: keyof ToolbarLabels; icon: Component }[] =
   ]
 
 const filterOpen = ref(false)
-const activeFacetTab = ref(facetsConfig[0]?.key ?? '')
 const facetSearch = ref<Record<string, string>>({})
 
 const totalActiveFilters = computed(() =>
@@ -101,44 +92,58 @@ const sortLabel = computed(() =>
 
 const controlClass =
   'inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-xl px-3 text-xs font-semibold whitespace-nowrap transition-colors outline-none focus-visible:ring-2 focus-visible:ring-brand sm:px-4'
+
+// Every facet is on the panel at once, so a value is a chip you switch on
+// rather than a row you find behind a tab.
+const chipClass = (active: boolean) =>
+  cn(
+    'focus-visible:ring-brand inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition-colors outline-none focus-visible:ring-2',
+    active
+      ? 'border-brand bg-brand text-page'
+      : 'text-content-secondary hover:text-content border-white/15 hover:border-white/30'
+  )
 </script>
 
 <template>
-  <div class="flex flex-wrap items-center gap-2">
-    <TabsRoot
-      :model-value="store.activeTab.value"
-      class="flex scrollbar-hide min-w-0 shrink-0 overflow-x-auto"
-      @update:model-value="store.setTab($event as HubTab)"
-    >
-      <TabsList
-        class="inline-flex items-center gap-1 rounded-xl bg-white/8 p-1"
+  <div class="flex flex-col gap-3">
+    <div class="flex flex-wrap items-center gap-2">
+      <TabsRoot
+        :model-value="store.activeTab.value"
+        class="flex scrollbar-hide min-w-0 shrink-0 overflow-x-auto"
+        @update:model-value="store.setTab($event as HubTab)"
       >
-        <TabsTrigger
-          v-for="tab in TABS"
-          :key="tab.key"
-          :value="tab.key"
-          :aria-label="labels[tab.labelKey]"
-          :data-testid="`hub-tab-${tab.key}`"
-          class="group text-content-secondary hover:text-content focus-visible:ring-brand focus-visible:ring-offset-page data-[state=active]:bg-brand data-[state=active]:text-page data-[state=active]:hover:bg-brand inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold whitespace-nowrap transition-colors outline-none hover:bg-white/8 focus-visible:ring-2 focus-visible:ring-offset-1 sm:px-3.5"
+        <TabsList
+          class="inline-flex items-center gap-1 rounded-xl bg-white/8 p-1"
         >
-          <component
-            :is="tab.icon"
-            class="size-3.5 shrink-0"
-            aria-hidden="true"
-          />
-          <span
-            class="ppformula-text-center-sm max-sm:hidden max-sm:group-data-[state=active]:inline-block"
+          <TabsTrigger
+            v-for="tab in TABS"
+            :key="tab.key"
+            :value="tab.key"
+            :aria-label="labels[tab.labelKey]"
+            :data-testid="`hub-tab-${tab.key}`"
+            class="group text-content-secondary hover:text-content focus-visible:ring-brand focus-visible:ring-offset-page data-[state=active]:bg-brand data-[state=active]:text-page data-[state=active]:hover:bg-brand inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold whitespace-nowrap transition-colors outline-none hover:bg-white/8 focus-visible:ring-2 focus-visible:ring-offset-1 sm:px-3.5"
           >
-            {{ labels[tab.labelKey] }}
-          </span>
-        </TabsTrigger>
-      </TabsList>
-    </TabsRoot>
+            <component
+              :is="tab.icon"
+              class="size-3.5 shrink-0"
+              aria-hidden="true"
+            />
+            <span
+              class="ppformula-text-center-sm max-sm:hidden max-sm:group-data-[state=active]:inline-block"
+            >
+              {{ labels[tab.labelKey] }}
+            </span>
+          </TabsTrigger>
+        </TabsList>
+      </TabsRoot>
 
-    <div class="ml-auto flex min-w-0 items-center gap-2">
-      <slot name="search" />
-      <PopoverRoot v-model:open="filterOpen">
-        <PopoverTrigger
+      <div class="ml-auto flex min-w-0 items-center gap-2">
+        <slot name="search" />
+        <button
+          type="button"
+          :aria-expanded="filterOpen"
+          :aria-label="labels.filter"
+          data-testid="hub-filter"
           :class="
             cn(
               controlClass,
@@ -147,8 +152,7 @@ const controlClass =
                 : 'text-content-secondary hover:text-content bg-white/8 hover:bg-white/12'
             )
           "
-          :aria-label="labels.filter"
-          data-testid="hub-filter"
+          @click="filterOpen = !filterOpen"
         >
           <SlidersHorizontal class="size-3.5 shrink-0" aria-hidden="true" />
           <span class="ppformula-text-center-sm max-sm:hidden">{{
@@ -170,153 +174,104 @@ const controlClass =
             "
             aria-hidden="true"
           />
-        </PopoverTrigger>
+        </button>
 
-        <PopoverPortal>
-          <PopoverContent
-            align="end"
-            :side-offset="8"
-            data-testid="hub-filter-menu"
-            class="bg-site-dropdown z-50 max-h-(--reka-popover-content-available-height) w-80 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-2xl border border-white/10 shadow-2xl shadow-black/50 outline-none"
+        <button
+          type="button"
+          :aria-label="sortLabel"
+          data-testid="hub-sort"
+          :class="
+            cn(
+              controlClass,
+              'text-content-secondary hover:text-content bg-white/8 hover:bg-white/12'
+            )
+          "
+          @click="store.cycleSort()"
+        >
+          <ArrowUpDown class="size-3.5 shrink-0" aria-hidden="true" />
+          <span class="ppformula-text-center-sm max-sm:hidden">{{
+            sortLabel
+          }}</span>
+        </button>
+      </div>
+    </div>
+
+    <div
+      v-if="filterOpen"
+      class="bg-site-dropdown flex flex-col gap-5 rounded-2xl border border-white/10 p-5"
+      data-testid="hub-filter-menu"
+    >
+      <div v-for="group in groups" :key="group.key" class="flex flex-col gap-2">
+        <div class="flex items-center gap-3">
+          <h3
+            class="text-content-muted text-2xs font-bold tracking-wider uppercase"
+            :data-testid="`hub-facet-${group.key}`"
           >
-            <TabsRoot v-model="activeFacetTab" class="flex flex-col">
-              <TabsList
-                class="flex items-center gap-1 border-b border-white/10 p-2"
-              >
-                <TabsTrigger
-                  v-for="group in groups"
-                  :key="group.key"
-                  :value="group.key"
-                  :data-testid="`hub-facet-${group.key}`"
-                  class="text-content-secondary hover:text-content focus-visible:ring-brand data-[state=active]:text-content inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-colors outline-none hover:bg-white/5 focus-visible:ring-2 data-[state=active]:bg-white/8"
-                >
-                  {{ group.label }}
-                  <span
-                    v-if="activeCountForType(group.type) > 0"
-                    class="bg-brand text-page inline-flex min-w-4 items-center justify-center rounded-full px-1 text-2xs font-bold tabular-nums"
-                  >
-                    {{ activeCountForType(group.type) }}
-                  </span>
-                </TabsTrigger>
-              </TabsList>
+            {{ group.label }}
+          </h3>
+          <input
+            v-if="group.values.length > SEARCH_THRESHOLD"
+            v-model="facetSearch[group.key]"
+            type="search"
+            :placeholder="labels.searchPlaceholder"
+            :data-testid="`hub-facet-search-${group.key}`"
+            class="text-content placeholder:text-content-muted focus-visible:ring-brand w-48 rounded-lg bg-white/5 px-3 py-1.5 text-xs outline-none focus-visible:ring-2 [&::-webkit-search-cancel-button]:hidden"
+          />
+        </div>
+        <div
+          class="flex max-h-32 scrollbar-thin flex-wrap gap-2 overflow-y-auto"
+          role="listbox"
+          aria-multiselectable="true"
+        >
+          <button
+            v-for="val in visibleValues(group)"
+            :key="val.value"
+            type="button"
+            role="option"
+            :aria-selected="isBadgeActive(group.type, val.value)"
+            :class="chipClass(isBadgeActive(group.type, val.value))"
+            @click="store.toggleBadge({ type: group.type, value: val.value })"
+          >
+            {{ val.displayValue }}
+            <span class="tabular-nums opacity-50">{{ val.count }}</span>
+          </button>
+          <p
+            v-if="visibleValues(group).length === 0"
+            class="text-content-muted py-1 text-xs"
+          >
+            {{ labels.noResults }}
+          </p>
+        </div>
+      </div>
 
-              <TabsContent
-                v-for="group in groups"
-                :key="group.key"
-                :value="group.key"
-                class="flex flex-col outline-none"
-              >
-                <div
-                  v-if="group.values.length > SEARCH_THRESHOLD"
-                  class="border-b border-white/10 p-2"
-                >
-                  <input
-                    v-model="facetSearch[group.key]"
-                    type="search"
-                    :placeholder="labels.searchPlaceholder"
-                    :data-testid="`hub-facet-search-${group.key}`"
-                    class="text-content placeholder:text-content-muted focus-visible:ring-brand w-full rounded-lg bg-white/5 px-3 py-2 text-xs outline-none focus-visible:ring-2"
-                  />
-                </div>
-                <ul
-                  class="max-h-72 scrollbar-thin overflow-y-auto py-1"
-                  role="listbox"
-                  aria-multiselectable="true"
-                >
-                  <li
-                    v-for="val in visibleValues(group)"
-                    :key="val.value"
-                    role="none"
-                  >
-                    <button
-                      type="button"
-                      role="option"
-                      :aria-selected="isBadgeActive(group.type, val.value)"
-                      class="text-content-secondary hover:text-content flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs transition-colors outline-none hover:bg-white/5 focus-visible:bg-white/5"
-                      @click="
-                        store.toggleBadge({
-                          type: group.type,
-                          value: val.value
-                        })
-                      "
-                    >
-                      <span
-                        :class="
-                          cn(
-                            'flex size-4 shrink-0 items-center justify-center rounded-sm border transition-colors',
-                            isBadgeActive(group.type, val.value)
-                              ? 'border-brand bg-brand text-page'
-                              : 'border-white/25'
-                          )
-                        "
-                        aria-hidden="true"
-                      >
-                        <Check
-                          v-if="isBadgeActive(group.type, val.value)"
-                          class="size-3"
-                          :stroke-width="3"
-                        />
-                      </span>
-                      <span class="flex-1 truncate">{{
-                        val.displayValue
-                      }}</span>
-                      <span class="text-content/30 shrink-0 tabular-nums">{{
-                        val.count
-                      }}</span>
-                    </button>
-                  </li>
-                  <li
-                    v-if="visibleValues(group).length === 0"
-                    role="none"
-                    class="text-content-muted px-3 py-4 text-center text-xs"
-                  >
-                    {{ labels.noResults }}
-                  </li>
-                </ul>
-              </TabsContent>
-
-              <div
-                v-if="totalActiveFilters > 0"
-                class="flex items-center justify-between gap-3 border-t border-white/10 p-2"
-              >
-                <span
-                  class="text-content-secondary px-1 text-xs"
-                  data-testid="hub-filter-applied"
-                >
-                  {{
-                    labels.applied.replace('{n}', String(totalActiveFilters))
-                  }}
-                </span>
-                <button
-                  type="button"
-                  class="text-content-secondary hover:text-content shrink-0 rounded-lg px-3 py-2 text-xs font-semibold transition-colors hover:bg-white/5"
-                  @click="store.clearBadges()"
-                >
-                  {{ labels.clearAll }}
-                </button>
-              </div>
-            </TabsRoot>
-          </PopoverContent>
-        </PopoverPortal>
-      </PopoverRoot>
-
-      <button
-        type="button"
-        :aria-label="sortLabel"
-        data-testid="hub-sort"
-        :class="
-          cn(
-            controlClass,
-            'text-content-secondary hover:text-content bg-white/8 hover:bg-white/12'
-          )
-        "
-        @click="store.cycleSort()"
+      <div
+        class="flex items-center justify-between gap-3 border-t border-white/10 pt-4"
       >
-        <ArrowUpDown class="size-3.5 shrink-0" aria-hidden="true" />
-        <span class="ppformula-text-center-sm max-sm:hidden">{{
-          sortLabel
-        }}</span>
-      </button>
+        <span
+          v-if="totalActiveFilters > 0"
+          class="text-content-secondary text-xs"
+          data-testid="hub-filter-applied"
+        >
+          {{ labels.applied.replace('{n}', String(totalActiveFilters)) }}
+        </span>
+        <button
+          v-if="totalActiveFilters > 0"
+          type="button"
+          class="text-content-secondary hover:text-content mr-auto rounded-lg px-3 py-2 text-xs font-semibold transition-colors hover:bg-white/5"
+          data-testid="hub-filter-clear"
+          @click="store.clearBadges()"
+        >
+          {{ labels.clearAll }}
+        </button>
+        <button
+          type="button"
+          class="bg-brand text-page hover:bg-brand/90 focus-visible:ring-brand ml-auto cursor-pointer rounded-xl px-5 py-2.5 text-xs font-bold transition-colors outline-none focus-visible:ring-2"
+          data-testid="hub-filter-show"
+          @click="filterOpen = false"
+        >
+          {{ labels.showResults.replace('{n}', String(resultCount)) }}
+        </button>
+      </div>
     </div>
   </div>
 </template>

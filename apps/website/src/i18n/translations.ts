@@ -9015,6 +9015,10 @@ Enterprise`
   'workshop.hub.sort.newest': { en: 'Newest', 'zh-CN': '最新' },
   'workshop.hub.facets.clearAll': { en: 'Clear all', 'zh-CN': '全部清除' },
   'workshop.hub.facets.search': { en: 'Search…', 'zh-CN': '搜索…' },
+  'workshop.hub.facets.show': {
+    en: 'Show {n} workflows',
+    'zh-CN': '显示 {n} 个工作流'
+  },
   'workshop.hub.facets.noResults': { en: 'No matches', 'zh-CN': '无匹配' },
   'workshop.hub.models': { en: 'MODELS', 'zh-CN': '模型' },
   'workshop.hub.categories': { en: 'CATEGORIES', 'zh-CN': '分类' },
