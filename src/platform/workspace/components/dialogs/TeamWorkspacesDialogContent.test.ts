@@ -130,6 +130,7 @@ function setOwnedWorkspaces() {
 
 describe('TeamWorkspacesDialogContent', () => {
   beforeEach(() => {
+    vi.useRealTimers()
     pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
     workspaceStore = useTeamWorkspaceStore(pinia)
     workspaceStore.workspaces = []

@@ -47,6 +47,7 @@ function mount(props: ComponentProps<typeof Composer> = {}) {
 
 describe('Composer', () => {
   beforeEach(() => {
+    vi.useRealTimers()
     setActivePinia(createPinia())
   })
 
