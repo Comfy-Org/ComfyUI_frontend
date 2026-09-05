@@ -1,0 +1,79 @@
+---
+import { getCollection } from 'astro:content'
+
+import { diagramRegistry } from '../../components/engineering-blog/diagrams/registry'
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import { t } from '../../i18n/translations'
+import { absoluteUrl, pageContext } from '../../utils/jsonLd'
+import { sortPostsByDateDesc, toCardProps } from '../../utils/engineeringBlog'
+
+const posts = await getCollection('engineeringBlog', ({ id }) =>
+  id.startsWith('en/')
+)
+const cards = sortPostsByDateDesc(posts).map(toCardProps)
+
+const { locale } = pageContext(Astro.site, Astro.url.pathname, Astro.currentLocale)
+
+const dateFormatter = new Intl.DateTimeFormat('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric'
+})
+---
+
+<BaseLayout
+  title="Engineering Blog - Comfy"
+  description="Stories from the team building Comfy's agent platform — the problems that forced a real design decision, and how we got there."
+  breadcrumbs={[
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    { name: 'Engineering Blog' }
+  ]}
+>
+  <section class="max-w-4xl mx-auto px-4 pt-16 pb-24 lg:pt-24 lg:pb-32">
+    <p
+      class="text-primary-comfy-yellow text-xs font-bold tracking-widest uppercase"
+    >
+      From the engineering team
+    </p>
+    <h1
+      class="text-primary-warm-white mt-4 text-3xl font-semibold lg:text-4xl"
+    >
+      Engineering Blog
+    </h1>
+    <p class="text-primary-comfy-canvas mt-4 max-w-2xl text-base/relaxed">
+      Stories from the team building Comfy's agent platform — the problems
+      that forced a real design decision, and how we got there.
+    </p>
+
+    <ul class="mt-16 space-y-10">
+      {
+        cards.map((card) => {
+          const Diagram = diagramRegistry[card.heroDiagram]
+          return (
+            <li class="border-t border-white/10 pt-10 first:border-t-0 first:pt-0">
+              <a
+                href={`/engineering-blog/${card.slug}/`}
+                class="group grid gap-5 sm:grid-cols-[9rem_1fr] sm:items-start sm:gap-8"
+              >
+                <div class="bg-site-bg-soft aspect-[8/5] w-full overflow-hidden rounded-xl p-3 sm:w-36">
+                  <Diagram variant="card" />
+                </div>
+                <div>
+                  <h2 class="text-primary-warm-white group-hover:text-primary-comfy-yellow text-xl font-semibold transition-colors lg:text-2xl">
+                    {card.title}
+                  </h2>
+                  <p class="text-primary-comfy-canvas mt-3 text-base/relaxed">
+                    {card.description}
+                  </p>
+                  <p class="text-primary-warm-gray mt-4 text-sm">
+                    {card.author} · {dateFormatter.format(card.date)}
+                  </p>
+                </div>
+              </a>
+            </li>
+          )
+        })
+      }
+    </ul>
+  </section>
+</BaseLayout>

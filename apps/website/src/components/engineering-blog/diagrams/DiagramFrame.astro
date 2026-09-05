@@ -1,0 +1,91 @@
+---
+interface Props {
+  viewBox: string
+  label: string
+  variant?: 'full' | 'card'
+}
+
+const { viewBox, label, variant = 'full' } = Astro.props
+---
+
+<figure class={variant === 'card' ? 'h-full w-full' : 'my-8'}>
+  <svg
+    viewBox={viewBox}
+    role="img"
+    aria-label={label}
+    class="h-auto w-full"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <slot />
+  </svg>
+</figure>
+
+<style is:global>
+  /*
+   * Shared visual language for the engineering-blog diagrams. Global so it
+   * reaches the SVG markup slotted in from each diagram component (Astro's
+   * scoped styles don't cross that boundary) — see
+   * src/components/engineering-blog/diagrams/*.astro.
+   */
+  .eb-diagram-box {
+    fill: var(--color-site-bg-soft);
+    stroke: var(--color-transparency-white-t20);
+    stroke-width: 1.5;
+  }
+  .eb-diagram-box-accent {
+    fill: var(--color-site-bg-soft);
+    stroke: var(--color-primary-comfy-yellow);
+    stroke-width: 2;
+  }
+  .eb-diagram-box-solid {
+    fill: var(--color-transparency-white-t8);
+    stroke: var(--color-transparency-white-t20);
+    stroke-width: 1.5;
+  }
+  .eb-diagram-label {
+    fill: var(--color-primary-warm-white);
+    font: 600 15px Inter, sans-serif;
+  }
+  .eb-diagram-label-accent {
+    fill: var(--color-primary-comfy-yellow);
+    font: 600 15px Inter, sans-serif;
+  }
+  .eb-diagram-sublabel {
+    fill: var(--color-primary-comfy-canvas);
+    font: 400 12px Inter, sans-serif;
+  }
+  .eb-diagram-caption {
+    fill: var(--color-primary-comfy-canvas);
+    font: 400 12px Inter, sans-serif;
+  }
+  .eb-diagram-mono {
+    fill: var(--color-primary-comfy-canvas);
+    font: 400 12px ui-monospace, monospace;
+  }
+  .eb-diagram-mono-accent {
+    fill: var(--color-primary-comfy-yellow);
+    font: 600 12px ui-monospace, monospace;
+  }
+  .eb-diagram-arrow {
+    stroke: var(--color-transparency-white-t20);
+    stroke-width: 1.75;
+    fill: none;
+  }
+  .eb-diagram-arrow-accent {
+    stroke: var(--color-primary-comfy-yellow);
+    stroke-width: 1.75;
+    fill: none;
+  }
+  .eb-diagram-arrow-dashed {
+    stroke: var(--color-transparency-white-t20);
+    stroke-width: 1.5;
+    fill: none;
+    stroke-dasharray: 5 5;
+  }
+  .eb-diagram-arrowhead {
+    fill: var(--color-transparency-white-t20);
+  }
+  .eb-diagram-arrowhead-accent {
+    fill: var(--color-primary-comfy-yellow);
+  }
+</style>

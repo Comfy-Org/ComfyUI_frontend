@@ -1,0 +1,55 @@
+---
+import { render } from 'astro:content'
+
+import type { EngineeringBlogPostEntry } from '../../utils/engineeringBlog'
+import Callout from './content/Callout.astro'
+import { diagramRegistry } from './diagrams/registry'
+import Code from './content/Code.astro'
+import Divider from './content/Divider.astro'
+import Heading2 from './content/Heading2.astro'
+import Heading3 from './content/Heading3.astro'
+import Link from './content/Link.astro'
+import List from './content/List.astro'
+import OrderedList from './content/OrderedList.astro'
+import Paragraph from './content/Paragraph.astro'
+import Pre from './content/Pre.astro'
+import Table from './content/Table.astro'
+import TableCell from './content/TableCell.astro'
+import TableHead from './content/TableHead.astro'
+import TableHeaderCell from './content/TableHeaderCell.astro'
+import TableRow from './content/TableRow.astro'
+
+interface Props {
+  entry: EngineeringBlogPostEntry
+}
+
+const { entry } = Astro.props
+const { Content } = await render(entry)
+
+const contentComponents = {
+  p: Paragraph,
+  a: Link,
+  h2: Heading2,
+  h3: Heading3,
+  h4: Heading3,
+  ul: List,
+  ol: OrderedList,
+  blockquote: Callout,
+  code: Code,
+  pre: Pre,
+  hr: Divider,
+  table: Table,
+  thead: TableHead,
+  tr: TableRow,
+  th: TableHeaderCell,
+  td: TableCell,
+  ArchitectureDiagram: diagramRegistry.architecture,
+  StampDiagram: diagramRegistry.stamp,
+  FeedbackLoopDiagram: diagramRegistry['feedback-loop'],
+  TwoDoorsDiagram: diagramRegistry['two-doors']
+}
+---
+
+<div class="text-primary-comfy-canvas">
+  <Content components={contentComponents} />
+</div>

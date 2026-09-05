@@ -1,0 +1,150 @@
+---
+import DiagramFrame from './DiagramFrame.astro'
+
+interface Props {
+  variant?: 'full' | 'card'
+}
+
+const { variant = 'full' } = Astro.props
+const label =
+  'Diagram: a cycle running from intake channels, to triage that categorizes each ticket the moment it is created, to the eval suite and release gate that scores it, to a fix that ships with its own permanent regression case, feeding back into intake as the next round of usage.'
+---
+
+{
+  variant === 'card' ? (
+    <DiagramFrame viewBox="0 0 320 200" label={label} variant="card">
+      <defs>
+        <marker
+          id="arrow-loop-card"
+          viewBox="0 0 10 10"
+          refX="8"
+          refY="5"
+          markerWidth="6"
+          markerHeight="6"
+          orient="auto-start-reverse"
+        >
+          <path d="M0,0 L10,5 L0,10 z" class="eb-diagram-arrowhead" />
+        </marker>
+      </defs>
+      <circle
+        cx="160"
+        cy="100"
+        r="70"
+        class="eb-diagram-arrow-dashed"
+        fill="none"
+      />
+      <path
+        d="M 222 74 L 226 100"
+        class="eb-diagram-arrow"
+        marker-end="url(#arrow-loop-card)"
+      />
+      <rect x="120" y="16" width="80" height="44" rx="9" class="eb-diagram-box" />
+      <text x="160" y="42" text-anchor="middle" class="eb-diagram-sublabel">
+        Intake
+      </text>
+      <rect x="204" y="128" width="88" height="44" rx="9" class="eb-diagram-box" />
+      <text x="248" y="154" text-anchor="middle" class="eb-diagram-sublabel">
+        Eval gate
+      </text>
+      <rect x="28" y="128" width="88" height="44" rx="9" class="eb-diagram-box-accent" />
+      <text x="72" y="154" text-anchor="middle" class="eb-diagram-sublabel">
+        Fix + test
+      </text>
+    </DiagramFrame>
+  ) : (
+    <DiagramFrame viewBox="0 0 700 640" label={label}>
+      <defs>
+        <marker
+          id="arrow-loop"
+          viewBox="0 0 10 10"
+          refX="8"
+          refY="5"
+          markerWidth="7"
+          markerHeight="7"
+          orient="auto-start-reverse"
+        >
+          <path d="M0,0 L10,5 L0,10 z" class="eb-diagram-arrowhead" />
+        </marker>
+      </defs>
+
+      <rect x="250" y="20" width="200" height="90" rx="12" class="eb-diagram-box" />
+      <text x="350" y="52" text-anchor="middle" class="eb-diagram-label">
+        Intake
+      </text>
+      <text x="350" y="74" text-anchor="middle" class="eb-diagram-sublabel">
+        preview chat, calls,
+      </text>
+      <text x="350" y="92" text-anchor="middle" class="eb-diagram-sublabel">
+        survey, usage analytics
+      </text>
+
+      <path
+        d="M 440 105 C 520 140, 545 180, 530 230"
+        class="eb-diagram-arrow"
+        marker-end="url(#arrow-loop)"
+      />
+
+      <rect x="450" y="235" width="200" height="90" rx="12" class="eb-diagram-box" />
+      <text x="550" y="267" text-anchor="middle" class="eb-diagram-label">
+        Triage
+      </text>
+      <text x="550" y="289" text-anchor="middle" class="eb-diagram-sublabel">
+        categorized the moment
+      </text>
+      <text x="550" y="307" text-anchor="middle" class="eb-diagram-sublabel">
+        the ticket is created
+      </text>
+
+      <path
+        d="M 530 330 C 545 400, 500 440, 440 465"
+        class="eb-diagram-arrow"
+        marker-end="url(#arrow-loop)"
+      />
+
+      <rect
+        x="250"
+        y="470"
+        width="200"
+        height="90"
+        rx="12"
+        class="eb-diagram-box-accent"
+      />
+      <text x="350" y="502" text-anchor="middle" class="eb-diagram-label-accent">
+        Eval suite + release gate
+      </text>
+      <text x="350" y="524" text-anchor="middle" class="eb-diagram-sublabel">
+        floor cases + a rotating
+      </text>
+      <text x="350" y="542" text-anchor="middle" class="eb-diagram-sublabel">
+        sample must clear the bar
+      </text>
+
+      <path
+        d="M 260 465 C 195 440, 155 400, 170 330"
+        class="eb-diagram-arrow"
+        marker-end="url(#arrow-loop)"
+      />
+
+      <rect x="50" y="235" width="200" height="90" rx="12" class="eb-diagram-box" />
+      <text x="150" y="267" text-anchor="middle" class="eb-diagram-label">
+        Fix ships
+      </text>
+      <text x="150" y="289" text-anchor="middle" class="eb-diagram-sublabel">
+        with its own regression
+      </text>
+      <text x="150" y="307" text-anchor="middle" class="eb-diagram-sublabel">
+        case, born together
+      </text>
+
+      <path
+        d="M 170 235 C 155 180, 180 140, 260 105"
+        class="eb-diagram-arrow"
+        marker-end="url(#arrow-loop)"
+      />
+
+      <text x="350" y="600" text-anchor="middle" class="eb-diagram-caption">
+        One human decision, at the merge. Everything else loops on its own.
+      </text>
+    </DiagramFrame>
+  )
+}

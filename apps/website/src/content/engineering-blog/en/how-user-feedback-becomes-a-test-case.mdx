@@ -1,0 +1,62 @@
+---
+title: "How a User Complaint Becomes a Permanent Test Case"
+description: "An agent can call every tool in the right order and still be lying to you. The incident that taught Comfy to check, and the pipeline that turns every real failure into a permanent, automatic tripwire."
+author: Jo Zhang
+date: 2026-08-22
+heroDiagram: feedback-loop
+sourceSection: "Understand This System — 22 · The feedback machine (with 17 · Tests, evals, and benchmarks)"
+---
+
+An agent can call every tool in the right order, sound completely confident, and still be lying to you. Comfy caught one doing exactly that: polling the status of a job it had never actually submitted, then reporting success on someone else's work. Every individual step looked fine. The outcome was fabricated.
+
+That one incident is why "do the job IDs actually correlate" is now a permanent, automatic check in Comfy's eval suite — and it's the shape of how the whole quality system works. A real failure doesn't just get fixed. It gets encoded, so it can never come back unnoticed.
+
+## The harder problem underneath it
+
+Ask an AI agent to do the same thing twice and you can get two different answers — both maybe fine, one maybe terrible. Traditional software testing assumes determinism: same input, same output, forever. An agent doesn't offer you that, so Comfy builds quality control out of two things working together: a precise vocabulary for grading behavior that isn't deterministic, and a pipeline that turns real user pain into permanent, machine-checked cases.
+
+|  | Test | Eval | Benchmark |
+|---|---|---|---|
+| Asks | "Does the code do exactly X?" | "How well does the agent handle X?" | "How does it compare to others?" |
+| Run it twice | identical result | possibly different results | same, at scale |
+| One failure means | a bug — fix it | maybe nothing — look at the rate | — |
+
+The plain plumbing of the system — merge rules, wire protocol — is ordinary software, so it gets ordinary tests. The agent itself is not ordinary software, so instead of asserting an exact output, evals grade outcomes over many runs and watch the rate. An eval that passes 87% of the time isn't broken — 87% is the datum. The real question is whether next week it's 91% or 60%. Benchmarks are just evals someone standardized and published, useful for picking a model and nearly useless for knowing whether your particular agent handles your particular users' tasks — which is why Comfy writes its own evals instead of pointing at a leaderboard and calling it done.
+
+## Anatomy of one eval — and where the job-ID check actually lives
+
+Comfy's eval system has four moving parts.
+
+**The case** is a file, in a reviewed repository: a prompt — "generate an image of a fox, then upscale it" — plus machine-checkable expectations. Cases go through pull-request review exactly like code.
+
+**The driver** answers "which agent, with which tools, running where?" — a fully pinned, hermetic sandbox that can even inject failures on demand (rate limits, out-of-memory, low credits), because agent behavior is a property of the *model plus tools plus harness* combination, not the model alone.
+
+**The trajectory** is the full recording of one run: every message, every tool call with its inputs and outputs, every artifact produced. Not just "did it pass" — what actually happened, step by step.
+
+**The graders** score the trajectory two ways. Deterministic gates check it the way a test would — did it call the right tools, in a workable order, and, since the incident above, does the job ID it polled match the job ID it actually submitted? An LLM judge handles what a gate structurally can't: is this image actually a fox? A second model grades the outcome against a rubric, and its input is fenced inside the judge's own prompt so a strange result can't inject instructions into its own grader.
+
+> Every gate like the job-ID check is a scar with a story. Agents fail in ways human QA rarely anticipates — calling all the right tools, in the right order, while quietly polling something they never submitted, and confidently reporting success anyway. The gate exists because that specific thing already happened once.
+
+## The release gate: evals with a hand on the brake
+
+This is where measurement turns into control. Because tool changes alone can measurably shift agent behavior — even when the model hasn't changed — every new tool-server release runs against a fixed set of "floor" cases (a permanent, growing "never again" list built from real past incidents) plus a rotating sample of the broader suite. Clear the bar and the release promotes automatically. Miss it and promotion is blocked — a required check, not a dashboard someone has to remember to glance at.
+
+## Where the raw material comes from
+
+<FeedbackLoopDiagram />
+
+All of that grading machinery needs real failures to learn from, and that's the part most teams still run on vibes and a spreadsheet. Real users reach Comfy through a preview program — named users who've agreed to try half-built things and complain in detail — and their signal arrives through several instrumented channels at once: preview-channel chat turned automatically into tracked tickets, transcribed user calls, an in-product feedback nudge, and passive usage analytics that answer "what do people actually touch," even when nobody writes anything down.
+
+The key design choice: **a ticket is categorized at the moment it's created**, not sorted out later in a weekly grooming meeting. The category *is* the routing address — a bug goes to the team that owns that part of the system, a repeatable failure scenario goes straight into the eval pipeline, a genuine product gap goes to a human product manager. Deferring that categorization just defers delivery.
+
+## The loop that compounds
+
+Fixes author their own regression guard as a side effect of shipping — the fix and its test case are born together, not added later if someone remembers. Past release-gate failures get mined for regression candidates, so yesterday's near-miss becomes tomorrow's permanent tripwire. And cases that keep passing for long enough eventually get retired, so the gate stays fast instead of growing forever.
+
+Put the anatomy and the pipeline together and the full circuit is visible: a real complaint becomes a ticket, a fix, a permanent eval case, and a release-gate check — with exactly one human decision, at the merge, and machinery handling everything else.
+
+> The misconception worth retiring: "user research is a phase that happens before you build." Here, it's a runtime component. Intake runs continuously, triage routes continuously, and the eval suite grows continuously. There's no final research report — the report *is* the release gate's pass rate, moving over time.
+
+## The takeaway
+
+Grading a system that doesn't behave the same way twice isn't a weaker form of testing — it's a different discipline, with its own vocabulary, its own anatomy, and its own supply chain for raw material. Get it working together, and "the agent feels dumb" stops being a vibe and starts being a number you can actually move — one incident at a time, starting with a job ID that didn't match.
