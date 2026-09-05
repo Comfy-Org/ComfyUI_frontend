@@ -1,3 +1,4 @@
+import { delay } from 'es-toolkit'
 import { onScopeDispose, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
@@ -9,6 +10,8 @@ export const FILMSTRIP_THUMBNAIL_MAX_WIDTH = 384
 
 const METADATA_EVENT_TIMEOUT_MS = 15000
 const SEEK_EVENT_TIMEOUT_MS = 5000
+const FRAME_DECODE_TIMEOUT_MS = 5000
+const FRAME_DECODE_RETRY_INTERVAL_MS = 250
 
 export type FilmstripError = 'canvas-unavailable' | 'load-failed'
 
@@ -152,6 +155,25 @@ function representativeFrameTime(duration: number): number {
     : 0
 }
 
+async function waitForDecodableFrame(
+  video: HTMLVideoElement,
+  canvas: HTMLCanvasElement,
+  context: CanvasRenderingContext2D,
+  signal: AbortSignal
+): Promise<string> {
+  const deadlineMs = Date.now() + FRAME_DECODE_TIMEOUT_MS
+  while (Date.now() < deadlineMs) {
+    try {
+      await delay(FRAME_DECODE_RETRY_INTERVAL_MS, { signal })
+    } catch {
+      throw new LoadAbortedError('Aborted waiting for a decodable frame')
+    }
+    const frame = await captureFrame(video, canvas, context)
+    if (frame) return frame
+  }
+  return ''
+}
+
 async function captureRepresentativeFrame(
   video: HTMLVideoElement,
   canvas: HTMLCanvasElement,
@@ -168,7 +190,8 @@ async function captureRepresentativeFrame(
       if (!(waitError instanceof EventTimeoutError)) throw waitError
     }
   }
-  return captureFrame(video, canvas, context)
+  const frame = await captureFrame(video, canvas, context)
+  return frame || waitForDecodableFrame(video, canvas, context, signal)
 }
 
 export function useVideoFilmstrip(
