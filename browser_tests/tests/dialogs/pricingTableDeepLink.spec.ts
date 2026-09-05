@@ -568,6 +568,9 @@ async function mockRecovered3dsSubscription(page: Page) {
 const pricingHeading = (page: Page) =>
   page.getByRole('heading', { name: 'Choose a Plan' })
 
+const SUBSCRIPTION_IN_PROGRESS_DETAIL =
+  'Another subscription change is already in progress'
+
 test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
   test('opens the pricing table for a personal owner', async ({ page }) => {
     await setupCloudApp(page, workspace('personal', 'owner'), [])
@@ -576,6 +579,34 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
 
     await cloudAppExpect(pricingHeading(page)).toBeVisible()
     await expect(page).not.toHaveURL(/[?&]pricing=/)
+  })
+
+  test('keeps an error toast dismissable over the open dialog', async ({
+    page
+  }) => {
+    await setupCloudApp(page, workspace('personal', 'owner'), [])
+
+    await page.goto(`${APP_URL}/?pricing=1`)
+    await cloudAppExpect(pricingHeading(page)).toBeVisible()
+    await page.evaluate((detail) => {
+      window.app!.extensionManager.toast.add({
+        severity: 'error',
+        summary: 'Error',
+        detail,
+        life: 30_000
+      })
+    }, SUBSCRIPTION_IN_PROGRESS_DETAIL)
+
+    const toast = page
+      .locator('.p-toast-message')
+      .filter({ hasText: SUBSCRIPTION_IN_PROGRESS_DETAIL })
+    await expect(toast).toBeVisible()
+    // Not getByRole: an open Reka modal marks the toast container aria-hidden,
+    // so the close button is absent from the accessibility tree.
+    await toast.locator('.p-toast-close-button').click()
+
+    await expect(toast).toHaveCount(0)
+    await expect(pricingHeading(page)).toBeVisible()
   })
 
   test('opens on the Team tab for ?pricing=team', async ({ page }) => {
