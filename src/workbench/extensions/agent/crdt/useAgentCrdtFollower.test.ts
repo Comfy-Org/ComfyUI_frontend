@@ -519,6 +519,25 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  // `connected` is derived from `acknowledgedWorkflowId`, not tracked as its
+  // own ref, so the doc_reset lineage break has to drop the acknowledgement to
+  // report a disconnect. A rebase that reinstates a separate `connected` write
+  // here, or drops the acknowledgement reset, silently breaks that.
+  it('reports a disconnect when a doc_reset breaks the lineage', () => {
+    const { unmount, status } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    expect(status().connected).toBe(true)
+
+    dispatchFrame('doc_reset', {
+      workflowId: 'wf-1',
+      actor: 'agent:turn',
+      seq: 43
+    })
+
+    expect(status().connected).toBe(false)
+    unmount()
+  })
+
   it('clears only for an explicit reset and rebinds after replacement', () => {
     const { unmount, status } = mountFollower('wf-1')
     expect(adapterState.bind).toHaveBeenCalledTimes(1)
