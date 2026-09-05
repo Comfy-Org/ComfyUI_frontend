@@ -158,6 +158,7 @@ const EVENT_KINDS: readonly DevEventKind[] = [
   'doc_subscribed',
   'doc_update',
   'doc_ops_result',
+  'doc_ops_result_dropped',
   'human_ops_settled',
   'doc_reset',
   'doc_nodes_changed',
