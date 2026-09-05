@@ -27,7 +27,7 @@ export interface DocUpdate {
   seq: number
   update: Uint8Array
   actor?: string
-  /** Accepted semantic op identities folded into this effect frame (DQ-9). */
+  /** Accepted semantic op identities folded into this effect frame. */
   opIds?: string[]
 }
 

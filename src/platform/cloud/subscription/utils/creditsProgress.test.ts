@@ -44,7 +44,7 @@ describe('computeMonthlyUsage', () => {
   })
 
   // Standard grants 4,200 credits but the cents ledger can only hold 1,991c,
-  // which reconstructs to 4,201 — one above the allowance (FE-1451).
+  // which reconstructs to 4,201 — one above the allowance.
   it('clamps a balance reconstructed just above the allowance', () => {
     expect(computeMonthlyUsage(4_201, 4_200)).toEqual({
       used: 0,

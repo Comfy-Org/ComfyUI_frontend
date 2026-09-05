@@ -1,22 +1,22 @@
 /**
- * Regression tests for the follower TRANSPORT SEAM — the part of PR #15457 that
- * outlives the disposable projector/diff/mutator spike (ADR-010).
+ * Regression tests for the follower transport seam that
+ * outlives the disposable projector/diff/mutator spike.
  *
  * Three defects are pinned here, all of them previously unreachable by the
  * existing suite because `docFrameClient.test.ts` uses a transport double that
  * can always send and never throws:
  *
- *   FE-SUBSCRIBE-1  a subscribe attempted before the socket is OPEN was a
+ *   A subscribe attempted before the socket is open was a
  *                   one-shot: the bridge latched its workflow id BEFORE the
  *                   send, the send threw, and the latch then blocked every
  *                   retry. `api` dispatches `reconnected` only on a RE-connect,
  *                   so the first open never repaired it — the follower stayed
  *                   inert for the life of the panel.
- *   FE-TEARDOWN-1   teardown sent an unsubscribe first, so on a closed socket it
+ *   Teardown sent an unsubscribe first, so on a closed socket it
  *                   threw before releasing listeners and the Y.Doc, leaving a
  *                   live bridge attached to the canvas; a remount then applied
  *                   every update twice.
- *   FE-KA11-1       nothing read `meta.schema_version`, so a doc written at a
+ *   Nothing read `meta.schema_version`, so a doc written at a
  *                   schema this build does not understand was projected anyway.
  */
 import { SCHEMA_VERSION, mint, nodesMap } from '@comfyorg/comfy-multi-player'
@@ -109,7 +109,7 @@ function wire() {
   return { transport, client, bridge, projected, schemaErrors }
 }
 
-describe('FE-SUBSCRIBE-1 — a subscribe raced against socket startup recovers', () => {
+describe('a subscribe raced against socket startup', () => {
   it('retries the subscribe when the socket becomes usable, and then follows', () => {
     const { transport, bridge, projected } = wire()
 
@@ -268,7 +268,7 @@ describe('human op gating around subscription acknowledgement', () => {
   })
 })
 
-describe('FE-TEARDOWN-1 — teardown completes with a dead socket', () => {
+describe('teardown with a dead socket', () => {
   it('releases every transport listener and the doc when unsubscribe cannot send', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const { transport, client, bridge, projected } = wire()
@@ -361,7 +361,7 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
     expect(bridge.follower.updatesApplied).toBe(1)
     expect(projected).toHaveLength(2)
 
-    // KA-6: a reset provokes nothing but subscription frames from the follower.
+    // A reset provokes nothing but subscription frames from the follower.
     const writes = transport.sent
       .map((frame) => JSON.parse(frame) as { type: string })
       .filter(
@@ -408,7 +408,7 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
   })
 })
 
-describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', () => {
+describe('a sequence jump forces a resync', () => {
   it('applies the catch-up update when its seq equals the preceding subscribe acknowledgement', () => {
     const { transport, bridge, projected } = wire()
     transport.open = true
@@ -424,8 +424,7 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
 
     // …but the host then sends the catch-up AT that seq, and it must land:
     // treating the ack as an applied baseline dropped this frame as stale and
-    // left the follower with an empty doc (the KA-11 schema_version=undefined
-    // symptom on nightly).
+    // left the follower with an empty doc (`schema_version=undefined`).
     transport.deliver(
       'doc_update',
       docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 1)
@@ -489,7 +488,7 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
     expect(bridge.subscribedWorkflowId).toBe(WORKFLOW_ID)
   })
 
-  it('s5-metrics-1: dispatches doc_gap at the exact boundary a jump is detected', () => {
+  it('dispatches doc_gap at the exact boundary a jump is detected', () => {
     const { transport, bridge } = wire()
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
@@ -731,7 +730,7 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
   })
 
-  it('s5-metrics-1: dispatches doc_stale at the exact boundary a duplicate is discarded', () => {
+  it('dispatches doc_stale at the exact boundary a duplicate is discarded', () => {
     const { transport, bridge } = wire()
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
@@ -819,7 +818,7 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
   })
 })
 
-describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
+describe('the read-time schema gate', () => {
   it('accepts a doc the shared package seeded at the version this build reads', () => {
     const { transport, bridge, projected, schemaErrors } = wire()
     transport.open = true
@@ -888,12 +887,12 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
     }).toThrow(FollowerSchemaError)
     expect(() => {
       assertReadableSchema(doc)
-    }).toThrow(/KA-11/)
+    }).toThrow(/refusing to project it/)
     error.mockRestore()
   })
 })
 
-describe('FEB-5 — switching workflows is a lineage break, never a fold', () => {
+describe('switching workflows is a lineage break, never a fold', () => {
   it('replaces the doc and subscribes from an EMPTY state vector on switch', () => {
     const { transport, bridge } = wire()
     const replaced: unknown[] = []

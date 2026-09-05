@@ -719,7 +719,7 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.boundWorkflowId.value).toBe('wf-1')
   })
 
-  it('(h5) a workflow.draft() snapshot is forwarded on the turn (PM-813/ecw-128)', async () => {
+  it('forwards a workflow.draft() snapshot on the turn', async () => {
     const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
       thread_id: 'th-1',
       message_id: 'msg-1',

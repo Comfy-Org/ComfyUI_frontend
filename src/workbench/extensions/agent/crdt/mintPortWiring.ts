@@ -97,7 +97,7 @@ export function runMintPortsIntentionalClear<T>(clear: () => T): T {
 
 /**
  * Serialized save-format node, `widgets_values` NAME-KEYED via the node's own
- * `widgets_values_named` minus non-value widgets (FE-1904: the doc host's
+ * `widgets_values_named` minus non-value widgets (the doc host's
  * sidecar projection accepts only the pinned catalog's `widget_order` names;
  * control widgets like a `button` serialize a named entry but are not in
  * `widget_order`, and any extra key is an opaque server-side 500).

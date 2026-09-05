@@ -9,8 +9,7 @@ import type { RerouteId } from '@/types/rerouteId'
 import { createUuidv4 } from '@/utils/uuid'
 
 /**
- * Characterisation baseline for QA-1 / invariant I2: undo after a *compound*
- * edit.
+ * Characterisation baseline for undo after a *compound* edit.
  *
  * Links, reroutes, widget values and positions each already have their own
  * tests. Nothing asserts that they still agree with one another after a single
@@ -368,8 +367,7 @@ describe('compound undo', () => {
 
   describe('replacing a node, reusing its id', () => {
     /**
-     * The second QA-1 variant. Reusing the id means undo cannot detect the edit
-     * by the id being absent.
+     * Reusing the id means undo cannot detect the edit by the id being absent.
      */
     function replaceMiddle(graph: LGraph, middleId: NodeId): LGraphNode {
       graph.remove(graph.getNodeById(middleId)!)

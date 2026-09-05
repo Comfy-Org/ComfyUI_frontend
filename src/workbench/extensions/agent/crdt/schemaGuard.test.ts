@@ -12,7 +12,7 @@ function docAtVersion(version: unknown): Y.Doc {
   return doc
 }
 
-describe('assertReadableSchema (KA-11, fail-closed on read)', () => {
+describe('assertReadableSchema', () => {
   it('accepts a doc the shared package minted at the build version', () => {
     const doc = mint({ nodes: [], links: [] }, { types: {} })
     expect(() => assertReadableSchema(doc)).not.toThrow()
@@ -29,7 +29,7 @@ describe('assertReadableSchema (KA-11, fail-closed on read)', () => {
     expect(thrown).toBeInstanceOf(FollowerSchemaError)
     const schemaError = thrown as FollowerSchemaError
     expect(schemaError.found).toBe(SCHEMA_VERSION + 1)
-    expect(schemaError.message).toContain('KA-11')
+    expect(schemaError.message).toContain('refusing to project it')
     expect(schemaError.message).toContain(`v${SCHEMA_VERSION}`)
   })
 
@@ -58,7 +58,7 @@ describe('assertReadableSchema (KA-11, fail-closed on read)', () => {
     expect(consoleError).not.toHaveBeenCalledWith(expect.stringContaining('99'))
   })
 
-  it('never writes the doc it refuses (KA-6: the follower is read-only)', () => {
+  it('never writes the doc it refuses', () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined)
     const doc = docAtVersion(99)
     const before = Y.encodeStateVector(doc)

@@ -30,5 +30,5 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const TransparentScrollbarTrack: Story = {
-  name: 'T-28 / PM-677 / FE-1320 Transparent scrollbar track'
+  name: 'Transparent scrollbar track'
 }

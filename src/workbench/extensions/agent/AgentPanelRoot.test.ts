@@ -451,7 +451,7 @@ function fileOfSize(name: string, size: number, type: string): File {
   return file
 }
 
-// DES-527 replaced the paperclip and @ buttons with a single + menu, so every
+// The paperclip and @ buttons were replaced with a single + menu, so every
 // attach or node-mention gesture now starts by opening it.
 async function openAddMenu(): Promise<void> {
   await userEvent.click(
@@ -774,7 +774,7 @@ describe('AgentPanelRoot attach flow', () => {
   })
 
   it('warns with the configured server limit when a video exceeds it', async () => {
-    // PM-118: dropping a movie showed "Comfy Agent hit a server error" because a
+    // Dropping a movie showed "Comfy Agent hit a server error" because a
     // size rejection was routed through the agent-failure overlay.
     getServerFeature.mockReturnValue(24 * 1024 * 1024)
     executionErrors.showErrorOverlay.mockClear()
@@ -830,7 +830,7 @@ describe('AgentPanelRoot attach flow', () => {
     await vi.waitFor(() => expect(uploaded).toEqual(['movie.mp4']))
   })
 
-  // Jo's FE-1323 expansion: every approved format attaches through drag-drop.
+  // Every approved format attaches through drag-drop.
   // The MIME column mirrors what browsers actually report - glb, md, and wav
   // drops often carry no type at all, so claiming must go by file name.
   it.for([
@@ -972,9 +972,9 @@ describe('AgentPanelRoot attach flow', () => {
     { mime: 'image/png', filename: 'gen.png' },
     { mime: 'video/mp4', filename: 'movie.mp4' }
   ])(
-    'T-08 / PM-646 / FE-1314 attaches a Media-card $mime URI and forwards its uploaded ref',
+    'attaches a Media-card $mime URI and forwards its uploaded ref',
     async ({ mime, filename }) => {
-      // PM-116: MediaAssetCard.dragStart sets asset-info + text/uri-list on the
+      // MediaAssetCard.dragStart sets asset-info + text/uri-list on the
       // transfer and never a File, so the panel must claim and fetch the URI.
       const messageBodies: unknown[] = []
       vi.stubGlobal(
@@ -1374,7 +1374,7 @@ describe('AgentPanelRoot canvas draft on send', () => {
     ws.clear()
   })
 
-  it('sends the active tab activeState as draft.content (PM-813/ecw-128)', async () => {
+  it('sends the active tab activeState as draft.content', async () => {
     const messageBodies: unknown[] = []
     vi.stubGlobal(
       'fetch',
@@ -2407,7 +2407,7 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(workflowService.openWorkflow).toHaveBeenCalledWith(tab)
     )
     expect(workflowService.saveWorkflowAs).not.toHaveBeenCalled()
-    // The whole FE-1310 chain: wire event -> session -> store -> rendered card.
+    // The whole chain: wire event -> session -> store -> rendered card.
     expect(
       await screen.findByRole('button', { name: /^Open / })
     ).toBeInTheDocument()
@@ -2643,7 +2643,7 @@ describe('AgentPanelRoot workflow binding', () => {
     )
   })
 
-  it('T-03 / PM-655 / FE-1311 sends the active canvas workflow in the agent snapshot', async () => {
+  it('sends the active canvas workflow in the agent snapshot', async () => {
     makeTab('wf-42')
     addTab('workflows/scratch.json', {
       activeState: fromPartial<ComfyWorkflowJSON>({
@@ -3779,7 +3779,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(state.selectItems).not.toHaveBeenCalled()
   })
 
-  it('X-03 / PM-680 / FE-1311 keeps displayed node chips identical to every sent node id', async () => {
+  it('keeps displayed node chips identical to every sent node id', async () => {
     makeTab()
     const bodies = mockMessagesEndpoint('wf-42')
     const selection = await startVueNodeSelection()

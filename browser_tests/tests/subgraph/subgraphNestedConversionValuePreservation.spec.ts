@@ -5,16 +5,16 @@ import {
 import { getPromotedWidgetNames } from '@e2e/fixtures/utils/promotedWidgets'
 
 /**
- * Regression: BUG-003 (fixed by #13809) — nested-subgraph promoted-value reset.
+ * Regression for the nested-subgraph promoted-value reset fixed by #13809.
  *
  * When a node inside a subgraph is converted into its own nested subgraph, the
  * value that the user set on the parent (host) subgraph node's promoted widget
  * must survive. Before the fix the host value reset to a stale interior value.
  *
- * Denys's repro: a subgraph exposes a promoted text widget showing a distinctive
- * string ("test cool value"); entering the subgraph, selecting the interior text
- * node and running "Convert Selection to Subgraph" reset the host's promoted
- * value back to the earlier interior string ("test value").
+ * A subgraph exposes a promoted text widget showing a distinctive string
+ * ("test cool value"); entering the subgraph, selecting the interior text node
+ * and running "Convert Selection to Subgraph" reset the host's promoted value
+ * back to the earlier interior string ("test value").
  *
  * The e2e value-add over the unit test
  * (SubgraphWidgetPromotion.test.ts > "preserves the host value when its source is

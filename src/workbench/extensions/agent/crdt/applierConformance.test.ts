@@ -1,5 +1,5 @@
 /**
- * Conformance vectors against the PINNED package (plan 3.5): every assumption
+ * Conformance vectors against the pinned package: every assumption
  * the write leg builds on, asserted against the applier the doc host actually
  * runs. These were staged "once the compatible pin lands" - the 0.2.0 pin
  * exposes the outcome union, so they run now and re-assert automatically at
@@ -232,7 +232,7 @@ describe('applier conformance (the pinned package the doc host runs)', () => {
     expect(seedWidgetValue(doc)).toBe(20)
   })
 
-  it('orders by the stamp FIELD, exact ties broken by op_id (KA-2 offline order)', () => {
+  it('orders by the stamp field, with exact ties broken by op_id', () => {
     const actor = 'human:u1:tab'
     const low = setWidget(1, { stamp: [3, actor] })
     const high = setWidget(2, { stamp: [3, actor] })

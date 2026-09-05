@@ -62,8 +62,8 @@ describe('OnboardingCoach', () => {
   })
 
   it('repositions when the viewport narrows after mount', async () => {
-    // 1280px viewport, target left edge at x=900 (mirrors the mr2-4 T-24/
-    // T-25 repro shape: a docked panel/target whose unclamped card position
+    // 1280px viewport, target left edge at x=900: a docked panel/target whose
+    // unclamped card position
     // is in-bounds at the wide viewport but must re-clamp once narrowed).
     // At 1280px: 900 - 256 - 8 = 636, within [8, 1280-264]=[8,1016] --
     // unclamped. At 700px: the same 636 would exceed 700-264=436, so the

@@ -111,7 +111,7 @@ describe('useNodeTooltips', () => {
     const config = createTooltipConfig(`${jsonTooltip}\n\na-long-value`)
 
     // Without a whitespace-preserving rule the \n\n separator collapses to a
-    // space and the label runs into the value (BUG-020).
+    // space and the label runs into the value.
     const pt = config.pt as { text?: { class?: string } } | undefined
     const textClass = pt?.text?.class ?? ''
     expect(textClass).toContain('whitespace-pre-line')

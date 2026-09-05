@@ -1,6 +1,6 @@
 /**
  * set_widget from the widgetValueStore setValue seam - NAME-KEYED by
- * construction (WidgetId is graphId:nodeId:name; FE-1904). Subgraph-owned
+ * construction (`WidgetId` is `graphId:nodeId:name`). Subgraph-owned
  * writes mint the interior form (path = resolved node-id chain,
  * inner_widget = the name); an unresolvable owner surfaces, never drops.
  */

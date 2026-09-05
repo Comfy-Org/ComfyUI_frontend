@@ -56,7 +56,7 @@ test.describe('Version Mismatch Warnings', { tag: '@slow' }, () => {
         )
       })
     })
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, migration tracked in #16859; not fixed in this pass
     await comfyPage.setup()
 
     // Expect a warning toast to be shown
@@ -78,7 +78,7 @@ test.describe('Version Mismatch Warnings', { tag: '@slow' }, () => {
         )
       })
     })
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, migration tracked in #16859; not fixed in this pass
     await comfyPage.setup()
 
     // Expect no warning toast to be shown
@@ -101,7 +101,7 @@ test.describe('Version Mismatch Warnings', { tag: '@slow' }, () => {
         )
       })
     })
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, migration tracked in #16859; not fixed in this pass
     await comfyPage.setup()
 
     // Locate the warning toast and dismiss it
@@ -118,7 +118,7 @@ test.describe('Version Mismatch Warnings', { tag: '@slow' }, () => {
     )
 
     // Reload the page, keeping local storage
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, migration tracked in #16859; not fixed in this pass
     await comfyPage.setup({ clearStorage: false })
 
     // The same warning from same versions should not be shown to the user again

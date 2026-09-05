@@ -165,7 +165,7 @@ if (!GIT_COMMIT) {
  * A content hash only changes when the chunk's own bytes change, so a routine
  * redeploy leaves stable vendor chunks — `rolldown-runtime`, `vendor-*` — at
  * byte-identical URLs. When one of those has been pinned as a 404 by an
- * intermediary or a browser (IR-105), redeploying cannot dislodge it: the
+ * intermediary or a browser, redeploying cannot dislodge it: the
  * client never re-requests a URL it believes it already has.
  *
  * Setting ASSET_CACHE_BUST inserts its value into every emitted asset name, so

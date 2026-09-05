@@ -11,7 +11,7 @@ import {
 import { graphToPrompt } from './executionUtil'
 
 /**
- * Characterization baseline for the API prompt (QA-13).
+ * Characterization baseline for the API prompt.
  *
  * The ECS migration's premise is that it preserves behavior. `output` is the
  * payload that actually reaches the backend, so any change to it is a

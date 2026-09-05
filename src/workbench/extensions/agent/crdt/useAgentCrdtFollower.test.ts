@@ -1,9 +1,9 @@
 /**
- * Composable-owned behavior only (plan 3.5's subscribe-robustness probes):
+ * Composable-owned subscribe-robustness behavior only:
  * the bridge/client mechanics have their own suites
  * (followerSubscription.test.ts, docFrameClient.test.ts), so both are
  * module-mocked here and every assertion targets what the COMPOSABLE adds -
- * the FE-1901 bounded subscribe retry, the FE-1902 sessionStorage rebind,
+ * the bounded subscribe retry, the sessionStorage rebind,
  * the frame-handler status surface, and total teardown.
  */
 import { createPinia, setActivePinia } from 'pinia'
@@ -219,7 +219,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('FE-1901: retries a refused subscribe with bounded exponential backoff', () => {
+  it('retries a refused subscribe with bounded exponential backoff', () => {
     vi.useFakeTimers()
     const { unmount } = mountFollower('wf-1')
 
@@ -247,7 +247,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('FE-1901: a confirmed subscribe clears the retry timer', () => {
+  it('clears the retry timer after a confirmed subscribe', () => {
     vi.useFakeTimers()
     const { unmount, status } = mountFollower('wf-1')
 
@@ -261,7 +261,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('FE-1901: a workflow switch cancels the pending retry', () => {
+  it('cancels the pending retry after a workflow switch', () => {
     vi.useFakeTimers()
     const { unmount, workflowId } = mountFollower('wf-1')
 
@@ -276,7 +276,7 @@ describe('useAgentCrdtFollower', () => {
     })
   })
 
-  it('FE-1902: persists a binding only once the server confirms it', () => {
+  it('persists a binding only once the server confirms it', () => {
     const { unmount } = mountFollower('wf-1')
     expect(persistedRecord()).toBeNull()
 
@@ -286,7 +286,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('FE-1902: a remount with no in-memory binding rebinds from sessionStorage', () => {
+  it('rebinds from sessionStorage after a remount with no in-memory binding', () => {
     const setup = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: true })
     setup.unmount()
@@ -299,7 +299,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('FE-1902: a real detach clears the persisted binding and unsubscribes', async () => {
+  it('clears the persisted binding and unsubscribes after a real detach', async () => {
     const { unmount, workflowId } = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: true })
     expect(persistedRecord()?.docId).toBe('wf-1')
@@ -313,7 +313,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('FEC-5: refuses a record from a different page session (e.g. a duplicated tab)', () => {
+  it('refuses a record from a different page session', () => {
     const setup = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: true })
     setup.unmount()
@@ -328,7 +328,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('FEC-5: refuses an expired record', () => {
+  it('refuses an expired record', () => {
     const setup = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: true })
     setup.unmount()
@@ -347,7 +347,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('FEC-5: refuses a legacy bare-string record', () => {
+  it('refuses a legacy bare-string record', () => {
     sessionStorage.setItem(DOC_ID_KEY, 'wf-legacy')
 
     const { unmount, status } = mountFollower(null)
@@ -357,7 +357,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('FEC-5: a refused legacy record is dropped by the first unbound mount', () => {
+  it('drops a refused legacy record on the first unbound mount', () => {
     sessionStorage.setItem(DOC_ID_KEY, 'wf-legacy')
 
     const { unmount } = mountFollower(null)
@@ -366,7 +366,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('FEC-5: live doc traffic slides the persisted expiry', () => {
+  it('slides the persisted expiry while doc traffic is live', () => {
     vi.useFakeTimers()
     const setup = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: true })
@@ -396,7 +396,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('FEC-5: only active-workflow op results slide the persisted expiry', () => {
+  it('slides the persisted expiry only for active-workflow op results', () => {
     vi.useFakeTimers()
     const { isTargetActive, unmount } = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: true })
@@ -417,7 +417,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('FEC-5: an idle doc still expires', () => {
+  it('expires an idle doc', () => {
     vi.useFakeTimers()
     const setup = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: true })
@@ -517,7 +517,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  describe('s5-metrics-1: per-outcome counters', () => {
+  describe('per-outcome counters', () => {
     it('counts received and applied for a frame that passes the filter', () => {
       const { unmount, status } = mountFollower('wf-1')
 
@@ -987,7 +987,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('probes a quiet bound channel once per budget and re-arms (BE-9740)', () => {
+  it('probes a quiet bound channel once per budget and re-arms', () => {
     vi.useFakeTimers()
     const { unmount } = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: true })

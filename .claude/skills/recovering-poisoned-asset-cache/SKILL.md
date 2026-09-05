@@ -9,7 +9,7 @@ A content-hashed chunk 404s. A cache stores that 404. Every client that reads
 from that cache is served a broken app, and **reloading cannot fix it** — the
 client is not asking origin, and with `immutable` it will not revalidate.
 
-This happened as IR-105: nginx stamped `Cache-Control: public, max-age=2592000,
+This happened when nginx stamped `Cache-Control: public, max-age=2592000,
 immutable` on 404 responses, Cloudflare honoured it, and `rolldown-runtime-*.js`
 — the module runtime, without which no other chunk can load — was served as a
 cached 404 to a subset of users for as long as 30 days.
@@ -152,5 +152,5 @@ like. Confirm from the server side (404 rate on `/assets/*`) instead.
   `/extensions/core/clipspace.js` still 404s as `public, max-age=14400` and
   re-caches after every purge. Shorter TTL and not `immutable`, so it
   self-heals in ~4h — but it is uncovered.
-- Nobody on the cloud team could purge the CDN or add an edge rule during
-  IR-105; both needed escalation. Budget for that delay, or fix the access.
+- Nobody on the cloud team could purge the CDN or add an edge rule during the
+  incident; both needed escalation. Budget for that delay, or fix the access.

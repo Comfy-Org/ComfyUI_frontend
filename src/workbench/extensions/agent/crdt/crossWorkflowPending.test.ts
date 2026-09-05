@@ -173,7 +173,7 @@ function dispatchOpsResult(detail: unknown): void {
   bridge().dispatchEvent(new CustomEvent('doc_ops_result', { detail }))
 }
 
-describe('R-73 cross-workflow pending operation characterization', () => {
+describe('cross-workflow pending operation characterization', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     bridgeState.current = null
@@ -201,9 +201,8 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     clientState.transportUp = true
     vi.advanceTimersByTime(500)
 
-    // R-73 was filed against PR #16332's switch site. On main f954e479a,
-    // opSender keeps the workflow captured at enqueue time, so this half of
-    // the suspected A-to-B contamination is already a regression guard.
+    // The sender keeps the workflow captured at enqueue time, so this half of
+    // the suspected A-to-B contamination is a regression guard.
     expect(bridge().subscribe).toHaveBeenLastCalledWith('wf-b')
     expect(clientState.sent).toHaveLength(1)
     expect(clientState.sent[0]).toMatchObject({ workflowId: 'wf-a' })
@@ -255,8 +254,8 @@ describe('R-73 cross-workflow pending operation characterization', () => {
       )
     ).toHaveLength(1)
 
-    // R-73 regression guard: result frames carry workflowId, and the guard
-    // added alongside this test (onOpsResult in useAgentCrdtFollower.ts)
+    // Result frames carry workflowId, and the guard added alongside this test
+    // (onOpsResult in useAgentCrdtFollower.ts)
     // drops a result whose workflowId no longer matches the subscribed
     // workflow, so workflow B's status is never updated from workflow A's
     // late frame, and the composable never re-emits that frame as a
