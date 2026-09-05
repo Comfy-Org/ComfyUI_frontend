@@ -27,12 +27,20 @@ const principles = [
 
 const doExamples = [
   t('brand.voice.do.0', locale),
-  t('brand.voice.do.1', locale)
+  t('brand.voice.do.1', locale),
+  t('brand.voice.do.2', locale),
+  t('brand.voice.do.3', locale),
+  t('brand.voice.do.4', locale),
+  t('brand.voice.do.5', locale)
 ]
 
 const dontExamples = [
   t('brand.voice.dont.0', locale),
-  t('brand.voice.dont.1', locale)
+  t('brand.voice.dont.1', locale),
+  t('brand.voice.dont.2', locale),
+  t('brand.voice.dont.3', locale),
+  t('brand.voice.dont.4', locale),
+  t('brand.voice.dont.5', locale)
 ]
 </script>
 
@@ -90,7 +98,7 @@ const dontExamples = [
           :key="example"
           class="bg-transparency-ink-t80 rounded-2xl p-5"
         >
-          <p class="text-primary-warm-gray text-base/[1.45] line-through">
+          <p class="text-primary-warm-gray text-base/[1.45]">
             {{ example }}
           </p>
         </div>
