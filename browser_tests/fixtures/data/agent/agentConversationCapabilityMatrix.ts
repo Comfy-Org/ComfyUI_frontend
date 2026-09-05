@@ -175,13 +175,13 @@ export const agentConversationCapabilityMatrix: readonly AgentConversationCapabi
     },
     {
       capability: 'agent_ask',
-      status: 'blocked',
-      reason: 'stack-not-rebased-onto-main'
+      status: 'recordable',
+      reason: 'recording-not-yet-captured'
     },
     {
       capability: 'agent_ask_resolved',
-      status: 'blocked',
-      reason: 'stack-not-rebased-onto-main'
+      status: 'recordable',
+      reason: 'recording-not-yet-captured'
     },
     {
       capability: 'reset_doc',

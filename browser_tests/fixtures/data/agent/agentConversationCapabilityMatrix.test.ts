@@ -76,16 +76,6 @@ describe('agentConversationCapabilityMatrix', () => {
         reason: 'panel-does-not-render-event'
       },
       {
-        capability: 'agent_ask',
-        status: 'blocked',
-        reason: 'stack-not-rebased-onto-main'
-      },
-      {
-        capability: 'agent_ask_resolved',
-        status: 'blocked',
-        reason: 'stack-not-rebased-onto-main'
-      },
-      {
         capability: 'reset_doc',
         status: 'blocked',
         reason: 'deferred-by-op-vocabulary'
@@ -96,6 +86,16 @@ describe('agentConversationCapabilityMatrix', () => {
         (row) => row.status === 'recordable'
       )
     ).toEqual([
+      {
+        capability: 'agent_ask',
+        status: 'recordable',
+        reason: 'recording-not-yet-captured'
+      },
+      {
+        capability: 'agent_ask_resolved',
+        status: 'recordable',
+        reason: 'recording-not-yet-captured'
+      },
       {
         capability: 'promoted_subgraph_widget',
         status: 'recordable',
