@@ -7,9 +7,14 @@ import HeaderMainDesktop from './HeaderMainDesktop.vue'
 import HeaderMainMobile from './HeaderMainMobile.vue'
 import Button from '@/components/ui/button/Button.vue'
 
-const { locale = 'en', githubStars = '' } = defineProps<{
+const {
+  locale = 'en',
+  githubStars = '',
+  showWorkshop = false
+} = defineProps<{
   locale?: Locale
   githubStars?: string
+  showWorkshop?: boolean
 }>()
 const routes = getRoutes(locale)
 
@@ -58,8 +63,8 @@ const ctaButtons = [
     </a>
 
     <!-- Desktop nav links -->
-    <HeaderMainDesktop :locale class="hidden lg:block" />
-    <HeaderMainMobile :locale class="lg:hidden" />
+    <HeaderMainDesktop :locale :show-workshop class="hidden lg:block" />
+    <HeaderMainMobile :locale :show-workshop class="lg:hidden" />
 
     <!-- Desktop CTA buttons -->
     <div
