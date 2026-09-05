@@ -6,7 +6,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { createGraphMutations } from '@/core/graph/graphMutations'
-import type { GraphMutations } from '@/core/graph/graphMutations'
+import type {
+  GraphMutations,
+  SemanticNodePayload
+} from '@/core/graph/graphMutations'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -125,7 +128,7 @@ describe('EcsFollowerAdapter integration', () => {
         actor: 'agent:test',
         opIds: ['bootstrap']
       })
-    ).toBe(true)
+    ).toEqual({ status: 'projected', sequence: 1 })
 
     const nodes = useNodeDataStore().getGraphNodesFor('root', 'root')
     expect(nodes.map(({ id }) => id)).toEqual([toNodeId(1), toNodeId(2)])
@@ -223,7 +226,10 @@ describe('EcsFollowerAdapter integration', () => {
     const update = Y.encodeStateAsUpdate(host)
     follower.applyRemoteUpdate(update)
 
-    expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(true)
+    expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toEqual({
+      status: 'projected',
+      sequence: 1
+    })
     expect(
       useNodeDataStore()
         .getGraphNodesFor('root', 'root')
@@ -284,7 +290,11 @@ describe('EcsFollowerAdapter integration', () => {
     // reconciliation must not be consumed — local-only node 99 survives.
     scopeAvailable = false
     deleteLayouts.mockClear()
-    expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(false)
+    expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toEqual({
+      status: 'retrying',
+      sequence: 1,
+      attempt: 1
+    })
     expect(
       useNodeDataStore()
         .getGraphNodesFor('root', 'root')
@@ -296,7 +306,10 @@ describe('EcsFollowerAdapter integration', () => {
     // clears the stale local-only node instead of falling through to
     // incremental handling.
     scopeAvailable = true
-    expect(adapter.applyFrame({ workflowId: 'wf', seq: 2, update })).toBe(true)
+    expect(adapter.applyFrame({ workflowId: 'wf', seq: 2, update })).toEqual({
+      status: 'projected',
+      sequence: 2
+    })
     expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
     expect(deleteLayouts).toHaveBeenCalledWith(
       scope,
@@ -337,7 +350,10 @@ describe('EcsFollowerAdapter integration', () => {
     const update = Y.encodeStateAsUpdate(host)
     follower.applyRemoteUpdate(update)
 
-    expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(true)
+    expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toEqual({
+      status: 'projected',
+      sequence: 1
+    })
     expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
     expect(
       useNodeDataStore()
@@ -408,13 +424,281 @@ describe('EcsFollowerAdapter integration', () => {
         actor: 'agent:test',
         opIds: ['prefix']
       })
-    ).toBe(true)
+    ).toEqual({ status: 'projected', sequence: 1 })
     expect(
       useNodeDataStore()
         .getGraphNodesFor('root', 'root')
         .map(({ id }) => id)
     ).toEqual(['1'])
     expect([...useLinkStore().graphTopologies(scope)]).toEqual([])
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
+  it('retries a failed frame before draining reentrant frames', () => {
+    const host = mint({ nodes: [], links: [] }, catalog)
+    const follower = new FollowerDoc()
+    const projectedNodes: SemanticNodePayload[] = []
+    const projectionOpIds: string[] = []
+    let batchAttempts = 0
+    let queueReentrantFrame = (): void => undefined
+    const mutations: GraphMutations = {
+      batch: (context, define) => {
+        batchAttempts += 1
+        projectionOpIds.push(context.opId)
+        define({
+          addNode: (payload) => projectedNodes.push(payload),
+          reconcileNode: (payload) => projectedNodes.push(payload),
+          setWidget: () => undefined,
+          connect: () => undefined,
+          removeMissing: () => undefined,
+          removeLinks: () => undefined,
+          deleteNode: () => undefined,
+          clearSemanticGraph: () => undefined
+        })
+        if (batchAttempts === 1) {
+          queueReentrantFrame()
+          projectedNodes.length = 0
+          return false
+        }
+        return true
+      },
+      addNode: () => true,
+      setWidget: () => true,
+      connect: () => true,
+      deleteNode: () => true,
+      clearSemanticGraph: () => true
+    }
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind('wf', follower)
+    const result = applyOps(
+      host,
+      [
+        op('node-1', 1, {
+          op: 'add_node',
+          node_id: 1,
+          class_type: 'Source',
+          pos: [10, 20],
+          node: {
+            id: 1,
+            type: 'Source',
+            pos: [10, 20],
+            inputs: [],
+            outputs: []
+          }
+        })
+      ] as Parameters<typeof applyOps>[1],
+      catalog
+    )
+    expect(result.outcomes).toEqual([{ op_id: 'node-1', outcome: 'applied' }])
+
+    const update = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(update)
+    queueReentrantFrame = () => {
+      const before = Y.encodeStateVector(host)
+      applyOps(
+        host,
+        [
+          op('node-2', 2, {
+            op: 'add_node',
+            node_id: 2,
+            class_type: 'Sink',
+            pos: [30, 40],
+            node: {
+              id: 2,
+              type: 'Sink',
+              pos: [30, 40],
+              inputs: [],
+              outputs: []
+            }
+          })
+        ] as Parameters<typeof applyOps>[1],
+        catalog
+      )
+      const reentrantUpdate = Y.encodeStateAsUpdate(host, before)
+      follower.applyRemoteUpdate(reentrantUpdate)
+      expect(
+        adapter.applyFrame({
+          workflowId: 'wf',
+          seq: 2,
+          update: reentrantUpdate,
+          actor: 'agent:test',
+          opIds: ['node-2']
+        })
+      ).toEqual({ status: 'queued' })
+    }
+    expect(
+      adapter.applyFrame({
+        workflowId: 'wf',
+        seq: 1,
+        update,
+        actor: 'agent:test',
+        opIds: ['node-1']
+      })
+    ).toEqual({ status: 'retrying', sequence: 1, attempt: 1 })
+    expect(projectedNodes).toEqual([])
+
+    expect(
+      adapter.applyFrame({
+        workflowId: 'wf',
+        seq: 3,
+        update: Y.encodeStateAsUpdate(new Y.Doc()),
+        actor: 'agent:test',
+        opIds: ['retry-drain']
+      })
+    ).toEqual({ status: 'projected', sequence: 3 })
+    // The retried authoritative reconcile sees node 2, then its queued frame
+    // replays under its own context. Real ECS reconciliation is idempotent.
+    expect(projectedNodes.map(({ id }) => id)).toEqual(['1', '2', '2'])
+    expect(projectionOpIds).toEqual([
+      'node-1',
+      'node-1',
+      'node-2',
+      'retry-drain'
+    ])
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
+  it('discards a rejected frame after schema validation fails', () => {
+    const host = mint(
+      {
+        nodes: [
+          { id: 1, type: 'Source', pos: [0, 0], inputs: [], outputs: [] }
+        ],
+        links: []
+      },
+      catalog
+    )
+    const follower = new FollowerDoc()
+    const batch = vi.fn(() => false)
+    const mutations: GraphMutations = {
+      batch,
+      addNode: () => true,
+      setWidget: () => true,
+      connect: () => true,
+      deleteNode: () => true,
+      clearSemanticGraph: () => true
+    }
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind('wf', follower)
+    const update = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(update)
+
+    expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toEqual({
+      status: 'retrying',
+      sequence: 1,
+      attempt: 1
+    })
+
+    adapter.discardPending('wf')
+
+    expect(adapter.retryPending('wf')).toEqual({ status: 'idle' })
+    expect(batch).toHaveBeenCalledTimes(1)
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
+  it('bounds deterministic projection retries and blocks until reset', () => {
+    const host = mint(
+      {
+        nodes: [
+          { id: 1, type: 'Source', pos: [0, 0], inputs: [], outputs: [] }
+        ],
+        links: []
+      },
+      catalog
+    )
+    const follower = new FollowerDoc()
+    let batchAttempts = 0
+    const mutations: GraphMutations = {
+      batch: () => {
+        batchAttempts += 1
+        return false
+      },
+      addNode: () => true,
+      setWidget: () => true,
+      connect: () => true,
+      deleteNode: () => true,
+      clearSemanticGraph: () => true
+    }
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind('wf', follower)
+    const update = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(update)
+
+    expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toEqual({
+      status: 'retrying',
+      sequence: 1,
+      attempt: 1
+    })
+    expect(adapter.retryPending('wf')).toEqual({
+      status: 'retrying',
+      sequence: 1,
+      attempt: 2
+    })
+    expect(adapter.retryPending('wf')).toEqual({
+      status: 'failed',
+      sequence: 1,
+      reason: 'rejected'
+    })
+    expect(adapter.applyFrame({ workflowId: 'wf', seq: 2, update })).toEqual({
+      status: 'failed',
+      sequence: 2,
+      reason: 'blocked'
+    })
+    expect(batchAttempts).toBe(3)
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
+  it('blocks projection immediately after a partial commit exception', () => {
+    const host = mint(
+      {
+        nodes: [
+          { id: 1, type: 'Source', pos: [0, 0], inputs: [], outputs: [] }
+        ],
+        links: []
+      },
+      catalog
+    )
+    const follower = new FollowerDoc()
+    let batchAttempts = 0
+    const mutations: GraphMutations = {
+      batch: () => {
+        batchAttempts += 1
+        throw new Error('commit failed after first write')
+      },
+      addNode: () => true,
+      setWidget: () => true,
+      connect: () => true,
+      deleteNode: () => true,
+      clearSemanticGraph: () => true
+    }
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind('wf', follower)
+    const update = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(update)
+
+    expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toEqual({
+      status: 'failed',
+      sequence: 1,
+      reason: 'exception'
+    })
+    expect(adapter.retryPending('wf')).toEqual({
+      status: 'failed',
+      sequence: 0,
+      reason: 'blocked'
+    })
+    expect(batchAttempts).toBe(1)
 
     adapter.destroy()
     follower.destroy()
@@ -458,7 +742,7 @@ describe('EcsFollowerAdapter integration', () => {
           actor: 'agent:test',
           opIds: [operationId]
         })
-      ).toBe(true)
+      ).toEqual({ status: 'projected', sequence: seq })
     }
 
     deliver({
@@ -558,7 +842,10 @@ describe('EcsFollowerAdapter integration', () => {
         actor: 'agent:test',
         opIds: [operationId]
       }
-      expect(adapter.applyFrame(frame)).toBe(true)
+      expect(adapter.applyFrame(frame)).toEqual({
+        status: 'projected',
+        sequence: seq
+      })
     }
 
     deliver({
@@ -739,7 +1026,7 @@ describe('EcsFollowerAdapter integration', () => {
           actor: 'agent:test',
           opIds: ['add']
         })
-      ).toBe(true)
+      ).toEqual({ status: 'projected', sequence: 1 })
 
       const nodeMap = nodesMap(host).get('1')
       expect(nodeMap).toBeInstanceOf(Y.Map)
@@ -760,7 +1047,7 @@ describe('EcsFollowerAdapter integration', () => {
             actor: 'agent:test',
             opIds: [`op-${seq}`]
           })
-        ).toBe(true)
+        ).toEqual({ status: 'projected', sequence: seq })
       }
       const widgetValue = (name: string) =>
         useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), name))
@@ -879,7 +1166,7 @@ describe('EcsFollowerAdapter integration', () => {
         actor: 'agent:test',
         opIds: ['op-1']
       })
-    ).toBe(true)
+    ).toEqual({ status: 'projected', sequence: 1 })
 
     const [stored] = useNodeDataStore().getGraphNodesFor('root', 'root')
     expect(stored).toMatchObject({ id: toNodeId(1), type: 'Source' })
@@ -967,7 +1254,10 @@ describe('EcsFollowerAdapter integration', () => {
     followerA.applyRemoteUpdate(updateA)
     followerB.applyRemoteUpdate(updateB)
 
-    expect(adapter.applyFrame(frameA)).toBe(true)
+    expect(adapter.applyFrame(frameA)).toEqual({
+      status: 'projected',
+      sequence: 1
+    })
     expect(events).toEqual(['wf-a:start', 'wf-b:start', 'wf-b:end', 'wf-a:end'])
     expect(followerA.doc.getMap('nodes').has('101')).toBe(true)
     expect(followerA.doc.getMap('nodes').has('202')).toBe(false)
@@ -1048,7 +1338,7 @@ describe('EcsFollowerAdapter integration', () => {
             actor: 'agent:test',
             opIds: ops.map(({ op_id }) => op_id)
           })
-        ).toBe(true)
+        ).toEqual({ status: 'projected', sequence: 1 })
       } else {
         let before = Y.encodeStateVector(host)
         let first = true
@@ -1070,7 +1360,7 @@ describe('EcsFollowerAdapter integration', () => {
               actor: 'agent:test',
               opIds: [singleOp.op_id]
             })
-          ).toBe(true)
+          ).toEqual({ status: 'projected', sequence: seq })
         }
       }
 

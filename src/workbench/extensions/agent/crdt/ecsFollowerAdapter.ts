@@ -10,6 +10,7 @@ import type {
   SemanticLinkPayload,
   SemanticNodePayload
 } from '@/core/graph/graphMutations'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toNodeId } from '@/types/nodeId'
 
@@ -20,6 +21,20 @@ type NodeRootAction = 'add' | 'update' | 'delete'
 export type MutationsForTarget =
   | GraphMutations
   | ((workflowId: string) => GraphMutations)
+
+export type FrameProjectionResult =
+  | { status: 'projected'; sequence: number }
+  | { status: 'queued' }
+  | { status: 'idle' }
+  | { status: 'unbound' }
+  | { status: 'retrying'; sequence: number; attempt: number }
+  | {
+      status: 'failed'
+      sequence: number
+      reason: 'rejected' | 'exception' | 'blocked'
+    }
+
+const PROJECTION_RETRY_MAX_ATTEMPTS = 3
 
 function plain(value: unknown): unknown {
   if (value instanceof Y.Map || value instanceof Y.Array) return value.toJSON()
@@ -113,11 +128,22 @@ interface TargetSession {
   readonly changedWidgets: Map<string, Set<string>>
   readonly replacedWidgetMaps: Set<string>
   readonly changedLinks: Set<string>
-  readonly frameQueue: DocUpdate[]
+  readonly frameQueue: PendingProjection[]
   onNodesChanged: (events: Y.YEvent<Y.AbstractType<unknown>>[]) => void
   onLinksChanged: (event: Y.YMapEvent<unknown>) => void
   reconcileNextFrame: boolean
   applying: boolean
+  projectionBlocked: boolean
+}
+
+interface PendingProjection {
+  readonly update: DocUpdate
+  readonly nodeActions: Map<string, NodeRootAction>
+  readonly changedWidgets: Map<string, Set<string>>
+  readonly replacedWidgetMaps: Set<string>
+  readonly changedLinks: Set<string>
+  readonly reconcile: boolean
+  attempts: number
 }
 
 /**
@@ -148,38 +174,86 @@ export class EcsFollowerAdapter {
   }
 
   /** Queue and drain only the target addressed by this frame. */
-  applyFrame(update: DocUpdate): boolean {
+  applyFrame(update: DocUpdate): FrameProjectionResult {
     const session = this.targets.get(update.workflowId)
-    if (!session) return false
+    if (!session) return { status: 'unbound' }
+    if (session.projectionBlocked)
+      return { status: 'failed', sequence: update.seq, reason: 'blocked' }
 
-    session.frameQueue.push(update)
-    if (session.applying) return true
+    session.frameQueue.push(this.captureSessionPending(session, update))
+    if (session.applying) return { status: 'queued' }
+    return this.drainSession(session)
+  }
+
+  retryPending(workflowId: string): FrameProjectionResult {
+    const session = this.targets.get(workflowId)
+    if (!session) return { status: 'unbound' }
+    if (session.projectionBlocked) {
+      const sequence = session.frameQueue[0]?.update.seq ?? 0
+      return { status: 'failed', sequence, reason: 'blocked' }
+    }
+    if (session.frameQueue.length === 0) return { status: 'idle' }
+    if (session.applying) return { status: 'queued' }
+    return this.drainSession(session)
+  }
+
+  private drainSession(session: TargetSession): FrameProjectionResult {
     session.applying = true
-    let updateCommitted = false
+    let projectedSequence = session.frameQueue[0]?.update.seq ?? 0
     try {
       while (session.frameQueue.length > 0) {
-        const frame = session.frameQueue.shift()
-        if (!frame) continue
-        const committed = this.applyQueuedFrame(session, frame)
-        if (frame === update) updateCommitted = committed
+        const pending = session.frameQueue.shift()
+        if (!pending) continue
+        const result = this.applyQueuedFrame(session, pending)
+        if (result === 'rejected') {
+          pending.attempts += 1
+          if (pending.attempts < PROJECTION_RETRY_MAX_ATTEMPTS) {
+            session.frameQueue.unshift(pending)
+            return {
+              status: 'retrying',
+              sequence: pending.update.seq,
+              attempt: pending.attempts
+            }
+          }
+          this.blockProjection(session)
+          return {
+            status: 'failed',
+            sequence: pending.update.seq,
+            reason: 'rejected'
+          }
+        }
+        if (result === 'exception') {
+          this.blockProjection(session)
+          return {
+            status: 'failed',
+            sequence: pending.update.seq,
+            reason: 'exception'
+          }
+        }
+        projectedSequence = pending.update.seq
       }
     } finally {
       session.applying = false
     }
-    return updateCommitted
+    return { status: 'projected', sequence: projectedSequence }
   }
 
   /** Explicit lineage reset only; reconnect/gap recovery never calls it. */
   clearForReset(workflowId: string, context: RemoteMutationContext): boolean {
     const session = this.targets.get(workflowId)
     if (!session) return false
+    session.projectionBlocked = false
+    session.frameQueue.length = 0
     this.discardSessionPending(session)
     return session.mutations.clearSemanticGraph(context)
   }
 
   discardPending(workflowId: string): void {
     const session = this.targets.get(workflowId)
-    if (session) this.discardSessionPending(session)
+    if (!session) return
+    session.frameQueue.length = 0
+    session.reconcileNextFrame = true
+    this.discardSessionPending(session)
   }
 
   destroy(): void {
@@ -206,6 +280,7 @@ export class EcsFollowerAdapter {
       frameQueue: [],
       reconcileNextFrame: true,
       applying: false,
+      projectionBlocked: false,
       onNodesChanged: (_events): void => undefined,
       onLinksChanged: (_event): void => undefined
     }
@@ -215,15 +290,38 @@ export class EcsFollowerAdapter {
     return session
   }
 
-  private applyQueuedFrame(session: TargetSession, update: DocUpdate): boolean {
-    const nodeActions = new Map(session.nodeActions)
-    const changedWidgets = new Map(
-      [...session.changedWidgets].map(([id, names]) => [id, new Set(names)])
-    )
-    const replacedWidgetMaps = new Set(session.replacedWidgetMaps)
-    const changedLinkIds = new Set(session.changedLinks)
-    const reconcile = session.reconcileNextFrame
+  private captureSessionPending(
+    session: TargetSession,
+    update: DocUpdate
+  ): PendingProjection {
+    const pending = {
+      update,
+      nodeActions: new Map(session.nodeActions),
+      changedWidgets: new Map(
+        [...session.changedWidgets].map(([id, names]) => [id, new Set(names)])
+      ),
+      replacedWidgetMaps: new Set(session.replacedWidgetMaps),
+      changedLinks: new Set(session.changedLinks),
+      reconcile: session.reconcileNextFrame,
+      attempts: 0
+    }
+    session.reconcileNextFrame = false
     this.discardSessionPending(session)
+    return pending
+  }
+
+  private applyQueuedFrame(
+    session: TargetSession,
+    pending: PendingProjection
+  ): 'projected' | 'rejected' | 'exception' {
+    const {
+      update,
+      nodeActions,
+      changedWidgets,
+      replacedWidgetMaps,
+      reconcile
+    } = pending
+    const changedLinkIds = pending.changedLinks
 
     const replacedNodeIds = new Set(
       [...nodeActions]
@@ -246,68 +344,76 @@ export class EcsFollowerAdapter {
     const removedLinkIds = [...changedLinkIds].flatMap((id) =>
       session.links.has(id) ? [] : [Number(id)]
     )
-    const committed = session.mutations.batch(frameContext(update), (batch) => {
-      if (reconcile) {
-        const nodes = [...session.nodes.keys()].flatMap((id) => {
-          const payload = readSemanticNode(session.follower.doc, id)
-          return payload ? [payload] : []
-        })
-        const links = [...session.links.keys()].flatMap((id) => {
-          const link = readSemanticLink(session.follower.doc, id)
-          return link ? [link] : []
-        })
-        batch.removeMissing(
-          nodes.map(({ id }) => toNodeId(id)),
-          links.map(({ id }) => id)
-        )
-        for (const payload of nodes) batch.reconcileNode(payload)
-        for (const link of links) batch.connect(link)
-        return
-      }
+    try {
+      const committed = session.mutations.batch(
+        frameContext(update),
+        (batch) => {
+          if (reconcile) {
+            const nodes = [...session.nodes.keys()].flatMap((id) => {
+              const payload = readSemanticNode(session.follower.doc, id)
+              return payload ? [payload] : []
+            })
+            const links = [...session.links.keys()].flatMap((id) => {
+              const link = readSemanticLink(session.follower.doc, id)
+              return link ? [link] : []
+            })
+            batch.removeMissing(
+              nodes.map(({ id }) => toNodeId(id)),
+              links.map(({ id }) => id)
+            )
+            for (const payload of nodes) batch.reconcileNode(payload)
+            for (const link of links) batch.connect(link)
+            return
+          }
 
-      batch.removeLinks(removedLinkIds)
-      for (const [id, action] of nodeActions) {
-        if (action === 'delete' || action === 'update')
-          batch.deleteNode(toNodeId(id))
-      }
-      for (const [id, action] of nodeActions) {
-        if (action === 'delete') continue
-        const payload = readSemanticNode(session.follower.doc, id)
-        if (!payload) continue
-        batch.addNode(payload)
-      }
-      for (const id of replacedWidgetMaps) {
-        if (nodeActions.has(id)) continue
-        const payload = readSemanticNode(session.follower.doc, id)
-        if (payload) batch.reconcileNode(payload)
-      }
-      for (const [id, names] of changedWidgets) {
-        if (nodeActions.has(id) || replacedWidgetMaps.has(id)) continue
-        const node = session.nodes.get(id)
-        const widgets = node?.get('widgets')
-        if (!(widgets instanceof Y.Map)) continue
-        if ([...names].some((name) => !widgets.has(name))) {
-          const payload = readSemanticNode(session.follower.doc, id)
-          if (payload) batch.reconcileNode(payload)
-          continue
+          batch.removeLinks(removedLinkIds)
+          for (const [id, action] of nodeActions) {
+            if (action === 'delete' || action === 'update')
+              batch.deleteNode(toNodeId(id))
+          }
+          for (const [id, action] of nodeActions) {
+            if (action === 'delete') continue
+            const payload = readSemanticNode(session.follower.doc, id)
+            if (payload) batch.addNode(payload)
+          }
+          for (const id of replacedWidgetMaps) {
+            if (nodeActions.has(id)) continue
+            const payload = readSemanticNode(session.follower.doc, id)
+            if (payload) batch.reconcileNode(payload)
+          }
+          for (const [id, names] of changedWidgets) {
+            if (nodeActions.has(id) || replacedWidgetMaps.has(id)) continue
+            const node = session.nodes.get(id)
+            const widgets = node?.get('widgets')
+            if (!(widgets instanceof Y.Map)) continue
+            if ([...names].some((name) => !widgets.has(name))) {
+              const payload = readSemanticNode(session.follower.doc, id)
+              if (payload) batch.reconcileNode(payload)
+              continue
+            }
+            for (const name of names) {
+              batch.setWidget(toNodeId(id), name, plain(widgets.get(name)))
+            }
+          }
+          for (const id of changedLinkIds) {
+            const link = readSemanticLink(session.follower.doc, id)
+            if (link) batch.connect(link)
+          }
         }
-        for (const name of names) {
-          batch.setWidget(toNodeId(id), name, plain(widgets.get(name)))
-        }
-      }
-      for (const id of changedLinkIds) {
-        const link = readSemanticLink(session.follower.doc, id)
-        if (link) batch.connect(link)
-      }
-    })
+      )
+      return committed ? 'projected' : 'rejected'
+    } catch (error) {
+      reportError(error, {
+        errorType: 'agent_crdt_projection_failure'
+      })
+      return 'exception'
+    }
+  }
 
-    // Only clear the reconciliation flag once the batch actually commits.
-    // A rejected batch (no scope, or validation failure) must leave
-    // reconcileNextFrame set so the next frame retries authoritative
-    // cleanup instead of falling through to incremental handling with
-    // stale local-only graph state still present.
-    if (committed) session.reconcileNextFrame = false
-    return committed
+  private blockProjection(session: TargetSession): void {
+    session.projectionBlocked = true
+    session.frameQueue.length = 0
+    this.discardSessionPending(session)
   }
 
   private discardSessionPending(session: TargetSession): void {

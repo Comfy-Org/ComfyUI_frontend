@@ -42,13 +42,16 @@ const bridgeState = vi.hoisted(() => {
 
 const clientState = vi.hoisted(() => ({
   destroy: vi.fn(),
-  sendOps: vi.fn(() => true)
+  sendOps: vi.fn(
+    (_workflowId: string, _tab: string, _ops: Array<{ op_id: string }>) => true
+  )
 }))
 
 const adapterState = vi.hoisted(() => ({
   bind: vi.fn(),
   unbind: vi.fn(),
-  applyFrame: vi.fn(() => true),
+  applyFrame: vi.fn(),
+  retryPending: vi.fn(),
   clearForReset: vi.fn(),
   discardPending: vi.fn(),
   destroy: vi.fn()
@@ -106,6 +109,7 @@ vi.mock('./ecsFollowerAdapter', () => ({
     bind = adapterState.bind
     unbind = adapterState.unbind
     applyFrame = adapterState.applyFrame
+    retryPending = adapterState.retryPending
     clearForReset = adapterState.clearForReset
     discardPending = adapterState.discardPending
     destroy = adapterState.destroy
@@ -170,13 +174,19 @@ function mountFollower(
   workflowId: Ref<string | null>
   isTargetActive: Ref<boolean>
   status: () => AgentCrdtStatus
+  enqueueHumanOperations: ReturnType<
+    typeof useAgentCrdtFollower
+  >['enqueueHumanOperations']
 } {
   const workflowId = ref<string | null>(initial)
   const isTargetActive = ref(initiallyActive)
   let exposedStatus!: () => AgentCrdtStatus
+  let exposedEnqueue!: ReturnType<
+    typeof useAgentCrdtFollower
+  >['enqueueHumanOperations']
   const host = defineComponent({
     setup() {
-      const { status } = useAgentCrdtFollower(
+      const { status, enqueueHumanOperations } = useAgentCrdtFollower(
         workflowId,
         graphMutations,
         () => null,
@@ -184,11 +194,18 @@ function mountFollower(
         getGraph
       )
       exposedStatus = () => status.value as AgentCrdtStatus
+      exposedEnqueue = enqueueHumanOperations
       return () => null
     }
   })
   const { unmount } = render(host)
-  return { unmount, workflowId, isTargetActive, status: exposedStatus }
+  return {
+    unmount,
+    workflowId,
+    isTargetActive,
+    status: exposedStatus,
+    enqueueHumanOperations: exposedEnqueue
+  }
 }
 
 function bridge(): InstanceType<(typeof bridgeState)['FakeBridge']> {
@@ -203,6 +220,11 @@ function dispatchFrame(type: string, detail: unknown): void {
 
 describe('useAgentCrdtFollower', () => {
   beforeEach(() => {
+    adapterState.applyFrame.mockImplementation((update: { seq: number }) => ({
+      status: 'projected',
+      sequence: update.seq
+    }))
+    adapterState.retryPending.mockReturnValue({ status: 'idle' })
     setActivePinia(createPinia())
     sessionStorage.clear()
     bridgeState.current = null
@@ -559,7 +581,7 @@ describe('useAgentCrdtFollower', () => {
     })
 
     it('counts skipped, not applied, when the adapter has no bound session for the frame', () => {
-      adapterState.applyFrame.mockReturnValueOnce(false)
+      adapterState.applyFrame.mockReturnValueOnce({ status: 'unbound' })
       const { unmount, status } = mountFollower('wf-1')
 
       dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 7 })
@@ -691,7 +713,7 @@ describe('useAgentCrdtFollower', () => {
     })
 
     it('does not reconcile after a frame the adapter skipped', () => {
-      adapterState.applyFrame.mockReturnValueOnce(false)
+      adapterState.applyFrame.mockReturnValueOnce({ status: 'unbound' })
       const { unmount, status } = mountFollower('wf-1', true, () => fakeGraph)
 
       dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
@@ -820,6 +842,74 @@ describe('useAgentCrdtFollower', () => {
       ])
       unmount()
     })
+  })
+
+  it('restores connected status after a successful projection', () => {
+    const { unmount, status } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    expect(status().connected).toBe(false)
+
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 7 })
+
+    expect(status().connected).toBe(true)
+    unmount()
+  })
+
+  it('stamps human ops only from successfully projected updates', () => {
+    const { enqueueHumanOperations, unmount, status } = mountFollower('wf-1')
+    bridge().lastSequence = 41
+    dispatchFrame('doc_subscribed', { ok: true })
+
+    enqueueHumanOperations([
+      {
+        op: 'delete_node',
+        node_id: '1',
+        removed_links: []
+      }
+    ])
+    expect(clientState.sendOps).toHaveBeenLastCalledWith(
+      'wf-1',
+      expect.any(String),
+      [expect.objectContaining({ base_version: 0 })]
+    )
+    const firstOpId = clientState.sendOps.mock.calls.at(-1)?.[2][0]?.op_id
+    if (!firstOpId) throw new Error('expected a sent operation')
+    dispatchFrame('doc_ops_result', {
+      ok: true,
+      applied: [firstOpId],
+      skipped: []
+    })
+
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 41 })
+    bridge().lastSequence = 42
+    bridge().follower.updatesApplied = 3
+    adapterState.applyFrame.mockReturnValueOnce({
+      status: 'failed',
+      sequence: 42,
+      reason: 'rejected'
+    })
+
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 42 })
+
+    expect(status().connected).toBe(false)
+    expect(status().updatesApplied).toBe(0)
+    expect(status().lastFrameType).toBe('projection_error')
+
+    enqueueHumanOperations([
+      {
+        op: 'delete_node',
+        node_id: '1',
+        removed_links: []
+      }
+    ])
+
+    expect(clientState.sendOps).toHaveBeenLastCalledWith(
+      'wf-1',
+      expect.any(String),
+      [expect.objectContaining({ base_version: 41 })]
+    )
+    unmount()
   })
 
   it('suspends a background target and catches up only after it becomes active', async () => {
@@ -1013,6 +1103,25 @@ describe('useAgentCrdtFollower', () => {
     expect(bridge().resubscribe).not.toHaveBeenCalled()
 
     vi.advanceTimersByTime(1000)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
+    unmount()
+  })
+
+  it('keeps stale recovery armed while a projection retry is pending', () => {
+    vi.useFakeTimers()
+    const { unmount, status } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    adapterState.applyFrame.mockReturnValueOnce({
+      status: 'retrying',
+      sequence: 2,
+      attempt: 1
+    })
+
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2 })
+
+    expect(status().connected).toBe(true)
+    expect(status().lastFrameType).toBe('projection_retry')
+    vi.advanceTimersByTime(STALE_AFTER_MS)
     expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
     unmount()
   })
