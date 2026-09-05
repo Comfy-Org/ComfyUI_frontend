@@ -1503,12 +1503,7 @@ export class LGraph
     // remove from canvas render
     const { list_of_graphcanvas } = this
     if (list_of_graphcanvas) {
-      for (const canvas of list_of_graphcanvas) {
-        if (canvas.selected_nodes[node.id])
-          delete canvas.selected_nodes[node.id]
-
-        canvas.deselect(node)
-      }
+      for (const canvas of list_of_graphcanvas) canvas.deselect(node)
     }
 
     // remove from containers
