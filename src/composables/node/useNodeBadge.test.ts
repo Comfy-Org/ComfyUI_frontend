@@ -127,6 +127,12 @@ describe('useNodeBadge', () => {
     await nextTick()
 
     expect(canvas.setDirty).not.toHaveBeenCalled()
+
+    canvasReady = true
+    pricingRevision.value++
+    await nextTick()
+
+    expect(canvas.setDirty).toHaveBeenCalledWith(true, true)
     component.unmount()
   })
 
@@ -141,6 +147,13 @@ describe('useNodeBadge', () => {
     )
 
     expect(canvas.setDirty).not.toHaveBeenCalled()
+
+    canvasReady = true
+    canvasEventListeners.get('litegraph:set-graph')?.(
+      new Event('litegraph:set-graph')
+    )
+
+    expect(canvas.setDirty).toHaveBeenCalledWith(true, true)
     component.unmount()
   })
 })
