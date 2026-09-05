@@ -11,6 +11,7 @@ const handles = vi.hoisted(() => ({
   signOut: vi.fn(),
   google: vi.fn(),
   github: vi.fn(),
+  isProvisioningError: vi.fn(),
   emitUser: undefined as ((user: unknown) => void) | undefined
 }))
 
@@ -25,6 +26,7 @@ vi.mock('../../config/workshop-firebase', () => ({
   signInWorkshopWithGoogle: handles.google,
   signInWorkshopWithGitHub: handles.github,
   signOutWorkshop: handles.signOut,
+  isWorkshopProvisioningError: handles.isProvisioningError,
   onWorkshopUserChanged: (cb: (user: unknown) => void) => {
     handles.emitUser = cb
     handles.onUserChanged()
@@ -38,6 +40,7 @@ beforeEach(() => {
   handles.signOut.mockReset().mockResolvedValue(undefined)
   handles.google.mockReset()
   handles.github.mockReset()
+  handles.isProvisioningError.mockReset().mockReturnValue(false)
   handles.emitUser = undefined
 })
 
@@ -52,14 +55,24 @@ describe('AuthSignIn', () => {
     ).not.toHaveBeenCalled()
   })
 
-  it('attaches the listener when the flag is on', () => {
+  it('attaches the listener when the flag is on', async () => {
     render(AuthSignIn)
-    expect(handles.onUserChanged).toHaveBeenCalledOnce()
+    await waitFor(() => expect(handles.onUserChanged).toHaveBeenCalledOnce())
+  })
+
+  it('attaches the listener when the flag turns on after mount', async () => {
+    handles.flag!.value = false
+    render(AuthSignIn)
+
+    handles.flag!.value = true
+
+    await waitFor(() => expect(handles.onUserChanged).toHaveBeenCalledOnce())
   })
 
   it('keeps a signed-in user on the signed-in screen when sign-out fails', async () => {
     handles.signOut.mockRejectedValue(new Error('network'))
     render(AuthSignIn)
+    await waitFor(() => expect(handles.onUserChanged).toHaveBeenCalledOnce())
     handles.emitUser?.({ email: 'a@b.co', displayName: null })
 
     await screen.findByText(/a@b\.co/)
@@ -101,5 +114,23 @@ describe('AuthSignIn', () => {
       .click(screen.getByRole('button', { name: /continue with github/i }))
 
     expect(await screen.findByRole('alert')).toBeTruthy()
+  })
+
+  it('keeps the signed-in identity visible when provisioning fails', async () => {
+    const failure = {
+      user: { email: 'user@example.com', displayName: null }
+    }
+    handles.isProvisioningError.mockImplementation((error) => error === failure)
+    handles.google.mockRejectedValue(failure)
+    render(AuthSignIn)
+
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: /continue with google/i }))
+
+    expect(await screen.findByText(/user@example\.com/)).toBeTruthy()
+    expect(screen.getByRole('alert').textContent).toContain(
+      'account setup did not finish'
+    )
   })
 })

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { onBeforeUnmount, ref, watch } from 'vue'
 
 import SocialAuthButtons from '@comfyorg/auth-core/SocialAuthButtons.vue'
 
@@ -9,12 +9,6 @@ import type {
   AuthSignInState
 } from '../../config/auth-sign-in-state'
 import { authSignInTransition } from '../../config/auth-sign-in-state'
-import {
-  onWorkshopUserChanged,
-  signInWorkshopWithGitHub,
-  signInWorkshopWithGoogle,
-  signOutWorkshop
-} from '../../config/workshop-firebase'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { useWorkshopAuthFlag } from '../../scripts/posthog'
@@ -27,6 +21,7 @@ const { mode = 'signIn', locale = 'en' } = defineProps<{
 
 const enabled = useWorkshopAuthFlag()
 const state = ref<AuthSignInState>({ step: 'idle' })
+const loadWorkshopFirebase = () => import('../../config/workshop-firebase')
 
 function dispatch(event: AuthSignInEvent) {
   state.value = authSignInTransition(state.value, event)
@@ -35,17 +30,25 @@ function dispatch(event: AuthSignInEvent) {
 async function signInWith(provider: AuthSignInProvider) {
   if (state.value.step === 'pending') return
   dispatch({ type: 'signInStarted', provider })
+  const firebase = await loadWorkshopFirebase()
   try {
     const credential =
       provider === 'google'
-        ? await signInWorkshopWithGoogle()
-        : await signInWorkshopWithGitHub()
+        ? await firebase.signInWorkshopWithGoogle()
+        : await firebase.signInWorkshopWithGitHub()
     dispatch({
       type: 'signInSucceeded',
       email: credential.user.email ?? credential.user.displayName ?? ''
     })
   } catch (error) {
-    dispatch({ type: 'signInFailed', error })
+    if (firebase.isWorkshopProvisioningError(error)) {
+      dispatch({
+        type: 'provisioningFailed',
+        email: error.user.email ?? error.user.displayName ?? ''
+      })
+    } else {
+      dispatch({ type: 'signInFailed', error })
+    }
   }
 }
 
@@ -54,6 +57,7 @@ async function signOut() {
   // drives the transition when it actually clears. Routing it to a sign-in
   // error would strand a signed-in user on an error screen.
   try {
+    const { signOutWorkshop } = await loadWorkshopFirebase()
     await signOutWorkshop()
   } catch (error) {
     console.error('Workshop sign-out failed', error)
@@ -61,22 +65,40 @@ async function signOut() {
 }
 
 let stopUserListener: (() => void) | undefined
-onMounted(() => {
-  // The Firebase listener (and its chunk load) must not run on a flag-off
-  // page, where the whole surface is hidden.
-  if (!enabled.value) return
-  stopUserListener = onWorkshopUserChanged((user) => {
-    dispatch(
-      user
-        ? {
-            type: 'userRestored',
-            email: user.email ?? user.displayName ?? ''
-          }
-        : { type: 'signedOut' }
-    )
-  })
+let listenerGeneration = 0
+watch(
+  enabled,
+  async (on) => {
+    const generation = ++listenerGeneration
+    stopUserListener?.()
+    stopUserListener = undefined
+    if (!on) return
+
+    try {
+      const { onWorkshopUserChanged } = await loadWorkshopFirebase()
+      if (generation !== listenerGeneration) return
+      stopUserListener = onWorkshopUserChanged((user) => {
+        dispatch(
+          user
+            ? {
+                type: 'userRestored',
+                email: user.email ?? user.displayName ?? ''
+              }
+            : { type: 'signedOut' }
+        )
+      })
+    } catch (error) {
+      if (generation === listenerGeneration) {
+        dispatch({ type: 'signInFailed', error })
+      }
+    }
+  },
+  { immediate: true }
+)
+onBeforeUnmount(() => {
+  listenerGeneration += 1
+  stopUserListener?.()
 })
-onBeforeUnmount(() => stopUserListener?.())
 </script>
 
 <template>
@@ -91,6 +113,13 @@ onBeforeUnmount(() => stopUserListener?.())
       </h1>
       <p class="mt-3 text-sm break-all text-primary-comfy-canvas/70">
         {{ t('auth.signIn.signedInAs', locale) }} {{ state.email }}
+      </p>
+      <p
+        v-if="state.messageKey"
+        role="alert"
+        class="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 text-sm text-primary-comfy-canvas"
+      >
+        {{ t(state.messageKey, locale) }}
       </p>
       <a
         href="/workshop/"

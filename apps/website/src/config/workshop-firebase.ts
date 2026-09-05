@@ -54,6 +54,22 @@ interface ProvisionableUser {
   getIdToken: () => Promise<string>
 }
 
+export class WorkshopProvisioningError extends Error {
+  constructor(
+    readonly user: User,
+    options: ErrorOptions
+  ) {
+    super('Signed in, but customer provisioning failed', options)
+    this.name = 'WorkshopProvisioningError'
+  }
+}
+
+export function isWorkshopProvisioningError(
+  error: unknown
+): error is WorkshopProvisioningError {
+  return error instanceof WorkshopProvisioningError
+}
+
 export async function provisionCustomer(
   user: ProvisionableUser,
   fetchImpl: typeof fetch = globalThis.fetch
@@ -73,18 +89,32 @@ export async function provisionCustomer(
   }
 }
 
+async function socialSignIn(
+  provider: GoogleAuthProvider | GithubAuthProvider
+): Promise<UserCredential> {
+  let credential: UserCredential | undefined
+  try {
+    return await socialSignInWithProvisioning({
+      signIn: async () => {
+        credential = await signInWithPopup(workshopAuth(), provider)
+        return credential
+      },
+      provisionCustomer: (result) => provisionCustomer(result.user)
+    })
+  } catch (cause) {
+    if (credential) {
+      throw new WorkshopProvisioningError(credential.user, { cause })
+    }
+    throw cause
+  }
+}
+
 export function signInWorkshopWithGoogle(): Promise<UserCredential> {
-  return socialSignInWithProvisioning({
-    signIn: () => signInWithPopup(workshopAuth(), new GoogleAuthProvider()),
-    provisionCustomer: (credential) => provisionCustomer(credential.user)
-  })
+  return socialSignIn(new GoogleAuthProvider())
 }
 
 export function signInWorkshopWithGitHub(): Promise<UserCredential> {
-  return socialSignInWithProvisioning({
-    signIn: () => signInWithPopup(workshopAuth(), new GithubAuthProvider()),
-    provisionCustomer: (credential) => provisionCustomer(credential.user)
-  })
+  return socialSignIn(new GithubAuthProvider())
 }
 
 export function signOutWorkshop(): Promise<void> {

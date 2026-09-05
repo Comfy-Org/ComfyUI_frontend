@@ -165,6 +165,10 @@ const translations = {
     en: 'Sign-in failed. Please try again.',
     'zh-CN': '登录失败，请重试。'
   },
+  'auth.signIn.error.provisioning': {
+    en: 'You are signed in, but account setup did not finish. Please try again shortly.',
+    'zh-CN': '您已登录，但账户设置尚未完成。请稍后重试。'
+  },
 
   // Tags (global, reusable across sections)
   'tags.partnerNodes': {
