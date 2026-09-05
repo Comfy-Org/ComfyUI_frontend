@@ -261,10 +261,10 @@ function reconcile(
  * `SubgraphNode.configure()` rebuilds the slots from the definition and binds
  * the promoted widgets from the interior. After an in-place reconcile the live
  * instance is left with the payload's flattened slots and no promoted widgets,
- * so repeat exactly what load does.
+ * so repeat exactly what load does while retaining renderer-owned layout.
  *
- * Untouched incumbents keep their `_subgraphSlot`-backed inputs and are left
- * alone.
+ * Untouched incumbents keep their definition-backed inputs and outputs and are
+ * left alone.
  */
 function reconfigureSubgraphInstance(
   graph: MaterializableGraph,
@@ -272,21 +272,42 @@ function reconfigureSubgraphInstance(
   serialised: ISerialisedNode | undefined
 ): void {
   if (!live.isSubgraphNode() || !serialised) return
-  const declared = live.subgraph.inputNode.slots
-  const intact =
-    live.inputs.length === declared.length &&
+  const declaredInputs = live.subgraph.inputNode.slots
+  const declaredOutputs = live.subgraph.outputNode.slots
+  const inputsIntact =
+    live.inputs.length === declaredInputs.length &&
     live.inputs.every((input) => input._subgraphSlot !== undefined)
-  if (intact) return
-  // `configure()` falls back to the class static title when the payload has
-  // none; the reconcile already kept the incumbent title, so carry it through.
-  const info = withNamedWidgetValues(serialised)
+  const outputsIntact =
+    live.outputs.length === declaredOutputs.length &&
+    live.outputs.every(
+      (output, index) =>
+        output.name === declaredOutputs[index]?.name &&
+        output.type === declaredOutputs[index]?.type
+    )
+  if (inputsIntact && outputsIntact) return
+  // `configure()` falls back to the class static title for an empty title.
+  const currentTitle = live.title
+  const {
+    inputs: _inputs,
+    outputs: _outputs,
+    ...definitionOwnedInfo
+  } = withNamedWidgetValues(serialised)
+  const info = {
+    ...definitionOwnedInfo,
+    title: currentTitle || ' ',
+    pos: [live.pos[0], live.pos[1]],
+    size: [live.size[0], live.size[1]],
+    flags: { ...live.flags }
+  } satisfies ISerialisedNode
   try {
-    live.configure(serialised.title ? info : { ...info, title: live.title })
+    withNamedValuesRestore(() => live.configure(info))
   } catch (cause) {
     reportError(cause, {
       errorType: 'agent_node_reconfigure_failed',
       context: { graphId: graph.id, nodeId: String(live.id) }
     })
+  } finally {
+    live.title = currentTitle
   }
 }
 
