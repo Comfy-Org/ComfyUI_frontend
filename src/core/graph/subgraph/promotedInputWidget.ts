@@ -53,12 +53,13 @@ export function inputForWidget(
  * value — this is the bridge that keeps that contract intact.
  *
  * The host {@link useWidgetValueStore} entry stays the sole authoritative
- * value (ADR-0009). `sourceWidget` is resolved by definition, not by host
- * instance — every host of a shared subgraph definition resolves to the same
- * interior widget object — so writing to it must not outlive this call, or a
- * host's edit leaks into every sibling host of that definition. The value is
- * written immediately before invoking the callback, mirroring the
- * write-then-invoke order of {@link BaseWidget.setValue} so first-party
+ * value (ADR-SUBGRAPH-PROMOTION-0009). `sourceWidget` is resolved by
+ * definition, not by host instance — every host of a shared subgraph
+ * definition resolves to the same interior widget object — so writing to it
+ * must not outlive this call, or a host's edit leaks into every sibling host
+ * of that definition. The value is written immediately before invoking the
+ * callback, mirroring the write-then-invoke order of
+ * {@link BaseWidget.setValue} so first-party
  * callbacks that ignore their callback args and read their captured widget's
  * own `.value` (e.g. `useImageUploadWidget`) observe the fresh value, then
  * restored to its prior value once the callback returns.

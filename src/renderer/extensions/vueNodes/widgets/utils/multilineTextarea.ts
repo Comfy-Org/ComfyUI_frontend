@@ -166,7 +166,7 @@ export function createPromotedMultilineWidget(
         // callback-forwarding bridge `_projectPromotedWidget`'s callback
         // provides, so an edit here would never reach the interior source
         // widget's callback. The host store write above always happens
-        // first, so the host stays authoritative (ADR-0009).
+        // first, so the host stays authoritative (ADR-SUBGRAPH-PROMOTION-0009).
         invokePromotedWidgetSourceCallback(subgraphNode, input, value)
       }
     }
