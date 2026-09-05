@@ -27,6 +27,7 @@ import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
 import { useDomClipping } from '@/composables/element/useDomClipping'
 import { findFirstNode } from '@/lib/litegraph/src/utils/collections'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { isComponentWidget, isDOMWidget } from '@/scripts/domWidget'
 import type { DomWidgetState } from '@/stores/domWidgetStore'
@@ -186,7 +187,21 @@ onMounted(() => {
   nextTick(() => {
     mountElementIfVisible()
   }).catch((error) => {
-    console.error('Error mounting DOM widget element:', error)
+    reportError(error, {
+      errorType: 'canvas_dom_widget_mount_failed',
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'canvas',
+        operation: 'render',
+        outcome: 'failed'
+      },
+      context: {
+        nodeId: widget.node.id,
+        visible: widgetState.visible,
+        hasElement: Boolean(widgetElement.value)
+      },
+      level: 'error'
+    })
   })
 })
 

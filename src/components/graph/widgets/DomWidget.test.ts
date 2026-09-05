@@ -4,11 +4,16 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive, ref } from 'vue'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { BaseDOMWidget } from '@/scripts/domWidget'
 import type { DomWidgetState } from '@/stores/domWidgetStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import DomWidget from './DomWidget.vue'
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: vi.fn()
+}))
 
 const mockUpdateClipPath = vi.fn()
 const mockClippingStyle = ref<Record<string, string>>({})
@@ -279,6 +284,44 @@ describe('DomWidget position update matrix', () => {
 describe('native DOM widget interaction lifecycle', () => {
   afterEach(() => {
     useDomWidgetStore().clear()
+  })
+
+  it('reports and contains DOM widget mount failures', async () => {
+    const widgetState = createWidgetState(false)
+    const input = document.createElement('input')
+    Object.assign(widgetState.widget, { element: input })
+    vi.spyOn(HTMLElement.prototype, 'appendChild').mockImplementation(function (
+      this: HTMLElement,
+      child: Node
+    ) {
+      if (child === input) throw new Error('mount failed')
+      return Node.prototype.appendChild.call(this, child)
+    })
+
+    const rendered = render(DomWidget, {
+      props: { widgetState }
+    })
+    await nextTick()
+    await nextTick()
+
+    expect(reportError).toHaveBeenCalledWith(new Error('mount failed'), {
+      errorType: 'canvas_dom_widget_mount_failed',
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'canvas',
+        operation: 'render',
+        outcome: 'failed'
+      },
+      context: {
+        nodeId: 1,
+        visible: true,
+        hasElement: true
+      },
+      level: 'error'
+    })
+    expect(rendered.container).not.toContainElement(input)
+
+    rendered.unmount()
   })
 
   it('preserves selection and outside-click focus behavior, then removes listeners', async () => {
