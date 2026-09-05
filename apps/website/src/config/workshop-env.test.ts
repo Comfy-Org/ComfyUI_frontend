@@ -15,7 +15,7 @@ describe('Workshop backend environment', () => {
     } = await import('./workshop-env')
 
     expect(WORKSHOP_ROUTER_BASE_URL).toBe('https://stagingapi.comfy.org')
-    expect(WORKSHOP_CLOUD_BASE_URL).toBe('https://staging.cloud.comfy.org')
+    expect(WORKSHOP_CLOUD_BASE_URL).toBe('https://stagingcloud.comfy.org')
     expect(WORKSHOP_FIREBASE_OPTIONS.projectId).toBe('dreamboothy-dev')
   })
 
