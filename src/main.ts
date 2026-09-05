@@ -33,6 +33,8 @@ import { stripPaymentReturnParams } from '@/platform/cloud/subscription/utils/pa
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 
+import { setDevAssertReporter } from '@/base/common/devAssert'
+
 import App from './App.vue'
 // Intentionally relative import to ensure the CSS is loaded in the right order (after litegraph.css)
 import './assets/css/style.css'
@@ -169,6 +171,15 @@ app
     firebaseApp,
     modules: [VueFireAuth()]
   })
+
+setDevAssertReporter((message) => {
+  if (__IS_NIGHTLY__) {
+    useToastStore().addAlert(message)
+  }
+  if (isCloud || __DISTRIBUTION__ === 'desktop') {
+    captureMessage(message, { level: 'warning' })
+  }
+})
 
 if (isCloud && hasHostTelemetryBridge) {
   syncHostUserIdWithFirebaseAuth()

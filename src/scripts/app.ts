@@ -6,6 +6,11 @@ import { shallowRef } from 'vue'
 
 import { partnerRunGateBlocksAutoQueue } from '@/composables/billing/usePartnerNodesRunGate'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
+import {
+  applyViewport,
+  measureViewportFromElement
+} from '@/renderer/core/canvas/canvasViewport'
+import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
@@ -1085,15 +1090,8 @@ export class ComfyApp {
   }
 
   private resizeCanvas(canvas: HTMLCanvasElement) {
-    // Limit minimal scale to 1, see https://github.com/comfyanonymous/ComfyUI/pull/845
-    const scale = Math.max(window.devicePixelRatio, 1)
-
-    // Clear fixed width and height while calculating rect so it uses 100% instead
-    canvas.height = canvas.width = NaN
-    const { width, height } = canvas.getBoundingClientRect()
-    canvas.width = Math.round(width * scale)
-    canvas.height = Math.round(height * scale)
-    canvas.getContext('2d')?.scale(scale, scale)
+    const viewport = measureViewportFromElement(canvas)
+    applyViewport(viewport, canvas, this.canvas.bgcanvas)
     this.canvas?.draw(true, true)
   }
 
@@ -1272,6 +1270,9 @@ export class ComfyApp {
       workflowNavigationId?: number
     } = {}
   ): Promise<LoadedComfyWorkflow | boolean> {
+    const canvasScheduler = useCanvasScheduler()
+    canvasScheduler.clear()
+
     const {
       checkForRerouteMigration = false,
       openSource,
@@ -1422,7 +1423,6 @@ export class ComfyApp {
       }
     }
 
-    const canvasVisible = !!(this.canvasEl.width && this.canvasEl.height)
     const fitView = () => {
       if (
         restore_view &&
@@ -1445,7 +1445,7 @@ export class ComfyApp {
               this.canvas.visible_area
             )
           ) {
-            requestAnimationFrame(() => useLitegraphService().fitView())
+            canvasScheduler.schedule(() => useLitegraphService().fitView())
           }
         } else {
           useLitegraphService().fitView()
@@ -1476,7 +1476,10 @@ export class ComfyApp {
           )
         }
 
-        if (canvasVisible) fitView()
+        canvasScheduler.schedule(() => {
+          this.resizeCanvas(this.canvasEl)
+          fitView()
+        })
       } catch (error) {
         useDialogService().showErrorDialog(error, {
           title: t('errorDialog.loadWorkflowTitle'),
@@ -1576,13 +1579,6 @@ export class ComfyApp {
       // Capture the workflow this load activated before the asset-scan awaits
       // below can hand control back and let the user switch to another one.
       activatedWorkflow = useWorkflowStore().activeWorkflow ?? undefined
-
-      // If the canvas was not visible and we're a fresh load, resize the canvas and fit the view
-      // This fixes switching from app mode to a new graph mode workflow (e.g. load template)
-      if (!canvasVisible && (!workflow || typeof workflow === 'string')) {
-        this.canvas.resize()
-        requestAnimationFrame(() => fitView())
-      }
 
       // Drop missing-node entries whose enclosing subgraph is
       // muted/bypassed. The initial JSON scan only checks each node's

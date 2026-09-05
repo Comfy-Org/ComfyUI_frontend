@@ -16,7 +16,13 @@ const { mockSetDirty, mockFitView } = vi.hoisted(() => ({
 }))
 
 vi.mock('@/scripts/app', () => {
+  const mockCanvasElement = {
+    offsetParent: document.body,
+    offsetWidth: 1920,
+    offsetHeight: 1080
+  }
   const mockCanvas = {
+    canvas: mockCanvasElement,
     subgraph: undefined as unknown,
     graph: undefined as unknown,
     ds: {
@@ -53,8 +59,20 @@ vi.mock('@/scripts/app', () => {
   }
 })
 
+vi.mock('@vueuse/core', async () => {
+  const actual = await vi.importActual('@vueuse/core')
+  return {
+    ...actual,
+    createSharedComposable: <Fn extends (...args: unknown[]) => unknown>(
+      fn: Fn
+    ) => fn
+  }
+})
+
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
+    linearMode: false,
+    canvas: app.canvas,
     getCanvas: () => app.canvas
   })
 }))
@@ -62,6 +80,18 @@ vi.mock('@vueuse/router', () => ({ useRouteHash: vi.fn() }))
 
 vi.mock('@/services/litegraphService', () => ({
   useLitegraphService: () => ({ fitView: mockFitView })
+}))
+
+vi.mock('@/renderer/core/canvas/useCanvasScheduler', () => ({
+  useCanvasScheduler: () => ({
+    schedule: (op: () => void) => {
+      requestAnimationFrame(() => op())
+    },
+    flush: vi.fn(),
+    clear: vi.fn(),
+    pending: () => 0,
+    isCanvasReady: () => true
+  })
 }))
 
 const mockCanvas = app.canvas
