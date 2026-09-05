@@ -10,6 +10,8 @@ import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
+const UPLOAD_TIMEOUT_MS = 120_000
+
 interface UseWidgetSelectActionsOptions {
   modelValue: Ref<string | undefined>
   dropdownItems: ComputedRef<FormDropdownItem[]>
@@ -51,7 +53,8 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
 
     const resp = await api.fetchApi('/upload/image', {
       method: 'POST',
-      body
+      body,
+      signal: AbortSignal.timeout(UPLOAD_TIMEOUT_MS)
     })
 
     if (resp.status !== 200) {

@@ -205,5 +205,54 @@ describe('useWidgetSelectActions', () => {
         '500 - Internal Server Error'
       )
     })
+
+    it('bounds a stalled upload instead of waiting forever', async () => {
+      const { api } = await import('@/scripts/api')
+      const expireDeadlines: (() => void)[] = []
+      const timeoutSpy = vi
+        .spyOn(AbortSignal, 'timeout')
+        .mockImplementation(() => {
+          const controller = new AbortController()
+          expireDeadlines.push(() =>
+            controller.abort(
+              new DOMException('signal timed out', 'TimeoutError')
+            )
+          )
+          return controller.signal
+        })
+      vi.mocked(api.fetchApi).mockImplementation(
+        (_route: string, options?: RequestInit) =>
+          new Promise<Response>((_resolve, reject) => {
+            const signal = options?.signal
+            signal?.addEventListener('abort', () => {
+              reject(signal.reason)
+            })
+          })
+      )
+
+      const modelValue = ref<string | undefined>('original.png')
+      const { handleFilesUpdate } = useWidgetSelectActions({
+        modelValue,
+        dropdownItems: computed(() => []),
+        widget: () =>
+          fromPartial<SimplifiedWidget<string | undefined>>({
+            name: 'test',
+            type: 'combo',
+            options: { values: [] }
+          }),
+        uploadFolder: () => 'input',
+        uploadSubfolder: () => undefined
+      })
+
+      const update = handleFilesUpdate([new File(['test'], 'stalled.png')])
+
+      expect(expireDeadlines).toHaveLength(1)
+      expect(timeoutSpy).toHaveBeenCalledWith(120_000)
+
+      expireDeadlines[0]()
+      await update
+
+      expect(modelValue.value).toBe('original.png')
+    })
   })
 })
