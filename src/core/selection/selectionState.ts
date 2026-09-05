@@ -21,7 +21,7 @@ export function parseSelectableKey(key: SelectableKey): {
   }
 }
 
-/** Insertion-ordered selection; the last key is the primary selection. */
+/** Insertion-ordered selection of one graph scope. */
 export interface SelectionState {
   readonly order: readonly SelectableKey[]
 }
@@ -36,10 +36,6 @@ export type SelectionCommand =
   | { readonly type: 'selection.add'; readonly keys: readonly SelectableKey[] }
   | {
       readonly type: 'selection.remove'
-      readonly keys: readonly SelectableKey[]
-    }
-  | {
-      readonly type: 'selection.toggle'
       readonly keys: readonly SelectableKey[]
     }
   | { readonly type: 'selection.clear' }
@@ -73,13 +69,6 @@ function nextOrder(
     case 'selection.remove': {
       const removed = new Set(command.keys)
       return order.filter((key) => !removed.has(key))
-    }
-    case 'selection.toggle': {
-      const toggled = new Set(command.keys)
-      return [
-        ...order.filter((key) => !toggled.has(key)),
-        ...unique(command.keys, new Set(order))
-      ]
     }
   }
 }

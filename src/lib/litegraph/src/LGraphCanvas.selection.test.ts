@@ -9,6 +9,7 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { selectableKeyOf } from '@/lib/litegraph/src/utils/selectableItems'
 import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -28,7 +29,10 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
     allocateZIndex: vi.fn(() => 0),
     readNodeRect: vi.fn(() => false),
     contentSizeOf: vi.fn(),
-    getGroupLayout: vi.fn()
+    getGroupLayout: vi.fn(),
+    getRerouteLayout: vi.fn(),
+    applyOperations: vi.fn(),
+    clearGraph: vi.fn()
   }
 }))
 
@@ -274,6 +278,41 @@ describe('LGraphCanvas selection', () => {
 
       expect(canvas.selectedItems.size).toBe(0)
       expect(graph.nodes).toHaveLength(0)
+    })
+
+    it('records and removes every selectable kind', () => {
+      const group = addGroup(graph, 'G', [400, 200, 100, 100])
+      const reroute = graph.setReroute({ pos: [500, 500], linkIds: [] })!
+      const subgraph = createTestSubgraph({ rootGraph: graph })
+
+      for (const item of [a, group, reroute]) canvas.select(item)
+      expect(canvas.selectedItems.size).toBe(3)
+      for (const item of [a, group, reroute]) canvas.deselect(item)
+      expect(canvas.selectedItems.size).toBe(0)
+
+      canvas.setGraph(subgraph)
+      graph = subgraph
+      const ioNodes = [subgraph.inputNode, subgraph.outputNode]
+      for (const item of ioNodes) canvas.select(item)
+      expect(canvas.selectedItems.size).toBe(2)
+      for (const item of ioNodes) canvas.deselect(item)
+      expect(canvas.selectedItems.size).toBe(0)
+    })
+
+    it('graph.clear() evicts the selection of every scope in that root', () => {
+      const store = useSelectionStore()
+      const subgraph = createTestSubgraph({ rootGraph: graph })
+      const scopes = [graphScopeOf(graph), graphScopeOf(subgraph)]
+      for (const scope of scopes) {
+        store.apply(scope, {
+          type: 'selection.add',
+          keys: [selectableKeyOf(a)]
+        })
+      }
+
+      graph.clear()
+
+      for (const scope of scopes) expect(store.selectedKeys(scope)).toEqual([])
     })
 
     it('setGraph() clears the selection of the graph being left', () => {
