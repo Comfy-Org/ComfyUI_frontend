@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { WorkshopField } from './workshop-detail'
 import { defaultWorkshopValues } from './workshop-detail'
-import { buildWorkshopInput, buildRouterSnippet } from './workshop-snippets'
+import { buildWorkshopInput, buildWorkshopSnippet } from './workshop-snippets'
 
 const fields: WorkshopField[] = [
   {
@@ -107,7 +107,7 @@ describe('Workshop snippets', () => {
     'builds the %s snippet from the current values',
     (language) => {
       expect(
-        buildRouterSnippet(language, 'bfl/flux-3', fields, {
+        buildWorkshopSnippet(language, 'bfl/flux-3', fields, {
           prompt: 'A red fox',
           enhance: true
         })
@@ -135,7 +135,7 @@ describe('Workshop snippets', () => {
     // Apostrophes are ordinary in prompts. Interpolating raw JSON into a
     // single-quoted argument ends the quote early and the command no longer
     // parses, which `bash -n` rejects.
-    const snippet = buildRouterSnippet('http', 'bfl/flux-2-pro', promptOnly, {
+    const snippet = buildWorkshopSnippet('http', 'bfl/flux-2-pro', promptOnly, {
       prompt: "don't stop"
     })
 
