@@ -45,7 +45,8 @@ describe('useReconnectQueueRefresh', () => {
     const refresh = useReconnectQueueRefresh()
     await refresh()
 
-    expect(clearSpy).toHaveBeenCalledTimes(1)
+    // Once inside queueStore.update(), once from the reconnect path itself.
+    expect(clearSpy).toHaveBeenCalledTimes(2)
     expect(clearSpy).toHaveBeenCalledWith(
       new Set(['run-1', 'pend-1', 'pend-2'])
     )

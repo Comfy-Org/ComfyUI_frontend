@@ -1277,6 +1277,26 @@ describe('useExecutionStore - clearActiveJobIfStale', () => {
     expect(store.activeJobId).toBeNull()
     expect(store.queuedJobs['other']).toBeDefined()
   })
+
+  it('preserves a job that started at or after the snapshot was requested', () => {
+    store.activeJobId = 'job-1'
+    store.queuedJobs = { 'job-1': { nodes: {}, executionStartedAt: 1000 } }
+
+    store.clearActiveJobIfStale(new Set(), 1000)
+
+    expect(store.activeJobId).toBe('job-1')
+    expect(store.queuedJobs['job-1']).toBeDefined()
+  })
+
+  it('clears a job that started before the snapshot was requested', () => {
+    store.activeJobId = 'job-1'
+    store.queuedJobs = { 'job-1': { nodes: {}, executionStartedAt: 999 } }
+
+    store.clearActiveJobIfStale(new Set(), 1000)
+
+    expect(store.activeJobId).toBeNull()
+    expect(store.queuedJobs['job-1']).toBeUndefined()
+  })
 })
 
 describe('useExecutionStore - progress_text startup guard', () => {

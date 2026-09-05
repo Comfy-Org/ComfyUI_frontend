@@ -533,6 +533,7 @@ export const useQueueStore = defineStore('queue', () => {
     updateState.dirty = false
     isLoading.value = true
     try {
+      const snapshotRequestedAt = performance.now()
       const [queueResult, historyResult] = await Promise.allSettled([
         api.getQueue({ throwOnError: true }),
         api.getHistory(maxHistoryItems.value)
@@ -559,6 +560,9 @@ export const useQueueStore = defineStore('queue', () => {
           ...queue.Pending.map((j) => j.id)
         ])
         executionStore.reconcileInitializingJobs(activeJobIds)
+        // Not gated on `historyResult`: getQueue and getHistory run
+        // concurrently and can disagree right after a job finishes.
+        executionStore.clearActiveJobIfStale(activeJobIds, snapshotRequestedAt)
       } else {
         console.error('Failed to fetch queue:', queueResult.reason)
       }

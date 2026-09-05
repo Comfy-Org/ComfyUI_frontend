@@ -1168,4 +1168,68 @@ describe('useQueueStore', () => {
       expect(store.isLoading).toBe(false)
     })
   })
+
+  describe('update() - stale active job recovery', () => {
+    function setActiveJob(id: string, executionStartedAt: number) {
+      const executionStore = useExecutionStore()
+      executionStore.activeJobId = id
+      executionStore.queuedJobs = { [id]: { nodes: {}, executionStartedAt } }
+      return executionStore
+    }
+
+    it('clears an active job missing from the fresh queue snapshot, independent of history', async () => {
+      // Regression for the race in PR #11866 review thread
+      // (discussion_r3178588879): getQueue and getHistory are fetched
+      // concurrently, so a job that just finished can be absent from
+      // Running/Pending while not yet present in history. If a terminal WS
+      // message is dropped, executionStore.activeJobId must still be
+      // recovered from the queue snapshot alone. It cannot wait on history.
+      mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
+      mockGetHistory.mockResolvedValue([]) // job not yet in history either
+      const executionStore = setActiveJob('job-1', performance.now() - 1000)
+
+      await store.update()
+
+      expect(executionStore.activeJobId).toBeNull()
+    })
+
+    it('does not clear the active job when it is still in the queue snapshot', async () => {
+      mockGetQueue.mockResolvedValue({
+        Running: [createRunningJob(0, 'run-1')],
+        Pending: []
+      })
+      mockGetHistory.mockResolvedValue([])
+      const executionStore = setActiveJob('run-1', performance.now() - 1000)
+
+      await store.update()
+
+      expect(executionStore.activeJobId).toBe('run-1')
+    })
+
+    it('keeps a job whose execution_start arrived while the fetch was in flight', async () => {
+      // Auto-queue fires the next POST /prompt from the same status event that
+      // triggers update(), so the GET /queue snapshot can predate the new job
+      // while its execution_start WS message lands before the response does.
+      mockGetQueue.mockImplementation(async () => {
+        setActiveJob('late-1', performance.now())
+        return { Running: [], Pending: [] }
+      })
+      mockGetHistory.mockResolvedValue([])
+      const executionStore = useExecutionStore()
+
+      await store.update()
+
+      expect(executionStore.activeJobId).toBe('late-1')
+    })
+
+    it('skips stale-job reconciliation when the queue fetch fails', async () => {
+      mockGetQueue.mockRejectedValue(new Error('queue down'))
+      mockGetHistory.mockResolvedValue([])
+      const executionStore = setActiveJob('job-1', performance.now() - 1000)
+
+      await store.update()
+
+      expect(executionStore.activeJobId).toBe('job-1')
+    })
+  })
 })
