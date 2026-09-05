@@ -13,9 +13,6 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { selectableKeyOf } from '@/renderer/core/canvas/litegraph/selectionAdapter'
-import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
-import { graphScopeOf } from '@/types/graphScopeId'
 
 const { mockShowNodeOptions, mockGetCanvasContextMenuTarget } = vi.hoisted(
   () => ({
@@ -39,15 +36,15 @@ vi.mock<unknown>(
 
 interface StubCanvas {
   graph: LGraph
+  groupSelectChildren: boolean
   deselectAll: ReturnType<typeof vi.fn>
+  select: ReturnType<typeof vi.fn>
   selectedItems: Set<unknown>
-  state: { selectionChanged: boolean }
 }
 
 describe('useGroupContextMenu', () => {
   const event = fromPartial<CanvasPointerEvent>({ canvasX: 10, canvasY: 20 })
   let group: LGraphGroup
-  let recomputeInsideNodes: ReturnType<typeof vi.spyOn>
   let legacyMenuMock: ReturnType<typeof vi.fn>
   let stubCanvas: StubCanvas
 
@@ -56,7 +53,6 @@ describe('useGroupContextMenu', () => {
     const graph = createTestSubgraph({ rootGraph: new LGraph() })
     group = new LGraphGroup()
     graph.add(group)
-    recomputeInsideNodes = vi.spyOn(group, 'recomputeInsideNodes')
     mockGetCanvasContextMenuTarget.mockReturnValue({ group })
 
     legacyMenuMock = vi.fn()
@@ -66,12 +62,17 @@ describe('useGroupContextMenu', () => {
 
     stubCanvas = {
       graph,
+      groupSelectChildren: true,
       deselectAll: vi.fn(),
-      selectedItems: new Set(),
-      state: { selectionChanged: false }
+      select: vi.fn(),
+      selectedItems: new Set()
     }
     stubCanvas.deselectAll.mockImplementation(() => {
       stubCanvas.selectedItems.clear()
+    })
+    stubCanvas.select.mockImplementation((item: unknown) => {
+      expect(stubCanvas.groupSelectChildren).toBe(false)
+      stubCanvas.selectedItems.add(item)
     })
   })
 
@@ -87,21 +88,25 @@ describe('useGroupContextMenu', () => {
     invoke(undefined)
 
     expect(stubCanvas.deselectAll).toHaveBeenCalledOnce()
-    expect(group.selected).toBe(true)
-    expect(stubCanvas.selectedItems.has(group)).toBe(true)
-    expect(
-      useSelectionStore().isSelected(
-        graphScopeOf(stubCanvas.graph),
-        selectableKeyOf(group)
-      )
-    ).toBe(true)
-    expect(stubCanvas.state.selectionChanged).toBe(true)
-    expect(recomputeInsideNodes).toHaveBeenCalledOnce()
+    expect(stubCanvas.select).toHaveBeenCalledExactlyOnceWith(group)
+    expect(stubCanvas.groupSelectChildren).toBe(true)
     expect(mockShowNodeOptions).toHaveBeenCalledWith(event)
     expect(stubCanvas.deselectAll.mock.invocationCallOrder[0]).toBeLessThan(
+      stubCanvas.select.mock.invocationCallOrder[0]
+    )
+    expect(stubCanvas.select.mock.invocationCallOrder[0]).toBeLessThan(
       mockShowNodeOptions.mock.invocationCallOrder[0]
     )
     expect(legacyMenuMock).not.toHaveBeenCalled()
+  })
+
+  it('restores the child-cascade setting when select throws', () => {
+    stubCanvas.select.mockImplementation(() => {
+      throw new Error('boom')
+    })
+
+    expect(() => invoke(undefined)).toThrow('boom')
+    expect(stubCanvas.groupSelectChildren).toBe(true)
   })
 
   it('falls through to the legacy menu when a node is under the cursor', () => {
@@ -159,33 +164,25 @@ describe('useGroupContextMenu', () => {
   })
 
   it('keeps the menu open without re-selecting when only the group is selected', () => {
-    group.selected = true
     stubCanvas.selectedItems.add(group)
 
     invoke(undefined)
 
     expect(stubCanvas.deselectAll).not.toHaveBeenCalled()
-    expect(stubCanvas.selectedItems.size).toBe(1)
-    expect(stubCanvas.selectedItems.has(group)).toBe(true)
-    expect(stubCanvas.state.selectionChanged).toBe(false)
-    expect(group.recomputeInsideNodes).not.toHaveBeenCalled()
+    expect(stubCanvas.select).not.toHaveBeenCalled()
     expect(mockShowNodeOptions).toHaveBeenCalledWith(event)
     expect(legacyMenuMock).not.toHaveBeenCalled()
   })
 
   it('reselects the group when selected child nodes would hide group actions', () => {
-    const childNode = { selected: true }
-    group.selected = true
     stubCanvas.selectedItems.add(group)
-    stubCanvas.selectedItems.add(childNode)
+    stubCanvas.selectedItems.add({ selected: true })
 
     invoke(undefined)
 
     expect(stubCanvas.deselectAll).toHaveBeenCalledOnce()
-    expect(stubCanvas.selectedItems.size).toBe(1)
-    expect(stubCanvas.selectedItems.has(group)).toBe(true)
-    expect(stubCanvas.state.selectionChanged).toBe(true)
-    expect(group.recomputeInsideNodes).toHaveBeenCalledOnce()
+    expect(stubCanvas.select).toHaveBeenCalledExactlyOnceWith(group)
+    expect([...stubCanvas.selectedItems]).toEqual([group])
     expect(mockShowNodeOptions).toHaveBeenCalledWith(event)
     expect(legacyMenuMock).not.toHaveBeenCalled()
   })
