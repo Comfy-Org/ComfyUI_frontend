@@ -464,7 +464,14 @@ const {
   // `app.isGraphReady` is a plain getter; reading `canvasStore.canvas` (set
   // right after `app.setup()`) makes the follower's graph watch fire once the
   // root graph exists.
-  () => (canvasStore.canvas && app.isGraphReady ? app.rootGraph : null)
+  () => {
+    const rootGraphId = boundWorkflowId.value
+      ? boundTabFor(boundWorkflowId.value)?.activeState?.id
+      : null
+    return canvasStore.canvas && app.isGraphReady && rootGraphId
+      ? app.rootGraph
+      : null
+  }
 )
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,

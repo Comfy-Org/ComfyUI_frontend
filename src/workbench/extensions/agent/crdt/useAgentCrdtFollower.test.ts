@@ -46,7 +46,7 @@ const clientState = vi.hoisted(() => ({
 }))
 
 const adapterState = vi.hoisted(() => ({
-  bind: vi.fn(),
+  bind: vi.fn(() => true),
   unbind: vi.fn(),
   applyFrame: vi.fn(() => true),
   clearForReset: vi.fn(),
@@ -206,6 +206,7 @@ describe('useAgentCrdtFollower', () => {
     setActivePinia(createPinia())
     sessionStorage.clear()
     bridgeState.current = null
+    adapterState.bind.mockReset().mockReturnValue(true)
     materializerState.reconcileAgentAdapters.mockReset().mockReturnValue([])
     definitionsState.readSubgraphDefinitions.mockClear()
   })
@@ -213,6 +214,11 @@ describe('useAgentCrdtFollower', () => {
   it('subscribes immediately to a bound workflow and reports it in status', () => {
     const { unmount, status } = mountFollower('wf-1')
 
+    expect(adapterState.bind).toHaveBeenCalledWith('wf-1', bridge().follower, {
+      source: 'agent-remote',
+      actor: 'agent:replay',
+      opId: 'follower-bind:wf-1'
+    })
     expect(bridge().subscribe).toHaveBeenCalledWith('wf-1')
     expect(status().workflowId).toBe('wf-1')
     expect(status().enabled).toBe(true)
@@ -274,6 +280,44 @@ describe('useAgentCrdtFollower', () => {
       expect(bridge().subscribe).toHaveBeenLastCalledWith('wf-2')
       unmount()
     })
+  })
+
+  it('binds a workflow switch only after the bridge replaces its lineage', async () => {
+    const { unmount, workflowId } = mountFollower('wf-1')
+    const oldFollower = bridge().follower
+    const replacementFollower = {
+      updatesApplied: 0,
+      doc: { getMap: () => ({ toJSON: () => ({}) }) }
+    }
+    adapterState.bind.mockClear()
+    bridge().subscribe.mockImplementationOnce((next: string) => {
+      bridge().follower = replacementFollower
+      bridge().dispatchEvent(
+        new CustomEvent('follower_replaced', {
+          detail: { workflowId: next }
+        })
+      )
+    })
+
+    workflowId.value = 'wf-2'
+    await nextTick()
+
+    expect(adapterState.bind).toHaveBeenCalledTimes(1)
+    expect(adapterState.bind).toHaveBeenCalledWith(
+      'wf-2',
+      replacementFollower,
+      {
+        source: 'agent-remote',
+        actor: 'agent:replay',
+        opId: 'follower-bind:wf-2'
+      }
+    )
+    expect(adapterState.bind).not.toHaveBeenCalledWith(
+      'wf-2',
+      oldFollower,
+      expect.anything()
+    )
+    unmount()
   })
 
   it('FE-1902: persists a binding only once the server confirms it', () => {
@@ -478,7 +522,12 @@ describe('useAgentCrdtFollower', () => {
     expect(adapterState.bind).toHaveBeenCalledTimes(2)
     expect(adapterState.bind).toHaveBeenLastCalledWith(
       'wf-1',
-      bridge().follower
+      bridge().follower,
+      {
+        source: 'agent-remote',
+        actor: 'agent:replay',
+        opId: 'follower-bind:wf-1'
+      }
     )
     unmount()
   })
@@ -726,6 +775,29 @@ describe('useAgentCrdtFollower', () => {
       expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
         fakeGraph,
         fakeDefinitions
+      )
+      unmount()
+    })
+
+    it('retries rejected baseline projection when the graph becomes ready', async () => {
+      adapterState.bind.mockReturnValueOnce(false).mockReturnValue(true)
+      const graph = shallowRef<MaterializableGraph | null>(null)
+      const { unmount } = mountFollower('wf-1', true, () => graph.value)
+
+      expect(adapterState.bind).toHaveBeenCalledTimes(1)
+
+      graph.value = fakeGraph
+      await nextTick()
+
+      expect(adapterState.bind).toHaveBeenCalledTimes(2)
+      expect(adapterState.bind).toHaveBeenLastCalledWith(
+        'wf-1',
+        bridge().follower,
+        {
+          source: 'agent-remote',
+          actor: 'agent:replay',
+          opId: 'follower-bind:wf-1'
+        }
       )
       unmount()
     })
