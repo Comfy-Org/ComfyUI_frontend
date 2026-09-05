@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import HeaderAccount from './HeaderAccount.vue'
@@ -8,7 +9,9 @@ const h = vi.hoisted(() => ({
   flag: undefined as { value: boolean } | undefined,
   user: undefined as { value: unknown } | undefined,
   session: undefined as { value: unknown } | undefined,
-  balance: undefined as { value: unknown } | undefined
+  balance: undefined as { value: unknown } | undefined,
+  ensureFresh: vi.fn(),
+  signOut: vi.fn()
 }))
 
 vi.mock('../../scripts/posthog', async () => {
@@ -28,8 +31,8 @@ vi.mock('../../config/workshop-session-state', async () => {
     useWorkshopSession: () => ({
       user,
       session,
-      ensureFresh: vi.fn(),
-      signOut: vi.fn()
+      ensureFresh: h.ensureFresh,
+      signOut: h.signOut
     })
   }
 })
@@ -48,6 +51,8 @@ beforeEach(() => {
   h.user!.value = null
   h.session!.value = undefined
   h.balance!.value = { status: 'unknown' }
+  h.ensureFresh.mockReset().mockResolvedValue({ status: 'error' })
+  h.signOut.mockReset().mockResolvedValue(undefined)
 })
 
 describe('HeaderAccount', () => {
@@ -89,6 +94,38 @@ describe('HeaderAccount', () => {
     // A bare aria-label="Account" would win over the child text and leave the
     // balance unspoken; the accessible name must carry it.
     expect(screen.getByRole('button', { name: /1,234 credits/i })).toBeTruthy()
+  })
+
+  it('uses the singular label for one credit', () => {
+    h.user!.value = { email: 'a@b.co', displayName: 'Ada' }
+    h.session!.value = { token: 'jwt', uid: 'user-1', workspace, role: 'owner' }
+    h.balance!.value = { status: 'ok', credits: 1 }
+    render(HeaderAccount)
+
+    expect(screen.getByRole('button', { name: /1 credit$/i })).toBeTruthy()
+  })
+
+  it('shows progress while retrying a failed session', async () => {
+    let release!: () => void
+    h.ensureFresh.mockImplementation(
+      () => new Promise<void>((resolve) => (release = resolve))
+    )
+    h.user!.value = { email: 'a@b.co', displayName: null }
+    render(HeaderAccount)
+
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: /session error/i }))
+
+    const pending = screen.getByRole('button', { name: /retrying session/i })
+    expect(pending.getAttribute('aria-busy')).toBe('true')
+    expect(pending.hasAttribute('disabled')).toBe(true)
+    release()
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: /session error/i })
+      ).toBeTruthy()
+    )
   })
 
   it('omits the credits number when the balance is in error', () => {

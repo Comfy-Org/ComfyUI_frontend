@@ -5,14 +5,9 @@ import { authSignInTransition } from './auth-sign-in-state'
 
 const idle: AuthSignInState = { step: 'idle' }
 const pending: AuthSignInState = { step: 'pending', provider: 'google' }
-const minting: AuthSignInState = { step: 'minting', email: 'a@b.co' }
-const sessionError: AuthSignInState = {
-  step: 'sessionError',
-  email: 'a@b.co'
-}
 
 describe('authSignInTransition', () => {
-  it('starts a popup from idle and ignores clicks during pending or minting', () => {
+  it('starts a popup from idle and ignores a second click while pending', () => {
     const started = authSignInTransition(idle, {
       type: 'signInStarted',
       provider: 'google'
@@ -26,66 +21,57 @@ describe('authSignInTransition', () => {
       }),
       'two popups at once would race each other for the outcome'
     ).toBe(started)
-    expect(
-      authSignInTransition(minting, {
-        type: 'signInStarted',
-        provider: 'github'
-      })
-    ).toBe(minting)
   })
 
-  it('moves through popup success into minting, then signedIn', () => {
-    const afterPopup = authSignInTransition(pending, {
+  it('mints a workspace session after authentication succeeds', () => {
+    const minting = authSignInTransition(pending, {
       type: 'credentialSucceeded',
       email: 'a@b.co'
     })
-    expect(afterPopup).toEqual(minting)
-    expect(authSignInTransition(afterPopup, { type: 'mintSucceeded' })).toEqual(
-      { step: 'signedIn', email: 'a@b.co' }
-    )
-  })
-
-  it('lands a mint failure on the retry surface, never back at the popup', () => {
-    expect(authSignInTransition(minting, { type: 'mintFailed' })).toEqual(
-      sessionError
-    )
-    expect(authSignInTransition(sessionError, { type: 'mintRetried' })).toEqual(
-      minting
-    )
+    expect(minting).toEqual({ step: 'minting', email: 'a@b.co' })
+    expect(authSignInTransition(minting, { type: 'mintSucceeded' })).toEqual({
+      step: 'signedIn',
+      email: 'a@b.co'
+    })
   })
 
   it('keeps a mid-popup restore event from short-circuiting the attempt', () => {
     expect(
-      authSignInTransition(pending, { type: 'userRestored', email: 'a@b.co' }),
+      authSignInTransition(pending, {
+        type: 'userRestored',
+        email: 'a@b.co'
+      }),
       'the popup resolves the Firebase user before provisioning finishes; the attempt owns the outcome'
     ).toBe(pending)
   })
 
-  it('sends a returning Firebase user into minting from idle and from an error', () => {
+  it('keeps the Firebase identity visible when customer setup fails', () => {
     expect(
-      authSignInTransition(idle, { type: 'userRestored', email: 'a@b.co' })
-    ).toEqual(minting)
-    const errored: AuthSignInState = {
-      step: 'error',
-      messageKey: 'auth.signIn.error.generic'
-    }
-    expect(
-      authSignInTransition(errored, { type: 'userRestored', email: 'a@b.co' })
-    ).toEqual(minting)
+      authSignInTransition(pending, {
+        type: 'provisioningFailed',
+        email: 'a@b.co'
+      })
+    ).toEqual({
+      step: 'signedIn',
+      email: 'a@b.co',
+      messageKey: 'auth.signIn.error.provisioning'
+    })
   })
 
-  it.for([
-    ['minting', minting],
-    ['sessionError', sessionError],
-    ['signedIn', { step: 'signedIn', email: 'a@b.co' }]
-  ] as const)(
-    'ignores a userRestored event while %s so an in-flight or settled attempt is not disturbed',
-    ([, from]) => {
-      expect(
-        authSignInTransition(from, { type: 'userRestored', email: 'x@y.co' })
-      ).toBe(from)
-    }
-  )
+  it('mints a workspace session for a returning visitor', () => {
+    expect(
+      authSignInTransition(idle, { type: 'userRestored', email: 'a@b.co' })
+    ).toEqual({ step: 'minting', email: 'a@b.co' })
+  })
+
+  it('keeps the signed-in identity and sign-out path available when minting fails', () => {
+    const minting: AuthSignInState = { step: 'minting', email: 'a@b.co' }
+    expect(authSignInTransition(minting, { type: 'mintFailed' })).toEqual({
+      step: 'signedIn',
+      email: 'a@b.co',
+      messageKey: 'auth.signIn.error.session'
+    })
+  })
 
   it.for([
     [
@@ -134,13 +120,9 @@ describe('authSignInTransition', () => {
     ).toEqual({ step: 'error', messageKey })
   })
 
-  it('returns to idle on sign-out, but never abandons an in-flight attempt', () => {
+  it('returns to idle on sign-out from signedIn, but never abandons a pending attempt', () => {
     const signedIn: AuthSignInState = { step: 'signedIn', email: 'a@b.co' }
     expect(authSignInTransition(signedIn, { type: 'signedOut' })).toEqual(idle)
-    expect(authSignInTransition(sessionError, { type: 'signedOut' })).toEqual(
-      idle
-    )
     expect(authSignInTransition(pending, { type: 'signedOut' })).toBe(pending)
-    expect(authSignInTransition(minting, { type: 'signedOut' })).toBe(minting)
   })
 })

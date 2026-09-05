@@ -3,6 +3,10 @@ import { readonly, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
+import {
+  normalizeTurnstileMode,
+  type TurnstileMode
+} from '@comfyorg/auth-core/turnstile'
 
 import type { Platform } from '@/composables/useDownloadUrl'
 import type { ConnectionId, McpClientId } from '@/config/mcpClients'
@@ -58,6 +62,7 @@ type AnalyticsEvent =
 let initialized = false
 
 const WORKSHOP_AUTH_FLAG = 'workshop-auth'
+const WORKSHOP_TURNSTILE_FLAG = 'workshop-signup-turnstile'
 
 /**
  * The build-time override forces the flag on for dev and preview builds, which
@@ -68,9 +73,18 @@ const WORKSHOP_AUTH_FLAG = 'workshop-auth'
  */
 const OVERRIDDEN_ON = import.meta.env.PUBLIC_WORKSHOP_AUTH_FLAG === '1'
 const workshopAuthEnabled = ref(OVERRIDDEN_ON)
+const TURNSTILE_OVERRIDE = import.meta.env.PUBLIC_WORKSHOP_TURNSTILE_MODE
+const TURNSTILE_OVERRIDDEN = Boolean(TURNSTILE_OVERRIDE)
+const workshopTurnstileMode = ref<TurnstileMode>(
+  normalizeTurnstileMode(TURNSTILE_OVERRIDE)
+)
 
 export function useWorkshopAuthFlag(): Readonly<Ref<boolean>> {
   return readonly(workshopAuthEnabled)
+}
+
+export function useWorkshopTurnstileMode(): Readonly<Ref<TurnstileMode>> {
+  return readonly(workshopTurnstileMode)
 }
 
 export function initPostHog() {
@@ -87,9 +101,16 @@ export function initPostHog() {
     })
     initialized = true
     posthog.onFeatureFlags(() => {
-      if (OVERRIDDEN_ON) return
-      workshopAuthEnabled.value =
-        posthog.isFeatureEnabled(WORKSHOP_AUTH_FLAG) === true
+      if (!OVERRIDDEN_ON) {
+        workshopAuthEnabled.value =
+          posthog.isFeatureEnabled(WORKSHOP_AUTH_FLAG) === true
+      }
+      if (!TURNSTILE_OVERRIDDEN) {
+        const value = posthog.getFeatureFlag(WORKSHOP_TURNSTILE_FLAG)
+        workshopTurnstileMode.value = normalizeTurnstileMode(
+          typeof value === 'string' ? value : undefined
+        )
+      }
     })
   } catch (error) {
     console.error('PostHog init failed', error)

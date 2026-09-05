@@ -27,6 +27,7 @@ const typeEmail = (value: string) =>
 beforeEach(() => {
   h.flag!.value = true
   h.sendReset.mockReset().mockResolvedValue(undefined)
+  window.history.replaceState({}, '', '/')
 })
 
 describe('AuthForgotPassword', () => {
@@ -103,5 +104,37 @@ describe('AuthForgotPassword', () => {
 
     release()
     await waitFor(() => expect(h.sendReset).toHaveBeenCalledOnce())
+  })
+
+  it('keeps a safe return destination on the back-to-sign-in link', async () => {
+    window.history.replaceState(
+      {},
+      '',
+      '/forgot-password/?returnTo=%2Fworkshop%2Fmodels%2Fexample%2F'
+    )
+    render(AuthForgotPassword)
+
+    await waitFor(() => {
+      expect(
+        screen
+          .getByRole('link', { name: /back to sign in/i })
+          .getAttribute('href')
+      ).toBe('/login/?returnTo=%2Fworkshop%2Fmodels%2Fexample%2F')
+    })
+  })
+
+  it('drops an unsafe cross-origin return destination', () => {
+    window.history.replaceState(
+      {},
+      '',
+      '/forgot-password/?returnTo=https%3A%2F%2Fevil.example'
+    )
+    render(AuthForgotPassword)
+
+    expect(
+      screen
+        .getByRole('link', { name: /back to sign in/i })
+        .getAttribute('href')
+    ).toBe('/login/')
   })
 })

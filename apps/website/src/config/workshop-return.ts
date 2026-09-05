@@ -55,19 +55,32 @@ const FORM_KEY_PREFIX = 'comfy.workshop.form.'
  * placeholder strings a restored form would send as a literal run input.
  * The value's type cannot tell them apart, so the field kind decides.
  */
-function restorableKeys(fields: readonly WorkshopField[]): ReadonlySet<string> {
-  return new Set(
-    fields.filter((field) => field.kind !== 'media').map((field) => field.name)
-  )
-}
-
-function isRestorableValue(value: unknown): value is WorkshopFormValue {
-  return (
-    typeof value === 'string' ||
-    typeof value === 'number' ||
-    typeof value === 'boolean' ||
-    (Array.isArray(value) && value.every((entry) => typeof entry === 'string'))
-  )
+function restoreValue(
+  field: WorkshopField,
+  value: unknown
+): { readonly value: WorkshopFormValue } | undefined {
+  if (field.kind === 'media') return undefined
+  // JSON cannot encode `undefined`; null is the private storage sentinel for
+  // a deliberately cleared optional field.
+  if (value === null) return { value: undefined }
+  switch (field.kind) {
+    case 'text':
+      return typeof value === 'string' ? { value } : undefined
+    case 'select':
+      return field.options.some((option) => Object.is(option, value))
+        ? { value: value as string | number | boolean }
+        : undefined
+    case 'number':
+      return typeof value === 'number' &&
+        Number.isFinite(value) &&
+        (!field.integer || Number.isInteger(value)) &&
+        (field.min === undefined || value >= field.min) &&
+        (field.max === undefined || value <= field.max)
+        ? { value }
+        : undefined
+    case 'toggle':
+      return typeof value === 'boolean' ? { value } : undefined
+  }
 }
 
 /**
@@ -79,11 +92,13 @@ export function stashWorkshopForm(
   fields: readonly WorkshopField[],
   values: WorkshopFormValues
 ): void {
-  const keep = restorableKeys(fields)
+  const keep = new Set(
+    fields.filter((field) => field.kind !== 'media').map((field) => field.name)
+  )
   const kept = Object.fromEntries(
-    Object.entries(values).filter(
-      ([name, value]) => keep.has(name) && value !== undefined
-    )
+    Object.entries(values)
+      .filter(([name]) => keep.has(name))
+      .map(([name, value]) => [name, value === undefined ? null : value])
   )
   try {
     globalThis.sessionStorage?.setItem(
@@ -124,11 +139,22 @@ export function popWorkshopForm(
     return undefined
   }
 
-  const keep = restorableKeys(fields)
-  const restored = Object.fromEntries(
-    Object.entries(parsed).filter(
-      ([name, value]) => keep.has(name) && isRestorableValue(value)
-    )
-  )
+  const byName = new Map(fields.map((field) => [field.name, field]))
+  const restored: Record<string, WorkshopFormValue> = {}
+  for (const [name, value] of Object.entries(parsed)) {
+    const field = byName.get(name)
+    if (!field) continue
+    const valid = restoreValue(field, value)
+    if (valid) restored[name] = valid.value
+  }
   return Object.keys(restored).length > 0 ? restored : undefined
+}
+
+/**
+ * Resolve an explicit return destination. A plain visit to the sign-in page
+ * has no destination and must remain there after sign-in.
+ */
+export function requestedReturnPath(search: string): string | undefined {
+  const raw = new URLSearchParams(search).get('returnTo')
+  return raw ? safeReturnPath(raw) : undefined
 }

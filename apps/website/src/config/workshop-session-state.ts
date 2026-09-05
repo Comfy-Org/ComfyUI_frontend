@@ -1,21 +1,17 @@
 /**
- * The session shared between islands — the header account control and the
- * playground live in different islands, but Astro dedupes this module into
- * one chunk per page, so this module scope is the bus between them (the same
- * mechanism workshop-credentials-state already relies on).
+ * Shared signed-in state for the website's Vue islands. Firebase is loaded
+ * only after the Workshop auth flag becomes true; a release-shape page does
+ * not download or initialize it.
  *
- * Nothing here runs — no Firebase listener, no chunk — until the auth flag
- * is on, so a flag-off page is byte-identical to the site before sign-in
- * existed. The listeners only keep the DISPLAYED state warm: anything that
- * spends the token awaits `ensureFresh()` at the moment of use (ADR 0011);
- * a stale ref can cost a repaint, never a failed run.
+ * The listener and focus refresh keep displayed state warm. A caller that
+ * needs a token must still await `ensureFresh()` immediately before use.
  */
 import type { User } from 'firebase/auth'
 import { computed, readonly, ref, watch } from 'vue'
 
 import { useWorkshopAuthFlag } from '../scripts/posthog'
-import { onWorkshopUserChanged, signOutWorkshop } from './workshop-firebase'
 import type { WorkshopSession, WorkshopSessionResult } from './workshop-session'
+import type { WorkshopSessionUser } from './workshop-session'
 import {
   clearWorkshopSession,
   ensureFreshWorkshopSession,
@@ -25,54 +21,89 @@ import {
 const user = ref<User | null>(null)
 const session = ref<WorkshopSession | undefined>(undefined)
 let started = false
+let generation = 0
+let stopUserListener: (() => void) | undefined
+let stopFocusListener: (() => void) | undefined
 
 async function refreshWith(
-  mint: typeof ensureFreshWorkshopSession
+  mint: typeof ensureFreshWorkshopSession,
+  requestedUser?: WorkshopSessionUser
 ): Promise<WorkshopSessionResult | undefined> {
-  const currentUser = user.value
+  const currentUser = requestedUser ?? user.value
   if (!currentUser) return undefined
+
   const result = await mint(currentUser)
-  // A user switch while the mint was in flight: the result belongs to the
-  // previous user and must not be published.
-  if (user.value?.uid !== currentUser.uid) return undefined
-  // A failed mint must drop the stale session, or credentials.value keeps
-  // serving the old token and the run path fires with it (ADR 0011).
+  // A listener-observed user switch invalidates even a popup-started mint.
+  // With no requested user, sign-out also invalidates the result.
+  if (
+    user.value?.uid !== currentUser.uid &&
+    (!requestedUser || user.value !== null)
+  ) {
+    return undefined
+  }
   session.value = result.status === 'ok' ? result.session : undefined
   return result
 }
 
-const ensureFresh = () => refreshWith(ensureFreshWorkshopSession)
-/** Cache-bypassing mint — the one 401 retry a run is allowed. */
-const remint = () => refreshWith(remintWorkshopSession)
+const ensureFresh = (requestedUser?: WorkshopSessionUser) =>
+  refreshWith(ensureFreshWorkshopSession, requestedUser)
+const remint = (requestedUser?: WorkshopSessionUser) =>
+  refreshWith(remintWorkshopSession, requestedUser)
 
-function begin(): void {
-  onWorkshopUserChanged((nextUser) => {
+function stopListeners(): void {
+  stopUserListener?.()
+  stopUserListener = undefined
+  stopFocusListener?.()
+  stopFocusListener = undefined
+}
+
+async function begin(expectedGeneration: number): Promise<void> {
+  const firebase = await import('./workshop-firebase')
+  if (generation !== expectedGeneration) return
+
+  stopUserListener = firebase.onWorkshopUserChanged((nextUser) => {
     user.value = nextUser
+    session.value = undefined
     if (!nextUser) {
-      session.value = undefined
       clearWorkshopSession()
       return
     }
-    void ensureFresh()
+    void ensureFresh(nextUser)
   })
-  window.addEventListener('focus', () => {
-    void ensureFresh()
-  })
+
+  const onFocus = () => void ensureFresh()
+  window.addEventListener('focus', onFocus)
+  stopFocusListener = () => window.removeEventListener('focus', onFocus)
 }
 
 function start(): void {
   if (started || typeof window === 'undefined') return
   started = true
   const enabled = useWorkshopAuthFlag()
-  if (enabled.value) {
-    begin()
-    return
-  }
-  const stop = watch(enabled, (on) => {
-    if (!on) return
-    stop()
-    begin()
-  })
+  watch(
+    enabled,
+    (on) => {
+      const expectedGeneration = ++generation
+      stopListeners()
+      if (!on) {
+        user.value = null
+        session.value = undefined
+        clearWorkshopSession()
+        return
+      }
+      void begin(expectedGeneration).catch((error: unknown) => {
+        if (generation === expectedGeneration) {
+          console.error('Workshop auth initialization failed', error)
+        }
+      })
+    },
+    { immediate: true }
+  )
+}
+
+async function signOut(): Promise<void> {
+  const { signOutWorkshop } = await import('./workshop-firebase')
+  await signOutWorkshop()
 }
 
 export function useWorkshopSession() {
@@ -83,6 +114,6 @@ export function useWorkshopSession() {
     signedIn: computed(() => session.value !== undefined),
     ensureFresh,
     remint,
-    signOut: signOutWorkshop
+    signOut
   }
 }

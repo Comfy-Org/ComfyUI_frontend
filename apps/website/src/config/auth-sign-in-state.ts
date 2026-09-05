@@ -1,12 +1,8 @@
 /**
  * The sign-in page's state, as one union and a pure transition so the
  * orderings that matter — a popup resolving while Firebase's restore
- * listener also fires, a session mint failing after the popup succeeded —
+ * listener also fires, a provisioning failure after the popup succeeded —
  * are decided in one tested place instead of by handler timing.
- *
- * `minting` is its own step because the popup succeeding is not the end:
- * the visitor is signed in only once the workspace session exists, and a
- * mint failure needs a retry surface that must never re-prompt the popup.
  */
 import { classifyAuthError } from '@comfyorg/auth-core/firebaseAuthError'
 
@@ -19,13 +15,17 @@ export type AuthSignInState =
   | { readonly step: 'pending'; readonly provider: AuthSignInProvider }
   | { readonly step: 'minting'; readonly email: string }
   | { readonly step: 'error'; readonly messageKey: TranslationKey }
-  | { readonly step: 'sessionError'; readonly email: string }
-  | { readonly step: 'signedIn'; readonly email: string }
+  | {
+      readonly step: 'signedIn'
+      readonly email: string
+      readonly messageKey?: TranslationKey
+    }
 
 export type AuthSignInEvent =
   | { readonly type: 'signInStarted'; readonly provider: AuthSignInProvider }
   | { readonly type: 'credentialSucceeded'; readonly email: string }
   | { readonly type: 'signInFailed'; readonly error: unknown }
+  | { readonly type: 'provisioningFailed'; readonly email: string }
   | { readonly type: 'userRestored'; readonly email: string }
   | { readonly type: 'mintSucceeded' }
   | { readonly type: 'mintFailed' }
@@ -53,6 +53,9 @@ const EMAIL_ERROR_KEYS: Partial<Record<string, TranslationKey>> = {
   'auth/wrong-password': 'auth.signIn.error.invalidCredentials',
   'auth/user-not-found': 'auth.signIn.error.invalidCredentials',
   'auth/invalid-email': 'auth.signIn.error.invalidCredentials',
+  // Deliberate UX tradeoff: signup identifies an existing account so the
+  // visitor can switch to sign-in. Password reset itself remains neutral and
+  // never reveals whether an address exists.
   'auth/email-already-in-use': 'auth.signIn.error.emailInUse',
   'auth/too-many-requests': 'auth.signIn.error.tooManyRequests'
 }
@@ -63,7 +66,7 @@ export function authSignInTransition(
 ): AuthSignInState {
   switch (event.type) {
     case 'signInStarted':
-      // One attempt at a time: a click during pending/minting changes nothing.
+      // One popup at a time: a second click while pending changes nothing.
       return state.step === 'pending' || state.step === 'minting'
         ? state
         : { step: 'pending', provider: event.provider }
@@ -80,10 +83,15 @@ export function authSignInTransition(
         messageKey: emailKey ?? ERROR_KEYS[classified.kind]
       }
     }
+    case 'provisioningFailed':
+      return {
+        step: 'signedIn',
+        email: event.email,
+        messageKey: 'auth.signIn.error.provisioning'
+      }
     case 'userRestored':
-      // A returning Firebase user still needs the mint. While an attempt is
-      // in flight (the popup fires this listener too), the attempt owns the
-      // outcome.
+      // Firebase's restore listener also fires mid-popup; the in-flight
+      // attempt owns the outcome then (provisioning may still fail).
       return state.step === 'idle' || state.step === 'error'
         ? { step: 'minting', email: event.email }
         : state
@@ -93,10 +101,15 @@ export function authSignInTransition(
         : state
     case 'mintFailed':
       return state.step === 'minting'
-        ? { step: 'sessionError', email: state.email }
+        ? {
+            step: 'signedIn',
+            email: state.email,
+            messageKey: 'auth.signIn.error.session'
+          }
         : state
     case 'mintRetried':
-      return state.step === 'sessionError'
+      return state.step === 'signedIn' &&
+        state.messageKey === 'auth.signIn.error.session'
         ? { step: 'minting', email: state.email }
         : state
     case 'signedOut':
