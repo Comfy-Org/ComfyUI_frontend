@@ -740,7 +740,18 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
     // A subscription checkout shows its own success step in the pricing dialog,
     // so leave it open. Top-ups have no such step: close and surface settings.
-    if (operation.type === 'topup') {
+    // A dismissed operation's dialog is already closed and may now belong to a
+    // different attempt, so this late success only notifies — it must not
+    // reach for UI that has moved on without it. Re-read the operation: the
+    // refresh above just awaited, and dismissOperation() replaces the map
+    // entry rather than mutating it, so the local `operation` captured before
+    // that await can still read dismissed: false after a dismissal.
+    const currentOperation = operations.value.get(opId)
+    if (
+      operation.type === 'topup' &&
+      currentOperation &&
+      !currentOperation.dismissed
+    ) {
       useDialogStore().closeDialog({ key: 'top-up-credits' })
       useSettingsDialog().show(isCloud ? 'workspace' : 'credits')
     }

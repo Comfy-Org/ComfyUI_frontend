@@ -384,6 +384,27 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     ).toBeNull()
   })
 
+  it('hides verification once a resumed challenge is processing', () => {
+    render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: {
+        tierKey: 'creator',
+        embeddedCheckoutEnabled: true,
+        authenticationState: 'processing',
+        // A stale action_url can still be present while the server catches up
+        // to a challenge this or another tab already resumed; the button must
+        // stay hidden so the customer never reopens a moving intent.
+        actionUrl: 'https://verify.example/sensitive-token'
+      },
+      global: globalOptions
+    })
+
+    expect(
+      screen.queryByRole('button', {
+        name: 'subscription.preview.completeVerification'
+      })
+    ).toBeNull()
+  })
+
   it('shows reconciliation support guidance with the operation id', () => {
     render(SubscriptionAddPaymentPreviewWorkspace, {
       props: {
