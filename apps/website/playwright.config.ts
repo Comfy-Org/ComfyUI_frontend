@@ -24,9 +24,11 @@ export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  reporter: process.env.CI
-    ? [['html'], ['json', { outputFile: 'results.json' }]]
-    : 'html',
+  reporter: process.env.PLAYWRIGHT_BLOB_OUTPUT_DIR
+    ? 'blob'
+    : process.env.CI
+      ? [['html'], ['json', { outputFile: 'results.json' }]]
+      : 'html',
   expect: {
     toHaveScreenshot: { maxDiffPixels: 100 }
   },

@@ -24,7 +24,16 @@ jobs:
       - id: changes
         uses: ./.github/actions/changes-filter
 
-  website-e2e:
+  # Sharded so 407 specs no longer run in a single 2-worker job (that took
+  # ~8.2m of Playwright wall time alone, leaving almost no slack under the
+  # 15m job timeout — any runner slowness pushed it over and the
+  # merge-group cancellation silently dequeued the PR). Each shard builds
+  # independently (the site build is ~13s, not worth artifact-passing) and
+  # uploads a blob report for website-e2e-report to merge. Named
+  # `-shard` (not `website-e2e`) because the required-check context
+  # `website-e2e` (branch ruleset) must stay a single, non-matrix-expanded
+  # check name — see the `website-e2e` gate job below.
+  website-e2e-shard:
     needs: changes
     if: ${{ needs.changes.outputs.app-website-changes == 'true' || needs.changes.outputs.packages-changes == 'true' }}
     runs-on: ubuntu-latest
@@ -33,13 +42,11 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: read
-    outputs:
-      test-outcome: ${{ steps.tests.outcome }}
-      report-url: ${{ steps.deploy.outputs.url }}
-      screenshot-failures: ${{ steps.failures.outputs.screenshot }}
-      other-failures: ${{ steps.failures.outputs.other }}
-      # Evaluated at job level (not from a step) — static expression.
-      is-pr: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false }}
+    strategy:
+      fail-fast: false
+      matrix:
+        shardIndex: [1, 2, 3, 4]
+        shardTotal: [4]
     steps:
       - uses: actions/checkout@v7
 
@@ -57,13 +64,128 @@ jobs:
           PUBLIC_CUSTOMERIO_WRITE_KEY: test-e2e-write-key
         run: pnpm --filter @comfyorg/website build
 
-      - name: Run Playwright tests
+      - name: Run Playwright tests (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
         id: tests
-        run: pnpm --filter @comfyorg/website test:e2e
+        run: pnpm --filter @comfyorg/website test:e2e --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+        env:
+          PLAYWRIGHT_BLOB_OUTPUT_DIR: ${{ github.workspace }}/apps/website/blob-report
+
+      - name: Upload blob report
+        uses: actions/upload-artifact@v6
+        if: ${{ !cancelled() }}
+        with:
+          name: website-blob-report-${{ matrix.shardIndex }}
+          path: apps/website/blob-report/
+          retention-days: 1
+
+      # Self-describing completeness signal. A shard that dies before the
+      # test step (install, build, container) uploads no blob report, so
+      # website-e2e-report would otherwise merge a partial set and publish
+      # its counts as if they were the aggregate. Recording one status file
+      # per shard lets that job tell "this shard reported" from "this shard
+      # never got far enough to report" without hardcoding a shard total
+      # that could drift from the matrix above.
+      - name: Record shard status
+        if: ${{ always() }}
+        run: |
+          mkdir -p shard-status
+          if [ -d apps/website/blob-report ] && [ -n "$(ls -A apps/website/blob-report 2>/dev/null)" ]; then
+            echo reported > "shard-status/${{ matrix.shardIndex }}"
+          else
+            echo missing > "shard-status/${{ matrix.shardIndex }}"
+          fi
+
+      - name: Upload shard status
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: website-shard-status-${{ matrix.shardIndex }}
+          path: shard-status/
+          if-no-files-found: error
+          retention-days: 1
+
+  # Merges the sharded blob reports into one HTML/JSON report, deploys it,
+  # categorizes failures, and writes the job summary — the single place
+  # downstream jobs (post-result-comment) read outcome/report-url from.
+  website-e2e-report:
+    needs: [changes, website-e2e-shard]
+    if: ${{ always() && (needs.changes.outputs.app-website-changes == 'true' || needs.changes.outputs.packages-changes == 'true') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    outputs:
+      test-outcome: ${{ steps.outcome.outputs.result }}
+      report-url: ${{ steps.deploy.outputs.url }}
+      screenshot-failures: ${{ steps.failures.outputs.screenshot }}
+      other-failures: ${{ steps.failures.outputs.other }}
+      # Evaluated at job level (not from a step) — static expression.
+      is-pr: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install pnpm
+        run: corepack enable && corepack prepare
+
+      - name: Download shard statuses
+        if: ${{ needs.website-e2e-shard.result != 'cancelled' }}
+        id: shard-statuses
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          path: apps/website/shard-status
+          pattern: website-shard-status-*
+          merge-multiple: true
+
+      - name: Download blob reports
+        if: ${{ needs.website-e2e-shard.result != 'cancelled' }}
+        id: blob-reports
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          path: apps/website/all-blob-reports
+          pattern: website-blob-report-*
+          merge-multiple: true
+
+      # Three outcomes, not two. `infrastructure` means at least one shard
+      # never produced a blob report, so any merged report is partial and
+      # its pass/fail counts describe a subset of the suite. The gate job
+      # fails on all three of cancelled/infrastructure/failure; the split
+      # exists so the summary and PR comment stop rendering a partial run
+      # as an aggregate test result (previously a phantom `0/0`).
+      - name: Determine shard outcome
+        id: outcome
+        env:
+          SHARDS_RESULT: ${{ needs.website-e2e-shard.result }}
+          SHARD_STATUSES_OUTCOME: ${{ steps.shard-statuses.outcome }}
+          BLOB_REPORTS_OUTCOME: ${{ steps.blob-reports.outcome }}
+        run: |
+          statuses=$(find apps/website/shard-status -maxdepth 1 -type f 2>/dev/null | wc -l)
+          reports=$(find apps/website/all-blob-reports -type f -name '*.zip' 2>/dev/null | wc -l)
+          missing=$(grep -rlx missing apps/website/shard-status 2>/dev/null | wc -l)
+          if [ "$SHARD_STATUSES_OUTCOME" != "success" ] || \
+             [ "$BLOB_REPORTS_OUTCOME" != "success" ] || \
+             [ "$statuses" -ne 4 ] || [ "$reports" -ne 4 ] || \
+             [ "$missing" -gt 0 ]; then
+            echo "Incomplete shard artifacts (statuses: $statuses/4, reports: $reports/4, missing: $missing)" >&2
+            echo "result=infrastructure" >> "$GITHUB_OUTPUT"
+          elif [ "$SHARDS_RESULT" = "success" ]; then
+            echo "result=success" >> "$GITHUB_OUTPUT"
+          else
+            echo "result=failure" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Merge into HTML and JSON reports
+        if: ${{ needs.website-e2e-shard.result != 'cancelled' && steps.outcome.outputs.result != 'infrastructure' }}
+        working-directory: apps/website
+        run: |
+          pnpm dlx @playwright/test merge-reports --reporter=html ./all-blob-reports
+          PLAYWRIGHT_JSON_OUTPUT_NAME=results.json \
+          pnpm dlx @playwright/test merge-reports --reporter=json ./all-blob-reports
 
       - name: Upload test report
         uses: actions/upload-artifact@v6
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && needs.website-e2e-shard.result != 'cancelled' && steps.outcome.outputs.result != 'infrastructure' }}
         with:
           name: website-playwright-report
           path: apps/website/playwright-report/
@@ -74,7 +196,8 @@ jobs:
         if: >-
           ${{
             always() &&
-            !cancelled() &&
+            needs.website-e2e-shard.result != 'cancelled' &&
+            steps.outcome.outputs.result != 'infrastructure' &&
             (
               github.event_name != 'pull_request' ||
               github.event.pull_request.head.repo.fork == false
@@ -92,7 +215,7 @@ jobs:
             OUTPUT=$(pnpx wrangler@^4.0.0 pages deploy apps/website/playwright-report \
               --project-name=comfyui-website-e2e \
               --branch="$BRANCH" 2>&1) && { DEPLOY_OK=true; break; } || echo "$OUTPUT"
-            [ $i -lt 3 ] && sleep 10
+            [ "$i" -lt 3 ] && sleep 10
           done
           echo "$OUTPUT"
           if [ "$DEPLOY_OK" != "true" ]; then
@@ -100,11 +223,11 @@ jobs:
             exit 1
           fi
           URL=$(echo "$OUTPUT" | grep -oE 'https://[a-zA-Z0-9.-]+\.pages\.dev\S*' | head -1)
-          echo "url=${URL}" >> $GITHUB_OUTPUT
+          echo "url=${URL}" >> "$GITHUB_OUTPUT"
 
       - name: Categorize failures
         id: failures
-        if: always() && !cancelled() && steps.tests.outcome != 'success'
+        if: always() && needs.website-e2e-shard.result != 'cancelled' && steps.outcome.outputs.result == 'failure'
         uses: actions/github-script@v9
         with:
           script: |
@@ -135,16 +258,18 @@ jobs:
             core.setOutput('other', failed.length - screenshotFailures)
 
       - name: Write job summary
-        if: always() && !cancelled()
+        if: always() && needs.website-e2e-shard.result != 'cancelled'
         uses: actions/github-script@v9
         env:
-          TEST_OUTCOME: ${{ steps.tests.outcome }}
+          TEST_OUTCOME: ${{ steps.outcome.outputs.result }}
           REPORT_URL: ${{ steps.deploy.outputs.url }}
           SCREENSHOT_FAILURES: ${{ steps.failures.outputs.screenshot }}
           OTHER_FAILURES: ${{ steps.failures.outputs.other }}
         with:
           script: |
-            const passed = process.env.TEST_OUTCOME === 'success'
+            const outcome = process.env.TEST_OUTCOME
+            const passed = outcome === 'success'
+            const infrastructure = outcome === 'infrastructure'
             const reportUrl = process.env.REPORT_URL
             const screenshotFailures = parseInt(process.env.SCREENSHOT_FAILURES) || 0
             const otherFailures = parseInt(process.env.OTHER_FAILURES) || 0
@@ -153,15 +278,20 @@ jobs:
 
             if (passed) {
               lines.push('> [!TIP]', '> All tests passed.')
+            } else if (infrastructure) {
+              lines.push(
+                '> [!CAUTION]',
+                '> A shard failed before producing a report, so the suite did not fully run. No pass/fail counts are available.'
+              )
             } else {
               lines.push('> [!CAUTION]', '> Some tests failed.')
             }
 
             const rows = [
-              ['Status', passed ? '✅ Passed' : '❌ Failed'],
+              ['Status', passed ? '✅ Passed' : infrastructure ? '💥 Infrastructure failure' : '❌ Failed'],
               ['Report', reportUrl ? `[View Report](${reportUrl})` : '_unavailable_']
             ]
-            if (!passed) {
+            if (!passed && !infrastructure) {
               rows.push(
                 ['Screenshot diffs', String(screenshotFailures)],
                 ['Other failures', String(otherFailures)]
@@ -175,6 +305,35 @@ jobs:
             )
 
             await core.summary.addRaw(lines.join('\n')).write()
+
+  # Required-check gate: branch ruleset pins the context name `website-e2e`,
+  # so this stays a single non-matrix job (unlike website-e2e-shard above)
+  # that passes/fails/skips as one status regardless of shard count.
+  website-e2e:
+    if: ${{ always() }}
+    needs: [changes, website-e2e-shard, website-e2e-report]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check website E2E result
+        env:
+          SHOULD_RUN: ${{ needs.changes.outputs.app-website-changes == 'true' || needs.changes.outputs.packages-changes == 'true' }}
+          SHARD_RESULT: ${{ needs.website-e2e-shard.result }}
+          REPORT_RESULT: ${{ needs.website-e2e-report.result }}
+          TEST_OUTCOME: ${{ needs.website-e2e-report.outputs.test-outcome }}
+        run: |
+          if [ "$SHOULD_RUN" != "true" ]; then
+            echo "Website E2E skipped (no relevant changes)"
+            exit 0
+          fi
+          # TEST_OUTCOME is checked separately from the job results: a shard
+          # can succeed and still emit no blob report, which leaves both job
+          # results green while the suite never actually reported.
+          if [ "$SHARD_RESULT" != "success" ] || [ "$REPORT_RESULT" != "success" ] || [ "$TEST_OUTCOME" != "success" ]; then
+            echo "Website E2E failed (shards: $SHARD_RESULT, report: $REPORT_RESULT, outcome: $TEST_OUTCOME)"
+            exit 1
+          fi
+          echo "Website E2E passed"
 
   post-starting-comment:
     # Safe to comment from pull_request trigger: fork PRs are excluded by the guard below.
@@ -207,8 +366,8 @@ jobs:
             > Tests are running… [View workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
   post-result-comment:
-    needs: website-e2e
-    if: always() && !cancelled() && needs.website-e2e.outputs.is-pr == 'true'
+    needs: website-e2e-report
+    if: always() && !cancelled() && needs.website-e2e-report.outputs.is-pr == 'true'
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -223,13 +382,15 @@ jobs:
         id: content
         uses: actions/github-script@v9
         env:
-          TEST_OUTCOME: ${{ needs.website-e2e.outputs.test-outcome }}
-          REPORT_URL: ${{ needs.website-e2e.outputs.report-url }}
-          SCREENSHOT_FAILURES: ${{ needs.website-e2e.outputs.screenshot-failures }}
-          OTHER_FAILURES: ${{ needs.website-e2e.outputs.other-failures }}
+          TEST_OUTCOME: ${{ needs.website-e2e-report.outputs.test-outcome }}
+          REPORT_URL: ${{ needs.website-e2e-report.outputs.report-url }}
+          SCREENSHOT_FAILURES: ${{ needs.website-e2e-report.outputs.screenshot-failures }}
+          OTHER_FAILURES: ${{ needs.website-e2e-report.outputs.other-failures }}
         with:
           script: |
-            const passed = process.env.TEST_OUTCOME === 'success'
+            const outcome = process.env.TEST_OUTCOME
+            const passed = outcome === 'success'
+            const infrastructure = outcome === 'infrastructure'
             const reportUrl = process.env.REPORT_URL
             const screenshotFailures = parseInt(process.env.SCREENSHOT_FAILURES) || 0
             const otherFailures = parseInt(process.env.OTHER_FAILURES) || 0
@@ -238,15 +399,20 @@ jobs:
 
             if (passed) {
               lines.push('> [!TIP]', '> All tests passed.')
+            } else if (infrastructure) {
+              lines.push(
+                '> [!CAUTION]',
+                '> A shard failed before producing a report, so the suite did not fully run. No pass/fail counts are available.'
+              )
             } else {
               lines.push('> [!CAUTION]', '> Some tests failed.')
             }
 
             const rows = [
-              ['Status', passed ? '✅ Passed' : '❌ Failed'],
+              ['Status', passed ? '✅ Passed' : infrastructure ? '💥 Infrastructure failure' : '❌ Failed'],
               ['Report', reportUrl ? `[View Report](${reportUrl})` : '_unavailable_']
             ]
-            if (!passed) {
+            if (!passed && !infrastructure) {
               rows.push(
                 ['Screenshot diffs', String(screenshotFailures)],
                 ['Other failures', String(otherFailures)]

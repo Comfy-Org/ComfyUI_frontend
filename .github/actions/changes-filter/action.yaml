@@ -24,7 +24,7 @@ outputs:
     description: 'Any file outside `apps/`, `docs/`, `.storybook/`, or `**/*.md` changed.'
     value: ${{ github.event_name != 'pull_request' || steps.relevant.outputs.relevant == 'true' }}
   app-website-changes:
-    description: 'Shared deps or `apps/website/**` changed.'
+    description: 'Shared deps, `apps/website/**`, or the website e2e workflow changed.'
     value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.app_website == 'true' }}
   app-frontend-changes:
     description: 'Shared deps or `src/**` changed.'
@@ -53,6 +53,7 @@ runs:
         filters: |
           app_website:
             - 'apps/website/**'
+            - '.github/workflows/ci-website-e2e.yaml'
           app_frontend:
             - 'src/**'
           packages:
