@@ -91,6 +91,13 @@ describe('ImagePreview', () => {
     await nextTick()
   }
 
+  function spyOnParentPropagation(container: Element) {
+    const preview = container.querySelector('.image-preview') as HTMLElement
+    const parentListener = vi.fn()
+    preview.parentElement!.addEventListener('keydown', parentListener)
+    return { preview, parentListener }
+  }
+
   it('does not render when no imageUrls provided', () => {
     const { container } = renderImagePreview({ imageUrls: [] })
 
@@ -389,6 +396,55 @@ describe('ImagePreview', () => {
       await nextTick()
 
       expect(screen.getByRole('img')).toHaveAttribute('src', initialSrc!)
+    })
+
+    it.for(['ArrowLeft', 'ArrowRight', 'Home', 'End'])(
+      'stops propagation for %s in gallery mode',
+      async (key) => {
+        const { container } = renderImagePreview()
+        const user = userEvent.setup()
+        await switchToGallery(user)
+        const { preview, parentListener } = spyOnParentPropagation(container)
+
+        await fireEvent.keyDown(preview, { key })
+        await nextTick()
+
+        expect(parentListener).not.toHaveBeenCalled()
+      }
+    )
+
+    it('stops propagation for Escape when returning to grid', async () => {
+      const { container } = renderImagePreview()
+      const user = userEvent.setup()
+      await switchToGallery(user)
+      const { preview, parentListener } = spyOnParentPropagation(container)
+
+      await fireEvent.keyDown(preview, { key: 'Escape' })
+      await nextTick()
+
+      expect(parentListener).not.toHaveBeenCalled()
+    })
+
+    it('does not stop propagation for arrow keys in grid mode', async () => {
+      const { container } = renderImagePreview()
+      const { preview, parentListener } = spyOnParentPropagation(container)
+
+      await fireEvent.keyDown(preview, { key: 'ArrowRight' })
+      await nextTick()
+
+      expect(parentListener).toHaveBeenCalledOnce()
+    })
+
+    it('does not stop propagation for unhandled keys in gallery mode', async () => {
+      const { container } = renderImagePreview()
+      const user = userEvent.setup()
+      await switchToGallery(user)
+      const { preview, parentListener } = spyOnParentPropagation(container)
+
+      await fireEvent.keyDown(preview, { key: 'Delete' })
+      await nextTick()
+
+      expect(parentListener).toHaveBeenCalledOnce()
     })
   })
 
