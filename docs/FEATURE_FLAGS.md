@@ -285,6 +285,37 @@ max_size = feature_flags.get_connection_feature(
 
 ## Adding New Feature Flags
 
+### High-risk Cloud PRs
+
+A `risk:high` or `risk:xhigh` PR that changes Cloud runtime behavior must be
+operationally inert while its rollout flag is OFF. The flag may be new or
+pre-existing, but it must fail closed in code and be OFF for every Cloud
+production cohort when the PR merges.
+
+This gate is Cloud-only; OSS and Desktop feature flags remain unchanged.
+
+The author provides exactly one field:
+
+```markdown
+## Feature flag
+
+- **Flag**: unified_cloud_auth
+```
+
+No other template evidence is required. The policy check derives everything
+else and verifies that the flag contains the full change, defaults OFF, is OFF
+in production, and preserves tested existing behavior while OFF. Missing
+evidence is inconclusive; only `pass` satisfies the gate.
+
+![Risk disputes override the effective PR risk before high-risk Cloud changes enter the default-OFF flag or approved exception paths.](./images/high-risk-cloud-pr-flag-contract.png)
+
+`clientFeatureFlags.json` advertises client capabilities. It is not a rollout
+control and does not satisfy this policy.
+
+If a flag cannot isolate the change safely, document validation and rollback in
+the PR discussion and ask any `comfy_frontend_devs` reviewer to apply the
+`flag-exempt` label. Urgency alone is not an exception.
+
 ### Backend
 
 1. **For server capabilities**, add to `SERVER_FEATURE_FLAGS` in `comfy_api/feature_flags.py`:
