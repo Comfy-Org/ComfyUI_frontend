@@ -6,8 +6,11 @@ import type { Locale } from '../../i18n/translations'
 import FeaturedCarousel01 from '../../components/blocks/FeaturedCarousel01.vue'
 import type { FeaturedSlide } from '../../components/blocks/FeaturedCarousel01.vue'
 import HeroCentered01 from '../../components/blocks/HeroCentered01.vue'
+import Button from '../../components/ui/button/Button.vue'
+import { externalLinks } from '../../config/routes'
 import { featuredEvents } from '../../data/events'
 import { t } from '../../i18n/translations'
+import { resolveRel } from '../../utils/cta'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -36,7 +39,22 @@ const slides = computed<FeaturedSlide[]>(() =>
       :eyebrow="t('events.hero.eyebrow', locale)"
       :title="t('events.hero.title', locale)"
       :subtitle="t('events.hero.subtitle', locale)"
-    />
+    >
+      <div class="mt-8 flex flex-wrap justify-center gap-4">
+        <Button as="a" href="#events-directory">
+          {{ t('events.hero.browseEvents', locale) }}
+        </Button>
+        <Button
+          as="a"
+          variant="outline"
+          :href="externalLinks.eventHostApplicationForm"
+          target="_blank"
+          :rel="resolveRel({ target: '_blank' })"
+        >
+          {{ t('events.hero.applyToHost', locale) }}
+        </Button>
+      </div>
+    </HeroCentered01>
 
     <div class="mt-12 lg:mt-20">
       <FeaturedCarousel01

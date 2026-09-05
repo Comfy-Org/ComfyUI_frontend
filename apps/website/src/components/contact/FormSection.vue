@@ -12,6 +12,7 @@ const { locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
 
+// Locales without their own HubSpot form fall back to the English one.
 const englishFormId = '94e05eab-1373-47f7-ab5e-d84f9e6aa262'
 
 const contactFormIds: Partial<Record<Locale, string>> = {

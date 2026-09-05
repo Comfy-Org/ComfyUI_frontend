@@ -134,6 +134,7 @@ export const externalLinks = {
     `https://cloud.comfy.org/?utm_source=comfy_org&utm_medium=website&utm_campaign=free_tier&utm_content=${content}`,
   cloudStatus: 'https://status.comfy.org',
   discord: 'https://discord.com/invite/comfyorg',
+  eventHostApplicationForm: 'https://form.typeform.com/to/Fr2FrB6c',
   docs: 'https://docs.comfy.org/',
   docsApi: 'https://docs.comfy.org/development/cloud/overview#quick-start',
   comfyCliRepo: 'https://github.com/Comfy-Org/comfy-cli',

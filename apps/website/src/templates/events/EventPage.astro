@@ -5,9 +5,9 @@
 // carry VideoObject JSON-LD for the recording, upcoming ones an Event node and
 // an add-to-calendar action. Locale comes from the page's URL.
 import BaseLayout from '../../layouts/BaseLayout.astro'
+import EventsDirectorySection from './EventsDirectorySection.vue'
 import EventVideoDialog from './EventVideoDialog.vue'
 import PastEventsSection from './PastEventsSection.vue'
-import UpcomingEventsSection from './UpcomingEventsSection.vue'
 import { localizeHref } from '../../config/routes'
 import type { ComfyEvent } from '../../data/events'
 import {
@@ -93,7 +93,7 @@ const breadcrumbs = [
     isPast ? (
       <PastEventsSection locale={locale} />
     ) : (
-      <UpcomingEventsSection locale={locale} client:visible />
+      <EventsDirectorySection locale={locale} client:visible />
     )
   }
   <EventVideoDialog
