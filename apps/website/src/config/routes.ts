@@ -72,7 +72,8 @@ type Routes = Readonly<Record<RouteKey, string>>
 // src/pages/minimax/license/professional-request.astro.
 //
 // workshop: the model workshop lives only at /workshop (src/pages/workshop/);
-// there is no /<locale>/workshop page, so a prefixed link 404s.
+// there is no /<locale>/workshop page, so a prefixed link 404s. The route is
+// also omitted from deployed builds until config/workshop-release.ts enables it.
 const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'affiliates',
   'affiliateTerms',
