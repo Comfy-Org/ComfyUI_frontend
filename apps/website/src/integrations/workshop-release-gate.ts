@@ -1,0 +1,63 @@
+import type { AstroIntegration } from 'astro'
+// Both imported statically. A dynamic `import()` inside the hook throws
+// "Vite module runner has been closed" — by `astro:build:done` the runner that
+// resolves module specifiers is gone, so anything not already loaded fails.
+import { existsSync } from 'node:fs'
+import { rm } from 'node:fs/promises'
+import { fileURLToPath } from 'node:url'
+import { join } from 'node:path'
+
+import { isWorkshopInBuild } from '../config/workshop-release'
+
+/**
+ * Keeps Workshop out of a release build.
+ *
+ * Workshop is unfinished, and `noindex` does not stop a page being deployed —
+ * it only asks a crawler to stay away, while the page stays live at a URL
+ * anyone can share. A deployed build must not contain those routes at all.
+ *
+ * This runs at `astro:build:done` and removes the emitted directory. The
+ * earlier attempt filtered the route list at `astro:routes:resolved`, which
+ * does not work: that hook reports the resolved routes, and mutating the
+ * array does not stop them being generated. Deleting the output is
+ * unambiguous, and the assertion below makes a silent failure impossible.
+ *
+ * Preview builds are release builds too — a preview answers "what goes out if
+ * we release right now?", so it excludes Workshop for the same reason. Local
+ * development keeps it, and so does any build asked for it explicitly. See
+ * `config/workshop-release.ts` for the switch.
+ */
+export function workshopReleaseGate(): AstroIntegration {
+  return {
+    name: 'workshop-release-gate',
+    hooks: {
+      'astro:build:done': async ({ dir, pages, logger }) => {
+        if (isWorkshopInBuild()) return
+
+        const built = pages.filter(
+          (page) =>
+            page.pathname === 'workshop' ||
+            page.pathname.startsWith('workshop/')
+        ).length
+
+        const root = fileURLToPath(dir)
+        await rm(join(root, 'workshop'), { recursive: true, force: true })
+
+        // The whole point of this integration is that nothing ships. If the
+        // directory is somehow still there, fail the build rather than let a
+        // release go out with it.
+        if (existsSync(join(root, 'workshop'))) {
+          throw new Error(
+            'workshop-release-gate could not remove the Workshop output; refusing to ship it.'
+          )
+        }
+
+        logger.warn(
+          `Workshop is excluded from this build: removed ${built} generated page${
+            built === 1 ? '' : 's'
+          }. Set WORKSHOP_IN_BUILD=1 to include it.`
+        )
+      }
+    }
+  }
+}
