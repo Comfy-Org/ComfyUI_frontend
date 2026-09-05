@@ -86,6 +86,102 @@ const translations = {
     en: 'Browse all models',
     'zh-CN': '浏览所有模型'
   },
+  'auth.signIn.meta.title': {
+    en: 'Sign in - Comfy',
+    'zh-CN': '登录 - Comfy'
+  },
+  'auth.signIn.meta.description': {
+    en: 'Sign in to your Comfy account.',
+    'zh-CN': '登录你的 Comfy 账户。'
+  },
+  'auth.signUp.meta.title': {
+    en: 'Sign up - Comfy',
+    'zh-CN': '注册 - Comfy'
+  },
+  'auth.signUp.meta.description': {
+    en: 'Create your Comfy account.',
+    'zh-CN': '创建你的 Comfy 账户。'
+  },
+  'auth.signIn.heading': {
+    en: 'Sign in to Comfy',
+    'zh-CN': '登录 Comfy'
+  },
+  'auth.signIn.body': {
+    en: 'Use your Comfy account across the Workshop, Cloud, and Platform.',
+    'zh-CN': '一个 Comfy 账户，通用于 Workshop、Cloud 和 Platform。'
+  },
+  'auth.signUp.heading': {
+    en: 'Create your Comfy account',
+    'zh-CN': '创建 Comfy 账户'
+  },
+  'auth.signUp.body': {
+    en: 'One account for the Workshop, Cloud, and Platform.',
+    'zh-CN': '一个账户，通用于 Workshop、Cloud 和 Platform。'
+  },
+  'auth.signIn.newHere': {
+    en: 'New to Comfy?',
+    'zh-CN': '第一次使用 Comfy？'
+  },
+  'auth.signIn.signUpLink': {
+    en: 'Create an account',
+    'zh-CN': '创建账户'
+  },
+  'auth.signUp.haveAccount': {
+    en: 'Already have an account?',
+    'zh-CN': '已经有账户？'
+  },
+  'auth.signUp.signInLink': {
+    en: 'Sign in',
+    'zh-CN': '登录'
+  },
+  'auth.signIn.google': {
+    en: 'Continue with Google',
+    'zh-CN': '使用 Google 继续'
+  },
+  'auth.signIn.github': {
+    en: 'Continue with GitHub',
+    'zh-CN': '使用 GitHub 继续'
+  },
+  'auth.signIn.pending': {
+    en: 'Finish signing in from the pop-up window.',
+    'zh-CN': '请在弹出窗口中完成登录。'
+  },
+  'auth.signIn.signedInHeading': {
+    en: 'You are signed in',
+    'zh-CN': '已登录'
+  },
+  'auth.signIn.signedInAs': {
+    en: 'Signed in as',
+    'zh-CN': '当前账户：'
+  },
+  'auth.signIn.signOut': {
+    en: 'Sign out',
+    'zh-CN': '退出登录'
+  },
+  'auth.signIn.backToWorkshop': {
+    en: 'Back to Workshop',
+    'zh-CN': '返回 Workshop'
+  },
+  'auth.signIn.error.popupDismissed': {
+    en: 'The sign-in window closed before finishing. Try again.',
+    'zh-CN': '登录窗口在完成前被关闭，请重试。'
+  },
+  'auth.signIn.error.domain': {
+    en: 'Sign-in is not available on this address yet.',
+    'zh-CN': '当前地址暂不支持登录。'
+  },
+  'auth.signIn.error.blocked': {
+    en: 'Sign-ups are temporarily unavailable. Please try again later.',
+    'zh-CN': '注册暂时不可用，请稍后再试。'
+  },
+  'auth.signIn.error.generic': {
+    en: 'Sign-in failed. Please try again.',
+    'zh-CN': '登录失败，请重试。'
+  },
+  'auth.signIn.error.provisioning': {
+    en: 'You are signed in, but account setup did not finish. Please try again shortly.',
+    'zh-CN': '您已登录，但账户设置尚未完成。请稍后重试。'
+  },
 
   // Tags (global, reusable across sections)
   'tags.partnerNodes': {

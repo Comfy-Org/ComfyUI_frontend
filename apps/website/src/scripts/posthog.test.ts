@@ -3,15 +3,27 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const hoisted = vi.hoisted(() => ({
   mockInit: vi.fn(),
-  mockCapture: vi.fn()
+  mockCapture: vi.fn(),
+  mockOnFeatureFlags: vi.fn(),
+  mockIsFeatureEnabled: vi.fn()
 }))
 
 vi.mock('posthog-js', () => ({
   default: {
     init: hoisted.mockInit,
-    capture: hoisted.mockCapture
+    capture: hoisted.mockCapture,
+    onFeatureFlags: hoisted.mockOnFeatureFlags,
+    isFeatureEnabled: hoisted.mockIsFeatureEnabled
   }
 }))
+
+/** Fire the callback PostHog registered with onFeatureFlags. */
+function emitFeatureFlags() {
+  const cb = hoisted.mockOnFeatureFlags.mock.calls.at(-1)?.[0] as
+    | (() => void)
+    | undefined
+  cb?.()
+}
 
 describe('initPostHog', () => {
   beforeEach(() => {
@@ -162,5 +174,48 @@ describe('captureMcpClientTabClick', () => {
     captureMcpClientTabClick('cursor')
 
     expect(hoisted.mockCapture).not.toHaveBeenCalled()
+  })
+})
+
+describe('useWorkshopAuthFlag', () => {
+  beforeEach(() => {
+    vi.resetModules()
+    hoisted.mockOnFeatureFlags.mockReset()
+    hoisted.mockIsFeatureEnabled.mockReset()
+  })
+
+  it('is off until PostHog answers, then tracks the flag in both directions', async () => {
+    hoisted.mockIsFeatureEnabled.mockReturnValue(true)
+    const { initPostHog, useWorkshopAuthFlag } = await import('./posthog')
+    const enabled = useWorkshopAuthFlag()
+
+    expect(enabled.value, 'off until PostHog answers').toBe(false)
+
+    initPostHog()
+    emitFeatureFlags()
+    expect(enabled.value).toBe(true)
+
+    // The flag being turned off remotely must actually take the surface down.
+    hoisted.mockIsFeatureEnabled.mockReturnValue(false)
+    emitFeatureFlags()
+    expect(enabled.value, 'a remote disable must not be a one-way latch').toBe(
+      false
+    )
+  })
+
+  it('honors the build override and keeps it sticky against a remote disable', async () => {
+    vi.stubEnv('PUBLIC_WORKSHOP_AUTH_FLAG', '1')
+    hoisted.mockIsFeatureEnabled.mockReturnValue(false)
+    const { initPostHog, useWorkshopAuthFlag } = await import('./posthog')
+    const enabled = useWorkshopAuthFlag()
+
+    expect(enabled.value, 'override forces on with no PostHog').toBe(true)
+
+    initPostHog()
+    emitFeatureFlags()
+    expect(
+      enabled.value,
+      'an override-on build ignores PostHog turning the flag off'
+    ).toBe(true)
   })
 })

@@ -941,6 +941,9 @@ importers:
       '@astrojs/sitemap':
         specifier: 'catalog:'
         version: 3.7.3
+      '@comfyorg/auth-core':
+        specifier: workspace:*
+        version: link:../../packages/auth-core
       '@comfyorg/design-system':
         specifier: workspace:*
         version: link:../../packages/design-system
@@ -971,6 +974,9 @@ importers:
       cva:
         specifier: 'catalog:'
         version: 1.0.0-beta.4(typescript@6.0.3)
+      firebase:
+        specifier: 'catalog:'
+        version: 11.10.0
       gsap:
         specifier: 'catalog:'
         version: 3.15.0
