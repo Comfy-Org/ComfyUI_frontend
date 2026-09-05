@@ -23,7 +23,7 @@ import type {
   TurnId,
   UploadImageResult
 } from '../../schemas/agentApiSchema'
-import { zAgentWsEvent } from '../../schemas/agentApiSchema'
+import { zAgentTurnAccepted, zAgentWsEvent } from '../../schemas/agentApiSchema'
 import { AgentApiError } from '../../services/agent/agentRestClient'
 import type {
   AgentRestClient,
@@ -1702,6 +1702,99 @@ describe('app:agent_error telemetry (TEL-8)', () => {
     })
   })
 
+  it('marks a deterministic send rejection unretryable', async () => {
+    const rest = fakeRest({
+      postMessage: vi.fn(async () => {
+        throw new AgentApiError('unprocessable', 422, null)
+      })
+    })
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+
+    await session.sendMessage('make me a cat')
+
+    expect(telemetryState.trackAgentError).toHaveBeenCalledWith({
+      error_class: 'request_failed',
+      failure_stage: 'pre_acceptance',
+      retryable: false,
+      turn_accepted: false,
+      ui_treatment: 'inline_notice'
+    })
+  })
+
+  it('classifies a failure after the ack as post-acceptance and unretryable', async () => {
+    const rest = fakeRest()
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+    const setItem = vi
+      .spyOn(globalThis.localStorage, 'setItem')
+      .mockImplementation(() => {
+        throw new DOMException('quota', 'QuotaExceededError')
+      })
+
+    try {
+      const ok = await session.sendMessage('make me a cat')
+      expect(ok).toBe(false)
+    } finally {
+      setItem.mockRestore()
+    }
+
+    expect(rest.postMessage).toHaveBeenCalledTimes(1)
+    expect(telemetryState.trackAgentError).toHaveBeenCalledWith({
+      error_class: 'request_failed',
+      failure_stage: 'post_acceptance',
+      retryable: false,
+      turn_accepted: true,
+      ui_treatment: 'inline_notice'
+    })
+  })
+
+  it('treats an unreadable ack body as an accepted turn', async () => {
+    const rest = fakeRest({
+      postMessage: vi.fn(async () => {
+        // `AgentRestClient` parses only after `response.ok`, so this is what a
+        // 2xx with an unexpected body raises: the turn started, the ack did not
+        // survive validation.
+        return zAgentTurnAccepted.parse({ thread_id: 'th-1' })
+      })
+    })
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+
+    await session.sendMessage('make me a cat')
+
+    expect(telemetryState.trackAgentError).toHaveBeenCalledWith({
+      error_class: 'request_failed',
+      failure_stage: 'post_acceptance',
+      retryable: false,
+      turn_accepted: true,
+      ui_treatment: 'inline_notice'
+    })
+  })
+
+  it('reports a stashed live turn when the resume history load fails', async () => {
+    const getMessages = vi
+      .fn<AgentRestClient['getMessages']>()
+      .mockRejectedValue(new Error('history boom'))
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: fakeEvents().source
+    })
+    session.start()
+    await session.sendMessage('go')
+    expect(useAgentConversationStore().activeTurnId).not.toBeNull()
+
+    await session.loadThread('th-other')
+
+    expect(telemetryState.trackAgentError).toHaveBeenCalledWith({
+      error_class: 'history_load_failed',
+      failure_stage: 'pre_acceptance',
+      retryable: true,
+      turn_accepted: true,
+      ui_treatment: 'error_overlay'
+    })
+  })
+
   it('tracks a pre-acceptance busy-state rejection when a send is already in flight', async () => {
     let resolvePost: (value: AgentTurnAccepted) => void = () => undefined
     const rest = fakeRest({
@@ -1745,7 +1838,7 @@ describe('app:agent_error telemetry (TEL-8)', () => {
     expect(telemetryState.trackAgentError).toHaveBeenCalledWith({
       error_class: 'cancel_failed',
       failure_stage: 'post_acceptance',
-      retryable: false,
+      retryable: true,
       turn_accepted: true,
       ui_treatment: 'error_overlay'
     })

@@ -1,4 +1,5 @@
 import { computed, ref } from 'vue'
+import { ZodError } from 'zod'
 
 import { i18n } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
@@ -63,6 +64,36 @@ export interface AgentSessionDeps {
 
 const THREAD_STORAGE_KEY = 'Comfy.Agent.ThreadId'
 const PREPARE_TIMEOUT_MS = 3000
+
+/**
+ * Statuses whose cause is the request itself or the caller's authorization, so
+ * a byte-identical retry fails identically. Everything else the backend can
+ * return (429, 5xx) and every transport failure is transient enough that
+ * `retryable: true` is the honest answer.
+ */
+const NON_RETRYABLE_REQUEST_STATUSES = new Set([
+  400, 401, 403, 404, 405, 409, 410, 422
+])
+
+/**
+ * Whether resending a failed agent request is safe. `accepted` is decisive: the
+ * server is already running the turn, so a retry starts a second one.
+ */
+function isRetryableRequestFailure(error: unknown, accepted: boolean): boolean {
+  if (accepted) return false
+  if (error instanceof AgentApiError)
+    return !NON_RETRYABLE_REQUEST_STATUSES.has(error.status)
+  return true
+}
+
+/**
+ * `AgentRestClient` validates a response body only after `response.ok`, so a
+ * schema failure out of `postMessage` means the server accepted the turn and
+ * the FE could not read the ack — post-acceptance, and never safe to resend.
+ */
+function isResponseSchemaFailure(error: unknown): boolean {
+  return error instanceof ZodError
+}
 
 let sessionGeneration = 0
 
@@ -162,8 +193,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const generation = ++loadGeneration
       const isCurrent = () =>
         generation === loadGeneration && ownedGeneration === sessionGeneration
+      const stashedTurn = conversationStore.activeTurnId !== null
       conversationStore.stashActiveTurn()
-      void hydrateFromServer(surviving, isCurrent).then(() => {
+      void hydrateFromServer(surviving, isCurrent, stashedTurn).then(() => {
         if (isCurrent() && conversationStore.threadId === surviving)
           conversationStore.resumeBackgroundTurn()
       })
@@ -186,7 +218,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   async function hydrateFromServer(
     threadId: string,
-    isCurrent: () => boolean = () => true
+    isCurrent: () => boolean = () => true,
+    // Set by the resume paths, which stash a still-streaming turn before
+    // reloading its thread: the load is a fresh request the server never
+    // accepted, but a turn is accepted and running while it fails.
+    stashedTurn = false
   ): Promise<boolean> {
     try {
       const history = await rest.getMessages(threadId)
@@ -202,7 +238,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
         return false
       }
       pushError(error instanceof Error ? error.message : String(error))
-      trackAgentError('history_load_failed', 'pre_acceptance', 'error_overlay')
+      trackAgentError(
+        'history_load_failed',
+        'pre_acceptance',
+        'error_overlay',
+        {
+          turnAccepted: stashedTurn
+        }
+      )
       return false
     }
   }
@@ -263,8 +306,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
         wfContext ? { ...input, workflowId: wfContext.id } : input
       )
     }
+    // The post-ack bookkeeping below shares this try, so the catch cannot tell
+    // a rejected request from a QuotaExceededError out of localStorage or a
+    // throwing `adopted` callback. Everything after this flag flips is a
+    // failure of a turn the server already started.
+    let accepted = false
     try {
       const ack = await postTurn(conversationStore.threadId ?? 'new')
+      accepted = true
       conversationStore.setThreadId(ack.thread_id)
       localStorage.setItem(THREAD_STORAGE_KEY, ack.thread_id)
       if (ack.workflow_id !== undefined) {
@@ -289,6 +338,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       }
       return true
     } catch (error) {
+      const turnAccepted = accepted || isResponseSchemaFailure(error)
       const message =
         error instanceof AgentApiError
           ? error.message
@@ -300,7 +350,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
         text,
         `${i18n.global.t('agent.sendFailed')}: ${message}`
       )
-      trackAgentError('request_failed', 'pre_acceptance', 'inline_notice')
+      trackAgentError(
+        'request_failed',
+        turnAccepted ? 'post_acceptance' : 'pre_acceptance',
+        'inline_notice',
+        { retryable: isRetryableRequestFailure(error, turnAccepted) }
+      )
       return false
     } finally {
       sending.value = false
@@ -324,7 +379,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (error instanceof AgentApiError && error.status === 409) return
       promptEditState.value = { phase: 'idle' }
       pushError(error instanceof Error ? error.message : String(error))
-      trackAgentError('cancel_failed', 'post_acceptance', 'error_overlay')
+      // The line above returned the prompt to idle and the turn is still
+      // running, so cancelling again is safe; the already-finished race is
+      // handled as the 409 above, not here.
+      trackAgentError('cancel_failed', 'post_acceptance', 'error_overlay', {
+        retryable: true
+      })
     }
   }
 
@@ -385,12 +445,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
     promptEditState.value = { phase: 'idle' }
     const isCurrent = () =>
       generation === loadGeneration && ownedGeneration === sessionGeneration
+    const stashedTurn = conversationStore.activeTurnId !== null
     conversationStore.stashActiveTurn()
     boundWorkflowId.value = null
     rememberedWorkflowId = null
     conversationStore.setThreadId(threadId)
     localStorage.setItem(THREAD_STORAGE_KEY, threadId)
-    const hydrated = await hydrateFromServer(threadId, isCurrent)
+    const hydrated = await hydrateFromServer(threadId, isCurrent, stashedTurn)
     if (hydrated && isCurrent()) conversationStore.resumeBackgroundTurn()
   }
 
