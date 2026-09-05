@@ -3,24 +3,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { centsToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
 
+import type { WorkshopSession } from './workshop-session'
 import type * as CreditsModule from './workshop-credits'
 
 // The credits module carries a shared balance ref and an in-flight-refresh
 // guard, so each test loads a fresh copy to keep that state from leaking.
 let mod: typeof CreditsModule
-const microsToCredits = (micros: number) => mod.microsToCredits(micros)
+const balanceToCredits = (cents: number) => mod.balanceToCredits(cents)
 const refreshWorkshopCredits = (fetchImpl?: typeof fetch) =>
   mod.refreshWorkshopCredits(fetchImpl)
 const useWorkshopCredits = () => mod.useWorkshopCredits()
-const workshopPurchaseUrl = (returnTo: string) =>
-  mod.workshopPurchaseUrl(returnTo)
-
-type WorkshopSession = {
-  token: string
-  uid: string
-  workspace?: { id: string }
-}
-
 interface SessionHandles {
   setSession?: (session: WorkshopSession | undefined) => void
   remint?: ReturnType<typeof vi.fn>
@@ -39,9 +31,17 @@ vi.mock('../scripts/posthog', async () => {
 vi.mock('./workshop-session-state', async () => {
   const { computed, ref } = await import('vue')
   const session = ref<WorkshopSession | undefined>(undefined)
+  const mintedSession: WorkshopSession = {
+    token: 'jwt',
+    uid: 'user-1',
+    permissions: ['workspace:read'],
+    expiresAt: Date.now() + 60 * 60 * 1000,
+    workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
+    role: 'owner'
+  }
   const remint = vi.fn(async () => ({
     status: 'ok',
-    session: { token: 'jwt', uid: 'user-1' }
+    session: mintedSession
   }))
   sessionHandles.setSession = (next) => {
     session.value = next
@@ -58,14 +58,12 @@ vi.mock('./workshop-session-state', async () => {
 
 const withToken = (token: string, uid = 'user-1'): WorkshopSession => ({
   token,
-  uid
+  uid,
+  permissions: ['workspace:read'],
+  expiresAt: Date.now() + 60 * 60 * 1000,
+  workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
+  role: 'owner'
 })
-
-const withWorkspace = (
-  id: string,
-  token = 'jwt',
-  uid = 'user-1'
-): WorkshopSession => ({ token, uid, workspace: { id } })
 
 const jsonResponse = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), {
@@ -78,27 +76,21 @@ beforeEach(async () => {
   mod = await import('./workshop-credits')
   sessionHandles.setSession!(undefined)
   sessionHandles.remint!.mockClear()
-  sessionHandles.flag!.value = true
+  // Keep the module lifecycle off in the fetch unit tests; each test invokes
+  // refresh explicitly with its own fetch implementation.
+  sessionHandles.flag!.value = false
+  mod.useWorkshopCredits()
   sessionHandles.remint!.mockImplementation(async () => ({
     status: 'ok',
-    session: { token: 'jwt', uid: 'user-1' }
+    session: withToken('jwt')
   }))
 })
 
-describe('microsToCredits', () => {
-  it('agrees with the shared creditsUtil rounding', () => {
-    expect(microsToCredits(1_000_000)).toBe(centsToCredits(100))
-    expect(microsToCredits(4_750_000)).toBe(centsToCredits(475))
-    expect(microsToCredits(0)).toBe(0)
-  })
-})
-
-describe('workshopPurchaseUrl', () => {
-  it('points at platform with the utm source and the return address', () => {
-    const url = new URL(workshopPurchaseUrl('/workshop/models/flux/'))
-    expect(url.origin).toBe('https://platform.comfy.org')
-    expect(url.searchParams.get('utm_source')).toBe('comfy_workshop')
-    expect(url.searchParams.get('returnTo')).toBe('/workshop/models/flux/')
+describe('balanceToCredits', () => {
+  it('treats the backend values as cents despite their _micros names', () => {
+    expect(balanceToCredits(1_000_000)).toBe(centsToCredits(1_000_000))
+    expect(balanceToCredits(4_750_000)).toBe(centsToCredits(4_750_000))
+    expect(balanceToCredits(0)).toBe(0)
   })
 })
 
@@ -113,7 +105,7 @@ describe('refreshWorkshopCredits', () => {
 
     expect(useWorkshopCredits().balance.value).toEqual({
       status: 'ok',
-      credits: microsToCredits(2_000_000)
+      credits: balanceToCredits(2_000_000)
     })
     const [url, init] = fetchImpl.mock.calls[0] as unknown as [
       string,
@@ -135,7 +127,7 @@ describe('refreshWorkshopCredits', () => {
 
     expect(useWorkshopCredits().balance.value).toEqual({
       status: 'ok',
-      credits: microsToCredits(1_000_000)
+      credits: balanceToCredits(1_000_000)
     })
   })
 
@@ -143,7 +135,7 @@ describe('refreshWorkshopCredits', () => {
     sessionHandles.setSession!(withToken('stale-jwt'))
     sessionHandles.remint!.mockImplementation(async () => {
       sessionHandles.setSession!(withToken('fresh-jwt'))
-      return { status: 'ok', session: { token: 'fresh-jwt', uid: 'user-1' } }
+      return { status: 'ok', session: withToken('fresh-jwt') }
     })
     const fetchImpl = vi
       .fn()
@@ -157,7 +149,7 @@ describe('refreshWorkshopCredits', () => {
     expect(sessionHandles.remint).toHaveBeenCalledOnce()
     expect(useWorkshopCredits().balance.value).toEqual({
       status: 'ok',
-      credits: microsToCredits(500_000)
+      credits: balanceToCredits(500_000)
     })
     const second = fetchImpl.mock.calls[1] as unknown as [string, RequestInit]
     expect((second[1].headers as Record<string, string>).Authorization).toBe(
@@ -211,13 +203,13 @@ describe('refreshWorkshopCredits', () => {
     expect(
       useWorkshopCredits().balance.value,
       'a balance fetched for the previous user must not show under the new one'
-    ).not.toEqual({ status: 'ok', credits: microsToCredits(9_000_000) })
+    ).not.toEqual({ status: 'ok', credits: balanceToCredits(9_000_000) })
   })
 
-  it('does not publish a balance that belongs to a superseded workspace', async () => {
-    sessionHandles.setSession!(withWorkspace('ws-1'))
+  it('does not publish a balance fetched with a superseded token', async () => {
+    sessionHandles.setSession!(withToken('old-jwt'))
     const fetchImpl = vi.fn(async () => {
-      sessionHandles.setSession!(withWorkspace('ws-2'))
+      sessionHandles.setSession!(withToken('new-jwt'))
       return jsonResponse(200, { effective_balance_micros: 9_000_000 })
     })
 
@@ -225,8 +217,8 @@ describe('refreshWorkshopCredits', () => {
 
     expect(
       useWorkshopCredits().balance.value,
-      'a balance for the previous workspace must not show after a switch'
-    ).not.toEqual({ status: 'ok', credits: microsToCredits(9_000_000) })
+      'a balance fetched with an older token must not overwrite a newer session'
+    ).not.toEqual({ status: 'ok', credits: balanceToCredits(9_000_000) })
   })
 
   it('bounds the balance read with an abort signal', async () => {
@@ -266,7 +258,35 @@ describe('refreshWorkshopCredits', () => {
     ).toHaveBeenCalledOnce()
     expect(useWorkshopCredits().balance.value).toEqual({
       status: 'ok',
-      credits: microsToCredits(3_000_000)
+      credits: balanceToCredits(3_000_000)
+    })
+  })
+
+  it('queues a forced refresh after an older read already in flight', async () => {
+    sessionHandles.setSession!(withToken('jwt'))
+    let release!: () => void
+    const gate = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const fetchImpl = vi
+      .fn()
+      .mockImplementationOnce(async () => {
+        await gate
+        return jsonResponse(200, { effective_balance_micros: 100 })
+      })
+      .mockResolvedValueOnce(
+        jsonResponse(200, { effective_balance_micros: 200 })
+      )
+
+    const oldRead = refreshWorkshopCredits(fetchImpl)
+    const forced = mod.refreshWorkshopCredits(fetchImpl, { force: true })
+    release()
+    await Promise.all([oldRead, forced])
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+    expect(useWorkshopCredits().balance.value).toEqual({
+      status: 'ok',
+      credits: balanceToCredits(200)
     })
   })
 })

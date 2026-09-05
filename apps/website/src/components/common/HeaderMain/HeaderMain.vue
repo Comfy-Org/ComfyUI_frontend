@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { defineAsyncComponent } from 'vue'
+
 import type { Locale } from '../../../i18n/translations.ts'
 import { t } from '../../../i18n/translations.ts'
 import { externalLinks, getRoutes } from '../../../config/routes.ts'
+import { useWorkshopAuthFlag } from '../../../scripts/posthog.ts'
 import GitHubStarBadge from '../GitHubStarBadge.vue'
-import HeaderAccount from '../../workshop/HeaderAccount.vue'
 import HeaderMainDesktop from './HeaderMainDesktop.vue'
 import HeaderMainMobile from './HeaderMainMobile.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -13,6 +15,10 @@ const { locale = 'en', githubStars = '' } = defineProps<{
   githubStars?: string
 }>()
 const routes = getRoutes(locale)
+const workshopAuthEnabled = useWorkshopAuthFlag()
+const HeaderAccount = defineAsyncComponent(
+  () => import('../../workshop/HeaderAccount.vue')
+)
 
 const ctaButtons = [
   {
@@ -82,8 +88,7 @@ const ctaButtons = [
           <span class="2xl:hidden">{{ cta.short }}</span>
         </span>
       </Button>
+      <HeaderAccount v-if="workshopAuthEnabled" :locale="locale" />
     </div>
-
-    <HeaderAccount :locale="locale" />
   </nav>
 </template>

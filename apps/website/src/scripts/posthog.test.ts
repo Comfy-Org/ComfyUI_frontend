@@ -195,6 +195,7 @@ describe('useWorkshopAuthFlag', () => {
     emitFeatureFlags()
     expect(enabled.value).toBe(true)
 
+    // The flag being turned off remotely must actually take the surface down.
     hoisted.mockIsFeatureEnabled.mockReturnValue(false)
     emitFeatureFlags()
     expect(enabled.value, 'a remote disable must not be a one-way latch').toBe(
