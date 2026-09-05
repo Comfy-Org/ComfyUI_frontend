@@ -349,6 +349,10 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
    * @returns The index of the input slot on this node, otherwise `-1`.
    */
   private _getBypassSlotIndex(slot: number, type: ISlotType) {
+    if (this.node.isSubgraphNode()) {
+      return this._getSubgraphBypassSlotIndex(slot, type)
+    }
+
     const { inputs } = this
     const oppositeInput = inputs.at(slot)
     const outputType = this.node.outputs[slot].type
@@ -377,6 +381,32 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
         LiteGraph.isValidConnection(input.type, outputType) &&
         LiteGraph.isValidConnection(input.type, type)
     )
+  }
+
+  /**
+   * Subgraph inputs and outputs are independent boundary slots, so their
+   * positions cannot establish a bypass relationship.  Only an output wired
+   * directly to a subgraph input inside the subgraph can be bypassed to that
+   * input; outputs produced by interior nodes have no safe external shortcut.
+   */
+  private _getSubgraphBypassSlotIndex(slot: number, type: ISlotType) {
+    const { node } = this
+    if (!node.isSubgraphNode()) return -1
+
+    const output = node.outputs.at(slot)
+    if (!output) return -1
+
+    const innerLink = node.resolveSubgraphOutputLink(slot)
+    if (!innerLink?.subgraphInput) return -1
+
+    const inputSlot = innerLink.link.origin_slot
+    const input = this.inputs.at(inputSlot)
+    if (!input) return -1
+
+    return LiteGraph.isValidConnection(input.type, output.type) &&
+      LiteGraph.isValidConnection(input.type, type)
+      ? inputSlot
+      : -1
   }
 
   /**
