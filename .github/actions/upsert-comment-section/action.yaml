@@ -71,6 +71,98 @@ runs:
           const sectionStartsIn = (body) =>
             body.match(/<!-- section:[a-z0-9-]+:start -->/g) ?? []
 
+          // GitHub rejects an issue-comment body over 65536 characters with a
+          // 422, and the generated sections are unbounded — a single ci-metrics
+          // report has reached 244k on its own. Passing content by file path
+          // removed the ARG_MAX ceiling that used to bound it incidentally, so
+          // the size has to be enforced here instead.
+          //
+          // Trim section CONTENT only, never the markers: every section stays
+          // present and addressable, so the workflow that owns a trimmed
+          // section restores its full text on its next run.
+          const MAX_COMMENT_LENGTH = 65536
+          const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+          const blockRegex =
+            /(<!-- section:([a-z0-9-]+):start -->\n?)([\s\S]*?)(\n?<!-- section:\2:end -->)/g
+          const truncationNotice = (omitted) =>
+            `\n\n_Truncated ${omitted} characters to fit GitHub's ${MAX_COMMENT_LENGTH}-character comment limit. Full output: ${runUrl}_`
+
+          const clampBody = (body) => {
+            if (body.length <= MAX_COMMENT_LENGTH) return body
+
+            // Split into ordered pieces so markers and any non-section text
+            // (the comment marker, spacing) round-trip untouched.
+            const pieces = []
+            let cursor = 0
+            for (const match of body.matchAll(blockRegex)) {
+              if (match.index > cursor) {
+                pieces.push({ text: body.slice(cursor, match.index) })
+              }
+              pieces.push({ open: match[1], content: match[3], close: match[4] })
+              cursor = match.index + match[0].length
+            }
+            pieces.push({ text: body.slice(cursor) })
+
+            const fixedLength = pieces.reduce(
+              (total, piece) =>
+                total +
+                (piece.text !== undefined
+                  ? piece.text.length
+                  : piece.open.length + piece.close.length),
+              0
+            )
+            const sections = pieces.filter((piece) => piece.text === undefined)
+
+            // Equal-share water filling, smallest section first: a section under
+            // its share releases the remainder to the larger ones, so one
+            // runaway report cannot starve every other workflow's section.
+            let remaining = Math.max(0, MAX_COMMENT_LENGTH - fixedLength)
+            const ordered = [...sections].sort(
+              (a, b) => a.content.length - b.content.length
+            )
+            ordered.forEach((section, index) => {
+              const share = Math.floor(remaining / (ordered.length - index))
+              if (section.content.length > share) {
+                // Size the reservation with the pre-trim count, which can only
+                // have at least as many digits as the final one, so the notice
+                // always fits the share it was budgeted from.
+                const reserved = truncationNotice(section.content.length).length
+                if (share <= reserved) {
+                  section.content = ''
+                } else {
+                  const keep = share - reserved
+                  section.content =
+                    section.content.slice(0, keep) +
+                    truncationNotice(section.content.length - keep)
+                }
+              }
+              remaining -= section.content.length
+            })
+
+            const clamped = pieces
+              .map((piece) =>
+                piece.text !== undefined
+                  ? piece.text
+                  : piece.open + piece.content + piece.close
+              )
+              .join('')
+
+            if (clamped.length > MAX_COMMENT_LENGTH) {
+              // Unreachable by the arithmetic above; a mangled tail still beats
+              // a 422 that reds the branch this report is only describing.
+              core.warning(
+                `upsert-comment-section: body still ${clamped.length} characters after trimming; hard-truncating`
+              )
+              return clamped.slice(0, MAX_COMMENT_LENGTH)
+            }
+            return clamped
+          }
+
+          // 422 is a validation failure (body too long, and similar): the same
+          // request will fail identically every time, so burning the retry
+          // budget on it only delays the error.
+          const isPermanent = (err) => err?.status === 422
+
           const findComment = async () => {
             const comments = await github.paginate(
               github.rest.issues.listComments,
@@ -97,7 +189,7 @@ runs:
                 await github.rest.issues.createComment({
                   ...context.repo,
                   issue_number: prNumber,
-                  body: `${commentMarker}\n${sectionBlock}`
+                  body: clampBody(`${commentMarker}\n${sectionBlock}`)
                 })
                 // Concurrent writers may have also created a comment; merge all
                 // sections from every duplicate into the lowest-id copy, verify,
@@ -138,7 +230,7 @@ runs:
                     await github.rest.issues.updateComment({
                       ...context.repo,
                       comment_id: canonical.id,
-                      body: mergedBody
+                      body: clampBody(mergedBody)
                     })
                     // Verify canonical has all sections before deleting duplicates
                     const verified = (await github.rest.issues.getComment({
@@ -165,16 +257,22 @@ runs:
                 }
                 return
               } catch (err) {
-                if (attempt === maxAttempts) throw err
+                if (isPermanent(err) || attempt === maxAttempts) throw err
                 continue // another writer likely created it first; retry updates
               }
             }
 
             const body = existing.body ?? ''
             const expectedSections = sectionStartsIn(body)
-            const updated = sectionRegex.test(body)
-              ? body.replace(sectionRegex, sectionBlock)
-              : body.trimEnd() + '\n\n' + sectionBlock
+            const updated = clampBody(
+              sectionRegex.test(body)
+                ? body.replace(sectionRegex, sectionBlock)
+                : body.trimEnd() + '\n\n' + sectionBlock
+            )
+            // Verify against what was actually written: clampBody may have
+            // trimmed our own section, and looking for the untrimmed block
+            // would read as a clobber and burn every remaining attempt.
+            const writtenBlock = updated.match(sectionRegex)?.[0] ?? sectionBlock
 
             try {
               await github.rest.issues.updateComment({
@@ -183,13 +281,13 @@ runs:
                 body: updated
               })
             } catch (err) {
-              if (attempt === maxAttempts) throw err
+              if (isPermanent(err) || attempt === maxAttempts) throw err
               continue // transient failure; retry
             }
 
             const current = (await findComment())?.body ?? ''
             const survived =
-              current.includes(sectionBlock) &&
+              current.includes(writtenBlock) &&
               expectedSections.every((s) => current.includes(s))
             if (survived) return
 
