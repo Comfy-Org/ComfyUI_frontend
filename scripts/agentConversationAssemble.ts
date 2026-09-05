@@ -404,26 +404,41 @@ function buildResponse(
   return { response, cancelAfter }
 }
 
-// The frames and the audit rows must describe the same turn's tool calls.
+const repeated = (values: string[]): string[] => [
+  ...new Set(values.filter((value, index) => values.indexOf(value) !== index))
+]
+
+// The frames and the audit rows must describe the same turn's tool calls, one
+// terminal frame and one parent row each. Set equality alone hides multiplicity:
+// a second terminal frame replays the call's ops again, and a second parent row
+// is silently dropped from the replay while still counting toward the draft.
 function checkTurnAgreement(
   kept: RecordedFrame[],
   rows: ParentRow[],
   label: string
 ): void {
-  const frameCalls = new Set(
-    kept
-      .filter(
-        (frame) =>
-          frame.type === 'agent_tool_call' && frame.data.status !== 'running'
-      )
-      .flatMap(
-        (frame) => z.string().safeParse(frame.data.tool_call_id).data ?? []
-      )
-  )
-  const rowCalls = new Set(rows.map((row) => row.tool_call_id))
-  if (!sameSet(frameCalls, rowCalls))
+  const frameCalls = kept
+    .filter(
+      (frame) =>
+        frame.type === 'agent_tool_call' && frame.data.status !== 'running'
+    )
+    .flatMap(
+      (frame) => z.string().safeParse(frame.data.tool_call_id).data ?? []
+    )
+  const repeatedFrames = repeated(frameCalls)
+  if (repeatedFrames.length > 0)
     refuse(
-      `${label}: frames ${list(frameCalls)} and audit parent rows ${list(rowCalls)} disagree; the rows are not this turn`
+      `${label}: tool calls ${list(repeatedFrames)} carry more than one terminal frame; the replay would apply their ops once per frame`
+    )
+  const rowCalls = rows.map((row) => row.tool_call_id)
+  const repeatedRows = repeated(rowCalls)
+  if (repeatedRows.length > 0)
+    refuse(
+      `${label}: audit parent rows repeat tool calls ${list(repeatedRows)}; only one operation list per call can be the turn's`
+    )
+  if (!sameSet(new Set(frameCalls), new Set(rowCalls)))
+    refuse(
+      `${label}: frames ${list(new Set(frameCalls))} and audit parent rows ${list(new Set(rowCalls))} disagree; the rows are not this turn`
     )
 }
 
@@ -437,22 +452,34 @@ function checkDraft(
   if (draft === null)
     refuse(`no workflow_drafts row for ${workflowId}: the seed did not bind`)
   const draftIds = new Set(draft.nodes.map((node) => node.id))
-  const nodeIds = (kind: string): Set<string> =>
-    new Set(
-      appliedOps
-        .filter((op) => op.op === kind && (op.node_id ?? null) !== null)
-        .map((op) => String(op.node_id))
-    )
 
-  const deleted = nodeIds('delete_node')
-  const added = nodeIds('add_node')
-  const expected = [...seedIds].filter((id) => !deleted.has(id))
-  const missing = expected.filter((id) => !draftIds.has(id))
+  // Replay the ops in order over the seed rather than collecting membership:
+  // a delete_node followed by an add_node of the same id leaves the node in
+  // place, which unordered sets read as a node the delete failed to remove.
+  const expected = new Set(seedIds)
+  const touched = new Set<string>()
+  for (const op of appliedOps) {
+    if ((op.node_id ?? null) === null) continue
+    const id = String(op.node_id)
+    if (op.op === 'delete_node') {
+      expected.delete(id)
+      touched.add(id)
+    } else if (op.op === 'add_node') {
+      expected.add(id)
+      touched.add(id)
+    }
+  }
+
+  const missing = [...expected].filter((id) => !draftIds.has(id))
   if (missing.length > 0)
     refuse(
-      `draft for ${workflowId} lacks seed node ids ${list(missing)} that no applied delete_node removed`
+      `draft for ${workflowId} lacks node ids ${list(missing)} that the applied ops leave in place`
     )
-  const undeleted = [...deleted].filter((id) => draftIds.has(id))
+  // Still present although the ops ended by removing it: the ops did not reach
+  // the document. A node the ops never mention is merely unexplained.
+  const undeleted = [...draftIds].filter(
+    (id) => touched.has(id) && !expected.has(id)
+  )
   if (undeleted.length > 0)
     refuse(
       `draft for ${workflowId} still holds node ids ${list(undeleted)} that applied delete_node ops removed`
@@ -460,11 +487,10 @@ function checkDraft(
 
   return {
     draft_nodes: draftIds.size,
-    added_nodes: added.size,
-    deleted_nodes: deleted.size,
-    unexplained_draft_nodes: [...draftIds].filter(
-      (id) => !expected.includes(id) && !added.has(id)
-    ).length
+    added_nodes: [...expected].filter((id) => !seedIds.has(id)).length,
+    deleted_nodes: [...seedIds].filter((id) => !expected.has(id)).length,
+    unexplained_draft_nodes: [...draftIds].filter((id) => !expected.has(id))
+      .length
   }
 }
 
