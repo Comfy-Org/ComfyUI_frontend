@@ -214,6 +214,40 @@ describe('useComfyHubPublishWizard', () => {
         'https://cdn.example.com/sample.png'
       )
     })
+
+    it('restores models, customNodes, tutorialUrl, and metadata', () => {
+      const { applyPrefill, formData } = useComfyHubPublishWizard()
+      applyPrefill({
+        models: ['SDXL'],
+        customNodes: ['Impact Pack'],
+        tutorialUrl: 'https://youtube.com/abc',
+        metadata: { extra: 'value' }
+      })
+      expect(formData.value.models).toEqual(['SDXL'])
+      expect(formData.value.customNodes).toEqual(['Impact Pack'])
+      expect(formData.value.tutorialUrl).toBe('https://youtube.com/abc')
+      expect(formData.value.metadata).toEqual({ extra: 'value' })
+    })
+
+    it('does not overwrite models, customNodes, tutorialUrl, or metadata already set by the user', () => {
+      const { applyPrefill, formData } = useComfyHubPublishWizard()
+      formData.value.models = ['User model']
+      formData.value.customNodes = ['User node']
+      formData.value.tutorialUrl = 'https://youtube.com/user'
+      formData.value.metadata = { user: 'value' }
+
+      applyPrefill({
+        models: ['SDXL'],
+        customNodes: ['Impact Pack'],
+        tutorialUrl: 'https://youtube.com/abc',
+        metadata: { extra: 'value' }
+      })
+
+      expect(formData.value.models).toEqual(['User model'])
+      expect(formData.value.customNodes).toEqual(['User node'])
+      expect(formData.value.tutorialUrl).toBe('https://youtube.com/user')
+      expect(formData.value.metadata).toEqual({ user: 'value' })
+    })
   })
 
   it('caches the published Hub title by workflow path', () => {
