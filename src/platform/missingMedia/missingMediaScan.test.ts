@@ -5,12 +5,12 @@ import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type * as AssetServiceModule from '@/platform/assets/services/assetService'
+import { assetService } from '@/platform/assets/services/assetService'
 import {
   createMediaNodeDef,
   seedMediaNodeDefs
 } from '@/platform/missingMedia/__fixtures__/promotedMedia'
-import type * as FetchJobsModule from '@/platform/remote/comfyui/jobs/fetchJobs'
+import { fetchHistoryPage } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type * as GraphTraversalUtil from '@/utils/graphTraversalUtil'
@@ -28,15 +28,6 @@ import {
   getMissingMediaReferences
 } from './missingMediaGrouping'
 import type { MissingMediaCandidate } from './types'
-
-const { mockGetAllAssetsByTag, mockGetAssetsPageByTag } = vi.hoisted(() => ({
-  mockGetAllAssetsByTag: vi.fn(),
-  mockGetAssetsPageByTag: vi.fn()
-}))
-
-const { mockFetchHistoryPage } = vi.hoisted(() => ({
-  mockFetchHistoryPage: vi.fn()
-}))
 
 vi.mock('@/utils/graphTraversalUtil', async (importActual) => {
   const actual = await importActual<typeof GraphTraversalUtil>()
@@ -78,31 +69,12 @@ vi.mock('@/composables/useFeatureFlags', () => ({
   useFeatureFlags: () => ({ flags: { assetsEnabled: true } })
 }))
 
-vi.mock('@/platform/assets/services/assetService', async () => {
-  const actual = await vi.importActual<typeof AssetServiceModule>(
-    '@/platform/assets/services/assetService'
-  )
+vi.mock('@/platform/assets/services/assetService')
+vi.mock('@/platform/remote/comfyui/jobs/fetchJobs')
 
-  return {
-    ...actual,
-    assetService: {
-      ...actual.assetService,
-      getAllAssetsByTag: mockGetAllAssetsByTag,
-      getAssetsPageByTag: mockGetAssetsPageByTag
-    }
-  }
-})
-
-vi.mock('@/platform/remote/comfyui/jobs/fetchJobs', async () => {
-  const actual = await vi.importActual<typeof FetchJobsModule>(
-    '@/platform/remote/comfyui/jobs/fetchJobs'
-  )
-
-  return {
-    ...actual,
-    fetchHistoryPage: mockFetchHistoryPage
-  }
-})
+const mockGetAllAssetsByTag = vi.mocked(assetService.getAllAssetsByTag)
+const mockGetAssetsPageByTag = vi.mocked(assetService.getAssetsPageByTag)
+const mockFetchHistoryPage = vi.mocked(fetchHistoryPage)
 
 function makeCandidate(
   nodeId: string,
