@@ -118,12 +118,12 @@ flushErrorReports()
 // Strings here are intentionally not i18n'd: they're developer/nightly diagnostics,
 // not user-facing in stable releases.
 setAssertReporter(
-  (message) => {
+  (message, context) => {
     if (isDesktop) {
-      captureMessage(message, { level: 'warning' })
+      captureMessage(message, { level: 'warning', extra: context })
     }
     if (isCloud) {
-      reportAssertFailure(message)
+      reportAssertFailure(message, context)
     }
     if (isNightly) {
       useToastStore(pinia).add({
