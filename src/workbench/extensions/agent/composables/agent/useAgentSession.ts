@@ -201,7 +201,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     unsubscribeStatus?.()
     unsubscribe = null
     unsubscribeStatus = null
-    const stoppedGeneration = ownedGeneration
+    if (ownedGeneration !== sessionGeneration) return
+    const stoppedGeneration = ++sessionGeneration
     queueMicrotask(() => {
       if (stoppedGeneration !== sessionGeneration) return
       conversationStore.abortActiveTurn()
@@ -360,13 +361,25 @@ export function useAgentSession(deps: AgentSessionDeps) {
       answeringAskIds.value.has(askId)
     )
       return
+    const answerOwnedGeneration = ownedGeneration
+    const answerSessionGeneration = sessionGeneration
+    const generation = loadGeneration
+    const isCurrent = () =>
+      generation === loadGeneration && ownedGeneration === sessionGeneration
     setAskAnswering(askId, true)
     try {
       await rest.answerAsk(currentThreadId, askId, [selection])
       // Keep the actions disabled until the canonical resolution frame arrives.
     } catch (error) {
+      // A failed answer must never wedge the ask in answeringAskIds, even when
+      // the failure lands on a thread the user already left.
       setAskAnswering(askId, false)
       if (error instanceof AgentApiError && error.status === 409) {
+        if (
+          answerOwnedGeneration !== ownedGeneration ||
+          answerSessionGeneration !== sessionGeneration
+        )
+          return
         conversationStore.ingest({
           type: 'agent_ask_resolved',
           data: {
@@ -379,7 +392,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
         })
         return
       }
+      // A backend failure to record the answer is real telemetry regardless of
+      // which thread is on screen; only the user-facing notice is thread-local.
       reportError(error, { errorType: 'agent_ask_answer_failed' })
+      if (!isCurrent()) return
       pushError(error instanceof Error ? error.message : String(error))
     }
   }
