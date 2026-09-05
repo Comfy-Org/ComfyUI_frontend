@@ -91,7 +91,15 @@ export function clearDevEvents(): void {
   triggerRef(devEvents)
 }
 
-/** Serializes an event detail defensively (Uint8Array etc. don't JSON well). */
+/**
+ * Serializes an event detail defensively (typed arrays / ArrayBuffer don't
+ * JSON well). Intentionally broad: any `ArrayBuffer.isView` value (not just
+ * `Uint8Array`) collapses to `"<TypedArrayName>(byteLength)"`, and raw
+ * `ArrayBuffer` collapses to `"ArrayBuffer(byteLength)"`. Dev-panel-only
+ * output — see `devPanelLog.test.ts` "stringifies binary payloads
+ * defensively" for the covered cases. (Follow-up to
+ * https://github.com/Comfy-Org/ComfyUI_frontend/pull/16344 review comment.)
+ */
 export function stringifyDevEvents(events: readonly DevEvent[]): string {
   return JSON.stringify(events, devEventReplacer(), 2)
 }
