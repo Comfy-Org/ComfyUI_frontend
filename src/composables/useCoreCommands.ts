@@ -884,10 +884,10 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Contact Support',
       versionAdded: '1.17.8',
       function: () => {
-        const { userEmail, resolvedUserInfo } = useCurrentUser()
+        const { userEmail, userDisplayName } = useCurrentUser()
         const supportUrl = buildSupportUrl({
           userEmail: userEmail.value,
-          userId: resolvedUserInfo.value?.id
+          userDisplayName: userDisplayName.value
         })
         window.open(supportUrl, '_blank', 'noopener,noreferrer')
       }

@@ -511,7 +511,7 @@ const VIDEO_TEMPLATE_URL =
   'https://cloud.comfy.org/?template=video_wan2_2_14B_i2v'
 
 /** External footnote destinations — rendered as real links (open in a new tab). */
-const QUESTIONS_URL = 'https://portal.usepylon.com/comfy-org/forms/question'
+const QUESTIONS_URL = 'https://comfy-org.portal.usepylon.com/forms/question'
 const ENTERPRISE_URL = 'https://comfy.org/cloud/enterprise/'
 const PRICING_URL = 'https://comfy.org/cloud/pricing/'
 
