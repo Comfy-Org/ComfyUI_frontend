@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import {
   assertNoCommittedSourceTierSwitch,
@@ -13,26 +13,34 @@ import {
 // The guard greps `src/` only, so this literal is inert here in `scripts/`.
 const SOURCE_TIER_SWITCH = '__COMFY_CUSTOM_NODE_DETECTION_PROOF_TIER__'
 
-const fixtures: string[] = []
-
 /**
- * A throwaway git repo with one tracked `src/` file. `git grep` searches
- * tracked files, so the file is staged but never committed.
+ * Runs `fn` against a fresh temporary directory and removes it afterwards.
+ * The directory is scoped to the caller rather than registered in a
+ * module-level list, so no state is shared between test cases.
  */
-function sourceFixture(contents: string): string {
-  const root = mkdtempSync(join(tmpdir(), 'proof-switch-'))
-  fixtures.push(root)
-  mkdirSync(join(root, 'src'))
-  writeFileSync(join(root, 'src', 'node.ts'), contents)
-  spawnSync('git', ['init', '-q'], { cwd: root })
-  spawnSync('git', ['add', 'src/node.ts'], { cwd: root })
-  return root
+function withTempDir(prefix: string, fn: (root: string) => void): void {
+  const root = mkdtempSync(join(tmpdir(), prefix))
+  try {
+    fn(root)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
 }
 
-afterEach(() => {
-  while (fixtures.length)
-    rmSync(fixtures.pop()!, { recursive: true, force: true })
-})
+/**
+ * Runs `fn` against a throwaway git repo with one tracked `src/` file.
+ * `git grep` searches tracked files, so the file is staged but never
+ * committed.
+ */
+function withSourceFixture(contents: string, fn: (root: string) => void): void {
+  withTempDir('proof-switch-', (root) => {
+    mkdirSync(join(root, 'src'))
+    writeFileSync(join(root, 'src', 'node.ts'), contents)
+    spawnSync('git', ['init', '-q'], { cwd: root })
+    spawnSync('git', ['add', 'src/node.ts'], { cwd: root })
+    fn(root)
+  })
+}
 
 describe('custom-node detection proof', () => {
   it('keeps the detection proof switch out of committed source', () => {
@@ -40,25 +48,28 @@ describe('custom-node detection proof', () => {
   })
 
   it('accepts a working tree whose src/ is free of the switch', () => {
-    const root = sourceFixture('export const value = 1\n')
-    expect(() => assertNoCommittedSourceTierSwitch(root)).not.toThrow()
+    withSourceFixture('export const value = 1\n', (root) => {
+      expect(() => assertNoCommittedSourceTierSwitch(root)).not.toThrow()
+    })
   })
 
   it('rejects a committed source-tier switch', () => {
-    const root = sourceFixture(
-      `export const tier = globalThis.${SOURCE_TIER_SWITCH}\n`
-    )
-    expect(() => assertNoCommittedSourceTierSwitch(root)).toThrow(
-      /detection proof switch leaked into src\//
+    withSourceFixture(
+      `export const tier = globalThis.${SOURCE_TIER_SWITCH}\n`,
+      (root) => {
+        expect(() => assertNoCommittedSourceTierSwitch(root)).toThrow(
+          /detection proof switch leaked into src\//
+        )
+      }
     )
   })
 
   it('rejects a working tree it cannot inspect', () => {
-    const root = mkdtempSync(join(tmpdir(), 'proof-switch-nogit-'))
-    fixtures.push(root)
-    expect(() => assertNoCommittedSourceTierSwitch(root)).toThrow(
-      /could not inspect src\//
-    )
+    withTempDir('proof-switch-nogit-', (root) => {
+      expect(() => assertNoCommittedSourceTierSwitch(root)).toThrow(
+        /could not inspect src\//
+      )
+    })
   })
 
   it('mutates only the calibrated S9 witness method', () => {
