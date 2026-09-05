@@ -125,65 +125,6 @@ const tabActivity = useWorkflowTabActivityStore()
 const CREATING_TAB_MIN_DURATION_MS = 500
 
 const canvasStore = useCanvasStore()
-const graphMutationsByWorkflow = new Map<
-  string,
-  ReturnType<typeof createGraphMutations>
->()
-const graphMutations = (workflowId: string) => {
-  const existing = graphMutationsByWorkflow.get(workflowId)
-  if (existing) return existing
-  const mutations = createGraphMutations({
-    getScope() {
-      const rootGraphId = boundTabFor(workflowId)?.activeState?.id
-      return rootGraphId
-        ? {
-            rootGraphId: toRootGraphId(rootGraphId),
-            owningGraphId: toOwningGraphId(rootGraphId)
-          }
-        : null
-    },
-    layout: {
-      createNode(scope, nodeId, layout, context) {
-        const { position, size } = layout
-        layoutStore.applyOperation({
-          type: 'createNode',
-          graphId: scope.rootGraphId,
-          ownerGraphId: scope.owningGraphId,
-          nodeId,
-          layout: {
-            id: nodeId,
-            position,
-            size,
-            bounds: { x: position.x, y: position.y, ...size },
-            zIndex: layoutStore.allocateZIndex(),
-            visible: true
-          },
-          source: LayoutSource.AgentRemote,
-          actor: context.actor,
-          opId: context.opId,
-          timestamp: Date.now()
-        })
-      },
-      deleteNodes(scope, nodeIds, context) {
-        const timestamp = Date.now()
-        layoutStore.applyOperations(
-          nodeIds.map((nodeId) => ({
-            type: 'deleteNode',
-            graphId: scope.rootGraphId,
-            ownerGraphId: scope.owningGraphId,
-            nodeId,
-            source: LayoutSource.AgentRemote,
-            actor: context.actor,
-            opId: context.opId,
-            timestamp
-          }))
-        )
-      }
-    }
-  })
-  graphMutationsByWorkflow.set(workflowId, mutations)
-  return mutations
-}
 const { focusNodeInstance } = useFocusNode()
 
 function toSelectedNode(node: LGraphNode): SelectedNode {
@@ -424,7 +365,9 @@ const {
   boundWorkflowId,
   bindWorkflow,
   answerAsk,
-  answeringAskIds
+  answeringAskIds,
+  destructiveMutationsAllowed,
+  rejectDestructiveMutation
 } = useAgentSession({
   rest,
   events,
@@ -437,6 +380,68 @@ const {
     draft: activeWorkflowDraft
   }
 })
+
+const graphMutationsByWorkflow = new Map<
+  string,
+  ReturnType<typeof createGraphMutations>
+>()
+const graphMutations = (workflowId: string) => {
+  const existing = graphMutationsByWorkflow.get(workflowId)
+  if (existing) return existing
+  const mutations = createGraphMutations({
+    getScope() {
+      const rootGraphId = boundTabFor(workflowId)?.activeState?.id
+      return rootGraphId
+        ? {
+            rootGraphId: toRootGraphId(rootGraphId),
+            owningGraphId: toOwningGraphId(rootGraphId)
+          }
+        : null
+    },
+    allowDestructiveMutation: () => destructiveMutationsAllowed.value,
+    onDestructiveMutationRejected: rejectDestructiveMutation,
+    layout: {
+      createNode(scope, nodeId, layout, context) {
+        const { position, size } = layout
+        layoutStore.applyOperation({
+          type: 'createNode',
+          graphId: scope.rootGraphId,
+          ownerGraphId: scope.owningGraphId,
+          nodeId,
+          layout: {
+            id: nodeId,
+            position,
+            size,
+            bounds: { x: position.x, y: position.y, ...size },
+            zIndex: layoutStore.allocateZIndex(),
+            visible: true
+          },
+          source: LayoutSource.AgentRemote,
+          actor: context.actor,
+          opId: context.opId,
+          timestamp: Date.now()
+        })
+      },
+      deleteNodes(scope, nodeIds, context) {
+        const timestamp = Date.now()
+        layoutStore.applyOperations(
+          nodeIds.map((nodeId) => ({
+            type: 'deleteNode',
+            graphId: scope.rootGraphId,
+            ownerGraphId: scope.owningGraphId,
+            nodeId,
+            source: LayoutSource.AgentRemote,
+            actor: context.actor,
+            opId: context.opId,
+            timestamp
+          }))
+        )
+      }
+    }
+  })
+  graphMutationsByWorkflow.set(workflowId, mutations)
+  return mutations
+}
 
 const isBoundWorkflowActive = computed(() => {
   const bound = boundWorkflowId.value

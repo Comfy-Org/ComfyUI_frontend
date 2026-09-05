@@ -90,6 +90,15 @@ export const useAgentConversationStore = defineStore(
       messages.value.push(message)
     }
 
+    function recordActiveNotice(text: string): void {
+      if (liveMessage === null) return
+      liveMessage.parts = [
+        ...liveMessage.parts,
+        { type: 'notice', level: 'error', text }
+      ]
+      replaceActive(liveMessage)
+    }
+
     function startTurn(turnId: TurnId): void {
       if (transport) abortActiveTurn()
       const message = createAssistantMessage(turnId)
@@ -296,6 +305,7 @@ export const useAgentConversationStore = defineStore(
       recordUser,
       setThreadId,
       recordFailedSend,
+      recordActiveNotice,
       startTurn,
       ingest,
       abortActiveTurn,

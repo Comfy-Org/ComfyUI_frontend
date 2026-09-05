@@ -143,6 +143,79 @@ describe('graphMutations', () => {
     error.mockRestore()
   })
 
+  it('preserves all five existing nodes when an additive turn falls back to replacing the graph', () => {
+    const initial = mutations()
+    initial.batch(context, (batch) => {
+      for (let id = 1; id <= 5; id++) batch.addNode(node(id, { seed: id }))
+    })
+    createLayout.mockClear()
+    deleteLayouts.mockClear()
+    const snapshot = () =>
+      JSON.stringify({
+        nodes: useNodeDataStore().getGraphNodesFor('root', 'root'),
+        links: [...useLinkStore().graphTopologies(scope)]
+      })
+    const before = snapshot()
+    const rejected = vi.fn()
+    const guarded = createGraphMutations({
+      getScope: () => scope,
+      allowDestructiveMutation: () => false,
+      onDestructiveMutationRejected: rejected,
+      layout: { createNode: createLayout, deleteNodes: deleteLayouts }
+    })
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const applied = guarded.batch(
+      { ...context, opId: 'add-text-fallback' },
+      (batch) => {
+        batch.removeMissing([], [])
+        batch.addNode({
+          ...node(6, { text: 'hello' }),
+          type: 'TextNode'
+        })
+      }
+    )
+
+    expect(applied).toBe(false)
+    expect(snapshot()).toBe(before)
+    expect(rejected).toHaveBeenCalledOnce()
+    expect(rejected).toHaveBeenCalledWith({
+      nodeIds: [
+        toNodeId(1),
+        toNodeId(2),
+        toNodeId(3),
+        toNodeId(4),
+        toNodeId(5)
+      ],
+      linkIds: []
+    })
+    expect(createLayout).not.toHaveBeenCalled()
+    expect(deleteLayouts).not.toHaveBeenCalled()
+    expect(error).toHaveBeenCalledWith(
+      '[agent-crdt] graph mutation rejected: destructive change requires explicit user confirmation; nodes=[1,2,3,4,5], links=[], actor=agent:test, op=add-text-fallback'
+    )
+    error.mockRestore()
+  })
+
+  it('allows a node deletion after explicit destructive authorization', () => {
+    const initial = mutations()
+    initial.addNode(node(1), context)
+    deleteLayouts.mockClear()
+    const guarded = createGraphMutations({
+      getScope: () => scope,
+      allowDestructiveMutation: () => true,
+      layout: { createNode: createLayout, deleteNodes: deleteLayouts }
+    })
+
+    expect(
+      guarded.deleteNode(toNodeId(1), [], {
+        ...context,
+        opId: 'confirmed-delete'
+      })
+    ).toBe(true)
+    expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
+  })
+
   it('rejects a sibling-owned node collision before committing earlier writes', () => {
     const siblingScope = {
       rootGraphId: scope.rootGraphId,

@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import { i18n } from '@/i18n'
 import type { TurnId } from '../../schemas/agentApiSchema'
+import { createAssistantMessage } from '../../services/agent/agentMessageParts'
 
 import AgentPanel from './AgentPanel.vue'
 
@@ -56,6 +57,30 @@ describe('AgentPanel', () => {
         'The AI agent can make mistakes. Double check your response.'
       )
     ).toBeInTheDocument()
+  })
+
+  it('renders a blocked destructive fallback in the response panel', () => {
+    const message = createAssistantMessage('msg-1' as TurnId)
+    message.streaming = false
+    message.parts = [
+      {
+        type: 'notice',
+        level: 'error',
+        text: 'Existing workflow content was preserved.'
+      }
+    ]
+
+    render(AgentPanel, {
+      props: { entries: [message], historyGroups },
+      global: {
+        plugins: [i18n],
+        stubs: { Composer: true, PanelHeader: true }
+      }
+    })
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Existing workflow content was preserved.'
+    )
   })
 
   it('groups chat options with the title and separates history navigation', () => {

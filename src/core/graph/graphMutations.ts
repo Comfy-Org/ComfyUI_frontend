@@ -97,6 +97,13 @@ export interface GraphMutations {
 export interface GraphMutationsDeps {
   getScope(): GraphScope | null
   layout: SemanticLayoutMutationPort
+  allowDestructiveMutation?(change: DestructiveGraphMutation): boolean
+  onDestructiveMutationRejected?(change: DestructiveGraphMutation): void
+}
+
+interface DestructiveGraphMutation {
+  nodeIds: readonly NodeId[]
+  linkIds: readonly LinkId[]
 }
 
 type QueuedMutation =
@@ -145,6 +152,11 @@ type PreparedMutation =
       removedLinkIds: readonly LinkId[]
     }
   | { kind: 'clearSemanticGraph'; nodeIds: readonly NodeId[] }
+
+interface PreparedPlan {
+  mutations: PreparedMutation[]
+  destructive: DestructiveGraphMutation
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -316,7 +328,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
   function prepare(
     scope: GraphScope,
     queued: readonly QueuedMutation[]
-  ): PreparedMutation[] | string {
+  ): PreparedPlan | string {
     const nodes = new Map(
       nodeStore
         .getGraphNodesFor(scope.rootGraphId, scope.owningGraphId)
@@ -325,6 +337,9 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     const links = new Map(
       [...linkStore.graphTopologies(scope)].map((link) => [link.id, link])
     )
+    const initialNodes = new Map(nodes)
+    const initialLinks = new Set(links.keys())
+    const removedInitialNodeIds = new Set<NodeId>()
     const widgets = new Map<string, Set<string>>()
     for (const node of nodes.values()) {
       widgets.set(
@@ -466,6 +481,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             .map(({ id }) => id)
             .filter((id) => !retainedNodeIds.has(nodeKey(id)))
           for (const id of nodeIds) {
+            if (initialNodes.has(nodeKey(id))) removedInitialNodeIds.add(id)
             nodes.delete(nodeKey(id))
             widgets.delete(nodeKey(id))
             removeIncidentLinks(links, id)
@@ -517,6 +533,9 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             }
             removedLinkIds.push(id)
           }
+          if (initialNodes.has(nodeKey(mutation.nodeId))) {
+            removedInitialNodeIds.add(mutation.nodeId)
+          }
           nodes.delete(nodeKey(mutation.nodeId))
           widgets.delete(nodeKey(mutation.nodeId))
           removeIncidentLinks(links, mutation.nodeId)
@@ -530,6 +549,9 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
         }
         case 'clearSemanticGraph': {
           const nodeIds = [...nodes.values()].map(({ id }) => id)
+          for (const id of nodeIds) {
+            if (initialNodes.has(nodeKey(id))) removedInitialNodeIds.add(id)
+          }
           nodes.clear()
           widgets.clear()
           links.clear()
@@ -538,7 +560,21 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
         }
       }
     }
-    return prepared
+    return {
+      mutations: prepared,
+      destructive: {
+        nodeIds: [
+          ...new Set([
+            ...removedInitialNodeIds,
+            ...[...initialNodes].flatMap(([id, node]) => {
+              const finalNode = nodes.get(id)
+              return !finalNode || finalNode.type !== node.type ? [node.id] : []
+            })
+          ])
+        ],
+        linkIds: [...initialLinks].filter((id) => !links.has(id))
+      }
+    }
   }
 
   function detachLinkSlots(
@@ -802,9 +838,22 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           queued.push({ kind: 'clearSemanticGraph' })
         }
       })
-      const prepared = prepare(scope, queued)
-      if (typeof prepared === 'string') return fail(prepared)
-      commit(scope, prepared, context)
+      const plan = prepare(scope, queued)
+      if (typeof plan === 'string') return fail(plan)
+      const destructive =
+        plan.destructive.nodeIds.length > 0 ||
+        plan.destructive.linkIds.length > 0
+      if (
+        destructive &&
+        deps.allowDestructiveMutation &&
+        !deps.allowDestructiveMutation(plan.destructive)
+      ) {
+        deps.onDestructiveMutationRejected?.(plan.destructive)
+        return fail(
+          `destructive change requires explicit user confirmation; nodes=[${plan.destructive.nodeIds.join(',')}], links=[${plan.destructive.linkIds.join(',')}], actor=${context.actor}, op=${context.opId}`
+        )
+      }
+      commit(scope, plan.mutations, context)
       return true
     },
     addNode(payload, context) {

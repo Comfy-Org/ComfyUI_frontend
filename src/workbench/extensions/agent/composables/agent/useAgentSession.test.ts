@@ -1,6 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
@@ -212,6 +213,71 @@ describe('useAgentSession (v1 composition root)', () => {
       streaming: false
     })
     expect(session.isStreaming.value).toBe(false)
+  })
+
+  it('requires graph-specific destructive intent before authorizing node loss', async () => {
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest(),
+      events: source
+    })
+    session.start()
+
+    await session.sendMessage(
+      "Add a text node, set its prompt to 'hello', and run it."
+    )
+    expect(session.destructiveMutationsAllowed.value).toBe(false)
+
+    await session.sendMessage('Delete every node from this workflow.')
+    expect(session.destructiveMutationsAllowed.value).toBe(true)
+    emit(doneIn('th-other', 'msg-other'))
+    expect(session.destructiveMutationsAllowed.value).toBe(true)
+    emit(done('msg-1'))
+    expect(session.destructiveMutationsAllowed.value).toBe(false)
+
+    await session.sendMessage("Delete all nodes, but don't remove the links.")
+    expect(session.destructiveMutationsAllowed.value).toBe(true)
+
+    await session.sendMessage('Delete all nodes. Do not remove the links.')
+    expect(session.destructiveMutationsAllowed.value).toBe(true)
+
+    await session.sendMessage("Don't remove the links, but delete all nodes.")
+    expect(session.destructiveMutationsAllowed.value).toBe(true)
+
+    await session.sendMessage('Do not delete any nodes; just explain them.')
+    expect(session.destructiveMutationsAllowed.value).toBe(false)
+
+    await session.sendMessage('Replace the prompt text with hello.')
+    expect(session.destructiveMutationsAllowed.value).toBe(false)
+  })
+
+  it('reports a blocked destructive change once per turn', async () => {
+    const rest = fakeRest()
+    const { source } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+
+    await session.sendMessage('Add a text node.')
+    session.rejectDestructiveMutation()
+    session.rejectDestructiveMutation()
+    await Promise.resolve()
+
+    const assistant = session.entries.value.at(-1)
+    expect(assistant?.role).toBe('assistant')
+    if (assistant?.role !== 'assistant') return
+    expect(assistant.parts).toEqual([
+      {
+        type: 'notice',
+        level: 'error',
+        text: i18n.global.t('agent.destructiveMutationBlocked')
+      }
+    ])
+    expect(rest.cancelMessage).toHaveBeenCalledTimes(1)
+
+    await session.sendMessage('Add another text node.')
+    session.rejectDestructiveMutation()
+    await Promise.resolve()
+    expect(rest.cancelMessage).toHaveBeenCalledTimes(2)
   })
 
   it('(b) a second send posts to the adopted threadId, not new', async () => {

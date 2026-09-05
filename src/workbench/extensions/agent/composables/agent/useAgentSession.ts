@@ -80,6 +80,23 @@ export interface AgentSessionDeps {
 
 const THREAD_STORAGE_KEY = 'Comfy.Agent.ThreadId'
 const PREPARE_TIMEOUT_MS = 3000
+const DESTRUCTIVE_COMMAND =
+  /\b(?:clear|delete|discard|erase|remove|replace)\b/giu
+const DESTRUCTIVE_TARGET =
+  /\b(?:all|everything|graph|link|links|node|nodes|workflow|canvas|connection|connections)\b/iu
+const NEGATED_COMMAND_PREFIX =
+  /\b(?:do not|don['’]t|never|without)(?:\s+\S+){0,3}\s*$/iu
+
+function hasExplicitDestructiveIntent(text: string): boolean {
+  const hasUnnegatedCommand = Array.from(
+    text.matchAll(DESTRUCTIVE_COMMAND)
+  ).some((match) => {
+    const prefix = text.slice(Math.max(0, match.index - 40), match.index)
+    const clausePrefix = prefix.split(/[.!?;\n]|\bbut\b/iu).at(-1) ?? prefix
+    return !NEGATED_COMMAND_PREFIX.test(clausePrefix)
+  })
+  return hasUnnegatedCommand && DESTRUCTIVE_TARGET.test(text)
+}
 
 let sessionGeneration = 0
 
@@ -113,6 +130,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     else next.delete(askId)
     answeringAskIds.value = next
   }
+
+  const destructiveMutationsAllowed = ref(false)
+  let destructiveRejectionReported = false
 
   let localErrorCount = 0
   function nextLocalErrorId(): TurnId {
@@ -223,6 +243,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return false
     }
     promptEditState.value = { phase: 'idle' }
+    destructiveMutationsAllowed.value = hasExplicitDestructiveIntent(text)
+    destructiveRejectionReported = false
     sending.value = true
     stopRequestedWhileSending.value = false
     // Capture the originating tab identity before the first await: prepare()
@@ -305,6 +327,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       }
       return true
     } catch (error) {
+      destructiveMutationsAllowed.value = false
       const message =
         error instanceof AgentApiError
           ? error.message
@@ -326,6 +349,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   const wasStopRequestedWhileSending = () => stopRequestedWhileSending.value
 
   async function stopTurn(): Promise<void> {
+    destructiveMutationsAllowed.value = false
     const threadId = conversationStore.threadId
     const turnId = conversationStore.activeTurnId
     if (threadId === null || turnId === null) {
@@ -384,11 +408,24 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
+  // The follower retries a refused destructive frame on every later frame, so
+  // the graph layer may call this many times for one blocked change. Report
+  // and cancel once per sent turn.
+  function rejectDestructiveMutation(): void {
+    if (destructiveRejectionReported) return
+    destructiveRejectionReported = true
+    conversationStore.recordActiveNotice(
+      i18n.global.t('agent.destructiveMutationBlocked')
+    )
+    void stopTurn()
+  }
+
   let loadGeneration = 0
 
   function newChat(): void {
     loadGeneration++
     promptEditState.value = { phase: 'idle' }
+    destructiveMutationsAllowed.value = false
     conversationStore.stashActiveTurn()
     conversationStore.reset()
     boundWorkflowId.value = null
@@ -403,6 +440,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   async function loadThread(threadId: string): Promise<void> {
     const generation = ++loadGeneration
     promptEditState.value = { phase: 'idle' }
+    destructiveMutationsAllowed.value = false
     const isCurrent = () =>
       generation === loadGeneration && ownedGeneration === sessionGeneration
     conversationStore.stashActiveTurn()
@@ -427,6 +465,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
           typeof messageId !== 'string' ||
           messageId === conversationStore.activeTurnId
         ) {
+          destructiveMutationsAllowed.value = false
           conversationStore.abortActiveTurn()
           pushError(i18n.global.t('agent.malformedEvent'))
         } else {
@@ -450,8 +489,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
         )
           workflow?.activeTab?.(event.data)
         return
-      default:
+      default: {
+        const completesActiveTurn =
+          event.type === 'agent_message_done' &&
+          event.data.message_id === conversationStore.activeTurnId &&
+          (event.data.thread_id === undefined ||
+            event.data.thread_id === conversationStore.threadId)
         conversationStore.ingest(event)
+        if (completesActiveTurn) destructiveMutationsAllowed.value = false
         if (
           event.type === 'agent_message_done' &&
           promptEditState.value.phase === 'stopping' &&
@@ -462,6 +507,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
             phase: 'ready',
             turnId: promptEditState.value.turnId
           }
+        break
+      }
     }
   }
 
@@ -474,6 +521,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     // interrupted. An initial `false` (socket not open yet) is not a
     // reconnect and must not abort a turn that survived a remount.
     if (!everLive) return
+    destructiveMutationsAllowed.value = false
     conversationStore.abortActiveTurn()
     conversationStore.dropBackgroundTurns()
   }
@@ -492,7 +540,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   return {
     boundWorkflowId: computed(() => boundWorkflowId.value),
+    destructiveMutationsAllowed: computed(
+      () => destructiveMutationsAllowed.value
+    ),
     bindWorkflow,
+    rejectDestructiveMutation,
     isSending,
     editableTurnId,
     start,
