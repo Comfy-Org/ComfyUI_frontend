@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -10,6 +10,12 @@ import type {
   DraftSnapshot,
   OpenTabsSnapshot
 } from '../../services/agent/agentRestClient'
+import {
+  forgetAgentSessionMemory,
+  hasAgentSessionMemoryFor,
+  readAgentSessionMemory,
+  rememberAgentSessionMemory
+} from '../../services/agent/agentSessionMemory'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 
@@ -63,6 +69,7 @@ type PromptEditState =
 export interface AgentSessionDeps {
   rest: AgentRestClient
   events: AgentEventSource
+  identity?: () => string | null
   workflow?: {
     // origin, when given, pins resolution to the tab that initiated the send
     // instead of whatever tab is active when this is called - it is read
@@ -78,7 +85,6 @@ export interface AgentSessionDeps {
   }
 }
 
-const THREAD_STORAGE_KEY = 'Comfy.Agent.ThreadId'
 const PREPARE_TIMEOUT_MS = 3000
 
 let sessionGeneration = 0
@@ -106,12 +112,36 @@ export function useAgentSession(deps: AgentSessionDeps) {
   const promptEditState = ref<PromptEditState>({ phase: 'idle' })
   const sending = ref(false)
   const answeringAskIds = ref<ReadonlySet<string>>(new Set())
+  let loadGeneration = 0
+  let identityGeneration = 0
 
   function setAskAnswering(askId: string, answering: boolean): void {
     const next = new Set(answeringAskIds.value)
     if (answering) next.add(askId)
     else next.delete(askId)
     answeringAskIds.value = next
+  }
+
+  if (deps.identity) {
+    watch(deps.identity, (identity, previousIdentity) => {
+      if (previousIdentity === null && hasAgentSessionMemoryFor(identity)) {
+        restorePersistedThread(identity)
+        return
+      }
+
+      // The app-scoped identity tracker purges the stores and persisted keys.
+      // Clear session-local state too so an open panel cannot keep following
+      // the previous account's workflow or complete one of its pending loads.
+      loadGeneration++
+      identityGeneration++
+      notices.value = []
+      promptEditState.value = { phase: 'idle' }
+      sending.value = false
+      stopRequestedWhileSending.value = false
+      boundWorkflowId.value = null
+      rememberedWorkflowId = null
+      forgetAgentSessionMemory()
+    })
   }
 
   let localErrorCount = 0
@@ -133,14 +163,30 @@ export function useAgentSession(deps: AgentSessionDeps) {
     notices.value.push({ level: 'error', text })
   }
 
+  function restorePersistedThread(identity?: string | null): void {
+    if (conversationStore.messages.length !== 0) return
+
+    const storedThreadId = readAgentSessionMemory(identity)
+    if (storedThreadId === null) return
+
+    const generation = ++loadGeneration
+    conversationStore.setThreadId(storedThreadId)
+    void hydrateFromServer(
+      storedThreadId,
+      () =>
+        generation === loadGeneration && ownedGeneration === sessionGeneration
+    )
+  }
+
   function start(): void {
     ownedGeneration = ++sessionGeneration
     everLive = false
+    const identity = deps.identity?.()
     // The binding only outlives a remount together with its thread: a page
     // with no surviving thread has no resumed turn the binding could serve.
     if (
       conversationStore.threadId === null &&
-      localStorage.getItem(THREAD_STORAGE_KEY) === null
+      readAgentSessionMemory(identity) === null
     ) {
       rememberedWorkflowId = null
       boundWorkflowId.value = null
@@ -159,19 +205,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       })
       return
     }
-    if (conversationStore.messages.length === 0) {
-      const stored = localStorage.getItem(THREAD_STORAGE_KEY)
-      if (stored !== null) {
-        const generation = ++loadGeneration
-        conversationStore.setThreadId(stored)
-        void hydrateFromServer(
-          stored,
-          () =>
-            generation === loadGeneration &&
-            ownedGeneration === sessionGeneration
-        )
-      }
-    }
+    restorePersistedThread(identity)
   }
 
   async function hydrateFromServer(
@@ -188,7 +222,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (error instanceof AgentApiError && error.status === 404) {
         if (conversationStore.threadId === threadId)
           conversationStore.setThreadId(null)
-        localStorage.removeItem(THREAD_STORAGE_KEY)
+        forgetAgentSessionMemory()
         return false
       }
       pushError(error instanceof Error ? error.message : String(error))
@@ -225,6 +259,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     promptEditState.value = { phase: 'idle' }
     sending.value = true
     stopRequestedWhileSending.value = false
+    const operationGeneration = identityGeneration
+    const isCurrentIdentity = () => operationGeneration === identityGeneration
     // Capture the originating tab identity before the first await: prepare()
     // can take up to PREPARE_TIMEOUT_MS, and a tab switch while it is
     // pending must not reattribute this send to the newly active tab. The id
@@ -241,6 +277,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         workflow.prepare().catch(() => undefined),
         new Promise<void>((resolve) => setTimeout(resolve, PREPARE_TIMEOUT_MS))
       ])
+    if (!isCurrentIdentity()) return false
     const wfContext = workflow?.current(origin)
     const tabs = workflow?.tabs?.(origin)
     async function postTurn(threadId: string) {
@@ -272,8 +309,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     try {
       const ack = await postTurn(conversationStore.threadId ?? 'new')
+      if (!isCurrentIdentity()) return false
       conversationStore.setThreadId(ack.thread_id)
-      localStorage.setItem(THREAD_STORAGE_KEY, ack.thread_id)
+      rememberAgentSessionMemory(ack.thread_id, deps.identity?.())
       if (ack.workflow_id !== undefined) {
         // The ack does not say whether the server minted a workflow or echoed
         // the thread's existing one. The persisted binding store preserves
@@ -305,6 +343,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       }
       return true
     } catch (error) {
+      if (!isCurrentIdentity()) return false
       const message =
         error instanceof AgentApiError
           ? error.message
@@ -318,7 +357,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       )
       return false
     } finally {
-      sending.value = false
+      if (isCurrentIdentity()) sending.value = false
     }
   }
 
@@ -384,8 +423,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
-  let loadGeneration = 0
-
   function newChat(): void {
     loadGeneration++
     promptEditState.value = { phase: 'idle' }
@@ -393,7 +430,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.reset()
     boundWorkflowId.value = null
     rememberedWorkflowId = null
-    localStorage.removeItem(THREAD_STORAGE_KEY)
+    forgetAgentSessionMemory()
   }
 
   function listThreads() {
@@ -409,7 +446,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     boundWorkflowId.value = null
     rememberedWorkflowId = null
     conversationStore.setThreadId(threadId)
-    localStorage.setItem(THREAD_STORAGE_KEY, threadId)
+    rememberAgentSessionMemory(threadId, deps.identity?.())
     const hydrated = await hydrateFromServer(threadId, isCurrent)
     if (hydrated && isCurrent()) conversationStore.resumeBackgroundTurn()
   }

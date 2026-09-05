@@ -10,6 +10,7 @@ An Architecture Decision Record captures an important architectural decision mad
 
 | ADR                                                                                                              | Title                                                           | Status   | Date       |
 | ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | -------- | ---------- |
+| [AGENT-SESSION-0028](AGENT-SESSION-0028-compose-turn-origin-and-account-generation.md)                           | Compose Turn Origin and Account Generation                      | Proposed | 2026-09-05 |
 | [AUTH-BILLING-0014](AUTH-BILLING-0014-billing-attempt-context-and-workspace-scope.md)                            | Billing Attempt Context and Workspace Scope                     | Proposed | 2026-07-28 |
 | [AUTH-CREDENTIALS-0011](AUTH-CREDENTIALS-0011-cloud-credential-lifecycle-invariants.md)                          | Cloud Credential Lifecycle Invariants                           | Proposed | 2026-07-09 |
 | [CRDT-FOLLOWER-0025](CRDT-FOLLOWER-0025-in-app-agent-crdt-follower-and-distribution-resolved-boundaries.md)      | In-App Agent CRDT Follower and Distribution-Resolved Boundaries | Proposed | 2026-08-21 |

@@ -1,4 +1,6 @@
+import { createTestingPinia } from '@pinia/testing'
 import { createPinia, setActivePinia } from 'pinia'
+import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
@@ -21,6 +23,7 @@ import type {
   AgentRestClient,
   PostMessageInput
 } from '../../services/agent/agentRestClient'
+import { rememberAgentSessionMemory } from '../../services/agent/agentSessionMemory'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 
@@ -180,7 +183,7 @@ const historyRow = (
 
 describe('useAgentSession (v1 composition root)', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     localStorage.clear()
     vi.mocked(reportError).mockClear()
   })
@@ -717,6 +720,123 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(vi.mocked(postMessage).mock.calls[0][1]).not.toHaveProperty('draft')
     expect(adopted).toHaveBeenCalledWith('wf-1', undefined)
     expect(session.boundWorkflowId.value).toBe('wf-1')
+  })
+
+  it('clears the workflow binding when an authenticated identity changes', async () => {
+    const identity = ref<string | null>('user-a')
+    const session = useAgentSession({
+      rest: fakeRest(),
+      events: fakeEvents().source,
+      identity: () => identity.value
+    })
+    session.start()
+    await session.sendMessage('bind me')
+
+    expect(session.boundWorkflowId.value).toBe('wf-1')
+
+    identity.value = 'user-b'
+    await nextTick()
+    expect(session.boundWorkflowId.value).toBeNull()
+
+    session.bindWorkflow('wf-2')
+    identity.value = null
+    await nextTick()
+    expect(session.boundWorkflowId.value).toBeNull()
+    session.newChat()
+  })
+
+  it('clears notices when an authenticated identity changes', async () => {
+    const identity = ref<string | null>('user-a')
+    const session = useAgentSession({
+      rest: fakeRest({
+        cancelMessage: vi.fn(async () => {
+          throw new TypeError('network down')
+        })
+      }),
+      events: fakeEvents().source,
+      identity: () => identity.value
+    })
+    session.start()
+    await session.sendMessage('start a turn')
+    await session.stopTurn()
+    expect(session.notices.value).toEqual([
+      { level: 'error', text: 'network down' }
+    ])
+
+    identity.value = 'user-b'
+    await nextTick()
+
+    expect(session.notices.value).toEqual([])
+    session.newChat()
+  })
+
+  it('ignores a send completion from the previous identity', async () => {
+    let resolvePost: ((ack: AgentTurnAccepted) => void) | undefined
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(
+      () =>
+        new Promise((resolve) => {
+          resolvePost = resolve
+        })
+    )
+    const identity = ref<string | null>('user-a')
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source,
+      identity: () => identity.value
+    })
+    session.start()
+
+    const send = session.sendMessage('private prompt')
+    await vi.waitFor(() => expect(postMessage).toHaveBeenCalledOnce())
+    identity.value = 'user-b'
+    await nextTick()
+    resolvePost?.({
+      thread_id: 'thread-a',
+      message_id: 'message-a',
+      workflow_id: 'workflow-a'
+    })
+
+    await expect(send).resolves.toBe(false)
+    expect(session.threadId.value).toBeNull()
+    expect(session.entries.value).toEqual([])
+    expect(session.isSending.value).toBe(false)
+    expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBeNull()
+  })
+
+  it('does not post after the identity changes while workflow preparation is pending', async () => {
+    let releasePrepare: () => void = () => undefined
+    const prepare = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          releasePrepare = resolve
+        })
+    )
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
+      thread_id: 'thread-a',
+      message_id: 'message-a'
+    }))
+    const identity = ref<string | null>('user-a')
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source,
+      identity: () => identity.value,
+      workflow: {
+        current: () => ({ id: 'workflow-a', tabPath: 'tab-a' }),
+        adopted: vi.fn(),
+        prepare
+      }
+    })
+    session.start()
+
+    const send = session.sendMessage('private prompt')
+    await vi.waitFor(() => expect(prepare).toHaveBeenCalledOnce())
+    identity.value = 'user-b'
+    await nextTick()
+    releasePrepare()
+
+    await expect(send).resolves.toBe(false)
+    expect(postMessage).not.toHaveBeenCalled()
+    expect(session.isSending.value).toBe(false)
   })
 
   it('(h5) a workflow.draft() snapshot is forwarded on the turn (PM-813/ecw-128)', async () => {
@@ -1816,7 +1936,7 @@ describe('thread resume (B17)', () => {
   ]
 
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     localStorage.clear()
   })
 
@@ -1836,6 +1956,44 @@ describe('thread resume (B17)', () => {
     expect(assistant).toMatchObject({ role: 'assistant', streaming: false })
     expect(session.threadId.value).toBe('th-9')
     expect(session.isStreaming.value).toBe(false)
+  })
+
+  it('waits for identity resolution before restoring its persisted thread', async () => {
+    const identity = ref<string | null>(null)
+    rememberAgentSessionMemory('th-9', 'user-a')
+    const getMessages = vi.fn(async (): Promise<AgentMessages> => HISTORY)
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: fakeEvents().source,
+      identity: () => identity.value
+    })
+
+    session.start()
+    expect(getMessages).not.toHaveBeenCalled()
+
+    identity.value = 'user-a'
+    await nextTick()
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledWith('th-9'))
+    expect(session.threadId.value).toBe('th-9')
+  })
+
+  it("does not restore another user's persisted thread", async () => {
+    const identity = ref<string | null>(null)
+    rememberAgentSessionMemory('th-9', 'user-a')
+    const getMessages = vi.fn(async (): Promise<AgentMessages> => HISTORY)
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: fakeEvents().source,
+      identity: () => identity.value
+    })
+
+    session.start()
+    identity.value = 'user-b'
+    await nextTick()
+
+    expect(getMessages).not.toHaveBeenCalled()
+    expect(session.threadId.value).toBeNull()
+    expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBeNull()
   })
 
   it('forgets a stale persisted thread on 404 without surfacing an error', async () => {

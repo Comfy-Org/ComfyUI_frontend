@@ -11,6 +11,7 @@ import {
 } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
+import type { Ref } from 'vue'
 
 // jsdom does not implement ResizeObserver (happy-dom does); stub it before the
 // Vue node preview chain constructs its module-level observer at import time.
@@ -271,9 +272,20 @@ vi.mock('@/stores/executionErrorStore', () => ({
   useExecutionErrorStore: () => executionErrors
 }))
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: () => ({ userDisplayName: { value: 'Jo Rivera' } })
+const auth = vi.hoisted(() => ({
+  user: null as unknown as Ref<null | { id: string }>
 }))
+
+vi.mock('@/composables/auth/useCurrentUser', async () => {
+  const { ref } = await import('vue')
+  auth.user = ref<null | { id: string }>({ id: 'user-a' })
+  return {
+    useCurrentUser: () => ({
+      resolvedUserInfo: auth.user,
+      userDisplayName: { value: 'Jo Rivera' }
+    })
+  }
+})
 
 const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
 
@@ -1447,6 +1459,7 @@ describe('AgentPanelRoot history', () => {
     setActivePinia(createPinia())
     ws.clear()
     localStorage.clear()
+    auth.user.value = { id: 'user-a' }
   })
 
   async function renderWithActiveThread(): Promise<void> {
@@ -1702,6 +1715,53 @@ describe('AgentPanelRoot history', () => {
       id: 'th-10',
       title: 'make a duck'
     })
+  })
+
+  it('discards thread history loaded for a previous identity', async () => {
+    const pending = new Map<string, (response: Response) => void>()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        (url: string) =>
+          new Promise<Response>((resolve) => {
+            if (url.endsWith('/api/agent/threads')) {
+              const userId = auth.user.value?.id
+              if (userId) pending.set(userId, resolve)
+            } else {
+              resolve(new Response('[]', { status: 200 }))
+            }
+          })
+      )
+    )
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await vi.waitFor(() => expect(pending.has('user-a')).toBe(true))
+
+    auth.user.value = { id: 'user-b' }
+    await nextTick()
+    await vi.waitFor(() => expect(pending.has('user-b')).toBe(true))
+    pending.get('user-b')?.(
+      new Response(
+        JSON.stringify({ threads: [{ id: 'thread-b', title: 'B history' }] }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      )
+    )
+    await vi.waitFor(() =>
+      expect(useAgentChatHistoryStore().sessions).toEqual([
+        expect.objectContaining({ id: 'thread-b' })
+      ])
+    )
+
+    pending.get('user-a')?.(
+      new Response(
+        JSON.stringify({ threads: [{ id: 'thread-a', title: 'A history' }] }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      )
+    )
+    await nextTick()
+
+    expect(useAgentChatHistoryStore().sessions).toEqual([
+      expect.objectContaining({ id: 'thread-b' })
+    ])
   })
 
   it('surfaces a thread-list failure via the host error modal', async () => {
