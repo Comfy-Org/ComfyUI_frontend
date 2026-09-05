@@ -8680,13 +8680,81 @@ Enterprise`
     en: '{n} credits added',
     'zh-CN': '已添加 {n} 积分'
   },
-  'workshop.credits.doneBody': {
-    en: 'You are back on the model page, with your inputs exactly as you left them.',
-    'zh-CN': '你已回到模型页面，输入内容与离开时完全一致。'
-  },
   'workshop.credits.resume': {
     en: 'Back to the model',
     'zh-CN': '返回模型'
+  },
+  'workshop.credits.custom': {
+    en: 'Custom · $5 – $10,000',
+    'zh-CN': '自定义 · $5 – $10,000'
+  },
+  'workshop.credits.less': { en: 'Less', 'zh-CN': '减少' },
+  'workshop.credits.more': { en: 'More', 'zh-CN': '增加' },
+  'workshop.credits.cancelAtStripe': {
+    en: 'Cancel payment',
+    'zh-CN': '取消付款'
+  },
+  'workshop.credits.canceledNotice': {
+    en: 'Payment canceled: nothing was charged.',
+    'zh-CN': '付款已取消：未产生任何扣款。'
+  },
+  'workshop.credits.waitingTitle': {
+    en: 'Waiting for your payment',
+    'zh-CN': '正在等待付款'
+  },
+  'workshop.credits.waitingBody': {
+    en: 'Complete the purchase in the new tab. This updates automatically.',
+    'zh-CN': '请在新标签页中完成购买，此处会自动更新。'
+  },
+  'workshop.credits.waitingPolling': {
+    en: 'Checking for credits…',
+    'zh-CN': '正在查询积分…'
+  },
+  'workshop.credits.reopen': {
+    en: 'Reopen Stripe',
+    'zh-CN': '重新打开 Stripe'
+  },
+  'workshop.credits.addedTo': {
+    en: 'Added to {workspace}. Your inputs are as you left them.',
+    'zh-CN': '已添加到 {workspace}。你的输入保持原样。'
+  },
+  'workshop.credits.previousBalance': {
+    en: 'Previous balance',
+    'zh-CN': '原有余额'
+  },
+  'workshop.credits.added': { en: 'Added', 'zh-CN': '新增' },
+  'workshop.credits.newBalance': { en: 'New balance', 'zh-CN': '当前余额' },
+  'workshop.credits.heldTitle': {
+    en: 'Payment received',
+    'zh-CN': '已收到付款'
+  },
+  'workshop.credits.heldBody': {
+    en: 'Your payment went through, but the credits have not arrived yet. You will not be charged again.',
+    'zh-CN': '付款已成功，但积分尚未到账。不会重复扣款。'
+  },
+  'workshop.credits.heldSupport': {
+    en: 'If they do not appear, give support this ID',
+    'zh-CN': '若积分仍未到账，请将此 ID 提供给客服'
+  },
+  'workshop.credits.contactSupport': {
+    en: 'Contact support',
+    'zh-CN': '联系客服'
+  },
+  'workshop.proto.topUp': {
+    en: 'Return from Stripe',
+    'zh-CN': '从 Stripe 返回后'
+  },
+  'workshop.proto.topUp.landed': {
+    en: 'Credits land',
+    'zh-CN': '积分到账'
+  },
+  'workshop.proto.topUp.settling': {
+    en: 'Still settling (holds)',
+    'zh-CN': '仍在结算（保持等待）'
+  },
+  'workshop.proto.topUp.unresolved': {
+    en: 'Never arrives (receipt)',
+    'zh-CN': '始终未到账（凭据）'
   },
   'workshop.credits.close': { en: 'Close', 'zh-CN': '关闭' },
   'workshop.media.label': {

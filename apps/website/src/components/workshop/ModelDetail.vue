@@ -114,7 +114,8 @@ const { session, setCredits, switchWorkspace } = useMockSession()
 const {
   outcome: simOutcome,
   modelState: simGate,
-  showStatuses
+  showStatuses,
+  buyStep
 } = usePrototypeTweaks()
 const signInHref = useSignInHref(locale)
 
@@ -177,6 +178,9 @@ onMounted(() => {
   } catch {
     /* storage unavailable */
   }
+  // `?buy=` opens the credits flow straight onto a given step, so each state
+  // can be linked for review instead of clicked to.
+  if (buyStep.value !== 'closed') buyingCredits.value = true
 })
 watch(
   values,
