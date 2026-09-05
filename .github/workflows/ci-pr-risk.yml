@@ -30,6 +30,15 @@ permissions:
   contents: read
 
 jobs:
+  risk-map-fixtures:
+    name: Check risk map fixtures
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: bash scripts/check-risk-map-fixtures.sh
+
   pr-risk:
     # Token guards, not risk judgements: fork and Dependabot pull_request runs
     # get a read-only GITHUB_TOKEN, so the label write would 403. Scoped to the
