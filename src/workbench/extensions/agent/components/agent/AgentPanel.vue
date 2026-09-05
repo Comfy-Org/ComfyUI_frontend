@@ -117,6 +117,11 @@ function onSelectHistory(id: string): void {
 }
 
 const composerRef = ref<InstanceType<typeof Composer>>()
+const workflowSelectorRef = ref<InstanceType<typeof WorkflowSelectorChip>>()
+
+function onWorkflowTargetRequired(): void {
+  workflowSelectorRef.value?.openPicker()
+}
 
 const { t } = useI18n()
 
@@ -340,6 +345,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             :workflow-references="workflowReferences"
             :available-workflows="availableWorkflows"
             :editable-workflow-id="editableWorkflowId"
+            :has-workflow-target="!workflowDetached"
             :get-mention-nodes="getMentionNodes"
             @send="onComposerSend"
             @stop="emit('stop')"
@@ -351,12 +357,15 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             @workflow-reference-pick="emit('workflowReferencePick', $event)"
             @request-workflow-references="emit('requestWorkflowReferences')"
             @remove-workflow-reference="emit('removeWorkflowReference', $event)"
+            @workflow-target-required="onWorkflowTargetRequired"
           >
             <template #header>
               <WorkflowSelectorChip
+                ref="workflowSelectorRef"
                 :active-tab="activeTab"
                 :tabs="workflowTabs"
                 :detached="workflowDetached"
+                :disabled="streaming || submitting"
                 @select-tab="emit('selectTab', $event)"
               />
             </template>

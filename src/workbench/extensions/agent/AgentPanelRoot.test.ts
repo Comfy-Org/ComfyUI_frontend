@@ -638,6 +638,9 @@ describe('AgentPanelRoot attach flow', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     ws.clear()
+    const tab = addTab('workflows/current.json')
+    hostStores.workflow.activeWorkflow = tab
+    useAgentWorkflowTabBindingStore().bind('wf-42', tab.path)
   })
 
   it('uploads a picked file, stages its ref, and forwards it on the next send', async () => {
@@ -1419,7 +1422,7 @@ describe('AgentPanelRoot canvas draft on send', () => {
     expect(prepareForSave).toHaveBeenCalledOnce()
   })
 
-  it('omits draft when there is no active tab', async () => {
+  it('does not send or clear the prompt when there is no selected target', async () => {
     const messageBodies: unknown[] = []
     vi.stubGlobal(
       'fetch',
@@ -1434,11 +1437,12 @@ describe('AgentPanelRoot canvas draft on send', () => {
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
-    await userEvent.type(screen.getByRole('textbox'), 'hello')
+    const textbox = screen.getByRole('textbox')
+    await userEvent.type(textbox, 'hello')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
 
-    expect(messageBodies).toHaveLength(1)
-    expect(messageBodies[0]).not.toHaveProperty('draft')
+    expect(messageBodies).toHaveLength(0)
+    expect(textbox).toHaveValue('hello')
   })
 })
 
@@ -1909,6 +1913,9 @@ describe('AgentPanelRoot lifecycle', () => {
   })
 
   it('does not cancel the in-flight turn when the panel unmounts', async () => {
+    const tab = addTab('workflows/current.json')
+    hostStores.workflow.activeWorkflow = tab
+    useAgentWorkflowTabBindingStore().bind('wf-42', tab.path)
     const urls: string[] = []
     const fetchMock = vi.fn(async (url: string) => {
       urls.push(url)
@@ -2065,6 +2072,7 @@ describe('AgentPanelRoot workflow binding', () => {
   it('activates the tab picked from the workflow selector via the service', async () => {
     makeTab('wf-42')
     const other = addTab('workflows/other.json')
+    useAgentWorkflowTabBindingStore().bind('wf-other', other.path)
     mockMessagesEndpoint('wf-42')
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
@@ -2291,7 +2299,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(app.loadGraphData).not.toHaveBeenCalled()
   })
 
-  it('does not send an unbound tab draft to an existing workflow thread', async () => {
+  it('keeps sending the pinned target after viewing an unbound tab', async () => {
     makeTab('wf-42')
     const bodies = mockMessagesEndpoint('wf-42')
     await renderAndSend('first message')
@@ -2307,9 +2315,11 @@ describe('AgentPanelRoot workflow binding', () => {
     hostStores.workflow.activeWorkflow = scratch
     await sendFromComposer('second message')
 
-    expect(bodies[1]).not.toHaveProperty('workflow_id')
-    expect(bodies[1]).not.toHaveProperty('current_tab')
-    expect(bodies[1]).not.toHaveProperty('draft')
+    expect(bodies[1]).toMatchObject({
+      workflow_id: 'wf-42',
+      current_tab: 'wf-42',
+      draft: { content: { id: 'wf-42' } }
+    })
   })
 
   it('re-attaches by picking a row so the next send carries the workflow again', async () => {
@@ -2373,7 +2383,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(tab.path).toBe('workflows/current.json')
   })
 
-  it('a detached send never re-arms the editing spinner on the old tab', async () => {
+  it('a fresh-chat send re-arms the spinner on its preserved target', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
@@ -2390,7 +2400,7 @@ describe('AgentPanelRoot workflow binding', () => {
     )
     await sendFromComposer('detached turn')
 
-    expect(activity.editingTabPath).toBeNull()
+    expect(activity.editingTabPath).toBe('workflows/current.json')
   })
 
   it('agent_active_tab activates the bound tab', async () => {
@@ -2614,6 +2624,7 @@ describe('AgentPanelRoot workflow binding', () => {
     )
   })
   it('an activation superseded before it starts does nothing at all', async () => {
+    makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
 
     await renderAndSend('work here')
@@ -2990,7 +3001,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[0]).not.toHaveProperty('current_tab')
   })
 
-  it('omits current_tab from the snapshot when the active tab has no cloud id', async () => {
+  it('keeps current_tab pinned when the viewed tab has no cloud id', async () => {
     makeTab('wf-42')
     const bodies = mockMessagesEndpoint('wf-42')
 
@@ -3006,10 +3017,10 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[1]).toMatchObject({
       open_tabs: [{ workflow_id: 'wf-42', name: 'current' }]
     })
-    expect(bodies[1]).not.toHaveProperty('current_tab')
+    expect(bodies[1]).toHaveProperty('current_tab', 'wf-42')
   })
 
-  it('keeps an existing thread workflow on its own tab when sending from an unsaved tab', async () => {
+  it('keeps an existing thread pinned when viewing an unsaved tab', async () => {
     const origin = makeTab('wf-42')
     const bodies = mockMessagesEndpoint('wf-42')
 
@@ -3024,8 +3035,11 @@ describe('AgentPanelRoot workflow binding', () => {
 
     await sendFromComposer('second message')
 
-    expect(bodies[1]).not.toHaveProperty('workflow_id')
-    expect(bodies[1]).not.toHaveProperty('draft')
+    expect(bodies[1]).toMatchObject({
+      workflow_id: 'wf-42',
+      current_tab: 'wf-42',
+      draft: { content: { id: 'wf-42' } }
+    })
     expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-42')).toBe(
       origin.path
     )
@@ -3280,6 +3294,37 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[0]).not.toHaveProperty('open_tabs')
     expect(bodies[0]).not.toHaveProperty('current_tab')
     expect(app.loadGraphData).not.toHaveBeenCalled()
+  })
+
+  it('disables target selection for an active turn and ignores agent tab changes for attribution', async () => {
+    makeTab('wf-42')
+    const other = addTab('workflows/other.json')
+    useAgentWorkflowTabBindingStore().bind('wf-other', other.path)
+    const bodies = mockMessagesEndpoint('wf-42')
+
+    await renderAndSend('first turn')
+    const selector = screen.getByRole('button', {
+      name: i18n.global.t('agent.switchWorkflow')
+    })
+    expect(selector).toBeDisabled()
+
+    ws.emit('agent_active_tab', {
+      workflow_id: 'wf-other',
+      name: 'other',
+      thread_id: 'th-1'
+    })
+    await vi.waitFor(() =>
+      expect(workflowService.openWorkflow).toHaveBeenCalledWith(other)
+    )
+    expect(selector).toHaveTextContent('current')
+
+    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    await screen.findByRole('button', { name: 'Send' })
+    await sendFromComposer('second turn')
+    expect(bodies[1]).toMatchObject({
+      workflow_id: 'wf-42',
+      current_tab: 'wf-42'
+    })
   })
 
   it('binds a minted workflow to its unsaved tab and subscribes once', async () => {

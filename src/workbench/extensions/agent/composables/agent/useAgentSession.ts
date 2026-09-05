@@ -73,7 +73,10 @@ export interface AgentSessionDeps {
     current(origin?: TurnOrigin): WorkflowTurnContext | undefined
     adopted(workflowId: string, sent: WorkflowTurnContext | undefined): void
     prepare?(): Promise<void>
-    tabs?(origin?: TurnOrigin): OpenTabsSnapshot | undefined
+    tabs?(
+      origin?: TurnOrigin,
+      references?: WorkflowReference[]
+    ): OpenTabsSnapshot | undefined
     activeTab?(data: AgentActiveTabData): void
     draft?(origin?: TurnOrigin): DraftSnapshot | undefined
   }
@@ -244,7 +247,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         new Promise<void>((resolve) => setTimeout(resolve, PREPARE_TIMEOUT_MS))
       ])
     const wfContext = workflow?.current(origin)
-    const tabs = workflow?.tabs?.(origin)
+    const tabs = workflow?.tabs?.(origin, workflowReferences)
     async function postTurn(threadId: string) {
       const draft = workflow?.draft?.(origin)
       // An unsaved tab now yields a context carrying only its tabPath, so a

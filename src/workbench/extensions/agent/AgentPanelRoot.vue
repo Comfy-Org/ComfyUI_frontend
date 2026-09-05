@@ -312,7 +312,10 @@ const availableWorkflowReferences = computed<WorkflowReference[]>(() => {
   }
   return [...byId.values()]
 })
-const workflowDetached = ref(false)
+const selectedTarget = ref<ComfyWorkflow | null>(
+  workflowStore.activeWorkflow ?? null
+)
+const workflowDetached = computed(() => selectedTarget.value === null)
 
 // Resolves the tab a turn is attributed to. `null` (the send had no origin
 // tab) resolves to nothing rather than falling back to the active tab, so
@@ -321,7 +324,7 @@ function originWorkflow(origin?: TurnOrigin): ComfyWorkflow | undefined {
   if (origin === null) return undefined
   return (
     (origin === undefined
-      ? workflowStore.activeWorkflow
+      ? selectedTarget.value
       : workflowStore.openWorkflows.find(
           (workflow) => workflow.path === origin.tabPath
         )) ?? undefined
@@ -354,7 +357,7 @@ function activeWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
 }
 
 const activeTab = computed<ActiveTab | null>(() => {
-  const active = workflowStore.activeWorkflow
+  const active = selectedTarget.value
   return active
     ? {
         path: active.path,
@@ -366,8 +369,7 @@ const activeTab = computed<ActiveTab | null>(() => {
 })
 
 const editableWorkflowId = computed(() => {
-  if (workflowDetached.value) return undefined
-  const active = workflowStore.activeWorkflow
+  const active = selectedTarget.value
   return active ? cloudIdFor(active) : undefined
 })
 
@@ -393,26 +395,65 @@ const workflowTabs = computed<ActiveTab[]>(() =>
 )
 
 async function onSelectTab(path: string): Promise<void> {
-  workflowDetached.value = false
   const tab = workflowStore.getWorkflowByPath(path)
-  if (tab) await workflowService.openWorkflow(tab)
+  if (!tab || isSending.value || status.value !== 'idle') return
+  const previousView = workflowStore.activeWorkflow
+  try {
+    const saved = tab.isTemporary
+      ? await workflowService.saveWorkflowAs(tab)
+      : tab.isModified
+        ? await workflowService.saveWorkflow(tab)
+        : true
+    if (!saved) return
+    await refreshCloudWorkflowIds()
+    const workflowId = cloudIdFor(tab)
+    if (workflowId === undefined) {
+      toast.add({
+        severity: 'warn',
+        summary: t('agent.saveFailedTitle'),
+        detail: t('agent.saveFailedDescription')
+      })
+      return
+    }
+    await workflowService.openWorkflow(tab)
+    selectedTarget.value = tab
+    removeWorkflowReference(workflowId)
+  } catch (error) {
+    if (
+      previousView !== null &&
+      workflowStore.activeWorkflow?.path !== previousView.path
+    )
+      await workflowService.openWorkflow(previousView)
+    toast.add({
+      severity: 'warn',
+      summary: t('agent.saveFailedTitle'),
+      detail:
+        error instanceof Error
+          ? error.message
+          : t('agent.saveFailedDescription')
+    })
+  }
 }
 
-function openTabsSnapshot(origin?: TurnOrigin): OpenTabsSnapshot | undefined {
-  const openTabs = workflowStore.openWorkflows.flatMap((tab) => {
-    const workflowId = cloudIdFor(tab)
-    return workflowId === undefined
-      ? []
-      : [{ workflow_id: workflowId, name: cloudWorkflowName(tab) }]
-  })
-  if (openTabs.length === 0) return undefined
-  // A turn with no origin tab still reports the open tabs (they are context,
-  // not attribution) but must not name a current_tab.
-  const active = originWorkflow(origin)
+function openTabsSnapshot(
+  origin?: TurnOrigin,
+  references: WorkflowReference[] = []
+): OpenTabsSnapshot | undefined {
+  const target = originWorkflow(origin)
+  const targetId = target ? cloudIdFor(target) : undefined
+  if (target === undefined || targetId === undefined) return undefined
+  const seen = new Set([targetId])
+  const openTabs = [
+    { workflow_id: targetId, name: cloudWorkflowName(target) },
+    ...references.flatMap((reference) => {
+      if (seen.has(reference.id)) return []
+      seen.add(reference.id)
+      return [{ workflow_id: reference.id, name: reference.name }]
+    })
+  ]
   return {
     open_tabs: openTabs,
-    current_tab:
-      active && !workflowDetached.value ? cloudIdFor(active) : undefined
+    current_tab: targetId
   }
 }
 
@@ -712,7 +753,6 @@ void refreshHistory()
 
 async function onSelectHistory(id: string): Promise<void> {
   exitNodeSelectionMode()
-  workflowDetached.value = false
   await loadThread(id)
   void refreshHistory()
 }
@@ -776,7 +816,6 @@ function onDeleteHistory(id: string): void {
 
 function onNewChat(): void {
   exitNodeSelectionMode()
-  workflowDetached.value = true
   workflowReferences.value = []
   newChat()
 }

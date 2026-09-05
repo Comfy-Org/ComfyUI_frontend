@@ -28,11 +28,13 @@ import type { ActiveTab } from '../../../types/activeTab'
 const {
   activeTab,
   tabs,
-  detached = false
+  detached = false,
+  disabled = false
 } = defineProps<{
   activeTab: ActiveTab | null
   tabs: ActiveTab[]
   detached?: boolean
+  disabled?: boolean
 }>()
 const emit = defineEmits<{
   selectTab: [path: string]
@@ -63,6 +65,12 @@ watch(open, async (isOpen) => {
   searchInput.value?.focus()
 })
 
+function openPicker(): void {
+  if (!disabled) open.value = true
+}
+
+defineExpose({ openPicker })
+
 const filteredTabs = computed(() =>
   tabs.filter((tab) =>
     tab.name.toLowerCase().includes(query.value.trim().toLowerCase())
@@ -89,10 +97,11 @@ function onSearchKeydown(event: KeyboardEvent): void {
             <TooltipTrigger as-child>
               <button
                 type="button"
+                :disabled="disabled"
                 :aria-label="t('agent.switchWorkflow')"
                 :class="
                   cn(
-                    'group text-agent-fg hover:bg-agent-surface-hover inline-flex h-7 min-w-0 cursor-pointer items-center gap-2 rounded-lg px-2.5 text-xs/4 font-normal transition-colors',
+                    'group text-agent-fg hover:bg-agent-surface-hover inline-flex h-7 min-w-0 cursor-pointer items-center gap-2 rounded-lg px-2.5 text-xs/4 font-normal transition-colors disabled:cursor-not-allowed disabled:opacity-50',
                     current ? 'flex-1' : 'border border-white/15 bg-white/4.5'
                   )
                 "

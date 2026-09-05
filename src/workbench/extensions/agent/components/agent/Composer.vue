@@ -37,6 +37,7 @@ const {
   workflowReferences = [],
   availableWorkflows = [],
   editableWorkflowId,
+  hasWorkflowTarget = false,
   getMentionNodes = () => []
 } = defineProps<{
   streaming?: boolean
@@ -47,6 +48,7 @@ const {
   workflowReferences?: WorkflowReference[]
   availableWorkflows?: WorkflowReference[]
   editableWorkflowId?: string
+  hasWorkflowTarget?: boolean
   getMentionNodes?: () => SelectedNode[]
 }>()
 const emit = defineEmits<{
@@ -64,6 +66,7 @@ const emit = defineEmits<{
   workflowReferencePick: [workflow: WorkflowReference]
   requestWorkflowReferences: []
   removeWorkflowReference: [id: string]
+  workflowTargetRequired: []
 }>()
 const { t } = useI18n()
 
@@ -339,6 +342,10 @@ const placeholderHint = computed(() => {
 
 const composer = useComposer({
   onSend: (text, attachments) => {
+    if (!hasWorkflowTarget) {
+      emit('workflowTargetRequired')
+      return false
+    }
     if (workflowReferences.length > 0)
       emit('send', text, attachments, [...workflowReferences])
     else emit('send', text, attachments)
