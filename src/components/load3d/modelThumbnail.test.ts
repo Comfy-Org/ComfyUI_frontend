@@ -9,14 +9,19 @@ vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({
   persistThumbnail
 }))
 
+const reportError = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry/reportError', () => ({ reportError }))
+
 const createLoad3d = vi.hoisted(() => vi.fn())
 vi.mock('@/extensions/core/load3d/createLoad3d', () => ({ createLoad3d }))
 
 function mockInstance(overrides: Record<string, unknown> = {}) {
+  const invalidate = vi.fn()
   return {
     loadModel: vi.fn().mockResolvedValue(undefined),
     captureThumbnail: vi.fn().mockResolvedValue('data:image/png;base64,thumb'),
     remove: vi.fn(),
+    getLoaderManager: vi.fn(() => ({ invalidate })),
     ...overrides
   }
 }
@@ -26,6 +31,7 @@ describe('generateModelThumbnail', () => {
     createLoad3d.mockReset()
     isAssetPreviewSupported.mockReset().mockReturnValue(false)
     persistThumbnail.mockReset()
+    reportError.mockReset()
   })
 
   it('renders offscreen, returns the data url, and disposes the instance', async () => {
@@ -109,5 +115,44 @@ describe('generateModelThumbnail', () => {
     await expect(nextRun).resolves.toBe('data:image/png;base64,thumb')
     expect(stuck.remove).toHaveBeenCalledTimes(1)
     expect(next.loadModel).toHaveBeenCalledWith('/next.glb')
+    expect(reportError).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        errorType: 'load3d_thumbnail_generation_failed'
+      })
+    )
+  })
+
+  it('invalidates the loader before disposing on timeout, so a load that resolves afterward cannot publish', async () => {
+    vi.useFakeTimers()
+    const invalidate = vi.fn()
+    const order: string[] = []
+    const stuck = mockInstance({
+      loadModel: vi.fn(() => new Promise<void>(() => {})),
+      remove: vi.fn(() => order.push('remove')),
+      getLoaderManager: vi.fn(() => ({
+        invalidate: () => {
+          order.push('invalidate')
+          invalidate()
+        }
+      })),
+      captureThumbnail: vi.fn(() => {
+        // Would only run if the abandoned load were (incorrectly) awaited
+        // past the timeout; asserting it never fires is the regression
+        // check for the resource leak this fix closes.
+        throw new Error('must not capture a thumbnail for an invalidated load')
+      })
+    })
+    createLoad3d.mockReturnValueOnce(stuck)
+
+    const stuckRun = generateModelThumbnail('/stuck.glb', 'stuck.glb')
+    await vi.waitFor(() => expect(createLoad3d).toHaveBeenCalledTimes(1))
+    await vi.advanceTimersByTimeAsync(15_000)
+
+    await expect(stuckRun).resolves.toBeNull()
+    expect(invalidate).toHaveBeenCalledTimes(1)
+    expect(stuck.remove).toHaveBeenCalledTimes(1)
+    expect(order).toEqual(['invalidate', 'remove'])
+    expect(stuck.captureThumbnail).not.toHaveBeenCalled()
   })
 })
