@@ -18,7 +18,8 @@ const mocks = vi.hoisted(() => ({
   billingRail: 'stripe' as BillingRail | null,
   cancelSubscription: vi.fn(),
   prepare: vi.fn(),
-  trackCancellation: vi.fn()
+  trackCancellation: vi.fn(),
+  reportError: vi.fn()
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
@@ -40,6 +41,10 @@ vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
     trackSubscriptionCancellation: mocks.trackCancellation
   })
+}))
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mocks.reportError
 }))
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
@@ -152,7 +157,6 @@ describe('launchCancellationFlow', () => {
 
   it('falls back when preparation or the provider fails', async () => {
     const preparationError = new Error('blocked by browser')
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     mocks.prepare.mockRejectedValueOnce(preparationError)
     const preparationFallback = vi.fn()
 
@@ -160,10 +164,18 @@ describe('launchCancellationFlow', () => {
 
     expect(preparationFallback).toHaveBeenCalledWith()
     expect(mocks.trackCancellation).not.toHaveBeenCalled()
-    expect(warn).toHaveBeenCalledWith(
-      'Failed to prepare Churnkey cancellation flow:',
-      preparationError
-    )
+    expect(mocks.reportError).toHaveBeenCalledWith(preparationError, {
+      errorType: 'cloud_cancellation_vendor_fallback',
+      tags: {
+        failure_kind: 'degraded',
+        feature_area: 'cloud',
+        operation: 'navigate',
+        outcome: 'recovered',
+        assert_mode: 'soft'
+      },
+      context: { workspace_still_current: true },
+      level: 'warning'
+    })
 
     mocks.prepare.mockResolvedValueOnce(
       session(async () => {

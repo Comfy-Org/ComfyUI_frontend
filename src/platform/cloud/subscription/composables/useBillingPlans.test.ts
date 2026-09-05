@@ -1,15 +1,20 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
 
-const { mockGetBillingPlans } = vi.hoisted(() => ({
-  mockGetBillingPlans: vi.fn()
+const { mockGetBillingPlans, mockReportError } = vi.hoisted(() => ({
+  mockGetBillingPlans: vi.fn(),
+  mockReportError: vi.fn()
 }))
 
 vi.mock('@/platform/workspace/api/workspaceApi', () => ({
   workspaceApi: {
     getBillingPlans: mockGetBillingPlans
   }
+}))
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
 }))
 
 const buildPlan = (overrides: Partial<Plan> = {}): Plan => ({
@@ -35,15 +40,8 @@ const importUseBillingPlans = async () => {
 }
 
 describe('useBillingPlans', () => {
-  let consoleErrorSpy: ReturnType<typeof vi.spyOn>
-
   beforeEach(() => {
     vi.resetModules()
-    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-  })
-
-  afterEach(() => {
-    consoleErrorSpy.mockRestore()
   })
 
   describe('fetchPlans', () => {
@@ -146,21 +144,40 @@ describe('useBillingPlans', () => {
       expect(isLoading.value).toBe(false)
     })
 
-    it('captures Error messages into error.value and logs to console', async () => {
-      mockGetBillingPlans.mockRejectedValue(new Error('network down'))
-
+    it('reports the degraded catalog fallback and preserves cached state', async () => {
+      mockGetBillingPlans.mockResolvedValueOnce({
+        plans: [buildPlan()],
+        team_credit_stops: {
+          default_stop_index: 0,
+          stops: []
+        }
+      })
       const useBillingPlans = await importUseBillingPlans()
       const { fetchPlans, error, isLoading, plans } = useBillingPlans()
+      await fetchPlans()
+
+      mockGetBillingPlans.mockRejectedValue(new Error('network down'))
 
       await fetchPlans()
 
       expect(error.value).toBe('network down')
       expect(isLoading.value).toBe(false)
-      expect(plans.value).toEqual([])
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        '[useBillingPlans] Failed to fetch plans:',
-        expect.any(Error)
-      )
+      expect(plans.value).toEqual([buildPlan()])
+      expect(mockReportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'cloud_billing_plan_catalog_fallback',
+        tags: {
+          failure_kind: 'degraded',
+          feature_area: 'cloud',
+          operation: 'load',
+          outcome: 'recovered',
+          assert_mode: 'soft'
+        },
+        context: {
+          has_cached_plans: true,
+          has_team_credit_stops: true
+        },
+        level: 'warning'
+      })
     })
 
     it('uses a fallback message when rejection is not an Error instance', async () => {
