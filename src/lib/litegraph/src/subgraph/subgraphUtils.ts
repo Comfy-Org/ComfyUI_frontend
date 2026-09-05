@@ -46,6 +46,7 @@ interface FilteredItems {
   unknown: Set<Positionable>
 }
 
+/** @internal */
 export function splitPositionables(
   items: Iterable<Positionable>
 ): FilteredItems {
@@ -98,6 +99,7 @@ interface BoundaryLinks {
   boundaryOutputLinks: LLink[]
 }
 
+/** @internal */
 export function getBoundaryLinks(
   graph: LGraph,
   items: Set<Positionable>
@@ -220,6 +222,7 @@ export function getBoundaryLinks(
   }
 }
 
+/** @internal */
 export function multiClone(nodes: Iterable<LGraphNode>): ISerialisedNode[] {
   const clonedNodes: ISerialisedNode[] = []
 
@@ -247,6 +250,8 @@ export function multiClone(nodes: Iterable<LGraphNode>): ISerialisedNode[] {
  * Groups resolved connections by output object. If the output is nullish, the connection will be in its own group.
  * @param resolvedConnections The resolved connections to group
  * @returns A map of grouped connections.
+ *
+ * @internal
  */
 export function groupResolvedByOutput(
   resolvedConnections: ResolvedConnection[]
@@ -289,6 +294,7 @@ function mapReroutes(
   return lastId
 }
 
+/** @internal */
 export function mapSubgraphInputsAndLinks(
   resolvedInputLinks: ResolvedConnection[],
   links: SerialisableLLink[],
@@ -370,6 +376,8 @@ export function mapSubgraphInputsAndLinks(
  * @param resolvedOutputLinks The resolved output links.
  * @param links The links to add to the subgraph.
  * @returns The subgraph output slots.
+ *
+ * @internal
  */
 export function mapSubgraphOutputsAndLinks(
   resolvedOutputLinks: ResolvedConnection[],
@@ -448,6 +456,8 @@ export function mapSubgraphOutputsAndLinks(
  * Collects all subgraph IDs used directly in a single graph (non-recursive).
  * @param graph The graph to check for subgraph nodes
  * @returns Set of subgraph IDs used in this graph
+ *
+ * @internal
  */
 export function getDirectSubgraphIds(graph: GraphOrSubgraph): Set<SubgraphId> {
   const subgraphIds = new Set<SubgraphId>()
@@ -466,6 +476,8 @@ export function getDirectSubgraphIds(graph: GraphOrSubgraph): Set<SubgraphId> {
  * @param rootGraph The graph to start from
  * @param subgraphRegistry Map of all available subgraphs
  * @returns Set of all subgraph IDs found
+ *
+ * @internal
  */
 export function findUsedSubgraphIds(
   rootGraph: GraphOrSubgraph,
@@ -618,6 +630,8 @@ export function reorderSubgraphInputs(
  * Type guard to check if a slot is a SubgraphInput.
  * @param slot The slot to check
  * @returns true if the slot is a SubgraphInput
+ *
+ * @internal
  */
 export function isSubgraphInput(slot: unknown): slot is SubgraphInput {
   return (
@@ -632,6 +646,8 @@ export function isSubgraphInput(slot: unknown): slot is SubgraphInput {
  * Type guard to check if a slot is a SubgraphOutput.
  * @param slot The slot to check
  * @returns true if the slot is a SubgraphOutput
+ *
+ * @internal
  */
 export function isSubgraphOutput(slot: unknown): slot is SubgraphOutput {
   return (
@@ -646,6 +662,8 @@ export function isSubgraphOutput(slot: unknown): slot is SubgraphOutput {
  * Type guard to check if a slot is a regular node slot (INodeInputSlot or INodeOutputSlot).
  * @param slot The slot to check
  * @returns true if the slot is a regular node slot
+ *
+ * @internal
  */
 export function isNodeSlot(
   slot: unknown
