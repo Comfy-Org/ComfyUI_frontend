@@ -10,6 +10,7 @@ import {
 } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import type {
   CheckoutAttributionMetadata,
   PaymentIntentSource
@@ -161,6 +162,21 @@ async function initiateSubscriptionCheckout(
     if (openInNewTab) {
       const checkoutWindow = window.open(data.checkout_url, '_blank')
       if (!checkoutWindow) {
+        reportError(new Error('Subscription checkout popup was blocked'), {
+          errorType: 'cloud_checkout_popup_blocked',
+          tags: {
+            failure_kind: 'bad_state',
+            feature_area: 'cloud',
+            operation: 'navigate',
+            outcome: 'aborted',
+            assert_mode: 'soft'
+          },
+          context: {
+            checkout_type: 'new',
+            open_in_new_tab: true
+          },
+          level: 'error'
+        })
         return
       }
       persistPendingSubscriptionCheckoutAttempt(pendingAttempt)
