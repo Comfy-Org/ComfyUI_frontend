@@ -151,75 +151,93 @@ describe('CRDT human write-leg invariants (property)', () => {
           onBatchSettled: () => {}
         }
         const sender = createOpSender(deps)
+        try {
+          for (const operation of operations) {
+            enqueue(sender, [operation])
+            const latest = sent.at(-1)
+            if (!latest) throw new Error('Expected an in-flight operation')
+            resultListener(opsResult([latest[0].op_id]))
+          }
 
-        for (const operation of operations) {
-          enqueue(sender, [operation])
-          const latest = sent.at(-1)
-          if (!latest) throw new Error('Expected an in-flight operation')
-          resultListener(opsResult([latest[0].op_id]))
+          const delivered = sent.flat()
+          expect(
+            delivered.map((op) => {
+              if (op.op !== 'add_node') throw new Error('Expected add_node')
+              return op.node_id
+            })
+          ).toEqual(operations.map((operation) => operation.node_id))
+          expect(new Set(delivered.map((op) => op.op_id))).toHaveLength(
+            operations.length
+          )
+          expect(delivered.map((op) => op.base_version)).toEqual(
+            operations.map((_, index) => 42 + index)
+          )
+          expect(sender.pending()).toBe(0)
+        } finally {
+          sender.detach()
         }
-
-        const delivered = sent.flat()
-        expect(
-          delivered.map((op) => {
-            if (op.op !== 'add_node') throw new Error('Expected add_node')
-            return op.node_id
-          })
-        ).toEqual(operations.map((operation) => operation.node_id))
-        expect(new Set(delivered.map((op) => op.op_id))).toHaveLength(
-          operations.length
-        )
-        expect(delivered.map((op) => op.base_version)).toEqual(
-          operations.map((_, index) => 42 + index)
-        )
-        expect(sender.pending()).toBe(0)
-        sender.detach()
       })
     )
   })
 
   it('retries transport failures and result silence without reminting', () => {
-    vi.useFakeTimers()
-    fc.assert(
-      fc.property(
-        arbOperations,
-        fc.integer({ min: 1, max: 4 }),
-        (operations, failedAttempts) => {
-          const attempts: Op[][] = []
-          let callCount = 0
-          const deps = {
-            sendOps: (_workflowId: string, _tab: string, ops: Op[]) => {
-              attempts.push(ops)
-              callCount += 1
-              return callCount > failedAttempts
-            },
-            onOpsResult: () => () => {},
-            workflowId: () => WORKFLOW_ID,
-            tab: TAB,
-            actor: () => ACTOR,
-            baseVersion: () => 73,
-            observedVersion: () => 72,
-            reserveVersions: (
-              _workflowId: string,
-              observed: number,
-              _count: number
-            ) => observed + 1,
-            onBatchSettled: () => {}
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    try {
+      fc.assert(
+        fc.property(
+          arbOperations,
+          fc.integer({ min: 1, max: 4 }),
+          (operations, failedAttempts) => {
+            const attemptIdentities: Array<
+              Array<Pick<Op, 'op_id' | 'actor' | 'base_version' | 'stamp'>>
+            > = []
+            let callCount = 0
+            const deps = {
+              sendOps: (_workflowId: string, _tab: string, ops: Op[]) => {
+                attemptIdentities.push(
+                  ops.map(({ op_id, actor, base_version, stamp }) => ({
+                    op_id,
+                    actor,
+                    base_version,
+                    stamp: structuredClone(stamp)
+                  }))
+                )
+                callCount += 1
+                return callCount > failedAttempts
+              },
+              onOpsResult: () => () => {},
+              workflowId: () => WORKFLOW_ID,
+              tab: TAB,
+              actor: () => ACTOR,
+              baseVersion: () => 73,
+              observedVersion: () => 72,
+              reserveVersions: (
+                _workflowId: string,
+                observed: number,
+                _count: number
+              ) => observed + 1,
+              onBatchSettled: () => {}
+            }
+            const sender = createOpSender(deps)
+            try {
+              enqueue(sender, operations)
+              vi.advanceTimersByTime(failedAttempts * 500)
+              expect(attemptIdentities).toHaveLength(failedAttempts + 1)
+              const mintedIdentities = attemptIdentities[0]
+              for (const identities of attemptIdentities)
+                expect(identities).toEqual(mintedIdentities)
+
+              vi.advanceTimersByTime(10_000)
+              expect(attemptIdentities.at(-1)).toEqual(mintedIdentities)
+              expect(attemptIdentities).toHaveLength(failedAttempts + 2)
+            } finally {
+              sender.detach()
+            }
           }
-          const sender = createOpSender(deps)
-
-          enqueue(sender, operations)
-          vi.advanceTimersByTime(failedAttempts * 500)
-          expect(attempts).toHaveLength(failedAttempts + 1)
-          const minted = attempts[0]
-          for (const attempt of attempts) expect(attempt).toEqual(minted)
-
-          vi.advanceTimersByTime(10_000)
-          expect(attempts.at(-1)).toEqual(minted)
-          expect(attempts).toHaveLength(failedAttempts + 2)
-          sender.detach()
-        }
+        )
       )
-    )
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
