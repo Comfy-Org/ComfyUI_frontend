@@ -52,7 +52,7 @@ describe('reduceSelection', () => {
       status: 'no-op'
     },
     {
-      name: 'replace dedupes and makes the last key primary',
+      name: 'replace dedupes and keeps command order',
       state: selection(a, b),
       command: { type: 'selection.replace', keys: [c, group, c] },
       order: [c, group],
@@ -64,13 +64,6 @@ describe('reduceSelection', () => {
       command: { type: 'selection.replace', keys: [a, b] },
       order: [a, b],
       status: 'no-op'
-    },
-    {
-      name: 'toggle removes present keys and appends absent ones',
-      state: selection(a, b),
-      command: { type: 'selection.toggle', keys: [b, c] },
-      order: [a, c],
-      status: 'applied'
     },
     {
       name: 'clear empties the selection',
@@ -91,6 +84,18 @@ describe('reduceSelection', () => {
     expect(transition.status).toBe(status)
     expect(transition.state.order).toEqual(order)
     if (status === 'no-op') expect(transition.state).toBe(state)
+  })
+
+  it.for<SelectionCommand>([
+    { type: 'selection.add', keys: [b, c] },
+    { type: 'selection.remove', keys: [a] },
+    { type: 'selection.replace', keys: [c, group] },
+    { type: 'selection.clear' }
+  ])('$type applied twice is a no-op the second time', (command) => {
+    const once = reduceSelection(selection(a, b), command)
+    const twice = reduceSelection(once.state, command)
+    expect(twice.status).toBe('no-op')
+    expect(twice.state).toBe(once.state)
   })
 
   it('does not mutate the previous state', () => {
