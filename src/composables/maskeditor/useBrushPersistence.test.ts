@@ -1,17 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
 
-vi.mock('es-toolkit/compat', async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...(actual as object),
-    debounce: vi.fn((fn: (...args: unknown[]) => void) => {
-      const immediate = (...args: unknown[]) => fn(...args)
-      immediate.cancel = vi.fn()
-      return immediate
-    })
-  }
-})
-
 vi.mock('@/scripts/utils', () => ({
   getStorageValue: vi.fn((key: string) => localStorage.getItem(key)),
   setStorageValue: vi.fn((key: string, value: string) => {
@@ -72,22 +60,20 @@ describe('loadAndApply', () => {
 })
 
 describe('save', () => {
-  it('writes current brush settings to localStorage', () => {
+  it('delays writing settings captured at call time', () => {
     const store = useMaskEditorStore()
-    store.brushSettings.size = 99
+    store.setBrushSize(300)
     const { save } = useBrushPersistence()
     save()
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
-    expect(saved.size).toBe(99)
-  })
+    store.setBrushSize(10)
 
-  it('captures settings at call time so a subsequent store reset does not overwrite the save', () => {
-    const store = useMaskEditorStore()
-    store.brushSettings.size = 77
-    const { save } = useBrushPersistence()
-    save()
-    store.brushSettings.size = 10
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
+    expect(vi.getTimerCount()).toBe(1)
+
+    vi.runOnlyPendingTimers()
+
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
-    expect(saved.size).toBe(77)
+    expect(saved.size).toBe(250)
+    expect(vi.getTimerCount()).toBe(0)
   })
 })

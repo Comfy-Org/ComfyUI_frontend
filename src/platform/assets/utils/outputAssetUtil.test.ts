@@ -4,14 +4,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { getOutputKey } from '@/platform/assets/utils/outputKeyUtil'
 import type { ResultItemImpl } from '@/stores/queueStore'
 import type { SerializedNodeId } from '@/types/nodeId'
 
-import {
-  getOutputKey,
-  getTotalAssetOutputCount,
-  resolveOutputAssetItems
-} from './outputAssetUtil'
+import { getTotalAssetOutputCount } from './outputAssetCountUtil'
+import { resolveOutputAssetItems } from './outputAssetUtil'
 
 const mocks = vi.hoisted(() => ({
   getJobDetail: vi.fn(),
@@ -114,12 +112,17 @@ describe('getTotalAssetOutputCount', () => {
     const parent = createAsset({
       id: 'job-1-parent',
       name: 'parent.png',
-      user_metadata: { jobId: 'job-1', nodeId: '1', outputCount: 4 }
+      user_metadata: {
+        jobId: 'job-1',
+        nodeId: '1',
+        subfolder: 'outputs',
+        outputCount: 4
+      }
     })
     const child = createAsset({
       id: 'job-1-child',
       name: 'child.png',
-      user_metadata: { jobId: 'job-1', nodeId: '2' }
+      user_metadata: { jobId: 'job-1', nodeId: '2', subfolder: 'outputs' }
     })
 
     expect(getTotalAssetOutputCount([parent, child])).toBe(4)
@@ -428,9 +431,7 @@ describe('resolveOutputAssetItems', () => {
     expect(mocks.getJobDetail).not.toHaveBeenCalled()
     expect(results).toHaveLength(1)
     const [asset] = results
-    if (!asset) {
-      throw new Error('Expected a root output asset')
-    }
+
     expect(asset.id).toBe(`job-root-${getOutputKey(output)}`)
     if (!asset.user_metadata) {
       throw new Error('Expected output metadata')

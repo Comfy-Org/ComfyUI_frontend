@@ -6433,7 +6433,7 @@
     }
   },
   "GetImageSize": {
-    "description": "מחזיר את רוחב וגובה התמונה, ומעביר אותה ללא שינוי.",
+    "description": "מחזיר את הרוחב, הגובה וגודל האצווה של התמונה.",
     "display_name": "קבל גודל תמונה",
     "inputs": {
       "image": {
@@ -7201,12 +7201,12 @@
     }
   },
   "HiDreamO1ReferenceImages": {
-    "description": "צרף 1-10 תמונות ייחוס להתניה, אחת להנחיית עריכה או מספר תמונות להתאמה אישית מבוססת נושא.",
+    "description": "צרף תמונות ייחוס ממוינות להתניה חיובית ושלילית.",
     "display_name": "HiDream-O1 תמונות ייחוס",
     "inputs": {
       "images": {
         "name": "תמונות",
-        "tooltip": "תמונות ייחוס. תמונה אחת = עריכת הנחיה; 2-10 תמונות = ייחוס מרובה."
+        "tooltip": "תמונות הייחוס משמשות לפי הסדר המספרי של השקעים."
       },
       "negative": {
         "name": "שלילי"
@@ -12710,6 +12710,84 @@
       }
     }
   },
+  "MetaMuseImageEditApi": {
+    "description": "עורך או משלב עד 10 תמונות ייחוס בהנחיית פרומפט טקסט, באמצעות מודל Muse Image של Meta.",
+    "display_name": "Meta Muse: עריכת תמונה",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל לשימוש."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_enable_image_search": {
+        "name": "enable_image_search"
+      },
+      "model_enable_shell": {
+        "name": "enable_shell"
+      },
+      "model_enable_web_search": {
+        "name": "enable_web_search"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_strength": {
+        "name": "reasoning_strength"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MetaMuseImageTextToImageApi": {
+    "description": "יוצר תמונות מפרומפט טקסט באמצעות מודל Muse Image של Meta, המבצע הסקה על הפרומפט לפני העיבוד.",
+    "display_name": "Meta Muse: טקסט לתמונה",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל לשימוש."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_enable_image_search": {
+        "name": "enable_image_search"
+      },
+      "model_enable_shell": {
+        "name": "enable_shell"
+      },
+      "model_enable_web_search": {
+        "name": "enable_web_search"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_strength": {
+        "name": "reasoning_strength"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MiniMaxH3AddGuide": {
     "description": "עגן תמונה, clip קצר, שמע או clip עם פסקולו בכל פריים של סרטון MiniMax H3. שרשר מספר צמתים כדי לעגן מספר פריימים.",
     "display_name": "הוספת הנחיה עבור MiniMax H3",
@@ -12744,6 +12822,46 @@
     "outputs": {
       "0": {
         "name": "חיובי",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3FunControlNetApply": {
+    "description": "החל MiniMax H3 Fun ControlNet על מודל מטקסט לווידאו כתיקון מודל.",
+    "display_name": "החל MiniMax H3 Fun ControlNet",
+    "inputs": {
+      "control_video": {
+        "name": "control_video"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "הערך 1 מסמן את האזורים שיש ליצור מחדש."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "הווידאו שמאחורי המסכה; נקרא רק כאשר ניתנת מסכה."
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -12792,7 +12910,8 @@
     "display_name": "MiniMax H3 Reference to Video",
     "inputs": {
       "audio_vae": {
-        "name": "audio_vae"
+        "name": "audio_vae",
+        "tooltip": "VAE לשמע. בלעדיו, שמע הייחוס מתנה רק את מקודד הטקסט."
       },
       "clip": {
         "name": "clip"
@@ -12824,7 +12943,8 @@
         "name": "ref_videos"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "VAE לווידאו. בלעדיו, תמונות/סרטוני הייחוס מתנים רק את מקודד הטקסט."
       },
       "width": {
         "name": "width"
@@ -12933,7 +13053,7 @@
     }
   },
   "MinimaxHailuo03FirstLastFrameNode": {
-    "description": "יוצר וידאו מתמונה של פריים ראשון ואופציונלית גם פריים אחרון באמצעות מודל MiniMax H3. יחס הגובה-רוחב של הווידאו תואם לתמונות שסופקו.",
+    "description": "יצירת וידאו מתמונת פריים ראשון ומתמונת פריים אחרון אופציונלית באמצעות מודלי MiniMax H3. יחס הממדים של הווידאו נקבע לפי התמונות שסופקו.",
     "display_name": "MiniMax H3 יצירת וידאו מפריים ראשון ואחרון",
     "inputs": {
       "control_after_generate": {
@@ -12976,7 +13096,7 @@
     }
   },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "יצירת וידאו בהתבסס על תמונות רפרנס, סרטונים ואודיו באמצעות מודל MiniMax H3. התייחסו לרפרנסים בהנחיה לפי הסדר: 'Image 1', 'Image 2', 'Video 1', 'Audio 1' וכן הלאה.",
+    "description": "יצירת וידאו המותנה בתמונות, סרטונים ושמע של ייחוס באמצעות מודלי MiniMax H3. התייחסו להפניות בפרומפט לפי סדרן: 'Image 1', 'Image 2', 'Video 1', 'Audio 1' וכן הלאה.",
     "display_name": "MiniMax H3 רפרנס לווידאו",
     "inputs": {
       "control_after_generate": {
@@ -13051,7 +13171,7 @@
     }
   },
   "MinimaxHailuo03TextToVideoNode": {
-    "description": "יצירת וידאו מהנחיה טקסטואלית באמצעות מודל MiniMax H3.",
+    "description": "יצירת וידאו מפרומפט טקסט באמצעות מודלי MiniMax H3.",
     "display_name": "MiniMax H3 טקסט לווידאו",
     "inputs": {
       "control_after_generate": {
@@ -16932,7 +17052,7 @@
   },
   "Preview3D": {
     "description": "תצוגה מקדימה של קובץ מודל תלת-ממדי מבלי לשמור אותו בתיקיית הפלט של ComfyUI.",
-    "display_name": "תצוגה מקדימה בתלת-ממד ואנימציה",
+    "display_name": "תצוגה מקדימה של 3D והנפשה (מיושן)",
     "inputs": {
       "bg_image": {
         "name": "bg_image"
@@ -17945,7 +18065,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "סוג הפלט שעבורו נוצר הסגנון: recraftv4_styles לתמונות רסטר, recraftv4_styles_vector עבור SVG."
+        "tooltip": "המודל שעבורו נוצר הסגנון. Standard ו-Pro חולקים מאגר סגנונות אחד: סגנונות רסטר פועלים עם כל מודל רסטר של Recraft V4 ו-V4.1, וסגנונות וקטוריים (*_vector) עם כל מודל וקטורי של V4 ו-V4.1."
       }
     },
     "outputs": {
@@ -18641,6 +18761,10 @@
       "multiple": {
         "name": "multiple",
         "tooltip": "המכפלה הקרובה ביותר של התוצאה לקביעת הרזולוציה הנבחרת."
+      },
+      "preview": {
+        "name": "preview",
+        "tooltip": "תצוגה מקדימה חיה של רזולוציית הפלט המחושבת."
       }
     },
     "outputs": {
@@ -21121,6 +21245,23 @@
       }
     }
   },
+  "SenseNovaSamplingOptions": {
+    "description": "הגדר את הסטת הזרימה של SenseNova.",
+    "display_name": "אפשרויות דגימה של SenseNova",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SetClipHooks": {
     "display_name": "הגדר CLIP Hooks",
     "inputs": {
@@ -23429,10 +23570,12 @@
         "name": "animate_in_place"
       },
       "bake": {
-        "name": "bake"
+        "name": "bake",
+        "tooltip": "אפה חומרים מתקדמים אל המרקמים הבסיסיים לתאימות רחבה יותר."
       },
       "export_orientation": {
-        "name": "export_orientation"
+        "name": "export_orientation",
+        "tooltip": "הציר הקדמי של המודל המיוצא. default שומר על ‎+x של Tripo."
       },
       "export_vertex_colors": {
         "name": "export_vertex_colors"
@@ -23441,13 +23584,15 @@
         "name": "face_limit"
       },
       "fbx_preset": {
-        "name": "fbx_preset"
+        "name": "fbx_preset",
+        "tooltip": "הגדרת תאימות מראש של FBX. bake_scale אופה את שינוי קנה המידה אל הגאומטריה."
       },
       "flatten_bottom": {
         "name": "flatten_bottom"
       },
       "flatten_bottom_threshold": {
-        "name": "flatten_bottom_threshold"
+        "name": "flatten_bottom_threshold",
+        "tooltip": "עומק השטחה לשימוש עם flatten_bottom."
       },
       "force_symmetry": {
         "name": "force_symmetry"
@@ -23480,15 +23625,66 @@
         "name": "texture_size"
       },
       "with_animation": {
-        "name": "with_animation"
+        "name": "with_animation",
+        "tooltip": "שמור על השלד וההנפשה של מודלים עם rig או שעברו retargeting."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": "מודל שהומר בפורמט המבוקש. OBJ נמסר על־ידי Tripo כארכיון ZIP ‏(mesh, material ו-textures)."
+      }
+    }
+  },
+  "TripoEditMultiviewNode": {
+    "description": "עורך את התצוגות של תוצאת Tripo: Image to Multiview באמצעות הנחיות טקסט לכל תצוגה. תצוגות ללא הנחיה נשארות ללא שינוי. הזן את התמונות אל Tripo: Multiview to Model; לא ניתן לערוך שוב ערכה שעברה עריכה.",
+    "display_name": "Tripo: עריכת תצוגות מרובות",
+    "inputs": {
+      "back_prompt": {
+        "name": "back_prompt"
+      },
+      "front_prompt": {
+        "name": "front_prompt"
+      },
+      "left_prompt": {
+        "name": "left_prompt"
+      },
+      "multiview_task_id": {
+        "name": "multiview_task_id"
+      },
+      "right_prompt": {
+        "name": "right_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "front",
+        "tooltip": null
+      },
+      "1": {
+        "name": "שמאל",
+        "tooltip": null
+      },
+      "2": {
+        "name": "אחורי",
+        "tooltip": null
+      },
+      "3": {
+        "name": "ימין",
+        "tooltip": null
       }
     }
   },
   "TripoImageToModelNode": {
     "display_name": "Tripo: תמונה למודל",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "התאמת מודלים בעלי מרקם לגודלם האמיתי במטרים. Tripo שומרת את הגודל כהמרת הסצנה של המודל ומטמיעה אותו בעת המרה, rigging או retargeting של המודל; מתעלמת מכך ללא מרקם."
+      },
       "face_limit": {
-        "name": "מגבלת פאות"
+        "name": "מגבלת פאות",
+        "tooltip": "מספר הפאות המרבי. ‎-1 מאפשר ל-Tripo לבחור באופן מסתגל (כ-1.4 מיליון פאות ב-v3.x standard,‏ 2 מיליון ב-detailed).‏ Tripo מגביל בשקט: v2.5 ל-500,000, ורשתות quad ל-150,000."
       },
       "geometry_quality": {
         "name": "איכות גיאומטריה"
@@ -23507,22 +23703,31 @@
         "name": "כיוון"
       },
       "pbr": {
-        "name": "PBR"
+        "name": "PBR",
+        "tooltip": "מפות חומר PBR ‏(צבע בסיס, מתכתיות, חספוס, נורמל). מחייב מרקם."
       },
       "quad": {
-        "name": "ריבוע"
+        "name": "ריבוע",
+        "tooltip": "פלט רשת quad. ‏Tripo מספקת רשתות quad כ-FBX, לכן התוצאה מגיעה בפלט FBX ופלט GLB נשאר ריק."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "רשת low-poly עם טופולוגיה נקייה בסגנון עבודת יד (500–20,000 פאות, quad ‏500–10,000). מתאימה במיוחד לנושאים פשוטים; נושאים מורכבים עשויים להיכשל."
       },
       "style": {
-        "name": "סגנון"
+        "name": "סגנון",
+        "tooltip": "אינו נתמך עוד על ידי Tripo ומתוּעלם. נשמר עבור תהליכי עבודה ישנים יותר."
       },
       "texture": {
-        "name": "מרקם"
+        "name": "מרקם",
+        "tooltip": "יצירת מפות מרקם. כיבוי מחזיר גאומטריה בלבד ומתעלם מ-pbr."
       },
       "texture_alignment": {
         "name": "יישור מרקם"
       },
       "texture_quality": {
-        "name": "איכות מרקם"
+        "name": "איכות מרקם",
+        "tooltip": "detailed = מרקמי HD, ‏extreme = מרקמי 8K Ultra."
       },
       "texture_seed": {
         "name": "seed למרקם"
@@ -23539,6 +23744,41 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "ריק כאשר quad מופעל."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "מתמלא רק כאשר quad מופעל."
+      }
+    }
+  },
+  "TripoImageToMultiviewNode": {
+    "description": "יוצר מבטים קדמי, שמאלי, אחורי וימני של הנושא. הזינו אותם אל Tripo: Multiview to Model, או שפרו אותם תחילה באמצעות Tripo: Edit Multiview.",
+    "display_name": "Tripo: תמונה לריבוי מבטים",
+    "inputs": {
+      "image": {
+        "name": "תמונה"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "task_id של ריבוי מבטים",
+        "tooltip": null
+      },
+      "1": {
+        "name": "קדמי",
+        "tooltip": null
+      },
+      "2": {
+        "name": "שמאל",
+        "tooltip": null
+      },
+      "3": {
+        "name": "אחורי",
+        "tooltip": null
+      },
+      "4": {
+        "name": "ימין",
         "tooltip": null
       }
     }
@@ -23559,11 +23799,43 @@
       }
     }
   },
+  "TripoMeshCompleteNode": {
+    "description": "משלים את חלקיו של מודל מפולח ומתקן אזורים חסרים.",
+    "display_name": "Tripo: השלמת חלקי רשת",
+    "inputs": {
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "שמות חלקים להשלמה, מופרדים בפסיקים. השארה ריקה משלימה את כל החלקים."
+      },
+      "segment_task_id": {
+        "name": "segment_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "task_id של המודל",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: רב-תצוגה למודל",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "שנה קנה מידה של מודלים בעלי מרקם לגודלם בעולם האמיתי במטרים. Tripo שומרת את הגודל כהמרת סצנה של המודל ומטמיעה אותו בעת המרת המודל, יצירת rig או מיקוד מחדש; האפשרות מתעלמת ללא מרקם."
+      },
       "face_limit": {
-        "name": "מגבלת פאות"
+        "name": "מגבלת פאות",
+        "tooltip": "מספר הפאות המרבי. ‎-1 מאפשר ל-Tripo לבחור באופן מסתגל (כ-1.4 מיליון פאות ב-v3.x standard,‏ 2 מיליון ב-detailed).‏ Tripo מגביל בשקט: v2.5 ל-500,000, ורשתות quad ל-150,000."
       },
       "geometry_quality": {
         "name": "איכות גיאומטריה"
@@ -23591,20 +23863,27 @@
         "name": "כיוון"
       },
       "pbr": {
-        "name": "PBR"
+        "name": "PBR",
+        "tooltip": "מפות חומר PBR ‏(צבע בסיס, מתכתיות, חספוס, נורמל). מחייב מרקם."
       },
       "quad": {
         "name": "ריבוע",
-        "tooltip": "פרמטר זה אינו בשימוש יותר ואינו משפיע."
+        "tooltip": "פלט רשת quad. ‏Tripo מספקת רשתות quad כ-FBX, לכן התוצאה מגיעה בפלט FBX ופלט GLB נשאר ריק."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "רשת low-poly עם טופולוגיה נקייה בסגנון עבודת יד (500–20,000 פאות, quad ‏500–10,000). מתאימה במיוחד לנושאים פשוטים; נושאים מורכבים עשויים להיכשל."
       },
       "texture": {
-        "name": "מרקם"
+        "name": "מרקם",
+        "tooltip": "יצירת מפות מרקם. כיבוי מחזיר גאומטריה בלבד ומתעלם מ-pbr."
       },
       "texture_alignment": {
         "name": "יישור מרקם"
       },
       "texture_quality": {
-        "name": "איכות מרקם"
+        "name": "איכות מרקם",
+        "tooltip": "detailed = מרקמי HD, ‏extreme = מרקמי 8K Ultra."
       },
       "texture_seed": {
         "name": "seed למרקם"
@@ -23621,7 +23900,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "ריק כאשר quad מופעל."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "מאוכלס רק כאשר quad מופעל."
       }
     }
   },
@@ -23635,7 +23918,7 @@
       },
       "compress_geometry": {
         "name": "דחיסת גיאומטריה",
-        "tooltip": "הפעלת דחיסה מבוססת גיאומטריה. יש לבצע דחיסה הפוכה לפני עריכה."
+        "tooltip": "החל דחיסת גאומטריה meshopt ‏(EXT_meshopt_compression). הקבצים קטנים יותר, אך התצוגה המקדימה התלת־ממדית של ComfyUI אינה יכולה להציגם; יש לפרוס דחיסה לפני עריכה."
       },
       "enable_image_autofix": {
         "name": "תיקון תמונה אוטומטי",
@@ -23685,7 +23968,7 @@
       },
       "compress_geometry": {
         "name": "דחיסת גיאומטריה",
-        "tooltip": "הפעלת דחיסה מבוססת גיאומטריה. יש לבצע דחיסה הפוכה לפני עריכה."
+        "tooltip": "החל דחיסת גאומטריה meshopt ‏(EXT_meshopt_compression). הקבצים קטנים יותר, אך התצוגה המקדימה התלת־ממדית של ComfyUI אינה יכולה להציגם; יש לפרוס דחיסה לפני עריכה."
       },
       "export_uv": {
         "name": "ייצוא UV",
@@ -23744,7 +24027,7 @@
       },
       "compress_geometry": {
         "name": "דחיסת גיאומטריה",
-        "tooltip": "הפעל דחיסה מבוססת גיאומטריה. יש לבצע דקומפרסיה לפני עריכה."
+        "tooltip": "החל דחיסת גאומטריה meshopt ‏(EXT_meshopt_compression). הקבצים קטנים יותר, אך התצוגה המקדימה התלת־ממדית של ComfyUI אינה יכולה להציגם; יש לפרוס דחיסה לפני עריכה."
       },
       "export_uv": {
         "name": "ייצוא UV",
@@ -23791,11 +24074,24 @@
   "TripoRetargetNode": {
     "display_name": "Tripo: התאמת מודל מרושת",
     "inputs": {
+      "animate_in_place": {
+        "name": "animate_in_place",
+        "tooltip": "נגן את ההנפשה במקומה, ללא הסטת שורש."
+      },
       "animation": {
-        "name": "אנימציה"
+        "name": "אנימציה",
+        "tooltip": "הנפשות preset:* פועלות עם שני דגמי ה-rig; הנפשות preset:biped:* דורשות rig שנוצר עם model v1.0-20240301."
+      },
+      "export_with_geometry": {
+        "name": "export_with_geometry",
+        "tooltip": "כלול את הרשת בייצוא; כאשר האפשרות כבויה, ייוצא רק השלד המונפש."
       },
       "original_model_task_id": {
         "name": "original_model_task_id"
+      },
+      "out_format": {
+        "name": "out_format",
+        "tooltip": "תבנית קובץ הפלט; התוצאה מגיעה בפלט התואם."
       }
     },
     "outputs": {
@@ -23809,15 +24105,97 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "מאוכלס כאשר out_format הוא glb."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "מאוכלס כאשר out_format הוא fbx."
+      }
+    }
+  },
+  "TripoRetopologyNode": {
+    "description": "בונה מחדש רשת low-poly בעלת טופולוגיה נקייה ממודל high-poly.",
+    "display_name": "Tripo: רטופולוגיה",
+    "inputs": {
+      "bake": {
+        "name": "bake",
+        "tooltip": "הטמע את המרקמים של המקור ברשת ה-low-poly."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "מספר הפאות היעד: 500–20,000 משולשים או 500–10,000 מרובעים. הערך -1 מאפשר ל-Tripo לבחור."
+      },
+      "model_task_id": {
+        "name": "model_task_id"
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "שמות חלקים המופרדים בפסיקים מ-Tripo: Segment Model. השארת השדה ריק מעבדת את המודל כולו."
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "פלט רשת מרובעת. Tripo מספקת רשתות מרובעות כ-FBX, לכן התוצאה מגיעה בפלט FBX ופלט GLB נשאר ריק."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": "ריק כאשר quad מופעל."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "מאוכלס רק כאשר quad מופעל."
+      }
+    }
+  },
+  "TripoRigCheckNode": {
+    "description": "בודק אם ניתן ליצור rig למודל ואיזה סוג שלד Tripo ממליצה.",
+    "display_name": "Tripo: בדיקת rig",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "riggable",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_type",
+        "tooltip": "שלד מומלץ: biped, quadruped, hexapod, octopod, avian, serpentine או aquatic; ‏'others' כאשר לא ניתן ליצור rig למודל."
       }
     }
   },
   "TripoRigNode": {
     "display_name": "Tripo: ריג למודל",
     "inputs": {
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "v1.0: דמויות דמויות-אדם (דו-רגליות) בלבד, 90+ הגדרות קדם להנפשה. v2.5: יצורים שאינם דמויי-אדם (ארבע-רגליים, שש-רגליים, שמונה-רגליים, עופות, נחשיים, ימיים)."
+      },
       "original_model_task_id": {
         "name": "original_model_task_id"
+      },
+      "out_format": {
+        "name": "out_format",
+        "tooltip": "תבנית קובץ הפלט; התוצאה מתקבלת בפלט התואם."
+      },
+      "rig_type": {
+        "name": "rig_type",
+        "tooltip": "סוג שלד. 'auto' מפעיל תחילה את בדיקת ה-rig החינמית של Tripo ומשתמש בסוג המומלץ."
+      },
+      "spec": {
+        "name": "spec",
+        "tooltip": "מתן שמות לעצמות: מקורי של Tripo או תואם Mixamo. Tripo אינו יכול לבצע retarget להגדרות קדם ההנפשה שלו על rig מסוג v1.0 שנוצר עם מפרט mixamo; יש להשתמש ב-tripo עבור Tripo: Retarget rigged model."
       }
     },
     "outputs": {
@@ -23831,7 +24209,38 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "מאוכלס כאשר out_format הוא glb."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "מאוכלס כאשר out_format הוא fbx."
+      }
+    }
+  },
+  "TripoSegmentNode": {
+    "description": "מפצל מודל לחלקים. שמות החלקים מוזנים אל Tripo: Complete Mesh Parts, Tripo: Retopology ו-Tripo: Convert model.",
+    "display_name": "Tripo: פילוח מודל",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "segment task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "part_names",
+        "tooltip": "שמות החלקים, מופרדים בפסיקים."
       }
     }
   },
@@ -23933,8 +24342,13 @@
   "TripoTextToModelNode": {
     "display_name": "Tripo: טקסט למודל",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "שינוי קנה מידה של מודלים בעלי מרקם לגודלם בעולם האמיתי במטרים. Tripo שומר את הגודל כטרנספורמציית הסצנה של המודל ומטמיע אותו בעת המרת המודל, יצירת rig או retarget; מתעלם ממנו ללא texture."
+      },
       "face_limit": {
-        "name": "מגבלת פאות"
+        "name": "מגבלת פאות",
+        "tooltip": "מספר הפאות המרבי. ‎-1 מאפשר ל-Tripo לבחור באופן מסתגל (כ-1.4M פאות ב-v3.x standard, ‏2M ב-detailed). Tripo מגביל בשקט: v2.5 ל-500,000, ורשתות quad ל-150,000."
       },
       "geometry_quality": {
         "name": "איכות גיאומטריה"
@@ -23949,25 +24363,35 @@
         "name": "גרסת מודל"
       },
       "negative_prompt": {
-        "name": "פרומפט שלילי"
+        "name": "פרומפט שלילי",
+        "tooltip": "עד 255 תווים."
       },
       "pbr": {
-        "name": "PBR"
+        "name": "PBR",
+        "tooltip": "מפות חומר PBR ‏(צבע בסיס, מתכתיות, חספוס, נורמל). מחייב texture."
       },
       "prompt": {
         "name": "פרומפט"
       },
       "quad": {
-        "name": "ריבוע"
+        "name": "ריבוע",
+        "tooltip": "פלט רשת quad. ‏Tripo מספק רשתות quad כ-FBX, לכן התוצאה מתקבלת בפלט FBX ופלט GLB נשאר ריק."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "רשת low-poly עם טופולוגיה נקייה בסגנון עבודת יד (500–20,000 פאות, quad ‏500–10,000). מתאים במיוחד לנושאים פשוטים; נושאים מורכבים עלולים להיכשל."
       },
       "style": {
-        "name": "סגנון"
+        "name": "סגנון",
+        "tooltip": "אינו נתמך עוד על-ידי Tripo ומתעלמים ממנו. נשמר עבור תהליכי עבודה ישנים יותר."
       },
       "texture": {
-        "name": "מרקם"
+        "name": "מרקם",
+        "tooltip": "יצירת מפות מרקם. כיבוי מחזיר גאומטריה בלבד ומתעלם מ-pbr."
       },
       "texture_quality": {
-        "name": "איכות מרקם"
+        "name": "איכות מרקם",
+        "tooltip": "detailed = מרקמי HD, extreme = מרקמי Ultra ‏8K."
       },
       "texture_seed": {
         "name": "seed של מרקם"
@@ -23984,7 +24408,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "ריק כאשר quad מופעל."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "מאוכלס רק כאשר quad מופעל."
       }
     }
   },
@@ -23994,21 +24422,40 @@
       "model_task_id": {
         "name": "model_task_id"
       },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "מודל מרקם: v3.0 עבור רשתות שנוצרו עם v3.x, ‏v2.5 עבור רשתות שנוצרו עם v2.5."
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "שמות חלקים מופרדים בפסיקים מ-Tripo: Segment Model ליצירת טקסטורות. אם ריק, נוצרים מרקמים לכל חלק."
+      },
       "pbr": {
-        "name": "PBR"
+        "name": "PBR",
+        "tooltip": "מפות חומר PBR ‏(צבע בסיס, מתכתיות, חספוס, נורמל); כיבוי מספק מרקם בצבע אחיד."
+      },
+      "reference": {
+        "name": "reference",
+        "tooltip": "תמונות עזר המנחות את המרקמים. לא ניתן לשלב עם texture_prompt או style_image."
+      },
+      "style_image": {
+        "name": "style_image",
+        "tooltip": "תמונת עזר לסגנון האמנותי של המרקמים. משמשת רק יחד עם texture_prompt."
       },
       "texture": {
-        "name": "מרקם"
+        "name": "מרקם",
+        "tooltip": "מתעלמים: צומת זה תמיד יוצר מרקמים. נשמר עבור תהליכי עבודה ישנים יותר."
       },
       "texture_alignment": {
         "name": "יישור מרקם"
       },
       "texture_prompt": {
         "name": "פרומפט מרקם",
-        "tooltip": "הנחיה טקסטואלית אופציונלית למרקם. נדרש בפועל עבור מודלים מיובאים (Tripo: Import Model), אשר אינם כוללים תמונת מקור להסקת צבעים."
+        "tooltip": "הנחיית טקסט אופציונלית ליצירת מרקם. נדרשת בפועל עבור מודלים מיובאים (Tripo: Import Model), שאינם כוללים תמונת מקור שממנה ניתן להסיק צבעים. לא ניתן לשלב עם תמונות ייחוס."
       },
       "texture_quality": {
-        "name": "איכות מרקם"
+        "name": "איכות מרקם",
+        "tooltip": "detailed = מרקמי HD, extreme = מרקמי Ultra ‏8K."
       },
       "texture_seed": {
         "name": "seed של מרקם"
@@ -24025,7 +24472,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "ריק כאשר המקור הוא רשת מרובעת או ייבוא FBX."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Tripo מחזיר FBX עבור רשתות מרובעות וייבואי FBX; אחרת ריק."
       }
     }
   },

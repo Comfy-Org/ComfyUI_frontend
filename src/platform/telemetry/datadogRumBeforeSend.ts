@@ -1,5 +1,7 @@
 import type { RumBeforeSend, RumErrorEvent } from '@datadog/browser-rum'
 
+import { ASSERTION_FAILURE_PREFIX, hasRumAssertReporter } from '@/base/assert'
+
 const RUM_NOISE_HOSTS = [
   'facebook.com',
   'px.ads.linkedin.com',
@@ -10,6 +12,10 @@ const RUM_NOISE_HOSTS = [
 ]
 
 const FIRST_PARTY_EXTENSION_FOLDERS = new Set(['cloud', 'core'])
+
+const FIREBASE_PENDING_PROMISE_ASSERTION =
+  'INTERNAL ASSERTION FAILED: Pending promise was never set'
+const FIREBASE_PENDING_PROMISE_FINGERPRINT = 'firebase-auth-pending-promise'
 
 type RumErrorOrigin =
   | { origin: 'first_party' }
@@ -33,8 +39,27 @@ export function classifyRumErrorOrigin(stack?: string): RumErrorOrigin {
   return { origin: 'third_party' }
 }
 
+function fingerprintFirebasePendingPromise(event: RumErrorEvent): void {
+  if (event.error.message.endsWith(FIREBASE_PENDING_PROMISE_ASSERTION)) {
+    event.error.fingerprint = FIREBASE_PENDING_PROMISE_FINGERPRINT
+  }
+}
+
+/**
+ * RUM collects `console.error` on its own, so a reported assertion arrives
+ * twice — untagged from the console, and tagged.
+ */
+function isConsoleEchoOfReportedAssertion(event: RumErrorEvent): boolean {
+  return (
+    hasRumAssertReporter() &&
+    event.error.source === 'console' &&
+    event.error.message.startsWith(ASSERTION_FAILURE_PREFIX)
+  )
+}
+
 function shouldKeepRumEvent(event: Parameters<RumBeforeSend>[0]): boolean {
   if (event.type !== 'error') return true
+  if (isConsoleEchoOfReportedAssertion(event)) return false
 
   const message = event.error.message
   if (message.startsWith('intervention:')) return false
@@ -67,6 +92,9 @@ function tagRumErrorOrigin(event: RumErrorEvent): void {
 
 export const rumBeforeSend: RumBeforeSend = (event) => {
   if (!shouldKeepRumEvent(event)) return false
-  if (event.type === 'error') tagRumErrorOrigin(event)
+  if (event.type === 'error') {
+    fingerprintFirebasePendingPromise(event)
+    tagRumErrorOrigin(event)
+  }
   return true
 }

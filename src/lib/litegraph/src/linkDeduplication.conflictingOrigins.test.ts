@@ -11,7 +11,18 @@ import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 
-import { conflictingOriginLinksRoot } from './__fixtures__/duplicateLinks'
+import {
+  conflictingOriginLinksRoot,
+  duplicateLinksRoot
+} from './__fixtures__/duplicateLinks'
+
+const trackLinkDedupDrop = vi.fn()
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({
+    trackLinkDedupDrop
+  })
+}))
 
 class DupTestNode extends LGraphNode {
   constructor(title?: string) {
@@ -56,7 +67,7 @@ function linksIntoTargetSlot(
   targetId: NodeId,
   targetSlot: number
 ): SerializedLinkFields[] {
-  const fields = (links ?? []).map((link) =>
+  const fields = links.map((link) =>
     linkFieldsOf(link as SerialisedLLinkArray | SerialisableLLink)
   )
   return fields.filter(
@@ -90,6 +101,17 @@ describe('normalizeConfiguredTopology with conflicting origins (#15577)', () => 
     )
   })
 
+  it('fires LinkDedupDrop exactly once with the dropped/survivor ids and target when origins differ', () => {
+    configureConflictingOrigins()
+
+    expect(trackLinkDedupDrop).toHaveBeenCalledOnce()
+    expect(trackLinkDedupDrop).toHaveBeenCalledWith({
+      droppedLinkId: 1,
+      survivorLinkId: 2,
+      target: '3:0'
+    })
+  })
+
   it('registers exactly one link at the contested input', () => {
     const graph = configureConflictingOrigins()
 
@@ -109,7 +131,14 @@ describe('normalizeConfiguredTopology with conflicting origins (#15577)', () => 
       0
     )
 
-    expect(survivor?.origin_id).toBe(toNodeId(2))
+    expect(survivor.origin_id).toBe(toNodeId(2))
+  })
+
+  it('does not fire LinkDedupDrop for a same-origin remap', () => {
+    const graph = new LGraph()
+    graph.configure(structuredClone(duplicateLinksRoot))
+
+    expect(trackLinkDedupDrop).not.toHaveBeenCalled()
   })
 })
 

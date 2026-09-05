@@ -37,7 +37,7 @@ describe('WidgetSelectDefault', () => {
     name: 'test_combo',
     type: 'combo',
     value: undefined,
-    options: { values, ...options } as SimplifiedWidget['options']
+    options: { values, ...options }
   })
 
   function renderComponent(
@@ -72,7 +72,7 @@ describe('WidgetSelectDefault', () => {
   }
 
   const optionLabels = () =>
-    screen.queryAllByRole('option').map((option) => option.textContent?.trim())
+    screen.queryAllByRole('option').map((option) => option.textContent.trim())
 
   async function expectHighlightedOption(name: string) {
     await waitFor(() => {
@@ -361,7 +361,7 @@ describe('WidgetSelectDefault', () => {
 
       const trigger = screen.getByTestId('widget-select-default-trigger')
       expect(trigger).not.toHaveAttribute('aria-invalid')
-      expect(trigger.textContent?.trim()).toBe('')
+      expect(trigger.textContent.trim()).toBe('')
     })
 
     it('selects the first option when the value is undefined', () => {
@@ -379,7 +379,7 @@ describe('WidgetSelectDefault', () => {
 
       const options = screen.getAllByRole('option')
       expect(options).toHaveLength(2)
-      expect(options.map((option) => option.textContent?.trim())).toEqual(
+      expect(options.map((option) => option.textContent.trim())).toEqual(
         expect.arrayContaining(['a', 'b'])
       )
       for (const option of options) {

@@ -34,7 +34,7 @@ function createTestWidget(
   )
 }
 
-class MutableTypeWidget extends BaseWidget<IBaseWidget<number, string>> {
+class MutableTypeWidget extends BaseWidget<IBaseWidget<number>> {
   drawWidget(
     _ctx: CanvasRenderingContext2D,
     _options: DrawWidgetOptions
@@ -72,8 +72,9 @@ describe('BaseWidget store integration', () => {
   it('preserves name in keys, spread copies, and JSON', () => {
     const widget = createTestWidget(node, { name: 'custom-name' })
 
-    expect(Object.keys(widget)).toContain('_name')
-    expect(Object.keys(widget)).not.toContain('name')
+    const widgetKeys = Object.keys(widget)
+    expect(widgetKeys).toContain('_name')
+    expect(widgetKeys).not.toContain('name')
     expect({ ...widget }).toMatchObject({ _name: 'custom-name' })
     expect(JSON.parse(JSON.stringify(widget))).toMatchObject({
       _name: 'custom-name'
@@ -339,7 +340,7 @@ describe('BaseWidget store integration', () => {
           const state = store.getWidget(
             widgetId(graphId, node.id, 'system_prompt')
           )
-          return (state?.value as string) ?? defaultValue
+          return typeof state?.value === 'string' ? state.value : defaultValue
         },
         set(v: string) {
           const graphId = widget.node.graph?.rootGraph.id

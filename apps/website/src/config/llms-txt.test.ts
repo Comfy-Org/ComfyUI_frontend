@@ -3,11 +3,25 @@ import { dirname, join, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
+import {
+  findRedirectedLinks,
+  internalLinks,
+  isLlmsTxtLinkLine,
+  normalizePath,
+  parseLlmsTxtLinks
+} from '../lib/llms-txt'
 import { getRoutes } from './routes'
 
 const websiteRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const llmsTxt = readFileSync(join(websiteRoot, 'public', 'llms.txt'), 'utf8')
 const pagesDir = join(websiteRoot, 'src', 'pages')
+const vercelRedirectSources = new Set<string>(
+  (
+    JSON.parse(readFileSync(join(websiteRoot, 'vercel.json'), 'utf8')) as {
+      redirects: { source: string }[]
+    }
+  ).redirects.map((redirect) => normalizePath(redirect.source))
+)
 
 /**
  * Pages that exist in src/pages but are deliberately kept out of llms.txt.
@@ -16,17 +30,26 @@ const pagesDir = join(websiteRoot, 'src', 'pages')
  */
 const EXCLUDED_PAGES = new Set([
   '/404',
+  '/agent', // unlisted agent beta waitlist page, noindex
   '/booking-confirmation', // post-form confirmation, no standalone content
   '/individual-submission', // gallery submission form
   '/payment/failed', // checkout return page
   '/payment/success', // checkout return page
   '/case-studies', // "Coming Soon" placeholder
   '/videos', // "Coming Soon" placeholder
-  '/demos' // index is a "Coming Soon" placeholder; the demo pages are listed
+  '/demos', // index is a "Coming Soon" placeholder; the demo pages are listed
+  '/platform/serverless-animation' // noindex temporary motion study, not a real page
 ])
 
-/** Files the build emits outside src/pages (the sitemap integration writes this one). */
-const BUILD_ARTIFACTS = new Set(['/sitemap-index.xml'])
+/**
+ * Files the build emits outside src/pages: the sitemap integration writes
+ * sitemap-index.xml, and the markdown-twins integration writes llms-full.txt
+ * plus one llms.txt per section (see SECTIONS in
+ * src/integrations/markdown-twins.ts). The section indexes live under a real
+ * page's directory (e.g. /learning/llms.txt) so the dynamic-route matcher
+ * below already accepts them; only the two root-level files need listing.
+ */
+const BUILD_ARTIFACTS = new Set(['/sitemap-index.xml', '/llms-full.txt'])
 
 /**
  * Route shapes of the Comfy Workflows app, which lives in another repo and is
@@ -41,14 +64,6 @@ const WORKFLOW_APP_ROUTES = [
   /^\/workflows\/use-cases(\/[a-z0-9-]+)?$/,
   /^\/[a-z]{2}(-[A-Za-z]{2})?\/workflows$/
 ]
-
-const LINK_LINE =
-  /^- \[(?<title>[^\]]+)\]\((?<url>https?:\/\/[^)\s]+)\): (?<description>.+)$/
-
-function normalizePath(path: string): string {
-  const trimmed = path.replace(/\/+$/, '')
-  return trimmed === '' ? '/' : trimmed
-}
 
 /** Turn `src/pages/learning/[category]/[slug].astro` into a matcher for `/learning/x/y`. */
 function pageMatchers(root: string): {
@@ -85,22 +100,9 @@ function pageMatchers(root: string): {
   return { static: staticPages, dynamic }
 }
 
-function parseLinks() {
-  return llmsTxt
-    .split('\n')
-    .map((line) => LINK_LINE.exec(line)?.groups)
-    .filter(
-      (groups): groups is { title: string; url: string; description: string } =>
-        Boolean(groups)
-    )
-}
-
 describe('llms.txt', () => {
-  const links = parseLinks()
-  const internalPaths = links
-    .map((link) => new URL(link.url))
-    .filter((url) => url.hostname === 'comfy.org')
-    .map((url) => normalizePath(url.pathname))
+  const links = parseLlmsTxtLinks(llmsTxt)
+  const internalPaths = internalLinks(links).map(({ path }) => path)
   const { static: staticPages, dynamic } = pageMatchers(pagesDir)
   const zhCN = pageMatchers(join(pagesDir, 'zh-CN'))
 
@@ -115,7 +117,7 @@ describe('llms.txt', () => {
 
   it('formats every bullet as "- [title](url): description"', () => {
     const bullets = llmsTxt.split('\n').filter((line) => line.startsWith('- ['))
-    const malformed = bullets.filter((line) => !LINK_LINE.test(line))
+    const malformed = bullets.filter((line) => !isLlmsTxtLinkLine(line))
     expect(malformed).toEqual([])
     expect(links.length).toBeGreaterThan(100)
   })
@@ -171,5 +173,17 @@ describe('llms.txt', () => {
       linked.has(page)
     )
     expect(listedButExcluded).toEqual([])
+  })
+
+  it('uses only literal redirect sources for stale link checks', () => {
+    const patternedSources = [...vercelRedirectSources].filter((source) =>
+      /[:*(]/.test(source)
+    )
+    expect(patternedSources).toEqual([])
+  })
+
+  it('links a redirect destination rather than its stale source', () => {
+    const redirected = findRedirectedLinks(links, vercelRedirectSources)
+    expect(redirected).toEqual([])
   })
 })
