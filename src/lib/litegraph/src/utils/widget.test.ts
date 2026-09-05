@@ -7,6 +7,7 @@ import {
   getWidgetStep,
   resolveNodeRootGraphId
 } from '@/lib/litegraph/src/litegraph'
+import { formatNumericWidgetValue } from '@/lib/litegraph/src/utils/widget'
 
 describe('getWidgetStep', () => {
   test('should return step2 when available', () => {
@@ -45,6 +46,15 @@ describe('getWidgetStep', () => {
     }
 
     expect(getWidgetStep(optionsWithZeroStep)).toBe(1)
+  })
+})
+
+describe('formatNumericWidgetValue', () => {
+  test.each<[string, unknown]>([
+    ['symbol', Symbol('legacy')],
+    ['object without primitive conversion', Object.create(null)]
+  ])('formats %s coercion failures as NaN', (_label, value) => {
+    expect(formatNumericWidgetValue(value)).toBe('NaN')
   })
 })
 

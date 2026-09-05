@@ -18,6 +18,26 @@ export function getWidgetStep(options: IWidgetOptions): number {
   return options.step2 || (options.step || 10) * 0.1
 }
 
+/**
+ * Formats a numeric widget value for legacy canvas rendering.
+ *
+ * Persisted workflows and extension-provided widgets can contain values that do
+ * not match the current numeric widget type. Keep coercion at this runtime
+ * boundary so an invalid value cannot throw and stop the canvas render loop.
+ */
+export function formatNumericWidgetValue(
+  value: unknown,
+  precision = 3
+): string {
+  let numericValue: number
+  try {
+    numericValue = Number(value)
+  } catch {
+    numericValue = Number.NaN
+  }
+  return numericValue.toFixed(precision)
+}
+
 export function evaluateInput(input: string): number | undefined {
   const result = evaluateMathExpression(input)
   if (result !== undefined) {
