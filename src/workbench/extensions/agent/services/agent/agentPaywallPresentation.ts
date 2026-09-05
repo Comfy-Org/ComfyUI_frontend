@@ -12,7 +12,6 @@ export type AgentPaywallPresentation =
   | { kind: 'local' }
 
 interface AgentPaywallPresentationInput {
-  distribution: 'cloud' | 'local'
   role: WorkspaceRole
   tier: SubscriptionTier | null
   canTopUp: boolean
@@ -34,14 +33,12 @@ export const DEFAULT_AGENT_PAYWALL_PRESENTATION = {
 } as const satisfies AgentPaywallPresentation
 
 export function resolveAgentPaywallPresentation({
-  distribution,
   role,
   tier,
   canTopUp,
   canSubscribeSelfServe
 }: AgentPaywallPresentationInput): AgentPaywallPresentation {
   if (role === 'member') return { kind: 'member' }
-  if (distribution === 'local') return { kind: 'local' }
   if (!canTopUp) {
     return canSubscribeSelfServe
       ? { kind: 'subscriptionRequired' }

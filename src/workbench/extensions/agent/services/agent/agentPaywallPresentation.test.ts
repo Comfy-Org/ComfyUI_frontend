@@ -33,7 +33,6 @@ describe('resolveAgentPaywallPresentation', () => {
   ])('maps the ready server pair for $name', (testCase) => {
     expect(
       resolveServerCapabilities({
-        distribution: 'cloud',
         role: 'owner',
         tier: 'STANDARD',
         canTopUp: testCase.canTopUp,
@@ -55,7 +54,6 @@ describe('resolveAgentPaywallPresentation', () => {
     ({ tier, showUpgrade }) => {
       expect(
         resolveServerCapabilities({
-          distribution: 'cloud',
           role: 'owner',
           tier,
           canTopUp: true,
@@ -65,24 +63,14 @@ describe('resolveAgentPaywallPresentation', () => {
     }
   )
 
-  it('keeps role and distribution overrides outside Cloud owners', () => {
+  it('keeps the member override ahead of the server pair', () => {
     expect(
       resolveServerCapabilities({
-        distribution: 'cloud',
         role: 'member',
         tier: 'STANDARD',
         canTopUp: true,
         canSubscribeSelfServe: true
       })
     ).toEqual({ kind: 'member' })
-    expect(
-      resolveServerCapabilities({
-        distribution: 'local',
-        role: 'owner',
-        tier: null,
-        canTopUp: true,
-        canSubscribeSelfServe: false
-      })
-    ).toEqual({ kind: 'local' })
   })
 })

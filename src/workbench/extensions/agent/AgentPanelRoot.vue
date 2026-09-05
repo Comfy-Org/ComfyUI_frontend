@@ -56,7 +56,6 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
-import { isCloud } from '@/platform/distribution/types'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
@@ -119,7 +118,6 @@ const {
 } = useBillingCapabilities()
 const paywallPresentation = computed(() =>
   resolveAgentPaywallPresentation({
-    distribution: isCloud ? 'cloud' : 'local',
     role: workspaceRole.value,
     tier: subscriptionTier.value,
     // The initial false/false pair is not an authoritative sales-managed
