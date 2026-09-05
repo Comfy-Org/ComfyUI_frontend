@@ -29,6 +29,18 @@ function isActiveTracker(tracker: ChangeTracker): boolean {
   return useWorkflowStore().activeWorkflow?.changeTracker === tracker
 }
 
+function syncWorkflowModifiedFlag(tracker: ChangeTracker): void {
+  // Get the workflow from the store as ChangeTracker is raw object, i.e.
+  // `tracker.workflow` is not reactive.
+  const workflow = useWorkflowStore().getWorkflowByPath(tracker.workflow.path)
+  if (workflow) {
+    workflow.isModified = !ChangeTracker.graphEqual(
+      tracker.initialState,
+      tracker.activeState
+    )
+  }
+}
+
 function isAutoQueueOnChange(): boolean {
   return (
     useQueueSettingsStore().mode === 'change' ||
@@ -289,6 +301,7 @@ export class ChangeTracker {
 
     if (state) this.activeState = clone(state)
     this.initialState = clone(this.activeState)
+    syncWorkflowModifiedFlag(this)
   }
 
   store() {
@@ -365,15 +378,7 @@ export class ChangeTracker {
   }
 
   updateModified(previousState?: ComfyWorkflowJSON) {
-    // Get the workflow from the store as ChangeTracker is raw object, i.e.
-    // `this.workflow` is not reactive.
-    const workflow = useWorkflowStore().getWorkflowByPath(this.workflow.path)
-    if (workflow) {
-      workflow.isModified = !ChangeTracker.graphEqual(
-        this.initialState,
-        this.activeState
-      )
-    }
+    syncWorkflowModifiedFlag(this)
 
     const autoQueueGraphChanged =
       !!previousState &&
