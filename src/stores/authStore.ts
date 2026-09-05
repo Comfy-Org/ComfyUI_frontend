@@ -1,3 +1,4 @@
+import { useMemoize } from '@vueuse/core'
 import { FirebaseError } from 'firebase/app'
 import {
   AuthErrorCodes,
@@ -89,6 +90,14 @@ export const useAuthStore = defineStore('auth', () => {
   let customerRecovery: Promise<void> | null = null
   let customerRecoveryIdentity: string | null = null
   const isFetchingBalance = ref(false)
+  const mintUnifiedToken = useMemoize((uid: string) =>
+    useWorkspaceAuthStore()
+      .mintAtLogin()
+      .then((success) => {
+        if (!success) mintUnifiedToken.delete(uid)
+        return success
+      })
+  )
 
   // Balance state
   const balance = ref<GetCustomerBalanceResponse | null>(null)
@@ -145,6 +154,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     if (user === null || identityChanged) {
       useWorkspaceAuthStore().clearWorkspaceContext()
+      mintUnifiedToken.clear()
     }
     if (identityChanged) {
       useTeamWorkspaceStore().resetForIdentityChange()
@@ -166,7 +176,7 @@ export const useAuthStore = defineStore('auth', () => {
     } else if (isCloud) {
       // Mint the single Cloud JWT at login (flag-guarded inside the store; a
       // no-op when unified_cloud_auth is off).
-      void useWorkspaceAuthStore().mintAtLogin()
+      void mintUnifiedToken(user.uid)
     }
 
     // Reset balance when auth state changes
@@ -237,8 +247,9 @@ export const useAuthStore = defineStore('auth', () => {
   /**
    * Retrieves the appropriate authentication header for API requests.
    *
-   * When unified_cloud_auth is enabled, returns the single Cloud JWT for every
-   * cloud request (no Firebase/API-key fallback) so one token is used end to end.
+   * When unified_cloud_auth is enabled, awaits any in-flight login mint and
+   * returns the single Cloud JWT; if minting failed, falls back to the
+   * Firebase token rather than reporting an authenticated user as logged out.
    * Otherwise checks for authentication in the following order:
    * 1. Workspace token on Cloud when the user has active workspace context
    * 2. Firebase authentication token (if user is logged in)
@@ -251,8 +262,15 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const getAuthHeader = async (): Promise<AuthHeader | null> => {
     if (flags.unifiedCloudAuthEnabled) {
+      const uid = currentUser.value?.uid
+      if (uid) await mintUnifiedToken(uid).catch(() => false)
+      // The mint wait can outlast an account switch; a stale caller must not
+      // read the new identity's unified token or fall back to its Firebase
+      // token.
+      if (currentUser.value?.uid !== uid) return null
       const token = useWorkspaceAuthStore().getUnifiedToken()
-      return token ? { Authorization: `Bearer ${token}` } : null
+      if (token) return { Authorization: `Bearer ${token}` }
+      return await getFirebaseAuthHeader()
     }
 
     const workspaceAuth = useWorkspaceAuthStore()
@@ -337,12 +355,18 @@ export const useAuthStore = defineStore('auth', () => {
 
   /**
    * Returns the raw auth token (not wrapped in a header object).
-   * When unified_cloud_auth is enabled, returns the single Cloud JWT; otherwise
-   * Cloud priority is workspace token > Firebase token.
+   * When unified_cloud_auth is enabled, awaits any in-flight login mint and
+   * returns the single Cloud JWT; otherwise Cloud priority is workspace token
+   * > Firebase token.
    * Use this for WebSocket connections and backend node auth.
    */
   const getAuthToken = async (): Promise<string | undefined> => {
     if (flags.unifiedCloudAuthEnabled) {
+      const uid = currentUser.value?.uid
+      if (uid) await mintUnifiedToken(uid).catch(() => false)
+      // See getAuthHeader: a stale caller must not read the new identity's
+      // unified token after an account switch during the mint wait.
+      if (currentUser.value?.uid !== uid) return undefined
       return useWorkspaceAuthStore().getUnifiedToken()
     }
 
