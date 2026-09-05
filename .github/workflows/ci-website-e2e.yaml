@@ -129,10 +129,22 @@ jobs:
 
       - name: Download shard statuses
         if: ${{ needs.website-e2e-shard.result != 'cancelled' }}
+        id: shard-statuses
+        continue-on-error: true
         uses: actions/download-artifact@v8
         with:
           path: apps/website/shard-status
           pattern: website-shard-status-*
+          merge-multiple: true
+
+      - name: Download blob reports
+        if: ${{ needs.website-e2e-shard.result != 'cancelled' }}
+        id: blob-reports
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          path: apps/website/all-blob-reports
+          pattern: website-blob-report-*
           merge-multiple: true
 
       # Three outcomes, not two. `infrastructure` means at least one shard
@@ -145,24 +157,23 @@ jobs:
         id: outcome
         env:
           SHARDS_RESULT: ${{ needs.website-e2e-shard.result }}
+          SHARD_STATUSES_OUTCOME: ${{ steps.shard-statuses.outcome }}
+          BLOB_REPORTS_OUTCOME: ${{ steps.blob-reports.outcome }}
         run: |
+          statuses=$(find apps/website/shard-status -maxdepth 1 -type f 2>/dev/null | wc -l)
+          reports=$(find apps/website/all-blob-reports -type f -name '*.zip' 2>/dev/null | wc -l)
           missing=$(grep -rlx missing apps/website/shard-status 2>/dev/null | wc -l)
-          if [ "$missing" -gt 0 ]; then
-            echo "$missing shard(s) produced no blob report" >&2
+          if [ "$SHARD_STATUSES_OUTCOME" != "success" ] || \
+             [ "$BLOB_REPORTS_OUTCOME" != "success" ] || \
+             [ "$statuses" -ne 4 ] || [ "$reports" -ne 4 ] || \
+             [ "$missing" -gt 0 ]; then
+            echo "Incomplete shard artifacts (statuses: $statuses/4, reports: $reports/4, missing: $missing)" >&2
             echo "result=infrastructure" >> "$GITHUB_OUTPUT"
           elif [ "$SHARDS_RESULT" = "success" ]; then
             echo "result=success" >> "$GITHUB_OUTPUT"
           else
             echo "result=failure" >> "$GITHUB_OUTPUT"
           fi
-
-      - name: Download blob reports
-        if: ${{ needs.website-e2e-shard.result != 'cancelled' && steps.outcome.outputs.result != 'infrastructure' }}
-        uses: actions/download-artifact@v8
-        with:
-          path: apps/website/all-blob-reports
-          pattern: website-blob-report-*
-          merge-multiple: true
 
       - name: Merge into HTML and JSON reports
         if: ${{ needs.website-e2e-shard.result != 'cancelled' && steps.outcome.outputs.result != 'infrastructure' }}
@@ -204,7 +215,7 @@ jobs:
             OUTPUT=$(pnpx wrangler@^4.0.0 pages deploy apps/website/playwright-report \
               --project-name=comfyui-website-e2e \
               --branch="$BRANCH" 2>&1) && { DEPLOY_OK=true; break; } || echo "$OUTPUT"
-            [ $i -lt 3 ] && sleep 10
+            [ "$i" -lt 3 ] && sleep 10
           done
           echo "$OUTPUT"
           if [ "$DEPLOY_OK" != "true" ]; then
@@ -212,7 +223,7 @@ jobs:
             exit 1
           fi
           URL=$(echo "$OUTPUT" | grep -oE 'https://[a-zA-Z0-9.-]+\.pages\.dev\S*' | head -1)
-          echo "url=${URL}" >> $GITHUB_OUTPUT
+          echo "url=${URL}" >> "$GITHUB_OUTPUT"
 
       - name: Categorize failures
         id: failures
