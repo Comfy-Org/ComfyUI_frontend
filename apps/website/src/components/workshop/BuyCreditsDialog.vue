@@ -221,6 +221,17 @@ const stepperClass =
           </span>
         </div>
 
+        <!-- REMOVE BEFORE SHIPPING. Scaffolding, not a feature: it shows the
+             return address being carried so a reviewer can watch `success_url`
+             follow them between models. It cannot survive the real flow — a
+             live Checkout URL is created server-side and opaque
+             (`/c/pay/cs_live_…`), so there is nothing legible to print — and
+             showing a payment URL on a page that takes money teaches people to
+             trust pasted Stripe links, which is the shape of a phishing
+             attempt. It is a <p>, not an <a>: it is not a fallback for a
+             blocked popup. That case needs a same-tab retry instead, and does
+             not exist yet. Deleting this also means dropping the `success_url`
+             assertion in ModelDetail.test.ts. -->
         <p
           class="bg-transparency-white-t4 overflow-x-auto rounded-2xl px-4 py-3 font-mono text-xs whitespace-nowrap text-primary-warm-gray"
           data-testid="buy-credits-url"
