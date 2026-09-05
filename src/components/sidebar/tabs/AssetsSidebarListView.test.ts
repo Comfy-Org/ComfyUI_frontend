@@ -1,6 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 
-import { render, fireEvent } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { defineComponent } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -56,7 +57,7 @@ const AssetsListItemStub = defineComponent({
     :data-preview-url="previewUrl"
     :data-is-video-preview="isVideoPreview"
     data-testid="assets-list-item"
-  ><button data-testid="preview-click-trigger" @click="$emit('preview-click')" /><slot /></div>`
+  ><button data-testid="preview-click-trigger" @click="$emit('preview-click')" /><slot /><slot name="actions" /></div>`
 })
 
 const buildAsset = (id: string, name: string): AssetItem =>
@@ -172,5 +173,61 @@ describe('AssetsSidebarListView', () => {
     await fireEvent.dblClick(stub)
 
     expect(onPreviewAsset).toHaveBeenCalledWith(imageAsset)
+  })
+
+  for (const [label, keys] of [
+    ['Enter', '{Enter}'],
+    ['Space', '{ }']
+  ] as const) {
+    it(`does not select a focused asset with ${label} (#16308: missing keyboard handler)`, async () => {
+      const user = userEvent.setup()
+      const imageAsset = {
+        ...buildAsset(`image-asset-${label}`, 'image.png'),
+        user_metadata: {}
+      } satisfies AssetItem
+      const onSelectAsset = vi.fn()
+
+      renderListView([buildOutputItem(imageAsset)], {
+        selectableAssets: [imageAsset],
+        'onSelect-asset': onSelectAsset
+      })
+
+      const item = screen.getByRole('button', {
+        name: 'assetBrowser.ariaLabel.assetCard'
+      })
+      item.focus()
+      expect(item).toHaveFocus()
+
+      await user.keyboard(keys)
+
+      expect(onSelectAsset).not.toHaveBeenCalled()
+    })
+  }
+
+  it('does not select an asset when Enter activates its actions button', async () => {
+    const user = userEvent.setup()
+    const imageAsset = {
+      ...buildAsset('image-asset-actions', 'image.png'),
+      user_metadata: {}
+    } satisfies AssetItem
+    const onSelectAsset = vi.fn()
+
+    renderListView([buildOutputItem(imageAsset)], {
+      selectableAssets: [imageAsset],
+      'onSelect-asset': onSelectAsset
+    })
+
+    const item = screen.getByRole('button', {
+      name: 'assetBrowser.ariaLabel.assetCard'
+    })
+    await user.hover(item)
+
+    const actionsButton = await screen.findByRole('button', {
+      name: 'mediaAsset.actions.moreOptions'
+    })
+    actionsButton.focus()
+    await user.keyboard('{Enter}')
+
+    expect(onSelectAsset).not.toHaveBeenCalled()
   })
 })
