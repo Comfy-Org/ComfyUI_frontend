@@ -55,14 +55,48 @@ describe('ServerlessHowItWorksSection', () => {
 
     await setAllIntersecting(true)
     expect(container.querySelectorAll('.animate-dash-flow')).toHaveLength(6)
+    expect(container.querySelectorAll('animateMotion')).toHaveLength(3)
 
     await setAllIntersecting(false)
     expect(container.querySelectorAll('.animate-dash-flow')).toHaveLength(0)
+    expect(container.querySelectorAll('animateMotion')).toHaveLength(0)
 
     await setAllIntersecting(true)
     visibilityState.mockReturnValue('hidden')
     document.dispatchEvent(new Event('visibilitychange'))
     await nextTick()
     expect(container.querySelectorAll('.animate-dash-flow')).toHaveLength(0)
+  })
+
+  it('shuffles outlines without restarting orbits and pauses changes offscreen', async () => {
+    vi.useFakeTimers()
+    vi.spyOn(Math, 'random').mockReturnValue(0.4)
+    const { container, unmount } = render(ServerlessHowItWorksSection)
+    await setAllIntersecting(true)
+
+    const motions = [...container.querySelectorAll('animateMotion')]
+    const dottedMember = () =>
+      container.querySelector('circle[stroke-dasharray]')?.parentElement
+        ?.textContent
+    const initialMember = dottedMember()
+
+    await vi.advanceTimersByTimeAsync(5000)
+    expect(dottedMember()).not.toBe(initialMember)
+    for (const motion of motions) {
+      expect(container.contains(motion)).toBe(true)
+    }
+
+    await setAllIntersecting(false)
+    const pausedMember = dottedMember()
+    await vi.advanceTimersByTimeAsync(15000)
+    expect(dottedMember()).toBe(pausedMember)
+
+    await setAllIntersecting(true)
+    await vi.advanceTimersByTimeAsync(5000)
+    expect(dottedMember()).not.toBe(pausedMember)
+    unmount()
+    expect(vi.getTimerCount()).toBe(0)
+    await vi.advanceTimersByTimeAsync(15000)
+    expect(vi.getTimerCount()).toBe(0)
   })
 })
