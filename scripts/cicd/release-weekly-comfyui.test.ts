@@ -10,25 +10,53 @@ interface WorkflowStep {
   run?: string
   with?: {
     path?: string
+    ref?: string
     version?: number | string
     package_json_file?: string
   }
 }
 
-interface Workflow {
-  jobs?: {
-    'publish-pypi'?: {
-      steps?: WorkflowStep[]
-    }
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+
+const isWorkflowStep = (value: unknown): value is WorkflowStep => {
+  if (!isRecord(value)) return false
+  const optionalStrings = ['name', 'id', 'uses', 'run']
+  if (
+    optionalStrings.some(
+      (key) => value[key] !== undefined && typeof value[key] !== 'string'
+    )
+  ) {
+    return false
   }
+  return value.with === undefined || isRecord(value.with)
 }
 
-const steps = (() => {
-  const workflow = parse(
-    readFileSync('.github/workflows/release-weekly-comfyui.yaml', 'utf8')
-  ) as Workflow
-  return workflow.jobs?.['publish-pypi']?.steps ?? []
-})()
+/**
+ * Read the `publish-pypi` steps out of the workflow without asserting the
+ * parsed YAML's shape: a bad parse should fail here with a clear message
+ * rather than surface as an unrelated undefined further down.
+ */
+const readPublishPypiSteps = (path: string): WorkflowStep[] => {
+  const parsed: unknown = parse(readFileSync(path, 'utf8'))
+  expect(isRecord(parsed), `${path} did not parse to a mapping`).toBe(true)
+
+  const jobs = (parsed as Record<string, unknown>).jobs
+  expect(isRecord(jobs), `${path} has no jobs mapping`).toBe(true)
+
+  const job = (jobs as Record<string, unknown>)['publish-pypi']
+  expect(isRecord(job), `${path} has no publish-pypi job`).toBe(true)
+
+  const steps = (job as Record<string, unknown>).steps
+  expect(Array.isArray(steps), 'publish-pypi has no steps array').toBe(true)
+  expect((steps as unknown[]).every(isWorkflowStep)).toBe(true)
+
+  return steps as WorkflowStep[]
+}
+
+const steps = readPublishPypiSteps(
+  '.github/workflows/release-weekly-comfyui.yaml'
+)
 
 const indexOfStep = (name: string) =>
   steps.findIndex((step) => step.name === name)
@@ -38,8 +66,15 @@ describe('weekly ComfyUI release', () => {
   const resolveIndex = indexOfStep('Resolve legacy pnpm version')
   const pnpmIndex = indexOfStep('Install pnpm')
 
-  it('installs pnpm only after the release tag is checked out', () => {
+  it('checks out the release tag being published', () => {
     expect(checkoutIndex).toBeGreaterThanOrEqual(0)
+    expect(steps[checkoutIndex].uses).toMatch(/^actions\/checkout@/)
+    expect(steps[checkoutIndex].with?.ref).toBe(
+      'v${{ needs.resolve-version.outputs.target_version }}'
+    )
+  })
+
+  it('installs pnpm only after the release tag is checked out', () => {
     expect(pnpmIndex).toBeGreaterThan(checkoutIndex)
     expect(steps[pnpmIndex].uses).toMatch(/^pnpm\/action-setup@/)
   })
