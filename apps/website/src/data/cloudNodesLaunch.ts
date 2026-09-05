@@ -1,4 +1,7 @@
-import type { ModelLaunchPage } from '../templates/model-launch/types'
+import type {
+  ModelLaunchMedia,
+  ModelLaunchPage
+} from '../templates/model-launch/types'
 
 import { externalLinks } from '../config/routes'
 
@@ -6,9 +9,26 @@ import { externalLinks } from '../config/routes'
 // shape is the same: one hero, how it works, pricing, FAQ. Reusing the template
 // means no new components and the same locale coverage the model pages get.
 //
-// PLACEHOLDER MEDIA: the hero still is an existing site asset. Replace it with
-// a capture of a Comfy Cloud node on canvas before this ships.
-const HERO_STILL = '/hero/input.webp'
+// The launch film, encoded to the site's web video profile and served from
+// media.comfy.org. It is 15s, 1280x720, and carries its own soundtrack.
+//
+// The poster is cut from the film's own node-graph beat (t=2.6s) rather than
+// frame 0: it shows a real `Comfy Cloud Flux 2 Text to Image` node on canvas
+// with its widgets and BETA pill legible, which is the single clearest frame
+// for explaining what this page is about. Frame 0 is a near-black orbit shot
+// and reads as an empty box before the video loads.
+//
+// The `_v1` suffixes are not decoration. These objects ship
+// `cache-control: public,max-age=3600`, so the edge keeps serving old bytes for
+// up to an hour no matter how many times the same key is re-uploaded. A new key
+// is the only same-hour bust — version the filename again on the next swap.
+const media = {
+  hero: {
+    kind: 'video',
+    src: 'https://media.comfy.org/website/cloud-nodes/hero_v1.mp4',
+    posterSrc: 'https://media.comfy.org/website/cloud-nodes/hero-poster_v1.webp'
+  }
+} as const satisfies Record<string, ModelLaunchMedia>
 
 // Where every CTA lands. Local users need a Comfy account to spend credits, and
 // the node itself is discovered in the node library once ComfyUI ships it.
@@ -20,8 +40,14 @@ export const cloudNodesPage: ModelLaunchPage = {
   breadcrumbLabelKey: 'cloudNodesLaunch.breadcrumb.model',
   breadcrumbUpdatedKey: 'cloudNodesLaunch.breadcrumb.updated',
   hero: {
-    layout: 'overlay',
-    placeholderImageSrc: HERO_STILL,
+    // The film carries its own title cards, so an 'overlay' layout would stack
+    // site copy on top of burnt-in copy. Lead with the media instead, the way
+    // /minimax reads, and let the heading sit under it.
+    layout: 'media-first',
+    videoSrc: media.hero.src,
+    posterSrc: media.hero.posterSrc,
+    // Phones get the poster rather than a 2.8MB download they cannot hear.
+    mobileFallbackImageSrc: media.hero.posterSrc,
     badgeKeys: [
       'cloudNodesLaunch.hero.tagNoSubscription',
       'cloudNodesLaunch.hero.tagOpenModels',
@@ -59,17 +85,23 @@ export const cloudNodesPage: ModelLaunchPage = {
     items: [
       {
         id: 'update-comfyui',
-        title: { en: 'Update ComfyUI', 'zh-CN': '更新 ComfyUI' },
+        title: {
+          en: 'Update to v0.34.5 or later',
+          'zh-CN': '更新到 v0.34.5 或更高版本'
+        },
         description: {
-          en: 'The Comfy Cloud nodes arrive with the release, alongside every other partner node.',
-          'zh-CN': '随版本更新一同提供，与其他合作伙伴节点一样。'
+          // Never a bare version number: this copy outlives the release, and
+          // "v0.34.5" alone reads as "only this version" the day v0.34.6 ships.
+          en: 'The Comfy Cloud nodes ship in ComfyUI v0.34.5. Update and restart, and they appear in the node library alongside every other partner node.',
+          'zh-CN':
+            'Comfy Cloud 节点随 ComfyUI v0.34.5 发布。更新并重启后，它们会与其他合作伙伴节点一同出现在节点库中。'
         }
       },
       {
         id: 'drop-in-a-node',
         title: { en: 'Drop one into your graph', 'zh-CN': '拖入你的工作流' },
         description: {
-          en: 'Search the node library for Comfy Cloud. Wire it up like any other node.',
+          en: 'Search the node library for "Comfy Cloud". Wire it up like any other node.',
           'zh-CN': '在节点库中搜索 Comfy Cloud，像其他节点一样连线即可。'
         }
       },

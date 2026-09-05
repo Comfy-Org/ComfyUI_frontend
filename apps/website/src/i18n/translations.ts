@@ -8400,16 +8400,16 @@ Enterprise`
     'zh-CN': '开源模型'
   },
   'cloudNodesLaunch.hero.tagPayPerRun': {
-    en: 'Pay Per Run',
-    'zh-CN': '按次付费'
+    en: 'Pay Per GPU-Second',
+    'zh-CN': '按 GPU 秒计费'
   },
   'cloudNodesLaunch.hero.title': {
-    en: 'Your graph stays local.',
-    'zh-CN': '工作流留在本地。'
+    en: 'Your graph.',
+    'zh-CN': '你的工作流。'
   },
   'cloudNodesLaunch.hero.titleRest': {
-    en: '\nThe GPU does not.',
-    'zh-CN': '\nGPU 不必如此。'
+    en: '\nOur GPUs.',
+    'zh-CN': '\n我们的 GPU。'
   },
   'cloudNodesLaunch.hero.description': {
     en: 'Comfy Cloud nodes run the newest open models on our GPUs from inside your own ComfyUI. Nothing to download, no VRAM floor, and no plan to buy. You are billed per GPU-second in credits, the same way every other partner node works.',
@@ -8429,8 +8429,9 @@ Enterprise`
     'zh-CN': '上线特惠：GPU 时长五折'
   },
   'cloudNodesLaunch.pricing.banner.subtitle': {
-    en: 'Every Comfy Cloud node runs at half the usual GPU rate during the launch window.',
-    'zh-CN': '上线期间，所有 Comfy Cloud 节点均以常规 GPU 费率的一半运行。'
+    en: 'Every Comfy Cloud node runs at half the usual GPU rate through 11:59pm PT on Monday, September 7. The discount comes off your bill, so the node still shows the standard rate.',
+    'zh-CN':
+      '截至太平洋时间 9 月 7 日（周一）23:59，所有 Comfy Cloud 节点均以常规 GPU 费率的一半运行。折扣在结算时抵扣，因此节点上仍显示标准费率。'
   },
   'cloudNodesLaunch.pricing.banner.cta': {
     en: 'Claim the offer',
