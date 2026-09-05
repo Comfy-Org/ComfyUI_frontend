@@ -1,0 +1,10 @@
+diff --git a/browser_tests/tests/example.spec.ts b/browser_tests/tests/example.spec.ts
+index 1111111..2222222 100644
+--- a/browser_tests/tests/example.spec.ts
++++ b/browser_tests/tests/example.spec.ts
+@@ -1,1 +2,5 @@
++// test.skip('documented example')
++/* test.fixme('another example') */
++const note = "test.skip('not executable')"
++
+ test.skip('existing skip')

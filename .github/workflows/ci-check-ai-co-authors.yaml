@@ -18,3 +18,9 @@ jobs:
 
       - name: Check commits for AI co-author trailers
         run: bash .github/scripts/check-ai-co-authors.sh "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}"
+
+      - name: Test browser skip accountability checker
+        run: node --test scripts/check-test-skip-accountability.self-test.mjs
+
+      - name: Check browser test skips have restoration tracking
+        run: node scripts/check-test-skip-accountability.mjs --base-sha "${{ github.event.pull_request.base.sha }}"
