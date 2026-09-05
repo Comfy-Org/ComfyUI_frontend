@@ -11,13 +11,36 @@ vi.mock('node:fs/promises', () => ({ rm: vi.fn() }))
 class FakeChild extends EventEmitter {
   exitCode: number | null = null
   signalCode: NodeJS.Signals | null = null
-  readonly pid = 100
+
+  constructor(readonly pid = 100) {
+    super()
+  }
 
   exit(code: number): void {
     this.exitCode = code
     this.emit('exit', code)
   }
 }
+
+describe('supervise state', () => {
+  it('keeps the first child exit code as the lifecycle result', async () => {
+    vi.spyOn(process, 'kill').mockImplementation(() => {
+      throw Object.assign(new Error('missing'), { code: 'ESRCH' })
+    })
+    const first = new FakeChild(100)
+    const second = new FakeChild(101)
+    const supervisor = supervise('/tmp/agent-data')
+    supervisor.watch(first as unknown as ChildProcess)
+    supervisor.watch(second as unknown as ChildProcess)
+
+    second.exit(17)
+    first.exit(0)
+
+    await expect(supervisor.exitRequested).resolves.toBe(17)
+    expect(supervisor.requested()).toBe(true)
+    await expect(supervisor.stop(17)).resolves.toBe(17)
+  })
+})
 
 describe('waitForStartup', () => {
   it('returns a child failure without waiting for HTTP readiness', async () => {
@@ -108,12 +131,12 @@ describe('supervise teardown', () => {
     supervisor.watch(child as unknown as ChildProcess)
     child.exit(0)
 
-    const stopped = expect(supervisor.stop(1)).rejects.toThrow(
-      'Process groups 100 are still running; preserved /tmp/agent-data'
-    )
+    const stopped = supervisor.stop(1).catch((error: unknown) => error)
     await vi.advanceTimersByTimeAsync(3000)
 
-    await stopped
+    await expect(stopped).resolves.toMatchObject({
+      message: 'Process groups 100 are still running; preserved /tmp/agent-data'
+    })
     expect(rm).not.toHaveBeenCalled()
   })
 })
