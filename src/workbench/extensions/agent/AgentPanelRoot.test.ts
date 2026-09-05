@@ -2015,18 +2015,26 @@ describe('AgentPanelRoot workflow binding', () => {
     return bodies
   }
 
-  it('names the active workflow in the selector', async () => {
+  it('keeps the selected Agent target when the visible graph tab changes', async () => {
     makeTab('wf-42')
-    mockMessagesEndpoint('wf-42')
+    const bodies = mockMessagesEndpoint('wf-42')
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     expect(await screen.findAllByText('current')).not.toHaveLength(0)
 
     const other = addTab('workflows/other.json')
+    useAgentWorkflowTabBindingStore().bind('wf-other', other.path)
     hostStores.workflow.activeWorkflow = other
-    expect(await screen.findAllByText('other')).not.toHaveLength(0)
-    expect(screen.queryAllByText('current')).toHaveLength(0)
+    await nextTick()
+
+    expect(await screen.findAllByText('current')).not.toHaveLength(0)
+    await sendFromComposer('keep editing current')
+    expect(bodies[0]).toMatchObject({
+      workflow_id: 'wf-42',
+      current_tab: 'wf-42',
+      open_tabs: [{ workflow_id: 'wf-42', name: 'current' }]
+    })
   })
 
   it('hides the active workflow in history and restores it on return', async () => {
@@ -2326,7 +2334,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[0]).toMatchObject({ workflow_id: 'wf-42' })
   })
 
-  it('starts a new chat detached from the previously active workflow', async () => {
+  it('preserves the explicitly selected target when starting a new chat', async () => {
     makeTab('wf-42')
     const bodies = mockMessagesEndpoint('wf-42')
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
@@ -2335,18 +2343,34 @@ describe('AgentPanelRoot workflow binding', () => {
       screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
     )
 
-    expect(
-      await screen.findAllByText(i18n.global.t('agent.selectWorkflowForAgent'))
-    ).not.toHaveLength(0)
-    expect(screen.queryByText('current')).not.toBeInTheDocument()
+    expect(await screen.findAllByText('current')).not.toHaveLength(0)
 
     await sendFromComposer('fresh chat')
 
-    expect(bodies[0]).not.toHaveProperty('workflow_id')
-    expect(bodies[0]).not.toHaveProperty('current_tab')
     expect(bodies[0]).toMatchObject({
+      workflow_id: 'wf-42',
+      current_tab: 'wf-42',
       open_tabs: [{ workflow_id: 'wf-42', name: 'current' }]
     })
+  })
+
+  it('keeps the draft and opens the workflow picker instead of posting without a target', async () => {
+    const tab = makeTab('wf-42')
+    hostStores.workflow.activeWorkflow = null
+    const bodies = mockMessagesEndpoint('wf-42')
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const textbox = screen.getByRole('textbox')
+    await userEvent.type(textbox, 'do not lose this')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(bodies).toHaveLength(0)
+    expect(textbox).toHaveValue('do not lose this')
+    expect(
+      screen.getByPlaceholderText(i18n.global.t('agent.searchWorkflows'))
+    ).toBeVisible()
+    expect(hostStores.workflow.activeWorkflow).toBeNull()
+    expect(tab.path).toBe('workflows/current.json')
   })
 
   it('a detached send never re-arms the editing spinner on the old tab', async () => {
@@ -2802,7 +2826,7 @@ describe('AgentPanelRoot workflow binding', () => {
     ).toBeUndefined()
   })
 
-  it('resolves saved tabs to their cloud workflow ids by name', async () => {
+  it('does not include ordinary open tabs in turn context', async () => {
     makeTab()
     addTab('workflows/side.json')
     const bodies = mockMessagesEndpoint('wf-cloud-current', [
@@ -2814,10 +2838,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     expect(bodies[0]).toMatchObject({
       workflow_id: 'wf-cloud-current',
-      open_tabs: [
-        { workflow_id: 'wf-cloud-current', name: 'current' },
-        { workflow_id: 'wf-cloud-side', name: 'side' }
-      ],
+      open_tabs: [{ workflow_id: 'wf-cloud-current', name: 'current' }],
       current_tab: 'wf-cloud-current'
     })
   })
@@ -2914,7 +2935,7 @@ describe('AgentPanelRoot workflow binding', () => {
     })
   })
 
-  it('includes a backgrounded tab whose binding was persisted before a reload', async () => {
+  it('omits a backgrounded tab whose binding was persisted before a reload', async () => {
     localStorage.setItem(
       'Comfy.Agent.WorkflowTabBindings',
       JSON.stringify({ 'wf-old': 'workflows/mountain.json' })
@@ -2926,11 +2947,34 @@ describe('AgentPanelRoot workflow binding', () => {
     await renderAndSend('first message')
 
     expect(bodies[0]).toMatchObject({
+      open_tabs: [{ workflow_id: 'wf-42', name: 'current' }],
+      current_tab: 'wf-42'
+    })
+  })
+
+  it('sends the target first followed only by explicitly selected workflow references', async () => {
+    makeTab('wf-42')
+    const referenced = addTab('workflows/reference.json')
+    const ordinary = addTab('workflows/ordinary.json')
+    useAgentWorkflowTabBindingStore().bind('wf-reference', referenced.path)
+    useAgentWorkflowTabBindingStore().bind('wf-ordinary', ordinary.path)
+    const bodies = mockMessagesEndpoint('wf-42')
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await userEvent.type(screen.getByRole('textbox'), '@')
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: 'reference' })
+    )
+    await sendFromComposer('compare these')
+
+    expect(bodies[0]).toMatchObject({
+      workflow_id: 'wf-42',
+      current_tab: 'wf-42',
       open_tabs: [
         { workflow_id: 'wf-42', name: 'current' },
-        { workflow_id: 'wf-old', name: 'mountain' }
-      ],
-      current_tab: 'wf-42'
+        { workflow_id: 'wf-reference', name: 'reference' }
+      ]
     })
   })
 
