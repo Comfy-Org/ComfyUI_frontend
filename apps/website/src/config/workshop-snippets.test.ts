@@ -116,6 +116,47 @@ describe('Workshop snippets', () => {
     })
   })
 
+  it('preserves invalid JSON as text instead of dropping the input', () => {
+    const complex: WorkshopField[] = [
+      {
+        kind: 'text',
+        name: 'inputs',
+        label: 'Inputs',
+        required: true,
+        multiline: true,
+        valueType: 'json'
+      }
+    ]
+
+    expect(buildWorkshopInput(complex, { inputs: '[invalid' })).toEqual({
+      inputs: '[invalid'
+    })
+  })
+
+  it('renders empty and populated arrays as Python literals', () => {
+    const complex: WorkshopField[] = [
+      {
+        kind: 'text',
+        name: 'inputs',
+        label: 'Inputs',
+        required: true,
+        multiline: true,
+        valueType: 'json'
+      }
+    ]
+
+    expect(
+      buildWorkshopSnippet('python', 'example/model', complex, {
+        inputs: '[]'
+      })
+    ).toContain('"inputs": []')
+    expect(
+      buildWorkshopSnippet('python', 'example/model', complex, {
+        inputs: '[true, null, 3]'
+      })
+    ).toContain('[\n        True,\n        None,\n        3\n    ]')
+  })
+
   it('preserves an apostrophe in the HTTP request payload', () => {
     const snippet = buildWorkshopSnippet('http', 'bfl/flux-2-pro', promptOnly, {
       prompt: "don't stop"
