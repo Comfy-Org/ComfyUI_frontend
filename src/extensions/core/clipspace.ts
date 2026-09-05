@@ -1,5 +1,4 @@
-import { app } from '../../scripts/app'
-import { ComfyApp } from '../../scripts/app'
+import { app, ComfyApp } from '../../scripts/app'
 import { $el, ComfyDialog } from '../../scripts/ui'
 
 class ClipspaceDialog extends ComfyDialog {
@@ -85,7 +84,7 @@ class ClipspaceDialog extends ComfyDialog {
   override createButtons() {
     const buttons = []
 
-    for (let idx in ClipspaceDialog.items) {
+    for (const idx in ClipspaceDialog.items) {
       const item = ClipspaceDialog.items[idx]
       if (!item.contextPredicate || item.contextPredicate())
         buttons.push(ClipspaceDialog.items[idx])
@@ -150,7 +149,7 @@ class ClipspaceDialog extends ComfyDialog {
           $el('option', { value: 'selected' }, 'selected'),
           $el('option', { value: 'all' }, 'all')
         ]
-      ) as HTMLSelectElement
+      )
       combo2.value = ComfyApp.clipspace['img_paste_mode']
 
       const row2 = $el('tr', {}, [

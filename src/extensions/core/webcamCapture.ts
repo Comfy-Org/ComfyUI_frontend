@@ -38,7 +38,7 @@ app.registerExtension({
             // @ts-expect-error fixme ts strict error
             video.addEventListener('loadedmetadata', () => res(video), false)
             video.srcObject = stream
-            video.play()
+            void video.play()
           } catch (error) {
             const label = document.createElement('div')
             label.style.color = 'red'
@@ -62,7 +62,7 @@ app.registerExtension({
           }
         }
 
-        loadVideo()
+        void loadVideo()
 
         return { widget: node.addDOMWidget(inputName, 'WEBCAM', container) }
       }

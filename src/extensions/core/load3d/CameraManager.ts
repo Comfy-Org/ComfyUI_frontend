@@ -1,11 +1,11 @@
 import * as THREE from 'three'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
-import {
-  type CameraManagerInterface,
-  type CameraState,
-  type CameraType,
-  type EventManagerInterface
+import type {
+  CameraManagerInterface,
+  CameraState,
+  CameraType,
+  EventManagerInterface
 } from './interfaces'
 
 function resolveIncomingCustomUp(state: CameraState): THREE.Vector3 | null {

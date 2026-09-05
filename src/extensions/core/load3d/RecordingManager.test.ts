@@ -289,10 +289,7 @@ describe('RecordingManager', () => {
       const sprite = scene.children.find(
         (c) => c instanceof THREE.Sprite
       ) as THREE.Sprite
-      const disposeSpy = vi.spyOn(
-        sprite.material as THREE.SpriteMaterial,
-        'dispose'
-      )
+      const disposeSpy = vi.spyOn(sprite.material, 'dispose')
 
       manager.dispose()
 

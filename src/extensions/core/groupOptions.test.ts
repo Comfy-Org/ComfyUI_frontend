@@ -167,7 +167,7 @@ describe('Comfy.GroupOptions canvas menu', () => {
     const item = items.find((entry) => entry?.content === label)
     const menuElement: ContextMenuDivElement = document.createElement('div')
 
-    item?.callback?.call(menuElement)
+    void item?.callback?.call(menuElement)
 
     expect(nodes.map((node) => node.mode)).toEqual([expected, expected])
     expect(graphChange).toHaveBeenCalledTimes(nodes.length)

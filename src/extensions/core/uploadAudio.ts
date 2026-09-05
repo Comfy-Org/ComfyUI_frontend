@@ -19,7 +19,7 @@ import type { NodeExecutionOutput } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { DOMWidget } from '@/scripts/domWidget'
 import { useAudioService } from '@/services/audioService'
-import { type NodeLocatorId } from '@/types'
+import type { NodeLocatorId } from '@/types'
 import { widgetId } from '@/types/widgetId'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
@@ -237,9 +237,8 @@ app.registerExtension({
 
         // Load saved audio file widget values if restoring from workflow
         const onGraphConfigured = node.onGraphConfigured
-        node.onGraphConfigured = function () {
-          // @ts-expect-error fixme ts strict error
-          onGraphConfigured?.apply(this, arguments)
+        node.onGraphConfigured = function (...args) {
+          onGraphConfigured?.apply(this, args)
           onAudioWidgetUpdate()
         }
 
@@ -429,7 +428,9 @@ app.registerExtension({
                 if (mediaRecorder) {
                   try {
                     mediaRecorder.stop()
-                  } catch {}
+                  } catch {
+                    // Already stopped or never started; nothing to clean up
+                  }
                 }
                 useAudioService().stopAllTracks(currentStream)
                 currentStream = null

@@ -7,6 +7,7 @@ import type {
   ModelManagerInterface
 } from './interfaces'
 import { LoaderManager } from './LoaderManager'
+import type * as ModelAdapterModule from './ModelAdapter'
 import type {
   ModelAdapter,
   ModelAdapterCapabilities,
@@ -103,7 +104,7 @@ vi.mock('./SplatModelAdapter', () => ({
 
 vi.mock('./ModelAdapter', async () => {
   const actual =
-    await vi.importActual<typeof import('./ModelAdapter')>('./ModelAdapter')
+    await vi.importActual<typeof ModelAdapterModule>('./ModelAdapter')
   return { ...actual, fetchModelData: fetchModelDataMock }
 })
 
@@ -135,9 +136,7 @@ function makeLoaderManager() {
   )
   const internals = lm as unknown as LoaderManagerInternals
   const pick = (ext: string) =>
-    internals.pickAdapter.call(lm, ext, () =>
-      fetchModelDataMock()
-    ) as Promise<ModelAdapter | null>
+    internals.pickAdapter.call(lm, ext, () => fetchModelDataMock())
   return { lm, modelManager, eventManager, pick }
 }
 

@@ -10,7 +10,8 @@ import { DEFAULT_MODEL_CAPABILITIES } from './ModelAdapter'
 import type { AdapterRef, ModelAdapterCapabilities } from './ModelAdapter'
 import type { RecordingManager } from './RecordingManager'
 import type { SceneModelManager } from './SceneModelManager'
-import { Viewport3d, type Viewport3dDeps } from './Viewport3d'
+import { Viewport3d } from './Viewport3d'
+import type { Viewport3dDeps } from './Viewport3d'
 import { computeCameraFromMatrices } from './cameraFromMatrices'
 import { DIRECT_EXPORT_FORMATS } from './constants'
 import type {
@@ -337,7 +338,9 @@ class Load3d extends Viewport3d {
     if (this.loadingPromise) {
       try {
         await this.loadingPromise
-      } catch (e) {}
+      } catch {
+        // Superseded load: the previous failure is reported by its own caller
+      }
     }
 
     this.loadingPromise = this._loadModelInternal(
@@ -354,7 +357,9 @@ class Load3d extends Viewport3d {
       last = this.loadingPromise
       try {
         await last
-      } catch (e) {}
+      } catch {
+        // Only idleness matters here; load failures surface via loadModel
+      }
     }
   }
 

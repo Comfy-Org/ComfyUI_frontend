@@ -109,7 +109,7 @@ describe('load3dLazy', () => {
       input: {
         required: { model_file: ['STRING', {}] }
       }
-    } as Partial<ComfyNodeDef>)
+    })
 
     await hook({} as typeof LGraphNode, nodeData)
 
@@ -126,7 +126,7 @@ describe('load3dLazy', () => {
       input: {
         required: { model_file: ['STRING', {}] }
       }
-    } as Partial<ComfyNodeDef>)
+    })
 
     await hook({} as typeof LGraphNode, nodeData)
 
@@ -141,7 +141,7 @@ describe('load3dLazy', () => {
     const { hook } = await loadLazyExtensionFresh()
     const nodeData = makeNodeDef('Load3D', {
       input: { required: {} }
-    } as Partial<ComfyNodeDef>)
+    })
 
     await expect(
       hook({} as typeof LGraphNode, nodeData)
@@ -154,7 +154,7 @@ describe('load3dLazy', () => {
       input: {
         required: { model_file: ['STRING', { existing: true }] }
       }
-    } as Partial<ComfyNodeDef>)
+    })
 
     await hook({} as typeof LGraphNode, nodeData)
 

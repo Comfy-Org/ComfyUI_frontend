@@ -10,7 +10,7 @@ import { useDialogService } from '@/services/dialogService'
 import { checkMirrorReachable } from '@/utils/electronMirrorCheck'
 import { isDesktop } from '@/platform/distribution/types'
 import { electronAPI as getElectronAPI } from '@/utils/envUtil'
-;(async () => {
+void (async () => {
   if (!isDesktop) return
 
   const electronAPI = getElectronAPI()
@@ -22,7 +22,7 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
   const onChangeRestartApp = (newValue: unknown, oldValue: unknown) => {
     // Add a delay to allow changes to take effect before restarting.
     if (oldValue !== undefined && newValue !== oldValue) {
-      electronAPI.restartApp('Restart ComfyUI to apply changes.', 1500)
+      void electronAPI.restartApp('Restart ComfyUI to apply changes.', 1500)
     }
   }
 
@@ -60,7 +60,7 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
         ) => {
           if (!oldValue) return
 
-          electronAPI.Config.setWindowStyle(newValue)
+          void electronAPI.Config.setWindowStyle(newValue)
         }
       },
       {
@@ -113,7 +113,7 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
         label: 'Open Models Folder',
         icon: 'pi pi-folder-open',
         function() {
-          electronAPI.openModelsFolder()
+          void electronAPI.openModelsFolder()
         }
       },
       {
@@ -121,7 +121,7 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
         label: 'Open Outputs Folder',
         icon: 'pi pi-folder-open',
         function() {
-          electronAPI.openOutputsFolder()
+          void electronAPI.openOutputsFolder()
         }
       },
       {
@@ -129,7 +129,7 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
         label: 'Open Inputs Folder',
         icon: 'pi pi-folder-open',
         function() {
-          electronAPI.openInputsFolder()
+          void electronAPI.openInputsFolder()
         }
       },
       {
@@ -137,7 +137,7 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
         label: 'Open Custom Nodes Folder',
         icon: 'pi pi-folder-open',
         function() {
-          electronAPI.openCustomNodesFolder()
+          void electronAPI.openCustomNodesFolder()
         }
       },
       {
@@ -145,7 +145,7 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
         label: 'Open extra_model_paths.yaml',
         icon: 'pi pi-file',
         function() {
-          electronAPI.openModelConfig()
+          void electronAPI.openModelConfig()
         }
       },
       {
@@ -198,7 +198,7 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
             })
             if (proceed) {
               try {
-                electronAPI.restartAndInstall()
+                void electronAPI.restartAndInstall()
               } catch (error) {
                 log.error('Error installing update:', error)
                 toastStore.add({
@@ -229,7 +229,7 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
             type: 'reinstall'
           })
 
-          if (proceed) electronAPI.reinstall()
+          if (proceed) void electronAPI.reinstall()
         }
       },
       {
@@ -237,7 +237,7 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
         label: 'Restart',
         icon: 'pi pi-refresh',
         function() {
-          electronAPI.restartApp()
+          void electronAPI.restartApp()
         }
       },
       {
@@ -256,7 +256,7 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
             if (!confirmed) return
           }
 
-          electronAPI.quit()
+          void electronAPI.quit()
         }
       }
     ],
