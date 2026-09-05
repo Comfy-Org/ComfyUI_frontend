@@ -1,0 +1,32 @@
+{
+  "name": "@comfyorg/auth-core",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Framework-light auth building blocks shared by the app and the website: sign-in/sign-up validation schemas, the Turnstile widget and its gating state, Firebase auth error classification, and customer-provisioning orchestration",
+  "keywords": [],
+  "type": "module",
+  "exports": {
+    "./signInSchemas": "./src/signInSchemas.ts",
+    "./turnstile": "./src/turnstile.ts",
+    "./turnstileScript": "./src/turnstileScript.ts",
+    "./firebaseAuthError": "./src/firebaseAuthError.ts",
+    "./provisioning": "./src/provisioning.ts",
+    "./TurnstileWidget.vue": "./src/TurnstileWidget.vue"
+  },
+  "scripts": {
+    "lint": "oxlint src --type-aware && eslint src",
+    "typecheck": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "@comfyorg/shared-frontend-utils": "workspace:*",
+    "@vueuse/core": "catalog:",
+    "vue": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@testing-library/vue": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "vue-tsc": "catalog:"
+  }
+}
