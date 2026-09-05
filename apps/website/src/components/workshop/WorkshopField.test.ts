@@ -8,12 +8,13 @@ import WorkshopField from './WorkshopField.vue'
 
 function renderField(field: Field) {
   const updated = vi.fn()
+  const props = {
+    field,
+    modelValue: {},
+    'onUpdate:modelValue': updated
+  }
   render(WorkshopField, {
-    props: {
-      field,
-      modelValue: {},
-      'onUpdate:modelValue': updated
-    } as never
+    props
   })
   return updated
 }
