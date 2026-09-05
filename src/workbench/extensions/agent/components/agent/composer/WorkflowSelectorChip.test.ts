@@ -2,7 +2,7 @@ import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type { ComponentProps } from 'vue-component-type-helpers'
@@ -21,9 +21,11 @@ const i18n = createI18n({
         switchWorkflow: enMessages.agent.switchWorkflow,
         changeWorkflowForChat: enMessages.agent.changeWorkflowForChat,
         chooseWorkflow: enMessages.agent.chooseWorkflow,
+        selectWorkflowForAgent: 'Select a workflow for agent to work in',
         chooseWorkflowForChat: enMessages.agent.chooseWorkflowForChat,
-        dontWorkInWorkflow: enMessages.agent.dontWorkInWorkflow,
-        searchWorkflows: enMessages.agent.searchWorkflows
+        searchWorkflows: enMessages.agent.searchWorkflows,
+        currentTab: 'Current tab',
+        otherOpenWorkflows: 'Other open workflows'
       },
       g: {
         agentWorking: enMessages.g.agentWorking,
@@ -50,7 +52,12 @@ function renderChip(
 ) {
   const user = userEvent.setup()
   const emitted = render(WorkflowSelectorChip, {
-    props: { activeTab: tabs[0], tabs, ...props },
+    props: {
+      activeTab: tabs[0],
+      tabs,
+      visibleTabPath: tabs[0].path,
+      ...props
+    },
     global: { plugins: [i18n, pinia] }
   })
   return { user, ...emitted }
@@ -62,7 +69,11 @@ const trigger = () =>
 describe('WorkflowSelectorChip', () => {
   it('names the active workflow on the trigger and lists every open tab', async () => {
     const { user } = renderChip()
-    expect(trigger()).toHaveTextContent('portrait')
+    const workflowName = within(trigger()).getByText('portrait')
+    expect(trigger()).toHaveClass('flex-1', 'font-normal')
+    expect(trigger()).not.toHaveClass('font-medium')
+    expect(workflowName).not.toHaveClass('underline', 'decoration-solid')
+    expect(screen.getAllByRole('button')).toHaveLength(1)
 
     await user.hover(trigger())
     expect(
@@ -79,6 +90,33 @@ describe('WorkflowSelectorChip', () => {
       'portrait',
       'upscale'
     ])
+    expect(
+      within(screen.getByRole('group', { name: 'Current tab' })).getByRole(
+        'menuitemradio'
+      )
+    ).toHaveTextContent('portrait')
+    expect(
+      within(
+        screen.getByRole('group', { name: 'Other open workflows' })
+      ).getByRole('menuitemradio')
+    ).toHaveTextContent('upscale')
+  })
+
+  it('separates the visible tab section from the checked Agent target', async () => {
+    const { user } = renderChip({ visibleTabPath: tabs[1].path })
+    await user.click(trigger())
+
+    const visibleRow = within(
+      await screen.findByRole('group', { name: 'Current tab' })
+    ).getByRole('menuitemradio')
+    const targetRow = within(
+      screen.getByRole('group', { name: 'Other open workflows' })
+    ).getByRole('menuitemradio')
+
+    expect(visibleRow).toHaveTextContent('upscale')
+    expect(visibleRow).not.toBeChecked()
+    expect(targetRow).toHaveTextContent('portrait')
+    expect(targetRow).toBeChecked()
   })
 
   it('exposes only the active tab as the checked menu item', async () => {
@@ -92,29 +130,35 @@ describe('WorkflowSelectorChip', () => {
     ).toHaveTextContent('upscale')
   })
 
-  it('emits one selected tab path from the controlled radio group', async () => {
-    const { user, emitted } = renderChip()
+  it('awaits one selected tab path before closing the controlled menu', async () => {
+    const selectTab = vi.fn(async () => true)
+    const { user } = renderChip({ selectTab })
     await user.click(trigger())
     await user.click(await screen.findByText('upscale'))
 
-    expect(emitted('selectTab')).toEqual([['workflows/upscale.json']])
+    expect(selectTab).toHaveBeenCalledExactlyOnceWith('workflows/upscale.json')
+    expect(screen.queryByRole('menu')).toBeNull()
 
     await user.click(trigger())
     expect(
       await screen.findByRole('menuitemradio', { checked: true })
     ).toHaveTextContent('portrait')
-    expect(emitted('selectTab')).toHaveLength(1)
+    expect(selectTab).toHaveBeenCalledTimes(1)
   })
 
   it('shows the choose-a-workflow placeholder without an active tab', async () => {
     const { user } = renderChip({ activeTab: null })
-    expect(trigger()).toHaveTextContent(enMessages.agent.chooseWorkflow)
-    expect(
-      screen.queryByRole('button', {
-        name: enMessages.agent.dontWorkInWorkflow
-      })
-    ).toBeNull()
-
+    const emptyTrigger = trigger()
+    expect(emptyTrigger).toHaveTextContent(
+      'Select a workflow for agent to work in'
+    )
+    expect(emptyTrigger).toHaveClass(
+      'border',
+      'border-white/15',
+      'bg-white/4.5',
+      'font-normal'
+    )
+    expect(emptyTrigger).not.toHaveClass('flex-1', 'font-medium')
     await user.hover(trigger())
     expect(
       await screen.findByRole('tooltip', { hidden: true })
@@ -125,49 +169,17 @@ describe('WorkflowSelectorChip', () => {
 
   it('detached mode has no current workflow even with an active tab', async () => {
     const { user } = renderChip({ detached: true })
-    expect(trigger()).toHaveTextContent(enMessages.agent.chooseWorkflow)
+    expect(trigger()).toHaveTextContent(
+      'Select a workflow for agent to work in'
+    )
     expect(trigger()).not.toHaveTextContent('portrait')
-    expect(
-      screen.queryByRole('button', {
-        name: enMessages.agent.dontWorkInWorkflow
-      })
-    ).toBeNull()
-
     await user.click(trigger())
     expect(screen.queryByRole('menuitemradio', { checked: true })).toBeNull()
-  })
-
-  it('emits clear from the X button', async () => {
-    const { user, emitted } = renderChip()
-    const clear = screen.getByRole('button', {
-      name: enMessages.agent.dontWorkInWorkflow
-    })
-
-    await user.hover(clear)
     expect(
-      await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent(enMessages.agent.dontWorkInWorkflow)
-    await user.click(clear)
-
-    expect(emitted('clear')).toHaveLength(1)
-  })
-
-  it('delays each tooltip when moving between selector controls', async () => {
-    const { user } = renderChip()
-    const selector = trigger()
-    const clear = screen.getByRole('button', {
-      name: enMessages.agent.dontWorkInWorkflow
-    })
-
-    await user.hover(selector)
-    await screen.findByRole('tooltip', { hidden: true })
-    await user.unhover(selector)
-    await user.hover(clear)
-
-    expect(screen.queryByRole('tooltip')).toBeNull()
-    expect(
-      await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent(enMessages.agent.dontWorkInWorkflow)
+      within(screen.getByRole('group', { name: 'Current tab' })).getByRole(
+        'menuitemradio'
+      )
+    ).toHaveTextContent('portrait')
   })
 
   it('shows unsaved dots on a modified active workflow trigger and row', async () => {
@@ -204,7 +216,7 @@ describe('WorkflowSelectorChip', () => {
   })
 
   it('filters the tab list as the search input is typed into', async () => {
-    const { user } = renderChip()
+    const { user } = renderChip({ visibleTabPath: tabs[1].path })
     await user.click(trigger())
 
     const search = await screen.findByPlaceholderText(
@@ -214,6 +226,12 @@ describe('WorkflowSelectorChip', () => {
 
     const items = screen.getAllByRole('menuitemradio')
     expect(items.map((item) => item.textContent.trim())).toEqual(['upscale'])
+    expect(
+      screen.getByRole('group', { name: 'Current tab' })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('group', { name: 'Other open workflows' })
+    ).toBeNull()
   })
 
   it('closes the dropdown on Escape from the focused search input', async () => {

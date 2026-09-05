@@ -11,9 +11,9 @@ import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { buildAgentTooltipConfig } from '@/composables/useTooltipConfig'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
 import type { ActiveTab } from '../../types/activeTab'
+import type { WorkflowReference } from '../../types/workflowReference'
 import type { TurnId } from '../../schemas/agentApiSchema'
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
@@ -37,11 +37,16 @@ const {
   canOpenAssets = false,
   isMaximized = false,
   selectionTags = [],
+  workflowReferences = [],
+  availableWorkflows = [],
+  editableWorkflowId,
   activeTab = null,
   workflowTabs = [],
+  visibleTabPath = null,
+  selectingTabPath = null,
+  selectTab = async () => false,
   workflowDetached = false,
   getMentionNodes = () => [],
-  getMentionAssets = async () => [],
   sessionId = null,
   customTitle,
   historyGroups,
@@ -56,11 +61,16 @@ const {
   canOpenAssets?: boolean
   isMaximized?: boolean
   selectionTags?: SelectedNode[]
+  workflowReferences?: WorkflowReference[]
+  availableWorkflows?: WorkflowReference[]
+  editableWorkflowId?: string
   activeTab?: ActiveTab | null
   workflowTabs?: ActiveTab[]
+  visibleTabPath?: string | null
+  selectingTabPath?: string | null
+  selectTab?: (path: string) => Promise<boolean>
   workflowDetached?: boolean
   getMentionNodes?: () => SelectedNode[]
-  getMentionAssets?: () => AssetItem[] | Promise<AssetItem[]>
   sessionId?: string | null
   customTitle?: string
   historyGroups: HistoryGroups
@@ -68,17 +78,21 @@ const {
   answeringAskIds?: ReadonlySet<string>
 }>()
 const emit = defineEmits<{
-  send: [text: string, attachments: ComposerAttachment[]]
+  send: [
+    text: string,
+    attachments: ComposerAttachment[],
+    workflowReferences?: WorkflowReference[]
+  ]
   stop: []
   attach: []
   openAssets: []
   selectNodes: []
   removeTag: [id: string]
-  focusTag: [id: string]
   mentionPick: [node: SelectedNode]
+  workflowReferencePick: [workflow: WorkflowReference]
+  requestWorkflowReferences: []
+  removeWorkflowReference: [id: string]
   feedback: [turnId: string, vote: 'up' | 'down' | null]
-  selectTab: [path: string]
-  clearWorkflow: []
   newChat: []
   toggleSize: []
   close: []
@@ -90,6 +104,7 @@ const emit = defineEmits<{
   renameChat: [title: string]
   answerAsk: [askId: string, selection: 'run' | 'cancel']
   openWorkflow: [workflowId: string, workflowName?: string]
+  openReferenceWorkflow: [workflowId: string, workflowName: string]
 }>()
 
 const showHistory = ref(false)
@@ -108,6 +123,11 @@ function onSelectHistory(id: string): void {
 }
 
 const composerRef = ref<InstanceType<typeof Composer>>()
+const workflowSelectorRef = ref<InstanceType<typeof WorkflowSelectorChip>>()
+
+function onWorkflowTargetRequired(): void {
+  workflowSelectorRef.value?.openPicker()
+}
 
 const { t } = useI18n()
 
@@ -175,6 +195,15 @@ function updateAttachment(
 
 function removeAttachment(id: string): void {
   composerRef.value?.removeAttachment(id)
+}
+
+function onComposerSend(
+  text: string,
+  attachments: ComposerAttachment[],
+  references?: WorkflowReference[]
+): void {
+  if (references !== undefined) emit('send', text, attachments, references)
+  else emit('send', text, attachments)
 }
 
 defineExpose({ addAttachment, updateAttachment, removeAttachment })
@@ -300,6 +329,10 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             (workflowId, workflowName) =>
               emit('openWorkflow', workflowId, workflowName)
           "
+          @open-reference-workflow="
+            (workflowId, workflowName) =>
+              emit('openReferenceWorkflow', workflowId, workflowName)
+          "
         />
       </div>
     </template>
@@ -308,7 +341,10 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       <slot name="instrument" />
       <footer class="shrink-0 py-3">
         <div class="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4">
-          <RunNoticeBanner :expanded="isMaximized" />
+          <RunNoticeBanner
+            :expanded="isMaximized"
+            :workflow-name="workflowDetached ? undefined : activeTab?.name"
+          />
           <Composer
             ref="composerRef"
             :streaming="streaming"
@@ -316,24 +352,34 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             :can-attach="canAttach"
             :can-open-assets="canOpenAssets"
             :selection-tags="selectionTags"
+            :workflow-references="workflowReferences"
+            :available-workflows="availableWorkflows"
+            :editable-workflow-id="editableWorkflowId"
+            :has-workflow-target="!workflowDetached"
+            :target-selecting="selectingTabPath !== null"
             :get-mention-nodes="getMentionNodes"
-            :get-mention-assets="getMentionAssets"
-            @send="(text, attachments) => emit('send', text, attachments)"
+            @send="onComposerSend"
             @stop="emit('stop')"
             @attach="emit('attach')"
             @open-assets="emit('openAssets')"
             @select-nodes="emit('selectNodes')"
             @remove-tag="emit('removeTag', $event)"
-            @focus-tag="emit('focusTag', $event)"
             @mention-pick="emit('mentionPick', $event)"
+            @workflow-reference-pick="emit('workflowReferencePick', $event)"
+            @request-workflow-references="emit('requestWorkflowReferences')"
+            @remove-workflow-reference="emit('removeWorkflowReference', $event)"
+            @workflow-target-required="onWorkflowTargetRequired"
           >
             <template #header>
               <WorkflowSelectorChip
+                ref="workflowSelectorRef"
                 :active-tab="activeTab"
                 :tabs="workflowTabs"
+                :visible-tab-path="visibleTabPath"
+                :selecting-tab-path="selectingTabPath"
+                :select-tab="selectTab"
                 :detached="workflowDetached"
-                @select-tab="emit('selectTab', $event)"
-                @clear="emit('clearWorkflow')"
+                :disabled="streaming || submitting"
               />
             </template>
           </Composer>

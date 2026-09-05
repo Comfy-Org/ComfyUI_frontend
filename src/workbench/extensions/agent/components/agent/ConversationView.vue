@@ -27,6 +27,7 @@ const emit = defineEmits<{
   editPrompt: [text: string]
   answerAsk: [askId: string, selection: 'run' | 'cancel']
   openWorkflow: [workflowId: string, workflowName?: string]
+  openReferenceWorkflow: [workflowId: string, workflowName: string]
 }>()
 
 const { t } = useI18n()
@@ -87,8 +88,13 @@ watch(
               :text="entry.text"
               :attachments="entry.attachments"
               :tags="entry.tags"
+              :workflow-references="entry.workflowReferences"
               :editable="entry.id === editableTurnId"
               @edit="emit('editPrompt', $event)"
+              @open-reference-workflow="
+                (workflowId: string, workflowName: string) =>
+                  emit('openReferenceWorkflow', workflowId, workflowName)
+              "
             />
             <AgentMessage
               v-else

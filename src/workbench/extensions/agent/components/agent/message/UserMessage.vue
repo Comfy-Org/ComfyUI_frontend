@@ -9,6 +9,7 @@ import { api } from '@/scripts/api'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 import type { UserAttachment } from '../../../stores/agent/agentConversationStore'
+import type { WorkflowReference } from '../../../types/workflowReference'
 import type { ReplyAsset } from '../../../utils/replyAssets'
 import AgentTooltip from '../AgentTooltip.vue'
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
@@ -17,15 +18,18 @@ const {
   text,
   attachments = [],
   tags = [],
+  workflowReferences = [],
   editable = false
 } = defineProps<{
   text: string
   attachments?: UserAttachment[]
   tags?: string[]
+  workflowReferences?: WorkflowReference[]
   editable?: boolean
 }>()
 const emit = defineEmits<{
   edit: [text: string]
+  openReferenceWorkflow: [workflowId: string, workflowName: string]
 }>()
 
 const { t } = useI18n()
@@ -109,9 +113,22 @@ const splitAttachments = computed(() => {
     </div>
     <div
       v-if="text"
-      class="border-agent-border bg-agent-surface-raised text-agent-fg w-fit max-w-full rounded-[10px] border px-2.5 py-1.5 text-sm wrap-break-word whitespace-pre-wrap"
+      data-testid="user-message-bubble"
+      class="border-agent-border bg-agent-surface-raised text-agent-fg-muted flex w-fit max-w-full flex-wrap items-center gap-1 rounded-[10px] border px-2.5 py-1.5 text-sm/5 font-normal wrap-break-word whitespace-pre-wrap"
     >
-      {{ text }}
+      <button
+        v-for="workflow in workflowReferences"
+        :key="workflow.id"
+        type="button"
+        :aria-label="t('agent.openWorkflowTab', { name: workflow.name })"
+        data-testid="workflow-reference-chip"
+        class="inline-flex max-w-40 cursor-pointer items-center gap-1 rounded-sm border-0 bg-primary-background/30 px-1 py-0.5 align-middle text-xs/[15px] font-normal text-primary-background-hover ring-1 ring-primary-background/30 ring-inset"
+        @click="emit('openReferenceWorkflow', workflow.id, workflow.name)"
+      >
+        <span class="icon-[comfy--workflow] size-3.5 shrink-0" />
+        <span class="truncate">{{ workflow.name }}</span>
+      </button>
+      <span>{{ text }}</span>
     </div>
     <div
       v-if="text"

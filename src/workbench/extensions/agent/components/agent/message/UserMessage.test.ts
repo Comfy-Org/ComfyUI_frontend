@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
@@ -38,9 +38,12 @@ function renderMessage(props: {
   attachments?: { name: string; previewUrl?: string; ref?: string }[]
   tags?: string[]
   editable?: boolean
+  workflowReferences?: { id: string; name: string }[]
 }) {
+  const { workflowReferences, ...componentProps } = props
   return render(UserMessage, {
-    props,
+    props: componentProps,
+    attrs: { workflowReferences },
     global: {
       plugins: [i18n],
       stubs: {
@@ -61,6 +64,59 @@ function stubbedAssets(): { url: string; filename: string; kind: string }[] {
 }
 
 describe('UserMessage', () => {
+  it('renders submitted workflow references inline with the prompt snapshot', () => {
+    renderMessage({
+      text: 'Build a scene from water world.',
+      workflowReferences: [
+        { id: 'wf-1', name: 'Workflow 1' },
+        { id: 'wf-2', name: 'Workflow 2' }
+      ]
+    })
+
+    const bubble = screen.getByTestId('user-message-bubble')
+    const [firstWorkflowChip] = within(bubble).getAllByTestId(
+      'workflow-reference-chip'
+    )
+    expect(firstWorkflowChip).toHaveClass(
+      'bg-primary-background/30',
+      'ring-1',
+      'ring-inset',
+      'ring-primary-background/30',
+      'text-primary-background-hover',
+      'rounded-sm',
+      'text-xs/[15px]',
+      'font-normal'
+    )
+    expect(firstWorkflowChip).not.toHaveClass('font-medium')
+    expect(bubble).toHaveClass(
+      'flex',
+      'flex-wrap',
+      'gap-1',
+      'text-agent-fg-muted',
+      'text-sm/5',
+      'font-normal'
+    )
+    expect(within(bubble).getByText('Workflow 2')).toBeVisible()
+    expect(
+      within(bubble).getByText('Build a scene from water world.')
+    ).toBeVisible()
+  })
+
+  it('emits navigation without changing the editable target when a sent chip is clicked', async () => {
+    const view = renderMessage({
+      text: 'Compare this',
+      workflowReferences: [{ id: 'wf-reference', name: 'Reference' }]
+    })
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Open Reference' })
+    )
+
+    expect(view.emitted('openReferenceWorkflow')).toEqual([
+      ['wf-reference', 'Reference']
+    ])
+  })
+
   it('renders a caption-only placeholder tile for a preview-less attachment', () => {
     renderMessage({ text: '', attachments: [{ name: 'clip.bin' }] })
 

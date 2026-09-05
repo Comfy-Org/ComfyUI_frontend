@@ -23,7 +23,7 @@ vi.hoisted(() => {
 })
 
 import { i18n } from '@/i18n'
-import { assetService } from '@/platform/assets/services/assetService'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { app } from '@/scripts/app'
@@ -140,9 +140,11 @@ const hostStores = vi.hoisted(() => ({
   workflow: null as unknown as {
     activeWorkflow: FakeTab | null
     openWorkflows: FakeTab[]
+    workflows: FakeTab[]
     tabs: Map<string, FakeTab>
     openTabPaths: Set<string>
     getWorkflowByPath: (path: string) => FakeTab | null
+    syncWorkflows: ReturnType<typeof vi.fn>
     nodeToNodeLocatorId: (node: {
       graph?: { id?: string }
       id: string | number
@@ -168,9 +170,13 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
         return tab === undefined ? [] : [tab]
       })
     },
+    get workflows() {
+      return [...tabs.values()]
+    },
     tabs,
     openTabPaths,
     getWorkflowByPath: (path: string) => tabs.get(path) ?? null,
+    syncWorkflows: vi.fn(async () => undefined),
     nodeToNodeLocatorId: (node: {
       graph?: { id?: string }
       id: string | number
@@ -223,10 +229,15 @@ const workflowService = vi.hoisted(() => ({
     return true
   }),
   saveWorkflowAs: vi.fn(
-    async (
-      tab: { path: string; isTemporary: boolean; isModified: boolean },
-      _options?: { filename?: string }
-    ) => {
+    async (tab: FakeTab, options?: { filename?: string }) => {
+      if (options?.filename) {
+        hostStores.workflow.tabs.delete(tab.path)
+        hostStores.workflow.openTabPaths.delete(tab.path)
+        tab.filename = options.filename
+        tab.path = `${tab.directory}/${options.filename}.json`
+        hostStores.workflow.tabs.set(tab.path, tab)
+        hostStores.workflow.openTabPaths.add(tab.path)
+      }
       tab.isTemporary = false
       tab.isModified = false
       return true
@@ -238,6 +249,7 @@ const workflowService = vi.hoisted(() => ({
       hostStores.workflow.openTabPaths.add(tab.path)
       hostStores.workflow.activeWorkflow = known
     }
+    return true
   })
 }))
 
@@ -337,6 +349,7 @@ beforeEach(() => {
   workflowService.saveWorkflow.mockClear()
   workflowService.saveWorkflowAs.mockClear()
   workflowService.openWorkflow.mockClear()
+  hostStores.workflow.syncWorkflows.mockClear()
   focusNodeInstance.mockReset()
   socketSend.mockReset()
 })
@@ -360,6 +373,14 @@ function ack(workflowId: string, messageId = 'm-1') {
   return { thread_id: 'th-1', message_id: messageId, workflow_id: workflowId }
 }
 
+function renderWithSelectedTarget() {
+  const active = hostStores.workflow.activeWorkflow
+  useAgentPanelStore().selectedWorkflow = active
+    ? fromPartial<ComfyWorkflow>(active)
+    : null
+  return render(AgentPanelRoot, { global: { plugins: [i18n] } })
+}
+
 async function sendFromComposer(text: string): Promise<void> {
   await userEvent.type(screen.getByRole('textbox'), text)
   await userEvent.click(screen.getByRole('button', { name: 'Send' }))
@@ -367,7 +388,7 @@ async function sendFromComposer(text: string): Promise<void> {
 }
 
 async function renderAndSend(text: string): Promise<void> {
-  render(AgentPanelRoot, { global: { plugins: [i18n] } })
+  renderWithSelectedTarget()
   await sendFromComposer(text)
 }
 
@@ -408,7 +429,7 @@ describe('AgentPanelRoot session notices', () => {
           })
       )
     )
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
     const toast = useToastStore()
 
     ws.emit('agent_message_done', {})
@@ -461,6 +482,7 @@ async function openAddMenu(): Promise<void> {
 
 async function openMentionPicker(): Promise<void> {
   await userEvent.type(screen.getByRole('textbox'), '@')
+  await userEvent.click(screen.getByRole('menuitem', { name: 'Nodes' }))
 }
 
 type SelectionTestNode = {
@@ -577,7 +599,7 @@ async function enterNodeSelectionMode(): Promise<void> {
   await openAddMenu()
   await userEvent.click(
     await screen.findByRole('menuitem', {
-      name: i18n.global.t('agent.addNodesFromGraph')
+      name: i18n.global.t('agent.nodes')
     })
   )
 }
@@ -590,7 +612,7 @@ async function startVueNodeSelection() {
     else state.selectedItems.add(node)
     hostStores.canvas.updateSelectedItems()
   })
-  const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+  const panel = renderWithSelectedTarget()
   renderCanvasNodeButtons(state.nodes, selectClickedNode)
   useAgentPanelStore().isOpen = true
 
@@ -638,6 +660,9 @@ describe('AgentPanelRoot attach flow', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     ws.clear()
+    const tab = addTab('workflows/current.json')
+    hostStores.workflow.activeWorkflow = tab
+    useAgentWorkflowTabBindingStore().bind('wf-42', tab.path)
   })
 
   it('uploads a picked file, stages its ref, and forwards it on the next send', async () => {
@@ -658,7 +683,7 @@ describe('AgentPanelRoot attach flow', () => {
     })
     vi.stubGlobal('fetch', fetchMock)
 
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
 
     await openAddMenu()
     await userEvent.click(
@@ -694,7 +719,7 @@ describe('AgentPanelRoot attach flow', () => {
   it('uploads a picked video above 20MB when the server permits it', async () => {
     getServerFeature.mockReturnValue(100 * 1024 * 1024)
     const uploaded = stubUploadFetch()
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
 
     await openAddMenu()
     await userEvent.click(
@@ -717,7 +742,7 @@ describe('AgentPanelRoot attach flow', () => {
     const sidebar = useSidebarTabStore()
     sidebar.activeSidebarTabId = 'workflows'
 
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
 
     await openAddMenu()
     await userEvent.click(
@@ -734,7 +759,7 @@ describe('AgentPanelRoot attach flow', () => {
     const sidebar = useSidebarTabStore()
     sidebar.activeSidebarTabId = 'assets'
 
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
 
     await openAddMenu()
     await userEvent.click(
@@ -758,12 +783,12 @@ describe('AgentPanelRoot attach flow', () => {
       activeMode: 'builder:inputs'
     }
 
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
 
     await openAddMenu()
     expect(
       await screen.findByRole('menuitem', {
-        name: i18n.global.t('agent.addNodesFromGraph')
+        name: i18n.global.t('agent.nodes')
       })
     ).toBeInTheDocument()
     expect(
@@ -779,7 +804,7 @@ describe('AgentPanelRoot attach flow', () => {
     getServerFeature.mockReturnValue(24 * 1024 * 1024)
     executionErrors.showErrorOverlay.mockClear()
     stubUploadFetch()
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
     await nextTick()
 
     const movie = fileOfSize('movie.mp4', 25 * 1024 * 1024, 'video/mp4')
@@ -799,7 +824,7 @@ describe('AgentPanelRoot attach flow', () => {
   it('keeps the image limit at 20MB when the server permits more', async () => {
     getServerFeature.mockReturnValue(100 * 1024 * 1024)
     const uploaded = stubUploadFetch()
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
     await nextTick()
 
     const image = fileOfSize('huge.png', MAX_ATTACHMENT_BYTES + 1, 'image/png')
@@ -818,7 +843,7 @@ describe('AgentPanelRoot attach flow', () => {
   it('uploads a dropped video above 20MB when the server permits it', async () => {
     getServerFeature.mockReturnValue(100 * 1024 * 1024)
     const uploaded = stubUploadFetch()
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
     await nextTick()
 
     const movie = fileOfSize('movie.mp4', MAX_ATTACHMENT_BYTES + 1, 'video/mp4')
@@ -844,7 +869,7 @@ describe('AgentPanelRoot attach flow', () => {
     ['prompt.txt', 'text/plain']
   ])('attaches a dropped %s and uploads it', async ([name, type]) => {
     const uploaded = stubUploadFetch()
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
     await nextTick()
 
     expect(
@@ -859,7 +884,7 @@ describe('AgentPanelRoot attach flow', () => {
 
   it('names every approved format in the picker accept list', async () => {
     stubUploadFetch()
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
     await nextTick()
 
     const accept =
@@ -882,7 +907,7 @@ describe('AgentPanelRoot attach flow', () => {
 
   it('refreshes the input asset library after an upload', async () => {
     const uploaded = stubUploadFetch()
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
     await nextTick()
     const refresh = vi
       .spyOn(useAssetsStore().inputAssets, 'loadNew')
@@ -899,7 +924,7 @@ describe('AgentPanelRoot attach flow', () => {
   it('keeps the 20MB limit for an oversize audio file', async () => {
     getServerFeature.mockReturnValue(100 * 1024 * 1024)
     const uploaded = stubUploadFetch()
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
     await nextTick()
 
     const song = fileOfSize('big.mp3', MAX_ATTACHMENT_BYTES + 1, 'audio/mpeg')
@@ -919,7 +944,7 @@ describe('AgentPanelRoot attach flow', () => {
     // Without cancelling dragover the browser fires no drop at all, so this is
     // what makes the advertised drag-and-drop work.
     stubUploadFetch()
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
     await nextTick()
     const target = screen.getByRole('textbox')
 
@@ -931,7 +956,7 @@ describe('AgentPanelRoot attach flow', () => {
 
   it('shows the asset drop target during a trusted drag and clears it on leave', async () => {
     stubUploadFetch()
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
     await nextTick()
     const target = screen.getByRole('textbox')
     const data = {
@@ -952,7 +977,7 @@ describe('AgentPanelRoot attach flow', () => {
 
   it('rejects URI-only drags without showing or claiming the asset target', async () => {
     const uploaded = stubUploadFetch()
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
     await nextTick()
     const target = screen.getByRole('textbox')
     const data = {
@@ -1004,7 +1029,7 @@ describe('AgentPanelRoot attach flow', () => {
           })
         })
       )
-      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      renderWithSelectedTarget()
       await nextTick()
       const target = screen.getByRole('textbox')
       const dragData = {
@@ -1062,7 +1087,7 @@ describe('AgentPanelRoot attach flow', () => {
         }
       )
       vi.stubGlobal('fetch', fetchSpy)
-      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      renderWithSelectedTarget()
       await nextTick()
       const target = screen.getByRole('textbox')
       const ref = `stored_${filename}`
@@ -1126,7 +1151,7 @@ describe('AgentPanelRoot attach flow', () => {
         )
       })
     )
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
     await nextTick()
     const target = screen.getByRole('textbox')
     const dragData = {
@@ -1155,7 +1180,7 @@ describe('AgentPanelRoot attach flow', () => {
     // The graph loader only opens a dropped workflow while the drop is
     // unclaimed, so the panel must not claim files it cannot attach.
     stubUploadFetch()
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
     await nextTick()
     const target = screen.getByRole('textbox')
 
@@ -1172,7 +1197,7 @@ describe('AgentPanelRoot attach flow', () => {
 
   it('attaches only the assets out of a mixed drop', async () => {
     const uploaded = stubUploadFetch()
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
     await nextTick()
 
     // The non-attachable file comes first: addFiles uploads sequentially, so a
@@ -1209,7 +1234,7 @@ describe('AgentPanelRoot attach flow', () => {
     })
     vi.stubGlobal('fetch', fetchMock)
 
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
 
     const file = new File(['x'], 'cat.png', { type: 'image/png' })
     await userEvent.upload(
@@ -1301,7 +1326,7 @@ describe('AgentPanelRoot attach flow', () => {
       })
     )
 
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
 
     const file = new File(['x'], 'cat.png', { type: 'image/png' })
     await userEvent.upload(
@@ -1350,7 +1375,7 @@ describe('AgentPanelRoot attach flow', () => {
       })
     )
 
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
 
     const file = new File(['x'], 'cat.png', { type: 'image/png' })
     await userEvent.upload(
@@ -1406,7 +1431,7 @@ describe('AgentPanelRoot canvas draft on send', () => {
     hostStores.workflow.openTabPaths.add(activeWorkflow.path)
     hostStores.workflow.activeWorkflow = activeWorkflow
 
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
 
     await userEvent.type(screen.getByRole('textbox'), "what's on my canvas")
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
@@ -1419,7 +1444,7 @@ describe('AgentPanelRoot canvas draft on send', () => {
     expect(prepareForSave).toHaveBeenCalledOnce()
   })
 
-  it('omits draft when there is no active tab', async () => {
+  it('does not send or clear the prompt when there is no selected target', async () => {
     const messageBodies: unknown[] = []
     vi.stubGlobal(
       'fetch',
@@ -1432,13 +1457,14 @@ describe('AgentPanelRoot canvas draft on send', () => {
     )
     hostStores.workflow.activeWorkflow = null
 
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
 
-    await userEvent.type(screen.getByRole('textbox'), 'hello')
+    const textbox = screen.getByRole('textbox')
+    await userEvent.type(textbox, 'hello')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
 
-    expect(messageBodies).toHaveLength(1)
-    expect(messageBodies[0]).not.toHaveProperty('draft')
+    expect(messageBodies).toHaveLength(0)
+    expect(textbox).toHaveValue('hello')
   })
 })
 
@@ -1472,7 +1498,7 @@ describe('AgentPanelRoot history', () => {
             })
       )
     )
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
     useAgentConversationStore().setThreadId('th-active')
     await nextTick()
   }
@@ -1690,7 +1716,7 @@ describe('AgentPanelRoot history', () => {
     })
     vi.stubGlobal('fetch', fetchMock)
 
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
 
     const history = useAgentChatHistoryStore()
     await vi.waitFor(() => expect(history.sessions).toHaveLength(2))
@@ -1712,7 +1738,7 @@ describe('AgentPanelRoot history', () => {
       vi.fn(async () => new Response('{}', { status: 500 }))
     )
 
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
 
     await vi.waitFor(() =>
       expect(executionErrors.showErrorOverlay).toHaveBeenCalledTimes(1)
@@ -1738,7 +1764,7 @@ describe('AgentPanelRoot history', () => {
             })
       )
     )
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
 
     const convo = useAgentConversationStore()
     convo.setThreadId('th-active')
@@ -1778,7 +1804,7 @@ describe('AgentPanelRoot transcript copy', () => {
       )
     )
 
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
 
     const convo = useAgentConversationStore()
     const turnId = 'turn-1' as TurnId
@@ -1842,7 +1868,7 @@ describe('AgentPanelRoot feedback capture', () => {
   })
 
   it('forwards a thumbs vote to telemetry with the message id and vote', async () => {
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
 
     const store = useAgentConversationStore()
     const turnId = 'turn-9' as TurnId
@@ -1909,6 +1935,9 @@ describe('AgentPanelRoot lifecycle', () => {
   })
 
   it('does not cancel the in-flight turn when the panel unmounts', async () => {
+    const tab = addTab('workflows/current.json')
+    hostStores.workflow.activeWorkflow = tab
+    useAgentWorkflowTabBindingStore().bind('wf-42', tab.path)
     const urls: string[] = []
     const fetchMock = vi.fn(async (url: string) => {
       urls.push(url)
@@ -1916,7 +1945,7 @@ describe('AgentPanelRoot lifecycle', () => {
     })
     vi.stubGlobal('fetch', fetchMock)
 
-    const { unmount } = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const { unmount } = renderWithSelectedTarget()
 
     await sendFromComposer('hello')
 
@@ -1931,7 +1960,7 @@ describe('AgentPanelRoot lifecycle', () => {
     activity.setEditing('workflows/active.json')
     activity.setCreating(true)
 
-    const { unmount } = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const { unmount } = renderWithSelectedTarget()
 
     unmount()
 
@@ -1947,7 +1976,7 @@ describe('AgentPanelRoot greeting', () => {
   })
 
   it('personalizes the empty-state greeting with the account first name', async () => {
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
 
     expect(await screen.findByText('Hello Jo,')).toBeInTheDocument()
   })
@@ -1984,7 +2013,9 @@ describe('AgentPanelRoot workflow binding', () => {
 
   function mockMessagesEndpoint(
     ackWorkflowId: string,
-    cloudWorkflows: { id: string; name: string }[] = []
+    cloudWorkflows:
+      | { id: string; name: string }[]
+      | (() => { id: string; name: string }[]) = []
   ): unknown[] {
     const bodies: unknown[] = []
     vi.stubGlobal(
@@ -1999,12 +2030,16 @@ describe('AgentPanelRoot workflow binding', () => {
           return json(200, { threads: [], pagination: { page: 1 } })
         }
         if (url.includes('/workflows')) {
+          const workflows =
+            typeof cloudWorkflows === 'function'
+              ? cloudWorkflows()
+              : cloudWorkflows
           return json(200, {
-            data: cloudWorkflows,
+            data: workflows,
             pagination: {
               offset: 0,
               limit: 100,
-              total: cloudWorkflows.length,
+              total: workflows.length,
               has_more: false
             }
           })
@@ -2015,25 +2050,267 @@ describe('AgentPanelRoot workflow binding', () => {
     return bodies
   }
 
-  it('names the active workflow in the selector', async () => {
+  it('requires explicit selection on first entry even with an unsaved canvas', async () => {
+    makeTab().isTemporary = true
+    const bodies = mockMessagesEndpoint('wf-new')
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const textbox = screen.getByRole('textbox')
+    await userEvent.type(textbox, 'build here{Enter}')
+    expect(
+      await screen.findByPlaceholderText(i18n.global.t('agent.searchWorkflows'))
+    ).toHaveFocus()
+    expect(screen.queryByRole('menuitemradio', { checked: true })).toBeNull()
+    expect(textbox).toHaveValue('build here')
+    expect(bodies).toHaveLength(0)
+    expect(workflowService.saveWorkflowAs).not.toHaveBeenCalled()
+  })
+
+  it('keeps a saving row open until automatic save and target selection complete', async () => {
+    makeTab('wf-42')
+    const scratch = addTab('workflows/scratch.json', { isTemporary: true })
+    const cloudWorkflows: { id: string; name: string }[] = []
+    const bodies = mockMessagesEndpoint('wf-scratch', cloudWorkflows)
+    let resolveSave = () => {}
+    const save = new Promise<boolean>((resolve) => {
+      resolveSave = () => resolve(true)
+    })
+    workflowService.saveWorkflowAs.mockImplementationOnce(async () => {
+      await save
+      scratch.isTemporary = false
+      cloudWorkflows.push({ id: 'wf-scratch', name: 'scratch' })
+      return true
+    })
+    renderWithSelectedTarget()
+    const textbox = screen.getByRole('textbox')
+    await userEvent.type(textbox, 'keep this prompt')
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitemradio', { name: 'scratch' })
+    )
+    const row = await screen.findByRole('menuitemradio', { name: /scratch/ })
+    expect(within(row).getByRole('status')).toHaveTextContent('Saving workflow')
+    expect(row).not.toBeChecked()
+    expect(screen.getByRole('menuitemradio', { name: 'current' })).toBeChecked()
+    expect(
+      screen.getByRole('menuitemradio', { name: 'current' })
+    ).toHaveAttribute('aria-disabled', 'true')
+    expect(workflowService.saveWorkflowAs).toHaveBeenCalledWith(scratch, {
+      filename: 'scratch'
+    })
+    expect(workflowService.openWorkflow).not.toHaveBeenCalled()
+    resolveSave()
+    await vi.waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+    expect(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    ).toHaveTextContent('scratch')
+    expect(textbox).toHaveValue('keep this prompt')
+    expect(bodies).toHaveLength(0)
+  })
+
+  it('keeps the menu and draft available to retry after an automatic save failure', async () => {
+    makeTab('wf-42')
+    const scratch = addTab('workflows/scratch.json', { isTemporary: true })
+    const cloudWorkflows: { id: string; name: string }[] = []
+    mockMessagesEndpoint('wf-scratch', cloudWorkflows)
+    workflowService.saveWorkflowAs.mockRejectedValueOnce(
+      new Error('save unavailable')
+    )
+    workflowService.saveWorkflowAs.mockImplementationOnce(async () => {
+      scratch.isTemporary = false
+      cloudWorkflows.push({ id: 'wf-scratch', name: 'scratch' })
+      return true
+    })
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const textbox = screen.getByRole('textbox')
+    await userEvent.type(textbox, 'keep draft')
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitemradio', { name: 'scratch' })
+    )
+    await vi.waitFor(() =>
+      expect(useToastStore().messagesToAdd).toHaveLength(1)
+    )
+    expect(
+      screen.getByRole('menuitemradio', { name: 'scratch' })
+    ).not.toHaveAttribute('aria-disabled', 'true')
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(textbox).toHaveValue('keep draft')
+    await userEvent.click(
+      screen.getByRole('menuitemradio', { name: 'scratch' })
+    )
+    await vi.waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+    expect(workflowService.saveWorkflowAs).toHaveBeenCalledTimes(2)
+  })
+
+  it('retries the Cloud binding without saving a successfully saved workflow twice', async () => {
+    const current = makeTab('wf-42')
+    const scratch = addTab('workflows/scratch.json', { isTemporary: true })
+    const cloudWorkflows: { id: string; name: string }[] = []
+    mockMessagesEndpoint('wf-scratch', cloudWorkflows)
+    renderWithSelectedTarget()
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitemradio', { name: 'scratch' })
+    )
+    await vi.waitFor(() =>
+      expect(useToastStore().messagesToAdd).toHaveLength(1)
+    )
+    expect(scratch.isTemporary).toBe(false)
+    expect(hostStores.workflow.activeWorkflow?.path).toBe(current.path)
+    expect(screen.getByRole('menuitemradio', { name: 'current' })).toBeChecked()
+
+    cloudWorkflows.push({ id: 'wf-scratch', name: 'scratch' })
+    await userEvent.click(
+      screen.getByRole('menuitemradio', { name: 'scratch' })
+    )
+    await vi.waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+    expect(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    ).toHaveTextContent('scratch')
+    expect(workflowService.saveWorkflowAs).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not apply a target selection that finishes after panel teardown', async () => {
+    const current = makeTab('wf-42')
+    const scratch = addTab('workflows/scratch.json', { isTemporary: true })
+    mockMessagesEndpoint('wf-scratch', [
+      { id: 'wf-scratch', name: 'saved-scratch' }
+    ])
+    let finishSave = () => {}
+    const saved = new Promise<void>((resolve) => {
+      finishSave = resolve
+    })
+    workflowService.saveWorkflowAs.mockImplementationOnce(async () => {
+      await saved
+      scratch.isTemporary = false
+      return true
+    })
+    const { unmount } = renderWithSelectedTarget()
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitemradio', { name: 'scratch' })
+    )
+    expect(workflowService.saveWorkflowAs).toHaveBeenCalledTimes(1)
+    unmount()
+    finishSave()
+    await saved
+    await nextTick()
+    expect(scratch.isTemporary).toBe(false)
+    expect(workflowService.openWorkflow).not.toHaveBeenCalled()
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(current.path)
+  })
+
+  it('keeps the old target when the selected workflow cannot open', async () => {
+    makeTab('wf-42')
+    const other = addTab('workflows/other.json')
+    useAgentWorkflowTabBindingStore().bind('wf-other', other.path)
+    mockMessagesEndpoint('wf-42')
+    workflowService.openWorkflow.mockResolvedValueOnce(false)
+    renderWithSelectedTarget()
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitemradio', { name: 'other' })
+    )
+    await vi.waitFor(() =>
+      expect(useToastStore().messagesToAdd).toHaveLength(1)
+    )
+    expect(screen.getByRole('menuitemradio', { name: 'current' })).toBeChecked()
+  })
+
+  it('retains an explicitly chosen target across panel reopen and New Chat', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
-
+    const { unmount } = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitemradio', { name: 'current' })
+    )
+    await vi.waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+    unmount()
+    hostStores.workflow.activeWorkflow = addTab('workflows/other.json')
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+    expect(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    ).toHaveTextContent('current')
+  })
+
+  it('keeps the selected Agent target when the visible graph tab changes', async () => {
+    makeTab('wf-42')
+    const bodies = mockMessagesEndpoint('wf-42')
+
+    renderWithSelectedTarget()
 
     expect(await screen.findAllByText('current')).not.toHaveLength(0)
 
     const other = addTab('workflows/other.json')
+    useAgentWorkflowTabBindingStore().bind('wf-other', other.path)
     hostStores.workflow.activeWorkflow = other
-    expect(await screen.findAllByText('other')).not.toHaveLength(0)
-    expect(screen.queryAllByText('current')).toHaveLength(0)
+    await nextTick()
+
+    expect(await screen.findAllByText('current')).not.toHaveLength(0)
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    )
+    const visibleRow = within(
+      await screen.findByRole('group', { name: 'Current tab' })
+    ).getByRole('menuitemradio')
+    const targetRow = within(
+      screen.getByRole('group', { name: 'Other open workflows' })
+    ).getByRole('menuitemradio')
+    expect(visibleRow).toHaveTextContent('other')
+    expect(visibleRow).not.toBeChecked()
+    expect(targetRow).toHaveTextContent('current')
+    expect(targetRow).toBeChecked()
+    await userEvent.keyboard('{Escape}')
+
+    await sendFromComposer('keep editing current')
+    expect(bodies[0]).toMatchObject({
+      workflow_id: 'wf-42',
+      current_tab: 'wf-42',
+      open_tabs: [{ workflow_id: 'wf-42', name: 'current' }]
+    })
   })
 
   it('hides the active workflow in history and restores it on return', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
 
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
     expect(await screen.findAllByText('current')).not.toHaveLength(0)
 
     await userEvent.click(
@@ -2057,9 +2334,10 @@ describe('AgentPanelRoot workflow binding', () => {
   it('activates the tab picked from the workflow selector via the service', async () => {
     makeTab('wf-42')
     const other = addTab('workflows/other.json')
+    useAgentWorkflowTabBindingStore().bind('wf-other', other.path)
     mockMessagesEndpoint('wf-42')
 
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
 
     await userEvent.click(
       screen.getByRole('button', {
@@ -2078,6 +2356,185 @@ describe('AgentPanelRoot workflow binding', () => {
         name: i18n.global.t('agent.switchWorkflow')
       })
     ).toHaveTextContent('other')
+  })
+
+  it.for([true, false])(
+    'only waits for the Cloud index when target identity is missing (bound: %s)',
+    async (hasBinding) => {
+      makeTab('wf-42')
+      const other = addTab('workflows/other.json')
+      if (hasBinding)
+        useAgentWorkflowTabBindingStore().bind('wf-other', other.path)
+      let finishLookup = () => {}
+      const pendingLookup = new Promise<void>((resolve) => {
+        finishLookup = resolve
+      })
+      let lookupCount = 0
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (url: string) => {
+          if (url.includes('/workflows')) {
+            lookupCount++
+            await pendingLookup
+            return json(200, {
+              data: [{ id: 'wf-other', name: 'other' }],
+              pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+            })
+          }
+          if (url.includes('/agent/threads')) return json(200, { threads: [] })
+          return json(200, {})
+        })
+      )
+      renderWithSelectedTarget()
+      await vi.waitFor(() => expect(lookupCount).toBe(1))
+      try {
+        await userEvent.click(
+          screen.getByRole('button', {
+            name: i18n.global.t('agent.switchWorkflow')
+          })
+        )
+        await userEvent.click(
+          await screen.findByRole('menuitemradio', { name: 'other' })
+        )
+        if (hasBinding) {
+          await vi.waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+          expect(lookupCount).toBe(1)
+        } else {
+          await vi.waitFor(() => expect(lookupCount).toBe(2))
+          expect(workflowService.openWorkflow).not.toHaveBeenCalled()
+          expect(
+            screen.getByRole('menuitemradio', { name: 'current' })
+          ).toBeChecked()
+          finishLookup()
+          await vi.waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+        }
+        expect(workflowService.openWorkflow).toHaveBeenCalledWith(other)
+        expect(
+          screen.getByRole('button', {
+            name: i18n.global.t('agent.switchWorkflow')
+          })
+        ).toHaveTextContent('other')
+      } finally {
+        finishLookup()
+        await pendingLookup
+        await nextTick()
+      }
+    }
+  )
+
+  it.for(['binding', 'cloud index', 'temporary binding'] as const)(
+    'selects an existing Cloud workflow without saving its edits via %s',
+    async (identitySource) => {
+      makeTab('wf-42')
+      const draft = fromPartial<ComfyWorkflowJSON>({
+        id: 'local-graph-id',
+        nodes: [
+          { id: 91, type: 'CLIPTextEncode', widgets_values: ['latest edit'] }
+        ]
+      })
+      const other = addTab('workflows/other.json', {
+        isTemporary: identitySource === 'temporary binding',
+        isModified: true,
+        activeState: draft
+      })
+      if (identitySource !== 'cloud index')
+        useAgentWorkflowTabBindingStore().bind('wf-other', other.path)
+      const bodies = mockMessagesEndpoint(
+        'wf-other',
+        identitySource === 'cloud index'
+          ? [{ id: 'wf-other', name: 'other' }]
+          : []
+      )
+      renderWithSelectedTarget()
+
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.switchWorkflow')
+        })
+      )
+      await userEvent.click(
+        await screen.findByRole('menuitemradio', { name: 'other' })
+      )
+      await vi.waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+      expect(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.switchWorkflow')
+        })
+      ).toHaveTextContent('other')
+      expect(workflowService.saveWorkflow).not.toHaveBeenCalled()
+      expect(workflowService.saveWorkflowAs).not.toHaveBeenCalled()
+      expect(other.isModified).toBe(true)
+
+      await sendFromComposer('use my latest edits')
+      expect(bodies[0]).toMatchObject({
+        workflow_id: 'wf-other',
+        current_tab: 'wf-other',
+        draft: { content: draft }
+      })
+    }
+  )
+
+  it('automatically numbers a Cloud name collision before changing target and view', async () => {
+    makeTab('wf-42')
+    const scratch = addTab('workflows/scratch.json', { isTemporary: true })
+    mockMessagesEndpoint('wf-scratch', () => [
+      { id: 'wf-existing', name: 'scratch' },
+      ...(!scratch.isTemporary
+        ? [{ id: 'wf-scratch', name: 'scratch (2)' }]
+        : [])
+    ])
+
+    renderWithSelectedTarget()
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    )
+    await userEvent.click(await screen.findByText('scratch'))
+
+    await vi.waitFor(() =>
+      expect(workflowService.saveWorkflowAs).toHaveBeenCalledWith(scratch, {
+        filename: 'scratch (2)'
+      })
+    )
+    expect(workflowService.openWorkflow).toHaveBeenCalledWith(scratch)
+    expect(hostStores.workflow.activeWorkflow?.path).toBe(scratch.path)
+    expect(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    ).toHaveTextContent('scratch (2)')
+  })
+
+  it.for([
+    ['unsuccessful save', false] as const,
+    ['save failure', new Error('save failed')] as const
+  ])('preserves target, view, and draft after %s', async ([_label, result]) => {
+    const current = makeTab('wf-42')
+    const scratch = addTab('workflows/scratch.json', { isTemporary: true })
+    if (result instanceof Error)
+      workflowService.saveWorkflowAs.mockRejectedValueOnce(result)
+    else workflowService.saveWorkflowAs.mockResolvedValueOnce(result)
+    mockMessagesEndpoint('wf-42')
+
+    renderWithSelectedTarget()
+    const textbox = screen.getByRole('textbox')
+    await userEvent.type(textbox, 'keep this draft')
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    )
+    await userEvent.click(await screen.findByText('scratch'))
+
+    await vi.waitFor(() =>
+      expect(workflowService.saveWorkflowAs).toHaveBeenCalledWith(scratch, {
+        filename: 'scratch'
+      })
+    )
+    expect(hostStores.workflow.activeWorkflow?.path).toBe(current.path)
+    expect(textbox).toHaveValue('keep this draft')
+    expect(screen.getByRole('menuitemradio', { name: 'current' })).toBeChecked()
   })
 
   it('transitions the bound tab from editing to modified when the turn completes', async () => {
@@ -2101,7 +2558,7 @@ describe('AgentPanelRoot workflow binding', () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
 
-    const { unmount } = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const { unmount } = renderWithSelectedTarget()
     await sendFromComposer('add an upscaler')
 
     const activity = useWorkflowTabActivityStore()
@@ -2241,7 +2698,7 @@ describe('AgentPanelRoot workflow binding', () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
 
-    const { unmount } = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const { unmount } = renderWithSelectedTarget()
     await sendFromComposer('add an upscaler')
 
     const activity = useWorkflowTabActivityStore()
@@ -2263,7 +2720,7 @@ describe('AgentPanelRoot workflow binding', () => {
       })
     )
 
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
     await vi.waitFor(() =>
       expect(activity.editingTabPath).toBe('workflows/current.json')
     )
@@ -2283,7 +2740,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(app.loadGraphData).not.toHaveBeenCalled()
   })
 
-  it('does not send an unbound tab draft to an existing workflow thread', async () => {
+  it('keeps sending the pinned target after viewing an unbound tab', async () => {
     makeTab('wf-42')
     const bodies = mockMessagesEndpoint('wf-42')
     await renderAndSend('first message')
@@ -2299,43 +2756,20 @@ describe('AgentPanelRoot workflow binding', () => {
     hostStores.workflow.activeWorkflow = scratch
     await sendFromComposer('second message')
 
-    expect(bodies[1]).not.toHaveProperty('workflow_id')
-    expect(bodies[1]).not.toHaveProperty('current_tab')
-    expect(bodies[1]).not.toHaveProperty('draft')
-  })
-
-  it('chip X detaches the chat so the next send carries no workflow context', async () => {
-    makeTab('wf-42')
-    const bodies = mockMessagesEndpoint('wf-42')
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
-
-    await userEvent.click(
-      screen.getByRole('button', {
-        name: i18n.global.t('agent.dontWorkInWorkflow')
-      })
-    )
-    expect(
-      await screen.findAllByText(i18n.global.t('agent.chooseWorkflow'))
-    ).not.toHaveLength(0)
-
-    await sendFromComposer('work without a canvas')
-
-    expect(bodies[0]).not.toHaveProperty('workflow_id')
-    expect(bodies[0]).not.toHaveProperty('current_tab')
-    expect(bodies[0]).toMatchObject({
-      open_tabs: [{ workflow_id: 'wf-42', name: 'current' }]
+    expect(bodies[1]).toMatchObject({
+      workflow_id: 'wf-42',
+      current_tab: 'wf-42',
+      draft: { content: { id: 'wf-42' } }
     })
   })
 
   it('re-attaches by picking a row so the next send carries the workflow again', async () => {
     makeTab('wf-42')
     const bodies = mockMessagesEndpoint('wf-42')
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
 
     await userEvent.click(
-      screen.getByRole('button', {
-        name: i18n.global.t('agent.dontWorkInWorkflow')
-      })
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
     )
     await userEvent.click(
       screen.getByRole('button', {
@@ -2351,33 +2785,49 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[0]).toMatchObject({ workflow_id: 'wf-42' })
   })
 
-  it('starts a new chat detached from the previously active workflow', async () => {
+  it('preserves the explicitly selected target when starting a new chat', async () => {
     makeTab('wf-42')
     const bodies = mockMessagesEndpoint('wf-42')
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
 
     await userEvent.click(
       screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
     )
 
-    expect(
-      await screen.findAllByText(i18n.global.t('agent.chooseWorkflow'))
-    ).not.toHaveLength(0)
-    expect(screen.queryByText('current')).not.toBeInTheDocument()
+    expect(await screen.findAllByText('current')).not.toHaveLength(0)
 
     await sendFromComposer('fresh chat')
 
-    expect(bodies[0]).not.toHaveProperty('workflow_id')
-    expect(bodies[0]).not.toHaveProperty('current_tab')
     expect(bodies[0]).toMatchObject({
+      workflow_id: 'wf-42',
+      current_tab: 'wf-42',
       open_tabs: [{ workflow_id: 'wf-42', name: 'current' }]
     })
   })
 
-  it('a detached send never re-arms the editing spinner on the old tab', async () => {
+  it('keeps the draft and opens the workflow picker instead of posting without a target', async () => {
+    const tab = makeTab('wf-42')
+    hostStores.workflow.activeWorkflow = null
+    const bodies = mockMessagesEndpoint('wf-42')
+
+    renderWithSelectedTarget()
+    const textbox = screen.getByRole('textbox')
+    await userEvent.type(textbox, 'do not lose this')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(bodies).toHaveLength(0)
+    expect(textbox).toHaveValue('do not lose this')
+    expect(
+      screen.getByPlaceholderText(i18n.global.t('agent.searchWorkflows'))
+    ).toBeVisible()
+    expect(hostStores.workflow.activeWorkflow).toBeNull()
+    expect(tab.path).toBe('workflows/current.json')
+  })
+
+  it('a fresh-chat send re-arms the spinner on its preserved target', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
 
     await sendFromComposer('attached turn')
     const activity = useWorkflowTabActivityStore()
@@ -2387,13 +2837,11 @@ describe('AgentPanelRoot workflow binding', () => {
     await vi.waitFor(() => expect(activity.editingTabPath).toBeNull())
 
     await userEvent.click(
-      screen.getByRole('button', {
-        name: i18n.global.t('agent.dontWorkInWorkflow')
-      })
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
     )
     await sendFromComposer('detached turn')
 
-    expect(activity.editingTabPath).toBeNull()
+    expect(activity.editingTabPath).toBe('workflows/current.json')
   })
 
   it('agent_active_tab activates the bound tab', async () => {
@@ -2541,6 +2989,7 @@ describe('AgentPanelRoot workflow binding', () => {
         })
         const known = hostStores.workflow.tabs.get(slow.path)
         if (known) hostStores.workflow.activeWorkflow = known
+        return true
       }
     )
 
@@ -2617,6 +3066,7 @@ describe('AgentPanelRoot workflow binding', () => {
     )
   })
   it('an activation superseded before it starts does nothing at all', async () => {
+    makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
 
     await renderAndSend('work here')
@@ -2815,7 +3265,7 @@ describe('AgentPanelRoot workflow binding', () => {
       })
     )
 
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
     await vi.waitFor(() => expect(workflowRequests).toBe(1))
     await userEvent.type(screen.getByRole('textbox'), 'first message')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
@@ -2829,7 +3279,7 @@ describe('AgentPanelRoot workflow binding', () => {
     ).toBeUndefined()
   })
 
-  it('resolves saved tabs to their cloud workflow ids by name', async () => {
+  it('does not include ordinary open tabs in turn context', async () => {
     makeTab()
     addTab('workflows/side.json')
     const bodies = mockMessagesEndpoint('wf-cloud-current', [
@@ -2841,10 +3291,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     expect(bodies[0]).toMatchObject({
       workflow_id: 'wf-cloud-current',
-      open_tabs: [
-        { workflow_id: 'wf-cloud-current', name: 'current' },
-        { workflow_id: 'wf-cloud-side', name: 'side' }
-      ],
+      open_tabs: [{ workflow_id: 'wf-cloud-current', name: 'current' }],
       current_tab: 'wf-cloud-current'
     })
   })
@@ -2929,6 +3376,46 @@ describe('AgentPanelRoot workflow binding', () => {
     ).toBeInTheDocument()
   })
 
+  it('syncs and opens a closed workflow from a sent reference chip without changing the Agent target', async () => {
+    const current = makeTab('wf-cloud-current')
+    const reference = addTab('workflows/reference.json')
+    hostStores.workflow.openTabPaths.delete(reference.path)
+    mockMessagesEndpoint('wf-cloud-current', [
+      { id: 'wf-cloud-current', name: 'current' },
+      { id: 'wf-reference', name: 'reference' }
+    ])
+
+    renderWithSelectedTarget()
+    const conversation = useAgentConversationStore()
+    const historyMessageId = 'history-message' as TurnId
+    conversation.startTurn(historyMessageId)
+    conversation.recordUser(
+      historyMessageId,
+      'Compare these',
+      undefined,
+      undefined,
+      [{ id: 'wf-reference', name: 'reference' }]
+    )
+    conversation.ingest({
+      type: 'agent_message_done',
+      data: { message_id: 'history-message', thread_id: 'th-history' }
+    })
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Open reference' })
+    )
+
+    await vi.waitFor(() =>
+      expect(workflowService.openWorkflow).toHaveBeenCalledWith(reference)
+    )
+    expect(hostStores.workflow.syncWorkflows).toHaveBeenCalledOnce()
+    expect(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    ).toHaveTextContent(current.filename)
+  })
+
   it('sends every open tab that has a cloud id with the message', async () => {
     makeTab('wf-42')
     const bodies = mockMessagesEndpoint('wf-42')
@@ -2941,7 +3428,7 @@ describe('AgentPanelRoot workflow binding', () => {
     })
   })
 
-  it('includes a backgrounded tab whose binding was persisted before a reload', async () => {
+  it('omits a backgrounded tab whose binding was persisted before a reload', async () => {
     localStorage.setItem(
       'Comfy.Agent.WorkflowTabBindings',
       JSON.stringify({ 'wf-old': 'workflows/mountain.json' })
@@ -2953,11 +3440,34 @@ describe('AgentPanelRoot workflow binding', () => {
     await renderAndSend('first message')
 
     expect(bodies[0]).toMatchObject({
+      open_tabs: [{ workflow_id: 'wf-42', name: 'current' }],
+      current_tab: 'wf-42'
+    })
+  })
+
+  it('sends the target first followed only by explicitly selected workflow references', async () => {
+    makeTab('wf-42')
+    const referenced = addTab('workflows/reference.json')
+    const ordinary = addTab('workflows/ordinary.json')
+    useAgentWorkflowTabBindingStore().bind('wf-reference', referenced.path)
+    useAgentWorkflowTabBindingStore().bind('wf-ordinary', ordinary.path)
+    const bodies = mockMessagesEndpoint('wf-42')
+
+    renderWithSelectedTarget()
+    await userEvent.type(screen.getByRole('textbox'), '@')
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: 'reference' })
+    )
+    await sendFromComposer('compare these')
+
+    expect(bodies[0]).toMatchObject({
+      workflow_id: 'wf-42',
+      current_tab: 'wf-42',
       open_tabs: [
         { workflow_id: 'wf-42', name: 'current' },
-        { workflow_id: 'wf-old', name: 'mountain' }
-      ],
-      current_tab: 'wf-42'
+        { workflow_id: 'wf-reference', name: 'reference' }
+      ]
     })
   })
 
@@ -2973,7 +3483,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[0]).not.toHaveProperty('current_tab')
   })
 
-  it('omits current_tab from the snapshot when the active tab has no cloud id', async () => {
+  it('keeps current_tab pinned when the viewed tab has no cloud id', async () => {
     makeTab('wf-42')
     const bodies = mockMessagesEndpoint('wf-42')
 
@@ -2989,10 +3499,10 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[1]).toMatchObject({
       open_tabs: [{ workflow_id: 'wf-42', name: 'current' }]
     })
-    expect(bodies[1]).not.toHaveProperty('current_tab')
+    expect(bodies[1]).toHaveProperty('current_tab', 'wf-42')
   })
 
-  it('keeps an existing thread workflow on its own tab when sending from an unsaved tab', async () => {
+  it('keeps an existing thread pinned when viewing an unsaved tab', async () => {
     const origin = makeTab('wf-42')
     const bodies = mockMessagesEndpoint('wf-42')
 
@@ -3007,8 +3517,11 @@ describe('AgentPanelRoot workflow binding', () => {
 
     await sendFromComposer('second message')
 
-    expect(bodies[1]).not.toHaveProperty('workflow_id')
-    expect(bodies[1]).not.toHaveProperty('draft')
+    expect(bodies[1]).toMatchObject({
+      workflow_id: 'wf-42',
+      current_tab: 'wf-42',
+      draft: { content: { id: 'wf-42' } }
+    })
     expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-42')).toBe(
       origin.path
     )
@@ -3060,20 +3573,20 @@ describe('AgentPanelRoot workflow binding', () => {
     ).toBeUndefined()
   })
 
-  it('stages a mention pick once and reports the tag gesture', async () => {
+  it('stages a mention pick without selecting it on canvas', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
     const state = setupNodeSelectionCanvas()
 
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
     useAgentPanelStore().isOpen = true
 
     await openMentionPicker()
     await userEvent.click(await screen.findByText('KSampler'))
 
     expect(await screen.findByText('KSampler')).toBeInTheDocument()
-    expect([...state.selectedItems]).toEqual([state.nodes[1]])
-    expect(state.selectItems).toHaveBeenCalledWith([state.nodes[1]], true)
+    expect([...state.selectedItems]).toEqual([])
+    expect(state.selectItems).not.toHaveBeenCalled()
     expect(telemetry.trackAgentNodeTagged).toHaveBeenCalledTimes(1)
     expect(telemetry.trackAgentNodeTagged).toHaveBeenCalledWith({
       source: 'mention_picker'
@@ -3088,16 +3601,17 @@ describe('AgentPanelRoot workflow binding', () => {
       { id: 7, title: 'KSampler' }
     ]
 
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
 
     const textbox = screen.getByRole('textbox')
     await userEvent.type(textbox, '@')
+    await userEvent.keyboard('{Enter}')
     expect(screen.getByText('#5')).toBeInTheDocument()
     expect(screen.getByText('#7')).toBeInTheDocument()
-    await userEvent.keyboard('{ArrowDown}{Tab}')
+    await userEvent.keyboard('{ArrowDown}{ArrowDown}{Tab}')
 
     expect(textbox).toHaveValue('')
-    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
     expect(screen.getAllByText('KSampler')).toHaveLength(1)
     expect(screen.getByText('#7')).toBeInTheDocument()
     await sendFromComposer('tune it')
@@ -3108,40 +3622,127 @@ describe('AgentPanelRoot workflow binding', () => {
     })
   })
 
-  it('sends an existing @ asset reference without uploading it again', async () => {
+  it('keeps asset actions out of the @ Reference menu', async () => {
     makeTab('wf-42')
-    const bodies = mockMessagesEndpoint('wf-42')
-    vi.spyOn(assetService, 'getInputAssetsIncludingPublic').mockResolvedValue([
-      fromPartial({
-        id: 'asset-1',
-        name: 'sunset-original.png',
-        hash: 'sunset-hash.png',
-        tags: ['input'],
-        display_name: 'Sunset.png',
-        preview_url: '/api/assets/asset-1/content'
-      })
-    ])
 
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
     const textbox = screen.getByRole('textbox')
     await userEvent.type(textbox, '@sun')
-    await userEvent.click(
-      await screen.findByRole('option', { name: 'Sunset.png' })
+
+    expect(screen.getByRole('menuitem', { name: 'Nodes' })).toBeVisible()
+    expect(screen.getByRole('menuitem', { name: 'Workflows' })).toBeVisible()
+    expect(screen.queryByText('Sunset.png')).not.toBeInTheDocument()
+    expect(textbox).toHaveValue('@sun')
+  })
+
+  it('offers only Cloud-backed workflows that are open in editor tabs', async () => {
+    makeTab('wf-current')
+    const other = addTab('workflows/other.json')
+    useAgentWorkflowTabBindingStore().bind('wf-other', other.path)
+    mockMessagesEndpoint('wf-current', [
+      { id: 'wf-remote', name: 'Remote workflow' }
+    ])
+
+    renderWithSelectedTarget()
+    await userEvent.type(screen.getByRole('textbox'), '@')
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
+
+    expect(await screen.findByRole('menuitem', { name: 'other' })).toBeVisible()
+    expect(
+      screen.queryByRole('menuitem', { name: 'Remote workflow' })
+    ).toBeNull()
+  })
+
+  it('offers an open tab after it is saved while the panel remains mounted', async () => {
+    makeTab('wf-current')
+    const savedLater = addTab('workflows/video_minimax_h3_i2v.json', {
+      isTemporary: true
+    })
+    const cloudWorkflows: { id: string; name: string }[] = []
+    mockMessagesEndpoint('wf-current', cloudWorkflows)
+
+    renderWithSelectedTarget()
+    const textbox = screen.getByRole('textbox')
+    await userEvent.type(textbox, '@')
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
+    expect(
+      screen.queryByRole('menuitem', { name: 'video_minimax_h3_i2v' })
+    ).toBeNull()
+
+    await userEvent.keyboard('{Escape}')
+    await userEvent.clear(textbox)
+    hostStores.workflow.getWorkflowByPath(savedLater.path)!.isTemporary = false
+    cloudWorkflows.push({
+      id: 'wf-video',
+      name: 'video_minimax_h3_i2v'
+    })
+
+    await userEvent.type(textbox, '@')
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
+
+    expect(
+      await screen.findByRole('menuitem', { name: 'video_minimax_h3_i2v' })
+    ).toBeVisible()
+  })
+
+  it('does not let an older workflow refresh overwrite a newer result', async () => {
+    makeTab('wf-current')
+    addTab('workflows/video_minimax_h3_i2v.json')
+    let resolveInitial!: (response: Response) => void
+    const initialWorkflowResponse = new Promise<Response>((resolve) => {
+      resolveInitial = resolve
+    })
+    let workflowRequestCount = 0
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) => {
+        if (url.includes('/workflows')) {
+          workflowRequestCount++
+          if (workflowRequestCount === 1) return initialWorkflowResponse
+          return Promise.resolve(
+            json(200, {
+              data: [{ id: 'wf-video', name: 'video_minimax_h3_i2v' }],
+              pagination: {
+                offset: 0,
+                limit: 100,
+                total: 1,
+                has_more: false
+              }
+            })
+          )
+        }
+        if (url.includes('/agent/threads'))
+          return Promise.resolve(
+            json(200, { threads: [], pagination: { page: 1 } })
+          )
+        return Promise.resolve(new Response('{}', { status: 200 }))
+      })
     )
 
-    expect(textbox).toHaveValue('')
-    expect(screen.getByText('Sunset.png')).toBeInTheDocument()
-    await sendFromComposer('use this asset')
-
-    expect(bodies[0]).toMatchObject({
-      content: 'use this asset',
-      attachments: ['sunset-hash.png']
-    })
+    renderWithSelectedTarget()
+    await userEvent.type(screen.getByRole('textbox'), '@')
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
     expect(
-      vi
-        .mocked(fetch)
-        .mock.calls.some(([url]) => String(url).includes('/upload/'))
-    ).toBe(false)
+      await screen.findByRole('menuitem', { name: 'video_minimax_h3_i2v' })
+    ).toBeVisible()
+
+    resolveInitial(
+      json(200, {
+        data: [],
+        pagination: {
+          offset: 0,
+          limit: 100,
+          total: 0,
+          has_more: false
+        }
+      })
+    )
+    await nextTick()
+    await nextTick()
+
+    expect(
+      screen.getByRole('menuitem', { name: 'video_minimax_h3_i2v' })
+    ).toBeVisible()
   })
 
   it('sends no workflow id for an unbound tab and posts exactly once', async () => {
@@ -3175,6 +3776,37 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[0]).not.toHaveProperty('open_tabs')
     expect(bodies[0]).not.toHaveProperty('current_tab')
     expect(app.loadGraphData).not.toHaveBeenCalled()
+  })
+
+  it('disables target selection for an active turn and ignores agent tab changes for attribution', async () => {
+    makeTab('wf-42')
+    const other = addTab('workflows/other.json')
+    useAgentWorkflowTabBindingStore().bind('wf-other', other.path)
+    const bodies = mockMessagesEndpoint('wf-42')
+
+    await renderAndSend('first turn')
+    const selector = screen.getByRole('button', {
+      name: i18n.global.t('agent.switchWorkflow')
+    })
+    expect(selector).toBeDisabled()
+
+    ws.emit('agent_active_tab', {
+      workflow_id: 'wf-other',
+      name: 'other',
+      thread_id: 'th-1'
+    })
+    await vi.waitFor(() =>
+      expect(workflowService.openWorkflow).toHaveBeenCalledWith(other)
+    )
+    expect(selector).toHaveTextContent('current')
+
+    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    await screen.findByRole('button', { name: 'Send' })
+    await sendFromComposer('second turn')
+    expect(bodies[1]).toMatchObject({
+      workflow_id: 'wf-42',
+      current_tab: 'wf-42'
+    })
   })
 
   it('binds a minted workflow to its unsaved tab and subscribes once', async () => {
@@ -3274,7 +3906,7 @@ describe('AgentPanelRoot workflow binding', () => {
       })
     )
 
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
     await vi.waitFor(() => expect(workflowRequests).toBe(1))
     await userEvent.type(screen.getByRole('textbox'), 'build a graph')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
@@ -3309,7 +3941,7 @@ describe('AgentPanelRoot workflow binding', () => {
       { id: 7, title: 'VAEDecode' }
     ]
 
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
     useAgentPanelStore().isOpen = true
 
     await openMentionPicker()
@@ -3335,73 +3967,50 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(screen.queryByText(/KSampler/)).not.toBeInTheDocument()
   })
 
-  it('deselects the graph node when its reference chip is removed', async () => {
+  it('removes a reference chip without changing canvas selection', async () => {
     makeTab()
     const state = setupNodeSelectionCanvas()
+    state.selectedItems.add(state.nodes[0])
+    hostStores.canvas.updateSelectedItems()
 
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
     useAgentPanelStore().isOpen = true
 
-    await openMentionPicker()
-    await userEvent.click(await screen.findByText('VAE Decode'))
     await openMentionPicker()
     const matches = await screen.findAllByText('KSampler')
     await userEvent.click(matches[matches.length - 1])
 
-    expect(await screen.findByText('VAE Decode')).toBeInTheDocument()
     expect(screen.getByText('KSampler')).toBeInTheDocument()
 
     await userEvent.click(
-      screen.getByRole('button', { name: 'Remove VAE Decode #9 reference' })
+      screen.getByRole('button', { name: 'Remove KSampler #12 reference' })
     )
 
-    expect(screen.queryByText('VAE Decode')).not.toBeInTheDocument()
-    expect(state.deselect).toHaveBeenCalledWith(state.nodes[0])
+    expect(screen.queryByText('KSampler')).not.toBeInTheDocument()
+    expect(state.deselect).not.toHaveBeenCalled()
     expect(focusNodeInstance).not.toHaveBeenCalled()
-    expect([...state.selectedItems]).toEqual([state.nodes[1]])
-    expect(hostStores.canvas.selectedItems).toEqual([state.nodes[1]])
+    expect([...state.selectedItems]).toEqual([state.nodes[0]])
+    expect(hostStores.canvas.selectedItems).toEqual([state.nodes[0]])
   })
 
-  it('focuses the graph node when its reference chip is activated', async () => {
+  it('does not expose a canvas-focus action on a reference chip', async () => {
     makeTab()
-    const state = setupNodeSelectionCanvas()
+    setupNodeSelectionCanvas()
 
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    useAgentPanelStore().isOpen = true
-
-    await openMentionPicker()
-    await userEvent.click(await screen.findByText('KSampler'))
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Show KSampler #12 on canvas' })
-    )
-
-    expect(focusNodeInstance).toHaveBeenCalledWith(state.nodes[1])
-    expect(screen.getByText('KSampler')).toBeInTheDocument()
-  })
-
-  it('focuses a retained subgraph node after navigating to the root graph', async () => {
-    makeTab()
-    const state = setupNodeSelectionCanvas()
-    nestSelectionCanvasInSubgraph(state)
-
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
     useAgentPanelStore().isOpen = true
 
     await openMentionPicker()
     await userEvent.click(await screen.findByText('KSampler'))
 
-    showRootGraph(state)
-    await nextTick()
-
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Show KSampler #12 on canvas' })
-    )
-
-    expect(focusNodeInstance).toHaveBeenCalledWith(state.nodes[1])
+    expect(
+      screen.queryByRole('button', { name: 'Show KSampler #12 on canvas' })
+    ).toBeNull()
+    expect(focusNodeInstance).not.toHaveBeenCalled()
     expect(screen.getByText('KSampler')).toBeInTheDocument()
   })
 
-  it('uses graph-scoped identity for focus, removal, and picker exclusion', async () => {
+  it('uses graph-scoped identity for removal and picker exclusion', async () => {
     makeTab()
     const state = setupNodeSelectionCanvas()
     const subgraphNode = nestSelectionCanvasInSubgraph(state)
@@ -3416,7 +4025,7 @@ describe('AgentPanelRoot workflow binding', () => {
     }
     appMock.graph.nodes = [subgraphNode, rootTwin]
 
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
     useAgentPanelStore().isOpen = true
 
     await openMentionPicker()
@@ -3427,16 +4036,9 @@ describe('AgentPanelRoot workflow binding', () => {
     hostStores.canvas.updateSelectedItems()
     await nextTick()
 
-    await userEvent.click(
-      screen.getByRole('button', {
-        name: 'Show Subgraph twin #shared on canvas'
-      })
-    )
-    expect(focusNodeInstance).toHaveBeenCalledWith(referencedNode)
-
     await openMentionPicker()
     expect(
-      within(screen.getByRole('listbox')).getByText('Root twin')
+      within(screen.getByRole('menu')).getByText('Root twin')
     ).toBeInTheDocument()
 
     await userEvent.click(
@@ -3444,7 +4046,7 @@ describe('AgentPanelRoot workflow binding', () => {
         name: 'Remove Subgraph twin #shared reference'
       })
     )
-    expect(state.deselect).toHaveBeenCalledWith(referencedNode)
+    expect(state.deselect).not.toHaveBeenCalled()
     expect([...state.selectedItems]).toEqual([rootTwin])
   })
 
@@ -3452,16 +4054,16 @@ describe('AgentPanelRoot workflow binding', () => {
     makeTab()
     setupNodeSelectionCanvas()
 
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
     useAgentPanelStore().isOpen = true
 
     await openMentionPicker()
     await userEvent.click(await screen.findByText('KSampler'))
     await openMentionPicker()
 
-    const listbox = screen.getByRole('listbox')
-    expect(within(listbox).queryByText('KSampler')).not.toBeInTheDocument()
-    expect(within(listbox).getByText('VAE Decode')).toBeInTheDocument()
+    const menu = screen.getByRole('menu')
+    expect(within(menu).queryByText('KSampler')).not.toBeInTheDocument()
+    expect(within(menu).getByText('VAE Decode')).toBeInTheDocument()
   })
 
   it('keeps reference chips unchanged after normal graph selection', async () => {
@@ -3469,7 +4071,7 @@ describe('AgentPanelRoot workflow binding', () => {
     mockMessagesEndpoint('wf-42')
     const state = setupNodeSelectionCanvas()
 
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
     useAgentPanelStore().isOpen = true
 
     await openMentionPicker()
@@ -3490,7 +4092,7 @@ describe('AgentPanelRoot workflow binding', () => {
     mockMessagesEndpoint('wf-42')
     const state = setupNodeSelectionCanvas()
 
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
     useAgentPanelStore().isOpen = true
 
     await openMentionPicker()
@@ -3518,7 +4120,7 @@ describe('AgentPanelRoot workflow binding', () => {
     const subgraphNode = nestSelectionCanvasInSubgraph(state)
     state.nodes[1].id = 'shared'
 
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
     useAgentPanelStore().isOpen = true
 
     await openMentionPicker()
@@ -3546,7 +4148,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(screen.getByText('KSampler')).toBeInTheDocument()
   })
 
-  it('restores an off-view subgraph reference by locator after a panel remount', async () => {
+  it('restores an off-view subgraph context chip without a focus action', async () => {
     makeTab()
     const state = setupNodeSelectionCanvas()
     const subgraphNode = nestSelectionCanvasInSubgraph(state)
@@ -3562,7 +4164,7 @@ describe('AgentPanelRoot workflow binding', () => {
     appMock.graph.nodes = [subgraphNode, rootTwin]
     const panelStore = useAgentPanelStore()
 
-    const first = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const first = renderWithSelectedTarget()
     panelStore.isOpen = true
     await openMentionPicker()
     await userEvent.click(await screen.findByText('Subgraph twin'))
@@ -3572,25 +4174,25 @@ describe('AgentPanelRoot workflow binding', () => {
     await nextTick()
     first.unmount()
 
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
     panelStore.isOpen = true
     await nextTick()
 
     expect(screen.getByText('Subgraph twin')).toBeInTheDocument()
     expect(screen.queryByText('Root twin')).not.toBeInTheDocument()
-    await userEvent.click(
-      screen.getByRole('button', {
+    expect(
+      screen.queryByRole('button', {
         name: 'Show Subgraph twin #shared on canvas'
       })
-    )
-    expect(focusNodeInstance).toHaveBeenCalledWith(referencedNode)
+    ).toBeNull()
+    expect(focusNodeInstance).not.toHaveBeenCalled()
   })
   it('does not resend a canvas selection after its chip was consumed', async () => {
     makeTab()
     const bodies = mockMessagesEndpoint('wf-42')
     const state = setupNodeSelectionCanvas()
 
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
     useAgentPanelStore().isOpen = true
 
     await openMentionPicker()
@@ -3603,7 +4205,7 @@ describe('AgentPanelRoot workflow binding', () => {
     ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
     await screen.findByRole('button', { name: 'Send' })
 
-    expect([...state.selectedItems]).toEqual([state.nodes[1]])
+    expect([...state.selectedItems]).toEqual([])
     await sendFromComposer('second ask')
     expect(bodies[1]).not.toHaveProperty('selection')
   })
@@ -3614,7 +4216,7 @@ describe('AgentPanelRoot workflow binding', () => {
     appMock.graph.nodes = [{ id: 7, title: 'KSampler' }]
 
     const panelStore = useAgentPanelStore()
-    const first = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const first = renderWithSelectedTarget()
     panelStore.isOpen = true
 
     await openMentionPicker()
@@ -3628,7 +4230,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await nextTick()
     first.unmount()
 
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
     panelStore.isOpen = true
     await nextTick()
     expect(screen.queryByText('KSampler')).not.toBeInTheDocument()
@@ -3665,7 +4267,7 @@ describe('AgentPanelRoot workflow binding', () => {
     const bodies = mockMessagesEndpoint('wf-42')
     const panelStore = useAgentPanelStore()
     appMock.graph.nodes = [{ id: 7, title: 'First KSampler' }]
-    const first = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const first = renderWithSelectedTarget()
     panelStore.isOpen = true
 
     await openMentionPicker()
@@ -3685,7 +4287,7 @@ describe('AgentPanelRoot workflow binding', () => {
       { isTemporary: true }
     )
     appMock.graph.nodes = [{ id: 7, title: 'Second KSampler' }]
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
     panelStore.isOpen = true
 
     await openMentionPicker()
@@ -3703,7 +4305,7 @@ describe('AgentPanelRoot workflow binding', () => {
       state.selectedItems.add(node)
       hostStores.canvas.updateSelectedItems()
     }
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
     renderCanvasNodeButtons(state.nodes, selectLegacyNode)
     useAgentPanelStore().isOpen = true
 
@@ -3736,7 +4338,7 @@ describe('AgentPanelRoot workflow binding', () => {
       else state.selectedItems.add(node)
       hostStores.canvas.updateSelectedItems()
     }
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
     renderCanvasNodeButtons(state.nodes, toggleNode)
     useAgentPanelStore().isOpen = true
 
@@ -3760,7 +4362,7 @@ describe('AgentPanelRoot workflow binding', () => {
     makeTab()
     mockMessagesEndpoint('wf-42')
     const state = setupNodeSelectionCanvas()
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
     useAgentPanelStore().isOpen = true
 
     await enterNodeSelectionMode()
@@ -3912,7 +4514,7 @@ describe('AgentPanelRoot workflow binding', () => {
     hostStores.canvas.updateSelectedItems()
     useAgentPanelStore().isOpen = true
 
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
     await nextTick()
 
     expect(nodeSelectionStore.isLoadingWorkflow).toBe(false)
@@ -3936,7 +4538,7 @@ describe('AgentPanelRoot workflow binding', () => {
       canvas: { focus: vi.fn() }
     }
 
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    renderWithSelectedTarget()
     useAgentPanelStore().isOpen = true
 
     await openMentionPicker()

@@ -12,6 +12,7 @@ import type {
 } from '../../services/agent/agentRestClient'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
+import type { WorkflowReference } from '../../types/workflowReference'
 
 export interface AgentEventSource {
   subscribe(listener: (raw: unknown) => void): () => void
@@ -71,8 +72,12 @@ export interface AgentSessionDeps {
     // TurnOrigin for why "no origin tab" is a value rather than an omission.
     current(origin?: TurnOrigin): WorkflowTurnContext | undefined
     adopted(workflowId: string, sent: WorkflowTurnContext | undefined): void
+    restored?(workflowId: string | undefined): Promise<void> | void
     prepare?(): Promise<void>
-    tabs?(origin?: TurnOrigin): OpenTabsSnapshot | undefined
+    tabs?(
+      origin?: TurnOrigin,
+      references?: WorkflowReference[]
+    ): OpenTabsSnapshot | undefined
     activeTab?(data: AgentActiveTabData): void
     draft?(origin?: TurnOrigin): DraftSnapshot | undefined
   }
@@ -182,6 +187,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const history = await rest.getMessages(threadId)
       if (conversationStore.threadId !== threadId || !isCurrent()) return false
       conversationStore.hydrate(history)
+      await workflow?.restored?.(conversationStore.latestWorkflowId)
+      if (conversationStore.threadId !== threadId || !isCurrent()) return false
       return true
     } catch (error) {
       if (!isCurrent()) return false
@@ -212,7 +219,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
   async function sendMessage(
     text: string,
     attachments?: SentAttachment[],
-    tags?: SentTag[]
+    tags?: SentTag[],
+    workflowReferences?: WorkflowReference[]
   ): Promise<boolean> {
     if (sending.value) {
       conversationStore.recordFailedSend(
@@ -242,7 +250,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         new Promise<void>((resolve) => setTimeout(resolve, PREPARE_TIMEOUT_MS))
       ])
     const wfContext = workflow?.current(origin)
-    const tabs = workflow?.tabs?.(origin)
+    const tabs = workflow?.tabs?.(origin, workflowReferences)
     async function postTurn(threadId: string) {
       const draft = workflow?.draft?.(origin)
       // An unsaved tab now yields a context carrying only its tabPath, so a
@@ -296,7 +304,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
           previewUrl,
           ref
         })),
-        tags?.map((tag) => `${tag.title} #${tag.id}`)
+        tags?.map((tag) => `${tag.title} #${tag.id}`),
+        workflowReferences
       )
       conversationStore.startTurn(turnId)
       if (wasStopRequestedWhileSending()) {

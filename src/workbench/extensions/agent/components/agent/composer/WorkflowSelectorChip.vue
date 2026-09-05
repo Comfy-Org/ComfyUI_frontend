@@ -28,15 +28,19 @@ import type { ActiveTab } from '../../../types/activeTab'
 const {
   activeTab,
   tabs,
-  detached = false
+  visibleTabPath = null,
+  selectingTabPath = null,
+  selectTab = async () => false,
+  detached = false,
+  disabled = false
 } = defineProps<{
   activeTab: ActiveTab | null
   tabs: ActiveTab[]
+  visibleTabPath?: string | null
+  selectingTabPath?: string | null
+  selectTab?: (path: string) => Promise<boolean>
   detached?: boolean
-}>()
-const emit = defineEmits<{
-  selectTab: [path: string]
-  clear: []
+  disabled?: boolean
 }>()
 
 const { t } = useI18n()
@@ -64,11 +68,42 @@ watch(open, async (isOpen) => {
   searchInput.value?.focus()
 })
 
-const filteredTabs = computed(() =>
-  tabs.filter((tab) =>
-    tab.name.toLowerCase().includes(query.value.trim().toLowerCase())
+function openPicker(): void {
+  if (!disabled) open.value = true
+}
+
+defineExpose({ openPicker })
+
+function onOpenChange(value: boolean): void {
+  if (selectingTabPath === null) open.value = value
+}
+
+async function onSelectTab(path: string): Promise<void> {
+  if (disabled || selectingTabPath !== null) return
+  if (await selectTab(path)) open.value = false
+}
+
+const tabSections = computed(() => {
+  const normalizedQuery = query.value.trim().toLowerCase()
+  const filteredTabs = tabs.filter((tab) =>
+    tab.name.toLowerCase().includes(normalizedQuery)
   )
-)
+  const visibleTab = filteredTabs.find((tab) => tab.path === visibleTabPath)
+  const otherTabs = filteredTabs.filter((tab) => tab.path !== visibleTabPath)
+
+  return [
+    {
+      key: 'current',
+      label: t('agent.currentTab'),
+      tabs: visibleTab ? [visibleTab] : []
+    },
+    {
+      key: 'other',
+      label: t('agent.otherOpenWorkflows'),
+      tabs: otherTabs
+    }
+  ].filter((section) => section.tabs.length > 0)
+})
 
 // Suppress keys from the dropdown's typeahead while typing in the search box,
 // but let Escape bubble to reka's dismiss (a window keydown listener) so the
@@ -83,18 +118,19 @@ function onSearchKeydown(event: KeyboardEvent): void {
     ref="selectorRoot"
     class="flex w-full items-center justify-between gap-1.5"
   >
-    <DropdownMenuRoot v-model:open="open">
+    <DropdownMenuRoot :open="open" @update:open="onOpenChange">
       <TooltipProvider v-bind="AGENT_REKA_TOOLTIP_PROVIDER_PROPS">
         <TooltipRoot>
           <DropdownMenuTrigger as-child>
             <TooltipTrigger as-child>
               <button
                 type="button"
+                :disabled="disabled"
                 :aria-label="t('agent.switchWorkflow')"
                 :class="
                   cn(
-                    'group text-agent-fg hover:bg-agent-surface-hover inline-flex h-7 min-w-0 cursor-pointer items-center gap-2 rounded-lg px-2.5 text-xs/4 font-medium transition-colors',
-                    !current && 'text-agent-fg-muted hover:text-agent-fg flex-1'
+                    'group text-agent-fg hover:bg-agent-surface-hover inline-flex h-7 min-w-0 cursor-pointer items-center gap-2 rounded-lg px-2.5 text-xs/4 font-normal transition-colors disabled:cursor-not-allowed disabled:opacity-50',
+                    current ? 'flex-1' : 'border border-white/15 bg-white/4.5'
                   )
                 "
               >
@@ -110,7 +146,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
                   class="text-agent-fg-subtle group-hover:text-agent-fg icon-[comfy--workflow] size-3.5 shrink-0"
                 />
                 <span class="min-w-0 truncate">{{
-                  current?.name ?? t('agent.chooseWorkflow')
+                  current?.name ?? t('agent.selectWorkflowForAgent')
                 }}</span>
                 <span
                   v-if="current?.isPersisted === false || current?.modified"
@@ -141,11 +177,12 @@ function onSearchKeydown(event: KeyboardEvent): void {
           align="start"
           :side-offset="8"
           :reference="composerReference"
-          class="agent-scope bg-agent-surface-raised z-1100 box-border max-h-64 w-(--reka-dropdown-menu-trigger-width) overflow-y-auto rounded-[10px] border border-white/10 p-1 font-inter shadow-lg"
+          class="agent-scope bg-agent-surface-raised z-1100 box-border w-(--reka-dropdown-menu-trigger-width) overflow-hidden rounded-[10px] border border-white/10 p-1 font-inter shadow-lg"
         >
           <input
             ref="searchInput"
             v-model="query"
+            :disabled="selectingTabPath !== null"
             type="text"
             :placeholder="t('agent.searchWorkflows')"
             class="text-agent-fg placeholder:text-agent-fg-muted mb-1 h-8 w-full rounded-[10px] border border-white/15 bg-transparent px-2.5 py-1 text-[14px]/5 outline-none"
@@ -153,39 +190,57 @@ function onSearchKeydown(event: KeyboardEvent): void {
           />
           <DropdownMenuRadioGroup
             :model-value="current?.path ?? ''"
-            @update:model-value="emit('selectTab', $event)"
+            class="max-h-52 overflow-y-auto"
+            @update:model-value="onSelectTab"
           >
-            <DropdownMenuRadioItem
-              v-for="tab in filteredTabs"
-              :key="tab.path"
-              :value="tab.path"
-              class="text-agent-fg box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none data-highlighted:bg-[#404040]"
+            <div
+              v-for="section in tabSections"
+              :key="section.key"
+              role="group"
+              :aria-label="section.label"
             >
-              <span
-                v-if="tabActivity.editingTabPath === tab.path"
-                role="img"
-                :aria-label="t('g.agentWorking')"
-                class="text-agent-fg-subtle icon-[lucide--loader-circle] size-4 shrink-0 motion-safe:animate-spin"
-              />
-              <span
-                v-else
-                class="text-agent-fg-subtle icon-[comfy--workflow] size-4 shrink-0"
-              />
-              <span class="truncate">{{ tab.name }}</span>
-              <span
-                v-if="
-                  tabActivity.unseenModifiedPaths.has(tab.path) ||
-                  tab.isPersisted === false ||
-                  tab.modified ||
-                  tab.path === current?.path
-                "
-                class="ml-auto flex shrink-0 items-center gap-1.5"
+              <div
+                aria-hidden="true"
+                class="text-agent-fg-muted px-1.5 py-1 text-[11px]/4 font-medium"
               >
+                {{ section.label }}
+              </div>
+              <DropdownMenuRadioItem
+                v-for="tab in section.tabs"
+                :key="tab.path"
+                :value="tab.path"
+                :disabled="disabled || selectingTabPath !== null"
+                :aria-busy="selectingTabPath === tab.path || undefined"
+                class="text-agent-fg box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none data-highlighted:bg-[#404040]"
+                @select.prevent
+              >
+                <span
+                  v-if="selectingTabPath === tab.path"
+                  role="status"
+                  class="flex size-4 shrink-0 items-center justify-center"
+                >
+                  <span
+                    class="text-agent-fg-subtle icon-[lucide--loader-circle] size-4 motion-safe:animate-spin"
+                    aria-hidden="true"
+                  />
+                  <span class="sr-only">{{ t('agent.savingWorkflow') }}</span>
+                </span>
+                <span
+                  v-else-if="tabActivity.editingTabPath === tab.path"
+                  role="img"
+                  :aria-label="t('g.agentWorking')"
+                  class="text-agent-fg-subtle icon-[lucide--loader-circle] size-4 shrink-0 motion-safe:animate-spin"
+                />
+                <span
+                  v-else
+                  class="text-agent-fg-subtle icon-[comfy--workflow] size-4 shrink-0"
+                />
+                <span class="min-w-0 truncate">{{ tab.name }}</span>
                 <span
                   v-if="tabActivity.unseenModifiedPaths.has(tab.path)"
                   role="img"
                   :aria-label="t('g.agentModified')"
-                  class="flex size-4 items-center justify-center"
+                  class="flex size-4 shrink-0 items-center justify-center"
                 >
                   <span class="size-2 rounded-full bg-primary-background" />
                 </span>
@@ -196,43 +251,20 @@ function onSearchKeydown(event: KeyboardEvent): void {
                 >
                   <span class="bg-agent-fg size-2 rounded-full" />
                 </span>
-                <span class="flex size-4 shrink-0 items-center justify-center">
+                <span
+                  class="ml-auto flex size-4 shrink-0 items-center justify-center"
+                >
                   <DropdownMenuItemIndicator
                     class="flex size-4 items-center justify-center"
                   >
                     <span class="icon-[lucide--check] size-4" />
                   </DropdownMenuItemIndicator>
                 </span>
-              </span>
-            </DropdownMenuRadioItem>
+              </DropdownMenuRadioItem>
+            </div>
           </DropdownMenuRadioGroup>
         </DropdownMenuContent>
       </DropdownMenuPortal>
     </DropdownMenuRoot>
-    <TooltipProvider v-if="current" v-bind="AGENT_REKA_TOOLTIP_PROVIDER_PROPS">
-      <TooltipRoot disable-closing-trigger>
-        <TooltipTrigger as-child>
-          <button
-            type="button"
-            :aria-label="t('agent.dontWorkInWorkflow')"
-            class="text-agent-fg-subtle hover:bg-agent-surface-hover hover:text-agent-fg flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-lg transition-colors"
-            @click="emit('clear')"
-          >
-            <span class="icon-[lucide--x] size-4" />
-          </button>
-        </TooltipTrigger>
-        <TooltipPortal>
-          <TooltipContent
-            side="top"
-            align="end"
-            :side-offset="6"
-            :collision-padding="8"
-            :class="AGENT_REKA_TOOLTIP_CONTENT_CLASS"
-          >
-            {{ t('agent.dontWorkInWorkflow') }}
-          </TooltipContent>
-        </TooltipPortal>
-      </TooltipRoot>
-    </TooltipProvider>
   </div>
 </template>

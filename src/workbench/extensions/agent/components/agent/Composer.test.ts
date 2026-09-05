@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -9,7 +9,6 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 import * as tooltipConfig from '@/composables/useTooltipConfig'
 import { i18n } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-
 import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'
 import Composer from './Composer.vue'
 
@@ -35,9 +34,13 @@ function jsonResponse(status: number, body: unknown): Response {
   })
 }
 
-function mount(props: ComponentProps<typeof Composer> = {}) {
+function mount(
+  props: ComponentProps<typeof Composer> = {},
+  attrs: Record<string, unknown> = {}
+) {
   return render(Composer, {
-    props,
+    props: { hasWorkflowTarget: true, ...props },
+    attrs,
     global: {
       plugins: [i18n],
       directives: { tooltip: tooltipDirectiveStub }
@@ -90,6 +93,20 @@ describe('Composer', () => {
 
     expect(emitted().selectNodes).toHaveLength(1)
     expect(getMentionNodes).not.toHaveBeenCalled()
+  })
+
+  it('retains the draft on Enter while a workflow selection is saving', async () => {
+    const { emitted, rerender } = mount({ targetSelecting: true })
+    const box = screen.getByRole('textbox')
+    await userEvent.type(box, 'keep this draft{Enter}')
+    expect(box).toHaveValue('keep this draft')
+    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
+    expect(emitted().send).toBeUndefined()
+
+    await rerender({ targetSelecting: false })
+    expect(emitted().send).toBeUndefined()
+    await userEvent.keyboard('{Enter}')
+    expect(emitted().send).toHaveLength(1)
   })
 
   it('disables send when empty and enables once text is typed', async () => {
@@ -334,28 +351,44 @@ describe('Composer', () => {
       { id: '7', title: 'KSampler' },
       { id: '9', title: 'VAE Decode' }
     ]
-    const ASSETS = [
-      {
-        id: 'asset-1',
-        name: 'sunset-original.png',
-        hash: 'sunset-hash.png',
-        tags: ['input'],
-        display_name: 'Sunset.png',
-        thumbnail_url: '/api/assets/asset-1/thumbnail',
-        created_at: '2026-01-01T00:00:00.000Z',
-        updated_at: '2026-01-01T00:00:00.000Z'
-      },
-      {
-        id: 'asset-2',
-        name: 'forest.png',
-        tags: ['input'],
-        user_metadata: { name: 'Forest reference' },
-        created_at: '2026-01-01T00:00:00.000Z',
-        updated_at: '2026-01-01T00:00:00.000Z'
-      }
-    ]
 
-    it('lists matching nodes alphabetically', async () => {
+    async function openReferenceRoot(text = '@') {
+      await userEvent.type(screen.getByRole('textbox'), text)
+      return screen.getByRole('menu', { name: 'Add to prompt' })
+    }
+
+    async function openReferenceSection(
+      section: 'Nodes' | 'Workflows',
+      text = '@'
+    ) {
+      const menu = await openReferenceRoot(text)
+      await userEvent.click(
+        within(menu).getByRole('menuitem', { name: section })
+      )
+      return screen.getByRole('menu', { name: 'Add to prompt' })
+    }
+
+    it('opens a Reference menu with only Nodes and Workflows at the root', async () => {
+      mount({
+        getMentionNodes: () => NODES,
+        availableWorkflows: [{ id: 'wf-water', name: 'Water world' }],
+        canOpenAssets: true
+      })
+
+      const menu = await openReferenceRoot()
+
+      expect(within(menu).getByText('Reference')).toBeVisible()
+      expect(
+        within(menu)
+          .getAllByRole('menuitem')
+          .map((item) => item.textContent.trim())
+      ).toEqual(['Nodes', 'Workflows'])
+      expect(within(menu).queryByText('KSampler')).toBeNull()
+      expect(within(menu).queryByText('Water world')).toBeNull()
+      expect(within(menu).queryByText('Add from assets panel')).toBeNull()
+    })
+
+    it('opens the Nodes submenu and lists matching nodes alphabetically', async () => {
       mount({
         getMentionNodes: () => [
           { id: '3', title: 'VAE Decode' },
@@ -364,11 +397,13 @@ describe('Composer', () => {
         ]
       })
 
-      await userEvent.type(screen.getByRole('textbox'), '@')
+      const menu = await openReferenceSection('Nodes')
 
       expect(
-        screen.getAllByRole('option').map((option) => option.textContent.trim())
-      ).toEqual(['Alpha', 'KSampler', 'VAE Decode'])
+        within(menu)
+          .getAllByRole('menuitem')
+          .map((item) => item.textContent.trim())
+      ).toEqual(['Back', 'Alpha', 'KSampler', 'VAE Decode'])
     })
 
     // Re-picking a staged node is a no-op, so it drops out of the list.
@@ -378,13 +413,13 @@ describe('Composer', () => {
         selectionTags: [NODES[0]]
       })
 
-      await userEvent.type(screen.getByRole('textbox'), '@')
+      const menu = await openReferenceSection('Nodes')
 
-      const labels = screen
-        .getAllByRole('option')
-        .map((option) => option.textContent.trim())
+      const labels = within(menu)
+        .getAllByRole('menuitem')
+        .map((item) => item.textContent.trim())
       expect(labels).not.toContain(NODES[0].title)
-      expect(screen.getAllByRole('option')).toHaveLength(NODES.length - 1)
+      expect(labels).toEqual(['Back', 'KSampler #7', 'VAE Decode'])
     })
 
     // The staged node is only hidden from the picker, not from the duplicate
@@ -397,25 +432,20 @@ describe('Composer', () => {
         selectionTags: [NODES[0]]
       })
 
-      await userEvent.type(screen.getByRole('textbox'), '@')
+      await openReferenceSection('Nodes')
 
       expect(screen.getByText(`#${NODES[0].id}`)).toBeInTheDocument()
     })
 
-    it('opens on @, filters with spaces, and stages the pick on Enter', async () => {
+    it('keeps type-to-filter behavior inside the selected reference type', async () => {
       const { emitted } = mount({ getMentionNodes: () => NODES })
       const box = screen.getByRole('textbox')
 
-      await userEvent.type(box, '@')
-      expect(screen.getByRole('listbox')).toBeInTheDocument()
-      expect(screen.getAllByRole('option')).toHaveLength(3)
-      expect(screen.getByText('#5')).toBeInTheDocument()
-      expect(screen.getByText('#7')).toBeInTheDocument()
-      expect(screen.queryByText('#9')).not.toBeInTheDocument()
-
-      await userEvent.type(box, 'vae de')
-      expect(screen.getAllByRole('option')).toHaveLength(1)
-      expect(screen.queryByText('#9')).not.toBeInTheDocument()
+      const menu = await openReferenceSection('Nodes', '@vae de')
+      expect(within(menu).getAllByRole('menuitem')).toHaveLength(2)
+      expect(
+        within(menu).getByRole('menuitem', { name: 'VAE Decode' })
+      ).toHaveAttribute('data-active', 'true')
 
       await userEvent.keyboard('{Enter}')
       expect(emitted().mentionPick[0]).toEqual([NODES[2]])
@@ -423,74 +453,99 @@ describe('Composer', () => {
       expect((box as HTMLTextAreaElement).value).toBe('')
     })
 
-    it('navigates with arrows and inserts with Tab', async () => {
-      const { emitted } = mount({ getMentionNodes: () => NODES })
+    it('navigates categories and submenu items with the keyboard', async () => {
+      const workflow = { id: 'wf-water', name: 'Water world' }
+      const { emitted } = mount({ availableWorkflows: [workflow] })
 
-      await userEvent.type(screen.getByRole('textbox'), '@')
-      const options = screen.getAllByRole('option')
+      const root = await openReferenceRoot()
+      const categories = within(root).getAllByRole('menuitem')
+      expect(categories[0]).toHaveAttribute('data-active', 'true')
       await userEvent.keyboard('{ArrowDown}')
-      expect(options[1]).toHaveAttribute('aria-selected', 'true')
-      await userEvent.keyboard('{ArrowUp}')
-      expect(options[0]).toHaveAttribute('aria-selected', 'true')
-      await userEvent.keyboard('{Tab}')
+      expect(categories[1]).toHaveAttribute('data-active', 'true')
+      await userEvent.keyboard('{Enter}')
 
-      expect(emitted().mentionPick[0]).toEqual([NODES[0]])
+      const submenu = screen.getByRole('menu', { name: 'Add to prompt' })
+      expect(
+        within(submenu).getByRole('menuitem', { name: 'Back' })
+      ).toHaveAttribute('data-active', 'true')
+      await userEvent.keyboard('{ArrowDown}{Tab}')
+
+      expect(emitted().workflowReferencePick).toEqual([[workflow]])
       expect(emitted().send).toBeUndefined()
     })
 
-    it('filters assets, stages a keyboard pick, removes its token, and sends its ref', async () => {
+    it('stages an eligible workflow from the Workflows submenu', async () => {
+      const workflow = { id: 'wf-water', name: 'Water world' }
       const { emitted } = mount({
-        getMentionNodes: () => NODES,
-        getMentionAssets: async () => ASSETS
+        availableWorkflows: [
+          { id: 'wf-edit', name: 'Editable workflow' },
+          workflow
+        ],
+        editableWorkflowId: 'wf-edit'
       })
-      const box = screen.getByRole('textbox')
 
-      await userEvent.type(box, '@sun')
-      const option = await screen.findByRole('option', { name: 'Sunset.png' })
-      expect(screen.getAllByRole('option')).toEqual([option])
-
-      await userEvent.keyboard('{Enter}')
-      expect(box).toHaveValue('')
-      expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
-      expect(screen.getByText('Sunset.png')).toBeInTheDocument()
-
-      await userEvent.type(box, 'use this')
-      await userEvent.click(screen.getByRole('button', { name: 'Send' }))
-      expect(emitted().send[0]).toEqual([
-        'use this',
-        [
-          {
-            id: 'asset:asset-1',
-            name: 'Sunset.png',
-            ref: 'sunset-hash.png',
-            previewUrl: '/api/assets/asset-1/thumbnail'
-          }
-        ]
-      ])
-    })
-
-    it('stages an asset with the mouse and removes its chip', async () => {
-      mount({ getMentionAssets: async () => ASSETS })
-      const box = screen.getByRole('textbox')
-
-      await userEvent.type(box, '@forest')
+      const menu = await openReferenceSection('Workflows', '@water')
       await userEvent.click(
-        await screen.findByRole('option', { name: 'Forest reference' })
+        within(menu).getByRole('menuitem', { name: 'Water world' })
       )
 
-      expect(box).toHaveValue('')
-      expect(screen.getByText('Forest reference')).toBeInTheDocument()
-      await userEvent.click(screen.getByRole('button', { name: 'Remove' }))
-      expect(screen.queryByText('Forest reference')).not.toBeInTheDocument()
+      expect(emitted().workflowReferencePick).toEqual([[workflow]])
+      expect(screen.getByRole('textbox')).toHaveValue('')
+    })
+
+    it('requests fresh workflow candidates when @ enters Workflows', async () => {
+      const { emitted } = mount()
+
+      await openReferenceSection('Workflows')
+
+      expect(emitted().requestWorkflowReferences).toHaveLength(1)
+    })
+
+    it('returns from a reference submenu to the root menu', async () => {
+      mount({ getMentionNodes: () => NODES })
+      const menu = await openReferenceSection('Nodes')
+
+      await userEvent.click(
+        within(menu).getByRole('menuitem', { name: 'Back' })
+      )
+
+      const root = screen.getByRole('menu', { name: 'Add to prompt' })
+      expect(within(root).getByText('Reference')).toBeVisible()
+      expect(
+        within(root).getByRole('menuitem', { name: 'Nodes' })
+      ).toBeVisible()
+      expect(
+        within(root).getByRole('menuitem', { name: 'Workflows' })
+      ).toBeVisible()
+    })
+
+    it('includes selected workflow references in the send snapshot', async () => {
+      const references = [{ id: 'wf-water', name: 'Water world' }]
+      const { emitted } = mount({ workflowReferences: references })
+
+      await userEvent.type(screen.getByRole('textbox'), 'use this workflow')
+      await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+      expect(emitted().send[0]).toEqual(['use this workflow', [], references])
+    })
+
+    it('excludes only the referenced id when node titles match', async () => {
+      mount({ selectionTags: [NODES[0]], getMentionNodes: () => NODES })
+
+      const menu = await openReferenceSection('Nodes')
+
+      expect(within(menu).queryByText('#5')).not.toBeInTheDocument()
+      expect(within(menu).getByText('#7')).toBeInTheDocument()
+      expect(within(menu).getByText('VAE Decode')).toBeInTheDocument()
     })
 
     it('keeps a duplicate-title id visible when filtering by id', async () => {
       mount({ getMentionNodes: () => NODES })
 
-      await userEvent.type(screen.getByRole('textbox'), '@5')
+      const menu = await openReferenceSection('Nodes', '@5')
 
-      expect(screen.getAllByRole('option')).toHaveLength(1)
-      expect(screen.getByText('#5')).toBeInTheDocument()
+      expect(within(menu).getAllByRole('menuitem')).toHaveLength(2)
+      expect(within(menu).getByText('#5')).toBeInTheDocument()
     })
 
     it('closes on Escape so Enter sends normally', async () => {
@@ -498,10 +553,10 @@ describe('Composer', () => {
       const box = screen.getByRole('textbox')
 
       await userEvent.type(box, 'hi @k')
-      expect(screen.getByRole('listbox')).toBeInTheDocument()
+      expect(screen.getByRole('menu')).toBeInTheDocument()
 
       await userEvent.keyboard('{Escape}')
-      expect(screen.queryByRole('listbox')).toBeNull()
+      expect(screen.queryByRole('menu')).toBeNull()
 
       await userEvent.keyboard('{Enter}')
       expect(emitted().send[0]).toEqual(['hi @k', []])
@@ -511,7 +566,7 @@ describe('Composer', () => {
       mount({ getMentionNodes: () => NODES })
 
       await userEvent.type(screen.getByRole('textbox'), 'email@k')
-      expect(screen.queryByRole('listbox')).toBeNull()
+      expect(screen.queryByRole('menu')).toBeNull()
     })
 
     it('lets Shift+Enter insert a newline instead of picking', async () => {
@@ -519,13 +574,13 @@ describe('Composer', () => {
       const box = screen.getByRole('textbox')
 
       await userEvent.type(box, '@k')
-      expect(screen.getByRole('listbox')).toBeInTheDocument()
+      expect(screen.getByRole('menu')).toBeInTheDocument()
 
       await userEvent.keyboard('{Shift>}{Enter}{/Shift}')
       expect(emitted().mentionPick).toBeUndefined()
       expect(emitted().send).toBeUndefined()
       expect((box as HTMLTextAreaElement).value).toBe('@k\n')
-      expect(screen.queryByRole('listbox')).toBeNull()
+      expect(screen.queryByRole('menu')).toBeNull()
     })
 
     it('closes when the caret moves out of the token', async () => {
@@ -533,10 +588,10 @@ describe('Composer', () => {
       const box = screen.getByRole('textbox')
 
       await userEvent.type(box, '@k')
-      expect(screen.getByRole('listbox')).toBeInTheDocument()
+      expect(screen.getByRole('menu')).toBeInTheDocument()
 
       await userEvent.keyboard('{Home}')
-      expect(screen.queryByRole('listbox')).toBeNull()
+      expect(screen.queryByRole('menu')).toBeNull()
     })
   })
 
@@ -555,8 +610,173 @@ describe('Composer', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Add to prompt' }))
     // Anchor on the entry that is always present, so the absence assertions
     // below cannot pass against a menu that never opened.
-    return screen.findByRole('menuitem', { name: 'Add nodes from graph' })
+    return screen.findByRole('menuitem', { name: 'Nodes' })
   }
+
+  it('separates node and workflow references in the add menu', async () => {
+    mount()
+
+    await openAddMenu()
+
+    expect(screen.getByRole('menuitem', { name: 'Nodes' })).toBeVisible()
+    expect(screen.getByRole('menuitem', { name: 'Workflows' })).toBeVisible()
+  })
+
+  it('returns from the workflow submenu to the reference menu', async () => {
+    mount()
+
+    await openAddMenu()
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Back' }))
+
+    expect(screen.getByRole('menuitem', { name: 'Nodes' })).toBeVisible()
+    expect(screen.getByRole('menuitem', { name: 'Workflows' })).toBeVisible()
+  })
+
+  it('requests fresh workflow candidates when + opens Workflows', async () => {
+    const { emitted } = mount()
+
+    await openAddMenu()
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
+
+    expect(emitted().requestWorkflowReferences).toHaveLength(1)
+  })
+
+  it('lists only eligible workflows and emits the selected reference', async () => {
+    const { emitted } = mount(
+      {},
+      {
+        availableWorkflows: [
+          { id: 'wf-edit', name: 'Editable workflow' },
+          { id: 'wf-selected', name: 'Already selected' },
+          { id: 'wf-eligible', name: 'Water world' }
+        ],
+        workflowReferences: [{ id: 'wf-selected', name: 'Already selected' }],
+        editableWorkflowId: 'wf-edit'
+      }
+    )
+
+    await openAddMenu()
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
+
+    expect(
+      screen.queryByRole('menuitem', { name: 'Editable workflow' })
+    ).toBeNull()
+    expect(
+      screen.queryByRole('menuitem', { name: 'Already selected' })
+    ).toBeNull()
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: 'Water world' })
+    )
+
+    expect(emitted().workflowReferencePick).toEqual([
+      [{ id: 'wf-eligible', name: 'Water world' }]
+    ])
+  })
+
+  it('removes the workflow reference before the text caret with Backspace', async () => {
+    const { emitted } = mount(
+      {},
+      {
+        workflowReferences: [
+          { id: 'wf-1', name: 'Water world' },
+          { id: 'wf-2', name: 'Portrait lighting' }
+        ]
+      }
+    )
+
+    const inlineInput = screen.getByTestId('composer-inline-input')
+    const workflowChips = within(inlineInput).getAllByTestId(
+      'workflow-reference-chip'
+    )
+    expect(workflowChips[0]).toHaveClass(
+      'bg-primary-background/30',
+      'ring-1',
+      'ring-inset',
+      'ring-primary-background/30',
+      'text-primary-background-hover',
+      'rounded-sm',
+      'text-xs/[15px]',
+      'font-normal'
+    )
+    expect(workflowChips[0]).not.toHaveClass('h-5', 'h-7', 'font-medium')
+    expect(inlineInput).toContainElement(screen.getByRole('textbox'))
+    expect(
+      within(inlineInput).queryByRole('button', { name: /workflow reference/ })
+    ).toBeNull()
+
+    const textarea = screen.getByRole('textbox') as HTMLTextAreaElement
+    await userEvent.type(textarea, 'keep me')
+    textarea.setSelectionRange(0, 0)
+    await userEvent.keyboard('{Backspace}')
+
+    expect(emitted().removeWorkflowReference).toEqual([['wf-2']])
+    expect(textarea).toHaveValue('keep me')
+  })
+
+  it('keeps normal text deletion when the caret is not at the start', async () => {
+    const { emitted } = mount(
+      {},
+      {
+        workflowReferences: [{ id: 'wf-1', name: 'Water world' }]
+      }
+    )
+
+    const textarea = screen.getByRole('textbox') as HTMLTextAreaElement
+    await userEvent.type(textarea, 'text')
+    await userEvent.keyboard('{Backspace}')
+
+    expect(emitted().removeWorkflowReference).toBeUndefined()
+    expect(textarea).toHaveValue('tex')
+  })
+
+  it('keeps selected nodes in a dedicated section above the inline prompt', () => {
+    mount({
+      selectionTags: [{ id: '5', title: 'KSampler' }],
+      workflowReferences: [{ id: 'wf-1', name: 'Water world' }]
+    })
+
+    const nodeSection = screen.getByTestId('composer-node-section')
+    const inlineInput = screen.getByTestId('composer-inline-input')
+
+    expect(nodeSection).toHaveClass('border-b', 'p-3')
+    expect(nodeSection).toHaveTextContent('KSampler')
+    expect(nodeSection).not.toContainElement(screen.getByRole('textbox'))
+    expect(inlineInput).not.toHaveTextContent('KSampler')
+    expect(inlineInput).toHaveTextContent('Water world')
+  })
+
+  it('keeps added assets in a separate padded section above the prompt', async () => {
+    const composer = ref<InstanceType<typeof Composer> | null>(null)
+    const Host = defineComponent({
+      setup: () => () => h(Composer, { ref: composer })
+    })
+    render(Host, { global: { plugins: [i18n] } })
+    composer.value?.addAttachment({
+      id: 'attachment-1',
+      name: 'cat.png',
+      ref: 'uploaded_cat.png',
+      previewUrl: 'https://example.com/cat.png'
+    })
+    await nextTick()
+
+    const assetSection = screen.getByTestId('composer-asset-section')
+    const inlineInput = screen.getByTestId('composer-inline-input')
+
+    expect(assetSection).toHaveClass('p-3')
+    expect(assetSection).toContainElement(
+      screen.getByRole('img', { name: 'cat.png' })
+    )
+    expect(inlineInput).not.toContainElement(
+      screen.getByRole('img', { name: 'cat.png' })
+    )
+  })
+
+  it('keeps the empty prompt hint visible when only nodes are selected', () => {
+    mount({ selectionTags: [{ id: '5', title: 'KSampler' }] })
+
+    expect(screen.getByText('Describe ideas, @ to reference,')).toBeVisible()
+  })
 
   it('hides the conditional entries from the add menu by default', async () => {
     mount()
@@ -610,17 +830,6 @@ describe('Composer', () => {
     expect(screen.queryByText('#5')).not.toBeInTheDocument()
   })
 
-  it('passes the full tooltip config to selection chip directives', () => {
-    mount({ selectionTags: [{ id: '5', title: 'KSampler' }] })
-
-    const button = screen.getByRole('button', {
-      name: 'Show KSampler #5 on canvas'
-    })
-    expect(tooltipBindings.get(button)).toEqual(
-      tooltipConfig.buildAgentTooltipConfig('Show on canvas')
-    )
-  })
-
   it('emits removeTag when a selection chip is removed', async () => {
     const { emitted } = mount({
       selectionTags: [{ id: '5', title: 'KSampler' }]
@@ -644,16 +853,13 @@ describe('Composer', () => {
     )
   })
 
-  it('emits focusTag when a selection chip is activated', async () => {
-    const { emitted } = mount({
-      selectionTags: [{ id: '5', title: 'KSampler' }]
-    })
+  it('renders a selection chip label as non-interactive context', () => {
+    mount({ selectionTags: [{ id: '5', title: 'KSampler' }] })
 
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Show KSampler #5 on canvas' })
-    )
-
-    expect(emitted().focusTag).toEqual([['5']])
+    expect(screen.getByText('KSampler')).toBeVisible()
+    expect(
+      screen.queryByRole('button', { name: 'Show KSampler #5 on canvas' })
+    ).toBeNull()
   })
 
   // The remove button sits outside the focus trigger; removing a chip must not

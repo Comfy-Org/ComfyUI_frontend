@@ -693,6 +693,25 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(body.selection).toEqual({ node_ids: ['5', '6'] })
   })
 
+  it('(h3) keeps workflow references in the local turn without inventing a wire field', async () => {
+    const rest = fakeRest()
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    const references = [{ id: 'wf-context', name: 'Context workflow' }]
+    session.start()
+
+    await session.sendMessage('compare this', undefined, undefined, references)
+
+    expect(vi.mocked(rest.postMessage).mock.calls[0][1]).toEqual({
+      content: 'compare this',
+      selection: undefined,
+      attachments: undefined
+    })
+    expect(useAgentConversationStore().entries[0]).toMatchObject({
+      role: 'user',
+      workflowReferences: references
+    })
+  })
+
   it('(h4) the turn post never carries a draft field (upload retired)', async () => {
     const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
       thread_id: 'th-1',
@@ -1920,6 +1939,36 @@ describe('thread resume (B17)', () => {
       role: 'user',
       text: 'build a duck'
     })
+  })
+
+  it('restores the target from the latest persisted user message', async () => {
+    const older = historyRow(1, 'user', 'turn-a', 'First')
+    older.workflow_id = 'wf-a'
+    const latest = historyRow(3, 'user', 'turn-b', 'Second')
+    latest.workflow_id = 'wf-b'
+    const restored = vi.fn()
+    const session = useAgentSession({
+      rest: fakeRest({
+        getMessages: vi.fn(
+          async (): Promise<AgentMessages> => [
+            latest,
+            historyRow(2, 'assistant', 'turn-a', 'Done'),
+            older
+          ]
+        )
+      }),
+      events: fakeEvents().source,
+      workflow: {
+        current: () => undefined,
+        adopted: vi.fn(),
+        restored
+      }
+    })
+    session.start()
+
+    await session.loadThread('th-9')
+
+    expect(restored).toHaveBeenCalledWith('wf-b')
   })
 
   it('listThreads returns the REST client thread list', async () => {
