@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+import AxeBuilderPlaywright from '@axe-core/playwright'
 
 import type { Asset } from '@comfyorg/ingest-types'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
@@ -1063,6 +1064,146 @@ test.describe('Assets sidebar - delete confirmation', () => {
     await expect(tab.assetCards).toHaveCount(initialCount)
   })
 })
+
+test.describe(
+  'Assets sidebar - accessibility states',
+  { tag: '@audit' },
+  () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
+      await comfyPage.assets.mockInputFiles([])
+      await comfyPage.assets.mockJobDetail('job-gamma', JOB_GAMMA_DETAIL)
+      await comfyPage.assets.mockDeleteHistory()
+      await comfyPage.setup()
+    })
+
+    test.afterEach(async ({ comfyPage }) => {
+      await comfyPage.assets.clearMocks()
+    })
+
+    test('loaded, grouped, and delete states have accessible controls', async ({
+      comfyPage
+    }) => {
+      const tab = comfyPage.menu.assetsTab
+      await tab.open()
+
+      await tab.generatedTab.focus()
+      await comfyPage.page.keyboard.press('ArrowRight')
+      await expect(tab.importedTab).toBeFocused()
+
+      const loadedResults = await new AxeBuilderPlaywright({
+        page: comfyPage.page
+      })
+        .include('.sidebar-content-container')
+        .disableRules('aria-valid-attr-value')
+        .analyze()
+      expect(
+        loadedResults.violations.filter(
+          ({ impact }) => impact === 'critical' || impact === 'serious'
+        )
+      ).toEqual([])
+
+      await tab.assetCards
+        .first()
+        .getByRole('button', { name: 'See more outputs' })
+        .click()
+      await expect(tab.backToAssetsButton).toBeVisible()
+
+      const groupedResults = await new AxeBuilderPlaywright({
+        page: comfyPage.page
+      })
+        .include('.sidebar-content-container')
+        .disableRules('aria-valid-attr-value')
+        .analyze()
+      expect(
+        groupedResults.violations.filter(
+          ({ impact }) => impact === 'critical' || impact === 'serious'
+        )
+      ).toEqual([])
+
+      await tab.backToAssetsButton.click()
+      await tab.assetCards.first().click({ button: 'right' })
+      await tab.contextMenuItem('Delete').click()
+      await expect(comfyPage.confirmDialog.root).toBeVisible()
+
+      const deleteResults = await new AxeBuilderPlaywright({
+        page: comfyPage.page
+      })
+        .include('[role="dialog"]')
+        .disableRules('color-contrast')
+        .analyze()
+      expect(
+        deleteResults.violations.filter(
+          ({ impact }) => impact === 'critical' || impact === 'serious'
+        )
+      ).toEqual([])
+    })
+
+    test('tabs reference rendered tab panels', async ({ comfyPage }) => {
+      test.fail(
+        true,
+        'Assets tabs currently reference tab panels that are not rendered'
+      )
+      const tab = comfyPage.menu.assetsTab
+      await tab.open()
+
+      const results = await new AxeBuilderPlaywright({ page: comfyPage.page })
+        .include('.sidebar-content-container')
+        .withRules('aria-valid-attr-value')
+        .analyze()
+      expect(results.violations).toEqual([])
+    })
+
+    test('empty state remains announced without serious violations', async ({
+      comfyPage
+    }) => {
+      const tab = comfyPage.menu.assetsTab
+      await comfyPage.assets.mockOutputHistory([])
+      await tab.open({ waitForAssets: false })
+      await expect(
+        tab.emptyStateTitle('No generated files found')
+      ).toBeVisible()
+
+      const emptyResults = await new AxeBuilderPlaywright({
+        page: comfyPage.page
+      })
+        .include('.sidebar-content-container')
+        .disableRules('aria-valid-attr-value')
+        .analyze()
+      expect(
+        emptyResults.violations.filter(
+          ({ impact }) => impact === 'critical' || impact === 'serious'
+        )
+      ).toEqual([])
+    })
+
+    test('error state remains announced without serious violations', async ({
+      comfyPage
+    }) => {
+      const tab = comfyPage.menu.assetsTab
+      await tab.open()
+      await comfyPage.page.route(/\/api\/assets\/[^/?]+$/, (route) =>
+        route.fulfill({ status: 503 })
+      )
+      await tab.assetCards.first().click({ button: 'right' })
+      await tab.contextMenuItem('Delete').click()
+      await comfyPage.confirmDialog.delete.click()
+      const errorToast = comfyPage.page.locator('.p-toast-message-error')
+      await expect(errorToast).toBeVisible()
+
+      const errorResults = await new AxeBuilderPlaywright({
+        page: comfyPage.page
+      })
+        .include('.p-toast-message-error')
+        .analyze()
+      expect(
+        errorResults.violations.filter(
+          ({ impact }) => impact === 'critical' || impact === 'serious'
+        )
+      ).toEqual([])
+    })
+  }
+)
 
 // ==========================================================================
 // 12. Media type filter (cloud-only)

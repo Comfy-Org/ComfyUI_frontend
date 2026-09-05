@@ -159,6 +159,7 @@
     "zod-validation-error": "catalog:"
   },
   "devDependencies": {
+    "@axe-core/playwright": "catalog:",
     "@comfyorg/ingest-types": "workspace:*",
     "@eslint/js": "catalog:",
     "@intlify/eslint-plugin-vue-i18n": "catalog:",
