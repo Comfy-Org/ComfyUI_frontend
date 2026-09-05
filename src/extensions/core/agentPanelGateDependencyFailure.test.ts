@@ -28,6 +28,20 @@ vi.mock('@/workbench/extensions/agent/stores/agent/agentPanelStore', () => ({
   useAgentPanelStore: () => agentStore
 }))
 
+vi.mock('@/workbench/extensions/agent/stores/agent/agentConsentStore', () => ({
+  useAgentConsentStore: () => ({ load: vi.fn() })
+}))
+
+vi.mock('@/composables/auth/useCurrentUser', async () => {
+  const { ref } = await import('vue')
+  return {
+    useCurrentUser: () => ({
+      isLoggedIn: ref(true),
+      resolvedUserInfo: ref({ id: 'account-a' })
+    })
+  }
+})
+
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: () => ({ activeWorkflow: null })
 }))

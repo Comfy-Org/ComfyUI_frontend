@@ -51,6 +51,7 @@ describe('useAgentDockMount', () => {
     expect(loadDockedAgentPanel).not.toHaveBeenCalled()
     expect(docked.value).toBe(false)
     store.enabled = true
+    store.consentAccepted = true
     expect(loadDockedAgentPanel).not.toHaveBeenCalled()
     expect(docked.value).toBe(false)
     store.isOpen = true

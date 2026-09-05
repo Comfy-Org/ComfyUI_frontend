@@ -155,9 +155,12 @@ vi.mock('@/stores/workspaceStore', () => ({
 const agentPanelHolder = vi.hoisted(() => ({
   store: null as unknown as {
     isOpen: { value: boolean }
+    isVisible: { value: boolean }
     enabled: { value: boolean }
     gateSettled: { value: boolean }
     toggle: ReturnType<typeof vi.fn>
+    open: ReturnType<typeof vi.fn>
+    suppressRestoredOpen: ReturnType<typeof vi.fn>
   }
 }))
 vi.mock(
@@ -166,11 +169,21 @@ vi.mock(
     const { reactive, ref } = await import('vue')
     agentPanelHolder.store = {
       isOpen: ref(false),
+      isVisible: ref(false),
       enabled: ref(false),
       gateSettled: ref(false),
       toggle: vi.fn(() => {
         agentPanelHolder.store.isOpen.value =
           !agentPanelHolder.store.isOpen.value
+        agentPanelHolder.store.isVisible.value =
+          agentPanelHolder.store.isOpen.value
+      }),
+      open: vi.fn(() => {
+        agentPanelHolder.store.isOpen.value = true
+        agentPanelHolder.store.isVisible.value = true
+      }),
+      suppressRestoredOpen: vi.fn(() => {
+        agentPanelHolder.store.isOpen.value = false
       })
     }
     // reactive() unwraps the holder refs on read, matching a real pinia
@@ -178,6 +191,19 @@ vi.mock(
     return { useAgentPanelStore: () => reactive(agentPanelHolder.store) }
   }
 )
+
+const withConsent = vi.hoisted(() =>
+  vi.fn(async (onAccept: () => void) => onAccept())
+)
+vi.mock(
+  '@/workbench/extensions/agent/composables/agent/useAgentConsent',
+  () => ({ useAgentConsent: () => ({ withConsent }) })
+)
+
+const trackAgentEntryButtonClicked = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({ trackAgentEntryButtonClicked })
+}))
 
 vi.mock('@/utils/mouseDownUtil', () => ({
   whileMouseDown: vi.fn()
@@ -289,13 +315,20 @@ describe('WorkflowTabs agent entry button', () => {
     tabBarLayout.value = 'Default'
     agentPanelHolder.store.enabled.value = true
     agentPanelHolder.store.isOpen.value = false
+    agentPanelHolder.store.isVisible.value = false
     agentPanelHolder.store.toggle.mockClear()
+    agentPanelHolder.store.open.mockClear()
+    agentPanelHolder.store.suppressRestoredOpen.mockClear()
+    withConsent.mockClear()
+    withConsent.mockImplementation(async (onAccept: () => void) => onAccept())
+    trackAgentEntryButtonClicked.mockClear()
   })
 
   afterEach(() => {
     tabBarLayout.value = 'Default'
     agentPanelHolder.store.enabled.value = false
     agentPanelHolder.store.isOpen.value = false
+    agentPanelHolder.store.isVisible.value = false
   })
 
   it('does not render the entry button in the legacy tab bar even with the flag on', () => {
@@ -326,7 +359,7 @@ describe('WorkflowTabs agent entry button', () => {
     ).toHaveLength(1)
   })
 
-  it('toggles the panel and reflects the pressed state on the button', async () => {
+  it('gates opening and reflects the visible state on the button', async () => {
     const { user } = renderComponent()
 
     const button = screen.getByRole('button', {
@@ -336,8 +369,65 @@ describe('WorkflowTabs agent entry button', () => {
 
     await user.click(button)
 
-    expect(agentPanelHolder.store.toggle).toHaveBeenCalledTimes(1)
+    expect(withConsent).toHaveBeenCalledOnce()
+    expect(agentPanelHolder.store.open).toHaveBeenCalledOnce()
+    expect(trackAgentEntryButtonClicked).toHaveBeenCalledWith({
+      resulting_state: 'opened'
+    })
     expect(button).toHaveAttribute('aria-pressed', 'true')
+
+    await user.click(button)
+
+    expect(agentPanelHolder.store.toggle).toHaveBeenCalledOnce()
+    expect(trackAgentEntryButtonClicked).toHaveBeenLastCalledWith({
+      resulting_state: 'closed'
+    })
+    expect(button).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('ignores repeated opens while consent is pending and retries after it settles', async () => {
+    let resolveConsent!: () => void
+    withConsent.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveConsent = resolve
+        })
+    )
+    const { user } = renderComponent()
+    const button = screen.getByRole('button', {
+      name: enMessages.agent.askComfyAgent
+    })
+
+    await user.click(button)
+    await user.click(button)
+
+    expect(withConsent).toHaveBeenCalledOnce()
+    expect(agentPanelHolder.store.open).not.toHaveBeenCalled()
+
+    resolveConsent()
+    await waitFor(() => expect(withConsent).toHaveBeenCalledOnce())
+    await user.click(button)
+
+    expect(withConsent).toHaveBeenCalledTimes(2)
+    expect(agentPanelHolder.store.open).toHaveBeenCalledOnce()
+  })
+
+  it('clears a hidden restored intent before requesting consent', async () => {
+    agentPanelHolder.store.isOpen.value = true
+    withConsent.mockImplementationOnce(async (onAccept: () => void) => {
+      expect(agentPanelHolder.store.isOpen.value).toBe(false)
+      expect(agentPanelHolder.store.suppressRestoredOpen).toHaveBeenCalledOnce()
+      onAccept()
+    })
+    const { user } = renderComponent()
+
+    await user.click(
+      screen.getByRole('button', { name: enMessages.agent.askComfyAgent })
+    )
+
+    expect(agentPanelHolder.store.toggle).not.toHaveBeenCalled()
+    expect(agentPanelHolder.store.suppressRestoredOpen).toHaveBeenCalledOnce()
+    expect(withConsent).toHaveBeenCalledOnce()
   })
 
   it('exposes the gate-settled signal on the actions container once the gate settles', async () => {

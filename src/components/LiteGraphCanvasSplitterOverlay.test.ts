@@ -10,6 +10,7 @@ import { createI18n } from 'vue-i18n'
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 
 vi.mock('@/stores/authStore', () => ({
@@ -118,5 +119,41 @@ describe('LiteGraphCanvasSplitterOverlay', () => {
     await nextTick()
 
     expect(screen.getByTestId('topmenu')).toBeInTheDocument()
+  })
+  it('refreshes the splitter only when the Agent panel becomes visible', async () => {
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
+    setActivePinia(pinia)
+    const agentPanelStore = useAgentPanelStore()
+    agentPanelStore.enabled = true
+    agentPanelStore.isOpen = true
+    agentPanelStore.consentAccepted = false
+
+    const splitterMounts = vi.fn()
+    const i18n = createI18n({
+      legacy: false,
+      locale: 'en',
+      messages: { en: { sideToolbar: { sidebar: 'Sidebar' } } }
+    })
+
+    render(LiteGraphCanvasSplitterOverlay, {
+      global: {
+        plugins: [pinia, i18n],
+        stubs: {
+          Splitter: {
+            setup: splitterMounts,
+            template: '<div><slot /></div>'
+          },
+          SplitterPanel: { template: '<div><slot /></div>' }
+        }
+      }
+    })
+    const mountsBeforeConsent = splitterMounts.mock.calls.length
+
+    agentPanelStore.consentAccepted = true
+    await nextTick()
+
+    expect(splitterMounts.mock.calls.length).toBeGreaterThan(
+      mountsBeforeConsent
+    )
   })
 })

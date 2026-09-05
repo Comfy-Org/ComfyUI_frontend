@@ -44,6 +44,10 @@ vi.mock('@/composables/canvas/useFocusNode', () => ({
   useFocusNode: () => ({ focusNodeInstance })
 }))
 
+vi.mock('@/workbench/extensions/agent/stores/agent/agentConsentStore', () => ({
+  useAgentConsentStore: () => ({ accepted: true })
+}))
+
 const ws = vi.hoisted(() => {
   type Listener = (event: { detail?: unknown }) => void
   const listeners = new Map<string, Set<Listener>>()
@@ -272,7 +276,10 @@ vi.mock('@/stores/executionErrorStore', () => ({
 }))
 
 vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: () => ({ userDisplayName: { value: 'Jo Rivera' } })
+  useCurrentUser: () => ({
+    isLoggedIn: { value: true },
+    userDisplayName: { value: 'Jo Rivera' }
+  })
 }))
 
 const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
@@ -388,6 +395,35 @@ function addTab(path: string, overrides: Partial<FakeTab> = {}): FakeTab {
   hostStores.workflow.openTabPaths.add(tab.path)
   return tab
 }
+
+describe('AgentPanelRoot first-use experience', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    ws.clear()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response('{"threads":[]}', {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' }
+          })
+      )
+    )
+  })
+
+  it('opens directly to Agent without the superseded coach prompt', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(await screen.findByRole('textbox')).toBeInTheDocument()
+    await nextTick()
+    await nextTick()
+
+    expect(
+      screen.queryByRole('dialog', { name: 'Meet the agent' })
+    ).not.toBeInTheDocument()
+  })
+})
 
 describe('AgentPanelRoot session notices', () => {
   beforeEach(() => {

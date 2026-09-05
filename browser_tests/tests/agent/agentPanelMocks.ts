@@ -3,6 +3,7 @@ import type { Page, Route } from '@playwright/test'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import type {
   AgentCancelAccepted,
   AgentTurnAccepted,
@@ -132,14 +133,20 @@ function agentFeatures(agentFlag: boolean): RemoteConfig {
 
 async function mockAgentBoot(
   page: Page,
-  {
-    agentFlag,
-    postedMessages
-  }: { agentFlag: boolean; postedMessages: string[] }
+  agentFlag: boolean,
+  postedMessages: string[],
+  initialConsentAccepted: boolean,
+  panelInitiallyOpen: boolean,
+  consentSaveStatus: number,
+  consentWrites: boolean[]
 ): Promise<void> {
-  await page.addInitScript(() => {
-    localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
-  })
+  let consentAccepted = initialConsentAccepted
+
+  await page.addInitScript((initiallyOpen) => {
+    if (localStorage.getItem('Comfy.AgentPanel.open') === null) {
+      localStorage.setItem('Comfy.AgentPanel.open', String(initiallyOpen))
+    }
+  }, panelInitiallyOpen)
 
   await mockBilling(page)
   await page.route('**/api/assets**', (r) =>
@@ -169,6 +176,34 @@ async function mockAgentBoot(
       })
     )
   )
+  await page.route('**/api/settings/*', async (route) => {
+    const request = route.request()
+    const settingId = decodeURIComponent(new URL(request.url()).pathname)
+      .split('/')
+      .at(-1)
+    if (request.method() !== 'POST') {
+      return route.fulfill(
+        jsonRoute({
+          value:
+            settingId === AGENT_CONSENT_SETTING_ID ? consentAccepted : undefined
+        })
+      )
+    }
+
+    const value: unknown = request.postDataJSON()
+    if (settingId === AGENT_CONSENT_SETTING_ID && typeof value === 'boolean') {
+      consentWrites.push(value)
+    }
+    if (settingId === AGENT_CONSENT_SETTING_ID && consentSaveStatus >= 400) {
+      return route.fulfill({ status: consentSaveStatus })
+    }
+    if (settingId === AGENT_CONSENT_SETTING_ID && typeof value === 'boolean') {
+      consentAccepted = value
+    }
+    return route.fulfill({
+      status: settingId === AGENT_CONSENT_SETTING_ID ? consentSaveStatus : 204
+    })
+  })
   await page.route('**/api/userdata**', (r) => r.fulfill(jsonRoute([])))
   await page.route('**/api/extensions', (r) => r.fulfill(jsonRoute([])))
   await page.route('**/api/object_info', (r) => r.fulfill(jsonRoute({})))
@@ -231,17 +266,45 @@ async function mockAgentBoot(
 
 type AgentFixtures = {
   agentFlagEnabled: boolean
+  agentConsentAccepted: boolean
+  agentPanelInitiallyOpen: boolean
+  agentConsentSaveStatus: number
+  agentConsentWrites: boolean[]
   postedMessages: string[]
 }
 
 export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   agentFlagEnabled: [true, { option: true }],
-  // oxlint-disable-next-line no-empty-pattern -- Playwright requires an object pattern.
-  postedMessages: async ({}, use) => {
+  agentConsentAccepted: [true, { option: true }],
+  agentPanelInitiallyOpen: [false, { option: true }],
+  agentConsentSaveStatus: [204, { option: true }],
+  agentConsentWrites: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
     await use([])
   },
-  page: async ({ page, agentFlagEnabled, postedMessages }, use) => {
-    await mockAgentBoot(page, { agentFlag: agentFlagEnabled, postedMessages })
+  postedMessages: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
+    await use([])
+  },
+  page: async (
+    {
+      page,
+      agentFlagEnabled,
+      postedMessages,
+      agentConsentAccepted,
+      agentPanelInitiallyOpen,
+      agentConsentSaveStatus,
+      agentConsentWrites
+    },
+    use
+  ) => {
+    await mockAgentBoot(
+      page,
+      agentFlagEnabled,
+      postedMessages,
+      agentConsentAccepted,
+      agentPanelInitiallyOpen,
+      agentConsentSaveStatus,
+      agentConsentWrites
+    )
     await use(page)
   }
 })

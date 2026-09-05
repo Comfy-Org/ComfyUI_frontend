@@ -12,6 +12,14 @@ vi.mock('@/stores/dialogStore', () => ({
   useDialogStore: () => ({ dialogStack })
 }))
 
+vi.mock('@/composables/auth/useCurrentUser', () => ({
+  useCurrentUser: () => ({ isLoggedIn: { value: true } })
+}))
+
+vi.mock('@/workbench/extensions/agent/stores/agent/agentConsentStore', () => ({
+  useAgentConsentStore: () => ({ accepted: true })
+}))
+
 const settings = vi.hoisted(() => {
   const values = new Map<string, unknown>()
   return {

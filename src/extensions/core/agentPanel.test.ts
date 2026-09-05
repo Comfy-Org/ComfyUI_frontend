@@ -6,7 +6,24 @@ const mocks = vi.hoisted(() => ({
   capturedExtensions: [] as ComfyExtension[],
   notifyAfterGraphConfigure: vi.fn(),
   notifyBeforeGraphLoad: vi.fn(),
-  agentStore: { enabled: false, isOpen: true, close: vi.fn() },
+  agentStore: {
+    enabled: false,
+    consentAccepted: false,
+    isOpen: true,
+    get isVisible() {
+      return this.enabled && this.isOpen && this.consentAccepted
+    },
+    close: vi.fn()
+  },
+  consentStore: {
+    accepted: true,
+    load: vi.fn(() => Promise.resolve(false))
+  },
+  currentUser: {
+    resolvedUserInfo: null as {
+      value: { id: string } | null
+    } | null
+  },
   canvasStore: { updateSelectedItems: vi.fn() },
   getNodeByLocatorId: vi.fn(),
   flagEnabled: undefined as boolean | undefined,
@@ -44,6 +61,26 @@ vi.mock('@/workbench/extensions/agent/crdt/mintPortWiring', () => ({
 vi.mock('@/workbench/extensions/agent/stores/agent/agentPanelStore', () => ({
   useAgentPanelStore: () => mocks.agentStore
 }))
+
+vi.mock('@/workbench/extensions/agent/stores/agent/agentConsentStore', () => ({
+  useAgentConsentStore: () => mocks.consentStore
+}))
+
+vi.mock('@/composables/auth/useCurrentUser', async () => {
+  const { computed, ref } = await import('vue')
+  return {
+    useCurrentUser: () => {
+      const resolvedUserInfo = ref<{ id: string } | null>({ id: 'account-a' })
+      mocks.currentUser.resolvedUserInfo = resolvedUserInfo
+      return {
+        isLoggedIn: computed(() => resolvedUserInfo.value !== null),
+        resolvedUserInfo
+      }
+    }
+  }
+})
+
+vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: () => mocks.workflowStore
@@ -86,6 +123,14 @@ vi.mock('posthog-js', () => ({
 const flush = (): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, 0))
 
+function getResolvedUserInfoRef(): {
+  value: { id: string } | null
+} {
+  const resolvedUserInfo = mocks.currentUser.resolvedUserInfo
+  if (!resolvedUserInfo) throw new Error('Current-user mock is not initialized')
+  return resolvedUserInfo
+}
+
 async function loadEntryAndSetup(): Promise<void> {
   const { registerAgentPanelExtension } = await import('./agentPanel')
   registerAgentPanelExtension()
@@ -104,7 +149,10 @@ describe('AgentPanel extension flag gate', () => {
     mocks.notifyAfterGraphConfigure.mockClear()
     mocks.notifyBeforeGraphLoad.mockClear()
     mocks.agentStore.close.mockClear()
+    mocks.consentStore.load.mockClear()
+    mocks.consentStore.accepted = true
     mocks.agentStore.enabled = false
+    mocks.agentStore.consentAccepted = false
     mocks.agentStore.isOpen = true
     mocks.flagEnabled = undefined
     mocks.flagListener = null
@@ -135,11 +183,13 @@ describe('AgentPanel extension flag gate', () => {
     await loadEntryAndSetup()
 
     expect(mocks.agentStore.enabled).toBe(true)
+    expect(mocks.consentStore.load).toHaveBeenCalledOnce()
   })
 
   it('leaves the panel disabled while the flag is undefined', async () => {
     await loadEntryAndSetup()
     expect(mocks.agentStore.enabled).toBe(false)
+    expect(mocks.consentStore.load).not.toHaveBeenCalled()
   })
 
   it('registers the tab-activity tracker once at setup, not gated on the flag', async () => {
@@ -147,11 +197,28 @@ describe('AgentPanel extension flag gate', () => {
     expect(mocks.registerTracker).toHaveBeenCalledTimes(1)
   })
 
+  it('projects account consent into the panel visibility gate', async () => {
+    await loadEntryAndSetup()
+
+    expect(mocks.agentStore.consentAccepted).toBe(true)
+  })
+
   it('enables the panel when the flag turns true', async () => {
     await loadEntryAndSetup()
     mocks.flagEnabled = true
     mocks.flagListener!()
     expect(mocks.agentStore.enabled).toBe(true)
+  })
+
+  it('reloads consent when the resolved account changes', async () => {
+    mocks.flagEnabled = true
+    await loadEntryAndSetup()
+    expect(mocks.consentStore.load).toHaveBeenCalledOnce()
+
+    getResolvedUserInfoRef().value = { id: 'account-b' }
+    await flush()
+
+    expect(mocks.consentStore.load).toHaveBeenCalledTimes(2)
   })
 
   it('disables the panel without closing it when the flag flips back to false', async () => {
@@ -188,6 +255,7 @@ describe('AgentPanel extension flag gate', () => {
     const rootGraph = {}
     const selectItems = vi.fn()
     mocks.agentStore.enabled = true
+    mocks.agentStore.consentAccepted = true
 
     extension!.beforeLoadGraph!({} as never)
 
@@ -237,6 +305,7 @@ describe('AgentPanel extension flag gate', () => {
     const selectItems = vi.fn()
 
     mocks.agentStore.enabled = true
+    mocks.agentStore.consentAccepted = true
     mocks.nodeSelectionStore.isLoadingWorkflow = true
     mocks.nodeSelectionStore.nodeIds.mockReturnValue([locator])
     mocks.getNodeByLocatorId.mockReturnValue(subgraphNode)
@@ -261,6 +330,20 @@ describe('AgentPanel extension flag gate', () => {
     extension!.beforeLoadGraph!({} as never)
 
     expect(mocks.notifyBeforeGraphLoad).toHaveBeenCalledOnce()
+    expect(mocks.nodeSelectionStore.beginWorkflowLoad).not.toHaveBeenCalled()
+  })
+
+  it('does not start selection restoration without accepted consent', async () => {
+    const { registerAgentPanelExtension } = await import('./agentPanel')
+    registerAgentPanelExtension()
+    const extension = mocks.capturedExtensions.find(
+      (item) => item.name === 'Comfy.AgentPanel'
+    )
+    mocks.agentStore.enabled = true
+    mocks.agentStore.consentAccepted = false
+
+    extension!.beforeLoadGraph!({} as never)
+
     expect(mocks.nodeSelectionStore.beginWorkflowLoad).not.toHaveBeenCalled()
   })
 
@@ -301,6 +384,7 @@ describe('AgentPanel extension flag gate', () => {
     )
     mocks.agentStore.enabled = true
     mocks.agentStore.isOpen = true
+    mocks.agentStore.consentAccepted = true
     mocks.nodeSelectionStore.isLoadingWorkflow = true
     mocks.nodeSelectionStore.nodeIds.mockReturnValue(['12'])
     mocks.getNodeByLocatorId.mockImplementation(() => {

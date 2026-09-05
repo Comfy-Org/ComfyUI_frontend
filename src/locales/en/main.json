@@ -5239,8 +5239,6 @@
     "sendFailed": "Message failed to send",
     "sendBusy": "A message is already being sent",
     "malformedEvent": "The agent sent an event this panel could not read",
-    "coachTitle": "Meet the agent",
-    "coachBody": "Ask it to build or edit graphs.",
     "thought": "Thought",
     "thoughtTimed": "Thought for {seconds} seconds",
     "downloadAssets": "Download assets",
@@ -5253,6 +5251,17 @@
     "runModeTriggerAutoLimit": "Auto (limited)",
     "runModeTriggerAutoLimitTooltip": "Ask when credit limit is reached",
     "showMore": "Show more",
-    "showLess": "Show less"
+    "showLess": "Show less",
+    "consent": {
+      "title": "Meet Comfy Agent",
+      "body1": "Comfy Agent can read the workflow you have open, add and edit nodes, and change widget values on your behalf. It only acts on the workflow you have open.",
+      "body2": "Running stays your decision: the agent prepares the graph and you click Run to execute it.",
+      "readDocs": "Read the docs",
+      "reject": "Skip for now",
+      "accept": "Start using Comfy Agent",
+      "videoPlaceholder": "Video unavailable",
+      "loadError": "Could not load your Agent preference. Try again.",
+      "saveError": "Could not save your preference. Try again."
+    }
   }
 }
