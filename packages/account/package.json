@@ -10,6 +10,10 @@
       "types": "./dist/core/index.d.ts",
       "import": "./dist/core/index.js"
     },
+    "./firebase": {
+      "types": "./dist/firebase/index.d.ts",
+      "import": "./dist/firebase/index.js"
+    },
     "./vue": {
       "types": "./dist/vue/index.d.ts",
       "import": "./dist/vue/index.js"
@@ -22,17 +26,22 @@
     "build": "tsc -p tsconfig.build.json",
     "guard": "bash scripts/verify-import-guard.sh",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run --root ../.. packages/account/src"
   },
   "devDependencies": {
+    "firebase": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
     "vue": "catalog:"
   },
   "peerDependencies": {
+    "firebase": ">=11 <13",
     "vue": ">=3.5 <4"
   },
   "peerDependenciesMeta": {
+    "firebase": {
+      "optional": true
+    },
     "vue": {
       "optional": true
     }
