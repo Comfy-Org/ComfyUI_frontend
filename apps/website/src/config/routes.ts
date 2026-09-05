@@ -44,7 +44,9 @@ const baseRoutes = {
   brand: '/brand'
 } as const
 
-type Routes = typeof baseRoutes
+type RouteKey = keyof typeof baseRoutes
+
+type Routes = Readonly<Record<RouteKey, string>>
 
 // Routes that are served only at their canonical path regardless of the
 // active locale. Localized variants of these routes intentionally do not
@@ -61,9 +63,6 @@ type Routes = typeof baseRoutes
 // Customer Agreement template), same reasoning. See the comment header
 // in src/pages/enterprise-msa.astro.
 //
-// agent: launch page is English-only for now; keep any route references on the
-// canonical path until a localized page exists.
-//
 // models: the supported-models catalog only exists at /p/supported-models;
 // there is no /<locale>/p/supported-models page, so a prefixed link 404s.
 //
@@ -71,7 +70,6 @@ type Routes = typeof baseRoutes
 // form, so no localized variant exists. See the comment header in
 // src/pages/minimax/license/professional-request.astro.
 const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
-  'agent',
   'affiliates',
   'affiliateTerms',
   'termsOfService',
@@ -82,9 +80,22 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'minimaxLicenseProfessionalRequest'
 ])
 
-const LOCALE_INVARIANT_PATHS = new Set<string>(
-  [...LOCALE_INVARIANT_ROUTE_KEYS].map((key) => baseRoutes[key])
-)
+// pixal3d-trellis2: a bespoke English launch page with no Chinese version,
+// unlike the model-launch pages, which are data-driven and localized. It has no
+// `routes` entry, so it is listed by path.
+//
+// platform/serverless-animation: English-only. Its three siblings under
+// /platform/ each have a zh-CN twin and it does not, so without this the
+// emitter advertises a Chinese page that 404s.
+const LOCALE_INVARIANT_EXTRA_PATHS = [
+  '/pixal3d-trellis2',
+  '/platform/serverless-animation'
+]
+
+const LOCALE_INVARIANT_PATHS = new Set<string>([
+  ...[...LOCALE_INVARIANT_ROUTE_KEYS].map((key) => baseRoutes[key]),
+  ...LOCALE_INVARIANT_EXTRA_PATHS
+])
 
 /**
  * Prefix an internal path with the locale (`/mcp` → `/zh-CN/mcp`). External
@@ -111,7 +122,7 @@ export function getRoutes(locale: Locale = 'en'): Routes {
       key,
       localizeHref(path, locale)
     ])
-  ) as unknown as Routes
+  ) as Routes
 }
 
 export const externalLinks = {
@@ -156,7 +167,7 @@ export const externalLinks = {
   mcpEndpoint: 'https://cloud.comfy.org/mcp',
   mcpSkills: 'https://github.com/Comfy-Org/comfy-skills',
   platform: 'https://platform.comfy.org',
-  platformBuilds: 'https://platform.comfy.org/builds',
+  platformBuilds: 'https://platform.comfy.org/profile/builds',
   platformUsage: 'https://platform.comfy.org/profile/usage',
   reddit: 'https://www.reddit.com/r/comfyui/',
   support: 'https://support.comfy.org/hc/en-us',

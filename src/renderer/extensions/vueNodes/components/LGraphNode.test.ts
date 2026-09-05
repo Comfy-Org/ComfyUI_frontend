@@ -70,7 +70,9 @@ vi.mock(
 vi.mock('@/scripts/app', () => ({
   app: {
     rootGraph: { id: 'graph-test', getNodeById: vi.fn() },
-    canvas: { setDirty: vi.fn() }
+    canvas: { setDirty: vi.fn() },
+    nodeOutputs: {},
+    nodePreviewImages: {}
   }
 }))
 
@@ -237,6 +239,48 @@ describe('LGraphNode', () => {
     })
 
     expect(container.textContent).toContain('Test Node')
+  })
+
+  it('renders a customtext widget registered by graph mutations', async () => {
+    const fakeRootGraph: Record<string, unknown> = {
+      id: 'graph-test',
+      getNodeById: () => null,
+      subgraphs: new Map()
+    }
+    fakeRootGraph.rootGraph = fakeRootGraph
+    useCanvasStore().currentGraph = fromAny(fakeRootGraph)
+    useWidgetValueStore().registerWidget(
+      widgetId('graph-test', mockNodeData.id, 'prompt'),
+      {
+        name: 'prompt',
+        type: 'customtext',
+        value: 'A projected prompt',
+        options: {},
+        label: 'prompt'
+      },
+      {}
+    )
+
+    render(LGraphNode, {
+      props: {
+        nodeData: { ...mockNodeData, graphId: 'graph-test' }
+      },
+      global: {
+        plugins: [pinia, i18n],
+        stubs: {
+          AsyncComponentWrapper: {
+            props: ['modelValue'],
+            template: '<textarea :value="modelValue" />'
+          },
+          NodeHeader: true,
+          NodeSlots: true,
+          NodeContent: true,
+          SlotConnectionDot: true
+        }
+      }
+    })
+
+    expect(await screen.findByRole('textbox')).toHaveValue('A projected prompt')
   })
 
   it('should apply selected styling when selected prop is true', async () => {

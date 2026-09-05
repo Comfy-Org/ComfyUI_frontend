@@ -6433,7 +6433,7 @@
     }
   },
   "GetImageSize": {
-    "description": "Restituisce larghezza e altezza dell'immagine, lasciandola invariata.",
+    "description": "Restituisce la larghezza, l'altezza e la dimensione del batch dell'immagine.",
     "display_name": "Ottieni Dimensione Immagine",
     "inputs": {
       "image": {
@@ -12710,6 +12710,84 @@
       }
     }
   },
+  "MetaMuseImageEditApi": {
+    "description": "Modifica o combina fino a 10 immagini di riferimento guidate da un prompt di testo utilizzando il modello Muse Image di Meta.",
+    "display_name": "Meta Muse Image Modifica",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Modello da utilizzare."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_enable_image_search": {
+        "name": "enable_image_search"
+      },
+      "model_enable_shell": {
+        "name": "enable_shell"
+      },
+      "model_enable_web_search": {
+        "name": "enable_web_search"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_strength": {
+        "name": "reasoning_strength"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MetaMuseImageTextToImageApi": {
+    "description": "Genera immagini da un prompt di testo utilizzando il modello Muse Image di Meta, che ragiona sul prompt prima del rendering.",
+    "display_name": "Meta Muse Image da testo a immagine",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Modello da utilizzare."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_enable_image_search": {
+        "name": "enable_image_search"
+      },
+      "model_enable_shell": {
+        "name": "enable_shell"
+      },
+      "model_enable_web_search": {
+        "name": "enable_web_search"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_strength": {
+        "name": "reasoning_strength"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MiniMaxH3AddGuide": {
     "description": "Ancora un'immagine, un breve clip, audio o un clip con la relativa colonna sonora a qualsiasi fotogramma di un video MiniMax H3. Collega più nodi in sequenza per ancorare più fotogrammi.",
     "display_name": "Aggiungi guida per MiniMax H3",
@@ -12832,7 +12910,8 @@
     "display_name": "MiniMax H3 Riferimento a Video",
     "inputs": {
       "audio_vae": {
-        "name": "audio_vae"
+        "name": "audio_vae",
+        "tooltip": "VAE audio. Senza di esso, l'audio di riferimento condiziona solo il codificatore testuale."
       },
       "clip": {
         "name": "clip"
@@ -12864,7 +12943,8 @@
         "name": "video di riferimento"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "VAE video. Senza di esso, le immagini/video di riferimento condizionano solo il codificatore testuale."
       },
       "width": {
         "name": "larghezza"
@@ -12973,7 +13053,7 @@
     }
   },
   "MinimaxHailuo03FirstLastFrameNode": {
-    "description": "Genera un video da un'immagine del primo frame e, opzionalmente, da un'immagine dell'ultimo frame utilizzando il modello MiniMax H3. Il rapporto d'aspetto del video segue quello delle immagini fornite.",
+    "description": "Genera un video da un'immagine del primo fotogramma e, facoltativamente, da un'immagine dell'ultimo fotogramma usando i modelli MiniMax H3. Le proporzioni del video seguono le immagini fornite.",
     "display_name": "MiniMax H3 Da Primo-Ultimo Frame a Video",
     "inputs": {
       "control_after_generate": {
@@ -13016,7 +13096,7 @@
     }
   },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "Genera un video condizionato su immagini di riferimento, video e audio utilizzando il modello MiniMax H3. Fai riferimento agli elementi nel prompt secondo il loro ordine: 'Immagine 1', 'Immagine 2', 'Video 1', 'Audio 1', e così via.",
+    "description": "Genera un video condizionato da immagini, video e audio di riferimento usando i modelli MiniMax H3. Fai riferimento ai contenuti di riferimento nel prompt in base al loro ordine: 'Immagine 1', 'Immagine 2', 'Video 1', 'Audio 1' e così via.",
     "display_name": "MiniMax H3 Riferimento a Video",
     "inputs": {
       "control_after_generate": {
@@ -13091,7 +13171,7 @@
     }
   },
   "MinimaxHailuo03TextToVideoNode": {
-    "description": "Genera un video da un prompt testuale utilizzando il modello MiniMax H3.",
+    "description": "Genera un video da un prompt testuale usando i modelli MiniMax H3.",
     "display_name": "MiniMax H3 Testo a Video",
     "inputs": {
       "control_after_generate": {
@@ -16972,7 +17052,7 @@
   },
   "Preview3D": {
     "description": "Visualizza in anteprima un file modello 3D senza salvarlo nella directory di output di ComfyUI.",
-    "display_name": "Anteprima 3D & Animazione",
+    "display_name": "Anteprima 3D e animazione (DEPRECATO)",
     "inputs": {
       "bg_image": {
         "name": "immagine_sfondo"
@@ -17985,7 +18065,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Tipo di output per cui viene creato lo stile: recraftv4_styles per immagini raster, recraftv4_styles_vector per SVG."
+        "tooltip": "Modello per il quale viene creato lo stile. Standard e Pro condividono un unico pool di stili: gli stili raster funzionano con ogni modello raster Recraft V4 e V4.1, gli stili vettoriali (*_vector) con ogni modello vettoriale V4 e V4.1."
       }
     },
     "outputs": {
@@ -18681,6 +18761,10 @@
       "multiple": {
         "name": "multiplo",
         "tooltip": "Multiplo più vicino del risultato a cui impostare la risoluzione selezionata."
+      },
+      "preview": {
+        "name": "preview",
+        "tooltip": "Anteprima in tempo reale della risoluzione di output calcolata."
       }
     },
     "outputs": {
@@ -23486,10 +23570,12 @@
         "name": "anima_in_posizione"
       },
       "bake": {
-        "name": "bake"
+        "name": "bake",
+        "tooltip": "Incorpora i materiali avanzati nelle texture di base per una compatibilità più ampia."
       },
       "export_orientation": {
-        "name": "esporta_orientamento"
+        "name": "esporta_orientamento",
+        "tooltip": "Asse frontale del modello esportato. default mantiene il +x di Tripo."
       },
       "export_vertex_colors": {
         "name": "esporta_colori_vertici"
@@ -23498,13 +23584,15 @@
         "name": "limite_facce"
       },
       "fbx_preset": {
-        "name": "preset_fbx"
+        "name": "preset_fbx",
+        "tooltip": "Preimpostazione di compatibilità FBX. bake_scale incorpora la trasformazione di scala nella geometria."
       },
       "flatten_bottom": {
         "name": "appiattisci_base"
       },
       "flatten_bottom_threshold": {
-        "name": "soglia_appiattimento_base"
+        "name": "soglia_appiattimento_base",
+        "tooltip": "Profondità di appiattimento utilizzata con flatten_bottom."
       },
       "force_symmetry": {
         "name": "forza_simmetria"
@@ -23537,15 +23625,66 @@
         "name": "dimensione_texture"
       },
       "with_animation": {
-        "name": "con_animazione"
+        "name": "con_animazione",
+        "tooltip": "Mantiene lo scheletro e l'animazione dei modelli con rig o retargeting."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": "Modello convertito nel formato richiesto. Tripo fornisce OBJ come archivio ZIP (mesh, materiale e texture)."
+      }
+    }
+  },
+  "TripoEditMultiviewNode": {
+    "description": "Modifica le viste di un risultato di Tripo: Image to Multiview con istruzioni di testo per ciascuna vista. Le viste senza istruzioni restano invariate. Inserisci le immagini in Tripo: Multiview to Model; un set modificato non può essere modificato nuovamente.",
+    "display_name": "Tripo: Modifica multivista",
+    "inputs": {
+      "back_prompt": {
+        "name": "back_prompt"
+      },
+      "front_prompt": {
+        "name": "front_prompt"
+      },
+      "left_prompt": {
+        "name": "left_prompt"
+      },
+      "multiview_task_id": {
+        "name": "multiview_task_id"
+      },
+      "right_prompt": {
+        "name": "right_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "front",
+        "tooltip": null
+      },
+      "1": {
+        "name": "sinistra",
+        "tooltip": null
+      },
+      "2": {
+        "name": "posteriore",
+        "tooltip": null
+      },
+      "3": {
+        "name": "destra",
+        "tooltip": null
       }
     }
   },
   "TripoImageToModelNode": {
     "display_name": "Tripo: Da Immagine a Modello",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Ridimensiona i modelli con texture alla loro dimensione reale in metri. Tripo memorizza la dimensione come trasformazione di scena del modello e la incorpora quando il modello viene convertito, riggato o retargetizzato; ignorato senza texture."
+      },
       "face_limit": {
-        "name": "limite facce"
+        "name": "limite facce",
+        "tooltip": "Numero massimo di facce. -1 consente a Tripo di scegliere in modo adattivo (circa 1,4 M di facce su v3.x standard, 2 M su detailed). Tripo limita silenziosamente: v2.5 a 500.000, mesh quad a 150.000."
       },
       "geometry_quality": {
         "name": "qualità geometria"
@@ -23564,22 +23703,31 @@
         "name": "orientamento"
       },
       "pbr": {
-        "name": "pbr"
+        "name": "pbr",
+        "tooltip": "Mappe dei materiali PBR (colore di base, metallico, ruvidità, normale). Richiede texture."
       },
       "quad": {
-        "name": "quad"
+        "name": "quad",
+        "tooltip": "Output mesh quad. Tripo fornisce le mesh quad come FBX, quindi il risultato arriva nell'output FBX e l'output GLB resta vuoto."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Mesh low-poly con topologia pulita in stile realizzato a mano (500-20.000 facce, quad 500-10.000). Ideale per soggetti semplici; quelli complessi potrebbero non riuscire."
       },
       "style": {
-        "name": "stile"
+        "name": "stile",
+        "tooltip": "Non più supportato da Tripo e ignorato. Mantenuto per i workflow meno recenti."
       },
       "texture": {
-        "name": "texture"
+        "name": "texture",
+        "tooltip": "Genera mappe di texture. Se disattivato, restituisce la geometria senza texture e ignora pbr."
       },
       "texture_alignment": {
         "name": "allineamento texture"
       },
       "texture_quality": {
-        "name": "qualità texture"
+        "name": "qualità texture",
+        "tooltip": "detailed = texture HD, extreme = texture 8K Ultra."
       },
       "texture_seed": {
         "name": "seme texture"
@@ -23596,6 +23744,41 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "Vuoto quando quad è abilitato."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Popolato solo quando quad è abilitato."
+      }
+    }
+  },
+  "TripoImageToMultiviewNode": {
+    "description": "Genera viste frontale, sinistra, posteriore e destra del soggetto. Passale a Tripo: Da viste multiple a modello, oppure rifiniscile prima con Tripo: Modifica viste multiple.",
+    "display_name": "Tripo: Da immagine a viste multiple",
+    "inputs": {
+      "image": {
+        "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "multiview task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "frontale",
+        "tooltip": null
+      },
+      "2": {
+        "name": "sinistra",
+        "tooltip": null
+      },
+      "3": {
+        "name": "posteriore",
+        "tooltip": null
+      },
+      "4": {
+        "name": "destra",
         "tooltip": null
       }
     }
@@ -23616,11 +23799,43 @@
       }
     }
   },
+  "TripoMeshCompleteNode": {
+    "description": "Completa le parti di un modello segmentato e ripara le regioni mancanti.",
+    "display_name": "Tripo: Completa parti della mesh",
+    "inputs": {
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "Nomi delle parti da completare separati da virgole. Se vuoto, completa tutte le parti."
+      },
+      "segment_task_id": {
+        "name": "segment_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: Multiview a Modello",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Ridimensiona i modelli con texture alla loro dimensione reale in metri. Tripo memorizza la dimensione come trasformazione di scena del modello e la incorpora quando il modello viene convertito, sottoposto a rig o retargettizzato; ignorato senza texture."
+      },
       "face_limit": {
-        "name": "limite facce"
+        "name": "limite facce",
+        "tooltip": "Numero massimo di facce. -1 consente a Tripo di scegliere in modo adattivo (circa 1,4 M di facce su v3.x standard, 2 M su detailed). Tripo limita silenziosamente: v2.5 a 500.000, mesh quad a 150.000."
       },
       "geometry_quality": {
         "name": "qualità geometria"
@@ -23648,20 +23863,27 @@
         "name": "orientamento"
       },
       "pbr": {
-        "name": "pbr"
+        "name": "pbr",
+        "tooltip": "Mappe dei materiali PBR (colore di base, metallico, ruvidità, normale). Richiede texture."
       },
       "quad": {
         "name": "quad",
-        "tooltip": "Questo parametro è deprecato e non ha effetto."
+        "tooltip": "Output mesh quad. Tripo fornisce le mesh quad come FBX, quindi il risultato arriva nell'output FBX e l'output GLB resta vuoto."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Mesh low-poly con topologia pulita in stile realizzato a mano (500-20.000 facce, quad 500-10.000). Ideale per soggetti semplici; quelli complessi potrebbero non riuscire."
       },
       "texture": {
-        "name": "texture"
+        "name": "texture",
+        "tooltip": "Genera mappe di texture. Se disattivato, restituisce la geometria senza texture e ignora pbr."
       },
       "texture_alignment": {
         "name": "allineamento texture"
       },
       "texture_quality": {
-        "name": "qualità texture"
+        "name": "qualità texture",
+        "tooltip": "detailed = texture HD, extreme = texture 8K Ultra."
       },
       "texture_seed": {
         "name": "seme texture"
@@ -23678,7 +23900,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "Vuoto quando quad è abilitato."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Viene popolato solo quando quad è abilitato."
       }
     }
   },
@@ -23692,7 +23918,7 @@
       },
       "compress_geometry": {
         "name": "comprimi_geometria",
-        "tooltip": "Applica compressione basata sulla geometria. Decomprimi prima di modificare."
+        "tooltip": "Applica la compressione della geometria meshopt (EXT_meshopt_compression). File più piccoli, ma l'anteprima 3D di ComfyUI non può visualizzarli; decomprimere prima della modifica."
       },
       "enable_image_autofix": {
         "name": "abilita_autocorrezione_immagine",
@@ -23742,7 +23968,7 @@
       },
       "compress_geometry": {
         "name": "comprimi_geometria",
-        "tooltip": "Applica compressione basata sulla geometria. Decomprimi prima di modificare."
+        "tooltip": "Applica la compressione della geometria meshopt (EXT_meshopt_compression). File più piccoli, ma l'anteprima 3D di ComfyUI non può visualizzarli; decomprimere prima della modifica."
       },
       "export_uv": {
         "name": "esporta_uv",
@@ -23801,7 +24027,7 @@
       },
       "compress_geometry": {
         "name": "comprimi geometria",
-        "tooltip": "Applica compressione basata sulla geometria. Decomprimi prima di modificare."
+        "tooltip": "Applica la compressione della geometria meshopt (EXT_meshopt_compression). File più piccoli, ma l'anteprima 3D di ComfyUI non può visualizzarli; decomprimere prima della modifica."
       },
       "export_uv": {
         "name": "esporta UV",
@@ -23848,11 +24074,24 @@
   "TripoRetargetNode": {
     "display_name": "Tripo: Retarget modello riggato",
     "inputs": {
+      "animate_in_place": {
+        "name": "animate_in_place",
+        "tooltip": "Riproduce l'animazione sul posto, senza spostamento della radice."
+      },
       "animation": {
-        "name": "animazione"
+        "name": "animazione",
+        "tooltip": "Le animazioni preset:* funzionano con entrambi i modelli rig; le animazioni preset:biped:* richiedono un rig creato con il modello v1.0-20240301."
+      },
+      "export_with_geometry": {
+        "name": "export_with_geometry",
+        "tooltip": "Include la mesh nell'esportazione; se disattivato, esporta solo lo scheletro animato."
       },
       "original_model_task_id": {
         "name": "ID task modello originale"
+      },
+      "out_format": {
+        "name": "out_format",
+        "tooltip": "Formato del file di output; il risultato arriva nell'output corrispondente."
       }
     },
     "outputs": {
@@ -23866,15 +24105,97 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "Viene popolato quando out_format è glb."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Viene popolato quando out_format è fbx."
+      }
+    }
+  },
+  "TripoRetopologyNode": {
+    "description": "Ricostruisce una mesh low-poly con topologia pulita da un modello high-poly.",
+    "display_name": "Tripo: Retopologia",
+    "inputs": {
+      "bake": {
+        "name": "bake",
+        "tooltip": "Esegue il bake delle texture di origine sulla mesh low-poly."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Numero di facce desiderato: 500-20.000 triangoli o 500-10.000 quad. -1 lascia scegliere a Tripo."
+      },
+      "model_task_id": {
+        "name": "model_task_id"
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "Nomi delle parti separati da virgole da Tripo: Segment Model. Se vuoto, elabora l'intero modello."
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "Output di mesh quad. Tripo fornisce le mesh quad come FBX, quindi il risultato arriva nell'output FBX e l'output GLB rimane vuoto."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": "Vuoto quando quad è abilitato."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Viene popolato solo quando quad è abilitato."
+      }
+    }
+  },
+  "TripoRigCheckNode": {
+    "description": "Verifica se un modello può essere sottoposto a rig e quale tipo di scheletro Tripo consiglia.",
+    "display_name": "Tripo: Controllo rig",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "riggable",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_type",
+        "tooltip": "Scheletro consigliato: biped, quadruped, hexapod, octopod, avian, serpentine o aquatic; 'others' quando il modello non è adatto al rig."
       }
     }
   },
   "TripoRigNode": {
     "display_name": "Tripo: Rigga modello",
     "inputs": {
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "v1.0: solo personaggi umanoidi (bipedi), oltre 90 preset di animazione. v2.5: creature non umanoidi (quadrupedi, esapodi, ottopodi, aviarie, serpentine, acquatiche)."
+      },
       "original_model_task_id": {
         "name": "ID task modello originale"
+      },
+      "out_format": {
+        "name": "out_format",
+        "tooltip": "Formato del file di output; il risultato arriva sull'uscita corrispondente."
+      },
+      "rig_type": {
+        "name": "rig_type",
+        "tooltip": "Tipo di scheletro. 'auto' esegue prima il controllo rig gratuito di Tripo e usa il tipo consigliato."
+      },
+      "spec": {
+        "name": "spec",
+        "tooltip": "Denominazione delle ossa: nativa Tripo o compatibile con Mixamo. Tripo non può ritargettare i propri preset di animazione su un rig v1.0 creato con la specifica mixamo; usa tripo per Tripo: Retarget modello con rig."
       }
     },
     "outputs": {
@@ -23888,7 +24209,38 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "Popolato quando out_format è glb."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Popolato quando out_format è fbx."
+      }
+    }
+  },
+  "TripoSegmentNode": {
+    "description": "Divide un modello in parti. I nomi delle parti alimentano Tripo: Completa parti mesh, Tripo: Retopology e Tripo: Converti modello.",
+    "display_name": "Tripo: Segmenta modello",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "segment task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "part_names",
+        "tooltip": "Nomi delle parti separati da virgole."
       }
     }
   },
@@ -23990,8 +24342,13 @@
   "TripoTextToModelNode": {
     "display_name": "Tripo: Da testo a modello",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Ridimensiona i modelli con texture alla loro dimensione reale in metri. Tripo memorizza la dimensione come trasformazione della scena del modello e la incorpora quando il modello viene convertito, dotato di rig o ritargettato; ignorato senza texture."
+      },
       "face_limit": {
-        "name": "limite_facce"
+        "name": "limite_facce",
+        "tooltip": "Numero massimo di facce. -1 consente a Tripo di scegliere in modo adattivo (circa 1,4 M di facce su v3.x standard, 2 M su detailed). Tripo applica limiti senza avviso: v2.5 a 500.000, mesh quad a 150.000."
       },
       "geometry_quality": {
         "name": "qualità_geometria"
@@ -24006,25 +24363,35 @@
         "name": "model_version"
       },
       "negative_prompt": {
-        "name": "negative_prompt"
+        "name": "negative_prompt",
+        "tooltip": "Fino a 255 caratteri."
       },
       "pbr": {
-        "name": "pbr"
+        "name": "pbr",
+        "tooltip": "Mappe del materiale PBR (colore di base, metallico, ruvidità, normale). Richiede texture."
       },
       "prompt": {
         "name": "prompt"
       },
       "quad": {
-        "name": "quad"
+        "name": "quad",
+        "tooltip": "Output mesh quad. Tripo fornisce le mesh quad come FBX, quindi il risultato arriva sull'uscita FBX e l'uscita GLB rimane vuota."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Mesh low-poly con topologia pulita in stile artigianale (500-20.000 facce, quad 500-10.000). Ideale per soggetti semplici; quelli complessi potrebbero non riuscire."
       },
       "style": {
-        "name": "stile"
+        "name": "stile",
+        "tooltip": "Non più supportato da Tripo e ignorato. Mantenuto per i workflow meno recenti."
       },
       "texture": {
-        "name": "texture"
+        "name": "texture",
+        "tooltip": "Genera mappe texture. Disattivato restituisce la geometria nuda e ignora pbr."
       },
       "texture_quality": {
-        "name": "qualità_texture"
+        "name": "qualità_texture",
+        "tooltip": "detailed = texture HD, extreme = texture Ultra 8K."
       },
       "texture_seed": {
         "name": "seme_texture"
@@ -24041,7 +24408,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "Vuoto quando quad è abilitato."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Popolato solo quando quad è abilitato."
       }
     }
   },
@@ -24051,21 +24422,40 @@
       "model_task_id": {
         "name": "task_id_modello"
       },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "Modello di texture: v3.0 per le mesh generate con v3.x, v2.5 per le mesh generate con v2.5."
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "Nomi delle parti separati da virgole da Tripo: Segment Model da texturizzare. Se vuoto, applica le texture a ogni parte."
+      },
       "pbr": {
-        "name": "pbr"
+        "name": "pbr",
+        "tooltip": "Mappe del materiale PBR (colore di base, metallico, ruvidità, normale); se disattivato fornisce una texture a tinta unita."
+      },
+      "reference": {
+        "name": "riferimento",
+        "tooltip": "Immagini di riferimento che guidano le texture. Non possono essere combinate con texture_prompt o style_image."
+      },
+      "style_image": {
+        "name": "style_image",
+        "tooltip": "Immagine di riferimento per lo stile artistico delle texture. Usata solo insieme a texture_prompt."
       },
       "texture": {
-        "name": "texture"
+        "name": "texture",
+        "tooltip": "Ignorato: questo nodo genera sempre texture. Mantenuto per i workflow meno recenti."
       },
       "texture_alignment": {
         "name": "allineamento_texture"
       },
       "texture_prompt": {
         "name": "prompt_texture",
-        "tooltip": "Guida testuale opzionale per la texturizzazione. Necessaria in pratica per i modelli importati (Tripo: Import Model), che non hanno un'immagine di origine da cui dedurre i colori."
+        "tooltip": "Guida testuale opzionale per la texturizzazione. In pratica è richiesta per i modelli importati (Tripo: Import Model), che non hanno un'immagine sorgente da cui dedurre i colori. Non può essere combinata con immagini di riferimento."
       },
       "texture_quality": {
-        "name": "qualità_texture"
+        "name": "qualità_texture",
+        "tooltip": "detailed = texture HD, extreme = texture Ultra 8K."
       },
       "texture_seed": {
         "name": "seme_texture"
@@ -24082,7 +24472,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "Vuoto quando la sorgente è una mesh quad o un'importazione FBX."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Tripo restituisce FBX per le mesh quad e le importazioni FBX; altrimenti è vuoto."
       }
     }
   },

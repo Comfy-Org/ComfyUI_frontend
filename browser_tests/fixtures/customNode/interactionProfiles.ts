@@ -45,7 +45,7 @@ export interface PackInteractionProfileFile {
   recordedAt: { core: string; pin: string }
   schema: 3
   corpus: { count: number; nodeTypesSha256: string }
-  nodes: Record<string, NodeInteractionProfile>
+  nodes: Partial<Record<string, NodeInteractionProfile>>
 }
 
 // Nodes whose interaction deltas are not reproducible run-to-run, keyed by
@@ -217,7 +217,7 @@ function probesEqual(
 export function comparePackProfiles(input: {
   pack: string
   expectedPin: string
-  observed: Record<string, NodeInteractionProfile>
+  observed: Partial<Record<string, NodeInteractionProfile>>
   committed: PackInteractionProfileFile | null
 }): string[] {
   const { pack, expectedPin, observed, committed } = input

@@ -126,8 +126,8 @@ describe('getRoutes agent', () => {
     expect(getRoutes('en').agent).toBe('/agent')
   })
 
-  it('serves the English-only agent page at its canonical path for zh-CN', () => {
-    expect(getRoutes('zh-CN').agent).toBe('/agent')
+  it('serves a localized agent path for zh-CN', () => {
+    expect(getRoutes('zh-CN').agent).toBe('/zh-CN/agent')
   })
 })
 

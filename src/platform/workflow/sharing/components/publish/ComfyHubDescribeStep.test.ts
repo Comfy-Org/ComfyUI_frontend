@@ -150,7 +150,7 @@ describe('ComfyHubDescribeStep', () => {
       '[data-testid="tags-input"][data-disabled="true"] [data-testid="tag-item"]'
     )
 
-    await userEvent.click(suggestionButtons[0] as HTMLElement)
+    await userEvent.click(suggestionButtons[0])
 
     expect(onUpdateTags).toHaveBeenLastCalledWith(['Alpha'])
   })

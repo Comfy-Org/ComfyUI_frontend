@@ -179,7 +179,6 @@ test.describe(
     )
 
     test.describe('Promoted Widget Reactivity', { tag: ['@vue-nodes'] }, () => {
-      // Open bug #14495 — drop the `test.fail()` below when the fix lands.
       // https://github.com/Comfy-Org/ComfyUI_frontend/issues/14495
       test('Promoted STRING widget edit survives a rebind of the interior link', async ({
         comfyPage
@@ -499,14 +498,14 @@ test.describe(
             return await comfyPage.page.evaluate(() => {
               const graph = window.app!.canvas.graph
               if (!graph || !('inputNode' in graph)) return null
-              return graph.inputs?.[0]?.name ?? null
+              return graph.inputs.at(0)?.name ?? null
             })
           })
           .not.toBeNull()
         const removedSlotName = await comfyPage.page.evaluate(() => {
           const graph = window.app!.canvas.graph
           if (!graph || !('inputNode' in graph)) return null
-          return graph.inputs?.[0]?.name ?? null
+          return graph.inputs.at(0)?.name ?? null
         })
 
         await comfyPage.subgraph.removeSlot('input')

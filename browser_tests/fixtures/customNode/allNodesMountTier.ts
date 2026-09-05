@@ -42,7 +42,7 @@ interface DuplicateWidgetExpectation {
 
 const MOUNT_WIDGET_DUPLICATE_EXPECTATIONS: Record<
   string,
-  Record<string, DuplicateWidgetExpectation>
+  Partial<Record<string, DuplicateWidgetExpectation>>
 > = {}
 
 const manifestPackNames = loadAllManifestPackNames()
@@ -72,7 +72,7 @@ interface MountedShape {
 function vueMountProblems(
   page: Page,
   mounted: Array<{ id: string; type: string }>,
-  expectedDuplicatesByNode: Record<string, DuplicateWidgetExpectation>
+  expectedDuplicatesByNode: Partial<Record<string, DuplicateWidgetExpectation>>
 ): Promise<string[]> {
   return page.evaluate(
     ([mountedNodes, duplicateExpectations]) => {
@@ -123,7 +123,7 @@ function vueMountProblems(
         const domWidgets = root.querySelectorAll(
           '[data-testid="node-widget"]'
         ).length
-        const expectedDuplicates = duplicateExpectations[node.type!]
+        const expectedDuplicates = duplicateExpectations[node.type]
         if (expectedDuplicates) {
           const widgetNameCounts: Record<string, number> = {}
           for (const widget of widgets)
@@ -161,7 +161,7 @@ function vueMountProblems(
           widgets.map((widget) => widget.name).filter(Boolean)
         )
         const expectedSlotKeys = [
-          ...(node.inputs ?? []).flatMap((input, index) => {
+          ...node.inputs.flatMap((input, index) => {
             const { name: widgetName } =
               (input as { widget?: { name?: string } }).widget ?? {}
             return widgetName &&
@@ -172,7 +172,7 @@ function vueMountProblems(
               ? []
               : [`${id}-in-${index}`]
           }),
-          ...(node.outputs ?? []).map((_, index) => `${id}-out-${index}`)
+          ...node.outputs.map((_, index) => `${id}-out-${index}`)
         ].sort()
         const mountedSlotKeys = [
           ...root.querySelectorAll<HTMLElement>('[data-slot-key]')
@@ -210,10 +210,7 @@ function addChunk(
       } | null> = []
       for (const [index, type] of chunk.entries()) {
         const node = window.LiteGraph!.createNode(type, undefined, {
-          pos: [
-            (index % cols) * (spacingX as number),
-            Math.floor(index / cols) * (spacingY as number)
-          ]
+          pos: [(index % cols) * spacingX, Math.floor(index / cols) * spacingY]
         })
         if (!node) {
           shapes.push(null)
@@ -224,15 +221,15 @@ function addChunk(
         shapes.push({
           id: String(node.id),
           widgetNames: (node.widgets ?? []).map((widget) => widget.name),
-          inputNames: (node.inputs ?? []).map((input) => input.name),
-          outputCount: (node.outputs ?? []).length
+          inputNames: node.inputs.map((input) => input.name),
+          outputCount: node.outputs.length
         })
       }
       window.__cnIdBase = window.app!.graph.last_node_id
       const canvas = window.app!.canvas
       const rect = canvas.canvas.getBoundingClientRect()
-      const width = cols * (spacingX as number)
-      const height = Math.ceil(chunk.length / cols) * (spacingY as number)
+      const width = cols * spacingX
+      const height = Math.ceil(chunk.length / cols) * spacingY
       const scale = Math.min(
         (rect.width / Math.max(width, 1)) * 0.9,
         (rect.height / Math.max(height, 1)) * 0.9,

@@ -29,7 +29,7 @@ const toRankedPlanKey = (
   billingCycle: BillingCycle
 ): RankedPlanKey | null => {
   if (tierKey === 'founder' || tierKey === 'free') return null
-  return `${billingCycle}-${tierKey}` as RankedPlanKey
+  return `${billingCycle}-${tierKey}`
 }
 
 export const getPlanRank = ({

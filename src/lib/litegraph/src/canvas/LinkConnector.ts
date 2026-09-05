@@ -152,12 +152,12 @@ export class LinkConnector {
       : null
     if (linkId == null) {
       // No link connected, check for a floating link
-      const [floatingLink] = slotFloatingLinks(
+      const floatingLink = slotFloatingLinks(
         network,
         'input',
         node.id,
         node.inputs.indexOf(input)
-      )
+      ).at(0)
       if (floatingLink?.parentId == null) return
 
       try {
@@ -179,7 +179,7 @@ export class LinkConnector {
           'before-move-input',
           renderLink
         )
-        if (mayContinue === false) return
+        if (!mayContinue) return
 
         renderLinks.push(renderLink)
       } catch (error) {
@@ -254,12 +254,12 @@ export class LinkConnector {
             'before-move-input',
             renderLink
           )
-          if (mayContinue === false) return
+          if (!mayContinue) return
 
           renderLinks.push(renderLink)
 
           this.listenUntilReset('input-moved', (e) => {
-            if ('link' in e.detail && e.detail.link) {
+            if ('link' in e.detail) {
               e.detail.link.disconnect(network, 'output')
             }
           })
@@ -322,7 +322,7 @@ export class LinkConnector {
           'before-move-output',
           renderLink
         )
-        if (mayContinue === false) continue
+        if (!mayContinue) continue
 
         renderLinks.push(renderLink)
         this.floatingLinks.push(floatingLink)
@@ -353,7 +353,7 @@ export class LinkConnector {
 
           const subgraphOutputNode = network.outputNode
           const subgraphOutput = network.outputs.at(link.target_slot)
-          if (!subgraphOutputNode || !subgraphOutput) {
+          if (!subgraphOutput) {
             console.error('No subgraph output found for link.')
             continue
           }
@@ -392,7 +392,7 @@ export class LinkConnector {
             'before-move-output',
             renderLink
           )
-          if (mayContinue === false) continue
+          if (!mayContinue) continue
 
           renderLinks.push(renderLink)
         } catch (error) {
@@ -691,7 +691,7 @@ export class LinkConnector {
         renderLinks: this.renderLinks,
         event
       })
-      if (mayContinue === false) return
+      if (!mayContinue) return
     }
 
     try {
@@ -752,7 +752,7 @@ export class LinkConnector {
 
           // Only reuse the slot if the next link's type would be compatible
           // Otherwise, keep using EmptySubgraphOutput to create a new slot
-          const nextLink = renderLinks[renderLinks.indexOf(link) + 1]
+          const nextLink = renderLinks.at(renderLinks.indexOf(link) + 1)
           if (nextLink && link.fromSlot.type === nextLink.fromSlot.type) {
             targetSlot = createdSlot
           } else {
@@ -798,7 +798,7 @@ export class LinkConnector {
 
           // Only reuse the slot if the next link's type would be compatible
           // Otherwise, keep using EmptySubgraphInput to create a new slot
-          const nextLink = renderLinks[renderLinks.indexOf(link) + 1]
+          const nextLink = renderLinks.at(renderLinks.indexOf(link) + 1)
           if (nextLink && link.fromSlot.type === nextLink.fromSlot.type) {
             targetSlot = createdSlot
           } else {
@@ -857,7 +857,7 @@ export class LinkConnector {
       reroute,
       event
     })
-    if (mayContinue === false) return
+    if (!mayContinue) return
 
     // Connecting to input
     if (this.state.connectingTo === 'input') {
@@ -950,7 +950,7 @@ export class LinkConnector {
     if (this.renderLinks.length === 0) return
     // For external event only.
     const mayContinue = this.events.dispatch('dropped-on-canvas', event)
-    if (mayContinue === false) return
+    if (!mayContinue) return
 
     this.disconnectLinks()
   }
@@ -982,10 +982,10 @@ export class LinkConnector {
     } = this
 
     const mayContinue = this.events.dispatch('dropped-on-node', { node, event })
-    if (mayContinue === false) return
+    if (!mayContinue) return
 
     // Assume all links are the same type, disallow loopback
-    const firstLink = this.renderLinks[0]
+    const firstLink = this.renderLinks.at(0)
     if (!firstLink) return
 
     // Use a single type check before looping; ensures all dropped links go to the same slot
@@ -1038,7 +1038,7 @@ export class LinkConnector {
             link.outputSlot,
             link.inputNode,
             link.inputSlot,
-            undefined!
+            undefined
           )
         }
         continue
@@ -1104,7 +1104,7 @@ export class LinkConnector {
 
       const afterRerouteId =
         link instanceof MovingLinkBase
-          ? link.link?.parentId
+          ? link.link.parentId
           : link.fromReroute?.id
 
       return {
@@ -1161,7 +1161,7 @@ export class LinkConnector {
    */
   reset(force = false): void {
     const mayContinue = this.events.dispatch('reset', force)
-    if (mayContinue === false) return
+    if (!mayContinue) return
 
     const {
       state,

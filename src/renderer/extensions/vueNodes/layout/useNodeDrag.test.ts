@@ -17,13 +17,9 @@ import type { UUID } from '@/utils/uuid'
 const ROOT_GRAPH_ID = vi.hoisted<UUID>(() => 'root-graph')
 
 const testState = vi.hoisted(() => {
-  // Imports are unavailable inside vi.hoisted() so shoehorn's fromAny cannot
-  // be used here. This local identity function serves the same purpose
-  // (runtime no-op cast) until the test is rewritten to use real stores.
-  const placeholder = <T>(v: unknown): T => v as T
   return {
-    selectedNodeIds: placeholder<Ref<Set<NodeId>>>(null),
-    selectedItems: placeholder<Ref<unknown[]>>(null),
+    selectedNodeIds: null as unknown as Ref<Set<NodeId>>,
+    selectedItems: null as unknown as Ref<unknown[]>,
     nodeLayouts: new Map<string, Pick<NodeLayout, 'position' | 'size'>>(),
     mutationFns: {
       moveNode: vi.fn(),

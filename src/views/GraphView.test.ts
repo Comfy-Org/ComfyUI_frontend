@@ -6,11 +6,19 @@ import { createI18n } from 'vue-i18n'
 import type * as VueUseCore from '@vueuse/core'
 import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
-import type * as DistTypes from '@/platform/distribution/types'
+import type * as DistributionTypes from '@/platform/distribution/types'
 import type * as I18nModule from '@/i18n'
 
 const apiMock = vi.hoisted(() => new EventTarget())
-const distribution = vi.hoisted(() => ({ isCloud: false }))
+const distribution = vi.hoisted(
+  (): {
+    isCloud: typeof DistributionTypes.isCloud
+    isDesktop: typeof DistributionTypes.isDesktop
+  } => ({
+    isCloud: false,
+    isDesktop: false
+  })
+)
 
 vi.mock('@/scripts/api', () => ({ api: apiMock }))
 
@@ -63,16 +71,7 @@ vi.mock('@/i18n', async (importOriginal) => {
   const actual = await importOriginal<typeof I18nModule>()
   return { ...actual, loadLocale: vi.fn().mockResolvedValue(undefined) }
 })
-vi.mock('@/platform/distribution/types', async (importOriginal) => {
-  const actual = await importOriginal<typeof DistTypes>()
-  return {
-    ...actual,
-    get isCloud() {
-      return distribution.isCloud
-    },
-    isDesktop: false
-  }
-})
+vi.mock('@/platform/distribution/types', () => distribution)
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({ get: vi.fn(() => undefined), set: vi.fn() })
 }))

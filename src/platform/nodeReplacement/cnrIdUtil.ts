@@ -23,5 +23,5 @@ export function getCnrIdFromProperties(
  * @returns The cnrId string, or undefined if not found
  */
 export function getCnrIdFromNode(node: LGraphNode): string | undefined {
-  return getCnrIdFromProperties(node.properties as Record<string, unknown>)
+  return getCnrIdFromProperties(node.properties)
 }
