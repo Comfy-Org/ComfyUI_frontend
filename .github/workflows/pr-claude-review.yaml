@@ -42,7 +42,7 @@ jobs:
           pnpm add -g typescript @vue/compiler-sfc
 
       - name: Run Claude PR Review
-        uses: anthropics/claude-code-action@239e3a730883eeb5c53db12b0fc9573b3024b126 # v1.0.191
+        uses: anthropics/claude-code-action@8251c103ac8c1d761882c86aba1412c7f583c844 # v1.0.213
         with:
           label_trigger: 'claude-review'
           prompt: |
