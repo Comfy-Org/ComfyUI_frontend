@@ -7,9 +7,21 @@ import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { graphToPrompt } from './executionUtil'
 
-function addNode(graph: LGraph, comfyClass: string) {
-  const node = new LGraphNode(comfyClass)
+function makeNode(title: string, comfyClass: string, virtual = false) {
+  const node = new LGraphNode(title)
   node.comfyClass = comfyClass
+  if (virtual) node.isVirtualNode = true
+  return node
+}
+
+function buildGraph(...nodes: LGraphNode[]) {
+  const graph = new LGraph()
+  for (const node of nodes) graph.add(node)
+  return graph
+}
+
+function addNode(graph: LGraph, comfyClass: string) {
+  const node = makeNode(comfyClass, comfyClass)
   graph.add(node)
   return node
 }
@@ -108,5 +120,60 @@ describe('graphToPrompt widget serialization', () => {
     widget.value = null
 
     expect(await promptInputs(graph, node)).not.toHaveProperty('prompt')
+  })
+})
+
+describe('graphToPrompt', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('excludes nodes with isVirtualNode from API output', async () => {
+    const realNode = makeNode('RealNode', 'KSampler')
+    const virtualNode = makeNode('VirtualNode', 'Note', true)
+    const graph = buildGraph(realNode, virtualNode)
+
+    const { output } = await graphToPrompt(graph)
+
+    expect(output[String(virtualNode.id)]).toBeUndefined()
+    expect(output[String(realNode.id)]).toBeDefined()
+    expect(output[String(realNode.id)].class_type).toBe('KSampler')
+  })
+
+  it('produces empty output when all nodes are virtual', async () => {
+    const graph = buildGraph(
+      makeNode('Note', 'Note', true),
+      makeNode('MarkdownNote', 'MarkdownNote', true)
+    )
+
+    const { output } = await graphToPrompt(graph)
+
+    expect(Object.keys(output)).toHaveLength(0)
+  })
+
+  it('includes virtual nodes in workflow JSON for save fidelity', async () => {
+    const note = makeNode('Note', 'Note', true)
+    const realNode = makeNode('RealNode', 'KSampler')
+    const graph = buildGraph(note, realNode)
+
+    const { workflow, output } = await graphToPrompt(graph)
+
+    expect(
+      workflow.nodes.some((node) => String(node.id) === String(note.id)),
+      'Workflow JSON should preserve virtual nodes by ID'
+    ).toBe(true)
+    expect(output[String(note.id)]).toBeUndefined()
+  })
+
+  it('preserves multiple non-virtual nodes', async () => {
+    const node1 = makeNode('Node1', 'KSampler')
+    const node2 = makeNode('Node2', 'SaveImage')
+    const graph = buildGraph(node1, node2)
+
+    const { output } = await graphToPrompt(graph)
+
+    expect(Object.keys(output)).toHaveLength(2)
+    expect(output[String(node1.id)].class_type).toBe('KSampler')
+    expect(output[String(node2.id)].class_type).toBe('SaveImage')
   })
 })
