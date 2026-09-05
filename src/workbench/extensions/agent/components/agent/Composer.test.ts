@@ -39,7 +39,7 @@ function mount(
   attrs: Record<string, unknown> = {}
 ) {
   return render(Composer, {
-    props,
+    props: { hasWorkflowTarget: true, ...props },
     attrs,
     global: {
       plugins: [i18n],
