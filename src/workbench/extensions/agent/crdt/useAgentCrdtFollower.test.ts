@@ -20,6 +20,8 @@ import { toNodeId } from '@/types/nodeId'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
 
+const reportErrorMock = vi.hoisted(() => vi.fn())
+
 const bridgeState = vi.hoisted(() => {
   class FakeBridge extends EventTarget {
     subscribe = vi.fn()
@@ -31,7 +33,6 @@ const bridgeState = vi.hoisted(() => {
     subscribedWorkflowId: string | null = 'wf-1'
     lastSequence = 41
     follower = {
-      updatesApplied: 0,
       doc: {
         getMap: () => ({ toJSON: () => ({}) })
       }
@@ -124,6 +125,10 @@ vi.mock('./devPanelLog', () => ({
   recordDevEvent: vi.fn()
 }))
 
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: reportErrorMock
+}))
+
 vi.mock('@/scripts/api', () => ({ api: apiState.api }))
 vi.mock('@/scripts/app', () => ({ app: { graph: null, canvas: null } }))
 vi.mock('@/stores/authStore', () => ({
@@ -164,7 +169,11 @@ function writeRawRecord(overrides: {
 function mountFollower(
   initial: string | null = null,
   initiallyActive = true,
-  getGraph: () => MaterializableGraph | null = () => null
+  getGraph: () => MaterializableGraph | null = () => null,
+  onFailure: (
+    type: 'op_rejected' | 'apply_failed',
+    details: string
+  ) => void = () => {}
 ): {
   unmount: () => void
   workflowId: Ref<string | null>
@@ -181,7 +190,8 @@ function mountFollower(
         graphMutations,
         () => null,
         isTargetActive,
-        getGraph
+        getGraph,
+        onFailure
       )
       exposedStatus = () => status.value as AgentCrdtStatus
       return () => null
@@ -445,9 +455,14 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('clears only for an explicit reset and rebinds after replacement', () => {
+  it('clears update outcome counters only for an explicit reset and rebinds after replacement', () => {
     const { unmount, status } = mountFollower('wf-1')
     expect(adapterState.bind).toHaveBeenCalledTimes(1)
+
+    dispatchFrame('doc_update_received', {})
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 42 })
+    expect(status().updatesReceived).toBe(1)
+    expect(status().updatesApplied).toBe(1)
 
     dispatchFrame('doc_reset', {
       workflowId: 'wf-1',
@@ -459,13 +474,15 @@ describe('useAgentCrdtFollower', () => {
       actor: 'agent:turn',
       opId: 'doc-reset:43'
     })
+    expect(status().updatesReceived).toBe(0)
+    expect(status().updatesApplied).toBe(0)
 
-    bridge().follower.updatesApplied = 3
+    dispatchFrame('doc_update_received', {})
     dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 44 })
-    expect(status().updatesApplied).toBe(3)
+    expect(status().updatesApplied).toBe(1)
 
     dispatchFrame('follower_replaced', { workflowId: 'wf-2' })
-    expect(status().updatesApplied).toBe(3)
+    expect(status().updatesApplied).toBe(1)
     expect(adapterState.bind).toHaveBeenCalledTimes(1)
 
     dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
@@ -504,16 +521,205 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('surfaces applied updates and the last frame type in status', () => {
+  it('reports received, applied, skipped, and errored update outcomes', () => {
     const { unmount, status } = mountFollower('wf-1')
-    bridge().follower.updatesApplied = 3
 
     const update = { workflowId: 'wf-1', seq: 7 }
+    adapterState.applyFrame.mockReturnValueOnce(true)
+    dispatchFrame('doc_update_received', {})
     dispatchFrame('doc_update', update)
+    dispatchFrame('doc_update_received', {})
+    dispatchFrame('doc_update_skipped', {})
+    dispatchFrame('doc_update_received', {})
+    dispatchFrame('doc_update_error', {})
+    dispatchFrame('doc_update_received', {})
+    dispatchFrame('schema_error', { workflowId: 'wf-1', code: 'unreadable' })
 
-    expect(status().updatesApplied).toBe(3)
-    expect(status().lastFrameType).toBe('doc_update')
+    expect(status()).toMatchObject({
+      updatesReceived: 4,
+      updatesApplied: 1,
+      updatesSkipped: 1,
+      updatesErrored: 2
+    })
+    expect(status().lastFrameType).toBe('schema_error')
     expect(adapterState.applyFrame).toHaveBeenCalledWith(update)
+    unmount()
+  })
+
+  it('surfaces a rejected human operation batch without rolling it back', () => {
+    const onFailure = vi.fn()
+    const { unmount, status } = mountFollower(
+      'wf-1',
+      true,
+      () => null,
+      onFailure
+    )
+
+    dispatchFrame('doc_ops_result', {
+      workflowId: 'wf-1',
+      ok: false,
+      applied: ['op-1'],
+      skipped: ['duplicate-op'],
+      code: 'invalid_node_payload',
+      message: 'node payload failed schema check',
+      failed: { op_id: 'op-2', code: 'invalid_node_payload' }
+    })
+
+    expect(status()).toMatchObject({
+      opNacks: 1,
+      lastOpNack: {
+        workflowId: 'wf-1',
+        code: 'invalid_node_payload',
+        message: 'node payload failed schema check',
+        applied: 1,
+        skipped: 1
+      }
+    })
+    expect(reportErrorMock).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'agent_crdt_host_operation_rejected'
+      })
+    )
+    expect(onFailure).toHaveBeenCalledWith(
+      'op_rejected',
+      'node payload failed schema check'
+    )
+    unmount()
+  })
+
+  it('ignores malformed operation results without reporting a nack', () => {
+    const { unmount, status } = mountFollower('wf-1')
+
+    dispatchFrame('doc_ops_result', { workflowId: 'wf-1' })
+    dispatchFrame('doc_ops_result', null)
+
+    expect(status()).toMatchObject({ opNacks: 0, lastOpNack: null })
+    expect(reportErrorMock).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  it('reports an ECS projection failure and keeps listening for updates', () => {
+    const onFailure = vi.fn()
+    const { unmount, status } = mountFollower(
+      'wf-1',
+      true,
+      () => null,
+      onFailure
+    )
+    adapterState.applyFrame.mockImplementationOnce(() => {
+      throw new Error('mutation batch failed')
+    })
+
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 7 })
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 8 })
+
+    expect(status().projectionErrors).toBe(1)
+    expect(adapterState.applyFrame).toHaveBeenCalledTimes(2)
+    expect(reportErrorMock).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'agent_crdt_projection_failure' })
+    )
+    expect(onFailure).toHaveBeenCalledWith(
+      'apply_failed',
+      'mutation batch failed'
+    )
+    unmount()
+  })
+
+  it('reports an ECS projection rejection without a no-op resubscribe', () => {
+    const { unmount, status } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { workflowId: 'wf-1', ok: true, seq: 6 })
+    bridge().resubscribe.mockClear()
+    adapterState.applyFrame.mockReturnValueOnce(false)
+
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 7 })
+
+    // The bridge merged the frame's bytes before dispatch, so a state-vector
+    // resubscribe cannot redeliver it; the adapter already dropped its pending
+    // diff before batching. Neither is a recovery, so neither runs here.
+    expect(status()).toMatchObject({ projectionErrors: 1, connected: true })
+    expect(adapterState.discardPending).not.toHaveBeenCalled()
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+    expect(reportErrorMock).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'agent_crdt_projection_failure' })
+    )
+    unmount()
+  })
+
+  it('reports host nacks once per workflow, not once per mount', async () => {
+    const { unmount, workflowId, status } = mountFollower('wf-1')
+
+    dispatchFrame('doc_ops_result', { workflowId: 'wf-1', ok: false })
+    dispatchFrame('doc_ops_result', { workflowId: 'wf-1', ok: false })
+    expect(reportErrorMock).toHaveBeenCalledTimes(1)
+
+    workflowId.value = 'wf-2'
+    await nextTick()
+    dispatchFrame('doc_ops_result', { workflowId: 'wf-2', ok: false })
+
+    expect(status().opNacks).toBe(3)
+    expect(reportErrorMock).toHaveBeenCalledTimes(2)
+    expect(reportErrorMock).toHaveBeenLastCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'agent_crdt_host_operation_rejected',
+        tags: expect.objectContaining({ workflow_id: 'wf-2' })
+      })
+    )
+    unmount()
+  })
+
+  it('keeps failure counters monotonic across resets and workflow switches', async () => {
+    const { unmount, workflowId, status } = mountFollower('wf-1')
+    adapterState.applyFrame.mockImplementationOnce(() => {
+      throw new Error('mutation batch failed')
+    })
+    dispatchFrame('doc_ops_result', {
+      workflowId: 'wf-1',
+      ok: false,
+      code: 'invalid_node_payload'
+    })
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 7 })
+
+    dispatchFrame('doc_reset', { workflowId: 'wf-1', seq: 8 })
+
+    expect(status()).toMatchObject({
+      opNacks: 1,
+      lastOpNack: null,
+      projectionErrors: 1
+    })
+    dispatchFrame('doc_ops_result', {
+      workflowId: 'wf-1',
+      ok: false,
+      code: 'invalid_node_payload'
+    })
+
+    workflowId.value = 'wf-2'
+    await nextTick()
+
+    expect(status()).toMatchObject({
+      opNacks: 2,
+      lastOpNack: null,
+      projectionErrors: 1
+    })
+    unmount()
+  })
+
+  it('counts an unbound projection as skipped', () => {
+    const { unmount, status } = mountFollower('wf-1')
+    adapterState.applyFrame.mockReturnValueOnce(false)
+
+    dispatchFrame('doc_update_received', {})
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 7 })
+
+    expect(status()).toMatchObject({
+      updatesReceived: 1,
+      updatesApplied: 0,
+      updatesSkipped: 1,
+      updatesErrored: 0
+    })
     unmount()
   })
 

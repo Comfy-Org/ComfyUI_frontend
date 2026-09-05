@@ -235,6 +235,11 @@ export class LayoutFollowerBridge extends EventTarget {
     if (!(event instanceof CustomEvent)) return
     const update = event.detail as DocUpdate
     if (update.workflowId !== this.sentWorkflowId) return
+    this.dispatchEvent(
+      new CustomEvent('doc_update_received', {
+        detail: { workflowId: update.workflowId, seq: update.seq }
+      })
+    )
 
     // A stale/duplicate frame cannot advance the replica. Ignoring it also
     // prevents a replayed Yjs frame from spuriously re-running ECS effects.
@@ -245,6 +250,15 @@ export class LayoutFollowerBridge extends EventTarget {
     // leave the follower on an empty doc (KA-11).
     const isCatchUp = this.catchUpPending && update.seq === this.ackSeq
     if (!isCatchUp && this.lastSeq !== null && update.seq <= this.lastSeq) {
+      this.dispatchEvent(
+        new CustomEvent('doc_update_skipped', {
+          detail: {
+            workflowId: update.workflowId,
+            seq: update.seq,
+            reason: 'stale'
+          }
+        })
+      )
       this.dispatchEvent(
         new CustomEvent('doc_stale', {
           detail: { workflowId: update.workflowId, seq: update.seq }
@@ -264,6 +278,15 @@ export class LayoutFollowerBridge extends EventTarget {
     const baseline = this.lastSeq ?? this.ackSeq
     if (baseline !== null && update.seq > baseline + 1) {
       this.dispatchEvent(
+        new CustomEvent('doc_update_skipped', {
+          detail: {
+            workflowId: update.workflowId,
+            seq: update.seq,
+            reason: 'gap'
+          }
+        })
+      )
+      this.dispatchEvent(
         new CustomEvent('doc_gap', {
           detail: {
             workflowId: update.workflowId,
@@ -275,10 +298,19 @@ export class LayoutFollowerBridge extends EventTarget {
       this.resubscribe()
       return
     }
+    try {
+      this.follower.applyRemoteUpdate(update.update)
+    } catch {
+      this.dispatchEvent(
+        new CustomEvent('doc_update_error', {
+          detail: { workflowId: update.workflowId, seq: update.seq }
+        })
+      )
+      return
+    }
     if (this.lastSeq === null || update.seq > this.lastSeq)
       this.lastSeq = update.seq
     if (isCatchUp) this.catchUpPending = false
-    this.follower.applyRemoteUpdate(update.update)
 
     // KA-11 read-time gate. The merge itself is unconditional — Yjs bytes are
     // integrated or they are not — but nothing downstream may READ a doc whose

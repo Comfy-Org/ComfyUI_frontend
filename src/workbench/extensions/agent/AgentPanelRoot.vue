@@ -464,7 +464,8 @@ const {
   // `app.isGraphReady` is a plain getter; reading `canvasStore.canvas` (set
   // right after `app.setup()`) makes the follower's graph watch fire once the
   // root graph exists.
-  () => (canvasStore.canvas && app.isGraphReady ? app.rootGraph : null)
+  () => (canvasStore.canvas && app.isGraphReady ? app.rootGraph : null),
+  surfaceAgentError
 )
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,
@@ -513,7 +514,10 @@ watch(status, (value) => {
 
 const executionErrorStore = useExecutionErrorStore()
 
-function surfaceAgentError(type: 'agent_api_failed', details: string): void {
+function surfaceAgentError(
+  type: 'agent_api_failed' | 'op_rejected' | 'apply_failed',
+  details: string
+): void {
   executionErrorStore.recordPromptError({
     type,
     message: t(`errorCatalog.promptErrors.${type}.desc`),
