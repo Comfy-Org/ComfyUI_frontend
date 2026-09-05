@@ -14,6 +14,7 @@
         >
           <WorkflowTabs />
           <TopbarBadges />
+          <EmailVerificationNudge />
           <TopbarSubscribeButton />
         </div>
       </div>
@@ -160,6 +161,7 @@ import NodePropertiesPanel from '@/components/rightSidePanel/RightSidePanel.vue'
 import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
+import EmailVerificationNudge from '@/components/topbar/EmailVerificationNudge.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
