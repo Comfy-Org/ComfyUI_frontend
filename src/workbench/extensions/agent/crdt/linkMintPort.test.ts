@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 import type { GraphOperation } from './graphOperations'
 import { attachLinkMintPort } from './linkMintPort'
 import type {
@@ -9,6 +11,8 @@ import type {
 } from './linkMintPort'
 import { createMintSession } from './mintSession'
 import type { MintSession } from './mintSession'
+
+vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
 
 const ROOT_SCOPE: LinkScopeView = {
   rootGraphId: 'root-uuid',
@@ -41,6 +45,7 @@ describe('attachLinkMintPort', () => {
   let port: LinkMintPort
   let enabled: boolean
   let bound: boolean
+  let intentionalClear: boolean
   let session: MintSession
   let placedListeners: Set<
     (scope: LinkScopeView, topology: LinkTopologyView) => void
@@ -61,6 +66,7 @@ describe('attachLinkMintPort', () => {
     minted = []
     enabled = true
     bound = true
+    intentionalClear = false
     session = createMintSession()
     placedListeners = new Set()
     deletedListeners = new Set()
@@ -78,6 +84,7 @@ describe('attachLinkMintPort', () => {
       session,
       isEnabled: () => enabled,
       isDocBound: () => bound,
+      isIntentionalClear: () => intentionalClear,
       enqueue: (operations) => minted.push(...operations)
     })
   })
@@ -128,37 +135,93 @@ describe('attachLinkMintPort', () => {
 
     expect(minted).toEqual([])
     expect(consoleError).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_crdt_unrepresentable_link_operation',
+      context: { id: 41 }
+    })
     consoleError.mockRestore()
   })
 
   it('captures a severed link under both endpoints, consumed exactly once', () => {
     remove(ROOT_SCOPE, topology(41))
 
-    expect(port.severances.take('2')).toEqual([41])
-    expect(port.severances.take('1')).toEqual([])
+    expect(port.severances.take(ROOT_SCOPE.owningGraphId, '2')).toEqual([41])
+    expect(port.severances.take(ROOT_SCOPE.owningGraphId, '1')).toEqual([])
   })
 
-  it('surfaces an unconsumed local disconnect as divergence after the sweep', async () => {
+  it('mints a standalone disconnect for a local link deletion', async () => {
     const consoleError = vi
       .spyOn(console, 'error')
       .mockImplementation(() => undefined)
     remove(ROOT_SCOPE, topology(41))
+
+    expect(minted).toEqual([])
     await afterSweep()
 
-    expect(consoleError).toHaveBeenCalledOnce()
-    expect(consoleError.mock.calls[0][1]).toBe(41)
+    expect(minted).toEqual([
+      { op: 'disconnect', link_id: 41, to_node: 2, to_slot: 3 }
+    ])
+    expect(consoleError).not.toHaveBeenCalled()
     consoleError.mockRestore()
   })
 
-  it('stays silent for a consumed severance (the delete carried it)', async () => {
+  it('mints a disconnect for a consumed severance (the delete also carries it as removed_links)', async () => {
     const consoleError = vi
       .spyOn(console, 'error')
       .mockImplementation(() => undefined)
     remove(ROOT_SCOPE, topology(41))
-    port.severances.take('1')
+    port.severances.take(ROOT_SCOPE.owningGraphId, '1')
     await afterSweep()
 
+    expect(minted).toEqual([
+      { op: 'disconnect', link_id: 41, to_node: 2, to_slot: 3 }
+    ])
     expect(consoleError).not.toHaveBeenCalled()
+    consoleError.mockRestore()
+  })
+
+  it('surfaces an unconsumed subgraph-interior deletion observably instead of minting', async () => {
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
+    remove(SUBGRAPH_SCOPE, topology(41))
+    await afterSweep()
+
+    expect(minted).toEqual([])
+    expect(consoleError).toHaveBeenCalledWith(
+      '[agent-crdt] subgraph-interior disconnect has no wire op; the bound doc diverges from the local graph',
+      '41'
+    )
+    consoleError.mockRestore()
+  })
+
+  it('does not consume a subgraph-interior deletion into delete_node', async () => {
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
+    remove(SUBGRAPH_SCOPE, topology(41))
+    expect(port.severances.take(SUBGRAPH_SCOPE.owningGraphId, '1')).toEqual([])
+    await afterSweep()
+
+    expect(minted).toEqual([])
+    expect(consoleError).toHaveBeenCalledOnce()
+    consoleError.mockRestore()
+  })
+
+  it('keeps same-id severances isolated by their owning graph', async () => {
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
+    remove(ROOT_SCOPE, topology(41))
+    remove(SUBGRAPH_SCOPE, topology(41))
+
+    expect(port.severances.take(ROOT_SCOPE.owningGraphId, '1')).toEqual([41])
+    await afterSweep()
+
+    expect(minted).toEqual([
+      { op: 'disconnect', link_id: 41, to_node: 2, to_slot: 3 }
+    ])
+    expect(consoleError).toHaveBeenCalledOnce()
     consoleError.mockRestore()
   })
 
@@ -175,14 +238,23 @@ describe('attachLinkMintPort', () => {
     consoleError.mockRestore()
   })
 
+  it('suppresses standalone disconnects during an intentional clear', async () => {
+    intentionalClear = true
+    remove(ROOT_SCOPE, topology(41))
+    intentionalClear = false
+    await afterSweep()
+
+    expect(minted).toEqual([])
+  })
+
   it('sweeps the capture window: a later take finds nothing', async () => {
     session.beginGraphTeardown()
     remove(ROOT_SCOPE, topology(41))
     session.endGraphTeardown()
     await afterSweep()
 
-    expect(port.severances.take('1')).toEqual([])
-    expect(port.severances.take('2')).toEqual([])
+    expect(port.severances.take(ROOT_SCOPE.owningGraphId, '1')).toEqual([])
+    expect(port.severances.take(ROOT_SCOPE.owningGraphId, '2')).toEqual([])
   })
 
   it('stops minting after detach', () => {

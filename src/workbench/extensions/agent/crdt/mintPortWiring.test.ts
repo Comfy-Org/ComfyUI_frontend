@@ -163,7 +163,57 @@ describe('attachMintPortWiring', () => {
     await afterSweep()
 
     expect(minted).toEqual([
-      { op: 'delete_node', node_id: '2', removed_links: [toLinkId(41)] }
+      { op: 'delete_node', node_id: '2', removed_links: [toLinkId(41)] },
+      {
+        op: 'disconnect',
+        link_id: toLinkId(41),
+        to_node: toNodeId(2),
+        to_slot: 3
+      }
+    ])
+  })
+
+  it('mints one clear without standalone disconnects for cleared links', async () => {
+    const linkStore = useLinkStore()
+    const severed = topology(41)
+    graphNodes.set('1', { id: toNodeId(1) })
+    graphNodes.set('2', { id: toNodeId(2) })
+    linkStore.registerLink(ROOT_SCOPE, severed)
+    minted.length = 0
+
+    wiring.runIntentionalClear(() => {
+      linkStore.deleteLink(ROOT_SCOPE, severed)
+      deliverLayoutChange({
+        operation: { type: 'clearGraph', actor: 'user-abc' }
+      })
+    })
+    await afterSweep()
+
+    expect(minted).toEqual([{ op: 'clear', removed_nodes: ['1', '2'] }])
+  })
+
+  it('restores disconnect minting after an intentional clear throws', async () => {
+    const linkStore = useLinkStore()
+    const severed = topology(41)
+    linkStore.registerLink(ROOT_SCOPE, severed)
+    minted.length = 0
+
+    expect(() =>
+      wiring.runIntentionalClear(() => {
+        throw new Error('clear failed')
+      })
+    ).toThrow('clear failed')
+
+    linkStore.deleteLink(ROOT_SCOPE, severed)
+    await afterSweep()
+
+    expect(minted).toEqual([
+      {
+        op: 'disconnect',
+        link_id: toLinkId(41),
+        to_node: toNodeId(2),
+        to_slot: 3
+      }
     ])
   })
 

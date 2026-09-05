@@ -38,6 +38,8 @@ interface LayoutChangeFeed {
 
 /** The workflow-JSON node snapshot an `add_node` carries, read at mint time. */
 interface MintSnapshotSource {
+  /** Owning graph id for node ids emitted by the layout feed. */
+  graphId(): string
   /** Serialized workflow-JSON node for `id`, or null when unavailable. */
   serializeNode(id: string): WorkflowNode | null
   /** Every node id currently on the graph (clear's authoritative target set). */
@@ -173,7 +175,10 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
           {
             op: 'delete_node',
             node_id: operation.nodeId,
-            removed_links: deps.severedLinks.take(String(operation.nodeId))
+            removed_links: deps.severedLinks.take(
+              deps.source.graphId(),
+              String(operation.nodeId)
+            )
           }
         ])
         return

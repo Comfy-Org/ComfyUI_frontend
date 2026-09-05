@@ -302,7 +302,9 @@ export function useCoreCommands(): ComfyCommand[] {
             const nonIoNodes = getAllNonIoNodesInSubgraph(subgraph)
             nonIoNodes.forEach((node) => subgraph.remove(node))
           } else {
-            runMintPortsIntentionalClear(() => app.clean())
+            runMintPortsIntentionalClear(() => {
+              app.clean()
+            })
           }
           api.dispatchCustomEvent('graphCleared')
         }

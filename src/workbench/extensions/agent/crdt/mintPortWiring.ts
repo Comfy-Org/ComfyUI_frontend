@@ -126,6 +126,7 @@ function serializeForMint(node: LGraphNode): WorkflowNode | null {
 
 export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
   const session = createMintSession()
+  let intentionalClearDepth = 0
 
   type PlacedListener = Parameters<
     Parameters<typeof attachLinkMintPort>[0]['events']['onPlaced']
@@ -154,6 +155,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     session,
     isEnabled: deps.isEnabled,
     isDocBound: deps.isDocBound,
+    isIntentionalClear: () => intentionalClearDepth > 0,
     enqueue: deps.enqueue
   })
 
@@ -165,6 +167,9 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     isEnabled: deps.isEnabled,
     isDocBound: deps.isDocBound,
     source: {
+      graphId() {
+        return String(deps.getGraph()?.id ?? '')
+      },
       serializeNode(id) {
         const node = deps.getGraph()?.getNodeById(id as NodeId)
         return node ? serializeForMint(node) : null
@@ -244,7 +249,12 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
   const wiring: MintPortWiring = {
     session,
     runIntentionalClear(fn) {
-      return layoutPort.runIntentionalClear(fn)
+      intentionalClearDepth++
+      try {
+        return layoutPort.runIntentionalClear(fn)
+      } finally {
+        intentionalClearDepth--
+      }
     },
     onBeforeGraphLoad() {
       if (loadBracketOpen) return

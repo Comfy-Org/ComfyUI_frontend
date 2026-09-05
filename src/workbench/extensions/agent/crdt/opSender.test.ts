@@ -25,6 +25,7 @@ describe('createOpSender', () => {
   let resultListener: ((result: OpsResultView) => void) | null
   let transportUp: boolean
   let boundWorkflow: string | null
+  let baseVersion: number
   let sender: ReturnType<typeof createOpSender>
 
   function ackInFlight(): void {
@@ -43,6 +44,7 @@ describe('createOpSender', () => {
     resultListener = null
     transportUp = true
     boundWorkflow = WORKFLOW
+    baseVersion = 41
     sender = createOpSender({
       sendOps: (workflowId, tab, ops) => {
         if (!transportUp) return false
@@ -58,7 +60,7 @@ describe('createOpSender', () => {
       workflowId: () => boundWorkflow,
       tab: TAB,
       actor: () => ACTOR,
-      baseVersion: () => 41,
+      baseVersion: () => baseVersion,
       onBatchSettled: (outcome) => settled.push(outcome)
     })
   })
@@ -97,6 +99,72 @@ describe('createOpSender', () => {
     ackInFlight()
     expect(sender.pending()).toBe(0)
     expect(settled).toHaveLength(2)
+  })
+
+  it('advances the local stamp when the observed sequence has not changed', () => {
+    sender.enqueue([addNode(1)])
+    sender.enqueue([addNode(2)])
+
+    expect(sent[0].ops[0].stamp).toEqual([41, ACTOR])
+    expect(sent[0].ops[0].base_version).toBe(41)
+    ackInFlight()
+    expect(sent[1].ops[0].stamp).toEqual([42, ACTOR])
+    expect(sent[1].ops[0].base_version).toBe(42)
+
+    baseVersion = 50
+    ackInFlight()
+    sender.enqueue([addNode(3)])
+    expect(sent[2].ops[0].stamp).toEqual([50, ACTOR])
+    expect(sent[2].ops[0].base_version).toBe(50)
+  })
+
+  it('resets the local stamp when the bound workflow changes', () => {
+    sender.enqueue([addNode(1)])
+    expect(sent[0].ops[0].stamp).toEqual([41, ACTOR])
+    ackInFlight()
+
+    boundWorkflow = 'wf-2'
+    baseVersion = 0
+    sender.enqueue([addNode(2)])
+    expect(sent[1].workflowId).toBe('wf-2')
+    expect(sent[1].ops[0].stamp).toEqual([0, ACTOR])
+  })
+
+  it('resets the local stamp when the document lineage resets', () => {
+    sender.enqueue([addNode(1)])
+    expect(sent[0].ops[0].base_version).toBe(41)
+    ackInFlight()
+
+    baseVersion = 0
+    sender.resetLineage()
+    sender.enqueue([addNode(2)])
+
+    expect(sent[1].ops[0].base_version).toBe(0)
+    expect(sent[1].ops[0].stamp).toEqual([0, ACTOR])
+  })
+
+  it('discards in-flight and queued batches when the document lineage resets', () => {
+    sender.enqueue(Array.from({ length: 300 }, (_, index) => addNode(index)))
+    expect(sender.pending()).toBe(2)
+
+    sender.resetLineage()
+
+    expect(sender.pending()).toBe(0)
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'undeliverable',
+      'undeliverable'
+    ])
+    expect(vi.getTimerCount()).toBe(0)
+
+    baseVersion = 0
+    sender.enqueue([addNode(301)])
+    vi.advanceTimersByTime(20_000)
+
+    expect(sent).toHaveLength(3)
+    expect(sent[1].ops[0]).toMatchObject({
+      op: 'add_node',
+      node_id: 301
+    })
   })
 
   it('retries a down transport with the SAME minted ops and never re-mints', () => {
@@ -298,10 +366,20 @@ describe('createOpSender', () => {
 
     expect(sent).toHaveLength(1)
     expect(sent[0].ops).toHaveLength(256)
+    expect(new Set(sent[0].ops.map((op) => op.base_version))).toEqual(
+      new Set([41])
+    )
     expect(sender.pending()).toBe(2)
 
     ackInFlight()
     expect(sent[1].ops).toHaveLength(44)
+    expect(new Set(sent[1].ops.map((op) => op.base_version))).toEqual(
+      new Set([42])
+    )
+
+    ackInFlight()
+    sender.enqueue([addNode(301)])
+    expect(sent[2].ops[0].base_version).toBe(43)
   })
 
   it('ignores a result for other ops while a batch is in flight', () => {
