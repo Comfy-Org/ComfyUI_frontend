@@ -374,6 +374,12 @@ export class ComfyApp {
   get configuringGraph() {
     return this.configuringGraphLevel > 0
   }
+
+  getRandParam() {
+    if (isCloud) return ''
+    return '&rand=' + Math.random()
+  }
+
   ctx!: CanvasRenderingContext2D
   bodyTop: HTMLElement
   bodyLeft: HTMLElement
@@ -530,11 +536,6 @@ export class ComfyApp {
     let preview_format = useSettingStore().get('Comfy.PreviewFormat')
     if (preview_format) return `&preview=${preview_format}`
     else return ''
-  }
-
-  getRandParam() {
-    if (isCloud) return ''
-    return '&rand=' + Math.random()
   }
 
   static onClipspaceEditorSave() {
