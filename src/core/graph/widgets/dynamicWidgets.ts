@@ -30,6 +30,7 @@ import type { InputLayoutSnapshot } from '@/lib/litegraph/src/node/slotLinks'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { WidgetValue } from '@/types/simplifiedWidget'
 import { widgetId } from '@/types/widgetId'
 
 function setCanvasDirty(canvas: typeof app.canvas | undefined) {
@@ -120,17 +121,30 @@ function dynamicComboWidget(
     appArg,
     widgetName
   )
+  const removedWidgetValues = new Map<
+    string | undefined,
+    Map<string, { type: string; value: WidgetValue }>
+  >()
+  let activeOption = widget.value as string | undefined
   function isInGroup(e: { name: string }): boolean {
     return e.name.startsWith(inputName + '.')
   }
   const updateWidgets = (value?: string) => {
     if (!node.widgets) throw new Error('Not Reachable')
     const newSpec = value ? options[value] : undefined
+    const removedOption = activeOption
+    activeOption = value
 
     const previous = captureInputLayout(node)
     const inputLinks = new Map(previous.links)
     const removedInputs = remove(node.inputs, isInGroup)
     for (const widget of remove(node.widgets, isInGroup)) {
+      const optionValues = removedWidgetValues.get(removedOption) ?? new Map()
+      optionValues.set(widget.name, {
+        type: widget.type,
+        value: widget.value
+      })
+      removedWidgetValues.set(removedOption, optionValues)
       widget.onRemove?.()
       if (widget.widgetId) deleteWidget(widget.widgetId)
     }
@@ -168,6 +182,21 @@ function dynamicComboWidget(
       node.inputs.findIndex((i) => i.name === widget.name) + 1
     const addedWidgets = node.widgets.splice(startingLength)
     node.widgets.splice(insertionPoint, 0, ...addedWidgets)
+    const graphId = resolveNodeRootGraphId(node)
+    for (const [offset, addedWidget] of addedWidgets.entries()) {
+      const removed = removedWidgetValues.get(value)?.get(addedWidget.name)
+      const restored = graphId
+        ? useWidgetValueStore().getRestoredWidgetValue(
+            graphId,
+            node.id,
+            addedWidget.name,
+            insertionPoint + offset
+          )
+        : undefined
+      if (!restored && removed?.type === addedWidget.type) {
+        addedWidget.value = removed.value
+      }
+    }
     syncNodeWidgetOrder(node)
     if (inputInsertionPoint === 0) {
       if (
