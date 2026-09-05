@@ -132,6 +132,13 @@ const REPORT_SOURCE_LABELS: readonly {
 const STATUS_ROWS = [
   ['doc id', () => status.workflowId ?? S.none],
   ['connected', () => (status.connected ? S.yes : S.no)],
+  [
+    'subscription',
+    () =>
+      status.refusalCode
+        ? `${status.subscriptionStatus} (${status.refusalCode})`
+        : status.subscriptionStatus
+  ],
   ['updates applied', () => String(status.updatesApplied)],
   [
     'outcomes (recv/applied/skip/err/gap/reset/drop)',

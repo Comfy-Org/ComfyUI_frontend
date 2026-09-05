@@ -382,6 +382,7 @@ function crdtSection(crdt: CrdtDebugSnapshot): string {
   return [
     `- **Enabled:** ${crdt.status.enabled}`,
     `- **Connected:** ${crdt.status.connected}`,
+    `- **Subscription:** ${crdt.status.subscriptionStatus}${crdt.status.refusalCode ? ` (${crdt.status.refusalCode})` : ''}`,
     `- **Doc id:** ${crdt.status.workflowId ?? 'none'}`,
     `- **Updates applied:** ${crdt.status.updatesApplied}`,
     `- **Last frame:** ${crdt.status.lastFrameType ?? 'none'}`,

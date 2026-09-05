@@ -35,6 +35,8 @@ const STATUS: AgentCrdtStatus = {
   workflowId: 'doc-1',
   updatesApplied: 4,
   lastFrameType: 'doc_update',
+  subscriptionStatus: 'connected',
+  refusalCode: null,
   outcomes: {
     received: 5,
     applied: 4,
