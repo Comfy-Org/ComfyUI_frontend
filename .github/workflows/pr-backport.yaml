@@ -368,6 +368,37 @@ jobs:
             PR_AUTHOR_IS_BOT=$(jq -r '.pull_request.user.type == "Bot"' "$GITHUB_EVENT_PATH")
           fi
 
+          # A merged PR can be locked (the CLA check locks merged PRs), which
+          # makes `gh pr comment` fail and would otherwise silently drop the
+          # "PR creation failed, backport manually" notice — leaving a pushed
+          # branch stranded with nobody told, the gap that left PRs
+          # #14018-#14021 to be recreated by hand. Fall back to a tracking
+          # issue that mentions the author. Bash functions don't cross steps,
+          # so this mirrors the `notify()` helper in "Comment on failures".
+          notify() {
+            local body="$1"
+            local context="$2"
+            if gh pr comment "${PR_NUMBER}" --body "${body}"; then
+              return
+            fi
+            echo "::warning::Could not comment on PR #${PR_NUMBER} (${context}); opening a tracking issue instead."
+            local title="Backport of #${PR_NUMBER} to ${target} failed"
+            # gh issue create is not idempotent, so a blind retry can file the
+            # issue twice when the first call actually succeeded but timed out.
+            # Only drop --label when gh specifically rejected the label.
+            local err
+            if err=$(gh issue create --title "${title}" --body "${body}" --label backport 2>&1); then
+              return
+            fi
+            echo "${err}"
+            if grep -qi "label.*not found\|could not add label\|'backport' not found" <<<"${err}"; then
+              gh issue create --title "${title}" --body "${body}" \
+                || echo "::warning::Also failed to open a tracking issue for #${PR_NUMBER} (${context})."
+            else
+              echo "::warning::Could not open a tracking issue for #${PR_NUMBER} (${context})."
+            fi
+          }
+
           for backport in ${{ steps.backport.outputs.success }}; do
             IFS=':' read -r target branch <<< "${backport}"
 
@@ -388,12 +419,11 @@ jobs:
                 fi
                 gh pr merge "${PR_NUM}" --auto --squash --repo "${{ github.repository }}" \
                   || echo "::warning::Failed to enable auto-merge for PR #${PR_NUM}"
-                gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Successfully backported to #${PR_NUM}"
+                gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Successfully backported to #${PR_NUM}" || true
               fi
             else
               echo "::error::Failed to create PR for ${target}: ${PR_URL}"
-              # Still try to comment on the original PR about the failure
-              gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Backport branch created but PR creation failed for \`${target}\`. Please create the PR manually from branch \`${branch}\`"
+              notify "@${PR_AUTHOR} Backport branch created but PR creation failed for \`${target}\`. Please create the PR manually from branch \`${branch}\`" "PR creation failed for ${target} (branch ${branch})"
             fi
           done
 
