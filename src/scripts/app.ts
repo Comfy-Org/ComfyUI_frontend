@@ -33,6 +33,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { installNodeAddedTelemetry } from '@/platform/telemetry/nodeAdded/installNodeAddedTelemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import { normalizeExecutionTriggerSource } from '@/platform/telemetry/types'
 import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
 import { groupMissingNodesByPack } from '@/platform/telemetry/utils/groupMissingNodesByPack'
@@ -2092,22 +2093,14 @@ export class ComfyApp {
     if (workflow) {
       let workflowObj: ComfyWorkflowJSON | undefined = undefined
       try {
-        workflowObj =
+        const parsed =
           typeof workflow === 'string'
             ? parseJsonWithNonFinite<ComfyWorkflowJSON>(workflow)
             : (workflow as ComfyWorkflowJSON)
 
         // Only load workflow if parsing succeeded AND validation passed
-        if (
-          workflowObj &&
-          typeof workflowObj === 'object' &&
-          !Array.isArray(workflowObj)
-        ) {
-          await this.loadGraphData(workflowObj, true, true, fileName, {
-            openSource,
-            deferWarnings: options?.deferWarnings
-          })
-          return
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          workflowObj = parsed
         } else {
           console.error(
             'Invalid workflow structure, trying parameters fallback'
@@ -2117,22 +2110,42 @@ export class ComfyApp {
         console.error('Failed to parse workflow:', err)
         // Fall through to check parameters as fallback
       }
+
+      // Loaded outside the parse try so a load failure never falls through
+      if (workflowObj) {
+        await this.loadGraphData(workflowObj, true, true, fileName, {
+          openSource,
+          deferWarnings: options?.deferWarnings
+        })
+        return
+      }
     }
 
     if (prompt) {
+      let promptObj: ComfyApiWorkflow | undefined = undefined
       try {
-        const promptObj =
+        const parsed =
           typeof prompt === 'string'
             ? parseJsonWithNonFinite<ComfyApiWorkflow>(prompt)
             : prompt
-        if (this.isApiJson(promptObj)) {
-          await this.loadApiJson(promptObj, fileName, {
-            deferWarnings: options?.deferWarnings
-          })
-          return
+        if (this.isApiJson(parsed)) {
+          promptObj = parsed
         }
       } catch (err) {
         console.error('Failed to parse prompt:', err)
+      }
+
+      if (promptObj) {
+        try {
+          await this.loadApiJson(promptObj, fileName, {
+            deferWarnings: options?.deferWarnings
+          })
+        } catch (err) {
+          console.error('Failed to load API prompt:', err)
+          reportError(err, { errorType: 'api_prompt_load_failure' })
+          this.showErrorOnFileLoad(file)
+        }
+        return
       }
       // Fall through to parameters as a last resort
     }

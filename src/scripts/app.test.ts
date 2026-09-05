@@ -2629,6 +2629,63 @@ describe('ComfyApp', () => {
       consoleError.mockRestore()
     })
 
+    it('propagates a workflow load failure instead of importing A1111 parameters', async () => {
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+        workflow: createWorkflowGraphData(),
+        parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+      })
+      const loadFailure = new Error('activation failed')
+      vi.spyOn(app, 'loadGraphData').mockRejectedValue(loadFailure)
+
+      await expect(
+        app.handleFile(createTestFile('both.png', 'image/png'))
+      ).rejects.toThrow(loadFailure)
+
+      expect(mockImportA1111).not.toHaveBeenCalled()
+    })
+
+    it('still falls back to A1111 parameters when the workflow fails to parse', async () => {
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+      const graph = new LGraph()
+      const parameters = 'positive\nNegative prompt: negative\nSteps: 20'
+      Reflect.set(app, 'rootGraphInternal', graph)
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+        workflow: 'not json',
+        parameters
+      })
+
+      await app.handleFile(createTestFile('both.png', 'image/png'))
+
+      expect(mockImportA1111).toHaveBeenCalledWith(
+        graph,
+        parameters,
+        expect.any(Function)
+      )
+      consoleError.mockRestore()
+    })
+
+    it('reports an api prompt load failure instead of importing A1111 parameters', async () => {
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+        prompt: { '1': { class_type: 'KSampler', inputs: {} } },
+        parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+      })
+      vi.spyOn(app, 'loadApiJson').mockRejectedValue(new Error('load failed'))
+
+      await app.handleFile(createTestFile('api.png', 'image/png'))
+
+      expect(mockImportA1111).not.toHaveBeenCalled()
+      expect(mockToastStore.addAlert).toHaveBeenCalledOnce()
+      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
+        t('toastMessages.fileLoadError', { fileName: 'api.png' })
+      )
+      consoleError.mockRestore()
+    })
+
     it.for([
       {
         outcome: 'core-nodes-unavailable' as const,
