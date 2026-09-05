@@ -12,7 +12,31 @@ globs:
 - Never use `any` type - use proper TypeScript types
 - Never use `as any` type assertions - fix the underlying type issue
 - Type assertions are a last resort; they lead to brittle code
-- Avoid `@ts-expect-error` - fix the underlying issue instead
+- Never add `@ts-ignore` or `@ts-nocheck`. Use `@ts-expect-error` only in a test
+  that intentionally verifies a compiler error.
+
+### Prove the type before overriding it
+
+Do not treat an assertion, suppression, or its comment as evidence that a value
+has the claimed type. Before overriding the compiler:
+
+1. Remove the override and read the complete diagnostic.
+2. Trace the value to its runtime owner and authoritative type or schema.
+3. Search the repository for an existing type, guard, parser, builder, or test
+   fixture that owns the same boundary.
+4. Fix the source type, narrow the value, or parse external data at the boundary.
+5. Run the owning typecheck without the override.
+
+Use real platform objects and generated types when they own the contract. For
+example, construct a `Response` instead of casting an object to `Response`.
+Model malformed runtime input as `unknown` and pass it through the boundary
+parser. Do not use a double assertion to make invalid test data compile.
+
+A comment can document an external constraint, but it cannot prove a type or
+waive a failed check. External constraints may justify a specific assertion at
+an integration boundary, never a TypeScript suppression. If an upstream
+declaration is wrong, verify its runtime shape and do not spread assertions
+through consumers.
 
 ### Type Assertion Hierarchy
 
@@ -20,8 +44,8 @@ When you must handle uncertain types, prefer these approaches in order:
 
 1. ✅ **No assertion** — Properly typed from the start
 2. ✅ **Type narrowing** — `if ('prop' in obj)` or type guards
-3. ⚠️ **Specific assertion** — `as SpecificType` when you truly know the type
-4. ⚠️ **`unknown` with narrowing** — For genuinely unknown data
+3. ✅ **`unknown` with narrowing**: For genuinely unknown data
+4. ⚠️ **Specific assertion**: Only at a verified external boundary
 5. ❌ **`as any`** — FORBIDDEN
 
 ### Zod Schema Rules

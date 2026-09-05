@@ -148,6 +148,33 @@ Look for:
 - Leftover debug code (console.log, commented code, TODO comments)
 - Hand-declared/inlined server or API response types that duplicate a type already generated from an OpenAPI spec (`@comfyorg/ingest-types`, `@comfyorg/registry-types` under `packages/`) instead of importing it — these silently drift from the real contract and caused real bugs in PR #14771
 
+#### 3.2.1 Audit suppressions before approving
+
+Search added lines for `eslint-disable`, `oxlint-disable`, `@ts-ignore`,
+`@ts-nocheck`, `@ts-expect-error`, `as any`, double assertions, and non-null
+assertions. Passing lint or typecheck is not evidence that these overrides are
+correct.
+
+For each override:
+
+1. Remove it in the local checkout and run the narrowest owning lint or
+   typecheck command. Record the exact diagnostic, then restore the file.
+2. Trace the value to its runtime owner and authoritative type or schema.
+3. Search for an existing typed helper, generated type, guard, parser, fixture,
+   semantic query, or readiness signal that avoids the override.
+4. Check whether the code can fix the type, API, component semantics, or test
+   instead.
+
+Do not accept an override because its comment explains why the compliant path
+was inconvenient. Request changes for every `@ts-ignore` and `@ts-nocheck`, and
+for `@ts-expect-error` outside a test that intentionally verifies a compiler
+error. Request changes for file-wide or multi-rule lint disables, Testing
+Library disables that permit DOM traversal, casts that make malformed fixtures
+compile, and timing sleeps that hide missing readiness. Never accept `as any`.
+Accept a narrow lint exception or another specific assertion only when an
+external constraint is verified and no compliant fix is possible. State that
+evidence in the review.
+
 ### 3.3 Library Usage Enforcement
 
 CRITICAL: Flag any re-implementation of existing functionality:
