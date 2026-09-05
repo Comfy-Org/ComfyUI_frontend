@@ -54,6 +54,7 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
 import { isCloud } from '@/platform/distribution/types'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -110,6 +111,7 @@ const { t } = useI18n()
 const toast = useToastStore()
 const { open: openAccountPrecondition } = useAccountPreconditionDialog()
 const { workspaceRole } = useWorkspaceUI()
+const { tier: subscriptionTier } = useBillingContext()
 const {
   canTopUp,
   canSubscribeSelfServe,
@@ -119,6 +121,7 @@ const paywallPresentation = computed(() =>
   resolveAgentPaywallPresentation({
     distribution: isCloud ? 'cloud' : 'local',
     role: workspaceRole.value,
+    tier: subscriptionTier.value,
     // The initial false/false pair is not an authoritative sales-managed
     // result while the shared capability source initializes in the background.
     canTopUp: billingCapabilitiesReady.value

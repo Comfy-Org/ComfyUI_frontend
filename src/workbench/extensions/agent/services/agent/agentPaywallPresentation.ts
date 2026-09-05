@@ -1,3 +1,5 @@
+import type { SubscriptionTier } from '@comfyorg/ingest-types'
+
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 
 export type AgentPaywallAction = 'addCredits' | 'subscribe' | 'upgrade'
@@ -12,8 +14,18 @@ export type AgentPaywallPresentation =
 interface AgentPaywallPresentationInput {
   distribution: 'cloud' | 'local'
   role: WorkspaceRole
+  tier: SubscriptionTier | null
   canTopUp: boolean
   canSubscribeSelfServe: boolean
+}
+
+const TIERS_WITH_HIGHER_PERSONAL_TIER: ReadonlySet<SubscriptionTier> = new Set([
+  'STANDARD',
+  'CREATOR'
+])
+
+function hasHigherPersonalTier(tier: SubscriptionTier | null): boolean {
+  return tier !== null && TIERS_WITH_HIGHER_PERSONAL_TIER.has(tier)
 }
 
 export const DEFAULT_AGENT_PAYWALL_PRESENTATION = {
@@ -24,6 +36,7 @@ export const DEFAULT_AGENT_PAYWALL_PRESENTATION = {
 export function resolveAgentPaywallPresentation({
   distribution,
   role,
+  tier,
   canTopUp,
   canSubscribeSelfServe
 }: AgentPaywallPresentationInput): AgentPaywallPresentation {
@@ -36,6 +49,6 @@ export function resolveAgentPaywallPresentation({
   }
   return {
     kind: 'subscribed',
-    showUpgrade: canSubscribeSelfServe
+    showUpgrade: canSubscribeSelfServe && hasHigherPersonalTier(tier)
   }
 }
