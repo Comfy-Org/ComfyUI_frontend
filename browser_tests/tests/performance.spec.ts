@@ -17,8 +17,9 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       await comfyPage.nextFrame()
     }
 
-    const m = await comfyPage.perf.stopMeasuring('canvas-idle')
-    recordMeasurement(m)
+    const m = recordMeasurement(
+      await comfyPage.perf.stopMeasuring('canvas-idle')
+    )
     console.log(
       `Canvas idle: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts`
     )
@@ -42,8 +43,9 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       )
     }
 
-    const m = await comfyPage.perf.stopMeasuring('canvas-mouse-sweep')
-    recordMeasurement(m)
+    const m = recordMeasurement(
+      await comfyPage.perf.stopMeasuring('canvas-mouse-sweep')
+    )
     console.log(
       `Mouse sweep: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts`
     )
@@ -68,8 +70,9 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       await comfyPage.nextFrame()
     }
 
-    const m = await comfyPage.perf.stopMeasuring('dom-widget-clipping')
-    recordMeasurement(m)
+    const m = recordMeasurement(
+      await comfyPage.perf.stopMeasuring('dom-widget-clipping')
+    )
     console.log(`Clipping: ${m.layouts} forced layouts`)
   })
 
@@ -81,8 +84,9 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       await comfyPage.nextFrame()
     }
 
-    const m = await comfyPage.perf.stopMeasuring('subgraph-idle')
-    recordMeasurement(m)
+    const m = recordMeasurement(
+      await comfyPage.perf.stopMeasuring('subgraph-idle')
+    )
     console.log(
       `Subgraph idle: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts`
     )
@@ -105,8 +109,9 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       )
     }
 
-    const m = await comfyPage.perf.stopMeasuring('subgraph-mouse-sweep')
-    recordMeasurement(m)
+    const m = recordMeasurement(
+      await comfyPage.perf.stopMeasuring('subgraph-mouse-sweep')
+    )
     console.log(
       `Subgraph mouse sweep: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts`
     )
@@ -122,8 +127,9 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       await comfyPage.nextFrame()
     }
 
-    const m = await comfyPage.perf.stopMeasuring('large-graph-idle')
-    recordMeasurement(m)
+    const m = recordMeasurement(
+      await comfyPage.perf.stopMeasuring('large-graph-idle')
+    )
     console.log(
       `Large graph idle: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts`
     )
@@ -150,8 +156,9 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     }
     await comfyPage.page.mouse.up({ button: 'middle' })
 
-    const m = await comfyPage.perf.stopMeasuring('large-graph-pan')
-    recordMeasurement(m)
+    const m = recordMeasurement(
+      await comfyPage.perf.stopMeasuring('large-graph-pan')
+    )
     console.log(
       `Large graph pan: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.taskDurationMs.toFixed(1)}ms task`
     )
@@ -190,8 +197,9 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     }
     await comfyPage.page.mouse.up()
 
-    const m = await comfyPage.perf.stopMeasuring('legacy-node-drag')
-    recordMeasurement(m)
+    const m = recordMeasurement(
+      await comfyPage.perf.stopMeasuring('legacy-node-drag')
+    )
 
     // Verify the measured interaction was a node drag, not a canvas pan.
     const movedX = await comfyPage.page.evaluate((id) => {
@@ -231,10 +239,11 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       await comfyPage.nextFrame()
     }
 
-    const m = await comfyPage.perf.stopMeasuring('large-graph-zoom')
-    recordMeasurement(m)
+    const m = recordMeasurement(
+      await comfyPage.perf.stopMeasuring('large-graph-zoom')
+    )
     console.log(
-      `Large graph zoom: ${m.layouts} layouts, ${m.layoutDurationMs.toFixed(1)}ms layout, ${m.frameDurationMs.toFixed(1)}ms/frame, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
+      `Large graph zoom: ${m.layouts} layouts, ${m.layoutDurationMs.toFixed(1)}ms layout, ${m.rafIntervalP95Ms.toFixed(1)}ms rAF p95, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
     )
   })
 
@@ -244,8 +253,9 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     await comfyPage.perf.startMeasuring()
     await comfyPage.canvasOps.panSweep()
 
-    const measurement = await comfyPage.perf.stopMeasuring('viewport-pan-sweep')
-    recordMeasurement(measurement)
+    const measurement = recordMeasurement(
+      await comfyPage.perf.stopMeasuring('viewport-pan-sweep')
+    )
     logMeasurement('Viewport pan sweep', measurement, [
       'styleRecalcs',
       'layouts',
@@ -273,8 +283,9 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       await comfyPage.nextFrame()
     }
 
-    const m = await comfyPage.perf.stopMeasuring('subgraph-dom-widget-clipping')
-    recordMeasurement(m)
+    const m = recordMeasurement(
+      await comfyPage.perf.stopMeasuring('subgraph-dom-widget-clipping')
+    )
     console.log(`Subgraph clipping: ${m.layouts} forced layouts`)
   })
 
@@ -292,10 +303,11 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       await comfyPage.nextFrame()
     }
 
-    const m = await comfyPage.perf.stopMeasuring('canvas-zoom-sweep')
-    recordMeasurement(m)
+    const m = recordMeasurement(
+      await comfyPage.perf.stopMeasuring('canvas-zoom-sweep')
+    )
     console.log(
-      `Zoom sweep: ${m.layouts} layouts, ${m.frameDurationMs.toFixed(1)}ms/frame, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
+      `Zoom sweep: ${m.layouts} layouts, ${m.rafIntervalP95Ms.toFixed(1)}ms rAF p95, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
     )
   })
 
@@ -316,8 +328,9 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       await comfyPage.nextFrame()
     }
 
-    const m = await comfyPage.perf.stopMeasuring('minimap-idle')
-    recordMeasurement(m)
+    const m = recordMeasurement(
+      await comfyPage.perf.stopMeasuring('minimap-idle')
+    )
     console.log(
       `Minimap idle: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
     )
@@ -337,8 +350,9 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
         await comfyPage.nextFrame()
       }
 
-      const m = await comfyPage.perf.stopMeasuring('vue-large-graph-idle')
-      recordMeasurement(m)
+      const m = recordMeasurement(
+        await comfyPage.perf.stopMeasuring('vue-large-graph-idle')
+      )
       console.log(
         `Vue large graph idle: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.domNodes} DOM nodes`
       )
@@ -361,10 +375,11 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       }
       await comfyPage.page.mouse.up({ button: 'middle' })
 
-      const m = await comfyPage.perf.stopMeasuring('vue-large-graph-pan')
-      recordMeasurement(m)
+      const m = recordMeasurement(
+        await comfyPage.perf.stopMeasuring('vue-large-graph-pan')
+      )
       console.log(
-        `Vue large graph pan: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.frameDurationMs.toFixed(1)}ms/frame, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
+        `Vue large graph pan: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.rafIntervalP95Ms.toFixed(1)}ms rAF p95, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
       )
     })
 
@@ -457,10 +472,11 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
         await comfyPage.nextFrame()
       }
 
-      const m = await comfyPage.perf.stopMeasuring('vue-zoom-out-idle')
-      recordMeasurement(m)
+      const m = recordMeasurement(
+        await comfyPage.perf.stopMeasuring('vue-zoom-out-idle')
+      )
       console.log(
-        `Vue zoom out idle: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.frameDurationMs.toFixed(1)}ms/frame`
+        `Vue zoom out idle: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.rafIntervalP95Ms.toFixed(1)}ms rAF p95`
       )
     })
   })
@@ -496,8 +512,9 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       await comfyPage.vueNodes.waitForNodes(80)
       await comfyPage.idleFrames(30)
 
-      const m = await comfyPage.perf.stopMeasuring('subgraph-transition-enter')
-      recordMeasurement(m)
+      const m = recordMeasurement(
+        await comfyPage.perf.stopMeasuring('subgraph-transition-enter')
+      )
       console.log(
         `Subgraph enter (80 nodes): ${m.taskDurationMs.toFixed(0)}ms task, ${m.layouts} layouts, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
       )
@@ -520,8 +537,9 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       })
       .toBe('foo')
 
-    const m = await comfyPage.perf.stopMeasuring('workflow-execution')
-    recordMeasurement(m)
+    const m = recordMeasurement(
+      await comfyPage.perf.stopMeasuring('workflow-execution')
+    )
     console.log(
       `Workflow execution: ${m.durationMs.toFixed(0)}ms total, ${m.layouts} layouts, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
     )
