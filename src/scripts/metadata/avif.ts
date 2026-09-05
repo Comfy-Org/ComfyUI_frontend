@@ -10,9 +10,8 @@ import {
   ComfyMetadataTags,
   type IsobmffBoxContentRange
 } from '@/types/metadataTypes'
+import { readFileAsArrayBuffer } from '@/utils/fileUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
-
-import { readFileAsArrayBuffer } from './readFile'
 
 const readNullTerminatedString = (
   dataView: DataView,

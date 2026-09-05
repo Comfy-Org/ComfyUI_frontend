@@ -11,9 +11,8 @@ import {
   type GltfJsonData,
   GltfSizeBytes
 } from '@/types/metadataTypes'
+import { readFileAsArrayBuffer } from '@/utils/fileUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
-
-import { readFileAsArrayBuffer } from './readFile'
 
 const MAX_READ_BYTES = 1 << 20
 
