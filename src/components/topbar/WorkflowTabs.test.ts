@@ -157,6 +157,7 @@ const agentPanelHolder = vi.hoisted(() => ({
     isOpen: { value: boolean }
     enabled: { value: boolean }
     gateSettled: { value: boolean }
+    flagDelivered: { value: boolean }
     toggle: ReturnType<typeof vi.fn>
   }
 }))
@@ -168,6 +169,7 @@ vi.mock(
       isOpen: ref(false),
       enabled: ref(false),
       gateSettled: ref(false),
+      flagDelivered: ref(false),
       toggle: vi.fn(() => {
         agentPanelHolder.store.isOpen.value =
           !agentPanelHolder.store.isOpen.value
@@ -288,6 +290,7 @@ describe('WorkflowTabs agent entry button', () => {
   beforeEach(() => {
     tabBarLayout.value = 'Default'
     agentPanelHolder.store.enabled.value = true
+    agentPanelHolder.store.flagDelivered.value = true
     agentPanelHolder.store.isOpen.value = false
     agentPanelHolder.store.toggle.mockClear()
   })
@@ -296,6 +299,8 @@ describe('WorkflowTabs agent entry button', () => {
     tabBarLayout.value = 'Default'
     agentPanelHolder.store.enabled.value = false
     agentPanelHolder.store.isOpen.value = false
+    agentPanelHolder.store.gateSettled.value = false
+    agentPanelHolder.store.flagDelivered.value = false
   })
 
   it('does not render the entry button in the legacy tab bar even with the flag on', () => {
@@ -305,6 +310,20 @@ describe('WorkflowTabs agent entry button', () => {
     expect(
       screen.queryByRole('button', { name: enMessages.agent.askComfyAgent })
     ).toBeNull()
+  })
+
+  it('renders the entry button even before server flags settle', () => {
+    // flagDelivered is a pure QA marker (data-agent-flag-delivered); the
+    // entry button gates on the PostHog `enabled` entitlement alone so an
+    // entitled user is never blocked by a websocket handshake that may
+    // never complete. See:
+    // https://github.com/Comfy-Org/ComfyUI_frontend/pull/16301#discussion_r3909242397
+    agentPanelHolder.store.flagDelivered.value = false
+    renderComponent()
+
+    expect(
+      screen.getByRole('button', { name: enMessages.agent.askComfyAgent })
+    ).not.toBeNull()
   })
 
   it('does not render the entry button while the feature flag is off', () => {
@@ -350,6 +369,19 @@ describe('WorkflowTabs agent entry button', () => {
     await nextTick()
 
     expect(actions).toHaveAttribute('data-agent-gate-settled', 'true')
+  })
+
+  it('exposes the flag-delivered signal only after the first server delivery', async () => {
+    agentPanelHolder.store.flagDelivered.value = false
+    renderComponent()
+
+    const actions = screen.getByTestId('integrated-tab-bar-actions')
+    expect(actions).not.toHaveAttribute('data-agent-flag-delivered')
+
+    agentPanelHolder.store.flagDelivered.value = true
+    await nextTick()
+
+    expect(actions).toHaveAttribute('data-agent-flag-delivered', 'true')
   })
 })
 

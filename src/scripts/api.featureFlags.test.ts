@@ -35,8 +35,13 @@ describe('API Feature Flags', () => {
       Object.assign(this, mockWebSocket)
     })
 
-    // Reset API state
+    // Reset API state. socket must be cleared too: createSocket() early-
+    // returns when a socket already exists, which otherwise silently skips
+    // arming a fresh settle timer for a test that expects one (the previous
+    // test's socket is never closed here since WebSocket is fully mocked).
+    api.socket = null
     api.serverFeatureFlags.value = {}
+    api.serverFeatureFlagsReceived.value = false
 
     // Mock getClientFeatureFlags to return test feature flags
     vi.spyOn(api, 'getClientFeatureFlags').mockReturnValue({
@@ -47,6 +52,26 @@ describe('API Feature Flags', () => {
   })
 
   describe('Feature flags negotiation', () => {
+    it('marks feature flags stale without clearing them when resetting the socket identity', async () => {
+      // Clearing the map here (rather than just the received latch) would
+      // open a capability-downgrade window: every consumer of
+      // getServerFeature()/serverSupportsFeature() would see "server
+      // supports nothing" until the new socket delivers -- up to the 5s
+      // settle fallback, or indefinitely if it never opens. See:
+      // https://github.com/Comfy-Org/ComfyUI_frontend/pull/16301#discussion_r3909242419
+      const resettingApi = new ComfyApi()
+      resettingApi.serverFeatureFlags.value = { account_a_feature: true }
+      resettingApi.serverFeatureFlagsReceived.value = true
+
+      const resetPromise = resettingApi.resetSocket()
+
+      expect(resettingApi.serverFeatureFlags.value).toEqual({
+        account_a_feature: true
+      })
+      expect(resettingApi.serverFeatureFlagsReceived.value).toBe(false)
+      await resetPromise
+    })
+
     it('should send client feature flags as first message on connection', async () => {
       // Initialize API connection
       const initPromise = api.init()
@@ -103,9 +128,11 @@ describe('API Feature Flags', () => {
         max_upload_size: 104857600,
         capabilities: ['isolated_nodes', 'dynamic_models']
       })
+      expect(api.serverFeatureFlagsReceived.value).toBe(true)
     })
 
     it('should handle server without feature flags support', async () => {
+      vi.useFakeTimers()
       // Initialize API connection
       const initPromise = api.init()
 
@@ -136,8 +163,22 @@ describe('API Feature Flags', () => {
 
       await initPromise
 
+      await vi.advanceTimersByTimeAsync(5_000)
+
       // Server features should remain empty
       expect(api.serverFeatureFlags.value).toEqual({})
+      expect(api.serverFeatureFlagsReceived.value).toBe(true)
+    })
+
+    it('settles feature flags when the socket closes before opening', () => {
+      vi.useFakeTimers()
+      api.init()
+
+      wsEventHandlers['error'](new Event('error'))
+      wsEventHandlers['close'](new Event('close'))
+
+      expect(mockWebSocket.close).toHaveBeenCalledOnce()
+      expect(api.serverFeatureFlagsReceived.value).toBe(true)
     })
   })
 

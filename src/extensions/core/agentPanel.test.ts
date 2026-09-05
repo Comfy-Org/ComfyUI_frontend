@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 
 import type { ComfyExtension } from '@/types/comfy'
 
@@ -6,7 +7,13 @@ const mocks = vi.hoisted(() => ({
   capturedExtensions: [] as ComfyExtension[],
   notifyAfterGraphConfigure: vi.fn(),
   notifyBeforeGraphLoad: vi.fn(),
-  agentStore: { enabled: false, isOpen: true, close: vi.fn() },
+  agentStore: {
+    enabled: false,
+    isOpen: true,
+    gateSettled: false,
+    flagDelivered: false,
+    close: vi.fn()
+  },
   canvasStore: { updateSelectedItems: vi.fn() },
   getNodeByLocatorId: vi.fn(),
   flagEnabled: undefined as boolean | undefined,
@@ -40,6 +47,14 @@ vi.mock('@/workbench/extensions/agent/crdt/mintPortWiring', () => ({
   notifyMintPortsAfterGraphConfigure: mocks.notifyAfterGraphConfigure,
   notifyMintPortsBeforeGraphLoad: mocks.notifyBeforeGraphLoad
 }))
+
+vi.mock('@/scripts/api', () => {
+  // Stub the refs this module's import graph actually reads
+  // (agentPanelStore.flagDelivered derives from this). An untyped {}
+  // fails as a runtime TypeError instead of at type-check when anything
+  // in that graph later reads api.<x>.value.
+  return { api: { serverFeatureFlagsReceived: ref(false) } }
+})
 
 vi.mock('@/workbench/extensions/agent/stores/agent/agentPanelStore', () => ({
   useAgentPanelStore: () => mocks.agentStore
@@ -106,6 +121,7 @@ describe('AgentPanel extension flag gate', () => {
     mocks.agentStore.close.mockClear()
     mocks.agentStore.enabled = false
     mocks.agentStore.isOpen = true
+    mocks.agentStore.flagDelivered = false
     mocks.flagEnabled = undefined
     mocks.flagListener = null
     mocks.registerTracker.mockClear()
