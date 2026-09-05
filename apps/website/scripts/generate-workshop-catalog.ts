@@ -93,11 +93,7 @@ export function buildWorkshopCatalog(input: unknown): WorkshopModelEntry[] {
   if (ids.size !== catalog.length) throw new Error('Duplicate partner model id')
   if (slugs.size !== catalog.length) throw new Error('Duplicate Workshop slug')
 
-  // Deliberately unsorted. Each model is its own file, so the only thing an
-  // order could affect is the sequence of independent writes. `localeCompare`
-  // was also host-dependent: `p/ä` and `p/z` swap between LANG=C and
-  // LANG=sv_SE.UTF-8, which would churn the committed output.
-  return catalog
+  return catalog.toSorted((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
 }
 
 async function loadModels(modulePath: string): Promise<unknown> {

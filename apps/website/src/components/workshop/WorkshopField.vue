@@ -109,7 +109,7 @@ const acceptByType = {
     >
       <option
         v-for="option in field.suggestions"
-        :key="option"
+        :key="String(option)"
         :value="option"
       />
     </datalist>
@@ -123,7 +123,11 @@ const acceptByType = {
       <option v-if="field.defaultValue === undefined" value="">
         {{ t('workshop.model.select', locale) }}
       </option>
-      <option v-for="option in field.options" :key="option" :value="option">
+      <option
+        v-for="option in field.options"
+        :key="String(option)"
+        :value="option"
+      >
         {{ option }}
       </option>
     </select>
