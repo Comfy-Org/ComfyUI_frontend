@@ -559,7 +559,7 @@ async function onAgentActiveTab(
     if (remainingCreatingTime > 0)
       await new Promise((resolve) => setTimeout(resolve, remainingCreatingTime))
     if (stale()) return
-    const tab = workflowStore.createTemporary(
+    const tab = workflowStore.createNewTemporary(
       agentTabFilename(data.name),
       blankGraph
     )
