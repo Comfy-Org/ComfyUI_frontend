@@ -31,6 +31,7 @@ import router from '@/router'
 import { isDesktop, isNightly } from '@/platform/distribution/types'
 import { stripPaymentReturnParams } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { installBillingMockHarness } from '@/platform/workspace/dev/billingMockHarness'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 
 import App from './App.vue'
@@ -40,6 +41,10 @@ import { i18n } from './i18n'
 
 const isCloud = __DISTRIBUTION__ === 'cloud'
 const hasHostTelemetryBridge = Boolean(window.__comfyDesktop2?.Telemetry)
+
+// PREVIEW HARNESS (do not merge): no-op unless `?billingmock`. Must run before
+// /api/features is fetched so the team-workspaces flag merge lands.
+installBillingMockHarness()
 
 if (isCloud) stripPaymentReturnParams()
 
