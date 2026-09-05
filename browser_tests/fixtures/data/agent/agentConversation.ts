@@ -172,10 +172,13 @@ export function listRecordedConversations(): string[] {
   return readdirSync(dir)
     .filter((file) => file.endsWith('.json'))
     .map((file) => file.slice(0, -'.json'.length))
-    .filter(
-      (caseId) =>
-        loadAgentConversation(caseId).source.response_side === 'recorded'
-    )
+    .map((caseId) => {
+      if (loadAgentConversation(caseId).source.response_side !== 'recorded')
+        throw new Error(
+          `${caseId} is not marked response_side: recorded; the replay suite only carries recordings`
+        )
+      return caseId
+    })
     .sort()
 }
 
