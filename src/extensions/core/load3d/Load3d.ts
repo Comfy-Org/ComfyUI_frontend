@@ -36,9 +36,8 @@ export type Load3dDeps = Viewport3dDeps & {
 
 function positionThumbnailCamera(
   camera: THREE.PerspectiveCamera,
-  model: THREE.Object3D
+  box: THREE.Box3
 ) {
-  const box = new THREE.Box3().setFromObject(model)
   const size = box.getSize(new THREE.Vector3())
   const center = box.getCenter(new THREE.Vector3())
   const maxDim = Math.max(size.x, size.y, size.z)
@@ -564,15 +563,13 @@ class Load3d extends Viewport3d {
         this.cameraManager.toggleCamera('perspective')
       }
 
-      positionThumbnailCamera(
-        this.cameraManager.perspectiveCamera,
-        this.modelManager.currentModel
-      )
+      const box =
+        this.modelManager.getCurrentBounds() ??
+        new THREE.Box3().setFromObject(this.modelManager.currentModel)
+
+      positionThumbnailCamera(this.cameraManager.perspectiveCamera, box)
 
       if (this.controlsManager.controls) {
-        const box = new THREE.Box3().setFromObject(
-          this.modelManager.currentModel
-        )
         this.controlsManager.controls.target.copy(
           box.getCenter(new THREE.Vector3())
         )
