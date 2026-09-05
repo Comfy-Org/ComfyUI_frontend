@@ -76,12 +76,13 @@ describe('ServerlessHowItWorksSection', () => {
 
     const motions = [...container.querySelectorAll('animateMotion')]
     const dottedMember = () =>
-      container.querySelector('circle[stroke-dasharray]')?.parentElement
-        ?.textContent
-    const initialMember = dottedMember()
+      container
+        .querySelector('circle[stroke-dasharray]')
+        ?.parentElement?.textContent.trim()
+    expect(dottedMember()).toBe('JP')
 
     await vi.advanceTimersByTimeAsync(5000)
-    expect(dottedMember()).not.toBe(initialMember)
+    expect(dottedMember()).toBe('BH')
     for (const motion of motions) {
       expect(container.contains(motion)).toBe(true)
     }
@@ -93,7 +94,7 @@ describe('ServerlessHowItWorksSection', () => {
 
     await setAllIntersecting(true)
     await vi.advanceTimersByTimeAsync(5000)
-    expect(dottedMember()).not.toBe(pausedMember)
+    expect(dottedMember()).toBe('JP')
     unmount()
     expect(vi.getTimerCount()).toBe(0)
     await vi.advanceTimersByTimeAsync(15000)

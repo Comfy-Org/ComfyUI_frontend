@@ -190,7 +190,7 @@ watchEffect(() => {
                     />
                     <Transition name="crossfade" mode="out-in">
                       <text
-                        :key="workflow.endpoint"
+                        :key="workflow.file"
                         class="fill-primary-comfy-yellow font-[Menlo,Monaco,Consolas,monospace] text-xl tracking-[0.7px]"
                       >
                         <tspan x="24" y="34">{{ workflow.file }}</tspan>
@@ -246,7 +246,7 @@ watchEffect(() => {
                 />
                 <Transition name="crossfade" mode="out-in">
                   <text
-                    :key="workflow.file"
+                    :key="workflow.endpoint"
                     x="13"
                     y="339.847"
                     class="fill-primary-comfy-canvas font-[Menlo,Monaco,Consolas,monospace] text-xl tracking-[0.7px]"
