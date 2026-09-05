@@ -53,9 +53,9 @@ describe('MediaVideoTop', () => {
     expect(container.querySelector('source')).not.toBeInTheDocument()
   })
 
-  it('emits playback events and hides paused overlay while playing', async () => {
+  it('shows native controls only while playing and hovered', async () => {
     const user = userEvent.setup()
-    const { container, emitted } = render(MediaVideoTop, {
+    const { container } = render(MediaVideoTop, {
       props: {
         asset: createVideoAsset('https://example.com/thumb.jpg')
       }
@@ -63,21 +63,20 @@ describe('MediaVideoTop', () => {
 
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
     const video = container.querySelector('video')!
-    expect(video).toBeInTheDocument()
 
     await fireEvent.play(video)
-    expect(emitted()['videoPlayingStateChanged']?.at(-1)).toEqual([true])
-
-    // eslint-disable-next-line testing-library/no-node-access -- root wrapper has no role
-    await user.hover(container.firstElementChild!)
-    expect(video.controls).toBe(true)
-
-    // eslint-disable-next-line testing-library/no-node-access -- root wrapper has no role
-    await user.unhover(container.firstElementChild!)
     expect(video.controls).toBe(false)
 
+    await user.hover(video)
+    expect(video.controls).toBe(true)
+
     await fireEvent.pause(video)
-    expect(emitted()['videoPlayingStateChanged']?.at(-1)).toEqual([false])
+    expect(video.controls).toBe(false)
+
+    await fireEvent.play(video)
+    expect(video.controls).toBe(true)
+
+    await user.unhover(video)
     expect(video.controls).toBe(false)
   })
 
@@ -157,8 +156,7 @@ describe('MediaVideoTop', () => {
     })
 
     await fireEvent.play(video)
-    // eslint-disable-next-line testing-library/no-node-access -- root wrapper has no role
-    await user.hover(container.firstElementChild!)
+    await user.hover(video)
     expect(video.controls).toBe(false)
 
     await user.click(video)

@@ -278,9 +278,7 @@ function mountMediaActions(asset?: AssetMeta) {
     setup() {
       provide(MediaAssetKey, {
         asset: ref(asset),
-        context: ref({ type: 'input' as const }),
-        isVideoPlaying: ref(false),
-        showVideoControls: ref(false)
+        context: ref({ type: 'input' as const })
       })
       return () => h(ChildComponent)
     }
