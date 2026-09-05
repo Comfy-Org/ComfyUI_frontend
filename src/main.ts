@@ -64,6 +64,31 @@ if (hasHostTelemetryBridge) {
   initHostTelemetry()
 }
 
+// ========== Edge 浏览器补丁：阻止隐藏状态下的 replaceState ==========
+const originalReplaceState = window.history.replaceState
+// 使用 Parameters 工具类型提取原生方法参数类型
+type ReplaceStateParams = Parameters<typeof window.history.replaceState>
+
+// 定义一个与原生签名完全一致的包装函数
+const patchedReplaceState = function (
+  this: Window,
+  ...args: ReplaceStateParams
+) {
+  // 检查页面是否隐藏
+  if (!document.hidden) {
+    // 直接调用原生方法，参数自动匹配
+    return originalReplaceState.apply(this, args)
+  }
+  console.warn('[Patch] Suppressed replaceState when hidden')
+  return undefined
+}
+
+// 仅在 Edge 中应用补丁
+if (/Edg/.test(navigator.userAgent)) {
+  window.history.replaceState = patchedReplaceState
+}
+// ========== Edge 浏览器补丁：阻止隐藏状态下的 replaceState ==========
+
 const ComfyUIPreset = definePreset(Aura, {
   semantic: {
     // @ts-expect-error fixme ts strict error
