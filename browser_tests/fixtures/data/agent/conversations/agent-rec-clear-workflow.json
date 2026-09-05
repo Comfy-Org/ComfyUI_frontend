@@ -102,12 +102,8 @@
                 "properties": {},
                 "widgets_values": [null]
               },
-              "actor": "rec-local-user",
-              "op_id": "f4c6e7330dff4a5e846f9d9e984fb4fe",
-              "stamp": [1, "rec-local-user"],
               "node_id": 3802035302970761,
-              "class_type": "CLIPTextEncode",
-              "base_version": 1
+              "class_type": "CLIPTextEncode"
             }
           ],
           "at_ms": 8072
@@ -130,10 +126,6 @@
           "ops": [
             {
               "op": "clear",
-              "actor": "rec-local-user",
-              "op_id": "0bbb0b04eff44f5d89695ca4cbe02f12",
-              "stamp": [2, "rec-local-user"],
-              "base_version": 2,
               "removed_nodes": [3802035302970761]
             }
           ],
