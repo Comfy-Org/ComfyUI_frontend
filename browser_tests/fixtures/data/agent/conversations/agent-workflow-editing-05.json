@@ -1,0 +1,277 @@
+{
+  "schema_version": "agent-conversation.v1",
+  "source": {
+    "repo": "Comfy-Org/evals",
+    "suite": "agent",
+    "case_id": "agent-workflow-editing-05",
+    "response_side": "synthesized",
+    "note": "Response synthesized from the case's expected outcome: an ImageStitch node shows the generated output next to the input image. The eval case ships no seed, so a small image-to-image seed stands in."
+  },
+  "workflow": {
+    "id": "2b7d9a34-5c1e-4f0a-8e6b-7d2f3a9c1b45",
+    "name": "Image edit",
+    "catalog": {
+      "types": {
+        "LoadImage": { "widget_order": ["image", "upload"] },
+        "VAEEncode": { "widget_order": [] },
+        "KSampler": {
+          "widget_order": [
+            "seed",
+            "control_after_generate",
+            "steps",
+            "cfg",
+            "sampler_name",
+            "scheduler",
+            "denoise"
+          ]
+        },
+        "VAEDecode": { "widget_order": [] },
+        "SaveImage": { "widget_order": ["filename_prefix"] },
+        "ImageStitch": {
+          "widget_order": [
+            "direction",
+            "match_image_size",
+            "spacing_width",
+            "spacing_color"
+          ]
+        },
+        "PreviewImage": { "widget_order": [] }
+      }
+    },
+    "seed": {
+      "nodes": [
+        {
+          "id": 1,
+          "type": "LoadImage",
+          "pos": [0, 0],
+          "size": [315, 314],
+          "inputs": [],
+          "outputs": [
+            { "name": "IMAGE", "type": "IMAGE", "links": [1] },
+            { "name": "MASK", "type": "MASK", "links": [] }
+          ],
+          "widgets_values": ["example.png", "image"]
+        },
+        {
+          "id": 2,
+          "type": "VAEEncode",
+          "pos": [400, 0],
+          "size": [210, 46],
+          "inputs": [
+            { "name": "pixels", "type": "IMAGE", "link": 1 },
+            { "name": "vae", "type": "VAE", "link": null }
+          ],
+          "outputs": [{ "name": "LATENT", "type": "LATENT", "links": [2] }],
+          "widgets_values": []
+        },
+        {
+          "id": 3,
+          "type": "KSampler",
+          "pos": [700, 0],
+          "size": [315, 262],
+          "inputs": [
+            { "name": "model", "type": "MODEL", "link": null },
+            { "name": "positive", "type": "CONDITIONING", "link": null },
+            { "name": "negative", "type": "CONDITIONING", "link": null },
+            { "name": "latent_image", "type": "LATENT", "link": 2 }
+          ],
+          "outputs": [{ "name": "LATENT", "type": "LATENT", "links": [3] }],
+          "widgets_values": [0, "randomize", 20, 7, "euler", "normal", 0.6]
+        },
+        {
+          "id": 8,
+          "type": "VAEDecode",
+          "pos": [1100, 0],
+          "size": [210, 46],
+          "inputs": [
+            { "name": "samples", "type": "LATENT", "link": 3 },
+            { "name": "vae", "type": "VAE", "link": null }
+          ],
+          "outputs": [{ "name": "IMAGE", "type": "IMAGE", "links": [4] }],
+          "widgets_values": []
+        },
+        {
+          "id": 9,
+          "type": "SaveImage",
+          "pos": [1400, 0],
+          "size": [315, 270],
+          "inputs": [{ "name": "images", "type": "IMAGE", "link": 4 }],
+          "outputs": [],
+          "widgets_values": ["ComfyUI"]
+        }
+      ],
+      "links": [
+        [1, 1, 0, 2, 0, "IMAGE"],
+        [2, 2, 0, 3, 3, "LATENT"],
+        [3, 3, 0, 8, 0, "LATENT"],
+        [4, 8, 0, 9, 0, "IMAGE"]
+      ]
+    }
+  },
+  "request": {
+    "content": "now use a stitch images node to show the output next to the input"
+  },
+  "response": [
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_thinking",
+        "data": {
+          "delta": "I'll stitch the loaded input and the decoded output side by side and preview the result."
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_active_tab",
+        "data": {
+          "workflow_id": "2b7d9a34-5c1e-4f0a-8e6b-7d2f3a9c1b45",
+          "name": "Image edit"
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "tool_call_id": "call-add-stitch",
+          "tool_name": "add_node",
+          "status": "running"
+        }
+      }
+    },
+    {
+      "kind": "graph_ops",
+      "ops": [
+        {
+          "op": "add_node",
+          "node_id": 12,
+          "class_type": "ImageStitch",
+          "pos": [1400, 350],
+          "node": {
+            "id": 12,
+            "type": "ImageStitch",
+            "title": "Input vs output",
+            "pos": [1400, 350],
+            "size": [315, 150],
+            "inputs": [
+              { "name": "image1", "type": "IMAGE", "link": null },
+              { "name": "image2", "type": "IMAGE", "link": null }
+            ],
+            "outputs": [{ "name": "IMAGE", "type": "IMAGE", "links": [] }],
+            "widgets_values": ["right", true, 0, "white"]
+          }
+        },
+        {
+          "op": "add_node",
+          "node_id": 13,
+          "class_type": "PreviewImage",
+          "pos": [1800, 350],
+          "node": {
+            "id": 13,
+            "type": "PreviewImage",
+            "title": "Side by side",
+            "pos": [1800, 350],
+            "size": [315, 270],
+            "inputs": [{ "name": "images", "type": "IMAGE", "link": null }],
+            "outputs": [],
+            "widgets_values": []
+          }
+        }
+      ]
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "tool_call_id": "call-add-stitch",
+          "tool_name": "add_node",
+          "status": "success",
+          "duration_ms": 500
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "tool_call_id": "call-wire-stitch",
+          "tool_name": "connect",
+          "status": "running"
+        }
+      }
+    },
+    {
+      "kind": "graph_ops",
+      "ops": [
+        {
+          "op": "connect",
+          "link_id": 5,
+          "from_node": 1,
+          "from_slot": 0,
+          "to_node": 12,
+          "to_slot": 0,
+          "link_type": "IMAGE"
+        },
+        {
+          "op": "connect",
+          "link_id": 6,
+          "from_node": 8,
+          "from_slot": 0,
+          "to_node": 12,
+          "to_slot": 1,
+          "link_type": "IMAGE"
+        },
+        {
+          "op": "connect",
+          "link_id": 7,
+          "from_node": 12,
+          "from_slot": 0,
+          "to_node": 13,
+          "to_slot": 0,
+          "link_type": "IMAGE"
+        }
+      ]
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_tool_call",
+        "data": {
+          "tool_call_id": "call-wire-stitch",
+          "tool_name": "connect",
+          "status": "success",
+          "duration_ms": 700
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_message_delta",
+        "data": {
+          "delta": "Done. An **Image Stitch** node now takes the loaded input on the left and the decoded output on the right, and a preview node shows the pair. Your save node is untouched."
+        }
+      }
+    },
+    {
+      "kind": "event",
+      "event": {
+        "type": "agent_message_done",
+        "data": {
+          "usage": {
+            "input_tokens": 6010,
+            "output_tokens": 280,
+            "total_tokens": 6290,
+            "cache_read_input_tokens": 0,
+            "cache_creation_input_tokens": 0
+          }
+        }
+      }
+    }
+  ]
+}
