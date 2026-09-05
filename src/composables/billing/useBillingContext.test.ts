@@ -283,6 +283,17 @@ describe('useBillingContext', () => {
     await expect(fetchBalance()).resolves.toBeUndefined()
   })
 
+  it('bumps usageLogsRefreshSignal on a genuine balance change but not on first hydration', async () => {
+    const context = useBillingContext()
+
+    await vi.waitFor(() => expect(context.balance.value).not.toBeNull())
+    expect(context.usageLogsRefreshSignal.value).toBe(0)
+
+    await context.fetchBalance()
+
+    expect(context.usageLogsRefreshSignal.value).toBe(1)
+  })
+
   it('exposes subscribe action', async () => {
     const { subscribe } = useBillingContext()
     await expect(subscribe('pro-monthly')).resolves.toEqual({

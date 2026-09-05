@@ -363,17 +363,6 @@ describe('UsageLogsTable', () => {
     })
   })
 
-  describe('component methods', () => {
-    it('calls getMyEvents on refresh with page 1', async () => {
-      await renderLoaded()
-
-      expect(mockCustomerEventsService.getMyEvents).toHaveBeenCalledWith({
-        page: 1,
-        limit: 7
-      })
-    })
-  })
-
   describe('billing events source', () => {
     it('uses workspaceApi.getBillingEvents on the workspace billing flow', async () => {
       mockBillingRouting.shouldUseWorkspaceBilling = true

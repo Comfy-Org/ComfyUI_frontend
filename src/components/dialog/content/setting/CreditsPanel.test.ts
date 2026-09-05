@@ -1,24 +1,24 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick } from 'vue'
+import { defineComponent, h } from 'vue'
 import { createI18n } from 'vue-i18n'
-
-import type { BalanceInfo } from '@/composables/billing/types'
 
 import CreditsPanel from './CreditsPanel.vue'
 
 const billingMocks = vi.hoisted(() => ({
-  balance: { value: null as BalanceInfo | null },
+  usageLogsRefreshSignal: { value: 0 },
   manageSubscription: vi.fn()
 }))
 vi.mock('@/composables/billing/useBillingContext', async () => {
   const { ref } = await import('vue')
-  const balance = ref<BalanceInfo | null>(null)
-  Object.defineProperty(billingMocks, 'balance', { get: () => balance })
+  const usageLogsRefreshSignal = ref(0)
+  Object.defineProperty(billingMocks, 'usageLogsRefreshSignal', {
+    get: () => usageLogsRefreshSignal
+  })
   return {
     useBillingContext: () => ({
-      balance,
+      usageLogsRefreshSignal,
       manageSubscription: billingMocks.manageSubscription
     })
   }
@@ -73,19 +73,10 @@ const i18n = createI18n({
   }
 })
 
-function makeBalance(amountMicros: number): BalanceInfo {
-  return {
-    amountMicros,
-    currency: 'usd',
-    effectiveBalanceMicros: amountMicros,
-    prepaidBalanceMicros: 0,
-    cloudCreditBalanceMicros: 0
-  }
-}
-
 describe('CreditsPanel', () => {
   beforeEach(() => {
-    billingMocks.balance.value = null
+    billingMocks.usageLogsRefreshSignal.value = 0
+    refreshActivity.mockClear()
   })
 
   function renderComponent() {
@@ -103,15 +94,12 @@ describe('CreditsPanel', () => {
     expect(billingMocks.manageSubscription).toHaveBeenCalledOnce()
   })
 
-  it('refreshes activity on a balance change but not on first hydration', async () => {
+  it('refreshes activity when the shared billing signal changes', async () => {
     renderComponent()
-
-    billingMocks.balance.value = makeBalance(5000)
-    await nextTick()
+    screen.getByTestId('usage-logs-table')
     expect(refreshActivity).not.toHaveBeenCalled()
 
-    billingMocks.balance.value = makeBalance(9000)
-    await nextTick()
-    expect(refreshActivity).toHaveBeenCalledOnce()
+    billingMocks.usageLogsRefreshSignal.value++
+    await vi.waitFor(() => expect(refreshActivity).toHaveBeenCalledOnce())
   })
 })

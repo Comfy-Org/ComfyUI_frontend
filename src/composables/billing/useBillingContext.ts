@@ -124,6 +124,12 @@ function useBillingContextInternal(): BillingContext {
     toValue(activeContext.value.balance)
   )
 
+  const usageLogsRefreshSignal = ref(0)
+  watch(balance, (next, previous) => {
+    if (!next || !previous) return
+    usageLogsRefreshSignal.value++
+  })
+
   const plans = computed(() => toValue(checkoutContext.value.plans))
 
   const currentPlanSlug = computed(() =>
@@ -345,6 +351,7 @@ function useBillingContextInternal(): BillingContext {
     isInitialized,
     subscription,
     balance,
+    usageLogsRefreshSignal,
     plans,
     currentPlanSlug,
     teamCreditStops,
