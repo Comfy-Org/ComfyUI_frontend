@@ -185,6 +185,9 @@ export const cloudNodesPage: ModelLaunchPage = {
       }
     ]
   },
+  // Default order runs faq before steps, which suits a model page selling a
+  // gallery. Here the first question is how to get the nodes, so steps lead.
+  sectionOrder: ['steps', 'faq'],
   runOptions: {
     headingKey: 'cloudNodesLaunch.runOptions.heading',
     subtitleKey: 'cloudNodesLaunch.runOptions.subtitle',
