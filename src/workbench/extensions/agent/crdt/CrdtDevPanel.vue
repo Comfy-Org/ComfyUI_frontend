@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useClipboard } from '@vueuse/core'
+import { useClipboard, useEventListener } from '@vueuse/core'
 import {
   computed,
   nextTick,
@@ -8,6 +8,7 @@ import {
   onMounted,
   ref,
   shallowRef,
+  useTemplateRef,
   watch
 } from 'vue'
 
@@ -185,6 +186,8 @@ const HIDDEN_KEY = 'Comfy.Agent.CrdtDevPanel.hidden'
 const open = ref(readOpen())
 const tab = ref<'status' | 'log' | 'merge'>('status')
 const dismissed = ref(readHidden())
+const chipButton = useTemplateRef<HTMLButtonElement>('chipButton')
+const closeButton = useTemplateRef<HTMLButtonElement>('closeButton')
 
 function readOpen(): boolean {
   try {
@@ -220,6 +223,15 @@ function setOpen(value: boolean) {
   }
 }
 
+function onDocumentKeydown(event: KeyboardEvent): void {
+  if (!open.value || event.key !== 'Escape') return
+  event.stopPropagation()
+  if (event.target instanceof HTMLSelectElement) return
+  setOpen(false)
+}
+
+useEventListener(document, 'keydown', onDocumentKeydown)
+
 // ── live document facts ───────────────────────────────────────────────────
 const docState = shallowRef<CrdtDebugSnapshot | null>(null)
 let pollHandle: ReturnType<typeof setInterval> | undefined
@@ -244,6 +256,21 @@ onBeforeUnmount(() => {
   clearTimeout(itemCopyReset)
 })
 
+watch(
+  open,
+  (value) => {
+    const control = value ? closeButton.value : chipButton.value
+    control?.focus()
+  },
+  { flush: 'post' }
+)
+watch(
+  closeButton,
+  (button) => {
+    if (open.value) button?.focus()
+  },
+  { flush: 'post' }
+)
 watch(tab, poll)
 
 const docRows = computed<readonly (readonly [string, string])[]>(() => {
@@ -604,6 +631,7 @@ function fmtTime(at: number): string {
 
     <button
       v-else-if="!open"
+      ref="chipButton"
       type="button"
       :title="S.open"
       class="text-agent-fg-muted border-agent-border bg-agent-surface-raised hover:text-agent-fg hover:bg-agent-surface-hover mr-4 mb-1 flex h-6 cursor-pointer items-center gap-1 self-end rounded-full border px-2 transition-colors"
@@ -657,6 +685,7 @@ function fmtTime(at: number): string {
           <span class="icon-[lucide--eye-off] size-4" />
         </button>
         <button
+          ref="closeButton"
           type="button"
           :title="S.close"
           class="text-agent-fg-muted hover:text-agent-fg cursor-pointer"
