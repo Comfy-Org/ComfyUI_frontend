@@ -2,7 +2,7 @@
  * The workspace session: a short-lived JWT minted from the Firebase user,
  * which is what actually authorizes runs and balance reads.
  *
- * Freshness is valid-on-read (ADR 0011): callers await
+ * Freshness is valid-on-read (AUTH-CREDENTIALS-0011): callers await
  * `ensureFreshWorkshopSession` at the moment they need a token, and it never
  * resolves with less than five minutes of validity — anything closer
  * re-mints inside the call. Timers and focus checks elsewhere only warm this
