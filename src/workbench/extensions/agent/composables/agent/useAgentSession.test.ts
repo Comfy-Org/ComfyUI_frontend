@@ -487,11 +487,47 @@ describe('useAgentSession (v1 composition root)', () => {
 
     const conversationStore = useAgentConversationStore()
     const ingest = vi.spyOn(conversationStore, 'ingest')
-    const answeringStateAfterSwitch = session.answeringAskIds.value
     rejectAnswer?.(new AgentApiError('already answered', 409, undefined))
     await pendingAnswer
 
-    expect(session.answeringAskIds.value).toBe(answeringStateAfterSwitch)
+    expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
+    expect(ingest).not.toHaveBeenCalled()
+    expect(session.notices.value).toEqual([])
+    expect(reportError).not.toHaveBeenCalled()
+    expect(conversationStore.threadId).toBe('th-2')
+  })
+
+  it('reports a stale non-409 answer failure without mutating the new thread', async () => {
+    let rejectAnswer: ((reason?: unknown) => void) | undefined
+    const answerAsk = vi.fn<AgentRestClient['answerAsk']>(
+      () =>
+        new Promise<AgentAnswerAccepted>((_, reject) => {
+          rejectAnswer = reject
+        })
+    )
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ answerAsk }),
+      events: source
+    })
+    session.start()
+    await session.sendMessage('build it')
+    emit(runApproval('msg-1'))
+
+    const pendingAnswer = session.answerAsk('turn-1:call-1', 'run')
+    await vi.waitFor(() => expect(answerAsk).toHaveBeenCalledOnce())
+    await session.loadThread('th-2')
+
+    const conversationStore = useAgentConversationStore()
+    const ingest = vi.spyOn(conversationStore, 'ingest')
+    rejectAnswer?.(new AgentApiError('backend blip', 500, undefined))
+    await pendingAnswer
+
+    expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+      errorType: 'agent_ask_answer_failed'
+    })
+    expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
+    expect(session.notices.value).toEqual([])
     expect(ingest).not.toHaveBeenCalled()
     expect(conversationStore.threadId).toBe('th-2')
   })

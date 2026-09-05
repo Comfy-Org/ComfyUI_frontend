@@ -316,9 +316,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
       await rest.answerAsk(currentThreadId, askId, [selection])
       // Keep the actions disabled until the canonical resolution frame arrives.
     } catch (error) {
-      if (!isCurrent()) return
+      // A failed answer must never wedge the ask in answeringAskIds, even when
+      // the failure lands on a thread the user already left.
       setAskAnswering(askId, false)
       if (error instanceof AgentApiError && error.status === 409) {
+        // Another path resolved the ask; only rehydrate the visible thread.
+        if (!isCurrent()) return
         conversationStore.ingest({
           type: 'agent_ask_resolved',
           data: {
@@ -331,7 +334,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
         })
         return
       }
+      // A backend failure to record the answer is real telemetry regardless of
+      // which thread is on screen; only the user-facing notice is thread-local.
       reportError(error, { errorType: 'agent_ask_answer_failed' })
+      if (!isCurrent()) return
       pushError(error instanceof Error ? error.message : String(error))
     }
   }
