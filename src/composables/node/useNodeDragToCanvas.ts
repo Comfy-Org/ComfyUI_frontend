@@ -3,6 +3,7 @@ import { ref, shallowRef } from 'vue'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { NodeAddSource } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -40,7 +41,20 @@ function applyWidgetValues(node: LGraphNode, values: WidgetValues) {
   for (const [name, value] of Object.entries(values)) {
     const widget = node.widgets?.find((w) => w.name === name)
     if (!widget) {
-      console.error(`Widget ${name} not found on node ${node.type}`)
+      reportError(
+        new Error('Requested widget is missing from the added node'),
+        {
+          errorType: 'nodes_drag_widget_missing',
+          tags: {
+            failure_kind: 'bad_state',
+            feature_area: 'nodes',
+            operation: 'render',
+            outcome: 'failed'
+          },
+          context: { drag_mode: dragMode.value },
+          level: 'error'
+        }
+      )
       useToastStore().add({
         severity: 'warn',
         summary: t('g.warning'),
@@ -79,7 +93,20 @@ function addNodeAtPosition(clientX: number, clientY: number): boolean {
     useLitegraphService().addNodeOnGraph(nodeDef, { pos })
   )
   if (!node) {
-    console.error(`Failed to add node to graph: ${nodeDef.name}`)
+    reportError(new Error('Failed to add dragged node to the graph'), {
+      errorType: 'nodes_drag_add_failed',
+      tags: {
+        failure_kind: 'bad_state',
+        feature_area: 'nodes',
+        operation: 'render',
+        outcome: 'failed'
+      },
+      context: {
+        drag_mode: dragMode.value,
+        has_widget_values: pendingWidgetValues.value !== undefined
+      },
+      level: 'error'
+    })
     useToastStore().add({
       severity: 'error',
       summary: t('g.error'),
