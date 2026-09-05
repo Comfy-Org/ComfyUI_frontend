@@ -6,7 +6,10 @@ import { describe, expect, it, vi } from 'vitest'
 import { t } from '@/i18n'
 
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type {
+  LGraph,
+  LGraphNodeConstructor
+} from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
@@ -162,6 +165,85 @@ describe('GroupNodeConfig.processInputSlots', () => {
     )
 
     expect(inputMap).toEqual({ model: 0, latent_image: 1 })
+  })
+})
+
+describe('GroupNodeHandler.getGroupData', () => {
+  const ksamplerDef: ComfyNodeDef = {
+    name: 'KSampler',
+    display_name: 'KSampler',
+    description: '',
+    category: 'sampling',
+    output_node: false,
+    python_module: 'nodes',
+    input: { required: {} },
+    output: [],
+    output_name: [],
+    output_is_list: []
+  }
+
+  it('returns the registered GroupNodeConfig for legacy custom-node callers (#12931)', async () => {
+    const ext = extensionState.ext
+    if (!ext) throw new Error('Comfy.GroupNode extension was not registered')
+
+    try {
+      ext.addCustomNodeDefs?.({ KSampler: ksamplerDef }, fromPartial({}))
+
+      class TestGroupNodeCtor extends LGraphNode {}
+      TestGroupNodeCtor.nodeData = {}
+      LiteGraph.registered_node_types['workflow>MyGroup'] = TestGroupNodeCtor
+
+      const config = new GroupNodeConfig('MyGroup', {
+        nodes: [{ index: 0, type: 'KSampler' }],
+        links: [],
+        external: []
+      })
+      await config.registerType()
+
+      const ctor = LiteGraph.registered_node_types['workflow>MyGroup']
+      const node = { constructor: ctor } as unknown as LGraphNode
+
+      expect(GroupNodeHandler.getGroupData(node)).toBe(config)
+      expect(GroupNodeHandler.getGroupData(ctor as LGraphNodeConstructor)).toBe(
+        config
+      )
+    } finally {
+      delete LiteGraph.registered_node_types['workflow>MyGroup']
+    }
+  })
+
+  it('checks the instance before falling back to the constructor', async () => {
+    const ext = extensionState.ext
+    if (!ext) throw new Error('Comfy.GroupNode extension was not registered')
+
+    try {
+      ext.addCustomNodeDefs?.({ KSampler: ksamplerDef }, fromPartial({}))
+
+      class MarkedGroupCtor extends LGraphNode {}
+      MarkedGroupCtor.nodeData = {}
+      LiteGraph.registered_node_types['workflow>MyInstanceOwnedGroup'] =
+        MarkedGroupCtor
+
+      const config = new GroupNodeConfig('MyInstanceOwnedGroup', {
+        nodes: [{ index: 0, type: 'KSampler' }],
+        links: [],
+        external: []
+      })
+      await config.registerType()
+
+      // The marker now lives on MarkedGroupCtor.nodeData. Build a node whose
+      // own constructor carries no marker, but whose instance does -- the
+      // legacy shape this shim must still resolve.
+      class UnmarkedCtor extends LGraphNode {}
+      const node = {
+        constructor: UnmarkedCtor,
+        nodeData: MarkedGroupCtor.nodeData
+      } as unknown as LGraphNode
+
+      expect(GroupNodeHandler.getGroupData(node)).toBe(config)
+    } finally {
+      delete LiteGraph.registered_node_types['workflow>MyInstanceOwnedGroup']
+    }
   })
 })
 
