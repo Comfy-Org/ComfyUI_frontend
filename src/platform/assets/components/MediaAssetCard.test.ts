@@ -82,6 +82,23 @@ function dispatchDragStart(
   return { event, add }
 }
 
+// The media preview is an async component, and transforming its chunk on a cold
+// cache regularly outlasts vi.waitFor's 1s default — which in turn needs room
+// under the per-test timeout, whose 5s default it would otherwise consume.
+vi.setConfig({ testTimeout: 15000 })
+
+function findMediaElement(container: Element, tag: 'audio' | 'video') {
+  return vi.waitFor(
+    () => {
+      // eslint-disable-next-line testing-library/no-node-access -- media elements have no ARIA role in happy-dom
+      const element = container.querySelector(tag)
+      expect(element).toBeInTheDocument()
+      return element!
+    },
+    { timeout: 4000 }
+  )
+}
+
 describe('MediaAssetCard', () => {
   describe('dragStart', () => {
     it('cancels the native drag when Ctrl is held so a marquee can start over the card', () => {
@@ -206,12 +223,7 @@ describe('MediaAssetCard', () => {
         loading: false,
         asset: { ...asset, name: 'clip.mp4' }
       })
-      const video = await vi.waitFor(() => {
-        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
-        const element = container.querySelector('video')
-        expect(element).toBeInTheDocument()
-        return element!
-      })
+      const video = await findMediaElement(container, 'video')
       const playSpy = vi
         .spyOn(video, 'play')
         .mockImplementation(() => Promise.resolve())
@@ -230,6 +242,108 @@ describe('MediaAssetCard', () => {
     }
   )
 
+  describe('audio player strip', () => {
+    const audioAsset: AssetItem = { ...asset, name: 'track.mp3' }
+
+    async function renderAudioCard() {
+      const rendered = renderCard({ loading: false, asset: audioAsset })
+      const audio = await findMediaElement(rendered.container, 'audio')
+      // A waveform click only seeks once the media reports a duration.
+      Object.defineProperty(audio, 'duration', {
+        value: 10,
+        configurable: true
+      })
+      await fireEvent(audio, new Event('durationchange'))
+      const playButton = screen.getByRole('button', { name: 'g.play' })
+      // eslint-disable-next-line testing-library/no-node-access -- the waveform strip has no interactive role
+      const waveform = playButton.nextElementSibling!
+      // happy-dom lays nothing out, so the seek ratio needs a width to divide
+      // by, and userEvent always clicks at clientX 0 — straddling the origin
+      // puts that click mid-strip, a real seek to 0:05 rather than the 0:00
+      // already showing.
+      vi.spyOn(waveform, 'getBoundingClientRect').mockReturnValue(
+        new DOMRect(-50, 0, 100, 32)
+      )
+      return {
+        ...rendered,
+        playButton,
+        waveform,
+        playSpy: vi.spyOn(audio, 'play').mockResolvedValue()
+      }
+    }
+
+    it.for([
+      { modifier: 'Shift', keyDown: '{Shift>}', keyUp: '{/Shift}' },
+      { modifier: 'Ctrl', keyDown: '{Control>}', keyUp: '{/Control}' },
+      { modifier: 'Meta', keyDown: '{Meta>}', keyUp: '{/Meta}' }
+    ])(
+      '$modifier-clicks the waveform to select without seeking',
+      async ({ keyDown, keyUp }) => {
+        const user = userEvent.setup()
+        const { emitted, waveform, playSpy } = await renderAudioCard()
+
+        await user.keyboard(keyDown)
+        await user.click(waveform)
+        await user.keyboard(keyUp)
+
+        expect(emitted().select).toHaveLength(1)
+        expect(playSpy).not.toHaveBeenCalled()
+        expect(screen.getByText('0:00 / 0:10')).toBeInTheDocument()
+      }
+    )
+
+    it('seeks without selecting from a plain click on the waveform', async () => {
+      const user = userEvent.setup()
+      const { emitted, waveform, playSpy } = await renderAudioCard()
+
+      await user.click(waveform)
+
+      expect(screen.getByText('0:05 / 0:10')).toBeInTheDocument()
+      expect(playSpy).toHaveBeenCalled()
+      expect(emitted().select).toBeUndefined()
+      expect(emitted()['toggle-selection']).toBeUndefined()
+    })
+
+    it('lets a modifier pointerdown out of the player but stops a plain one', async () => {
+      const user = userEvent.setup()
+      const { container, waveform } = await renderAudioCard()
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- the grid listens for pointerdown outside the card
+      const card = container.querySelector('[data-asset-id="a"]')!
+      const onPointerDown = vi.fn()
+      card.addEventListener('pointerdown', onPointerDown)
+
+      await user.click(waveform)
+      expect(onPointerDown).not.toHaveBeenCalled()
+
+      await user.keyboard('{Control>}')
+      await user.click(waveform)
+      await user.keyboard('{/Control}')
+      expect(onPointerDown).toHaveBeenCalledTimes(1)
+    })
+
+    it('toggles playback without selecting from a plain click on play', async () => {
+      const user = userEvent.setup()
+      const { emitted, playButton, playSpy } = await renderAudioCard()
+
+      await user.click(playButton)
+
+      expect(playSpy).toHaveBeenCalledTimes(1)
+      expect(emitted().select).toBeUndefined()
+    })
+
+    it('selects without toggling playback from a modifier click on play', async () => {
+      const user = userEvent.setup()
+      const { emitted, playButton, playSpy } = await renderAudioCard()
+
+      await user.keyboard('{Shift>}')
+      await user.click(playButton)
+      await user.keyboard('{/Shift}')
+
+      expect(emitted().select).toHaveLength(1)
+      expect(playSpy).not.toHaveBeenCalled()
+    })
+  })
+
   it('disables native controls for compact video cards', async () => {
     const user = userEvent.setup()
     const { container } = renderCard({
@@ -237,12 +351,7 @@ describe('MediaAssetCard', () => {
       asset: { ...asset, name: 'clip.mp4' },
       showNativeVideoControls: false
     })
-    const video = await vi.waitFor(() => {
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
-      const element = container.querySelector('video')
-      expect(element).toBeInTheDocument()
-      return element!
-    })
+    const video = await findMediaElement(container, 'video')
     const pauseSpy = vi.spyOn(video, 'pause').mockImplementation(() => {})
 
     Object.defineProperty(video, 'paused', {
@@ -272,12 +381,7 @@ describe('MediaAssetCard', () => {
       asset: { ...asset, name: 'clip.mp4' },
       showNativeVideoControls: false
     })
-    const video = await vi.waitFor(() => {
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
-      const element = container.querySelector('video')
-      expect(element).toBeInTheDocument()
-      return element!
-    })
+    const video = await findMediaElement(container, 'video')
 
     // eslint-disable-next-line testing-library/no-node-access -- the video hover target has no role
     const hoverTarget = video.parentElement!
