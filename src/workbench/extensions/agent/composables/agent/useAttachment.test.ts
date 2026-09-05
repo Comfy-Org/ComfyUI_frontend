@@ -71,7 +71,71 @@ describe('useAttachment', () => {
     await addFiles([movie])
 
     expect(maxBytes).toHaveBeenCalledWith(movie)
-    expect(upload).toHaveBeenCalledWith(movie)
+    expect(upload).toHaveBeenCalledWith(movie, expect.any(AbortSignal))
+  })
+
+  it('stages a whole batch before uploading it concurrently', async () => {
+    const resolvers: Array<(result: { ref: string }) => void> = []
+    const upload = vi.fn(
+      () =>
+        new Promise<{ ref: string }>((resolve) => {
+          resolvers.push(resolve)
+        })
+    )
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, ...registry })
+
+    const pending = addFiles([
+      fileOfSize('a.png', 1),
+      fileOfSize('b.png', 1),
+      fileOfSize('c.png', 1)
+    ])
+
+    expect(registry.chips.map(({ name }) => name)).toEqual([
+      'a.png',
+      'b.png',
+      'c.png'
+    ])
+    expect(upload).toHaveBeenCalledTimes(3)
+
+    resolvers[2]({ ref: 'c.png' })
+    resolvers[0]({ ref: 'a.png' })
+    resolvers[1]({ ref: 'b.png' })
+    await pending
+    expect(registry.chips.map(({ ref }) => ref)).toEqual([
+      'a.png',
+      'b.png',
+      'c.png'
+    ])
+  })
+
+  it('aborts and removes an upload that exceeds the configured timeout', async () => {
+    vi.useFakeTimers()
+    try {
+      let signal: AbortSignal | undefined
+      const upload = vi.fn((_file: File, uploadSignal?: AbortSignal) => {
+        signal = uploadSignal
+        return new Promise<{ ref: string }>(() => {})
+      })
+      const onError = vi.fn()
+      const registry = chipRegistry()
+      const { addFiles } = useAttachment({
+        upload,
+        uploadTimeoutMs: 1000,
+        onError,
+        ...registry
+      })
+
+      const pending = addFiles([fileOfSize('stuck.png', 1)])
+      await vi.advanceTimersByTimeAsync(1000)
+      await pending
+
+      expect(signal?.aborted).toBe(true)
+      expect(registry.chips).toEqual([])
+      expect(onError).toHaveBeenCalledWith('stuck.png could not be uploaded')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('rejects against the resolved limit and warns with that limit', async () => {

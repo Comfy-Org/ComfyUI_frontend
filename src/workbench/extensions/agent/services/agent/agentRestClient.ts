@@ -216,13 +216,14 @@ export function createAgentRestClient() {
 
   async function uploadImage(
     image: Blob,
-    filename: string
+    filename: string,
+    signal?: AbortSignal
   ): Promise<UploadImageResult> {
     const form = new FormData()
     form.append('image', image, filename)
     return request(
       '/upload/image',
-      { method: 'POST', body: form },
+      { method: 'POST', body: form, signal },
       zUploadImageResult
     )
   }
