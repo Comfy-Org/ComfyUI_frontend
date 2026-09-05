@@ -187,6 +187,18 @@ const translations = {
     en: 'Next featured workflow',
     'zh-CN': '下一个精选工作流'
   },
+  'modelDiscovery.label': { en: 'WORKSHOP', 'zh-CN': '工作坊' },
+  'modelDiscovery.heading': {
+    en: 'All the latest models,\nready to run',
+    'zh-CN': '最新模型，\n即刻运行'
+  },
+  'modelDiscovery.subtitle': {
+    en: 'Models from Google, ByteDance, Black Forest Labs, Kling and more, on Comfy Router. Pick one, set your inputs, hit Run.',
+    'zh-CN':
+      '来自 Google、ByteDance、Black Forest Labs、Kling 等提供商的模型，均由 Comfy Router 提供。选一个，设置输入，点击运行。'
+  },
+  'modelDiscovery.rowLabel': { en: 'Model providers', 'zh-CN': '模型提供商' },
+  'modelDiscovery.browse': { en: 'Browse all models', 'zh-CN': '浏览全部模型' },
 
   // Model release carousel (home page)
   'modelRelease.eyebrow': {
@@ -8373,6 +8385,762 @@ Enterprise`
   'platform.closing.headingAfterBadge': {
     en: 'Deploy your ComfyUI workflow as a production API.\nThousands of models on one platform.',
     'zh-CN': '将你的 ComfyUI 工作流部署为生产级 API。数千个模型，尽在一个平台。'
+  },
+
+  // Workshop – header account + nav
+  'nav.workshop': { en: 'Workshop', 'zh-CN': '工作坊' },
+  'nav.comfyWorkshop': { en: 'Comfy Workshop', 'zh-CN': 'Comfy 工作坊' },
+  'nav.signIn': { en: 'Sign in', 'zh-CN': '登录' },
+  'nav.signOut': { en: 'Log out', 'zh-CN': '退出登录' },
+  'nav.accountMenu': { en: 'Account menu', 'zh-CN': '账户菜单' },
+  'nav.credits': { en: 'credits', 'zh-CN': '积分' },
+  'nav.noCredits': { en: 'No credits', 'zh-CN': '无积分' },
+  'nav.buyCredits': { en: 'Buy credits', 'zh-CN': '购买积分' },
+  'nav.creditsLabel': { en: 'Credits', 'zh-CN': '积分' },
+  'nav.workspaces': { en: 'Workspaces', 'zh-CN': '工作区' },
+  'nav.planAndCredits': { en: 'Plan & credits', 'zh-CN': '套餐与积分' },
+  'nav.workspaceSettings': {
+    en: 'Workspace settings',
+    'zh-CN': '工作区设置'
+  },
+  'nav.switchWorkspace': { en: 'Switch workspace', 'zh-CN': '切换工作区' },
+  'nav.planFree': { en: 'Free', 'zh-CN': '免费' },
+  'nav.roleOwner': { en: 'Owner', 'zh-CN': '所有者' },
+  'nav.roleMember': { en: 'Member', 'zh-CN': '成员' },
+  'nav.planPro': { en: 'Pro', 'zh-CN': 'Pro' },
+  'nav.upgrade': { en: 'Upgrade', 'zh-CN': '升级' },
+  'nav.addCredits': { en: 'Add credits', 'zh-CN': '添加积分' },
+  'nav.upgradeToAddCredits': {
+    en: 'Upgrade to add credits',
+    'zh-CN': '升级以添加积分'
+  },
+
+  // Workshop – catalog pages
+  'workshop.title': { en: 'Workshop', 'zh-CN': '工作坊' },
+  'workshop.meta.title': {
+    en: 'Comfy Workshop - Models & Workflows',
+    'zh-CN': 'Comfy 工作坊 - 模型与工作流'
+  },
+  'workshop.meta.description': {
+    en: 'Browse and run partner models and curated workflows in the Comfy Workshop.',
+    'zh-CN': '在 Comfy 工作坊中浏览并运行合作伙伴模型和精选工作流。'
+  },
+  'workshop.hero.eyebrow': { en: 'Comfy Workshop', 'zh-CN': 'Comfy 工作坊' },
+  'workshop.hero.heading': {
+    en: 'Run the best models',
+    'zh-CN': '运行顶尖模型'
+  },
+  'workshop.hero.subtitle': {
+    en: 'Partner models, ready to run. No install, no setup.',
+    'zh-CN': '合作伙伴模型，即开即用。无需安装配置。'
+  },
+  'workshop.task.label': {
+    en: '{input} to {output}',
+    'zh-CN': '{input}转{output}'
+  },
+  'workshop.task.text': { en: 'Text', 'zh-CN': '文本' },
+  'workshop.task.image': { en: 'Image', 'zh-CN': '图像' },
+  'workshop.task.video': { en: 'Video', 'zh-CN': '视频' },
+  'workshop.task.audio': { en: 'Audio', 'zh-CN': '音频' },
+  'workshop.models.heading': { en: 'Models', 'zh-CN': '模型' },
+  'workshop.proto.version': { en: 'Version', 'zh-CN': '版本' },
+  'workshop.proto.version.v1': {
+    en: 'V1 · Categories in tabs',
+    'zh-CN': 'V1 · 标签页分类'
+  },
+  'workshop.proto.version.v1_1': {
+    en: 'V1 test 1 · Rows per use case',
+    'zh-CN': 'V1 测试 1 · 按用途分行'
+  },
+  'workshop.proto.version.v1_2': {
+    en: 'V1 test 2 · Categories in a side rail',
+    'zh-CN': 'V1 测试 2 · 类别侧边栏'
+  },
+  'workshop.proto.version.v2_1': {
+    en: 'V2 test 1',
+    'zh-CN': 'V2 测试 1'
+  },
+  'workshop.proto.version.v2': {
+    en: 'V2 · Workflows, apps and models',
+    'zh-CN': 'V2 · 工作流、应用与模型'
+  },
+  'workshop.sections.featured': { en: 'Featured', 'zh-CN': '精选' },
+  'workshop.sections.otherFormats': {
+    en: 'Other formats',
+    'zh-CN': '其他格式'
+  },
+  'workshop.sections.seeAll': { en: 'See all', 'zh-CN': '查看全部' },
+  'workshop.sections.provider': { en: 'All providers', 'zh-CN': '所有提供方' },
+  'workshop.sections.scrollBack': {
+    en: 'Scroll back',
+    'zh-CN': '向前滚动'
+  },
+  'workshop.sections.scrollForward': {
+    en: 'Scroll forward',
+    'zh-CN': '向后滚动'
+  },
+  'workshop.sections.back': {
+    en: 'Back to all categories',
+    'zh-CN': '返回所有类别'
+  },
+  'workshop.sections.count': {
+    en: '{n} models',
+    'zh-CN': '{n} 个模型'
+  },
+  'workshop.useCase.label': {
+    en: 'Browse by use case',
+    'zh-CN': '按用途浏览'
+  },
+  'workshop.useCase.all': { en: 'All', 'zh-CN': '全部' },
+  'workshop.useCase.generateImages': {
+    en: 'Generate images',
+    'zh-CN': '生成图像'
+  },
+  'workshop.useCase.editImages': { en: 'Edit images', 'zh-CN': '编辑图像' },
+  'workshop.useCase.generateVideos': {
+    en: 'Generate videos',
+    'zh-CN': '生成视频'
+  },
+  'workshop.useCase.animateImages': {
+    en: 'Animate images',
+    'zh-CN': '让图像动起来'
+  },
+  'workshop.useCase.editVideos': { en: 'Edit videos', 'zh-CN': '编辑视频' },
+  'workshop.useCase.3d': { en: '3D', 'zh-CN': '3D' },
+  'workshop.useCase.audio': { en: 'Audio', 'zh-CN': '音频' },
+  'workshop.useCase.text': { en: 'Text', 'zh-CN': '文本' },
+  'workshop.search.label': {
+    en: 'Search models, providers, categories...',
+    'zh-CN': '搜索模型、提供商、分类...'
+  },
+  'workshop.search.clear': { en: 'Clear search', 'zh-CN': '清除搜索' },
+  'workshop.search.popular': { en: 'Popular models', 'zh-CN': '热门模型' },
+  'workshop.search.more': { en: '+ {n} more', 'zh-CN': '+ {n} 个' },
+  'workshop.search.providers': { en: 'Providers', 'zh-CN': '提供商' },
+  'workshop.filter.image': { en: 'Image', 'zh-CN': '图像' },
+  'workshop.filter.video': { en: 'Video', 'zh-CN': '视频' },
+  'workshop.filter.audio': { en: 'Audio', 'zh-CN': '音频' },
+  'workshop.filter.3d': { en: '3D', 'zh-CN': '3D' },
+  'workshop.filter.text': { en: 'Text', 'zh-CN': '文本' },
+  'workshop.filter.other': { en: 'Other', 'zh-CN': '其他' },
+  'workshop.input.title': { en: 'Input', 'zh-CN': '输入' },
+  'workshop.output.select': { en: 'Output {n}', 'zh-CN': '输出 {n}' },
+  'workshop.filter.label': { en: 'Filter', 'zh-CN': '筛选' },
+  'workshop.filter.filterBy': { en: 'Filter by…', 'zh-CN': '筛选…' },
+  'workshop.filter.sectionLabel': { en: 'Filter by', 'zh-CN': '筛选条件' },
+  'workshop.filter.back': { en: 'All filters', 'zh-CN': '全部筛选' },
+  'workshop.filter.noMatches': { en: 'No matches', 'zh-CN': '没有匹配项' },
+  'workshop.filter.clearAll': { en: 'Clear filters', 'zh-CN': '清除筛选' },
+  'workshop.filter.applied': { en: '{n} selected', 'zh-CN': '已选 {n} 项' },
+  'workshop.filter.providerGroup': { en: 'Models', 'zh-CN': '模型' },
+  'workshop.launch.allUseCases': {
+    en: 'All use cases',
+    'zh-CN': '全部用例'
+  },
+  'workshop.launch.label': {
+    en: 'Use cases',
+    'zh-CN': '用例'
+  },
+  'workshop.filter.outputGroup': { en: 'Output', 'zh-CN': '输出' },
+  'workshop.filter.capabilityGroup': {
+    en: 'Categories',
+    'zh-CN': '分类'
+  },
+  'workshop.filter.search': { en: 'Search…', 'zh-CN': '搜索…' },
+  'workshop.sort.label': { en: 'Sort', 'zh-CN': '排序' },
+  'workshop.sort.popular': { en: 'Most popular', 'zh-CN': '最受欢迎' },
+  'workshop.sort.name': { en: 'Name A to Z', 'zh-CN': '名称 A 到 Z' },
+  'workshop.sort.priceAsc': {
+    en: 'Price: low to high',
+    'zh-CN': '价格：从低到高'
+  },
+  'workshop.sort.priceDesc': {
+    en: 'Price: high to low',
+    'zh-CN': '价格：从高到低'
+  },
+  'workshop.form.advanced': { en: 'Advanced settings', 'zh-CN': '高级设置' },
+  'workshop.signIn.meta.title': {
+    en: 'Sign in · Comfy Workshop',
+    'zh-CN': '登录 · Comfy 工作坊'
+  },
+  'workshop.signIn.title': {
+    en: 'Log in to your account',
+    'zh-CN': '登录您的账户'
+  },
+  'workshop.signIn.newUser': {
+    en: 'New to Comfy?',
+    'zh-CN': '初次使用 Comfy？'
+  },
+  'workshop.signIn.signUpHere': { en: 'Sign up here', 'zh-CN': '在此注册' },
+  'workshop.signIn.freeRuns': {
+    en: 'to get 5 free runs.',
+    'zh-CN': '即可获得 5 次免费运行。'
+  },
+  'workshop.signIn.google': {
+    en: 'Log in with Google',
+    'zh-CN': '使用 Google 登录'
+  },
+  'workshop.signIn.github': {
+    en: 'Log in with Github',
+    'zh-CN': '使用 Github 登录'
+  },
+  'workshop.signIn.useEmail': { en: 'Use email instead', 'zh-CN': '改用邮箱' },
+  'workshop.signIn.backToSocial': {
+    en: 'Sign up with Google or Github instead',
+    'zh-CN': '改用 Google 或 Github'
+  },
+  'workshop.signIn.emailLabel': { en: 'Email', 'zh-CN': '邮箱' },
+  'workshop.signIn.emailPlaceholder': {
+    en: 'Enter your email',
+    'zh-CN': '输入您的邮箱'
+  },
+  'workshop.signIn.passwordLabel': { en: 'Password', 'zh-CN': '密码' },
+  'workshop.signIn.passwordPlaceholder': {
+    en: 'Enter your password',
+    'zh-CN': '输入您的密码'
+  },
+  'workshop.signIn.forgotPassword': {
+    en: 'Forgot password?',
+    'zh-CN': '忘记密码？'
+  },
+  'workshop.signIn.submit': { en: 'Sign in', 'zh-CN': '登录' },
+  'workshop.signUp.title': { en: 'Create an account', 'zh-CN': '创建账户' },
+  'workshop.signUp.haveAccount': {
+    en: 'Already have an account?',
+    'zh-CN': '已有账户？'
+  },
+  'workshop.signUp.signIn': { en: 'Sign in', 'zh-CN': '登录' },
+  'workshop.signUp.google': {
+    en: 'Sign up with Google',
+    'zh-CN': '使用 Google 注册'
+  },
+  'workshop.signUp.github': {
+    en: 'Sign up with Github',
+    'zh-CN': '使用 Github 注册'
+  },
+  'workshop.signUp.submit': { en: 'Sign up', 'zh-CN': '注册' },
+  'workshop.signUp.terms': {
+    en: 'By clicking "Next" or "Sign Up", you agree to our',
+    'zh-CN': '点击"下一步"或"注册"即表示您同意我们的'
+  },
+  'workshop.signUp.termsLink': { en: 'Terms of Use', 'zh-CN': '使用条款' },
+  'workshop.signUp.and': { en: 'and', 'zh-CN': '和' },
+  'workshop.signUp.privacyLink': { en: 'Privacy Policy', 'zh-CN': '隐私政策' },
+  'workshop.signIn.prototypeNote': {
+    en: 'Prototype: this page mirrors the Cloud login. Real accounts sign in at',
+    'zh-CN': '原型：此页面复刻 Cloud 登录页。真实账户请在此登录：'
+  },
+  'workshop.card.partnerNode': { en: 'Partner node', 'zh-CN': '合作伙伴节点' },
+  'workshop.card.runs': { en: '{n} runs', 'zh-CN': '{n} 次运行' },
+  'workshop.card.creditsPerRun': { en: 'credits / run', 'zh-CN': '积分 / 次' },
+  'workshop.card.from': { en: 'from', 'zh-CN': '起' },
+  'workshop.card.priceOnPage': {
+    en: 'Pricing on model page',
+    'zh-CN': '价格见模型页'
+  },
+  'workshop.card.tryCta': {
+    en: 'Try in Playground',
+    'zh-CN': '在 Playground 试用'
+  },
+  'workshop.empty.heading': {
+    en: 'No models match',
+    'zh-CN': '没有匹配的模型'
+  },
+  'workshop.empty.body': {
+    en: 'Try a different search or clear the filters.',
+    'zh-CN': '换个关键词或清除筛选条件。'
+  },
+  'workshop.empty.clear': { en: 'Clear filters', 'zh-CN': '清除筛选' },
+
+  // Workshop – model detail
+  'workshop.model.meta.description': {
+    en: 'Run {name} in your browser, then call it from your code.',
+    'zh-CN': '在浏览器中运行 {name}，然后从代码中调用它。'
+  },
+  'workshop.model.tabs.playground': { en: 'Playground', 'zh-CN': 'Playground' },
+  'workshop.model.tabs.api': { en: 'API', 'zh-CN': 'API' },
+  'workshop.model.tabs.examples': { en: 'Examples', 'zh-CN': '示例' },
+  'workshop.model.tabs.details': { en: 'Details', 'zh-CN': '详情' },
+  'workshop.model.related': {
+    en: 'More from the Workshop',
+    'zh-CN': '工作坊的更多内容'
+  },
+  'workshop.model.relatedProvider': {
+    en: 'More from {provider}',
+    'zh-CN': '{provider} 的更多模型'
+  },
+  'workshop.model.browseAll': {
+    en: 'Browse all models',
+    'zh-CN': '浏览全部模型'
+  },
+  'workshop.credits.title': {
+    en: 'Payment happens on Stripe',
+    'zh-CN': '支付在 Stripe 完成'
+  },
+  'workshop.credits.body': {
+    en: 'Pick a top-up here and finish the purchase on Stripe Checkout. We send the page you are on as the return address, so you land back here with your inputs as you left them:',
+    'zh-CN':
+      '在此选择充值额度，然后在 Stripe Checkout 完成支付。我们会带上当前页面作为返回地址，付款后你会回到这里，输入内容保持原样：'
+  },
+  'workshop.credits.continue': {
+    en: 'Continue to Stripe',
+    'zh-CN': '前往 Stripe'
+  },
+  'workshop.credits.cancel': { en: 'Stay here', 'zh-CN': '留在此页' },
+  'workshop.credits.checkout': {
+    en: 'Checkout',
+    'zh-CN': '结账'
+  },
+  'workshop.credits.checkoutNote': {
+    en: 'Stripe hosts this page. It stands in here so the round trip can be reviewed end to end.',
+    'zh-CN': '此页面由 Stripe 托管。这里以模拟代替，以便完整体验整个流程。'
+  },
+  'workshop.credits.pay': { en: 'Pay {usd}', 'zh-CN': '支付 {usd}' },
+  'workshop.credits.back': { en: 'Back', 'zh-CN': '返回' },
+  'workshop.credits.done': {
+    en: '{n} credits added',
+    'zh-CN': '已添加 {n} 积分'
+  },
+  'workshop.credits.doneBody': {
+    en: 'You are back on the model page, with your inputs exactly as you left them.',
+    'zh-CN': '你已回到模型页面，输入内容与离开时完全一致。'
+  },
+  'workshop.credits.resume': {
+    en: 'Back to the model',
+    'zh-CN': '返回模型'
+  },
+  'workshop.credits.close': { en: 'Close', 'zh-CN': '关闭' },
+  'workshop.media.label': {
+    en: 'Browse by output',
+    'zh-CN': '按输出浏览'
+  },
+  'workshop.useCase.more': {
+    en: 'More categories',
+    'zh-CN': '更多分类'
+  },
+  'workshop.model.versions': { en: '{n} versions', 'zh-CN': '{n} 个版本' },
+  'workshop.model.deprecated': { en: 'Deprecated', 'zh-CN': '已弃用' },
+  'workshop.model.deprecatedBody': {
+    en: 'This model is being retired.',
+    'zh-CN': '该模型即将下线。'
+  },
+  'workshop.model.deprecatedSuccessor': {
+    en: 'Try {successor} instead',
+    'zh-CN': '建议改用 {successor}'
+  },
+  'workshop.model.degraded': { en: 'Degraded', 'zh-CN': '性能下降' },
+  'workshop.model.perRun': { en: 'per run', 'zh-CN': '每次运行' },
+  'workshop.model.degradedBody': {
+    en: 'The provider is reporting slow or failing runs right now.',
+    'zh-CN': '提供方当前报告运行缓慢或失败。'
+  },
+
+  // Workshop – playground fields
+  'workshop.field.prompt': { en: 'Prompt', 'zh-CN': '提示词' },
+  'workshop.field.promptPlaceholder': {
+    en: 'Describe what you want to make',
+    'zh-CN': '描述你想生成的内容'
+  },
+  'workshop.field.seed': { en: 'Seed', 'zh-CN': '随机种子' },
+  'workshop.field.image': { en: 'Reference image', 'zh-CN': '参考图' },
+  'workshop.field.aspectRatio': { en: 'Aspect ratio', 'zh-CN': '宽高比' },
+  'workshop.field.resolution': { en: 'Resolution', 'zh-CN': '分辨率' },
+  'workshop.field.duration': { en: 'Duration (s)', 'zh-CN': '时长（秒）' },
+  'workshop.field.voice': { en: 'Voice', 'zh-CN': '声音' },
+  'workshop.field.format': { en: 'Format', 'zh-CN': '格式' },
+  'workshop.field.maxTokens': { en: 'Max tokens', 'zh-CN': '最大 token 数' },
+  'workshop.field.upload': { en: 'Upload', 'zh-CN': '上传' },
+  'workshop.field.uploadLimit': { en: 'up to 25 MB', 'zh-CN': '最大 25 MB' },
+  'workshop.field.remove': { en: 'Remove file', 'zh-CN': '移除文件' },
+  'workshop.form.required': {
+    en: 'This field is required',
+    'zh-CN': '此字段为必填项'
+  },
+  'workshop.form.tooLarge': {
+    en: 'File is over 25 MB',
+    'zh-CN': '文件超过 25 MB'
+  },
+  'workshop.form.badType': {
+    en: 'File type not supported',
+    'zh-CN': '不支持的文件类型'
+  },
+  'workshop.form.outOfRange': {
+    en: 'Value is outside the allowed range',
+    'zh-CN': '数值超出允许范围'
+  },
+  'workshop.form.badOption': {
+    en: 'Choose one of the listed options',
+    'zh-CN': '请选择列表中的选项'
+  },
+  'workshop.form.rejected': {
+    en: 'The provider rejected this value',
+    'zh-CN': '提供方拒绝了该值'
+  },
+
+  // Workshop – run
+  'workshop.run.signIn': { en: 'Sign in to run', 'zh-CN': '登录以运行' },
+  'workshop.run.buyCredits': {
+    en: 'Add credits',
+    'zh-CN': '添加积分'
+  },
+  'workshop.run.run': { en: 'Run', 'zh-CN': '运行' },
+  'workshop.run.cancel': { en: 'Cancel', 'zh-CN': '取消' },
+  'workshop.run.running': { en: 'Generating…', 'zh-CN': '生成中…' },
+  'workshop.run.policy': {
+    en: 'Disabled by your workspace policy',
+    'zh-CN': '已被工作区策略禁用'
+  },
+  'workshop.run.unavailable': {
+    en: 'Model temporarily unavailable',
+    'zh-CN': '模型暂时不可用'
+  },
+  'workshop.run.videoHint': {
+    en: 'Video runs can take up to 10 minutes and run without a queue.',
+    'zh-CN': '视频生成最长可能需要 10 分钟，且不排队。'
+  },
+
+  // Workshop – output
+  'workshop.output.title': { en: 'Output', 'zh-CN': '输出' },
+  'workshop.output.example': { en: 'Example output', 'zh-CN': '示例输出' },
+  'workshop.output.exampleHint': {
+    en: 'This is the example result. Run to generate your own.',
+    'zh-CN': '这是示例结果。运行以生成你自己的结果。'
+  },
+  'workshop.output.earlier': {
+    en: 'Earlier runs this session',
+    'zh-CN': '本次会话的早前运行'
+  },
+  'workshop.output.latest': { en: 'Latest', 'zh-CN': '最新' },
+  'workshop.output.placeholder': {
+    en: 'Your output will appear here.',
+    'zh-CN': '你的输出会显示在这里。'
+  },
+  'workshop.output.download': { en: 'Download', 'zh-CN': '下载' },
+  'workshop.output.useInCode': {
+    en: 'Use these settings in code',
+    'zh-CN': '在代码中使用这些设置'
+  },
+  'workshop.output.expires': {
+    en: 'Output links expire 24 hours after the run. Download to keep it.',
+    'zh-CN': '输出链接在运行后 24 小时失效。请下载保存。'
+  },
+  'workshop.output.nsfw': {
+    en: 'This output may be sensitive.',
+    'zh-CN': '此输出可能包含敏感内容。'
+  },
+  'workshop.output.expand': { en: 'Expand', 'zh-CN': '放大' },
+  'workshop.output.play': { en: 'Play', 'zh-CN': '播放' },
+  'workshop.output.pause': { en: 'Pause', 'zh-CN': '暂停' },
+  'workshop.output.soundOn': { en: 'Turn sound on', 'zh-CN': '打开声音' },
+  'workshop.output.soundOff': { en: 'Turn sound off', 'zh-CN': '关闭声音' },
+  'workshop.output.collapse': { en: 'Close', 'zh-CN': '关闭' },
+  'workshop.output.reveal': { en: 'Click to reveal', 'zh-CN': '点击查看' },
+  'workshop.output.cancelled': {
+    en: 'Run cancelled. No credits were charged.',
+    'zh-CN': '运行已取消。未扣除积分。'
+  },
+  'workshop.output.runAgain': { en: 'Run again', 'zh-CN': '再次运行' },
+  'workshop.error.provider': {
+    en: 'The provider returned an error. You were not charged.',
+    'zh-CN': '提供方返回了错误。未扣费。'
+  },
+  'workshop.error.rateLimit': {
+    en: 'Too many runs right now. Wait a moment and try again.',
+    'zh-CN': '当前运行过多。请稍后重试。'
+  },
+  'workshop.error.policy': {
+    en: 'Your workspace policy blocks this provider.',
+    'zh-CN': '你的工作区策略禁止了该提供方。'
+  },
+  'workshop.error.noCredits': {
+    en: 'Not enough credits. Payment happens on Stripe.',
+    'zh-CN': '积分不足。支付在 Stripe 完成。'
+  },
+  'workshop.error.unavailable': {
+    en: 'This model is temporarily unavailable.',
+    'zh-CN': '该模型暂时不可用。'
+  },
+  'workshop.error.validation': {
+    en: 'Check the highlighted fields.',
+    'zh-CN': '请检查高亮的字段。'
+  },
+  'workshop.error.retry': { en: 'Try again', 'zh-CN': '重试' },
+  'workshop.error.timeout': {
+    en: 'The provider took too long to answer. You were not charged.',
+    'zh-CN': '提供方响应超时。未扣费。'
+  },
+  'workshop.error.lowCredits': {
+    en: 'You have {credits} credits and this run needs {n}. Buy credits to continue; your inputs stay here.',
+    'zh-CN':
+      '你有 {credits} 积分，本次运行需要 {n}。购买积分后继续，你的输入会保留。'
+  },
+  'workshop.error.memberNoCredits': {
+    en: '{workspace} has no credits left. Only the workspace owner can buy more; you can run this on your personal workspace instead.',
+    'zh-CN':
+      '{workspace} 的积分已用完。只有工作区所有者可以购买；你可以改用个人工作区运行。'
+  },
+  'workshop.run.memberNoCredits': {
+    en: 'Ask the owner for credits',
+    'zh-CN': '请所有者购买积分'
+  },
+  'workshop.run.switchPersonal': {
+    en: 'Switch to personal workspace',
+    'zh-CN': '切换到个人工作区'
+  },
+  'workshop.run.degraded': {
+    en: 'This model is degraded right now: runs may be slower or fail more often.',
+    'zh-CN': '该模型当前性能下降：运行可能更慢或更容易失败。'
+  },
+  'workshop.output.expired': {
+    en: 'This output has expired.',
+    'zh-CN': '该输出已过期。'
+  },
+  'workshop.output.expiredHint': {
+    en: 'Results are not stored. Links live for 24 hours after the run; download an output to keep it.',
+    'zh-CN': '结果不会被保存。链接在运行后 24 小时内有效；请下载以保留。'
+  },
+  'workshop.proto.lowBalance': { en: 'Low balance', 'zh-CN': '余额不足' },
+  'workshop.proto.member': {
+    en: 'Team member (not owner)',
+    'zh-CN': '团队成员（非所有者）'
+  },
+  'workshop.proto.outcome.expired': {
+    en: 'Success, output already expired',
+    'zh-CN': '成功，输出已过期'
+  },
+  'workshop.proto.outcome.timeout': {
+    en: 'Timeout (504)',
+    'zh-CN': '超时 (504)'
+  },
+  'workshop.proto.outcomeHint': {
+    en: 'Running and cancelled come from the Run and Cancel buttons.',
+    'zh-CN': '“运行中”和“已取消”通过运行和取消按钮触发。'
+  },
+  'workshop.proto.gate.degraded': {
+    en: 'Model degraded (runs, with warning)',
+    'zh-CN': '模型性能下降（可运行，带警告）'
+  },
+  'workshop.proto.gate.deprecated': {
+    en: 'Model deprecated (cannot run)',
+    'zh-CN': '模型已弃用（无法运行）'
+  },
+
+  // Workshop – API tab
+  'workshop.api.heading': {
+    en: 'Call this model from your code',
+    'zh-CN': '从代码中调用该模型'
+  },
+  'workshop.api.body': {
+    en: 'One POST to Comfy Router, with the values from the Playground form. Set COMFY_API_KEY and it runs as it stands.',
+    'zh-CN':
+      '向 Comfy Router 发送一次 POST 请求，使用 Playground 表单中的值。设置 COMFY_API_KEY 后即可直接运行。'
+  },
+  'workshop.api.copy': { en: 'Copy snippet', 'zh-CN': '复制代码' },
+  'workshop.api.copied': { en: 'Copied', 'zh-CN': '已复制' },
+  'workshop.api.getKey': { en: 'Get API key', 'zh-CN': '获取 API 密钥' },
+  'workshop.api.docs': { en: 'Router docs', 'zh-CN': 'Router 文档' },
+
+  // Workshop – examples
+  'workshop.examples.heading': { en: 'Example outputs', 'zh-CN': '示例输出' },
+  'workshop.examples.open': {
+    en: 'Open in Playground',
+    'zh-CN': '在 Playground 中打开'
+  },
+  'workshop.examples.empty': {
+    en: 'No examples yet for this model.',
+    'zh-CN': '该模型暂无示例。'
+  },
+  'workshop.examples.product': { en: 'Product shot', 'zh-CN': '产品图' },
+  'workshop.examples.portrait': {
+    en: 'Editorial portrait',
+    'zh-CN': '杂志风人像'
+  },
+  'workshop.examples.videoExtend': {
+    en: 'Cinematic dolly-in',
+    'zh-CN': '电影感推镜'
+  },
+  'workshop.examples.cameraMotion': {
+    en: 'Orbit shot',
+    'zh-CN': '环绕镜头'
+  },
+  'workshop.examples.narration': { en: 'Narration', 'zh-CN': '旁白' },
+  'workshop.examples.asset': { en: 'Game asset', 'zh-CN': '游戏资产' },
+  'workshop.examples.brief': { en: 'Taglines', 'zh-CN': '标语' },
+
+  // Workshop – prototype controls
+  'workshop.proto.title': {
+    en: 'Prototype controls · mock data',
+    'zh-CN': '原型控制 · 模拟数据'
+  },
+  'workshop.proto.share': { en: 'Share this setup', 'zh-CN': '分享此配置' },
+  'workshop.proto.shareCopy': { en: 'Copy link', 'zh-CN': '复制链接' },
+  'workshop.proto.shareCopied': { en: 'Copied', 'zh-CN': '已复制' },
+  'workshop.proto.shareHint': {
+    en: 'Opens this page with the controls above already applied.',
+    'zh-CN': '打开此页面时会自动应用上面的控制项。'
+  },
+  'workshop.hub.title': { en: 'Browse the Workshop', 'zh-CN': '浏览工作坊' },
+  'workshop.hub.workflows': { en: 'Workflows', 'zh-CN': '工作流' },
+  'workshop.hub.search': {
+    en: 'Search workflows, models, creators...',
+    'zh-CN': '搜索工作流、模型、创作者...'
+  },
+  'workshop.hub.kind.all': { en: 'All', 'zh-CN': '全部' },
+  'workshop.hub.kind.graph': { en: 'Node Graphs', 'zh-CN': '节点图' },
+  'workshop.hub.kind.app': { en: 'Comfy Apps', 'zh-CN': 'Comfy 应用' },
+  'workshop.hub.kind.models': { en: 'Models', 'zh-CN': '模型' },
+  'workshop.hub.io.image': { en: 'Image', 'zh-CN': '图像' },
+  'workshop.hub.io.video': { en: 'Video', 'zh-CN': '视频' },
+  'workshop.hub.io.audio': { en: 'Audio', 'zh-CN': '音频' },
+  'workshop.hub.io.3d': { en: '3D', 'zh-CN': '3D' },
+  'workshop.workflow.crumb': { en: 'Workflows', 'zh-CN': '工作流' },
+  'workshop.workflow.by': { en: 'by {author}', 'zh-CN': '作者 {author}' },
+  'workshop.workflow.nodeGraph': { en: 'Node Graph', 'zh-CN': '节点图' },
+  'workshop.workflow.comfyApp': { en: 'Comfy App', 'zh-CN': 'Comfy 应用' },
+  'workshop.workflow.serverless': {
+    en: 'Serverless API',
+    'zh-CN': '无服务器 API'
+  },
+  'workshop.workflow.about': { en: 'About', 'zh-CN': '关于' },
+  'workshop.workflow.customNodes': {
+    en: 'Requires custom nodes',
+    'zh-CN': '需要自定义节点'
+  },
+  'workshop.workflow.io': { en: 'Inputs & Outputs', 'zh-CN': '输入与输出' },
+  'workshop.workflow.inputs': { en: 'Inputs', 'zh-CN': '输入' },
+  'workshop.workflow.outputs': { en: 'Outputs', 'zh-CN': '输出' },
+  'workshop.workflow.graph': { en: 'Workflow', 'zh-CN': '工作流' },
+  'workshop.workflow.graphNote': {
+    en: 'The node graph behind this deployment is read-only here. Open it on comfy.org or download the JSON to edit it in ComfyUI.',
+    'zh-CN':
+      '此部署背后的节点图在这里为只读。可在 comfy.org 打开或下载 JSON 在 ComfyUI 中编辑。'
+  },
+  'workshop.workflow.openComfy': {
+    en: 'Open on comfy.org',
+    'zh-CN': '在 comfy.org 打开'
+  },
+  'workshop.workflow.download': {
+    en: 'Download workflow JSON',
+    'zh-CN': '下载工作流 JSON'
+  },
+  'workshop.workflow.ratings': {
+    en: 'Ratings & comments',
+    'zh-CN': '评分与评论'
+  },
+  'workshop.workflow.comment1': {
+    en: 'Dropped straight into our pipeline via the API. Cloned it to desktop for the heavy batch nights, worth it.',
+    'zh-CN':
+      '通过 API 直接接入了我们的流水线。批量任务多的晚上克隆到桌面端跑，很值。'
+  },
+  'workshop.workflow.comment2': {
+    en: 'Identity preservation is the best I have found. Would love a strength slider on the rim light.',
+    'zh-CN': '身份保持是我用过最好的。希望轮廓光能加一个强度滑块。'
+  },
+  'workshop.workflow.related': {
+    en: 'Related workflows',
+    'zh-CN': '相关工作流'
+  },
+  'workshop.workflow.relatedAll': {
+    en: 'Browse all',
+    'zh-CN': '浏览全部'
+  },
+  'workshop.workflow.clone': {
+    en: 'Clone to your machine — {credits} credits',
+    'zh-CN': '克隆到本机 — {credits} 积分'
+  },
+  'workshop.workflow.cloneSignedOut': {
+    en: 'Clone to your machine',
+    'zh-CN': '克隆到本机'
+  },
+  'workshop.hub.sort.popular': { en: 'Most Popular', 'zh-CN': '最受欢迎' },
+  'workshop.hub.sort.newest': { en: 'Newest', 'zh-CN': '最新' },
+  'workshop.hub.facets.clearAll': { en: 'Clear all', 'zh-CN': '全部清除' },
+  'workshop.hub.facets.search': { en: 'Search…', 'zh-CN': '搜索…' },
+  'workshop.hub.facets.type': { en: 'Type', 'zh-CN': '类型' },
+  'workshop.hub.facets.media': { en: 'Media', 'zh-CN': '媒体' },
+  'workshop.hub.facets.task': { en: 'Task', 'zh-CN': '任务' },
+  'workshop.hub.facets.partner': { en: 'Partner', 'zh-CN': '合作方' },
+  'workshop.hub.facets.industry': { en: 'Industry', 'zh-CN': '行业' },
+  'workshop.hub.facets.more': { en: '+ {n} more', 'zh-CN': '+ {n} 更多' },
+  'workshop.hub.facets.less': { en: 'Show less', 'zh-CN': '收起' },
+  'workshop.hub.facets.show': {
+    en: 'Show {n} workflows',
+    'zh-CN': '显示 {n} 个工作流'
+  },
+  'workshop.hub.facets.noResults': { en: 'No matches', 'zh-CN': '无匹配' },
+  'workshop.hub.models': { en: 'MODELS', 'zh-CN': '模型' },
+  'workshop.hub.categories': { en: 'CATEGORIES', 'zh-CN': '分类' },
+  'workshop.hub.tryNow': { en: 'Try now', 'zh-CN': '立即试用' },
+  'workshop.hub.tag.partnerNodes': {
+    en: 'Partner Nodes',
+    'zh-CN': '合作伙伴节点'
+  },
+  'workshop.hub.loadMore': { en: 'Load more', 'zh-CN': '加载更多' },
+  'workshop.hub.empty': {
+    en: 'No templates match your filters',
+    'zh-CN': '没有符合筛选条件的模板'
+  },
+  'workshop.hub.emptyHint': {
+    en: 'Try removing some filters',
+    'zh-CN': '试试移除一些筛选条件'
+  },
+  'workshop.hub.showing': {
+    en: 'Showing {shown} of {total} templates',
+    'zh-CN': '显示 {shown} / {total} 个模板'
+  },
+  'workshop.proto.families': {
+    en: 'Group releases behind the newest',
+    'zh-CN': '将旧版本折叠到最新版本下'
+  },
+  'workshop.proto.statuses': {
+    en: 'Show deprecated and degraded models',
+    'zh-CN': '显示已弃用和降级的模型'
+  },
+  'workshop.proto.session': { en: 'Session', 'zh-CN': '会话' },
+  'workshop.proto.session.signedOut': { en: 'Signed out', 'zh-CN': '未登录' },
+  'workshop.proto.session.new': {
+    en: 'New account (no credits yet)',
+    'zh-CN': '新账户（尚无积分）'
+  },
+  'workshop.proto.session.existing': {
+    en: 'Existing account',
+    'zh-CN': '已有账户'
+  },
+  'workshop.proto.subscribed': { en: 'Subscribed', 'zh-CN': '已订阅' },
+  'workshop.proto.zeroBalance': { en: 'Zero balance', 'zh-CN': '零余额' },
+  'workshop.proto.outcome': {
+    en: 'Simulate run outcome',
+    'zh-CN': '模拟运行结果'
+  },
+  'workshop.proto.outcome.success': { en: 'Success', 'zh-CN': '成功' },
+  'workshop.proto.outcome.nsfw': {
+    en: 'Success, sensitive output',
+    'zh-CN': '成功，敏感输出'
+  },
+  'workshop.proto.outcome.validation': {
+    en: 'Validation error (422)',
+    'zh-CN': '校验错误 (422)'
+  },
+  'workshop.proto.outcome.provider': {
+    en: 'Provider error',
+    'zh-CN': '提供方错误'
+  },
+  'workshop.proto.outcome.rateLimit': {
+    en: 'Rate limit (429)',
+    'zh-CN': '限流 (429)'
+  },
+  'workshop.proto.gate': {
+    en: 'Simulate model state',
+    'zh-CN': '模拟模型状态'
+  },
+  'workshop.proto.gate.none': { en: 'Normal', 'zh-CN': '正常' },
+  'workshop.proto.gate.policy': {
+    en: 'Workspace policy blocks provider (403)',
+    'zh-CN': '工作区策略禁止提供方 (403)'
+  },
+  'workshop.proto.gate.unavailable': {
+    en: 'Model unavailable',
+    'zh-CN': '模型不可用'
   }
 } as const satisfies Record<
   string,

@@ -41,7 +41,24 @@ test.describe('Homepage @smoke', () => {
     await expect(activeSlide.getByText('New Model Release')).toBeVisible()
     const cta = activeSlide.getByRole('link', { name: 'Explore Seedance 2.5' })
     await expect(cta).toBeVisible()
-    await expect(cta).toHaveAttribute('href', '/seedance-2.5')
+    await expect(cta).toHaveAttribute('href', '/workshop/models/seedance-2/')
+  })
+
+  test('ModelDiscoverySection links providers to the Workshop', async ({
+    page
+  }) => {
+    const section = page.getByTestId('model-discovery')
+    await expect(
+      section.getByRole('heading', { name: /ready to run/i })
+    ).toBeVisible()
+    const bytedance = section.getByRole('link', { name: /ByteDance/ }).first()
+    await expect(bytedance).toHaveAttribute(
+      'href',
+      '/workshop?provider=ByteDance'
+    )
+    await expect(
+      section.getByRole('link', { name: 'Browse all models' })
+    ).toHaveAttribute('href', '/workshop')
   })
 
   test('FeaturedWorkflowsSection carousel is visible', async ({ page }) => {

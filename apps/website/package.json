@@ -20,7 +20,11 @@
     "generate:models": "tsx ./scripts/generate-models.ts",
     "validate:jsonld": "tsx ./scripts/validate-jsonld.ts",
     "check:hreflang": "tsx ./scripts/check-hreflang.ts",
-    "validate:llms-txt-links": "tsx ./scripts/validate-llms-txt-links.ts"
+    "validate:llms-txt-links": "tsx ./scripts/validate-llms-txt-links.ts",
+    "workshop:generate": "tsx ./scripts/generate-workshop-models.ts",
+    "workshop:generate-versions": "tsx ./scripts/generate-workshop-versions.ts",
+    "hub:backfill-media-type": "tsx ./scripts/backfill-template-media-type.ts",
+    "hub:generate-join": "tsx ./scripts/generate-template-model-join.ts"
   },
   "dependencies": {
     "@astrojs/sitemap": "catalog:",

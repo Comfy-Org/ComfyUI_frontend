@@ -1,0 +1,102 @@
+// @vitest-environment happy-dom
+import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
+import { afterEach, describe, expect, it } from 'vitest'
+
+import { useHubStore } from '../../composables/useHubStore'
+import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
+import HubBrowse from './HubBrowse.vue'
+
+const { groupVersions } = usePrototypeTweaks()
+
+afterEach(() => {
+  useHubStore().reset()
+  groupVersions.value = false
+})
+
+describe('HubBrowse', () => {
+  it('scopes the grid to Comfy Apps and narrows it by search', async () => {
+    const user = userEvent.setup()
+    render(HubBrowse)
+    expect(screen.getAllByTestId('hub-card')).toHaveLength(30)
+
+    await user.click(screen.getByTestId('hub-tab-comfyApps'))
+    const apps = screen.getAllByTestId('hub-card')
+    expect(apps.length).toBeGreaterThan(0)
+    expect(apps.every((card) => card.getAttribute('data-app') === 'true')).toBe(
+      true
+    )
+
+    await user.click(screen.getByTestId('hub-tab-all'))
+    await user.click(screen.getByTestId('hub-search-open'))
+    await user.type(screen.getByTestId('hub-search'), 'minimax h3')
+    expect(screen.getAllByTestId('hub-card-link')[0].textContent).toContain(
+      'MiniMax H3'
+    )
+  })
+
+  it('shows the Workshop model cards under the Models tab', async () => {
+    const user = userEvent.setup()
+    render(HubBrowse)
+    await user.click(screen.getByTestId('hub-tab-models'))
+    expect(screen.queryByTestId('hub-grid')).toBeNull()
+    expect(screen.getAllByTestId('workshop-model-card').length).toBeGreaterThan(
+      10
+    )
+    await user.click(screen.getByTestId('hub-search-open'))
+    await user.type(screen.getByTestId('hub-search'), 'kling')
+    const cards = screen.getAllByTestId('workshop-model-card')
+    expect(cards.length).toBeGreaterThan(0)
+    cards.forEach((card) => expect(card.textContent).toMatch(/Kling/i))
+  })
+
+  it('filters by a model facet from the Filter popover', async () => {
+    const user = userEvent.setup()
+    render(HubBrowse)
+    await user.click(screen.getByTestId('hub-filter'))
+    await user.click(await screen.findByRole('option', { name: /^Wan \d+$/ }))
+    expect(screen.getByTestId('hub-filter-count').textContent?.trim()).toBe('1')
+    expect(screen.getByTestId('hub-showing').textContent).toContain('of 36')
+  })
+
+  it('scopes both the models and the workflows to the chosen use case', async () => {
+    const user = userEvent.setup()
+    render(HubBrowse)
+
+    await user.click(screen.getByTestId('hub-use-case-3d'))
+    const lead = screen.getAllByTestId('hub-models-lead')
+    expect(lead[0].textContent).toContain('Tripo')
+    expect(screen.getByTestId('hub-showing').textContent).toContain('of 39')
+
+    await user.click(screen.getByTestId('hub-tab-models'))
+    expect(screen.getAllByTestId('workshop-model-card')).toHaveLength(5)
+    expect(screen.queryByTestId('model-card-versions')).toBeNull()
+  })
+
+  it('collapses the releases of a family when the prototype asks for it', async () => {
+    const user = userEvent.setup()
+    groupVersions.value = true
+    render(HubBrowse)
+
+    await user.click(screen.getByTestId('hub-use-case-3d'))
+    await user.click(screen.getByTestId('hub-tab-models'))
+    expect(screen.getAllByTestId('workshop-model-card')).toHaveLength(3)
+    expect(
+      screen.getAllByTestId('model-card-versions')[0].textContent
+    ).toContain('2 versions')
+  })
+
+  it('counts the applied filters in the popover and clears them', async () => {
+    const user = userEvent.setup()
+    render(HubBrowse)
+    await user.click(screen.getByTestId('hub-filter'))
+    await user.click(await screen.findByRole('option', { name: /^Wan \d+$/ }))
+    expect(screen.getByTestId('hub-filter-applied').textContent).toContain(
+      '1 selected'
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Clear all' }))
+    expect(screen.queryByTestId('hub-filter-applied')).toBeNull()
+    expect(screen.queryByTestId('hub-filter-count')).toBeNull()
+  })
+})

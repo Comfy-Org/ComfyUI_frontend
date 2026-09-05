@@ -15,7 +15,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       {{ t('customers.contact.label', locale) }}
     </span>
     <h2
-      class="text-primary-comfy-canvas mt-4 max-w-2xl text-3xl font-light whitespace-pre-line"
+      class="mt-4 max-w-2xl text-3xl font-light whitespace-pre-line text-primary-comfy-canvas"
       v-html="t('customers.contact.heading', locale)"
     />
   </section>

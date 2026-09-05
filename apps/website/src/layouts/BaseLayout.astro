@@ -6,6 +6,7 @@ import SiteFooter from '../components/common/SiteFooter.vue'
 import HeaderMain from '../components/common/HeaderMain/HeaderMain.vue'
 import AnnouncementBanner from '../templates/drops/AnnouncementBanner.vue'
 import { bannerConfig, getBannerData } from '../config/banner'
+import { getRoutes } from '../config/routes'
 import { isNoindexPathname } from '../config/indexing'
 import {
   hreflangAlternates,
@@ -35,6 +36,7 @@ interface Props {
   breadcrumbs?: Crumb[]
   mainEntityId?: string
   extraJsonLd?: (JsonLdNode | null | undefined)[]
+  minimal?: boolean
 }
 
 const {
@@ -47,6 +49,7 @@ const {
   breadcrumbs,
   mainEntityId,
   extraJsonLd,
+  minimal = false,
 } = Astro.props
 
 const keywordsContent = keywords && keywords.length > 0 ? keywords.join(', ') : undefined
@@ -230,7 +233,7 @@ const structuredData = shouldNoindex
       </noscript>
     )}
 
-    {bannerVisible && (
+    {bannerVisible && !minimal && (
       <AnnouncementBanner
         data={bannerData}
         version={bannerVersion}
@@ -238,7 +241,15 @@ const structuredData = shouldNoindex
         client:load
       />
     )}
-    <HeaderMain locale={locale} github-stars={githubStars} client:load />
+    {minimal ? (
+      <div class="mx-auto max-w-7xl px-6 py-8 lg:px-8">
+        <a href={getRoutes(locale).home} class="inline-block" aria-label="Comfy">
+          <img src="/icons/logo.svg" alt="Comfy" class="h-9 w-auto" />
+        </a>
+      </div>
+    ) : (
+      <HeaderMain locale={locale} github-stars={githubStars} client:load />
+    )}
     <!-- Horizontal clip lives here (not on <html>, which must stay overflow:
          visible for reka-ui's dialog scroll lock). <body>'s clip does not
          contain overflow once <html> is visible, because the root propagates
@@ -247,7 +258,7 @@ const structuredData = shouldNoindex
     <main class="overflow-x-clip">
       <slot />
     </main>
-    <SiteFooter locale={locale} client:load />
+    {!minimal && <SiteFooter locale={locale} client:load />}
 
     <Analytics />
 

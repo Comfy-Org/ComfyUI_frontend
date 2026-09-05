@@ -131,7 +131,7 @@ const ambientClipId = `industries-ambient-${uid}`
           >
             {{ t('industries.label', locale) }}
           </p>
-          <p class="text-primary-warm-gray max-w-md text-lg/relaxed">
+          <p class="max-w-md text-lg/relaxed text-primary-warm-gray">
             {{ t('industries.body', locale) }}
           </p>
         </div>

@@ -44,6 +44,7 @@ export type NavItem =
 export function getMainNavigation(locale: Locale): NavItem[] {
   const routes = getRoutes(locale)
   return [
+    { label: t('nav.workshop', locale), href: routes.workshop, badge: 'new' },
     {
       label: t('nav.products', locale),
       badge: 'new',
@@ -61,6 +62,11 @@ export function getMainNavigation(locale: Locale): NavItem[] {
         {
           header: t('nav.products', locale),
           items: [
+            {
+              label: t('nav.comfyWorkshop', locale),
+              href: routes.workshop,
+              badge: 'new'
+            },
             { label: t('nav.comfyLocal', locale), href: routes.download },
             { label: t('nav.comfyCloud', locale), href: routes.cloud },
             {

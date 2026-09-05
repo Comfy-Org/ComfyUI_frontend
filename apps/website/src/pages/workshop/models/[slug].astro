@@ -1,0 +1,181 @@
+---
+import { ArrowRight } from '@lucide/vue'
+import type { GetStaticPaths } from 'astro'
+import BaseLayout from '../../../layouts/BaseLayout.astro'
+import ModelDetail from '../../../components/workshop/ModelDetail.vue'
+import ModelStatus from '../../../components/workshop/ModelStatus.vue'
+import PrototypeTweaks from '../../../components/workshop/PrototypeTweaks.vue'
+import WorkshopModelCard from '../../../components/workshop/WorkshopModelCard.vue'
+import { getRoutes } from '../../../config/routes'
+import {
+  catalogSearch,
+  getWorkshopModel,
+  getWorkshopModelDetail,
+  workshopModels
+} from '../../../config/workshop'
+import { relatedModels } from '../../../config/workshop-related'
+import { t } from '../../../i18n/translations'
+
+export const getStaticPaths: GetStaticPaths = () =>
+  workshopModels.map((model) => ({ params: { slug: model.slug } }))
+
+const { slug } = Astro.params
+const model = getWorkshopModelDetail(slug as string)!
+const related = relatedModels(model, workshopModels)
+// The provider heading only holds while every card under it is that provider's;
+// once the row is topped up from the rest of the catalogue it would be a lie.
+const relatedProvider =
+  related.length > 0 &&
+  related.every((other) => other.provider === model.provider)
+    ? model.provider
+    : undefined
+const relatedHeading = relatedProvider
+  ? t('workshop.model.relatedProvider').replace('{provider}', relatedProvider)
+  : t('workshop.model.related')
+const successor = model.successorSlug
+  ? getWorkshopModel(model.successorSlug)
+  : undefined
+const routes = getRoutes()
+
+const modalityLabel = {
+  image: t('workshop.filter.image'),
+  video: t('workshop.filter.video'),
+  audio: t('workshop.filter.audio'),
+  '3d': t('workshop.filter.3d'),
+  text: t('workshop.filter.text')
+} as const
+
+const price =
+  model.creditsPerRun !== undefined
+    ? `${model.creditsPerRun} ${t('nav.credits')}`
+    : undefined
+
+const pillClass =
+  'inline-flex h-7 items-center rounded-full border border-transparency-white-t20 px-3 text-sm leading-none text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow'
+
+// The provider already leads the hero, so the chip row is capabilities only.
+const tags = model.capabilities.map((capability) => ({
+  label: capability,
+  search: catalogSearch({ capabilities: [capability] })
+}))
+---
+
+<BaseLayout
+  title={`${model.name} · ${t('workshop.title')} - Comfy`}
+  description={t('workshop.model.meta.description').replace('{name}', model.name)}
+  ogImage={model.thumbnailUrl}
+  noindex
+>
+  <div class="mx-auto max-w-10xl px-6 py-12 lg:px-8 lg:py-16">
+    <nav aria-label="Breadcrumb" class="mb-8 px-8 text-xs text-primary-warm-gray lg:px-10">
+      <ol class="flex flex-wrap items-center gap-2">
+        <li>
+          <a href={routes.home} class="hover:text-primary-warm-white">
+            {t('breadcrumb.home')}
+          </a>
+        </li>
+        <li aria-hidden="true">›</li>
+        <li>
+          <a href={routes.workshop} class="hover:text-primary-warm-white">
+            {t('workshop.models.heading')}
+          </a>
+        </li>
+        <li aria-hidden="true">›</li>
+        <li class="text-primary-warm-white" aria-current="page">{model.name}</li>
+      </ol>
+    </nav>
+    <header class="mx-8 mb-12 lg:mx-10" data-testid="model-hero">
+      <div class="flex flex-col justify-center gap-6 pr-8 lg:pr-10">
+        <div class="flex max-w-2xl flex-col gap-3">
+        <div class="flex flex-wrap items-center gap-3">
+          <p
+            class="text-sm leading-none font-medium tracking-widest text-primary-comfy-yellow uppercase"
+          >
+            {model.provider ?? t('workshop.card.partnerNode')}
+          </p>
+          {model.modality && (
+            <a
+              href={`${routes.workshop}${catalogSearch({ modalities: [model.modality] })}`}
+              class={pillClass}
+            >
+              {modalityLabel[model.modality]}
+            </a>
+          )}
+        </div>
+
+        <h1 class="text-3xl font-bold text-primary-comfy-canvas lg:text-5xl">
+          {model.name}
+        </h1>
+
+        <p
+          class="flex items-baseline gap-2 text-sm text-primary-comfy-canvas/60"
+          data-testid="model-price"
+        >
+          {
+            price ? (
+              <>
+                <span class="text-lg font-bold text-primary-warm-white">{price}</span>
+                {t('workshop.model.perRun')}
+              </>
+            ) : (
+              t('workshop.card.priceOnPage')
+            )
+          }
+        </p>
+
+        <ModelStatus
+          status={model.status}
+          variant="banner"
+          successor={successor ? { name: successor.name, href: successor.href } : undefined}
+          client:load
+        />
+
+        <ul class="mt-2 flex flex-wrap items-center gap-2" data-testid="model-tags">
+          {tags.map((tag) => (
+            <li>
+              <a
+                href={`${routes.workshop}${tag.search}`}
+                class="inline-flex h-8 items-center rounded-full bg-transparency-white-t8 px-4 text-sm text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t20 hover:text-primary-comfy-yellow"
+              >
+                {tag.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+        </div>
+      </div>
+    </header>
+
+    <div class="px-8 lg:px-10">
+    <ModelDetail model={model} client:load />
+
+    <section
+      class="mt-24 border-t border-transparency-white-t8 pt-12"
+      data-testid="related-models"
+    >
+      <div class="mb-6 flex items-end justify-between gap-4">
+        <h2 class="text-2xl font-bold text-primary-comfy-canvas">
+          {relatedHeading}
+        </h2>
+        <a
+          href={routes.workshop}
+          class="inline-flex items-center gap-2 text-sm font-bold tracking-wider text-primary-comfy-yellow uppercase hover:underline"
+        >
+          {t('workshop.model.browseAll')}
+          <ArrowRight class="size-4" aria-hidden="true" />
+        </a>
+      </div>
+      <ul class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {
+          related.map((other) => (
+            <li>
+              <WorkshopModelCard model={other} client:visible />
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+    </div>
+  </div>
+  <PrototypeTweaks show-run-controls client:load />
+</BaseLayout>

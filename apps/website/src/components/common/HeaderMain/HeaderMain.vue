@@ -3,6 +3,7 @@ import type { Locale } from '../../../i18n/translations.ts'
 import { t } from '../../../i18n/translations.ts'
 import { externalLinks, getRoutes } from '../../../config/routes.ts'
 import GitHubStarBadge from '../GitHubStarBadge.vue'
+import HeaderAccount from './HeaderAccount.vue'
 import HeaderMainDesktop from './HeaderMainDesktop.vue'
 import HeaderMainMobile from './HeaderMainMobile.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -47,7 +48,7 @@ const ctaButtons = [
         class="col-span-full row-span-full h-8"
       />
       <div
-        class="relative col-span-full row-span-full h-10 w-0 overflow-clip transition-[width] xl:w-36"
+        class="relative col-span-full row-span-full h-10 w-0 overflow-clip transition-[width] 2xl:w-36"
       >
         <img
           src="/icons/logo.svg"
@@ -59,7 +60,10 @@ const ctaButtons = [
 
     <!-- Desktop nav links -->
     <HeaderMainDesktop :locale class="hidden lg:block" />
-    <HeaderMainMobile :locale class="lg:hidden" />
+    <div class="flex shrink-0 items-center gap-2 lg:hidden">
+      <HeaderAccount :locale />
+      <HeaderMainMobile :locale />
+    </div>
 
     <!-- Desktop CTA buttons -->
     <div
@@ -77,10 +81,11 @@ const ctaButtons = [
         :aria-label="cta.ariaLabel"
       >
         <span>
-          <span class="hidden 2xl:inline-block">{{ cta.full }}</span>
-          <span class="2xl:hidden">{{ cta.short }}</span>
+          <span class="hidden min-[1800px]:inline-block">{{ cta.full }}</span>
+          <span class="min-[1800px]:hidden">{{ cta.short }}</span>
         </span>
       </Button>
+      <HeaderAccount :locale />
     </div>
   </nav>
 </template>

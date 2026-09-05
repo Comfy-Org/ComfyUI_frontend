@@ -41,7 +41,9 @@ const baseRoutes = {
   geminiOmni: '/gemini-omni',
   wanAnimate2: '/wan-animate-2',
   wan3: '/wan-3.0',
-  brand: '/brand'
+  brand: '/brand',
+  workshop: '/workshop',
+  workshopSignIn: '/workshop/sign-in'
 } as const
 
 type RouteKey = keyof typeof baseRoutes
@@ -69,6 +71,8 @@ type Routes = Readonly<Record<RouteKey, string>>
 // minimaxLicenseProfessionalRequest: embeds an English-only HubSpot intake
 // form, so no localized variant exists. See the comment header in
 // src/pages/minimax/license/professional-request.astro.
+//
+// workshop, workshopSignIn: prototype pages, English only for now.
 const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'affiliates',
   'affiliateTerms',
@@ -77,7 +81,9 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'enterprise',
   'managedBuilds',
   'models',
-  'minimaxLicenseProfessionalRequest'
+  'minimaxLicenseProfessionalRequest',
+  'workshop',
+  'workshopSignIn'
 ])
 
 // pixal3d-trellis2: a bespoke English launch page with no Chinese version,
@@ -110,7 +116,7 @@ export function isLocaleInvariantPath(pathname: string): boolean {
 
 export function localizeHref(href: string, locale: Locale = 'en'): string {
   if (locale === 'en' || !href.startsWith('/')) return href
-  if (LOCALE_INVARIANT_PATHS.has(href)) return href
+  if (isLocaleInvariantPath(href.split(/[?#]/, 1)[0])) return href
   if (locale === 'ja') return href === '/' ? '/ja/' : href
   return `/${locale}${href}`
 }
@@ -130,6 +136,7 @@ export const externalLinks = {
   apiKeys: 'https://platform.comfy.org/profile/api-keys',
   blog: 'https://blog.comfy.org/',
   cloud: 'https://cloud.comfy.org',
+  cloudLogin: 'https://cloud.comfy.org/cloud/login',
   cloudCta: (content: string) =>
     `https://cloud.comfy.org/?utm_source=comfy_org&utm_medium=website&utm_campaign=free_tier&utm_content=${content}`,
   cloudStatus: 'https://status.comfy.org',

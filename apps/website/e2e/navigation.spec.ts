@@ -8,6 +8,7 @@ const minimaxRoute = '/minimax-h3'
 const minimaxRouteZh = '/zh-CN/minimax-h3'
 
 const TOP_LEVEL_LABELS = [
+  'Workshop',
   'Products',
   'Pricing',
   'Community',
@@ -36,10 +37,18 @@ test.describe('Desktop navigation @smoke', () => {
     }
   })
 
-  test('NEW badge shows on Products and Community only', async ({ page }) => {
+  test('NEW badge shows on Workshop, Products and Community only', async ({
+    page
+  }) => {
+    await page.setViewportSize({ width: 1600, height: 900 })
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
     const desktopLinks = nav.getByTestId('desktop-nav-links')
 
+    await expect(
+      desktopLinks
+        .getByRole('link', { name: 'Workshop' })
+        .getByText('NEW', { exact: true })
+    ).toBeVisible()
     for (const label of ['Products', 'Community']) {
       await expect(
         desktopLinks
@@ -137,16 +146,23 @@ test.describe('Mobile menu @mobile', () => {
     const menu = page.getByRole('dialog')
     await expect(menu).toBeVisible()
 
-    for (const label of ['Products', 'Pricing', 'Community']) {
+    for (const label of ['Workshop', 'Products', 'Pricing', 'Community']) {
       await expect(menu.getByText(label, { exact: true }).first()).toBeVisible()
     }
   })
 
-  test('NEW badge shows on Products and Community only', async ({ page }) => {
+  test('NEW badge shows on Workshop, Products and Community only', async ({
+    page
+  }) => {
     await page.getByRole('button', { name: 'Toggle menu' }).click()
 
     const menu = page.getByRole('dialog')
 
+    await expect(
+      menu.getByRole('link', { name: 'Workshop' }).getByText('NEW', {
+        exact: true
+      })
+    ).toBeVisible()
     for (const label of ['Products', 'Community']) {
       await expect(
         menu.getByRole('button', { name: label }).getByText('NEW', {
