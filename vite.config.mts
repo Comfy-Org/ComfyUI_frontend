@@ -818,6 +818,10 @@ export default defineConfig({
   },
 
   test: {
+    // `.storybook/main.ts` aliases this so `.storybook/preview.ts` can pull in
+    // the website's global stylesheet. Tests that mount portable stories have
+    // to load that same preview, so they need the alias too.
+    alias: { '@comfyorg/website': '/apps/website' },
     mockReset: true,
     restoreMocks: true,
     unstubEnvs: true,
