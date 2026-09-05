@@ -1064,6 +1064,94 @@ test.describe('Assets sidebar - delete confirmation', () => {
   })
 })
 
+test.describe('Assets sidebar - long translated labels', () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
+    await comfyPage.assets.mockInputFiles([])
+    await comfyPage.assets.mockDeleteHistory()
+    await comfyPage.page.setViewportSize({ width: 720, height: 640 })
+    await comfyPage.setup()
+  })
+
+  test.afterEach(async ({ comfyPage }) => {
+    await comfyPage.assets.clearMocks()
+  })
+
+  test('keeps selection actions reachable', async ({ comfyPage }) => {
+    test.fixme(
+      true,
+      'The selected-count label currently overlaps actions at narrow widths'
+    )
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+    const filename = 'landscape.png'
+    const selectionControl = comfyPage.page.getByRole('button', {
+      name: `${filename} - image asset`,
+      exact: true
+    })
+    await expect(selectionControl).toBeVisible()
+
+    await tab.generatedTab.evaluate((element) => {
+      element.textContent = '［!! Generated files from this workspace !!］'
+    })
+    await tab.importedTab.evaluate((element) => {
+      element.textContent = '［!! Files imported into this workspace !!］'
+    })
+    await selectionControl.dispatchEvent('click')
+    await tab.selectionCountButton.evaluate((element) => {
+      element.textContent = '［!! 2 items selected for a workspace action !!］'
+    })
+
+    await expect(tab.generatedTab).toBeInViewport({ ratio: 1 })
+    await expect(tab.importedTab).toBeInViewport({ ratio: 1 })
+    await expect(tab.deselectAllButton).toBeInViewport({ ratio: 1 })
+    await expect(tab.downloadSelectedButton).toBeInViewport({ ratio: 1 })
+    await expect(tab.deleteSelectedButton).toBeInViewport({ ratio: 1 })
+    await expect
+      .poll(() =>
+        tab.selectionFooter.evaluate(
+          (element) => element.scrollWidth <= element.clientWidth + 1
+        )
+      )
+      .toBe(true)
+    await expect(selectionControl).toHaveAccessibleName(
+      `${filename} - image asset`
+    )
+  })
+
+  test('keeps confirmation controls reachable', async ({ comfyPage }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+    const filename = 'landscape.png'
+    const selectionControl = comfyPage.page.getByRole('button', {
+      name: `${filename} - image asset`,
+      exact: true
+    })
+    await expect(selectionControl).toBeVisible()
+
+    await selectionControl.dispatchEvent('click')
+    await tab.deleteSelectedButton.click()
+    const dialog = comfyPage.confirmDialog.root
+    await expect(dialog).toBeVisible()
+    const cancelButton = dialog.getByRole('button').first()
+    const deleteButton = dialog.getByRole('button').last()
+    await dialog.getByRole('heading').evaluate((element) => {
+      element.textContent =
+        '［!! Permanently delete the selected workspace files? !!］'
+    })
+    await deleteButton.evaluate((element) => {
+      element.textContent = '［!! Delete permanently !!］'
+    })
+    await cancelButton.evaluate((element) => {
+      element.textContent = '［!! Keep these files instead !!］'
+    })
+
+    await expect(deleteButton).toBeInViewport({ ratio: 1 })
+    await expect(cancelButton).toBeInViewport({ ratio: 1 })
+    await expect(dialog).toContainText(filename)
+  })
+})
+
 // ==========================================================================
 // 12. Media type filter (cloud-only)
 // ==========================================================================
