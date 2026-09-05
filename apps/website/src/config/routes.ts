@@ -170,6 +170,7 @@ export const externalLinks = {
   platform: 'https://platform.comfy.org',
   platformBuilds: 'https://platform.comfy.org/profile/builds',
   platformUsage: 'https://platform.comfy.org/profile/usage',
+  pricing: 'https://comfy.org/pricing',
   reddit: 'https://www.reddit.com/r/comfyui/',
   support: 'https://support.comfy.org/hc/en-us',
   trustCenter: 'https://app.vanta.com/comfy.org/trust/o6nu46b16iu3e7fhc41hnz',
