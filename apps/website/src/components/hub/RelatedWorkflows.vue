@@ -23,21 +23,26 @@ const {
 
 <template>
   <section data-testid="related-workflows">
-    <div class="mb-6 flex items-end justify-between gap-4">
-      <h2 class="text-3xl font-medium tracking-tight text-primary-comfy-canvas">
-        {{ t('workshop.workflow.related', locale) }}
-      </h2>
-      <a
-        :href="allHref"
-        class="text-primary-comfy-yellow hover:text-primary-comfy-yellow/80 inline-flex shrink-0 items-center gap-1 text-sm font-bold tracking-wider uppercase transition-colors"
-        data-testid="related-workflows-all"
-      >
-        {{ t('workshop.workflow.relatedAll', locale) }}
-        <ChevronRight class="size-4" aria-hidden="true" />
-      </a>
-    </div>
-
     <CardRow :locale>
+      <template #heading>
+        <h2
+          class="text-3xl font-medium tracking-tight text-primary-comfy-canvas"
+        >
+          {{ t('workshop.workflow.related', locale) }}
+        </h2>
+      </template>
+
+      <template #actions>
+        <a
+          :href="allHref"
+          class="text-primary-comfy-yellow hover:text-primary-comfy-yellow/80 inline-flex shrink-0 items-center gap-1 text-sm font-bold tracking-wider uppercase transition-colors"
+          data-testid="related-workflows-all"
+        >
+          {{ t('workshop.workflow.relatedAll', locale) }}
+          <ChevronRight class="size-4" aria-hidden="true" />
+        </a>
+      </template>
+
       <li
         v-for="template in templates"
         :key="template.name"

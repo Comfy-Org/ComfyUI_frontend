@@ -79,7 +79,7 @@ const showingText = computed(() =>
 
 <template>
   <div class="w-full min-w-0 flex-1">
-    <div class="bg-page mb-6 py-4">
+    <div class="bg-page sticky top-20 z-30 mb-6 py-4 lg:top-26">
       <BrowseToolbar
         :templates="facetSource"
         :facets-config="facetsConfig"

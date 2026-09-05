@@ -143,7 +143,7 @@ describe('ModelDetail', () => {
     const api = await signedInDetail()
     await user().type(screen.getByTestId('field-prompt'), 'a cat')
     await user().click(screen.getByTestId('run-button'))
-    expect(screen.getByTestId('run-cancel')).toBeTruthy()
+    expect(screen.getByTestId('run-button').textContent).toContain('Cancel')
 
     vi.advanceTimersByTime(2500)
     await nextTick()
@@ -155,7 +155,7 @@ describe('ModelDetail', () => {
     const api = await signedInDetail()
     await user().type(screen.getByTestId('field-prompt'), 'a cat')
     await user().click(screen.getByTestId('run-button'))
-    await user().click(screen.getByTestId('run-cancel'))
+    await user().click(screen.getByTestId('run-button'))
 
     vi.advanceTimersByTime(3000)
     await nextTick()

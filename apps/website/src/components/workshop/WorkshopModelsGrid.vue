@@ -308,7 +308,7 @@ const menuItemClass =
           aria-hidden="true"
           :class="
             cn(
-              'bg-primary-comfy-yellow pointer-events-none absolute bottom-0 h-0.5 rounded-full transition-[translate,width] duration-300 ease-out',
+              'pointer-events-none absolute bottom-0 h-0.5 rounded-full bg-primary-warm-white transition-[translate,width] duration-300 ease-out',
               railBeside && 'lg:hidden'
             )
           "
@@ -333,7 +333,7 @@ const menuItemClass =
 
     <div class="min-w-0">
       <div
-        class="mb-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
+        class="bg-page sticky top-20 z-30 mb-8 flex flex-col gap-4 py-4 lg:top-26 lg:flex-row lg:items-center lg:justify-between"
       >
         <div class="relative w-full lg:max-w-xl" @focusout="closeSearchOnLeave">
           <label for="workshop-search" class="sr-only">

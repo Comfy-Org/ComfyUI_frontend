@@ -93,14 +93,11 @@ const tags = model.capabilities.map((capability) => ({
         model.thumbnailUrl && (
           <StaticFrame
             src={model.thumbnailUrl}
-            class="absolute inset-0 size-full object-cover"
+            class="absolute inset-0 size-full object-cover [mask-image:linear-gradient(to_right,transparent_45%,black_85%)]"
             client:load
           />
         )
       }
-      <div
-        class="absolute inset-0 bg-linear-to-r from-page from-15% via-page/85 to-transparent"
-      />
 
       <div
         class="relative flex min-h-52 flex-col justify-center gap-6 py-8 pr-8 lg:min-h-60 lg:py-10 lg:pr-10"

@@ -8465,6 +8465,10 @@ Enterprise`
     'zh-CN': 'V2 · 工作流、应用与模型'
   },
   'workshop.sections.featured': { en: 'Featured', 'zh-CN': '精选' },
+  'workshop.sections.otherFormats': {
+    en: 'Other formats',
+    'zh-CN': '其他格式'
+  },
   'workshop.sections.seeAll': { en: 'See all', 'zh-CN': '查看全部' },
   'workshop.sections.provider': { en: 'All providers', 'zh-CN': '所有提供方' },
   'workshop.sections.scrollBack': {
@@ -8553,16 +8557,6 @@ Enterprise`
   'workshop.sort.priceDesc': {
     en: 'Price: high to low',
     'zh-CN': '价格：从高到低'
-  },
-  'workshop.form.step.inputs': { en: 'Inputs', 'zh-CN': '输入' },
-  'workshop.form.step.inputsNote': {
-    en: 'What this run starts from.',
-    'zh-CN': '本次运行的起点。'
-  },
-  'workshop.form.step.output': { en: 'Output', 'zh-CN': '输出' },
-  'workshop.form.step.outputNote': {
-    en: 'How the result comes out.',
-    'zh-CN': '结果的输出方式。'
   },
   'workshop.form.advanced': { en: 'Advanced settings', 'zh-CN': '高级设置' },
   'workshop.signIn.meta.title': {
@@ -9062,6 +9056,8 @@ Enterprise`
   'workshop.hub.sort.newest': { en: 'Newest', 'zh-CN': '最新' },
   'workshop.hub.facets.clearAll': { en: 'Clear all', 'zh-CN': '全部清除' },
   'workshop.hub.facets.search': { en: 'Search…', 'zh-CN': '搜索…' },
+  'workshop.hub.facets.more': { en: '+ {n} more', 'zh-CN': '+ {n} 更多' },
+  'workshop.hub.facets.less': { en: 'Show less', 'zh-CN': '收起' },
   'workshop.hub.facets.show': {
     en: 'Show {n} workflows',
     'zh-CN': '显示 {n} 个工作流'

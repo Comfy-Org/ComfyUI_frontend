@@ -117,6 +117,8 @@ const toolbarLabels: ToolbarLabels = {
   applied: t('workshop.filter.applied', locale),
   searchPlaceholder: t('workshop.hub.facets.search', locale),
   noResults: t('workshop.hub.facets.noResults', locale),
+  more: t('workshop.hub.facets.more', locale),
+  less: t('workshop.hub.facets.less', locale),
   sortPopular: t('workshop.hub.sort.popular', locale),
   sortNewest: t('workshop.hub.sort.newest', locale),
   showResults: t('workshop.hub.facets.show', locale)
@@ -207,7 +209,7 @@ const filteredTemplates = computed(() => {
             cn(
               'flex shrink-0 cursor-pointer items-baseline gap-1.5 border-b-2 pb-3 text-sm font-medium whitespace-nowrap transition-colors',
               useCase === entry.value
-                ? 'border-primary-comfy-yellow text-primary-warm-white'
+                ? 'border-primary-warm-white text-primary-warm-white'
                 : 'text-content-secondary hover:text-content border-transparent'
             )
           "

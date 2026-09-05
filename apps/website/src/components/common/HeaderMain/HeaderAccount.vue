@@ -158,20 +158,27 @@ const avatarClass =
               </p>
               <DropdownMenuItem
                 v-for="workspace in WORKSPACES"
-                :key="workspace"
+                :key="workspace.name"
                 :class="itemClass"
-                :data-testid="`account-workspace-${workspace}`"
-                @click="switchWorkspace(workspace)"
+                :data-testid="`account-workspace-${workspace.name}`"
+                @click="switchWorkspace(workspace.name)"
               >
                 <span
                   class="grid size-9 shrink-0 place-items-center rounded-lg bg-transparency-white-t8 text-sm font-bold text-primary-warm-white"
                   aria-hidden="true"
                 >
-                  {{ initialsOf(workspace) }}
+                  {{ initialsOf(workspace.name) }}
                 </span>
-                <span class="flex-1 truncate">{{ workspace }}</span>
+                <span class="flex min-w-0 flex-1 flex-col">
+                  <span class="truncate">{{ workspace.name }}</span>
+                  <span
+                    class="truncate text-2xs font-bold tracking-wider text-primary-warm-gray uppercase"
+                  >
+                    {{ workspace.plan }}
+                  </span>
+                </span>
                 <Check
-                  v-if="workspace === account.workspace"
+                  v-if="workspace.name === account.workspace"
                   class="text-primary-comfy-yellow size-4"
                   aria-hidden="true"
                 />

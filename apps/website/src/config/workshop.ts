@@ -274,8 +274,8 @@ export function splitTask(
 export const USE_CASES = [
   'generate-images',
   'edit-images',
-  'generate-videos',
   'animate-images',
+  'generate-videos',
   'edit-videos',
   'text',
   '3d',

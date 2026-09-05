@@ -40,8 +40,7 @@ import PlaygroundOutput from './PlaygroundOutput.vue'
 const {
   model,
   locale = 'en',
-  clone,
-  stepped = false
+  clone
 } = defineProps<{
   model: WorkshopModelDetail
   locale?: Locale
@@ -49,7 +48,6 @@ const {
   /** Names the form's groups as numbered steps and keeps the result in view
    * while they are filled in. The workflow pages ask for it; a model page has
    * a shorter form that reads fine as one list. */
-  stepped?: boolean
 }>()
 
 const slots = useSlots()
@@ -351,7 +349,6 @@ function useInCode() {
             :schema
             :errors
             :locale
-            :stepped
             :disabled="isRunning"
           />
         </div>
@@ -490,11 +487,7 @@ function useInCode() {
         </div>
       </div>
 
-      <div
-        :class="
-          cn('lg:col-span-7', stepped && 'lg:sticky lg:top-24 lg:self-start')
-        "
-      >
+      <div class="lg:sticky lg:top-26 lg:col-span-7 lg:self-start">
         <PlaygroundOutput
           v-model:revealed="revealed"
           :state="runState"
@@ -502,7 +495,6 @@ function useInCode() {
           :now
           :modality="model.modality"
           :locale
-          @cancel="cancel"
           @retry="reset"
           @use-in-code="useInCode"
         />

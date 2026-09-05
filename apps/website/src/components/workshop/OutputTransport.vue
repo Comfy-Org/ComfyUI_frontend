@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Pause, Play, Volume2, VolumeX } from '@lucide/vue'
+import { Maximize2, Pause, Play, Volume2, VolumeX } from '@lucide/vue'
 import { useIntervalFn } from '@vueuse/core'
 import { computed, ref } from 'vue'
 
@@ -12,10 +12,17 @@ import { t } from '../../i18n/translations'
 // carry sound has no track to play. The transport stands in for the one the
 // finished product will have: the clip loops on its own and this says where it
 // is, so the shape of the control can be judged before the media is real.
-const { seconds = 10, locale = 'en' } = defineProps<{
+const {
+  seconds = 10,
+  expandable = false,
+  locale = 'en'
+} = defineProps<{
   seconds?: number
+  expandable?: boolean
   locale?: Locale
 }>()
+
+const emit = defineEmits<{ expand: [] }>()
 
 const playing = ref(true)
 const elapsed = ref(0)
@@ -28,15 +35,17 @@ useIntervalFn(() => {
 const progress = computed(() => `${(elapsed.value / seconds) * 100}%`)
 
 const clock = (value: number) =>
-  `${Math.floor(value / 60)}:${String(Math.floor(value % 60)).padStart(2, '0')}`
+  `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(
+    Math.floor(value % 60)
+  ).padStart(2, '0')}`
 
 const buttonClass =
-  'focus-visible:ring-primary-comfy-yellow/50 grid size-7 shrink-0 cursor-pointer place-items-center rounded-full text-primary-warm-white transition-colors outline-none hover:text-primary-comfy-yellow focus-visible:ring-2'
+  'grid size-9 shrink-0 cursor-pointer place-items-center rounded-xl bg-transparency-white-t20 text-primary-warm-white backdrop-blur-sm transition-colors outline-none hover:bg-white/30 focus-visible:ring-2 focus-visible:ring-primary-warm-white/60'
 </script>
 
 <template>
   <div
-    class="flex items-center gap-3 bg-linear-to-t from-primary-comfy-ink/90 to-transparent px-3 pt-8 pb-3"
+    class="flex items-center gap-3 bg-linear-to-t from-primary-comfy-ink/90 to-transparent px-4 pt-10 pb-4"
     data-testid="output-transport"
   >
     <button
@@ -61,17 +70,28 @@ const buttonClass =
       :aria-valuemax="seconds"
     >
       <span
-        class="bg-primary-comfy-yellow absolute inset-y-0 left-0 rounded-full"
+        class="absolute inset-y-0 left-0 rounded-full bg-primary-warm-white"
         :style="{ width: progress }"
       />
     </div>
 
     <span
-      class="shrink-0 text-2xs text-primary-warm-white tabular-nums"
+      class="shrink-0 text-xs text-primary-warm-white tabular-nums"
       data-testid="output-time"
     >
-      {{ clock(elapsed) }} / {{ clock(seconds) }}
+      {{ clock(elapsed) }}
     </span>
+
+    <button
+      v-if="expandable"
+      type="button"
+      :aria-label="t('workshop.output.expand', locale)"
+      :class="buttonClass"
+      data-testid="output-expand"
+      @click="emit('expand')"
+    >
+      <Maximize2 class="size-4" aria-hidden="true" />
+    </button>
 
     <button
       type="button"
@@ -82,7 +102,7 @@ const buttonClass =
           locale
         )
       "
-      :class="cn(buttonClass, !muted && 'text-primary-comfy-yellow')"
+      :class="cn(buttonClass, !muted && 'bg-white/30')"
       data-testid="output-sound"
       @click="muted = !muted"
     >

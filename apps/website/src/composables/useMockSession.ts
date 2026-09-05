@@ -30,14 +30,19 @@ export const WELCOME_CREDITS = 0
 export const EXISTING_CREDITS = 5840
 export const LOW_CREDITS = 3
 
-export const WORKSPACES = ["Ada's Studio", 'Comfy team', 'Client demos']
-export const PERSONAL_WORKSPACE = WORKSPACES[0]
-const TEAM_WORKSPACE = WORKSPACES[1]
+export const WORKSPACES = [
+  { name: "Ada's Studio", plan: 'PRO' },
+  { name: 'Comfy team', plan: 'ENTERPRISE' },
+  { name: 'Client demos', plan: 'FREE' }
+] as const
+
+export const PERSONAL_WORKSPACE = WORKSPACES[0].name
+const TEAM_WORKSPACE = WORKSPACES[1].name
 
 const BASE_ACCOUNT = {
   name: 'Ada Lovelace',
   email: 'ada@example.com',
-  workspace: WORKSPACES[0],
+  workspace: PERSONAL_WORKSPACE,
   role: 'owner' as const
 }
 

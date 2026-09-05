@@ -38,7 +38,6 @@ const {
 const revealed = defineModel<boolean>('revealed', { default: false })
 
 const emit = defineEmits<{
-  cancel: []
   retry: []
   useInCode: []
 }>()
@@ -81,8 +80,13 @@ const plays = computed(
     (modality === 'video' || modality === 'audio') &&
     shown.value?.kind !== 'text'
 )
+// Only a result the visitor produced opens full screen; the example is a
+// sample of what the model makes, not their picture to inspect.
 const expandable = computed(
-  () => modality !== 'audio' && shown.value?.kind !== 'text'
+  () =>
+    state.status === 'succeeded' &&
+    modality !== 'audio' &&
+    shown.value?.kind !== 'text'
 )
 const outputs = computed(() =>
   shown.value
@@ -186,14 +190,6 @@ const earlierClass = (active: boolean) =>
       >
         {{ t('workshop.run.videoHint', locale) }}
       </p>
-      <Button
-        variant="outline"
-        size="sm"
-        data-testid="run-cancel"
-        @click="emit('cancel')"
-      >
-        {{ t('workshop.run.cancel', locale) }}
-      </Button>
     </div>
 
     <!-- Expired -->
@@ -248,7 +244,7 @@ const earlierClass = (active: boolean) =>
 
     <!-- Succeeded, or the example that ships with the model -->
     <template v-else-if="shown">
-      <div class="relative flex-1 bg-primary-comfy-ink">
+      <div class="relative flex-1">
         <div
           :class="blurred ? 'blur-2xl select-none' : ''"
           class="size-full transition-[filter]"
@@ -287,7 +283,13 @@ const earlierClass = (active: boolean) =>
           </div>
         </div>
         <button
-          v-if="currentUrl && !blurred && expandable && !isVideoUrl(currentUrl)"
+          v-if="
+            currentUrl &&
+            !blurred &&
+            expandable &&
+            !plays &&
+            !isVideoUrl(currentUrl)
+          "
           type="button"
           :aria-label="t('workshop.output.expand', locale)"
           :class="cn(mediaControlClass, 'absolute top-3 right-3')"
@@ -299,8 +301,10 @@ const earlierClass = (active: boolean) =>
 
         <OutputTransport
           v-if="plays && !blurred && !isVideoUrl(currentUrl)"
+          :expandable
           :locale
           class="absolute inset-x-0 bottom-0"
+          @expand="expanded = true"
         />
         <button
           v-if="blurred"

@@ -35,6 +35,8 @@ export interface ToolbarLabels {
   readonly applied: string
   readonly searchPlaceholder: string
   readonly noResults: string
+  readonly more: string
+  readonly less: string
   readonly sortPopular: string
   readonly sortNewest: string
   readonly showResults: string
@@ -52,6 +54,10 @@ const facetInput = computed(() => templates)
 const { facetsByType, isBadgeActive, activeCountForType } =
   useFacets(facetInput)
 
+// A facet with sixty values cannot be read as a wall of chips: each group opens
+// with the values that carry the most workflows and hides the tail behind a
+// count, the way the rest of the catalogue reveals long lists.
+const CHIP_LIMIT = 10
 const SEARCH_THRESHOLD = 12
 
 const TABS: { key: HubTab; labelKey: keyof ToolbarLabels; icon: Component }[] =
@@ -64,6 +70,7 @@ const TABS: { key: HubTab; labelKey: keyof ToolbarLabels; icon: Component }[] =
 
 const filterOpen = ref(false)
 const facetSearch = ref<Record<string, string>>({})
+const expanded = ref<Record<string, boolean>>({})
 
 const totalActiveFilters = computed(() =>
   facetsConfig.reduce((sum, cfg) => sum + activeCountForType(cfg.type), 0)
@@ -76,14 +83,32 @@ const groups = computed(() =>
   }))
 )
 
-function visibleValues(group: {
-  key: string
-  values: readonly FacetValue[]
-}): readonly FacetValue[] {
+interface FacetGroup {
+  readonly key: string
+  readonly type: FilterBadge['type']
+  readonly values: readonly FacetValue[]
+}
+
+function matchingValues(group: FacetGroup): readonly FacetValue[] {
   const q = (facetSearch.value[group.key] ?? '').trim().toLowerCase()
   return q
     ? group.values.filter((v) => v.displayValue.toLowerCase().includes(q))
     : group.values
+}
+
+// A chosen value stays in sight even when its count puts it in the tail.
+function visibleValues(group: FacetGroup): readonly FacetValue[] {
+  const values = matchingValues(group)
+  if (expanded.value[group.key]) return values
+  const chosen = values.filter((v) => isBadgeActive(group.type, v.value))
+  const rest = values.filter((v) => !isBadgeActive(group.type, v.value))
+  return [...chosen, ...rest].slice(0, CHIP_LIMIT)
+}
+
+function hiddenCount(group: FacetGroup): number {
+  return expanded.value[group.key]
+    ? 0
+    : matchingValues(group).length - visibleValues(group).length
 }
 
 const sortLabel = computed(() =>
@@ -121,7 +146,7 @@ const chipClass = (active: boolean) =>
             :value="tab.key"
             :aria-label="labels[tab.labelKey]"
             :data-testid="`hub-tab-${tab.key}`"
-            class="group text-content-secondary hover:text-content focus-visible:ring-brand focus-visible:ring-offset-page data-[state=active]:bg-brand data-[state=active]:text-page data-[state=active]:hover:bg-brand inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold whitespace-nowrap transition-colors outline-none hover:bg-white/8 focus-visible:ring-2 focus-visible:ring-offset-1 sm:px-3.5"
+            class="group text-content-secondary hover:text-content focus-visible:ring-brand focus-visible:ring-offset-page data-[state=active]:bg-primary-warm-white data-[state=active]:text-page data-[state=active]:hover:bg-primary-warm-white inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold whitespace-nowrap transition-colors outline-none hover:bg-white/8 focus-visible:ring-2 focus-visible:ring-offset-1 sm:px-3.5"
           >
             <component
               :is="tab.icon"
@@ -210,7 +235,7 @@ const chipClass = (active: boolean) =>
             {{ group.label }}
           </h3>
           <input
-            v-if="group.values.length > SEARCH_THRESHOLD"
+            v-if="expanded[group.key] && group.values.length > SEARCH_THRESHOLD"
             v-model="facetSearch[group.key]"
             type="search"
             :placeholder="labels.searchPlaceholder"
@@ -219,7 +244,13 @@ const chipClass = (active: boolean) =>
           />
         </div>
         <div
-          class="flex max-h-32 scrollbar-thin flex-wrap gap-2 overflow-y-auto"
+          :class="
+            cn(
+              'flex flex-wrap gap-2',
+              expanded[group.key] &&
+                'max-h-56 scrollbar-thin content-start overflow-y-auto'
+            )
+          "
           role="listbox"
           aria-multiselectable="true"
         >
@@ -242,6 +273,20 @@ const chipClass = (active: boolean) =>
             {{ labels.noResults }}
           </p>
         </div>
+
+        <button
+          v-if="hiddenCount(group) > 0 || expanded[group.key]"
+          type="button"
+          class="hover:text-brand focus-visible:ring-brand w-fit cursor-pointer rounded-lg text-xs font-semibold text-content-secondary transition-colors outline-none focus-visible:ring-2"
+          :data-testid="`hub-facet-more-${group.key}`"
+          @click="expanded[group.key] = !expanded[group.key]"
+        >
+          {{
+            expanded[group.key]
+              ? labels.less
+              : labels.more.replace('{n}', String(hiddenCount(group)))
+          }}
+        </button>
       </div>
 
       <div

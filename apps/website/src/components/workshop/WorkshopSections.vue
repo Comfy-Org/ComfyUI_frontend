@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronRight } from '@lucide/vue'
+import { ChevronRight, Sparkles } from '@lucide/vue'
 import { computed } from 'vue'
 
 import type { SortOrder, UseCase, WorkshopModel } from '../../config/workshop'
@@ -41,17 +41,31 @@ const featured = computed(() =>
   groupByFamily(sortWorkshopModels(models, 'popular')).slice(0, FEATURED_LIMIT)
 )
 
+// Text, 3D and audio hold a handful of models each, so a row apiece reads as an
+// empty shelf. They share one row until the catalogue fills out.
+const GROUPED: readonly UseCase[] = ['text', '3d', 'audio']
+
 const sections = computed(() =>
-  USE_CASES.map((useCase) => {
-    const matches = groupByFamily(
+  USE_CASES.filter((useCase) => !GROUPED.includes(useCase))
+    .map((useCase) => {
+      const matches = groupByFamily(
+        sortWorkshopModels(filterWorkshopModels(models, { useCase }), sort)
+      )
+      return {
+        useCase,
+        total: matches.length,
+        shown: matches.slice(0, ROW_LIMIT)
+      }
+    })
+    .filter((section) => section.total > 0)
+)
+
+const otherFormats = computed(() =>
+  groupByFamily(
+    GROUPED.flatMap((useCase) =>
       sortWorkshopModels(filterWorkshopModels(models, { useCase }), sort)
     )
-    return {
-      useCase,
-      total: matches.length,
-      shown: matches.slice(0, ROW_LIMIT)
-    }
-  }).filter((section) => section.total > 0)
+  )
 )
 
 // A model the taxonomy cannot place would otherwise be reachable only by
@@ -71,15 +85,23 @@ const unplaced = computed(() =>
     <section
       v-if="featured.length"
       aria-labelledby="section-featured"
+      class="rounded-4.5xl border border-transparency-white-t8 bg-linear-to-br from-primary-comfy-plum/35 via-transparency-white-t4 to-transparent p-6 lg:p-8"
       data-testid="section-featured"
     >
-      <h2
-        id="section-featured"
-        class="mb-5 text-xl font-medium text-primary-warm-white"
-      >
-        {{ t('workshop.sections.featured', locale) }}
-      </h2>
       <CardRow :locale>
+        <template #heading>
+          <h2
+            id="section-featured"
+            class="flex items-center gap-2 text-xl font-medium text-primary-warm-white"
+          >
+            <Sparkles
+              class="text-primary-comfy-yellow size-5"
+              aria-hidden="true"
+            />
+            {{ t('workshop.sections.featured', locale) }}
+          </h2>
+        </template>
+
         <li
           v-for="family in featured"
           :key="family.key"
@@ -101,30 +123,66 @@ const unplaced = computed(() =>
       :aria-labelledby="`section-${section.useCase}`"
       :data-testid="`section-${section.useCase}`"
     >
-      <div class="mb-5 flex items-center justify-between gap-4">
-        <h2
-          :id="`section-${section.useCase}`"
-          class="flex items-baseline gap-2 text-xl font-medium text-primary-warm-white"
-        >
-          {{ t(labelKey[section.useCase], locale) }}
-          <span class="text-sm text-primary-warm-gray tabular-nums">
-            {{ section.total }}
-          </span>
-        </h2>
-        <button
-          type="button"
-          class="hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-lg text-sm font-medium text-primary-warm-gray transition-colors outline-none focus-visible:ring-3"
-          :data-testid="`section-${section.useCase}-see-all`"
-          @click="emit('open', section.useCase)"
-        >
-          {{ t('workshop.sections.seeAll', locale) }}
-          <ChevronRight class="size-4" aria-hidden="true" />
-        </button>
-      </div>
-
       <CardRow :locale>
+        <template #heading>
+          <h2
+            :id="`section-${section.useCase}`"
+            class="flex items-baseline gap-2 text-xl font-medium text-primary-warm-white"
+          >
+            {{ t(labelKey[section.useCase], locale) }}
+            <span class="text-sm text-primary-warm-gray tabular-nums">
+              {{ section.total }}
+            </span>
+          </h2>
+        </template>
+
+        <template #actions>
+          <button
+            type="button"
+            class="hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-lg text-sm font-medium text-primary-warm-gray transition-colors outline-none focus-visible:ring-3"
+            :data-testid="`section-${section.useCase}-see-all`"
+            @click="emit('open', section.useCase)"
+          >
+            {{ t('workshop.sections.seeAll', locale) }}
+            <ChevronRight class="size-4" aria-hidden="true" />
+          </button>
+        </template>
+
         <li
           v-for="family in section.shown"
+          :key="family.key"
+          class="w-72 shrink-0 snap-start"
+        >
+          <WorkshopModelCard
+            :model="family.latest"
+            :version-count="family.versions.length"
+            :locale
+            :show-status="showStatuses"
+          />
+        </li>
+      </CardRow>
+    </section>
+
+    <section
+      v-if="otherFormats.length"
+      aria-labelledby="section-other-formats"
+      data-testid="section-other-formats"
+    >
+      <CardRow :locale>
+        <template #heading>
+          <h2
+            id="section-other-formats"
+            class="flex items-baseline gap-2 text-xl font-medium text-primary-warm-white"
+          >
+            {{ t('workshop.sections.otherFormats', locale) }}
+            <span class="text-sm text-primary-warm-gray tabular-nums">
+              {{ otherFormats.length }}
+            </span>
+          </h2>
+        </template>
+
+        <li
+          v-for="family in otherFormats"
           :key="family.key"
           class="w-72 shrink-0 snap-start"
         >

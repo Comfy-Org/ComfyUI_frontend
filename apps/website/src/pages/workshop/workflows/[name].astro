@@ -3,6 +3,7 @@ import BaseLayout from '../../../layouts/BaseLayout.astro'
 import RelatedWorkflows from '../../../components/hub/RelatedWorkflows.vue'
 import ModelDetail from '../../../components/workshop/ModelDetail.vue'
 import PrototypeTweaks from '../../../components/workshop/PrototypeTweaks.vue'
+import StaticFrame from '../../../components/workshop/StaticFrame.vue'
 import { getRoutes } from '../../../config/routes'
 import { hubWorkflowUrl } from '../../../lib/hub/routes'
 import { tagDisplayName } from '../../../lib/hub/tag-aliases'
@@ -73,12 +74,30 @@ const comments = [
     </nav>
 
     <header
-      class="relative mb-12 overflow-hidden rounded-4.5xl bg-primary-comfy-ink-light"
+      class="relative mx-8 mb-12 overflow-hidden rounded-4.5xl lg:mx-10"
       data-testid="workflow-hero"
     >
-      <div class="relative flex flex-col justify-center gap-6 p-8 lg:p-10">
-        <div class="flex min-w-0 flex-col gap-3">
-          <h1 class="truncate text-3xl font-bold text-primary-comfy-canvas lg:text-5xl">
+      {
+        template.thumbnails[0] && (
+          <StaticFrame
+            src={template.thumbnails[0]}
+            class="absolute inset-0 size-full object-cover [mask-image:linear-gradient(to_right,transparent_45%,black_85%)]"
+            client:load
+          />
+        )
+      }
+
+      <div
+        class="relative flex min-h-52 flex-col justify-center gap-4 py-8 pr-8 lg:min-h-60 lg:py-10 lg:pr-10"
+      >
+        <div class="flex min-w-0 max-w-2xl flex-col gap-3">
+          <ul class="flex flex-wrap items-center gap-2" data-testid="workflow-kinds">
+            <li><span class={pillClass}>{kindLabel}</span></li>
+            {mediaLabel[mediaType] && <li><span class={pillClass}>{mediaLabel[mediaType]}</span></li>}
+            {isPartner && <li><span class={pillClass} data-testid="workflow-serverless">{t('workshop.workflow.serverless')}</span></li>}
+          </ul>
+
+          <h1 class="text-3xl font-bold text-primary-comfy-canvas lg:text-5xl">
             {template.title}
           </h1>
 
@@ -93,20 +112,16 @@ const comments = [
             )
           }
 
-          <p class="text-content-secondary flex items-center gap-2 text-base">
-            <span
-              class="bg-brand text-page grid size-5 shrink-0 place-items-center rounded-full text-2xs font-bold"
-              aria-hidden="true"
-            >
-              {author.charAt(0).toUpperCase()}
-            </span>
-            <span class="ppformula-text-center-sm truncate">{author}</span>
-          </p>
-
-          <ul class="mt-2 flex flex-wrap items-center gap-2" data-testid="workflow-tags">
-            <li><span class={pillClass}>{kindLabel}</span></li>
-            {mediaLabel[mediaType] && <li><span class={pillClass}>{mediaLabel[mediaType]}</span></li>}
-            {isPartner && <li><span class={pillClass} data-testid="workflow-serverless">{t('workshop.workflow.serverless')}</span></li>}
+          <ul class="mt-1 flex flex-wrap items-center gap-2" data-testid="workflow-tags">
+            <li class="text-content-secondary mr-1 flex items-center gap-2 text-sm">
+              <span
+                class="bg-brand text-page grid size-5 shrink-0 place-items-center rounded-full text-2xs font-bold"
+                aria-hidden="true"
+              >
+                {author.charAt(0).toUpperCase()}
+              </span>
+              <span class="ppformula-text-center-sm truncate">{author}</span>
+            </li>
             {
               template.tags.map((tag) => (
                 <li>
@@ -137,7 +152,7 @@ const comments = [
     </header>
 
     <div class="px-8 lg:px-10">
-      <ModelDetail model={model} clone={clone} stepped client:load>
+      <ModelDetail model={model} clone={clone} client:load>
         <div slot="details" class="flex flex-col gap-8">
           <section class="grid gap-8 lg:grid-cols-12" data-testid="workflow-about">
             {
