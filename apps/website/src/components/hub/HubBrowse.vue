@@ -114,6 +114,17 @@ const useCaseTabs = computed(() => [
 
 const scoped = computed(() => inUseCase(useCase.value))
 
+// The tab row has no room on a phone, so the panel carries the same axis.
+const navGroup = computed(() => ({
+  label: t('workshop.launch.label', locale),
+  value: useCase.value,
+  options: useCaseTabs.value.map((entry) => ({
+    value: entry.value,
+    label: t(useCaseLabelKey[entry.value], locale),
+    count: totalIn(entry.value)
+  }))
+}))
+
 // The row is for narrowing what the use case already picked, so search stays
 // out of the way until it is asked for.
 const searchInput = ref<HTMLInputElement>()
@@ -327,36 +338,9 @@ const filteredTemplates = computed(() => {
       :toolbar-labels="toolbarLabels"
       :labels="gridLabels"
       :href-for="hrefFor"
+      :nav-group="navGroup"
+      @select-nav="useCase = $event as UseCase | 'all'"
     >
-      <template #panel-top>
-        <div class="flex flex-col gap-3 sm:hidden">
-          <h3 class="text-content-muted text-base">
-            {{ t('workshop.useCase.label', locale) }}
-          </h3>
-          <div class="flex flex-wrap gap-2" role="listbox">
-            <button
-              v-for="entry in useCaseTabs"
-              :key="entry.value"
-              type="button"
-              role="option"
-              :aria-selected="useCase === entry.value"
-              :data-testid="`hub-use-case-${entry.value}`"
-              :class="
-                cn(
-                  'focus-visible:ring-brand cursor-pointer rounded-full border px-4 py-2 text-sm transition-colors outline-none focus-visible:ring-2',
-                  useCase === entry.value
-                    ? 'border-brand bg-brand text-page font-medium'
-                    : 'text-content border-white/15'
-                )
-              "
-              @click="useCase = entry.value"
-            >
-              {{ t(useCaseLabelKey[entry.value], locale) }}
-            </button>
-          </div>
-        </div>
-      </template>
-
       <template #search>
         <button
           v-if="!searching"

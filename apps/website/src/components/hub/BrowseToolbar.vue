@@ -2,6 +2,7 @@
 import {
   ArrowRight,
   ArrowUpDown,
+  Check,
   ChevronDown,
   LayoutGrid,
   SlidersHorizontal,
@@ -61,12 +62,24 @@ export interface ToolbarLabels {
   readonly showResults: string
 }
 
-const { templates, facetsConfig, labels, resultCount } = defineProps<{
+const { templates, facetsConfig, labels, resultCount, navGroup } = defineProps<{
   templates: readonly FacetTemplate[]
   facetsConfig: readonly FacetGroupConfig[]
   labels: ToolbarLabels
   resultCount: number
+  /** The axis the tab row carries, which a phone folds in with the facets. */
+  navGroup?: {
+    readonly label: string
+    readonly value: string
+    readonly options: readonly {
+      readonly value: string
+      readonly label: string
+      readonly count: number
+    }[]
+  }
 }>()
+
+const emit = defineEmits<{ 'select-nav': [string] }>()
 
 const store = useHubStore()
 const facetInput = computed(() => templates)
@@ -189,6 +202,43 @@ const segmentClass = (active: boolean) =>
   )
 
 const groupTitleClass = 'text-content-muted text-base'
+
+// A phone shows the facets the way the hub does: one at a time, behind a row of
+// names, with a search and a list you tick. The wide panel keeps its chips.
+const phoneFacet = ref<string>()
+const facetTabs = computed(() => [
+  ...(navGroup ? [{ key: 'nav', label: navGroup.label }] : []),
+  ...groups.value.map((group) => ({ key: group.key, label: group.label }))
+])
+const currentFacet = computed(
+  () => phoneFacet.value ?? facetTabs.value[0]?.key ?? ''
+)
+const currentGroup = computed(() =>
+  groups.value.find((group) => group.key === currentFacet.value)
+)
+const phoneOptions = computed(() => {
+  const group = currentGroup.value
+  if (!group) return navGroup?.options ?? []
+  return matchingValues(group).map((value) => ({
+    value: value.value,
+    label: value.displayValue,
+    count: value.count
+  }))
+})
+const phoneSearchKey = computed(() => currentGroup.value?.key ?? 'nav')
+const isPhoneChosen = (value: string) =>
+  currentGroup.value
+    ? isBadgeActive(currentGroup.value.type, value)
+    : navGroup?.value === value
+
+function phoneToggle(value: string) {
+  const group = currentGroup.value
+  if (!group) return emit('select-nav', value)
+  const badge = { type: group.type, value }
+  return group.display === 'segmented'
+    ? store.selectBadge(badge)
+    : store.toggleBadge(badge)
+}
 </script>
 
 <template>
@@ -298,9 +348,89 @@ const groupTitleClass = 'text-content-muted text-base'
       class="bg-site-dropdown absolute top-full right-0 z-40 mt-3 flex max-h-[75vh] w-full max-w-4xl scrollbar-thin flex-col gap-7 overflow-y-auto rounded-3xl border border-white/10 p-8 shadow-2xl"
       data-testid="hub-filter-menu"
     >
-      <slot name="panel-top" />
+      <div class="-m-8 flex flex-col sm:hidden" data-testid="hub-filter-phone">
+        <div
+          class="flex scrollbar-hide items-center gap-1 overflow-x-auto border-b border-white/10 p-2"
+          role="tablist"
+        >
+          <button
+            v-for="tab in facetTabs"
+            :key="tab.key"
+            type="button"
+            role="tab"
+            :aria-selected="currentFacet === tab.key"
+            :data-testid="`hub-phone-facet-${tab.key}`"
+            :class="
+              cn(
+                'cursor-pointer rounded-lg px-2.5 py-1.5 text-xs font-semibold tracking-wider whitespace-nowrap uppercase transition-colors',
+                currentFacet === tab.key
+                  ? 'text-content bg-white/8'
+                  : 'text-content-secondary'
+              )
+            "
+            @click="phoneFacet = tab.key"
+          >
+            {{ tab.label }}
+          </button>
+        </div>
 
-      <div class="flex flex-wrap gap-x-12 gap-y-7">
+        <div v-if="currentGroup" class="border-b border-white/10 p-2">
+          <input
+            v-model="facetSearch[phoneSearchKey]"
+            type="search"
+            :placeholder="labels.searchPlaceholder"
+            :aria-label="labels.searchPlaceholder"
+            class="text-content placeholder:text-content-muted focus-visible:ring-brand w-full rounded-lg bg-white/5 px-3 py-2 text-xs outline-none focus-visible:ring-2 [&::-webkit-search-cancel-button]:hidden"
+          />
+        </div>
+
+        <ul
+          class="max-h-72 scrollbar-thin overflow-y-auto py-1"
+          role="listbox"
+          aria-multiselectable="true"
+        >
+          <li v-for="option in phoneOptions" :key="option.value" role="none">
+            <button
+              type="button"
+              role="option"
+              :aria-selected="isPhoneChosen(option.value)"
+              class="text-content-secondary flex w-full cursor-pointer items-center gap-2.5 px-3 py-2 text-left text-xs transition-colors outline-none hover:bg-white/5"
+              @click="phoneToggle(option.value)"
+            >
+              <span
+                :class="
+                  cn(
+                    'flex size-4 shrink-0 items-center justify-center rounded-sm border transition-colors',
+                    isPhoneChosen(option.value)
+                      ? 'border-brand bg-brand text-page'
+                      : 'border-white/25'
+                  )
+                "
+                aria-hidden="true"
+              >
+                <Check
+                  v-if="isPhoneChosen(option.value)"
+                  class="size-3"
+                  :stroke-width="3"
+                />
+              </span>
+              <span class="flex-1 truncate">{{ option.label }}</span>
+              <span class="text-content/30 shrink-0 tabular-nums">
+                {{ option.count }}
+              </span>
+            </button>
+          </li>
+          <li
+            v-if="phoneOptions.length === 0"
+            role="none"
+            class="text-content-muted px-3 py-2 text-xs"
+          >
+            {{ labels.noResults }}
+          </li>
+        </ul>
+      </div>
+
+      <div class="hidden flex-wrap gap-x-12 gap-y-7 sm:flex">
         <div
           v-for="group in groups.filter((g) => g.display === 'segmented')"
           :key="group.key"
@@ -340,7 +470,7 @@ const groupTitleClass = 'text-content-muted text-base'
       <div
         v-for="group in groups.filter((g) => g.display === 'chips')"
         :key="group.key"
-        class="flex flex-col gap-3"
+        class="flex flex-col gap-3 max-sm:hidden"
       >
         <h3 :class="groupTitleClass">{{ groupLabel(group) }}</h3>
         <div
@@ -383,7 +513,7 @@ const groupTitleClass = 'text-content-muted text-base'
         </div>
       </div>
 
-      <div class="grid gap-7 sm:grid-cols-2">
+      <div class="hidden gap-7 sm:grid sm:grid-cols-2">
         <div
           v-for="group in groups.filter((g) => g.display === 'select')"
           :key="group.key"
