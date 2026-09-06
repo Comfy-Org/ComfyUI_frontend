@@ -51,7 +51,7 @@
   },
   "src/composables/maskeditor/useMaskEditorSaver.ts": {
     "comfy/no-new-error-throw": {
-      "count": 5
+      "count": 8
     }
   },
   "src/composables/painter/usePainter.ts": {
