@@ -7,7 +7,7 @@ import { hasKey, t } from '../../i18n/translations'
 const locales: Locale[] = ['en', 'zh-CN']
 
 const dynamicKeys: string[] = [
-  ...[1, 2, 3].flatMap((n) => [
+  ...[1, 2, 3, 4].flatMap((n) => [
     `cloudNodesLaunch.setup.step${n}.label`,
     `cloudNodesLaunch.setup.step${n}.description`
   ]),

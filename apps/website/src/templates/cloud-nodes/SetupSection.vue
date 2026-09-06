@@ -8,7 +8,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const ctas = cloudNodesCtas(locale)
 
-const stepNumbers = [1, 2, 3] as const
+const stepNumbers = [1, 2, 3, 4] as const
 
 const steps = stepNumbers.map((n) => ({
   id: String(n),

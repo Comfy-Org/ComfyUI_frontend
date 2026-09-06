@@ -32,9 +32,9 @@ describe('HeroSection', () => {
 })
 
 describe('SetupSection', () => {
-  it('lists three steps and links how to update', () => {
+  it('lists four steps and links how to update', () => {
     render(SetupSection, { props })
-    expect(screen.getAllByRole('article')).toHaveLength(3)
+    expect(screen.getAllByRole('article')).toHaveLength(4)
     const hrefs = screen.getAllByRole('link').map((a) => a.getAttribute('href'))
     expect(hrefs).toContain(externalLinks.docsUpdateComfyUI)
   })

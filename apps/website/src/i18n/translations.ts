@@ -8432,32 +8432,40 @@ Enterprise`
       'ComfyUI 画布上的 Comfy Cloud Flux 2 文生图节点，连接到 Save Image 节点'
   },
   'cloudNodesLaunch.setup.heading': {
-    en: 'Three steps to your first run',
-    'zh-CN': '三步完成首次运行'
+    en: 'Four steps to your first run',
+    'zh-CN': '四步完成首次运行'
   },
   'cloudNodesLaunch.setup.step1.label': {
     en: 'Update ComfyUI',
     'zh-CN': '更新 ComfyUI'
   },
   'cloudNodesLaunch.setup.step1.description': {
-    en: 'Update to v0.34.5 or later and restart. The nodes are part of ComfyUI core, so there is nothing to install separately.',
+    en: 'Update to v0.34.5 or later. The nodes are part of ComfyUI core, so there is nothing to install separately.',
     'zh-CN':
-      '更新到 v0.34.5 或更高版本并重启。这些节点属于 ComfyUI 核心，无需单独安装。'
+      '更新到 v0.34.5 或更高版本。这些节点属于 ComfyUI 核心，无需单独安装。'
   },
   'cloudNodesLaunch.setup.step2.label': {
+    en: 'Restart ComfyUI',
+    'zh-CN': '重启 ComfyUI'
+  },
+  'cloudNodesLaunch.setup.step2.description': {
+    en: 'The nodes only register at startup, so they will not appear until you restart.',
+    'zh-CN': '节点只在启动时注册，重启后才会出现。'
+  },
+  'cloudNodesLaunch.setup.step3.label': {
     en: 'Find a node',
     'zh-CN': '找到节点'
   },
-  'cloudNodesLaunch.setup.step2.description': {
-    en: 'Search the node library for \\u201cComfy Cloud\\u201d. Every node carries a [BETA] suffix in its display name.',
+  'cloudNodesLaunch.setup.step3.description': {
+    en: 'Search the node library for “Comfy Cloud”. Every node carries a [BETA] suffix in its display name.',
     'zh-CN':
       '在节点库中搜索“Comfy Cloud”。每个节点的显示名称都带有 [BETA] 后缀。'
   },
-  'cloudNodesLaunch.setup.step3.label': {
+  'cloudNodesLaunch.setup.step4.label': {
     en: 'Wire it in and run',
     'zh-CN': '连线并运行'
   },
-  'cloudNodesLaunch.setup.step3.description': {
+  'cloudNodesLaunch.setup.step4.description': {
     en: 'Wire it like any other node. The model runs on our GPUs and the result comes back into the same canvas.',
     'zh-CN':
       '像其他节点一样连线。模型在我们的 GPU 上运行，结果会回到同一张画布。'
