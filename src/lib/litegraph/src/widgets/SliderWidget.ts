@@ -59,7 +59,7 @@ export class SliderWidget
     if (showText) {
       ctx.textAlign = 'center'
       ctx.fillStyle = this.text_color
-      const fixedValue = Number(this.value).toFixed(this.options.precision ?? 3)
+      const fixedValue = this.value.toFixed(this.options.precision ?? 3)
       ctx.fillText(
         `${this.label || this.name}  ${fixedValue}`,
         width * 0.5,

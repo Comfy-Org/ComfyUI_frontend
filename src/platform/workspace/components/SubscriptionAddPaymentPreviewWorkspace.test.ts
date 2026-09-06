@@ -296,7 +296,7 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     await userEvent.click(
       screen.getByText('subscription.preview.applyPromoCode')
     )
-    expect(emitted().applyPromotionCode?.at(-1)).toEqual(['SAVE20'])
+    expect(emitted().applyPromotionCode.at(-1)).toEqual(['SAVE20'])
   })
 
   it('offers Add new payment method from the saved-method picker', async () => {

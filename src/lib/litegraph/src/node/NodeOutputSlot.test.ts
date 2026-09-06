@@ -125,7 +125,6 @@ describe('NodeOutputSlot deprecated links getter', () => {
     const slot = source.outputs[0]
     slot.links = []
     const links = slot.links
-    if (!links) throw new Error('Expected retained output links')
     const first = source.connect(0, target, 0)!
 
     expect(links).toEqual([first.id])
@@ -140,7 +139,6 @@ describe('NodeOutputSlot deprecated links getter', () => {
     slot.links = []
     expect(slot.links).toEqual([])
     const links = slot.links
-    if (!links) throw new Error('Expected assigned output links')
     expect(() => links.push(toLinkId(404))).not.toThrow()
     expect(slot.links).toEqual([])
   })

@@ -70,7 +70,9 @@ vi.mock(
 vi.mock('@/scripts/app', () => ({
   app: {
     rootGraph: { id: 'graph-test', getNodeById: vi.fn() },
-    canvas: { setDirty: vi.fn() }
+    canvas: { setDirty: vi.fn() },
+    nodeOutputs: {},
+    nodePreviewImages: {}
   }
 }))
 
