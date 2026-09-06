@@ -7,6 +7,14 @@ import { resolveRel } from '../../utils/cta'
 import { cloudNodeModelCards } from './modelCards'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+
+function nodeCountLabel(nodeCount: number): string {
+  const key =
+    new Intl.PluralRules(locale).select(nodeCount) === 'one'
+      ? 'cloudNodesLaunch.models.nodeCountOne'
+      : 'cloudNodesLaunch.models.nodeCountOther'
+  return t(key, locale).replace('{count}', String(nodeCount))
+}
 </script>
 
 <template>
@@ -56,7 +64,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
           <span
             class="shrink-0 rounded-full bg-white/15 px-3 py-1 text-xs whitespace-nowrap text-primary-comfy-canvas backdrop-blur-sm"
           >
-            {{ t(card.nodesKey, locale) }}
+            {{ nodeCountLabel(card.nodeCount) }}
           </span>
         </div>
       </li>

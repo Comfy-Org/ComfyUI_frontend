@@ -8486,13 +8486,13 @@ Enterprise`
     en: 'See the node reference',
     'zh-CN': '查看节点参考'
   },
-  'cloudNodesLaunch.models.oneNode': {
-    en: '1 node',
-    'zh-CN': '1 个节点'
+  'cloudNodesLaunch.models.nodeCountOne': {
+    en: '{count} node',
+    'zh-CN': '{count} 个节点'
   },
-  'cloudNodesLaunch.models.threeNodes': {
-    en: '3 nodes',
-    'zh-CN': '3 个节点'
+  'cloudNodesLaunch.models.nodeCountOther': {
+    en: '{count} nodes',
+    'zh-CN': '{count} 个节点'
   },
   'cloudNodesLaunch.models.flux2': {
     en: 'Flux 2',

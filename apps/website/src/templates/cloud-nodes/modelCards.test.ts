@@ -9,11 +9,6 @@ const locales: Locale[] = ['en', 'zh-CN']
 const MEDIA_URL =
   /^https:\/\/media\.comfy\.org\/website\/cloud-nodes\/models\/[\w-]+\.(webp|webm|mp4)$/
 
-const NODES_PER_KEY: Record<string, number> = {
-  'cloudNodesLaunch.models.oneNode': 1,
-  'cloudNodesLaunch.models.threeNodes': 3
-}
-
 describe('cloudNodeModelCards', () => {
   it('declares a media kind that matches the file it points at', () => {
     for (const card of cloudNodeModelCards) {
@@ -34,18 +29,18 @@ describe('cloudNodeModelCards', () => {
   })
 
   it('covers exactly the eight launch nodes', () => {
-    const perCard = cloudNodeModelCards.map(
-      (card) => NODES_PER_KEY[card.nodesKey]
+    const total = cloudNodeModelCards.reduce(
+      (sum, card) => sum + card.nodeCount,
+      0
     )
-    expect(perCard).not.toContain(undefined)
     expect(cloudNodeModelCards).toHaveLength(6)
-    expect(perCard.reduce((a, b) => a + b, 0)).toBe(8)
+    expect(total).toBe(8)
   })
 
   it.for(locales)('translates every card label for %s', (locale) => {
     for (const card of cloudNodeModelCards) {
       expect(t(card.titleKey, locale)).not.toBe('')
-      expect(t(card.nodesKey, locale)).not.toBe('')
+      expect(card.nodeCount).toBeGreaterThan(0)
     }
   })
 })
