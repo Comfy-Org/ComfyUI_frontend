@@ -40,12 +40,12 @@ const clock = (value: number) =>
   ).padStart(2, '0')}`
 
 const buttonClass =
-  'grid size-9 shrink-0 cursor-pointer place-items-center rounded-xl text-primary-warm-white/80 transition-colors outline-none hover:text-primary-warm-white focus-visible:ring-2 focus-visible:ring-primary-warm-white/60'
+  'grid size-11 shrink-0 cursor-pointer place-items-center rounded-xl text-primary-warm-white/80 transition-colors outline-none hover:text-primary-warm-white focus-visible:ring-2 focus-visible:ring-primary-warm-white/60 sm:size-9'
 </script>
 
 <template>
   <div
-    class="flex items-center gap-3 bg-linear-to-t from-primary-comfy-ink/90 to-transparent px-4 pt-10 pb-4"
+    class="flex items-center gap-2 bg-linear-to-t from-primary-comfy-ink/90 to-transparent px-3 pt-10 pb-3 sm:gap-3 sm:px-4 sm:pb-4"
     data-testid="output-transport"
   >
     <button
@@ -58,12 +58,12 @@ const buttonClass =
       data-testid="output-play"
       @click="playing = !playing"
     >
-      <Pause v-if="playing" class="size-4" aria-hidden="true" />
-      <Play v-else class="size-4" aria-hidden="true" />
+      <Pause v-if="playing" class="size-5 sm:size-4" aria-hidden="true" />
+      <Play v-else class="size-5 sm:size-4" aria-hidden="true" />
     </button>
 
     <div
-      class="relative h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-transparency-white-t20"
+      class="relative h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-transparency-white-t20 sm:h-1"
       role="progressbar"
       :aria-valuenow="Math.round(elapsed)"
       :aria-valuemin="0"
@@ -76,7 +76,7 @@ const buttonClass =
     </div>
 
     <span
-      class="shrink-0 text-xs text-primary-warm-white tabular-nums"
+      class="shrink-0 text-sm text-primary-warm-white tabular-nums sm:text-xs"
       data-testid="output-time"
     >
       {{ clock(elapsed) }}
@@ -90,7 +90,7 @@ const buttonClass =
       data-testid="output-expand"
       @click="emit('expand')"
     >
-      <Maximize2 class="size-4" aria-hidden="true" />
+      <Maximize2 class="size-5 sm:size-4" aria-hidden="true" />
     </button>
 
     <button
@@ -106,8 +106,8 @@ const buttonClass =
       data-testid="output-sound"
       @click="muted = !muted"
     >
-      <VolumeX v-if="muted" class="size-4" aria-hidden="true" />
-      <Volume2 v-else class="size-4" aria-hidden="true" />
+      <VolumeX v-if="muted" class="size-5 sm:size-4" aria-hidden="true" />
+      <Volume2 v-else class="size-5 sm:size-4" aria-hidden="true" />
     </button>
   </div>
 </template>
