@@ -228,8 +228,9 @@ describe('pendingOpShadow (s3-opt-5 presentation surface)', () => {
     // FORECLOSE #5 guard: the overlay must stay presentation-only. Importing
     // yjs (or anything that could reach the shared doc) from this module
     // would be the first step toward encoding shadows into the shared doc.
-    // @/base/assert is the repo's central invariant channel (ADR 0019) — a
-    // base-layer leaf with no Yjs/DOM/framework coupling.
+    // @/base/assert is the repo's central invariant channel
+    // (ADR-TELEMETRY-DIAGNOSTICS-0019) — a base-layer leaf with no
+    // Yjs/DOM/framework coupling.
     const source = readFileSync(
       new URL('./pendingOpShadow.ts', pathToFileURL(import.meta.filename)),
       'utf8'
