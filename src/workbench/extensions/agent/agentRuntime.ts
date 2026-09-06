@@ -12,7 +12,7 @@ import type { AgentRestClient } from './services/agent/agentRestClient'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import type { ChatSession } from './stores/agent/agentChatHistoryStore'
 
-type RestFactory = (signal: () => AbortSignal | undefined) => AgentRestClient
+type RestFactory = () => AgentRestClient
 
 export interface AgentRuntimeOptions {
   enabled: boolean
@@ -39,10 +39,7 @@ function toChatSession(
 export function createAgentRuntime(options: AgentRuntimeOptions) {
   if (!options.enabled) return null
 
-  let requests = new AbortController()
-  const rest = (
-    options.createRest ?? ((signal) => createAgentRestClient({ signal }))
-  )(() => requests.signal)
+  const rest = (options.createRest ?? createAgentRestClient)()
   const events = (options.createEvents ?? (() => createAgentEventSource(api)))()
   const session = useAgentSession({
     rest,
@@ -73,7 +70,6 @@ export function createAgentRuntime(options: AgentRuntimeOptions) {
   function start(): void {
     if (started) return
     started = true
-    if (requests.signal.aborted) requests = new AbortController()
     session.start()
     watchers = [
       watch(session.threadId, (id) => history.setActive(id), {
@@ -94,7 +90,6 @@ export function createAgentRuntime(options: AgentRuntimeOptions) {
   function stop(): void {
     if (!started) return
     started = false
-    requests.abort()
     watchers.forEach((unwatch) => unwatch())
     watchers = []
     session.stop()

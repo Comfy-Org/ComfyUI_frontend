@@ -166,18 +166,13 @@ describe('agentRuntime', () => {
     })
   })
 
-  it('cancels the active turn and aborts pending requests on stop', async () => {
+  it('lets mutating requests settle when stopped', async () => {
     const cancelMessage = vi.fn(
       async (): Promise<AgentCancelAccepted> => ({ status: 'cancelling' })
     )
-    const observedSignals: AbortSignal[] = []
     const runtime = createAgentRuntime({
       enabled: true,
-      createRest: (signal) => {
-        const current = signal()
-        if (current) observedSignals.push(current)
-        return fakeRest({ cancelMessage })
-      },
+      createRest: () => fakeRest({ cancelMessage }),
       createEvents: () => fakeEvents().source,
       untitledChatTitle: 'Untitled chat'
     })
@@ -188,7 +183,7 @@ describe('agentRuntime', () => {
     expect(cancelMessage).toHaveBeenCalledWith('thread-1', 'turn-1')
 
     runtime?.stop()
-    expect(observedSignals[0]?.aborted).toBe(true)
+    expect(cancelMessage).toHaveBeenCalledOnce()
   })
 
   it('propagates a history failure without stopping the session transport', async () => {
