@@ -1151,6 +1151,69 @@ describe('reconcileAgentAdapters', () => {
       }
     )
 
+    it.for(['slot probe', 'widget values'] as const)(
+      'isolates a failing %s while materializing siblings and detaching orphans',
+      (failurePoint) => {
+        const source = createTestSubgraph({
+          inputs: [{ name: 'value', type: 'number' }]
+        })
+        const definition = source.asSerialisable()
+        const { follower } = seedDocument(graph, {
+          nodes: [nodePayload(1, definition.id), nodePayload(2)],
+          links: [],
+          definitions: { subgraphs: [definition] }
+        })
+        const definitions = readSubgraphDefinitions(follower.doc)
+        reconcileAgentAdapters(graph, definitions)
+        const instance = graph.getNodeById(toNodeId(1))
+        if (!instance?.isSubgraphNode()) throw new Error('Expected subgraph')
+        const orphan = graph.getNodeById(toNodeId(2))
+        const mutations = remoteMutations(graphScopeOf(graph))
+        mutations.deleteNode(toNodeId(2), [], REMOTE)
+        mutations.addNode(nodePayload(9), REMOTE)
+        mutations.batch(REMOTE, (batch) =>
+          batch.reconcileNode({
+            ...nodePayload(1, definition.id),
+            inputs: [{ name: 'value', type: 'number', link: null }]
+          })
+        )
+        const [target, key] =
+          failurePoint === 'slot probe'
+            ? ([instance.inputs[0], '_subgraphSlot'] as const)
+            : ([instance._state.lastSerialization, 'widgets_values'] as const)
+        if (!target) throw new Error('Missing reconcile state')
+        Object.defineProperty(target, key, {
+          configurable: true,
+          get() {
+            throw new Error('prepare failed')
+          }
+        })
+
+        expect(reconcileAgentAdapters(graph, definitions)).toEqual([
+          toNodeId(9)
+        ])
+        expect(graph.getNodeById(toNodeId(9))).toBeInstanceOf(DummyNode)
+        expect(graph._nodes).not.toContain(orphan)
+        expect(orphan?.graph).toBeNull()
+        expect(reconcileAgentAdapters(graph, definitions)).toEqual([])
+        expect(reportError).toHaveBeenCalledExactlyOnceWith(
+          expect.objectContaining({ message: 'prepare failed' }),
+          expect.objectContaining({
+            errorType: 'agent_node_reconfigure_failed'
+          })
+        )
+
+        Object.defineProperty(target, key, { value: undefined, writable: true })
+        expect(reconcileAgentAdapters(graph, definitions)).toEqual([])
+        expect(instance.inputs[0]?._subgraphSlot).toBe(
+          instance.subgraph.inputNode.slots[0]
+        )
+        expect(instance.inputs[0]?._listenerController?.signal.aborted).toBe(
+          false
+        )
+      }
+    )
+
     it('registers a definition once across repeated reconciles', () => {
       const definition = createTestSubgraphData({
         nodes: [nodePayload(7)] as never

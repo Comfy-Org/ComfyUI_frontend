@@ -273,39 +273,39 @@ function reconfigureSubgraphInstance(
   serialised: ISerialisedNode | undefined
 ): void {
   if (!live.isSubgraphNode() || !serialised) return
-  const declaredInputs = live.subgraph.inputNode.slots
-  const declaredOutputs = live.subgraph.outputNode.slots
-  const inputsIntact =
-    live.inputs.length === declaredInputs.length &&
-    live.inputs.every((input) => input._subgraphSlot !== undefined)
-  const outputsIntact =
-    live.outputs.length === declaredOutputs.length &&
-    live.outputs.every(
-      (output, index) =>
-        output.name === declaredOutputs[index]?.name &&
-        output.type === declaredOutputs[index]?.type
-    )
-  if (
-    inputsIntact &&
-    outputsIntact &&
-    !failedInstanceReconfigurations.has(live)
-  )
-    return
-  // `configure()` falls back to the class static title for an empty title.
   const currentTitle = live.title
-  const {
-    inputs: _inputs,
-    outputs: _outputs,
-    ...definitionOwnedInfo
-  } = withNamedWidgetValues(serialised)
-  const info = {
-    ...definitionOwnedInfo,
-    title: currentTitle || ' ',
-    pos: [live.pos[0], live.pos[1]],
-    size: [live.size[0], live.size[1]],
-    flags: { ...live.flags }
-  } satisfies ISerialisedNode
   try {
+    const declaredInputs = live.subgraph.inputNode.slots
+    const declaredOutputs = live.subgraph.outputNode.slots
+    const inputsIntact =
+      live.inputs.length === declaredInputs.length &&
+      live.inputs.every((input) => input._subgraphSlot !== undefined)
+    const outputsIntact =
+      live.outputs.length === declaredOutputs.length &&
+      live.outputs.every(
+        (output, index) =>
+          output.name === declaredOutputs[index]?.name &&
+          output.type === declaredOutputs[index]?.type
+      )
+    if (
+      inputsIntact &&
+      outputsIntact &&
+      !failedInstanceReconfigurations.has(live)
+    )
+      return
+    // `configure()` falls back to the class static title for an empty title.
+    const {
+      inputs: _inputs,
+      outputs: _outputs,
+      ...definitionOwnedInfo
+    } = withNamedWidgetValues(serialised)
+    const info = {
+      ...definitionOwnedInfo,
+      title: currentTitle || ' ',
+      pos: [live.pos[0], live.pos[1]],
+      size: [live.size[0], live.size[1]],
+      flags: { ...live.flags }
+    } satisfies ISerialisedNode
     withNamedValuesRestore(() => live.configure(info))
     failedInstanceReconfigurations.delete(live)
   } catch (cause) {
