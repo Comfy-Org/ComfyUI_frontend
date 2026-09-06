@@ -367,6 +367,19 @@ describe('SubgraphConversion', () => {
         expect(errorSpy).not.toHaveBeenCalled()
       })
 
+      it('Should report a missing host input and continue unpacking', () => {
+        const { graph, subgraphNode } = createPromotedWidgetSubgraph()
+        subgraphNode.removeInput(0)
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+        graph.unpackSubgraph(subgraphNode)
+
+        expect(errorSpy).toHaveBeenCalledWith(
+          'Missing host input when unpacking subgraph'
+        )
+        expect(graph.nodes.length).toBe(1)
+      })
+
       it('Should hand the promoted host value to the interior widget', () => {
         const { graph, subgraphNode, hostWidgetId } =
           createPromotedWidgetSubgraph()
