@@ -144,6 +144,9 @@ describe('colorUtil conversions', () => {
       expect(intToHex(-1)).toBe('#000000')
       expect(intToHex(0.5)).toBe('#000001')
       expect(intToHex(0x1000000)).toBe('#ffffff')
+      expect(intToHex(Number.NaN)).toBe('#000000')
+      expect(intToHex(Number.POSITIVE_INFINITY)).toBe('#000000')
+      expect(intToHex(Number.NEGATIVE_INFINITY)).toBe('#000000')
     })
   })
 
