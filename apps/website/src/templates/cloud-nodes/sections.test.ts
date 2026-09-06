@@ -65,8 +65,7 @@ describe('HowItWorksSection', () => {
 describe('WhySection', () => {
   it('lists the four reasons', () => {
     render(WhySection, { props })
-    expect(screen.getByText('The VRAM wall')).toBeTruthy()
-    expect(screen.getByText('No plan to buy')).toBeTruthy()
+    expect(screen.getAllByRole('heading', { level: 3 })).toHaveLength(4)
   })
 })
 

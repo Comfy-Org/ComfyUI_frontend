@@ -8527,63 +8527,60 @@ Enterprise`
     'zh-CN': '每个节点对应一套精选工作流，并锁定具体模型版本。'
   },
   'cloudNodesLaunch.howItWorks.1.label': {
-    en: 'A saved graph keeps producing the same result over time, because the model version behind the node does not move.',
-    'zh-CN':
-      '保存的工作流会持续产出一致的结果，因为节点背后的模型版本不会变动。'
+    en: 'Pinned versions, so a saved graph keeps its result.',
+    'zh-CN': '版本锁定，保存的工作流结果不变。'
   },
   'cloudNodesLaunch.howItWorks.2.label': {
-    en: 'Only the node\u2019s own inputs leave your machine. Everything else in the workflow keeps running locally.',
-    'zh-CN':
-      '只有该节点自身的输入会离开你的机器，工作流中的其他部分仍在本地运行。'
+    en: 'Only the node’s inputs leave your machine.',
+    'zh-CN': '只有该节点的输入会离开你的机器。'
   },
   'cloudNodesLaunch.howItWorks.3.label': {
-    en: 'Results come back as IMAGE, VIDEO or AUDIO. No upload step, no second application, no environment to maintain.',
-    'zh-CN':
-      '结果以 IMAGE、VIDEO 或 AUDIO 的形式返回。无需上传，无需第二个应用，也无需维护运行环境。'
+    en: 'Results return as a normal IMAGE, VIDEO or AUDIO output.',
+    'zh-CN': '结果以普通的 IMAGE、VIDEO 或 AUDIO 输出返回。'
   },
   'cloudNodesLaunch.howItWorks.4.label': {
-    en: 'You are charged for execution time rather than per generation, so a short image costs meaningfully less than a long video.',
-    'zh-CN':
-      '按实际执行时间计费，而不是按次计费，因此生成一张图远比一段长视频便宜。'
+    en: 'Charged by execution time, not per generation.',
+    'zh-CN': '按执行时间计费，而不是按次计费。'
   },
   'cloudNodesLaunch.why.heading': {
-    en: 'Built for the models\n',
-    'zh-CN': '为那些跑不动的\n'
+    en: 'Maximum control.\n',
+    'zh-CN': '完全掌控。\n'
   },
   'cloudNodesLaunch.why.headingHighlight': {
-    en: "your machine can't hold",
-    'zh-CN': '模型而生'
+    en: 'Offload only the compute.',
+    'zh-CN': '只把算力交给我们。'
   },
   'cloudNodesLaunch.why.subtitle': {
-    en: 'This is not a push to move you off local. Keep running what your machine handles well.',
-    'zh-CN': '这不是要把你从本地推走。你的机器跑得动的，继续在本地跑。'
+    en: 'Your graph, your nodes, your outputs. A Comfy Cloud node hands off a single model run and hands the result straight back.',
+    'zh-CN':
+      '你的工作流、你的节点、你的输出，始终属于你。Comfy Cloud 节点只把一次模型运行交出去，并把结果直接送回。'
   },
   'cloudNodesLaunch.why.1.title': {
-    en: 'The VRAM wall',
-    'zh-CN': '显存的墙'
+    en: 'Your workflow stays yours',
+    'zh-CN': '工作流始终是你的'
   },
   'cloudNodesLaunch.why.1.description': {
-    en: 'Every ComfyUI user meets CUDA error: out of memory eventually. A model ships, you want to try it, and it does not fit on your card.',
+    en: 'The graph you built, the nodes around it and the outputs you route onward all stay on your machine, exactly as they are.',
     'zh-CN':
-      '每个 ComfyUI 用户迟早都会遇到 CUDA error: out of memory。新模型发布了，你想试试，却装不进你的显卡。'
+      '你搭建的工作流、周围的节点，以及往下游输送的输出，都原封不动地留在你的机器上。'
   },
   'cloudNodesLaunch.why.2.title': {
-    en: 'Renting a box is not the answer',
-    'zh-CN': '租一台机器并不是答案'
+    en: 'Only the compute moves',
+    'zh-CN': '移动的只有算力'
   },
   'cloudNodesLaunch.why.2.description': {
-    en: 'The thing you actually want to keep is your workflow: the graph you built, the nodes around it, the outputs you route onward.',
+    en: 'A Cloud node sends the inputs for one model and returns the result. Everything else in the workflow keeps running locally.',
     'zh-CN':
-      '你真正想保留的是自己的工作流：你搭好的图、周围的节点，以及往下游输送的输出。'
+      '云端节点只发送某一个模型所需的输入，并返回结果。工作流中的其他部分仍在本地运行。'
   },
   'cloudNodesLaunch.why.3.title': {
-    en: 'No plan to buy',
-    'zh-CN': '不必购买套餐'
+    en: 'Reach for any model',
+    'zh-CN': '任何模型都能用上'
   },
   'cloudNodesLaunch.why.3.description': {
-    en: 'An account and credits are enough, the same as every other partner node. There is no plan floor and no monthly minimum.',
+    en: 'The newest open models run on our GPUs at full size, so what your hardware can do stops deciding what you can make.',
     'zh-CN':
-      '只需账号和积分，与其他合作伙伴节点一样。没有套餐门槛，也没有每月最低消费。'
+      '最新的开源模型以完整规模在我们的 GPU 上运行，你能做什么不再取决于手上的硬件。'
   },
   'cloudNodesLaunch.why.4.title': {
     en: 'One node, not a migration',
@@ -8591,7 +8588,7 @@ Enterprise`
   },
   'cloudNodesLaunch.why.4.description': {
     en: 'You add a node to the graph you already have. Nothing else about your setup changes.',
-    'zh-CN': '你只是在已有的工作流里加一个节点。其他一切都不用改。'
+    'zh-CN': '你只是在已有的工作流里加一个节点，其他一切都不用改。'
   },
   'cloudNodesLaunch.faq.heading': {
     en: 'Frequently asked questions',
@@ -8602,9 +8599,9 @@ Enterprise`
     'zh-CN': '为什么这些节点标记为测试版？'
   },
   'cloudNodesLaunch.faq.1.a': {
-    en: 'Because the curated set is still changing: nodes may gain or lose options, and a workflow may be retired. It is not a statement about reliability, runs are real and are billed the same as any other partner node. The [BETA] marker is on the node name itself so you see it before you use one.',
+    en: 'Because the curated set is still changing: nodes may gain or lose options, and a workflow may be retired. It is not a statement about reliability, runs are real and are billed the same as any other partner node.',
     'zh-CN':
-      '因为精选节点集仍在调整：节点的选项可能增减，某个工作流也可能被下线。这与稳定性无关，运行是真实的，计费方式与其他合作伙伴节点一致。[BETA] 标记就在节点名称上，你在使用前就能看到。'
+      '因为精选节点集仍在调整：节点的选项可能增减，某个工作流也可能被下线。这与稳定性无关，运行是真实的，计费方式与其他合作伙伴节点一致。'
   },
   'cloudNodesLaunch.faq.2.q': {
     en: 'Do I need a Comfy Cloud subscription?',
