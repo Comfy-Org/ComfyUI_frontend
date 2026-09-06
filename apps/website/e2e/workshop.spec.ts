@@ -39,7 +39,8 @@ test.describe('Workshop V2', () => {
       'MiniMax H3'
     )
     await hub.getByTestId('hub-filter').click()
-    await page.getByRole('option', { name: /^Flux \d+$/ }).click()
+    await page.getByTestId('hub-facet-models').click()
+    await page.getByRole('option', { name: 'Flux', exact: true }).click()
     await expect(hub.getByTestId('hub-filter-count')).toHaveText('1')
   })
 
