@@ -60,6 +60,7 @@ export type AuthFlowAction =
   | 'github_sign_in'
   | 'github_sign_up'
   | 'password_reset'
+  | 'api_key_sign_in'
 
 /**
  * Metadata for failed authentication attempts
