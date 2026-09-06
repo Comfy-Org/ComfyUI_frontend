@@ -203,11 +203,20 @@ describe('Dynamic Combos', () => {
   test('Same-name children keep separate values across options', () => {
     const node = testNode()
     addDynamicCombo(node, [['INT'], ['INT']])
+
+    // Give each option's child a distinct value.
     node.widgets[1].value = 3
-
     node.widgets[0].value = '1'
-
     expect(node.widgets[1].value).not.toBe(3)
+    node.widgets[1].value = 7
+
+    // Toggling back and forth restores each option's own value exactly.
+    node.widgets[0].value = '0'
+    expect(node.widgets[1].value).toBe(3)
+    node.widgets[0].value = '1'
+    expect(node.widgets[1].value).toBe(7)
+    node.widgets[0].value = '0'
+    expect(node.widgets[1].value).toBe(3)
   })
 })
 describe('Autogrow', () => {
