@@ -1264,20 +1264,28 @@ class LayoutStoreImpl {
           try {
             listener(change)
           } catch (error) {
-            reportError(error, {
-              errorType: 'canvas_layout_listener_failed',
-              tags: {
-                failure_kind: 'caught_unexpected',
-                feature_area: 'canvas',
-                operation: 'sync',
-                outcome: 'failed',
-                listener_scope: 'geometry'
-              },
-              level: 'error'
-            })
+            this.reportListenerFailure(error, 'geometry')
           }
         }
       }
+    })
+  }
+
+  private reportListenerFailure(
+    error: unknown,
+    scope: 'geometry' | 'global' | 'node'
+  ): void {
+    console.error(`[LayoutStore] ${scope} listener failed`, error)
+    reportError(error, {
+      errorType: 'canvas_layout_listener_failed',
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'canvas',
+        operation: 'sync',
+        outcome: 'failed',
+        listener_scope: scope
+      },
+      level: 'error'
     })
   }
 
@@ -1286,17 +1294,7 @@ class LayoutStoreImpl {
       try {
         listener(change)
       } catch (error) {
-        reportError(error, {
-          errorType: 'canvas_layout_listener_failed',
-          tags: {
-            failure_kind: 'caught_unexpected',
-            feature_area: 'canvas',
-            operation: 'sync',
-            outcome: 'failed',
-            listener_scope: 'global'
-          },
-          level: 'error'
-        })
+        this.reportListenerFailure(error, 'global')
       }
     })
   }
@@ -1313,17 +1311,7 @@ class LayoutStoreImpl {
         try {
           listener(change)
         } catch (error) {
-          reportError(error, {
-            errorType: 'canvas_layout_listener_failed',
-            tags: {
-              failure_kind: 'caught_unexpected',
-              feature_area: 'canvas',
-              operation: 'sync',
-              outcome: 'failed',
-              listener_scope: 'node'
-            },
-            level: 'error'
-          })
+          this.reportListenerFailure(error, 'node')
         }
       })
     }

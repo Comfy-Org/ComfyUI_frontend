@@ -325,31 +325,46 @@ describe('layoutStore CRDT operations', () => {
       global: new Error('global listener failed'),
       node: new Error('node listener failed')
     }
-    const successfulListeners = {
+    const listenersBefore = {
       geometry: vi.fn(),
       global: vi.fn(),
       node: vi.fn()
     }
+    const listenersAfter = {
+      geometry: vi.fn(),
+      global: vi.fn(),
+      node: vi.fn()
+    }
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {})
 
+    const stopBeforeGeometry = layoutStore.onGeometryChange(
+      listenersBefore.geometry
+    )
     const stopFailingGeometry = layoutStore.onGeometryChange(() => {
       throw errors.geometry
     })
-    const stopSuccessfulGeometry = layoutStore.onGeometryChange(
-      successfulListeners.geometry
+    const stopAfterGeometry = layoutStore.onGeometryChange(
+      listenersAfter.geometry
     )
+    const stopBeforeGlobal = layoutStore.onChange(listenersBefore.global)
     const stopFailingGlobal = layoutStore.onChange(() => {
       throw errors.global
     })
-    const stopSuccessfulGlobal = layoutStore.onChange(
-      successfulListeners.global
+    const stopAfterGlobal = layoutStore.onChange(listenersAfter.global)
+    const stopBeforeNode = layoutStore.onNodeChange(
+      GRAPH,
+      nodeId,
+      listenersBefore.node
     )
     const stopFailingNode = layoutStore.onNodeChange(GRAPH, nodeId, () => {
       throw errors.node
     })
-    const stopSuccessfulNode = layoutStore.onNodeChange(
+    const stopAfterNode = layoutStore.onNodeChange(
       GRAPH,
       nodeId,
-      successfulListeners.node
+      listenersAfter.node
     )
 
     layoutStore.applyOperation({
@@ -366,10 +381,18 @@ describe('layoutStore CRDT operations', () => {
       expect(mockReportError).toHaveBeenCalledTimes(3)
     })
 
-    for (const listener of Object.values(successfulListeners)) {
+    for (const listener of Object.values(listenersBefore)) {
       expect(listener).toHaveBeenCalledOnce()
     }
+    for (const listener of Object.values(listenersAfter)) {
+      expect(listener).toHaveBeenCalledOnce()
+    }
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(3)
     for (const scope of ['geometry', 'global', 'node'] as const) {
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        `[LayoutStore] ${scope} listener failed`,
+        errors[scope]
+      )
       expect(mockReportError).toHaveBeenCalledWith(errors[scope], {
         errorType: 'canvas_layout_listener_failed',
         tags: {
@@ -383,12 +406,16 @@ describe('layoutStore CRDT operations', () => {
       })
     }
 
+    consoleErrorSpy.mockRestore()
+    stopBeforeGeometry()
     stopFailingGeometry()
-    stopSuccessfulGeometry()
+    stopAfterGeometry()
+    stopBeforeGlobal()
     stopFailingGlobal()
-    stopSuccessfulGlobal()
+    stopAfterGlobal()
+    stopBeforeNode()
     stopFailingNode()
-    stopSuccessfulNode()
+    stopAfterNode()
   })
 
   it('clears node-scoped listeners when the viewed graph changes', () => {
