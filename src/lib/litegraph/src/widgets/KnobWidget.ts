@@ -231,8 +231,10 @@ export class KnobWidget extends BaseWidget<IKnobWidget> implements IKnobWidget {
         : step
 
     const deltaValue = adjustment * step_with_shift_modifier
+    const currentValue = coerceNumericWidgetValue(this.value)
     const newValue = clamp(
-      this.value + deltaValue,
+      (Number.isNaN(currentValue) ? this.options.min : currentValue) +
+        deltaValue,
       this.options.min,
       this.options.max
     )
