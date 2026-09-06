@@ -1486,96 +1486,6 @@
       }
     }
   },
-  "ByteDanceImageNode": {
-    "description": "Gere imagens usando modelos ByteDance via API com base em um prompt",
-    "display_name": "ByteDance Imagem",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "guidance_scale": {
-        "name": "guidance_scale",
-        "tooltip": "Um valor mais alto faz a imagem seguir o prompt mais de perto"
-      },
-      "height": {
-        "name": "height",
-        "tooltip": "Altura personalizada para a imagem. O valor só funciona se `size_preset` estiver definido como `Personalizado`"
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "O prompt de texto usado para gerar a imagem"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Seed a ser usada para a geração"
-      },
-      "size_preset": {
-        "name": "size_preset",
-        "tooltip": "Escolha um tamanho recomendado. Selecione Personalizado para usar a largura e altura abaixo"
-      },
-      "watermark": {
-        "name": "watermark",
-        "tooltip": "Se deve adicionar uma marca d'água \"Gerado por IA\" à imagem"
-      },
-      "width": {
-        "name": "width",
-        "tooltip": "Largura personalizada para a imagem. O valor só funciona se `size_preset` estiver definido como `Personalizado`"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "ByteDanceImageReferenceNode": {
-    "description": "Gerar vídeo usando prompt e imagens de referência.",
-    "display_name": "Imagens de Referência ByteDance para Vídeo",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "proporção",
-        "tooltip": "A proporção do vídeo de saída."
-      },
-      "control_after_generate": {
-        "name": "controle após gerar"
-      },
-      "duration": {
-        "name": "duração",
-        "tooltip": "A duração do vídeo de saída em segundos."
-      },
-      "images": {
-        "name": "imagens",
-        "tooltip": "De uma a quatro imagens."
-      },
-      "model": {
-        "name": "modelo"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "O prompt de texto usado para gerar o vídeo."
-      },
-      "resolution": {
-        "name": "resolução",
-        "tooltip": "A resolução do vídeo de saída."
-      },
-      "seed": {
-        "name": "semente",
-        "tooltip": "Semente a ser usada para a geração."
-      },
-      "watermark": {
-        "name": "marca d'água",
-        "tooltip": "Se deve adicionar uma marca d'água \"Gerado por IA\" ao vídeo."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "ByteDanceImageToVideoNode": {
     "description": "Gerar vídeo usando modelos ByteDance via API com base em imagem e prompt",
     "display_name": "Imagem para Vídeo ByteDance",
@@ -9589,40 +9499,6 @@
       }
     }
   },
-  "KlingVideoExtendNode": {
-    "description": "Nó Kling Extender Vídeo. Estenda vídeos criados por outros nós Kling. O video_id é criado usando outros Nós Kling.",
-    "display_name": "Kling Extender Vídeo",
-    "inputs": {
-      "cfg_scale": {
-        "name": "cfg_scale"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Prompt de texto negativo para elementos a serem evitados no vídeo estendido"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Prompt de texto positivo para guiar a extensão do vídeo"
-      },
-      "video_id": {
-        "name": "video_id",
-        "tooltip": "O ID do vídeo a ser estendido. Suporta vídeos gerados por texto para vídeo, imagem para vídeo e operações anteriores de extensão de vídeo. Não pode exceder 3 minutos de duração total após a extensão."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "duration",
-        "tooltip": null
-      }
-    }
-  },
   "KlingVideoNode": {
     "description": "Gere vídeos com Kling V3. Suporta texto-para-vídeo e imagem-para-vídeo com storyboard opcional, multi-prompt e geração de áudio.",
     "display_name": "Kling 3.0 Vídeo",
@@ -11423,70 +11299,6 @@
       "seed": {
         "name": "semente",
         "tooltip": "Semente para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da semente."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LtxvApiImageToVideo": {
-    "description": "Vídeos de qualidade profissional com duração e resolução personalizáveis a partir da imagem inicial.",
-    "display_name": "LTXV Imagem para Vídeo",
-    "inputs": {
-      "duration": {
-        "name": "duration"
-      },
-      "fps": {
-        "name": "fps"
-      },
-      "generate_audio": {
-        "name": "generate_audio",
-        "tooltip": "Quando verdadeiro, o vídeo gerado incluirá áudio gerado por IA correspondente à cena."
-      },
-      "image": {
-        "name": "image",
-        "tooltip": "Primeiro quadro a ser usado para o vídeo."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "resolution": {
-        "name": "resolution"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LtxvApiTextToVideo": {
-    "description": "Vídeos de qualidade profissional com duração e resolução personalizáveis.",
-    "display_name": "LTXV Texto para Vídeo",
-    "inputs": {
-      "duration": {
-        "name": "duração"
-      },
-      "fps": {
-        "name": "fps"
-      },
-      "generate_audio": {
-        "name": "gerar_áudio",
-        "tooltip": "Quando verdadeiro, o vídeo gerado incluirá áudio gerado por IA correspondente à cena."
-      },
-      "model": {
-        "name": "modelo"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "resolution": {
-        "name": "resolução"
       }
     },
     "outputs": {
@@ -16184,7 +15996,11 @@
       },
       "max_output_tokens": {
         "name": "max_output_tokens",
-        "tooltip": "Um limite superior para o número de tokens que podem ser gerados em uma resposta, incluindo tokens de saída visíveis."
+        "tooltip": "Um limite máximo para o número de tokens que podem ser gerados em uma resposta, incluindo tokens de saída visíveis e tokens de raciocínio"
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "Quanto o modelo raciocina antes de responder. 'default' deixa a escolha para o modelo. Os níveis compatíveis variam por modelo: GPT-6 Astra low-max, GPT-5.6 none-max (sem minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, série o low-high; o GPT-4.1 não tem raciocínio. Níveis não compatíveis são rejeitados antes do envio da solicitação."
       },
       "truncation": {
         "name": "truncation",
@@ -16224,78 +16040,6 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "Entradas de texto para o modelo, usadas para gerar uma resposta."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIDalle2": {
-    "description": "Gera imagens de forma síncrona via endpoint DALL·E 2 da OpenAI.",
-    "display_name": "OpenAI DALL·E 2",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "image": {
-        "name": "image",
-        "tooltip": "Imagem de referência opcional para edição de imagem."
-      },
-      "mask": {
-        "name": "mask",
-        "tooltip": "Máscara opcional para inpainting (áreas brancas serão substituídas)"
-      },
-      "n": {
-        "name": "n",
-        "tooltip": "Quantas imagens gerar"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Prompt de texto para o DALL·E"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "ainda não implementado no backend"
-      },
-      "size": {
-        "name": "size",
-        "tooltip": "Tamanho da imagem"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIDalle3": {
-    "description": "Gera imagens de forma síncrona via endpoint DALL·E 3 da OpenAI.",
-    "display_name": "OpenAI DALL·E 3",
-    "inputs": {
-      "control_after_generate": {
-        "name": "controle após gerar"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Prompt de texto para o DALL·E"
-      },
-      "quality": {
-        "name": "qualidade",
-        "tooltip": "Qualidade da imagem"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "ainda não implementado no backend"
-      },
-      "size": {
-        "name": "tamanho",
-        "tooltip": "Tamanho da imagem"
-      },
-      "style": {
-        "name": "estilo",
-        "tooltip": "Vivo faz o modelo tender a gerar imagens hiper-realistas e dramáticas. Natural faz o modelo produzir imagens mais naturais, com aparência menos hiper-realista."
       }
     },
     "outputs": {

@@ -1486,96 +1486,6 @@
       }
     }
   },
-  "ByteDanceImageNode": {
-    "description": "透過 API 基於提示詞使用字節跳動模型生成圖像",
-    "display_name": "字節跳動圖像",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "guidance_scale": {
-        "name": "guidance_scale",
-        "tooltip": "數值越高，圖像越遵循提示詞"
-      },
-      "height": {
-        "name": "height",
-        "tooltip": "圖像的自訂高度。僅在 `size_preset` 設為 `Custom` 時生效"
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "用於生成圖像的文字提示詞"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "用於生成的種子值"
-      },
-      "size_preset": {
-        "name": "size_preset",
-        "tooltip": "選擇推薦尺寸。選擇「自訂」以使用下方的寬度和高度"
-      },
-      "watermark": {
-        "name": "watermark",
-        "tooltip": "是否在圖像上添加「AI 生成」浮水印"
-      },
-      "width": {
-        "name": "width",
-        "tooltip": "圖像的自訂寬度。僅在 `size_preset` 設為 `Custom` 時生效"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "ByteDanceImageReferenceNode": {
-    "description": "使用提示詞和參考圖像生成影片",
-    "display_name": "字節跳動參考圖像轉影片",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "輸出影片的長寬比。"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration": {
-        "name": "duration",
-        "tooltip": "輸出影片的持續時間（以秒為單位）。"
-      },
-      "images": {
-        "name": "images",
-        "tooltip": "一至四張圖片。"
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "用於生成影片的文字提示。"
-      },
-      "resolution": {
-        "name": "resolution",
-        "tooltip": "輸出影片的解析度。"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "用於生成的種子值。"
-      },
-      "watermark": {
-        "name": "watermark",
-        "tooltip": "是否在影片中添加「AI 生成」浮水印。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "ByteDanceImageToVideoNode": {
     "description": "透過 API 使用字節跳動模型，基於圖片和提示生成影片",
     "display_name": "字節跳動圖片轉影片",
@@ -9589,40 +9499,6 @@
       }
     }
   },
-  "KlingVideoExtendNode": {
-    "description": "Kling Video 延伸節點。可延伸由其他 Kling 節點製作的影片。video_id 是透過其他 Kling 節點產生的。",
-    "display_name": "Kling Video 延伸",
-    "inputs": {
-      "cfg_scale": {
-        "name": "cfg_scale"
-      },
-      "negative_prompt": {
-        "name": "負向提示詞",
-        "tooltip": "用於避免在延伸影片中出現的負向文字提示"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "用於引導影片延伸的正向文字提示"
-      },
-      "video_id": {
-        "name": "video_id",
-        "tooltip": "要延伸的影片 ID。支援由文字轉影片、圖片轉影片及先前影片延伸操作所產生的影片。延伸後總長度不可超過 3 分鐘。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "時長",
-        "tooltip": null
-      }
-    }
-  },
   "KlingVideoNode": {
     "description": "使用 Kling V3 產生影片。支援文字轉影片與圖片轉影片，可選擇分鏡多提示與音訊生成。",
     "display_name": "Kling 3.0 影片",
@@ -11423,70 +11299,6 @@
       "seed": {
         "name": "種子",
         "tooltip": "決定此節點是否重新執行的種子；實際結果無論種子如何皆為非確定性。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LtxvApiImageToVideo": {
-    "description": "基於起始圖片，具有可自訂持續時間和解析度的專業級影片。",
-    "display_name": "LTXV 圖片轉影片",
-    "inputs": {
-      "duration": {
-        "name": "持續時間"
-      },
-      "fps": {
-        "name": "幀率"
-      },
-      "generate_audio": {
-        "name": "生成音訊",
-        "tooltip": "當為 true 時，生成的影片將包含與場景匹配的 AI 生成音訊。"
-      },
-      "image": {
-        "name": "圖片",
-        "tooltip": "要用於影片的第一幀。"
-      },
-      "model": {
-        "name": "模型"
-      },
-      "prompt": {
-        "name": "提示詞"
-      },
-      "resolution": {
-        "name": "解析度"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LtxvApiTextToVideo": {
-    "description": "具有可自訂持續時間和解析度的專業級影片。",
-    "display_name": "LTXV 文字轉影片",
-    "inputs": {
-      "duration": {
-        "name": "持續時間"
-      },
-      "fps": {
-        "name": "幀率"
-      },
-      "generate_audio": {
-        "name": "生成音訊",
-        "tooltip": "當為 true 時，生成的影片將包含與場景匹配的 AI 生成音訊。"
-      },
-      "model": {
-        "name": "模型"
-      },
-      "prompt": {
-        "name": "提示詞"
-      },
-      "resolution": {
-        "name": "解析度"
       }
     },
     "outputs": {
@@ -16184,7 +15996,11 @@
       },
       "max_output_tokens": {
         "name": "max_output_tokens",
-        "tooltip": "為回應生成的 token 數量的上限，包括可見的輸出 token"
+        "tooltip": "回應可產生的 Token 數量上限，包含可見輸出 Token 與推理 Token"
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "模型在回答前進行推理的程度。'default' 由模型自行決定。各模型支援的層級不同：GPT-6 Astra low-max、GPT-5.6 none-max（不含 minimal）、GPT-5.5 none-xhigh、GPT-5.5 Pro medium-xhigh、GPT-5 minimal-high、o-series low-high；GPT-4.1 不具推理功能。不支援的層級會在傳送請求前遭拒絕。"
       },
       "truncation": {
         "name": "truncation",
@@ -16224,78 +16040,6 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "模型的文字輸入，用於生成回應。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIDalle2": {
-    "description": "透過 OpenAI 的 DALL·E 2 端點同步產生影像。",
-    "display_name": "OpenAI DALL·E 2",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "image": {
-        "name": "參考影像",
-        "tooltip": "可選的參考影像，用於影像編輯。"
-      },
-      "mask": {
-        "name": "遮罩",
-        "tooltip": "可選的遮罩，用於修補（白色區域將被取代）"
-      },
-      "n": {
-        "name": "數量",
-        "tooltip": "要產生多少張影像"
-      },
-      "prompt": {
-        "name": "提示詞",
-        "tooltip": "DALL·E 的文字提示"
-      },
-      "seed": {
-        "name": "種子",
-        "tooltip": "後端尚未實作"
-      },
-      "size": {
-        "name": "尺寸",
-        "tooltip": "影像尺寸"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIDalle3": {
-    "description": "透過 OpenAI 的 DALL·E 3 端點同步產生影像。",
-    "display_name": "OpenAI DALL·E 3",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "prompt": {
-        "name": "提示詞",
-        "tooltip": "DALL·E 的文字提示"
-      },
-      "quality": {
-        "name": "畫質",
-        "tooltip": "影像品質"
-      },
-      "seed": {
-        "name": "種子",
-        "tooltip": "後端尚未實作"
-      },
-      "size": {
-        "name": "尺寸",
-        "tooltip": "影像尺寸"
-      },
-      "style": {
-        "name": "風格",
-        "tooltip": "「生動」會讓模型傾向產生超現實且戲劇化的影像。「自然」則會讓模型產生較自然、不那麼超現實的影像。"
       }
     },
     "outputs": {

@@ -1486,96 +1486,6 @@
       }
     }
   },
-  "ByteDanceImageNode": {
-    "description": "إنشاء الصور باستخدام نماذج ByteDance عبر API استنادًا إلى النص الموجه",
-    "display_name": "صورة ByteDance",
-    "inputs": {
-      "control_after_generate": {
-        "name": "التحكم بعد التوليد"
-      },
-      "guidance_scale": {
-        "name": "مقياس التوجيه",
-        "tooltip": "القيمة الأعلى تجعل الصورة تتبع النص الموجه بشكل أكبر"
-      },
-      "height": {
-        "name": "الارتفاع",
-        "tooltip": "الارتفاع المخصص للصورة. القيمة تعمل فقط إذا تم ضبط `size_preset` على `Custom`"
-      },
-      "model": {
-        "name": "النموذج"
-      },
-      "prompt": {
-        "name": "النص الموجه",
-        "tooltip": "النص الموجه المستخدم لإنشاء الصورة"
-      },
-      "seed": {
-        "name": "البذرة",
-        "tooltip": "البذرة المستخدمة في التوليد"
-      },
-      "size_preset": {
-        "name": "ضبط الحجم",
-        "tooltip": "اختر حجمًا موصى به. اختر مخصص لاستخدام العرض والارتفاع أدناه"
-      },
-      "watermark": {
-        "name": "علامة مائية",
-        "tooltip": "ما إذا كان سيتم إضافة علامة مائية \"تم إنشاؤها بالذكاء الاصطناعي\" إلى الصورة"
-      },
-      "width": {
-        "name": "العرض",
-        "tooltip": "العرض المخصص للصورة. القيمة تعمل فقط إذا تم ضبط `size_preset` على `Custom`"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "ByteDanceImageReferenceNode": {
-    "description": "إنشاء فيديو باستخدام النص الموجه والصور المرجعية.",
-    "display_name": "فيديو ByteDance من الصور المرجعية",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "نسبة العرض إلى الارتفاع للفيديو الناتج."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration": {
-        "name": "duration",
-        "tooltip": "مدة الفيديو الناتج بالثواني."
-      },
-      "images": {
-        "name": "images",
-        "tooltip": "من صورة إلى أربع صور."
-      },
-      "model": {
-        "name": "النموذج"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "المطالبة النصية المستخدمة لتوليد الفيديو."
-      },
-      "resolution": {
-        "name": "resolution",
-        "tooltip": "دقة الفيديو الناتج."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "البذرة المستخدمة في التوليد."
-      },
-      "watermark": {
-        "name": "watermark",
-        "tooltip": "ما إذا كان سيتم إضافة علامة مائية \"تم إنشاؤه بالذكاء الاصطناعي\" إلى الفيديو."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "ByteDanceImageToVideoNode": {
     "description": "توليد فيديو باستخدام نماذج ByteDance عبر واجهة برمجة التطبيقات بناءً على الصورة والمطالبة",
     "display_name": "ByteDance من صورة إلى فيديو",
@@ -9589,40 +9499,6 @@
       }
     }
   },
-  "KlingVideoExtendNode": {
-    "description": "عقدة تمديد الفيديو من كليينج. تمديد الفيديوهات المصنوعة بواسطة عقد كليينج الأخرى. يتم إنشاء video_id باستخدام عقد كليينج الأخرى.",
-    "display_name": "كليينج تمديد الفيديو",
-    "inputs": {
-      "cfg_scale": {
-        "name": "cfg_scale"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "نص سلبي لعناصر يجب تجنبها في الفيديو الممدد"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "نص إيجابي لتوجيه تمديد الفيديو"
-      },
-      "video_id": {
-        "name": "video_id",
-        "tooltip": "معرف الفيديو المراد تمديده. يدعم الفيديوهات الناتجة عن تحويل النص إلى فيديو، وتحويل الصورة إلى فيديو، وعمليات تمديد الفيديو السابقة. لا يمكن أن تتجاوز مدة الفيديو الإجمالية بعد التمديد 3 دقائق."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "duration",
-        "tooltip": null
-      }
-    }
-  },
   "KlingVideoNode": {
     "description": "إنشاء مقاطع فيديو باستخدام Kling V3. يدعم التحويل من نص إلى فيديو ومن صورة إلى فيديو مع إمكانية استخدام لوحة قصة متعددة التعليمات وخيار توليد الصوت.",
     "display_name": "Kling 3.0 فيديو",
@@ -11423,70 +11299,6 @@
       "seed": {
         "name": "البذرة",
         "tooltip": "بذرة لتحديد ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج الفعلية غير حتمية بغض النظر عن البذرة."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LtxvApiImageToVideo": {
-    "description": "مقاطع فيديو بجودة احترافية مع مدة ودقة قابلة للتخصيص بناءً على الصورة الأولية.",
-    "display_name": "LTXV صورة إلى فيديو",
-    "inputs": {
-      "duration": {
-        "name": "مدة"
-      },
-      "fps": {
-        "name": "معدل الإطارات"
-      },
-      "generate_audio": {
-        "name": "إنشاء_صوت",
-        "tooltip": "عند تفعيله، سيتضمن الفيديو المُنشأ صوتًا مُولَّدًا بالذكاء الاصطناعي يتناسب مع المشهد."
-      },
-      "image": {
-        "name": "صورة",
-        "tooltip": "الإطار الأول الذي سيتم استخدامه للفيديو."
-      },
-      "model": {
-        "name": "نموذج"
-      },
-      "prompt": {
-        "name": "مُوجِّه"
-      },
-      "resolution": {
-        "name": "دقة"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LtxvApiTextToVideo": {
-    "description": "مقاطع فيديو بجودة احترافية مع مدة ودقة قابلة للتخصيص.",
-    "display_name": "LTXV نص إلى فيديو",
-    "inputs": {
-      "duration": {
-        "name": "مدة"
-      },
-      "fps": {
-        "name": "معدل الإطارات"
-      },
-      "generate_audio": {
-        "name": "إنشاء_صوت",
-        "tooltip": "عند تفعيله، سيتضمن الفيديو المُنشأ صوتًا مُولَّدًا بالذكاء الاصطناعي يتناسب مع المشهد."
-      },
-      "model": {
-        "name": "نموذج"
-      },
-      "prompt": {
-        "name": "مُوجِّه"
-      },
-      "resolution": {
-        "name": "دقة"
       }
     },
     "outputs": {
@@ -16184,7 +15996,11 @@
       },
       "max_output_tokens": {
         "name": "الرموز المخرجة القصوى",
-        "tooltip": "حد أعلى لعدد الرموز التي يمكن توليدها للاستجابة، بما في ذلك الرموز المخرجة المرئية"
+        "tooltip": "حدّ أعلى لعدد الرموز المميزة التي يمكن إنشاؤها للاستجابة، بما في ذلك رموز الإخراج المرئية ورموز الاستدلال"
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "مقدار استدلال النموذج قبل الإجابة. يترك 'default' الخيار للنموذج. تختلف المستويات المدعومة حسب النموذج: GPT-6 Astra من low إلى max، وGPT-5.6 من none إلى max (دون minimal)، وGPT-5.5 من none إلى xhigh، وGPT-5.5 Pro من medium إلى xhigh، وGPT-5 من minimal إلى high، وسلسلة o من low إلى high؛ لا يدعم GPT-4.1 الاستدلال. تُرفض المستويات غير المدعومة قبل إرسال الطلب."
       },
       "truncation": {
         "name": "الاقتصاص",
@@ -16224,78 +16040,6 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "مدخلات نصية للنموذج، تُستخدم لإنشاء رد."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIDalle2": {
-    "description": "ينشئ صورًا بشكل متزامن عبر نقطة نهاية DALL·E 2 من OpenAI.",
-    "display_name": "OpenAI DALL·E 2",
-    "inputs": {
-      "control_after_generate": {
-        "name": "التحكم بعد الإنشاء"
-      },
-      "image": {
-        "name": "الصورة",
-        "tooltip": "صورة مرجعية اختيارية لتحرير الصور."
-      },
-      "mask": {
-        "name": "القناع",
-        "tooltip": "قناع اختياري للرسم الداخلي (سيتم استبدال المناطق البيضاء)"
-      },
-      "n": {
-        "name": "عدد الصور",
-        "tooltip": "كم عدد الصور التي يتم إنشاؤها"
-      },
-      "prompt": {
-        "name": "النص الوصفي",
-        "tooltip": "النص الوصفي لـ DALL·E"
-      },
-      "seed": {
-        "name": "البذرة",
-        "tooltip": "لم يتم تنفيذه بعد في الخلفية"
-      },
-      "size": {
-        "name": "الحجم",
-        "tooltip": "حجم الصورة"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIDalle3": {
-    "description": "ينشئ صورًا بشكل متزامن عبر نقطة نهاية DALL·E 3 من OpenAI.",
-    "display_name": "OpenAI DALL·E 3",
-    "inputs": {
-      "control_after_generate": {
-        "name": "التحكم بعد الإنشاء"
-      },
-      "prompt": {
-        "name": "النص الوصفي",
-        "tooltip": "النص الوصفي لـ DALL·E"
-      },
-      "quality": {
-        "name": "الجودة",
-        "tooltip": "جودة الصورة"
-      },
-      "seed": {
-        "name": "البذرة",
-        "tooltip": "لم يتم تنفيذه بعد في الخلفية"
-      },
-      "size": {
-        "name": "الحجم",
-        "tooltip": "حجم الصورة"
-      },
-      "style": {
-        "name": "الأسلوب",
-        "tooltip": "النمط 'Vivid' يجعل النموذج يميل لإنشاء صور فائقة الواقعية ودرامية. النمط 'Natural' يجعل النموذج ينتج صورًا أكثر طبيعية وأقل واقعية بشكل مبالغ."
       }
     },
     "outputs": {

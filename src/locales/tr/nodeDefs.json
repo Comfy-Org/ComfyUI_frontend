@@ -1486,96 +1486,6 @@
       }
     }
   },
-  "ByteDanceImageNode": {
-    "description": "İstek üzerine api aracılığıyla ByteDance modellerini kullanarak görüntüler oluşturun",
-    "display_name": "ByteDance Görüntü",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "guidance_scale": {
-        "name": "guidance_scale",
-        "tooltip": "Daha yüksek değer, görselin istemi daha yakından takip etmesini sağlar"
-      },
-      "height": {
-        "name": "height",
-        "tooltip": "Görsel için özel yükseklik. Bu değer yalnızca `size_preset` `Custom` olarak ayarlandığında çalışır"
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Görseli oluşturmak için kullanılan metin istemi"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Oluşturma için kullanılacak seed değeri"
-      },
-      "size_preset": {
-        "name": "size_preset",
-        "tooltip": "Önerilen bir boyut seçin. Aşağıdaki genişlik ve yüksekliği kullanmak için Özel'i seçin"
-      },
-      "watermark": {
-        "name": "watermark",
-        "tooltip": "Görsele \"AI tarafından oluşturuldu\" filigranı eklenip eklenmeyeceği"
-      },
-      "width": {
-        "name": "width",
-        "tooltip": "Görsel için özel genişlik. Bu değer yalnızca `size_preset` `Custom` olarak ayarlandığında çalışır"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "ByteDanceImageReferenceNode": {
-    "description": "İstemi ve referans görselleri kullanarak video oluşturun.",
-    "display_name": "ByteDance Referans Görsellerden Videoya",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "Çıktı videosunun en-boy oranı."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration": {
-        "name": "duration",
-        "tooltip": "Çıktı videosunun saniye cinsinden süresi."
-      },
-      "images": {
-        "name": "images",
-        "tooltip": "Bir ila dört görsel."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Videoyu oluşturmak için kullanılan metin istemi."
-      },
-      "resolution": {
-        "name": "resolution",
-        "tooltip": "Çıktı videosunun çözünürlüğü."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Oluşturma için kullanılacak seed değeri."
-      },
-      "watermark": {
-        "name": "watermark",
-        "tooltip": "Videoya \"AI tarafından oluşturuldu\" filigranı eklenip eklenmeyeceği."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "ByteDanceImageToVideoNode": {
     "description": "Görüntü ve prompt kullanarak ByteDance modelleri aracılığıyla API üzerinden video oluşturun",
     "display_name": "ByteDance Görüntüden Videoya",
@@ -9589,40 +9499,6 @@
       }
     }
   },
-  "KlingVideoExtendNode": {
-    "description": "Kling Video Uzatma Düğümü. Diğer Kling düğümleri tarafından yapılan videoları uzatın. video_id, diğer Kling Düğümleri kullanılarak oluşturulur.",
-    "display_name": "Kling Video Uzatma",
-    "inputs": {
-      "cfg_scale": {
-        "name": "cfg_ölçeği"
-      },
-      "negative_prompt": {
-        "name": "negatif_istem",
-        "tooltip": "Uzatılmış videoda kaçınılması gereken öğeler için negatif metin istemi"
-      },
-      "prompt": {
-        "name": "istem",
-        "tooltip": "Video uzatmayı yönlendirmek için pozitif metin istemi"
-      },
-      "video_id": {
-        "name": "video_kimliği",
-        "tooltip": "Uzatılacak videonun kimliği. Metinden videoya, görüntüden videoya ve önceki video uzatma işlemlerinden oluşturulan videoları destekler. Uzatmadan sonra toplam süre 3 dakikayı geçemez."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_kimliği",
-        "tooltip": null
-      },
-      "2": {
-        "name": "süre",
-        "tooltip": null
-      }
-    }
-  },
   "KlingVideoNode": {
     "description": "Kling V3 ile videolar oluşturun. Metinden videoya ve isteğe bağlı storyboard çoklu istem ve ses üretimiyle görüntüden videoya destekler.",
     "display_name": "Kling 3.0 Video",
@@ -11423,70 +11299,6 @@
       "seed": {
         "name": "tohum",
         "tooltip": "Düğümün yeniden çalıştırılıp çalıştırılmayacağını belirleyen tohum; gerçek sonuçlar tohumdan bağımsız olarak rastgeledir."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LtxvApiImageToVideo": {
-    "description": "Başlangıç görüntüsüne dayalı özelleştirilebilir süre ve çözünürlükte profesyonel kalitede videolar.",
-    "display_name": "LTXV Görüntüden Videoya",
-    "inputs": {
-      "duration": {
-        "name": "süre"
-      },
-      "fps": {
-        "name": "fps"
-      },
-      "generate_audio": {
-        "name": "ses_oluştur",
-        "tooltip": "Doğru olduğunda, oluşturulan video sahneye uygun yapay zeka tarafından oluşturulmuş ses içerecektir."
-      },
-      "image": {
-        "name": "görüntü",
-        "tooltip": "Video için kullanılacak ilk kare."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "resolution": {
-        "name": "çözünürlük"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LtxvApiTextToVideo": {
-    "description": "Özelleştirilebilir süre ve çözünürlükte profesyonel kalitede videolar.",
-    "display_name": "LTXV Metinden Videoya",
-    "inputs": {
-      "duration": {
-        "name": "süre"
-      },
-      "fps": {
-        "name": "fps"
-      },
-      "generate_audio": {
-        "name": "ses_oluştur",
-        "tooltip": "Doğru olduğunda, oluşturulan video sahneye uygun yapay zeka tarafından oluşturulmuş ses içerecektir."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "resolution": {
-        "name": "çözünürlük"
       }
     },
     "outputs": {
@@ -16184,7 +15996,11 @@
       },
       "max_output_tokens": {
         "name": "maksimum_çıktı_tokenları",
-        "tooltip": "Görünür çıktı tokenları dahil olmak üzere bir yanıt için üretilebilecek token sayısı için üst sınır"
+        "tooltip": "Görünür çıktı tokenları ve akıl yürütme tokenları dâhil olmak üzere bir yanıt için oluşturulabilecek token sayısının üst sınırı"
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "Modelin yanıtlamadan önce ne kadar akıl yürüttüğü. 'default', seçimi modele bırakır. Desteklenen düzeyler modele göre değişir: GPT-6 Astra low-max, GPT-5.6 none-max (minimal yok), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; GPT-4.1 akıl yürütmeyi desteklemez. Desteklenmeyen düzeyler, istek gönderilmeden önce reddedilir."
       },
       "truncation": {
         "name": "kırpma",
@@ -16224,78 +16040,6 @@
       "prompt": {
         "name": "komut",
         "tooltip": "Modelin yanıt oluşturmak için kullandığı metin girdileri."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIDalle2": {
-    "description": "OpenAI'nin DALL·E 2 uç noktası aracılığıyla eşzamanlı olarak görüntüler oluşturur.",
-    "display_name": "OpenAI DALL·E 2",
-    "inputs": {
-      "control_after_generate": {
-        "name": "oluşturduktan sonra kontrol et"
-      },
-      "image": {
-        "name": "görüntü",
-        "tooltip": "Görüntü düzenleme için isteğe bağlı referans görüntü."
-      },
-      "mask": {
-        "name": "maske",
-        "tooltip": "İç boyama için isteğe bağlı maske (beyaz alanlar değiştirilecektir)"
-      },
-      "n": {
-        "name": "n",
-        "tooltip": "Kaç tane görüntü oluşturulacağı"
-      },
-      "prompt": {
-        "name": "istem",
-        "tooltip": "DALL·E için metin istemi"
-      },
-      "seed": {
-        "name": "tohum",
-        "tooltip": "arka uçta henüz uygulanmadı"
-      },
-      "size": {
-        "name": "boyut",
-        "tooltip": "Görüntü boyutu"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIDalle3": {
-    "description": "OpenAI'nin DALL·E 3 uç noktası aracılığıyla eşzamanlı olarak görüntüler oluşturur.",
-    "display_name": "OpenAI DALL·E 3",
-    "inputs": {
-      "control_after_generate": {
-        "name": "oluşturduktan sonra kontrol et"
-      },
-      "prompt": {
-        "name": "istem",
-        "tooltip": "DALL·E için metin istemi"
-      },
-      "quality": {
-        "name": "kalite",
-        "tooltip": "Görüntü kalitesi"
-      },
-      "seed": {
-        "name": "tohum",
-        "tooltip": "arka uçta henüz uygulanmadı"
-      },
-      "size": {
-        "name": "boyut",
-        "tooltip": "Görüntü boyutu"
-      },
-      "style": {
-        "name": "stil",
-        "tooltip": "Canlı, modelin hiper-gerçekçi ve dramatik görüntüler oluşturmaya yönelmesine neden olur. Doğal, modelin daha doğal, daha az hiper-gerçekçi görünen görüntüler üretmesine neden olur."
       }
     },
     "outputs": {
