@@ -31,6 +31,10 @@ describe('validateNodeDef', () => {
     [{ ckpt_name: ['foo', { default: 1 }] }, ['foo', { default: 1 }]],
     [{ ckpt_name: ['foo', { bar: 1 }] }, ['foo', { bar: 1 }]],
     [{ ckpt_name: ['INT', { bar: 1 }] }, ['INT', { bar: 1 }]],
+    [
+      { ckpt_name: ['INT', { default: 0, display: 'color' }] },
+      ['INT', { default: 0, display: 'color' }]
+    ],
     [{ ckpt_name: [[1, 2, 3], { bar: 1 }] }, [[1, 2, 3], { bar: 1 }]]
   ])(
     'validateComfyNodeDef with various input spec formats',

@@ -252,9 +252,9 @@ export interface IFileUploadWidget extends IBaseWidget<string, 'fileupload'> {
 }
 
 /** Color picker widget for selecting colors */
-export interface IColorWidget extends IBaseWidget<string, 'color'> {
+export interface IColorWidget extends IBaseWidget<string | number, 'color'> {
   type: 'color'
-  value: string
+  value: string | number
 }
 
 /** Markdown widget for displaying formatted text */

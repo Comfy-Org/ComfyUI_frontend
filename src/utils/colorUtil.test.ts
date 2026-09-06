@@ -8,6 +8,7 @@ import {
   hexToRgb,
   hsbToRgb,
   hsvaToHex,
+  intToHex,
   isTransparent,
   luminance,
   normalizeHex,
@@ -129,6 +130,13 @@ describe('colorUtil conversions', () => {
     it('converts 3-digit hex to packed integer', () => {
       expect(hexToInt('#fff')).toBe(0xffffff)
       expect(hexToInt('#f00')).toBe(0xff0000)
+    })
+  })
+
+  describe('intToHex', () => {
+    it('converts an RGB integer to a padded hexadecimal color', () => {
+      expect(intToHex(0)).toBe('#000000')
+      expect(intToHex(0x45edf5)).toBe('#45edf5')
     })
   })
 

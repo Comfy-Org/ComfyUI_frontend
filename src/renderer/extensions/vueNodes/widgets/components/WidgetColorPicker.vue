@@ -1,6 +1,10 @@
 <template>
   <WidgetLayoutField :widget="widget">
-    <ColorPicker v-model="localValue" @update:model-value="onUpdate" />
+    <ColorPicker
+      v-model="localValue"
+      :alpha="format !== 'int'"
+      @update:model-value="onUpdate"
+    />
   </WidgetLayoutField>
 </template>
 
@@ -8,7 +12,12 @@
 import { ref, watch } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { isColorFormat, toHexFromFormat } from '@/utils/colorUtil'
+import {
+  hexToInt,
+  intToHex,
+  isColorFormat,
+  toHexFromFormat
+} from '@/utils/colorUtil'
 import type { ColorFormat } from '@/utils/colorUtil'
 
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
@@ -17,26 +26,35 @@ import ColorPicker from '@/components/ui/color-picker/ColorPicker.vue'
 
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
-type WidgetOptions = IWidgetOptions & { format?: ColorFormat }
+type ColorWidgetValue = string | number
+type WidgetOptions = IWidgetOptions & { format?: ColorFormat | 'int' }
 
 const { widget } = defineProps<{
-  widget: SimplifiedWidget<string, WidgetOptions>
+  widget: SimplifiedWidget<ColorWidgetValue, WidgetOptions>
 }>()
 
-const modelValue = defineModel<string>({ required: true })
+const modelValue = defineModel<ColorWidgetValue>({ required: true })
 
-const format = isColorFormat(widget.options?.format)
-  ? widget.options.format
-  : 'hex'
+const format =
+  widget.options?.format === 'int' || isColorFormat(widget.options?.format)
+    ? widget.options.format
+    : 'hex'
 
-const localValue = ref(toHexFromFormat(modelValue.value || '#000000', format))
+function toPickerValue(value: ColorWidgetValue): string {
+  if (format === 'int') {
+    return typeof value === 'number' ? intToHex(value) : '#000000'
+  }
+  return toHexFromFormat(value || '#000000', format)
+}
+
+const localValue = ref(toPickerValue(modelValue.value))
 
 watch(modelValue, (newVal) => {
-  localValue.value = toHexFromFormat(newVal || '#000000', format)
+  localValue.value = toPickerValue(newVal)
 })
 
 function onUpdate(val: string) {
   localValue.value = val
-  modelValue.value = val
+  modelValue.value = format === 'int' ? hexToInt(val) : val
 }
 </script>
