@@ -12,7 +12,7 @@ const [a, b, c] = ['1', '2', '3'].map((id) => toSelectableKey('node', id))
 const group = toSelectableKey('group', 7)
 
 function selection(...keys: (typeof a)[]): SelectionState {
-  return { order: keys }
+  return { order: keys, members: new Set(keys) }
 }
 
 describe('reduceSelection', () => {
@@ -83,6 +83,7 @@ describe('reduceSelection', () => {
     const transition = reduceSelection(state, command)
     expect(transition.status).toBe(status)
     expect(transition.state.order).toEqual(order)
+    expect([...transition.state.members]).toEqual(order)
     if (status === 'no-op') expect(transition.state).toBe(state)
   })
 

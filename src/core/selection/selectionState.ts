@@ -24,9 +24,14 @@ export function parseSelectableKey(key: SelectableKey): {
 /** Insertion-ordered selection of one graph scope. */
 export interface SelectionState {
   readonly order: readonly SelectableKey[]
+  /** The same keys as {@link order}, for O(1) membership checks. */
+  readonly members: ReadonlySet<SelectableKey>
 }
 
-export const EMPTY_SELECTION: SelectionState = { order: [] }
+export const EMPTY_SELECTION: SelectionState = {
+  order: [],
+  members: new Set()
+}
 
 export type SelectionCommand =
   | {
@@ -49,14 +54,14 @@ export function reduceSelection(
   state: SelectionState,
   command: SelectionCommand
 ): SelectionTransition {
-  const order = nextOrder(state.order, command)
+  const order = nextOrder(state, command)
   return sameOrder(state.order, order)
     ? { state, status: 'no-op' }
-    : { state: { order }, status: 'applied' }
+    : { state: { order, members: new Set(order) }, status: 'applied' }
 }
 
 function nextOrder(
-  order: readonly SelectableKey[],
+  { order, members }: SelectionState,
   command: SelectionCommand
 ): readonly SelectableKey[] {
   switch (command.type) {
@@ -65,7 +70,7 @@ function nextOrder(
     case 'selection.replace':
       return unique(command.keys)
     case 'selection.add':
-      return [...order, ...unique(command.keys, new Set(order))]
+      return [...order, ...unique(command.keys, new Set(members))]
     case 'selection.remove': {
       const removed = new Set(command.keys)
       return order.filter((key) => !removed.has(key))
