@@ -153,8 +153,6 @@ export const externalLinks = {
   docsMcpLocalMd:
     'https://docs.comfy.org/agent-tools/mcp.md#local-comfy-mcp-connection',
   docsCloudNodes: 'https://docs.comfy.org/cloud-nodes/overview',
-  // The one update link, everywhere: it covers portable, desktop and manual
-  // installs, so we never half-list paths and leave someone out.
   docsUpdateComfyUI: 'https://docs.comfy.org/installation/update_comfyui',
   docsComfyRouter:
     'https://docs.comfy.org/development/comfy-router/quickstart#comfy-router-quickstart',

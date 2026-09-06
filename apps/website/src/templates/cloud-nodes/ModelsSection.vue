@@ -3,6 +3,7 @@ import SectionHeader from '../../components/common/SectionHeader.vue'
 import { externalLinks } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { resolveRel } from '../../utils/cta'
 import { cloudNodeModelCards } from './modelCards'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -28,8 +29,8 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         class="group relative overflow-hidden rounded-3xl bg-black/40"
       >
         <video
-          v-if="/\.(webm|mp4)$/.test(card.mediaSrc)"
-          :src="card.mediaSrc"
+          v-if="card.media.kind === 'video'"
+          :src="card.media.src"
           :aria-label="t(card.titleKey, locale)"
           class="aspect-square size-full object-cover transition-transform duration-300 group-hover:scale-105"
           autoplay
@@ -39,7 +40,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         />
         <img
           v-else
-          :src="card.mediaSrc"
+          :src="card.media.src"
           :alt="t(card.titleKey, locale)"
           class="aspect-square size-full object-cover transition-transform duration-300 group-hover:scale-105"
           loading="lazy"
@@ -47,7 +48,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         />
 
         <div
-          class="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 bg-gradient-to-t from-black/85 to-transparent p-5"
+          class="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 bg-linear-to-t from-black/85 to-transparent p-5"
         >
           <h3 class="text-base font-medium text-primary-comfy-canvas">
             {{ t(card.titleKey, locale) }}
@@ -66,7 +67,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       <a
         :href="externalLinks.docsCloudNodes"
         target="_blank"
-        rel="noreferrer"
+        :rel="resolveRel({ target: '_blank' })"
         class="underline underline-offset-4"
       >
         {{ t('cloudNodesLaunch.models.footnoteLink', locale) }}

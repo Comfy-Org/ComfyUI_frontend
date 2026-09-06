@@ -8,16 +8,10 @@ export interface CloudNodesCta {
   target?: '_blank'
 }
 
-/**
- * Calls-to-action for the Cloud Nodes page. There is nothing to install --
- * the nodes arrive with ComfyUI -- so the second action is the docs rather
- * than a download, and "get started" means an account to spend credits from.
- */
 export function cloudNodesCtas(locale: Locale): {
   getStarted: CloudNodesCta
   docs: CloudNodesCta
   update: CloudNodesCta
-  setup: CloudNodesCta
 } {
   return {
     getStarted: {
@@ -34,10 +28,6 @@ export function cloudNodesCtas(locale: Locale): {
       label: t('cloudNodesLaunch.cta.update', locale),
       href: externalLinks.docsUpdateComfyUI,
       target: '_blank'
-    },
-    setup: {
-      label: t('cloudNodesLaunch.cta.setup', locale),
-      href: '#setup'
     }
   }
 }

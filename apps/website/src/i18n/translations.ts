@@ -8379,7 +8379,6 @@ Enterprise`
     'zh-CN': '将你的 ComfyUI 工作流部署为生产级 API。数千个模型，尽在一个平台。'
   },
 
-  // Comfy Cloud nodes launch page (/cloud-nodes)
   'cloudNodesLaunch.meta.title': {
     en: 'Comfy Cloud Nodes: Run Open Models on Our GPUs, From Your ComfyUI',
     'zh-CN':
@@ -8401,10 +8400,6 @@ Enterprise`
   'cloudNodesLaunch.cta.update': {
     en: 'How to Update ComfyUI',
     'zh-CN': '如何更新 ComfyUI'
-  },
-  'cloudNodesLaunch.cta.setup': {
-    en: 'How to Start',
-    'zh-CN': '如何开始'
   },
   'cloudNodesLaunch.hero.title': {
     en: 'Our GPUs.',

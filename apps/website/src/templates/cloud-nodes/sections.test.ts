@@ -15,8 +15,6 @@ import { cloudNodeModelCards } from './modelCards'
 const props = { locale: 'en' as const }
 
 describe('HeroSection', () => {
-  // The block renders titleHighlight BEFORE title, so the halves being the
-  // right way round is not obvious from the config alone.
   it('reads "Your graph. Our GPUs." in that order', () => {
     render(HeroSection, { props, global: { stubs: { VideoPlayer: true } } })
     const heading = screen.getByRole('heading', { level: 1 })
@@ -35,8 +33,8 @@ describe('HeroSection', () => {
 
 describe('SetupSection', () => {
   it('lists three steps and links how to update', () => {
-    const { container } = render(SetupSection, { props })
-    expect(container.querySelectorAll('article')).toHaveLength(3)
+    render(SetupSection, { props })
+    expect(screen.getAllByRole('article')).toHaveLength(3)
     const hrefs = screen.getAllByRole('link').map((a) => a.getAttribute('href'))
     expect(hrefs).toContain(externalLinks.docsUpdateComfyUI)
   })
@@ -44,14 +42,12 @@ describe('SetupSection', () => {
 
 describe('ModelsSection', () => {
   it('renders one tile per model', () => {
-    const { container } = render(ModelsSection, { props })
-    expect(container.querySelectorAll('li')).toHaveLength(
+    render(ModelsSection, { props })
+    expect(screen.getAllByRole('listitem')).toHaveLength(
       cloudNodeModelCards.length
     )
   })
 
-  // It used to promise "the docs" and link to /cloud-nodes, the page you are
-  // already on.
   it('sends the node reference to the docs, not back to this page', () => {
     render(ModelsSection, { props })
     const link = screen.getByRole('link', { name: /node reference/i })
@@ -61,8 +57,8 @@ describe('ModelsSection', () => {
 
 describe('HowItWorksSection', () => {
   it('lists the four mechanism points', () => {
-    const { container } = render(HowItWorksSection, { props })
-    expect(container.querySelectorAll('li')).toHaveLength(4)
+    render(HowItWorksSection, { props })
+    expect(screen.getAllByRole('listitem')).toHaveLength(4)
   })
 })
 
@@ -76,10 +72,10 @@ describe('WhySection', () => {
 
 describe('FAQSection', () => {
   it('asks the seven launch questions, beta first', () => {
-    const { container } = render(FAQSection, { props })
-    const questions = container.querySelectorAll('button')
-    expect(questions.length).toBeGreaterThanOrEqual(7)
-    expect(screen.getByText(/why are these marked beta/i)).toBeTruthy()
+    render(FAQSection, { props })
+    const questions = screen.getAllByRole('button')
+    expect(questions).toHaveLength(7)
+    expect(questions[0].textContent).toMatch(/why are these marked beta/i)
   })
 })
 

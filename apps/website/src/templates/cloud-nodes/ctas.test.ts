@@ -8,8 +8,8 @@ import { cloudNodesCtas } from './ctas'
 const locales: Locale[] = ['en', 'zh-CN']
 
 describe('cloudNodesCtas', () => {
-  it.each(locales)('resolves labels and links for %s', (locale) => {
-    const { getStarted, docs, update, setup } = cloudNodesCtas(locale)
+  it.for(locales)('resolves labels and links for %s', (locale) => {
+    const { getStarted, docs, update } = cloudNodesCtas(locale)
 
     expect(getStarted.label).not.toBe('')
     expect(getStarted.href).toBe(externalLinks.cloud)
@@ -22,13 +22,8 @@ describe('cloudNodesCtas', () => {
     expect(update.label).not.toBe('')
     expect(update.href).toBe(externalLinks.docsUpdateComfyUI)
     expect(update.target).toBe('_blank')
-
-    expect(setup.label).not.toBe('')
-    expect(setup.href).toBe('#setup')
   })
 
-  // The update doc covers portable, desktop and manual in one page. Anything
-  // narrower reads as "not supported" to whoever is missing.
   it('points updating at the canonical docs page', () => {
     expect(externalLinks.docsUpdateComfyUI).toBe(
       'https://docs.comfy.org/installation/update_comfyui'

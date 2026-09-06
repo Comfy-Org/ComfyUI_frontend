@@ -6,11 +6,6 @@ import { hasKey, t } from '../../i18n/translations'
 
 const locales: Locale[] = ['en', 'zh-CN']
 
-// The sections build these with template literals, so TypeScript cannot check
-// them: `cloudNodesLaunch.faq.${n}.q` is a string until it reaches t(), which
-// throws on a key that does not exist. Enumerating them here is what catches a
-// renamed or dropped key, and it is how the cloudNodes.* namespace collision
-// with /cloud/supported-nodes would have surfaced.
 const dynamicKeys: string[] = [
   ...[1, 2, 3].flatMap((n) => [
     `cloudNodesLaunch.setup.step${n}.label`,
@@ -28,7 +23,7 @@ const dynamicKeys: string[] = [
   ])
 ]
 
-const staticKeys: string[] = [
+const staticKeys: TranslationKey[] = [
   'cloudNodesLaunch.meta.title',
   'cloudNodesLaunch.meta.description',
   'cloudNodesLaunch.hero.title',
@@ -51,7 +46,7 @@ const staticKeys: string[] = [
   'breadcrumb.cloudNodes'
 ]
 
-const allKeys = [...staticKeys, ...dynamicKeys]
+const allKeys: string[] = [...staticKeys, ...dynamicKeys]
 
 describe('cloud-nodes copy', () => {
   it('defines every key the page renders', () => {
@@ -59,7 +54,7 @@ describe('cloud-nodes copy', () => {
     expect(missing).toEqual([])
   })
 
-  it.each(locales)('has non-empty copy in %s', (locale) => {
+  it.for(locales)('has non-empty copy in %s', (locale) => {
     for (const key of allKeys) {
       expect(t(key as TranslationKey, locale).trim()).not.toBe('')
     }
