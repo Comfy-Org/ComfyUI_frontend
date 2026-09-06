@@ -22,14 +22,18 @@ const CONTACT_FORMS = [
   }
 ] as const
 
+// Stubbed so every assertion in this file covers our embed contract, not
+// HubSpot's availability. The geometry specs below measure our own columns,
+// which `min-w-0` pins to 50% independently of what the form renders.
+test.beforeEach(async ({ page }) => {
+  await page.route(HUBSPOT_SCRIPT_PATTERN, (route) =>
+    route.fulfill({ status: 200, contentType: 'text/javascript', body: '' })
+  )
+})
+
 test.describe('Contact form embed @smoke', () => {
   for (const { locale, path, formId } of CONTACT_FORMS) {
     test(`mounts the ${locale} HubSpot form`, async ({ page }) => {
-      // Stubbed so the assertions below cover our embed contract, not
-      // HubSpot's availability.
-      await page.route(HUBSPOT_SCRIPT_PATTERN, (route) =>
-        route.fulfill({ status: 200, contentType: 'text/javascript', body: '' })
-      )
       await page.goto(path)
 
       await expect(
