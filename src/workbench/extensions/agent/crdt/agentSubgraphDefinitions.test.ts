@@ -168,6 +168,28 @@ describe('readSubgraphDefinitions', () => {
     expect(projected.definitions).toEqual({ subgraphs: [inner] })
   })
 
+  it('rejects a definition with malformed nested definitions', () => {
+    const definition = createTestSubgraphData()
+    const doc = seed(definition)
+    const stored = expectYMap(
+      doc.getMap<unknown>('definitions').get(definition.id)
+    )
+    stored.set('definitions', { subgraphs: [null] })
+
+    expect(readSubgraphDefinitions(doc)).toEqual([])
+  })
+
+  it('rejects a definition with malformed interior nodes', () => {
+    const definition = createTestSubgraphData()
+    const doc = seed(definition)
+    const stored = expectYMap(
+      doc.getMap<unknown>('definitions').get(definition.id)
+    )
+    stored.set('nodes', [null])
+
+    expect(readSubgraphDefinitions(doc)).toEqual([])
+  })
+
   it('skips definition and node entries that are not records', () => {
     const definition = createTestSubgraphData({
       nodes: [interiorNode(1)]

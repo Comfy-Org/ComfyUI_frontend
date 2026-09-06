@@ -30,14 +30,16 @@ const bridgeState = vi.hoisted(() => {
     sendHumanOps = vi.fn()
     subscribedWorkflowId: string | null = 'wf-1'
     lastSequence = 41
+    nodes = new Map<string, unknown>()
+    nodeMapError: Error | null = null
     follower = {
       updatesApplied: 0,
       doc: {
-        share: new Map<string, unknown>(),
-        getMap: () => ({
-          keys: () => new Map<string, unknown>().keys(),
-          toJSON: () => ({})
-        })
+        share: new Map<string, unknown>([['nodes', this.nodes]]),
+        getMap: () => {
+          if (this.nodeMapError) throw this.nodeMapError
+          return this.nodes
+        }
       }
     }
   }
@@ -410,6 +412,38 @@ describe('useAgentCrdtFollower', () => {
 
     expect(bridge().subscribe).toHaveBeenCalledWith('wf-1')
     expect(status().workflowId).toBe('wf-1')
+    unmount()
+  })
+
+  it('records document node additions and removals', async () => {
+    const { recordDevEvent } = await import('./devPanelLog')
+    const { unmount } = mountFollower('wf-1')
+    bridge().nodes.set('1', {})
+
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 1 })
+    bridge().nodes.delete('1')
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2 })
+
+    const changes = vi
+      .mocked(recordDevEvent)
+      .mock.calls.filter(([event]) => event === 'doc_nodes_changed')
+    expect(changes).toEqual([
+      ['doc_nodes_changed', { added: ['1'], removed: [] }],
+      ['doc_nodes_changed', { added: [], removed: ['1'] }]
+    ])
+    unmount()
+  })
+
+  it('keeps processing an update when the nodes root has another type', () => {
+    const { unmount } = mountFollower('wf-1')
+    bridge().nodeMapError = new Error(
+      'Type with the name nodes has already been defined with a different constructor'
+    )
+
+    expect(() =>
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 1 })
+    ).not.toThrow()
+
     unmount()
   })
 
