@@ -35,7 +35,7 @@ function findLegacyWidget():
       widget: IBaseWidget
     }
   | undefined {
-  const hostNode = canvas?.graph?.getNodeById(props.nodeId) ?? undefined
+  const hostNode = canvas.graph?.getNodeById(props.nodeId) ?? undefined
   return resolveWidgetFromHostNode(hostNode, props.widget.name)
 }
 
@@ -54,7 +54,7 @@ function bindWidget() {
     widgetInstance.callback = useChainCallback(
       widgetInstance.callback,
       function (this: IBaseWidget) {
-        this?.triggerDraw?.()
+        this.triggerDraw?.()
       }
     )
   widgetInstance.triggerDraw = draw
@@ -117,7 +117,7 @@ function handleDown(e: PointerEvent) {
 function handleUp(e: PointerEvent) {
   if (!pointer || !node) return
   augmentToCanvasPointerEvent(e, node, canvas)
-  e.click_time = e.timeStamp - (pointer?.eDown?.timeStamp ?? 0)
+  e.click_time = e.timeStamp - (pointer.eDown?.timeStamp ?? 0)
   pointer.up(e)
 }
 function handleMove(e: PointerEvent) {

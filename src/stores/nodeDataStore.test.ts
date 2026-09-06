@@ -218,7 +218,7 @@ describe('nodeDataStore registration via LGraph', () => {
     replacement.id = original.id
 
     expect(transferReplacementOwnership(original, replacement)).toBe(true)
-    expect(original.last_serialization?.type).toBe('missing/Node')
+    expect(original.last_serialization.type).toBe('missing/Node')
     expect(replacement.last_serialization).toBeUndefined()
     expect(
       registeredState(graph, replacement)?.lastSerialization

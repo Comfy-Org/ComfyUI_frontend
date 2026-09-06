@@ -98,7 +98,7 @@ export const resolveNodeSurfaceSlotCandidate = (
   const node = graph.getNodeById(nodeId)
   if (!node) return null
 
-  const firstLink = adapter.renderLinks[0]
+  const firstLink = adapter.renderLinks.at(0)
   if (!firstLink) return null
 
   const connectingTo = adapter.linkConnector.state.connectingTo

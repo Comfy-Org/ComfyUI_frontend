@@ -71,7 +71,7 @@ const useNodePreview = <T extends MediaElement>(
     const outputUrls = nodeOutputStore.getNodeImageUrls(node)
     if (!outputUrls?.length) return
 
-    if (options?.block) node.isLoading = true
+    if (options.block) node.isLoading = true
 
     loadElements(outputUrls)
       .then((elements) => {
@@ -141,7 +141,7 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
       fitDimensionsToNodeWidth(
         video.videoWidth,
         video.videoHeight,
-        node.size?.[0] || DEFAULT_VIDEO_SIZE
+        node.size[0] || DEFAULT_VIDEO_SIZE
       )
 
     minWidth = calculatedWidth
@@ -188,7 +188,6 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
 
   const onLoaded = (videoElements: HTMLVideoElement[]) => {
     const videoElement = videoElements[0]
-    if (!videoElement) return
 
     if (!node.videoContainer) {
       node.videoContainer = createContainer()
