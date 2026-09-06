@@ -93,8 +93,12 @@ the interpretation of a gesture, and both renderers feed it.
 
    - `idle` + `down` → `pressed`. Emits press-time commands such as
      `bringToFront` and sticky selection for the right button.
+   - `pressed` + `move` within the drift threshold → `pressed`. Emits
+     `movePress`, which only the `CanvasPointer` adapter consumes (see
+     Compatibility requirements). The Vue adapter ignores it.
    - `pressed` + `move` beyond the drift threshold → `dragging`. Emits
-     `startDrag` with the drag kind derived from the target and policy.
+     `startDrag` with the drag kind derived from the target and policy,
+     followed by `moveDrag` for the same event.
    - `pressed` + `up` beyond the drift threshold → `idle`. Emits `startDrag`
      followed by `endDrag`, even if no `move` arrived. It emits no click command
      and does not replace the previous-click record.
@@ -117,13 +121,13 @@ the interpretation of a gesture, and both renderers feed it.
    - Any other pair returns the state unchanged with no commands.
 
 2. **Commands are the only output.** The reducer returns plain, serializable
-   command values. They include `select`, `startDrag`, `moveDrag`, `endDrag`,
-   `openContextMenu`, `bringToFront`, and `marquee`. An interpreter applies them
-   to `selectionStore`, `layoutStore`, and canvas services. Nothing else writes
-   selection or drag state during a gesture. Existing node hooks and extension
-   callbacks are outward effects emitted by the interpreter in the required
-   order. This follows the command and effect distinction in
-   [State, effects and workflows](../guidance/state-and-effects.md).
+   command values. They include `select`, `startDrag`, `movePress`, `moveDrag`,
+   `endDrag`, `openContextMenu`, `bringToFront`, and `marquee`. An interpreter
+   applies them to `selectionStore`, `layoutStore`, and canvas services. Nothing
+   else writes selection or drag state during a gesture. Existing node hooks and
+   extension callbacks are outward effects emitted by the interpreter in the
+   required order. This follows the command and effect distinction in [State,
+   effects and workflows](../guidance/state-and-effects.md).
 3. **Hit-test once per press.** The `down` event carries a `PointerTarget`
    union (`canvas`, `node`, `nodeTitle`, `widget`, `slot`, `group`,
    `groupTitle`, `reroute`, `link`, `linkCenter`, `resizeHandle`, and
@@ -169,8 +173,10 @@ the interpretation of a gesture, and both renderers feed it.
   the first `moveDrag`, and no `moveDrag` fires inside the click threshold.
   `CanvasPointer` currently invokes `onDrag` before `onDragStart` on the
   promoting move and invokes `onDrag` for movement inside the threshold.
-  Characterization tests cover every current `onDrag` assignment and record
-  the reduced callback count.
+  Legacy `onDrag` consumers such as number-widget drag adjustment depend on
+  that in-threshold movement, so the `CanvasPointer` adapter forwards
+  `movePress` to `onDrag` while the Vue adapter ignores it. Characterization
+  tests cover every current `onDrag` assignment and record the callback count.
 - The adapter that accepts `down` owns the gesture until `up` or `cancel`.
   Renderer, mode, and feature-flag changes take effect only after the gesture
   returns to `idle`. Teardown, lost pointer capture, blur, and visibility loss
