@@ -115,15 +115,23 @@ describe('node shell teardown', () => {
       )
     })
 
-    it('restores the edited value when the removed node is re-added (undo of delete)', () => {
+    it('restores the edited value when a fresh node with the same id is re-added (undo of delete)', () => {
       const graph = new LGraph()
       const node = addWidgetedNode(graph)
       node.widgets![0].value = 'a distinct edited value'
+      const nodeId = node.id
 
       graph.remove(node)
-      graph.add(node)
 
-      expect(node.widgets![0].value).toBe('a distinct edited value')
+      // Undo rebuilds the node from serialized state rather than reusing the
+      // removed object, so the re-added node is a brand-new instance whose
+      // widget carries its default value. Only the store can restore the edit.
+      const restored = new LGraphNode('Node')
+      restored.id = nodeId
+      restored.addWidget('text', 'prompt', 'a value', () => {})
+      graph.add(restored)
+
+      expect(restored.widgets![0].value).toBe('a distinct edited value')
     })
 
     it('still discards values when a whole graph is cleared', () => {
