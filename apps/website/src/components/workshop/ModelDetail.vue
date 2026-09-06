@@ -506,7 +506,13 @@ function useInCode() {
       role="tabpanel"
       aria-labelledby="tab-examples"
     >
-      <ExamplesTab :examples :locale @open="openExample" />
+      <ExamplesTab
+        :examples
+        :model-name="model.name"
+        :credits="creditsPerRun"
+        :locale
+        @open="openExample"
+      />
     </section>
 
     <section

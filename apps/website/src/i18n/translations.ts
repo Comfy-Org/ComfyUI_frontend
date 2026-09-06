@@ -8953,7 +8953,14 @@ Enterprise`
   'workshop.api.docs': { en: 'Router docs', 'zh-CN': 'Router 文档' },
 
   // Workshop – examples
-  'workshop.examples.heading': { en: 'Example outputs', 'zh-CN': '示例输出' },
+  'workshop.examples.madeWith': {
+    en: 'Made with {model}',
+    'zh-CN': '使用 {model} 制作'
+  },
+  'workshop.examples.subtitle': {
+    en: 'Examples and outputs made with this model.',
+    'zh-CN': '使用该模型制作的示例与输出。'
+  },
   'workshop.examples.open': {
     en: 'Open in Playground',
     'zh-CN': '在 Playground 中打开'
@@ -8962,22 +8969,6 @@ Enterprise`
     en: 'No examples yet for this model.',
     'zh-CN': '该模型暂无示例。'
   },
-  'workshop.examples.product': { en: 'Product shot', 'zh-CN': '产品图' },
-  'workshop.examples.portrait': {
-    en: 'Editorial portrait',
-    'zh-CN': '杂志风人像'
-  },
-  'workshop.examples.videoExtend': {
-    en: 'Cinematic dolly-in',
-    'zh-CN': '电影感推镜'
-  },
-  'workshop.examples.cameraMotion': {
-    en: 'Orbit shot',
-    'zh-CN': '环绕镜头'
-  },
-  'workshop.examples.narration': { en: 'Narration', 'zh-CN': '旁白' },
-  'workshop.examples.asset': { en: 'Game asset', 'zh-CN': '游戏资产' },
-  'workshop.examples.brief': { en: 'Taglines', 'zh-CN': '标语' },
 
   // Workshop – prototype controls
   'workshop.proto.title': {

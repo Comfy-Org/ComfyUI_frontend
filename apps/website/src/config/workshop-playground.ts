@@ -260,25 +260,56 @@ function isWithinRange(
 export interface PlaygroundExample {
   readonly id: string
   readonly title: string
-  readonly description: string
+  /** What the run was asked for, when the example carries a prompt. */
+  readonly prompt?: string
+  /** The few settings worth reading back: size, then length. */
+  readonly specs: readonly string[]
   readonly values: Readonly<Record<string, string | number | boolean>>
   readonly outputUrl: string
   readonly nodeDisplayName?: string
   readonly fields?: readonly GeneratedField[]
 }
 
+const SIZE_KEYS = ['resolution', 'size', 'aspect_ratio', 'ratio'] as const
+
+function specsOf(
+  values: Readonly<Record<string, string | number | boolean>>
+): string[] {
+  // 'auto' and the like name no size, so only a value carrying a number reads
+  // as one.
+  const size = SIZE_KEYS.map((key) => values[key]).find(
+    (value) => typeof value === 'string' && /\d/.test(value)
+  )
+  const duration: unknown = values.duration
+  const seconds =
+    typeof duration === 'number' ||
+    (typeof duration === 'string' && duration !== '')
+  return [
+    // A label like '720p: 16:9 (1280x720)' says it once in its first word.
+    ...(size === undefined ? [] : [String(size).replace(/:\s.*$/, '')]),
+    ...(seconds ? [`${duration}s`] : [])
+  ]
+}
+
 export function examplesForModel(
   model: Pick<WorkshopModelDetail, 'examples'>
 ): readonly PlaygroundExample[] {
-  return model.examples.map((example: GeneratedExample) => ({
-    id: example.name,
-    title: example.title,
-    description: example.description,
-    values: example.values,
-    outputUrl: example.thumbnailUrl,
-    ...(example.node ? { nodeDisplayName: example.node.displayName } : {}),
-    ...(example.fields ? { fields: example.fields } : {})
-  }))
+  return model.examples.map((example: GeneratedExample) => {
+    const prompt =
+      typeof example.values.prompt === 'string'
+        ? example.values.prompt.trim()
+        : ''
+    return {
+      id: example.name,
+      title: example.title,
+      ...(prompt ? { prompt } : {}),
+      specs: specsOf(example.values),
+      values: example.values,
+      outputUrl: example.thumbnailUrl,
+      ...(example.node ? { nodeDisplayName: example.node.displayName } : {}),
+      ...(example.fields ? { fields: example.fields } : {})
+    }
+  })
 }
 
 // Prefills the form with an example: its values plus a stand-in upload for

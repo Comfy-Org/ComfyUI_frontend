@@ -263,7 +263,7 @@ describe('ModelDetail', () => {
   it('swaps the form to the example template', async () => {
     await signedInDetail()
     await user().click(screen.getByTestId('tab-examples'))
-    await user().click(screen.getByTestId('example-open'))
+    await user().click(screen.getAllByTestId('example-card')[0])
 
     expect(
       screen.getByTestId('playground-output').getAttribute('data-state')

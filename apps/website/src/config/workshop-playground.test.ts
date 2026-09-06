@@ -192,7 +192,7 @@ describe('exampleValues', () => {
     const values = exampleValues(schema, {
       id: 'demo',
       title: 'Demo',
-      description: '',
+      specs: [],
       values: { prompt: 'a capybara', size: '2K' },
       outputUrl: 'https://example.com/out.webp'
     })
