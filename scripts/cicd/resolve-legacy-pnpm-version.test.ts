@@ -1,7 +1,12 @@
-import { describe, expect, it } from 'vitest'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import {
   declaredPnpmVersion,
+  readManifest,
   resolveVersionInput
 } from './resolve-legacy-pnpm-version.js'
 
@@ -87,5 +92,42 @@ describe('resolveVersionInput', () => {
 
   it('supplies the fallback when the manifest is missing entirely', () => {
     expect(resolveVersionInput(undefined, FALLBACK)).toBe(FALLBACK)
+  })
+})
+
+describe('readManifest', () => {
+  let dir: string
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'resolve-legacy-pnpm-'))
+  })
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('parses an existing manifest', () => {
+    const manifestPath = join(dir, 'package.json')
+    writeFileSync(
+      manifestPath,
+      JSON.stringify({ packageManager: 'pnpm@11.13.1' })
+    )
+    expect(readManifest(manifestPath)).toEqual({
+      packageManager: 'pnpm@11.13.1'
+    })
+  })
+
+  it('returns undefined for a missing manifest, like the action does', () => {
+    expect(readManifest(join(dir, 'package.json'))).toBeUndefined()
+  })
+
+  it('surfaces malformed JSON instead of silently falling back', () => {
+    const manifestPath = join(dir, 'package.json')
+    writeFileSync(manifestPath, '{ not json')
+    expect(() => readManifest(manifestPath)).toThrow(SyntaxError)
+  })
+
+  it('rethrows read errors other than a missing file', () => {
+    expect(() => readManifest(dir)).toThrow()
   })
 })

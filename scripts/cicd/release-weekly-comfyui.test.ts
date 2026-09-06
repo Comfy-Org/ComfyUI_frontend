@@ -65,6 +65,7 @@ describe('weekly ComfyUI release', () => {
   const checkoutIndex = indexOfStep('Checkout code at target version')
   const resolveIndex = indexOfStep('Resolve legacy pnpm version')
   const pnpmIndex = indexOfStep('Install pnpm')
+  const stageIndex = indexOfStep('Stage release scripts')
 
   it('checks out the release tag being published', () => {
     expect(checkoutIndex).toBeGreaterThanOrEqual(0)
@@ -109,5 +110,11 @@ describe('weekly ComfyUI release', () => {
     expect(steps[resolveIndex].run).toContain(
       '"$RUNNER_TEMP/cicd/resolve-legacy-pnpm-version.js"'
     )
+  })
+
+  it('stages the release scripts into $RUNNER_TEMP before resolving', () => {
+    expect(stageIndex).toBeGreaterThanOrEqual(0)
+    expect(stageIndex).toBeLessThan(resolveIndex)
+    expect(steps[stageIndex].run).toContain('"$RUNNER_TEMP/cicd"')
   })
 })
