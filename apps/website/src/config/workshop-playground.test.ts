@@ -183,9 +183,8 @@ describe('examplesForModel', () => {
         { ...shared, name: 'c', title: 'Bare', values: { size: 'auto' } }
       ]
     })
-    expect(sized).toMatchObject({ prompt: 'a capybara', specs: ['480p', '5s'] })
+    expect(sized.specs).toEqual(['480p', '5s'])
     expect(verbose.specs).toEqual(['720p'])
-    expect(verbose).not.toHaveProperty('prompt')
     expect(bare.specs).toEqual([])
   })
 })

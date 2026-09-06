@@ -74,7 +74,7 @@ const specsOf = (example: PlaygroundExample) =>
           </div>
           <div class="flex flex-col gap-1 px-4 py-3">
             <p class="line-clamp-2 text-sm text-primary-warm-white">
-              {{ example.prompt ? `"${example.prompt}"` : example.title }}
+              {{ example.title }}
             </p>
             <p
               v-if="specsOf(example)"

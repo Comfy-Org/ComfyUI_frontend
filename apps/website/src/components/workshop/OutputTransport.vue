@@ -40,7 +40,7 @@ const clock = (value: number) =>
   ).padStart(2, '0')}`
 
 const buttonClass =
-  'grid size-11 shrink-0 cursor-pointer place-items-center rounded-xl text-primary-warm-white/80 transition-colors outline-none hover:text-primary-warm-white focus-visible:ring-2 focus-visible:ring-primary-warm-white/60 sm:size-9'
+  'grid size-11 shrink-0 cursor-pointer place-items-center rounded-full text-primary-warm-white/80 transition-colors outline-none hover:bg-transparency-white-t20 hover:text-primary-warm-white focus-visible:bg-transparency-white-t20 focus-visible:ring-2 focus-visible:ring-primary-warm-white/60 active:bg-transparency-white-t8 sm:size-9'
 </script>
 
 <template>

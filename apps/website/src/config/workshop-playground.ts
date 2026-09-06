@@ -260,8 +260,6 @@ function isWithinRange(
 export interface PlaygroundExample {
   readonly id: string
   readonly title: string
-  /** What the run was asked for, when the example carries a prompt. */
-  readonly prompt?: string
   /** The few settings worth reading back: size, then length. */
   readonly specs: readonly string[]
   readonly values: Readonly<Record<string, string | number | boolean>>
@@ -295,14 +293,9 @@ export function examplesForModel(
   model: Pick<WorkshopModelDetail, 'examples'>
 ): readonly PlaygroundExample[] {
   return model.examples.map((example: GeneratedExample) => {
-    const prompt =
-      typeof example.values.prompt === 'string'
-        ? example.values.prompt.trim()
-        : ''
     return {
       id: example.name,
       title: example.title,
-      ...(prompt ? { prompt } : {}),
       specs: specsOf(example.values),
       values: example.values,
       outputUrl: example.thumbnailUrl,
