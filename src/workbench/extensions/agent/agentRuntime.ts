@@ -98,18 +98,13 @@ function createEnabledAgentRuntime(options: AgentRuntimeOptions) {
     session.stop()
   }
 
-  function retarget(workflowId: string): void {
-    session.bindWorkflow(workflowId)
-  }
-
   return {
     ...session,
     rest,
     history,
     refreshHistory,
     start,
-    stop,
-    retarget
+    stop
   }
 }
 
