@@ -46,6 +46,12 @@ function embedStyle() {
   return screen.getByTestId('hubspot-form-embed').style
 }
 
+function declarations(style: CSSStyleDeclaration): [string, string][] {
+  return [...style.cssText.matchAll(/(--[\w-]+)\s*:\s*([^;]+)/g)].map(
+    ([, property, value]) => [property, value.trim()]
+  )
+}
+
 let createElementSpy: ReturnType<typeof stubScriptLoading>
 
 beforeEach(() => {
@@ -88,34 +94,41 @@ describe('HubspotFormEmbed', () => {
 
   // Unset, these fall back to `--hsf-field-input__padding`, and HubSpot sizes
   // its `appearance: none` boxes purely from padding — so they render at 34px.
-  it('sizes checkboxes and radios independently of the text input', () => {
+  it('sizes checkboxes and radios smaller than the text input', () => {
     const style = embedStyle()
+    const paddingPx = (property: string) => {
+      const value = style.getPropertyValue(property)
+      expect(value).toMatch(/^\d+px$/)
+      return Number.parseInt(value, 10)
+    }
 
-    const inputPadding = style.getPropertyValue('--hsf-field-input__padding')
-    expect(inputPadding).not.toBe('')
+    const inputPadding = paddingPx('--hsf-field-input__padding')
 
     for (const control of ['checkbox', 'radio']) {
-      const padding = style.getPropertyValue(`--hsf-field-${control}__padding`)
-      expect(padding).not.toBe('')
-      expect(padding).not.toBe(inputPadding)
+      expect(paddingPx(`--hsf-field-${control}__padding`)).toBeLessThan(
+        inputPadding
+      )
     }
   })
 
-  it('themes the form from tokens rather than literal colours', () => {
-    const cssText = embedStyle().cssText
+  it('resolves every colour through a theme token', () => {
+    const colours = declarations(embedStyle()).filter(([property]) =>
+      property.endsWith('color')
+    )
 
-    expect(cssText).toMatch(/var\(--color-/)
-    expect(cssText).not.toMatch(/#[0-9a-f]{3,8}\b/i)
-    expect(cssText).not.toMatch(/\brgba?\(/i)
+    expect(colours.length).toBeGreaterThan(0)
+    for (const [property, value] of colours) {
+      expect(`${property}: ${value}`).toMatch(/var\(--color-/)
+    }
   })
 
   it('gives the submit button hover and focus states', () => {
-    const style = embedStyle()
+    const declared = new Map(declarations(embedStyle()))
 
     for (const state of ['hover', 'focus']) {
-      expect(
-        style.getPropertyValue(`--hsf-button--${state}__background-color`)
-      ).not.toBe('')
+      expect(declared.get(`--hsf-button--${state}__background-color`)).toMatch(
+        /var\(--color-/
+      )
     }
   })
 })
