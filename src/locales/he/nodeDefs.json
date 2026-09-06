@@ -1486,96 +1486,6 @@
       }
     }
   },
-  "ByteDanceImageNode": {
-    "description": "יצירת תמונות באמצעות מודלים של ByteDance דרך API על בסיס פרומפט",
-    "display_name": "ByteDance Image",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "guidance_scale": {
-        "name": "guidance_scale",
-        "tooltip": "ערך גבוה יותר יגרום לתמונה לעקוב אחרי הפרומפט בצורה מדויקת יותר"
-      },
-      "height": {
-        "name": "height",
-        "tooltip": "גובה מותאם אישית לתמונה. ערך זה פעיל רק אם 'size_preset' מוגדר כ-'Custom'"
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "הפרומפט הטקסטואלי המשמש ליצירת התמונה"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "זרע (seed) לשימוש ביצירה"
-      },
-      "size_preset": {
-        "name": "size_preset",
-        "tooltip": "בחר גודל מומלץ. בחר Custom כדי להשתמש ברוחב ובגובה למטה"
-      },
-      "watermark": {
-        "name": "watermark",
-        "tooltip": "האם להוסיף סימן מים \"AI generated\" לתמונה"
-      },
-      "width": {
-        "name": "width",
-        "tooltip": "רוחב מותאם אישית לתמונה. ערך זה פעיל רק אם 'size_preset' מוגדר כ-'Custom'"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "ByteDanceImageReferenceNode": {
-    "description": "יצירת וידאו באמצעות פרומפט ותמונות ייחוס.",
-    "display_name": "ByteDance הפניות תמונה לוידאו",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "יחס הגובה-רוחב של הוידאו המופק."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration": {
-        "name": "duration",
-        "tooltip": "משך הוידאו המופק בשניות."
-      },
-      "images": {
-        "name": "images",
-        "tooltip": "תמונה אחת עד ארבע תמונות."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "הפרומפט הטקסטואלי המשמש ליצירת הוידאו."
-      },
-      "resolution": {
-        "name": "resolution",
-        "tooltip": "הרזולוציה של הוידאו המופק."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "זרע (seed) לשימוש ביצירה."
-      },
-      "watermark": {
-        "name": "watermark",
-        "tooltip": "האם להוסיף סימן מים \"AI generated\" לוידאו."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "ByteDanceImageToVideoNode": {
     "description": "יצירת וידאו באמצעות מודלים של ByteDance דרך API על בסיס תמונה ופרומפט",
     "display_name": "ByteDance תמונה לוידאו",
@@ -2755,6 +2665,260 @@
     "inputs": {
       "values": {
         "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudFlux2TextToImageNode": {
+    "description": "BETA. ערכת הצמתים של Comfy Cloud עדיין משתנה: ייתכן שיתווספו או יוסרו אפשרויות, וייתכן שתהליך עבודה יופסק. יוצר תמונה מפרומפט טקסט באמצעות Flux 2 dev. מצב Turbo מחליף ל-LoRA הנבחר וללוח זמנים קצר, תוך ויתור קל על נאמנות לטובת הרצה מהירה בהרבה; יש לכבות אותו למעבר dev מלא ללא LoRA. פועל על GPU של Comfy Cloud, והחיוב הוא לפי משך ההרצה, בתעריף {'$'}0.001295 לשניית GPU‏ (0.27 קרדיטים). התשלום בקרדיטים, ללא צורך במינוי Cloud.",
+    "display_name": "Comfy Cloud Flux 2 טקסט לתמונה [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "תקציב הפיקסלים הכולל. 1.0 הוא בערך 1024x1024 ביחס ריבועי."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "turbo": {
+        "name": "turbo",
+        "tooltip": "הפעלת Turbo LoRA בלוח זמנים קצר, תוך ויתור קל על נאמנות לטובת הרצה מהירה בהרבה. במצב כבוי מתבצע מעבר dev מלא ללא LoRA."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMageFlowTextToImageNode": {
+    "description": "BETA. ערכת הצמתים של Comfy Cloud עדיין משתנה: ייתכן שיתווספו או יוסרו אפשרויות, וייתכן שתהליך עבודה יופסק. יוצר תמונה מפרומפט טקסט באמצעות Mage-Flow במעבר מלא של 30 צעדים. מקבל פרומפט שלילי, שבו הגרסה המזוקקת Turbo אינה יכולה להשתמש היטב. פועל על GPU של Comfy Cloud, והחיוב הוא לפי משך ההרצה, בתעריף {'$'}0.001295 לשניית GPU‏ (0.27 קרדיטים). התשלום בקרדיטים, ללא צורך במינוי Cloud.",
+    "display_name": "Comfy Cloud Mage Flow טקסט לתמונה [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "תקציב הפיקסלים הכולל. 1.0 הוא בערך 1024x1024 ביחס ריבועי."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "יש להשאיר ריק כדי לשמור על הפרומפט השלילי שעבורו צינור עיבוד זה כוונן."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMageFlowTurboTextToImageNode": {
+    "description": "BETA. ערכת הצמתים של Comfy Cloud עדיין משתנה: ייתכן שיתווספו או יוסרו אפשרויות, וייתכן שתהליך עבודה יופסק. יוצר תמונה מפרומפט טקסט באמצעות Mage-Flow מזוקק ב-4 צעדים ב-cfg 1. זמן ה-GPU הוא בערך שביעית מזה של מעבר מלא, ולכן זו האפשרות המתאימה לאיטרציות. פועל על GPU של Comfy Cloud, והחיוב הוא לפי משך ההרצה, בתעריף {'$'}0.001295 לשניית GPU‏ (0.27 קרדיטים). התשלום בקרדיטים, ללא צורך במינוי Cloud.",
+    "display_name": "Comfy Cloud Mage Flow Turbo טקסט לתמונה [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "תקציב הפיקסלים הכולל. 1.0 הוא בערך 1024x1024 ביחס ריבועי."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "יש להשאיר ריק כדי לשמור על הפרומפט השלילי שעבורו צינור עיבוד זה כוונן."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3FirstLastFrameToVideoNode": {
+    "description": "BETA. ערכת הצמתים של Comfy Cloud עדיין משתנה: ייתכן שיתווספו או יוסרו אפשרויות, וייתכן שתהליך עבודה יופסק. יוצר את התנועה בין שני פריימי מפתח, עם פסקול תואם, באמצעות MiniMax H3. יש לספק את פריימי הפתיחה והסגירה, והמודל ימלא את הקטע שביניהם. הפריים האחרון אופציונלי: אם משמיטים אותו, התנועה ממשיכה הרחק מהפריים הראשון במקום זאת. פועל על GPU של Comfy Cloud, והחיוב הוא לפי משך ההרצה, בתעריף {'$'}0.001295 לשניית GPU‏ (0.27 קרדיטים). התשלום בקרדיטים, ללא צורך במינוי Cloud.",
+    "display_name": "Comfy Cloud MiniMax H3 מפריים ראשון ואחרון לווידאו [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "duration_seconds": {
+        "name": "duration_seconds",
+        "tooltip": "משך בשניות. צינור העיבוד מכמת לצעדים של 17 פריימים ב-24fps, לכן אורך הקליפ יהיה בטווח של כשני שלישים השנייה מערך זה."
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "תקציב גודל הפריים. עלות 720p היא בערך פי שניים בשניות GPU לעומת 480p."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3ImageToVideoNode": {
+    "description": "BETA. ערכת הצמתים של Comfy Cloud עדיין משתנה: אפשרויות עשויות להתווסף או להימחק, ותהליך עבודה עשוי לצאת משימוש. מנפיש תמונה סטטית לסרטון עם פסקול תואם באמצעות MiniMax H3. הזינו את מסגרת הסיום של clip והוא ימשיך את הרצף, כך ששרשור של כמה מהם יוצר שוט ארוך יותר. פועל על GPU של Comfy Cloud, והחיוב הוא לפי זמן הפעולה בתעריף של {'$'}0.001295 לכל שניית GPU ‏(0.27 קרדיטים). התשלום בקרדיטים, ללא צורך במנוי Cloud.",
+    "display_name": "Comfy Cloud MiniMax H3 תמונה לווידאו [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "duration_seconds": {
+        "name": "duration_seconds",
+        "tooltip": "אורך בשניות. תהליך העיבוד מכמת לצעדים של 17 מסגרות ב-24fps, ולכן אורך ה-clip יהיה בטווח של כשני שלישים השנייה מערך זה."
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "prompt": {
+        "name": "פרומפט"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "תקציב גודל מסגרת. 720p עולה בערך פי שניים בשניות GPU לעומת 480p."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3TextToVideoNode": {
+    "description": "BETA. ערכת הצמתים של Comfy Cloud עדיין משתנה: אפשרויות עשויות להתווסף או להימחק, ותהליך עבודה עשוי לצאת משימוש. יוצר סרטון עם פסקול תואם מפרומפט טקסט באמצעות MiniMax H3. התמונה והשמע נוצרים באותו מעבר, במקום שהשמע ידובב לאחר מכן. פועל על GPU של Comfy Cloud, והחיוב הוא לפי זמן הפעולה בתעריף של {'$'}0.001295 לכל שניית GPU ‏(0.27 קרדיטים). התשלום בקרדיטים, ללא צורך במנוי Cloud.",
+    "display_name": "Comfy Cloud MiniMax H3 טקסט לווידאו [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "duration_seconds": {
+        "name": "duration_seconds",
+        "tooltip": "אורך בשניות. תהליך העיבוד מכמת לצעדים של 17 מסגרות ב-24fps, ולכן אורך ה-clip יהיה בטווח של כשני שלישים השנייה מערך זה."
+      },
+      "prompt": {
+        "name": "פרומפט"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "תקציב גודל מסגרת. 720p עולה בערך פי שניים בשניות GPU לעומת 480p."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxMusic3TextToAudioNode": {
+    "description": "BETA. ערכת הצמתים של Comfy Cloud עדיין משתנה: אפשרויות עשויות להתווסף או להימחק, ותהליך עבודה עשוי לצאת משימוש. יוצר שיר מלא מתיאור באמצעות MiniMax Music 3. הפרומפט מגדיר את הסגנון, הכלים והאווירה; המילים מושרות ולא מתוארות, והשארת שדה המילים ריק יוצרת רצועה אינסטרומנטלית. פועל על GPU של Comfy Cloud, והחיוב הוא לפי זמן הפעולה בתעריף של {'$'}0.001295 לכל שניית GPU ‏(0.27 קרדיטים). התשלום בקרדיטים, ללא צורך במנוי Cloud.",
+    "display_name": "Comfy Cloud MiniMax Music 3 טקסט לשמע [BETA]",
+    "inputs": {
+      "audio_quality": {
+        "name": "audio_quality",
+        "tooltip": "קצב סיביות של mp3. ‏V0 משתנה והוא האיכות הגבוהה ביותר מבין השלושה."
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "lyrics": {
+        "name": "מילים",
+        "tooltip": "מילים לשירה. השאירו ריק ליצירה אינסטרומנטלית."
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "משך הזמן המרבי של הרצועה. המודל עשוי לסיים את השיר מוקדם יותר."
+      },
+      "prompt": {
+        "name": "פרומפט"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudZImageTurboNode": {
+    "description": "BETA. ערכת הצמתים של Comfy Cloud עדיין משתנה: אפשרויות עשויות להתווסף או להימחק, ותהליך עבודה עשוי לצאת משימוש. יוצר תמונה מפרומפט טקסט באמצעות Z-Image Turbo ב-8 צעדים. זהו אחד הצמתים המהירים והזולים ביותר כאן, ולכן הוא המתאים ביותר לאיטרציה. פועל על GPU של Comfy Cloud, והחיוב הוא לפי זמן הפעולה בתעריף של {'$'}0.001295 לכל שניית GPU ‏(0.27 קרדיטים). התשלום בקרדיטים, ללא צורך במנוי Cloud.",
+    "display_name": "Comfy Cloud Z-Image Turbo טקסט לתמונה [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר היצירה"
+      },
+      "megapixels": {
+        "name": "מגה-פיקסלים",
+        "tooltip": "תקציב הפיקסלים הכולל. 1.0 הוא בקירוב 1024x1024 ביחס ממדים ריבועי."
+      },
+      "prompt": {
+        "name": "פרומפט"
+      },
+      "seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -9335,40 +9499,6 @@
       }
     }
   },
-  "KlingVideoExtendNode": {
-    "description": "צומת הרחבת וידאו Kling. הרחב סרטונים שנוצרו על ידי צמתים אחרים של Kling. ה-video_id נוצר באמצעות צמתים אחרים של Kling.",
-    "display_name": "Kling הרחבת וידאו",
-    "inputs": {
-      "cfg_scale": {
-        "name": "cfg_scale"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "פרומפט שלילי (הנחיה שלילית) לאלמנטים שיש להימנע מהם בווידאו המורחב"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "פרומפט חיובי (הנחיה חיובית) להכוונת הרחבת הווידאו"
-      },
-      "video_id": {
-        "name": "video_id",
-        "tooltip": "מזהה הווידאו להרחבה. תומך בסרטונים שנוצרו על ידי טקסט-לווידאו, תמונה-לווידאו, ופעולות הרחבה קודמות. לא ניתן לעבור את משך הזמן הכולל של 3 דקות לאחר ההרחבה."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "duration",
-        "tooltip": null
-      }
-    }
-  },
   "KlingVideoNode": {
     "description": "יצירת סרטונים עם Kling V3. תומך בטקסט-לווידאו ותמונה-לווידאו עם אפשרות לפרומפט מרובה (storyboard) ויצירת אודיו.",
     "display_name": "Kling 3.0 וידאו",
@@ -11169,70 +11299,6 @@
       "seed": {
         "name": "seed",
         "tooltip": "seed לקביעת האם הצומת ירוץ מחדש; התוצאות בפועל אינן דטרמיניסטיות ללא קשר ל-seed."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LtxvApiImageToVideo": {
-    "description": "סרטונים באיכות מקצועית עם משך ורזולוציה מותאמים אישית על בסיס תמונת התחלה.",
-    "display_name": "LTXV Image To Video",
-    "inputs": {
-      "duration": {
-        "name": "משך"
-      },
-      "fps": {
-        "name": "fps"
-      },
-      "generate_audio": {
-        "name": "יצירת אודיו",
-        "tooltip": "כאשר מאופשר, הווידאו שיווצר יכלול אודיו שנוצר ב-AI בהתאמה לסצנה."
-      },
-      "image": {
-        "name": "תמונה",
-        "tooltip": "הפריים הראשון שישמש לווידאו."
-      },
-      "model": {
-        "name": "מודל"
-      },
-      "prompt": {
-        "name": "פרומפט"
-      },
-      "resolution": {
-        "name": "רזולוציה"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LtxvApiTextToVideo": {
-    "description": "סרטונים באיכות מקצועית עם משך ורזולוציה מותאמים אישית.",
-    "display_name": "LTXV Text To Video",
-    "inputs": {
-      "duration": {
-        "name": "משך"
-      },
-      "fps": {
-        "name": "fps"
-      },
-      "generate_audio": {
-        "name": "יצירת אודיו",
-        "tooltip": "כאשר מאופשר, הווידאו שיווצר יכלול אודיו שנוצר ב-AI בהתאמה לסצנה."
-      },
-      "model": {
-        "name": "מודל"
-      },
-      "prompt": {
-        "name": "פרומפט"
-      },
-      "resolution": {
-        "name": "רזולוציה"
       }
     },
     "outputs": {
@@ -15930,7 +15996,11 @@
       },
       "max_output_tokens": {
         "name": "max_output_tokens",
-        "tooltip": "גבול עליון למספר הטוקנים שניתן להפיק בתגובה, כולל טוקנים גלויים"
+        "tooltip": "גבול עליון למספר הטוקנים שניתן להפיק עבור תשובה, לרבות טוקני פלט גלויים וטוקני הסקה"
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "מידת ההסקה שהמודל מבצע לפני המענה. 'default' משאיר את הבחירה למודל. הרמות הנתמכות משתנות לפי מודל: GPT-6 Astra low-max, GPT-5.6 none-max (ללא minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; ל-GPT-4.1 אין יכולת הסקה. רמות שאינן נתמכות נדחות לפני שליחת הבקשה."
       },
       "truncation": {
         "name": "truncation",
@@ -15970,78 +16040,6 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "קלטי טקסט למודל, המשמשים להפקת תגובה."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIDalle2": {
-    "description": "יוצר תמונות באופן סינכרוני דרך נקודת הקצה של DALL·E 2 של OpenAI.",
-    "display_name": "OpenAI DALL·E 2",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "image": {
-        "name": "image",
-        "tooltip": "תמונת ייחוס אופציונלית לעריכת תמונה."
-      },
-      "mask": {
-        "name": "mask",
-        "tooltip": "מסכה אופציונלית ל-inpainting (אזורים לבנים יוחלפו)"
-      },
-      "n": {
-        "name": "n",
-        "tooltip": "כמה תמונות ליצור"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "פרומפט טקסט עבור DALL·E"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "עדיין לא נתמך ב-backend"
-      },
-      "size": {
-        "name": "size",
-        "tooltip": "גודל התמונה"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIDalle3": {
-    "description": "יוצר תמונות באופן סינכרוני דרך נקודת הקצה של OpenAI DALL·E 3.",
-    "display_name": "OpenAI DALL·E 3",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "הנחיה טקסטואלית עבור DALL·E"
-      },
-      "quality": {
-        "name": "quality",
-        "tooltip": "איכות התמונה"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "עדיין לא נתמך בצד השרת"
-      },
-      "size": {
-        "name": "size",
-        "tooltip": "גודל התמונה"
-      },
-      "style": {
-        "name": "style",
-        "tooltip": "Vivid גורם למודל להעדיף יצירת תמונות דרמטיות והיפר-ריאליסטיות. Natural גורם למודל להפיק תמונות טבעיות ופחות היפר-ריאליסטיות."
       }
     },
     "outputs": {
