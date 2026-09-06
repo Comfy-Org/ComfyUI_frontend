@@ -25,7 +25,6 @@ interface AgentTestHarnessOptions {
 export function createAgentTestHarness(options: AgentTestHarnessOptions = {}) {
   const pinia = createPinia()
   setActivePinia(pinia)
-  localStorage.clear()
 
   let eventListener: ((raw: unknown) => void) | undefined
   const unsubscribe = vi.fn(() => {
@@ -90,7 +89,6 @@ export function createAgentTestHarness(options: AgentTestHarnessOptions = {}) {
     },
     teardown() {
       unsubscribe()
-      localStorage.clear()
     }
   }
 }

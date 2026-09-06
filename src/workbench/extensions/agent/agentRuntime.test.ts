@@ -12,7 +12,7 @@ import type {
 } from './schemas/agentApiSchema'
 import type { AgentEventSource } from './composables/agent/useAgentSession'
 import type { AgentRestClient } from './services/agent/agentRestClient'
-import { createAgentTestHarness } from './testing/agentTestHarness'
+import { createAgentTestHarness } from './__fixtures__/agentTestHarness'
 import { createAgentRuntime } from './agentRuntime'
 
 function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
