@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { reactive } from 'vue'
+import { shallowReactive } from 'vue'
 
 import {
   EMPTY_SELECTION,
@@ -23,7 +23,7 @@ import type {
  * See ADR-CANVAS-SELECTION-0028.
  */
 export const useSelectionStore = defineStore('selection', () => {
-  const roots = reactive(
+  const roots = shallowReactive(
     new Map<RootGraphId, Map<OwningGraphId, SelectionState>>()
   )
 
@@ -49,7 +49,7 @@ export const useSelectionStore = defineStore('selection', () => {
   ): Map<OwningGraphId, SelectionState> {
     const existing = roots.get(rootGraphId)
     if (existing) return existing
-    const created = reactive(new Map<OwningGraphId, SelectionState>())
+    const created = shallowReactive(new Map<OwningGraphId, SelectionState>())
     roots.set(rootGraphId, created)
     return created
   }
