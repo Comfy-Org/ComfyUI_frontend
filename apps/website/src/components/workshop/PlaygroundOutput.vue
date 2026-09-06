@@ -141,13 +141,6 @@ const earlierClass = (active: boolean) =>
         {{ elapsed }}
       </span>
       <span
-        v-else-if="state.status === 'succeeded'"
-        class="text-primary-comfy-yellow"
-        data-testid="run-credits-used"
-      >
-        {{ state.creditsUsed }} {{ t('nav.credits', locale) }}
-      </span>
-      <span
         v-else-if="state.status === 'example'"
         class="text-primary-warm-white"
         data-testid="output-example"
@@ -423,11 +416,12 @@ const earlierClass = (active: boolean) =>
       </p>
       <div
         v-if="state.status === 'succeeded'"
-        class="flex flex-wrap items-center justify-end gap-2 border-t border-transparency-white-t8 p-4"
+        class="flex flex-col gap-2 border-t border-transparency-white-t8 p-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end"
       >
         <Button
           variant="outline"
           size="sm"
+          class="w-full sm:w-auto"
           data-testid="output-use-in-code"
           @click="emit('useInCode')"
         >
@@ -440,6 +434,7 @@ const earlierClass = (active: boolean) =>
           :download="shown.fileName"
           :prepend-icon="Download"
           size="sm"
+          class="w-full sm:w-auto"
           data-testid="output-download"
         >
           {{ t('workshop.output.download', locale) }}

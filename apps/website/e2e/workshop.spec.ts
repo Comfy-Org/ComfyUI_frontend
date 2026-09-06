@@ -241,7 +241,6 @@ test.describe('Model playground', () => {
     await expect(output).toHaveAttribute('data-state', 'succeeded', {
       timeout: 10_000
     })
-    await expect(page.getByTestId('run-credits-used')).toContainText('8')
     await expect(page.getByTestId('output-download')).toBeVisible()
     await expect(
       page.getByTestId('desktop-nav-cta').getByTestId('header-credits')

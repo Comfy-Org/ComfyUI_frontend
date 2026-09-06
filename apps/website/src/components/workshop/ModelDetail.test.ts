@@ -122,9 +122,9 @@ describe('ModelDetail', () => {
 
   it('arrives with the first example loaded and editable', async () => {
     await signedInDetail()
-    expect(
-      (screen.getByTestId('field-prompt') as HTMLTextAreaElement).value
-    ).toBe('a capybara')
+    expect(screen.getByTestId<HTMLTextAreaElement>('field-prompt').value).toBe(
+      'a capybara'
+    )
     expect(screen.getByText('flf-end_frame.webp')).toBeTruthy()
     expect(
       screen.getByTestId('playground-output').getAttribute('data-state')
@@ -147,7 +147,9 @@ describe('ModelDetail', () => {
 
     vi.advanceTimersByTime(2500)
     await nextTick()
-    expect(screen.getByTestId('run-credits-used').textContent).toContain('8')
+    expect(
+      screen.getByTestId('playground-output').getAttribute('data-state')
+    ).toBe('succeeded')
     expect(credits(api)).toBe(EXISTING_CREDITS - 8)
   })
 
@@ -159,7 +161,9 @@ describe('ModelDetail', () => {
 
     vi.advanceTimersByTime(3000)
     await nextTick()
-    expect(screen.queryByTestId('run-credits-used')).toBeNull()
+    expect(
+      screen.getByTestId('playground-output').getAttribute('data-state')
+    ).toBe('cancelled')
     expect(credits(api)).toBe(EXISTING_CREDITS)
   })
 
@@ -265,8 +269,8 @@ describe('ModelDetail', () => {
       screen.getByTestId('playground-output').getAttribute('data-state')
     ).toBe('example')
     expect(screen.getByText('flf-end_frame.webp')).toBeTruthy()
-    expect(
-      (screen.getByTestId('field-prompt') as HTMLTextAreaElement).value
-    ).toBe('a capybara')
+    expect(screen.getByTestId<HTMLTextAreaElement>('field-prompt').value).toBe(
+      'a capybara'
+    )
   })
 })

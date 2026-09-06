@@ -28,12 +28,10 @@ describe('run transition', () => {
       type: 'complete',
       at: 5000,
       output,
-      creditsUsed: 24,
       nsfw: false
     })
     expect(done).toMatchObject({
       status: 'succeeded',
-      creditsUsed: 24,
       expiresAt: 5000 + OUTPUT_TTL_MS
     })
   })
@@ -142,7 +140,6 @@ describe('runGate for teams and model lifecycles', () => {
       type: 'complete',
       at: 2_000,
       output: { kind: 'image', url: 'x', fileName: 'x.webp' },
-      creditsUsed: 1,
       nsfw: false,
       ttlMs: 0
     })

@@ -15,7 +15,6 @@ const output = (name: string): RunOutput => ({
 const succeeded = (out: RunOutput, nsfw = false): RunState => ({
   status: 'succeeded',
   output: out,
-  creditsUsed: 8,
   completedAt: 1_000,
   expiresAt: 100_000,
   nsfw
@@ -41,7 +40,6 @@ describe('PlaygroundOutput', () => {
         now: 2_000
       }
     })
-    expect(screen.getByTestId('run-credits-used').textContent).toContain('8')
     expect(
       screen.getByTestId('output-download').getAttribute('href')
     ).toContain('latest')

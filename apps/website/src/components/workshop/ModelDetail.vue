@@ -231,7 +231,6 @@ function finishRun() {
         type: 'complete',
         at,
         output,
-        creditsUsed: creditsPerRun,
         nsfw: simOutcome.value === 'nsfw',
         ...(simOutcome.value === 'expired' ? { ttlMs: 0 } : {})
       })

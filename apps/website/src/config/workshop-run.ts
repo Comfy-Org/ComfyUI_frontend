@@ -30,7 +30,6 @@ export type RunState =
   | {
       readonly status: 'succeeded'
       readonly output: RunOutput
-      readonly creditsUsed: number
       readonly completedAt: number
       readonly expiresAt: number
       readonly nsfw: boolean
@@ -48,7 +47,6 @@ export type RunEvent =
       readonly type: 'complete'
       readonly at: number
       readonly output: RunOutput
-      readonly creditsUsed: number
       readonly nsfw: boolean
       readonly ttlMs?: number
     }
@@ -74,7 +72,6 @@ export function transition(state: RunState, event: RunEvent): RunState {
         ? {
             status: 'succeeded',
             output: event.output,
-            creditsUsed: event.creditsUsed,
             completedAt: event.at,
             expiresAt: event.at + (event.ttlMs ?? OUTPUT_TTL_MS),
             nsfw: event.nsfw
