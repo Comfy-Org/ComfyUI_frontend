@@ -8457,9 +8457,8 @@ Enterprise`
     'zh-CN': '找到节点'
   },
   'cloudNodesLaunch.setup.step3.description': {
-    en: 'Search the node library for “Comfy Cloud”. Every node carries a [BETA] suffix in its display name.',
-    'zh-CN':
-      '在节点库中搜索“Comfy Cloud”。每个节点的显示名称都带有 [BETA] 后缀。'
+    en: 'Search the node library for “Comfy Cloud”.',
+    'zh-CN': '在节点库中搜索“Comfy Cloud”。'
   },
   'cloudNodesLaunch.setup.step4.label': {
     en: 'Wire it in and run',
