@@ -20,6 +20,7 @@
  * stays dependency-free and is invoked as `node <path>` rather than via tsx.
  */
 import { readFileSync } from 'node:fs'
+import { pathToFileURL } from 'node:url'
 
 /**
  * The pnpm version a manifest declares, mirroring `pnpm/action-setup`'s own
@@ -88,7 +89,7 @@ export function readManifest(manifestPath) {
 
 const isCli =
   process.argv[1] !== undefined &&
-  import.meta.url === new URL(`file://${process.argv[1]}`).href
+  import.meta.url === pathToFileURL(process.argv[1]).href
 
 if (isCli) {
   const [manifestPath, fallback] = process.argv.slice(2)
