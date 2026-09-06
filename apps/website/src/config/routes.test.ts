@@ -50,4 +50,3 @@ describe('getRoutes minimaxLicenseProfessionalRequest', () => {
     )
   })
 })
-
