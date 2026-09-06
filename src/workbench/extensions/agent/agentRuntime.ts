@@ -40,9 +40,7 @@ function toChatSession(
   }
 }
 
-export function createAgentRuntime(options: AgentRuntimeOptions) {
-  if (!options.enabled) return null
-
+function createEnabledAgentRuntime(options: AgentRuntimeOptions) {
   const rest = (options.createRest ?? createAgentRestClient)()
   const events = (options.createEvents ?? (() => createAgentEventSource(api)))()
   const session = useAgentSession({
@@ -113,4 +111,18 @@ export function createAgentRuntime(options: AgentRuntimeOptions) {
     stop,
     retarget
   }
+}
+
+type AgentRuntime = ReturnType<typeof createEnabledAgentRuntime>
+
+export function createAgentRuntime(
+  options: AgentRuntimeOptions & { enabled: true }
+): AgentRuntime
+export function createAgentRuntime(
+  options: AgentRuntimeOptions
+): AgentRuntime | null
+export function createAgentRuntime(
+  options: AgentRuntimeOptions
+): AgentRuntime | null {
+  return options.enabled ? createEnabledAgentRuntime(options) : null
 }

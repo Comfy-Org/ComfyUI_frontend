@@ -415,7 +415,7 @@ const runtime = createAgentRuntime({
       error instanceof Error ? error.message : String(error)
     )
   }
-})!
+})
 
 const {
   sendMessage,
