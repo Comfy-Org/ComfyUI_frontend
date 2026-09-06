@@ -40,7 +40,15 @@ services:
       case "${COMFYUI_FRONTEND_MODE:-local}" in
         local)
           echo 'Waiting for the local ComfyUI backend'
-          until curl --fail --silent http://127.0.0.1:8188/system_stats >/dev/null; do
+          for attempt in {1..300}; do
+            if curl --fail --silent --max-time 2 \
+              http://127.0.0.1:8188/system_stats >/dev/null; then
+              break
+            fi
+            if [[ "$attempt" == 300 ]]; then
+              echo 'Local ComfyUI backend did not become ready after 300 attempts' >&2
+              exit 1
+            fi
             sleep 2
           done
           echo 'Starting the frontend in local ComfyUI mode'
