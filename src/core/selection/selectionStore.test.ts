@@ -6,7 +6,7 @@ import type {
   SelectableKey,
   SelectionCommand
 } from '@/core/selection/selectionState'
-import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
+import { useSelectionStore } from '@/core/selection/selectionStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
 import { toGroupId } from '@/types/groupId'
