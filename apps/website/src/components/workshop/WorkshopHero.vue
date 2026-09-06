@@ -5,6 +5,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import SplitReveal from './SplitReveal.vue'
 
 const {
   headingKey = 'workshop.hero.heading',
@@ -32,13 +33,13 @@ const slots = useSlots()
     <p
       class="text-primary-comfy-yellow mb-5 text-sm font-medium tracking-widest uppercase"
     >
-      {{ t('workshop.hero.eyebrow', locale) }}
+      <SplitReveal :text="t('workshop.hero.eyebrow', locale)" />
     </p>
     <h1 class="text-4xl font-bold text-primary-comfy-canvas lg:text-6xl">
-      {{ t(headingKey, locale) }}
+      <SplitReveal :text="t(headingKey, locale)" :delay="90" />
     </h1>
     <p v-if="subtitleKey" class="mt-4 text-lg text-primary-comfy-canvas/70">
-      {{ t(subtitleKey, locale) }}
+      <SplitReveal :text="t(subtitleKey, locale)" :delay="260" :stagger="50" />
     </p>
 
     <slot />

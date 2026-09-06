@@ -5,6 +5,7 @@ import BaseLayout from '../../../layouts/BaseLayout.astro'
 import ModelDetail from '../../../components/workshop/ModelDetail.vue'
 import ModelStatus from '../../../components/workshop/ModelStatus.vue'
 import PrototypeTweaks from '../../../components/workshop/PrototypeTweaks.vue'
+import SplitReveal from '../../../components/workshop/SplitReveal.vue'
 import WorkshopModelCard from '../../../components/workshop/WorkshopModelCard.vue'
 import { getRoutes } from '../../../config/routes'
 import {
@@ -107,7 +108,7 @@ const tags = model.capabilities.map((capability) => ({
         </div>
 
         <h1 class="text-3xl font-bold text-primary-comfy-canvas lg:text-5xl">
-          {model.name}
+          <SplitReveal text={model.name} client:load />
         </h1>
 
         <p
