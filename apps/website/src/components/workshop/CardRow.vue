@@ -32,7 +32,7 @@ useResizeObserver(row, measure)
 
 const arrowClass = (disabled: boolean) =>
   cn(
-    'focus-visible:ring-primary-comfy-yellow/50 grid size-9 place-items-center rounded-full border border-transparency-white-t20 text-primary-warm-white transition-colors outline-none focus-visible:ring-3',
+    'focus-visible:ring-primary-comfy-yellow/50 bg-page/70 grid size-9 place-items-center rounded-full border border-transparency-white-t20 text-primary-warm-white backdrop-blur-sm transition-colors outline-none focus-visible:ring-3',
     disabled
       ? 'cursor-not-allowed opacity-30'
       : 'hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow cursor-pointer'
@@ -40,38 +40,10 @@ const arrowClass = (disabled: boolean) =>
 </script>
 
 <template>
-  <div>
+  <div class="relative">
     <div class="mb-5 flex items-center justify-between gap-4">
       <slot name="heading" />
-      <div class="flex shrink-0 items-center gap-3">
-        <slot name="actions" />
-        <div
-          v-if="!atStart || !atEnd"
-          class="flex gap-2"
-          data-testid="card-row-arrows"
-        >
-          <button
-            type="button"
-            :disabled="atStart"
-            :aria-label="t('workshop.sections.scrollBack', locale)"
-            :class="arrowClass(atStart)"
-            data-testid="card-row-prev"
-            @click="page(-1)"
-          >
-            <ChevronLeft class="size-4" aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            :disabled="atEnd"
-            :aria-label="t('workshop.sections.scrollForward', locale)"
-            :class="arrowClass(atEnd)"
-            data-testid="card-row-next"
-            @click="page(1)"
-          >
-            <ChevronRight class="size-4" aria-hidden="true" />
-          </button>
-        </div>
-      </div>
+      <slot name="actions" />
     </div>
 
     <ul
@@ -87,5 +59,32 @@ const arrowClass = (disabled: boolean) =>
     >
       <slot />
     </ul>
+
+    <div
+      v-if="!atStart || !atEnd"
+      class="absolute right-2 bottom-6 flex gap-2"
+      data-testid="card-row-arrows"
+    >
+      <button
+        type="button"
+        :disabled="atStart"
+        :aria-label="t('workshop.sections.scrollBack', locale)"
+        :class="arrowClass(atStart)"
+        data-testid="card-row-prev"
+        @click="page(-1)"
+      >
+        <ChevronLeft class="size-4" aria-hidden="true" />
+      </button>
+      <button
+        type="button"
+        :disabled="atEnd"
+        :aria-label="t('workshop.sections.scrollForward', locale)"
+        :class="arrowClass(atEnd)"
+        data-testid="card-row-next"
+        @click="page(1)"
+      >
+        <ChevronRight class="size-4" aria-hidden="true" />
+      </button>
+    </div>
   </div>
 </template>

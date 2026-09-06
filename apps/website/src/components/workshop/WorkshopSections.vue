@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronRight, Sparkles } from '@lucide/vue'
+import { ChevronRight } from '@lucide/vue'
 import { computed } from 'vue'
 
 import type { SortOrder, UseCase, WorkshopModel } from '../../config/workshop'
@@ -85,19 +85,15 @@ const unplaced = computed(() =>
     <section
       v-if="featured.length"
       aria-labelledby="section-featured"
-      class="rounded-4.5xl border border-transparency-white-t8 bg-linear-to-br from-primary-comfy-plum/35 via-transparency-white-t4 to-transparent p-6 lg:p-8"
+      class="bg-transparency-white-t4 rounded-4.5xl border border-transparency-white-t8 p-6 backdrop-blur-xl lg:p-8"
       data-testid="section-featured"
     >
       <CardRow :locale>
         <template #heading>
           <h2
             id="section-featured"
-            class="flex items-center gap-2 text-xl font-medium text-primary-warm-white"
+            class="text-xl font-medium text-primary-warm-white"
           >
-            <Sparkles
-              class="text-primary-comfy-yellow size-5"
-              aria-hidden="true"
-            />
             {{ t('workshop.sections.featured', locale) }}
           </h2>
         </template>

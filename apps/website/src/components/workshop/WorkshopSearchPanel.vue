@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -51,7 +51,8 @@ const popular = computed(() =>
 // somewhere: the chips narrow what the search already found.
 const chipsFrom = (
   values: (model: WorkshopModel) => readonly string[],
-  chosen: readonly string[]
+  chosen: readonly string[],
+  showAll: boolean
 ) => {
   const counts = new Map<string, number>()
   for (const model of matching.value)
@@ -61,21 +62,33 @@ const chipsFrom = (
     ([a, left], [b, right]) => right - left || a.localeCompare(b)
   )
   return {
-    chips: ranked.slice(0, CHIPS).map(([value, count]) => ({
-      value,
-      count,
-      selected: chosen.includes(value)
-    })),
-    more: Math.max(ranked.length - CHIPS, 0)
+    chips: (showAll ? ranked : ranked.slice(0, CHIPS)).map(
+      ([value, count]) => ({
+        value,
+        count,
+        selected: chosen.includes(value)
+      })
+    ),
+    more: showAll ? 0 : Math.max(ranked.length - CHIPS, 0)
   }
 }
 
+const allProviders = ref(false)
+const allCapabilities = ref(false)
+
 const providerChips = computed(() =>
-  chipsFrom((model) => (model.provider ? [model.provider] : []), providers)
+  chipsFrom(
+    (model) => (model.provider ? [model.provider] : []),
+    providers,
+    allProviders.value
+  )
 )
 const capabilityChips = computed(() =>
-  chipsFrom((model) => model.capabilities, capabilities)
+  chipsFrom((model) => model.capabilities, capabilities, allCapabilities.value)
 )
+
+const moreClass =
+  'hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 cursor-pointer rounded-lg text-xs text-primary-warm-gray transition-colors outline-none focus-visible:ring-3'
 
 const chipClass = (selected: boolean) =>
   cn(
@@ -164,10 +177,12 @@ const chipClass = (selected: boolean) =>
         {{ chip.value }}
         <span class="tabular-nums opacity-60">{{ chip.count }}</span>
       </button>
-      <span
+      <button
         v-if="providerChips.more > 0"
-        class="text-xs text-primary-warm-gray"
+        type="button"
+        :class="moreClass"
         data-testid="workshop-search-provider-more"
+        @mousedown.prevent="allProviders = true"
       >
         {{
           t('workshop.search.more', locale).replace(
@@ -175,7 +190,7 @@ const chipClass = (selected: boolean) =>
             `${providerChips.more}`
           )
         }}
-      </span>
+      </button>
     </section>
 
     <section
@@ -199,10 +214,12 @@ const chipClass = (selected: boolean) =>
         {{ chip.value }}
         <span class="tabular-nums opacity-60">{{ chip.count }}</span>
       </button>
-      <span
+      <button
         v-if="capabilityChips.more > 0"
-        class="text-xs text-primary-warm-gray"
+        type="button"
+        :class="moreClass"
         data-testid="workshop-search-capability-more"
+        @mousedown.prevent="allCapabilities = true"
       >
         {{
           t('workshop.search.more', locale).replace(
@@ -210,7 +227,7 @@ const chipClass = (selected: boolean) =>
             `${capabilityChips.more}`
           )
         }}
-      </span>
+      </button>
     </section>
   </div>
 </template>

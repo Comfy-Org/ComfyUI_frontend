@@ -40,7 +40,7 @@ const clock = (value: number) =>
   ).padStart(2, '0')}`
 
 const buttonClass =
-  'grid size-9 shrink-0 cursor-pointer place-items-center rounded-xl bg-transparency-white-t20 text-primary-warm-white backdrop-blur-sm transition-colors outline-none hover:bg-white/30 focus-visible:ring-2 focus-visible:ring-primary-warm-white/60'
+  'grid size-9 shrink-0 cursor-pointer place-items-center rounded-xl text-primary-warm-white/80 transition-colors outline-none hover:text-primary-warm-white focus-visible:ring-2 focus-visible:ring-primary-warm-white/60'
 </script>
 
 <template>
@@ -102,7 +102,7 @@ const buttonClass =
           locale
         )
       "
-      :class="cn(buttonClass, !muted && 'bg-white/30')"
+      :class="cn(buttonClass, !muted && 'text-primary-warm-white')"
       data-testid="output-sound"
       @click="muted = !muted"
     >
