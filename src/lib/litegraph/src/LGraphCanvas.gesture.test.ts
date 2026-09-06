@@ -219,9 +219,9 @@ describe('LGraphCanvas pointer gestures', () => {
       expect(log).not.toContain('canvas.onNodeMoved')
     })
 
-    it.fails('slow movement within the drift threshold stays a click', () => {
+    it('slow movement within the drift threshold stays a click', () => {
       gesture.press(A_BODY)
-      gesture.move(shifted(A_BODY, NEAR), {}, CanvasPointer.bufferTime + 100)
+      gesture.move(shifted(A_BODY, NEAR), {}, 500)
       gesture.release(shifted(A_BODY, NEAR))
 
       expect(posOf(a)).toEqual([20, 40])

@@ -40,9 +40,8 @@ CanvasPointer replaces much of the original pointer handling code. It provides a
 
 ### Click "drift"
 
-A small amount of buffering is performed between down/up events to prevent accidental micro-drag events. If either of the two controls are exceeded, the event will be considered a drag event, not a click.
+A small amount of movement is tolerated between down/up events to prevent accidental micro-drag events. Once the pointer travels further than the limit, the event is considered a drag event, not a click. Time does not affect the decision.
 
-- `bufferTime` is the maximum time that tiny movements can be ignored (Default: 32ms)
 - `maxClickDrift` controls how far a click can drift from its down event before it is considered a drag (Default: 6)
 
 ### Double-click
@@ -57,7 +56,6 @@ When double clicking, the double click callback is executed shortly after one no
 All above configuration is via class static.
 
 ```ts
-CanvasPointer.bufferTime = 32
 CanvasPointer.maxClickDrift = 6
 CanvasPointer.doubleClickTime = 300
 ```
