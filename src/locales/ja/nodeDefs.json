@@ -770,6 +770,54 @@
       }
     }
   },
+  "BlockSparseAttention": {
+    "description": "comfy_kitchen によるブロックスパースアテンション：各クエリブロックが選択されたキー ブロックのサブセットに正確にアテンションを行い、アテンション計算を削減します。短いシーケンスでは通常、密な処理の方が高速なため、相対的な高速化の効果はシーケンス長とともに大きくなります。有効スケジュール外、dense_blocks、および min_tokens 未満では、モデルは有効な密なモデルのアテンションバックエンドを使用します。",
+    "display_name": "ブロックスパースアテンション",
+    "inputs": {
+      "dense_blocks": {
+        "name": "dense_blocks",
+        "tooltip": "常に密な処理を実行する Transformer ブロック。例：'0, 1, 47-49'。"
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "スケジュールのこの時点より後は密な処理です。"
+      },
+      "extra_tokens": {
+        "name": "extra_tokens",
+        "tooltip": "各クエリブロックが、選択されたブロックに加えてアテンションを行う、スコア上位の追加トークン数。多いほどアテンション時間が増え、密な処理に近づきます。256 を推奨、0 で無効化します。VSA では無視されます。"
+      },
+      "min_tokens": {
+        "name": "min_tokens",
+        "tooltip": "これより短いシーケンスは密な処理のままです。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "selection": {
+        "name": "selection",
+        "tooltip": "正確なキー ブロックの選択方法。Sol-Attn：ヘッド／ブロックごとの適応しきい値。top-k (SLA)：すべてで固定の keep_percent を維持し、学習済み重みでのみ推奨。VSA (FastVideo)：FastH3-VSA のキューブタイル処理と粗い分岐で、対応する学習済み重みが必要です。"
+      },
+      "selection_tau": {
+        "name": "tau"
+      },
+      "sink_conditioning": {
+        "name": "sink_conditioning",
+        "tooltip": "MiniMax-H3 専用。exact_kv：各クエリがパックされたテキスト／音声／参照行に正確にアテンションを行います（コスト約 3%）。exact_kv_and_rows：さらにターゲット音声のクエリ行を密に実行します（生成された音声を維持）。"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "スケジュールのこの時点より前は密な処理です。"
+      },
+      "verbose": {
+        "name": "verbose"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaEraser": {
     "description": "Briaを使用して、マスクで囲まれたオブジェクトまたは領域を画像から削除します。",
     "display_name": "Bria イレーサー",
@@ -1477,96 +1525,6 @@
       },
       "watermark": {
         "name": "ウォーターマーク",
-        "tooltip": "動画に「AI生成」の透かしを追加するかどうか。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "ByteDanceImageNode": {
-    "description": "プロンプトに基づいてAPI経由でByteDanceモデルを使用して画像を生成",
-    "display_name": "ByteDance画像",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後の制御"
-      },
-      "guidance_scale": {
-        "name": "ガイダンススケール",
-        "tooltip": "値が高いほどプロンプトに忠実な画像になります"
-      },
-      "height": {
-        "name": "高さ",
-        "tooltip": "画像のカスタム高さ。`size_preset`が`Custom`に設定されている場合のみ有効"
-      },
-      "model": {
-        "name": "モデル"
-      },
-      "prompt": {
-        "name": "プロンプト",
-        "tooltip": "画像生成に使用するテキストプロンプト"
-      },
-      "seed": {
-        "name": "シード",
-        "tooltip": "生成に使用するシード値"
-      },
-      "size_preset": {
-        "name": "サイズプリセット",
-        "tooltip": "推奨サイズを選択。カスタムを選択すると下記の幅と高さを使用します"
-      },
-      "watermark": {
-        "name": "透かし",
-        "tooltip": "画像に「AI生成」の透かしを追加するかどうか"
-      },
-      "width": {
-        "name": "幅",
-        "tooltip": "画像のカスタム幅。`size_preset`が`Custom`に設定されている場合のみ有効"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "ByteDanceImageReferenceNode": {
-    "description": "プロンプトと参照画像を使用して動画を生成",
-    "display_name": "ByteDance参照画像から動画生成",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "アスペクト比",
-        "tooltip": "出力動画のアスペクト比"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration": {
-        "name": "再生時間",
-        "tooltip": "出力動画の再生時間（秒）"
-      },
-      "images": {
-        "name": "画像",
-        "tooltip": "1〜4枚の画像"
-      },
-      "model": {
-        "name": "モデル"
-      },
-      "prompt": {
-        "name": "プロンプト",
-        "tooltip": "動画生成に使用するテキストプロンプト"
-      },
-      "resolution": {
-        "name": "解像度",
-        "tooltip": "出力動画の解像度"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "生成に使用するシード値。"
-      },
-      "watermark": {
-        "name": "watermark",
         "tooltip": "動画に「AI生成」の透かしを追加するかどうか。"
       }
     },
@@ -2755,6 +2713,260 @@
     "inputs": {
       "values": {
         "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudFlux2TextToImageNode": {
+    "description": "BETA。Comfy Cloud ノードセットは現在も変更中です。オプションが追加または削除されたり、ワークフローが廃止されたりする場合があります。Flux 2 dev を使用して、テキストプロンプトから画像を生成します。Turbo は選択した LoRA と短いスケジュールを使用し、忠実度をわずかに犠牲にして大幅に高速化します。LoRA なしのフルレングス dev パスを使用するにはオフにしてください。Comfy Cloud GPU で実行され、実行時間に応じて {'$'}0.001295/GPU 秒（0.27 クレジット）が課金されます。クレジットで支払い、Cloud サブスクリプションは不要です。",
+    "display_name": "Comfy Cloud Flux 2 Text to Image [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "総ピクセル予算。1.0 は正方形の比率で約 1024x1024 です。"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "turbo": {
+        "name": "turbo",
+        "tooltip": "短いスケジュールで Turbo LoRA を実行し、忠実度をわずかに犠牲にして大幅に高速化します。オフでは LoRA なしのフル dev パスを実行します。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMageFlowTextToImageNode": {
+    "description": "BETA。Comfy Cloud ノードセットは現在も変更中です。オプションが追加または削除されたり、ワークフローが廃止されたりする場合があります。Mage-Flow を使用して、30 ステップのフルパスでテキストプロンプトから画像を生成します。蒸留された turbo バリアントでは十分に使用できないネガティブプロンプトを受け取ります。Comfy Cloud GPU で実行され、実行時間に応じて {'$'}0.001295/GPU 秒（0.27 クレジット）が課金されます。クレジットで支払い、Cloud サブスクリプションは不要です。",
+    "display_name": "Comfy Cloud Mage Flow Text to Image [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "総ピクセル予算。1.0 は正方形の比率で約 1024x1024 です。"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "このパイプラインの調整に使用されたネガティブプロンプトを維持するには、空のままにします。"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMageFlowTurboTextToImageNode": {
+    "description": "BETA。Comfy Cloud ノードセットは現在も変更中です。オプションが追加または削除されたり、ワークフローが廃止されたりする場合があります。cfg 1で、蒸留済みMage-Flowを使用して4ステップでテキストプロンプトから画像を生成します。フルパスの約7分の1のGPU時間で済むため、反復作業に適しています。Comfy Cloud GPUで実行され、実行時間に応じて{'$'}0.001295/GPU秒（0.27クレジット）が課金されます。クレジットで支払われるため、Cloudサブスクリプションは不要です。",
+    "display_name": "Comfy Cloud Mage Flow Turbo Text to Image [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "control_after_generate": {
+        "name": "生成後の操作"
+      },
+      "megapixels": {
+        "name": "メガピクセル",
+        "tooltip": "総ピクセル数の上限です。1.0は正方形の比率で約1024x1024です。"
+      },
+      "negative_prompt": {
+        "name": "ネガティブプロンプト",
+        "tooltip": "このパイプラインで調整されたネガティブプロンプトを使用するには、空欄のままにしてください。"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3FirstLastFrameToVideoNode": {
+    "description": "BETA。Comfy Cloud ノードセットは現在も変更中です。オプションが追加または削除されたり、ワークフローが廃止されたりする場合があります。MiniMax H3を使用して、2つのキーフレーム間の動きを一致するサウンドトラック付きで生成します。開始フレームと終了フレームを指定すると、モデルがその間のショットを補完します。最後のフレームは任意です。指定しない場合は、最初のフレームから動きが展開されます。Comfy Cloud GPUで実行され、実行時間に応じて{'$'}0.001295/GPU秒（0.27クレジット）が課金されます。クレジットで支払われるため、Cloudサブスクリプションは不要です。",
+    "display_name": "Comfy Cloud MiniMax H3 最初と最後のフレームから動画 [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "control_after_generate": {
+        "name": "生成後の操作"
+      },
+      "duration_seconds": {
+        "name": "秒数",
+        "tooltip": "秒単位の長さです。パイプラインは24fpsで17フレーム単位に量子化するため、クリップの長さはこの値から約3分の2秒以内になります。"
+      },
+      "first_frame": {
+        "name": "最初のフレーム"
+      },
+      "last_frame": {
+        "name": "最後のフレーム"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "resolution": {
+        "name": "解像度",
+        "tooltip": "フレームサイズの上限です。720pは480pの約2倍のGPU秒を消費します。"
+      },
+      "seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3ImageToVideoNode": {
+    "description": "BETA。Comfy Cloud ノードセットは現在も変更中です。オプションが追加または削除されたり、ワークフローが廃止されたりする場合があります。MiniMax H3を使用して、静止画を一致するサウンドトラック付きの動画にアニメーション化します。クリップの終了フレームを入力するとシーケンスが続くため、複数を連結してより長いショットを作成できます。Comfy Cloud GPUで実行され、実行時間に応じて{'$'}0.001295/GPU秒（0.27クレジット）が課金されます。クレジットで支払われるため、Cloudサブスクリプションは不要です。",
+    "display_name": "Comfy Cloud MiniMax H3 画像から動画 [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "control_after_generate": {
+        "name": "生成後の操作"
+      },
+      "duration_seconds": {
+        "name": "秒数",
+        "tooltip": "秒単位の長さです。パイプラインは24fpsで17フレーム単位に量子化するため、クリップの長さはこの値から約3分の2秒以内になります。"
+      },
+      "first_frame": {
+        "name": "最初のフレーム"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "resolution": {
+        "name": "解像度",
+        "tooltip": "フレームサイズの上限です。720pは480pの約2倍のGPU秒を消費します。"
+      },
+      "seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3TextToVideoNode": {
+    "description": "BETA。Comfy Cloud ノードセットは現在も変更中です。オプションが追加または削除されたり、ワークフローが廃止されたりする場合があります。MiniMax H3を使用して、テキストプロンプトから一致するサウンドトラック付きの動画を生成します。映像と音声は後から吹き替えるのではなく、同じパスで生成されます。Comfy Cloud GPUで実行され、実行時間に応じて{'$'}0.001295/GPU秒（0.27クレジット）が課金されます。クレジットで支払われるため、Cloudサブスクリプションは不要です。",
+    "display_name": "Comfy Cloud MiniMax H3 テキストから動画 [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "duration_seconds": {
+        "name": "秒数",
+        "tooltip": "秒単位の長さ。パイプラインは24fpsで17フレーム単位に量子化するため、クリップの長さはこの値から約3分の2秒以内になります。"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "resolution": {
+        "name": "解像度",
+        "tooltip": "フレームサイズの上限です。720pは480pの約2倍のGPU秒を消費します。"
+      },
+      "seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxMusic3TextToAudioNode": {
+    "description": "BETA。Comfy Cloudノードセットは現在も変更中です。オプションが追加または削除されたり、ワークフローが廃止されたりする場合があります。MiniMax Music 3を使用して、説明からフル楽曲を生成します。プロンプトにはスタイル、楽器編成、雰囲気を指定します。歌詞は説明ではなく歌唱され、歌詞を空にするとインストゥルメンタル曲になります。Comfy Cloud GPUで実行され、実行時間に応じて{'$'}0.001295/GPU秒（0.27クレジット）が課金されます。クレジットで支払われ、Cloudサブスクリプションは不要です。",
+    "display_name": "Comfy Cloud MiniMax Music 3 テキストからオーディオ [BETA]",
+    "inputs": {
+      "audio_quality": {
+        "name": "audio_quality",
+        "tooltip": "mp3ビットレート。V0は可変で、3つの中で最高品質です。"
+      },
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "lyrics": {
+        "name": "lyrics",
+        "tooltip": "歌唱する歌詞。インストゥルメンタルにする場合は空のままにします。"
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "トラックの最大再生時間。モデルがそれより早く曲を終了する場合があります。"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudZImageTurboNode": {
+    "description": "BETA。Comfy Cloudノードセットは現在も変更中です。オプションが追加または削除されたり、ワークフローが廃止されたりする場合があります。Z-Image Turboを使用して、テキストプロンプトから8ステップで画像を生成します。ここで最も高速かつ低コストなノードの1つであり、反復作業に適しています。Comfy Cloud GPUで実行され、実行時間に応じて{'$'}0.001295/GPU秒（0.27クレジット）が課金されます。クレジットで支払われ、Cloudサブスクリプションは不要です。",
+    "display_name": "Comfy Cloud Z-Image Turbo テキストから画像 [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "総ピクセル数の上限。1.0は正方形比率で約1024x1024です。"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -6433,7 +6645,7 @@
     }
   },
   "GetImageSize": {
-    "description": "画像の幅と高さを返し、変更せずに通過させます。",
+    "description": "画像の幅、高さ、バッチサイズを返します。",
     "display_name": "画像サイズ取得",
     "inputs": {
       "image": {
@@ -9335,40 +9547,6 @@
       }
     }
   },
-  "KlingVideoExtendNode": {
-    "description": "Kling Video Extendノード。他のKlingノードで作成された動画を拡張します。video_idは他のKlingノードを使用して作成されます。",
-    "display_name": "Kling Video Extend",
-    "inputs": {
-      "cfg_scale": {
-        "name": "cfg_scale"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "拡張動画で避けたい要素のネガティブテキストプロンプト"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "動画拡張をガイドするためのポジティブなテキストプロンプト"
-      },
-      "video_id": {
-        "name": "video_id",
-        "tooltip": "拡張する動画のID。テキストから動画、画像から動画、または以前の動画拡張操作で生成された動画をサポートします。拡張後の合計再生時間は3分を超えることはできません。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "duration",
-        "tooltip": null
-      }
-    }
-  },
   "KlingVideoNode": {
     "description": "Kling V3でビデオを生成します。テキストからビデオ、画像からビデオ、オプションでストーリーボードのマルチプロンプトやオーディオ生成に対応しています。",
     "display_name": "Kling 3.0 ビデオ",
@@ -11177,70 +11355,6 @@
       }
     }
   },
-  "LtxvApiImageToVideo": {
-    "description": "開始画像に基づいてカスタマイズ可能な長さと解像度のプロフェッショナル品質の動画。",
-    "display_name": "LTXV 画像から動画へ",
-    "inputs": {
-      "duration": {
-        "name": "長さ"
-      },
-      "fps": {
-        "name": "fps"
-      },
-      "generate_audio": {
-        "name": "オーディオ生成",
-        "tooltip": "trueの場合、生成された動画にはシーンに合ったAI生成オーディオが含まれます。"
-      },
-      "image": {
-        "name": "画像",
-        "tooltip": "動画の最初のフレームとして使用する画像。"
-      },
-      "model": {
-        "name": "モデル"
-      },
-      "prompt": {
-        "name": "プロンプト"
-      },
-      "resolution": {
-        "name": "解像度"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LtxvApiTextToVideo": {
-    "description": "カスタマイズ可能な長さと解像度のプロフェッショナル品質の動画。",
-    "display_name": "LTXV テキストから動画へ",
-    "inputs": {
-      "duration": {
-        "name": "長さ"
-      },
-      "fps": {
-        "name": "fps"
-      },
-      "generate_audio": {
-        "name": "オーディオ生成",
-        "tooltip": "trueの場合、生成された動画にはシーンに合ったAI生成オーディオが含まれます。"
-      },
-      "model": {
-        "name": "モデル"
-      },
-      "prompt": {
-        "name": "プロンプト"
-      },
-      "resolution": {
-        "name": "解像度"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "LumaConceptsNode": {
     "description": "Luma Text to VideoおよびLuma Image to Videoノードで使用するための1つ以上のカメラコンセプトを保持します。",
     "display_name": "Lumaコンセプト",
@@ -12710,6 +12824,84 @@
       }
     }
   },
+  "MetaMuseImageEditApi": {
+    "description": "MetaのMuse Imageモデルを使用し、テキストプロンプトに基づいて最大10枚の参照画像を編集または結合します。",
+    "display_name": "Meta Muse Image Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "使用するモデル。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_enable_image_search": {
+        "name": "enable_image_search"
+      },
+      "model_enable_shell": {
+        "name": "enable_shell"
+      },
+      "model_enable_web_search": {
+        "name": "enable_web_search"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_strength": {
+        "name": "reasoning_strength"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MetaMuseImageTextToImageApi": {
+    "description": "MetaのMuse Imageモデルを使用してテキストプロンプトから画像を生成します。このモデルはレンダリング前にプロンプトについて推論します。",
+    "display_name": "Meta Muse Image テキストから画像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "使用するモデル。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_enable_image_search": {
+        "name": "enable_image_search"
+      },
+      "model_enable_shell": {
+        "name": "enable_shell"
+      },
+      "model_enable_web_search": {
+        "name": "enable_web_search"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_strength": {
+        "name": "reasoning_strength"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MiniMaxH3AddGuide": {
     "description": "MiniMax H3動画の任意のフレームに、画像、短いclip、音声、または音声トラック付きclipを固定します。複数のフレームを固定するには、複数のノードを連結してください。",
     "display_name": "MiniMax H3用ガイドを追加",
@@ -12832,7 +13024,8 @@
     "display_name": "MiniMax H3 リファレンスから動画へ",
     "inputs": {
       "audio_vae": {
-        "name": "audio_vae"
+        "name": "audio_vae",
+        "tooltip": "オーディオVAE。これがない場合、参照オーディオはテキストエンコーダーの条件付けにのみ使用されます。"
       },
       "clip": {
         "name": "clip"
@@ -12864,7 +13057,8 @@
         "name": "リファレンス動画"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "ビデオVAE。これがない場合、参照画像／動画はテキストエンコーダーの条件付けにのみ使用されます。"
       },
       "width": {
         "name": "幅"
@@ -15850,7 +16044,11 @@
       },
       "max_output_tokens": {
         "name": "最大出力トークン数",
-        "tooltip": "生成できる応答のトークン数の上限（表示可能な出力トークンを含む）"
+        "tooltip": "表示出力トークンと推論トークンを含め、応答用に生成できるトークン数の上限です"
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "回答前にモデルがどの程度推論するかを指定します。'default' はモデルに選択を委ねます。対応レベルはモデルごとに異なります：GPT-6 Astra low-max、GPT-5.6 none-max（minimal なし）、GPT-5.5 none-xhigh、GPT-5.5 Pro medium-xhigh、GPT-5 minimal-high、o-series low-high。GPT-4.1 には推論機能がありません。未対応のレベルはリクエスト送信前に拒否されます。"
       },
       "truncation": {
         "name": "切り捨て",
@@ -15890,78 +16088,6 @@
       "prompt": {
         "name": "プロンプト",
         "tooltip": "モデルへのテキスト入力。応答を生成するために使用されます。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIDalle2": {
-    "description": "OpenAIのDALL·E 2エンドポイントを通じて同期的に画像を生成します。",
-    "display_name": "OpenAI DALL·E 2",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後のコントロール"
-      },
-      "image": {
-        "name": "画像",
-        "tooltip": "画像編集用のオプション参照画像。"
-      },
-      "mask": {
-        "name": "マスク",
-        "tooltip": "インペインティング用のオプションマスク（白い部分が置き換えられます）"
-      },
-      "n": {
-        "name": "生成数",
-        "tooltip": "生成する画像の枚数"
-      },
-      "prompt": {
-        "name": "プロンプト",
-        "tooltip": "DALL·E用のテキストプロンプト"
-      },
-      "seed": {
-        "name": "シード",
-        "tooltip": "バックエンドではまだ未実装"
-      },
-      "size": {
-        "name": "サイズ",
-        "tooltip": "画像サイズ"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIDalle3": {
-    "description": "OpenAIのDALL·E 3エンドポイントを通じて同期的に画像を生成します。",
-    "display_name": "OpenAI DALL·E 3",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後のコントロール"
-      },
-      "prompt": {
-        "name": "プロンプト",
-        "tooltip": "DALL·E用のテキストプロンプト"
-      },
-      "quality": {
-        "name": "画質",
-        "tooltip": "画像の品質"
-      },
-      "seed": {
-        "name": "シード",
-        "tooltip": "バックエンドではまだ未実装"
-      },
-      "size": {
-        "name": "サイズ",
-        "tooltip": "画像サイズ"
-      },
-      "style": {
-        "name": "スタイル",
-        "tooltip": "「Vivid」はモデルがハイパーリアルでドラマチックな画像を生成する傾向になります。「Natural」はより自然で、ハイパーリアルではない画像を生成します。"
       }
     },
     "outputs": {
@@ -16972,7 +17098,7 @@
   },
   "Preview3D": {
     "description": "3DモデルファイルをComfyUIの出力ディレクトリに保存せずにプレビューします。",
-    "display_name": "3Dプレビュー",
+    "display_name": "3Dとアニメーションをプレビュー（非推奨）",
     "inputs": {
       "bg_image": {
         "name": "bg_image"
@@ -17985,7 +18111,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "スタイルを作成する出力タイプ: ラスター画像には recraftv4_styles、SVG には recraftv4_styles_vector。"
+        "tooltip": "スタイルを作成する対象のモデル。Standard と Pro は1つのスタイルプールを共有します。ラスター スタイルはすべての Recraft V4 および V4.1 ラスターモデルで使用でき、ベクター スタイル（*_vector）はすべての V4 および V4.1 ベクターモデルで使用できます。"
       }
     },
     "outputs": {
@@ -23490,10 +23616,12 @@
         "name": "その場でアニメーション"
       },
       "bake": {
-        "name": "ベイク"
+        "name": "ベイク",
+        "tooltip": "互換性を高めるため、高度なマテリアルをベーステクスチャにベイクします。"
       },
       "export_orientation": {
-        "name": "エクスポート方向"
+        "name": "エクスポート方向",
+        "tooltip": "エクスポートするモデルの前方軸。default は Tripo の +x を維持します。"
       },
       "export_vertex_colors": {
         "name": "頂点カラーをエクスポート"
@@ -23502,13 +23630,15 @@
         "name": "face_limit"
       },
       "fbx_preset": {
-        "name": "FBXプリセット"
+        "name": "FBXプリセット",
+        "tooltip": "FBX互換性プリセット。bake_scale はスケール変換をジオメトリにベイクします。"
       },
       "flatten_bottom": {
         "name": "底面を平坦化"
       },
       "flatten_bottom_threshold": {
-        "name": "底面平坦化しきい値"
+        "name": "底面平坦化しきい値",
+        "tooltip": "flatten_bottom で使用する平坦化の深さです。"
       },
       "force_symmetry": {
         "name": "対称性を強制"
@@ -23541,15 +23671,66 @@
         "name": "texture_size"
       },
       "with_animation": {
-        "name": "アニメーション付き"
+        "name": "アニメーション付き",
+        "tooltip": "リギング済みまたはリターゲット済みモデルのスケルトンとアニメーションを保持します。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": "指定形式に変換されたモデル。OBJ は Tripo により ZIP アーカイブ（メッシュ、マテリアル、テクスチャ）として提供されます。"
+      }
+    }
+  },
+  "TripoEditMultiviewNode": {
+    "description": "Tripo: Image to Multiview の結果のビューを、ビューごとのテキスト指示で編集します。指示のないビューは変更されません。画像を Tripo: Multiview to Model に入力してください。編集済みセットは再編集できません。",
+    "display_name": "Tripo: マルチビューを編集",
+    "inputs": {
+      "back_prompt": {
+        "name": "back_prompt"
+      },
+      "front_prompt": {
+        "name": "front_prompt"
+      },
+      "left_prompt": {
+        "name": "left_prompt"
+      },
+      "multiview_task_id": {
+        "name": "multiview_task_id"
+      },
+      "right_prompt": {
+        "name": "right_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "前面",
+        "tooltip": null
+      },
+      "1": {
+        "name": "左側",
+        "tooltip": null
+      },
+      "2": {
+        "name": "背面",
+        "tooltip": null
+      },
+      "3": {
+        "name": "右側",
+        "tooltip": null
       }
     }
   },
   "TripoImageToModelNode": {
     "display_name": "Tripo: 画像からモデル",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "テクスチャ付きモデルを実世界のサイズ（メートル）にスケーリングします。Tripo はサイズをモデルのシーントランスフォームとして保存し、モデルの変換、リギング、リターゲティング時にベイクします。テクスチャなしでは無視されます。"
+      },
       "face_limit": {
-        "name": "face_limit"
+        "name": "face_limit",
+        "tooltip": "最大面数。-1 を指定すると Tripo が適応的に選択します（v3.x standard では約140万面、detailed では200万面）。Tripo は自動的に上限を適用します：v2.5 は500,000、四角形メッシュは150,000。"
       },
       "geometry_quality": {
         "name": "ジオメトリ品質"
@@ -23568,22 +23749,31 @@
         "name": "orientation"
       },
       "pbr": {
-        "name": "pbr"
+        "name": "pbr",
+        "tooltip": "PBRマテリアルマップ（ベースカラー、メタリック、ラフネス、法線）。texture が必要です。"
       },
       "quad": {
-        "name": "quad"
+        "name": "quad",
+        "tooltip": "四角形メッシュを出力します。Tripo は四角形メッシュを FBX として提供するため、結果は FBX 出力に届き、GLB 出力は空のままです。"
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "クリーンで手作業風のトポロジを持つローポリメッシュ（500～20,000面、四角形は500～10,000面）。単純な被写体に最適です。複雑な被写体では失敗する場合があります。"
       },
       "style": {
-        "name": "style"
+        "name": "style",
+        "tooltip": "Tripo ではサポートされなくなり、無視されます。古いワークフローのために保持されています。"
       },
       "texture": {
-        "name": "texture"
+        "name": "texture",
+        "tooltip": "テクスチャマップを生成します。オフの場合はジオメトリのみが返され、pbr は無視されます。"
       },
       "texture_alignment": {
         "name": "texture_alignment"
       },
       "texture_quality": {
-        "name": "texture_quality"
+        "name": "texture_quality",
+        "tooltip": "detailed = HDテクスチャ、extreme = 8K Ultraテクスチャ。"
       },
       "texture_seed": {
         "name": "texture_seed"
@@ -23600,6 +23790,41 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "quad が有効な場合は空です。"
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "quad が有効な場合にのみ出力されます。"
+      }
+    }
+  },
+  "TripoImageToMultiviewNode": {
+    "description": "被写体の正面、左、背面、右のビューを生成します。Tripo: Multiview to Model に入力するか、先に Tripo: Edit Multiview で調整してください。",
+    "display_name": "Tripo: 画像からマルチビュー",
+    "inputs": {
+      "image": {
+        "name": "画像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "マルチビュー task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "正面",
+        "tooltip": null
+      },
+      "2": {
+        "name": "左",
+        "tooltip": null
+      },
+      "3": {
+        "name": "背面",
+        "tooltip": null
+      },
+      "4": {
+        "name": "右",
         "tooltip": null
       }
     }
@@ -23620,11 +23845,43 @@
       }
     }
   },
+  "TripoMeshCompleteNode": {
+    "description": "セグメント化されたモデルのパーツを補完し、欠損領域を修復します。",
+    "display_name": "Tripo: メッシュパーツを補完",
+    "inputs": {
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "補完するパーツ名をカンマ区切りで指定します。空の場合はすべてのパーツを補完します。"
+      },
+      "segment_task_id": {
+        "name": "segment_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "モデル task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: マルチビューからモデル",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "テクスチャ付きモデルを実世界のサイズ（メートル）にスケーリングします。Tripo はサイズをモデルのシーントランスフォームとして保存し、モデルの変換、リギング、リターゲティング時にベイクします。テクスチャなしでは無視されます。"
+      },
       "face_limit": {
-        "name": "face_limit"
+        "name": "face_limit",
+        "tooltip": "最大面数。-1 の場合、Tripo が適応的に選択します（v3.x standard では約 140 万面、detailed では 200 万面）。Tripo は上限を自動的に適用します：v2.5 は 500,000、quad メッシュは 150,000。"
       },
       "geometry_quality": {
         "name": "ジオメトリ品質"
@@ -23652,20 +23909,27 @@
         "name": "orientation"
       },
       "pbr": {
-        "name": "pbr"
+        "name": "pbr",
+        "tooltip": "PBR マテリアルマップ（ベースカラー、メタリック、ラフネス、法線）。テクスチャが必要です。"
       },
       "quad": {
         "name": "quad",
-        "tooltip": "このパラメータは非推奨であり、何も行いません。"
+        "tooltip": "Quad メッシュ出力。Tripo は quad メッシュを FBX として提供するため、結果は FBX 出力に届き、GLB 出力は空のままです。"
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "クリーンで手作業風のトポロジーを持つローポリメッシュ（500～20,000 面、quad は 500～10,000 面）。シンプルな被写体に最適です。複雑な被写体では失敗する場合があります。"
       },
       "texture": {
-        "name": "texture"
+        "name": "texture",
+        "tooltip": "テクスチャマップを生成します。オフの場合はジオメトリのみを返し、pbr は無視されます。"
       },
       "texture_alignment": {
         "name": "texture_alignment"
       },
       "texture_quality": {
-        "name": "texture_quality"
+        "name": "texture_quality",
+        "tooltip": "detailed = HD テクスチャ、extreme = 8K Ultra テクスチャ。"
       },
       "texture_seed": {
         "name": "texture_seed"
@@ -23682,7 +23946,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "quad が有効な場合は空です。"
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "quad が有効な場合にのみ出力されます。"
       }
     }
   },
@@ -23696,7 +23964,7 @@
       },
       "compress_geometry": {
         "name": "ジオメトリ圧縮",
-        "tooltip": "ジオメトリベースの圧縮を適用します。編集前に解凍してください。"
+        "tooltip": "meshopt ジオメトリ圧縮（EXT_meshopt_compression）を適用します。ファイルサイズは小さくなりますが、ComfyUI の 3D プレビューでは表示できません。編集前に展開してください。"
       },
       "enable_image_autofix": {
         "name": "画像自動補正を有効化",
@@ -23746,7 +24014,7 @@
       },
       "compress_geometry": {
         "name": "ジオメトリ圧縮",
-        "tooltip": "ジオメトリベースの圧縮を適用します。編集前に解凍してください。"
+        "tooltip": "meshopt ジオメトリ圧縮（EXT_meshopt_compression）を適用します。ファイルサイズは小さくなりますが、ComfyUI の 3D プレビューでは表示できません。編集前に展開してください。"
       },
       "export_uv": {
         "name": "UV展開を出力",
@@ -23805,7 +24073,7 @@
       },
       "compress_geometry": {
         "name": "ジオメトリ圧縮",
-        "tooltip": "ジオメトリベースの圧縮を適用します。編集前に解凍してください。"
+        "tooltip": "meshopt ジオメトリ圧縮（EXT_meshopt_compression）を適用します。ファイルサイズは小さくなりますが、ComfyUI の 3D プレビューでは表示できません。編集前に展開してください。"
       },
       "export_uv": {
         "name": "UVエクスポート",
@@ -23852,11 +24120,24 @@
   "TripoRetargetNode": {
     "display_name": "Tripo: リグ付きモデルのリターゲット",
     "inputs": {
+      "animate_in_place": {
+        "name": "animate_in_place",
+        "tooltip": "ルートの移動を行わず、その場でアニメーションを再生します。"
+      },
       "animation": {
-        "name": "animation"
+        "name": "animation",
+        "tooltip": "preset:* アニメーションは両方のリグモデルで使用できます。preset:biped:* アニメーションには、model v1.0-20240301 で作成されたリグが必要です。"
+      },
+      "export_with_geometry": {
+        "name": "export_with_geometry",
+        "tooltip": "エクスポートにメッシュを含めます。オフの場合はアニメーション付きスケルトンのみをエクスポートします。"
       },
       "original_model_task_id": {
         "name": "original_model_task_id"
+      },
+      "out_format": {
+        "name": "out_format",
+        "tooltip": "出力ファイル形式。結果は対応する出力に届きます。"
       }
     },
     "outputs": {
@@ -23870,15 +24151,97 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "out_format が glb の場合に出力されます。"
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "out_format が fbx の場合に出力されます。"
+      }
+    }
+  },
+  "TripoRetopologyNode": {
+    "description": "高ポリゴンモデルから、クリーンなトポロジーを持つ低ポリゴンメッシュを再構築します。",
+    "display_name": "Tripo: リトポロジー",
+    "inputs": {
+      "bake": {
+        "name": "bake",
+        "tooltip": "ソーステクスチャを低ポリゴンメッシュにベイクします。"
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "目標面数: 三角形は500～20,000、四角形は500～10,000。-1 を指定すると Tripo が選択します。"
+      },
+      "model_task_id": {
+        "name": "model_task_id"
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "Tripo: Segment Model のカンマ区切りパーツ名。空欄の場合はモデル全体を処理します。"
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "四角形メッシュを出力します。Tripo は四角形メッシュを FBX として提供するため、結果は FBX 出力に届き、GLB 出力は空のままです。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": "quad が有効な場合は空です。"
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "quad が有効な場合にのみ出力されます。"
+      }
+    }
+  },
+  "TripoRigCheckNode": {
+    "description": "モデルをリギングできるかどうか、および Tripo が推奨するスケルトンタイプを確認します。",
+    "display_name": "Tripo: リグチェック",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "riggable",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_type",
+        "tooltip": "推奨スケルトン: biped、quadruped、hexapod、octopod、avian、serpentine、aquatic。モデルをリギングできない場合は 'others'。"
       }
     }
   },
   "TripoRigNode": {
     "display_name": "Tripo: モデルのリグ設定",
     "inputs": {
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "v1.0: ヒューマノイド（biped）キャラクターのみ、90種類以上のアニメーションプリセット。v2.5: 非ヒューマノイドのクリーチャー（quadruped、hexapod、octopod、avian、serpentine、aquatic）。"
+      },
       "original_model_task_id": {
         "name": "original_model_task_id"
+      },
+      "out_format": {
+        "name": "out_format",
+        "tooltip": "出力ファイル形式。結果は対応する出力に届きます。"
+      },
+      "rig_type": {
+        "name": "rig_type",
+        "tooltip": "スケルトンタイプ。'auto' はまず Tripo の無料リグチェックを実行し、推奨タイプを使用します。"
+      },
+      "spec": {
+        "name": "spec",
+        "tooltip": "ボーン命名: Tripo ネイティブまたは Mixamo互換。Tripo は mixamo spec で作成された v1.0 リグにアニメーションプリセットをリターゲットできません。Tripo: Retarget rigged model には tripo を使用してください。"
       }
     },
     "outputs": {
@@ -23892,7 +24255,38 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "out_format が glb の場合に出力されます。"
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "out_format が fbx の場合に出力されます。"
+      }
+    }
+  },
+  "TripoSegmentNode": {
+    "description": "モデルをパーツに分割します。パーツ名は Tripo: Complete Mesh Parts、Tripo: Retopology、Tripo: Convert model に入力されます。",
+    "display_name": "Tripo: モデルをセグメント化",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "segment task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "part_names",
+        "tooltip": "パーツ名をカンマ区切りで指定します。"
       }
     }
   },
@@ -23994,8 +24388,13 @@
   "TripoTextToModelNode": {
     "display_name": "Tripo: テキストからモデル生成",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "テクスチャ付きモデルを実世界のメートル単位のサイズにスケーリングします。Tripo はサイズをモデルのシーントランスフォームとして保存し、モデルの変換、リギング、リターゲティング時に適用します。テクスチャなしでは無視されます。"
+      },
       "face_limit": {
-        "name": "face_limit"
+        "name": "face_limit",
+        "tooltip": "最大面数。-1 の場合、Tripo が適応的に選択します（v3.x standard では約140万面、detailed では200万面）。Tripo は自動的に上限を適用します：v2.5 は500,000、クアッドメッシュは150,000。"
       },
       "geometry_quality": {
         "name": "ジオメトリ品質"
@@ -24010,25 +24409,35 @@
         "name": "model_version"
       },
       "negative_prompt": {
-        "name": "negative_prompt"
+        "name": "negative_prompt",
+        "tooltip": "最大255文字です。"
       },
       "pbr": {
-        "name": "pbr"
+        "name": "pbr",
+        "tooltip": "PBR マテリアルマップ（ベースカラー、メタリック、ラフネス、法線）。texture が必要です。"
       },
       "prompt": {
         "name": "prompt"
       },
       "quad": {
-        "name": "quad"
+        "name": "quad",
+        "tooltip": "クアッドメッシュ出力。Tripo はクアッドメッシュを FBX として提供するため、結果は FBX 出力に届き、GLB 出力は空のままです。"
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "クリーンで手作業風のトポロジーを持つローポリメッシュ（500～20,000面、quad は500～10,000面）。単純な被写体に最適です。複雑な被写体では失敗する場合があります。"
       },
       "style": {
-        "name": "style"
+        "name": "style",
+        "tooltip": "Tripo ではサポートされなくなり、無視されます。古いワークフロー用に保持されています。"
       },
       "texture": {
-        "name": "texture"
+        "name": "texture",
+        "tooltip": "テクスチャマップを生成します。オフの場合はジオメトリのみを返し、pbr は無視されます。"
       },
       "texture_quality": {
-        "name": "texture_quality"
+        "name": "texture_quality",
+        "tooltip": "detailed = HD テクスチャ、extreme = 8K Ultra テクスチャ。"
       },
       "texture_seed": {
         "name": "texture_seed"
@@ -24045,7 +24454,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "quad が有効な場合は空です。"
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "quad が有効な場合にのみ出力されます。"
       }
     }
   },
@@ -24055,21 +24468,40 @@
       "model_task_id": {
         "name": "model_task_id"
       },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "テクスチャモデル：v3.x で生成されたメッシュには v3.0、v2.5 で生成されたメッシュには v2.5。"
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "テクスチャリングする Tripo: Segment Model のパーツ名をカンマ区切りで指定します。空の場合はすべてのパーツをテクスチャリングします。"
+      },
       "pbr": {
-        "name": "pbr"
+        "name": "pbr",
+        "tooltip": "PBR マテリアルマップ（ベースカラー、メタリック、ラフネス、法線）。オフの場合は単色テクスチャになります。"
+      },
+      "reference": {
+        "name": "reference",
+        "tooltip": "テクスチャを誘導する参照画像。texture_prompt または style_image とは併用できません。"
+      },
+      "style_image": {
+        "name": "style_image",
+        "tooltip": "テクスチャの芸術スタイル用の参照画像。texture_prompt と併用する場合にのみ使用されます。"
       },
       "texture": {
-        "name": "texture"
+        "name": "texture",
+        "tooltip": "無視されます。このノードは常にテクスチャを生成します。古いワークフロー用に保持されています。"
       },
       "texture_alignment": {
         "name": "texture_alignment"
       },
       "texture_prompt": {
         "name": "texture_prompt",
-        "tooltip": "テクスチャ付与のためのオプションのテキストガイダンス。インポートしたモデル（Tripo: Import Model）には参照画像がないため、実際には必須です。"
+        "tooltip": "テクスチャリング用の任意のテキストガイダンス。色を推測するための元画像を持たないインポート済みモデル（Tripo: Import Model）では、実質的に必須です。参照画像とは併用できません。"
       },
       "texture_quality": {
-        "name": "texture_quality"
+        "name": "texture_quality",
+        "tooltip": "detailed = HD テクスチャ、extreme = 8K Ultra テクスチャ。"
       },
       "texture_seed": {
         "name": "texture_seed"
@@ -24086,7 +24518,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "入力元がクアッドメッシュまたは FBX インポートの場合は空です。"
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Tripo はクアッドメッシュおよび FBX インポートに対して FBX を返します。それ以外の場合は空です。"
       }
     }
   },
