@@ -126,7 +126,7 @@ describe('useGroupContextMenu', () => {
 
       canvas.processContextMenu(undefined, event)
 
-      expect(canvas.selectedItems).toEqual(new Set([targetGroup]))
+      expect([...canvas.selectedItems]).toEqual([targetGroup])
       expect(selections.at(-1)).toEqual([targetGroup])
       expect(targetGroup.selected).toBe(true)
       expect(node.selected).toBe(false)
@@ -141,7 +141,7 @@ describe('useGroupContextMenu', () => {
 
     canvas.processContextMenu(undefined, event)
 
-    expect(canvas.selectedItems).toEqual(new Set([node]))
+    expect([...canvas.selectedItems]).toEqual([node])
     expect(node.selected).toBe(true)
     expect(mockShowNodeOptions).toHaveBeenCalledWith(event)
   })
