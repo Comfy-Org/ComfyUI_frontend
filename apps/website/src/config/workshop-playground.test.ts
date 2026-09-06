@@ -243,3 +243,35 @@ describe('isVideoUrl', () => {
     expect(isVideoUrl('https://cdn.example/output.png')).toBe(false)
   })
 })
+
+describe('example titles', () => {
+  const shared = {
+    description: '',
+    tags: [],
+    thumbnailUrl: 'https://example.com/x.webp',
+    values: {}
+  }
+
+  it('drops the part that only names the model again', () => {
+    const [a, b] = examplesForModel({
+      examples: [
+        { ...shared, name: 'a', title: 'Grok: Video generation' },
+        { ...shared, name: 'b', title: 'Grok Imagine 1.5: Image to Video' }
+      ]
+    })
+    expect([a.title, b.title]).toEqual(['Video generation', 'Image to Video'])
+  })
+
+  it('keeps it when it is the only thing telling two apart', () => {
+    const [a, b] = examplesForModel({
+      examples: [
+        { ...shared, name: 'a', title: 'Seedance 1.5 Pro: Image to Video' },
+        { ...shared, name: 'b', title: 'Seedance 1.0 Pro: Image to Video' }
+      ]
+    })
+    expect([a.title, b.title]).toEqual([
+      'Seedance 1.5 Pro: Image to Video',
+      'Seedance 1.0 Pro: Image to Video'
+    ])
+  })
+})

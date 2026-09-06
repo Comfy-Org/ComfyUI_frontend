@@ -289,13 +289,32 @@ function specsOf(
   ]
 }
 
+// The tab already says which model made these, so a title that opens by
+// naming it again says nothing. It stays whenever dropping it would leave two
+// cards reading the same, which is what tells one variant from another.
+function titlesWithoutTheirPrefix(
+  examples: readonly GeneratedExample[]
+): readonly string[] {
+  const short = examples.map(
+    (example) => /^.+?:\s+(.+)$/.exec(example.title)?.[1] ?? example.title
+  )
+  const seen = new Set<string>()
+  const repeated = new Set(
+    short.filter((title) => seen.size === seen.add(title).size)
+  )
+  return examples.map((example, index) =>
+    repeated.has(short[index]) ? example.title : short[index]
+  )
+}
+
 export function examplesForModel(
   model: Pick<WorkshopModelDetail, 'examples'>
 ): readonly PlaygroundExample[] {
-  return model.examples.map((example: GeneratedExample) => {
+  const titles = titlesWithoutTheirPrefix(model.examples)
+  return model.examples.map((example: GeneratedExample, index) => {
     return {
       id: example.name,
-      title: example.title,
+      title: titles[index],
       specs: specsOf(example.values),
       values: example.values,
       outputUrl: example.thumbnailUrl,
