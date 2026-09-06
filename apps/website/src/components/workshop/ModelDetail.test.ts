@@ -233,7 +233,7 @@ describe('ModelDetail', () => {
     })
     api.signIn('existing')
     await nextTick()
-    expect(screen.queryByTestId('tab-examples')).toBeNull()
+    expect(screen.queryByTestId('examples-section')).toBeNull()
     expect(screen.getByTestId('clone-button').textContent).toContain('2,900')
     expect(screen.getByTestId('clone-button').getAttribute('href')).toBe(
       '/x.json'
@@ -262,7 +262,6 @@ describe('ModelDetail', () => {
 
   it('swaps the form to the example template', async () => {
     await signedInDetail()
-    await user().click(screen.getByTestId('tab-examples'))
     await user().click(screen.getAllByTestId('example-card')[0])
 
     expect(

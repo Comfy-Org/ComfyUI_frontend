@@ -8663,7 +8663,6 @@ Enterprise`
   },
   'workshop.model.tabs.playground': { en: 'Playground', 'zh-CN': 'Playground' },
   'workshop.model.tabs.api': { en: 'API', 'zh-CN': 'API' },
-  'workshop.model.tabs.examples': { en: 'Examples', 'zh-CN': '示例' },
   'workshop.model.tabs.details': { en: 'Details', 'zh-CN': '详情' },
   'workshop.model.related': {
     en: 'More from the Workshop',

@@ -319,7 +319,6 @@ test.describe('Model playground', () => {
     )
     await expect(page.getByTestId('field-prompt')).not.toHaveValue('')
     await page.getByTestId('field-prompt').fill('')
-    await page.getByTestId('tab-examples').click()
     await page.getByTestId('example-card').first().click()
     await expect(page.getByTestId('playground-tab')).toBeVisible()
     await expect(page.getByTestId('field-prompt')).not.toHaveValue('')

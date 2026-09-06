@@ -52,15 +52,12 @@ const {
 
 const slots = useSlots()
 
-type Section = 'playground' | 'examples' | 'details' | 'api'
+type Section = 'playground' | 'details' | 'api'
 const sections = computed<readonly Section[]>(() =>
-  slots.details
-    ? ['playground', 'details', 'api']
-    : ['playground', 'examples', 'api']
+  slots.details ? ['playground', 'details', 'api'] : ['playground', 'api']
 )
 const sectionLabel: Record<Section, TranslationKey> = {
   playground: 'workshop.model.tabs.playground',
-  examples: 'workshop.model.tabs.examples',
   details: 'workshop.model.tabs.details',
   api: 'workshop.model.tabs.api'
 }
@@ -72,6 +69,9 @@ const { onKeydown: onTabKeydown } = useTablist(
 )
 
 const examples = examplesForModel(model)
+// A workflow page describes one workflow, so the model's other examples would
+// be beside the point there.
+const showsExamples = computed(() => !slots.details && examples.length > 0)
 const firstExample = examples[0]
 // Every page arrives with its first example loaded: prompt, inputs and the
 // matching output, all editable.
@@ -500,11 +500,12 @@ function useInCode() {
       </div>
     </section>
 
+    <!-- An example is a preset for the form above, so it sits under it rather
+      than behind a tab that leads away from the form it fills in. -->
     <section
-      v-if="activeSection === 'examples'"
-      id="panel-examples"
-      role="tabpanel"
-      aria-labelledby="tab-examples"
+      v-if="showsExamples && activeSection === 'playground'"
+      class="border-t border-transparency-white-t8 pt-10"
+      data-testid="examples-section"
     >
       <ExamplesTab
         :examples
