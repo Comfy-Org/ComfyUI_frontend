@@ -1486,96 +1486,6 @@
       }
     }
   },
-  "ByteDanceImageNode": {
-    "display_name": "ByteDance Image",
-    "description": "Generate images using ByteDance models via api based on prompt",
-    "inputs": {
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "The text prompt used to generate the image"
-      },
-      "size_preset": {
-        "name": "size_preset",
-        "tooltip": "Pick a recommended size. Select Custom to use the width and height below"
-      },
-      "width": {
-        "name": "width",
-        "tooltip": "Custom width for image. Value is working only if `size_preset` is set to `Custom`"
-      },
-      "height": {
-        "name": "height",
-        "tooltip": "Custom height for image. Value is working only if `size_preset` is set to `Custom`"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Seed to use for generation"
-      },
-      "guidance_scale": {
-        "name": "guidance_scale",
-        "tooltip": "Higher value makes the image follow the prompt more closely"
-      },
-      "watermark": {
-        "name": "watermark",
-        "tooltip": "Whether to add an \"AI generated\" watermark to the image"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "ByteDanceImageReferenceNode": {
-    "display_name": "ByteDance Reference Images to Video",
-    "description": "Generate video using prompt and reference images.",
-    "inputs": {
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "The text prompt used to generate the video."
-      },
-      "images": {
-        "name": "images",
-        "tooltip": "One to four images."
-      },
-      "resolution": {
-        "name": "resolution",
-        "tooltip": "The resolution of the output video."
-      },
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "The aspect ratio of the output video."
-      },
-      "duration": {
-        "name": "duration",
-        "tooltip": "The duration of the output video in seconds."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Seed to use for generation."
-      },
-      "watermark": {
-        "name": "watermark",
-        "tooltip": "Whether to add an \"AI generated\" watermark to the video."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "ByteDanceImageToVideoNode": {
     "display_name": "ByteDance Image to Video",
     "description": "Generate video using ByteDance models via api based on image and prompt",
@@ -2755,6 +2665,260 @@
     "inputs": {
       "values": {
         "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudFlux2TextToImageNode": {
+    "display_name": "Comfy Cloud Flux 2 Text to Image [BETA]",
+    "description": "BETA. The Comfy Cloud node set is still changing: options may be added or removed, and a workflow may be retired. Generates an image from a text prompt with Flux 2 dev. Turbo swaps in the chosen LoRA and a short schedule, trading a little fidelity for a much quicker run; switch it off for the full-length dev pass with no LoRA. Runs on a Comfy Cloud GPU, billed by how long it runs at {'$'}0.001295/GPU-second (0.27 credits). Paid in credits, no Cloud subscription required.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "Total pixel budget. 1.0 is about 1024x1024 at a square ratio."
+      },
+      "turbo": {
+        "name": "turbo",
+        "tooltip": "Run the Turbo LoRA on a short schedule, trading a little fidelity for a much quicker run. Off runs the full dev pass with no LoRA."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMageFlowTextToImageNode": {
+    "display_name": "Comfy Cloud Mage Flow Text to Image [BETA]",
+    "description": "BETA. The Comfy Cloud node set is still changing: options may be added or removed, and a workflow may be retired. Generates an image from a text prompt with Mage-Flow over a full 30-step pass. It takes a negative prompt, which the distilled turbo variant cannot use well. Runs on a Comfy Cloud GPU, billed by how long it runs at {'$'}0.001295/GPU-second (0.27 credits). Paid in credits, no Cloud subscription required.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Leave empty to keep the negative prompt this pipeline was tuned with."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "Total pixel budget. 1.0 is about 1024x1024 at a square ratio."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMageFlowTurboTextToImageNode": {
+    "display_name": "Comfy Cloud Mage Flow Turbo Text to Image [BETA]",
+    "description": "BETA. The Comfy Cloud node set is still changing: options may be added or removed, and a workflow may be retired. Generates an image from a text prompt with distilled Mage-Flow in 4 steps at cfg 1. Roughly a seventh of the GPU time of the full pass, which makes it the one to iterate on. Runs on a Comfy Cloud GPU, billed by how long it runs at {'$'}0.001295/GPU-second (0.27 credits). Paid in credits, no Cloud subscription required.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Leave empty to keep the negative prompt this pipeline was tuned with."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "Total pixel budget. 1.0 is about 1024x1024 at a square ratio."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3FirstLastFrameToVideoNode": {
+    "display_name": "Comfy Cloud MiniMax H3 First-Last Frame to Video [BETA]",
+    "description": "BETA. The Comfy Cloud node set is still changing: options may be added or removed, and a workflow may be retired. Generates the motion between two keyframes, with a matching soundtrack, using MiniMax H3. Give it the opening and closing frames and the model fills in the shot between them. The last frame is optional: leave it out and the motion runs away from the first frame instead. Runs on a Comfy Cloud GPU, billed by how long it runs at {'$'}0.001295/GPU-second (0.27 credits). Paid in credits, no Cloud subscription required.",
+    "inputs": {
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Frame size budget. 720p costs roughly twice the GPU-seconds of 480p."
+      },
+      "duration_seconds": {
+        "name": "duration_seconds",
+        "tooltip": "Length in seconds. The pipeline quantises to 17-frame steps at 24fps, so the clip lands within about two thirds of a second of this."
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3ImageToVideoNode": {
+    "display_name": "Comfy Cloud MiniMax H3 Image to Video [BETA]",
+    "description": "BETA. The Comfy Cloud node set is still changing: options may be added or removed, and a workflow may be retired. Animates a still into a video with a matching soundtrack, using MiniMax H3. Feed it a clip's closing frame and it continues the sequence, so chaining several builds a longer shot. Runs on a Comfy Cloud GPU, billed by how long it runs at {'$'}0.001295/GPU-second (0.27 credits). Paid in credits, no Cloud subscription required.",
+    "inputs": {
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Frame size budget. 720p costs roughly twice the GPU-seconds of 480p."
+      },
+      "duration_seconds": {
+        "name": "duration_seconds",
+        "tooltip": "Length in seconds. The pipeline quantises to 17-frame steps at 24fps, so the clip lands within about two thirds of a second of this."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3TextToVideoNode": {
+    "display_name": "Comfy Cloud MiniMax H3 Text to Video [BETA]",
+    "description": "BETA. The Comfy Cloud node set is still changing: options may be added or removed, and a workflow may be retired. Generates a video with a matching soundtrack from a text prompt, using MiniMax H3. Picture and audio come out of the same pass rather than being dubbed on afterwards. Runs on a Comfy Cloud GPU, billed by how long it runs at {'$'}0.001295/GPU-second (0.27 credits). Paid in credits, no Cloud subscription required.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Frame size budget. 720p costs roughly twice the GPU-seconds of 480p."
+      },
+      "duration_seconds": {
+        "name": "duration_seconds",
+        "tooltip": "Length in seconds. The pipeline quantises to 17-frame steps at 24fps, so the clip lands within about two thirds of a second of this."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxMusic3TextToAudioNode": {
+    "display_name": "Comfy Cloud MiniMax Music 3 Text to Audio [BETA]",
+    "description": "BETA. The Comfy Cloud node set is still changing: options may be added or removed, and a workflow may be retired. Generates a full song from a description with MiniMax Music 3. The prompt carries the style, instrumentation and mood; lyrics are sung rather than described, and an empty lyric leaves the track instrumental. Runs on a Comfy Cloud GPU, billed by how long it runs at {'$'}0.001295/GPU-second (0.27 credits). Paid in credits, no Cloud subscription required.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt"
+      },
+      "lyrics": {
+        "name": "lyrics",
+        "tooltip": "Words to sing. Leave empty for an instrumental."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "Longest the track may run. The model can end the song earlier."
+      },
+      "audio_quality": {
+        "name": "audio_quality",
+        "tooltip": "mp3 bitrate. V0 is variable and the highest quality of the three."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudZImageTurboNode": {
+    "display_name": "Comfy Cloud Z-Image Turbo Text to Image [BETA]",
+    "description": "BETA. The Comfy Cloud node set is still changing: options may be added or removed, and a workflow may be retired. Generates an image from a text prompt with Z-Image Turbo in 8 steps. One of the quickest and cheapest nodes here, which makes it the one to iterate on. Runs on a Comfy Cloud GPU, billed by how long it runs at {'$'}0.001295/GPU-second (0.27 credits). Paid in credits, no Cloud subscription required.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "Total pixel budget. 1.0 is about 1024x1024 at a square ratio."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
       }
     },
     "outputs": {
@@ -9221,40 +9385,6 @@
       }
     }
   },
-  "KlingVideoExtendNode": {
-    "display_name": "Kling Video Extend",
-    "description": "Kling Video Extend Node. Extend videos made by other Kling nodes. The video_id is created by using other Kling Nodes.",
-    "inputs": {
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Positive text prompt for guiding the video extension"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Negative text prompt for elements to avoid in the extended video"
-      },
-      "cfg_scale": {
-        "name": "cfg_scale"
-      },
-      "video_id": {
-        "name": "video_id",
-        "tooltip": "The ID of the video to be extended. Supports videos generated by text-to-video, image-to-video, and previous video extension operations. Cannot exceed 3 minutes total duration after extension."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "duration",
-        "tooltip": null
-      }
-    }
-  },
   "KlingVideoNode": {
     "display_name": "Kling 3.0 Video",
     "description": "Generate videos with Kling V3. Supports text-to-video and image-to-video with optional storyboard multi-prompt and audio generation.",
@@ -10654,70 +10784,6 @@
       },
       "2": {
         "name": "latent",
-        "tooltip": null
-      }
-    }
-  },
-  "LtxvApiImageToVideo": {
-    "display_name": "LTXV Image To Video",
-    "description": "Professional-quality videos with customizable duration and resolution based on start image.",
-    "inputs": {
-      "image": {
-        "name": "image",
-        "tooltip": "First frame to be used for the video."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "duration": {
-        "name": "duration"
-      },
-      "resolution": {
-        "name": "resolution"
-      },
-      "fps": {
-        "name": "fps"
-      },
-      "generate_audio": {
-        "name": "generate_audio",
-        "tooltip": "When true, the generated video will include AI-generated audio matching the scene."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LtxvApiTextToVideo": {
-    "display_name": "LTXV Text To Video",
-    "description": "Professional-quality videos with customizable duration and resolution.",
-    "inputs": {
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "duration": {
-        "name": "duration"
-      },
-      "resolution": {
-        "name": "resolution"
-      },
-      "fps": {
-        "name": "fps"
-      },
-      "generate_audio": {
-        "name": "generate_audio",
-        "tooltip": "When true, the generated video will include AI-generated audio matching the scene."
-      }
-    },
-    "outputs": {
-      "0": {
         "tooltip": null
       }
     }
@@ -15930,11 +15996,15 @@
       },
       "max_output_tokens": {
         "name": "max_output_tokens",
-        "tooltip": "An upper bound for the number of tokens that can be generated for a response, including visible output tokens"
+        "tooltip": "An upper bound for the number of tokens that can be generated for a response, including visible output tokens and reasoning tokens"
       },
       "instructions": {
         "name": "instructions",
         "tooltip": "Instructions for the model on how to generate the response"
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "How much the model reasons before answering. 'default' leaves the choice to the model. Supported levels differ per model: GPT-6 Astra low-max, GPT-5.6 none-max (no minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; GPT-4.1 has no reasoning. Unsupported levels are rejected before the request is sent."
       }
     },
     "outputs": {
@@ -15970,78 +16040,6 @@
       "advanced_options": {
         "name": "advanced_options",
         "tooltip": "Optional configuration for the model. Accepts inputs from the OpenAI Chat Advanced Options node."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIDalle2": {
-    "display_name": "OpenAI DALL·E 2",
-    "description": "Generates images synchronously via OpenAI's DALL·E 2 endpoint.",
-    "inputs": {
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Text prompt for DALL·E"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "not implemented yet in backend"
-      },
-      "size": {
-        "name": "size",
-        "tooltip": "Image size"
-      },
-      "n": {
-        "name": "n",
-        "tooltip": "How many images to generate"
-      },
-      "image": {
-        "name": "image",
-        "tooltip": "Optional reference image for image editing."
-      },
-      "mask": {
-        "name": "mask",
-        "tooltip": "Optional mask for inpainting (white areas will be replaced)"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIDalle3": {
-    "display_name": "OpenAI DALL·E 3",
-    "description": "Generates images synchronously via OpenAI's DALL·E 3 endpoint.",
-    "inputs": {
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Text prompt for DALL·E"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "not implemented yet in backend"
-      },
-      "quality": {
-        "name": "quality",
-        "tooltip": "Image quality"
-      },
-      "style": {
-        "name": "style",
-        "tooltip": "Vivid causes the model to lean towards generating hyper-real and dramatic images. Natural causes the model to produce more natural, less hyper-real looking images."
-      },
-      "size": {
-        "name": "size",
-        "tooltip": "Image size"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
       }
     },
     "outputs": {

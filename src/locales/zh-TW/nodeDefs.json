@@ -1486,96 +1486,6 @@
       }
     }
   },
-  "ByteDanceImageNode": {
-    "description": "透過 API 基於提示詞使用字節跳動模型生成圖像",
-    "display_name": "字節跳動圖像",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "guidance_scale": {
-        "name": "guidance_scale",
-        "tooltip": "數值越高，圖像越遵循提示詞"
-      },
-      "height": {
-        "name": "height",
-        "tooltip": "圖像的自訂高度。僅在 `size_preset` 設為 `Custom` 時生效"
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "用於生成圖像的文字提示詞"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "用於生成的種子值"
-      },
-      "size_preset": {
-        "name": "size_preset",
-        "tooltip": "選擇推薦尺寸。選擇「自訂」以使用下方的寬度和高度"
-      },
-      "watermark": {
-        "name": "watermark",
-        "tooltip": "是否在圖像上添加「AI 生成」浮水印"
-      },
-      "width": {
-        "name": "width",
-        "tooltip": "圖像的自訂寬度。僅在 `size_preset` 設為 `Custom` 時生效"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "ByteDanceImageReferenceNode": {
-    "description": "使用提示詞和參考圖像生成影片",
-    "display_name": "字節跳動參考圖像轉影片",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "輸出影片的長寬比。"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration": {
-        "name": "duration",
-        "tooltip": "輸出影片的持續時間（以秒為單位）。"
-      },
-      "images": {
-        "name": "images",
-        "tooltip": "一至四張圖片。"
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "用於生成影片的文字提示。"
-      },
-      "resolution": {
-        "name": "resolution",
-        "tooltip": "輸出影片的解析度。"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "用於生成的種子值。"
-      },
-      "watermark": {
-        "name": "watermark",
-        "tooltip": "是否在影片中添加「AI 生成」浮水印。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "ByteDanceImageToVideoNode": {
     "description": "透過 API 使用字節跳動模型，基於圖片和提示生成影片",
     "display_name": "字節跳動圖片轉影片",
@@ -2755,6 +2665,260 @@
     "inputs": {
       "values": {
         "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudFlux2TextToImageNode": {
+    "description": "測試版。Comfy Cloud 節點集仍在變動：選項可能新增或移除，工作流程也可能停用。使用 Flux 2 dev 根據文字提示詞產生影像。Turbo 使用所選的 LoRA 與較短排程，以些微保真度換取更快的執行速度；關閉後則會以不使用 LoRA 的完整 dev 流程執行。在 Comfy Cloud GPU 上執行，依執行時間計費，費率為 {'$'}0.001295/GPU-second（0.27 點數）。以點數支付，無需訂閱 Cloud。",
+    "display_name": "Comfy Cloud Flux 2 文字轉影像 [測試版]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "長寬比"
+      },
+      "control_after_generate": {
+        "name": "產生後控制"
+      },
+      "megapixels": {
+        "name": "百萬像素",
+        "tooltip": "總像素預算。長寬比為正方形時，1.0 約為 1024x1024。"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "seed": {
+        "name": "種子"
+      },
+      "turbo": {
+        "name": "Turbo",
+        "tooltip": "以較短排程執行 Turbo LoRA，以些微保真度換取更快的執行速度。關閉後會以不使用 LoRA 的完整 dev 流程執行。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMageFlowTextToImageNode": {
+    "description": "測試版。Comfy Cloud 節點集仍在變動：選項可能新增或移除，工作流程也可能停用。使用 Mage-Flow 以完整 30 步流程根據文字提示詞產生影像。支援負面提示詞，而蒸餾 Turbo 變體無法妥善使用。在 Comfy Cloud GPU 上執行，依執行時間計費，費率為 {'$'}0.001295/GPU-second（0.27 點數）。以點數支付，無需訂閱 Cloud。",
+    "display_name": "Comfy Cloud Mage Flow 文字轉影像 [測試版]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "長寬比"
+      },
+      "control_after_generate": {
+        "name": "產生後控制"
+      },
+      "megapixels": {
+        "name": "百萬像素",
+        "tooltip": "總像素預算。長寬比為正方形時，1.0 約為 1024x1024。"
+      },
+      "negative_prompt": {
+        "name": "負面提示詞",
+        "tooltip": "留空即可保留此流程經調校的負面提示詞。"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMageFlowTurboTextToImageNode": {
+    "description": "測試版。Comfy Cloud 節點集仍在變動：選項可能新增或移除，工作流程也可能停用。使用蒸餾版 Mage-Flow，以 cfg 1 執行 4 步，根據文字提示詞產生影像。所需 GPU 時間約為完整流程的七分之一，因此適合反覆迭代。在 Comfy Cloud GPU 上執行，依執行時間計費，費率為 {'$'}0.001295/GPU-second（0.27 點數）。以點數支付，無需訂閱 Cloud。",
+    "display_name": "Comfy Cloud Mage Flow Turbo 文字轉影像 [測試版]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "長寬比"
+      },
+      "control_after_generate": {
+        "name": "產生後控制"
+      },
+      "megapixels": {
+        "name": "百萬像素",
+        "tooltip": "總像素預算。長寬比為正方形時，1.0 約為 1024x1024。"
+      },
+      "negative_prompt": {
+        "name": "負面提示詞",
+        "tooltip": "留空即可保留此流程經調校的負面提示詞。"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3FirstLastFrameToVideoNode": {
+    "description": "測試版。Comfy Cloud 節點集仍在變動：選項可能新增或移除，工作流程也可能停用。使用 MiniMax H3 產生兩個關鍵影格之間的動態，並搭配相符的音軌。提供開始與結束影格後，模型會補完兩者之間的鏡頭。最後一幀為選填：省略時，動態會改由第一幀向後延伸。在 Comfy Cloud GPU 上執行，依執行時間計費，費率為 {'$'}0.001295/GPU-second（0.27 點數）。以點數支付，無需訂閱 Cloud。",
+    "display_name": "Comfy Cloud MiniMax H3 首尾影格轉影片 [測試版]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "長寬比"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "duration_seconds": {
+        "name": "持續時間（秒）",
+        "tooltip": "以秒為單位的長度。此流程會以 24fps 量化為 17 影格步進，因此片段時長與此值的差距約在三分之二秒內。"
+      },
+      "first_frame": {
+        "name": "第一幀"
+      },
+      "last_frame": {
+        "name": "最後影格"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "resolution": {
+        "name": "解析度",
+        "tooltip": "影格尺寸預算。720p 所需的 GPU 秒數約為 480p 的兩倍。"
+      },
+      "seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3ImageToVideoNode": {
+    "description": "BETA。Comfy Cloud 節點集仍在持續變動：可能新增或移除選項，也可能淘汰工作流程。使用 MiniMax H3，將靜態圖片製作成附有相符音軌的影片。輸入 clip 的結尾影格即可延續序列；串接多個節點便能建立更長的鏡頭。於 Comfy Cloud GPU 上執行，依執行時間以 {'$'}0.001295/GPU-second（0.27 點數）計費。以點數支付，無需 Cloud 訂閱。",
+    "display_name": "Comfy Cloud MiniMax H3 圖片轉影片 [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "長寬比"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "duration_seconds": {
+        "name": "時長（秒）",
+        "tooltip": "時長（秒）。流程會在 24fps 下量化為每 17 影格的步進，因此片段長度與此值的差距約在三分之二秒內。"
+      },
+      "first_frame": {
+        "name": "第一影格"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "resolution": {
+        "name": "解析度",
+        "tooltip": "影格尺寸預算。720p 消耗的 GPU 秒數約為 480p 的兩倍。"
+      },
+      "seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3TextToVideoNode": {
+    "description": "BETA。Comfy Cloud 節點集仍在持續變動：可能新增或移除選項，也可能淘汰工作流程。使用 MiniMax H3，根據文字提示詞生成附有相符音軌的影片。影像和音訊會在同一次處理中產生，而非事後配音。於 Comfy Cloud GPU 上執行，依執行時間以 {'$'}0.001295/GPU-second（0.27 點數）計費。以點數支付，無需 Cloud 訂閱。",
+    "display_name": "Comfy Cloud MiniMax H3 文字轉影片 [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "長寬比"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "duration_seconds": {
+        "name": "時長（秒）",
+        "tooltip": "時長（秒）。流程會在 24fps 下量化為每 17 影格的步進，因此片段長度與此值的差距約在三分之二秒內。"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "resolution": {
+        "name": "解析度",
+        "tooltip": "影格尺寸預算。720p 消耗的 GPU 秒數約為 480p 的兩倍。"
+      },
+      "seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxMusic3TextToAudioNode": {
+    "description": "BETA。Comfy Cloud 節點集仍在持續變動：可能新增或移除選項，也可能淘汰工作流程。使用 MiniMax Music 3，根據描述生成完整歌曲。提示詞決定風格、樂器編制和氛圍；歌詞會被演唱而非僅描述，若歌詞留空則產生純音樂曲目。於 Comfy Cloud GPU 上執行，依執行時間以 {'$'}0.001295/GPU-second（0.27 點數）計費。以點數支付，無需 Cloud 訂閱。",
+    "display_name": "Comfy Cloud MiniMax Music 3 文字轉音訊 [BETA]",
+    "inputs": {
+      "audio_quality": {
+        "name": "音訊品質",
+        "tooltip": "mp3 位元率。V0 為可變位元率，且是三者中品質最高者。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "lyrics": {
+        "name": "歌詞",
+        "tooltip": "要演唱的歌詞。留空即可產生純音樂。"
+      },
+      "max_duration": {
+        "name": "最長時長",
+        "tooltip": "曲目的最長時長。模型可能會提早結束歌曲。"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudZImageTurboNode": {
+    "description": "BETA。Comfy Cloud 節點集仍在持續變動：可能新增或移除選項，也可能淘汰工作流程。使用 Z-Image Turbo，在 8 個步驟內根據文字提示詞生成圖片。這裡速度最快且成本最低的節點之一，因此很適合反覆迭代。於 Comfy Cloud GPU 上執行，依執行時間以 {'$'}0.001295/GPU-second（0.27 點數）計費。以點數支付，無需 Cloud 訂閱。",
+    "display_name": "Comfy Cloud Z-Image Turbo 文字轉圖片 [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "長寬比"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "megapixels": {
+        "name": "百萬像素",
+        "tooltip": "總像素預算。正方形比例下，1.0 約為 1024x1024。"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "seed": {
+        "name": "種子"
       }
     },
     "outputs": {
@@ -9335,40 +9499,6 @@
       }
     }
   },
-  "KlingVideoExtendNode": {
-    "description": "Kling Video 延伸節點。可延伸由其他 Kling 節點製作的影片。video_id 是透過其他 Kling 節點產生的。",
-    "display_name": "Kling Video 延伸",
-    "inputs": {
-      "cfg_scale": {
-        "name": "cfg_scale"
-      },
-      "negative_prompt": {
-        "name": "負向提示詞",
-        "tooltip": "用於避免在延伸影片中出現的負向文字提示"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "用於引導影片延伸的正向文字提示"
-      },
-      "video_id": {
-        "name": "video_id",
-        "tooltip": "要延伸的影片 ID。支援由文字轉影片、圖片轉影片及先前影片延伸操作所產生的影片。延伸後總長度不可超過 3 分鐘。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "時長",
-        "tooltip": null
-      }
-    }
-  },
   "KlingVideoNode": {
     "description": "使用 Kling V3 產生影片。支援文字轉影片與圖片轉影片，可選擇分鏡多提示與音訊生成。",
     "display_name": "Kling 3.0 影片",
@@ -11169,70 +11299,6 @@
       "seed": {
         "name": "種子",
         "tooltip": "決定此節點是否重新執行的種子；實際結果無論種子如何皆為非確定性。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LtxvApiImageToVideo": {
-    "description": "基於起始圖片，具有可自訂持續時間和解析度的專業級影片。",
-    "display_name": "LTXV 圖片轉影片",
-    "inputs": {
-      "duration": {
-        "name": "持續時間"
-      },
-      "fps": {
-        "name": "幀率"
-      },
-      "generate_audio": {
-        "name": "生成音訊",
-        "tooltip": "當為 true 時，生成的影片將包含與場景匹配的 AI 生成音訊。"
-      },
-      "image": {
-        "name": "圖片",
-        "tooltip": "要用於影片的第一幀。"
-      },
-      "model": {
-        "name": "模型"
-      },
-      "prompt": {
-        "name": "提示詞"
-      },
-      "resolution": {
-        "name": "解析度"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LtxvApiTextToVideo": {
-    "description": "具有可自訂持續時間和解析度的專業級影片。",
-    "display_name": "LTXV 文字轉影片",
-    "inputs": {
-      "duration": {
-        "name": "持續時間"
-      },
-      "fps": {
-        "name": "幀率"
-      },
-      "generate_audio": {
-        "name": "生成音訊",
-        "tooltip": "當為 true 時，生成的影片將包含與場景匹配的 AI 生成音訊。"
-      },
-      "model": {
-        "name": "模型"
-      },
-      "prompt": {
-        "name": "提示詞"
-      },
-      "resolution": {
-        "name": "解析度"
       }
     },
     "outputs": {
@@ -15930,7 +15996,11 @@
       },
       "max_output_tokens": {
         "name": "max_output_tokens",
-        "tooltip": "為回應生成的 token 數量的上限，包括可見的輸出 token"
+        "tooltip": "回應可生成詞元數量的上限，包括可見輸出詞元和推理詞元"
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "模型在回答前進行多少推理。'default' 會將選擇權交由模型。支援的等級因模型而異：GPT-6 Astra low-max、GPT-5.6 none-max（不含 minimal）、GPT-5.5 none-xhigh、GPT-5.5 Pro medium-xhigh、GPT-5 minimal-high、o-series low-high；GPT-4.1 不具推理能力。不支援的等級會在傳送請求前遭到拒絕。"
       },
       "truncation": {
         "name": "truncation",
@@ -15970,78 +16040,6 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "模型的文字輸入，用於生成回應。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIDalle2": {
-    "description": "透過 OpenAI 的 DALL·E 2 端點同步產生影像。",
-    "display_name": "OpenAI DALL·E 2",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "image": {
-        "name": "參考影像",
-        "tooltip": "可選的參考影像，用於影像編輯。"
-      },
-      "mask": {
-        "name": "遮罩",
-        "tooltip": "可選的遮罩，用於修補（白色區域將被取代）"
-      },
-      "n": {
-        "name": "數量",
-        "tooltip": "要產生多少張影像"
-      },
-      "prompt": {
-        "name": "提示詞",
-        "tooltip": "DALL·E 的文字提示"
-      },
-      "seed": {
-        "name": "種子",
-        "tooltip": "後端尚未實作"
-      },
-      "size": {
-        "name": "尺寸",
-        "tooltip": "影像尺寸"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIDalle3": {
-    "description": "透過 OpenAI 的 DALL·E 3 端點同步產生影像。",
-    "display_name": "OpenAI DALL·E 3",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "prompt": {
-        "name": "提示詞",
-        "tooltip": "DALL·E 的文字提示"
-      },
-      "quality": {
-        "name": "畫質",
-        "tooltip": "影像品質"
-      },
-      "seed": {
-        "name": "種子",
-        "tooltip": "後端尚未實作"
-      },
-      "size": {
-        "name": "尺寸",
-        "tooltip": "影像尺寸"
-      },
-      "style": {
-        "name": "風格",
-        "tooltip": "「生動」會讓模型傾向產生超現實且戲劇化的影像。「自然」則會讓模型產生較自然、不那麼超現實的影像。"
       }
     },
     "outputs": {
