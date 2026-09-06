@@ -1,7 +1,7 @@
 import { clamp } from 'es-toolkit/compat'
 
 import type { ISliderWidget } from '@/lib/litegraph/src/types/widgets'
-import { formatNumericWidgetValue } from '@/lib/litegraph/src/utils/widget'
+import { coerceNumericWidgetValue } from '@/lib/litegraph/src/utils/widget'
 
 import { BaseWidget } from './BaseWidget'
 import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
@@ -34,8 +34,9 @@ export class SliderWidget
     ctx.fillRect(margin, y, width - margin * 2, height)
 
     // Calculate normalized value
+    const value = coerceNumericWidgetValue(this.value)
     const range = this.options.max - this.options.min
-    let nvalue = (this.value - this.options.min) / range
+    let nvalue = (value - this.options.min) / range
     nvalue = clamp(nvalue, 0, 1)
 
     // Draw slider bar
@@ -60,10 +61,7 @@ export class SliderWidget
     if (showText) {
       ctx.textAlign = 'center'
       ctx.fillStyle = this.text_color
-      const fixedValue = formatNumericWidgetValue(
-        this.value,
-        this.options.precision ?? 3
-      )
+      const fixedValue = value.toFixed(this.options.precision ?? 3)
       ctx.fillText(
         `${this.label || this.name}  ${fixedValue}`,
         width * 0.5,

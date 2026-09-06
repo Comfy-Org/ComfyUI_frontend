@@ -19,23 +19,25 @@ export function getWidgetStep(options: IWidgetOptions): number {
 }
 
 /**
- * Formats a numeric widget value for legacy canvas rendering.
+ * Coerces a numeric widget value for legacy canvas rendering.
  *
  * Persisted workflows and extension-provided widgets can contain values that do
  * not match the current numeric widget type. Keep coercion at this runtime
  * boundary so an invalid value cannot throw and stop the canvas render loop.
  */
+export function coerceNumericWidgetValue(value: unknown): number {
+  try {
+    return Number(value)
+  } catch {
+    return Number.NaN
+  }
+}
+
 export function formatNumericWidgetValue(
   value: unknown,
   precision = 3
 ): string {
-  let numericValue: number
-  try {
-    numericValue = Number(value)
-  } catch {
-    numericValue = Number.NaN
-  }
-  return numericValue.toFixed(precision)
+  return coerceNumericWidgetValue(value).toFixed(precision)
 }
 
 export function evaluateInput(input: string): number | undefined {

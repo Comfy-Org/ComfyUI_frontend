@@ -2,7 +2,7 @@ import { clamp } from 'es-toolkit/compat'
 
 import type { IKnobWidget } from '@/lib/litegraph/src/types/widgets'
 import {
-  formatNumericWidgetValue,
+  coerceNumericWidgetValue,
   getWidgetStep
 } from '@/lib/litegraph/src/utils/widget'
 
@@ -116,8 +116,9 @@ export class KnobWidget extends BaseWidget<IKnobWidget> implements IKnobWidget {
     ctx.stroke()
     ctx.closePath()
 
+    const value = coerceNumericWidgetValue(this.value)
     const range = this.options.max - this.options.min
-    let nvalue = (this.value - this.options.min) / range
+    let nvalue = (value - this.options.min) / range
     nvalue = clamp(nvalue, 0, 1)
 
     // Draw value
@@ -172,10 +173,7 @@ export class KnobWidget extends BaseWidget<IKnobWidget> implements IKnobWidget {
     if (showText) {
       ctx.textAlign = 'center'
       ctx.fillStyle = this.text_color
-      const fixedValue = formatNumericWidgetValue(
-        this.value,
-        this.options.precision ?? 3
-      )
+      const fixedValue = value.toFixed(this.options.precision ?? 3)
       ctx.fillText(
         `${this.label || this.name}\n${fixedValue}`,
         width * 0.5,
