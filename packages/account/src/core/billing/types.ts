@@ -87,6 +87,26 @@ export interface BillingStatusResponse {
   subscription_status?: string
   is_active?: boolean
 }
+export interface BillingCapabilities {
+  can_cancel: boolean
+  can_change_seats: boolean
+  can_downgrade_to_personal: boolean
+  can_invite_members: boolean
+  can_reactivate: boolean
+  can_subscribe_self_serve: boolean
+  can_top_up: boolean
+}
+export interface BillingCapabilitiesResponse {
+  capabilities: BillingCapabilities
+  expires_at: string
+  resolved_for: Record<string, unknown>
+  revision: number
+  rollout_defaults_applied: {
+    can_downgrade_to_personal: boolean
+    can_subscribe_self_serve: boolean
+    can_top_up: boolean
+  }
+}
 export interface BillingOperationResponse {
   status: BillingOperationStatus
   started_at?: string
@@ -168,4 +188,7 @@ export interface BillingApiClient {
     signal?: AccountAbortSignal
   ): Promise<BillingOperationResponse>
   getStatus(signal?: AccountAbortSignal): Promise<BillingStatusResponse>
+  getCapabilities?(
+    signal?: AccountAbortSignal
+  ): Promise<BillingCapabilitiesResponse>
 }

@@ -32,6 +32,39 @@ describe('payments claims', () => {
     )
   })
 
+  it('reads server-resolved billing capabilities', async () => {
+    const body = {
+      capabilities: {
+        can_cancel: true,
+        can_change_seats: false,
+        can_downgrade_to_personal: false,
+        can_invite_members: true,
+        can_reactivate: false,
+        can_subscribe_self_serve: true,
+        can_top_up: true
+      },
+      expires_at: '2026-09-06T12:00:00Z',
+      resolved_for: { workspace_id: 'workspace-1' },
+      revision: 1,
+      rollout_defaults_applied: {
+        can_downgrade_to_personal: false,
+        can_subscribe_self_serve: false,
+        can_top_up: false
+      }
+    }
+    const transport = vi.fn(async () => ({ status: 200, body }))
+    const client = createBillingApiClient({ transport })
+
+    await expect(client.getCapabilities!()).resolves.toEqual(body)
+    expect(transport).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: 'GET',
+        path: '/api/billing/capabilities',
+        headers: {}
+      })
+    )
+  })
+
   it('TP-6 PM-8 PM-10 EC-P-1: sends the production subscribe body without an idempotency header', async () => {
     const transport = vi.fn(async () => ({
       status: 200,
