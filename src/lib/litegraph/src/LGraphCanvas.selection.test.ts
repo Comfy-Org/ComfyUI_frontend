@@ -279,6 +279,17 @@ describe('LGraphCanvas selection', () => {
       expect(graph.nodes).toHaveLength(0)
     })
 
+    it('selectItems() commits the whole batch before any node hook runs', () => {
+      const sizesSeenByHooks: number[] = []
+      canvas.onNodeSelected = () =>
+        sizesSeenByHooks.push(canvas.selectedItems.size)
+
+      canvas.selectItems([a, b])
+
+      expect(sizesSeenByHooks).toEqual([2, 2])
+      expect(onSelectionChange).toHaveBeenCalledTimes(1)
+    })
+
     it('highlights a link connected after the node was selected', () => {
       a.addOutput('out', 'number')
       b.addInput('in', 'number')

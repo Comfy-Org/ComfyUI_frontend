@@ -4516,21 +4516,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       for (const item of itemsInRect) desired.add(item)
     }
 
-    let changed = false
-    for (const item of [...this.selectedItems]) {
-      if (!desired.has(item)) {
-        this.deselect(item)
-        changed = true
-      }
-    }
-    for (const item of desired) {
-      if (!this.#isSelected(item)) {
-        this.select(item)
-        changed = true
-      }
-    }
+    const dropped = [...this.selectedItems].filter((item) => !desired.has(item))
+    const removed = this.#deselectMany(dropped)
+    const added = this.#selectMany(desired)
 
-    if (changed) {
+    if (removed || added) {
       this.onSelectionChange?.(this.selected_nodes)
       this.setDirty(true)
     }
@@ -4563,17 +4553,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const { selectedItems } = this
 
     if (e.shiftKey) {
-      // Add to selection
-      for (const item of itemsInRect) this.select(item)
+      this.#selectMany(itemsInRect)
     } else if (e.altKey) {
-      // Remove from selection
-      for (const item of itemsInRect) this.deselect(item)
+      this.#deselectMany(itemsInRect)
     } else {
-      // Replace selection
-      for (const item of selectedItems.values()) {
-        if (!itemsInRect.has(item)) this.deselect(item)
-      }
-      for (const item of itemsInRect) this.select(item)
+      this.#deselectMany(
+        [...selectedItems].filter((item) => !itemsInRect.has(item))
+      )
+      this.#selectMany(itemsInRect)
     }
 
     this.onSelectionChange?.(this.selected_nodes)
@@ -4631,29 +4618,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   select<TPositionable extends Positionable = LGraphNode>(
     item: TPositionable
   ): void {
-    if (this.selectOnly && !(item instanceof LGraphNode)) return
-    if (this.#isSelected(item)) return
-
-    this.#setSelected(item, true)
-
-    if (item instanceof LGraphGroup) {
-      item.recomputeInsideNodes()
-      if (this.groupSelectChildren) {
-        this.#traverseGroupChildren(
-          item,
-          (child) => {
-            if (!this.#isSelected(child)) this.#setSelected(child, true)
-          },
-          (child) => this.select(child)
-        )
-      }
-      return
-    }
-
-    if (!(item instanceof LGraphNode)) return
-
-    item.onSelected?.()
-    this.onNodeSelected?.(item)
+    this.#selectMany([item])
   }
 
   /**
@@ -4663,25 +4628,74 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   deselect<TPositionable extends Positionable = LGraphNode>(
     item: TPositionable
   ): void {
-    if (!this.#isSelected(item)) return
+    this.#deselectMany([item])
+  }
 
-    this.#setSelected(item, false)
+  /**
+   * Adds {@link items} (and, with {@link groupSelectChildren}, the children
+   * of any groups among them) to the selection as one command, then fires
+   * the node hooks for every node that became selected.
+   * @returns Whether the selection changed.
+   */
+  #selectMany(items: Iterable<Positionable>): boolean {
+    return this.#changeSelection(items, true)
+  }
 
-    if (item instanceof LGraphGroup && this.groupSelectChildren) {
-      this.#traverseGroupChildren(
-        item,
-        (child) => {
-          if (this.#isSelected(child)) this.#setSelected(child, false)
-        },
-        (child) => this.deselect(child)
-      )
-      return
+  /** Counterpart of {@link #selectMany}. */
+  #deselectMany(items: Iterable<Positionable>): boolean {
+    return this.#changeSelection(items, false)
+  }
+
+  #changeSelection(items: Iterable<Positionable>, selected: boolean): boolean {
+    const { graph } = this
+    if (!graph) return false
+
+    const scope = graphScopeOf(graph)
+    const planned = new Set(this.#selection.selectedKeys(scope))
+    const keys: SelectableKey[] = []
+    const nodes: LGraphNode[] = []
+
+    const plan = (item: Positionable): boolean => {
+      const key = selectableKeyOf(item)
+      if (planned.has(key) === selected) return false
+      if (selected) planned.add(key)
+      else planned.delete(key)
+      keys.push(key)
+      return true
     }
 
-    if (!(item instanceof LGraphNode)) return
+    const visit = (item: Positionable): void => {
+      if (selected && this.selectOnly && !(item instanceof LGraphNode)) return
+      if (!plan(item)) return
 
-    item.onDeselected?.()
-    this.onNodeDeselected?.(item)
+      if (item instanceof LGraphGroup) {
+        if (selected) item.recomputeInsideNodes()
+        if (this.groupSelectChildren) {
+          this.#traverseGroupChildren(item, plan, visit)
+        }
+        return
+      }
+
+      if (item instanceof LGraphNode) nodes.push(item)
+    }
+
+    for (const item of items) visit(item)
+    if (!keys.length) return false
+
+    this.#selection.apply(scope, {
+      type: selected ? 'selection.add' : 'selection.remove',
+      keys
+    })
+    for (const node of nodes) {
+      if (selected) {
+        node.onSelected?.()
+        this.onNodeSelected?.(node)
+      } else {
+        node.onDeselected?.()
+        this.onNodeDeselected?.(node)
+      }
+    }
+    return true
   }
 
   #setSelected(item: Positionable, selected: boolean): void {
@@ -4766,9 +4780,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     items?: Positionable[],
     add_to_current_selection?: boolean
   ): void {
-    const itemsToSelect = items ?? this.positionableItems
     if (!add_to_current_selection) this.deselectAll()
-    for (const item of itemsToSelect) this.select(item)
+    this.#selectMany(items ?? this.positionableItems)
     this.onSelectionChange?.(this.selected_nodes)
     this.setDirty(true)
   }
