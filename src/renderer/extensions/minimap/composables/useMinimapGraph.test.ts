@@ -136,6 +136,40 @@ describe('useMinimapGraph', () => {
     expect(onGraphChangedMock).toHaveBeenCalledTimes(1)
   })
 
+  it('cleans up after the graph id is reassigned in place', () => {
+    const originalOnConnectionChange = vi.fn()
+    mockGraph.onConnectionChange = originalOnConnectionChange
+
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+
+    graphManager.setupEventListeners()
+
+    // Loading another workflow reassigns the id on the same root LGraph.
+    mockGraph.id = 'test-graph-456'
+
+    graphManager.cleanupEventListeners()
+
+    expect(mockGraph.onConnectionChange).toBe(originalOnConnectionChange)
+
+    mockGraph.events.dispatch('node:added', { node: { id: '3' } as LGraphNode })
+
+    expect(onGraphChangedMock).not.toHaveBeenCalled()
+  })
+
+  it('does not install a second set of hooks after an in-place id change', () => {
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+
+    graphManager.setupEventListeners()
+    mockGraph.id = 'test-graph-456'
+    graphManager.setupEventListeners()
+
+    mockGraph.events.dispatch('node:added', { node: { id: '3' } as LGraphNode })
+
+    expect(onGraphChangedMock).toHaveBeenCalledTimes(1)
+  })
+
   it('should cleanup event listeners properly', () => {
     const originalOnConnectionChange = vi.fn()
     mockGraph.onConnectionChange = originalOnConnectionChange
