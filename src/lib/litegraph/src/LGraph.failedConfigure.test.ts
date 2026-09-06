@@ -14,10 +14,16 @@ import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { GraphScope } from '@/types/graphScopeId'
-import { graphScopeOf } from '@/types/graphScopeId'
+import {
+  graphScopeOf,
+  toOwningGraphId,
+  toRootGraphId
+} from '@/types/graphScopeId'
 import type { GroupId } from '@/types/groupId'
 import type { NodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 import type { RerouteId } from '@/types/rerouteId'
+import { toRerouteId } from '@/types/rerouteId'
 import { widgetId } from '@/types/widgetId'
 import { createTestSubgraphData } from './subgraph/__fixtures__/subgraphHelpers'
 
@@ -372,32 +378,14 @@ describe('a workflow loaded after a failed load, on the same graph', () => {
     expect(graph.id).toBe(GOOD_ID)
   })
 
-  it('clears nested-owner state before loading the next workflow', () => {
-    const nested = graphAfterFailedConfigure(failingNestedWorkflow())
-    const definition = nested.subgraphs.get(NESTED_DEFINITION_ID)
-    if (!definition) throw new Error('Expected failed subgraph definition')
-
-    const scope = graphScopeOf(definition)
-    const nodeIds = definition.nodes.map((node) => node.id)
-    const linkIds = [...useLinkStore().graphTopologies(scope)].map(
-      (link) => link.id
-    )
-    const rerouteIds = [...definition.reroutes.keys()]
-    const widgetIds = nodeIds.flatMap((id) =>
-      useWidgetValueStore().getNodeWidgetIds(BAD_ID, id)
-    )
-
-    expect(storeOwnership(scope, nodeIds, rerouteIds, [])).toEqual({
-      nodes: nodeIds,
-      links: linkIds,
-      reroutes: rerouteIds,
-      nodeLayouts: nodeIds,
-      rerouteLayouts: rerouteIds,
-      groupLayouts: [],
-      widgets: widgetIds
-    })
-
-    nested.configure(unrelatedWorkflow())
+  it('clears nested-owner state when definition configuration fails', () => {
+    const graph = graphAfterFailedConfigure(failingNestedWorkflow())
+    const scope = {
+      rootGraphId: toRootGraphId(BAD_ID),
+      owningGraphId: toOwningGraphId(NESTED_DEFINITION_ID)
+    }
+    const nodeIds = [toNodeId(2), toNodeId(3)]
+    const rerouteIds = [toRerouteId(1)]
 
     expect(storeOwnership(scope, nodeIds, rerouteIds, [])).toEqual({
       nodes: [],
@@ -408,7 +396,7 @@ describe('a workflow loaded after a failed load, on the same graph', () => {
       groupLayouts: [],
       widgets: []
     })
-    expect(nested.subgraphs.has(NESTED_DEFINITION_ID)).toBe(false)
+    expect(graph.subgraphs.has(NESTED_DEFINITION_ID)).toBe(false)
   })
 
   it('does not retain unrecognised top-level workflow keys', () => {
