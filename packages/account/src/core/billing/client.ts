@@ -2,6 +2,7 @@ import { AccountError, MalformedResponseError } from '../index.js'
 import type { AccountAbortSignal, TransportRequest } from '../index.js'
 import type {
   BillingApiClient,
+  BillingCapabilitiesResponse,
   BillingOperationResponse,
   BillingStatusResponse,
   BillingTransport,
@@ -23,6 +24,7 @@ export const billingPaths = {
   resubscribe: '/api/billing/subscription/resubscribe',
   cancel: '/api/billing/subscription/cancel',
   paymentPortal: '/api/billing/payment-portal',
+  capabilities: '/api/billing/capabilities',
   status: '/api/billing/status',
   operation: (id: string) => `/api/billing/ops/${encodeURIComponent(id)}`
 } as const
@@ -127,6 +129,15 @@ export function createBillingApiClient(
       request<BillingStatusResponse>(
         transport,
         billingPaths.status,
+        'GET',
+        undefined,
+        undefined,
+        signal
+      ),
+    getCapabilities: (signal?: AccountAbortSignal) =>
+      request<BillingCapabilitiesResponse>(
+        transport,
+        billingPaths.capabilities,
         'GET',
         undefined,
         undefined,
