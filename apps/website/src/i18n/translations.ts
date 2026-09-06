@@ -8669,9 +8669,17 @@ Enterprise`
     en: 'More from {provider}',
     'zh-CN': '{provider} 的更多模型'
   },
+  'workshop.model.relatedShort': {
+    en: 'More models',
+    'zh-CN': '更多模型'
+  },
   'workshop.model.browseAll': {
     en: 'Browse all models',
     'zh-CN': '浏览全部模型'
+  },
+  'workshop.model.browseAllShort': {
+    en: 'Browse all',
+    'zh-CN': '浏览全部'
   },
   'workshop.credits.title': {
     en: 'Payment happens on Stripe',

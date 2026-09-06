@@ -32,6 +32,9 @@ const relatedProvider =
 const relatedHeading = relatedProvider
   ? t('workshop.model.relatedProvider').replace('{provider}', relatedProvider)
   : t('workshop.model.related')
+// A phone has room for one line of each, so it gets the shorter wording. The
+// cards name their provider, so dropping it from the heading loses nothing.
+const relatedHeadingShort = t('workshop.model.relatedShort')
 const successor = model.successorSlug
   ? getWorkshopModel(model.successorSlug)
   : undefined
@@ -155,14 +158,16 @@ const tags = model.capabilities.map((capability) => ({
     >
       <div class="mb-6 flex items-end justify-between gap-4">
         <h2 class="text-2xl font-bold text-primary-comfy-canvas">
-          {relatedHeading}
+          <span class="sm:hidden">{relatedHeadingShort}</span>
+          <span class="max-sm:hidden">{relatedHeading}</span>
         </h2>
         <a
           href={routes.workshop}
           class="inline-flex items-center gap-2 text-sm font-bold tracking-wider text-primary-comfy-yellow uppercase hover:underline"
         >
-          {t('workshop.model.browseAll')}
-          <ArrowRight class="size-4" aria-hidden="true" />
+          <span class="sm:hidden">{t('workshop.model.browseAllShort')}</span>
+          <span class="max-sm:hidden">{t('workshop.model.browseAll')}</span>
+          <ArrowRight class="size-4 shrink-0" aria-hidden="true" />
         </a>
       </div>
       <ul class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
