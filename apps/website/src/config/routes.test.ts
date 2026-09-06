@@ -150,3 +150,13 @@ describe('getRoutes minimaxLicense', () => {
     expect(getRoutes('zh-CN').minimaxLicense).toBe('/zh-CN/minimax/license')
   })
 })
+
+describe('getRoutes cloudNodes', () => {
+  it('serves the Comfy Cloud nodes launch page at its canonical path for en', () => {
+    expect(getRoutes('en').cloudNodes).toBe('/cloud-nodes')
+  })
+
+  it('serves a localized path for zh-CN', () => {
+    expect(getRoutes('zh-CN').cloudNodes).toBe('/zh-CN/cloud-nodes')
+  })
+})
