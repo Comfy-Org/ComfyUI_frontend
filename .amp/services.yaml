@@ -39,6 +39,10 @@ services:
     command: |
       case "${COMFYUI_FRONTEND_MODE:-local}" in
         local)
+          echo 'Waiting for the local ComfyUI backend'
+          until curl --fail --silent http://127.0.0.1:8188/system_stats >/dev/null; do
+            sleep 2
+          done
           echo 'Starting the frontend in local ComfyUI mode'
           exec env VITE_REMOTE_DEV=true DISABLE_VUE_PLUGINS=true \
             pnpm dev --host 0.0.0.0 --port "$PORT"

@@ -74,7 +74,8 @@ Remote development containers used by coding agents default to local mode.
 Local mode runs the containerized backend and one local frontend. Cloud mode
 skips Docker and the local backend, and runs one frontend against the Comfy test
 cloud. Set `COMFYUI_FRONTEND_MODE=cloud` in the container environment to switch
-modes.
+modes. `amp orb services ensure` waits for the local backend before exposing the
+frontend portal, so browser tests can run as soon as the command returns.
 
 If the container's `GH_TOKEN` can read the private package, no other credentials
 are needed. Otherwise, add a GitHub token with `read:packages` access to the
