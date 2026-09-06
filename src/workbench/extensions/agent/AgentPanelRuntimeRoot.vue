@@ -623,6 +623,7 @@ void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
   mintPortWiring.detach()
   exitNodeSelectionMode()
+  activeTabGeneration++
   runtime.stop()
   tabActivity.setEditing(null)
   tabActivity.setCreating(false)
