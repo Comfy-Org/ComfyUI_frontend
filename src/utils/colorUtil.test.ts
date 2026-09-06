@@ -137,6 +137,13 @@ describe('colorUtil conversions', () => {
     it('converts an RGB integer to a padded hexadecimal color', () => {
       expect(intToHex(0)).toBe('#000000')
       expect(intToHex(0x45edf5)).toBe('#45edf5')
+      expect(intToHex(0xffffff)).toBe('#ffffff')
+    })
+
+    it('normalizes values to the 24-bit RGB range', () => {
+      expect(intToHex(-1)).toBe('#000000')
+      expect(intToHex(0.5)).toBe('#000001')
+      expect(intToHex(0x1000000)).toBe('#ffffff')
     })
   })
 

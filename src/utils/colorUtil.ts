@@ -88,7 +88,10 @@ export function hexToInt(hex: string): number {
 }
 
 export function intToHex(value: number): string {
-  return `#${value.toString(16).padStart(6, '0')}`
+  const normalized = Number.isFinite(value)
+    ? Math.max(0, Math.min(0xffffff, Math.round(value)))
+    : 0
+  return `#${normalized.toString(16).padStart(6, '0')}`
 }
 
 export function rgbToHex({ r, g, b }: RGB): string {

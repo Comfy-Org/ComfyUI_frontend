@@ -1,7 +1,7 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
-  INumericWidget,
-  IWidgetOptions
+  IColorWidgetOptions,
+  INumericWidget
 } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -57,7 +57,7 @@ export const useIntWidget = () => {
     const step = inputSpec.step ?? 1
     /** Assertion {@link inputSpec.default} */
     const defaultValue = (inputSpec.default as number | undefined) ?? 0
-    const options: IWidgetOptions & { format?: 'int' } = {
+    const options: IColorWidgetOptions = {
       min: inputSpec.min ?? 0,
       max: inputSpec.max ?? 2048,
       /** @deprecated Use step2 instead. The 10x value is a legacy implementation. */

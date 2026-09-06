@@ -18,19 +18,17 @@ import {
   isColorFormat,
   toHexFromFormat
 } from '@/utils/colorUtil'
-import type { ColorFormat } from '@/utils/colorUtil'
 
-import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
+import type { IColorWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 
 import ColorPicker from '@/components/ui/color-picker/ColorPicker.vue'
 
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 type ColorWidgetValue = string | number
-type WidgetOptions = IWidgetOptions & { format?: ColorFormat | 'int' }
 
 const { widget } = defineProps<{
-  widget: SimplifiedWidget<ColorWidgetValue, WidgetOptions>
+  widget: SimplifiedWidget<ColorWidgetValue, IColorWidgetOptions>
 }>()
 
 const modelValue = defineModel<ColorWidgetValue>({ required: true })

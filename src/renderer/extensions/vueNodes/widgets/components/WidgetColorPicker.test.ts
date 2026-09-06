@@ -107,6 +107,22 @@ describe('WidgetColorPicker Value Binding', () => {
 
       expect(onUpdateModelValue).toHaveBeenCalledWith(0x00ff00)
     })
+
+    it('round-trips black as integer zero', async () => {
+      const onUpdateModelValue = vi.fn()
+      const widget = createColorWidget(0, { format: 'int' })
+      renderComponent(widget, 0, {
+        'onUpdate:modelValue': onUpdateModelValue
+      })
+
+      const input = screen.getByTestId('color-picker-input')
+      expect(input).toHaveValue('#000000')
+
+      await fireEvent.update(input, '#45edf5')
+      await fireEvent.update(input, '#000000')
+
+      expect(onUpdateModelValue).toHaveBeenCalledWith(0)
+    })
   })
 
   describe('Component Rendering', () => {
