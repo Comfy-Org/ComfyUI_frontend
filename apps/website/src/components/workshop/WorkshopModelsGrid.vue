@@ -305,7 +305,8 @@ const menuItemClass =
         ref="nav"
         :class="
           cn(
-            'relative mb-8 hidden gap-8 overflow-x-auto border-b border-transparency-white-t8 sm:flex',
+            'relative mb-8 flex gap-8 overflow-x-auto border-b border-transparency-white-t8',
+            railBeside && 'max-sm:hidden',
             railBeside &&
               'lg:mb-0 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:border-b-0'
           )
@@ -403,7 +404,9 @@ const menuItemClass =
             :capability-options="capabilityOptions"
             :provider-options="providerOptions"
             :modality-options="modalityOptions"
-            :use-case-options="onPhone ? useCaseOptions : undefined"
+            :use-case-options="
+              onPhone && railBeside ? useCaseOptions : undefined
+            "
             :locale
           />
 

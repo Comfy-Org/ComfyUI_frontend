@@ -62,24 +62,12 @@ export interface ToolbarLabels {
   readonly showResults: string
 }
 
-const { templates, facetsConfig, labels, resultCount, navGroup } = defineProps<{
+const { templates, facetsConfig, labels, resultCount } = defineProps<{
   templates: readonly FacetTemplate[]
   facetsConfig: readonly FacetGroupConfig[]
   labels: ToolbarLabels
   resultCount: number
-  /** The axis the tab row carries, which a phone folds in with the facets. */
-  navGroup?: {
-    readonly label: string
-    readonly value: string
-    readonly options: readonly {
-      readonly value: string
-      readonly label: string
-      readonly count: number
-    }[]
-  }
 }>()
-
-const emit = defineEmits<{ 'select-nav': [string] }>()
 
 const store = useHubStore()
 const facetInput = computed(() => templates)
@@ -206,10 +194,9 @@ const groupTitleClass = 'text-content-muted text-base'
 // A phone shows the facets the way the hub does: one at a time, behind a row of
 // names, with a search and a list you tick. The wide panel keeps its chips.
 const phoneFacet = ref<string>()
-const facetTabs = computed(() => [
-  ...(navGroup ? [{ key: 'nav', label: navGroup.label }] : []),
-  ...groups.value.map((group) => ({ key: group.key, label: group.label }))
-])
+const facetTabs = computed(() =>
+  groups.value.map((group) => ({ key: group.key, label: group.label }))
+)
 const currentFacet = computed(
   () => phoneFacet.value ?? facetTabs.value[0]?.key ?? ''
 )
@@ -218,26 +205,25 @@ const currentGroup = computed(() =>
 )
 const phoneOptions = computed(() => {
   const group = currentGroup.value
-  if (!group) return navGroup?.options ?? []
-  return matchingValues(group).map((value) => ({
-    value: value.value,
-    label: value.displayValue,
-    count: value.count
-  }))
+  return group
+    ? matchingValues(group).map((value) => ({
+        value: value.value,
+        label: value.displayValue,
+        count: value.count
+      }))
+    : []
 })
-const phoneSearchKey = computed(() => currentGroup.value?.key ?? 'nav')
-const isPhoneChosen = (value: string) =>
-  currentGroup.value
-    ? isBadgeActive(currentGroup.value.type, value)
-    : navGroup?.value === value
+const isPhoneChosen = (value: string) => {
+  const group = currentGroup.value
+  return group ? isBadgeActive(group.type, value) : false
+}
 
 function phoneToggle(value: string) {
   const group = currentGroup.value
-  if (!group) return emit('select-nav', value)
+  if (!group) return
   const badge = { type: group.type, value }
-  return group.display === 'segmented'
-    ? store.selectBadge(badge)
-    : store.toggleBadge(badge)
+  if (group.display === 'segmented') store.selectBadge(badge)
+  else store.toggleBadge(badge)
 }
 </script>
 
@@ -376,7 +362,7 @@ function phoneToggle(value: string) {
 
         <div v-if="currentGroup" class="border-b border-white/10 p-2">
           <input
-            v-model="facetSearch[phoneSearchKey]"
+            v-model="facetSearch[currentFacet]"
             type="search"
             :placeholder="labels.searchPlaceholder"
             :aria-label="labels.searchPlaceholder"

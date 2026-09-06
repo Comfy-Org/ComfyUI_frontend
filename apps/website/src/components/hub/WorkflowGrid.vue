@@ -21,7 +21,6 @@ const {
   facetTemplates,
   facetsConfig,
   toolbarLabels,
-  navGroup,
   labels,
   hrefFor
 } = defineProps<{
@@ -29,21 +28,11 @@ const {
   facetTemplates: readonly HubTemplate[]
   facetsConfig: readonly FacetGroupConfig[]
   toolbarLabels: ToolbarLabels
-  navGroup?: {
-    readonly label: string
-    readonly value: string
-    readonly options: readonly {
-      readonly value: string
-      readonly label: string
-      readonly count: number
-    }[]
-  }
   labels: GridLabels
   hrefFor: (template: HubTemplate) => string
 }>()
 
 const PAGE = 30
-const emit = defineEmits<{ selectNav: [string] }>()
 
 const store = useHubStore()
 const displayCount = ref(PAGE)
@@ -97,8 +86,6 @@ const showingText = computed(() =>
         :facets-config="facetsConfig"
         :labels="toolbarLabels"
         :result-count="sortedTemplates.length"
-        :nav-group
-        @select-nav="emit('selectNav', $event)"
       >
         <template #search><slot name="search" /></template>
       </BrowseToolbar>

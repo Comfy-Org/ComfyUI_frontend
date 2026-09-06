@@ -114,17 +114,6 @@ const useCaseTabs = computed(() => [
 
 const scoped = computed(() => inUseCase(useCase.value))
 
-// The tab row has no room on a phone, so the panel carries the same axis.
-const navGroup = computed(() => ({
-  label: t('workshop.launch.label', locale),
-  value: useCase.value,
-  options: useCaseTabs.value.map((entry) => ({
-    value: entry.value,
-    label: t(useCaseLabelKey[entry.value], locale),
-    count: totalIn(entry.value)
-  }))
-}))
-
 // The row is for narrowing what the use case already picked, so search stays
 // out of the way until it is asked for.
 const searchInput = ref<HTMLInputElement>()
@@ -287,7 +276,7 @@ const filteredTemplates = computed(() => {
     >
       <nav
         ref="nav"
-        class="relative mt-12 hidden scrollbar-thin gap-6 overflow-x-auto border-b border-white/10 sm:flex"
+        class="relative mt-12 flex scrollbar-thin gap-6 overflow-x-auto border-b border-white/10"
         :aria-label="t('workshop.media.label', locale)"
         data-testid="hub-use-cases"
       >
@@ -338,8 +327,6 @@ const filteredTemplates = computed(() => {
       :toolbar-labels="toolbarLabels"
       :labels="gridLabels"
       :href-for="hrefFor"
-      :nav-group="navGroup"
-      @select-nav="useCase = $event as UseCase | 'all'"
     >
       <template #search>
         <button
