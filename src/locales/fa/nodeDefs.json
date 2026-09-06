@@ -1486,96 +1486,6 @@
       }
     }
   },
-  "ByteDanceImageNode": {
-    "description": "تولید تصویر با استفاده از مدل‌های ByteDance از طریق API بر اساس پرامپت",
-    "display_name": "تصویر ByteDance",
-    "inputs": {
-      "control_after_generate": {
-        "name": "کنترل پس از تولید"
-      },
-      "guidance_scale": {
-        "name": "guidance_scale",
-        "tooltip": "مقدار بالاتر باعث می‌شود تصویر بیشتر از پرامپت پیروی کند"
-      },
-      "height": {
-        "name": "ارتفاع",
-        "tooltip": "ارتفاع سفارشی برای تصویر. این مقدار فقط زمانی اعمال می‌شود که «پیش‌تنظیم اندازه» روی «سفارشی» باشد."
-      },
-      "model": {
-        "name": "مدل"
-      },
-      "prompt": {
-        "name": "پرامپت",
-        "tooltip": "متن پرامپت مورد استفاده برای تولید تصویر"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "seed مورد استفاده برای تولید"
-      },
-      "size_preset": {
-        "name": "پیش‌تنظیم اندازه",
-        "tooltip": "یک اندازه پیشنهادی انتخاب کنید. برای استفاده از عرض و ارتفاع سفارشی، گزینه سفارشی را انتخاب کنید."
-      },
-      "watermark": {
-        "name": "واترمارک",
-        "tooltip": "آیا واترمارک «تولید شده توسط هوش مصنوعی» به تصویر اضافه شود یا خیر"
-      },
-      "width": {
-        "name": "عرض",
-        "tooltip": "عرض سفارشی برای تصویر. این مقدار فقط زمانی اعمال می‌شود که «پیش‌تنظیم اندازه» روی «سفارشی» باشد."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "ByteDanceImageReferenceNode": {
-    "description": "تولید ویدیو با استفاده از پرامپت و تصاویر مرجع.",
-    "display_name": "تبدیل تصاویر مرجع ByteDance به ویدیو",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "نسبت تصویر",
-        "tooltip": "نسبت تصویر ویدیوی خروجی."
-      },
-      "control_after_generate": {
-        "name": "کنترل پس از تولید"
-      },
-      "duration": {
-        "name": "مدت زمان",
-        "tooltip": "مدت زمان ویدیوی خروجی بر حسب ثانیه."
-      },
-      "images": {
-        "name": "تصاویر",
-        "tooltip": "یک تا چهار تصویر."
-      },
-      "model": {
-        "name": "مدل"
-      },
-      "prompt": {
-        "name": "پرامپت",
-        "tooltip": "متن پرامپت برای تولید ویدیو استفاده می‌شود."
-      },
-      "resolution": {
-        "name": "رزولوشن",
-        "tooltip": "رزولوشن ویدیوی خروجی."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "seed مورد استفاده برای تولید."
-      },
-      "watermark": {
-        "name": "واترمارک",
-        "tooltip": "آیا واترمارک «تولید شده توسط هوش مصنوعی» به ویدیو اضافه شود؟"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "ByteDanceImageToVideoNode": {
     "description": "تولید ویدیو با استفاده از مدل‌های ByteDance از طریق API بر اساس تصویر و پرامپت",
     "display_name": "تبدیل تصویر به ویدیو ByteDance",
@@ -2755,6 +2665,260 @@
     "inputs": {
       "values": {
         "name": "مقادیر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudFlux2TextToImageNode": {
+    "description": "بتا. مجموعه nodeهای Comfy Cloud همچنان در حال تغییر است: ممکن است گزینه‌ها افزوده یا حذف شوند و یک workflow بازنشسته شود. با Flux 2 dev از یک پرامپت متنی تصویر تولید می‌کند. Turbo از LoRA انتخاب‌شده و یک برنامهٔ زمان‌بندی کوتاه استفاده می‌کند و با اندکی کاهش وفاداری، اجرا را بسیار سریع‌تر می‌سازد؛ برای اجرای کامل dev بدون LoRA آن را خاموش کنید. روی یک GPU در Comfy Cloud اجرا می‌شود و بر اساس مدت اجرا با نرخ {'$'}۰.۰۰۱۲۹۵/GPU-second ‏(۰.۲۷ اعتبار) هزینه محاسبه می‌شود. پرداخت با اعتبار انجام می‌شود و اشتراک Cloud لازم نیست.",
+    "display_name": "Comfy Cloud Flux 2 متن به تصویر [بتا]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "بودجهٔ کل پیکسل. ۱.۰ در نسبت مربعی حدود ۱۰۲۴×۱۰۲۴ است."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "turbo": {
+        "name": "turbo",
+        "tooltip": "LoRA مربوط به Turbo را با یک برنامهٔ زمان‌بندی کوتاه اجرا می‌کند و با اندکی کاهش وفاداری، اجرا را بسیار سریع‌تر می‌سازد. در حالت خاموش، اجرای کامل dev بدون LoRA انجام می‌شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMageFlowTextToImageNode": {
+    "description": "بتا. مجموعه nodeهای Comfy Cloud همچنان در حال تغییر است: ممکن است گزینه‌ها افزوده یا حذف شوند و یک workflow بازنشسته شود. با Mage-Flow طی یک اجرای کامل ۳۰ مرحله‌ای از یک پرامپت متنی تصویر تولید می‌کند. پرامپت منفی می‌پذیرد که گونهٔ turbo تقطیرشده نمی‌تواند آن را به‌خوبی به‌کار گیرد. روی یک GPU در Comfy Cloud اجرا می‌شود و بر اساس مدت اجرا با نرخ {'$'}۰.۰۰۱۲۹۵/GPU-second ‏(۰.۲۷ اعتبار) هزینه محاسبه می‌شود. پرداخت با اعتبار انجام می‌شود و اشتراک Cloud لازم نیست.",
+    "display_name": "Comfy Cloud Mage Flow متن به تصویر [بتا]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "بودجهٔ کل پیکسل. ۱.۰ در نسبت مربعی حدود ۱۰۲۴×۱۰۲۴ است."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "برای حفظ پرامپت منفی که این pipeline با آن تنظیم شده است، خالی بگذارید."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMageFlowTurboTextToImageNode": {
+    "description": "بتا. مجموعه nodeهای Comfy Cloud همچنان در حال تغییر است: ممکن است گزینه‌ها افزوده یا حذف شوند و یک workflow بازنشسته شود. با Mage-Flow تقطیرشده در ۴ مرحله و cfg ۱ از یک پرامپت متنی تصویر تولید می‌کند. زمان GPU آن تقریباً یک‌هفتم اجرای کامل است، بنابراین برای تکرار بهترین گزینه است. روی یک GPU در Comfy Cloud اجرا می‌شود و بر اساس مدت اجرا با نرخ {'$'}۰.۰۰۱۲۹۵/GPU-second ‏(۰.۲۷ اعتبار) هزینه محاسبه می‌شود. پرداخت با اعتبار انجام می‌شود و اشتراک Cloud لازم نیست.",
+    "display_name": "Comfy Cloud Mage Flow Turbo متن به تصویر [بتا]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "بودجهٔ کل پیکسل. ۱.۰ در نسبت مربعی حدود ۱۰۲۴×۱۰۲۴ است."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "برای حفظ پرامپت منفی که این pipeline با آن تنظیم شده است، خالی بگذارید."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3FirstLastFrameToVideoNode": {
+    "description": "بتا. مجموعه nodeهای Comfy Cloud همچنان در حال تغییر است: ممکن است گزینه‌ها افزوده یا حذف شوند و یک workflow بازنشسته شود. با استفاده از MiniMax H3، حرکت میان دو فریم کلیدی را همراه با موسیقی متن هماهنگ تولید می‌کند. فریم آغاز و پایان را بدهید تا مدل نمای بین آن‌ها را تکمیل کند. فریم آخر اختیاری است: آن را وارد نکنید تا حرکت به‌جای آن از فریم اول ادامه یابد. روی یک GPU در Comfy Cloud اجرا می‌شود و بر اساس مدت اجرا با نرخ {'$'}۰.۰۰۱۲۹۵/GPU-second ‏(۰.۲۷ اعتبار) هزینه محاسبه می‌شود. پرداخت با اعتبار انجام می‌شود و اشتراک Cloud لازم نیست.",
+    "display_name": "Comfy Cloud MiniMax H3 فریم اول-آخر به ویدیو [بتا]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "duration_seconds": {
+        "name": "duration_seconds",
+        "tooltip": "مدت بر حسب ثانیه. این pipeline به گام‌های ۱۷ فریمی در ۲۴fps کوانتیزه می‌کند، بنابراین طول clip حداکثر حدود دو سوم ثانیه با این مقدار اختلاف خواهد داشت."
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "فریم آخر"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "بودجهٔ اندازهٔ فریم. ۷۲۰p تقریباً دو برابر ۴۸۰p ثانیهٔ GPU هزینه دارد."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3ImageToVideoNode": {
+    "description": "بتا. مجموعه nodeهای Comfy Cloud همچنان در حال تغییر است: ممکن است گزینه‌هایی اضافه یا حذف شوند و یک workflow کنار گذاشته شود. با استفاده از MiniMax H3، یک تصویر ثابت را همراه با موسیقی متن هماهنگ به ویدئو تبدیل می‌کند. فریم پایانی یک clip را به آن بدهید تا دنباله را ادامه دهد؛ زنجیره‌کردن چند مورد، نمایی طولانی‌تر می‌سازد. روی یک GPU در Comfy Cloud اجرا می‌شود و هزینه بر اساس مدت اجرا، با نرخ {'$'}۰.۰۰۱۲۹۵ به‌ازای هر ثانیه GPU (۰.۲۷ اعتبار) محاسبه می‌شود. پرداخت با اعتبار انجام می‌شود و به اشتراک Cloud نیازی نیست.",
+    "display_name": "Comfy Cloud MiniMax H3 تصویر به ویدئو [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبت ابعاد"
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "duration_seconds": {
+        "name": "مدت به ثانیه",
+        "tooltip": "مدت بر حسب ثانیه. خط لوله به گام‌های ۱۷ فریمی در ۲۴fps کوانتیزه می‌شود؛ بنابراین طول clip حداکثر حدود دو سوم ثانیه با این مقدار اختلاف خواهد داشت."
+      },
+      "first_frame": {
+        "name": "فریم اول"
+      },
+      "prompt": {
+        "name": "پرامپت"
+      },
+      "resolution": {
+        "name": "وضوح",
+        "tooltip": "بودجهٔ اندازهٔ فریم. ۷۲۰p تقریباً دو برابر ۴۸۰p ثانیهٔ GPU هزینه دارد."
+      },
+      "seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3TextToVideoNode": {
+    "description": "بتا. مجموعه nodeهای Comfy Cloud همچنان در حال تغییر است: ممکن است گزینه‌هایی اضافه یا حذف شوند و یک workflow کنار گذاشته شود. با استفاده از MiniMax H3، از یک پرامپت متنی ویدئویی با موسیقی متن هماهنگ تولید می‌کند. تصویر و صدا در یک گذر واحد تولید می‌شوند، نه اینکه صدا بعداً روی آن‌ها گذاشته شود. روی یک GPU در Comfy Cloud اجرا می‌شود و هزینه بر اساس مدت اجرا، با نرخ {'$'}۰.۰۰۱۲۹۵ به‌ازای هر ثانیه GPU (۰.۲۷ اعتبار) محاسبه می‌شود. پرداخت با اعتبار انجام می‌شود و به اشتراک Cloud نیازی نیست.",
+    "display_name": "Comfy Cloud MiniMax H3 متن به ویدئو [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبت ابعاد"
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "duration_seconds": {
+        "name": "مدت به ثانیه",
+        "tooltip": "مدت بر حسب ثانیه. خط لوله به گام‌های ۱۷ فریمی در ۲۴fps کوانتیزه می‌شود؛ بنابراین طول clip حداکثر حدود دو سوم ثانیه با این مقدار اختلاف خواهد داشت."
+      },
+      "prompt": {
+        "name": "پرامپت"
+      },
+      "resolution": {
+        "name": "وضوح",
+        "tooltip": "بودجهٔ اندازهٔ فریم. ۷۲۰p تقریباً دو برابر ۴۸۰p ثانیهٔ GPU هزینه دارد."
+      },
+      "seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxMusic3TextToAudioNode": {
+    "description": "بتا. مجموعه nodeهای Comfy Cloud همچنان در حال تغییر است: ممکن است گزینه‌هایی اضافه یا حذف شوند و یک workflow کنار گذاشته شود. با MiniMax Music 3، یک ترانهٔ کامل را از روی توضیحات تولید می‌کند. پرامپت سبک، سازبندی و حال‌وهوا را تعیین می‌کند؛ متن ترانه خوانده می‌شود، نه توصیف، و متن ترانهٔ خالی قطعه را بی‌کلام می‌گذارد. روی یک GPU در Comfy Cloud اجرا می‌شود و هزینه بر اساس مدت اجرا، با نرخ {'$'}۰.۰۰۱۲۹۵ به‌ازای هر ثانیه GPU (۰.۲۷ اعتبار) محاسبه می‌شود. پرداخت با اعتبار انجام می‌شود و به اشتراک Cloud نیازی نیست.",
+    "display_name": "Comfy Cloud MiniMax Music 3 متن به صدا [BETA]",
+    "inputs": {
+      "audio_quality": {
+        "name": "کیفیت صدا",
+        "tooltip": "نرخ بیت mp3. ‏V0 متغیر است و از میان این سه، بالاترین کیفیت را دارد."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "lyrics": {
+        "name": "متن ترانه",
+        "tooltip": "کلماتی که خوانده می‌شوند. برای موسیقی بی‌کلام خالی بگذارید."
+      },
+      "max_duration": {
+        "name": "حداکثر مدت",
+        "tooltip": "بیشترین مدت اجرای قطعه. مدل ممکن است ترانه را زودتر به پایان برساند."
+      },
+      "prompt": {
+        "name": "پرامپت"
+      },
+      "seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudZImageTurboNode": {
+    "description": "بتا. مجموعه nodeهای Comfy Cloud همچنان در حال تغییر است: ممکن است گزینه‌هایی اضافه یا حذف شوند و یک workflow کنار گذاشته شود. با Z-Image Turbo در ۸ گام، از یک پرامپت متنی تصویر تولید می‌کند. یکی از سریع‌ترین و ارزان‌ترین nodeهای اینجا است و برای تکرار و بهبود مناسب‌تر است. روی یک GPU در Comfy Cloud اجرا می‌شود و هزینه بر اساس مدت اجرا، با نرخ {'$'}۰.۰۰۱۲۹۵ به‌ازای هر ثانیه GPU (۰.۲۷ اعتبار) محاسبه می‌شود. پرداخت با اعتبار انجام می‌شود و به اشتراک Cloud نیازی نیست.",
+    "display_name": "Comfy Cloud Z-Image Turbo متن به تصویر [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبت ابعاد"
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "megapixels": {
+        "name": "مگاپیکسل",
+        "tooltip": "بودجهٔ کل پیکسل. ۱٫۰ در نسبت مربعی تقریباً برابر با ۱۰۲۴×۱۰۲۴ است."
+      },
+      "prompt": {
+        "name": "پرامپت"
+      },
+      "seed": {
+        "name": "بذر"
       }
     },
     "outputs": {
@@ -9335,40 +9499,6 @@
       }
     }
   },
-  "KlingVideoExtendNode": {
-    "description": "گره Kling گسترش ویدیو. ویدیوهای ساخته‌شده توسط سایر گره‌های Kling را گسترش دهید. video_id توسط سایر گره‌های Kling ایجاد می‌شود.",
-    "display_name": "Kling گسترش ویدیو",
-    "inputs": {
-      "cfg_scale": {
-        "name": "cfg_scale"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "پرامپت متنی منفی برای اجتناب از عناصر ناخواسته در ویدیوی گسترش‌یافته"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "پرامپت متنی مثبت برای راهنمایی گسترش ویدیو"
-      },
-      "video_id": {
-        "name": "video_id",
-        "tooltip": "شناسه ویدیویی که باید گسترش یابد. از ویدیوهای تولیدشده توسط تبدیل متن به ویدیو، تصویر به ویدیو و عملیات گسترش ویدیوی قبلی پشتیبانی می‌کند. پس از گسترش، مدت زمان کل نباید از ۳ دقیقه بیشتر شود."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "duration",
-        "tooltip": null
-      }
-    }
-  },
   "KlingVideoNode": {
     "description": "تولید ویدیو با Kling V3. پشتیبانی از تبدیل متن به ویدیو و تصویر به ویدیو با امکان استفاده از استوری‌بورد چندپرومپتی و تولید صوت اختیاری.",
     "display_name": "Kling 3.0 ویدیو",
@@ -11169,70 +11299,6 @@
       "seed": {
         "name": "بذر",
         "tooltip": "بذر برای تعیین اینکه آیا node باید دوباره اجرا شود؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LtxvApiImageToVideo": {
-    "description": "ویدیوهای حرفه‌ای با مدت و وضوح قابل تنظیم بر اساس تصویر شروع.",
-    "display_name": "تبدیل تصویر به ویدیو LTXV",
-    "inputs": {
-      "duration": {
-        "name": "مدت"
-      },
-      "fps": {
-        "name": "فریم بر ثانیه"
-      },
-      "generate_audio": {
-        "name": "تولید صدا",
-        "tooltip": "در صورت فعال بودن، ویدیوی تولیدشده شامل صدای تولیدشده توسط هوش مصنوعی متناسب با صحنه خواهد بود."
-      },
-      "image": {
-        "name": "تصویر",
-        "tooltip": "اولین فریم مورد استفاده برای ویدیو."
-      },
-      "model": {
-        "name": "مدل"
-      },
-      "prompt": {
-        "name": "پرامپت"
-      },
-      "resolution": {
-        "name": "وضوح"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LtxvApiTextToVideo": {
-    "description": "ویدیوهای حرفه‌ای با مدت زمان و وضوح قابل تنظیم.",
-    "display_name": "LTXV تبدیل متن به ویدیو",
-    "inputs": {
-      "duration": {
-        "name": "مدت زمان"
-      },
-      "fps": {
-        "name": "فریم بر ثانیه"
-      },
-      "generate_audio": {
-        "name": "تولید صدا",
-        "tooltip": "در صورت فعال بودن، ویدیوی تولید شده شامل صدای تولید شده توسط هوش مصنوعی متناسب با صحنه خواهد بود."
-      },
-      "model": {
-        "name": "مدل"
-      },
-      "prompt": {
-        "name": "پرامپت"
-      },
-      "resolution": {
-        "name": "وضوح"
       }
     },
     "outputs": {
@@ -15930,7 +15996,11 @@
       },
       "max_output_tokens": {
         "name": "max_output_tokens",
-        "tooltip": "حد بالایی برای تعداد توکن‌هایی که می‌توانند برای یک پاسخ تولید شوند، شامل توکن‌های خروجی قابل مشاهده"
+        "tooltip": "حد بالای تعداد توکن‌هایی که می‌توان برای یک پاسخ تولید کرد، شامل توکن‌های خروجی قابل‌مشاهده و توکن‌های استدلال"
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "میزان استدلال مدل پیش از پاسخ‌گویی. «default» انتخاب را به مدل واگذار می‌کند. سطوح پشتیبانی‌شده برای هر مدل متفاوت‌اند: GPT-6 Astra از low تا max، GPT-5.6 از none تا max (بدون minimal)، GPT-5.5 از none تا xhigh، GPT-5.5 Pro از medium تا xhigh، GPT-5 از minimal تا high، و سری o از low تا high؛ GPT-4.1 استدلال ندارد. سطوح پشتیبانی‌نشده پیش از ارسال درخواست رد می‌شوند."
       },
       "truncation": {
         "name": "truncation",
@@ -15970,78 +16040,6 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "ورودی متنی به مدل، برای تولید پاسخ استفاده می‌شود."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIDalle2": {
-    "description": "تولید تصویر به صورت همزمان از طریق نقطه پایانی DALL·E 2 شرکت OpenAI.",
-    "display_name": "OpenAI DALL·E 2",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "image": {
-        "name": "image",
-        "tooltip": "تصویر مرجع اختیاری برای ویرایش تصویر."
-      },
-      "mask": {
-        "name": "mask",
-        "tooltip": "ماسک اختیاری برای inpainting (ناحیه‌های سفید جایگزین خواهند شد)"
-      },
-      "n": {
-        "name": "n",
-        "tooltip": "تعداد تصاویری که باید تولید شود"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "پرامپت متنی برای DALL·E"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "هنوز در backend پیاده‌سازی نشده است"
-      },
-      "size": {
-        "name": "size",
-        "tooltip": "اندازه تصویر"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIDalle3": {
-    "description": "تولید تصویر به صورت همزمان از طریق نقطه پایانی DALL·E 3 شرکت OpenAI.",
-    "display_name": "OpenAI DALL·E 3",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "متن راهنما برای DALL·E"
-      },
-      "quality": {
-        "name": "quality",
-        "tooltip": "کیفیت تصویر"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "هنوز در backend پیاده‌سازی نشده است"
-      },
-      "size": {
-        "name": "size",
-        "tooltip": "اندازه تصویر"
-      },
-      "style": {
-        "name": "style",
-        "tooltip": "گزینه Vivid مدل را به سمت تولید تصاویر فوق‌واقعی و دراماتیک سوق می‌دهد. گزینه Natural باعث تولید تصاویر طبیعی‌تر و کمتر فوق‌واقعی می‌شود."
       }
     },
     "outputs": {

@@ -1486,96 +1486,6 @@
       }
     }
   },
-  "ByteDanceImageNode": {
-    "description": "Genera immagini utilizzando i modelli ByteDance tramite API in base al prompt",
-    "display_name": "ByteDance Immagine",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "guidance_scale": {
-        "name": "guidance_scale",
-        "tooltip": "Un valore più alto fa sì che l’immagine segua il prompt più fedelmente"
-      },
-      "height": {
-        "name": "height",
-        "tooltip": "Altezza personalizzata per l’immagine. Il valore funziona solo se `size_preset` è impostato su `Personalizzato`"
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Il prompt testuale utilizzato per generare l’immagine"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Seed da utilizzare per la generazione"
-      },
-      "size_preset": {
-        "name": "size_preset",
-        "tooltip": "Scegli una dimensione consigliata. Seleziona Personalizzato per usare larghezza e altezza sotto"
-      },
-      "watermark": {
-        "name": "watermark",
-        "tooltip": "Se aggiungere una filigrana \"AI generated\" all’immagine"
-      },
-      "width": {
-        "name": "width",
-        "tooltip": "Larghezza personalizzata per l’immagine. Il valore funziona solo se `size_preset` è impostato su `Personalizzato`"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "ByteDanceImageReferenceNode": {
-    "description": "Genera un video utilizzando un prompt e immagini di riferimento.",
-    "display_name": "Immagini di riferimento ByteDance in video",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "rapporto d'aspetto",
-        "tooltip": "Il rapporto d'aspetto del video in output."
-      },
-      "control_after_generate": {
-        "name": "controllo dopo la generazione"
-      },
-      "duration": {
-        "name": "durata",
-        "tooltip": "La durata del video in output in secondi."
-      },
-      "images": {
-        "name": "immagini",
-        "tooltip": "Da una a quattro immagini."
-      },
-      "model": {
-        "name": "modello"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Il prompt testuale utilizzato per generare il video."
-      },
-      "resolution": {
-        "name": "risoluzione",
-        "tooltip": "La risoluzione del video in output."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Seed da utilizzare per la generazione."
-      },
-      "watermark": {
-        "name": "filigrana",
-        "tooltip": "Se aggiungere una filigrana \"Generato da AI\" al video."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "ByteDanceImageToVideoNode": {
     "description": "Genera un video utilizzando i modelli ByteDance tramite API a partire da un'immagine e un prompt",
     "display_name": "ByteDance da immagine a video",
@@ -2755,6 +2665,260 @@
     "inputs": {
       "values": {
         "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudFlux2TextToImageNode": {
+    "description": "BETA. Il set di nodi Comfy Cloud è ancora in evoluzione: alcune opzioni potrebbero essere aggiunte o rimosse e un workflow potrebbe essere ritirato. Genera un'immagine da un prompt di testo con Flux 2 dev. Turbo usa il LoRA selezionato e uno schedule breve, sacrificando leggermente la fedeltà per un'esecuzione molto più rapida; disattivalo per il passaggio dev completo senza LoRA. Viene eseguito su una GPU Comfy Cloud, con fatturazione in base alla durata dell'esecuzione a {'$'}0.001295/GPU-second (0.27 crediti). Pagamento in crediti, non è richiesto alcun abbonamento Cloud.",
+    "display_name": "Comfy Cloud Flux 2 Da testo a immagine [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "Budget totale di pixel. 1.0 corrisponde a circa 1024x1024 con proporzioni quadrate."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "turbo": {
+        "name": "turbo",
+        "tooltip": "Esegue il LoRA Turbo con uno schedule breve, sacrificando leggermente la fedeltà per un'esecuzione molto più rapida. Disattivato esegue il passaggio dev completo senza LoRA."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMageFlowTextToImageNode": {
+    "description": "BETA. Il set di nodi Comfy Cloud è ancora in evoluzione: alcune opzioni potrebbero essere aggiunte o rimosse e un workflow potrebbe essere ritirato. Genera un'immagine da un prompt di testo con Mage-Flow in un passaggio completo di 30 step. Accetta un prompt negativo, che la variante turbo distillata non può utilizzare bene. Viene eseguito su una GPU Comfy Cloud, con fatturazione in base alla durata dell'esecuzione a {'$'}0.001295/GPU-second (0.27 crediti). Pagamento in crediti, non è richiesto alcun abbonamento Cloud.",
+    "display_name": "Comfy Cloud Mage Flow Da testo a immagine [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "Budget totale di pixel. 1.0 corrisponde a circa 1024x1024 con proporzioni quadrate."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Lascia vuoto per mantenere il prompt negativo con cui è stata ottimizzata questa pipeline."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMageFlowTurboTextToImageNode": {
+    "description": "BETA. Il set di nodi Comfy Cloud è ancora in evoluzione: alcune opzioni potrebbero essere aggiunte o rimosse e un workflow potrebbe essere ritirato. Genera un'immagine da un prompt di testo con Mage-Flow distillato in 4 step a cfg 1. Richiede circa un settimo del tempo GPU del passaggio completo, risultando ideale per iterare. Viene eseguito su una GPU Comfy Cloud, con fatturazione in base alla durata dell'esecuzione a {'$'}0.001295/GPU-second (0.27 crediti). Pagamento in crediti, non è richiesto alcun abbonamento Cloud.",
+    "display_name": "Comfy Cloud Mage Flow Turbo Da testo a immagine [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "Budget totale di pixel. 1.0 corrisponde a circa 1024x1024 con proporzioni quadrate."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Lascia vuoto per mantenere il prompt negativo con cui è stata ottimizzata questa pipeline."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3FirstLastFrameToVideoNode": {
+    "description": "BETA. Il set di nodi Comfy Cloud è ancora in evoluzione: alcune opzioni potrebbero essere aggiunte o rimosse e un workflow potrebbe essere ritirato. Genera il movimento tra due fotogrammi chiave, con una colonna sonora corrispondente, usando MiniMax H3. Fornisci i fotogrammi iniziale e finale e il modello completa la ripresa tra di essi. L'ultimo fotogramma è facoltativo: omettilo e il movimento si sviluppa invece dal primo fotogramma. Viene eseguito su una GPU Comfy Cloud, con fatturazione in base alla durata dell'esecuzione a {'$'}0.001295/GPU-second (0.27 crediti). Pagamento in crediti, non è richiesto alcun abbonamento Cloud.",
+    "display_name": "Comfy Cloud MiniMax H3 Da primo-ultimo fotogramma a video [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "duration_seconds": {
+        "name": "duration_seconds",
+        "tooltip": "Durata in secondi. La pipeline quantizza in intervalli di 17 fotogrammi a 24 fps, quindi la durata della clip sarà entro circa due terzi di secondo da questo valore."
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Budget per la dimensione del fotogramma. 720p costa approssimativamente il doppio dei GPU-secondi rispetto a 480p."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3ImageToVideoNode": {
+    "description": "BETA. Il set di nodi Comfy Cloud è ancora in evoluzione: le opzioni possono essere aggiunte o rimosse e un workflow può essere ritirato. Anima un'immagine statica trasformandola in un video con una colonna sonora corrispondente, usando MiniMax H3. Fornisci il fotogramma finale di un clip e continuerà la sequenza, quindi concatenandone diversi si ottiene un'inquadratura più lunga. Viene eseguito su una GPU Comfy Cloud, con addebito in base al tempo di esecuzione a {'$'}0.001295/GPU-second (0.27 crediti). Pagamento in crediti, non è richiesto alcun abbonamento Cloud.",
+    "display_name": "Comfy Cloud MiniMax H3 da immagine a video [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "duration_seconds": {
+        "name": "duration_seconds",
+        "tooltip": "Durata in secondi. La pipeline quantizza in passaggi di 17 fotogrammi a 24 fps, quindi il clip risulta entro circa due terzi di secondo da questo valore."
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Budget per le dimensioni del fotogramma. 720p costa circa il doppio dei secondi GPU rispetto a 480p."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3TextToVideoNode": {
+    "description": "BETA. Il set di nodi Comfy Cloud è ancora in evoluzione: le opzioni possono essere aggiunte o rimosse e un workflow può essere ritirato. Genera un video con una colonna sonora corrispondente da un prompt di testo, usando MiniMax H3. Immagine e audio vengono prodotti nello stesso passaggio, anziché aggiungere il doppiaggio in seguito. Viene eseguito su una GPU Comfy Cloud, con addebito in base al tempo di esecuzione a {'$'}0.001295/GPU-second (0.27 crediti). Pagamento in crediti, non è richiesto alcun abbonamento Cloud.",
+    "display_name": "Comfy Cloud MiniMax H3 da testo a video [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "duration_seconds": {
+        "name": "duration_seconds",
+        "tooltip": "Durata in secondi. La pipeline quantizza in passaggi di 17 fotogrammi a 24 fps, quindi il clip risulta entro circa due terzi di secondo da questo valore."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Budget per le dimensioni del fotogramma. 720p costa circa il doppio dei secondi GPU rispetto a 480p."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxMusic3TextToAudioNode": {
+    "description": "BETA. Il set di nodi Comfy Cloud è ancora in evoluzione: le opzioni possono essere aggiunte o rimosse e un workflow può essere ritirato. Genera una canzone completa da una descrizione con MiniMax Music 3. Il prompt definisce stile, strumentazione e atmosfera; il testo viene cantato anziché descritto e, se lasciato vuoto, la traccia sarà strumentale. Viene eseguito su una GPU Comfy Cloud, con addebito in base al tempo di esecuzione a {'$'}0.001295/GPU-second (0.27 crediti). Pagamento in crediti, non è richiesto alcun abbonamento Cloud.",
+    "display_name": "Comfy Cloud MiniMax Music 3 da testo ad audio [BETA]",
+    "inputs": {
+      "audio_quality": {
+        "name": "audio_quality",
+        "tooltip": "Bitrate mp3. V0 è variabile e offre la qualità più alta tra le tre."
+      },
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "lyrics": {
+        "name": "lyrics",
+        "tooltip": "Parole da cantare. Lascia vuoto per un brano strumentale."
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "Durata massima della traccia. Il modello può terminare la canzone prima."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudZImageTurboNode": {
+    "description": "BETA. Il set di nodi Comfy Cloud è ancora in evoluzione: le opzioni possono essere aggiunte o rimosse e un workflow può essere ritirato. Genera un'immagine da un prompt di testo con Z-Image Turbo in 8 passaggi. È uno dei nodi più rapidi ed economici qui, ideale per iterare. Viene eseguito su una GPU Comfy Cloud, con addebito in base al tempo di esecuzione a {'$'}0.001295/GPU-second (0.27 crediti). Pagamento in crediti, non è richiesto alcun abbonamento Cloud.",
+    "display_name": "Comfy Cloud Z-Image Turbo da testo a immagine [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "Budget totale di pixel. 1.0 corrisponde a circa 1024x1024 con proporzioni quadrate."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -9335,40 +9499,6 @@
       }
     }
   },
-  "KlingVideoExtendNode": {
-    "description": "Nodo Kling Video Extend. Estende i video creati da altri nodi Kling. Il video_id viene creato utilizzando altri nodi Kling.",
-    "display_name": "Kling Video Extend",
-    "inputs": {
-      "cfg_scale": {
-        "name": "cfg_scale"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Prompt testuale negativo per elementi da evitare nel video esteso"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Prompt testuale positivo per guidare l'estensione del video"
-      },
-      "video_id": {
-        "name": "video_id",
-        "tooltip": "L'ID del video da estendere. Supporta video generati da text-to-video, image-to-video e precedenti operazioni di estensione video. Non può superare i 3 minuti di durata totale dopo l'estensione."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "duration",
-        "tooltip": null
-      }
-    }
-  },
   "KlingVideoNode": {
     "description": "Genera video con Kling V3. Supporta text-to-video e image-to-video con storyboard multi-prompt opzionale e generazione audio.",
     "display_name": "Kling 3.0 Video",
@@ -11169,70 +11299,6 @@
       "seed": {
         "name": "seed",
         "tooltip": "Seed per determinare se il nodo deve essere rieseguito; i risultati effettivi sono comunque non deterministici."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LtxvApiImageToVideo": {
-    "description": "Video di qualità professionale con durata e risoluzione personalizzabili a partire da un'immagine iniziale.",
-    "display_name": "LTXV Da Immagine a Video",
-    "inputs": {
-      "duration": {
-        "name": "durata"
-      },
-      "fps": {
-        "name": "fps"
-      },
-      "generate_audio": {
-        "name": "genera_audio",
-        "tooltip": "Se attivo, il video generato includerà audio AI che corrisponde alla scena."
-      },
-      "image": {
-        "name": "immagine",
-        "tooltip": "Primo fotogramma da utilizzare per il video."
-      },
-      "model": {
-        "name": "modello"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "resolution": {
-        "name": "risoluzione"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LtxvApiTextToVideo": {
-    "description": "Video di qualità professionale con durata e risoluzione personalizzabili.",
-    "display_name": "LTXV Da Testo a Video",
-    "inputs": {
-      "duration": {
-        "name": "durata"
-      },
-      "fps": {
-        "name": "fps"
-      },
-      "generate_audio": {
-        "name": "genera_audio",
-        "tooltip": "Se attivo, il video generato includerà audio AI che corrisponde alla scena."
-      },
-      "model": {
-        "name": "modello"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "resolution": {
-        "name": "risoluzione"
       }
     },
     "outputs": {
@@ -15930,7 +15996,11 @@
       },
       "max_output_tokens": {
         "name": "token_massimi_output",
-        "tooltip": "Un limite superiore al numero di token che possono essere generati per una risposta, inclusi i token di output visibili."
+        "tooltip": "Un limite massimo per il numero di token che possono essere generati per una risposta, inclusi i token di output visibili e i token di ragionamento"
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "Quanto il modello ragiona prima di rispondere. 'default' lascia la scelta al modello. I livelli supportati variano in base al modello: GPT-6 Astra low-max, GPT-5.6 none-max (senza minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; GPT-4.1 non dispone di ragionamento. I livelli non supportati vengono rifiutati prima dell'invio della richiesta."
       },
       "truncation": {
         "name": "troncamento",
@@ -15970,78 +16040,6 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "Input testuali per il modello, utilizzati per generare una risposta."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIDalle2": {
-    "description": "Genera immagini in modo sincrono tramite l'endpoint DALL·E 2 di OpenAI.",
-    "display_name": "OpenAI DALL·E 2",
-    "inputs": {
-      "control_after_generate": {
-        "name": "controllo_dopo_generazione"
-      },
-      "image": {
-        "name": "immagine",
-        "tooltip": "Immagine di riferimento opzionale per l'editing dell'immagine."
-      },
-      "mask": {
-        "name": "mask",
-        "tooltip": "Mask opzionale per inpainting (le aree bianche verranno sostituite)"
-      },
-      "n": {
-        "name": "n",
-        "tooltip": "Quante immagini generare"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Prompt testuale per DALL·E"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "non ancora implementato nel backend"
-      },
-      "size": {
-        "name": "dimensione",
-        "tooltip": "Dimensione dell'immagine"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIDalle3": {
-    "description": "Genera immagini in modo sincrono tramite l'endpoint DALL·E 3 di OpenAI.",
-    "display_name": "OpenAI DALL·E 3",
-    "inputs": {
-      "control_after_generate": {
-        "name": "controllo dopo la generazione"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Prompt testuale per DALL·E"
-      },
-      "quality": {
-        "name": "qualità",
-        "tooltip": "Qualità dell'immagine"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "non ancora implementato nel backend"
-      },
-      "size": {
-        "name": "dimensione",
-        "tooltip": "Dimensione dell'immagine"
-      },
-      "style": {
-        "name": "stile",
-        "tooltip": "Vivido fa sì che il modello tenda a generare immagini iper-realistiche e drammatiche. Naturale fa sì che il modello produca immagini più naturali e meno iper-realistiche."
       }
     },
     "outputs": {
