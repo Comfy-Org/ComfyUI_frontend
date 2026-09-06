@@ -143,4 +143,34 @@ describe('graphToPrompt _meta pack identity', () => {
     })
     expect(output[String(bareNode.id)]._meta).toEqual({ title: 'BareNode' })
   })
+
+  it('omits non-string pack identity properties', async () => {
+    const graph = new LGraph()
+    const node = addNode(graph, 'InvalidIdentityNode', {
+      cnr_id: {},
+      aux_id: [],
+      ver: 123
+    })
+
+    const { output } = await graphToPrompt(graph)
+
+    expect(output[String(node.id)]._meta).toEqual({
+      title: 'InvalidIdentityNode'
+    })
+  })
+
+  it('falls back to a valid aux_id when cnr_id is not a string', async () => {
+    const graph = new LGraph()
+    const node = addNode(graph, 'FallbackIdentityNode', {
+      cnr_id: 123,
+      aux_id: 'aux/pack'
+    })
+
+    const { output } = await graphToPrompt(graph)
+
+    expect(output[String(node.id)]._meta).toEqual({
+      title: 'FallbackIdentityNode',
+      cnr_id: 'aux/pack'
+    })
+  })
 })

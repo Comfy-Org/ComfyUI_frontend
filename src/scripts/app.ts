@@ -2358,9 +2358,13 @@ export class ComfyApp {
         | undefined
       if (!node) {
         const cnrId =
-          typeof data._meta?.cnr_id === 'string' ? data._meta.cnr_id : undefined
+          typeof data._meta?.cnr_id === 'string' && data._meta.cnr_id.length > 0
+            ? data._meta.cnr_id
+            : undefined
         const packVersion =
-          typeof data._meta?.ver === 'string' ? data._meta.ver : undefined
+          typeof data._meta?.ver === 'string' && data._meta.ver.length > 0
+            ? data._meta.ver
+            : undefined
         const missingNode = new LGraphNode(
           data._meta?.title ?? data.class_type,
           sanitizeNodeName(data.class_type)

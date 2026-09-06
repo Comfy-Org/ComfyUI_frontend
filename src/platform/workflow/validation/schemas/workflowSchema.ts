@@ -548,8 +548,8 @@ const zNodeData = z.object({
   class_type: z.string(),
   _meta: z.object({
     title: z.string(),
-    cnr_id: z.string().optional(),
-    ver: z.string().optional()
+    cnr_id: z.string().min(1).optional(),
+    ver: z.string().min(1).optional()
   })
 })
 
