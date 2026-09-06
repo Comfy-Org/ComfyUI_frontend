@@ -32,21 +32,24 @@ beforeEach(() => {
 })
 
 describe('LGraphNode.configure onConfigure hook isolation', () => {
-  it('hands onConfigure a clone, not the caller live serialized object', () => {
+  it('hands onConfigure a shallow copy, not the caller live serialized object', () => {
     const node = new LGraphNode('TestNode')
     const canonical = nodeWithNamespacedExtension()
-    const canonicalSnapshot = JSON.parse(JSON.stringify(canonical))
 
     let hookArg: unknown
     node.onConfigure = (data) => {
       hookArg = data
       Object.assign(data, { mutated: true })
+      Reflect.deleteProperty(data, 'size')
     }
 
     node.configure(canonical)
 
     expect(hookArg).not.toBe(canonical)
-    expect(canonical).toEqual(canonicalSnapshot)
+    expect(canonical).not.toHaveProperty('mutated')
+    expect(canonical).not.toHaveProperty('myExt')
+    expect(canonical.size).toEqual([200, 100])
+    expect(canonical.extensions).toEqual({ myExt: { note: 'hello' } })
   })
 
   it('does not promote namespaced extension keys onto the caller serialized object', () => {
@@ -68,15 +71,16 @@ describe('LGraphNode.configure onConfigure hook isolation', () => {
   it('accepts a serialized object that still holds live slot instances', () => {
     // `ComfyNode.configure` (litegraphService) fills `data.inputs` with the
     // node's live `NodeInputSlot` instances before calling
-    // `LGraphNode.configure`. Those carry a node back-reference and only
-    // become plain data through `toJSON()`, so the view must not
-    // `structuredClone` them (DataCloneError) and must hand the hook the JSON
-    // shape.
+    // `LGraphNode.configure`. Those carry a node back-reference, so the view
+    // must not `structuredClone` them (DataCloneError). The shallow copy
+    // passes nested values through unchanged, so the hook sees the same
+    // shapes it always did.
     const node = new LGraphNode('TestNode')
     node.addInput('in', 'number')
+    const liveSlot = new NodeInputSlot({ name: 'in', type: 'number' }, node)
     const info: ISerialisedNode = {
       ...nodeWithNamespacedExtension(),
-      inputs: [new NodeInputSlot({ name: 'in', type: 'number' }, node)]
+      inputs: [liveSlot]
     }
 
     let hookArg: ISerialisedNode | undefined
@@ -85,10 +89,9 @@ describe('LGraphNode.configure onConfigure hook isolation', () => {
     }
 
     expect(() => node.configure(info)).not.toThrow()
-    expect(hookArg?.inputs?.[0]).toEqual(
-      JSON.parse(JSON.stringify(info.inputs?.[0]))
-    )
-    expect(hookArg?.inputs?.[0]).not.toBe(info.inputs?.[0])
+    expect(hookArg).not.toBe(info)
+    expect(hookArg?.inputs).toBe(info.inputs)
+    expect(hookArg?.inputs?.[0]).toBe(liveSlot)
   })
 
   it('keeps a missing-node placeholder free of promoted keys after onConfigure mutates its view', () => {

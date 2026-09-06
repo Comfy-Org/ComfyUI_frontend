@@ -210,21 +210,22 @@ export const runExtensionSerializeHook = <T extends object>(
 }
 
 /**
- * Deep-copies a serialized object the way it would appear in workflow JSON.
+ * Builds the object handed to `onConfigure`.
  *
- * `node.serialize()` returns live slot instances that serialize through
- * `toJSON()`, so `structuredClone` would throw (`DataCloneError`) on them and
- * would not honour `toJSON()` even where it succeeds. A JSON round trip is the
- * faithful "serialized view" clone.
+ * The view is a shallow copy of the caller's serialized object: adding,
+ * removing, or reassigning top-level keys on it (including the extension
+ * payload promoted onto it here) never reaches the caller or its later
+ * `serialize()` output. Nested values are intentionally shared as-is rather
+ * than cloned: `ComfyNode.configure` passes live slot instances in
+ * `data.inputs`, and any clone boundary (`structuredClone`, JSON) would either
+ * throw on them or rewrite the value shapes hooks already receive.
  */
-const cloneSerialised = <T>(value: T): T => JSON.parse(JSON.stringify(value))
-
 export const extensionConfigureView = <T extends object>(
   owner: object,
   canonical: T
 ): T =>
   Object.assign(
-    cloneSerialised(canonical),
+    { ...canonical },
     structuredClone(payloads.get(owner)?.namespaced),
     structuredClone(payloads.get(owner)?.legacy)
   )

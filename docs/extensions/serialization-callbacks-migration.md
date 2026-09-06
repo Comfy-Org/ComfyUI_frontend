@@ -18,10 +18,13 @@ connection-timing hooks see
 `node.widgets` and widget value storage see
 [Widget system migration](widgets-migration.md).
 
-`onConfigure` now receives an isolated copy of the serialized data. Mutating
-that callback argument, including nested fields, does not change the caller's
-workflow JSON and is not persisted. Extensions that previously relied on those
-mutations must store custom state on `node.properties` or `graph.extra` instead.
+`onConfigure` now receives a shallow copy of the serialized data rather than
+the caller's own object. Adding, removing, or reassigning top-level keys on the
+callback argument does not change the caller's workflow JSON and is not
+persisted. Nested objects (for example `inputs`, `pos`, `properties`) are still
+shared with the caller, so mutating them in place still leaks; extensions that
+relied on either kind of mutation must store custom state on `node.properties`
+or `graph.extra` instead.
 
 ## Store custom data in properties or extra
 

@@ -282,28 +282,26 @@ describe('LGraph Serialisation', () => {
     expect(Reflect.get(node, 'legacyData')).toEqual({ retained: true })
   })
 
-  test('passes an isolated clone, not the caller live serialized object, to configure hooks', ({
+  test('passes a shallow copy, not the caller live serialized object, to configure hooks', ({
     expect
   }) => {
     const node = new LGraphNode('Extended')
     const saved = Object.assign(node.serialize(), {
       legacyData: { retained: true }
     })
-    const savedSnapshot = JSON.parse(JSON.stringify(saved))
     let configuredData: object | undefined
     node.onConfigure = (data) => {
       configuredData = data
       Object.assign(data, { mutated: true })
-      data.pos[0] = 999
     }
 
     node.configure(saved)
 
     expect(configuredData).not.toBe(saved)
     expect(Reflect.get(node, 'legacyData')).toEqual({ retained: true })
-    // The hook's mutation of its argument must not leak back to the caller's
-    // object (https://github.com/Comfy-Org/ComfyUI_frontend/pull/15924#discussion_r3858723898).
-    expect(saved).toEqual(savedSnapshot)
+    // The hook's top-level mutation of its argument must not leak back to the
+    // caller's object (https://github.com/Comfy-Org/ComfyUI_frontend/pull/15924#discussion_r3858723898).
+    expect(saved).not.toHaveProperty('mutated')
   })
 
   test('does not apply unsafe extension keys to the configure view', ({
