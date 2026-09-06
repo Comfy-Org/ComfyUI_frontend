@@ -21,7 +21,10 @@ describe('cmpEventSink', () => {
     expect(cmpEventSink(event)).toBeUndefined()
 
     expect(reportError).toHaveBeenCalledWith(
-      expect.objectContaining({ message: event.message }),
+      expect.objectContaining({
+        name: 'OpRejectedError',
+        message: event.message
+      }),
       {
         errorType: 'cmp_event',
         tags: {
@@ -35,6 +38,34 @@ describe('cmpEventSink', () => {
           op_id: event.op_id,
           batch_index: 2
         }
+      }
+    )
+  })
+
+  it('omits absent optional fields for a minimal event', () => {
+    cmpEventSink({
+      schema_version: 1,
+      type: 'clock_anomaly',
+      source: 'clock',
+      code: 'skew',
+      message: 'clock skew detected'
+    })
+
+    expect(reportError).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        name: 'CmpEvent',
+        message: 'clock skew detected'
+      }),
+      {
+        errorType: 'cmp_event',
+        tags: {
+          cmp_event_schema_version: 1,
+          cmp_event_type: 'clock_anomaly',
+          cmp_event_source: 'clock',
+          cmp_event_code: 'skew',
+          cmp_event_error_name: undefined
+        },
+        context: {}
       }
     )
   })
