@@ -80,6 +80,7 @@ import type {
   DraftSnapshot,
   OpenTabsSnapshot
 } from './services/agent/agentRestClient'
+import { createAgentRestClient } from './services/agent/agentRestClient'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { createAgentRuntime } from './agentRuntime'
 import {
@@ -245,10 +246,11 @@ function mentionableAssets() {
 }
 
 let cloudIdsByName = new Map<string, string>()
+const agentRest = createAgentRestClient()
 
 async function refreshCloudWorkflowIds(): Promise<void> {
   try {
-    const workflows = await runtime.rest.listCloudWorkflows()
+    const workflows = await agentRest.listCloudWorkflows()
     const nameCounts = new Map<string, number>()
     for (const { name } of workflows) {
       if (name !== undefined)
@@ -397,6 +399,7 @@ function onWorkflowAdopted(
 
 const runtime = createAgentRuntime({
   enabled: true,
+  createRest: () => agentRest,
   untitledChatTitle: t('agent.untitledChat'),
   workflow: {
     current: activeWorkflowTurnContext,
