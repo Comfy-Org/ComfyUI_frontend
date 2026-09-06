@@ -74,6 +74,7 @@ export function createAgentRuntime(options: AgentRuntimeOptions) {
   function start(): void {
     if (started) return
     started = true
+    noticesSeen = session.notices.value.length
     session.start()
     watchers = [
       watch(session.threadId, (id) => history.setActive(id), {
