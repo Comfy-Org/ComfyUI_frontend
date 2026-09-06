@@ -1031,6 +1031,12 @@ describe('reconcileAgentAdapters', () => {
       if (!instance) throw new Error('Expected subgraph instance')
       expect(instance.inputs).toHaveLength(0)
       expect(instance.outputs).toHaveLength(1)
+      const receiver = new DummyNode()
+      receiver.addInput('result', 'number')
+      graph.add(receiver)
+      const link = instance.connect(0, receiver, 0)
+      expect(link).toBeDefined()
+      expect(instance.getOutputNodes(0)).toEqual([receiver])
 
       remoteMutations(graphScopeOf(graph)).batch(
         { ...REMOTE, opId: 'op-bare-reconcile' },
@@ -1041,6 +1047,9 @@ describe('reconcileAgentAdapters', () => {
       expect(reconcileAgentAdapters(graph, definitions)).toEqual([])
       expect(instance.outputs).toHaveLength(1)
       expect(instance.outputs[0]?.name).toBe('result')
+      expect(instance.isOutputConnected(0)).toBe(true)
+      expect(instance.getOutputNodes(0)).toEqual([receiver])
+      expect(receiver.getInputLink(0)).toBe(link)
     })
 
     it.for(['configure', '_internalConfigureAfterSlots'] as const)(
