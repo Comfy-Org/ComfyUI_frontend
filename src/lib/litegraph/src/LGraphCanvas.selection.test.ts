@@ -1,10 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { Modifiers } from '@/lib/litegraph/src/__fixtures__/canvasHarness'
+import {
+  addGroup,
+  addNode,
+  createCanvas,
+  keyEvent,
+  pointerEvent,
+  selectedTitles
+} from '@/lib/litegraph/src/__fixtures__/canvasHarness'
 import type { Positionable, Rect } from '@/lib/litegraph/src/interfaces'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import {
   LGraph,
-  LGraphCanvas,
   LGraphGroup,
   LGraphNode,
   LiteGraph
@@ -13,64 +22,8 @@ import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/su
 import { selectableKeyOf } from '@/lib/litegraph/src/utils/selectableItems'
 import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
 import { graphScopeOf } from '@/types/graphScopeId'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock(import('@/renderer/core/layout/store/layoutStore'))
-
-type Modifiers = Partial<
-  Pick<MouseEventInit, 'shiftKey' | 'ctrlKey' | 'metaKey' | 'altKey'>
->
-
-function createCanvas(graph: LGraph): LGraphCanvas {
-  const canvasElement = document.createElement('canvas')
-  canvasElement.width = 800
-  canvasElement.height = 600
-  canvasElement.getContext = vi
-    .fn()
-    .mockReturnValue(createMockCanvasRenderingContext2D())
-  canvasElement.getBoundingClientRect = vi.fn().mockReturnValue({
-    left: 0,
-    top: 0,
-    width: 800,
-    height: 600
-  })
-  document.body.append(canvasElement)
-  return new LGraphCanvas(canvasElement, graph, { skip_render: true })
-}
-
-function addNode(graph: LGraph, title: string, x: number, y: number) {
-  const node = new LGraphNode(title)
-  node.pos = [x, y]
-  node.size = [100, 60]
-  node.updateArea()
-  graph.add(node)
-  return node
-}
-
-function addGroup(graph: LGraph, title: string, bounds: Rect) {
-  const group = new LGraphGroup(title)
-  group._bounding.set(bounds)
-  graph.add(group)
-  return group
-}
-
-function pointerEvent(
-  type: 'pointerdown' | 'pointerup',
-  x: number,
-  y: number,
-  modifiers: Modifiers
-): PointerEvent {
-  const event = new MouseEvent(type, {
-    button: 0,
-    buttons: type === 'pointerdown' ? 1 : 0,
-    clientX: x,
-    clientY: y,
-    ...modifiers
-  })
-  Object.defineProperty(event, 'isPrimary', { value: true })
-  Object.defineProperty(event, 'pointerId', { value: 1 })
-  return event as PointerEvent
-}
 
 function click(
   canvas: LGraphCanvas,
@@ -102,18 +55,6 @@ function marquee(
   } else {
     canvas['_handleMultiSelect'](event, dragRect)
   }
-}
-
-function keyEvent(type: 'keydown' | 'keyup', key: string): KeyboardEvent {
-  const event = new KeyboardEvent(type, { key })
-  Object.defineProperty(event, 'target', { value: { localName: 'div' } })
-  return event
-}
-
-function selectedTitles(canvas: LGraphCanvas): string[] {
-  return [...canvas.selectedItems]
-    .map((item) => ('title' in item ? String(item.title) : String(item)))
-    .sort()
 }
 
 describe('LGraphCanvas selection', () => {
