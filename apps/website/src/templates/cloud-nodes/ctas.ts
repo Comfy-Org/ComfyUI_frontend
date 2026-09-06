@@ -1,4 +1,4 @@
-import { externalLinks } from '../../config/routes'
+import { externalLinks, getRoutes } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
@@ -16,8 +16,7 @@ export function cloudNodesCtas(locale: Locale): {
   return {
     getStarted: {
       label: t('cloudNodesLaunch.cta.getStarted', locale),
-      href: externalLinks.cloud,
-      target: '_blank'
+      href: getRoutes(locale).download
     },
     docs: {
       label: t('cloudNodesLaunch.cta.docs', locale),

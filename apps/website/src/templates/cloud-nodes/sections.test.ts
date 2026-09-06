@@ -2,7 +2,7 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import { externalLinks } from '../../config/routes'
+import { externalLinks, getRoutes } from '../../config/routes'
 import ClosingCtaSection from './ClosingCtaSection.vue'
 import FAQSection from './FAQSection.vue'
 import HeroSection from './HeroSection.vue'
@@ -26,7 +26,7 @@ describe('HeroSection', () => {
   it('offers the docs alongside getting started', () => {
     render(HeroSection, { props, global: { stubs: { VideoPlayer: true } } })
     const hrefs = screen.getAllByRole('link').map((a) => a.getAttribute('href'))
-    expect(hrefs).toContain(externalLinks.cloud)
+    expect(hrefs).toContain(getRoutes('en').download)
     expect(hrefs).toContain(externalLinks.docsCloudNodes)
   })
 })
@@ -83,6 +83,6 @@ describe('ClosingCtaSection', () => {
   it('closes on getting started', () => {
     render(ClosingCtaSection, { props })
     const hrefs = screen.getAllByRole('link').map((a) => a.getAttribute('href'))
-    expect(hrefs).toContain(externalLinks.cloud)
+    expect(hrefs).toContain(getRoutes('en').download)
   })
 })
