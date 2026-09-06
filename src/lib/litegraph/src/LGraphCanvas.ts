@@ -1920,7 +1920,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // this.offset = [0,0];
     this.dragging_rectangle = null
 
-    for (const item of this.selectedItems) item.selected = undefined
     this.selected_group = null
     this.#applySelection({ type: 'selection.clear' })
     this.onSelectionChange?.(this.selected_nodes)
@@ -4601,7 +4600,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     if (!item) {
       if (!eitherModifier || this.multi_select) this.deselectAll()
-    } else if (!item.selected || !this.#isSelected(item)) {
+    } else if (!this.#isSelected(item)) {
       if (!modifySelection) this.deselectAll(item)
       this.select(item)
     } else if (modifySelection && !sticky) {
@@ -4632,7 +4631,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   ): void {
     if (!this.#ownsSelectable(item)) return
     if (this.selectOnly && !(item instanceof LGraphNode)) return
-    if (item.selected && this.#isSelected(item)) return
+    if (this.#isSelected(item)) return
 
     this.#setSelected(item, true)
 
@@ -4642,9 +4641,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this.#traverseGroupChildren(
           item,
           (child) => {
-            if (!child.selected || !this.#isSelected(child)) {
-              this.#setSelected(child, true)
-            }
+            if (!this.#isSelected(child)) this.#setSelected(child, true)
           },
           (child) => this.select(child)
         )
@@ -4666,7 +4663,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     item: TPositionable
   ): void {
     if (!this.#ownsSelectable(item)) return
-    if (!item.selected && !this.#isSelected(item)) return
+    if (!this.#isSelected(item)) return
 
     this.#setSelected(item, false)
 
@@ -4674,9 +4671,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.#traverseGroupChildren(
         item,
         (child) => {
-          if (child.selected || this.#isSelected(child)) {
-            this.#setSelected(child, false)
-          }
+          if (this.#isSelected(child)) this.#setSelected(child, false)
         },
         (child) => this.deselect(child)
       )
@@ -4690,7 +4685,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   #setSelected(item: Positionable, selected: boolean): void {
-    item.selected = selected
     this.#applySelection({
       type: selected ? 'selection.add' : 'selection.remove',
       keys: [selectableKeyOf(item)]
@@ -4812,11 +4806,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     const kept =
       keepSelected && selected.has(keepSelected) ? keepSelected : undefined
-    for (const sel of selected) {
-      if (sel === kept) continue
-      sel.onDeselected?.()
-      sel.selected = false
-    }
+    for (const sel of selected) if (sel !== kept) sel.onDeselected?.()
     this.#applySelection(
       kept
         ? { type: 'selection.replace', keys: [selectableKeyOf(kept)] }
@@ -5750,7 +5740,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     // draw shape
-    this.drawNodeShape(node, ctx, size, color, bgcolor, !!node.selected)
+    this.drawNodeShape(node, ctx, size, color, bgcolor, node.selected)
 
     // Render title buttons (if not collapsed)
     if (!node.flags.collapsed) {
