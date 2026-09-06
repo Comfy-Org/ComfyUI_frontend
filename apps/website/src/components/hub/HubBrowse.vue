@@ -276,7 +276,7 @@ const filteredTemplates = computed(() => {
     >
       <nav
         ref="nav"
-        class="relative mt-12 flex scrollbar-thin gap-6 overflow-x-auto border-b border-white/10"
+        class="relative mt-12 hidden scrollbar-thin gap-6 overflow-x-auto border-b border-white/10 sm:flex"
         :aria-label="t('workshop.media.label', locale)"
         data-testid="hub-use-cases"
       >
@@ -328,6 +328,35 @@ const filteredTemplates = computed(() => {
       :labels="gridLabels"
       :href-for="hrefFor"
     >
+      <template #panel-top>
+        <div class="flex flex-col gap-3 sm:hidden">
+          <h3 class="text-content-muted text-base">
+            {{ t('workshop.useCase.label', locale) }}
+          </h3>
+          <div class="flex flex-wrap gap-2" role="listbox">
+            <button
+              v-for="entry in useCaseTabs"
+              :key="entry.value"
+              type="button"
+              role="option"
+              :aria-selected="useCase === entry.value"
+              :data-testid="`hub-use-case-${entry.value}`"
+              :class="
+                cn(
+                  'focus-visible:ring-brand cursor-pointer rounded-full border px-4 py-2 text-sm transition-colors outline-none focus-visible:ring-2',
+                  useCase === entry.value
+                    ? 'border-brand bg-brand text-page font-medium'
+                    : 'text-content border-white/15'
+                )
+              "
+              @click="useCase = entry.value"
+            >
+              {{ t(useCaseLabelKey[entry.value], locale) }}
+            </button>
+          </div>
+        </div>
+      </template>
+
       <template #search>
         <button
           v-if="!searching"

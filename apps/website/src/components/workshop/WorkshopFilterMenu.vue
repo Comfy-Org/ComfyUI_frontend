@@ -10,7 +10,7 @@ import {
   TabsRoot,
   TabsTrigger
 } from 'reka-ui'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -23,33 +23,48 @@ export interface FacetMenuOption {
   readonly count: number
 }
 
-type Facet = 'provider' | 'capability' | 'modality'
+type Facet = 'provider' | 'capability' | 'modality' | 'useCase'
 
 const {
   capabilityOptions,
   providerOptions,
   modalityOptions,
+  useCaseOptions,
   locale = 'en'
 } = defineProps<{
   capabilityOptions: readonly FacetMenuOption[]
   providerOptions: readonly FacetMenuOption[]
   modalityOptions: readonly FacetMenuOption[]
+  /** Only where the use-case row has no room of its own, on a phone. */
+  useCaseOptions?: readonly FacetMenuOption[]
   locale?: Locale
 }>()
 
 const capabilities = defineModel<string[]>('capabilities', { required: true })
 const providers = defineModel<string[]>('providers', { required: true })
 const modalities = defineModel<string[]>('modalities', { required: true })
+const useCases = defineModel<string[]>('useCases', { default: () => [] })
 
 const open = ref(false)
 const activeFacet = ref<Facet>('provider')
 const search = ref<Record<Facet, string>>({
   provider: '',
   capability: '',
-  modality: ''
+  modality: '',
+  useCase: ''
 })
 
 const facets = computed(() => [
+  ...(useCaseOptions
+    ? [
+        {
+          facet: 'useCase' as const,
+          label: t('workshop.launch.label', locale),
+          options: useCaseOptions,
+          selected: useCases
+        }
+      ]
+    : []),
   {
     facet: 'provider' as const,
     label: t('workshop.filter.providerGroup', locale),
@@ -75,6 +90,12 @@ const selectedCount = computed(
     capabilities.value.length + providers.value.length + modalities.value.length
 )
 
+// The menu opens on the facet that leads the row, which on a phone is the
+// use cases the tab row no longer shows.
+watch(open, (value) => {
+  if (value) activeFacet.value = facets.value[0].facet
+})
+
 function visibleOptions(entry: (typeof facets.value)[number]) {
   const needle = search.value[entry.facet].trim().toLowerCase()
   return needle
@@ -89,7 +110,9 @@ const modelFor = (facet: Facet) =>
     ? capabilities
     : facet === 'modality'
       ? modalities
-      : providers
+      : facet === 'useCase'
+        ? useCases
+        : providers
 
 function toggle(facet: Facet, value: string) {
   const selected = modelFor(facet)
@@ -102,6 +125,7 @@ function clearAll() {
   capabilities.value = []
   providers.value = []
   modalities.value = []
+  useCases.value = []
 }
 </script>
 
@@ -146,7 +170,7 @@ function clearAll() {
       >
         <TabsRoot v-model="activeFacet" class="flex flex-col">
           <TabsList
-            class="flex items-center gap-1 border-b border-white/10 p-2"
+            class="flex scrollbar-hide items-center gap-1 overflow-x-auto border-b border-white/10 p-2"
           >
             <TabsTrigger
               v-for="entry in facets"

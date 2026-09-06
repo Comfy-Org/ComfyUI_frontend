@@ -10,6 +10,8 @@ import {
 } from 'reka-ui'
 import { computed, onMounted, ref, useTemplateRef } from 'vue'
 
+import { useMediaQuery } from '@vueuse/core'
+
 import Button from '@/components/ui/button/Button.vue'
 import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
 import { useSlidingUnderline } from '../../composables/useSlidingUnderline'
@@ -122,6 +124,29 @@ const rail = computed(() => {
       current: useCase.value === value
     }))
   ]
+})
+
+const onPhone = useMediaQuery('(max-width: 639px)')
+
+const useCaseOptions = computed<FacetMenuOption[]>(() => {
+  const counts = countByUseCase(models)
+  return rail.value.map((entry) => ({
+    value: entry.value,
+    label: entry.label,
+    count: entry.value === 'all' ? models.length : counts[entry.value]
+  }))
+})
+
+const chosenUseCase = computed<string[]>({
+  get: () => (useCase.value === 'all' ? [] : [useCase.value]),
+  set: (values) => {
+    const last = values.at(-1)
+    selectRail(
+      (USE_CASES as readonly string[]).includes(last ?? '')
+        ? (last as UseCase)
+        : 'all'
+    )
+  }
 })
 
 function selectRail(value: UseCase | 'all') {
@@ -280,7 +305,7 @@ const menuItemClass =
         ref="nav"
         :class="
           cn(
-            'relative mb-8 flex gap-8 overflow-x-auto border-b border-transparency-white-t8',
+            'relative mb-8 hidden gap-8 overflow-x-auto border-b border-transparency-white-t8 sm:flex',
             railBeside &&
               'lg:mb-0 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:border-b-0'
           )
@@ -374,9 +399,11 @@ const menuItemClass =
             v-model:capabilities="capabilities"
             v-model:providers="providers"
             v-model:modalities="modalities"
+            v-model:use-cases="chosenUseCase"
             :capability-options="capabilityOptions"
             :provider-options="providerOptions"
             :modality-options="modalityOptions"
+            :use-case-options="onPhone ? useCaseOptions : undefined"
             :locale
           />
 

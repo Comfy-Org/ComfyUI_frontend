@@ -87,6 +87,7 @@ const showingText = computed(() =>
         :result-count="sortedTemplates.length"
       >
         <template #search><slot name="search" /></template>
+        <template #panel-top><slot name="panel-top" /></template>
       </BrowseToolbar>
     </div>
 

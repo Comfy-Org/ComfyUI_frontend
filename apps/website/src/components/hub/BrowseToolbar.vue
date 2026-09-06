@@ -298,6 +298,8 @@ const groupTitleClass = 'text-content-muted text-base'
       class="bg-site-dropdown absolute top-full right-0 z-40 mt-3 flex max-h-[75vh] w-full max-w-4xl scrollbar-thin flex-col gap-7 overflow-y-auto rounded-3xl border border-white/10 p-8 shadow-2xl"
       data-testid="hub-filter-menu"
     >
+      <slot name="panel-top" />
+
       <div class="flex flex-wrap gap-x-12 gap-y-7">
         <div
           v-for="group in groups.filter((g) => g.display === 'segmented')"
