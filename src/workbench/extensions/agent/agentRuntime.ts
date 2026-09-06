@@ -16,7 +16,7 @@ type RestFactory = () => AgentRestClient
 
 export interface AgentRuntimeOptions {
   enabled: boolean
-  untitledChatTitle: string
+  untitledChatTitle: string | (() => string)
   workflow?: AgentSessionDeps['workflow']
   createRest?: RestFactory
   createEvents?: () => AgentSessionDeps['events']
@@ -25,13 +25,17 @@ export interface AgentRuntimeOptions {
 
 function toChatSession(
   thread: AgentThreadSummary,
-  untitledChatTitle: string
+  untitledChatTitle: string | (() => string)
 ): ChatSession {
   const stamp = thread.last_message_at ?? thread.updated_at ?? thread.created_at
   const updatedAt = stamp ? Date.parse(stamp) : Date.now()
+  const fallbackTitle =
+    typeof untitledChatTitle === 'function'
+      ? untitledChatTitle()
+      : untitledChatTitle
   return {
     id: thread.id,
-    title: thread.title || thread.preview || untitledChatTitle,
+    title: thread.title || thread.preview || fallbackTitle,
     updatedAt: Number.isNaN(updatedAt) ? Date.now() : updatedAt
   }
 }

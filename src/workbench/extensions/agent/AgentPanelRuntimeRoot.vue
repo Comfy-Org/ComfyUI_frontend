@@ -400,7 +400,7 @@ function onWorkflowAdopted(
 const runtime = createAgentRuntime({
   enabled: true,
   createRest: () => agentRest,
-  untitledChatTitle: t('agent.untitledChat'),
+  untitledChatTitle: () => t('agent.untitledChat'),
   workflow: {
     current: activeWorkflowTurnContext,
     adopted: onWorkflowAdopted,
