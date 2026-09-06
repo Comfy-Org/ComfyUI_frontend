@@ -55,7 +55,7 @@ const comments = [
   noindex
 >
   <div class="mx-auto max-w-10xl px-6 py-12 lg:px-8 lg:py-16">
-    <nav aria-label="Breadcrumb" class="mb-8 px-8 text-xs text-primary-warm-gray lg:px-10">
+    <nav aria-label="Breadcrumb" class="mb-8 text-xs text-primary-warm-gray sm:px-8 lg:px-10">
       <ol class="flex flex-wrap items-center gap-2">
         <li>
           <a href={routes.home} class="hover:text-primary-warm-white">
@@ -74,7 +74,7 @@ const comments = [
     </nav>
 
     <header
-      class="relative mx-8 mb-12 overflow-hidden rounded-4.5xl lg:mx-10"
+      class="relative mb-12 overflow-hidden rounded-4.5xl sm:mx-8 lg:mx-10"
       data-testid="workflow-hero"
     >
       {
@@ -151,7 +151,7 @@ const comments = [
       </div>
     </header>
 
-    <div class="px-8 lg:px-10">
+    <div class="sm:px-8 lg:px-10">
       <ModelDetail model={model} clone={clone} client:load>
         <div slot="details" class="flex flex-col gap-8">
           <section class="grid gap-8 lg:grid-cols-12" data-testid="workflow-about">
