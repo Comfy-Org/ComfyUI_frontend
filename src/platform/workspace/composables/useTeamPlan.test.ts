@@ -25,7 +25,7 @@ const {
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    isActiveSubscription: mockIsActiveSubscription,
+    canAccessSubscriptionFeatures: mockIsActiveSubscription,
     isInitialized: mockIsInitialized,
     isTeamPlan: mockIsTeamPlan,
     maxSeats: mockMaxSeats,

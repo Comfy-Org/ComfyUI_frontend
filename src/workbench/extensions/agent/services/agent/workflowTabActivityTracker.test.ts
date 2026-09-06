@@ -1,6 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 
@@ -32,7 +32,7 @@ describe('registerWorkflowTabActivityTracker', () => {
     setActivePinia(createPinia())
     hostWorkflow.store.activeWorkflow = null
     hostWorkflow.store.openWorkflows = []
-    stop = registerWorkflowTabActivityTracker()
+    stop = registerWorkflowTabActivityTracker(ref(true))
   })
 
   afterEach(() => {
@@ -75,5 +75,56 @@ describe('registerWorkflowTabActivityTracker', () => {
     await nextTick()
 
     expect(activity.unseenModifiedPaths.has('workflows/a.json')).toBe(true)
+  })
+
+  it('stops tab watchers created after the feature is enabled', async () => {
+    stop()
+    const enabled = ref(false)
+    stop = registerWorkflowTabActivityTracker(enabled)
+    const activity = useWorkflowTabActivityStore()
+
+    enabled.value = true
+    await nextTick()
+    stop()
+    activity.markModified('workflows/a.json')
+    hostWorkflow.store.activeWorkflow = { path: 'workflows/a.json' }
+    await nextTick()
+
+    expect(activity.unseenModifiedPaths.has('workflows/a.json')).toBe(true)
+  })
+
+  it('does not register tab watchers while the feature is disabled', async () => {
+    stop()
+    const enabled = ref(false)
+    stop = registerWorkflowTabActivityTracker(enabled)
+    const activity = useWorkflowTabActivityStore()
+    activity.markModified('workflows/a.json')
+
+    hostWorkflow.store.activeWorkflow = { path: 'workflows/a.json' }
+    await nextTick()
+
+    expect(activity.unseenModifiedPaths.has('workflows/a.json')).toBe(true)
+  })
+
+  it('registers on enable and removes agent activity on disable', async () => {
+    stop()
+    const enabled = ref(false)
+    stop = registerWorkflowTabActivityTracker(enabled)
+    const activity = useWorkflowTabActivityStore()
+
+    enabled.value = true
+    await nextTick()
+    activity.markModified('workflows/a.json')
+    hostWorkflow.store.activeWorkflow = { path: 'workflows/a.json' }
+    await nextTick()
+    expect(activity.unseenModifiedPaths.has('workflows/a.json')).toBe(false)
+
+    activity.markModified('workflows/b.json')
+    activity.setEditing('workflows/b.json')
+    enabled.value = false
+    await nextTick()
+
+    expect(activity.unseenModifiedPaths).toHaveLength(0)
+    expect(activity.editingTabPath).toBeNull()
   })
 })

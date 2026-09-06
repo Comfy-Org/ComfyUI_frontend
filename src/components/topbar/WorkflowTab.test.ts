@@ -1,4 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -106,12 +107,8 @@ type WorkflowOption = WorkflowTabProps['workflowOption']
 type Workflow = WorkflowOption['workflow']
 type WorkflowOverrides = Partial<Workflow>
 
-// ComfyWorkflow has many required fields the component never reads (file
-// IO, change tracking). Validate the fields we *do* set against the real
-// type via Partial<Workflow>, then cast — adding/renaming a read field in
-// the component will fail typecheck on the override map.
 function makeWorkflowOption(overrides: WorkflowOverrides = {}): WorkflowOption {
-  const workflow = {
+  const workflow = fromPartial<Workflow>({
     key: 'test-key',
     path: '/workflows/test.json',
     filename: 'test.json',
@@ -120,10 +117,10 @@ function makeWorkflowOption(overrides: WorkflowOverrides = {}): WorkflowOption {
     activeMode: 'graph',
     changeTracker: null,
     ...overrides
-  } satisfies WorkflowOverrides
+  })
   // markRaw keeps a stable identity through prop reactivity so the store's
   // identity-based status lookup resolves against the same object.
-  return { value: 'test-key', workflow: markRaw(workflow) as Workflow }
+  return { value: 'test-key', workflow: markRaw(workflow) }
 }
 
 function renderTab({

@@ -11,10 +11,19 @@ import {
 import type { ISerialisedGraph } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
+import { toNodeId } from '@/types/nodeId'
 
 import { test } from './__fixtures__/testExtensions'
 
-beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
+const mockReportError = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
+}))
+
+beforeEach(() => {
+  setActivePinia(createTestingPinia({ stubActions: false }))
+  mockReportError.mockClear()
+})
 
 describe('LGraph Serialisation', () => {
   test('can (de)serialise node / group titles', ({ expect, minimalGraph }) => {
@@ -74,6 +83,94 @@ describe('LGraph Serialisation', () => {
     )
 
     expect(copiedLink).toMatchObject(expectedLink)
+  })
+
+  test('falls back to live adapters when a node is missing from the store', ({
+    expect
+  }) => {
+    const graph = new LGraph()
+    const registered = new LGraphNode('Registered')
+    graph.add(registered)
+    const adapterOnly = new LGraphNode('Adapter only')
+    adapterOnly.id = toNodeId(99)
+    graph._nodes.push(adapterOnly)
+
+    const serialized = graph.serialize()
+
+    expect(serialized.nodes.map(({ title }) => title)).toEqual([
+      'Registered',
+      'Adapter only'
+    ])
+    expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        message: 'Graph serialization state mismatch'
+      }),
+      {
+        errorType: 'graph_serialization_state_mismatch',
+        context: {
+          graphId: graph.id,
+          mismatch: `live node ${adapterOnly.id} has no stored state`
+        }
+      }
+    )
+  })
+
+  test('serialises a node held twice in the live array only once', ({
+    expect
+  }) => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Doubled')
+    graph.add(node)
+    graph._nodes.push(node)
+
+    const serialized = graph.serialize()
+
+    expect(serialized.nodes.map(({ title }) => title)).toEqual(['Doubled'])
+    expect(mockReportError).not.toHaveBeenCalled()
+  })
+
+  test('serialises a duplicated live node once through the fallback', ({
+    expect
+  }) => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Doubled')
+    graph.add(node)
+    graph._nodes.push(node)
+    const adapterOnly = new LGraphNode('Adapter only')
+    adapterOnly.id = toNodeId(99)
+    graph._nodes.push(adapterOnly)
+
+    const serialized = graph.serialize()
+
+    expect(serialized.nodes.map(({ title }) => title)).toEqual([
+      'Doubled',
+      'Adapter only'
+    ])
+    expect(mockReportError).toHaveBeenCalledOnce()
+  })
+
+  test('serialises one entry per id when distinct live nodes share an id', ({
+    expect
+  }) => {
+    const graph = new LGraph()
+    const registered = new LGraphNode('Registered')
+    graph.add(registered)
+    const impostor = new LGraphNode('Impostor')
+    impostor.id = registered.id
+    graph._nodes.push(impostor)
+    const adapterOnly = new LGraphNode('Adapter only')
+    adapterOnly.id = toNodeId(99)
+    graph._nodes.push(adapterOnly)
+
+    const serialized = graph.serialize()
+
+    const ids = serialized.nodes.map(({ id }) => id)
+    expect(new Set(ids).size).toBe(ids.length)
+    expect(ids).toHaveLength(2)
+    expect(new Set(ids)).toEqual(
+      new Set([registered.id, adapterOnly.id].map(Number))
+    )
+    expect(mockReportError).toHaveBeenCalledOnce()
   })
 
   test('round trips namespaced node and graph extension payloads', ({

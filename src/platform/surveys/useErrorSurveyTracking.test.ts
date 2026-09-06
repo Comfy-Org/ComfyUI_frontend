@@ -36,7 +36,7 @@ describe('useErrorSurveyTracking', () => {
   })
 
   afterEach(() => {
-    scope?.stop()
+    scope.stop()
   })
 
   it('counts false → true transition once', async () => {

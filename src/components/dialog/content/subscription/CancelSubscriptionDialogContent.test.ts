@@ -32,7 +32,7 @@ function withStrictMillisecondParser<T>(run: () => T): T {
     }
   }
 
-  vi.stubGlobal('Date', StrictDate as DateConstructor)
+  vi.stubGlobal('Date', StrictDate)
 
   try {
     return run()
