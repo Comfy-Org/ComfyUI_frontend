@@ -104,14 +104,14 @@ describe('agentRuntime', () => {
       untitledChatTitle: 'Untitled chat'
     })
 
-    runtime?.start()
-    runtime?.start()
+    runtime.start()
+    runtime.start()
 
     expect(createEvents).toHaveBeenCalledOnce()
     expect(harness.events.subscribe).toHaveBeenCalledOnce()
 
-    runtime?.stop()
-    runtime?.stop()
+    runtime.stop()
+    runtime.stop()
 
     expect(harness.unsubscribe).toHaveBeenCalledOnce()
   })
@@ -124,9 +124,9 @@ describe('agentRuntime', () => {
       createEvents: () => events.source,
       untitledChatTitle: 'Untitled chat'
     })
-    runtime?.start()
+    runtime.start()
 
-    await runtime?.sendMessage('Make a fox')
+    await runtime.sendMessage('Make a fox')
     events.emit({
       type: 'agent_thinking',
       data: {
@@ -152,11 +152,11 @@ describe('agentRuntime', () => {
       }
     })
 
-    expect(runtime?.entries.value.map((entry) => entry.role)).toEqual([
+    expect(runtime.entries.value.map((entry) => entry.role)).toEqual([
       'user',
       'assistant'
     ])
-    expect(runtime?.entries.value[1]).toMatchObject({
+    expect(runtime.entries.value[1]).toMatchObject({
       role: 'assistant',
       streaming: false,
       parts: [
@@ -176,13 +176,13 @@ describe('agentRuntime', () => {
       createEvents: () => fakeEvents().source,
       untitledChatTitle: 'Untitled chat'
     })
-    runtime?.start()
-    await runtime?.sendMessage('Make a fox')
+    runtime.start()
+    await runtime.sendMessage('Make a fox')
 
-    await runtime?.stopTurn()
+    await runtime.stopTurn()
     expect(cancelMessage).toHaveBeenCalledWith('thread-1', 'turn-1')
 
-    runtime?.stop()
+    runtime.stop()
     expect(cancelMessage).toHaveBeenCalledOnce()
   })
 
@@ -199,8 +199,8 @@ describe('agentRuntime', () => {
       onError
     })
 
-    runtime?.start()
-    await runtime?.refreshHistory()
+    runtime.start()
+    await runtime.refreshHistory()
 
     expect(onError).toHaveBeenCalledWith(error)
     expect(events.unsubscribe).not.toHaveBeenCalled()
