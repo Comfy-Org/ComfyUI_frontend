@@ -159,6 +159,35 @@ describe('examplesForModel', () => {
       fields: generatedFields
     })
   })
+
+  it('reads back only the settings that say something', () => {
+    const shared = {
+      description: '',
+      tags: [],
+      thumbnailUrl: 'https://example.com/x.webp'
+    }
+    const [sized, verbose, bare] = examplesForModel({
+      examples: [
+        {
+          ...shared,
+          name: 'a',
+          title: 'Sized',
+          values: { prompt: '  a capybara  ', resolution: '480p', duration: 5 }
+        },
+        {
+          ...shared,
+          name: 'b',
+          title: 'Verbose',
+          values: { prompt: '', size: '720p: 16:9 (1280x720)' }
+        },
+        { ...shared, name: 'c', title: 'Bare', values: { size: 'auto' } }
+      ]
+    })
+    expect(sized).toMatchObject({ prompt: 'a capybara', specs: ['480p', '5s'] })
+    expect(verbose.specs).toEqual(['720p'])
+    expect(verbose).not.toHaveProperty('prompt')
+    expect(bare.specs).toEqual([])
+  })
 })
 
 describe('exampleValues', () => {
