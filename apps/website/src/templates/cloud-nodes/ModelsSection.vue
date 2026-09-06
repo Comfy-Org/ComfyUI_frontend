@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import SectionHeader from '../../components/common/SectionHeader.vue'
-import { getRoutes } from '../../config/routes'
+import { externalLinks } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { cloudNodeModelCards } from './modelCards'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
-
-const routes = getRoutes(locale)
 </script>
 
 <template>
@@ -65,7 +63,12 @@ const routes = getRoutes(locale)
 
     <p class="mt-8 text-center text-sm text-smoke-700">
       {{ t('cloudNodesLaunch.models.footnote', locale) }}
-      <a :href="routes.cloudNodes" class="underline underline-offset-4">
+      <a
+        :href="externalLinks.docsCloudNodes"
+        target="_blank"
+        rel="noreferrer"
+        class="underline underline-offset-4"
+      >
         {{ t('cloudNodesLaunch.models.footnoteLink', locale) }}
       </a>
     </p>
