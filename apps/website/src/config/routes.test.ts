@@ -19,6 +19,15 @@ describe('localizeHref', () => {
 
   it('never prefixes locale-invariant routes', () => {
     expect(localizeHref('/terms-of-service', 'zh-CN')).toBe('/terms-of-service')
+    expect(localizeHref('/enterprise', 'zh-CN')).toBe('/enterprise')
+    expect(localizeHref('/enterprise/managed-builds', 'zh-CN')).toBe(
+      '/enterprise/managed-builds'
+    )
+  })
+
+  it('only localizes the Japanese homepage', () => {
+    expect(localizeHref('/', 'ja')).toBe('/ja/')
+    expect(localizeHref('/cloud', 'ja')).toBe('/cloud')
   })
 })
 
@@ -55,6 +64,20 @@ describe('getRoutes ltx', () => {
 
   it('serves a localized ltx path for zh-CN', () => {
     expect(getRoutes('zh-CN').ltx).toBe('/zh-CN/ltx-2.5')
+  })
+})
+
+describe('getRoutes minimaxLicenseProfessionalRequest', () => {
+  it('serves the license request page at its canonical path for en', () => {
+    expect(getRoutes('en').minimaxLicenseProfessionalRequest).toBe(
+      '/minimax/license/professional-request'
+    )
+  })
+
+  it('never prefixes the English-only license request page for zh-CN', () => {
+    expect(getRoutes('zh-CN').minimaxLicenseProfessionalRequest).toBe(
+      '/minimax/license/professional-request'
+    )
   })
 })
 
@@ -98,6 +121,16 @@ describe('getRoutes flux3', () => {
   })
 })
 
+describe('getRoutes agent', () => {
+  it('serves the agent page at its canonical path for en', () => {
+    expect(getRoutes('en').agent).toBe('/agent')
+  })
+
+  it('serves a localized agent path for zh-CN', () => {
+    expect(getRoutes('zh-CN').agent).toBe('/zh-CN/agent')
+  })
+})
+
 describe('getRoutes fdct', () => {
   it('serves the fdct page at its canonical path for en', () => {
     expect(getRoutes('en').fdct).toBe('/forward-deployed-creatives')
@@ -115,5 +148,15 @@ describe('getRoutes minimaxLicense', () => {
 
   it('serves a localized MiniMax license path for zh-CN', () => {
     expect(getRoutes('zh-CN').minimaxLicense).toBe('/zh-CN/minimax/license')
+  })
+})
+
+describe('getRoutes cloudNodes', () => {
+  it('serves the Comfy Cloud nodes launch page at its canonical path for en', () => {
+    expect(getRoutes('en').cloudNodes).toBe('/cloud-nodes')
+  })
+
+  it('serves a localized path for zh-CN', () => {
+    expect(getRoutes('zh-CN').cloudNodes).toBe('/zh-CN/cloud-nodes')
   })
 })

@@ -27,6 +27,7 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import type { AppMode } from '@/utils/appMode'
 import { isValidUuid } from '@/utils/formatUtil'
+import { zeroUuid } from '@/utils/uuid'
 import { t } from '@/i18n'
 
 function createModeTestWorkflow(
@@ -360,8 +361,8 @@ describe('useWorkflowService', () => {
         }
       ]
 
-      useMissingModelStore().missingModelCandidates = modelCandidates as never
-      useMissingMediaStore().missingMediaCandidates = mediaCandidates as never
+      useMissingModelStore().missingModelCandidates = modelCandidates
+      useMissingMediaStore().missingMediaCandidates = mediaCandidates
 
       useWorkflowService().beforeLoadNewGraph()
 
@@ -541,7 +542,7 @@ describe('useWorkflowService', () => {
       workflowStore.attachWorkflow(replacement, 1)
       workflowStore.activeWorkflow = closing as LoadedComfyWorkflow
       vi.spyOn(workflowStore, 'getMostRecentWorkflow').mockReturnValue(
-        replacement as LoadedComfyWorkflow
+        replacement
       )
       const storeClose = vi.spyOn(workflowStore, 'closeWorkflow')
       const error = new Error('replacement load failed')
@@ -575,7 +576,7 @@ describe('useWorkflowService', () => {
       workflowStore.attachWorkflow(replacement, 1)
       workflowStore.activeWorkflow = closing as LoadedComfyWorkflow
       vi.spyOn(workflowStore, 'getMostRecentWorkflow').mockReturnValue(
-        replacement as LoadedComfyWorkflow
+        replacement
       )
       const storeClose = vi.spyOn(workflowStore, 'closeWorkflow')
       // The REAL configure-failure shape (christian-byrne's 16075 review):
@@ -651,7 +652,7 @@ describe('useWorkflowService', () => {
       expect(calls).toHaveLength(2)
       expect(calls[1][3]).toMatchObject({ path: 'workflows/retained.json' })
       expect(calls[1][0]).toEqual(retained.activeState)
-      expect(workflowStore.activeWorkflow?.path).toBe('workflows/retained.json')
+      expect(workflowStore.activeWorkflow.path).toBe('workflows/retained.json')
     })
 
     it('serializes rapid workflow opens so the final selection stays active', async () => {
@@ -704,7 +705,7 @@ describe('useWorkflowService', () => {
           .mocked(app.loadGraphData)
           .mock.calls.map((call) => call[4]?.workflowNavigationId)
       ).toEqual([1, 2])
-      expect(workflowStore.activeWorkflow?.path).toBe(second.path)
+      expect(workflowStore.activeWorkflow.path).toBe(second.path)
     })
 
     it('continues with the next workflow when the previous load fails', async () => {
@@ -749,7 +750,7 @@ describe('useWorkflowService', () => {
       expect(
         vi.mocked(app.loadGraphData).mock.calls.map((call) => call[3])
       ).toEqual([first, second])
-      expect(workflowStore.activeWorkflow?.path).toBe(second.path)
+      expect(workflowStore.activeWorkflow.path).toBe(second.path)
     })
 
     it('closes an inactive workflow without waiting for an unrelated load', async () => {
@@ -940,7 +941,7 @@ describe('useWorkflowService', () => {
         warnIfUnsaved: false
       })
 
-      expect(workflowStore.activeWorkflow?.path).toBe(next.path)
+      expect(workflowStore.activeWorkflow.path).toBe(next.path)
       expect(app.loadGraphData).toHaveBeenCalledWith(
         expect.anything(),
         true,
@@ -994,7 +995,7 @@ describe('useWorkflowService', () => {
       await Promise.all([firstOpen, secondOpen, close])
 
       expect(workflowStore.openWorkflows).not.toContain(second)
-      expect(workflowStore.activeWorkflow?.path).toBe(current.path)
+      expect(workflowStore.activeWorkflow.path).toBe(current.path)
     })
 
     it('does not let an older close override a newer workflow selection', async () => {
@@ -1047,7 +1048,7 @@ describe('useWorkflowService', () => {
       await Promise.all([firstOpen, secondOpen, close, finalOpen])
 
       expect(workflowStore.openWorkflows).not.toContain(second)
-      expect(workflowStore.activeWorkflow?.path).toBe(final.path)
+      expect(workflowStore.activeWorkflow.path).toBe(final.path)
       expect(
         vi.mocked(app.loadGraphData).mock.calls.map((call) => call[3])
       ).toEqual([first, second, final])
@@ -1109,7 +1110,7 @@ describe('useWorkflowService', () => {
       ])
 
       expect(workflowStore.openWorkflows).not.toContain(closing)
-      expect(workflowStore.activeWorkflow?.path).toBe(current.path)
+      expect(workflowStore.activeWorkflow.path).toBe(current.path)
     })
 
     it('serializes a newer selection after the last-tab replacement', async () => {
@@ -1167,7 +1168,7 @@ describe('useWorkflowService', () => {
 
       expect(maxConcurrentLoads).toBe(1)
       expect(workflowStore.openWorkflows).not.toContain(closing)
-      expect(workflowStore.activeWorkflow?.path).toBe(final.path)
+      expect(workflowStore.activeWorkflow.path).toBe(final.path)
       expect(
         vi.mocked(app.loadGraphData).mock.calls.map((call) => call[3])
       ).toEqual([undefined, final])
@@ -1215,7 +1216,7 @@ describe('useWorkflowService', () => {
 
       expect(app.loadGraphData).toHaveBeenCalledOnce()
       expect(workflowStore.openWorkflows).not.toContain(closing)
-      expect(workflowStore.activeWorkflow?.path).toBe(replacement.path)
+      expect(workflowStore.activeWorkflow.path).toBe(replacement.path)
     })
 
     it('keeps a valid active workflow when closing tabs concurrently', async () => {
@@ -1256,7 +1257,7 @@ describe('useWorkflowService', () => {
       expect(app.loadGraphData).toHaveBeenCalledOnce()
       expect(workflowStore.openWorkflows).not.toContain(first)
       expect(workflowStore.openWorkflows).not.toContain(second)
-      expect(workflowStore.activeWorkflow?.path).toBe(replacement.path)
+      expect(workflowStore.activeWorkflow.path).toBe(replacement.path)
     })
 
     it('never selects a workflow that is itself closing as the replacement', async () => {
@@ -1281,7 +1282,7 @@ describe('useWorkflowService', () => {
       workflowStore.attachWorkflow(survivor, 2)
       workflowStore.activeWorkflow = active as LoadedComfyWorkflow
       vi.spyOn(workflowStore, 'getMostRecentWorkflow').mockReturnValue(
-        alsoClosing as LoadedComfyWorkflow
+        alsoClosing
       )
 
       // Hold alsoClosing's pending open so its close stays registered as
@@ -1320,7 +1321,7 @@ describe('useWorkflowService', () => {
         survivor,
         expect.anything()
       )
-      expect(workflowStore.activeWorkflow?.path).toBe(survivor.path)
+      expect(workflowStore.activeWorkflow.path).toBe(survivor.path)
     })
 
     it('skips a closing candidate in the index-shift fallback', async () => {
@@ -1389,7 +1390,7 @@ describe('useWorkflowService', () => {
       const loadedPaths = vi
         .mocked(app.loadGraphData)
         .mock.calls.map(
-          (call) => (call?.[3] as { path?: string } | undefined)?.path
+          (call) => (call[3] as { path?: string } | undefined)?.path
         )
       expect(loadedPaths).toContain(survivor.path)
       expect(loadedPaths).not.toContain(closingNeighbor.path)
@@ -1543,7 +1544,7 @@ describe('useWorkflowService', () => {
 
       expect(app.loadGraphData).toHaveBeenCalledTimes(2)
       expect(workflowStore.openWorkflows).not.toContain(closing)
-      expect(workflowStore.activeWorkflow?.path).toBe(replacement.path)
+      expect(workflowStore.activeWorkflow.path).toBe(replacement.path)
     })
   })
 
@@ -1709,6 +1710,26 @@ describe('useWorkflowService', () => {
       await service.closeWorkflow(workflow, { warnIfUnsaved: false })
 
       expect(discardPreviews).toHaveBeenCalledWith(workflow.path)
+    })
+  })
+
+  describe('duplicateWorkflow', () => {
+    it('opens a distinct temporary workflow when duplicating repeatedly', async () => {
+      const workflowStore = useWorkflowStore()
+      const source = createModeTestWorkflow({
+        path: 'workflows/source.json'
+      })
+      source.changeTracker.activeState = makeWorkflowData()
+      workflowStore.createNewTemporary('source (Copy).json', makeWorkflowData())
+
+      await useWorkflowService().duplicateWorkflow(source)
+
+      expect(app.loadGraphData).toHaveBeenCalledWith(
+        expect.objectContaining({ id: expect.any(String) }),
+        true,
+        true,
+        expect.objectContaining({ path: 'workflows/source (Copy) (2).json' })
+      )
     })
   })
 
@@ -1945,6 +1966,49 @@ describe('useWorkflowService', () => {
       expect(resetArg?.id).not.toBe('different-legacy-name')
       expect(resetArg?.id).not.toBe('legacy-workflow-name')
     })
+
+    describe('root graph id adoption', () => {
+      const rootGraphId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+      const incomingId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+
+      beforeEach(() => {
+        Reflect.set(app, 'isGraphReady', true)
+      })
+
+      afterEach(() => {
+        Reflect.deleteProperty(app, 'isGraphReady')
+        Reflect.deleteProperty(app.rootGraph, 'id')
+      })
+
+      it('mints a root graph id for a zero-id graph and writes it into the workflow data', async () => {
+        app.rootGraph.id = zeroUuid
+        const workflowData = makeWorkflowDataWithId(zeroUuid)
+
+        await useWorkflowService().afterLoadNewGraph('repeat', workflowData)
+
+        expect(app.rootGraph.id).not.toBe(zeroUuid)
+        expect(isValidUuid(app.rootGraph.id)).toBe(true)
+        expect(workflowData.id).toBe(app.rootGraph.id)
+        expect(useExecutionErrorStore().setActiveGraph).toHaveBeenCalledWith(
+          app.rootGraph.id,
+          existingWorkflow.path
+        )
+      })
+
+      it('leaves the incoming workflow id alone when the root graph already has one', async () => {
+        app.rootGraph.id = rootGraphId
+        const workflowData = makeWorkflowDataWithId(incomingId)
+
+        await useWorkflowService().afterLoadNewGraph('repeat', workflowData)
+
+        expect(workflowData.id).toBe(incomingId)
+        expect(app.rootGraph.id).toBe(rootGraphId)
+        expect(useExecutionErrorStore().setActiveGraph).toHaveBeenCalledWith(
+          rootGraphId,
+          existingWorkflow.path
+        )
+      })
+    })
   })
 
   describe('per-workflow mode switching', () => {
@@ -2176,6 +2240,43 @@ describe('useWorkflowService', () => {
     })
   })
 
+  describe('renameWorkflow', () => {
+    it('keeps run errors attached to a renamed workflow', async () => {
+      setActivePinia(createTestingPinia({ stubActions: false }))
+      const workflowStore = useWorkflowStore()
+      const service = useWorkflowService()
+      const executionErrorStore = useExecutionErrorStore()
+      const graphId = '11111111-1111-4111-8111-111111111111'
+      const oldPath = 'workflows/original.json'
+      const newPath = 'workflows/renamed.json'
+      const promptError = {
+        type: 'execution',
+        message: 'prompt failed',
+        details: ''
+      }
+      const workflow = createModeTestWorkflow({ path: oldPath })
+      workflow.changeTracker.activeState.id = graphId
+
+      vi.spyOn(workflowStore, 'renameWorkflow').mockImplementation(
+        async (renamedWorkflow, path) => {
+          renamedWorkflow.updatePath(path)
+        }
+      )
+      executionErrorStore.setActiveGraph(graphId, oldPath)
+      executionErrorStore.recordPromptError(promptError)
+
+      await service.renameWorkflow(workflow, newPath)
+
+      expect(executionErrorStore.captureRunErrorKey()).toBe(
+        executionErrorStore.runErrorKey(graphId, newPath)
+      )
+      executionErrorStore.setActiveGraph(graphId, newPath)
+      expect(executionErrorStore.lastPromptError).toEqual(promptError)
+      executionErrorStore.setActiveGraph(graphId, oldPath)
+      expect(executionErrorStore.lastPromptError).toBeNull()
+    })
+  })
+
   describe('saveWorkflowAs', () => {
     let workflowStore: ReturnType<typeof useWorkflowStore>
     let service: ReturnType<typeof useWorkflowService>
@@ -2379,7 +2480,7 @@ describe('useWorkflowService', () => {
         isApp: true
       })
 
-      expect(source.changeTracker!.prepareForSave).toHaveBeenCalledTimes(1)
+      expect(source.changeTracker.prepareForSave).toHaveBeenCalledTimes(1)
     })
 
     it('does not modify source workflow mode when saving persisted workflow as different mode', async () => {
@@ -2437,7 +2538,7 @@ describe('useWorkflowService', () => {
     function captureLinearModeAtSaveTime() {
       let value: boolean | undefined
       vi.mocked(workflowStore.saveWorkflow).mockImplementation(async () => {
-        value = app.rootGraph.extra?.linearMode as boolean | undefined
+        value = app.rootGraph.extra.linearMode as boolean | undefined
       })
       return () => value
     }

@@ -19,10 +19,21 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
+// Only the renewal messages are supplied, so the renewal assertions verify
+// real interpolated output while every other key still renders as itself.
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: { en: {} }
+  messages: {
+    en: {
+      subscription: {
+        preview: {
+          renewsAt: 'Renews at {amount} on {date}. Cancel anytime.',
+          renewsAtAmount: 'Renews at {amount}. Cancel anytime.'
+        }
+      }
+    }
+  }
 })
 
 const globalOptions = {
@@ -75,6 +86,23 @@ function preview(
     renewal_at: '2027-06-28T00:00:00Z',
     ...overrides
   }
+}
+
+// Shape returned while embedded checkout is disabled: every exact-quote field
+// is absent and only the legacy cost fields are populated.
+function legacyPreview(
+  overrides: Partial<PreviewSubscribeResponse>
+): PreviewSubscribeResponse {
+  const {
+    amount_due_cents,
+    currency,
+    renewal_amount_cents,
+    renewal_at,
+    quote_id,
+    quote_version,
+    ...legacy
+  } = preview(overrides)
+  return legacy
 }
 
 describe('SubscriptionTransitionPreviewWorkspace', () => {
@@ -153,6 +181,29 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
       '_blank',
       'noopener,noreferrer'
     )
+  })
+
+  it('reports failed verification without offering to resume it', () => {
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: preview({}),
+        embeddedCheckoutEnabled: true,
+        authenticationState: 'failed_retryable',
+        authenticationError: 'Challenge was closed',
+        // A stale action_url from the abandoned challenge can still be present
+        // when the server reports failed_retryable; the button must stay
+        // hidden regardless.
+        actionUrl: 'https://verify.example/sensitive-token'
+      },
+      global: globalOptions
+    })
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Challenge was closed')
+    expect(
+      screen.queryByRole('button', {
+        name: 'subscription.preview.completeVerification'
+      })
+    ).toBeNull()
   })
 
   it('renders a scheduled downgrade with the after-that block and no charge', () => {
@@ -309,5 +360,66 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
       global: globalOptions
     })
     expect(screen.getByText(/Some Future Tier/)).toBeTruthy()
+  })
+
+  it('prices a legacy preview from the server costs instead of reporting the quote unavailable', () => {
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: legacyPreview({
+          cost_today_cents: 31_850,
+          cost_next_period_cents: 33_600,
+          new_plan: plan('CREATOR', 'ANNUAL', 33_600)
+        })
+      },
+      global: globalOptions
+    })
+
+    expect(screen.getByText('$318.50')).toBeTruthy()
+    expect(
+      screen.getByText('Renews at $336.00 on Jun 28, 2027. Cancel anytime.')
+    ).toBeTruthy()
+    expect(
+      screen.queryByText('subscription.preview.quoteUnavailable')
+    ).toBeNull()
+  })
+
+  it('states legacy renewal terms without a date when the server supplies no period end', () => {
+    const { period_end, ...planWithoutPeriodEnd } = plan(
+      'CREATOR',
+      'ANNUAL',
+      33_600
+    )
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: legacyPreview({
+          cost_today_cents: 31_850,
+          cost_next_period_cents: 33_600,
+          new_plan: planWithoutPeriodEnd
+        })
+      },
+      global: globalOptions
+    })
+
+    expect(screen.getByText('Renews at $336.00. Cancel anytime.')).toBeTruthy()
+    expect(
+      screen.queryByText('subscription.preview.quoteUnavailable')
+    ).toBeNull()
+  })
+
+  it('withholds an exact quote that arrives without a currency to price it in', () => {
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: preview({
+          cost_today_cents: 31_850,
+          new_plan: plan('CREATOR', 'ANNUAL', 33_600),
+          currency: undefined
+        })
+      },
+      global: globalOptions
+    })
+
+    expect(
+      screen.getAllByText('subscription.preview.quoteUnavailable')
+    ).toHaveLength(2)
   })
 })

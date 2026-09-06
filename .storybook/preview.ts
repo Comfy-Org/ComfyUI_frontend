@@ -11,6 +11,7 @@ import Tooltip from 'primevue/tooltip'
 import { i18n } from '@/i18n'
 import '@/lib/litegraph/public/css/litegraph.css'
 import '@/assets/css/style.css'
+import '@comfyorg/website/src/styles/global.css'
 
 const ComfyUIPreset = definePreset(Aura, {
   semantic: {

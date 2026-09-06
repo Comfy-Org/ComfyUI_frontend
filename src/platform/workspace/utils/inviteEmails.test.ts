@@ -34,7 +34,7 @@ describe('sanitizeInviteEmails', () => {
     ])
   })
 
-  it('clamps to maxSeats, keeping the first entries', () => {
+  it('clamps to the limit, keeping the first entries', () => {
     expect(sanitizeInviteEmails(['a@b.com', 'c@d.com', 'e@f.com'], 2)).toEqual([
       'a@b.com',
       'c@d.com'

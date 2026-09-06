@@ -30,4 +30,8 @@ Disallow: /_astro/
 Disallow: /_website/
 Disallow: /_vercel/
 
+# Content Signals (contentsignals.org): this content may be used for search,
+# as input to AI answers, and for AI training.
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+
 Sitemap: https://comfy.org/sitemap-index.xml

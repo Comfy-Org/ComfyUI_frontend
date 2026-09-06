@@ -146,7 +146,7 @@ test.describe('Keybinding Presets', { tag: '@keyboard' }, () => {
     // Verify the downloaded file is valid JSON with correct structure
     const downloadPath = await download.path()
     expect(downloadPath).toBeTruthy()
-    const content = fs.readFileSync(downloadPath!, 'utf-8')
+    const content = fs.readFileSync(downloadPath, 'utf-8')
     const parsed = JSON.parse(content) as {
       name: string
       newBindings: unknown[]

@@ -52,6 +52,7 @@
             <WorkspaceProfilePic
               class="size-9 shrink-0 text-sm"
               :workspace-name="workspace.name"
+              :subscription-tier="workspace.subscriptionTier"
             />
             <div class="flex min-w-0 flex-1 flex-col items-start gap-1">
               <div class="flex items-center gap-1.5">

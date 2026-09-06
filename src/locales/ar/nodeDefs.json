@@ -1486,96 +1486,6 @@
       }
     }
   },
-  "ByteDanceImageNode": {
-    "description": "إنشاء الصور باستخدام نماذج ByteDance عبر API استنادًا إلى النص الموجه",
-    "display_name": "صورة ByteDance",
-    "inputs": {
-      "control_after_generate": {
-        "name": "التحكم بعد التوليد"
-      },
-      "guidance_scale": {
-        "name": "مقياس التوجيه",
-        "tooltip": "القيمة الأعلى تجعل الصورة تتبع النص الموجه بشكل أكبر"
-      },
-      "height": {
-        "name": "الارتفاع",
-        "tooltip": "الارتفاع المخصص للصورة. القيمة تعمل فقط إذا تم ضبط `size_preset` على `Custom`"
-      },
-      "model": {
-        "name": "النموذج"
-      },
-      "prompt": {
-        "name": "النص الموجه",
-        "tooltip": "النص الموجه المستخدم لإنشاء الصورة"
-      },
-      "seed": {
-        "name": "البذرة",
-        "tooltip": "البذرة المستخدمة في التوليد"
-      },
-      "size_preset": {
-        "name": "ضبط الحجم",
-        "tooltip": "اختر حجمًا موصى به. اختر مخصص لاستخدام العرض والارتفاع أدناه"
-      },
-      "watermark": {
-        "name": "علامة مائية",
-        "tooltip": "ما إذا كان سيتم إضافة علامة مائية \"تم إنشاؤها بالذكاء الاصطناعي\" إلى الصورة"
-      },
-      "width": {
-        "name": "العرض",
-        "tooltip": "العرض المخصص للصورة. القيمة تعمل فقط إذا تم ضبط `size_preset` على `Custom`"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "ByteDanceImageReferenceNode": {
-    "description": "إنشاء فيديو باستخدام النص الموجه والصور المرجعية.",
-    "display_name": "فيديو ByteDance من الصور المرجعية",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "نسبة العرض إلى الارتفاع للفيديو الناتج."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration": {
-        "name": "duration",
-        "tooltip": "مدة الفيديو الناتج بالثواني."
-      },
-      "images": {
-        "name": "images",
-        "tooltip": "من صورة إلى أربع صور."
-      },
-      "model": {
-        "name": "النموذج"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "المطالبة النصية المستخدمة لتوليد الفيديو."
-      },
-      "resolution": {
-        "name": "resolution",
-        "tooltip": "دقة الفيديو الناتج."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "البذرة المستخدمة في التوليد."
-      },
-      "watermark": {
-        "name": "watermark",
-        "tooltip": "ما إذا كان سيتم إضافة علامة مائية \"تم إنشاؤه بالذكاء الاصطناعي\" إلى الفيديو."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "ByteDanceImageToVideoNode": {
     "description": "توليد فيديو باستخدام نماذج ByteDance عبر واجهة برمجة التطبيقات بناءً على الصورة والمطالبة",
     "display_name": "ByteDance من صورة إلى فيديو",
@@ -2755,6 +2665,260 @@
     "inputs": {
       "values": {
         "name": "القيم"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudFlux2TextToImageNode": {
+    "description": "تجريبي. لا تزال مجموعة عقد Comfy Cloud تتغير: قد تُضاف خيارات أو تُزال، وقد يُوقف سير عمل. ينشئ صورة من مطالبة نصية باستخدام Flux 2 dev. يستبدل Turbo بـ LoRA المختار وجدول قصير، مقابل قدر بسيط من الدقة لتشغيل أسرع بكثير؛ أوقفه لاستخدام تمرير dev كامل المدة دون LoRA. يعمل على وحدة GPU في Comfy Cloud، وتُحتسب التكلفة حسب مدة التشغيل بسعر {'$'}0.001295 لكل GPU-ثانية (0.27 رصيد). الدفع بالأرصدة، ولا يلزم اشتراك Cloud.",
+    "display_name": "Comfy Cloud Flux 2 تحويل النص إلى صورة [تجريبي]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "إجمالي ميزانية البكسلات. تعادل 1.0 تقريبًا 1024x1024 بنسبة مربعة."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "turbo": {
+        "name": "turbo",
+        "tooltip": "شغّل Turbo LoRA بجدول قصير، مقابل قدر بسيط من الدقة لتشغيل أسرع بكثير. عند إيقافه، يُشغَّل تمرير dev كامل دون LoRA."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMageFlowTextToImageNode": {
+    "description": "تجريبي. لا تزال مجموعة عقد Comfy Cloud تتغير: قد تُضاف خيارات أو تُزال، وقد يُوقف سير عمل. ينشئ صورة من مطالبة نصية باستخدام Mage-Flow عبر تمرير كامل من 30 خطوة. يقبل مطالبة سلبية، لا يمكن للإصدار Turbo المُقطَّر استخدامها جيدًا. يعمل على وحدة GPU في Comfy Cloud، وتُحتسب التكلفة حسب مدة التشغيل بسعر {'$'}0.001295 لكل GPU-ثانية (0.27 رصيد). الدفع بالأرصدة، ولا يلزم اشتراك Cloud.",
+    "display_name": "Comfy Cloud Mage Flow تحويل النص إلى صورة [تجريبي]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "إجمالي ميزانية البكسلات. تعادل 1.0 تقريبًا 1024x1024 بنسبة مربعة."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "اتركه فارغًا للاحتفاظ بالمطالبة السلبية التي ضُبط عليها خط الأنابيب هذا."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMageFlowTurboTextToImageNode": {
+    "description": "تجريبي. لا تزال مجموعة عقد Comfy Cloud تتغير: قد تُضاف خيارات أو تُزال، وقد يُوقف سير عمل. ينشئ صورة من مطالبة نصية باستخدام Mage-Flow المُقطَّر خلال 4 خطوات عند cfg 1. يستهلك تقريبًا سُبع زمن GPU للتمرير الكامل، مما يجعله مناسبًا للتكرار. يعمل على وحدة GPU في Comfy Cloud، وتُحتسب التكلفة حسب مدة التشغيل بسعر {'$'}0.001295 لكل GPU-ثانية (0.27 رصيد). الدفع بالأرصدة، ولا يلزم اشتراك Cloud.",
+    "display_name": "Comfy Cloud Mage Flow Turbo تحويل النص إلى صورة [تجريبي]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "إجمالي ميزانية البكسلات. تعادل 1.0 تقريبًا 1024x1024 بنسبة مربعة."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "اتركه فارغًا للاحتفاظ بالمطالبة السلبية التي ضُبط عليها خط الأنابيب هذا."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3FirstLastFrameToVideoNode": {
+    "description": "تجريبي. لا تزال مجموعة عقد Comfy Cloud تتغير: قد تُضاف خيارات أو تُزال، وقد يُوقف سير عمل. ينشئ الحركة بين إطارين رئيسيين، مع مسار صوتي متوافق، باستخدام MiniMax H3. قدّم له الإطارين الافتتاحي والختامي، وسيملأ النموذج اللقطة بينهما. الإطار الأخير اختياري: اتركه خارجًا لتتواصل الحركة انطلاقًا من الإطار الأول بدلًا من ذلك. يعمل على وحدة GPU في Comfy Cloud، وتُحتسب التكلفة حسب مدة التشغيل بسعر {'$'}0.001295 لكل GPU-ثانية (0.27 رصيد). الدفع بالأرصدة، ولا يلزم اشتراك Cloud.",
+    "display_name": "Comfy Cloud MiniMax H3 من الإطار الأول والأخير إلى فيديو [تجريبي]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "duration_seconds": {
+        "name": "duration_seconds",
+        "tooltip": "المدة بالثواني. يكمّم خط الأنابيب إلى خطوات من 17 إطارًا عند 24fps، لذا ستكون مدة المقطع ضمن نحو ثلثي ثانية من هذه القيمة."
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "الإطار الأخير"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "ميزانية حجم الإطار. تكلّف 720p تقريبًا ضعف عدد GPU-ثانية مقارنةً بـ 480p."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3ImageToVideoNode": {
+    "description": "تجريبي. لا تزال مجموعة عُقد Comfy Cloud تتغير: قد تُضاف خيارات أو تُزال، وقد يُوقف سير عمل. يحرّك صورة ثابتة إلى فيديو بمسار صوتي متوافق باستخدام MiniMax H3. زوّده بالإطار الختامي لـclip وسيواصل التسلسل، لذا يتيح ربط عدة مقاطع إنشاء لقطة أطول. يعمل على GPU من Comfy Cloud، وتُحتسب التكلفة حسب مدة التشغيل بسعر {'$'}0.001295 لكل ثانية-GPU (0.27 رصيدًا). الدفع بالاعتمادات، ولا يلزم اشتراك Cloud.",
+    "display_name": "Comfy Cloud MiniMax H3 تحويل صورة إلى فيديو [تجريبي]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبة العرض إلى الارتفاع"
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "duration_seconds": {
+        "name": "المدة بالثواني",
+        "tooltip": "المدة بالثواني. يكمّم خط الأنابيب إلى خطوات من 17 إطارًا عند 24fps، لذا تقع مدة المقطع ضمن نحو ثلثي ثانية من هذه القيمة."
+      },
+      "first_frame": {
+        "name": "الإطار الأول"
+      },
+      "prompt": {
+        "name": "الموجّه"
+      },
+      "resolution": {
+        "name": "الدقة",
+        "tooltip": "ميزانية حجم الإطار. تكلف 720p ما يقارب ضعف ثواني GPU اللازمة لـ480p."
+      },
+      "seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3TextToVideoNode": {
+    "description": "تجريبي. لا تزال مجموعة عُقد Comfy Cloud تتغير: قد تُضاف خيارات أو تُزال، وقد يُوقف سير عمل. ينشئ فيديو بمسار صوتي متوافق من موجّه نصي باستخدام MiniMax H3. تُنتج الصورة والصوت في التمريرة نفسها بدلًا من دبلجة الصوت لاحقًا. يعمل على GPU من Comfy Cloud، وتُحتسب التكلفة حسب مدة التشغيل بسعر {'$'}0.001295 لكل ثانية-GPU (0.27 رصيدًا). الدفع بالاعتمادات، ولا يلزم اشتراك Cloud.",
+    "display_name": "Comfy Cloud MiniMax H3 تحويل نص إلى فيديو [تجريبي]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبة العرض إلى الارتفاع"
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "duration_seconds": {
+        "name": "المدة بالثواني",
+        "tooltip": "المدة بالثواني. يكمّم خط الأنابيب إلى خطوات من 17 إطارًا عند 24fps، لذا تقع مدة المقطع ضمن نحو ثلثي ثانية من هذه القيمة."
+      },
+      "prompt": {
+        "name": "الموجّه"
+      },
+      "resolution": {
+        "name": "الدقة",
+        "tooltip": "ميزانية حجم الإطار. تكلف 720p ما يقارب ضعف ثواني GPU اللازمة لـ480p."
+      },
+      "seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxMusic3TextToAudioNode": {
+    "description": "تجريبي. لا تزال مجموعة عُقد Comfy Cloud تتغير: قد تُضاف خيارات أو تُزال، وقد يُوقف سير عمل. ينشئ أغنية كاملة من وصف باستخدام MiniMax Music 3. يحدد الموجّه الأسلوب والآلات الموسيقية والمزاج؛ وتُغنّى الكلمات بدلًا من وصفها، وترك حقل الكلمات فارغًا يجعل المقطع موسيقيًا فقط. يعمل على GPU من Comfy Cloud، وتُحتسب التكلفة حسب مدة التشغيل بسعر {'$'}0.001295 لكل ثانية-GPU (0.27 رصيدًا). الدفع بالاعتمادات، ولا يلزم اشتراك Cloud.",
+    "display_name": "Comfy Cloud MiniMax Music 3 تحويل نص إلى صوت [تجريبي]",
+    "inputs": {
+      "audio_quality": {
+        "name": "جودة الصوت",
+        "tooltip": "معدل بت mp3. ‏V0 متغير وهو أعلى جودة من بين الخيارات الثلاثة."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "lyrics": {
+        "name": "الكلمات",
+        "tooltip": "الكلمات المراد غناؤها. اتركه فارغًا لمقطع موسيقي فقط."
+      },
+      "max_duration": {
+        "name": "المدة القصوى",
+        "tooltip": "أقصى مدة يمكن أن يستغرقها المقطع. قد ينهي النموذج الأغنية قبل ذلك."
+      },
+      "prompt": {
+        "name": "الموجّه"
+      },
+      "seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudZImageTurboNode": {
+    "description": "تجريبي. لا تزال مجموعة عُقد Comfy Cloud تتغير: قد تُضاف خيارات أو تُزال، وقد يُوقف سير عمل. ينشئ صورة من موجّه نصي باستخدام Z-Image Turbo في 8 خطوات. إحدى أسرع العُقد وأقلها تكلفة هنا، ما يجعلها مناسبة للتكرار عليها. يعمل على GPU من Comfy Cloud، وتُحتسب التكلفة حسب مدة التشغيل بسعر {'$'}0.001295 لكل ثانية-GPU (0.27 رصيدًا). الدفع بالاعتمادات، ولا يلزم اشتراك Cloud.",
+    "display_name": "Comfy Cloud Z-Image Turbo تحويل نص إلى صورة [تجريبي]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبة العرض إلى الارتفاع"
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "megapixels": {
+        "name": "الميغابكسل",
+        "tooltip": "إجمالي ميزانية البكسلات. تعادل 1.0 تقريبًا 1024x1024 عند نسبة مربعة."
+      },
+      "prompt": {
+        "name": "الموجّه"
+      },
+      "seed": {
+        "name": "البذرة"
       }
     },
     "outputs": {
@@ -6433,7 +6597,7 @@
     }
   },
   "GetImageSize": {
-    "description": "يعرض عرض وارتفاع الصورة، ويمررها دون تغيير.",
+    "description": "يعيد عرض الصورة وارتفاعها وحجم الدفعة.",
     "display_name": "الحصول على حجم الصورة",
     "inputs": {
       "image": {
@@ -7133,7 +7297,7 @@
       },
       "mode": {
         "name": "الوضع",
-        "tooltip": "'السرعة' أسرع؛ 'الدقة' تنتج مزامنة شفاه بجودة أعلى ولكن بتكلفة مضاعفة."
+        "tooltip": "‏'speed' أسرع؛ بينما يُنتج 'precision' مزامنة شفاه أعلى جودة بتكلفة أعلى."
       },
       "output_language": {
         "name": "اللغة المستهدفة",
@@ -7201,12 +7365,12 @@
     }
   },
   "HiDreamO1ReferenceImages": {
-    "description": "إرفاق ١-١٠ صور مرجعية للتهيئة، صورة واحدة لتعليمات التحرير أو عدة صور لتخصيص قائم على الموضوع.",
+    "description": "أرفق صورًا مرجعية مرتبة بالتكييف الإيجابي والسلبي.",
     "display_name": "صور مرجعية HiDream-O1",
     "inputs": {
       "images": {
         "name": "الصور",
-        "tooltip": "صور مرجعية. صورة واحدة = تحرير بالتعليمات؛ ٢-١٠ صور = مرجع متعدد."
+        "tooltip": "تُستخدم الصور المرجعية وفق الترتيب الرقمي للمقابس."
       },
       "negative": {
         "name": "سلبي"
@@ -9335,40 +9499,6 @@
       }
     }
   },
-  "KlingVideoExtendNode": {
-    "description": "عقدة تمديد الفيديو من كليينج. تمديد الفيديوهات المصنوعة بواسطة عقد كليينج الأخرى. يتم إنشاء video_id باستخدام عقد كليينج الأخرى.",
-    "display_name": "كليينج تمديد الفيديو",
-    "inputs": {
-      "cfg_scale": {
-        "name": "cfg_scale"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "نص سلبي لعناصر يجب تجنبها في الفيديو الممدد"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "نص إيجابي لتوجيه تمديد الفيديو"
-      },
-      "video_id": {
-        "name": "video_id",
-        "tooltip": "معرف الفيديو المراد تمديده. يدعم الفيديوهات الناتجة عن تحويل النص إلى فيديو، وتحويل الصورة إلى فيديو، وعمليات تمديد الفيديو السابقة. لا يمكن أن تتجاوز مدة الفيديو الإجمالية بعد التمديد 3 دقائق."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "duration",
-        "tooltip": null
-      }
-    }
-  },
   "KlingVideoNode": {
     "description": "إنشاء مقاطع فيديو باستخدام Kling V3. يدعم التحويل من نص إلى فيديو ومن صورة إلى فيديو مع إمكانية استخدام لوحة قصة متعددة التعليمات وخيار توليد الصوت.",
     "display_name": "Kling 3.0 فيديو",
@@ -11177,70 +11307,6 @@
       }
     }
   },
-  "LtxvApiImageToVideo": {
-    "description": "مقاطع فيديو بجودة احترافية مع مدة ودقة قابلة للتخصيص بناءً على الصورة الأولية.",
-    "display_name": "LTXV صورة إلى فيديو",
-    "inputs": {
-      "duration": {
-        "name": "مدة"
-      },
-      "fps": {
-        "name": "معدل الإطارات"
-      },
-      "generate_audio": {
-        "name": "إنشاء_صوت",
-        "tooltip": "عند تفعيله، سيتضمن الفيديو المُنشأ صوتًا مُولَّدًا بالذكاء الاصطناعي يتناسب مع المشهد."
-      },
-      "image": {
-        "name": "صورة",
-        "tooltip": "الإطار الأول الذي سيتم استخدامه للفيديو."
-      },
-      "model": {
-        "name": "نموذج"
-      },
-      "prompt": {
-        "name": "مُوجِّه"
-      },
-      "resolution": {
-        "name": "دقة"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LtxvApiTextToVideo": {
-    "description": "مقاطع فيديو بجودة احترافية مع مدة ودقة قابلة للتخصيص.",
-    "display_name": "LTXV نص إلى فيديو",
-    "inputs": {
-      "duration": {
-        "name": "مدة"
-      },
-      "fps": {
-        "name": "معدل الإطارات"
-      },
-      "generate_audio": {
-        "name": "إنشاء_صوت",
-        "tooltip": "عند تفعيله، سيتضمن الفيديو المُنشأ صوتًا مُولَّدًا بالذكاء الاصطناعي يتناسب مع المشهد."
-      },
-      "model": {
-        "name": "نموذج"
-      },
-      "prompt": {
-        "name": "مُوجِّه"
-      },
-      "resolution": {
-        "name": "دقة"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "LumaConceptsNode": {
     "description": "يحتوي على مفهوم كاميرا واحد أو أكثر للاستخدام مع Luma نص إلى فيديو وLuma صورة إلى فيديو.",
     "display_name": "مفاهيم لومة",
@@ -12710,6 +12776,84 @@
       }
     }
   },
+  "MetaMuseImageEditApi": {
+    "description": "يحرر أو يدمج ما يصل إلى 10 صور مرجعية وفقًا لموجّه نصي باستخدام نموذج Muse Image من Meta.",
+    "display_name": "Meta Muse Image: تحرير الصور",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المراد استخدامه."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_enable_image_search": {
+        "name": "enable_image_search"
+      },
+      "model_enable_shell": {
+        "name": "enable_shell"
+      },
+      "model_enable_web_search": {
+        "name": "enable_web_search"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_strength": {
+        "name": "reasoning_strength"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MetaMuseImageTextToImageApi": {
+    "description": "ينشئ صورًا من موجّه نصي باستخدام نموذج Muse Image من Meta، الذي يستدل حول الموجّه قبل التصيير.",
+    "display_name": "Meta Muse Image: تحويل النص إلى صورة",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المراد استخدامه."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_enable_image_search": {
+        "name": "enable_image_search"
+      },
+      "model_enable_shell": {
+        "name": "enable_shell"
+      },
+      "model_enable_web_search": {
+        "name": "enable_web_search"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_strength": {
+        "name": "reasoning_strength"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MiniMaxH3AddGuide": {
     "description": "ثبّت صورة أو clip قصيرًا أو صوتًا أو clip مع مساره الصوتي عند أي إطار من فيديو MiniMax H3. اربط عدة عُقد لتثبيت عدة إطارات.",
     "display_name": "إضافة دليل لـ MiniMax H3",
@@ -12744,6 +12888,46 @@
     "outputs": {
       "0": {
         "name": "إيجابي",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3FunControlNetApply": {
+    "description": "تطبيق MiniMax H3 Fun ControlNet على نموذج تحويل النص إلى فيديو كرقعة للنموذج.",
+    "display_name": "تطبيق MiniMax H3 Fun ControlNet",
+    "inputs": {
+      "control_video": {
+        "name": "control_video"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "يشير 1 إلى المناطق المطلوب إعادة توليدها."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "الفيديو خلف القناع؛ لا يُقرأ إلا عند توفير قناع."
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -12792,7 +12976,8 @@
     "display_name": "تحويل مرجع MiniMax H3 إلى فيديو",
     "inputs": {
       "audio_vae": {
-        "name": "audio_vae"
+        "name": "audio_vae",
+        "tooltip": "VAE للصوت. بدونه، لا يؤثر الصوت المرجعي إلا على مرمّز النص."
       },
       "clip": {
         "name": "clip"
@@ -12824,7 +13009,8 @@
         "name": "الفيديوهات المرجعية"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "VAE للفيديو. بدونه، لا تؤثر الصور/الفيديوهات المرجعية إلا على مرمّز النص."
       },
       "width": {
         "name": "العرض"
@@ -12933,7 +13119,7 @@
     }
   },
   "MinimaxHailuo03FirstLastFrameNode": {
-    "description": "توليد فيديو من صورة الإطار الأول وصورة إطار أخير اختيارية باستخدام نموذج MiniMax H3. نسبة العرض إلى الارتفاع للفيديو تتبع الصور المقدمة.",
+    "description": "أنشئ فيديو من صورة الإطار الأول وصورة اختيارية للإطار الأخير باستخدام نماذج MiniMax H3. تتبع نسبة أبعاد الفيديو الصور المُقدَّمة.",
     "display_name": "MiniMax H3 من إطار أول/أخير إلى فيديو",
     "inputs": {
       "control_after_generate": {
@@ -12976,7 +13162,7 @@
     }
   },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "إنشاء فيديو بناءً على صور مرجعية، فيديوهات، وصوت باستخدام نموذج MiniMax H3. ارجع إلى المراجع في النص حسب ترتيبها: 'صورة 1'، 'صورة 2'، 'فيديو 1'، 'صوت 1'، وهكذا.",
+    "description": "أنشئ فيديو مشروطًا بالصور والفيديوهات والصوت المرجعية باستخدام نماذج MiniMax H3. أشِر إلى المراجع في الموجّه وفق ترتيبها: «الصورة 1»، «الصورة 2»، «الفيديو 1»، «الصوت 1»، وهكذا.",
     "display_name": "MiniMax H3 مرجع إلى فيديو",
     "inputs": {
       "control_after_generate": {
@@ -13051,7 +13237,7 @@
     }
   },
   "MinimaxHailuo03TextToVideoNode": {
-    "description": "إنشاء فيديو من نص باستخدام نموذج MiniMax H3.",
+    "description": "أنشئ فيديو من موجّه نصي باستخدام نماذج MiniMax H3.",
     "display_name": "MiniMax H3 تحويل نص إلى فيديو",
     "inputs": {
       "control_after_generate": {
@@ -15810,7 +15996,11 @@
       },
       "max_output_tokens": {
         "name": "الرموز المخرجة القصوى",
-        "tooltip": "حد أعلى لعدد الرموز التي يمكن توليدها للاستجابة، بما في ذلك الرموز المخرجة المرئية"
+        "tooltip": "حد أقصى لعدد الرموز المميزة التي يمكن إنشاؤها للاستجابة، بما في ذلك رموز الإخراج المرئية ورموز الاستدلال"
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "مقدار استدلال النموذج قبل الإجابة. يترك 'default' الاختيار للنموذج. تختلف المستويات المدعومة حسب النموذج: GPT-6 Astra من low إلى max، وGPT-5.6 من none إلى max (دون minimal)، وGPT-5.5 من none إلى xhigh، وGPT-5.5 Pro من medium إلى xhigh، وGPT-5 من minimal إلى high، وسلسلة o من low إلى high؛ لا يدعم GPT-4.1 الاستدلال. تُرفض المستويات غير المدعومة قبل إرسال الطلب."
       },
       "truncation": {
         "name": "الاقتصاص",
@@ -15850,78 +16040,6 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "مدخلات نصية للنموذج، تُستخدم لإنشاء رد."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIDalle2": {
-    "description": "ينشئ صورًا بشكل متزامن عبر نقطة نهاية DALL·E 2 من OpenAI.",
-    "display_name": "OpenAI DALL·E 2",
-    "inputs": {
-      "control_after_generate": {
-        "name": "التحكم بعد الإنشاء"
-      },
-      "image": {
-        "name": "الصورة",
-        "tooltip": "صورة مرجعية اختيارية لتحرير الصور."
-      },
-      "mask": {
-        "name": "القناع",
-        "tooltip": "قناع اختياري للرسم الداخلي (سيتم استبدال المناطق البيضاء)"
-      },
-      "n": {
-        "name": "عدد الصور",
-        "tooltip": "كم عدد الصور التي يتم إنشاؤها"
-      },
-      "prompt": {
-        "name": "النص الوصفي",
-        "tooltip": "النص الوصفي لـ DALL·E"
-      },
-      "seed": {
-        "name": "البذرة",
-        "tooltip": "لم يتم تنفيذه بعد في الخلفية"
-      },
-      "size": {
-        "name": "الحجم",
-        "tooltip": "حجم الصورة"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIDalle3": {
-    "description": "ينشئ صورًا بشكل متزامن عبر نقطة نهاية DALL·E 3 من OpenAI.",
-    "display_name": "OpenAI DALL·E 3",
-    "inputs": {
-      "control_after_generate": {
-        "name": "التحكم بعد الإنشاء"
-      },
-      "prompt": {
-        "name": "النص الوصفي",
-        "tooltip": "النص الوصفي لـ DALL·E"
-      },
-      "quality": {
-        "name": "الجودة",
-        "tooltip": "جودة الصورة"
-      },
-      "seed": {
-        "name": "البذرة",
-        "tooltip": "لم يتم تنفيذه بعد في الخلفية"
-      },
-      "size": {
-        "name": "الحجم",
-        "tooltip": "حجم الصورة"
-      },
-      "style": {
-        "name": "الأسلوب",
-        "tooltip": "النمط 'Vivid' يجعل النموذج يميل لإنشاء صور فائقة الواقعية ودرامية. النمط 'Natural' يجعل النموذج ينتج صورًا أكثر طبيعية وأقل واقعية بشكل مبالغ."
       }
     },
     "outputs": {
@@ -16932,7 +17050,7 @@
   },
   "Preview3D": {
     "description": "معاينة ملف نموذج ثلاثي الأبعاد دون حفظه في دليل مخرجات ComfyUI.",
-    "display_name": "معاينة ثلاثية الأبعاد",
+    "display_name": "معاينة ثلاثية الأبعاد والرسوم المتحركة (مهمل)",
     "inputs": {
       "bg_image": {
         "name": "bg_image"
@@ -17945,7 +18063,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "نوع الإخراج الذي يُنشأ النمط له: recraftv4_styles للصور النقطية، وrecraftv4_styles_vector لـ SVG."
+        "tooltip": "النموذج الذي يُنشأ النمط له. يشترك Standard وPro في مجموعة أنماط واحدة: تعمل الأنماط النقطية مع كل نموذج نقطي من Recraft V4 وV4.1، وتعمل الأنماط المتجهية (*_vector) مع كل نموذج متجهي من V4 وV4.1."
       }
     },
     "outputs": {
@@ -18641,6 +18759,10 @@
       "multiple": {
         "name": "مضاعف",
         "tooltip": "أقرب مضاعف للنتيجة لتعيين الدقة المختارة عليه."
+      },
+      "preview": {
+        "name": "معاينة",
+        "tooltip": "معاينة مباشرة لدقة الإخراج المحسوبة."
       }
     },
     "outputs": {
@@ -21121,6 +21243,23 @@
       }
     }
   },
+  "SenseNovaSamplingOptions": {
+    "description": "تعيين إزاحة تدفق SenseNova.",
+    "display_name": "خيارات أخذ العينات لـ SenseNova",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SetClipHooks": {
     "display_name": "تعيين CLIP Hooks",
     "inputs": {
@@ -23429,10 +23568,12 @@
         "name": "تحريك في المكان"
       },
       "bake": {
-        "name": "خبز"
+        "name": "خبز",
+        "tooltip": "ضمّن المواد المتقدمة في الخامات الأساسية لتوافق أوسع."
       },
       "export_orientation": {
-        "name": "تصدير الاتجاه"
+        "name": "تصدير الاتجاه",
+        "tooltip": "المحور الأمامي للنموذج المُصدَّر. يحافظ default على +x الخاص بـ Tripo."
       },
       "export_vertex_colors": {
         "name": "تصدير ألوان الرؤوس"
@@ -23441,13 +23582,15 @@
         "name": "حد الوجه"
       },
       "fbx_preset": {
-        "name": "إعداد FBX"
+        "name": "إعداد FBX",
+        "tooltip": "إعداد مسبق لتوافق FBX. يقوم bake_scale بدمج تحويل المقياس في الهندسة."
       },
       "flatten_bottom": {
         "name": "تسوية القاع"
       },
       "flatten_bottom_threshold": {
-        "name": "عتبة تسوية القاع"
+        "name": "عتبة تسوية القاع",
+        "tooltip": "عمق التسطيح المستخدم مع flatten_bottom."
       },
       "force_symmetry": {
         "name": "فرض التماثل"
@@ -23480,15 +23623,66 @@
         "name": "حجم النسيج"
       },
       "with_animation": {
-        "name": "مع الحركة"
+        "name": "مع الحركة",
+        "tooltip": "احتفظ بالهيكل العظمي والحركة للنماذج المجهزة بهيكل عظمي أو المعاد استهدافها."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": "النموذج المُحوَّل بالتنسيق المطلوب. يسلّم Tripo ملف OBJ كأرشيف ZIP ‏(شبكة ومواد وخامات)."
+      }
+    }
+  },
+  "TripoEditMultiviewNode": {
+    "description": "يحرر مناظر ناتج Tripo: Image to Multiview باستخدام تعليمات نصية لكل منظور. تبقى المناظر التي لا تحتوي على تعليمات دون تغيير. أدخل الصور إلى Tripo: Multiview to Model؛ ولا يمكن تحرير مجموعة محررة مرة أخرى.",
+    "display_name": "Tripo: تحرير متعدد المناظر",
+    "inputs": {
+      "back_prompt": {
+        "name": "back_prompt"
+      },
+      "front_prompt": {
+        "name": "front_prompt"
+      },
+      "left_prompt": {
+        "name": "left_prompt"
+      },
+      "multiview_task_id": {
+        "name": "multiview_task_id"
+      },
+      "right_prompt": {
+        "name": "right_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "الأمامي",
+        "tooltip": null
+      },
+      "1": {
+        "name": "يسار",
+        "tooltip": null
+      },
+      "2": {
+        "name": "خلف",
+        "tooltip": null
+      },
+      "3": {
+        "name": "يمين",
+        "tooltip": null
       }
     }
   },
   "TripoImageToModelNode": {
     "display_name": "Tripo: الصورة إلى نموذج",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "تحجيم النماذج ذات النسيج إلى حجمها الحقيقي بالمتر. يخزّن Tripo الحجم كتحويل مشهد للنموذج ويثبّته عند تحويل النموذج أو تجهيزه بهيكل عظمي أو إعادة استهدافه؛ ويُتجاهل بدون texture."
+      },
       "face_limit": {
-        "name": "حد الوجه"
+        "name": "حد الوجه",
+        "tooltip": "الحد الأقصى لعدد الأوجه. تتيح القيمة -1 لـ Tripo الاختيار تكيفيًا (نحو 1.4M وجه في الإصدار القياسي v3.x، و2M في detailed). يفرض Tripo حدودًا بصمت: v2.5 عند 500,000، والشبكات الرباعية عند 150,000."
       },
       "geometry_quality": {
         "name": "جودة الهندسة"
@@ -23507,22 +23701,31 @@
         "name": "الاتجاه"
       },
       "pbr": {
-        "name": "pbr"
+        "name": "pbr",
+        "tooltip": "خرائط مواد PBR (اللون الأساسي، المعدنية، الخشونة، العادي). يتطلب texture."
       },
       "quad": {
-        "name": "رباعي"
+        "name": "رباعي",
+        "tooltip": "إخراج شبكة رباعية. يقدّم Tripo الشبكات الرباعية بصيغة FBX، لذا تصل النتيجة إلى مخرج FBX ويبقى مخرج GLB فارغًا."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "شبكة منخفضة المضلعات بطوبولوجيا نظيفة بأسلوب مصنوع يدويًا (500-20,000 وجه، والرباعي 500-10,000). الأفضل للموضوعات البسيطة؛ قد تفشل الموضوعات المعقدة."
       },
       "style": {
-        "name": "النمط"
+        "name": "النمط",
+        "tooltip": "لم يعد Tripo يدعمه ويتم تجاهله. أُبقي لسير العمل الأقدم."
       },
       "texture": {
-        "name": "النسيج"
+        "name": "النسيج",
+        "tooltip": "إنشاء خرائط النسيج. يؤدي إيقافه إلى إرجاع هندسة مجردة ويتجاهل pbr."
       },
       "texture_alignment": {
         "name": "محاذاة النسيج"
       },
       "texture_quality": {
-        "name": "جودة النسيج"
+        "name": "جودة النسيج",
+        "tooltip": "detailed = أنسجة HD، extreme = أنسجة Ultra بدقة 8K."
       },
       "texture_seed": {
         "name": "بذرة النسيج"
@@ -23539,6 +23742,41 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "فارغ عند تفعيل quad."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "يُملأ فقط عند تفعيل quad."
+      }
+    }
+  },
+  "TripoImageToMultiviewNode": {
+    "description": "ينشئ مناظر أمامية ويسرى وخلفية ويمنى للموضوع. أدخلها إلى Tripo: من مناظر متعددة إلى نموذج، أو حسّنها أولًا باستخدام Tripo: تحرير المناظر المتعددة.",
+    "display_name": "Tripo: من صورة إلى مناظر متعددة",
+    "inputs": {
+      "image": {
+        "name": "صورة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "معرّف مهمة المناظر المتعددة task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "أمام",
+        "tooltip": null
+      },
+      "2": {
+        "name": "يسار",
+        "tooltip": null
+      },
+      "3": {
+        "name": "خلف",
+        "tooltip": null
+      },
+      "4": {
+        "name": "يمين",
         "tooltip": null
       }
     }
@@ -23559,11 +23797,43 @@
       }
     }
   },
+  "TripoMeshCompleteNode": {
+    "description": "يُكمل أجزاء النموذج المُجزّأ ويُصلح المناطق المفقودة.",
+    "display_name": "Tripo: إكمال أجزاء الشبكة",
+    "inputs": {
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "أسماء الأجزاء المراد إكمالها، مفصولة بفواصل. يكتمل كل جزء عند تركه فارغًا."
+      },
+      "segment_task_id": {
+        "name": "segment_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "معرّف مهمة النموذج task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: متعدد المناظر إلى نموذج",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "قياس النماذج ذات الخامات إلى حجمها الحقيقي بالأمتار. يخزّن Tripo الحجم باعتباره تحويل مشهد النموذج ويضمّنه عند تحويل النموذج أو تجهيزه بهيكل عظمي أو إعادة استهدافه؛ يُتجاهل دون خامة."
+      },
       "face_limit": {
-        "name": "حد_الوجه"
+        "name": "حد_الوجه",
+        "tooltip": "الحد الأقصى لعدد الأوجه. تتيح القيمة -1 لـ Tripo الاختيار تكيفيًا (نحو 1.4M وجه في الإصدار القياسي v3.x، و2M في detailed). يفرض Tripo حدودًا بصمت: v2.5 عند 500,000، والشبكات الرباعية عند 150,000."
       },
       "geometry_quality": {
         "name": "جودة الهندسة"
@@ -23591,20 +23861,27 @@
         "name": "التوجيه"
       },
       "pbr": {
-        "name": "PBR"
+        "name": "PBR",
+        "tooltip": "خرائط مواد PBR (اللون الأساسي، المعدنية، الخشونة، العادي). يتطلب texture."
       },
       "quad": {
         "name": "رباعي",
-        "tooltip": "هذا المعامل قديم ولم يعد له أي تأثير."
+        "tooltip": "إخراج شبكة رباعية. يقدّم Tripo الشبكات الرباعية بصيغة FBX، لذا تصل النتيجة إلى مخرج FBX ويبقى مخرج GLB فارغًا."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "شبكة منخفضة المضلعات بطوبولوجيا نظيفة بأسلوب مصنوع يدويًا (500-20,000 وجه، والرباعي 500-10,000). الأفضل للموضوعات البسيطة؛ قد تفشل الموضوعات المعقدة."
       },
       "texture": {
-        "name": "الملمس"
+        "name": "الملمس",
+        "tooltip": "إنشاء خرائط النسيج. يؤدي إيقافه إلى إرجاع هندسة مجردة ويتجاهل pbr."
       },
       "texture_alignment": {
         "name": "محاذاة_الملمس"
       },
       "texture_quality": {
-        "name": "جودة_الملمس"
+        "name": "جودة_الملمس",
+        "tooltip": "detailed = أنسجة HD، extreme = أنسجة Ultra بدقة 8K."
       },
       "texture_seed": {
         "name": "بذرة_الملمس"
@@ -23621,7 +23898,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "يكون فارغًا عند تفعيل quad."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "يُملأ فقط عند تفعيل quad."
       }
     }
   },
@@ -23635,7 +23916,7 @@
       },
       "compress_geometry": {
         "name": "ضغط الهندسة",
-        "tooltip": "تطبيق ضغط هندسي. فك الضغط قبل التعديل."
+        "tooltip": "تطبيق ضغط هندسة meshopt ‏(EXT_meshopt_compression). ملفات أصغر، لكن معاينة ثلاثية الأبعاد في ComfyUI لا يمكنها عرضها؛ فك الضغط قبل التحرير."
       },
       "enable_image_autofix": {
         "name": "تفعيل تصحيح الصورة التلقائي",
@@ -23685,7 +23966,7 @@
       },
       "compress_geometry": {
         "name": "ضغط الهندسة",
-        "tooltip": "تطبيق ضغط هندسي. فك الضغط قبل التعديل."
+        "tooltip": "تطبيق ضغط هندسة meshopt ‏(EXT_meshopt_compression). ملفات أصغر، لكن معاينة ثلاثية الأبعاد في ComfyUI لا يمكنها عرضها؛ فك الضغط قبل التحرير."
       },
       "export_uv": {
         "name": "تصدير UV",
@@ -23744,7 +24025,7 @@
       },
       "compress_geometry": {
         "name": "ضغط الهندسة",
-        "tooltip": "تطبيق ضغط قائم على الهندسة. فك الضغط قبل التعديل."
+        "tooltip": "تطبيق ضغط هندسة meshopt ‏(EXT_meshopt_compression). ملفات أصغر، لكن معاينة ثلاثية الأبعاد في ComfyUI لا يمكنها عرضها؛ فك الضغط قبل التحرير."
       },
       "export_uv": {
         "name": "تصدير UV",
@@ -23791,11 +24072,24 @@
   "TripoRetargetNode": {
     "display_name": "Tripo: إعادة توجيه النموذج المجهز",
     "inputs": {
+      "animate_in_place": {
+        "name": "animate_in_place",
+        "tooltip": "تشغيل الرسوم المتحركة في موضعها، دون إزاحة الجذر."
+      },
       "animation": {
-        "name": "الرسوم_المتحركة"
+        "name": "الرسوم_المتحركة",
+        "tooltip": "تعمل الرسوم المتحركة preset:* مع كلا نموذجي الهيكل العظمي؛ تتطلب الرسوم المتحركة preset:biped:* هيكلًا عظميًا تم إنشاؤه باستخدام النموذج v1.0-20240301."
+      },
+      "export_with_geometry": {
+        "name": "export_with_geometry",
+        "tooltip": "تضمين الشبكة في التصدير؛ عند إيقافه، يُصدَّر الهيكل العظمي المتحرك فقط."
       },
       "original_model_task_id": {
         "name": "معرف_مهمة_النموذج_الأصلي"
+      },
+      "out_format": {
+        "name": "out_format",
+        "tooltip": "تنسيق ملف الإخراج؛ تصل النتيجة إلى الإخراج المطابق."
       }
     },
     "outputs": {
@@ -23809,15 +24103,97 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "يُملأ عندما يكون out_format هو glb."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "يُملأ عندما يكون out_format هو fbx."
+      }
+    }
+  },
+  "TripoRetopologyNode": {
+    "description": "يعيد بناء شبكة منخفضة المضلعات بطوبولوجيا نظيفة من نموذج عالي المضلعات.",
+    "display_name": "Tripo: إعادة بناء الطوبولوجيا",
+    "inputs": {
+      "bake": {
+        "name": "bake",
+        "tooltip": "دمج خامات المصدر على الشبكة منخفضة المضلعات."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "عدد الوجوه المستهدف: من 500 إلى 20,000 مثلث أو من 500 إلى 10,000 رباعي. تتيح القيمة -1 لـ Tripo الاختيار."
+      },
+      "model_task_id": {
+        "name": "model_task_id"
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "أسماء الأجزاء مفصولة بفواصل من Tripo: Segment Model. يعالج الحقل الفارغ النموذج بأكمله."
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "إخراج شبكة رباعية. يقدّم Tripo الشبكات الرباعية بصيغة FBX، لذا تصل النتيجة إلى إخراج FBX ويبقى إخراج GLB فارغًا."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "معرّف مهمة النموذج",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": "يكون فارغًا عند تفعيل quad."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "يُملأ فقط عند تفعيل quad."
+      }
+    }
+  },
+  "TripoRigCheckNode": {
+    "description": "يتحقق مما إذا كان يمكن تجهيز نموذج بهيكل عظمي ومن نوع الهيكل العظمي الذي يوصي به Tripo.",
+    "display_name": "Tripo: فحص الهيكل العظمي",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "قابل للتجهيز بهيكل عظمي",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_type",
+        "tooltip": "الهيكل العظمي الموصى به: biped أو quadruped أو hexapod أو octopod أو avian أو serpentine أو aquatic؛ وتكون القيمة 'others' عندما لا يكون النموذج قابلاً للتجهيز بهيكل عظمي."
       }
     }
   },
   "TripoRigNode": {
     "display_name": "Tripo: تجهيز النموذج",
     "inputs": {
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "v1.0: شخصيات بشرية الشكل (ثنائية الأرجل) فقط، أكثر من 90 إعدادًا مسبقًا للحركة. v2.5: مخلوقات غير بشرية الشكل (رباعية الأرجل، سداسية الأرجل، ثمانية الأرجل، طيرية، أفعوانية، مائية)."
+      },
       "original_model_task_id": {
         "name": "معرف_مهمة_النموذج_الأصلي"
+      },
+      "out_format": {
+        "name": "out_format",
+        "tooltip": "تنسيق ملف الإخراج؛ تصل النتيجة إلى المخرج المطابق."
+      },
+      "rig_type": {
+        "name": "rig_type",
+        "tooltip": "نوع الهيكل العظمي. يشغّل 'auto' فحص الهيكل المجاني من Tripo أولًا ويستخدم النوع الموصى به."
+      },
+      "spec": {
+        "name": "spec",
+        "tooltip": "تسمية العظام: أصلية لـ Tripo أو متوافقة مع Mixamo. لا يستطيع Tripo إعادة استهداف إعداداته المسبقة للحركة إلى هيكل v1.0 مُنشأ بمواصفة mixamo؛ استخدم tripo مع Tripo: Retarget rigged model."
       }
     },
     "outputs": {
@@ -23831,7 +24207,38 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "يُملأ عندما يكون out_format هو glb."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "يُملأ عندما يكون out_format هو fbx."
+      }
+    }
+  },
+  "TripoSegmentNode": {
+    "description": "يقسم نموذجًا إلى أجزاء. تُغذّي أسماء الأجزاء العقد Tripo: Complete Mesh Parts وTripo: Retopology وTripo: Convert model.",
+    "display_name": "Tripo: تقسيم النموذج",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "مهمة task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "part_names",
+        "tooltip": "أسماء الأجزاء مفصولة بفواصل."
       }
     }
   },
@@ -23933,8 +24340,13 @@
   "TripoTextToModelNode": {
     "display_name": "Tripo: النص إلى نموذج",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "تحجيم النماذج ذات الخامات إلى حجمها الحقيقي بالأمتار. يخزن Tripo الحجم كتحويل مشهد للنموذج ويدمجه عند تحويل النموذج أو تجهيزه بهيكل أو إعادة استهدافه؛ ويُتجاهل دون خامة."
+      },
       "face_limit": {
-        "name": "حد_الوجه"
+        "name": "حد_الوجه",
+        "tooltip": "الحد الأقصى لعدد الأوجه. تتيح -1 لـ Tripo الاختيار تكيفيًا (نحو 1.4M وجه في معيار v3.x، و2M في detailed). يفرض Tripo حدًا بصمت: v2.5 عند 500,000، والشبكات الرباعية عند 150,000."
       },
       "geometry_quality": {
         "name": "جودة الهندسة"
@@ -23949,25 +24361,35 @@
         "name": "إصدار_النموذج"
       },
       "negative_prompt": {
-        "name": "النص_السلبي"
+        "name": "النص_السلبي",
+        "tooltip": "حتى 255 حرفًا."
       },
       "pbr": {
-        "name": "PBR"
+        "name": "PBR",
+        "tooltip": "خرائط مادة PBR (اللون الأساسي، المعدني، الخشونة، العادي). يتطلب texture."
       },
       "prompt": {
         "name": "المطالبة"
       },
       "quad": {
-        "name": "رباعي"
+        "name": "رباعي",
+        "tooltip": "إخراج شبكة رباعية. يسلّم Tripo الشبكات الرباعية بصيغة FBX، لذا تصل النتيجة إلى مخرج FBX ويبقى مخرج GLB فارغًا."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "شبكة منخفضة المضلع بتوبولوجيا نظيفة بأسلوب مصنوع يدويًا (500-20,000 وجه، والرباعي 500-10,000). الأفضل للموضوعات البسيطة؛ وقد تفشل الموضوعات المعقدة."
       },
       "style": {
-        "name": "النمط"
+        "name": "النمط",
+        "tooltip": "لم يعد مدعومًا من Tripo ويتم تجاهله. تم الاحتفاظ به لسير العمل الأقدم."
       },
       "texture": {
-        "name": "الملمس"
+        "name": "الملمس",
+        "tooltip": "إنشاء خرائط الخامة. يؤدي إيقافه إلى إرجاع هندسة مجردة ويتجاهل pbr."
       },
       "texture_quality": {
-        "name": "جودة_الملمس"
+        "name": "جودة_الملمس",
+        "tooltip": "detailed = خامات HD، extreme = خامات Ultra بدقة 8K."
       },
       "texture_seed": {
         "name": "بذرة_الملمس"
@@ -23984,7 +24406,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "فارغ عند تمكين quad."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "يُملأ فقط عند تمكين quad."
       }
     }
   },
@@ -23994,21 +24420,40 @@
       "model_task_id": {
         "name": "معرف_مهمة_النموذج"
       },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "نموذج الخامة: v3.0 للشبكات المُنشأة باستخدام v3.x، وv2.5 للشبكات المُنشأة باستخدام v2.5."
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "أسماء الأجزاء مفصولة بفواصل من Tripo: Segment Model لتطبيق الخامات عليها. عند تركها فارغة، تُطبَّق الخامات على كل جزء."
+      },
       "pbr": {
-        "name": "PBR"
+        "name": "PBR",
+        "tooltip": "خرائط مادة PBR (اللون الأساسي، المعدني، الخشونة، العادي)؛ يؤدي إيقافه إلى خامة بلون بسيط."
+      },
+      "reference": {
+        "name": "reference",
+        "tooltip": "صور مرجعية لتوجيه الخامات. لا يمكن دمجها مع texture_prompt أو style_image."
+      },
+      "style_image": {
+        "name": "style_image",
+        "tooltip": "صورة مرجعية للنمط الفني للخامات. تُستخدم فقط مع texture_prompt."
       },
       "texture": {
-        "name": "الملمس"
+        "name": "الملمس",
+        "tooltip": "يُتجاهل: تنشئ هذه العقدة خامات دائمًا. تم الاحتفاظ به لسير العمل الأقدم."
       },
       "texture_alignment": {
         "name": "محاذاة_الملمس"
       },
       "texture_prompt": {
         "name": "texture_prompt",
-        "tooltip": "إرشادات نصية اختيارية للإكساء. مطلوبة عملياً للنماذج المستوردة (Tripo: استيراد نموذج)، والتي لا تحتوي على صورة مصدر لاستنتاج الألوان منها."
+        "tooltip": "إرشاد نصي اختياري لإضافة الخامات. مطلوب عمليًا للنماذج المستوردة (Tripo: Import Model)، التي لا تحمل صورة مصدر لاستنتاج الألوان منها. لا يمكن دمجه مع الصور المرجعية."
       },
       "texture_quality": {
-        "name": "جودة_الملمس"
+        "name": "جودة_الملمس",
+        "tooltip": "detailed = خامات HD، extreme = خامات Ultra بدقة 8K."
       },
       "texture_seed": {
         "name": "بذرة_الملمس"
@@ -24025,7 +24470,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "يكون فارغًا عندما يكون المصدر شبكة رباعية أو استيراد FBX."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "يعيد Tripo ملف FBX للشبكات الرباعية وعمليات استيراد FBX؛ ويكون فارغًا بخلاف ذلك."
       }
     }
   },
@@ -24755,6 +25204,23 @@
       }
     }
   },
+  "VideoCrop": {
+    "display_name": "اقتصاص الفيديو",
+    "inputs": {
+      "crop": {
+        "name": "crop",
+        "tooltip": "منطقة الاقتصاص بالبكسل. يَحفظ العرض/الارتفاع الصفري الإطار كاملاً."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VideoFrameSample": {
     "description": "استخلاص عدد ثابت من الإطارات من فيديو باستخدام استراتيجيات متنوعة.",
     "display_name": "استخلاص إطار من الفيديو",
@@ -24856,6 +25322,27 @@
       },
       "model": {
         "name": "النموذج"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "اقتطاع الفيديو (متقدم)",
+    "inputs": {
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "إذا كانت القيمة True، فسيُثار خطأ عند تعذّر تحقيق المدة المحددة."
+      },
+      "trim": {
+        "name": "trim",
+        "tooltip": "نافذة الاقتطاع باستخدام إطارات البداية/النهاية."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

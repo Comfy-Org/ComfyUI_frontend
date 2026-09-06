@@ -1,10 +1,11 @@
+import { uniqBy } from 'es-toolkit'
 import { useToast } from 'primevue/usetoast'
 import { inject } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import { downloadFile } from '@/base/common/downloadUtil'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useWorkflowActionsService } from '@/platform/workflow/core/services/workflowActionsService'
@@ -12,11 +13,11 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
-import { useDialogStore } from '@/stores/dialogStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import {
   getAssetDisplayName,
@@ -27,17 +28,15 @@ import { getAssetUrl } from '../utils/assetUrlUtil'
 import { clearDeletedAssetWidgetValues } from '../utils/clearDeletedAssetWidgetValues'
 import { clearNodePreviewCacheForValues } from '../utils/clearNodePreviewCacheForValues'
 import { markDeletedAssetsAsMissingMedia } from '../utils/markDeletedAssetsAsMissingMedia'
-import {
-  getTotalAssetOutputCount,
-  resolveOutputAssetItems
-} from '../utils/outputAssetUtil'
+import { getTotalAssetOutputCount } from '../utils/outputAssetCountUtil'
+import { resolveOutputAssetItems } from '../utils/outputAssetUtil'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
 
 import { useAssetExportStore } from '@/stores/assetExportStore'
 
-import type { AssetItem } from '../schemas/assetSchema'
+import type { AssetId, AssetItem } from '../schemas/assetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import { assetService } from '../services/assetService'
 
@@ -63,13 +62,15 @@ function createAssetWidgetPath(asset: AssetItem): string {
  * annotation. The content `hash` is included whenever present, since
  * cloud-stored assets can be referenced by hash.
  */
-function widgetValueVariantsForAsset(asset: AssetItem): string[] {
+function widgetValueVariants(
+  name: string | undefined,
+  type: string,
+  subfolder?: string,
+  hash?: string
+): string[] {
   const variants: string[] = []
-  const type = getAssetType(asset, 'input')
-  const name = asset.name
   if (name) {
     if (type === 'output') {
-      const subfolder = getOutputAssetMetadata(asset.user_metadata)?.subfolder
       const path = subfolder ? `${subfolder}/${name}` : name
       variants.push(`${path} [output]`)
     } else if (type === 'temp') {
@@ -79,7 +80,6 @@ function widgetValueVariantsForAsset(asset: AssetItem): string[] {
       variants.push(`${name} [input]`)
     }
   }
-  const hash = asset.hash
   if (hash) variants.push(hash)
   return variants
 }
@@ -87,39 +87,14 @@ function widgetValueVariantsForAsset(asset: AssetItem): string[] {
 export function useMediaAssetActions() {
   const { t } = useI18n()
   const toast = useToast()
-  const dialogStore = useDialogStore()
+  const assetsStore = useAssetsStore()
+  const dialogService = useDialogService()
   const mediaContext = inject(MediaAssetKey, null)
   const { copyToClipboard } = useCopyToClipboard()
+  const { flags } = useFeatureFlags()
   const workflowActions = useWorkflowActionsService()
   const litegraphService = useLitegraphService()
   const nodeDefStore = useNodeDefStore()
-
-  /**
-   * Internal helper to perform the API deletion for a single asset
-   * Handles both output assets (via history API) and input assets (via asset service)
-   * @throws Error if deletion fails or is not allowed
-   */
-  const deleteAssetApi = async (
-    asset: AssetItem,
-    assetType: string
-  ): Promise<void> => {
-    // Temp files (e.g. preview-node outputs) are history-backed outputs that
-    // happen to live in the temp dir, so they delete via the history API too.
-    if (assetType === 'output' || assetType === 'temp') {
-      const jobId =
-        getOutputAssetMetadata(asset.user_metadata)?.jobId || asset.id
-      if (!jobId) {
-        throw new Error('Unable to extract job ID from asset')
-      }
-      await api.deleteItem('history', jobId)
-    } else {
-      // Input assets can only be deleted in cloud environment
-      if (!isCloud) {
-        throw new Error(t('mediaAsset.deletingImportedFilesCloudOnly'))
-      }
-      await assetService.deleteAsset(asset.id)
-    }
-  }
 
   /**
    * Download one or more assets.
@@ -350,14 +325,6 @@ export function useMediaAssetActions() {
     }
 
     const nodeDef = nodeDefStore.nodeDefsByName[nodeType]
-    if (!nodeDef) {
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('mediaAsset.nodeTypeNotFound', { nodeType })
-      })
-      return
-    }
 
     const node = withNodeAddSource('programmatic', () =>
       litegraphService.addNodeOnGraph(nodeDef, {
@@ -464,8 +431,6 @@ export function useMediaAssetActions() {
    * Creates loader nodes for each asset
    */
   const addMultipleToWorkflow = async (assets: AssetItem[]) => {
-    if (!assets || assets.length === 0) return
-
     const NODE_OFFSET = 50
     let nodeIndex = 0
     let succeeded = 0
@@ -480,10 +445,6 @@ export function useMediaAssetActions() {
       }
 
       const nodeDef = nodeDefStore.nodeDefsByName[nodeType]
-      if (!nodeDef) {
-        failed++
-        continue
-      }
 
       const center = litegraphService.getCanvasCenter()
       const node = withNodeAddSource('programmatic', () =>
@@ -544,8 +505,6 @@ export function useMediaAssetActions() {
    * Open workflows from multiple assets in new tabs
    */
   const openMultipleWorkflows = async (assets: AssetItem[]) => {
-    if (!assets || assets.length === 0) return
-
     let succeeded = 0
     let failed = 0
 
@@ -598,8 +557,6 @@ export function useMediaAssetActions() {
    * Export workflows from multiple assets as JSON files
    */
   const exportMultipleWorkflows = async (assets: AssetItem[]) => {
-    if (!assets || assets.length === 0) return
-
     let succeeded = 0
     let failed = 0
 
@@ -658,176 +615,234 @@ export function useMediaAssetActions() {
    * @param assets Single asset or array of assets to delete
    * @returns true if user confirmed and deletion was attempted, false if cancelled
    */
-  const deleteAssets = async (
-    assets: AssetItem | AssetItem[]
-  ): Promise<boolean> => {
-    const assetArray = Array.isArray(assets) ? assets : [assets]
-    if (assetArray.length === 0) return false
+  async function deleteAssets(input: AssetItem[] | AssetItem) {
+    const assets = Array.isArray(input) ? input : [input]
+    interface BaseDeleteOperation {
+      kind: string
+      dependents?: DeleteOperation[]
+      markDeletionId?: AssetId
+      name?: string
+    }
+    interface AssetDeletion extends BaseDeleteOperation {
+      kind: 'asset'
+      variants: string[]
+      id: AssetId
+      tags?: string[]
+    }
+    interface JobDeletion extends BaseDeleteOperation {
+      kind: 'job'
+      id: string
+    }
+    type DeleteOperation = AssetDeletion | JobDeletion
 
-    const assetsStore = useAssetsStore()
-    const isSingle = assetArray.length === 1
+    function getDeletionPlan(): DeleteOperation[] {
+      if (!flags.assetsEnabled) {
+        const operations: JobDeletion[] = assets.flatMap((asset) => {
+          const markDeletionId = asset.id
+          const { jobId } = getOutputAssetMetadata(asset.user_metadata) ?? {}
+          if (!jobId) return []
 
-    return new Promise((resolve) => {
-      dialogStore.showDialog({
-        key: 'delete-assets-confirmation',
-        title: isSingle
-          ? t('mediaAsset.deleteAssetTitle')
-          : t('mediaAsset.deleteSelectedTitle'),
-        component: ConfirmationDialogContent,
-        props: {
-          message: isSingle
-            ? t('mediaAsset.deleteAssetDescription')
-            : t('mediaAsset.deleteSelectedDescription', {
-                count: assetArray.length
-              }),
-          type: 'delete',
-          itemList: assetArray.map((asset) => getAssetDisplayName(asset)),
-          onConfirm: async () => {
-            // Show loading overlay for all assets being deleted
-            assetArray.forEach((asset) =>
-              assetsStore.setAssetDeleting(asset.id, true)
-            )
+          const name = getAssetDisplayName(asset)
+          return [{ kind: 'job', id: jobId, name, markDeletionId }]
+        })
+        return uniqBy(operations, (op) => op.id)
+      }
+      if (!flags.assetDeletionEnabled) {
+        toast.add({
+          detail: t('mediaAsset.deletionUnsupported'),
+          life: 5000,
+          severity: 'error',
+          summary: t('g.error')
+        })
+        return []
+      }
+      return assets.flatMap((asset) => {
+        const markDeletionId = asset.id
+        const metadata = getOutputAssetMetadata(asset.user_metadata)
+        const childAssets: AssetDeletion[] = (
+          metadata?.allOutputs ?? []
+        ).flatMap((output) => {
+          if (!output.assetId) return []
 
-            try {
-              // Delete all assets using Promise.allSettled to track individual results
-              const results = await Promise.allSettled(
-                assetArray.map((asset) =>
-                  deleteAssetApi(asset, getAssetType(asset))
-                )
-              )
-
-              // Count successes and failures
-              const succeeded = results.filter(
-                (r) => r.status === 'fulfilled'
-              ).length
-              const failed = results.filter((r) => r.status === 'rejected')
-
-              // Log failed deletions for debugging
-              failed.forEach((result, index) => {
-                console.warn(
-                  `Failed to delete asset ${assetArray[index].name}:`,
-                  result.reason
-                )
-              })
-
-              // Update stores after deletions
-              const hasOutputAssets = assetArray.some((a) => {
-                const type = getAssetType(a)
-                return type === 'output' || type === 'temp'
-              })
-              const hasInputAssets = assetArray.some(
-                (a) => getAssetType(a) === 'input'
-              )
-
-              if (hasOutputAssets) {
-                await assetsStore.updateHistory()
-              }
-              if (hasInputAssets) {
-                await assetsStore.updateInputs()
-              }
-
-              const rootGraph = app.rootGraph
-              if (rootGraph) {
-                const deletedValues = new Set<string>()
-                assetArray.forEach((asset, index) => {
-                  if (results[index].status !== 'fulfilled') return
-                  for (const value of widgetValueVariantsForAsset(asset)) {
-                    deletedValues.add(value)
-                  }
-                })
-                if (deletedValues.size > 0) {
-                  const nodeOutputStore = useNodeOutputStore()
-                  // Order matters: mark + cache-clear both look up nodes by
-                  // current widget.value, so they must run before
-                  // clearDeletedAssetWidgetValues blanks those values.
-                  markDeletedAssetsAsMissingMedia(rootGraph, deletedValues)
-                  clearNodePreviewCacheForValues(
-                    rootGraph,
-                    deletedValues,
-                    (node) => nodeOutputStore.removeNodeOutputsForNode(node)
-                  )
-                  clearDeletedAssetWidgetValues(rootGraph, deletedValues)
-                  useWorkflowStore().activeWorkflow?.changeTracker?.captureCanvasState()
-                }
-              }
-
-              // Invalidate model caches for affected categories
-              const modelCategories = new Set<string>()
-
-              for (const asset of assetArray) {
-                for (const tag of asset.tags ?? []) {
-                  if (EXCLUDED_TAGS.has(tag)) continue
-                  if (assetsStore.hasCategory(tag)) {
-                    modelCategories.add(tag)
-                  }
-                }
-              }
-
-              for (const category of modelCategories) {
-                assetsStore.invalidateModelsForCategory(category)
-              }
-
-              // Show appropriate feedback based on results
-              if (failed.length === 0) {
-                toast.add({
-                  severity: 'success',
-                  summary: t('g.success'),
-                  detail: isSingle
-                    ? t('mediaAsset.assetDeletedSuccessfully')
-                    : t(
-                        'mediaAsset.selection.assetsDeletedSuccessfully',
-                        succeeded
-                      ),
-                  life: 2000
-                })
-              } else if (succeeded === 0) {
-                toast.add({
-                  severity: 'error',
-                  summary: t('g.error'),
-                  detail: isSingle
-                    ? t('mediaAsset.failedToDeleteAsset')
-                    : t('mediaAsset.selection.failedToDeleteAssets')
-                })
-              } else {
-                // Partial success (only possible with multiple assets)
-                toast.add({
-                  severity: 'warn',
-                  summary: t('g.warning'),
-                  detail: t('mediaAsset.selection.partialDeleteSuccess', {
-                    succeeded,
-                    failed: failed.length
-                  }),
-                  life: 3000
-                })
-              }
-            } catch (error) {
-              console.error('Failed to delete assets:', error)
-              toast.add({
-                severity: 'error',
-                summary: t('g.error'),
-                detail: isSingle
-                  ? t('mediaAsset.failedToDeleteAsset')
-                  : t('mediaAsset.selection.failedToDeleteAssets')
-              })
-            } finally {
-              // Hide loading overlay for all assets
-              assetArray.forEach((asset) =>
-                assetsStore.setAssetDeleting(asset.id, false)
-              )
-            }
-
-            resolve(true)
-          },
-          onCancel: () => {
-            resolve(false)
+          const variants = widgetValueVariants(
+            output.filename,
+            output.type,
+            output.subfolder
+          )
+          return {
+            kind: 'asset',
+            markDeletionId,
+            name: output.display_name || output.filename,
+            id: output.assetId,
+            tags: asset.tags,
+            variants
           }
-        },
-        dialogComponentProps: {
-          renderer: 'reka',
-          size: 'md'
-        }
+        })
+        if (childAssets.length > 0) return childAssets
+
+        const variants = widgetValueVariants(
+          asset.name,
+          getAssetType(asset, 'input'),
+          metadata?.subfolder,
+          asset.hash
+        )
+        return [
+          {
+            kind: 'asset',
+            id: asset.id,
+            markDeletionId,
+            name: getAssetDisplayName(asset),
+            tags: asset.tags,
+            variants
+          }
+        ]
       })
+    }
+
+    function getNames(operation: DeleteOperation): string[] {
+      return [
+        ...(operation.name ? [operation.name] : []),
+        ...(operation.dependents ? operation.dependents.flatMap(getNames) : [])
+      ]
+    }
+    function getOperationCount(
+      kind: string,
+      operation: DeleteOperation[]
+    ): number {
+      return operation.reduce((tally, op) => {
+        const selfCount = op.kind === kind ? 1 : 0
+        const dependents = getOperationCount(kind, op.dependents ?? [])
+        return tally + selfCount + dependents
+      }, 0)
+    }
+
+    const deletedVariants = new Set<string>()
+    const invalidatedModelTags = new Set<string>()
+
+    let deletedAssetCount = 0
+    async function deleteAsset(operation: AssetDeletion) {
+      await assetService.deleteAsset(operation.id)
+      deletedAssetCount++
+      for (const variant of operation.variants) deletedVariants.add(variant)
+      for (const tag of operation.tags ?? []) {
+        if (!EXCLUDED_TAGS.has(tag) && assetsStore.hasCategory(tag))
+          invalidatedModelTags.add(tag)
+      }
+      void assetsStore.inputAssets.invalidate([operation.id])
+    }
+    let deletedJobCount = 0
+    async function deleteJob(operation: JobDeletion) {
+      await api.deleteItem('history', operation.id)
+      deletedJobCount++
+    }
+    async function performDelete(
+      operation: DeleteOperation
+    ): Promise<unknown[]> {
+      if (operation.markDeletionId)
+        assetsStore.setAssetDeleting(operation.markDeletionId, true)
+      try {
+        if (operation.dependents) {
+          const failedDependents = (
+            await Promise.all(operation.dependents.map(performDelete))
+          ).flat()
+          if (failedDependents.length) return failedDependents
+        }
+
+        try {
+          if (operation.kind === 'asset') await deleteAsset(operation)
+          else await deleteJob(operation)
+        } catch (err) {
+          return [err]
+        }
+      } finally {
+        if (operation.markDeletionId)
+          assetsStore.setAssetDeleting(operation.markDeletionId, false)
+      }
+
+      return []
+    }
+
+    const deletionPlan = getDeletionPlan()
+    if (!deletionPlan.length) return false
+
+    const plannedAssetCount = getOperationCount('asset', deletionPlan)
+    const plannedJobCount = getOperationCount('job', deletionPlan)
+    const deleteConfirmed = await dialogService.confirm({
+      title: t('mediaAsset.deleteItems'),
+      type: 'delete',
+      message: plannedAssetCount
+        ? t('mediaAsset.deletePermanent')
+        : t('mediaAsset.deleteHistoryOnly'),
+      itemList: deletionPlan.flatMap(getNames)
     })
+    if (!deleteConfirmed) return false
+
+    const failedDeletions = (
+      await Promise.all(deletionPlan.map(performDelete))
+    ).flat()
+
+    const rootGraph = app.rootGraph
+    if (deletedVariants.size) {
+      const nodeOutputStore = useNodeOutputStore()
+      // Order matters: mark + cache-clear both look up nodes by
+      // current widget.value, so they must run before
+      // clearDeletedAssetWidgetValues blanks those values.
+      markDeletedAssetsAsMissingMedia(rootGraph, deletedVariants)
+      clearNodePreviewCacheForValues(rootGraph, deletedVariants, (node) =>
+        nodeOutputStore.removeNodeOutputsForNode(node)
+      )
+      clearDeletedAssetWidgetValues(rootGraph, deletedVariants)
+      useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
+    }
+
+    for (const category of invalidatedModelTags)
+      assetsStore.invalidateModelsForCategory(category)
+
+    if (!flags.assetsEnabled) {
+      const hasOutputAssets = assets.some((a) => {
+        const type = getAssetType(a)
+        return type === 'output' || type === 'temp'
+      })
+      const hasInputAssets = assets.some((a) => getAssetType(a) === 'input')
+
+      if (hasOutputAssets) {
+        await assetsStore.outputAssets.invalidate()
+      }
+      if (hasInputAssets) {
+        await assetsStore.inputAssets.invalidate()
+      }
+    }
+
+    const severity =
+      failedDeletions.length === 0
+        ? 'success'
+        : deletedJobCount || deletedAssetCount
+          ? 'warn'
+          : 'error'
+
+    const resultMessages: string[] = []
+    if (plannedAssetCount) {
+      resultMessages.push(
+        t(
+          'mediaAsset.assetsDeleted',
+          { total: plannedAssetCount },
+          deletedAssetCount
+        )
+      )
+    }
+    if (plannedJobCount) {
+      resultMessages.push(
+        t('mediaAsset.jobsDeleted', { total: plannedJobCount }, deletedJobCount)
+      )
+    }
+
+    toast.add({
+      detail: resultMessages.join('\n'),
+      life: severity === 'success' ? 2000 : 5000,
+      severity,
+      summary: t(`mediaAsset.assetDelete.${severity}`)
+    })
+    return true
   }
 
   return {

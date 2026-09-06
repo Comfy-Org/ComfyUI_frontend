@@ -38,8 +38,8 @@ const { siteUrl, locale, url } = pageContext(
   Astro.currentLocale
 )
 
-const title = event.title[locale]
-const description = event.description[locale]
+const title = event.title[locale] || event.title.en
+const description = event.description[locale] || event.description.en
 // Same build-time clock as the derived lists, so the page body always agrees
 // with the section rendered behind the dialog.
 const isPast = pastEvents.includes(event)
@@ -53,7 +53,9 @@ const videoJsonLd: JsonLdNode | undefined =
         name: title,
         description,
         thumbnailUrl: event.media.src,
-        contentUrl: youtubeWatchHref(event.recordingVideoId)[locale],
+        contentUrl:
+          youtubeWatchHref(event.recordingVideoId)[locale] ||
+          youtubeWatchHref(event.recordingVideoId).en,
         embedUrl: `https://www.youtube-nocookie.com/embed/${event.recordingVideoId}`,
         uploadDate: event.startDateTime,
         locale

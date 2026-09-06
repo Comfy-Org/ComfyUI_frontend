@@ -33,7 +33,7 @@ const { siteUrl, locale, url } = pageContext(
   Astro.currentLocale
 )
 
-const title = tutorial.title[locale]
+const title = tutorial.title[locale] || tutorial.title.en
 const description = tutorialDescription(tutorial, locale)
 const videoId = jsonLdId(url, 'video')
 

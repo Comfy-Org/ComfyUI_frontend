@@ -20,6 +20,7 @@ import type {
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
   ImageLoadFailureMetadata,
+  LinkDedupDropMetadata,
   NamedValuesShadowDiffMismatchMetadata,
   NamedValuesShadowDiffSummaryMetadata,
   NodeAddedMetadata,
@@ -110,6 +111,12 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
     this.dispatch((provider) => provider.trackImageLoadFailed?.(metadata))
+  }
+
+  trackFeatureFlagEvaluation(key: string, value: unknown): void {
+    this.dispatch((provider) =>
+      provider.trackFeatureFlagEvaluation?.(key, value)
+    )
   }
 
   trackUserLoggedIn(): void {
@@ -391,6 +398,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) =>
       provider.trackNamedValuesShadowDiffSummary?.(metadata)
     )
+  }
+
+  trackLinkDedupDrop(metadata: LinkDedupDropMetadata): void {
+    this.dispatch((provider) => provider.trackLinkDedupDrop?.(metadata))
   }
 
   trackPageView(pageName: string, properties?: PageViewMetadata): void {

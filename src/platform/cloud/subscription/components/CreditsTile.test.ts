@@ -255,6 +255,51 @@ describe('CreditsTile', () => {
     expect(container.textContent).toContain('422 left of 21K')
   })
 
+  // 1991 cents is what the backend grants for STANDARD's 4,200-credit
+  // allowance; reconstructing it yields 4,201, one above the plan (FE-1451).
+  it('clamps monthly remaining to the allowance instead of exceeding it', () => {
+    state.canAccessSubscriptionFeatures = true
+    state.tier = 'STANDARD'
+    state.subscription = {
+      tier: 'STANDARD',
+      duration: 'MONTHLY',
+      renewalDate: '2026-08-30T12:00:00Z'
+    }
+    state.balance = {
+      amountMicros: 1991,
+      cloudCreditBalanceMicros: 1991,
+      prepaidBalanceMicros: 0
+    }
+
+    const { container } = renderTile()
+
+    expect(container.textContent).toContain('4,200 left of 4,200')
+    expect(container.textContent).not.toContain('4,201 left of')
+    expect(container.textContent).toContain('0 used')
+    expect(container.textContent).toContain('4.2K left of 4.2K')
+  })
+
+  it('uses the Founder allowance fallback when clamping reconstructed credits', () => {
+    state.canAccessSubscriptionFeatures = true
+    state.tier = 'FOUNDERS_EDITION'
+    state.subscription = {
+      tier: 'FOUNDERS_EDITION',
+      duration: 'MONTHLY',
+      renewalDate: '2026-08-30T12:00:00Z'
+    }
+    state.balance = {
+      amountMicros: 2589,
+      cloudCreditBalanceMicros: 2589,
+      prepaidBalanceMicros: 0
+    }
+
+    const { container } = renderTile()
+
+    expect(container.textContent).toContain('5,463')
+    expect(container.textContent).toContain('5,461 left of 5,461')
+    expect(container.textContent).toContain('0 used')
+  })
+
   it('uses the full annual Team grant for the credit pool total', () => {
     state.canAccessSubscriptionFeatures = true
     state.subscription = {

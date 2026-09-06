@@ -112,7 +112,7 @@ snapshots can't be accidentally committed.
 
 ## Cloud nodes integration
 
-`/cloud/supported-nodes` (and `/zh-CN/`) lists custom-node packs preinstalled on Comfy Cloud, joined with public metadata from the [ComfyUI Custom Node Registry](https://registry.comfy.org) ([`api.comfy.org`](https://api.comfy.org)). See [`src/pages/cloud/supported-nodes/AGENTS.md`](src/pages/cloud/supported-nodes/AGENTS.md) for the build pipeline, source-file map, and key invariants.
+`/cloud/supported-nodes` (and `/zh-CN/`) lists custom-node packs preinstalled on Comfy Cloud, joined with public metadata from the [ComfyUI Custom Node Registry](https://registry.comfy.org) ([`api.comfy.org`](https://api.comfy.org)). See [`src/components/cloud-nodes/AGENTS.md`](src/components/cloud-nodes/AGENTS.md) for the build pipeline, source-file map, and key invariants.
 
 Build-time env var: `WEBSITE_CLOUD_API_KEY` (Cloud `/api/object_info` auth; the build falls back to the committed snapshot when unset). Must also be set in the Vercel project environment.
 
@@ -154,9 +154,9 @@ can't be accidentally committed. Otherwise the `Release: Website` GitHub
 Actions workflow runs the same step on every manual dispatch and opens a PR
 with the refreshed snapshot.
 
-## HubSpot contact form
+## HubSpot forms
 
-The contact page uses HubSpot's hosted form embed for the interest form:
+Pages that collect leads use HubSpot's hosted form embed:
 
 ```html
 <script
@@ -171,13 +171,19 @@ The contact page uses HubSpot's hosted form embed for the interest form:
 ></div>
 ```
 
-The localized `/zh-CN/contact` page uses the same portal and script with form
-ID `6885750c-02ef-4aa2-ba0d-213be9cccf93`.
+Every form lives under portal `244637579` in region `na2` and is addressed by
+form ID:
+
+| Page                                    | Form ID                                |
+| --------------------------------------- | -------------------------------------- |
+| `/contact`                              | `94e05eab-1373-47f7-ab5e-d84f9e6aa262` |
+| `/zh-CN/contact`                        | `6885750c-02ef-4aa2-ba0d-213be9cccf93` |
+| `/minimax/license/professional-request` | `40ef858c-374a-4958-8180-bfa54f0a67fb` |
 
 This keeps submission handling, validation, anti-spam updates, and field
 configuration in HubSpot. The local implementation in
-`src/components/contact/HubspotFormEmbed.vue` only loads the hosted script and
-renders the documented embed container.
+`src/components/common/HubspotFormEmbed.vue` takes the form ID as a prop, loads
+the hosted script once, and renders the documented embed container.
 
 ## Scripts
 

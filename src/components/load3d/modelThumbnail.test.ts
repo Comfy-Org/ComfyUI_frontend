@@ -90,4 +90,24 @@ describe('generateModelThumbnail', () => {
 
     expect(createLoad3d).toHaveBeenCalledTimes(2)
   })
+
+  it('times out a stuck load, disposes it, and advances the queue', async () => {
+    vi.useFakeTimers()
+    const stuck = mockInstance({
+      loadModel: vi.fn(() => new Promise<void>(() => {}))
+    })
+    const next = mockInstance()
+    createLoad3d.mockReturnValueOnce(stuck).mockReturnValueOnce(next)
+
+    const stuckRun = generateModelThumbnail('/stuck.glb', 'stuck.glb')
+    const nextRun = generateModelThumbnail('/next.glb', 'next.glb')
+    await vi.waitFor(() => expect(createLoad3d).toHaveBeenCalledTimes(1))
+
+    await vi.advanceTimersByTimeAsync(15_000)
+
+    await expect(stuckRun).resolves.toBeNull()
+    await expect(nextRun).resolves.toBe('data:image/png;base64,thumb')
+    expect(stuck.remove).toHaveBeenCalledTimes(1)
+    expect(next.loadModel).toHaveBeenCalledWith('/next.glb')
+  })
 })

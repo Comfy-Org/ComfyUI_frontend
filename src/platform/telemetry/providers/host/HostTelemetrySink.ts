@@ -14,6 +14,7 @@ import type {
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
+  LinkDedupDropMetadata,
   NamedValuesShadowDiffMismatchMetadata,
   NamedValuesShadowDiffSummaryMetadata,
   NodeAddedMetadata,
@@ -290,6 +291,10 @@ export class HostTelemetrySink implements TelemetryProvider {
 
   trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
     this.capture(TelemetryEvents.UI_BUTTON_CLICKED, metadata)
+  }
+
+  trackLinkDedupDrop(metadata: LinkDedupDropMetadata): void {
+    this.capture(TelemetryEvents.LINK_DEDUP_DROP, metadata)
   }
 
   trackNamedValuesShadowDiffMismatch(

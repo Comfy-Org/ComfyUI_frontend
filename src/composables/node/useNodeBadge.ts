@@ -26,7 +26,7 @@ export const useNodeBadge = () => {
       showApiPricingBadge
     ],
     () => {
-      app.canvas?.setDirty(true, true)
+      app.canvas.setDirty(true, true)
     }
   )
 
@@ -39,7 +39,7 @@ export const useNodeBadge = () => {
       () => nodePricing.pricingRevision.value,
       () => {
         if (!showApiPricingBadge.value) return
-        app.canvas?.setDirty(true, true)
+        app.canvas.setDirty(true, true)
       }
     )
 
@@ -50,7 +50,7 @@ export const useNodeBadge = () => {
         app.canvas.canvas.addEventListener<'litegraph:set-graph'>(
           'litegraph:set-graph',
           () => {
-            app.canvas?.setDirty(true, true)
+            app.canvas.setDirty(true, true)
           }
         )
       }

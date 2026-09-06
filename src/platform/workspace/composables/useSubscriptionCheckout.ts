@@ -33,7 +33,7 @@ import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
-  clearPendingSubscriptionCheckout,
+  clearPendingSubscriptionCheckoutIfTerminal,
   savePendingSubscriptionCheckout
 } from '@/platform/workspace/utils/pendingSubscriptionCheckout'
 import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
@@ -193,12 +193,6 @@ export function useSubscriptionCheckout(
   const authenticationError = computed(
     () => activeCheckoutOperation.value?.errorMessage ?? null
   )
-  const canRetryAuthentication = computed(
-    () => activeCheckoutOperation.value?.canRetryAuthentication ?? false
-  )
-  const isAuthenticating = computed(
-    () => activeCheckoutOperation.value?.isAuthenticating ?? false
-  )
   const reconciliationOperationId = computed(() =>
     activeCheckoutOperation.value?.status === 'reconciliation_needed'
       ? activeCheckoutOperation.value.opId
@@ -353,27 +347,43 @@ export function useSubscriptionCheckout(
     )
   }
 
+  function isUsableTeamPreview(
+    preview: PreviewSubscribeResponse | null | undefined,
+    checkoutType: SubscriptionCheckoutType
+  ): preview is PreviewSubscribeResponse & { allowed: true } {
+    if (isSubscriptionCancelled()) return isReactivationCapablePreview(preview)
+    return checkoutType === 'change'
+      ? isExistingPlanPreview(preview)
+      : Boolean(preview?.allowed)
+  }
+
   function reactivationMaterialSnapshot(
     preview: PreviewSubscribeResponse,
     ignoreTimeDerivedTodayValues = false
   ): string {
-    const planSnapshot = (
-      plan: PreviewSubscribeResponse['new_plan'] | undefined
-    ) =>
-      plan
-        ? [
-            plan.slug,
-            plan.tier,
-            plan.duration,
-            plan.price_cents,
-            plan.credits_cents,
-            plan.seat_summary?.seat_count,
-            plan.seat_summary?.total_cost_cents,
-            plan.seat_summary?.total_credits_cents,
-            plan.period_start,
-            plan.period_end
-          ]
-        : null
+    type RuntimePlan = Omit<
+      NonNullable<PreviewSubscribeResponse['new_plan']>,
+      'seat_summary'
+    > & {
+      seat_summary?: PreviewSubscribeResponse['new_plan']['seat_summary']
+    }
+
+    const planSnapshot = (plan: RuntimePlan | undefined) => {
+      if (!plan) return null
+      const { seat_summary: seatSummary } = plan
+      return [
+        plan.slug,
+        plan.tier,
+        plan.duration,
+        plan.price_cents,
+        plan.credits_cents,
+        seatSummary?.seat_count,
+        seatSummary?.total_cost_cents,
+        seatSummary?.total_credits_cents,
+        plan.period_start,
+        plan.period_end
+      ]
+    }
 
     return JSON.stringify([
       preview.allowed,
@@ -766,19 +776,24 @@ export function useSubscriptionCheckout(
     quoteIsCurrent.value = false
 
     if (!embeddedCheckoutEnabled) {
-      checkoutStep.value = 'preview'
-      const needsPreview = payload.isChange || isSubscriptionCancelled()
-      isLoadingPreview.value = needsPreview && !!payload.stop.id
-      if (!needsPreview || !payload.stop.id) return
+      const teamCreditStopId = payload.stop.id
+      if (!teamCreditStopId) {
+        toast.add({
+          severity: 'error',
+          summary: t('subscription.teamPlan.name'),
+          detail: t('subscription.teamPlan.unavailable')
+        })
+        resetToPricing()
+        return
+      }
+      isLoadingPreview.value = true
 
       let response: PreviewSubscribeResponse | null = null
       let previewError: unknown
       try {
         response = await previewSubscribe(
           getTeamPlanSlug(payload.billingCycle),
-          {
-            teamCreditStopId: payload.stop.id
-          }
+          { teamCreditStopId }
         )
       } catch (error) {
         previewError = error
@@ -798,14 +813,11 @@ export function useSubscriptionCheckout(
       }
 
       if (previewRequestId !== teamPreviewRequestId) return
-      if (
-        (isSubscriptionCancelled() && isReactivationCapablePreview(response)) ||
-        (!isSubscriptionCancelled() && isExistingPlanPreview(response))
-      ) {
-        if (response) installPreview(response)
+      if (isUsableTeamPreview(response, checkoutType)) {
+        installPreview(response)
+        checkoutStep.value = 'preview'
         return
       }
-      if (!isSubscriptionCancelled()) return
       toast.add({
         severity: 'error',
         summary: t('subscription.teamPlan.name'),
@@ -1298,44 +1310,35 @@ export function useSubscriptionCheckout(
     initialActionUrl?: string
   ) {
     activeCheckoutOperationId.value = opId
-    try {
-      const metadata = {
-        tier: context.tier,
-        cycle: context.cycle,
-        checkoutType: context.checkoutType,
-        paymentIntentSource,
-        attemptStartedAt: context.attemptStartedAt,
-        ...(embeddedCheckoutEnabled && {
-          suppressProcessingToast: true,
-          autoHandleRequiresAction: true
-        })
-      }
-      const terminalOperation = initialActionUrl
-        ? billingOperationStore.startOperation(
-            opId,
-            'subscription',
-            metadata,
-            initialActionUrl
-          )
-        : billingOperationStore.startOperation(opId, 'subscription', metadata)
-      if (embeddedCheckoutEnabled) isSubscribing.value = false
-      const operation = await terminalOperation
-      if (
-        operation.status === 'succeeded' &&
-        activeCheckoutOperationId.value === opId &&
-        operation.workspaceId === workspaceStore.activeWorkspaceId
-      ) {
-        checkoutStep.value = 'success'
-      }
-    } finally {
-      clearPendingSubscriptionCheckout(opId)
+    const metadata = {
+      tier: context.tier,
+      cycle: context.cycle,
+      checkoutType: context.checkoutType,
+      paymentIntentSource,
+      attemptStartedAt: context.attemptStartedAt,
+      ...(embeddedCheckoutEnabled && {
+        suppressProcessingToast: true,
+        autoHandleRequiresAction: true
+      })
     }
-  }
-
-  async function retryPaymentAuthentication() {
-    const opId = activeCheckoutOperation.value?.opId
-    if (!opId) return
-    await billingOperationStore.retryPaymentAuthentication(opId)
+    const terminalOperation = initialActionUrl
+      ? billingOperationStore.startOperation(
+          opId,
+          'subscription',
+          metadata,
+          initialActionUrl
+        )
+      : billingOperationStore.startOperation(opId, 'subscription', metadata)
+    if (embeddedCheckoutEnabled) isSubscribing.value = false
+    const operation = await terminalOperation
+    clearPendingSubscriptionCheckoutIfTerminal(opId, operation.status)
+    if (
+      operation.status === 'succeeded' &&
+      activeCheckoutOperationId.value === opId &&
+      operation.workspaceId === workspaceStore.activeWorkspaceId
+    ) {
+      checkoutStep.value = 'success'
+    }
   }
 
   async function handleTeamSubscription(
@@ -1354,7 +1357,7 @@ export function useSubscriptionCheckout(
     if (!beginCheckoutMutation()) return
 
     const teamCheckout = selectedTeamCheckout.value
-    if (!teamCheckout?.stop.id) {
+    if (!teamCheckout.stop.id) {
       toast.add({
         severity: 'error',
         summary: t('subscription.teamPlan.name'),
@@ -1549,8 +1552,6 @@ export function useSubscriptionCheckout(
     activeCheckoutActionUrl,
     authenticationState,
     authenticationError,
-    canRetryAuthentication,
-    isAuthenticating,
     reconciliationOperationId,
     isPolling,
     isTeamCheckout,
@@ -1564,7 +1565,6 @@ export function useSubscriptionCheckout(
     handleTeamSubscribe: handleTeamSubscription,
     handleSubscriptionPayment,
     handleTeamSubscriptionPayment,
-    retryPaymentAuthentication,
     applyPromotionCode,
     invalidateQuote,
     handleResubscribe

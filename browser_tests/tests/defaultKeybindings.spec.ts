@@ -246,6 +246,8 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
         await comfyPage.keyboard.press('Control+s')
         await expect(comfyPage.page.getByRole('dialog')).toBeVisible()
 
+        await comfyPage.command.mockCommand('Comfy.SaveWorkflow')
+
         await comfyPage.page.evaluate(() => {
           window.TestCommand = false
           window.addEventListener('keydown', (event: KeyboardEvent) => {
@@ -258,6 +260,9 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
         await expect
           .poll(() => comfyPage.page.evaluate(() => window.TestCommand))
           .toBe(true)
+        expect(
+          await comfyPage.command.getExecutionCount('Comfy.SaveWorkflow')
+        ).toBe(0)
 
         await comfyPage.keyboard.press('Escape')
       })

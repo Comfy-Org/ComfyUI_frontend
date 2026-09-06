@@ -26,21 +26,21 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
     nodeName: string
   ): Promise<string[] | undefined> => {
     return await comfyPage.page.evaluate((name) => {
-      const node = window.app!.graph!.nodes.find((node) => node.title === name)
+      const node = window.app!.graph.nodes.find((node) => node.title === name)
       return node!.widgets![0].options.values as string[] | undefined
     }, nodeName)
   }
 
   const getWidgetValue = async (comfyPage: ComfyPage, nodeName: string) => {
     return await comfyPage.page.evaluate((name) => {
-      const node = window.app!.graph!.nodes.find((node) => node.title === name)
+      const node = window.app!.graph.nodes.find((node) => node.title === name)
       return node!.widgets![0].value
     }, nodeName)
   }
 
   const clickRefreshButton = (comfyPage: ComfyPage, nodeName: string) => {
     return comfyPage.page.evaluate((name) => {
-      const node = window.app!.graph!.nodes.find((node) => node.title === name)
+      const node = window.app!.graph.nodes.find((node) => node.title === name)
       const buttonWidget = node!.widgets!.find((w) => w.name === 'refresh')
       return buttonWidget?.callback?.(buttonWidget.value)
     }, nodeName)
@@ -93,7 +93,7 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
         .poll(() =>
           comfyPage.page.evaluate((name) => {
             return (
-              window.app!.graph!.nodes.find((node) => node.title === name) !=
+              window.app!.graph.nodes.find((node) => node.title === name) !=
               null
             )
           }, nodeName)

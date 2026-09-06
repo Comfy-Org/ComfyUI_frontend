@@ -260,7 +260,7 @@ describe('WidgetRecordAudio', () => {
 
   describe('Recording persistence via onRecordingComplete', () => {
     function createAudioWidget(initialSrc = '') {
-      const element = document.createElement('audio') as HTMLAudioElement
+      const element = document.createElement('audio')
       element.src = initialSrc
       return {
         name: 'audioUI',

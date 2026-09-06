@@ -42,6 +42,11 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     }
   }
 
+  /**
+   * @returns The registered state. Re-registering the same raw state under the
+   * same owner returns the incumbent; `undefined` means a distinct state
+   * occupies the node ID.
+   */
   function registerNode(
     graphScope: GraphScope,
     state: NodeState,

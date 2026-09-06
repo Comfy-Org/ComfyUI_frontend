@@ -234,6 +234,7 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
   async function tourToRunStep(page: Page) {
     const screen = page.getByRole('dialog', { name: GETTING_STARTED_TITLE })
     const spotlight = page.getByTestId('coach-spotlight')
+    const workflowTabs = page.getByTestId('topbar-workflow-tabs')
     const card = page.getByTestId('coach-card')
 
     await page.route('**/api/prompt', (route) =>
@@ -257,6 +258,23 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
 
     for (let step = 1; step < totalSteps; step++) {
       await expect(card).toContainText(`Step ${step} of ${totalSteps}`)
+      await expect(card).toHaveAttribute('aria-busy', 'false')
+      await expect
+        .poll(
+          async () => {
+            const [spotlightBox, tabsBox] = await Promise.all([
+              spotlight.boundingBox(),
+              workflowTabs.boundingBox()
+            ])
+            return (
+              !!spotlightBox &&
+              !!tabsBox &&
+              spotlightBox.y >= tabsBox.y + tabsBox.height
+            )
+          },
+          { message: 'the workflow tabs must not cover the spotlight' }
+        )
+        .toBe(true)
       if (await runTitle.isVisible()) break
       await next.click()
     }
@@ -381,6 +399,7 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
   test.describe('arriving on a template link', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await clearWorkflowHistory(comfyPage.page)
+      // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
       await comfyPage.setup({
         clearStorage: false,
         url: `/?template=${LINKED_TEMPLATE_ID}`
@@ -469,6 +488,7 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
   test.describe('arriving on a link that loads nothing', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await clearWorkflowHistory(comfyPage.page)
+      // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
       await comfyPage.setup({
         clearStorage: false,
         url: '/?template=no_such_template_exists'
