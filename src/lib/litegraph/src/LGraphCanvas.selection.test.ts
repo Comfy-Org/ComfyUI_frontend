@@ -143,6 +143,13 @@ describe('LGraphCanvas selection', () => {
     )
   })
 
+  it('keeps the deprecated selection pulse inert', () => {
+    canvas.select(a)
+    canvas.deselectAll()
+
+    expect(canvas.state.selectionChanged).toBe(false)
+  })
+
   describe('click', () => {
     it.for<{ name: string; modifiers: Modifiers; expected: string[] }>([
       { name: 'plain click replaces', modifiers: {}, expected: ['B'] },

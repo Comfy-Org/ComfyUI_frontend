@@ -262,10 +262,7 @@ interface LGraphCanvasState {
   /** If `true`, pointer move events will set the canvas cursor style. */
   shouldSetCursor: boolean
 
-  /**
-   * Dirty flag indicating that {@link selectedItems} has changed.
-   * Downstream consumers may reset to false once actioned.
-   */
+  /** @deprecated No longer updated. Read selection from the selection store. */
   selectionChanged: boolean
 
   /** ID of node currently in ghost placement mode (semi-transparent, following cursor). */
@@ -375,11 +372,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    */
   static _measureText?: (text: string, fontStyle?: string) => number
 
-  /**
-   * The state of this canvas, e.g. whether it is being dragged, or read-only.
-   *
-   * Implemented as a POCO that can be proxied without side-effects.
-   */
+  private _draggingItems = false
+
+  /** The state of this canvas, e.g. whether it is being dragged or read-only. */
   state: LGraphCanvasState = {
     draggingItems: false,
     draggingCanvas: false,
@@ -483,11 +478,17 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   get isDragging(): boolean {
-    return this.state.draggingItems
+    return this._draggingItems
   }
 
   set isDragging(value: boolean) {
-    this.state.draggingItems = value
+    const changed = this._draggingItems !== value
+    this._draggingItems = value
+    if (changed) {
+      this.dispatchEvent('litegraph:dragging-items-changed', {
+        dragging: value
+      })
+    }
   }
 
   get hoveringOver(): CanvasItem {
@@ -961,6 +962,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     graph: LGraph,
     options?: LGraphCanvas['options']
   ) {
+    Object.defineProperty(this.state, 'draggingItems', {
+      get: () => this._draggingItems,
+      set: (value: boolean) => {
+        this.isDragging = value
+      },
+      enumerable: true
+    })
     options ||= {}
     this.options = options
 
@@ -1943,7 +1951,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // this.offset = [0,0];
     this.dragging_rectangle = null
 
-    this.state.selectionChanged = true
     this.onSelectionChange?.(this.selected_nodes)
 
     this.visible_nodes = []
@@ -3895,7 +3902,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         newValue: false
       })
 
-      this.state.selectionChanged = true
       this.onSelectionChange?.(this.selected_nodes)
     }
 
@@ -4886,10 +4892,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     const resultingSelectionSize = this.selectedItems.size
     for (const item of deselected) item.onDeselected?.()
-    if (selected.size !== resultingSelectionSize) {
-      this.state.selectionChanged = true
+    if (selected.size !== resultingSelectionSize)
       this.onSelectionChange?.(this.selected_nodes)
-    }
   }
 
   /** @deprecated See {@link LGraphCanvas.deselectAll} */
@@ -4927,7 +4931,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     applyCanvasSelection(this, { type: 'selection.clear' })
     this.current_node = null
 
-    this.state.selectionChanged = true
     this.onSelectionChange?.(this.selected_nodes)
     this.setDirty(true)
     graph.afterChange()
