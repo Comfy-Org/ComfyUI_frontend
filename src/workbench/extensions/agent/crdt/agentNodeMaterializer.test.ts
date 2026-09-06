@@ -953,6 +953,30 @@ describe('reconcileAgentAdapters', () => {
       expect(reportError).not.toHaveBeenCalled()
     })
 
+    it('replaces a missing-node placeholder when its definition completes', () => {
+      const definition = createTestSubgraphData({
+        nodes: [nodePayload(7)]
+      })
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id)],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+      const stored = follower.doc
+        .getMap<Y.Map<unknown>>('definitions')
+        .get(definition.id)
+      if (!stored) throw new Error('Expected stored definition')
+      stored.delete('state')
+
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+      expect(graph.getNodeById(toNodeId(1))?.has_errors).toBe(true)
+
+      reconcileAgentAdapters(graph, [definition])
+
+      expect(graph.getNodeById(toNodeId(1))).toBeInstanceOf(SubgraphNode)
+      expect(graph.getNodeById(toNodeId(1))?.has_errors).toBeFalsy()
+    })
+
     it('does not treat a definition payload as an edit to an existing subgraph', () => {
       const definition = createTestSubgraphData({
         nodes: [nodePayload(7)]

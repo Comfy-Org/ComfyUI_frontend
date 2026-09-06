@@ -2,6 +2,7 @@ import { OPAQUE_WIDGETS_KEY } from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
+import { zProjectedSubgraphDefinition } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 /**
  * Root map the op layer mints `definitions.subgraphs` into, keyed by
@@ -82,26 +83,11 @@ function readInteriorNode(source: unknown): Record<string, unknown> | null {
 }
 
 function isExportedSubgraph(value: unknown): value is ExportedSubgraph {
-  if (typeof value !== 'object' || value === null) return false
-  const graph = value as Record<string, unknown>
-  const state = graph.state
-  if (typeof state !== 'object' || state === null) return false
-  const counters = state as Record<string, unknown>
+  const result = zProjectedSubgraphDefinition.safeParse(value)
+  if (!result.success) return false
   return (
-    typeof graph.id === 'string' &&
-    typeof graph.name === 'string' &&
-    (graph.version === 0 || graph.version === 1) &&
-    typeof graph.revision === 'number' &&
-    typeof graph.inputNode === 'object' &&
-    graph.inputNode !== null &&
-    typeof graph.outputNode === 'object' &&
-    graph.outputNode !== null &&
-    typeof counters.lastNodeId === 'number' &&
-    typeof counters.lastLinkId === 'number' &&
-    typeof counters.lastGroupId === 'number' &&
-    typeof counters.lastRerouteId === 'number' &&
-    (graph.nodes === undefined || Array.isArray(graph.nodes)) &&
-    (graph.links === undefined || Array.isArray(graph.links))
+    result.data.definitions === undefined ||
+    result.data.definitions.subgraphs.every(isExportedSubgraph)
   )
 }
 

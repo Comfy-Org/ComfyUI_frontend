@@ -142,10 +142,9 @@ function tryCreateSubgraph(
     withNamedValuesRestore(() => rootGraph.createSubgraph(definition))
     return undefined
   } catch (cause) {
-    // Configuration failed before `subgraph-created` was dispatched, so no
-    // app-owned node type exists. Tear the half-built graph down through the
-    // same path node removal uses: a bare map delete would leave its graph
-    // metadata behind, and the next attempt would remint its id.
+    // Tear the half-built graph down through the same path node removal uses:
+    // a bare map delete would leave its graph metadata behind, and the next
+    // attempt would remint its id.
     const halfBuilt = rootGraph.subgraphs.get(definition.id)
     if (halfBuilt) {
       try {
@@ -230,15 +229,25 @@ function reconcile(
     scope.rootGraphId,
     scope.owningGraphId
   )
-  const orphans = graph._nodes.filter(
-    (node) => !nodeStore.ownsNode(scope, node._state)
-  )
+  const orphans = graph._nodes.filter((node) => {
+    const registeredType = LiteGraph.registered_node_types[node.type]
+    return (
+      !nodeStore.ownsNode(scope, node._state) ||
+      (registeredType !== undefined && !(node instanceof registeredType))
+    )
+  })
   const orphansById = new Map(orphans.map((node) => [node.id, node]))
 
   const materialized: NodeId[] = []
   for (const state of records) {
     const live = graph._nodes_by_id[state.id]
-    if (live && nodeStore.ownsNode(scope, live._state)) continue
+    if (
+      live &&
+      nodeStore.ownsNode(scope, live._state) &&
+      !orphansById.has(state.id)
+    ) {
+      continue
+    }
     const serialised = state.lastSerialization
     if (!serialised) continue
     if (pendingDefinitions.has(state.type)) continue
@@ -355,6 +364,7 @@ function materialize(
       context: { graphId: graph.id, nodeId: String(state.id) }
     })
   }
+  node.last_serialization = serialised
   return true
 }
 

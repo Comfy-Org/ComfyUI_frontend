@@ -277,7 +277,11 @@ export function useAgentCrdtFollower(
   const currentDocNodeIds = (): Set<string> => {
     const doc = bridge.follower.doc
     if (!doc.share.has('nodes')) return new Set()
-    return new Set(doc.getMap('nodes').keys())
+    try {
+      return new Set(doc.getMap('nodes').keys())
+    } catch {
+      return new Set()
+    }
   }
 
   // FE-1901 (poc-2): a `doc_subscribed {ok:false}` is a SERVER refusal — e.g.
