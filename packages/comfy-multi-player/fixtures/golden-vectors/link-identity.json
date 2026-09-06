@@ -1,0 +1,24 @@
+{
+  "format_version": 1,
+  "comment": "RUL-104 option B parity vectors. Both arrival orders must select winner by [base_version, actor, op_id] for one String(link_id) register.",
+  "cases": [
+    {
+      "name": "normalized-number-string-higher-version",
+      "a": { "link_id": 700, "base_version": 1, "actor": "agent:fixture:a", "op_id": "00000000000000000000000000000001", "endpoint": [100, 200, 0] },
+      "b": { "link_id": "700", "base_version": 2, "actor": "agent:fixture:b", "op_id": "00000000000000000000000000000002", "endpoint": [101, 201, 1] },
+      "winner": "b"
+    },
+    {
+      "name": "actor-tiebreak",
+      "a": { "link_id": "700", "base_version": 3, "actor": "agent:fixture:a", "envelope_base_version": 99, "envelope_actor": "human:envelope:z", "op_id": "00000000000000000000000000000003", "endpoint": [102, 200, 1] },
+      "b": { "link_id": 700, "base_version": 3, "actor": "human:fixture:b", "envelope_base_version": 0, "envelope_actor": "agent:envelope:a", "op_id": "00000000000000000000000000000004", "endpoint": [103, 201, 0] },
+      "winner": "b"
+    },
+    {
+      "name": "op-id-tiebreak",
+      "a": { "link_id": 700, "base_version": 4, "actor": "agent:fixture:same", "op_id": "00000000000000000000000000000005", "endpoint": [100, 201, 1] },
+      "b": { "link_id": "700", "base_version": 4, "actor": "agent:fixture:same", "op_id": "00000000000000000000000000000006", "endpoint": [101, 200, 0] },
+      "winner": "b"
+    }
+  ]
+}

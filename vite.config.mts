@@ -872,6 +872,7 @@ export default defineConfig({
     },
     exclude: [
       'src/__ecs_matrix__/**',
+      'packages/comfy-multi-player/**',
       '**/node_modules/**',
       '**/dist/**',
       '**/cypress/**',

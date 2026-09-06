@@ -112,6 +112,16 @@ export const validateAdrDirectory = (directory: string): void => {
   }
 }
 
+// Workspace packages that maintain their own ADR corpus under their own
+// numbering scheme. The identifier grammar documented in docs/adr/README.md
+// governs this repository's ADRs; a workspace package's ADRs are governed by
+// that package, so reporting its internally-numbered references as stale
+// references to this repository's retired numeric ADRs is a category error.
+const SELF_GOVERNED_ADR_ROOTS = ['packages/comfy-multi-player/']
+
+export const isScannedForLegacyReferences = (filename: string): boolean =>
+  !SELF_GOVERNED_ADR_ROOTS.some((root) => filename.startsWith(root))
+
 const checkLegacyReferences = (repositoryRoot: string): void => {
   const files = execFileSync(
     'git',
@@ -123,6 +133,7 @@ const checkLegacyReferences = (repositoryRoot: string): void => {
   const matches: string[] = []
 
   for (const filename of files) {
+    if (!isScannedForLegacyReferences(filename)) continue
     const absolutePath = join(repositoryRoot, filename)
     if (!existsSync(absolutePath)) continue
     const contents = readFileSync(absolutePath, 'utf8')

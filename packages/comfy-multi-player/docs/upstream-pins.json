@@ -1,0 +1,191 @@
+{
+  "schema_version": 1,
+  "purpose": "FC-10 / KA-12 registry of every cross-repository document this package cites normatively, pinned by immutable commit SHA. A citation pinned to a branch silently re-targets when the other repository moves, so a statement that was true when written becomes a claim about a document that no longer says it. Verified offline by `npm run check:pins`; verified against the remote by `npm run check:pins -- --verify-remote`.",
+  "pins": {
+    "comfy-cli/op-vocabulary-v1": {
+      "repo": "https://github.com/Comfy-Org/comfy-cli.git",
+      "path": "docs/op-vocabulary-v1.md",
+      "commit": "7e732242d971daf0d2d30f22f997abfacd78986e",
+      "blob_sha1": "5c604599cc26730dcb53a3a392431b42fd40fa74",
+      "content_sha256": "e275b62d28b606219d06c9302575980164ea5ad8937adbea660da658bb21ab3d",
+      "sections_cited": [
+        "1",
+        "1.2",
+        "1.5",
+        "1.6",
+        "2",
+        "3",
+        "4",
+        "7",
+        "8.1",
+        "8.2",
+        "8.3",
+        "8.4",
+        "8.5",
+        "8.6",
+        "8.7"
+      ],
+      "established_by": "The citing lines were written in comfy-multi-player d81620f601aad620978d612dc34be630b1fbbc06 (2026-08-13T01:39:45-0700). The last commit touching docs/op-vocabulary-v1.md on the cited branch at or before that instant is 7e73224 (2026-08-12T02:01:23-0700), so this is the revision the package was written against. Corroborated independently: fixtures/MANIFEST.json already pins the corpus generator to the same commit, so the op corpus and the op vocabulary resolve to one upstream revision.",
+      "cited_by": [
+        "src/index.ts",
+        "src/types.ts",
+        "docs/multiplayer-schema.md",
+        "README.md"
+      ],
+      "former_branch_citation": "fix/validate-lowers-ui-to-api",
+      "branch_status": "DELETED upstream on 2026-08-21T06:03:03Z when comfy-cli PR #511 squash-merged. The branch pointer this repository cited no longer resolves; the SHA still does.",
+      "upstream_head_observed": {
+        "date": "2026-08-21",
+        "ref": "main",
+        "commit": "3ff9f55a5841407bfee67e520c2485e5d46ff488",
+        "content_sha256": "7bd2e31e784f3aaa2c48a2340d51cbcc24623b6bd28e8b612d0589423c19f6ee",
+        "drift": "Upstream has moved past the pin: amendments v1.1 (§10), v1.3 (§12) and v1.4 (§13) all post-date it. See docs/api-contract-proposal.md Q5 and Amendment A1 in docs/multiplayer-schema.md. Moving this pin is a deliberate contract change, not a refresh: re-read each section in sections_cited, reconcile the applier, then move commit, blob_sha1, content_sha256 and every cited_by site together."
+      }
+    },
+    "comfy-cli/op-vocabulary-v1@amendment-v1.2": {
+      "repo": "https://github.com/Comfy-Org/comfy-cli.git",
+      "path": "docs/op-vocabulary-v1.md",
+      "commit": "1201b676275ce7e9b5cdb90f135b6e115ba9df10",
+      "blob_sha1": "1a487a04718b2eff4964404e6377fbf15020ee5f",
+      "content_sha256": "5473991baa526dc4c2d57758b15ab45f00c985b2b24cced1efa930c98d0a6317",
+      "sections_cited": [
+        "11",
+        "11.1",
+        "11.2"
+      ],
+      "established_by": "Already cited by SHA in docs/multiplayer-schema.md Amendment A1; only its branch label was moving. The amendment was later rebased onto the PR #511 branch as a534630fda3b11acb49481dbc479aaed46fe2b39, whose docs/op-vocabulary-v1.md blob is byte-identical (git blob 1a487a04718b2eff4964404e6377fbf15020ee5f), so the rebase did not change the cited content.",
+      "cited_by": [
+        "docs/multiplayer-schema.md"
+      ],
+      "former_branch_citation": "kishore/v1-032-connect-lww",
+      "branch_status": "DELETED upstream. The commit survives on kishore/archive/v1-032-connect-lww-prerebase and resolves through the GitHub API; the branch label in Amendment A1 is retained as historical context only.",
+      "upstream_head_observed": {
+        "date": "2026-08-21",
+        "ref": "main",
+        "commit": "3ff9f55a5841407bfee67e520c2485e5d46ff488",
+        "content_sha256": "7bd2e31e784f3aaa2c48a2340d51cbcc24623b6bd28e8b612d0589423c19f6ee",
+        "drift": "§11/§11.1/§11.2 still exist on main with the same numbering. This pin is ahead of comfy-cli/op-vocabulary-v1 above: the package adopted amendment v1.2 (§11) without adopting amendment v1.1 (§10), which is older and already present at this same commit. That gap is the reset_doc drift tracked as Q5."
+      }
+    },
+    "comfy-cli/workflow_ops": {
+      "repo": "https://github.com/Comfy-Org/comfy-cli.git",
+      "path": "comfy_cli/workflow_ops.py",
+      "commit": "7e732242d971daf0d2d30f22f997abfacd78986e",
+      "blob_sha1": "c0fa6f4160b2d28bd1f4be081a7cb596f44a221c",
+      "content_sha256": "22dfb8ac0747dc7153a61012340b4ce31158dc68a34997abc584f35fb0325f31",
+      "sections_cited": [
+        "_new_op",
+        "_stamp_key",
+        "_write_target",
+        "apply_op",
+        "canonical"
+      ],
+      "established_by": "src/applier.ts calls itself a faithful port of workflow_ops.apply_op, and src/stamps.ts mirrors _stamp_key/_write_target; both were written in d81620f against the same branch state as the vocabulary above. fixtures/MANIFEST.json pins the identical commit as the corpus generator, and every recorded session in fixtures/ was produced by this exact file.",
+      "cited_by": [
+        "src/index.ts",
+        "src/types.ts",
+        "docs/spike-report-v1-007.md"
+      ],
+      "former_branch_citation": "pr511-reconcile",
+      "branch_status": "DELETED upstream. docs/spike-report-v1-007.md cited the generator branch by the name it carried during the V1-007 spike; the branch was later renamed to fix/validate-lowers-ui-to-api (comfy-cli PR #511) and deleted on merge. The commit is established from fixtures/MANIFEST.json, not from the branch name.",
+      "upstream_head_observed": {
+        "date": "2026-08-21",
+        "ref": "main",
+        "commit": "3ff9f55a5841407bfee67e520c2485e5d46ff488",
+        "content_sha256": "0a9ce9da04dd7258263a0d31bd8eacd12d16ecc56f2d43af6b040b297c7e4173",
+        "drift": "838 lines changed since the pin. Regenerating the corpus against head would change recorded outputs; fixtures/README.md documents the regeneration procedure and requires the pinned checkout."
+      }
+    },
+    "cloud/dochost-server": {
+      "repo": "https://github.com/Comfy-Org/cloud.git",
+      "path": "services/agent/dochost/src/server.ts",
+      "commit": "070dce96b4c475a0d926d570eba411f799329817",
+      "blob_sha1": "547ed2a0bc988153720055389e210b5a01bedabd",
+      "content_sha256": "5d3b971a109e78e5bca4f61577544935d209ce99617bb9056276042e6867f0ff",
+      "sections_cited": [
+        "requirePin",
+        "handleProject",
+        "handleApply",
+        "the apply_error 400 branch"
+      ],
+      "established_by": "Registered by comfy-multi-player #38 (the KA-11 read gate), which cites the sidecar's behaviour to justify exporting readSchemaVersion/assertReadableSchema: the host answers the schema question BEFORE it reads, the way it already answers the catalog question. Resolved at cloud origin/main HEAD on 2026-08-21 and read directly rather than inferred -- requirePin at :168 raises the structured catalog_mismatch at :184; handleProject calls it at :303 and then project(doc, catalog) at :304; handleApply embeds `projection: project(doc, catalog)` in the same response object at :281, after applyOps at :274; the catch at :436 turns a fold/apply throw -- and its comment already names 'a schema_version this package refuses' -- into HTTP 400 apply_error rather than a 500. The Go client types only catalog_mismatch (internal/dochost/client.go:55), so a schema refusal reaches the turn loop as a generic error and the turn fails without committing.",
+      "cited_by": [
+        "src/schema-version.ts"
+      ],
+      "access_note": "Comfy-Org/cloud is PRIVATE. `npm run check:pins -- --verify-remote` resolves this pin only with a token that has access; without one the GitHub API answers 404, which this gate treats as definitive evidence ABOUT THE PIN (exit 1) rather than about the request (exit 2). That classification was deliberately introduced by #66 and is right for a public repo; it mis-fires here. Read a 404 on this pin as 'no access', not 'pin broken', until the gate learns to tell them apart.",
+      "upstream_head_observed": {
+        "date": "2026-08-21",
+        "ref": "main",
+        "commit": "070dce96b4c475a0d926d570eba411f799329817",
+        "drift": "None: the pin IS the observed head. The consumer pin runs the other way too -- services/agent/dochost/package-lock.json pins @comfyorg/comfy-multi-player to 6793d754c84c9bec97fbd2fb4d54ce187a2c83ba, which is 30 commits behind this package's main, so neither #31 nor #38 is live in production. A pin bump lands them together."
+      },
+      "former_branch_citation": null,
+      "branch_status": "NEVER BRANCH-CITED. Registered directly at a SHA by #38, so there is no branch citation to retire — unlike the three comfy-cli pins, which were retrofits of citations that had named a branch and whose branches were later DELETED upstream. Recorded explicitly rather than omitted, so a future reader can tell 'pinned from the start' from 'provenance lost'."
+    },
+    "comfy-cli/workflow_ops@promoted-host-writes": {
+      "repo": "https://github.com/Comfy-Org/comfy-cli.git",
+      "path": "comfy_cli/workflow_ops.py",
+      "commit": "ba0b0b92abcc86b01e8a6704d07088f92afe7aa7",
+      "blob_sha1": "36ab4d857a0952b8f7a4f79f5b056a0a74cef398",
+      "content_sha256": "116fc84769774f9d3731b2ef3ce407efbc395c2ad043f4ecd6bacf132f89704a",
+      "sections_cited": [
+        "_set_widget_impl",
+        "_apply_set_widget",
+        "_apply_connect",
+        "_resolve_input_target",
+        "_resolve_promoted_target",
+        "_write_target",
+        "_lww_gate"
+      ],
+      "established_by": "First registered at the head of comfy-cli PR #815 (6ebc3032, `fix(subgraph): edit promoted widgets where the frontend reads them (BE-10305)`), read directly on 2026-08-27: `_set_widget_impl` mints the host write with `promoted={value_index, instance_path}` and appends `host_widgets_values` after apply; `_apply_set_widget` resolves `instance_path` through `_resolve_node_path` and writes `cql.promoted.set_host_value`; `_resolve_input_target`/`_resolve_promoted_target` mint `grow={name, type, promoted: True, widget?}` for a declared subgraph input; `_apply_connect` reuses the entry by name for a promoted grow and otherwise appends `{name, type, link, grow_id, widget?}`. RE-PINNED 2026-08-28 to comfy-cli main ba0b0b92abcc86b01e8a6704d07088f92afe7aa7 after the #815/#818 stack was rebase-merged (the PR-head commits are unreachable upstream). Re-read at main: every symbol above still defines at the same module (`_lww_gate` :384, `_set_widget_impl` :629, `_apply_set_widget` :1836, `_apply_connect` :1972, `_write_target` :2217 — now spelling a promoted grow as (\"input\", str(to_node), \"grow\", str(grow[\"name\"])) at :2248 — `_resolve_input_target` :2621, `_resolve_promoted_target` :2757). The companion `comfy_cli/cql/promoted.py` at main is blob 0dd8287c63ba5ff2867654a890fe50542f8df53d (sha256 0d7177849e1756016b6830d8acfc9edc701d19fff28099db0c4a2b670e875b5f). fixtures/session-promoted-host.session.jsonl was regenerated at this exact revision.",
+      "cited_by": [
+        "src/types.ts",
+        "src/applier.ts",
+        "docs/multiplayer-schema.md",
+        "test/promoted-host-writes.test.ts",
+        "fixtures/README.md",
+        "fixtures/MANIFEST.json"
+      ],
+      "upstream_head_observed": {
+        "date": "2026-08-28",
+        "ref": "main",
+        "commit": "ba0b0b92abcc86b01e8a6704d07088f92afe7aa7",
+        "content_sha256": "116fc84769774f9d3731b2ef3ce407efbc395c2ad043f4ecd6bacf132f89704a",
+        "drift": "None: the pin IS main. Content moved past the original PR-#815 head by the #818 amendment (promoted grows are `_lww_gate`d on the full-name register and `grow_id` follows the winner — both already matched here) and by op-vocabulary §14.4: a host write whose instance carries a legacy `properties.proxyWidgets` entry the definition does not back additionally carries `promoted.repair = {entry, ids}` and comfy-cli's apply mutates the DEFINITION (mints subgraph inputs + boundary links). This applier reads only `value_index`/`instance_path`/`host_widgets_values` and does not perform the repair — recorded as OPEN in schema Amendment A15; the corpus session carries no `repair` (the z-image template has no legacy proxyWidgets entry)."
+      },
+      "former_branch_citation": null,
+      "branch_status": "NEVER BRANCH-CITED. Registered directly at the PR head SHA; the PR's branch name is recorded only in the drift note as provenance, never as the citation."
+    },
+    "comfy-cli/op-vocabulary-v1@amendment-v1.5": {
+      "repo": "https://github.com/Comfy-Org/comfy-cli.git",
+      "path": "docs/op-vocabulary-v1.md",
+      "commit": "ba0b0b92abcc86b01e8a6704d07088f92afe7aa7",
+      "blob_sha1": "69edcf4a0929e1270c83cedc7af73c5dce3b1ca4",
+      "content_sha256": "3b337423127cae6969c5dd48e8bdcce3940de79c478c1797600917f275234fee",
+      "sections_cited": [
+        "8.7",
+        "14",
+        "14.1",
+        "14.2",
+        "14.3",
+        "14.4"
+      ],
+      "established_by": "Registered when comfy-multi-player PR #104 (schema Amendment A15) adopted comfy-cli's follow-up to PR #815: PR #818 `fix(ops): gate promoted connect grows as one register; positional payload for PrimitiveNode writes (amendment v1.5)`, head observed via `gh pr view 818` on 2026-08-28 and fetched as refs/pull/818/head (8f83af6d). RE-PINNED the same day to comfy-cli main ba0b0b92abcc86b01e8a6704d07088f92afe7aa7 after the stack was rebase-merged and its branches deleted. Re-read at main: §14 `Amendment v1.5` now has sub-sections 14.1-14.4 (14.4 is new: legacy proxyWidgets repair, `promoted.repair`), and §8.7 `Subgraph scope` gained the promoted-widgets-are-HOST-writes bullets; §11/§11.1/§11.2 (the v1.2 pin) are unchanged at :509/:516/:600. Read directly: §14.2 spells the promoted-grow register as (\"input\", str(to_node), \"grow\", str(grow[\"name\"])) — the FULL declared name, because subgraph input names may contain dots — and gates it with _lww_gate, moving grow_id to the winner; §14.3 gives the legacy_primitive PrimitiveNode write a positional payload (promoted.value_index + host_widgets_values). comfy_cli/workflow_ops.py at main is blob 36ab4d857a0952b8f7a4f79f5b056a0a74cef398 (sha256 116fc84769774f9d3731b2ef3ce407efbc395c2ad043f4ecd6bacf132f89704a), the comfy-cli/workflow_ops@promoted-host-writes pin. src/stamps.ts writeTarget was changed to match in the same comfy-multi-player change.",
+      "cited_by": [
+        "src/stamps.ts",
+        "src/types.ts",
+        "docs/multiplayer-schema.md",
+        "docs/decisions/EXCEPTIONS.md"
+      ],
+      "upstream_head_observed": {
+        "date": "2026-08-28",
+        "ref": "main",
+        "commit": "ba0b0b92abcc86b01e8a6704d07088f92afe7aa7",
+        "content_sha256": "3b337423127cae6969c5dd48e8bdcce3940de79c478c1797600917f275234fee",
+        "drift": "None: the pin IS main. Relative to the PR-#818 head first cited, §14.4 (`promoted.repair`) is new and §8.7 gained promoted text; neither changes the two op shapes this package applies, but §14.4's definition repair is NOT implemented here (schema Amendment A15, OPEN)."
+      },
+      "former_branch_citation": null,
+      "branch_status": "NEVER BRANCH-CITED. Registered directly at the PR head SHA; the PR's branch name is recorded only in the drift note as provenance, never as the citation."
+    }
+  }
+}

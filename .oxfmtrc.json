@@ -6,6 +6,7 @@
   "trailingComma": "none",
   "printWidth": 80,
   "ignorePatterns": [
+    "packages/comfy-multi-player/**",
     "packages/registry-types/src/comfyRegistryTypes.ts",
     "public/materialdesignicons.min.css",
     "scripts/registry-census/corpus.pins.json",

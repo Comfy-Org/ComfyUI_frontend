@@ -40,7 +40,11 @@ function op(id: string, baseVersion: number, payload: object) {
     op_id: id,
     actor: 'agent:test',
     base_version: baseVersion,
-    stamp: [baseVersion, 'agent:test', id],
+    // Wire `stamp` is the 2-tuple `[base_version, actor]` (`Stamp` in the
+    // package types, and what `opEnvelope.ts` mints). The `op_id` tiebreak is
+    // appended by `stampKey()`, so do not put it here: the resulting
+    // `StampKey` is `[baseVersion, 'agent:test', id]` either way.
+    stamp: [baseVersion, 'agent:test'],
     ...payload
   }
 }

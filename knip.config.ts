@@ -46,6 +46,10 @@ const config: KnipConfig = {
       project: ['src/**/*.ts']
     }
   },
+  // This imported package retains its package-scoped purity, import-graph,
+  // type, and corpus gates; root Knip's app-oriented heuristics misclassify
+  // its executable fixtures and compile-time negative tests as dead files.
+  ignoreWorkspaces: ['packages/comfy-multi-player'],
   ignoreBinaries: [
     // Optional host tool the recorder probes for and degrades without
     'xcode-select'
