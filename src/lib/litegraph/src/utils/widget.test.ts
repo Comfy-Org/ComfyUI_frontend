@@ -50,10 +50,10 @@ describe('getWidgetStep', () => {
 })
 
 describe('formatNumericWidgetValue', () => {
-  test.each<[string, unknown]>([
+  test.for<[string, unknown]>([
     ['symbol', Symbol('legacy')],
     ['object without primitive conversion', Object.create(null)]
-  ])('formats %s coercion failures as NaN', (_label, value) => {
+  ])('formats %s coercion failures as NaN', ([_label, value]) => {
     expect(formatNumericWidgetValue(value)).toBe('NaN')
   })
 })

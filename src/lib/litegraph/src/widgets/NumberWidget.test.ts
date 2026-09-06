@@ -36,13 +36,13 @@ function persistedNode(value: TWidgetValue): ISerialisedNode {
 
 describe('NumberWidget', () => {
   describe('_displayValue', () => {
-    it.each<[TWidgetValue, string]>([
+    it.for<[TWidgetValue, string]>([
       ['both', 'NaN'],
       [true, '1.000'],
       ['', '0.000']
     ])(
       'coerces persisted non-number value %j before formatting without mutating it',
-      (value, expected) => {
+      ([value, expected]) => {
         const { node, widget } = createWidget()
         node.configure(persistedNode(value))
 
