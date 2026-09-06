@@ -40,6 +40,7 @@ const baseRoutes = {
   ltx: '/ltx-2.5',
   geminiOmni: '/gemini-omni',
   wanAnimate2: '/wan-animate-2',
+  cloudNodes: '/cloud-nodes',
   wan3: '/wan-3.0',
   brand: '/brand'
 } as const
@@ -151,6 +152,8 @@ export const externalLinks = {
   docsMcpMd: 'https://docs.comfy.org/agent-tools/mcp.md',
   docsMcpLocalMd:
     'https://docs.comfy.org/agent-tools/mcp.md#local-comfy-mcp-connection',
+  docsCloudNodes: 'https://docs.comfy.org/cloud-nodes/overview',
+  docsUpdateComfyUI: 'https://docs.comfy.org/installation/update_comfyui',
   docsComfyRouter:
     'https://docs.comfy.org/development/comfy-router/quickstart#comfy-router-quickstart',
   docsPlatform: 'https://docs.comfy.org/development/overview',
@@ -169,6 +172,7 @@ export const externalLinks = {
   platform: 'https://platform.comfy.org',
   platformBuilds: 'https://platform.comfy.org/profile/builds',
   platformUsage: 'https://platform.comfy.org/profile/usage',
+  pricing: 'https://comfy.org/pricing',
   reddit: 'https://www.reddit.com/r/comfyui/',
   support: 'https://support.comfy.org/hc/en-us',
   trustCenter: 'https://app.vanta.com/comfy.org/trust/o6nu46b16iu3e7fhc41hnz',
