@@ -1486,96 +1486,6 @@
       }
     }
   },
-  "ByteDanceImageNode": {
-    "description": "İstek üzerine api aracılığıyla ByteDance modellerini kullanarak görüntüler oluşturun",
-    "display_name": "ByteDance Görüntü",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "guidance_scale": {
-        "name": "guidance_scale",
-        "tooltip": "Daha yüksek değer, görselin istemi daha yakından takip etmesini sağlar"
-      },
-      "height": {
-        "name": "height",
-        "tooltip": "Görsel için özel yükseklik. Bu değer yalnızca `size_preset` `Custom` olarak ayarlandığında çalışır"
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Görseli oluşturmak için kullanılan metin istemi"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Oluşturma için kullanılacak seed değeri"
-      },
-      "size_preset": {
-        "name": "size_preset",
-        "tooltip": "Önerilen bir boyut seçin. Aşağıdaki genişlik ve yüksekliği kullanmak için Özel'i seçin"
-      },
-      "watermark": {
-        "name": "watermark",
-        "tooltip": "Görsele \"AI tarafından oluşturuldu\" filigranı eklenip eklenmeyeceği"
-      },
-      "width": {
-        "name": "width",
-        "tooltip": "Görsel için özel genişlik. Bu değer yalnızca `size_preset` `Custom` olarak ayarlandığında çalışır"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "ByteDanceImageReferenceNode": {
-    "description": "İstemi ve referans görselleri kullanarak video oluşturun.",
-    "display_name": "ByteDance Referans Görsellerden Videoya",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "Çıktı videosunun en-boy oranı."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration": {
-        "name": "duration",
-        "tooltip": "Çıktı videosunun saniye cinsinden süresi."
-      },
-      "images": {
-        "name": "images",
-        "tooltip": "Bir ila dört görsel."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Videoyu oluşturmak için kullanılan metin istemi."
-      },
-      "resolution": {
-        "name": "resolution",
-        "tooltip": "Çıktı videosunun çözünürlüğü."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Oluşturma için kullanılacak seed değeri."
-      },
-      "watermark": {
-        "name": "watermark",
-        "tooltip": "Videoya \"AI tarafından oluşturuldu\" filigranı eklenip eklenmeyeceği."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "ByteDanceImageToVideoNode": {
     "description": "Görüntü ve prompt kullanarak ByteDance modelleri aracılığıyla API üzerinden video oluşturun",
     "display_name": "ByteDance Görüntüden Videoya",
@@ -2755,6 +2665,260 @@
     "inputs": {
       "values": {
         "name": "değerler"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudFlux2TextToImageNode": {
+    "description": "BETA. Comfy Cloud düğüm seti hâlâ değişmektedir: seçenekler eklenebilir veya kaldırılabilir ve bir iş akışı kullanımdan kaldırılabilir. Flux 2 dev ile bir metin isteminden görüntü oluşturur. Turbo, seçilen LoRA'yı ve kısa bir zamanlamayı kullanarak biraz aslına uygunluktan ödün verip çok daha hızlı çalışır; LoRA olmadan tam uzunluktaki dev geçişi için kapatın. Comfy Cloud GPU'sunda çalışır; {'$'}0.001295/GPU-saniye (0.27 kredi) üzerinden çalışma süresine göre ücretlendirilir. Krediyle ödenir, Cloud aboneliği gerekmez.",
+    "display_name": "Comfy Cloud Flux 2 Metinden Görüntüye [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "Toplam piksel bütçesi. 1.0, kare oranda yaklaşık 1024x1024'tür."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "turbo": {
+        "name": "turbo",
+        "tooltip": "Turbo LoRA'yı kısa bir zamanlamayla çalıştırarak biraz aslına uygunluktan ödün verip çok daha hızlı sonuç alın. Kapalıyken LoRA olmadan tam dev geçişi çalışır."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMageFlowTextToImageNode": {
+    "description": "BETA. Comfy Cloud düğüm seti hâlâ değişmektedir: seçenekler eklenebilir veya kaldırılabilir ve bir iş akışı kullanımdan kaldırılabilir. Mage-Flow ile tam 30 adımlı bir geçişte metin isteminden görüntü oluşturur. Damıtılmış turbo varyantının iyi kullanamadığı bir negatif istem alır. Comfy Cloud GPU'sunda çalışır; {'$'}0.001295/GPU-saniye (0.27 kredi) üzerinden çalışma süresine göre ücretlendirilir. Krediyle ödenir, Cloud aboneliği gerekmez.",
+    "display_name": "Comfy Cloud Mage Flow Metinden Görüntüye [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "Toplam piksel bütçesi. 1.0, kare oranda yaklaşık 1024x1024'tür."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Bu işlem hattının ayarlandığı negatif istemi korumak için boş bırakın."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMageFlowTurboTextToImageNode": {
+    "description": "BETA. Comfy Cloud düğüm seti hâlâ değişmektedir: seçenekler eklenebilir veya kaldırılabilir ve bir iş akışı kullanımdan kaldırılabilir. Damıtılmış Mage-Flow ile cfg 1'de 4 adımda metin isteminden görüntü oluşturur. Tam geçişin GPU süresinin yaklaşık yedide biri olduğundan yinelemeler için idealdir. Comfy Cloud GPU'sunda çalışır; {'$'}0.001295/GPU-saniye (0.27 kredi) üzerinden çalışma süresine göre ücretlendirilir. Krediyle ödenir, Cloud aboneliği gerekmez.",
+    "display_name": "Comfy Cloud Mage Flow Turbo Metinden Görüntüye [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "Toplam piksel bütçesi. 1.0, kare oranda yaklaşık 1024x1024'tür."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Bu işlem hattının ayarlandığı negatif istemi korumak için boş bırakın."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3FirstLastFrameToVideoNode": {
+    "description": "BETA. Comfy Cloud düğüm seti hâlâ değişmektedir: seçenekler eklenebilir veya kaldırılabilir ve bir iş akışı kullanımdan kaldırılabilir. MiniMax H3 kullanarak, eşleşen bir ses parçasıyla iki anahtar kare arasındaki hareketi oluşturur. Başlangıç ve bitiş karelerini verin; model aradaki çekimi doldurur. Son kare isteğe bağlıdır: boş bırakırsanız hareket bunun yerine ilk kareden ilerler. Comfy Cloud GPU'sunda çalışır; {'$'}0.001295/GPU-saniye (0.27 kredi) üzerinden çalışma süresine göre ücretlendirilir. Krediyle ödenir, Cloud aboneliği gerekmez.",
+    "display_name": "Comfy Cloud MiniMax H3 İlk-Son Kareden Videoya [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "duration_seconds": {
+        "name": "duration_seconds",
+        "tooltip": "Saniye cinsinden uzunluk. İşlem hattı 24 fps'de 17 karelik adımlara yuvarladığından klip bunun yaklaşık üçte iki saniyesi içinde olur."
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Kare boyutu bütçesi. 720p, yaklaşık olarak 480p'nin iki katı GPU-saniyesine mal olur."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3ImageToVideoNode": {
+    "description": "BETA. Comfy Cloud düğüm seti hâlâ değişiyor: seçenekler eklenebilir veya kaldırılabilir ve bir iş akışı kullanımdan kaldırılabilir. MiniMax H3 kullanarak durağan bir görüntüyü uyumlu bir film müziğiyle videoya dönüştürür. Bir klibin son karesini verin; diziyi devam ettirir, böylece birkaçını zincirlemek daha uzun bir çekim oluşturur. Comfy Cloud GPU'sunda çalışır ve çalışma süresine göre {'$'}0.001295/GPU-saniyesi (0,27 kredi) üzerinden ücretlendirilir. Krediyle ödenir, Cloud aboneliği gerekmez.",
+    "display_name": "Comfy Cloud MiniMax H3 Görüntüden Videoya [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "duration_seconds": {
+        "name": "duration_seconds",
+        "tooltip": "Saniye cinsinden uzunluk. İşlem hattı 24 fps'de 17 karelik adımlara kuantize eder, bu nedenle klip bu değerin yaklaşık üçte iki saniyesi içinde olur."
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Kare boyutu bütçesi. 720p, 480p'nin GPU-saniyesinin yaklaşık iki katına mal olur."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3TextToVideoNode": {
+    "description": "BETA. Comfy Cloud düğüm seti hâlâ değişiyor: seçenekler eklenebilir veya kaldırılabilir ve bir iş akışı kullanımdan kaldırılabilir. MiniMax H3 kullanarak bir metin isteminden uyumlu bir film müziğiyle video oluşturur. Görüntü ve ses sonradan dublaj yapılmak yerine aynı işlemde üretilir. Comfy Cloud GPU'sunda çalışır ve çalışma süresine göre {'$'}0.001295/GPU-saniyesi (0,27 kredi) üzerinden ücretlendirilir. Krediyle ödenir, Cloud aboneliği gerekmez.",
+    "display_name": "Comfy Cloud MiniMax H3 Metinden Videoya [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "duration_seconds": {
+        "name": "duration_seconds",
+        "tooltip": "Saniye cinsinden uzunluk. İşlem hattı 24 fps'de 17 karelik adımlara kuantize eder, bu nedenle klip bu değerin yaklaşık üçte iki saniyesi içinde olur."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Kare boyutu bütçesi. 720p, 480p'nin GPU-saniyesinin yaklaşık iki katına mal olur."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxMusic3TextToAudioNode": {
+    "description": "BETA. Comfy Cloud düğüm seti hâlâ değişiyor: seçenekler eklenebilir veya kaldırılabilir ve bir iş akışı kullanımdan kaldırılabilir. MiniMax Music 3 ile bir açıklamadan tam bir şarkı oluşturur. İstem; stili, enstrümantasyonu ve ruh hâlini belirler; şarkı sözleri açıklanmak yerine söylenir ve boş şarkı sözü parçayı enstrümantal bırakır. Comfy Cloud GPU'sunda çalışır ve çalışma süresine göre {'$'}0.001295/GPU-saniyesi (0,27 kredi) üzerinden ücretlendirilir. Krediyle ödenir, Cloud aboneliği gerekmez.",
+    "display_name": "Comfy Cloud MiniMax Music 3 Metinden Sese [BETA]",
+    "inputs": {
+      "audio_quality": {
+        "name": "audio_quality",
+        "tooltip": "mp3 bit hızı. V0 değişkendir ve üçü arasında en yüksek kalitedir."
+      },
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "lyrics": {
+        "name": "lyrics",
+        "tooltip": "Söylenecek sözler. Enstrümantal için boş bırakın."
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "Parçanın çalabileceği en uzun süre. Model şarkıyı daha erken bitirebilir."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudZImageTurboNode": {
+    "description": "BETA. Comfy Cloud düğüm seti hâlâ değişiyor: seçenekler eklenebilir veya kaldırılabilir ve bir iş akışı kullanımdan kaldırılabilir. Z-Image Turbo ile bir metin isteminden 8 adımda görüntü oluşturur. Buradaki en hızlı ve en ucuz düğümlerden biri olduğundan, üzerinde yineleme yapmak için idealdir. Comfy Cloud GPU'sunda çalışır ve çalışma süresine göre {'$'}0.001295/GPU-saniyesi (0,27 kredi) üzerinden ücretlendirilir. Krediyle ödenir, Cloud aboneliği gerekmez.",
+    "display_name": "Comfy Cloud Z-Image Turbo Metinden Görüntüye [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "Toplam piksel bütçesi. 1.0, kare en-boy oranında yaklaşık 1024x1024'tür."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -9335,40 +9499,6 @@
       }
     }
   },
-  "KlingVideoExtendNode": {
-    "description": "Kling Video Uzatma Düğümü. Diğer Kling düğümleri tarafından yapılan videoları uzatın. video_id, diğer Kling Düğümleri kullanılarak oluşturulur.",
-    "display_name": "Kling Video Uzatma",
-    "inputs": {
-      "cfg_scale": {
-        "name": "cfg_ölçeği"
-      },
-      "negative_prompt": {
-        "name": "negatif_istem",
-        "tooltip": "Uzatılmış videoda kaçınılması gereken öğeler için negatif metin istemi"
-      },
-      "prompt": {
-        "name": "istem",
-        "tooltip": "Video uzatmayı yönlendirmek için pozitif metin istemi"
-      },
-      "video_id": {
-        "name": "video_kimliği",
-        "tooltip": "Uzatılacak videonun kimliği. Metinden videoya, görüntüden videoya ve önceki video uzatma işlemlerinden oluşturulan videoları destekler. Uzatmadan sonra toplam süre 3 dakikayı geçemez."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_kimliği",
-        "tooltip": null
-      },
-      "2": {
-        "name": "süre",
-        "tooltip": null
-      }
-    }
-  },
   "KlingVideoNode": {
     "description": "Kling V3 ile videolar oluşturun. Metinden videoya ve isteğe bağlı storyboard çoklu istem ve ses üretimiyle görüntüden videoya destekler.",
     "display_name": "Kling 3.0 Video",
@@ -11169,70 +11299,6 @@
       "seed": {
         "name": "tohum",
         "tooltip": "Düğümün yeniden çalıştırılıp çalıştırılmayacağını belirleyen tohum; gerçek sonuçlar tohumdan bağımsız olarak rastgeledir."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LtxvApiImageToVideo": {
-    "description": "Başlangıç görüntüsüne dayalı özelleştirilebilir süre ve çözünürlükte profesyonel kalitede videolar.",
-    "display_name": "LTXV Görüntüden Videoya",
-    "inputs": {
-      "duration": {
-        "name": "süre"
-      },
-      "fps": {
-        "name": "fps"
-      },
-      "generate_audio": {
-        "name": "ses_oluştur",
-        "tooltip": "Doğru olduğunda, oluşturulan video sahneye uygun yapay zeka tarafından oluşturulmuş ses içerecektir."
-      },
-      "image": {
-        "name": "görüntü",
-        "tooltip": "Video için kullanılacak ilk kare."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "resolution": {
-        "name": "çözünürlük"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LtxvApiTextToVideo": {
-    "description": "Özelleştirilebilir süre ve çözünürlükte profesyonel kalitede videolar.",
-    "display_name": "LTXV Metinden Videoya",
-    "inputs": {
-      "duration": {
-        "name": "süre"
-      },
-      "fps": {
-        "name": "fps"
-      },
-      "generate_audio": {
-        "name": "ses_oluştur",
-        "tooltip": "Doğru olduğunda, oluşturulan video sahneye uygun yapay zeka tarafından oluşturulmuş ses içerecektir."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "resolution": {
-        "name": "çözünürlük"
       }
     },
     "outputs": {
@@ -15930,7 +15996,11 @@
       },
       "max_output_tokens": {
         "name": "maksimum_çıktı_tokenları",
-        "tooltip": "Görünür çıktı tokenları dahil olmak üzere bir yanıt için üretilebilecek token sayısı için üst sınır"
+        "tooltip": "Görünür çıktı token'ları ve muhakeme token'ları dahil olmak üzere, bir yanıt için oluşturulabilecek token sayısının üst sınırı"
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "Modelin yanıtlamadan önce ne ölçüde muhakeme yürüttüğü. 'default' seçimi modele bırakır. Desteklenen düzeyler modele göre farklılık gösterir: GPT-6 Astra low-max, GPT-5.6 none-max (no minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; GPT-4.1'de muhakeme yoktur. Desteklenmeyen düzeyler, istek gönderilmeden önce reddedilir."
       },
       "truncation": {
         "name": "kırpma",
@@ -15970,78 +16040,6 @@
       "prompt": {
         "name": "komut",
         "tooltip": "Modelin yanıt oluşturmak için kullandığı metin girdileri."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIDalle2": {
-    "description": "OpenAI'nin DALL·E 2 uç noktası aracılığıyla eşzamanlı olarak görüntüler oluşturur.",
-    "display_name": "OpenAI DALL·E 2",
-    "inputs": {
-      "control_after_generate": {
-        "name": "oluşturduktan sonra kontrol et"
-      },
-      "image": {
-        "name": "görüntü",
-        "tooltip": "Görüntü düzenleme için isteğe bağlı referans görüntü."
-      },
-      "mask": {
-        "name": "maske",
-        "tooltip": "İç boyama için isteğe bağlı maske (beyaz alanlar değiştirilecektir)"
-      },
-      "n": {
-        "name": "n",
-        "tooltip": "Kaç tane görüntü oluşturulacağı"
-      },
-      "prompt": {
-        "name": "istem",
-        "tooltip": "DALL·E için metin istemi"
-      },
-      "seed": {
-        "name": "tohum",
-        "tooltip": "arka uçta henüz uygulanmadı"
-      },
-      "size": {
-        "name": "boyut",
-        "tooltip": "Görüntü boyutu"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIDalle3": {
-    "description": "OpenAI'nin DALL·E 3 uç noktası aracılığıyla eşzamanlı olarak görüntüler oluşturur.",
-    "display_name": "OpenAI DALL·E 3",
-    "inputs": {
-      "control_after_generate": {
-        "name": "oluşturduktan sonra kontrol et"
-      },
-      "prompt": {
-        "name": "istem",
-        "tooltip": "DALL·E için metin istemi"
-      },
-      "quality": {
-        "name": "kalite",
-        "tooltip": "Görüntü kalitesi"
-      },
-      "seed": {
-        "name": "tohum",
-        "tooltip": "arka uçta henüz uygulanmadı"
-      },
-      "size": {
-        "name": "boyut",
-        "tooltip": "Görüntü boyutu"
-      },
-      "style": {
-        "name": "stil",
-        "tooltip": "Canlı, modelin hiper-gerçekçi ve dramatik görüntüler oluşturmaya yönelmesine neden olur. Doğal, modelin daha doğal, daha az hiper-gerçekçi görünen görüntüler üretmesine neden olur."
       }
     },
     "outputs": {

@@ -1486,96 +1486,6 @@
       }
     }
   },
-  "ByteDanceImageNode": {
-    "description": "プロンプトに基づいてAPI経由でByteDanceモデルを使用して画像を生成",
-    "display_name": "ByteDance画像",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後の制御"
-      },
-      "guidance_scale": {
-        "name": "ガイダンススケール",
-        "tooltip": "値が高いほどプロンプトに忠実な画像になります"
-      },
-      "height": {
-        "name": "高さ",
-        "tooltip": "画像のカスタム高さ。`size_preset`が`Custom`に設定されている場合のみ有効"
-      },
-      "model": {
-        "name": "モデル"
-      },
-      "prompt": {
-        "name": "プロンプト",
-        "tooltip": "画像生成に使用するテキストプロンプト"
-      },
-      "seed": {
-        "name": "シード",
-        "tooltip": "生成に使用するシード値"
-      },
-      "size_preset": {
-        "name": "サイズプリセット",
-        "tooltip": "推奨サイズを選択。カスタムを選択すると下記の幅と高さを使用します"
-      },
-      "watermark": {
-        "name": "透かし",
-        "tooltip": "画像に「AI生成」の透かしを追加するかどうか"
-      },
-      "width": {
-        "name": "幅",
-        "tooltip": "画像のカスタム幅。`size_preset`が`Custom`に設定されている場合のみ有効"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "ByteDanceImageReferenceNode": {
-    "description": "プロンプトと参照画像を使用して動画を生成",
-    "display_name": "ByteDance参照画像から動画生成",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "アスペクト比",
-        "tooltip": "出力動画のアスペクト比"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration": {
-        "name": "再生時間",
-        "tooltip": "出力動画の再生時間（秒）"
-      },
-      "images": {
-        "name": "画像",
-        "tooltip": "1〜4枚の画像"
-      },
-      "model": {
-        "name": "モデル"
-      },
-      "prompt": {
-        "name": "プロンプト",
-        "tooltip": "動画生成に使用するテキストプロンプト"
-      },
-      "resolution": {
-        "name": "解像度",
-        "tooltip": "出力動画の解像度"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "生成に使用するシード値。"
-      },
-      "watermark": {
-        "name": "watermark",
-        "tooltip": "動画に「AI生成」の透かしを追加するかどうか。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "ByteDanceImageToVideoNode": {
     "description": "画像とプロンプトに基づいてAPI経由でByteDanceモデルを使用して動画を生成",
     "display_name": "ByteDance Image to Video",
@@ -2755,6 +2665,260 @@
     "inputs": {
       "values": {
         "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudFlux2TextToImageNode": {
+    "description": "ベータ。Comfy Cloud ノードセットは現在も変更中です。オプションが追加または削除される場合があり、ワークフローが廃止されることもあります。Flux 2 dev を使用して、テキストプロンプトから画像を生成します。Turbo では選択した LoRA と短いスケジュールを使用し、わずかに忠実度を犠牲にして大幅に高速化します。LoRA なしの完全な dev パスを実行するにはオフにしてください。Comfy Cloud GPU で実行され、実行時間に応じて {'$'}0.001295/GPU 秒（0.27 クレジット）が課金されます。クレジット払いで、Cloud サブスクリプションは不要です。",
+    "display_name": "Comfy Cloud Flux 2 テキストから画像 [ベータ]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "総ピクセル予算です。1.0 は正方形比率で約 1024x1024 です。"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "turbo": {
+        "name": "turbo",
+        "tooltip": "Turbo LoRA を短いスケジュールで実行し、わずかに忠実度を犠牲にして大幅に高速化します。オフでは、LoRA なしで完全な dev パスを実行します。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMageFlowTextToImageNode": {
+    "description": "ベータ。Comfy Cloud ノードセットは現在も変更中です。オプションが追加または削除される場合があり、ワークフローが廃止されることもあります。Mage-Flow を使用し、完全な 30 ステップのパスでテキストプロンプトから画像を生成します。ネガティブプロンプトに対応しており、蒸留版 turbo バリアントでは十分に使用できません。Comfy Cloud GPU で実行され、実行時間に応じて {'$'}0.001295/GPU 秒（0.27 クレジット）が課金されます。クレジット払いで、Cloud サブスクリプションは不要です。",
+    "display_name": "Comfy Cloud Mage Flow テキストから画像 [ベータ]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "総ピクセル予算です。1.0 は正方形比率で約 1024x1024 です。"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "このパイプラインのチューニングに使用されたネガティブプロンプトを維持するには、空欄のままにします。"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMageFlowTurboTextToImageNode": {
+    "description": "ベータ。Comfy Cloud ノードセットは現在も変更中です。オプションが追加または削除される場合があり、ワークフローが廃止されることもあります。蒸留版 Mage-Flow を cfg 1、4 ステップで使用して、テキストプロンプトから画像を生成します。完全パスの GPU 時間のおよそ 7 分の 1 で、反復作業に適しています。Comfy Cloud GPU で実行され、実行時間に応じて {'$'}0.001295/GPU 秒（0.27 クレジット）が課金されます。クレジット払いで、Cloud サブスクリプションは不要です。",
+    "display_name": "Comfy Cloud Mage Flow Turbo テキストから画像 [ベータ]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "総ピクセル予算です。1.0 は正方形比率で約 1024x1024 です。"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "このパイプラインのチューニングに使用されたネガティブプロンプトを維持するには、空欄のままにします。"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3FirstLastFrameToVideoNode": {
+    "description": "ベータ。Comfy Cloud ノードセットは現在も変更中です。オプションが追加または削除される場合があり、ワークフローが廃止されることもあります。MiniMax H3 を使用して、2 つのキーフレーム間の動きを、対応するサウンドトラックとともに生成します。開始フレームと終了フレームを指定すると、モデルがその間のショットを補完します。最後のフレームは任意です。省略すると、最初のフレームから離れる方向に動きが生成されます。Comfy Cloud GPU で実行され、実行時間に応じて {'$'}0.001295/GPU 秒（0.27 クレジット）が課金されます。クレジット払いで、Cloud サブスクリプションは不要です。",
+    "display_name": "Comfy Cloud MiniMax H3 最初と最後のフレームから動画 [ベータ]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "duration_seconds": {
+        "name": "duration_seconds",
+        "tooltip": "秒単位の長さです。パイプラインは 24fps で 17 フレーム単位に量子化するため、クリップの長さはこれから約 3 分の 2 秒以内になります。"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "フレームサイズの予算です。720p は 480p のおよそ 2 倍の GPU 秒を要します。"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3ImageToVideoNode": {
+    "description": "BETA。Comfy Cloudノードセットは現在も変更中です。オプションが追加または削除される場合があり、ワークフローが廃止される場合もあります。MiniMax H3を使用して、静止画を対応するサウンドトラック付きの動画にアニメーション化します。クリップの最後のフレームを入力するとシーケンスを継続するため、複数を連結してより長いショットを作成できます。Comfy Cloud GPUで実行され、実行時間に応じて {'$'}0.001295/GPU秒（0.27クレジット）で課金されます。クレジットで支払われ、Cloudサブスクリプションは不要です。",
+    "display_name": "Comfy Cloud MiniMax H3 画像から動画 [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "duration_seconds": {
+        "name": "duration_seconds",
+        "tooltip": "秒単位の長さ。パイプラインは24fpsで17フレーム単位に量子化するため、クリップの長さはこの値から約3分の2秒以内になります。"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "フレームサイズの予算。720pは480pのおよそ2倍のGPU秒を消費します。"
+      },
+      "seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3TextToVideoNode": {
+    "description": "BETA。Comfy Cloudノードセットは現在も変更中です。オプションが追加または削除される場合があり、ワークフローが廃止される場合もあります。MiniMax H3を使用して、テキストプロンプトから対応するサウンドトラック付きの動画を生成します。映像と音声は後から吹き替えるのではなく、同じ処理で生成されます。Comfy Cloud GPUで実行され、実行時間に応じて {'$'}0.001295/GPU秒（0.27クレジット）で課金されます。クレジットで支払われ、Cloudサブスクリプションは不要です。",
+    "display_name": "Comfy Cloud MiniMax H3 テキストから動画 [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "duration_seconds": {
+        "name": "duration_seconds",
+        "tooltip": "秒単位の長さ。パイプラインは24fpsで17フレーム単位に量子化するため、クリップの長さはこの値から約3分の2秒以内になります。"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "フレームサイズの予算。720pは480pのおよそ2倍のGPU秒を消費します。"
+      },
+      "seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxMusic3TextToAudioNode": {
+    "description": "BETA。Comfy Cloudノードセットは現在も変更中です。オプションが追加または削除される場合があり、ワークフローが廃止される場合もあります。MiniMax Music 3を使用して、説明から楽曲全体を生成します。プロンプトにはスタイル、楽器編成、ムードを指定します。歌詞は説明ではなく歌われ、歌詞を空欄にするとトラックはインストゥルメンタルになります。Comfy Cloud GPUで実行され、実行時間に応じて {'$'}0.001295/GPU秒（0.27クレジット）で課金されます。クレジットで支払われ、Cloudサブスクリプションは不要です。",
+    "display_name": "Comfy Cloud MiniMax Music 3 テキストからオーディオ [BETA]",
+    "inputs": {
+      "audio_quality": {
+        "name": "audio_quality",
+        "tooltip": "mp3ビットレート。V0は可変ビットレートで、3つの中で最高品質です。"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "lyrics": {
+        "name": "歌詞",
+        "tooltip": "歌う言葉。インストゥルメンタルにする場合は空欄のままにします。"
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "トラックの最大再生時間。モデルはより早く曲を終了する場合があります。"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudZImageTurboNode": {
+    "description": "BETA。Comfy Cloudノードセットは現在も変更中です。オプションが追加または削除される場合があり、ワークフローが廃止される場合もあります。Z-Image Turboを使用して、テキストプロンプトから8ステップで画像を生成します。ここでは最も高速かつ低コストなノードの1つであり、反復調整に最適です。Comfy Cloud GPUで実行され、実行時間に応じて {'$'}0.001295/GPU秒（0.27クレジット）で課金されます。クレジットで支払われ、Cloudサブスクリプションは不要です。",
+    "display_name": "Comfy Cloud Z-Image Turbo テキストから画像 [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "合計ピクセル予算。正方形の比率では、1.0 は約 1024x1024 です。"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "seed": {
+        "name": "シード"
       }
     },
     "outputs": {
@@ -9335,40 +9499,6 @@
       }
     }
   },
-  "KlingVideoExtendNode": {
-    "description": "Kling Video Extendノード。他のKlingノードで作成された動画を拡張します。video_idは他のKlingノードを使用して作成されます。",
-    "display_name": "Kling Video Extend",
-    "inputs": {
-      "cfg_scale": {
-        "name": "cfg_scale"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "拡張動画で避けたい要素のネガティブテキストプロンプト"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "動画拡張をガイドするためのポジティブなテキストプロンプト"
-      },
-      "video_id": {
-        "name": "video_id",
-        "tooltip": "拡張する動画のID。テキストから動画、画像から動画、または以前の動画拡張操作で生成された動画をサポートします。拡張後の合計再生時間は3分を超えることはできません。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "duration",
-        "tooltip": null
-      }
-    }
-  },
   "KlingVideoNode": {
     "description": "Kling V3でビデオを生成します。テキストからビデオ、画像からビデオ、オプションでストーリーボードのマルチプロンプトやオーディオ生成に対応しています。",
     "display_name": "Kling 3.0 ビデオ",
@@ -11169,70 +11299,6 @@
       "seed": {
         "name": "シード",
         "tooltip": "ノードを再実行するかどうかを決定するシード。実際の結果はシードに関係なく非決定的です。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LtxvApiImageToVideo": {
-    "description": "開始画像に基づいてカスタマイズ可能な長さと解像度のプロフェッショナル品質の動画。",
-    "display_name": "LTXV 画像から動画へ",
-    "inputs": {
-      "duration": {
-        "name": "長さ"
-      },
-      "fps": {
-        "name": "fps"
-      },
-      "generate_audio": {
-        "name": "オーディオ生成",
-        "tooltip": "trueの場合、生成された動画にはシーンに合ったAI生成オーディオが含まれます。"
-      },
-      "image": {
-        "name": "画像",
-        "tooltip": "動画の最初のフレームとして使用する画像。"
-      },
-      "model": {
-        "name": "モデル"
-      },
-      "prompt": {
-        "name": "プロンプト"
-      },
-      "resolution": {
-        "name": "解像度"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LtxvApiTextToVideo": {
-    "description": "カスタマイズ可能な長さと解像度のプロフェッショナル品質の動画。",
-    "display_name": "LTXV テキストから動画へ",
-    "inputs": {
-      "duration": {
-        "name": "長さ"
-      },
-      "fps": {
-        "name": "fps"
-      },
-      "generate_audio": {
-        "name": "オーディオ生成",
-        "tooltip": "trueの場合、生成された動画にはシーンに合ったAI生成オーディオが含まれます。"
-      },
-      "model": {
-        "name": "モデル"
-      },
-      "prompt": {
-        "name": "プロンプト"
-      },
-      "resolution": {
-        "name": "解像度"
       }
     },
     "outputs": {
@@ -15930,7 +15996,11 @@
       },
       "max_output_tokens": {
         "name": "最大出力トークン数",
-        "tooltip": "生成できる応答のトークン数の上限（表示可能な出力トークンを含む）"
+        "tooltip": "表示出力トークンと推論トークンを含む、応答として生成できるトークン数の上限"
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "回答前にモデルがどの程度推論するかを指定します。'default' はモデルに選択を委ねます。対応レベルはモデルごとに異なります: GPT-6 Astra は low-max、GPT-5.6 は none-max（minimal なし）、GPT-5.5 は none-xhigh、GPT-5.5 Pro は medium-xhigh、GPT-5 は minimal-high、o-series は low-high。GPT-4.1 には推論機能がありません。未対応のレベルはリクエスト送信前に拒否されます。"
       },
       "truncation": {
         "name": "切り捨て",
@@ -15970,78 +16040,6 @@
       "prompt": {
         "name": "プロンプト",
         "tooltip": "モデルへのテキスト入力。応答を生成するために使用されます。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIDalle2": {
-    "description": "OpenAIのDALL·E 2エンドポイントを通じて同期的に画像を生成します。",
-    "display_name": "OpenAI DALL·E 2",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後のコントロール"
-      },
-      "image": {
-        "name": "画像",
-        "tooltip": "画像編集用のオプション参照画像。"
-      },
-      "mask": {
-        "name": "マスク",
-        "tooltip": "インペインティング用のオプションマスク（白い部分が置き換えられます）"
-      },
-      "n": {
-        "name": "生成数",
-        "tooltip": "生成する画像の枚数"
-      },
-      "prompt": {
-        "name": "プロンプト",
-        "tooltip": "DALL·E用のテキストプロンプト"
-      },
-      "seed": {
-        "name": "シード",
-        "tooltip": "バックエンドではまだ未実装"
-      },
-      "size": {
-        "name": "サイズ",
-        "tooltip": "画像サイズ"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIDalle3": {
-    "description": "OpenAIのDALL·E 3エンドポイントを通じて同期的に画像を生成します。",
-    "display_name": "OpenAI DALL·E 3",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後のコントロール"
-      },
-      "prompt": {
-        "name": "プロンプト",
-        "tooltip": "DALL·E用のテキストプロンプト"
-      },
-      "quality": {
-        "name": "画質",
-        "tooltip": "画像の品質"
-      },
-      "seed": {
-        "name": "シード",
-        "tooltip": "バックエンドではまだ未実装"
-      },
-      "size": {
-        "name": "サイズ",
-        "tooltip": "画像サイズ"
-      },
-      "style": {
-        "name": "スタイル",
-        "tooltip": "「Vivid」はモデルがハイパーリアルでドラマチックな画像を生成する傾向になります。「Natural」はより自然で、ハイパーリアルではない画像を生成します。"
       }
     },
     "outputs": {

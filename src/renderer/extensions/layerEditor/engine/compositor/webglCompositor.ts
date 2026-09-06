@@ -505,15 +505,22 @@ export function createWebGLCompositor(): Compositor {
         typeof OffscreenCanvas !== 'undefined'
           ? new OffscreenCanvas(width, height)
           : document.createElement('canvas')
-      if (!(c instanceof OffscreenCanvas)) {
-        c.width = width
-        c.height = height
-      }
-      const ctx = c.getContext('webgl2', {
+      const attributes: WebGLContextAttributes = {
         alpha: true,
         premultipliedAlpha: false,
         preserveDrawingBuffer: true
-      })
+      }
+      // The two canvases each answer 'webgl2' with a WebGL2RenderingContext,
+      // but the union of their overloads collapses to RenderingContext, so
+      // each asks on its own.
+      let ctx: WebGL2RenderingContext | null
+      if (c instanceof OffscreenCanvas) {
+        ctx = c.getContext('webgl2', attributes)
+      } else {
+        c.width = width
+        c.height = height
+        ctx = c.getContext('webgl2', attributes)
+      }
       if (!ctx) return false
       if (!ctx.getExtension('EXT_color_buffer_float')) return false
       canvas = c
