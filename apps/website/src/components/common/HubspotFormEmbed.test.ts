@@ -41,6 +41,11 @@ function loaderScript() {
   return document.getElementById(SCRIPT_ID) as HTMLScriptElement | null
 }
 
+function embedStyle() {
+  render(HubspotFormEmbed, { props: { formId: FORM_ID } })
+  return screen.getByTestId('hubspot-form-embed').style
+}
+
 let createElementSpy: ReturnType<typeof stubScriptLoading>
 
 beforeEach(() => {
@@ -79,5 +84,38 @@ describe('HubspotFormEmbed', () => {
     expect(screen.getByRole('link').getAttribute('href')).toBe(
       'mailto:hello@comfy.org'
     )
+  })
+
+  // Unset, these fall back to `--hsf-field-input__padding`, and HubSpot sizes
+  // its `appearance: none` boxes purely from padding — so they render at 34px.
+  it('sizes checkboxes and radios independently of the text input', () => {
+    const style = embedStyle()
+
+    const inputPadding = style.getPropertyValue('--hsf-field-input__padding')
+    expect(inputPadding).not.toBe('')
+
+    for (const control of ['checkbox', 'radio']) {
+      const padding = style.getPropertyValue(`--hsf-field-${control}__padding`)
+      expect(padding).not.toBe('')
+      expect(padding).not.toBe(inputPadding)
+    }
+  })
+
+  it('themes the form from tokens rather than literal colours', () => {
+    const cssText = embedStyle().cssText
+
+    expect(cssText).toMatch(/var\(--color-/)
+    expect(cssText).not.toMatch(/#[0-9a-f]{3,8}\b/i)
+    expect(cssText).not.toMatch(/\brgba?\(/i)
+  })
+
+  it('gives the submit button hover and focus states', () => {
+    const style = embedStyle()
+
+    for (const state of ['hover', 'focus']) {
+      expect(
+        style.getPropertyValue(`--hsf-button--${state}__background-color`)
+      ).not.toBe('')
+    }
   })
 })
