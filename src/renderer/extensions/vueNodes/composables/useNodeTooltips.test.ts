@@ -89,12 +89,24 @@ describe('useNodeTooltips', () => {
     expect(consoleError).not.toHaveBeenCalled()
   })
 
+  it('returns no tooltip for an input absent from the live node definition', () => {
+    const { getInputSlotTooltip } = useNodeTooltips('SAM3_Detect')
+
+    expect(getInputSlotTooltip('stale_input')).toBe('')
+  })
+
   it('reads input-based widget tooltips without i18n placeholder errors', () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { getWidgetTooltip } = useNodeTooltips('SAM3_Detect')
 
     expect(getWidgetTooltip(positiveCoordsWidget)).toBe(jsonTooltip)
     expect(consoleError).not.toHaveBeenCalled()
+  })
+
+  it('returns no tooltip for a widget absent from the live node definition', () => {
+    const { getWidgetTooltip } = useNodeTooltips('SAM3_Detect')
+
+    expect(getWidgetTooltip({ name: 'stale_widget' })).toBe('')
   })
 
   it('reads output slot tooltips without i18n placeholder errors', () => {
