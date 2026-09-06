@@ -770,6 +770,54 @@
       }
     }
   },
+  "BlockSparseAttention": {
+    "description": "קשב דליל-בלוקים באמצעות comfy_kitchen: כל בלוק שאילתה מפנה קשב בדיוק לתת-קבוצה נבחרת של בלוקי מפתח, וכך מפחית את חישוב הקשב. שיפור המהירות היחסי גדל עם אורך הרצף, שכן רצפים קצרים בדרך כלל מהירים יותר במצב צפוף. מחוץ ללוח הזמנים הפעיל, עבור dense_blocks ומתחת ל-min_tokens, המודל משתמש במנגנון הקשב של המודל הצפוף הפעיל.",
+    "display_name": "קשב דליל-בלוקים",
+    "inputs": {
+      "dense_blocks": {
+        "name": "dense_blocks",
+        "tooltip": "בלוקי Transformer שפועלים תמיד במצב צפוף, לדוגמה: '0, 1, 47-49'."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "צפוף לאחר נקודה זו בלוח הזמנים."
+      },
+      "extra_tokens": {
+        "name": "extra_tokens",
+        "tooltip": "טוקנים נוספים בעלי הציון הגבוה ביותר שכל בלוק שאילתה מפנה אליהם קשב מעבר לבלוקים שנבחרו עבורו. ערך גבוה יותר קרוב למצב צפוף ומגדיל את זמן הקשב; מומלץ 256, ו-0 משבית. מתעלמים מכך עבור VSA."
+      },
+      "min_tokens": {
+        "name": "min_tokens",
+        "tooltip": "רצפים קצרים מערך זה נשארים צפופים."
+      },
+      "model": {
+        "name": "model"
+      },
+      "selection": {
+        "name": "selection",
+        "tooltip": "אופן בחירת בלוקי המפתח המדויקים. Sol-Attn: סף מסתגל לכל ראש/בלוק. top-k (SLA): keep_percent קבוע בכל מקום, מומלץ רק עם משקולות שאומנו לכך. VSA (FastVideo): ריצוף קוביות והענף הגס של FastH3-VSA, דורש משקולות שאומנו לכך."
+      },
+      "selection_tau": {
+        "name": "tau"
+      },
+      "sink_conditioning": {
+        "name": "sink_conditioning",
+        "tooltip": "עבור MiniMax-H3 בלבד. exact_kv: כל שאילתה מפנה קשב בדיוק לשורות הטקסט/השמע/הייחוס הארוזות (עלות של כ-3%). exact_kv_and_rows: בנוסף, מפעיל במצב צפוף את שורות שאילתת שמע-היעד (שומר על השמע שנוצר ללא שינוי)."
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "צפוף לפני נקודה זו בלוח הזמנים."
+      },
+      "verbose": {
+        "name": "verbose"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaEraser": {
     "description": "הסרת אובייקטים או אזורים המסומנים באמצעות מסכה מתוך תמונה באמצעות Bria.",
     "display_name": "מחק Bria",
@@ -1459,96 +1507,6 @@
       "last_frame": {
         "name": "last_frame",
         "tooltip": "הפריים האחרון שישמש לוידאו."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "הפרומפט הטקסטואלי המשמש ליצירת הוידאו."
-      },
-      "resolution": {
-        "name": "resolution",
-        "tooltip": "הרזולוציה של הוידאו המופק."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "זרע (seed) לשימוש ביצירה."
-      },
-      "watermark": {
-        "name": "watermark",
-        "tooltip": "האם להוסיף סימן מים \"AI generated\" לוידאו."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "ByteDanceImageNode": {
-    "description": "יצירת תמונות באמצעות מודלים של ByteDance דרך API על בסיס פרומפט",
-    "display_name": "ByteDance Image",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "guidance_scale": {
-        "name": "guidance_scale",
-        "tooltip": "ערך גבוה יותר יגרום לתמונה לעקוב אחרי הפרומפט בצורה מדויקת יותר"
-      },
-      "height": {
-        "name": "height",
-        "tooltip": "גובה מותאם אישית לתמונה. ערך זה פעיל רק אם 'size_preset' מוגדר כ-'Custom'"
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "הפרומפט הטקסטואלי המשמש ליצירת התמונה"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "זרע (seed) לשימוש ביצירה"
-      },
-      "size_preset": {
-        "name": "size_preset",
-        "tooltip": "בחר גודל מומלץ. בחר Custom כדי להשתמש ברוחב ובגובה למטה"
-      },
-      "watermark": {
-        "name": "watermark",
-        "tooltip": "האם להוסיף סימן מים \"AI generated\" לתמונה"
-      },
-      "width": {
-        "name": "width",
-        "tooltip": "רוחב מותאם אישית לתמונה. ערך זה פעיל רק אם 'size_preset' מוגדר כ-'Custom'"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "ByteDanceImageReferenceNode": {
-    "description": "יצירת וידאו באמצעות פרומפט ותמונות ייחוס.",
-    "display_name": "ByteDance הפניות תמונה לוידאו",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "יחס הגובה-רוחב של הוידאו המופק."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration": {
-        "name": "duration",
-        "tooltip": "משך הוידאו המופק בשניות."
-      },
-      "images": {
-        "name": "images",
-        "tooltip": "תמונה אחת עד ארבע תמונות."
       },
       "model": {
         "name": "model"
@@ -9589,40 +9547,6 @@
       }
     }
   },
-  "KlingVideoExtendNode": {
-    "description": "צומת הרחבת וידאו Kling. הרחב סרטונים שנוצרו על ידי צמתים אחרים של Kling. ה-video_id נוצר באמצעות צמתים אחרים של Kling.",
-    "display_name": "Kling הרחבת וידאו",
-    "inputs": {
-      "cfg_scale": {
-        "name": "cfg_scale"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "פרומפט שלילי (הנחיה שלילית) לאלמנטים שיש להימנע מהם בווידאו המורחב"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "פרומפט חיובי (הנחיה חיובית) להכוונת הרחבת הווידאו"
-      },
-      "video_id": {
-        "name": "video_id",
-        "tooltip": "מזהה הווידאו להרחבה. תומך בסרטונים שנוצרו על ידי טקסט-לווידאו, תמונה-לווידאו, ופעולות הרחבה קודמות. לא ניתן לעבור את משך הזמן הכולל של 3 דקות לאחר ההרחבה."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "duration",
-        "tooltip": null
-      }
-    }
-  },
   "KlingVideoNode": {
     "description": "יצירת סרטונים עם Kling V3. תומך בטקסט-לווידאו ותמונה-לווידאו עם אפשרות לפרומפט מרובה (storyboard) ויצירת אודיו.",
     "display_name": "Kling 3.0 וידאו",
@@ -11423,70 +11347,6 @@
       "seed": {
         "name": "seed",
         "tooltip": "seed לקביעת האם הצומת ירוץ מחדש; התוצאות בפועל אינן דטרמיניסטיות ללא קשר ל-seed."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LtxvApiImageToVideo": {
-    "description": "סרטונים באיכות מקצועית עם משך ורזולוציה מותאמים אישית על בסיס תמונת התחלה.",
-    "display_name": "LTXV Image To Video",
-    "inputs": {
-      "duration": {
-        "name": "משך"
-      },
-      "fps": {
-        "name": "fps"
-      },
-      "generate_audio": {
-        "name": "יצירת אודיו",
-        "tooltip": "כאשר מאופשר, הווידאו שיווצר יכלול אודיו שנוצר ב-AI בהתאמה לסצנה."
-      },
-      "image": {
-        "name": "תמונה",
-        "tooltip": "הפריים הראשון שישמש לווידאו."
-      },
-      "model": {
-        "name": "מודל"
-      },
-      "prompt": {
-        "name": "פרומפט"
-      },
-      "resolution": {
-        "name": "רזולוציה"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LtxvApiTextToVideo": {
-    "description": "סרטונים באיכות מקצועית עם משך ורזולוציה מותאמים אישית.",
-    "display_name": "LTXV Text To Video",
-    "inputs": {
-      "duration": {
-        "name": "משך"
-      },
-      "fps": {
-        "name": "fps"
-      },
-      "generate_audio": {
-        "name": "יצירת אודיו",
-        "tooltip": "כאשר מאופשר, הווידאו שיווצר יכלול אודיו שנוצר ב-AI בהתאמה לסצנה."
-      },
-      "model": {
-        "name": "מודל"
-      },
-      "prompt": {
-        "name": "פרומפט"
-      },
-      "resolution": {
-        "name": "רזולוציה"
       }
     },
     "outputs": {
@@ -16184,7 +16044,11 @@
       },
       "max_output_tokens": {
         "name": "max_output_tokens",
-        "tooltip": "גבול עליון למספר הטוקנים שניתן להפיק בתגובה, כולל טוקנים גלויים"
+        "tooltip": "גבול עליון למספר הטוקנים שניתן ליצור עבור תשובה, כולל טוקני פלט גלויים וטוקני חשיבה"
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "מידת החשיבה שהמודל מבצע לפני מתן תשובה. 'default' משאיר את הבחירה למודל. הרמות הנתמכות משתנות לפי מודל: GPT-6 Astra low-max, GPT-5.6 none-max (ללא minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; ל-GPT-4.1 אין יכולת חשיבה. רמות שאינן נתמכות נדחות לפני שליחת הבקשה."
       },
       "truncation": {
         "name": "truncation",
@@ -16224,78 +16088,6 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "קלטי טקסט למודל, המשמשים להפקת תגובה."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIDalle2": {
-    "description": "יוצר תמונות באופן סינכרוני דרך נקודת הקצה של DALL·E 2 של OpenAI.",
-    "display_name": "OpenAI DALL·E 2",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "image": {
-        "name": "image",
-        "tooltip": "תמונת ייחוס אופציונלית לעריכת תמונה."
-      },
-      "mask": {
-        "name": "mask",
-        "tooltip": "מסכה אופציונלית ל-inpainting (אזורים לבנים יוחלפו)"
-      },
-      "n": {
-        "name": "n",
-        "tooltip": "כמה תמונות ליצור"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "פרומפט טקסט עבור DALL·E"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "עדיין לא נתמך ב-backend"
-      },
-      "size": {
-        "name": "size",
-        "tooltip": "גודל התמונה"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIDalle3": {
-    "description": "יוצר תמונות באופן סינכרוני דרך נקודת הקצה של OpenAI DALL·E 3.",
-    "display_name": "OpenAI DALL·E 3",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "הנחיה טקסטואלית עבור DALL·E"
-      },
-      "quality": {
-        "name": "quality",
-        "tooltip": "איכות התמונה"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "עדיין לא נתמך בצד השרת"
-      },
-      "size": {
-        "name": "size",
-        "tooltip": "גודל התמונה"
-      },
-      "style": {
-        "name": "style",
-        "tooltip": "Vivid גורם למודל להעדיף יצירת תמונות דרמטיות והיפר-ריאליסטיות. Natural גורם למודל להפיק תמונות טבעיות ופחות היפר-ריאליסטיות."
       }
     },
     "outputs": {

@@ -770,6 +770,54 @@
       }
     }
   },
+  "BlockSparseAttention": {
+    "description": "comfy_kitchen によるブロックスパースアテンション: 各クエリブロックは、選択されたキー・ブロックのサブセットに対して正確にアテンションを行い、アテンション計算量を削減します。短いシーケンスでは通常、密な処理のほうが高速なため、相対的な速度向上はシーケンス長とともに大きくなります。有効なスケジュール外、dense_blocks、および min_tokens 未満では、モデルは有効な密なモデルアテンションバックエンドを使用します。",
+    "display_name": "ブロックスパースアテンション",
+    "inputs": {
+      "dense_blocks": {
+        "name": "dense_blocks",
+        "tooltip": "常に密な処理を実行する Transformer ブロックです。例: '0, 1, 47-49'。"
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "スケジュールのこの時点より後は密な処理を行います。"
+      },
+      "extra_tokens": {
+        "name": "extra_tokens",
+        "tooltip": "選択されたブロックに加えて、各クエリブロックがアテンションを行う高スコアの追加トークン数です。増やすほど密な処理に近づき、アテンション時間が増えます。256 を推奨します。0 で無効化されます。VSA では無視されます。"
+      },
+      "min_tokens": {
+        "name": "min_tokens",
+        "tooltip": "これより短いシーケンスは密な処理のままです。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "selection": {
+        "name": "selection",
+        "tooltip": "正確なキー・ブロックの選択方法です。Sol-Attn: ヘッド/ブロックごとの適応しきい値。top-k (SLA): すべてで固定の keep_percent を維持します。学習済み重みでのみ推奨されます。VSA (FastVideo): FastH3-VSA のキューブタイル化と粗い分岐を使用し、対応する学習済み重みが必要です。"
+      },
+      "selection_tau": {
+        "name": "tau"
+      },
+      "sink_conditioning": {
+        "name": "sink_conditioning",
+        "tooltip": "MiniMax-H3 専用です。exact_kv: 各クエリがパックされたテキスト/オーディオ/参照行に対して正確にアテンションを行います（コスト約 3%）。exact_kv_and_rows: さらにターゲットオーディオのクエリ行を密に実行します（生成されたオーディオを維持します）。"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "スケジュールのこの時点より前は密な処理を行います。"
+      },
+      "verbose": {
+        "name": "verbose"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaEraser": {
     "description": "Briaを使用して、画像からmaskで指定したオブジェクトまたは領域を削除します。",
     "display_name": "Bria 消去",
@@ -1477,96 +1525,6 @@
       },
       "watermark": {
         "name": "ウォーターマーク",
-        "tooltip": "動画に「AI生成」の透かしを追加するかどうか。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "ByteDanceImageNode": {
-    "description": "プロンプトに基づいてAPI経由でByteDanceモデルを使用して画像を生成",
-    "display_name": "ByteDance画像",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後の制御"
-      },
-      "guidance_scale": {
-        "name": "ガイダンススケール",
-        "tooltip": "値が高いほどプロンプトに忠実な画像になります"
-      },
-      "height": {
-        "name": "高さ",
-        "tooltip": "画像のカスタム高さ。`size_preset`が`Custom`に設定されている場合のみ有効"
-      },
-      "model": {
-        "name": "モデル"
-      },
-      "prompt": {
-        "name": "プロンプト",
-        "tooltip": "画像生成に使用するテキストプロンプト"
-      },
-      "seed": {
-        "name": "シード",
-        "tooltip": "生成に使用するシード値"
-      },
-      "size_preset": {
-        "name": "サイズプリセット",
-        "tooltip": "推奨サイズを選択。カスタムを選択すると下記の幅と高さを使用します"
-      },
-      "watermark": {
-        "name": "透かし",
-        "tooltip": "画像に「AI生成」の透かしを追加するかどうか"
-      },
-      "width": {
-        "name": "幅",
-        "tooltip": "画像のカスタム幅。`size_preset`が`Custom`に設定されている場合のみ有効"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "ByteDanceImageReferenceNode": {
-    "description": "プロンプトと参照画像を使用して動画を生成",
-    "display_name": "ByteDance参照画像から動画生成",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "アスペクト比",
-        "tooltip": "出力動画のアスペクト比"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration": {
-        "name": "再生時間",
-        "tooltip": "出力動画の再生時間（秒）"
-      },
-      "images": {
-        "name": "画像",
-        "tooltip": "1〜4枚の画像"
-      },
-      "model": {
-        "name": "モデル"
-      },
-      "prompt": {
-        "name": "プロンプト",
-        "tooltip": "動画生成に使用するテキストプロンプト"
-      },
-      "resolution": {
-        "name": "解像度",
-        "tooltip": "出力動画の解像度"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "生成に使用するシード値。"
-      },
-      "watermark": {
-        "name": "watermark",
         "tooltip": "動画に「AI生成」の透かしを追加するかどうか。"
       }
     },
@@ -9589,40 +9547,6 @@
       }
     }
   },
-  "KlingVideoExtendNode": {
-    "description": "Kling Video Extendノード。他のKlingノードで作成された動画を拡張します。video_idは他のKlingノードを使用して作成されます。",
-    "display_name": "Kling Video Extend",
-    "inputs": {
-      "cfg_scale": {
-        "name": "cfg_scale"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "拡張動画で避けたい要素のネガティブテキストプロンプト"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "動画拡張をガイドするためのポジティブなテキストプロンプト"
-      },
-      "video_id": {
-        "name": "video_id",
-        "tooltip": "拡張する動画のID。テキストから動画、画像から動画、または以前の動画拡張操作で生成された動画をサポートします。拡張後の合計再生時間は3分を超えることはできません。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "duration",
-        "tooltip": null
-      }
-    }
-  },
   "KlingVideoNode": {
     "description": "Kling V3でビデオを生成します。テキストからビデオ、画像からビデオ、オプションでストーリーボードのマルチプロンプトやオーディオ生成に対応しています。",
     "display_name": "Kling 3.0 ビデオ",
@@ -11423,70 +11347,6 @@
       "seed": {
         "name": "シード",
         "tooltip": "ノードを再実行するかどうかを決定するシード。実際の結果はシードに関係なく非決定的です。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LtxvApiImageToVideo": {
-    "description": "開始画像に基づいてカスタマイズ可能な長さと解像度のプロフェッショナル品質の動画。",
-    "display_name": "LTXV 画像から動画へ",
-    "inputs": {
-      "duration": {
-        "name": "長さ"
-      },
-      "fps": {
-        "name": "fps"
-      },
-      "generate_audio": {
-        "name": "オーディオ生成",
-        "tooltip": "trueの場合、生成された動画にはシーンに合ったAI生成オーディオが含まれます。"
-      },
-      "image": {
-        "name": "画像",
-        "tooltip": "動画の最初のフレームとして使用する画像。"
-      },
-      "model": {
-        "name": "モデル"
-      },
-      "prompt": {
-        "name": "プロンプト"
-      },
-      "resolution": {
-        "name": "解像度"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LtxvApiTextToVideo": {
-    "description": "カスタマイズ可能な長さと解像度のプロフェッショナル品質の動画。",
-    "display_name": "LTXV テキストから動画へ",
-    "inputs": {
-      "duration": {
-        "name": "長さ"
-      },
-      "fps": {
-        "name": "fps"
-      },
-      "generate_audio": {
-        "name": "オーディオ生成",
-        "tooltip": "trueの場合、生成された動画にはシーンに合ったAI生成オーディオが含まれます。"
-      },
-      "model": {
-        "name": "モデル"
-      },
-      "prompt": {
-        "name": "プロンプト"
-      },
-      "resolution": {
-        "name": "解像度"
       }
     },
     "outputs": {
@@ -16184,7 +16044,11 @@
       },
       "max_output_tokens": {
         "name": "最大出力トークン数",
-        "tooltip": "生成できる応答のトークン数の上限（表示可能な出力トークンを含む）"
+        "tooltip": "応答として生成できるトークン数の上限。表示出力トークンと推論トークンを含みます"
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "回答前にモデルがどの程度推論するか。'default' は選択をモデルに任せます。サポートされるレベルはモデルごとに異なります: GPT-6 Astra は low-max、GPT-5.6 は none-max（minimal なし）、GPT-5.5 は none-xhigh、GPT-5.5 Pro は medium-xhigh、GPT-5 は minimal-high、o-series は low-high。GPT-4.1 には推論機能はありません。対応していないレベルは、リクエストが送信される前に拒否されます。"
       },
       "truncation": {
         "name": "切り捨て",
@@ -16224,78 +16088,6 @@
       "prompt": {
         "name": "プロンプト",
         "tooltip": "モデルへのテキスト入力。応答を生成するために使用されます。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIDalle2": {
-    "description": "OpenAIのDALL·E 2エンドポイントを通じて同期的に画像を生成します。",
-    "display_name": "OpenAI DALL·E 2",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後のコントロール"
-      },
-      "image": {
-        "name": "画像",
-        "tooltip": "画像編集用のオプション参照画像。"
-      },
-      "mask": {
-        "name": "マスク",
-        "tooltip": "インペインティング用のオプションマスク（白い部分が置き換えられます）"
-      },
-      "n": {
-        "name": "生成数",
-        "tooltip": "生成する画像の枚数"
-      },
-      "prompt": {
-        "name": "プロンプト",
-        "tooltip": "DALL·E用のテキストプロンプト"
-      },
-      "seed": {
-        "name": "シード",
-        "tooltip": "バックエンドではまだ未実装"
-      },
-      "size": {
-        "name": "サイズ",
-        "tooltip": "画像サイズ"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIDalle3": {
-    "description": "OpenAIのDALL·E 3エンドポイントを通じて同期的に画像を生成します。",
-    "display_name": "OpenAI DALL·E 3",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後のコントロール"
-      },
-      "prompt": {
-        "name": "プロンプト",
-        "tooltip": "DALL·E用のテキストプロンプト"
-      },
-      "quality": {
-        "name": "画質",
-        "tooltip": "画像の品質"
-      },
-      "seed": {
-        "name": "シード",
-        "tooltip": "バックエンドではまだ未実装"
-      },
-      "size": {
-        "name": "サイズ",
-        "tooltip": "画像サイズ"
-      },
-      "style": {
-        "name": "スタイル",
-        "tooltip": "「Vivid」はモデルがハイパーリアルでドラマチックな画像を生成する傾向になります。「Natural」はより自然で、ハイパーリアルではない画像を生成します。"
       }
     },
     "outputs": {

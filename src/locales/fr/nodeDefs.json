@@ -770,6 +770,54 @@
       }
     }
   },
+  "BlockSparseAttention": {
+    "description": "Attention par blocs clairsemés via comfy_kitchen : chaque bloc de requêtes effectue exactement l’attention sur un sous-ensemble sélectionné de blocs de clés, réduisant les calculs d’attention. Le gain de vitesse relatif augmente avec la longueur de séquence, car les séquences courtes sont généralement plus rapides en dense. En dehors du planning actif, pour dense_blocks et sous min_tokens, le modèle utilise le backend d’attention dense actif du modèle.",
+    "display_name": "Attention par blocs clairsemés",
+    "inputs": {
+      "dense_blocks": {
+        "name": "dense_blocks",
+        "tooltip": "Blocs Transformer qui utilisent toujours l’attention dense, p. ex. « 0, 1, 47-49 »."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "Attention dense après ce point du planning."
+      },
+      "extra_tokens": {
+        "name": "extra_tokens",
+        "tooltip": "Jetons supplémentaires les mieux notés auxquels chaque bloc de requêtes porte attention au-delà de ses blocs sélectionnés. Plus proche du dense pour davantage de temps d’attention ; 256 recommandé, 0 désactive. Ignoré pour VSA."
+      },
+      "min_tokens": {
+        "name": "min_tokens",
+        "tooltip": "Les séquences plus courtes que cette valeur restent denses."
+      },
+      "model": {
+        "name": "model"
+      },
+      "selection": {
+        "name": "selection",
+        "tooltip": "Méthode de sélection exacte des blocs de clés. Sol-Attn : seuil adaptatif par tête/bloc. top-k (SLA) : keep_percent fixe partout, recommandé uniquement avec des poids entraînés. VSA (FastVideo) : pavage en cubes et branche grossière de FastH3-VSA, nécessite des poids entraînés pour cela."
+      },
+      "selection_tau": {
+        "name": "tau"
+      },
+      "sink_conditioning": {
+        "name": "sink_conditioning",
+        "tooltip": "MiniMax-H3 uniquement. exact_kv : chaque requête porte exactement son attention sur les lignes texte/audio/référence compactées (coût d’environ 3 %). exact_kv_and_rows : exécute également en dense les lignes de requêtes audio cibles (préserve l’audio généré)."
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "Attention dense avant ce point du planning."
+      },
+      "verbose": {
+        "name": "verbose"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaEraser": {
     "description": "Supprimez d'une image les objets ou zones délimités par un masque à l'aide de Bria.",
     "display_name": "Gomme Bria",
@@ -1477,96 +1525,6 @@
       },
       "watermark": {
         "name": "watermark",
-        "tooltip": "Indique s'il faut ajouter un filigrane \"Généré par IA\" à la vidéo."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "ByteDanceImageNode": {
-    "description": "Générer des images en utilisant les modèles ByteDance via l'API basée sur le prompt",
-    "display_name": "Image ByteDance",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "guidance_scale": {
-        "name": "guidance_scale",
-        "tooltip": "Une valeur plus élevée fait que l'image suit plus fidèlement le prompt"
-      },
-      "height": {
-        "name": "height",
-        "tooltip": "Hauteur personnalisée pour l'image. La valeur fonctionne uniquement si `size_preset` est défini sur `Personnalisé`"
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Le prompt texte utilisé pour générer l'image"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Graine à utiliser pour la génération."
-      },
-      "size_preset": {
-        "name": "size_preset",
-        "tooltip": "Choisir une taille recommandée. Sélectionnez Personnalisé pour utiliser la largeur et la hauteur ci-dessous"
-      },
-      "watermark": {
-        "name": "watermark",
-        "tooltip": "Indique s'il faut ajouter un filigrane \"Généré par IA\" à l'image"
-      },
-      "width": {
-        "name": "width",
-        "tooltip": "Largeur personnalisée pour l'image. La valeur fonctionne uniquement si `size_preset` est défini sur `Personnalisé`"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "ByteDanceImageReferenceNode": {
-    "description": "Générer une vidéo en utilisant un prompt et des images de référence.",
-    "display_name": "ByteDance Images de référence en vidéo",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "ratio_d'aspect",
-        "tooltip": "Le ratio d'aspect de la vidéo en sortie."
-      },
-      "control_after_generate": {
-        "name": "contrôle après génération"
-      },
-      "duration": {
-        "name": "durée",
-        "tooltip": "La durée de la vidéo en sortie en secondes."
-      },
-      "images": {
-        "name": "images",
-        "tooltip": "Une à quatre images."
-      },
-      "model": {
-        "name": "modèle"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Le prompt textuel utilisé pour générer la vidéo."
-      },
-      "resolution": {
-        "name": "résolution",
-        "tooltip": "La résolution de la vidéo en sortie."
-      },
-      "seed": {
-        "name": "graine",
-        "tooltip": "Graine à utiliser pour la génération."
-      },
-      "watermark": {
-        "name": "filigrane",
         "tooltip": "Indique s'il faut ajouter un filigrane \"Généré par IA\" à la vidéo."
       }
     },
@@ -9589,40 +9547,6 @@
       }
     }
   },
-  "KlingVideoExtendNode": {
-    "description": "Nœud Kling Video Extend. Étend les vidéos créées par d'autres nœuds Kling. Le video_id est créé en utilisant d'autres nœuds Kling.",
-    "display_name": "Kling Video Extend",
-    "inputs": {
-      "cfg_scale": {
-        "name": "cfg_scale"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Invite textuelle négative pour les éléments à éviter dans la vidéo étendue"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Invite textuelle positive pour guider l’extension de la vidéo"
-      },
-      "video_id": {
-        "name": "video_id",
-        "tooltip": "L’ID de la vidéo à étendre. Prend en charge les vidéos générées par texte-vers-vidéo, image-vers-vidéo et les opérations précédentes d’extension de vidéo. La durée totale ne peut pas dépasser 3 minutes après extension."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "duration",
-        "tooltip": null
-      }
-    }
-  },
   "KlingVideoNode": {
     "description": "Générez des vidéos avec Kling V3. Prend en charge le texte-vers-vidéo et l’image-vers-vidéo avec storyboard multi-invite optionnel et génération audio.",
     "display_name": "Kling 3.0 Vidéo",
@@ -11423,70 +11347,6 @@
       "seed": {
         "name": "seed",
         "tooltip": "Seed pour déterminer si le nœud doit être relancé ; les résultats réels sont non déterministes quel que soit le seed."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LtxvApiImageToVideo": {
-    "description": "Vidéos de qualité professionnelle avec durée et résolution personnalisables basées sur l'image de départ.",
-    "display_name": "LTXV Image vers Vidéo",
-    "inputs": {
-      "duration": {
-        "name": "durée"
-      },
-      "fps": {
-        "name": "ips"
-      },
-      "generate_audio": {
-        "name": "générer_audio",
-        "tooltip": "Lorsque activé, la vidéo générée inclura un audio généré par IA correspondant à la scène."
-      },
-      "image": {
-        "name": "image",
-        "tooltip": "Première image à utiliser pour la vidéo."
-      },
-      "model": {
-        "name": "modèle"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "resolution": {
-        "name": "résolution"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LtxvApiTextToVideo": {
-    "description": "Vidéos de qualité professionnelle avec durée et résolution personnalisables.",
-    "display_name": "LTXV Texte vers Vidéo",
-    "inputs": {
-      "duration": {
-        "name": "durée"
-      },
-      "fps": {
-        "name": "ips"
-      },
-      "generate_audio": {
-        "name": "générer_audio",
-        "tooltip": "Lorsque activé, la vidéo générée inclura un audio généré par IA correspondant à la scène."
-      },
-      "model": {
-        "name": "modèle"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "resolution": {
-        "name": "résolution"
       }
     },
     "outputs": {
@@ -16184,7 +16044,11 @@
       },
       "max_output_tokens": {
         "name": "jetons_sortie_max",
-        "tooltip": "Une limite supérieure pour le nombre de jetons pouvant être générés pour une réponse, incluant les jetons de sortie visibles"
+        "tooltip": "Limite supérieure du nombre de jetons pouvant être générés pour une réponse, y compris les jetons de sortie visibles et les jetons de raisonnement"
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "Détermine dans quelle mesure le modèle raisonne avant de répondre. « default » laisse le choix au modèle. Les niveaux pris en charge diffèrent selon le modèle : GPT-6 Astra low-max, GPT-5.6 none-max (sans minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, série o low-high ; GPT-4.1 ne prend pas en charge le raisonnement. Les niveaux non pris en charge sont rejetés avant l’envoi de la requête."
       },
       "truncation": {
         "name": "troncature",
@@ -16224,78 +16088,6 @@
       "prompt": {
         "name": "invite",
         "tooltip": "Entrées textuelles pour le modèle, utilisées pour générer une réponse."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIDalle2": {
-    "description": "Génère des images de façon synchrone via l’endpoint DALL·E 2 d’OpenAI.",
-    "display_name": "OpenAI DALL·E 2",
-    "inputs": {
-      "control_after_generate": {
-        "name": "contrôle après génération"
-      },
-      "image": {
-        "name": "image",
-        "tooltip": "Image de référence optionnelle pour l’édition d’image."
-      },
-      "mask": {
-        "name": "mask",
-        "tooltip": "Masque optionnel pour l’inpainting (les zones blanches seront remplacées)"
-      },
-      "n": {
-        "name": "n",
-        "tooltip": "Nombre d’images à générer"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Invite textuelle pour DALL·E"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "pas encore implémenté côté backend"
-      },
-      "size": {
-        "name": "taille",
-        "tooltip": "Taille de l’image"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIDalle3": {
-    "description": "Génère des images de manière synchrone via l’endpoint DALL·E 3 d’OpenAI.",
-    "display_name": "OpenAI DALL·E 3",
-    "inputs": {
-      "control_after_generate": {
-        "name": "contrôle après génération"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Invite textuelle pour DALL·E"
-      },
-      "quality": {
-        "name": "qualité",
-        "tooltip": "Qualité de l’image"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "pas encore implémenté côté backend"
-      },
-      "size": {
-        "name": "taille",
-        "tooltip": "Taille de l’image"
-      },
-      "style": {
-        "name": "style",
-        "tooltip": "Vivid pousse le modèle à générer des images hyper-réalistes et dramatiques. Natural fait produire au modèle des images plus naturelles, moins hyper-réalistes."
       }
     },
     "outputs": {
