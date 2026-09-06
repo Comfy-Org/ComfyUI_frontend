@@ -208,15 +208,24 @@
     <div class="mt-auto flex flex-col gap-8 p-8">
       <div v-if="step === 'verifying'">
         <Button
-          v-if="topupCanRetryAuthentication"
+          v-if="topupCanResumeAuthentication"
           variant="primary"
           size="lg"
           class="h-10 w-full justify-center"
           :loading="topupIsAuthenticating"
           :disabled="!canTopUp"
-          @click="retryTopupAuthentication"
+          @click="resumeTopupAuthentication"
         >
-          {{ $t('billingOperation.retryVerification') }}
+          {{ $t('subscription.preview.completeVerification') }}
+        </Button>
+        <Button
+          v-else-if="topupIsFailedRetryable"
+          variant="primary"
+          size="lg"
+          class="h-10 w-full justify-center"
+          @click="startOverTopup"
+        >
+          {{ $t('credits.topUp.startOver') }}
         </Button>
         <Button
           v-else-if="!topupReconciliationOperationId"
@@ -313,7 +322,7 @@ const { fetchBalance, fetchStatus, manageSubscription, topup } =
 const { canTopUp } = useBillingCapabilities()
 
 const billingOperationStore = useBillingOperationStore()
-const isPolling = computed(() => billingOperationStore.isAddingCredits)
+const isAddingCredits = computed(() => billingOperationStore.isAddingCredits)
 const topupOperation = computed(
   () => billingOperationStore.topupActionOperation
 )
@@ -321,11 +330,14 @@ const topupActionUrl = computed(() => topupOperation.value?.actionUrl ?? null)
 const topupAuthenticationError = computed(
   () => topupOperation.value?.errorMessage ?? null
 )
-const topupCanRetryAuthentication = computed(
+const topupCanResumeAuthentication = computed(
   () => topupOperation.value?.canRetryAuthentication ?? false
 )
 const topupIsAuthenticating = computed(
   () => topupOperation.value?.isAuthenticating ?? false
+)
+const topupIsFailedRetryable = computed(
+  () => topupOperation.value?.authenticationState === 'failed_retryable'
 )
 const topupReconciliationOperationId = computed(() =>
   topupOperation.value?.status === 'reconciliation_needed'
@@ -388,25 +400,22 @@ const paymentLocked = computed(
   () =>
     loading.value ||
     paymentSubmitted.value ||
-    isPolling.value ||
+    isAddingCredits.value ||
     !!topupOperation.value
 )
 
-watch([isPolling, topupOperation], ([polling, operation]) => {
-  if (step.value === 'verifying' && !polling && !operation) {
-    step.value = 'amount'
-    return
+watch(
+  [isAddingCredits, topupOperation, canTopUp],
+  ([addingCredits, operation, allowed]) => {
+    if (step.value === 'verifying' && !addingCredits && !operation) {
+      step.value = 'amount'
+      return
+    }
+    if (operation && allowed) {
+      step.value = 'verifying'
+    }
   }
-  if (
-    operation &&
-    canTopUp.value &&
-    (operation.actionUrl ||
-      operation.canRetryAuthentication ||
-      operation.status === 'reconciliation_needed')
-  ) {
-    step.value = 'verifying'
-  }
-})
+)
 
 // Utility functions
 function formatNumber(num: number): string {
@@ -462,10 +471,17 @@ function openTopupVerification() {
   window.open(topupActionUrl.value, '_blank', 'noopener,noreferrer')
 }
 
-function retryTopupAuthentication() {
+function resumeTopupAuthentication() {
   const operation = topupOperation.value
   if (!operation || !canTopUp.value) return
   void billingOperationStore.retryPaymentAuthentication(operation.opId)
+}
+
+function startOverTopup() {
+  const operation = topupOperation.value
+  if (operation) billingOperationStore.dismissOperation(operation.opId)
+  paymentSubmitted.value = false
+  step.value = 'amount'
 }
 
 function handleClose(clearTracking = true) {

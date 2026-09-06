@@ -197,7 +197,7 @@ export class WorkflowHelper {
 
   async getLinearModeFromGraph(): Promise<boolean | undefined> {
     return this.comfyPage.page.evaluate(() => {
-      return window.app!.rootGraph.extra?.linearMode as boolean | undefined
+      return window.app!.rootGraph.extra.linearMode as boolean | undefined
     })
   }
 
@@ -219,7 +219,7 @@ export class WorkflowHelper {
     await this.comfyPage.page.waitForFunction(
       () =>
         !(window.app?.extensionManager as WorkspaceStore | undefined)?.workflow
-          ?.isBusy,
+          .isBusy,
       undefined,
       { timeout }
     )

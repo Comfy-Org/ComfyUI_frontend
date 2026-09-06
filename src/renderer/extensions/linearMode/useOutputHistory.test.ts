@@ -85,19 +85,21 @@ vi.mock('@/stores/executionStore', () => ({
   })
 }))
 
-vi.mock('@/stores/queueStore', async (importOriginal) => {
-  return {
-    ...(await importOriginal()),
-    useQueueStore: () => ({
-      get runningTasks() {
-        return runningTasksRef.value
-      },
-      get pendingTasks() {
-        return pendingTasksRef.value
-      }
-    })
-  }
-})
+vi.mock('@/stores/queueStore', () => ({
+  ResultItemImpl: class ResultItemImpl {
+    constructor(item: object) {
+      Object.assign(this, item)
+    }
+  },
+  useQueueStore: () => ({
+    get runningTasks() {
+      return runningTasksRef.value
+    },
+    get pendingTasks() {
+      return pendingTasksRef.value
+    }
+  })
+}))
 
 const { jobDetailResults } = vi.hoisted(() => ({
   jobDetailResults: new Map<string, unknown>()
