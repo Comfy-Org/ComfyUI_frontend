@@ -770,6 +770,54 @@
       }
     }
   },
+  "BlockSparseAttention": {
+    "description": "comfy_kitchen aracılığıyla blok-seyrek dikkat: her sorgu bloğu seçili bir anahtar bloğu alt kümesine tam olarak dikkat eder ve dikkat hesaplamasını azaltır. Kısa diziler genellikle yoğun hâlde daha hızlı olduğundan, göreli hız kazancı dizi uzunluğuyla artar. Etkin zamanlamanın dışında, dense_blocks içinde ve min_tokens altında model etkin yoğun model dikkat arka ucunu kullanır.",
+    "display_name": "Blok Seyrek Dikkat",
+    "inputs": {
+      "dense_blocks": {
+        "name": "dense_blocks",
+        "tooltip": "Her zaman yoğun çalışan dönüştürücü blokları, ör. '0, 1, 47-49'."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "Zamanlamanın bu noktasından sonra yoğun kullanılır."
+      },
+      "extra_tokens": {
+        "name": "extra_tokens",
+        "tooltip": "Her sorgu bloğunun seçili bloklarının ötesinde dikkat ettiği ek en yüksek puanlı tokenlar. Daha fazla dikkat süresi için yoğuna daha yakın; 256 önerilir, 0 devre dışı bırakır. VSA için yok sayılır."
+      },
+      "min_tokens": {
+        "name": "min_tokens",
+        "tooltip": "Bundan daha kısa diziler yoğun kalır."
+      },
+      "model": {
+        "name": "model"
+      },
+      "selection": {
+        "name": "selection",
+        "tooltip": "Tam anahtar bloklarının nasıl seçileceği. Sol-Attn: başına/başlık ve blok başına uyarlanabilir eşik. top-k (SLA): her yerde sabit keep_percent, yalnızca eğitilmiş ağırlıklarla önerilir. VSA (FastVideo): FastH3-VSA'nın küp döşemesi ve kaba dalı; bunun için eğitilmiş ağırlıklar gerektirir."
+      },
+      "selection_tau": {
+        "name": "tau"
+      },
+      "sink_conditioning": {
+        "name": "sink_conditioning",
+        "tooltip": "Yalnızca MiniMax-H3. exact_kv: her sorgu, paketlenmiş metin/ses/referans satırlarına tam olarak dikkat eder (~%3 maliyet). exact_kv_and_rows: ek olarak hedef ses sorgu satırlarını yoğun çalıştırır (oluşturulan sesi bozulmadan korur)."
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "Zamanlamanın bu noktasından önce yoğun kullanılır."
+      },
+      "verbose": {
+        "name": "verbose"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaEraser": {
     "description": "Bria kullanarak bir görüntüden mask ile ana hatları belirtilen nesneleri veya alanları kaldırın.",
     "display_name": "Bria Silgi",

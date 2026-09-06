@@ -770,6 +770,54 @@
       }
     }
   },
+  "BlockSparseAttention": {
+    "description": "Attenzione a blocchi sparsi tramite comfy_kitchen: ogni blocco di query presta attenzione esattamente a un sottoinsieme selezionato di blocchi chiave, riducendo il calcolo dell'attenzione. Il guadagno di velocità relativo cresce con la lunghezza della sequenza, poiché le sequenze brevi sono solitamente più veloci in modalità densa. Al di fuori della pianificazione attiva, per dense_blocks e sotto min_tokens, il modello usa il backend di attenzione del modello denso attivo.",
+    "display_name": "Attenzione a blocchi sparsi",
+    "inputs": {
+      "dense_blocks": {
+        "name": "dense_blocks",
+        "tooltip": "Blocchi del trasformatore che vengono sempre eseguiti in modalità densa, ad es. '0, 1, 47-49'."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "Densa dopo questo punto della pianificazione."
+      },
+      "extra_tokens": {
+        "name": "extra_tokens",
+        "tooltip": "Token aggiuntivi con punteggio più alto a cui ogni blocco di query presta attenzione oltre ai blocchi selezionati. Più vicino alla modalità densa per un tempo di attenzione maggiore; consigliato 256, 0 disabilita. Ignorato per VSA."
+      },
+      "min_tokens": {
+        "name": "min_tokens",
+        "tooltip": "Le sequenze più corte di questo valore restano dense."
+      },
+      "model": {
+        "name": "model"
+      },
+      "selection": {
+        "name": "selection",
+        "tooltip": "Come vengono scelti i blocchi chiave esatti. Sol-Attn: soglia adattiva per testa/blocco. top-k (SLA): keep_percent fisso ovunque, consigliato solo con pesi addestrati. VSA (FastVideo): tiling a cubi e ramo grossolano di FastH3-VSA, richiede pesi addestrati per questo."
+      },
+      "selection_tau": {
+        "name": "tau"
+      },
+      "sink_conditioning": {
+        "name": "sink_conditioning",
+        "tooltip": "Solo MiniMax-H3. exact_kv: ogni query presta attenzione esattamente alle righe di testo/audio/riferimento compattate (~3% del costo). exact_kv_and_rows: esegue inoltre in modalità densa le righe di query dell'audio target (mantiene intatto l'audio generato)."
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "Densa prima di questo punto della pianificazione."
+      },
+      "verbose": {
+        "name": "verbose"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaEraser": {
     "description": "Rimuovi oggetti o aree delimitate da una maschera da un'immagine usando Bria.",
     "display_name": "Gomma Bria",

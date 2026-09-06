@@ -770,6 +770,54 @@
       }
     }
   },
+  "BlockSparseAttention": {
+    "description": "comfy_kitchen을 통한 블록 희소 어텐션: 각 쿼리 블록이 선택된 키 블록 하위 집합에 정확하게 어텐션하여 어텐션 연산을 줄입니다. 짧은 시퀀스에서는 일반적으로 dense가 더 빠르므로, 시퀀스 길이가 길수록 상대적인 속도 향상도 커집니다. 활성 스케줄 외부, dense_blocks 및 min_tokens 미만에서는 모델이 활성 dense 모델 어텐션 백엔드를 사용합니다.",
+    "display_name": "블록 희소 어텐션",
+    "inputs": {
+      "dense_blocks": {
+        "name": "dense_blocks",
+        "tooltip": "항상 dense로 실행되는 Transformer 블록입니다. 예: '0, 1, 47-49'."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "스케줄의 이 지점 이후에는 dense를 사용합니다."
+      },
+      "extra_tokens": {
+        "name": "extra_tokens",
+        "tooltip": "각 쿼리 블록이 선택된 블록 외에 어텐션하는 추가 최고 점수 토큰입니다. 어텐션 시간을 늘리면 dense에 더 가까워집니다. 256을 권장하며, 0은 비활성화합니다. VSA에서는 무시됩니다."
+      },
+      "min_tokens": {
+        "name": "min_tokens",
+        "tooltip": "이보다 짧은 시퀀스는 dense로 유지됩니다."
+      },
+      "model": {
+        "name": "model"
+      },
+      "selection": {
+        "name": "selection",
+        "tooltip": "정확한 키 블록 선택 방식입니다. Sol-Attn: 헤드/블록별 적응형 임곗값입니다. top-k (SLA): 모든 곳에서 고정 keep_percent를 유지하며, 학습된 가중치와 함께만 권장됩니다. VSA (FastVideo): FastH3-VSA의 큐브 타일링 및 코스 분기를 사용하며, 이를 위해 학습된 가중치가 필요합니다."
+      },
+      "selection_tau": {
+        "name": "tau"
+      },
+      "sink_conditioning": {
+        "name": "sink_conditioning",
+        "tooltip": "MiniMax-H3 전용입니다. exact_kv: 모든 쿼리가 패킹된 텍스트/오디오/참조 행에 정확하게 어텐션합니다(약 3% 비용). exact_kv_and_rows: 추가로 대상 오디오 쿼리 행을 dense로 실행합니다(생성된 오디오를 그대로 유지)."
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "스케줄의 이 지점 이전에는 dense를 사용합니다."
+      },
+      "verbose": {
+        "name": "verbose"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaEraser": {
     "description": "Bria를 사용하여 image에서 mask로 윤곽이 지정된 객체 또는 영역을 제거합니다.",
     "display_name": "Bria 지우개",

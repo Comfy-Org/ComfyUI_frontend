@@ -770,6 +770,54 @@
       }
     }
   },
+  "BlockSparseAttention": {
+    "description": "通过 comfy_kitchen 实现块稀疏注意力：每个查询块会精确关注选定的部分键块，从而减少注意力计算。相对速度提升会随序列长度增长，因为短序列通常使用稠密计算更快。在活动调度之外、dense_blocks 中以及低于 min_tokens 时，模型会使用当前稠密模型的注意力后端。",
+    "display_name": "块稀疏注意力",
+    "inputs": {
+      "dense_blocks": {
+        "name": "dense_blocks",
+        "tooltip": "始终使用稠密计算的 Transformer 块，例如“0, 1, 47-49”。"
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "调度在此位置之后使用稠密计算。"
+      },
+      "extra_tokens": {
+        "name": "extra_tokens",
+        "tooltip": "除已选块外，每个查询块额外关注的高评分 token。数值越高越接近稠密计算，但注意力耗时越长；建议使用 256，设为 0 可禁用。VSA 会忽略此项。"
+      },
+      "min_tokens": {
+        "name": "min_tokens",
+        "tooltip": "短于此长度的序列将保持稠密计算。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "selection": {
+        "name": "selection",
+        "tooltip": "精确键块的选择方式。Sol-Attn：按头/块使用自适应阈值。top-k (SLA)：在所有位置固定使用 keep_percent，仅建议搭配已训练的权重使用。VSA (FastVideo)：使用 FastH3-VSA 的立方体分块和粗粒度分支，需要为其训练的权重。"
+      },
+      "selection_tau": {
+        "name": "tau"
+      },
+      "sink_conditioning": {
+        "name": "sink_conditioning",
+        "tooltip": "仅适用于 MiniMax-H3。exact_kv：每个查询都会精确关注打包的文本/音频/参考行（约 3% 开销）。exact_kv_and_rows：此外会对目标音频查询行执行稠密计算（保持生成的音频完整）。"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "调度在此位置之前使用稠密计算。"
+      },
+      "verbose": {
+        "name": "verbose"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaEraser": {
     "description": "使用 Bria 从图像中移除由蒙版勾勒的对象或区域。",
     "display_name": "Bria 擦除",

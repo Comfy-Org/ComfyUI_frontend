@@ -770,6 +770,54 @@
       }
     }
   },
+  "BlockSparseAttention": {
+    "description": "Atención dispersa por bloques mediante comfy_kitchen: cada bloque de consultas presta atención exactamente a un subconjunto seleccionado de bloques de claves, lo que reduce el cálculo de atención. La ganancia relativa de velocidad aumenta con la longitud de la secuencia, ya que las secuencias cortas suelen ser más rápidas con atención densa. Fuera de la programación activa, en dense_blocks y por debajo de min_tokens, el modelo utiliza el backend de atención densa del modelo activo.",
+    "display_name": "Atención dispersa por bloques",
+    "inputs": {
+      "dense_blocks": {
+        "name": "dense_blocks",
+        "tooltip": "Bloques del transformador que siempre se ejecutan de forma densa, p. ej., '0, 1, 47-49'."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "Densa después de este punto de la programación."
+      },
+      "extra_tokens": {
+        "name": "extra_tokens",
+        "tooltip": "Tokens adicionales con mayor puntuación a los que presta atención cada bloque de consultas además de sus bloques seleccionados. Más cercana a la densa para disponer de más tiempo de atención; se recomiendan 256, 0 lo desactiva. Se ignora para VSA."
+      },
+      "min_tokens": {
+        "name": "min_tokens",
+        "tooltip": "Las secuencias más cortas que este valor permanecen densas."
+      },
+      "model": {
+        "name": "model"
+      },
+      "selection": {
+        "name": "selection",
+        "tooltip": "Cómo se eligen los bloques de claves exactos. Sol-Attn: umbral adaptativo por cabeza/bloque. top-k (SLA): keep_percent fijo en todas partes, recomendado solo con pesos entrenados. VSA (FastVideo): división en cubos y rama gruesa de FastH3-VSA; requiere pesos entrenados para ello."
+      },
+      "selection_tau": {
+        "name": "tau"
+      },
+      "sink_conditioning": {
+        "name": "sink_conditioning",
+        "tooltip": "Solo MiniMax-H3. exact_kv: cada consulta presta atención exactamente a las filas empaquetadas de texto/audio/referencia (~3 % de coste). exact_kv_and_rows: además ejecuta de forma densa las filas de consultas de audio objetivo (mantiene intacto el audio generado)."
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "Densa antes de este punto de la programación."
+      },
+      "verbose": {
+        "name": "verbose"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaEraser": {
     "description": "Elimina objetos o áreas delimitadas por una máscara de una imagen mediante Bria.",
     "display_name": "Borrador de Bria",

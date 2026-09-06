@@ -770,6 +770,54 @@
       }
     }
   },
+  "BlockSparseAttention": {
+    "description": "透過 comfy_kitchen 的區塊稀疏注意力：每個查詢區塊會精確關注所選的部分鍵區塊，以減少注意力運算。相對速度增益會隨序列長度增加而成長，因為短序列通常以稠密運算更快。在啟用排程之外、dense_blocks 所指定的區塊及低於 min_tokens 時，模型會使用目前啟用的稠密模型注意力後端。",
+    "display_name": "區塊稀疏注意力",
+    "inputs": {
+      "dense_blocks": {
+        "name": "dense_blocks",
+        "tooltip": "一律使用稠密運算的 Transformer 區塊，例如「0, 1, 47-49」。"
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "在排程的此時間點之後使用稠密運算。"
+      },
+      "extra_tokens": {
+        "name": "extra_tokens",
+        "tooltip": "每個查詢區塊除了所選區塊外，額外關注的最高分權杖數。數值越高，注意力運算越接近稠密；建議使用 256，0 為停用。VSA 會忽略此設定。"
+      },
+      "min_tokens": {
+        "name": "min_tokens",
+        "tooltip": "短於此長度的序列會維持稠密運算。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "selection": {
+        "name": "selection",
+        "tooltip": "選擇精確計算的鍵區塊方式。Sol-Attn：每個頭／區塊使用自適應閾值。top-k (SLA)：所有位置固定保留 keep_percent，僅建議搭配已訓練的權重使用。VSA (FastVideo)：FastH3-VSA 的立方分塊與粗略分支，需要針對此功能訓練的權重。"
+      },
+      "selection_tau": {
+        "name": "tau"
+      },
+      "sink_conditioning": {
+        "name": "sink_conditioning",
+        "tooltip": "僅適用於 MiniMax-H3。exact_kv：每個查詢會精確關注打包的文字／音訊／參考列（約 3% 成本）。exact_kv_and_rows：此外會以稠密運算執行目標音訊查詢列（保留生成的音訊完整性）。"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "在排程的此時間點之前使用稠密運算。"
+      },
+      "verbose": {
+        "name": "verbose"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaEraser": {
     "description": "使用 Bria 從影像中移除由遮罩標示的物件或區域。",
     "display_name": "Bria 消除工具",

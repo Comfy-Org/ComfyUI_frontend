@@ -770,6 +770,54 @@
       }
     }
   },
+  "BlockSparseAttention": {
+    "description": "Attention par blocs clairsemés via comfy_kitchen : chaque bloc de requêtes effectue exactement l’attention sur un sous-ensemble sélectionné de blocs de clés, réduisant les calculs d’attention. Le gain de vitesse relatif augmente avec la longueur de séquence, car les séquences courtes sont généralement plus rapides en dense. En dehors du planning actif, pour dense_blocks et sous min_tokens, le modèle utilise le backend d’attention dense actif du modèle.",
+    "display_name": "Attention par blocs clairsemés",
+    "inputs": {
+      "dense_blocks": {
+        "name": "dense_blocks",
+        "tooltip": "Blocs Transformer qui utilisent toujours l’attention dense, p. ex. « 0, 1, 47-49 »."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "Attention dense après ce point du planning."
+      },
+      "extra_tokens": {
+        "name": "extra_tokens",
+        "tooltip": "Jetons supplémentaires les mieux notés auxquels chaque bloc de requêtes porte attention au-delà de ses blocs sélectionnés. Plus proche du dense pour davantage de temps d’attention ; 256 recommandé, 0 désactive. Ignoré pour VSA."
+      },
+      "min_tokens": {
+        "name": "min_tokens",
+        "tooltip": "Les séquences plus courtes que cette valeur restent denses."
+      },
+      "model": {
+        "name": "model"
+      },
+      "selection": {
+        "name": "selection",
+        "tooltip": "Méthode de sélection exacte des blocs de clés. Sol-Attn : seuil adaptatif par tête/bloc. top-k (SLA) : keep_percent fixe partout, recommandé uniquement avec des poids entraînés. VSA (FastVideo) : pavage en cubes et branche grossière de FastH3-VSA, nécessite des poids entraînés pour cela."
+      },
+      "selection_tau": {
+        "name": "tau"
+      },
+      "sink_conditioning": {
+        "name": "sink_conditioning",
+        "tooltip": "MiniMax-H3 uniquement. exact_kv : chaque requête porte exactement son attention sur les lignes texte/audio/référence compactées (coût d’environ 3 %). exact_kv_and_rows : exécute également en dense les lignes de requêtes audio cibles (préserve l’audio généré)."
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "Attention dense avant ce point du planning."
+      },
+      "verbose": {
+        "name": "verbose"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaEraser": {
     "description": "Supprimez d'une image les objets ou zones délimités par un masque à l'aide de Bria.",
     "display_name": "Gomme Bria",

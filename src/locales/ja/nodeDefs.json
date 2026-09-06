@@ -770,6 +770,54 @@
       }
     }
   },
+  "BlockSparseAttention": {
+    "description": "comfy_kitchen によるブロックスパースアテンション: 各クエリブロックは、選択されたキー・ブロックのサブセットに対して正確にアテンションを行い、アテンション計算量を削減します。短いシーケンスでは通常、密な処理のほうが高速なため、相対的な速度向上はシーケンス長とともに大きくなります。有効なスケジュール外、dense_blocks、および min_tokens 未満では、モデルは有効な密なモデルアテンションバックエンドを使用します。",
+    "display_name": "ブロックスパースアテンション",
+    "inputs": {
+      "dense_blocks": {
+        "name": "dense_blocks",
+        "tooltip": "常に密な処理を実行する Transformer ブロックです。例: '0, 1, 47-49'。"
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "スケジュールのこの時点より後は密な処理を行います。"
+      },
+      "extra_tokens": {
+        "name": "extra_tokens",
+        "tooltip": "選択されたブロックに加えて、各クエリブロックがアテンションを行う高スコアの追加トークン数です。増やすほど密な処理に近づき、アテンション時間が増えます。256 を推奨します。0 で無効化されます。VSA では無視されます。"
+      },
+      "min_tokens": {
+        "name": "min_tokens",
+        "tooltip": "これより短いシーケンスは密な処理のままです。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "selection": {
+        "name": "selection",
+        "tooltip": "正確なキー・ブロックの選択方法です。Sol-Attn: ヘッド/ブロックごとの適応しきい値。top-k (SLA): すべてで固定の keep_percent を維持します。学習済み重みでのみ推奨されます。VSA (FastVideo): FastH3-VSA のキューブタイル化と粗い分岐を使用し、対応する学習済み重みが必要です。"
+      },
+      "selection_tau": {
+        "name": "tau"
+      },
+      "sink_conditioning": {
+        "name": "sink_conditioning",
+        "tooltip": "MiniMax-H3 専用です。exact_kv: 各クエリがパックされたテキスト/オーディオ/参照行に対して正確にアテンションを行います（コスト約 3%）。exact_kv_and_rows: さらにターゲットオーディオのクエリ行を密に実行します（生成されたオーディオを維持します）。"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "スケジュールのこの時点より前は密な処理を行います。"
+      },
+      "verbose": {
+        "name": "verbose"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaEraser": {
     "description": "Briaを使用して、画像からmaskで指定したオブジェクトまたは領域を削除します。",
     "display_name": "Bria 消去",

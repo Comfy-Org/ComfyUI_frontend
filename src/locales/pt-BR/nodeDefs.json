@@ -770,6 +770,54 @@
       }
     }
   },
+  "BlockSparseAttention": {
+    "description": "Atenção esparsa por blocos via comfy_kitchen: cada bloco de consulta atende exatamente a um subconjunto selecionado de blocos-chave, reduzindo o cálculo de atenção. O ganho relativo de velocidade cresce com o comprimento da sequência, pois sequências curtas geralmente são mais rápidas com atenção densa. Fora da programação ativa, em dense_blocks e abaixo de min_tokens, o modelo usa o backend de atenção do modelo denso ativo.",
+    "display_name": "Atenção Esparsa por Blocos",
+    "inputs": {
+      "dense_blocks": {
+        "name": "dense_blocks",
+        "tooltip": "Blocos do transformer que sempre são executados de forma densa, por exemplo, '0, 1, 47-49'."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "Denso após este ponto da programação."
+      },
+      "extra_tokens": {
+        "name": "extra_tokens",
+        "tooltip": "Tokens extras com maior pontuação aos quais cada bloco de consulta atende além dos blocos selecionados. Mais próximo de denso para mais tempo de atenção; 256 recomendado, 0 desativa. Ignorado para VSA."
+      },
+      "min_tokens": {
+        "name": "min_tokens",
+        "tooltip": "Sequências mais curtas que isto permanecem densas."
+      },
+      "model": {
+        "name": "model"
+      },
+      "selection": {
+        "name": "selection",
+        "tooltip": "Como os blocos-chave exatos são escolhidos. Sol-Attn: limite adaptativo por cabeça/bloco. top-k (SLA): keep_percent fixo em todos os lugares, recomendado apenas com pesos treinados. VSA (FastVideo): divisão em cubos e ramificação grosseira do FastH3-VSA, requer pesos treinados para isso."
+      },
+      "selection_tau": {
+        "name": "tau"
+      },
+      "sink_conditioning": {
+        "name": "sink_conditioning",
+        "tooltip": "Somente MiniMax-H3. exact_kv: cada consulta atende exatamente às linhas compactadas de texto/áudio/referência (~3% do custo). exact_kv_and_rows: adicionalmente executa de forma densa as linhas de consulta do áudio-alvo (mantém o áudio gerado intacto)."
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "Denso antes deste ponto da programação."
+      },
+      "verbose": {
+        "name": "verbose"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaEraser": {
     "description": "Remova objetos ou áreas delimitadas por uma máscara de uma imagem usando Bria.",
     "display_name": "Apagador Bria",
