@@ -60,9 +60,7 @@ vi.mock('@/scripts/app', () => {
     app: {
       clean: vi.fn(() => {
         // Simulate app.clean() calling graph.clear() only when not in subgraph
-        if (!mockCanvas.subgraph) {
-          mockGraphClear()
-        }
+        mockGraphClear()
       }),
       openClipspace: vi.fn(),
       queuePrompt: vi.fn().mockResolvedValue(true),

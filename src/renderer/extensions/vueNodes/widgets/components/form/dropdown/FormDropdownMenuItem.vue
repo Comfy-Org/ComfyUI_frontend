@@ -46,7 +46,7 @@ async function resolveMeshPreview() {
 }
 
 useIntersectionObserver(mediaContainerRef, ([entry]) => {
-  if (!entry?.isIntersecting) return
+  if (!entry.isIntersecting) return
   if (!isMesh.value || meshPreviewAttempted.value) return
   meshPreviewAttempted.value = true
   void resolveMeshPreview()

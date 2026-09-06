@@ -18,10 +18,10 @@ test.describe('Group node migration', { tag: '@node' }, () => {
       const graph = window.app!.graph
       return {
         groupNodeInstances: graph.nodes.filter((n) =>
-          String(n.type).startsWith('workflow>')
+          n.type.startsWith('workflow>')
         ).length,
         subgraphCount: graph.subgraphs.size,
-        hasGroupNodesExtra: !!graph.extra?.groupNodes
+        hasGroupNodesExtra: !!graph.extra.groupNodes
       }
     })
 
