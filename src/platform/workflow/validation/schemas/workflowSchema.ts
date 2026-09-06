@@ -493,6 +493,22 @@ const zSubgraphDefinition = zComfyWorkflow1
   })
   .passthrough()
 
+export const zProjectedSubgraphDefinition = zSubgraphDefinition
+  .omit({ definitions: true, extra: true, id: true })
+  .extend({
+    id: z.string(),
+    extra: z.unknown().optional(),
+    nodes: z
+      .array(
+        zComfyNode.extend({
+          properties: zProperties.optional(),
+          widgets_values_named: z.record(z.unknown()).optional()
+        })
+      )
+      .optional(),
+    definitions: z.object({ subgraphs: z.array(z.unknown()) }).optional()
+  })
+
 export type ModelFile = z.infer<typeof zModelFile>
 export type ComfyLinkObject = z.infer<typeof zComfyLinkObject>
 export type ComfyNode = z.infer<typeof zComfyNode>

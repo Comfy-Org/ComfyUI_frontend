@@ -2065,13 +2065,24 @@ export class LGraph
   }
 
   private createNormalizedSubgraphs(data: ExportedSubgraph[]): Subgraph[] {
-    const subgraphs = data.map((definition) =>
-      this.createNormalizedSubgraph(definition)
-    )
+    const subgraphs = new Map<string, Subgraph>()
     for (const definition of topologicalSortSubgraphs(data)) {
-      const subgraph = this.subgraphs.get(definition.id)
-      if (!subgraph) continue
-      subgraph.configure(definition)
+      const subgraph = this.createNormalizedSubgraph(definition)
+      subgraphs.set(definition.id, subgraph)
+      try {
+        subgraph.configure(definition)
+      } catch (error) {
+        try {
+          this.releaseSubgraphs([subgraph])
+        } catch (rollbackError) {
+          throw new AggregateError(
+            [error, rollbackError],
+            `Subgraph definition ${definition.id} failed to configure and roll back`,
+            { cause: rollbackError }
+          )
+        }
+        throw error
+      }
       // A listener can register global constructors and node definitions for
       // this subgraph. Do not expose it until configuration has succeeded.
       this.rootGraph.events.dispatch('subgraph-created', {
@@ -2079,7 +2090,10 @@ export class LGraph
         data: definition
       })
     }
-    return subgraphs
+    return data.flatMap((definition) => {
+      const subgraph = subgraphs.get(definition.id)
+      return subgraph ? [subgraph] : []
+    })
   }
 
   private createNormalizedSubgraph(normalized: ExportedSubgraph): Subgraph {
