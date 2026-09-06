@@ -7,6 +7,9 @@ import { useWorkflowShareService } from '@/platform/workflow/sharing/services/wo
 
 const mockApp = vi.hoisted(() => ({
   rootGraph: {} as object | null,
+  get isGraphReady() {
+    return this.rootGraph !== null
+  },
   graphToPrompt: vi.fn()
 }))
 

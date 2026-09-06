@@ -399,6 +399,7 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
   test.describe('arriving on a template link', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await clearWorkflowHistory(comfyPage.page)
+      // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
       await comfyPage.setup({
         clearStorage: false,
         url: `/?template=${LINKED_TEMPLATE_ID}`
@@ -487,6 +488,7 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
   test.describe('arriving on a link that loads nothing', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await clearWorkflowHistory(comfyPage.page)
+      // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
       await comfyPage.setup({
         clearStorage: false,
         url: '/?template=no_such_template_exists'

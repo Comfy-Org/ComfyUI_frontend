@@ -54,12 +54,26 @@ async function initializeDatadogRum(env: string): Promise<void> {
   trackUserManualRefresh()
 }
 
+/**
+ * Maps a hostname to the deploy environment name Datadog/backend engineers
+ * already use to distinguish prod from testcloud/staging — shared here so a
+ * caller identifying "which backend is this" (e.g. a bug-report payload)
+ * reads the same classification RUM does, instead of a second hostname list
+ * that can drift from this one.
+ */
+export function resolveDeployEnv(
+  hostname = window.location.hostname
+): string | undefined {
+  return (
+    DATADOG_ENV_BY_HOSTNAME.get(hostname) ??
+    (hostname.endsWith('.testenvs.comfy.org') ? 'test-v2' : undefined)
+  )
+}
+
 export function initDatadogRum(
   hostname = window.location.hostname
 ): Promise<void> {
-  const env =
-    DATADOG_ENV_BY_HOSTNAME.get(hostname) ??
-    (hostname.endsWith('.testenvs.comfy.org') ? 'test-v2' : undefined)
+  const env = resolveDeployEnv(hostname)
   if (!env || datadogRum.getInitConfiguration()) return Promise.resolve()
 
   initializationPromise ??= initializeDatadogRum(env).finally(() => {

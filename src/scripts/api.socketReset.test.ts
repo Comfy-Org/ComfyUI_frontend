@@ -14,10 +14,7 @@ const releaseNextToken = async () => {
   await new Promise((resolve) => setTimeout(resolve, 0))
 }
 
-vi.mock('@/platform/distribution/types', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/platform/distribution/types')>()),
-  isCloud: true
-}))
+vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
 
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({

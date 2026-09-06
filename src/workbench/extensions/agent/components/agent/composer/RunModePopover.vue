@@ -11,29 +11,47 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { buildAgentTooltipConfig } from '@/composables/useTooltipConfig'
+import { reportError } from '@/platform/telemetry/reportError'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import type { AgentRunMode } from '../../../stores/agent/agentRunModeStore'
-import { useAgentRunModeStore } from '../../../stores/agent/agentRunModeStore'
+import {
+  DEFAULT_CREDIT_LIMIT,
+  useAgentRunModeStore
+} from '../../../stores/agent/agentRunModeStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
 const store = useAgentRunModeStore()
+const toast = useToastStore()
 
 const open = ref(false)
+const saving = ref(false)
 const draftMode = ref<AgentRunMode>(store.mode)
-const draftLimit = ref(store.creditLimit)
+const draftLimit = ref(store.creditLimit ?? DEFAULT_CREDIT_LIMIT)
 
 function onOpenChange(next: boolean): void {
   open.value = next
   if (next) {
     draftMode.value = store.mode
-    draftLimit.value = store.creditLimit
+    draftLimit.value = store.creditLimit ?? DEFAULT_CREDIT_LIMIT
   }
 }
 
-function saveChanges(): void {
-  store.save(draftMode.value, draftLimit.value)
-  open.value = false
+async function saveChanges(): Promise<void> {
+  saving.value = true
+  try {
+    await store.save(
+      draftMode.value,
+      draftMode.value === 'auto_limited' ? draftLimit.value : null
+    )
+    open.value = false
+  } catch (error) {
+    reportError(error, { errorType: 'agent_run_mode_save_failure' })
+    toast.add({ severity: 'error', detail: t('agent.runModeSaveFailed') })
+  } finally {
+    saving.value = false
+  }
 }
 
 function onDraftMode(value: string | undefined): void {
@@ -42,29 +60,34 @@ function onDraftMode(value: string | undefined): void {
 }
 
 const dirty = computed(
-  () => draftMode.value !== store.mode || draftLimit.value !== store.creditLimit
-)
-
-const limitValid = computed(
   () =>
-    draftMode.value !== 'auto-limit' ||
-    (Number.isFinite(draftLimit.value) && Math.floor(draftLimit.value) > 0)
+    draftMode.value !== store.mode ||
+    (draftMode.value === 'auto_limited' &&
+      draftLimit.value !== store.creditLimit)
 )
 
-const saveable = computed(() => dirty.value && limitValid.value)
+const limitValid = computed(() => {
+  if (draftMode.value !== 'auto_limited') return true
+  const limit = draftLimit.value
+  return limit !== null && Number.isInteger(limit) && limit > 0
+})
+
+const saveable = computed(
+  () => dirty.value && limitValid.value && !saving.value
+)
 
 const TRIGGER_LABEL_KEYS: Record<AgentRunMode, string> = {
-  ask: 'agent.runModeTriggerAsk',
+  ask_approval: 'agent.runModeTriggerAsk',
   auto: 'agent.runModeTriggerAuto',
-  'auto-limit': 'agent.runModeTriggerAutoLimit'
+  auto_limited: 'agent.runModeTriggerAutoLimit'
 }
 
 const triggerLabel = computed(() => t(TRIGGER_LABEL_KEYS[store.mode]))
 
 const TRIGGER_TOOLTIP_KEYS: Record<AgentRunMode, string> = {
-  ask: 'agent.runModeTriggerAskTooltip',
+  ask_approval: 'agent.runModeTriggerAskTooltip',
   auto: 'agent.runModeTriggerAutoTooltip',
-  'auto-limit': 'agent.runModeTriggerAutoLimitTooltip'
+  auto_limited: 'agent.runModeTriggerAutoLimitTooltip'
 }
 
 const triggerTooltip = computed(() => t(TRIGGER_TOOLTIP_KEYS[store.mode]))
@@ -76,7 +99,7 @@ const options: {
   description: string
 }[] = [
   {
-    mode: 'ask',
+    mode: 'ask_approval',
     icon: 'icon-[lucide--hand]',
     title: 'agent.runModeAsk',
     description: 'agent.runModeAskDescription'
@@ -88,7 +111,7 @@ const options: {
     description: 'agent.runModeAutoDescription'
   },
   {
-    mode: 'auto-limit',
+    mode: 'auto_limited',
     icon: 'icon-[lucide--gauge]',
     title: 'agent.runModeLimit',
     description: 'agent.runModeLimitDescription'
@@ -170,7 +193,9 @@ const options: {
               />
             </RadioGroupItem>
             <div
-              v-if="option.mode === 'auto-limit' && draftMode === 'auto-limit'"
+              v-if="
+                option.mode === 'auto_limited' && draftMode === 'auto_limited'
+              "
               class="flex items-center gap-3 px-9.5 pb-2.5"
             >
               <input
