@@ -28,10 +28,11 @@ double click), `onClick`, `onDragStart` (`_startDraggingItems`), `onDragEnd`
 (marquee), and ghost placement.
 
 A press is promoted to a drag when the pointer moves more than
-`CanvasPointer.maxClickDrift` (6 px) **or** when more than
-`CanvasPointer.bufferTime` (32 ms) has elapsed. The time rule means a slow
-click on a touchpad or a paused pointer becomes a drag that selects and moves
-nothing, and a fast drag of a few pixels stays a click. Both limits are
+`CanvasPointer.maxClickDrift` (6 px), or when more than
+`CanvasPointer.bufferTime` (32 ms) has elapsed. The time rule runs inside
+`move()`, so any `pointermove` that arrives after 32 ms, even one pixel of
+touchpad jitter, turns a slow click into a drag that selects and moves
+nothing, while a fast drag of a few pixels stays a click. Both limits are
 exposed as experimental settings (`Comfy.Pointer.ClickDrift`,
 `Comfy.Pointer.ClickBufferTime`), so behavior depends on user configuration.
 
@@ -58,25 +59,54 @@ emission.
 The result is a class of bugs that cannot be fixed locally: a fix in one
 renderer does not apply to the other, a fix in one `pointerdown` branch does
 not apply to the other 39, and a fix in the click path can be undone by the
-timing rule. Characterization tests added under ADR-CANVAS-SELECTION-0028
-describe current selection behavior but cannot express gesture behavior
-without a real `CanvasPointer` and a real canvas.
+timing rule. Existing unit tests cover parts of each renderer in isolation:
+`useClickDragGuard.test.ts` covers the Vue distance threshold and
+`useNodeEventHandlers.test.ts` covers the Vue click and pointer-up selection
+policy. `CanvasPointer` has no unit test, and no test drives a real
+`LGraphCanvas` through press, move, and release to record which selection
+writes and callbacks fire for each target kind. That integration behavior is
+what the bugs above live in.
 
 ## Decision
 
 Pointer input becomes a single explicit state machine. One pure reducer owns
 the interpretation of a gesture, and both renderers feed it.
 
-Specifically:
-
 1. **One reducer.** A pure function
    `reduceGesture(state, event, policy) → { state, effects }` owns the
-   `idle → pressed → dragging → idle` lifecycle. `GestureEvent` is
-   `down | move | up | cancel`, each carrying pointer position, button,
-   modifiers, and the resolved `PointerTarget`. `GestureState` is a
-   discriminated union; `pressed` and `dragging` carry the origin, the
-   target, and the current drag kind. The reducer never touches a store, the
-   DOM, or a canvas instance.
+   gesture lifecycle. `GestureState` is a discriminated union of `idle`,
+   `pressed`, and `dragging`. `pressed` and `dragging` hold the press origin,
+   the `PointerTarget` captured at `down`, the button and modifiers, and (for
+   `dragging`) the drag kind. `idle` may hold the previous click (timestamp,
+   position, target key) so the reducer can recognize a double click.
+   `GestureEvent` is `down | move | up | cancel`. Every event carries pointer
+   position, modifiers, and the event timestamp; only `down` carries a
+   `PointerTarget` and a button. `move` and `up` may carry a hover or drop
+   target that the adapter resolved for link and reroute drags; the press
+   target itself never changes after `down`. The reducer never touches a
+   store, the DOM, a canvas instance, or the clock.
+
+   Transitions:
+
+   - `idle` + `down` → `pressed`. Emits press-time effects such as
+     `bringToFront` and sticky selection for the right button.
+   - `pressed` + `move` beyond the drift threshold → `dragging`. Emits
+     `startDrag` with the drag kind derived from the target and policy.
+   - `pressed` + `up` → `idle`. Emits `doubleClick` when the previous click
+     in `idle` had the same target key, happened less than
+     `CanvasPointer.doubleClickTime` ago, and lies within three times the
+     drift threshold; otherwise emits `click`. `idle` records this click
+     after a `click` and clears it after a `doubleClick`, matching the
+     current `_completeClick` rule.
+   - `dragging` + `move` → `dragging`. Emits `moveDrag`.
+   - `dragging` + `up` → `idle`. Emits `endDrag` with the release position
+     and any drop target.
+   - `pressed` + `cancel` → `idle`. Emits no click and no drag effect.
+   - `dragging` + `cancel` → `idle`. Emits `cancelDrag`, which the
+     interpreter uses to release the drag, restore canvas flags, and release
+     pointer capture. Cancellation also clears the previous-click record.
+   - Any other pair returns the state unchanged with no effects.
+
 2. **Effects are the only side channel.** The reducer returns a list of plain
    effect values such as `select`, `startDrag`, `moveDrag`, `endDrag`,
    `openContextMenu`, `bringToFront`, and `marquee`. An interpreter applies
@@ -86,10 +116,11 @@ Specifically:
    today.
 3. **Hit-test once per press.** The `down` event carries a `PointerTarget`
    union (`canvas`, `node`, `nodeTitle`, `widget`, `slot`, `group`,
-   `groupTitle`, `reroute`, `link`, `linkCenter`, `resizeHandle`, `subgraphIO`,
-   …). The classic canvas resolves it with the existing hit-test helpers; Vue
-   nodes resolve it from the DOM element that received the event. After the
-   press, no branch re-derives what was hit.
+   `groupTitle`, `reroute`, `link`, `linkCenter`, `resizeHandle`, and
+   `subgraphIO`). The classic canvas resolves it with the existing hit-test
+   helpers; Vue nodes resolve it from the DOM element that received the event.
+   Both adapters keep that target for the rest of the press. No branch
+   re-derives what was hit on `move` or `up`.
 4. **Distance-only drag threshold.** A press becomes a drag only when the
    pointer moves further than `Comfy.Pointer.ClickDrift`. The time-based
    promotion and `CanvasPointer.bufferTime` are removed, and
@@ -121,10 +152,13 @@ Specifically:
   Characterization tests capture that order before the reducer replaces a
   path.
 - `CanvasPointer` remains exported with its current callback surface until
-  the corpus check shows no extension assigns `pointer.onClick`,
-  `pointer.onDragStart`, or `pointer.finally`. During migration it is a thin
-  adapter that dispatches `GestureEvent` values and runs assigned callbacks as
-  effects.
+  the corpus check shows no extension assigns any of `pointer.onClick`,
+  `pointer.onDoubleClick`, `pointer.onDragStart`, `pointer.onDrag`,
+  `pointer.onDragEnd`, or `pointer.finally`. First-party code assigns all six
+  today, in `LGraphCanvas`, `SubgraphInputNode`, `SubgraphOutputNode`,
+  `WidgetLegacy.vue`, and `useImagePreviewWidget`. During migration
+  `CanvasPointer` is a thin adapter that dispatches `GestureEvent` values and
+  runs assigned callbacks as effects.
 - `canvas.read_only`, `canvas.allow_dragcanvas`, and `canvas.multi_select`
   remain readable and writable; writes update the policy, and reads derive
   from it.
@@ -158,11 +192,12 @@ Specifically:
 - **Adopt a gesture library.** Libraries such as `@use-gesture` classify
   pointer motion but do not know canvas targets or selection policy; the
   branch logic would remain. The reducer is small and its tests are the value.
-- **Keep the time-based click buffer.** It was added so a slow press could
-  start a drag without movement. No current interaction depends on that
-  behavior, and it is the root of several "click became drag" reports.
-  Distance-only thresholds match tldraw, Excalidraw, React Flow, and most
-  desktop toolkits.
+- **Keep the time-based click buffer.** Its code comment says it covers a
+  user who holds the pointer still and then releases, but promotion only runs
+  inside `move()`, so a press with no `pointermove` never becomes a drag. In
+  practice the rule only converts slow, jittery clicks into drags, which is
+  the "click became drag" class of reports. Distance-only thresholds match
+  tldraw, Excalidraw, React Flow, and most desktop toolkits.
 - **Replace all input handling in one change.** Shortest transition, but the
   compatibility requirements above cannot be verified for 40 branches at once.
   A reducer that adopts one target kind at a time can be reviewed against the
