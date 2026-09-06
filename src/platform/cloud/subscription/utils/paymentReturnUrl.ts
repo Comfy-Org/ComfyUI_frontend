@@ -37,7 +37,7 @@ export function consumePaymentReturn(): boolean {
  */
 export function paymentReturnUrl(): string {
   const { origin, pathname } = globalThis.location
-  if (origin?.startsWith('https://') || origin?.startsWith('http://')) {
+  if (origin.startsWith('https://') || origin.startsWith('http://')) {
     return `${origin}${pathname}`
   }
   return `${getComfyPlatformBaseUrl()}/payment/success`

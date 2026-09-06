@@ -36,15 +36,17 @@ export const useServerConfigStore = defineStore('serverConfig', () => {
   const serverConfigsByCategory = computed<
     Record<string, ServerConfigWithValue<ServerConfigValue>[]>
   >(() => {
-    return serverConfigs.value.reduce(
-      (acc, config) => {
-        const category = config.category?.[0] ?? 'General'
-        acc[category] = acc[category] || []
-        acc[category].push(config)
-        return acc
-      },
-      {} as Record<string, ServerConfigWithValue<ServerConfigValue>[]>
-    )
+    const categories = new Map<
+      string,
+      ServerConfigWithValue<ServerConfigValue>[]
+    >()
+    for (const config of serverConfigs.value) {
+      const category = config.category?.[0] ?? 'General'
+      const configs = categories.get(category) ?? []
+      configs.push(config)
+      categories.set(category, configs)
+    }
+    return Object.fromEntries(categories)
   })
   const serverConfigValues = computed<Record<string, ServerConfigValue>>(() => {
     return Object.fromEntries(
