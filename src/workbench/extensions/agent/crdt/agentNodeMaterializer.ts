@@ -61,6 +61,7 @@ export function reconcileAgentAdapters(
  * a definition that keeps failing across reconcile frames is reported once.
  */
 const reportedDefinitionFailures = new WeakMap<LGraph, Set<string>>()
+const failedInstanceReconfigurations = new WeakSet<LGraphNode>()
 
 /**
  * Register explicitly created subgraph definitions the root graph does not
@@ -284,7 +285,12 @@ function reconfigureSubgraphInstance(
         output.name === declaredOutputs[index]?.name &&
         output.type === declaredOutputs[index]?.type
     )
-  if (inputsIntact && outputsIntact) return
+  if (
+    inputsIntact &&
+    outputsIntact &&
+    !failedInstanceReconfigurations.has(live)
+  )
+    return
   // `configure()` falls back to the class static title for an empty title.
   const currentTitle = live.title
   const {
@@ -301,11 +307,15 @@ function reconfigureSubgraphInstance(
   } satisfies ISerialisedNode
   try {
     withNamedValuesRestore(() => live.configure(info))
+    failedInstanceReconfigurations.delete(live)
   } catch (cause) {
-    reportError(cause, {
-      errorType: 'agent_node_reconfigure_failed',
-      context: { graphId: graph.id, nodeId: String(live.id) }
-    })
+    if (!failedInstanceReconfigurations.has(live)) {
+      failedInstanceReconfigurations.add(live)
+      reportError(cause, {
+        errorType: 'agent_node_reconfigure_failed',
+        context: { graphId: graph.id, nodeId: String(live.id) }
+      })
+    }
   } finally {
     live.title = currentTitle
   }
