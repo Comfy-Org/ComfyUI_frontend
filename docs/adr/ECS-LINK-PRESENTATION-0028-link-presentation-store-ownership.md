@@ -1,4 +1,4 @@
-# 28. Link Presentation Store Owns Hidden/Label State
+# ADR-ECS-LINK-PRESENTATION-0028: Link Presentation Store Owns Hidden/Label State
 
 Date: 2026-08-29
 
@@ -14,7 +14,7 @@ curve is replaced by endpoint badges (`hidden`) and the text those badges show
 `definitions`, and ride the workflow JSON so a workflow round-trips through
 released clients unchanged.
 
-[ADR 0008](0008-entity-component-system.md) places new cross-cutting entity
+[ADR-ECS-0008](ECS-0008-entity-component-system.md) places new cross-cutting entity
 state in a dedicated graph-scoped store as plain component data rather than on
 entity classes, and `LLink` is already a compatibility shell over the link
 topology store. Three homes were considered:
@@ -38,7 +38,8 @@ topology store. Three homes were considered:
    unrelated graph's entries. An entry exists only for a link with non-default
    presentation, so the store's contents are exactly the set that serializes.
 
-2. Ownership follows [ADR 0016](0016-entity-registration-collision-and-recovery-boundaries.md)
+2. Ownership follows
+   [ADR-ECS-IDENTITY-0016](ECS-IDENTITY-0016-entity-id-collision-policy-and-recovery.md)
    value-map semantics: the first writing graph owns an entry, another owner
    can neither overwrite nor take it, and reads are owner-scoped exactly as
    writes are.
@@ -65,10 +66,9 @@ topology store. Three homes were considered:
 
 6. Mutation goes through validated store actions carrying graph scope and
    mutation provenance. Presentation mutation is not expressed as a
-   serializable command: no entity store in this codebase dispatches commands,
-   and adding an executor for a single store would fork the mutation model.
-   Presentation moves onto [ADR 0003](0003-crdt-based-layout-system.md)'s
-   command boundary when that boundary is implemented for entity stores.
+   serializable command because the current command boundary covers durable
+   entity geometry. Extending command coverage to non-layout entity stores
+   requires a separate architecture decision; this PR does not establish one.
 
 7. Hover-reveal state and badge geometry are outside this store. Reveal is
    per-owner, reference-counted, and scoped to a root graph; badge rows are
