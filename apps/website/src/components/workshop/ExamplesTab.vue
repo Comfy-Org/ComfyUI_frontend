@@ -7,22 +7,16 @@ import { t } from '../../i18n/translations'
 const {
   examples,
   modelName,
-  credits,
   locale = 'en'
 } = defineProps<{
   examples: readonly PlaygroundExample[]
   modelName: string
-  credits?: number
   locale?: Locale
 }>()
 
 const emit = defineEmits<{ open: [example: PlaygroundExample] }>()
 
-const specsOf = (example: PlaygroundExample) =>
-  [
-    ...example.specs,
-    ...(credits === undefined ? [] : [`${credits} ${t('nav.credits', locale)}`])
-  ].join(' · ')
+const specsOf = (example: PlaygroundExample) => example.specs.join(' · ')
 </script>
 
 <template>
@@ -44,12 +38,12 @@ const specsOf = (example: PlaygroundExample) =>
       {{ t('workshop.examples.empty', locale) }}
     </p>
 
-    <ul v-else class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+    <ul v-else class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
       <li v-for="example in examples" :key="example.id">
         <button
           type="button"
           :aria-label="t('workshop.examples.open', locale)"
-          class="bg-transparency-white-t4 focus-visible:ring-primary-comfy-yellow/50 group flex w-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-transparency-white-t8 text-left transition-colors outline-none hover:border-transparency-white-t20 focus-visible:ring-3"
+          class="bg-transparency-white-t4 focus-visible:ring-primary-comfy-yellow/50 group flex size-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-transparency-white-t8 text-left transition-colors outline-none hover:border-transparency-white-t20 focus-visible:ring-3"
           data-testid="example-card"
           @click="emit('open', example)"
         >

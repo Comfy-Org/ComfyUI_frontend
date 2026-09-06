@@ -509,7 +509,6 @@ function useInCode() {
       <ExamplesTab
         :examples
         :model-name="model.name"
-        :credits="creditsPerRun"
         :locale
         @open="openExample"
       />

@@ -22,7 +22,7 @@ const WORKFLOW_TEMPLATES_BASE =
 const OUTPUT = fileURLToPath(
   new URL('../src/config/workshop-models.generated.json', import.meta.url)
 )
-const EXAMPLES_PER_MODEL = 3
+const EXAMPLES_PER_MODEL = 4
 
 type Modality = 'image' | 'video' | 'audio' | '3d' | 'text'
 type Primitive = string | number | boolean
@@ -208,7 +208,11 @@ function pyString(literal: string | undefined): string | undefined {
       literal
     )
   if (!match) return undefined
-  return (match[1] ?? match[2] ?? match[3] ?? '').replace(/\\n/g, ' ').trim()
+  // Only one of the three quote styles matches; the rest come back undefined
+  // at runtime, which the regex types deny.
+  const groups: (string | undefined)[] = [match[1], match[2], match[3]]
+  const quoted = groups.find((group) => group !== undefined)
+  return (quoted ?? '').replace(/\\n/g, ' ').trim()
 }
 
 function pyNumber(literal: string | undefined): number | undefined {
@@ -219,7 +223,7 @@ function pyNumber(literal: string | undefined): number | undefined {
 
 function stringItems(listBody: string): string[] {
   return [...listBody.matchAll(/"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)'/g)].map(
-    (m) => m[1] ?? m[2]
+    (m: (string | undefined)[]) => m[1] ?? m[2] ?? ''
   )
 }
 
@@ -490,9 +494,7 @@ function alignWidgets(
         field.options.includes(value))
     if (!fits) return false
     out[def.name] =
-      field.kind === 'number'
-        ? Math.min(value as number, field.max)
-        : (value as Primitive)
+      field.kind === 'number' ? Math.min(value as number, field.max) : value
     if (def.options) {
       const picked = def.options.find((o) => o.label === value)
       if (
