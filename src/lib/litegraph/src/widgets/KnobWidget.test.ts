@@ -52,4 +52,24 @@ describe('KnobWidget', () => {
       expect.any(Number)
     )
   })
+
+  it('draws a numeric value with the same formatting', () => {
+    const widget = new KnobWidget(
+      {
+        type: 'knob',
+        name: 'cfg',
+        value: 0.5,
+        options: { min: 0, max: 1, step2: 0.01 },
+        y: 0
+      },
+      new LGraphNode('TestNode')
+    )
+    const ctx = fakeCtx()
+    widget.drawWidget(ctx, { width: 200 })
+    expect(ctx.fillText).toHaveBeenCalledWith(
+      'cfg\n0.500',
+      expect.any(Number),
+      expect.any(Number)
+    )
+  })
 })

@@ -40,4 +40,24 @@ describe('SliderWidget', () => {
       expect.any(Number)
     )
   })
+
+  it('draws a numeric value with the same formatting', () => {
+    const widget = new SliderWidget(
+      {
+        type: 'slider',
+        name: 'denoise',
+        value: 0.5,
+        options: { min: 0, max: 1, step2: 0.01 },
+        y: 0
+      },
+      new LGraphNode('TestNode')
+    )
+    const ctx = fakeCtx()
+    widget.drawWidget(ctx, { width: 200 })
+    expect(ctx.fillText).toHaveBeenCalledWith(
+      'denoise  0.500',
+      expect.any(Number),
+      expect.any(Number)
+    )
+  })
 })
