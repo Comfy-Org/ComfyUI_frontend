@@ -5,6 +5,7 @@ import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
+import { getRootGraph, setRootGraph } from '@/scripts/__tests__/appTestUtils'
 import { useExtensionStore } from '@/stores/extensionStore'
 import type { ComfyExtension } from '@/types/comfy'
 
@@ -58,10 +59,8 @@ describe('CustomCombo copy/paste', () => {
 
   it('preserves combo options and selected value through clone and paste', () => {
     const graph = new LGraph()
-    type AppWithRootGraph = { rootGraphInternal?: LGraph }
-    const appWithRootGraph = app as unknown as AppWithRootGraph
-    const previousRootGraph = appWithRootGraph.rootGraphInternal
-    appWithRootGraph.rootGraphInternal = graph
+    const previousRootGraph = getRootGraph(app)
+    setRootGraph(app, graph)
 
     try {
       const original = LiteGraph.createNode(TEST_CUSTOM_COMBO_TYPE)!
@@ -90,7 +89,7 @@ describe('CustomCombo copy/paste', () => {
         'gamma'
       ])
     } finally {
-      appWithRootGraph.rootGraphInternal = previousRootGraph
+      setRootGraph(app, previousRootGraph)
     }
   })
 })
