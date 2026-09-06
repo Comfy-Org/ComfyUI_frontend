@@ -229,6 +229,10 @@ the interpretation of a gesture, and both renderers feed it.
 
 ## Notes
 
+After the migration is complete, revise this ADR to remove implementation
+history that the code makes clear. Keep the approaches we rejected or moved
+away from and the reasons why.
+
 Tracking: [FE-2040](https://linear.app/comfyorg/issue/FE-2040).
 
 Related decisions:
