@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowUpDown, ChevronDown, ChevronLeft, Search, X } from '@lucide/vue'
+import { ArrowUpDown, ChevronDown, ChevronLeft } from '@lucide/vue'
 import {
   DropdownMenuContent,
   DropdownMenuPortal,
@@ -41,7 +41,7 @@ import { t } from '../../i18n/translations'
 import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
-import WorkshopSearchPanel from './WorkshopSearchPanel.vue'
+import WorkshopSearchField from './WorkshopSearchField.vue'
 import WorkshopSections from './WorkshopSections.vue'
 
 const { models, locale = 'en' } = defineProps<{
@@ -55,24 +55,6 @@ const modalities = ref<string[]>([])
 const capabilities = ref<string[]>([])
 const providers = ref<string[]>([])
 const sort = ref<SortOrder>('popular')
-const searchOpen = ref(false)
-
-// Focus moving to the clear button or into the panel itself is still inside
-// the search, so only a move out of the wrapper closes it.
-function closeSearchOnLeave(event: FocusEvent) {
-  const wrapper = event.currentTarget
-  const moved = event.relatedTarget
-  if (
-    wrapper instanceof HTMLElement &&
-    (!(moved instanceof Node) || !wrapper.contains(moved))
-  )
-    searchOpen.value = false
-}
-
-const toggled = (list: readonly string[], value: string) =>
-  list.includes(value)
-    ? list.filter((entry) => entry !== value)
-    : [...list, value]
 const { showStatuses, version, groupVersions } = usePrototypeTweaks()
 
 onMounted(() => {
@@ -345,55 +327,14 @@ const menuItemClass =
       <div
         class="bg-page sticky top-20 z-30 mb-8 flex flex-col gap-4 py-4 lg:top-26 lg:flex-row lg:items-center lg:justify-between"
       >
-        <div class="relative w-full lg:max-w-xl" @focusout="closeSearchOnLeave">
-          <label for="workshop-search" class="sr-only">
-            {{ t('workshop.search.label', locale) }}
-          </label>
-          <Search
-            class="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-primary-warm-gray"
-            aria-hidden="true"
-          />
-          <input
-            id="workshop-search"
-            v-model="query"
-            type="search"
-            :placeholder="t('workshop.search.label', locale)"
-            data-testid="workshop-search"
-            class="bg-transparency-white-t4 focus-visible:ring-primary-comfy-yellow/50 h-11 w-full rounded-2xl pr-10 pl-11 text-sm text-primary-warm-white outline-none placeholder:text-primary-warm-gray focus-visible:ring-3 [&::-webkit-search-cancel-button]:hidden"
-            role="combobox"
-            aria-controls="workshop-search-panel"
-            :aria-expanded="searchOpen"
-            @focus="searchOpen = true"
-            @keydown.escape="searchOpen = false"
-          />
-          <button
-            v-if="query"
-            type="button"
-            :aria-label="t('workshop.search.clear', locale)"
-            data-testid="workshop-search-clear"
-            class="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-primary-warm-gray hover:text-primary-warm-white"
-            @click="query = ''"
-          >
-            <X class="size-4" aria-hidden="true" />
-          </button>
-
-          <WorkshopSearchPanel
-            v-if="searchOpen"
-            id="workshop-search-panel"
-            :models
-            :query
-            :providers
-            :capabilities
-            :locale
-            @pick="(model) => (query = model.name)"
-            @toggle-provider="
-              (value) => (providers = toggled(providers, value))
-            "
-            @toggle-capability="
-              (value) => (capabilities = toggled(capabilities, value))
-            "
-          />
-        </div>
+        <WorkshopSearchField
+          v-model="query"
+          v-model:providers="providers"
+          v-model:capabilities="capabilities"
+          :models
+          :locale
+          class="w-full lg:max-w-xl"
+        />
 
         <div class="flex flex-wrap gap-2" data-testid="workshop-filters">
           <WorkshopFilterMenu

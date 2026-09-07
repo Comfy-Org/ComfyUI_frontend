@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { Search, X } from '@lucide/vue'
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { X } from '@lucide/vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { FilterBadgeType } from '../../composables/useHubStore'
 import { useHubStore } from '../../composables/useHubStore'
 import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
-import type { UseCase } from '../../config/workshop'
+import type { UseCase, WorkshopModel } from '../../config/workshop'
 import { USE_CASES, useCaseFor, workshopModels } from '../../config/workshop'
 import { groupModels } from '../../config/model-family'
 import hubTemplates from '../../data/hubTemplates.json'
@@ -27,6 +27,7 @@ import type { GridLabels } from './WorkflowGrid.vue'
 import WorkflowGrid from './WorkflowGrid.vue'
 import WorkshopHero from '../workshop/WorkshopHero.vue'
 import WorkshopModelCard from '../workshop/WorkshopModelCard.vue'
+import WorkshopSearchField from '../workshop/WorkshopSearchField.vue'
 
 const { locale = 'en', embedded = false } = defineProps<{
   locale?: Locale
@@ -63,34 +64,47 @@ const useCaseLabelKey: Record<UseCase | 'all', TranslationKey> = {
 }
 
 // Arriving from the home row means "show me this provider": the models it makes
-// and the workflows that run them.
-const provider = ref<string>()
+// and the workflows that run them. The search panel narrows the same two lists,
+// by provider and by what a model can do.
+const providers = ref<string[]>([])
+const capabilities = ref<string[]>([])
 
-const providerModels = computed(() =>
-  provider.value
-    ? new Set(
-        workshopModels
-          .filter((model) => model.provider === provider.value)
-          .map((model) => model.name.toLowerCase())
-      )
-    : undefined
+const narrowed = computed(
+  () => providers.value.length + capabilities.value.length > 0
 )
 
-const runsProviderModel = (tmpl: HubTemplate) => {
-  const names = providerModels.value
-  return !names || tmpl.models.some((name) => names.has(name.toLowerCase()))
-}
+const matchesModel = (model: WorkshopModel) =>
+  (providers.value.length === 0 ||
+    (model.provider !== undefined &&
+      providers.value.includes(model.provider))) &&
+  (capabilities.value.length === 0 ||
+    capabilities.value.some((capability) =>
+      model.capabilities.includes(capability)
+    ))
+
+// A workflow answers to the same narrowing through the models it runs.
+const matchingModelNames = computed(
+  () =>
+    new Set(
+      workshopModels
+        .filter(matchesModel)
+        .map((model) => model.name.toLowerCase())
+    )
+)
+
+const runsMatchingModel = (tmpl: HubTemplate) =>
+  !narrowed.value ||
+  tmpl.models.some((name) => matchingModelNames.value.has(name.toLowerCase()))
 
 const inUseCase = (value: UseCase | 'all') => ({
   models: workshopModels.filter(
     (model) =>
-      (value === 'all' || useCaseFor(model) === value) &&
-      (!provider.value || model.provider === provider.value)
+      (value === 'all' || useCaseFor(model) === value) && matchesModel(model)
   ),
   templates: templates.filter(
     (tmpl) =>
       (value === 'all' || useCaseForTemplate(tmpl, workshopModels) === value) &&
-      runsProviderModel(tmpl)
+      runsMatchingModel(tmpl)
   )
 })
 
@@ -109,35 +123,20 @@ const useCaseTabs = computed(() =>
 
 const scoped = computed(() => inUseCase(useCase.value))
 
-// The row is for narrowing what the use case already picked, so search stays
-// out of the way until it is asked for.
-const searchInput = ref<HTMLInputElement>()
-const searching = ref(false)
-async function openSearch() {
-  searching.value = true
-  await nextTick()
-  searchInput.value?.focus()
-}
-function closeSearchIfEmpty() {
-  if (store.searchQuery.value.trim() === '') searching.value = false
-}
-
 onMounted(() => {
   const params = new URLSearchParams(location.search)
   const tab = TABS.find((value) => value === params.get('tab'))
   if (tab) store.setTab(tab)
   const wanted = USE_CASES.find((value) => value === params.get('useCase'))
   if (wanted) useCase.value = wanted
-  provider.value = params.get('provider') ?? undefined
+  const asked = params.get('provider')
+  if (asked) providers.value = [asked]
   for (const type of ['tag', 'model'] as const) {
     const value = params.get(type)
     if (value) store.toggleBadge({ type, value })
   }
   const query = params.get('q')
-  if (query) {
-    store.searchQuery.value = query
-    searching.value = true
-  }
+  if (query) store.searchQuery.value = query
 })
 
 const toolbarLabels: ToolbarLabels = {
@@ -298,16 +297,19 @@ const filteredTemplates = computed(() => {
       </aside>
 
       <div class="min-w-0">
-        <button
-          v-if="provider"
-          type="button"
-          class="text-page bg-brand hover:bg-brand/90 mb-6 inline-flex cursor-pointer items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold transition-colors"
-          data-testid="hub-provider-chip"
-          @click="provider = undefined"
-        >
-          {{ provider }}
-          <X class="size-3.5" aria-hidden="true" />
-        </button>
+        <div v-if="providers.length" class="mb-6 flex flex-wrap gap-2">
+          <button
+            v-for="name in providers"
+            :key="name"
+            type="button"
+            class="text-page bg-brand hover:bg-brand/90 inline-flex cursor-pointer items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold transition-colors"
+            data-testid="hub-provider-chip"
+            @click="providers = providers.filter((entry) => entry !== name)"
+          >
+            {{ name }}
+            <X class="size-3.5" aria-hidden="true" />
+          </button>
+        </div>
 
         <WorkflowGrid
           :templates="filteredTemplates"
@@ -318,42 +320,14 @@ const filteredTemplates = computed(() => {
           :href-for="hrefFor"
         >
           <template #search>
-            <button
-              v-if="!searching"
-              type="button"
-              :aria-label="t('workshop.hub.search', locale)"
-              :title="t('workshop.hub.search', locale)"
-              class="text-content-secondary hover:text-content focus-visible:ring-brand grid size-10 cursor-pointer place-items-center rounded-xl bg-white/8 transition-colors outline-none hover:bg-white/12 focus-visible:ring-2 xl:hidden"
-              data-testid="hub-search-open"
-              @click="openSearch"
-            >
-              <Search class="size-4" aria-hidden="true" />
-            </button>
-            <label
-              :class="
-                cn(
-                  'relative block w-96 max-w-full',
-                  !searching && 'hidden xl:block'
-                )
-              "
-            >
-              <span class="sr-only">{{
-                t('workshop.hub.search', locale)
-              }}</span>
-              <Search
-                class="text-content-muted pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2"
-                aria-hidden="true"
-              />
-              <input
-                ref="searchInput"
-                v-model="store.searchQuery.value"
-                type="search"
-                data-testid="hub-search"
-                :placeholder="t('workshop.hub.search', locale)"
-                class="text-content placeholder:text-content-muted focus-visible:ring-brand h-10 w-full rounded-xl bg-white/8 pr-3 pl-10 text-xs outline-none focus-visible:ring-2"
-                @blur="closeSearchIfEmpty"
-              />
-            </label>
+            <WorkshopSearchField
+              v-model="store.searchQuery.value"
+              v-model:providers="providers"
+              v-model:capabilities="capabilities"
+              :models="workshopModels"
+              :locale
+              class="w-full min-w-40 xl:w-96"
+            />
           </template>
 
           <template v-if="store.activeTab.value === 'all'" #lead>

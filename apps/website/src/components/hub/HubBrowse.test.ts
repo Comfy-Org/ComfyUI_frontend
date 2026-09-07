@@ -28,8 +28,7 @@ describe('HubBrowse', () => {
     )
 
     await user.click(screen.getByTestId('hub-tab-all'))
-    await user.click(screen.getByTestId('hub-search-open'))
-    await user.type(screen.getByTestId('hub-search'), 'minimax h3')
+    await user.type(screen.getByTestId('workshop-search'), 'minimax h3')
     expect(screen.getAllByTestId('hub-card-link')[0].textContent).toContain(
       'MiniMax H3'
     )
@@ -43,11 +42,29 @@ describe('HubBrowse', () => {
     expect(screen.getAllByTestId('workshop-model-card').length).toBeGreaterThan(
       10
     )
-    await user.click(screen.getByTestId('hub-search-open'))
-    await user.type(screen.getByTestId('hub-search'), 'kling')
+    await user.type(screen.getByTestId('workshop-search'), 'kling')
     const cards = screen.getAllByTestId('workshop-model-card')
     expect(cards.length).toBeGreaterThan(0)
     cards.forEach((card) => expect(card.textContent).toMatch(/Kling/i))
+  })
+
+  it('narrows the hub from the shared search panel', async () => {
+    const user = userEvent.setup()
+    render(HubBrowse)
+    expect(screen.queryByTestId('workshop-search-panel')).toBeNull()
+
+    await user.click(screen.getByTestId('workshop-search'))
+    const chip = screen
+      .getAllByTestId('workshop-search-provider')
+      .find((entry) => entry.textContent.includes('Kling'))!
+    await user.click(chip)
+
+    expect(screen.getByTestId('hub-provider-chip').textContent).toContain(
+      'Kling'
+    )
+    const cards = screen.getAllByTestId('hub-card')
+    expect(cards.length).toBeGreaterThan(0)
+    expect(cards.length).toBeLessThan(30)
   })
 
   it('filters by a model facet from the Filter popover', async () => {

@@ -69,7 +69,7 @@ const chipsFrom = (
         selected: chosen.includes(value)
       })
     ),
-    more: showAll ? 0 : Math.max(ranked.length - CHIPS, 0)
+    hidden: Math.max(ranked.length - CHIPS, 0)
   }
 }
 
@@ -86,6 +86,12 @@ const providerChips = computed(() =>
 const capabilityChips = computed(() =>
   chipsFrom((model) => model.capabilities, capabilities, allCapabilities.value)
 )
+
+// Opening the rest of the chips is undoable: the same button folds them back.
+const moreLabel = (expanded: boolean, hidden: number) =>
+  expanded
+    ? t('workshop.hub.facets.less', locale)
+    : t('workshop.search.more', locale).replace('{n}', `${hidden}`)
 
 const moreClass =
   'hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 cursor-pointer rounded-lg text-xs text-primary-warm-gray transition-colors outline-none focus-visible:ring-3'
@@ -178,18 +184,13 @@ const chipClass = (selected: boolean) =>
         <span class="tabular-nums opacity-60">{{ chip.count }}</span>
       </button>
       <button
-        v-if="providerChips.more > 0"
+        v-if="providerChips.hidden > 0"
         type="button"
         :class="moreClass"
         data-testid="workshop-search-provider-more"
-        @mousedown.prevent="allProviders = true"
+        @mousedown.prevent="allProviders = !allProviders"
       >
-        {{
-          t('workshop.search.more', locale).replace(
-            '{n}',
-            `${providerChips.more}`
-          )
-        }}
+        {{ moreLabel(allProviders, providerChips.hidden) }}
       </button>
     </section>
 
@@ -215,18 +216,13 @@ const chipClass = (selected: boolean) =>
         <span class="tabular-nums opacity-60">{{ chip.count }}</span>
       </button>
       <button
-        v-if="capabilityChips.more > 0"
+        v-if="capabilityChips.hidden > 0"
         type="button"
         :class="moreClass"
         data-testid="workshop-search-capability-more"
-        @mousedown.prevent="allCapabilities = true"
+        @mousedown.prevent="allCapabilities = !allCapabilities"
       >
-        {{
-          t('workshop.search.more', locale).replace(
-            '{n}',
-            `${capabilityChips.more}`
-          )
-        }}
+        {{ moreLabel(allCapabilities, capabilityChips.hidden) }}
       </button>
     </section>
   </div>
