@@ -7,8 +7,9 @@
  */
 import type { User } from 'firebase/auth'
 
-import type { SessionClient } from '@comfyorg/account/core'
+import type { BillingClient, SessionClient } from '@comfyorg/account/core'
 import {
+  createBillingClient,
   createSessionClient,
   isPermanentSessionError
 } from '@comfyorg/account/core'
@@ -51,6 +52,11 @@ export const workshopSessionClient: SessionClient<User> =
     exchangeUrl: `${WORKSHOP_CLOUD_BASE_URL}/api/auth/token`,
     storage
   })
+
+export const workshopBillingClient: BillingClient = createBillingClient({
+  session: workshopSessionClient,
+  balanceUrl: `${WORKSHOP_CLOUD_BASE_URL}/api/billing/balance`
+})
 
 /**
  * Mirrors the cloud app's auth-refresh telemetry so both surfaces feed one

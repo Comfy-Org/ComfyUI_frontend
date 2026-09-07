@@ -3,291 +3,141 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { centsToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
 
-import type { WorkshopSession } from './workshop-session'
-import type * as CreditsModule from './workshop-credits'
+import type { WorkshopSession } from './workshop-session-state'
 
-// The credits module carries a shared balance ref and an in-flight-refresh
-// guard, so each test loads a fresh copy to keep that state from leaking.
-let mod: typeof CreditsModule
-const balanceToCredits = (cents: number) => mod.balanceToCredits(cents)
-const refreshWorkshopCredits = (fetchImpl?: typeof fetch) =>
-  mod.refreshWorkshopCredits(fetchImpl)
-const useWorkshopCredits = () => mod.useWorkshopCredits()
-interface SessionHandles {
-  setSession?: (session: WorkshopSession | undefined) => void
-  remint?: ReturnType<typeof vi.fn>
-  flag?: { value: boolean }
-}
-
-const sessionHandles = vi.hoisted<SessionHandles>(() => ({}))
+const h = vi.hoisted(() => {
+  const state = {
+    flag: undefined as { value: boolean } | undefined,
+    setSession: undefined as
+      | ((session: WorkshopSession | undefined) => void)
+      | undefined,
+    billingState: { status: 'unknown' } as unknown,
+    listeners: new Set<(state: unknown) => void>(),
+    refresh: vi.fn<(options?: { readonly force?: boolean }) => Promise<void>>(
+      async () => {}
+    ),
+    reset: vi.fn(),
+    publish(next: unknown) {
+      state.billingState = next
+      state.listeners.forEach((listener) => listener(next))
+    }
+  }
+  return state
+})
 
 vi.mock('../scripts/posthog', async () => {
   const { ref } = await import('vue')
   const flag = ref(true)
-  sessionHandles.flag = flag
+  h.flag = flag
   return { useWorkshopAuthFlag: () => flag }
 })
 
 vi.mock('./workshop-session-state', async () => {
   const { computed, ref } = await import('vue')
   const session = ref<WorkshopSession | undefined>(undefined)
-  const mintedSession: WorkshopSession = {
-    token: 'jwt',
+  h.setSession = (next) => {
+    session.value = next
+  }
+  return {
+    useWorkshopSession: () => ({
+      session,
+      signedIn: computed(() => session.value !== undefined),
+      remint: vi.fn()
+    })
+  }
+})
+
+vi.mock('./workshop-account', () => ({
+  workshopBillingClient: {
+    getState: () => h.billingState,
+    subscribe: (listener: (state: unknown) => void) => {
+      h.listeners.add(listener)
+      listener(h.billingState)
+      return () => h.listeners.delete(listener)
+    },
+    refresh: h.refresh,
+    reset: h.reset
+  }
+}))
+
+function liveSession(token = 'jwt'): WorkshopSession {
+  return {
+    token,
     uid: 'user-1',
     permissions: ['workspace:read'],
     expiresAt: Date.now() + 60 * 60 * 1000,
     workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
     role: 'owner'
   }
-  const remint = vi.fn(async () => ({
-    status: 'ok',
-    session: mintedSession
-  }))
-  sessionHandles.setSession = (next) => {
-    session.value = next
-  }
-  sessionHandles.remint = remint
-  return {
-    useWorkshopSession: () => ({
-      session,
-      signedIn: computed(() => session.value !== undefined),
-      remint
-    })
-  }
-})
+}
 
-const withToken = (token: string, uid = 'user-1'): WorkshopSession => ({
-  token,
-  uid,
-  permissions: ['workspace:read'],
-  expiresAt: Date.now() + 60 * 60 * 1000,
-  workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
-  role: 'owner'
-})
-
-const jsonResponse = (status: number, body: unknown) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json' }
-  })
-
-beforeEach(async () => {
+async function importFresh() {
   vi.resetModules()
-  mod = await import('./workshop-credits')
-  sessionHandles.setSession!(undefined)
-  sessionHandles.remint!.mockClear()
-  // Keep the module lifecycle off in the fetch unit tests; each test invokes
-  // refresh explicitly with its own fetch implementation.
-  sessionHandles.flag!.value = false
-  mod.useWorkshopCredits()
-  sessionHandles.remint!.mockImplementation(async () => ({
-    status: 'ok',
-    session: withToken('jwt')
-  }))
+  return import('./workshop-credits')
+}
+
+beforeEach(() => {
+  h.listeners.clear()
+  h.billingState = { status: 'unknown' }
+  h.setSession?.(undefined)
 })
 
 describe('balanceToCredits', () => {
-  it('treats the backend values as cents despite their _micros names', () => {
-    expect(balanceToCredits(1_000_000)).toBe(centsToCredits(1_000_000))
-    expect(balanceToCredits(4_750_000)).toBe(centsToCredits(4_750_000))
-    expect(balanceToCredits(0)).toBe(0)
+  it('treats the backend values as cents despite their _micros names', async () => {
+    const mod = await importFresh()
+    expect(mod.balanceToCredits(1_000_000)).toBe(centsToCredits(1_000_000))
+    expect(mod.balanceToCredits(4_750_000)).toBe(centsToCredits(4_750_000))
+    expect(mod.balanceToCredits(0)).toBe(0)
   })
 })
 
-describe('refreshWorkshopCredits', () => {
-  it('publishes the converted balance for a live session', async () => {
-    sessionHandles.setSession!(withToken('jwt'))
-    const fetchImpl = vi.fn(async () =>
-      jsonResponse(200, { effective_balance_micros: 2_000_000 })
-    )
+describe('useWorkshopCredits', () => {
+  it('converts the client cents into chip credits', async () => {
+    const mod = await importFresh()
+    const { balance } = mod.useWorkshopCredits()
 
-    await refreshWorkshopCredits(fetchImpl)
+    h.publish({ status: 'ok', cents: 1234 })
 
-    expect(useWorkshopCredits().balance.value).toEqual({
-      status: 'ok',
-      credits: balanceToCredits(2_000_000)
-    })
-    const [url, init] = fetchImpl.mock.calls[0] as unknown as [
-      string,
-      RequestInit
-    ]
-    expect(url).toContain('/api/billing/balance')
-    expect((init.headers as Record<string, string>).Authorization).toBe(
-      'Bearer jwt'
-    )
-  })
-
-  it('falls back to amount_micros when the effective field is absent', async () => {
-    sessionHandles.setSession!(withToken('jwt'))
-    const fetchImpl = vi.fn(async () =>
-      jsonResponse(200, { amount_micros: 1_000_000 })
-    )
-
-    await refreshWorkshopCredits(fetchImpl)
-
-    expect(useWorkshopCredits().balance.value).toEqual({
-      status: 'ok',
-      credits: balanceToCredits(1_000_000)
-    })
-  })
-
-  it('re-mints once on a failed read and retries with the new token', async () => {
-    sessionHandles.setSession!(withToken('stale-jwt'))
-    sessionHandles.remint!.mockImplementation(async () => {
-      sessionHandles.setSession!(withToken('fresh-jwt'))
-      return { status: 'ok', session: withToken('fresh-jwt') }
-    })
-    const fetchImpl = vi
-      .fn()
-      .mockResolvedValueOnce(jsonResponse(401, {}))
-      .mockResolvedValueOnce(
-        jsonResponse(200, { effective_balance_micros: 500_000 })
-      )
-
-    await refreshWorkshopCredits(fetchImpl)
-
-    expect(sessionHandles.remint).toHaveBeenCalledOnce()
-    expect(useWorkshopCredits().balance.value).toEqual({
-      status: 'ok',
-      credits: balanceToCredits(500_000)
-    })
-    const second = fetchImpl.mock.calls[1] as unknown as [string, RequestInit]
-    expect((second[1].headers as Record<string, string>).Authorization).toBe(
-      'Bearer fresh-jwt'
-    )
-  })
-
-  it('settles on the error state when the retry also fails, never NaN', async () => {
-    sessionHandles.setSession!(withToken('jwt'))
-    const fetchImpl = vi.fn(async () => jsonResponse(200, { unexpected: true }))
-
-    await refreshWorkshopCredits(fetchImpl)
-
-    expect(useWorkshopCredits().balance.value).toEqual({ status: 'error' })
-  })
-
-  it('does nothing while signed out', async () => {
-    const fetchImpl = vi.fn()
-
-    await refreshWorkshopCredits(fetchImpl)
-
-    expect(fetchImpl).not.toHaveBeenCalled()
-    expect(useWorkshopCredits().balance.value).toEqual({ status: 'unknown' })
-  })
-
-  it.for([
-    ['null', { effective_balance_micros: null }],
-    ['a string', { effective_balance_micros: '2000000' }],
-    ['neither field present', { some_other_field: 1 }]
-  ] as const)(
-    'errors rather than trusting a %s balance field',
-    async ([, body]) => {
-      sessionHandles.setSession!(withToken('jwt'))
-      const fetchImpl = vi.fn(async () => jsonResponse(200, body))
-
-      await refreshWorkshopCredits(fetchImpl)
-
-      expect(useWorkshopCredits().balance.value).toEqual({ status: 'error' })
-    }
-  )
-
-  it('does not publish a balance that belongs to a superseded user', async () => {
-    sessionHandles.setSession!(withToken('jwt', 'user-1'))
-    const fetchImpl = vi.fn(async () => {
-      sessionHandles.setSession!(withToken('other-jwt', 'user-2'))
-      return jsonResponse(200, { effective_balance_micros: 9_000_000 })
-    })
-
-    await refreshWorkshopCredits(fetchImpl)
-
-    expect(
-      useWorkshopCredits().balance.value,
-      'a balance fetched for the previous user must not show under the new one'
-    ).not.toEqual({ status: 'ok', credits: balanceToCredits(9_000_000) })
-  })
-
-  it('does not publish a balance fetched with a superseded token', async () => {
-    sessionHandles.setSession!(withToken('old-jwt'))
-    const fetchImpl = vi.fn(async () => {
-      sessionHandles.setSession!(withToken('new-jwt'))
-      return jsonResponse(200, { effective_balance_micros: 9_000_000 })
-    })
-
-    await refreshWorkshopCredits(fetchImpl)
-
-    expect(
-      useWorkshopCredits().balance.value,
-      'a balance fetched with an older token must not overwrite a newer session'
-    ).not.toEqual({ status: 'ok', credits: balanceToCredits(9_000_000) })
-  })
-
-  it('bounds the balance read with an abort signal', async () => {
-    sessionHandles.setSession!(withToken('jwt'))
-    const fetchImpl = vi.fn(async () =>
-      jsonResponse(200, { effective_balance_micros: 1_000_000 })
-    )
-
-    await refreshWorkshopCredits(fetchImpl)
-
-    const [, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit]
-    expect(
-      init.signal,
-      'a balance read without an abort signal can pin the chip stale'
-    ).toBeInstanceOf(AbortSignal)
-  })
-
-  it('shares one in-flight read across overlapping triggers', async () => {
-    sessionHandles.setSession!(withToken('jwt'))
-    let release!: () => void
-    const gate = new Promise<void>((resolve) => {
-      release = resolve
-    })
-    const fetchImpl = vi.fn(async () => {
-      await gate
-      return jsonResponse(200, { effective_balance_micros: 3_000_000 })
-    })
-
-    const first = refreshWorkshopCredits(fetchImpl)
-    const second = refreshWorkshopCredits(fetchImpl)
-    release()
-    await Promise.all([first, second])
-
-    expect(
-      fetchImpl,
-      'two overlapping triggers for one session must not fetch twice'
-    ).toHaveBeenCalledOnce()
-    expect(useWorkshopCredits().balance.value).toEqual({
-      status: 'ok',
-      credits: balanceToCredits(3_000_000)
-    })
-  })
-
-  it('queues a forced refresh after an older read already in flight', async () => {
-    sessionHandles.setSession!(withToken('jwt'))
-    let release!: () => void
-    const gate = new Promise<void>((resolve) => {
-      release = resolve
-    })
-    const fetchImpl = vi
-      .fn()
-      .mockImplementationOnce(async () => {
-        await gate
-        return jsonResponse(200, { effective_balance_micros: 100 })
+    await vi.waitFor(() =>
+      expect(balance.value).toEqual({
+        status: 'ok',
+        credits: mod.balanceToCredits(1234)
       })
-      .mockResolvedValueOnce(
-        jsonResponse(200, { effective_balance_micros: 200 })
-      )
+    )
+  })
 
-    const oldRead = refreshWorkshopCredits(fetchImpl)
-    const forced = mod.refreshWorkshopCredits(fetchImpl, { force: true })
-    release()
-    await Promise.all([oldRead, forced])
+  it('passes error states through unconverted', async () => {
+    const mod = await importFresh()
+    const { balance } = mod.useWorkshopCredits()
 
-    expect(fetchImpl).toHaveBeenCalledTimes(2)
-    expect(useWorkshopCredits().balance.value).toEqual({
-      status: 'ok',
-      credits: balanceToCredits(200)
-    })
+    h.publish({ status: 'error', unauthorized: true })
+
+    await vi.waitFor(() =>
+      expect(balance.value).toEqual({ status: 'error', unauthorized: true })
+    )
+  })
+
+  it('forwards refresh calls to the billing client', async () => {
+    const mod = await importFresh()
+
+    await mod.refreshWorkshopCredits({ force: true })
+
+    expect(h.refresh).toHaveBeenCalledExactlyOnceWith({ force: true })
+  })
+
+  it('resets the client when the flag turns off', async () => {
+    const mod = await importFresh()
+    mod.useWorkshopCredits()
+    const callsBefore = h.reset.mock.calls.length
+
+    h.flag!.value = false
+
+    await vi.waitFor(() =>
+      expect(
+        h.reset.mock.calls.length,
+        'flag-off must return the chip to unknown'
+      ).toBeGreaterThan(callsBefore)
+    )
   })
 })
 
@@ -297,7 +147,7 @@ describe('useWorkshopCredits start()', () => {
   })
 
   it('installs no focus listener while the flag is off', async () => {
-    sessionHandles.flag!.value = false
+    h.flag!.value = false
     const addSpy = vi.spyOn(window, 'addEventListener')
     const mod = await import('./workshop-credits')
 
@@ -310,14 +160,40 @@ describe('useWorkshopCredits start()', () => {
     addSpy.mockRestore()
   })
 
-  it('installs the focus listener once the flag is on', async () => {
-    sessionHandles.flag!.value = true
+  it('arms the lifecycle when the flag turns on after mount', async () => {
+    h.flag!.value = false
     const addSpy = vi.spyOn(window, 'addEventListener')
     const mod = await import('./workshop-credits')
-
     mod.useWorkshopCredits()
 
-    expect(addSpy.mock.calls.some(([type]) => type === 'focus')).toBe(true)
+    h.flag!.value = true
+
+    await vi.waitFor(() =>
+      expect(
+        addSpy.mock.calls.some(([type]) => type === 'focus'),
+        'a flag answered true after mount must still arm the lifecycle'
+      ).toBe(true)
+    )
     addSpy.mockRestore()
+  })
+
+  it('force-refreshes on focus while a session is live', async () => {
+    h.flag!.value = true
+    const mod = await import('./workshop-credits')
+    mod.useWorkshopCredits()
+    h.setSession!(liveSession())
+    const forcedBefore = h.refresh.mock.calls.filter(
+      ([options]) => options?.force === true
+    ).length
+
+    window.dispatchEvent(new Event('focus'))
+
+    await vi.waitFor(() =>
+      expect(
+        h.refresh.mock.calls.filter(([options]) => options?.force === true)
+          .length,
+        'refocus must force a re-read so a balance spent in another tab updates'
+      ).toBeGreaterThan(forcedBefore)
+    )
   })
 })
