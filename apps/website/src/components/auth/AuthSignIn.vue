@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, ref, watch } from 'vue'
 
-import SocialAuthButtons from '@comfyorg/auth-core/SocialAuthButtons.vue'
+import SocialAuthButtons from '@comfyorg/account/SocialAuthButtons.vue'
 
 import type {
   AuthSignInEvent,

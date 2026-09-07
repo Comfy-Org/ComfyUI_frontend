@@ -475,9 +475,9 @@ importers:
       '@atlaskit/pragmatic-drag-and-drop':
         specifier: ^1.3.1
         version: 1.8.1
-      '@comfyorg/auth-core':
+      '@comfyorg/account':
         specifier: workspace:*
-        version: link:packages/auth-core
+        version: link:packages/account
       '@comfyorg/comfy-multi-player':
         specifier: 0.2.1
         version: 0.2.1
@@ -941,9 +941,9 @@ importers:
       '@astrojs/sitemap':
         specifier: 'catalog:'
         version: 3.7.3
-      '@comfyorg/auth-core':
+      '@comfyorg/account':
         specifier: workspace:*
-        version: link:../../packages/auth-core
+        version: link:../../packages/account
       '@comfyorg/design-system':
         specifier: workspace:*
         version: link:../../packages/design-system
@@ -1066,8 +1066,11 @@ importers:
         specifier: 'catalog:'
         version: 3.3.9(typescript@6.0.3)
 
-  packages/auth-core:
+  packages/account:
     dependencies:
+      '@comfyorg/ingest-types':
+        specifier: workspace:*
+        version: link:../ingest-types
       '@comfyorg/shared-frontend-utils':
         specifier: workspace:*
         version: link:../shared-frontend-utils
@@ -1084,6 +1087,12 @@ importers:
       '@testing-library/vue':
         specifier: 'catalog:'
         version: 8.1.0(@vue/compiler-dom@3.5.41)(@vue/compiler-sfc@3.5.41)(@vue/server-renderer@3.5.41)(vue@3.5.41(typescript@6.0.3))
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.9.5
+      firebase:
+        specifier: 'catalog:'
+        version: 11.10.0
       typescript:
         specifier: 'catalog:'
         version: 6.0.3

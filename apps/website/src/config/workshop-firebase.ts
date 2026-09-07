@@ -1,26 +1,15 @@
 /**
- * The Workshop's Firebase surface: one lazily-created auth instance bound to
- * the env-selected project, plus the sign-in actions. The sequencing rules
- * (social always provisions a customer; a failed provision during sign-up
- * rolls the user back) live tested in @comfyorg/auth-core — this module only
- * supplies the Firebase and network effects.
- *
- * Popup, never `signInWithRedirect`: the redirect flow is broken under
- * Safari's ITP for cross-origin helper domains, which is why the platform
- * app is popup-only too.
+ * The Workshop's Firebase surface: the package-owned identity entry bound
+ * to the env-selected project, plus the sign-in actions composed with
+ * customer provisioning. The sequencing rules (social always provisions a
+ * customer; a failed provision during sign-up rolls the user back) live
+ * tested in @comfyorg/account — this module only supplies the network
+ * effects and wires them to the package identity.
  */
-import { getApps, initializeApp } from 'firebase/app'
 import type { User, UserCredential } from 'firebase/auth'
-import {
-  GithubAuthProvider,
-  GoogleAuthProvider,
-  getAuth,
-  onAuthStateChanged,
-  signInWithPopup,
-  signOut
-} from 'firebase/auth'
 
-import { socialSignInWithProvisioning } from '@comfyorg/auth-core/provisioning'
+import { createFirebaseIdentity } from '@comfyorg/account/firebase'
+import { socialSignInWithProvisioning } from '@comfyorg/account/provisioning'
 
 import {
   WORKSHOP_FIREBASE_OPTIONS,
@@ -33,12 +22,10 @@ const WORKSHOP_APP_NAME = 'workshop'
 /** Ceiling on the provisioning POST; a hung request must not strand sign-in. */
 const WORKSHOP_PROVISION_TIMEOUT_MS = 15_000
 
-function workshopAuth() {
-  const existing = getApps().find((app) => app.name === WORKSHOP_APP_NAME)
-  return getAuth(
-    existing ?? initializeApp(WORKSHOP_FIREBASE_OPTIONS, WORKSHOP_APP_NAME)
-  )
-}
+const identity = createFirebaseIdentity({
+  options: WORKSHOP_FIREBASE_OPTIONS,
+  appName: WORKSHOP_APP_NAME
+})
 
 /**
  * Whether a `POST /customers` response means the customer is provisioned. A
@@ -90,13 +77,13 @@ export async function provisionCustomer(
 }
 
 async function socialSignIn(
-  provider: GoogleAuthProvider | GithubAuthProvider
+  signIn: () => Promise<UserCredential>
 ): Promise<UserCredential> {
   let credential: UserCredential | undefined
   try {
     return await socialSignInWithProvisioning({
       signIn: async () => {
-        credential = await signInWithPopup(workshopAuth(), provider)
+        credential = await signIn()
         return credential
       },
       provisionCustomer: (result) => provisionCustomer(result.user)
@@ -110,20 +97,20 @@ async function socialSignIn(
 }
 
 export function signInWorkshopWithGoogle(): Promise<UserCredential> {
-  return socialSignIn(new GoogleAuthProvider())
+  return socialSignIn(identity.signInWithGoogle)
 }
 
 export function signInWorkshopWithGitHub(): Promise<UserCredential> {
-  return socialSignIn(new GithubAuthProvider())
+  return socialSignIn(identity.signInWithGitHub)
 }
 
 export function signOutWorkshop(): Promise<void> {
-  return signOut(workshopAuth())
+  return identity.signOut()
 }
 
 /** Fires with the restored user (or null) once Firebase settles, then on every change. */
 export function onWorkshopUserChanged(
   callback: (user: User | null) => void
 ): () => void {
-  return onAuthStateChanged(workshopAuth(), callback)
+  return identity.onUserChanged(callback)
 }

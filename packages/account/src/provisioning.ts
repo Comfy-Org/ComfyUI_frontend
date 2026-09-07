@@ -15,8 +15,9 @@ interface DeletableUserCredential {
  * fails (rejection, 5xx, network) the Firebase user is already created and,
  * without rollback, the account is orphaned — every retry then fails
  * "email already in use", permanently bricking signup. So a provisioning
- * failure deletes the just-created user (best-effort: a cleanup failure never
- * masks the original error) and rethrows.
+ * failure deletes the just-created user (best-effort with one retried
+ * delete, so a single transient blip cannot orphan the account; a cleanup
+ * failure never masks the original error) and rethrows.
  */
 export async function signUpWithProvisioning<
   T extends DeletableUserCredential
@@ -30,7 +31,11 @@ export async function signUpWithProvisioning<
     await deps.provisionCustomer(credential)
   } catch (error) {
     try {
-      await credential.user.delete()
+      try {
+        await credential.user.delete()
+      } catch {
+        await credential.user.delete()
+      }
     } catch (rollbackError) {
       // A reporting sink can throw; never let it displace the original error.
       try {
