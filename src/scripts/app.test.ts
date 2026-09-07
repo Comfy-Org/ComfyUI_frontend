@@ -2515,6 +2515,27 @@ describe('ComfyApp', () => {
       expect(createNode).not.toHaveBeenCalled()
     })
 
+    it('should alert the user when loading an embedded API prompt fails', async () => {
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+        prompt: { '1': { class_type: 'KSampler', inputs: {} } },
+        parameters: 'a photo of a cat\nSteps: 20'
+      })
+      const loadApiJson = vi
+        .spyOn(app, 'loadApiJson')
+        .mockRejectedValue(new Error('build failed'))
+
+      const imageFile = createTestFile('api.png', 'image/png')
+
+      await expect(app.handleFile(imageFile)).resolves.toBeUndefined()
+
+      expect(loadApiJson).toHaveBeenCalled()
+      // Exactly one alert, and no A1111 import: the failed API load returns
+      // rather than falling through to the parameters fallback.
+      expect(mockToastStore.addAlert).toHaveBeenCalledTimes(1)
+      expect(mockImportA1111).not.toHaveBeenCalled()
+      expect(createNode).not.toHaveBeenCalled()
+    })
+
     it('should not create Load3DAdvanced node when mesh upload fails', async () => {
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue(undefined)
       vi.mocked(Load3dUtils.uploadFile).mockResolvedValue(undefined)
