@@ -48,12 +48,13 @@ const zNumericInputOptions = zBaseInputOptions.extend({
   step: z.number().optional(),
   /** Note: Many node authors are using INT/FLOAT to pass list of INT/FLOAT. */
   default: z.union([z.number(), z.array(z.number())]).optional(),
-  display: z
-    .enum(['slider', 'number', 'knob', 'gradientslider', 'color'])
-    .optional()
+  display: z.enum(['slider', 'number', 'knob', 'gradientslider']).optional()
 })
 
 export const zIntInputOptions = zNumericInputOptions.extend({
+  display: z
+    .enum(['slider', 'number', 'knob', 'gradientslider', 'color'])
+    .optional(),
   /**
    * If true, a linked widget will be added to the node to select the mode
    * of `control_after_generate`.

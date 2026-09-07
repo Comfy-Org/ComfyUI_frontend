@@ -92,23 +92,7 @@ describe('WidgetColorPicker Value Binding', () => {
       expect(onUpdateModelValue).toHaveBeenCalledWith('#ff00ff')
     })
 
-    it('converts integer-backed colors without changing their value type', async () => {
-      const onUpdateModelValue = vi.fn()
-      const widget = createColorWidget(0x45edf5, { format: 'int' })
-      renderComponent(widget, 0x45edf5, {
-        'onUpdate:modelValue': onUpdateModelValue
-      })
-
-      const input = screen.getByTestId('color-picker-input')
-      expect(input).toHaveValue('#45edf5')
-      expect(input).toHaveAttribute('data-alpha', 'false')
-
-      await fireEvent.update(input, '#00ff00')
-
-      expect(onUpdateModelValue).toHaveBeenCalledWith(0x00ff00)
-    })
-
-    it('round-trips black as integer zero', async () => {
+    it('round-trips integer-backed colors including zero', async () => {
       const onUpdateModelValue = vi.fn()
       const widget = createColorWidget(0, { format: 'int' })
       renderComponent(widget, 0, {
@@ -117,10 +101,12 @@ describe('WidgetColorPicker Value Binding', () => {
 
       const input = screen.getByTestId('color-picker-input')
       expect(input).toHaveValue('#000000')
+      expect(input).toHaveAttribute('data-alpha', 'false')
 
-      await fireEvent.update(input, '#45edf5')
+      await fireEvent.update(input, '#00ff00')
+      expect(onUpdateModelValue).toHaveBeenCalledWith(0x00ff00)
+
       await fireEvent.update(input, '#000000')
-
       expect(onUpdateModelValue).toHaveBeenCalledWith(0)
     })
   })

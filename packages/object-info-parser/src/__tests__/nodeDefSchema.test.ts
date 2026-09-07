@@ -55,8 +55,9 @@ describe('validateNodeDef', () => {
     [{ ckpt_name: { 'model1.safetensors': 'foo' } }],
     [{ ckpt_name: ['*', ''] }],
     [{ ckpt_name: ['foo', { default: 1 }, { default: 2 }] }],
-    [{ ckpt_name: ['INT', { default: '124' }] }]
-  ])('validateComfyNodeDef rejects invalid input specs', (inputSpec) => {
+    [{ ckpt_name: ['INT', { default: '124' }] }],
+    [{ ckpt_name: ['FLOAT', { display: 'color' }] }]
+  ])('validateComfyNodeDef rejects invalid input specs', ([inputSpec]) => {
     it(`rejects input spec format: ${JSON.stringify(inputSpec)}`, () => {
       expect(
         validateComfyNodeDef({
