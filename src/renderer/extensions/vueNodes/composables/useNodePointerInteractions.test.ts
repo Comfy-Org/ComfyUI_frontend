@@ -132,6 +132,17 @@ describe('useNodePointerInteractions', () => {
     expect(selectedTitles(canvas)).toEqual(['Second'])
   })
 
+  it('a second click inside the double-click window still applies modifiers', () => {
+    canvas.select(second)
+    press(handlers, 10, 10, { shiftKey: true, timeStamp: 0 })
+    release(handlers, 10, 10, { shiftKey: true, timeStamp: 10 })
+    expect(selectedTitles(canvas)).toEqual(['First', 'Second'])
+
+    press(handlers, 10, 10, { ctrlKey: true, timeStamp: 100 })
+    release(handlers, 10, 10, { ctrlKey: true, timeStamp: 110 })
+    expect(selectedTitles(canvas)).toEqual(['Second'])
+  })
+
   it('movement inside the click drift stays a click', () => {
     const { startDrag } = useNodeDrag()
     press(handlers, 10, 10)

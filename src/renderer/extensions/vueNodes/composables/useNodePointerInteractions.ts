@@ -69,9 +69,8 @@ export function useNodePointerInteractions(
     const node = canvasStore.currentGraph?.getNodeById(press.nodeId)
     switch (effect) {
       case 'click':
-        if (node) canvas?.processSelect(node, event)
-        return
       case 'doubleClick':
+        if (node) canvas?.processSelect(node, event)
         return
       case 'startDrag':
         if (press.selectOnly) return
