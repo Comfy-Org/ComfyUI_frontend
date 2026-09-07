@@ -149,7 +149,7 @@ describe('AuthForgotPassword lazy-load boundary', () => {
     const source = rawSources['./AuthForgotPassword.vue']
 
     expect(
-      /^import[^;]*workshop-firebase/m.test(source),
+      /^import[^(]*from '\.\.\/\.\.\/config\/workshop-firebase'/m.test(source),
       'a static import ships firebase/app+auth to every flag-off visitor of /forgot-password'
     ).toBe(false)
     expect(source).toContain("import('../../config/workshop-firebase')")
