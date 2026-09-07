@@ -2166,6 +2166,48 @@ describe('useWorkspaceAuthStore', () => {
       expect(mockFetch).toHaveBeenCalledTimes(2)
     })
 
+    it('a slower login mint resolving after a workspace switch never reverts it', async () => {
+      mockUnifiedCloudAuthEnabled.value = true
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      let releaseCookie!: () => void
+      mockEnsureSessionCookie.mockImplementationOnce(
+        () => new Promise<void>((resolve) => (releaseCookie = resolve))
+      )
+      let releasePersonal!: (response: unknown) => void
+      const mockFetch = vi
+        .fn()
+        .mockImplementationOnce(
+          () => new Promise((resolve) => (releasePersonal = resolve))
+        )
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockTokenResponse)
+        })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      const switching = store.switchWorkspace('workspace-123')
+      const loggingIn = store.mintAtLogin()
+      await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledOnce())
+
+      releaseCookie()
+      await switching
+      expect(store.getUnifiedToken()).toBe('workspace-token-abc')
+
+      releasePersonal({
+        ok: true,
+        json: () => Promise.resolve(personalTokenResponse)
+      })
+      await expect(
+        loggingIn,
+        'the login still reports success: its personal mint was superseded, not lost'
+      ).resolves.toBe(true)
+      expect(
+        store.getUnifiedToken(),
+        'a login mint for the personal default resolving late must not silently revert the switch'
+      ).toBe('workspace-token-abc')
+    })
+
     it('does not let an old workspace retry supersede a pending switch', async () => {
       mockUnifiedCloudAuthEnabled.value = true
       mockGetIdToken.mockResolvedValue('firebase-token-xyz')
