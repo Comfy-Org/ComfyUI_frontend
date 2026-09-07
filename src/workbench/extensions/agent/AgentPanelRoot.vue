@@ -17,7 +17,6 @@ import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
 import { createGraphMutations } from '@/core/graph/graphMutations'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -78,13 +77,11 @@ import type {
   TurnOrigin,
   WorkflowTurnContext
 } from './composables/agent/useAgentSession'
+import { useAgentWorkflowResolver } from './composables/agent/useAgentWorkflowResolver'
 import { useAgentSession } from './composables/agent/useAgentSession'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { createAgentRestClient } from './services/agent/agentRestClient'
-import type {
-  DraftSnapshot,
-  OpenTabsSnapshot
-} from './services/agent/agentRestClient'
+import type { DraftSnapshot } from './services/agent/agentRestClient'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
@@ -124,6 +121,20 @@ const { selectedWorkflow: selectedTarget } = storeToRefs(agentPanelStore)
 const { dismissedSelectionSignature, enabled: agentEnabled } =
   storeToRefs(agentPanelStore)
 const agentNodeSelectionStore = useAgentNodeSelectionStore()
+const {
+  refreshCloudWorkflowIds,
+  cloudIdFor,
+  boundWorkflowFor,
+  storedWorkflowFor,
+  openWorkflowFor,
+  availableWorkflowReferences,
+  openTabsSnapshot,
+  nextSaveFilename
+} = useAgentWorkflowResolver({
+  workflows: workflowStore,
+  bindings: bindingStore,
+  listCloudWorkflows: () => rest.listCloudWorkflows()
+})
 const tabActivity = useWorkflowTabActivityStore()
 const CREATING_TAB_MIN_DURATION_MS = 500
 
@@ -137,7 +148,7 @@ const graphMutations = (workflowId: string) => {
   if (existing) return existing
   const mutations = createGraphMutations({
     getScope() {
-      const rootGraphId = boundTabFor(workflowId)?.activeState?.id
+      const rootGraphId = boundWorkflowFor(workflowId)?.activeState?.id
       return rootGraphId
         ? {
             rootGraphId: toRootGraphId(rootGraphId),
@@ -272,7 +283,6 @@ watch(
   { immediate: true }
 )
 
-const cloudWorkflowIndex = ref<WorkflowReference[]>([])
 const workflowReferences = ref<WorkflowReference[]>([])
 let composerRevision = 0
 watch(
@@ -288,75 +298,6 @@ watch(
   },
   { flush: 'sync' }
 )
-let cloudWorkflowRefreshGeneration = 0
-
-const cloudIdsByName = computed(() => {
-  const nameCounts = new Map<string, number>()
-  for (const { name } of cloudWorkflowIndex.value)
-    nameCounts.set(name, (nameCounts.get(name) ?? 0) + 1)
-
-  return new Map(
-    cloudWorkflowIndex.value.flatMap(({ id, name }) =>
-      nameCounts.get(name) === 1 ? [[name, id] as const] : []
-    )
-  )
-})
-
-async function refreshCloudWorkflowIds(): Promise<boolean> {
-  const generation = ++cloudWorkflowRefreshGeneration
-  try {
-    const workflows = await rest.listCloudWorkflows()
-    if (generation !== cloudWorkflowRefreshGeneration) return false
-    cloudWorkflowIndex.value = workflows.flatMap(({ id, name }) =>
-      name === undefined ? [] : [{ id, name }]
-    )
-    return true
-  } catch (error) {
-    if (generation !== cloudWorkflowRefreshGeneration) return false
-    reportError(error, {
-      errorType: 'agent_cloud_workflow_ids_refresh_failed'
-    })
-    return false
-  }
-}
-
-function cloudWorkflowName(tab: ComfyWorkflow): string {
-  return tab.suffix === 'app.json' ? `${tab.filename}.app` : tab.filename
-}
-
-function openSavedTabsNamed(name: string): ComfyWorkflow[] {
-  return workflowStore.openWorkflows.filter(
-    (tab) => !tab.isTemporary && cloudWorkflowName(tab) === name
-  )
-}
-
-function savedWorkflowsNamed(name: string): ComfyWorkflow[] {
-  return workflowStore.workflows.filter(
-    (workflow) => !workflow.isTemporary && cloudWorkflowName(workflow) === name
-  )
-}
-
-function cloudIdFor(tab: ComfyWorkflow): string | undefined {
-  const name = cloudWorkflowName(tab)
-  const saved =
-    !tab.isTemporary && openSavedTabsNamed(name).length === 1
-      ? cloudIdsByName.value.get(name)
-      : undefined
-  return saved ?? bindingStore.workflowIdFor(tab.path)
-}
-
-// Candidate policy lives at the composition boundary. Composer only receives
-// the resulting list, so this can later switch to saved workflows or search
-// results without changing picker, filtering, or chip behavior.
-const availableWorkflowReferences = computed<WorkflowReference[]>(() => {
-  const byId = new Map<string, WorkflowReference>()
-  for (const tab of workflowStore.openWorkflows) {
-    const id = cloudIdFor(tab)
-    if (id !== undefined && !byId.has(id))
-      byId.set(id, { id, name: tab.filename })
-  }
-  return [...byId.values()]
-})
 const selectingTarget = ref<ComfyWorkflow | null>(null)
 let targetSelectionGeneration = 0
 const workflowDetached = computed(() => selectedTarget.value === null)
@@ -429,6 +370,15 @@ function removeWorkflowReference(id: string): void {
   )
 }
 
+function commitWorkflowTarget(
+  workflow: ComfyWorkflow,
+  workflowId: string
+): void {
+  bindingStore.bind(workflowId, workflow.path)
+  selectedTarget.value = workflow
+  removeWorkflowReference(workflowId)
+}
+
 const workflowTabs = computed<ActiveTab[]>(() =>
   workflowStore.openWorkflows.map((tab) => ({
     path: tab.path,
@@ -438,7 +388,7 @@ const workflowTabs = computed<ActiveTab[]>(() =>
   }))
 )
 
-async function onSelectTab(path: string): Promise<boolean> {
+async function onSelectWorkflowTarget(path: string): Promise<boolean> {
   const tab = workflowStore.getWorkflowByPath(path)
   if (
     !tab ||
@@ -465,18 +415,7 @@ async function onSelectTab(path: string): Promise<boolean> {
     if (tab.isTemporary && cloudIdFor(tab) === undefined) {
       if (!(await refreshCloudWorkflowIds())) return failSelection()
       if (!isCurrent()) return false
-      const names = new Set([
-        ...cloudWorkflowIndex.value.map(({ name }) => name),
-        ...workflowStore.workflows
-          .filter((workflow) => workflow.path !== tab.path)
-          .map(cloudWorkflowName)
-      ])
-      const appSuffix = tab.initialMode === 'app' ? '.app' : ''
-      const stem = tab.filename.replace(/ \(\d+\)$/, '')
-      let filename = tab.filename
-      let counter = 2
-      while (names.has(`${filename}${appSuffix}`))
-        filename = `${stem} (${counter++})`
+      const filename = nextSaveFilename(tab)
       if (!(await workflowService.saveWorkflowAs(tab, { filename })))
         return failSelection()
     }
@@ -491,25 +430,13 @@ async function onSelectTab(path: string): Promise<boolean> {
     if ((await workflowService.openWorkflow(tab)) === false)
       return failSelection(t('agent.targetNavigationUnavailable'))
     if (!isCurrent()) return false
-    bindingStore.bind(workflowId, tab.path)
-    selectedTarget.value = tab
-    removeWorkflowReference(workflowId)
+    commitWorkflowTarget(tab, workflowId)
     return true
   } catch (error) {
     return failSelection(error instanceof Error ? error.message : undefined)
   } finally {
     selectingTarget.value = null
   }
-}
-
-function openTabsSnapshot(): OpenTabsSnapshot | undefined {
-  const openTabs = workflowStore.openWorkflows.flatMap((tab) => {
-    const id = cloudIdFor(tab)
-    return id === undefined
-      ? []
-      : [{ workflow_id: id, name: cloudWorkflowName(tab) }]
-  })
-  return openTabs.length > 0 ? { open_tabs: openTabs } : undefined
 }
 
 function onWorkflowAdopted(
@@ -522,7 +449,7 @@ function onWorkflowAdopted(
   const adoptable =
     sent.id === undefined
       ? bindingStore.tabPathFor(workflowId) === undefined &&
-        boundTabFor(workflowId) === null
+        boundWorkflowFor(workflowId) === null
       : sent.id === workflowId
   if (adoptable) {
     bindingStore.bind(workflowId, sent.tabPath)
@@ -545,7 +472,7 @@ async function onWorkflowRestored(
   if (workflowId === undefined) return
   await refreshCloudWorkflowIds()
   if (generation !== targetSelectionGeneration) return
-  const target = boundTabFor(workflowId)
+  const target = boundWorkflowFor(workflowId)
   if (target === null) {
     selectedTarget.value = null
     warnWorkflowUnavailable()
@@ -559,9 +486,7 @@ async function onWorkflowRestored(
       warnWorkflowUnavailable()
       return
     }
-    bindingStore.bind(workflowId, target.path)
-    selectedTarget.value = target
-    removeWorkflowReference(workflowId)
+    commitWorkflowTarget(target, workflowId)
   } catch {
     if (generation !== targetSelectionGeneration) return
     warnWorkflowUnavailable()
@@ -609,7 +534,7 @@ const isBoundWorkflowActive = computed(() => {
   return (
     bound !== null &&
     active !== null &&
-    boundTabFor(bound)?.path === active.path
+    boundWorkflowFor(bound)?.path === active.path
   )
 })
 
@@ -697,32 +622,6 @@ watch(
   }
 )
 
-function boundTabFor(workflowId: string): ComfyWorkflow | null {
-  const path = bindingStore.tabPathFor(workflowId)
-  const bound =
-    path === undefined ? null : workflowStore.getWorkflowByPath(path)
-  if (bound) return bound
-  for (const [name, id] of cloudIdsByName.value) {
-    if (id !== workflowId) continue
-    const matches = openSavedTabsNamed(name)
-    return matches.length === 1 ? matches[0] : null
-  }
-  return null
-}
-
-function storedWorkflowFor(workflowId: string): ComfyWorkflow | null {
-  const boundPath = bindingStore.tabPathFor(workflowId)
-  const bound =
-    boundPath === undefined ? null : workflowStore.getWorkflowByPath(boundPath)
-  if (bound) return bound
-  for (const [name, id] of cloudIdsByName.value) {
-    if (id !== workflowId) continue
-    const matches = savedWorkflowsNamed(name)
-    return matches.length === 1 ? matches[0] : null
-  }
-  return null
-}
-
 let activeTabGeneration = 0
 let activeTabChain: Promise<void> = Promise.resolve()
 
@@ -738,12 +637,11 @@ function onOpenApprovalWorkflow(
   enqueueActiveTab({ workflow_id: workflowId, name: workflowName })
 }
 
-async function onOpenReferenceWorkflow(workflowId: string): Promise<void> {
+async function onNavigateToReferenceWorkflow(
+  workflowId: string
+): Promise<void> {
   try {
-    let target =
-      workflowStore.openWorkflows.find(
-        (tab) => cloudIdFor(tab) === workflowId
-      ) ?? null
+    let target = openWorkflowFor(workflowId)
     if (target === null) {
       await Promise.all([
         refreshCloudWorkflowIds(),
@@ -786,11 +684,11 @@ async function onAgentActiveTab(
   const stale = () => generation !== activeTabGeneration
   if (stale()) return
   try {
-    const bound = boundTabFor(data.workflow_id)
+    const bound = boundWorkflowFor(data.workflow_id)
     if (bound) {
       await workflowService.openWorkflow(bound)
       if (stale()) return
-      // boundTabFor can resolve by cloud name, which leaves no binding behind
+      // boundWorkflowFor can resolve by cloud name, which leaves no binding behind
       // for everything downstream that only reads tabPathFor.
       bindingStore.bind(data.workflow_id, bound.path)
       if (status.value !== 'idle') tabActivity.setEditing(bound.path)
@@ -1312,7 +1210,7 @@ function onPanelDrop(event: DragEvent): void {
       :workflow-tabs="workflowTabs"
       :visible-tab-path="workflowStore.activeWorkflow?.path ?? null"
       :selecting-tab-path="selectingTarget?.path ?? null"
-      :select-tab="onSelectTab"
+      :select-tab="onSelectWorkflowTarget"
       :workflow-detached="workflowDetached"
       :get-mention-nodes="mentionableNodes"
       @send="onSend"
@@ -1328,7 +1226,7 @@ function onPanelDrop(event: DragEvent): void {
       @feedback="onFeedback"
       @answer-ask="answerAsk"
       @open-workflow="onOpenApprovalWorkflow"
-      @open-reference-workflow="onOpenReferenceWorkflow"
+      @open-reference-workflow="onNavigateToReferenceWorkflow"
       @new-chat="onNewChat"
       @toggle-size="agentPanelStore.toggleMaximize()"
       @close="onClosePanel"
