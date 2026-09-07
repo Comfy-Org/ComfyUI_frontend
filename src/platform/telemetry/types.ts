@@ -105,6 +105,24 @@ export interface ImageLoadFailureMetadata {
 }
 
 /**
+ * One row per session describing how long startup took and where the time
+ * went. `total_ms` is measured from navigation start to the moment the loading
+ * screen comes down, so it is directly comparable to what a user experiences
+ * and can be percentiled across sessions without joining per-phase events.
+ *
+ * `outcome` distinguishes a startup that completed from one that threw partway
+ * through; without it the slow and broken sessions are the ones missing from
+ * the data, which biases every percentile fast.
+ */
+export interface BootstrapCompleteMetadata {
+  total_ms: number
+  outcome: 'completed' | 'failed'
+  phase_count: number
+  /** Per-phase durations, keyed `<namespace>/<phase>` (e.g. `bootstrap/object-info`). */
+  phases: Record<string, number>
+}
+
+/**
  * Survey field ids mapped to answers. Fields are backend-overridable, so all
  * are optional.
  */
@@ -985,6 +1003,7 @@ export interface TelemetryProvider {
   trackUnifiedAuthRefresh?(metadata: UnifiedAuthRefreshMetadata): void
   trackImageLoadFailed?(metadata: ImageLoadFailureMetadata): void
   trackUserLoggedIn?(): void
+  trackBootstrapComplete?(metadata: BootstrapCompleteMetadata): void
 
   // Subscription flow events
   trackSubscription?(
@@ -1137,6 +1156,7 @@ export const TelemetryEvents = {
   UNIFIED_AUTH_REFRESH_SUCCEEDED: 'auth.unified.refresh.succeeded',
   UNIFIED_AUTH_REFRESH_FAILED: 'auth.unified.refresh.failed',
   IMAGE_LOAD_FAILED: 'app:image_load_failed',
+  BOOTSTRAP_COMPLETE: 'app:bootstrap_complete',
 
   // Subscription Flow
   RUN_BUTTON_CLICKED: 'app:run_button_click',
@@ -1328,6 +1348,7 @@ export type TelemetryEventProperties =
   | UnifiedAuthRetryMetadata
   | UnifiedAuthRefreshMetadata
   | ImageLoadFailureMetadata
+  | BootstrapCompleteMetadata
   | SurveyResponses
   | TemplateMetadata
   | ExecutionContext

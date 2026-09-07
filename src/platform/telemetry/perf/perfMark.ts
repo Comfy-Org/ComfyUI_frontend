@@ -1,10 +1,14 @@
 /**
  * Thin performance instrumentation primitives.
  *
- * Ground truth is the browser Performance API (marks/measures). Datadog RUM
- * and Sentry are secondary consumers so the data shows up in dashboards and
- * traces without requiring both tools to agree on the recording strategy.
+ * Ground truth is the browser Performance API (marks/measures); everything the
+ * tracer reports is read back from that timeline. Sentry breadcrumbs are a
+ * secondary consumer so a startup error carries the phase timings that preceded
+ * it. Aggregate emission to analytics happens once, from `bootstrapTracer`,
+ * rather than per mark — the telemetry registry does not exist yet while the
+ * earliest phases are running.
  */
+import { addBreadcrumb } from '@sentry/vue'
 
 export interface PerfSpan {
   /** Wall-clock ms since navigationStart when mark() was called. */
@@ -23,12 +27,12 @@ const NOOP_PERF_SPAN: PerfSpan = {
  *
  * Records a `performance.mark('<name>:start')`. Calling `stop()` records
  * `performance.mark('<name>:end')` + `performance.measure('<name>', ...)`,
- * sends a Datadog `addAction` and a Sentry breadcrumb, and returns the
- * elapsed milliseconds.
+ * adds a Sentry breadcrumb, and returns the elapsed milliseconds. Repeat
+ * `stop()` calls return the first measured duration without re-recording.
  *
  * @example
- * const span = perfMark('bootstrap/auth-gate')
- * await authStore.initialize()
+ * const span = perfMark('bootstrap/object-info')
+ * await this.getNodeDefs()
  * const ms = span.stop()
  */
 export function perfMark(name: string): PerfSpan {
@@ -38,17 +42,19 @@ export function perfMark(name: string): PerfSpan {
   try {
     performance.mark(startName)
     const startMs = performance.now()
+    let durationMs: number | undefined
 
     return {
       startMs,
       stop(): number {
+        if (durationMs !== undefined) return durationMs
         try {
           performance.mark(endName)
-          const durationMs = _measure(name, startName, endName, startMs)
-          _emitToDatadog(name, durationMs)
+          durationMs = _measure(name, startName, endName, startMs)
           _emitToSentry(name, durationMs)
           return durationMs
         } catch {
+          durationMs = 0
           return 0
         }
       }
@@ -60,12 +66,10 @@ export function perfMark(name: string): PerfSpan {
 
 /**
  * Mark a single point-in-time milestone (no duration).
- * Shows up in the Datadog RUM timeline as a custom action.
  */
 export function perfPoint(name: string): void {
   try {
     performance.mark(name)
-    _emitToDatadog(name, 0)
     _emitToSentry(name, 0)
   } catch {
     return
@@ -85,31 +89,16 @@ function _measure(
   }
 }
 
-function _emitToDatadog(name: string, durationMs: number): void {
-  try {
-    const dd = (
-      window as { DD_RUM?: { addAction(n: string, c: object): void } }
-    ).DD_RUM
-    dd?.addAction(name, { duration_ms: durationMs })
-  } catch {
-    // never break the app for telemetry
-  }
-}
-
 function _emitToSentry(name: string, durationMs: number): void {
   try {
     // addBreadcrumb is a module-level function in @sentry/vue v10 — safe to
-    // call even before Sentry.init() completes (it queues internally).
-    void import('@sentry/vue')
-      .then(({ addBreadcrumb }) => {
-        addBreadcrumb({
-          category: 'perf',
-          message: name,
-          level: 'info',
-          data: { duration_ms: durationMs }
-        })
-      })
-      .catch(() => undefined)
+    // call before Sentry.init() completes (it queues internally).
+    addBreadcrumb({
+      category: 'perf',
+      message: name,
+      level: 'info',
+      data: { duration_ms: durationMs }
+    })
   } catch {
     // never break the app for telemetry
   }

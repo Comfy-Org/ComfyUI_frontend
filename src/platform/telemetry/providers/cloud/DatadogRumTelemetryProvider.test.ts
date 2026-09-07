@@ -307,4 +307,28 @@ describe('DatadogRumTelemetryProvider', () => {
       }
     })
   })
+
+  it('records startup as one action plus a duration vital', () => {
+    new DatadogRumTelemetryProvider().trackBootstrapComplete({
+      total_ms: 5200,
+      outcome: 'failed',
+      phase_count: 2,
+      phases: { 'auth-gate/user-store': 2500, 'bootstrap/object-info': 700 }
+    })
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.BOOTSTRAP_COMPLETE,
+      {
+        total_ms: 5200,
+        outcome: 'failed',
+        phase_count: 2,
+        phases: { 'auth-gate/user-store': 2500, 'bootstrap/object-info': 700 }
+      }
+    )
+    expect(addDurationVital).toHaveBeenCalledWith('bootstrap', {
+      startTime: performance.timeOrigin,
+      duration: 5200,
+      context: { outcome: 'failed' }
+    })
+  })
 })
