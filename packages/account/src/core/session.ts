@@ -361,76 +361,81 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     signal?.addEventListener('abort', abort, { once: true })
     const timeout = setTimeout(() => controller.abort(), timeoutMs)
 
-    let response: Response
     try {
-      const idToken = await abortable(user.getIdToken(), controller.signal)
-      response = await fetchImpl(exchangeUrl, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-          'Content-Type': 'application/json'
-        },
-        // Empty body: the backend resolves the personal workspace.
-        body: JSON.stringify({}),
-        signal: controller.signal
-      })
-    } catch {
-      return { status: 'error', code: 'TOKEN_EXCHANGE_FAILED' }
+      let response: Response
+      try {
+        const idToken = await abortable(user.getIdToken(), controller.signal)
+        response = await fetchImpl(exchangeUrl, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+            'Content-Type': 'application/json'
+          },
+          // Empty body: the backend resolves the personal workspace.
+          body: JSON.stringify({}),
+          signal: controller.signal
+        })
+      } catch {
+        return { status: 'error', code: 'TOKEN_EXCHANGE_FAILED' }
+      }
+
+      if (!response.ok) {
+        return {
+          status: 'error',
+          code: codeForResponse(response.status),
+          httpStatus: response.status
+        }
+      }
+
+      let rawBody: unknown
+      try {
+        // The timeout stays armed through the body read: headers arriving
+        // does not bound the body, and a stalled body must abort exactly
+        // like a stalled connect.
+        rawBody = await abortable(response.json(), controller.signal)
+      } catch {
+        return {
+          status: 'error',
+          code: 'TOKEN_EXCHANGE_FAILED',
+          httpStatus: response.status
+        }
+      }
+
+      const parseResult = CredentialResponseSchema.safeParse(rawBody)
+      if (!parseResult.success) {
+        return {
+          status: 'error',
+          code: 'TOKEN_EXCHANGE_FAILED',
+          httpStatus: response.status
+        }
+      }
+      // Date.parse can yield NaN on a schema-valid string, so the expiry gets
+      // its own check after the schema, as in production.
+      const expiresAt = Date.parse(parseResult.data.expires_at)
+      if (Number.isNaN(expiresAt)) {
+        return {
+          status: 'error',
+          code: 'TOKEN_EXCHANGE_FAILED',
+          httpStatus: response.status
+        }
+      }
+
+      const session: AccountCredential = {
+        token: parseResult.data.token,
+        expiresAt,
+        uid: user.uid,
+        workspace: parseResult.data.workspace,
+        role: parseResult.data.role,
+        permissions: parseResult.data.permissions
+      }
+      safeWrite(
+        JSON.stringify({ ...session, expires_at: parseResult.data.expires_at })
+      )
+      return { status: 'ok', session }
     } finally {
       clearTimeout(timeout)
       signal?.removeEventListener('abort', abort)
     }
-
-    if (!response.ok) {
-      return {
-        status: 'error',
-        code: codeForResponse(response.status),
-        httpStatus: response.status
-      }
-    }
-
-    let rawBody: unknown
-    try {
-      rawBody = await response.json()
-    } catch {
-      return {
-        status: 'error',
-        code: 'TOKEN_EXCHANGE_FAILED',
-        httpStatus: response.status
-      }
-    }
-
-    const parseResult = CredentialResponseSchema.safeParse(rawBody)
-    if (!parseResult.success) {
-      return {
-        status: 'error',
-        code: 'TOKEN_EXCHANGE_FAILED',
-        httpStatus: response.status
-      }
-    }
-    // Date.parse can yield NaN on a schema-valid string, so the expiry gets
-    // its own check after the schema, as in production.
-    const expiresAt = Date.parse(parseResult.data.expires_at)
-    if (Number.isNaN(expiresAt)) {
-      return {
-        status: 'error',
-        code: 'TOKEN_EXCHANGE_FAILED',
-        httpStatus: response.status
-      }
-    }
-
-    const session: AccountCredential = {
-      token: parseResult.data.token,
-      expiresAt,
-      uid: user.uid,
-      workspace: parseResult.data.workspace,
-      role: parseResult.data.role,
-      permissions: parseResult.data.permissions
-    }
-    safeWrite(
-      JSON.stringify({ ...session, expires_at: parseResult.data.expires_at })
-    )
-    return { status: 'ok', session }
   }
 
   /**
