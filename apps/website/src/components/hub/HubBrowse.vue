@@ -1,13 +1,6 @@
 <script setup lang="ts">
 import { Search, X } from '@lucide/vue'
-import {
-  computed,
-  nextTick,
-  onMounted,
-  onUnmounted,
-  ref,
-  useTemplateRef
-} from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -15,7 +8,6 @@ import type { FilterBadgeType } from '../../composables/useHubStore'
 import { useHubStore } from '../../composables/useHubStore'
 import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
 import type { UseCase } from '../../config/workshop'
-import { useSlidingUnderline } from '../../composables/useSlidingUnderline'
 import { USE_CASES, useCaseFor, workshopModels } from '../../config/workshop'
 import { groupModels } from '../../config/model-family'
 import hubTemplates from '../../data/hubTemplates.json'
@@ -30,6 +22,7 @@ import type { HubTemplate } from '../../lib/hub/types'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import type { FacetGroupConfig, ToolbarLabels } from './BrowseToolbar.vue'
+import HubUseCaseNav from './HubUseCaseNav.vue'
 import type { GridLabels } from './WorkflowGrid.vue'
 import WorkflowGrid from './WorkflowGrid.vue'
 import WorkshopHero from '../workshop/WorkshopHero.vue'
@@ -44,7 +37,11 @@ const templates = (hubTemplates as HubTemplate[]).map((template) =>
   withFacetFields(template, workshopModels)
 )
 const store = useHubStore()
-const { groupVersions } = usePrototypeTweaks()
+const { groupVersions, version } = usePrototypeTweaks()
+
+// V2 keeps the row of use cases under the title; V2.1 is the same catalogue
+// with that row stood up as a rail beside the grid.
+const railBeside = computed(() => version.value === 'v2.1' && !embedded)
 onUnmounted(() => store.reset())
 
 const TABS = ['all', 'nodeGraphs', 'comfyApps', 'models'] as const
@@ -104,13 +101,11 @@ const totalIn = (value: UseCase | 'all') => {
 
 // In the catalogue's reading order, and without printing the tally: the row
 // names use cases, it is not a report.
-const navRef = useTemplateRef<HTMLElement>('nav')
-const underline = useSlidingUnderline(navRef, () => useCase.value)
-
-const useCaseTabs = computed(() => [
-  { value: 'all' as const },
-  ...USE_CASES.filter((value) => totalIn(value) > 0).map((value) => ({ value }))
-])
+const useCaseTabs = computed(() =>
+  ['all' as const, ...USE_CASES.filter((value) => totalIn(value) > 0)].map(
+    (value) => ({ value, label: t(useCaseLabelKey[value], locale) })
+  )
+)
 
 const scoped = computed(() => inUseCase(useCase.value))
 
@@ -274,122 +269,120 @@ const filteredTemplates = computed(() => {
       :locale
       data-testid="hub-heading"
     >
-      <nav
-        ref="nav"
-        class="relative mt-12 flex scrollbar-thin gap-6 overflow-x-auto border-b border-white/10"
-        :aria-label="t('workshop.media.label', locale)"
-        data-testid="hub-use-cases"
-      >
-        <span
-          aria-hidden="true"
-          class="pointer-events-none absolute bottom-0 h-0.5 rounded-full bg-primary-warm-white transition-[translate,width] duration-300 ease-out"
-          :style="{
-            width: `${underline.width}px`,
-            translate: `${underline.left}px 0`
-          }"
-        />
-        <button
-          v-for="entry in useCaseTabs"
-          :key="entry.value"
-          type="button"
-          :aria-pressed="useCase === entry.value"
-          :data-testid="`hub-use-case-${entry.value}`"
-          :class="
-            cn(
-              'flex shrink-0 cursor-pointer items-baseline gap-1.5 pb-3 text-sm font-medium whitespace-nowrap transition-colors',
-              useCase === entry.value
-                ? 'text-primary-warm-white'
-                : 'text-content-muted hover:text-content'
-            )
-          "
-          @click="useCase = entry.value"
-        >
-          {{ t(useCaseLabelKey[entry.value], locale) }}
-        </button>
-      </nav>
+      <HubUseCaseNav
+        v-if="!railBeside"
+        class="mt-12"
+        :entries="useCaseTabs"
+        :current="useCase"
+        :label="t('workshop.media.label', locale)"
+        @select="useCase = $event"
+      />
     </WorkshopHero>
 
-    <button
-      v-if="provider"
-      type="button"
-      class="text-page bg-brand hover:bg-brand/90 mb-6 inline-flex cursor-pointer items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold transition-colors"
-      data-testid="hub-provider-chip"
-      @click="provider = undefined"
+    <div
+      :class="
+        cn('gap-10', railBeside && 'lg:grid lg:grid-cols-[15rem_minmax(0,1fr)]')
+      "
     >
-      {{ provider }}
-      <X class="size-3.5" aria-hidden="true" />
-    </button>
-
-    <WorkflowGrid
-      :templates="filteredTemplates"
-      :facet-templates="templates"
-      :facets-config="facetsConfig"
-      :toolbar-labels="toolbarLabels"
-      :labels="gridLabels"
-      :href-for="hrefFor"
-    >
-      <template #search>
-        <button
-          v-if="!searching"
-          type="button"
-          :aria-label="t('workshop.hub.search', locale)"
-          :title="t('workshop.hub.search', locale)"
-          class="text-content-secondary hover:text-content focus-visible:ring-brand grid size-10 cursor-pointer place-items-center rounded-xl bg-white/8 transition-colors outline-none hover:bg-white/12 focus-visible:ring-2 xl:hidden"
-          data-testid="hub-search-open"
-          @click="openSearch"
-        >
-          <Search class="size-4" aria-hidden="true" />
-        </button>
-        <label
-          :class="
-            cn(
-              'relative block w-96 max-w-full',
-              !searching && 'hidden xl:block'
-            )
-          "
-        >
-          <span class="sr-only">{{ t('workshop.hub.search', locale) }}</span>
-          <Search
-            class="text-content-muted pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2"
-            aria-hidden="true"
-          />
-          <input
-            ref="searchInput"
-            v-model="store.searchQuery.value"
-            type="search"
-            data-testid="hub-search"
-            :placeholder="t('workshop.hub.search', locale)"
-            class="text-content placeholder:text-content-muted focus-visible:ring-brand h-10 w-full rounded-xl bg-white/8 pr-3 pl-10 text-xs outline-none focus-visible:ring-2"
-            @blur="closeSearchIfEmpty"
-          />
-        </label>
-      </template>
-
-      <template v-if="store.activeTab.value === 'all'" #lead>
-        <WorkshopModelCard
-          v-for="family in modelFamilies.slice(0, LEAD_MODELS)"
-          :key="family.key"
-          :model="family.latest"
-          :version-count="family.versions.length"
-          :locale
-          data-testid="hub-models-lead"
+      <aside
+        v-if="railBeside"
+        class="mb-8 lg:sticky lg:top-28 lg:mb-0 lg:max-h-[calc(100vh-9rem)] lg:scrollbar-thin lg:self-start lg:overflow-y-auto lg:pt-4"
+      >
+        <HubUseCaseNav
+          rail-beside
+          :entries="useCaseTabs"
+          :current="useCase"
+          :label="t('workshop.media.label', locale)"
+          @select="useCase = $event"
         />
-      </template>
+      </aside>
 
-      <template #models>
-        <ul
-          class="grid grid-cols-1 gap-5 min-[2200px]:grid-cols-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-          data-testid="hub-models"
+      <div class="min-w-0">
+        <button
+          v-if="provider"
+          type="button"
+          class="text-page bg-brand hover:bg-brand/90 mb-6 inline-flex cursor-pointer items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold transition-colors"
+          data-testid="hub-provider-chip"
+          @click="provider = undefined"
         >
-          <li v-for="family in modelFamilies" :key="family.key">
+          {{ provider }}
+          <X class="size-3.5" aria-hidden="true" />
+        </button>
+
+        <WorkflowGrid
+          :templates="filteredTemplates"
+          :facet-templates="templates"
+          :facets-config="facetsConfig"
+          :toolbar-labels="toolbarLabels"
+          :labels="gridLabels"
+          :href-for="hrefFor"
+        >
+          <template #search>
+            <button
+              v-if="!searching"
+              type="button"
+              :aria-label="t('workshop.hub.search', locale)"
+              :title="t('workshop.hub.search', locale)"
+              class="text-content-secondary hover:text-content focus-visible:ring-brand grid size-10 cursor-pointer place-items-center rounded-xl bg-white/8 transition-colors outline-none hover:bg-white/12 focus-visible:ring-2 xl:hidden"
+              data-testid="hub-search-open"
+              @click="openSearch"
+            >
+              <Search class="size-4" aria-hidden="true" />
+            </button>
+            <label
+              :class="
+                cn(
+                  'relative block w-96 max-w-full',
+                  !searching && 'hidden xl:block'
+                )
+              "
+            >
+              <span class="sr-only">{{
+                t('workshop.hub.search', locale)
+              }}</span>
+              <Search
+                class="text-content-muted pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2"
+                aria-hidden="true"
+              />
+              <input
+                ref="searchInput"
+                v-model="store.searchQuery.value"
+                type="search"
+                data-testid="hub-search"
+                :placeholder="t('workshop.hub.search', locale)"
+                class="text-content placeholder:text-content-muted focus-visible:ring-brand h-10 w-full rounded-xl bg-white/8 pr-3 pl-10 text-xs outline-none focus-visible:ring-2"
+                @blur="closeSearchIfEmpty"
+              />
+            </label>
+          </template>
+
+          <template v-if="store.activeTab.value === 'all'" #lead>
             <WorkshopModelCard
+              v-for="family in modelFamilies.slice(0, LEAD_MODELS)"
+              :key="family.key"
               :model="family.latest"
               :version-count="family.versions.length"
               :locale
+              data-testid="hub-models-lead"
             />
-          </li>
-        </ul>
-      </template>
-    </WorkflowGrid>
+          </template>
+
+          <template #models>
+            <ul
+              class="grid grid-cols-1 gap-5 min-[2200px]:grid-cols-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+              data-testid="hub-models"
+            >
+              <li v-for="family in modelFamilies" :key="family.key">
+                <WorkshopModelCard
+                  :model="family.latest"
+                  :version-count="family.versions.length"
+                  :locale
+                />
+              </li>
+            </ul>
+          </template>
+        </WorkflowGrid>
+      </div>
+    </div>
   </section>
 </template>
