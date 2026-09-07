@@ -282,16 +282,16 @@ const translations = {
     'zh-CN': '忘记密码？'
   },
   'auth.signIn.error.invalidCredentials': {
-    en: 'That email and password did not match. Try again or reset your password.',
-    'zh-CN': '邮箱与密码不匹配。请重试或重置密码。'
+    en: 'Invalid login credentials. Please check your email and password.',
+    'zh-CN': '登录凭据无效。请检查您的邮箱和密码。'
   },
   'auth.signIn.error.emailInUse': {
-    en: 'An account with this email already exists. Sign in instead.',
-    'zh-CN': '该邮箱已注册，请直接登录。'
+    en: 'An account with this email already exists. Try signing in instead.',
+    'zh-CN': '已存在使用此电子邮件的账户。请尝试登录。'
   },
   'auth.signIn.error.tooManyRequests': {
-    en: 'Too many attempts. Wait a moment and try again.',
-    'zh-CN': '尝试次数过多，请稍后再试。'
+    en: 'Too many login attempts. Please wait a moment and try again.',
+    'zh-CN': '登录尝试次数过多。请稍等片刻再试。'
   },
   'auth.turnstile.expired': {
     en: 'The verification expired. Please solve it again.',
