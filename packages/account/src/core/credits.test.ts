@@ -109,6 +109,30 @@ describe('createBillingClient', () => {
     expect(client.getState()).toEqual({ status: 'ok', cents: 500 })
   })
 
+  it("spends the 401 re-mint for the read's owner, never the current identity", async () => {
+    const session = fakeSession(credentialFor('uid-1', 'jwt-1'))
+    let release!: (response: Response) => void
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(
+        () => new Promise<Response>((resolve) => (release = resolve))
+      )
+      .mockImplementationOnce(async () =>
+        balanceResponse({ effective_balance_micros: 500 })
+      )
+    const client = makeClient(session, fetchImpl)
+
+    const refreshing = client.refresh()
+    session.set(credentialFor('uid-2', 'jwt-b'))
+    release(balanceResponse({}, 401))
+    await refreshing
+
+    expect(
+      session.remint,
+      "a stale 401 belonging to the read's owner must not burn a forced mint against the switched-in identity"
+    ).toHaveBeenCalledWith(expect.objectContaining({ uid: 'uid-1' }))
+  })
+
   it('settles on the error state when the retry also fails, never NaN', async () => {
     const session = fakeSession(credentialFor('uid-1', 'jwt-1'))
     const fetchImpl = vi.fn<typeof fetch>(async () => balanceResponse({}, 401))
