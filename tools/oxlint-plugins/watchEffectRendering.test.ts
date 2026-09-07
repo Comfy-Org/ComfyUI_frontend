@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+import { fromAny } from '@total-typescript/shoehorn'
 import { RuleTester } from 'oxlint/plugins-dev'
 import { describe, expect, it } from 'vitest'
 
