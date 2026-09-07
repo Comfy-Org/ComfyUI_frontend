@@ -39,6 +39,7 @@ const matrixJob = workflow.jobs?.custom_nodes_e2e
 const matrixName = matrixJob?.name ?? ''
 const aggregateName = workflow.jobs?.['custom-nodes-e2e-status']?.name ?? ''
 const proofRowExpression = String(matrixJob?.strategy?.matrix?.proof_row ?? '')
+const shardExpression = String(matrixJob?.strategy?.matrix?.shard ?? '')
 
 const BARE_RUN_NAME = 'CI: Tests Custom Nodes'
 const BARE_AGGREGATE_NAME = 'E2E Custom Nodes Test'
@@ -237,9 +238,6 @@ const dispatchContext = (
   matrix
 })
 
-// The matrix expansion is itself input-dependent, so derive it rather than
-// hardcoding it: `detection_proof_row` reaches the matrix job's name through
-// `matrix.proof_row`, not directly.
 const asList = (value: Value): string[] => {
   if (!Array.isArray(value)) {
     throw new Error(`expected a list, got ${String(value)}`)
@@ -247,10 +245,21 @@ const asList = (value: Value): string[] => {
   return value.map(String)
 }
 
+// Both matrix expansions are themselves input-dependent, so derive them rather
+// than hardcoding: `detection_proof_row` and `record_interactions` reach the
+// matrix job's name through `matrix.proof_row` and `matrix.shard`, not directly.
 const proofRowsFor = (context: Context): string[] =>
   asList(
     evaluate(
       proofRowExpression.replace(/^\s*\$\{\{|\}\}\s*$/g, '').trim(),
+      context
+    )
+  )
+
+const shardsFor = (context: Context): string[] =>
+  asList(
+    evaluate(
+      shardExpression.replace(/^\s*\$\{\{|\}\}\s*$/g, '').trim(),
       context
     )
   )
@@ -367,7 +376,7 @@ describe('custom-node check-run names cannot masquerade as the ref grade', () =>
       const overridden = dispatchContext(overrides)
 
       const cellFor = (context: Context) => ({
-        shard: context.inputs.record_interactions ? 'core:1/1' : ORDINARY_SHARD,
+        shard: shardsFor(context)[0],
         proof_row: proofRowsFor(context)[0]
       })
 
