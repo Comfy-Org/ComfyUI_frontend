@@ -99,7 +99,7 @@ const tabSections = computed(() => {
     },
     {
       key: 'other',
-      label: t('agent.otherOpenWorkflows'),
+      label: visibleTab ? t('agent.otherOpenWorkflows') : undefined,
       tabs: otherTabs
     }
   ].filter((section) => section.tabs.length > 0)
@@ -200,6 +200,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
               :aria-label="section.label"
             >
               <div
+                v-if="section.label"
                 aria-hidden="true"
                 class="text-agent-fg-muted px-1.5 py-1 text-[11px]/4 font-medium"
               >

@@ -11,6 +11,62 @@ test.describe(
   'Explicit Agent workflow selection',
   { tag: ['@cloud', '@ui'] },
   () => {
+    test('shows headerless search results when the current tab is filtered out', async ({
+      page,
+      workflowSelection
+    }, testInfo) => {
+      await page
+        .getByRole('button', {
+          name: enMessages.sideToolbar.newBlankWorkflow,
+          exact: true
+        })
+        .click()
+      const editorTabs = page.locator('.workflow-tabs .p-togglebutton')
+      await expect(editorTabs).toHaveCount(2)
+      await editorTabs.first().click()
+      await page
+        .getByRole('button', { name: enMessages.agent.askComfyAgent })
+        .click()
+      await page
+        .getByRole('button', { name: enMessages.agent.switchWorkflow })
+        .click()
+      const menu = page.getByRole('menu')
+      await expect(
+        menu.getByRole('group', { name: enMessages.agent.currentTab })
+      ).toBeVisible()
+      await expect(
+        menu.getByRole('group', { name: enMessages.agent.otherOpenWorkflows })
+      ).toBeVisible()
+      const search = page.getByPlaceholder(enMessages.agent.searchWorkflows)
+      await search.fill('(2)')
+
+      await expect(menu.getByRole('menuitemradio')).toHaveCount(1)
+      await expect(menu.getByRole('menuitemradio')).toHaveText(
+        'Unsaved Workflow (2)'
+      )
+      await expect(
+        menu.getByText(enMessages.agent.currentTab, { exact: true })
+      ).toHaveCount(0)
+      await expect(
+        menu.getByText(enMessages.agent.otherOpenWorkflows, { exact: true })
+      ).toHaveCount(0)
+      await testInfo.attach('headerless-workflow-results', {
+        body: await menu.screenshot({
+          path: testInfo.outputPath('headerless-workflow-results.png')
+        }),
+        contentType: 'image/png'
+      })
+      await search.clear()
+      await expect(
+        menu.getByRole('group', { name: enMessages.agent.currentTab })
+      ).toBeVisible()
+      await expect(
+        menu.getByRole('group', { name: enMessages.agent.otherOpenWorkflows })
+      ).toBeVisible()
+      expect(workflowSelection.savedPaths).toHaveLength(0)
+      expect(workflowSelection.postedMessages).toHaveLength(0)
+    })
+
     test('keeps a fresh draft and shows inline saving until the selected workflow is ready', async ({
       page,
       workflowSelection
