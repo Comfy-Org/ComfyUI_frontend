@@ -36,11 +36,19 @@ const ERROR_KEYS: Record<
   ReturnType<typeof classifyAuthError>['kind'],
   TranslationKey
 > = {
-  'popup-dismissed': 'auth.signIn.error.popupDismissed',
+  'popup-dismissed': 'auth.signIn.error.popupClosed',
   'unauthorized-domain': 'auth.signIn.error.domain',
   'signup-blocked': 'auth.signIn.error.blocked',
   auth: 'auth.signIn.error.generic',
   unknown: 'auth.signIn.error.generic'
+}
+
+// Each dismissal shape gets the cloud app's own copy for it; the closed
+// message is the fallback for any future code in the family.
+const POPUP_DISMISSED_KEYS: Partial<Record<string, TranslationKey>> = {
+  'auth/popup-closed-by-user': 'auth.signIn.error.popupClosed',
+  'auth/cancelled-popup-request': 'auth.signIn.error.popupCancelled',
+  'auth/popup-blocked': 'auth.signIn.error.popupBlocked'
 }
 
 export function authSignInTransition(
@@ -55,11 +63,17 @@ export function authSignInTransition(
         : { step: 'pending', provider: event.provider }
     case 'popupSucceeded':
       return { step: 'minting', email: event.email }
-    case 'signInFailed':
+    case 'signInFailed': {
+      const classified = classifyAuthError(event.error)
+      const popupKey =
+        classified.kind === 'popup-dismissed'
+          ? POPUP_DISMISSED_KEYS[classified.code]
+          : undefined
       return {
         step: 'error',
-        messageKey: ERROR_KEYS[classifyAuthError(event.error).kind]
+        messageKey: popupKey ?? ERROR_KEYS[classified.kind]
       }
+    }
     case 'provisioningFailed':
       return {
         step: 'signedIn',

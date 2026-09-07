@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { classifyAuthError } from './firebaseAuthError'
+import {
+  AUTH_ERROR_MESSAGES,
+  classifyAuthError,
+  severityForAuthError
+} from './firebaseAuthError'
 
 const firebaseError = (code: string, message = 'Firebase: error.') => ({
   code,
@@ -63,5 +67,40 @@ describe('classifyAuthError', () => {
     ]
   ] as const)('classifies %s as unknown', ([, value]) => {
     expect(classifyAuthError(value)).toEqual({ kind: 'unknown' })
+  })
+})
+
+describe('shared auth error copy and severity', () => {
+  it('carries a message for every popup-dismissal code and the named fallbacks', () => {
+    for (const code of [
+      'auth/popup-closed-by-user',
+      'auth/cancelled-popup-request',
+      'auth/popup-blocked'
+    ]) {
+      expect(
+        AUTH_ERROR_MESSAGES[code],
+        `each dismissal shape has its own copy in the cloud app; ${code} losing its entry silently degrades to the generic string`
+      ).toBeTruthy()
+    }
+    expect(AUTH_ERROR_MESSAGES['generic']).toBeTruthy()
+    expect(AUTH_ERROR_MESSAGES['signupBlocked']).toBeTruthy()
+  })
+
+  it('marks a dismissed popup as a warning and every real failure as an error', () => {
+    expect(
+      severityForAuthError({
+        kind: 'popup-dismissed',
+        code: 'auth/cancelled-popup-request'
+      }),
+      'the user closing a window is not an application error'
+    ).toBe('warn')
+    for (const classification of [
+      { kind: 'unauthorized-domain', code: 'auth/unauthorized-domain' },
+      { kind: 'signup-blocked', code: 'auth/internal-error' },
+      { kind: 'auth', code: 'auth/invalid-credential' },
+      { kind: 'unknown' }
+    ] as const) {
+      expect(severityForAuthError(classification)).toBe('error')
+    }
   })
 })
