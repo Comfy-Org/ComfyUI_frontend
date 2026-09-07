@@ -12,6 +12,7 @@ import {
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef, PriceBadge } from '@/schemas/nodeDefSchema'
+import { toNodeId } from '@/types/nodeId'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 // -----------------------------------------------------------------------------
@@ -86,6 +87,7 @@ function createMockNodeWithPriceBadge(
   return Object.assign(baseNode, {
     widgets: mockWidgets,
     inputs: mockInputs,
+    isInputConnected: (slot: number) => mockInputs[slot]?.link != null,
     constructor: {
       nodeData: {
         name: nodeTypeName,
@@ -118,8 +120,13 @@ function createMockNode(
   return Object.assign(baseNode, {
     widgets,
     inputs,
+    isInputConnected: (slot: number) => inputs[slot]?.link != null,
     constructor: { nodeData }
   })
+}
+
+function drainMicrotasks(): Promise<void> {
+  return new Promise((resolve) => setImmediate(resolve))
 }
 
 // -----------------------------------------------------------------------------
@@ -135,10 +142,10 @@ describe('useNodePricing', () => {
         priceBadge('{"type":"usd","usd":0.05}')
       )
 
-      getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe(creditsLabel(0.05))
+      await vi.waitFor(
+        () => expect(getNodeDisplayPrice(node)).toBe(creditsLabel(0.05)),
+        { interval: 1 }
+      )
     })
 
     it('should evaluate static text result', async () => {
@@ -148,10 +155,9 @@ describe('useNodePricing', () => {
         priceBadge('{"type":"text","text":"Free"}')
       )
 
-      getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe('Free')
+      await vi.waitFor(() => expect(getNodeDisplayPrice(node)).toBe('Free'), {
+        interval: 1
+      })
     })
   })
 
@@ -166,10 +172,33 @@ describe('useNodePricing', () => {
         [{ name: 'count', value: 5 }]
       )
 
+      await vi.waitFor(
+        () => expect(getNodeDisplayPrice(node)).toBe(creditsLabel(0.05)),
+        { interval: 1 }
+      )
+    })
+
+    it('caches per signature so base and override reads both settle', async () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNodeWithPriceBadge(
+        'TestSignatureNode',
+        priceBadge('{"type":"text","text": widgets.prompt}', [
+          { name: 'prompt', type: 'STRING' }
+        ]),
+        [{ name: 'prompt', value: 'inner' }]
+      )
+      const overrides = new Map([['prompt', 'outer']])
+
       getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe(creditsLabel(0.05))
+      getNodeDisplayPrice(node, overrides)
+      await vi.waitFor(
+        () => {
+          expect(getNodeDisplayPrice(node)).toBe('inner')
+          expect(getNodeDisplayPrice(node, overrides)).toBe('outer')
+        },
+        { interval: 1 }
+      )
+      expect(getNodeDisplayPrice(node)).toBe('inner')
     })
 
     it('should handle FLOAT widget as number', async () => {
@@ -182,10 +211,10 @@ describe('useNodePricing', () => {
         [{ name: 'rate', value: 0.05 }]
       )
 
-      getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe(creditsLabel(0.5))
+      await vi.waitFor(
+        () => expect(getNodeDisplayPrice(node)).toBe(creditsLabel(0.5)),
+        { interval: 1 }
+      )
     })
 
     it('should handle COMBO widget with numeric value', async () => {
@@ -198,10 +227,10 @@ describe('useNodePricing', () => {
         [{ name: 'duration', value: 5 }]
       )
 
-      getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe(creditsLabel(0.35))
+      await vi.waitFor(
+        () => expect(getNodeDisplayPrice(node)).toBe(creditsLabel(0.35)),
+        { interval: 1 }
+      )
     })
 
     it('should handle COMBO widget with string value', async () => {
@@ -215,10 +244,10 @@ describe('useNodePricing', () => {
         [{ name: 'mode', value: 'Pro' }] // Should be lowercased to "pro"
       )
 
-      getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe(creditsLabel(0.1))
+      await vi.waitFor(
+        () => expect(getNodeDisplayPrice(node)).toBe(creditsLabel(0.1)),
+        { interval: 1 }
+      )
     })
 
     it('should handle BOOLEAN widget', async () => {
@@ -231,10 +260,10 @@ describe('useNodePricing', () => {
         [{ name: 'premium', value: true }]
       )
 
-      getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe(creditsLabel(0.1))
+      await vi.waitFor(
+        () => expect(getNodeDisplayPrice(node)).toBe(creditsLabel(0.1)),
+        { interval: 1 }
+      )
     })
 
     it('should handle STRING widget (lowercased)', async () => {
@@ -248,10 +277,10 @@ describe('useNodePricing', () => {
         [{ name: 'model', value: 'ProModel' }] // Should be lowercased to "promodel"
       )
 
-      getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe(creditsLabel(0.1))
+      await vi.waitFor(
+        () => expect(getNodeDisplayPrice(node)).toBe(creditsLabel(0.1)),
+        { interval: 1 }
+      )
     })
   })
 
@@ -270,10 +299,10 @@ describe('useNodePricing', () => {
         [{ name: 'resolution', value: '1080p' }]
       )
 
-      getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe(creditsLabel(0.1))
+      await vi.waitFor(
+        () => expect(getNodeDisplayPrice(node)).toBe(creditsLabel(0.1)),
+        { interval: 1 }
+      )
     })
 
     it('should handle multiple widgets', async () => {
@@ -296,10 +325,10 @@ describe('useNodePricing', () => {
         ]
       )
 
-      getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe(creditsLabel(1.0))
+      await vi.waitFor(
+        () => expect(getNodeDisplayPrice(node)).toBe(creditsLabel(1.0)),
+        { interval: 1 }
+      )
     })
 
     it('should handle conditional pricing based on widget values', async () => {
@@ -323,10 +352,10 @@ describe('useNodePricing', () => {
         ]
       )
 
-      getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe(creditsLabel(0.56))
+      await vi.waitFor(
+        () => expect(getNodeDisplayPrice(node)).toBe(creditsLabel(0.56)),
+        { interval: 1 }
+      )
     })
   })
 
@@ -338,10 +367,13 @@ describe('useNodePricing', () => {
         priceBadge('{"type":"range_usd","min_usd":0.05,"max_usd":0.10}')
       )
 
-      getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
-      const price = getNodeDisplayPrice(node)
-      expect(price).toMatch(/\d+\.?\d*-\d+\.?\d* credits\/Run/)
+      await vi.waitFor(
+        () =>
+          expect(getNodeDisplayPrice(node)).toMatch(
+            /\d+\.?\d*-\d+\.?\d* credits\/Run/
+          ),
+        { interval: 1 }
+      )
     })
 
     it('should format list_usd result', async () => {
@@ -351,10 +383,13 @@ describe('useNodePricing', () => {
         priceBadge('{"type":"list_usd","usd":[0.05, 0.10, 0.15]}')
       )
 
-      getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
-      const price = getNodeDisplayPrice(node)
-      expect(price).toMatch(/\d+\.?\d*\/\d+\.?\d*\/\d+\.?\d* credits\/Run/)
+      await vi.waitFor(
+        () =>
+          expect(getNodeDisplayPrice(node)).toMatch(
+            /\d+\.?\d*\/\d+\.?\d*\/\d+\.?\d* credits\/Run/
+          ),
+        { interval: 1 }
+      )
     })
 
     it('should respect custom suffix in format options', async () => {
@@ -364,10 +399,11 @@ describe('useNodePricing', () => {
         priceBadge('{"type":"usd","usd":0.07,"format":{"suffix":"/second"}}')
       )
 
-      getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe(creditsLabel(0.07, '/second'))
+      await vi.waitFor(
+        () =>
+          expect(getNodeDisplayPrice(node)).toBe(creditsLabel(0.07, '/second')),
+        { interval: 1 }
+      )
     })
 
     it('should add approximate prefix when specified', async () => {
@@ -377,10 +413,13 @@ describe('useNodePricing', () => {
         priceBadge('{"type":"usd","usd":0.05,"format":{"approximate":true}}')
       )
 
-      getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
-      const price = getNodeDisplayPrice(node)
-      expect(price).toMatch(/^~\d+\.?\d* credits\/Run$/)
+      await vi.waitFor(
+        () =>
+          expect(getNodeDisplayPrice(node)).toMatch(
+            /^~\d+\.?\d* credits\/Run$/
+          ),
+        { interval: 1 }
+      )
     })
 
     it('should add note suffix when specified', async () => {
@@ -390,10 +429,13 @@ describe('useNodePricing', () => {
         priceBadge('{"type":"usd","usd":0.05,"format":{"note":"(estimated)"}}')
       )
 
-      getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
-      const price = getNodeDisplayPrice(node)
-      expect(price).toMatch(/credits\/Run \(estimated\)$/)
+      await vi.waitFor(
+        () =>
+          expect(getNodeDisplayPrice(node)).toMatch(
+            /credits\/Run \(estimated\)$/
+          ),
+        { interval: 1 }
+      )
     })
 
     it('should combine approximate prefix and note suffix', async () => {
@@ -405,10 +447,13 @@ describe('useNodePricing', () => {
         )
       )
 
-      getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
-      const price = getNodeDisplayPrice(node)
-      expect(price).toMatch(/^~\d+\.?\d* credits\/image \(beta\)$/)
+      await vi.waitFor(
+        () =>
+          expect(getNodeDisplayPrice(node)).toMatch(
+            /^~\d+\.?\d* credits\/image \(beta\)$/
+          ),
+        { interval: 1 }
+      )
     })
 
     it('should use custom separator for list_usd', async () => {
@@ -420,10 +465,13 @@ describe('useNodePricing', () => {
         )
       )
 
-      getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
-      const price = getNodeDisplayPrice(node)
-      expect(price).toMatch(/\d+\.?\d* or \d+\.?\d* credits\/Run/)
+      await vi.waitFor(
+        () =>
+          expect(getNodeDisplayPrice(node)).toMatch(
+            /\d+\.?\d* or \d+\.?\d* credits\/Run/
+          ),
+        { interval: 1 }
+      )
     })
   })
 
@@ -441,10 +489,10 @@ describe('useNodePricing', () => {
         [{ name: 'image', connected: true }]
       )
 
-      getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe(creditsLabel(0.1))
+      await vi.waitFor(
+        () => expect(getNodeDisplayPrice(node)).toBe(creditsLabel(0.1)),
+        { interval: 1 }
+      )
     })
 
     it('should handle disconnected input check', async () => {
@@ -460,10 +508,10 @@ describe('useNodePricing', () => {
         [{ name: 'image', connected: false }]
       )
 
-      getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe(creditsLabel(0.05))
+      await vi.waitFor(
+        () => expect(getNodeDisplayPrice(node)).toBe(creditsLabel(0.05)),
+        { interval: 1 }
+      )
     })
   })
 
@@ -501,10 +549,10 @@ describe('useNodePricing', () => {
         [{ name: 'count', value: null }]
       )
 
-      getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe(creditsLabel(0.05))
+      await vi.waitFor(
+        () => expect(getNodeDisplayPrice(node)).toBe(creditsLabel(0.05)),
+        { interval: 1 }
+      )
     })
 
     it('should handle missing widget gracefully', async () => {
@@ -518,10 +566,10 @@ describe('useNodePricing', () => {
         []
       )
 
-      getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe(creditsLabel(0.05))
+      await vi.waitFor(
+        () => expect(getNodeDisplayPrice(node)).toBe(creditsLabel(0.05)),
+        { interval: 1 }
+      )
     })
 
     it('should handle undefined widget value gracefully', async () => {
@@ -535,62 +583,10 @@ describe('useNodePricing', () => {
         [{ name: 'count', value: undefined }]
       )
 
-      getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe(creditsLabel(0.05))
-    })
-  })
-
-  describe('getNodePricingConfig', () => {
-    it('should return pricing config for nodes with price_badge', () => {
-      const { getNodePricingConfig } = useNodePricing()
-      const node = createMockNodeWithPriceBadge(
-        'TestConfigNode',
-        priceBadge('{"type":"usd","usd":0.05}')
+      await vi.waitFor(
+        () => expect(getNodeDisplayPrice(node)).toBe(creditsLabel(0.05)),
+        { interval: 1 }
       )
-
-      const config = getNodePricingConfig(node)
-      expect(config).toBeDefined()
-      expect(config?.engine).toBe('jsonata')
-      expect(config?.expr).toBe('{"type":"usd","usd":0.05}')
-      expect(config?.depends_on).toBeDefined()
-    })
-
-    it('should return undefined for nodes without price_badge', () => {
-      const { getNodePricingConfig } = useNodePricing()
-      const node = createMockNode({
-        name: 'NoPricingNode',
-        api_node: true
-      })
-
-      const config = getNodePricingConfig(node)
-      expect(config).toBeUndefined()
-    })
-
-    it('should return undefined for non-API nodes', () => {
-      const { getNodePricingConfig } = useNodePricing()
-      const node = createMockNode({
-        name: 'RegularNode',
-        api_node: false
-      })
-
-      const config = getNodePricingConfig(node)
-      expect(config).toBeUndefined()
-    })
-
-    it('does not leak the compiled JSONata expression', () => {
-      const { getNodePricingConfig } = useNodePricing()
-      const node = createMockNodeWithPriceBadge(
-        'TestStripCompiledNode',
-        priceBadge('{"type":"usd","usd":0.05}')
-      )
-
-      const config = getNodePricingConfig(node)
-      expect(config).toBeDefined()
-      // _compiled is the runtime JSONata instance and must not be exposed to
-      // tooling/debug consumers.
-      expect(config).not.toHaveProperty('_compiled')
     })
   })
 
@@ -604,9 +600,10 @@ describe('useNodePricing', () => {
 
       const before = pricingRevision.value
       getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
-
-      expect(pricingRevision.value).toBeGreaterThan(before)
+      await vi.waitFor(
+        () => expect(pricingRevision.value).toBeGreaterThan(before),
+        { interval: 1 }
+      )
     })
 
     it('bumps the per-node revision ref after async evaluation resolves in VueNodes mode', async () => {
@@ -619,15 +616,18 @@ describe('useNodePricing', () => {
 
       LiteGraph.vueNodesMode = true
       try {
-        const revBefore = getNodeRevisionRef(node.id).value
+        const nodeId = node.id
+        const revBefore = getNodeRevisionRef(nodeId).value
         const tickBefore = pricingRevision.value
 
         getNodeDisplayPrice(node)
-        await new Promise((r) => setTimeout(r, 50))
-
-        // VueNodes path bumps per-node ref instead of the global tick.
-        expect(getNodeRevisionRef(node.id).value).toBeGreaterThan(revBefore)
-        expect(pricingRevision.value).toBe(tickBefore)
+        await vi.waitFor(
+          () => {
+            expect(getNodeRevisionRef(nodeId).value).toBeGreaterThan(revBefore)
+            expect(pricingRevision.value).toBeGreaterThan(tickBefore)
+          },
+          { interval: 1 }
+        )
       } finally {
         LiteGraph.vueNodesMode = false
       }
@@ -641,24 +641,102 @@ describe('useNodePricing', () => {
       )
 
       // First call schedules eval; second call (after resolution) is a cache hit.
-      getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
+      const revisionBeforeEvaluation = pricingRevision.value
+      expect(getNodeDisplayPrice(node)).toBe('')
+      await vi.waitFor(
+        () =>
+          expect(pricingRevision.value).toBeGreaterThan(
+            revisionBeforeEvaluation
+          ),
+        { interval: 1 }
+      )
       const first = getNodeDisplayPrice(node)
+      expect(first).toBe(creditsLabel(0.05))
 
       const tickAfterFirst = pricingRevision.value
       const second = getNodeDisplayPrice(node)
       // Cache-hit path must not schedule a new evaluation, so no further tick.
-      await new Promise((r) => setTimeout(r, 20))
+      await drainMicrotasks()
 
       expect(second).toBe(first)
       expect(pricingRevision.value).toBe(tickAfterFirst)
     })
   })
 
+  describe('failed evaluation caching', () => {
+    it('recovers the price badge when a failed string value is corrected to its numeric equivalent', async () => {
+      const { getNodeDisplayPrice, pricingRevision } = useNodePricing()
+      const rule = priceBadge('{"type":"usd","usd": widgets.steps * 0.01}', [
+        { name: 'steps', type: 'COMBO' }
+      ])
+      const numericNode = createMockNodeWithPriceBadge(
+        'TestNumericPriceBadgeNode',
+        rule,
+        [{ name: 'steps', value: 10 }]
+      )
+      const correctedNode = createMockNodeWithPriceBadge(
+        'TestCorrectedPriceBadgeNode',
+        rule,
+        [{ name: 'steps', value: '10' }]
+      )
+
+      await vi.waitFor(
+        () => expect(getNodeDisplayPrice(numericNode)).toBe(creditsLabel(0.1)),
+        { interval: 1 }
+      )
+
+      const revisionBeforeFailure = pricingRevision.value
+      expect(getNodeDisplayPrice(correctedNode)).toBe('')
+      await vi.waitFor(
+        () =>
+          expect(pricingRevision.value).toBeGreaterThan(revisionBeforeFailure),
+        { interval: 1 }
+      )
+      expect(getNodeDisplayPrice(correctedNode)).toBe('')
+
+      const stepsWidget = correctedNode.widgets?.find(
+        (widget) => widget.name === 'steps'
+      )
+      if (!stepsWidget) throw new Error('Expected a steps widget')
+      stepsWidget.value = 10
+
+      expect(getNodeDisplayPrice(correctedNode)).toBe('')
+      await vi.waitFor(
+        () =>
+          expect(getNodeDisplayPrice(correctedNode)).toBe(creditsLabel(0.1)),
+        { interval: 1 }
+      )
+    })
+
+    it('does not retry a failed price badge evaluation for an unchanged value', async () => {
+      const { getNodeDisplayPrice, pricingRevision } = useNodePricing()
+      const node = createMockNodeWithPriceBadge(
+        'TestFailedPriceBadgeCacheNode',
+        priceBadge('{"type":"usd","usd": widgets.steps * 0.01}', [
+          { name: 'steps', type: 'COMBO' }
+        ]),
+        [{ name: 'steps', value: '10' }]
+      )
+
+      const revisionBeforeFailure = pricingRevision.value
+      expect(getNodeDisplayPrice(node)).toBe('')
+      await vi.waitFor(
+        () =>
+          expect(pricingRevision.value).toBeGreaterThan(revisionBeforeFailure),
+        { interval: 1 }
+      )
+      const revisionAfterFailure = pricingRevision.value
+
+      expect(getNodeDisplayPrice(node)).toBe('')
+      await drainMicrotasks()
+      expect(pricingRevision.value).toBe(revisionAfterFailure)
+    })
+  })
+
   describe('getNodeRevisionRef', () => {
     it('should return a ref for a node ID', () => {
       const { getNodeRevisionRef } = useNodePricing()
-      const ref = getNodeRevisionRef('node-1')
+      const ref = getNodeRevisionRef(toNodeId('node-1'))
 
       expect(ref).toBeDefined()
       expect(ref.value).toBe(0)
@@ -666,54 +744,31 @@ describe('useNodePricing', () => {
 
     it('should return the same ref for the same node ID', () => {
       const { getNodeRevisionRef } = useNodePricing()
-      const ref1 = getNodeRevisionRef('node-same')
-      const ref2 = getNodeRevisionRef('node-same')
+      const ref1 = getNodeRevisionRef(toNodeId('node-same'))
+      const ref2 = getNodeRevisionRef(toNodeId('node-same'))
 
       expect(ref1).toBe(ref2)
     })
 
     it('should return different refs for different node IDs', () => {
       const { getNodeRevisionRef } = useNodePricing()
-      const ref1 = getNodeRevisionRef('node-a')
-      const ref2 = getNodeRevisionRef('node-b')
+      const ref1 = getNodeRevisionRef(toNodeId('node-a'))
+      const ref2 = getNodeRevisionRef(toNodeId('node-b'))
 
       expect(ref1).not.toBe(ref2)
     })
 
     it('should handle both string and number node IDs', () => {
       const { getNodeRevisionRef } = useNodePricing()
-      // Number ID gets stringified, so '123' and 123 should return the same ref
-      const refFromNumber = getNodeRevisionRef(123)
-      const refFromString = getNodeRevisionRef('123')
+      const refFromNumber = getNodeRevisionRef(toNodeId(123))
+      const refFromString = getNodeRevisionRef(toNodeId('123'))
 
       expect(refFromNumber).toBe(refFromString)
     })
   })
 
-  describe('triggerPriceRecalculation', () => {
-    it('should not throw for API nodes with price_badge', () => {
-      const { triggerPriceRecalculation } = useNodePricing()
-      const node = createMockNodeWithPriceBadge(
-        'TestTriggerNode',
-        priceBadge('{"type":"usd","usd":0.05}')
-      )
-
-      expect(() => triggerPriceRecalculation(node)).not.toThrow()
-    })
-
-    it('should not throw for non-API nodes', () => {
-      const { triggerPriceRecalculation } = useNodePricing()
-      const node = createMockNode({
-        name: 'RegularNode',
-        api_node: false
-      })
-
-      expect(() => triggerPriceRecalculation(node)).not.toThrow()
-    })
-  })
-
   describe('error handling', () => {
-    it('should return empty string for invalid JSONata expression', async () => {
+    it('should return empty string for invalid JSONata expression', () => {
       const { getNodeDisplayPrice } = useNodePricing()
       const node = createMockNodeWithPriceBadge(
         'TestInvalidExprNode',
@@ -721,39 +776,48 @@ describe('useNodePricing', () => {
         priceBadge('{"type":"usd","usd": (widgets.count * 0.01')
       )
 
-      getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
-      const price = getNodeDisplayPrice(node)
       // Should not crash, just return empty
-      expect(price).toBe('')
+      expect(getNodeDisplayPrice(node)).toBe('')
     })
 
     it('should return empty string for expression that throws at runtime', async () => {
-      const { getNodeDisplayPrice } = useNodePricing()
+      const { getNodeDisplayPrice, pricingRevision } = useNodePricing()
       const node = createMockNodeWithPriceBadge(
         'TestRuntimeErrorNode',
         // Expression that will fail at runtime (calling function on undefined)
         priceBadge('$lookup(undefined, "key")')
       )
 
-      getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe('')
+      const revisionBeforeEvaluation = pricingRevision.value
+      expect(getNodeDisplayPrice(node)).toBe('')
+      await vi.waitFor(
+        () =>
+          expect(pricingRevision.value).toBeGreaterThan(
+            revisionBeforeEvaluation
+          ),
+        { interval: 1 }
+      )
+      expect(getNodeDisplayPrice(node)).toBe('')
     })
 
     it('should return empty string for invalid PricingResult type', async () => {
-      const { getNodeDisplayPrice } = useNodePricing()
+      const { getNodeDisplayPrice, pricingRevision } = useNodePricing()
       const node = createMockNodeWithPriceBadge(
         'TestInvalidResultTypeNode',
         // Returns object with invalid type field
         priceBadge('{"type":"invalid_type","value":123}')
       )
 
-      getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe('')
+      const revisionBeforeEvaluation = pricingRevision.value
+      expect(getNodeDisplayPrice(node)).toBe('')
+      await vi.waitFor(
+        () =>
+          expect(pricingRevision.value).toBeGreaterThan(
+            revisionBeforeEvaluation
+          ),
+        { interval: 1 }
+      )
+      expect(getNodeDisplayPrice(node)).toBe('')
     })
 
     it('should handle legacy format without type field', async () => {
@@ -764,38 +828,50 @@ describe('useNodePricing', () => {
         priceBadge('{"usd":0.05}')
       )
 
-      getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
-      const price = getNodeDisplayPrice(node)
       // Legacy format {usd: number} is supported
-      expect(price).toBe(creditsLabel(0.05))
+      await vi.waitFor(
+        () => expect(getNodeDisplayPrice(node)).toBe(creditsLabel(0.05)),
+        { interval: 1 }
+      )
     })
 
     it('should return empty string for non-object result', async () => {
-      const { getNodeDisplayPrice } = useNodePricing()
+      const { getNodeDisplayPrice, pricingRevision } = useNodePricing()
       const node = createMockNodeWithPriceBadge(
         'TestNonObjectNode',
         // Returns a plain number instead of PricingResult object
         priceBadge('0.05')
       )
 
-      getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe('')
+      const revisionBeforeEvaluation = pricingRevision.value
+      expect(getNodeDisplayPrice(node)).toBe('')
+      await vi.waitFor(
+        () =>
+          expect(pricingRevision.value).toBeGreaterThan(
+            revisionBeforeEvaluation
+          ),
+        { interval: 1 }
+      )
+      expect(getNodeDisplayPrice(node)).toBe('')
     })
 
     it('should return empty string for null result', async () => {
-      const { getNodeDisplayPrice } = useNodePricing()
+      const { getNodeDisplayPrice, pricingRevision } = useNodePricing()
       const node = createMockNodeWithPriceBadge(
         'TestNullResultNode',
         priceBadge('null')
       )
 
-      getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe('')
+      const revisionBeforeEvaluation = pricingRevision.value
+      expect(getNodeDisplayPrice(node)).toBe('')
+      await vi.waitFor(
+        () =>
+          expect(pricingRevision.value).toBeGreaterThan(
+            revisionBeforeEvaluation
+          ),
+        { interval: 1 }
+      )
+      expect(getNodeDisplayPrice(node)).toBe('')
     })
   })
 
@@ -827,11 +903,11 @@ describe('useNodePricing', () => {
         ]
       )
 
-      getNodeDisplayPrice(node)
-      await new Promise((r) => setTimeout(r, 50))
-      const price = getNodeDisplayPrice(node)
       // 2 connected inputs in 'videos' group * 0.05 = 0.10
-      expect(price).toBe(creditsLabel(0.1))
+      await vi.waitFor(
+        () => expect(getNodeDisplayPrice(node)).toBe(creditsLabel(0.1)),
+        { interval: 1 }
+      )
     })
   })
 
@@ -902,10 +978,10 @@ describe('useNodePricing', () => {
           priceBadge('{"type":"usd","usd":0.05}')
         )
 
-        getNodeDisplayPrice(node)
-        await new Promise((r) => setTimeout(r, 50))
-        const price = getNodeDisplayPrice(node)
-        expect(price).toBe('10.6 credits/Run')
+        await vi.waitFor(
+          () => expect(getNodeDisplayPrice(node)).toBe('10.6 credits/Run'),
+          { interval: 1 }
+        )
       })
 
       it('should not display decimal in badge for whole credits', async () => {
@@ -916,10 +992,10 @@ describe('useNodePricing', () => {
           priceBadge('{"type":"usd","usd":1.00}')
         )
 
-        getNodeDisplayPrice(node)
-        await new Promise((r) => setTimeout(r, 50))
-        const price = getNodeDisplayPrice(node)
-        expect(price).toBe('211 credits/Run')
+        await vi.waitFor(
+          () => expect(getNodeDisplayPrice(node)).toBe('211 credits/Run'),
+          { interval: 1 }
+        )
       })
 
       it('should handle range with mixed decimal display', async () => {
@@ -931,10 +1007,10 @@ describe('useNodePricing', () => {
           priceBadge('{"type":"range_usd","min_usd":0.05,"max_usd":1.00}')
         )
 
-        getNodeDisplayPrice(node)
-        await new Promise((r) => setTimeout(r, 50))
-        const price = getNodeDisplayPrice(node)
-        expect(price).toBe('10.6-211 credits/Run')
+        await vi.waitFor(
+          () => expect(getNodeDisplayPrice(node)).toBe('10.6-211 credits/Run'),
+          { interval: 1 }
+        )
       })
     })
   })

@@ -101,7 +101,8 @@ const reportOpen = ref(false)
  */
 const showReport = () => {
   useTelemetry()?.trackUiButtonClicked({
-    button_id: 'error_dialog_show_report_clicked'
+    button_id: 'error_dialog_show_report_clicked',
+    element_group: 'error_dialog'
   })
   reportOpen.value = true
 }

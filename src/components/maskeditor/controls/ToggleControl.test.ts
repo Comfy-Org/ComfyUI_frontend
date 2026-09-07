@@ -28,16 +28,12 @@ describe('ToggleControl', () => {
 
   it('should reflect modelValue=false as unchecked', () => {
     renderComponent({ modelValue: false })
-    expect((screen.getByRole('checkbox') as HTMLInputElement).checked).toBe(
-      false
-    )
+    expect(screen.getByRole<HTMLInputElement>('checkbox').checked).toBe(false)
   })
 
   it('should reflect modelValue=true as checked', () => {
     renderComponent({ modelValue: true })
-    expect((screen.getByRole('checkbox') as HTMLInputElement).checked).toBe(
-      true
-    )
+    expect(screen.getByRole<HTMLInputElement>('checkbox').checked).toBe(true)
   })
 
   it('should emit update:modelValue=true when toggled on', async () => {

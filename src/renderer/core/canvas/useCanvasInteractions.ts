@@ -1,10 +1,18 @@
 import { computed } from 'vue'
 
-import { isMiddlePointerInput } from '@/base/pointerUtils'
+import {
+  isMiddleButtonEvent,
+  isMiddleButtonHeld,
+  isMiddlePointerInput
+} from '@/base/pointerUtils'
 import { isCanvasGestureWheel } from '@/base/wheelGestures'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
+
+function currentCanvasElement(): HTMLCanvasElement | null {
+  return app.canvas.canvas
+}
 
 /**
  * Composable for handling canvas interactions from Vue components.
@@ -23,9 +31,7 @@ export function useCanvasInteractions() {
    * Whether Vue node components should handle pointer events.
    * Returns false when canvas is in read-only/panning mode (e.g., space key held for panning).
    */
-  const shouldHandleNodePointerEvents = computed(
-    () => !(canvasStore.canvas?.read_only ?? false)
-  )
+  const shouldHandleNodePointerEvents = computed(() => !canvasStore.isReadOnly)
 
   /**
    * Returns true if the wheel event target is inside an element that should
@@ -37,7 +43,7 @@ export function useCanvasInteractions() {
   const wheelCapturedByFocusedElement = (event: WheelEvent): boolean => {
     const target = event.target as HTMLElement | null
     const captureElement = target?.closest('[data-capture-wheel="true"]')
-    const active = document.activeElement as Element | null
+    const active = document.activeElement
 
     return !!(captureElement && active && captureElement.contains(active))
   }
@@ -76,26 +82,40 @@ export function useCanvasInteractions() {
    * Handles pointer events from media elements that should potentially
    * be forwarded to canvas (e.g., space+drag for panning)
    */
-  const handlePointer = (event: PointerEvent) => {
-    if (isMiddlePointerInput(event)) {
+  const forwardMiddlePointerIfNeeded = (
+    event: PointerEvent,
+    isMiddleInput: (event: PointerEvent) => boolean
+  ) => {
+    if (isMiddleInput(event)) {
       forwardEventToCanvas(event)
-      return
+      return true
     }
 
-    // Check if canvas exists using established pattern
+    return false
+  }
+
+  const handleLeftButtonReadOnlyPointer = (event: PointerEvent) => {
     const canvas = getCanvas()
-    if (!canvas) return
-
-    // Check conditions for forwarding events to canvas
-    const isSpacePanningDrag = canvas.read_only && event.buttons === 1 // Space key pressed + left mouse drag
-    const isMiddleMousePanning = event.buttons === 4 // Middle mouse button for panning
-
-    if (isSpacePanningDrag || isMiddleMousePanning) {
+    if (canvas.read_only && event.buttons === 1) {
       event.preventDefault()
       event.stopPropagation()
       forwardEventToCanvas(event)
-      return
     }
+  }
+
+  const handlePointerDown = (event: PointerEvent) => {
+    if (forwardMiddlePointerIfNeeded(event, isMiddlePointerInput)) return
+    handleLeftButtonReadOnlyPointer(event)
+  }
+
+  const handlePointerMove = (event: PointerEvent) => {
+    if (forwardMiddlePointerIfNeeded(event, isMiddleButtonHeld)) return
+    handleLeftButtonReadOnlyPointer(event)
+  }
+
+  const handlePointerUp = (event: PointerEvent) => {
+    if (forwardMiddlePointerIfNeeded(event, isMiddleButtonEvent)) return
+    handleLeftButtonReadOnlyPointer(event)
   }
 
   /**
@@ -107,7 +127,7 @@ export function useCanvasInteractions() {
     // Honor wheel capture only when the element is focused
     if (event instanceof WheelEvent && !shouldForwardWheelEvent(event)) return
 
-    const canvasEl = app.canvas?.canvas
+    const canvasEl = currentCanvasElement()
     if (!canvasEl) return
     event.preventDefault()
     event.stopPropagation()
@@ -129,17 +149,19 @@ export function useCanvasInteractions() {
       return
     }
 
-    // Create new event with same properties
-    const EventConstructor = event.constructor as
-      | typeof MouseEvent
-      | typeof PointerEvent
-    const newEvent = new EventConstructor(event.type, event)
-    canvasEl.dispatchEvent(newEvent)
+    if (event instanceof PointerEvent) {
+      canvasEl.dispatchEvent(new PointerEvent(event.type, event))
+      return
+    }
+
+    canvasEl.dispatchEvent(new MouseEvent(event.type, event))
   }
 
   return {
     handleWheel,
-    handlePointer,
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp,
     forwardEventToCanvas,
     shouldHandleNodePointerEvents
   }

@@ -66,7 +66,6 @@ describe('fetchRolesForBuild', () => {
   })
 
   afterEach(() => {
-    vi.restoreAllMocks()
     process.env.WEBSITE_ASHBY_API_KEY = savedApiKey
     process.env.WEBSITE_ASHBY_JOB_BOARD_NAME = savedBoardName
   })

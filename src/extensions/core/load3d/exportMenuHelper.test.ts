@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type Load3d from './Load3d'
 import { createExportMenuItems } from './exportMenuHelper'
@@ -41,14 +41,6 @@ function makeLoad3d(
 }
 
 describe('createExportMenuItems', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   it('returns a separator followed by a Save submenu', () => {
     const items = createExportMenuItems(makeLoad3d())
 
@@ -76,7 +68,8 @@ describe('createExportMenuItems', () => {
     expect(submenuOptions.map((o: { content: string }) => o.content)).toEqual([
       'GLB',
       'OBJ',
-      'STL'
+      'STL',
+      'FBX'
     ])
   })
 

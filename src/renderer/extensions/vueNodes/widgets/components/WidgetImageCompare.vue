@@ -53,10 +53,20 @@
       <!-- Circular drag handle -->
       <div
         v-if="hasCompareImages"
-        class="pointer-events-none absolute top-1/2 z-10 size-6 -translate-1/2 rounded-full border-2 border-white bg-white/30 shadow-lg backdrop-blur-sm"
+        class="pointer-events-none absolute top-0 z-10 h-full w-6"
         :style="{ left: `${sliderPosition}%` }"
         role="presentation"
-      />
+      >
+        <div
+          class="absolute top-0 h-[calc(50%-var(--spacing)*3)] w-0.25 bg-white/30 backdrop-blur-sm"
+        />
+        <div
+          class="absolute top-1/2 size-6 -translate-1/2 rounded-full border-2 bg-white/30 shadow-lg backdrop-blur-sm"
+        />
+        <div
+          class="absolute bottom-0 h-[calc(50%-var(--spacing)*3)] w-0.25 bg-white/30 backdrop-blur-sm"
+        />
+      </div>
     </div>
 
     <div
@@ -144,13 +154,13 @@ watch(
 const beforeImage = computed(() => {
   const value = props.widget.value
   if (isSingleImage(value)) return value
-  return value?.beforeImages?.[beforeIndex.value] ?? ''
+  return value.beforeImages?.[beforeIndex.value] ?? ''
 })
 
 const afterImage = computed(() => {
   const value = props.widget.value
   if (isSingleImage(value)) return ''
-  return value?.afterImages?.[afterIndex.value] ?? ''
+  return value.afterImages?.[afterIndex.value] ?? ''
 })
 
 const hasCompareImages = computed(() =>
@@ -159,14 +169,14 @@ const hasCompareImages = computed(() =>
 
 const beforeAlt = computed(() => {
   const value = props.widget.value
-  return !isSingleImage(value) && value?.beforeAlt
+  return !isSingleImage(value) && value.beforeAlt
     ? value.beforeAlt
     : 'Before image'
 })
 
 const afterAlt = computed(() => {
   const value = props.widget.value
-  return !isSingleImage(value) && value?.afterAlt
+  return !isSingleImage(value) && value.afterAlt
     ? value.afterAlt
     : 'After image'
 })

@@ -1,4 +1,6 @@
 import { render, screen } from '@testing-library/vue'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { toNodeId } from '@/types/nodeId'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
@@ -65,9 +67,9 @@ function makeWidget(
     name: 'range_w',
     type: 'range',
     value: { min: 0, max: 1 },
-    options: options as IWidgetRangeOptions,
+    options,
     ...widgetOverrides
-  } as SimplifiedWidget<RangeValue, IWidgetRangeOptions>
+  }
 }
 
 function setUpstream(value: RangeValue | undefined) {
@@ -133,9 +135,12 @@ describe('WidgetRange', () => {
     it('shows upstream value when disabled with a valid upstream', () => {
       setUpstream({ min: 0.3, max: 0.7 })
       renderWidget(
-        makeWidget({ disabled: true } as IWidgetRangeOptions, {
-          linkedUpstream: { nodeId: 'n1' }
-        }),
+        makeWidget(
+          { disabled: true },
+          {
+            linkedUpstream: { nodeId: toNodeId('n1') }
+          }
+        ),
         { min: 0, max: 1 }
       )
       const el = screen.getByTestId('range-editor')
@@ -144,10 +149,13 @@ describe('WidgetRange', () => {
 
     it('ignores upstream value when not disabled', () => {
       setUpstream({ min: 0.3, max: 0.7 })
-      renderWidget(makeWidget({}, { linkedUpstream: { nodeId: 'n1' } }), {
-        min: 0,
-        max: 1
-      })
+      renderWidget(
+        makeWidget({}, { linkedUpstream: { nodeId: toNodeId('n1') } }),
+        {
+          min: 0,
+          max: 1
+        }
+      )
       const el = screen.getByTestId('range-editor')
       expect(JSON.parse(el.dataset.model!)).toEqual({ min: 0, max: 1 })
     })
@@ -165,7 +173,12 @@ describe('WidgetRange', () => {
       outputsHolder.nodeOutputs = {
         loc1: { histogram_range_w: [1, 2, 3, 4] }
       }
-      renderWidget(makeWidget({}, { nodeLocatorId: 'loc1' }))
+      renderWidget(
+        makeWidget(
+          {},
+          { nodeLocatorId: createNodeLocatorId(null, toNodeId('loc1')) }
+        )
+      )
       expect(screen.getByTestId('range-editor').dataset.hasHistogram).toBe(
         'true'
       )
@@ -175,7 +188,12 @@ describe('WidgetRange', () => {
       outputsHolder.nodeOutputs = {
         loc1: { histogram_range_w: [] }
       }
-      renderWidget(makeWidget({}, { nodeLocatorId: 'loc1' }))
+      renderWidget(
+        makeWidget(
+          {},
+          { nodeLocatorId: createNodeLocatorId(null, toNodeId('loc1')) }
+        )
+      )
       expect(screen.getByTestId('range-editor').dataset.hasHistogram).toBe(
         'false'
       )

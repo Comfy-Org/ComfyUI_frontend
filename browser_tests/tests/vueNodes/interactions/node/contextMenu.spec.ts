@@ -56,8 +56,7 @@ function getNodeWrapper(comfyPage: ComfyPage, nodeTitle: string): Locator {
 }
 
 async function getNodeRef(comfyPage: ComfyPage, nodeTitle: string) {
-  const refs = await comfyPage.nodeOps.getNodeRefsByTitle(nodeTitle)
-  return refs[0]
+  return await comfyPage.nodeOps.getNodeRefByTitle(nodeTitle)
 }
 
 test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
@@ -166,7 +165,7 @@ test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
       await openContextMenu(comfyPage, nodeTitle)
       await clickExactMenuItem(comfyPage, 'Bypass')
 
-      await expect.poll(() => nodeRef.isBypassed()).toBe(true)
+      await expect(nodeRef).toBeBypassed()
       await expect(getNodeWrapper(comfyPage, nodeTitle)).toHaveClass(
         BYPASS_CLASS
       )
@@ -174,10 +173,31 @@ test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
       await openContextMenu(comfyPage, nodeTitle)
       await clickExactMenuItem(comfyPage, 'Remove Bypass')
 
-      await expect.poll(() => nodeRef.isBypassed()).toBe(false)
+      await expect(nodeRef).not.toBeBypassed()
       await expect(getNodeWrapper(comfyPage, nodeTitle)).not.toHaveClass(
         BYPASS_CLASS
       )
+    })
+
+    test('shows exactly one bypass menu item per state (FE-720 regression)', async ({
+      comfyPage
+    }) => {
+      const nodeTitle = 'Load Checkpoint'
+      const nodeRef = await getNodeRef(comfyPage, nodeTitle)
+      const bypassItem = comfyPage.contextMenu.menuItem('Bypass')
+      const removeBypassItem = comfyPage.contextMenu.menuItem('Remove Bypass')
+
+      await openContextMenu(comfyPage, nodeTitle)
+      await expect(bypassItem).toHaveCount(1)
+      await expect(removeBypassItem).toHaveCount(0)
+      await clickExactMenuItem(comfyPage, 'Bypass')
+      await expect(nodeRef).toBeBypassed()
+
+      await openContextMenu(comfyPage, nodeTitle)
+      await expect(removeBypassItem).toHaveCount(1)
+      await expect(bypassItem).toHaveCount(0)
+      await clickExactMenuItem(comfyPage, 'Remove Bypass')
+      await expect(nodeRef).not.toBeBypassed()
     })
 
     test('should minimize and expand node via context menu', async ({
@@ -213,22 +233,23 @@ test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
       await comfyPage.page
         .context()
         .grantPermissions(['clipboard-read', 'clipboard-write'])
-      await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
+      await comfyPage.nodeOps.clearGraph()
+      await comfyPage.searchBoxV2.addNode('Load Image')
       await comfyPage.vueNodes.waitForNodes(1)
       await comfyPage.page
         .locator('[data-node-id] img')
         .first()
         .waitFor({ state: 'visible' })
 
-      const [loadImageNode] =
-        await comfyPage.nodeOps.getNodeRefsByTitle('Load Image')
-      if (!loadImageNode) throw new Error('Load Image node not found')
+      const loadImageNode =
+        await comfyPage.nodeOps.getNodeRefByTitle('Load Image')
 
       await expect
         .poll(() =>
           comfyPage.page.evaluate(
             (nodeId) =>
-              window.app!.graph.getNodeById(nodeId)?.imgs?.length ?? 0,
+              window.app!.graph.nodes.find((node) => node.id === nodeId)?.imgs
+                ?.length ?? 0,
             loadImageNode.id
           )
         )
@@ -451,7 +472,7 @@ test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
 
       for (const title of nodeTitles) {
         const nodeRef = await getNodeRef(comfyPage, title)
-        await expect.poll(() => nodeRef.isBypassed()).toBe(true)
+        await expect(nodeRef).toBeBypassed()
         await expect(getNodeWrapper(comfyPage, title)).toHaveClass(BYPASS_CLASS)
       }
 
@@ -460,7 +481,7 @@ test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
 
       for (const title of nodeTitles) {
         const nodeRef = await getNodeRef(comfyPage, title)
-        await expect.poll(() => nodeRef.isBypassed()).toBe(false)
+        await expect(nodeRef).not.toBeBypassed()
         await expect(getNodeWrapper(comfyPage, title)).not.toHaveClass(
           BYPASS_CLASS
         )
@@ -505,25 +526,6 @@ test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
           comfyPage.page.evaluate(() => window.app!.graph.groups.length)
         )
         .toBe(initialGroupCount + 1)
-    })
-
-    test('should convert to group node via context menu', async ({
-      comfyPage
-    }) => {
-      await openMultiNodeContextMenu(comfyPage, nodeTitles)
-      await clickExactMenuItem(comfyPage, 'Convert to Group Node')
-
-      await comfyPage.nodeOps.promptDialogInput.waitFor({ state: 'visible' })
-      await comfyPage.nodeOps.fillPromptDialog('TestGroupNode')
-
-      await expect
-        .poll(async () => {
-          const groupNodes = await comfyPage.nodeOps.getNodeRefsByType(
-            'workflow>TestGroupNode'
-          )
-          return groupNodes.length
-        })
-        .toBe(1)
     })
 
     test('should convert selected nodes to subgraph via context menu', async ({

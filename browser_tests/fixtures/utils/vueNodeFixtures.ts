@@ -1,4 +1,5 @@
 import type { Locator } from '@playwright/test'
+import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
 
 import { TitleEditor } from '@e2e/fixtures/components/TitleEditor'
 import { TestIds } from '@e2e/fixtures/selectors'
@@ -15,7 +16,15 @@ export class VueNodeFixture {
   public readonly root: Locator
   public readonly widgets: Locator
   public readonly imagePreview: Locator
+  public readonly imageGrid: Locator
   public readonly content: Locator
+  public readonly priceBadge: {
+    required: Locator
+    requiredText: Locator
+    rest: Locator
+    restText: Locator
+  }
+  public readonly resize: { bottomRight: Locator }
 
   constructor(private readonly locator: Locator) {
     this.header = locator.locator('[data-testid^="node-header-"]')
@@ -28,7 +37,18 @@ export class VueNodeFixture {
     this.root = locator
     this.widgets = this.locator.locator('.lg-node-widget')
     this.imagePreview = locator.locator('.image-preview')
+    this.imageGrid = locator.getByTestId(TestIds.node.imageGrid)
     this.content = locator.locator('.lg-node-content')
+    const required = locator.getByTestId('credit-badge-required')
+    const rest = locator.getByTestId('credit-badge-rest')
+    this.priceBadge = {
+      required,
+      requiredText: required.locator('span'),
+      rest,
+      restText: rest.locator('span')
+    }
+    const bottomRight = locator.getByRole('button', { name: 'bottom-right' })
+    this.resize = { bottomRight }
   }
 
   async getTitle(): Promise<string> {
@@ -76,5 +96,41 @@ export class VueNodeFixture {
         ? slotLocators.filter({ hasText: nameOrLocator })
         : slotLocators.filter({ has: nameOrLocator })
     return filteredLocator.getByTestId('slot-dot').locator('..')
+  }
+
+  /** Locator for the resize handle at the given corner, scoped to this node. */
+  getResizeHandle(corner: CompassCorners): Locator {
+    return this.root.locator(`[data-corner="${corner}"]`)
+  }
+
+  /**
+   * Drag the resize handle at `corner` by (deltaX, deltaY) viewport pixels.
+   * Uses `hover()` to land the pointer on the handle with Playwright's
+   * actionability checks before starting the mouse sequence, which protects
+   * against occluding overlays and subpixel hit-test misses.
+   */
+  async resizeFromCorner(
+    corner: CompassCorners,
+    deltaX: number,
+    deltaY: number
+  ): Promise<void> {
+    const handle = this.getResizeHandle(corner)
+    await handle.hover()
+    const box = await handle.boundingBox()
+    if (!box) {
+      throw new Error(
+        `Resize handle for corner "${corner}" has no bounding box`
+      )
+    }
+
+    const page = this.locator.page()
+    const startX = box.x + box.width / 2
+    const startY = box.y + box.height / 2
+    await page.mouse.move(startX, startY)
+    await page.mouse.down()
+    await page.mouse.move(startX + deltaX, startY + deltaY, {
+      steps: 5
+    })
+    await page.mouse.up()
   }
 }

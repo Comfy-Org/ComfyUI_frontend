@@ -40,49 +40,19 @@ test.describe(
       )
       const [nodeId1, nodeId2] = nodeIds
 
-      // Enter first subgraph, set text widget value
-      await comfyPage.vueNodes.enterSubgraph(nodeId1)
-      await comfyPage.vueNodes.waitForNodes()
-      const textarea1 = comfyPage.vueNodes
-        .getNodeByTitle(clipNodeTitle)
-        .first()
-        .getByRole('textbox', { name: 'text' })
-      await textarea1.fill('subgraph1_value')
-      await expect(textarea1).toHaveValue('subgraph1_value')
-      await comfyPage.subgraph.exitViaBreadcrumb()
+      const promotedTextarea = (nodeId: string) =>
+        comfyPage.vueNodes
+          .getNodeLocator(nodeId)
+          .getByRole('textbox', { name: 'text' })
 
-      // Enter second subgraph, set text widget value
-      await comfyPage.vueNodes.waitForNodes()
-      await comfyPage.vueNodes.enterSubgraph(nodeId2)
-      await comfyPage.vueNodes.waitForNodes()
-      const textarea2 = comfyPage.vueNodes
-        .getNodeByTitle(clipNodeTitle)
-        .first()
-        .getByRole('textbox', { name: 'text' })
-      await textarea2.fill('subgraph2_value')
-      await expect(textarea2).toHaveValue('subgraph2_value')
-      await comfyPage.subgraph.exitViaBreadcrumb()
+      await promotedTextarea(nodeId1).fill('subgraph1_value')
+      await expect(promotedTextarea(nodeId1)).toHaveValue('subgraph1_value')
 
-      // Re-enter first subgraph, assert value preserved
-      await comfyPage.vueNodes.waitForNodes()
-      await comfyPage.vueNodes.enterSubgraph(nodeId1)
-      await comfyPage.vueNodes.waitForNodes()
-      const textarea1Again = comfyPage.vueNodes
-        .getNodeByTitle(clipNodeTitle)
-        .first()
-        .getByRole('textbox', { name: 'text' })
-      await expect(textarea1Again).toHaveValue('subgraph1_value')
-      await comfyPage.subgraph.exitViaBreadcrumb()
+      await promotedTextarea(nodeId2).fill('subgraph2_value')
+      await expect(promotedTextarea(nodeId2)).toHaveValue('subgraph2_value')
 
-      // Re-enter second subgraph, assert value preserved
-      await comfyPage.vueNodes.waitForNodes()
-      await comfyPage.vueNodes.enterSubgraph(nodeId2)
-      await comfyPage.vueNodes.waitForNodes()
-      const textarea2Again = comfyPage.vueNodes
-        .getNodeByTitle(clipNodeTitle)
-        .first()
-        .getByRole('textbox', { name: 'text' })
-      await expect(textarea2Again).toHaveValue('subgraph2_value')
+      await expect(promotedTextarea(nodeId1)).toHaveValue('subgraph1_value')
+      await expect(promotedTextarea(nodeId2)).toHaveValue('subgraph2_value')
     })
   }
 )

@@ -5,6 +5,7 @@ import { LGraph } from './LGraph'
 import { LGraphCanvas } from './LGraphCanvas'
 import { LGraphGroup } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
+import type { NodeProperty } from './LGraphNode'
 import { LLink } from './LLink'
 import { Reroute } from './Reroute'
 import { InputIndicators } from './canvas/InputIndicators'
@@ -28,7 +29,19 @@ import {
   RenderShape,
   TitleMode
 } from './types/globalEnums'
-import { createUuidv4 } from './utils/uuid'
+import { createUuidv4 } from '@/utils/uuid'
+
+export interface SlotTypeDefaultNodeOpts {
+  node?: string
+  title?: string
+  properties?: Record<string, NodeProperty>
+  inputs?: [string, string][]
+  outputs?: [string, string][]
+  json?: Parameters<LGraphNode['configure']>[0]
+}
+
+type SlotTypeDefaultNode = string | SlotTypeDefaultNodeOpts
+type SlotTypeDefault = SlotTypeDefaultNode | SlotTypeDefaultNode[]
 
 /**
  * The Global Scope. It contains all the registered node classes.
@@ -77,7 +90,6 @@ export class LiteGraphGlobal {
 
   WIDGET_BGCOLOR = '#222'
   WIDGET_OUTLINE_COLOR = '#666'
-  WIDGET_PROMOTED_OUTLINE_COLOR = '#BF00FF'
   WIDGET_ADVANCED_OUTLINE_COLOR = 'rgba(56, 139, 253, 0.8)'
   WIDGET_TEXT_COLOR = '#DDD'
   WIDGET_SECONDARY_TEXT_COLOR = '#999'
@@ -233,12 +245,12 @@ export class LiteGraphGlobal {
    * specify for each IN slot type a(/many) default node(s), use single string, array, or object
    * (with node, title, parameters, ..) like for search
    */
-  slot_types_default_in: Record<string, string[]> = {}
+  slot_types_default_in: Record<string, SlotTypeDefault> = {}
   /**
    * specify for each OUT slot type a(/many) default node(s), use single string, array, or object
    * (with node, title, parameters, ..) like for search
    */
-  slot_types_default_out: Record<string, string[]> = {}
+  slot_types_default_out: Record<string, SlotTypeDefault> = {}
 
   /** [true!] very handy, ALT click to clone and drag the new node */
   alt_drag_do_clone_nodes = false
@@ -266,10 +278,6 @@ export class LiteGraphGlobal {
    * with the inputs of the newly pasted nodes
    */
   ctrl_shift_v_paste_connect_unselected_outputs = true
-
-  // if true, all newly created nodes/links will use string UUIDs for their id fields instead of integers.
-  // use this if you must have node IDs that are unique across all graphs and subgraphs.
-  use_uuids = false
 
   // Whether to highlight the bounding box of selected groups
   highlight_selected_group = true
@@ -344,6 +352,13 @@ export class LiteGraphGlobal {
   saveViewportWithGraph: boolean = true
 
   /**
+   * If `true`, widgets values are deserialised using a map of widget names to values instead of a list.
+   * This is intended as a temporary setting. It is planned to be made the default and eventually removed.
+   * @default false
+   */
+  namedValuesRestore: boolean = false
+
+  /**
    * Enable Vue nodes mode for rendering and positioning.
    * When true:
    * - Nodes will calculate slot positions using Vue component dimensions
@@ -406,8 +421,6 @@ export class LiteGraphGlobal {
    * @param base_class class containing the structure of a node
    */
   registerNodeType(type: string, base_class: typeof LGraphNode): void {
-    if (!base_class.prototype)
-      throw 'Cannot register a simple object, it must be a class with a prototype'
     base_class.type = type
 
     const classname = base_class.name
@@ -423,7 +436,9 @@ export class LiteGraphGlobal {
       base_class.prototype[i] ||= LGraphNode.prototype[i]
     }
 
-    const prev = this.registered_node_types[type]
+    const prev = Object.hasOwn(this.registered_node_types, type)
+      ? this.registered_node_types[type]
+      : undefined
     if (prev && this.debug) {
       console.warn('replacing node type:', type)
     }
@@ -450,13 +465,17 @@ export class LiteGraphGlobal {
    */
   unregisterNodeType(type: string | typeof LGraphNode): void {
     const base_class =
-      typeof type === 'string' ? this.registered_node_types[type] : type
+      typeof type !== 'string'
+        ? type
+        : Object.hasOwn(this.registered_node_types, type)
+          ? this.registered_node_types[type]
+          : undefined
     if (!base_class) throw `node type not found: ${String(type)}`
 
     delete this.registered_node_types[String(base_class.type)]
 
-    const name = base_class.constructor.name
-    if (name) delete this.Nodes[name]
+    const name = base_class.name
+    if (name && this.Nodes[name] === base_class) delete this.Nodes[name]
   }
 
   /**
@@ -480,7 +499,7 @@ export class LiteGraphGlobal {
     // @ts-expect-error Confirm this function no longer supports string types - base_class should always be an instance not a constructor.
     const class_type = base_class.constructor.type
 
-    let allTypes = []
+    let allTypes: string[]
     if (typeof slot_type === 'string') {
       allTypes = slot_type.split(',')
     } else if (slot_type == this.EVENT || slot_type == this.ACTION) {
@@ -532,7 +551,9 @@ export class LiteGraphGlobal {
     title?: string,
     options?: CreateNodeOptions
   ): LGraphNode | null {
-    const base_class = this.registered_node_types[type]
+    const base_class = Object.hasOwn(this.registered_node_types, type)
+      ? this.registered_node_types[type]
+      : undefined
     if (!base_class) {
       if (this.debug) console.warn(`GraphNode type "${type}" not registered.`)
       return null
@@ -540,28 +561,19 @@ export class LiteGraphGlobal {
 
     title = title || base_class.title || type
 
-    let node = null
+    let node: LGraphNode
 
-    if (this.catch_exceptions) {
-      try {
-        node = new base_class(title)
-      } catch (error) {
-        console.error(error)
-        return null
-      }
-    } else {
+    try {
       node = new base_class(title)
+      node._state.type = type
+    } catch (error) {
+      if (!this.catch_exceptions) throw error
+      console.error(error)
+      return null
     }
 
-    node.type = type
-
     if (!node.title && title) node.title = title
-    node.properties ||= {}
-    node.properties_info ||= []
-    node.flags ||= {}
     // call onresize?
-    node.size ||= node.computeSize()
-    node.pos ||= [this.DEFAULT_POSITION[0], this.DEFAULT_POSITION[1]]
     node.mode ||= LGraphEventMode.ALWAYS
 
     // extra options
@@ -733,25 +745,19 @@ export class LiteGraphGlobal {
   /* helper for interaction: pointer, touch, mouse Listeners
     used by LGraphCanvas DragAndScale ContextMenu */
   pointerListenerAdd(
-    oDOM: Node,
+    oDOM: Node | null,
     sEvIn: string,
     fCall: (e: Event) => boolean | void,
     capture = false
   ): void {
-    if (
-      !oDOM ||
-      !oDOM.addEventListener ||
-      !sEvIn ||
-      typeof fCall !== 'function'
-    )
-      return
+    if (!oDOM || !sEvIn || typeof fCall !== 'function') return
 
     let sMethod = this.pointerevents_method
     let sEvent = sEvIn
 
     // UNDER CONSTRUCTION
     // convert pointerevents to touch event when not available
-    if (sMethod == 'pointer' && !window.PointerEvent) {
+    if (sMethod == 'pointer' && !Reflect.has(window, 'PointerEvent')) {
       console.warn("sMethod=='pointer' && !window.PointerEvent")
       console.warn(
         `Converting pointer[${sEvent}] : down move up cancel enter TO touchstart touchmove touchend, etc ..`
@@ -820,18 +826,12 @@ export class LiteGraphGlobal {
   }
 
   pointerListenerRemove(
-    oDOM: Node,
+    oDOM: Node | null,
     sEvent: string,
     fCall: (e: Event) => boolean | void,
     capture = false
   ): void {
-    if (
-      !oDOM ||
-      !oDOM.removeEventListener ||
-      !sEvent ||
-      typeof fCall !== 'function'
-    )
-      return
+    if (!oDOM || !sEvent || typeof fCall !== 'function') return
 
     switch (sEvent) {
       // both pointer and move events
@@ -881,7 +881,9 @@ export class LiteGraphGlobal {
 
   distance = distance
 
-  colorToString(c: [number, number, number, number]): string {
+  colorToString(
+    c: [number, number, number] | [number, number, number, number]
+  ): string {
     return `rgba(${Math.round(c[0] * 255).toFixed()},${Math.round(
       c[1] * 255
     ).toFixed()},${Math.round(c[2] * 255).toFixed()},${

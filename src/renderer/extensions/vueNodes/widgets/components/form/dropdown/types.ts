@@ -39,11 +39,13 @@ export interface FormDropdownInputProps {
   uploadable: boolean
   disabled: boolean
   accept?: string
+  isUploading?: boolean
 }
 
 export interface FormDropdownMenuItemProps {
   index: number
   selected: boolean
+  candidate?: boolean
   previewUrl: string
   name: string
   label?: string

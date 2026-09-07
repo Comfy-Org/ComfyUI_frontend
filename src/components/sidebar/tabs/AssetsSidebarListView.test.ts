@@ -1,3 +1,5 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { render, fireEvent } from '@testing-library/vue'
 import { defineComponent } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
@@ -58,11 +60,11 @@ const AssetsListItemStub = defineComponent({
 })
 
 const buildAsset = (id: string, name: string): AssetItem =>
-  ({
+  fromPartial({
     id,
     name,
     tags: []
-  }) satisfies AssetItem
+  })
 
 const buildOutputItem = (asset: AssetItem): OutputStackListItem => ({
   key: `asset-${asset.id}`,
@@ -106,10 +108,10 @@ describe('AssetsSidebarListView', () => {
     const assetListItem = stubs[stubs.length - 1]
 
     expect(assetListItem).toBeDefined()
-    expect(assetListItem?.getAttribute('data-preview-url')).toBe(
+    expect(assetListItem.getAttribute('data-preview-url')).toBe(
       '/api/view/clip.mp4'
     )
-    expect(assetListItem?.getAttribute('data-is-video-preview')).toBe('true')
+    expect(assetListItem.getAttribute('data-is-video-preview')).toBe('true')
   })
 
   it('uses icon fallback for text assets even when preview_url exists', () => {
@@ -126,8 +128,8 @@ describe('AssetsSidebarListView', () => {
     const assetListItem = stubs[stubs.length - 1]
 
     expect(assetListItem).toBeDefined()
-    expect(assetListItem?.getAttribute('data-preview-url')).toBe('')
-    expect(assetListItem?.getAttribute('data-is-video-preview')).toBe('false')
+    expect(assetListItem.getAttribute('data-preview-url')).toBe('')
+    expect(assetListItem.getAttribute('data-is-video-preview')).toBe('false')
   })
 
   it('emits preview-asset when item preview is clicked', async () => {

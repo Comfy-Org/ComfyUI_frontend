@@ -11,7 +11,6 @@ describe('useErrorHandling', () => {
   let errorHandler: ReturnType<typeof useErrorHandling>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     setActivePinia(createTestingPinia())
     errorHandler = useErrorHandling()
   })

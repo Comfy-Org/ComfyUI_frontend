@@ -24,13 +24,23 @@
         >
           <ComfyHubThumbnailStep
             :thumbnail-type="formData.thumbnailType"
+            :thumbnail-file="formData.thumbnailFile"
+            :thumbnail-url="formData.thumbnailUrl"
+            :existing-thumbnail-type="formData.existingThumbnailType"
+            :comparison-before-file="formData.comparisonBeforeFile"
+            :comparison-after-file="formData.comparisonAfterFile"
+            :comparison-after-url="formData.comparisonAfterUrl"
             @update:thumbnail-type="onUpdateFormData({ thumbnailType: $event })"
             @update:thumbnail-file="onUpdateFormData({ thumbnailFile: $event })"
+            @update:thumbnail-url="onUpdateFormData({ thumbnailUrl: $event })"
             @update:comparison-before-file="
               onUpdateFormData({ comparisonBeforeFile: $event })
             "
             @update:comparison-after-file="
               onUpdateFormData({ comparisonAfterFile: $event })
+            "
+            @update:comparison-after-url="
+              onUpdateFormData({ comparisonAfterUrl: $event })
             "
           />
           <ComfyHubExamplesStep
@@ -61,6 +71,7 @@
         :is-last-step
         :is-publish-disabled
         :is-publishing="isPublishInFlight"
+        :is-update
         @back="onGoBack"
         @next="onGoNext"
         @publish="handlePublish"
@@ -92,6 +103,7 @@ const {
   isFirstStep,
   isLastStep,
   isPublishing = false,
+  isUpdate = false,
   onGoNext,
   onGoBack,
   onUpdateFormData,
@@ -105,6 +117,7 @@ const {
   isFirstStep: boolean
   isLastStep: boolean
   isPublishing?: boolean
+  isUpdate?: boolean
   onGoNext: () => void
   onGoBack: () => void
   onUpdateFormData: (patch: Partial<ComfyHubPublishFormData>) => void

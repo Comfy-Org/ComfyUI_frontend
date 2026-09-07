@@ -1,66 +1,40 @@
 <template>
-  <div>
+  <div ref="containerRef" class="w-full">
     <!-- Hidden single-line measurement element for overflow detection -->
     <div
       ref="measureRef"
       class="pointer-events-none invisible absolute inset-x-0 top-0 overflow-hidden whitespace-nowrap"
       aria-hidden="true"
-    >
-      <slot />
-    </div>
-
-    <MarqueeLine v-if="!secondLine">
-      <slot />
-    </MarqueeLine>
-
-    <div v-else class="flex w-full flex-col">
-      <MarqueeLine>{{ firstLine }}</MarqueeLine>
-      <MarqueeLine>{{ secondLine }}</MarqueeLine>
+      v-text="text"
+    />
+    <div class="flex w-full flex-col">
+      <MarqueeLine v-for="(line, index) in lines" :key="index">
+        {{ line }}
+      </MarqueeLine>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useMutationObserver, useResizeObserver } from '@vueuse/core'
-import { ref } from 'vue'
+import { useElementSize } from '@vueuse/core'
+import { computed, useTemplateRef } from 'vue'
 
 import MarqueeLine from './MarqueeLine.vue'
 import { splitTextAtWordBoundary } from '@/utils/textTickerUtils'
 
-const measureRef = ref<HTMLElement | null>(null)
-const firstLine = ref('')
-const secondLine = ref('')
+const { text } = defineProps<{ text: string }>()
 
-function splitLines() {
-  const el = measureRef.value
-  const text = el?.textContent?.trim()
-  if (!el || !text) {
-    firstLine.value = ''
-    secondLine.value = ''
-    return
-  }
+const measureRef = useTemplateRef('measureRef')
+const containerRef = useTemplateRef('containerRef')
+const { width: textWidth } = useElementSize(measureRef)
+const { width: containerWidth } = useElementSize(containerRef)
 
-  const containerWidth = el.clientWidth
-  const textWidth = el.scrollWidth
+const lines = computed(() => {
+  if (!textWidth.value || !containerWidth.value) return [text]
 
-  if (textWidth <= containerWidth) {
-    firstLine.value = text
-    secondLine.value = ''
-    return
-  }
+  const safeRenderWidth = containerWidth.value - 30
+  if (textWidth.value <= safeRenderWidth) return [text]
 
-  const [first, second] = splitTextAtWordBoundary(
-    text,
-    containerWidth / textWidth
-  )
-  firstLine.value = first
-  secondLine.value = second
-}
-
-useResizeObserver(measureRef, splitLines)
-useMutationObserver(measureRef, splitLines, {
-  childList: true,
-  characterData: true,
-  subtree: true
+  return splitTextAtWordBoundary(text, safeRenderWidth / textWidth.value)
 })
 </script>

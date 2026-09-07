@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/vue'
-import type * as VueUseCore from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
@@ -15,13 +14,9 @@ const {
   mockIsAssetPreviewSupported: vi.fn(() => true)
 }))
 
-vi.mock('@vueuse/core', async (importOriginal) => {
-  const actual = await importOriginal<typeof VueUseCore>()
-  return {
-    ...actual,
-    useIntersectionObserver: mockUseIntersectionObserver
-  }
-})
+vi.mock('@vueuse/core', () => ({
+  useIntersectionObserver: mockUseIntersectionObserver
+}))
 
 vi.mock('../utils/assetPreviewUtil', () => ({
   findServerPreviewUrl: mockFindServerPreviewUrl,
@@ -32,7 +27,7 @@ function makeAsset(overrides: Partial<AssetMeta> = {}): AssetMeta {
   return {
     id: 'asset-1',
     name: 'mesh.glb',
-    asset_hash: null,
+    hash: null,
     mime_type: 'model/gltf-binary',
     tags: [],
     kind: '3D',
@@ -65,7 +60,6 @@ const globalConfig = { mocks: { $t: (key: string) => key } }
 
 describe('Media3DTop', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockIsAssetPreviewSupported.mockReturnValue(true)
   })
 

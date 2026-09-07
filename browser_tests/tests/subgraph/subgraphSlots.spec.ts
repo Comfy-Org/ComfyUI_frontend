@@ -1,12 +1,12 @@
+import { expect } from '@playwright/test'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
-
-import { expect } from '@playwright/test'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
+import { toNodeId } from '@/types/nodeId'
 import {
   expectSlotsWithinBounds,
   measureNodeSlotOffsets
@@ -248,9 +248,8 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
         if (!graph || !('inputNode' in graph))
           throw new Error('Expected to be in subgraph')
 
-        const input = graph.inputs?.[0]
-        if (!input?.labelPos)
-          throw new Error('Could not get label position for testing')
+        const input = graph.inputs.at(0)
+        if (!input) throw new Error('Could not get input for testing')
 
         const leftClickEvent = {
           canvasX: input.labelPos[0],
@@ -261,16 +260,14 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
         } as Parameters<typeof graph.inputNode.onPointerDown>[0]
 
         const inputNode = graph.inputNode
-        if (inputNode?.onPointerDown) {
-          inputNode.onPointerDown(
-            leftClickEvent,
-            app.canvas.pointer,
-            app.canvas.linkConnector
-          )
+        inputNode.onPointerDown(
+          leftClickEvent,
+          app.canvas.pointer,
+          app.canvas.linkConnector
+        )
 
-          if (app.canvas.pointer.onDoubleClick) {
-            app.canvas.pointer.onDoubleClick(leftClickEvent)
-          }
+        if (app.canvas.pointer.onDoubleClick) {
+          app.canvas.pointer.onDoubleClick(leftClickEvent)
         }
       })
 
@@ -329,7 +326,7 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
           comfyPage.page.evaluate(() => {
             const graph = window.app!.canvas.graph
             if (!graph || !('inputNode' in graph)) return null
-            return graph.inputs?.[0]?.label || null
+            return graph.inputs.at(0)?.label || null
           })
         )
         .toBe(RENAMED_SLOT_NAME)
@@ -461,16 +458,17 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       const subgraphNodeAfter = comfyPage.vueNodes.getNodeLocator('19')
       await expect(subgraphNodeAfter).toBeVisible()
 
+      const subgraphNodeId = toNodeId(19)
       await expect
         .poll(() =>
-          comfyPage.page.evaluate(() => {
-            const node = window.app!.canvas.graph!.getNodeById('19')
+          comfyPage.page.evaluate((nodeId) => {
+            const node = window.app!.canvas.graph!.getNodeById(nodeId)
             if (!node) return null
             const widget = node.widgets?.find((entry: { name: string }) =>
               entry.name.includes('seed')
             )
             return widget?.label || widget?.name || null
-          })
+          }, subgraphNodeId)
         )
         .toBe(RENAMED_LABEL)
 
@@ -535,7 +533,7 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       const initialLabel = await comfyPage.page.evaluate(() => {
         const graph = window.app!.canvas.graph
         if (!graph || !('inputNode' in graph)) return null
-        const textInput = graph.inputs?.find(
+        const textInput = graph.inputs.find(
           (input: { type: string }) => input.type === 'STRING'
         )
         return textInput?.label || textInput?.name || null
@@ -594,7 +592,7 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
 
       await comfyPage.page.evaluate(
         (wf) =>
-          window.app!.loadGraphData(wf as ComfyWorkflowJSON, true, true, null, {
+          window.app!.loadGraphData(wf, true, true, null, {
             openSource: 'template'
           }),
         workflow
@@ -607,15 +605,14 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
         .poll(() =>
           comfyPage.page.evaluate(
             () =>
-              window.app!.graph._nodes.filter((n) => !!n.isSubgraphNode?.())
-                .length
+              window.app!.graph._nodes.filter((n) => n.isSubgraphNode()).length
           )
         )
         .toBeGreaterThan(0)
 
       const nodeIds = await comfyPage.page.evaluate(() =>
         window
-          .app!.graph._nodes.filter((n) => !!n.isSubgraphNode?.())
+          .app!.graph._nodes.filter((n) => n.isSubgraphNode())
           .map((n) => String(n.id))
       )
 
@@ -632,3 +629,89 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
     })
   })
 })
+
+test(
+  'link interactions',
+  { tag: ['@vue-nodes', '@subgraph'] },
+  async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+    await comfyPage.vueNodes.enterSubgraph('2')
+
+    const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    const seedSlot = ksampler.getSlot('seed')
+    const seedIOSlot = await comfyPage.subgraph.getInputSlot('seed')
+
+    await test.step('Make second INT typed connection', async () => {
+      const toPos = await seedIOSlot.getOpenSlotPosition()
+      await seedSlot.dragTo(comfyPage.canvas, { targetPosition: toPos })
+      const isConnected = () => comfyPage.vueNodes.isSlotConnected(seedSlot)
+      await expect.poll(isConnected).toBe(true)
+    })
+
+    const rawClip = await comfyPage.subgraph.getInputBounds()
+    const absolutePos = await comfyPage.canvasOps.toAbsolute(rawClip)
+    const clip = { ...rawClip, ...absolutePos }
+    await comfyPage.canvas.hover({ position: await seedIOSlot.getPosition() })
+    const twoLinkScreenshot = await comfyPage.page.screenshot({ clip })
+
+    const stepsSlot = ksampler.getSlot('steps')
+
+    await test.step('Node -> I/O hover effect', async () => {
+      await stepsSlot.hover()
+      await stepsSlot.click({ trial: true })
+      await comfyPage.page.mouse.down()
+      await comfyPage.canvas.hover({ position: await seedIOSlot.getPosition() })
+
+      await expect(comfyPage.page).toHaveScreenshot('vue-io-highlight.png', {
+        clip
+      })
+
+      //cancel link operation
+      await stepsSlot.hover()
+      await comfyPage.page.mouse.up()
+    })
+
+    await ksampler.title.hover()
+
+    const slotParent = stepsSlot.locator('../..')
+    await expect(slotParent, 'unconnected slot is hidden').toHaveCSS(
+      'opacity',
+      '0'
+    )
+
+    await test.step('Connect I/O to node with snap', async () => {
+      const hasSnap = () =>
+        comfyPage.page.evaluate(() => !!app!.canvas._highlight_pos)
+      expect(await hasSnap()).toBe(false)
+
+      const emptySlotPos = await seedIOSlot.getOpenSlotPosition()
+      await comfyPage.canvas.hover({ position: emptySlotPos })
+      await comfyPage.page.mouse.down()
+      const { width, height } = (await stepsSlot.boundingBox())!
+      await stepsSlot.hover({ position: { x: (width * 3) / 4, y: height / 2 } })
+      await expect.poll(hasSnap).toBe(true)
+      await comfyPage.page.mouse.up()
+
+      //move hover off the slot
+      await ksampler.title.hover()
+    })
+
+    await expect(slotParent, 'connected slot is visible').not.toHaveCSS(
+      'opacity',
+      '0'
+    )
+
+    await test.step('Can disconnect link by right click', async () => {
+      const stepsIOSlot = await comfyPage.subgraph.getInputSlot('steps')
+      const { x, y } = await stepsIOSlot.getPosition()
+      await comfyPage.page.mouse.click(x, y, { button: 'right' })
+      await comfyPage.contextMenu.clickLitegraphMenuItem('Remove Slot')
+
+      await expect(slotParent).toHaveCSS('opacity', '0')
+
+      await comfyPage.canvas.hover({ position: await seedIOSlot.getPosition() })
+      const postScreenshot = await comfyPage.page.screenshot({ clip })
+      expect(postScreenshot).toStrictEqual(twoLinkScreenshot)
+    })
+  }
+)

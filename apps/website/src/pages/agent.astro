@@ -1,0 +1,54 @@
+---
+import { getAgentCards } from '../components/agent/agentCards'
+import HeroWaitlist01 from '../components/blocks/HeroWaitlist01.vue'
+import { t } from '../i18n/translations'
+import BaseLayout from '../layouts/BaseLayout.astro'
+
+const locale = 'en'
+const agentCards = getAgentCards(locale)
+---
+
+<BaseLayout
+  title={t('agent.meta.title', locale)}
+  description={t('agent.meta.description', locale)}
+  noindex
+>
+  <HeroWaitlist01
+    client:load
+    locale={locale}
+    badgeText={t('agent.hero.badge', locale)}
+    title={t('agent.hero.title', locale)}
+    subtitle={t('agent.hero.subtitle', locale)}
+    footnote={t('agent.hero.footnote', locale)}
+    signupEvent="agent_beta_waitlist_joined"
+  />
+
+  <!-- ============ CARDS ============ -->
+  <section
+    class="mx-auto max-w-295 px-6 pt-15 pb-35 max-[820px]:pt-20 max-[820px]:pb-24"
+  >
+    <div class="mx-auto mb-13.5 max-w-180 text-center">
+      <h2
+        class="text-[clamp(28px,4.2vw,48px)]/[1.12] font-light tracking-[-0.02em] text-primary-comfy-canvas"
+      >
+        {t('agent.cards.heading', locale)}
+      </h2>
+    </div>
+
+    <div class="grid grid-cols-2 gap-6 max-[820px]:grid-cols-1">
+      {
+        agentCards.map((card) => (
+          <div class="rounded-3xl bg-primary-comfy-ink-light p-8.5 pb-9.5">
+            <p class="mb-4 text-xs font-bold tracking-[0.14em] text-primary-comfy-yellow uppercase">
+              {card.tag}
+            </p>
+            <h3 class="mb-3 text-xl/[1.25] font-medium tracking-[-0.01em] text-primary-comfy-canvas">
+              {card.title}
+            </h3>
+            <p class="text-sm/[1.62] text-primary-warm-white/66">{card.body}</p>
+          </div>
+        ))
+      }
+    </div>
+  </section>
+</BaseLayout>

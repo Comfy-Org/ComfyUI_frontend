@@ -7,10 +7,11 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
+vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+
 describe('useWorkflowTabState', () => {
   beforeEach(() => {
     vi.resetModules()
-    sessionStorage.clear()
   })
 
   describe('activePath', () => {

@@ -1,23 +1,27 @@
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   LGraph,
   LGraphCanvas,
   LGraphNode,
-  LiteGraph
+  LiteGraph,
+  ToInputRenderLink
 } from '@/lib/litegraph/src/litegraph'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { getSlotLayoutAtPoint } from '@/renderer/core/canvas/litegraph/slotCalculations'
+import type * as SlotCalculations from '@/renderer/core/canvas/litegraph/slotCalculations'
 
-vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
-  layoutStore: {
-    querySlotAtPoint: vi.fn(),
-    queryRerouteAtPoint: vi.fn(),
-    getNodeLayoutRef: vi.fn(() => ({ value: null })),
-    getSlotLayout: vi.fn(),
-    setSource: vi.fn(),
-    batchUpdateNodeBounds: vi.fn()
-  }
-}))
+vi.mock('@/renderer/core/layout/store/layoutStore')
+vi.mock(
+  '@/renderer/core/canvas/litegraph/slotCalculations',
+  async (importOriginal) => ({
+    ...(await importOriginal<typeof SlotCalculations>()),
+    getSlotLayoutAtPoint: vi.fn()
+  })
+)
+
+beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
 describe('LGraphCanvas slot hit detection', () => {
   let graph: LGraph
@@ -26,8 +30,6 @@ describe('LGraphCanvas slot hit detection', () => {
   let canvasElement: HTMLCanvasElement
 
   beforeEach(() => {
-    vi.clearAllMocks()
-
     canvasElement = document.createElement('canvas')
     canvasElement.width = 800
     canvasElement.height = 600
@@ -93,8 +95,36 @@ describe('LGraphCanvas slot hit detection', () => {
     LiteGraph.vueNodesMode = false
   })
 
+  it('highlights the free fallback when hovering an incompatible input', () => {
+    LiteGraph.vueNodesMode = false
+    node.addInput('image', 'IMAGE')
+    node.addInput('video', 'VIDEO')
+    node.updateArea()
+    canvas.visible_nodes = [node]
+
+    const source = new LGraphNode('Source')
+    source.addOutput('image', 'IMAGE')
+    graph.add(source)
+    canvas.linkConnector.state.connectingTo = 'input'
+    canvas.linkConnector.renderLinks.push(
+      new ToInputRenderLink(graph, source, source.outputs[0])
+    )
+
+    const [clientX, clientY] = node.getInputPos(1)
+    canvas.processMouseMove(
+      new PointerEvent('pointermove', {
+        clientX,
+        clientY,
+        isPrimary: true
+      })
+    )
+
+    expect(canvas._highlight_input).toBe(node.inputs[0])
+    expect(canvas._highlight_pos).toEqual(node.getInputSlotPos(node.inputs[0]))
+  })
+
   describe('processMouseDown slot fallback in Vue nodes mode', () => {
-    it('should query layoutStore.querySlotAtPoint when clicking outside node bounds', () => {
+    it('should query slot geometry when clicking outside node bounds', () => {
       // Click position outside node bounds (node is at 100,100 with size 150x80)
       // So node covers x: 100-250, y: 100-180
       // Click at x=255 is outside the right edge
@@ -106,25 +136,24 @@ describe('LGraphCanvas slot hit detection', () => {
       expect(graph.getNodeOnPos(clickX, clickY)).toBeNull()
 
       // Mock the slot query to return our node's slot
-      vi.mocked(layoutStore.querySlotAtPoint).mockReturnValue({
-        nodeId: String(node.id),
+      vi.mocked(getSlotLayoutAtPoint).mockReturnValue({
+        nodeId: node.id,
         index: 0,
         type: 'output',
         position: { x: 252, y: 120 },
         bounds: { x: 246, y: 110, width: 20, height: 20 }
       })
 
-      // Call processMouseDown - this should trigger the slot fallback
       canvas.processMouseDown(
         new MouseEvent('pointerdown', {
-          button: 1, // Middle button
+          button: 2,
           clientX: clickX,
           clientY: clickY
         })
       )
 
-      // The fix should query the layout store when no node is found at click position
-      expect(layoutStore.querySlotAtPoint).toHaveBeenCalledWith({
+      expect(node.selected).toBe(true)
+      expect(getSlotLayoutAtPoint).toHaveBeenCalledWith(graph, {
         x: clickX,
         y: clickY
       })
@@ -145,36 +174,34 @@ describe('LGraphCanvas slot hit detection', () => {
       expect(node.isPointInside(clickX, clickY)).toBe(true)
       expect(graph.getNodeOnPos(clickX, clickY)).toBe(node)
 
-      // Call processMouseDown
       canvas.processMouseDown(
         new MouseEvent('pointerdown', {
-          button: 1,
+          button: 2,
           clientX: clickX,
           clientY: clickY
         })
       )
 
-      // Should NOT query the layout store since node was found directly
-      expect(layoutStore.querySlotAtPoint).not.toHaveBeenCalled()
+      expect(node.selected).toBe(true)
+      expect(getSlotLayoutAtPoint).not.toHaveBeenCalled()
     })
 
-    it('should NOT query layoutStore when not in Vue nodes mode', () => {
+    it('should NOT query derived slot geometry when not in Vue nodes mode', () => {
       LiteGraph.vueNodesMode = false
 
       const clickX = 255
       const clickY = 120
 
-      // Call processMouseDown
       canvas.processMouseDown(
         new MouseEvent('pointerdown', {
-          button: 1,
+          button: 2,
           clientX: clickX,
           clientY: clickY
         })
       )
 
-      // Should NOT query the layout store in non-Vue mode
-      expect(layoutStore.querySlotAtPoint).not.toHaveBeenCalled()
+      expect(node.selected).not.toBe(true)
+      expect(getSlotLayoutAtPoint).not.toHaveBeenCalled()
     })
 
     it('should find node via slot query for input slots extending beyond left edge', () => {
@@ -187,8 +214,8 @@ describe('LGraphCanvas slot hit detection', () => {
       // Verify outside bounds
       expect(node.isPointInside(clickX, clickY)).toBe(false)
 
-      vi.mocked(layoutStore.querySlotAtPoint).mockReturnValue({
-        nodeId: String(node.id),
+      vi.mocked(getSlotLayoutAtPoint).mockReturnValue({
+        nodeId: node.id,
         index: 0,
         type: 'input',
         position: { x: 98, y: 140 },
@@ -197,13 +224,14 @@ describe('LGraphCanvas slot hit detection', () => {
 
       canvas.processMouseDown(
         new MouseEvent('pointerdown', {
-          button: 1,
+          button: 2,
           clientX: clickX,
           clientY: clickY
         })
       )
 
-      expect(layoutStore.querySlotAtPoint).toHaveBeenCalledWith({
+      expect(node.selected).toBe(true)
+      expect(getSlotLayoutAtPoint).toHaveBeenCalledWith(graph, {
         x: clickX,
         y: clickY
       })

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { ASCII, GltfSizeBytes } from '@/types/metadataTypes'
 
@@ -180,8 +180,6 @@ describe('GLTF binary metadata parser', () => {
   })
 
   describe('FileReader failure modes', () => {
-    afterEach(() => vi.restoreAllMocks())
-
     const file = new File([new Uint8Array(16)], 'test.glb')
 
     it('resolves empty when the FileReader fires error', async () => {

@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -23,22 +23,23 @@ const {
   dialogCloseMock,
   serviceSourceLoad3d,
   getLoad3dAsyncMock
-} = vi.hoisted(() => ({
-  viewerState: {
-    current: null as ReturnType<typeof buildViewerStub> | null
-  },
-  dragState: {
-    current: null as ReturnType<typeof buildDragStub> | null
-  },
-  capturedDragOptions: {
-    current: null as { onModelDrop?: (file: File) => Promise<void> } | null
-  },
-  dialogCloseMock: vi.fn(),
-  serviceSourceLoad3d: {
-    current: null as unknown
-  },
-  getLoad3dAsyncMock: vi.fn()
-}))
+} = vi.hoisted(() => {
+  const serviceSourceLoad3d: { current: unknown } = { current: null }
+  return {
+    viewerState: {
+      current: null as ReturnType<typeof buildViewerStub> | null
+    },
+    dragState: {
+      current: null as ReturnType<typeof buildDragStub> | null
+    },
+    capturedDragOptions: {
+      current: null as { onModelDrop?: (file: File) => Promise<void> } | null
+    },
+    dialogCloseMock: vi.fn(),
+    serviceSourceLoad3d,
+    getLoad3dAsyncMock: vi.fn()
+  }
+})
 
 function buildViewerStub() {
   return {
@@ -59,6 +60,7 @@ function buildViewerStub() {
     canUseGizmo: ref(true),
     canUseLighting: ref(true),
     canExport: ref(true),
+    sourceFormat: ref<string | null>(null),
     materialModes: ref(['original', 'normal', 'wireframe']),
     animations: ref<Array<{ name: string; index: number }>>([]),
     playing: ref(false),
@@ -200,16 +202,11 @@ async function renderViewerContent(options: RenderOptions = {}) {
 
 describe('Load3dViewerContent', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     vi.stubGlobal('MutationObserver', NoopMutationObserver)
     viewerState.current = null
     dragState.current = null
     capturedDragOptions.current = null
     serviceSourceLoad3d.current = null
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
   })
 
   describe('initialization', () => {

@@ -55,17 +55,17 @@ export const useReleaseService = () => {
 
       switch (status) {
         case 400:
-          return `Bad request: ${data?.message || 'Invalid input'}`
+          return `Bad request: ${data.message || 'Invalid input'}`
         case 401:
           return 'Unauthorized: Authentication required'
         case 403:
-          return `Forbidden: ${data?.message || 'Access denied'}`
+          return `Forbidden: ${data.message || 'Access denied'}`
         case 404:
-          return `Not found: ${data?.message || 'Resource not found'}`
+          return `Not found: ${data.message || 'Resource not found'}`
         case 500:
-          return `Server error: ${data?.message || 'Internal server error'}`
+          return `Server error: ${data.message || 'Internal server error'}`
         default:
-          return `${context}: ${data?.message || axiosError.message}`
+          return `${context}: ${data.message || axiosError.message}`
       }
     }
 
@@ -98,8 +98,9 @@ export const useReleaseService = () => {
   // Fetch release notes from API
   const getReleases = async (
     params: GetReleasesParams,
-    signal?: AbortSignal
+    options: { signal?: AbortSignal; deployEnvironment?: string } = {}
   ): Promise<ReleaseNote[] | null> => {
+    const { signal, deployEnvironment } = options
     const endpoint = '/releases'
     const errorContext = 'Failed to get releases'
     const routeSpecificErrors = {
@@ -110,7 +111,10 @@ export const useReleaseService = () => {
       () =>
         releaseApiClient.get<ReleaseNote[]>(endpoint, {
           params,
-          signal
+          signal,
+          headers: deployEnvironment
+            ? { 'Comfy-Env': deployEnvironment }
+            : undefined
         }),
       errorContext,
       routeSpecificErrors

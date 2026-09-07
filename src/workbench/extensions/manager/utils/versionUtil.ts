@@ -35,7 +35,7 @@ export function checkVersionCompatibility(
   }
 
   // If no version requirement specified, assume compatible (no conflict)
-  if (isNil(supportedVersion) || isEmpty(supportedVersion?.trim())) {
+  if (isNil(supportedVersion) || isEmpty(supportedVersion.trim())) {
     return null
   }
 
@@ -43,7 +43,7 @@ export function checkVersionCompatibility(
   const cleanCurrent = cleanVersion(currentVersion)
 
   // Check if version satisfies the range
-  let isCompatible = false
+  let isCompatible: boolean
   try {
     isCompatible = satisfies(cleanCurrent, supportedVersion)
   } catch {

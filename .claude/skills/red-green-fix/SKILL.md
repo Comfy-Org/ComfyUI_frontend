@@ -95,7 +95,7 @@ Run the test locally before pushing to confirm it fails for the right reason:
 
 ```bash
 # Vitest
-pnpm test:unit -- <test-file>
+pnpm test:unit <test-file>
 
 # Playwright
 pnpm test:browser:local -- --grep "<test name>"

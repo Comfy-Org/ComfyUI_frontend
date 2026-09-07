@@ -11,7 +11,7 @@ function getFileContentType(file: File): string {
 }
 
 function getUsername(profile: ComfyHubProfile | null): string {
-  const username = profile?.username?.trim()
+  const username = profile?.username.trim()
   if (!username) {
     throw new Error('ComfyHub profile is required before publishing')
   }
@@ -74,14 +74,21 @@ export function useComfyHubPublishSubmission() {
       await workflowShareService.getShareableAssets()
     )
 
+    const keepsExistingThumbnail =
+      formData.existingThumbnailType === formData.thumbnailType
     const thumbnailFile = resolveThumbnailFile(formData)
     const thumbnailTokenOrUrl = thumbnailFile
       ? await uploadFileAndGetToken(thumbnailFile)
-      : undefined
+      : keepsExistingThumbnail
+        ? (formData.thumbnailUrl ?? undefined)
+        : undefined
     const thumbnailComparisonTokenOrUrl =
-      formData.thumbnailType === 'imageComparison' &&
-      formData.comparisonAfterFile
-        ? await uploadFileAndGetToken(formData.comparisonAfterFile)
+      formData.thumbnailType === 'imageComparison'
+        ? formData.comparisonAfterFile
+          ? await uploadFileAndGetToken(formData.comparisonAfterFile)
+          : keepsExistingThumbnail
+            ? (formData.comparisonAfterUrl ?? undefined)
+            : undefined
         : undefined
 
     const sampleImageTokensOrUrls =

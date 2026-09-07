@@ -6,11 +6,13 @@ import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
 const STORAGE_KEY = 'maskeditor_brush_settings'
 
-function loadBrushFromStorage(): Brush | null {
+type StoredBrush = Omit<Brush, 'stepSize'> & { stepSize?: number }
+
+function loadBrushFromStorage(): StoredBrush | null {
   try {
     const brushString = getStorageValue(STORAGE_KEY)
     if (brushString) {
-      return JSON.parse(brushString) as Brush
+      return JSON.parse(brushString) as StoredBrush
     }
     return null
   } catch (error) {

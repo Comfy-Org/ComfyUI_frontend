@@ -24,6 +24,9 @@ export class ToInputFromIoNodeLink implements RenderLink {
   readonly fromPos: Point
   fromDirection: LinkDirection = LinkDirection.RIGHT
   readonly existingLink?: LLink
+  disconnectOnDrop: boolean
+  readonly disconnectOrigin?: Point
+  readonly isIoNodeLink = true
 
   constructor(
     readonly network: LinkNetwork,
@@ -43,6 +46,11 @@ export class ToInputFromIoNodeLink implements RenderLink {
     this.fromSlotIndex = outputIndex
     this.fromPos = fromReroute ? fromReroute.pos : fromSlot.pos
     this.existingLink = existingLink
+    this.disconnectOnDrop = true
+
+    if (!existingLink) return
+    const toNode = network.getNodeById(existingLink.target_id)
+    this.disconnectOrigin = toNode?.getInputPos(existingLink.target_slot)
   }
 
   canConnectToInput(inputNode: NodeLike, input: INodeInputSlot): boolean {
@@ -112,7 +120,6 @@ export class ToInputFromIoNodeLink implements RenderLink {
     for (const reroute of originalReroutes) {
       if (reroute.id === fromReroute?.id) break
 
-      reroute.removeLink(link)
       if (reroute.totalLinks === 0) {
         if (link.isFloating) {
           // Cannot float from both sides - remove

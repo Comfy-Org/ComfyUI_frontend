@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -34,10 +33,6 @@ vi.mock('@/i18n', () => ({
 
 vi.mock('@/platform/distribution/types', () => ({ isCloud: false }))
 
-vi.mock('@/stores/settingStore', () => ({
-  useSettingStore: vi.fn(() => ({ get: vi.fn(() => false) }))
-}))
-
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn(() => ({ get: vi.fn(() => false) }))
 }))
@@ -60,11 +55,8 @@ function makeNodeWithPreview(id: number): LGraphNode {
 
 describe('FE-230 regression — workflow-load missing-media flagging must not wipe node previews', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     mockApp.isGraphReady = true
     mockApp.rootGraph = { nodes: [], _nodes: [] } as unknown as LGraph
-    mockRemoveNodeOutputs.mockReset()
-    mockGetNodeByExecutionId.mockReset()
   })
 
   it('does not clear node.imgs when verification flags a Load Image as missing on workflow load (e.g. mask-editor saved value)', async () => {

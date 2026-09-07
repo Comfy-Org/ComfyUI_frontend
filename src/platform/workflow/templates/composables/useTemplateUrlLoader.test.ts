@@ -36,8 +36,8 @@ vi.mock(
 )
 
 // Mock template workflows composable
-const mockLoadTemplates = vi.fn().mockResolvedValue(true)
-const mockLoadWorkflowTemplate = vi.fn().mockResolvedValue(true)
+const mockLoadTemplates = vi.fn(async () => true)
+const mockLoadWorkflowTemplate = vi.fn(async () => true)
 
 vi.mock(
   '@/platform/workflow/templates/composables/useTemplateWorkflows',
@@ -63,7 +63,7 @@ vi.mock('vue-i18n', () => ({
     t: vi.fn((key: string, params?: unknown) => {
       if (key === 'g.error') return 'Error'
       if (key === 'templateWorkflows.error.templateNotFound') {
-        return `Template "${(params as { templateName?: string })?.templateName}" not found`
+        return `Template "${(params as { templateName?: string }).templateName}" not found`
       }
       if (key === 'g.errorLoadingTemplate') return 'Failed to load template'
       return key
@@ -82,7 +82,6 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 
 describe('useTemplateUrlLoader', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockQueryParams = {}
     mockCanvasStore.linearMode = false
   })

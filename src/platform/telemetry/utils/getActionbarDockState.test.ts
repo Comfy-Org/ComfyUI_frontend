@@ -1,0 +1,26 @@
+import { describe, expect, it, vi } from 'vitest'
+
+import { getActionbarDockState } from './getActionbarDockState'
+
+describe('getActionbarDockState', () => {
+  it('returns docked when no preference is stored', () => {
+    expect(getActionbarDockState()).toBe('docked')
+  })
+
+  it('returns docked when the stored preference is true', () => {
+    localStorage.setItem('Comfy.MenuPosition.Docked', 'true')
+    expect(getActionbarDockState()).toBe('docked')
+  })
+
+  it('returns floating when the stored preference is false', () => {
+    localStorage.setItem('Comfy.MenuPosition.Docked', 'false')
+    expect(getActionbarDockState()).toBe('floating')
+  })
+
+  it('returns docked when storage access throws', () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new DOMException('denied', 'SecurityError')
+    })
+    expect(getActionbarDockState()).toBe('docked')
+  })
+})

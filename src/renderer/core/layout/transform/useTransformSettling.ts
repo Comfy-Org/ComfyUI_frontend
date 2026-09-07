@@ -2,6 +2,8 @@ import { useDebounceFn, useEventListener } from '@vueuse/core'
 import { ref } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
+import { isMiddleButtonEvent } from '@/base/pointerUtils'
+
 interface TransformSettlingOptions {
   /**
    * Delay in ms before transform is considered "settled" after last interaction
@@ -85,7 +87,7 @@ function usePointerDrag(
     'pointerdown',
     (e: PointerEvent) => {
       // Only primary (0) and middle (1) buttons trigger canvas pan.
-      if (e.button === 0 || e.button === 1) pointerCount.value++
+      if (e.button === 0 || isMiddleButtonEvent(e)) pointerCount.value++
     },
     eventOptions
   )

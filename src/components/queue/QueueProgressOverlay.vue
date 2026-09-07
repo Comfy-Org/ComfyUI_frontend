@@ -66,10 +66,8 @@ import { useQueueProgress } from '@/composables/queue/useQueueProgress'
 import { useResultGallery } from '@/composables/queue/useResultGallery'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useAssetSelectionStore } from '@/platform/assets/composables/useAssetSelectionStore'
-import { isCloud } from '@/platform/distribution/types'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 import { api } from '@/scripts/api'
-import { useAssetsStore } from '@/stores/assetsStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
@@ -91,7 +89,6 @@ const queueStore = useQueueStore()
 const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
 const sidebarTabStore = useSidebarTabStore()
-const assetsStore = useAssetsStore()
 const assetSelectionStore = useAssetSelectionStore()
 const { showQueueClearHistoryDialog } = useQueueClearHistoryDialog()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
@@ -195,19 +192,14 @@ const onCancelItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
   const jobId = item.taskRef?.jobId
   if (!jobId) return
 
-  if (item.state === 'running' || item.state === 'initialization') {
-    // Running/initializing jobs: interrupt execution
-    // Cloud backend uses deleteItem, local uses interrupt
-    if (isCloud) {
-      await api.deleteItem('queue', jobId)
-    } else {
-      await api.interrupt(jobId)
-    }
+  if (
+    item.state === 'running' ||
+    item.state === 'initialization' ||
+    item.state === 'pending'
+  ) {
+    // State-agnostic cancel (see api.ts cancelJob for the runtime-parity caveat).
+    await api.cancelJob(jobId)
     executionStore.clearInitializationByJobId(jobId)
-    await queueStore.update()
-  } else if (item.state === 'pending') {
-    // Pending jobs: remove from queue
-    await api.deleteItem('queue', jobId)
     await queueStore.update()
   }
 })
@@ -251,13 +243,6 @@ const focusAssetInSidebar = async (item: JobListItem) => {
   const assetId = String(jobId)
   openAssetsSidebar()
   await nextTick()
-  await assetsStore.updateHistory()
-  const asset = assetsStore.historyAssets.find(
-    (existingAsset) => existingAsset.id === assetId
-  )
-  if (!asset) {
-    throw new Error('Asset not found in media assets panel')
-  }
   assetSelectionStore.setSelection([assetId])
   assetSelectionStore.setLastSelectedAssetId(assetId)
 }
@@ -292,17 +277,8 @@ const interruptAll = wrapWithErrorHandlingAsync(async () => {
 
   if (!jobIds.length) return
 
-  // Cloud backend supports cancelling specific jobs via /queue delete,
-  // while /interrupt always targets the "first" job. Use the targeted API
-  // on cloud to ensure we cancel the workflow the user clicked.
-  if (isCloud) {
-    await Promise.all(jobIds.map((id) => api.deleteItem('queue', id)))
-    executionStore.clearInitializationByJobIds(jobIds)
-    await queueStore.update()
-    return
-  }
-
-  await Promise.all(jobIds.map((id) => api.interrupt(id)))
+  // State-agnostic batch cancel (see api.ts cancelJobs for the runtime-parity caveat).
+  await api.cancelJobs(jobIds)
   executionStore.clearInitializationByJobIds(jobIds)
   await queueStore.update()
 })

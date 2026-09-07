@@ -1,6 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { IWidget } from '@/lib/litegraph/src/types/widgets'
@@ -13,7 +11,6 @@ import {
 } from './__fixtures__/subgraphHelpers'
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   resetSubgraphFixtureState()
 })
 
@@ -101,43 +98,6 @@ describe('SubgraphNode Memory Management', () => {
   })
 
   describe('Widget Promotion Memory Management', () => {
-    it('should not mutate manually injected widget references', () => {
-      const subgraph = createTestSubgraph({
-        inputs: [{ name: 'testInput', type: 'number' }]
-      })
-      const subgraphNode = createTestSubgraphNode(subgraph)
-
-      const input = subgraphNode.inputs[0]
-      const mockWidget = {
-        type: 'number',
-        name: 'promoted_widget',
-        value: 123,
-        options: {},
-        y: 0,
-        draw: vi.fn(),
-        mouse: vi.fn(),
-        computeSize: vi.fn(),
-        createCopyForNode: vi.fn().mockReturnValue({
-          type: 'number',
-          name: 'promoted_widget',
-          value: 123
-        })
-      } as Partial<IWidget> as IWidget
-
-      input._widget = mockWidget
-      input.widget = { name: 'promoted_widget' }
-      subgraphNode.widgets.push(mockWidget)
-
-      expect(input._widget).toBe(mockWidget)
-      expect(input.widget).toBeDefined()
-      expect(subgraphNode.widgets).toContain(mockWidget)
-
-      subgraphNode.removeWidget(mockWidget)
-
-      // removeWidget only affects managed promoted widgets, not manually injected entries.
-      expect(subgraphNode.widgets).toContain(mockWidget)
-    })
-
     it('should not leak widgets during reconfiguration', () => {
       const subgraph = createTestSubgraph({
         inputs: [{ name: 'input1', type: 'number' }]
@@ -304,17 +264,13 @@ describe('SubgraphMemory - Widget Reference Management', () => {
       }
 
       // Set references
-      if (input) {
-        ;(input as InputWithWidget)._widget = mockReferences.widget
-        ;(input as InputWithWidget)._connection = mockReferences.connection
-      }
-      if (output) {
-        ;(input as InputWithWidget)._connection = mockReferences.connection
-      }
+      ;(input as InputWithWidget)._widget = mockReferences.widget
+      ;(input as InputWithWidget)._connection = mockReferences.connection
+      ;(output as InputWithWidget)._connection = mockReferences.connection
 
       // Verify references are set
-      expect((input as InputWithWidget)?._widget).toBe(mockReferences.widget)
-      expect((input as InputWithWidget)?._connection).toBe(
+      expect((input as InputWithWidget)._widget).toBe(mockReferences.widget)
+      expect((input as InputWithWidget)._connection).toBe(
         mockReferences.connection
       )
 
@@ -322,7 +278,7 @@ describe('SubgraphMemory - Widget Reference Management', () => {
       subgraphNode.onRemoved()
 
       // Input-specific listeners should be cleaned up (this works)
-      if (input && '_listenerController' in input) {
+      if ('_listenerController' in input) {
         expect(
           (input as InputWithWidget)._listenerController?.signal.aborted
         ).toBe(true)

@@ -23,6 +23,7 @@ export class ToOutputFromIoNodeLink implements RenderLink {
   readonly fromPos: Point
   readonly fromSlotIndex: SlotIndex
   fromDirection: LinkDirection = LinkDirection.LEFT
+  readonly isIoNodeLink = true
 
   constructor(
     readonly network: LinkNetwork,
@@ -81,7 +82,7 @@ export class ToOutputFromIoNodeLink implements RenderLink {
   ): void {
     const { fromSlot } = this
 
-    const newLink = fromSlot.connect(output, outputNode, reroute?.id)
+    const newLink = fromSlot.connect(output, outputNode, reroute.id)
     events.dispatch('link-created', newLink)
   }
 

@@ -9,16 +9,28 @@ import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 export class SubgraphEditor {
   public readonly root: Locator
   public readonly promotionItems: Locator
+  public readonly selectionToolboxButton: Locator
 
   constructor(protected readonly comfyPage: ComfyPage) {
     this.root = this.comfyPage.menu.propertiesPanel.root
     this.promotionItems = this.root.getByTestId(
       TestIds.subgraphEditor.widgetItem
     )
+    this.selectionToolboxButton = this.comfyPage.selectionToolbox.getByRole(
+      'button',
+      { name: 'Edit Subgraph Widgets' }
+    )
   }
 
-  async open(subgraphNode: Locator) {
+  async openFromSelectionToolbox(subgraphNode: Locator) {
     await new VueNodeFixture(subgraphNode).select()
+    await this.selectionToolboxButton.click()
+    await expect(this.root, 'Open Properties Panel').toBeVisible()
+  }
+
+  async ensureOpen(subgraphNode: Locator) {
+    await new VueNodeFixture(subgraphNode).select()
+    if (await this.root.isVisible()) return
     const menu = await this.comfyPage.contextMenu.openFor(subgraphNode)
     await menu.clickMenuItemExact('Edit Subgraph Widgets')
     await expect(this.root, 'Open Properties Panel').toBeVisible()
@@ -69,7 +81,7 @@ export class SubgraphEditor {
       toState?: boolean
     }
   ) {
-    await this.open(subgraphNode)
+    await this.ensureOpen(subgraphNode)
 
     const item = this.resolveItem(options)
     await this.togglePromotionOnItem(item, options.toState)

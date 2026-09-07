@@ -153,6 +153,7 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
     )
     // Reload to apply the new setting. Setting Comfy.CustomColorPalettes directly
     // doesn't update the store immediately.
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
 
     await comfyPage.workflow.loadWorkflow('nodes/every_node_color')
@@ -189,6 +190,16 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
     await expect(comfyPage.canvas).toHaveScreenshot(
       'custom-color-palette-obsidian-dark.png'
     )
+  })
+
+  test('Palette can modify @vue-nodes color', async ({ comfyPage }) => {
+    const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    const getColor = () =>
+      node.body.evaluate((el) => getComputedStyle(el).backgroundColor)
+
+    const initialColor = await getColor()
+    await comfyPage.settings.setSetting('Comfy.ColorPalette', 'solarized')
+    await expect.poll(getColor).not.toEqual(initialColor)
   })
 })
 
@@ -235,7 +246,7 @@ test.describe(
       await expect
         .poll(() =>
           comfyPage.page.evaluate(() => {
-            const graph = window.app!.graph!
+            const graph = window.app!.graph
             if (typeof graph.serialize !== 'function') return undefined
             const parsed = graph.serialize() as {
               nodes: Array<{ bgcolor?: string; color?: string }>
@@ -249,7 +260,7 @@ test.describe(
         .poll(async () => {
           const nodes = await comfyPage.page.evaluate(() => {
             return (
-              window.app!.graph!.serialize() as {
+              window.app!.graph.serialize() as {
                 nodes: Array<{ bgcolor?: string; color?: string }>
               }
             ).nodes

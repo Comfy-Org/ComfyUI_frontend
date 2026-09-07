@@ -1,7 +1,6 @@
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
-import { zResultItem } from '@/schemas/apiSchema'
+import { parseAssetInfo } from '@/platform/assets/schemas/mediaAssetSchema'
 import type { ResultItem } from '@/schemas/apiSchema'
 
 type DragHandler = (e: DragEvent) => boolean
@@ -12,14 +11,6 @@ interface DragAndDropOptions<T> {
   onDrop: DropHandler<T>
   onResultItemDrop?: (item: ResultItem) => void
   fileFilter?: (file: File) => boolean
-}
-
-function parseAssetInfo(assetString?: string) {
-  try {
-    return zResultItem.safeParse(JSON.parse(assetString ?? '')).data
-  } catch {
-    // output was not parsable, allow fallthrough and return undefined
-  }
 }
 
 /**
@@ -45,12 +36,12 @@ export const useNodeDragAndDrop = <T>(
     return (
       onDragOver?.(e) ??
       (hasFiles(e.dataTransfer.items) ||
-        e?.dataTransfer?.types?.includes('text/uri-list'))
+        e.dataTransfer.types.includes('text/uri-list'))
     )
   }
 
   const isDraggingValidFiles = (e: DragEvent | undefined) => {
-    if (e?.dataTransfer?.files?.length)
+    if (e?.dataTransfer?.files.length)
       return hasValidFiles(e.dataTransfer.files)
 
     return !!e?.dataTransfer?.getData('text/uri-list')
@@ -61,26 +52,28 @@ export const useNodeDragAndDrop = <T>(
 
   const installedDragDrop = async function (e: DragEvent) {
     if (!isDraggingValidFiles(e)) return false
+    const { dataTransfer } = e
+    if (!dataTransfer) return false
 
-    const files = filterFiles(e.dataTransfer!.files)
+    const files = filterFiles(dataTransfer.files)
     if (files.length) {
       await onDrop(files)
       return true
     }
-    const asset = parseAssetInfo(e?.dataTransfer?.getData(MIME_ASSET_INFO))
+    const asset = parseAssetInfo(dataTransfer)
     if (asset?.filename && options.onResultItemDrop) {
       await options.onResultItemDrop(asset)
       return true
     }
 
-    const baseUri = e?.dataTransfer?.getData('text/uri-list') ?? ''
+    const baseUri = dataTransfer.getData('text/uri-list')
     const uri = URL.parse(baseUri, location.href)
     if (!uri || uri.origin !== location.origin) return false
 
     try {
       const resp = await fetch(uri)
       const fileName =
-        uri?.searchParams?.get('filename') ?? baseUri.split('/').at(-1)
+        uri.searchParams.get('filename') ?? baseUri.split('/').at(-1)
       if (!fileName || !resp.ok) return false
 
       const blob = await resp.blob()

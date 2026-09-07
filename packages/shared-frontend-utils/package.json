@@ -6,18 +6,18 @@
   "keywords": [],
   "type": "module",
   "exports": {
+    "./creditsUtil": "./src/creditsUtil.ts",
     "./formatUtil": "./src/formatUtil.ts",
-    "./networkUtil": "./src/networkUtil.ts"
+    "./networkUtil": "./src/networkUtil.ts",
+    "./piiUtil": "./src/piiUtil.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "axios": "catalog:",
-    "dompurify": "catalog:"
+    "axios": "catalog:"
   },
   "devDependencies": {
     "typescript": "catalog:"
-  },
-  "packageManager": "pnpm@10.17.1"
+  }
 }

@@ -7,7 +7,7 @@ import type {
   JobListItem,
   TaskType
 } from '@/platform/remote/comfyui/jobs/jobTypes'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type {
   ResultItem,
   StatusWsMessageStatus,
@@ -21,6 +21,7 @@ import { useExtensionService } from '@/services/extensionService'
 import { getJobDetail } from '@/services/jobOutputCache'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
@@ -32,13 +33,14 @@ enum TaskItemDisplayStatus {
   Cancelled = 'Cancelled'
 }
 
-interface ResultItemInit extends ResultItem {
-  nodeId: NodeId
+export interface ResultItemInit extends ResultItem {
   mediaType: string
-  format?: string
-  frame_rate?: number
+  nodeId: SerializedNodeId
+  assetId?: string
   display_name?: string
   content?: string
+  format?: string
+  frame_rate?: number
 }
 
 export class ResultItemImpl {
@@ -46,18 +48,20 @@ export class ResultItemImpl {
   subfolder: string
   type: string
 
-  nodeId: NodeId
   // 'audio' | 'images' | ...
   mediaType: string
+  nodeId: SerializedNodeId
+
+  assetId?: string
+
+  // text specific field
+  content?: string
 
   display_name?: string
 
   // VHS output specific fields
   format?: string
   frame_rate?: number
-
-  // text specific field
-  content?: string
 
   constructor(obj: ResultItemInit) {
     this.filename = obj.filename ?? ''
@@ -72,6 +76,7 @@ export class ResultItemImpl {
     this.format = obj.format
     this.frame_rate = obj.frame_rate
     this.content = obj.content
+    this.assetId = obj.assetId
   }
 
   get urlParams(): URLSearchParams {
@@ -223,7 +228,10 @@ export class ResultItemImpl {
     return getMediaTypeFromFilename(this.filename) === '3D'
   }
   get isText(): boolean {
-    return this.mediaType === 'text'
+    return (
+      this.mediaType === 'text' ||
+      getMediaTypeFromFilename(this.filename) === 'text'
+    )
   }
 
   get supportsPreview(): boolean {
@@ -272,9 +280,6 @@ export class TaskItemImpl {
   }
 
   calculateFlatOutputs(): ReadonlyArray<ResultItemImpl> {
-    if (!this.outputs) {
-      return []
-    }
     return parseTaskOutput(this.outputs)
   }
 
@@ -324,6 +329,11 @@ export class TaskItemImpl {
 
   get outputsCount(): number | undefined {
     return this.job.outputs_count ?? undefined
+  }
+
+  /** Absent on backends or jobs that predate this field. */
+  get previewableOutputsCount(): number | undefined {
+    return this.job.previewable_outputs_count ?? undefined
   }
 
   get status() {
@@ -434,16 +444,14 @@ export class TaskItemImpl {
 
     // Use full outputs from job detail, or fall back to existing outputs
     const outputsToLoad = jobDetail?.outputs ?? this.outputs
-    if (!outputsToLoad) {
-      return
-    }
-
     const nodeOutputsStore = useNodeOutputStore()
     const rawOutputs = toRaw(outputsToLoad)
-    for (const nodeExecutionId in rawOutputs) {
+    for (const rawNodeExecutionId in rawOutputs) {
+      const nodeExecutionId = tryNormalizeNodeExecutionId(rawNodeExecutionId)
+      if (!nodeExecutionId) continue
       nodeOutputsStore.setNodeOutputsByExecutionId(
         nodeExecutionId,
-        rawOutputs[nodeExecutionId]
+        rawOutputs[rawNodeExecutionId]
       )
     }
     useExtensionService().invokeExtensions(
@@ -490,8 +498,8 @@ export const useQueueStore = defineStore('queue', () => {
   // and a single re-fetch fires after the current one completes.
   // This prevents both request spam and UI starvation (where a rapid stream
   // of calls causes every response to be discarded by a stale-request guard).
-  let inFlight = false
-  let dirty = false
+  const updateState = { inFlight: false, dirty: false }
+  const hasDirtyUpdate = () => updateState.dirty
 
   const tasks = computed<TaskItemImpl[]>(
     () =>
@@ -516,13 +524,13 @@ export const useQueueStore = defineStore('queue', () => {
   )
 
   const update = async () => {
-    if (inFlight) {
-      dirty = true
+    if (updateState.inFlight) {
+      updateState.dirty = true
       return
     }
 
-    inFlight = true
-    dirty = false
+    updateState.inFlight = true
+    updateState.dirty = false
     isLoading.value = true
     try {
       const [queueResult, historyResult] = await Promise.allSettled([
@@ -539,7 +547,7 @@ export const useQueueStore = defineStore('queue', () => {
         const appearedTasks = [...pendingTasks.value, ...runningTasks.value]
         const executionStore = useExecutionStore()
         appearedTasks.forEach((task) => {
-          const jobIdString = String(task.jobId)
+          const jobIdString = task.jobId
           const workflowId = task.workflowId
           if (workflowId && jobIdString) {
             executionStore.registerJobWorkflowIdMapping(jobIdString, workflowId)
@@ -574,7 +582,11 @@ export const useQueueStore = defineStore('queue', () => {
           const existing = existingByJobId.get(job.id)
           if (!existing) return new TaskItemImpl(job)
           // Recreate if outputs_count changed to ensure lazy loading works
-          if (existing.outputsCount !== (job.outputs_count ?? undefined)) {
+          if (
+            existing.outputsCount !== (job.outputs_count ?? undefined) ||
+            existing.previewableOutputsCount !==
+              (job.previewable_outputs_count ?? undefined)
+          ) {
             return new TaskItemImpl(job)
           }
           return existing
@@ -595,8 +607,8 @@ export const useQueueStore = defineStore('queue', () => {
       }
     } finally {
       isLoading.value = false
-      inFlight = false
-      if (dirty) {
+      updateState.inFlight = false
+      if (hasDirtyUpdate()) {
         void update()
       }
     }
@@ -644,34 +656,12 @@ export const useQueuePendingTaskCountStore = defineStore(
       count: 0
     }),
     actions: {
-      update(e: CustomEvent<StatusWsMessageStatus>) {
-        this.count = e.detail?.exec_info?.queue_remaining || 0
+      update(e: CustomEvent<StatusWsMessageStatus | null>) {
+        this.count = e.detail?.exec_info.queue_remaining || 0
       }
     }
   }
 )
-
-export type AutoQueueMode =
-  | 'disabled'
-  | 'change'
-  | 'instant-idle'
-  | 'instant-running'
-
-export const isInstantMode = (
-  mode: AutoQueueMode
-): mode is 'instant-idle' | 'instant-running' =>
-  mode === 'instant-idle' || mode === 'instant-running'
-
-export const isInstantRunningMode = (
-  mode: AutoQueueMode
-): mode is 'instant-running' => mode === 'instant-running'
-
-export const useQueueSettingsStore = defineStore('queueSettingsStore', {
-  state: () => ({
-    mode: 'disabled' as AutoQueueMode,
-    batchCount: 1
-  })
-})
 
 export const useQueueUIStore = defineStore('queueUIStore', () => {
   const settingStore = useSettingStore()

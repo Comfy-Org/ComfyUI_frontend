@@ -4,6 +4,7 @@ import { compare, valid } from 'semver'
 import { computed, ref } from 'vue'
 
 import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { stringToLocale } from '@/utils/formatUtil'
@@ -22,13 +23,11 @@ export const useReleaseStore = defineStore('release', () => {
   const releaseService = useReleaseService()
   const systemStatsStore = useSystemStatsStore()
   const settingStore = useSettingStore()
+  const onboardingTourStore = useOnboardingTourStore()
 
-  const currentVersion = computed(() => {
-    if (isCloud) {
-      return systemStatsStore?.systemStats?.system?.cloud_version ?? ''
-    }
-    return systemStatsStore?.systemStats?.system?.comfyui_version ?? ''
-  })
+  const currentVersion = computed(
+    () => systemStatsStore.systemStats?.system.comfyui_version ?? ''
+  )
 
   // Release data from settings
   const locale = computed(() => settingStore.get('Comfy.Locale'))
@@ -45,7 +44,7 @@ export const useReleaseStore = defineStore('release', () => {
 
   // Most recent release
   const recentRelease = computed(() => {
-    return releases.value[0] ?? null
+    return releases.value.at(0) ?? null
   })
 
   // 3 most recent releases
@@ -140,7 +139,9 @@ export const useReleaseStore = defineStore('release', () => {
       return false
     }
 
-    const { version } = recentRelease.value
+    const release = recentRelease.value
+    if (!release) return false
+    const { version } = release
 
     // Changelog seen → clear dot
     if (
@@ -171,6 +172,11 @@ export const useReleaseStore = defineStore('release', () => {
   })
 
   const shouldShowPopup = computed(() => {
+    // Deferred, not dropped: the tour ends and this re-evaluates.
+    if (onboardingTourStore.activeTour === 'firstRun') {
+      return false
+    }
+
     if (!isDesktop && !isCloud) {
       return false
     }
@@ -251,9 +257,7 @@ export const useReleaseStore = defineStore('release', () => {
 
     // Skip fetching if API nodes are disabled via argv
     if (
-      systemStatsStore.systemStats?.system?.argv?.includes(
-        '--disable-api-nodes'
-      )
+      systemStatsStore.systemStats?.system.argv?.includes('--disable-api-nodes')
     ) {
       return
     }
@@ -266,12 +270,18 @@ export const useReleaseStore = defineStore('release', () => {
         await until(systemStatsStore.isInitialized)
       }
 
-      const fetchedReleases = await releaseService.getReleases({
-        project: isCloud ? 'cloud' : 'comfyui',
-        current_version: currentVersion.value,
-        form_factor: systemStatsStore.getFormFactor(),
-        locale: stringToLocale(locale.value)
-      })
+      const fetchedReleases = await releaseService.getReleases(
+        {
+          project: isCloud ? 'cloud' : 'comfyui',
+          current_version: currentVersion.value,
+          form_factor: systemStatsStore.getFormFactor(),
+          locale: stringToLocale(locale.value)
+        },
+        {
+          deployEnvironment:
+            systemStatsStore.systemStats?.system.deploy_environment
+        }
+      )
 
       if (fetchedReleases !== null) {
         releases.value = fetchedReleases

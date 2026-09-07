@@ -1,0 +1,33 @@
+// FE-resolved catalog IDs that either normalize multiple sources or do not map
+// 1:1 to an API error type. Simple validation mappings stay with the validation
+// resolver.
+export const MISSING_CONNECTION_CATALOG_ID = 'missing_connection'
+export const UNKNOWN_VALIDATION_ERROR_CATALOG_ID = 'unknown_validation_error'
+export const EXECUTION_FAILED_CATALOG_ID = 'execution_failed'
+export const IMAGE_NOT_LOADED_CATALOG_ID = 'image_not_loaded'
+export const OUT_OF_MEMORY_CATALOG_ID = 'out_of_memory'
+export const CONTENT_BLOCKED_CATALOG_ID = 'content_blocked'
+export const ACCESS_REQUIRED_CATALOG_ID = 'access_required'
+export const MODEL_ACCESS_ERROR_CATALOG_ID = 'model_access_error'
+export const INVALID_CLIP_INPUT_CATALOG_ID = 'invalid_clip_input'
+export const INVALID_PROMPT_CATALOG_ID = 'invalid_prompt'
+export const INVALID_WORKFLOW_REQUEST_CATALOG_ID = 'invalid_workflow_request'
+export const INSUFFICIENT_CREDITS_CATALOG_ID = 'insufficient_credits'
+export const WORKSPACE_INSUFFICIENT_CREDITS_CATALOG_ID =
+  'workspace_insufficient_credits'
+export const SUBSCRIPTION_REQUIRED_CATALOG_ID = 'subscription_required'
+export const SUBSCRIPTION_UPGRADE_REQUIRED_CATALOG_ID =
+  'subscription_upgrade_required'
+export const MODEL_DOWNLOAD_FAILED_CATALOG_ID = 'model_download_failed'
+export const UNEXPECTED_SERVICE_ERROR_CATALOG_ID = 'unexpected_service_error'
+export const REQUEST_FAILED_CATALOG_ID = 'request_failed'
+export const RUN_START_FAILED_CATALOG_ID = 'run_start_failed'
+export const RUN_ENDED_UNEXPECTEDLY_CATALOG_ID = 'run_ended_unexpectedly'
+export const SIGN_IN_REQUIRED_CATALOG_ID = 'sign_in_required'
+export const RATE_LIMITED_CATALOG_ID = 'rate_limited'
+export const TIMEOUT_CATALOG_ID = 'timeout'
+export const GENERATION_STALLED_CATALOG_ID = 'generation_stalled'
+export const PREPROCESSING_FAILED_CATALOG_ID = 'preprocessing_failed'
+export const PREPROCESSING_TIMEOUT_CATALOG_ID = 'preprocessing_timeout'
+export const SERVER_CRASHED_CATALOG_ID = 'server_crashed'
+export const SERVER_BUSY_CATALOG_ID = 'server_busy'

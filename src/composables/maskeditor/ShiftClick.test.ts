@@ -33,7 +33,6 @@ describe('Shift+Click Drawing Logic', () => {
     // Segment 2: B -> C
     const result2 = resampleSegment([pB, pC], spacing, remainder)
     outputPoints.push(...result2.points)
-    remainder = result2.remainder
 
     // Verify final state
     // Start offset 2. Points at 2, 6, 10 (relative to B).

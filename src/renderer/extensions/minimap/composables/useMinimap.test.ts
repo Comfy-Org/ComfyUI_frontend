@@ -1,16 +1,26 @@
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, shallowRef } from 'vue'
+import { nextTick, ref, shallowRef } from 'vue'
 
+import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
+import { useLinkStore } from '@/stores/linkStore'
+import { toLinkId } from '@/types/linkId'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import { toNodeId } from '@/types/nodeId'
 import {
   createMockCanvas2DContext,
   createMockMinimapCanvas
 } from '@/utils/__tests__/litegraphTestUtils'
+import type { UUID } from '@/utils/uuid'
 
 interface MockNode {
   id: string
   pos: number[]
   size: number[]
+  renderingSize: number[]
   color?: string
   constructor?: { color: string }
   outputs?: { links: string[] }[] | null
@@ -18,12 +28,34 @@ interface MockNode {
 
 interface MockGraph {
   _nodes: MockNode[]
-  links: Record<string, { id: string; target_id: string }>
+  _groups: []
+  events: CustomEventTarget<LGraphEventMap>
+  id: UUID
+  rootGraph: { id: UUID }
+  links: Map<string, { id: string; target_id: string }>
   getNodeById: Mock
   setDirtyCanvas: Mock
   onNodeAdded: ((node: MockNode) => void) | null
   onNodeRemoved: ((node: MockNode) => void) | null
   onConnectionChange: ((node: MockNode) => void) | null
+}
+
+const GRAPH_ID: UUID = 'minimap-graph'
+const GRAPH_SCOPE = {
+  rootGraphId: toRootGraphId(GRAPH_ID),
+  owningGraphId: toOwningGraphId(GRAPH_ID)
+}
+
+function registerMockLink(id: number, targetNodeId: string) {
+  useLinkStore().registerLink(GRAPH_SCOPE, {
+    id: toLinkId(id),
+    graphId: GRAPH_SCOPE.owningGraphId,
+    originNodeId: toNodeId('node1'),
+    originSlot: 0,
+    targetNodeId: toNodeId(targetNodeId),
+    targetSlot: 0,
+    type: '*'
+  })
 }
 
 interface MockCanvas {
@@ -49,18 +81,21 @@ const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0))
 
 const triggerRAF = async () => {
   // Trigger all RAF callbacks
-  Object.values(rafCallbacks).forEach((cb) => cb?.())
+  Object.values(rafCallbacks).forEach((cb) => cb())
   await flushPromises()
 }
 
 const mockPause = vi.fn()
 const mockResume = vi.fn()
+const mockIntervalPause = vi.fn()
+const mockIntervalResume = vi.fn()
 
 const rafCallbacks: Record<string, () => void> = {}
 let rafCallbackId = 0
 
 vi.mock('@vueuse/core', () => {
   return {
+    useDocumentVisibility: vi.fn(() => ref('visible')),
     useRafFn: vi.fn((callback, options) => {
       const id = rafCallbackId++
       rafCallbacks[id] = callback
@@ -72,14 +107,38 @@ vi.mock('@vueuse/core', () => {
       const resumeFn = vi.fn(() => {
         mockResume()
         // Execute the RAF callback immediately when resumed
-        if (rafCallbacks[id]) {
-          rafCallbacks[id]()
-        }
+        const callback = Object.hasOwn(rafCallbacks, id)
+          ? rafCallbacks[id]
+          : undefined
+        callback?.()
       })
 
       return {
         pause: mockPause,
         resume: resumeFn
+      }
+    }),
+    useIntervalFn: vi.fn((callback, _interval, options) => {
+      const id = rafCallbackId++
+      const state = { active: options?.immediate !== false }
+      rafCallbacks[id] = () => {
+        if (state.active) callback()
+      }
+
+      if (state.active) {
+        void Promise.resolve().then(() => callback())
+      }
+
+      return {
+        pause: vi.fn(() => {
+          state.active = false
+          mockIntervalPause()
+        }),
+        resume: vi.fn(() => {
+          state.active = true
+          mockIntervalResume()
+          callback()
+        })
       }
     }),
     useThrottleFn: vi.fn((callback) => {
@@ -99,6 +158,7 @@ const setupMocks = () => {
       id: 'node1',
       pos: [0, 0],
       size: [100, 50],
+      renderingSize: [100, 50],
       color: '#ff0000',
       constructor: { color: '#666' },
       outputs: [
@@ -111,6 +171,7 @@ const setupMocks = () => {
       id: 'node2',
       pos: [200, 100],
       size: [150, 75],
+      renderingSize: [150, 75],
       constructor: { color: '#666' },
       outputs: []
     }
@@ -118,14 +179,21 @@ const setupMocks = () => {
 
   moduleMockGraph = {
     _nodes: mockNodes,
-    links: {
-      link1: {
-        id: 'link1',
-        target_id: 'node2'
-      }
-    },
+    _groups: [],
+    id: GRAPH_ID,
+    rootGraph: { id: GRAPH_ID },
+    links: new Map([
+      [
+        'link1',
+        {
+          id: 'link1',
+          target_id: 'node2'
+        }
+      ]
+    ]),
     getNodeById: vi.fn((id) => mockNodes.find((n) => n.id === id)),
     setDirtyCanvas: vi.fn(),
+    events: new CustomEventTarget<LGraphEventMap>(),
     onNodeAdded: null,
     onNodeRemoved: null,
     onConnectionChange: null
@@ -201,9 +269,9 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
 }))
 
 vi.mock('@/stores/executionStore', () => ({
-  useExecutionStore: vi.fn().mockReturnValue({
-    nodeProgressStates: {}
-  })
+  useExecutionStore: vi.fn(() => ({
+    nodeLocationProgressStates: {}
+  }))
 }))
 
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
@@ -228,10 +296,8 @@ describe('useMinimap', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
-
-    mockPause.mockClear()
-    mockResume.mockClear()
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    registerMockLink(1, 'node2')
 
     mockContext2D = createMockCanvas2DContext()
 
@@ -263,6 +329,7 @@ describe('useMinimap', () => {
         id: 'node1',
         pos: [0, 0],
         size: [100, 50],
+        renderingSize: [100, 50],
         color: '#ff0000',
         constructor: { color: '#666' },
         outputs: [
@@ -275,6 +342,7 @@ describe('useMinimap', () => {
         id: 'node2',
         pos: [200, 100],
         size: [150, 75],
+        renderingSize: [150, 75],
         constructor: { color: '#666' },
         outputs: []
       }
@@ -282,14 +350,21 @@ describe('useMinimap', () => {
 
     moduleMockGraph = {
       _nodes: mockNodes,
-      links: {
-        link1: {
-          id: 'link1',
-          target_id: 'node2'
-        }
-      },
+      _groups: [],
+      id: GRAPH_ID,
+      rootGraph: { id: GRAPH_ID },
+      links: new Map([
+        [
+          'link1',
+          {
+            id: 'link1',
+            target_id: 'node2'
+          }
+        ]
+      ]),
       getNodeById: vi.fn((id) => mockNodes.find((n) => n.id === id)),
       setDirtyCanvas: vi.fn(),
+      events: new CustomEventTarget<LGraphEventMap>(),
       onNodeAdded: null,
       onNodeRemoved: null,
       onConnectionChange: null
@@ -474,6 +549,7 @@ describe('useMinimap', () => {
         id: 'new-node',
         pos: [150, 150],
         size: [100, 50],
+        renderingSize: [100, 50],
         constructor: { color: '#666' },
         outputs: []
       })
@@ -537,7 +613,6 @@ describe('useMinimap', () => {
       const minimap = await createAndInitializeMinimap()
 
       await minimap.init()
-      await new Promise((resolve) => setTimeout(resolve, 100))
 
       expect(mockContext2D.clearRect).not.toHaveBeenCalled()
 
@@ -560,8 +635,6 @@ describe('useMinimap', () => {
 
       // The renderer has a fast path for empty graphs, force it to execute
       minimap.renderMinimap()
-
-      await new Promise((resolve) => setTimeout(resolve, 100))
 
       expect(minimap.initialized.value).toBe(true)
 
@@ -865,56 +938,6 @@ describe('useMinimap', () => {
     })
   })
 
-  describe('graph change handling', () => {
-    it('should handle node addition', async () => {
-      const minimap = await createAndInitializeMinimap()
-
-      await minimap.init()
-
-      const newNode = {
-        id: 'node3',
-        pos: [300, 200],
-        size: [100, 100],
-        constructor: { color: '#666' },
-        outputs: []
-      }
-
-      moduleMockGraph._nodes.push(newNode)
-      if (moduleMockGraph.onNodeAdded) {
-        moduleMockGraph.onNodeAdded(newNode)
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 600))
-    })
-
-    it('should handle node removal', async () => {
-      const minimap = await createAndInitializeMinimap()
-
-      await minimap.init()
-
-      const removedNode = moduleMockGraph._nodes[0]
-      moduleMockGraph._nodes.splice(0, 1)
-
-      if (moduleMockGraph.onNodeRemoved) {
-        moduleMockGraph.onNodeRemoved(removedNode)
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 600))
-    })
-
-    it('should handle connection changes', async () => {
-      const minimap = await createAndInitializeMinimap()
-
-      await minimap.init()
-
-      if (moduleMockGraph.onConnectionChange) {
-        moduleMockGraph.onConnectionChange(moduleMockGraph._nodes[0])
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 600))
-    })
-  })
-
   describe('container styles', () => {
     it('should provide correct container styles for dark theme', () => {
       const minimap = useMinimap()
@@ -937,7 +960,7 @@ describe('useMinimap', () => {
     })
 
     it('should handle invalid link references', async () => {
-      moduleMockGraph.links.link1.target_id = 'invalid-node'
+      registerMockLink(2, 'invalid-node')
       moduleMockGraph.getNodeById.mockReturnValue(null)
 
       const minimap = await createAndInitializeMinimap()

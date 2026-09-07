@@ -2,7 +2,8 @@
   <div
     :class="
       cn(
-        'group relative rounded-lg transition-all focus-within:ring focus-within:ring-component-node-widget-background-highlighted hover:bg-component-node-widget-background-hovered',
+        'group relative rounded-lg transition-all focus-within:ring focus-within:ring-component-node-widget-background-highlighted',
+        !isReadOnly && 'hover:bg-component-node-widget-background-hovered',
         widget.borderStyle
       )
     "
@@ -22,7 +23,7 @@
       :class="
         cn(
           WidgetInputBaseClass,
-          'size-full resize-none text-xs',
+          'size-full resize-none text-(length:--comfy-textarea-font-size) leading-normal',
           !hideLayoutField && 'pt-5',
           // Avoid overflow-auto when idle to prevent per-textarea compositing layers.
           'overflow-hidden hover:overflow-auto focus:overflow-auto'

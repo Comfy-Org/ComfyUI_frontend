@@ -9,19 +9,13 @@ export const useQueueClearHistoryDialog = () => {
       key: 'queue-clear-history',
       component: QueueClearHistoryDialog,
       dialogComponentProps: {
+        renderer: 'reka',
         headless: true,
         closable: false,
         closeOnEscape: true,
         dismissableMask: true,
-        pt: {
-          root: {
-            class: 'max-w-90 w-auto bg-transparent border-none shadow-none'
-          },
-          content: {
-            class: 'bg-transparent',
-            style: 'padding: 0'
-          }
-        }
+        // The content draws its own panel — neutralize the chrome box.
+        contentClass: 'w-fit max-w-90 border-none bg-transparent shadow-none'
       }
     })
   }

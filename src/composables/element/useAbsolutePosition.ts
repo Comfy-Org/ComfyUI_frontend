@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'vue'
+import type { CSSProperties, Ref } from 'vue'
 import { ref, watch } from 'vue'
 
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
@@ -15,7 +15,14 @@ export interface PositionConfig {
   scale?: number
 }
 
-export function useAbsolutePosition(options: { useTransform?: boolean } = {}) {
+interface UseAbsolutePositionReturn {
+  style: Ref<CSSProperties>
+  updatePosition: (config: PositionConfig) => void
+}
+
+export function useAbsolutePosition(
+  options: { useTransform?: boolean } = {}
+): UseAbsolutePositionReturn {
   const { useTransform = false } = options
 
   const canvasStore = useCanvasStore()
@@ -34,11 +41,6 @@ export function useAbsolutePosition(options: { useTransform?: boolean } = {}) {
     { flush: 'post' }
   )
 
-  /**
-   * @note Do NOT convert style to a computed value, as it will cause lag when
-   * updating the style on different animation frames. Vue's computed value is
-   * evaluated asynchronously.
-   */
   const style = ref<CSSProperties>({})
 
   /**

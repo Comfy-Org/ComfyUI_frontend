@@ -12,7 +12,7 @@
       loop
       playsinline
       class="relative size-full object-contain transition-transform duration-300 group-hover:scale-105 group-data-[selected=true]:scale-105"
-      @click.stop="onVideoClick"
+      @click="onVideoClick"
       @play="onVideoPlay"
       @pause="onVideoPause"
     >
@@ -33,8 +33,9 @@ import type { AssetMeta } from '../schemas/mediaAssetSchema'
 
 import VideoPlayOverlay from './VideoPlayOverlay.vue'
 
-const { asset } = defineProps<{
+const { asset, showNativeControls = true } = defineProps<{
   asset: AssetMeta
+  showNativeControls?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -47,7 +48,9 @@ const isHovered = ref(false)
 const isPlaying = ref(false)
 
 // Show native controls only while actively playing and hovered.
-const shouldShowControls = computed(() => isPlaying.value && isHovered.value)
+const shouldShowControls = computed(
+  () => showNativeControls && isPlaying.value && isHovered.value
+)
 
 watch(shouldShowControls, (controlsVisible) => {
   emit('videoControlsChanged', controlsVisible)
@@ -67,8 +70,15 @@ const onVideoPause = () => {
   emit('videoPlayingStateChanged', false)
 }
 
-const onVideoClick = async () => {
-  if (shouldShowControls.value) return
+async function onVideoClick(event: MouseEvent) {
+  if (
+    event.shiftKey ||
+    event.metaKey ||
+    event.ctrlKey ||
+    shouldShowControls.value
+  ) {
+    return
+  }
 
   const video = videoElement.value
   if (!video) return

@@ -17,13 +17,29 @@ import { computed } from 'vue'
 import DomWidget from '@/components/graph/widgets/DomWidget.vue'
 import { getDomWidgetZIndex } from '@/components/graph/widgets/domWidgetZIndex'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import { findFirstNode } from '@/lib/litegraph/src/utils/collections'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 
 const domWidgetStore = useDomWidgetStore()
-const overrideTransitionGrace = new Set<string>()
 
 const widgetStates = computed(() => [...domWidgetStore.widgetStates.values()])
+
+// Track canvas viewport and selected-node bounds between frames.
+// lgCanvas.ds.offset, ds.scale, and node.renderArea are non-reactive plain
+// values, so widgetState.pos needs a new identity to rerun downstream work.
+const lastViewport = {
+  offsetX: Number.NaN,
+  offsetY: Number.NaN,
+  scale: Number.NaN
+}
+const lastSelected = {
+  id: undefined as string | number | undefined,
+  x: 0,
+  y: 0,
+  width: 0,
+  height: 0
+}
 
 const updateWidgets = () => {
   const lgCanvas = canvasStore.canvas
@@ -31,47 +47,43 @@ const updateWidgets = () => {
 
   const lowQuality = lgCanvas.low_quality
   const currentGraph = lgCanvas.graph
-  const seenWidgetIds = new Set<string>()
+
+  const viewportOffsetX = lgCanvas.ds.offset[0]
+  const viewportOffsetY = lgCanvas.ds.offset[1]
+  const viewportScale = lgCanvas.ds.scale
+  const viewportChanged =
+    lastViewport.offsetX !== viewportOffsetX ||
+    lastViewport.offsetY !== viewportOffsetY ||
+    lastViewport.scale !== viewportScale
+  lastViewport.offsetX = viewportOffsetX
+  lastViewport.offsetY = viewportOffsetY
+  lastViewport.scale = viewportScale
+
+  const selectedNode = findFirstNode(lgCanvas.selectedItems)
+  const selectedNodeId = selectedNode?.id
+  const selectedArea = selectedNode?.renderArea
+  const selectionChanged =
+    lastSelected.id !== selectedNodeId ||
+    (!!selectedArea &&
+      (lastSelected.x !== selectedArea[0] ||
+        lastSelected.y !== selectedArea[1] ||
+        lastSelected.width !== selectedArea[2] ||
+        lastSelected.height !== selectedArea[3]))
+  lastSelected.id = selectedNodeId
+  lastSelected.x = selectedArea?.[0] ?? 0
+  lastSelected.y = selectedArea?.[1] ?? 0
+  lastSelected.width = selectedArea?.[2] ?? 0
+  lastSelected.height = selectedArea?.[3] ?? 0
 
   for (const widgetState of widgetStates.value) {
     const widget = widgetState.widget
-    seenWidgetIds.add(widget.id)
 
-    // Use position override only when the override node (SubgraphNode) is
-    // in the current graph. When the user enters the subgraph, the override
-    // node is no longer visible — fall back to the widget's own node.
-    // Use graph reference equality (IDs are not unique across graphs).
-    const override = widgetState.positionOverride
-    const useOverride = !!override && currentGraph === override.node.graph
-    const inOverrideTransitionGap =
-      !!override && !useOverride && !widgetState.active
-    const useTransitionGrace =
-      inOverrideTransitionGap && !overrideTransitionGrace.has(widget.id)
-
-    if (useTransitionGrace) {
-      overrideTransitionGrace.add(widget.id)
-    } else if (!inOverrideTransitionGap) {
-      overrideTransitionGrace.delete(widget.id)
-    }
-
-    // Early exit for non-visible widgets.
-    // When a position override is active (widget promoted to SubgraphNode),
-    // the interior widget's `active` flag is false (its node is in the
-    // subgraph, not the current graph) — bypass that check.
-    if (
-      !widget.isVisible() ||
-      (!widgetState.active && !useOverride && !useTransitionGrace)
-    ) {
+    if (!widget.isVisible() || !widgetState.active) {
       widgetState.visible = false
       continue
     }
 
-    // During graph transitions, hold the previous position for one frame
-    // so promoted widgets don't briefly disappear before activation flips.
-    if (useTransitionGrace) continue
-
-    const posNode = useOverride ? override.node : widget.node
-    const posWidget = useOverride ? override.widget : widget
+    const posNode = widget.node
 
     const isInCorrectGraph = posNode.graph === currentGraph
     const nodeVisible = lgCanvas.isNodeVisible(posNode)
@@ -83,22 +95,28 @@ const updateWidgets = () => {
 
     if (widgetState.visible) {
       const margin = widget.margin
-      widgetState.pos = [
-        posNode.pos[0] + margin,
-        posNode.pos[1] + margin + posWidget.y
-      ]
-      widgetState.size = [
-        (posWidget.width ?? posNode.width) - margin * 2,
-        (posWidget.computedHeight ?? 50) - margin * 2
-      ]
+      const newPosX = posNode.pos[0] + margin
+      const newPosY = posNode.pos[1] + margin + widget.y
+      if (
+        viewportChanged ||
+        selectionChanged ||
+        widgetState.pos[0] !== newPosX ||
+        widgetState.pos[1] !== newPosY
+      ) {
+        widgetState.pos = [newPosX, newPosY]
+      }
+
+      const newWidth = (widget.width ?? posNode.width) - margin * 2
+      const newHeight = (widget.computedHeight ?? 50) - margin * 2
+      if (
+        widgetState.size[0] !== newWidth ||
+        widgetState.size[1] !== newHeight
+      ) {
+        widgetState.size = [newWidth, newHeight]
+      }
+
       widgetState.zIndex = getDomWidgetZIndex(posNode, currentGraph)
       widgetState.readonly = lgCanvas.read_only
-    }
-  }
-
-  for (const widgetId of overrideTransitionGrace) {
-    if (!seenWidgetIds.has(widgetId)) {
-      overrideTransitionGrace.delete(widgetId)
     }
   }
 }

@@ -1,7 +1,7 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IButtonWidget } from '@/lib/litegraph/src/types/widgets'
 
-import { BaseWidget } from './BaseWidget'
+import { BaseWidget, extensionValue } from './BaseWidget'
 import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
 
 export class ButtonWidget
@@ -9,11 +9,11 @@ export class ButtonWidget
   implements IButtonWidget
 {
   override type = 'button' as const
-  clicked: boolean
+  declare clicked: boolean
 
   constructor(widget: IButtonWidget, node: LGraphNode) {
     super(widget, node)
-    this.clicked ??= false
+    this.clicked = extensionValue(this.clicked) ?? false
   }
 
   /**
@@ -23,7 +23,7 @@ export class ButtonWidget
    */
   override drawWidget(
     ctx: CanvasRenderingContext2D,
-    { width, showText = true, suppressPromotedOutline }: DrawWidgetOptions
+    { width, showText = true }: DrawWidgetOptions
   ) {
     // Store original context attributes
     const { fillStyle, strokeStyle, textAlign } = ctx
@@ -41,7 +41,7 @@ export class ButtonWidget
 
     // Draw button outline if not disabled
     if (showText && !this.computedDisabled) {
-      ctx.strokeStyle = this.getOutlineColor(suppressPromotedOutline)
+      ctx.strokeStyle = this.getOutlineColor()
       ctx.strokeRect(margin, y, width - margin * 2, height)
     }
 

@@ -1,6 +1,5 @@
 import { whenever } from '@vueuse/core'
 import { orderBy } from 'es-toolkit/compat'
-import { compare, valid } from 'semver'
 import type { Ref } from 'vue'
 import { computed } from 'vue'
 
@@ -11,6 +10,7 @@ import { useWorkflowPacks } from '@/workbench/extensions/manager/composables/nod
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+import { getPackUpdateStatus } from '@/workbench/extensions/manager/utils/packUpdateStatus'
 
 type NodePack = components['schemas']['Node']
 
@@ -72,21 +72,9 @@ export function useManagerDisplayPacks(
     )
 
   const filterOutdated = (packs: NodePack[]) =>
-    packs.filter((p) => {
-      const installedVersion = comfyManagerStore.getInstalledPackVersion(
-        p.id ?? ''
-      )
-      const latestVersion = p.latest_version?.version
-      if (
-        !comfyManagerStore.isPackInstalled(p.id) ||
-        !installedVersion ||
-        !latestVersion ||
-        !valid(installedVersion) // nightly builds
-      ) {
-        return false
-      }
-      return compare(latestVersion, installedVersion) > 0
-    })
+    packs.filter(
+      (p) => getPackUpdateStatus(p, comfyManagerStore).isUpdateAvailable
+    )
 
   // Data fetching triggers using whenever
   const needsInstalledPacks = computed(() =>

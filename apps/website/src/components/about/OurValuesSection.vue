@@ -33,7 +33,7 @@ const values: {
 </script>
 
 <template>
-  <section class="px-6 py-24 lg:px-20 lg:py-32">
+  <section class="max-w-9xl mx-auto px-6 py-24 lg:px-20 lg:py-32">
     <div class="mx-auto max-w-5xl text-center">
       <SectionLabel>
         {{ t('about.values.label', locale) }}

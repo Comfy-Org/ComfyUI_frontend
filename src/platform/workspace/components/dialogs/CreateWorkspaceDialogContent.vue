@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex w-full max-w-[400px] flex-col rounded-2xl border border-border-default bg-base-background"
+    class="flex w-full max-w-lg flex-col rounded-2xl border border-border-default bg-base-background"
   >
     <!-- Header -->
     <div
@@ -24,13 +24,13 @@
         {{ $t('workspacePanel.createWorkspaceDialog.message') }}
       </p>
       <div class="flex flex-col gap-2">
-        <label class="text-sm text-base-foreground">
+        <label class="text-sm text-muted-foreground">
           {{ $t('workspacePanel.createWorkspaceDialog.nameLabel') }}
         </label>
         <input
           v-model="workspaceName"
           type="text"
-          class="focus:ring-secondary-foreground w-full rounded-lg border border-border-default bg-transparent px-3 py-2 text-sm text-base-foreground placeholder:text-muted-foreground focus:ring-1 focus:outline-none"
+          class="focus:ring-secondary-foreground h-10 w-full rounded-lg border-none bg-secondary-background px-4 text-sm text-base-foreground placeholder:text-muted-foreground focus:ring-1 focus:outline-none"
           :placeholder="
             $t('workspacePanel.createWorkspaceDialog.namePlaceholder')
           "

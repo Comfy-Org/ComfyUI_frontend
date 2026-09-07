@@ -8,6 +8,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useAppMode } from '@/composables/useAppMode'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useExternalLink } from '@/composables/useExternalLink'
+import { resolveRunErrorMessage } from '@/platform/errorCatalog/errorMessageResolver'
 import { buildSupportUrl } from '@/platform/support/config'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -19,7 +20,7 @@ const appModeStore = useAppModeStore()
 const { setMode } = useAppMode()
 const executionErrorStore = useExecutionErrorStore()
 const { buildDocsUrl, staticUrls } = useExternalLink()
-const { allErrorGroups } = useErrorGroups('', t)
+const { allErrorGroups } = useErrorGroups('')
 const { copyToClipboard } = useCopyToClipboard()
 
 const guideUrl = buildDocsUrl('troubleshooting/overview', {
@@ -34,13 +35,16 @@ const inputNodeIds = computed(() => {
 })
 
 const accessibleNodeErrors = computed(() =>
-  Object.keys(executionErrorStore.lastNodeErrors ?? {}).filter((k) =>
+  Object.keys(executionErrorStore.surfacedNodeErrors ?? {}).filter((k) =>
     inputNodeIds.value.has(k)
   )
 )
 const accessibleErrors = computed(() =>
-  accessibleNodeErrors.value.flatMap((k) =>
-    executionErrorStore.lastNodeErrors![k].errors.flatMap((error) => {
+  accessibleNodeErrors.value.flatMap((k) => {
+    const nodeError = executionErrorStore.surfacedNodeErrors?.[k]
+    if (!nodeError) return []
+
+    return nodeError.errors.flatMap((error) => {
       const { extra_info } = error
       if (!extra_info) return []
 
@@ -49,20 +53,35 @@ const accessibleErrors = computed(() =>
       )
       if (!selectedInput) return []
 
-      return [`${selectedInput[1]}: ${error.message}`]
+      const resolvedDisplay = resolveRunErrorMessage({
+        kind: 'node_validation',
+        error,
+        nodeDisplayName: nodeError.class_type
+      })
+
+      return [
+        resolvedDisplay.displayDetails ??
+          resolvedDisplay.displayMessage ??
+          `${selectedInput[1]}: ${error.message}`
+      ]
     })
-  )
+  })
 )
 const allErrors = computed(() =>
   allErrorGroups.value.flatMap((group) => {
-    if (group.type !== 'execution') return [group.title]
+    if (group.type !== 'execution') {
+      return [group.displayMessage ?? group.displayTitle]
+    }
 
     return group.cards.flatMap((c) =>
-      c.errors.map((e) =>
-        e.details
+      c.errors.map((e) => {
+        const resolvedMessage = e.displayDetails ?? e.displayMessage
+        if (resolvedMessage) return resolvedMessage
+
+        return e.details
           ? `${c.title} (${e.details}): ${e.message}`
           : `${c.title}: ${e.message}`
-      )
+      })
     )
   })
 )

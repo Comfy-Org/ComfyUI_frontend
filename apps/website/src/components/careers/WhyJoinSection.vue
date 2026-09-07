@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '../../i18n/translations'
 
 import WireNodeLayout from '../common/WireNodeLayout.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const reasons = [
+const reasons: TranslationKey[] = [
   'careers.whyJoin.reason1',
   'careers.whyJoin.reason2',
   'careers.whyJoin.reason3',
   'careers.whyJoin.reason4',
   'careers.whyJoin.reason5'
-] as const
+]
 </script>
 
 <template>

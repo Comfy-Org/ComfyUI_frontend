@@ -1,7 +1,7 @@
 /* eslint-disable testing-library/no-container, testing-library/no-node-access -- hidden file input has no role/label, queried by selector */
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -67,14 +67,6 @@ function renderComponent(opts: RenderOpts = {}) {
 }
 
 describe('HDRIControls', () => {
-  beforeEach(() => {
-    addAlert.mockClear()
-  })
-
-  afterEach(() => {
-    document.body.innerHTML = ''
-  })
-
   describe('initial render', () => {
     it('renders the upload button when no HDRI is loaded', () => {
       renderComponent()

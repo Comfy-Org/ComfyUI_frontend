@@ -1,6 +1,6 @@
 import type { ISerialisedGraph } from '@/lib/litegraph/src/litegraph'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { SystemStats } from '@/schemas/apiSchema'
+import type { SerializedNodeId } from '@/types/nodeId'
 
 export interface ErrorReportData {
   exceptionType: string
@@ -10,7 +10,7 @@ export interface ErrorReportData {
   workflow: ISerialisedGraph
 
   traceback?: string
-  nodeId?: NodeId
+  nodeId?: SerializedNodeId
   nodeType?: string
 }
 
@@ -31,9 +31,7 @@ export function generateErrorReport(error: ErrorReportData): string {
 
   return `
 # ComfyUI Error Report
-${
-  error
-    ? `## Error Details
+## Error Details
 - **Node ID:** ${error.nodeId || 'N/A'}
 - **Node Type:** ${error.nodeType || 'N/A'}
 - **Exception Type:** ${error.exceptionType || 'N/A'}
@@ -41,9 +39,7 @@ ${
 ## Stack Trace
 \`\`\`
 ${error.traceback || 'No stack trace available'}
-\`\`\``
-    : ''
-}
+\`\`\`
 ## System Information
 - **ComfyUI Version:** ${systemStats.system.comfyui_version}
 - **Arguments:** ${systemStats.system.argv.join(' ')}

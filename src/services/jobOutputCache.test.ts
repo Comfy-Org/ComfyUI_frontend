@@ -1,4 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+vi.mock('@/platform/assets/composables/media/assetMappers')
 
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import { api } from '@/scripts/api'
@@ -9,6 +11,7 @@ import type {
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
   findActiveIndex,
+  getJobAssets,
   getJobDetail,
   getJobWorkflow,
   getOutputsForTask
@@ -23,6 +26,7 @@ vi.mock('@/platform/remote/comfyui/jobs/fetchJobs', () => ({
 vi.mock('@/scripts/api', () => ({
   api: {
     getJobDetail: vi.fn(),
+    getJobAssets: vi.fn(),
     apiURL: vi.fn((path: string) => `/api${path}`),
     addEventListener: vi.fn(),
     removeEventListener: vi.fn()
@@ -73,10 +77,6 @@ function uniqueId(prefix: string): string {
 }
 
 describe('jobOutputCache', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   describe('findActiveIndex', () => {
     it('returns index of matching URL', () => {
       const items = [
@@ -356,6 +356,75 @@ describe('jobOutputCache', () => {
       const result = await getJobDetail(jobId)
 
       expect(result).toBeUndefined()
+    })
+  })
+
+  describe('getJobAssets', () => {
+    it('caches assets after the first fetch', async () => {
+      const jobId = uniqueId('job-assets')
+      vi.mocked(api.getJobAssets).mockResolvedValue({
+        assets: [{ id: 'a1', name: 'a.png', created_at: 't' }],
+        complete: true
+      })
+
+      await getJobAssets(jobId)
+      const result = await getJobAssets(jobId)
+
+      expect(result.map((asset) => asset.id)).toEqual(['a1'])
+      expect(api.getJobAssets).toHaveBeenCalledTimes(1)
+    })
+
+    it('dedupes concurrent requests for the same job', async () => {
+      const jobId = uniqueId('job-assets')
+      vi.mocked(api.getJobAssets).mockResolvedValue({
+        assets: [{ id: 'a1', name: 'a.png', created_at: 't' }],
+        complete: true
+      })
+
+      const [first, second] = await Promise.all([
+        getJobAssets(jobId),
+        getJobAssets(jobId)
+      ])
+
+      expect(first).toEqual(second)
+      expect(api.getJobAssets).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not cache empty results', async () => {
+      const jobId = uniqueId('job-assets')
+      vi.mocked(api.getJobAssets).mockResolvedValue({
+        assets: [],
+        complete: true
+      })
+
+      await getJobAssets(jobId)
+      await getJobAssets(jobId)
+
+      expect(api.getJobAssets).toHaveBeenCalledTimes(2)
+    })
+
+    it('does not cache a truncated result, and re-fetches once complete', async () => {
+      const jobId = uniqueId('job-assets')
+      vi.mocked(api.getJobAssets).mockResolvedValue({
+        assets: [{ id: 'a1', name: 'a.png', created_at: 't' }],
+        complete: false
+      })
+
+      const truncated = await getJobAssets(jobId)
+      expect(truncated.map((asset) => asset.id)).toEqual(['a1'])
+
+      vi.mocked(api.getJobAssets).mockResolvedValue({
+        assets: [
+          { id: 'a1', name: 'a.png', created_at: 't' },
+          { id: 'a2', name: 'b.png', created_at: 't' }
+        ],
+        complete: true
+      })
+
+      const recovered = await getJobAssets(jobId)
+
+      expect(recovered.map((asset) => asset.id)).toEqual(['a1', 'a2'])
+      expect(api.getJobAssets).toHaveBeenCalledTimes(2)
     })
   })
 

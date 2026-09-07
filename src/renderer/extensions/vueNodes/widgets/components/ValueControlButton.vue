@@ -28,6 +28,7 @@ const textMap: Record<ControlOptions, string | null> = {
 
 <template>
   <button
+    data-testid="value-control"
     type="button"
     :aria-label="t('widgets.valueControl.' + mode)"
     :class="

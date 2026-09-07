@@ -29,7 +29,7 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
 
       <!-- Node slot I/O -->
       <div
-        v-for="[slotInput, slotOutput] in _.zip(slotInputDefs, allOutputDefs)"
+        v-for="[slotInput, slotOutput] in zip(slotInputDefs, allOutputDefs)"
         :key="(slotInput?.name || '') + (slotOutput?.index.toString() || '')"
         class="_sb_row slot_row"
       >
@@ -78,7 +78,7 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
         <div class="_sb_col _sb_arrow">&#x25B6;</div>
       </div>
     </div>
-    <div
+    <SanitizedHtml
       v-if="renderedDescription"
       class="_sb_description"
       data-testid="node-description"
@@ -86,18 +86,20 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
         color: litegraphColors.WIDGET_SECONDARY_TEXT_COLOR,
         backgroundColor: litegraphColors.WIDGET_BGCOLOR
       }"
-      v-html="renderedDescription"
+      :html="renderedDescription"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import _ from 'es-toolkit/compat'
+import { truncate, zip } from 'es-toolkit/compat'
 import { computed } from 'vue'
 
+import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import LGraphNodePreview from '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { flattenInputSpecs } from '@/schemas/nodeDef/inputSpecUtil'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
@@ -122,7 +124,7 @@ const renderedDescription = computed(() => {
   return renderMarkdownToHtml(description)
 })
 
-const allInputDefs = Object.values(nodeDef.inputs)
+const allInputDefs = flattenInputSpecs(nodeDef.inputs)
 const allOutputDefs = nodeDef.outputs
 const slotInputDefs = allInputDefs.filter(
   (input) => !widgetStore.inputIsWidget(input)
@@ -146,7 +148,7 @@ const truncateDefaultValue = (
     stringValue = String(value)
   }
 
-  return _.truncate(stringValue, { length: charLimit })
+  return truncate(stringValue, { length: charLimit })
 }
 </script>
 

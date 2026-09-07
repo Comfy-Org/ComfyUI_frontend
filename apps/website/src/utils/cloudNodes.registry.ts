@@ -5,8 +5,10 @@ import type { components } from '@comfyorg/registry-types'
 export const DEFAULT_REGISTRY_BASE_URL = 'https://api.comfy.org'
 const DEFAULT_TIMEOUT_MS = 5_000
 const BATCH_SIZE = 50
+const COMFY_NODES_PAGE_SIZE = 500
 
 export type RegistryPack = components['schemas']['Node']
+export type RegistryComfyNode = components['schemas']['ComfyNode']
 
 function nullToUndefined<T>(value: T | null | undefined): T | undefined {
   return value ?? undefined
@@ -55,6 +57,29 @@ const RegistryPackSchema = z
 const RegistryListResponseSchema = z
   .object({
     nodes: z.array(RegistryPackSchema)
+  })
+  .passthrough()
+
+const RegistryComfyNodeSchema = z
+  .object({
+    comfy_node_name: optionalString,
+    category: optionalString,
+    description: optionalString,
+    deprecated: z
+      .boolean()
+      .nullish()
+      .transform((v) => v ?? undefined),
+    experimental: z
+      .boolean()
+      .nullish()
+      .transform((v) => v ?? undefined)
+  })
+  .passthrough()
+
+const RegistryComfyNodesResponseSchema = z
+  .object({
+    comfy_nodes: z.array(RegistryComfyNodeSchema).nullish(),
+    totalNumberOfPages: z.number().nullish()
   })
   .passthrough()
 
@@ -120,6 +145,142 @@ export async function fetchRegistryPacks(
   }
 
   return resolved
+}
+
+export interface RegistryPackWithNodes {
+  pack: RegistryPack
+  nodes: RegistryComfyNode[]
+}
+
+export async function fetchRegistryPacksWithNodes(
+  packIds: readonly string[],
+  options: FetchRegistryOptions = {}
+): Promise<Map<string, RegistryPackWithNodes | null>> {
+  const packs = await fetchRegistryPacks(packIds, options)
+
+  const baseUrl = options.baseUrl ?? DEFAULT_REGISTRY_BASE_URL
+  const timeoutMs = clampTimeoutMs(options.timeoutMs)
+  const fetchImpl = options.fetchImpl ?? fetch
+
+  const entries = await Promise.all(
+    [...packs.entries()].map(
+      async ([packId, pack]): Promise<
+        [string, RegistryPackWithNodes | null]
+      > => {
+        if (!pack?.latest_version?.version) {
+          return [packId, null]
+        }
+
+        const nodes = await fetchComfyNodesForPack(
+          fetchImpl,
+          baseUrl,
+          packId,
+          pack.latest_version.version,
+          timeoutMs
+        )
+
+        return [packId, { pack, nodes }]
+      }
+    )
+  )
+
+  return new Map(entries)
+}
+
+async function fetchComfyNodesForPack(
+  fetchImpl: typeof fetch,
+  baseUrl: string,
+  packId: string,
+  version: string,
+  timeoutMs: number
+): Promise<RegistryComfyNode[]> {
+  const allNodes: RegistryComfyNode[] = []
+  let page = 1
+  let totalPages = 1
+
+  while (page <= totalPages) {
+    const result = await fetchComfyNodesPageWithRetry(
+      fetchImpl,
+      baseUrl,
+      packId,
+      version,
+      page,
+      timeoutMs
+    )
+
+    if (!result) break
+
+    allNodes.push(...result.nodes)
+    totalPages = result.totalPages
+    page++
+  }
+
+  return allNodes
+}
+
+async function fetchComfyNodesPageWithRetry(
+  fetchImpl: typeof fetch,
+  baseUrl: string,
+  packId: string,
+  version: string,
+  page: number,
+  timeoutMs: number
+): Promise<{ nodes: RegistryComfyNode[]; totalPages: number } | null> {
+  const firstAttempt = await fetchComfyNodesPage(
+    fetchImpl,
+    baseUrl,
+    packId,
+    version,
+    page,
+    timeoutMs
+  )
+  if (firstAttempt) return firstAttempt
+
+  // Retry once on failure
+  return fetchComfyNodesPage(
+    fetchImpl,
+    baseUrl,
+    packId,
+    version,
+    page,
+    timeoutMs
+  )
+}
+
+async function fetchComfyNodesPage(
+  fetchImpl: typeof fetch,
+  baseUrl: string,
+  packId: string,
+  version: string,
+  page: number,
+  timeoutMs: number
+): Promise<{ nodes: RegistryComfyNode[]; totalPages: number } | null> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+
+  try {
+    const url = `${baseUrl}/nodes/${encodeURIComponent(packId)}/versions/${encodeURIComponent(version)}/comfy-nodes?limit=${COMFY_NODES_PAGE_SIZE}&page=${page}`
+    const res = await fetchImpl(url, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+      signal: controller.signal
+    })
+
+    if (!res.ok) return null
+
+    const rawBody: unknown = await res.json()
+    const parsed = RegistryComfyNodesResponseSchema.safeParse(rawBody)
+    if (!parsed.success) return null
+
+    return {
+      nodes: (parsed.data.comfy_nodes ?? []) as RegistryComfyNode[],
+      totalPages: parsed.data.totalNumberOfPages ?? 1
+    }
+  } catch {
+    return null
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 async function fetchBatchWithRetry(

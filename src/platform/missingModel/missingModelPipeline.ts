@@ -15,12 +15,11 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyW
 import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { api } from '@/scripts/api'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useModelStore } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { MissingNodeType } from '@/types/comfy'
 import {
-  isAncestorPathActive,
+  isCandidateScopeActive,
   isMissingCandidateActive
 } from '@/utils/graphTraversalUtil'
 
@@ -34,6 +33,7 @@ interface MissingModelPipelineStore {
   createVerificationAbortController: () => AbortController
   setFolderPaths: (paths: Record<string, string[]>) => void
   setFileSize: (url: string, size: number) => void
+  setGatedRepoUrl: (url: string, repoUrl: string) => void
 }
 
 interface RunMissingModelPipelineOptions {
@@ -46,7 +46,7 @@ interface RunMissingModelPipelineOptions {
 
 interface RefreshMissingModelPipelineOptions {
   graph: LGraph
-  reloadNodeDefs: () => Promise<void>
+  reloadNodeDefs?: () => Promise<void>
   missingModelStore: MissingModelPipelineStore
   silent?: boolean
 }
@@ -121,30 +121,17 @@ export async function runMissingModelPipeline({
     getDirectory
   )
 
-  const modelStore = useModelStore()
-  await modelStore.loadModelFolders()
-  const enrichedAll = await enrichWithEmbeddedMetadata(
-    candidates,
-    graphData,
-    async (name, directory) => {
-      const folder = await modelStore.getLoadedModelFolder(directory)
-      const models = folder?.models
-      return !!(
-        models && Object.values(models).some((m) => m.file_name === name)
-      )
-    },
-    isCloud ? isAssetBrowserWidget : undefined
-  )
+  const enrichedAll = enrichWithEmbeddedMetadata(candidates, graphData)
 
-  // Drop candidates whose enclosing subgraph is muted/bypassed. Per-node
-  // scans only checked each node's own mode; the cascade from an
-  // inactive container to its interior happens here.
+  // Drop candidates whose active scope is muted/bypassed. Normal candidates
+  // use nodeId; promoted host candidates use sourceExecutionId so host-keyed
+  // errors still respect inactive interior subgraph containers.
   // Asymmetric on purpose: a candidate dropped here is not resurrected if
   // the user un-bypasses the container mid-verification. The realtime
   // mode-change path (handleNodeModeChange → scanAndAddNodeErrors) is
   // responsible for surfacing errors after an un-bypass.
-  const enrichedCandidates = enrichedAll.filter(
-    (c) => c.nodeId == null || isAncestorPathActive(graph, String(c.nodeId))
+  const enrichedCandidates = enrichedAll.filter((c) =>
+    isCandidateScopeActive(graph, c)
   )
 
   const confirmedCandidates = enrichedCandidates.filter(
@@ -186,7 +173,7 @@ export async function runMissingModelPipeline({
             severity: 'warn',
             summary: st(
               'toastMessages.missingModelVerificationFailed',
-              'Failed to verify missing models. Some models may not be shown in the Errors tab.'
+              'Failed to verify missing models. Some models may not be shown in the Issues tab.'
             ),
             life: 5000
           })
@@ -217,15 +204,16 @@ export async function runMissingModelPipeline({
           cacheModelCandidates(activeWf, confirmedCandidates)
         })
 
-      const missingModelDownload =
-        import('@/platform/missingModel/missingModelDownload')
+      const missingModelMetadata =
+        import('@/platform/missingModel/missingModelMetadata')
       void Promise.allSettled(
         downloadableCandidates.map(async (c) => {
-          const { fetchModelMetadata } = await missingModelDownload
-          const metadata = await fetchModelMetadata(c.url)
-          if (!controller.signal.aborted && metadata.fileSize !== null) {
-            missingModelStore.setFileSize(c.url, metadata.fileSize)
-          }
+          const { fetchAndStoreModelMetadata } = await missingModelMetadata
+          await fetchAndStoreModelMetadata(
+            c.url,
+            missingModelStore,
+            controller.signal
+          )
         })
       )
     }
@@ -242,7 +230,7 @@ export async function refreshMissingModelPipeline({
   missingModelStore,
   silent = true
 }: RefreshMissingModelPipelineOptions): Promise<MissingModelPipelineResult> {
-  await reloadNodeDefs()
+  await reloadNodeDefs?.()
   const graphData: MissingModelWorkflowData = graph.serialize()
   const activeWorkflowState =
     useWorkspaceStore().workflow.activeWorkflow?.activeState

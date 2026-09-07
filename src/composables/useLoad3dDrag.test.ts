@@ -24,7 +24,7 @@ function createMockDragEvent(
   const dataTransfer: Partial<DataTransfer> = {
     types,
     files: createMockFileList(files),
-    dropEffect: 'none' as DataTransfer['dropEffect']
+    dropEffect: 'none'
   }
 
   const event: Partial<DragEvent> = {
@@ -40,8 +40,6 @@ describe('useLoad3dDrag', () => {
   let mockOnModelDrop: (file: File) => void | Promise<void>
 
   beforeEach(() => {
-    vi.clearAllMocks()
-
     mockToastStore = {
       addAlert: vi.fn()
     } as Partial<ReturnType<typeof useToastStore>> as ReturnType<

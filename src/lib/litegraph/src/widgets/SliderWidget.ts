@@ -1,6 +1,7 @@
 import { clamp } from 'es-toolkit/compat'
 
 import type { ISliderWidget } from '@/lib/litegraph/src/types/widgets'
+import { coerceNumericWidgetValue } from '@/lib/litegraph/src/utils/widget'
 
 import { BaseWidget } from './BaseWidget'
 import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
@@ -20,7 +21,7 @@ export class SliderWidget
    */
   override drawWidget(
     ctx: CanvasRenderingContext2D,
-    { width, showText = true, suppressPromotedOutline }: DrawWidgetOptions
+    { width, showText = true }: DrawWidgetOptions
   ) {
     // Store original context attributes
     const { fillStyle, strokeStyle, textAlign } = ctx
@@ -33,8 +34,9 @@ export class SliderWidget
     ctx.fillRect(margin, y, width - margin * 2, height)
 
     // Calculate normalized value
+    const value = coerceNumericWidgetValue(this.value)
     const range = this.options.max - this.options.min
-    let nvalue = (this.value - this.options.min) / range
+    let nvalue = (value - this.options.min) / range
     nvalue = clamp(nvalue, 0, 1)
 
     // Draw slider bar
@@ -43,7 +45,7 @@ export class SliderWidget
 
     // Draw outline if not disabled
     if (showText && !this.computedDisabled) {
-      ctx.strokeStyle = this.getOutlineColor(suppressPromotedOutline)
+      ctx.strokeStyle = this.getOutlineColor()
       ctx.strokeRect(margin, y, width - margin * 2, height)
     }
 
@@ -59,7 +61,7 @@ export class SliderWidget
     if (showText) {
       ctx.textAlign = 'center'
       ctx.fillStyle = this.text_color
-      const fixedValue = Number(this.value).toFixed(this.options.precision ?? 3)
+      const fixedValue = value.toFixed(this.options.precision ?? 3)
       ctx.fillText(
         `${this.label || this.name}  ${fixedValue}`,
         width * 0.5,

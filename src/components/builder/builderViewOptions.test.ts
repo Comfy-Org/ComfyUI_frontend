@@ -12,19 +12,19 @@ vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({ trackDefaultViewSet: mockTrackDefaultViewSet })
 }))
 
-vi.mock('@/scripts/app', () => ({
-  app: { rootGraph: { extra: {} } }
-}))
+vi.mock('@/scripts/app', () => {
+  const rootGraph = { extra: {} }
+  return { app: { rootGraph, rootGraphOrUndefined: rootGraph } }
+})
 
 describe('setWorkflowDefaultView', () => {
   let setWorkflowDefaultView: typeof SetWorkflowDefaultViewFn
   let app: { rootGraph: { extra: Record<string, unknown> } }
 
   beforeEach(async () => {
-    vi.clearAllMocks()
     const mod = await import('./builderViewOptions')
     setWorkflowDefaultView = mod.setWorkflowDefaultView
-    app = (await import('@/scripts/app')).app as typeof app
+    app = (await import('@/scripts/app')).app
     app.rootGraph.extra = {}
   })
 

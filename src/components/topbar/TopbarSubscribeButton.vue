@@ -2,7 +2,7 @@
   <Button
     v-if="isCloud && isFreeTier"
     class="mr-2 shrink-0 whitespace-nowrap"
-    variant="gradient"
+    variant="subscribe"
     size="sm"
     data-testid="topbar-subscribe-button"
     @click="handleClick"
@@ -21,6 +21,6 @@ const { isFreeTier } = useBillingContext()
 const subscriptionDialog = useSubscriptionDialog()
 
 function handleClick() {
-  subscriptionDialog.showPricingTable()
+  subscriptionDialog.showPricingTable({ reason: 'subscribe_now_button' })
 }
 </script>

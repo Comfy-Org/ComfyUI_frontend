@@ -5,11 +5,7 @@
     data-capture-wheel="true"
     tabindex="-1"
     @pointerdown.stop="focusContainer"
-    @pointermove.stop
-    @pointerup.stop
     @mousedown.stop
-    @mousemove.stop
-    @mouseup.stop
     @contextmenu.stop.prevent
     @dragover.prevent.stop="handleDragOver"
     @dragleave.stop="handleDragLeave"

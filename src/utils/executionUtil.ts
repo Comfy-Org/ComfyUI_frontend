@@ -12,8 +12,38 @@ import type {
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 
-import { ExecutableGroupNodeDTO, isGroupNode } from './executableGroupNodeDto'
 import { compressWidgetInputSlots } from './litegraphUtil'
+
+type ExportedWidgetValueWrapper = {
+  __type__?: unknown
+  __value__: unknown
+}
+
+function isExportedWidgetValueWrapper(
+  value: unknown
+): value is ExportedWidgetValueWrapper {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value) &&
+    '__value__' in value
+  )
+}
+
+/**
+ * Inverse of the wrapping applied during Export (API). Curve values carry a
+ * type marker and may be objects; untyped wrappers are reserved for arrays so
+ * ordinary objects containing a `__value__` property pass through unchanged.
+ */
+export function unwrapExportedWidgetValue(value: unknown): unknown {
+  if (
+    isExportedWidgetValueWrapper(value) &&
+    (value.__type__ === 'CURVE' || Array.isArray(value.__value__))
+  ) {
+    return value.__value__
+  }
+  return value
+}
 
 /**
  * Converts the current graph workflow for sending to the API.
@@ -59,9 +89,11 @@ export const graphToPrompt = async (
 
   const nodeDtoMap = new Map<ExecutionId, ExecutableLGraphNode>()
   for (const node of graph.computeExecutionOrder(false)) {
-    const dto: ExecutableLGraphNode = isGroupNode(node)
-      ? new ExecutableGroupNodeDTO(node, [], nodeDtoMap)
-      : new ExecutableNodeDTO(node, [], nodeDtoMap)
+    const dto: ExecutableLGraphNode = new ExecutableNodeDTO(
+      node,
+      [],
+      nodeDtoMap
+    )
 
     nodeDtoMap.set(dto.id, dto)
 
@@ -97,7 +129,7 @@ export const graphToPrompt = async (
     // widget.serialize controls workflow persistence (checked by LGraphNode).
     if (widgets) {
       for (const [i, widget] of widgets.entries()) {
-        if (!widget.name || widget.options?.serialize === false) continue
+        if (!widget.name || widget.options.serialize === false) continue
 
         const widgetValue = widget.serializeValue
           ? await widget.serializeValue(node, i)
@@ -107,9 +139,12 @@ export const graphToPrompt = async (
         // of the array as a node connection.
         // The backend automatically unwraps the object to an array during
         // execution.
-        inputs[widget.name] = Array.isArray(widgetValue)
-          ? { __value__: widgetValue }
-          : widgetValue
+        inputs[widget.name] =
+          widget.type === 'curve' && widgetValue != null
+            ? { __type__: 'CURVE', __value__: widgetValue }
+            : Array.isArray(widgetValue)
+              ? { __value__: widgetValue }
+              : widgetValue
       }
     }
 
@@ -126,13 +161,13 @@ export const graphToPrompt = async (
       }
 
       inputs[input.name] = [
-        String(resolvedInput.origin_id),
+        resolvedInput.origin_id,
         // @ts-expect-error link.origin_slot is already number.
         parseInt(resolvedInput.origin_slot)
       ]
     }
 
-    output[String(node.id)] = {
+    output[node.id] = {
       inputs,
       // TODO(huchenlei): Filter out all nodes that cannot be mapped to a
       // comfyClass.
@@ -147,7 +182,11 @@ export const graphToPrompt = async (
   // Remove inputs connected to removed nodes
   for (const { inputs } of Object.values(output)) {
     for (const [i, input] of Object.entries(inputs)) {
-      if (Array.isArray(input) && input.length === 2 && !output[input[0]]) {
+      if (
+        Array.isArray(input) &&
+        input.length === 2 &&
+        !Object.hasOwn(output, input[0])
+      ) {
         delete inputs[i]
       }
     }

@@ -10,7 +10,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 </script>
 
 <template>
-  <section class="px-4 py-24 lg:px-20 lg:py-40">
+  <section class="max-w-9xl mx-auto px-4 py-24 lg:px-20 lg:py-40">
     <div
       class="bg-transparency-white-t4 rounded-5xl flex flex-col-reverse items-stretch gap-10 p-2 lg:flex-row lg:gap-8"
     >

@@ -1,15 +1,11 @@
-import type { UUID } from '@/lib/litegraph/src/utils/uuid'
+import type { UUID } from '@/utils/uuid'
 
-import type {
-  LGraphConfig,
-  LGraphExtra,
-  LGraphState,
-  SubgraphId
-} from '../LGraph'
-import type { GroupId, IGraphGroupFlags } from '../LGraphGroup'
-import type { NodeId, NodeProperty } from '../LGraphNode'
-import type { LinkId, SerialisedLLinkArray } from '../LLink'
-import type { FloatingRerouteSlot, RerouteId } from '../Reroute'
+import type { LGraphConfig, LGraphExtra, SubgraphId } from '../LGraph'
+import type { IGraphGroupFlags } from '../LGraphGroup'
+import type { NodeProperty } from '@/types/nodeState'
+import type { SerializedNodeId } from '@/types/nodeId'
+import type { SerialisedLLinkArray } from '../LLink'
+import type { FloatingRerouteSlot } from '../Reroute'
 import type {
   Dictionary,
   INodeFlags,
@@ -49,12 +45,21 @@ interface BaseExportedGraph {
     /** The base definition of subgraphs used in this workflow. That is, what you see when you open / edit a subgraph. */
     subgraphs?: ExportedSubgraph[]
   }
+  extensions?: ExtensionPayload
+}
+
+interface SerialisableGraphState {
+  /** Counter, not an id — brand at the point a group is constructed. */
+  lastGroupId: number
+  lastNodeId: number
+  lastLinkId: number
+  lastRerouteId: number
 }
 
 export interface SerialisableGraph extends BaseExportedGraph {
   /** Schema version.  @remarks Version bump should add to const union, which is used to narrow type during deserialise. */
   version: 0 | 1
-  state: LGraphState
+  state: SerialisableGraphState
   groups?: ISerialisedGroup[]
   nodes?: ISerialisedNode[]
   links?: SerialisableLLink[]
@@ -63,23 +68,27 @@ export interface SerialisableGraph extends BaseExportedGraph {
   extra?: LGraphExtra
 }
 
+type ExtensionPayload = Record<string, unknown>
+
 export type ISerialisableNodeInput = Omit<
   INodeInputSlot,
-  'boundingRect' | 'widget'
+  'boundingRect' | 'widget' | 'link'
 > & {
+  link?: number | null
   widget?: { name: string }
 }
 export type ISerialisableNodeOutput = Omit<
   INodeOutputSlot,
-  'boundingRect' | '_data'
+  'boundingRect' | '_data' | 'links'
 > & {
+  links?: number[] | null
   widget?: { name: string }
 }
 
 /** Serialised LGraphNode */
 export interface ISerialisedNode {
   title?: string
-  id: NodeId
+  id: SerializedNodeId
   type: string
   pos: Point
   size: Size
@@ -101,6 +110,8 @@ export interface ISerialisedNode {
    * See example in https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite/blob/8629188458dc6cb832f871ece3bd273507e8a766/web/js/VHS.core.js#L59-L84
    */
   widgets_values?: TWidgetValue[]
+  widgets_values_named?: Record<string, TWidgetValue>
+  extensions?: ExtensionPayload
 }
 
 /** Properties of nodes that are used by subgraph instances. */
@@ -125,8 +136,8 @@ export interface ExportedSubgraphInstance extends NodeSubgraphSharedProps {
  * Maintained for backwards compat
  */
 export interface ISerialisedGraph extends BaseExportedGraph {
-  last_node_id: NodeId
-  last_link_id: LinkId
+  last_node_id: SerializedNodeId
+  last_link_id: number
   nodes: ISerialisedNode[]
   links: SerialisedLLinkArray[]
   floatingLinks?: SerialisableLLink[]
@@ -159,7 +170,7 @@ export interface ExportedSubgraph extends SerialisableGraph {
 /** Properties shared by subgraph and node I/O slots. */
 type SubgraphIOShared = Omit<
   INodeSlot,
-  'boundingRect' | 'nameLocked' | 'locked' | 'removable' | '_floatingLinks'
+  'boundingRect' | 'nameLocked' | 'locked' | 'removable'
 >
 
 /** Subgraph I/O slots */
@@ -169,20 +180,20 @@ export interface SubgraphIO extends SubgraphIOShared {
   /** The data type this slot uses. Unlike nodes, this does not support legacy numeric types. */
   type: string
   /** Links connected to this slot, or `undefined` if not connected. An output slot should only ever have one link. */
-  linkIds?: LinkId[]
+  linkIds?: number[]
 }
 
 /** A reference to a node widget shown in the parent graph */
 export interface ExposedWidget {
   /** The ID of the node (inside the subgraph) that the widget belongs to. */
-  id: NodeId
+  id: SerializedNodeId
   /** The name of the widget to show in the parent graph. */
   name: string
 }
 
 /** Serialised LGraphGroup */
 export interface ISerialisedGroup {
-  id: GroupId
+  id: number
   title: string
   bounding: number[]
   color?: string
@@ -200,32 +211,32 @@ export interface ClipboardItems {
 }
 
 export interface SerialisableReroute {
-  id: RerouteId
-  parentId?: RerouteId
+  id: number
+  parentId?: number
   pos: Point
-  linkIds: LinkId[]
+  linkIds: number[]
   floating?: FloatingRerouteSlot
 }
 
 export interface SerialisableLLink {
   /** Link ID */
-  id: LinkId
+  id: number
   /** Output node ID */
-  origin_id: NodeId
+  origin_id: SerializedNodeId
   /** Output slot index */
   origin_slot: number
   /** Input node ID */
-  target_id: NodeId
+  target_id: SerializedNodeId
   /** Input slot index */
   target_slot: number
   /** Data type of the link */
   type: ISlotType
   /** ID of the last reroute (from input to output) that this link passes through, otherwise `undefined` */
-  parentId?: RerouteId
+  parentId?: number
 }
 
 export interface ExportedSubgraphIONode {
-  id: NodeId
+  id: SerializedNodeId
   bounding: [number, number, number, number]
   pinned?: boolean
 }

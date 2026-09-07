@@ -1,19 +1,14 @@
 import userEvent from '@testing-library/user-event'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
-  layoutStore: {
-    querySlotAtPoint: vi.fn(),
-    queryRerouteAtPoint: vi.fn(),
-    getNodeLayoutRef: vi.fn(() => ({ value: null })),
-    getSlotLayout: vi.fn(),
-    setSource: vi.fn(),
-    setActor: vi.fn()
-  }
-}))
+vi.mock('@/renderer/core/layout/store/layoutStore')
+
+beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
 function createGhostTestHarness() {
   const canvasElement = document.createElement('canvas')
@@ -54,7 +49,6 @@ describe('LGraphCanvas ghost placement auto-pan', () => {
   let node: LGraphNode
 
   beforeEach(() => {
-    vi.useFakeTimers()
     ;({ canvas, canvasElement, node } = createGhostTestHarness())
     // Near left edge so autopan fires by default
     canvas.mouse[0] = 5
@@ -64,7 +58,6 @@ describe('LGraphCanvas ghost placement auto-pan', () => {
   afterEach(() => {
     if (canvas.state.ghostNodeId != null) canvas.finalizeGhostPlacement(false)
     canvasElement.remove()
-    vi.useRealTimers()
   })
 
   it('moves the ghost node when pointer is near edge', () => {
@@ -236,5 +229,43 @@ describe('LGraphCanvas ghost placement cancellation via document keydown', () =>
     } finally {
       window.removeEventListener('keydown', windowSpy)
     }
+  })
+
+  it('removes listeners and resets transient drag state when ghostNodeId was already cleared', async () => {
+    const processMoveSpy = vi.spyOn(canvas, 'processMouseMove')
+    canvas.startGhostPlacement(node)
+    expect(canvas.isDragging).toBe(true)
+    expect(canvas['_autoPan']).not.toBeNull()
+
+    canvas.state.ghostNodeId = null
+
+    canvas.finalizeGhostPlacement(true)
+
+    expect(canvas.isDragging).toBe(false)
+    expect(canvas['_autoPan']).toBeNull()
+
+    document.dispatchEvent(new MouseEvent('pointermove'))
+    expect(processMoveSpy).not.toHaveBeenCalled()
+
+    const windowSpy = vi.fn()
+    window.addEventListener('keydown', windowSpy)
+    try {
+      await userEvent.keyboard('{Escape}')
+      expect(windowSpy).toHaveBeenCalledTimes(1)
+    } finally {
+      window.removeEventListener('keydown', windowSpy)
+    }
+  })
+
+  it('does not clobber unrelated drag state when called with no ghost in flight', () => {
+    const fakeAutoPan = { stop: vi.fn() }
+    canvas.isDragging = true
+    canvas['_autoPan'] = fakeAutoPan as unknown as (typeof canvas)['_autoPan']
+
+    canvas.finalizeGhostPlacement(true)
+
+    expect(canvas.isDragging).toBe(true)
+    expect(canvas['_autoPan']).toBe(fakeAutoPan)
+    expect(fakeAutoPan.stop).not.toHaveBeenCalled()
   })
 })

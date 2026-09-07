@@ -114,6 +114,25 @@ test.describe(
           .poll(() => collectWidgetLabels(shownSection))
           .not.toContain('text')
       })
+
+      test(
+        'control after generate does not display',
+        { tag: '@vue-nodes' },
+        async ({ comfyPage }) => {
+          await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+          const subgraphNode = comfyPage.vueNodes.getNodeByTitle('New Subgraph')
+          const { editor } = comfyPage.subgraph
+          await editor.ensureOpen(subgraphNode)
+
+          await expect(
+            editor.promotionItems.first(),
+            'some promotion item is visible'
+          ).toBeVisible()
+
+          const widgetName = 'control_after_generate'
+          await expect(editor.resolveItem({ widgetName })).toBeHidden()
+        }
+      )
     })
 
     test.describe('Parameters tab (WidgetActions menu)', () => {

@@ -158,15 +158,6 @@
   "Comfy_Graph_UnpackSubgraph": {
     "label": "Desempaquetar el subgrafo seleccionado"
   },
-  "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
-    "label": "Convertir nodos seleccionados en nodo de grupo"
-  },
-  "Comfy_GroupNode_ManageGroupNodes": {
-    "label": "Administrar nodos de grupo"
-  },
-  "Comfy_GroupNode_UngroupSelectedGroupNodes": {
-    "label": "Desagrupar nodos de grupo seleccionados"
-  },
   "Comfy_Help_AboutComfyUI": {
     "label": "Abrir Acerca de ComfyUI"
   },
@@ -184,6 +175,9 @@
   },
   "Comfy_Interrupt": {
     "label": "Interrumpir"
+  },
+  "Comfy_LayerEditor_OpenLayerEditor": {
+    "label": "Abrir el editor de capas para el nodo seleccionado"
   },
   "Comfy_LoadDefaultWorkflow": {
     "label": "Cargar flujo de trabajo predeterminado"

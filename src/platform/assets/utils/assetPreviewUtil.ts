@@ -5,7 +5,7 @@ import { useAssetsStore } from '@/stores/assetsStore'
 interface AssetRecord {
   id: string
   name: string
-  asset_hash?: string
+  hash?: string | null
   preview_url?: string
   preview_id?: string | null
 }
@@ -26,7 +26,7 @@ async function fetchAssets(
   return data.assets ?? []
 }
 
-function resolvePreviewUrl(asset: AssetRecord): string {
+export function resolvePreviewUrl(asset: AssetRecord): string {
   if (asset.preview_url) return api.apiURL(asset.preview_url)
 
   const contentId = asset.preview_id ?? asset.id
@@ -35,14 +35,14 @@ function resolvePreviewUrl(asset: AssetRecord): string {
 
 /**
  * Find an output asset record by content hash, falling back to name.
- * On cloud, output filenames are content-hashed; use asset_hash to match.
+ * On cloud, output filenames are content-hashed; use hash to match.
  * On local, filenames are not hashed; use name_contains to match.
  */
 export async function findOutputAsset(
   name: string
 ): Promise<AssetRecord | undefined> {
-  const byHash = await fetchAssets({ asset_hash: name })
-  const hashMatch = byHash.find((a) => a.asset_hash === name)
+  const byHash = await fetchAssets({ hash: name })
+  const hashMatch = byHash.find((a) => a.hash === name)
   if (hashMatch) return hashMatch
 
   const byName = await fetchAssets({ name_contains: name })
@@ -81,9 +81,7 @@ export async function persistThumbnail(
     await assetService.updateAsset(asset.id, {
       preview_id: uploaded.id
     })
-
-    const previewUrl = api.apiURL(`/assets/${uploaded.id}/content`)
-    useAssetsStore().setAssetPreview(asset.name, uploaded.id, previewUrl)
+    await useAssetsStore().outputAssets.invalidate()
   } catch {
     // Non-critical — client still shows the rendered thumbnail
   }

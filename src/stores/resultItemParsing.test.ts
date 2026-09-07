@@ -1,5 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+vi.mock('@/platform/assets/composables/media/assetMappers')
 
 import type { NodeExecutionOutput } from '@/schemas/apiSchema'
 import { parseNodeOutput, parseTaskOutput } from '@/stores/resultItemParsing'
@@ -81,6 +83,21 @@ describe(parseNodeOutput, () => {
     const types = result.map((r) => r.mediaType)
     expect(types).toContain('gifs')
     expect(types).toContain('3d')
+  })
+
+  it('flattens files outputs (e.g. SaveText)', () => {
+    const output = makeOutput({
+      files: [{ filename: 'result.txt', subfolder: '', type: 'output' }],
+      text: 'some generated text'
+    })
+
+    const result = parseNodeOutput('9', output)
+
+    expect(result).toHaveLength(1)
+    expect(result[0].filename).toBe('result.txt')
+    expect(result[0].mediaType).toBe('files')
+    expect(result[0].isText).toBe(true)
+    expect(result[0].supportsPreview).toBe(true)
   })
 
   it('ignores empty arrays', () => {

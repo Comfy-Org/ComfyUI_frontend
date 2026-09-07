@@ -2,6 +2,8 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { ref } from 'vue'
 
+import { visibleGalleryItems as items } from '../../data/gallery'
+import type { GalleryItem } from '../../data/gallery'
 import type { Locale } from '../../i18n/translations'
 import GalleryCard from './GalleryCard.vue'
 import GalleryDetailModal from './GalleryDetailModal.vue'
@@ -15,166 +17,6 @@ function openDetail(index: number) {
   modalIndex.value = index
   modalOpen.value = true
 }
-
-export interface GalleryItem {
-  image?: string
-  video?: string
-  title: string
-  userAlias: string
-  teamAlias: string
-  tool: string
-  href?: string
-}
-
-const items: GalleryItem[] = [
-  {
-    video: 'https://media.comfy.org/videos/compressed_512/eye.webm',
-    title: 'Until Our Eye Interlink harajuku',
-    userAlias: 'ShaneF Motion Design',
-    teamAlias: 'ThinkDiffusion',
-    tool: 'ComfyUI',
-    href: 'https://www.thinkdiffusion.com/studio#success-stories-anta'
-  },
-  {
-    video: 'https://media.comfy.org/videos/compressed_512/kyrie.webm',
-    title: 'Origins - Kyrie Irving',
-    userAlias: 'ShaneF Motion Design',
-    teamAlias: 'ThinkDiffusion',
-    tool: 'ComfyUI',
-    href: 'https://vimeo.com/1021360563'
-  },
-  {
-    video: 'https://media.comfy.org/videos/compressed_512/arcade.webm',
-    title: 'Neon Nights',
-    userAlias: 'ShaneF Motion Design',
-    teamAlias: 'DOGSTUDIO/DEPT®',
-    tool: 'ComfyUI',
-    href: 'https://www.instagram.com/p/C1kG1oErzUV/'
-  },
-  {
-    video: 'https://media.comfy.org/videos/compressed_512/dusk_mountains.webm',
-    title: 'Untitled',
-    userAlias: 'MidJourney man',
-    teamAlias: 'DOGSTUDIO/DEPT®',
-    tool: 'ComfyUI',
-    href: 'https://www.instagram.com/midjourney.man/?hl=fr'
-  },
-  {
-    video: 'https://media.comfy.org/videos/compressed_512/cigarette.webm',
-    title: 'Autopoiesis',
-    userAlias: 'Yogo',
-    teamAlias: 'Visual Frisson',
-    tool: 'ComfyUI',
-    href: 'https://www.instagram.com/visualfrisson/?hl=en'
-  },
-  {
-    video:
-      'https://media.comfy.org/videos/compressed_512/Eat%20It%20-%20Dance%20%5BWanAnimate%5D2.webm',
-    title: 'Eat It - Dance',
-    userAlias: 'Johana Lyu',
-    teamAlias: 'Visual Frisson',
-    tool: 'ComfyUI',
-    href: 'https://www.joannalyu.com/'
-  },
-  {
-    video: 'https://media.comfy.org/videos/compressed_512/flower.webm',
-    title: 'Fall',
-    userAlias: 'Nathan Shipley',
-    teamAlias: 'Visual Frisson',
-    tool: 'ComfyUI',
-    href: 'https://www.instagram.com/p/C3k9t_6vH5F/'
-  },
-  {
-    video: 'https://media.comfy.org/videos/compressed_512/buildings.webm',
-    title: 'Untitled',
-    userAlias: 'Nathan Shipley',
-    teamAlias: '',
-    tool: 'ComfyUI',
-    href: 'https://www.instagram.com/p/C6rEuJ4p9xU/'
-  },
-  {
-    video:
-      'https://media.comfy.org/videos/compressed_512/origami_shortened.webm',
-    title: 'Origami world',
-    userAlias: 'Karen X',
-    teamAlias: '',
-    tool: 'ComfyUI',
-    href: 'https://www.instagram.com/karenxcheng/'
-  },
-  {
-    video: 'https://media.comfy.org/videos/compressed_512/biking.webm',
-    title: 'Shot on InstaX',
-    userAlias: 'Karen X',
-    teamAlias: '',
-    tool: 'ComfyUI',
-    href: 'https://www.instagram.com/karenxcheng/'
-  },
-  {
-    video: 'https://media.comfy.org/videos/compressed_512/clouds.webm',
-    title: "It's gonna be a good good summer",
-    userAlias: 'Paul Trillo',
-    teamAlias: '',
-    tool: 'CogvideoX',
-    href: 'https://vimeo.com/1019685900'
-  },
-  {
-    video: 'https://media.comfy.org/videos/compressed_512/dududu.webm',
-    title: 'DDU-DU DDU-DU',
-    userAlias: 'Purz',
-    teamAlias: 'Andidea',
-    tool: 'Animatediff',
-    href: 'https://vimeo.com/1019924290'
-  },
-  {
-    video: 'https://media.comfy.org/videos/compressed_512/paul_trillo.webm',
-    title: 'Cuco - A Love Letter To LA',
-    userAlias: 'Paul Trillo',
-    teamAlias: 'CoffeeVectors',
-    tool: 'ComfyUI',
-    href: 'https://vimeo.com/1062859798'
-  },
-  {
-    video:
-      'https://media.comfy.org/videos/compressed_512/chibi_fish_tank_shortened.webm',
-    title: 'Show you my garden',
-    userAlias: 'Paul Trillo',
-    teamAlias: '',
-    tool: 'CogvideoX',
-    href: 'https://vimeo.com/1019685479'
-  },
-  {
-    video: 'https://media.comfy.org/videos/compressed_512/swings.webm',
-    title: 'Goodbye Beijing',
-    userAlias: 'Rui',
-    teamAlias: 'makeitrad',
-    tool: 'Animatediff',
-    href: 'https://x.com/rui40000'
-  },
-  {
-    video: 'https://media.comfy.org/videos/compressed_512/clouds_statue.webm',
-    title: 'Animation Reel',
-    userAlias: 'Andidea',
-    teamAlias: '',
-    tool: 'ComfyUI',
-    href: 'https://www.youtube.com/watch?v=qu3eIQ1uln8'
-  },
-  {
-    image: 'https://media.comfy.org/website/gallery/gallery.webp',
-    title: 'Amber Astronaut',
-    userAlias: 'Yogo',
-    teamAlias: '',
-    tool: 'ComfyUI',
-    href: 'https://de.linkedin.com/in/milan-kastenmueller-18778a174'
-  },
-  {
-    image: 'https://media.comfy.org/website/gallery/desert.webp',
-    title: 'Desert Landing',
-    userAlias: 'Yogo',
-    teamAlias: '',
-    tool: 'ComfyUI',
-    href: 'https://de.linkedin.com/in/milan-kastenmueller-18778a174'
-  }
-]
 
 /**
  * Desktop layout pattern (repeating):
@@ -223,7 +65,10 @@ while (idx < items.length) {
 </script>
 
 <template>
-  <section data-testid="gallery-grid" class="px-4 pb-20 lg:px-20">
+  <section
+    data-testid="gallery-grid"
+    class="max-w-9xl mx-auto px-4 pb-20 lg:px-20"
+  >
     <!-- Desktop grid -->
     <div
       class="rounded-5xl bg-transparency-white-t4 hidden flex-col gap-2 p-2 lg:flex"

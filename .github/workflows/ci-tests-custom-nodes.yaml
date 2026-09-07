@@ -1,0 +1,468 @@
+# Runs the custom-node regression suite against a backend that has the manifest
+# packs actually installed, so the load/run tiers execute for real. Within a
+# run the result fails closed: if a pack fails to install or any tier is
+# skipped, the job goes red - a suite that let a broken pack through as a
+# "skip" would be pointless.
+#
+# Automatic PR and merge-queue runs are temporarily disabled so failures do
+# not block merges. Nightly and manual runs still exercise the exact packs.
+# Jobs have read-only permissions, and neither checkout persists credentials
+# while third-party setup and runtime code executes.
+#
+# The matrix splits the six-pack Core depth suite into two balanced shards and
+# adds the pinned Cloud snapshot as five breadth shards. The Cloud snapshot
+# produces 87
+# manifest rows and one unjoined YAML pack; the unjoined pack and four reviewed
+# quarantine entries are reported as excluded coverage. Every entry owns an
+# isolated LOCAL ComfyUI backend and installs only its manifest slice.
+#
+# The gate is deterministic at the SOURCE level: ComfyUI core is pinned at a
+# verified commit and every pack is installed at the exact deployRef the pinned
+# Cloud snapshot declares - a commit for git-sourced packs, or a registry
+# version's CDN artifact - so no source surface moves underneath a run. Python
+# dependencies still resolve fresh, and the runner image updates independently.
+name: 'CI: Tests Custom Nodes'
+
+on:
+  schedule:
+    - cron: '15 9 * * *'
+  workflow_dispatch:
+    inputs:
+      detection_proof_row:
+        description: 'Clean run or deliberate independent-tier break'
+        required: false
+        type: choice
+        options: ['0', 'all', '1', '2', '3', '9', '15']
+        default: '0'
+      branch:
+        description: 'Frontend branch/ref to test (empty = the ref this workflow runs from)'
+        required: false
+        type: string
+        default: ''
+      grep:
+        description: "Playwright -g filter, e.g. 'VideoHelperSuite' or 'Pack startup' (empty = full suite; the exact-count gate is skipped when set)"
+        required: false
+        type: string
+        default: ''
+      comfyui_ref:
+        description: 'ComfyUI core ref to run against (empty = the verified pin)'
+        required: false
+        type: string
+        default: ''
+      record_interactions:
+        description: 'Record Core S13 interaction profiles as an artifact'
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  # Dispatches get a per-run group: two manual runs (e.g. comparing branches)
+  # must not cancel each other, while overlapping nightlies supersede per-ref.
+  group: ${{ github.event_name == 'workflow_dispatch' && format('{0}-dispatch-{1}', github.workflow, github.run_id) || format('{0}-{1}', github.workflow, github.ref) }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  COMFYUI_PIN: b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      should-run: ${{ github.event_name == 'pull_request' && github.event.pull_request.changed_files >= 3000 || steps.changes.outputs.should-run }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Detect relevant changes
+        id: changes
+        uses: ./.github/actions/changes-filter
+
+  # Each job is intentionally one worker: the auto-run tier needs exclusive
+  # access to its backend's queue. Parallelism comes from the shard matrix
+  # instead, and every job owns a separate backend.
+  custom_nodes_e2e:
+    needs: changes
+    if: needs.changes.outputs.should-run == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        # THE shard-count knob. Each value is the `index/total` the manifest
+        # loader wants, so the count lives in exactly one place and the list
+        # cannot drift out of step with a separate total. Slices are balanced
+        # by expectedNodeCount (see shardOf), not by pack count: node counts
+        # run 1..285 with a median of 6, and a matrix costs its slowest shard.
+        shard: ${{ fromJSON(inputs.record_interactions && '["core:1/1"]' || '["core:1/2","core:2/2","1/5","2/5","3/5","4/5","5/5"]') }}
+        proof_row: >-
+          ${{ fromJSON(github.event_name == 'schedule' && '["0","1","2","3","9","15"]' || github.event_name == 'workflow_dispatch' && inputs.detection_proof_row == 'all' && '["1","2","3","9","15"]' || format('["{0}"]', inputs.detection_proof_row || '0')) }}
+        exclude:
+          - shard: 'core:1/2'
+            proof_row: '1'
+          - shard: 'core:2/2'
+            proof_row: '1'
+          - shard: '1/5'
+            proof_row: '1'
+          - shard: '2/5'
+            proof_row: '1'
+          - shard: '3/5'
+            proof_row: '1'
+          - shard: '5/5'
+            proof_row: '1'
+          - shard: 'core:1/2'
+            proof_row: '2'
+          - shard: 'core:2/2'
+            proof_row: '2'
+          - shard: '1/5'
+            proof_row: '2'
+          - shard: '2/5'
+            proof_row: '2'
+          - shard: '3/5'
+            proof_row: '2'
+          - shard: '5/5'
+            proof_row: '2'
+          - shard: 'core:1/2'
+            proof_row: '3'
+          - shard: 'core:2/2'
+            proof_row: '3'
+          - shard: '1/5'
+            proof_row: '3'
+          - shard: '2/5'
+            proof_row: '3'
+          - shard: '3/5'
+            proof_row: '3'
+          - shard: '5/5'
+            proof_row: '3'
+          - shard: 'core:1/2'
+            proof_row: '9'
+          - shard: 'core:2/2'
+            proof_row: '9'
+          - shard: '1/5'
+            proof_row: '9'
+          - shard: '3/5'
+            proof_row: '9'
+          - shard: '4/5'
+            proof_row: '9'
+          - shard: '5/5'
+            proof_row: '9'
+          - shard: 'core:1/2'
+            proof_row: '15'
+          - shard: '1/5'
+            proof_row: '15'
+          - shard: '2/5'
+            proof_row: '15'
+          - shard: '3/5'
+            proof_row: '15'
+          - shard: '4/5'
+            proof_row: '15'
+          - shard: '5/5'
+            proof_row: '15'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    # Job-level so every step that installs packs, runs the suite, or gates its
+    # results reads the same slice. The specs and the install loop both derive
+    # their pack list from these three (see scripts/customNodeShard.ts).
+    env:
+      CUSTOM_NODES_MANIFEST: ${{ startsWith(matrix.shard, 'core:') && 'core' || 'cloud' }}
+    steps:
+      # Artifact and cache names cannot contain `/`, which the shard id does.
+      - name: Resolve shard identity
+        shell: bash
+        env:
+          MATRIX_SHARD: ${{ matrix.shard }}
+        run: |
+          set -euo pipefail
+          custom_nodes_shard="${MATRIX_SHARD#core:}"
+          if ! [[ "$custom_nodes_shard" =~ ^[0-9]+/[0-9]+$ ]]; then
+            echo "::error::matrix shard '$MATRIX_SHARD' is not [core:]index/total"; exit 1
+          fi
+          echo "CUSTOM_NODES_SHARD=$custom_nodes_shard" >> "$GITHUB_ENV"
+          echo "SHARD_SLUG=${CUSTOM_NODES_MANIFEST}-${custom_nodes_shard/\//-of-}" >> "$GITHUB_ENV"
+
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          # workflow_dispatch may aim the suite at any frontend branch; every
+          # other event tests its own ref exactly as before.
+          ref: ${{ inputs.branch || github.ref }}
+          persist-credentials: false
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          include_build_step: false
+          node_cache: 'false'
+
+      - name: Apply Detection Proof source break
+        id: source-mutation
+        if: >-
+          matrix.proof_row != '0' &&
+          matrix.proof_row != '9'
+        env:
+          PROOF_ROW: ${{ matrix.proof_row }}
+        run: pnpm exec tsx scripts/cicd/custom-node-proof.ts mutate-source
+
+      - name: Build frontend
+        env:
+          VITE_USE_LEGACY_DEFAULT_GRAPH: 'true'
+        run: pnpm build
+
+      - name: Verify Detection Proof witness shard
+        if: matrix.proof_row != '0'
+        shell: bash
+        env:
+          PROOF_ROW: ${{ matrix.proof_row }}
+        run: |
+          set -euo pipefail
+          case "$PROOF_ROW" in
+            1|2|3) witness=comfyui-impact-pack ;;
+            9) witness=comfyui-videohelpersuite ;;
+            15) witness=ComfyUI-Impact-Pack ;;
+          esac
+          pnpm --silent custom-node-shard | cut -f1 | grep -qxF "$witness" || {
+            echo "::error::S$PROOF_ROW proof ran on a shard that does not own $witness"
+            exit 1
+          }
+
+      - name: Report cloud-manifest provenance
+        if: env.CUSTOM_NODES_MANIFEST == 'cloud'
+        shell: bash
+        run: |
+          set -euo pipefail
+          jq -r '.source | "Cloud pack snapshot: \(.repository)/blob/\(.ref)/\(.path) (imported \(.importedAt))"' \
+            browser_tests/fixtures/data/customNodeManifest.cloud.json | tee /tmp/cloud-manifest-source.txt
+          {
+            echo '### Cloud pack snapshot'
+            echo
+            sed 's/^/- /' /tmp/cloud-manifest-source.txt
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Setup Playwright
+        uses: ./.github/actions/setup-playwright
+        with:
+          install_deps: 'false'
+
+      # Checks out ComfyUI, installs Python/torch/requirements and ComfyUI_devtools.
+      # launch_server:false so we can add the manifest packs before booting.
+      # comfyui_ref pins core so the gate is reproducible: COMFYUI_PIN is the
+      # exact master commit the suite (incl. the KJNodes ledger entries and
+      # per-pack node counts) was last verified green against. Bump it
+      # deliberately, in its own PR, recalibrating ledgers/counts if the run
+      # says so.
+      - name: Setup ComfyUI server
+        uses: ./.github/actions/setup-comfyui-server
+        with:
+          launch_server: 'false'
+          # workflow_dispatch may override the pin (e.g. probing a core
+          # candidate before a deliberate bump); every gating event stays
+          # pinned.
+          comfyui_ref: ${{ inputs.comfyui_ref || env.COMFYUI_PIN }}
+
+      # Pack sources are pinned, so their content is fully determined by the
+      # manifest: cache the fetched trees (sans .git) and restore by manifest
+      # hash, with a prefix fallback so a single-pack deployRef bump still
+      # reuses every other pack. The per-pack .ref marker is the integrity
+      # check - a stale or partial entry re-fetches.
+      - name: Restore manifest pack cache
+        id: pack-cache
+        uses: actions/cache/restore@v5
+        with:
+          path: ~/.cache/cn-packs
+          key: cn-packs-v3-${{ env.SHARD_SLUG }}-${{ hashFiles('browser_tests/fixtures/data/customNodeManifest.*.json') }}
+          restore-keys: cn-packs-v3-${{ env.SHARD_SLUG }}-
+
+      - name: Report excluded packs
+        if: always() && (matrix.shard == 'core:1/1' || matrix.shard == 'core:1/2' || (env.CUSTOM_NODES_MANIFEST == 'cloud' && matrix.shard == '1/5'))
+        run: pnpm custom-node-quarantine
+
+      - name: Prepare manifest custom node sources
+        id: prepare
+        run: pnpm exec tsx scripts/cicd/custom-node-install.ts --prepare
+
+      # Persist pinned source before pack-controlled requirements execute.
+      - name: Save manifest pack cache
+        if: >-
+          always() &&
+          (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') &&
+          steps.prepare.outcome == 'success' &&
+          steps.pack-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: ~/.cache/cn-packs
+          key: cn-packs-v3-${{ env.SHARD_SLUG }}-${{ hashFiles('browser_tests/fixtures/data/customNodeManifest.*.json') }}
+
+      - name: Install manifest custom node requirements
+        id: install
+        run: pnpm exec tsx scripts/cicd/custom-node-install.ts --requirements
+
+      - name: Apply Detection Proof execution break
+        id: execution-mutation
+        if: matrix.proof_row == '9'
+        env:
+          PROOF_ROW: ${{ matrix.proof_row }}
+        run: pnpm exec tsx scripts/cicd/custom-node-proof.ts mutate-execution
+
+      - name: Bind Detection Proof identity
+        if: matrix.proof_row != '0'
+        env:
+          MUTATION_DIGEST: ${{ steps.source-mutation.outputs.digest || steps.execution-mutation.outputs.digest }}
+          MUTATION_PATH: ${{ steps.source-mutation.outputs.path || steps.execution-mutation.outputs.path }}
+          PROOF_ROW: ${{ matrix.proof_row }}
+        run: pnpm exec tsx scripts/cicd/custom-node-proof.ts identity
+
+      - name: Stage deterministic inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ComfyUI/input
+          cp browser_tests/assets/test_upload_image.png ComfyUI/input/000_custom_node_probe.png
+          cp browser_tests/assets/image32x32.webp ComfyUI/input/000_custom_node_probe.webp
+          python - <<'PY'
+          import wave
+
+          with wave.open('ComfyUI/input/000_custom_node_probe.wav', 'wb') as audio:
+              audio.setnchannels(1)
+              audio.setsampwidth(2)
+              audio.setframerate(8000)
+              audio.writeframes(b'\0\0' * 8000)
+          PY
+          cp ComfyUI/input/000_custom_node_probe.wav ComfyUI/input/001_custom_node_probe.wav
+          pack_rows=$(pnpm --silent custom-node-shard) || {
+            echo '::error::could not resolve the custom-node shard manifest'
+            exit 1
+          }
+          if ! cut -f1 <<<"$pack_rows" | grep -qix comfyui-videohelpersuite; then
+            echo 'This shard has no run-tier pack; staged only deterministic media probes.'
+            exit 0
+          fi
+          mkdir -p ComfyUI/input/images
+          cp ComfyUI/input/000_custom_node_probe.wav ComfyUI/input/plain_audio.wav
+          cp browser_tests/assets/plain_video.mp4 ComfyUI/input/plain_video.mp4 \
+            || { echo "::error::could not stage plain_video.mp4 - the VHS run tier has no input to execute on"; exit 1; }
+          cp browser_tests/assets/image32x32.webp ComfyUI/input/test_upload_image.webp
+          cp browser_tests/assets/image32x32.webp ComfyUI/input/images/test_upload_image.webp
+
+      # --cache-none so retried run-tier tests re-execute every node (a cached
+      # node emits no `executing` event and would false-fail PARTIAL).
+      - name: Start ComfyUI server
+        shell: bash
+        working-directory: ComfyUI
+        run: |
+          python main.py --cpu --multi-user --cache-none --front-end-root ../dist &
+          wait-for-it --service 127.0.0.1:8188 -t 600
+
+      - name: Run custom-node suite
+        id: suite
+        continue-on-error: ${{ matrix.proof_row != '0' }}
+        env:
+          CN_ENABLE_S15: ${{ env.CUSTOM_NODES_MANIFEST == 'core' && '1' || '0' }}
+          CN_OUTPUT_HASHES_CORE: ${{ env.COMFYUI_PIN }}
+          CN_INTERACTION: ${{ inputs.record_interactions && 'record' || '' }}
+          CN_INTERACTION_CORE: ${{ env.COMFYUI_PIN }}
+          PLAYWRIGHT_JSON_OUTPUT_NAME: custom-nodes-results.json
+          PROOF_ROW: ${{ matrix.proof_row }}
+          # Through env, not inline interpolation: dispatch input must never
+          # be shell-parsed.
+          GREP_FILTER: ${{ inputs.record_interactions && 'interaction profiles' || inputs.grep }}
+        run: |
+          set -o pipefail
+          # workers=1: the auto-run tier needs exclusive backend-queue access;
+          # parallel workers interrupt each other's executions.
+          # --project=custom-nodes: the `@custom-nodes`-tagged specs, which the
+          # main e2e job's `chromium` project excludes (see playwright.config).
+          # Json feeds the skip gate below; html writes playwright-report/
+          # (the upload step's target) and folds in the retain-on-failure
+          # traces. List keeps live diagnostics visible.
+          grep_args=()
+          case "$PROOF_ROW" in
+            0) [ -n "${GREP_FILTER:-}" ] && grep_args=(--grep "$GREP_FILTER") ;;
+            1|2|3|9)
+              grep_args=(--grep 'all nodes by tier @custom-nodes.*S(1|2|3|9):')
+              ;;
+            15)
+              grep_args=(--grep 'custom node: ComfyUI-Impact-Pack @custom-nodes.*Curated workflow execution: completes without error')
+              ;;
+          esac
+          pnpm exec playwright test browser_tests/tests/customNodes/ \
+            --project=custom-nodes --reporter=list,json,html --workers=1 --retries=0 \
+            "${grep_args[@]}" 2>&1 | tee custom-nodes.log
+
+      # A skip here means a pack or devtools did not load: on this backend every
+      # tier is meant to run, so a skip is a gate failure, not an honest pass.
+      - name: Forbid failed, skipped, or flaky tests
+        if: always() && matrix.proof_row == '0'
+        env:
+          SUITE_OUTCOME: ${{ steps.suite.outcome }}
+          GREP_FILTER: ${{ inputs.grep }}
+        run: pnpm exec tsx scripts/cicd/custom-node-results.ts ordinary
+
+      - name: Assert deliberate failure independence
+        if: always() && matrix.proof_row != '0'
+        env:
+          PROOF_ROW: ${{ matrix.proof_row }}
+          SUITE_OUTCOME: ${{ steps.suite.outcome }}
+        run: pnpm exec tsx scripts/cicd/custom-node-results.ts proof
+
+      - name: Publish results table
+        if: always()
+        shell: bash
+        env:
+          BRANCH_TESTED: ${{ inputs.branch || github.ref_name }}
+          COMFYUI_REF_USED: ${{ inputs.comfyui_ref || env.COMFYUI_PIN }}
+          GREP_FILTER: ${{ inputs.grep }}
+        run: python3 scripts/cicd/custom-nodes-summary.py
+
+      - name: Upload Playwright report and raw diagnostics
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          # Shard-scoped: artifact names are unique per run, so matrix jobs
+          # sharing one name cannot overwrite each other's reports.
+          name: ${{ matrix.proof_row != '0' && format('playwright-report-custom-nodes-{0}-row{1}', env.SHARD_SLUG, matrix.proof_row) || format('playwright-report-custom-nodes-{0}', env.SHARD_SLUG) }}
+          path: |
+            playwright-report/
+            custom-nodes-results.json
+            custom-nodes.log
+            browser_tests/fixtures/customNode/interactionProfiles/
+            tier-isolation-proof-evidence.txt
+            tier-isolation-proof-identity.txt
+          retention-days: 7
+          if-no-files-found: error
+
+  custom-nodes-e2e-status:
+    name: E2E Custom Nodes Test
+    if: always()
+    needs: [changes, custom_nodes_e2e]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce suite result
+        shell: bash
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          EVENT_NAME: ${{ github.event_name }}
+          SHOULD_RUN: ${{ needs.changes.outputs.should-run }}
+          E2E_RESULT: ${{ needs.custom_nodes_e2e.result }}
+        run: |
+          set -euo pipefail
+          [ "$CHANGES_RESULT" = success ] || { echo "::error::change detection ended with $CHANGES_RESULT"; exit 1; }
+          case "$SHOULD_RUN" in
+            true) ;;
+            false)
+              [ "$EVENT_NAME" = pull_request ] || { echo "::error::change detection returned false for $EVENT_NAME"; exit 1; }
+              ;;
+            *) echo "::error::change detection returned invalid value '$SHOULD_RUN'"; exit 1 ;;
+          esac
+          if [ "$SHOULD_RUN" = false ]; then
+            [ "$E2E_RESULT" = skipped ] || { echo "::error::irrelevant-change matrix ended with $E2E_RESULT"; exit 1; }
+            echo 'custom-node matrix not applicable to this pull request'
+            exit 0
+          fi
+          [ "$E2E_RESULT" = success ] || { echo "::error::custom-node matrix ended with $E2E_RESULT"; exit 1; }

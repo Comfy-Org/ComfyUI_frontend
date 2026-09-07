@@ -4,6 +4,7 @@ import { useSharedCanvasPositionConversion } from '@/composables/element/useCanv
 import { usePragmaticDroppable } from '@/composables/usePragmaticDragAndDrop'
 import type { LGraphNode, Point } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { app as comfyApp } from '@/scripts/app'
@@ -37,7 +38,9 @@ export const useCanvasDrop = (canvasRef: Ref<HTMLCanvasElement | null>) => {
           // Add an offset on y to make sure after adding the node, the cursor
           // is on the node (top left corner)
           pos[1] += LiteGraph.NODE_TITLE_HEIGHT
-          litegraphService.addNodeOnGraph(nodeDef, { pos })
+          withNodeAddSource('sidebar_drag', () =>
+            litegraphService.addNodeOnGraph(nodeDef, { pos })
+          )
         } else if (node.data instanceof ComfyModelDef) {
           const model = node.data
           const pos = basePos
@@ -58,11 +61,8 @@ export const useCanvasDrop = (canvasRef: Ref<HTMLCanvasElement | null>) => {
           if (!targetGraphNode) {
             const provider = modelToNodeStore.getNodeProvider(model.directory)
             if (provider) {
-              targetGraphNode = litegraphService.addNodeOnGraph(
-                provider.nodeDef,
-                {
-                  pos
-                }
+              targetGraphNode = withNodeAddSource('sidebar_drag', () =>
+                litegraphService.addNodeOnGraph(provider.nodeDef, { pos })
               )
               targetProvider = provider
             }

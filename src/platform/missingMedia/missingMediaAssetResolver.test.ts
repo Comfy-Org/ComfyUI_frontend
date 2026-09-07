@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -10,14 +10,17 @@ import {
   resolveMissingMediaAssetSources
 } from './missingMediaAssetResolver'
 
-const { mockGetInputAssetsIncludingPublic, mockGetAssetsPageByTag } =
-  vi.hoisted(() => ({
-    mockGetInputAssetsIncludingPublic: vi.fn(),
-    mockGetAssetsPageByTag: vi.fn()
-  }))
+const { mockGetAllAssetsByTag, mockGetAssetsPageByTag } = vi.hoisted(() => ({
+  mockGetAllAssetsByTag: vi.fn(),
+  mockGetAssetsPageByTag: vi.fn()
+}))
 
 const { mockFetchHistoryPage } = vi.hoisted(() => ({
   mockFetchHistoryPage: vi.fn()
+}))
+
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({ flags: { assetsEnabled: true } })
 }))
 
 vi.mock('@/platform/assets/services/assetService', async () => {
@@ -29,7 +32,7 @@ vi.mock('@/platform/assets/services/assetService', async () => {
     ...actual,
     assetService: {
       ...actual.assetService,
-      getInputAssetsIncludingPublic: mockGetInputAssetsIncludingPublic,
+      getAllAssetsByTag: mockGetAllAssetsByTag,
       getAssetsPageByTag: mockGetAssetsPageByTag
     }
   }
@@ -46,14 +49,13 @@ vi.mock('@/platform/remote/comfyui/jobs/fetchJobs', async () => {
   }
 })
 
-function makeAsset(name: string, assetHash: string | null = null): AssetItem {
-  return {
+function makeAsset(name: string, assetHash?: string): AssetItem {
+  return fromPartial({
     id: name,
     name,
-    asset_hash: assetHash,
-    mime_type: null,
+    hash: assetHash,
     tags: ['input']
-  }
+  })
 }
 
 function makeHistoryJob(
@@ -101,15 +103,14 @@ function makeAssetPage(
 
 describe('resolveMissingMediaAssetSources', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    mockGetInputAssetsIncludingPublic.mockResolvedValue([])
+    mockGetAllAssetsByTag.mockResolvedValue([])
     mockGetAssetsPageByTag.mockResolvedValue(makeAssetPage([]))
     mockFetchHistoryPage.mockResolvedValue(makeHistoryPage([]))
   })
 
-  it('loads cloud input assets when requested', async () => {
+  it('loads cloud input assets via a public-inclusive query', async () => {
     const inputAsset = makeAsset('photo.png')
-    mockGetInputAssetsIncludingPublic.mockResolvedValue([inputAsset])
+    mockGetAllAssetsByTag.mockResolvedValue([inputAsset])
 
     const result = await resolveMissingMediaAssetSources({
       isCloud: true,
@@ -118,11 +119,13 @@ describe('resolveMissingMediaAssetSources', () => {
       allowCompactSuffix: true
     })
 
+    expect(mockGetAllAssetsByTag).toHaveBeenCalledWith(
+      'input',
+      true,
+      expect.objectContaining({ signal: expect.any(AbortSignal) })
+    )
     expect(result.inputAssets).toEqual([inputAsset])
     expect(result.generatedAssets).toEqual([])
-    expect(mockGetInputAssetsIncludingPublic).toHaveBeenCalledWith(
-      expect.any(AbortSignal)
-    )
     expect(mockFetchHistoryPage).not.toHaveBeenCalled()
   })
 
@@ -152,8 +155,12 @@ describe('resolveMissingMediaAssetSources', () => {
 
   it('stops reading cloud output asset pages once all requested names are found', async () => {
     const target = 'target-output.png'
+    const outputAsset = makeAsset('ComfyUI_00001_.png', target)
     mockGetAssetsPageByTag.mockResolvedValueOnce(
-      makeAssetPage([makeAsset(target)], { hasMore: true, total: 501 })
+      makeAssetPage([outputAsset], {
+        hasMore: true,
+        total: 501
+      })
     )
 
     const result = await resolveMissingMediaAssetSources({
@@ -163,15 +170,61 @@ describe('resolveMissingMediaAssetSources', () => {
       allowCompactSuffix: true
     })
 
-    expect(result.generatedAssets).toEqual([makeAsset(target)])
+    expect(result.generatedAssets).toEqual([outputAsset])
     expect(mockGetAssetsPageByTag).toHaveBeenCalledOnce()
+  })
+
+  it('stops reading cloud output asset pages when a flat target matches by name', async () => {
+    const target = 'ComfyUI_00001_.mp4'
+    const outputAsset = makeAsset(target, 'different-output-hash.mp4')
+    mockGetAssetsPageByTag.mockResolvedValueOnce(
+      makeAssetPage([outputAsset], {
+        hasMore: true,
+        total: 501
+      })
+    )
+
+    const result = await resolveMissingMediaAssetSources({
+      isCloud: true,
+      includeGeneratedAssets: true,
+      generatedMatchNames: new Set([target]),
+      allowCompactSuffix: true
+    })
+
+    expect(result.generatedAssets).toEqual([outputAsset])
+    expect(mockGetAssetsPageByTag).toHaveBeenCalledOnce()
+  })
+
+  it('does not stop cloud output asset paging on a flat asset name collision', async () => {
+    const target = 'target-output.mp4'
+    const collidingNameAsset = makeAsset(target)
+    const matchingHashAsset = makeAsset('ComfyUI_00001_.mp4', target)
+    mockGetAssetsPageByTag
+      .mockResolvedValueOnce(
+        makeAssetPage([collidingNameAsset], { hasMore: true, total: 501 })
+      )
+      .mockResolvedValueOnce(makeAssetPage([matchingHashAsset]))
+
+    const result = await resolveMissingMediaAssetSources({
+      isCloud: true,
+      includeGeneratedAssets: true,
+      generatedMatchNames: new Set([target]),
+      generatedHashRequiredNames: new Set([target]),
+      allowCompactSuffix: true
+    })
+
+    expect(result.generatedAssets).toEqual([
+      collidingNameAsset,
+      matchingHashAsset
+    ])
+    expect(mockGetAssetsPageByTag).toHaveBeenCalledTimes(2)
   })
 
   it('aborts cloud output asset loading when input asset loading fails', async () => {
     const inputError = new Error('input failed')
     let rejectInputAssets!: (err: Error) => void
     let resolveOutputAssets!: (page: ReturnType<typeof makeAssetPage>) => void
-    mockGetInputAssetsIncludingPublic.mockReturnValueOnce(
+    mockGetAllAssetsByTag.mockReturnValueOnce(
       new Promise<AssetItem[]>((_, reject) => {
         rejectInputAssets = reject
       })

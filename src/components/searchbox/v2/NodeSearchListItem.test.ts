@@ -22,8 +22,7 @@ function renderItem(
         NodePricingBadge: {
           template: '<div data-testid="pricing-badge" />',
           props: ['nodeDef']
-        },
-        ComfyLogo: { template: '<div data-testid="comfy-logo" />' }
+        }
       }
     }
   })
@@ -32,7 +31,16 @@ function renderItem(
 describe('NodeSearchListItem', () => {
   beforeEach(() => {
     setupTestPinia()
-    vi.restoreAllMocks()
+  })
+
+  it('renders node names as text rather than HTML', () => {
+    const displayName = '<img src=x onerror=alert(1)>Node'
+    renderItem({
+      nodeDef: createMockNodeDef({ display_name: displayName })
+    })
+
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+    expect(screen.getByText(displayName)).toBeInTheDocument()
   })
 
   describe('id name badge', () => {
@@ -101,13 +109,13 @@ describe('NodeSearchListItem', () => {
   })
 
   describe('source badge', () => {
-    it('renders core comfy badge for non-custom node when showSourceBadge is true', () => {
+    it('renders Comfy text badge for core node when showSourceBadge is true', () => {
       renderItem({
         nodeDef: createMockNodeDef({ python_module: 'nodes' }),
         showDescription: true,
         showSourceBadge: true
       })
-      expect(screen.getByTestId('comfy-logo')).toBeInTheDocument()
+      expect(screen.getByText('Comfy')).toBeInTheDocument()
     })
 
     it('renders custom node badge for custom node when showSourceBadge is true', () => {
@@ -128,7 +136,31 @@ describe('NodeSearchListItem', () => {
         showDescription: true,
         showSourceBadge: false
       })
-      expect(screen.queryByTestId('comfy-logo')).not.toBeInTheDocument()
+      expect(screen.queryByText('Comfy')).not.toBeInTheDocument()
+    })
+
+    it('renders Essentials badge for curated node when showSourceBadge is true', () => {
+      renderItem({
+        nodeDef: createMockNodeDef({
+          name: 'LoadImage',
+          python_module: 'nodes'
+        }),
+        showDescription: true,
+        showSourceBadge: true
+      })
+      expect(screen.getByText('Essentials')).toBeInTheDocument()
+    })
+
+    it('does not render Essentials badge for uncurated node', () => {
+      renderItem({
+        nodeDef: createMockNodeDef({
+          name: 'NotCurated',
+          python_module: 'nodes'
+        }),
+        showDescription: true,
+        showSourceBadge: true
+      })
+      expect(screen.queryByText('Essentials')).not.toBeInTheDocument()
     })
 
     it('renders essentials badge for essentials node when showSourceBadge is true', () => {

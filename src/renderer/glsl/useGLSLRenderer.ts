@@ -1,4 +1,7 @@
 import { detectPassCount } from '@/renderer/glsl/glslUtils'
+import { acquireSharedGL } from '@/renderer/glsl/sharedGLContext'
+
+import type { SharedGLHandle } from '@/renderer/glsl/sharedGLContext'
 
 const VERTEX_SHADER_SOURCE = `#version 300 es
 out vec2 v_texCoord;
@@ -30,6 +33,20 @@ const DEFAULT_CONFIG: GLSLRendererConfig = {
 interface CompileResult {
   success: boolean
   log: string
+}
+
+function createTexture(gl: WebGL2RenderingContext): WebGLTexture | null {
+  return gl.createTexture()
+}
+
+function createFramebuffer(
+  gl: WebGL2RenderingContext
+): WebGLFramebuffer | null {
+  return gl.createFramebuffer()
+}
+
+function createProgram(gl: WebGL2RenderingContext): WebGLProgram | null {
+  return gl.createProgram()
 }
 
 function compileShader(
@@ -70,6 +87,7 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
     ...Array.from({ length: maxCurves }, (_, i) => `u_curve${i}`)
   ]
 
+  let sharedGL: SharedGLHandle | null = null
   let canvas: OffscreenCanvas | null = null
   let gl: WebGL2RenderingContext | null = null
   let vertexShader: WebGLShader | null = null
@@ -88,6 +106,8 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
   let passCount = 1
   let disposed = false
   let lastCompiledSource: string | null = null
+  let fboWidth = 0
+  let fboHeight = 0
 
   function initPingPongFBOs(
     ctx: WebGL2RenderingContext,
@@ -99,7 +119,7 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
 
     try {
       for (let i = 0; i < 2; i++) {
-        const tex = ctx.createTexture()
+        const tex = createTexture(ctx)
         if (!tex) throw new Error('Failed to create ping-pong texture')
         ctx.bindTexture(ctx.TEXTURE_2D, tex)
         ctx.texImage2D(
@@ -118,7 +138,7 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
         ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, ctx.CLAMP_TO_EDGE)
         ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, ctx.CLAMP_TO_EDGE)
 
-        const fbo = ctx.createFramebuffer()
+        const fbo = createFramebuffer(ctx)
         if (!fbo) throw new Error('Failed to create ping-pong framebuffer')
         ctx.bindFramebuffer(ctx.FRAMEBUFFER, fbo)
         ctx.framebufferTexture2D(
@@ -172,7 +192,7 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
   function getFallbackTexture(): WebGLTexture {
     if (!gl) throw new Error('Renderer not initialized')
     if (!fallbackTexture) {
-      const tex = gl.createTexture()
+      const tex = createTexture(gl)
       if (!tex) throw new Error('Failed to create fallback texture')
       fallbackTexture = tex
       gl.bindTexture(gl.TEXTURE_2D, fallbackTexture)
@@ -195,21 +215,20 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
     if (disposed) return false
 
     try {
-      canvas = new OffscreenCanvas(width, height)
-      const ctx = canvas.getContext('webgl2', {
-        alpha: true,
-        premultipliedAlpha: false,
-        preserveDrawingBuffer: true
-      })
-      if (!ctx) return false
+      sharedGL = acquireSharedGL()
+      if (!sharedGL) return false
 
-      gl = ctx
+      canvas = sharedGL.canvas
+      gl = sharedGL.gl
 
-      if (!gl.getExtension('EXT_color_buffer_float')) return false
+      canvas.width = width
+      canvas.height = height
+      gl.viewport(0, 0, width, height)
 
-      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
       vertexShader = compileShader(gl, gl.VERTEX_SHADER, VERTEX_SHADER_SOURCE)
       initPingPongFBOs(gl, width, height)
+      fboWidth = width
+      fboHeight = height
       return true
     } catch {
       dispose()
@@ -244,7 +263,7 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
       return { success: false, log: msg }
     }
 
-    const prog = gl.createProgram()
+    const prog = createProgram(gl)
     if (!prog) return { success: false, log: 'Failed to create program' }
 
     gl.attachShader(prog, vertexShader!)
@@ -267,9 +286,13 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
     if (canvas.width !== width || canvas.height !== height) {
       canvas.width = width
       canvas.height = height
-      gl.viewport(0, 0, width, height)
+    }
+    gl.viewport(0, 0, width, height)
+    if (fboWidth !== width || fboHeight !== height) {
       destroyPingPongFBOs()
       initPingPongFBOs(gl, width, height)
+      fboWidth = width
+      fboHeight = height
     }
   }
 
@@ -309,7 +332,7 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
       curveTextures[index] = null
     }
 
-    const texture = gl.createTexture()
+    const texture = createTexture(gl)
     if (!texture) return
 
     const unit = maxInputs + index
@@ -352,7 +375,7 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
       inputTextures[index] = null
     }
 
-    const texture = gl.createTexture()
+    const texture = createTexture(gl)
     if (!texture) return
 
     gl.activeTexture(gl.TEXTURE0 + index)
@@ -366,8 +389,28 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
     inputTextures[index] = texture
   }
 
+  function clearInputImage(index: number): void {
+    if (disposed || !gl) return
+    if (index < 0 || index >= maxInputs) return
+    const texture = inputTextures[index]
+    if (texture) {
+      gl.deleteTexture(texture)
+      inputTextures[index] = null
+    }
+  }
+
+  function isContextLost(): boolean {
+    return gl?.isContextLost() ?? false
+  }
+
   function render(): void {
     if (disposed || !program || !pingPongFBOs || !gl || !canvas) return
+
+    if (canvas.width !== fboWidth || canvas.height !== fboHeight) {
+      canvas.width = fboWidth
+      canvas.height = fboHeight
+    }
+    gl.viewport(0, 0, fboWidth, fboHeight)
 
     gl.useProgram(program)
     gl.disable(gl.BLEND)
@@ -481,8 +524,10 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
 
     uniformLocations.clear()
 
-    const ext = gl.getExtension('WEBGL_lose_context')
-    ext?.loseContext()
+    sharedGL?.release()
+    sharedGL = null
+    gl = null
+    canvas = null
   }
 
   return {
@@ -494,6 +539,8 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
     setBoolUniform,
     bindCurveTexture,
     bindInputImage,
+    clearInputImage,
+    isContextLost,
     render,
     readPixels,
     toBlob,

@@ -4,7 +4,6 @@ import { computed, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
-import { st } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -57,8 +56,10 @@ export type JobGroup = {
 
 const ADDED_HINT_DURATION_MS = 3000
 const relativeTimeFormatterCache = new Map<string, Intl.RelativeTimeFormat>()
+const optionalValue = <T>(value: T | null | undefined): T | undefined =>
+  value ?? undefined
 const taskIdToKey = (id: string | number | undefined) => {
-  if (id === null || id === undefined) return null
+  if (id === undefined) return null
   const key = String(id)
   return key.length ? key : null
 }
@@ -190,8 +191,7 @@ export function useJobList() {
   const currentNodeName = computed(() => {
     return resolveNodeDisplayName(executionStore.executingNode, {
       emptyLabel: t('g.emDash'),
-      untitledLabel: t('g.untitled'),
-      st
+      untitledLabel: t('g.untitled')
     })
   })
 
@@ -201,7 +201,8 @@ export function useJobList() {
   const searchQuery = ref('')
   const debouncedSearchQuery = refDebounced(searchQuery, 150)
 
-  const mostRecentTimestamp = (task: TaskItemImpl) => task.createTime ?? 0
+  const mostRecentTimestamp = (task: TaskItemImpl) =>
+    optionalValue(task.createTime) ?? 0
 
   const allTasksSorted = computed<TaskItemImpl[]>(() => {
     const all = [
@@ -215,7 +216,7 @@ export function useJobList() {
   const tasksWithJobState = computed<TaskWithState[]>(() =>
     allTasksSorted.value.map((task) => ({
       task,
-      state: jobStateFromTask(task, isJobInitializing(task?.jobId))
+      state: jobStateFromTask(task, isJobInitializing(task.jobId))
     }))
   )
 
@@ -241,7 +242,13 @@ export function useJobList() {
     }
 
     if (selectedWorkflowFilter.value === 'current') {
-      const activeId = workflowStore.activeWorkflow?.activeState?.id
+      const activeWorkflow = optionalValue<
+        typeof workflowStore.activeWorkflow | null
+      >(workflowStore.activeWorkflow)
+      if (!activeWorkflow) return []
+      const activeId = optionalValue<typeof activeWorkflow.activeState | null>(
+        activeWorkflow.activeState
+      )?.id
       if (!activeId) return []
       entries = entries.filter(({ task }) => {
         const wid = task.workflowId
@@ -261,8 +268,7 @@ export function useJobList() {
 
   const jobItems = computed<JobListItem[]>(() => {
     return filteredTaskEntries.value.map(({ task, state }) => {
-      const isActive =
-        String(task.jobId ?? '') === String(executionStore.activeJobId ?? '')
+      const isActive = task.jobId === (executionStore.activeJobId ?? '')
       const showAddedHint = shouldShowAddedHint(task, state)
       const promptKey = taskIdToKey(task.jobId)
       const promptPreviewUrl =
@@ -283,7 +289,7 @@ export function useJobList() {
       })
 
       return {
-        id: String(task.jobId),
+        id: task.jobId,
         title: display.primary,
         meta: display.secondary,
         state,
@@ -304,7 +310,7 @@ export function useJobList() {
           task.executionTime !== undefined
             ? task.executionTime / 3_600_000
             : undefined
-      } as JobListItem
+      }
     })
   })
 
@@ -318,8 +324,8 @@ export function useJobList() {
     if (!normalizedSearchQuery.value) return filteredTaskEntries.value
 
     return filteredTaskEntries.value.filter(({ task }) => {
-      const taskId = String(task.jobId ?? '').toLocaleLowerCase()
-      const item = jobItemById.value.get(String(task.jobId))
+      const taskId = task.jobId.toLocaleLowerCase()
+      const item = jobItemById.value.get(task.jobId)
       if (!item) {
         return taskId.includes(normalizedSearchQuery.value)
       }
@@ -341,9 +347,9 @@ export function useJobList() {
     for (const { task, state } of searchableTaskEntries.value) {
       let ts: number | undefined
       if (state === 'completed' || state === 'failed') {
-        ts = task.executionEndTimestamp
+        ts = optionalValue(task.executionEndTimestamp ?? task.createTime)
       } else {
-        ts = task.createTime
+        ts = optionalValue(task.createTime)
       }
       const key = ts === undefined ? 'undated' : dateKey(ts)
       let groupIdx = index.get(key)
@@ -360,7 +366,7 @@ export function useJobList() {
         groupIdx = groups.length - 1
         index.set(key, groupIdx)
       }
-      const ji = jobItemById.value.get(String(task.jobId))
+      const ji = jobItemById.value.get(task.jobId)
       if (ji) groups[groupIdx].items.push(ji)
     }
 

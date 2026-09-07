@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
@@ -8,24 +8,23 @@ import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useInstalledPacks } from '@/workbench/extensions/manager/composables/nodePack/useInstalledPacks'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
-import type { ConflictAcknowledgmentState } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
 import type { ConflictDetectionResult } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
+import type * as ConflictUtils from '@/workbench/extensions/manager/utils/conflictUtils'
+import {
+  checkAcceleratorCompatibility,
+  checkOSCompatibility
+} from '@/workbench/extensions/manager/utils/systemCompatibility'
 import { checkVersionCompatibility } from '@/workbench/extensions/manager/utils/versionUtil'
 
-// Mock @vueuse/core until function
-vi.mock('@vueuse/core', async () => {
-  const actual = await vi.importActual('@vueuse/core')
-  return {
-    ...actual,
-    until: vi.fn(() => ({
-      toBe: vi.fn(() => Promise.resolve())
-    }))
-  }
-})
+vi.mock('@vueuse/core', () => ({
+  until: vi.fn(() => ({
+    toBe: vi.fn(() => Promise.resolve())
+  }))
+}))
 
 // Mock dependencies
 vi.mock('@/workbench/extensions/manager/services/comfyManagerService', () => ({
@@ -42,50 +41,24 @@ vi.mock('@/stores/systemStatsStore', () => ({
 
 vi.mock('@/workbench/extensions/manager/utils/versionUtil', () => ({
   getFrontendVersion: vi.fn(() => '1.24.0'),
-  checkVersionCompatibility: vi.fn()
+  checkVersionCompatibility: vi.fn(() => null)
 }))
 
 vi.mock('@/workbench/extensions/manager/utils/systemCompatibility', () => ({
-  checkOSCompatibility: vi.fn(),
-  checkAcceleratorCompatibility: vi.fn(),
+  checkOSCompatibility: vi.fn(() => null),
+  checkAcceleratorCompatibility: vi.fn(() => null),
   normalizeOSList: vi.fn((list) => list)
 }))
 
-vi.mock('@/workbench/extensions/manager/utils/conflictUtils', () => ({
-  consolidateConflictsByPackage: vi.fn((results) => results),
-  createBannedConflict: vi.fn((isBanned) =>
-    isBanned
-      ? {
-          type: 'banned',
-          current_value: 'installed',
-          required_value: 'not_banned'
-        }
-      : null
-  ),
-  createPendingConflict: vi.fn((isPending) =>
-    isPending
-      ? {
-          type: 'pending',
-          current_value: 'installed',
-          required_value: 'not_pending'
-        }
-      : null
-  ),
-  generateConflictSummary: vi.fn((results, duration) => ({
-    total_packages: results.length,
-    compatible_packages: results.filter(
-      (r: ConflictDetectionResult) => r.is_compatible
-    ).length,
-    conflicted_packages: results.filter(
-      (r: ConflictDetectionResult) => r.has_conflict
-    ).length,
-    banned_packages: 0,
-    pending_packages: 0,
-    conflicts_by_type_details: {},
-    last_check_timestamp: new Date().toISOString(),
-    check_duration_ms: duration
-  }))
-}))
+vi.mock('@/workbench/extensions/manager/utils/conflictUtils', async () => {
+  const actual = await vi.importActual<typeof ConflictUtils>(
+    '@/workbench/extensions/manager/utils/conflictUtils'
+  )
+  return {
+    ...actual,
+    consolidateConflictsByPackage: vi.fn((results) => results)
+  }
+})
 
 vi.mock(
   '@/workbench/extensions/manager/composables/useConflictAcknowledgment',
@@ -170,12 +143,12 @@ describe('useConflictDetection', () => {
     },
     get bannedPackages() {
       return mockConflictedPackages.filter((p) =>
-        p.conflicts?.some((c) => c.type === 'banned')
+        p.conflicts.some((c) => c.type === 'banned')
       )
     },
     get securityPendingPackages() {
       return mockConflictedPackages.filter((p) =>
-        p.conflicts?.some((c) => c.type === 'pending')
+        p.conflicts.some((c) => c.type === 'pending')
       )
     },
     setConflictedPackages: vi.fn(),
@@ -218,23 +191,21 @@ describe('useConflictDetection', () => {
     typeof useSystemStatsStore
   >
 
-  const mockAcknowledgment = {
-    checkComfyUIVersionChange: vi.fn(),
-    acknowledgmentState: computed(
-      () => ({}) as Partial<ConflictAcknowledgmentState>
-    ),
+  const mockAcknowledgment: ReturnType<typeof useConflictAcknowledgment> = {
+    acknowledgmentState: computed(() => ({
+      modal_dismissed: false,
+      red_dot_dismissed: false,
+      warning_banner_dismissed: false
+    })),
     shouldShowConflictModal: computed(() => false),
     shouldShowRedDot: computed(() => false),
     shouldShowManagerBanner: computed(() => false),
     dismissRedDotNotification: vi.fn(),
     dismissWarningBanner: vi.fn(),
     markConflictsAsSeen: vi.fn()
-  } as Partial<ReturnType<typeof useConflictAcknowledgment>> as ReturnType<
-    typeof useConflictAcknowledgment
-  >
+  }
 
   beforeEach(() => {
-    vi.clearAllMocks()
     pinia = createTestingPinia({ stubActions: false })
     setActivePinia(pinia)
 
@@ -265,10 +236,6 @@ describe('useConflictDetection', () => {
     mockConflictedPackages = []
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   describe('system environment collection', () => {
     it('should collect system environment correctly', async () => {
       const { collectSystemEnvironment } = useConflictDetection()
@@ -283,7 +250,7 @@ describe('useConflictDetection', () => {
     })
 
     it('should handle missing system stats gracefully', async () => {
-      mockSystemStatsStore.systemStats = null as never
+      mockSystemStatsStore.systemStats = null
 
       const { collectSystemEnvironment } = useConflictDetection()
       const environment = await collectSystemEnvironment()
@@ -307,7 +274,7 @@ describe('useConflictDetection', () => {
           id: 'test-pack',
           name: 'Test Pack',
           latest_version: { version: '1.0.0' }
-        } as components['schemas']['Node']
+        }
       ]
 
       mockInstalledPacksWithVersions.value = [
@@ -371,7 +338,7 @@ describe('useConflictDetection', () => {
         {
           id: 'banned-pack',
           name: 'Banned Pack'
-        } as components['schemas']['Node']
+        }
       ]
 
       mockInstalledPacksWithVersions.value = [
@@ -445,6 +412,52 @@ describe('useConflictDetection', () => {
         current_value: 'Import error',
         required_value: 'Import error'
       })
+    })
+  })
+
+  describe('checkNodeCompatibility status derivation', () => {
+    it('flags a banned conflict for a Node with NodeStatusBanned', () => {
+      const { checkNodeCompatibility } = useConflictDetection()
+      const { conflicts } = checkNodeCompatibility({
+        status: 'NodeStatusBanned'
+      })
+
+      expect(conflicts.map((c) => c.type)).toContain('banned')
+    })
+
+    it('flags a banned conflict for a NodeVersion with NodeVersionStatusBanned', () => {
+      const { checkNodeCompatibility } = useConflictDetection()
+      const { conflicts } = checkNodeCompatibility({
+        status: 'NodeVersionStatusBanned'
+      })
+
+      expect(conflicts.map((c) => c.type)).toContain('banned')
+    })
+
+    it('flags a pending conflict for a NodeVersion with NodeVersionStatusPending', () => {
+      const { checkNodeCompatibility } = useConflictDetection()
+      const { conflicts } = checkNodeCompatibility({
+        status: 'NodeVersionStatusPending'
+      })
+
+      const types = conflicts.map((c) => c.type)
+      expect(types).toContain('pending')
+      expect(types).not.toContain('banned')
+    })
+
+    it('forwards supported_os/supported_accelerators to the systemCompatibility checks', () => {
+      const { checkNodeCompatibility } = useConflictDetection()
+      checkNodeCompatibility({
+        status: 'NodeVersionStatusActive',
+        supported_os: ['Linux'],
+        supported_accelerators: ['CUDA']
+      })
+
+      expect(checkOSCompatibility).toHaveBeenCalledWith(['Linux'], undefined)
+      expect(checkAcceleratorCompatibility).toHaveBeenCalledWith(
+        ['CUDA'],
+        undefined
+      )
     })
   })
 

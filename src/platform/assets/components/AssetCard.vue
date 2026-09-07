@@ -1,5 +1,6 @@
 <template>
   <div
+    data-testid="asset-card"
     data-component-id="AssetCard"
     :data-asset-id="asset.id"
     :aria-labelledby="titleId"
@@ -128,10 +129,10 @@
 </template>
 
 <script setup lang="ts">
-import { useImage } from '@vueuse/core'
 import { computed, ref, toValue, useId, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useImageQuiet } from '@/composables/useImageQuiet'
 import IconGroup from '@/components/button/IconGroup.vue'
 import MoreButton from '@/components/button/MoreButton.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
@@ -190,7 +191,7 @@ const tooltipDelay = computed<number>(() =>
   settingStore.get('LiteGraph.Node.TooltipDelay')
 )
 
-const { isLoading, error } = useImage({
+const { isLoading, error } = useImageQuiet({
   src: asset.preview_url ?? '',
   alt: displayName.value
 })

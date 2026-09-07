@@ -120,7 +120,6 @@ vi.mock('@/workbench/eventHelpers', () => ({
 
 describe('pasteImageNode', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     vi.mocked(mockCanvas.graph!.add).mockImplementation(
       (node: LGraphNode | LGraphGroup | null) => node as LGraphNode
     )
@@ -186,10 +185,6 @@ describe('pasteImageNode', () => {
 })
 
 describe('pasteImageNodes', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('should create multiple nodes for multiple files', async () => {
     const mockNode1 = createMockNode()
     const mockNode2 = createMockNode()
@@ -219,10 +214,6 @@ describe('pasteImageNodes', () => {
 })
 
 describe('pasteAudioNode', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('should create new LoadAudio node when no audio node provided', async () => {
     const mockNode = createMockNode()
     vi.mocked(createNode).mockResolvedValue(mockNode)
@@ -271,10 +262,6 @@ describe('pasteAudioNode', () => {
 })
 
 describe('pasteAudioNodes', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('should create multiple nodes for multiple audio files', async () => {
     const mockNode1 = createMockNode()
     const mockNode2 = createMockNode()
@@ -315,10 +302,6 @@ describe('pasteAudioNodes', () => {
 })
 
 describe('pasteVideoNode', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('should create new LoadVideo node when no video node provided', async () => {
     const mockNode = createMockNode()
     vi.mocked(createNode).mockResolvedValue(mockNode)
@@ -367,10 +350,6 @@ describe('pasteVideoNode', () => {
 })
 
 describe('pasteVideoNodes', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('should create multiple nodes for multiple video files', async () => {
     const mockNode1 = createMockNode()
     const mockNode2 = createMockNode()
@@ -412,7 +391,6 @@ describe('pasteVideoNodes', () => {
 
 describe('usePaste', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockCanvas.current_node = null
     mockWorkspaceStore.shiftDown = false
     vi.mocked(mockCanvas.graph!.add).mockImplementation(
@@ -528,6 +506,46 @@ describe('usePaste', () => {
 
     await vi.waitFor(() => {
       expect(app.loadGraphData).toHaveBeenCalledWith(workflow)
+    })
+  })
+
+  it.for([
+    { version: '1.0', extra: {} },
+    { version: '1.0', nodes: [] },
+    { version: '1.0', nodes: {}, extra: {} }
+  ])('does not load malformed workflow JSON', async (workflow) => {
+    usePaste()
+    const dataTransfer = new DataTransfer()
+    dataTransfer.setData('text/plain', JSON.stringify(workflow))
+
+    document.dispatchEvent(
+      new ClipboardEvent('paste', { clipboardData: dataTransfer })
+    )
+
+    await vi.waitFor(() => {
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expect(mockCanvas.pasteFromClipboard).toHaveBeenCalled()
+    })
+  })
+
+  it('preserves text input paste for malformed workflow JSON', async () => {
+    usePaste()
+    const input = document.createElement('input')
+    input.type = 'text'
+    document.body.append(input)
+    const dataTransfer = new DataTransfer()
+    dataTransfer.setData('text/plain', JSON.stringify({ version: '1.0' }))
+
+    input.dispatchEvent(
+      new ClipboardEvent('paste', {
+        bubbles: true,
+        clipboardData: dataTransfer
+      })
+    )
+
+    await vi.waitFor(() => {
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
     })
   })
 
