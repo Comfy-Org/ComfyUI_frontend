@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import type { AcceptableValue } from 'reka-ui'
 import {
   DropdownMenuContent,
   DropdownMenuItemIndicator,
@@ -75,6 +76,10 @@ const filteredTabs = computed(() =>
 // menu still closes from the focused input.
 function onSearchKeydown(event: KeyboardEvent): void {
   if (event.key !== 'Escape') event.stopPropagation()
+}
+
+function onSelectTab(value: AcceptableValue): void {
+  if (typeof value === 'string') emit('selectTab', value)
 }
 </script>
 
@@ -153,7 +158,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
           />
           <DropdownMenuRadioGroup
             :model-value="current?.path ?? ''"
-            @update:model-value="emit('selectTab', $event)"
+            @update:model-value="onSelectTab"
           >
             <DropdownMenuRadioItem
               v-for="tab in filteredTabs"

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { AcceptableValue } from 'reka-ui'
 import {
   PopoverContent,
   PopoverPortal,
@@ -54,7 +55,8 @@ async function saveChanges(): Promise<void> {
   }
 }
 
-function onDraftMode(value: string | undefined): void {
+function onDraftMode(value: AcceptableValue): void {
+  if (typeof value !== 'string') return
   const match = options.find((option) => option.mode === value)
   if (match) draftMode.value = match.mode
 }

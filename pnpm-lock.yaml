@@ -70,8 +70,8 @@ catalogs:
       specifier: ^1.61.1
       version: 1.61.1
     '@primeuix/utils':
-      specifier: ^0.8.1
-      version: 0.8.1
+      specifier: ^0.3.2
+      version: 0.3.2
     '@primevue/core':
       specifier: 4.2.5
       version: 4.2.5
@@ -519,7 +519,7 @@ importers:
         version: 2.2.500
       '@primeuix/utils':
         specifier: 'catalog:'
-        version: 0.8.1
+        version: 0.3.2
       '@primevue/core':
         specifier: 'catalog:'
         version: 4.2.5(vue@3.5.41(typescript@6.0.3))
@@ -573,7 +573,7 @@ importers:
         version: 14.4.0(vue@3.5.41(typescript@6.0.3))
       '@vueuse/integrations':
         specifier: 'catalog:'
-        version: 14.4.0(axios@1.18.1(debug@4.4.3))(fuse.js@7.5.0)(vue@3.5.41(typescript@6.0.3))
+        version: 14.4.0(axios@1.18.1(debug@4.4.3))(fuse.js@7.0.0)(vue@3.5.41(typescript@6.0.3))
       '@vueuse/router':
         specifier: ^14.4.0
         version: 14.4.0(vue-router@5.2.0(@vue/compiler-sfc@3.5.41)(esbuild@0.28.1)(pinia@4.0.2(@vue/devtools-api@8.1.5)(typescript@6.0.3)(vue@3.5.41(typescript@6.0.3)))(rolldown@1.2.6)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))(vue@3.5.41(typescript@6.0.3)))(vue@3.5.41(typescript@6.0.3))
@@ -617,8 +617,8 @@ importers:
         specifier: 'catalog:'
         version: 11.10.0
       fuse.js:
-        specifier: 7.5.0
-        version: 7.5.0
+        specifier: 7.0.0
+        version: 7.0.0
       glob:
         specifier: 'catalog:'
         version: 13.0.6
@@ -3453,10 +3453,6 @@ packages:
     resolution: {integrity: sha512-pZ5f+vj7wSzRhC7KoEQRU5fvYAe+RP9+m39CTscZ3UywCD1Y2o6Fe1rRgklMPSkzUcty2jzkA0zMYkiJBD1hgg==}
     engines: {node: '>=12.11.0'}
 
-  '@primeuix/utils@0.8.1':
-    resolution: {integrity: sha512-tMtdkSUEl8/6Lc5iNOp7zXMFKJGLyf7mxvS/Hf5GzHVfa2dvsnVmEn0I/i3+80oEmnsVlHhr9+8aM5cKw7vbHA==}
-    engines: {node: '>=12.11.0'}
-
   '@primevue/core@4.2.5':
     resolution: {integrity: sha512-+oWBIQs5dLd2Ini4KEVOlvPILk989EHAskiFS3R/dz3jeOllJDMZFcSp8V9ddV0R3yDaPdLVkfHm2Q5t42kU2Q==}
     engines: {node: '>=12.11.0'}
@@ -6115,8 +6111,8 @@ packages:
   functions-have-names@1.2.3:
     resolution: {integrity: sha512-xckBUXyTIqT97tq2x2AMb+g163b5JFysYk0x4qxNFwbfQkmNZoiRHb6sPzI9/QV33WeuvVYBUIiD4NzNIyqaRQ==}
 
-  fuse.js@7.5.0:
-    resolution: {integrity: sha512-sQtrEfA+ez/3G0cCZecF70oqpCRttCexYUG4mUrtWL49ULUzUyxokt5kyqwtKzj1270RaKih+hcP3qLcumccow==}
+  fuse.js@7.0.0:
+    resolution: {integrity: sha512-14F4hBIxqKvD4Zz/XjDc3y94mNZN6pRv3U13Udo0lNLCWRBUsrMv2xwcF/y/Z5sV6+FQW+/ow68cHpm4sunt8Q==}
     engines: {node: '>=10'}
 
   gensync@1.0.0-beta.2:
@@ -11714,8 +11710,6 @@ snapshots:
 
   '@primeuix/utils@0.6.4': {}
 
-  '@primeuix/utils@0.8.1': {}
-
   '@primevue/core@4.2.5(vue@3.5.41(typescript@6.0.3))':
     dependencies:
       '@primeuix/styled': 0.3.2
@@ -13224,14 +13218,14 @@ snapshots:
       '@vueuse/shared': 14.4.0(vue@3.5.41(typescript@6.0.3))
       vue: 3.5.41(typescript@6.0.3)
 
-  '@vueuse/integrations@14.4.0(axios@1.18.1(debug@4.4.3))(fuse.js@7.5.0)(vue@3.5.41(typescript@6.0.3))':
+  '@vueuse/integrations@14.4.0(axios@1.18.1(debug@4.4.3))(fuse.js@7.0.0)(vue@3.5.41(typescript@6.0.3))':
     dependencies:
       '@vueuse/core': 14.4.0(vue@3.5.41(typescript@6.0.3))
       '@vueuse/shared': 14.4.0(vue@3.5.41(typescript@6.0.3))
       vue: 3.5.41(typescript@6.0.3)
     optionalDependencies:
       axios: 1.18.1(debug@4.4.3)
-      fuse.js: 7.5.0
+      fuse.js: 7.0.0
 
   '@vueuse/metadata@14.4.0': {}
 
@@ -14663,7 +14657,7 @@ snapshots:
 
   functions-have-names@1.2.3: {}
 
-  fuse.js@7.5.0: {}
+  fuse.js@7.0.0: {}
 
   gensync@1.0.0-beta.2: {}
 

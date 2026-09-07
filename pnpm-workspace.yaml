@@ -32,7 +32,7 @@ catalog:
   '@lucide/vue': ^1.17.0
   '@pinia/testing': ^2.0.1
   '@playwright/test': ^1.61.1
-  '@primeuix/utils': ^0.8.1
+  '@primeuix/utils': ^0.3.2
   '@primevue/core': 4.2.5
   '@primevue/forms': 4.2.5
   '@primevue/themes': 4.5.4
