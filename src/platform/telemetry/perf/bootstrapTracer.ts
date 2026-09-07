@@ -20,20 +20,25 @@
  *   bootstrap/extensions           | ~0.5 s    (addCustomNodeDefs + registerCustomNodes)
  *   bootstrap/extensions-setup     | ~0.5 s    (extension.setup() hooks)
  *
+ * Startup ends when the loading screen comes down, not when any one subsystem
+ * finishes. `complete()` is therefore called from the single place that owns
+ * that transition (`GraphCanvas`'s onMounted `finally`), so the trace covers
+ * the extension and object-info phases that run inside `ComfyApp.setup()` and
+ * so a startup that threw still reports.
+ *
  * Usage:
  *   import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
  *
- *   const phase = bootstrapTracer.startPhase('bootstrap/object-info')
- *   await this.getNodeDefs()
- *   phase.stop()
+ *   await bootstrapTracer.settle('bootstrap/object-info', () => this.getNodeDefs())
  */
+import { useTelemetry } from '@/platform/telemetry'
 
 import { perfMark, perfPoint } from './perfMark'
 import type { PerfSpan } from './perfMark'
 
 /** All known startup phase names. Extending this list is the only change
  *  required to add a new tracked phase. */
-type BootstrapPhase =
+export type BootstrapPhase =
   | 'startup/remote-config'
   | 'startup/telemetry-init'
   | 'startup/firebase-init'
@@ -48,10 +53,17 @@ type BootstrapPhase =
   | 'bootstrap/object-info'
   | 'bootstrap/extensions'
   | 'bootstrap/extensions-setup'
-  | 'bootstrap/app-mounted'
+
+export interface BootstrapPhaseTiming {
+  name: BootstrapPhase
+  startMs: number
+  durationMs: number
+}
 
 class BootstrapTracer {
   private _spans = new Map<BootstrapPhase, PerfSpan>()
+  private _timings: BootstrapPhaseTiming[] = []
+  private _completed = false
 
   /**
    * Start timing a phase. Returns a handle; call `.stop()` when complete.
@@ -63,13 +75,37 @@ class BootstrapTracer {
       // Already running — return a no-op handle so callers don't have to guard
       return { stop: () => 0 }
     }
-    const span = perfMark(`bootstrap/${phase}`)
-    this._spans.set(phase, span)
-    return {
-      stop: () => {
-        this._spans.delete(phase)
-        return span.stop()
-      }
+    this._spans.set(phase, perfMark(phase))
+    return { stop: () => this._stopPhase(phase) }
+  }
+
+  private _stopPhase(phase: BootstrapPhase): number {
+    const span = this._spans.get(phase)
+    if (!span) return 0
+    this._spans.delete(phase)
+    const durationMs = span.stop()
+    this._timings.push({
+      name: phase,
+      startMs: Math.round(span.startMs),
+      durationMs: Math.round(durationMs)
+    })
+    return durationMs
+  }
+
+  /**
+   * Time `work` and record the phase whether it resolves or rejects, then
+   * re-settle exactly as `work` did.
+   *
+   * A phase stopped only on the success path goes unrecorded precisely when
+   * startup went wrong, so the surviving sessions are the fast ones and every
+   * percentile reads better than reality.
+   */
+  async settle<T>(phase: BootstrapPhase, work: () => Promise<T>): Promise<T> {
+    const span = this.startPhase(phase)
+    try {
+      return await work()
+    } finally {
+      span.stop()
     }
   }
 
@@ -81,23 +117,40 @@ class BootstrapTracer {
   }
 
   /**
-   * Return a summary of all completed bootstrap measures, sorted by start time.
-   * Useful for logging to console in dev or emitting a single "startup complete"
-   * event to analytics.
+   * Completed phases, in the order they started.
+   *
+   * Built from what this tracer measured rather than re-scanned out of
+   * `performance.getEntriesByType('measure')`: that buffer is shared with
+   * every other measure in the app and can be cleared by anyone.
    */
-  summary(): { name: string; durationMs: number; startMs: number }[] {
+  summary(): BootstrapPhaseTiming[] {
+    return [...this._timings].sort((a, b) => a.startMs - b.startMs)
+  }
+
+  /**
+   * Close out startup: stop any phase still open, emit one aggregate event
+   * carrying total wall-clock and the per-phase breakdown, and log the trace
+   * locally. Idempotent — only the first call reports.
+   *
+   * One row per session is what makes "how many users hit a slow load"
+   * answerable by percentile; fifteen separate per-phase events are not.
+   */
+  complete(outcome: 'completed' | 'failed' = 'completed'): void {
+    if (this._completed) return
+    this._completed = true
     try {
-      return performance
-        .getEntriesByType('measure')
-        .filter((e) => e.name.startsWith('bootstrap/'))
-        .sort((a, b) => a.startTime - b.startTime)
-        .map((e) => ({
-          name: e.name.replace(/^bootstrap\//, ''),
-          durationMs: Math.round(e.duration),
-          startMs: Math.round(e.startTime)
-        }))
+      for (const phase of [...this._spans.keys()]) this._stopPhase(phase)
+      const totalMs = Math.round(performance.now())
+      const rows = this.summary()
+      useTelemetry()?.trackBootstrapComplete({
+        total_ms: totalMs,
+        outcome,
+        phase_count: rows.length,
+        phases: Object.fromEntries(rows.map((r) => [r.name, r.durationMs]))
+      })
+      this._logSummary(rows, totalMs)
     } catch {
-      return []
+      return
     }
   }
 
@@ -105,19 +158,17 @@ class BootstrapTracer {
    * Log the startup summary to the console in a compact table.
    * Only emits in dev or when DEBUG_PERF is set.
    */
-  logSummary(): void {
+  private _logSummary(rows: BootstrapPhaseTiming[], totalMs: number): void {
     try {
       if (!import.meta.env.DEV && localStorage.getItem('DEBUG_PERF') !== 'true')
         return
-      const rows = this.summary()
       if (rows.length === 0) return
-      const total = rows.reduce((acc, r) => acc + r.durationMs, 0)
       console.warn(
         '[Bootstrap] Startup trace\n' +
           rows
             .map((r) => `  ${r.startMs}ms  ${r.name}: ${r.durationMs}ms`)
             .join('\n') +
-          `\n  Total instrumented: ${total}ms`
+          `\n  Total wall-clock: ${totalMs}ms`
       )
     } catch {
       return
