@@ -380,6 +380,41 @@ describe('SubgraphConversion', () => {
         expect(graph.nodes.length).toBe(1)
       })
 
+      it('Should not alias a later host input when an earlier input is missing', () => {
+        const subgraph = createTestSubgraph({
+          inputs: [
+            { name: 'first', type: 'number' },
+            { name: 'second', type: 'number' }
+          ]
+        })
+        const subgraphNode = createTestSubgraphNode(subgraph)
+        const graph = subgraphNode.graph!
+        graph.add(subgraphNode)
+
+        for (let slot = 0; slot < 2; slot++) {
+          const inner = createTestWidgetNode(subgraph)
+          inner.inputs[0].widget = { name: 'text_widget' }
+          const widget = inner.getWidgetFromSlot(inner.inputs[0])
+          assert(widget)
+          widget.value = `interior ${slot}`
+          subgraph.inputNode.slots[slot].connect(inner.inputs[0], inner)
+        }
+
+        const secondWidgetId = subgraphNode.inputs[1].widgetId
+        assert(secondWidgetId)
+        useWidgetValueStore().setValue(secondWidgetId, 'second host')
+        subgraphNode.removeInput(0)
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+        graph.unpackSubgraph(subgraphNode)
+
+        expect(errorSpy).toHaveBeenCalledTimes(1)
+        expect(readUnpackedWidgetValues(graph)).toEqual([
+          'interior 0',
+          'second host'
+        ])
+      })
+
       it('Should hand the promoted host value to the interior widget', () => {
         const { graph, subgraphNode, hostWidgetId } =
           createPromotedWidgetSubgraph()

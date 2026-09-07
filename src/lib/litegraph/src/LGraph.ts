@@ -49,12 +49,7 @@ import {
   observeRerouteId
 } from './idAllocation'
 import type { LGraphState } from './idAllocation'
-import {
-  inputHasLink,
-  inputLink,
-  outputHasLinks,
-  outputLinks
-} from './node/slotLinks'
+import { inputHasLink, outputHasLinks, outputLinks } from './node/slotLinks'
 import { normalizeWidgetsView } from './node/widgetsView'
 import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
 import { useEntityIdStore } from '@/stores/entityIdStore'
@@ -2465,17 +2460,22 @@ export class LGraph
       externalFirst: boolean
     }[] = []
     for (const [, link] of subgraphNode.subgraph.links) {
-      const hostInput =
+      const subgraphInput =
         link.origin_id === SUBGRAPH_INPUT_ID
-          ? subgraphNode.inputs[link.origin_slot]
+          ? link.resolve(subgraphNode.subgraph).subgraphInput
           : undefined
+      const hostInput = subgraphInput
+        ? subgraphNode.inputs.find(
+            (input) => input._subgraphSlot?.id === subgraphInput.id
+          )
+        : undefined
       if (link.origin_id === SUBGRAPH_INPUT_ID && !hostInput) {
         console.error('Missing host input when unpacking subgraph')
         continue
       }
       const outerLink =
         link.origin_id === SUBGRAPH_INPUT_ID
-          ? inputLink(this, subgraphNode.id, link.origin_slot)
+          ? this.getLink(hostInput?.link)
           : undefined
       if (link.origin_id === SUBGRAPH_INPUT_ID && !outerLink) {
         const interiorNode = this.getNodeById(nodeIdMap.get(link.target_id))
