@@ -4,8 +4,15 @@ import { isVideoUrl } from '../../config/workshop-playground'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
-const { examples, locale = 'en' } = defineProps<{
+import { cn } from '@comfyorg/tailwind-utils'
+
+const {
+  examples,
+  activeId,
+  locale = 'en'
+} = defineProps<{
   examples: readonly PlaygroundExample[]
+  activeId?: string
   locale?: Locale
 }>()
 
@@ -34,12 +41,20 @@ const specsOf = (example: PlaygroundExample) => example.specs.join(' · ')
         <button
           type="button"
           :aria-label="t('workshop.examples.open', locale)"
+          :aria-current="example.id === activeId ? 'true' : undefined"
           class="group flex w-full cursor-pointer flex-col gap-2 text-left outline-none"
           data-testid="example-card"
           @click="emit('open', example)"
         >
           <span
-            class="bg-primary-comfy-ink-light group-hover:ring-primary-comfy-yellow group-focus-visible:ring-primary-comfy-yellow relative block aspect-video overflow-hidden rounded-lg ring-0 transition-shadow group-hover:ring-2 group-focus-visible:ring-2"
+            :class="
+              cn(
+                'bg-primary-comfy-ink-light relative block aspect-video overflow-hidden rounded-lg ring-1 transition-[box-shadow,filter]',
+                example.id === activeId
+                  ? 'ring-primary-comfy-yellow ring-2'
+                  : 'group-focus-visible:ring-primary-comfy-yellow ring-transparency-white-t8 group-hover:ring-transparency-white-t20 group-hover:brightness-110'
+              )
+            "
           >
             <video
               v-if="isVideoUrl(example.outputUrl)"
@@ -58,15 +73,19 @@ const specsOf = (example: PlaygroundExample) => example.specs.join(' · ')
               loading="lazy"
               decoding="async"
             />
-            <span
-              class="absolute inset-0 grid place-items-center bg-primary-comfy-ink/70 px-2 text-center text-xs text-primary-warm-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
-            >
-              {{ t('workshop.examples.use', locale) }}
-            </span>
           </span>
 
           <span class="flex flex-col gap-0.5">
-            <span class="line-clamp-2 text-xs text-primary-comfy-canvas">
+            <span
+              :class="
+                cn(
+                  'line-clamp-2 text-xs transition-colors',
+                  example.id === activeId
+                    ? 'text-primary-warm-white'
+                    : 'text-primary-comfy-canvas group-hover:text-primary-warm-white'
+                )
+              "
+            >
               {{ example.title }}
             </span>
             <span

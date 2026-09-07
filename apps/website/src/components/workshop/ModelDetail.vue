@@ -78,6 +78,8 @@ const firstExample = examples[0]
 const activeExample = ref<PlaygroundExample | undefined>(
   firstExample?.fields ? firstExample : undefined
 )
+// Which example the form is currently holding, marked in the row below it.
+const activeExampleId = ref(firstExample?.id)
 const schema = computed(() =>
   schemaForModel({
     fields: activeExample.value?.fields ?? model.fields,
@@ -281,6 +283,7 @@ function reset() {
 function openExample(example: PlaygroundExample) {
   clearTimeout(timer)
   activeExample.value = example.fields ? example : undefined
+  activeExampleId.value = example.id
   values.value = exampleValues(schema.value, example)
   runState.value = { status: 'example', output: exampleOutput(example) }
   activeSection.value = 'playground'
@@ -507,7 +510,12 @@ function useInCode() {
       class="pt-6"
       data-testid="examples-section"
     >
-      <ExamplesTab :examples :locale @open="openExample" />
+      <ExamplesTab
+        :examples
+        :active-id="activeExampleId"
+        :locale
+        @open="openExample"
+      />
     </section>
 
     <section

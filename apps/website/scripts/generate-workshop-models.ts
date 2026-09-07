@@ -22,7 +22,7 @@ const WORKFLOW_TEMPLATES_BASE =
 const OUTPUT = fileURLToPath(
   new URL('../src/config/workshop-models.generated.json', import.meta.url)
 )
-const EXAMPLES_PER_MODEL = 4
+const EXAMPLES_PER_MODEL = 6
 
 type Modality = 'image' | 'video' | 'audio' | '3d' | 'text'
 type Primitive = string | number | boolean
@@ -558,10 +558,15 @@ function pickApiNode(
   const score = (node: WorkflowNode) => {
     const schema = schemas.get(node.type)!
     const fields = fieldsFor(schema.inputs, schema.sources, {})
+    // The subject of the workflow is the node that takes the prompt, not a
+    // helper that happens to accept a texture_prompt beside it.
     const hasPrompt = fields.some(
-      (f) => f.kind === 'text' && /prompt|text/.test(f.name)
+      (f) => f.kind === 'text' && /^(?:positive_)?(?:prompt|text)$/.test(f.name)
     )
-    return (hasPrompt ? 1000 : 0) + fields.length
+    // What the visitor hands the model, prompt or file, is what makes a node
+    // the subject of its workflow; the rest are conversion and export steps.
+    const takesUpload = fields.some((f) => f.kind === 'file')
+    return (hasPrompt ? 1000 : 0) + (takesUpload ? 500 : 0) + fields.length
   }
   return nodes
     .filter((node) => schemas.has(node.type))
