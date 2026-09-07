@@ -145,6 +145,7 @@ describe('HeaderAccount', () => {
       () => new Promise<void>((resolve) => (release = resolve))
     )
     h.user!.value = { email: 'a@b.co', displayName: null }
+    h.sessionFailure!.value = { status: 'error', code: 'TOKEN_EXCHANGE_FAILED' }
     render(HeaderAccount)
 
     await userEvent
