@@ -305,6 +305,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
 
   let currentUser: TUser | null = null
   let credential: AccountCredential | undefined
+  let credentialTarget: string | undefined
   let failure: SessionFailure | undefined
   let detachCurrent: (() => void) | undefined
   /**
@@ -602,13 +603,15 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     const reportOutcome = clientOptions.refreshScheduler?.onScheduledOutcome
     const startEpoch = identityEpoch
     const startInvalidation = invalidationEpoch
-    // Refresh the session that is actually live: minting the personal
-    // default here would silently switch a team session's workspace.
-    const result = await sharedMint(
-      user,
-      { workspaceId: credential?.workspace.id },
-      true
-    )
+    // Refresh with the target that produced the live credential, so a
+    // scheduled refresh reproduces the same session AND coalesces with any
+    // concurrent reactive re-mint for it.
+    let result: SessionResult
+    try {
+      result = await sharedMint(user, { workspaceId: credentialTarget }, true)
+    } catch {
+      result = { status: 'error', code: 'TOKEN_EXCHANGE_FAILED' }
+    }
     if (
       currentUser?.uid !== user.uid ||
       identityEpoch !== startEpoch ||
@@ -670,6 +673,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     }
     if (result.status === 'ok') {
       credential = result.session
+      credentialTarget = options.workspaceId ?? clientOptions.workspaceId
       failure = undefined
       armScheduledRefresh(result.session.expiresAt)
     } else if (
@@ -696,6 +700,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
         stopScheduledRefresh()
         currentUser = next
         credential = undefined
+        credentialTarget = undefined
         failure = undefined
         if (!next) {
           safeClear()
@@ -715,6 +720,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
         stopScheduledRefresh()
         currentUser = null
         credential = undefined
+        credentialTarget = undefined
         failure = undefined
         publish()
       }
@@ -740,6 +746,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       invalidationEpoch += 1
       stopScheduledRefresh()
       credential = undefined
+      credentialTarget = undefined
       failure = undefined
       publish()
     },

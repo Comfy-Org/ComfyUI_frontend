@@ -255,7 +255,7 @@ describe('opt-in refresh scheduler', () => {
     expect(outcomes).toEqual(['permanent_failure'])
   })
 
-  it('re-mints the credential workspace, not the personal default', async () => {
+  it('re-mints with the target that produced the credential', async () => {
     const fetchImpl = vi.fn<typeof fetch>(
       async () =>
         new Response(
@@ -271,12 +271,11 @@ describe('opt-in refresh scheduler', () => {
     )
     const client = makeClient({ fetchImpl })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    client.attachIdentity(identity.port, { autoMint: false })
+    const user = testUser()
 
-    identity.fire(testUser())
-    await vi.waitFor(() => {
-      expect(client.getToken()).toBe('jwt-team')
-    })
+    identity.fire(user)
+    await client.ensureFresh(user, { workspaceId: 'ws-team' })
     await vi.advanceTimersByTimeAsync(
       NINETY_MINUTES_MS - DEFAULT_BUFFER_MS + 10
     )
