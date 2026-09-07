@@ -9,6 +9,7 @@ const h = vi.hoisted(() => ({
   flag: undefined as { value: boolean } | undefined,
   user: undefined as { value: unknown } | undefined,
   session: undefined as { value: unknown } | undefined,
+  sessionFailure: undefined as { value: unknown } | undefined,
   balance: undefined as { value: unknown } | undefined,
   ensureFresh: vi.fn(),
   signOut: vi.fn()
@@ -25,12 +26,15 @@ vi.mock('../../config/workshop-session-state', async () => {
   const { ref } = await import('vue')
   const user = ref<unknown>(null)
   const session = ref<unknown>(undefined)
+  const sessionFailure = ref<unknown>(undefined)
   h.user = user
   h.session = session
+  h.sessionFailure = sessionFailure
   return {
     useWorkshopSession: () => ({
       user,
       session,
+      sessionFailure,
       ensureFresh: h.ensureFresh,
       signOut: h.signOut
     })
@@ -50,6 +54,7 @@ beforeEach(() => {
   h.flag!.value = true
   h.user!.value = null
   h.session!.value = undefined
+  h.sessionFailure!.value = undefined
   h.balance!.value = { status: 'unknown' }
   h.ensureFresh.mockReset().mockResolvedValue({ status: 'error' })
   h.signOut.mockReset().mockResolvedValue(undefined)
@@ -83,11 +88,25 @@ describe('HeaderAccount', () => {
     })
   })
 
-  it('shows a session-retry control when a user has no workspace session', () => {
+  it('shows a session-retry control when the last mint attempt failed', () => {
     h.user!.value = { email: 'a@b.co', displayName: null }
     h.session!.value = undefined
+    h.sessionFailure!.value = { status: 'error', code: 'TOKEN_EXCHANGE_FAILED' }
     render(HeaderAccount)
     expect(screen.getByRole('button', { name: /session error/i })).toBeTruthy()
+  })
+
+  it('shows a neutral signing-in state while the mint is legitimately in flight', () => {
+    h.user!.value = { email: 'a@b.co', displayName: null }
+    h.session!.value = undefined
+    h.sessionFailure!.value = undefined
+    render(HeaderAccount)
+
+    expect(
+      screen.queryByRole('button', { name: /session error/i }),
+      'normal sign-in latency is not an error and must not flash error styling'
+    ).toBeNull()
+    expect(screen.getByRole('status')).toBeTruthy()
   })
 
   it('shows the account control with the credits chip when signed in', () => {
@@ -137,8 +156,8 @@ describe('HeaderAccount', () => {
     expect(pending.hasAttribute('disabled')).toBe(true)
     release()
     expect(
-        await screen.findByRole('button', { name: /session error/i })
-      ).toBeTruthy()
+      await screen.findByRole('button', { name: /session error/i })
+    ).toBeTruthy()
   })
 
   it('omits the credits number when the balance is in error', () => {
@@ -149,5 +168,22 @@ describe('HeaderAccount', () => {
 
     expect(screen.getByRole('button', { name: /account/i })).toBeTruthy()
     expect(screen.queryByText(/credits/i)).toBeNull()
+  })
+})
+
+describe('HeaderAccount sign-in href', () => {
+  it('carries the return destination from the very first render, before any mount hook', async () => {
+    const { renderToString } = await import('vue/server-renderer')
+    const { createSSRApp, h: hyper } = await import('vue')
+    window.history.replaceState({}, '', '/workshop/models/example/?tab=api')
+
+    const html = await renderToString(
+      createSSRApp({ render: () => hyper(HeaderAccount) })
+    )
+
+    expect(
+      html,
+      'a click during hydration must not lose the returnTo and strand sign-in on /login/'
+    ).toContain(encodeURIComponent('/workshop/models/example/'))
   })
 })
