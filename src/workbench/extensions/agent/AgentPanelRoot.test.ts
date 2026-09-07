@@ -2222,6 +2222,167 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(useAgentPanelStore().selectedWorkflow?.path).toBe(current.path)
   })
 
+  it.for(['false', 'throw', 'missing-id'])(
+    'leaves history targetless when restoration has %s',
+    async (outcome) => {
+      makeTab('wf-42')
+      const other = addTab('workflows/history-target.json')
+      useAgentWorkflowTabBindingStore().bind('wf-history', other.path)
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (url: string) => {
+          if (url.includes('/messages'))
+            return json(200, [
+              {
+                id: 'history-user',
+                thread_id: 'th-history',
+                seq: 1,
+                role: 'user',
+                status: 'complete',
+                turn_id: 'history-turn',
+                ...(outcome === 'missing-id'
+                  ? {}
+                  : { workflow_id: 'wf-history' }),
+                content: { text: 'Historical prompt' }
+              }
+            ])
+          if (url.includes('/agent/threads'))
+            return json(200, {
+              threads: [{ id: 'th-history', title: 'Earlier chat' }]
+            })
+          if (url.includes('/workflows'))
+            return json(200, {
+              data: [],
+              pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+            })
+          return json(200, {})
+        })
+      )
+      if (outcome === 'false')
+        workflowService.openWorkflow.mockResolvedValueOnce(false)
+      if (outcome === 'throw')
+        workflowService.openWorkflow.mockRejectedValueOnce(
+          new Error('unavailable')
+        )
+      renderWithSelectedTarget()
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      await userEvent.click(await screen.findByText('Earlier chat'))
+      await screen.findAllByText('Historical prompt')
+      if (outcome !== 'missing-id')
+        await vi.waitFor(() =>
+          expect(useToastStore().messagesToAdd).toEqual(
+            expect.arrayContaining([
+              expect.objectContaining({
+                detail: i18n.global.t('agent.targetNavigationUnavailable')
+              })
+            ])
+          )
+        )
+      await vi.waitFor(() =>
+        expect(useAgentPanelStore().selectedWorkflow).toBeNull()
+      )
+      expect(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.switchWorkflow')
+        })
+      ).toHaveTextContent(i18n.global.t('agent.selectWorkflowForAgent'))
+    }
+  )
+
+  it('does not commit a pending selection after its tab closes', async () => {
+    const current = makeTab('wf-42')
+    const scratch = addTab('workflows/scratch.json', { isTemporary: true })
+    mockMessagesEndpoint('wf-scratch')
+    let finishSave = () => {}
+    const saved = new Promise<void>((resolve) => {
+      finishSave = resolve
+    })
+    workflowService.saveWorkflowAs.mockImplementationOnce(async () => {
+      await saved
+      scratch.isTemporary = false
+      return true
+    })
+    renderWithSelectedTarget()
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitemradio', { name: 'scratch' })
+    )
+    expect(workflowService.saveWorkflowAs).toHaveBeenCalledOnce()
+    hostStores.workflow.openTabPaths.delete(scratch.path)
+    finishSave()
+    await saved
+    await nextTick()
+    expect(scratch.isTemporary).toBe(false)
+    expect(workflowService.openWorkflow).not.toHaveBeenCalled()
+    expect(
+      useAgentWorkflowTabBindingStore().workflowIdFor(scratch.path)
+    ).toBeUndefined()
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(current.path)
+  })
+
+  it('promotes a reference to target without changing earlier message references', async () => {
+    makeTab('wf-42')
+    const b = addTab('workflows/reference-b.json')
+    const c = addTab('workflows/reference-c.json')
+    useAgentWorkflowTabBindingStore().bind('wf-b', b.path)
+    useAgentWorkflowTabBindingStore().bind('wf-c', c.path)
+    const bodies = mockMessagesEndpoint('wf-b')
+    renderWithSelectedTarget()
+    const oldTurn = 'previous-turn' as TurnId
+    const conversation = useAgentConversationStore()
+    conversation.startTurn(oldTurn)
+    conversation.recordUser(oldTurn, 'Earlier prompt', undefined, undefined, [
+      { id: 'wf-b', name: 'reference-b' }
+    ])
+    conversation.ingest({
+      type: 'agent_message_done',
+      data: { message_id: oldTurn, thread_id: 'th-1' }
+    })
+    for (const name of ['reference-b', 'reference-c']) {
+      await userEvent.type(screen.getByRole('textbox'), '@')
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
+      await userEvent.click(await screen.findByRole('menuitem', { name }))
+    }
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitemradio', { name: 'reference-b' })
+    )
+    await vi.waitFor(() =>
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(b.path)
+    )
+    const composer = screen.getByTestId('composer-inline-input')
+    expect(
+      within(composer).queryByRole('button', { name: 'Open reference-b' })
+    ).toBeNull()
+    expect(
+      within(composer).getByRole('button', { name: 'Open reference-c' })
+    ).toBeVisible()
+    await sendFromComposer('Use C to edit B')
+    expect(bodies[0]).toMatchObject({
+      workflow_id: 'wf-b',
+      workflow_references: [{ workflow_id: 'wf-c', name: 'reference-c' }]
+    })
+    expect(
+      conversation.entries.find(
+        (entry) => entry.role === 'user' && entry.text === 'Earlier prompt'
+      )
+    ).toMatchObject({
+      workflowReferences: [{ id: 'wf-b', name: 'reference-b' }]
+    })
+  })
+
   it('keeps the old target when the selected workflow cannot open', async () => {
     makeTab('wf-42')
     const other = addTab('workflows/other.json')
