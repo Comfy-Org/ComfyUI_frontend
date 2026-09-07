@@ -24,9 +24,6 @@ const config: KnipConfig = {
       ],
       ignore: ['scripts/registry-census/detection-proof/**']
     },
-    'packages/auth-core': {
-      project: ['src/**/*.{js,ts,vue}']
-    },
     'packages/account': {
       project: ['src/**/*.{js,ts,vue}']
     },

@@ -7,7 +7,13 @@
   "type": "module",
   "exports": {
     "./core": "./src/core/index.ts",
-    "./firebase": "./src/firebase/index.ts"
+    "./firebase": "./src/firebase/index.ts",
+    "./signInSchemas": "./src/signInSchemas.ts",
+    "./turnstile": "./src/turnstile.ts",
+    "./turnstileScript": "./src/turnstileScript.ts",
+    "./firebaseAuthError": "./src/firebaseAuthError.ts",
+    "./provisioning": "./src/provisioning.ts",
+    "./TurnstileWidget.vue": "./src/TurnstileWidget.vue"
   },
   "scripts": {
     "lint": "oxlint src --type-aware && eslint src",
@@ -15,9 +21,13 @@
   },
   "dependencies": {
     "@comfyorg/ingest-types": "workspace:*",
+    "@comfyorg/shared-frontend-utils": "workspace:*",
+    "@vueuse/core": "catalog:",
+    "vue": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@testing-library/vue": "catalog:",
     "@types/node": "catalog:",
     "firebase": "catalog:",
     "typescript": "catalog:",
