@@ -845,6 +845,7 @@ type BillingErrorCode =
   | 'member_removal_failed'
   | 'missing_checkout_response'
   | 'missing_payment_method_url'
+  | 'parked_checkout_recovery_offered'
   | 'payment_popup_blocked'
   | 'reactivation_not_confirmed'
   | 'reactivation_amount_changed'

@@ -3124,7 +3124,7 @@ describe('useSubscriptionCheckout', () => {
       const checkout = await setupWithApprovedPreview()
       checkout.selectedTierKey.value = 'standard'
       checkout.selectedBillingCycle.value = 'yearly'
-      mockBillingStatus.value = 'awaiting_payment_method'
+      mockKnownOperations.value = new Map([['op-parked', {}]])
       mockSubscribe.mockResolvedValueOnce({
         status: 'pending_payment',
         billing_op_id: 'op-parked'
@@ -3141,7 +3141,7 @@ describe('useSubscriptionCheckout', () => {
       const checkout = await setupWithApprovedPreview()
       checkout.selectedTierKey.value = 'standard'
       checkout.selectedBillingCycle.value = 'yearly'
-      mockBillingStatus.value = 'awaiting_payment_method'
+      mockKnownOperations.value = new Map([['op-parked-no-url', {}]])
       mockSubscribe.mockResolvedValueOnce({
         status: 'needs_payment_method',
         billing_op_id: 'op-parked-no-url'
@@ -3158,7 +3158,6 @@ describe('useSubscriptionCheckout', () => {
       const checkout = await setupWithApprovedPreview()
       checkout.selectedTierKey.value = 'standard'
       checkout.selectedBillingCycle.value = 'yearly'
-      mockBillingStatus.value = 'paid'
       mockSubscribe.mockResolvedValueOnce({
         status: 'pending_payment',
         billing_op_id: 'op-live'
@@ -3178,7 +3177,7 @@ describe('useSubscriptionCheckout', () => {
       const checkout = await setupWithApprovedPreview()
       checkout.selectedTierKey.value = 'standard'
       checkout.selectedBillingCycle.value = 'yearly'
-      mockBillingStatus.value = 'awaiting_payment_method'
+      mockKnownOperations.value = new Map([['op-parked', {}]])
       mockSubscribe.mockResolvedValueOnce({
         status: 'pending_payment',
         billing_op_id: 'op-parked'
@@ -3202,6 +3201,74 @@ describe('useSubscriptionCheckout', () => {
         expect.any(Object),
         'https://stripe.com/pay'
       )
+    })
+
+    it('polls a replayed operation when this attempt supplied a saved card', async () => {
+      const checkout = await setupWithApprovedPreview()
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+      checkout.selectedSavedPaymentMethodId.value = 'pm_saved'
+      // Same shape as a parked replay, but this attempt carries payment
+      // authority, so the operation is charged and must be polled.
+      mockKnownOperations.value = new Map([['op-parked', {}]])
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'pending_payment',
+        billing_op_id: 'op-parked'
+      })
+
+      await checkout.handleAddCreditCard()
+
+      expect(checkout.parkedCheckoutRecovery.value).toBe(false)
+      expect(mockStartOperation).toHaveBeenCalledWith(
+        'op-parked',
+        'subscription',
+        expect.any(Object)
+      )
+    })
+
+    it('polls rather than prompting on a plan change, which cannot render the prompt', async () => {
+      const checkout = await setupWithApprovedPreview()
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+      // Change previews never receive the recovery prop, so setting the flag
+      // there would strand the user on a dead confirm step.
+      checkout.previewData.value = {
+        allowed: true,
+        transition_type: 'upgrade',
+        requires_reactivation_confirmation: false
+      } as PreviewSubscribeResponse
+      mockKnownOperations.value = new Map([['op-parked', {}]])
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'pending_payment',
+        billing_op_id: 'op-parked'
+      })
+
+      await checkout.handleAddCreditCard()
+
+      expect(checkout.parkedCheckoutRecovery.value).toBe(false)
+      expect(mockStartOperation).toHaveBeenCalledWith(
+        'op-parked',
+        'subscription',
+        expect.any(Object)
+      )
+    })
+
+    it('clears the payment recovery prompt when returning to pricing', async () => {
+      const checkout = await setupWithApprovedPreview()
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+      mockKnownOperations.value = new Map([['op-parked', {}]])
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'pending_payment',
+        billing_op_id: 'op-parked'
+      })
+
+      await checkout.handleAddCreditCard()
+      expect(checkout.parkedCheckoutRecovery.value).toBe(true)
+
+      checkout.handleBackToPricing()
+
+      expect(checkout.parkedCheckoutRecovery.value).toBe(false)
     })
 
     it('advances to success once the async payment operation succeeds', async () => {

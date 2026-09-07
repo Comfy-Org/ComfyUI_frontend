@@ -135,8 +135,7 @@ export function useSubscriptionCheckout(
     fetchStatus,
     isTeamPlan,
     resubscribe,
-    subscription,
-    billingStatus
+    subscription
   } = useBillingContext()
   const { shouldUseWorkspaceBilling } = useBillingRouting()
   const { canSubscribeSelfServe, canChangeSeats, canDowngradeToPersonal } =
@@ -964,6 +963,9 @@ export function useSubscriptionCheckout(
       if (embeddedCheckoutEnabled && quote && !quoteIsCurrent.value) {
         throw new Error(t('subscription.preview.applyQuoteBeforeContinuing'))
       }
+      // Captured before subscribe: afterwards this attempt's own operation is
+      // registered too, and the two become indistinguishable.
+      const knownOperationIds = new Set(billingOperationStore.operations.keys())
       const response = await subscribe(planSlug, {
         ...(embeddedCheckoutEnabled &&
           buildPaymentOptions(quote, confirmationToken, promotionCode)),
@@ -990,7 +992,13 @@ export function useSubscriptionCheckout(
         tier: tierKey,
         cycle: billingCycle,
         checkoutType,
-        attemptStartedAt
+        attemptStartedAt,
+        suppliedPaymentAuthority: Boolean(
+          confirmationToken || selectedSavedPaymentMethodId.value
+        ),
+        replayedKnownOperation: response
+          ? knownOperationIds.has(response.billing_op_id)
+          : false
       })
       activeCheckoutAttemptStartedAt = undefined
     } catch (error) {
@@ -1120,6 +1128,18 @@ export function useSubscriptionCheckout(
      * subscribe call), not just the poll-observation window.
      */
     attemptStartedAt?: number
+    /**
+     * Whether this attempt carried its own payment authority (a confirmation
+     * token or a saved method). Such an attempt is charged server-side, so a
+     * link-less response from it must be polled, never treated as parked.
+     */
+    suppliedPaymentAuthority?: boolean
+    /**
+     * Whether the returned billing op was already known to the client before
+     * this attempt, captured before the subscribe call. Only a replay of an
+     * operation we already had can be the parked checkout.
+     */
+    replayedKnownOperation?: boolean
   }
 
   function trackSubscriptionStarted(
@@ -1157,7 +1177,7 @@ export function useSubscriptionCheckout(
   function trackSubscriptionFailure(
     context: SubscriptionOutcomeContext,
     error?: unknown,
-    errorCode?: 'missing_checkout_response'
+    errorCode?: 'missing_checkout_response' | 'parked_checkout_recovery_offered'
   ) {
     if (context.attemptStartedAt === undefined) return
 
@@ -1245,13 +1265,25 @@ export function useSubscriptionCheckout(
       return
     }
 
-    // No payment link while already parked on a card means the operation
-    // cannot advance until checkout completes, so polling it only expires.
+    // A link-less response is only "parked" when it names an operation we
+    // already knew about. Workspace billing status cannot decide this: the
+    // delegated subscribe path returns pending_payment without a link on
+    // healthy attempts too, and it never writes billing_status, so the status
+    // stays awaiting_payment_method through the very request that resolves it.
+    // The caller snapshots known operations before subscribing, so a hit means
+    // the backend replayed the parked op rather than reserving a new one.
     if (
       !response.payment_method_url &&
-      billingStatus.value === 'awaiting_payment_method'
+      context.checkoutType === 'new' &&
+      !context.suppliedPaymentAuthority &&
+      context.replayedKnownOperation
     ) {
       parkedCheckoutRecovery.value = true
+      trackSubscriptionFailure(
+        context,
+        undefined,
+        'parked_checkout_recovery_offered'
+      )
       return
     }
 
