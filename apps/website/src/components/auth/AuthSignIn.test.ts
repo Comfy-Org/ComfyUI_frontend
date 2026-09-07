@@ -182,7 +182,9 @@ describe('AuthSignIn', () => {
 
     await user.type(screen.getByLabelText('Email'), 'user@example.com')
     await user.type(screen.getByLabelText('Password'), 'Password1!')
-    await user.click(screen.getByRole('button', { name: /^sign in$/i }))
+    await user.click(
+      screen.getByRole('button', { name: /sign in with email/i })
+    )
 
     await waitFor(() => expect(handles.emailSignIn).toHaveBeenCalledOnce())
     expect(

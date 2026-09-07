@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { classifyAuthError } from '@comfyorg/account/firebaseAuthError'
-import { onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { authSchemasFor } from '../../config/auth-schemas'
 import { AUTH_FIELD_CLASS } from './authFieldClass'
@@ -16,7 +16,6 @@ const { locale = 'en' } = defineProps<{
 const enabled = useWorkshopAuthFlag()
 const email = ref('')
 const fieldError = ref('')
-const signInHref = ref('/login/')
 
 type ResetState = 'idle' | 'sending' | 'sent' | 'error'
 const state = ref<ResetState>('idle')
@@ -54,11 +53,12 @@ function isUnknownEmailError(error: unknown): boolean {
   )
 }
 
-onMounted(() => {
+const signInHref = computed(() => {
+  if (typeof window === 'undefined') return '/login/'
   const destination = requestedReturnPath(window.location.search)
-  if (destination) {
-    signInHref.value = `/login/?returnTo=${encodeURIComponent(destination)}`
-  }
+  return destination
+    ? `/login/?returnTo=${encodeURIComponent(destination)}`
+    : '/login/'
 })
 </script>
 

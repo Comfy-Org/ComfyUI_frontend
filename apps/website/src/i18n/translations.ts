@@ -146,6 +146,10 @@ const translations = {
     en: 'Finish signing in from the pop-up window.',
     'zh-CN': '请在弹出窗口中完成登录。'
   },
+  'auth.signIn.pendingEmail': {
+    en: 'Signing you in…',
+    'zh-CN': '正在为你登录…'
+  },
   'auth.signIn.signedInHeading': {
     en: 'You are signed in',
     'zh-CN': '已登录'

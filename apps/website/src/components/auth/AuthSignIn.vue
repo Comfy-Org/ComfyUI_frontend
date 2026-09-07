@@ -265,7 +265,12 @@ onMounted(() => {
       >
         {{
           state.step === 'pending'
-            ? t('auth.signIn.pending', locale)
+            ? t(
+                state.provider === 'email'
+                  ? 'auth.signIn.pendingEmail'
+                  : 'auth.signIn.pending',
+                locale
+              )
             : t('auth.signIn.starting', locale)
         }}
       </p>

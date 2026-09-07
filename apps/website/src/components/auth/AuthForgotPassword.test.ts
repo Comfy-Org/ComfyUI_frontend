@@ -134,8 +134,9 @@ describe('AuthForgotPassword', () => {
     expect(
       screen
         .getByRole('link', { name: /back to sign in/i })
-        .getAttribute('href')
-    ).toBe('/login/')
+        .getAttribute('href'),
+      'a cross-origin destination maps to the safe Workshop-home fallback, never the raw value'
+    ).toBe('/login/?returnTo=%2Fworkshop%2F')
   })
 })
 
