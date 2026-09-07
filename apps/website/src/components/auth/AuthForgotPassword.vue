@@ -3,7 +3,6 @@ import { classifyAuthError } from '@comfyorg/account/firebaseAuthError'
 import { onMounted, ref } from 'vue'
 
 import { authSchemasFor } from '../../config/auth-schemas'
-import { sendWorkshopPasswordReset } from '../../config/workshop-firebase'
 import { requestedReturnPath } from '../../config/workshop-return'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -33,6 +32,8 @@ async function submit() {
   fieldError.value = ''
   state.value = 'sending'
   try {
+    const { sendWorkshopPasswordReset } =
+      await import('../../config/workshop-firebase')
     await sendWorkshopPasswordReset(email.value)
     state.value = 'sent'
   } catch (error) {
