@@ -99,6 +99,17 @@ export const SESSION_ERROR_MESSAGES: Readonly<
  * one queryable event across every host. The package never calls a
  * telemetry API itself — call sites stay host-specific.
  */
+/**
+ * English source strings for the signed-in states the Workshop site already
+ * ships; a host that surfaces sign-in success starts from these rather than
+ * inventing new copy. The cloud app currently surfaces nothing on success —
+ * adopting these there is a product decision, not a requirement.
+ */
+export const SESSION_SUCCESS_MESSAGES = {
+  signedInHeading: 'You are signed in',
+  signedInAs: 'Signed in as'
+} as const
+
 export const SESSION_TELEMETRY_EVENT = {
   refreshSucceeded: 'auth.unified.refresh.succeeded',
   refreshFailed: 'auth.unified.refresh.failed'
