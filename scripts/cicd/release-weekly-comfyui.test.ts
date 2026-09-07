@@ -13,6 +13,7 @@ interface WorkflowStep {
     ref?: string
     version?: number | string
     package_json_file?: string
+    'sparse-checkout'?: string
   }
 }
 
@@ -66,6 +67,7 @@ describe('weekly ComfyUI release', () => {
   const resolveIndex = indexOfStep('Resolve legacy pnpm version')
   const pnpmIndex = indexOfStep('Install pnpm')
   const stageIndex = indexOfStep('Stage release scripts')
+  const scriptsCheckoutIndex = indexOfStep('Check out release scripts')
 
   it('checks out the release tag being published', () => {
     expect(checkoutIndex).toBeGreaterThanOrEqual(0)
@@ -113,8 +115,17 @@ describe('weekly ComfyUI release', () => {
   })
 
   it('stages the release scripts into $RUNNER_TEMP before resolving', () => {
-    expect(stageIndex).toBeGreaterThanOrEqual(0)
+    expect(scriptsCheckoutIndex).toBeGreaterThanOrEqual(0)
+    expect(stageIndex).toBeGreaterThan(scriptsCheckoutIndex)
     expect(stageIndex).toBeLessThan(resolveIndex)
+
+    const scriptsCheckout = steps[scriptsCheckoutIndex].with
+    const source = `${scriptsCheckout?.path}/${scriptsCheckout?.['sparse-checkout']}`
+    expect(scriptsCheckout?.path).toBeTruthy()
+    expect(scriptsCheckout?.['sparse-checkout']).toBeTruthy()
+
+    // The destination alone would also match a step that merely mkdir'd it.
+    expect(steps[stageIndex].run).toContain(source)
     expect(steps[stageIndex].run).toContain('"$RUNNER_TEMP/cicd"')
   })
 })
