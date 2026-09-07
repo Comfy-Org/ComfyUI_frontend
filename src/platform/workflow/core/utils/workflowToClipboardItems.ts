@@ -56,8 +56,8 @@ function getLinks(
       target_slot,
       type,
       parentId: parentIds.get(id),
-      ...(presentation?.[String(id)]?.hidden && { hidden: true }),
-      ...(presentation?.[String(id)]?.label !== undefined && {
+      ...(presentation?.[String(id)]?.hidden === true && { hidden: true }),
+      ...(typeof presentation?.[String(id)]?.label === 'string' && {
         label: presentation[String(id)].label
       })
     })
