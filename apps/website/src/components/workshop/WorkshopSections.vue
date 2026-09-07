@@ -33,14 +33,6 @@ const {
 
 const emit = defineEmits<{ open: [UseCase] }>()
 
-// Router does not report a curated set yet, so the row that opens the listing
-// is the catalogue's own most-run models. It reads as an editor's shelf and
-// costs nothing to keep true as the catalogue grows.
-const FEATURED_LIMIT = 6
-const featured = computed(() =>
-  groupByFamily(sortWorkshopModels(models, 'popular')).slice(0, FEATURED_LIMIT)
-)
-
 // Text, 3D and audio hold a handful of models each, so a row apiece reads as an
 // empty shelf. They share one row until the catalogue fills out.
 const GROUPED: readonly UseCase[] = ['text', '3d', 'audio']
@@ -82,37 +74,6 @@ const unplaced = computed(() =>
 
 <template>
   <div class="flex flex-col gap-12" data-testid="workshop-sections">
-    <section
-      v-if="featured.length"
-      aria-labelledby="section-featured"
-      class="bg-transparency-white-t4 rounded-4.5xl border border-transparency-white-t8 p-6 backdrop-blur-xl lg:p-8"
-      data-testid="section-featured"
-    >
-      <CardRow :locale>
-        <template #heading>
-          <h2
-            id="section-featured"
-            class="text-xl font-medium text-primary-warm-white"
-          >
-            {{ t('workshop.sections.featured', locale) }}
-          </h2>
-        </template>
-
-        <li
-          v-for="family in featured"
-          :key="family.key"
-          class="w-72 shrink-0 snap-start"
-        >
-          <WorkshopModelCard
-            :model="family.latest"
-            :version-count="family.versions.length"
-            :locale
-            :show-status="showStatuses"
-          />
-        </li>
-      </CardRow>
-    </section>
-
     <section
       v-for="section in sections"
       :key="section.useCase"

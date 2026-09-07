@@ -27,7 +27,7 @@ export interface ShareState {
 }
 
 export const SHARE_DEFAULTS: ShareState = {
-  version: 'v1.1',
+  version: 'v1.2',
   showStatuses: false,
   groupVersions: false,
   session: 'signedOut',

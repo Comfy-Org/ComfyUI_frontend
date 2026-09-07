@@ -8453,18 +8453,17 @@ Enterprise`
     'zh-CN': '已弃用 · 标签页分类'
   },
   'workshop.proto.version.v1_1': {
-    en: 'V1 · Rows per use case',
-    'zh-CN': 'V1 · 按用途分行'
+    en: 'Discarded · Rows per use case',
+    'zh-CN': '已弃用 · 按用途分行'
   },
   'workshop.proto.version.v1_2': {
-    en: 'Discarded · Categories in a side rail',
-    'zh-CN': '已弃用 · 类别侧边栏'
+    en: 'V1 · Categories in a side rail',
+    'zh-CN': 'V1 · 类别侧边栏'
   },
   'workshop.proto.version.v2': {
     en: 'V2 · Workflows, apps and models',
     'zh-CN': 'V2 · 工作流、应用与模型'
   },
-  'workshop.sections.featured': { en: 'Featured', 'zh-CN': '精选' },
   'workshop.sections.otherFormats': {
     en: 'Other formats',
     'zh-CN': '其他格式'

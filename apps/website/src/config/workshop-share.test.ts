@@ -28,10 +28,10 @@ describe('share links for the prototype controls', () => {
   })
 
   it('carries the version so a link opens the variant it names', () => {
-    expect(encodeShareSearch({ ...SHARE_DEFAULTS, version: 'v1.2' })).toBe(
-      '?version=v1.2'
+    expect(encodeShareSearch({ ...SHARE_DEFAULTS, version: 'v1.1' })).toBe(
+      '?version=v1.1'
     )
-    expect(decodeShareSearch('?version=v1.2').version).toBe('v1.2')
+    expect(decodeShareSearch('?version=v1.1').version).toBe('v1.1')
     expect(decodeShareSearch('?version=nope').version).toBeUndefined()
   })
 
