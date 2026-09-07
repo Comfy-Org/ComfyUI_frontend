@@ -22,6 +22,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [DEVEX-MONOREPO-0002](DEVEX-MONOREPO-0002-adopt-a-pnpm-workspace-monorepo.md)                                    | Adopt a pnpm Workspace Monorepo                                 | Accepted | 2025-08-25 |
 | [ECS-0008](ECS-0008-entity-component-system.md)                                                                  | Entity Component System                                         | Proposed | 2026-03-23 |
 | [ECS-IDENTITY-0016](ECS-IDENTITY-0016-entity-id-collision-policy-and-recovery.md)                                | Entity ID Collision Policy and Recovery                         | Proposed | 2026-08-24 |
+| [ECS-LINK-PRESENTATION-0028](ECS-LINK-PRESENTATION-0028-link-presentation-store-ownership.md)                    | Link Presentation Store Owns Hidden/Label State                 | Proposed | 2026-08-29 |
 | [ECS-SLOTS-0017](ECS-SLOTS-0017-slot-records-as-the-source-of-truth.md)                                          | Slot Records as the Source of Truth                             | Accepted | 2026-08-24 |
 | [ECS-WIDGETS-0023](ECS-WIDGETS-0023-widget-entities-with-a-legacy-layer.md)                                      | Widget Entities with a Legacy Layer                             | Proposed | 2026-08-26 |
 | [EXTENSIONS-PUBLIC-API-0005](EXTENSIONS-PUBLIC-API-0005-bundle-vue-dependencies-in-extensions.md)                | Bundle Vue Dependencies in Extensions                           | Accepted | 2025-12-13 |
