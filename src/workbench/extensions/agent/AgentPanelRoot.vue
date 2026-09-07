@@ -531,8 +531,17 @@ async function onWorkflowRestored(
     return
   }
   try {
-    await workflowService.openWorkflow(target)
+    const opened = await workflowService.openWorkflow(target)
     if (generation !== targetSelectionGeneration) return
+    if (opened === false) {
+      selectedTarget.value = null
+      toast.add({
+        severity: 'warn',
+        detail: t('agent.targetNavigationUnavailable'),
+        life: 5000
+      })
+      return
+    }
     bindingStore.bind(workflowId, target.path)
     selectedTarget.value = target
     removeWorkflowReference(workflowId)
@@ -875,6 +884,7 @@ void refreshHistory()
 
 async function onSelectHistory(id: string): Promise<void> {
   ++targetSelectionGeneration
+  selectedTarget.value = null
   exitNodeSelectionMode()
   await loadThread(id)
   void refreshHistory()
