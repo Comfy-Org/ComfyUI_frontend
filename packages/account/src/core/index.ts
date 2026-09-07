@@ -1,5 +1,6 @@
 export type {
   AccountCredential,
+  AttachIdentityOptions,
   AccountUser,
   CredentialStorage,
   IdentityPort,

@@ -207,8 +207,19 @@ export type SessionSnapshot<TUser extends AccountUser = AccountUser> =
       readonly failure: SessionFailure
     }
 
+export interface AttachIdentityOptions {
+  /**
+   * When false, an identity event sets the user and publishes without
+   * starting a warm-up mint — for hosts that drive every mint explicitly.
+   */
+  readonly autoMint?: boolean
+}
+
 export interface SessionClient<TUser extends AccountUser = AccountUser> {
-  attachIdentity: (identity: IdentityPort<TUser>) => () => void
+  attachIdentity: (
+    identity: IdentityPort<TUser>,
+    options?: AttachIdentityOptions
+  ) => () => void
   getSnapshot: () => SessionSnapshot<TUser>
   subscribe: (
     listener: (snapshot: SessionSnapshot<TUser>) => void
@@ -399,9 +410,29 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     signal?.addEventListener('abort', abort, { once: true })
     const timeout = setTimeout(() => controller.abort(), timeoutMs)
 
+    let idToken: string
+    try {
+      idToken = await abortable(user.getIdToken(), controller.signal)
+    } catch (error) {
+      clearTimeout(timeout)
+      signal?.removeEventListener('abort', abort)
+      // requestToken treats a missing identity token as NOT_AUTHENTICATED;
+      // an identity failure carrying that code keeps it, anything else
+      // (including our own abort) stays in the transient bucket.
+      const coded =
+        !controller.signal.aborted &&
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        error.code === 'NOT_AUTHENTICATED'
+      return {
+        status: 'error',
+        code: coded ? 'NOT_AUTHENTICATED' : 'TOKEN_EXCHANGE_FAILED'
+      }
+    }
+
     let response: Response
     try {
-      const idToken = await abortable(user.getIdToken(), controller.signal)
       response = await fetchImpl(exchangeUrl, {
         method: 'POST',
         headers: {
@@ -571,7 +602,13 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     const reportOutcome = clientOptions.refreshScheduler?.onScheduledOutcome
     const startEpoch = identityEpoch
     const startInvalidation = invalidationEpoch
-    const result = await sharedMint(user, {}, true)
+    // Refresh the session that is actually live: minting the personal
+    // default here would silently switch a team session's workspace.
+    const result = await sharedMint(
+      user,
+      { workspaceId: credential?.workspace.id },
+      true
+    )
     if (
       currentUser?.uid !== user.uid ||
       identityEpoch !== startEpoch ||
@@ -650,7 +687,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   }
 
   return {
-    attachIdentity(identity) {
+    attachIdentity(identity, attachOptions) {
       detachCurrent?.()
       let active = true
       const unsubscribe = identity.onUserChanged((next) => {
@@ -666,7 +703,9 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
           return
         }
         publish()
-        void refreshWith(ensureCore, next)
+        if (attachOptions?.autoMint !== false) {
+          void refreshWith(ensureCore, next)
+        }
       })
       const detach = () => {
         if (!active) return
