@@ -22,14 +22,14 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
         .poll(() =>
           comfyPage.page.evaluate(() => {
             const nodes = window.app!.canvas.graph!.nodes
-            return nodes?.[0]?.id ?? null
+            return nodes.at(0)?.id ?? null
           })
         )
         .not.toBeNull()
 
       const nodeId = await comfyPage.page.evaluate(() => {
         const nodes = window.app!.canvas.graph!.nodes
-        return nodes?.[0]?.id ?? null
+        return nodes.at(0)?.id ?? null
       })
 
       const nodeToClone = await comfyPage.nodeOps.getNodeRefById(String(nodeId))
