@@ -698,6 +698,21 @@ describe('host-driven invalidation', () => {
       'the attachment survives invalidation, so a targeted re-mint commits normally'
     ).toBe('post-invalidate-jwt')
   })
+
+  it('reads signed-out immediately after invalidation, not minting', async () => {
+    const { client } = makeClient({ fetchImpl: okFetch() })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+    identity.fire(testUser())
+    await vi.waitFor(() => expect(client.getToken()).toBe('workspace-jwt'))
+
+    client.invalidate()
+
+    expect(
+      client.getSnapshot().phase,
+      "an invalidated client claiming 'minting' hands a signed-out host a stale identity until the port re-diffs"
+    ).toBe('signed-out')
+  })
 })
 
 describe('transient-failure credential preservation', () => {
