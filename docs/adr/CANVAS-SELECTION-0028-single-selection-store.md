@@ -14,12 +14,10 @@ owner. The fact "node 7 is selected" is stored in `item.selected`,
 and the Vue mirror `canvasStore.selectedItems`. Link highlighting and the
 `state.selectionChanged` pulse are maintained alongside those copies.
 
-Callers must update these values in the right order. Sixteen manual
-`updateSelectedItems()` calls synchronize the Vue mirror. Direct mutations,
-such as `selectedItems.clear()`, can leave `item.selected`,
-`highlighted_links`, and `selected_nodes` stale. Selection can also survive a
-workflow switch as references to objects from the previous workflow because
-it is not scoped to the graph that owns those objects.
+Callers must update these values in the right order. Fifteen external call
+sites manually call `updateSelectedItems()` to synchronize the Vue mirror.
+Direct mutations, such as `selectedItems.clear()`, can leave `item.selected`,
+`highlighted_links`, and `selected_nodes` stale.
 
 Selection behavior is also spread across classic canvas and Vue input paths.
 Those paths differ in modifier handling, group selection, callback emission,
@@ -43,9 +41,12 @@ Specifically:
    `SelectableKey` values. A key identifies a node, group, reroute, subgraph
    input node, or subgraph output node.
 2. Entity removal carries its full graph scope and removes the corresponding
-   key only from that bucket. Closing a root graph evicts all of its buckets.
-   An entity removal must not affect a different root graph that happens to
-   reuse the same local ID.
+   key only from that bucket. An entity removal must not affect a different
+   graph that happens to reuse the same local ID. Workflow switches and
+   subgraph navigation clear the outgoing selection as they do today; returning
+   to a graph does not restore its previous selection. Buckets define identity
+   and cleanup scope, not navigation history. Closing a root graph evicts all
+   of its buckets.
 3. State changes use four commands: `selection.replace`, `selection.add`,
    `selection.remove`, and `selection.clear`. The commands are serializable,
    deterministic, and idempotent. Existing toggle interactions inspect current
@@ -77,7 +78,7 @@ Specifically:
    Adopting a classified `interaction/selection` invalidation reason belongs in
    the rendering-invalidation work.
 
-## Compatibility requirements
+### Compatibility requirements
 
 The migration must preserve these observable behaviors:
 
@@ -87,6 +88,8 @@ The migration must preserve these observable behaviors:
   and its current edit and drag guards through `canvas.selectOnly`.
 - Alt keeps its current node-clone and link-reroute bindings.
 - Group selection and deselection keep their current child-cascade behavior.
+- Workflow switches and subgraph navigation clear selection rather than
+  restoring a selection retained for that graph.
 - Selection callbacks and node hooks keep their current entry-point-specific
   emission behavior.
 - Extension reads and writes through documented or observed legacy selection
@@ -94,13 +97,16 @@ The migration must preserve these observable behaviors:
 
 Characterization tests against the real `LGraphCanvas` record these contracts
 before each caller moves to the store. Store tests cover command idempotence,
-removal of every selectable kind, graph-scoped cleanup, and root-graph
-eviction. Each migration step must leave the characterization tests unchanged.
+removal of every selectable kind, graph-scoped cleanup, navigation clearing,
+and root-graph eviction. Each migration step must leave the characterization
+tests unchanged.
 
-## Deferred decisions
+### Deferred decisions
 
 The following work requires separate decisions because it changes behavior or
-public compatibility:
+public compatibility. The proposed
+[ADR-CANVAS-GESTURE-0029](https://github.com/Comfy-Org/ComfyUI_frontend/pull/17106)
+owns the pointer gesture changes:
 
 - unifying classic and Vue gesture handling;
 - changing modifier meanings or combined-modifier precedence;
@@ -130,8 +136,8 @@ public compatibility:
 - Selection has one graph-scoped owner.
 - Derived canvas, Vue, and highlighting state cannot drift from the selected
   key set.
-- Entity and workflow cleanup cannot remove or retain selection in an unrelated
-  graph.
+- Entity cleanup cannot remove selection in an unrelated graph with the same
+  local ID.
 - Later interaction changes start from consistent state and can be reviewed as
   behavior changes rather than mixed migrations.
 
@@ -149,7 +155,7 @@ Tracking: [FE-2040](https://linear.app/comfyorg/issue/FE-2040).
 
 Related decisions:
 [ADR-CRDT-LAYOUT-0003](CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md)
-defines the command requirements;
+provides the serializable-operation precedent;
 [ADR-ECS-0008](ECS-0008-entity-component-system.md) places entity state in
 dedicated stores; and
 [ADR-GRAPH-DOCUMENT-0026](GRAPH-DOCUMENT-0026-frontend-document-model.md)
