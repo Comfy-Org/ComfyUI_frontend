@@ -323,6 +323,7 @@ import type { AgentChatEvent } from './services/agent/agentEventTransport'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
+import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 
 import AgentPanelRoot from './AgentPanelRoot.vue'
@@ -4189,7 +4190,101 @@ describe('AgentPanelRoot workflow binding', () => {
     ).toBe(false)
   })
 
-  it('does not reattribute a send when its originating tab closes during preparation', async () => {
+  it.for(['untouched', 'new-draft', 'new-chat'])(
+    'recovers a failed send only in its untouched composer: %s',
+    async (nextAction) => {
+      makeTab('wf-42')
+      const reference = addTab('workflows/reference.json')
+      useAgentWorkflowTabBindingStore().bind('wf-reference', reference.path)
+      const bodies: Record<string, unknown>[] = []
+      let finishSend: (response: Response) => void = () => {}
+      const response = new Promise<Response>((resolve) => {
+        finishSend = resolve
+      })
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (url: string, init?: RequestInit) => {
+          if (url.includes('/messages') && init?.method === 'POST') {
+            bodies.push(
+              JSON.parse(String(init.body)) as Record<string, unknown>
+            )
+            return bodies.length === 1 ? response : json(202, ack('wf-42'))
+          }
+          if (url.includes('/messages')) return json(200, [])
+          if (url.includes('/agent/threads')) return json(200, { threads: [] })
+          if (url.includes('/workflows'))
+            return json(200, {
+              data: [],
+              pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+            })
+          return json(200, {})
+        })
+      )
+      setupNodeSelectionCanvas()
+      renderWithSelectedTarget()
+      useAgentPanelStore().isOpen = true
+      await openMentionPicker()
+      await userEvent.click(await screen.findByText('KSampler'))
+      const textbox = screen.getByRole('textbox')
+      await userEvent.type(textbox, '@')
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
+      await userEvent.click(
+        await screen.findByRole('menuitem', { name: 'reference' })
+      )
+      const composer = useAgentComposerStore()
+      composer.attachments = [
+        { id: 'upload-1', name: 'cat.png', ref: 'uploaded_cat.png' }
+      ]
+      await userEvent.type(textbox, '  Keep this draft  ')
+      await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+      await vi.waitFor(() => expect(bodies).toHaveLength(1))
+      expect(screen.getByRole('button', { name: 'Stop' })).toBeVisible()
+      if (nextAction === 'new-draft') await userEvent.type(textbox, 'New input')
+      if (nextAction === 'new-chat')
+        await userEvent.click(
+          screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+        )
+      finishSend(json(500, { error: 'Unavailable' }))
+      await vi.waitFor(() =>
+        expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull()
+      )
+      if (nextAction === 'untouched') {
+        expect(textbox).toHaveValue('  Keep this draft  ')
+        expect(composer.attachments).toMatchObject([
+          { ref: 'uploaded_cat.png' }
+        ])
+        expect(
+          screen.getByRole('button', { name: 'Open reference' })
+        ).toBeVisible()
+        expect(
+          screen.getByRole('button', { name: 'Remove KSampler #12 reference' })
+        ).toBeVisible()
+        await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+        await vi.waitFor(() => expect(bodies).toHaveLength(2))
+        expect(bodies[1]).toMatchObject({
+          workflow_id: 'wf-42',
+          content: 'Keep this draft',
+          selection: { node_ids: ['12'] },
+          attachments: ['uploaded_cat.png'],
+          workflow_references: [
+            { workflow_id: 'wf-reference', name: 'reference' }
+          ]
+        })
+      } else {
+        expect(textbox).toHaveValue(
+          nextAction === 'new-draft' ? 'New input' : ''
+        )
+        expect(composer.attachments).toEqual([])
+        expect(
+          screen.queryByRole('button', { name: 'Open reference' })
+        ).toBeNull()
+        if (nextAction === 'new-chat')
+          expect(useAgentConversationStore().entries).toHaveLength(0)
+      }
+    }
+  )
+
+  it('cancels and restores the draft when its target closes during preparation', async () => {
     const origin = makeTab('wf-origin')
     origin.activeState = fromPartial<ComfyWorkflowJSON>({ id: 'origin-draft' })
     const replacement = addTab('workflows/replacement.json', {
@@ -4233,11 +4328,12 @@ describe('AgentPanelRoot workflow binding', () => {
     hostStores.workflow.activeWorkflow = replacement
     releasePreparation()
 
-    await vi.waitFor(() => expect(bodies).toHaveLength(1))
-    expect(bodies[0]).not.toHaveProperty('workflow_id')
-    expect(bodies[0]).not.toHaveProperty('current_tab')
-    expect(bodies[0]).not.toHaveProperty('draft')
-    await screen.findByRole('button', { name: 'Stop' })
+    await vi.waitFor(() =>
+      expect(screen.getByRole('textbox')).toHaveValue('build a graph')
+    )
+    expect(bodies).toHaveLength(0)
+    expect(useAgentPanelStore().selectedWorkflow).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull()
     expect(
       useAgentWorkflowTabBindingStore().tabPathFor('wf-fresh')
     ).toBeUndefined()

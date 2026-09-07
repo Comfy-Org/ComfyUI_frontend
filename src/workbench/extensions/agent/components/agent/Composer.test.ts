@@ -54,6 +54,14 @@ describe('Composer', () => {
     setActivePinia(createPinia())
   })
 
+  it('preserves new input on Enter while a previous send is submitting', async () => {
+    const { emitted } = mount({ submitting: true })
+    const textbox = screen.getByRole('textbox')
+    await userEvent.type(textbox, 'Next draft{Enter}')
+    expect(textbox).toHaveValue('Next draft')
+    expect(emitted().send).toBeUndefined()
+  })
+
   it('blocks all node entry points and explains why while workflow references remain available', async () => {
     const reason = 'Please select a workflow first'
     const props = {
