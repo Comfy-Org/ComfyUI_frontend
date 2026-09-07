@@ -8692,6 +8692,10 @@ Enterprise`
     en: 'Reopen Stripe',
     'zh-CN': '重新打开 Stripe'
   },
+  'workshop.credits.closingIsSafe': {
+    en: 'Closing this won’t affect your payment.',
+    'zh-CN': '关闭此窗口不会影响你的付款。'
+  },
   'workshop.credits.reopenPrompt': {
     en: 'Closed it by mistake?',
     'zh-CN': '不小心关闭了？'

@@ -9,12 +9,13 @@ import {
   Minus,
   Plus
 } from '@lucide/vue'
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useMockSession } from '../../composables/useMockSession'
+import { usePendingTopUp } from '../../composables/usePendingTopUp'
 import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
 import {
   MAX_TOP_UP_USD,
@@ -25,11 +26,7 @@ import {
 } from '../../config/credits'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import {
-  SETTLE_DELAY_MS,
-  returnStepFor,
-  stripeCheckoutHref
-} from '../../lib/workshop/buy-credits'
+import { stripeCheckoutHref } from '../../lib/workshop/buy-credits'
 import Dialog from '../ui/dialog/Dialog.vue'
 import DialogContent from '../ui/dialog/DialogContent.vue'
 import DialogDescription from '../ui/dialog/DialogDescription.vue'
@@ -38,8 +35,9 @@ import DialogTitle from '../ui/dialog/DialogTitle.vue'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const open = defineModel<boolean>('open', { default: false })
 
-const { session, addCredits } = useMockSession()
+const { session } = useMockSession()
 const { topUpOutcome, buyStep } = usePrototypeTweaks()
+const { pending, outcome, begin, settle, place, clear } = usePendingTopUp()
 
 const usd = ref<number>(25)
 const credits = computed(() => usdToCredits(usd.value))
@@ -48,16 +46,18 @@ const workspace = computed(() =>
 )
 
 // Continue is a real link, so the tab opens on the visitor's own click and a
-// popup blocker never sees a programmatic open to swallow. That removes the
-// blocked case rather than handling it, and it means cancelling happens at
-// Stripe, in the other tab: this page just keeps waiting until they come back
-// or dismiss it. There is no "you cancelled" state to return to.
+// popup blocker never sees a programmatic open to swallow. Cancelling then
+// happens at Stripe, in the other tab: this page just keeps waiting until they
+// come back or dismiss it.
 //
-// The prototype plays Stripe's own page out in place, so the journey can be
-// reviewed without a payment account.
+// The purchase itself lives in usePendingTopUp, above this component, so
+// dismissing the card never abandons money that is already in flight.
 type Step = 'leaving' | 'checkout' | 'waiting' | 'landed' | 'unresolved'
-const step = ref<Step>('leaving')
-const previousCredits = ref(0)
+const standIn = ref(false)
+const step = computed<Step>(() =>
+  standIn.value ? 'checkout' : pending.value ? outcome.value : 'leaving'
+)
+const previousCredits = computed(() => pending.value?.previousCredits ?? 0)
 
 const returnPath = ref('/workshop/')
 const href = computed(() => stripeCheckoutHref(returnPath.value, usd.value))
@@ -66,35 +66,22 @@ const operationId = computed(
   () => `op_${(usdToCredits(usd.value) * 7919).toString(36)}`
 )
 
-let settleTimer: ReturnType<typeof setTimeout> | undefined
-function clearSettleTimer() {
-  if (settleTimer) clearTimeout(settleTimer)
-  settleTimer = undefined
-}
-onBeforeUnmount(clearSettleTimer)
-
 const RETURN_STEPS = ['waiting', 'landed', 'unresolved'] as const
 function isReturnStep(value: string): value is (typeof RETURN_STEPS)[number] {
   return (RETURN_STEPS as readonly string[]).includes(value)
 }
 
 watch(open, (value) => {
-  clearSettleTimer()
   if (!value) return
   returnPath.value = location.pathname + location.search
+  standIn.value = false
   // A review link can open any part of the flow. The states after the hand-off
   // are three clicks deep otherwise, and they are the ones worth looking at.
   const entry = buyStep.value
-  // Consumed once: after the link has opened its step, the dialog behaves
-  // normally, so closing and reopening does not jump back and grant again.
+  // Consumed once, so closing and reopening behaves normally afterwards.
   if (entry !== 'closed') buyStep.value = 'closed'
-  step.value = isReturnStep(entry) ? entry : 'leaving'
-  if (step.value === 'landed') {
-    previousCredits.value =
-      session.value.status === 'signedIn' ? session.value.account.credits : 0
-    // Land the grant too, so the ledger and the header agree.
-    addCredits(credits.value)
-  }
+  if (isReturnStep(entry)) place(entry, credits.value)
+  else if (entry === 'amount') clear()
 })
 
 function setAmount(next: number) {
@@ -105,23 +92,18 @@ function setAmount(next: number) {
 // prototype the navigation is prevented so Stripe's page can be played out in
 // place — shipping means dropping the `.prevent` and letting the link work.
 function leaveForStripe() {
-  step.value = 'waiting'
+  begin(credits.value)
 }
 
-// Stripe redirects the moment the card clears; the grant follows on a webhook.
-// Coming back before the credits do is the normal case, not an edge one, so the
-// page always lands on `waiting` first and resolves from there.
 function pay() {
-  previousCredits.value =
-    session.value.status === 'signedIn' ? session.value.account.credits : 0
-  step.value = 'waiting'
-  const settled = returnStepFor(topUpOutcome.value)
-  if (settled === 'waiting') return
-  clearSettleTimer()
-  settleTimer = setTimeout(() => {
-    if (settled === 'landed') addCredits(credits.value)
-    step.value = settled
-  }, SETTLE_DELAY_MS)
+  standIn.value = false
+  settle(topUpOutcome.value)
+}
+
+// Concluding the purchase: the money has resolved either way, so stop tracking.
+function finish() {
+  clear()
+  open.value = false
 }
 
 const format = (value: number) => value.toLocaleString(locale)
@@ -303,7 +285,7 @@ const stepperClass =
             size="lg"
             class="px-5"
             data-testid="buy-credits-back"
-            @click="step = 'waiting'"
+            @click="standIn = false"
           >
             {{ t('workshop.credits.back', locale) }}
           </Button>
@@ -345,24 +327,18 @@ const stepperClass =
             rel="noopener noreferrer"
             class="text-primary-comfy-yellow underline-offset-4 hover:underline"
             data-testid="buy-credits-reopen"
-            @click.prevent="step = 'checkout'"
+            @click.prevent="standIn = true"
           >
             {{ t('workshop.credits.reopen', locale) }}
           </a>
         </p>
 
-        <Button
-          variant="outline"
-          size="lg"
-          class="w-fit px-5"
-          data-testid="buy-credits-dismiss"
-          @click="open = false"
-        >
-          <!-- Not "Cancel": dismissing this does not cancel anything. The
-               checkout is open in the other tab and will complete or not on its
-               own; this only puts the page back. -->
-          {{ t('workshop.credits.close', locale) }}
-        </Button>
+        <!-- No button: there is no decision to make here. The X closes the card,
+             and closing changes nothing — the checkout is open in the other tab
+             and resolves on its own, with the page still watching. -->
+        <p class="text-sm text-primary-warm-gray">
+          {{ t('workshop.credits.closingIsSafe', locale) }}
+        </p>
       </div>
 
       <!-- 3b · The credits landed. -->
@@ -431,7 +407,7 @@ const stepperClass =
           size="lg"
           class="w-fit px-5"
           data-testid="buy-credits-resume"
-          @click="open = false"
+          @click="finish"
         >
           {{ t('workshop.credits.resume', locale) }}
         </Button>
@@ -481,7 +457,7 @@ const stepperClass =
             size="lg"
             class="px-5"
             data-testid="buy-credits-held-close"
-            @click="open = false"
+            @click="finish"
           >
             {{ t('workshop.credits.close', locale) }}
           </Button>
