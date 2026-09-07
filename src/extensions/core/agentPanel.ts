@@ -9,10 +9,6 @@ import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { reportError } from '@/platform/telemetry/reportError'
-import {
-  notifyMintPortsAfterGraphConfigure,
-  notifyMintPortsBeforeGraphLoad
-} from '@/workbench/extensions/agent/crdt/mintPortWiring'
 
 let registered = false
 
@@ -23,7 +19,6 @@ export function registerAgentPanelExtension(): void {
   useExtensionService().registerExtension({
     name: 'Comfy.AgentPanel',
     beforeLoadGraph() {
-      notifyMintPortsBeforeGraphLoad()
       const agentPanelStore = useAgentPanelStore()
       if (!agentPanelStore.enabled || !agentPanelStore.isOpen) return
 
@@ -62,9 +57,6 @@ export function registerAgentPanelExtension(): void {
       if (nodeSelectionStore.isLoadingWorkflow) {
         nodeSelectionStore.finishWorkflowLoad()
       }
-    },
-    afterConfigureGraph() {
-      notifyMintPortsAfterGraphConfigure()
     },
     setup() {
       const { enabled } = storeToRefs(useAgentPanelStore())

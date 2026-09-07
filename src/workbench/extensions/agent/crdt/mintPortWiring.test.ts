@@ -6,6 +6,7 @@ import type { GraphScope } from '@/types/graphScopeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import type { LinkTopology } from '@/types/linkTopology'
 
+import { beginGraphLoad, settleGraphLoad } from '@/base/graphLoadLifecycle'
 import { useLinkStore } from '@/stores/linkStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
@@ -258,18 +259,17 @@ describe('attachMintPortWiring', () => {
     expect(minted).toEqual([])
   })
 
-  it('suppresses mints between the load-bracket hooks, fail-closed on a failed load', () => {
-    wiring.onBeforeGraphLoad()
+  it('suppresses mints during each balanced graph-load lifecycle', () => {
+    const failedLoad = beginGraphLoad()
     useLinkStore().registerLink(ROOT_SCOPE, topology(41))
     expect(minted).toEqual([])
+    settleGraphLoad(failedLoad)
 
-    // A failed load never fires afterConfigureGraph: the bracket stays open
-    // (still no mints), and the NEXT load's paired hooks close it.
-    wiring.onBeforeGraphLoad()
+    const succeedingLoad = beginGraphLoad()
     useLinkStore().registerLink(ROOT_SCOPE, topology(42))
     expect(minted).toEqual([])
 
-    wiring.onAfterGraphConfigure()
+    settleGraphLoad(succeedingLoad)
     useLinkStore().registerLink(ROOT_SCOPE, topology(43, 4))
     expect(minted).toHaveLength(1)
   })

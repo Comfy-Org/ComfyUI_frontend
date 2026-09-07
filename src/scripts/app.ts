@@ -4,6 +4,7 @@ import type { ToastMessageOptions } from 'primevue/toast'
 import { reactive, unref } from 'vue'
 import { shallowRef } from 'vue'
 
+import { beginGraphLoadScope } from '@/base/graphLoadLifecycle'
 import { partnerRunGateBlocksAutoQueue } from '@/composables/billing/usePartnerNodesRunGate'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 
@@ -1282,6 +1283,7 @@ export class ComfyApp {
       workflowNavigationId
     } = options
     useWorkflowService().beforeLoadNewGraph(clean !== false)
+    using graphLoadSettlement = beginGraphLoadScope()
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
     if (skipAssetScans) {
@@ -1552,6 +1554,7 @@ export class ComfyApp {
         'afterConfigureGraph',
         missingNodeTypes
       )
+      graphLoadSettlement[Symbol.dispose]()
 
       const effectiveShareId =
         shareId ??
@@ -2139,6 +2142,9 @@ export class ComfyApp {
 
     // Use parameters strictly as the final fallback
     if (parameters && typeof parameters === 'string') {
+      // Minted in this scope, not inside the callback, so the early returns
+      // below and any throw from importA1111 settle it via disposal.
+      using graphLoadSettlement = beginGraphLoadScope()
       const outcome = await importA1111(
         this.rootGraph,
         parameters,
@@ -2182,6 +2188,7 @@ export class ComfyApp {
         'afterConfigureGraph',
         []
       )
+      graphLoadSettlement[Symbol.dispose]()
       await useWorkflowService().afterLoadNewGraph(
         fileName,
         this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
@@ -2322,6 +2329,7 @@ export class ComfyApp {
   ): Promise<void> {
     // false: no workflow load follows to republish the hash.
     useWorkflowService().beforeLoadNewGraph(false)
+    using graphLoadSettlement = beginGraphLoadScope()
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
     this.canvas.setGraph(this.rootGraph)
     this.clean()
@@ -2472,6 +2480,7 @@ export class ComfyApp {
       'afterConfigureGraph',
       missingNodeTypes
     )
+    graphLoadSettlement[Symbol.dispose]()
     await useWorkflowService().afterLoadNewGraph(
       fileName,
       this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
