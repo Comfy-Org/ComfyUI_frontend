@@ -466,26 +466,14 @@ async function onSelectTab(path: string): Promise<boolean> {
   }
 }
 
-function openTabsSnapshot(
-  origin?: TurnOrigin,
-  references: WorkflowReference[] = []
-): OpenTabsSnapshot | undefined {
-  const target = originWorkflow(origin)
-  const targetId = target ? cloudIdFor(target) : undefined
-  if (target === undefined || targetId === undefined) return undefined
-  const seen = new Set([targetId])
-  const openTabs = [
-    { workflow_id: targetId, name: cloudWorkflowName(target) },
-    ...references.flatMap((reference) => {
-      if (seen.has(reference.id)) return []
-      seen.add(reference.id)
-      return [{ workflow_id: reference.id, name: reference.name }]
-    })
-  ]
-  return {
-    open_tabs: openTabs,
-    current_tab: targetId
-  }
+function openTabsSnapshot(): OpenTabsSnapshot | undefined {
+  const openTabs = workflowStore.openWorkflows.flatMap((tab) => {
+    const id = cloudIdFor(tab)
+    return id === undefined
+      ? []
+      : [{ workflow_id: id, name: cloudWorkflowName(tab) }]
+  })
+  return openTabs.length > 0 ? { open_tabs: openTabs } : undefined
 }
 
 function onWorkflowAdopted(

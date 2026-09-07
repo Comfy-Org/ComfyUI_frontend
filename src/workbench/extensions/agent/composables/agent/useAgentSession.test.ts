@@ -195,6 +195,7 @@ describe('useAgentSession (v1 composition root)', () => {
 
     expect(rest.postMessage).toHaveBeenCalledWith('new', {
       content: 'make me a cat',
+      workflowReferences: [],
       selection: undefined,
       attachments: undefined
     })
@@ -664,6 +665,7 @@ describe('useAgentSession (v1 composition root)', () => {
 
     expect(rest.postMessage).toHaveBeenCalledWith('new', {
       content: 'with files',
+      workflowReferences: [],
       selection: undefined,
       attachments: ['upload_a.png', 'upload_b.png']
     })

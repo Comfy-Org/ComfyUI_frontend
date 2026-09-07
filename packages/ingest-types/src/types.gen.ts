@@ -4244,17 +4244,23 @@ export type AgentRunMode = {
  */
 export type AgentPostMessageRequest = {
   /**
-   * Optional input-image filenames the client already uploaded to the ComfyUI input namespace (via /api/upload/image, which returns the {name, subfolder, type} reference). The agent wires them into the workflow by filename — it never receives image bytes here.
-   */
-  attachments?: Array<string>
-  /**
    * The user's message.
    */
   content: string
   /**
-   * Cloud workflow id of the client's active tab (should appear in open_tabs). When present and authorized it selects the workflow the turn starts focused on — explicit workflow_id > current_tab > the thread's remembered workflow.
+   * When present, the agent edits this workflow's draft. Ownership-checked (403 if not the caller's workflow).
    */
-  current_tab?: string
+  workflow_id?: string
+  /**
+   * Optional canvas selection context ("change these nodes").
+   */
+  selection?: {
+    [key: string]: unknown
+  }
+  /**
+   * Optional input-image filenames the client already uploaded to the ComfyUI input namespace (via /api/upload/image, which returns the {name, subfolder, type} reference). The agent wires them into the workflow by filename — it never receives image bytes here.
+   */
+  attachments?: Array<string>
   /**
    * The client's live canvas, sent so the agent operates on what the user currently sees instead of an empty or stale draft. Reuses the {content, version} shape returned by GET /api/agent/draft. Additive — older clients omit it and the agent falls back to the stored draft.
    */
@@ -4271,28 +4277,29 @@ export type AgentPostMessageRequest = {
     version?: number | null
   }
   /**
-   * Snapshot of the client's open workflow tabs that have cloud workflow ids (local-only/unsaved tabs are omitted), so the agent knows the user's real tab strip and can switch between tabs. Advisory context, not a grant — entries not in the caller's workspace are ignored. Additive — older clients omit it.
+   * Snapshot of the client's open editor tabs in editor order. Advisory context, not a grant — entries outside the caller's workspace are ignored. With workflow_references present, only the editable target and explicit references enter the model's workflow context.
    */
   open_tabs?: Array<{
-    /**
-     * Display name of the tab, shown to the agent so the user can reference tabs by name.
-     */
-    name?: string
     /**
      * Cloud workflow id of the open tab.
      */
     workflow_id: string
+    /**
+     * Display name of the tab, shown to the agent so the user can reference tabs by name.
+     */
+    name?: string
   }>
   /**
-   * Optional canvas selection context ("change these nodes").
+   * Cloud workflow id of the client's active editor tab; no ordering requirement. Modern clients use workflow_id for the editable target and omit this field. When present and authorized it selects the workflow the turn starts focused on — explicit workflow_id > current_tab > the thread's remembered workflow.
    */
-  selection?: {
-    [key: string]: unknown
-  }
+  current_tab?: string
   /**
-   * When present, the agent edits this workflow's draft. Ownership-checked (403 if not the caller's workflow).
+   * Explicit read-only workflow references for this turn, independent of open_tabs. Omitted preserves legacy open-tab context; an empty array means no additional workflow context. The editable target is selected by workflow_id and excluded from references. Entries are workspace-authorized, deduplicated, capped at 50, and names truncated to 120 characters. References need not be open in the editor.
    */
-  workflow_id?: string
+  workflow_references?: Array<{
+    workflow_id: string
+    name?: string
+  }>
 }
 
 /**

@@ -2301,8 +2301,12 @@ describe('AgentPanelRoot workflow binding', () => {
     await sendFromComposer('keep editing current')
     expect(bodies[0]).toMatchObject({
       workflow_id: 'wf-42',
-      current_tab: 'wf-42',
-      open_tabs: [{ workflow_id: 'wf-42', name: 'current' }]
+
+      open_tabs: [
+        { workflow_id: 'wf-42', name: 'current' },
+        { workflow_id: 'wf-other', name: 'other' }
+      ],
+      workflow_references: []
     })
   })
 
@@ -2468,7 +2472,7 @@ describe('AgentPanelRoot workflow binding', () => {
       await sendFromComposer('use my latest edits')
       expect(bodies[0]).toMatchObject({
         workflow_id: 'wf-other',
-        current_tab: 'wf-other',
+
         draft: { content: draft }
       })
     }
@@ -2758,7 +2762,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     expect(bodies[1]).toMatchObject({
       workflow_id: 'wf-42',
-      current_tab: 'wf-42',
+
       draft: { content: { id: 'wf-42' } }
     })
   })
@@ -2800,7 +2804,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     expect(bodies[0]).toMatchObject({
       workflow_id: 'wf-42',
-      current_tab: 'wf-42',
+
       open_tabs: [{ workflow_id: 'wf-42', name: 'current' }]
     })
   })
@@ -3105,8 +3109,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await renderAndSend('first message')
 
     expect(bodies[0]).toMatchObject({
-      open_tabs: [{ workflow_id: 'wf-42', name: 'current' }],
-      current_tab: 'wf-42'
+      open_tabs: [{ workflow_id: 'wf-42', name: 'current' }]
     })
   })
 
@@ -3326,7 +3329,7 @@ describe('AgentPanelRoot workflow binding', () => {
           name: 'all-in-one-image-edit-models.app'
         }
       ],
-      current_tab: 'wf-all-in-one',
+
       draft: { content: activeState }
     })
     expect(
@@ -3426,8 +3429,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await renderAndSend('first message')
 
     expect(bodies[0]).toMatchObject({
-      open_tabs: [{ workflow_id: 'wf-42', name: 'current' }],
-      current_tab: 'wf-42'
+      open_tabs: [{ workflow_id: 'wf-42', name: 'current' }]
     })
   })
 
@@ -3452,11 +3454,13 @@ describe('AgentPanelRoot workflow binding', () => {
   })
 
   it('sends explicit references separately from the complete editor snapshot', async () => {
-    makeTab('wf-42')
+    const target = makeTab('wf-42')
     const referenced = addTab('workflows/reference.json')
     const ordinary = addTab('workflows/ordinary.json')
     useAgentWorkflowTabBindingStore().bind('wf-reference', referenced.path)
     useAgentWorkflowTabBindingStore().bind('wf-ordinary', ordinary.path)
+    hostStores.workflow.openTabPaths.delete(target.path)
+    hostStores.workflow.openTabPaths.add(target.path)
     const bodies = mockMessagesEndpoint('wf-42')
 
     renderWithSelectedTarget()
@@ -3470,9 +3474,9 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[0]).toMatchObject({
       workflow_id: 'wf-42',
       open_tabs: [
-        { workflow_id: 'wf-42', name: 'current' },
         { workflow_id: 'wf-reference', name: 'reference' },
-        { workflow_id: 'wf-ordinary', name: 'ordinary' }
+        { workflow_id: 'wf-ordinary', name: 'ordinary' },
+        { workflow_id: 'wf-42', name: 'current' }
       ],
       workflow_references: [{ workflow_id: 'wf-reference', name: 'reference' }]
     })
@@ -3491,7 +3495,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[0]).not.toHaveProperty('current_tab')
   })
 
-  it('keeps current_tab pinned when the viewed tab has no cloud id', async () => {
+  it('keeps the editable target when viewing an unbound tab without current_tab fallback', async () => {
     makeTab('wf-42')
     const bodies = mockMessagesEndpoint('wf-42')
 
@@ -3507,7 +3511,8 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[1]).toMatchObject({
       open_tabs: [{ workflow_id: 'wf-42', name: 'current' }]
     })
-    expect(bodies[1]).toHaveProperty('current_tab', 'wf-42')
+    expect(bodies[1]).toHaveProperty('workflow_id', 'wf-42')
+    expect(bodies[1]).not.toHaveProperty('current_tab')
   })
 
   it('keeps an existing thread pinned when viewing an unsaved tab', async () => {
@@ -3527,7 +3532,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     expect(bodies[1]).toMatchObject({
       workflow_id: 'wf-42',
-      current_tab: 'wf-42',
+
       draft: { content: { id: 'wf-42' } }
     })
     expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-42')).toBe(
@@ -3812,8 +3817,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await screen.findByRole('button', { name: 'Send' })
     await sendFromComposer('second turn')
     expect(bodies[1]).toMatchObject({
-      workflow_id: 'wf-42',
-      current_tab: 'wf-42'
+      workflow_id: 'wf-42'
     })
   })
 

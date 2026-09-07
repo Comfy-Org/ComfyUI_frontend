@@ -1,3 +1,4 @@
+import type { AgentPostMessageRequest } from '@comfyorg/ingest-types'
 import type { z } from 'zod'
 
 import { api } from '@/scripts/api'
@@ -39,15 +40,10 @@ export class AgentApiError extends Error {
   }
 }
 
-interface OpenTabEntry {
-  workflow_id: string
-  name: string
-}
-
-export interface OpenTabsSnapshot {
-  open_tabs: OpenTabEntry[]
-  current_tab?: string
-}
+export type OpenTabsSnapshot = Pick<
+  AgentPostMessageRequest,
+  'open_tabs' | 'current_tab'
+>
 
 /** An omitted `version` makes this content authoritative for the backend CAS. */
 export interface DraftSnapshot {
@@ -60,6 +56,7 @@ export interface PostMessageInput {
   workflowId?: string
   selection?: Record<string, unknown>
   attachments?: string[]
+  workflowReferences?: AgentPostMessageRequest['workflow_references']
   tabs?: OpenTabsSnapshot
   draft?: DraftSnapshot
 }
@@ -125,6 +122,8 @@ export function createAgentRestClient() {
       if (req.tabs.current_tab !== undefined)
         body.current_tab = req.tabs.current_tab
     }
+    if (req.workflowReferences !== undefined)
+      body.workflow_references = req.workflowReferences
     if (req.selection !== undefined) body.selection = req.selection
     if (req.attachments !== undefined) body.attachments = req.attachments
     if (req.draft !== undefined) body.draft = req.draft
