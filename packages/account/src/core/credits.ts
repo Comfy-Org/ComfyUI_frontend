@@ -4,7 +4,7 @@
  * stale token is allowed. Presentation (unit conversion, chips, focus
  * triggers) stays with the host.
  */
-import type { SessionClient } from './session.js'
+import type { AccountCredential, SessionClient } from './session.js'
 
 export type CreditsState =
   | { readonly status: 'unknown' }
@@ -25,8 +25,142 @@ export interface BillingClient {
   reset: () => void
 }
 
+/** Ceiling on a balance read; a hung fetch must not pin the state stale. */
+const DEFAULT_BALANCE_TIMEOUT_MS = 15_000
+
+function readBalanceCents(body: unknown): number | undefined {
+  if (typeof body !== 'object' || body === null) return undefined
+  if (
+    'effective_balance_micros' in body &&
+    typeof body.effective_balance_micros === 'number'
+  ) {
+    return body.effective_balance_micros
+  }
+  // Older responses carry only amount_micros.
+  if ('amount_micros' in body && typeof body.amount_micros === 'number') {
+    return body.amount_micros
+  }
+  return undefined
+}
+
 export function createBillingClient(
-  _options: BillingClientOptions
+  options: BillingClientOptions
 ): BillingClient {
-  throw new Error('unimplemented')
+  const {
+    session,
+    balanceUrl,
+    fetchImpl = globalThis.fetch,
+    timeoutMs = DEFAULT_BALANCE_TIMEOUT_MS
+  } = options
+
+  let state: CreditsState = { status: 'unknown' }
+  const listeners = new Set<(state: CreditsState) => void>()
+  let inFlight: Promise<void> | undefined
+  let inFlightIdentity: string | undefined
+
+  function publish(next: CreditsState): void {
+    state = next
+    listeners.forEach((listener) => listener(state))
+  }
+
+  function activeCredential(): AccountCredential | undefined {
+    const snapshot = session.getSnapshot()
+    return snapshot.phase === 'authenticated' ? snapshot.session : undefined
+  }
+
+  const identityKey = (uid: string, token: string) => `${uid}|${token}`
+
+  async function fetchBalance(token: string): Promise<CreditsState> {
+    let response: Response
+    try {
+      response = await fetchImpl(balanceUrl, {
+        headers: { Authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(timeoutMs)
+      })
+    } catch {
+      return { status: 'error' }
+    }
+    if (!response.ok) {
+      return { status: 'error', unauthorized: response.status === 401 }
+    }
+    let body: unknown
+    try {
+      body = await response.json()
+    } catch {
+      return { status: 'error' }
+    }
+    const cents = readBalanceCents(body)
+    if (cents === undefined) return { status: 'error' }
+    return { status: 'ok', cents }
+  }
+
+  async function runRefresh(): Promise<void> {
+    const active = activeCredential()
+    if (!active) {
+      publish({ status: 'unknown' })
+      return
+    }
+    const uid = active.uid
+    let token = active.token
+    let result = await fetchBalance(token)
+    // One re-mint on a stale token, mirroring the run path's single retry.
+    // Other failures are not the token's fault, so no mint is spent on them.
+    if (result.status === 'error' && result.unauthorized) {
+      const reminted = await session.remint()
+      if (reminted?.status === 'ok') {
+        token = reminted.session.token
+        result = await fetchBalance(token)
+      }
+    }
+    // Publish only if the same user and token are still live. A sign-out,
+    // user switch, or re-mint must not publish an older read.
+    const live = activeCredential()
+    if (live?.uid === uid && live.token === token) {
+      publish(result)
+    }
+  }
+
+  const client: BillingClient = {
+    getState: () => state,
+    subscribe(listener) {
+      listeners.add(listener)
+      listener(state)
+      return () => listeners.delete(listener)
+    },
+    /**
+     * Session-change and refocus can fire together; without dedupe they race
+     * and the last fetch to resolve wins, so a slow earlier read can
+     * overwrite a fresh later one. Concurrent callers for the same identity
+     * share one in-flight refresh; a caller for a different identity starts
+     * its own. A forced call queued behind an in-flight read inherits that
+     * read's remaining time on top of its own — it never drops, but it has
+     * no independent ceiling until the earlier read settles.
+     */
+    refresh(refreshOptions = {}) {
+      const active = activeCredential()
+      const identity = active
+        ? identityKey(active.uid, active.token)
+        : undefined
+
+      if (inFlight !== undefined && inFlightIdentity === identity) {
+        return refreshOptions.force
+          ? inFlight.then(() => client.refresh())
+          : inFlight
+      }
+
+      inFlightIdentity = identity
+      const refresh = runRefresh().finally(() => {
+        if (inFlight === refresh) {
+          inFlight = undefined
+          inFlightIdentity = undefined
+        }
+      })
+      inFlight = refresh
+      return refresh
+    },
+    reset() {
+      publish({ status: 'unknown' })
+    }
+  }
+  return client
 }
