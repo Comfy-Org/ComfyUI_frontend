@@ -119,6 +119,52 @@ describe('WorkflowSelectorChip', () => {
     expect(targetRow).toBeChecked()
   })
 
+  it.for([null, 'workflows/closed.json'])(
+    'omits section headings when no visible tab matches the picker (%s)',
+    async (visibleTabPath) => {
+      const selectTab = vi.fn(async () => true)
+      const { user } = renderChip({ visibleTabPath, selectTab })
+      await user.click(trigger())
+
+      expect(await screen.findAllByRole('menuitemradio')).toHaveLength(2)
+      expect(screen.queryByText('Current tab')).toBeNull()
+      expect(screen.queryByText('Other open workflows')).toBeNull()
+      expect(
+        screen.queryByRole('group', { name: 'Other open workflows' })
+      ).toBeNull()
+      expect(
+        screen.getByRole('menuitemradio', { name: 'portrait' })
+      ).toBeChecked()
+      await user.click(screen.getByRole('menuitemradio', { name: 'upscale' }))
+      expect(selectTab).toHaveBeenCalledExactlyOnceWith(tabs[1].path)
+      expect(screen.queryByRole('menu')).toBeNull()
+    }
+  )
+
+  it('hides the other-workflows heading when search excludes the current tab and restores it on clearing', async () => {
+    const { user } = renderChip()
+    await user.click(trigger())
+    const search = await screen.findByPlaceholderText(
+      enMessages.agent.searchWorkflows
+    )
+    await user.type(search, 'ups')
+
+    expect(screen.getAllByRole('menuitemradio')).toHaveLength(1)
+    expect(screen.getByRole('menuitemradio', { name: 'upscale' })).toBeVisible()
+    expect(screen.queryByText('Current tab')).toBeNull()
+    expect(screen.queryByText('Other open workflows')).toBeNull()
+    expect(
+      screen.queryByRole('group', { name: 'Other open workflows' })
+    ).toBeNull()
+
+    await user.clear(search)
+    expect(screen.getByRole('group', { name: 'Current tab' })).toBeVisible()
+    expect(
+      screen.getByRole('group', { name: 'Other open workflows' })
+    ).toBeVisible()
+    expect(screen.getAllByRole('menuitemradio')).toHaveLength(2)
+  })
+
   it('exposes only the active tab as the checked menu item', async () => {
     const { user } = renderChip()
     await user.click(trigger())
