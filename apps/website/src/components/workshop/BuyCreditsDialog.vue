@@ -191,7 +191,16 @@ const stepperClass =
           </span>
         </div>
 
-        <div class="flex flex-wrap gap-3">
+        <div class="flex flex-wrap items-center justify-end gap-3">
+          <Button
+            variant="outline"
+            size="lg"
+            class="px-5"
+            data-testid="buy-credits-cancel"
+            @click="open = false"
+          >
+            {{ t('workshop.credits.cancel', locale) }}
+          </Button>
           <Button
             size="lg"
             class="px-5"
@@ -205,15 +214,6 @@ const stepperClass =
             <template #append>
               <ExternalLink class="size-4" aria-hidden="true" />
             </template>
-          </Button>
-          <Button
-            variant="outline"
-            size="lg"
-            class="px-5"
-            data-testid="buy-credits-cancel"
-            @click="open = false"
-          >
-            {{ t('workshop.credits.cancel', locale) }}
           </Button>
         </div>
       </div>
@@ -248,7 +248,16 @@ const stepperClass =
           </dd>
         </dl>
 
-        <div class="flex flex-wrap gap-3">
+        <div class="flex flex-wrap items-center justify-end gap-3">
+          <Button
+            variant="outline"
+            size="lg"
+            class="px-5"
+            data-testid="buy-credits-back"
+            @click="standIn = false"
+          >
+            {{ t('workshop.credits.back', locale) }}
+          </Button>
           <Button
             size="lg"
             class="px-5"
@@ -261,15 +270,6 @@ const stepperClass =
                 `$${format(usd)}`
               )
             }}
-          </Button>
-          <Button
-            variant="outline"
-            size="lg"
-            class="px-5"
-            data-testid="buy-credits-back"
-            @click="standIn = false"
-          >
-            {{ t('workshop.credits.back', locale) }}
           </Button>
         </div>
       </div>
@@ -387,7 +387,7 @@ const stepperClass =
 
         <Button
           size="lg"
-          class="w-fit px-5"
+          class="ml-auto w-fit px-5"
           data-testid="buy-credits-resume"
           @click="finish"
         >
@@ -430,10 +430,7 @@ const stepperClass =
           </span>
         </div>
 
-        <div class="flex flex-wrap gap-3">
-          <Button size="lg" class="px-5" data-testid="buy-credits-support">
-            {{ t('workshop.credits.contactSupport', locale) }}
-          </Button>
+        <div class="flex flex-wrap items-center justify-end gap-3">
           <Button
             variant="outline"
             size="lg"
@@ -442,6 +439,9 @@ const stepperClass =
             @click="finish"
           >
             {{ t('workshop.credits.close', locale) }}
+          </Button>
+          <Button size="lg" class="px-5" data-testid="buy-credits-support">
+            {{ t('workshop.credits.contactSupport', locale) }}
           </Button>
         </div>
       </div>
