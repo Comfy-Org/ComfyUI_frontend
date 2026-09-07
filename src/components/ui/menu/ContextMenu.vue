@@ -5,6 +5,7 @@ import {
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
+import { useEventListener } from '@vueuse/core'
 import type { ComponentPublicInstance } from 'vue'
 import { nextTick, ref, useId, useTemplateRef } from 'vue'
 
@@ -25,6 +26,7 @@ const { id: providedId, model } = defineProps<{
 const emit = defineEmits<{ show: []; hide: [] }>()
 
 const content = useTemplateRef<ComponentPublicInstance>('content')
+const trigger = useTemplateRef<HTMLElement>('trigger')
 const visible = ref(false)
 const generatedId = useId()
 const anchor = ref({ x: 0, y: 0 })
@@ -64,6 +66,23 @@ function hide() {
   setOpen(false)
 }
 
+useEventListener(
+  document,
+  'pointerdown',
+  (event) => {
+    const target = event.target
+    if (
+      !visible.value ||
+      !(target instanceof Element) ||
+      trigger.value?.contains(target) ||
+      target.closest('[data-reka-menu-content]')
+    )
+      return
+    hide()
+  },
+  { capture: true }
+)
+
 function toggle(event: Event) {
   const wrapper = content.value?.$el
   const element =
@@ -88,6 +107,7 @@ defineExpose({ container: content, hide, show, toggle, visible })
   <DropdownMenuRoot :open="visible" :modal="false" @update:open="updateOpen">
     <DropdownMenuTrigger as-child>
       <button
+        ref="trigger"
         type="button"
         tabindex="-1"
         aria-hidden="true"

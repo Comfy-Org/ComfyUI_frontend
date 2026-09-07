@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { defineComponent, ref } from 'vue'
+import { defineComponent, nextTick, ref } from 'vue'
 
 import Menu from './Menu.vue'
 import ContextMenu from './ContextMenu.vue'
@@ -71,7 +71,7 @@ describe('Menu', () => {
     expect(await screen.findByRole('menuitem', { name: 'Run' })).toBeVisible()
   })
 
-  it('opens a context menu at the pointer and dismisses outside', async () => {
+  it('dismisses a context menu before an outside pointer event is stopped', async () => {
     render(
       defineComponent({
         components: { ContextMenu },
@@ -80,7 +80,7 @@ describe('Menu', () => {
           return { menu }
         },
         template:
-          '<button @contextmenu.prevent="menu?.show($event)">Target</button><button>Outside</button><ContextMenu ref="menu" :model="[{ label: \'Inspect\' }]" />'
+          '<button @contextmenu.prevent="menu?.show($event)">Target</button><button @pointerdown.stop>Outside</button><ContextMenu ref="menu" :model="[{ label: \'Inspect\' }]" />'
       })
     )
     const user = userEvent.setup({ pointerEventsCheck: 0 })
@@ -98,6 +98,33 @@ describe('Menu', () => {
       target: screen.getByRole('button', { name: 'Outside', hidden: true })
     })
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+  })
+
+  it('keeps a context menu open when focus moves outside', async () => {
+    render(
+      defineComponent({
+        components: { ContextMenu },
+        setup() {
+          const menu = ref<InstanceType<typeof ContextMenu>>()
+          return { menu }
+        },
+        template:
+          '<button @contextmenu.prevent="menu?.show($event)">Target</button><button>Outside</button><ContextMenu ref="menu" :model="[{ label: \'Inspect\' }]" />'
+      })
+    )
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+    await user.pointer({
+      keys: '[MouseRight]',
+      target: screen.getByRole('button', { name: 'Target' })
+    })
+    await screen.findByRole('menu')
+    screen.getByRole('button', { name: 'Outside', hidden: true }).focus()
+    await nextTick()
+    await nextTick()
+    await nextTick()
+
+    expect(screen.getByRole('menu')).toBeVisible()
   })
 
   it('opens from a stopped pointer context-menu event', async () => {
