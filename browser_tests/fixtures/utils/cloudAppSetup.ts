@@ -18,20 +18,22 @@ import { mockWorkspace } from '@e2e/fixtures/utils/workspaceMocks'
 export const APP_URL =
   process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
-// Disable the experimental Asset API: with it on (cloud default) the unmocked
-// asset endpoints 403 and workflow restore throws uncaught, aborting the
-// GraphCanvas onMounted chain before the URL action loaders.
-const DEFAULT_SETTINGS = { 'Comfy.Assets.UseAssetAPI': false }
-
 // The URL action loaders run at the tail of GraphCanvas onMounted, so the boot
 // chain must not throw before them: a missing settings subpath, prompt
-// exec_info, or queue status each abort that chain.
+// exec_info, queue status, or an unmocked asset endpoint each abort that chain.
 async function mockGraphBootExtras(page: Page) {
   // Boot only reads these; fall back on any write so an unexpected POST/PUT
   // surfaces instead of being masked by a blanket 200.
   await page.route('**/api/settings/**', (route) => {
     if (route.request().method() !== 'GET') return route.fallback()
     return route.fulfill(jsonRoute({}))
+  })
+  // Cloud always has assets enabled, so the unmocked asset endpoints would 403
+  // and workflow restore would throw uncaught. One glob covers every shape boot
+  // asks for: `/api/assets`, `?query`, `/seed`, `/<id>`.
+  await page.route('**/api/assets**', (route) => {
+    if (route.request().method() !== 'GET') return route.fallback()
+    return route.fulfill(jsonRoute({ assets: [], total: 0, has_more: false }))
   })
   await page.route('**/api/prompt', (route) => {
     if (route.request().method() !== 'GET') return route.fallback()
@@ -71,10 +73,7 @@ export async function setupCloudApp(
     billingCapabilitiesStatus
   }: CloudAppSetupOptions
 ) {
-  await mockCloudBoot(page, {
-    features: features ?? {},
-    settings: DEFAULT_SETTINGS
-  })
+  await mockCloudBoot(page, { features: features ?? {} })
   await mockGraphBootExtras(page)
   await mockBilling(page, {
     workspaceId: workspace.id,

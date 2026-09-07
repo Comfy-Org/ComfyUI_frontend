@@ -8,12 +8,12 @@ const test = mergeTests(comfyPageFixture, assetApiFixture)
 const assetBrowserModal = '[data-component-id="AssetBrowserModal"]'
 
 test.describe('Model library tab routing', () => {
-  test('Opens the asset browser when both asset settings are enabled', async ({
+  test('Opens the asset browser when the assets capability and browser setting are enabled', async ({
     comfyPage,
     assetApi
   }) => {
     await assetApi.mock()
-    await comfyPage.settings.setSetting('Comfy.Assets.UseAssetAPI', true)
+    await comfyPage.featureFlags.setServerFlagsPersistent({ assets: true })
     await comfyPage.settings.setSetting(
       'Comfy.ModelLibrary.UseAssetBrowser',
       true
@@ -25,11 +25,13 @@ test.describe('Model library tab routing', () => {
     await expect(comfyPage.menu.modelLibraryTab.modelTree).toHaveCount(0)
   })
 
-  test('Keeps the sidebar tree when the asset API is disabled', async ({
+  test('Keeps the sidebar tree when the assets capability is disabled', async ({
     comfyPage
   }) => {
-    // With the asset API off, the browser setting is inert.
-    await comfyPage.settings.setSetting('Comfy.Assets.UseAssetAPI', false)
+    // With the backend assets capability off, the browser setting is inert.
+    // Forced false rather than left unset so the real backend's handshake
+    // cannot decide which branch this test exercises.
+    await comfyPage.featureFlags.setServerFlagsPersistent({ assets: false })
     await comfyPage.settings.setSetting(
       'Comfy.ModelLibrary.UseAssetBrowser',
       true
@@ -41,12 +43,12 @@ test.describe('Model library tab routing', () => {
     await expect(comfyPage.page.locator(assetBrowserModal)).toHaveCount(0)
   })
 
-  test('Keeps the sidebar tree when only the asset API is enabled', async ({
+  test('Keeps the sidebar tree when only the assets capability is enabled', async ({
     comfyPage,
     assetApi
   }) => {
     await assetApi.mock()
-    await comfyPage.settings.setSetting('Comfy.Assets.UseAssetAPI', true)
+    await comfyPage.featureFlags.setServerFlagsPersistent({ assets: true })
     await comfyPage.settings.setSetting(
       'Comfy.ModelLibrary.UseAssetBrowser',
       false
@@ -61,16 +63,14 @@ test.describe('Model library tab routing', () => {
 
 test.describe('Model library tab routing on cloud', { tag: '@cloud' }, () => {
   test('Defaults to the asset browser', async ({ comfyPage, assetApi }) => {
-    // Cloud defaults both asset settings on; no explicit settings here so the
-    // test pins the defaults, not just the routing.
+    // Cloud hardwires the assets capability on and defaults the browser
+    // setting on; nothing is forced here so the test pins that default, not
+    // just the routing.
     await assetApi.mock()
 
     await comfyPage.menu.modelLibraryTab.tabButton.click()
 
-    // Assert the defaults themselves, not only the routing result.
-    await expect
-      .poll(() => comfyPage.settings.getSetting('Comfy.Assets.UseAssetAPI'))
-      .toBe(true)
+    // Assert the default itself, not only the routing result.
     await expect
       .poll(() =>
         comfyPage.settings.getSetting('Comfy.ModelLibrary.UseAssetBrowser')
