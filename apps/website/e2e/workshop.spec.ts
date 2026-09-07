@@ -34,7 +34,7 @@ test.describe('Workshop V2', () => {
       'true'
     )
     await hub.getByTestId('hub-tab-all').click()
-    await hub.getByTestId('hub-search').fill('minimax h3')
+    await hub.getByTestId('workshop-search').fill('minimax h3')
     await expect(hub.getByTestId('hub-card-link').first()).toContainText(
       'MiniMax H3'
     )
@@ -166,7 +166,7 @@ test.describe('Workshop catalog', () => {
     await page.goto('/workshop/models/kling-ai/')
     await page
       .getByTestId('model-hero')
-      .getByRole('link', { name: 'Video' })
+      .getByRole('link', { name: 'Video', exact: true })
       .click()
     await expect(page).toHaveURL(/\/workshop\/?\?modality=video$/)
     await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
