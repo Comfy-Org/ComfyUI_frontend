@@ -3,8 +3,8 @@ import { ref, shallowRef } from 'vue'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { findActiveIndex, getOutputsForTask } from '@/services/jobOutputCache'
 import type { TaskItemImpl } from '@/stores/queueStore'
-import type { AugmentedResultItem } from '@/stores/resultItem'
-import { resultItemUrl } from '@/stores/resultItem'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import { resultItemUrl } from '@/utils/resultItemUrl'
 
 /**
  * Manages result gallery state and activation for queue items.

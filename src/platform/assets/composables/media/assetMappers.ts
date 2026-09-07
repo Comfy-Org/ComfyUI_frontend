@@ -5,8 +5,8 @@ import type { AssetContext } from '@/platform/assets/schemas/mediaAssetSchema'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { api } from '@/scripts/api'
 import type { TaskItemImpl } from '@/stores/queueStore'
-import type { AugmentedResultItem } from '@/stores/resultItem'
-import { resultItemPreviewUrl, resultItemUrl } from '@/stores/resultItem'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
 import {
   getMediaTypeFromFilename,
   isPreviewableMediaType

@@ -6,7 +6,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
 import { api } from '@/scripts/api'
-import type { AugmentedResultItem } from '@/stores/resultItem'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 import {
   renderMarkdownToHtml,
   resolveMarkdownUrl

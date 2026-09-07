@@ -1,6 +1,6 @@
 import type { Token } from 'marked'
 
-import type { AugmentedResultItem } from '@/stores/resultItem'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 import type { MediaType } from '@/utils/formatUtil'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 

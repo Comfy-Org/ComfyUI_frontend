@@ -111,11 +111,8 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import JobDetailsHoverPopover from '@/components/queue/job/JobDetailsHoverPopover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
-import {
-  isImageResult,
-  isVideoResult,
-  resultItemPreviewUrl
-} from '@/stores/resultItem'
+import { resultItemPreviewUrl } from '@/utils/resultItemUrl'
+import { isImageResult, isVideoResult } from '@/utils/resultItem'
 import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 import { iconForJobState } from '@/utils/queueDisplay'

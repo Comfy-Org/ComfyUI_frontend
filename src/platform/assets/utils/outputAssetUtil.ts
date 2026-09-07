@@ -8,8 +8,8 @@ import {
   getJobDetail,
   getPreviewableOutputsFromJobDetail
 } from '@/services/jobOutputCache'
-import type { AugmentedResultItem } from '@/stores/resultItem'
-import { resultItemPreviewUrl, resultItemUrl } from '@/stores/resultItem'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
 
 type OutputAssetMapOptions = {
   jobId: string

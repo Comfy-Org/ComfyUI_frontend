@@ -143,7 +143,7 @@ vi.mock('@/utils/formatUtil', async (importOriginal) => ({
 import { useJobMenu } from '@/composables/queue/useJobMenu'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { TaskItemImpl } from '@/stores/queueStore'
-import type { AugmentedResultItem } from '@/stores/resultItem'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
 type MockTaskRef = Record<string, unknown>
 

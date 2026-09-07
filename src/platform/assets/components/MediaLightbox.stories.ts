@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
 
 import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
-import type { AugmentedResultItem } from '@/stores/resultItem'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
 type MockItem = Pick<AugmentedResultItem, 'filename' | 'url'>
 

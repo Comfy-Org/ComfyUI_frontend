@@ -1,6 +1,6 @@
 import type { NodeExecutionOutput, ResultItem } from '@/schemas/apiSchema'
 import { resultItemType } from '@/schemas/apiSchema'
-import type { AugmentedResultItem } from '@/stores/resultItem'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
 const METADATA_KEYS = new Set(['animated', 'text'])
 

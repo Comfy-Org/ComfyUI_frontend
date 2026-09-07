@@ -17,11 +17,9 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 import type { TaskOutput } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import type { TaskItemImpl } from '@/stores/queueStore'
-import type { AugmentedResultItem } from '@/stores/resultItem'
-import {
-  filterPreviewableResults,
-  findResultIndexByUrl
-} from '@/stores/resultItem'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import { findResultIndexByUrl } from '@/utils/resultItemUrl'
+import { filterPreviewableResults } from '@/utils/resultItem'
 import { parseTaskOutput } from '@/stores/resultItemParsing'
 
 const MAX_TASK_CACHE_SIZE = 50

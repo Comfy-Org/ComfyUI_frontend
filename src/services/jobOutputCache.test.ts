@@ -17,7 +17,7 @@ import {
   getOutputsForTask
 } from '@/services/jobOutputCache'
 import { TaskItemImpl } from '@/stores/queueStore'
-import type { AugmentedResultItem } from '@/stores/resultItem'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
 vi.mock('@/platform/remote/comfyui/jobs/fetchJobs', () => ({
   fetchJobDetail: vi.fn(),

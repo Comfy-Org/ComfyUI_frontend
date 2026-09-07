@@ -13,8 +13,8 @@
 
 <script setup lang="ts">
 import WaveAudioPlayer from '@/components/common/WaveAudioPlayer.vue'
-import type { AugmentedResultItem } from '@/stores/resultItem'
-import { resultItemUrl } from '@/stores/resultItem'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import { resultItemUrl } from '@/utils/resultItemUrl'
 
 const { result } = defineProps<{
   result: AugmentedResultItem

@@ -5,8 +5,8 @@ import {
   getMediaType,
   mediaTypes
 } from '@/renderer/extensions/linearMode/mediaTypes'
-import type { AugmentedResultItem } from '@/stores/resultItem'
-import { resultItemUrl } from '@/stores/resultItem'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import { resultItemUrl } from '@/utils/resultItemUrl'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import VideoPlayOverlay from '@/platform/assets/components/VideoPlayOverlay.vue'

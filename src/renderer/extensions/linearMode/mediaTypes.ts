@@ -1,7 +1,7 @@
 import { t } from '@/i18n'
 
-import type { AugmentedResultItem } from '@/stores/resultItem'
-import { isImageResult, isTextResult, isVideoResult } from '@/stores/resultItem'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import { isImageResult, isTextResult, isVideoResult } from '@/utils/resultItem'
 
 type StatItem = { content?: string; iconClass?: string }
 export const mediaTypes: Record<string, StatItem> = {

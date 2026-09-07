@@ -10,12 +10,12 @@ import { computed } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExtensionStore } from '@/stores/extensionStore'
-import type { AugmentedResultItem } from '@/stores/resultItem'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 import {
-  resultItemHtmlVideoType,
   resultItemUrl,
   resultItemVhsAdvancedPreviewUrl
-} from '@/stores/resultItem'
+} from '@/utils/resultItemUrl'
+import { resultItemHtmlVideoType } from '@/utils/resultItem'
 
 /* MediaLightbox retains this component via KeepAlive include, which matches on
    the registered component name. */

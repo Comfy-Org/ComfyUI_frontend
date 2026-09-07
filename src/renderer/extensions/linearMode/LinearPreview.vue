@@ -19,8 +19,8 @@ import OutputHistory from '@/renderer/extensions/linearMode/OutputHistory.vue'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
 import type { OutputSelection } from '@/renderer/extensions/linearMode/linearModeTypes'
 import { app } from '@/scripts/app'
-import type { AugmentedResultItem } from '@/stores/resultItem'
-import { resultItemUrl } from '@/stores/resultItem'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import { resultItemUrl } from '@/utils/resultItemUrl'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()

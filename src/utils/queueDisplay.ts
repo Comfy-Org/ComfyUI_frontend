@@ -1,5 +1,6 @@
 import type { TaskItemImpl } from '@/stores/queueStore'
-import { isImageResult, resultItemUrl } from '@/stores/resultItem'
+import { resultItemUrl } from '@/utils/resultItemUrl'
+import { isImageResult } from '@/utils/resultItem'
 import type { JobState } from '@/types/queue'
 import { formatDuration } from '@/utils/formatUtil'
 import { clampPercentInt, formatPercent0 } from '@/utils/numberUtil'

@@ -1,7 +1,7 @@
 import { marked } from 'marked'
 import { describe, expect, it } from 'vitest'
 
-import { isImageResult } from '@/stores/resultItem'
+import { isImageResult } from '@/utils/resultItem'
 
 import {
   classifyAssetUrl,

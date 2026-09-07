@@ -1,5 +1,5 @@
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type { AugmentedResultItem } from '@/stores/resultItem'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
 export interface InProgressItem {
   id: string

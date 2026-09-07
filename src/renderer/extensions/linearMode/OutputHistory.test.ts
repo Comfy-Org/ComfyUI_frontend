@@ -12,7 +12,7 @@ import type {
   InProgressItem,
   OutputSelection
 } from '@/renderer/extensions/linearMode/linearModeTypes'
-import type { AugmentedResultItem } from '@/stores/resultItem'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 import type { PagedList } from '@/utils/pagedList'
 
 import OutputHistory from './OutputHistory.vue'

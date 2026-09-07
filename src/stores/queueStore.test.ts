@@ -14,7 +14,7 @@ import {
   resultItemHtmlAudioType,
   resultItemHtmlVideoType,
   resultItemSupportsPreview
-} from '@/stores/resultItem'
+} from '@/utils/resultItem'
 
 // Fixture factory for JobListItem
 function createJob(

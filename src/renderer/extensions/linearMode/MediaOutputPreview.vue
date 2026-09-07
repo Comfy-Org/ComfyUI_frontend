@@ -5,8 +5,8 @@ import { useTextFileContent } from '@/composables/useTextFileContent'
 import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
 import VideoPreview from '@/renderer/extensions/linearMode/VideoPreview.vue'
 import { getMediaType } from '@/renderer/extensions/linearMode/mediaTypes'
-import type { AugmentedResultItem } from '@/stores/resultItem'
-import { resultItemUrl } from '@/stores/resultItem'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import { resultItemUrl } from '@/utils/resultItemUrl'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const Preview3d = defineAsyncComponent(

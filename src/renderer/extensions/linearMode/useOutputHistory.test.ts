@@ -7,7 +7,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { InProgressItem } from '@/renderer/extensions/linearMode/linearModeTypes'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
 import { useAppModeStore } from '@/stores/appModeStore'
-import type { AugmentedResultItem } from '@/stores/resultItem'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 import { toNodeId } from '@/types/nodeId'
 
 const mediaRef = ref<AssetItem[]>([])
