@@ -13,6 +13,7 @@ import ToastRoot from './ToastRoot.vue'
 import ToastTitle from './ToastTitle.vue'
 import ToastViewport from './ToastViewport.vue'
 import { useToast } from './toastStore'
+import type { ToastId } from './toastStore'
 
 const toast = useToast()
 const { toasts } = storeToRefs(toast)
@@ -20,9 +21,19 @@ const { isActive: agentNodeSelectionActive } = storeToRefs(
   useAgentNodeSelectionStore()
 )
 const latestToastId = computed(() => toasts.value.at(-1)?.id)
+let escapeToastId: ToastId | undefined
 
-function preserveToastOnEscape(event: KeyboardEvent) {
-  event.preventDefault()
+function preserveToastOnEscape(id: ToastId) {
+  escapeToastId = id
+}
+
+function updateToastOpen(id: ToastId, open: boolean) {
+  if (open) return
+  if (escapeToastId === id) {
+    escapeToastId = undefined
+    return
+  }
+  toast.dismiss(id)
 }
 
 const icons = {
@@ -39,12 +50,13 @@ const icons = {
     <ToastRoot
       v-for="message in toasts"
       :key="message.id"
+      :open="true"
       :duration="message.duration"
       :role="message.role"
       data-testid="toast"
       :data-toast-kind="message.kind"
-      @escape-key-down="preserveToastOnEscape"
-      @update:open="(open) => !open && toast.dismiss(message.id)"
+      @escape-key-down="preserveToastOnEscape(message.id)"
+      @update:open="updateToastOpen(message.id, $event)"
     >
       <template v-if="message.kind === 'custom'">
         <component
