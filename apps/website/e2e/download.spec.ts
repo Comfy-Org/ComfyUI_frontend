@@ -1,5 +1,5 @@
-import type { Browser, BrowserContext, Page } from '@playwright/test'
-import { devices, expect } from '@playwright/test'
+import type { BrowserContext, Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
@@ -73,244 +73,239 @@ function heroLocator(page: Page) {
   })
 }
 
-async function openMobileDownloadPage(
-  browser: Browser,
-  path = '/download',
-  { cdpUnreachable = false } = {}
-) {
-  const context = await browser.newContext({ userAgent: IPHONE_UA })
-  const captured: CdpCapture[] = []
-  await routeCdp(context, captured, { unreachable: cdpUnreachable })
-  const page = await context.newPage()
-  await page.goto(path)
-  return { context, page, hero: heroLocator(page), captured }
-}
-
 test.describe('Download page @smoke', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/download')
-  })
-
   test('has correct title', async ({ page }) => {
+    await page.goto('/download')
     await expect(page).toHaveTitle(
       'Download Comfy Desktop - Run AI on Your Hardware'
     )
   })
 
   test('CloudBannerSection is visible with cloud link', async ({ page }) => {
+    await page.goto('/download')
     const link = page.getByRole('link', { name: /TRY COMFY CLOUD/i })
     await expect(link).toBeVisible()
     await expect(link).toHaveAttribute('href', 'https://cloud.comfy.org')
   })
 
   test('HeroSection heading and subtitle are visible', async ({ page }) => {
+    await page.goto('/download')
     await expect(
       page.getByRole('heading', { name: /Run on your hardware/i, level: 1 })
     ).toBeVisible()
     await expect(page.getByText(/The full ComfyUI engine/)).toBeVisible()
   })
 
-  test('HeroSection has download and GitHub buttons', async ({ browser }) => {
-    const context = await browser.newContext({ userAgent: WINDOWS_UA })
-    const captured: CdpCapture[] = []
-    await routeCdp(context, captured)
-    const page = await context.newPage()
-    await page.goto('/download')
+  test.describe('Windows desktop', () => {
+    test.use({ userAgent: WINDOWS_UA })
 
-    const hero = heroLocator(page)
-    const downloadBtn = hero.getByRole('link', { name: /DOWNLOAD DESKTOP/i })
-    await expect(downloadBtn).toBeVisible()
-    await expect(downloadBtn).toHaveAttribute('target', '_blank')
-    await expect(downloadBtn).toHaveAttribute(
-      'href',
-      'https://comfy.org/download/windows/nsis/x64'
-    )
-    await expect(downloadBtn).toHaveAttribute('data-astro-prefetch', 'false')
+    test('HeroSection has download and GitHub buttons', async ({
+      context,
+      page
+    }) => {
+      const captured: CdpCapture[] = []
+      await routeCdp(context, captured)
+      await page.goto('/download')
 
-    const githubBtn = hero.getByRole('link', { name: /INSTALL FROM GITHUB/i })
-    await expect(githubBtn).toBeVisible()
-    await expect(githubBtn).toHaveAttribute(
-      'href',
-      'https://github.com/Comfy-Org/ComfyUI#installing'
-    )
+      const hero = heroLocator(page)
+      const downloadBtn = hero.getByRole('link', { name: /DOWNLOAD DESKTOP/i })
+      await expect(downloadBtn).toBeVisible()
+      await expect(downloadBtn).toHaveAttribute('target', '_blank')
+      await expect(downloadBtn).toHaveAttribute(
+        'href',
+        'https://comfy.org/download/windows/nsis/x64'
+      )
+      await expect(downloadBtn).toHaveAttribute('data-astro-prefetch', 'false')
 
-    await expect(hero.getByRole('textbox')).toHaveCount(0)
+      const githubBtn = hero.getByRole('link', { name: /INSTALL FROM GITHUB/i })
+      await expect(githubBtn).toBeVisible()
+      await expect(githubBtn).toHaveAttribute(
+        'href',
+        'https://github.com/Comfy-Org/ComfyUI#installing'
+      )
 
-    // Desktop must never load the CDP SDK — settle the network, then assert silence.
-    await page.waitForLoadState('networkidle')
-    expect(captured).toHaveLength(0)
+      await expect(hero.getByRole('textbox')).toHaveCount(0)
 
-    await context.close()
-  })
-
-  test('HeroSection falls back to both Windows + Mac when UA is unrecognized', async ({
-    browser
-  }) => {
-    const context = await browser.newContext({ userAgent: LINUX_UA })
-    const page = await context.newPage()
-    await page.goto('/download')
-
-    const hero = heroLocator(page)
-
-    const windowsBtn = hero.locator(
-      'a[href="https://comfy.org/download/windows/nsis/x64"]'
-    )
-    await expect(windowsBtn).toBeVisible()
-    await expect(windowsBtn).toHaveText(/DOWNLOAD DESKTOP/i)
-
-    const macBtn = hero.locator(
-      'a[href="https://download.comfy.org/mac/dmg/arm64"]'
-    )
-    await expect(macBtn).toBeVisible()
-    await expect(macBtn).toHaveText(/DOWNLOAD DESKTOP/i)
-
-    await expect(
-      hero.getByRole('link', { name: /DOWNLOAD DESKTOP/i })
-    ).toHaveCount(2)
-
-    await expect(hero.getByRole('textbox')).toHaveCount(0)
-
-    await context.close()
-  })
-
-  test('HeroSection hides every desktop CTA on mobile', async ({ browser }) => {
-    const { context, hero } = await openMobileDownloadPage(browser)
-
-    await expect(
-      hero.getByRole('link', { name: /DOWNLOAD DESKTOP/i })
-    ).toBeHidden()
-    await expect(
-      hero.getByRole('link', { name: /INSTALL FROM GITHUB/i })
-    ).toBeVisible()
-
-    await context.close()
-  })
-
-  test('mobile email form submits identify then track to Customer.io', async ({
-    browser
-  }) => {
-    const { context, hero, captured } = await openMobileDownloadPage(browser)
-
-    const emailInput = hero.getByRole('textbox', { name: /Email address/i })
-    await expect(emailInput).toBeVisible()
-    await expect(
-      hero.getByRole('link', { name: /INSTALL FROM GITHUB/i })
-    ).toBeVisible()
-
-    await emailInput.fill('someone@example.com')
-    await hero.getByRole('button', { name: /Send download link/i }).click()
-
-    await expect(
-      hero.getByText(/The link is sent to someone@example\.com/i)
-    ).toBeVisible()
-
-    const events = () => captured.filter((capture) => capture.method === 'POST')
-    const paths = () => events().map((capture) => capture.path)
-
-    // Poll until both expected calls arrive; tolerate unrelated SDK posts
-    // (e.g. sampled /m metrics), but keep identify-before-track ordering.
-    await expect
-      .poll(() => paths())
-      .toEqual(expect.arrayContaining(['/v1/i', '/v1/t']))
-    expect(paths().indexOf('/v1/i')).toBeLessThan(paths().indexOf('/v1/t'))
-
-    const identify = events().find((capture) => capture.path === '/v1/i')!
-    const track = events().find((capture) => capture.path === '/v1/t')!
-    expect(identify.body?.userId).toBe('someone@example.com')
-    expect(identify.body?.traits).toMatchObject({
-      email: 'someone@example.com'
+      // Desktop must never load the CDP SDK — settle the network, then assert silence.
+      await page.waitForLoadState('networkidle')
+      expect(captured).toHaveLength(0)
     })
-    expect(track.body?.event).toBe('download_link_requested')
-    expect(track.body?.properties).toMatchObject({
-      locale: 'en',
-      page: '/download'
+  })
+
+  test.describe('unrecognized desktop', () => {
+    test.use({ userAgent: LINUX_UA })
+
+    test('HeroSection falls back to both Windows + Mac when UA is unrecognized', async ({
+      page
+    }) => {
+      await page.goto('/download')
+
+      const hero = heroLocator(page)
+
+      const windowsBtn = hero.locator(
+        'a[href="https://comfy.org/download/windows/nsis/x64"]'
+      )
+      await expect(windowsBtn).toBeVisible()
+      await expect(windowsBtn).toHaveText(/DOWNLOAD DESKTOP/i)
+
+      const macBtn = hero.locator(
+        'a[href="https://download.comfy.org/mac/dmg/arm64"]'
+      )
+      await expect(macBtn).toBeVisible()
+      await expect(macBtn).toHaveText(/DOWNLOAD DESKTOP/i)
+
+      await expect(
+        hero.getByRole('link', { name: /DOWNLOAD DESKTOP/i })
+      ).toHaveCount(2)
+
+      await expect(hero.getByRole('textbox')).toHaveCount(0)
+    })
+  })
+
+  test.describe('iPhone', () => {
+    test.use({ userAgent: IPHONE_UA })
+
+    test('HeroSection hides every desktop CTA on mobile', async ({ page }) => {
+      await page.goto('/download')
+      const hero = heroLocator(page)
+
+      await expect(
+        hero.getByRole('link', { name: /DOWNLOAD DESKTOP/i })
+      ).toBeHidden()
+      await expect(
+        hero.getByRole('link', { name: /INSTALL FROM GITHUB/i })
+      ).toBeVisible()
     })
 
-    await context.close()
-  })
+    test('mobile email form submits identify then track to Customer.io', async ({
+      context,
+      page
+    }) => {
+      const captured: CdpCapture[] = []
+      await routeCdp(context, captured)
+      await page.goto('/download')
+      const hero = heroLocator(page)
 
-  test('mobile email form shows error state when Customer.io is unreachable', async ({
-    browser
-  }) => {
-    const { context, hero } = await openMobileDownloadPage(
-      browser,
-      '/download',
-      { cdpUnreachable: true }
-    )
+      const emailInput = hero.getByRole('textbox', { name: /Email address/i })
+      await expect(emailInput).toBeVisible()
+      await expect(
+        hero.getByRole('link', { name: /INSTALL FROM GITHUB/i })
+      ).toBeVisible()
 
-    await hero
-      .getByRole('textbox', { name: /Email address/i })
-      .fill('someone@example.com')
-    await hero.getByRole('button', { name: /Send download link/i }).click()
+      await emailInput.fill('someone@example.com')
+      await hero.getByRole('button', { name: /Send download link/i }).click()
 
-    await expect(
-      hero.getByText(/Something went wrong\. Please try again\./i)
-    ).toBeVisible()
-    await expect(
-      hero.getByRole('button', { name: /Send download link/i })
-    ).toBeEnabled()
+      await expect(
+        hero.getByText(/The link is sent to someone@example\.com/i)
+      ).toBeVisible()
 
-    await context.close()
-  })
+      const events = () =>
+        captured.filter((capture) => capture.method === 'POST')
+      const paths = () => events().map((capture) => capture.path)
 
-  test('honeypot submission shows success without any CDP event', async ({
-    browser
-  }) => {
-    const { context, hero, captured } = await openMobileDownloadPage(browser)
+      // Poll until both expected calls arrive; tolerate unrelated SDK posts
+      // (e.g. sampled /m metrics), but keep identify-before-track ordering.
+      await expect
+        .poll(() => paths())
+        .toEqual(expect.arrayContaining(['/v1/i', '/v1/t']))
+      expect(paths().indexOf('/v1/i')).toBeLessThan(paths().indexOf('/v1/t'))
 
-    await hero
-      .getByRole('textbox', { name: /Email address/i })
-      .fill('someone@example.com')
-    // Bots fill the hidden decoy via script — mimic that, since Playwright
-    // refuses to fill invisible elements.
-    await hero.locator('input[name="company"]').evaluate((decoy) => {
-      const input = decoy as HTMLInputElement
-      input.value = 'spam corp'
-      input.dispatchEvent(new Event('input', { bubbles: true }))
-    })
-    await hero.getByRole('button', { name: /Send download link/i }).click()
-
-    await expect(
-      hero.getByText(/The link is sent to someone@example\.com/i)
-    ).toBeVisible()
-    expect(
-      captured.filter((capture) => capture.method === 'POST')
-    ).toHaveLength(0)
-
-    await context.close()
-  })
-
-  test('zh-CN download page submits the translated email form with zh-CN locale', async ({
-    browser
-  }) => {
-    const { context, hero, captured } = await openMobileDownloadPage(
-      browser,
-      '/zh-CN/download'
-    )
-
-    await expect(
-      hero.getByRole('heading', { name: '获取下载链接' })
-    ).toBeVisible()
-
-    await hero
-      .getByRole('textbox', { name: '邮箱地址' })
-      .fill('someone@example.com')
-    await hero.getByRole('button', { name: '发送下载链接' }).click()
-
-    await expect(
-      hero.getByText(/下载链接已发送至 someone@example\.com/)
-    ).toBeVisible()
-
-    const track = captured.find((capture) => capture.path === '/v1/t')
-    expect(track?.body?.properties).toMatchObject({
-      locale: 'zh-CN',
-      page: '/zh-CN/download'
+      const identify = events().find((capture) => capture.path === '/v1/i')!
+      const track = events().find((capture) => capture.path === '/v1/t')!
+      expect(identify.body?.userId).toBe('someone@example.com')
+      expect(identify.body?.traits).toMatchObject({
+        email: 'someone@example.com'
+      })
+      expect(track.body?.event).toBe('download_link_requested')
+      expect(track.body?.properties).toMatchObject({
+        locale: 'en',
+        page: '/download'
+      })
     })
 
-    await context.close()
+    test('mobile email form shows error state when Customer.io is unreachable', async ({
+      context,
+      page
+    }) => {
+      const captured: CdpCapture[] = []
+      await routeCdp(context, captured, { unreachable: true })
+      await page.goto('/download')
+      const hero = heroLocator(page)
+
+      await hero
+        .getByRole('textbox', { name: /Email address/i })
+        .fill('someone@example.com')
+      await hero.getByRole('button', { name: /Send download link/i }).click()
+
+      await expect(
+        hero.getByText(/Something went wrong\. Please try again\./i)
+      ).toBeVisible()
+      await expect(
+        hero.getByRole('button', { name: /Send download link/i })
+      ).toBeEnabled()
+    })
+
+    test('honeypot submission shows success without any CDP event', async ({
+      context,
+      page
+    }) => {
+      const captured: CdpCapture[] = []
+      await routeCdp(context, captured)
+      await page.goto('/download')
+      const hero = heroLocator(page)
+
+      await hero
+        .getByRole('textbox', { name: /Email address/i })
+        .fill('someone@example.com')
+      // Bots fill the hidden decoy via script — mimic that, since Playwright
+      // refuses to fill invisible elements.
+      await hero.locator('input[name="company"]').evaluate((decoy) => {
+        const input = decoy as HTMLInputElement
+        input.value = 'spam corp'
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+      })
+      await hero.getByRole('button', { name: /Send download link/i }).click()
+
+      await expect(
+        hero.getByText(/The link is sent to someone@example\.com/i)
+      ).toBeVisible()
+      expect(
+        captured.filter((capture) => capture.method === 'POST')
+      ).toHaveLength(0)
+    })
+
+    test('zh-CN download page submits the translated email form with zh-CN locale', async ({
+      context,
+      page
+    }) => {
+      const captured: CdpCapture[] = []
+      await routeCdp(context, captured)
+      await page.goto('/zh-CN/download')
+      const hero = heroLocator(page)
+
+      await expect(
+        hero.getByRole('heading', { name: '获取下载链接' })
+      ).toBeVisible()
+
+      await hero
+        .getByRole('textbox', { name: '邮箱地址' })
+        .fill('someone@example.com')
+      await hero.getByRole('button', { name: '发送下载链接' }).click()
+
+      await expect(
+        hero.getByText(/下载链接已发送至 someone@example\.com/)
+      ).toBeVisible()
+
+      const track = captured.find((capture) => capture.path === '/v1/t')
+      expect(track?.body?.properties).toMatchObject({
+        locale: 'zh-CN',
+        page: '/zh-CN/download'
+      })
+    })
   })
 
   test('ReasonSection heading and reasons are visible', async ({ page }) => {
+    await page.goto('/download')
     await expect(
       page.getByRole('heading', { name: /Why.*professionals.*choose/i })
     ).toBeVisible()
@@ -326,10 +321,12 @@ test.describe('Download page @smoke', () => {
   })
 
   test('EcoSystemSection heading is visible', async ({ page }) => {
+    await page.goto('/download')
     await expect(page.getByText(/An ecosystem that moves faster/)).toBeVisible()
   })
 
   test('ProductCardsSection has 3 product cards', async ({ page }) => {
+    await page.goto('/download')
     const section = page.locator('section', {
       has: page.getByRole('heading', { name: /The AI creation/ })
     })
@@ -340,6 +337,7 @@ test.describe('Download page @smoke', () => {
   test('ProductCardsSection links to cloud, platform, enterprise', async ({
     page
   }) => {
+    await page.goto('/download')
     const section = page.locator('section', {
       has: page.getByRole('heading', { name: /The AI creation/ })
     })
@@ -350,6 +348,7 @@ test.describe('Download page @smoke', () => {
   })
 
   test('FAQSection heading is visible with 8 items', async ({ page }) => {
+    await page.goto('/download')
     await expect(page.getByRole('heading', { name: /FAQ/i })).toBeVisible()
 
     const faqButtons = page.locator('button[aria-controls^="faq-panel-"]')
@@ -422,30 +421,27 @@ test.describe('Download page mobile @mobile', () => {
     ).toBeVisible()
   })
 
-  test('download buttons are stacked vertically', async ({ browser }) => {
-    const context = await browser.newContext({
-      ...devices['Pixel 5'],
-      userAgent: WINDOWS_UA
-    })
-    const page = await context.newPage()
-    await page.goto('/download')
+  test.describe('Windows buttons', () => {
+    test.use({ userAgent: WINDOWS_UA })
 
-    const hero = heroLocator(page)
-    const downloadBtn = hero.getByRole('link', { name: /DOWNLOAD DESKTOP/i })
-    const githubBtn = hero.getByRole('link', { name: /INSTALL FROM GITHUB/i })
-
-    await expect(downloadBtn).toBeVisible()
-    await expect(githubBtn).toBeVisible()
-
-    await expect
-      .poll(async () => {
-        const downloadBox = await downloadBtn.boundingBox()
-        const githubBox = await githubBtn.boundingBox()
-        if (!downloadBox || !githubBox) return false
-        return githubBox.y > downloadBox.y
+    test('download buttons are stacked vertically', async ({ page }) => {
+      const hero = heroLocator(page)
+      const downloadBtn = hero.getByRole('link', { name: /DOWNLOAD DESKTOP/i })
+      const githubBtn = hero.getByRole('link', {
+        name: /INSTALL FROM GITHUB/i
       })
-      .toBe(true)
 
-    await context.close()
+      await expect(downloadBtn).toBeVisible()
+      await expect(githubBtn).toBeVisible()
+
+      await expect
+        .poll(async () => {
+          const downloadBox = await downloadBtn.boundingBox()
+          const githubBox = await githubBtn.boundingBox()
+          if (!downloadBox || !githubBox) return false
+          return githubBox.y > downloadBox.y
+        })
+        .toBe(true)
+    })
   })
 })
