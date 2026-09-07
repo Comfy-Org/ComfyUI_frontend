@@ -250,6 +250,12 @@ export async function expectResolvedPromotedModelSuppressesStaleInteriorErrors(
     ).toContainText(staleModelName)
     await expect(staleCombo).toBeHidden()
     await expect(
+      node.getByRole('combobox', {
+        name: PROMOTED_MODEL_WIDGET_NAME,
+        exact: true
+      })
+    ).toHaveCount(0)
+    await expect(
       node.getByRole('img', {
         name: `${PROMOTED_MODEL_WIDGET_NAME}: Linked input`,
         exact: true

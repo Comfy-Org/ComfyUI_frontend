@@ -84,6 +84,9 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
         await comfyExpect(linkedTextbox).toHaveValue('22222222222')
         await comfyExpect(linkedTextbox).toBeHidden()
         await comfyExpect(
+          innerNode.getByRole('textbox', { name: 'text_1', exact: true })
+        ).toHaveCount(0)
+        await comfyExpect(
           innerNode.getByRole('img', { name: 'text_1: Linked input' })
         ).toBeVisible()
       })
