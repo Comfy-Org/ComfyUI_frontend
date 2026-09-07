@@ -308,6 +308,11 @@ const SubscriptionFooterLinksStub = {
     '<div data-testid="subscription-footer-links" :data-show-invoice-history="String(showInvoiceHistory)" />'
 }
 
+const StatusBadgeStub = {
+  props: ['label', 'severity'],
+  template: '<span :data-severity="severity">{{ label }}</span>'
+}
+
 const DropdownMenuStub = {
   props: ['entries'],
   template:
@@ -325,7 +330,7 @@ function renderComponent({ stubFooter = true } = {}) {
         ...(stubFooter
           ? { SubscriptionFooterLinks: SubscriptionFooterLinksStub }
           : {}),
-        StatusBadge: true,
+        StatusBadge: StatusBadgeStub,
         DropdownMenu: DropdownMenuStub
       }
     }
@@ -497,6 +502,50 @@ describe('SubscriptionPanelContentWorkspace', () => {
       expect(
         screen.queryByRole('button', { name: /subscribe|reactivate/i })
       ).not.toBeInTheDocument()
+    })
+
+    it('marks an ended Enterprise plan inactive without the state card', () => {
+      useEnterprisePlan()
+      mockSubscriptionStatus.value = 'ended'
+      mockIsActiveSubscription.value = false
+      renderComponent()
+
+      expect(screen.getByTestId('plan-status-badge')).toHaveTextContent(
+        'Inactive'
+      )
+      expect(screen.getByTestId('plan-status-badge')).toHaveAttribute(
+        'data-severity',
+        'secondary'
+      )
+      expect(
+        screen.queryByTestId('subscription-state-card')
+      ).not.toBeInTheDocument()
+    })
+
+    it('marks an ended Personal plan inactive when it cannot self-serve', () => {
+      mockIsInPersonalWorkspace.value = true
+      mockIsActiveSubscription.value = false
+      mockSubscriptionStatus.value = 'ended'
+      mockBillingStatus.value = 'inactive'
+      mockCanSubscribeSelfServe.value = false
+      renderComponent()
+
+      expect(screen.getByTestId('plan-status-badge')).toHaveTextContent(
+        'Inactive'
+      )
+      expect(
+        screen.queryByTestId('subscription-state-card')
+      ).not.toBeInTheDocument()
+    })
+
+    it('keeps the cancelled badge while an Enterprise plan still runs', () => {
+      useEnterprisePlan()
+      mockSubscriptionStatus.value = 'canceled'
+      renderComponent()
+
+      expect(screen.getByText('Canceled')).toBeInTheDocument()
+      expect(screen.queryByText('Inactive')).not.toBeInTheDocument()
+      expect(screen.getByTestId('subscription-state-card')).toBeInTheDocument()
     })
 
     it('renders an unrecognized tier as Current plan without catalog content', () => {
@@ -708,7 +757,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockBillingStatus.value = 'inactive'
     renderComponent()
 
-    expect(screen.getByText('Your subscription has ended')).toBeInTheDocument()
+    expect(
+      screen.queryByTestId('subscription-state-card')
+    ).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Free' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Billing & invoices' }))
     expect(mockManageSubscription).toHaveBeenCalledOnce()
@@ -750,7 +801,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
       expect(screen.getByRole('heading', { name: 'Team' })).toBeInTheDocument()
       expect(
-        screen.queryByText('Your subscription has ended')
+        screen.queryByTestId('subscription-state-card')
       ).not.toBeInTheDocument()
       expect(
         screen.queryByRole('button', { name: 'Subscribe' })
@@ -796,19 +847,15 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(mockShowSubscriptionDialog).not.toHaveBeenCalled()
   })
 
-  it('shows ended copy for an inactive ended subscription without a date', () => {
+  it('drops the state card for an inactive ended subscription without a date', () => {
     mockSubscriptionStatus.value = 'ended'
     mockIsActiveSubscription.value = false
     mockIsInPersonalWorkspace.value = true
     mockEndDate.value = null
     renderComponent()
 
-    expect(screen.getByText('Your subscription has ended')).toBeInTheDocument()
     expect(
-      screen.getByText('Your subscription is no longer active.')
-    ).toBeInTheDocument()
-    expect(
-      screen.queryByText(/features remain active/i)
+      screen.queryByTestId('subscription-state-card')
     ).not.toBeInTheDocument()
     expect(screen.queryByText(/^Ends on/i)).not.toBeInTheDocument()
     expect(
@@ -840,7 +887,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
     const user = userEvent.setup()
     renderComponent()
 
-    expect(screen.getByText('Your subscription has ended')).toBeInTheDocument()
+    expect(
+      screen.queryByTestId('subscription-state-card')
+    ).not.toBeInTheDocument()
     expect(
       screen.getByRole('heading', { name: 'Inactive team subscription' })
     ).toBeInTheDocument()
@@ -903,7 +952,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockSubscriptionStatus.value = 'ended'
     renderComponent()
 
-    expect(screen.getByText('Your subscription has ended')).toBeInTheDocument()
+    expect(
+      screen.queryByTestId('subscription-state-card')
+    ).not.toBeInTheDocument()
     expect(screen.queryByText(/^Renews on/i)).not.toBeInTheDocument()
   })
 

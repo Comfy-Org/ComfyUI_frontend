@@ -130,6 +130,12 @@ const config: StorybookConfig = {
               process.cwd() + '/src/storybook/mocks/useWorkspaceUI.ts'
           },
           {
+            find: '@/base/credits/comfyCredits',
+            replacement:
+              process.cwd() +
+              '/packages/shared-frontend-utils/src/creditsUtil.ts'
+          },
+          {
             find: '@/utils/formatUtil',
             replacement:
               process.cwd() +

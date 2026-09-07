@@ -497,7 +497,7 @@ describe('useJobMenu', () => {
         expectedWidgetValue
       )
       expect(widgetCallback).toHaveBeenCalledWith(expectedWidgetValue)
-      expect(node.graph?.setDirtyCanvas).toHaveBeenCalledWith(true, true)
+      expect(node.graph.setDirtyCanvas).toHaveBeenCalledWith(true, true)
     }
   )
 
