@@ -5206,6 +5206,8 @@
     "changeWorkflowForChat": "Change the workflow for this chat",
     "chatOptions": "Chat options",
     "chooseWorkflow": "Choose a workflow",
+    "selectWorkflowForNodes": "Please select a workflow first",
+    "switchWorkflowForNodes": "Switch to {workflowName} to add nodes.",
     "selectWorkflowForAgent": "Select a workflow for agent to work in",
     "chooseWorkflowForChat": "Choose a workflow for this chat",
     "searchWorkflows": "Search workflows",

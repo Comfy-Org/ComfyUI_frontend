@@ -11,6 +11,82 @@ test.describe(
   'Explicit Agent workflow selection',
   { tag: ['@cloud', '@ui'] },
   () => {
+    test('explains disabled node references until the selected workflow is visible', async ({
+      page,
+      workflowSelection
+    }, testInfo) => {
+      await page
+        .getByRole('button', { name: enMessages.agent.askComfyAgent })
+        .click()
+      const panel = page.locator('#agent-panel-root')
+      const reason = enMessages.agent.selectWorkflowForNodes
+      const inline = panel.getByRole('button', {
+        name: 'add nodes from graph,'
+      })
+      await expect(inline).toHaveAttribute('aria-disabled', 'true')
+      await expect(inline).toHaveAccessibleDescription(reason)
+      await inline.hover()
+      await expect(page.getByText(reason, { exact: true })).toBeVisible()
+
+      await panel
+        .getByRole('button', { name: enMessages.agent.addToPrompt })
+        .click()
+      const plusNodes = page.getByRole('menuitem', {
+        name: enMessages.agent.nodes,
+        exact: true
+      })
+      await expect(plusNodes).toHaveAttribute('aria-disabled', 'true')
+      await plusNodes.hover()
+      await expect(page.getByText(reason, { exact: true })).toBeVisible()
+      await page.keyboard.press('Escape')
+      await expect(page.getByText(reason, { exact: true })).toBeHidden()
+      await page.keyboard.press('Escape')
+      await expect(plusNodes).toBeHidden()
+
+      const composer = panel.getByRole('textbox', { includeHidden: true })
+      await composer.fill('@')
+      const nodes = panel.getByRole('menuitem', {
+        name: enMessages.agent.nodes,
+        exact: true
+      })
+      await expect(nodes).toHaveAttribute('aria-disabled', 'true')
+      await nodes.hover()
+      await expect(page.getByText(reason, { exact: true })).toBeVisible()
+      await testInfo.attach('disabled-node-references', {
+        body: await panel.screenshot({
+          path: testInfo.outputPath('disabled-node-references.png')
+        }),
+        contentType: 'image/png'
+      })
+      await composer.press('Enter')
+      await expect(nodes).toBeVisible()
+      await composer.press('Escape')
+      await composer.fill('')
+      expect(workflowSelection.postedMessages).toHaveLength(0)
+
+      await panel
+        .getByRole('button', { name: enMessages.agent.switchWorkflow })
+        .click()
+      await page
+        .getByRole('menuitemradio', { name: /Unsaved Workflow/ })
+        .click()
+      await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
+      workflowSelection.finishSave(true)
+      await expect(inline).not.toHaveAttribute('aria-disabled', 'true')
+      await page
+        .getByRole('button', {
+          name: enMessages.sideToolbar.newBlankWorkflow,
+          exact: true
+        })
+        .click()
+      await expect(inline).toHaveAttribute('aria-disabled', 'true')
+      await expect(inline).toHaveAccessibleDescription(
+        /Switch to .+ to add nodes\./
+      )
+      await page.getByTestId('workflow-tab').first().click()
+      await expect(inline).not.toHaveAttribute('aria-disabled', 'true')
+    })
+
     test('shows headerless search results when the current tab is filtered out', async ({
       page,
       workflowSelection

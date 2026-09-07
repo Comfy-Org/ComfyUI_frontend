@@ -37,6 +37,7 @@ const {
   canOpenAssets = false,
   isMaximized = false,
   selectionTags = [],
+  nodeReferenceDisabledReason,
   workflowReferences = [],
   availableWorkflows = [],
   editableWorkflowId,
@@ -61,6 +62,7 @@ const {
   canOpenAssets?: boolean
   isMaximized?: boolean
   selectionTags?: SelectedNode[]
+  nodeReferenceDisabledReason?: string
   workflowReferences?: WorkflowReference[]
   availableWorkflows?: WorkflowReference[]
   editableWorkflowId?: string
@@ -352,6 +354,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             :can-attach="canAttach"
             :can-open-assets="canOpenAssets"
             :selection-tags="selectionTags"
+            :node-reference-disabled-reason="nodeReferenceDisabledReason"
             :workflow-references="workflowReferences"
             :available-workflows="availableWorkflows"
             :editable-workflow-id="editableWorkflowId"

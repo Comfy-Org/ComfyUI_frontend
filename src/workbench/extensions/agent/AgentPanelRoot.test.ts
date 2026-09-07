@@ -1909,6 +1909,7 @@ describe('AgentPanelRoot lifecycle', () => {
   })
 
   it('reports the header close click and attributes the panel close to it', async () => {
+    hostStores.workflow.activeWorkflow = addTab('workflows/current.json')
     const selection = await startVueNodeSelection()
 
     await userEvent.click(
@@ -1926,6 +1927,7 @@ describe('AgentPanelRoot lifecycle', () => {
   })
 
   it('ends node selection when the panel unmounts', async () => {
+    hostStores.workflow.activeWorkflow = addTab('workflows/current.json')
     const selection = await startVueNodeSelection()
 
     selection.unmount()

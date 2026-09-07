@@ -117,6 +117,7 @@ const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const bindingStore = useAgentWorkflowTabBindingStore()
 const agentPanelStore = useAgentPanelStore()
+const { selectedWorkflow: selectedTarget } = storeToRefs(agentPanelStore)
 const { dismissedSelectionSignature, enabled: agentEnabled } =
   storeToRefs(agentPanelStore)
 const agentNodeSelectionStore = useAgentNodeSelectionStore()
@@ -192,6 +193,20 @@ function toSelectedNode(node: LGraphNode): SelectedNode {
   }
 }
 
+const canReferenceNodes = computed(
+  () =>
+    selectedTarget.value !== null &&
+    workflowStore.activeWorkflow?.path === selectedTarget.value.path
+)
+const nodeReferenceDisabledReason = computed(() => {
+  if (selectedTarget.value === null) return t('agent.selectWorkflowForNodes')
+  if (!canReferenceNodes.value)
+    return t('agent.switchWorkflowForNodes', {
+      workflowName: selectedTarget.value.filename
+    })
+  return undefined
+})
+
 const selectedNodes = computed<SelectedNode[]>(() =>
   canvasStore.selectedItems.filter(isLGraphNode).map(toSelectedNode)
 )
@@ -203,41 +218,46 @@ const {
   replace: replaceSelectionTags
 } = useCanvasSelection({
   selection: selectedNodes,
-  enabled: agentEnabled,
+  enabled: () => agentEnabled.value && selectedTarget.value !== null,
   isLive: () => agentPanelStore.isOpen,
-  isTracking: () => agentNodeSelectionStore.isActive,
+  isTracking: () => canReferenceNodes.value && agentNodeSelectionStore.isActive,
   isPaused: () => agentNodeSelectionStore.isLoadingWorkflow,
-  scope: () => workflowStore.activeWorkflow?.path ?? null,
+  scope: () => selectedTarget.value?.path ?? null,
   dismissedSignature: dismissedSelectionSignature
 })
+
+let nodeReferenceWorkflow = selectionTags.value.length
+  ? selectedTarget.value
+  : null
 
 function viewedGraphNodes() {
   return app.canvas?.graph?.nodes ?? app.graph?.nodes ?? []
 }
 
 function mentionableNodes(): SelectedNode[] {
-  return viewedGraphNodes().map(toSelectedNode)
+  return canReferenceNodes.value ? viewedGraphNodes().map(toSelectedNode) : []
 }
 
 watch(
   selectionTags,
   (tags) => {
+    nodeReferenceWorkflow = tags.length ? selectedTarget.value : null
     if (!agentPanelStore.isOpen || agentNodeSelectionStore.isLoadingWorkflow)
       return
     agentNodeSelectionStore.saveNodeIds(
-      workflowStore.activeWorkflow?.path,
+      selectedTarget.value?.path,
       tags.map(selectedNodeKey)
     )
   },
-  { deep: true }
+  { deep: true, flush: 'sync' }
 )
 
 watch(
-  () => agentPanelStore.isOpen,
-  (open) => {
-    if (!open) return
+  [() => agentPanelStore.isOpen, canReferenceNodes],
+  ([open, canReference]) => {
+    if (!open || !canReference || selectionTags.value.length > 0) return
     const locatorIds = new Set(
-      agentNodeSelectionStore.nodeIds(workflowStore.activeWorkflow?.path)
+      agentNodeSelectionStore.nodeIds(selectedTarget.value?.path)
     )
     replaceSelectionTags(
       [...locatorIds]
@@ -320,7 +340,6 @@ const availableWorkflowReferences = computed<WorkflowReference[]>(() => {
   }
   return [...byId.values()]
 })
-const { selectedWorkflow: selectedTarget } = storeToRefs(agentPanelStore)
 const selectingTarget = ref<ComfyWorkflow | null>(null)
 let targetSelectionGeneration = 0
 const workflowDetached = computed(() => selectedTarget.value === null)
@@ -884,7 +903,11 @@ function onSend(
 ): void {
   if (selectingTarget.value || selectedTarget.value === null) return
   exitNodeSelectionMode()
-  const nodeTags = consumeSelection()
+  const nodeTags =
+    nodeReferenceWorkflow === selectedTarget.value
+      ? [...selectionTags.value]
+      : []
+  consumeSelection()
   workflowReferences.value = []
   useTelemetry()?.trackAgentMessageSent({
     attachment_count: attachments.length,
@@ -934,12 +957,14 @@ watch(
   (items) => {
     const nodes = items.filter(isLGraphNode)
     if (agentNodeSelectionStore.restoredNodeIds !== null) {
-      selectedGraphNodes = new Map(
-        nodes.map(
-          (node) => [workflowStore.nodeToNodeLocatorId(node), node] as const
+      if (canReferenceNodes.value) {
+        selectedGraphNodes = new Map(
+          nodes.map(
+            (node) => [workflowStore.nodeToNodeLocatorId(node), node] as const
+          )
         )
-      )
-      replaceSelectionTags(nodes.map(toSelectedNode))
+        replaceSelectionTags(nodes.map(toSelectedNode))
+      }
       agentNodeSelectionStore.finishWorkflowLoad()
       return
     }
@@ -995,6 +1020,18 @@ watch(
 watch(() => workflowStore.activeWorkflow, exitNodeSelectionMode)
 
 watch(
+  selectedTarget,
+  (target, previous) => {
+    exitNodeSelectionMode()
+    replaceSelectionTags([])
+    nodeReferenceWorkflow = null
+    agentNodeSelectionStore.saveNodeIds(previous?.path, [])
+    agentNodeSelectionStore.saveNodeIds(target?.path, [])
+  },
+  { flush: 'sync' }
+)
+
+watch(
   () => canvasStore.currentGraph,
   () => {
     if (!agentNodeSelectionStore.isLoadingWorkflow) exitNodeSelectionMode()
@@ -1002,7 +1039,7 @@ watch(
 )
 
 function onSelectNodes(): void {
-  if (selectingNodes) return
+  if (!canReferenceNodes.value || selectingNodes) return
   const canvas = app.canvas
   if (!canvas) return
 
@@ -1074,6 +1111,7 @@ function onOpenAssets(): void {
 }
 
 function onMentionPick(node: SelectedNode): void {
+  if (!canReferenceNodes.value) return
   const stagedBefore = selectionTags.value.length
   addSelectionTag(node)
   if (selectionTags.value.length > stagedBefore)
@@ -1216,6 +1254,7 @@ function onPanelDrop(event: DragEvent): void {
       :session-id="threadId"
       :custom-title="history.titleFor(threadId)"
       :selection-tags="selectionTags"
+      :node-reference-disabled-reason="nodeReferenceDisabledReason"
       :workflow-references="workflowReferences"
       :available-workflows="availableWorkflowReferences"
       :editable-workflow-id="editableWorkflowId"

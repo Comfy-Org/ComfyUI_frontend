@@ -34,6 +34,7 @@ const {
   canAttach = false,
   canOpenAssets = false,
   selectionTags = [],
+  nodeReferenceDisabledReason,
   workflowReferences = [],
   availableWorkflows = [],
   editableWorkflowId,
@@ -46,6 +47,7 @@ const {
   canAttach?: boolean
   canOpenAssets?: boolean
   selectionTags?: SelectedNode[]
+  nodeReferenceDisabledReason?: string
   workflowReferences?: WorkflowReference[]
   availableWorkflows?: WorkflowReference[]
   editableWorkflowId?: string
@@ -94,6 +96,10 @@ const eligibleWorkflows = computed(() => {
     .toSorted((a, b) => a.name.localeCompare(b.name))
 })
 function loadMentionNodes(): void {
+  if (nodeReferenceDisabledReason) {
+    graphNodes.value = []
+    return
+  }
   graphNodes.value = getMentionNodes().toSorted((a, b) =>
     a.title.localeCompare(b.title)
   )
@@ -246,7 +252,40 @@ function syncMention(event: Event): void {
   resetMentionActive()
 }
 
+function isNodeReferenceDisabled(match: MentionMatch): boolean {
+  return (
+    !!nodeReferenceDisabledReason &&
+    (match.kind === 'node' ||
+      (match.kind === 'section' && match.id === 'nodes'))
+  )
+}
+
+function onSelectNodes(event: Event): void {
+  if (nodeReferenceDisabledReason) {
+    event.preventDefault()
+    return
+  }
+  emit('selectNodes')
+}
+
+watch(
+  () => nodeReferenceDisabledReason,
+  (reason) => {
+    if (!reason) {
+      if (mentionOpen.value) loadMentionNodes()
+      return
+    }
+    graphNodes.value = []
+    if (mentionSection.value === 'nodes') {
+      mentionSection.value = 'root'
+      resetMentionActive()
+    }
+  },
+  { flush: 'sync' }
+)
+
 function pickMention(match: MentionMatch): void {
+  if (isNodeReferenceDisabled(match)) return
   if (match.kind === 'section') {
     mentionSection.value = match.id
     if (match.id === 'workflows') emit('requestWorkflowReferences')
@@ -416,45 +455,56 @@ defineExpose({
       >
         {{ t('agent.reference') }}
       </div>
-      <div
+      <AgentTooltip
         v-for="(match, index) in mentionMatches"
-        :id="`agent-reference-item-${index}`"
         :key="`${match.kind}:${match.id}`"
-        role="menuitem"
-        :data-active="index === mentionActive"
-        :class="
-          cn(
-            'text-agent-fg flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs font-normal outline-none',
-            index === mentionActive && 'bg-agent-surface-hover'
-          )
-        "
-        @mouseenter="mentionActive = index"
-        @click="pickMention(match)"
+        :label="nodeReferenceDisabledReason ?? ''"
+        :disabled="!isNodeReferenceDisabled(match)"
       >
-        <span
-          v-if="match.kind === 'section' && match.id === 'nodes'"
-          class="icon-[comfy--node] size-3.5 shrink-0"
-        />
-        <span
-          v-else-if="match.kind === 'section' && match.id === 'workflows'"
-          class="icon-[comfy--workflow] size-3.5 shrink-0"
-        />
-        <span
-          v-else-if="match.kind === 'back'"
-          class="icon-[lucide--chevron-left] size-4 shrink-0"
-        />
-        <span class="min-w-0 flex-1 truncate">{{ match.label }}</span>
-        <span
-          v-if="match.kind === 'node' && graphDupes.has(match.node.title)"
-          :class="cn(duplicateIdClass, 'ml-auto')"
+        <div
+          :id="`agent-reference-item-${index}`"
+          :aria-disabled="isNodeReferenceDisabled(match) || undefined"
+          :aria-description="
+            isNodeReferenceDisabled(match)
+              ? nodeReferenceDisabledReason
+              : undefined
+          "
+          role="menuitem"
+          :data-active="index === mentionActive"
+          :class="
+            cn(
+              'text-agent-fg flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs font-normal outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50',
+              index === mentionActive && 'bg-agent-surface-hover'
+            )
+          "
+          @mouseenter="mentionActive = index"
+          @click="pickMention(match)"
         >
-          #{{ match.node.id }}
-        </span>
-        <span
-          v-if="match.kind === 'section'"
-          class="icon-[lucide--chevron-right] size-4 shrink-0"
-        />
-      </div>
+          <span
+            v-if="match.kind === 'section' && match.id === 'nodes'"
+            class="icon-[comfy--node] size-3.5 shrink-0"
+          />
+          <span
+            v-else-if="match.kind === 'section' && match.id === 'workflows'"
+            class="icon-[comfy--workflow] size-3.5 shrink-0"
+          />
+          <span
+            v-else-if="match.kind === 'back'"
+            class="icon-[lucide--chevron-left] size-4 shrink-0"
+          />
+          <span class="min-w-0 flex-1 truncate">{{ match.label }}</span>
+          <span
+            v-if="match.kind === 'node' && graphDupes.has(match.node.title)"
+            :class="cn(duplicateIdClass, 'ml-auto')"
+          >
+            #{{ match.node.id }}
+          </span>
+          <span
+            v-if="match.kind === 'section'"
+            class="icon-[lucide--chevron-right] size-4 shrink-0"
+          />
+        </div>
+      </AgentTooltip>
       <div
         v-if="!mentionHasResults"
         role="status"
@@ -584,18 +634,25 @@ defineExpose({
             class="text-agent-fg-muted pointer-events-none absolute inset-x-0 top-0 z-10 font-inter text-[14px]/[20px] font-normal"
           >
             <span>{{ placeholderHint.firstLine }}</span>
-            <button
-              type="button"
-              class="text-agent-fg-muted hover:text-agent-fg focus-visible:text-agent-fg focus-visible:outline-agent-fg pointer-events-auto mr-[4px] ml-[-5px] inline-flex h-[20px] shrink-0 cursor-pointer items-center gap-[4px] rounded-[8px] px-[4px] align-top text-[14px]/[20px] transition-colors focus-visible:outline-1"
-              @click="emit('selectNodes')"
+            <AgentTooltip
+              :label="nodeReferenceDisabledReason ?? ''"
+              :disabled="!nodeReferenceDisabledReason"
             >
-              <span
-                class="icon-[lucide--mouse-pointer-click] size-[14px] shrink-0"
-              />
-              <span class="underline decoration-dashed underline-offset-2"
-                >{{ placeholderHint.addNodes }},</span
+              <button
+                type="button"
+                :aria-disabled="!!nodeReferenceDisabledReason || undefined"
+                :aria-description="nodeReferenceDisabledReason"
+                class="text-agent-fg-muted hover:text-agent-fg focus-visible:text-agent-fg focus-visible:outline-agent-fg pointer-events-auto mr-[4px] ml-[-5px] inline-flex h-[20px] shrink-0 cursor-pointer items-center gap-[4px] rounded-[8px] px-[4px] align-top text-[14px]/[20px] transition-colors focus-visible:outline-1 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+                @click="onSelectNodes"
               >
-            </button>
+                <span
+                  class="icon-[lucide--mouse-pointer-click] size-[14px] shrink-0"
+                />
+                <span class="underline decoration-dashed underline-offset-2"
+                  >{{ placeholderHint.addNodes }},</span
+                >
+              </button>
+            </AgentTooltip>
             <span>{{ placeholderHint.dragAssets }}</span>
           </div>
         </div>
@@ -617,15 +674,22 @@ defineExpose({
               :side-offset="4"
               class="agent-scope bg-agent-surface-raised z-1100 box-border w-max min-w-[186px] rounded-[10px] border border-white/10 p-1 font-inter shadow-lg"
             >
-              <DropdownMenuItem
-                class="text-agent-fg data-highlighted:bg-agent-surface-hover mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none"
-                @select="emit('selectNodes')"
+              <AgentTooltip
+                :label="nodeReferenceDisabledReason ?? ''"
+                :disabled="!nodeReferenceDisabledReason"
               >
-                <span class="icon-[comfy--node] size-4 shrink-0" />
-                <span class="whitespace-nowrap">
-                  {{ t('agent.nodes') }}
-                </span>
-              </DropdownMenuItem>
+                <DropdownMenuItem
+                  :disabled="!!nodeReferenceDisabledReason"
+                  :aria-description="nodeReferenceDisabledReason"
+                  class="text-agent-fg data-highlighted:bg-agent-surface-hover mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+                  @select="onSelectNodes"
+                >
+                  <span class="icon-[comfy--node] size-4 shrink-0" />
+                  <span class="whitespace-nowrap">
+                    {{ t('agent.nodes') }}
+                  </span>
+                </DropdownMenuItem>
+              </AgentTooltip>
               <DropdownMenuSub
                 v-model:open="workflowSubmenuOpen"
                 @update:open="onWorkflowSubmenuOpenChange"
