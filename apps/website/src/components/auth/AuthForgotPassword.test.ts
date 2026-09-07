@@ -1,4 +1,7 @@
 // @vitest-environment happy-dom
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -136,5 +139,20 @@ describe('AuthForgotPassword', () => {
         .getByRole('link', { name: /back to sign in/i })
         .getAttribute('href')
     ).toBe('/login/')
+  })
+})
+
+describe('AuthForgotPassword lazy-load boundary', () => {
+  it('loads workshop-firebase only inside submit, never at module scope', () => {
+    const source = readFileSync(
+      fileURLToPath(new URL('./AuthForgotPassword.vue', import.meta.url)),
+      'utf8'
+    )
+
+    expect(
+      /^import[^;]*workshop-firebase/m.test(source),
+      'a static import ships firebase/app+auth to every flag-off visitor of /forgot-password'
+    ).toBe(false)
+    expect(source).toContain("import('../../config/workshop-firebase')")
   })
 })
