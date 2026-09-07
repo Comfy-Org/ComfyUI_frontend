@@ -110,6 +110,7 @@ defineExpose({ container: content, hide, show, toggle, visible })
         :side-offset="2"
         align="start"
         @close-auto-focus.prevent
+        @focus-outside.prevent
       >
         <MenuItems :items="model" @select="hide">
           <template v-if="$slots.item" #item="slotProps">
