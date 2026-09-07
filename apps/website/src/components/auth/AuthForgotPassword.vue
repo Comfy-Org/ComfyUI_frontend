@@ -3,6 +3,7 @@ import { classifyAuthError } from '@comfyorg/account/firebaseAuthError'
 import { onMounted, ref } from 'vue'
 
 import { authSchemasFor } from '../../config/auth-schemas'
+import { AUTH_FIELD_CLASS } from './authFieldClass'
 import { requestedReturnPath } from '../../config/workshop-return'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -89,7 +90,7 @@ onMounted(() => {
           v-model="email"
           type="email"
           autocomplete="email"
-          class="focus-visible:border-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 h-11 w-full rounded-xl border border-primary-comfy-canvas/15 bg-primary-comfy-canvas/5 px-4 text-sm text-primary-comfy-canvas outline-none focus-visible:ring-3"
+          :class="AUTH_FIELD_CLASS"
           :aria-invalid="Boolean(fieldError)"
         />
         <span v-if="fieldError" role="alert" class="text-xs text-red-400">

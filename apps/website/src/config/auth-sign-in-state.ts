@@ -57,6 +57,9 @@ const EMAIL_ERROR_KEYS: Partial<Record<string, TranslationKey>> = {
   // visitor can switch to sign-in. Password reset itself remains neutral and
   // never reveals whether an address exists.
   'auth/email-already-in-use': 'auth.signIn.error.emailInUse',
+  // The second accepted, narrower oracle: a throttled visitor retrying
+  // against generic copy just creates support load, and the limit is
+  // enforced server-side regardless of what the copy reveals.
   'auth/too-many-requests': 'auth.signIn.error.tooManyRequests'
 }
 
