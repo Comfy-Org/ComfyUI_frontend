@@ -90,6 +90,57 @@ describe('signUpWithProvisioning', () => {
     ).rejects.toBe(failure)
   })
 
+  it('retries the rollback delete once so a transient blip cannot orphan the user', async () => {
+    const deleteFn = vi
+      .fn<() => Promise<void>>()
+      .mockRejectedValueOnce(new Error('network blip'))
+      .mockResolvedValueOnce(undefined)
+    const credential = credentialWith(deleteFn)
+    const failure = new Error('provisioning failed')
+    const onRollbackFailure = vi.fn()
+
+    await expect(
+      signUpWithProvisioning({
+        createUser: async () => credential,
+        provisionCustomer: async () => {
+          throw failure
+        },
+        onRollbackFailure
+      })
+    ).rejects.toBe(failure)
+
+    expect(
+      deleteFn,
+      'a single transient blip during the delete permanently orphans the account without a retry'
+    ).toHaveBeenCalledTimes(2)
+    expect(
+      onRollbackFailure,
+      'a recovered rollback is not a failure'
+    ).not.toHaveBeenCalled()
+  })
+
+  it('reports rollback failure only after the retry also fails', async () => {
+    const deleteFn = vi.fn<() => Promise<void>>(async () => {
+      throw new Error('still down')
+    })
+    const credential = credentialWith(deleteFn)
+    const failure = new Error('provisioning failed')
+    const onRollbackFailure = vi.fn()
+
+    await expect(
+      signUpWithProvisioning({
+        createUser: async () => credential,
+        provisionCustomer: async () => {
+          throw failure
+        },
+        onRollbackFailure
+      })
+    ).rejects.toBe(failure)
+
+    expect(deleteFn).toHaveBeenCalledTimes(2)
+    expect(onRollbackFailure).toHaveBeenCalledOnce()
+  })
+
   it('does not provision when user creation itself fails', async () => {
     const failure = new Error('email already in use')
     const provisionCustomer = vi.fn(async () => {})
