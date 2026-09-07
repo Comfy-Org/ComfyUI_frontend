@@ -59,6 +59,13 @@ export function usePrototypeTweaks() {
   onMounted(() => {
     if (hydrated) return
     hydrated = true
+    // ?v=v1.1 makes a version linkable, so a ticket or a Slack message can
+    // point at the variant it is about instead of describing how to reach it.
+    const asked = new URLSearchParams(location.search).get('v')
+    if (isVersion(asked)) {
+      version.value = asked
+      return
+    }
     try {
       const stored = localStorage.getItem(VERSION_KEY)
       if (isVersion(stored)) version.value = stored
