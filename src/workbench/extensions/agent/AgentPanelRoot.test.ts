@@ -2014,6 +2014,23 @@ describe('AgentPanelRoot workflow binding', () => {
     return tab
   }
 
+  function setupWorkflowContext({
+    targetId,
+    references
+  }: {
+    targetId: string
+    references: { path: string; workflowId?: string }[]
+  }) {
+    const target = makeTab(targetId)
+    const bindings = useAgentWorkflowTabBindingStore()
+    const referenceTabs = references.map(({ path, workflowId }) => {
+      const tab = addTab(path)
+      if (workflowId !== undefined) bindings.bind(workflowId, tab.path)
+      return tab
+    })
+    return { target, references: referenceTabs }
+  }
+
   function mockMessagesEndpoint(
     ackWorkflowId: string,
     cloudWorkflows:
@@ -2330,11 +2347,15 @@ describe('AgentPanelRoot workflow binding', () => {
   })
 
   it('promotes a reference to target without changing earlier message references', async () => {
-    makeTab('wf-42')
-    const b = addTab('workflows/reference-b.json')
-    const c = addTab('workflows/reference-c.json')
-    useAgentWorkflowTabBindingStore().bind('wf-b', b.path)
-    useAgentWorkflowTabBindingStore().bind('wf-c', c.path)
+    const {
+      references: [b]
+    } = setupWorkflowContext({
+      targetId: 'wf-42',
+      references: [
+        { path: 'workflows/reference-b.json', workflowId: 'wf-b' },
+        { path: 'workflows/reference-c.json', workflowId: 'wf-c' }
+      ]
+    })
     const bodies = mockMessagesEndpoint('wf-b')
     renderWithSelectedTarget()
     const oldTurn = 'previous-turn' as TurnId
@@ -2385,9 +2406,10 @@ describe('AgentPanelRoot workflow binding', () => {
   })
 
   it('keeps the old target when the selected workflow cannot open', async () => {
-    makeTab('wf-42')
-    const other = addTab('workflows/other.json')
-    useAgentWorkflowTabBindingStore().bind('wf-other', other.path)
+    setupWorkflowContext({
+      targetId: 'wf-42',
+      references: [{ path: 'workflows/other.json', workflowId: 'wf-other' }]
+    })
     mockMessagesEndpoint('wf-42')
     workflowService.openWorkflow.mockResolvedValueOnce(false)
     renderWithSelectedTarget()
@@ -2432,15 +2454,18 @@ describe('AgentPanelRoot workflow binding', () => {
   })
 
   it('keeps the selected Agent target when the visible graph tab changes', async () => {
-    makeTab('wf-42')
+    const {
+      references: [other]
+    } = setupWorkflowContext({
+      targetId: 'wf-42',
+      references: [{ path: 'workflows/other.json', workflowId: 'wf-other' }]
+    })
     const bodies = mockMessagesEndpoint('wf-42')
 
     renderWithSelectedTarget()
 
     expect(await screen.findAllByText('current')).not.toHaveLength(0)
 
-    const other = addTab('workflows/other.json')
-    useAgentWorkflowTabBindingStore().bind('wf-other', other.path)
     hostStores.workflow.activeWorkflow = other
     await nextTick()
 
@@ -3549,10 +3574,19 @@ describe('AgentPanelRoot workflow binding', () => {
   it.for(['binding', 'index'])(
     'opens a reference resolved by %s without refreshing workflow lists',
     async (identitySource) => {
-      const current = makeTab('wf-cloud-current')
-      const reference = addTab('workflows/reference.json')
-      if (identitySource === 'binding')
-        useAgentWorkflowTabBindingStore().bind('wf-reference', reference.path)
+      const {
+        target: current,
+        references: [reference]
+      } = setupWorkflowContext({
+        targetId: 'wf-cloud-current',
+        references: [
+          {
+            path: 'workflows/reference.json',
+            workflowId:
+              identitySource === 'binding' ? 'wf-reference' : undefined
+          }
+        ]
+      })
       mockMessagesEndpoint(
         'wf-cloud-current',
         identitySource === 'index'
@@ -3590,9 +3624,15 @@ describe('AgentPanelRoot workflow binding', () => {
   it.for(['open', 'closed'])(
     'navigates to a staged reference in an %s tab without changing the target or draft',
     async (tabState) => {
-      const current = makeTab('wf-cloud-current')
-      const reference = addTab('workflows/reference.json')
-      useAgentWorkflowTabBindingStore().bind('wf-reference', reference.path)
+      const {
+        target: current,
+        references: [reference]
+      } = setupWorkflowContext({
+        targetId: 'wf-cloud-current',
+        references: [
+          { path: 'workflows/reference.json', workflowId: 'wf-reference' }
+        ]
+      })
       const bodies = mockMessagesEndpoint('wf-cloud-current')
       setupNodeSelectionCanvas()
       renderWithSelectedTarget()
@@ -3648,9 +3688,12 @@ describe('AgentPanelRoot workflow binding', () => {
   it.for(['false', 'throw'])(
     'keeps a staged reference and warns when navigation returns %s',
     async (failure) => {
-      const current = makeTab('wf-cloud-current')
-      const reference = addTab('workflows/reference.json')
-      useAgentWorkflowTabBindingStore().bind('wf-reference', reference.path)
+      const { target: current } = setupWorkflowContext({
+        targetId: 'wf-cloud-current',
+        references: [
+          { path: 'workflows/reference.json', workflowId: 'wf-reference' }
+        ]
+      })
       const bodies = mockMessagesEndpoint('wf-cloud-current')
       renderWithSelectedTarget()
       const textbox = screen.getByRole('textbox')
@@ -4195,13 +4238,17 @@ describe('AgentPanelRoot workflow binding', () => {
     'new-draft',
     'cleared-draft',
     'removed-reference',
+    'removed-attachment',
     'new-chat'
   ])(
     'recovers a failed send only in its untouched composer: %s',
     async (nextAction) => {
-      makeTab('wf-42')
-      const reference = addTab('workflows/reference.json')
-      useAgentWorkflowTabBindingStore().bind('wf-reference', reference.path)
+      setupWorkflowContext({
+        targetId: 'wf-42',
+        references: [
+          { path: 'workflows/reference.json', workflowId: 'wf-reference' }
+        ]
+      })
       const bodies: Record<string, unknown>[] = []
       let finishSend: (response: Response) => void = () => {}
       const response = new Promise<Response>((resolve) => {
@@ -4249,7 +4296,11 @@ describe('AgentPanelRoot workflow binding', () => {
         await userEvent.type(textbox, 'New input')
       if (nextAction === 'cleared-draft') await userEvent.clear(textbox)
       if (nextAction === 'removed-reference') {
-        await userEvent.type(textbox, '@')
+        await userEvent.click(
+          screen.getByRole('button', {
+            name: i18n.global.t('agent.addToPrompt')
+          })
+        )
         await userEvent.click(
           screen.getByRole('menuitem', { name: 'Workflows' })
         )
@@ -4258,6 +4309,16 @@ describe('AgentPanelRoot workflow binding', () => {
         )
         await userEvent.click(
           screen.getByRole('button', { name: 'Remove reference reference' })
+        )
+      }
+      if (nextAction === 'removed-attachment') {
+        composer.attachments = [
+          { id: 'upload-2', name: 'new.png', ref: 'new.png' }
+        ]
+        await userEvent.click(
+          await screen.findByRole('button', {
+            name: i18n.global.t('agent.remove')
+          })
         )
       }
       if (nextAction === 'new-chat')
@@ -4654,9 +4715,12 @@ describe('AgentPanelRoot workflow binding', () => {
   })
 
   it('clears old node references when selecting another workflow with the same node id', async () => {
-    makeTab('wf-42')
-    const other = addTab('workflows/other.json')
-    useAgentWorkflowTabBindingStore().bind('wf-other', other.path)
+    const {
+      references: [other]
+    } = setupWorkflowContext({
+      targetId: 'wf-42',
+      references: [{ path: 'workflows/other.json', workflowId: 'wf-other' }]
+    })
     const bodies = mockMessagesEndpoint('wf-other')
     setupNodeSelectionCanvas()
     renderWithSelectedTarget()
