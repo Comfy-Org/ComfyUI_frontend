@@ -373,39 +373,35 @@ const { lockedRatio, ratioKeys, selectedRatio, isLockEnabled, canLockRatio } =
     sourceHeight: toRef(() => height)
   })
 
-const startFrameWidget = computed(
-  (): SimplifiedWidget<number> => ({
-    name: 'start_frame',
-    label: t('videoEdit.startFrame'),
-    type: 'number',
-    value: startFrame.value,
-    options: {
-      min: 0,
-      max: Math.max(endFrame.value - 1, 0),
-      step: 1,
-      step2: 1,
-      precision: 0,
-      disabled: !videoUrl || loading
-    }
-  })
-)
+const startFrameWidget = computed((): SimplifiedWidget<number> => ({
+  name: 'start_frame',
+  label: t('videoEdit.startFrame'),
+  type: 'number',
+  value: startFrame.value,
+  options: {
+    min: 0,
+    max: Math.max(endFrame.value - 1, 0),
+    step: 1,
+    step2: 1,
+    precision: 0,
+    disabled: !videoUrl || loading
+  }
+}))
 
-const endFrameWidget = computed(
-  (): SimplifiedWidget<number> => ({
-    name: 'end_frame',
-    label: t('videoEdit.endFrame'),
-    type: 'number',
-    value: endFrame.value,
-    options: {
-      min: Math.min(startFrame.value + 1, effectiveTotalFrames.value - 1),
-      max: Math.max(effectiveTotalFrames.value - 1, 0),
-      step: 1,
-      step2: 1,
-      precision: 0,
-      disabled: !videoUrl || loading
-    }
-  })
-)
+const endFrameWidget = computed((): SimplifiedWidget<number> => ({
+  name: 'end_frame',
+  label: t('videoEdit.endFrame'),
+  type: 'number',
+  value: endFrame.value,
+  options: {
+    min: Math.min(startFrame.value + 1, effectiveTotalFrames.value - 1),
+    max: Math.max(effectiveTotalFrames.value - 1, 0),
+    step: 1,
+    step2: 1,
+    precision: 0,
+    disabled: !videoUrl || loading
+  }
+}))
 
 const videoAspectRatioStyle = computed(() => {
   const intrinsic = videoIntrinsicSize.value

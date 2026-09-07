@@ -68,15 +68,13 @@ export function distributeNodes(
     node.pos[index] = startAt + gap * i
     startAt += node.size[index]
   }
-  const newPositions = sorted.map(
-    (node): NewNodePosition => ({
-      node,
-      newPos: {
-        x: node.pos[0],
-        y: node.pos[1]
-      }
-    })
-  )
+  const newPositions = sorted.map((node): NewNodePosition => ({
+    node,
+    newPos: {
+      x: node.pos[0],
+      y: node.pos[1]
+    }
+  }))
   return newPositions
 }
 

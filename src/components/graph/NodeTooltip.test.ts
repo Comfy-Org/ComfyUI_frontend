@@ -51,14 +51,12 @@ const mockIsOverNodeOutput = vi.hoisted(() => vi.fn<HitTest>())
 const mockIsDOMWidget = vi.hoisted(() =>
   vi.fn<(widget: MockWidget) => boolean>()
 )
-const mockCanvas = vi.hoisted(
-  (): MockCanvas => ({
-    mouse: [100, 80],
-    graph_mouse: [10, 10],
-    node_over: null,
-    getWidgetAtCursor: vi.fn<() => MockWidget | null>()
-  })
-)
+const mockCanvas = vi.hoisted((): MockCanvas => ({
+  mouse: [100, 80],
+  graph_mouse: [10, 10],
+  node_over: null,
+  getWidgetAtCursor: vi.fn<() => MockWidget | null>()
+}))
 
 vi.mock('@/lib/litegraph/src/litegraph', async (importOriginal) => {
   const actual = await importOriginal<typeof LiteGraphModule>()

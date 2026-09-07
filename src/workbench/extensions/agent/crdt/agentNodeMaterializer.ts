@@ -262,8 +262,9 @@ function materialize(
     LiteGraph.createNode(state.type, state.title) ?? missingNode(state)
   node.id = state.id
 
-  const widgets = widgetStore.getNodeWidgets(scope.rootGraphId, state.id).map(
-    (widget): WidgetStateInit => ({
+  const widgets = widgetStore
+    .getNodeWidgets(scope.rootGraphId, state.id)
+    .map((widget): WidgetStateInit => ({
       disabled: widget.disabled,
       label: widget.label,
       name: widget.name,
@@ -272,8 +273,7 @@ function materialize(
       type: widget.type,
       value: widget.value,
       y: widget.y
-    })
-  )
+    }))
   const restore = () => {
     nodeStore.registerNode(scope, state)
     for (const widget of widgets) {

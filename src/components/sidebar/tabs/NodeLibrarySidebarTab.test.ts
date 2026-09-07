@@ -31,13 +31,11 @@ const {
     },
     mockAddNodeOnGraph: vi.fn(),
     mockSearchNode: vi.fn(() => []),
-    mockOrganizeNodes: vi.fn(
-      (): TreeNode => ({
-        key: 'root',
-        label: 'Root',
-        children: []
-      })
-    ),
+    mockOrganizeNodes: vi.fn((): TreeNode => ({
+      key: 'root',
+      label: 'Root',
+      children: []
+    })),
     mockToggleNodeOnEvent: vi.fn()
   }
 })

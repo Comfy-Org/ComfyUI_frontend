@@ -121,27 +121,23 @@ const mentionMatches = computed<MentionMatch[]>(() => {
           !stagedKeys.value.has(selectedNodeKey(node)) &&
           (node.title.toLowerCase().includes(query) || node.id.includes(query))
       )
-      .map(
-        (node): MentionMatch => ({
-          kind: 'node',
-          id: selectedNodeKey(node),
-          label: node.title,
-          node
-        })
-      ),
+      .map((node): MentionMatch => ({
+        kind: 'node',
+        id: selectedNodeKey(node),
+        label: node.title,
+        node
+      })),
     ...mentionAssets.value
       .filter((asset) => {
         const label = getAssetDisplayName(asset).toLowerCase()
         return label.includes(query) || asset.name.toLowerCase().includes(query)
       })
-      .map(
-        (asset): MentionMatch => ({
-          kind: 'asset',
-          id: asset.id,
-          label: getAssetDisplayName(asset),
-          asset
-        })
-      )
+      .map((asset): MentionMatch => ({
+        kind: 'asset',
+        id: asset.id,
+        label: getAssetDisplayName(asset),
+        asset
+      }))
   ].toSorted((a, b) => a.label.localeCompare(b.label))
 })
 

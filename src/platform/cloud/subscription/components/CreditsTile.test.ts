@@ -37,9 +37,9 @@ const state = vi.hoisted(() => ({
   trackAddApiCreditButtonClicked: vi.fn(),
   trackApiCreditTopupSucceeded: vi.fn(),
   telemetryUnavailable: false,
-  getMyEvents: vi.fn(
-    async (): Promise<CustomerEventsResult> => ({ events: [] })
-  ),
+  getMyEvents: vi.fn(async (): Promise<CustomerEventsResult> => ({
+    events: []
+  })),
   customerEventsError: null as string | null,
   toastErrorHandler: vi.fn()
 }))

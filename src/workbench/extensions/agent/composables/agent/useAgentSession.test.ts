@@ -31,40 +31,34 @@ vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
 
 function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
   const base: AgentRestClient = {
-    postMessage: vi.fn(
-      async (): Promise<AgentTurnAccepted> => ({
-        thread_id: 'th-1',
-        message_id: 'msg-1',
-        workflow_id: 'wf-1'
-      })
-    ),
+    postMessage: vi.fn(async (): Promise<AgentTurnAccepted> => ({
+      thread_id: 'th-1',
+      message_id: 'msg-1',
+      workflow_id: 'wf-1'
+    })),
     getMessages: vi.fn(async (): Promise<AgentMessages> => []),
     listThreads: vi.fn(async (): Promise<AgentThreadSummary[]> => []),
-    getRunMode: vi.fn(
-      async (): Promise<AgentRunModePreference> => ({
-        mode: 'auto',
-        credit_limit: null
-      })
-    ),
+    getRunMode: vi.fn(async (): Promise<AgentRunModePreference> => ({
+      mode: 'auto',
+      credit_limit: null
+    })),
     putRunMode: vi.fn(
       async (
         preference: AgentRunModePreference
       ): Promise<AgentRunModePreference> => preference
     ),
     listCloudWorkflows: vi.fn(async () => []),
-    cancelMessage: vi.fn(
-      async (): Promise<AgentCancelAccepted> => ({ status: 'cancelling' })
-    ),
-    answerAsk: vi.fn(
-      async (): Promise<AgentAnswerAccepted> => ({ status: 'answered' })
-    ),
-    uploadImage: vi.fn(
-      async (): Promise<UploadImageResult> => ({
-        name: 'n',
-        subfolder: '',
-        type: 'input'
-      })
-    )
+    cancelMessage: vi.fn(async (): Promise<AgentCancelAccepted> => ({
+      status: 'cancelling'
+    })),
+    answerAsk: vi.fn(async (): Promise<AgentAnswerAccepted> => ({
+      status: 'answered'
+    })),
+    uploadImage: vi.fn(async (): Promise<UploadImageResult> => ({
+      name: 'n',
+      subfolder: '',
+      type: 'input'
+    }))
   }
   return { ...base, ...overrides }
 }
@@ -411,9 +405,9 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it('answers a run approval once and stays busy until its resolution event', async () => {
-    const answerAsk = vi.fn(
-      async (): Promise<AgentAnswerAccepted> => ({ status: 'answered' })
-    )
+    const answerAsk = vi.fn(async (): Promise<AgentAnswerAccepted> => ({
+      status: 'answered'
+    }))
     const rest = fakeRest({ answerAsk })
     const { source, emit } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
@@ -957,13 +951,12 @@ describe('useAgentSession (v1 composition root)', () => {
 
   it('(l5) a done landing during the return hydrate still renders the full reply', async () => {
     let resolveHistory: ((rows: AgentMessages) => void) | undefined
-    const getMessages = vi.fn(
-      (threadId: string): Promise<AgentMessages> =>
-        threadId === 'th-1'
-          ? new Promise((resolve) => {
-              resolveHistory = resolve
-            })
-          : Promise.resolve([])
+    const getMessages = vi.fn((threadId: string): Promise<AgentMessages> =>
+      threadId === 'th-1'
+        ? new Promise((resolve) => {
+            resolveHistory = resolve
+          })
+        : Promise.resolve([])
     )
     const rest = fakeRest({ getMessages })
     const { source, emit } = fakeEvents()
@@ -1202,13 +1195,12 @@ describe('useAgentSession (v1 composition root)', () => {
 
   it('(l13) newChat during a pending thread load discards that load and keeps the stash', async () => {
     const resolvers: Array<(rows: AgentMessages) => void> = []
-    const getMessages = vi.fn(
-      (threadId: string): Promise<AgentMessages> =>
-        threadId === 'th-1'
-          ? new Promise((resolve) => {
-              resolvers.push(resolve)
-            })
-          : Promise.resolve([])
+    const getMessages = vi.fn((threadId: string): Promise<AgentMessages> =>
+      threadId === 'th-1'
+        ? new Promise((resolve) => {
+            resolvers.push(resolve)
+          })
+        : Promise.resolve([])
     )
     const rest = fakeRest({ getMessages })
     const { source, emit } = fakeEvents()
@@ -1595,12 +1587,10 @@ describe('thread resume (B17)', () => {
   })
 
   it('panel reopen refreshes the surviving conversation without losing the sent message', async () => {
-    const getMessages = vi.fn(
-      async (): Promise<AgentMessages> => [
-        historyRow(1, 'user', 'turn-A', 'live message'),
-        historyRow(2, 'assistant', 'turn-A', 'finished while closed')
-      ]
-    )
+    const getMessages = vi.fn(async (): Promise<AgentMessages> => [
+      historyRow(1, 'user', 'turn-A', 'live message'),
+      historyRow(2, 'assistant', 'turn-A', 'finished while closed')
+    ])
     const rest = fakeRest({ getMessages })
     const first = useAgentSession({ rest, events: fakeEvents().source })
     first.start()
@@ -1647,15 +1637,13 @@ describe('thread resume (B17)', () => {
   })
 
   it('listThreads returns the REST client thread list', async () => {
-    const listThreads = vi.fn(
-      async (): Promise<AgentThreadSummary[]> => [
-        {
-          id: 'th-9',
-          title: 'build a duck',
-          updated_at: '2026-07-07T00:00:00Z'
-        }
-      ]
-    )
+    const listThreads = vi.fn(async (): Promise<AgentThreadSummary[]> => [
+      {
+        id: 'th-9',
+        title: 'build a duck',
+        updated_at: '2026-07-07T00:00:00Z'
+      }
+    ])
     const session = useAgentSession({
       rest: fakeRest({ listThreads }),
       events: fakeEvents().source
