@@ -285,6 +285,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
   function destroy(): void {
     stopRefreshTimer()
+    detachUnifiedIdentity?.()
+    detachUnifiedIdentity = undefined
   }
 
   function initializeFromSession(): boolean {

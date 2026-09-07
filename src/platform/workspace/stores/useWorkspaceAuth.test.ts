@@ -2564,6 +2564,30 @@ describe('useWorkspaceAuthStore', () => {
       expect(mockFetch).not.toHaveBeenCalled()
     })
 
+    it('destroy detaches the unified identity and drops the token', async () => {
+      mockUnifiedCloudAuthEnabled.value = true
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(personalTokenResponse)
+      })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      await store.mintAtLogin()
+      expect(store.getUnifiedToken()).toBe('unified-token-1')
+
+      store.destroy()
+
+      expect(
+        store.getUnifiedToken(),
+        'a torn-down store must not keep serving the unified token'
+      ).toBeUndefined()
+      mockFetch.mockClear()
+      await vi.advanceTimersByTimeAsync(60 * 60 * 1000)
+      expect(mockFetch).not.toHaveBeenCalled()
+    })
+
     it('is fully dormant under the flag OFF: no unified network, timer, or rotation', async () => {
       mockUnifiedCloudAuthEnabled.value = false
       mockGetIdToken.mockResolvedValue('firebase-token-xyz')
