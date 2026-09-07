@@ -6,7 +6,7 @@ import { pageContext } from '../../utils/jsonLd'
 
 const { locale } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  Astro.originPathname,
   Astro.currentLocale,
 )
 ---
@@ -16,5 +16,5 @@ const { locale } = pageContext(
   description={t('payment.success.meta.description', locale)}
   noindex
 >
-  <PaymentStatusSection status="success" />
+  <PaymentStatusSection locale={locale} status="success" />
 </BaseLayout>

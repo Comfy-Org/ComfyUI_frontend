@@ -13,22 +13,24 @@ import { pageContext } from '../../utils/jsonLd'
 
 const { locale } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  Astro.originPathname,
   Astro.currentLocale,
 )
+
+
 
 
 
 ---
 
 <BaseLayout
-  title={t('affiliate-terms.page.title')}
-  description={t('affiliate-terms.page.description')}
+  title={t('affiliate-terms.page.title', locale)}
+  description={t('affiliate-terms.page.description', locale)}
 >
-  <HeroSection title={t('affiliate-terms.page.heading')} />
+  <HeroSection title={t('affiliate-terms.page.heading', locale)} />
   <p class="text-primary-warm-gray mt-2 text-center text-sm">
-    {t('affiliate-terms.page.effectiveDateLabel')}: {
-      t('affiliate-terms.effective-date')
+    {t('affiliate-terms.page.effectiveDateLabel', locale)}: {
+      t('affiliate-terms.effective-date', locale)
     }
   </p>
   <LegalContentSection

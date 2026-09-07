@@ -10,7 +10,7 @@ import { localizeHref } from '../config/routes'
 
 const { locale } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  Astro.originPathname,
   Astro.currentLocale,
 )
 ---
@@ -19,13 +19,13 @@ const { locale } = pageContext(
   title={t('models.meta.title', locale)}
   description={t('models.meta.description', locale)}
 >
-  <ModelsHeroSection
+  <ModelsHeroSection locale={locale}
     modelName="Grok Imagine"
     ctaHref={localizeHref('/p/supported-models/grok-imagine', locale)}
     videoSrc="https://media.comfy.org/website/models/video_ComfdyUI_00001_.mp4"
     videoAriaLabel={t('models.grokImagine.videoAriaLabel', locale)}
   />
-  <ModelCreationsSection client:load />
-  <AIModelsSection client:load />
-  <ProductShowcaseSection client:load />
+  <ModelCreationsSection locale={locale} client:load />
+  <AIModelsSection locale={locale} client:load />
+  <ProductShowcaseSection locale={locale} client:load />
 </BaseLayout>

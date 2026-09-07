@@ -14,6 +14,7 @@ import {
   jsonLdId,
   pageContext,
 } from '../utils/jsonLd'
+import { localizeHref } from '../config/routes'
 
 const outcome = await fetchRolesForBuild()
 reportAshbyOutcome(outcome)
@@ -27,13 +28,13 @@ if (outcome.status === 'failed') {
 
 const departments = outcome.snapshot.departments
 
-const { locale, url } = pageContext(
+const { locale, canonicalUrl, canonicalLocale } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  Astro.originPathname,
   Astro.currentLocale,
 )
 const roles = itemListNode(
-  url,
+  canonicalUrl,
   t('breadcrumb.careers', locale),
   departments.flatMap((department) =>
     department.roles.map((role) => ({ name: role.title, url: role.jobUrl })),
@@ -45,18 +46,18 @@ const roles = itemListNode(
   title={t('careers.meta.title', locale)}
   description={t('careers.meta.description', locale)}
   pageType="CollectionPage"
-  mainEntityId={jsonLdId(url, 'itemlist')}
+  mainEntityId={jsonLdId(canonicalUrl, 'itemlist')}
   breadcrumbs={[
-    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, localizeHref('/', canonicalLocale)) },
     { name: t('breadcrumb.careers', locale) },
   ]}
   extraJsonLd={[roles]}
 >
-  <HeroSection />
-  <RolesSection departments={departments} client:visible />
-  <WhyJoinSection client:visible />
+  <HeroSection locale={locale} />
+  <RolesSection locale={locale} departments={departments} client:visible />
+  <WhyJoinSection locale={locale} client:visible />
   <TeamPhotosSection client:visible />
-  <FAQSection
+  <FAQSection locale={locale}
     headingKey="careers.faq.heading"
     faqPrefix="careers.faq"
     faqCount={8}

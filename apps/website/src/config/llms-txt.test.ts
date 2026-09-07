@@ -117,11 +117,19 @@ describe('llms.txt', () => {
   const links = parseLlmsTxtLinks(llmsTxt)
   const internalPaths = internalLinks(links).map(({ path }) => path)
   const { static: staticPages, dynamic } = pageMatchers(pagesDir)
-  /** One matcher per localized locale, keyed by its URL prefix. */
+  /**
+   * One matcher per localized locale, keyed by its URL prefix.
+   *
+   * Every locale reuses the ENGLISH matchers. Localized pages have no files of
+   * their own since P3-9: Astro's i18n fallback serves /zh-CN/pricing from
+   * pricing.astro, so a localized path is served exactly when its English route
+   * is. Reading `src/pages/zh-CN/` instead reported all 20 Chinese links in
+   * llms.txt as pointing at nothing.
+   */
   const byLocalePrefix = new Map(
     LOCALIZED_CODES.map((code) => [
       localePrefix(code),
-      pageMatchers(join(pagesDir, code))
+      { static: staticPages, dynamic }
     ])
   )
 

@@ -40,10 +40,35 @@ describe('pageContext', () => {
     expect(pageContext(site, '/about/', undefined)).toEqual({
       siteUrl,
       locale: 'en',
-      url: 'https://comfy.org/about/'
+      url: 'https://comfy.org/about/',
+      canonicalUrl: 'https://comfy.org/about/',
+      canonicalLocale: 'en'
     })
     expect(pageContext(site, '/zh-CN/', 'zh-CN').locale).toBe('zh-CN')
     expect(pageContext(site, '/ja/', 'ja').locale).toBe('ja')
+  })
+
+  /**
+   * `url` is where the reader actually is; `canonicalUrl` is what the page
+   * claims to be. They diverge exactly when a locale is served by the i18n
+   * fallback but held back from indexing — and getting that backwards would
+   * have told Google the English page is the original for every Chinese page.
+   */
+  it('keeps a published localized page as its own original', () => {
+    const context = pageContext(site, '/zh-CN/pricing/', 'zh-CN')
+
+    expect(context.url).toBe('https://comfy.org/zh-CN/pricing/')
+    expect(context.canonicalUrl).toBe('https://comfy.org/zh-CN/pricing/')
+    expect(context.canonicalLocale).toBe('zh-CN')
+  })
+
+  it('points a held-back page at the English original', () => {
+    // Japanese serves only `/`, so every other route is built but unpublished.
+    const context = pageContext(site, '/ja/pricing/', 'ja')
+
+    expect(context.url).toBe('https://comfy.org/ja/pricing/')
+    expect(context.canonicalUrl).toBe('https://comfy.org/pricing/')
+    expect(context.canonicalLocale).toBe('en')
   })
 })
 

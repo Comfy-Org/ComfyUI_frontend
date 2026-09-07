@@ -8464,7 +8464,10 @@ Enterprise`
   // index.astro
   'home.meta.title': {
     en: 'Comfy - Professional Control of Visual AI',
-    'zh-CN': 'Comfy - 视觉 AI 的最强可控性'
+    'zh-CN': 'Comfy - 视觉 AI 的最强可控性',
+    // Rescued from ja/index.astro, where it was the one page of approved
+    // Japanese anyone had written. P3-9 deletes that file.
+    ja: 'Comfy - ビジュアルAIを自在にコントロール'
   },
   // individual-submission.astro
   'individualSubmission.meta.title': {
@@ -8646,7 +8649,15 @@ Enterprise`
   'home.meta.keywords': {
     en: 'comfyui app, comfyui web app, comfy ui application, comfyui application, comfy app, comfyui, visual ai app, node-based ai, generative ai workflows',
     'zh-CN':
-      'comfyui app, comfyui web app, comfyui application, ComfyUI 应用, ComfyUI 网页版, ComfyUI 桌面应用, ComfyUI 下载, 可视化 AI, 节点式 AI, 生成式 AI 工作流'
+      'comfyui app, comfyui web app, comfyui application, ComfyUI 应用, ComfyUI 网页版, ComfyUI 桌面应用, ComfyUI 下载, 可视化 AI, 节点式 AI, 生成式 AI 工作流',
+    ja: 'ComfyUI, ComfyUI アプリ, ComfyUI ウェブ版, ComfyUI デスクトップ, ビジュアル AI, ノードベース AI, 生成 AI ワークフロー'
+  },
+  // cli.astro carried these in English and its zh-CN twin carried none, so the
+  // Chinese page emitted no keywords at all. Through the dictionary it falls
+  // back to English until the pipeline translates them, which is the same rule
+  // every other string follows.
+  'cli.meta.keywords': {
+    en: 'comfy cli, comfyui cli, comfyui command line, comfyui terminal, comfyui automation, comfyui ci, ai cli for coding agents, claude code image generation, comfyui batch generation'
   },
   'cloud.meta.keywords': {
     en: 'comfyui web app, comfyui app, comfyui online, comfyui cloud, comfy cloud, comfy ui application, comfyui browser, cloud comfyui, managed comfyui',

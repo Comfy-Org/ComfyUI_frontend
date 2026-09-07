@@ -7,9 +7,11 @@ import { pageContext } from '../utils/jsonLd'
 
 const { locale } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  Astro.originPathname,
   Astro.currentLocale,
 )
+
+
 ---
 
 <BaseLayout
@@ -19,7 +21,7 @@ const { locale } = pageContext(
 >
   <HeroSection title="Terms of Service" />
   <p class="text-primary-warm-gray mt-2 text-center text-sm">
-    {t('tos.effectiveDateLabel')}: {t('tos.effectiveDate')}
+    {t('tos.effectiveDateLabel', locale)}: {t('tos.effectiveDate', locale)}
   </p>
-  <ContentSection prefix="tos" client:load />
+  <ContentSection locale={locale} prefix="tos" client:load />
 </BaseLayout>

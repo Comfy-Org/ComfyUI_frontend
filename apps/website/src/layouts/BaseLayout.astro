@@ -8,6 +8,7 @@ import AnnouncementBanner from '../templates/drops/AnnouncementBanner.vue'
 import { bannerConfig, getBannerData } from '../config/banner'
 import { isNoindexPathname } from '../config/indexing'
 import {
+  canonicalPath,
   hreflangAlternates,
   ogLocale,
   ogLocaleAlternate
@@ -51,16 +52,28 @@ const {
 
 const keywordsContent = keywords && keywords.length > 0 ? keywords.join(', ') : undefined
 
+// `originPathname`, not `url.pathname`: with i18n fallback rewrites, Astro
+// reports the ENGLISH path it rendered FROM, while originPathname keeps the URL
+// actually requested. Every locale-aware thing on the page — canonical, JSON-LD,
+// breadcrumbs, hreflang — has to describe the page a reader asked for.
 const { siteUrl, locale, url } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  Astro.originPathname,
   Astro.currentLocale,
 )
-const canonicalURL = new URL(url)
+// NOT `new URL(url)`. Once a locale is served by the i18n fallback, Astro
+// reports the ENGLISH pathname during the render, so a canonical taken from it
+// declares the English page the original. That is right for a held-back locale
+// and catastrophic for a translated one: it would have told Google the English
+// page is the original for every Chinese page on the site.
+const canonicalURL = new URL(canonicalPath(new URL(url).pathname, locale), url)
 const shouldNoindex = noindex || isNoindexPathname(Astro.url.pathname)
 const alternates = shouldNoindex
   ? []
-  : hreflangAlternates(canonicalURL.pathname, canonicalURL.origin)
+  : // `locale` comes from Astro.currentLocale, which is the ONLY thing that
+    // knows a rewritten fallback page is Japanese: Astro reports the English
+    // pathname during that render.
+    hreflangAlternates(canonicalURL.pathname, canonicalURL.origin, locale)
 const openGraphLocale = ogLocale(locale)
 const openGraphLocaleAlternate = ogLocaleAlternate(locale, alternates)
 const ogImageURL = new URL(ogImage, Astro.site ?? 'https://comfy.org')
@@ -87,7 +100,12 @@ const structuredData = shouldNoindex
   : buildPageGraph(
       { siteUrl, locale },
       {
-        url,
+        // The canonical, not the path Astro reported. During a fallback render
+        // that path is the ENGLISH one, so the graph claimed a Chinese page WAS
+        // the English page: same @id, same url. Structured data has to agree
+        // with the canonical tag or it describes a different page than the one
+        // being served.
+        url: canonicalURL.href,
         name: title,
         description,
         imageUrl: ogImageURL.href,
@@ -250,6 +268,26 @@ const structuredData = shouldNoindex
     <SiteFooter locale={locale} client:load />
 
     <Analytics />
+    {/*
+      @vercel/analytics bakes `Astro.url.pathname` into the element and offers
+      no prop to override it. With i18n fallback rewrites that path is the
+      ENGLISH one, so every Chinese and Japanese pageview would be reported
+      against the English URL and the localized sites would look like they had
+      no traffic at all.
+
+      Corrected through the element's own data attribute, which its constructor
+      reads. Safe to do here: the vendor's script is `type="module"` and
+      therefore deferred, while this classic inline script runs immediately, so
+      the attribute is right before the element upgrades.
+
+      The page's OWN url, not its canonical: a held-back Japanese page points its
+      canonical at English, but its traffic is still Japanese traffic.
+    */}
+    <script is:inline define:vars={{ analyticsPath: new URL(url).pathname }}>
+      document
+        .querySelector('vercel-analytics')
+        ?.setAttribute('data-pathname', analyticsPath)
+    </script>
 
     <script>
       import { initSmoothScroll, cancelScroll } from '../scripts/smoothScroll'

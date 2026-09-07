@@ -12,7 +12,7 @@ import { pageContext } from '../../utils/jsonLd'
 
 const { locale } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  Astro.originPathname,
   Astro.currentLocale,
 )
 
@@ -24,11 +24,11 @@ const { locale } = pageContext(
   description={t('cloud.hero.subtitle', locale)}
   keywords={t('cloud.meta.keywords', locale).split(', ')}
 >
-  <HeroSection />
-  <ReasonSection />
-  <AIModelsSection />
-  <AudienceSection />
-  <PricingSection />
-  <ProductCardsSection />
-  <FAQSection client:visible />
+  <HeroSection locale={locale} />
+  <ReasonSection locale={locale} />
+  <AIModelsSection locale={locale} />
+  <AudienceSection locale={locale} />
+  <PricingSection locale={locale} />
+  <ProductCardsSection locale={locale} />
+  <FAQSection locale={locale} client:visible />
 </BaseLayout>

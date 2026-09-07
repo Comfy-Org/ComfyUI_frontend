@@ -14,10 +14,11 @@ import { cliPageJsonLd } from '../templates/cli/jsonLd'
 import { cliModelCards } from '../templates/cli/modelCards'
 import { t } from '../i18n/translations'
 import { absoluteUrl, pageContext } from '../utils/jsonLd'
+import { localizeHref } from '../config/routes'
 
-const { siteUrl, locale, url } = pageContext(
+const { siteUrl, locale, url, canonicalLocale } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  Astro.originPathname,
   Astro.currentLocale,
 )
 
@@ -30,11 +31,11 @@ const { softwareId, nodes: cliJsonLd } = cliPageJsonLd(siteUrl, url, locale)
   description={t('cli.meta.description', locale)}
   mainEntityId={softwareId}
   breadcrumbs={[
-    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, localizeHref('/', canonicalLocale)) },
     { name: t('breadcrumb.cli', locale) },
   ]}
   extraJsonLd={cliJsonLd}
-  keywords={['comfy cli', 'comfyui cli', 'comfyui command line', 'comfyui terminal', 'comfyui automation', 'comfyui ci', 'ai cli for coding agents', 'claude code image generation', 'comfyui batch generation']}
+  keywords={t('cli.meta.keywords', locale).split(', ')}
   ogImage="https://media.comfy.org/website/cli/og-v2.jpg"
 >
   <HeroSection locale={locale} client:load />

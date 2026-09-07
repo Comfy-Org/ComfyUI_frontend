@@ -8,7 +8,7 @@ import {
   isLocale,
   type Locale
 } from '../config/locales'
-import { isLocaleInvariantPath } from '../config/routes'
+import { isLocaleInvariantPath, localizeHref } from '../config/routes'
 
 export interface Alternate {
   hreflang: Locale | 'x-default'
@@ -47,10 +47,24 @@ function englishPath(pathname: string): string {
  */
 export function hreflangAlternates(
   pathname: string,
-  origin: string
+  origin: string,
+  pageLocale: Locale = DEFAULT_LOCALE
 ): Alternate[] {
   const en = englishPath(pathname)
   if (en === '/404' || isLocaleInvariantPath(en)) return []
+
+  // A page whose OWN locale is held back belongs in no cluster. Astro's i18n
+  // fallback builds /ja/<route> for every route while only / is on the Japanese
+  // allowlist; those pages were emitting the English cluster, which nothing in
+  // that cluster listed back, so the site advertised a one-way relationship and
+  // the pages appeared to claim membership of a group they are held out of.
+  //
+  // The locale must be PASSED IN, not read from the path. During a rewritten
+  // fallback render Astro reports the ENGLISH pathname while
+  // `Astro.currentLocale` is the requested locale, so a path-derived answer is
+  // `en` for every fallback page and this rule would never fire. That version
+  // passed its unit test and changed nothing in the build.
+  if (!isPageIndexable(pageLocale, en)) return []
   const enHref = new URL(withSlash(en), origin).href
   const twin = (locale: Locale) =>
     new URL(withSlash(`${localePrefix(locale)}${en === '/' ? '' : en}`), origin)
@@ -69,12 +83,44 @@ export function hreflangAlternates(
   return alternates
 }
 
+/**
+ * The canonical path for a page, given the locale it is rendering for.
+ *
+ * Cannot be taken from the pathname Astro reports. Once a locale is served by
+ * the i18n fallback, Astro reports the ENGLISH path during the render, so a
+ * canonical built from it declares the English page the original — correct for
+ * a held-back locale, catastrophic for a translated one. Chinese is fully
+ * translated, and deleting its page files turns every /zh-CN/ URL into a
+ * fallback render, so this decides whether the Chinese site keeps its identity
+ * in search.
+ *
+ * The rule is the same predicate everything else reads: a page published in its
+ * locale is its own original; one that is held back points at English.
+ */
+export function canonicalPath(pathname: string, pageLocale: Locale): string {
+  const en = englishPath(pathname)
+  const path = isPageIndexable(pageLocale, en)
+    ? localizeHref(en, pageLocale)
+    : en
+  // The site canonicalises with a trailing slash everywhere. Returning the bare
+  // path here would rewrite the canonical of all 1,291 pages.
+  return withSlash(trimSlash(path))
+}
+
 /** `xhtml:link` alternates for one sitemap entry, or nothing for English-only pages. */
 export function sitemapAlternates(
   url: string
 ): { url: string; lang: string }[] | undefined {
   const { pathname, origin } = new URL(url)
-  const alternates = hreflangAlternates(pathname, origin)
+  // Unlike a page render, a sitemap entry's path IS the localized one, so the
+  // locale can be read off it here.
+  const pageLocale =
+    LOCALE_CODES.find(
+      (locale) =>
+        locale !== DEFAULT_LOCALE &&
+        pathname.startsWith(`${localePrefix(locale)}/`)
+    ) ?? DEFAULT_LOCALE
+  const alternates = hreflangAlternates(pathname, origin, pageLocale)
   return alternates.length > 0
     ? alternates.map((alternate) => ({
         url: alternate.href,

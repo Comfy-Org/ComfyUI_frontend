@@ -13,10 +13,11 @@ import {
   pageContext,
   softwareApplicationNode,
 } from '../../../utils/jsonLd'
+import { localizeHref } from '../../../config/routes'
 
-const { siteUrl, locale, url } = pageContext(
+const { siteUrl, locale, canonicalUrl, canonicalLocale } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  Astro.originPathname,
   Astro.currentLocale,
 )
 
@@ -41,12 +42,12 @@ const metaDescription = t('cloudNodes.detail.metaDescription', locale)
   .replace('{description}', description)
 
 
-const softwareId = jsonLdId(url, 'software')
+const softwareId = jsonLdId(canonicalUrl, 'software')
 const software = softwareApplicationNode({
   siteUrl,
   id: softwareId,
   name: pack.displayName,
-  url,
+  url: canonicalUrl,
   applicationCategory: 'DeveloperApplication',
   applicationSubCategory: 'ComfyUI custom-node pack',
   operatingSystem: 'Comfy Cloud (managed)',
@@ -66,15 +67,15 @@ const software = softwareApplicationNode({
   ogImage={pack.bannerUrl}
   mainEntityId={softwareId}
   breadcrumbs={[
-    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
-    { name: 'Comfy Cloud', url: absoluteUrl(Astro.site, '/cloud') },
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, localizeHref('/', canonicalLocale)) },
+    { name: 'Comfy Cloud', url: absoluteUrl(Astro.site, localizeHref('/cloud', canonicalLocale)) },
     {
       name: t('breadcrumb.supportedNodes', locale),
-      url: absoluteUrl(Astro.site, '/cloud/supported-nodes'),
+      url: absoluteUrl(Astro.site, localizeHref('/cloud/supported-nodes', canonicalLocale)),
     },
     { name: pack.displayName },
   ]}
   extraJsonLd={[software]}
 >
-  <PackDetail pack={pack} />
+  <PackDetail locale={locale} pack={pack} />
 </BaseLayout>

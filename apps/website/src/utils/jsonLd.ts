@@ -1,5 +1,11 @@
-import { DEFAULT_LOCALE, isLocale, type Locale } from '../config/locales'
+import {
+  DEFAULT_LOCALE,
+  isLocale,
+  localePrefix,
+  type Locale
+} from '../config/locales'
 import { externalLinks } from '../config/routes'
+import { canonicalPath } from '../lib/hreflang'
 
 export type JsonLdNode = Record<string, unknown> & { '@type': string }
 
@@ -54,14 +60,42 @@ export function pageContext(
   site: URL | undefined,
   pathname: string,
   currentLocale: string | undefined
-): PageContext & { url: string } {
+): PageContext & {
+  url: string
+  canonicalUrl: string
+  canonicalLocale: Locale
+} {
+  const locale = isLocale(currentLocale) ? currentLocale : DEFAULT_LOCALE
   return {
     siteUrl: siteUrlFrom(site),
+    /**
+     * The canonical URL, which is NOT always this page's own.
+     *
+     * A locale served by the i18n fallback but held back from indexing points
+     * its canonical at the English original. Structured-data ids have to follow
+     * that, or the graph describes a different page than the canonical claims.
+     * `url` stays the page's real address, which is what analytics needs.
+     */
+    canonicalUrl: absoluteUrl(site, canonicalPath(pathname, locale)),
+    /**
+     * The locale the canonical belongs to, which is English for a page held
+     * back from indexing.
+     *
+     * Breadcrumbs and other structured-data URLs follow this rather than the
+     * rendering locale: a held-back Japanese page canonicals to English, so a
+     * breadcrumb pointing at /ja/ would describe a different site section than
+     * the canonical claims the page belongs to.
+     */
+    canonicalLocale: canonicalPath(pathname, locale).startsWith(
+      `${localePrefix(locale)}/`
+    )
+      ? locale
+      : DEFAULT_LOCALE,
     // Any locale this site serves, not a hardcoded pair. This is what BaseLayout
     // calls to decide a page's locale, so an unrecognised value here made the
     // page declare itself English in JSON-LD, in `<html lang>` and in the
     // canonical. A new locale used to be unrecognised by default.
-    locale: isLocale(currentLocale) ? currentLocale : DEFAULT_LOCALE,
+    locale,
     url: absoluteUrl(site, pathname)
   }
 }

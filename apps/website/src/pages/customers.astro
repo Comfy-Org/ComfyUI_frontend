@@ -9,10 +9,11 @@ import { t } from '../i18n/translations'
 import { toCardProps } from '../utils/customers'
 import { loadStories } from '../utils/loadStories'
 import { absoluteUrl, itemListNode, jsonLdId, pageContext } from '../utils/jsonLd'
+import { localizeHref } from '../config/routes'
 
-const { url, locale } = pageContext(
+const { locale, canonicalUrl, canonicalLocale } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  Astro.originPathname,
   Astro.currentLocale
 )
 
@@ -21,10 +22,10 @@ const stories = (await loadStories(locale)).map(toCardProps)
 
 const collectionLabel = t('nav.customerStories', locale)
 const storyList = itemListNode(
-  url,
+  canonicalUrl,
   collectionLabel,
   stories.map((story) => ({
-    url: absoluteUrl(Astro.site, `/customers/${story.slug}`),
+    url: absoluteUrl(Astro.site, localizeHref(`/customers/${story.slug}`, canonicalLocale)),
     name: story.title
   }))
 )
@@ -34,16 +35,16 @@ const storyList = itemListNode(
   title={t('customers.meta.title', locale)}
   description={t('customers.meta.description', locale)}
   pageType="CollectionPage"
-  mainEntityId={jsonLdId(url, 'itemlist')}
+  mainEntityId={jsonLdId(canonicalUrl, 'itemlist')}
   breadcrumbs={[
-    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, localizeHref('/', canonicalLocale)) },
     { name: collectionLabel }
   ]}
   extraJsonLd={[storyList]}
 >
-  <HeroSection client:load />
-  <StorySection stories={stories} />
-  <FeedbackSection client:load />
-  <VideoSection client:load />
-  <ContactSection />
+  <HeroSection locale={locale} client:load />
+  <StorySection locale={locale} stories={stories} />
+  <FeedbackSection locale={locale} client:load />
+  <VideoSection locale={locale} client:load />
+  <ContactSection locale={locale} />
 </BaseLayout>

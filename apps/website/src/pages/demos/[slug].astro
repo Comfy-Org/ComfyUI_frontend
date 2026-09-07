@@ -14,6 +14,13 @@ import {
   organizationId,
   pageContext,
 } from '../../utils/jsonLd'
+import { localizeHref } from '../../config/routes'
+
+const { siteUrl, locale, canonicalUrl, canonicalLocale } = pageContext(
+  Astro.site,
+  Astro.originPathname,
+  Astro.currentLocale,
+)
 
 export const getStaticPaths: GetStaticPaths = () => {
   return demos.map((demo) => ({
@@ -24,27 +31,23 @@ export const getStaticPaths: GetStaticPaths = () => {
 const { slug } = Astro.params
 const demo = getDemoBySlug(slug as string)!
 const nextDemo = getNextDemo(slug as string)
-const title = t(demo.title)
-const description = t(demo.description)
+const title = t(demo.title, locale)
+const description = t(demo.description, locale)
 
-const { siteUrl, locale, url } = pageContext(
-  Astro.site,
-  Astro.url.pathname,
-  Astro.currentLocale,
-)
+
 const educationalLevel =
   demo.difficulty === 'beginner'
     ? 'Beginner'
     : demo.difficulty === 'intermediate'
       ? 'Intermediate'
       : 'Advanced'
-const learningId = jsonLdId(url, 'learning')
+const learningId = jsonLdId(canonicalUrl, 'learning')
 const learningResource: JsonLdNode = {
   '@type': 'LearningResource',
   '@id': learningId,
   name: title,
   description,
-  url,
+  url: canonicalUrl,
   image: new URL(demo.ogImage, Astro.site).href,
   learningResourceType: 'interactive tutorial',
   interactivityType: 'active',
@@ -52,7 +55,7 @@ const learningResource: JsonLdNode = {
   timeRequired: demo.durationIso,
   datePublished: demo.publishedDate,
   dateModified: demo.modifiedDate,
-  isPartOf: { '@id': jsonLdId(url, 'webpage') },
+  isPartOf: { '@id': jsonLdId(canonicalUrl, 'webpage') },
   author: { '@id': organizationId(siteUrl) },
 }
 ---
@@ -63,10 +66,10 @@ const learningResource: JsonLdNode = {
   ogImage={demo.ogImage}
   mainEntityId={learningId}
   breadcrumbs={[
-    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, localizeHref('/', canonicalLocale)) },
     {
       name: t('demos.breadcrumb.demos', locale),
-      url: absoluteUrl(Astro.site, '/demos'),
+      url: absoluteUrl(Astro.site, localizeHref('/demos', canonicalLocale)),
     },
     { name: title },
   ]}
@@ -78,15 +81,15 @@ const learningResource: JsonLdNode = {
     <link rel="preconnect" href="https://demo.arcade.software" />
   </Fragment>
 
-  <DemoHeroSection
-    label={t(demo.category)}
+  <DemoHeroSection locale={locale}
+    label={t(demo.category, locale)}
     title={title}
     description={description}
     difficulty={demo.difficulty}
     estimatedTime={demo.estimatedTime}
   />
 
-  <ArcadeEmbed
+  <ArcadeEmbed locale={locale}
     arcadeId={demo.arcadeId}
     title={title}
     aspectRatio={demo.aspectRatio}
@@ -94,14 +97,14 @@ const learningResource: JsonLdNode = {
   />
 
   {demo.transcript && (
-    <DemoTranscript
-      transcript={t(demo.transcript)}
+    <DemoTranscript locale={locale}
+      transcript={t(demo.transcript, locale)}
       client:visible
     />
   )}
 
-  <DemoNavSection
-    nextTitle={t(nextDemo.title)}
+  <DemoNavSection locale={locale}
+    nextTitle={t(nextDemo.title, locale)}
     nextSlug={nextDemo.slug}
     nextThumbnail={nextDemo.thumbnail}
   />

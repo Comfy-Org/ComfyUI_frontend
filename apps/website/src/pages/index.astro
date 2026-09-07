@@ -21,7 +21,7 @@ import {
 
 const { siteUrl, locale } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  Astro.originPathname,
   Astro.currentLocale,
 );
 
@@ -38,15 +38,15 @@ const { siteUrl, locale } = pageContext(
   ]}
   keywords={t('home.meta.keywords', locale).split(', ')}
 >
-  <HeroGraphSection client:load />
+  <HeroGraphSection locale={locale} client:load />
   <SocialProofBarSection />
-  <DeveloperPlatformSection client:visible />
-  <MinimaxLicenseHeroSection client:visible />
-  <ModelReleaseSection client:visible />
-  <FeaturedWorkflowsSection client:load />
-  <ProductShowcaseSection client:load />
-  <IndustriesSection client:load />
-  <GetStartedSection />
-  <ProductCardsSection />
-  <CaseStudySpotlightSection client:load />
+  <DeveloperPlatformSection locale={locale} client:visible />
+  <MinimaxLicenseHeroSection locale={locale} client:visible />
+  <ModelReleaseSection locale={locale} client:visible />
+  <FeaturedWorkflowsSection locale={locale} client:load />
+  <ProductShowcaseSection locale={locale} client:load />
+  <IndustriesSection locale={locale} client:load />
+  <GetStartedSection locale={locale} />
+  <ProductCardsSection locale={locale} />
+  <CaseStudySpotlightSection locale={locale} client:load />
 </BaseLayout>

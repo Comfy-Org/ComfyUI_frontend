@@ -2,9 +2,14 @@
 import { getAgentCards } from '../components/agent/agentCards'
 import HeroWaitlist01 from '../components/blocks/HeroWaitlist01.vue'
 import { t } from '../i18n/translations'
+import { pageContext } from '../utils/jsonLd'
 import BaseLayout from '../layouts/BaseLayout.astro'
 
-const locale = 'en'
+const { locale } = pageContext(
+  Astro.site,
+  Astro.originPathname,
+  Astro.currentLocale,
+)
 const agentCards = getAgentCards(locale)
 ---
 

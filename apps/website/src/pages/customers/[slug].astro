@@ -12,10 +12,11 @@ import {
   jsonLdId,
   pageContext
 } from '../../utils/jsonLd'
+import { localizeHref } from '../../config/routes'
 
-const { siteUrl, locale, url } = pageContext(
+const { siteUrl, locale, canonicalUrl, canonicalLocale } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  Astro.originPathname,
   Astro.currentLocale
 )
 
@@ -27,12 +28,30 @@ export async function getStaticPaths() {
   }))
 }
 
-const { entry, next } = Astro.props
+/**
+ * Re-resolved for THIS page's locale.
+ *
+ * `getStaticPaths` runs before any page renders and cannot see a locale, so it
+ * necessarily loads the English stories. Once the i18n fallback serves
+ * /zh-CN/customers/<slug> from this same file, those English props would be
+ * rendered at a Chinese URL — the Chinese customer stories came out entirely in
+ * English. The slug is locale-invariant, so the story is looked up again here,
+ * where `Astro.currentLocale` is known, and falls back to the English entry when
+ * a locale has no translation of it.
+ */
+const { entry: englishEntry, next: englishNext } = Astro.props
+const slug = storySlug(englishEntry.id)
+const localeStories = await loadStories(locale)
+const localeEntry = localeStories.find((story) => storySlug(story.id) === slug)
+// `nextStory` throws on an unknown slug on purpose, so it is only asked about a
+// locale that actually has this story. Japanese has no customer stories at all.
+const entry = localeEntry ?? englishEntry
+const next = localeEntry ? nextStory(localeStories, slug) : englishNext
 
 
 const article = articleNode({
   siteUrl,
-  pageUrl: url,
+  pageUrl: canonicalUrl,
   title: entry.data.title,
   description: entry.data.description,
   imageUrl: entry.data.cover,
@@ -44,12 +63,12 @@ const article = articleNode({
   title={`${entry.data.title} - Comfy`}
   description={entry.data.description}
   ogImage={entry.data.cover}
-  mainEntityId={jsonLdId(url, 'article')}
+  mainEntityId={jsonLdId(canonicalUrl, 'article')}
   breadcrumbs={[
-    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, localizeHref('/', canonicalLocale)) },
     {
       name: t('nav.customerStories', locale),
-      url: absoluteUrl(Astro.site, '/customers')
+      url: absoluteUrl(Astro.site, localizeHref('/customers', canonicalLocale))
     },
     { name: entry.data.title }
   ]}
@@ -61,10 +80,10 @@ const article = articleNode({
     description={entry.data.description}
     image={entry.data.cover}
   />
-  <CustomerArticle entry={entry} />
-  <WhatsNextSection
+  <CustomerArticle locale={locale} entry={entry} />
+  <WhatsNextSection locale={locale}
     title={next.data.title}
     image={next.data.cover}
-    href={`/customers/${storySlug(next.id)}`}
+    href={localizeHref(`/customers/${storySlug(next.id)}`, locale)}
   />
 </BaseLayout>

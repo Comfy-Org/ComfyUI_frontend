@@ -11,10 +11,11 @@ import { affiliateFaqs } from '../../data/affiliateFaq'
 import { t } from '../../i18n/translations'
 import type { JsonLdNode } from '../../utils/jsonLd'
 import { absoluteUrl, jsonLdId, pageContext } from '../../utils/jsonLd'
+import { localizeHref } from '../../config/routes'
 
-const { locale, url } = pageContext(
+const { locale, canonicalUrl, canonicalLocale } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  Astro.originPathname,
   Astro.currentLocale,
 )
 
@@ -23,7 +24,7 @@ const pageDescription = t('affiliate.page.description', locale)
 
 const faqPage: JsonLdNode = {
   '@type': 'FAQPage',
-  '@id': jsonLdId(url, 'faq'),
+  '@id': jsonLdId(canonicalUrl, 'faq'),
   mainEntity: affiliateFaqs.map((faq) => ({
     '@type': 'Question',
     name: faq.question[locale],
@@ -36,17 +37,17 @@ const faqPage: JsonLdNode = {
   title={pageTitle}
   description={pageDescription}
   breadcrumbs={[
-    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, localizeHref('/', canonicalLocale)) },
     { name: pageTitle },
   ]}
   extraJsonLd={[faqPage]}
 >
 
-  <HeroSection />
-  <HowItWorksSection />
-  <AudienceSection />
-  <BenefitsSection />
-  <BrandAssetsSection />
-  <FAQSection client:visible />
-  <CtaSection />
+  <HeroSection locale={locale} />
+  <HowItWorksSection locale={locale} />
+  <AudienceSection locale={locale} />
+  <BenefitsSection locale={locale} />
+  <BrandAssetsSection locale={locale} />
+  <FAQSection locale={locale} client:visible />
+  <CtaSection locale={locale} />
 </BaseLayout>

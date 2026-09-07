@@ -27,6 +27,7 @@
     "i18n:check-config": "tsx ./scripts/i18n/check-config.ts",
     "validate:jsonld": "tsx ./scripts/validate-jsonld.ts",
     "check:hreflang": "tsx ./scripts/check-hreflang.ts",
+    "check:localized-pages": "tsx ./scripts/check-localized-pages.ts",
     "validate:llms-txt-links": "tsx ./scripts/validate-llms-txt-links.ts"
   },
   "dependencies": {

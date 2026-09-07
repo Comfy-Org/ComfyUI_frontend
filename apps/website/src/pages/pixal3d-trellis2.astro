@@ -316,7 +316,7 @@ const faqJsonLd = {
 
 const { locale } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  Astro.originPathname,
   Astro.currentLocale,
 )
 ---

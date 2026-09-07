@@ -6,11 +6,11 @@ import { pageContext } from '../../utils/jsonLd'
 
 const { locale } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  Astro.originPathname,
   Astro.currentLocale,
 )
 ---
 
 <BaseLayout title={t('demos.meta.title', locale)} description={t('demos.meta.description', locale)}>
-  <ComingSoon />
+  <ComingSoon locale={locale} />
 </BaseLayout>

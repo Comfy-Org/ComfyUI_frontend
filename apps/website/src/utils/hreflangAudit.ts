@@ -28,6 +28,19 @@ export interface BuiltSite {
    * which is the same lie the page-side rules already refuse.
    */
   sitemap: Map<string, Alternate[]> | null
+  /**
+   * Routes whose page canonicals to ITSELF.
+   *
+   * Astro's i18n fallback builds a page for every route in a fallback locale,
+   * so a `/ja/` file existing stopped meaning Japanese is published there. A
+   * page that canonicals to the English original is declaring itself not the
+   * original; one that canonicals to itself is claiming to be the real thing
+   * and must therefore appear in its cluster.
+   *
+   * Read off the built HTML, so the audit still never inherits the emitter's
+   * opinion — it cross-checks two statements the built site makes.
+   */
+  selfCanonical: ReadonlySet<string>
   origin: string
 }
 
@@ -40,7 +53,7 @@ export interface BuiltSite {
 function expectedAlternates(
   route: string,
   origin: string,
-  builtRoutes: ReadonlySet<string>
+  selfCanonical: ReadonlySet<string>
 ): Map<string, string> {
   const path = unprefixed(route)
   const english = `${origin}${path}`
@@ -51,14 +64,16 @@ function expectedAlternates(
     ['en', english],
     [ZH_HREFLANG, chinese]
   ])
-  // Japanese is a partial locale: it has one page today, so it belongs in a
-  // cluster only where its page was actually built. Deciding that from the BUILT
-  // site rather than from the emitter's own route list is what keeps this an
-  // independent check. A stale list fails here both ways round: claim a Japanese
-  // page that was not built and the "was not built (404)" rule fires; build one
-  // and forget to list it and the "expects ja -> ... but does not declare it"
-  // rule fires.
-  if (builtRoutes.has(japaneseRoute)) {
+  // Japanese is a partial locale, and since the i18n fallback landed its pages
+  // exist for every route whether or not the language is published there. So
+  // the signal is the Japanese page's own canonical, not its existence: a page
+  // pointing at the English original is held back and must stay out of the
+  // cluster, while one pointing at itself is claiming to be the real thing and
+  // must be in it. Read off the BUILT site, so the audit stays independent of
+  // the emitter. A stale answer fails both ways round: claim a Japanese page
+  // that was not built and the "was not built (404)" rule fires; publish one
+  // and leave it out and the "expects ja -> ..." rule fires.
+  if (selfCanonical.has(japaneseRoute)) {
     expected.set(JA_HREFLANG, `${origin}${japaneseRoute}`)
   }
   expected.set('x-default', english)
@@ -78,10 +93,10 @@ function clusterErrors(
   alternates: Alternate[],
   origin: string,
   source: string,
-  builtRoutes: ReadonlySet<string>
+  selfCanonical: ReadonlySet<string>
 ): string[] {
   const errors: string[] = []
-  const expected = expectedAlternates(route, origin, builtRoutes)
+  const expected = expectedAlternates(route, origin, selfCanonical)
   const seen = new Set<string>()
   for (const { hreflang, href } of alternates) {
     if (seen.has(hreflang)) {
@@ -130,17 +145,15 @@ function clusterErrors(
 export function auditBuiltSite({
   pages,
   sitemap,
+  selfCanonical,
   origin
 }: BuiltSite): string[] {
   const errors: string[] = []
   const routeOfHref = (href: string) => href.slice(origin.length) || '/'
-  // Which locales a route SHOULD cluster is read off the built site, so the
-  // audit never inherits the emitter's opinion of what exists.
-  const builtRoutes: ReadonlySet<string> = new Set(pages.keys())
 
   for (const [route, alternates] of pages) {
     errors.push(
-      ...clusterErrors(route, alternates, origin, 'page', builtRoutes)
+      ...clusterErrors(route, alternates, origin, 'page', selfCanonical)
     )
 
     // Only the pages can be checked against what was actually built.
@@ -192,7 +205,13 @@ export function auditBuiltSite({
     }
 
     errors.push(
-      ...clusterErrors(route, sitemapAlternates, origin, 'sitemap', builtRoutes)
+      ...clusterErrors(
+        route,
+        sitemapAlternates,
+        origin,
+        'sitemap',
+        selfCanonical
+      )
     )
 
     const langs = new Set(

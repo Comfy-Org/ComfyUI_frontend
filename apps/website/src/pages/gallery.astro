@@ -8,13 +8,13 @@ import { pageContext } from '../utils/jsonLd'
 
 const { locale } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  Astro.originPathname,
   Astro.currentLocale,
 )
 ---
 
 <BaseLayout title={t('gallery.meta.title', locale)} description={t('gallery.meta.description', locale)}>
-  <HeroSection />
-  <GallerySection client:load />
-  <ContactSection />
+  <HeroSection locale={locale} />
+  <GallerySection locale={locale} client:load />
+  <ContactSection locale={locale} />
 </BaseLayout>

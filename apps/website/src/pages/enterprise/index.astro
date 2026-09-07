@@ -8,7 +8,7 @@ import HeroSplit01 from '../../components/blocks/HeroSplit01.vue'
 import OfferGrid01 from '../../components/blocks/OfferGrid01.vue'
 import ReasonsSplit01 from '../../components/blocks/ReasonsSplit01.vue'
 import EnterpriseHeroScene from '../../components/product/enterprise/EnterpriseHeroScene.vue'
-import { externalLinks } from '../../config/routes'
+import { externalLinks, localizeHref } from '../../config/routes'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import { absoluteUrl, pageContext } from '../../utils/jsonLd'
 import { buildFaqPageNode } from './_faqMetadata'
@@ -172,9 +172,9 @@ const industries = [
   },
 ] as const
 
-const { url, locale } = pageContext(
+const { url, locale, canonicalLocale } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  Astro.originPathname,
   Astro.currentLocale,
 )
 const faqPage = buildFaqPageNode(url, faqs)
@@ -185,12 +185,12 @@ const faqPage = buildFaqPageNode(url, faqs)
   description={t('enterprise.meta.description', locale)}
   pageType="WebPage"
   breadcrumbs={[
-    { name: 'Home', url: absoluteUrl(Astro.site, '/') },
+    { name: 'Home', url: absoluteUrl(Astro.site, localizeHref('/', canonicalLocale)) },
     { name: 'Enterprise' },
   ]}
   extraJsonLd={[faqPage]}
 >
-  <HeroSplit01
+  <HeroSplit01 locale={locale}
     badgeText="ENTERPRISE"
     title={'Govern ComfyUI across\nevery team and runtime.'}
     subtitle="Standardize how teams build, run, and deploy visual AI with ComfyUI Managed Builds, production capacity, commercial licensing, and hands-on implementation support."

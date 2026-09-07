@@ -7,7 +7,7 @@ import { pageContext } from '../../utils/jsonLd'
 
 const { locale } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  Astro.originPathname,
   Astro.currentLocale,
 )
 ---
@@ -17,5 +17,5 @@ const { locale } = pageContext(
   description={t('desktop_privacy.meta.description', locale)}
 >
   <HeroSection title={t('desktop_privacy.hero.title', locale)} />
-  <ContentSection prefix="desktop_privacy" client:load />
+  <ContentSection locale={locale} prefix="desktop_privacy" client:load />
 </BaseLayout>

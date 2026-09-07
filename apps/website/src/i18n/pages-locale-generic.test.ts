@@ -1,8 +1,10 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs'
-import { dirname, join, relative } from 'node:path'
+import { dirname, join, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { describe, expect, it } from 'vitest'
+
+import { isLocale } from '../config/locales'
 
 const pagesDir = join(dirname(dirname(fileURLToPath(import.meta.url))), 'pages')
 
@@ -55,6 +57,32 @@ describe('page files never name a locale', () => {
     expect(pages.length).toBeGreaterThan(50)
   })
 
+  it('never lives in a directory named after a locale', () => {
+    // A directory named after a locale forks the page rather than translating
+    // it, and the fork then drifts in silence: `ja/index.astro` was a copy of
+    // the home page that never received the Developer Platform section English
+    // and Chinese both show.
+    const offenders = pages
+      .filter(({ name }) => name.split(sep).some(isLocale))
+      .map(({ name }) => name)
+
+    expect(offenders).toEqual([])
+  })
+
+  it('never calls t() without a locale', () => {
+    // This guard used to cover only `.vue` files, and 35 locale-less `t()` calls
+    // in `.astro` pages went unnoticed. They default to English, which was
+    // invisible while each locale had its own file and became English text on
+    // localized pages the moment one file served them all.
+    const offenders = pages
+      .filter(({ body }) =>
+        /\bt\(\s*(?:'[^']*'|`[^`]*`|[A-Za-z_$][\w$.]*)\s*\)/.test(body)
+      )
+      .map(({ name }) => name)
+
+    expect(offenders).toEqual([])
+  })
+
   it('never passes a literal locale to t()', () => {
     const offenders = pages
       .filter(({ body }) =>
@@ -68,6 +96,18 @@ describe('page files never name a locale', () => {
   it('never hands a component a literal locale prop', () => {
     const offenders = pages
       .filter(({ body }) => /\blocale="(?:en|zh-CN|ja)"/.test(body))
+      .map(({ name }) => name)
+
+    expect(offenders).toEqual([])
+  })
+
+  it('never keeps a keyword list of its own', () => {
+    // Search keywords differ per market, so they are copy, not configuration.
+    // Left in the page they were written once per language by hand: /cli had
+    // them in English and /zh-CN/cli had none at all, and the Japanese home
+    // page carried seven Japanese keywords no pipeline could see.
+    const offenders = pages
+      .filter(({ body }) => /\bkeywords=\{\[/.test(body))
       .map(({ name }) => name)
 
     expect(offenders).toEqual([])

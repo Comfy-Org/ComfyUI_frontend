@@ -15,13 +15,14 @@ import {
   pageContext,
   productNode,
 } from '../utils/jsonLd'
+import { localizeHref } from '../config/routes'
 
-const { siteUrl, locale, url } = pageContext(
+const { siteUrl, locale, url, canonicalUrl, canonicalLocale } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  Astro.originPathname,
   Astro.currentLocale,
 )
-const productId = jsonLdId(url, 'product')
+const productId = jsonLdId(canonicalUrl, 'product')
 ---
 
 <BaseLayout
@@ -29,8 +30,8 @@ const productId = jsonLdId(url, 'product')
   description={t('pricing.meta.description', locale)}
   mainEntityId={productId}
   breadcrumbs={[
-    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
-    { name: 'Comfy Cloud', url: absoluteUrl(Astro.site, '/cloud') },
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, localizeHref('/', canonicalLocale)) },
+    { name: 'Comfy Cloud', url: absoluteUrl(Astro.site, localizeHref('/cloud', canonicalLocale)) },
     { name: t('breadcrumb.pricing', locale) },
   ]}
   extraJsonLd={[
@@ -43,14 +44,14 @@ const productId = jsonLdId(url, 'product')
     }),
   ]}
 >
-  <CloudPricingSection client:load />
-  <WhatsIncludedSection />
+  <CloudPricingSection locale={locale} client:load />
+  <WhatsIncludedSection locale={locale} />
   <ResourceCostsSection
     locale={locale}
     heading={t('pricing.resourceCosts.heading', locale)}
     note={t('pricing.resourceCosts.note', locale)}
   />
-  <MinimaxLicenseHeroSection client:visible />
+  <MinimaxLicenseHeroSection locale={locale} client:visible />
   <MinimaxLicensePricingSection locale={locale} />
   <LookingForElseSection locale={locale} />
   <PricingFaq locale={locale} />

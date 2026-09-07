@@ -9,7 +9,7 @@ import HeroProduct01 from '../../components/blocks/HeroProduct01.vue'
 import ReasonsSplit01 from '../../components/blocks/ReasonsSplit01.vue'
 import StepsGrid01 from '../../components/blocks/StepsGrid01.vue'
 import DistributionsScene from '../../components/product/enterprise/DistributionsScene.vue'
-import { externalLinks } from '../../config/routes'
+import { externalLinks, localizeHref } from '../../config/routes'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import { absoluteUrl, pageContext } from '../../utils/jsonLd'
 import { buildFaqPageNode } from './_faqMetadata'
@@ -108,9 +108,9 @@ const industries = [
   },
 ] as const
 
-const { url, locale } = pageContext(
+const { url, locale, canonicalLocale } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  Astro.originPathname,
   Astro.currentLocale,
 )
 const faqPage = buildFaqPageNode(url, faqs)
@@ -121,8 +121,8 @@ const faqPage = buildFaqPageNode(url, faqs)
   description={t('enterprise.managedBuilds.meta.description', locale)}
   pageType="WebPage"
   breadcrumbs={[
-    { name: 'Home', url: absoluteUrl(Astro.site, '/') },
-    { name: 'Enterprise', url: absoluteUrl(Astro.site, '/enterprise/') },
+    { name: 'Home', url: absoluteUrl(Astro.site, localizeHref('/', canonicalLocale)) },
+    { name: 'Enterprise', url: absoluteUrl(Astro.site, localizeHref('/enterprise/', canonicalLocale)) },
     { name: 'ComfyUI Managed Builds' },
   ]}
   extraJsonLd={[faqPage]}
