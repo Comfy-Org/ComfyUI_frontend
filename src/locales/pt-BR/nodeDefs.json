@@ -770,6 +770,54 @@
       }
     }
   },
+  "BlockSparseAttention": {
+    "description": "Atenção esparsa em blocos via comfy_kitchen: cada bloco de consulta atende exatamente a um subconjunto selecionado de blocos de chave, reduzindo o custo computacional da atenção. O ganho relativo de velocidade aumenta com o comprimento da sequência, pois sequências curtas geralmente são mais rápidas no modo denso. Fora da programação ativa, em dense_blocks e abaixo de min_tokens, o modelo usa o backend de atenção densa do modelo ativo.",
+    "display_name": "Atenção Esparsa em Blocos",
+    "inputs": {
+      "dense_blocks": {
+        "name": "dense_blocks",
+        "tooltip": "Blocos do Transformer que sempre são executados de forma densa, por exemplo, '0, 1, 47-49'."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "Denso após este ponto da programação."
+      },
+      "extra_tokens": {
+        "name": "extra_tokens",
+        "tooltip": "Tokens extras com maior pontuação aos quais cada bloco de consulta atende além dos blocos selecionados. Mais próximo de denso para mais tempo de atenção; 256 é recomendado, 0 desativa. Ignorado para VSA."
+      },
+      "min_tokens": {
+        "name": "min_tokens",
+        "tooltip": "Sequências mais curtas que isto permanecem densas."
+      },
+      "model": {
+        "name": "model"
+      },
+      "selection": {
+        "name": "selection",
+        "tooltip": "Como os blocos de chave exatos são escolhidos. Sol-Attn: limiar adaptativo por cabeça/bloco. top-k (SLA): keep_percent fixo em todos os lugares, recomendado apenas com pesos treinados. VSA (FastVideo): divisão em cubos e ramo grosseiro do FastH3-VSA; requer pesos treinados para isso."
+      },
+      "selection_tau": {
+        "name": "tau"
+      },
+      "sink_conditioning": {
+        "name": "sink_conditioning",
+        "tooltip": "Somente MiniMax-H3. exact_kv: cada consulta atende exatamente às linhas compactadas de texto/áudio/referência (~3% de custo). exact_kv_and_rows: adicionalmente executa de forma densa as linhas de consulta do áudio-alvo (mantém o áudio gerado intacto)."
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "Denso antes deste ponto da programação."
+      },
+      "verbose": {
+        "name": "verbose"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaEraser": {
     "description": "Remova objetos ou áreas delimitadas por uma máscara de uma imagem usando Bria.",
     "display_name": "Bria Eraser",
@@ -7925,6 +7973,28 @@
       },
       "sigma": {
         "name": "sigma"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageColorSpace": {
+    "description": "Converte sRGB (Rec.709), HDR (Rec.2020 HLG) e HDR PQ (Rec.2020 PQ). Usa branco SDR de 203 nits e uma tela de referência HLG de 1000 nits. O estreitamento aplica mapeamento de tons à luminância excedente em todo o lote e comprime cores fora da gama. As conversões são calculadas em float32 e retornam o device e dtype intermediários. Alfa reto não passa por transformação de cor.",
+    "display_name": "Converter Espaço de Cor da Imagem",
+    "inputs": {
+      "destination": {
+        "name": "destination",
+        "tooltip": "Espaço de cor dos pixels de saída. Defina o nó de salvamento para este mesmo espaço de cor."
+      },
+      "image": {
+        "name": "image"
+      },
+      "source": {
+        "name": "source",
+        "tooltip": "Espaço de cor dos pixels de entrada."
       }
     },
     "outputs": {

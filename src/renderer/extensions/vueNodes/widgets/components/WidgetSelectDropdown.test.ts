@@ -164,6 +164,21 @@ describe('WidgetSelectDropdown', () => {
     expect(screen.getByText('img_001.png')).toBeDefined()
   })
 
+  it('allows EXR files for image uploads', () => {
+    const widget = createMockWidget<string | undefined>({
+      value: undefined,
+      name: 'test_image',
+      type: 'combo',
+      options: { values: [] }
+    })
+    renderComponent(widget, undefined)
+
+    expect(screen.getByLabelText('g.upload')).toHaveAttribute(
+      'accept',
+      'image/*,.exr'
+    )
+  })
+
   it('renders in cloud asset mode', () => {
     mockAssetsData.items = [
       fromPartial({
