@@ -8460,10 +8460,6 @@ Enterprise`
     en: 'V1 · Categories in a side rail',
     'zh-CN': 'V1 · 类别侧边栏'
   },
-  'workshop.proto.version.v2_1': {
-    en: 'V2 test 1 · Use cases in a side rail',
-    'zh-CN': 'V2 测试 1 · 用途侧边栏'
-  },
   'workshop.proto.version.v2': {
     en: 'V2 · Workflows, apps and models',
     'zh-CN': 'V2 · 工作流、应用与模型'

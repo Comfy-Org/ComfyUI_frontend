@@ -38,11 +38,11 @@ const templates = (hubTemplates as HubTemplate[]).map((template) =>
   withFacetFields(template, workshopModels)
 )
 const store = useHubStore()
-const { groupVersions, version } = usePrototypeTweaks()
+const { groupVersions } = usePrototypeTweaks()
 
-// V2 keeps the row of use cases under the title; V2.1 is the same catalogue
-// with that row stood up as a rail beside the grid.
-const railBeside = computed(() => version.value === 'v2.1' && !embedded)
+// The use cases read as a rail beside the grid, the way the models listing
+// does. Embedded elsewhere the hub is a grid on its own, without them.
+const railBeside = computed(() => !embedded)
 onUnmounted(() => store.reset())
 
 const TABS = ['all', 'nodeGraphs', 'comfyApps', 'models'] as const
@@ -267,16 +267,7 @@ const filteredTemplates = computed(() => {
       heading-key="workshop.hub.title"
       :locale
       data-testid="hub-heading"
-    >
-      <HubUseCaseNav
-        v-if="!railBeside"
-        class="mt-12"
-        :entries="useCaseTabs"
-        :current="useCase"
-        :label="t('workshop.media.label', locale)"
-        @select="useCase = $event"
-      />
-    </WorkshopHero>
+    />
 
     <div
       :class="

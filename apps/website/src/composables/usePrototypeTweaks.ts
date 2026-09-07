@@ -24,10 +24,14 @@ export type ModelState = (typeof MODEL_STATES)[number]
 // categories in a rail beside the grid (11 Sep), chosen over the two other
 // takes on the same listing: rows per use case, and the tabs the catalogue
 // shipped with, which is kept as a discarded option rather than deleted. V2 is
-// the screen where workflows, apps and models live together (GA 30 Sep), and
-// V2.1 is where V2's own variants are tried without disturbing what V2 shows.
-// The ids stay as they were so the links already shared keep working.
-export const VERSIONS = ['v1.2', 'v1.1', 'v2', 'v2.1', 'v1'] as const
+// the screen where workflows, apps and models live together (GA 30 Sep), and it
+// carries its use cases in that same rail. The ids stay as they were so the
+// links already shared keep working.
+export const VERSIONS = ['v1.2', 'v1.1', 'v2', 'v1'] as const
+
+// V2's own rail test won the comparison and became V2 itself, so a link that
+// still asks for it lands on the screen it was pointing at.
+const RETIRED: Record<string, Version> = { 'v2.1': 'v2' }
 export type Version = (typeof VERSIONS)[number]
 
 const VERSION_KEY = 'comfy-workshop-version'
@@ -48,6 +52,11 @@ function isVersion(value: unknown): value is Version {
   )
 }
 
+function asVersion(value: string | null): Version | undefined {
+  if (value === null) return undefined
+  return isVersion(value) ? value : RETIRED[value]
+}
+
 watch(version, (value) => {
   try {
     localStorage.setItem(VERSION_KEY, value)
@@ -63,14 +72,14 @@ export function usePrototypeTweaks() {
     hydrated = true
     // ?v=v1.1 makes a version linkable, so a ticket or a Slack message can
     // point at the variant it is about instead of describing how to reach it.
-    const asked = new URLSearchParams(location.search).get('v')
-    if (isVersion(asked)) {
+    const asked = asVersion(new URLSearchParams(location.search).get('v'))
+    if (asked) {
       version.value = asked
       return
     }
     try {
-      const stored = localStorage.getItem(VERSION_KEY)
-      if (isVersion(stored)) version.value = stored
+      const stored = asVersion(localStorage.getItem(VERSION_KEY))
+      if (stored) version.value = stored
     } catch {
       /* storage unavailable */
     }
