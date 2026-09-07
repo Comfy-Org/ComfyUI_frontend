@@ -187,6 +187,74 @@ describe('opt-in refresh scheduler', () => {
     ).toBe('error')
   })
 
+  it('reports each scheduled outcome to the host hook, and only scheduled ones', async () => {
+    const outcomes: string[] = []
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(async () => mintResponse('jwt-1'))
+      .mockImplementationOnce(async () => new Response('{}', { status: 503 }))
+      .mockImplementationOnce(async () => mintResponse('jwt-2'))
+      .mockImplementation(async () => new Response('{}', { status: 503 }))
+    const client = makeClient({
+      fetchImpl,
+      refreshScheduler: {
+        onScheduledOutcome: (outcome) => outcomes.push(outcome)
+      }
+    })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+
+    identity.fire(testUser())
+    await vi.waitFor(() => {
+      expect(client.getToken()).toBe('jwt-1')
+    })
+    expect(
+      outcomes,
+      'the login mint is not a scheduled refresh; cloud does not track it'
+    ).toEqual([])
+
+    await vi.advanceTimersByTimeAsync(
+      NINETY_MINUTES_MS - DEFAULT_BUFFER_MS + 10
+    )
+    expect(outcomes).toEqual(['retry_scheduled'])
+    await vi.advanceTimersByTimeAsync(5000 + 10)
+    expect(outcomes).toEqual(['retry_scheduled', 'succeeded'])
+
+    await vi.advanceTimersByTimeAsync(NINETY_MINUTES_MS * 10)
+    expect(outcomes).toEqual([
+      'retry_scheduled',
+      'succeeded',
+      'retry_scheduled',
+      'retry_scheduled',
+      'retry_scheduled',
+      'retries_exhausted'
+    ])
+  })
+
+  it('reports a permanent scheduled failure to the host hook', async () => {
+    const outcomes: string[] = []
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(async () => mintResponse('jwt-1'))
+      .mockImplementation(async () => new Response('{}', { status: 401 }))
+    const client = makeClient({
+      fetchImpl,
+      refreshScheduler: {
+        onScheduledOutcome: (outcome) => outcomes.push(outcome)
+      }
+    })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+
+    identity.fire(testUser())
+    await vi.waitFor(() => {
+      expect(client.getToken()).toBe('jwt-1')
+    })
+    await vi.advanceTimersByTimeAsync(NINETY_MINUTES_MS * 10)
+
+    expect(outcomes).toEqual(['permanent_failure'])
+  })
+
   it('arms nothing without the opt-in', async () => {
     const fetchImpl = vi.fn<typeof fetch>(async () => mintResponse('jwt-1'))
     const client = makeClient({ fetchImpl, refreshScheduler: undefined })

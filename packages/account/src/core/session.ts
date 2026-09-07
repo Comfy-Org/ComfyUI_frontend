@@ -162,6 +162,12 @@ export interface RefreshSchedulerOptions {
   readonly bufferMs?: number
   readonly retryBaseMs?: number
   readonly maxRetries?: number
+  /**
+   * Called with the outcome of every SCHEDULED refresh attempt (never a
+   * login or caller-initiated mint), so a host can feed its refresh
+   * telemetry without owning the scheduler.
+   */
+  readonly onScheduledOutcome?: (outcome: SessionRefreshOutcome) => void
 }
 
 export interface SessionClientOptions extends SessionRequestOptions {
@@ -548,6 +554,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   async function runScheduledRefresh(): Promise<void> {
     const user = currentUser
     if (!user) return
+    const reportOutcome = clientOptions.refreshScheduler?.onScheduledOutcome
     const startEpoch = identityEpoch
     const result = await sharedMint(user, {}, true)
     if (currentUser?.uid !== user.uid || identityEpoch !== startEpoch) return
@@ -556,6 +563,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       failure = undefined
       publish()
       armScheduledRefresh(result.session.expiresAt)
+      reportOutcome?.('succeeded')
       return
     }
     if (isPermanentSessionError(result.code)) {
@@ -563,9 +571,13 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       failure = result
       safeClear()
       publish()
+      reportOutcome?.('permanent_failure')
       return
     }
-    if (scheduledRetryCount >= schedulerMaxRetries) return
+    if (scheduledRetryCount >= schedulerMaxRetries) {
+      reportOutcome?.('retries_exhausted')
+      return
+    }
     const delay = schedulerRetryBaseMs * 2 ** scheduledRetryCount
     scheduledRetryCount += 1
     stopScheduledRefresh()
@@ -573,6 +585,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       scheduledTimer = undefined
       void runScheduledRefresh()
     }, delay)
+    reportOutcome?.('retry_scheduled')
   }
 
   async function refreshWith(
