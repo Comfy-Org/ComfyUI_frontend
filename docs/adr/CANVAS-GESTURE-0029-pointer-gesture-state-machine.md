@@ -76,18 +76,18 @@ Pointer input becomes a single explicit state machine. One pure reducer owns
 the interpretation of a gesture, and both renderers feed it.
 
 1. **One reducer.** A pure function
-   `reduceGesture(state, event, policy) → { state, commands }` owns the
-   gesture lifecycle. `GestureState` is a discriminated union of `idle`,
-   `pressed`, and `dragging`. `pressed` and `dragging` hold the press origin,
-   the `PointerTarget` captured at `down`, the button and modifiers, and (for
-   `dragging`) the drag kind. `idle` may hold the previous click (timestamp,
-   position, target key) so the reducer can recognize a double click.
-   `GestureEvent` is `down | move | up | cancel`. Every event carries pointer
-   position, modifiers, and the event timestamp; only `down` carries a
-   `PointerTarget` and a button. `move` and `up` may carry a hover or drop
-   target that the adapter resolved for link and reroute drags; the press
-   target itself never changes after `down`. The reducer never touches a
-   store, the DOM, a canvas instance, or the clock.
+   `reduceGesture(state, event) → { state, commands }` owns the gesture
+   lifecycle. `GestureState` is a discriminated union of `idle`, `pressed`, and
+   `dragging`. `pressed` and `dragging` hold the press origin, the
+   `PointerTarget` and effective policy captured at `down`, the button and
+   modifiers, and (for `dragging`) the drag kind. `idle` may hold the previous
+   click (timestamp, position, target key) so the reducer can recognize a
+   double click. `GestureEvent` is `down | move | up | cancel`. Every event
+   carries pointer position, modifiers, and the event timestamp; only `down`
+   carries a `PointerTarget`, button, and `InteractionPolicy`. `move` and `up`
+   may carry a hover or drop target that the adapter resolved for link and
+   reroute drags; the press target itself never changes after `down`. The
+   reducer never touches a store, the DOM, a canvas instance, or the clock.
 
    Transitions:
 
@@ -145,7 +145,7 @@ the interpretation of a gesture, and both renderers feed it.
    `addModifier` and `subtractModifier` names do not describe distinct behavior;
    `processSelect` consumes them only through `eitherModifier`.
 6. **`InteractionPolicy` replaces mode flags.** The reducer receives an
-   immutable policy value describing what the canvas currently allows:
+   immutable policy on `down` describing what the canvas currently allows:
    whether items may be selected, dragged, or resized, whether the canvas may
    pan, and which button opens menus. `read_only`, `allow_dragcanvas`,
    `selectOnly`, `multi_select`, and `leftMouseClickBehavior` become derived
