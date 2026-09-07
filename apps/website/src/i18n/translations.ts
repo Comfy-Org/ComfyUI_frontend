@@ -8548,7 +8548,7 @@ export function t(key: TranslationKey, locale: Locale = 'en'): string {
 
 export const translationKeys = Object.keys(translations) as TranslationKey[]
 
-export function hasKey(key: string): boolean {
+export function hasKey(key: string): key is TranslationKey {
   return key in translations
 }
 
