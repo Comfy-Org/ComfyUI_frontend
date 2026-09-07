@@ -63,7 +63,7 @@ async function createList(
 
 function requestedAfterCursors() {
   return fetchApiMock.mock.calls.slice(1).map(([url]) => {
-    const requestUrl = new URL(String(url), 'http://localhost')
+    const requestUrl = new URL(url, 'http://localhost')
     return requestUrl.searchParams.get('after')
   })
 }
