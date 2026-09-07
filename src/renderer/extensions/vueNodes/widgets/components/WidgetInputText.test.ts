@@ -92,11 +92,13 @@ describe('WidgetInputText Value Binding', () => {
       expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
       expect(input).toBeInTheDocument()
       expect(input).toHaveValue('Local draft')
+      expect(input.matches('[inert], [inert] *')).toBe(true)
       expect(onUpdate).not.toHaveBeenCalled()
 
       await rerender({ widget })
       expect(screen.queryByRole('img')).not.toBeInTheDocument()
       expect(screen.getByRole('textbox')).toBe(input)
+      expect(input.matches('[inert], [inert] *')).toBe(false)
       await user.clear(input)
       await user.type(input, 'New draft')
       expect(onUpdate).toHaveBeenLastCalledWith('New draft')

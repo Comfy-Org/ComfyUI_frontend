@@ -59,11 +59,14 @@ describe('linked widget presentation', () => {
     expect(input).toBeInTheDocument()
     expect(control).toBeInTheDocument()
     expect(input).toHaveValue('42')
+    expect(input.matches('[inert], [inert] *')).toBe(true)
+    expect(control.matches('[inert], [inert] *')).toBe(true)
     expect(onUpdate).not.toHaveBeenCalled()
     expect(updateControl).not.toHaveBeenCalled()
 
     await rerender({ widget })
     expect(screen.getByRole('spinbutton')).toBe(input)
+    expect(input.matches('[inert], [inert] *')).toBe(false)
     expect(
       screen.getByRole('button', {
         name: messages.widgets.valueControl.randomize
@@ -98,10 +101,12 @@ describe('linked widget presentation', () => {
     ).toBeInTheDocument()
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
     expect(trigger).toBeInTheDocument()
+    expect(trigger.matches('[inert], [inert] *')).toBe(true)
     expect(onUpdate).not.toHaveBeenCalled()
 
     await rerender({ widget })
     expect(screen.getByRole('combobox', { name: 'sampler' })).toBe(trigger)
+    expect(trigger.matches('[inert], [inert] *')).toBe(false)
     expect(trigger).toHaveTextContent('euler')
     await user.click(trigger)
     await user.click(await screen.findByRole('option', { name: 'heun' }))
@@ -141,11 +146,13 @@ describe('linked widget presentation', () => {
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
     expect(input).toBeInTheDocument()
     expect(input).toHaveValue('Local draft')
+    expect(input).toHaveAttribute('inert')
     expect(onUpdate).not.toHaveBeenCalled()
 
     await rerender({ widget })
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
     expect(screen.getByRole('textbox')).toBe(input)
+    expect(input).not.toHaveAttribute('inert')
     await user.clear(input)
     await user.type(input, 'New draft')
     expect(onUpdate).toHaveBeenLastCalledWith('New draft')
@@ -174,9 +181,11 @@ describe('linked widget presentation', () => {
       screen.getByRole('img', { name: 'enabled: Linked input' })
     ).toBeInTheDocument()
     expect(screen.queryByRole('switch')).not.toBeInTheDocument()
+    expect(control.matches('[inert], [inert] *')).toBe(true)
     expect(onUpdate).not.toHaveBeenCalled()
     await rerender({ widget })
     expect(screen.getByRole('switch')).toBe(control)
+    expect(control.matches('[inert], [inert] *')).toBe(false)
     expect(control).toBeChecked()
   })
 })
