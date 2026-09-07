@@ -537,6 +537,80 @@ describe('isPermanentSessionError', () => {
   )
 })
 
+describe('host-driven invalidation', () => {
+  it('drops the credential and blocks in-flight commits while keeping the identity attached', async () => {
+    let release!: (response: Response) => void
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(async () => jsonResponse(200, mintBody()))
+      .mockImplementationOnce(
+        () => new Promise<Response>((resolve) => (release = resolve))
+      )
+      .mockImplementationOnce(async () =>
+        jsonResponse(200, mintBody({ token: 'post-invalidate-jwt' }))
+      )
+    const { client } = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+    const user = testUser()
+
+    identity.fire(user)
+    await vi.waitFor(() => expect(client.getToken()).toBe('workspace-jwt'))
+    const inFlight = client.remint(user, {})
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(2))
+    client.invalidate()
+
+    expect(
+      client.getToken(),
+      'a host failing closed must never serve the previous scope mid-switch'
+    ).toBeUndefined()
+    release(jsonResponse(200, mintBody({ token: 'stale-jwt' })))
+    expect(await inFlight).toBeUndefined()
+    expect(client.getToken()).toBeUndefined()
+
+    const after = await client.remint(user, {})
+    expect(
+      after?.status === 'ok' && after.session.token,
+      'the attachment survives invalidation, so a targeted re-mint commits normally'
+    ).toBe('post-invalidate-jwt')
+  })
+})
+
+describe('transient-failure credential preservation', () => {
+  it('keeps a live credential when an opt-in remint fails transiently', async () => {
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(async () => jsonResponse(200, mintBody()))
+      .mockImplementationOnce(async () => jsonResponse(503, {}))
+      .mockImplementationOnce(async () => jsonResponse(401, {}))
+    const { client } = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+    const user = testUser()
+
+    identity.fire(user)
+    await vi.waitFor(() => expect(client.getToken()).toBe('workspace-jwt'))
+
+    const transient = await client.remint(user, {
+      preserveCredentialOnTransientFailure: true
+    })
+    expect(transient?.status).toBe('error')
+    expect(
+      client.getToken(),
+      'a transient re-mint failure must not destroy a still-valid credential'
+    ).toBe('workspace-jwt')
+
+    const permanent = await client.remint(user, {
+      preserveCredentialOnTransientFailure: true
+    })
+    expect(permanent?.status).toBe('error')
+    expect(
+      client.getToken(),
+      'preservation is transient-only; a permanent failure still commits'
+    ).toBeUndefined()
+  })
+})
+
 describe('re-mint observability', () => {
   it('publishes a fresh authenticated snapshot on every re-mint', async () => {
     let minted = 0

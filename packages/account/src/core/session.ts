@@ -149,6 +149,13 @@ export interface SessionRequestOptions {
   readonly timeoutMs?: number
   /** Mint for this workspace instead of the server-resolved personal one. */
   readonly workspaceId?: string
+  /**
+   * On a transient remint failure, keep the currently published credential
+   * instead of committing the error — for hosts whose still-valid token
+   * must survive a failed proactive or reactive refresh. Permanent
+   * failures always commit.
+   */
+  readonly preserveCredentialOnTransientFailure?: boolean
 }
 
 /**
@@ -223,6 +230,12 @@ export interface SessionClient<TUser extends AccountUser = AccountUser> {
     requestedUser?: AccountUser,
     options?: SessionRequestOptions
   ) => Promise<SessionResult | undefined>
+  /**
+   * Fail closed: drop the published credential, cancel scheduled work, and
+   * invalidate in-flight mints, keeping the identity attachment so a
+   * targeted re-mint can follow. For host flows like a workspace switch.
+   */
+  invalidate: () => void
   clearCache: () => void
 }
 
@@ -289,6 +302,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
    * happened while I was in flight" (must invalidate).
    */
   let identityEpoch = 0
+  let invalidationEpoch = 0
   const listeners = new Set<(snapshot: SessionSnapshot<TUser>) => void>()
 
   let inFlight: Promise<SessionResult> | undefined
@@ -556,8 +570,14 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     if (!user) return
     const reportOutcome = clientOptions.refreshScheduler?.onScheduledOutcome
     const startEpoch = identityEpoch
+    const startInvalidation = invalidationEpoch
     const result = await sharedMint(user, {}, true)
-    if (currentUser?.uid !== user.uid || identityEpoch !== startEpoch) return
+    if (
+      currentUser?.uid !== user.uid ||
+      identityEpoch !== startEpoch ||
+      invalidationEpoch !== startInvalidation
+    )
+      return
     if (result.status === 'ok') {
       credential = result.session
       failure = undefined
@@ -600,7 +620,11 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     if (!user) return undefined
 
     const startEpoch = identityEpoch
+    const startInvalidation = invalidationEpoch
     const result = await core(user, options)
+    if (invalidationEpoch !== startInvalidation) {
+      return undefined
+    }
     if (
       currentUser?.uid !== user.uid &&
       (identityEpoch !== startEpoch || !requestedUser || currentUser !== null)
@@ -611,6 +635,12 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       credential = result.session
       failure = undefined
       armScheduledRefresh(result.session.expiresAt)
+    } else if (
+      options.preserveCredentialOnTransientFailure === true &&
+      credential !== undefined &&
+      !isPermanentSessionError(result.code)
+    ) {
+      return result
     } else {
       credential = undefined
       failure = result
@@ -667,6 +697,13 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       refreshWith(ensureCore, requestedUser, options),
     remint: (requestedUser, options) =>
       refreshWith(remintCore, requestedUser, options),
+    invalidate() {
+      invalidationEpoch += 1
+      stopScheduledRefresh()
+      credential = undefined
+      failure = undefined
+      publish()
+    },
     clearCache() {
       safeClear()
     }
