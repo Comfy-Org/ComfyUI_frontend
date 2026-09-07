@@ -269,6 +269,7 @@
   "cli.howItWorks.step3.number": "03",
   "cli.howItWorks.step3.title": "CREATE",
   "cli.meta.description": "The command line for the full ComfyUI engine. Generate images, video, audio, and 3D from Claude Code, Codex, Cursor, or any shell, on Comfy Cloud or your own GPU.",
+  "cli.meta.keywords": "comfy cli, comfyui cli, comfyui command line, comfyui terminal, comfyui automation, comfyui ci, ai cli for coding agents, claude code image generation, comfyui batch generation",
   "cli.meta.title": "Comfy CLI - Drive ComfyUI from your terminal and any coding agent",
   "cli.session.alt": "Recorded terminal session: comfy generate saving cat.png, a workflow run on Comfy Cloud, the bundled skills list, and the two images the session saved",
   "cli.session.heading": "A real session, start to finish.",

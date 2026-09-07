@@ -42,9 +42,22 @@ describe('localizeHref', () => {
     )
   })
 
-  it('only localizes the Japanese homepage', () => {
+  /**
+   * Japanese publishes tier 1 and holds the long tail back. A held-back route
+   * is left unprefixed so nothing on the site links to a page that is not
+   * published, which is the same predicate the hreflang emitter reads.
+   *
+   * This asserted "only the home page" until P4 filled Japanese and tier 1 went
+   * live. The routes are named from both sides on purpose: a one-sided check
+   * passes just as well when the allowlist is empty as when it is right.
+   */
+  it('localizes a published Japanese route and leaves a held-back one alone', () => {
     expect(localizeHref('/', 'ja')).toBe('/ja/')
-    expect(localizeHref('/cloud', 'ja')).toBe('/cloud')
+    expect(localizeHref('/cloud', 'ja')).toBe('/ja/cloud')
+    expect(localizeHref('/about', 'ja')).toBe('/ja/about')
+
+    expect(localizeHref('/cli', 'ja')).toBe('/cli')
+    expect(localizeHref('/careers', 'ja')).toBe('/careers')
   })
 })
 

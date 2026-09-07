@@ -96,20 +96,36 @@ export function isLocale(value: string | undefined): value is Locale {
 }
 
 /**
- * Routes a partially-translated locale actually serves.
+ * Routes a partially-translated locale actually publishes.
  *
- * Chinese is absent because it has a twin for nearly every route, so it gets a
- * blanket yes and `LOCALE_INVARIANT_PATHS` carves out the exceptions. Japanese
- * is the other way round: one page today, so the same blanket rule would offer
- * around 58 Japanese URLs that do not exist.
+ * Chinese is absent because it is fully translated, so it gets a blanket yes and
+ * `LOCALE_INVARIANT_PATHS` carves out the exceptions.
  *
- * P3 generates the Japanese page shells and generates this set with them, at
- * which point `ja` moves to the blanket rule and this entry disappears.
+ * P3 changed what this set means. It used to record which Japanese pages
+ * existed, because only one did; Astro's fallback now builds all 560, so the
+ * question is which of them we publish. It is the only lever, gating indexing,
+ * the sitemap, and whether any link on the site points there.
+ *
+ * Japanese is 99% translated as of P4, and publishes tier 1: the home page plus
+ * `/download`, `/cloud`, `/platform` and `/about`. The long tail follows in its
+ * own change rather than all at once, which is the pattern Google's
+ * scaled-content-abuse policy targets.
+ *
+ * `/pricing` was named in tier 1 and is deliberately NOT here. Its 21 FAQ items
+ * come from an MDX content collection that has no Japanese, so they fall back to
+ * English: the page measures 48% translated where 85% is achievable, and the FAQ
+ * is most of a pricing page's substance. Add it once the MDX adapter exists.
+ *
+ * The other 66 pages below their ceiling are the same two gaps — the MDX
+ * collections and `src/data/*.ts` — plus the legal pages, which are English on
+ * purpose. `pnpm build && pnpm i18n:report` lists them.
  *
  * Paths carry no trailing slash, matching `baseRoutes` and `englishPath`.
  */
-const PARTIAL_LOCALE_ROUTES: Partial<Record<Locale, ReadonlySet<string>>> = {
-  ja: new Set(['/'])
+export const PARTIAL_LOCALE_ROUTES: Partial<
+  Record<Locale, ReadonlySet<string>>
+> = {
+  ja: new Set(['/', '/download', '/cloud', '/platform', '/about'])
 }
 
 /**
@@ -145,10 +161,10 @@ const INDEXABLE_PAGES: Record<
 > = {
   // Complete and human-approved, so every page it serves is fair game.
   'zh-CN': 'all',
-  // Japanese has one page today and it is already indexed; whether a
-  // 94%-English page should stay that way was deferred to P4, so this holds the
-  // current behaviour rather than silently changing it. When P3 generates the
-  // shells this narrows to the tier-1 pages the plan wants launched first.
+  // Japanese is gated by `PARTIAL_LOCALE_ROUTES` above, so 'all' means every
+  // route it publishes rather than every route there is. Its home page stays
+  // indexed while P4 fills it, rather than changing live behaviour twice in one
+  // release.
   ja: 'all'
 }
 

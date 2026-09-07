@@ -9,7 +9,11 @@ describe('t() fallback semantics', () => {
   })
 
   it('falls back to English when Japanese copy is missing', () => {
-    expect(t('tags.partnerNodes', 'ja')).toBe('Partner Nodes')
+    // A contract key, not an ordinary one. `tags.partnerNodes` stood here until
+    // P4 machine-translated it, which is what an arbitrary "untranslated"
+    // example is always going to do. `tos.*` is in NEVER_TRANSLATED_NAMESPACES,
+    // so no run can ever fill it and this example cannot rot.
+    expect(t('tos.effectiveDateLabel', 'ja')).toBe('Effective Date')
   })
 
   it('preserves intentional empty string translations', () => {
@@ -43,14 +47,23 @@ describe('resolveTranslation provenance', () => {
   })
 
   /**
-   * Japanese is barely started, so most keys still fall through to English.
-   * That is the signal the indexability predicate will consume: a page built
-   * from keys resolving to `english` is not genuinely translated.
+   * A key resolving to `english` is the signal the indexability predicate
+   * consumes: a page built from those is not genuinely translated.
+   *
+   * Japanese was 1% translated when this was written and is now filled, so the
+   * example has to be a key that stays English by construction rather than one
+   * that merely happens to be missing today.
    */
   it('reports an untranslated key as English, not as a translation', () => {
-    expect(resolveTranslation('tags.partnerNodes', 'ja')).toEqual({
-      value: 'Partner Nodes',
+    expect(resolveTranslation('tos.effectiveDateLabel', 'ja')).toEqual({
+      value: 'Effective Date',
       provenance: 'english'
     })
+  })
+
+  it('reports machine-filled Japanese as machine, not as approved', () => {
+    const resolved = resolveTranslation('tags.partnerNodes', 'ja')
+    expect(resolved.provenance).toBe('machine')
+    expect(resolved.value).not.toBe('Partner Nodes')
   })
 })

@@ -2176,6 +2176,7 @@
   "privacy.hero.title": "Privacy Policy",
   "desktop_privacy.hero.title": "Desktop Privacy Policy",
   "home.meta.keywords": "comfyui app, comfyui web app, comfy ui application, comfyui application, comfy app, comfyui, visual ai app, node-based ai, generative ai workflows",
+  "cli.meta.keywords": "comfy cli, comfyui cli, comfyui command line, comfyui terminal, comfyui automation, comfyui ci, ai cli for coding agents, claude code image generation, comfyui batch generation",
   "cloud.meta.keywords": "comfyui web app, comfyui app, comfyui online, comfyui cloud, comfy cloud, comfy ui application, comfyui browser, cloud comfyui, managed comfyui",
   "download.meta.keywords": "comfyui app, comfyui desktop app, comfyui desktop, comfy ui application, comfyui download, download comfyui, comfyui windows, comfyui mac, comfyui linux"
 }
