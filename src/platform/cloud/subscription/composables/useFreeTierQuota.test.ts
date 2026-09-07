@@ -23,7 +23,9 @@ vi.mock('@/composables/useFeatureFlags', () => ({
 }))
 
 const mockCreditBadges = vi.hoisted<{ value: object[] }>(() => ({ value: [] }))
-vi.mock('@/scripts/app', () => ({ app: { graph: { rootGraph: {} } } }))
+vi.mock('@/scripts/app', () => ({
+  app: { isGraphReady: true, rootGraph: {} }
+}))
 vi.mock('@/systems/badgeSystem', () => ({
   graphCreditsBadges: () => mockCreditBadges.value
 }))
