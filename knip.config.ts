@@ -27,6 +27,9 @@ const config: KnipConfig = {
     'packages/auth-core': {
       project: ['src/**/*.{js,ts,vue}']
     },
+    'packages/account': {
+      project: ['src/**/*.{js,ts,vue}']
+    },
     'packages/design-system': {
       project: ['src/**/*.{css,js,ts}']
     },
