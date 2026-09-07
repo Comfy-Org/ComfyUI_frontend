@@ -283,6 +283,14 @@ onMounted(async () => {
     await withLoadFailureToast(() => modelStore.loadModels())
   }
 })
+
+// Off-cloud the assets capability arrives on the WS handshake, which can land
+// after this tab mounted. Sampling it only in onMounted would leave the tree
+// empty with the load-all button already hidden by `v-if="!usesAssetApi"`,
+// leaving no affordance to populate it.
+watch(usesAssetApi, async (enabled) => {
+  if (enabled) await withLoadFailureToast(() => modelStore.loadModels())
+})
 </script>
 
 <style scoped>
