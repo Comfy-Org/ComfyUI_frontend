@@ -138,6 +138,65 @@ describe('agentRunModeStore', () => {
     expect(store.mode).toBe('auto_limited')
   })
 
+  it('keeps the latest save when an earlier PUT resolves last', async () => {
+    let resolveFirst!: (response: Response) => void
+    let resolveSecond!: (response: Response) => void
+    fetchApi
+      .mockImplementationOnce(
+        () =>
+          new Promise<Response>((resolve) => {
+            resolveFirst = resolve
+          })
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise<Response>((resolve) => {
+            resolveSecond = resolve
+          })
+      )
+    const store = useAgentRunModeStore()
+
+    const first = store.save('auto_limited', 20)
+    const second = store.save('auto', null)
+    resolveSecond(jsonResponse(200, { mode: 'auto', credit_limit: null }))
+    await second
+    resolveFirst(jsonResponse(200, { mode: 'auto_limited', credit_limit: 20 }))
+    await first
+
+    expect(store.mode).toBe('auto')
+    expect(store.creditLimit).toBeNull()
+  })
+
+  it('applies an earlier save when the latest one fails', async () => {
+    let resolveFirst!: (response: Response) => void
+    let resolveSecond!: (response: Response) => void
+    fetchApi
+      .mockImplementationOnce(
+        () =>
+          new Promise<Response>((resolve) => {
+            resolveFirst = resolve
+          })
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise<Response>((resolve) => {
+            resolveSecond = resolve
+          })
+      )
+    const store = useAgentRunModeStore()
+
+    const first = store.save('auto_limited', 20)
+    const second = store.save('auto', null)
+
+    resolveSecond(jsonResponse(500, { error: 'boom' }))
+    await expect(second).rejects.toThrow()
+    resolveFirst(jsonResponse(200, { mode: 'auto_limited', credit_limit: 20 }))
+    await first
+
+    expect(store.mode).toBe('auto_limited')
+    expect(store.creditLimit).toBe(20)
+  })
+
   it('keeps a valid local preference when the endpoint is unavailable', async () => {
     localStorage.setItem(
       'Comfy.Agent.RunModePreference',

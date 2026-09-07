@@ -63,7 +63,13 @@ describe('per-locale dictionary budget', () => {
    * only that locale's readers, not everybody. Raise it deliberately when the
    * copy genuinely grows, and say why.
    */
-  const BUDGET_BYTES = 320_000
+  //
+  // Raised from 320,000 on 2026-09-07. Two things grew the copy for real: P4
+  // filled Japanese, and merging main added a launch page (76 keys). Japanese
+  // is the largest at 320,832 bytes raw because kana and kanji are three bytes
+  // each in UTF-8 where Latin is one — compressed it is 87 KB against English's
+  // 78 KB, so the gap a reader actually pays is about 9 KB, not 44 KB.
+  const BUDGET_BYTES = 340_000
 
   it.for(LOCALE_CODES)('keeps %s within budget', (locale) => {
     const file = join(i18nDir, 'resolved', `${locale}.json`)

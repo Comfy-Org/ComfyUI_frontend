@@ -1,18 +1,16 @@
 // @vitest-environment happy-dom
-import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { t } from '../../i18n/translations'
 import ServerlessDeploySection from './ServerlessDeploySection.vue'
 
-const commandLines = () =>
-  (screen.getByRole('tabpanel').textContent ?? '')
-    .split('\n')
-    .filter((line) => line.startsWith('$ '))
+vi.mock('../../composables/useReducedMotion', () => ({
+  prefersReducedMotion: () => true
+}))
 
 describe('ServerlessDeploySection', () => {
-  it('walks through the install flow first and the workflow flow on demand', async () => {
+  it('presents the deploy transcript as a live terminal', () => {
     render(ServerlessDeploySection, { props: { locale: 'en' } })
 
     expect(
@@ -22,26 +20,22 @@ describe('ServerlessDeploySection', () => {
       })
     ).toBeTruthy()
     expect(
-      screen.getByText(
-        /Easily package up your existing ComfyUI environment or a single workflow,\s+then deploy it to Comfy API\./
-      )
+      screen.getByText(t('platform.serverlessDeploy.shipSubtitle', 'en'))
     ).toBeTruthy()
-    expect(commandLines()).toEqual([
+
+    const terminal = screen.getByRole('img', {
+      name: t('platform.serverlessDeploy.heading', 'en')
+    })
+    const transcript = terminal.textContent ?? ''
+    for (const line of [
       '$ comfy build init',
+      '✔ Scanned this ComfyUI install — custom nodes, models, pinned deps',
       '$ comfy build push --release --target linux/nvidia',
-      '$ comfy deploy up'
-    ])
-
-    await userEvent.click(
-      screen.getByRole('tab', {
-        name: t('platform.serverlessDeploy.tabWorkflow', 'en')
-      })
-    )
-
-    expect(commandLines()).toEqual([
-      '$ comfy build init --from-workflow ./workflow.json --comfy-version v0.34.2',
-      '$ comfy build push --release --target linux/nvidia',
-      '$ comfy deploy up'
-    ])
+      '✔ Build released',
+      '$ comfy deploy up',
+      '✔ Endpoint live → https://your-build.run.comfy.app'
+    ]) {
+      expect(transcript).toContain(line)
+    }
   })
 })

@@ -28,10 +28,8 @@ import { getAssetUrl } from '../utils/assetUrlUtil'
 import { clearDeletedAssetWidgetValues } from '../utils/clearDeletedAssetWidgetValues'
 import { clearNodePreviewCacheForValues } from '../utils/clearNodePreviewCacheForValues'
 import { markDeletedAssetsAsMissingMedia } from '../utils/markDeletedAssetsAsMissingMedia'
-import {
-  getTotalAssetOutputCount,
-  resolveOutputAssetItems
-} from '../utils/outputAssetUtil'
+import { getTotalAssetOutputCount } from '../utils/outputAssetCountUtil'
+import { resolveOutputAssetItems } from '../utils/outputAssetUtil'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
@@ -327,14 +325,6 @@ export function useMediaAssetActions() {
     }
 
     const nodeDef = nodeDefStore.nodeDefsByName[nodeType]
-    if (!nodeDef) {
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('mediaAsset.nodeTypeNotFound', { nodeType })
-      })
-      return
-    }
 
     const node = withNodeAddSource('programmatic', () =>
       litegraphService.addNodeOnGraph(nodeDef, {
@@ -441,8 +431,6 @@ export function useMediaAssetActions() {
    * Creates loader nodes for each asset
    */
   const addMultipleToWorkflow = async (assets: AssetItem[]) => {
-    if (!assets || assets.length === 0) return
-
     const NODE_OFFSET = 50
     let nodeIndex = 0
     let succeeded = 0
@@ -457,10 +445,6 @@ export function useMediaAssetActions() {
       }
 
       const nodeDef = nodeDefStore.nodeDefsByName[nodeType]
-      if (!nodeDef) {
-        failed++
-        continue
-      }
 
       const center = litegraphService.getCanvasCenter()
       const node = withNodeAddSource('programmatic', () =>
@@ -521,8 +505,6 @@ export function useMediaAssetActions() {
    * Open workflows from multiple assets in new tabs
    */
   const openMultipleWorkflows = async (assets: AssetItem[]) => {
-    if (!assets || assets.length === 0) return
-
     let succeeded = 0
     let failed = 0
 
@@ -575,8 +557,6 @@ export function useMediaAssetActions() {
    * Export workflows from multiple assets as JSON files
    */
   const exportMultipleWorkflows = async (assets: AssetItem[]) => {
-    if (!assets || assets.length === 0) return
-
     let succeeded = 0
     let failed = 0
 
@@ -681,7 +661,7 @@ export function useMediaAssetActions() {
         const metadata = getOutputAssetMetadata(asset.user_metadata)
         const childAssets: AssetDeletion[] = (
           metadata?.allOutputs ?? []
-        )?.flatMap((output) => {
+        ).flatMap((output) => {
           if (!output.assetId) return []
 
           const variants = widgetValueVariants(
@@ -802,7 +782,7 @@ export function useMediaAssetActions() {
     ).flat()
 
     const rootGraph = app.rootGraph
-    if (rootGraph && deletedVariants.size) {
+    if (deletedVariants.size) {
       const nodeOutputStore = useNodeOutputStore()
       // Order matters: mark + cache-clear both look up nodes by
       // current widget.value, so they must run before
@@ -812,7 +792,7 @@ export function useMediaAssetActions() {
         nodeOutputStore.removeNodeOutputsForNode(node)
       )
       clearDeletedAssetWidgetValues(rootGraph, deletedVariants)
-      useWorkflowStore().activeWorkflow?.changeTracker?.captureCanvasState()
+      useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
     }
 
     for (const category of invalidatedModelTags)

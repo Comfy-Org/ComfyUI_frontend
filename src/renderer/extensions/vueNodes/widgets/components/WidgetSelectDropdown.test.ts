@@ -17,21 +17,15 @@ import { createMockWidget } from './widgetTestUtils'
 const mockCheckState = vi.hoisted(() => vi.fn())
 const mockAssetsData = vi.hoisted(() => ({ items: [] as AssetItem[] }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
-  const actual = await vi.importActual(
-    '@/platform/workflow/management/stores/workflowStore'
-  )
-  return {
-    ...actual,
-    useWorkflowStore: () => ({
-      activeWorkflow: {
-        changeTracker: {
-          checkState: mockCheckState
-        }
+vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
+  useWorkflowStore: () => ({
+    activeWorkflow: {
+      changeTracker: {
+        checkState: mockCheckState
       }
-    })
-  }
-})
+    }
+  })
+}))
 
 vi.mock('@/scripts/api')
 
@@ -168,6 +162,21 @@ describe('WidgetSelectDropdown', () => {
     })
     renderComponent(widget, 'img_001.png')
     expect(screen.getByText('img_001.png')).toBeDefined()
+  })
+
+  it('allows EXR files for image uploads', () => {
+    const widget = createMockWidget<string | undefined>({
+      value: undefined,
+      name: 'test_image',
+      type: 'combo',
+      options: { values: [] }
+    })
+    renderComponent(widget, undefined)
+
+    expect(screen.getByLabelText('g.upload')).toHaveAttribute(
+      'accept',
+      'image/*,.exr'
+    )
   })
 
   it('renders in cloud asset mode', () => {

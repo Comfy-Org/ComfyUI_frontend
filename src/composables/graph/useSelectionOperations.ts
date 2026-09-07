@@ -24,7 +24,7 @@ export function useSelectionOperations() {
 
   const copySelection = () => {
     const canvas = app.canvas
-    if (!canvas.selectedItems || canvas.selectedItems.size === 0) {
+    if (canvas.selectedItems.size === 0) {
       toastStore.add({
         severity: 'warn',
         summary: t('g.nothingToCopy'),
@@ -48,12 +48,12 @@ export function useSelectionOperations() {
     canvas.pasteFromClipboard({ connectInputs: false })
 
     // Trigger change tracking
-    workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+    workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
   }
 
   const duplicateSelection = () => {
     const canvas = app.canvas
-    if (!canvas.selectedItems || canvas.selectedItems.size === 0) {
+    if (canvas.selectedItems.size === 0) {
       toastStore.add({
         severity: 'warn',
         summary: t('g.nothingToDuplicate'),
@@ -74,7 +74,7 @@ export function useSelectionOperations() {
     canvas.pasteFromClipboard({ connectInputs: false })
 
     // Trigger change tracking
-    workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+    workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
   }
 
   const deleteSelection = () => {
@@ -82,7 +82,7 @@ export function useSelectionOperations() {
     // Picking nodes for the agent is not editing: deleting stays off until the
     // mode ends.
     if (isSelectOnly(canvas)) return
-    if (!canvas.selectedItems || canvas.selectedItems.size === 0) {
+    if (canvas.selectedItems.size === 0) {
       toastStore.add({
         severity: 'warn',
         summary: t('g.nothingToDelete'),
@@ -96,7 +96,7 @@ export function useSelectionOperations() {
     canvas.setDirty(true, true)
 
     // Trigger change tracking
-    workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+    workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
   }
 
   const renameSelection = async () => {
@@ -126,7 +126,7 @@ export function useSelectionOperations() {
           const titledItem = item as { title: string }
           titledItem.title = newTitle
           app.canvas.setDirty(true, true)
-          workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+          workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
         }
       }
       return
@@ -149,7 +149,7 @@ export function useSelectionOperations() {
           }
         })
         app.canvas.setDirty(true, true)
-        workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+        workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
       }
       return
     }

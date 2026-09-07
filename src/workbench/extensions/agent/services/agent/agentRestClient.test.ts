@@ -8,6 +8,7 @@ const fetchApi = vi.hoisted(() =>
 vi.mock('@/scripts/api', () => ({ api: { fetchApi } }))
 
 import { AgentApiError, createAgentRestClient } from './agentRestClient'
+import type { AgentRestClient } from './agentRestClient'
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -62,18 +63,17 @@ describe('agentRestClient route + method', () => {
 
   it('gets and puts the run-mode preference using the API contract', async () => {
     const preference = { mode: 'auto_limited' as const, credit_limit: 25 }
+    const client: AgentRestClient = createAgentRestClient()
     respond(jsonResponse(200, preference))
 
-    await expect(createAgentRestClient().getRunMode()).resolves.toEqual(
-      preference
-    )
+    await expect(client.getRunMode()).resolves.toEqual(preference)
     expect(lastCall()).toMatchObject({
       route: '/agent/run-mode',
       init: { method: 'GET' }
     })
 
     respond(jsonResponse(200, preference))
-    await createAgentRestClient().putRunMode(preference)
+    await client.putRunMode(preference)
     const { route, init } = lastCall()
     expect(route).toBe('/agent/run-mode')
     expect(init.method).toBe('PUT')
@@ -103,6 +103,16 @@ describe('agentRestClient route + method', () => {
     expect(route).toBe('/agent/threads/t7/messages/m3/cancel')
     expect(init.method).toBe('POST')
     expect(init.body).toBe('{}')
+  })
+
+  it('answerAsk POSTs the selected option to the encoded ask path', async () => {
+    respond(jsonResponse(202, { status: 'answered' }))
+    await makeClient().answerAsk('t7', 'turn-1:call/1', ['run'])
+
+    const { route, init } = lastCall()
+    expect(route).toBe('/agent/threads/t7/asks/turn-1%3Acall%2F1/answer')
+    expect(init.method).toBe('POST')
+    expect(JSON.parse(init.body as string)).toEqual({ selected: ['run'] })
   })
 
   it('listCloudWorkflows GETs the paginated workflows path until has_more is false', async () => {

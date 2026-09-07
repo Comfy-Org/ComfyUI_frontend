@@ -1,0 +1,45 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro'
+import ProductCardsSection from '../components/common/ProductCardsSection.vue'
+import HeroSection from '../templates/cloud-nodes/HeroSection.vue'
+import SetupSection from '../templates/cloud-nodes/SetupSection.vue'
+import ModelsSection from '../templates/cloud-nodes/ModelsSection.vue'
+import HowItWorksSection from '../templates/cloud-nodes/HowItWorksSection.vue'
+import WhySection from '../templates/cloud-nodes/WhySection.vue'
+import FAQSection from '../templates/cloud-nodes/FAQSection.vue'
+import ClosingCtaSection from '../templates/cloud-nodes/ClosingCtaSection.vue'
+import { t } from '../i18n/translations'
+import { absoluteUrl, pageContext } from '../utils/jsonLd'
+import { localizeHref } from '../config/routes'
+
+const { locale, canonicalLocale } = pageContext(
+  Astro.site,
+  Astro.originPathname,
+  Astro.currentLocale
+)
+---
+
+<BaseLayout
+  title={t('cloudNodesLaunch.meta.title', locale)}
+  description={t('cloudNodesLaunch.meta.description', locale)}
+  breadcrumbs={[
+    {
+      name: t('breadcrumb.home', locale),
+      url: absoluteUrl(Astro.site, localizeHref('/', canonicalLocale))
+    },
+    { name: t('breadcrumb.cloudNodes', locale) }
+  ]}
+>
+  <HeroSection locale={locale} client:load />
+  <SetupSection locale={locale} />
+  <ModelsSection locale={locale} client:visible />
+  <HowItWorksSection locale={locale} />
+  <WhySection locale={locale} />
+  <ProductCardsSection
+    locale={locale}
+    label-key="products.labelProducts"
+    cta-variant="underlineLink"
+  />
+  <FAQSection client:visible locale={locale} />
+  <ClosingCtaSection locale={locale} />
+</BaseLayout>

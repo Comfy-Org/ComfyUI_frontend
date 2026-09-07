@@ -17,11 +17,11 @@ import NodePreview from './NodePreview.vue'
 // jsdom does not implement ResizeObserver (happy-dom does); stub it before
 // component modules construct their module-level observer at import time.
 vi.hoisted(() => {
-  globalThis.ResizeObserver ??= class {
+  globalThis.ResizeObserver = class {
     observe() {}
     unobserve() {}
     disconnect() {}
-  } as unknown as typeof ResizeObserver
+  }
 })
 
 describe('NodePreview', () => {
@@ -243,7 +243,7 @@ describe('NodePreview', () => {
       expect(description).toBeInTheDocument()
     })
 
-    it('uses v-html directive for rendered content', () => {
+    it('renders markdown as HTML', () => {
       const htmlNodeDef: ComfyNodeDefV2 = {
         ...mockNodeDef,
         description: 'Content with **bold** text'
