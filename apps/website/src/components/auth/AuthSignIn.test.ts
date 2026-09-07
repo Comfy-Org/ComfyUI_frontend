@@ -28,7 +28,7 @@ vi.mock('../../scripts/posthog', async () => {
   }
 })
 
-vi.mock('@comfyorg/auth-core/TurnstileWidget.vue', async () => {
+vi.mock('@comfyorg/account/TurnstileWidget.vue', async () => {
   const { defineComponent, h, onMounted } = await import('vue')
   return {
     default: defineComponent({

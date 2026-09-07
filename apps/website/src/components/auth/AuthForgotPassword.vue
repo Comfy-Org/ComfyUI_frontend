@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { classifyAuthError } from '@comfyorg/auth-core/firebaseAuthError'
+import { classifyAuthError } from '@comfyorg/account/firebaseAuthError'
 import { onMounted, ref } from 'vue'
 
 import { authSchemasFor } from '../../config/auth-schemas'

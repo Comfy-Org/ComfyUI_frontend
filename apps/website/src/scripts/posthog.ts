@@ -2,11 +2,13 @@ import posthog from 'posthog-js'
 import { readonly, ref } from 'vue'
 import type { Ref } from 'vue'
 
+import { SESSION_TELEMETRY_EVENT } from '@comfyorg/account/core'
+import type { SessionRefreshOutcome } from '@comfyorg/account/core'
 import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
 import {
   normalizeTurnstileMode,
   type TurnstileMode
-} from '@comfyorg/auth-core/turnstile'
+} from '@comfyorg/account/turnstile'
 
 import type { Platform } from '@/composables/useDownloadUrl'
 import type { ConnectionId, McpClientId } from '@/config/mcpClients'
@@ -25,7 +27,11 @@ const ANALYTICS_EVENT = {
   cliConnectionTabClicked: 'website:cli_connection_tab_clicked',
   cliClientTabClicked: 'website:cli_client_tab_clicked',
   mcpConnectionTabClicked: 'website:mcp_connection_tab_clicked',
-  mcpClientTabClicked: 'website:mcp_client_tab_clicked'
+  mcpClientTabClicked: 'website:mcp_client_tab_clicked',
+  // Shared with the cloud app (no website: prefix) so one PostHog funnel
+  // covers auth-refresh outcomes across every surface.
+  authRefreshSucceeded: SESSION_TELEMETRY_EVENT.refreshSucceeded,
+  authRefreshFailed: SESSION_TELEMETRY_EVENT.refreshFailed
 } as const
 
 export type CliClientId =
@@ -57,6 +63,12 @@ type AnalyticsEvent =
   | {
       name: typeof ANALYTICS_EVENT.mcpClientTabClicked
       properties: { client: McpClientId }
+    }
+  | {
+      name:
+        | typeof ANALYTICS_EVENT.authRefreshSucceeded
+        | typeof ANALYTICS_EVENT.authRefreshFailed
+      properties: { outcome: SessionRefreshOutcome }
     }
 
 let initialized = false
@@ -162,5 +174,19 @@ export function captureMcpClientTabClick(client: McpClientId): void {
   captureEvent({
     name: ANALYTICS_EVENT.mcpClientTabClicked,
     properties: { client }
+  })
+}
+
+export function captureAuthRefreshSucceeded(): void {
+  captureEvent({
+    name: ANALYTICS_EVENT.authRefreshSucceeded,
+    properties: { outcome: 'succeeded' }
+  })
+}
+
+export function captureAuthRefreshFailed(outcome: SessionRefreshOutcome): void {
+  captureEvent({
+    name: ANALYTICS_EVENT.authRefreshFailed,
+    properties: { outcome }
   })
 }

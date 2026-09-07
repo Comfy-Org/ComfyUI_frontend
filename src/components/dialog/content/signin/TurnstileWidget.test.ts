@@ -11,7 +11,7 @@ const { lightTheme, sharedProps, sharedReset } = vi.hoisted(() => ({
   sharedReset: vi.fn()
 }))
 
-vi.mock('@comfyorg/auth-core/TurnstileWidget.vue', async () => {
+vi.mock('@comfyorg/account/TurnstileWidget.vue', async () => {
   const { defineComponent, h } = await import('vue')
   return {
     default: defineComponent({
@@ -31,7 +31,7 @@ vi.mock('@comfyorg/auth-core/TurnstileWidget.vue', async () => {
   }
 })
 
-vi.mock('@comfyorg/auth-core/turnstileScript', () => ({
+vi.mock('@comfyorg/account/turnstileScript', () => ({
   loadTurnstile: vi.fn()
 }))
 

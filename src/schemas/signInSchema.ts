@@ -1,8 +1,8 @@
-import { createAuthSchemas } from '@comfyorg/auth-core/signInSchemas'
+import { createAuthSchemas } from '@comfyorg/account/signInSchemas'
 
 import { t } from '@/i18n'
 
-export type { SignInData, SignUpData } from '@comfyorg/auth-core/signInSchemas'
+export type { SignInData, SignUpData } from '@comfyorg/account/signInSchemas'
 
 export const {
   apiKeySchema,

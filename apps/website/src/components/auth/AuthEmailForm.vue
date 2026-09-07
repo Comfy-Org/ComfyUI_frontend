@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, useTemplateRef } from 'vue'
 
-import TurnstileWidget from '@comfyorg/auth-core/TurnstileWidget.vue'
+import TurnstileWidget from '@comfyorg/account/TurnstileWidget.vue'
 import {
   isTurnstileEnabled,
   useTurnstileGate
-} from '@comfyorg/auth-core/turnstile'
+} from '@comfyorg/account/turnstile'
 
 import { authSchemasFor } from '../../config/auth-schemas'
 import { WORKSHOP_TURNSTILE_SITE_KEY } from '../../config/workshop-env'

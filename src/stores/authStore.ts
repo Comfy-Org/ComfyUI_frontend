@@ -23,7 +23,7 @@ import { useFirebaseAuth } from 'vuefire'
 import {
   signUpWithProvisioning,
   socialSignInWithProvisioning
-} from '@comfyorg/auth-core/provisioning'
+} from '@comfyorg/account/provisioning'
 
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'

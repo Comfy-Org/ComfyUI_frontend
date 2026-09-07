@@ -1,18 +1,30 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { WorkshopSession } from './workshop-session'
+import type { WorkshopSession } from './workshop-session-state'
 
-const h = vi.hoisted(() => ({
-  initialFlag: true,
-  flag: undefined as { value: boolean } | undefined,
-  emitUser: undefined as ((user: unknown) => void) | undefined,
-  onUserChanged: vi.fn(),
-  stopUserChanged: vi.fn(),
-  ensureFresh: vi.fn(),
-  remint: vi.fn(),
-  clear: vi.fn()
-}))
+const h = vi.hoisted(() => {
+  const state = {
+    initialFlag: true,
+    flag: undefined as { value: boolean } | undefined,
+    listeners: new Set<(snapshot: unknown) => void>(),
+    snapshot: {
+      phase: 'signed-out',
+      user: null,
+      session: undefined
+    } as unknown,
+    firebaseEvaluated: vi.fn(),
+    attachIdentity: vi.fn(() => () => undefined),
+    ensureFresh: vi.fn(),
+    remint: vi.fn(),
+    clearCache: vi.fn(),
+    publish(next: unknown) {
+      state.snapshot = next
+      state.listeners.forEach((listener) => listener(next))
+    }
+  }
+  return state
+})
 
 vi.mock('../scripts/posthog', async () => {
   const { ref } = await import('vue')
@@ -21,19 +33,28 @@ vi.mock('../scripts/posthog', async () => {
   return { useWorkshopAuthFlag: () => flag }
 })
 
-vi.mock('./workshop-firebase', () => ({
-  onWorkshopUserChanged: (cb: (user: unknown) => void) => {
-    h.emitUser = cb
-    h.onUserChanged()
-    return h.stopUserChanged
-  },
-  signOutWorkshop: vi.fn()
-}))
+vi.mock('./workshop-firebase', () => {
+  h.firebaseEvaluated()
+  return {
+    onWorkshopUserChanged: () => () => undefined,
+    signOutWorkshop: vi.fn()
+  }
+})
 
-vi.mock('./workshop-session', () => ({
-  ensureFreshWorkshopSession: h.ensureFresh,
-  remintWorkshopSession: h.remint,
-  clearWorkshopSession: h.clear
+vi.mock('./workshop-account', () => ({
+  workshopSessionClient: {
+    subscribe: (listener: (snapshot: unknown) => void) => {
+      h.listeners.add(listener)
+      listener(h.snapshot)
+      return () => h.listeners.delete(listener)
+    },
+    attachIdentity: h.attachIdentity,
+    ensureFresh: h.ensureFresh,
+    remint: h.remint,
+    clearCache: h.clearCache,
+    getSnapshot: () => h.snapshot,
+    getToken: vi.fn()
+  }
 }))
 
 const okSession: WorkshopSession = {
@@ -45,24 +66,28 @@ const okSession: WorkshopSession = {
   role: 'owner'
 }
 
+function authenticatedSnapshot() {
+  return {
+    phase: 'authenticated',
+    user: { uid: 'user-1' },
+    session: okSession
+  }
+}
+
 async function importFresh() {
   vi.resetModules()
   const mod = await import('./workshop-session-state')
   const session = mod.useWorkshopSession()
   if (h.initialFlag) {
-    await vi.waitFor(() => expect(h.onUserChanged).toHaveBeenCalledOnce())
+    await vi.waitFor(() => expect(h.attachIdentity).toHaveBeenCalledOnce())
   }
   return session
 }
 
 beforeEach(() => {
-  h.emitUser = undefined
   h.initialFlag = true
-  h.onUserChanged.mockClear()
-  h.stopUserChanged.mockClear()
-  h.ensureFresh.mockReset()
-  h.remint.mockReset()
-  h.clear.mockReset()
+  h.listeners.clear()
+  h.snapshot = { phase: 'signed-out', user: null, session: undefined }
 })
 
 describe('useWorkshopSession', () => {
@@ -70,57 +95,72 @@ describe('useWorkshopSession', () => {
     h.initialFlag = false
     await importFresh()
 
-    expect(h.onUserChanged).not.toHaveBeenCalled()
+    expect(h.firebaseEvaluated).not.toHaveBeenCalled()
     h.flag!.value = true
-    await vi.waitFor(() => expect(h.onUserChanged).toHaveBeenCalledOnce())
+    await vi.waitFor(() => expect(h.attachIdentity).toHaveBeenCalledOnce())
+    expect(h.firebaseEvaluated).toHaveBeenCalledOnce()
   })
 
   it('publishes the session when a restored user mints successfully', async () => {
-    h.ensureFresh.mockResolvedValue({ status: 'ok', session: okSession })
     const s = await importFresh()
 
-    h.emitUser?.({ uid: 'user-1' })
+    h.publish(authenticatedSnapshot())
+
     await vi.waitFor(() => expect(s.session.value).toEqual(okSession))
     expect(s.signedIn.value).toBe(true)
   })
 
   it('drops the stale session when a refresh fails, so no stale token is served', async () => {
-    h.ensureFresh
-      .mockResolvedValueOnce({ status: 'ok', session: okSession })
-      .mockResolvedValueOnce({ status: 'error', reason: 'http' })
     const s = await importFresh()
-    h.emitUser?.({ uid: 'user-1' })
+    h.publish(authenticatedSnapshot())
     await vi.waitFor(() => expect(s.session.value).toEqual(okSession))
 
-    const result = await s.ensureFresh()
+    h.publish({
+      phase: 'error',
+      user: { uid: 'user-1' },
+      session: undefined,
+      failure: { status: 'error', code: 'TOKEN_EXCHANGE_FAILED' }
+    })
 
-    expect(result?.status).toBe('error')
-    expect(
-      s.session.value,
-      'a failed refresh must clear the session, or the run path fires with a stale token'
-    ).toBeUndefined()
+    await vi.waitFor(() =>
+      expect(
+        s.session.value,
+        'a failed refresh must clear the session, or the run path fires with a stale token'
+      ).toBeUndefined()
+    )
   })
 
   it('mints directly from a popup user before the listener publishes it', async () => {
-    h.ensureFresh.mockResolvedValue({ status: 'ok', session: okSession })
     const s = await importFresh()
-    const popupUser = { uid: 'user-1' }
+    const popupUser = { uid: 'user-1', getIdToken: async () => 'id-token' }
 
-    const result = await s.ensureFresh(popupUser as never)
+    await s.ensureFresh(popupUser)
 
     expect(h.ensureFresh).toHaveBeenCalledWith(popupUser)
-    expect(result?.status).toBe('ok')
-    expect(s.session.value).toEqual(okSession)
   })
 
   it('clears the session on sign-out', async () => {
-    h.ensureFresh.mockResolvedValue({ status: 'ok', session: okSession })
     const s = await importFresh()
-    h.emitUser?.({ uid: 'user-1' })
+    h.publish(authenticatedSnapshot())
     await vi.waitFor(() => expect(s.session.value).toEqual(okSession))
 
-    h.emitUser?.(null)
+    h.publish({ phase: 'signed-out', user: null, session: undefined })
+
     await vi.waitFor(() => expect(s.session.value).toBeUndefined())
-    expect(h.clear).toHaveBeenCalled()
+    expect(s.signedIn.value).toBe(false)
+  })
+
+  it('clears the cache when the flag turns off', async () => {
+    await importFresh()
+    const callsBefore = h.clearCache.mock.calls.length
+
+    h.flag!.value = false
+
+    await vi.waitFor(() =>
+      expect(
+        h.clearCache.mock.calls.length,
+        'flag-off must drop the cached credential'
+      ).toBeGreaterThan(callsBefore)
+    )
   })
 })

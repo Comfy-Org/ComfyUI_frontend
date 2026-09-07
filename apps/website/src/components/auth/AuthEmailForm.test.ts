@@ -7,12 +7,12 @@ import { defineComponent } from 'vue'
 import AuthEmailForm from './AuthEmailForm.vue'
 
 // A controllable Turnstile stand-in: the machine itself is tested in
-// @comfyorg/auth-core; here only the gate wiring matters.
+// @comfyorg/account; here only the gate wiring matters.
 const widgetBehavior = vi.hoisted(() => ({
   mode: 'silent' as 'silent' | 'unavailable' | 'token',
   reset: vi.fn()
 }))
-vi.mock('@comfyorg/auth-core/TurnstileWidget.vue', async () => {
+vi.mock('@comfyorg/account/TurnstileWidget.vue', async () => {
   const { h, onMounted } = await import('vue')
   return {
     default: defineComponent({
