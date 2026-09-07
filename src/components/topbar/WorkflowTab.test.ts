@@ -76,6 +76,7 @@ vi.mock('./WorkflowTabPopover.vue', () => ({
   }
 }))
 
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
@@ -128,11 +129,13 @@ function makeWorkflowOption(overrides: WorkflowOverrides = {}): WorkflowOption {
 function renderTab({
   workflowOption = makeWorkflowOption(),
   activeWorkflowKey = 'other-key',
-  activeWorkflowPath
+  activeWorkflowPath,
+  otherOpenWorkflows = []
 }: {
   workflowOption?: WorkflowOption
   activeWorkflowKey?: string
   activeWorkflowPath?: string
+  otherOpenWorkflows?: Workflow[]
 } = {}) {
   const resolvedActiveWorkflowPath =
     activeWorkflowPath ??
@@ -140,7 +143,7 @@ function renderTab({
       ? workflowOption.workflow.path
       : '/workflows/other.json')
 
-  return render(WorkflowTab, {
+  const rendered = render(WorkflowTab, {
     global: {
       plugins: [
         createTestingPinia({
@@ -171,6 +174,10 @@ function renderTab({
       isLast: false
     }
   })
+  const workflowStore = useWorkflowStore()
+  for (const workflow of [workflowOption.workflow, ...otherOpenWorkflows])
+    workflowStore.attachWorkflow(workflow, 0)
+  return rendered
 }
 
 describe('WorkflowTab - workflow status indicator', () => {
@@ -329,7 +336,8 @@ describe('WorkflowTab - Agent target', () => {
 
   it('follows the selected target independently of the visible tab and panel visibility', async () => {
     const workflowOption = makeWorkflowOption()
-    renderTab({ workflowOption })
+    const other = makeWorkflowOption({ path: '/workflows/other.json' }).workflow
+    renderTab({ workflowOption, otherOpenWorkflows: [other] })
     const panel = useAgentPanelStore()
     panel.enabled = true
     expect(screen.queryByRole('img', { name: targetLabel })).toBeNull()
@@ -344,9 +352,7 @@ describe('WorkflowTab - Agent target', () => {
     await nextTick()
     expect(screen.getByRole('img', { name: targetLabel })).toBeVisible()
 
-    panel.selectedWorkflow = makeWorkflowOption({
-      path: '/workflows/other.json'
-    }).workflow
+    panel.selectedWorkflow = other
     await nextTick()
     expect(screen.queryByRole('img', { name: targetLabel })).toBeNull()
 
