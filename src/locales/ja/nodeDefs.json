@@ -770,6 +770,54 @@
       }
     }
   },
+  "BlockSparseAttention": {
+    "description": "comfy_kitchen によるブロックスパースアテンション: 各クエリブロックが選択したキー ブロックのサブセットに対して正確にアテンションを実行し、アテンション計算量を削減します。短いシーケンスでは通常デンスの方が高速なため、相対的な速度向上はシーケンス長に応じて大きくなります。有効なスケジュール外、dense_blocks、および min_tokens 未満では、モデルは有効なデンスモデルのアテンションバックエンドを使用します。",
+    "display_name": "ブロックスパースアテンション",
+    "inputs": {
+      "dense_blocks": {
+        "name": "dense_blocks",
+        "tooltip": "常にデンス処理を実行する Transformer ブロック。例: '0, 1, 47-49'。"
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "スケジュールのこの時点より後はデンス処理です。"
+      },
+      "extra_tokens": {
+        "name": "extra_tokens",
+        "tooltip": "各クエリブロックが選択したブロックに加えてアテンションを実行する、高スコアの追加トークン数。値を大きくするとデンス処理に近づき、アテンション時間が増加します。256 を推奨し、0 で無効化します。VSA では無視されます。"
+      },
+      "min_tokens": {
+        "name": "min_tokens",
+        "tooltip": "これより短いシーケンスはデンス処理のままです。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "selection": {
+        "name": "selection",
+        "tooltip": "正確なキーブロックの選択方法。Sol-Attn: ヘッド/ブロックごとの適応的しきい値。top-k (SLA): 全体で固定の keep_percent を維持。学習済み重みでのみ推奨。VSA (FastVideo): FastH3-VSA のキューブタイリングと粗いブランチを使用し、対応する学習済み重みが必要です。"
+      },
+      "selection_tau": {
+        "name": "tau"
+      },
+      "sink_conditioning": {
+        "name": "sink_conditioning",
+        "tooltip": "MiniMax-H3 専用。exact_kv: 各クエリがパックされたテキスト/音声/参照行に対して正確にアテンションを実行します（コスト約 3%）。exact_kv_and_rows: さらにターゲット音声のクエリ行をデンス処理します（生成された音声を維持）。"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "スケジュールのこの時点より前はデンス処理です。"
+      },
+      "verbose": {
+        "name": "verbose"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaEraser": {
     "description": "Briaを使用して、マスクで囲まれたオブジェクトまたは領域を画像から削除します。",
     "display_name": "Bria イレーサー",
@@ -7925,6 +7973,28 @@
       },
       "sigma": {
         "name": "シグマ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageColorSpace": {
+    "description": "sRGB（Rec.709）、HDR（Rec.2020 HLG）、HDR PQ（Rec.2020 PQ）を変換します。203 nit の SDR ホワイトと 1000 nit の HLG リファレンスディスプレイを使用します。狭域化では、バッチ全体で過剰な輝度をトーンマッピングし、色域外の色を圧縮します。変換は float32 で計算され、中間デバイスと dtype を返します。ストレートアルファには色変換を適用しません。",
+    "display_name": "画像カラースペースを変換",
+    "inputs": {
+      "destination": {
+        "name": "destination",
+        "tooltip": "出力ピクセルのカラースペース。保存ノードも同じカラースペースに設定してください。"
+      },
+      "image": {
+        "name": "image"
+      },
+      "source": {
+        "name": "source",
+        "tooltip": "入力ピクセルのカラースペース。"
       }
     },
     "outputs": {
