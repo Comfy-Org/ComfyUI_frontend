@@ -134,19 +134,18 @@ describe('colorUtil conversions', () => {
   })
 
   describe('intToHex', () => {
-    it('converts an RGB integer to a padded hexadecimal color', () => {
-      expect(intToHex(0)).toBe('#000000')
-      expect(intToHex(0x45edf5)).toBe('#45edf5')
-      expect(intToHex(0xffffff)).toBe('#ffffff')
-    })
-
-    it('normalizes values to the 24-bit RGB range', () => {
-      expect(intToHex(-1)).toBe('#000000')
-      expect(intToHex(0.5)).toBe('#000001')
-      expect(intToHex(0x1000000)).toBe('#ffffff')
-      expect(intToHex(Number.NaN)).toBe('#000000')
-      expect(intToHex(Number.POSITIVE_INFINITY)).toBe('#000000')
-      expect(intToHex(Number.NEGATIVE_INFINITY)).toBe('#000000')
+    it.for([
+      [0, '#000000'],
+      [0x45edf5, '#45edf5'],
+      [0xffffff, '#ffffff'],
+      [-1, '#000000'],
+      [0.5, '#000001'],
+      [0x1000000, '#ffffff'],
+      [Number.NaN, '#000000'],
+      [Number.POSITIVE_INFINITY, '#000000'],
+      [Number.NEGATIVE_INFINITY, '#000000']
+    ] as const)('%s → %s', ([value, expected]) => {
+      expect(intToHex(value)).toBe(expected)
     })
   })
 
