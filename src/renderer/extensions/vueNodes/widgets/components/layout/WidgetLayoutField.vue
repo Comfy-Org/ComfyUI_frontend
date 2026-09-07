@@ -5,10 +5,12 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
+import LinkedWidgetStatus from '../LinkedWidgetStatus.vue'
+
 const { widget, rootClass } = defineProps<{
   widget: Pick<
     SimplifiedWidget<string | number | undefined>,
-    'name' | 'label' | 'borderStyle'
+    'name' | 'label' | 'borderStyle' | 'linkedDisplay'
   >
   rootClass?: string
   noBorder?: boolean
@@ -47,15 +49,23 @@ const borderStyle = computed(() =>
         :class="
           cn(
             'min-w-0 cursor-default rounded-md transition-all',
-            !noBorder && borderStyle
+            !noBorder && borderStyle,
+            widget.linkedDisplay && 'invisible'
           )
         "
+        :inert="!!widget.linkedDisplay"
+        :aria-hidden="widget.linkedDisplay ? true : undefined"
         @pointerdown.stop
         @pointermove.stop
         @pointerup.stop
       >
         <slot :border-style />
       </div>
+      <LinkedWidgetStatus
+        v-if="widget.linkedDisplay"
+        :display="widget.linkedDisplay"
+        :widget
+      />
     </div>
   </div>
 </template>

@@ -52,6 +52,8 @@ export interface LinkedUpstreamInfo {
   outputName?: string
 }
 
+export type LinkedWidgetDisplay = 'control' | 'switch' | 'expanding'
+
 export interface SimplifiedWidget<
   T extends WidgetValue = WidgetValue,
   O extends IWidgetOptions = IWidgetOptions
@@ -96,6 +98,8 @@ export interface SimplifiedWidget<
   controlWidget?: SafeControlWidget
 
   linkedUpstream?: LinkedUpstreamInfo
+
+  linkedDisplay?: LinkedWidgetDisplay
 }
 
 export interface SimplifiedControlWidget<

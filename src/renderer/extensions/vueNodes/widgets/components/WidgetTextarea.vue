@@ -26,11 +26,14 @@
           'size-full resize-none text-(length:--comfy-textarea-font-size) leading-normal',
           !hideLayoutField && 'pt-5',
           // Avoid overflow-auto when idle to prevent per-textarea compositing layers.
-          'overflow-hidden hover:overflow-auto focus:overflow-auto'
+          'overflow-hidden hover:overflow-auto focus:overflow-auto',
+          widget.linkedDisplay && 'invisible'
         )
       "
       :placeholder
       :readonly="isReadOnly"
+      :inert="!!widget.linkedDisplay"
+      :aria-hidden="widget.linkedDisplay ? true : undefined"
       data-capture-wheel="true"
       @pointerdown.capture.stop="trackFocus"
       @pointermove.capture.stop
@@ -38,7 +41,7 @@
       @contextmenu.capture="handleContextMenu"
     />
     <Button
-      v-if="isReadOnly"
+      v-if="isReadOnly && !widget.linkedDisplay"
       variant="textonly"
       size="icon"
       class="invisible absolute top-1.5 right-1.5 z-10 group-focus-within:visible group-hover:visible hover:bg-base-foreground/10"
@@ -49,6 +52,11 @@
     >
       <i class="icon-[lucide--copy] size-4 text-component-node-foreground" />
     </Button>
+    <LinkedWidgetStatus
+      v-if="widget.linkedDisplay"
+      :display="widget.linkedDisplay"
+      :widget
+    />
   </div>
 </template>
 
@@ -68,6 +76,7 @@ import {
 } from '@/utils/widgetPropFilter'
 
 import { WidgetInputBaseClass } from './layout'
+import LinkedWidgetStatus from './LinkedWidgetStatus.vue'
 
 const { widget, placeholder = '' } = defineProps<{
   widget: SimplifiedWidget<string>

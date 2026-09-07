@@ -2,6 +2,7 @@ import type { TooltipOptions } from 'primevue'
 
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -18,6 +19,7 @@ import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetD
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import {
   getComponent,
+  getLinkedWidgetDisplay,
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { app } from '@/scripts/app'
@@ -367,6 +369,16 @@ function processWidget(
     resolveLiveWidgetContext(ctx.rootGraph, ctx.hostNode, liveWidget)
 
   const slotInfo = ctx.slotMetadata.get(widgetState.name)
+  const vueComponent =
+    !renderState?.isDOMWidget && typeof liveWidget?.draw === 'function'
+      ? WidgetLegacy
+      : getComponent(type) ||
+        (renderState?.isDOMWidget ? WidgetDOM : WidgetLegacy)
+  const isBoundaryLinked = slotInfo?.originNodeId === SUBGRAPH_INPUT_ID
+  const linkedDisplay =
+    isBoundaryLinked && vueComponent !== WidgetLegacy
+      ? getLinkedWidgetDisplay(type, options)
+      : undefined
   const visible = isWidgetVisible(
     options,
     ctx.showAdvanced,
@@ -403,6 +415,7 @@ function processWidget(
     controlWidget,
     label: widgetState.label,
     linkedUpstream,
+    linkedDisplay,
     nodeLocatorId: widgetNodeLocatorId(ctx, bareWidgetId, sourceExecutionId),
     options: widgetOptions,
     spec: live
@@ -414,10 +427,12 @@ function processWidget(
     isTooltipValueType(type) && String(value).length > 10
       ? String(value)
       : undefined
-  const tooltipConfig = ctx.ui.getTooltipConfig(
-    { name: widgetState.name, tooltip: renderState?.tooltip },
-    valueTooltip
-  )
+  const tooltipConfig = linkedDisplay
+    ? { disabled: true }
+    : ctx.ui.getTooltipConfig(
+        { name: widgetState.name, tooltip: renderState?.tooltip },
+        valueTooltip
+      )
   const handleContextMenu = (e: PointerEvent) => {
     e.preventDefault()
     e.stopPropagation()
@@ -438,11 +453,7 @@ function processWidget(
     ),
     widgetId: id,
     renderKey: `${id}:${type}`,
-    vueComponent:
-      !renderState?.isDOMWidget && typeof liveWidget?.draw === 'function'
-        ? WidgetLegacy
-        : getComponent(type) ||
-          (renderState?.isDOMWidget ? WidgetDOM : WidgetLegacy),
+    vueComponent,
     simplified,
     visible,
     updateHandler,

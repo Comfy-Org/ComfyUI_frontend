@@ -1,11 +1,14 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
 import type { InputTextProps } from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
 import { describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
+import messages from '@/locales/en/main.json'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetInputText from './WidgetInputText.vue'
@@ -31,7 +34,14 @@ describe('WidgetInputText Value Binding', () => {
   ) => {
     return render(WidgetInputText, {
       global: {
-        plugins: [PrimeVue],
+        plugins: [
+          PrimeVue,
+          createI18n({
+            legacy: false,
+            locale: 'en',
+            messages: { en: messages }
+          })
+        ],
         components: { InputText, Textarea }
       },
       props: {
@@ -56,6 +66,52 @@ describe('WidgetInputText Value Binding', () => {
     }
     return input
   }
+
+  describe('linked widget presentation', () => {
+    it('preserves the mounted text editor and value through display transitions', async () => {
+      const user = userEvent.setup()
+      const widget = createInputTextWidget('Local draft')
+      const onUpdate = vi.fn()
+      const { rerender } = renderComponent(widget, 'Local draft', {
+        'onUpdate:modelValue': onUpdate
+      })
+      const input = screen.getByRole('textbox')
+      await user.click(input)
+      expect(input).toHaveFocus()
+
+      await rerender({
+        widget: {
+          ...widget,
+          linkedDisplay: 'control',
+          options: { disabled: true }
+        }
+      })
+      expect(
+        screen.getByRole('img', { name: 'test_input: Linked input' })
+      ).toBeInTheDocument()
+      expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+      expect(input).toBeInTheDocument()
+      expect(input).toHaveValue('Local draft')
+      expect(onUpdate).not.toHaveBeenCalled()
+
+      await rerender({ widget })
+      expect(screen.queryByRole('img')).not.toBeInTheDocument()
+      expect(screen.getByRole('textbox')).toBe(input)
+      await user.clear(input)
+      await user.type(input, 'New draft')
+      expect(onUpdate).toHaveBeenLastCalledWith('New draft')
+    })
+
+    it('does not replace an unlinked disabled control with a link indicator', () => {
+      renderComponent(
+        createInputTextWidget('Read me', { disabled: true }),
+        'Read me'
+      )
+      expect(screen.getByRole('textbox')).toBeDisabled()
+      expect(screen.getByRole('textbox')).toHaveValue('Read me')
+      expect(screen.queryByRole('img')).not.toBeInTheDocument()
+    })
+  })
 
   describe('Vue Event Emission', () => {
     it('emits Vue event when input value changes on blur', async () => {
