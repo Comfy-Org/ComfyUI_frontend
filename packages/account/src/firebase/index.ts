@@ -29,6 +29,12 @@ export interface FirebaseIdentityConfig {
   readonly appName?: string
   /** Host-selected persistence; Firebase's default when omitted. */
   readonly persistence?: Persistence
+  /**
+   * Ceiling on the network-shaped actions (email sign-in/sign-up, password
+   * reset). Popup sign-in stays unbounded: the user may legitimately take
+   * minutes, and the SDK raises its own cancellation errors.
+   */
+  readonly actionTimeoutMs?: number
 }
 
 export interface FirebaseIdentity {
@@ -62,10 +68,32 @@ function githubProvider(): GithubAuthProvider {
   return provider
 }
 
+const DEFAULT_ACTION_TIMEOUT_MS = 15_000
+
+function bounded<T>(run: Promise<T>, timeoutMs: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(
+      () => reject(new Error('Firebase auth action timed out')),
+      timeoutMs
+    )
+    run.then(
+      (value) => {
+        clearTimeout(timer)
+        resolve(value)
+      },
+      (error: unknown) => {
+        clearTimeout(timer)
+        reject(error)
+      }
+    )
+  })
+}
+
 export function createFirebaseIdentity(
   config: FirebaseIdentityConfig
 ): FirebaseIdentity {
   const appName = config.appName ?? 'comfy-account'
+  const actionTimeoutMs = config.actionTimeoutMs ?? DEFAULT_ACTION_TIMEOUT_MS
 
   const auth = () => {
     const existing = getApps().find((app) => app.name === appName)
@@ -82,15 +110,21 @@ export function createFirebaseIdentity(
     signInWithGitHub: () => signInWithPopup(auth(), githubProvider()),
     signInWithEmail: async (email, password) => {
       const { signInWithEmailAndPassword } = await import('firebase/auth')
-      return signInWithEmailAndPassword(auth(), email, password)
+      return bounded(
+        signInWithEmailAndPassword(auth(), email, password),
+        actionTimeoutMs
+      )
     },
     createUserWithEmail: async (email, password) => {
       const { createUserWithEmailAndPassword } = await import('firebase/auth')
-      return createUserWithEmailAndPassword(auth(), email, password)
+      return bounded(
+        createUserWithEmailAndPassword(auth(), email, password),
+        actionTimeoutMs
+      )
     },
     sendPasswordReset: async (email) => {
       const { sendPasswordResetEmail } = await import('firebase/auth')
-      return sendPasswordResetEmail(auth(), email)
+      return bounded(sendPasswordResetEmail(auth(), email), actionTimeoutMs)
     },
     signOut: async () => {
       const { signOut } = await import('firebase/auth')

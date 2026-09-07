@@ -274,6 +274,32 @@ describe('ensureFresh', () => {
     expect(result).toEqual({ status: 'error', code: 'TOKEN_EXCHANGE_FAILED' })
   })
 
+  it('aborts a response whose headers arrive but whose body stalls forever', async () => {
+    const stalledBody = new ReadableStream<Uint8Array>({
+      start: () => undefined
+    })
+    const fetchImpl = vi.fn<typeof fetch>(
+      async () =>
+        new Response(stalledBody, {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        })
+    )
+    const { client, storage } = makeClient({ fetchImpl })
+
+    const result = await client.ensureFresh(testUser(), { timeoutMs: 25 })
+
+    expect(
+      result,
+      'clearing the timeout once headers arrive leaves the body read unbounded and the mint pending forever'
+    ).toEqual({
+      status: 'error',
+      code: 'TOKEN_EXCHANGE_FAILED',
+      httpStatus: 200
+    })
+    expect(storage.raw()).toBeNull()
+  })
+
   it('also times out while Firebase is still resolving its ID token', async () => {
     const fetchImpl = vi.fn<typeof fetch>()
     const { client } = makeClient({ fetchImpl })
@@ -794,6 +820,34 @@ describe('sign-in state ownership', () => {
     ).toBe('popup-jwt')
   })
 
+  it('exposes a popup mint through the snapshot only once the identity port delivers the user', async () => {
+    const fetchImpl = okFetch('popup-jwt')
+    const { client } = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+    const user = testUser()
+
+    const result = await client.ensureFresh(user, {})
+
+    expect(result?.status).toBe('ok')
+    expect(
+      client.getSnapshot().phase,
+      'the snapshot user belongs to the identity port, which has not fired yet'
+    ).toBe('signed-out')
+    expect(client.getToken()).toBeUndefined()
+
+    identity.fire(user)
+
+    await vi.waitFor(() => {
+      expect(client.getSnapshot().phase).toBe('authenticated')
+    })
+    expect(client.getToken()).toBe('popup-jwt')
+    expect(
+      fetchImpl,
+      'the listener settles from the cached popup credential, not a second mint'
+    ).toHaveBeenCalledOnce()
+  })
+
   it('ignores a stale detach from a superseded attachIdentity call', async () => {
     const { client } = makeClient({ fetchImpl: okFetch('jwt-b') })
     const identityA = manualIdentity()
@@ -825,6 +879,64 @@ describe('sign-in state ownership', () => {
 
     expect(client.getSnapshot().phase).toBe('signed-out')
     expect(fetchImpl).not.toHaveBeenCalled()
+  })
+})
+
+describe('storage writes after identity changes', () => {
+  it('never writes a credential minted before an external sign-out', async () => {
+    let release!: (response: Response) => void
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(async () => jsonResponse(200, mintBody()))
+      .mockImplementationOnce(
+        () => new Promise<Response>((resolve) => (release = resolve))
+      )
+    const { client, storage } = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+    const user = testUser()
+
+    identity.fire(user)
+    await vi.waitFor(() => expect(client.getToken()).toBe('workspace-jwt'))
+    const late = client.remint(user, {})
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(2))
+    identity.fire(null)
+    expect(storage.raw()).toBeNull()
+    release(jsonResponse(200, mintBody({ token: 'stale-after-signout' })))
+
+    expect(await late).toBeUndefined()
+    expect(
+      storage.raw(),
+      'the in-memory guard is not enough; a late mint must not resurrect a signed-out session in storage'
+    ).toBeNull()
+  })
+
+  it('never writes a credential minted before a detach', async () => {
+    let release!: (response: Response) => void
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(async () => jsonResponse(200, mintBody()))
+      .mockImplementationOnce(
+        () => new Promise<Response>((resolve) => (release = resolve))
+      )
+    const { client, storage } = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    const detach = client.attachIdentity(identity.port)
+    const user = testUser()
+
+    identity.fire(user)
+    await vi.waitFor(() => expect(client.getToken()).toBe('workspace-jwt'))
+    const late = client.remint(user, {})
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(2))
+    detach()
+    client.clearCache()
+    release(jsonResponse(200, mintBody({ token: 'stale-after-detach' })))
+    await late
+
+    expect(
+      storage.raw(),
+      'a mint that outlives its attachment must not repopulate the cache the host cleared'
+    ).toBeNull()
   })
 })
 

@@ -231,6 +231,11 @@ export interface SessionClient<TUser extends AccountUser = AccountUser> {
    * than `freshMarginMs` of validity, minting inside the call when the
    * cache cannot promise that. Resolves undefined when nobody is signed in
    * or when the identity changed while the mint was in flight.
+   *
+   * An explicit-user call made before the identity port has ever fired
+   * (the popup path) resolves with the result, and the credential is
+   * cached — but the snapshot and getToken() stay signed-out until the
+   * port delivers that user, since the snapshot's user is the port's.
    */
   ensureFresh: (
     requestedUser?: AccountUser,
@@ -406,102 +411,116 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       return { status: 'error', code: 'TOKEN_EXCHANGE_FAILED' }
     }
 
+    const startEpoch = identityEpoch
     const controller = new AbortController()
     const abort = () => controller.abort()
     signal?.addEventListener('abort', abort, { once: true })
     const timeout = setTimeout(() => controller.abort(), timeoutMs)
 
-    let idToken: string
     try {
-      idToken = await abortable(user.getIdToken(), controller.signal)
-    } catch (error) {
-      clearTimeout(timeout)
-      signal?.removeEventListener('abort', abort)
-      // requestToken treats a missing identity token as NOT_AUTHENTICATED;
-      // an identity failure carrying that code keeps it, anything else
-      // (including our own abort) stays in the transient bucket.
-      const coded =
-        !controller.signal.aborted &&
-        typeof error === 'object' &&
-        error !== null &&
-        'code' in error &&
-        error.code === 'NOT_AUTHENTICATED'
-      return {
-        status: 'error',
-        code: coded ? 'NOT_AUTHENTICATED' : 'TOKEN_EXCHANGE_FAILED'
+      let idToken: string
+      try {
+        idToken = await abortable(user.getIdToken(), controller.signal)
+      } catch (error) {
+        // requestToken treats a missing identity token as NOT_AUTHENTICATED;
+        // an identity failure carrying that code keeps it, anything else
+        // (including our own abort) stays in the transient bucket.
+        const coded =
+          !controller.signal.aborted &&
+          typeof error === 'object' &&
+          error !== null &&
+          'code' in error &&
+          error.code === 'NOT_AUTHENTICATED'
+        return {
+          status: 'error',
+          code: coded ? 'NOT_AUTHENTICATED' : 'TOKEN_EXCHANGE_FAILED'
+        }
       }
-    }
 
-    let response: Response
-    try {
-      response = await fetchImpl(exchangeUrl, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-          'Content-Type': 'application/json'
-        },
-        // Same body construction as requestToken: an explicit workspace_id,
-        // or an empty body the backend resolves to the personal workspace.
-        body: JSON.stringify(workspaceId ? { workspace_id: workspaceId } : {}),
-        signal: controller.signal
-      })
-    } catch {
-      return { status: 'error', code: 'TOKEN_EXCHANGE_FAILED' }
+      let response: Response
+      try {
+        response = await fetchImpl(exchangeUrl, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+            'Content-Type': 'application/json'
+          },
+          // Same body construction as requestToken: an explicit workspace_id,
+          // or an empty body the backend resolves to the personal workspace.
+          body: JSON.stringify(
+            workspaceId ? { workspace_id: workspaceId } : {}
+          ),
+          signal: controller.signal
+        })
+      } catch {
+        return { status: 'error', code: 'TOKEN_EXCHANGE_FAILED' }
+      }
+
+      if (!response.ok) {
+        return {
+          status: 'error',
+          code: codeForResponse(response.status),
+          httpStatus: response.status
+        }
+      }
+
+      let rawBody: unknown
+      try {
+        // The timeout stays armed through the body read: headers arriving
+        // does not bound the body, and a stalled body must abort exactly
+        // like a stalled connect.
+        rawBody = await abortable(response.json(), controller.signal)
+      } catch {
+        return {
+          status: 'error',
+          code: 'TOKEN_EXCHANGE_FAILED',
+          httpStatus: response.status
+        }
+      }
+
+      const parseResult = CredentialResponseSchema.safeParse(rawBody)
+      if (!parseResult.success) {
+        return {
+          status: 'error',
+          code: 'TOKEN_EXCHANGE_FAILED',
+          httpStatus: response.status
+        }
+      }
+      // Date.parse can yield NaN on a schema-valid string, so the expiry gets
+      // its own check after the schema, as in production.
+      const expiresAt = Date.parse(parseResult.data.expires_at)
+      if (Number.isNaN(expiresAt)) {
+        return {
+          status: 'error',
+          code: 'TOKEN_EXCHANGE_FAILED',
+          httpStatus: response.status
+        }
+      }
+
+      const session: AccountCredential = {
+        token: parseResult.data.token,
+        expiresAt,
+        uid: user.uid,
+        workspace: parseResult.data.workspace,
+        role: parseResult.data.role,
+        permissions: parseResult.data.permissions
+      }
+      // The cache write consults the identity epoch like the in-memory
+      // commit does: a mint outliving a sign-out or detach must not
+      // resurrect the session in persistent storage.
+      if (identityEpoch === startEpoch) {
+        safeWrite(
+          JSON.stringify({
+            ...session,
+            expires_at: parseResult.data.expires_at
+          })
+        )
+      }
+      return { status: 'ok', session }
     } finally {
       clearTimeout(timeout)
       signal?.removeEventListener('abort', abort)
     }
-
-    if (!response.ok) {
-      return {
-        status: 'error',
-        code: codeForResponse(response.status),
-        httpStatus: response.status
-      }
-    }
-
-    let rawBody: unknown
-    try {
-      rawBody = await response.json()
-    } catch {
-      return {
-        status: 'error',
-        code: 'TOKEN_EXCHANGE_FAILED',
-        httpStatus: response.status
-      }
-    }
-
-    const parseResult = CredentialResponseSchema.safeParse(rawBody)
-    if (!parseResult.success) {
-      return {
-        status: 'error',
-        code: 'TOKEN_EXCHANGE_FAILED',
-        httpStatus: response.status
-      }
-    }
-    // Date.parse can yield NaN on a schema-valid string, so the expiry gets
-    // its own check after the schema, as in production.
-    const expiresAt = Date.parse(parseResult.data.expires_at)
-    if (Number.isNaN(expiresAt)) {
-      return {
-        status: 'error',
-        code: 'TOKEN_EXCHANGE_FAILED',
-        httpStatus: response.status
-      }
-    }
-
-    const session: AccountCredential = {
-      token: parseResult.data.token,
-      expiresAt,
-      uid: user.uid,
-      workspace: parseResult.data.workspace,
-      role: parseResult.data.role,
-      permissions: parseResult.data.permissions
-    }
-    safeWrite(
-      JSON.stringify({ ...session, expires_at: parseResult.data.expires_at })
-    )
-    return { status: 'ok', session }
   }
 
   /**
@@ -715,6 +734,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       const detach = () => {
         if (!active) return
         active = false
+        identityEpoch += 1
         detachCurrent = undefined
         unsubscribe()
         stopScheduledRefresh()
