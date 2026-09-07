@@ -340,6 +340,10 @@ const translations = {
     en: 'credit',
     'zh-CN': '积分'
   },
+  'auth.header.signingIn': {
+    en: 'Signing in…',
+    'zh-CN': '正在登录…'
+  },
   'auth.header.sessionRetry': {
     en: 'Session error — retry',
     'zh-CN': '会话错误 — 重试'
