@@ -1,7 +1,4 @@
 // @vitest-environment happy-dom
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
-
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -144,10 +141,12 @@ describe('AuthForgotPassword', () => {
 
 describe('AuthForgotPassword lazy-load boundary', () => {
   it('loads workshop-firebase only inside submit, never at module scope', () => {
-    const source = readFileSync(
-      fileURLToPath(new URL('./AuthForgotPassword.vue', import.meta.url)),
-      'utf8'
-    )
+    const rawSources = import.meta.glob<string>('./AuthForgotPassword.vue', {
+      query: '?raw',
+      import: 'default',
+      eager: true
+    })
+    const source = rawSources['./AuthForgotPassword.vue']
 
     expect(
       /^import[^;]*workshop-firebase/m.test(source),
