@@ -287,6 +287,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
 
   let inFlight: Promise<SessionResult> | undefined
   let inFlightUid: string | undefined
+  let inFlightTarget: string | undefined
   let inFlightForced = false
 
   function getSnapshot(): SessionSnapshot<TUser> {
@@ -365,7 +366,8 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     const {
       fetchImpl = clientOptions.fetchImpl ?? globalThis.fetch,
       signal = clientOptions.signal,
-      timeoutMs = clientOptions.timeoutMs ?? DEFAULT_MINT_TIMEOUT_MS
+      timeoutMs = clientOptions.timeoutMs ?? DEFAULT_MINT_TIMEOUT_MS,
+      workspaceId = clientOptions.workspaceId
     } = options
 
     if (signal?.aborted) {
@@ -386,8 +388,9 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
           Authorization: `Bearer ${idToken}`,
           'Content-Type': 'application/json'
         },
-        // Empty body: the backend resolves the personal workspace.
-        body: JSON.stringify({}),
+        // Same body construction as requestToken: an explicit workspace_id,
+        // or an empty body the backend resolves to the personal workspace.
+        body: JSON.stringify(workspaceId ? { workspace_id: workspaceId } : {}),
         signal: controller.signal
       })
     } catch {
@@ -459,19 +462,23 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     options: SessionRequestOptions,
     forced: boolean
   ): Promise<SessionResult> {
+    const target = options.workspaceId ?? clientOptions.workspaceId
     if (
       inFlight !== undefined &&
       inFlightUid === user.uid &&
+      inFlightTarget === target &&
       (!forced || inFlightForced)
     ) {
       return inFlight
     }
     inFlightUid = user.uid
+    inFlightTarget = target
     inFlightForced = forced
     const running = mint(user, options).finally(() => {
       if (inFlight !== running) return
       inFlight = undefined
       inFlightUid = undefined
+      inFlightTarget = undefined
       inFlightForced = false
     })
     inFlight = running
@@ -483,8 +490,13 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     options: SessionRequestOptions
   ): Promise<SessionResult> {
     const now = options.now?.() ?? clientOptions.now?.() ?? Date.now()
+    const target = options.workspaceId ?? clientOptions.workspaceId
     const cached = readCached(user.uid)
-    if (cached && isCredentialFresh(cached, now, freshMarginMs)) {
+    if (
+      cached &&
+      isCredentialFresh(cached, now, freshMarginMs) &&
+      (target === undefined || cached.workspace.id === target)
+    ) {
       return Promise.resolve({ status: 'ok', session: cached })
     }
     return sharedMint(user, options, false)
@@ -496,6 +508,71 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   ): Promise<SessionResult> {
     safeClear()
     return sharedMint(user, options, true)
+  }
+
+  const schedulerBufferMs =
+    clientOptions.refreshScheduler?.bufferMs ?? DEFAULT_FRESH_MARGIN_MS
+  const schedulerRetryBaseMs =
+    clientOptions.refreshScheduler?.retryBaseMs ?? 5000
+  const schedulerMaxRetries = clientOptions.refreshScheduler?.maxRetries ?? 3
+  let scheduledTimer: ReturnType<typeof setTimeout> | undefined
+  let scheduledRetryCount = 0
+
+  function stopScheduledRefresh(): void {
+    if (scheduledTimer !== undefined) {
+      clearTimeout(scheduledTimer)
+      scheduledTimer = undefined
+    }
+  }
+
+  function armScheduledRefresh(expiresAt: number): void {
+    if (!clientOptions.refreshScheduler) return
+    stopScheduledRefresh()
+    scheduledRetryCount = 0
+    const now = clientOptions.now?.() ?? Date.now()
+    scheduledTimer = setTimeout(
+      () => {
+        scheduledTimer = undefined
+        void runScheduledRefresh()
+      },
+      Math.max(0, expiresAt - schedulerBufferMs - now)
+    )
+  }
+
+  /**
+   * The scheduled re-mint mirrors the cloud store's refresh semantics: a
+   * transient failure keeps the still-valid credential and retries with
+   * doubling backoff; a permanent failure commits the error; exhausted
+   * retries leave recovery to the next valid-on-read call.
+   */
+  async function runScheduledRefresh(): Promise<void> {
+    const user = currentUser
+    if (!user) return
+    const startEpoch = identityEpoch
+    const result = await sharedMint(user, {}, true)
+    if (currentUser?.uid !== user.uid || identityEpoch !== startEpoch) return
+    if (result.status === 'ok') {
+      credential = result.session
+      failure = undefined
+      publish()
+      armScheduledRefresh(result.session.expiresAt)
+      return
+    }
+    if (isPermanentSessionError(result.code)) {
+      credential = undefined
+      failure = result
+      safeClear()
+      publish()
+      return
+    }
+    if (scheduledRetryCount >= schedulerMaxRetries) return
+    const delay = schedulerRetryBaseMs * 2 ** scheduledRetryCount
+    scheduledRetryCount += 1
+    stopScheduledRefresh()
+    scheduledTimer = setTimeout(() => {
+      scheduledTimer = undefined
+      void runScheduledRefresh()
+    }, delay)
   }
 
   async function refreshWith(
@@ -520,6 +597,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     if (result.status === 'ok') {
       credential = result.session
       failure = undefined
+      armScheduledRefresh(result.session.expiresAt)
     } else {
       credential = undefined
       failure = result
@@ -535,6 +613,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       const unsubscribe = identity.onUserChanged((next) => {
         if (!active) return
         identityEpoch += 1
+        stopScheduledRefresh()
         currentUser = next
         credential = undefined
         failure = undefined
@@ -551,6 +630,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
         active = false
         detachCurrent = undefined
         unsubscribe()
+        stopScheduledRefresh()
         currentUser = null
         credential = undefined
         failure = undefined
