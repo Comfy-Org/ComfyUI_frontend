@@ -103,9 +103,11 @@ describe('useNodeTooltips', () => {
     expect(consoleError).not.toHaveBeenCalled()
   })
 
-  it('returns no tooltip for a widget absent from the live node definition', () => {
-    const { getWidgetTooltip } = useNodeTooltips('SAM3_Detect')
+  it('returns empty tooltips for inputs absent from the live node definition', () => {
+    const { getInputSlotTooltip, getWidgetTooltip } =
+      useNodeTooltips('SAM3_Detect')
 
+    expect(getInputSlotTooltip('stale_input')).toBe('')
     expect(getWidgetTooltip({ name: 'stale_widget' })).toBe('')
   })
 
