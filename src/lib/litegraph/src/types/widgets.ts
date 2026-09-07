@@ -5,6 +5,7 @@ import type { BoundingBox } from '@/types/boundingBoxes'
 import type { NodeId } from '@/types/nodeId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import type { WidgetId } from '@/types/widgetId'
+import type { ColorFormat } from '@/utils/colorUtil'
 
 import type {
   CanvasColour,
@@ -252,9 +253,17 @@ export interface IFileUploadWidget extends IBaseWidget<string, 'fileupload'> {
 }
 
 /** Color picker widget for selecting colors */
-export interface IColorWidget extends IBaseWidget<string, 'color'> {
+export interface IColorWidgetOptions extends IWidgetOptions {
+  format?: ColorFormat | 'int'
+}
+
+export interface IColorWidget extends IBaseWidget<
+  string | number,
+  'color',
+  IColorWidgetOptions
+> {
   type: 'color'
-  value: string
+  value: string | number
 }
 
 /** Markdown widget for displaying formatted text */
