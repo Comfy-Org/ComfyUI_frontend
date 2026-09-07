@@ -2,7 +2,7 @@
  * The Workshop's Firebase surface: one lazily-created auth instance bound to
  * the env-selected project, plus the sign-in actions. The sequencing rules
  * (social always provisions a customer; a failed provision during sign-up
- * rolls the user back) live tested in @comfyorg/auth-core — this module only
+ * rolls the user back) live tested in @comfyorg/account — this module only
  * supplies the Firebase and network effects.
  *
  * Popup, never `signInWithRedirect`: the redirect flow is broken under
@@ -20,7 +20,7 @@ import {
   signOut
 } from 'firebase/auth'
 
-import { socialSignInWithProvisioning } from '@comfyorg/auth-core/provisioning'
+import { socialSignInWithProvisioning } from '@comfyorg/account/provisioning'
 
 import {
   WORKSHOP_FIREBASE_OPTIONS,

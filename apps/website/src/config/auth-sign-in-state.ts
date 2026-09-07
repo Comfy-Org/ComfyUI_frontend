@@ -4,7 +4,7 @@
  * listener also fires, a provisioning failure after the popup succeeded —
  * are decided in one tested place instead of by handler timing.
  */
-import { classifyAuthError } from '@comfyorg/auth-core/firebaseAuthError'
+import { classifyAuthError } from '@comfyorg/account/firebaseAuthError'
 
 import type { TranslationKey } from '../i18n/translations'
 

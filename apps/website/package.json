@@ -25,7 +25,7 @@
   },
   "dependencies": {
     "@astrojs/sitemap": "catalog:",
-    "@comfyorg/auth-core": "workspace:*",
+    "@comfyorg/account": "workspace:*",
     "@comfyorg/design-system": "workspace:*",
     "@comfyorg/object-info-parser": "workspace:*",
     "@comfyorg/shared-frontend-utils": "workspace:*",
