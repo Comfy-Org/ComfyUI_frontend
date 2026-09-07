@@ -69,3 +69,56 @@ export function classifyAuthError(error: unknown): AuthErrorClassification {
   }
   return { kind: 'auth', code: error.code }
 }
+
+/**
+ * English source copy for auth failures, extracted verbatim from the cloud
+ * app's shipped strings (src/locales/en/main.json, auth.errors.*) so hosts
+ * never invent independently worded copy for the same failure. Keyed by the
+ * Firebase code, plus the two named fallbacks. The unauthorized-domain copy
+ * stays host-side: it interpolates the host's own domain and support email.
+ */
+export const AUTH_ERROR_MESSAGES: Readonly<Record<string, string>> = {
+  'auth/invalid-email': 'Please enter a valid email address.',
+  'auth/user-disabled':
+    'This account has been disabled. Please contact support.',
+  'auth/user-not-found':
+    'No account found with this email. Would you like to create a new account?',
+  'auth/wrong-password':
+    'The password you entered is incorrect. Please try again.',
+  'auth/email-already-in-use':
+    'An account with this email already exists. Try signing in instead.',
+  'auth/weak-password':
+    'Password is too weak. Please use a stronger password with at least 6 characters.',
+  'auth/too-many-requests':
+    'Too many login attempts. Please wait a moment and try again.',
+  'auth/operation-not-allowed':
+    'This sign-in method is not currently supported.',
+  'auth/invalid-credential':
+    'Invalid login credentials. Please check your email and password.',
+  'auth/network-request-failed':
+    'Network error. Please check your connection and try again.',
+  'auth/popup-closed-by-user':
+    'The sign-in window closed before sign-in finished. Please try again.',
+  'auth/cancelled-popup-request':
+    'Another sign-in window was already open, so this one was cancelled. Please try again.',
+  'auth/popup-blocked':
+    'Your browser blocked the sign-in window. Please allow pop-ups for this site and try again.',
+  'auth/account-exists-with-different-credential':
+    'An account already exists with this email address but uses a different sign-in method. Please sign in the way you did originally.',
+  generic: 'Something went wrong while signing you in. Please try again.',
+  signupBlocked:
+    "We couldn't create your account right now. Please try again later. If this keeps happening, email support@comfy.org."
+}
+
+export type AuthToastSeverity = 'error' | 'warn'
+
+/**
+ * The cloud app's toast-severity policy for classified auth failures: a
+ * dismissed popup is the user changing their mind, not an application
+ * error; everything else alarms.
+ */
+export function severityForAuthError(
+  classification: AuthErrorClassification
+): AuthToastSeverity {
+  return classification.kind === 'popup-dismissed' ? 'warn' : 'error'
+}
