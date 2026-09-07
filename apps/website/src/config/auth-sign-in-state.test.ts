@@ -65,7 +65,17 @@ describe('authSignInTransition', () => {
     [
       'a dismissed popup',
       { code: 'auth/popup-closed-by-user', message: 'x' },
-      'auth.signIn.error.popupDismissed'
+      'auth.signIn.error.popupClosed'
+    ],
+    [
+      'a superseded popup',
+      { code: 'auth/cancelled-popup-request', message: 'x' },
+      'auth.signIn.error.popupCancelled'
+    ],
+    [
+      'a browser-blocked popup',
+      { code: 'auth/popup-blocked', message: 'x' },
+      'auth.signIn.error.popupBlocked'
     ],
     [
       'an unauthorized domain',
