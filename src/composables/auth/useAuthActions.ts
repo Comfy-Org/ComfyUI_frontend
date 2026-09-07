@@ -5,7 +5,7 @@ import { ref } from 'vue'
 import {
   classifyAuthError,
   isFirebaseAuthErrorLike
-} from '@comfyorg/auth-core/firebaseAuthError'
+} from '@comfyorg/account/firebaseAuthError'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { watchForTopupBalanceUpdate } from '@/composables/billing/topupBalanceRefresh'
