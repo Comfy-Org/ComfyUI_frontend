@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
@@ -26,10 +24,6 @@ const graphB = {
 const LINK = toLinkId(1)
 
 describe('useLinkPresentationStore', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('merges patches per field and clears a field patched to undefined', () => {
     const store = useLinkPresentationStore()
     store.patch(graphA, LINK, { hidden: true })
