@@ -231,6 +231,9 @@ catalogs:
     eslint-plugin-playwright:
       specifier: ^2.11.0
       version: 2.11.0
+    eslint-plugin-storybook:
+      specifier: ^10.6.0
+      version: 10.6.0
     eslint-plugin-testing-library:
       specifier: ^7.16.2
       version: 7.16.2
@@ -789,7 +792,7 @@ importers:
         specifier: 'catalog:'
         version: 2.11.0(eslint@10.10.0(jiti@2.7.0))
       eslint-plugin-storybook:
-        specifier: 10.6.0
+        specifier: 'catalog:'
         version: 10.6.0(eslint@10.10.0(jiti@2.7.0))(typescript@6.0.3)
       eslint-plugin-testing-library:
         specifier: 'catalog:'
