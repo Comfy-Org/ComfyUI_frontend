@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { stripeCheckoutHref } from './buy-credits'
+import { returnStepFor, stripeCheckoutHref } from './buy-credits'
 
 describe('stripeCheckoutHref', () => {
   it('sends the page as the return address', () => {
@@ -17,5 +17,19 @@ describe('stripeCheckoutHref', () => {
     const url = new URL(stripeCheckoutHref('//evil.example/steal', 10))
 
     expect(url.searchParams.get('success_url')).toBeNull()
+  })
+})
+
+describe('returnStepFor', () => {
+  it('settles on the credits when the grant lands', () => {
+    expect(returnStepFor('landed')).toBe('landed')
+  })
+
+  it('holds on waiting while the webhook is still in flight', () => {
+    expect(returnStepFor('settling')).toBe('waiting')
+  })
+
+  it('falls through to the receipt when the grant never arrives', () => {
+    expect(returnStepFor('unresolved')).toBe('unresolved')
   })
 })
