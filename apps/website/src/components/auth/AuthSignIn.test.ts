@@ -175,6 +175,23 @@ describe('AuthSignIn', () => {
     expect(handles.turnstileReset).toHaveBeenCalledOnce()
   })
 
+  it('shows email-appropriate progress copy while an email sign-in is pending', async () => {
+    handles.emailSignIn.mockImplementation(() => new Promise(() => {}))
+    render(AuthSignIn)
+    const user = userEvent.setup()
+
+    await user.type(screen.getByLabelText('Email'), 'user@example.com')
+    await user.type(screen.getByLabelText('Password'), 'Password1!')
+    await user.click(screen.getByRole('button', { name: /^sign in$/i }))
+
+    await waitFor(() => expect(handles.emailSignIn).toHaveBeenCalledOnce())
+    expect(
+      screen.queryByText(/pop-up window/i),
+      'no pop-up exists in the email flow; the copy must not tell users to look for one'
+    ).toBeNull()
+    expect(screen.getByText(/signing you in/i)).toBeTruthy()
+  })
+
   it('keeps a safe return destination through the forgot-password flow', async () => {
     window.history.replaceState(
       {},

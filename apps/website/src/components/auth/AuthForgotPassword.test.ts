@@ -155,3 +155,24 @@ describe('AuthForgotPassword lazy-load boundary', () => {
     expect(source).toContain("import('../../config/workshop-firebase')")
   })
 })
+
+describe('AuthForgotPassword back-to-sign-in href', () => {
+  it('carries the return destination from the very first render, before any mount hook', async () => {
+    const { renderToString } = await import('vue/server-renderer')
+    const { createSSRApp, h: hyper } = await import('vue')
+    window.history.replaceState(
+      {},
+      '',
+      '/forgot-password/?returnTo=%2Fworkshop%2Fmodels%2Fexample%2F'
+    )
+
+    const html = await renderToString(
+      createSSRApp({ render: () => hyper(AuthForgotPassword) })
+    )
+
+    expect(
+      html,
+      'a click during hydration must not lose the returnTo carried into forgot-password'
+    ).toContain('/login/?returnTo=')
+  })
+})
