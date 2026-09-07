@@ -5,10 +5,8 @@ import type { Ref } from 'vue'
 import { SESSION_TELEMETRY_EVENT } from '@comfyorg/account/core'
 import type { SessionRefreshOutcome } from '@comfyorg/account/core'
 import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
-import {
-  normalizeTurnstileMode,
-  type TurnstileMode
-} from '@comfyorg/account/turnstile'
+import { normalizeTurnstileMode } from '@comfyorg/account/turnstile';
+import type { TurnstileMode } from '@comfyorg/account/turnstile';
 
 import type { Platform } from '@/composables/useDownloadUrl'
 import type { ConnectionId, McpClientId } from '@/config/mcpClients'
@@ -31,7 +29,8 @@ const ANALYTICS_EVENT = {
   // Shared with the cloud app (no website: prefix) so one PostHog funnel
   // covers auth-refresh outcomes across every surface.
   authRefreshSucceeded: SESSION_TELEMETRY_EVENT.refreshSucceeded,
-  authRefreshFailed: SESSION_TELEMETRY_EVENT.refreshFailed
+  authRefreshFailed: SESSION_TELEMETRY_EVENT.refreshFailed,
+  workshopSignupRollbackFailed: 'website:workshop_signup_rollback_failed'
 } as const
 
 export type CliClientId =
@@ -69,6 +68,10 @@ type AnalyticsEvent =
         | typeof ANALYTICS_EVENT.authRefreshSucceeded
         | typeof ANALYTICS_EVENT.authRefreshFailed
       properties: { outcome: SessionRefreshOutcome }
+    }
+  | {
+      name: typeof ANALYTICS_EVENT.workshopSignupRollbackFailed
+      properties?: undefined
     }
 
 let initialized = false
@@ -182,6 +185,16 @@ export function captureAuthRefreshSucceeded(): void {
     name: ANALYTICS_EVENT.authRefreshSucceeded,
     properties: { outcome: 'succeeded' }
   })
+}
+
+/**
+ * Fired when a failed sign-up could not roll back its just-created Firebase
+ * user even after the retried delete: the account is orphaned and every
+ * later sign-up with that email fails. No error payload on purpose; the
+ * event is the count, and error content risks carrying PII.
+ */
+export function captureSignupRollbackFailure(): void {
+  captureEvent({ name: ANALYTICS_EVENT.workshopSignupRollbackFailed })
 }
 
 export function captureAuthRefreshFailed(outcome: SessionRefreshOutcome): void {

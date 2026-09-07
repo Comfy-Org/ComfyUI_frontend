@@ -14,6 +14,7 @@ import {
   socialSignInWithProvisioning
 } from '@comfyorg/account/provisioning'
 
+import { captureSignupRollbackFailure } from '../scripts/posthog'
 import {
   WORKSHOP_FIREBASE_OPTIONS,
   WORKSHOP_ROUTER_BASE_URL
@@ -145,6 +146,7 @@ export function signUpWorkshopWithEmail(
     provisionCustomer: (credential) =>
       provisionCustomer(credential.user, { turnstileToken }),
     onRollbackFailure: (error) => {
+      captureSignupRollbackFailure()
       console.warn(
         'Failed to roll back orphaned Firebase user after customer creation failed',
         error
