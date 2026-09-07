@@ -32,7 +32,7 @@ test.describe('Properties panel - Info tab dynamic combo inputs', () => {
 
   function addAdvancedDynamicComboInput(objectInfo: ObjectInfoResponse) {
     const nodeInfo = objectInfo[NODE_TYPE]
-    if (!nodeInfo?.input) {
+    if (!nodeInfo.input) {
       throw new Error(`Missing object_info entry for ${NODE_TYPE}`)
     }
 
@@ -80,7 +80,6 @@ test.describe('Properties panel - Info tab dynamic combo inputs', () => {
       // (used by selectNodes) actually lands on the node instead of the
       // toolbar. See BuilderSelectHelper.selectInputWidget for the same pattern.
       const [nodeRef] = await comfyPage.nodeOps.getNodeRefsByTitle(NODE_TITLE)
-      if (!nodeRef) throw new Error(`Node ${NODE_TITLE} not found`)
       await nodeRef.centerOnNode()
 
       await comfyPage.nodeOps.selectNodes([NODE_TITLE])

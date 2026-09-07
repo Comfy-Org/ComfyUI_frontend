@@ -306,7 +306,7 @@ async function getTopSearchResult() {
     return
   }
 
-  return selectedSorter.value({ items: matches })?.[0]
+  return selectedSorter.value({ items: matches })[0]
 }
 
 async function selectTopSearchResult() {
