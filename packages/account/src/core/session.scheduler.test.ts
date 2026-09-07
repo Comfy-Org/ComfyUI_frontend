@@ -255,6 +255,39 @@ describe('opt-in refresh scheduler', () => {
     expect(outcomes).toEqual(['permanent_failure'])
   })
 
+  it('re-mints the credential workspace, not the personal default', async () => {
+    const fetchImpl = vi.fn<typeof fetch>(
+      async () =>
+        new Response(
+          JSON.stringify({
+            token: 'jwt-team',
+            permissions: ['workspace:read'],
+            expires_at: new Date(Date.now() + NINETY_MINUTES_MS).toISOString(),
+            workspace: { id: 'ws-team', name: 'Team', type: 'team' },
+            role: 'member'
+          }),
+          { status: 200 }
+        )
+    )
+    const client = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+
+    identity.fire(testUser())
+    await vi.waitFor(() => {
+      expect(client.getToken()).toBe('jwt-team')
+    })
+    await vi.advanceTimersByTimeAsync(
+      NINETY_MINUTES_MS - DEFAULT_BUFFER_MS + 10
+    )
+
+    const [, scheduledInit] = fetchImpl.mock.calls[1]
+    expect(
+      scheduledInit?.body,
+      'refreshing a team session with the personal default would silently switch workspaces'
+    ).toBe(JSON.stringify({ workspace_id: 'ws-team' }))
+  })
+
   it('arms nothing without the opt-in', async () => {
     const fetchImpl = vi.fn<typeof fetch>(async () => mintResponse('jwt-1'))
     const client = makeClient({ fetchImpl, refreshScheduler: undefined })

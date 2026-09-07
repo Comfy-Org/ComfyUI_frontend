@@ -537,6 +537,62 @@ describe('isPermanentSessionError', () => {
   )
 })
 
+describe('identity token failures', () => {
+  it('maps a NOT_AUTHENTICATED-coded identity failure to the production code', async () => {
+    const { client } = makeClient({ fetchImpl: vi.fn<typeof fetch>() })
+    const user: AccountUser = {
+      uid: 'uid-1',
+      getIdToken: async () => {
+        throw Object.assign(new Error('no identity'), {
+          code: 'NOT_AUTHENTICATED'
+        })
+      }
+    }
+
+    const result = await client.ensureFresh(user, {})
+
+    expect(result).toEqual({ status: 'error', code: 'NOT_AUTHENTICATED' })
+  })
+
+  it('keeps an uncoded identity failure in the transient bucket', async () => {
+    const { client } = makeClient({ fetchImpl: vi.fn<typeof fetch>() })
+    const user: AccountUser = {
+      uid: 'uid-1',
+      getIdToken: async () => {
+        throw new Error('identity provider re-initializing')
+      }
+    }
+
+    const result = await client.ensureFresh(user, {})
+
+    expect(result).toEqual({ status: 'error', code: 'TOKEN_EXCHANGE_FAILED' })
+  })
+})
+
+describe('attachIdentity without auto-mint', () => {
+  it('sets the user and publishes, but leaves minting to the host', async () => {
+    const fetchImpl = okFetch('host-driven-jwt')
+    const { client } = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port, { autoMint: false })
+    const user = testUser()
+
+    identity.fire(user)
+    expect(
+      user.getIdToken,
+      'a host that mints explicitly must not get a second mint per identity event'
+    ).not.toHaveBeenCalled()
+    expect(client.getSnapshot().phase).toBe('minting')
+
+    const result = await client.ensureFresh(user, {})
+
+    expect(result?.status).toBe('ok')
+    expect(client.getSnapshot().phase).toBe('authenticated')
+    expect(client.getToken()).toBe('host-driven-jwt')
+    expect(fetchImpl).toHaveBeenCalledOnce()
+  })
+})
+
 describe('host-driven invalidation', () => {
   it('drops the credential and blocks in-flight commits while keeping the identity attached', async () => {
     let release!: (response: Response) => void
