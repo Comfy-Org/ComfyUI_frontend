@@ -23,8 +23,11 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import { protectedTokens } from '../../../../scripts/i18n/protected-tokens'
-import { createOpenAiTranslator, translateLocaleItems } from '../../../../scripts/i18n/translate';
-import type { TranslationItem } from '../../../../scripts/i18n/translate';
+import {
+  createOpenAiTranslator,
+  translateLocaleItems
+} from '../../../../scripts/i18n/translate'
+import type { TranslationItem } from '../../../../scripts/i18n/translate'
 import { isLocale } from '../../src/config/locales'
 import { containsTerm } from '../../src/i18n/pipeline/validate'
 import {

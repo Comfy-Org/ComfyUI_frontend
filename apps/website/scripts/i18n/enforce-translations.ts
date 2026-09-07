@@ -19,7 +19,10 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import { isLocale } from '../../src/config/locales'
-import { enforceTranslations,isSystemicFailure } from '../../src/i18n/pipeline/enforce'
+import {
+  enforceTranslations,
+  isSystemicFailure
+} from '../../src/i18n/pipeline/enforce'
 import type {
   EnglishSource,
   TranslationLayer
