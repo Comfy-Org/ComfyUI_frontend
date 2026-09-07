@@ -424,15 +424,13 @@ function processWidget(
   }
 
   const valueTooltip =
-    isTooltipValueType(type) && String(value).length > 10
+    !linkedDisplay && isTooltipValueType(type) && String(value).length > 10
       ? String(value)
       : undefined
-  const tooltipConfig = linkedDisplay
-    ? { disabled: true }
-    : ctx.ui.getTooltipConfig(
-        { name: widgetState.name, tooltip: renderState?.tooltip },
-        valueTooltip
-      )
+  const tooltipConfig = ctx.ui.getTooltipConfig(
+    { name: widgetState.name, tooltip: renderState?.tooltip },
+    valueTooltip
+  )
   const handleContextMenu = (e: PointerEvent) => {
     e.preventDefault()
     e.stopPropagation()

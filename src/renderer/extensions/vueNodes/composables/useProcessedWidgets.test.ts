@@ -363,6 +363,9 @@ describe('promoted subgraph widgets', () => {
     const { graph, subgraph } = setupComplexPromotionFixture()
     const node = subgraph.getNodeById(INTERIOR_ID)
     if (!node) throw new Error('Expected the interior node')
+    const widget = node.widgets?.find((widget) => widget.name === 'string_a')
+    if (!widget) throw new Error('Expected the interior widget')
+    widget.value = 'Local text that should not appear while linked'
 
     function processInteriorWidget(node: LGraphNode) {
       return computeProcessedWidgets({
@@ -371,7 +374,12 @@ describe('promoted subgraph widgets', () => {
         showAdvanced: false,
         isGraphReady: true,
         rootGraph: graph,
-        ui: noopUi
+        ui: {
+          ...noopUi,
+          getTooltipConfig: (_widget, fullValue) => ({
+            value: ['Input description', fullValue].filter(Boolean).join('\n\n')
+          })
+        }
       }).find((widget) => widget.simplified.name === 'string_a')
     }
 
@@ -379,12 +387,15 @@ describe('promoted subgraph widgets', () => {
       'control'
     )
     expect(processInteriorWidget(node)?.tooltipConfig).toEqual({
-      disabled: true
+      value: 'Input description'
     })
     node.disconnectInput(0)
     expect(
       processInteriorWidget(node)?.simplified.linkedDisplay
     ).toBeUndefined()
+    expect(processInteriorWidget(node)?.tooltipConfig).toEqual({
+      value: `Input description\n\n${widget.value}`
+    })
 
     const source = new LGraphNode('Source')
     subgraph.add(source)
@@ -429,7 +440,7 @@ describe('promoted subgraph widgets', () => {
     ['gradientslider', undefined],
     ['curve', undefined]
   ] as const)(
-    'limits the boundary link indicator for %s widgets',
+    'limits the boundary link indicator for %s widgets (display: %s, auxiliary control: %s)',
     ([type, display, hasControl]) => {
       const { graph, subgraph } = setupComplexPromotionFixture()
       const node = subgraph.getNodeById(INTERIOR_ID)

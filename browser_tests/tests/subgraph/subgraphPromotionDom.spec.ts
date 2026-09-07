@@ -154,8 +154,13 @@ test.describe(
 
           const interiorTextareas = comfyPage.page
             .locator('[data-node-id]')
-            .getByRole('textbox')
+            .getByRole('textbox', { includeHidden: true })
           await expect(interiorTextareas).toHaveCount(2)
+          await expect(interiorTextareas.nth(0)).toBeHidden()
+          await expect(interiorTextareas.nth(1)).toBeHidden()
+          await expect(
+            comfyPage.page.getByTestId('linked-widget-placeholder')
+          ).toHaveCount(2)
 
           await comfyPage.subgraph.exitViaBreadcrumb()
 
