@@ -122,13 +122,13 @@ const stepperClass =
   <Dialog v-model:open="open">
     <DialogContent
       :close-label="t('workshop.credits.close', locale)"
-      class="sm:max-w-xl"
+      class="flex min-h-[min(85vh,41rem)] flex-col sm:min-h-136 sm:max-w-xl"
       data-testid="buy-credits-dialog"
     >
       <!-- 1 · Amount — the last screen we own before the hand-off -->
       <div
         v-if="step === 'leaving'"
-        class="flex flex-col gap-6"
+        class="flex flex-1 flex-col gap-6"
         data-step="leaving"
       >
         <DialogTitle class="pr-16">
@@ -191,7 +191,7 @@ const stepperClass =
           </span>
         </div>
 
-        <div class="flex flex-wrap items-center justify-end gap-3">
+        <div class="mt-auto flex flex-wrap items-center justify-end gap-3">
           <Button
             variant="outline"
             size="lg"
@@ -221,7 +221,7 @@ const stepperClass =
       <!-- 2 · Stripe's page. Never renders live: the browser is on stripe.com. -->
       <div
         v-else-if="step === 'checkout'"
-        class="flex flex-col gap-6"
+        class="flex flex-1 flex-col gap-6"
         data-step="checkout"
       >
         <p
@@ -248,7 +248,7 @@ const stepperClass =
           </dd>
         </dl>
 
-        <div class="flex flex-wrap items-center justify-end gap-3">
+        <div class="mt-auto flex flex-wrap items-center justify-end gap-3">
           <Button
             variant="outline"
             size="lg"
@@ -278,7 +278,7 @@ const stepperClass =
            what a lost grant looks like — only elapsed time tells them apart. -->
       <div
         v-else-if="step === 'waiting'"
-        class="flex flex-col gap-6"
+        class="flex flex-1 flex-col gap-6"
         data-step="waiting"
       >
         <DialogTitle class="pr-16">
@@ -326,7 +326,7 @@ const stepperClass =
       <!-- 3b · The credits landed. -->
       <div
         v-else-if="step === 'landed'"
-        class="flex flex-col gap-6"
+        class="flex flex-1 flex-col gap-6"
         data-testid="buy-credits-done"
         data-step="landed"
       >
@@ -387,7 +387,7 @@ const stepperClass =
 
         <Button
           size="lg"
-          class="ml-auto w-fit px-5"
+          class="mt-auto ml-auto w-fit px-5"
           data-testid="buy-credits-resume"
           @click="finish"
         >
@@ -399,7 +399,7 @@ const stepperClass =
            this rail has no reconciler (IR-126/128), unlike the in-app one. -->
       <div
         v-else
-        class="flex flex-col gap-6"
+        class="flex flex-1 flex-col gap-6"
         data-testid="buy-credits-held"
         data-step="unresolved"
       >
@@ -430,7 +430,7 @@ const stepperClass =
           </span>
         </div>
 
-        <div class="flex flex-wrap items-center justify-end gap-3">
+        <div class="mt-auto flex flex-wrap items-center justify-end gap-3">
           <Button
             variant="outline"
             size="lg"
