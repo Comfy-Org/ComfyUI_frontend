@@ -261,7 +261,9 @@
           size="lg"
           class="w-full rounded-lg"
           :loading="isLoading"
-          :disabled="interactionLocked"
+          :disabled="
+            interactionLocked || !quoteIsUsable || verificationRecoveryActive
+          "
           @click="$emit('addCreditCard')"
         >
           {{ $t('subscription.preview.completePayment') }}

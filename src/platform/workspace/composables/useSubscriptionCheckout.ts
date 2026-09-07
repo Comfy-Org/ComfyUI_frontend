@@ -1278,6 +1278,10 @@ export function useSubscriptionCheckout(
       !context.suppliedPaymentAuthority &&
       context.replayedKnownOperation
     ) {
+      // Still record the operation: the parked checkout is the one that will
+      // settle if the customer finishes it in the Stripe tab, and without a
+      // resume record a reload leaves that op unreconciled.
+      savePendingCheckout(response.billing_op_id, context)
       parkedCheckoutRecovery.value = true
       trackSubscriptionFailure(
         context,

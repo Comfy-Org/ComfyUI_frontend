@@ -364,6 +364,32 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     )
   })
 
+  it.each([
+    ['capture-mode', { usePaymentElement: true }],
+    [
+      'saved-method',
+      { savedMethods: [{ id: 'pm_1', brand: 'visa', last4: '4242' }] }
+    ]
+  ])(
+    'hides the %s payment action during parked-checkout recovery',
+    (_variant, extraProps) => {
+      render(SubscriptionAddPaymentPreviewWorkspace, {
+        props: {
+          tierKey: 'creator',
+          parkedCheckoutRecovery: true,
+          ...extraProps
+        },
+        global: globalOptions
+      })
+
+      expect(
+        screen.queryByRole('button', {
+          name: /subscription\.preview\.(subscribeToPlan|payAndSubscribe)/
+        })
+      ).toBeNull()
+    }
+  )
+
   it('hides the standard subscribe action during parked-checkout recovery', () => {
     render(SubscriptionAddPaymentPreviewWorkspace, {
       props: { tierKey: 'creator', parkedCheckoutRecovery: true },
@@ -377,6 +403,32 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
       })
     ).toBeNull()
   })
+
+  it.each([
+    ['capture mode', { usePaymentElement: true }],
+    [
+      'saved methods',
+      { savedMethods: [{ id: 'pm_1', brand: 'visa', last4: '4242' }] }
+    ]
+  ])(
+    'hides the %s payment action during parked-checkout recovery',
+    (_label, extraProps) => {
+      render(SubscriptionAddPaymentPreviewWorkspace, {
+        props: {
+          tierKey: 'creator',
+          parkedCheckoutRecovery: true,
+          ...extraProps
+        },
+        global: globalOptions
+      })
+
+      expect(
+        screen.queryByRole('button', {
+          name: /subscription\.preview\.(subscribeToPlan|payAndSubscribe)/
+        })
+      ).toBeNull()
+    }
+  )
 
   it('retries the subscribe from the parked-checkout prompt', async () => {
     const { emitted } = render(SubscriptionAddPaymentPreviewWorkspace, {
