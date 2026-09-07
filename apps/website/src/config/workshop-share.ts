@@ -27,7 +27,7 @@ export interface ShareState {
 }
 
 export const SHARE_DEFAULTS: ShareState = {
-  version: 'v1',
+  version: 'v1.2',
   showStatuses: false,
   groupVersions: false,
   session: 'signedOut',
@@ -71,7 +71,7 @@ export function encodeShareSearch(state: ShareState, base = ''): string {
     const value = state[field]
     if (value === SHARE_DEFAULTS[field]) continue
     if (field === 'subscribed' && state.session === 'signedOut') continue
-    params.set(key, typeof value === 'boolean' ? flag(value) : String(value))
+    params.set(key, typeof value === 'boolean' ? flag(value) : value)
   }
   const search = params.toString()
   return search ? `?${search}` : ''
@@ -90,6 +90,13 @@ function pickFlag(raw: string | null): boolean | undefined {
   return raw === '1' ? true : raw === '0' ? false : undefined
 }
 
+// A parameter that is absent from the link leaves the current setting alone,
+// so the fields that read back undefined are dropped rather than assigned.
+function withoutMissing<T extends object>(source: T): Partial<T> {
+  const kept = Object.entries(source).filter((entry) => entry[1] !== undefined)
+  return Object.fromEntries(kept) as Partial<T>
+}
+
 export function decodeShareSearch(search: string): Partial<ShareState> {
   const params = new URLSearchParams(search)
   const decoded: Partial<ShareState> = {
@@ -103,7 +110,5 @@ export function decodeShareSearch(search: string): Partial<ShareState> {
     outcome: pick(RUN_OUTCOMES, params.get(KEYS.outcome)),
     modelState: pick(MODEL_STATES, params.get(KEYS.modelState))
   }
-  return Object.fromEntries(
-    Object.entries(decoded).filter(([, value]) => value !== undefined)
-  )
+  return withoutMissing(decoded)
 }

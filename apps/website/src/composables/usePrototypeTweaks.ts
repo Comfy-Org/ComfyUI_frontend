@@ -20,19 +20,21 @@ export const MODEL_STATES = [
 ] as const
 export type ModelState = (typeof MODEL_STATES)[number]
 
-// One control for the whole prototype: V1 is the flat models catalog (11 Sep),
-// V1.1 opens that same catalog as browseable rows per use case, V1.2 moves the
-// categories into a rail beside the grid, V2 is the screen where workflows,
-// apps and models live together (GA 30 Sep), and V2.1 is where V2's own
-// variants are tried without disturbing what V2 shows.
-export const VERSIONS = ['v1', 'v1.1', 'v1.2', 'v2', 'v2.1'] as const
+// One control for the whole prototype. V1 is the models catalogue with its
+// categories in a rail beside the grid (11 Sep), chosen over the two other
+// takes on the same listing: rows per use case, and the tabs the catalogue
+// shipped with, which is kept as a discarded option rather than deleted. V2 is
+// the screen where workflows, apps and models live together (GA 30 Sep), and
+// V2.1 is where V2's own variants are tried without disturbing what V2 shows.
+// The ids stay as they were so the links already shared keep working.
+export const VERSIONS = ['v1.2', 'v1.1', 'v2', 'v2.1', 'v1'] as const
 export type Version = (typeof VERSIONS)[number]
 
 const VERSION_KEY = 'comfy-workshop-version'
 
 const outcome = ref<RunOutcome>('success')
 const modelState = ref<ModelState>('none')
-const version = ref<Version>('v1')
+const version = ref<Version>('v1.2')
 // Deprecated and degraded models are invented cases: hidden unless asked for.
 const showStatuses = ref(false)
 // The catalogue lists one card per model, as the TDD describes. Grouping the

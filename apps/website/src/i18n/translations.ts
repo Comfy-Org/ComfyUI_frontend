@@ -8449,16 +8449,16 @@ Enterprise`
   'workshop.models.heading': { en: 'Models', 'zh-CN': '模型' },
   'workshop.proto.version': { en: 'Version', 'zh-CN': '版本' },
   'workshop.proto.version.v1': {
-    en: 'V1 · Categories in tabs',
-    'zh-CN': 'V1 · 标签页分类'
+    en: 'Discarded · Categories in tabs',
+    'zh-CN': '已弃用 · 标签页分类'
   },
   'workshop.proto.version.v1_1': {
     en: 'V1 test 1 · Rows per use case',
     'zh-CN': 'V1 测试 1 · 按用途分行'
   },
   'workshop.proto.version.v1_2': {
-    en: 'V1 test 2 · Categories in a side rail',
-    'zh-CN': 'V1 测试 2 · 类别侧边栏'
+    en: 'V1 · Categories in a side rail',
+    'zh-CN': 'V1 · 类别侧边栏'
   },
   'workshop.proto.version.v2_1': {
     en: 'V2 test 1 · Use cases in a side rail',

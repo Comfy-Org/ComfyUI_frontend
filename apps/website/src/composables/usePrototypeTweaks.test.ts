@@ -30,7 +30,7 @@ beforeEach(() => {
 describe('usePrototypeTweaks', () => {
   it('starts on V1 with the invented cases hidden', async () => {
     const tweaks = await mountTweaks()
-    expect(tweaks.version.value).toBe('v1')
+    expect(tweaks.version.value).toBe('v1.2')
     expect(tweaks.showStatuses.value).toBe(false)
     expect(tweaks.outcome.value).toBe('success')
     expect(tweaks.modelState.value).toBe('none')
@@ -42,7 +42,7 @@ describe('usePrototypeTweaks', () => {
 
     vi.resetModules()
     localStorage.setItem('comfy-workshop-version', 'v9')
-    expect((await mountTweaks()).version.value).toBe('v1')
+    expect((await mountTweaks()).version.value).toBe('v1.2')
   })
 
   it('persists version changes and shares state between callers', async () => {
