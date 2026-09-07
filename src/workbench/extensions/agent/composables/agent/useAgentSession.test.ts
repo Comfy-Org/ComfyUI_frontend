@@ -795,6 +795,46 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(vi.mocked(postMessage).mock.calls[0][1]).not.toHaveProperty('draft')
   })
 
+  it.for(['new-chat', 'history'])(
+    'cancels preparation after switching conversation: %s',
+    async (context) => {
+      const rest = fakeRest()
+      const { source } = fakeEvents()
+      let releasePrepare = () => {}
+      const prepare = vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            releasePrepare = resolve
+          })
+      )
+      const adopted = vi.fn()
+      const session = useAgentSession({
+        rest,
+        events: source,
+        workflow: {
+          current: () => ({ id: 'wf-a', tabPath: 'tab-a' }),
+          prepare,
+          adopted
+        }
+      })
+      session.start()
+      const sending = session.sendMessage('Old draft')
+      expect(prepare).toHaveBeenCalledOnce()
+      if (context === 'new-chat') session.newChat()
+      else await session.loadThread('th-history')
+      releasePrepare()
+      expect(await sending).toBe(false)
+      expect(rest.postMessage).not.toHaveBeenCalled()
+      expect(adopted).not.toHaveBeenCalled()
+      expect(session.entries.value).toEqual([])
+      expect(session.threadId.value).toBe(
+        context === 'new-chat' ? null : 'th-history'
+      )
+      expect(session.isSending.value).toBe(false)
+      session.stop()
+    }
+  )
+
   it('(h7) a tab switch while prepare() is pending does not reattribute the send to the new tab', async () => {
     const postMessage = vi.fn(async () => ({
       thread_id: 'th-1',

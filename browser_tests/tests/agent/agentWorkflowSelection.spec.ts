@@ -11,6 +11,60 @@ test.describe(
   'Explicit Agent workflow selection',
   { tag: ['@cloud', '@ui'] },
   () => {
+    test('clears a closed target and restores a send interrupted during preparation', async ({
+      page,
+      workflowSelection
+    }) => {
+      await page
+        .getByRole('button', { name: enMessages.agent.askComfyAgent })
+        .click()
+      const panel = page.locator('#agent-panel-root')
+      const targetPicker = panel.getByRole('button', {
+        name: enMessages.agent.switchWorkflow
+      })
+      await targetPicker.click()
+      await page
+        .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
+        .click()
+      await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
+      workflowSelection.finishSave(true)
+      await expect(targetPicker).toHaveText('Unsaved Workflow')
+      await page
+        .getByRole('button', {
+          name: enMessages.sideToolbar.newBlankWorkflow,
+          exact: true
+        })
+        .click()
+      const tabs = page.getByTestId('workflow-tab')
+      await expect(tabs).toHaveCount(2)
+      const composer = panel.getByRole('textbox', { includeHidden: true })
+      await composer.fill('Keep this interrupted draft')
+      workflowSelection.pauseWorkflowLookups()
+      const lookups = workflowSelection.workflowLookups()
+      await composer.press('Enter')
+      await expect
+        .poll(() => workflowSelection.workflowLookups())
+        .toBeGreaterThan(lookups)
+      await tabs.first().hover()
+      await tabs
+        .first()
+        .getByRole('button', { name: enMessages.g.close })
+        .click()
+      await expect(tabs).toHaveCount(1)
+      workflowSelection.resumeWorkflowLookups()
+      await expect(composer).toHaveValue('Keep this interrupted draft')
+      await expect(
+        panel.getByText(enMessages.agent.selectWorkflowForAgent)
+      ).toBeVisible()
+      await expect(
+        tabs.getByRole('img', { name: enMessages.agent.targetForThisChat })
+      ).toHaveCount(0)
+      await expect(
+        panel.getByRole('button', { name: enMessages.agent.stop, exact: true })
+      ).toHaveCount(0)
+      expect(workflowSelection.postedMessages).toHaveLength(0)
+    })
+
     test('navigates and removes staged workflow chips while retaining the draft and target', async ({
       page,
       workflowSelection
@@ -137,6 +191,9 @@ test.describe(
       await expect(page.getByText(reason, { exact: true })).toBeHidden()
       await page.keyboard.press('Escape')
       await expect(plusNodes).toBeHidden()
+      await expect(
+        panel.getByRole('button', { name: enMessages.agent.addToPrompt })
+      ).toBeFocused()
 
       const composer = panel.getByRole('textbox', { includeHidden: true })
       await composer.fill('@')
