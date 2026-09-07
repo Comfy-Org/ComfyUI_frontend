@@ -2852,6 +2852,57 @@ describe('useWorkspaceAuthStore', () => {
       expect(mockFetch).toHaveBeenCalledTimes(4)
     })
 
+    it('starts a fresh retry_count after a successful reactive re-mint', async () => {
+      mockUnifiedCloudAuthEnabled.value = true
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const expiresInMs = 3600 * 1000
+      const okResponse = (token: string) => ({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            ...personalTokenResponse,
+            token,
+            expires_at: new Date(Date.now() + expiresInMs).toISOString()
+          })
+      })
+      const transientFailure = {
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+        text: () => Promise.resolve(JSON.stringify({ message: 'try again' }))
+      }
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce(okResponse('unified-token-1'))
+        .mockResolvedValueOnce(transientFailure)
+        .mockImplementationOnce(() =>
+          Promise.resolve(okResponse('unified-token-2'))
+        )
+        .mockResolvedValue(transientFailure)
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      await store.mintAtLogin()
+      await vi.advanceTimersByTimeAsync(expiresInMs - 5 * 60 * 1000)
+      expect(mockTrackUnifiedAuthRefresh).toHaveBeenLastCalledWith({
+        outcome: 'retry_scheduled',
+        retry_count: 1
+      })
+
+      await expect(store.remintUnifiedOnce('unified-token-1')).resolves.toBe(
+        'unified-token-2'
+      )
+      await vi.advanceTimersByTimeAsync(expiresInMs - 5 * 60 * 1000)
+
+      expect(
+        mockTrackUnifiedAuthRefresh,
+        'a successful mint starts a fresh retry chain; a stale count here poisons the exhaustion signal'
+      ).toHaveBeenLastCalledWith({
+        outcome: 'retry_scheduled',
+        retry_count: 1
+      })
+    })
+
     it('bounds refresh retries and keeps the slot for reactive recovery', async () => {
       mockUnifiedCloudAuthEnabled.value = true
       mockGetIdToken.mockResolvedValue('firebase-token-xyz')
