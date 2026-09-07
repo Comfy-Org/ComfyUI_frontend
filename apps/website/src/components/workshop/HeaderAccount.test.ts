@@ -68,6 +68,21 @@ describe('HeaderAccount', () => {
     expect(screen.getByRole('link', { name: /sign in/i })).toBeTruthy()
   })
 
+  it('appears when the flag turns on after mount', async () => {
+    h.flag!.value = false
+    render(HeaderAccount)
+    expect(screen.queryByRole('link', { name: /sign in/i })).toBeNull()
+
+    h.flag!.value = true
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('link', { name: /sign in/i }),
+        'PostHog answers after mount; a one-shot flag read never shows the control'
+      ).toBeTruthy()
+    })
+  })
+
   it('shows a session-retry control when a user has no workspace session', () => {
     h.user!.value = { email: 'a@b.co', displayName: null }
     h.session!.value = undefined
@@ -121,11 +136,9 @@ describe('HeaderAccount', () => {
     expect(pending.getAttribute('aria-busy')).toBe('true')
     expect(pending.hasAttribute('disabled')).toBe(true)
     release()
-    await waitFor(() =>
-      expect(
-        screen.getByRole('button', { name: /session error/i })
+    expect(
+        await screen.findByRole('button', { name: /session error/i })
       ).toBeTruthy()
-    )
   })
 
   it('omits the credits number when the balance is in error', () => {
