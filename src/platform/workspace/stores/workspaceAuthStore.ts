@@ -2,10 +2,10 @@ import { zWorkspaceWithRole } from '@comfyorg/ingest-types/zod'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 import { z } from 'zod'
-import { fromZodError } from 'zod-validation-error'
 
 import type { AccountUser, SessionErrorCode } from '@comfyorg/account/core'
 import {
+  SESSION_ERROR_MESSAGES,
   createSessionClient,
   isPermanentSessionError
 } from '@comfyorg/account/core'
@@ -22,7 +22,6 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
-import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import type { WorkspaceIdentity } from '@/platform/workspace/workspaceTypes'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
@@ -91,7 +90,15 @@ function isPermanentAuthError(err: unknown): err is WorkspaceAuthError {
   )
 }
 
-function permanentAuthErrorMessageKey(code: string | undefined): string {
+function isSessionErrorCode(
+  code: string | undefined
+): code is SessionErrorCode {
+  return code !== undefined && code in SESSION_ERROR_MESSAGES
+}
+
+// The one code-to-copy mapping; exhaustive so a new code is a compile
+// error here instead of a silently wrong fallback toast.
+function sessionErrorMessageKey(code: SessionErrorCode): string {
   switch (code) {
     case 'ACCESS_DENIED':
       return 'workspaceAuth.errors.accessDenied'
@@ -99,8 +106,10 @@ function permanentAuthErrorMessageKey(code: string | undefined): string {
       return 'workspaceAuth.errors.workspaceNotFound'
     case 'INVALID_FIREBASE_TOKEN':
       return 'workspaceAuth.errors.invalidFirebaseToken'
-    default:
+    case 'NOT_AUTHENTICATED':
       return 'workspaceAuth.errors.notAuthenticated'
+    case 'TOKEN_EXCHANGE_FAILED':
+      return 'workspaceAuth.errors.tokenExchangeFailed'
   }
 }
 
@@ -110,7 +119,11 @@ function surfacePermanentAuthError(err: WorkspaceAuthError): void {
   useToastStore().add({
     severity: 'error',
     summary: t('g.error'),
-    detail: t(permanentAuthErrorMessageKey(err.code))
+    detail: t(
+      sessionErrorMessageKey(
+        isSessionErrorCode(err.code) ? err.code : 'TOKEN_EXCHANGE_FAILED'
+      )
+    )
   })
 }
 
@@ -375,8 +388,6 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     })
 
     if (!response.ok) {
-      const { message } = await parseErrorResponse(response)
-
       if (response.status === 401) {
         throw new WorkspaceAuthError(
           t('workspaceAuth.errors.invalidFirebaseToken'),
@@ -397,7 +408,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       }
 
       throw new WorkspaceAuthError(
-        t('workspaceAuth.errors.tokenExchangeFailed', { error: message }),
+        t('workspaceAuth.errors.tokenExchangeFailed'),
         'TOKEN_EXCHANGE_FAILED'
       )
     }
@@ -407,9 +418,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
     if (!parseResult.success) {
       throw new WorkspaceAuthError(
-        t('workspaceAuth.errors.tokenExchangeFailed', {
-          error: fromZodError(parseResult.error).message
-        }),
+        t('workspaceAuth.errors.tokenExchangeFailed'),
         'TOKEN_EXCHANGE_FAILED'
       )
     }
@@ -419,9 +428,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
     if (isNaN(expiresAt)) {
       throw new WorkspaceAuthError(
-        t('workspaceAuth.errors.tokenExchangeFailed', {
-          error: 'Invalid expiry timestamp'
-        }),
+        t('workspaceAuth.errors.tokenExchangeFailed'),
         'TOKEN_EXCHANGE_FAILED'
       )
     }
@@ -735,21 +742,6 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     return 'workspace_id' in target ? target.workspace_id : undefined
   }
 
-  function unifiedErrorMessageKey(code: SessionErrorCode): string {
-    switch (code) {
-      case 'ACCESS_DENIED':
-        return 'workspaceAuth.errors.accessDenied'
-      case 'WORKSPACE_NOT_FOUND':
-        return 'workspaceAuth.errors.workspaceNotFound'
-      case 'INVALID_FIREBASE_TOKEN':
-        return 'workspaceAuth.errors.invalidFirebaseToken'
-      case 'NOT_AUTHENTICATED':
-        return 'workspaceAuth.errors.notAuthenticated'
-      case 'TOKEN_EXCHANGE_FAILED':
-        return 'workspaceAuth.errors.tokenExchangeFailed'
-    }
-  }
-
   function unifiedSelectionInvalid(code: SessionErrorCode): boolean {
     return code === 'ACCESS_DENIED' || code === 'WORKSPACE_NOT_FOUND'
   }
@@ -785,7 +777,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     if (unifiedPermanentFailureSurfaced) return
     unifiedPermanentFailureSurfaced = true
     surfacePermanentAuthError(
-      new WorkspaceAuthError(t(unifiedErrorMessageKey(code)), code)
+      new WorkspaceAuthError(t(sessionErrorMessageKey(code)), code)
     )
   }
 
@@ -928,7 +920,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     })
     if (result?.status === 'error') {
       throw new WorkspaceAuthError(
-        t(unifiedErrorMessageKey(result.code)),
+        t(sessionErrorMessageKey(result.code)),
         result.code
       )
     }
