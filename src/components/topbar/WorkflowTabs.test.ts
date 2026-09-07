@@ -179,9 +179,8 @@ vi.mock(
   }
 )
 
-vi.mock('@/utils/mouseDownUtil', () => ({
-  whileMouseDown: vi.fn()
-}))
+const whileMouseDown = vi.hoisted(() => vi.fn())
+vi.mock('@/utils/mouseDownUtil', () => ({ whileMouseDown }))
 
 vi.mock('./WorkflowOverflowMenu.vue', () => ({
   default: defineComponent({
@@ -588,5 +587,75 @@ describe('WorkflowTabs scrolling', () => {
 
     expect(scrollIntoView).not.toHaveBeenCalled()
     unmount()
+  })
+})
+
+describe('WorkflowTabs overflow arrows', () => {
+  beforeEach(() => {
+    whileMouseDown.mockClear()
+    overflowObservers.length = 0
+    workflowStore.openWorkflows = []
+    workflowStore.activeWorkflow = null
+  })
+
+  it('scrolls once immediately and delays hold-to-repeat scrolling', async () => {
+    renderComponent()
+    await waitFor(() => expect(overflowObservers).toHaveLength(1))
+    overflowObservers[0].isOverflowing.value = true
+    await nextTick()
+
+    const scrollContent = screen.getByTestId('scroll-content')
+
+    const scrollBy = vi.fn()
+    Object.defineProperty(scrollContent, 'scrollBy', {
+      configurable: true,
+      value: scrollBy
+    })
+
+    const rightArrow = await screen.findByRole('button', {
+      name: /scroll right/i
+    })
+    rightArrow.dispatchEvent(
+      new PointerEvent('pointerdown', { bubbles: true, pointerId: 1 })
+    )
+
+    expect(scrollBy).toHaveBeenCalledOnce()
+    expect(scrollBy).toHaveBeenCalledWith({ left: 20 })
+    expect(whileMouseDown).toHaveBeenCalledOnce()
+    expect(whileMouseDown).toHaveBeenCalledWith(
+      expect.any(PointerEvent),
+      expect.any(Function),
+      30,
+      300
+    )
+
+    const repeatScroll = whileMouseDown.mock.calls[0][1]
+    repeatScroll()
+
+    expect(scrollBy).toHaveBeenCalledTimes(2)
+  })
+
+  it('scrolls once when activated from the keyboard', async () => {
+    renderComponent()
+    await waitFor(() => expect(overflowObservers).toHaveLength(1))
+    overflowObservers[0].isOverflowing.value = true
+    await nextTick()
+
+    const scrollContent = screen.getByTestId('scroll-content')
+    const scrollBy = vi.fn()
+    Object.defineProperty(scrollContent, 'scrollBy', {
+      configurable: true,
+      value: scrollBy
+    })
+
+    const rightArrow = await screen.findByRole('button', {
+      name: /scroll right/i
+    })
+    rightArrow.removeAttribute('disabled')
+    rightArrow.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+
+    expect(scrollBy).toHaveBeenCalledOnce()
+    expect(scrollBy).toHaveBeenCalledWith({ left: 20 })
+    expect(whileMouseDown).not.toHaveBeenCalled()
   })
 })
