@@ -17,7 +17,7 @@ const agentPanelStore = useAgentPanelStore()
     v-tooltip="{ value: t('agent.targetForThisChat'), showDelay: 300 }"
     role="img"
     :aria-label="t('agent.targetForThisChat')"
-    class="inline-flex size-3.5 shrink-0 text-brand-yellow"
+    class="inline-flex size-2.5 shrink-0 text-brand-yellow"
   >
     <i class="icon-[comfy--comfy-c] size-full" />
   </span>
