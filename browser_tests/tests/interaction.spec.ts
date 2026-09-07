@@ -514,14 +514,14 @@ test.describe('Node Interaction', () => {
         .poll(() =>
           comfyPage.page.evaluate(() => {
             const group = window.app!.graph.groups[0]
-            return group ? [group.size[0], group.size[1]] : null
+            return [group.size[0], group.size[1]]
           })
         )
         .not.toBeNull()
 
       const initialGroupSize = await comfyPage.page.evaluate(() => {
         const group = window.app!.graph.groups[0]
-        return group ? [group.size[0], group.size[1]] : null
+        return [group.size[0], group.size[1]]
       })
 
       await comfyPage.keyboard.selectAll()
@@ -531,7 +531,7 @@ test.describe('Node Interaction', () => {
         .poll(() =>
           comfyPage.page.evaluate(() => {
             const group = window.app!.graph.groups[0]
-            return group ? [group.size[0], group.size[1]] : null
+            return [group.size[0], group.size[1]]
           })
         )
         .not.toEqual(initialGroupSize)

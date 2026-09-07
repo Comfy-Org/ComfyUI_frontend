@@ -1,5 +1,9 @@
 import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'
-import { evaluateInput, getWidgetStep } from '@/lib/litegraph/src/utils/widget'
+import {
+  evaluateInput,
+  formatNumericWidgetValue,
+  getWidgetStep
+} from '@/lib/litegraph/src/utils/widget'
 
 import { BaseSteppedWidget } from './BaseSteppedWidget'
 import type { WidgetEventOptions } from './BaseWidget'
@@ -10,7 +14,8 @@ export class NumberWidget
 {
   override get _displayValue() {
     if (this.computedDisabled) return ''
-    return Number(this.value).toFixed(
+    return formatNumericWidgetValue(
+      this.value,
       this.options.precision !== undefined ? this.options.precision : 3
     )
   }
@@ -83,7 +88,7 @@ export class NumberWidget
     const delta = x < 40 ? -1 : x > width - 40 ? 1 : 0
 
     if (delta && x > -3 && x < width + 3) return
-    this.setValue(this.value + (e.deltaX ?? 0) * getWidgetStep(this.options), {
+    this.setValue(this.value + e.deltaX * getWidgetStep(this.options), {
       e,
       node,
       canvas

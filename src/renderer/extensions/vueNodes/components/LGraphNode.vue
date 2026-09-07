@@ -417,7 +417,7 @@ async function nodeOnPointerdown(event: PointerEvent) {
   const node = resolveLGraphNode()
   if (event.altKey && node) {
     const result = LGraphCanvas.cloneNodes([node])
-    if (result?.created?.length) {
+    if (result?.created.length) {
       const [newNode] = result.created
       const newNodeId =
         typeof newNode.id === 'number' ? toNodeId(newNode.id) : newNode.id

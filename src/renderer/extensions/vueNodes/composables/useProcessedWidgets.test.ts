@@ -273,8 +273,8 @@ describe('widget visibility', () => {
     visibility.suppression.byConnection = true
 
     const [processed] = processWidgets({ widgetIds: [id] })
-    expect(processed?.visible).toBe(false)
-    expect(processed?.suppressedByConnection).toBe(true)
+    expect(processed.visible).toBe(false)
+    expect(processed.suppressedByConnection).toBe(true)
   })
 })
 

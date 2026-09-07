@@ -283,7 +283,7 @@ function setRootHostWidgetValue(
   hostNodeId: number,
   value: string
 ) {
-  const hostNode = graphData.nodes?.find(
+  const hostNode = graphData.nodes.find(
     (node) => Number(node.id) === hostNodeId
   )
   if (!hostNode) throw new Error(`Expected host node ${hostNodeId}`)

@@ -61,7 +61,7 @@ test.describe('Asset-supported node default value', { tag: '@cloud' }, () => {
     // filename, so asset.name is the resolved value.
     const nodeId = await comfyPage.page.evaluate(() => {
       const node = window.LiteGraph!.createNode('CheckpointLoaderSimple')
-      window.app!.graph.add(node!)
+      window.app!.graph.add(node)
       return node!.id
     })
 
@@ -79,7 +79,7 @@ test.describe('Asset-supported node default value', { tag: '@cloud' }, () => {
                 (w: { name: string }) => w.name === 'ckpt_name'
               )
               if (widget?.type !== 'asset') return waitingForWidgetType
-              const val = String(widget?.value ?? '')
+              const val = String(widget.value ?? '')
               return val === 'Select model' ? waitingForWidgetValue : val
             },
             {

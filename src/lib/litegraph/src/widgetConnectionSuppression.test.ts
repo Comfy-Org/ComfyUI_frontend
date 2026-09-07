@@ -250,7 +250,7 @@ describe('widget connection suppression', () => {
       expect(visibilityOf(widget).suppression.byConnection).toBe(true)
       expect(widget.hidden).toBe(true)
 
-      const hostWidget = host.widgets?.[0]
+      const hostWidget = host.widgets.at(0)
       if (!hostWidget) throw new Error('Missing promoted host widget')
       expect(visibilityOf(hostWidget).suppression.byConnection).toBe(false)
 

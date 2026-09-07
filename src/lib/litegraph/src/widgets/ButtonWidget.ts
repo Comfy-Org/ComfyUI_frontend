@@ -1,7 +1,7 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IButtonWidget } from '@/lib/litegraph/src/types/widgets'
 
-import { BaseWidget } from './BaseWidget'
+import { BaseWidget, extensionValue } from './BaseWidget'
 import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
 
 type ButtonWidgetSource = Omit<IButtonWidget, 'options'> & {
@@ -12,14 +12,14 @@ export class ButtonWidget
   extends BaseWidget<IButtonWidget>
   implements IButtonWidget
 {
-  clicked: boolean
+  declare clicked: boolean
 
   constructor(widget: ButtonWidgetSource, node: LGraphNode) {
     const normalizedWidget = Object.assign(widget, {
       options: widget.options ?? {}
     })
     super(normalizedWidget, node)
-    this.clicked ??= false
+    this.clicked = extensionValue(this.clicked) ?? false
   }
 
   /**

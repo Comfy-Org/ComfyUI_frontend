@@ -123,7 +123,6 @@ function writePromotedWidgetValue(
   value: WidgetState['value']
 ) {
   const input = promotedInputs(node)[index]
-  if (!input) throw new Error(`Missing promoted input ${index}`)
   useWidgetValueStore().setValue(input.widgetId, value)
 }
 
@@ -157,7 +156,7 @@ describe('SubgraphWidgetPromotion', () => {
       const { node, widget } = createNodeWithWidget('Test Node')
 
       const subgraphNode = setupPromotedWidget(subgraph, node)
-      const input = promotedInputs(subgraphNode)[0]
+      const input = promotedInputs(subgraphNode).at(0)
       if (!input) throw new Error('Missing promoted input')
 
       expect(widget.visibility.suppression.byConnection).toBe(true)
@@ -177,7 +176,7 @@ describe('SubgraphWidgetPromotion', () => {
       widget.options.hidden = false
 
       const subgraphNode = setupPromotedWidget(subgraph, node)
-      const input = promotedInputs(subgraphNode)[0]
+      const input = promotedInputs(subgraphNode).at(0)
       if (!input) throw new Error('Missing promoted input')
       const promotedWidget = promotedWidgetStateByName(subgraphNode, 'value')
 

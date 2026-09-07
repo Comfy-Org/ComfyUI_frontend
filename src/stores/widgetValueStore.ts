@@ -223,7 +223,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     init: WidgetStateInit,
     renderState: WidgetRenderState = {},
     visibility: WidgetVisibilityComponent = deriveWidgetVisibility({
-      type: String(init.type),
+      type: init.type,
       options: init.options
     }),
     _context?: RemoteMutationContext

@@ -83,6 +83,10 @@ export interface WidgetEventOptions {
   canvas: LGraphCanvas
 }
 
+export function extensionValue<T>(value: T): T | null | undefined {
+  return value
+}
+
 export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   implements IBaseWidget, NodeBindable
 {
@@ -119,8 +123,8 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   }
 
   set name(value: string) {
-    const previous = this._name
-    if (previous === undefined || previous === value) {
+    const previous = extensionValue(this._name)
+    if (previous == null || previous === value) {
       this._name = value
       return
     }
@@ -150,10 +154,10 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   }
 
   set options(rawOptions: TWidget['options']) {
-    const previousHidden = this._rawOptions?.hidden
+    const previousHidden = this._rawOptions.hidden
     this.installOptionsShim(rawOptions)
     if (previousHidden !== undefined) this._rawOptions.hidden = previousHidden
-    if (this._state) this._state.options = this._rawOptions
+    this._state.options = this._rawOptions
     this.syncVisibilityFromOptions()
   }
 
@@ -251,10 +255,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     if (isLegacyHiddenWidgetType(value)) {
       applyLegacyHiddenWrite(this._visibility, true)
     } else if (wasLegacyHiding) {
-      applyLegacyHiddenWrite(
-        this._visibility,
-        this._rawOptions?.hidden === true
-      )
+      applyLegacyHiddenWrite(this._visibility, this._rawOptions.hidden === true)
     }
   }
 
@@ -304,7 +305,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     // 'converted-widget') are conversion bookkeeping, not registration
     // intent; keep them out of rawOptions so restoring the type recovers
     // the registration-time hidden state.
-    if (this._rawOptions && !isLegacyWidgetHidingType(this._type)) {
+    if (!isLegacyWidgetHidingType(this._type)) {
       this._rawOptions.hidden = value
     }
   }
@@ -316,7 +317,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     applyLegacyAdvancedWrite(
       this._visibility,
       value,
-      this._rawOptions?.advanced !== undefined
+      this._rawOptions.advanced !== undefined
     )
   }
 
@@ -691,16 +692,14 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
 
     const v = this.type === 'number' ? Number(value) : value
     this.value = v
-    if (
-      this.options?.property &&
-      node.properties[this.options.property] !== undefined
-    ) {
-      node.setProperty(this.options.property, v)
+    const property = extensionValue(this.options)?.property
+    if (property && node.properties[property] !== undefined) {
+      node.setProperty(property, v)
     }
     const pos = canvas.graph_mouse
     this.callback?.(this.value, canvas, node, pos, e)
 
-    node.onWidgetChanged?.(this.name ?? '', v, oldValue, this)
+    node.onWidgetChanged?.(extensionValue(this.name) ?? '', v, oldValue, this)
     if (node.graph) node.graph.incrementVersion()
   }
 

@@ -280,9 +280,6 @@ export class TaskItemImpl {
   }
 
   calculateFlatOutputs(): ReadonlyArray<ResultItemImpl> {
-    if (!this.outputs) {
-      return []
-    }
     return parseTaskOutput(this.outputs)
   }
 
@@ -447,10 +444,6 @@ export class TaskItemImpl {
 
     // Use full outputs from job detail, or fall back to existing outputs
     const outputsToLoad = jobDetail?.outputs ?? this.outputs
-    if (!outputsToLoad) {
-      return
-    }
-
     const nodeOutputsStore = useNodeOutputStore()
     const rawOutputs = toRaw(outputsToLoad)
     for (const rawNodeExecutionId in rawOutputs) {
@@ -505,8 +498,8 @@ export const useQueueStore = defineStore('queue', () => {
   // and a single re-fetch fires after the current one completes.
   // This prevents both request spam and UI starvation (where a rapid stream
   // of calls causes every response to be discarded by a stale-request guard).
-  let inFlight = false
-  let dirty = false
+  const updateState = { inFlight: false, dirty: false }
+  const hasDirtyUpdate = () => updateState.dirty
 
   const tasks = computed<TaskItemImpl[]>(
     () =>
@@ -531,13 +524,13 @@ export const useQueueStore = defineStore('queue', () => {
   )
 
   const update = async () => {
-    if (inFlight) {
-      dirty = true
+    if (updateState.inFlight) {
+      updateState.dirty = true
       return
     }
 
-    inFlight = true
-    dirty = false
+    updateState.inFlight = true
+    updateState.dirty = false
     isLoading.value = true
     try {
       const [queueResult, historyResult] = await Promise.allSettled([
@@ -554,7 +547,7 @@ export const useQueueStore = defineStore('queue', () => {
         const appearedTasks = [...pendingTasks.value, ...runningTasks.value]
         const executionStore = useExecutionStore()
         appearedTasks.forEach((task) => {
-          const jobIdString = String(task.jobId)
+          const jobIdString = task.jobId
           const workflowId = task.workflowId
           if (workflowId && jobIdString) {
             executionStore.registerJobWorkflowIdMapping(jobIdString, workflowId)
@@ -614,8 +607,8 @@ export const useQueueStore = defineStore('queue', () => {
       }
     } finally {
       isLoading.value = false
-      inFlight = false
-      if (dirty) {
+      updateState.inFlight = false
+      if (hasDirtyUpdate()) {
         void update()
       }
     }
@@ -663,8 +656,8 @@ export const useQueuePendingTaskCountStore = defineStore(
       count: 0
     }),
     actions: {
-      update(e: CustomEvent<StatusWsMessageStatus>) {
-        this.count = e.detail?.exec_info?.queue_remaining || 0
+      update(e: CustomEvent<StatusWsMessageStatus | null>) {
+        this.count = e.detail?.exec_info.queue_remaining || 0
       }
     }
   }

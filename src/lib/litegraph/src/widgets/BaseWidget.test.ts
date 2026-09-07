@@ -7,7 +7,10 @@ import type {
   IBaseWidget,
   INumericWidget
 } from '@/lib/litegraph/src/types/widgets'
-import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
+import {
+  BaseWidget,
+  extensionValue
+} from '@/lib/litegraph/src/widgets/BaseWidget'
 import type {
   DrawWidgetOptions,
   WidgetEventOptions
@@ -141,7 +144,7 @@ describe('BaseWidget store integration', () => {
       const widget = createTestWidget(node)
       widget.hidden = true
 
-      widget.options = widget.options || {}
+      widget.options = extensionValue(widget.options) || {}
       widget.options.read_only = true
 
       expect(widget.hidden).toBe(true)
@@ -579,7 +582,7 @@ describe('BaseWidget store integration', () => {
           const state = store.getWidget(
             widgetId(graphId, node.id, 'system_prompt')
           )
-          return (state?.value as string) ?? defaultValue
+          return typeof state?.value === 'string' ? state.value : defaultValue
         },
         set(v: string) {
           const graphId = widget.node.graph?.rootGraph.id

@@ -6,6 +6,7 @@ import type { NodeId } from '@/types/nodeId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import type { WidgetId } from '@/types/widgetId'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
+import type { ColorFormat } from '@/utils/colorUtil'
 
 import type {
   CanvasColour,
@@ -151,6 +152,7 @@ export type IWidget =
   | ICompositorWidget
   | IRangeWidget
   | IVideoEditWidget
+  | IResolutionPreviewWidget
   | IBoundingBoxesWidget
   | IColorsWidget
 
@@ -252,9 +254,17 @@ export interface IFileUploadWidget extends IBaseWidget<string, 'fileupload'> {
 }
 
 /** Color picker widget for selecting colors */
-export interface IColorWidget extends IBaseWidget<string, 'color'> {
+export interface IColorWidgetOptions extends IWidgetOptions {
+  format?: ColorFormat | 'int'
+}
+
+export interface IColorWidget extends IBaseWidget<
+  string | number,
+  'color',
+  IColorWidgetOptions
+> {
   type: 'color'
-  value: string
+  value: string | number
 }
 
 /** Markdown widget for displaying formatted text */
@@ -423,6 +433,21 @@ export interface IVideoEditWidget extends IBaseWidget<
 > {
   type: 'videoedit'
   value: VideoEditValue
+}
+
+export interface IWidgetResolutionPreviewOptions extends IWidgetOptions {
+  ratio_widget?: string
+  megapixels_widget?: string
+  multiple_widget?: string
+}
+
+export interface IResolutionPreviewWidget extends IBaseWidget<
+  null,
+  'resolutionpreview',
+  IWidgetResolutionPreviewOptions
+> {
+  type: 'resolutionpreview'
+  value: null
 }
 
 /**

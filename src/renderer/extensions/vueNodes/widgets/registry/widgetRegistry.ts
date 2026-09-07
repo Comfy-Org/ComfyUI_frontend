@@ -86,6 +86,9 @@ const WidgetVideoEdit = defineAsyncComponent(
 const WidgetColors = defineAsyncComponent(
   () => import('@/components/palette/WidgetColors.vue')
 )
+const WidgetResolutionPreview = defineAsyncComponent(
+  () => import('../components/WidgetResolutionPreview.vue')
+)
 
 export const FOR_TESTING = {
   WidgetButton,
@@ -282,6 +285,14 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
     {
       component: WidgetColors,
       aliases: ['COLORS'],
+      essential: false
+    }
+  ],
+  [
+    'resolutionpreview',
+    {
+      component: WidgetResolutionPreview,
+      aliases: ['RESOLUTION_PREVIEW'],
       essential: false
     }
   ]

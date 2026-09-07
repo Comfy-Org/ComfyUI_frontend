@@ -128,7 +128,7 @@ function createSlotMetadata(
     linked: link !== undefined,
     originNodeId: link?.originNodeId,
     originOutputName: link
-      ? originNode?.outputs?.[link.originSlot]?.name
+      ? originNode?.outputs[link.originSlot]?.name
       : undefined,
     promoted: input.widgetId !== undefined,
     type: String(input.type)
@@ -246,7 +246,7 @@ function createWidgetUpdateHandler({
       live.node.widgets?.forEach((w) => w.triggerDraw?.())
     }
 
-    const options = { min: widgetOptions?.min, max: widgetOptions?.max }
+    const options = { min: widgetOptions.min, max: widgetOptions.max }
     if (errorTarget) {
       executionErrorStore.clearWidgetRelatedErrors(
         errorTarget.executionId,
@@ -341,11 +341,9 @@ function widgetNodeLocatorId(
     if (sourceLocator) return sourceLocator
   }
   if (!bareWidgetId) return undefined
-  return (
-    createNodeLocatorId(
-      subgraphIdFromState(ctx.nodeData, ctx.rootGraphId),
-      bareWidgetId
-    ) ?? undefined
+  return createNodeLocatorId(
+    subgraphIdFromState(ctx.nodeData, ctx.rootGraphId),
+    bareWidgetId
   )
 }
 
@@ -380,7 +378,7 @@ function processWidget(
   const renderState = ctx.widgetValueStore.getWidgetRenderState(id)
   const visibility = ctx.widgetValueStore.getWidgetVisibility(id)
   if (!type) return null
-  const options: IWidgetOptions = { ...(widgetState.options ?? {}) }
+  const options: IWidgetOptions = { ...widgetState.options }
 
   const { live, errorTarget, controlWidget, sourceExecutionId } =
     resolveLiveWidgetContext(ctx.rootGraph, ctx.hostNode, liveWidget)
