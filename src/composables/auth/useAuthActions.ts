@@ -83,6 +83,14 @@ export const useAuthActions = () => {
           t('auth.errors.generic')
         )
       })
+    } else if (error instanceof FirebaseError) {
+      // classifyAuthError only knows auth/ codes; an app/ or installations/
+      // FirebaseError still gets the localized copy, never the raw SDK text.
+      toastStore.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: st(`auth.errors.${error.code}`, t('auth.errors.generic'))
+      })
     } else {
       toastErrorHandler(error)
     }

@@ -1428,6 +1428,24 @@ describe('useAuthStore', () => {
       })
     })
 
+    it.for(['loginWithGoogle', 'loginWithGithub'] as const)(
+      '%s aborts provisioning with the explicit gate error when no ID token can be minted',
+      async (method) => {
+        vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue({
+          user: mockUser
+        } as Partial<UserCredential> as UserCredential)
+        mockUser.getIdToken.mockResolvedValue('')
+
+        await expect(store[method]()).rejects.toThrow(
+          'Cannot create customer: User not authenticated'
+        )
+        expect(
+          customerRequestBody(),
+          'provisioning must be gated on a mintable ID token, not attempted and left to fail downstream'
+        ).toBeUndefined()
+      }
+    )
+
     it('should handle concurrent social login attempts correctly', async () => {
       const mockUserCredential = { user: mockUser }
       vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue(
