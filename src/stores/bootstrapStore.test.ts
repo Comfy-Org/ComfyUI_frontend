@@ -118,6 +118,7 @@ describe('bootstrapStore', () => {
     mockSettingLoad.mockRejectedValueOnce(new Error('settings failed'))
     mockWorkflowLoad.mockRejectedValueOnce(new Error('workflows failed'))
     const milestone = vi.spyOn(bootstrapTracer, 'milestone')
+    const previousPhaseCount = bootstrapTracer.summary().length
     const store = useBootstrapStore()
 
     await expect(store.startStoreBootstrap()).resolves.toBeUndefined()
@@ -126,7 +127,8 @@ describe('bootstrapStore', () => {
       expect(milestone).toHaveBeenCalledWith('stores-ready')
       expect(store.isI18nReady).toBe(true)
     })
-    expect(bootstrapTracer.summary().map((r) => r.name)).toEqual(
+    const phaseRows = bootstrapTracer.summary().slice(previousPhaseCount)
+    expect(phaseRows.map((row) => row.name)).toEqual(
       expect.arrayContaining(['bootstrap/settings', 'bootstrap/workflows'])
     )
   })

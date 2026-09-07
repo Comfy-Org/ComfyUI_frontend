@@ -1,24 +1,45 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { BootstrapCompleteMetadata } from '@/platform/telemetry/types'
+import type {
+  BootstrapCompleteMetadata,
+  TelemetryDispatcher
+} from '@/platform/telemetry/types'
 
+import { BootstrapTracer } from './bootstrapTracer'
 import { perfMark, perfPoint } from './perfMark'
 
-const { addBreadcrumb, trackBootstrapComplete } = vi.hoisted(() => ({
-  addBreadcrumb: vi.fn(),
-  trackBootstrapComplete: vi.fn()
-}))
+const {
+  addBreadcrumb,
+  trackBootstrapComplete,
+  trackEarlyBootstrapComplete,
+  useTelemetry
+} = vi.hoisted(() => {
+  const trackBootstrapComplete =
+    vi.fn<(metadata: BootstrapCompleteMetadata) => void>()
+  return {
+    addBreadcrumb: vi.fn(),
+    trackBootstrapComplete,
+    trackEarlyBootstrapComplete:
+      vi.fn<(metadata: BootstrapCompleteMetadata) => void>(),
+    useTelemetry: vi.fn(
+      (): Pick<TelemetryDispatcher, 'trackBootstrapComplete'> | null => ({
+        trackBootstrapComplete
+      })
+    )
+  }
+})
 
 vi.mock('@sentry/vue', () => ({ addBreadcrumb }))
-vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => ({ trackBootstrapComplete })
-}))
-
-/** The tracer is a singleton that reports once, so each test needs its own. */
-async function freshTracer() {
-  vi.resetModules()
-  return (await import('./bootstrapTracer')).bootstrapTracer
-}
+vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+vi.mock('@/platform/telemetry', () => ({ useTelemetry }))
+vi.mock(
+  '@/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider',
+  () => ({
+    DatadogRumTelemetryProvider: class {
+      trackBootstrapComplete = trackEarlyBootstrapComplete
+    }
+  })
+)
 
 describe('perfMark', () => {
   beforeEach(() => {
@@ -63,10 +84,12 @@ describe('bootstrapTracer', () => {
   beforeEach(() => {
     addBreadcrumb.mockReset()
     trackBootstrapComplete.mockReset()
+    trackEarlyBootstrapComplete.mockReset()
+    useTelemetry.mockClear()
   })
 
   it('records a phase under its own name, not a doubled prefix', async () => {
-    const tracer = await freshTracer()
+    const tracer = new BootstrapTracer()
 
     await tracer.settle('bootstrap/object-info', () => Promise.resolve('defs'))
 
@@ -76,7 +99,7 @@ describe('bootstrapTracer', () => {
   })
 
   it('records a phase whose work rejects and rethrows', async () => {
-    const tracer = await freshTracer()
+    const tracer = new BootstrapTracer()
 
     await expect(
       tracer.settle('bootstrap/settings', () =>
@@ -88,7 +111,7 @@ describe('bootstrapTracer', () => {
   })
 
   it('reports one event covering phases that finish after the store loads', async () => {
-    const tracer = await freshTracer()
+    const tracer = new BootstrapTracer()
 
     await tracer.settle('bootstrap/settings', () => Promise.resolve())
     await tracer.settle('bootstrap/object-info', () => Promise.resolve())
@@ -96,8 +119,7 @@ describe('bootstrapTracer', () => {
     tracer.complete()
 
     expect(trackBootstrapComplete).toHaveBeenCalledOnce()
-    const metadata = trackBootstrapComplete.mock
-      .calls[0][0] as BootstrapCompleteMetadata
+    const metadata = trackBootstrapComplete.mock.calls[0][0]
     expect(metadata.outcome).toBe('completed')
     expect(metadata.phase_count).toBe(3)
     expect(Object.keys(metadata.phases)).toEqual([
@@ -108,20 +130,19 @@ describe('bootstrapTracer', () => {
     expect(metadata.total_ms).toBeGreaterThanOrEqual(0)
   })
 
-  it('reports a failed startup, closing phases still open', async () => {
-    const tracer = await freshTracer()
+  it('reports a failed startup, closing phases still open', () => {
+    const tracer = new BootstrapTracer()
 
     tracer.startPhase('bootstrap/object-info')
     tracer.complete('failed')
 
-    const metadata = trackBootstrapComplete.mock
-      .calls[0][0] as BootstrapCompleteMetadata
+    const metadata = trackBootstrapComplete.mock.calls[0][0]
     expect(metadata.outcome).toBe('failed')
     expect(Object.keys(metadata.phases)).toEqual(['bootstrap/object-info'])
   })
 
-  it('reports only once', async () => {
-    const tracer = await freshTracer()
+  it('reports only once', () => {
+    const tracer = new BootstrapTracer()
 
     tracer.complete()
     tracer.complete('failed')
@@ -130,22 +151,39 @@ describe('bootstrapTracer', () => {
   })
 
   it('reports a startup still running at the watchdog deadline', async () => {
-    const tracer = await freshTracer()
+    const tracer = new BootstrapTracer()
 
     await tracer.settle('startup/remote-config', () => Promise.resolve())
     tracer.startPhase('auth-gate/user-store')
     tracer.armWatchdog(30_000)
     await vi.advanceTimersByTimeAsync(30_000)
 
-    const metadata = trackBootstrapComplete.mock
-      .calls[0][0] as BootstrapCompleteMetadata
+    const metadata = trackBootstrapComplete.mock.calls[0][0]
     expect(metadata.outcome).toBe('timed_out')
     expect(metadata.pending).toEqual(['auth-gate/user-store'])
     expect(Object.keys(metadata.phases)).toEqual(['startup/remote-config'])
   })
 
+  it('reports an early timeout before the telemetry registry exists', async () => {
+    useTelemetry.mockReturnValueOnce(null)
+    const tracer = new BootstrapTracer()
+
+    tracer.startPhase('startup/remote-config')
+    tracer.armWatchdog(30_000)
+    await vi.advanceTimersByTimeAsync(30_000)
+
+    await vi.waitFor(() => {
+      expect(trackEarlyBootstrapComplete).toHaveBeenCalledWith(
+        expect.objectContaining({
+          outcome: 'timed_out',
+          pending: ['startup/remote-config']
+        })
+      )
+    })
+  })
+
   it('still reports the terminal row after a watchdog row', async () => {
-    const tracer = await freshTracer()
+    const tracer = new BootstrapTracer()
 
     tracer.startPhase('auth-gate/user-store')
     tracer.armWatchdog(30_000)
@@ -154,14 +192,12 @@ describe('bootstrapTracer', () => {
 
     expect(trackBootstrapComplete).toHaveBeenCalledTimes(2)
     expect(
-      trackBootstrapComplete.mock.calls.map(
-        ([m]) => (m as BootstrapCompleteMetadata).outcome
-      )
+      trackBootstrapComplete.mock.calls.map(([metadata]) => metadata.outcome)
     ).toEqual(['timed_out', 'completed'])
   })
 
   it('does not report a watchdog row once startup has completed', async () => {
-    const tracer = await freshTracer()
+    const tracer = new BootstrapTracer()
 
     tracer.armWatchdog(30_000)
     tracer.complete()

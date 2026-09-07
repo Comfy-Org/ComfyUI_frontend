@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { BillingTelemetryEvent } from '../../types'
+import type {
+  BillingTelemetryEvent,
+  BootstrapCompleteMetadata
+} from '../../types'
 import { TelemetryEvents } from '../../types'
 import { DatadogRumTelemetryProvider } from './DatadogRumTelemetryProvider'
 
@@ -330,5 +333,23 @@ describe('DatadogRumTelemetryProvider', () => {
       duration: 5200,
       context: { outcome: 'failed' }
     })
+  })
+
+  it('records timed-out startup without a duration vital', () => {
+    const metadata: BootstrapCompleteMetadata = {
+      total_ms: 30_000,
+      outcome: 'timed_out',
+      phase_count: 1,
+      phases: {},
+      pending: ['bootstrap/object-info']
+    }
+
+    new DatadogRumTelemetryProvider().trackBootstrapComplete(metadata)
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.BOOTSTRAP_COMPLETE,
+      metadata
+    )
+    expect(addDurationVital).not.toHaveBeenCalled()
   })
 })

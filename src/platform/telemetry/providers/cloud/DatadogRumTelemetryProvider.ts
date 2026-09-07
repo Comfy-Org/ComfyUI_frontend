@@ -41,6 +41,8 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
 
   trackBootstrapComplete(metadata: BootstrapCompleteMetadata): void {
     datadogRum.addAction(TelemetryEvents.BOOTSTRAP_COMPLETE, metadata)
+    if (metadata.outcome === 'timed_out') return
+
     datadogRum.addDurationVital('bootstrap', {
       startTime: performance.timeOrigin,
       duration: metadata.total_ms,

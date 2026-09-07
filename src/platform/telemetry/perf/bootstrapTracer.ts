@@ -25,13 +25,15 @@
  * that transition (`GraphCanvas`'s onMounted `finally`), so the trace covers
  * the extension and object-info phases that run inside `ComfyApp.setup()` and
  * so a startup that threw still reports. A startup that never gets there is
- * reported by `armWatchdog()`, armed from `main.ts` once the app is mounted.
+ * reported by `armWatchdog()`, armed from `main.ts` before blocking startup
+ * work begins.
  *
  * Usage:
  *   import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
  *
  *   await bootstrapTracer.settle('bootstrap/object-info', () => this.getNodeDefs())
  */
+import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { BootstrapCompleteMetadata } from '@/platform/telemetry/types'
 
@@ -69,7 +71,7 @@ export interface BootstrapPhaseTiming {
   durationMs: number
 }
 
-class BootstrapTracer {
+export class BootstrapTracer {
   private _spans = new Map<BootstrapPhase, PerfSpan>()
   private _timings: BootstrapPhaseTiming[] = []
   private _completed = false
@@ -176,13 +178,23 @@ class BootstrapTracer {
     try {
       const totalMs = Math.round(performance.now())
       const rows = this.summary()
-      useTelemetry()?.trackBootstrapComplete({
+      const metadata: BootstrapCompleteMetadata = {
         total_ms: totalMs,
         outcome,
         phase_count: rows.length,
         phases: Object.fromEntries(rows.map((r) => [r.name, r.durationMs])),
         ...(pending?.length ? { pending } : {})
-      })
+      }
+      const telemetry = useTelemetry()
+      if (telemetry) {
+        telemetry.trackBootstrapComplete(metadata)
+      } else if (isCloud && outcome === 'timed_out') {
+        void import('@/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider')
+          .then(({ DatadogRumTelemetryProvider }) => {
+            new DatadogRumTelemetryProvider().trackBootstrapComplete(metadata)
+          })
+          .catch(() => {})
+      }
       this._logSummary(rows, totalMs)
     } catch {
       return
@@ -194,20 +206,16 @@ class BootstrapTracer {
    * Only emits in dev or when DEBUG_PERF is set.
    */
   private _logSummary(rows: BootstrapPhaseTiming[], totalMs: number): void {
-    try {
-      if (!import.meta.env.DEV && localStorage.getItem('DEBUG_PERF') !== 'true')
-        return
-      if (rows.length === 0) return
-      console.warn(
-        '[Bootstrap] Startup trace\n' +
-          rows
-            .map((r) => `  ${r.startMs}ms  ${r.name}: ${r.durationMs}ms`)
-            .join('\n') +
-          `\n  Total wall-clock: ${totalMs}ms`
-      )
-    } catch {
+    if (!import.meta.env.DEV && localStorage.getItem('DEBUG_PERF') !== 'true')
       return
-    }
+    if (rows.length === 0) return
+    console.warn(
+      '[Bootstrap] Startup trace\n' +
+        rows
+          .map((r) => `  ${r.startMs}ms  ${r.name}: ${r.durationMs}ms`)
+          .join('\n') +
+        `\n  Total wall-clock: ${totalMs}ms`
+    )
   }
 }
 

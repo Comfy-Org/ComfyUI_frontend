@@ -44,6 +44,8 @@ const hasHostTelemetryBridge = Boolean(window.__comfyDesktop2?.Telemetry)
 
 if (isCloud) stripPaymentReturnParams()
 
+bootstrapTracer.armWatchdog()
+
 // Load remote config before initializeApp() below, so getFirebaseConfig() resolves
 // against the server's runtime values instead of the build-time defaults.
 await bootstrapTracer.settle('startup/remote-config', async () => {
@@ -198,4 +200,3 @@ void bootstrapStore.startStoreBootstrap()
 
 app.mount('#vue-app')
 bootstrapTracer.milestone('app-mounted')
-bootstrapTracer.armWatchdog()
