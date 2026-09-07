@@ -4190,7 +4190,13 @@ describe('AgentPanelRoot workflow binding', () => {
     ).toBe(false)
   })
 
-  it.for(['untouched', 'new-draft', 'new-chat'])(
+  it.for([
+    'untouched',
+    'new-draft',
+    'cleared-draft',
+    'removed-reference',
+    'new-chat'
+  ])(
     'recovers a failed send only in its untouched composer: %s',
     async (nextAction) => {
       makeTab('wf-42')
@@ -4239,7 +4245,21 @@ describe('AgentPanelRoot workflow binding', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Send' }))
       await vi.waitFor(() => expect(bodies).toHaveLength(1))
       expect(screen.getByRole('button', { name: 'Stop' })).toBeVisible()
-      if (nextAction === 'new-draft') await userEvent.type(textbox, 'New input')
+      if (nextAction === 'new-draft' || nextAction === 'cleared-draft')
+        await userEvent.type(textbox, 'New input')
+      if (nextAction === 'cleared-draft') await userEvent.clear(textbox)
+      if (nextAction === 'removed-reference') {
+        await userEvent.type(textbox, '@')
+        await userEvent.click(
+          screen.getByRole('menuitem', { name: 'Workflows' })
+        )
+        await userEvent.click(
+          await screen.findByRole('menuitem', { name: 'reference' })
+        )
+        await userEvent.click(
+          screen.getByRole('button', { name: 'Remove reference reference' })
+        )
+      }
       if (nextAction === 'new-chat')
         await userEvent.click(
           screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
