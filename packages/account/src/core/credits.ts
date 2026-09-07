@@ -95,18 +95,21 @@ export function createBillingClient(
   }
 
   async function runRefresh(): Promise<void> {
-    const active = activeCredential()
-    if (!active) {
+    const snapshot = session.getSnapshot()
+    if (snapshot.phase !== 'authenticated') {
       publish({ status: 'unknown' })
       return
     }
-    const uid = active.uid
-    let token = active.token
+    const owner = snapshot.user
+    const uid = snapshot.session.uid
+    let token = snapshot.session.token
     let result = await fetchBalance(token)
-    // One re-mint on a stale token, mirroring the run path's single retry.
-    // Other failures are not the token's fault, so no mint is spent on them.
+    // One re-mint on a stale token, mirroring the run path's single retry,
+    // spent for the identity whose read failed — never whoever is signed in
+    // by the time the 401 lands. Other failures are not the token's fault,
+    // so no mint is spent on them.
     if (result.status === 'error' && result.unauthorized) {
-      const reminted = await session.remint()
+      const reminted = await session.remint(owner)
       if (reminted?.status === 'ok') {
         token = reminted.session.token
         result = await fetchBalance(token)
