@@ -1,17 +1,17 @@
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/stores/resultItem'
 
 export interface InProgressItem {
   id: string
   jobId: string
   state: 'skeleton' | 'latent' | 'image'
   latentPreviewUrl?: string
-  output?: ResultItemImpl
+  output?: AugmentedResultItem
 }
 
 export interface OutputSelection {
   asset?: AssetItem
-  output?: ResultItemImpl
+  output?: AugmentedResultItem
   canShowPreview: boolean
   latentPreviewUrl?: string
   showSkeleton?: boolean

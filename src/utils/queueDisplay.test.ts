@@ -159,9 +159,12 @@ describe('buildJobDisplay', () => {
           executionTimeInSeconds: 3.51,
           previewOutput: {
             filename: 'preview.png',
-            isImage: true,
+            subfolder: '',
+            type: 'output',
+            nodeId: '0',
+            mediaType: 'images',
             url: '/api/view?filename=preview.png&type=output&subfolder='
-          } as PreviewOutput
+          } as const
         }),
         'completed',
         createCtx()

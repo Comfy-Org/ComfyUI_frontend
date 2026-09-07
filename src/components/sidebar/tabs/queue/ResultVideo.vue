@@ -10,14 +10,19 @@ import { computed } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExtensionStore } from '@/stores/extensionStore'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/stores/resultItem'
+import {
+  resultItemHtmlVideoType,
+  resultItemUrl,
+  resultItemVhsAdvancedPreviewUrl
+} from '@/stores/resultItem'
 
 /* MediaLightbox retains this component via KeepAlive include, which matches on
    the registered component name. */
 defineOptions({ name: 'ResultVideo' })
 
 const props = defineProps<{
-  result: ResultItemImpl
+  result: AugmentedResultItem
 }>()
 
 const settingStore = useSettingStore()
@@ -34,10 +39,12 @@ const vhsAdvancedPreviews = computed(() => {
 
 const url = computed(() =>
   vhsAdvancedPreviews.value
-    ? props.result.vhsAdvancedPreviewUrl
-    : props.result.url
+    ? resultItemVhsAdvancedPreviewUrl(props.result)
+    : resultItemUrl(props.result)
 )
 const htmlVideoType = computed(() =>
-  vhsAdvancedPreviews.value ? 'video/webm' : props.result.htmlVideoType
+  vhsAdvancedPreviews.value
+    ? 'video/webm'
+    : resultItemHtmlVideoType(props.result)
 )
 </script>

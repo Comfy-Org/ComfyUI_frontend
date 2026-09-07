@@ -1,10 +1,10 @@
 import type { NodeExecutionOutput } from '@/schemas/apiSchema'
 import { parseNodeOutput } from '@/stores/resultItemParsing'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/stores/resultItem'
 
 export function flattenNodeOutput([nodeId, nodeOutput]: [
   string | number,
   NodeExecutionOutput | null | undefined
-]): ResultItemImpl[] {
+]): AugmentedResultItem[] {
   return parseNodeOutput(nodeId, nodeOutput)
 }

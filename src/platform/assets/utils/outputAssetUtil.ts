@@ -8,11 +8,12 @@ import {
   getJobDetail,
   getPreviewableOutputsFromJobDetail
 } from '@/services/jobOutputCache'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/stores/resultItem'
+import { resultItemPreviewUrl, resultItemUrl } from '@/stores/resultItem'
 
 type OutputAssetMapOptions = {
   jobId: string
-  outputs: readonly ResultItemImpl[]
+  outputs: readonly AugmentedResultItem[]
   createdAt?: string
   executionTimeInSeconds?: number
   workflow?: OutputAssetMetadata['workflow']
@@ -77,8 +78,8 @@ function mapOutputsToAssetItems({
       created_at: createdAtValue,
       updated_at: createdAtValue,
       tags: ['output'],
-      thumbnail_url: output.previewUrl,
-      preview_url: output.url,
+      thumbnail_url: resultItemPreviewUrl(output),
+      preview_url: resultItemUrl(output),
       user_metadata: {
         jobId,
         nodeId: output.nodeId,

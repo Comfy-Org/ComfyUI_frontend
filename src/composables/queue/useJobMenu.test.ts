@@ -4,6 +4,7 @@ import type { Ref } from 'vue'
 
 import type { JobListItem } from '@/composables/queue/useJobList'
 import type { MenuEntry } from '@/composables/queue/useJobMenu'
+import type * as FormatUtil from '@/utils/formatUtil'
 
 vi.mock('@/platform/distribution/types', () => ({
   isCloud: false
@@ -35,8 +36,10 @@ vi.mock('@/i18n', () => ({
 
 const mapTaskOutputToAssetItemMock = vi.fn()
 vi.mock('@/platform/assets/composables/media/assetMappers', () => ({
-  mapTaskOutputToAssetItem: (taskItem: TaskItemImpl, output: ResultItemImpl) =>
-    mapTaskOutputToAssetItemMock(taskItem, output)
+  mapTaskOutputToAssetItem: (
+    taskItem: TaskItemImpl,
+    output: AugmentedResultItem
+  ) => mapTaskOutputToAssetItemMock(taskItem, output)
 }))
 
 const mediaAssetActionsMock = {
@@ -131,14 +134,16 @@ vi.mock('@/services/jobOutputCache', () => ({
 const appendJsonExtMock = vi.fn((value: string) =>
   value.toLowerCase().endsWith('.json') ? value : `${value}.json`
 )
-vi.mock('@/utils/formatUtil', () => ({
+vi.mock('@/utils/formatUtil', async (importOriginal) => ({
+  ...(await importOriginal<typeof FormatUtil>()),
   appendJsonExt: (...args: Parameters<typeof appendJsonExtMock>) =>
     appendJsonExtMock(...args)
 }))
 
 import { useJobMenu } from '@/composables/queue/useJobMenu'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
+import type { TaskItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/stores/resultItem'
 
 type MockTaskRef = Record<string, unknown>
 
@@ -509,8 +514,7 @@ describe('useJobMenu', () => {
         state: 'completed',
         taskRef: {
           previewOutput: {
-            isImage: true,
-            filename: 'foo',
+            filename: 'foo.png',
             subfolder: '',
             type: 'output'
           }
@@ -555,8 +559,7 @@ describe('useJobMenu', () => {
         state: 'completed',
         taskRef: {
           previewOutput: {
-            isImage: true,
-            filename: 'foo',
+            filename: 'foo.png',
             subfolder: '',
             type: 'output'
           }

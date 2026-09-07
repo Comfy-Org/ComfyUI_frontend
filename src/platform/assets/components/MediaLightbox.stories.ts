@@ -2,34 +2,22 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
 
 import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/stores/resultItem'
 
-type MockItem = Pick<
-  ResultItemImpl,
-  'filename' | 'url' | 'isImage' | 'isVideo' | 'isAudio'
->
+type MockItem = Pick<AugmentedResultItem, 'filename' | 'url'>
 
 const SAMPLE_IMAGES: MockItem[] = [
   {
     filename: 'landscape.jpg',
-    url: 'https://i.imgur.com/OB0y6MR.jpg',
-    isImage: true,
-    isVideo: false,
-    isAudio: false
+    url: 'https://i.imgur.com/OB0y6MR.jpg'
   },
   {
     filename: 'portrait.jpg',
-    url: 'https://i.imgur.com/CzXTtJV.jpg',
-    isImage: true,
-    isVideo: false,
-    isAudio: false
+    url: 'https://i.imgur.com/CzXTtJV.jpg'
   },
   {
     filename: 'nature.jpg',
-    url: 'https://farm9.staticflickr.com/8505/8441256181_4e98d8bff5_z_d.jpg',
-    isImage: true,
-    isVideo: false,
-    isAudio: false
+    url: 'https://farm9.staticflickr.com/8505/8441256181_4e98d8bff5_z_d.jpg'
   }
 ]
 
@@ -46,7 +34,7 @@ export const MultipleImages: Story = {
     components: { MediaLightbox },
     setup() {
       const activeIndex = ref(0)
-      const items = SAMPLE_IMAGES as ResultItemImpl[]
+      const items = SAMPLE_IMAGES as AugmentedResultItem[]
       return { activeIndex, items }
     },
     template: `
@@ -78,7 +66,7 @@ export const SingleImage: Story = {
     components: { MediaLightbox },
     setup() {
       const activeIndex = ref(-1)
-      const items = [SAMPLE_IMAGES[0]] as ResultItemImpl[]
+      const items = [SAMPLE_IMAGES[0]] as AugmentedResultItem[]
       return { activeIndex, items }
     },
     template: `
@@ -106,7 +94,7 @@ export const Closed: Story = {
     components: { MediaLightbox },
     setup() {
       const activeIndex = ref(-1)
-      const items = SAMPLE_IMAGES as ResultItemImpl[]
+      const items = SAMPLE_IMAGES as AugmentedResultItem[]
       return { activeIndex, items }
     },
     template: `

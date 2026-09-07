@@ -6,7 +6,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
 import { api } from '@/scripts/api'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/stores/resultItem'
 import {
   renderMarkdownToHtml,
   resolveMarkdownUrl
@@ -83,7 +83,7 @@ const MediaLightbox = defineAsyncComponent(
   () => import('@/components/sidebar/tabs/queue/MediaLightbox.vue')
 )
 
-const proseItems = ref<ResultItemImpl[]>([])
+const proseItems = ref<AugmentedResultItem[]>([])
 const proseIndex = ref(-1)
 
 function onProseClick(event: MouseEvent): void {

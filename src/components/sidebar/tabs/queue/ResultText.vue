@@ -11,11 +11,15 @@
 
 <script setup lang="ts">
 import { useTextFileContent } from '@/composables/useTextFileContent'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/stores/resultItem'
+import { resultItemUrl } from '@/stores/resultItem'
 
 const { result } = defineProps<{
-  result: ResultItemImpl
+  result: AugmentedResultItem
 }>()
 
-const { textContent, hasError } = useTextFileContent(() => result)
+const { textContent, hasError } = useTextFileContent(() => ({
+  content: result.content,
+  url: resultItemUrl(result)
+}))
 </script>

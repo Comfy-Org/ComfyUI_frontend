@@ -5,24 +5,20 @@ vi.mock('@/platform/assets/composables/media/assetMappers')
 import { useResultGallery } from '@/composables/queue/useResultGallery'
 import type { JobListItem as JobListViewItem } from '@/composables/queue/useJobList'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
-import { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
+import { TaskItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/stores/resultItem'
 
 const createResultItem = (
   url: string,
   supportsPreview = true
-): ResultItemImpl => {
-  const item = new ResultItemImpl({
-    filename: url,
-    subfolder: '',
-    type: 'output',
-    nodeId: 'node-1',
-    mediaType: supportsPreview ? 'images' : 'unknown'
-  })
-  // Override url getter for test matching
-  Object.defineProperty(item, 'url', { get: () => url })
-  Object.defineProperty(item, 'supportsPreview', { get: () => supportsPreview })
-  return item
-}
+): AugmentedResultItem => ({
+  filename: url,
+  subfolder: '',
+  type: 'output',
+  nodeId: 'node-1',
+  mediaType: supportsPreview ? 'images' : 'unknown',
+  url
+})
 
 const createMockJob = (id: string, outputsCount = 1): JobListItem => ({
   id,
@@ -34,8 +30,8 @@ const createMockJob = (id: string, outputsCount = 1): JobListItem => ({
 })
 
 const createTask = (
-  preview?: ResultItemImpl,
-  allOutputs?: ResultItemImpl[],
+  preview?: AugmentedResultItem,
+  allOutputs?: AugmentedResultItem[],
   outputsCount = 1
 ): TaskItemImpl => {
   const job = createMockJob(

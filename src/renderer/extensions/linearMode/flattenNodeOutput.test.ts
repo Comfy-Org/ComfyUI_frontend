@@ -23,7 +23,7 @@ describe(flattenNodeOutput, () => {
     expect(result).toEqual([])
   })
 
-  it('flattens images into ResultItemImpl instances', () => {
+  it('flattens images into result items', () => {
     const output = makeOutput({
       images: [
         { filename: 'a.png', subfolder: '', type: 'output' },

@@ -5,7 +5,7 @@ import { useAppMode } from '@/composables/useAppMode'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeOutput'
 import type { InProgressItem } from '@/renderer/extensions/linearMode/linearModeTypes'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/stores/resultItem'
 import type { ExecutedWsMessage, JobId } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useAppModeStore } from '@/stores/appModeStore'
@@ -20,7 +20,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
   const workflowStore = useWorkflowStore()
 
   const inProgressItems = ref<InProgressItem[]>([])
-  const resolvedOutputsCache = new Map<string, ResultItemImpl[]>()
+  const resolvedOutputsCache = new Map<string, AugmentedResultItem[]>()
   const selectedId = ref<string | null>(null)
   const isFollowing = ref(true)
   const trackedJobId = ref<JobId | null>(null)

@@ -1,16 +1,21 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import {
   getMediaType,
   mediaTypes
 } from '@/renderer/extensions/linearMode/mediaTypes'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/stores/resultItem'
+import { resultItemUrl } from '@/stores/resultItem'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import VideoPlayOverlay from '@/platform/assets/components/VideoPlayOverlay.vue'
 
 const { output } = defineProps<{
-  output: ResultItemImpl
+  output: AugmentedResultItem
 }>()
+
+const url = computed(() => resultItemUrl(output))
 </script>
 <template>
   <img
@@ -20,7 +25,7 @@ const { output } = defineProps<{
     loading="lazy"
     width="40"
     height="40"
-    :src="output.url"
+    :src="url"
   />
   <template v-else-if="getMediaType(output) === 'video'">
     <video
@@ -29,7 +34,7 @@ const { output } = defineProps<{
       preload="metadata"
       width="40"
       height="40"
-      :src="output.url"
+      :src="url"
     />
     <VideoPlayOverlay size="sm" />
   </template>

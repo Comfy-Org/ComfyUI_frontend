@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { ResultItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/stores/resultItem'
 import type { SerializedNodeId } from '@/types/nodeId'
 
 import MediaLightbox from './MediaLightbox.vue'
@@ -36,7 +36,7 @@ const i18n = createI18n({
   }
 })
 
-type MockResultItem = Partial<ResultItemImpl> & {
+type MockResultItem = Partial<AugmentedResultItem> & {
   filename: string
   subfolder: string
   type: string
@@ -126,7 +126,7 @@ describe('MediaLightbox', () => {
         }
       },
       props: {
-        allGalleryItems: mockGalleryItems as ResultItemImpl[],
+        allGalleryItems: mockGalleryItems as AugmentedResultItem[],
         activeIndex: 0,
         'onUpdate:activeIndex': onUpdateActiveIndex,
         ...props
@@ -155,7 +155,7 @@ describe('MediaLightbox', () => {
 
   it('hides navigation buttons for single item', async () => {
     renderGallery({
-      allGalleryItems: [mockGalleryItems[0]] as ResultItemImpl[]
+      allGalleryItems: [mockGalleryItems[0]] as AugmentedResultItem[]
     })
     await nextTick()
 
@@ -171,7 +171,7 @@ describe('MediaLightbox', () => {
     /* eslint-enable testing-library/no-container, testing-library/no-node-access */
 
     await rerender({
-      allGalleryItems: mockGalleryItems as ResultItemImpl[],
+      allGalleryItems: mockGalleryItems as AugmentedResultItem[],
       activeIndex: 0
     })
     await nextTick()
@@ -202,12 +202,11 @@ describe('MediaLightbox', () => {
         allGalleryItems: [
           {
             ...mockGalleryItems[0],
-            isImage: false,
-            isText: true,
+            filename: 'failed.txt',
             mediaType: 'text',
             url: '/api/view?filename=failed.txt'
           }
-        ] as ResultItemImpl[]
+        ] as AugmentedResultItem[]
       },
       { ResultText: false }
     )
@@ -291,13 +290,13 @@ describe('MediaLightbox', () => {
       const { rerender } = render(MediaLightbox, {
         global: { plugins: [i18n] },
         props: {
-          allGalleryItems: items as ResultItemImpl[],
+          allGalleryItems: items as AugmentedResultItem[],
           activeIndex: 0
         }
       })
       const show = async (activeIndex: number) => {
         await rerender({
-          allGalleryItems: items as ResultItemImpl[],
+          allGalleryItems: items as AugmentedResultItem[],
           activeIndex
         })
         await nextTick()

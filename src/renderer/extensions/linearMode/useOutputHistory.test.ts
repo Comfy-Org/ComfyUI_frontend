@@ -7,7 +7,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { InProgressItem } from '@/renderer/extensions/linearMode/linearModeTypes'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { ResultItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/stores/resultItem'
 import { toNodeId } from '@/types/nodeId'
 
 const mediaRef = ref<AssetItem[]>([])
@@ -23,7 +23,7 @@ const pendingTasksRef = ref<Array<{ jobId: string }>>([])
 
 const selectAsLatestFn = vi.fn()
 const resolveIfReadyFn = vi.fn()
-const resolvedOutputsCacheRef = new Map<string, ResultItemImpl[]>()
+const resolvedOutputsCacheRef = new Map<string, AugmentedResultItem[]>()
 
 vi.mock('@/platform/assets/composables/media/assetMappers', () => ({
   getAssetType: (tags?: string[]) =>
@@ -86,11 +86,6 @@ vi.mock('@/stores/executionStore', () => ({
 }))
 
 vi.mock('@/stores/queueStore', () => ({
-  ResultItemImpl: class ResultItemImpl {
-    constructor(item: object) {
-      Object.assign(this, item)
-    }
-  },
   useQueueStore: () => ({
     get runningTasks() {
       return runningTasksRef.value
@@ -113,7 +108,7 @@ vi.mock('@/services/jobOutputCache', () => ({
 function makeAsset(
   id: string,
   jobId: string,
-  opts?: { allOutputs?: ResultItemImpl[]; outputCount?: number }
+  opts?: { allOutputs?: AugmentedResultItem[]; outputCount?: number }
 ): AssetItem {
   return fromPartial({
     id,
@@ -132,14 +127,17 @@ function makeAsset(
   })
 }
 
-function makeResult(filename: string, nodeId: string = '1'): ResultItemImpl {
-  return new ResultItemImpl({
+function makeResult(
+  filename: string,
+  nodeId: string = '1'
+): AugmentedResultItem {
+  return {
     filename,
     subfolder: '',
     type: 'output',
     nodeId,
     mediaType: 'images'
-  })
+  }
 }
 
 describe(useOutputHistory, () => {

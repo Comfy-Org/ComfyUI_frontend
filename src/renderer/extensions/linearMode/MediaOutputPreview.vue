@@ -5,7 +5,8 @@ import { useTextFileContent } from '@/composables/useTextFileContent'
 import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
 import VideoPreview from '@/renderer/extensions/linearMode/VideoPreview.vue'
 import { getMediaType } from '@/renderer/extensions/linearMode/mediaTypes'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/stores/resultItem'
+import { resultItemUrl } from '@/stores/resultItem'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const Preview3d = defineAsyncComponent(
@@ -15,7 +16,7 @@ const Preview3d = defineAsyncComponent(
 defineOptions({ inheritAttrs: false })
 
 const { output } = defineProps<{
-  output: ResultItemImpl
+  output: AugmentedResultItem
   mobile?: boolean
 }>()
 
@@ -25,8 +26,11 @@ const outputLabel = computed(
   () => output.display_name?.trim() || output.filename
 )
 const { textContent } = useTextFileContent(() =>
-  mediaType.value === 'text' ? output : undefined
+  mediaType.value === 'text'
+    ? { content: output.content, url: resultItemUrl(output) }
+    : undefined
 )
+const url = computed(() => resultItemUrl(output))
 </script>
 <template>
   <template v-if="mediaType === 'images' || mediaType === 'video'">
@@ -34,12 +38,12 @@ const { textContent } = useTextFileContent(() =>
       v-if="mediaType === 'images'"
       :class="attrs.class as string"
       :mobile
-      :src="output.url"
+      :src="url"
       :label="outputLabel"
     />
     <VideoPreview
       v-else
-      :src="output.url"
+      :src="url"
       :label="outputLabel"
       :class="
         cn(
@@ -54,7 +58,7 @@ const { textContent } = useTextFileContent(() =>
       v-if="mediaType === 'audio'"
       :class="cn('m-auto w-full', attrs.class as string)"
       controls
-      :src="output.url"
+      :src="url"
     />
     <article
       v-else-if="mediaType === 'text'"
@@ -69,7 +73,7 @@ const { textContent } = useTextFileContent(() =>
     <Preview3d
       v-else-if="mediaType === '3d'"
       :class="attrs.class as string"
-      :model-url="output.url"
+      :model-url="url"
     />
     <span v-if="outputLabel" class="self-center text-sm">
       {{ outputLabel }}

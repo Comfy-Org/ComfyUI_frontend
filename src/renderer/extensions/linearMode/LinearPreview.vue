@@ -19,7 +19,8 @@ import OutputHistory from '@/renderer/extensions/linearMode/OutputHistory.vue'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
 import type { OutputSelection } from '@/renderer/extensions/linearMode/linearModeTypes'
 import { app } from '@/scripts/app'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/stores/resultItem'
+import { resultItemUrl } from '@/stores/resultItem'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
@@ -33,7 +34,7 @@ const { runButtonClick, mobile } = defineProps<{
 }>()
 
 const selectedItem = ref<AssetItem>()
-const selectedOutput = ref<ResultItemImpl>()
+const selectedOutput = ref<AugmentedResultItem>()
 const canShowPreview = ref(true)
 const latentPreview = ref<string>()
 const showSkeleton = ref(false)
@@ -48,7 +49,13 @@ function handleSelection(sel: OutputSelection) {
 
 function downloadAsset(item?: AssetItem) {
   for (const output of allOutputs(item))
-    downloadFile(output.url, output.filename)
+    downloadFile(resultItemUrl(output), output.filename)
+}
+
+function downloadOutput(output?: AugmentedResultItem) {
+  if (!output) return
+  const url = resultItemUrl(output)
+  if (url) downloadFile(url)
 }
 
 async function loadWorkflow(item: AssetItem | undefined) {
@@ -92,11 +99,7 @@ async function rerun(e: Event) {
       v-tooltip.top="t('g.download')"
       size="icon"
       :aria-label="t('g.download')"
-      @click="
-        () => {
-          if (selectedOutput?.url) downloadFile(selectedOutput.url)
-        }
-      "
+      @click="() => downloadOutput(selectedOutput)"
     >
       <i class="icon-[lucide--download]" />
     </Button>

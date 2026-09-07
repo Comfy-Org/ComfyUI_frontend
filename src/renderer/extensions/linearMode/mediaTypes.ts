@@ -1,6 +1,7 @@
 import { t } from '@/i18n'
 
-import type { ResultItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/stores/resultItem'
+import { isImageResult, isTextResult, isVideoResult } from '@/stores/resultItem'
 
 type StatItem = { content?: string; iconClass?: string }
 export const mediaTypes: Record<string, StatItem> = {
@@ -26,10 +27,10 @@ export const mediaTypes: Record<string, StatItem> = {
   }
 }
 
-export function getMediaType(output?: ResultItemImpl) {
+export function getMediaType(output?: AugmentedResultItem) {
   if (!output) return ''
-  if (output.isVideo) return 'video'
-  if (output.isImage) return 'images'
-  if (output.isText) return 'text'
+  if (isVideoResult(output)) return 'video'
+  if (isImageResult(output)) return 'images'
+  if (isTextResult(output)) return 'text'
   return output.mediaType
 }
