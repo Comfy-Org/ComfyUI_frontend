@@ -11,9 +11,17 @@ import {
 import type {
   LGraphCanvas,
   LGraphGroup,
-  LGraphNode
+  LGraphNode,
+  LLink
 } from '@/lib/litegraph/src/litegraph'
-import { CanvasPointer, LGraph, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  CanvasPointer,
+  LGraph,
+  LiteGraph,
+  Reroute
+} from '@/lib/litegraph/src/litegraph'
+import { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 
@@ -27,6 +35,12 @@ const A_TITLE: Point = [90, 30]
 const B_BODY: Point = [340, 70]
 /** Group title bar, between nodes A and B. */
 const G_TITLE: Point = [220, 10]
+/** Bottom-right resize handle of the 500x300 group. */
+const G_RESIZE: Point = [497, 297]
+/** Reroute on the A to B link, below both nodes. */
+const REROUTE: Point = [200, 200]
+/** Centre marker of the A to B link, below both nodes. */
+const LINK_CENTRE: Point = [200, 250]
 /** Empty canvas, outside every node and group. */
 const EMPTY: Point = [600, 500]
 /** Well past {@link CanvasPointer.maxClickDrift}. */
@@ -42,6 +56,14 @@ function posOf(item: LGraphNode | LGraphGroup): Point {
   return [item.pos[0], item.pos[1]]
 }
 
+function connect(from: LGraphNode, to: LGraphNode) {
+  from.addOutput('out', '*')
+  to.addInput('in', '*')
+  const link = from.connect(0, to, 0)
+  assert(link)
+  return link
+}
+
 class Gesture {
   clock = 0
   constructor(readonly canvas: LGraphCanvas) {}
@@ -52,7 +74,9 @@ class Gesture {
   }
 
   press([x, y]: Point, options: PointerEventOptions = {}, after = 1) {
-    this.canvas.visible_nodes = [...this.canvas.graph!.nodes]
+    const { graph } = this.canvas
+    if (!graph) throw new Error('canvas graph is required')
+    this.canvas.visible_nodes = [...graph.nodes]
     this.canvas.processMouseDown(
       pointerEvent('pointerdown', x, y, {
         timeStamp: this.stamp(after),
@@ -124,6 +148,10 @@ function recordCallbacks(canvas: LGraphCanvas, node: LGraphNode) {
   vi.spyOn(canvas, 'processContextMenu').mockImplementation(
     record('processContextMenu')
   )
+  vi.spyOn(canvas, 'showLinkMenu').mockImplementation(() => {
+    log.push('showLinkMenu')
+    return true
+  })
   vi.spyOn(canvas, 'showSearchBox').mockImplementation(() => {
     log.push('showSearchBox')
     return document.createElement('div')
@@ -479,6 +507,137 @@ describe('LGraphCanvas pointer gestures', () => {
         'emit.group-double-click'
       ])
     })
+
+    it('latches an empty press when release crosses into a group at low zoom', () => {
+      canvas.ds.scale = 0.1
+
+      gesture.press([20, -0.1])
+      gesture.release([20, 0.1])
+
+      expect(selectedTitles(canvas)).toEqual([])
+    })
+
+    it('latches a group press when release crosses outside at low zoom', () => {
+      canvas.ds.scale = 0.1
+
+      gesture.press([20, 0.1])
+      gesture.release([20, -0.1])
+
+      expect(selectedTitles(canvas)).toEqual(['G'])
+    })
+
+    it('ignores stale reroute hits when links are hidden', () => {
+      const link = connect(a, b)
+      const reroute = graph.createReroute(G_TITLE, link)
+      assert(reroute)
+      canvas._visibleReroutes.add(reroute)
+      canvas.links_render_mode = LinkRenderType.HIDDEN_LINK
+
+      gesture.click(G_TITLE)
+
+      expect(selectedTitles(canvas)).toEqual(['G'])
+    })
+
+    it('press sets selected_group; a node press leaves it untouched', () => {
+      gesture.click(G_TITLE)
+      expect(canvas.selected_group).toBe(group)
+
+      gesture.click(A_BODY)
+      expect(canvas.selected_group).toBe(group)
+
+      gesture.click(EMPTY)
+      expect(canvas.selected_group).toBeNull()
+
+      gesture.drag(G_TITLE, FAR)
+      expect(canvas.selected_group).toBeNull()
+    })
+  })
+
+  describe('group resize handle', () => {
+    let group: LGraphGroup
+
+    beforeEach(() => {
+      group = addGroup(graph, 'G', [0, 0, 500, 300])
+    })
+
+    it('drag resizes the group without selecting or moving it', () => {
+      gesture.drag(G_RESIZE, FAR)
+
+      expect([...group.size]).toEqual([520, 330])
+      expect(posOf(group)).toEqual([0, 0])
+      expect(selectedTitles(canvas)).toEqual([])
+      expect(canvas.resizingGroup).toBeNull()
+    })
+  })
+
+  describe('reroute', () => {
+    let reroute: Reroute
+
+    beforeEach(() => {
+      const link = connect(a, b)
+      const created = graph.createReroute(REROUTE, link)
+      assert(created)
+      reroute = created
+      canvas._visibleReroutes.add(reroute)
+    })
+
+    it('click selects the reroute', () => {
+      gesture.click(REROUTE)
+
+      expect([...canvas.selectedItems]).toEqual([reroute])
+    })
+
+    it('drag moves the reroute without a link drag', () => {
+      gesture.drag(REROUTE, FAR)
+
+      expect([...canvas.selectedItems]).toEqual([reroute])
+      expect([...reroute.pos]).toEqual(shifted(REROUTE, FAR))
+      expect(canvas.linkConnector.isConnecting).toBe(false)
+    })
+
+    it('shift press starts a link drag from the reroute', () => {
+      gesture.press(REROUTE, { shiftKey: true })
+
+      expect(canvas.linkConnector.isConnecting).toBe(true)
+      expect([...canvas.selectedItems]).toEqual([])
+    })
+  })
+
+  describe('link centre marker', () => {
+    let link: LLink
+
+    beforeEach(() => {
+      link = connect(a, b)
+      link._pos = [...LINK_CENTRE]
+      canvas.renderedPaths.add(link)
+    })
+
+    it('click opens the link menu', () => {
+      gesture.click(LINK_CENTRE)
+
+      expect(log).toEqual(['showLinkMenu'])
+      expect(selectedTitles(canvas)).toEqual([])
+    })
+
+    it('drag pans the canvas instead of opening the menu', () => {
+      gesture.drag(LINK_CENTRE, FAR)
+
+      expect(log).toEqual([])
+      expect(canvas.ds.offset).toEqual(FAR)
+      expect(canvas.dragging_canvas).toBe(false)
+    })
+
+    it('starts a modified link drag when links are hidden', () => {
+      canvas.links_render_mode = LinkRenderType.HIDDEN_LINK
+      vi.mocked(layoutStore.queryLinkSegmentAtPoint).mockReturnValue({
+        linkId: link.id,
+        rerouteId: null
+      })
+
+      gesture.press(LINK_CENTRE, { shiftKey: true })
+
+      expect(canvas.linkConnector.isConnecting).toBe(true)
+    })
   })
 
   describe('empty canvas', () => {
@@ -541,6 +700,64 @@ describe('LGraphCanvas pointer gestures', () => {
 
         expect(selectedTitles(canvas)).toEqual(['A'])
         expect(canvas.ds.offset).toEqual([0, 0])
+      })
+
+      it('ctrl click in panning mode selects the group under the pointer', () => {
+        LiteGraph.leftMouseClickBehavior = 'panning'
+        addGroup(graph, 'G', [0, 0, 500, 300])
+
+        gesture.click(G_TITLE, { ctrlKey: true })
+
+        expect(selectedTitles(canvas)).toEqual(['G'])
+      })
+
+      it('ctrl click selects a group title beneath a link centre', () => {
+        LiteGraph.leftMouseClickBehavior = 'panning'
+        const group = addGroup(graph, 'G', [0, 240, 500, 300])
+        const link = connect(a, b)
+        link._pos = [...LINK_CENTRE]
+        canvas.renderedPaths.add(link)
+
+        gesture.click(LINK_CENTRE, { ctrlKey: true })
+
+        expect([...canvas.selectedItems]).toEqual([group])
+      })
+
+      it('ctrl click selects a lower group title beneath a resize handle', () => {
+        LiteGraph.leftMouseClickBehavior = 'panning'
+        const lower = addGroup(graph, 'Lower', [450, 290, 100, 100])
+        addGroup(graph, 'Upper', [0, 0, 500, 300])
+
+        gesture.click(G_RESIZE, { ctrlKey: true })
+
+        expect([...canvas.selectedItems]).toEqual([lower])
+      })
+
+      it('ctrl click selects a lower group title beneath an overlapping group', () => {
+        LiteGraph.leftMouseClickBehavior = 'panning'
+        const lower = addGroup(graph, 'Lower', [0, 0, 500, 300])
+        addGroup(graph, 'Upper', [0, -50, 500, 100])
+
+        gesture.click(G_TITLE, { ctrlKey: true })
+
+        expect([...canvas.selectedItems]).toEqual([lower])
+      })
+
+      it('ctrl click selects a group title beneath a reroute slot', () => {
+        LiteGraph.leftMouseClickBehavior = 'panning'
+        const group = addGroup(graph, 'G', [0, 0, 500, 300])
+        const link = connect(a, b)
+        const reroute = graph.createReroute(
+          [G_TITLE[0] - Reroute.slotOffset, G_TITLE[1]],
+          link
+        )
+        assert(reroute)
+        reroute.updateVisibility(G_TITLE)
+        canvas._visibleReroutes.add(reroute)
+
+        gesture.click(G_TITLE, { ctrlKey: true })
+
+        expect([...canvas.selectedItems]).toEqual([group])
       })
 
       it('cancel discards the rectangle and the selection change', () => {
