@@ -208,7 +208,7 @@ describe('PrimitiveNode', () => {
   })
 
   it('keeps its serialized value for an asset browser widget', () => {
-    vi.spyOn(assetService, 'shouldUseAssetBrowser').mockReturnValue(true)
+    vi.spyOn(assetService, 'shouldUseWidgetAssetPicker').mockReturnValue(true)
     const graph = new LGraph()
     const target = new LGraphNode('Target')
     target.comfyClass = 'CheckpointLoaderSimple'

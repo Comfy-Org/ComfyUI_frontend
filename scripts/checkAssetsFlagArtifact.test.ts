@@ -4,18 +4,18 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
-  assertAssetApiGate,
+  assertWidgetAssetPickerGate,
   assertBuildProvenance,
   assertNoTestFixtures,
   checkAssetsFlagArtifact
 } from './checkAssetsFlagArtifact'
 
-describe('assertAssetApiGate', () => {
+describe('assertWidgetAssetPickerGate', () => {
   it.for(['localhost', 'desktop'])(
-    'accepts a disabled %s Asset API gate',
+    'accepts a disabled %s widget asset-picker gate',
     (distribution) => {
       expect(() =>
-        assertAssetApiGate(
+        assertWidgetAssetPickerGate(
           ['function isWidgetAssetPickerEnabled() {\n  return false;\n}'],
           distribution
         )
@@ -27,7 +27,7 @@ describe('assertAssetApiGate', () => {
     'accepts a compact disabled %s gate',
     (distribution) => {
       expect(() =>
-        assertAssetApiGate(
+        assertWidgetAssetPickerGate(
           ['function isWidgetAssetPickerEnabled(){return!1}'],
           distribution
         )
@@ -37,7 +37,7 @@ describe('assertAssetApiGate', () => {
 
   it('accepts a Cloud gate folded to a static true', () => {
     expect(() =>
-      assertAssetApiGate(
+      assertWidgetAssetPickerGate(
         ['function isWidgetAssetPickerEnabled() {\n  return true;\n}'],
         'cloud'
       )
@@ -46,7 +46,7 @@ describe('assertAssetApiGate', () => {
 
   it('accepts a minified Cloud gate spelling true as !0', () => {
     expect(() =>
-      assertAssetApiGate(
+      assertWidgetAssetPickerGate(
         ['function isWidgetAssetPickerEnabled(){return!0}'],
         'cloud'
       )
@@ -57,8 +57,8 @@ describe('assertAssetApiGate', () => {
     'function isWidgetAssetPickerEnabled() {\n  track();\n  return true;\n}',
     'function isWidgetAssetPickerEnabled() {\n  return isCloud;\n}'
   ])('rejects a Cloud gate that is not a static constant: %s', (gate) => {
-    expect(() => assertAssetApiGate([gate], 'cloud')).toThrow(
-      'Built Asset API gate is invalid for cloud'
+    expect(() => assertWidgetAssetPickerGate([gate], 'cloud')).toThrow(
+      'Built widget asset-picker gate is invalid for cloud'
     )
   })
 
@@ -66,50 +66,50 @@ describe('assertAssetApiGate', () => {
     'function isWidgetAssetPickerEnabled() {\n  if (!api.getServerFeature("assets", false)) return false;\n  return true;\n}',
     'function isWidgetAssetPickerEnabled() {\n  if (false) return false;\n  return true;\n}'
   ])('rejects a localhost gate that can still enable: %s', (gate) => {
-    expect(() => assertAssetApiGate([gate], 'localhost')).toThrow(
-      'Built Asset API gate is invalid for localhost'
+    expect(() => assertWidgetAssetPickerGate([gate], 'localhost')).toThrow(
+      'Built widget asset-picker gate is invalid for localhost'
     )
   })
 
   it('rejects a localhost artifact that still carries the Cloud branch', () => {
     expect(() =>
-      assertAssetApiGate(
+      assertWidgetAssetPickerGate(
         [
           'function isWidgetAssetPickerEnabled() {\n  if (!isCloud) return false;\n  return true;\n}'
         ],
         'localhost'
       )
-    ).toThrow('Built Asset API gate is invalid for localhost')
+    ).toThrow('Built widget asset-picker gate is invalid for localhost')
   })
 
   it('rejects a Cloud build whose gate folded to a static false', () => {
     // Pins that the deliberately weak cloud leg is not vacuous: it rejects a
     // constant of the wrong polarity, it does not accept any constant at all.
     expect(() =>
-      assertAssetApiGate(
+      assertWidgetAssetPickerGate(
         ['function isWidgetAssetPickerEnabled() {\n  return false;\n}'],
         'cloud'
       )
-    ).toThrow('Built Asset API gate is invalid for cloud')
+    ).toThrow('Built widget asset-picker gate is invalid for cloud')
   })
 
-  it('rejects a build without exactly one Asset API gate', () => {
-    expect(() => assertAssetApiGate([], 'localhost')).toThrow(
-      'Expected one Asset API gate in the build, found 0'
+  it('rejects a build without exactly one widget asset-picker gate', () => {
+    expect(() => assertWidgetAssetPickerGate([], 'localhost')).toThrow(
+      'Expected one widget asset-picker gate in the build, found 0'
     )
   })
 
   it('rejects a build carrying the gate in more than one chunk', () => {
     const gate = 'function isWidgetAssetPickerEnabled() {\n  return false;\n}'
 
-    expect(() => assertAssetApiGate([gate, gate], 'localhost')).toThrow(
-      'Expected one Asset API gate in the build, found 2'
-    )
+    expect(() =>
+      assertWidgetAssetPickerGate([gate, gate], 'localhost')
+    ).toThrow('Expected one widget asset-picker gate in the build, found 2')
   })
 
   it('rejects an unsupported distribution rather than assuming non-cloud', () => {
     expect(() =>
-      assertAssetApiGate(
+      assertWidgetAssetPickerGate(
         ['function isWidgetAssetPickerEnabled() {\n  return false;\n}'],
         'Cloud'
       )
@@ -118,7 +118,7 @@ describe('assertAssetApiGate', () => {
 
   it('reports a gate with a nested block through its matching brace', () => {
     expect(() =>
-      assertAssetApiGate(
+      assertWidgetAssetPickerGate(
         [
           'function isWidgetAssetPickerEnabled() {\n  if (!isCloud) {\n    return false\n  }\n  return true\n}'
         ],
@@ -136,13 +136,13 @@ describe('assertAssetApiGate', () => {
     // rejected on its own merits, for having an extra statement, not for
     // failing to be found at all).
     expect(() =>
-      assertAssetApiGate(
+      assertWidgetAssetPickerGate(
         [
           'function isWidgetAssetPickerEnabled() {\n  const label = "{unbalanced"\n  return false\n}'
         ],
         'localhost'
       )
-    ).toThrow('Built Asset API gate is invalid for localhost')
+    ).toThrow('Built widget asset-picker gate is invalid for localhost')
   })
 })
 

@@ -24,6 +24,7 @@ const {
   mockLoadModels,
   downloadStoreState,
   settingState,
+  featureFlagState,
   modelsState
 } = vi.hoisted(() => {
   let capturedRoot: TreeExplorerNode | null = null
@@ -46,7 +47,8 @@ const {
     mockRefreshModelFolder: vi.fn().mockResolvedValue(undefined),
     mockLoadModels: vi.fn().mockResolvedValue([]),
     downloadStoreState: { setLastCompleted: (_: unknown) => {} },
-    settingState: { useAssetAPI: false, autoLoadAll: false },
+    settingState: { autoLoadAll: false },
+    featureFlagState: { assetsEnabled: false },
     modelsState: {
       push: (_: unknown) => {},
       reset: () => {}
@@ -122,11 +124,20 @@ vi.mock('@/stores/assetDownloadStore', async () => {
   }
 })
 
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: {
+      get assetsEnabled() {
+        return featureFlagState.assetsEnabled
+      }
+    }
+  })
+}))
+
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
     get: vi.fn((key: string) => {
       if (key === 'Comfy.ModelLibrary.NameFormat') return 'filename'
-      if (key === 'Comfy.Assets.UseAssetAPI') return settingState.useAssetAPI
       if (key === 'Comfy.ModelLibrary.AutoLoadAll') {
         return settingState.autoLoadAll
       }
@@ -229,7 +240,7 @@ describe('ModelLibrarySidebarTab', () => {
   beforeEach(() => {
     resetRoot()
     downloadStoreState.setLastCompleted(null)
-    settingState.useAssetAPI = false
+    featureFlagState.assetsEnabled = false
     settingState.autoLoadAll = false
     modelsState.reset()
   })
@@ -470,7 +481,7 @@ describe('ModelLibrarySidebarTab', () => {
   describe('asset mode', () => {
     it('surfaces an error toast when the eager load fails on mount', async () => {
       const error = vi.spyOn(console, 'error').mockImplementation(() => {})
-      settingState.useAssetAPI = true
+      featureFlagState.assetsEnabled = true
       mockLoadModels.mockRejectedValueOnce(new Error('walk failed'))
 
       renderComponent()
@@ -487,7 +498,7 @@ describe('ModelLibrarySidebarTab', () => {
     })
 
     it('hides the load-all button and eager-loads models on mount', async () => {
-      settingState.useAssetAPI = true
+      featureFlagState.assetsEnabled = true
       renderComponent()
       await nextTick()
 
