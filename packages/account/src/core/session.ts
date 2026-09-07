@@ -258,9 +258,12 @@ export interface SessionClient<TUser extends AccountUser = AccountUser> {
     options?: SessionRequestOptions
   ) => Promise<SessionResult | undefined>
   /**
-   * Fail closed: drop the published credential, cancel scheduled work, and
-   * invalidate in-flight mints, keeping the identity attachment so a
-   * targeted re-mint can follow. For host flows like a workspace switch.
+   * Fail closed: drop the published credential AND the identity snapshot,
+   * cancel scheduled work, and invalidate in-flight mints, keeping the
+   * identity attachment so a targeted re-mint can follow. The snapshot
+   * reads signed-out until the port re-delivers a user; an explicit-user
+   * re-mint before that resolves and caches like the pre-attach popup
+   * path. For host flows like a sign-out or a workspace switch.
    */
   invalidate: () => void
   clearCache: () => void
@@ -798,6 +801,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     invalidate() {
       invalidationEpoch += 1
       stopScheduledRefresh()
+      currentUser = null
       credential = undefined
       credentialTarget = undefined
       failure = undefined
