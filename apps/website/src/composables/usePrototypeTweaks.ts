@@ -21,13 +21,13 @@ export const MODEL_STATES = [
 export type ModelState = (typeof MODEL_STATES)[number]
 
 // One control for the whole prototype. V1 is the models catalogue with its
-// categories in a rail beside the grid (11 Sep), chosen over the two other
-// takes on the same listing: rows per use case, and the tabs the catalogue
-// shipped with, which is kept as a discarded option rather than deleted. V2 is
-// the screen where workflows, apps and models live together (GA 30 Sep), and it
-// carries its use cases in that same rail. The ids stay as they were so the
-// links already shared keep working.
-export const VERSIONS = ['v1.2', 'v1.1', 'v2', 'v1'] as const
+// categories in a rail beside the grid (11 Sep) and V2 is the screen where
+// workflows, apps and models live together (GA 30 Sep), carrying its use cases
+// in that same rail. The two takes V1 beat, rows per use case and the tabs the
+// catalogue shipped with, are kept as discarded options rather than deleted,
+// and sit last. The ids stay as they were so the links already shared keep
+// working.
+export const VERSIONS = ['v1.2', 'v2', 'v1.1', 'v1'] as const
 
 // V2's own rail test won the comparison and became V2 itself, so a link that
 // still asks for it lands on the screen it was pointing at.

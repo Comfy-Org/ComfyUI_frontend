@@ -8453,8 +8453,8 @@ Enterprise`
     'zh-CN': '已弃用 · 标签页分类'
   },
   'workshop.proto.version.v1_1': {
-    en: 'V1 test 1 · Rows per use case',
-    'zh-CN': 'V1 测试 1 · 按用途分行'
+    en: 'Discarded · Rows per use case',
+    'zh-CN': '已弃用 · 按用途分行'
   },
   'workshop.proto.version.v1_2': {
     en: 'V1 · Categories in a side rail',
