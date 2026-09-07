@@ -22,7 +22,8 @@ Two existing stores are unsuitable:
 
 - `extra.linkExtensions` requires `parentId`, so released clients would reject
   presentation for a link without a reroute.
-- The CRDT layout store owns the layout document, not workflow presentation.
+- [ADR-CRDT-LAYOUT-0003](CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md)
+  keeps layout in a separate document from workflow presentation.
 
 ## Decision
 
@@ -50,10 +51,6 @@ Two existing stores are unsuitable:
 
 6. Hover state and badge geometry are transient derived data. They do not
    belong in this store or in workflow serialization.
-
-This store follows the current non-layout mutation model documented in
-[ADR-ECS-0008](ECS-0008-entity-component-system.md). Extending serializable
-commands beyond layout requires a separate decision.
 
 ## Consequences
 

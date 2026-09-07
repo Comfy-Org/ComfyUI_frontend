@@ -7,7 +7,6 @@ import type {
   OwningGraphId,
   RootGraphId
 } from '@/types/graphScopeId'
-import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import type { LinkId } from '@/types/linkId'
 import type { LinkPresentation } from '@/types/linkPresentation'
 
@@ -85,8 +84,7 @@ export const useLinkPresentationStore = defineStore('linkPresentation', () => {
   function patch(
     scope: GraphScope,
     linkId: LinkId,
-    partial: LinkPresentation,
-    _context?: RemoteMutationContext
+    partial: LinkPresentation
   ): void {
     const bucket = roots.get(scope.rootGraphId)
     const incumbent = bucket?.byId.get(linkId)
@@ -121,8 +119,7 @@ export const useLinkPresentationStore = defineStore('linkPresentation', () => {
   /** For stashing presentation across a transfer. */
   function take(
     scope: GraphScope,
-    linkId: LinkId,
-    _context?: RemoteMutationContext
+    linkId: LinkId
   ): LinkPresentation | undefined {
     const bucket = roots.get(scope.rootGraphId)
     const entry = bucket?.byId.get(linkId)
@@ -145,10 +142,7 @@ export const useLinkPresentationStore = defineStore('linkPresentation', () => {
     roots.delete(rootGraphId)
   }
 
-  function clearOwner(
-    scope: GraphScope,
-    _context?: RemoteMutationContext
-  ): void {
+  function clearOwner(scope: GraphScope): void {
     const bucket = roots.get(scope.rootGraphId)
     const ownerIds = bucket?.idsByOwner.get(scope.owningGraphId)
     if (!bucket || !ownerIds) return
