@@ -2,7 +2,7 @@ import { toGroupId } from '@/types/groupId'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
@@ -366,6 +366,17 @@ describe('layoutStore CRDT operations', () => {
       nodeId,
       listenersAfter.node
     )
+    onTestFinished(() => {
+      stopBeforeGeometry()
+      stopFailingGeometry()
+      stopAfterGeometry()
+      stopBeforeGlobal()
+      stopFailingGlobal()
+      stopAfterGlobal()
+      stopBeforeNode()
+      stopFailingNode()
+      stopAfterNode()
+    })
 
     layoutStore.applyOperation({
       type: 'moveNode',
@@ -406,16 +417,26 @@ describe('layoutStore CRDT operations', () => {
       })
     }
 
-    consoleErrorSpy.mockRestore()
-    stopBeforeGeometry()
-    stopFailingGeometry()
-    stopAfterGeometry()
-    stopBeforeGlobal()
-    stopFailingGlobal()
-    stopAfterGlobal()
-    stopBeforeNode()
-    stopFailingNode()
-    stopAfterNode()
+    layoutStore.applyOperation({
+      type: 'moveNode',
+      graphId: GRAPH,
+      nodeId,
+      position: { x: 400, y: 300 },
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas,
+      actor: 'test'
+    })
+
+    await vi.waitFor(() => {
+      expect(consoleErrorSpy).toHaveBeenCalledTimes(6)
+    })
+    expect(mockReportError).toHaveBeenCalledTimes(3)
+    for (const listener of Object.values(listenersBefore)) {
+      expect(listener).toHaveBeenCalledTimes(2)
+    }
+    for (const listener of Object.values(listenersAfter)) {
+      expect(listener).toHaveBeenCalledTimes(2)
+    }
   })
 
   it('clears node-scoped listeners when the viewed graph changes', () => {

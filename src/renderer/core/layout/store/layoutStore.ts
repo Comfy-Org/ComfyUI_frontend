@@ -162,6 +162,11 @@ function isSlotOffsetSnapshotEqual(
   return true
 }
 
+type LayoutListenerScope = 'geometry' | 'global' | 'node'
+type LayoutListener =
+  | ((change: LayoutChange) => void)
+  | ((graphIds: ReadonlySet<UUID>) => void)
+
 class LayoutStoreImpl {
   private static readonly REROUTE_DEFAULTS: RerouteData = {
     id: toRerouteId(0),
@@ -196,6 +201,14 @@ class LayoutStoreImpl {
   private geometryListeners = new Set<(graphIds: ReadonlySet<UUID>) => void>()
   private pendingGeometryChanges: ReadonlySet<UUID>[] = []
   private isGeometryDispatchQueued = false
+  private readonly reportedListenerFailures: Record<
+    LayoutListenerScope,
+    WeakSet<LayoutListener>
+  > = {
+    geometry: new WeakSet(),
+    global: new WeakSet(),
+    node: new WeakSet()
+  }
 
   // New data structures for hit testing
   private linkLayouts = new Map<LinkId, LinkLayout>()
@@ -1260,7 +1273,7 @@ class LayoutStoreImpl {
           try {
             listener(change)
           } catch (error) {
-            this.reportListenerFailure(error, 'geometry')
+            this.reportListenerFailure(error, 'geometry', listener)
           }
         }
       }
@@ -1269,9 +1282,14 @@ class LayoutStoreImpl {
 
   private reportListenerFailure(
     error: unknown,
-    scope: 'geometry' | 'global' | 'node'
+    scope: LayoutListenerScope,
+    listener: LayoutListener
   ): void {
     console.error(`[LayoutStore] ${scope} listener failed`, error)
+    const reportedFailures = this.reportedListenerFailures[scope]
+    if (reportedFailures.has(listener)) return
+    reportedFailures.add(listener)
+
     reportError(error, {
       errorType: 'canvas_layout_listener_failed',
       tags: {
@@ -1290,7 +1308,7 @@ class LayoutStoreImpl {
       try {
         listener(change)
       } catch (error) {
-        this.reportListenerFailure(error, 'global')
+        this.reportListenerFailure(error, 'global', listener)
       }
     })
   }
@@ -1307,7 +1325,7 @@ class LayoutStoreImpl {
         try {
           listener(change)
         } catch (error) {
-          this.reportListenerFailure(error, 'node')
+          this.reportListenerFailure(error, 'node', listener)
         }
       })
     }
