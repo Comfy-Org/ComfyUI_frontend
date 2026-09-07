@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ChevronLeft, ChevronRight } from '@lucide/vue'
-import { useResizeObserver } from '@vueuse/core'
-import { onMounted, ref, useTemplateRef } from 'vue'
+import { useMutationObserver, useResizeObserver } from '@vueuse/core'
+import { nextTick, onMounted, ref, useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -27,8 +27,11 @@ function page(direction: 1 | -1) {
     el.scrollBy({ left: direction * el.clientWidth * 0.8, behavior: 'smooth' })
 }
 
-onMounted(measure)
+// The row only fades on the side that still has cards behind it, so the fade
+// has to be re-read whenever the cards themselves change, not just on scroll.
+onMounted(() => void nextTick(measure))
 useResizeObserver(row, measure)
+useMutationObserver(row, measure, { childList: true, subtree: true })
 
 const arrowClass = (disabled: boolean) =>
   cn(
@@ -40,10 +43,38 @@ const arrowClass = (disabled: boolean) =>
 </script>
 
 <template>
-  <div class="relative">
+  <div>
     <div class="mb-5 flex items-center justify-between gap-4">
       <slot name="heading" />
-      <slot name="actions" />
+      <div class="flex items-center gap-3">
+        <slot name="actions" />
+        <div
+          v-if="!atStart || !atEnd"
+          class="flex shrink-0 gap-2"
+          data-testid="card-row-arrows"
+        >
+          <button
+            type="button"
+            :disabled="atStart"
+            :aria-label="t('workshop.sections.scrollBack', locale)"
+            :class="arrowClass(atStart)"
+            data-testid="card-row-prev"
+            @click="page(-1)"
+          >
+            <ChevronLeft class="size-4" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            :disabled="atEnd"
+            :aria-label="t('workshop.sections.scrollForward', locale)"
+            :class="arrowClass(atEnd)"
+            data-testid="card-row-next"
+            @click="page(1)"
+          >
+            <ChevronRight class="size-4" aria-hidden="true" />
+          </button>
+        </div>
+      </div>
     </div>
 
     <ul
@@ -51,40 +82,13 @@ const arrowClass = (disabled: boolean) =>
       :class="
         cn(
           '-mx-1 flex snap-x scrollbar-thin gap-5 overflow-x-auto px-1 pb-2',
-          !atStart && 'mask-l-from-92%',
-          !atEnd && 'mask-r-from-92%'
+          !atStart && 'mask-l-from-85%',
+          !atEnd && 'mask-r-from-85%'
         )
       "
       @scroll="measure"
     >
       <slot />
     </ul>
-
-    <div
-      v-if="!atStart || !atEnd"
-      class="absolute right-2 bottom-6 flex gap-2"
-      data-testid="card-row-arrows"
-    >
-      <button
-        type="button"
-        :disabled="atStart"
-        :aria-label="t('workshop.sections.scrollBack', locale)"
-        :class="arrowClass(atStart)"
-        data-testid="card-row-prev"
-        @click="page(-1)"
-      >
-        <ChevronLeft class="size-4" aria-hidden="true" />
-      </button>
-      <button
-        type="button"
-        :disabled="atEnd"
-        :aria-label="t('workshop.sections.scrollForward', locale)"
-        :class="arrowClass(atEnd)"
-        data-testid="card-row-next"
-        @click="page(1)"
-      >
-        <ChevronRight class="size-4" aria-hidden="true" />
-      </button>
-    </div>
   </div>
 </template>
