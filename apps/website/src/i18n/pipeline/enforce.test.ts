@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { enforceTranslations } from './enforce'
+import { enforceTranslations, isSystemicFailure } from './enforce'
 import type { Violation } from './validate'
 
 const violation = (key: string): Violation => ({
@@ -56,5 +56,43 @@ describe('enforceTranslations', () => {
 
   it('reports a zero drop rate for an empty run rather than dividing by zero', () => {
     expect(enforceTranslations({}, []).droppedShare).toBe(0)
+  })
+})
+
+/**
+ * Refusing a whole run is a separate decision from dropping a bad translation.
+ *
+ * Every failing string is already pruned to English individually, so this only
+ * decides whether to ALSO reject the keys that passed. The danger it names,
+ * reverting a locale to English, needs scale to be real.
+ *
+ * A share alone cannot tell the difference. A handful of keys fail every run by
+ * their nature: a person's name, a domain, a brand in capitals. The model
+ * returns them unchanged, which is correct, and the script check drops them for
+ * having no Japanese in them. Once the bulk of a locale is translated every run
+ * is small, so those few become most of it, and a share-only rule would refuse
+ * every nightly run from then on.
+ */
+describe('isSystemicFailure', () => {
+  it('refuses a large run that mostly failed', () => {
+    expect(isSystemicFailure({ dropped: 400, total: 500 })).toBe(true)
+  })
+
+  it('allows a large run with a weak tail', () => {
+    expect(isSystemicFailure({ dropped: 40, total: 500 })).toBe(false)
+  })
+
+  it('allows a small run even when nearly all of it failed', () => {
+    // The real case: nine chronic failures and one good new key. Refusing here
+    // discarded a correct translation and published nothing.
+    expect(isSystemicFailure({ dropped: 9, total: 10 })).toBe(false)
+  })
+
+  it('still refuses once the damage is large in absolute terms', () => {
+    expect(isSystemicFailure({ dropped: 21, total: 30 })).toBe(true)
+  })
+
+  it('treats an empty run as nothing to refuse', () => {
+    expect(isSystemicFailure({ dropped: 0, total: 0 })).toBe(false)
   })
 })

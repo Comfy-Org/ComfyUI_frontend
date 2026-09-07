@@ -2254,5 +2254,6 @@
   "cloudNodesLaunch.faq.7.a": "いいえ、置き換えるべきではありません。お使いのマシンで問題なく処理できるものは、引き続きローカルで実行してください。これらのノードは、ワークフローを離れることなく、ローカルでは扱えないモデルを実行するためにあります。",
   "cloudNodesLaunch.closing.heading": "ハードウェアではなくモデルを実行",
   "cloudNodesLaunch.closing.subtitle": "v0.34.5以降にアップデートし、ノードライブラリでComfy Cloudを検索して接続します。",
-  "footer.cloudNodes": "Comfy Cloud ノード"
+  "footer.cloudNodes": "Comfy Cloud ノード",
+  "footer.language": "言語"
 }

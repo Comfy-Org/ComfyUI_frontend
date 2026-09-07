@@ -2254,5 +2254,6 @@
   "cloudNodesLaunch.faq.7.a": "No, and it should not. Keep running what your machine handles well. These nodes exist for the models it cannot, without asking you to leave your workflow.",
   "cloudNodesLaunch.closing.heading": "Run the model, not the hardware",
   "cloudNodesLaunch.closing.subtitle": "Update to v0.34.5 or later, search the node library for Comfy Cloud, and wire one in.",
-  "footer.cloudNodes": "Comfy Cloud Nodes"
+  "footer.cloudNodes": "Comfy Cloud Nodes",
+  "footer.language": "Language"
 }

@@ -2254,5 +2254,6 @@
   "cloudNodesLaunch.faq.7.a": "不会，也不应该。本机跑得动的继续在本机跑。这些节点是为跑不动的模型准备的，同时让你无需离开自己的工作流。",
   "cloudNodesLaunch.closing.heading": "专注模型，而不是硬件",
   "cloudNodesLaunch.closing.subtitle": "更新到 v0.34.5 或更高版本，在节点库中搜索 Comfy Cloud，然后连线使用。",
-  "footer.cloudNodes": "Comfy Cloud 节点"
+  "footer.cloudNodes": "Comfy Cloud 节点",
+  "footer.language": "语言"
 }

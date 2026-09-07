@@ -8989,6 +8989,16 @@ Enterprise`
   'footer.cloudNodes': {
     en: 'Comfy Cloud Nodes',
     'zh-CN': 'Comfy Cloud 节点'
+  },
+
+  // The footer language switcher's accessible name. The Chinese here was
+  // written during implementation rather than by a reviewer, because the type
+  // requires a zh-CN value for every key and this one is a single standard
+  // term. Flagged in phase-4-japanese-fill.md for a native check; Japanese is
+  // left to the pipeline like any other key.
+  'footer.language': {
+    en: 'Language',
+    'zh-CN': '语言'
   }
 } as const satisfies Record<string, LocalizedText>
 

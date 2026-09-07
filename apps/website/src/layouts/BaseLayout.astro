@@ -265,7 +265,8 @@ const structuredData = shouldNoindex
     <main class="overflow-x-clip">
       <slot />
     </main>
-    <SiteFooter locale={locale} client:load />
+    <SiteFooter locale={locale}
+        alternates={alternates} client:load />
 
     <Analytics />
     {/*

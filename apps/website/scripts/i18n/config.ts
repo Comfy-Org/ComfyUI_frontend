@@ -56,8 +56,16 @@ Do not pad sentences. Japanese marketing copy is shorter than the English; a lit
 const chineseSimplifiedGuidance = `Use ONLY Simplified Chinese characters (简体中文). Never mix Simplified and Traditional.
 Match the terminology already used across comfy.org's Chinese pages: 工作流 for workflow, 节点 for node, 模型 for model.`
 
-/** The locales the website translates, keyed to `config/locales.ts`. */
-export const OUTPUT_LOCALES: Record<string, OutputLocale> = {
+/**
+ * The locales the website translates, keyed to `config/locales.ts`.
+ *
+ * The value is optional because the site serves locales this map does not
+ * translate — English is the source, so it has no entry. Typed as always
+ * present, every `!OUTPUT_LOCALES[locale]` guard reads as dead code to a
+ * type-aware linter, including the one in `check-config.ts` whose whole job is
+ * to catch a served locale with no entry here.
+ */
+export const OUTPUT_LOCALES: Record<string, OutputLocale | undefined> = {
   ja: { code: 'ja', name: 'Japanese', guidance: japaneseGuidance },
   'zh-CN': {
     code: 'zh-CN',

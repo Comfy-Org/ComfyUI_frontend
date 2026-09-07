@@ -47,3 +47,39 @@ export function enforceTranslations(
     droppedShare: total === 0 ? 0 : dropped.length / total
   }
 }
+
+/**
+ * Above this share of a run being dropped, the model or the config is broken
+ * rather than the tail being weak.
+ */
+const SYSTEMIC_DROP_SHARE = 0.5
+
+/**
+ * Below this many dropped keys, a share is not evidence of anything.
+ *
+ * Chosen against the real chronic set rather than picked round: a handful of
+ * keys fail every run by their nature — a person's name, a domain, a brand in
+ * capitals — because the model correctly returns them unchanged and the script
+ * check reads that as untranslated. There were nine of those when this was
+ * written, so the floor sits clear of them.
+ */
+const SYSTEMIC_DROP_FLOOR = 20
+
+/**
+ * Whether to refuse a whole run rather than publish what passed.
+ *
+ * A separate decision from dropping a bad translation: every failing string is
+ * already pruned to English on its own, so this only decides whether to also
+ * reject the keys that succeeded. Refusing a small run threw away good work and
+ * published nothing, and once a locale is mostly translated every run is small.
+ */
+export function isSystemicFailure({
+  dropped,
+  total
+}: {
+  dropped: number
+  total: number
+}): boolean {
+  if (total === 0) return false
+  return dropped >= SYSTEMIC_DROP_FLOOR && dropped / total > SYSTEMIC_DROP_SHARE
+}

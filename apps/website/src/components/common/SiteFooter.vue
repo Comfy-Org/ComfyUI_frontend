@@ -5,10 +5,15 @@ import { externalLinks, getRoutes } from '../../config/routes'
 import { useFrameScrub } from '../../composables/useFrameScrub'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import type { Alternate } from '../../utils/hreflangRoutes'
 import FooterLinkColumn from './FooterLinkColumn.vue'
+import LanguageSwitcher from './LanguageSwitcher.vue'
 import type { FooterLink } from './FooterLinkColumn.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale = 'en', alternates = [] } = defineProps<{
+  locale?: Locale
+  alternates?: readonly Alternate[]
+}>()
 const routes = getRoutes(locale)
 
 const footerRef = ref<HTMLElement>()
@@ -213,7 +218,10 @@ const contactColumn: { title: string; links: FooterLink[] } = {
         </div>
 
         <!-- Bottom bar -->
-        <div class="flex justify-center gap-6 lg:justify-end">
+        <div
+          class="flex flex-wrap items-center justify-center gap-6 lg:justify-end"
+        >
+          <LanguageSwitcher :locale="locale" :alternates="alternates" />
           <p class="text-sm">{{ t('footer.location', locale) }}</p>
           <p class="text-sm">&copy; {{ new Date().getFullYear() }} Comfy Org</p>
         </div>

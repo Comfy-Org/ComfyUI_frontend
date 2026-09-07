@@ -23,11 +23,8 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import { protectedTokens } from '../../../../scripts/i18n/protected-tokens'
-import {
-  createOpenAiTranslator,
-  translateLocaleItems,
-  type TranslationItem
-} from '../../../../scripts/i18n/translate'
+import { createOpenAiTranslator, translateLocaleItems } from '../../../../scripts/i18n/translate';
+import type { TranslationItem } from '../../../../scripts/i18n/translate';
 import { isLocale } from '../../src/config/locales'
 import { containsTerm } from '../../src/i18n/pipeline/validate'
 import {
@@ -55,7 +52,8 @@ function writeJson(file: string, value: Record<string, string>): void {
 
 async function main(): Promise<void> {
   const locale = process.env.WEBSITE_I18N_LOCALE
-  if (!isLocale(locale) || !OUTPUT_LOCALES[locale]) {
+  const outputLocale = isLocale(locale) ? OUTPUT_LOCALES[locale] : undefined
+  if (!isLocale(locale) || !outputLocale) {
     console.error(
       `[i18n] set WEBSITE_I18N_LOCALE to one of: ${Object.keys(OUTPUT_LOCALES).join(', ')}`
     )
@@ -117,7 +115,7 @@ async function main(): Promise<void> {
   })
 
   const translated = await translateLocaleItems(
-    OUTPUT_LOCALES[locale],
+    outputLocale,
     items,
     translateBatch,
     websiteTranslationConfig

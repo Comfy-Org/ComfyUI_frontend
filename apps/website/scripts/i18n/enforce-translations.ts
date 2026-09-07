@@ -19,7 +19,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import { isLocale } from '../../src/config/locales'
-import { enforceTranslations } from '../../src/i18n/pipeline/enforce'
+import { enforceTranslations,isSystemicFailure } from '../../src/i18n/pipeline/enforce'
 import type {
   EnglishSource,
   TranslationLayer
@@ -28,13 +28,6 @@ import { collectViolations } from '../../src/i18n/pipeline/validate'
 import { OUTPUT_LOCALES, preserveTerms } from './config'
 
 const I18N_DIR = path.join(process.cwd(), 'src', 'i18n')
-
-/**
- * Above this share of a run being dropped, the model or the config is broken
- * rather than the tail being weak, and continuing would quietly revert a locale
- * to English. Fail instead, so someone looks.
- */
-const SYSTEMIC_DROP_THRESHOLD = 0.5
 
 function readJson<T>(file: string, fallback: T): T {
   try {
@@ -91,10 +84,11 @@ function main(): void {
     process.stdout.write(`  dropped ${key} (${[...new Set(why)].join(', ')})\n`)
   }
 
-  if (droppedShare > SYSTEMIC_DROP_THRESHOLD) {
+  const total = Object.keys(incoming).length
+  if (isSystemicFailure({ dropped: dropped.length, total })) {
     console.error(
       `[i18n] ${locale}: dropped ${Math.round(droppedShare * 100)}% of the run ` +
-        `(${dropped.length} of ${Object.keys(incoming).length}). That is a broken ` +
+        `(${dropped.length} of ${total}). That is a broken ` +
         `model or config, not a weak tail. Publishing this would revert the ` +
         `locale to English.`
     )
