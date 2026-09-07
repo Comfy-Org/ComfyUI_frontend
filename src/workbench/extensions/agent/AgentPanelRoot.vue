@@ -718,11 +718,17 @@ function onOpenApprovalWorkflow(
 
 async function onOpenReferenceWorkflow(workflowId: string): Promise<void> {
   try {
-    await Promise.all([
-      refreshCloudWorkflowIds(),
-      workflowStore.syncWorkflows()
-    ])
-    const target = storedWorkflowFor(workflowId)
+    let target =
+      workflowStore.openWorkflows.find(
+        (tab) => cloudIdFor(tab) === workflowId
+      ) ?? null
+    if (target === null) {
+      await Promise.all([
+        refreshCloudWorkflowIds(),
+        workflowStore.syncWorkflows()
+      ])
+      target = storedWorkflowFor(workflowId)
+    }
     if (
       target === null ||
       (await workflowService.openWorkflow(target)) === false
