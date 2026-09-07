@@ -129,7 +129,9 @@ the interpretation of a gesture, and both renderers feed it.
 5. **Modifier semantics are unchanged in this ADR.** Shift and ctrl/meta both
    toggle membership, as `processSelect` does today. Vue nodes adopt this rule
    by routing through the same reducer instead of `handleNodeSelect`. Any
-   change to what a modifier means is a separate decision.
+   change to what a modifier means is a separate decision. The current
+   `addModifier` and `subtractModifier` names do not describe distinct behavior;
+   `processSelect` consumes them only through `eitherModifier`.
 6. **`InteractionPolicy` replaces mode flags.** The reducer receives an
    immutable policy value describing what the canvas currently allows:
    whether items may be selected, dragged, or resized, whether the canvas may
@@ -137,7 +139,8 @@ the interpretation of a gesture, and both renderers feed it.
    `selectOnly`, `multi_select`, and `leftMouseClickBehavior` become derived
    from or replaced by that value. Space-bar panning and drag-zoom are gesture
    overrides in the policy for the duration of the press; they do not write
-   `read_only`.
+   `read_only`. The adapter captures the effective policy at `down`; setting or
+   mode changes apply to the next press, not one already in progress.
 7. **`bringToFront` is an effect of pressing a node.** It is emitted on
    `down` for unpinned nodes, as the classic canvas does today, so both
    renderers order nodes the same way.
@@ -150,7 +153,14 @@ the interpretation of a gesture, and both renderers feed it.
   widget `mouse`/`onPointerDown`, `onSelectionChange`) fires with the same
   arguments and in the same relative order as the current implementation.
   Characterization tests capture that order before the reducer replaces a
-  path.
+  path. Drag promotion is the intentional exception: `startDrag` fires before
+  the first `moveDrag`, and no `moveDrag` fires inside the click threshold.
+  `CanvasPointer` currently invokes `onDrag` before `onDragStart` on the
+  promoting move.
+- The adapter that accepts `down` owns the gesture until `up` or `cancel`.
+  Renderer, mode, and feature-flag changes take effect only after the gesture
+  returns to `idle`. Teardown, lost pointer capture, blur, and visibility loss
+  dispatch `cancel` to the current owner before ownership ends.
 - `CanvasPointer` remains exported with its current callback surface until
   the corpus check shows no extension assigns any of `pointer.onClick`,
   `pointer.onDoubleClick`, `pointer.onDragStart`, `pointer.onDrag`,
@@ -158,7 +168,9 @@ the interpretation of a gesture, and both renderers feed it.
   today, in `LGraphCanvas`, `SubgraphInputNode`, `SubgraphOutputNode`,
   `WidgetLegacy.vue`, and `useImagePreviewWidget`. During migration
   `CanvasPointer` is a thin adapter that dispatches `GestureEvent` values and
-  runs assigned callbacks as effects.
+  runs assigned callbacks as effects. Its existing `finally` and `reset`
+  cleanup may remain in that adapter until the corresponding target path moves
+  to the effect interpreter.
 - `canvas.read_only`, `canvas.allow_dragcanvas`, and `canvas.multi_select`
   remain readable and writable; writes update the policy, and reads derive
   from it.
@@ -189,9 +201,11 @@ the interpretation of a gesture, and both renderers feed it.
   per-branch callback assignment, and DOM events would still need a target
   translation, so it removes the renderer split without removing the branch
   split.
-- **Adopt a gesture library.** Libraries such as `@use-gesture` classify
-  pointer motion but do not know canvas targets or selection policy; the
-  branch logic would remain. The reducer is small and its tests are the value.
+- **Adopt a gesture library.** Libraries such as `@use-gesture` can classify
+  target-independent pointer motion. They still require an adapter for the
+  existing callback order, cancellation rules, target model, and selection
+  policy. The reducer is small, so a library adds another lifecycle without
+  removing the application-specific work.
 - **Keep the time-based click buffer.** Its code comment says it covers a
   user who holds the pointer still and then releases, but promotion only runs
   inside `move()`, so a press with no `pointermove` never becomes a drag. In
@@ -251,10 +265,13 @@ Planned migration order:
    `CanvasPointer` and record selection, drag, and callback order per target
    kind.
 2. Extract `reduceGesture` with `CanvasPointer` as its adapter; remove the
-   time-based promotion and deprecate the setting.
+   time-based promotion, deprecate the setting, and add transition-table tests
+   for every state and event pair plus threshold boundaries. Capture the
+   effective threshold policy at `down`.
 3. Route Vue node pointer events through the reducer; delete
    `handleNodeSelect`, `toggleNodeSelectionAfterPointerUp`, and the Vue
-   drag-guard state.
+   drag-guard state. Run the same logical gesture traces through the classic
+   and Vue adapters and compare their effects.
 4. Replace `pointer.onClick` writers in `LGraphCanvas` one target kind at a
    time with `PointerTarget` resolution and effects.
 5. Introduce `InteractionPolicy` and derive the legacy mode flags from it.
