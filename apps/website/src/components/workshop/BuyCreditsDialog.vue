@@ -47,15 +47,16 @@ const workspace = computed(() =>
   session.value.status === 'signedIn' ? session.value.account.workspace : ''
 )
 
-// The real flow leaves for Stripe Checkout and comes back on a fresh page load.
-// The prototype plays that round trip out in place, so the whole journey can be
-// reviewed without a payment account — but the states after the hand-off are the
-// ones the live page will really have to render.
+// Continue is a real link, so the tab opens on the visitor's own click and a
+// popup blocker never sees a programmatic open to swallow. That removes the
+// blocked case rather than handling it, and it means cancelling happens at
+// Stripe, in the other tab: this page just keeps waiting until they come back
+// or dismiss it. There is no "you cancelled" state to return to.
+//
+// The prototype plays Stripe's own page out in place, so the journey can be
+// reviewed without a payment account.
 type Step = 'leaving' | 'checkout' | 'waiting' | 'landed' | 'unresolved'
 const step = ref<Step>('leaving')
-// Canceling at Stripe is not a failure: it returns to the amount with the
-// chosen amount intact and nothing to retry.
-const canceled = ref(false)
 const previousCredits = ref(0)
 
 const returnPath = ref('/workshop/')
@@ -87,7 +88,6 @@ watch(open, (value) => {
   // Consumed once: after the link has opened its step, the dialog behaves
   // normally, so closing and reopening does not jump back and grant again.
   if (entry !== 'closed') buyStep.value = 'closed'
-  canceled.value = entry === 'canceled'
   step.value = isReturnStep(entry) ? entry : 'leaving'
   if (step.value === 'landed') {
     previousCredits.value =
@@ -101,15 +101,11 @@ function setAmount(next: number) {
   usd.value = clampTopUp(next)
 }
 
+// The anchor opens Stripe; this only moves the page behind it on. In the
+// prototype the navigation is prevented so Stripe's page can be played out in
+// place — shipping means dropping the `.prevent` and letting the link work.
 function leaveForStripe() {
-  canceled.value = false
-  step.value = 'checkout'
-}
-
-function cancelAtStripe() {
-  clearSettleTimer()
-  canceled.value = true
-  step.value = 'leaving'
+  step.value = 'waiting'
 }
 
 // Stripe redirects the moment the card clears; the grant follows on a webhook.
@@ -159,14 +155,6 @@ const stepperClass =
         <DialogDescription class="text-base text-primary-comfy-canvas/70">
           {{ t('workshop.credits.body', locale) }}
         </DialogDescription>
-
-        <p
-          v-if="canceled"
-          class="bg-transparency-white-t4 rounded-2xl px-4 py-3 text-sm text-primary-comfy-canvas"
-          data-testid="buy-credits-canceled"
-        >
-          {{ t('workshop.credits.canceledNotice', locale) }}
-        </p>
 
         <div class="grid grid-cols-4 gap-2" data-testid="buy-credits-packs">
           <button
@@ -243,8 +231,11 @@ const stepperClass =
           <Button
             size="lg"
             class="px-5"
+            :href="href"
+            target="_blank"
+            rel="noopener noreferrer"
             data-testid="buy-credits-continue"
-            @click="leaveForStripe"
+            @click.prevent="leaveForStripe"
           >
             {{ t('workshop.credits.continue', locale) }}
             <template #append>
@@ -311,10 +302,10 @@ const stepperClass =
             variant="outline"
             size="lg"
             class="px-5"
-            data-testid="buy-credits-cancel-stripe"
-            @click="cancelAtStripe"
+            data-testid="buy-credits-back"
+            @click="step = 'waiting'"
           >
-            {{ t('workshop.credits.cancelAtStripe', locale) }}
+            {{ t('workshop.credits.back', locale) }}
           </Button>
         </div>
       </div>
@@ -342,14 +333,35 @@ const stepperClass =
           />
           {{ t('workshop.credits.waitingPolling', locale) }}
         </p>
+        <p
+          class="flex flex-wrap items-center gap-2 text-sm text-primary-warm-gray"
+        >
+          {{ t('workshop.credits.reopenPrompt', locale) }}
+          <!-- The tab is already open in the real flow; this brings it back if
+               they closed it. Not a fallback — there is no blocked case. -->
+          <a
+            :href="href"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-primary-comfy-yellow underline-offset-4 hover:underline"
+            data-testid="buy-credits-reopen"
+            @click.prevent="step = 'checkout'"
+          >
+            {{ t('workshop.credits.reopen', locale) }}
+          </a>
+        </p>
+
         <Button
           variant="outline"
           size="lg"
           class="w-fit px-5"
-          data-testid="buy-credits-reopen"
-          @click="step = 'checkout'"
+          data-testid="buy-credits-dismiss"
+          @click="open = false"
         >
-          {{ t('workshop.credits.reopen', locale) }}
+          <!-- Not "Cancel": dismissing this does not cancel anything. The
+               checkout is open in the other tab and will complete or not on its
+               own; this only puts the page back. -->
+          {{ t('workshop.credits.close', locale) }}
         </Button>
       </div>
 

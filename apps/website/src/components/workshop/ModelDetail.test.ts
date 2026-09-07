@@ -179,11 +179,17 @@ describe('ModelDetail', () => {
     expect(
       (await screen.findByTestId('buy-credits-url')).textContent
     ).toContain('success_url=')
+    // Continue is a link: the tab opens on the click and this page starts
+    // waiting straight away, rather than showing anything of its own.
     await user().click(screen.getByTestId('buy-credits-continue'))
+    expect(await screen.findByTestId('buy-credits-polling')).toBeTruthy()
+
+    // Stripe's page stands in here, reachable the way a closed tab would be.
+    await user().click(screen.getByTestId('buy-credits-reopen'))
     await user().click(await screen.findByTestId('buy-credits-pay'))
 
-    // Stripe redirects the moment the card clears, but the grant follows on a
-    // webhook: the page waits before it can say anything.
+    // The redirect beats the webhook, so it waits again before it can say
+    // anything.
     expect(await screen.findByTestId('buy-credits-polling')).toBeTruthy()
     vi.advanceTimersByTime(SETTLE_DELAY_MS)
     await nextTick()

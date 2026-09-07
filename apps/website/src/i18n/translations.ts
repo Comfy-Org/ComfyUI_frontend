@@ -8676,20 +8676,12 @@ Enterprise`
   },
   'workshop.credits.less': { en: 'Less', 'zh-CN': '减少' },
   'workshop.credits.more': { en: 'More', 'zh-CN': '增加' },
-  'workshop.credits.cancelAtStripe': {
-    en: 'Cancel payment',
-    'zh-CN': '取消付款'
-  },
-  'workshop.credits.canceledNotice': {
-    en: 'Payment canceled: nothing was charged.',
-    'zh-CN': '付款已取消：未产生任何扣款。'
-  },
   'workshop.credits.waitingTitle': {
     en: 'Waiting for your payment',
     'zh-CN': '正在等待付款'
   },
   'workshop.credits.waitingBody': {
-    en: 'Complete the purchase in the new tab. This updates automatically.',
+    en: 'Complete the purchase in the tab that just opened. This page updates on its own.',
     'zh-CN': '请在新标签页中完成购买，此处会自动更新。'
   },
   'workshop.credits.waitingPolling': {
@@ -8699,6 +8691,10 @@ Enterprise`
   'workshop.credits.reopen': {
     en: 'Reopen Stripe',
     'zh-CN': '重新打开 Stripe'
+  },
+  'workshop.credits.reopenPrompt': {
+    en: 'Closed it by mistake?',
+    'zh-CN': '不小心关闭了？'
   },
   'workshop.credits.addedTo': {
     en: 'Added to {workspace}. Your inputs are as you left them.',

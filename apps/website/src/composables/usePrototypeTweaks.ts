@@ -34,8 +34,7 @@ export const BUY_STEPS = [
   'amount',
   'waiting',
   'landed',
-  'unresolved',
-  'canceled'
+  'unresolved'
 ] as const
 export type BuyStep = (typeof BUY_STEPS)[number]
 
