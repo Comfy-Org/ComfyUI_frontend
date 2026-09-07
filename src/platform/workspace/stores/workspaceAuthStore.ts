@@ -843,6 +843,9 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       unifiedToken.value = snapshot.session.token
       unifiedTokenOwnerUid.value = snapshot.session.uid
       unifiedPermanentFailureSurfaced = false
+      // Any successful mint re-arms the scheduler with a fresh retry budget;
+      // this telemetry mirror must follow it or retry_count inflates.
+      unifiedScheduledRetryCount = 0
       currentWorkspace.value = {
         ...snapshot.session.workspace,
         role: snapshot.session.role
