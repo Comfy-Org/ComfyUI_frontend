@@ -223,6 +223,12 @@ jobs:
     # their pack list from these three (see scripts/customNodeShard.ts).
     env:
       CUSTOM_NODES_MANIFEST: ${{ startsWith(matrix.shard, 'core:') && 'core' || 'cloud' }}
+      # The one filter every consumer reads: the suite greps by it, the gate
+      # decides exact-count enforcement from it, and the summary reports it as
+      # what the run covered. A proof row runs its own regex, so a per-step
+      # expression that knew only about `record_interactions` and `grep` made
+      # the summary report `(full suite)` for a run that greps one tier.
+      GREP_FILTER: "${{ (matrix.proof_row == '1' || matrix.proof_row == '2' || matrix.proof_row == '3' || matrix.proof_row == '9') && 'all nodes by tier @custom-nodes.*S(1|2|3|9):' || matrix.proof_row == '15' && 'custom node: ComfyUI-Impact-Pack @custom-nodes.*Curated workflow execution: completes without error' || inputs.record_interactions && 'interaction profiles' || inputs.grep }}"
     steps:
       # Artifact and cache names cannot contain `/`, which the shard id does.
       - name: Resolve shard identity
@@ -419,10 +425,6 @@ jobs:
           CN_INTERACTION: ${{ inputs.record_interactions && 'record' || '' }}
           CN_INTERACTION_CORE: ${{ env.COMFYUI_PIN }}
           PLAYWRIGHT_JSON_OUTPUT_NAME: custom-nodes-results.json
-          PROOF_ROW: ${{ matrix.proof_row }}
-          # Through env, not inline interpolation: dispatch input must never
-          # be shell-parsed.
-          GREP_FILTER: ${{ inputs.record_interactions && 'interaction profiles' || inputs.grep }}
         run: |
           set -o pipefail
           # workers=1: the auto-run tier needs exclusive backend-queue access;
@@ -432,16 +434,10 @@ jobs:
           # Json feeds the skip gate below; html writes playwright-report/
           # (the upload step's target) and folds in the retain-on-failure
           # traces. List keeps live diagnostics visible.
+          # Through env, not inline interpolation: dispatch input must never
+          # be shell-parsed.
           grep_args=()
-          case "$PROOF_ROW" in
-            0) [ -n "${GREP_FILTER:-}" ] && grep_args=(--grep "$GREP_FILTER") ;;
-            1|2|3|9)
-              grep_args=(--grep 'all nodes by tier @custom-nodes.*S(1|2|3|9):')
-              ;;
-            15)
-              grep_args=(--grep 'custom node: ComfyUI-Impact-Pack @custom-nodes.*Curated workflow execution: completes without error')
-              ;;
-          esac
+          [ -n "${GREP_FILTER:-}" ] && grep_args=(--grep "$GREP_FILTER")
           pnpm exec playwright test browser_tests/tests/customNodes/ \
             --project=custom-nodes --reporter=list,json,html --workers=1 --retries=0 \
             "${grep_args[@]}" 2>&1 | tee custom-nodes.log
@@ -452,14 +448,6 @@ jobs:
         if: always() && matrix.proof_row == '0'
         env:
           SUITE_OUTCOME: ${{ steps.suite.outcome }}
-          # The same effective filter the suite step ran, not the caller's raw
-          # `grep`: this gate reads GREP_FILTER to decide whether to enforce the
-          # exact expected count, so under `record_interactions` (which forces
-          # `interaction profiles`) the raw input made it demand the full-suite
-          # count from a filtered run - and made two `record_interactions`
-          # dispatches differing only in `grep` gate differently under identical
-          # names.
-          GREP_FILTER: ${{ inputs.record_interactions && 'interaction profiles' || inputs.grep }}
         run: pnpm exec tsx scripts/cicd/custom-node-results.ts ordinary
 
       - name: Assert deliberate failure independence
@@ -475,10 +463,6 @@ jobs:
         env:
           BRANCH_TESTED: ${{ inputs.branch || github.ref_name }}
           COMFYUI_REF_USED: ${{ inputs.comfyui_ref || env.COMFYUI_PIN }}
-          # Report the filter that ran, for the same reason the gate above uses
-          # it: the summary table's "Grep filter" row is read as a record of what
-          # the run covered.
-          GREP_FILTER: ${{ inputs.record_interactions && 'interaction profiles' || inputs.grep }}
         run: python3 scripts/cicd/custom-nodes-summary.py
 
       - name: Upload Playwright report and raw diagnostics
