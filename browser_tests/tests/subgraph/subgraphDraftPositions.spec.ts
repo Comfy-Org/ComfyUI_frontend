@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeId } from '@/types/nodeId'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 interface SubgraphNodePosition {

@@ -21,7 +21,7 @@ const {
   hasCursor = true,
   class: customClass = ''
 } = defineProps<{
-  size?: 'mini' | 'compact' | 'regular' | 'portrait' | 'tall'
+  size?: 'mini' | 'compact' | 'regular' | 'portrait' | 'tall' | 'auto'
   variant?: 'default' | 'ghost' | 'outline'
   rounded?: 'none' | 'md' | 'lg' | 'xl'
   customAspectRatio?: string
@@ -71,7 +71,8 @@ const containerClasses = computed(() => {
         compact: 'aspect-240/311',
         regular: 'aspect-256/308',
         portrait: 'aspect-256/325',
-        tall: 'aspect-256/353'
+        tall: 'aspect-256/353',
+        auto: ''
       }[size]
 
   return cn(

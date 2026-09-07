@@ -184,6 +184,18 @@ export class ModelExporter {
     }
   }
 
+  static async exportDirect(
+    originalURL: string | null | undefined,
+    filename: string,
+    format: string
+  ): Promise<void> {
+    if (!originalURL) {
+      throw new Error(`No source file available to export as ${format}`)
+    }
+
+    return ModelExporter.downloadFromURL(originalURL, filename)
+  }
+
   private static saveArrayBuffer(buffer: ArrayBuffer, filename: string): void {
     const blob = new Blob([buffer], { type: 'application/octet-stream' })
     downloadBlob(filename, blob)

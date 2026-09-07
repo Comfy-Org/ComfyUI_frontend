@@ -5,11 +5,13 @@
  * patterns for the rest of the testing team. These tests cover construction
  * and basic I/O management.
  */
-import { createTestingPinia } from '@pinia/testing'
 import { fromAny } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
+import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { createUuidv4, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
@@ -21,7 +23,6 @@ import {
 } from './__fixtures__/subgraphHelpers'
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   resetSubgraphFixtureState()
 })
 
@@ -41,8 +42,8 @@ describe('Subgraph Construction', () => {
     )
     expect(subgraph.inputNode).toBeDefined()
     expect(subgraph.outputNode).toBeDefined()
-    expect(subgraph.inputNode.id).toBe(-10)
-    expect(subgraph.outputNode.id).toBe(-20)
+    expect(subgraph.inputNode.id).toBe(SUBGRAPH_INPUT_ID)
+    expect(subgraph.outputNode.id).toBe(SUBGRAPH_OUTPUT_ID)
   })
 
   it('should require a root graph', () => {

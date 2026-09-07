@@ -4,5 +4,9 @@ export const PRESERVED_QUERY_NAMESPACES = {
   SHARE: 'share',
   SHARE_AUTH: 'share_auth',
   CREATE_WORKSPACE: 'create_workspace',
-  OAUTH: 'oauth'
+  OAUTH: 'oauth',
+  PRICING: 'pricing',
+  TOPUP: 'topup',
+  SETTINGS: 'settings',
+  DESKTOP_LOGIN: 'desktop_login'
 } as const

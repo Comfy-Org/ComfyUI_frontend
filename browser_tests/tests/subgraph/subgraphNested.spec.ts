@@ -217,6 +217,14 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
         }
       })
 
+      // Each promoted input must surface its own source value, so assert the
+      // name->value mapping rather than the first textbox in DOM order.
+      const EXPECTED_VALUE_BY_INPUT: Record<string, RegExp> = {
+        value: /Inner 1/,
+        value_1: /Inner 2/,
+        value_1_1: /Inner 3/
+      }
+
       test('Promoted widgets from inner SubgraphNode are visible with correct values', async ({
         comfyPage
       }) => {
@@ -228,11 +236,16 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
         const widgets = outerNode.getByTestId(TestIds.widgets.widget)
         await comfyExpect(widgets).toHaveCount(4)
 
-        const valueWidget = outerNode
-          .getByRole('textbox', { name: 'value' })
-          .first()
-        await comfyExpect(valueWidget).toBeVisible()
-        await comfyExpect(valueWidget).toHaveValue(/Inner 1/)
+        for (const [inputName, expectedValue] of Object.entries(
+          EXPECTED_VALUE_BY_INPUT
+        )) {
+          const valueWidget = outerNode.getByRole('textbox', {
+            name: inputName,
+            exact: true
+          })
+          await comfyExpect(valueWidget).toBeVisible()
+          await comfyExpect(valueWidget).toHaveValue(expectedValue)
+        }
       })
 
       test('Promoted widgets from inner SubgraphNode carry correct source identity', async ({
@@ -271,11 +284,16 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
         const widgetsAfter = outerNodeAfter.getByTestId(TestIds.widgets.widget)
         await comfyExpect(widgetsAfter).toHaveCount(initialCount)
 
-        const valueWidget = outerNodeAfter
-          .getByRole('textbox', { name: 'value' })
-          .first()
-        await comfyExpect(valueWidget).toBeVisible()
-        await comfyExpect(valueWidget).toHaveValue(/Inner 1/)
+        for (const [inputName, expectedValue] of Object.entries(
+          EXPECTED_VALUE_BY_INPUT
+        )) {
+          const valueWidget = outerNodeAfter.getByRole('textbox', {
+            name: inputName,
+            exact: true
+          })
+          await comfyExpect(valueWidget).toBeVisible()
+          await comfyExpect(valueWidget).toHaveValue(expectedValue)
+        }
       })
     }
   )

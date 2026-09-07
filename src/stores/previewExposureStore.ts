@@ -8,7 +8,12 @@ import type {
 import { resolvePreviewExposureChain } from '@/core/graph/subgraph/preview/previewExposureChain'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
+import type { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
+import { toNodeId } from '@/types/nodeId'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 
 const EMPTY_EXPOSURES: readonly PreviewExposure[] = Object.freeze([])
@@ -16,6 +21,37 @@ const EMPTY_EXPOSURES: readonly PreviewExposure[] = Object.freeze([])
 type ResolveNestedHostFn = NonNullable<
   PreviewExposureChainContext['resolveNestedHost']
 >
+
+type PreviewExposureInput = Omit<PreviewExposure, 'sourceNodeId'> & {
+  sourceNodeId: SerializedNodeId
+}
+
+function normalizePreviewExposure(
+  exposure: PreviewExposureInput
+): PreviewExposure {
+  return {
+    ...exposure,
+    sourceNodeId: toNodeId(exposure.sourceNodeId)
+  }
+}
+
+export function getPreviewExposureHostLocator(
+  host: SubgraphNode
+): NodeLocatorId | null {
+  const locator = tryGetPreviewExposureHostLocator(host)
+  if (locator) return locator
+  console.error(
+    `Cannot create preview exposure host locator for node ${String(host.id)}`
+  )
+  return null
+}
+
+export function tryGetPreviewExposureHostLocator(
+  host: SubgraphNode
+): NodeLocatorId | null {
+  const graphId = host.graph?.isRootGraph ? null : (host.graph?.id ?? null)
+  return createNodeLocatorId(graphId, host.id)
+}
 
 export const usePreviewExposureStore = defineStore('previewExposure', () => {
   const exposures = ref(new Map<UUID, Map<string, PreviewExposure[]>>())
@@ -48,7 +84,7 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
   function setExposures(
     rootGraphId: UUID,
     hostNodeLocator: string,
-    next: readonly PreviewExposure[]
+    next: readonly PreviewExposureInput[]
   ): void {
     const hosts = _getHostsForGraph(rootGraphId)
     if (next.length === 0) {
@@ -56,13 +92,13 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
       if (hosts.size === 0) exposures.value.delete(rootGraphId)
       return
     }
-    hosts.set(hostNodeLocator, [...next])
+    hosts.set(hostNodeLocator, next.map(normalizePreviewExposure))
   }
 
   function addExposure(
     rootGraphId: UUID,
     hostNodeLocator: string,
-    source: { sourceNodeId: string; sourcePreviewName: string }
+    source: { sourceNodeId: SerializedNodeId; sourcePreviewName: string }
   ): PreviewExposure {
     const hosts = _getHostsForGraph(rootGraphId)
     const current = hosts.get(hostNodeLocator) ?? []
@@ -70,7 +106,7 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
     const name = nextUniqueName(source.sourcePreviewName, existingNames)
     const entry: PreviewExposure = {
       name,
-      sourceNodeId: source.sourceNodeId,
+      sourceNodeId: toNodeId(source.sourceNodeId),
       sourcePreviewName: source.sourcePreviewName
     }
     hosts.set(hostNodeLocator, [...current, entry])
@@ -87,6 +123,13 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
     const next = current.filter((e) => e.name !== name)
     if (next.length === current.length) return
     setExposures(rootGraphId, hostNodeLocator, next)
+  }
+
+  function clearHost(rootGraphId: UUID, hostNodeLocator: string): void {
+    const hosts = exposures.value.get(rootGraphId)
+    if (!hosts) return
+    hosts.delete(hostNodeLocator)
+    if (hosts.size === 0) exposures.value.delete(rootGraphId)
   }
 
   function clearGraph(rootGraphId: UUID): void {
@@ -126,6 +169,7 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
     setExposures,
     addExposure,
     removeExposure,
+    clearHost,
     clearGraph,
     resolveChain
   }

@@ -7,85 +7,13 @@ import { createI18n } from 'vue-i18n'
 import ViewerCameraControls from '@/components/load3d/controls/viewer/ViewerCameraControls.vue'
 import type { CameraType } from '@/extensions/core/load3d/interfaces'
 
-vi.mock('@/components/ui/select/Select.vue', async () => {
-  const { provide } = await import('vue')
-  return {
-    default: {
-      name: 'Select',
-      props: ['modelValue'],
-      emits: ['update:modelValue'],
-      setup(
-        props: { modelValue: string },
-        { emit }: { emit: (event: string, value: string) => void }
-      ) {
-        provide('selectModelValue', (): string => props.modelValue)
-        provide('selectUpdate', (v: string): void =>
-          emit('update:modelValue', v)
-        )
-      },
-      template: '<div><slot /></div>'
-    }
-  }
-})
+vi.mock('@/components/ui/select/Select.vue')
+vi.mock('@/components/ui/select/SelectContent.vue')
+vi.mock('@/components/ui/select/SelectItem.vue')
+vi.mock('@/components/ui/select/SelectTrigger.vue')
+vi.mock('@/components/ui/select/SelectValue.vue')
 
-vi.mock('@/components/ui/select/SelectContent.vue', async () => {
-  const { inject, ref, onMounted } = await import('vue')
-  return {
-    default: {
-      name: 'SelectContent',
-      setup() {
-        const selectModelValue = inject<() => string>('selectModelValue')
-        const selectUpdate = inject<(v: string) => void>('selectUpdate')
-        const el = ref<HTMLSelectElement | null>(null)
-        onMounted(() => {
-          if (el.value) el.value.value = selectModelValue?.() ?? ''
-        })
-        return {
-          el,
-          onChange: (e: Event) => {
-            selectUpdate?.((e.target as HTMLSelectElement).value)
-          }
-        }
-      },
-      template: '<select ref="el" @change="onChange"><slot /></select>'
-    }
-  }
-})
-
-vi.mock('@/components/ui/select/SelectItem.vue', () => ({
-  default: {
-    name: 'SelectItem',
-    props: ['value'],
-    template: '<option :value="value"><slot /></option>'
-  }
-}))
-
-vi.mock('@/components/ui/select/SelectTrigger.vue', () => ({
-  default: { name: 'SelectTrigger', template: '<span />' }
-}))
-
-vi.mock('@/components/ui/select/SelectValue.vue', () => ({
-  default: { name: 'SelectValue', template: '<span />' }
-}))
-
-vi.mock('@/components/ui/slider/Slider.vue', () => ({
-  default: {
-    name: 'UiSlider',
-    props: ['modelValue', 'min', 'max', 'step'],
-    emits: ['update:modelValue'],
-    template: `
-      <input
-        type="range"
-        role="slider"
-        :value="Array.isArray(modelValue) ? modelValue[0] : modelValue"
-        :min="min"
-        :max="max"
-        :step="step"
-        @input="$emit('update:modelValue', [Number($event.target.value)])"
-      />
-    `
-  }
-}))
+vi.mock('@/components/ui/slider/Slider.vue')
 
 const i18n = createI18n({
   legacy: false,

@@ -1,13 +1,12 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import * as fc from 'fast-check'
 import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
-vi.mock('@/platform/assets/utils/outputAssetUtil', () => ({
-  getOutputKey: () => null,
-  resolveOutputAssetItems: () => Promise.resolve([])
-}))
+vi.mock('@/platform/assets/utils/outputAssetUtil')
 
 vi.mock('@/platform/assets/schemas/assetMetadataSchema', () => ({
   getOutputAssetMetadata: (metadata: Record<string, unknown> | undefined) => {
@@ -33,12 +32,12 @@ function arbAssetList(
 ): fc.Arbitrary<AssetItem[]> {
   return fc.uniqueArray(arbAssetId, { minLength, maxLength }).map((ids) =>
     ids.map(
-      (id) =>
-        ({
+      (id): AssetItem =>
+        fromPartial({
           id,
           name: `${id}.png`,
           tags: ['output']
-        }) satisfies AssetItem
+        })
     )
   )
 }

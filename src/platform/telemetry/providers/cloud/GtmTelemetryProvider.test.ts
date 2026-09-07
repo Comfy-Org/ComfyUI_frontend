@@ -1,11 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-vi.mock('@/composables/useAppMode', () => ({
-  useAppMode: () => ({
-    mode: { value: 'app' },
-    isAppMode: { value: true }
-  })
-}))
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import { GtmTelemetryProvider } from './GtmTelemetryProvider'
 
@@ -25,7 +18,6 @@ describe('GtmTelemetryProvider', () => {
     window.dataLayer = undefined
     window.gtag = undefined
     document.head.innerHTML = ''
-    localStorage.clear()
   })
 
   it('injects the GTM runtime script', () => {
@@ -192,8 +184,22 @@ describe('GtmTelemetryProvider', () => {
 
     it('pushes run_workflow with trigger_source', () => {
       const provider = createInitializedProvider()
-      localStorage.setItem('Comfy.MenuPosition.Docked', 'false')
-      provider.trackRunButton({ trigger_source: 'button' })
+      provider.trackRunButton({
+        subscribe_to_run: false,
+        workflow_type: 'custom',
+        workflow_name: 'untitled',
+        custom_node_count: 0,
+        total_node_count: 0,
+        subgraph_count: 0,
+        has_api_nodes: false,
+        api_node_names: [],
+        has_toolkit_nodes: false,
+        toolkit_node_names: [],
+        trigger_source: 'button',
+        view_mode: 'app',
+        is_app_mode: true,
+        dock_state: 'floating'
+      })
       expect(lastDataLayerEntry()).toMatchObject({
         event: 'run_workflow',
         trigger_source: 'button',

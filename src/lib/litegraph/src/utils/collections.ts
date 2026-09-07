@@ -14,9 +14,7 @@ export function getAllNestedItems(
   items: ReadonlySet<Positionable>
 ): Set<Positionable> {
   const allItems = new Set<Positionable>()
-  if (items) {
-    for (const item of items) addRecursively(item, allItems)
-  }
+  for (const item of items) addRecursively(item, allItems)
   return allItems
 
   function addRecursively(
@@ -29,6 +27,25 @@ export function getAllNestedItems(
       for (const child of item.children) addRecursively(child, flatSet)
     }
   }
+}
+
+/**
+ * Resolves which items a drag gesture should move, honouring the
+ * "move group without its contents" modifier.
+ *
+ * Holding Ctrl (Windows/Linux) or Meta/Cmd (macOS) moves the selected items
+ * on their own, leaving nodes nested inside a dragged group in place.
+ * Without the modifier, a dragged group carries its contents with it.
+ * @param selected The currently selected items being dragged
+ * @param event The pointer event driving the drag
+ * @returns The items to move for this drag frame
+ */
+export function getDraggedItems(
+  selected: Set<Positionable>,
+  event: Pick<MouseEvent, 'ctrlKey' | 'metaKey'>
+): Set<Positionable> {
+  const moveGroupOnly = event.ctrlKey || event.metaKey
+  return moveGroupOnly ? selected : getAllNestedItems(selected)
 }
 
 /**
@@ -63,9 +80,9 @@ type FreeSlotResult<T extends { type: ISlotType }> =
 export function findFreeSlotOfType<T extends { type: ISlotType }>(
   slots: T[],
   type: ISlotType,
-  hasNoLinks: (slot: T) => boolean
+  hasNoLinks: (slot: T, index: number) => boolean
 ) {
-  if (!slots?.length) return
+  if (!slots.length) return
 
   let occupiedSlot: FreeSlotResult<T>
   let wildSlot: FreeSlotResult<T>
@@ -79,7 +96,7 @@ export function findFreeSlotOfType<T extends { type: ISlotType }>(
     for (const validType of validTypes) {
       for (const slotType of slotTypes) {
         if (slotType === validType) {
-          if (hasNoLinks(slot)) {
+          if (hasNoLinks(slot, index)) {
             // Exact match - short circuit
             return { index, slot }
           }
@@ -87,7 +104,7 @@ export function findFreeSlotOfType<T extends { type: ISlotType }>(
           occupiedSlot ??= { index, slot }
         } else if (!wildSlot && (validType === '*' || slotType === '*')) {
           // Save the first free wildcard slot as a fallback
-          if (hasNoLinks(slot)) {
+          if (hasNoLinks(slot, index)) {
             wildSlot = { index, slot }
           } else {
             occupiedWildSlot ??= { index, slot }

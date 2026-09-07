@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, useAttrs } from 'vue'
 
+import { useTextFileContent } from '@/composables/useTextFileContent'
 import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
 import VideoPreview from '@/renderer/extensions/linearMode/VideoPreview.vue'
 import { getMediaType } from '@/renderer/extensions/linearMode/mediaTypes'
@@ -22,6 +23,9 @@ const attrs = useAttrs()
 const mediaType = computed(() => getMediaType(output))
 const outputLabel = computed(
   () => output.display_name?.trim() || output.filename
+)
+const { textContent } = useTextFileContent(() =>
+  mediaType.value === 'text' ? output : undefined
 )
 </script>
 <template>
@@ -60,7 +64,7 @@ const outputLabel = computed(
           attrs.class as string
         )
       "
-      v-text="output.content"
+      v-text="textContent"
     />
     <Preview3d
       v-else-if="mediaType === '3d'"

@@ -3,6 +3,7 @@ import { expect } from '@playwright/test'
 import { affiliateFaqs } from '../src/data/affiliateFaq'
 import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
+import { waitForIsland } from './fixtures/islands'
 
 const PATH = '/affiliates'
 const APPLY_URL = 'https://forms.gle/RS8L2ttcuGap4Q1v6'
@@ -76,10 +77,14 @@ test.describe('Affiliates landing — desktop interactions', () => {
       return match?.textContent ?? null
     })
     expect(faqJsonLd, 'FAQ JSON-LD script').not.toBeNull()
-    const parsed = JSON.parse(faqJsonLd!)
-    expect(parsed['@type']).toBe('FAQPage')
-    expect(Array.isArray(parsed.mainEntity)).toBe(true)
-    expect(parsed.mainEntity.length).toBe(FAQ_COUNT)
+    const graph = JSON.parse(faqJsonLd!)['@graph'] as {
+      '@type': string
+      mainEntity?: unknown[]
+    }[]
+    const faqPage = graph.find((node) => node['@type'] === 'FAQPage')
+    expect(faqPage, 'FAQPage node in @graph').toBeDefined()
+    expect(Array.isArray(faqPage!.mainEntity)).toBe(true)
+    expect(faqPage!.mainEntity!.length).toBe(FAQ_COUNT)
   })
 
   test('Apply Now CTA opens the application form in a new tab', async ({
@@ -108,7 +113,7 @@ test.describe('Affiliates landing — desktop interactions', () => {
     const firstQuestion = page.getByRole('button', {
       name: FIRST_FAQ.question.en
     })
-    await firstQuestion.scrollIntoViewIfNeeded()
+    await waitForIsland(page, firstQuestion)
     await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
 
     await firstQuestion.click()

@@ -27,6 +27,11 @@
       variant="circle"
       class="ml-auto min-h-5 min-w-5 px-1 text-base-background"
     />
+    <i
+      v-else-if="suffixIcon"
+      :class="cn('ml-auto size-4 shrink-0', suffixIcon)"
+      aria-hidden="true"
+    />
   </div>
 </template>
 
@@ -35,12 +40,14 @@ import { computed, ref } from 'vue'
 
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import type { NavItemData } from '@/types/navTypes'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import NavIcon from './NavIcon.vue'
 
-const { icon, badge, active, onClick } = defineProps<{
+const { icon, badge, suffixIcon, active, onClick } = defineProps<{
   icon: NavItemData['icon']
   badge?: NavItemData['badge']
+  suffixIcon?: NavItemData['suffixIcon']
   active?: boolean
   onClick: () => void
 }>()

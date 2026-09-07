@@ -1,7 +1,6 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { createPinia, setActivePinia } from 'pinia'
 import { nextTick, ref } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { MissingNodeType } from '@/types/comfy'
 
@@ -46,10 +45,6 @@ vi.mock('@/utils/litegraphUtil', () => ({
   isLGraphNode: vi.fn(() => false)
 }))
 
-vi.mock('@/utils/executableGroupNodeDto', () => ({
-  isGroupNode: vi.fn(() => false)
-}))
-
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useErrorGroups } from './useErrorGroups'
 
@@ -78,10 +73,6 @@ function makeMissingNodeType(
 }
 
 describe('swapNodeGroups computed', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   function getSwapNodeGroups(nodeTypes: MissingNodeType[]) {
     useMissingNodesErrorStore().surfaceMissingNodes(nodeTypes)
 

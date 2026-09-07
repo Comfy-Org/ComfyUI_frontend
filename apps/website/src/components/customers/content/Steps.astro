@@ -1,0 +1,17 @@
+---
+interface Props {
+  items: string[]
+}
+
+const { items } = Astro.props
+---
+
+<ol class="mt-4 space-y-1 pl-1 text-sm [counter-reset:step]">
+  {
+    items.map((item) => (
+      <li class="flex items-start gap-3 text-primary-comfy-canvas [counter-increment:step] before:shrink-0 before:font-semibold before:tabular-nums before:text-primary-comfy-yellow before:content-[counter(step,_decimal-leading-zero)]">
+        {item}
+      </li>
+    ))
+  }
+</ol>

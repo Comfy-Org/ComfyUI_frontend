@@ -1,3 +1,5 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { toRef } from 'vue'
 
@@ -72,7 +74,7 @@ const sampleJobs: JobListItem[] = [
 ]
 
 const sampleAssets: AssetItem[] = [
-  {
+  fromPartial({
     id: 'asset-image-1',
     name: 'image-032.png',
     created_at: baseTimestamp,
@@ -84,8 +86,8 @@ const sampleAssets: AssetItem[] = [
       nodeId: 12,
       executionTimeInSeconds: 1.84
     }
-  },
-  {
+  }),
+  fromPartial({
     id: 'asset-video-1',
     name: 'clip-01.mp4',
     created_at: baseTimestamp,
@@ -95,8 +97,8 @@ const sampleAssets: AssetItem[] = [
     user_metadata: {
       duration: 132000
     }
-  },
-  {
+  }),
+  fromPartial({
     id: 'asset-audio-1',
     name: 'soundtrack-01.mp3',
     created_at: baseTimestamp,
@@ -105,30 +107,30 @@ const sampleAssets: AssetItem[] = [
     user_metadata: {
       duration: 200000
     }
-  },
-  {
+  }),
+  fromPartial({
     id: 'asset-3d-1',
     name: 'scene-01.glb',
     created_at: baseTimestamp,
     size: 134217728,
     tags: []
-  },
-  {
+  }),
+  fromPartial({
     id: 'asset-text-1',
     name: 'generation-notes.txt',
     created_at: baseTimestamp,
     preview_url: '/assets/images/default-template.png',
     size: 2048,
     tags: []
-  },
-  {
+  }),
+  fromPartial({
     id: 'asset-other-1',
     name: 'workflow-payload.bin',
     created_at: baseTimestamp,
     preview_url: '/assets/images/default-template.png',
     size: 4096,
     tags: []
-  }
+  })
 ]
 
 const cancelAction: JobAction = {

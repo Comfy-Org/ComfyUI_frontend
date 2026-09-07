@@ -4,30 +4,20 @@
  * Provides focused functionality for managing node layering through z-index.
  * Integrates with the layout system to ensure proper visual ordering.
  */
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeId } from '@/types/nodeId'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 
-interface NodeZIndexOptions {
-  /**
-   * Layout source for z-index mutations
-   * @default LayoutSource.Vue
-   */
-  layoutSource?: LayoutSource
-}
+export function useNodeZIndex() {
+  const layoutMutations = useLayoutMutations(LayoutSource.Vue)
+  const canvasStore = useCanvasStore()
 
-export function useNodeZIndex(options: NodeZIndexOptions = {}) {
-  const { layoutSource = LayoutSource.Vue } = options
-  const layoutMutations = useLayoutMutations()
+  function bringNodeToFront(nodeId: NodeId) {
+    const { currentGraph } = canvasStore
+    if (!currentGraph) return
 
-  /**
-   * Bring node to front (highest z-index)
-   * @param nodeId - The node to bring to front
-   * @param source - Optional source override
-   */
-  function bringNodeToFront(nodeId: NodeId, source?: LayoutSource) {
-    layoutMutations.setSource(source ?? layoutSource)
-    layoutMutations.bringNodeToFront(nodeId)
+    layoutMutations.setNodeOrder(currentGraph, nodeId, 'front')
   }
 
   return {

@@ -9,7 +9,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import WidgetImageCrop from '@/components/imagecrop/WidgetImageCrop.vue'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import {
   createMockLGraphNode,
@@ -20,16 +21,12 @@ import { imageCropLoadingAfterUrlChange, useImageCrop } from './useImageCrop'
 
 const resizeObserverCallbacks: Array<() => void> = []
 
-vi.mock('@vueuse/core', async () => {
-  const actual = await vi.importActual('@vueuse/core')
-  return {
-    ...(actual as Record<string, unknown>),
-    useResizeObserver: (_target: unknown, cb: () => void) => {
-      resizeObserverCallbacks.push(cb)
-      return { stop: vi.fn() }
-    }
+vi.mock('@vueuse/core', () => ({
+  useResizeObserver: (_target: unknown, cb: () => void) => {
+    resizeObserverCallbacks.push(cb)
+    return { stop: vi.fn() }
   }
-})
+}))
 
 const mockResolveNode = vi.hoisted(() =>
   vi.fn<(id: NodeId) => LGraphNode | null>()
@@ -83,7 +80,7 @@ const ImageCropHarness = defineComponent({
       modelValue,
       imageEl,
       containerEl,
-      ...useImageCrop(props.nodeId as NodeId, {
+      ...useImageCrop(toNodeId(props.nodeId), {
         imageEl,
         containerEl,
         modelValue
@@ -120,18 +117,17 @@ function mountContainerLayout(
     configurable: true,
     value: height
   })
-  el.getBoundingClientRect = () =>
-    ({
-      width: rectWidth,
-      height,
-      top: 0,
-      left: 0,
-      right: rectWidth,
-      bottom: height,
-      x: 0,
-      y: 0,
-      toJSON: () => ({})
-    }) as DOMRect
+  el.getBoundingClientRect = () => ({
+    width: rectWidth,
+    height,
+    top: 0,
+    left: 0,
+    right: rectWidth,
+    bottom: height,
+    x: 0,
+    y: 0,
+    toJSON: () => ({})
+  })
 }
 
 function makePointerEvent(
@@ -163,7 +159,7 @@ type CropVm = Record<string, unknown> & {
 function setupImageLayout(vm: CropVm, nw: number, nh: number) {
   /* Harness root + image are not RTL queries — layout is driven by composable state */
   /* eslint-disable testing-library/no-node-access */
-  const container = vm.$el as HTMLDivElement
+  const container = vm.$el
   const img = container.querySelector('img')
   /* eslint-enable testing-library/no-node-access */
   mountContainerLayout(container, 400, 300)
@@ -183,7 +179,7 @@ function setupImageLayout(vm: CropVm, nw: number, nh: number) {
 
 const harnessCleanups: Array<() => void> = []
 
-async function mountHarness(nodeId: NodeId = 2 as NodeId) {
+async function mountHarness(nodeId: NodeId = toNodeId(2)) {
   const el = document.createElement('div')
   document.body.appendChild(el)
   const app = createApp(ImageCropHarness, { nodeId: Number(nodeId) })
@@ -231,7 +227,6 @@ describe('useImageCrop', () => {
 
   beforeEach(() => {
     resizeObserverCallbacks.length = 0
-    vi.clearAllMocks()
     outputStore = {
       nodeOutputs: reactive<Record<string, unknown>>({}),
       nodePreviewImages: reactive<Record<string, unknown>>({}),
@@ -373,7 +368,7 @@ describe('useImageCrop', () => {
   it('uses scale factor 1 when natural dimensions are zero', async () => {
     const vm = await mountHarness()
     /* eslint-disable testing-library/no-node-access */
-    const container = vm.$el as HTMLDivElement
+    const container = vm.$el
     const img = container.querySelector('img')
     /* eslint-enable testing-library/no-node-access */
     if (!img) throw new Error('expected preview img')
@@ -438,7 +433,7 @@ describe('useImageCrop', () => {
   it('drags the crop box in image space and ends on pointerup', async () => {
     const vm = await mountHarness()
     setupImageLayout(vm, 400, 300)
-    mountContainerLayout(vm.$el as HTMLDivElement, 400, 300)
+    mountContainerLayout(vm.$el, 400, 300)
     vm.modelValue = { x: 10, y: 10, width: 120, height: 90 }
 
     const captureEl = document.createElement('div')
@@ -624,7 +619,6 @@ describe('WidgetImageCrop', () => {
 
   beforeEach(() => {
     resizeObserverCallbacks.length = 0
-    vi.clearAllMocks()
     const outputStore: MockOutputStore = {
       nodeOutputs: reactive<Record<string, unknown>>({}),
       nodePreviewImages: reactive<Record<string, unknown>>({}),
@@ -657,7 +651,7 @@ describe('WidgetImageCrop', () => {
       container: attach,
       props: {
         widget,
-        nodeId: 2 as NodeId,
+        nodeId: toNodeId(2),
         modelValue: { x: 0, y: 0, width: 100, height: 100 }
       },
       global: {
@@ -689,7 +683,7 @@ describe('WidgetImageCrop', () => {
       container: attach,
       props: {
         widget,
-        nodeId: 2 as NodeId,
+        nodeId: toNodeId(2),
         modelValue: { x: 0, y: 0, width: 200, height: 200 }
       },
       global: {
@@ -733,7 +727,7 @@ describe('WidgetImageCrop', () => {
       container: attach,
       props: {
         widget,
-        nodeId: 2 as NodeId,
+        nodeId: toNodeId(2),
         modelValue: { x: 0, y: 0, width: 200, height: 200 }
       },
       global: {
@@ -779,7 +773,7 @@ describe('WidgetImageCrop', () => {
       container: attach,
       props: {
         widget,
-        nodeId: 2 as NodeId,
+        nodeId: toNodeId(2),
         modelValue: { x: 0, y: 0, width: 100, height: 100 }
       },
       global: {

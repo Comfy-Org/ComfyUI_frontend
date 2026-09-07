@@ -1,7 +1,4 @@
-import {
-  TOOLKIT_BLUEPRINT_MODULES,
-  TOOLKIT_NODE_NAMES
-} from '@/constants/toolkitNodes'
+import { TOOLKIT_NODES } from '@/constants/essentialsNodes'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { app } from '@/scripts/app'
@@ -32,24 +29,22 @@ export function getExecutionContext(): ExecutionContext {
   const nodeCounts = reduceAllNodes<NodeMetrics>(
     app.rootGraph,
     (metrics, node) => {
-      const nodeDef = nodeDefStore.nodeDefsByName[node.type]
+      const nodeDef = nodeDefStore.fromLGraphNode(node)
       const isCustomNode =
-        nodeDef?.nodeSource?.type === NodeSourceType.CustomNodes
-      const isApiNode = nodeDef?.api_node === true
-      const isSubgraph = node.isSubgraphNode?.() === true
+        nodeDef?.nodeSource.type === NodeSourceType.CustomNodes
+      const isApiNode = nodeDef?.api_node
+      const isSubgraph =
+        typeof node.isSubgraphNode === 'function' && node.isSubgraphNode()
 
       if (isApiNode) {
         metrics.has_api_nodes = true
-        const canonicalName = nodeDef?.name
+        const canonicalName = nodeDef.name
         if (canonicalName && !metrics.api_node_names.includes(canonicalName)) {
           metrics.api_node_names.push(canonicalName)
         }
       }
 
-      const isToolkitNode =
-        TOOLKIT_NODE_NAMES.has(node.type) ||
-        (nodeDef?.python_module !== undefined &&
-          TOOLKIT_BLUEPRINT_MODULES.has(nodeDef.python_module))
+      const isToolkitNode = TOOLKIT_NODES.has(node.type)
       if (isToolkitNode) {
         metrics.has_toolkit_nodes = true
         const trackingName = nodeDef?.name ?? node.type

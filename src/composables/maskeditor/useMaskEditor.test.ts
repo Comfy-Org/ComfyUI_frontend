@@ -36,7 +36,6 @@ describe('useMaskEditor', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
   })
 
@@ -92,7 +91,7 @@ describe('useMaskEditor', () => {
     })
 
     it('should log and bail when node is null', () => {
-      useMaskEditor().openMaskEditor(null as unknown as LGraphNode)
+      useMaskEditor().openMaskEditor(null)
 
       expect(errorSpy).toHaveBeenCalledWith('[MaskEditor] No node provided')
       expect(mockDialogStore.showDialog).not.toHaveBeenCalled()

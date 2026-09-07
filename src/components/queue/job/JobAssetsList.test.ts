@@ -2,7 +2,7 @@
 /* eslint-disable testing-library/prefer-user-event -- fireEvent needed: fake timers require fireEvent for mouseEnter/mouseLeave */
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 import type * as RekaUi from 'reka-ui'
 
@@ -235,11 +235,6 @@ function renderJobAssetsList({
   return { ...result, user }
 }
 
-afterEach(() => {
-  vi.useRealTimers()
-  vi.restoreAllMocks()
-})
-
 describe('JobAssetsList', () => {
   it('renders grouped headers alongside job rows', () => {
     const displayedJobGroups: TestJobGroup[] = [
@@ -386,7 +381,7 @@ describe('JobAssetsList', () => {
   })
 
   it('shows and hides the job details popover with hover delays', async () => {
-    vi.useFakeTimers()
+    vi.useFakeTimers({ shouldAdvanceTime: false })
     const job = buildJob()
     const { container } = renderJobAssetsList({ jobs: [job] })
 
@@ -416,7 +411,7 @@ describe('JobAssetsList', () => {
   })
 
   it('keeps the job details popover open while hovering the popover', async () => {
-    vi.useFakeTimers()
+    vi.useFakeTimers({ shouldAdvanceTime: false })
     const job = buildJob()
     const { container } = renderJobAssetsList({ jobs: [job] })
 
@@ -449,7 +444,6 @@ describe('JobAssetsList', () => {
   })
 
   it('anchors the popover to the active row through Reka', async () => {
-    vi.useFakeTimers()
     const job = buildJob()
     const { container } = renderJobAssetsList({ jobs: [job] })
 
@@ -469,7 +463,6 @@ describe('JobAssetsList', () => {
   })
 
   it('clears the previous popover when hovering a new row briefly and leaving the list', async () => {
-    vi.useFakeTimers()
     const firstJob = buildJob({ id: 'job-1' })
     const secondJob = buildJob({ id: 'job-2', title: 'Job 2' })
     const { container } = renderJobAssetsList({
@@ -499,7 +492,6 @@ describe('JobAssetsList', () => {
   })
 
   it('updates the visible popover without closing when hovering another row', async () => {
-    vi.useFakeTimers()
     const firstJob = buildJob({ id: 'job-1' })
     const secondJob = buildJob({ id: 'job-2', title: 'Job 2' })
     const { container } = renderJobAssetsList({
@@ -537,7 +529,6 @@ describe('JobAssetsList', () => {
   })
 
   it('does not show details if the hovered row disappears before the show delay ends', async () => {
-    vi.useFakeTimers()
     const job = buildJob()
     const { container, rerender } = renderJobAssetsList({ jobs: [job] })
 

@@ -14,6 +14,7 @@ const PROMPT_ROUTE_PATTERN = /\/api\/prompt$/
 type RunOptions = {
   nodeErrors?: Record<string, NodeError>
   onPromptRequest?: (requestBody: unknown) => void | Promise<void>
+  beforePromptResponse?: (jobId: string) => void | Promise<void>
 }
 
 /**
@@ -77,7 +78,7 @@ export class ExecutionHelper {
    */
   async run(options: RunOptions = {}): Promise<string> {
     const jobId = `test-job-${++this.jobCounter}`
-    const { nodeErrors = {}, onPromptRequest } = options
+    const { nodeErrors = {}, onPromptRequest, beforePromptResponse } = options
 
     let fulfilled!: () => void
     const prompted = new Promise<void>((r) => {
@@ -88,6 +89,7 @@ export class ExecutionHelper {
       PROMPT_ROUTE_PATTERN,
       async (route) => {
         await onPromptRequest?.(route.request().postDataJSON())
+        await beforePromptResponse?.(jobId)
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -188,7 +190,7 @@ export class ExecutionHelper {
   executed(
     jobId: string,
     nodeId: string,
-    output: Record<string, unknown>
+    output: Record<string, unknown> | null | undefined
   ): void {
     this.requireWs().send(
       JSON.stringify({
@@ -231,6 +233,22 @@ export class ExecutionHelper {
     )
   }
 
+  /** Send `execution_interrupted` WS event (user-initiated stop). */
+  executionInterrupted(jobId: string, nodeId: string): void {
+    this.requireWs().send(
+      JSON.stringify({
+        type: 'execution_interrupted',
+        data: {
+          prompt_id: jobId,
+          timestamp: Date.now(),
+          node_id: nodeId,
+          node_type: 'Unknown',
+          executed: []
+        }
+      })
+    )
+  }
+
   /** Send `progress` WS event. */
   progress(jobId: string, nodeId: string, value: number, max: number): void {
     this.requireWs().send(
@@ -239,6 +257,24 @@ export class ExecutionHelper {
         data: { prompt_id: jobId, node: nodeId, value, max }
       })
     )
+  }
+
+  /**
+   * Put a single node into the `running` state at the given step progress,
+   * emitting both the `progress_state` and `progress` events the backend sends.
+   */
+  nodeRunning(jobId: string, nodeId: string, value: number, max: number): void {
+    const state: NodeProgressState = {
+      node_id: nodeId,
+      display_node_id: nodeId,
+      real_node_id: nodeId,
+      prompt_id: jobId,
+      state: 'running',
+      value,
+      max
+    }
+    this.progressState(jobId, { [nodeId]: state })
+    this.progress(jobId, nodeId, value, max)
   }
 
   /** Send `progress_state` WS event with per-node execution state. */

@@ -1,4 +1,5 @@
 import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
+import type { NodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 
 interface ResolvedPreviewChainStep {
@@ -11,7 +12,7 @@ export interface ResolvedPreviewChain {
   steps: readonly ResolvedPreviewChainStep[]
   leaf: {
     rootGraphId: UUID
-    sourceNodeId: string
+    sourceNodeId: NodeId
     sourcePreviewName: string
   }
 }
@@ -24,11 +25,15 @@ export interface PreviewExposureChainContext {
   resolveNestedHost(
     rootGraphId: UUID,
     hostNodeLocator: string,
-    sourceNodeId: string
+    sourceNodeId: NodeId
   ): { rootGraphId: UUID; hostNodeLocator: string } | undefined
 }
 
 const MAX_CHAIN_DEPTH = 32
+
+function exposureSourceNodeId(exposure: PreviewExposure): NodeId {
+  return exposure.sourceNodeId
+}
 
 export function resolvePreviewExposureChain(
   rootGraphId: UUID,
@@ -50,7 +55,7 @@ export function resolvePreviewExposureChain(
       steps,
       leaf: {
         rootGraphId: lastStep.rootGraphId,
-        sourceNodeId: lastStep.exposure.sourceNodeId,
+        sourceNodeId: exposureSourceNodeId(lastStep.exposure),
         sourcePreviewName: lastStep.exposure.sourcePreviewName
       }
     }
@@ -80,14 +85,14 @@ export function resolvePreviewExposureChain(
     const nested = ctx.resolveNestedHost(
       currentRootGraphId,
       currentHost,
-      exposure.sourceNodeId
+      exposureSourceNodeId(exposure)
     )
     if (!nested) {
       return {
         steps,
         leaf: {
           rootGraphId: currentRootGraphId,
-          sourceNodeId: exposure.sourceNodeId,
+          sourceNodeId: exposureSourceNodeId(exposure),
           sourcePreviewName: exposure.sourcePreviewName
         }
       }

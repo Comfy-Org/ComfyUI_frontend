@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
@@ -15,10 +13,12 @@ const mockApi = vi.hoisted(() => ({
 
 const mockDownloadBlob = vi.hoisted(() => vi.fn())
 const mockUploadFile = vi.hoisted(() => vi.fn())
-const mockConfirm = vi.hoisted(() => vi.fn().mockResolvedValue(true))
-const mockPrompt = vi.hoisted(() => vi.fn().mockResolvedValue('test-preset'))
+const mockConfirm = vi.hoisted(() => vi.fn(async () => true))
+const mockPrompt = vi.hoisted(() =>
+  vi.fn<() => Promise<string | null>>(async () => 'test-preset')
+)
 const mockShowSmallLayoutDialog = vi.hoisted(() =>
-  vi.fn().mockImplementation((options: Record<string, unknown>) => {
+  vi.fn((options: Record<string, unknown>) => {
     const props = options.props as Record<string, unknown> | undefined
     const onResult = props?.onResult as ((v: boolean) => void) | undefined
     onResult?.(true)
@@ -27,7 +27,7 @@ const mockShowSmallLayoutDialog = vi.hoisted(() =>
 const mockSettingSet = vi.hoisted(() => vi.fn())
 const mockToastAdd = vi.hoisted(() => vi.fn())
 const mockPersistUserKeybindings = vi.hoisted(() =>
-  vi.fn().mockResolvedValue(undefined)
+  vi.fn(async () => undefined)
 )
 
 vi.mock('@/scripts/api', () => ({
@@ -53,7 +53,7 @@ vi.mock('@/services/dialogService', () => ({
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
     set: mockSettingSet,
-    get: vi.fn().mockReturnValue('default')
+    get: vi.fn(() => 'default')
   })
 }))
 
@@ -96,8 +96,6 @@ describe('useKeybindingPresetService', () => {
   let store: ReturnType<typeof useKeybindingStore>
 
   beforeEach(() => {
-    vi.clearAllMocks()
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useKeybindingStore()
   })
 
@@ -428,8 +426,9 @@ describe('useKeybindingPresetService', () => {
       expect(store.savedPresetData?.newBindings).toHaveLength(1)
       expect(store.savedPresetData?.newBindings[0].commandId).toBe('new.cmd')
       expect(Object.keys(store.getUserKeybindings())).toHaveLength(1)
-      const bindings = Object.values(store.getUserKeybindings())
-      expect(bindings[0].commandId).toBe('new.cmd')
+      expect(
+        store.getUserKeybindingValues().map(({ commandId }) => commandId)
+      ).toEqual(['new.cmd'])
     })
 
     it('applies unset bindings from preset', async () => {
@@ -452,9 +451,9 @@ describe('useKeybindingPresetService', () => {
       service.applyPreset(preset)
 
       expect(store.currentPresetName).toBe('vim')
-      const unset = Object.values(store.getUserUnsetKeybindings())
-      expect(unset).toHaveLength(1)
-      expect(unset[0].commandId).toBe('test.selectAll')
+      expect(
+        store.getUserUnsetKeybindingValues().map(({ commandId }) => commandId)
+      ).toEqual(['test.selectAll'])
     })
   })
 

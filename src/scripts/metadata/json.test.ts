@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import {
   EXPECTED_PROMPT_NAN_COERCED,
@@ -69,10 +69,6 @@ describe('getDataFromJSON', () => {
   })
 
   describe('FileReader failure modes', () => {
-    afterEach(() => {
-      vi.restoreAllMocks()
-    })
-
     it('resolves undefined when the FileReader fires error', async () => {
       mockFileReaderError('readAsText')
 

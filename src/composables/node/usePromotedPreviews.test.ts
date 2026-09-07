@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { reactive } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -9,8 +7,12 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import {
+  getPreviewExposureHostLocator,
+  usePreviewExposureStore
+} from '@/stores/previewExposureStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { toNodeId } from '@/types/nodeId'
 
 import { CANVAS_IMAGE_PREVIEW_WIDGET } from './canvasImagePreviewTypes'
 import { usePromotedPreviews } from './usePromotedPreviews'
@@ -58,7 +60,7 @@ function addInteriorNode(
   } = { id: 10 }
 ): LGraphNode {
   const node = new LGraphNode('test')
-  node.id = options.id
+  node.id = toNodeId(options.id)
   if (options.previewMediaType) {
     node.previewMediaType = options.previewMediaType
   }
@@ -69,7 +71,7 @@ function addInteriorNode(
 function seedOutputs(subgraphId: string, nodeIds: Array<number | string>) {
   const store = useNodeOutputStore()
   for (const nodeId of nodeIds) {
-    const locatorId = createNodeLocatorId(subgraphId, nodeId)
+    const locatorId = createNodeLocatorId(subgraphId, toNodeId(nodeId))
     store.nodeOutputs[locatorId] = {
       images: [{ filename: 'output.png' }]
     }
@@ -82,7 +84,7 @@ function seedPreviewImages(
 ) {
   const store = useNodeOutputStore()
   for (const { nodeId, urls } of entries) {
-    const locatorId = createNodeLocatorId(subgraphId, nodeId)
+    const locatorId = createNodeLocatorId(subgraphId, toNodeId(nodeId))
     store.nodePreviewImages[locatorId] = urls
   }
 }
@@ -92,9 +94,12 @@ function exposePreview(
   sourceNodeId: string,
   sourcePreviewName = CANVAS_IMAGE_PREVIEW_WIDGET
 ) {
+  const hostLocator = getPreviewExposureHostLocator(setup.subgraphNode)
+  expect(hostLocator).not.toBeNull()
+  if (!hostLocator) return
   usePreviewExposureStore().addExposure(
     setup.subgraphNode.rootGraph.id,
-    String(setup.subgraphNode.id),
+    hostLocator,
     { sourceNodeId, sourcePreviewName }
   )
 }
@@ -121,8 +126,6 @@ function arrangePromotedPreview(options: ArrangeOptions = {}) {
 
 describe(usePromotedPreviews, () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.resetAllMocks()
     clearMockNodeOutputStore()
   })
 
@@ -134,6 +137,18 @@ describe(usePromotedPreviews, () => {
 
   it('returns empty array for null node', () => {
     const { promotedPreviews } = usePromotedPreviews(() => null)
+    expect(promotedPreviews.value).toEqual([])
+  })
+
+  it('returns empty array (does not throw) when SubgraphNode is detached', () => {
+    const setup = createSetup()
+    const parentGraph = setup.subgraphNode.graph!
+    parentGraph.add(setup.subgraphNode)
+    parentGraph.remove(setup.subgraphNode)
+
+    expect(setup.subgraphNode.graph).toBeNull()
+    const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
+    expect(() => promotedPreviews.value).not.toThrow()
     expect(promotedPreviews.value).toEqual([])
   })
 
@@ -220,7 +235,9 @@ describe(usePromotedPreviews, () => {
     exposePreview(setup, '10')
 
     const blobUrl = 'blob:http://localhost/glsl-preview'
-    seedPreviewImages(setup.subgraph.id, [{ nodeId: 10, urls: [blobUrl] }])
+    seedPreviewImages(setup.subgraph.id, [
+      { nodeId: toNodeId(10), urls: [blobUrl] }
+    ])
     vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([blobUrl])
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
@@ -243,7 +260,9 @@ describe(usePromotedPreviews, () => {
     expect(promotedPreviews.value).toEqual([])
 
     const blobUrl = 'blob:http://localhost/glsl-preview'
-    seedPreviewImages(setup.subgraph.id, [{ nodeId: 10, urls: [blobUrl] }])
+    seedPreviewImages(setup.subgraph.id, [
+      { nodeId: toNodeId(10), urls: [blobUrl] }
+    ])
     vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([blobUrl])
 
     expect(promotedPreviews.value).toEqual([
@@ -285,22 +304,21 @@ describe(usePromotedPreviews, () => {
     outerSetup.subgraph.add(innerHost)
 
     const store = usePreviewExposureStore()
-    store.addExposure(
-      outerSetup.subgraphNode.rootGraph.id,
-      String(innerHost.id),
-      {
-        sourceNodeId: String(leafNode.id),
-        sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
-      }
+    const innerHostLocator = getPreviewExposureHostLocator(innerHost)
+    const outerHostLocator = getPreviewExposureHostLocator(
+      outerSetup.subgraphNode
     )
-    store.addExposure(
-      outerSetup.subgraphNode.rootGraph.id,
-      String(outerSetup.subgraphNode.id),
-      {
-        sourceNodeId: String(innerHost.id),
-        sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
-      }
-    )
+    expect(innerHostLocator).not.toBeNull()
+    expect(outerHostLocator).not.toBeNull()
+    if (!innerHostLocator || !outerHostLocator) return
+    store.addExposure(outerSetup.subgraphNode.rootGraph.id, innerHostLocator, {
+      sourceNodeId: String(leafNode.id),
+      sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
+    })
+    store.addExposure(outerSetup.subgraphNode.rootGraph.id, outerHostLocator, {
+      sourceNodeId: String(innerHost.id),
+      sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
+    })
 
     const mockUrls = ['/view?filename=leaf.png']
     seedOutputs(innerSetup.subgraph.id, [leafNode.id])
@@ -335,10 +353,11 @@ describe(usePromotedPreviews, () => {
     const secondHost = createTestSubgraphNode(outerSetup.subgraph, { id: 12 })
     const firstHostLocator = String(firstHost.id)
     const secondHostLocator = String(secondHost.id)
-    const firstNestedLocator = `${firstHostLocator}:${innerHost.id}`
-    const secondNestedLocator = `${secondHostLocator}:${innerHost.id}`
-    const firstLeafExecutionId = `${firstNestedLocator}:${leafNode.id}`
-    const secondLeafExecutionId = `${secondNestedLocator}:${leafNode.id}`
+    const nestedLocator = getPreviewExposureHostLocator(innerHost)
+    expect(nestedLocator).not.toBeNull()
+    if (!nestedLocator) return
+    const firstLeafExecutionId = `${firstHostLocator}:${innerHost.id}:${leafNode.id}`
+    const secondLeafExecutionId = `${secondHostLocator}:${innerHost.id}:${leafNode.id}`
 
     const store = usePreviewExposureStore()
     store.addExposure(firstHost.rootGraph.id, firstHostLocator, {
@@ -349,11 +368,7 @@ describe(usePromotedPreviews, () => {
       sourceNodeId: String(innerHost.id),
       sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
     })
-    store.addExposure(firstHost.rootGraph.id, firstNestedLocator, {
-      sourceNodeId: String(leafNode.id),
-      sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
-    })
-    store.addExposure(firstHost.rootGraph.id, secondNestedLocator, {
+    store.addExposure(firstHost.rootGraph.id, nestedLocator, {
       sourceNodeId: String(leafNode.id),
       sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
     })

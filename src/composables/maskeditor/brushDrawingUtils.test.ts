@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { BrushShape } from '@/extensions/core/maskeditor/types'
 import type { Point } from '@/extensions/core/maskeditor/types'
@@ -106,7 +106,6 @@ describe('drawRgbShape', () => {
 
   describe('Rect brush with soft hardness', () => {
     beforeEach(() => spyOnCreateElement())
-    afterEach(() => vi.restoreAllMocks())
 
     it('draws the cached brush texture at the correct offset without using a gradient', () => {
       const ctx = makeMockCtx()
@@ -157,7 +156,6 @@ describe('drawMaskShape', () => {
 
   describe('Rect brush with soft hardness', () => {
     beforeEach(() => spyOnCreateElement())
-    afterEach(() => vi.restoreAllMocks())
 
     it('draws the cached texture without a gradient when not erasing', () => {
       const ctx = makeMockCtx()

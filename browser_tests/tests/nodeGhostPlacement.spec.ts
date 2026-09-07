@@ -2,6 +2,8 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import { toNodeId } from '@/types/nodeId'
+import type { SerializedNodeId } from '@/types/nodeId'
 
 type ComfyPage = Parameters<Parameters<typeof test>[2]>[0]['comfyPage']
 
@@ -32,12 +34,13 @@ async function addGhostAtCenter(comfyPage: ComfyPage) {
   return { nodeId: nodeRef.id, centerX, centerY }
 }
 
-function getNodeById(comfyPage: ComfyPage, nodeId: number | string) {
+function getNodeById(comfyPage: ComfyPage, nodeId: SerializedNodeId) {
+  const localNodeId = toNodeId(nodeId)
   return comfyPage.page.evaluate((id) => {
     const node = window.app!.graph.getNodeById(id)
     if (!node) return null
     return { ghost: !!node.flags.ghost }
-  }, nodeId)
+  }, localNodeId)
 }
 
 for (const mode of ['litegraph', 'vue'] as const) {

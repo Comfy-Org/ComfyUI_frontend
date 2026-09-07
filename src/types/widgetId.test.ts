@@ -1,0 +1,140 @@
+import { describe, expect, it, vi } from 'vitest'
+
+import type { WidgetId } from './widgetId'
+import {
+  ensureUniqueWidgetNames,
+  isWidgetId,
+  parseWidgetId,
+  widgetId
+} from './widgetId'
+import { toNodeId } from '@/types/nodeId'
+
+describe('ensureUniqueWidgetNames', () => {
+  it('renames duplicates without colliding with literal suffixes', () => {
+    const widgets = [
+      { name: 'seed' },
+      { name: 'seed' },
+      { name: 'seed#1' },
+      { name: 'seed' }
+    ]
+
+    expect(ensureUniqueWidgetNames(widgets)).toBe(true)
+    expect(widgets.map(({ name }) => name)).toEqual([
+      'seed',
+      'seed#2',
+      'seed#1',
+      'seed#3'
+    ])
+  })
+
+  it('logs and leaves all names unchanged when a duplicate cannot be renamed', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const widgets = [{ name: 'seed' }, Object.freeze({ name: 'seed' })]
+
+    expect(ensureUniqueWidgetNames(widgets)).toBe(false)
+    expect(widgets.map(({ name }) => name)).toEqual(['seed', 'seed'])
+    expect(warn).toHaveBeenCalledOnce()
+
+    warn.mockRestore()
+  })
+})
+
+describe('widgetId', () => {
+  const graphId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+
+  it('builds a deterministic id from its components', () => {
+    const id = widgetId(graphId, toNodeId(42), 'seed')
+    expect(id).toBe(`${graphId}:42:seed`)
+  })
+
+  it('produces equal ids for equal inputs', () => {
+    expect(widgetId(graphId, toNodeId(42), 'seed')).toBe(
+      widgetId(graphId, toNodeId(42), 'seed')
+    )
+  })
+
+  it('produces distinct ids when any component differs', () => {
+    const baseline = widgetId(graphId, toNodeId(42), 'seed')
+    expect(widgetId(graphId, toNodeId(43), 'seed')).not.toBe(baseline)
+    expect(widgetId(graphId, toNodeId(42), 'steps')).not.toBe(baseline)
+    const otherGraph = 'b1b2c3d4-e5f6-7890-abcd-ef1234567890'
+    expect(widgetId(otherGraph, toNodeId(42), 'seed')).not.toBe(baseline)
+  })
+
+  it('accepts string node ids', () => {
+    const id = widgetId(graphId, toNodeId('node-7'), 'value')
+    expect(id).toBe(`${graphId}:node-7:value`)
+  })
+
+  it('percent-encodes separator-colliding node ids and names', () => {
+    const first = widgetId(graphId, toNodeId('node:7'), 'value')
+    const second = widgetId(graphId, toNodeId('node'), '7:value')
+
+    expect(first).not.toBe(second)
+    expect(first).toContain('node%3A7:value')
+    expect(second).toContain('node:7%3Avalue')
+    expect(parseWidgetId(first)).toEqual({
+      graphId,
+      nodeId: toNodeId('node:7'),
+      name: 'value'
+    })
+  })
+})
+
+describe('parseWidgetId', () => {
+  const graphId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+
+  it('round-trips a constructed id', () => {
+    const id = widgetId(graphId, toNodeId(42), 'seed')
+    expect(parseWidgetId(id)).toEqual({
+      graphId,
+      nodeId: toNodeId('42'),
+      name: 'seed'
+    })
+  })
+
+  it('round-trips colons inside the name segment', () => {
+    const rawName = 'nested:label:with:colons'
+    expect(parseWidgetId(widgetId(graphId, toNodeId(42), rawName))).toEqual({
+      graphId,
+      nodeId: toNodeId('42'),
+      name: rawName
+    })
+  })
+
+  it('rejects ids that do not match the widget id format', () => {
+    expect(() => parseWidgetId(`${graphId}:42:name:extra` as WidgetId)).toThrow(
+      'Invalid widget id'
+    )
+  })
+})
+
+describe('isWidgetId', () => {
+  const graphId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+
+  it('accepts ids built by the constructor', () => {
+    expect(isWidgetId(widgetId(graphId, toNodeId(1), 'x'))).toBe(true)
+  })
+
+  it('accepts unicode widget names', () => {
+    expect(isWidgetId(`${graphId}:1:プロンプト`)).toBe(true)
+  })
+
+  it('rejects strings with extra colon-separated segments', () => {
+    expect(isWidgetId(`${graphId}:1:name:extra`)).toBe(false)
+  })
+
+  it('rejects strings without two colon-separated segments', () => {
+    expect(isWidgetId('only-one-colon:42')).toBe(false)
+    expect(isWidgetId('no-colons')).toBe(false)
+    expect(isWidgetId(':leading-colon:name')).toBe(false)
+    expect(isWidgetId('graph::name')).toBe(false)
+  })
+
+  it('rejects non-strings', () => {
+    expect(isWidgetId(42)).toBe(false)
+    expect(isWidgetId(null)).toBe(false)
+    expect(isWidgetId(undefined)).toBe(false)
+    expect(isWidgetId({})).toBe(false)
+  })
+})

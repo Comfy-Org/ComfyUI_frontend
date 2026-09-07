@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useTemplateRankingStore } from '@/stores/templateRankingStore'
 
@@ -12,11 +10,6 @@ vi.mock('axios', () => ({
 }))
 
 describe('templateRankingStore', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
-  })
-
   describe('computeFreshness', () => {
     it('returns 1.0 for brand new template (today)', () => {
       const store = useTemplateRankingStore()
@@ -52,85 +45,53 @@ describe('templateRankingStore', () => {
   })
 
   describe('computeDefaultScore', () => {
-    it('uses default searchRank of 5 when not provided', () => {
+    it('scores an uncurated template from usage and freshness alone', () => {
       const store = useTemplateRankingStore()
-      // Set largestUsageScore to avoid NaN when usage is 0
       store.largestUsageScore = 100
-      const score = store.computeDefaultScore('2024-01-01', undefined, 0)
-      // With no usage score loaded, usage = 0
-      // internal = 5/10 = 0.5, freshness ~0.1 (old date)
-      // score = 0 * 0.5 + 0.5 * 0.3 + 0.1 * 0.2 = 0.15 + 0.02 = 0.17
-      expect(score).toBeCloseTo(0.17, 1)
+      const threeYearsAgo = new Date(Date.now() - 3 * 365 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split('T')[0]
+      // curation = neutral 0.5, freshness = 0.1 (old date), usage = 0
+      // score = 0 * 0.5 + 0.5 * 0.3 + 0.1 * 0.2 = 0.17
+      expect(
+        store.computeDefaultScore(threeYearsAgo, undefined, 0)
+      ).toBeCloseTo(0.17, 2)
     })
 
-    it('high searchRank (10) boosts score', () => {
+    it('ranks promoted above neutral above demoted', () => {
       const store = useTemplateRankingStore()
       store.largestUsageScore = 100
-      const lowRank = store.computeDefaultScore('2024-01-01', 1, 0)
-      const highRank = store.computeDefaultScore('2024-01-01', 10, 0)
-      expect(highRank).toBeGreaterThan(lowRank)
+      const promoted = store.computeDefaultScore('2024-01-01', 1000, 0)
+      const neutral = store.computeDefaultScore('2024-01-01', 0, 0)
+      const demoted = store.computeDefaultScore('2024-01-01', -1000, 0)
+
+      expect(promoted).toBeGreaterThan(neutral)
+      expect(neutral).toBeGreaterThan(demoted)
     })
 
-    it('low searchRank (1) demotes score', () => {
+    it('scores an explicit zero the same as an absent searchRank', () => {
       const store = useTemplateRankingStore()
       store.largestUsageScore = 100
-      const neutral = store.computeDefaultScore('2024-01-01', 5, 0)
-      const demoted = store.computeDefaultScore('2024-01-01', 1, 0)
-      expect(demoted).toBeLessThan(neutral)
+
+      expect(store.computeDefaultScore('2024-01-01', 0, 0)).toBe(
+        store.computeDefaultScore('2024-01-01', undefined, 0)
+      )
     })
 
-    it('searchRank difference is significant', () => {
+    it('saturates out-of-range ranks instead of returning runaway scores', () => {
       const store = useTemplateRankingStore()
       store.largestUsageScore = 100
-      const rank1 = store.computeDefaultScore('2024-01-01', 1, 0)
-      const rank10 = store.computeDefaultScore('2024-01-01', 10, 0)
-      // Difference should be 0.9 * 0.3 = 0.27 (30% weight, 0.9 range)
-      expect(rank10 - rank1).toBeCloseTo(0.27, 2)
-    })
-  })
+      const capped = store.computeDefaultScore('2024-01-01', 1000, 0)
 
-  describe('computePopularScore', () => {
-    it('does not use searchRank', () => {
-      const store = useTemplateRankingStore()
-      store.largestUsageScore = 100
-      // Popular score ignores searchRank - just usage + freshness
-      const score1 = store.computePopularScore('2024-01-01', 0)
-      const score2 = store.computePopularScore('2024-01-01', 0)
-      expect(score1).toBe(score2)
+      expect(store.computeDefaultScore('2024-01-01', 1_000_000, 0)).toBe(capped)
+      expect(capped).toBeLessThanOrEqual(1)
     })
 
-    it('newer templates score higher', () => {
+    it('stays finite when nothing in the filtered set has usage', () => {
       const store = useTemplateRankingStore()
-      store.largestUsageScore = 100
-      const today = new Date().toISOString().split('T')[0]
-      const oldScore = store.computePopularScore('2020-01-01', 0)
-      const newScore = store.computePopularScore(today, 0)
-      expect(newScore).toBeGreaterThan(oldScore)
-    })
-  })
+      store.largestUsageScore = 0
 
-  describe('searchRank edge cases', () => {
-    it('handles searchRank of 0 (should still work, treated as very low)', () => {
-      const store = useTemplateRankingStore()
-      store.largestUsageScore = 100
-      const score = store.computeDefaultScore('2024-01-01', 0, 0)
-      expect(score).toBeGreaterThanOrEqual(0)
-    })
-
-    it('handles searchRank above 10 (clamping not enforced, but works)', () => {
-      const store = useTemplateRankingStore()
-      store.largestUsageScore = 100
-      const rank10 = store.computeDefaultScore('2024-01-01', 10, 0)
-      const rank15 = store.computeDefaultScore('2024-01-01', 15, 0)
-      expect(rank15).toBeGreaterThan(rank10)
-    })
-
-    it('handles negative searchRank', () => {
-      const store = useTemplateRankingStore()
-      store.largestUsageScore = 100
-      const score = store.computeDefaultScore('2024-01-01', -5, 0)
-      // Should still compute, just negative contribution from searchRank
-      expect(typeof score).toBe('number')
+      expect(store.computeDefaultScore('2024-01-01', 8, 0)).toBeGreaterThan(0)
     })
   })
 })

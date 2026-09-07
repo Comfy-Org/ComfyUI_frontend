@@ -3,6 +3,7 @@ import { computed, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
 import { useExecutionStore } from '@/stores/executionStore'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
 
 /**
  * Composable for managing execution state of Vue-based nodes
@@ -14,7 +15,7 @@ import { useExecutionStore } from '@/stores/executionStore'
  * @returns Object containing reactive execution state and progress
  */
 export const useNodeExecutionState = (
-  nodeLocatorIdMaybe: MaybeRefOrGetter<string | undefined>
+  nodeLocatorIdMaybe: MaybeRefOrGetter<NodeLocatorId | undefined>
 ) => {
   const locatorId = computed(() => toValue(nodeLocatorIdMaybe) ?? '')
   const { nodeLocationProgressStates, isIdle } =

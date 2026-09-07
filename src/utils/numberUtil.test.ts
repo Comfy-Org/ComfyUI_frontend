@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { clampPercentInt, formatPercent0 } from './numberUtil'
+import { clampPercentInt, formatPercent0, formatUsdCents } from './numberUtil'
 
 describe('clampPercentInt', () => {
   it('clamps undefined to 0', () => {
@@ -51,5 +51,21 @@ describe('formatPercent0', () => {
   it('clamps out-of-range values', () => {
     expect(formatPercent0('en-US', 150)).toBe('100%')
     expect(formatPercent0('en-US', -10)).toBe('0%')
+  })
+})
+
+describe('formatUsdCents', () => {
+  it('drops the fractional part for whole-dollar amounts', () => {
+    expect(formatUsdCents('en-US', 66500)).toBe('$665')
+    expect(formatUsdCents('en-US', 0)).toBe('$0')
+  })
+
+  it('renders two decimals when the cents are not a whole dollar', () => {
+    expect(formatUsdCents('en-US', 66550)).toBe('$665.50')
+    expect(formatUsdCents('en-US', 1)).toBe('$0.01')
+  })
+
+  it('groups thousands', () => {
+    expect(formatUsdCents('en-US', 200000)).toBe('$2,000')
   })
 })

@@ -40,9 +40,11 @@
           </span>
         </div>
       </slot>
+      <!-- w-max sizes the label to the rail instead of the padding-inset
+           button content box, which is too narrow for one-line labels -->
       <span
         v-if="label && !isSmall"
-        class="side-bar-button-label text-center text-2xs"
+        class="side-bar-button-label line-clamp-2 w-max max-w-[calc(var(--sidebar-width)-var(--sidebar-padding))] text-center text-2xs wrap-break-word whitespace-normal"
         >{{ st(label, label) }}</span
       >
     </div>
@@ -83,7 +85,14 @@ const overlayValue = computed(() =>
   typeof iconBadge === 'function' ? (iconBadge() ?? '') : iconBadge
 )
 const shouldShowBadge = computed(() => !!overlayValue.value)
-const computedTooltip = computed(() => st(tooltip, tooltip) + tooltipSuffix)
+/**
+ * Falls back to the label when no tooltip is provided, so labels clamped
+ * to two lines can always be recovered in full on hover.
+ */
+const computedTooltip = computed(() => {
+  const text = tooltip || label
+  return st(text, text) + tooltipSuffix
+})
 </script>
 
 <style>

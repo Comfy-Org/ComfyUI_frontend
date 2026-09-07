@@ -3,17 +3,6 @@
     class="relative flex h-full flex-col gap-6 overflow-y-auto p-4 pt-8 md:px-16 md:py-8"
   >
     <Button
-      v-if="checkoutStep === 'preview'"
-      size="icon"
-      variant="muted-textonly"
-      class="absolute top-2.5 left-2.5 shrink-0 rounded-full text-text-secondary hover:bg-white/10"
-      :aria-label="$t('g.back')"
-      @click="handleBackToPricing"
-    >
-      <i class="pi pi-arrow-left text-xl" />
-    </Button>
-
-    <Button
       size="icon"
       variant="muted-textonly"
       class="absolute top-2.5 right-2.5 shrink-0 rounded-full text-text-secondary hover:bg-white/10"
@@ -24,12 +13,17 @@
     </Button>
 
     <div class="flex flex-col items-center gap-3">
-      <!-- Decorative initial for "Team" workspace icon; not user-facing text -->
+      <!-- Decorative workspace-initial icon; not user-facing text -->
       <div
-        class="flex size-10 items-center justify-center rounded-xl bg-primary-background text-lg font-semibold text-white"
+        :class="
+          cn(
+            'flex size-10 items-center justify-center rounded-xl text-lg font-semibold text-white',
+            isPersonal ? 'bg-muted-foreground/30' : 'bg-primary-background'
+          )
+        "
         aria-hidden="true"
       >
-        T
+        {{ isPersonal ? 'P' : 'T' }}
       </div>
       <i18n-t
         keypath="subscription.plansForWorkspace"
@@ -37,8 +31,14 @@
         class="m-0 font-inter text-2xl font-semibold text-base-foreground"
       >
         <template #workspace>
-          <span class="text-emerald-400">
-            {{ $t('subscription.teamWorkspace') }}
+          <span
+            :class="isPersonal ? 'text-muted-foreground' : 'text-emerald-400'"
+          >
+            {{
+              isPersonal
+                ? $t('subscription.personalWorkspace')
+                : $t('subscription.teamWorkspace')
+            }}
           </span>
         </template>
       </i18n-t>
@@ -74,7 +74,15 @@
       :tier-key="selectedTierKey!"
       :billing-cycle="selectedBillingCycle"
       :is-loading="isSubscribing || isPolling"
+      :action-url="activeCheckoutActionUrl"
+      :authentication-state
+      :authentication-error
+      :reconciliation-operation-id
+      :quote-is-current
+      :is-applying-promotion-code
       @add-credit-card="handleAddCreditCard"
+      @apply-promotion-code="applyPromotionCode"
+      @invalidate-quote="invalidateQuote"
       @back="handleBackToPricing"
     />
 
@@ -87,24 +95,53 @@
       "
       :preview-data="previewData"
       :is-loading="isSubscribing || isPolling"
+      :action-url="activeCheckoutActionUrl"
+      :force-reactivation="reactivationRequired"
+      :authentication-state
+      :authentication-error
+      :reconciliation-operation-id
+      :quote-is-current
+      :is-applying-promotion-code
       @confirm="handleConfirmTransition"
+      @apply-promotion-code="applyPromotionCode"
+      @invalidate-quote="invalidateQuote"
       @back="handleBackToPricing"
+    />
+
+    <!-- Success Step - subscribe/change-plan confirmation -->
+    <SubscriptionSuccessWorkspace
+      v-else-if="checkoutStep === 'success' && selectedTierKey"
+      :tier-key="selectedTierKey"
+      :preview-data="previewData"
+      @close="handleSuccessClose"
     />
   </div>
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+import { onMounted } from 'vue'
+
 import Button from '@/components/ui/button/Button.vue'
-import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composables/useSubscriptionCheckout'
 import { useSubscriptionCheckout } from '@/platform/workspace/composables/useSubscriptionCheckout'
 
 import PricingTableWorkspace from './PricingTableWorkspace.vue'
 import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPreviewWorkspace.vue'
+import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
 
-const { onClose, reason } = defineProps<{
+const {
+  onClose,
+  reason,
+  isPersonal = false,
+  initialCheckout
+} = defineProps<{
   onClose: () => void
-  reason?: SubscriptionDialogReason
+  reason?: PaymentIntentSource
+  isPersonal?: boolean
+  initialCheckout?: SubscriptionCheckoutSelection
 }>()
 
 const emit = defineEmits<{
@@ -118,15 +155,33 @@ const {
   isSubscribing,
   isResubscribing,
   previewData,
+  reactivationRequired,
+  quoteIsCurrent,
+  isApplyingPromotionCode,
   selectedTierKey,
   selectedBillingCycle,
+  activeCheckoutActionUrl,
+  authenticationState,
+  authenticationError,
+  reconciliationOperationId,
   isPolling,
   handleSubscribeClick,
   handleBackToPricing,
   handleAddCreditCard,
   handleConfirmTransition,
-  handleResubscribe
-} = useSubscriptionCheckout(emit)
+  applyPromotionCode,
+  invalidateQuote,
+  handleResubscribe,
+  handleSuccessClose
+} = useSubscriptionCheckout(emit, reason, {
+  tierPlanType: isPersonal ? 'personal' : 'team'
+})
+
+onMounted(() => {
+  if (initialCheckout?.planMode === 'personal') {
+    void handleSubscribeClick(initialCheckout)
+  }
+})
 </script>
 
 <style scoped>

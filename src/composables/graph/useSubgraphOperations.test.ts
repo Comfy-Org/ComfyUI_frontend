@@ -52,7 +52,6 @@ function createRegularNode(): LGraphNode {
 
 describe('useSubgraphOperations', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mocks.selectedItems = []
   })
 

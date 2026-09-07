@@ -2,23 +2,29 @@ import { markRaw } from 'vue'
 
 import { t } from '@/i18n'
 import type { ChangeTracker } from '@/scripts/changeTracker'
-import type { AppMode } from '@/composables/useAppMode'
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import { UserFile } from '@/stores/userFileStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingNodeType } from '@/types/comfy'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
+import type { SerializedNodeId } from '@/types/nodeId'
+import type { AppMode } from '@/utils/appMode'
+import type { WidgetId } from '@/types/widgetId'
+import { generateUUID } from '@/utils/formatUtil'
 
 export interface InputWidgetConfig {
   height?: number
+  description?: string
 }
 
-export type LinearInput = [NodeId, string, InputWidgetConfig?]
+type LinearInputId = WidgetId | NodeLocatorId | SerializedNodeId
+type LinearOutputNodeId = SerializedNodeId
+export type LinearInput = [LinearInputId, string, InputWidgetConfig?]
 
 export interface LinearData {
   inputs: LinearInput[]
-  outputs: NodeId[]
+  outputs: LinearOutputNodeId[]
 }
 
 export interface PendingWarnings {
@@ -30,6 +36,8 @@ export interface PendingWarnings {
 export class ComfyWorkflow extends UserFile {
   static readonly basePath: string = 'workflows/'
   readonly tintCanvasBg?: string
+  /** Unique, stable identity for this workflow instance in the current session. */
+  readonly instanceId = generateUUID()
 
   /**
    * The change tracker for the workflow. Non-reactive raw object.
@@ -56,6 +64,7 @@ export class ComfyWorkflow extends UserFile {
    */
   activeMode: AppMode | null = null
   shareId?: string
+  legacyId?: string
   /**
    * @param options The path, modified, and size of the workflow.
    * Note: path is the full path, including the 'workflows/' prefix.

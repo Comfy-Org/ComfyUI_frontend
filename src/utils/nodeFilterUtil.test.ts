@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { toNodeId } from '@/types/nodeId'
 import { filterOutputNodes, isOutputNode } from '@/utils/nodeFilterUtil'
 
 describe('nodeFilterUtil', () => {
@@ -15,7 +16,7 @@ describe('nodeFilterUtil', () => {
     }
 
     const node = new MockNode('')
-    node.id = id
+    node.id = toNodeId(id)
     return node
   }
 
@@ -35,7 +36,7 @@ describe('nodeFilterUtil', () => {
 
       const result = filterOutputNodes(nodes)
       expect(result).toHaveLength(2)
-      expect(result.map((n) => n.id)).toEqual([2, 4])
+      expect(result.map((n) => Number(n.id))).toEqual([2, 4])
     })
 
     it('should return all nodes if all are output nodes', () => {
@@ -64,7 +65,7 @@ describe('nodeFilterUtil', () => {
     it('should handle nodes without nodeData', () => {
       // Create a plain LGraphNode without custom constructor
       const node = new LGraphNode('')
-      node.id = 1
+      node.id = toNodeId(1)
 
       const result = filterOutputNodes([node])
       expect(result).toHaveLength(0)
@@ -76,7 +77,7 @@ describe('nodeFilterUtil', () => {
       }
 
       const node = new MockNodeWithEmptyData('')
-      node.id = 1
+      node.id = toNodeId(1)
 
       const result = filterOutputNodes([node])
       expect(result).toHaveLength(0)
@@ -95,7 +96,7 @@ describe('nodeFilterUtil', () => {
 
       const result = selectedNodes.filter(isOutputNode)
       expect(result).toHaveLength(2)
-      expect(result.map((n) => n.id)).toEqual([2, 4])
+      expect(result.map((n) => Number(n.id))).toEqual([2, 4])
     })
 
     it('should handle empty selection', () => {

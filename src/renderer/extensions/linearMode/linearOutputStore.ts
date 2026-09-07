@@ -121,7 +121,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     const outputNodeIds = appModeStore.selectedOutputs
     if (
       outputNodeIds.length > 0 &&
-      !outputNodeIds.some((id) => String(id) === String(nodeId))
+      !outputNodeIds.some((id) => String(id) === nodeId)
     )
       return
 
@@ -294,7 +294,9 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
       if (!isAppMode.value) return
       const jobId = executionStore.activeJobId
       if (!jobId) return
-      const preview = previews[jobId]
+      const preview = Object.hasOwn(previews, jobId)
+        ? previews[jobId]
+        : undefined
       if (preview) onLatentPreview(jobId, preview.url, preview.nodeId)
     },
     { deep: true }
@@ -334,7 +336,10 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     // away, but only for a job belonging to the active workflow.
     const jobId = trackedJobId.value
     if (jobId && isJobForActiveWorkflow(jobId)) {
-      const preview = jobPreviewStore.nodePreviewsByPromptId[jobId]
+      const previews = jobPreviewStore.nodePreviewsByPromptId
+      const preview = Object.hasOwn(previews, jobId)
+        ? previews[jobId]
+        : undefined
       if (preview) onLatentPreview(jobId, preview.url, preview.nodeId)
     }
   }

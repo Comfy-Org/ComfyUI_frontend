@@ -56,8 +56,7 @@ function getNodeWrapper(comfyPage: ComfyPage, nodeTitle: string): Locator {
 }
 
 async function getNodeRef(comfyPage: ComfyPage, nodeTitle: string) {
-  const refs = await comfyPage.nodeOps.getNodeRefsByTitle(nodeTitle)
-  return refs[0]
+  return await comfyPage.nodeOps.getNodeRefByTitle(nodeTitle)
 }
 
 test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
@@ -234,22 +233,23 @@ test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
       await comfyPage.page
         .context()
         .grantPermissions(['clipboard-read', 'clipboard-write'])
-      await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
+      await comfyPage.nodeOps.clearGraph()
+      await comfyPage.searchBoxV2.addNode('Load Image')
       await comfyPage.vueNodes.waitForNodes(1)
       await comfyPage.page
         .locator('[data-node-id] img')
         .first()
         .waitFor({ state: 'visible' })
 
-      const [loadImageNode] =
-        await comfyPage.nodeOps.getNodeRefsByTitle('Load Image')
-      if (!loadImageNode) throw new Error('Load Image node not found')
+      const loadImageNode =
+        await comfyPage.nodeOps.getNodeRefByTitle('Load Image')
 
       await expect
         .poll(() =>
           comfyPage.page.evaluate(
             (nodeId) =>
-              window.app!.graph.getNodeById(nodeId)?.imgs?.length ?? 0,
+              window.app!.graph.nodes.find((node) => node.id === nodeId)?.imgs
+                ?.length ?? 0,
             loadImageNode.id
           )
         )

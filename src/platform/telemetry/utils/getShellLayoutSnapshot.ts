@@ -1,4 +1,3 @@
-import { useAppMode } from '@/composables/useAppMode'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
@@ -8,11 +7,15 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import type { ShellLayoutMetadata } from '../types'
 import { getActionbarDockState } from './getActionbarDockState'
 
-export function getShellLayoutSnapshot(): ShellLayoutMetadata {
-  const { mode, isAppMode } = useAppMode()
+type ShellLayoutMode = Pick<ShellLayoutMetadata, 'view_mode' | 'is_app_mode'>
+
+export function getShellLayoutSnapshot({
+  view_mode,
+  is_app_mode
+}: ShellLayoutMode): ShellLayoutMetadata {
   return {
-    view_mode: mode.value,
-    is_app_mode: isAppMode.value,
+    view_mode,
+    is_app_mode,
     dock_state: getActionbarDockState(),
     actionbar_position: useSettingStore().get('Comfy.UseNewMenu'),
     active_sidebar_tab: useSidebarTabStore().activeSidebarTabId,

@@ -36,6 +36,12 @@ export type QueueNotificationBanner =
   | QueueCompletedNotification
   | QueueFailedNotification
 
+const isRunAcknowledgement = (notification: QueueNotificationBanner) =>
+  notification.type === 'queuedPending' || notification.type === 'queued'
+
+const isOutcome = (notification: QueueNotificationBanner) =>
+  notification.type === 'completed' || notification.type === 'failed'
+
 const sanitizeCount = (value: number | undefined) => {
   if (!(typeof value === 'number' && value > 0)) {
     return 1
@@ -84,14 +90,14 @@ export const useQueueNotificationBanners = () => {
   }
 
   const showNextNotification = () => {
-    if (activeNotification.value !== null) {
+    if (
+      activeNotification.value !== null ||
+      pendingNotifications.value.length === 0
+    ) {
       return
     }
     const [nextNotification, ...rest] = pendingNotifications.value
     pendingNotifications.value = rest
-    if (!nextNotification) {
-      return
-    }
 
     activeNotification.value = nextNotification
     clearDismissTimer()
@@ -101,8 +107,36 @@ export const useQueueNotificationBanners = () => {
     )
   }
 
+  const queuePositionFor = (notification: QueueNotificationBanner) => {
+    if (!isRunAcknowledgement(notification)) {
+      return pendingNotifications.value.length
+    }
+    const firstOutcome = pendingNotifications.value.findIndex(isOutcome)
+    return firstOutcome === -1
+      ? pendingNotifications.value.length
+      : firstOutcome
+  }
+
   const queueNotification = (notification: QueueNotificationBanner) => {
-    pendingNotifications.value = [...pendingNotifications.value, notification]
+    if (isRunAcknowledgement(notification)) {
+      const active = activeNotification.value
+      if (active === null || isOutcome(active)) {
+        clearDismissTimer()
+        activeNotification.value = null
+        pendingNotifications.value = [
+          notification,
+          ...pendingNotifications.value
+        ]
+        showNextNotification()
+        return
+      }
+    }
+
+    pendingNotifications.value = pendingNotifications.value.toSpliced(
+      queuePositionFor(notification),
+      0,
+      notification
+    )
     showNextNotification()
   }
 
@@ -166,10 +200,7 @@ export const useQueueNotificationBanners = () => {
     }
 
     const queuedPendingNotification = pendingNotifications.value[pendingIndex]
-    if (
-      queuedPendingNotification === undefined ||
-      queuedPendingNotification.type !== 'queuedPending'
-    ) {
+    if (queuedPendingNotification.type !== 'queuedPending') {
       return false
     }
 
@@ -190,19 +221,19 @@ export const useQueueNotificationBanners = () => {
     event: CustomEvent<PromptQueueingEventPayload>
   ) => {
     const payload = event.detail
-    const count = sanitizeCount(payload?.batchCount)
+    const count = sanitizeCount(payload.batchCount)
     queueNotification(
-      toQueueLifecycleNotification('queuedPending', count, payload?.requestId)
+      toQueueLifecycleNotification('queuedPending', count, payload.requestId)
     )
   }
 
   const handlePromptQueued = (event: CustomEvent<PromptQueuedEventPayload>) => {
     const payload = event.detail
-    const count = sanitizeCount(payload?.batchCount)
-    const handled = convertQueuedPendingToQueued(payload?.requestId, count)
+    const count = sanitizeCount(payload.batchCount)
+    const handled = convertQueuedPendingToQueued(payload.requestId, count)
     if (!handled) {
       queueNotification(
-        toQueueLifecycleNotification('queued', count, payload?.requestId)
+        toQueueLifecycleNotification('queued', count, payload.requestId)
       )
     }
   }

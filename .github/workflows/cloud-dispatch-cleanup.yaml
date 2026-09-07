@@ -21,6 +21,7 @@ jobs:
     # - Preview label specifically removed
     if: >
       github.repository == 'Comfy-Org/ComfyUI_frontend' &&
+      github.event.pull_request.head.repo.fork == false &&
       ((github.event.action == 'closed' &&
         (contains(github.event.pull_request.labels.*.name, 'preview') ||
          contains(github.event.pull_request.labels.*.name, 'preview-cpu') ||

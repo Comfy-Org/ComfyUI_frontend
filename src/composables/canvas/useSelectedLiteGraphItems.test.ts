@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { markRaw } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -11,6 +10,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { NodeId } from '@/renderer/core/layout/types'
+import { toNodeId } from '@/types/nodeId'
 import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 
 const mockApp = vi.hoisted(() => ({
@@ -38,7 +38,7 @@ vi.mock('@/lib/litegraph/src/litegraph', async (importOriginal) => {
 // unmodified — the node accessors filter selectedItems with the real predicate.
 const makeNode = (mode: LGraphEventMode, id = 1): LGraphNode => {
   const node = new LGraphNode('Test')
-  node.id = id
+  node.id = toNodeId(id)
   node.mode = mode
   return node
 }
@@ -69,7 +69,7 @@ class MockNode implements Positionable {
   ) {
     this.pos = pos
     this.size = size
-    this.id = 'mock-node'
+    this.id = toNodeId('mock-node')
     this.boundingRect = [0, 0, 0, 0]
   }
 
@@ -100,7 +100,6 @@ describe('useSelectedLiteGraphItems', () => {
   let mockCanvas: { selectedItems: Set<Positionable> }
 
   beforeEach(() => {
-    setActivePinia(createPinia())
     canvasStore = useCanvasStore()
     mockApp.canvas.selected_nodes = null
 

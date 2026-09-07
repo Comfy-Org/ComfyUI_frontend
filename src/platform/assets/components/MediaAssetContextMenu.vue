@@ -93,16 +93,10 @@ useDismissableOverlay({
 })
 
 const showAddToWorkflow = computed(() => {
-  // Output assets can always be added
-  if (assetType === 'output') return true
-
-  // Input assets: check if file type is supported by loader nodes
-  if (assetType === 'input' && asset?.name) {
-    const { nodeType } = detectNodeTypeFromFilename(asset.name)
-    return nodeType !== null
-  }
-
-  return false
+  // Only file types with a loader node (image/video/audio) can be inserted
+  if (!asset?.name) return false
+  const { nodeType } = detectNodeTypeFromFilename(asset.name)
+  return nodeType !== null
 })
 
 const showWorkflowActions = computed(() => {

@@ -1,3 +1,6 @@
+// @vitest-environment jsdom
+// dompurify is inert under happy-dom — see the tripwire note in
+// vitest.setup.ts (capricorn86/happy-dom#2182, FE-1189).
 import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
@@ -10,6 +13,16 @@ import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSc
 import * as markdownRendererUtil from '@/utils/markdownRendererUtil'
 
 import NodePreview from './NodePreview.vue'
+
+// jsdom does not implement ResizeObserver (happy-dom does); stub it before
+// component modules construct their module-level observer at import time.
+vi.hoisted(() => {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+})
 
 describe('NodePreview', () => {
   let i18n: ReturnType<typeof createI18n>
@@ -93,7 +106,7 @@ describe('NodePreview', () => {
     const nodeHeader = screen.getByTestId('node-header')
 
     expect(nodeHeader).toHaveAttribute('title', longNameNodeDef.display_name)
-    expect(nodeHeader).toHaveTextContent(longNameNodeDef.display_name!)
+    expect(nodeHeader).toHaveTextContent(longNameNodeDef.display_name)
   })
 
   it('handles short node names without issues', () => {
@@ -230,7 +243,7 @@ describe('NodePreview', () => {
       expect(description).toBeInTheDocument()
     })
 
-    it('uses v-html directive for rendered content', () => {
+    it('renders markdown as HTML', () => {
       const htmlNodeDef: ComfyNodeDefV2 = {
         ...mockNodeDef,
         description: 'Content with **bold** text'

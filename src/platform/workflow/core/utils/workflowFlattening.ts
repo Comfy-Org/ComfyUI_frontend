@@ -1,7 +1,7 @@
-import type { NodeId } from '@/lib/litegraph/src/litegraph'
+import type { SerializedNodeId } from '@/types/nodeId'
 
 export interface FlattenableWorkflowNode {
-  id: NodeId
+  id: SerializedNodeId
   type: string
   mode?: number
   widgets_values?: readonly unknown[] | Record<string, unknown>
@@ -78,7 +78,7 @@ export function buildSubgraphExecutionPaths(
     nodes: readonly FlattenableWorkflowNode[],
     parentPrefix: string
   ) {
-    for (const n of nodes ?? []) {
+    for (const n of nodes) {
       if (typeof n.type !== 'string' || !subgraphDefMap.has(n.type)) continue
       if (visited.has(n.type)) continue
 

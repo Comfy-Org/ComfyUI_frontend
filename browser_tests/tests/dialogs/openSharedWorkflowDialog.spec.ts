@@ -43,12 +43,13 @@ async function mockLongNameSharedWorkflow(page: Page): Promise<void> {
 
 const test = comfyPageFixture
 
-test.describe('Open shared workflow dialog', { tag: '@cloud' }, () => {
+test.describe('Open shared workflow dialog', { tag: '@ui' }, () => {
   test('wraps a long workflow name instead of scrolling horizontally', async ({
     comfyPage
   }) => {
     const { page } = comfyPage
     await mockLongNameSharedWorkflow(page)
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup({ clearStorage: false, url: `/?share=${shareId}` })
 
     const dialog = page.getByTestId(TestIds.dialogs.openSharedWorkflow)

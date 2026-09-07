@@ -13,18 +13,25 @@
         {{ $t('g.beta') }}
       </span>
     </template>
+    <template #header-actions="{ hasResults }">
+      <Button
+        v-if="hasResults"
+        variant="secondary"
+        size="md"
+        @click="createApp"
+      >
+        <i class="icon-[lucide--plus] size-4" aria-hidden="true" />
+        {{ $t('linearMode.appModeToolbar.create') }}
+      </Button>
+    </template>
     <template #empty-state>
       <NoResultsPlaceholder
         button-variant="secondary"
         text-class="text-muted-foreground text-sm"
-        :message="
-          isAppMode
-            ? $t('linearMode.appModeToolbar.appsEmptyMessage')
-            : `${$t('linearMode.appModeToolbar.appsEmptyMessage')}\n${$t('linearMode.appModeToolbar.appsEmptyMessageAction')}`
-        "
-        button-icon="icon-[lucide--hammer]"
-        :button-label="isAppMode ? undefined : $t('linearMode.buildAnApp')"
-        @action="enterAppMode"
+        :message="`${$t('linearMode.appModeToolbar.appsEmptyMessage')}\n${$t('linearMode.appModeToolbar.appsEmptyMessageAction')}`"
+        button-icon="icon-[lucide--plus]"
+        :button-label="$t('linearMode.appModeToolbar.createApp')"
+        @action="createApp"
       />
     </template>
   </BaseWorkflowsSidebarTab>
@@ -33,16 +40,17 @@
 <script setup lang="ts">
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import BaseWorkflowsSidebarTab from '@/components/sidebar/tabs/BaseWorkflowsSidebarTab.vue'
-import { useAppMode } from '@/composables/useAppMode'
+import Button from '@/components/ui/button/Button.vue'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useCommandStore } from '@/stores/commandStore'
 
-const { isAppMode, setMode } = useAppMode()
+const commandStore = useCommandStore()
 
 function isAppWorkflow(workflow: ComfyWorkflow): boolean {
   return workflow.suffix === 'app.json'
 }
 
-function enterAppMode() {
-  setMode('app')
+function createApp() {
+  void commandStore.execute('Comfy.NewBlankWorkflow')
 }
 </script>

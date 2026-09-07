@@ -1,15 +1,20 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { createPinia, setActivePinia } from 'pinia'
 import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { MissingNodeType } from '@/types/comfy'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
+import type * as GraphTraversalUtil from '@/utils/graphTraversalUtil'
 
 vi.mock('@/scripts/app', () => ({
   app: {
+    isGraphReady: true,
     rootGraph: {
       serialize: vi.fn(() => ({})),
       getNodeById: vi.fn()
+    },
+    get rootGraphOrUndefined() {
+      return this.rootGraph
     }
   }
 }))
@@ -62,6 +67,9 @@ vi.mock('@/i18n', () => {
       'Prompt has no outputs',
     'errorCatalog.promptErrors.prompt_no_outputs.desc':
       'The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result.',
+    'errorCatalog.promptErrors.apply_failed.title': 'Agent edit failed',
+    'errorCatalog.promptErrors.apply_failed.desc':
+      'An agent edit could not be applied to the workflow document.',
     'errorCatalog.runtimeErrors.execution_failed.title': 'Execution failed',
     'errorCatalog.runtimeErrors.execution_failed.message':
       'Node threw an error during execution.',
@@ -115,10 +123,6 @@ vi.mock('@/utils/litegraphUtil', () => ({
   isLGraphNode: vi.fn(() => false)
 }))
 
-vi.mock('@/utils/executableGroupNodeDto', () => ({
-  isGroupNode: vi.fn(() => false)
-}))
-
 vi.mock(
   '@/platform/missingModel/composables/useMissingModelInteractions',
   () => ({
@@ -130,6 +134,14 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
+import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
+import { createBoundaryLinkedSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import {
+  getExecutionIdByNode,
+  getNodeByExecutionId
+} from '@/utils/graphTraversalUtil'
+import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useErrorGroups } from './useErrorGroups'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 
@@ -206,7 +218,6 @@ function createErrorGroups() {
 
 describe('useErrorGroups', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     mockIsCloud.value = false
     vi.mocked(isLGraphNode).mockReturnValue(false)
   })
@@ -334,7 +345,7 @@ describe('useErrorGroups', () => {
       )
       expect(missingGroup).toBeDefined()
       expect(missingGroup?.groupKey).toBe('missing_node')
-      expect(missingGroup?.displayTitle).toBe('Missing Node Packs (1)')
+      expect(missingGroup?.displayTitle).toBe('Missing Node Packs')
       expect(missingGroup?.displayMessage).toBe(
         'Install missing packs to use this workflow.'
       )
@@ -418,9 +429,46 @@ describe('useErrorGroups', () => {
       expect(swapIdx).toBeLessThan(missingIdx)
     })
 
+    it('places every error-severity group before missing-severity groups', async () => {
+      const { store, groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      store.recordPromptError({
+        type: 'prompt_no_outputs',
+        message: 'No outputs',
+        details: ''
+      })
+      store.recordNodeErrors({
+        '1': nodeError([validationError('required_input_missing', 'model')])
+      })
+      store.surfaceMissingModels([
+        makeModel('model.safetensors', { nodeId: '2' })
+      ])
+      store.surfaceMissingMedia([makeMedia('portrait.png', { nodeId: '3' })])
+      missingNodesStore.setMissingNodeTypes([
+        makeMissingNodeType('MissingNode', {
+          nodeId: '4',
+          cnrId: 'missing-pack'
+        })
+      ])
+      await nextTick()
+
+      const errorIndices = groups.allErrorGroups.value.flatMap(
+        (group, index) => (group.severity === 'error' ? [index] : [])
+      )
+      const missingIndices = groups.allErrorGroups.value.flatMap(
+        (group, index) => (group.severity === 'missing' ? [index] : [])
+      )
+
+      expect(errorIndices.length).toBeGreaterThan(0)
+      expect(missingIndices.length).toBeGreaterThan(0)
+      expect(Math.max(...errorIndices)).toBeLessThan(
+        Math.min(...missingIndices)
+      )
+    })
+
     it('uses fallback catalog grouping for unknown node validation errors', async () => {
       const { store, groups } = createErrorGroups()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '1': {
           class_type: 'KSampler',
           dependent_outputs: [],
@@ -432,7 +480,7 @@ describe('useErrorGroups', () => {
             }
           ]
         }
-      }
+      })
       await nextTick()
 
       const execGroups = groups.allErrorGroups.value.filter(
@@ -445,7 +493,7 @@ describe('useErrorGroups', () => {
 
     it('resolves required_input_missing item display copy', async () => {
       const { store, groups } = createErrorGroups()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '1': {
           class_type: 'KSampler',
           dependent_outputs: [],
@@ -460,7 +508,7 @@ describe('useErrorGroups', () => {
             }
           ]
         }
-      }
+      })
       await nextTick()
 
       const execGroup = groups.allErrorGroups.value.find(
@@ -489,9 +537,50 @@ describe('useErrorGroups', () => {
       )
     })
 
+    it('groups lifted boundary errors under the host node card', async () => {
+      const { store, groups } = createErrorGroups()
+      const { rootGraph, host } = createBoundaryLinkedSubgraph({
+        interiorType: 'InteriorClass'
+      })
+      const { getNodeByExecutionId: actualGetNodeByExecutionId } =
+        await vi.importActual<typeof GraphTraversalUtil>(
+          '@/utils/graphTraversalUtil'
+        )
+      vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) => {
+        return actualGetNodeByExecutionId(rootGraph, nodeId)
+      })
+      store.recordNodeErrors({
+        '12:5': nodeError(
+          [
+            validationError(
+              'required_input_missing',
+              'seed_input',
+              {},
+              'Required input is missing'
+            )
+          ],
+          'InteriorClass'
+        )
+      })
+      await nextTick()
+
+      const execGroup = groups.allErrorGroups.value.find(
+        (g) => g.type === 'execution'
+      )
+      expect(execGroup?.type).toBe('execution')
+      if (execGroup?.type !== 'execution') return
+
+      const card = execGroup.cards[0]
+      expect(card.nodeId).toBe('12')
+      expect(card.title).toBe(host.title)
+      expect(card.errors[0].displayDetails).toBe(
+        `${host.title} is missing a required input: seed`
+      )
+    })
+
     it('groups node validation errors by catalog id across node types', async () => {
       const { store, groups } = createErrorGroups()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '1': {
           class_type: 'KSampler',
           dependent_outputs: [],
@@ -520,7 +609,7 @@ describe('useErrorGroups', () => {
             }
           ]
         }
-      }
+      })
       await nextTick()
 
       const execGroups = groups.allErrorGroups.value.filter(
@@ -541,7 +630,7 @@ describe('useErrorGroups', () => {
     it('uses general execution_failed display fields for unrecognized runtime execution errors', async () => {
       mockIsCloud.value = true
       const { store, groups } = createErrorGroups()
-      store.lastExecutionError = {
+      store.recordExecutionError({
         prompt_id: 'test-prompt',
         timestamp: Date.now(),
         node_id: 5,
@@ -552,14 +641,13 @@ describe('useErrorGroups', () => {
         traceback: ['line 1', 'line 2'],
         current_inputs: {},
         current_outputs: {}
-      }
+      })
       await nextTick()
 
       const execGroups = groups.allErrorGroups.value.filter(
         (g) => g.type === 'execution'
       )
       expect(execGroups.length).toBeGreaterThan(0)
-      if (execGroups[0].type !== 'execution') return
       expect(execGroups[0].cards[0].errors[0]).toMatchObject({
         message: 'RuntimeError: mat1 and mat2 shapes cannot be multiplied',
         details: 'line 1\nline 2',
@@ -578,7 +666,7 @@ describe('useErrorGroups', () => {
     it('adds display fields for targeted runtime execution errors', async () => {
       mockIsCloud.value = true
       const { store, groups } = createErrorGroups()
-      store.lastExecutionError = {
+      store.recordExecutionError({
         prompt_id: 'test-prompt',
         timestamp: Date.now(),
         node_id: 5,
@@ -590,7 +678,7 @@ describe('useErrorGroups', () => {
         traceback: ['line 1', 'line 2'],
         current_inputs: {},
         current_outputs: {}
-      }
+      })
       await nextTick()
 
       const execGroup = groups.allErrorGroups.value.find(
@@ -611,11 +699,11 @@ describe('useErrorGroups', () => {
 
     it('includes prompt error when present', async () => {
       const { store, groups } = createErrorGroups()
-      store.lastPromptError = {
+      store.recordPromptError({
         type: 'prompt_no_outputs',
         message: 'No outputs',
         details: ''
-      }
+      })
       await nextTick()
 
       const promptGroup = groups.allErrorGroups.value.find(
@@ -623,6 +711,26 @@ describe('useErrorGroups', () => {
           g.type === 'execution' && g.displayTitle === 'Prompt has no outputs'
       )
       expect(promptGroup).toBeDefined()
+    })
+
+    it('carries prompt error details onto the card item', async () => {
+      const { store, groups } = createErrorGroups()
+      store.recordPromptError({
+        type: 'apply_failed',
+        message: 'An agent edit could not be applied to the workflow document.',
+        details: 'op_rejected: unknown_widget at seed'
+      })
+      await nextTick()
+
+      const promptGroup = groups.allErrorGroups.value.find(
+        (g) => g.groupKey === 'execution:prompt:apply_failed'
+      )
+      expect(promptGroup).toBeDefined()
+      const details =
+        promptGroup && 'cards' in promptGroup
+          ? promptGroup.cards[0]?.errors[0]?.details
+          : undefined
+      expect(details).toBe('op_rejected: unknown_widget at seed')
     })
 
     it('includes prompt error when a node is selected', async () => {
@@ -633,11 +741,11 @@ describe('useErrorGroups', () => {
         typeof canvasStore.selectedItems,
         unknown
       >([{ id: '1' }])
-      store.lastPromptError = {
+      store.recordPromptError({
         type: 'prompt_no_outputs',
         message: 'No outputs',
         details: ''
-      }
+      })
       await nextTick()
 
       const promptGroup = groups.allErrorGroups.value.find(
@@ -649,7 +757,7 @@ describe('useErrorGroups', () => {
 
     it('sorts cards within an execution group by nodeId numerically', async () => {
       const { store, groups } = createErrorGroups()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '10': {
           class_type: 'KSampler',
           dependent_outputs: [],
@@ -665,7 +773,7 @@ describe('useErrorGroups', () => {
           dependent_outputs: [],
           errors: [{ type: 'err', message: 'Error', details: '' }]
         }
-      }
+      })
       await nextTick()
 
       const execGroup = groups.allErrorGroups.value.find(
@@ -677,7 +785,7 @@ describe('useErrorGroups', () => {
 
     it('sorts cards with subpath nodeIds before higher root IDs', async () => {
       const { store, groups } = createErrorGroups()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '2': {
           class_type: 'KSampler',
           dependent_outputs: [],
@@ -693,7 +801,7 @@ describe('useErrorGroups', () => {
           dependent_outputs: [],
           errors: [{ type: 'err', message: 'Error', details: '' }]
         }
-      }
+      })
       await nextTick()
 
       const execGroup = groups.allErrorGroups.value.find(
@@ -705,7 +813,7 @@ describe('useErrorGroups', () => {
 
     it('sorts deeply nested nodeIds by each segment numerically', async () => {
       const { store, groups } = createErrorGroups()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '10:11:99': {
           class_type: 'KSampler',
           dependent_outputs: [],
@@ -721,7 +829,7 @@ describe('useErrorGroups', () => {
           dependent_outputs: [],
           errors: [{ type: 'err', message: 'Error', details: '' }]
         }
-      }
+      })
       await nextTick()
 
       const execGroup = groups.allErrorGroups.value.find(
@@ -735,13 +843,13 @@ describe('useErrorGroups', () => {
   describe('filteredGroups', () => {
     it('returns all groups when search query is empty', async () => {
       const { store, groups } = createErrorGroups()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '1': {
           class_type: 'KSampler',
           dependent_outputs: [],
           errors: [{ type: 'value_error', message: 'Bad value', details: '' }]
         }
-      }
+      })
       await nextTick()
 
       expect(groups.filteredGroups.value.length).toBeGreaterThan(0)
@@ -749,7 +857,7 @@ describe('useErrorGroups', () => {
 
     it('filters groups based on search query', async () => {
       const { store, groups, searchQuery } = createErrorGroups()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '1': {
           class_type: 'KSampler',
           dependent_outputs: [],
@@ -772,7 +880,7 @@ describe('useErrorGroups', () => {
             }
           ]
         }
-      }
+      })
       await nextTick()
 
       searchQuery.value = 'sampler'
@@ -782,7 +890,6 @@ describe('useErrorGroups', () => {
         (g) => g.type === 'execution'
       )
       for (const group of executionGroups) {
-        if (group.type !== 'execution') continue
         const hasMatch = group.cards.some(
           (c) =>
             c.title.toLowerCase().includes('sampler') ||
@@ -790,53 +897,6 @@ describe('useErrorGroups', () => {
         )
         expect(hasMatch).toBe(true)
       }
-    })
-  })
-
-  describe('groupedErrorMessages', () => {
-    it('returns empty array when no errors', () => {
-      const { groups } = createErrorGroups()
-      expect(groups.groupedErrorMessages.value).toEqual([])
-    })
-
-    it('collects unique display messages from node errors', async () => {
-      const { store, groups } = createErrorGroups()
-      store.lastNodeErrors = {
-        '1': {
-          class_type: 'KSampler',
-          dependent_outputs: [],
-          errors: [
-            { type: 'err_a', message: 'Error A', details: '' },
-            { type: 'err_b', message: 'Error B', details: '' }
-          ]
-        },
-        '2': {
-          class_type: 'CLIPLoader',
-          dependent_outputs: [],
-          errors: [{ type: 'err_a', message: 'Error A', details: '' }]
-        }
-      }
-      await nextTick()
-
-      const messages = groups.groupedErrorMessages.value
-      expect(messages).toEqual([unknownValidationMessage])
-    })
-
-    it('includes missing node group display message', async () => {
-      const { groups } = createErrorGroups()
-      const missingNodesStore = useMissingNodesErrorStore()
-      missingNodesStore.setMissingNodeTypes([
-        makeMissingNodeType('NodeA', { cnrId: 'pack-1' })
-      ])
-      await nextTick()
-
-      const missingGroup = groups.allErrorGroups.value.find(
-        (g) => g.type === 'missing_node'
-      )
-      expect(missingGroup).toBeDefined()
-      expect(groups.groupedErrorMessages.value).toContain(
-        missingGroup!.displayMessage
-      )
     })
   })
 
@@ -982,7 +1042,7 @@ describe('useErrorGroups', () => {
       )
       expect(modelGroup).toBeDefined()
       expect(modelGroup?.groupKey).toBe('missing_model')
-      expect(modelGroup?.displayTitle).toBe('Missing Models (1)')
+      expect(modelGroup?.displayTitle).toBe('Missing Models')
     })
   })
 
@@ -1037,24 +1097,13 @@ describe('useErrorGroups', () => {
     })
   })
 
-  describe('unfiltered vs selection-filtered model/media groups', () => {
-    it('exposes both unfiltered (missingModelGroups) and filtered (filteredMissingModelGroups)', () => {
-      const { groups } = createErrorGroups()
-      expect(groups.missingModelGroups).toBeDefined()
-      expect(groups.filteredMissingModelGroups).toBeDefined()
-      expect(groups.missingMediaGroups).toBeDefined()
-      expect(groups.filteredMissingMediaGroups).toBeDefined()
-    })
-
-    it('missingModelGroups returns total candidates regardless of selection (ErrorOverlay contract)', async () => {
+  describe('selection does not shrink displayed groups', () => {
+    it('missingModelGroups returns total candidates regardless of selection', async () => {
       const { store, groups } = createErrorGroups()
       store.surfaceMissingModels([
         makeModel('a.safetensors', { nodeId: '1', directory: 'checkpoints' }),
         makeModel('b.safetensors', { nodeId: '2', directory: 'checkpoints' })
       ])
-      // Simulate canvas selection of a single node so the filtered
-      // variant actually narrows. Without this, both sides return the
-      // same value trivially and the test can't prove the contract.
       vi.mocked(isLGraphNode).mockReturnValue(true)
       const canvasStore = useCanvasStore()
       canvasStore.selectedItems = fromAny<
@@ -1063,23 +1112,18 @@ describe('useErrorGroups', () => {
       >([{ id: '1' }])
       await nextTick()
 
-      // Unfiltered total stays at one group of two models regardless of
-      // the selection — ErrorOverlay reads this for the overlay label
-      // and must not shrink with canvas selection.
+      // Displayed groups never shrink with canvas selection — the count
+      // and list always describe the whole workflow.
       expect(groups.missingModelGroups.value).toHaveLength(1)
       expect(groups.missingModelGroups.value[0].models).toHaveLength(2)
-
-      // Filtered variant does narrow under the same selection state —
-      // this is how the errors tab scopes cards to the selected node.
-      // Exact filtered output depends on the app.rootGraph lookup
-      // (mocked to return undefined here); what matters is that the
-      // filtered shape is a different reference and does not blindly
-      // mirror the unfiltered one.
-      expect(groups.filteredMissingModelGroups.value).not.toBe(
-        groups.missingModelGroups.value
-      )
+      expect(
+        groups.filteredGroups.value.find((g) => g.type === 'missing_model')
+          ?.count
+      ).toBe(2)
     })
+  })
 
+  describe('missing media counting', () => {
     it('counts missing media by affected node rows, not grouped filenames', async () => {
       const { store, groups } = createErrorGroups()
       store.surfaceMissingMedia([
@@ -1098,12 +1142,12 @@ describe('useErrorGroups', () => {
       const missingMediaGroup = groups.allErrorGroups.value.find(
         (group) => group.type === 'missing_media'
       )
-      expect(missingMediaGroup?.displayTitle).toBe('Missing Inputs (2)')
+      expect(missingMediaGroup?.displayTitle).toBe('Missing Inputs')
     })
   })
 
-  describe('tabErrorGroups', () => {
-    it('filters prompt error when a node is selected', async () => {
+  describe('selection emphasis', () => {
+    it('never marks workflow-level prompt errors as matched by a selection', async () => {
       const { store, groups } = createErrorGroups()
       const canvasStore = useCanvasStore()
       vi.mocked(isLGraphNode).mockReturnValue(true)
@@ -1111,18 +1155,214 @@ describe('useErrorGroups', () => {
         typeof canvasStore.selectedItems,
         unknown
       >([{ id: '1' }])
-      store.lastPromptError = {
+      store.recordPromptError({
         type: 'prompt_no_outputs',
         message: 'No outputs',
         details: ''
-      }
+      })
       await nextTick()
 
-      const promptGroup = groups.tabErrorGroups.value.find(
+      const promptGroup = groups.allErrorGroups.value.find(
         (g) =>
           g.type === 'execution' && g.displayTitle === 'Prompt has no outputs'
       )
-      expect(promptGroup).toBeUndefined()
+      expect(promptGroup).toBeDefined()
+      expect(
+        groups.selectionMatchedGroupKeys.value.has(promptGroup!.groupKey)
+      ).toBe(false)
+    })
+
+    it('reports no selection state when nothing is selected', async () => {
+      const { store, groups } = createErrorGroups()
+      store.recordNodeErrors({
+        '1': {
+          class_type: 'KSampler',
+          dependent_outputs: [],
+          errors: [{ type: 'value_error', message: 'Bad value', details: '' }]
+        }
+      })
+      await nextTick()
+
+      expect(groups.hasSelection.value).toBe(false)
+      expect(groups.selectionMatchedGroupKeys.value.size).toBe(0)
+      expect(groups.selectionMatchedCardIds.value.size).toBe(0)
+      expect(groups.selectionErrorCount.value).toBe(0)
+    })
+
+    it('matches groups and cards of the selected error node', async () => {
+      const { store, groups } = createErrorGroups()
+      const canvasStore = useCanvasStore()
+      vi.mocked(isLGraphNode).mockReturnValue(true)
+      const selectedNode = { id: '1' }
+      vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
+        fromAny<LGraphNode, unknown>(
+          nodeId === '1' ? selectedNode : { id: nodeId }
+        )
+      )
+      canvasStore.selectedItems = fromAny<
+        typeof canvasStore.selectedItems,
+        unknown
+      >([selectedNode])
+      store.recordNodeErrors({
+        '1': {
+          class_type: 'KSampler',
+          dependent_outputs: [],
+          errors: [{ type: 'value_error', message: 'Bad value', details: '' }]
+        },
+        '2': {
+          class_type: 'CLIPLoader',
+          dependent_outputs: [],
+          errors: [
+            { type: 'file_not_found', message: 'File not found', details: '' }
+          ]
+        }
+      })
+      await nextTick()
+
+      expect(groups.hasSelection.value).toBe(true)
+      expect(groups.selectionErrorCount.value).toBe(1)
+      expect(groups.selectionMatchedCardIds.value.has('node-1')).toBe(true)
+      expect(groups.selectionMatchedCardIds.value.has('node-2')).toBe(false)
+      expect(groups.selectionMatchedAssetNodeIds.value.size).toBe(0)
+      // Both error groups remain displayed regardless of the selection
+      const executionGroups = groups.filteredGroups.value.filter(
+        (g) => g.type === 'execution'
+      )
+      const displayedCardIds = executionGroups.flatMap((g) =>
+        g.cards.map((c) => c.id)
+      )
+      expect(displayedCardIds).toContain('node-1')
+      expect(displayedCardIds).toContain('node-2')
+    })
+
+    it('narrows missing-node emphasis to packs containing the selected node', async () => {
+      const { groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      const canvasStore = useCanvasStore()
+      vi.mocked(isLGraphNode).mockReturnValue(true)
+      vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
+        fromAny<LGraphNode, unknown>({ id: nodeId })
+      )
+      canvasStore.selectedItems = fromAny<
+        typeof canvasStore.selectedItems,
+        unknown
+      >([{ id: '2' }])
+      missingNodesStore.setMissingNodeTypes([
+        makeMissingNodeType('NodeB', { cnrId: 'pack-1', nodeId: '2' }),
+        makeMissingNodeType('NodeC', { cnrId: 'pack-2', nodeId: '3' })
+      ])
+      await nextTick()
+
+      // Emphasis counts only the packs containing the selected node…
+      expect(groups.selectionMatchedGroupKeys.value.has('missing_node')).toBe(
+        true
+      )
+      expect(groups.selectionErrorCount.value).toBe(1)
+      // …and marks only the selected node for row highlighting.
+      expect(groups.selectionMatchedAssetNodeIds.value.has('2')).toBe(true)
+      expect(groups.selectionMatchedAssetNodeIds.value.has('3')).toBe(false)
+      // Display still shows every pack.
+      const missingNodeGroup = groups.filteredGroups.value.find(
+        (g) => g.type === 'missing_node'
+      )
+      expect(missingNodeGroup?.count).toBe(2)
+    })
+
+    it('does not emphasize missing-node groups for unrelated selections', async () => {
+      const { groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      const canvasStore = useCanvasStore()
+      vi.mocked(isLGraphNode).mockReturnValue(true)
+      vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
+        fromAny<LGraphNode, unknown>({ id: nodeId })
+      )
+      canvasStore.selectedItems = fromAny<
+        typeof canvasStore.selectedItems,
+        unknown
+      >([{ id: '99' }])
+      missingNodesStore.setMissingNodeTypes([
+        makeMissingNodeType('NodeB', { cnrId: 'pack-1', nodeId: '2' })
+      ])
+      await nextTick()
+
+      expect(groups.selectionMatchedGroupKeys.value.has('missing_node')).toBe(
+        false
+      )
+      expect(groups.selectionErrorCount.value).toBe(0)
+      // Display is unaffected by the unrelated selection.
+      expect(
+        groups.filteredGroups.value.find((g) => g.type === 'missing_node')
+          ?.count
+      ).toBe(1)
+    })
+
+    it('matches errors through graph resolution, not raw execution ids', async () => {
+      const { store, groups } = createErrorGroups()
+      const canvasStore = useCanvasStore()
+      vi.mocked(isLGraphNode).mockReturnValue(true)
+      // The error is keyed by a subgraph execution id ('2:5') that resolves
+      // to a different graph node id ('7') at the current graph level.
+      const selectedNode = { id: '7' }
+      vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
+        fromAny<LGraphNode, unknown>(
+          nodeId === '2:5' ? selectedNode : undefined
+        )
+      )
+      canvasStore.selectedItems = fromAny<
+        typeof canvasStore.selectedItems,
+        unknown
+      >([selectedNode])
+      store.recordNodeErrors({
+        '2:5': {
+          class_type: 'KSampler',
+          dependent_outputs: [],
+          errors: [{ type: 'value_error', message: 'Bad value', details: '' }]
+        }
+      })
+      await nextTick()
+
+      expect(groups.selectionErrorCount.value).toBe(1)
+      expect(groups.selectionMatchedCardIds.value.has('node-2:5')).toBe(true)
+    })
+
+    it('matches interior errors when a subgraph container is selected', async () => {
+      const { store, groups } = createErrorGroups()
+      const canvasStore = useCanvasStore()
+      vi.mocked(isLGraphNode).mockReturnValue(true)
+      // A container selection matches interior errors by execution-id prefix,
+      // even when the interior node does not resolve at the current level.
+      const containerNode = fromAny<SubgraphNode, unknown>(
+        Object.assign(Object.create(SubgraphNode.prototype), {
+          _state: { id: '2' }
+        })
+      )
+      vi.mocked(getNodeByExecutionId).mockReturnValue(null)
+      vi.mocked(getExecutionIdByNode).mockReturnValue(
+        fromAny<NodeExecutionId, unknown>('2')
+      )
+      canvasStore.selectedItems = fromAny<
+        typeof canvasStore.selectedItems,
+        unknown
+      >([containerNode])
+      store.recordNodeErrors({
+        '2:5': {
+          class_type: 'KSampler',
+          dependent_outputs: [],
+          errors: [{ type: 'value_error', message: 'Bad value', details: '' }]
+        },
+        '9': {
+          class_type: 'CLIPLoader',
+          dependent_outputs: [],
+          errors: [
+            { type: 'file_not_found', message: 'File not found', details: '' }
+          ]
+        }
+      })
+      await nextTick()
+
+      expect(groups.selectionErrorCount.value).toBe(1)
+      expect(groups.selectionMatchedCardIds.value.has('node-2:5')).toBe(true)
+      expect(groups.selectionMatchedCardIds.value.has('node-9')).toBe(false)
     })
   })
 })
