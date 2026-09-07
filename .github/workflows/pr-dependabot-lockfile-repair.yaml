@@ -1,0 +1,93 @@
+name: 'PR: Apply Dependabot Lockfile Repair'
+
+on:
+  workflow_run:
+    workflows: ['CI: Repair Dependabot Lockfile']
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: dependabot-lockfile-repair-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: true
+
+jobs:
+  apply:
+    if: >
+      github.repository == 'Comfy-Org/ComfyUI_frontend' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.actor.login == 'dependabot[bot]' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout trusted workflow revision
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Resolve pull request
+        id: pr
+        uses: ./.github/actions/resolve-pr-from-workflow-run
+
+      - name: Validate repair target
+        if: steps.pr.outputs.skip != 'true'
+        env:
+          HEAD_REF: ${{ github.event.workflow_run.head_branch }}
+          PR_AUTHOR: ${{ steps.pr.outputs.author }}
+        run: |
+          test "$PR_AUTHOR" = 'dependabot[bot]'
+          case "$HEAD_REF" in
+            dependabot/*) ;;
+            *) exit 1 ;;
+          esac
+
+      - name: Download repair artifact
+        if: steps.pr.outputs.skip != 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: dependabot-lockfile-repair
+          path: ${{ runner.temp }}/dependabot-lockfile-repair
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Checkout validated pull request revision
+        if: steps.pr.outputs.skip != 'true'
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.pr.outputs.head-sha }}
+          token: ${{ secrets.PR_GH_TOKEN }}
+
+      - name: Apply repaired lockfile
+        if: steps.pr.outputs.skip != 'true'
+        id: repair
+        env:
+          REPAIRED_LOCKFILE: ${{ runner.temp }}/dependabot-lockfile-repair/pnpm-lock.yaml
+        run: |
+          test ! -L pnpm-lock.yaml
+          test -f "$REPAIRED_LOCKFILE"
+          test ! -L "$REPAIRED_LOCKFILE"
+          cp "$REPAIRED_LOCKFILE" pnpm-lock.yaml
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          test "$(git diff --name-only)" = "pnpm-lock.yaml"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Commit and push repaired lockfile
+        if: steps.repair.outputs.changed == 'true'
+        env:
+          HEAD_REF: ${{ github.event.workflow_run.head_branch }}
+          HEAD_SHA: ${{ steps.pr.outputs.head-sha }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add pnpm-lock.yaml
+          git commit -m 'fix: repair Dependabot lockfile'
+          git push origin "HEAD:refs/heads/$HEAD_REF" \
+            --force-with-lease="refs/heads/$HEAD_REF:$HEAD_SHA"
