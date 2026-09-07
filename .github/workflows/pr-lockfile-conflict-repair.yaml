@@ -14,39 +14,22 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       candidates: ${{ steps.scan.outputs.result }}
-      count: ${{ steps.scan.outputs.count }}
     steps:
       - name: Find conflicting pull requests
         id: scan
         uses: actions/github-script@v9
         with:
           script: |
+            const baseRef = context.ref.replace('refs/heads/', '');
             const pulls = await github.paginate(github.rest.pulls.list, {
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: 'open',
-              base: context.ref.replace('refs/heads/', ''),
+              base: baseRef,
               per_page: 100,
             });
             const candidates = [];
             for (const pull of pulls) {
-              let livePull;
-              for (let attempt = 0; attempt < 3; attempt += 1) {
-                ({ data: livePull } = await github.rest.pulls.get({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  pull_number: pull.number,
-                }));
-                if (livePull.mergeable !== null) break;
-                await new Promise(resolve => setTimeout(resolve, 1000));
-              }
-              if (livePull.mergeable !== false) continue;
-              if (!livePull.head.repo) continue;
-              if (
-                livePull.head.repo.full_name !== process.env.GITHUB_REPOSITORY &&
-                !livePull.maintainer_can_modify
-              ) continue;
-
               const files = await github.paginate(github.rest.pulls.listFiles, {
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -55,20 +38,35 @@ jobs:
               });
               if (!files.some(file => file.filename === 'pnpm-lock.yaml')) continue;
 
+              const { data: livePull } = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pull.number,
+              });
+              if (
+                livePull.state !== 'open' ||
+                livePull.base.ref !== baseRef ||
+                !livePull.head.repo
+              ) continue;
+              if (
+                livePull.head.repo.full_name !== process.env.GITHUB_REPOSITORY &&
+                !livePull.maintainer_can_modify
+              ) continue;
+
               candidates.push({
                 number: pull.number,
-                baseSha: livePull.base.sha,
+                baseRef,
+                baseSha: context.sha,
                 headRef: livePull.head.ref,
                 headRepo: livePull.head.repo.full_name,
                 headSha: livePull.head.sha,
               });
             }
-            core.setOutput('count', String(candidates.length));
             return candidates;
 
   generate:
     needs: scan
-    if: needs.scan.outputs.count != '0'
+    if: needs.scan.outputs.candidates != '[]'
     strategy:
       fail-fast: false
       max-parallel: 5
@@ -141,7 +139,7 @@ jobs:
 
   apply:
     needs: [scan, generate]
-    if: needs.scan.outputs.count != '0'
+    if: needs.scan.outputs.candidates != '[]'
     strategy:
       fail-fast: false
       max-parallel: 5
@@ -154,7 +152,7 @@ jobs:
         id: pr
         uses: actions/github-script@v9
         env:
-          EXPECTED_BASE_SHA: ${{ matrix.pull.baseSha }}
+          EXPECTED_BASE_REF: ${{ matrix.pull.baseRef }}
           EXPECTED_HEAD_REF: ${{ matrix.pull.headRef }}
           EXPECTED_HEAD_REPOSITORY: ${{ matrix.pull.headRepo }}
           EXPECTED_HEAD_SHA: ${{ matrix.pull.headSha }}
@@ -168,7 +166,7 @@ jobs:
             });
             const valid =
               pull.state === 'open' &&
-              pull.base.sha === process.env.EXPECTED_BASE_SHA &&
+              pull.base.ref === process.env.EXPECTED_BASE_REF &&
               pull.head.sha === process.env.EXPECTED_HEAD_SHA &&
               pull.head.repo?.full_name === process.env.EXPECTED_HEAD_REPOSITORY &&
               pull.head.ref === process.env.EXPECTED_HEAD_REF &&
@@ -241,7 +239,7 @@ jobs:
           steps.artifact.outputs.eligible == 'true'
         uses: actions/github-script@v9
         env:
-          EXPECTED_BASE_SHA: ${{ matrix.pull.baseSha }}
+          EXPECTED_BASE_REF: ${{ matrix.pull.baseRef }}
           EXPECTED_HEAD_REF: ${{ matrix.pull.headRef }}
           EXPECTED_HEAD_REPOSITORY: ${{ matrix.pull.headRepo }}
           EXPECTED_HEAD_SHA: ${{ matrix.pull.headSha }}
@@ -255,7 +253,7 @@ jobs:
             });
             const valid =
               pull.state === 'open' &&
-              pull.base.sha === process.env.EXPECTED_BASE_SHA &&
+              pull.base.ref === process.env.EXPECTED_BASE_REF &&
               pull.head.sha === process.env.EXPECTED_HEAD_SHA &&
               pull.head.repo?.full_name === process.env.EXPECTED_HEAD_REPOSITORY &&
               pull.head.ref === process.env.EXPECTED_HEAD_REF &&
