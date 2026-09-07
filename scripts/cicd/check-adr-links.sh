@@ -7,6 +7,9 @@
 # Needs no deps, no build and no backend.
 set -euo pipefail
 
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
 # git grep exit code 1 means "no matches", which is success for this check.
 if refs=$(git grep -nEo 'docs/adr/[A-Za-z0-9._/-]+\.md' -- .); then
   :

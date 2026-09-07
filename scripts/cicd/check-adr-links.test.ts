@@ -2,9 +2,10 @@ import { execFileSync, spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 
 const SCRIPT = path.join(import.meta.dirname, 'check-adr-links.sh')
+const temporaryDirectories: string[] = []
 
 const GIT_ENV = {
   GIT_CONFIG_GLOBAL: '/dev/null',
@@ -16,6 +17,7 @@ const adrPath = (fileName: string): string => `docs/adr/${fileName}`
 // The script scans via `git grep`, so fixtures need a hermetic throwaway repo.
 function tempGitRepo(): { dir: string; git: (...args: string[]) => string } {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'adr-links-'))
+  temporaryDirectories.push(dir)
   const env = { ...process.env, ...GIT_ENV }
   const git = (...args: string[]) =>
     execFileSync('git', args, { cwd: dir, encoding: 'utf8', env })
@@ -39,6 +41,12 @@ function runScript(dir: string) {
   })
 }
 
+afterEach(() => {
+  for (const directory of temporaryDirectories.splice(0)) {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
 describe('check-adr-links', () => {
   it('passes when every referenced docs/adr path exists', () => {
     const { dir, git } = tempGitRepo()
@@ -60,8 +68,10 @@ describe('check-adr-links', () => {
     write(dir, '.agents/checks/guard.md', `required context: ${danglingAdr}\n`)
     git('add', '.')
     git('commit', '-m', 'fixture')
+    const nestedDir = path.join(dir, 'scripts', 'cicd')
+    fs.mkdirSync(nestedDir, { recursive: true })
 
-    const result = runScript(dir)
+    const result = runScript(nestedDir)
     expect(result.status).not.toBe(0)
     expect(result.stderr).toContain('.agents/checks/guard.md')
     expect(result.stderr).toContain(danglingAdr)
@@ -84,6 +94,7 @@ describe('check-adr-links', () => {
 
   it('propagates git grep errors', () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'adr-links-not-git-'))
+    temporaryDirectories.push(dir)
     const result = runScript(dir)
 
     expect(result.status).toBe(128)
