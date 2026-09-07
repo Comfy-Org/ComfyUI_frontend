@@ -8952,13 +8952,17 @@ Enterprise`
   'workshop.api.docs': { en: 'Router docs', 'zh-CN': 'Router 文档' },
 
   // Workshop – examples
-  'workshop.examples.madeWith': {
-    en: 'Made with {model}',
-    'zh-CN': '使用 {model} 制作'
+  'workshop.examples.start': {
+    en: 'Start from an example',
+    'zh-CN': '从示例开始'
   },
   'workshop.examples.subtitle': {
-    en: 'Examples and outputs made with this model.',
-    'zh-CN': '使用该模型制作的示例与输出。'
+    en: 'Pick one to fill the form above with its settings.',
+    'zh-CN': '选择一个示例，用它的设置填充上方表单。'
+  },
+  'workshop.examples.use': {
+    en: 'Use these settings',
+    'zh-CN': '使用这些设置'
   },
   'workshop.examples.open': {
     en: 'Open in Playground',

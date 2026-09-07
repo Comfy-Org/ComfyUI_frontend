@@ -504,15 +504,10 @@ function useInCode() {
       than behind a tab that leads away from the form it fills in. -->
     <section
       v-if="showsExamples && activeSection === 'playground'"
-      class="border-t border-transparency-white-t8 pt-10"
+      class="pt-6"
       data-testid="examples-section"
     >
-      <ExamplesTab
-        :examples
-        :model-name="model.name"
-        :locale
-        @open="openExample"
-      />
+      <ExamplesTab :examples :locale @open="openExample" />
     </section>
 
     <section

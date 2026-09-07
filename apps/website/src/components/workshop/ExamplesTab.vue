@@ -4,13 +4,8 @@ import { isVideoUrl } from '../../config/workshop-playground'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
-const {
-  examples,
-  modelName,
-  locale = 'en'
-} = defineProps<{
+const { examples, locale = 'en' } = defineProps<{
   examples: readonly PlaygroundExample[]
-  modelName: string
   locale?: Locale
 }>()
 
@@ -20,16 +15,12 @@ const specsOf = (example: PlaygroundExample) => example.specs.join(' · ')
 </script>
 
 <template>
-  <section class="flex flex-col gap-6" data-testid="examples-tab">
-    <div class="flex flex-col gap-2">
-      <h2
-        class="text-xs font-bold tracking-wider text-primary-warm-gray uppercase"
-      >
-        {{
-          t('workshop.examples.madeWith', locale).replace('{model}', modelName)
-        }}
+  <section class="flex flex-col gap-4" data-testid="examples-tab">
+    <div class="flex flex-col gap-1">
+      <h2 class="text-sm font-bold text-primary-warm-white">
+        {{ t('workshop.examples.start', locale) }}
       </h2>
-      <p class="text-sm text-primary-comfy-canvas">
+      <p class="text-sm text-primary-warm-gray">
         {{ t('workshop.examples.subtitle', locale) }}
       </p>
     </div>
@@ -38,20 +29,22 @@ const specsOf = (example: PlaygroundExample) => example.specs.join(' · ')
       {{ t('workshop.examples.empty', locale) }}
     </p>
 
-    <ul v-else class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+    <ul v-else class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
       <li v-for="example in examples" :key="example.id">
         <button
           type="button"
           :aria-label="t('workshop.examples.open', locale)"
-          class="bg-transparency-white-t4 focus-visible:ring-primary-comfy-yellow/50 group flex size-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-transparency-white-t8 text-left transition-colors outline-none hover:border-transparency-white-t20 focus-visible:ring-3"
+          class="group flex w-full cursor-pointer flex-col gap-2 text-left outline-none"
           data-testid="example-card"
           @click="emit('open', example)"
         >
-          <div class="bg-primary-comfy-ink-light aspect-video overflow-hidden">
+          <span
+            class="bg-primary-comfy-ink-light group-hover:ring-primary-comfy-yellow group-focus-visible:ring-primary-comfy-yellow relative block aspect-video overflow-hidden rounded-lg ring-0 transition-shadow group-hover:ring-2 group-focus-visible:ring-2"
+          >
             <video
               v-if="isVideoUrl(example.outputUrl)"
               :src="example.outputUrl"
-              class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+              class="size-full object-cover"
               muted
               loop
               playsinline
@@ -61,23 +54,29 @@ const specsOf = (example: PlaygroundExample) => example.specs.join(' · ')
               v-else-if="example.outputUrl"
               :src="example.outputUrl"
               :alt="example.title"
-              class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+              class="size-full object-cover"
               loading="lazy"
               decoding="async"
             />
-          </div>
-          <div class="flex flex-col gap-1 px-4 py-3">
-            <p class="line-clamp-2 text-sm text-primary-warm-white">
+            <span
+              class="absolute inset-0 grid place-items-center bg-primary-comfy-ink/70 px-2 text-center text-xs text-primary-warm-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+            >
+              {{ t('workshop.examples.use', locale) }}
+            </span>
+          </span>
+
+          <span class="flex flex-col gap-0.5">
+            <span class="line-clamp-2 text-xs text-primary-comfy-canvas">
               {{ example.title }}
-            </p>
-            <p
+            </span>
+            <span
               v-if="specsOf(example)"
-              class="text-xs text-primary-warm-gray"
+              class="text-[11px] text-primary-warm-gray"
               data-testid="example-specs"
             >
               {{ specsOf(example) }}
-            </p>
-          </div>
+            </span>
+          </span>
         </button>
       </li>
     </ul>
