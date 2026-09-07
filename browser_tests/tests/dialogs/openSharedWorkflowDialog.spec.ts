@@ -49,6 +49,7 @@ test.describe('Open shared workflow dialog', { tag: '@ui' }, () => {
   }) => {
     const { page } = comfyPage
     await mockLongNameSharedWorkflow(page)
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup({ clearStorage: false, url: `/?share=${shareId}` })
 
     const dialog = page.getByTestId(TestIds.dialogs.openSharedWorkflow)

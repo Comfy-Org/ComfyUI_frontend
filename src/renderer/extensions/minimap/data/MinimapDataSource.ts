@@ -31,9 +31,10 @@ export class MinimapDataSource {
 
     return graph._nodes.map((node) => {
       const [width, height] = node.renderingSize
-      const executionState =
-        nodeProgressStates[createNodeLocatorId(containingSubgraphId, node.id)]
-          ?.state ?? null
+      const locatorId = createNodeLocatorId(containingSubgraphId, node.id)
+      const executionState = Object.hasOwn(nodeProgressStates, locatorId)
+        ? nodeProgressStates[locatorId].state
+        : null
 
       return {
         id: node.id,

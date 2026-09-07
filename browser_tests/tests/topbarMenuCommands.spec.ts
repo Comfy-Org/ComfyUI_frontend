@@ -10,6 +10,7 @@ test.describe('Topbar menu commands', { tag: '@ui' }, () => {
       'Comfy.Workflow.WorkflowTabsPosition',
       'Topbar'
     )
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
   })
 

@@ -72,7 +72,7 @@ function linksIntoTargetSlot(
   targetId: NodeId,
   targetSlot: number
 ): SerializedLinkFields[] {
-  const fields = (links ?? []).map((link) =>
+  const fields = links.map((link) =>
     linkFieldsOf(link as SerialisedLLinkArray | SerialisableLLink)
   )
   return fields.filter(
@@ -136,7 +136,7 @@ describe('normalizeConfiguredTopology with conflicting origins (#15577)', () => 
       0
     )
 
-    expect(survivor?.origin_id).toBe(toNodeId(2))
+    expect(survivor.origin_id).toBe(toNodeId(2))
   })
 
   it('does not fire LinkDedupDrop for a same-origin remap', () => {

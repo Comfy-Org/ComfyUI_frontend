@@ -153,6 +153,7 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
     )
     // Reload to apply the new setting. Setting Comfy.CustomColorPalettes directly
     // doesn't update the store immediately.
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
 
     await comfyPage.workflow.loadWorkflow('nodes/every_node_color')

@@ -76,7 +76,7 @@ export function useOutputHistory(): {
     const pathMap = executionStore.jobIdToSessionWorkflowPath
 
     return items.filter((asset) => {
-      const m = getOutputAssetMetadata(asset?.user_metadata)
+      const m = getOutputAssetMetadata(asset.user_metadata)
       return m ? pathMap.get(m.jobId) === path : false
     })
   })
@@ -144,7 +144,7 @@ export function useOutputHistory(): {
   }
 
   function selectFirstHistory() {
-    const first = toValue(outputs.items)[0]
+    const first = toValue(outputs.items).at(0)
     if (first) {
       linearStore.selectAsLatest(`history:${first.id}:0`)
     } else {
@@ -157,7 +157,7 @@ export function useOutputHistory(): {
     if (linearStore.pendingResolve.size === 0) return
     for (const jobId of linearStore.pendingResolve) {
       const asset = toValue(outputs.items).find((a) => {
-        const m = getOutputAssetMetadata(a?.user_metadata)
+        const m = getOutputAssetMetadata(a.user_metadata)
         return m?.jobId === jobId
       })
       if (!asset) continue
@@ -179,7 +179,7 @@ export function useOutputHistory(): {
       // Delete first pending job for this workflow from the queue
       for (const task of queueStore.pendingTasks) {
         if (matchesActiveWorkflow(task)) {
-          await api.deleteItem('queue', String(task.jobId))
+          await api.deleteItem('queue', task.jobId)
           break
         }
       }

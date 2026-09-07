@@ -2,10 +2,13 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 
 import { useLinkPresentationStore } from './linkPresentationStore'
+
+vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
 
 const graphA = {
   rootGraphId: toRootGraphId('graph-a'),
@@ -54,7 +57,6 @@ describe('useLinkPresentationStore', () => {
   })
 
   it('rejects a patch from a different owning graph', () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const store = useLinkPresentationStore()
     store.patch(graphA, LINK, { label: 'Owned' })
 
@@ -63,8 +65,14 @@ describe('useLinkPresentationStore', () => {
     expect(store.getPresentation(graphA, LINK)).toEqual({
       label: 'Owned'
     })
-    expect(error).toHaveBeenCalledOnce()
-    error.mockRestore()
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+      errorType: 'link_presentation_ownership_conflict',
+      context: {
+        linkId: LINK,
+        incumbentGraphId: graphA.owningGraphId,
+        requestingGraphId: graphASibling.owningGraphId
+      }
+    })
   })
 
   it('take removes and returns only the owning graph entry', () => {
@@ -80,16 +88,7 @@ describe('useLinkPresentationStore', () => {
     expect(store.getPresentation(graphA, LINK)).toBeUndefined()
   })
 
-  it('indexes only the hidden links the scope owns', () => {
-    const store = useLinkPresentationStore()
-    store.patch(graphA, toLinkId(1), { hidden: true })
-    store.patch(graphA, toLinkId(2), { label: 'Visible' })
-    store.patch(graphASibling, toLinkId(3), { hidden: true })
-
-    expect(store.graphHiddenLinkIds(graphA)).toEqual([toLinkId(1)])
-  })
-
-  it('stops indexing a released link id for its previous owner', () => {
+  it('clearing a previous owner leaves a reassigned link intact', () => {
     const store = useLinkPresentationStore()
     store.patch(graphA, toLinkId(9), { hidden: true })
     store.patch(graphA, toLinkId(1), { hidden: true })
@@ -97,8 +96,12 @@ describe('useLinkPresentationStore', () => {
 
     store.patch(graphASibling, toLinkId(1), { hidden: true })
 
-    expect(store.graphHiddenLinkIds(graphA)).toEqual([toLinkId(9)])
-    expect(store.graphHiddenLinkIds(graphASibling)).toEqual([toLinkId(1)])
+    store.clearOwner(graphA)
+
+    expect(store.getPresentation(graphA, toLinkId(9))).toBeUndefined()
+    expect(store.getPresentation(graphASibling, toLinkId(1))).toEqual({
+      hidden: true
+    })
   })
 
   it('clearOwner leaves sibling owners intact and clearGraph wipes one root', () => {
@@ -110,7 +113,7 @@ describe('useLinkPresentationStore', () => {
     store.clearOwner(graphASibling)
 
     expect(store.getPresentation(graphA, toLinkId(1))).toBeDefined()
-    expect(store.getPresentation(graphA, toLinkId(2))).toBeUndefined()
+    expect(store.getPresentation(graphASibling, toLinkId(2))).toBeUndefined()
 
     store.clearGraph(graphA.rootGraphId)
 

@@ -68,7 +68,7 @@ describe('useLitegraphSettings', () => {
     settingStore.settingValues['Comfy.Graph.CanvasInfo'] = true
     await nextTick()
 
-    expect(canvasStore.canvas?.show_info).toBe(true)
+    expect(canvasStore.canvas.show_info).toBe(true)
     expect(firstDraw).toHaveBeenCalledTimes(2)
 
     canvasStore.canvas = createCanvas(secondDraw)

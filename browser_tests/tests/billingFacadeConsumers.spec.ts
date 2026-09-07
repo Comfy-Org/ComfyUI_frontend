@@ -265,4 +265,57 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
       page.getByRole('heading', { name: 'Choose a Plan' })
     ).toBeVisible()
   })
+
+  test('keeps the free-tier quota inside the top action bars', async ({
+    page
+  }) => {
+    test.fixme(
+      true,
+      'Activates after slice PR 16185 merges: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16185'
+    )
+    test.setTimeout(60_000)
+
+    const freeTierRemoteConfig = {
+      subscription_required: true,
+      free_tier_job_allowance_enabled: true,
+      free_tier_balance: { allowance: 5, remaining: 3, used: 2 }
+    } satisfies RemoteConfig
+
+    await mockCloudBoot(
+      page,
+      {
+        is_active: false,
+        subscription_tier: 'FREE',
+        subscription_duration: 'MONTHLY',
+        renewal_date: '2099-02-20T10:00:00Z',
+        has_funds: false
+      },
+      freeTierRemoteConfig,
+      'stripe'
+    )
+    await bootApp(page)
+
+    const actionBars = page.getByTestId('top-menu-actionbars')
+    const quota = actionBars.getByTestId('free-tier-quota')
+    await expect(quota).toBeVisible()
+
+    await expect
+      .poll(async () => {
+        const [quotaBox, actionBarsBox] = await Promise.all([
+          quota.boundingBox(),
+          actionBars.boundingBox()
+        ])
+        if (!quotaBox || !actionBarsBox) return Number.POSITIVE_INFINITY
+
+        return Math.max(
+          actionBarsBox.x - quotaBox.x,
+          actionBarsBox.y - quotaBox.y,
+          quotaBox.x + quotaBox.width - (actionBarsBox.x + actionBarsBox.width),
+          quotaBox.y +
+            quotaBox.height -
+            (actionBarsBox.y + actionBarsBox.height)
+        )
+      })
+      .toBeLessThanOrEqual(0)
+  })
 })
