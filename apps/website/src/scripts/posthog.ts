@@ -5,8 +5,8 @@ import type { Ref } from 'vue'
 import { SESSION_TELEMETRY_EVENT } from '@comfyorg/account/core'
 import type { SessionRefreshOutcome } from '@comfyorg/account/core'
 import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
-import { normalizeTurnstileMode } from '@comfyorg/account/turnstile';
-import type { TurnstileMode } from '@comfyorg/account/turnstile';
+import { normalizeTurnstileMode } from '@comfyorg/account/turnstile'
+import type { TurnstileMode } from '@comfyorg/account/turnstile'
 
 import type { Platform } from '@/composables/useDownloadUrl'
 import type { ConnectionId, McpClientId } from '@/config/mcpClients'

@@ -137,8 +137,8 @@ describe('HeaderAccount', () => {
     expect(pending.hasAttribute('disabled')).toBe(true)
     release()
     expect(
-        await screen.findByRole('button', { name: /session error/i })
-      ).toBeTruthy()
+      await screen.findByRole('button', { name: /session error/i })
+    ).toBeTruthy()
   })
 
   it('omits the credits number when the balance is in error', () => {
