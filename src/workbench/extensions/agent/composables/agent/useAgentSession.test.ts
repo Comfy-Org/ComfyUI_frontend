@@ -1926,9 +1926,15 @@ describe('thread resume (B17)', () => {
     const listThreads = vi.fn(
       async (): Promise<AgentThreadSummary[]> => [
         {
+          created_at: '2026-07-07T00:00:00Z',
           id: 'th-9',
+          last_message_at: '2026-07-07T00:00:00Z',
+          message_count: 2,
+          preview: 'build a duck',
+          status: 'active',
           title: 'build a duck',
-          updated_at: '2026-07-07T00:00:00Z'
+          updated_at: '2026-07-07T00:00:00Z',
+          workflow_id: 'wf-9'
         }
       ]
     )

@@ -770,6 +770,54 @@
       }
     }
   },
+  "BlockSparseAttention": {
+    "description": "انتباه متفرق الكتل عبر comfy_kitchen: تحضر كل كتلة استعلام مجموعة فرعية محددة من كتل المفاتيح بدقة، مما يقلل حسابات الانتباه. يزداد تحسن السرعة النسبي مع طول التسلسل لأن التسلسلات القصيرة تكون عادةً أسرع بالانتباه الكثيف. خارج الجدول النشط، ومع dense_blocks وتحت min_tokens، يستخدم النموذج الخلفية النشطة للانتباه الكثيف.",
+    "display_name": "انتباه متفرق الكتل",
+    "inputs": {
+      "dense_blocks": {
+        "name": "dense_blocks",
+        "tooltip": "كتل Transformer التي تعمل دائمًا بكثافة، مثل: '0, 1, 47-49'."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "كثيف بعد هذه النقطة من الجدول."
+      },
+      "extra_tokens": {
+        "name": "extra_tokens",
+        "tooltip": "رموز إضافية ذات أعلى نقاط تحضر إليها كل كتلة استعلام إلى جانب كتلها المحددة. أقرب إلى الكثيف لوقت انتباه أطول؛ يوصى بـ 256، و0 يعطّلها. تُتجاهل مع VSA."
+      },
+      "min_tokens": {
+        "name": "min_tokens",
+        "tooltip": "التسلسلات الأقصر من هذا تبقى كثيفة."
+      },
+      "model": {
+        "name": "model"
+      },
+      "selection": {
+        "name": "selection",
+        "tooltip": "كيفية اختيار كتل المفاتيح الدقيقة. ‏Sol-Attn: عتبة تكيفية لكل رأس/كتلة. ‏top-k (SLA): قيمة keep_percent ثابتة في كل مكان، ويوصى به فقط مع الأوزان المدرّبة. ‏VSA (FastVideo): تجانب مكعبات FastH3-VSA وفرعه الخشن، ويتطلب أوزانًا مدرّبة له."
+      },
+      "selection_tau": {
+        "name": "tau"
+      },
+      "sink_conditioning": {
+        "name": "sink_conditioning",
+        "tooltip": "لـ MiniMax-H3 فقط. ‏exact_kv: يحضر كل استعلام صفوف النص/الصوت/المرجع المجمعة بدقة (تكلفة ~3%). ‏exact_kv_and_rows: يشغّل أيضًا صفوف استعلام الصوت الهدف بكثافة (للحفاظ على الصوت المُولَّد كما هو)."
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "كثيف قبل هذه النقطة من الجدول."
+      },
+      "verbose": {
+        "name": "verbose"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaEraser": {
     "description": "أزل الكائنات أو المناطق المحددة بقناع من صورة باستخدام Bria.",
     "display_name": "ممحاة Bria",
@@ -7925,6 +7973,28 @@
       },
       "sigma": {
         "name": "سيغما"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageColorSpace": {
+    "description": "يحوّل بين sRGB ‏(Rec.709) وHDR ‏(Rec.2020 HLG) وHDR PQ ‏(Rec.2020 PQ). يستخدم نقطة بياض SDR بقوة 203 نت وشاشة مرجعية HLG بقوة 1000 نت. يؤدي التضييق إلى تعيين لوني للإضاءة الزائدة عبر الدفعة وضغط الألوان خارج النطاق اللوني. تُجرى التحويلات باستخدام float32 وتُرجع الجهاز الوسيط وdtype. لا يتحول alpha المستقيم لونيًا.",
+    "display_name": "تحويل مساحة ألوان الصورة",
+    "inputs": {
+      "destination": {
+        "name": "destination",
+        "tooltip": "مساحة ألوان بكسلات الإخراج. اضبط عقدة الحفظ على مساحة الألوان نفسها."
+      },
+      "image": {
+        "name": "image"
+      },
+      "source": {
+        "name": "source",
+        "tooltip": "مساحة ألوان بكسلات الإدخال."
       }
     },
     "outputs": {
