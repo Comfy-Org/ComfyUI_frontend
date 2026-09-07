@@ -2,6 +2,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import {
   routeObjectInfoFromSetupApi,
   setStringInputTooltip
@@ -152,6 +153,58 @@ test.describe(
             'Describe the image to generate.'
           )
         })
+      })
+    })
+
+    test.describe('boolean switch alignment', () => {
+      test.beforeEach(async ({ comfyPage }) => {
+        await comfyPage.workflow.loadWorkflow('widgets/boolean_widget')
+        await fitToViewInstant(comfyPage)
+        const node = await comfyPage.nodeOps.getNodeRefById('11')
+        const host = await node.convertToSubgraph()
+        await comfyPage.vueNodes.enterSubgraph(String(host.id))
+        await comfyPage.vueNodes.waitForNodes(1)
+        await comfyPage.subgraph.promoteWidget(
+          comfyPage.vueNodes.getNodeLocator('11'),
+          'boolean_input'
+        )
+        await comfyPage.nextFrame()
+      })
+
+      test('centers the linked indicator on the switch track with matching dimensions', async ({
+        comfyPage
+      }) => {
+        const node = comfyPage.vueNodes.getNodeLocator('11')
+        const control = node.getByRole('switch', { includeHidden: true })
+        const indicator = node.getByRole('img', {
+          name: 'boolean_input: Linked input'
+        })
+
+        await expect(control).toBeAttached()
+        await expect(control).toBeHidden()
+        await expect(indicator).toBeVisible()
+        await expect(async () => {
+          const track = await control.evaluate((element) => {
+            const track = element.firstElementChild
+            if (!track) throw new Error('Missing switch track')
+            const { x, y, width, height } = track.getBoundingClientRect()
+            return { x, y, width, height }
+          })
+          const marker = await indicator.boundingBox()
+          if (!marker) throw new Error('Missing linked switch indicator')
+          expect(track.width).toBeGreaterThan(0)
+          expect(track.height).toBeGreaterThan(0)
+          expect(marker.width).toBeCloseTo(track.width, 1)
+          expect(marker.height).toBeCloseTo(track.height, 1)
+          expect(marker.x + marker.width / 2).toBeCloseTo(
+            track.x + track.width / 2,
+            1
+          )
+          expect(marker.y + marker.height / 2).toBeCloseTo(
+            track.y + track.height / 2,
+            1
+          )
+        }).toPass({ timeout: 5000 })
       })
     })
 

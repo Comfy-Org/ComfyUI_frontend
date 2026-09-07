@@ -25,7 +25,7 @@ const { t } = useI18n()
       cn(
         'absolute z-20 flex cursor-default items-center overflow-hidden bg-component-node-widget-background/40 select-none',
         display === 'switch'
-          ? 'top-1 right-1 h-6 w-10 justify-center rounded-full'
+          ? 'top-1/2 right-0.5 h-5 w-9 -translate-y-1/2 justify-center rounded-full'
           : display === 'expanding'
             ? 'inset-0 justify-start rounded-lg px-3'
             : 'inset-0 justify-start rounded-md px-3'
