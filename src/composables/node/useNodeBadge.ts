@@ -2,6 +2,7 @@ import { computed, onMounted, watch } from 'vue'
 
 import { useNodePricing } from '@/composables/node/useNodePricing'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { installNodeBadges } from '@/systems/badgeSystem'
@@ -12,6 +13,7 @@ import { installNodeBadges } from '@/systems/badgeSystem'
  */
 export const useNodeBadge = () => {
   const settingStore = useSettingStore()
+  const canvasStore = useCanvasStore()
   const extensionStore = useExtensionStore()
 
   const showApiPricingBadge = computed(() =>
@@ -20,13 +22,14 @@ export const useNodeBadge = () => {
 
   watch(
     [
+      () => canvasStore.canvas,
       () => settingStore.get('Comfy.NodeBadge.NodeSourceBadgeMode'),
       () => settingStore.get('Comfy.NodeBadge.NodeIdBadgeMode'),
       () => settingStore.get('Comfy.NodeBadge.NodeLifeCycleBadgeMode'),
       showApiPricingBadge
     ],
     () => {
-      app.canvas.setDirty(true, true)
+      canvasStore.canvas?.setDirty(true, true)
     }
   )
 
