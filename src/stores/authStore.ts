@@ -734,13 +734,24 @@ export const useAuthStore = defineStore('auth', () => {
     return result
   }
 
+  // The same pre-flight executeAuthAction runs for createCustomer: getIdToken
+  // surfaces a token-mint failure (dialog + report) and provisioning is never
+  // attempted without a token it would need anyway.
+  const provisionSocialCustomer = async (): Promise<void> => {
+    const token = await getIdToken()
+    if (!token) {
+      throw new AuthStoreError('Cannot create customer: User not authenticated')
+    }
+    await createCustomer()
+  }
+
   const loginWithGoogle = async (options?: {
     isNewUser?: boolean
   }): Promise<UserCredential> => {
     const result = await executeAuthAction((authInstance) =>
       socialSignInWithProvisioning({
         signIn: () => signInWithPopup(authInstance, googleProvider),
-        provisionCustomer: () => createCustomer()
+        provisionCustomer: provisionSocialCustomer
       })
     )
 
@@ -762,7 +773,7 @@ export const useAuthStore = defineStore('auth', () => {
     const result = await executeAuthAction((authInstance) =>
       socialSignInWithProvisioning({
         signIn: () => signInWithPopup(authInstance, githubProvider),
-        provisionCustomer: () => createCustomer()
+        provisionCustomer: provisionSocialCustomer
       })
     )
 
