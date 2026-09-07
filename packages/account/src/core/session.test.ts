@@ -274,6 +274,32 @@ describe('ensureFresh', () => {
     expect(result).toEqual({ status: 'error', code: 'TOKEN_EXCHANGE_FAILED' })
   })
 
+  it('aborts a response whose headers arrive but whose body stalls forever', async () => {
+    const stalledBody = new ReadableStream<Uint8Array>({
+      start: () => undefined
+    })
+    const fetchImpl = vi.fn<typeof fetch>(
+      async () =>
+        new Response(stalledBody, {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        })
+    )
+    const { client, storage } = makeClient({ fetchImpl })
+
+    const result = await client.ensureFresh(testUser(), { timeoutMs: 25 })
+
+    expect(
+      result,
+      'clearing the timeout once headers arrive leaves the body read unbounded and the mint pending forever'
+    ).toEqual({
+      status: 'error',
+      code: 'TOKEN_EXCHANGE_FAILED',
+      httpStatus: 200
+    })
+    expect(storage.raw()).toBeNull()
+  })
+
   it('also times out while Firebase is still resolving its ID token', async () => {
     const fetchImpl = vi.fn<typeof fetch>()
     const { client } = makeClient({ fetchImpl })
