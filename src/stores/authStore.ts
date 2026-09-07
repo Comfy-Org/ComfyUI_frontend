@@ -35,6 +35,7 @@ import {
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { invalidateRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
 import { useDialogService } from '@/services/dialogService'
@@ -715,11 +716,13 @@ export const useAuthStore = defineStore('auth', () => {
           createCustomer(
             turnstileToken ? { turnstile_token: turnstileToken } : undefined
           ),
-        onRollbackFailure: (error) =>
+        onRollbackFailure: (error) => {
+          reportError(error, { errorType: 'auth_signup_rollback_failed' })
           console.warn(
             'Failed to roll back orphaned Firebase user after customer creation failed',
             error
           )
+        }
       })
     )
 
