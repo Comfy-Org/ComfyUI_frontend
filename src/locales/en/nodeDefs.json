@@ -770,6 +770,54 @@
       }
     }
   },
+  "BlockSparseAttention": {
+    "display_name": "Block Sparse Attention",
+    "description": "Block-sparse attention through comfy_kitchen: each query block attends a selected subset of key blocks exactly, reducing attention compute. The relative speed gain grows with sequence length since short sequences are usually faster dense. Outside the active schedule, dense_blocks and under min_tokens, the model uses the active dense model attention backend.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "selection": {
+        "name": "selection",
+        "tooltip": "How exact key blocks are chosen. Sol-Attn: per head/block adaptive threshold. top-k (SLA): fixed keep_percent everywhere, recommended only with trained weights. VSA (FastVideo): FastH3-VSA's cube tiling and coarse branch, requires weights trained for it."
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "Dense before this point of the schedule."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "Dense after this point of the schedule."
+      },
+      "dense_blocks": {
+        "name": "dense_blocks",
+        "tooltip": "Transformer blocks that always run dense, e.g. '0, 1, 47-49'."
+      },
+      "min_tokens": {
+        "name": "min_tokens",
+        "tooltip": "Sequences shorter than this stay dense."
+      },
+      "extra_tokens": {
+        "name": "extra_tokens",
+        "tooltip": "Extra top-scoring tokens each query block attends beyond its selected blocks. Closer to dense for more attention time; 256 recommended, 0 disables. Ignored for VSA."
+      },
+      "sink_conditioning": {
+        "name": "sink_conditioning",
+        "tooltip": "MiniMax-H3 only. exact_kv: every query attends the packed text/audio/reference rows exactly (~3% cost). exact_kv_and_rows: additionally runs the target-audio query rows dense (keeps generated audio intact)."
+      },
+      "verbose": {
+        "name": "verbose"
+      },
+      "selection_tau": {
+        "name": "tau"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaEraser": {
     "display_name": "Bria Eraser",
     "description": "Remove objects or areas outlined by a mask from an image using Bria.",
@@ -7925,6 +7973,28 @@
       },
       "sigma": {
         "name": "sigma"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageColorSpace": {
+    "display_name": "Convert Image Color Space",
+    "description": "Convert sRGB (Rec.709), HDR (Rec.2020 HLG), and HDR PQ (Rec.2020 PQ). Uses 203-nit SDR white and a 1000-nit HLG reference display. Narrowing tone-maps excess luminance across the batch and compresses out-of-gamut colors. Conversions compute in float32 and return the intermediate device and dtype. Straight alpha is not color-transformed.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "source": {
+        "name": "source",
+        "tooltip": "Color space of the input pixels."
+      },
+      "destination": {
+        "name": "destination",
+        "tooltip": "Color space of the output pixels. Set the save node to this same color space."
       }
     },
     "outputs": {

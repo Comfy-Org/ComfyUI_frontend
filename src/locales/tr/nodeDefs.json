@@ -770,6 +770,54 @@
       }
     }
   },
+  "BlockSparseAttention": {
+    "description": "comfy_kitchen aracılığıyla blok seyrek dikkat: her sorgu bloğu, anahtar bloklarının seçili bir alt kümesine tam olarak dikkat eder ve dikkat hesaplamasını azaltır. Göreli hız kazancı dizi uzunluğuyla artar; çünkü kısa diziler genellikle yoğun olarak daha hızlıdır. Etkin zamanlama dışında, dense_blocks kapsamında ve min_tokens altında model, etkin yoğun model dikkat arka ucunu kullanır.",
+    "display_name": "Blok Seyrek Dikkat",
+    "inputs": {
+      "dense_blocks": {
+        "name": "dense_blocks",
+        "tooltip": "Her zaman yoğun çalışan Transformer blokları, ör. '0, 1, 47-49'."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "Zamanlamanın bu noktasından sonra yoğun kullanılır."
+      },
+      "extra_tokens": {
+        "name": "extra_tokens",
+        "tooltip": "Her sorgu bloğunun, seçili bloklarının ötesinde dikkat ettiği en yüksek puanlı ek belirteçler. Daha fazla dikkat süresi için yoğuna daha yakın; 256 önerilir, 0 devre dışı bırakır. VSA için yok sayılır."
+      },
+      "min_tokens": {
+        "name": "min_tokens",
+        "tooltip": "Bundan kısa diziler yoğun kalır."
+      },
+      "model": {
+        "name": "model"
+      },
+      "selection": {
+        "name": "selection",
+        "tooltip": "Tam anahtar bloklarının nasıl seçildiği. Sol-Attn: başına/bloğa uyarlanabilir eşik. top-k (SLA): her yerde sabit keep_percent, yalnızca eğitilmiş ağırlıklarla önerilir. VSA (FastVideo): FastH3-VSA'nın küp döşemesi ve kaba dalı; bunun için eğitilmiş ağırlıklar gerektirir."
+      },
+      "selection_tau": {
+        "name": "tau"
+      },
+      "sink_conditioning": {
+        "name": "sink_conditioning",
+        "tooltip": "Yalnızca MiniMax-H3. exact_kv: her sorgu, paketlenmiş metin/ses/referans satırlarına tam olarak dikkat eder (~%3 maliyet). exact_kv_and_rows: ek olarak hedef ses sorgu satırlarını yoğun çalıştırır (oluşturulan sesi bozulmadan korur)."
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "Zamanlamanın bu noktasından önce yoğun kullanılır."
+      },
+      "verbose": {
+        "name": "verbose"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaEraser": {
     "description": "Bria kullanarak bir görüntüden maskeyle ana hatları belirtilen nesneleri veya alanları kaldırın.",
     "display_name": "Bria Silgi",
@@ -7925,6 +7973,28 @@
       },
       "sigma": {
         "name": "sigma"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageColorSpace": {
+    "description": "sRGB (Rec.709), HDR (Rec.2020 HLG) ve HDR PQ'yu (Rec.2020 PQ) dönüştürür. 203 nit SDR beyazı ve 1000 nit HLG referans ekranı kullanır. Daraltma, toplu iş genelindeki fazla parlaklığı ton eşler ve gamut dışı renkleri sıkıştırır. Dönüşümler float32 ile hesaplanır ve ara cihaz ile veri türünü döndürür. Düz alfa renk dönüşümüne tabi tutulmaz.",
+    "display_name": "Görüntü Renk Uzayını Dönüştür",
+    "inputs": {
+      "destination": {
+        "name": "destination",
+        "tooltip": "Çıktı piksellerinin renk uzayı. Kaydetme düğümünü aynı renk uzayına ayarlayın."
+      },
+      "image": {
+        "name": "image"
+      },
+      "source": {
+        "name": "source",
+        "tooltip": "Girdi piksellerinin renk uzayı."
       }
     },
     "outputs": {
