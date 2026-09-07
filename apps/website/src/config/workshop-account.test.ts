@@ -1,7 +1,9 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { AccountUser } from '@comfyorg/account/core'
+import type { User } from 'firebase/auth'
+
+import type { AccountUser, SessionClient } from '@comfyorg/account/core'
 
 const h = vi.hoisted(() => ({
   captureSucceeded: vi.fn(),
@@ -17,6 +19,10 @@ const STORAGE_KEY = 'comfy.workshop.session.v1'
 
 function testUser(uid = 'uid-1'): AccountUser {
   return { uid, getIdToken: vi.fn(async () => 'id-token') }
+}
+
+function testFirebaseUser(uid = 'uid-1'): User {
+  return testUser(uid) as Partial<User> as User
 }
 
 function mintBody(token: string) {
@@ -96,20 +102,39 @@ describe('workshop session storage adapter', () => {
 })
 
 describe('auth refresh telemetry', () => {
+  function attachManualPort(client: SessionClient<User>) {
+    let deliver: ((user: User | null) => void) | undefined
+    client.attachIdentity({
+      onUserChanged: (callback) => {
+        deliver = callback
+        return () => undefined
+      }
+    })
+    return (user: User | null) => deliver?.(user)
+  }
+
   it('reports one succeeded outcome per minted token', async () => {
+    vi.stubGlobal('fetch', okFetch())
     const client = await importFresh()
+    const fire = attachManualPort(client)
 
-    await client.ensureFresh(testUser(), { fetchImpl: okFetch() })
+    fire(testFirebaseUser())
 
-    expect(h.captureSucceeded).toHaveBeenCalledOnce()
+    await vi.waitFor(() => expect(h.captureSucceeded).toHaveBeenCalledOnce())
     expect(h.captureFailed).not.toHaveBeenCalled()
   })
 
   it('does not repeat the outcome for a cached read of the same token', async () => {
+    vi.stubGlobal('fetch', okFetch())
     const client = await importFresh()
+    const fire = attachManualPort(client)
 
-    await client.ensureFresh(testUser(), { fetchImpl: okFetch() })
-    await client.ensureFresh(testUser(), { fetchImpl: vi.fn<typeof fetch>() })
+    fire(testFirebaseUser())
+    await vi.waitFor(() => expect(h.captureSucceeded).toHaveBeenCalledOnce())
+    fire(testFirebaseUser())
+    await vi.waitFor(() =>
+      expect(client.getSnapshot().phase).toBe('authenticated')
+    )
 
     expect(
       h.captureSucceeded,
@@ -118,22 +143,32 @@ describe('auth refresh telemetry', () => {
   })
 
   it('reports a permanent failure outcome', async () => {
+    vi.stubGlobal('fetch', statusFetch(403))
     const client = await importFresh()
+    const fire = attachManualPort(client)
 
-    await client.ensureFresh(testUser(), { fetchImpl: statusFetch(403) })
+    fire(testFirebaseUser())
 
-    expect(h.captureFailed).toHaveBeenCalledExactlyOnceWith('permanent_failure')
+    await vi.waitFor(() =>
+      expect(h.captureFailed).toHaveBeenCalledExactlyOnceWith(
+        'permanent_failure'
+      )
+    )
     expect(h.captureSucceeded).not.toHaveBeenCalled()
   })
 
   it('stays silent on a transient failure', async () => {
+    vi.stubGlobal('fetch', statusFetch(503))
     const client = await importFresh()
+    const fire = attachManualPort(client)
 
-    await client.ensureFresh(testUser(), { fetchImpl: statusFetch(503) })
+    fire(testFirebaseUser())
 
+    await vi.waitFor(() => expect(client.getSnapshot().phase).toBe('error'))
     expect(
       h.captureFailed,
       'valid-on-read has no retry machinery, so transient outcomes are cloud-only vocabulary'
     ).not.toHaveBeenCalled()
+    expect(h.captureSucceeded).not.toHaveBeenCalled()
   })
 })

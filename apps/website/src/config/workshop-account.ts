@@ -8,8 +8,15 @@
 import type { User } from 'firebase/auth'
 
 import type { SessionClient } from '@comfyorg/account/core'
-import { createSessionClient } from '@comfyorg/account/core'
+import {
+  createSessionClient,
+  isPermanentSessionError
+} from '@comfyorg/account/core'
 
+import {
+  captureAuthRefreshFailed,
+  captureAuthRefreshSucceeded
+} from '../scripts/posthog'
 import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
 
 const STORAGE_KEY = 'comfy.workshop.session.v1'
@@ -44,3 +51,30 @@ export const workshopSessionClient: SessionClient<User> =
     exchangeUrl: `${WORKSHOP_CLOUD_BASE_URL}/api/auth/token`,
     storage
   })
+
+/**
+ * Mirrors the cloud app's auth-refresh telemetry so both surfaces feed one
+ * PostHog funnel. Only the outcomes this lifecycle can produce are fired:
+ * succeeded (deduped per token, since a cached read republishes the same
+ * credential) and permanent_failure; the retry outcomes belong to cloud's
+ * scheduler-based refresh.
+ */
+let lastReportedToken: string | undefined
+workshopSessionClient.subscribe((snapshot) => {
+  if (snapshot.phase === 'authenticated') {
+    if (snapshot.session.token === lastReportedToken) return
+    lastReportedToken = snapshot.session.token
+    captureAuthRefreshSucceeded()
+    return
+  }
+  if (snapshot.phase === 'signed-out') {
+    lastReportedToken = undefined
+    return
+  }
+  if (
+    snapshot.phase === 'error' &&
+    isPermanentSessionError(snapshot.failure.code)
+  ) {
+    captureAuthRefreshFailed('permanent_failure')
+  }
+})
