@@ -19,9 +19,9 @@ function makeAssetsResponse(assets: ReadonlyArray<Asset>): ListAssetsResponse {
 }
 
 export function assetRequestIncludesTag(url: string, tag: string): boolean {
-  const includeTags = new URL(url).searchParams.get('include_tags') ?? ''
-  return includeTags
-    .split(',')
+  const params = new URL(url).searchParams
+  return [params.get('include_tags'), params.get('tags_any')]
+    .flatMap((value) => (value ?? '').split(','))
     .map((value) => value.trim())
     .filter(Boolean)
     .includes(tag)

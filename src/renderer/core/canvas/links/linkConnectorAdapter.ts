@@ -48,7 +48,7 @@ export class LinkConnectorAdapter {
     opts?: { moveExisting?: boolean; fromRerouteId?: RerouteId }
   ): void {
     const node = this.network.getNodeById(nodeId)
-    const output = node?.outputs?.[outputIndex]
+    const output = node?.outputs[outputIndex]
     if (!node || !output) return
 
     const fromReroute = this.network.getReroute(opts?.fromRerouteId)
@@ -81,7 +81,7 @@ export class LinkConnectorAdapter {
     }
   ): void {
     const node = this.network.getNodeById(nodeId)
-    const input = node?.inputs?.[inputIndex]
+    const input = node?.inputs[inputIndex]
     if (!node || !input) return
 
     const fromReroute = this.network.getReroute(opts?.fromRerouteId)
@@ -113,14 +113,14 @@ export class LinkConnectorAdapter {
 
   isInputValidDrop(nodeId: NodeId, inputIndex: number): boolean {
     const node = this.network.getNodeById(nodeId)
-    const input = node?.inputs?.[inputIndex]
+    const input = node?.inputs[inputIndex]
     if (!node || !input) return false
     return this.linkConnector.isInputValidDrop(node, input)
   }
 
   isOutputValidDrop(nodeId: NodeId, outputIndex: number): boolean {
     const node = this.network.getNodeById(nodeId)
-    const output = node?.outputs?.[outputIndex]
+    const output = node?.outputs[outputIndex]
     if (!node || !output) return false
     return this.linkConnector.renderLinks.some((link) =>
       link.canConnectToOutput(node, output)
@@ -145,7 +145,7 @@ export class LinkConnectorAdapter {
     //Add extra check for connection to subgraphInput/subgraphOutput
     if (isSubgraph(this.network)) {
       const { canvasX, canvasY } = event
-      const ioNode = this.network.getIoNodeOnPos?.(canvasX, canvasY)
+      const ioNode = this.network.getIoNodeOnPos(canvasX, canvasY)
       if (ioNode) {
         this.linkConnector.dropOnIoNode(ioNode, event)
         return
@@ -162,8 +162,10 @@ export class LinkConnectorAdapter {
 
 /** Convenience creator using the current app canvas graph. */
 export function createLinkConnectorAdapter(): LinkConnectorAdapter | null {
-  const graph = app.canvas?.graph
-  const connector = app.canvas?.linkConnector
+  const getGraph = (): LGraph | null => app.canvas.graph
+  const getConnector = (): LinkConnector | null => app.canvas.linkConnector
+  const graph = getGraph()
+  const connector = getConnector()
   if (!graph || !connector) return null
 
   const adapter = adapterByGraph.get(graph)

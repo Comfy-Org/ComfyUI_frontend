@@ -16,89 +16,72 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-describe('getComfyApiBaseUrl', () => {
-  const originalConfig = remoteConfig.value
+interface BaseUrlCase {
+  label: string
+  getBaseUrl: () => string
+  setOverride: (value: string) => void
+  defaultUrl: string
+}
 
-  beforeEach(() => {
-    remoteConfig.value = {}
-  })
+const baseUrlCases: BaseUrlCase[] = [
+  {
+    label: 'API',
+    getBaseUrl: getComfyApiBaseUrl,
+    setOverride: (value) => {
+      remoteConfig.value = { comfy_api_base_url: value }
+    },
+    defaultUrl: 'https://stagingapi.comfy.org'
+  },
+  {
+    label: 'Cloud',
+    getBaseUrl: getComfyCloudBaseUrl,
+    setOverride: (value) => {
+      remoteConfig.value = { comfy_cloud_base_url: value }
+    },
+    defaultUrl: 'https://testcloud.comfy.org'
+  },
+  {
+    label: 'Platform',
+    getBaseUrl: getComfyPlatformBaseUrl,
+    setOverride: (value) => {
+      remoteConfig.value = { comfy_platform_base_url: value }
+    },
+    defaultUrl: 'https://stagingplatform.comfy.org'
+  }
+]
 
-  afterEach(() => {
-    remoteConfig.value = originalConfig
-  })
+describe.for(baseUrlCases)(
+  '$label base URL',
+  ({ getBaseUrl, setOverride, defaultUrl }) => {
+    const originalConfig = remoteConfig.value
 
-  it('honors the server-provided override', () => {
-    remoteConfig.value = { comfy_api_base_url: 'https://my-ephem.example.com' }
-    expect(getComfyApiBaseUrl()).toBe('https://my-ephem.example.com')
-  })
+    beforeEach(() => {
+      remoteConfig.value = {}
+    })
 
-  it('falls back to the build-time default when the key is absent', () => {
-    expect(getComfyApiBaseUrl()).toBe('https://stagingapi.comfy.org')
-  })
+    afterEach(() => {
+      remoteConfig.value = originalConfig
+    })
 
-  it('falls back to the build-time default when the value is empty', () => {
-    remoteConfig.value = { comfy_api_base_url: '' }
-    expect(getComfyApiBaseUrl()).toBe('https://stagingapi.comfy.org')
-  })
-})
+    it('honors a server-provided HTTPS override', () => {
+      setOverride('https://custom.example.com')
+      expect(getBaseUrl()).toBe('https://custom.example.com')
+    })
 
-describe('getComfyCloudBaseUrl', () => {
-  const originalConfig = remoteConfig.value
+    it('removes a trailing slash from the override', () => {
+      setOverride('https://custom.example.com/')
+      expect(getBaseUrl()).toBe('https://custom.example.com')
+    })
 
-  beforeEach(() => {
-    remoteConfig.value = {}
-  })
-
-  afterEach(() => {
-    remoteConfig.value = originalConfig
-  })
-
-  it('honors the server-provided override', () => {
-    remoteConfig.value = {
-      comfy_cloud_base_url: 'https://my-ephem-cloud.example.com'
-    }
-    expect(getComfyCloudBaseUrl()).toBe('https://my-ephem-cloud.example.com')
-  })
-
-  it('falls back to the build-time default when the key is absent', () => {
-    expect(getComfyCloudBaseUrl()).toBe('https://testcloud.comfy.org')
-  })
-
-  it('falls back to the build-time default when the value is empty', () => {
-    remoteConfig.value = { comfy_cloud_base_url: '' }
-    expect(getComfyCloudBaseUrl()).toBe('https://testcloud.comfy.org')
-  })
-})
-
-describe('getComfyPlatformBaseUrl', () => {
-  const originalConfig = remoteConfig.value
-
-  beforeEach(() => {
-    remoteConfig.value = {}
-  })
-
-  afterEach(() => {
-    remoteConfig.value = originalConfig
-  })
-
-  it('honors the server-provided override', () => {
-    remoteConfig.value = {
-      comfy_platform_base_url: 'https://my-ephem-platform.example.com'
-    }
-    expect(getComfyPlatformBaseUrl()).toBe(
-      'https://my-ephem-platform.example.com'
+    it.for([undefined, '', 'not-a-url', 'http://custom.example.com'])(
+      'falls back to the build-time default for %s',
+      (override) => {
+        if (override !== undefined) setOverride(override)
+        expect(getBaseUrl()).toBe(defaultUrl)
+      }
     )
-  })
-
-  it('falls back to the build-time default when the key is absent', () => {
-    expect(getComfyPlatformBaseUrl()).toBe('https://stagingplatform.comfy.org')
-  })
-
-  it('falls back to the build-time default when the value is empty', () => {
-    remoteConfig.value = { comfy_platform_base_url: '' }
-    expect(getComfyPlatformBaseUrl()).toBe('https://stagingplatform.comfy.org')
-  })
-})
+  }
+)
 
 describe('compatibility with comfyui servers that predate the override keys', () => {
   const originalConfig = remoteConfig.value

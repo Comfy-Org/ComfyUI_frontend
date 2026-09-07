@@ -157,6 +157,7 @@ import WorkflowOverflowMenu from './WorkflowOverflowMenu.vue'
 interface WorkflowOption {
   value: string
   workflow: ComfyWorkflow
+  revision: number
 }
 
 const props = defineProps<{
@@ -191,10 +192,15 @@ function openFeedback() {
 }
 
 const containerRef = ref<HTMLElement | null>(null)
+const selectionRevision = ref(0)
 
-const workflowToOption = (workflow: ComfyWorkflow): WorkflowOption => ({
+const workflowToOption = (
+  workflow: ComfyWorkflow,
+  revision = 0
+): WorkflowOption => ({
   value: workflow.path,
-  workflow
+  workflow,
+  revision
 })
 
 const options = computed<WorkflowOption[]>(() =>
@@ -202,7 +208,10 @@ const options = computed<WorkflowOption[]>(() =>
 )
 const selectedWorkflow = computed<WorkflowOption | null>(() =>
   workflowStore.activeWorkflow
-    ? workflowToOption(workflowStore.activeWorkflow as ComfyWorkflow)
+    ? workflowToOption(
+        workflowStore.activeWorkflow as ComfyWorkflow,
+        selectionRevision.value
+      )
     : null
 )
 
@@ -217,7 +226,19 @@ const onWorkflowClick = async (event: MouseEvent) => {
       ?.querySelector<HTMLElement>('[data-workflow-path]')
   const path = workflowElement?.dataset.workflowPath
   const option = options.value.find(({ value }) => value === path)
-  if (option) await workflowService.openWorkflow(option.workflow)
+  if (!option) return
+
+  try {
+    const opened = await workflowService.openWorkflow(option.workflow)
+    if (opened === false) {
+      selectionRevision.value++
+      await nextTick()
+    }
+  } catch (error) {
+    selectionRevision.value++
+    await nextTick()
+    throw error
+  }
 }
 
 const closeWorkflows = async (options: WorkflowOption[]) => {

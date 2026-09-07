@@ -15,6 +15,7 @@ defineProps<{
   benefits: readonly Benefit[]
   footnote?: string
   primaryCta?: Cta
+  secondaryCta?: Cta
 }>()
 </script>
 
@@ -64,7 +65,10 @@ defineProps<{
       {{ footnote }}
     </p>
 
-    <div v-if="primaryCta" class="mt-10 flex justify-center lg:mt-12">
+    <div
+      v-if="primaryCta"
+      class="mt-10 flex flex-col justify-center gap-4 sm:flex-row lg:mt-12"
+    >
       <Button
         as="a"
         :href="primaryCta.href"
@@ -75,6 +79,18 @@ defineProps<{
         class="px-20"
       >
         {{ primaryCta.label }}
+      </Button>
+      <Button
+        v-if="secondaryCta"
+        as="a"
+        :href="secondaryCta.href"
+        :target="secondaryCta.target"
+        :rel="resolveRel(secondaryCta)"
+        variant="default"
+        size="lg"
+        class="px-20"
+      >
+        {{ secondaryCta.label }}
       </Button>
     </div>
   </section>

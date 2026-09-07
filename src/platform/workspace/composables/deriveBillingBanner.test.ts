@@ -8,7 +8,7 @@ const funded: BillingBannerInputs = {
   v1PaymentRecovery: true,
   isTeamPlan: true,
   isLoaded: true,
-  isActiveSubscription: true,
+  canAccessSubscriptionFeatures: true,
   billingStatus: 'paid',
   hasFunds: true,
   isCancelled: false,
@@ -24,12 +24,12 @@ const funded: BillingBannerInputs = {
 // cannot emit, and pass no matter where the check sits.
 const paused: Partial<BillingBannerInputs> = {
   billingStatus: 'paused',
-  isActiveSubscription: false
+  canAccessSubscriptionFeatures: false
 }
 
 const paymentFailed: Partial<BillingBannerInputs> = {
   billingStatus: 'payment_failed',
-  isActiveSubscription: false
+  canAccessSubscriptionFeatures: false
 }
 
 function derive(overrides: Partial<BillingBannerInputs>) {
@@ -133,7 +133,10 @@ describe('deriveBillingBanner', () => {
 
   it('shows no banner for an inactive subscription (that is a run-lock modal)', () => {
     expect(
-      derive({ isActiveSubscription: false, billingStatus: 'inactive' })
+      derive({
+        canAccessSubscriptionFeatures: false,
+        billingStatus: 'inactive'
+      })
     ).toBeNull()
   })
 

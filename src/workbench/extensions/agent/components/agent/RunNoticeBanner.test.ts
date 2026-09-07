@@ -20,21 +20,15 @@ describe('RunNoticeBanner', () => {
     localStorage.clear()
   })
 
-  it('shows the run notice when it has not been dismissed', () => {
+  it('shows the edit-graph run notice on first launch', () => {
     mount()
-    expect(
-      screen.getByText(
-        "The agent can modify the graph. You'll need to click run to execute the workflow."
-      )
-    ).not.toBeNull()
+    expect(screen.getByText(i18n.global.t('agent.runNotice'))).not.toBeNull()
   })
 
   it('shows the expanded run notice in the maximized panel', () => {
     mount(true)
     expect(
-      screen.getByText(
-        "The agent can modify your workflow. You'll need to click run to execute."
-      )
+      screen.getByText(i18n.global.t('agent.runNoticeExpanded'))
     ).not.toBeNull()
   })
 

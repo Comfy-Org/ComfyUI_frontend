@@ -26,7 +26,7 @@ const mocks = vi.hoisted(() => {
 const storeState = vi.hoisted(() => {
   // Plain objects wired up in beforeEach. Tests use setStoreState to swap values.
   return {
-    systemStats: null as unknown,
+    systemStats: null,
     isLoading: false
   }
 })

@@ -9,7 +9,7 @@ const state = vi.hoisted(() => ({
   canLeaveWorkspace: false,
   canManageSubscription: false,
   canManageSubscriptionLifecycle: false,
-  isActiveSubscription: true,
+  canAccessSubscriptionFeatures: true,
   isDeleteDisabled: false,
   isFreeTier: false,
   isInPersonalWorkspace: false,
@@ -77,7 +77,9 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
       workspaceMenuDisabledTooltip: null
     })),
     isInPersonalWorkspace: computed(() => state.isInPersonalWorkspace),
-    isActiveSubscription: computed(() => state.isActiveSubscription),
+    canAccessSubscriptionFeatures: computed(
+      () => state.canAccessSubscriptionFeatures
+    ),
     isSubscriptionCancelled: computed(() => state.isSubscriptionCancelled),
     isDeleteDisabled: {
       get value() {
@@ -99,7 +101,7 @@ describe('useWorkspaceMenuItems', () => {
     state.canLeaveWorkspace = false
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
-    state.isActiveSubscription = true
+    state.canAccessSubscriptionFeatures = true
     state.isDeleteDisabled = false
     state.isFreeTier = false
     state.isInPersonalWorkspace = false
@@ -149,7 +151,7 @@ describe('useWorkspaceMenuItems', () => {
   it('defers to the capability for subscription state it already encodes', () => {
     state.canCancel = true
     state.isSubscriptionCancelled = true
-    state.isActiveSubscription = false
+    state.canAccessSubscriptionFeatures = false
     state.planSlug = null
 
     const { menuItems } = useWorkspaceMenuItems()
@@ -214,7 +216,7 @@ describe('useWorkspaceMenuItems', () => {
     state.shouldUseWorkspaceBilling = false
     state.billingStatus = 'payment_failed'
     state.canManageSubscriptionLifecycle = true
-    state.isActiveSubscription = false
+    state.canAccessSubscriptionFeatures = false
 
     const { menuItems } = useWorkspaceMenuItems()
 
@@ -227,7 +229,7 @@ describe('useWorkspaceMenuItems', () => {
     state.shouldUseWorkspaceBilling = false
     state.billingStatus = 'paused'
     state.canManageSubscriptionLifecycle = true
-    state.isActiveSubscription = false
+    state.canAccessSubscriptionFeatures = false
 
     const { menuItems } = useWorkspaceMenuItems()
 
@@ -240,7 +242,7 @@ describe('useWorkspaceMenuItems', () => {
     state.shouldUseWorkspaceBilling = false
     state.billingStatus = 'payment_failed'
     state.canManageSubscriptionLifecycle = true
-    state.isActiveSubscription = false
+    state.canAccessSubscriptionFeatures = false
     state.planSlug = null
 
     const { menuItems } = useWorkspaceMenuItems()
@@ -254,7 +256,7 @@ describe('useWorkspaceMenuItems', () => {
     state.shouldUseWorkspaceBilling = false
     state.billingStatus = 'payment_failed'
     state.canManageSubscriptionLifecycle = false
-    state.isActiveSubscription = false
+    state.canAccessSubscriptionFeatures = false
 
     const { menuItems } = useWorkspaceMenuItems()
 

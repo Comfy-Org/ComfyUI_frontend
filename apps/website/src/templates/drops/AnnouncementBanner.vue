@@ -4,19 +4,33 @@ import { ArrowRight, X } from '@lucide/vue'
 import type { BannerData } from '../../config/banner'
 import type { Locale } from '../../i18n/translations'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import { t } from '../../i18n/translations'
 import Button from '@/components/ui/button/Button.vue'
 import IconButton from '@/components/ui/icon-button/IconButton.vue'
 import { useBannerDismissal } from '../../composables/useBannerDismissal'
 
+const GRADIENT_BACKGROUND =
+  'linear-gradient(90deg, var(--color-primary-comfy-plum) 0%, var(--color-secondary-deep-plum) 53.85%, var(--color-secondary-mauve) 100%)'
+
 const {
   data,
   version,
-  locale = 'en'
+  locale = 'en',
+  background = GRADIENT_BACKGROUND,
+  centered = false,
+  dismissible = true
 } = defineProps<{
   data: BannerData
   version: string
   locale?: Locale
+  /** CSS `background` value. Defaults to the sitewide banner's plum gradient. */
+  background?: string
+  /** Centers the title/CTA instead of the sitewide banner's left alignment. */
+  centered?: boolean
+  /** Hides the close control for a banner that isn't meant to be dismissed. */
+  dismissible?: boolean
 }>()
 
 const { isVisible, close, persistHidden } = useBannerDismissal(version)
@@ -28,19 +42,24 @@ const { isVisible, close, persistHidden } = useBannerDismissal(version)
       <div class="min-h-0 overflow-hidden">
         <div
           data-slot="announcement-banner"
-          class="after:bg-transparency-white-t4 relative flex items-center gap-x-6 px-6 py-4 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-px sm:px-3.5 sm:before:flex-1"
-          style="
-            background: linear-gradient(
-              90deg,
-              var(--color-primary-comfy-plum) 0%,
-              var(--color-secondary-deep-plum) 53.85%,
-              var(--color-secondary-mauve) 100%
-            );
+          :class="
+            cn(
+              'after:bg-transparency-white-t4 relative flex items-center gap-x-6 px-6 py-4 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-px sm:px-3.5',
+              centered ? 'justify-center text-center' : 'sm:before:flex-1'
+            )
           "
+          :style="{ background }"
         >
-          <div class="flex flex-wrap items-center gap-x-8 gap-y-2">
+          <div
+            :class="
+              cn(
+                'flex flex-wrap items-center gap-x-8 gap-y-2',
+                centered && 'justify-center'
+              )
+            "
+          >
             <p
-              class="text-primary-warm-white ppformula-text-center text-sm md:text-base/6"
+              class="ppformula-text-center text-sm text-primary-warm-white md:text-base/6"
             >
               {{ data.title }}
               <span v-if="data.description" class="text-primary-warm-white/80">
@@ -62,7 +81,7 @@ const { isVisible, close, persistHidden } = useBannerDismissal(version)
               </template>
             </Button>
           </div>
-          <div class="flex flex-1 justify-end">
+          <div v-if="dismissible" class="flex flex-1 justify-end">
             <IconButton
               type="button"
               :aria-label="t('nav.close', locale)"

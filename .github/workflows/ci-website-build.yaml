@@ -49,3 +49,9 @@ jobs:
 
       - name: Validate llms.txt links
         run: pnpm --filter @comfyorg/website validate:llms-txt-links
+
+      # Same shape as validate:jsonld: reads the built dist/ and exits non-zero.
+      # Which routes are locale-invariant is hand-maintained, so this is what
+      # catches a cluster that points at a page the build never produced.
+      - name: Check hreflang clusters
+        run: pnpm --filter @comfyorg/website check:hreflang

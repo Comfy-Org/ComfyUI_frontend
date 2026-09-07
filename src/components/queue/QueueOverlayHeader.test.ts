@@ -56,7 +56,9 @@ describe('QueueOverlayHeader', () => {
     i18n.global.locale.value = 'en'
     mockSidebarTabStore.activeSidebarTabId = null
     mockGetSetting.mockImplementation((key: string) =>
-      key === 'Comfy.Queue.QPOV2' ? true : undefined
+      key === 'Comfy.Queue.QPOV2' || key === 'Comfy.Queue.ShowRunProgressBar'
+        ? true
+        : undefined
     )
   })
 

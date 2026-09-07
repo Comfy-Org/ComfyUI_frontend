@@ -34,7 +34,7 @@ function createTestWidget(
   )
 }
 
-class MutableTypeWidget extends BaseWidget<IBaseWidget<number, string>> {
+class MutableTypeWidget extends BaseWidget<IBaseWidget<number>> {
   drawWidget(
     _ctx: CanvasRenderingContext2D,
     _options: DrawWidgetOptions
@@ -340,7 +340,7 @@ describe('BaseWidget store integration', () => {
           const state = store.getWidget(
             widgetId(graphId, node.id, 'system_prompt')
           )
-          return (state?.value as string) ?? defaultValue
+          return typeof state?.value === 'string' ? state.value : defaultValue
         },
         set(v: string) {
           const graphId = widget.node.graph?.rootGraph.id

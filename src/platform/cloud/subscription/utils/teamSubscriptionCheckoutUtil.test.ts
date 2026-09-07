@@ -12,7 +12,7 @@ const {
   mockSubscribe: vi.fn(),
   mockTrackBeginCheckout: vi.fn(),
   mockTrackBillingEvent: vi.fn(),
-  mockUserId: { value: 'user-1' as string | null }
+  mockUserId: { value: 'user-1' }
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
@@ -63,6 +63,8 @@ describe('performTeamSubscriptionCheckout', () => {
     Object.defineProperty(globalThis, 'location', {
       configurable: true,
       value: {
+        origin: 'https://app.test',
+        pathname: '/payment/success',
         set href(value: string) {
           assignedHref = value
         }

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
   ExportedSubgraphInstance,
@@ -97,7 +97,7 @@ function promotedId(node: SubgraphNode) {
 function convertPromotedWidgetNode(rootGraph: LGraph): SubgraphNode {
   const producer = createTestNode(rootGraph, [], ['number'])
 
-  if (!LiteGraph.registered_node_types[CONVERTIBLE_NODE_TYPE]) {
+  if (!(CONVERTIBLE_NODE_TYPE in LiteGraph.registered_node_types)) {
     class ConvertibleNode extends LGraphNodeClass {
       constructor() {
         super('Convertible')
@@ -107,14 +107,6 @@ function convertPromotedWidgetNode(rootGraph: LGraph): SubgraphNode {
       }
     }
     LiteGraph.registerNodeType(CONVERTIBLE_NODE_TYPE, ConvertibleNode)
-    onTestFinished(() => {
-      if (
-        LiteGraph.registered_node_types[CONVERTIBLE_NODE_TYPE] ===
-        ConvertibleNode
-      ) {
-        LiteGraph.unregisterNodeType(CONVERTIBLE_NODE_TYPE)
-      }
-    })
   }
 
   const node = LiteGraph.createNode(CONVERTIBLE_NODE_TYPE)
@@ -251,6 +243,33 @@ describe('duplicated subgraph deleted in both orders (I4)', () => {
     expect(useWidgetValueStore().setValue(id, 999)).toBe(true)
     expect(promotedValueOf(first)).toBe(999)
     expect(promotedValueOf(second)).toBe(before)
+  })
+
+  it('does not leak a discarded clipboard clone value into a later unrelated instance (#16250)', () => {
+    const rootGraph = createTestRootGraph()
+    registerTestSubgraphNodeTypes(rootGraph)
+    const definition = createSharedDefinition(rootGraph)
+
+    const original = instantiate(definition, rootGraph, 111)
+
+    // Simulate the clipboard's clone-and-discard: construct a clone (which
+    // runs constructor-time widget resolution while its id is still
+    // UNASSIGNED_NODE_ID), then drop it without ever calling graph.add().
+    const clone = original.clone()
+    expect(clone).not.toBeNull()
+
+    expect(
+      useWidgetValueStore().getWidget(
+        widgetId(rootGraph.id, UNASSIGNED_NODE_ID, PROMOTED_INPUT)
+      )
+    ).toBeUndefined()
+
+    // A later, unrelated instance with the same promoted input name/type
+    // must not inherit anything left behind by the discarded clone.
+    const unrelated = instantiate(definition, rootGraph, 555)
+
+    expect(promotedValueOf(unrelated)).toBe(555)
+    expect(promotedId(unrelated)).not.toBe(promotedId(original))
   })
 
   it('keeps the shared definition only while a nested instance references it', () => {
