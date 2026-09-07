@@ -176,8 +176,9 @@ describe('ModelDetail', () => {
     // The trip to Platform is explained before it happens, it carries the page
     // back with it, and the mocked purchase returns with the credits added.
     await user().click(run)
+    // The page it carries back is on the link itself, not on any display of it.
     expect(
-      (await screen.findByTestId('buy-credits-url')).textContent
+      (await screen.findByTestId('buy-credits-continue')).getAttribute('href')
     ).toContain('success_url=')
     // Continue is a link: the tab opens on the click and this page starts
     // waiting straight away, rather than showing anything of its own.
