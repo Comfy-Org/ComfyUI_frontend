@@ -8486,13 +8486,9 @@ Enterprise`
     en: 'See the node reference',
     'zh-CN': '查看节点参考'
   },
-  'cloudNodesLaunch.models.nodeCountOne': {
-    en: '{count} node',
-    'zh-CN': '{count} 个节点'
-  },
-  'cloudNodesLaunch.models.nodeCountOther': {
-    en: '{count} nodes',
-    'zh-CN': '{count} 个节点'
+  'cloudNodesLaunch.models.nodeCount': {
+    en: '{count} node | {count} nodes',
+    'zh-CN': '{count} 个节点 | {count} 个节点'
   },
   'cloudNodesLaunch.models.flux2': {
     en: 'Flux 2',
@@ -8684,6 +8680,19 @@ export type LocalizedText = { en: string; 'zh-CN': string } & Partial<
 export function t(key: TranslationKey, locale: Locale = 'en'): string {
   const entry = translations[key] as LocalizedText
   return entry[locale] ?? entry.en
+}
+
+export function tPlural(
+  key: TranslationKey,
+  count: number,
+  locale: Locale = 'en'
+): string {
+  const forms = t(key, locale).split('|')
+  const form =
+    new Intl.PluralRules(locale).select(count) === 'one'
+      ? forms[0]
+      : forms[forms.length - 1]
+  return form.trim().replace('{count}', String(count))
 }
 
 export const translationKeys = Object.keys(translations) as TranslationKey[]

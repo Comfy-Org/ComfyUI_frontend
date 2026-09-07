@@ -2,19 +2,11 @@
 import SectionHeader from '../../components/common/SectionHeader.vue'
 import { externalLinks } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { t, tPlural } from '../../i18n/translations'
 import { resolveRel } from '../../utils/cta'
 import { cloudNodeModelCards } from './modelCards'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
-
-function nodeCountLabel(nodeCount: number): string {
-  const key =
-    new Intl.PluralRules(locale).select(nodeCount) === 'one'
-      ? 'cloudNodesLaunch.models.nodeCountOne'
-      : 'cloudNodesLaunch.models.nodeCountOther'
-  return t(key, locale).replace('{count}', String(nodeCount))
-}
 </script>
 
 <template>
@@ -64,7 +56,13 @@ function nodeCountLabel(nodeCount: number): string {
           <span
             class="shrink-0 rounded-full bg-white/15 px-3 py-1 text-xs whitespace-nowrap text-primary-comfy-canvas backdrop-blur-sm"
           >
-            {{ nodeCountLabel(card.nodeCount) }}
+            {{
+              tPlural(
+                'cloudNodesLaunch.models.nodeCount',
+                card.nodeCount,
+                locale
+              )
+            }}
           </span>
         </div>
       </li>
