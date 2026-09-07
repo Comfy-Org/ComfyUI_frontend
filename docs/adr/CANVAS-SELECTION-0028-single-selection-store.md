@@ -49,18 +49,34 @@ Specifically:
    of its buckets.
 3. State changes use four commands: `selection.replace`, `selection.add`,
    `selection.remove`, and `selection.clear`. The commands are serializable,
-   deterministic, and idempotent. Existing toggle interactions inspect current
-   membership and issue either `add` or `remove`; there is no replay-sensitive
-   `selection.toggle` command. Selection remains outside undo history and CRDT
-   synchronization because it is session state.
+   deterministic, and idempotent. Every command identifies its root and owning
+   graph. `replace` carries an ordered list of keys, `add` and `remove` carry one
+   key, and `clear` clears only the addressed owning-graph bucket. Closing a
+   root graph evicts its buckets through store lifecycle cleanup rather than a
+   broader form of `clear`. Repeated `add` does not duplicate or reorder a key;
+   `replace` keeps the first occurrence of each key; removing an absent key and
+   clearing an empty bucket are no-ops. Existing toggle interactions inspect
+   current membership and issue either `add` or `remove`; there is no
+   replay-sensitive `selection.toggle` command. Selection remains outside undo
+   history and CRDT synchronization because it is session state.
 4. `canvas.selectedItems`, `canvas.selected_nodes`,
    `canvas.highlighted_links`, `item.selected`, and `canvasStore.selectedItems`
-   become views or compatibility adapters over the store. The adapters
-   preserve the current public read and write contracts while first-party
-   callers migrate. Once corpus checks show that a writable legacy path is
-   unused, its removal or deprecation requires a separate compatibility
-   change. Interaction focus fields such as `canvas.current_node` and
-   `canvas.selected_group` remain separate.
+   become views or compatibility adapters over the store. Keys resolve through
+   the addressed owning graph and iteration returns its canonical live entity
+   objects, preserving object identity and the current group-and-child contents.
+   Removal drops the key before the ID can be reused, so a new entity with the
+   same local ID does not inherit selection; unresolved keys are omitted rather
+   than exposing stale objects. `selectedItems.add`, `delete`, and `clear`
+   dispatch the corresponding scoped commands and retain their current `Set`
+   return values. Assigning `true` to `item.selected` dispatches `add`; assigning
+   `false` or `undefined` dispatches `remove`. These raw compatibility writes do
+   not add callback effects that they do not emit today. `selected_nodes`,
+   `highlighted_links`, and `canvasStore.selectedItems` retain their current
+   projection shapes. If an extension writes one of those projections without
+   changing selection today, the adapter preserves that value separately and
+   does not treat it as selected state. Removing that writable behavior requires
+   a separate deprecation. Interaction focus fields such as `canvas.current_node`
+   and `canvas.selected_group` remain separate.
 5. Existing methods remain the behavior boundary. `select`, `deselect`,
    `deselectAll`, `processSelect`, `selectNode`, `selectNodes`, and
    `selectItems` translate their current decisions into store commands. They
@@ -97,9 +113,11 @@ The migration must preserve these observable behaviors:
 
 Characterization tests against the real `LGraphCanvas` record these contracts
 before each caller moves to the store. Store tests cover command idempotence,
-removal of every selectable kind, graph-scoped cleanup, navigation clearing,
-and root-graph eviction. Each migration step must leave the characterization
-tests unchanged.
+scope, duplicate-free insertion order, removal of every selectable kind,
+graph-scoped cleanup, navigation clearing, and root-graph eviction. Adapter
+tests cover `Set` mutator return values, canonical object identity,
+group-and-child contents, and removal followed by same-ID recreation. Each
+migration step must leave the characterization tests unchanged.
 
 ### Deferred decisions
 
