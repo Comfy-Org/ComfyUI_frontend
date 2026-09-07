@@ -47,23 +47,28 @@ import type { PerfSpan } from './perfMark'
  */
 const BOOTSTRAP_WATCHDOG_MS = 30_000
 
-/** All known startup phase names. Extending this list is the only change
- *  required to add a new tracked phase. */
-export type BootstrapPhase =
-  | 'startup/remote-config'
-  | 'startup/telemetry-init'
-  | 'startup/firebase-init'
-  | 'startup/sentry-init'
-  | 'auth-gate/initialized'
-  | 'auth-gate/user-store'
-  | 'auth-gate/needs-login'
-  | 'bootstrap/settings'
-  | 'bootstrap/workflows'
-  | 'bootstrap/extensions-load'
-  | 'bootstrap/extensions-init'
-  | 'bootstrap/object-info'
-  | 'bootstrap/extensions'
-  | 'bootstrap/extensions-setup'
+const BOOTSTRAP_PHASES = {
+  startup: ['remote-config', 'telemetry-init', 'firebase-init', 'sentry-init'],
+  'auth-gate': ['initialized', 'user-store', 'needs-login'],
+  bootstrap: [
+    'settings',
+    'workflows',
+    'extensions-load',
+    'extensions-init',
+    'object-info',
+    'extensions',
+    'extensions-setup'
+  ]
+} as const satisfies Record<string, readonly string[]>
+
+type BootstrapPhaseNamespace = keyof typeof BOOTSTRAP_PHASES
+
+type BootstrapSubphase<Namespace extends BootstrapPhaseNamespace> =
+  (typeof BOOTSTRAP_PHASES)[Namespace][number]
+
+export type BootstrapPhase = {
+  [Namespace in BootstrapPhaseNamespace]: `${Namespace}/${BootstrapSubphase<Namespace>}`
+}[BootstrapPhaseNamespace]
 
 export interface BootstrapPhaseTiming {
   name: BootstrapPhase
