@@ -1,6 +1,7 @@
 {
   "g": {
     "shortcutSuffix": " ({shortcut})",
+    "megapixelsValue": "{count} MP",
     "user": "User",
     "you": "You",
     "currentUser": "Current user",
@@ -1291,6 +1292,7 @@
     "title": "Compositor",
     "webglUnavailable": "WebGL is unavailable - the canvas cannot render",
     "loadFailed": "Failed to load layers",
+    "needsTwoImages": "The layer editor needs at least two output images",
     "layersFailedToLoad": "One layer failed to load | {count} layers failed to load",
     "selectTool": "Select",
     "handTool": "Hand",
@@ -2237,7 +2239,9 @@
       "deleteRecording": "Delete Recording",
       "videoRecordingTooltip": "Video recording of the scene [mp4]",
       "switchProjection": "Switch projection",
-      "originalMaterialOnly": "Original material only"
+      "originalMaterialOnly": "Original material only",
+      "customUp": "Custom up",
+      "naturalUp": "Natural up"
     },
     "materialModes": {
       "normal": "Normal",

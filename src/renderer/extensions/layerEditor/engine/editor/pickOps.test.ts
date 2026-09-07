@@ -79,6 +79,24 @@ describe('layerOpacityAt', () => {
     expect(layerOpacityAt(node, { x: 20, y: 100 }, content)).toBe(0)
     expect(layerOpacityAt(node, { x: 200, y: 100 }, content)).toBe(1)
   })
+  it('scales a group pick by the group opacity', () => {
+    const child = mkRaster('a', 0, 0, 100, 100)
+    const content = fakeContent({ a: fakeCanvas(10, 10, () => 1) })
+    const group = {
+      id: 'g',
+      kind: 'group',
+      name: 'g',
+      visible: true,
+      opacity: 0.2,
+      mode: {},
+      transform: { x: 0, y: 0, w: 100, h: 100, rotation: 0 },
+      locks: { content: false, position: false, visibility: false },
+      children: [child],
+      passThrough: false
+    } as unknown as SceneNode
+    expect(layerOpacityAt(group, { x: 50, y: 50 }, content)).toBeCloseTo(0.2)
+    expect(pickLayerAt([group], { x: 50, y: 50 }, content)).toBeNull()
+  })
   it('returns 0 outside the transform and for invisible layers', () => {
     const node = mkRaster('a', 0, 0, 100, 100)
     const content = fakeContent({ a: fakeCanvas(10, 10, () => 1) })

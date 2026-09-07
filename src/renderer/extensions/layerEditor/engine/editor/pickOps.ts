@@ -10,24 +10,16 @@ export type AlphaSampler = (
   y: number
 ) => number
 
-const sampleCache = new WeakMap<
-  HTMLCanvasElement,
-  CanvasRenderingContext2D | null
->()
-
 function defaultAlphaSampler(
   canvas: HTMLCanvasElement,
   x: number,
   y: number
 ): number {
-  let ctx = sampleCache.get(canvas)
-  if (ctx === undefined) {
-    try {
-      ctx = canvas.getContext('2d', { willReadFrequently: true })
-    } catch {
-      ctx = null
-    }
-    sampleCache.set(canvas, ctx)
+  let ctx: CanvasRenderingContext2D | null
+  try {
+    ctx = canvas.getContext('2d', { willReadFrequently: true })
+  } catch {
+    ctx = null
   }
   if (!ctx) return 1
   try {
@@ -78,7 +70,7 @@ export function layerOpacityAt(
         best = Math.max(best, layerOpacityAt(child, pt, content, sample))
         if (best >= 1) break
       }
-      return best
+      return best * node.opacity
     }
     case 'raster':
       return rasterAlphaAt(node as RasterData, pt, content, sample)
