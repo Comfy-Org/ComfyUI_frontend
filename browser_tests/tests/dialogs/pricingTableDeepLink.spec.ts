@@ -97,6 +97,7 @@ const ACTIVE_TEAM_STATUS = {
     credits_monthly: 147_700,
     stop_usd: 700
   },
+  scheduled_change: null,
   max_seats: 5,
   occupied_seats: 1
 } satisfies BillingStatusResponse
@@ -111,6 +112,7 @@ const ACTIVE_STANDARD_STATUS = {
   has_funds: true,
   renewal_date: '2099-02-20T00:00:00Z',
   team_credit_stop: null,
+  scheduled_change: null,
   max_seats: 1,
   occupied_seats: 1
 } satisfies BillingStatusResponse
