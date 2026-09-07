@@ -434,6 +434,46 @@ describe('ensureFresh', () => {
     ).toBe('ws-9')
   })
 
+  it('never lets a slower personal mint commit over a completed workspace switch', async () => {
+    let releasePersonal!: (response: Response) => void
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(
+        () => new Promise<Response>((resolve) => (releasePersonal = resolve))
+      )
+      .mockImplementationOnce(async () =>
+        jsonResponse(
+          200,
+          mintBody({
+            token: 'team-jwt',
+            workspace: { id: 'ws-9', name: 'Team', type: 'team' }
+          })
+        )
+      )
+    const { client } = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port, { autoMint: false })
+    const user = testUser()
+    identity.fire(user)
+
+    const personal = client.ensureFresh(user, {})
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledOnce())
+    const team = await client.remint(user, { workspaceId: 'ws-9' })
+    expect(team?.status === 'ok' && team.session.token).toBe('team-jwt')
+
+    releasePersonal(jsonResponse(200, mintBody({ token: 'personal-jwt' })))
+    const superseded = await personal
+
+    expect(
+      client.getToken(),
+      'a slower personal mint resolving after a workspace switch must not silently revert it'
+    ).toBe('team-jwt')
+    expect(
+      superseded,
+      'a superseded mint resolves undefined, like one outlived by an identity change'
+    ).toBeUndefined()
+  })
+
   it('resolves an expired-cache read with the NEW token when the mint lands after the call', async () => {
     let release!: (response: Response) => void
     const fetchImpl = vi.fn<typeof fetch>(
@@ -657,6 +697,21 @@ describe('host-driven invalidation', () => {
       after?.status === 'ok' && after.session.token,
       'the attachment survives invalidation, so a targeted re-mint commits normally'
     ).toBe('post-invalidate-jwt')
+  })
+
+  it('reads signed-out immediately after invalidation, not minting', async () => {
+    const { client } = makeClient({ fetchImpl: okFetch() })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+    identity.fire(testUser())
+    await vi.waitFor(() => expect(client.getToken()).toBe('workspace-jwt'))
+
+    client.invalidate()
+
+    expect(
+      client.getSnapshot().phase,
+      "an invalidated client claiming 'minting' hands a signed-out host a stale identity until the port re-diffs"
+    ).toBe('signed-out')
   })
 })
 

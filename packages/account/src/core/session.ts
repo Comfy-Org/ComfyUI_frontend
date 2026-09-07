@@ -258,9 +258,12 @@ export interface SessionClient<TUser extends AccountUser = AccountUser> {
     options?: SessionRequestOptions
   ) => Promise<SessionResult | undefined>
   /**
-   * Fail closed: drop the published credential, cancel scheduled work, and
-   * invalidate in-flight mints, keeping the identity attachment so a
-   * targeted re-mint can follow. For host flows like a workspace switch.
+   * Fail closed: drop the published credential AND the identity snapshot,
+   * cancel scheduled work, and invalidate in-flight mints, keeping the
+   * identity attachment so a targeted re-mint can follow. The snapshot
+   * reads signed-out until the port re-delivers a user; an explicit-user
+   * re-mint before that resolves and caches like the pre-attach popup
+   * path. For host flows like a sign-out or a workspace switch.
    */
   invalidate: () => void
   clearCache: () => void
@@ -337,6 +340,14 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   let inFlightUid: string | undefined
   let inFlightTarget: string | undefined
   let inFlightForced = false
+  /**
+   * Monotonic id taken by every started mint; a commit is allowed only for
+   * the newest one. Target-agnostic on purpose — a slower mint for the old
+   * workspace resolving after a switch must never revert it. Ports the
+   * cloud store's unifiedRefreshRequestId guard.
+   */
+  let mintSequence = 0
+  let inFlightMintId = 0
 
   function getSnapshot(): SessionSnapshot<TUser> {
     if (!currentUser) {
@@ -539,11 +550,16 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
    * reuses an in-flight mint only when that one is also forced, so a 401
    * retry never resolves to a non-forced mint still holding the stale token.
    */
+  interface MintHandle {
+    readonly mintId: number
+    readonly response: Promise<SessionResult>
+  }
+
   function sharedMint(
     user: AccountUser,
     options: SessionRequestOptions,
     forced: boolean
-  ): Promise<SessionResult> {
+  ): MintHandle {
     const target = options.workspaceId ?? clientOptions.workspaceId
     if (
       inFlight !== undefined &&
@@ -551,11 +567,13 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       inFlightTarget === target &&
       (!forced || inFlightForced)
     ) {
-      return inFlight
+      return { mintId: inFlightMintId, response: inFlight }
     }
     inFlightUid = user.uid
     inFlightTarget = target
     inFlightForced = forced
+    const mintId = ++mintSequence
+    inFlightMintId = mintId
     const running = mint(user, options).finally(() => {
       if (inFlight !== running) return
       inFlight = undefined
@@ -564,13 +582,13 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       inFlightForced = false
     })
     inFlight = running
-    return running
+    return { mintId, response: running }
   }
 
   function ensureCore(
     user: AccountUser,
     options: SessionRequestOptions
-  ): Promise<SessionResult> {
+  ): MintHandle {
     const now = options.now?.() ?? clientOptions.now?.() ?? Date.now()
     const target = options.workspaceId ?? clientOptions.workspaceId
     const cached = readCached(user.uid)
@@ -579,7 +597,10 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       isCredentialFresh(cached, now, freshMarginMs) &&
       (target === undefined || cached.workspace.id === target)
     ) {
-      return Promise.resolve({ status: 'ok', session: cached })
+      return {
+        mintId: mintSequence,
+        response: Promise.resolve({ status: 'ok', session: cached })
+      }
     }
     return sharedMint(user, options, false)
   }
@@ -587,7 +608,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   function remintCore(
     user: AccountUser,
     options: SessionRequestOptions
-  ): Promise<SessionResult> {
+  ): MintHandle {
     safeClear()
     return sharedMint(user, options, true)
   }
@@ -636,13 +657,19 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     // Refresh with the target that produced the live credential, so a
     // scheduled refresh reproduces the same session AND coalesces with any
     // concurrent reactive re-mint for it.
+    const { mintId, response } = sharedMint(
+      user,
+      { workspaceId: credentialTarget },
+      true
+    )
     let result: SessionResult
     try {
-      result = await sharedMint(user, { workspaceId: credentialTarget }, true)
+      result = await response
     } catch {
       result = { status: 'error', code: 'TOKEN_EXCHANGE_FAILED' }
     }
     if (
+      mintId !== mintSequence ||
       currentUser?.uid !== user.uid ||
       identityEpoch !== startEpoch ||
       invalidationEpoch !== startInvalidation
@@ -679,10 +706,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   }
 
   async function refreshWith(
-    core: (
-      user: AccountUser,
-      options: SessionRequestOptions
-    ) => Promise<SessionResult>,
+    core: (user: AccountUser, options: SessionRequestOptions) => MintHandle,
     requestedUser?: AccountUser,
     options: SessionRequestOptions = {}
   ): Promise<SessionResult | undefined> {
@@ -691,8 +715,9 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
 
     const startEpoch = identityEpoch
     const startInvalidation = invalidationEpoch
-    const result = await core(user, options)
-    if (invalidationEpoch !== startInvalidation) {
+    const { mintId, response } = core(user, options)
+    const result = await response
+    if (invalidationEpoch !== startInvalidation || mintId !== mintSequence) {
       return undefined
     }
     if (
@@ -776,6 +801,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     invalidate() {
       invalidationEpoch += 1
       stopScheduledRefresh()
+      currentUser = null
       credential = undefined
       credentialTarget = undefined
       failure = undefined
