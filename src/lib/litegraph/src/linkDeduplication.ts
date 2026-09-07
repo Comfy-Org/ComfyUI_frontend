@@ -2,7 +2,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import type { EndpointUpdate } from '@/stores/linkStore'
-import { toLinkId } from '@/types/linkId'
+import { parseLinkId, toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import cloneDeep from 'es-toolkit/compat/cloneDeep'
@@ -58,7 +58,9 @@ export function remapLinkReferences(
   const presentation = data.extra?.linkPresentation
   if (presentation) {
     for (const [key, value] of Object.entries(presentation)) {
-      const remappedKey = String(remap(Number(key)))
+      const linkId = parseLinkId(key)
+      if (linkId === undefined) continue
+      const remappedKey = String(remap(linkId))
       if (remappedKey === key) continue
       presentation[remappedKey] ??= value
       delete presentation[key]

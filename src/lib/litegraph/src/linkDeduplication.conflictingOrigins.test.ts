@@ -176,6 +176,15 @@ describe('legacy mirror link creation (#15577 reachability)', () => {
 })
 
 describe('normalizeConfiguredTopology presentation sidecar', () => {
+  it('does not turn a noncanonical presentation key into a valid survivor ID', () => {
+    const data = structuredClone(duplicateLinksRoot)
+    data.extra = { linkPresentation: { '02': { hidden: true } } }
+
+    const result = normalizeConfiguredTopology(data)
+
+    expect(result.extra?.linkPresentation).not.toHaveProperty('1')
+  })
+
   it('drops a losing entry when the survivor already carries presentation', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     const data = fromPartial<SerialisableGraph>({
