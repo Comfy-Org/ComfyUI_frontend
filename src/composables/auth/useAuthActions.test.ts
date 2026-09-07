@@ -510,6 +510,24 @@ describe('useAuthActions.reportError', () => {
     expect(mockToastErrorHandler).not.toHaveBeenCalled()
   })
 
+  it('shows the generic auth copy for a non-auth FirebaseError, never raw SDK text', () => {
+    const { reportError } = useAuthActions()
+
+    reportError(
+      new FirebaseError('app/no-app', 'Firebase: Error (app/no-app).')
+    )
+
+    expect(mockToastStore.add).toHaveBeenCalledWith({
+      severity: 'error',
+      summary: 'g.error',
+      detail: 'auth.errors.generic'
+    })
+    expect(
+      mockToastErrorHandler,
+      'a FirebaseError outside the auth/ namespace still deserves the localized copy, not the raw SDK message'
+    ).not.toHaveBeenCalled()
+  })
+
   it('delegates non-Firebase errors to toastErrorHandler', () => {
     const { reportError } = useAuthActions()
     const networkError = new TypeError('Failed to fetch')
