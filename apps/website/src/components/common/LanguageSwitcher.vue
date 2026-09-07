@@ -15,6 +15,13 @@ import type { Alternate } from '../../utils/hreflangRoutes'
  *
  * Links, never a toggle. A language is a different URL, so it has to be
  * navigable, shareable, and followable by a crawler.
+ *
+ * `data-astro-reload` because a language change is a document change, not a
+ * client-side swap. ClientRouter would swap the DOM without re-evaluating any
+ * module, and in production the browser loads only its own page dictionary — an
+ * English reader never downloads Chinese. Crossing locales that way left the
+ * new page asking for a dictionary that was never fetched, so `t()` threw and
+ * the page looked broken until a refresh.
  */
 const { locale, alternates } = defineProps<{
   locale: Locale
@@ -42,6 +49,7 @@ const hasChoice = languages.length > 1
         <a
           :href="language.href"
           :hreflang="language.code"
+          data-astro-reload
           :lang="language.code"
           :aria-current="language.code === locale ? 'true' : undefined"
           :class="

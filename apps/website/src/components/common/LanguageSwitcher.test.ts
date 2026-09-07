@@ -78,4 +78,27 @@ describe('LanguageSwitcher', () => {
 
     expect(screen.queryByRole('navigation')).toBeNull()
   })
+
+  /**
+   * A language change must be a real navigation, not a client-side swap.
+   *
+   * ClientRouter swaps the DOM without re-evaluating modules, and in production
+   * the browser deliberately loads only its own page's dictionary — an English
+   * reader never downloads Chinese. Crossing locales client-side therefore left
+   * the new page's islands asking for a dictionary that was never fetched, and
+   * `t()` threw rather than render text the server had not. The page looked
+   * broken until a refresh, which is a full load and fetches the right one.
+   *
+   * `data-astro-reload` opts these links out of client-side routing.
+   */
+  it('forces a full page load, so the new locale dictionary is fetched', () => {
+    render(LanguageSwitcher, { props: { locale: 'en', alternates: clustered } })
+
+    for (const name of ['English', '简体中文', '日本語']) {
+      expect(
+        screen.getByRole('link', { name }).hasAttribute('data-astro-reload'),
+        `${name} must force a full navigation`
+      ).toBe(true)
+    }
+  })
 })

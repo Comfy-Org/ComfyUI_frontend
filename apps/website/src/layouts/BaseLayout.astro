@@ -5,6 +5,7 @@ import '../styles/global.css'
 import SiteFooter from '../components/common/SiteFooter.vue'
 import HeaderMain from '../components/common/HeaderMain/HeaderMain.vue'
 import AnnouncementBanner from '../templates/drops/AnnouncementBanner.vue'
+import { LOCALE_PREFIXES } from '../config/locales'
 import { bannerConfig, getBannerData } from '../config/banner'
 import { isNoindexPathname } from '../config/indexing'
 import {
@@ -285,6 +286,43 @@ const structuredData = shouldNoindex
       The page's OWN url, not its canonical: a held-back Japanese page points its
       canonical at English, but its traffic is still Japanese traffic.
     */}
+    <!--
+      Crossing locales has to be a real page load.
+
+      ClientRouter swaps the document without re-evaluating any module, and in
+      production the browser deliberately loads only its own page's dictionary
+      — an English reader never downloads Chinese. A client-side swap into
+      another locale therefore leaves the incoming islands asking for a
+      dictionary that was never fetched, and `t()` throws rather than render
+      text the server did not. The page looks broken until a refresh, which is
+      a full load and fetches the right one.
+
+      This is not only the language switcher. `localizeHref` returns an
+      unprefixed path for a route a locale does not publish, so an ordinary
+      footer link from /zh-CN/about to /terms-of-service crosses locales too.
+      Hence one listener rather than an attribute on links nobody can
+      enumerate.
+
+      `loader` is the documented override point for the loading phase.
+    -->
+    <script is:inline define:vars={{ localePrefixes: LOCALE_PREFIXES }}>
+      document.addEventListener('astro:before-preparation', (event) => {
+        const localeOf = (pathname) =>
+          localePrefixes.find(
+            (prefix) =>
+              pathname === prefix || pathname.startsWith(prefix + '/')
+          ) ?? ''
+        if (localeOf(event.to.pathname) === localeOf(event.from.pathname)) {
+          return
+        }
+        event.loader = async () => {
+          window.location.assign(event.to.href)
+          // The browser is leaving; never resolve, so nothing swaps first.
+          await new Promise(() => {})
+        }
+      })
+    </script>
+
     <script is:inline define:vars={{ analyticsPath: new URL(url).pathname }}>
       document
         .querySelector('vercel-analytics')

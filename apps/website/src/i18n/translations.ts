@@ -23,10 +23,34 @@ import type { Locale } from '../config/locales'
 import type { TranslationLayer } from './pipeline/types'
 import type { LocalizedText, TranslationKey } from './source'
 
-const dictionaryLoaders = import.meta.glob<TranslationLayer>(
-  './resolved/*.json',
-  { import: 'default' }
-)
+/**
+ * `import.meta.glob` is a Vite feature, and not every runtime that loads this
+ * module is Vite.
+ *
+ * Playwright transpiles its specs with esbuild, and 17 of them import `t()`, so
+ * the whole e2e suite died on `(intermediate value).glob is not a function`.
+ * Vite replaces the CALL at transform time, so the try succeeds there and the
+ * split is untouched; anywhere else it throws and the file fallback below
+ * answers instead.
+ *
+ * Same family as `import.meta.env` being undefined under `tsx`, which
+ * `resolved.test.ts` already guards.
+ */
+// The value is optional because a lookup really can miss: outside Vite the map
+// is empty. Typed as always present, the `if (load)` below reads as dead code
+// to a type-aware linter — and it is the only thing standing between the e2e
+// suite and the crash this fixes.
+let dictionaryLoaders: Record<
+  string,
+  (() => Promise<TranslationLayer>) | undefined
+> = {}
+try {
+  dictionaryLoaders = import.meta.glob<TranslationLayer>('./resolved/*.json', {
+    import: 'default'
+  })
+} catch {
+  dictionaryLoaders = {}
+}
 
 function isLocale(value: string): value is Locale {
   return (LOCALE_CODES as readonly string[]).includes(value)
@@ -51,13 +75,21 @@ function documentLocale(): Locale {
 
 async function loadDictionary(locale: Locale): Promise<TranslationLayer> {
   const load = dictionaryLoaders[`./resolved/${locale}.json`]
-  if (!load) {
+  if (load) return load()
+
+  // No Vite, so read the file. Only reachable outside a bundler — a browser
+  // always has the glob — which is why the Node import is dynamic and stays out
+  // of the client graph.
+  const { readFile } = await import('node:fs/promises')
+  const file = new URL(`./resolved/${locale}.json`, import.meta.url)
+  try {
+    return JSON.parse(await readFile(file, 'utf8')) as TranslationLayer
+  } catch {
     throw new Error(
       `No resolved dictionary for locale "${locale}". Run ` +
         `\`pnpm i18n:build-resolved\` — src/i18n/resolved/${locale}.json is missing.`
     )
   }
-  return load()
 }
 
 /**
@@ -68,12 +100,18 @@ async function loadDictionary(locale: Locale): Promise<TranslationLayer> {
  * locales in a single file. Both would break on a single dictionary, and
  * neither ships to anyone.
  *
- * `import.meta.env` is safe here in a way it is not in `source.ts`: nothing
- * loads this module under `tsx`, and `resolved.test.ts` fails if that changes.
+ * `import.meta.env` is a Vite feature and is undefined without it, so this is
+ * read defensively rather than directly. That assumption used to be stated the
+ * other way round here — "nothing loads this module under `tsx`" — and Playwright
+ * disproved it: 17 e2e specs import `t()`, and esbuild gives them no
+ * `import.meta.env` at all. Undefined means "not a production browser", which is
+ * the right answer everywhere it happens.
  */
+const viteEnv = (import.meta as { env?: { PROD?: boolean; SSR?: boolean } }).env
+
 const PRODUCTION_BROWSER =
-  import.meta.env.PROD &&
-  !import.meta.env.SSR &&
+  viteEnv?.PROD === true &&
+  viteEnv.SSR !== true &&
   typeof document !== 'undefined'
 
 async function loadDictionaries(): Promise<Map<Locale, TranslationLayer>> {
