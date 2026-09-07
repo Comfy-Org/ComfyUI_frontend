@@ -146,7 +146,7 @@
     "semver": "^7.7.2",
     "shiki": "catalog:",
     "three": "catalog:",
-    "tiptap-markdown": "^0.9.0",
+    "tiptap-markdown": "^0.8.10",
     "typegpu": "catalog:",
     "vee-validate": "catalog:",
     "vue": "catalog:",
