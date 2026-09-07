@@ -71,7 +71,7 @@ test.describe('Workshop catalog', () => {
   test('lists partner models by what they do and filters by search', async ({
     page
   }) => {
-    await page.goto('/workshop/')
+    await page.goto('/workshop/?version=v1.2')
     const grid = page.getByTestId('workshop-models-grid')
     const cards = grid.getByTestId('workshop-model-card')
     await expect(cards.first()).toBeVisible()
@@ -93,8 +93,8 @@ test.describe('Workshop catalog', () => {
     await expect(cards.first()).toBeVisible()
   })
 
-  test('V1.1 browses category rows and drills into one', async ({ page }) => {
-    await page.goto('/workshop/?version=v1.1')
+  test('V1 browses category rows and drills into one', async ({ page }) => {
+    await page.goto('/workshop/')
     const sections = page.getByTestId('workshop-sections')
     await expect(sections).toBeVisible()
     await expect(page.getByTestId('workshop-use-cases')).toHaveCount(0)
@@ -116,7 +116,7 @@ test.describe('Workshop catalog', () => {
   })
 
   test('model cards open the model detail page', async ({ page }) => {
-    await page.goto('/workshop/')
+    await page.goto('/workshop/?version=v1.2')
     await page.getByTestId('workshop-search').fill('kling ai')
     await page.getByRole('heading', { level: 1 }).click()
     await page.getByTestId('workshop-model-card').first().click()
@@ -130,7 +130,7 @@ test.describe('Workshop catalog', () => {
   test('the filter menu drills into a facet and narrows the grid', async ({
     page
   }) => {
-    await page.goto('/workshop/')
+    await page.goto('/workshop/?version=v1.2')
     const cards = page
       .getByTestId('workshop-models-grid')
       .getByTestId('workshop-model-card')

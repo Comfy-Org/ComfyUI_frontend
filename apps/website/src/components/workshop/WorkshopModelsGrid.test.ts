@@ -1,8 +1,9 @@
 // @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
+import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
 import type { WorkshopModel } from '../../config/workshop'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
 
@@ -45,11 +46,16 @@ const models: WorkshopModel[] = [
 ]
 
 const cardNames = () =>
-  screen
-    .queryAllByTestId('workshop-model-card')
-    .map((card) => card.textContent ?? '')
+  screen.queryAllByTestId('workshop-model-card').map((card) => card.textContent)
+
+const { version } = usePrototypeTweaks()
 
 describe('WorkshopModelsGrid', () => {
+  // These cover the flat listing, which V1 reaches through its section rows.
+  beforeEach(() => {
+    version.value = 'v1.2'
+  })
+
   it('searches by name and provider', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
@@ -68,13 +74,13 @@ describe('WorkshopModelsGrid', () => {
     expect(
       screen
         .getAllByTestId('workshop-search-model')
-        .map((row) => row.textContent ?? '')
+        .map((row) => row.textContent)
     ).toHaveLength(3)
 
     await user.click(
       screen
         .getAllByTestId('workshop-search-provider')
-        .filter((chip) => chip.textContent?.includes('Kling'))[0]
+        .filter((chip) => chip.textContent.includes('Kling'))[0]
     )
     expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
   })
@@ -87,7 +93,7 @@ describe('WorkshopModelsGrid', () => {
     await user.click(
       screen
         .getAllByTestId('workshop-search-model')
-        .filter((row) => row.textContent?.includes('Flux'))[0]
+        .filter((row) => row.textContent.includes('Flux'))[0]
     )
     expect(cardNames()).toEqual([expect.stringContaining('Flux')])
   })

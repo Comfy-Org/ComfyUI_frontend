@@ -47,14 +47,14 @@ describe('PrototypeTweaks', () => {
       await screen.findByTestId('tweak-outcome'),
       'timeout'
     )
-    await user.selectOptions(screen.getByTestId('tweak-version'), 'v1.1')
-    expect(version.value).toBe('v1.1')
+    await user.selectOptions(screen.getByTestId('tweak-version'), 'v1.2')
+    expect(version.value).toBe('v1.2')
     const url = screen.getByTestId('tweak-share-url') as HTMLInputElement
     expect(url.value).toContain('/workshop/models/demo/?')
     expect(url.value).toContain('session=existing')
     expect(url.value).toContain('balance=low')
     expect(url.value).toContain('outcome=timeout')
-    expect(url.value).toContain('version=v1.1')
+    expect(url.value).toContain('version=v1.2')
 
     await user.click(screen.getByTestId('tweak-share-copy'))
     expect(

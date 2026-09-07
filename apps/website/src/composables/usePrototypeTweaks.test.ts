@@ -30,19 +30,19 @@ beforeEach(() => {
 describe('usePrototypeTweaks', () => {
   it('starts on V1 with the invented cases hidden', async () => {
     const tweaks = await mountTweaks()
-    expect(tweaks.version.value).toBe('v1.2')
+    expect(tweaks.version.value).toBe('v1.1')
     expect(tweaks.showStatuses.value).toBe(false)
     expect(tweaks.outcome.value).toBe('success')
     expect(tweaks.modelState.value).toBe('none')
   })
 
   it('restores a persisted version and ignores junk', async () => {
-    localStorage.setItem('comfy-workshop-version', 'v1.1')
-    expect((await mountTweaks()).version.value).toBe('v1.1')
+    localStorage.setItem('comfy-workshop-version', 'v1.2')
+    expect((await mountTweaks()).version.value).toBe('v1.2')
 
     vi.resetModules()
     localStorage.setItem('comfy-workshop-version', 'v9')
-    expect((await mountTweaks()).version.value).toBe('v1.2')
+    expect((await mountTweaks()).version.value).toBe('v1.1')
   })
 
   it('persists version changes and shares state between callers', async () => {
