@@ -44,7 +44,7 @@ export interface WorkflowTurnContext {
  * Which tab a turn belongs to, resolved once before prepare() and then handed
  * to every post-await lookup. The three states are deliberately distinct:
  *
- * - omitted: resolve whatever tab is active right now. Only correct outside a
+ * - omitted: resolve the currently selected target. Only correct outside a
  *   send, where there is nothing to pin to.
  * - `null`: the send had no origin tab at all (panel detached, or no workflow
  *   open when it started).
@@ -66,7 +66,7 @@ export interface AgentSessionDeps {
   events: AgentEventSource
   workflow?: {
     // origin, when given, pins resolution to the tab that initiated the send
-    // instead of whatever tab is active when this is called - it is read
+    // instead of the target selected when this is called - it is read
     // after prepare() so cloud ids it resolves are fresh, but must still
     // describe the pre-await originating tab, not a later switch. See
     // TurnOrigin for why "no origin tab" is a value rather than an omission.
@@ -236,7 +236,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     // lookups themselves stay post-await (prepare() is what warms them), but
     // pinned to this originating path rather than whatever is active later.
     // A send that starts with no origin tab must stay that way: `null` is not
-    // "resolve the active tab", or re-attaching during prepare() reattributes
+    // "resolve the selected target", or re-attaching during prepare() reattributes
     // the turn to the tab selected afterwards.
     const generation = loadGeneration
     const threadAtSend = conversationStore.threadId ?? 'new'

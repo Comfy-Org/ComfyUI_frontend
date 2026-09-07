@@ -348,7 +348,7 @@ let targetSelectionGeneration = 0
 const workflowDetached = computed(() => selectedTarget.value === null)
 
 // Resolves the tab a turn is attributed to. `null` (the send had no origin
-// tab) resolves to nothing rather than falling back to the active tab, so
+// tab) resolves to nothing rather than falling back to the selected target, so
 // re-attaching during prepare() cannot pull a later tab into this turn.
 function originWorkflow(origin?: TurnOrigin): ComfyWorkflow | undefined {
   if (origin === null) return undefined
@@ -361,46 +361,46 @@ function originWorkflow(origin?: TurnOrigin): ComfyWorkflow | undefined {
   )
 }
 
-function activeWorkflowTurnContext(
+function targetWorkflowTurnContext(
   origin?: TurnOrigin
 ): WorkflowTurnContext | undefined {
   if (workflowDetached.value) return undefined
-  const active = originWorkflow(origin)
-  if (!active) return undefined
-  const id = cloudIdFor(active)
-  if (id === undefined && !active.isTemporary && origin !== undefined)
+  const target = originWorkflow(origin)
+  if (!target) return undefined
+  const id = cloudIdFor(target)
+  if (id === undefined && !target.isTemporary && origin !== undefined)
     return undefined
   return id === undefined
-    ? { tabPath: active.path }
-    : { id, tabPath: active.path }
+    ? { tabPath: target.path }
+    : { id, tabPath: target.path }
 }
 
-function activeWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
+function targetWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
   if (workflowDetached.value) return undefined
-  const active = originWorkflow(origin)
-  if (!active) return undefined
-  if (active.path === workflowStore.activeWorkflow?.path)
-    active.changeTracker?.prepareForSave()
-  const content = active.activeState
+  const target = originWorkflow(origin)
+  if (!target) return undefined
+  if (target.path === workflowStore.activeWorkflow?.path)
+    target.changeTracker?.prepareForSave()
+  const content = target.activeState
   if (!content) return undefined
   return { content }
 }
 
 const activeTab = computed<ActiveTab | null>(() => {
-  const active = selectedTarget.value
-  return active
+  const target = selectedTarget.value
+  return target
     ? {
-        path: active.path,
-        name: active.filename,
-        isPersisted: active.isPersisted,
-        modified: active.isModified
+        path: target.path,
+        name: target.filename,
+        isPersisted: target.isPersisted,
+        modified: target.isModified
       }
     : null
 })
 
 const editableWorkflowId = computed(() => {
-  const active = selectedTarget.value
-  return active ? cloudIdFor(active) : undefined
+  const target = selectedTarget.value
+  return target ? cloudIdFor(target) : undefined
 })
 
 function addWorkflowReference(workflow: WorkflowReference): void {
@@ -516,6 +516,14 @@ function onWorkflowAdopted(
   }
 }
 
+function warnWorkflowUnavailable(): void {
+  toast.add({
+    severity: 'warn',
+    detail: t('agent.targetNavigationUnavailable'),
+    life: 5000
+  })
+}
+
 async function onWorkflowRestored(
   workflowId: string | undefined
 ): Promise<void> {
@@ -526,11 +534,7 @@ async function onWorkflowRestored(
   const target = boundTabFor(workflowId)
   if (target === null) {
     selectedTarget.value = null
-    toast.add({
-      severity: 'warn',
-      detail: t('agent.targetNavigationUnavailable'),
-      life: 5000
-    })
+    warnWorkflowUnavailable()
     return
   }
   try {
@@ -538,11 +542,7 @@ async function onWorkflowRestored(
     if (generation !== targetSelectionGeneration) return
     if (opened === false) {
       selectedTarget.value = null
-      toast.add({
-        severity: 'warn',
-        detail: t('agent.targetNavigationUnavailable'),
-        life: 5000
-      })
+      warnWorkflowUnavailable()
       return
     }
     bindingStore.bind(workflowId, target.path)
@@ -550,11 +550,7 @@ async function onWorkflowRestored(
     removeWorkflowReference(workflowId)
   } catch {
     if (generation !== targetSelectionGeneration) return
-    toast.add({
-      severity: 'warn',
-      detail: t('agent.targetNavigationUnavailable'),
-      life: 5000
-    })
+    warnWorkflowUnavailable()
   }
 }
 
@@ -581,7 +577,7 @@ const {
   rest,
   events,
   workflow: {
-    current: activeWorkflowTurnContext,
+    current: targetWorkflowTurnContext,
     adopted: onWorkflowAdopted,
     restored: onWorkflowRestored,
     prepare: async () => {
@@ -589,7 +585,7 @@ const {
     },
     tabs: openTabsSnapshot,
     activeTab: enqueueActiveTab,
-    draft: activeWorkflowDraft
+    draft: targetWorkflowDraft
   }
 })
 
@@ -645,12 +641,12 @@ function resumedTurnTabPath(): string | null {
     // it to whatever tab happens to be active lights the editing spinner on
     // that tab and markModifieds it on completion. Only a context carrying a
     // real workflow id may be attributed.
-    const context = activeWorkflowTurnContext()
+    const context = targetWorkflowTurnContext()
     return context?.id !== undefined ? context.tabPath : null
   }
   const boundPath = bindingStore.tabPathFor(bound)
   if (boundPath !== undefined) return boundPath
-  const context = activeWorkflowTurnContext()
+  const context = targetWorkflowTurnContext()
   return context?.id === bound ? context.tabPath : null
 }
 
@@ -745,20 +741,12 @@ async function onOpenReferenceWorkflow(workflowId: string): Promise<void> {
       target === null ||
       (await workflowService.openWorkflow(target)) === false
     ) {
-      toast.add({
-        severity: 'warn',
-        detail: t('agent.targetNavigationUnavailable'),
-        life: 5000
-      })
+      warnWorkflowUnavailable()
       return
     }
     bindingStore.bind(workflowId, target.path)
   } catch {
-    toast.add({
-      severity: 'warn',
-      detail: t('agent.targetNavigationUnavailable'),
-      life: 5000
-    })
+    warnWorkflowUnavailable()
   }
 }
 
