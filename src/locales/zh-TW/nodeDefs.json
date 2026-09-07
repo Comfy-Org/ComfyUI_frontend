@@ -770,6 +770,54 @@
       }
     }
   },
+  "BlockSparseAttention": {
+    "description": "透過 comfy_kitchen 的區塊稀疏注意力：每個查詢區塊會精確關注所選取的部分鍵區塊，藉此降低注意力運算量。相較於通常使用密集運算較快的短序列，序列越長，速度提升越明顯。在有效排程之外、dense_blocks 中，以及低於 min_tokens 時，模型會使用啟用中的密集模型注意力後端。",
+    "display_name": "區塊稀疏注意力",
+    "inputs": {
+      "dense_blocks": {
+        "name": "dense_blocks",
+        "tooltip": "一律以密集運算執行的 Transformer 區塊，例如「0, 1, 47-49」。"
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "在排程的此時間點之後使用密集運算。"
+      },
+      "extra_tokens": {
+        "name": "extra_tokens",
+        "tooltip": "每個查詢區塊除了所選區塊外，還會關注額外得分最高的 token。數值越高，注意力運算越接近密集運算；建議為 256，設為 0 可停用。VSA 會忽略此設定。"
+      },
+      "min_tokens": {
+        "name": "min_tokens",
+        "tooltip": "短於此長度的序列會維持使用密集運算。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "selection": {
+        "name": "selection",
+        "tooltip": "選擇精確鍵區塊的方式。Sol-Attn：依每個頭部／區塊採用自適應閾值。top-k (SLA)：在所有位置固定保留 keep_percent，僅建議搭配已訓練的權重使用。VSA (FastVideo)：FastH3-VSA 的立方體切片與粗略分支，需要為其訓練的權重。"
+      },
+      "selection_tau": {
+        "name": "tau"
+      },
+      "sink_conditioning": {
+        "name": "sink_conditioning",
+        "tooltip": "僅適用於 MiniMax-H3。exact_kv：每個查詢會精確關注已封裝的文字／音訊／參考列（約 3% 成本）。exact_kv_and_rows：另外以密集運算執行目標音訊查詢列（維持生成的音訊完整）。"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "在排程的此時間點之前使用密集運算。"
+      },
+      "verbose": {
+        "name": "verbose"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaEraser": {
     "description": "使用 Bria 從影像中移除由遮罩標示的物件或區域。",
     "display_name": "Bria 擦除",
@@ -7925,6 +7973,28 @@
       },
       "sigma": {
         "name": "標準差"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageColorSpace": {
+    "description": "轉換 sRGB (Rec.709)、HDR (Rec.2020 HLG) 與 HDR PQ (Rec.2020 PQ)。使用 203 尼特 SDR 白點與 1000 尼特 HLG 參考顯示器。縮窄會對整個批次的過量亮度進行色調映射，並壓縮超出色域的色彩。轉換會以 float32 計算，並傳回中間裝置與 dtype。直通 alpha 不會進行色彩轉換。",
+    "display_name": "轉換影像色彩空間",
+    "inputs": {
+      "destination": {
+        "name": "destination",
+        "tooltip": "輸出像素的色彩空間。請將儲存節點設為相同的色彩空間。"
+      },
+      "image": {
+        "name": "image"
+      },
+      "source": {
+        "name": "source",
+        "tooltip": "輸入像素的色彩空間。"
       }
     },
     "outputs": {
