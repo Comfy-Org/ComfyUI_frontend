@@ -957,8 +957,8 @@ describe('reconcileAgentAdapters', () => {
       const definitions = readSubgraphDefinitions(follower.doc)
       reconcileAgentAdapters(graph, definitions)
 
-      const instance = graph.getNodeById(toNodeId(1)) as SubgraphNode
-      expect(instance).toBeInstanceOf(SubgraphNode)
+      const instance = graph.getNodeById(toNodeId(1))
+      if (!instance?.isSubgraphNode()) throw new Error('Expected subgraph')
       expect(instance.title).toBe(source.name)
       const promotedWidgetId = instance.inputs[0]?.widgetId
       if (!promotedWidgetId) throw new Error('Missing promoted widgetId')
@@ -1071,8 +1071,8 @@ describe('reconcileAgentAdapters', () => {
         })
         const definitions = readSubgraphDefinitions(follower.doc)
         reconcileAgentAdapters(graph, definitions)
-        const instance = graph.getNodeById(toNodeId(1)) as SubgraphNode
-        expect(instance).toBeInstanceOf(SubgraphNode)
+        const instance = graph.getNodeById(toNodeId(1))
+        if (!instance?.isSubgraphNode()) throw new Error('Expected subgraph')
         const failing = vi
           .spyOn(instance, failurePoint)
           .mockImplementation(() => {
