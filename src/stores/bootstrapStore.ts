@@ -99,38 +99,34 @@ export const useBootstrapStore = defineStore('bootstrap', () => {
     if (storesLoaded) return []
     storesLoaded = true
 
-    const phaseSettings = bootstrapTracer.startPhase('bootstrap/settings')
-    const phaseWorkflows = bootstrapTracer.startPhase('bootstrap/workflows')
-
     return [
-      settingStore.load().finally(() => phaseSettings.stop()),
-      workflowStore.loadWorkflows().finally(() => phaseWorkflows.stop())
+      bootstrapTracer.settle('bootstrap/settings', () => settingStore.load()),
+      bootstrapTracer.settle('bootstrap/workflows', () =>
+        workflowStore.loadWorkflows()
+      )
     ]
   }
 
   async function startStoreBootstrap() {
     if (isCloud) {
-      const phaseAuth = bootstrapTracer.startPhase('auth-gate/initialized')
-      await waitForCloudAuth()
-      phaseAuth.stop()
+      await bootstrapTracer.settle('auth-gate/initialized', waitForCloudAuth)
     }
 
     const userStore = useUserStore()
-    const phaseUser = bootstrapTracer.startPhase('auth-gate/user-store')
-    await userStore.initialize()
-    phaseUser.stop()
+    await bootstrapTracer.settle('auth-gate/user-store', () =>
+      userStore.initialize()
+    )
 
     const { needsLogin } = storeToRefs(userStore)
-    const phaseLogin = bootstrapTracer.startPhase('auth-gate/needs-login')
-    await until(needsLogin).toBe(false)
-    phaseLogin.stop()
+    await bootstrapTracer.settle('auth-gate/needs-login', () =>
+      until(needsLogin).toBe(false)
+    )
 
     void loadI18n()
     const storeLoads = loadAuthenticatedStores()
 
     void Promise.allSettled(storeLoads).then(() => {
       bootstrapTracer.milestone('stores-ready')
-      bootstrapTracer.logSummary()
     })
   }
 

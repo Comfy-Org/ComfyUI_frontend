@@ -46,17 +46,17 @@ if (isCloud) stripPaymentReturnParams()
 
 // Load remote config before initializeApp() below, so getFirebaseConfig() resolves
 // against the server's runtime values instead of the build-time defaults.
-const phaseRemoteConfig = bootstrapTracer.startPhase('startup/remote-config')
-const { refreshRemoteConfig } =
-  await import('@/platform/remoteConfig/refreshRemoteConfig')
-await refreshRemoteConfig({ useAuth: false })
-phaseRemoteConfig.stop()
+await bootstrapTracer.settle('startup/remote-config', async () => {
+  const { refreshRemoteConfig } =
+    await import('@/platform/remoteConfig/refreshRemoteConfig')
+  await refreshRemoteConfig({ useAuth: false })
+})
 
 if (isCloud) {
-  const phaseTelemetry = bootstrapTracer.startPhase('startup/telemetry-init')
-  const { initTelemetry } = await import('@/platform/telemetry/initTelemetry')
-  await initTelemetry()
-  phaseTelemetry.stop()
+  await bootstrapTracer.settle('startup/telemetry-init', async () => {
+    const { initTelemetry } = await import('@/platform/telemetry/initTelemetry')
+    await initTelemetry()
+  })
 
   const { startFeatureFlagTelemetry } =
     await import('@/composables/useFeatureFlags')

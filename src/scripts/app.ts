@@ -977,9 +977,9 @@ export class ComfyApp {
     await useWorkspaceStore().workflow.syncWorkflows()
     //Doesn't need to block. Blueprints will load async
     void useSubgraphStore().fetchSubgraphs()
-    const phaseLoadExt = bootstrapTracer.startPhase('bootstrap/extensions-load')
-    await useExtensionService().loadExtensions()
-    phaseLoadExt.stop()
+    await bootstrapTracer.settle('bootstrap/extensions-load', () =>
+      useExtensionService().loadExtensions()
+    )
 
     this.addProcessKeyHandler()
     this.addConfigureHandler()
@@ -1074,19 +1074,17 @@ export class ComfyApp {
       }
     })
 
-    const phaseExtInit = bootstrapTracer.startPhase('bootstrap/extensions-init')
-    await useExtensionService().invokeExtensionsAsync('init')
-    phaseExtInit.stop()
+    await bootstrapTracer.settle('bootstrap/extensions-init', () =>
+      useExtensionService().invokeExtensionsAsync('init')
+    )
 
     await this.registerNodes()
 
     this.addDropHandler()
 
-    const phaseExtSetup = bootstrapTracer.startPhase(
-      'bootstrap/extensions-setup'
+    await bootstrapTracer.settle('bootstrap/extensions-setup', () =>
+      useExtensionService().invokeExtensionsAsync('setup')
     )
-    await useExtensionService().invokeExtensionsAsync('setup')
-    phaseExtSetup.stop()
 
     this.positionConversion = useCanvasPositionConversion(
       this.canvasContainer,
@@ -1188,14 +1186,14 @@ export class ComfyApp {
    * Registers nodes with the graph
    */
   async registerNodes() {
-    const phaseObjectInfo = bootstrapTracer.startPhase('bootstrap/object-info')
-    const defs = await this.getNodeDefs()
-    phaseObjectInfo.stop()
+    const defs = await bootstrapTracer.settle('bootstrap/object-info', () =>
+      this.getNodeDefs()
+    )
 
-    const phaseRegister = bootstrapTracer.startPhase('bootstrap/extensions')
-    await this.registerNodesFromDefs(defs)
-    await useExtensionService().invokeExtensionsAsync('registerCustomNodes')
-    phaseRegister.stop()
+    await bootstrapTracer.settle('bootstrap/extensions', async () => {
+      await this.registerNodesFromDefs(defs)
+      await useExtensionService().invokeExtensionsAsync('registerCustomNodes')
+    })
     if (this.vueAppReady) {
       this.updateVueAppNodeDefs(defs)
     }

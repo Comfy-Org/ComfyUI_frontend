@@ -114,24 +114,20 @@ describe('bootstrapStore', () => {
     })
   })
 
-  it('finishes bootstrap when authenticated store loads reject', async () => {
+  it('records both store phases when their loads reject', async () => {
     mockSettingLoad.mockRejectedValueOnce(new Error('settings failed'))
     mockWorkflowLoad.mockRejectedValueOnce(new Error('workflows failed'))
     const milestone = vi.spyOn(bootstrapTracer, 'milestone')
-    const logSummary = vi
-      .spyOn(bootstrapTracer, 'logSummary')
-      .mockImplementation(() => undefined)
     const store = useBootstrapStore()
 
     await expect(store.startStoreBootstrap()).resolves.toBeUndefined()
 
     await vi.waitFor(() => {
       expect(milestone).toHaveBeenCalledWith('stores-ready')
-      expect(logSummary).toHaveBeenCalledOnce()
       expect(store.isI18nReady).toBe(true)
     })
-    expect(milestone.mock.invocationCallOrder[0]).toBeLessThan(
-      logSummary.mock.invocationCallOrder[0]
+    expect(bootstrapTracer.summary().map((r) => r.name)).toEqual(
+      expect.arrayContaining(['bootstrap/settings', 'bootstrap/workflows'])
     )
   })
 
