@@ -9,6 +9,8 @@ import type {
   SessionErrorCode
 } from './session.js'
 import {
+  SESSION_ERROR_MESSAGES,
+  SESSION_SUCCESS_MESSAGES,
   createSessionClient,
   isCredentialFresh,
   isPermanentSessionError
@@ -1004,5 +1006,22 @@ describe('storage resilience', () => {
     identity.fire(null)
 
     expect(client.getSnapshot().phase).toBe('signed-out')
+  })
+})
+
+describe('shared session copy', () => {
+  it('covers every session error code and both success states', () => {
+    const codes: SessionErrorCode[] = [
+      'NOT_AUTHENTICATED',
+      'INVALID_FIREBASE_TOKEN',
+      'ACCESS_DENIED',
+      'WORKSPACE_NOT_FOUND',
+      'TOKEN_EXCHANGE_FAILED'
+    ]
+    for (const code of codes) {
+      expect(SESSION_ERROR_MESSAGES[code]).toBeTruthy()
+    }
+    expect(SESSION_SUCCESS_MESSAGES.signedInHeading).toBeTruthy()
+    expect(SESSION_SUCCESS_MESSAGES.signedInAs).toBeTruthy()
   })
 })

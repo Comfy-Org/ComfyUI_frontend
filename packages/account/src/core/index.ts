@@ -16,6 +16,7 @@ export type {
 } from './session.js'
 export {
   SESSION_ERROR_MESSAGES,
+  SESSION_SUCCESS_MESSAGES,
   SESSION_TELEMETRY_EVENT,
   createSessionClient,
   isCredentialFresh,
